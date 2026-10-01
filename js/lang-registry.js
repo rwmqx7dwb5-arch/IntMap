@@ -53,7 +53,7 @@
  *  can be edited without a symbol table going stale — an English string that changes simply falls
  *  back to English until the translation catches up, and the report says so.
  * ========================================================================== */
-window.IntMapLang = (function () {
+export const IntMapLang=(function () {
   'use strict';
 
   /* ── THE LIST. One row per language, and this is the only one in the app. ───────────────────
@@ -326,7 +326,9 @@ window.IntMapLang = (function () {
      across, so scripts/lang-ternary-codemod.mjs rewrites an expression into an expression and
      touches nothing else. Behaviour is `pick()`'s, exactly — positional for the first five, the
      `inline` table for the rest, English underneath both. */
-  function t(lang) {
+  /** (module-graph) the signature the call sites use, now that the type checker reads the import:
+      @param {string|(() => string)} lang  @param {...*} texts  English first, then the other columns  @returns {string} */
+  function t(lang, ...texts) {   /* `texts` names the columns for the checker; the body reads `arguments`, as before */
     var n = arguments.length;
     if (n < 2) return '';
     var code; try { code = normalise(typeof lang === 'function' ? lang() : lang); } catch (e) { code = FALLBACK; }
@@ -510,3 +512,8 @@ window.IntMapLang = (function () {
            /* for the coverage report and the tests */
            _ui: ui, _inline: inline, _derive: derive };
 })();
+/* (module-graph) THE COMPAT WINDOW. Every js/ and src/ reader IMPORTS IntMapLang from this file; this one
+   publication remains for what cannot import: the browser specs' page.evaluate, the console, and the
+   static pages' inline scripts. scripts/global-surface.mjs counts it, and its `reads` register is what
+   says no module reads it back off the global. */
+globalThis.IntMapLang=IntMapLang;

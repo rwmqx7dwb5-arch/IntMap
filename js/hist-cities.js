@@ -67,6 +67,7 @@
  *  buys is that `cities500`'s population floor of 500 is comfortably below anything OSM tags
  *  `place=city|town`, so the evidence covers what the layer draws.
  * ==========================================================================*/
+import { IntMapTime } from './chronos.js';
 window.IntMapHistCities = (function () {
   var data = null, loading = null, wired = false;
   var cache = { key: null, expr: null };
@@ -167,7 +168,7 @@ window.IntMapHistCities = (function () {
   }
 
   function traveling() {
-    try { return !!(window.IntMapTime && !window.IntMapTime.isLive()); } catch (_) { return false; }
+    try { return !!(IntMapTime && !IntMapTime.isLive()); } catch (_) { return false; }
   }
 
   /* ── the era name of ONE place, for readers that are not the label layer ─────────────────────
@@ -177,7 +178,7 @@ window.IntMapHistCities = (function () {
      and this returns null rather than guessing. */
   function at(spelling, lon, lat, lang) {
     if (!data || !spelling || !Number.isFinite(lon) || !Number.isFinite(lat)) return null;
-    var d = traveling() ? dnum(window.IntMapTime.when()) : null;
+    var d = traveling() ? dnum(IntMapTime.when()) : null;
     if (d == null) return null;
     for (var i = 0; i < data.cities.length; i++) {
       var c = data.cities[i];
@@ -226,7 +227,7 @@ window.IntMapHistCities = (function () {
        can support. A reader who asked for the local spelling of a name that no longer exists is
        asking for something the record does not hold. */
     var lg = labelLanguage(lang, mode);
-    var d = dnum(window.IntMapTime.when());
+    var d = dnum(IntMapTime.when());
     /* ⚠ THE BASE EXPRESSION IS PART OF THE KEY, not just the epoch and the language. `base` is what
        everything falls through to — the label every city outside the record gets — and it is rebuilt by
        the caller on every call. 'en' and 'local' both resolve to the English column above, so a
@@ -306,7 +307,7 @@ window.IntMapHistCities = (function () {
   function wire() {
     if (wired) return; wired = true;
     try {
-      window.IntMapTime.on(function (e) {
+      IntMapTime.on(function (e) {
         if (!e.isLive) ensure();
         try { if (window.applyLabelLang) window.applyLabelLang(); } catch (_) {}
       });

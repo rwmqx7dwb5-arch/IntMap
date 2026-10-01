@@ -13,6 +13,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { importModule, swappable, langRegistry } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -115,25 +116,27 @@ function stubRenderer(opts) {
 }
 
 let FACTORY = null;
+/* (module-graph) js/map-ui.js IMPORTS IntMapGeoEngine; each test's recording renderer is handed at that
+   import edge through one swappable binding, and the strings come from the real language registry */
+const ENGINE = swappable();
+langRegistry();
 
 async function bootUpload(opts) {
   const toasts = [];
   const R = stubRenderer(opts);
   const w = {};
   w.IntMapGeoEngine = R.api;
-  w.IntMapLang = { t: (lang, ...args) => (lang === 'jp' ? (args[1] || args[0]) : args[0]), locale: () => 'en' };
+  ENGINE.set(R.api);
   globalThis.window = w;
   globalThis.document = { createElement: () => stubEl(), body: { appendChild() { } }, getElementById: () => null, addEventListener() { } };
   const { makeGisRaster } = await import('../js/gis-raster.js');
   w.IntMapGisRaster = makeGisRaster();
   const origWarn = console.warn; console.warn = () => { };
-  /* ⚠ THE MODULE PUBLISHES ITS FACTORY ONCE PER PROCESS. js/map-ui.js writes onto whatever `window`
-     existed at its first evaluation, and a second import is a cache hit that writes nothing. Each
-     test wants its own renderer, so the factory is captured once and MOUNTED again on each fresh
-     window — which is also the closer reproduction of the app, where one module is mounted once
-     against one live renderer. */
-  if (!FACTORY) { await import('../js/map-ui.js'); FACTORY = w.IntMapModules.geojsonUpload; }
-  w.IntMapModules = { geojsonUpload: FACTORY };
+  /* ⚠ ONE MODULE, MOUNTED PER TEST. (module-graph) js/map-ui.js EXPORTS the factory; it is imported
+     once and MOUNTED again on each fresh window, with the renderer swapped in behind its import edge —
+     which is also the closer reproduction of the app, where one module is mounted once against one
+     live renderer. */
+  if (!FACTORY) FACTORY = (await importModule('js/map-ui.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: ENGINE.value } } })).geojsonUpload;
   FACTORY({ lang: 'en', imToast: (m) => toasts.push(m) });
   console.warn = origWarn;
   return { w, R, toasts, UP: w.GeoJSONUpload, raster: w.IntMapGisRaster };

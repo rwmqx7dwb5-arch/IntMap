@@ -92,8 +92,11 @@ function harness() {
     emit() { for (const fn of [...subscriptions]) fn(); }
   };
   const HOST = { lang: 'en' };
+  /* (module-graph) the lifted fragment reads the clock and the registry under the names js/data-layers.js
+     imports them as, so the context hands the same stubs in under those names as well as on `window` */
+  const lang = { t: (lang, en, jp) => lang === 'jp' ? jp : en };
   const context = vm.createContext({ HOST, document: { createElement: element, querySelectorAll: s => body.querySelectorAll(s) },
-    window: { IntMapTime: clock, IntMapLang: { t: (lang, en, jp) => lang === 'jp' ? jp : en } },
+    window: { IntMapTime: clock, IntMapLang: lang }, IntMapTime: clock, IntMapLang: lang,
     setTimeout: (fn, delay) => { timers.push({ fn, delay }); }, escapeHtml: s => s });
   vm.runInContext(source.slice(begin, end), context);
   return { body, HOST, clock, writes, subscriptions, timers, get elements() { return elements; },
@@ -548,10 +551,11 @@ function legendRun({ legends, mcH = 923, mcW = 1112, mobile = false, ws = false 
   /* `tileLegends` is the request (the next frame's placement); the fold asks for one and the rig
      counts the asks — the placement itself is `placeLegends`, called here at once */
   const asked = { n: 0 };
-  const args = ['document', 'window', 'getComputedStyle', 'HOST', 'tileLegends', ...LGD, ...STUBS];
+  /* (module-graph) `IntMapLang` is the imported binding the lifted bodies read — handed in by that name */
+  const args = ['document', 'window', 'getComputedStyle', 'HOST', 'tileLegends', 'IntMapLang', ...LGD, ...STUBS];
   /* eslint-disable no-new-func */
   const make = new Function(...args, DL_BODY + '\nreturn { placeLegends, minimizeOpenLegends };');
-  const api = make(document, window, () => ({ display: 'block' }), { lang: 'en' }, () => { asked.n++; },
+  const api = make(document, window, () => ({ display: 'block' }), { lang: 'en' }, () => { asked.n++; }, window.IntMapLang,
     ...LGD.map((n) => legends.find((el) => el.lgd === n) || null), ...STUBS.map(() => () => {}));
   api.asked = asked;
   api.placeLegends();

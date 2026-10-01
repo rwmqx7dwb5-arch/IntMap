@@ -148,12 +148,12 @@ test('#R686 ⑧ the shipped table is keyed to the bundle it names', () => {
     'no row may claim an English attestation');
 });
 
-test('#R686 ⑨ no era name is answered twice — the bundled lane and the hand tables are disjoint', () => {
+test('#R686 ⑨ no era name is answered twice — the bundled lane and the hand tables are disjoint', async () => {
   const d = doc();
   const clash = {};
   for (const lg of d.langs) {
     if (lg === 'en') continue;
-    const { api } = timeBorders({ lang: lg });
+    const { api } = await timeBorders({ lang: lg });
     const both = Object.entries(eraRowsOf(d)).filter(([k, r]) => r.n[lg] && api.eraLocName(k)).map(([k]) => k);
     if (both.length) clash[lg] = both.slice(0, 8);
   }
@@ -199,7 +199,7 @@ test('#R695 ① three records, one row shape — the rule can be asked once', ()
 
 test('#R695 ② the record’s own words always win — the merge is EVALUATED, not read', async () => {
   /* ⚠ THE MERGE ORDER IS THE WHOLE SAFETY OF THE IDENTIFIER LANE — js/time-borders.js is INSTANTIATED */
-  const { api, window: w } = timeBorders({ lang: 'jp' });
+  const { api, window: w } = await timeBorders({ lang: 'jp' });
   const t = doc();
   /* the harness has no `fetch`, so the table is injected the way the module would have received it */
   await api.loadHistNames();
@@ -337,7 +337,7 @@ test('#R695 ⑧ the shipped table is a table, not a second copy of the records',
 /* the other half of #R695: the years the reader can ASK for. Below 1689 there were no dates at all, so
    the stretch where dragging is WORST — a logarithmic slider over 124,688 years — had no way to step. */
 test('#R695 ⑨ the stepper reaches the era sheets, and asks no bundle it does not already have', async () => {
-  const { api, window: w } = timeBorders({ lang: 'jp', year: 500 });
+  const { api, window: w } = await timeBorders({ lang: 'jp', year: 500 });
   const HS = w.IntMapHistScale;
   assert.ok(HS && typeof HS.utcAt === 'function', 'js/hist-scale.js must be the one owner of this arithmetic');
   /* minimal stand-ins: the RULE is what is measured. Nothing here may fetch. */
@@ -356,8 +356,8 @@ test('#R695 ⑨ the stepper reaches the era sheets, and asks no bundle it does n
   assert.equal(ymd(await api.changeBefore(HS.utcAt(1689, 0, 2, 12))), '1689-01-01');
 });
 
-test('#R695 ⑩ a key below year 0 decodes to the year it names — both traps, in one line', () => {
-  const { api, window: w } = timeBorders({ lang: 'jp' });
+test('#R695 ⑩ a key below year 0 decodes to the year it names — both traps, in one line', async () => {
+  const { api, window: w } = await timeBorders({ lang: 'jp' });
   const HS = w.IntMapHistScale;
   /* ⚠ #R602: `new Date(y, …)` maps a year under 100 to 1900+y, and `Math.floor(k/100) % 100` yields a
      NEGATIVE month for a negative key. Neither could fire while the list stopped at 1689. */
@@ -383,7 +383,7 @@ const GLOSSED = ROWS.filter((r) => eraNameRule().split(r.name));
    SHIPPED BYTES is defined INSIDE the vm context (via the context's own Function), because the
    harness owns the sandbox and this file may not reach into it. */
 async function live(lang) {
-  const { api } = timeBorders({ lang });
+  const { api } = await timeBorders({ lang });
   api.eraLocName.constructor('j',
     'fetch=function(){return Promise.resolve({ok:true,json:function(){return Promise.resolve(j);}});}')(TABLE);
   await api.loadHistNames();
@@ -413,12 +413,12 @@ test('#R700 ② the join owns the punctuation, per language', () => {
   assert.ok(/[（）]/.test(jp), 'the Japanese label did not use full-width brackets');
 });
 
-test('#R700 ③ the hand tables still put the possessor back — a localized base alone is not the label', () => {
+test('#R700 ③ the hand tables still put the possessor back — a localized base alone is not the label', async () => {
   /* ⚠⚠ NOT EVERY LOCALIZED GLOSSED NAME GOES THROUGH THE BRACKET BRANCH («Cyraneica (UK Lybia)» is
      「キレナイカ」, «Arabia (Nejd)» comes back 「ナジュド（アラビア）」). So the composed ones are
      identified by what composition leaves behind — the localized base AND MORE. */
   const R = eraNameRule();
-  const api = timeBorders({ lang: 'jp' }).api;
+  const api = (await timeBorders({ lang: 'jp' })).api;
   let seen = 0, composed = 0;
   for (const r of GLOSSED) {
     const label = api.eraLocName(r.name);
@@ -658,28 +658,28 @@ const REACH_FLOOR = {
   de: [462, 2531], es: [475, 2627], fr: [477, 2659], jp: [660, 4531],
   ko: [619, 3173], ru: [660, 3724], zh: [622, 3546],
 };
-function received(lang) {
+async function received(lang) {
   const T = doc();
-  const { api } = timeBorders({ lang, year: 1950 });
+  const { api } = await timeBorders({ lang, year: 1950 });
   const hn = (rec, en) => Object.assign({}, T.byName?.[rec]?.[en]?.n || null, T.prose?.[en]?.n || null);
   const count = (names, rec) => names.reduce((n, x) => n + ((hn(rec, x)[lang] || api.eraLocName(x)) ? 1 : 0), 0);
   return [count(DRAWN.cs, 'cshapes'), count(DRAWN.er, 'eras')];
 }
 for (const [lang, floor] of Object.entries(REACH_FLOOR)) {
-  test(`#R716 ① ${lang}: the historical map reaches this reader on at least as many drawn features as measured`, () => {
-    const [cs, er] = received(lang);
+  test(`#R716 ① ${lang}: the historical map reaches this reader on at least as many drawn features as measured`, async () => {
+    const [cs, er] = await received(lang);
     assert.ok(cs >= floor[0], `CShapes 1886-2019: ${cs} of ${DRAWN.cs.length} drawn features reach a ${lang} reader, under the measured ${floor[0]} — a name has stopped being localized`);
     assert.ok(er >= floor[1], `era snapshots: ${er} of ${DRAWN.er.length} drawn features reach a ${lang} reader, under the measured ${floor[1]} — a name has stopped being localized`);
   });
 }
 
-test('#R716 ① the two name sources MERGE PER LANGUAGE rather than one owning the name outright', () => {
+test('#R716 ① the two name sources MERGE PER LANGUAGE rather than one owning the name outright', async () => {
   /* the defect in its own terms: names the hand table answers, which data/histnames.json ALSO answers
      in a language the hand table is silent in. Under per-NAME ownership this set is empty BY
      CONSTRUCTION — which is why eight rounds of green tests never mentioned it. */
   const T = doc();
   const langs = Object.keys(REACH_FLOOR);
-  const apis = Object.fromEntries(langs.map((l) => [l, timeBorders({ lang: l }).api]));
+  const apis = Object.fromEntries(await Promise.all(langs.map(async (l) => [l, (await timeBorders({ lang: l })).api])));
   let merged = 0;
   for (const [name, row] of Object.entries(T.byName.cshapes || {})) {
     const handled = langs.filter((l) => apis[l].eraLocName(name));

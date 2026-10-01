@@ -66,9 +66,11 @@ import { everyTick, stopTick } from './runtime.js';
 /* (#R550) …and the ONE answer to 「いまどの epoch か」. The date used to be spelled inside the tile
    URL below, which is why the globe could composite 2016 while dl-nightsat drew 2012. */
 import './night-lights.js';
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
 window.IntMapNightSide=(function(){
   'use strict';
-  const GE=()=>window.IntMapGeoEngine;
+  const GE=()=>IntMapGeoEngine;
   const SRC='im-night-src', LYR='im-night-shade', DYN='im-night-lights';
   const D=Math.PI/180;
 
@@ -288,7 +290,7 @@ window.IntMapNightSide=(function(){
     /* ⚠ (#R200) `T.now` IS NOT PART OF window.IntMapTime — see the note in js/theme-sky.js. This
        guard was false on every build since #R196, so the terminator and the city-lights mask were
        drawn for the wall clock even with the time machine years away. `when()` is the real one. */
-    try{ const T=window.IntMapTime; if(T&&T.when){ const d=T.when(); const v=(d instanceof Date)?d.getTime():+d; if(isFinite(v)) return v; } }catch(_){}
+    try{ const T=IntMapTime; if(T&&T.when){ const d=T.when(); const v=(d instanceof Date)?d.getTime():+d; if(isFinite(v)) return v; } }catch(_){}
     return Date.now();
   }
   /* ⚠ (#R196) THE HOT LOOP IS SEPARABLE, SO IT IS SEPARATED. The solar elevation at (lat, lng) is
@@ -499,7 +501,7 @@ window.IntMapNightSide=(function(){
        directions matter: leaving satellite has to REMOVE the layers (consider() does), and coming
        back has to rebuild them, because a restyle drops every added layer anyway. */
     try{ GE().events.on('styledata',()=>{ try{ consider(); }catch(_){} }); }catch(_){}
-    try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>{ refresh(true); }); }catch(_){}
+    try{ if(IntMapTime&&IntMapTime.on) IntMapTime.on(()=>{ refresh(true); }); }catch(_){}
     /* (#R550) …and when the clock crosses into ANOTHER EPOCH the PICTURE has to change, not only the
        terminator. Nothing is fetched unless the night side is actually built, which is what keeps a
        session that never leaves street level — or that turned the effect off — at zero requests. */

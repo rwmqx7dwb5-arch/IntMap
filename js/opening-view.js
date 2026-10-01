@@ -32,6 +32,7 @@
    rules at once — no unexported top-level declaration, and no export that nothing imports by name —
    and a module of small pure helpers satisfies both only as a single object (#R202 wrote this down
    after js/sky-model.js hit it). */
+import { IntMapTime } from './chronos.js';
 export const OpeningView = (() => {
   const D = Math.PI / 180;
 
@@ -88,7 +89,7 @@ export const OpeningView = (() => {
   /** the app's clock if it is already up, otherwise the wall clock (#R94, #R200: `when`, never `now`) */
   function openingClockMs() {
     try {
-      const T = (typeof window !== 'undefined') && window.IntMapTime;
+      const T = (typeof window !== 'undefined') && IntMapTime;
       if (T && T.when) { const v = +T.when(); if (isFinite(v)) return v; }
     } catch (_) {}
     return Date.now();

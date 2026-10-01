@@ -58,20 +58,23 @@ import { loadStarCatalogue } from './star-catalogue.js';
 import './space-events.js';
 import './space-bodies.js';
 import './space-cosmos.js';
-window.IntMapModules=window.IntMapModules||{};
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
 /* (startup-lazy-layers) THE EXPLORER, FETCHED AT THE ZOOM FLOOR. The way in — the zoom-out the map can no
    longer spend, its integral and its gauge — and window.IntMapSpace itself are js/space-approach.js, which
    is eager; this factory is mounted by js/lazy-modules.js (`spaceBody`) the first time that gesture starts
    (or Atlas asks for the explorer), and reads the approach's shared pieces off `window.IntMapSpace._kit`. */
-window.IntMapModules.spaceBody=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;
+export function spaceBody(HOST){
+  const GE=()=>IntMapGeoEngine;
   const K=window.IntMapSpace&&window.IntMapSpace._kit;
   if(!K) return null;
 
   const api=(function(){
     'use strict';
     const { atFloor, nearFloor, paintGauge, OVER_TRIGGER, OVER_DECAY, pushOut }=K;
-    const L=window.IntMapLang.pick(()=>HOST.lang);
+    const L=IntMapLang.pick(()=>HOST.lang);
     const EPH=()=>window.IntMapEphemeris;
     /* ⚠ (#R138) EVERY VALUE THAT REACHES THE DOM GOES THROUGH THE ONE SANITISER. Two of the strings
        this panel builds HTML from are DATA rather than literals — the body colour out of
@@ -130,7 +133,7 @@ window.IntMapModules.spaceBody=function(HOST){
        #R241 and #R248 each closed once, in one place: not a call, so no instrument saw the eleven
        names and fr/ko/zh/zh-hans had no row for them; and subscripted by hand, so those four
        languages would have read English even if they had. `LA(…)` is byte-identical data. */
-    const LA=window.IntMapLang.pickArgs();
+    const LA=IntMapLang.pickArgs();
     const NAMED={ sun:LA('Sun','太陽','Sonne','Солнце','Sol'), mercury:LA('Mercury','水星','Merkur','Меркурий','Mercurio'),
       venus:LA('Venus','金星','Venus','Венера','Venus'), earth:LA('Earth','地球','Erde','Земля','Tierra'),
       moon:LA('Moon','月','Mond','Луна','Luna'), mars:LA('Mars','火星','Mars','Марс','Marte'),
@@ -148,7 +151,7 @@ window.IntMapModules.spaceBody=function(HOST){
        time does NOT move the app's clock — the map underneath is not asked to follow a trip to 2400. */
     function nowMs(){
       if(!live) return timeMs;
-      try{ const T=window.IntMapTime; if(T&&T.when){ const d=T.when(); if(d&&isFinite(+d)) return +d; } }catch(_){}
+      try{ const T=IntMapTime; if(T&&T.when){ const d=T.when(); if(d&&isFinite(+d)) return +d; } }catch(_){}
       return Date.now();
     }
     const jdNow=()=>EPH().julianDay(nowMs());
@@ -2753,4 +2756,4 @@ window.IntMapModules.spaceBody=function(HOST){
      every later call goes straight to them; `mount`, `ready` and `_kit` stay the approach's */
   try{ Object.assign(window.IntMapSpace,api); }catch(_){}
   return api;
-};
+}

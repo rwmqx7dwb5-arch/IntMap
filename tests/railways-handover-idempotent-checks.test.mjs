@@ -19,6 +19,7 @@ import assert from 'node:assert/strict';
 import { resolve, join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const tick = (ms = 0) => new Promise((r) => setTimeout(r, ms));
@@ -62,12 +63,12 @@ function makeEngine() {
   };
 }
 
-const say = Object.assign((...a) => a[0], { arr: (a) => a[0] });
-function baseWindow(eng) {
+/* (module-graph) the renderer and the language registry are imports now: the fake engine is handed at
+   the geo-engine.js import edge of each module under test (see `mocksFor`), the registry is the real one */
+const mocksFor = (eng) => ({ 'js/geo-engine.js': { IntMapGeoEngine: eng.ge } });
+function baseWindow() {
   globalThis.window = globalThis.window || {};
   Object.assign(globalThis.window, {
-    IntMapGeoEngine: eng.ge,
-    IntMapLang: { pick: () => say, pickArgs: () => (...a) => a[0], t: (_l, en) => en },
     IntMapSafe: { html: (v) => v, url: (v) => v },
     IntMapLabelScale: { sub: (v) => v },
     addEventListener() { },
@@ -89,9 +90,9 @@ async function railways() {
     return new Response('', { status: 404 });
   };
   const eng = makeEngine();
-  baseWindow(eng);
-  await import(pathToFileURL(join(ROOT, 'js/railways.js')).href);
-  const R = window.IntMapModules.railways({ lang: 'en', canDraw: () => true });
+  baseWindow();
+  const { railways: factory } = await importModule('js/railways.js', { mocks: mocksFor(eng) });
+  const R = factory({ lang: 'en', canDraw: () => true });
   return { R, eng };
 }
 
@@ -150,7 +151,7 @@ test('railways-handover-idempotent ② a basemap swap still rebuilds the layer a
 });
 
 /* ── ③ every basemap-swap self-heal in js/layer-packs.js rebuilds a row only when the style lost it ──
-   THE PACKS ARE NOT LISTED HERE. Every factory js/layer-packs.js adds to IntMapModules is built over
+   THE PACKS ARE NOT LISTED HERE. Every factory js/layer-packs.js exports (module-graph) is built over
    a fake renderer and a fake Layers panel; every `styledata` subscriber they register is found by
    its subscription; every row checkbox they put in the panel is switched on. Then, per subscriber:
    a storm of `styledata` with the rows' layers on the map must fetch nothing, send nothing and add
@@ -198,7 +199,7 @@ function makeDom() {
 
 test('railways-handover-idempotent ③ every basemap-swap self-heal fires only when the style lost its row', async () => {
   const eng = makeEngine();
-  baseWindow(eng);
+  baseWindow();
   const count = { fetch: 0, send: 0, add: 0, addSource: 0, rail: 0, dc: 0 };
   const L = eng.ge.layers;
   const add0 = L.add, addSource0 = L.addSource, send0 = L.setSourceData;
@@ -222,17 +223,15 @@ test('railways-handover-idempotent ③ every basemap-swap self-heal fires only w
   const on0 = eng.ge.events.on;
   eng.ge.events.on = (n, f) => { if (n === 'styledata') found.push(f); return on0(n, f); };
 
-  /* the factories are the ones js/layer-packs.js adds, over whatever its own imports add */
-  window.IntMapModules = window.IntMapModules || {};
-  await import(pathToFileURL(join(ROOT, 'js/osm-facilities.js')).href);
-  const before = new Set(Object.keys(window.IntMapModules));
-  await import(pathToFileURL(join(ROOT, 'js/layer-packs.js')).href);
-  const packs = Object.keys(window.IntMapModules).filter((k) => !before.has(k));
+  /* the factories are the functions js/layer-packs.js exports — read off its namespace, not listed —
+     evaluated with the fake engine at its geo-engine.js import edge (module-graph) */
+  const NS = await importModule('js/layer-packs.js', { mocks: mocksFor(eng) });
+  const packs = Object.keys(NS).filter((k) => typeof NS[k] === 'function');
   const HOST = {
     lang: 'en', proj: 'globe', countryGeo: null, canDraw: () => true, imToast() { }, satToast() { },
     isMobile: () => false, t: (...a) => a[0], loadCountryData: () => Promise.resolve(null), countryStats: () => null,
   };
-  for (const p of packs) window.IntMapModules[p](HOST);
+  for (const p of packs) NS[p](HOST);
   assert.ok(packs.length > 0 && found.length > 0, 'js/layer-packs.js registered no pack or no styledata subscriber');
   /* a subscriber that goes through healWhenLost says which rows it heals; the behaviour below is
      measured on every subscriber either way, and the missing receipt is reported after it */

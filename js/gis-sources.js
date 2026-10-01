@@ -126,6 +126,7 @@
  *  module imports in Node with no DOM and refuses by name instead of throwing.
  * ==========================================================================*/
 
+import { IntMapGeoEngine } from './geo-engine.js';
 export function makeGisSources() {
   return (function () {
 
@@ -134,7 +135,9 @@ export function makeGisSources() {
     function REG() { try { return (typeof window !== 'undefined' && window.IntMapLayers) || null; } catch (_) { return null; } }
     function RASTER() { try { return (typeof window !== 'undefined' && window.IntMapGisRaster) || null; } catch (_) { return null; } }
     function DATA() { try { return (typeof window !== 'undefined' && window.IntMapData) || null; } catch (_) { return null; } }
-    function GE() { try { return (typeof window !== 'undefined' && window.IntMapGeoEngine) || null; } catch (_) { return null; } }
+    /* (module-graph) the engine is an import now, so it is always THERE; «no map» is the engine's own answer
+       (hasRenderer), not whether a global happens to exist — which is what the headless runtime relied on */
+    function GE() { try { const E = IntMapGeoEngine; return (E && (typeof E.hasRenderer !== 'function' || E.hasRenderer())) ? E : null; } catch (_) { return null; } }
 
     /* 「everything」, in the only vocabulary the layer contract has (js/gis-layers.js says why). */
     const WHOLE_WORLD = { w: -180, s: -90, e: 180, n: 90 };

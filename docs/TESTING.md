@@ -382,9 +382,19 @@ from a line joined to its neighbour, so it had stopped measuring what it was for
   assignment in the code of js/, src/, tests/, scripts/ or a top-level page (comments blanked, strings
   kept — an inline `onclick` is a reader), and not reachable by a program that enumerates window with
   a regular expression (Atlas's module catalogue, discovered from the source together with the entry
-  points it demands). `tests/dead-code-removal-checks.test.mjs` holds the rule to fixtures.
+  points it demands). `tests/dead-code-removal-checks.test.mjs` holds the rule to fixtures;
+- **the reach** (`reads`, module-graph): how many times js/ and src/ read each published name back off
+  the global — `window.X`, `globalThis.X`, `self.X`, and the bare implicit global `X` in a file that
+  neither declares nor imports it — by name. The window register cannot see this (one name read 1,800
+  times is one name); it is the measure of how much of the program is still joined through the global
+  rather than through `import`. 6,410 when it was introduced.
 
-All three are held as **names** in `tests/global-surface-baseline.json` and ratcheted both ways
+**One rule that is not a ratchet:** a name whose one publishing file also `export`s it has an import
+edge, so a js/ or src/ module that still reads it off the global fails, with the command that moves it
+(`node scripts/module-graph.mjs --migrate NAME --write`). Files that cannot take an `import` (a classic
+`<script>`, a Worker's graph, a file no page module reaches) are exempt, and `--migrate` names them.
+
+All four are held as **names** (the reach as name → count) in `tests/global-surface-baseline.json` and ratcheted both ways
 (which `check:perf` no longer is — its ceilings are lowered by main's CI): a name that appears fails until it is accepted with `--update` (and named in
 DEV-NOTES — that is the review of a new coupling); a name that is gone fails too, so the baseline
 keeps asserting what it says (#R194). The diff it prints is the member, not the count.
@@ -402,6 +412,36 @@ rule stood for (a free identifier that resolves to nothing), and `scripts/export
 read the shell with a parser: each factory instantiated once after the map exists, each shim a hoisted
 declaration that forwards `this` and every argument, and nothing evaluated before a factory touching a
 name it provides.
+
+### Evaluating shipped code: import it, do not read it (module-graph)
+
+A check that needs to run a js/ file **imports** it. `tests/helpers/import-module.mjs` (the implementation is
+`scripts/lib/import-module.mjs`, which build scripts use too):
+
+```js
+import { importModule, swappable } from './helpers/import-module.mjs';
+const M = await importModule('js/foo.js', {
+  globals: { window: fakeWindow, document: fakeDoc },               // the browser the file runs in
+  mocks:   { 'js/geo-engine.js': { IntMapGeoEngine: stubEngine } },  // one import edge of js/foo.js, replaced
+});
+M.foo(HOST);
+```
+
+- The file under test is **evaluated fresh** on every call; its own imports are the ordinary shared modules,
+  as in the browser. `mocks` replace only the imports the file under test makes **directly**
+  (`module.registerHooks`, synchronous and in-thread, Node 24). `swappable()` gives a stub whose behaviour
+  a check can change between cases while the module keeps the one binding it imported.
+- `globals` are installed on `globalThis` and **stay** for the rest of the check file — a module's functions
+  read `window` when they are called. `window` defaults to `globalThis`.
+- `requireModule(path)` and `langRegistry()` are the synchronous forms (Node 24 `require`s an ES module), for
+  build scripts whose callers are synchronous.
+- `tests/app-source.mjs`'s `asClassicScript` remains for checks that evaluate a **fragment** of a file; it
+  binds each imported name to what the sandbox's `window` supplies (the compat publication) and drops
+  `export`. Prefer `importModule` for a whole file.
+
+`node scripts/module-graph.mjs` prints the graph's columns (files with import/export, window-only files, the
+entry's lines, the registrations, the reads); `--plan`, `--export`, `--migrate` and `--entry` are the
+migration's steps (`docs/architecture/03-files.md`, 「ファイル同士の結び方」).
 
 ### Gating: the startup budget — `npm run check:perf` (#R311)
 
@@ -806,8 +846,10 @@ deferred only when nothing a reader can see depends on it having run.)
   is the loader's own verdict — it checks that the factory registered and that the module's global
   appeared — not the test's.
 
-If you add a module to the loader, add ONE entry to `LAZY_REGISTRY` in `js/lazy-modules.js` — the boot guard's `LAZY_FACTORIES` in `src/main.js` is derived from it (not to
-`MODULE_FACTORIES`, where the boot guard would report it missing on every clean load).
+If you add a module to the loader, add ONE entry to `LAZY_REGISTRY` in `js/lazy-modules.js` — `load: () => import('./x.js')`
+and `mount: (IM_HOST, m) => { … m.x(IM_HOST) … }`, where `x` is the file's exported factory and `m` the namespace the
+loader's import() resolved to. The boot guard's `LAZY_FACTORIES` in `src/main.js` is derived from it. (An eager factory is
+not listed anywhere: `js/app-body.js` imports it by name, and a missing one is a link error.)
 
 ### Non-AI news locator (`js/newsgeo.js`)
 

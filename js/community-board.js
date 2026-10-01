@@ -7,12 +7,14 @@
  *  The only edit to the moved text is that free references to closure variables became
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.communityBoard=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function communityBoard(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
 
   /* (#R172) THROUGH IntMapGeoEngine — this module no longer names the renderer. */
-  const _GE=()=>window.IntMapGeoEngine;
+  const _GE=()=>IntMapGeoEngine;
   const _LY=()=>{ const E=_GE(); return E?E.layers:null; };
   const _EV=()=>{ const E=_GE(); return E?E.events:null; };
   const _CM=()=>{ const E=_GE(); return E?E.camera:null; };
@@ -21,7 +23,7 @@ window.IntMapModules.communityBoard=function(HOST){
      isStyleLoaded() test only if the host is somehow absent. */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const commCatById=(id)=>HOST.COMM_CATEGORIES.find(c=>c.id===id)||HOST.COMM_CATEGORIES[0];
-  const commCatLabel=(id)=>{ const c=commCatById(id); return window.IntMapLang.pick(()=>HOST.lang).arr(c.label); };
+  const commCatLabel=(id)=>{ const c=commCatById(id); return IntMapLang.pick(()=>HOST.lang).arr(c.label); };
   /* Deterministic avatar (colored initial) from a display name. */
   function commAvatar(name){
     const s=(name||'?').trim(); let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0;
@@ -116,7 +118,7 @@ window.IntMapModules.communityBoard=function(HOST){
     const jp=HOST.lang==='jp', mine=HOST.user&&post.userId===HOST.user.id;
     const canDel = HOST.user && (mine || HOST.user.isAdmin);
     const cat=commCatById(post.category||'general');
-    const imgHtml=post.img?`<img class="comm-post-img" src="${IntMapSafe.html(IntMapSafe.url(post.img,{allowData:true}))}" data-id="${post.id}" alt="" role="button" tabindex="0" aria-label="${IntMapSafe.html(window.IntMapLang.t(HOST.lang,'View image','画像を表示'))}">`:'';   /* (#R138 SEC) post.img is user-controlled (direct Supabase insert) → scheme-validate + quote-escape (stored XSS, auto-fires on feed render) */
+    const imgHtml=post.img?`<img class="comm-post-img" src="${IntMapSafe.html(IntMapSafe.url(post.img,{allowData:true}))}" data-id="${post.id}" alt="" role="button" tabindex="0" aria-label="${IntMapSafe.html(IntMapLang.t(HOST.lang,'View image','画像を表示'))}">`:'';   /* (#R138 SEC) post.img is user-controlled (direct Supabase insert) → scheme-validate + quote-escape (stored XSS, auto-fires on feed render) */
     const edited=post.editedTs?` · <span class="comm-edited">${HOST.t('commEdited')}</span>`:'';
     const cmts=post.comments||[];
     return `<div class="comm-post" id="comm-post-${post.id}">
@@ -124,7 +126,7 @@ window.IntMapModules.communityBoard=function(HOST){
         <span class="comm-author-link" role="button" tabindex="0" data-uid="${post.userId||''}" data-author="${HOST.escapeHtml(post.author||'')}" style="display:flex;align-items:center;gap:10px;cursor:pointer;min-width:0;flex:1;">
         ${commAvatar(post.author)}
         <div class="comm-post-idn">
-          <div class="comm-post-author">${HOST.escapeHtml(post.author||(window.IntMapLang.t(HOST.lang,'Anonymous','匿名','Anonym','Анонимно','Anónimo')))}</div>
+          <div class="comm-post-author">${HOST.escapeHtml(post.author||(IntMapLang.t(HOST.lang,'Anonymous','匿名','Anonym','Анонимно','Anónimo')))}</div>
           <div class="comm-post-sub">${relTime(post.ts)}${edited} · <span class="comm-post-loc" role="button" tabindex="0" data-lat="${post.lat}" data-lng="${post.lng}">📍 ${post.lat.toFixed(1)}°, ${post.lng.toFixed(1)}°</span></div>
         </div></span>
         <span class="comm-cat-tag" style="--cc:${cat.color}">${cat.emoji} ${commCatLabel(post.category||'general')}</span>
@@ -133,11 +135,11 @@ window.IntMapModules.communityBoard=function(HOST){
       ${imgHtml}
       ${post.body?`<div class="comm-post-body">${linkify(post.body)}</div>`:''}
       <div class="comm-post-actions">
-        <button class="vote-btn ${post.voted?'voted':''}" data-effect="outward" data-id="${post.id}" title="${window.IntMapLang.t(HOST.lang,'Upvote','役に立った','Hilfreich','Полезно','Útil')}">▲ ${post.votes||0}</button>
+        <button class="vote-btn ${post.voted?'voted':''}" data-effect="outward" data-id="${post.id}" title="${IntMapLang.t(HOST.lang,'Upvote','役に立った','Hilfreich','Полезно','Útil')}">▲ ${post.votes||0}</button>
         <button class="cmt-toggle" data-id="${post.id}">💬 ${cmts.length}</button>
         <button class="locate-btn" data-id="${post.id}">🌐 ${HOST.t('commLocate')}</button>
         ${mine?`<button class="edit-btn" data-id="${post.id}">${HOST.t('commEdit')}</button>`:''}
-        <button class="report-btn" data-effect="outward" data-id="${post.id}" title="${window.IntMapLang.t(HOST.lang,'Report','通報','Melden','Пожаловаться','Denunciar')}">⚑</button>
+        <button class="report-btn" data-effect="outward" data-id="${post.id}" title="${IntMapLang.t(HOST.lang,'Report','通報','Melden','Пожаловаться','Denunciar')}">⚑</button>
         ${canDel?`<button class="del-btn" data-effect="destructive" data-id="${post.id}">${HOST.t('commDelete')}</button>`:''}
       </div>
       <div class="comm-comments ${HOST.commCollapsed[post.id]?'collapsed':''}" data-cwrap="${post.id}">
@@ -192,7 +194,7 @@ window.IntMapModules.communityBoard=function(HOST){
     document.getElementById('compose-submit').textContent = editPost ? HOST.t('commSaveEdit') : HOST.t('commPost');
     HOST.pendingImg = editPost ? (editPost.img||'') : ''; HOST.showComposeImgPreview(HOST.pendingImg);
     document.getElementById('compose-img-label').textContent=HOST.t('commAddImage');   /* (#R233) was a jp/en ternary — English in the other seven languages */
-    document.getElementById('compose-place-label').textContent=window.IntMapLang.t(HOST.lang,'Move pin on map','地図でピンを移動','Pin auf der Karte verschieben','Переместить метку на карте','Mover el pin en el mapa');
+    document.getElementById('compose-place-label').textContent=IntMapLang.t(HOST.lang,'Move pin on map','地図でピンを移動','Pin auf der Karte verschieben','Переместить метку на карте','Mover el pin en el mapa');
     /* Category picker — shown unless schema-detection proved the column is missing. */
     const showCat = !HOST.commCaps || HOST.commCaps.category;
     const catLabel=document.getElementById('compose-cat-label'), catWrap=document.getElementById('compose-cats');
@@ -203,7 +205,7 @@ window.IntMapModules.communityBoard=function(HOST){
         `${HOST.t('commPlacedAt')}: ${HOST.pendingPostLoc[1].toFixed(3)}°, ${HOST.pendingPostLoc[0].toFixed(3)}°`;
     } else {
       document.getElementById('compose-coord-hint').textContent=
-        window.IntMapLang.t(HOST.lang,'Click on the map to place a location.','地図をクリックして位置を指定してください。','Klicken Sie auf die Karte, um einen Ort zu setzen.','Кликните по карте, чтобы указать место.','Haga clic en el mapa para indicar un lugar.');
+        IntMapLang.t(HOST.lang,'Click on the map to place a location.','地図をクリックして位置を指定してください。','Klicken Sie auf die Karte, um einen Ort zu setzen.','Кликните по карте, чтобы указать место.','Haga clic en el mapa para indicar un lugar.');
     }
     m.classList.add('active');
   }
@@ -223,7 +225,7 @@ window.IntMapModules.communityBoard=function(HOST){
     }catch(_){} }
     let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))|0;
     const ava = avatar?`<div style="width:66px;height:66px;border-radius:50%;background:url('${IntMapSafe.html(IntMapSafe.url(avatar,{allowData:true}))}') center/cover;margin:0 auto 10px;"></div>`:`<div style="width:66px;height:66px;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:700;color:#fff;background:hsl(${Math.abs(h)%360},58%,46%)">${HOST.escapeHtml((name[0]||'?').toUpperCase())}</div>`;   /* (#R138 SEC) another user's avatar_url is attacker-controllable → scheme-validate + quote-escape (stored XSS via CSS background breakout) */
-    m.innerHTML=`<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:320px;text-align:center;">${ava}<h2 style="margin:0 0 6px;font-size:18px;">${HOST.escapeHtml(name||'?')}</h2><p style="color:var(--text-muted);font-size:13px;line-height:1.55;white-space:pre-wrap;margin:0 0 16px;">${bio?HOST.escapeHtml(bio):(window.IntMapLang.t(HOST.lang,'No bio yet.','自己紹介はまだありません。','Noch keine Bio.','Пока без описания.','Aún sin biografía.'))}</p><button id="pm-close" style="width:100%;background:var(--input-bg);color:var(--text-main);border:none;padding:10px;border-radius:9px;font-weight:600;cursor:pointer;">${window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}</button></div>`;
+    m.innerHTML=`<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:320px;text-align:center;">${ava}<h2 style="margin:0 0 6px;font-size:18px;">${HOST.escapeHtml(name||'?')}</h2><p style="color:var(--text-muted);font-size:13px;line-height:1.55;white-space:pre-wrap;margin:0 0 16px;">${bio?HOST.escapeHtml(bio):(IntMapLang.t(HOST.lang,'No bio yet.','自己紹介はまだありません。','Noch keine Bio.','Пока без описания.','Aún sin biografía.'))}</p><button id="pm-close" style="width:100%;background:var(--input-bg);color:var(--text-main);border:none;padding:10px;border-radius:9px;font-weight:600;cursor:pointer;">${IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}</button></div>`;
     m.querySelector('#pm-close').onclick=()=>{ m.style.display='none'; };
     m.style.display='flex';
     window.IntMapDialog.adopt(m,{ panel:m.firstElementChild });   /* (a11y-shared-dialog) Escape, Tab trap, focus back; named by its heading */
@@ -290,4 +292,4 @@ window.IntMapModules.communityBoard=function(HOST){
     const {error}=await HOST.DB.from('community_posts').update(patch).eq('id',id); if(error) throw error;
   }
   return { cmAddPost, cmEditPost, commCatLabel, imViewProfile, loadCommunity, openComposeModal, renderCommList, setupCommunityLayer, visibleCommunityPosts };
-};
+}

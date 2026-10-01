@@ -35,6 +35,7 @@
  *  ceiling moves up — so the clocks, the bounded gather and the evidence fetcher live here.
  * ==========================================================================*/
 import { fetchViaProxy } from './proxy-fetch.js';   /* the app's ONE relay ladder */
+import { IntMapLang } from './lang-registry.js';
 
 export const ATLAS_BUDGETS = {
   EVIDENCE_BUDGET_MS: 14000,   /* ONE external evidence fetch, relay ladder included */
@@ -85,7 +86,7 @@ export function settleWithin(jobs, ms) {
    string the analyze footer prints */
 export function lateNote(n, ms) {
   let L = null;
-  try { L = window.IntMapLang.pick(); } catch (_) { L = null; }
+  try { L = IntMapLang.pick(); } catch (_) { L = null; }
   const en = '{n} source(s) did not answer within {s}s';
   const s = L
     ? L(en, '{n}件の取得先が{s}秒以内に応答しなかった', '{n} Quelle(n) antworteten nicht innerhalb von {s}s',

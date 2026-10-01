@@ -39,9 +39,10 @@
  *  any Mercator source. js/cesium-engine.js puts THIS picture, which is equirectangular and does
  *  reach ±90°, underneath everything as a single whole-globe imagery layer.
  * ==========================================================================*/
+import { IntMapGeoEngine } from './geo-engine.js';
 window.IntMapWorldBase=(function(){
   'use strict';
-  const GE=()=>window.IntMapGeoEngine;
+  const GE=()=>IntMapGeoEngine;
   const SRC='world-base-src', LYR='layer-world-base', PROTO='imapworld';
   const TILE=512;
 

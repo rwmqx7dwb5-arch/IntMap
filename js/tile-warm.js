@@ -15,9 +15,10 @@
  *  (currentMapType, satProviderById, satBuildTiles, isMobile, and the engine) — all handed over
  *  through IM_HOST rather than closed over, which is what makes the move checkable.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.tileWarm=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;
+import { IntMapGeoEngine } from './geo-engine.js';
+
+export function tileWarm(HOST){
+  const GE=()=>IntMapGeoEngine;
   const isMobile=HOST.isMobile;
   const satProviderById=(id)=>HOST.satProviderById(id);
   const satBuildTiles=(p)=>HOST.satBuildTiles(p);
@@ -276,4 +277,4 @@ window.IntMapModules.tileWarm=function(HOST){
      every few hundred ms — during flight the camera moves CONTINUOUSLY so `moveend` never fires and the imagery
      couldn't keep up ("3D衛星画像の生成が飛行に追い付いていない"). The flight loop throttles the calls. */
   try{ window._imPredictivePrefetch=predictivePrefetch; }catch(_){}
-};
+}

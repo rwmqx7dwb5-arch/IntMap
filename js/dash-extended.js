@@ -8,11 +8,13 @@
  * ==========================================================================*/
 
 import { everyTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.dashExtended=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
+export function dashExtended(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -92,7 +94,7 @@ window.IntMapModules.dashExtended=function(HOST){
     /* (#R243) …and the tuples this file holds AS DATA go through the same resolver — see pickArgs()
        in js/lang-registry.js. A {en,jp} object is the seventh shape #R241 named and is invisible to
        every instrument; written as a call it is measured like any other call site. */
-    const L=window.IntMapLang.pick(()=>HOST.lang), LA=window.IntMapLang.pickArgs();
+    const L=IntMapLang.pick(()=>HOST.lang), LA=IntMapLang.pickArgs();
     /* Sovereignty disputes — international lines whose recognition is split. */
     /* (#R8c) FAITHFUL real-geography traces — NOT mathematically smoothed. The user clarified that
        "smooth" must mean true-to-real-data, not a Catmull-Rom curve (which invents shape). So these are
@@ -173,14 +175,14 @@ window.IntMapModules.dashExtended=function(HOST){
         try{ (gj.features||[]).forEach(f=>{ const p=f.properties||(f.properties={}); const fam=_langProp(p,['family','Family','FAMILY','fam','Fam','classification']); const hue=_langHash(fam||_langProp(p,['name','Language','language']))%360; p.__col='hsl('+hue+',58%,56%)'; }); }catch(_){}
         langData=gj; langFetching=false;
         try{ GE().layers.addSource(LANG_SRC,{type:'geojson',data:gj,tolerance:1.4,maxzoom:8,buffer:0}); addLangLayers(false); cb&&cb(true); }catch(_){ cb&&cb(false); }
-      }).catch(()=>{ langFetching=false; try{ satToast(window.IntMapLang.t(HOST.lang,"Language data not found — add data/asher_languages.geojson","言語データが見つかりません（data/asher_languages.geojson を配置）","Sprachdaten nicht gefunden — data/asher_languages.geojson hinzufügen","Языковые данные не найдены — добавьте data/asher_languages.geojson","No se encontraron los datos de idiomas: añada data/asher_languages.geojson")); }catch(_){}
+      }).catch(()=>{ langFetching=false; try{ satToast(IntMapLang.t(HOST.lang,"Language data not found — add data/asher_languages.geojson","言語データが見つかりません（data/asher_languages.geojson を配置）","Sprachdaten nicht gefunden — data/asher_languages.geojson hinzufügen","Языковые данные не найдены — добавьте data/asher_languages.geojson","No se encontraron los datos de idiomas: añada data/asher_languages.geojson")); }catch(_){}
         const x=document.getElementById('r7-dl-langs'); if(x){ x.checked=false; const r=x.closest('.lyr-row'); if(r) r.classList.remove('on'); } cb&&cb(false); });
     }
     function wireLangHover(){ if(langHoverWired) return; langHoverWired=true;
       langTip=document.createElement('div'); langTip.className='map-tooltip'; (document.getElementById('map-container')||document.body).appendChild(langTip);
       GE().events.onLayer('mousemove',LANG_FILL,(e)=>{ const f=e.features&&e.features[0]; if(!f){ langTip.style.display='none'; return; } const p=f.properties||{};
         const lang=_langProp(p,['Language','language','name','NAME','Name','PRNAME','label'])||'—', fam=_langProp(p,['Family','family','FAMILY','fam','classification'])||'—';
-        langTip.innerHTML='<div style="font-weight:600;margin-bottom:3px;">'+_esc(lang)+'</div><div style="color:var(--text-muted);font-size:12px;">'+(window.IntMapLang.t(HOST.lang,"Family: ","語族: ","Sprachfamilie: ","Семья: ","Familia: "))+_esc(fam)+'</div>';
+        langTip.innerHTML='<div style="font-weight:600;margin-bottom:3px;">'+_esc(lang)+'</div><div style="color:var(--text-muted);font-size:12px;">'+(IntMapLang.t(HOST.lang,"Family: ","語族: ","Sprachfamilie: ","Семья: ","Familia: "))+_esc(fam)+'</div>';
         langTip.style.display='block'; langTip.style.left=e.point.x+'px'; langTip.style.top=e.point.y+'px'; });
       GE().events.onLayer('mouseenter',LANG_FILL,()=>{ GE().render.canvas().style.cursor='pointer'; });
       GE().events.onLayer('mouseleave',LANG_FILL,()=>{ if(langTip) langTip.style.display='none'; GE().render.canvas().style.cursor=''; });
@@ -199,7 +201,7 @@ window.IntMapModules.dashExtended=function(HOST){
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     /* keep the advanced labels localized on language switch */
     const _origUpdateI18n=window.updateI18n;
-    function _r7Relabel(){ const h=document.querySelector('[data-r7head]'); if(h) h.textContent=window.IntMapLang.t(HOST.lang,"Intelligence (advanced)","インテリジェンス（高度）","Aufklärung (erweitert)","Разведка (расширенно)","Inteligencia (avanzado)"); const d=document.getElementById('r7-dl-disputes-lbl'), a=document.getElementById('r7-dl-airdef-lbl'), l=document.getElementById('r7-dl-langs-lbl'); if(d) d.textContent=window.IntMapLang.t(HOST.lang,"Disputed boundaries","係争境界線","Umstrittene Grenzen","Спорные границы","Fronteras en disputa"); if(a) a.textContent=window.IntMapLang.t(HOST.lang,"Air-defense coverage","防空カバレッジ（射程ドーム）","Luftverteidigungsabdeckung","Зоны ПВО","Cobertura de defensa aérea"); if(l) l.textContent=window.IntMapLang.t(HOST.lang,"World languages","世界の言語分布","Sprachen der Welt","Языки мира","Idiomas del mundo"); refreshDisputeLabels(); }
+    function _r7Relabel(){ const h=document.querySelector('[data-r7head]'); if(h) h.textContent=IntMapLang.t(HOST.lang,"Intelligence (advanced)","インテリジェンス（高度）","Aufklärung (erweitert)","Разведка (расширенно)","Inteligencia (avanzado)"); const d=document.getElementById('r7-dl-disputes-lbl'), a=document.getElementById('r7-dl-airdef-lbl'), l=document.getElementById('r7-dl-langs-lbl'); if(d) d.textContent=IntMapLang.t(HOST.lang,"Disputed boundaries","係争境界線","Umstrittene Grenzen","Спорные границы","Fronteras en disputa"); if(a) a.textContent=IntMapLang.t(HOST.lang,"Air-defense coverage","防空カバレッジ（射程ドーム）","Luftverteidigungsabdeckung","Зоны ПВО","Cobertura de defensa aérea"); if(l) l.textContent=IntMapLang.t(HOST.lang,"World languages","世界の言語分布","Sprachen der Welt","Языки мира","Idiomas del mundo"); refreshDisputeLabels(); }
     /* ⚠ (#R466) THIS USED TO LISTEN TO THE HEADER LANGUAGE PILLS, and #R11 hid those permanently
        (`css/intmap.css` `.lang-toggle{display:none!important}` — «language is changed from Settings
        only»), so the relabel had no reachable trigger left: the five buttons it wired are still in
@@ -209,4 +211,4 @@ window.IntMapModules.dashExtended=function(HOST){
     window.addEventListener('intmap-lang',()=>setTimeout(_r7Relabel,20));
     window.IntMapOverlays={ toggle, _ensure:ensureOverlays };
   })();
-};
+}

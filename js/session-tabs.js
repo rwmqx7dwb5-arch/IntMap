@@ -18,6 +18,7 @@
  *  the two files themselves, so neither list can drift into a silent `undefined`.
  * ==========================================================================*/
 import { whenBoxes } from './layer-rows.js';   /* (layer-manifest) «as soon as its row exists», from the manifest — not a poll */
+import { IntMapTime } from './chronos.js';
 export function makeSessionTabs(HOST, CTX) {
   const GE=CTX.GE, isMobile=CTX.isMobile, setMode=CTX.setMode;
   /* ===== (#R122) SESSION STATE PERSISTENCE — a browser reload used to reset everything except the map coordinates
@@ -36,7 +37,7 @@ export function makeSessionTabs(HOST, CTX) {
          cleared the moment a real click touches the box, so the session keeps wanting the layer. */
       (window.IntMapDefaultLayers||[]).forEach(id=>{ const cb=document.getElementById(id);
         if(cb&&!cb.checked&&cb.dataset&&cb.dataset.imAutoOff==='1'&&layers.indexOf(id)<0) layers.push(id); });
-      let year=null; try{ const T=window.IntMapTime; if(T&&T.isLive&&!T.isLive()&&T.year) year=T.year(); }catch(_){}
+      let year=null; try{ const T=IntMapTime; if(T&&T.isLive&&!T.isLive()&&T.year) year=T.year(); }catch(_){}
       /* (#R189) `defv` stamps WHICH generation of default-on handling wrote this session. Sessions
          written before #R188's imAutoOff fix (defv absent) may record an outage as an opt-out, and
          no amount of fixing the writer heals what is already in storage — the reader has to.
@@ -68,7 +69,7 @@ export function makeSessionTabs(HOST, CTX) {
       _save(); } }catch(_){} },true); }catch(_){}
     try{ document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.addEventListener('click',()=>setTimeout(_save,60))); }catch(_){}
     try{ ['btn-view-map','btn-view-sat','btn-view-3d'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(_save,120)); }); }catch(_){}
-    try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>_save()); }catch(_){}
+    try{ if(IntMapTime&&IntMapTime.on) IntMapTime.on(()=>_save()); }catch(_){}
     /* (#R170) DESKTOP BOOT → open the Countries tab ("デスクトップ版は通常モードをデフォルトに。（Countries が選択
        された状態で）"). #R11 deliberately left every tab deselected; that stays true for mobile (the tab is a bottom
        sheet, so auto-opening one would cover the map) and for workspace mode (which has its own windows).
@@ -165,7 +166,7 @@ export function makeSessionTabs(HOST, CTX) {
          button, and such a session simply restores no tab (the app's own default takes over). */
       try{ if(s.mode){ const map2={news:'tab.news',saved:'tab.news',info:'tab.info',stats:'tab.stats',atlas:'tab.atlas'}[s.mode]; if(map2&&window.IntMapOS) setTimeout(()=>{ try{ if(!HOST.mode) IntMapOS.exec(map2,{source:'restore'}); }catch(_){} },500); } }catch(_){}
       /* set the time-machine year */
-      try{ if(s.year&&window.IntMapTime&&window.IntMapTime.setYear){ setTimeout(()=>{ try{ window.IntMapTime.setYear(s.year,{source:'restore'}); }catch(_){} },900); } }catch(_){}
+      try{ if(s.year&&IntMapTime&&IntMapTime.setYear){ setTimeout(()=>{ try{ IntMapTime.setYear(s.year,{source:'restore'}); }catch(_){} },900); } }catch(_){}
       setTimeout(()=>{ _restoring=false; },1600);   /* stop suppressing saves once the restore settles */ }
     /* run the restore once the map + initial layer UI are ready */
     /* (restored-layer-before-style) on the style being able to take layers, not on MapLibre's `load`,
@@ -220,9 +221,9 @@ export function makeSessionTabs(HOST, CTX) {
   /* (#R94) TIME is a first-class kernel dimension — the master spacetime clock is registered as OS commands
      so both shells (UI + Atlas) operate it through the one kernel, and it appears in the OS catalog/log. */
   try{
-    IntMapOS.register('time.now', ()=>{ window.IntMapTime.setNow({source:'os'}); }, {label:'Time · now (live)', group:'time'});
-    IntMapOS.register('time.year', (ctx)=>{ const y=+((ctx&&ctx.params&&ctx.params.year)); if(y>=window.IntMapTime.min) window.IntMapTime.setYear(y,{source:'os'}); }, {label:'Time · set year', group:'time'});
-    IntMapOS.register('time.set', (ctx)=>{ const p=(ctx&&ctx.params)||{}; if(p.year!=null) window.IntMapTime.setYear(+p.year,{source:'os'}); else if(p.date!=null) window.IntMapTime.set(new Date(p.date),{source:'os'}); else if(p.daysAgo!=null) window.IntMapTime.setDaysAgo(+p.daysAgo,{source:'os'}); else window.IntMapTime.setNow({source:'os'}); }, {label:'Time · set instant', group:'time'});
+    IntMapOS.register('time.now', ()=>{ IntMapTime.setNow({source:'os'}); }, {label:'Time · now (live)', group:'time'});
+    IntMapOS.register('time.year', (ctx)=>{ const y=+((ctx&&ctx.params&&ctx.params.year)); if(y>=IntMapTime.min) IntMapTime.setYear(y,{source:'os'}); }, {label:'Time · set year', group:'time'});
+    IntMapOS.register('time.set', (ctx)=>{ const p=(ctx&&ctx.params)||{}; if(p.year!=null) IntMapTime.setYear(+p.year,{source:'os'}); else if(p.date!=null) IntMapTime.set(new Date(p.date),{source:'os'}); else if(p.daysAgo!=null) IntMapTime.setDaysAgo(+p.daysAgo,{source:'os'}); else IntMapTime.setNow({source:'os'}); }, {label:'Time · set instant', group:'time'});
   }catch(_){}
   /* (#R119) KERNEL COMMAND EXPANSION — every major subsystem gets a first-class OS command (UI, Atlas and any
      future shell submit the SAME intents; the registrations are thin wrappers over each module's own API, so the

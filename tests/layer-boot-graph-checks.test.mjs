@@ -84,15 +84,19 @@ test('R164 #1 each block was moved out, loaded, and instantiated at its original
     const src = rd(file);
     assert.ok(!html.includes(needle),
       `index.html must not still contain "${needle}" — a leftover in-page copy of ${file} would win`);
-    assert.ok(html.includes(`import '../${file}';`), `src/main.js imports ${file} (#R175)`);
-    assert.ok(src.includes('window.IntMapModules=window.IntMapModules||{};'),
-      `${file} extends IntMapModules without clobbering what earlier files put there`);
-    assert.ok(src.includes(`window.IntMapModules.${key}=function(HOST){`),
-      `${file} declares the ${key} factory taking (HOST)`);
+    /* (module-graph) «loaded» is «js/app-body.js imports the factory by name» (a missing file or export is a
+       link error); «extends the registry without clobbering» is «does not touch it, and exports the factory» */
+    assert.match(rd('js/app-body.js'), new RegExp(`^import \\{[^}]*\\b${key}\\b[^}]*\\} from '\\./${file.slice(3).replace('.', '\\.')}';$`, 'm'),
+      `js/app-body.js imports ${key} from ${file}, so the file is in the module graph`);
+    assert.doesNotMatch(code(src), /\bIntMapModules\b/, `${file} does not touch the retired window.IntMapModules registry`);
+    assert.ok(src.includes(`export function ${key}(HOST){`),
+      `${file} exports the ${key} factory taking (HOST)`);
     const call = global
-      ? `window.${global}=window.IntMapModules.${key}(IM_HOST);`
-      : `window.IntMapModules.${key}(IM_HOST);`;
-    assert.ok(html.includes(call), `index.html instantiates ${key} with the shared host at the original position`);
+      ? `window.${global}=${key}(IM_HOST);`
+      : `${key}(IM_HOST);`;
+    const at = new RegExp(`(?<![\\w$.])${key}\\(IM_HOST\\)`, 'g');
+    assert.equal((code(html).match(at) || []).length, 1, `index.html instantiates ${key} exactly once`);
+    assert.ok(new RegExp(`(?<![\\w$.])${call.replace(/[.()$]/g, '\\$&')}`).test(html), `index.html instantiates ${key} with the shared host at the original position`);
   }
 });
 
@@ -138,8 +142,10 @@ test('R164 #4 the parser-backed split-scope check passes (and covers the new fil
 });
 
 test('R164 #5 the boot guard names every new factory, so one missing file cannot hide', () => {
+  /* (module-graph) MODULE_FACTORIES is gone: the shell imports each factory by name, so a missing file
+     is a link error — bootGuardKnows() asks «imported and called by the shell, or mounted by the loader» */
   for (const { key } of MOVED) {
-    assert.ok(new RegExp(`'${key}'`).test(html), `the boot guard lists the ${key} factory`);
+    assert.ok(bootGuardKnows(root, key), `the boot guard lists the ${key} factory`);
   }
 });
 
@@ -444,15 +450,23 @@ test('R184 #1: every new module is in the import graph, the factory guard and ap
   ];
   for (const [file, factory, lazy] of MODULES) {
     assert.ok(rd(file).length > 500, `${file} exists and has content`);
-    const where = lazy ? loader : main, how = lazy ? `import('./${file.slice(3)}')` : `import '../${file}'`;
-    assert.ok(where.includes(how), `${file} is ${lazy ? 'fetched by js/lazy-modules.js' : 'imported by src/main.js'}`);   /* the registry entry's load() carries the literal */
-    if (lazy) assert.ok(!main.includes(`import '../${file}'`), `${file} is ALSO in src/main.js — it would be downloaded at boot regardless`);
-    assert.match(rd(file), new RegExp(`IntMapModules\\.${factory}\\s*=`),
+    /* (module-graph) an eager module is in the graph because js/app-body.js imports its factory BY NAME
+       (src/main.js no longer lists side-effect-free files; a missing file or export is a link error) */
+    const where = lazy ? loader : body, how = lazy ? `import('./${file.slice(3)}')` : `import { ${factory} } from './${file.slice(3)}';`;
+    assert.ok(where.includes(how), `${file} is ${lazy ? 'fetched by js/lazy-modules.js' : 'imported by name by js/app-body.js'}`);   /* the registry entry's load() carries the literal */
+    if (lazy) {
+      assert.ok(!main.includes(`import '../${file}'`), `${file} is ALSO in src/main.js — it would be downloaded at boot regardless`);
+      assert.ok(!new RegExp(`from '\\./${file.slice(3).replace('.', '\\.')}'`).test(body), `${file} is ALSO statically imported by js/app-body.js — it would be downloaded at boot regardless`);
+    }
+    assert.match(rd(file), new RegExp(`^export function ${factory}\\(HOST\\)\\{`, 'm'),
       `${file} declares exactly the factory the guard looks for`);
+    assert.doesNotMatch(codeOnly(rd(file)), /\bIntMapModules\b/, `${file} does not touch the retired registry`);
     /* the guard list — a file that fails to deploy must say so loudly (#R162/#R163) */
     assert.ok(bootGuardKnows(root, factory),   /* (#R798) the deferred list is the registry's, imported by the entry */
       `${factory} is in ${lazy ? 'LAZY' : 'MODULE'}_FACTORIES`);
-    assert.match(lazy ? loader : body, new RegExp(`IntMapModules\\.${factory}\\(IM_HOST\\)`),
+    /* (module-graph) the loader calls it on the namespace its import() resolved to (`m.x(IM_HOST)`); app-body by its imported name */
+    const inst = lazy ? new RegExp(`\\bm\\.${factory}\\(IM_HOST\\)`, 'g') : new RegExp(`(?<![\\w$.])${factory}\\(IM_HOST\\)`, 'g');
+    assert.equal((codeOnly(lazy ? loader : body).match(inst) || []).length, 1,
       `${factory} is instantiated once in ${lazy ? 'js/lazy-modules.js' : 'js/app-body.js'}`);
   }
   /* the pair travels together: the card must exist before the layer's click handler can find it */
@@ -468,7 +482,8 @@ test('R184 #5: the new modules parse and keep the CSS rule', () => {
   const FILES = ['js/satellite-detail.js', 'js/drone-ops.js', 'js/routing-ops.js'];
   for (const f of FILES) {
     const src = rd(f);
-    assert.doesNotThrow(() => acorn.parse(src, { ecmaVersion: 2022, sourceType: 'script' }), `${f} parses`);
+    /* (module-graph) every one exports its factory and imports what it reads, so all of them are modules now */
+    assert.doesNotThrow(() => acorn.parse(src, { ecmaVersion: 2022, sourceType: 'module' }), `${f} parses`);
     assert.ok(!/<style[\s>]|createElement\(\s*['"]style/.test(decomment(src)),
       `${f} adds no <style> — the CSS lives in css/intmap.css (#R162)`);
   }

@@ -43,9 +43,11 @@
  * ==========================================================================*/
 
 import { everyTick, stopTick } from './runtime.js';
+import { IntMapTime } from './chronos.js';
+import { IntMapLang } from './lang-registry.js';
 
 /* ── the pure parts ───────────────────────────────────────────────────────────────────────────── */
-const tr = (lang, en, jp) => window.IntMapLang.t(lang, en, jp);
+const tr = (lang, en, jp) => IntMapLang.t(lang, en, jp);
 
 /** one coordinate as words: 35.7° N / 北緯35.7° */
 export function fmtLatLng(lat, lng, lang) {
@@ -165,7 +167,7 @@ export function makeMapNarrator(HOST, CTX) {
     return '';
   };
   const whenText = () => {
-    try { const T = window.IntMapTime; if (!T || T.isLive()) return ''; return fmtWhen(T.year(), T.year() > 0 ? T.iso() : '', lang()); } catch (_) { return ''; }
+    try { const T = IntMapTime; if (!T || T.isLive()) return ''; return fmtWhen(T.year(), T.year() > 0 ? T.iso() : '', lang()); } catch (_) { return ''; }
   };
 
   let last = '';
@@ -212,7 +214,7 @@ export function makeMapNarrator(HOST, CTX) {
   };
   /* the bar is built by the layer panel when it first mounts; until then, look once a second (js/runtime.js — hidden tabs rest) */
   if (!watchLayers()) { const stop = everyTick('map-narrator:active-bar', 1000, () => { if (watchLayers()) { stopTick(stop); schedule(); } }); }
-  try { if (window.IntMapTime && window.IntMapTime.on) window.IntMapTime.on(schedule); } catch (_) {}
+  try { if (IntMapTime && IntMapTime.on) IntMapTime.on(schedule); } catch (_) {}
   window.addEventListener('intmap-lang', () => { nameRegion(); last = ''; schedule(); });
   schedule();
 

@@ -125,8 +125,9 @@ test("#R355 ② the popup never captions a reconstructed segment with another se
     'and it must use its own label');
   assert.ok(!/if \(names\.length && !srcName\) body \+= row\(T\.routeSource\(\)/.test(src),
     'the borrowed caption must be gone');
-  /* the label exists in all five positional languages, and the audit covers the rest */
-  assert.match(src, /verifiedElsewhere: \(\) => window\.IntMapLang\.t\(HOST\.lang, 'Surveyed sections', '[^']+', '[^']+', '[^']+', '[^']+'\)/,
+  /* the label exists in all five positional languages, and the audit covers the rest
+     ((module-graph) the registry is an import now, read as the bare binding) */
+  assert.match(src, /verifiedElsewhere: \(\) => IntMapLang\.t\(HOST\.lang, 'Surveyed sections', '[^']+', '[^']+', '[^']+', '[^']+'\)/,
     'the new label must be a five-argument call so the i18n audit can see it');
 });
 

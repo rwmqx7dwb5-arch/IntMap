@@ -32,9 +32,11 @@
  *  Every factory is still called at the exact spot its block used to occupy (js/app-body.js), so
  *  execution order is unchanged. The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules.timeSeries=function(HOST){
+
+export function timeSeries(HOST){
   window.IntMapTimeSeries=(function(){
     /* ⚠ (#R322) A LOAD FAILURE IS NEVER SILENT. This project's most expensive recurring defect is a
        feature that quietly stops existing (#R162, #R200, #R205, #R208), and "the file is not here
@@ -43,7 +45,7 @@ window.IntMapModules.timeSeries=function(HOST){
        nothing at all tells them nothing at all. ⚠ The pair below is spelled out once per factory
        because a js/ module may hold no top-level declaration (tests/layer-boot-graph-checks.test.mjs #R175 ③) — the same reason
        GE / esc / jp are already written five times in this file. */
-    function _lazyFail(){ const m=window.IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
+    function _lazyFail(){ const m=IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
       try{ HOST.imToast(m); }catch(_){ try{ console.error('[IntMap] analysisTimeSeries: '+m); }catch(__){} } }
     function _impl(){ try{ if(!window.IntMapLazy) { _lazyFail(); return Promise.resolve(null); }
         return window.IntMapLazy.need('analysisTimeSeries').then(ok=>{ const I=window.__imAnalysisTimeSeries; if(!ok||!I){ _lazyFail(); return null; } return I; },()=>{ _lazyFail(); return null; });
@@ -52,12 +54,12 @@ window.IntMapModules.timeSeries=function(HOST){
     async function open(){ const I=await _impl(); if(I) return I.open(); }
     return { open };
   })();
-};
+}
 
-window.IntMapModules.aiResearch=function(HOST){
+export function aiResearch(HOST){
   window.IntMapAIResearch=(function(){
     /* the loader and the failure notice — see the note above IntMapTimeSeries */
-    function _lazyFail(){ const m=window.IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
+    function _lazyFail(){ const m=IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
       try{ HOST.imToast(m); }catch(_){ try{ console.error('[IntMap] analysisResearch: '+m); }catch(__){} } }
     function _impl(){ try{ if(!window.IntMapLazy) { _lazyFail(); return Promise.resolve(null); }
         return window.IntMapLazy.need('analysisResearch').then(ok=>{ const I=window.__imAnalysisResearch; if(!ok||!I){ _lazyFail(); return null; } return I; },()=>{ _lazyFail(); return null; });
@@ -68,18 +70,18 @@ window.IntMapModules.aiResearch=function(HOST){
     async function askHere(lngLat){ const I=await _impl(); if(I) return I.askHere(lngLat); }
     return { open, askHere };
   })();
-};
+}
 
-window.IntMapModules.correlate=function(HOST){
+export function correlate(HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const countryStats=HOST.countryStats;
   (function(){
     if(typeof countryStats==='undefined') return;
     const L=()=>HOST.lang;
-    const tr=window.IntMapLang.pick(()=>L());
+    const tr=IntMapLang.pick(()=>L());
     function esc(s){ return window.IntMapSafe.html(s); }
     /* the loader and the failure notice — see the note above IntMapTimeSeries */
-    function _lazyFail(){ const m=window.IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
+    function _lazyFail(){ const m=IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
       try{ HOST.imToast(m); }catch(_){ try{ console.error('[IntMap] analysisCorrelate: '+m); }catch(__){} } }
     function _impl(){ try{ if(!window.IntMapLazy) { _lazyFail(); return Promise.resolve(null); }
         return window.IntMapLazy.need('analysisCorrelate').then(ok=>{ const I=window.__imAnalysisCorrelate; if(!ok||!I){ _lazyFail(); return null; } return I; },()=>{ _lazyFail(); return null; });
@@ -100,9 +102,9 @@ window.IntMapModules.correlate=function(HOST){
     function _onLang(){ try{ if(window.IntMapLazy&&window.IntMapLazy.ready('analysisCorrelate')){ const I=window.__imAnalysisCorrelate; if(I&&I.onLang) I.onLang(); } }catch(_){} }
     window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-correlate'); if(b){ const sp=b.querySelector('span'); if(sp) sp.textContent=btnLbl(); } _onLang(); });
   })();
-};
+}
 
-window.IntMapModules.worldEvents=function(HOST){
+export function worldEvents(HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const renderDashboard=HOST.renderDashboard;
   (function(){
@@ -110,7 +112,7 @@ window.IntMapModules.worldEvents=function(HOST){
        render, so it has to exist from the first one — the 132-event archive behind it does not. */
     window._dashView=window._dashView||'places';
     /* the loader and the failure notice — see the note above IntMapTimeSeries */
-    function _lazyFail(){ const m=window.IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
+    function _lazyFail(){ const m=IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
       try{ HOST.imToast(m); }catch(_){ try{ console.error('[IntMap] analysisEvents: '+m); }catch(__){} } }
     function _impl(){ try{ if(!window.IntMapLazy) { _lazyFail(); return Promise.resolve(null); }
         return window.IntMapLazy.need('analysisEvents').then(ok=>{ const I=window.__imAnalysisEvents; if(!ok||!I){ _lazyFail(); return null; } return I; },()=>{ _lazyFail(); return null; });
@@ -122,13 +124,13 @@ window.IntMapModules.worldEvents=function(HOST){
     window._setDashView=function(v){ _impl().then(()=>{ window._dashView=v; try{ renderDashboard(); }catch(_){} }); };
     window._renderEventsArchive=function(dash,q){ _impl().then(I=>{ if(I&&I.render) I.render(dash,q); }); };
   })();
-};
+}
 
-window.IntMapModules.edu=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function edu(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   window.IntMapEdu=(function(){
     /* the loader and the failure notice — see the note above IntMapTimeSeries */
-    function _lazyFail(){ const m=window.IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
+    function _lazyFail(){ const m=IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
       try{ HOST.imToast(m); }catch(_){ try{ console.error('[IntMap] analysisEdu: '+m); }catch(__){} } }
     function _impl(){ try{ if(!window.IntMapLazy) { _lazyFail(); return Promise.resolve(null); }
         return window.IntMapLazy.need('analysisEdu').then(ok=>{ const I=window.__imAnalysisEdu; if(!ok||!I){ _lazyFail(); return null; } return I; },()=>{ _lazyFail(); return null; });
@@ -149,14 +151,14 @@ window.IntMapModules.edu=function(HOST){
        Playground hub) — "Playground自体は…旧quiz modeの場所に / Quiz modeをplaygroundに移動". */
     function mount(){ if(document.getElementById('edu-mount')) return;
       const host=document.createElement('div'); host.id='edu-mount'; host.style.marginTop='6px';
-      host.innerHTML='<button id="btn-edu" class="ai-test-btn" style="width:100%;">🎮 <span>'+(window.IntMapLang.t(HOST.lang,"Playground","プレイグラウンド","Spielwiese","Песочница","Zona de pruebas"))+'</span></button>';
+      host.innerHTML='<button id="btn-edu" class="ai-test-btn" style="width:100%;">🎮 <span>'+(IntMapLang.t(HOST.lang,"Playground","プレイグラウンド","Spielwiese","Песочница","Zona de pruebas"))+'</span></button>';
       const tools=document.getElementById('layer-tools'); const dd=document.getElementById('layer-dropdown');
       (tools||dd||document.body).appendChild(host);
       host.querySelector('#btn-edu').onclick=()=>{ window.IntMapLazy.need('playground').then(()=>{ try{ window._openPlayground&&window._openPlayground(); }catch(_){} }); };
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     if(GE().hasRenderer()) GE().events.on('click',onMapClick);
     if(document.readyState!=='loading') setTimeout(mount,500); else document.addEventListener('DOMContentLoaded',()=>setTimeout(mount,500));
-    window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-edu'); if(b) b.innerHTML='🎮 <span>'+(window.IntMapLang.t(HOST.lang,"Playground","プレイグラウンド","Spielwiese","Песочница","Zona de pruebas"))+'</span>'; });
+    window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-edu'); if(b) b.innerHTML='🎮 <span>'+(IntMapLang.t(HOST.lang,"Playground","プレイグラウンド","Spielwiese","Песочница","Zona de pruebas"))+'</span>'; });
     return { open, close };
   })();
-};
+}

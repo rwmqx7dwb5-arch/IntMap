@@ -314,8 +314,10 @@ function overlayHarness() {
   walkAll(parse(src, { ecmaVersion: 'latest', sourceType: 'module' }));
   function element() { return { style: {}, children: [], listeners: new Map(), appendChild(c) { this.children.push(c); c.parentNode = this; }, setAttribute() {}, addEventListener(k, f) { this.listeners.set(k, f); }, remove() { this.parentNode = null; } }; }
   const frames = new Map(); let next = 0;
+  /* (module-graph) js/cesium-engine.js imports IntMapLang, so the lifted function reads the bare name — bind it too */
+  const lang = { t: () => '' };
   const make = vm.runInNewContext('(' + src.slice(fn.start, fn.end) + ')', {
-    document: { createElement: element, documentElement: { lang: 'en' } }, window: { IntMapLang: { t: () => '' } },
+    document: { createElement: element, documentElement: { lang: 'en' } }, window: { IntMapLang: lang }, IntMapLang: lang,
     normLngLat: (ll) => ll, requestAnimationFrame: (f) => { frames.set(++next, f); return next; }, cancelAnimationFrame: (id) => frames.delete(id),
   });
   function view() {

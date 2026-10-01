@@ -18,17 +18,19 @@ import { everyTick, stopTick } from './runtime.js';
 import { overpassQuery } from './overpass.js';   /* the one Overpass client, with a clock — js/overpass.js */
 /* (#R568) the plume model itself — the same module src/radiation-worker.js runs off the page. */
 import { RAD } from './radiation-model.js';
-window.IntMapModules=window.IntMapModules||{};
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules.radiation=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
+export function radiation(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   window.IntMapRadiation=(function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { run(){ return Promise.resolve({ok:false}); }, clear(){}, openPanel(){}, closePanel(){}, isOpen(){ return false; }, ISOTOPES:{}, SOURCES:{} };
-    const LL=window.IntMapLang.pick(()=>HOST.lang);
+    const LL=IntMapLang.pick(()=>HOST.lang);
     const SRC='imrad-src', DEP='imrad-dep-src'; let _run=null, _gen=0;
     /* (#R85) isotope + source-term presets ("放出量や放出時間、日時等も選べるように"). Half-lives in HOURS. */
     const ISOTOPES=RAD.ISOTOPES;
@@ -196,7 +198,7 @@ window.IntMapModules.radiation=function(HOST){
       }catch(_){ return []; }
     }
     /* Cs-137 ground-deposition zones — the real Chernobyl thresholds (Ci/km² → kBq/m²): 40/15/5/1 */
-    const LA=window.IntMapLang.pickArgs();   /* (#R241) see `pickArgs` in js/lang-registry.js */
+    const LA=IntMapLang.pickArgs();   /* (#R241) see `pickArgs` in js/lang-registry.js */
     const ZONE_LABEL={
       'z-exclusion':LA('Exclusion — permanent resettlement','立入禁止（強制移住）','Sperrzone','Зона отчуждения','Exclusión'),
       'z-evacuation':LA('Mandatory evacuation','義務的避難','Zwangsumsiedlung','Обязательное отселение','Evacuación obligatoria'),
@@ -447,7 +449,7 @@ window.IntMapModules.radiation=function(HOST){
       const where=site?((site.name?site.name+' · ':'')+site.lat.toFixed(3)+', '+site.lng.toFixed(3))
         :LL('No source placed yet','放出源が未設定です','Keine Quelle gesetzt','Источник не задан','Sin fuente colocada');
       p.innerHTML='<div class="rad-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">☢ '
-          +LL('Radioactive dispersion','放射性物質の拡散','Radioaktive Ausbreitung','Рассеивание радиации','Dispersión radiactiva')+'</span><button aria-label="'+window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="rad-x" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
+          +LL('Radioactive dispersion','放射性物質の拡散','Radioaktive Ausbreitung','Рассеивание радиации','Dispersión radiactiva')+'</span><button aria-label="'+IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="rad-x" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
         +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;">'
         +'<button class="rad-pick" style="height:34px;border:none;border-radius:9px;background:var(--primary-fill);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;">◎ '
           +LL('Place the source on the map','地図で放出源を設定','Quelle auf der Karte setzen','Задать источник на карте','Colocar la fuente en el mapa')+'</button>'
@@ -518,9 +520,9 @@ window.IntMapModules.radiation=function(HOST){
   try{ if(window.IntMapRadiation._share){ const _io=window.IntMapRadiation._share;
     if(window.IntMapShareState) window.IntMapShareState.register('radiation',_io);
     else (window._imShareEarly||(window._imShareEarly=[])).push(['radiation',_io]); } }catch(_){}
-};
+}
 
-window.IntMapModules.popArea=function(HOST){
+export function popArea(HOST){
   window.IntMapPopArea=(function(){
     const cache=new Map();
     function _decim(ring){ const r=ring.map(p=>[+(+p[0]).toFixed(5),+(+p[1]).toFixed(5)]);
@@ -678,7 +680,7 @@ window.IntMapModules.popArea=function(HOST){
       return {type:'Polygon',coordinates:[ring]}; }
     return { estimate, circleGeom };
   })();
-};
+}
 
 /* ══ ⚠⚠ (#R469) 「⛰ 傾斜・斜面方向レイヤーは完全削除。」 ═══════════════════════════════
    `IntMapModules.slope` / `window.IntMapSlope` stood here: the `dl-slope` row, the `imslope-fill`
@@ -695,8 +697,8 @@ window.IntMapModules.popArea=function(HOST){
    with 「電波・通信圏」 as a mode. The only thing this module had that the other did not — the TX
    power and the free-space link budget — was ported, formula for formula. */
 
-window.IntMapModules.sun=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function sun(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -707,7 +709,7 @@ window.IntMapModules.sun=function(HOST){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, close(){}, setTime(){} };
     const SRC='imsun-src'; const rad=Math.PI/180, J1970=2440588, J2000=2451545, dayMs=86400000, e=rad*23.4397;
     let panel=null, when=new Date(), busy=false, moveT=null, playing=0, bbldCache=null, bboxKey='';
-    const SN=window.IntMapLang.pick(()=>HOST.lang);
+    const SN=IntMapLang.pick(()=>HOST.lang);
     /* ══ ⚠⚠⚠ (#R298→#R302) THE POINT THIS PANEL IS ANSWERING FOR ═════════════════════════════════
        「地点を選ばないといけない系のツール、押したら勝手に地図中心を選択しているものとして結果を出すの
          を辞めろ。」 Everything this panel prints is a function of ONE coordinate — the sun's altitude
@@ -800,7 +802,7 @@ window.IntMapModules.sun=function(HOST){
         feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[r0.map(p=>[p[0]+oL,p[1]+oA])]},properties:{}}); });
       try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
     }catch(_){} busy=false; }
-    function fmtT(d){ try{ return d.toLocaleTimeString(window.IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit'}); }catch(_){ return '—'; } }
+    function fmtT(d){ try{ return d.toLocaleTimeString(IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit'}); }catch(_){ return '—'; } }
     function updatePanel(sp){ if(!panel) return; const c=siteLL();
       /* (#R298) 「どの地点の話なのか」 — one line, above the numbers it belongs to, in every state the
          panel has. ⚠ (#R302) and one of those states is 「none yet」: with no point the line asks for
@@ -818,7 +820,7 @@ window.IntMapModules.sun=function(HOST){
       try{ if(di) di.value=when.toISOString().slice(0,10); }catch(_){} const mins=when.getHours()*60+when.getMinutes(); if(tl) tl.value=mins; if(ti) ti.textContent=fmtT(when); }
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='sun-panel';
       panel.style.cssText='position:fixed;left:16px;top:80px;width:min(320px,92vw);z-index:calc(var(--z-dropdown) + 102);display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
-      panel.innerHTML='<div class="sun-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🌇 '+SN('Sun & shadow','日照・影','Sonne & Schatten','Солнце и тень','Sol y sombra')+'</span><button aria-label="'+window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="sun-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
+      panel.innerHTML='<div class="sun-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🌇 '+SN('Sun & shadow','日照・影','Sonne & Schatten','Солнце и тень','Sol y sombra')+'</span><button aria-label="'+IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="sun-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
         +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;">'
         +'<div style="display:flex;gap:8px;align-items:center;"><input type="date" class="sun-date" style="flex:1;height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;"><button class="sun-now" style="height:30px;padding:0 10px;border:none;border-radius:8px;background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;">'+SN('Now','現在','Jetzt','Сейчас','Ahora')+'</button><button class="sun-play" style="height:30px;width:34px;border:none;border-radius:8px;background:var(--primary-fill);color:#fff;font-size:13px;cursor:pointer;">▶</button></div>'
         +'<div style="display:flex;align-items:center;gap:8px;"><input type="range" class="sun-slider" min="0" max="1439" value="720" style="flex:1;"><span class="sun-time" style="font-size:12px;font-weight:700;color:var(--text-main);min-width:44px;text-align:right;">12:00</span></div>'
@@ -936,7 +938,7 @@ window.IntMapModules.sun=function(HOST){
       let a=null;
       try{ a=await ENG().analyse(lng,lat,{});
         const d=await ENG().dayAt(lng,lat,when,{});
-        const hhmm=t=>{ try{ return t?t.toLocaleTimeString(window.IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit'}):'—'; }catch(_){ return '—'; } };
+        const hhmm=t=>{ try{ return t?t.toLocaleTimeString(IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit'}):'—'; }catch(_){ return '—'; } };
         engSay('◎ '+lat.toFixed(4)+', '+lng.toFixed(4)+' · '+nf(a.groundM)+' m'
           +'<br><b>'+nf(a.annualHours)+' h</b> '+SN('of sun a year','の年間日照','Sonne pro Jahr','солнца в год','de sol al año')
           +' ('+SN('open horizon would give','遮蔽なしなら','ohne Horizont','без горизонта','sin horizonte')+' '+nf(a.annualOpenHours)+' h · −'+nf(a.lossPct,1)+'%)'
@@ -992,10 +994,10 @@ window.IntMapModules.sun=function(HOST){
     if(window.IntMapShareState) window.IntMapShareState.register('sun',_io);
     else (window._imShareEarly||(window._imShareEarly=[])).push(['sun',_io]); } }catch(_){}
 
-};
+}
 
-window.IntMapModules.transitReach=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function transitReach(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -1059,7 +1061,7 @@ window.IntMapModules.transitReach=function(HOST){
       try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){}
       try{ let a=180,b=90,c=-180,d=-90; r.stations.concat([{ll:r.origin}]).forEach(s=>{ a=Math.min(a,s.ll[0]);b=Math.min(b,s.ll[1]);c=Math.max(c,s.ll[0]);d=Math.max(d,s.ll[1]); }); if(isFinite(a)&&c>a) GE().camera.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:12,duration:900}); }catch(_){} }
     async function open(from,minutes){ ensure();
-      try{ if(window.satToast) satToast(window.IntMapLang.t(HOST.lang,'Computing rail reach…','鉄道到達圏を計算中…','Bahn-Erreichbarkeit wird berechnet…','Расчёт зоны доступности по железной дороге…','Calculando el alcance ferroviario…')); }catch(_){}
+      try{ if(window.satToast) satToast(IntMapLang.t(HOST.lang,'Computing rail reach…','鉄道到達圏を計算中…','Bahn-Erreichbarkeit wird berechnet…','Расчёт зоны доступности по железной дороге…','Calculando el alcance ferroviario…')); }catch(_){}
       const r=await run(from,minutes);
       /* (#R209) the reachable-area hull needs turf's convex+buffer, which are not in the boot bundle
          (see src/vendor.js). Wait for them HERE rather than letting draw() find them missing. */
@@ -1072,7 +1074,7 @@ window.IntMapModules.transitReach=function(HOST){
     const isOpen=()=>{ try{ const d=GE().layers.sourceData(SRC); return !!(d&&d.features&&d.features.length); }catch(_){ return false; } };
     function close(){ if(!isOpen()) return false; try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} return true; }
     return { run, open, draw, isOpen, close, clear:()=>{ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} } }; })();
-};
+}
 
 /* ══ ⚠⚠ (#R296) 「災害シミュレーターは4つのうち、放射性物質拡散シミュレーションを残し全削除」 ═════
    `IntMapModules.disaster` / `window.IntMapDisaster` stood here with four hazards — 洪水 / 火山灰 /

@@ -55,12 +55,14 @@
  *  · Load-on-demand (js/lazy-modules.js → `volcanoIntel`): nothing here is downloaded until a
  *    volcano is clicked, an Atlas volcano command runs, or the intelligence legend is opened.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.volcanoIntel=function(HOST){
-  const L=window.IntMapLang.pick(()=>HOST.lang);
-  const GE=()=>window.IntMapGeoEngine;
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function volcanoIntel(HOST){
+  const L=IntMapLang.pick(()=>HOST.lang);
+  const GE=()=>IntMapGeoEngine;
   const S=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
-  const loc=()=>{ try{ return window.IntMapLang.locale(HOST.lang,'en-GB'); }catch(_){ return 'en-GB'; } };
+  const loc=()=>{ try{ return IntMapLang.locale(HOST.lang,'en-GB'); }catch(_){ return 'en-GB'; } };
   const n0=(v)=>(v==null||!isFinite(v))?'':Math.round(v).toLocaleString(loc());
 
   /* ══ 1. THE BUNDLED RECORD ════════════════════════════════════════════════════════════════
@@ -166,7 +168,7 @@ window.IntMapModules.volcanoIntel=function(HOST){
      remaining four languages come from js/locales/ui.{fr,ko,zh,zh-hans}.js keyed by the English
      string, exactly like every other call site in this repo. ⚠ DO NOT INVENT A THIRD HELPER: #R353
      lost 40 strings to an arrow-function alias that `provenNames` could not see. */
-  const LA=window.IntMapLang.pickArgs();
+  const LA=IntMapLang.pickArgs();
   const langNow=()=>{ try{ return String((HOST&&HOST.lang)||'en').toLowerCase(); }catch(_){ return 'en'; } };
   const VOCAB={
     type:{
@@ -997,7 +999,7 @@ window.IntMapModules.volcanoIntel=function(HOST){
       'Das Global Volcanism Program führt keinen datierten Ausbruch. Die Aufnahme in den Holozän-Katalog beruht auf anderen Belegen — siehe „Der Vulkan“.',
       'В базе GVP нет ни одного датированного извержения. В голоценовый каталог вулкан включён по иным свидетельствам — см. «О вулкане».',
       'El Global Volcanism Program no registra ninguna erupción fechada. Está en el catálogo del Holoceno por otras evidencias — ver «El volcán».'));
-    const V=window.IntMapLang;
+    const V=IntMapLang;
     let h=sec(L('The record','記録の全体','Der Datensatz','Запись','El registro'))
       +row(L('Confirmed eruptions','確認された噴火','Bestätigte Ausbrüche','Подтверждённые извержения','Erupciones confirmadas'),n0(ch.n))
       +row(L('Uncertain eruptions','不確実な噴火','Unsichere Ausbrüche','Неподтверждённые','Erupciones inciertas'),ch.uncertain?n0(ch.uncertain):'')
@@ -1246,4 +1248,4 @@ window.IntMapModules.volcanoIntel=function(HOST){
     _jmaMap:JMA_TO_GVP, _jmaKey:jmaKey, _jmaLevel:jmaNum, _rank:RANK, _vocab:VOCAB, _ctry:CTRY_ISO };
   window.IntMapVolcano=API;
   return API;
-};
+}

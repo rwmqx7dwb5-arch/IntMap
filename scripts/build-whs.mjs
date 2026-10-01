@@ -68,11 +68,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import os from 'node:os';
-import vm from 'node:vm';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { toHans } from './zh-hans.mjs';
 import { UNESCO_WHC } from './lib/upstream-cadence.mjs';
+import { langRegistry } from './lib/import-module.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -166,19 +166,13 @@ function get(url, { accept, cacheKey } = {}) {
 }
 
 /* ══ THE LANGUAGE SET COMES FROM THE APP'S OWN REGISTRY ═══════════════════════════════════════
-   js/lang-registry.js is a browser global, not a module, and it is the only place that knows both
+   js/lang-registry.js is the only place that knows both
    that IntMap's Japanese code is 'jp' and that its two Chinese rows are zh-Hant and zh-Hans. It is
    evaluated here rather than copied, so a language added to js/locales/ reaches this build with no
    edit — which is the property scripts/i18n-langs.mjs already relies on for the reading pages. */
 function appLanguages() {
-  const sandbox = { window: {}, navigator: { language: 'en' }, document: undefined, Intl, console };
-  sandbox.window.window = sandbox.window;
-  const ctx = vm.createContext(sandbox);
-  vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', 'locales', '_langs.js'), 'utf8'), ctx,
-    { filename: '_langs.js' });
-  vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', 'lang-registry.js'), 'utf8'), ctx,
-    { filename: 'lang-registry.js' });
-  const L = sandbox.window.IntMapLang;
+  /* (module-graph) the registry is an ES module: imported, not re-evaluated from its text */
+  const L = langRegistry();
   if (!L || typeof L.htmlTag !== 'function') throw new Error('js/lang-registry.js did not define IntMapLang.htmlTag');
   return L.list().map((row) => ({ code: row.code, tag: L.htmlTag(row.code) }));
 }

@@ -7,8 +7,10 @@
  *  The only edit to the moved text is that free references to closure variables became
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.aiCore=function(HOST){
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function aiCore(HOST){
   const saveAIConfig=()=>{ try{ localStorage.setItem('intmap_ai_config',JSON.stringify(HOST.aiConfig)); }catch(_){} };
   /* (#R27) Account-based AI: the first-party server proxy is ALWAYS configured (see INTMAP_AI_PROXY
      below), so the engine is always "ready" to RECEIVE a click. The real gate — login required + the
@@ -80,7 +82,7 @@ window.IntMapModules.aiCore=function(HOST){
   async function aiPaintModelPicker(){
     const box=document.getElementById('ai-model-pick'); if(!box) return;
     const note=document.getElementById('ai-model-note');
-    const L=(en,jp)=>window.IntMapLang.t(HOST.lang,en,jp);
+    const L=(en,jp)=>IntMapLang.t(HOST.lang,en,jp);
     if(!_modelCat && !_modelCatErr){
       try{ _modelCat=await aiFetchModels(); }catch(e){ _modelCatErr=String((e&&e.message)||e); }
       if(!document.getElementById('ai-model-pick')) return;   /* the panel closed while we asked */
@@ -152,7 +154,7 @@ window.IntMapModules.aiCore=function(HOST){
       aiSetGlossUsage(data && typeof data.count==='number' ? data.count : 0, aiGlossLimit());
     }catch(_){}
   }
-  function aiGlossLimitMsg(){ try{ return window.IntMapLang.t(HOST.lang,
+  function aiGlossLimitMsg(){ try{ return IntMapLang.t(HOST.lang,
     'You have used today’s free term lookups. Your Atlas questions are unaffected.',
     '本日の用語解説の無料回数を使い切りました。Atlasへの質問回数には影響しません。',
     'Die kostenlosen Begriffserklärungen für heute sind aufgebraucht. Ihre Atlas-Fragen sind davon nicht betroffen.',
@@ -191,7 +193,7 @@ window.IntMapModules.aiCore=function(HOST){
      inline table for the rest, where 'English' is correctly translated (zh 英文) or absent (fr/ko),
      so the instruction «Write your ENTIRE response in <name> only» named the wrong language. The
      name a MODEL needs is the English one, and js/lang-registry.js derives it. */
-  function _aiLangName(){ try{ return window.IntMapLang.englishName(HOST.lang); }catch(_){ return 'English'; } }
+  function _aiLangName(){ try{ return IntMapLang.englishName(HOST.lang); }catch(_){ return 'English'; } }
   function _aiLangLine(){ const L=_aiLangName(); return ' IMPORTANT: Write your ENTIRE response in '+L+' only — every sentence, heading and bullet must be in '+L+', regardless of the language of the input or these instructions. Do not reply in English unless '+L+' is English.'; }   /* (#R285 追記) THE THIRD COPY OF THE REGISTER RULE lived right here, and #R285 missed it: it looked for hand-written IDENTITY lines and this is a hand-written REGISTER line. It carried the escape the specification supersedes (「ただし常に自然な敬語」), and it is appended to four prompts — all four of which now open with personaPrompt(), whose `address` clause owns the register. What this line is FOR (the reply-language lock) is untouched. */
   function aiLoginMsg(){ return aiJP()?'AI機能を使うにはログインが必要です。':'Please log in to use AI features.'; }
   function aiLimitMsg(){ return aiJP()?'本日の無料AI使用回数に達しました。':'You have reached today’s free AI limit.'; }
@@ -199,7 +201,7 @@ window.IntMapModules.aiCore=function(HOST){
      It means IntMap's own repair loop is stuck, so it must never read as "you are out of uses":
      the reader has not spent anything they did not intend to. Nine languages, through the registry
      (five positional, the rest from each locale's inline table keyed by the English string). */
-  function aiTurnCallsMsg(){ try{ return window.IntMapLang.t(HOST.lang,
+  function aiTurnCallsMsg(){ try{ return IntMapLang.t(HOST.lang,
     'This request needed too many tries — nothing more was used from your daily allowance. Please rephrase it and try again.',
     'この依頼で試行が多くなりすぎました。1日の利用回数はこれ以上消費していません。言い方を変えてもう一度お試しください。',
     'Diese Anfrage brauchte zu viele Versuche — von deinem Tageskontingent wurde nichts weiter verbraucht. Bitte formuliere sie neu.',
@@ -262,7 +264,7 @@ window.IntMapModules.aiCore=function(HOST){
   /* (#R113) Map a typed PROVIDER error (ai-proxy 502/503) to a clear, localized message. These are DISTINCT from
      the IntMap daily free-use limit (HTTP 429) — a Google-side 429 must never be shown as "out of free uses". */
   function aiProviderErrMsg(code, message){
-    const _pl=window.IntMapLang.pick(()=>HOST.lang);
+    const _pl=IntMapLang.pick(()=>HOST.lang);
     const M={
       provider_rate_limit:_pl('The AI service is busy right now — please try again in a moment (this is not your IntMap usage limit).','AIサービスが混雑しています。少し待って再試行してください（IntMapの利用回数上限ではありません）。','Der KI-Dienst ist gerade ausgelastet — bitte gleich erneut versuchen (nicht Ihr IntMap-Limit).','Сервис ИИ сейчас перегружен — повторите через мгновение (это не ваш лимит IntMap).','El servicio de IA está ocupado — inténtalo de nuevo en un momento (no es tu límite de IntMap).'),
       provider_quota:_pl('The AI provider quota was reached — this is separate from your IntMap free uses. Please try again later.','AIプロバイダ側の利用上限に達しました（あなたのIntMap無料利用枠とは別です）。後ほど再試行してください。','Das Kontingent des KI-Anbieters ist erschöpft — getrennt von Ihren IntMap-Freinutzungen. Später erneut versuchen.','Достигнут лимит провайдера ИИ — это отдельно от бесплатных использований IntMap. Повторите позже.','Se alcanzó la cuota del proveedor de IA — es independiente de tus usos gratuitos de IntMap. Inténtalo más tarde.'),
@@ -546,12 +548,12 @@ window.IntMapModules.aiCore=function(HOST){
        developer (intmap_dev flag, or logged in but currentUser not yet populated) saw the login prompt instead
        of the unlimited state ("開発者なので無制限に / 設定欄のグラフに反映されていない"). */
     if(aiDev()){
-      const L=(en,jp)=>window.IntMapLang.t(HOST.lang,en,jp);
+      const L=(en,jp)=>IntMapLang.t(HOST.lang,en,jp);
       const pick=aiModelPick();
       wrap.innerHTML=
         /* (#R101) the "✨ Built-in AI is ready…" line duplicated the section hint above — removed (de-dup + no ✨). */
         `<div class="ai-row" style="font-size:13px;color:var(--text-main);font-weight:600;">`+
-          aiEsc(window.IntMapLang.t(HOST.lang,'Developer account — unlimited AI usage.','開発者アカウント — AI利用は無制限です。','Entwicklerkonto — unbegrenzte KI-Nutzung.','Аккаунт разработчика — использование ИИ без ограничений.','Cuenta de desarrollador — uso de IA ilimitado.'))+
+          aiEsc(IntMapLang.t(HOST.lang,'Developer account — unlimited AI usage.','開発者アカウント — AI利用は無制限です。','Entwicklerkonto — unbegrenzte KI-Nutzung.','Аккаунт разработчика — использование ИИ без ограничений.','Cuenta de desarrollador — uso de IA ilimitado.'))+
           `<div style="height:7px;border-radius:5px;background:var(--input-bg);overflow:hidden;margin-top:8px;"><div style="height:100%;width:100%;background:linear-gradient(90deg,#34c759,#0a84ff);"></div></div>`+
         `</div>`+
         /* (#R722) the model picker — developer only, and the server says so too. */
@@ -604,8 +606,8 @@ window.IntMapModules.aiCore=function(HOST){
     else { btn.disabled=false; if(btn.dataset.olabel!=null){ btn.textContent=btn.dataset.olabel; delete btn.dataset.olabel; } }
   }
   /* (#R171) through the engine's event contract — this file no longer names the renderer at all. */
-  function aiWaitMapIdle(timeout){ return new Promise(res=>{ const E=window.IntMapGeoEngine; if(!E){ res(); return; } let done=false;
+  function aiWaitMapIdle(timeout){ return new Promise(res=>{ const E=IntMapGeoEngine; if(!E){ res(); return; } let done=false;
     const fin=()=>{ if(done)return; done=true; try{ E.events.off('idle',fin); }catch(_){} res(); };
     try{ E.events.on('idle',fin); }catch(_){ } setTimeout(fin,timeout||4500); }); }
   return { _aiLangLine, _aiLangName, aiDev, aiEsc, aiFetchUsage, aiGate, aiLimitMsg, aiLoginMsg, aiParseJSON, aiQuotaBlocked, aiReady, aiRefreshUsage, aiRenderSettings, aiReport, aiSaveSettings, aiSetBtnBusy, aiSyncFeatureButtons, aiToast, aiToday, aiUsageSummary, aiUsesLeft, aiVisionReady, aiWaitMapIdle, askAI, askAIGloss, askAIJSON, askAIJSONEnvelope };
-};
+}

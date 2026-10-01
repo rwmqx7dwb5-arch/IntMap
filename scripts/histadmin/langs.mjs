@@ -14,23 +14,18 @@
  *    · WHICH languages ship is scripts/histnames/langs.mjs, the one place that policy is written.
  *  Add a language to the app and every one of those follows; none of them is edited here.
  * ==========================================================================*/
-import fs from 'node:fs';
 import path from 'node:path';
-import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { shipLangs, harvestLangs } from '../histnames/langs.mjs';
 import { LANG_SOURCES } from '../histeras/match.mjs';
+import { langRegistry } from '../lib/import-module.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 /** js/lang-registry.js, evaluated — the app's own list, with each language's real tag. */
 export function registry(root = ROOT) {
-  const sb = { window: {}, console, Number, Array, Math, JSON, String, Object, Intl, Date, RegExp };
-  sb.window.window = sb.window;
-  vm.createContext(sb);
-  vm.runInContext(fs.readFileSync(path.join(root, 'js', 'locales', '_langs.js'), 'utf8'), sb, { filename: '_langs.js' });
-  vm.runInContext(fs.readFileSync(path.join(root, 'js', 'lang-registry.js'), 'utf8'), sb, { filename: 'lang-registry.js' });
-  const L = sb.window.IntMapLang;
+  /* (module-graph) the registry is an ES module: imported, not re-evaluated from its text */
+  const L = langRegistry();
   if (!L || typeof L.htmlTag !== 'function' || typeof L.list !== 'function') throw new Error('js/lang-registry.js did not define IntMapLang');
   return L;
 }

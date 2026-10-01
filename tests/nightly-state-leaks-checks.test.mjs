@@ -18,6 +18,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -126,16 +127,15 @@ async function railwaysOn(opts) {
     return new Response('', { status: 404 });
   };
   const eng = makeEngine(opts);
-  const say = Object.assign((...a) => a[0], { arr: (a) => a[0] });
   globalThis.window = globalThis.window || {};
   Object.assign(globalThis.window, {
-    IntMapGeoEngine: eng.ge,
-    IntMapLang: { pick: () => say, pickArgs: () => (...a) => a[0] },
     IntMapSafe: { html: (v) => v, url: (v) => v },
     IntMapLabelScale: { sub: (v) => v },
   });
-  await import(pathToFileURL(join(ROOT, 'js/railways.js')).href);
-  const R = window.IntMapModules.railways({ lang: 'en', canDraw: () => true });
+  /* (module-graph) js/railways.js imports its renderer: the fake engine is handed at the geo-engine.js
+     import edge of a fresh evaluation, and the language registry is the real one */
+  const { railways } = await importModule('js/railways.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: eng.ge } } });
+  const R = railways({ lang: 'en', canDraw: () => true });
   R.toggle(true);
   return { R, eng };
 }

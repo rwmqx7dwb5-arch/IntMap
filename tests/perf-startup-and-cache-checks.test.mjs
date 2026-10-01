@@ -31,6 +31,7 @@ import { judge } from '../scripts/perf-budget.mjs';
 import { ciRuns, ciBuildsBefore } from './helpers/ci-reach.mjs';
 import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { LAZY_REGISTRY } from '../js/lazy-modules.js';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
@@ -136,13 +137,13 @@ test('r311 ⑤ …and the loader kept BOTH paths; only their order changed', () 
 /* ─────────────────────────────────────────────────────────────────────────
    ⑥ The hover path stops paying for what it already knows.
    ───────────────────────────────────────────────────────────────────────── */
-test('r311 ⑥ positionTooltip no longer measures the map on every pointer event', () => {
+test('r311 ⑥ positionTooltip no longer measures the map on every pointer event', async () => {
   /* the surface lives in js/map-tooltip.js since this round — it left js/app-body.js whole so the
      shell budget in tests/r168 #8 could be paid rather than raised.
      EVALUATED: the module is run with a stub DOM whose map container COUNTS its layout reads and a
      ResizeObserver the test can fire. positionTooltip is called by every hover handler on every
      mousemove; reading the container rect there is a forced synchronous layout sixty times a second. */
-  const T = tooltipModule({ mapW: 1000, mapH: 600 });
+  const T = await tooltipModule({ mapW: 1000, mapH: 600 });
   for (let i = 0; i < 60; i++) T.api.positionTooltip({ x: 500 + i, y: 300 });
   assert.equal(T.rectReads(), 1, `the map was measured ${T.rectReads()} times for 60 pointer events — it must be once`);
   /* …and the size still comes from somewhere REAL — a check that only forbade the call would also
@@ -157,9 +158,9 @@ test('r311 ⑥ positionTooltip no longer measures the map on every pointer event
   assert.equal(T.rectReads(), 2, 'one read per resize, and none per pointer event');
 });
 
-test('r311 ⑦ the shared map tooltip is not rewritten with identical markup', () => {
+test('r311 ⑦ the shared map tooltip is not rewritten with identical markup', async () => {
   /* EVALUATED: an element that counts its innerHTML writes */
-  const T = tooltipModule({ mapW: 1000, mapH: 600 });
+  const T = await tooltipModule({ mapW: 1000, mapH: 600 });
   const el = T.api.ensureMapTooltip();
   for (let i = 0; i < 30; i++) T.api.setMapTooltipHTML(el, '<b>Tokyo</b>');
   assert.equal(el.writes, 1, 'it compares before it writes — the same markup thirty times is one write');
@@ -176,8 +177,9 @@ test('r311 ⑦ the shared map tooltip is not rewritten with identical markup', (
     'all of the always-on news hover handlers use it');
 });
 
-/* js/map-tooltip.js, run against the smallest DOM it touches */
-function tooltipModule({ mapW, mapH }) {
+/* js/map-tooltip.js, run against the smallest DOM it touches — (module-graph) IMPORTED, and its
+   exported factory called; the stub DOM is installed as the browser it runs in */
+async function tooltipModule({ mapW, mapH }) {
   let reads = 0, w = mapW, h = mapH;
   const observers = [];
   const container = {
@@ -191,13 +193,13 @@ function tooltipModule({ mapW, mapH }) {
     return el;
   };
   let tip = null;
-  const win = { IntMapModules: {}, addEventListener() {} };
+  const win = { addEventListener() {} };
   const document = { getElementById: (id) => (id === 'map-container' ? container : null), createElement: () => (tip = makeEl()) };
   function ResizeObserver(cb) { this.cb = cb; observers.push(this); }
   ResizeObserver.prototype.observe = function (t) { this.target = t; };
   ResizeObserver.prototype.disconnect = function () {};
-  new Function('window', 'document', 'ResizeObserver', read('js/map-tooltip.js'))(win, document, ResizeObserver);
-  const api = win.IntMapModules.mapTooltip();
+  const { mapTooltip } = await importModule('js/map-tooltip.js', { globals: { window: win, document, ResizeObserver } });
+  const api = mapTooltip();
   return {
     api, rectReads: () => reads, get tip() { return tip; },
     resizeTo(nw, nh) { w = nw; h = nh; for (const o of observers) if (o.target === container) o.cb(); },
@@ -362,10 +364,11 @@ test('R224 ⑥b Atlas is on demand, and every entry point fetches it', () => {
   /* ⚠ READ, NOT RUN: which entry points reach Atlas through the loader is an import/call-graph property across eight DOM modules. */
   assert.ok(!/import '\.\.\/js\/atlas-console\.js';/.test(read('src/main.js')), 'not in the boot bundle');
   const lz = read('js/lazy-modules.js');
-  /* (#R798) one registry entry: what it publishes, how it is fetched, how it is mounted */
+  /* (#R798) one registry entry: what it publishes, how it is fetched, how it is mounted —
+     (module-graph) mounted from the namespace the loader's own import() resolved to */
   assert.equal(LAZY_REGISTRY["atlasConsole"].publishes, 'IntMapConsole');
   assert.equal((String(LAZY_REGISTRY["atlasConsole"] && LAZY_REGISTRY["atlasConsole"].load).match(/import\('([^']+)'\)/) || [])[1], './atlas-console.js');
-  assert.match(String(LAZY_REGISTRY["atlasConsole"].mount), /window\.IntMapConsole=window\.IntMapModules\.atlasConsole\(IM_HOST\)/);
+  assert.match(String(LAZY_REGISTRY["atlasConsole"].mount), /window\.IntMapConsole=m\.atlasConsole\(IM_HOST\)/);
   assert.ok(lz.length > 0);
   const ld = read('js/atlas-loader.js');
   for (const k of ['ensure', 'hint', 'call', 'wire', 'loaded']) assert.ok(ld.includes(k + ':'), `the loader offers ${k}`);

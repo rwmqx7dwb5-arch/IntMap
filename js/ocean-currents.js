@@ -70,9 +70,11 @@
  *      layer needs no query service to be complete.
  *    · Turning the layer on is one ~760 kB file, fetched once per session and kept — and NOT on the boot path.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.oceanCurrents=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function oceanCurrents(HOST){
+  const GE=()=>IntMapGeoEngine;
 
   window.IntMapCurrents=(function(){
     if(!GE().hasRenderer()) return { state:()=>({on:false}) };
@@ -123,7 +125,7 @@ window.IntMapModules.oceanCurrents=function(HOST){
        climatological mean and 1…12 for a calendar month. */
     let field=null, fieldState='idle', months=null, monthState='idle', month=0, lastBox=null, lastStride=0;
     /* (#R245) the panel's names are a tuple held as data — see IntMapLang.pickArgs() */
-    const LA=window.IntMapLang.pickArgs();
+    const LA=IntMapLang.pickArgs();
     const FLD=()=>window.IntMapCurrentField;
 
     const panel=makePanel('oc-panel',()=>'🌊 '+L('Ocean currents','海流','Meeresströmungen','Морские течения','Corrientes marinas'),'wp-dl-currents',
@@ -569,4 +571,4 @@ window.IntMapModules.oceanCurrents=function(HOST){
         top:doc?(doc.named||[]).slice().sort((a,b)=>(b.meanSpeed||0)-(a.meanSpeed||0)).slice(0,3)
               .map(c=>({en:c.en,kind:c.kind,v:c.meanSpeed})):[] }) };
   })();
-};
+}

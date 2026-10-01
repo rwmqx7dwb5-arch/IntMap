@@ -162,12 +162,14 @@ async function mountWaves(opt) {
      would be running js/waves.js against the first case's globals. */
   await cold.load('js/waves-palette.js');
   await cold.load('js/waves-gl.js');
-  await cold.load('js/waves.js');
+  /* (module-graph) the factory is the module's export, not a window.IntMapModules entry */
+  const { waves } = await cold.load('js/waves.js');
+  assert.equal(typeof waves, 'function', 'js/waves.js must export its factory waves');
   const toasts = [], warns = [];
   const prevWarn = console.warn;
   console.warn = (...a) => warns.push(a.join(' '));
   const HOST = { lang: 'en', unitMode: 'metric', satToast: (m) => toasts.push(m), t: () => 'close' };
-  const api = cold.page.win.IntMapModules.waves(HOST);
+  const api = waves(HOST);
   return Object.assign(cold, { api, toasts, warns, restore: () => { console.warn = prevWarn; } });
 }
 

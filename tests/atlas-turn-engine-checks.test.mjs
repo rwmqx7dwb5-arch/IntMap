@@ -20,6 +20,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { transformSync } from 'esbuild';
+import { importModule, swappable } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8').replace(/\r\n/g, '\n');
@@ -27,7 +28,10 @@ const rd = (p) => readFileSync(join(ROOT, p), 'utf8').replace(/\r\n/g, '\n');
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 const { makeAtlasAgent } = await import('../js/atlas-agent.js');
 const { makeAtlasToolSurface } = await import('../js/atlas-toolsurface.js');
-const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
+/* (module-graph) js/atlas-capabilities.js IMPORTS the engine — it no longer reads window.IntMapGeoEngine —
+   so a case that needs a renderer seats its stub at that import edge; between cases the seat is empty. */
+const engineSeat = swappable();
+const { makeAtlasCapabilities } = await importModule('js/atlas-capabilities.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: engineSeat.value } } });
 const { makeAtlasSchemas } = await import('../js/atlas-schemas.js');
 const { makeAtlasResults } = await import('../js/atlas-results.js');
 
@@ -94,19 +98,19 @@ test('atlas-turn-engine ① the shipped camera verifier answers `unobserved` on 
     camera: { getCenter: () => ({ lng: CAM.lng, lat: CAM.lat }), getZoom: () => CAM.zoom, getBearing: () => 0, getPitch: () => 0, getBounds: () => null },
     render: { triggerRepaint() {}, canvas: () => null, onNextFrame(ms, fn) { fn(mode === 'live'); }, ticking() { return Promise.resolve(mode === 'live'); } },
   });
-  const had = window.IntMapGeoEngine;
+  const had = engineSeat.get();
   try {
-    window.IntMapGeoEngine = stub('asleep');
+    engineSeat.set(stub('asleep'));
     await fly.observe();
     const asleep = fly.verify({}, { place: 'Iceland' }, CAM, CAM, { ok: true }, 'view.flyTo');
     assert.equal(asleep.status, 'unobserved');
     assert.equal(asleep.code, 'not_rendering', 'the code still says why');
-    window.IntMapGeoEngine = stub('live');
+    engineSeat.set(stub('live'));
     await fly.observe();
     const live = fly.verify({}, { place: 'Iceland' }, CAM, CAM, { ok: true }, 'view.flyTo');
     assert.equal(live.status, 'partial', 'a drawing page that did not move keeps its verdict — only 「could not see」 moved');
     assert.equal(live.code, 'no_change');
-  } finally { if (had === undefined) delete window.IntMapGeoEngine; else window.IntMapGeoEngine = had; }
+  } finally { engineSeat.set(had); }
 });
 
 test('atlas-turn-engine ① the second identical call after an UNOBSERVED result is answered, not run again', async () => {

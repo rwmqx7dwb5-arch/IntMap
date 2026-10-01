@@ -35,6 +35,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname, resolve } from 'node:path';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -42,13 +43,12 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
 const settle = async () => { for (let i = 0; i < 6; i++) await tick(); };
 
 /* ══ THE APP'S OWN AI CORE, RUNNING ═══════════════════════════════════════════════════════════
-   js/ai-core.js is a plain script that hangs a factory on window — the same way index.html loads
-   it. `new Function` is how the other check files run these (a bare `export` would break them:
-   see #R443). Nothing here is a stub of the code under test: only the browser around it. */
-function harness({ serverCount = 0, respond, user = { id: '613271ce-0000-4000-8000-000000000000' } } = {}) {
+   js/ai-core.js exports its factory (module-graph): it is IMPORTED, fresh per harness, with the
+   browser around it installed as globals — its own imports (the language registry, the engine) are the
+   real modules. Nothing here is a stub of the code under test: only the browser around it. */
+async function harness({ serverCount = 0, respond, user = { id: '613271ce-0000-4000-8000-000000000000' } } = {}) {
   const calls = [];
   const win = {
-    IntMapModules: {},
     INTMAP_AI_PROXY: { url: 'https://vpekfwdpurzejrrmacac.supabase.co/functions/v1/ai-proxy' },
     SUPABASE_ANON_KEY: 'anon-key',
   };
@@ -71,17 +71,16 @@ function harness({ serverCount = 0, respond, user = { id: '613271ce-0000-4000-80
   win.sb = { auth: { async getSession() { return { data: { session: { access_token: 'jwt' } } }; } }, from() { return row(); } };
   const fetchStub = async (url, opts) => { calls.push({ url, opts }); return respond(url, opts); };
 
-  const load = (p) => new Function('window', 'document', 'location', 'localStorage', 'navigator', 'fetch', read(p))
-    (win, document, location, localStorage, {}, fetchStub);
-  load('js/lang-registry.js');
-  load('js/ai-core.js');
+  const { aiCore } = await importModule('js/ai-core.js', {
+    globals: { window: win, document, location, localStorage, navigator: {}, fetch: fetchStub },
+  });
 
   const aiUsage = { date: '', used: 0, limit: 10 };
   const HOST = {
     lang: 'jp', user, aiUsage, AI_FREE_DAILY: 10, aiButtonSyncers: [],
     openAuthModal() {}, t(k) { return k; },
   };
-  return { IM: win.IntMapModules.aiCore(HOST), HOST, aiUsage, calls, usage, win };
+  return { IM: aiCore(HOST), HOST, aiUsage, calls, usage, win };
 }
 
 const res = (status, body) => ({ status, ok: status >= 200 && status < 300, async json() { return JSON.parse(body); }, async text() { return body; } });
@@ -93,7 +92,7 @@ const LIMIT_JA = '本日の無料AI使用回数に達しました。';
 
 test('R447 ①a: a 429 IntMap did not write must not spend the reader’s day', async () => {
   /* what a rate limit in front of the Edge Function looks like: a 429 with no JSON at all */
-  const h = harness({ serverCount: 0, respond: async () => res(429, '<html><head><title>429 Too Many Requests</title></head></html>') });
+  const h = await harness({ serverCount: 0, respond: async () => res(429, '<html><head><title>429 Too Many Requests</title></head></html>') });
 
   const first = await askFails(h.IM, 'a');
   assert.notEqual(first, LIMIT_JA,
@@ -105,7 +104,7 @@ test('R447 ①a: a 429 IntMap did not write must not spend the reader’s day', 
 });
 
 test('R447 ①b: …and it must not silence the NEXT question', async () => {
-  const h = harness({ serverCount: 0, respond: async () => res(429, 'Too Many Requests') });
+  const h = await harness({ serverCount: 0, respond: async () => res(429, 'Too Many Requests') });
   await askFails(h.IM, 'a');
   const before = h.calls.length;
   const second = await askFails(h.IM, 'b');
@@ -118,13 +117,13 @@ test('R447 ①b: …and it must not silence the NEXT question', async () => {
 /* ══ ② ai-proxy's OWN TWO 429s ═══════════════════════════════════════════════════════════════ */
 
 test('R447 ②a: the daily-limit 429 is still believed, exactly', async () => {
-  const h = harness({ serverCount: 10, respond: async () => res(429, JSON.stringify({ error: 'limit', used: 10, limit: 10 })) });
+  const h = await harness({ serverCount: 10, respond: async () => res(429, JSON.stringify({ error: 'limit', used: 10, limit: 10 })) });
   assert.equal(await askFails(h.IM, 'a'), LIMIT_JA, 'a real limit 429 must still read as the daily limit');
   assert.equal(h.aiUsage.used, 10, 'and the number the server sent is the number the client keeps');
 });
 
 test('R447 ②b: the turn_calls 429 is not a bill the reader owes (#R318)', async () => {
-  const h = harness({ serverCount: 3, respond: async () => res(429, JSON.stringify({ error: 'turn_calls', used: 3, limit: 10, calls: 13 })) });
+  const h = await harness({ serverCount: 3, respond: async () => res(429, JSON.stringify({ error: 'turn_calls', used: 3, limit: 10, calls: 13 })) });
   const msg = await askFails(h.IM, 'a');
   assert.notEqual(msg, LIMIT_JA, 'a stuck repair loop must never read as "you are out of uses"');
   assert.ok(/試行が多く|too many tries/.test(msg), `got: ${msg}`);
@@ -135,7 +134,7 @@ test('R447 ②b: the turn_calls 429 is not a bill the reader owes (#R318)', asyn
 /* ══ ③ THE CURE THAT USED TO BE A RELOAD ═════════════════════════════════════════════════════ */
 
 test('R447 ③a: a stale-high mirror is re-read from the row before anybody is refused', async () => {
-  const h = harness({ serverCount: 2, respond: async () => res(200, JSON.stringify({ text: 'ok', used: 3, limit: 10 })) });
+  const h = await harness({ serverCount: 2, respond: async () => res(200, JSON.stringify({ text: 'ok', used: 3, limit: 10 })) });
   /* whatever put it there — a stale copy, a refunded use, a day boundary — the client believes
      it has nothing left while public.ai_usage says 2 of 10. */
   h.aiUsage.date = h.IM.aiToday(); h.aiUsage.used = 10;
@@ -148,7 +147,7 @@ test('R447 ③a: a stale-high mirror is re-read from the row before anybody is r
 });
 
 test('R447 ③b: the synchronous click gate refuses once, then repairs itself', async () => {
-  const h = harness({ serverCount: 2, respond: async () => res(200, JSON.stringify({ text: 'ok', used: 3, limit: 10 })) });
+  const h = await harness({ serverCount: 2, respond: async () => res(200, JSON.stringify({ text: 'ok', used: 3, limit: 10 })) });
   h.aiUsage.date = h.IM.aiToday(); h.aiUsage.used = 10;
   assert.equal(h.IM.aiGate(), false, 'aiGate() is called from click handlers and stays synchronous');
   await settle();
@@ -157,7 +156,7 @@ test('R447 ③b: the synchronous click gate refuses once, then repairs itself', 
 });
 
 test('R447 ③c: a genuine limit survives the re-read', async () => {
-  const h = harness({ serverCount: 10, respond: async () => res(200, JSON.stringify({ text: 'ok', used: 10, limit: 10 })) });
+  const h = await harness({ serverCount: 10, respond: async () => res(200, JSON.stringify({ text: 'ok', used: 10, limit: 10 })) });
   h.aiUsage.date = h.IM.aiToday(); h.aiUsage.used = 10;
   assert.equal(await askFails(h.IM, 'a'), LIMIT_JA, 'when the row agrees, the reader is still told the truth');
   assert.equal(h.calls.length, 0, 'and no use is spent finding that out');
@@ -168,7 +167,7 @@ test('R447 ③c: a genuine limit survives the re-read', async () => {
 test('R447 ④: no file carries its own copy of the quota rule', async () => {
   /* the asking form, RUN: it exists on the module (exported the way every other one is, #R169) and
      answers from the row — a stale-high mirror is re-read before it says «blocked» (③ owns the rest) */
-  const h = harness({ serverCount: 2, respond: async () => res(200, '{}') });
+  const h = await harness({ serverCount: 2, respond: async () => res(200, '{}') });
   assert.equal(typeof h.IM.aiQuotaBlocked, 'function', 'and the asking form must exist');
   h.aiUsage.date = h.IM.aiToday(); h.aiUsage.used = 10;
   assert.equal(await h.IM.aiQuotaBlocked(), false, 'aiQuotaBlocked must be exported, and ask the row before refusing');
@@ -194,7 +193,7 @@ test('R447 ④: no file carries its own copy of the quota rule', async () => {
 /* ══ ⑤ THE BODY IS KEPT ══════════════════════════════════════════════════════════════════════ */
 
 test('R447 ⑤: the 429 that could not be attributed leaves something to attribute it by', async () => {
-  const h = harness({ serverCount: 0, respond: async () => res(429, 'rate limit exceeded') });
+  const h = await harness({ serverCount: 0, respond: async () => res(429, 'rate limit exceeded') });
   await askFails(h.IM, 'a');
   const rec = h.win._aiLast429;
   assert.ok(rec, 'nothing was recorded — this round began with "we do not know which 429 arrived"');
@@ -202,7 +201,7 @@ test('R447 ⑤: the 429 that could not be attributed leaves something to attribu
   assert.equal(rec.error, null);
   assert.match(rec.body, /rate limit exceeded/, 'the body must be kept, not discarded by a failed r.json()');
 
-  const g = harness({ serverCount: 4, respond: async () => res(429, JSON.stringify({ error: 'turn_calls', used: 4, limit: 10, calls: 13 })) });
+  const g = await harness({ serverCount: 4, respond: async () => res(429, JSON.stringify({ error: 'turn_calls', used: 4, limit: 10, calls: 13 })) });
   await askFails(g.IM, 'a');
   assert.equal(g.win._aiLast429.attributed, true);
   assert.equal(g.win._aiLast429.error, 'turn_calls');

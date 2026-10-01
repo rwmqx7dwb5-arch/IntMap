@@ -35,16 +35,23 @@ import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const R = (p) => readLF(join(ROOT, p));
 
-/* js/history.js as the browser runs it: the tuple maker is the real one, so the rows carry real arrays. */
-function histStates() {
-  const win = { IntMapModules: {}, IntMapLang: { pickArgs: () => function () { return Array.prototype.slice.call(arguments); } } };
-  new Function('window', R('js/history.js'))(win);
+/* js/history.js as the browser runs it: the tuple maker is the real one, so the rows carry real arrays.
+   (module-graph) IMPORTED, fresh per call: the tuple maker is handed at its lang-registry.js import
+   edge, and histStates is the module's exported factory. */
+async function histStates() {
+  const win = {};
+  win.window = win;
+  const M = await importModule('js/history.js', {
+    globals: { window: win },
+    mocks: { 'js/lang-registry.js': { IntMapLang: { pickArgs: () => function () { return Array.prototype.slice.call(arguments); } } } },
+  });
   assert.equal(typeof win.IntMapHistName, 'function', 'the shared tuple reader is gone from js/history.js');
-  return { win, HS: win.IntMapModules.histStates({}) };
+  return { win, HS: M.histStates({}) };
 }
 
 /* Lift a top-level `function name(...){…}` out of a file, comments already stripped — the shared,
@@ -52,8 +59,8 @@ function histStates() {
 const lift = (code, name) => liftFunction(code, name);
 
 /* ── ① the panel's fallback record carries the state's real name, in both slots ────────────────── */
-test('R429 ①: the compare panel names a former state instead of writing 「—」 over it', () => {
-  const { win, HS } = histStates();
+test('R429 ①: the compare panel names a former state instead of writing 「—」 over it', async () => {
+  const { win, HS } = await histStates();
   const CODE = codeOnly(R('js/stats-compare.js'));
   const mini = new Function('window', '_histEntry',
     'return (' + lift(CODE, '_histMini') + ');',
@@ -77,8 +84,8 @@ test('R429 ①: the compare panel names a former state instead of writing 「—
 });
 
 /* ── ② …and the symptom itself: what cName() prints for a state countryStats has dropped ──────── */
-test('R429 ②: back at Now, with the entry gone from countryStats, the label is still the state', () => {
-  const { win, HS } = histStates();
+test('R429 ②: back at Now, with the entry gone from countryStats, the label is still the state', async () => {
+  const { win, HS } = await histStates();
   const CODE = codeOnly(R('js/stats-compare.js'));
   /* the two shipped lines that produce the label, wired to an EMPTY countryStats — which is exactly
      what js/time-countries.js restore() leaves behind while the panel re-renders 380 ms later */

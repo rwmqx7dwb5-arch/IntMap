@@ -16,22 +16,25 @@
  * ==========================================================================*/
 import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) the World Bank's clock, stated once — the three 20 s written here by hand read it now */
 import { readWithin } from './fetch-deadline.js';
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.statsCompare=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function statsCompare(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R172) THROUGH IntMapGeoEngine — this module no longer names the renderer. */
-  const _GE=()=>window.IntMapGeoEngine;
+  const _GE=()=>IntMapGeoEngine;
   const _LY=()=>{ const E=_GE(); return E?E.layers:null; };
   const _EV=()=>{ const E=_GE(); return E?E.events:null; };
   const _CM=()=>{ const E=_GE(); return E?E.camera:null; };
   const cName=HOST.cName, countryStats=HOST.countryStats, imToast=HOST.imToast, renderCompareFixed=HOST.renderCompareFixed, renderStats=HOST.renderStats, resolveCountryId=HOST.resolveCountryId, searchVal=HOST.searchVal;
   return (function(){
-    const LL=window.IntMapLang.pick(()=>HOST.lang);
+    const LL=IntMapLang.pick(()=>HOST.lang);
     /* (#R241) the ARRAY form of the language helper — see `pickArgs` in js/lang-registry.js.
        These tables held their translations as a bare array indexed by the language's position:
        no inline-table fallback (so fr/ko/zh got element 0 for ever) and invisible to every
        translation instrument. Written as a call, they are ordinary L(…) sites to the audits. */
-    const LA=window.IntMapLang.pickArgs();
+    const LA=IntMapLang.pickArgs();
     const esc=s=>window.IntMapSafe.html(s);
     const PAL=['#0a84ff','#ff9500','#34c759','#bf5af2','#ff453a','#5ac8fa','#ffd60a','#ff2d92','#30b0c7','#a2845e'];   /* (#R71) up to 10 countries */
     function short(v){ const a=Math.abs(v); if(a>=1e12) return (v/1e12).toFixed(2)+'T'; if(a>=1e9) return (v/1e9).toFixed(2)+'B'; if(a>=1e6) return (v/1e6).toFixed(2)+'M'; if(a>=1e3) return (v/1e3).toFixed(1)+'k'; return (Math.round(v*100)/100).toLocaleString(); }
@@ -190,7 +193,7 @@ window.IntMapModules.statsCompare=function(HOST){
        same null. The floor is the kernel's (js/chronos.js) and is read from it. Years the sources cannot
        reach are still answered honestly further down: Maddison decides GDP/population and the World Bank
        series simply have no row before 1960. */
-    function _ttYear(){ try{ const T=window.IntMapTime; if(!T||T.isLive()) return null; const y=T.year(), now=new Date().getFullYear(), lo=(+T.min||1850); return (y>=lo&&y<now)?y:null; }catch(_){ const y=window._imTimeYear, lo=((window.IntMapTime&&+window.IntMapTime.min)||1850); return (y&&y>=lo)?y:null; } }
+    function _ttYear(){ try{ const T=IntMapTime; if(!T||T.isLive()) return null; const y=T.year(), now=new Date().getFullYear(), lo=(+T.min||1850); return (y>=lo&&y<now)?y:null; }catch(_){ const y=window._imTimeYear, lo=((IntMapTime&&+IntMapTime.min)||1850); return (y&&y>=lo)?y:null; } }
     /* (#R94e) GDP & population come from Maddison (real 2011 int$) while travelling, matching the Countries tab. */
     function _madField(ind){ return (ind&&ind.k==='gdp')?'gdp':((ind&&ind.k==='pop')?'pop':((ind&&ind.k==='gdppc')?'gdppc':null)); }
     function _madOne(M,mf,cd,year){ if(mf==='gdp'){ const g=M.gdpBil(cd,year); return g!=null?g*1e9:null; } if(mf==='pop') return M.popN(cd,year); return M.gdppc(cd,year); }   /* gdppc = real 2011 int$ per capita (unscaled) */
@@ -747,7 +750,7 @@ window.IntMapModules.statsCompare=function(HOST){
          The real list replaces it the moment a series arrives (`_tsAvailYears`), and the series that
          reach furthest back are the Maddison ones, which start where the clock does. */
       if(!ys.length){ /* before any series has loaded: fall back to a full floor→now list so the control isn't empty */
-        let o=''; const nowY=new Date().getFullYear(), lo=((window.IntMapTime&&+window.IntMapTime.min)||1850);
+        let o=''; const nowY=new Date().getFullYear(), lo=((IntMapTime&&+IntMapTime.min)||1850);
         for(let y=nowY;y>=lo;y--) o+='<option value="'+y+'"'+(String(selV)===String(y)?' selected':'')+'>'+y+'</option>'; return o; }
       return ys.map(y=>'<option value="'+y+'"'+(String(selV)===String(y)?' selected':'')+'>'+y+'</option>').join(''); }
     function _tsRangeHtml(){ return '<span class="scp-tsl">'+LL('Years','期間','Zeitraum','Годы','Años')+'</span>'
@@ -983,7 +986,7 @@ window.IntMapModules.statsCompare=function(HOST){
     try{ if(_EV()) _EV().on('styledata',()=>{ if(codes&&codes.length&&document.getElementById('scp-view')){ setTimeout(()=>{ try{ if(document.getElementById('scp-view')) paintOnMap(); }catch(_){} },160); } }); }catch(_){}
     /* (#R94) re-render the OPEN comparison when the master clock moves — bars/table/focus follow the year. */
     let _ttReb=null;
-    try{ if(window.IntMapTime) window.IntMapTime.on(()=>{ if(host&&document.getElementById('scp-view')){ clearTimeout(_ttReb); _ttReb=setTimeout(()=>{ try{ render(); }catch(_){} },380); } }); }catch(_){}
+    try{ if(IntMapTime) IntMapTime.on(()=>{ if(host&&document.getElementById('scp-view')){ clearTimeout(_ttReb); _ttReb=setTimeout(()=>{ try{ render(); }catch(_){} },380); } }); }catch(_){}
     /* (#R105) re-localize the OPEN comparison immediately on a language change (was stuck until reload in ws mode).
        ensureView() returns the EXISTING host without rebuilding its header (title/back/modes), so we drop the host
        first → render() rebuilds it fresh in the new language (state — codes/sel/mode — is preserved in module vars). */
@@ -1017,4 +1020,4 @@ window.IntMapModules.statsCompare=function(HOST){
     function state(){ try{ return { open:!!(host&&host.isConnected&&document.getElementById('scp-view')), codes:codes.slice(), indicators:(indOrder||[]).slice(), mode, sources:Object.assign({},srcSel) }; }catch(_){ return null; } }
     return { open, paintOnMap, previewOnMap, clearMap, toggleCountry, indKeys:()=>IND.map(i2=>i2.k), indLabel, state };
   })();
-};
+}

@@ -33,13 +33,15 @@
  *  property is not absent, and the opacity SLIDER overwrites any `case` expression in fill-opacity
  *  the moment it initialises (measured: `"0.85"`), so «absent» has to live in the colour's alpha.
  * ==========================================================================*/
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.elections = function (HOST) {
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function elections(HOST) {
   /* (#R251) the array form of the language helper — a bare array literal is invisible to the i18n
      audit, so every language past the two it happened to list would silently read English. */
-  const LA = window.IntMapLang.pickArgs();
-  const L = window.IntMapLang.pick(() => HOST.lang);
-  const GE = () => window.IntMapGeoEngine;
+  const LA = IntMapLang.pickArgs();
+  const L = IntMapLang.pick(() => HOST.lang);
+  const GE = () => IntMapGeoEngine;
   const IDS = ['elec-fill', 'elec-line'];
   const SRC = 'elec-src';
   const CB = 'dl-elect';
@@ -65,7 +67,7 @@ window.IntMapModules.elections = function (HOST) {
      js/lang-registry.js already holds both spellings (each row's `alias`), so it is asked. */
   function nm(t) {
     if (!t) return '';
-    const R = window.IntMapLang;
+    const R = IntMapLang;
     const want = R.normalise(String(HOST.lang || 'en'));
     for (const k of Object.keys(t)) {
       if (k === 'native') continue;
@@ -80,7 +82,7 @@ window.IntMapModules.elections = function (HOST) {
     return (t.native && t.native !== main) ? t.native : '';
   }
 
-  const fmt = (n) => { try { return Number(n).toLocaleString(window.IntMapLang.locale(HOST.lang, 'en-US')); } catch (_) { return String(n); } };
+  const fmt = (n) => { try { return Number(n).toLocaleString(IntMapLang.locale(HOST.lang, 'en-US')); } catch (_) { return String(n); } };
   const partyOf = (pid) => (index && index.parties && index.parties[pid]) || null;
   const colourOf = (pid) => { const p = partyOf(pid); return (p && p.col) || null; };
   const partyName = (pid) => { const p = partyOf(pid); return p ? nm(p.n) : String(pid || ''); };
@@ -491,4 +493,4 @@ window.IntMapModules.elections = function (HOST) {
     select: (id) => select(id)
   };
   return window.IntMapElections;
-};
+}

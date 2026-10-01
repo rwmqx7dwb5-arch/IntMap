@@ -43,6 +43,7 @@
  *      node scripts/helper-ternary-codemod.mjs --check     # exit non-zero if any convertible pair is left
  * ==========================================================================*/
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { ensureImport } from './module-graph.mjs';   /* (module-graph) what this writes imports the registry */
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
@@ -145,13 +146,13 @@ for (const f of files) {
     const row = dict[en];
     if (!row || !row.de || !row.ru || !row.es) { missing.add(en); left++; return; }
     edits.push({ start: n.start, end: n.end,
-      text: 'window.IntMapLang.t(' + acc + ',' + q(en) + ',' + q(ja) + ',' + q(row.de) + ',' + q(row.ru) + ',' + q(row.es) + ')' });
+      text: 'IntMapLang.t(' + acc + ',' + q(en) + ',' + q(ja) + ',' + q(row.de) + ',' + q(row.ru) + ',' + q(row.es) + ')' });
   });
   if (DUMP || CHECK || !edits.length) { if (CHECK) left += edits.length; continue; }
   edits.sort((a, b) => b.start - a.start);
   let out = src0;
   for (const e of edits) out = out.slice(0, e.start) + e.text + out.slice(e.end);
-  writeFileSync(join(JS, f), out);
+  writeFileSync(join(JS, f), ensureImport(out, 'js/' + f, 'IntMapLang', 'js/lang-registry.js'));
   converted += edits.length;
   console.log('  ' + f + ' — ' + edits.length + ' site(s)');
 }

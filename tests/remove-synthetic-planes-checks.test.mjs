@@ -34,6 +34,7 @@ import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { browserFiles, discover } from '../scripts/outbound-hosts.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -59,7 +60,7 @@ function lift(file, names) {
 let booted = null;
 async function page() {
   if (booted) return booted;
-  const w = { IntMapModules: {}, addEventListener() { }, removeEventListener() { } };
+  const w = { addEventListener() { }, removeEventListener() { } };
   globalThis.window = w;
   /* the worker the real client talks to: it answers the protocol src/aviation-worker.js speaks, and
      each poll is answered by whatever the test says the feed is doing right now */
@@ -82,19 +83,22 @@ async function page() {
   globalThis.Worker = FakeWorker;
   await import(pathToFileURL(join(ROOT, 'js/plane-glyph.js')).href);
   await import(pathToFileURL(join(ROOT, 'src/aviation-worker-client.js')).href);
-  await import(pathToFileURL(join(ROOT, 'js/aviation-live.js')).href);
   /* the renderer: it records every aircraft buffer it is handed */
   const drawn = [];
-  w.IntMapGeoEngine = {
+  const engine = {
     hasRenderer: () => true,
     layers: { hasAircraftCloud: () => false, addAircraftCloud: () => true,
       setAircraftCloud: (_id, o) => { if (o && o.buffers) drawn.push(o); }, removeAircraftCloud() { } },
     camera: { getZoom: () => 5, getBounds: () => ({ getWest: () => 0, getSouth: () => 40, getEast: () => 20, getNorth: () => 55 }) },
     events: { on() { } },
   };
+  /* (module-graph) js/aviation-live.js imports IntMapGeoEngine and exports its factory: the recording
+     engine is handed at that import edge, and the data-layers fragment's GE() reads the same object */
+  w.IntMapGeoEngine = engine;
+  const { aviationLive } = await importModule('js/aviation-live.js', { globals: { window: w }, mocks: { 'js/geo-engine.js': { IntMapGeoEngine: engine } } });
   w.SUPABASE_URL = 'https://example-ref.supabase.co';
   const { makeLayerState } = await import(pathToFileURL(join(ROOT, 'js/layer-state.js')).href);
-  booted = { w, script, seen, drawn, makeLayerState };
+  booted = { w, script, seen, drawn, makeLayerState, aviationLive };
   return booted;
 }
 
@@ -109,10 +113,10 @@ function dataLayersPlanes(w, layerState) {
 }
 
 test('① a feed that refuses every request is said on the row, once — and no aircraft is drawn', async () => {
-  const { w, script, drawn, makeLayerState } = await page();
+  const { w, script, drawn, makeLayerState, aviationLive } = await page();
   const told = [];
   const layerState = makeLayerState({ doc: null, notify: { show: (s) => told.push(s) }, lang: () => 'en', name: () => 'Live aircraft traffic' });
-  w.IntMapAviation = w.IntMapModules.aviationLive({});
+  w.IntMapAviation = aviationLive({});
   w.IntMapLazy = { need: async () => true };
   const DL = dataLayersPlanes(w, layerState);
   script.poll = () => ({ type: 'error', error: 'http_403', reason: 'http', status: 403 });
@@ -153,13 +157,13 @@ test('① a feed that refuses every request is said on the row, once — and no 
 });
 
 test('② a platform that cannot start rejects the row\'s request with a reason, and the row says so', async () => {
-  const { w, makeLayerState } = await page();
+  const { w, makeLayerState, aviationLive } = await page();
   const told = [];
   const layerState = makeLayerState({ doc: null, notify: { show: (s) => told.push(s) }, lang: () => 'en', name: () => 'Live aircraft traffic' });
   /* the lazy module arrived, but the renderer cannot take the GPU cloud (no WebGL2 adapter) */
   const saved = w.IntMapGeoEngine.layers.addAircraftCloud;
   w.IntMapGeoEngine.layers.addAircraftCloud = () => false;
-  w.IntMapAviation = w.IntMapModules.aviationLive({});
+  w.IntMapAviation = aviationLive({});
   w.IntMapLazy = { need: async () => true };
   const DL = dataLayersPlanes(w, layerState);
   /* the row's path: toggleLayer's `req` → js/layer-rows.js layerInflight.track → layerState.request */

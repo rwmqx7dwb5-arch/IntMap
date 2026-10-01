@@ -22,6 +22,7 @@ import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -139,7 +140,9 @@ test('#R218 ⑤ …the two pages carry no prose of their own any more', () => {
   }
   /* the registry is still generated from ONE list, not transcribed (#R212's invariant) */
   const sl = read('js/sources-list.js');
-  assert.match(sl, /window\.IntMapRefData && window\.IntMapRefData\.dataSources/);
+  /* (module-graph) the list is reached through the registry's own export, not off `window` */
+  assert.match(sl, /^import \{ IntMapRefData \} from '\.\/reference-data\.js';/m);
+  assert.match(sl, /IntMapRefData && IntMapRefData\.dataSources/);
   assert.equal(/dataSources\s*=\s*\[/.test(sl), false, 'the page carries its own copy of the list');
 });
 /* ⚠ (#R246) FIVE LANGUAGES BECAME NINE, AND THE ENGLISH MOVED. The registry used to carry
@@ -149,12 +152,14 @@ test('#R218 ⑤ …the two pages carry no prose of their own any more', () => {
    description is now `sourceUse` in its own lazily-loaded pages file, English included, and the
    registry carries only the name and the URL (~50 kB out of the eager bundle). */
 test('#R218 ⑤ …and every registry entry has a description in all nine languages', async () => {
+  /* (module-graph) the registry is IMPORTED (it is an ES module that exports IntMapRefData); the nine
+     pages.<lg>.js documents are still classic scripts that publish on `window`, so they run in a vm */
   const ctx = { console };
   ctx.window = ctx; vm.createContext(ctx);
   const CODES = ['en', 'ja', 'de', 'ru', 'es', 'fr', 'ko', 'zh-hant', 'zh-hans'];
-  vm.runInContext(read('js/reference-data.js'), ctx, { filename: 'js/reference-data.js' });
+  const { IntMapRefData } = await importModule('js/reference-data.js');
   for (const c of CODES) vm.runInContext(read(`js/locales/pages.${c}.js`), ctx, { filename: c });
-  const list = ctx.window.IntMapRefData.dataSources;
+  const list = IntMapRefData.dataSources;
   assert.ok(list.length > 80, 'the registry shrank');
   for (const s of list) {
     assert.equal(s.use, undefined, `${s.n} still carries prose in the eager registry`);
@@ -173,7 +178,7 @@ test('#R218 ⑤ …and the app fetches those descriptions only when it needs the
   const s = code('js/app-body.js');
   /* (#R246) the fetch moved to js/reference-data.js `ensureDocs`, so the in-app dialog and
      sources.html share ONE implementation; app-body just asks for it when the dialog opens. */
-  assert.match(s, /window\.IntMapRefData\.ensureDocs\(currentLang,paint\)/,
+  assert.match(s, /IntMapRefData\.ensureDocs\(currentLang,paint\)/,
     'the Sources dialog does not lazily load the translated descriptions');
   assert.match(code('js/reference-data.js'), /sc\.src='\.\/js\/locales\/pages\.'\+c\+'\.js'/,
     'and the loader is the registry\'s');
@@ -211,7 +216,7 @@ test('R223 ⑩ Traditional Chinese is registered, complete, and appended at the 
   assert.match(read('js/locales/_langs.js'), /"zh"/, 'zh is in the generated language list');
   /* the file itself: both tables, and no call site was touched to get them */
   const zh = read('js/locales/ui.zh.js');
-  const ast = parse(zh, { ecmaVersion: 2022 });
+  const ast = parse(zh, { ecmaVersion: 2022, sourceType: 'module' });   /* (module-graph) the locale imports the registry */
   let ui = 0, inl = 0;
   walk.simple(ast, { Property(n) {
     const k = n.key && (n.key.name || n.key.value);
@@ -226,7 +231,7 @@ test('R223 ⑩ Traditional Chinese is registered, complete, and appended at the 
      a language stops keeping up. */
   const enUi = (() => {
     let n = 0;
-    walk.simple(parse(read('js/locales/ui.en.js'), { ecmaVersion: 2022 }), { Property(p) {
+    walk.simple(parse(read('js/locales/ui.en.js'), { ecmaVersion: 2022, sourceType: 'module' }), { Property(p) {
       const k = p.key && (p.key.name || p.key.value);
       if (k === 'ui' && p.value.type === 'ObjectExpression') n = p.value.properties.length;
     } });
@@ -314,7 +319,8 @@ test('R232 i18n: the locale directory IS the language list, and the generated co
 
   /* the two reading pages get the same list, because they have no bundler */
   for (const p of ['sources.html', 'science.html']) {
-    assert.match(read(p), /<script src="\.\/js\/locales\/_langs\.js"><\/script>/,
+    /* (module-graph) the static pages load their scripts as modules now */
+    assert.match(read(p), /<script type="module" src="\.\/js\/locales\/_langs\.js"><\/script>/,
       `${p} loads the generated language list`);
   }
   const { STATIC_ASSETS } = JSON.parse(JSON.stringify({ STATIC_ASSETS: [] }));   /* shape only */
@@ -326,7 +332,9 @@ test('R232 i18n: French and Korean exist, and cost nothing but their own files',
   for (const c of ['fr', 'ko']) {
     assert.ok(existsSync(new URL(`js/locales/ui.${c}.js`, ROOT)), `js/locales/ui.${c}.js`);
     const src = read(`js/locales/ui.${c}.js`);
-    assert.match(src, new RegExp(`window\\.IntMapLang\\.define\\('${c}',`), 'it registers itself');
+    /* (module-graph) it registers itself on the registry it IMPORTS, not on one found on `window` */
+    assert.match(src, /^import \{ IntMapLang \} from '\.\.\/lang-registry\.js';/m, 'it imports the registry');
+    assert.match(src, new RegExp(`^IntMapLang\\.define\\('${c}',`, 'm'), 'it registers itself');
     assert.match(src, /inline:\s*\{/, 'both tables are present');
   }
   /* ⚠ THE POINT OF THE ROUND: neither language is named anywhere else. */
@@ -403,7 +411,9 @@ test('R236 i18n: t(…) call sites do not leave a language slot empty', () => {
   const s = code(read('js/countries-ui.js'));
   assert.doesNotMatch(s, /IntMapLang\.t\([^)]*,\s*undefined\s*,/,
     'no t(…) site passes undefined for a language slot');
-  assert.doesNotMatch(s, /HOST\.lang==='de'\?'[^']*':window\.IntMapLang\.t\(/,
+  /* (module-graph) both spellings — the registry is an imported binding now, and a check anchored on
+     `window.` alone would pass vacuously */
+  assert.doesNotMatch(s, /HOST\.lang==='de'\?'[^']*':(?:window\.)?IntMapLang\.t\(/,
     'no language is hoisted in front of the call it belongs inside');
   for (const es of ['Solo este país', 'Series temporales', 'Informe de IA', 'Comparar'])
     assert.ok(s.includes(es), 'the country panel button has Spanish: ' + es);
@@ -419,7 +429,7 @@ test('R236 i18n: the Köppen criteria are given in all five languages', () => {
   const s = code(read('js/data-layers.js'));
   /* it used to be a two-column {en, jp} table picked with a ternary — neither instrument saw it */
   assert.doesNotMatch(s, /HOST\.lang==='jp'\?info\.jp:info\.en/, 'the two-language pick is gone');
-  assert.match(s, /function koppenCriteria\(code\)\{[\s\S]*?const T5=\(a\)=>window\.IntMapLang\.t\(/,
+  assert.match(s, /function koppenCriteria\(code\)\{[\s\S]*?const T5=\(a\)=>IntMapLang\.t\(/,
     'the criteria go through the registry');
   /* all nineteen rows carry five columns.
      ⚠ (#R248) UPDATED FOR THE CONTAINER, NOT FOR THE COUNT. These rows were array LITERALS; the
@@ -553,7 +563,7 @@ test('r247 ⑤ the calendar and the Wikipedia widgets answer from the registry, 
   assert.match(r, /WC\.date\(dow, \{ weekday: 'narrow'/, 'the weekday initials come from CLDR');
   const w = code(read('js/widget-defs-data.js'));
   assert.match(w, /function wikiLangs\(\)/, 'and the Wikipedia edition is derived from the reader\'s own tag');
-  assert.match(w, /window\.IntMapLang\.htmlTag\(WC\.lang\(\)\)/, '…from the registry, so a new language needs no edit here');
+  assert.match(w, /IntMapLang\.htmlTag\(WC\.lang\(\)\)/, '…from the registry, so a new language needs no edit here');
   assert.doesNotMatch(w, /\['ja','en'\]/, 'the two-language list is gone');
 });
 }

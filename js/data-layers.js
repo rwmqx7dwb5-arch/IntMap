@@ -21,6 +21,9 @@ import { jsonWithin, readWithin, untilObserved, isUnobserved } from './fetch-dea
 /* (layer-manifest) WHICH LAYERS EXIST, their shelves and their defaults are js/layer-manifest.js. The five lists
    below and reorganizeLayerPanel's taxonomy used to be written out here by hand; they are derived now. */
 import { defaultLayers, defaultOn, basicRows, basicLayers, hiddenRows, layerGroups, betaKeys, layerFor } from './layer-manifest.js';
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 /* ══ (fetch-deadline-layer) THE READS A ROW MAKES, FOR THE OTHER READERS OF THE SAME DATA ══════════════
    js/layer-previews.js drew the cable and radar thumbnails from reads of its own: a bare `fetch` with no
    clock, and — for the cables — the host FIRST and our relay second, the order cable-relay-first had just
@@ -163,16 +166,16 @@ window.IntMapBaseDisplay=(function(){
     if(rows().indexOf(t.id)<0) return; reconcileSoon(); }catch(_){} },true); }catch(_){}
   return { get, set, rows, defOn, matches, reconcile, MODES };
 })();
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.dataLayers=function(HOST){
-  const LDL=window.IntMapLang.pick(()=>HOST.lang);
+
+export function dataLayers(HOST){
+  const LDL=IntMapLang.pick(()=>HOST.lang);
   /* (#R241) the ARRAY form — see `pickArgs` in js/lang-registry.js. */
-  const LA=window.IntMapLang.pickArgs();
+  const LA=IntMapLang.pickArgs();
   /* (#R178) "have I already wired this hover / click?" — module state, not renderer state. These three
      were properties hung on the map object itself (map.__choroHover / __natoHover / __euHover), which
      is both invisible to anyone reading this file and something no other engine would carry. */
   const _hoverWired={}; let _natoHoverWired=false, _euHoverWired=false;
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const _collapseGroup=HOST._collapseGroup, _imTouchPrimary=HOST._imTouchPrimary, addCountryLayers=HOST.addCountryLayers, cName=HOST.cName, convTempText=HOST.convTempText, countryStats=HOST.countryStats, ensureMapTooltip=HOST.ensureMapTooltip, ensureTerrainSource=HOST.ensureTerrainSource, escapeHtml=HOST.escapeHtml, fmtPc=HOST.fmtPc, fmtTemp=HOST.fmtTemp, i18n=HOST.i18n, imToast=HOST.imToast, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, positionTooltip=HOST.positionTooltip, renderCoordReadout=HOST.renderCoordReadout, satToast=HOST.satToast, t=HOST.t;
   /* ══ ⚠⚠ (#R668) 「携帯か」 IS A QUESTION ABOUT THE DEVICE, AND `isMobile()` IS A 768 px MEDIA QUERY ══
@@ -559,8 +562,8 @@ window.IntMapModules.dataLayers=function(HOST){
     function makeLegend(id,bottomPx,title,gradient,labels,hint){
       const el=document.createElement('div'); el.className='data-legend'; el.id='data-legend-'+id;
       el.style.bottom=bottomPx+'px';
-      const noData=(['hdi','dem','pop','gdppc','tfr','milSpend','milSpendGDP'].includes(id))?`<div style="display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10px;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;border-radius:3px;background:#9aa0a6;border:1px solid rgba(0,0,0,0.12);"></span>${window.IntMapLang.t(HOST.lang,'No data','データなし','Keine Daten','Нет данных','Sin datos')}</div>`:'';
-      el.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="${id}" title="${t('close')}">×</button><h4>${title}</h4><div class="dl-bar" style="background:${gradient};"></div><div class="dl-scale"><span>${labels[0]}</span><span>${labels[1]}</span></div>${noData}${hint?`<div class="dl-hint">${hint}</div>`:''}${_legendDesc(id)}`;
+      const noData=(['hdi','dem','pop','gdppc','tfr','milSpend','milSpendGDP'].includes(id))?`<div style="display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10px;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;border-radius:3px;background:#9aa0a6;border:1px solid rgba(0,0,0,0.12);"></span>${IntMapLang.t(HOST.lang,'No data','データなし','Keine Daten','Нет данных','Sin datos')}</div>`:'';
+      el.innerHTML=`<span class="dl-drag" title="${IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="${id}" title="${t('close')}">×</button><h4>${title}</h4><div class="dl-bar" style="background:${gradient};"></div><div class="dl-scale"><span>${labels[0]}</span><span>${labels[1]}</span></div>${noData}${hint?`<div class="dl-hint">${hint}</div>`:''}${_legendDesc(id)}`;
       mc.appendChild(el);
       el.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
       /* Drag (mouse + touch) is wired centrally by wireDrag() once it is defined below, so every
@@ -611,24 +614,24 @@ window.IntMapModules.dataLayers=function(HOST){
         row.querySelector('.dl-clockyear').addEventListener('change',(e)=>{
           const v=e.target.value;
           if(!e.target.checkValidity()){ e.target.reportValidity(); row._imSyncClockYear(); return; }
-          try{ if(v==='') window.IntMapTime.setNow({source:'layer-legend'});
-               else window.IntMapTime.setYear(+v,{source:'layer-legend'}); }catch(_){} });
+          try{ if(v==='') IntMapTime.setNow({source:'layer-legend'});
+               else IntMapTime.setYear(+v,{source:'layer-legend'}); }catch(_){} });
         row.querySelector('.dl-clocknow').addEventListener('click',()=>{
-          try{ window.IntMapTime.setNow({source:'layer-legend'}); }catch(_){} });
+          try{ IntMapTime.setNow({source:'layer-legend'}); }catch(_){} });
       }
-      const nowTxt=window.IntMapLang.t(HOST.lang,'Now','現在','Jetzt','Сейчас','Ahora');
-      row.querySelector('.dl-clocklbl').textContent=window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año');
+      const nowTxt=IntMapLang.t(HOST.lang,'Now','現在','Jetzt','Сейчас','Ahora');
+      row.querySelector('.dl-clocklbl').textContent=IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año');
       const sel=row.querySelector('.dl-clockyear');
       sel.min=String(min); sel.max=String(max); sel.placeholder=nowTxt;
       sel.setAttribute('aria-label',row.querySelector('.dl-clocklbl').textContent);
       row.querySelector('.dl-clocknow').textContent=nowTxt;
-      const sync=()=>{ let y=null; try{ y=window.IntMapTime.isLive()?null:window.IntMapTime.year(); }catch(_){}
+      const sync=()=>{ let y=null; try{ y=IntMapTime.isLive()?null:IntMapTime.year(); }catch(_){}
         sel.value=(y!=null&&y>=min&&y<=max)?String(y):''; };
       sync();
       row._imSyncClockYear=sync;
       /* One subscription discovers current rows. A closure per row retained every removed
          legend across language changes, including its entire old option tree. */
-      if(!_legendClockSubscribed){ try{ window.IntMapTime.on(_syncLegendClockRows); _legendClockSubscribed=true; }catch(_){} }
+      if(!_legendClockSubscribed){ try{ IntMapTime.on(_syncLegendClockRows); _legendClockSubscribed=true; }catch(_){} }
       return row; }
     try{ window._legendClockYear=legendClockYear; }catch(_){}
     /* (#R110) the core data-legends bake `currentLang` at construction, so a LANGUAGE CHANGE left already-shown
@@ -640,17 +643,17 @@ window.IntMapModules.dataLayers=function(HOST){
     let lgdHDI,lgdDem,lgdPop,lgdNATO,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,lgdEEZ,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdWind;
     function buildCoreLegends(){
       CORE_LEGEND_IDS.forEach(id=>{ const e=document.getElementById('data-legend-'+id); if(e) e.remove(); });   /* drop the old-language elements before rebuilding (no duplicate ids) */
-    lgdHDI=makeLegend('hdi',140,(HOST.lang==='jp'?'HDI':'HDI'),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#a6d96a,#1a9850)',['0.45','0.95'], window.IntMapLang.t(HOST.lang,'2022 UNDP','2022 国連UNDP','2022 UNDP','2022 ПРООН','2022 PNUD'));
-    lgdDem=makeLegend('dem',140,(window.IntMapLang.t(HOST.lang,'Democracy Index','民主主義指数','Demokratieindex','Индекс демократии','Índice de democracia')),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#74add1,#313695)',['1','10'], HOST.lang==='jp'?'2023 EIU':'2023 EIU');
-    lgdPop=makeLegend('pop',140,(window.IntMapLang.t(HOST.lang,'Pop. density','人口密度','Bevölkerungsdichte','Плотность населения','Densidad de población')),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',['2','3000+'], HOST.lang==='jp'?'per km²':'per km²');
-    lgdNATO=makeLegend('nato',140,'NATO',`linear-gradient(to right,#0a3d91,#1e63ff)`,[window.IntMapLang.t(HOST.lang,'Member','加盟国','Mitglied','Член','Miembro'),''],window.IntMapLang.t(HOST.lang,'32 members','32か国','32 Mitglieder','32 членов','32 miembros'));
+    lgdHDI=makeLegend('hdi',140,(HOST.lang==='jp'?'HDI':'HDI'),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#a6d96a,#1a9850)',['0.45','0.95'], IntMapLang.t(HOST.lang,'2022 UNDP','2022 国連UNDP','2022 UNDP','2022 ПРООН','2022 PNUD'));
+    lgdDem=makeLegend('dem',140,(IntMapLang.t(HOST.lang,'Democracy Index','民主主義指数','Demokratieindex','Индекс демократии','Índice de democracia')),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#74add1,#313695)',['1','10'], HOST.lang==='jp'?'2023 EIU':'2023 EIU');
+    lgdPop=makeLegend('pop',140,(IntMapLang.t(HOST.lang,'Pop. density','人口密度','Bevölkerungsdichte','Плотность населения','Densidad de población')),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',['2','3000+'], HOST.lang==='jp'?'per km²':'per km²');
+    lgdNATO=makeLegend('nato',140,'NATO',`linear-gradient(to right,#0a3d91,#1e63ff)`,[IntMapLang.t(HOST.lang,'Member','加盟国','Mitglied','Член','Miembro'),''],IntMapLang.t(HOST.lang,'32 members','32か国','32 Mitglieder','32 членов','32 miembros'));
     /* (#R15b / #38) Legends the value-scale layers were missing — choropleths (GDP pc, fertility, military
        spend $B & %GDP) and the snow / aerosol / night-lights rasters. They auto-gain an opacity slider via
        ensureLegendOpacity (their ids exist in `opacities`), moving that control onto the legend too. */
-    lgdGdppc=makeLegend('gdppc',140,(window.IntMapLang.t(HOST.lang,'GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу населения','PIB per cápita')),'linear-gradient(to right,#fff7ec,#fee8c8,#fdbb84,#fc8d59,#e34a33,#7f0000)',['$1k','$90k+'], window.IntMapLang.t(HOST.lang,'USD, nominal','名目・米ドル','USD, nominal','долл. США, номинал','USD, nominal'));
-    lgdTfr=makeLegend('tfr',140,(window.IntMapLang.t(HOST.lang,'Total fertility rate','合計特殊出生率','Geburtenrate (TFR)','Суммарный коэффициент рождаемости','Tasa de fecundidad total')),'linear-gradient(to right,#2c7fb8,#7fcdbb,#ffffb2,#fe9929,#cc4c02)',['1.0','6.5+'], window.IntMapLang.t(HOST.lang,'2022 World Bank','2022 世界銀行','2022 Weltbank','2022 Всемирный банк','2022 Banco Mundial'));
-    lgdMil=makeLegend('milSpend',140,(window.IntMapLang.t(HOST.lang,'Mil. spending ($B)','国防費（$B）','Militärausgaben ($ Mrd.)','Военные расходы ($ млрд)','Gasto militar ($ mil M)')),'linear-gradient(to right,#fff7ec,#fdd49e,#fc8d59,#d7301f,#7f0000)',['$1B','$900B+'], 'SIPRI / IISS 2023');
-    lgdMilGDP=makeLegend('milSpendGDP',140,(window.IntMapLang.t(HOST.lang,'Mil. spending (% GDP)','国防費（対GDP）','Militärausgaben (% BIP)','Военные расходы (% ВВП)','Gasto militar (% PIB)')),'linear-gradient(to right,#edf8fb,#b2e2e2,#66c2a4,#2ca25f,#006d2c)',['0.5%','6%+'], 'SIPRI / IISS 2023');
+    lgdGdppc=makeLegend('gdppc',140,(IntMapLang.t(HOST.lang,'GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу населения','PIB per cápita')),'linear-gradient(to right,#fff7ec,#fee8c8,#fdbb84,#fc8d59,#e34a33,#7f0000)',['$1k','$90k+'], IntMapLang.t(HOST.lang,'USD, nominal','名目・米ドル','USD, nominal','долл. США, номинал','USD, nominal'));
+    lgdTfr=makeLegend('tfr',140,(IntMapLang.t(HOST.lang,'Total fertility rate','合計特殊出生率','Geburtenrate (TFR)','Суммарный коэффициент рождаемости','Tasa de fecundidad total')),'linear-gradient(to right,#2c7fb8,#7fcdbb,#ffffb2,#fe9929,#cc4c02)',['1.0','6.5+'], IntMapLang.t(HOST.lang,'2022 World Bank','2022 世界銀行','2022 Weltbank','2022 Всемирный банк','2022 Banco Mundial'));
+    lgdMil=makeLegend('milSpend',140,(IntMapLang.t(HOST.lang,'Mil. spending ($B)','国防費（$B）','Militärausgaben ($ Mrd.)','Военные расходы ($ млрд)','Gasto militar ($ mil M)')),'linear-gradient(to right,#fff7ec,#fdd49e,#fc8d59,#d7301f,#7f0000)',['$1B','$900B+'], 'SIPRI / IISS 2023');
+    lgdMilGDP=makeLegend('milSpendGDP',140,(IntMapLang.t(HOST.lang,'Mil. spending (% GDP)','国防費（対GDP）','Militärausgaben (% BIP)','Военные расходы (% ВВП)','Gasto militar (% PIB)')),'linear-gradient(to right,#edf8fb,#b2e2e2,#66c2a4,#2ca25f,#006d2c)',['0.5%','6%+'], 'SIPRI / IISS 2023');
     /* ══ (#R270) …AND EACH OF THEM SAYS SO ══════════════════════════════════════════════════════════
        These six are the layers #R268 filed under 「既にマスタークロックで変えられる」. They are, and
        until now nothing on them said it: the year lives on the legend as well, as one control that
@@ -660,7 +663,7 @@ window.IntMapModules.dataLayers=function(HOST){
        UNDP's 1990–2022. */
     try{
       const WBF=(window.IntMapTimeCountries&&window.IntMapTimeCountries.floor)||1960;
-      const MAD=(window.IntMapTime&&window.IntMapTime.min)||1850;
+      const MAD=(IntMapTime&&IntMapTime.min)||1850;
       legendClockYear(lgdGdppc,{min:MAD});                    /* Maddison real GDP pc back to the clock's floor */
       legendClockYear(lgdPop,{min:MAD});                      /* population → density, same source */
       legendClockYear(lgdTfr,{min:WBF});
@@ -683,14 +686,14 @@ window.IntMapModules.dataLayers=function(HOST){
         if(!h.getAttribute('data-base')) h.setAttribute('data-base',h.textContent||'');
       });
       const syncHints=()=>{ try{
-        let y=null; try{ y=window.IntMapTime.isLive()?null:window.IntMapTime.year(); }catch(_){}
+        let y=null; try{ y=IntMapTime.isLive()?null:IntMapTime.year(); }catch(_){}
         const undp=window._imHdiYear;
         [[lgdHDI,1],[lgdGdppc,0],[lgdPop,0],[lgdTfr,0],[lgdMil,0],[lgdMilGDP,0]].forEach(([el,isHdi])=>{
           if(!el) return; const h=el.querySelector('.dl-hint'); if(!h) return;
           const base=h.getAttribute('data-base')||'';
           if(isHdi){ const yy=(y==null)?2022:(undp||null);
             h.textContent=(yy==null)
-              ?window.IntMapLang.t(HOST.lang,'UNDP publishes no HDI for this year','この年のHDIは UNDP が公表していません','UNDP veröffentlicht für dieses Jahr keinen HDI','ПРООН не публикует ИЧР за этот год','El PNUD no publica IDH para este año')
+              ?IntMapLang.t(HOST.lang,'UNDP publishes no HDI for this year','この年のHDIは UNDP が公表していません','UNDP veröffentlicht für dieses Jahr keinen HDI','ПРООН не публикует ИЧР за этот год','El PNUD no publica IDH para este año')
               :(yy+' UNDP'); return; }
           h.textContent=base+((y!=null)?(' · '+y):''); });
       }catch(_){} };
@@ -703,11 +706,11 @@ window.IntMapModules.dataLayers=function(HOST){
          is called by js/time-countries.js's `repaint()`, which runs AFTER the overlay; the clock
          subscription stays as the answer for the case where no choropleth is on. */
       _syncYearHints=syncHints;
-      if(!_legendHintsSubscribed){ try{ window.IntMapTime.on(_queueLegendClockHints); _legendHintsSubscribed=true; }catch(_){} }
+      if(!_legendHintsSubscribed){ try{ IntMapTime.on(_queueLegendClockHints); _legendHintsSubscribed=true; }catch(_){} }
     }catch(_){}
-    lgdSnow=makeLegend('snow',140,(window.IntMapLang.t(HOST.lang,'Snow & ice','積雪・海氷','Schnee & Eis','Снег и лёд','Nieve y hielo')),'linear-gradient(to right,#2a78b8,#7fb3d9,#cfe6f5,#ffffff)',[window.IntMapLang.t(HOST.lang,'Low','少','Wenig','Мало','Bajo'),window.IntMapLang.t(HOST.lang,'High','多','Viel','Много','Alto')], 'MODIS NDSI');
-    lgdAod=makeLegend('aod',140,(window.IntMapLang.t(HOST.lang,'Aerosol / haze','エアロゾル / 煙霧','Aerosol / Dunst','Аэрозоль / дымка','Aerosol / bruma')),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',[window.IntMapLang.t(HOST.lang,'Clean air','清浄','Klar','Чисто','Limpio'),window.IntMapLang.t(HOST.lang,'Hazy','濃い','Trüb','Мутно','Brumoso')], 'MODIS AOD');
-    lgdNightsat=makeLegend('nightsat',140,(window.IntMapLang.t(HOST.lang,'Night lights','夜間光（衛星）','Nachtlichter','Ночные огни','Luces nocturnas')),'linear-gradient(to right,#05050f,#241a40,#7a5a1e,#ffd27f,#ffffff)',[window.IntMapLang.t(HOST.lang,'Dark','暗','Dunkel','Темно','Oscuro'),window.IntMapLang.t(HOST.lang,'Bright','明','Hell','Ярко','Brillante')], 'VIIRS Black Marble');
+    lgdSnow=makeLegend('snow',140,(IntMapLang.t(HOST.lang,'Snow & ice','積雪・海氷','Schnee & Eis','Снег и лёд','Nieve y hielo')),'linear-gradient(to right,#2a78b8,#7fb3d9,#cfe6f5,#ffffff)',[IntMapLang.t(HOST.lang,'Low','少','Wenig','Мало','Bajo'),IntMapLang.t(HOST.lang,'High','多','Viel','Много','Alto')], 'MODIS NDSI');
+    lgdAod=makeLegend('aod',140,(IntMapLang.t(HOST.lang,'Aerosol / haze','エアロゾル / 煙霧','Aerosol / Dunst','Аэрозоль / дымка','Aerosol / bruma')),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',[IntMapLang.t(HOST.lang,'Clean air','清浄','Klar','Чисто','Limpio'),IntMapLang.t(HOST.lang,'Hazy','濃い','Trüb','Мутно','Brumoso')], 'MODIS AOD');
+    lgdNightsat=makeLegend('nightsat',140,(IntMapLang.t(HOST.lang,'Night lights','夜間光（衛星）','Nachtlichter','Ночные огни','Luces nocturnas')),'linear-gradient(to right,#05050f,#241a40,#7a5a1e,#ffd27f,#ffffff)',[IntMapLang.t(HOST.lang,'Dark','暗','Dunkel','Темно','Oscuro'),IntMapLang.t(HOST.lang,'Bright','明','Hell','Ярко','Brillante')], 'VIIRS Black Marble');
     /* ⚠ (#R550) THE YEAR ROW HERE IS THE SAME ONE THE SIX CHOROPLETHS GOT IN #R270, AND IT IS THE
        SAME CLOCK. #R268's private two-option <select> is what it replaces: every year that picker
        could reach is still reachable, and now the whole app travels with it instead of this one
@@ -733,32 +736,32 @@ window.IntMapModules.dataLayers=function(HOST){
       {c:'#C8D0D8',n:LA('Connection line','接続線','Verbindungslinie','Соединительная линия','Línea de conexión')}
     ];
     const eezRows=EEZ_CATS.map(cat=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px;padding:1.5px 0;"><span style="display:inline-block;width:26px;height:0;border-top:3px ${cat.d?'dashed':'solid'} ${cat.c};box-shadow:0 0 4px ${cat.c};flex-shrink:0;"></span><span>${LDL.arr(cat.n)}</span></div>`).join('');
-    lgdEEZ.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="eez" title="${t('close')}">×</button><h4>${window.IntMapLang.t(HOST.lang,'Maritime zones','海洋管轄区域','Meereszonen','Морские зоны','Zonas marítimas')}</h4>
+    lgdEEZ.innerHTML=`<span class="dl-drag" title="${IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="eez" title="${t('close')}">×</button><h4>${IntMapLang.t(HOST.lang,'Maritime zones','海洋管轄区域','Meereszonen','Морские зоны','Zonas marítimas')}</h4>
       <div style="max-height:34vh; overflow-y:auto; margin:2px 0 4px; padding-right:2px;">${eezRows}</div>
-      <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:2px;">${window.IntMapLang.t(HOST.lang,'EEZ = Exclusive Economic Zone (to 200 nm). Line color = boundary type (bright colors for visibility); overlaps flag disputed claims.','EEZ＝排他的経済水域。沿岸国が漁業・海底資源を管轄（最大200海里）。境界の種類で色分け（視認性のため明るい配色）。重なりは領有権紛争の目安。','AWZ = Ausschließliche Wirtschaftszone (bis 200 sm). Linienfarbe = Grenztyp (helle Farben für bessere Sichtbarkeit); Überlappungen = Streitfälle.','ИЭЗ = исключительная экономическая зона (до 200 миль). Цвет линий — тип границы (яркие цвета для читаемости); наложения — споры.','ZEE = Zona Económica Exclusiva (hasta 200 mn). Color de línea = tipo de límite (colores vivos para visibilidad); solapamientos = disputas.')}</div>
-      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'Source: MarineRegions WMS','出典: MarineRegions WMS','Quelle: MarineRegions WMS','Источник: MarineRegions WMS','Fuente: MarineRegions WMS')}</div>`;
+      <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:2px;">${IntMapLang.t(HOST.lang,'EEZ = Exclusive Economic Zone (to 200 nm). Line color = boundary type (bright colors for visibility); overlaps flag disputed claims.','EEZ＝排他的経済水域。沿岸国が漁業・海底資源を管轄（最大200海里）。境界の種類で色分け（視認性のため明るい配色）。重なりは領有権紛争の目安。','AWZ = Ausschließliche Wirtschaftszone (bis 200 sm). Linienfarbe = Grenztyp (helle Farben für bessere Sichtbarkeit); Überlappungen = Streitfälle.','ИЭЗ = исключительная экономическая зона (до 200 миль). Цвет линий — тип границы (яркие цвета для читаемости); наложения — споры.','ZEE = Zona Económica Exclusiva (hasta 200 mn). Color de línea = tipo de límite (colores vivos para visibilidad); solapamientos = disputas.')}</div>
+      <div class="dl-hint">${IntMapLang.t(HOST.lang,'Source: MarineRegions WMS','出典: MarineRegions WMS','Quelle: MarineRegions WMS','Источник: MarineRegions WMS','Fuente: MarineRegions WMS')}</div>`;
     mc.appendChild(lgdEEZ);
     lgdEEZ.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-eez'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Thermal anomalies legend (fire/heat-signature pixels) */
     lgdThermal=document.createElement('div'); lgdThermal.className='data-legend'; lgdThermal.id='data-legend-thermal'; lgdThermal.style.bottom='140px';
-    lgdThermal.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="thermal" title="${t('close')}">×</button><h4>${window.IntMapLang.t(HOST.lang,'Thermal anomalies','熱異常(火災)','Thermische Anomalien','Тепловые аномалии','Anomalías térmicas')}</h4>
-      <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:14px;height:14px;background:#ff3b30;border-radius:50%;box-shadow:0 0 8px rgba(255,59,48,0.6);"></span> ${window.IntMapLang.t(HOST.lang,'Detected active fire / heat source','検知された火災・熱源','Erkannte Brände / Wärmequellen','Обнаруженные пожары / тепловые источники','Fuegos activos / fuentes de calor detectados')}</div>
-      <label style="display:flex; align-items:center; gap:6px; font-size:11px; margin:4px 0 2px; color:var(--text-muted);">${window.IntMapLang.t(HOST.lang,'Time window','期間','Zeitfenster','Окно','Ventana')}: <select class="thermal-window" style="flex:1; padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"><option value="24" data-i18n="thermWin24">${t('thermWin24')}</option><option value="48" data-i18n="thermWin48">${t('thermWin48')}</option><option value="72" data-i18n="thermWin72">${t('thermWin72')}</option></select></label>
-      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'NASA FIRMS · MODIS + VIIRS (real, near-real-time)','NASA FIRMS · MODIS + VIIRS（実データ・準リアルタイム）','NASA FIRMS · MODIS + VIIRS (echt, nahezu Echtzeit)','NASA FIRMS · MODIS + VIIRS (реальные данные, почти в реальном времени)','NASA FIRMS · MODIS + VIIRS (real, casi en tiempo real)')}</div>`;
+    lgdThermal.innerHTML=`<span class="dl-drag" title="${IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="thermal" title="${t('close')}">×</button><h4>${IntMapLang.t(HOST.lang,'Thermal anomalies','熱異常(火災)','Thermische Anomalien','Тепловые аномалии','Anomalías térmicas')}</h4>
+      <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:14px;height:14px;background:#ff3b30;border-radius:50%;box-shadow:0 0 8px rgba(255,59,48,0.6);"></span> ${IntMapLang.t(HOST.lang,'Detected active fire / heat source','検知された火災・熱源','Erkannte Brände / Wärmequellen','Обнаруженные пожары / тепловые источники','Fuegos activos / fuentes de calor detectados')}</div>
+      <label style="display:flex; align-items:center; gap:6px; font-size:11px; margin:4px 0 2px; color:var(--text-muted);">${IntMapLang.t(HOST.lang,'Time window','期間','Zeitfenster','Окно','Ventana')}: <select class="thermal-window" style="flex:1; padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"><option value="24" data-i18n="thermWin24">${t('thermWin24')}</option><option value="48" data-i18n="thermWin48">${t('thermWin48')}</option><option value="72" data-i18n="thermWin72">${t('thermWin72')}</option></select></label>
+      <div class="dl-hint">${IntMapLang.t(HOST.lang,'NASA FIRMS · MODIS + VIIRS (real, near-real-time)','NASA FIRMS · MODIS + VIIRS（実データ・準リアルタイム）','NASA FIRMS · MODIS + VIIRS (echt, nahezu Echtzeit)','NASA FIRMS · MODIS + VIIRS (реальные данные, почти в реальном времени)','NASA FIRMS · MODIS + VIIRS (real, casi en tiempo real)')}</div>`;
     mc.appendChild(lgdThermal);
     lgdThermal.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-thermal'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     { const sw=lgdThermal.querySelector('.thermal-window'); if(sw){ sw.value=window._thermalWindow||'24'; sw.addEventListener('change',()=>{ window._thermalWindow=sw.value; if(window._refreshThermal) window._refreshThermal(); try{ window._refreshLegendDates&&window._refreshLegendDates(); }catch(_){} }); } }
     /* Precipitation-radar legend (RainViewer rain-rate scale) */
     lgdRadar=document.createElement('div'); lgdRadar.className='data-legend'; lgdRadar.id='data-legend-radar'; lgdRadar.style.bottom='140px';
-    lgdRadar.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="radar" title="${t('close')}">×</button><h4>${t('lgdRadarTitle')||'Rain rate'}</h4>
+    lgdRadar.innerHTML=`<span class="dl-drag" title="${IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="radar" title="${t('close')}">×</button><h4>${t('lgdRadarTitle')||'Rain rate'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#9bd2ff,#0080ff,#00c800,#ffe000,#ff7800,#ff0000,#c800c8);"></div>
-      <div class="dl-scale"><span>${window.IntMapLang.t(HOST.lang,'Light','弱い','Leicht','Слабый','Ligero')}</span><span>${window.IntMapLang.t(HOST.lang,'Heavy','激しい','Stark','Сильный','Fuerte')}</span></div>
+      <div class="dl-scale"><span>${IntMapLang.t(HOST.lang,'Light','弱い','Leicht','Слабый','Ligero')}</span><span>${IntMapLang.t(HOST.lang,'Heavy','激しい','Stark','Сильный','Fuerte')}</span></div>
       <div class="rv-player">
-        <div class="rv-btns"><button class="rv-b" data-act="first" title="${window.IntMapLang.t(HOST.lang,'Oldest frame','最も古いフレーム','Ältester Frame','Самый старый кадр','Fotograma más antiguo')}">⏮</button><button class="rv-b" data-act="prev" title="${window.IntMapLang.t(HOST.lang,'Previous frame','前のフレーム','Vorheriger Frame','Предыдущий кадр','Fotograma anterior')}">◀</button><button class="rv-b" data-act="play" title="${window.IntMapLang.t(HOST.lang,'Animate','アニメーション','Animieren','Анимация','Animar')}">▶</button><button class="rv-b" data-act="next" title="${window.IntMapLang.t(HOST.lang,'Next frame','次のフレーム','Nächster Frame','Следующий кадр','Fotograma siguiente')}">▶</button><button class="rv-b" data-act="last" title="${window.IntMapLang.t(HOST.lang,'Latest frame','最新フレーム','Neuester Frame','Последний кадр','Último fotograma')}">⏭</button></div>
-        <input type="range" id="rv-time" aria-label="${window.IntMapLang.t(HOST.lang,'Radar frame time','レーダーの表示時刻')}" min="0" max="0" step="1" value="0" style="width:100%;accent-color:var(--primary-color);">
+        <div class="rv-btns"><button class="rv-b" data-act="first" title="${IntMapLang.t(HOST.lang,'Oldest frame','最も古いフレーム','Ältester Frame','Самый старый кадр','Fotograma más antiguo')}">⏮</button><button class="rv-b" data-act="prev" title="${IntMapLang.t(HOST.lang,'Previous frame','前のフレーム','Vorheriger Frame','Предыдущий кадр','Fotograma anterior')}">◀</button><button class="rv-b" data-act="play" title="${IntMapLang.t(HOST.lang,'Animate','アニメーション','Animieren','Анимация','Animar')}">▶</button><button class="rv-b" data-act="next" title="${IntMapLang.t(HOST.lang,'Next frame','次のフレーム','Nächster Frame','Следующий кадр','Fotograma siguiente')}">▶</button><button class="rv-b" data-act="last" title="${IntMapLang.t(HOST.lang,'Latest frame','最新フレーム','Neuester Frame','Последний кадр','Último fotograma')}">⏭</button></div>
+        <input type="range" id="rv-time" aria-label="${IntMapLang.t(HOST.lang,'Radar frame time','レーダーの表示時刻')}" min="0" max="0" step="1" value="0" style="width:100%;accent-color:var(--primary-color);">
         <div class="rv-when">—</div>
       </div>
-      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'RainViewer radar — the last two hours, 10 min apart','RainViewer レーダー — 直近2時間・10分間隔','RainViewer-Radar — die letzten zwei Stunden, 10-Minuten-Schritte','Радар RainViewer — последние два часа с шагом 10 мин','Radar RainViewer — las últimas dos horas, cada 10 min')}</div>`;
+      <div class="dl-hint">${IntMapLang.t(HOST.lang,'RainViewer radar — the last two hours, 10 min apart','RainViewer レーダー — 直近2時間・10分間隔','RainViewer-Radar — die letzten zwei Stunden, 10-Minuten-Schritte','Радар RainViewer — последние два часа с шагом 10 мин','Radar RainViewer — las últimas dos horas, cada 10 min')}</div>`;
     mc.appendChild(lgdRadar);
     lgdRadar.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-radar'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     { const box=lgdRadar.querySelector('.rv-player');
@@ -770,37 +773,37 @@ window.IntMapModules.dataLayers=function(HOST){
       const sl=box.querySelector('#rv-time'); if(sl) sl.oninput=()=>{ const P=window._rvPlayer; if(!P) return; P.play(false); P.show(+sl.value); }; }
     /* Sea-surface-temperature legend (GHRSST MUR L4) */
     lgdSST=document.createElement('div'); lgdSST.className='data-legend'; lgdSST.id='data-legend-sst'; lgdSST.style.bottom='140px';
-    lgdSST.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="sst" title="${t('close')}">×</button><h4>${t('lgdSSTTitle')||'Sea-surface temp'}</h4>
+    lgdSST.innerHTML=`<span class="dl-drag" title="${IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="sst" title="${t('close')}">×</button><h4>${t('lgdSSTTitle')||'Sea-surface temp'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#3a0088,#0033cc,#0099ff,#00e0c0,#7dff66,#ffe000,#ff7800,#e00000);"></div>
       <div class="dl-scale"><span>${fmtTemp(-2)}</span><span>${fmtTemp(32)}</span></div>
-      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'GHRSST MUR L4 (oceans only)','GHRSST MUR L4（海域のみ）','GHRSST MUR L4 (nur Ozeane)','GHRSST MUR L4 (только океаны)','GHRSST MUR L4 (solo océanos)')}</div>`;
+      <div class="dl-hint">${IntMapLang.t(HOST.lang,'GHRSST MUR L4 (oceans only)','GHRSST MUR L4（海域のみ）','GHRSST MUR L4 (nur Ozeane)','GHRSST MUR L4 (только океаны)','GHRSST MUR L4 (solo océanos)')}</div>`;
     mc.appendChild(lgdSST);
     lgdSST.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-sst'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Gridded population-density legend (NASA SEDAC GPW v4) */
     lgdPopGrid=document.createElement('div'); lgdPopGrid.className='data-legend'; lgdPopGrid.id='data-legend-popgrid'; lgdPopGrid.style.bottom='140px';
-    lgdPopGrid.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="popgrid" title="${t('close')}">×</button><h4>${window.IntMapLang.t(HOST.lang,'Pop. density (grid)','人口密度（グリッド）','Bevölkerungsdichte (Raster)','Плотность населения (сетка)','Densidad de población (malla)')}</h4>
+    lgdPopGrid.innerHTML=`<span class="dl-drag" title="${IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="popgrid" title="${t('close')}">×</button><h4>${IntMapLang.t(HOST.lang,'Pop. density (grid)','人口密度（グリッド）','Bevölkerungsdichte (Raster)','Плотность населения (сетка)','Densidad de población (malla)')}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#ffffd4,#fee391,#fec44f,#fe9929,#ec7014,#cc4c02,#8c2d04);"></div>
       <div class="dl-scale"><span>0</span><span>1000+ /km²</span></div>
-      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'NASA SEDAC GPW v4 (2020, ~1 km). Real distribution, independent of borders.','NASA SEDAC GPW v4（2020・約1km）。国境に依存しない実分布。','NASA SEDAC GPW v4 (2020, ~1 km). Reale Verteilung, unabhängig von Grenzen.','NASA SEDAC GPW v4 (2020, ~1 км). Реальное распределение, независимое от границ.','NASA SEDAC GPW v4 (2020, ~1 km). Distribución real, independiente de fronteras.')}</div>`;
+      <div class="dl-hint">${IntMapLang.t(HOST.lang,'NASA SEDAC GPW v4 (2020, ~1 km). Real distribution, independent of borders.','NASA SEDAC GPW v4（2020・約1km）。国境に依存しない実分布。','NASA SEDAC GPW v4 (2020, ~1 km). Reale Verteilung, unabhängig von Grenzen.','NASA SEDAC GPW v4 (2020, ~1 км). Реальное распределение, независимое от границ.','NASA SEDAC GPW v4 (2020, ~1 km). Distribución real, independiente de fronteras.')}</div>`;
     mc.appendChild(lgdPopGrid);
     lgdPopGrid.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-popgrid'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Color-relief elevation legend (#5) */
     lgdRelief=document.createElement('div'); lgdRelief.className='data-legend'; lgdRelief.id='data-legend-relief'; lgdRelief.style.bottom='140px';
-    lgdRelief.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="relief" title="${t('close')}">×</button><h4>${window.IntMapLang.t(HOST.lang,'Elevation (color)','標高（カラー段彩）','Höhe (farbig)','Высота (цвет)','Elevación (color)')}</h4>
+    lgdRelief.innerHTML=`<span class="dl-drag" title="${IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="relief" title="${t('close')}">×</button><h4>${IntMapLang.t(HOST.lang,'Elevation (color)','標高（カラー段彩）','Höhe (farbig)','Высота (цвет)','Elevación (color)')}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#0b4f8a,#7fb3d9,#1a7a3c,#a6d96a,#e6e08b,#d9a066,#a87b52,#cdbfb4,#ffffff);"></div>
-      <div class="dl-scale"><span>${window.IntMapLang.t(HOST.lang,'Deep sea','深海','Tiefsee','Глубоководье','Mar profundo')}</span><span>${window.IntMapLang.t(HOST.lang,'Peaks','高峰','Gipfel','Вершины','Cumbres')}</span></div>
+      <div class="dl-scale"><span>${IntMapLang.t(HOST.lang,'Deep sea','深海','Tiefsee','Глубоководье','Mar profundo')}</span><span>${IntMapLang.t(HOST.lang,'Peaks','高峰','Gipfel','Вершины','Cumbres')}</span></div>
       <div class="dl-hint">AWS Terrain (terrarium DEM)</div>`;
     mc.appendChild(lgdRelief);
     lgdRelief.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-relief'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Sea-level-rise legend (#24) */
     lgdSeaLevel=document.createElement('div'); lgdSeaLevel.className='data-legend'; lgdSeaLevel.id='data-legend-sealevel'; lgdSeaLevel.style.bottom='140px';
     const slL=window._seaLevelM||0;
-    lgdSeaLevel.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="sealevel" title="${t('close')}">×</button><h4>${window.IntMapLang.t(HOST.lang,'Sea-level change','海面変動','Meeresspiegel-Änderung','Изменение уровня моря','Cambio del nivel del mar')}</h4>
-      <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:16px;height:11px;border-radius:3px;background:rgba(40,120,200,0.75);border:1px solid rgba(0,0,0,0.15);"></span> ${window.IntMapLang.t(HOST.lang,'Flooded (≤ today ','浸水域 (≤ 現海面 ','Überflutet (≤ heute ','Затоплено (≤ текущего ','Inundado (≤ hoy ')}<b class="sl-cur">${(slL>=0?'+':'')+slL} m</b>${HOST.lang==='jp'?')':')'}</div>
+    lgdSeaLevel.innerHTML=`<span class="dl-drag" title="${IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="sealevel" title="${t('close')}">×</button><h4>${IntMapLang.t(HOST.lang,'Sea-level change','海面変動','Meeresspiegel-Änderung','Изменение уровня моря','Cambio del nivel del mar')}</h4>
+      <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:16px;height:11px;border-radius:3px;background:rgba(40,120,200,0.75);border:1px solid rgba(0,0,0,0.15);"></span> ${IntMapLang.t(HOST.lang,'Flooded (≤ today ','浸水域 (≤ 現海面 ','Überflutet (≤ heute ','Затоплено (≤ текущего ','Inundado (≤ hoy ')}<b class="sl-cur">${(slL>=0?'+':'')+slL} m</b>${HOST.lang==='jp'?')':')'}</div>
       <label style="display:flex; align-items:center; gap:8px; font-size:11px; margin:4px 0 2px; color:var(--text-muted);">-150<input type="range" class="sl-legend-range" min="-150" max="70" step="1" value="${Math.max(-150,Math.min(70,slL))}" style="flex:1; accent-color:var(--primary-color);">+70 m</label>
-      <div style="display:flex; gap:6px; margin:4px 0 2px;"><input type="number" class="sl-num" min="-11000" max="9000" step="1" value="${slL}" placeholder="m" style="flex:1; min-width:0; padding:5px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:12px;"><button class="sl-set" style="padding:5px 12px; border:none; border-radius:8px; background:var(--primary-fill); color:#fff; font-size:11px; font-weight:600; cursor:pointer;">${window.IntMapLang.t(HOST.lang,'Set','設定','Festlegen','Задать','Fijar')}</button></div>
+      <div style="display:flex; gap:6px; margin:4px 0 2px;"><input type="number" class="sl-num" min="-11000" max="9000" step="1" value="${slL}" placeholder="m" style="flex:1; min-width:0; padding:5px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:12px;"><button class="sl-set" style="padding:5px 12px; border:none; border-radius:8px; background:var(--primary-fill); color:#fff; font-size:11px; font-weight:600; cursor:pointer;">${IntMapLang.t(HOST.lang,'Set','設定','Festlegen','Задать','Fijar')}</button></div>
       <div class="sl-err" style="display:none; color:var(--info-mil); font-size:10px; margin:0 0 2px;"></div>
-      <div class="dl-hint">${window.IntMapLang.t(HOST.lang,'Slider or a number (-11000–9000 m; negative = sea-level fall). Naïve "bathtub" fill from the AWS Terrain DEM — ignores tides & defenses.','スライダーまたは数値（-11000〜9000 m、マイナス=海面低下）。AWS Terrain DEM に基づく簡易浸水。潮汐・防潮堤は未考慮。','Schieberegler oder Zahl (-11000–9000 m; negativ = Meeresspiegel-Abfall). Einfache „Badewannen“-Flutung aus dem AWS-Terrain-DEM — ohne Gezeiten & Deiche.','Ползунок или число (-11000–9000 м; минус = падение уровня). Простое «наполнение ванны» по DEM AWS Terrain — без приливов и дамб.','Deslizador o número (-11000–9000 m; negativo = descenso del nivel). Inundación simple («bañera») según el DEM de AWS Terrain — sin mareas ni defensas.')}</div>`;
+      <div class="dl-hint">${IntMapLang.t(HOST.lang,'Slider or a number (-11000–9000 m; negative = sea-level fall). Naïve "bathtub" fill from the AWS Terrain DEM — ignores tides & defenses.','スライダーまたは数値（-11000〜9000 m、マイナス=海面低下）。AWS Terrain DEM に基づく簡易浸水。潮汐・防潮堤は未考慮。','Schieberegler oder Zahl (-11000–9000 m; negativ = Meeresspiegel-Abfall). Einfache „Badewannen“-Flutung aus dem AWS-Terrain-DEM — ohne Gezeiten & Deiche.','Ползунок или число (-11000–9000 м; минус = падение уровня). Простое «наполнение ванны» по DEM AWS Terrain — без приливов и дамб.','Deslizador o número (-11000–9000 m; negativo = descenso del nivel). Inundación simple («bañera») según el DEM de AWS Terrain — sin mareas ni defensas.')}</div>`;
     mc.appendChild(lgdSeaLevel);
     lgdSeaLevel.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-sealevel'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Sea-level slider lives in the legend too (#11) — control the simulation straight from the legend. */
@@ -817,7 +820,7 @@ window.IntMapModules.dataLayers=function(HOST){
       const apply=(quiet)=>{ const raw=String(num.value||'').trim();
         if(quiet && (raw===''||raw==='-'||raw==='+')){ if(err) err.style.display='none'; return; }   /* mid-typing, not an error */
         const v=parseInt(raw,10);
-        if(isNaN(v)||v<-11000||v>9000){ if(err){ err.textContent=window.IntMapLang.t(HOST.lang,'Enter a number between -11000 and 9000','-11000〜9000 の数値を入力してください','Zahl zwischen -11000 und 9000 eingeben','Введите число от -11000 до 9000','Introduce un número entre -11000 y 9000'); err.style.display='block'; } return; }
+        if(isNaN(v)||v<-11000||v>9000){ if(err){ err.textContent=IntMapLang.t(HOST.lang,'Enter a number between -11000 and 9000','-11000〜9000 の数値を入力してください','Zahl zwischen -11000 und 9000 eingeben','Введите число от -11000 до 9000','Introduce un número entre -11000 y 9000'); err.style.display='block'; } return; }
         if(err) err.style.display='none'; window._seaLevelM=v; if(window._refreshSeaLevel) window._refreshSeaLevel(); };
       if(setb) setb.onclick=()=>apply(false);
       if(num){ let _slT=0;
@@ -843,13 +846,13 @@ window.IntMapModules.dataLayers=function(HOST){
        (IntMapECMWF.legend), together with the model name, its run hour and the valid time — the
        three facts 「Open-Meteo GFS」 was standing in for, wrongly, on a field that is ECMWF IFS. */
     lgdWind=document.createElement('div'); lgdWind.className='data-legend'; lgdWind.id='data-legend-wind'; lgdWind.style.bottom='140px';
-    lgdWind.innerHTML=`<span class="dl-drag" title="${window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="wind" title="${t('close')}">×</button><h4>${window.IntMapLang.t(HOST.lang,'Wind 10 m','風（10m）','Wind 10 m','Ветер 10 м','Viento 10 m')}</h4><div class="wind-legend-body"></div>`;
+    lgdWind.innerHTML=`<span class="dl-drag" title="${IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover')}">⋮⋮</span><button class="layer-popup-x" data-x="wind" title="${t('close')}">×</button><h4>${IntMapLang.t(HOST.lang,'Wind 10 m','風（10m）','Wind 10 m','Ветер 10 м','Viento 10 m')}</h4><div class="wind-legend-body"></div>`;
     mc.appendChild(lgdWind);
     lgdWind.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-wind'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     window._updateWindLegend=function(){
       const body=lgdWind.querySelector('.wind-legend-body'); if(!body) return;
       try{ if(window._renderWindLegendBody){ window._renderWindLegendBody(body); return; } }catch(_){}
-      body.innerHTML='<div class="dl-hint">'+window.IntMapLang.t(HOST.lang,'Loading the wind model…','風モデルを読み込み中…','Windmodell wird geladen…','Загрузка модели ветра…','Cargando el modelo de viento…')+'</div>';
+      body.innerHTML='<div class="dl-hint">'+IntMapLang.t(HOST.lang,'Loading the wind model…','風モデルを読み込み中…','Windmodell wird geladen…','Загрузка модели ветра…','Cargando el modelo de viento…')+'</div>';
     };
     window._updateWindLegend();
     }
@@ -1123,7 +1126,7 @@ window.IntMapModules.dataLayers=function(HOST){
     /* 「その日はデータがない」, said ONCE and where the date is — a line under the calendar and in the
        legend's as-of text, never a toast (a master-clock sweep would fire five of them). */
     function _dateNote(id){ const a=_dateAsked[id]; if(!a||a===layerDates[id]) return '';
-      return a+': '+window.IntMapLang.t(HOST.lang,'no data','データなし','keine Daten','нет данных','sin datos'); }
+      return a+': '+IntMapLang.t(HOST.lang,'no data','データなし','keine Daten','нет данных','sin datos'); }
     const _CHEV_L='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg>';
     const _CHEV_R='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>';
     /* the calendar and its two steps, ONE markup for both the legend and the Layers-panel row.
@@ -1168,8 +1171,8 @@ window.IntMapModules.dataLayers=function(HOST){
       const daily=_dailyAt(id,v), note=_dateNote(id);
       const label=(dir)=>{ const to=(dir<0?prev:next); if(!to) return '';
         if(!daily) return to;   /* an 8-day or monthly frame is not 「1日」 — name the day it lands on */
-        return (dir<0?window.IntMapLang.t(HOST.lang,'A day earlier','1日前','Ein Tag früher','На день раньше','Un día antes')
-                    :window.IntMapLang.t(HOST.lang,'A day later','1日後','Ein Tag später','На день позже','Un día después'))+' · '+to; };
+        return (dir<0?IntMapLang.t(HOST.lang,'A day earlier','1日前','Ein Tag früher','На день раньше','Un día antes')
+                    :IntMapLang.t(HOST.lang,'A day later','1日後','Ein Tag später','На день позже','Un día después'))+' · '+to; };
       document.querySelectorAll('.dl-datebox[data-dl="'+id+'"]').forEach(box=>{
         const inp=box.querySelector('input[type=date]');
         if(inp){ if(inp.value!==v) inp.value=v;
@@ -1221,15 +1224,15 @@ window.IntMapModules.dataLayers=function(HOST){
     /* (#R13c) Time-varying layers state WHEN their data is from, in the legend (user request). A small
        "as-of" line is appended to each dated legend and refreshed whenever the date/window changes. */
     function _legendWhenText(id){ const jp=HOST.lang==='jp';
-      if(id==='radar') return (window.IntMapLang.t(HOST.lang,'Latest frame (live)','最新フレーム（実時間）','Neuestes Bild (live)','Последний кадр (в реальном времени)','Último fotograma (en vivo)'));
+      if(id==='radar') return (IntMapLang.t(HOST.lang,'Latest frame (live)','最新フレーム（実時間）','Neuestes Bild (live)','Последний кадр (в реальном времени)','Último fotograma (en vivo)'));
       if(id==='thermal'){ const w=window._thermalWindow||'24'; return (jp?('直近'+w+'時間'):('Last '+w+' h')); }
       /* (#R268 追記) …before the `layerDates` gate: this layer's year is an EPOCH, not a date */
-      if(id==='popgrid') return (window.IntMapLang.t(HOST.lang,'Data: ','データ: ','Daten: ','данные: ','datos: '))+window._popgridYear;
+      if(id==='popgrid') return (IntMapLang.t(HOST.lang,'Data: ','データ: ','Daten: ','данные: ','datos: '))+window._popgridYear;
       const d=layerDates[id]; if(!d) return '';
       /* (#R298) …and when the day being drawn is NOT the day that was asked for, this line says both:
          「いつの絵か」 is the whole point of an as-of line, and a silent substitution defeats it. */
       const n=_dateNote(id);
-      return (window.IntMapLang.t(HOST.lang,'Data: ','データ: ','Daten: ','данные: ','datos: '))+d+(n?(' · '+n):'');
+      return (IntMapLang.t(HOST.lang,'Data: ','データ: ','Daten: ','данные: ','datos: '))+d+(n?(' · '+n):'');
     }
     /* (#R15d) The date/window control now lives IN the legend (not the Layers panel). For radar (live) we
        just show the as-of text; temp gets a month picker; sst/snow/aod a date picker; thermal a 24/48/72 h
@@ -1251,26 +1254,26 @@ window.IntMapModules.dataLayers=function(HOST){
          for ever while the gate went on reporting 100 %. The abbreviation is not worth a language. */
       const lg=HOST.lang;
       let ep=null,y=null; try{ ep=NL().current(); y=NL().clockYear(); }catch(_){}
-      const clockTxt=(y==null)?window.IntMapLang.t(lg,'now','現在','jetzt','сейчас','ahora'):String(y);
+      const clockTxt=(y==null)?IntMapLang.t(lg,'now','現在','jetzt','сейчас','ahora'):String(y);
       if(!ep){ let from=2012; try{ from=NL().eraFrom(); }catch(_){}
         /* ⚠ the year is a PLACEHOLDER, not concatenation: a key built with `+` matches no inline
            table, which is the other half of the same measured defect. */
-        const noRec=window.IntMapLang.t(lg,'no satellite night-lights record exists before {y}',
+        const noRec=IntMapLang.t(lg,'no satellite night-lights record exists before {y}',
                          '{y}年より前の衛星夜間光の記録はありません',
                          'vor {y} existiert keine Satelliten-Nachtlichtaufnahme',
                          'до {y} года спутниковых снимков ночных огней не существует',
                          'no existe registro satelital de luces nocturnas anterior a {y}').replace('{y}',from);
-        return '<b>'+escapeHtml(window.IntMapLang.t(lg,'No data','データなし','Keine Daten','Нет данных','Sin datos'))+'</b><br>'
+        return '<b>'+escapeHtml(IntMapLang.t(lg,'No data','データなし','Keine Daten','Нет данных','Sin datos'))+'</b><br>'
           +escapeHtml('Chronos: '+clockTxt+' — '+noRec);
       }
       const head='<b>'+escapeHtml(ep.product+' · '+ep.year)+'</b><br>'
         +escapeHtml(ep.sensor+' · '+ep.source+' · '+ep.resM+' m')+'<br>';
       if(_nightsatErr) return head+'<span style="color:var(--danger,#e5534b);">'+escapeHtml(
-        window.IntMapLang.t(lg,'Night-lights tiles could not be loaded','夜間光のタイルを取得できませんでした','Nachtlicht-Kacheln konnten nicht geladen werden','Не удалось загрузить тайлы ночных огней','No se pudieron cargar las teselas de luces nocturnas'))+'</span>';
+        IntMapLang.t(lg,'Night-lights tiles could not be loaded','夜間光のタイルを取得できませんでした','Nachtlicht-Kacheln konnten nicht geladen werden','Не удалось загрузить тайлы ночных огней','No se pudieron cargar las teselas de luces nocturnas'))+'</span>';
       if(y==null||y===ep.year) return head+escapeHtml('Chronos: '+clockTxt+' — '
-        +window.IntMapLang.t(lg,'following the clock','時計に追従中','folgt der Uhr','следует за часами','sigue el reloj'));
+        +IntMapLang.t(lg,'following the clock','時計に追従中','folgt der Uhr','следует за часами','sigue el reloj'));
       return head+escapeHtml('Chronos: '+y+' → '
-        +window.IntMapLang.t(lg,'nearest available data','最も近い記録','nächstgelegene Daten','ближайшие доступные данные','datos disponibles más cercanos')+': '+ep.year);
+        +IntMapLang.t(lg,'nearest available data','最も近い記録','nächstgelegene Daten','ближайшие доступные данные','datos disponibles más cercanos')+': '+ep.year);
     }
     /* ══ (#R550) THE ONE PLACE THE NIGHT-LIGHTS SOURCE IS POINTED AT A YEAR ══════════════════════
        ⚠ IT READS THE EPOCH, IT NEVER CARRIES ONE. `whenStyleReady()` resolves on an idle and the
@@ -1300,7 +1303,7 @@ window.IntMapModules.dataLayers=function(HOST){
     /* the source moves only when the EPOCH moves (js/night-lights.js coalesces); the legend's text
        also names the CLOCK's year, so it re-reads on every clock event — text costs no network */
     try{ NL().on(()=>{ _applyNightsat(); }); }catch(_){}
-    try{ window.IntMapTime.on(()=>{ try{ _refreshLegendDates(); }catch(_){} }); }catch(_){}
+    try{ IntMapTime.on(()=>{ try{ _refreshLegendDates(); }catch(_){} }); }catch(_){}
     function _refreshLegendDates(){
       [['thermal',lgdThermal],['radar',lgdRadar],['sst',lgdSST],['snow',lgdSnow],['aod',lgdAod],['nightsat',lgdNightsat],['popgrid',lgdPopGrid]].forEach(([id,lg])=>{
         if(!lg) return;
@@ -1309,13 +1312,13 @@ window.IntMapModules.dataLayers=function(HOST){
           w=document.createElement('div'); w.className='dl-when'; w.style.cssText='font-size:10px;color:var(--text-muted);margin-top:4px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;';
           const inSty='padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;';
           if(id==='radar'){ w.innerHTML='🕒 <span class="dl-when-t"></span>'; }
-          else if(id==='thermal'){ w.innerHTML='🕒 <label style="display:contents;"><span>'+(window.IntMapLang.t(HOST.lang,'Time window','期間','Zeitfenster','Окно','Ventana'))+'</span> <select class="dl-win" style="'+inSty+'"><option value="24">24 h</option><option value="48">48 h</option><option value="72">72 h</option></select></label>';
+          else if(id==='thermal'){ w.innerHTML='🕒 <label style="display:contents;"><span>'+(IntMapLang.t(HOST.lang,'Time window','期間','Zeitfenster','Окно','Ventana'))+'</span> <select class="dl-win" style="'+inSty+'"><option value="24">24 h</option><option value="48">48 h</option><option value="72">72 h</option></select></label>';
             const s=w.querySelector('.dl-win'); s.value=window._thermalWindow||'24'; s.addEventListener('change',()=>{ window._thermalWindow=s.value; try{ window._refreshThermal&&window._refreshThermal(); }catch(_){} _refreshLegendDates(); }); }
           /* (#R550) no <select> of its own any more — the year row above it moves Chronos, and this
              line says what Chronos' year actually PUT ON THE MAP: product, sensor, source, the data
              year, and — when they differ — both years, so 2017 drawing 2016 is never silent. */
           else if(id==='nightsat'){ w.innerHTML='🕒 <span class="dl-nl-when" style="line-height:1.5;"></span>'; }
-          else if(id==='popgrid'){ w.innerHTML='🕒 <label style="display:contents;"><span>'+(window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año'))+'</span> <select class="dl-epoch" style="'+inSty+'">'
+          else if(id==='popgrid'){ w.innerHTML='🕒 <label style="display:contents;"><span>'+(IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año'))+'</span> <select class="dl-epoch" style="'+inSty+'">'
               +POPGRID_EPOCHS.map(y=>'<option value="'+y+'">'+y+'</option>').join('')+'</select></label>';
             const e=w.querySelector('.dl-epoch'); e.value=window._popgridYear;
             e.addEventListener('change',()=>{ window._popgridYear=e.value;
@@ -1479,7 +1482,7 @@ window.IntMapModules.dataLayers=function(HOST){
            becomes a NUMBER before it is ever spliced into markup — Number() is the barrier here, and
            it is also the only thing that makes the clamp below mean anything */
         const _sl=Number(window._seaLevelM)||0;
-        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:8px; color:var(--text-muted);">${window.IntMapLang.t(HOST.lang,'Sea-level','海面変動','Meeresspiegel','Уровень моря','Nivel del mar')}: <input type="range" id="sl-${id}" min="-150" max="70" value="${Math.max(-150,Math.min(70,_sl))}" step="1" style="flex:1; accent-color:var(--primary-color);"><span id="sllbl-${id}" style="min-width:52px; text-align:right; font-variant-numeric:tabular-nums;">${(_sl>=0?'+':'')+_sl} m</span></label></div>`;
+        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:8px; color:var(--text-muted);">${IntMapLang.t(HOST.lang,'Sea-level','海面変動','Meeresspiegel','Уровень моря','Nivel del mar')}: <input type="range" id="sl-${id}" min="-150" max="70" value="${Math.max(-150,Math.min(70,_sl))}" step="1" style="flex:1; accent-color:var(--primary-color);"><span id="sllbl-${id}" style="min-width:52px; text-align:right; font-variant-numeric:tabular-nums;">${(_sl>=0?'+':'')+_sl} m</span></label></div>`;
       }
       /* (#R15c) EVERY opacity layer now owns a legend (specific, generic, or the wind legend), so the
          opacity control lives THERE and the inline Layers-panel slider is hidden for all of them. */
@@ -1539,7 +1542,7 @@ window.IntMapModules.dataLayers=function(HOST){
        would be wired, correct and unreachable, which is exactly what #R290 measured on the ECMWF rows. */
     (function mountWaveRow(){
       if(!dd||document.getElementById('lyrrow-waves')) return;
-      const nm=()=>window.IntMapLang.t(HOST.lang,'Waves','波','Wellen','Волны','Olas');
+      const nm=()=>IntMapLang.t(HOST.lang,'Waves','波','Wellen','Волны','Olas');
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-waves';
       w.innerHTML='<label class="layer-option"><input type="checkbox" id="dl-waves"> <span class="wv-lbl"></span></label>';
       w.querySelector('.wv-lbl').textContent=nm();
@@ -1620,9 +1623,9 @@ window.IntMapModules.dataLayers=function(HOST){
       /* (#R64) the bar is ALWAYS rendered (with "(0)" when empty) — if it appeared/disappeared with the first
          toggle, the rows below would shift by its height (the original R32 complaint). Constant height, always. */
       sec.style.display='';
-      const title=(window.IntMapLang.t(lang,'Active layers','表示中のレイヤー','Aktive Ebenen','Активные слои','Capas activas'));
-      const clearTxt=(window.IntMapLang.t(lang,'Turn all off','すべて解除','Alle aus','Сбросить все','Quitar todo'));
-      const listTxt=(window.IntMapLang.t(lang,'List','一覧','Liste','Список','Lista'));
+      const title=(IntMapLang.t(lang,'Active layers','表示中のレイヤー','Aktive Ebenen','Активные слои','Capas activas'));
+      const clearTxt=(IntMapLang.t(lang,'Turn all off','すべて解除','Alle aus','Сбросить все','Quitar todo'));
+      const listTxt=(IntMapLang.t(lang,'List','一覧','Liste','Список','Lista'));
       /* (#R19) One-tap deselect-ALL ("すべてのレイヤーを選択解除できるボタン") in the section header.
          (#R69) + a "List" expander (see .alc-panel CSS note) — better UI, same constant bar height. */
       /* (#R72) icon List button (SVG list glyph; title carries the localized label) */
@@ -1639,7 +1642,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const chip=document.createElement('span'); chip.className='active-lyr-chip';
         const nm=document.createElement('span'); nm.className='alc-name'; nm.textContent=c.name; window.IntMapDialog.makeActionable(nm);
         nm.onclick=()=>{ const row=c.el.closest('.lyr-row')||c.el.closest('label'); if(row&&row.scrollIntoView) try{ row.scrollIntoView({block:'nearest'}); }catch(_){} };
-        const x=document.createElement('button'); x.className='alc-x'; x.textContent='×'; x.title=(window.IntMapLang.t(lang,'Hide','非表示','Ausblenden','Скрыть','Ocultar'));
+        const x=document.createElement('button'); x.className='alc-x'; x.textContent='×'; x.title=(IntMapLang.t(lang,'Hide','非表示','Ausblenden','Скрыть','Ocultar'));
         x.onclick=(e)=>{ e.stopPropagation(); c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
         chip.appendChild(nm); chip.appendChild(x); wrap.appendChild(chip);
       });
@@ -1652,7 +1655,7 @@ window.IntMapModules.dataLayers=function(HOST){
       const buildPanel=()=>{
         const old=sec.querySelector('.alc-panel'); if(old) old.remove();
         const pn=document.createElement('div'); pn.className='alc-panel';
-        if(!chips.length){ const em=document.createElement('div'); em.className='alc-empty'; em.textContent=(window.IntMapLang.t(lang,'No layers are on','表示中のレイヤーはありません','Keine aktiven Ebenen','Нет активных слоёв','Sin capas activas')); pn.appendChild(em); }
+        if(!chips.length){ const em=document.createElement('div'); em.className='alc-empty'; em.textContent=(IntMapLang.t(lang,'No layers are on','表示中のレイヤーはありません','Keine aktiven Ebenen','Нет активных слоёв','Sin capas activas')); pn.appendChild(em); }
         chips.forEach(c=>{ const row=document.createElement('div'); row.className='alc-row';
           const nm=document.createElement('span'); nm.className='alcr-name'; nm.textContent=c.name; nm.title=c.name; window.IntMapDialog.makeActionable(nm);
           nm.onclick=()=>{ const r2=c.el.closest('.lyr-row')||c.el.closest('label'); if(r2&&r2.scrollIntoView) try{ r2.scrollIntoView({block:'nearest'}); }catch(_){} };
@@ -1660,10 +1663,10 @@ window.IntMapModules.dataLayers=function(HOST){
           const src=findOp(c.el);
           if(src){ const rg=document.createElement('input'); rg.type='range';
             rg.min=src.min||0; rg.max=src.max||1; rg.step=src.step||'any'; rg.value=src.value;
-            rg.title=(window.IntMapLang.t(lang,'Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad'));
+            rg.title=(IntMapLang.t(lang,'Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad'));
             rg.oninput=()=>{ try{ src.value=rg.value; src.dispatchEvent(new Event('input',{bubbles:true})); src.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} };
             row.appendChild(rg); }
-          const x=document.createElement('button'); x.className='alc-x'; x.textContent='×'; x.title=(window.IntMapLang.t(lang,'Hide','非表示','Ausblenden','Скрыть','Ocultar'));
+          const x=document.createElement('button'); x.className='alc-x'; x.textContent='×'; x.title=(IntMapLang.t(lang,'Hide','非表示','Ausblenden','Скрыть','Ocultar'));
           x.onclick=()=>{ try{ c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
           row.appendChild(x); pn.appendChild(row); });
         sec.appendChild(pn); };
@@ -1831,7 +1834,7 @@ window.IntMapModules.dataLayers=function(HOST){
            `data-lyr-tool` is (#R729): the module can add a third without editing js/map-ui.js. */
         const _seisBtn=()=>{
           let b=document.getElementById('btn-seismic-sim');
-          const lbl=window.IntMapLang.t(lang,'Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos');
+          const lbl=IntMapLang.t(lang,'Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos');
           if(b){ const sp=b.querySelector('span'); if(sp) sp.textContent=lbl; return b; }
           b=document.createElement('button'); b.id='btn-seismic-sim'; b.type='button'; b.className='ai-test-btn'; b.dataset.osAct='sim.seismic';
           b.style.cssText='width:100%;text-align:center;margin:6px 0 0;';
@@ -1851,7 +1854,7 @@ window.IntMapModules.dataLayers=function(HOST){
            so this button, the palette and Atlas are one path rather than three copies. */
         const _panBtn=()=>{
           let b=document.getElementById('btn-pandemic-sim');
-          const lbl=window.IntMapLang.t(lang,'Pandemic Simulator','パンデミック・シミュレーター','Pandemie-Simulator','Симулятор пандемии','Simulador de pandemia');
+          const lbl=IntMapLang.t(lang,'Pandemic Simulator','パンデミック・シミュレーター','Pandemie-Simulator','Симулятор пандемии','Simulador de pandemia');
           if(b){ const sp=b.querySelector('span'); if(sp) sp.textContent=lbl; return b; }
           b=document.createElement('button'); b.id='btn-pandemic-sim'; b.type='button'; b.className='ai-test-btn'; b.dataset.osAct='sim.pandemic';
           b.style.cssText='width:100%;text-align:center;margin:6px 0 0;';
@@ -1910,7 +1913,7 @@ window.IntMapModules.dataLayers=function(HOST){
         });
         if(otherRows.length){
           const oh=document.createElement('div'); oh.className='lyr-head'; oh.setAttribute('data-i18n','lyrGrpOthers'); oh.textContent=T('lyrGrpOthers'); order.push(oh);
-          const note=document.createElement('div'); note.className='lyr-others-note'; note.textContent=(window.IntMapLang.t(lang,'May be incomplete or not fully working.','動作しない場合や不完全な場合があります。','Kann unvollständig sein oder nicht voll funktionieren.','Может быть неполным или работать не полностью.','Puede estar incompleto o no funcionar del todo.')); order.push(note);
+          const note=document.createElement('div'); note.className='lyr-others-note'; note.textContent=(IntMapLang.t(lang,'May be incomplete or not fully working.','動作しない場合や不完全な場合があります。','Kann unvollständig sein oder nicht voll funktionieren.','Может быть неполным или работать не полностью.','Puede estar incompleto o no funcionar del todo.')); order.push(note);
           /* ⚠ (#R469) Beta is NOT folded — the reader's category list does not name it, and every row
              here would be behind the one 「その他N件」 line if the rule were applied to it. The mark is
              CLEARED rather than merely not set: this function is idempotent and a row that moved out
@@ -1940,7 +1943,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const _seis=_seisBtn();   /* (#R242) 「地震シミュレータはレイヤー欄からも開けるようにしろ。」 */
         const _pan=_panBtn();     /* (#R666) 「LayersのToolsからアクセスできるように。」 */
         tools.innerHTML='';
-        const th=document.createElement('div'); th.className='lyr-head lyr-section-label'; th.style.marginTop='2px'; th.textContent=(window.IntMapLang.t(lang,'Tools','ツール','Werkzeuge','Инструменты','Herramientas')); tools.appendChild(th);
+        const th=document.createElement('div'); th.className='lyr-head lyr-section-label'; th.style.marginTop='2px'; th.textContent=(IntMapLang.t(lang,'Tools','ツール','Werkzeuge','Инструменты','Herramientas')); tools.appendChild(th);
         /* reset display: these persistent buttons get moved here each rebuild; clear any stale display:none
            left over from an earlier collapse so the Tools section always shows (#R13c). */
         if(cmpBtn){ cmpBtn.style.display=''; cmpBtn.style.width='100%'; cmpBtn.style.margin='4px 0 0'; tools.appendChild(cmpBtn); }
@@ -2088,15 +2091,15 @@ window.IntMapModules.dataLayers=function(HOST){
     function whenStyleReady(){ return GE().whenCanDraw(); }
     /* Hover a choropleth country → tooltip with its name + the metric value. */
     const CHORO_META={
-      pop:{label:()=>window.IntMapLang.t(HOST.lang,'Pop. density','人口密度','Bevölkerungsdichte','Плотность населения','Densidad de población'), fmt:s=>s.density!=null?Math.round(s.density).toLocaleString()+' /km²':'—'},
+      pop:{label:()=>IntMapLang.t(HOST.lang,'Pop. density','人口密度','Bevölkerungsdichte','Плотность населения','Densidad de población'), fmt:s=>s.density!=null?Math.round(s.density).toLocaleString()+' /km²':'—'},
       hdi:{label:()=>'HDI (2022)', fmt:s=>s.hdi!=null?s.hdi.toFixed(3):'—'},
-      dem:{label:()=>window.IntMapLang.t(HOST.lang,'Democracy Index (2023)','民主主義指数 (2023)','Demokratieindex (2023)','Индекс демократии (2023)','Índice de democracia (2023)'), fmt:s=>s.dem!=null?s.dem.toFixed(2):'—'},
+      dem:{label:()=>IntMapLang.t(HOST.lang,'Democracy Index (2023)','民主主義指数 (2023)','Demokratieindex (2023)','Индекс демократии (2023)','Índice de democracia (2023)'), fmt:s=>s.dem!=null?s.dem.toFixed(2):'—'},
       /* Military spending choropleths (#26) — absolute (SIPRI 2023, $B) and as a share of GDP. */
-      milSpend:{label:()=>window.IntMapLang.t(HOST.lang,'Mil. spending (2023)','国防費 (2023)','Militärausgaben (2023)','Военные расходы (2023)','Gasto militar (2023)'), fmt:s=>s.milSpend!=null?'$'+s.milSpend+'B':'—'},
-      milSpendGDP:{label:()=>window.IntMapLang.t(HOST.lang,'Mil. spending (% GDP)','国防費 (対GDP)','Militärausgaben (% BIP)','Военные расходы (% ВВП)','Gasto militar (% PIB)'), fmt:s=>{ const p=(s.milSpend!=null&&s.gdp)?(s.milSpend/s.gdp*100):null; return p!=null?p.toFixed(2)+'%':'—'; }},
+      milSpend:{label:()=>IntMapLang.t(HOST.lang,'Mil. spending (2023)','国防費 (2023)','Militärausgaben (2023)','Военные расходы (2023)','Gasto militar (2023)'), fmt:s=>s.milSpend!=null?'$'+s.milSpend+'B':'—'},
+      milSpendGDP:{label:()=>IntMapLang.t(HOST.lang,'Mil. spending (% GDP)','国防費 (対GDP)','Militärausgaben (% BIP)','Военные расходы (% ВВП)','Gasto militar (% PIB)'), fmt:s=>{ const p=(s.milSpend!=null&&s.gdp)?(s.milSpend/s.gdp*100):null; return p!=null?p.toFixed(2)+'%':'—'; }},
       /* GDP per capita (#R9) — nominal USD; (#R22) the readout also shows the PPP figure when loaded. */
-      gdppc:{label:()=>window.IntMapLang.t(HOST.lang,'GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу населения','PIB per cápita'), fmt:s=>s.gdppc!=null?(fmtPc(s.gdppc)+(s.gdppcPPP!=null?' · PPP '+fmtPc(s.gdppcPPP):'')):'—'},
-      tfr:{label:()=>window.IntMapLang.t(HOST.lang,'Total fertility rate','合計特殊出生率','Geburtenrate (TFR)','Суммарный коэффициент рождаемости','Tasa de fecundidad total'), fmt:s=>s.tfr!=null?s.tfr.toFixed(2):'—'}
+      gdppc:{label:()=>IntMapLang.t(HOST.lang,'GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу населения','PIB per cápita'), fmt:s=>s.gdppc!=null?(fmtPc(s.gdppc)+(s.gdppcPPP!=null?' · PPP '+fmtPc(s.gdppcPPP):'')):'—'},
+      tfr:{label:()=>IntMapLang.t(HOST.lang,'Total fertility rate','合計特殊出生率','Geburtenrate (TFR)','Суммарный коэффициент рождаемости','Tasa de fecundidad total'), fmt:s=>s.tfr!=null?s.tfr.toFixed(2):'—'}
     };
     /* (#R13c) Value of the active choropleth under the cursor, for the bottom-left coord readout —
        so EVERY numeric layer (not just Köppen/temp/SST) shows its value at the cursor. One
@@ -2268,8 +2271,8 @@ window.IntMapModules.dataLayers=function(HOST){
        own layer rather than making a second copy here. */
     function styleModeRow(el,cls,get,set){ if(!el) return;
       let r=el.querySelector('.'+cls);
-      const OPT=[['uniform',()=>window.IntMapLang.t(HOST.lang,'One colour','単色','Eine Farbe','Один цвет','Un color')],
-                 ['byYear', ()=>window.IntMapLang.t(HOST.lang,'By accession year','加盟年別','Nach Beitrittsjahr','По году вступления','Por año de ingreso')]];
+      const OPT=[['uniform',()=>IntMapLang.t(HOST.lang,'One colour','単色','Eine Farbe','Один цвет','Un color')],
+                 ['byYear', ()=>IntMapLang.t(HOST.lang,'By accession year','加盟年別','Nach Beitrittsjahr','По году вступления','Por año de ingreso')]];
       if(!r){ r=document.createElement('div'); r.className=cls;
         r.style.cssText='display:flex;gap:5px;margin-top:7px;';
         r.innerHTML=OPT.map(o=>'<button type="button" data-s="'+o[0]+'" style="flex:1;min-width:0;border:1px solid rgba(128,128,128,0.3);border-radius:7px;padding:4px 6px;font-size:10.5px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></button>').join('');
@@ -2319,7 +2322,7 @@ window.IntMapModules.dataLayers=function(HOST){
       if(!GE().layers.has('nato-line')) GE().layers.add({id:'nato-line',type:'line',source:'src-nato',layout:{visibility:'none'},paint:{'line-color':'#7fb0ff','line-width':1.6}},beforeId);
       if(!GE().layers.hasSource('src-tropic')) GE().layers.addSource('src-tropic',{type:'geojson',data:tropicFC()});
       if(!GE().layers.has('nato-tropic-line')) GE().layers.add({id:'nato-tropic-line',type:'line',source:'src-tropic',layout:{visibility:'none'},paint:{'line-color':'#f4b740','line-width':1.4,'line-dasharray':[3,3],'line-opacity':0.9}},beforeId);
-      if(!GE().layers.has('nato-tropic-label')) GE().layers.add({id:'nato-tropic-label',type:'symbol',source:'src-tropic',layout:{visibility:'none','symbol-placement':'line','text-field':(window.IntMapLang.t(HOST.lang,'Tropic of Cancer (23.4°N)','北回帰線 (北緯23.4°)','Wendekreis des Krebses (23,4°N)','Северный тропик (23,4° с.ш.)','Trópico de Cáncer (23,4°N)')),'text-size':window.IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']],'symbol-spacing':340,'text-letter-spacing':0.04},paint:{'text-color':'#f4b740','text-halo-color':'rgba(0,0,0,0.65)','text-halo-width':1.3}},beforeId);
+      if(!GE().layers.has('nato-tropic-label')) GE().layers.add({id:'nato-tropic-label',type:'symbol',source:'src-tropic',layout:{visibility:'none','symbol-placement':'line','text-field':(IntMapLang.t(HOST.lang,'Tropic of Cancer (23.4°N)','北回帰線 (北緯23.4°)','Wendekreis des Krebses (23,4°N)','Северный тропик (23,4° с.ш.)','Trópico de Cáncer (23,4°N)')),'text-size':window.IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']],'symbol-spacing':340,'text-letter-spacing':0.04},paint:{'text-color':'#f4b740','text-halo-color':'rgba(0,0,0,0.65)','text-halo-width':1.3}},beforeId);
     }
     function natoFillColor(){ return (_natoStyle==='byYear')
       ? yearFillExpr(NATO_YEARS,yearColors(NATO_YEARS),'#2f6bff') : '#2f6bff'; }
@@ -2356,7 +2359,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const jp=HOST.lang==='jp';
         const row=document.createElement('div'); row.className='nato-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:7px;display:flex;align-items:center;gap:7px;';
         if(typeof isMobile==='function'&&isMobile()){
-          row.innerHTML='<label style="display:contents;">'+(window.IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año'))+' <select class="nato-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
+          row.innerHTML='<label style="display:contents;">'+(IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año'))+' <select class="nato-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
             NATO_YEARS.map(y=>'<option value="'+y+'"'+(y===_natoYear?' selected':'')+'>'+y+'</option>').join('')+'</select></label>';
           row.querySelector('.nato-year-sel').addEventListener('change',(e)=>{ _natoYear=+e.target.value||_natoYear; applyNato(); const v=el.querySelector('.nato-year-val'); if(v) v.textContent=_natoYear; });
         } else {
@@ -2364,7 +2367,7 @@ window.IntMapModules.dataLayers=function(HOST){
              accession year — the dense per-year ticks collided (1999/2004/2009/2017/2020/2023/2024 all
              bunched at the right) which was the "範囲のテキストが重なるクソUI". The selected year shows in
              the <b> readout, so no information is lost. */
-          row.innerHTML='<label style="display:contents;">'+(window.IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año'))+' <span style="flex:1;min-width:90px;display:flex;flex-direction:column;gap:1px;">'+
+          row.innerHTML='<label style="display:contents;">'+(IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año'))+' <span style="flex:1;min-width:90px;display:flex;flex-direction:column;gap:1px;">'+
             '<input type="range" min="0" max="'+(NATO_YEARS.length-1)+'" step="1" value="'+NATO_YEARS.indexOf(_natoYear)+'" style="width:100%;display:block;margin:0;box-sizing:border-box;">'+
             '<span aria-hidden="true" style="display:flex;justify-content:space-between;font-size:8px;line-height:1;color:var(--text-muted);"><span>'+NATO_YEARS[0]+'</span><span>'+NATO_YEARS[NATO_YEARS.length-1]+'</span></span>'+
             '</span></label> <b class="nato-year-val" style="color:var(--text-main);min-width:34px;text-align:right;">'+_natoYear+'</b>';
@@ -2394,8 +2397,8 @@ window.IntMapModules.dataLayers=function(HOST){
        for the ACTIVE mode — a switch that lived in only one of them would be unreachable from the
        other half of its own toggle. */
     let milMode='total';                       /* 'total' = US$ billions · 'gdp' = % of GDP */
-    const MIL_MODES=[['total',()=>window.IntMapLang.t(HOST.lang,'Total ($B)','総額（$B）','Gesamt ($ Mrd.)','Всего ($ млрд)','Total ($ mil M)')],
-                     ['gdp',  ()=>window.IntMapLang.t(HOST.lang,'% of GDP','対GDP比','% des BIP','% ВВП','% del PIB')]];
+    const MIL_MODES=[['total',()=>IntMapLang.t(HOST.lang,'Total ($B)','総額（$B）','Gesamt ($ Mrd.)','Всего ($ млрд)','Total ($ mil M)')],
+                     ['gdp',  ()=>IntMapLang.t(HOST.lang,'% of GDP','対GDP比','% des BIP','% ВВП','% del PIB')]];
     function milIsOn(){ try{ const cb=document.getElementById('dl-milSpend'); return !!(cb&&cb.checked); }catch(_){ return false; } }
     function milModeRow(el){ if(!el) return;
       let r=el.querySelector('.dl-milmode');
@@ -2432,9 +2435,9 @@ window.IntMapModules.dataLayers=function(HOST){
         const yr=NATO_JOIN[s.code], pct=defensePctGDP(s);
         const el=ensureMapTooltip(); window.showMapTooltip(el);
         window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?window.IntMapSafe.flag(s.flag)+' ':''}${cName(s)}</div>`+
-          `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Joined NATO','NATO加盟年','NATO-Beitritt','Вступление в НАТО','Ingreso en la OTAN')}: <b style="color:var(--text-main);">${yr||'—'}</b></div>`+
-          `<div style="color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Defense spending','国防費','Verteidigungsausgaben','Расходы на оборону','Gasto en defensa')}: <b style="color:var(--text-main);">${s.milSpend!=null?'$'+s.milSpend+'B (2023)':'—'}</b></div>`+
-          `<div style="color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Defense (% GDP)','国防費 (対GDP)','Verteidigung (% BIP)','Оборона (% ВВП)','Defensa (% PIB)')}: <b style="color:var(--text-main);">${pct!=null?pct.toFixed(2)+'%':'—'}</b></div>`);
+          `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${IntMapLang.t(HOST.lang,'Joined NATO','NATO加盟年','NATO-Beitritt','Вступление в НАТО','Ingreso en la OTAN')}: <b style="color:var(--text-main);">${yr||'—'}</b></div>`+
+          `<div style="color:var(--text-muted);font-size:12px;">${IntMapLang.t(HOST.lang,'Defense spending','国防費','Verteidigungsausgaben','Расходы на оборону','Gasto en defensa')}: <b style="color:var(--text-main);">${s.milSpend!=null?'$'+s.milSpend+'B (2023)':'—'}</b></div>`+
+          `<div style="color:var(--text-muted);font-size:12px;">${IntMapLang.t(HOST.lang,'Defense (% GDP)','国防費 (対GDP)','Verteidigung (% BIP)','Оборона (% ВВП)','Defensa (% PIB)')}: <b style="color:var(--text-main);">${pct!=null?pct.toFixed(2)+'%':'—'}</b></div>`);
         positionTooltip(e.point);
       });
       GE().events.onLayer('mouseleave','nato-fill',()=>{ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); });
@@ -2488,13 +2491,13 @@ window.IntMapModules.dataLayers=function(HOST){
         const jp=HOST.lang==='jp';
         const row=document.createElement('div'); row.className='eu-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:7px;display:flex;align-items:center;gap:7px;';
         if(typeof isMobile==='function'&&isMobile()){
-          row.innerHTML='<label style="display:contents;">'+(window.IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año'))+' <select class="eu-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
+          row.innerHTML='<label style="display:contents;">'+(IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año'))+' <select class="eu-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
             EU_YEARS.map(y=>'<option value="'+y+'"'+(y===_euYear?' selected':'')+'>'+y+'</option>').join('')+'</select></label>';
           row.querySelector('.eu-year-sel').addEventListener('change',(e)=>{ _euYear=+e.target.value||_euYear; applyEu(); const v=el.querySelector('.eu-year-val'); if(v) v.textContent=_euYear; });
         } else {
           /* (#R27) Same fix as NATO: label only the first/last year (space-between), not every dense
              enlargement year, so the range text no longer overlaps. */
-          row.innerHTML='<label style="display:contents;">'+(window.IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año'))+' <span style="flex:1;min-width:90px;display:flex;flex-direction:column;gap:1px;">'+
+          row.innerHTML='<label style="display:contents;">'+(IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año'))+' <span style="flex:1;min-width:90px;display:flex;flex-direction:column;gap:1px;">'+
             '<input type="range" min="0" max="'+(EU_YEARS.length-1)+'" step="1" value="'+EU_YEARS.indexOf(_euYear)+'" style="width:100%;display:block;margin:0;box-sizing:border-box;">'+
             '<span aria-hidden="true" style="display:flex;justify-content:space-between;font-size:8px;line-height:1;color:var(--text-muted);"><span>'+EU_YEARS[0]+'</span><span>'+EU_YEARS[EU_YEARS.length-1]+'</span></span>'+
             '</span></label> <b class="eu-year-val" style="color:var(--text-main);min-width:34px;text-align:right;">'+_euYear+'</b>';
@@ -2522,7 +2525,7 @@ window.IntMapModules.dataLayers=function(HOST){
       GE().events.onLayer('mousemove','eu-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; const code=e.features[0].id; if(!s) return;
         const el=ensureMapTooltip(); window.showMapTooltip(el);
         window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?window.IntMapSafe.flag(s.flag)+' ':''}${cName(s)}</div>`+
-          `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Joined EU','EU加盟年','EU-Beitritt','Вступление в ЕС','Ingreso en la UE')}: <b style="color:var(--text-main);">${EU_JOIN[code]||'—'}${EU_LEFT[code]?(' → '+EU_LEFT[code]+(window.IntMapLang.t(HOST.lang,' left',' 離脱',' ausgetreten',' вышла',' salió'))):''}</b></div>`);
+          `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${IntMapLang.t(HOST.lang,'Joined EU','EU加盟年','EU-Beitritt','Вступление в ЕС','Ingreso en la UE')}: <b style="color:var(--text-main);">${EU_JOIN[code]||'—'}${EU_LEFT[code]?(' → '+EU_LEFT[code]+(IntMapLang.t(HOST.lang,' left',' 離脱',' ausgetreten',' вышла',' salió'))):''}</b></div>`);
         positionTooltip(e.point);
       });
       GE().events.onLayer('mouseleave','eu-fill',()=>{ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); });
@@ -2537,7 +2540,7 @@ window.IntMapModules.dataLayers=function(HOST){
       const rg=row.querySelector('input[type=range]'); if(rg){ let idx=0; for(let i=0;i<years.length;i++){ if(years[i]<=val) idx=i; } rg.value=idx; }
       const se=row.querySelector('select'); if(se){ let best=years[0]; years.forEach(y=>{ if(y<=val) best=y; }); se.value=best; }
     }catch(_){} }
-    try{ if(window.IntMapTime) window.IntMapTime.on(e=>{
+    try{ if(IntMapTime) IntMapTime.on(e=>{
       const nt=e.isLive?NATO_YEARS[NATO_YEARS.length-1]:e.year;
       if(nt!==_natoYear){ _natoYear=nt;
         try{ if(GE().layers.has('nato-fill')&&GE().layers.getLayout('nato-fill','visibility')==='visible') applyNato(); }catch(_){}
@@ -3207,17 +3210,17 @@ window.IntMapModules.dataLayers=function(HOST){
          legend element is not in the DOM at that moment (measured: tests/atlas-shell-ui-checks.test.mjs (#R151) removes it between
          ticks), this wrote innerHTML on null and the whole change handler died uncaught */
       if(!lg) return;
-      const clearBtn=kSelected.size>0?`<button class="kl-clear" id="kl-clear">${window.IntMapLang.t(HOST.lang,'Clear selection','選択解除','Auswahl aufheben','Снять выделение','Quitar selección')}</button>`:'';
-      const dragTitle=window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover');
+      const clearBtn=kSelected.size>0?`<button class="kl-clear" id="kl-clear">${IntMapLang.t(HOST.lang,'Clear selection','選択解除','Auswahl aufheben','Снять выделение','Quitar selección')}</button>`:'';
+      const dragTitle=IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите для перемещения','Arrastra para mover');
       /* The drag handle is part of the rebuilt markup so it survives every innerHTML refresh — the
          old code injected it once after setup and buildLegend() wiped it, so the legend "couldn't be
          moved" (#22). */
       /* (#R12) Period pulldown — default present-day, switch to historical eras. */
-      const perLabel=window.IntMapLang.t(HOST.lang,'Period','期間','Zeitraum','Период','Período');
+      const perLabel=IntMapLang.t(HOST.lang,'Period','期間','Zeitraum','Период','Período');
       const periodSel=`<div class="kl-period"><label for="kl-period">${perLabel}</label><select id="kl-period">`+window.KOPPEN_PERIODS.map(([p])=>`<option value="${p}"${p===window._koppenPeriod?' selected':''}>${p}</option>`).join('')+`</select></div>`;
       /* (#R23) Click a class = highlight just that climate on the map (RESTORED). Selected rows get the
          .sel outline + a Clear button; long-press (mobile) / right-click (desktop) shows the criteria. */
-      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">×</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>{ const _kn=window.kName(code), _knm=(_kn===code?'':_kn); return `<div class="kl-item${kSelected.has(code)?' sel':''}" role="button" tabindex="0" aria-pressed="${kSelected.has(code)?'true':'false'}" data-c="${code}" title="${code}${_knm?' · '+_knm:''}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span><span class="kl-code">${code}</span>${_knm?`<span class="kl-nm"> · ${_knm}</span>`:''}</div>`; }).join('')+`</div>`+clearBtn+`<div class="kl-hint">${_imTouchPrimary()?(window.IntMapLang.t(HOST.lang,'Tap to highlight • long-press for criteria','タップでその気候だけ強調 / 長押しで定義','Tippen: Klima hervorheben • lange drücken: Kriterien','Касание — выделить климат • долгое нажатие — критерии','Toca para resaltar el clima • mantén pulsado para criterios')):(window.IntMapLang.t(HOST.lang,'Click to highlight • right-click for criteria','クリックでその気候だけ強調 / 右クリックで定義','Klick: Klima hervorheben • Rechtsklick: Kriterien','Клик — выделить климат • правый клик — критерии','Clic: resaltar clima • clic derecho: criterios'))}</div>`;
+      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">×</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>{ const _kn=window.kName(code), _knm=(_kn===code?'':_kn); return `<div class="kl-item${kSelected.has(code)?' sel':''}" role="button" tabindex="0" aria-pressed="${kSelected.has(code)?'true':'false'}" data-c="${code}" title="${code}${_knm?' · '+_knm:''}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span><span class="kl-code">${code}</span>${_knm?`<span class="kl-nm"> · ${_knm}</span>`:''}</div>`; }).join('')+`</div>`+clearBtn+`<div class="kl-hint">${_imTouchPrimary()?(IntMapLang.t(HOST.lang,'Tap to highlight • long-press for criteria','タップでその気候だけ強調 / 長押しで定義','Tippen: Klima hervorheben • lange drücken: Kriterien','Касание — выделить климат • долгое нажатие — критерии','Toca para resaltar el clima • mantén pulsado para criterios')):(IntMapLang.t(HOST.lang,'Click to highlight • right-click for criteria','クリックでその気候だけ強調 / 右クリックで定義','Klick: Klima hervorheben • Rechtsklick: Kriterien','Клик — выделить климат • правый клик — критерии','Clic: resaltar clima • clic derecho: criterios'))}</div>`;
       const psel=lg.querySelector('#kl-period'); if(psel) psel.onchange=(e)=>{ window.setKoppenPeriod(e.target.value); };
       const clr=lg.querySelector('#kl-clear'); if(clr) clr.onclick=()=>{ kSelected.clear(); buildLegend(); if(window._refreshKoppenImage) window._refreshKoppenImage(); };
       lg.querySelectorAll('.kl-item').forEach(it=>{
@@ -3301,7 +3304,7 @@ window.IntMapModules.dataLayers=function(HOST){
        five-language ternary, just a two-column table. Through the registry now, so the five slots
        are positional and a missing one shows up. */
     function koppenCriteria(code){
-      const T5=(a)=>window.IntMapLang.t(HOST.lang,a[0],a[1],a[2],a[3],a[4]);
+      const T5=(a)=>IntMapLang.t(HOST.lang,a[0],a[1],a[2],a[3],a[4]);
       const g=code[0], rest=code.slice(1), out=[];
       const main={A:LA('Tropical — coldest month ≥ 18 °C','熱帯 — 最寒月も18°C以上','Tropisch — kältester Monat ≥ 18 °C','Тропический — самый холодный месяц ≥ 18 °C','Tropical — mes más frío ≥ 18 °C'),
         B:LA('Arid — annual precipitation below the Köppen dryness threshold','乾燥帯 — 年降水量が乾燥限界未満','Arid — Jahresniederschlag unter der Köppen-Trockengrenze','Аридный — годовые осадки ниже порога сухости Кёппена','Árido — precipitación anual por debajo del umbral de aridez de Köppen'),
@@ -3355,7 +3358,7 @@ window.IntMapModules.dataLayers=function(HOST){
          stays outside it — it repeats the slider's own value, and inside the label the name would
          change on every drag. js/weather.js and js/waves.js build the same row the same way. */
       const row=document.createElement('div'); row.className='dl-op-row';
-      row.innerHTML=`<label style="display:contents;">${window.IntMapLang.t(HOST.lang,'Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad')}<input type="range" min="0" max="1" step="0.05" value="${opacities[id]}"></label><span class="dl-op-val">${Math.round(opacities[id]*100)}%</span>`;
+      row.innerHTML=`<label style="display:contents;">${IntMapLang.t(HOST.lang,'Opacity','不透明度','Deckkraft','Непрозрачность','Opacidad')}<input type="range" min="0" max="1" step="0.05" value="${opacities[id]}"></label><span class="dl-op-val">${Math.round(opacities[id]*100)}%</span>`;
       const hint=el.querySelector('.dl-hint, .kl-hint'); if(hint && hint.parentNode===el) el.insertBefore(row,hint); else el.appendChild(row);
       const r=row.querySelector('input'), val=row.querySelector('.dl-op-val');
       r.addEventListener('input',()=>{ const v=parseFloat(r.value); setLayerOpacity(id,v); if(val) val.textContent=Math.round(v*100)+'%'; });
@@ -3418,7 +3421,7 @@ window.IntMapModules.dataLayers=function(HOST){
       if(el.querySelector('.dl-cd-row')) return;
       const d=Math.max(0.25,Math.min(4,+window._contourDensity||1));
       const row=document.createElement('div'); row.className='dl-op-row dl-cd-row';
-      row.innerHTML=`<label style="display:contents;">${window.IntMapLang.t(HOST.lang,'Detail','細かさ','Dichte','Детализация','Detalle')}<input type="range" min="0.5" max="3" step="0.25" value="${d}"></label><span class="dl-op-val">${d}×</span>`;
+      row.innerHTML=`<label style="display:contents;">${IntMapLang.t(HOST.lang,'Detail','細かさ','Dichte','Детализация','Detalle')}<input type="range" min="0.5" max="3" step="0.25" value="${d}"></label><span class="dl-op-val">${d}×</span>`;
       /* (#R469) directly under the contour switch it belongs to — not under the HOST layer's opacity row */
       const ct=el.querySelector('.dl-ct-row');
       if(ct && ct.parentNode===el) el.insertBefore(row, ct.nextSibling);
@@ -3477,16 +3480,16 @@ window.IntMapModules.dataLayers=function(HOST){
       /* (#R241) resolved through `pick()` itself, so a language past the five positional slots
          gets its inline-table entry rather than English at index 0. */
       const nm=LDL.arr(GENERIC_LEG[id]);
-      const _dragT=window.IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите','Arrastra para mover');
+      const _dragT=IntMapLang.t(HOST.lang,'Drag to move','ドラッグして移動','Zum Verschieben ziehen','Перетащите','Arrastra para mover');
       if(!el.querySelector('h4')){ el.innerHTML='<span class="dl-drag" title="'+_dragT+'">⋮⋮</span><button class="layer-popup-x" data-x="'+(cbId||id)+'" title="'+t('close')+'">×</button><h4>'+nm+'</h4>';   /* (#R40) data-x so the universal delegated × handler is a guaranteed fallback */
         el.querySelector('.layer-popup-x').onclick=()=>{ const cb=(el.dataset.cbId&&document.getElementById(el.dataset.cbId))||document.getElementById('dl-'+id); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } };
         /* (#R15d) ships/planes: the military/civilian filter moves from the Layers panel INTO the legend. */
         if(id==='ships'||id==='planes'){
           const fr=document.createElement('div'); fr.className='gl-filter-row'; fr.style.cssText='font-size:10.5px;color:var(--text-muted);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
-          const _fL=window.IntMapLang.t(HOST.lang,'Filter','絞り込み','Filter','Фильтр','Filtro');
-          const _fAll=window.IntMapLang.t(HOST.lang,'All','すべて','Alle','Все','Todos');
-          const _fCiv=window.IntMapLang.t(HOST.lang,'Civilian','民間','Zivil','Гражданские','Civil');
-          const _fMil=window.IntMapLang.t(HOST.lang,'Military','軍用','Militär','Военные','Militar');
+          const _fL=IntMapLang.t(HOST.lang,'Filter','絞り込み','Filter','Фильтр','Filtro');
+          const _fAll=IntMapLang.t(HOST.lang,'All','すべて','Alle','Все','Todos');
+          const _fCiv=IntMapLang.t(HOST.lang,'Civilian','民間','Zivil','Гражданские','Civil');
+          const _fMil=IntMapLang.t(HOST.lang,'Military','軍用','Militär','Военные','Militar');
           fr.innerHTML='<label style="display:contents;">'+_fL+' <select class="gl-filter" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"><option value="all">'+_fAll+'</option><option value="civilian">'+_fCiv+'</option><option value="military">'+_fMil+'</option></select></label>';
           el.appendChild(fr);
           const s=fr.querySelector('.gl-filter'); try{ s.value=(trafficFilters&&trafficFilters[id])||'all'; }catch(_){}
@@ -3495,7 +3498,7 @@ window.IntMapModules.dataLayers=function(HOST){
              anyone who wants a plain top-down picture. Lives next to the filter, same row, same legend. */
           if(id==='planes'){
             const a3=document.createElement('label'); a3.style.cssText='display:flex;align-items:center;gap:5px;cursor:pointer;';
-            const _aL=window.IntMapLang.t(HOST.lang,'At real altitude','実際の高度で表示','In echter Höhe','На реальной высоте','A su altitud real');
+            const _aL=IntMapLang.t(HOST.lang,'At real altitude','実際の高度で表示','In echter Höhe','На реальной высоте','A su altitud real');
             a3.innerHTML='<input type="checkbox" class="gl-alt3d" style="accent-color:var(--primary-color);">'+_aL;
             fr.appendChild(a3);
             const c3=a3.querySelector('.gl-alt3d'); try{ c3.checked=planes3DOn(); }catch(_){}
@@ -3512,7 +3515,7 @@ window.IntMapModules.dataLayers=function(HOST){
         if(id==='sats'){
           const A=()=>window.IntMapSatellites;
           const fr=document.createElement('div'); fr.className='gl-filter-row'; fr.style.cssText='font-size:10.5px;color:var(--text-muted);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
-          const _gL=window.IntMapLang.t(HOST.lang,'Catalog','カタログ','Katalog','Каталог','Catálogo');
+          const _gL=IntMapLang.t(HOST.lang,'Catalog','カタログ','Katalog','Каталог','Catálogo');
           fr.innerHTML='<label style="display:contents;">'+_gL+' <select class="gl-satgrp" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;max-width:170px;"></select></label>';
           el.appendChild(fr);
           const gs=fr.querySelector('.gl-satgrp');
@@ -3545,7 +3548,7 @@ window.IntMapModules.dataLayers=function(HOST){
     function toggleLegendMin(el){
       const collapsed=el.classList.toggle('legend-collapsed');
       Array.from(el.children).forEach(ch=>{ if(ch.tagName==='H4'||ch.classList.contains('dl-drag')||ch.classList.contains('kl-drag')||ch.classList.contains('legend-min')||ch.classList.contains('layer-popup-x')) return; ch.style.display = collapsed?'none':''; });
-      const b=el.querySelector('.legend-min'); if(b){ b.textContent=collapsed?'▢':'–'; b.title=collapsed?(window.IntMapLang.t(HOST.lang,'Expand','展開','Ausklappen','Развернуть','Expandir')):(window.IntMapLang.t(HOST.lang,'Minimize','最小化','Minimieren','Свернуть','Minimizar')); }
+      const b=el.querySelector('.legend-min'); if(b){ b.textContent=collapsed?'▢':'–'; b.title=collapsed?(IntMapLang.t(HOST.lang,'Expand','展開','Ausklappen','Развернуть','Expandir')):(IntMapLang.t(HOST.lang,'Minimize','最小化','Minimieren','Свернуть','Minimizar')); }
     }
     function ensureLegendMinimize(el,fold){
       if(!el) return;
@@ -3557,7 +3560,7 @@ window.IntMapModules.dataLayers=function(HOST){
       if(!b){ b=document.createElement('button'); b.className='legend-min'; b.onclick=(e)=>{ e.stopPropagation(); toggleLegendMin(el);
         if(el.classList.contains('legend-collapsed')) delete el.dataset.legPinOpen; else el.dataset.legPinOpen='1'; }; el.appendChild(b); }
       const collapsed=el.classList.contains('legend-collapsed');
-      b.textContent=collapsed?'▢':'–'; b.title=collapsed?(window.IntMapLang.t(HOST.lang,'Expand','展開','Ausklappen','Развернуть','Expandir')):(window.IntMapLang.t(HOST.lang,'Minimize','最小化','Minimieren','Свернуть','Minimizar'));
+      b.textContent=collapsed?'▢':'–'; b.title=collapsed?(IntMapLang.t(HOST.lang,'Expand','展開','Ausklappen','Развернуть','Expandir')):(IntMapLang.t(HOST.lang,'Minimize','最小化','Minimieren','Свернуть','Minimizar'));
       /* On phones, start minimized so the legend never covers the map on open.
          ⚠⚠ (#R240) …EXCEPT IN THE SIDEBAR, WHERE THERE IS NOTHING TO COVER ═══════════════════════
          「パネル内のポップアップや凡例は最小化された状態でスタートしないように。」 Measured on a
@@ -4282,7 +4285,7 @@ window.IntMapModules.dataLayers=function(HOST){
          reason (measured in the relay: 1,224 frames arrived, 0 vessels were kept). Asking for an
          ArrayBuffer makes the frame readable here and now; _aisFrameText still accepts a string,
          because nothing promises which of the two arrives. */
-      let ws; try{ ws=new WebSocket('wss://stream.aisstream.io/v0/stream'); ws.binaryType='arraybuffer'; }catch(e){ imToast((window.IntMapLang.t(HOST.lang,'AIS connect failed: ','AIS接続失敗: ','AIS-Verbindung fehlgeschlagen: ','Сбой подключения AIS: ','Fallo de conexión AIS: '))+((e&&e.message)||e)); return; }
+      let ws; try{ ws=new WebSocket('wss://stream.aisstream.io/v0/stream'); ws.binaryType='arraybuffer'; }catch(e){ imToast((IntMapLang.t(HOST.lang,'AIS connect failed: ','AIS接続失敗: ','AIS-Verbindung fehlgeschlagen: ','Сбой подключения AIS: ','Fallo de conexión AIS: '))+((e&&e.message)||e)); return; }
       aisWS=ws;
       ws.onopen=()=>{ try{ ws.send(JSON.stringify({APIKey:aisKey, BoundingBoxes:aisBBox(), FilterMessageTypes:['PositionReport','ShipStaticData']})); }catch(_){} };
       ws.onmessage=(ev)=>{ if(ws!==aisWS) return; const txt=_aisFrameText(ev.data); if(!txt) return;
@@ -4418,10 +4421,10 @@ window.IntMapModules.dataLayers=function(HOST){
     }
     /* AIS ship-type code → label */
     function shipTypeLabel(c){ if(c==null) return ''; const jp=HOST.lang==='jp';
-      if(c===35) return window.IntMapLang.t(HOST.lang,'Military','軍用','Militär','Военное','Militar'); if(c===30) return window.IntMapLang.t(HOST.lang,'Fishing','漁船','Fischerei','Рыболовное','Pesca'); if(c===36) return window.IntMapLang.t(HOST.lang,'Sailing','帆船','Segelschiff','Парусное','Vela'); if(c===37) return window.IntMapLang.t(HOST.lang,'Pleasure craft','プレジャー','Sportboot','Прогулочное судно','Embarcación de recreo');
-      if(c>=60&&c<=69) return window.IntMapLang.t(HOST.lang,'Passenger','旅客船','Passagierschiff','Пассажирское','Pasaje'); if(c>=70&&c<=79) return window.IntMapLang.t(HOST.lang,'Cargo','貨物船','Frachtschiff','Грузовое','Carga'); if(c>=80&&c<=89) return window.IntMapLang.t(HOST.lang,'Tanker','タンカー','Tanker','Танкер','Petrolero');
-      if(c>=40&&c<=49) return window.IntMapLang.t(HOST.lang,'High-speed craft','高速船','Schnellboot','Скоростное судно','Nave rápida'); if(c===50) return window.IntMapLang.t(HOST.lang,'Pilot','パイロット','Lotsenboot','Лоцманское','Práctico'); if(c===51) return 'SAR'; if(c===52) return window.IntMapLang.t(HOST.lang,'Tug','タグ','Schlepper','Буксир','Remolcador'); if(c===55) return window.IntMapLang.t(HOST.lang,'Law enforcement','法執行','Behördenschiff','Правоохранительное','Autoridad');
-      return window.IntMapLang.t(HOST.lang,'Other','その他','Sonstige','Прочее','Otro'); }
+      if(c===35) return IntMapLang.t(HOST.lang,'Military','軍用','Militär','Военное','Militar'); if(c===30) return IntMapLang.t(HOST.lang,'Fishing','漁船','Fischerei','Рыболовное','Pesca'); if(c===36) return IntMapLang.t(HOST.lang,'Sailing','帆船','Segelschiff','Парусное','Vela'); if(c===37) return IntMapLang.t(HOST.lang,'Pleasure craft','プレジャー','Sportboot','Прогулочное судно','Embarcación de recreo');
+      if(c>=60&&c<=69) return IntMapLang.t(HOST.lang,'Passenger','旅客船','Passagierschiff','Пассажирское','Pasaje'); if(c>=70&&c<=79) return IntMapLang.t(HOST.lang,'Cargo','貨物船','Frachtschiff','Грузовое','Carga'); if(c>=80&&c<=89) return IntMapLang.t(HOST.lang,'Tanker','タンカー','Tanker','Танкер','Petrolero');
+      if(c>=40&&c<=49) return IntMapLang.t(HOST.lang,'High-speed craft','高速船','Schnellboot','Скоростное судно','Nave rápida'); if(c===50) return IntMapLang.t(HOST.lang,'Pilot','パイロット','Lotsenboot','Лоцманское','Práctico'); if(c===51) return 'SAR'; if(c===52) return IntMapLang.t(HOST.lang,'Tug','タグ','Schlepper','Буксир','Remolcador'); if(c===55) return IntMapLang.t(HOST.lang,'Law enforcement','法執行','Behördenschiff','Правоохранительное','Autoridad');
+      return IntMapLang.t(HOST.lang,'Other','その他','Sonstige','Прочее','Otro'); }
     /* AIS navigational-status code → label */
     function navStatusLabel(c){ if(c==null) return ''; const jp=HOST.lang==='jp';
       const en=['Under way (engine)','At anchor','Not under command','Restricted maneuverability','Constrained by draught','Moored','Aground','Fishing','Under way (sailing)'];
@@ -4607,46 +4610,46 @@ window.IntMapModules.dataLayers=function(HOST){
     }
     function agoStr(sec){ if(!sec) return ''; const s=Math.max(0,Math.round(Date.now()/1000-sec));
       const U=HOST.lang==='jp'?['秒前','分前','時間前']:HOST.lang==='de'?['s her','min her','h her']:HOST.lang==='ru'?['с назад','мин назад','ч назад']:HOST.lang==='es'?['s atrás','min atrás','h atrás']:['s ago','m ago','h ago'];
-      const sep=window.IntMapLang.t(HOST.lang,' ','');
+      const sep=IntMapLang.t(HOST.lang,' ','');
       if(s<60) return s+sep+U[0]; if(s<3600) return Math.floor(s/60)+sep+U[1]; return Math.floor(s/3600)+sep+U[2]; }
     function trafficTooltipHTML(id,p){
       const jp=HOST.lang==='jp';
       const row=(label,val)=>val!==''&&val!=null?`<div style="font-size:11px;margin-top:2px;"><span style="color:var(--text-muted);">${label}:</span> ${val}</div>`:'';
-      const typeChip=`<div style="font-size:11px;margin-top:4px;color:${p.type==='military'?'var(--info-mil)':'var(--info-energy)'};font-weight:600;">${p.type==='military'?(window.IntMapLang.t(HOST.lang,'Military','軍用','Militär','Военное','Militar')):(window.IntMapLang.t(HOST.lang,'Civilian','民間','Zivil','Гражданское','Civil'))}</div>`;
+      const typeChip=`<div style="font-size:11px;margin-top:4px;color:${p.type==='military'?'var(--info-mil)':'var(--info-energy)'};font-weight:600;">${p.type==='military'?(IntMapLang.t(HOST.lang,'Military','軍用','Militär','Военное','Militar')):(IntMapLang.t(HOST.lang,'Civilian','民間','Zivil','Гражданское','Civil'))}</div>`;
       if(id==='ships'){
         const nm=escapeHtml(p.name||'')||('MMSI '+(p.mmsi?escapeHtml(String(p.mmsi)):'—'));
         const spd=p.vel!=null?(Math.round(p.vel*10)/10)+' kn'+(p.vel?` · ${Math.round(p.vel*1.852)} km/h`:''):'';
         return `<div style="font-weight:700;font-size:13px;">🚢 ${nm}</div>`+
-          row(window.IntMapLang.t(HOST.lang,'Type','種別','Typ','Тип','Tipo'),shipTypeLabel(p.shipType))+
+          row(IntMapLang.t(HOST.lang,'Type','種別','Typ','Тип','Tipo'),shipTypeLabel(p.shipType))+
           row('MMSI',p.mmsi!=null?escapeHtml(String(p.mmsi)):'')+
-          row(window.IntMapLang.t(HOST.lang,'Call sign','呼出符号','Rufzeichen','Позывной','Indicativo'),escapeHtml(p.callsign||''))+
+          row(IntMapLang.t(HOST.lang,'Call sign','呼出符号','Rufzeichen','Позывной','Indicativo'),escapeHtml(p.callsign||''))+
           (p.imo?row('IMO',escapeHtml(String(p.imo))):'')+
-          row(window.IntMapLang.t(HOST.lang,'Speed','速力','Geschwindigkeit','Скорость','Velocidad'),spd)+
-          row(window.IntMapLang.t(HOST.lang,'Course','針路(COG)','Kurs (COG)','Курс (COG)','Rumbo (COG)'),p.cog!=null?Math.round(p.cog)+'°':'')+
-          row(window.IntMapLang.t(HOST.lang,'Heading','船首方位','Steuerkurs','Курс носа','Proa'),p.heading!=null?Math.round(p.heading)+'°':'')+
-          row(window.IntMapLang.t(HOST.lang,'Status','状態','Status','Состояние','Estado'),navStatusLabel(p.navStatus))+
-          row(window.IntMapLang.t(HOST.lang,'Draught','喫水','Tiefgang','Осадка','Calado'),p.draught?escapeHtml(String(p.draught))+' m':'')+
-          row(window.IntMapLang.t(HOST.lang,'Destination','仕向地','Ziel','Пункт назначения','Destino'),escapeHtml(p.dest||''))+
+          row(IntMapLang.t(HOST.lang,'Speed','速力','Geschwindigkeit','Скорость','Velocidad'),spd)+
+          row(IntMapLang.t(HOST.lang,'Course','針路(COG)','Kurs (COG)','Курс (COG)','Rumbo (COG)'),p.cog!=null?Math.round(p.cog)+'°':'')+
+          row(IntMapLang.t(HOST.lang,'Heading','船首方位','Steuerkurs','Курс носа','Proa'),p.heading!=null?Math.round(p.heading)+'°':'')+
+          row(IntMapLang.t(HOST.lang,'Status','状態','Status','Состояние','Estado'),navStatusLabel(p.navStatus))+
+          row(IntMapLang.t(HOST.lang,'Draught','喫水','Tiefgang','Осадка','Calado'),p.draught?escapeHtml(String(p.draught))+' m':'')+
+          row(IntMapLang.t(HOST.lang,'Destination','仕向地','Ziel','Пункт назначения','Destino'),escapeHtml(p.dest||''))+
           typeChip+
-          `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${(window.IntMapLang.t(HOST.lang,'Last seen','最終受信','Zuletzt empfangen','Последний приём','Última recepción'))+' '+agoStr(Math.floor((p.t||0)/1000))}<br>${aisKey?'aisstream.io · AIS':'aisstream.io + Digitraffic/Fintraffic (CC BY 4.0) · AIS'}</div>`;
+          `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${(IntMapLang.t(HOST.lang,'Last seen','最終受信','Zuletzt empfangen','Последний приём','Última recepción'))+' '+agoStr(Math.floor((p.t||0)/1000))}<br>${aisKey?'aisstream.io · AIS':'aisstream.io + Digitraffic/Fintraffic (CC BY 4.0) · AIS'}</div>`;
       }
       /* planes — every ADS-B field the feed carries (supabase/functions/aviation-feed) */
       const baroFt=p.baroAlt!=null?` (${Math.round(p.baroAlt*3.281)} ft)`:'';
       const velKmh=p.vel!=null?` · ${Math.round(p.vel*3.6)} km/h · ${Math.round(p.vel*1.944)} kn`:'';
-      const vr=p.vrate!=null&&Math.abs(p.vrate)>=0.3?`${p.vrate>0?'▲':'▼'} ${Math.abs(p.vrate).toFixed(1)} m/s`:(p.vrate!=null?(window.IntMapLang.t(HOST.lang,'level','水平飛行','Reiseflug','горизонтальный полёт','nivelado')):'');
+      const vr=p.vrate!=null&&Math.abs(p.vrate)>=0.3?`${p.vrate>0?'▲':'▼'} ${Math.abs(p.vrate).toFixed(1)} m/s`:(p.vrate!=null?(IntMapLang.t(HOST.lang,'level','水平飛行','Reiseflug','горизонтальный полёт','nivelado')):'');
       /* ⚠ every ADS-B string below is the feed's (the aviation-feed relay), exactly like the AIS
          strings of the ship half above — escaped the same way, not trusted because it is usually short */
       const acName=escapeHtml(p.desc||p.acType||'');
       return `<div style="font-weight:700;font-size:13px;">✈️ ${escapeHtml(p.callsign||p.reg||p.icao24||'—')}</div>`+
-        row(window.IntMapLang.t(HOST.lang,'Aircraft','機体','Luftfahrzeug','Воздушное судно','Aeronave'),acName)+
-        row(window.IntMapLang.t(HOST.lang,'Reg.','登録記号','Kennzeichen','Рег. номер','Matrícula'),escapeHtml(p.reg||''))+
+        row(IntMapLang.t(HOST.lang,'Aircraft','機体','Luftfahrzeug','Воздушное судно','Aeronave'),acName)+
+        row(IntMapLang.t(HOST.lang,'Reg.','登録記号','Kennzeichen','Рег. номер','Matrícula'),escapeHtml(p.reg||''))+
         row('ICAO24',p.icao24?escapeHtml(String(p.icao24).toUpperCase()):'')+
-        row(window.IntMapLang.t(HOST.lang,'Altitude','高度(気圧)','Höhe (baro)','Высота (баро)','Altitud (baro)'),p.onGround?(window.IntMapLang.t(HOST.lang,'on ground','地上','am Boden','на земле','en tierra')):(p.baroAlt!=null?Math.round(p.baroAlt)+' m'+baroFt:''))+
-        row(window.IntMapLang.t(HOST.lang,'Geo alt','高度(GPS)','Höhe (GPS)','Высота (GPS)','Altitud (GPS)'),p.geoAlt!=null?Math.round(p.geoAlt)+' m':'')+
-        row(window.IntMapLang.t(HOST.lang,'Speed','対地速度','Geschwindigkeit','Путевая скорость','Velocidad'),p.vel!=null?Math.round(p.vel)+' m/s'+velKmh:'')+
-        row(window.IntMapLang.t(HOST.lang,'Track','針路','Kurs über Grund','Путевой угол','Derrota'),p.heading!=null?Math.round(p.heading)+'°':'')+
-        row(window.IntMapLang.t(HOST.lang,'Vert. rate','昇降率','Steig-/Sinkrate','Верт. скорость','Régimen vertical'),vr)+
-        row(window.IntMapLang.t(HOST.lang,'Squawk','スコーク','Squawk','Сквок','Squawk'),escapeHtml(p.squawk||''))+
+        row(IntMapLang.t(HOST.lang,'Altitude','高度(気圧)','Höhe (baro)','Высота (баро)','Altitud (baro)'),p.onGround?(IntMapLang.t(HOST.lang,'on ground','地上','am Boden','на земле','en tierra')):(p.baroAlt!=null?Math.round(p.baroAlt)+' m'+baroFt:''))+
+        row(IntMapLang.t(HOST.lang,'Geo alt','高度(GPS)','Höhe (GPS)','Высота (GPS)','Altitud (GPS)'),p.geoAlt!=null?Math.round(p.geoAlt)+' m':'')+
+        row(IntMapLang.t(HOST.lang,'Speed','対地速度','Geschwindigkeit','Путевая скорость','Velocidad'),p.vel!=null?Math.round(p.vel)+' m/s'+velKmh:'')+
+        row(IntMapLang.t(HOST.lang,'Track','針路','Kurs über Grund','Путевой угол','Derrota'),p.heading!=null?Math.round(p.heading)+'°':'')+
+        row(IntMapLang.t(HOST.lang,'Vert. rate','昇降率','Steig-/Sinkrate','Верт. скорость','Régimen vertical'),vr)+
+        row(IntMapLang.t(HOST.lang,'Squawk','スコーク','Squawk','Сквок','Squawk'),escapeHtml(p.squawk||''))+
         typeChip+
         /* (#R173) what a click will draw, and how much of it there is. Named "observed" because that is
            exactly what it is — the fixes this browser has received, not a history we do not have. */
@@ -4658,10 +4661,10 @@ window.IntMapModules.dataLayers=function(HOST){
           const es=`Traza observada: ${st.fixes} puntos · ${st.minutes} min`;
           const lbl=HOST.lang==='jp'?ja:HOST.lang==='de'?de:HOST.lang==='ru'?ru:HOST.lang==='es'?es:en;
           const tip=k===selectedPlane
-            ? (window.IntMapLang.t(HOST.lang,'Click to hide','クリックで軌跡を消す','Klicken zum Ausblenden','Нажмите, чтобы скрыть','Clic para ocultar'))
-            : (window.IntMapLang.t(HOST.lang,'Click to show','クリックで軌跡を表示','Klicken für die Spur','Нажмите, чтобы показать','Clic para mostrar'));
+            ? (IntMapLang.t(HOST.lang,'Click to hide','クリックで軌跡を消す','Klicken zum Ausblenden','Нажмите, чтобы скрыть','Clic para ocultar'))
+            : (IntMapLang.t(HOST.lang,'Click to show','クリックで軌跡を表示','Klicken für die Spur','Нажмите, чтобы показать','Clic para mostrar'));
           return st.fixes>=2?`<div style="font-size:11px;margin-top:3px;color:#ffd23f;">${lbl} — ${tip}</div>`:''; })()+
-        `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${(window.IntMapLang.t(HOST.lang,'Last seen','最終受信','Zuletzt empfangen','Последний приём','Última recepción'))+' '+agoStr(p.lastContact)}<br>${_planeSourceLine()}</div>`;
+        `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${(IntMapLang.t(HOST.lang,'Last seen','最終受信','Zuletzt empfangen','Последний приём','Última recepción'))+' '+agoStr(p.lastContact)}<br>${_planeSourceLine()}</div>`;
     }
     function setupTrafficLayer(id){
       if(id==='planes'){ setupPlanes(); return; }
@@ -4772,8 +4775,8 @@ window.IntMapModules.dataLayers=function(HOST){
          drawn first (js/satellites-live.js — 15,969 objects on the map) while the live feed is still being asked,
          and this line said «Loading the catalog…» over all of them. A count that exists is shown, with the
          fetch still in progress said beside it. */
-      if(s.loading&&!s.catalogue){ box.textContent=jp?'カタログを取得中…':window.IntMapLang.t(HOST.lang,'Loading the catalog…',undefined,'Katalog wird geladen…','Загрузка каталога…','Cargando el catálogo…'); return; }
-      if(s.err&&!s.catalogue){ box.textContent=(window.IntMapLang.t(HOST.lang,'Could not load: ','取得できませんでした: ','Konnte nicht geladen werden: ','Не удалось загрузить: ','No se pudo cargar: '))+s.err; return; }
+      if(s.loading&&!s.catalogue){ box.textContent=jp?'カタログを取得中…':IntMapLang.t(HOST.lang,'Loading the catalog…',undefined,'Katalog wird geladen…','Загрузка каталога…','Cargando el catálogo…'); return; }
+      if(s.err&&!s.catalogue){ box.textContent=(IntMapLang.t(HOST.lang,'Could not load: ','取得できませんでした: ','Konnte nicht geladen werden: ','Не удалось загрузить: ','No se pudo cargar: '))+s.err; return; }
       /* Two numbers, because they answer two different questions and conflating them would hide the
          filter: how many objects are being propagated, and how many are being drawn right now. */
       const drawn=s.drawn, total=s.catalogue;
@@ -4784,18 +4787,18 @@ window.IntMapModules.dataLayers=function(HOST){
          through the layerStates section); back inside, the mark goes and the count returns. */
       const day=(iso)=>String(iso||'').slice(0,10);
       const none=total>0&&drawn===0&&s.outsideSpan===total&&!!s.elementsCover;
-      const note=none?window.IntMapLang.t(HOST.lang,
+      const note=none?IntMapLang.t(HOST.lang,
         'No orbital elements for this date — the catalogue speaks for '+day(s.elementsCover.from)+' to '+day(s.elementsCover.to),
         'この日時の軌道要素はありません（手元の要素が述べるのは '+day(s.elementsCover.from)+'〜'+day(s.elementsCover.to)+'）'):null;
       try{ const cur=layerState.get('dl-sats');
         if(none){ if(!cur||cur.state!=='nodata'||cur.message!==note) layerState.report('dl-sats','nodata',{reason:'out-of-epoch',message:note}); }
         else if(cur&&cur.state==='nodata') layerState.set('dl-sats',null); }catch(_){}
       if(none){ box.textContent=note; return; }
-      const away=(s.outsideSpan>0)?window.IntMapLang.t(HOST.lang,' · '+s.outsideSpan.toLocaleString()+' with no elements for this date','・'+s.outsideSpan.toLocaleString('ja-JP')+' 機はこの日時の軌道要素なし'):'';
+      const away=(s.outsideSpan>0)?IntMapLang.t(HOST.lang,' · '+s.outsideSpan.toLocaleString()+' with no elements for this date','・'+s.outsideSpan.toLocaleString('ja-JP')+' 機はこの日時の軌道要素なし'):'';
       box.textContent = (jp ? (drawn.toLocaleString('ja-JP')+' / '+total.toLocaleString('ja-JP')+' 機を表示中'+(s.sunlit?('・'+s.sunlit+' 機が太陽光下'):''))
         : (drawn.toLocaleString()+' / '+total.toLocaleString()+' shown'+(s.sunlit?(' · '+s.sunlit+' sunlit'):'')))
         + away
-        + (s.loading ? window.IntMapLang.t(HOST.lang,' · updating from the live feed…','・ライブ配信から更新中…') : '');
+        + (s.loading ? IntMapLang.t(HOST.lang,' · updating from the live feed…','・ライブ配信から更新中…') : '');
     }
     /* (#R311) THE ROW IS THE DOOR: js/satellites-live.js (and its detail card) are fetched here, and
        the "unavailable" branch below now answers a fetch that FAILED rather than one that never ran. */
@@ -4803,7 +4806,7 @@ window.IntMapModules.dataLayers=function(HOST){
     function _startSats(){
       const A=window.IntMapSatellites;
       if(!A){ try{ layerState.report('dl-sats',{reason:'unsupported'},{told:true}); }catch(_){}
-        try{ satToast(window.IntMapLang.t(HOST.lang,'The satellite layer is unavailable','人工衛星レイヤーを読み込めませんでした','Satellitenebene nicht verfügbar','Слой спутников недоступен','La capa de satélites no está disponible')); }catch(_){}
+        try{ satToast(IntMapLang.t(HOST.lang,'The satellite layer is unavailable','人工衛星レイヤーを読み込めませんでした','Satellitenebene nicht verfügbar','Слой спутников недоступен','La capa de satélites no está disponible')); }catch(_){}
         const cb=document.getElementById('dl-sats'); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } return; }
       whenStyleReady().then(()=>{ try{ A.setOpacity(opacities.sats); A.start(); }catch(e){ console.warn('sats start fail',e); } });
       if(_satCountT) stopTick(_satCountT);
@@ -5028,7 +5031,7 @@ window.IntMapModules.dataLayers=function(HOST){
         onWait:({attempt})=>{ busy(true,attempt);
           /* (layer-failure-state) still loading — but the owner knows the first answer did not arrive and is being asked again */
           try{ layerState.report(cbId,'loading',{reason:'timeout',retries:attempt}); }catch(_){}
-          if(!told){ told=true; try{ satToast(window.IntMapLang.t(HOST.lang,'Still waiting for the data — asking again','データの応答を待っています — もう一度問い合わせます')); }catch(_){} } }
+          if(!told){ told=true; try{ satToast(IntMapLang.t(HOST.lang,'Still waiting for the data — asking again','データの応答を待っています — もう一度問い合わせます')); }catch(_){} } }
       }).finally(()=>{ if(mine()) busy(false); });
     }
     let _subcableTries=0;
@@ -5085,7 +5088,7 @@ window.IntMapModules.dataLayers=function(HOST){
           if(cb&&cb.checked&&!res.silent&&_subcableTries<3){ const wait=[5000,15000,45000][_subcableTries++];
             setTimeout(()=>{ const c2=document.getElementById('dl-subcables'); if(c2&&c2.checked) addSubcables(); else _subcSettle(); },wait); return; }
           _subcableTries=0; autoUncheck('dl-subcables'); _subcSettle();
-          try{ satToast(window.IntMapLang.t(HOST.lang,'Submarine cable data unavailable','海底ケーブルデータを取得できませんでした','Seekabel-Daten nicht verfügbar','Данные о подводных кабелях недоступны','Datos de cables submarinos no disponibles')); }catch(_){} return; }
+          try{ satToast(IntMapLang.t(HOST.lang,'Submarine cable data unavailable','海底ケーブルデータを取得できませんでした','Seekabel-Daten nicht verfügbar','Данные о подводных кабелях недоступны','Datos de cables submarinos no disponibles')); }catch(_){} return; }
         _subcableTries=0;
         /* ══ (#R187) A REFUSED ADD IS NOT AN ANSWER — TRY AGAIN ═══════════════════════════════════
            「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。（追記：片方しかつかない）」
@@ -5154,13 +5157,13 @@ window.IntMapModules.dataLayers=function(HOST){
                absent. Say so the same way the download path does — imAutoOff, so the session still
                wants the layer, and a toast, so the screen is not silently missing what the row claims. */
             console.warn('addSubcables',e); autoUncheck('dl-subcables'); _subcSettle();
-            try{ satToast(window.IntMapLang.t(HOST.lang,'Could not add the submarine-cable layer','海底ケーブルレイヤーを追加できませんでした','Seekabel-Ebene konnte nicht hinzugefügt werden','Не удалось добавить слой подводных кабелей','No se pudo añadir la capa de cables submarinos')); }catch(_){} return;
+            try{ satToast(IntMapLang.t(HOST.lang,'Could not add the submarine-cable layer','海底ケーブルレイヤーを追加できませんでした','Seekabel-Ebene konnte nicht hinzugefügt werden','Не удалось добавить слой подводных кабелей','No se pudo añadir la capa de cables submarinos')); }catch(_){} return;
           }
           if(!GE().layers.has('lyr-subcables')){                 /* refused without throwing */
             if(again()) return;
             stopHook();
             console.warn('addSubcables: the style never accepted the cable layers'); autoUncheck('dl-subcables'); _subcSettle();
-            try{ satToast(window.IntMapLang.t(HOST.lang,'Could not add the submarine-cable layer','海底ケーブルレイヤーを追加できませんでした','Seekabel-Ebene konnte nicht hinzugefügt werden','Не удалось добавить слой подводных кабелей','No se pudo añadir la capa de cables submarinos')); }catch(_){} return;
+            try{ satToast(IntMapLang.t(HOST.lang,'Could not add the submarine-cable layer','海底ケーブルレイヤーを追加できませんでした','Seekabel-Ebene konnte nicht hinzugefügt werden','Не удалось добавить слой подводных кабелей','No se pudo añadir la capa de cables submarinos')); }catch(_){} return;
           }
           stopHook();
           setVis('lyr-subcables-glow',true); setVis('lyr-subcables',true); if(GE().layers.has('lyr-subcables-pts')) setVis('lyr-subcables-pts',true);
@@ -5344,12 +5347,12 @@ window.IntMapModules.dataLayers=function(HOST){
       const pb=box.querySelector('.rv-b[data-act="play"]'); if(pb) pb.textContent=_rvPlay?'⏸':'▶';
       const cap=box.querySelector('.rv-when');
       if(cap){
-        if(!tt) cap.textContent=window.IntMapLang.t(HOST.lang,'no frames','フレームなし','keine Bilder','нет кадров','sin fotogramas');
+        if(!tt) cap.textContent=IntMapLang.t(HOST.lang,'no frames','フレームなし','keine Bilder','нет кадров','sin fotogramas');
         else{
           const mins=Math.round((Date.now()-tt)/60000);
-          const clock=new Date(tt).toLocaleTimeString(window.IntMapLang.locale(HOST.lang,'en-GB'),{hour:'2-digit',minute:'2-digit'});
-          const rel=(mins<=0)?window.IntMapLang.t(HOST.lang,'now','現在','jetzt','сейчас','ahora')
-            :('−'+mins+' '+window.IntMapLang.t(HOST.lang,'min','分','Min.','мин','min'));
+          const clock=new Date(tt).toLocaleTimeString(IntMapLang.locale(HOST.lang,'en-GB'),{hour:'2-digit',minute:'2-digit'});
+          const rel=(mins<=0)?IntMapLang.t(HOST.lang,'now','現在','jetzt','сейчас','ahora')
+            :('−'+mins+' '+IntMapLang.t(HOST.lang,'min','分','Min.','мин','min'));
           cap.textContent=clock+' · '+rel+' · '+(_rvIdx+1)+'/'+n;
         }
       }
@@ -5396,7 +5399,7 @@ window.IntMapModules.dataLayers=function(HOST){
         else if(id==='precip'){ req=whenStyleReady().then(()=>{ try{ addRaster('precip',gibs('IMERG_Precipitation_Rate',6,'png',layerDates.precip+'T12:00:00Z'),6); }catch(_){} try{ setVis('lyr-precip',true); }catch(_){} }); }
         else if(id==='thermal'){
           lgdThermal.style.display='block'; tileLegends();
-          req=whenStyleReady().then(()=>{ try{ const built=addFirmsThermal(); setThermalVis(true); return built; }catch(e){ console.warn('thermal (GIBS) fail',e); try{ layerState.report('dl-thermal',e,{told:true}); }catch(_){} const cb=document.getElementById('dl-thermal'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(window.IntMapLang.t(HOST.lang,'Active-fire data unavailable','火災データを取得できませんでした','Branddaten nicht verfügbar','Данные о пожарах недоступны','Datos de incendios no disponibles')); }catch(_){} } });
+          req=whenStyleReady().then(()=>{ try{ const built=addFirmsThermal(); setThermalVis(true); return built; }catch(e){ console.warn('thermal (GIBS) fail',e); try{ layerState.report('dl-thermal',e,{told:true}); }catch(_){} const cb=document.getElementById('dl-thermal'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(IntMapLang.t(HOST.lang,'Active-fire data unavailable','火災データを取得できませんでした','Branddaten nicht verfügbar','Данные о пожарах недоступны','Datos de incendios no disponibles')); }catch(_){} } });
         }
         else if(id==='radar'){
           lgdRadar.style.display='block'; tileLegends();
@@ -5411,7 +5414,7 @@ window.IntMapModules.dataLayers=function(HOST){
             if(got===null) return;
             const on=document.getElementById('dl-radar'); if(!(on&&on.checked)) return;   /* nothing drawn behind a box that is off (CONSTITUTION §3) */
             if(!got||!addRainViewer()){
-              try{ satToast(window.IntMapLang.t(HOST.lang,'Live weather data unavailable','気象データを取得できませんでした','Wetterdaten nicht verfügbar','Данные о погоде недоступны','Datos meteorológicos no disponibles')); }catch(_){}
+              try{ satToast(IntMapLang.t(HOST.lang,'Live weather data unavailable','気象データを取得できませんでした','Wetterdaten nicht verfügbar','Данные о погоде недоступны','Datos meteorológicos no disponibles')); }catch(_){}
               try{ layerState.report('dl-radar',got?{reason:'not-drawn'}:why,{told:true}); }catch(_){}
               const cb=document.getElementById('dl-radar'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); }
               lgdRadar.style.display='none'; tileLegends();
@@ -5448,7 +5451,7 @@ window.IntMapModules.dataLayers=function(HOST){
                   0,'#1a7a3c',150,'#4fae5b',500,'#a6d96a',1000,'#e6e08b',1800,'#d9a066',2800,'#a87b52',3800,'#9b6b4a',4800,'#cdbfb4',6000,'#ffffff']}},beforeId);
             }
             setVis('lyr-relief',true); if(lgdRelief){ lgdRelief.style.display='block'; tileLegends(); }
-          }catch(e){ console.warn('relief fail',e); try{ layerState.report('dl-relief',e,{told:true}); }catch(_){} const cb=document.getElementById('dl-relief'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(window.IntMapLang.t(HOST.lang,'Color relief unavailable','カラー標高を初期化できませんでした','Farbrelief nicht verfügbar','Цветной рельеф недоступен','Relieve en color no disponible')); }catch(_){} } });
+          }catch(e){ console.warn('relief fail',e); try{ layerState.report('dl-relief',e,{told:true}); }catch(_){} const cb=document.getElementById('dl-relief'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(IntMapLang.t(HOST.lang,'Color relief unavailable','カラー標高を初期化できませんでした','Farbrelief nicht verfügbar','Цветной рельеф недоступен','Relieve en color no disponible')); }catch(_){} } });
         }
         else if(id==='sealevel'){
           lgdSeaLevel.style.display='block'; tileLegends();
@@ -5463,7 +5466,7 @@ window.IntMapModules.dataLayers=function(HOST){
           }catch(e){ console.warn('hillshade fail',e); } });
         }
         else if(id==='contours'){
-          req=whenStyleReady().then(()=>{ try{ if(addContours()){ setVis('contour-lines',true); setVis('contour-labels',true); } else { try{ layerState.report('dl-contours',{reason:'not-drawn'},{told:true}); }catch(_){} const cb=document.getElementById('dl-contours'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); } try{ satToast(window.IntMapLang.t(HOST.lang,'Could not initialize contours','等高線を初期化できませんでした','Höhenlinien konnten nicht initialisiert werden','Не удалось инициализировать изолинии','No se pudieron iniciar las curvas de nivel')); }catch(_){} } }catch(e){ console.warn('contours fail',e); } });
+          req=whenStyleReady().then(()=>{ try{ if(addContours()){ setVis('contour-lines',true); setVis('contour-labels',true); } else { try{ layerState.report('dl-contours',{reason:'not-drawn'},{told:true}); }catch(_){} const cb=document.getElementById('dl-contours'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); } try{ satToast(IntMapLang.t(HOST.lang,'Could not initialize contours','等高線を初期化できませんでした','Höhenlinien konnten nicht initialisiert werden','Не удалось инициализировать изолинии','No se pudieron iniciar las curvas de nivel')); }catch(_){} } }catch(e){ console.warn('contours fail',e); } });
         }
         else if(id==='eez'){
           /* Show legend immediately so user sees feedback; defer source add until style loads */
@@ -5507,8 +5510,8 @@ window.IntMapModules.dataLayers=function(HOST){
               /* (unobserved-is-not-refused) silent through every retry: nothing is kept (`_tfrData` stays unset, so the next
                  switch-on reads again) and the grey «no data» fill is taken down rather than left claiming the world has none */
               try{ layerState.report('dl-tfr',e,{told:true}); }catch(_){}   /* (layer-failure-state) unobserved or failed — classified from `e` */
-              if(isUnobserved(e)){ try{ setVis('tfr-fill',false); }catch(_){} try{ imToast(window.IntMapLang.t(HOST.lang,'The data did not arrive in time — try again','データが時間内に届きませんでした — もう一度お試しください')); }catch(_){} return; }
-              try{ imToast(window.IntMapLang.t(HOST.lang,'Could not load fertility data','出生率データを取得できませんでした','Fruchtbarkeitsdaten nicht verfügbar','Не удалось загрузить данные о рождаемости','No se pudieron cargar los datos de fecundidad')); }catch(_){} }); }
+              if(isUnobserved(e)){ try{ setVis('tfr-fill',false); }catch(_){} try{ imToast(IntMapLang.t(HOST.lang,'The data did not arrive in time — try again','データが時間内に届きませんでした — もう一度お試しください')); }catch(_){} return; }
+              try{ imToast(IntMapLang.t(HOST.lang,'Could not load fertility data','出生率データを取得できませんでした','Fruchtbarkeitsdaten nicht verfügbar','Не удалось загрузить данные о рождаемости','No se pudieron cargar los datos de fecundidad')); }catch(_){} }); }
           }catch(e){ console.warn('tfr choro fail',e); } });
         }
         else if(id==='nato'){
@@ -6087,4 +6090,4 @@ window.IntMapModules.dataLayers=function(HOST){
         states:()=>layerState.snapshot()};
     })();
   })();
-};
+}

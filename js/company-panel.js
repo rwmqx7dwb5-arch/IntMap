@@ -43,16 +43,19 @@
  *    inside is reached by delegation, so re-rendering can never leave a dead button or a second copy
  *    of a handler behind.
  * ==========================================================================*/
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.companyPanel = function (HOST) {
-  const GE = () => window.IntMapGeoEngine;   /* the renderer through the contract — never the raw handle */
-  const L = window.IntMapLang.pick(() => HOST.lang);
-  const LA = window.IntMapLang.pickArgs();   /* the five-language tuples below are DATA — see L.arr() */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+import { IntMapTables } from './tables.js';
+
+export function companyPanel(HOST) {
+  const GE = () => IntMapGeoEngine;   /* the renderer through the contract — never the raw handle */
+  const L = IntMapLang.pick(() => HOST.lang);
+  const LA = IntMapLang.pickArgs();   /* the five-language tuples below are DATA — see L.arr() */
   const S = (v) => { try { return window.IntMapSafe.html(v == null ? '' : String(v)); } catch (_) { return ''; } };
   const U = (v) => { try { return window.IntMapSafe.url(String(v || '')); } catch (_) { return ''; } };
 
-  const NLOC = () => { try { return window.IntMapLang.locale(HOST.lang); } catch (_) { return 'en'; } };
-  const TAG = () => { try { return String(window.IntMapLang.htmlTag(HOST.lang) || 'en').toLowerCase(); } catch (_) { return 'en'; } };
+  const NLOC = () => { try { return IntMapLang.locale(HOST.lang); } catch (_) { return 'en'; } };
+  const TAG = () => { try { return String(IntMapLang.htmlTag(HOST.lang) || 'en').toLowerCase(); } catch (_) { return 'en'; } };
   const nfmt = (v) => { try { return Number(v).toLocaleString(NLOC()); } catch (_) { return String(v); } };
 
   /* ── THE FACILITY VOCABULARY ────────────────────────────────────────────────────────────────
@@ -331,7 +334,7 @@ window.IntMapModules.companyPanel = function (HOST) {
   function sectorLabel(k) {
     const key = String(k || '').trim();
     if (!key) return '';
-    try { const T = window.IntMapTables && window.IntMapTables.CO_SECTORS; const a = T && T[key]; if (a) return L.arr(a); } catch (_) { }
+    try { const T = IntMapTables && IntMapTables.CO_SECTORS; const a = T && T[key]; if (a) return L.arr(a); } catch (_) { }
     return key;
   }
   function tickerText(idn, r) {
@@ -665,4 +668,4 @@ window.IntMapModules.companyPanel = function (HOST) {
   const API = { open, close, isOpen, current, render, precisionNote };
   window.IntMapCompanyPanel = API;
   return API;
-};
+}

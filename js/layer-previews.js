@@ -10,8 +10,9 @@
 import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) how long one read of a host may take. (fetch-deadline-layer) The relay URL it also gave the cable preview is the layer's business now — see layerReads below */
 import { readWithin, jsonWithin } from './fetch-deadline.js';
 import { layerReads } from './data-layers.js';   /* (fetch-deadline-layer) the cable and radar rows' OWN reads — a preview draws what its layer would, fetched the way its layer fetches it */
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
+import { IntMapGeoEngine } from './geo-engine.js';
+
+export function layerPreviews(countryStats,loadCountryData){
     /* (#R71) quality pass ("画像の縦横比が引き延ばされ…クオリティも低い"): canvases are now WEB-MERCATOR
        (±72.5° ≈ exactly 2:1 — country shapes look like the basemap, no vertical stretch) and rendered at
        2× device pixels (crisp on the 3-column tiles). The tile CSS aspect-ratio matches 240/121 so nothing
@@ -875,7 +876,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
          every tile it ever got, from the same queue, in the same order. Only the opening that
          nobody asked for is gone, and the desktop default is untouched. */
       if(_bootMobile()) return;
-      try{ const E=window.IntMapGeoEngine; if(E&&E.events&&E.events.once){ E.events.once('idle',()=>setTimeout(go,400)); } }catch(_){}
+      try{ const E=IntMapGeoEngine; if(E&&E.events&&E.events.once){ E.events.once('idle',()=>setTimeout(go,400)); } }catch(_){}
       setTimeout(go,6000); })();
     function _queueImg(el,id,url){ _imgQ.push({el,id,url}); _imgPump(); }
     function _imgPump(){ if(!_imgOpen) return;
@@ -896,4 +897,4 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
       try{ (container||document).querySelectorAll('.lst-prev:not(.has-prev)').forEach(el=>{
       const fn=_ioMap.get(el); if(fn){ _ioMap.delete(el); try{ _io&&_io.unobserve(el); }catch(_){} try{ fn(); }catch(_){} } }); }catch(_){} }
     return { into, kick, stats:()=>({q:_imgQ.length,busy:_imgBusy,inflight:_imgQ.slice(0,4).map(j=>j.id)}) };
-};
+}

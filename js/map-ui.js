@@ -21,8 +21,11 @@ import { everyTick, stopTick, tickKey } from './runtime.js';
 import { sharedIds, LAYERS, BASE, HIDDEN, BETA, layerDeclaration } from './layer-manifest.js';   /* (layer-manifest) which layers exist — the share link and the tile browser ask this, not the rows */   /* the one timer wheel — js/runtime.js */
 import { ownRelayUrl, clockFor } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the ticker's second rung; (fetch-deadline-layer) and each rung's clock */
 import { readWithin } from './fetch-deadline.js';   /* (fetch-deadline-layer) the ticker's reads, under that clock — see fjson */
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules=window.IntMapModules||{};
+
 /* ══ ⚠⚠⚠ (#R273) THE CLOSE MARK, ONE CHARACTER, EVERYWHERE ════════════════════════════════════════
    「複数のポップアップで、×の形がおかしくなっている。改悪をするな。元に戻せ。」
    「なにか形がおかしい×をやめろと言っている。明らかに×の形が変な感じ。」
@@ -115,8 +118,8 @@ window.IntMapPlaceClear=function(inp,btn,gap){
   try{ if(window.ResizeObserver){ var ro=new ResizeObserver(place); ro.observe(inp); } }catch(_){}
   return place; };
 
-window.IntMapModules.layerRegistry=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function layerRegistry(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
 
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const demElevAt=HOST.demElevAt;
@@ -131,7 +134,7 @@ window.IntMapModules.layerRegistry=function(HOST){
        as a literal (the same blindness #R250 found in `_dc(…,en,jp,…)` → `title:{en,jp}`).
        `pick()` IS this function, minus the ceiling: positional for the first five, the inline table
        keyed by the English string for the rest, English underneath both. */
-    const L5=window.IntMapLang.pick(()=>HOST.lang);
+    const L5=IntMapLang.pick(()=>HOST.lang);
 
     /* ⚠ (#R251) THE MAP CANVAS NAMES ITSELF, AND IT NAMES ITSELF IN ENGLISH. MapLibre writes
        `aria-label="Map"` on its canvas, so a screen-reader user in any of the other eight languages
@@ -698,10 +701,10 @@ window.IntMapModules.layerRegistry=function(HOST){
     const declaration=(id)=>layerDeclaration(String(id||''));
     return { register, list, active:activeIds, state, sampleAt, featuresIn, featuresInSource, declarationOf, loaderOf, narrow, context, declaration };
   })();
-};
+}
 
-window.IntMapModules.layerSidebar=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function layerSidebar(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const layerCbInfo=HOST.layerCbInfo, saveSettings=HOST.saveSettings, renderLayerFavs=HOST.renderLayerFavs;
   window.IntMapLayerSidebar=(function(){
@@ -710,12 +713,12 @@ window.IntMapModules.layerSidebar=function(HOST){
     /* ══ (#R253–#R258, #R508, front-mark-outer-context) WHO IS IN FRONT — the sidebar, or the panel being
        used — is decided by js/ui-stack.js (window.IntMapStack), which also orders the floating
        windows among themselves. The reasoning of every round that shaped it moved there with the code. */
-    const T=window.IntMapLang.pick(()=>HOST.lang);
+    const T=IntMapLang.pick(()=>HOST.lang);
     /* ⚠ (#R459) AN ATTRIBUTE THAT OUTLIVES A LANGUAGE CHANGE NEEDS BOTH HALVES. The text is right the
        moment the element is built; the KEY is what js/app-body.js's updateI18n() re-applies on every
        switch. `tg.title='Layers'` and `st.title='Favorite'` had neither and shipped English in all nine
        languages — invisibly, because scripts/i18n-attr-audit.mjs read only index.html until #R459. */
-    const titleKey=(el,k)=>{ try{ el.title=window.IntMapLang.keyed(HOST.lang)[k]||el.title; }catch(_){} el.setAttribute('data-i18n-title',k); return el; };
+    const titleKey=(el,k)=>{ try{ el.title=IntMapLang.keyed(HOST.lang)[k]||el.title; }catch(_){} el.setAttribute('data-i18n-title',k); return el; };
     /* (#R70) REBUILT FROM SCRATCH ("単にデフォルトの Layers選択欄を移植するな。一から同じ機能かつ洗練された
        UIで作り直せ。タイル形式にして"): the sidebar no longer adopts/reparents #layer-dropdown. It is its own
        TILE GRID — every layer row of the classic panel becomes a visual tile (preview image via
@@ -1215,7 +1218,7 @@ window.IntMapModules.layerSidebar=function(HOST){
        through the mechanism that was going to run anyway. Two mechanisms deciding one `display` is the
        defect #R469's note warns about, and this avoids being the second one. */
     const FAV_SEC='__favs';   /* collapse-state key: fixed, so remembering it survives a language change */
-    const favLabel=()=>{ try{ return window.IntMapLang.keyed(HOST.lang)['favLayers']||'Favorite layers'; }catch(_){ return 'Favorite layers'; } };
+    const favLabel=()=>{ try{ return IntMapLang.keyed(HOST.lang)['favLayers']||'Favorite layers'; }catch(_){ return 'Favorite layers'; } };
     /* the starred rows, in the reader's own star order — `imLayerFavs` is the order they starred them in */
     function favRowsOf(rows){ try{
       if(!Array.isArray(window.imLayerFavs)||typeof layerCbInfo!=='function') return [];
@@ -2003,14 +2006,14 @@ window.IntMapModules.layerSidebar=function(HOST){
       if(host){ const i=_hosts.indexOf(host); if(i>=0) _hosts.splice(i,1); host.remove(); } }catch(_){} }
     return { open, close, toggle, apply, mountInto, unmountFrom };
   })();
-};
+}
 
-window.IntMapModules.ticker=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function ticker(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const fetchData=HOST.fetchData, saveSettings=HOST.saveSettings;
   window.IntMapTicker=(function(){
-    const T=window.IntMapLang.pick(()=>HOST.lang);
+    const T=IntMapLang.pick(()=>HOST.lang);
     const esc=window.IntMapSafe.html;   /* the one encoder (index.html IntMapSafe) — the local copy here did not encode ' */
     const isMob=()=>window.IntMapDevice.compact();
     let bar=null,track=null,built=false,timer=0,mkt=[],news=[];
@@ -2125,9 +2128,9 @@ window.IntMapModules.ticker=function(HOST){
       try{ render(); }catch(_){} try{ if(document.body.classList.contains('ticker-on')) refresh(); }catch(_){} }catch(_){} }
     return { open, close, toggle, apply, getConfig, setConfig, isOpen:()=>document.body.classList.contains('ticker-on') };
   })();
-};
+}
 
-window.IntMapModules.layerPresets=function(HOST){
+export function layerPresets(HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast;
   (function(){
@@ -2161,16 +2164,16 @@ window.IntMapModules.layerPresets=function(HOST){
         setTimeout(()=>{ try{ if(p.ops) Object.keys(p.ops).forEach(k=>{ try{ setLayerOpacity(k,p.ops[k]); }catch(_){} }); }catch(_){} },900);
       },60); }
     function render(){ const host=document.getElementById('lyr-presets'); if(!host) return;
-      host.innerHTML='<button id="lp-save" data-effect="private" class="ai-test-btn" style="width:100%;">💾 <span>'+(window.IntMapLang.t(HOST.lang,"Save current layers as preset","現在のレイヤー構成を保存","Aktuelle Ebenen als Voreinstellung speichern","Сохранить текущие слои как пресет","Guardar las capas actuales como preajuste"))+'</span></button>'+
+      host.innerHTML='<button id="lp-save" data-effect="private" class="ai-test-btn" style="width:100%;">💾 <span>'+(IntMapLang.t(HOST.lang,"Save current layers as preset","現在のレイヤー構成を保存","Aktuelle Ebenen als Voreinstellung speichern","Сохранить текущие слои как пресет","Guardar las capas actuales como preajuste"))+'</span></button>'+
         (presets.length?('<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;">'+presets.map((p,i)=>
           '<div style="display:flex;align-items:center;gap:6px;">'+
           '<button data-ap="'+i+'" style="flex:1;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.2);color:var(--text-main);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">▶ '+window.IntMapSafe.html(p.name)+' <span style="color:var(--text-muted);font-size:10px;">('+(p.ids||[]).length+')</span></button>'+
-          '<button data-del="'+i+'" data-effect="destructive" title="'+(window.IntMapLang.t(HOST.lang,"Delete","削除","Löschen","Удалить","Eliminar"))+'" style="flex:0 0 auto;width:26px;height:26px;border:none;border-radius:7px;background:var(--input-bg);color:var(--text-muted);cursor:pointer;font-size:12px;">×</button></div>').join('')+'</div>'):'');
+          '<button data-del="'+i+'" data-effect="destructive" title="'+(IntMapLang.t(HOST.lang,"Delete","削除","Löschen","Удалить","Eliminar"))+'" style="flex:0 0 auto;width:26px;height:26px;border:none;border-radius:7px;background:var(--input-bg);color:var(--text-muted);cursor:pointer;font-size:12px;">×</button></div>').join('')+'</div>'):'');
       const sv=host.querySelector('#lp-save');
-      if(sv) sv.onclick=()=>{ const snap=capture(); if(!snap||!snap.ids.length){ try{ imToast(window.IntMapLang.t(HOST.lang,"No layers are on","表示中のレイヤーがありません","Keine Ebene ist eingeschaltet","Ни один слой не включён","No hay capas activas")); }catch(_){} return; }
-        const name=prompt(window.IntMapLang.t(HOST.lang,"Preset name:","プリセット名:","Name der Voreinstellung:","Название пресета:","Nombre del preajuste:"), jp()?('プリセット '+(presets.length+1)):('Preset '+(presets.length+1)));
+      if(sv) sv.onclick=()=>{ const snap=capture(); if(!snap||!snap.ids.length){ try{ imToast(IntMapLang.t(HOST.lang,"No layers are on","表示中のレイヤーがありません","Keine Ebene ist eingeschaltet","Ни один слой не включён","No hay capas activas")); }catch(_){} return; }
+        const name=prompt(IntMapLang.t(HOST.lang,"Preset name:","プリセット名:","Name der Voreinstellung:","Название пресета:","Nombre del preajuste:"), jp()?('プリセット '+(presets.length+1)):('Preset '+(presets.length+1)));
         if(!name) return; presets.push({name:String(name).slice(0,40), ids:snap.ids, ops:snap.ops}); save(); render(); };
-      host.querySelectorAll('[data-ap]').forEach(b=>b.onclick=()=>{ apply(presets[+b.getAttribute('data-ap')]); try{ imToast(window.IntMapLang.t(HOST.lang,"Preset applied","プリセットを適用しました","Voreinstellung angewendet","Пресет применён","Preajuste aplicado")); }catch(_){} });
+      host.querySelectorAll('[data-ap]').forEach(b=>b.onclick=()=>{ apply(presets[+b.getAttribute('data-ap')]); try{ imToast(IntMapLang.t(HOST.lang,"Preset applied","プリセットを適用しました","Voreinstellung angewendet","Пресет применён","Preajuste aplicado")); }catch(_){} });
       host.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ presets.splice(+b.getAttribute('data-del'),1); save(); render(); });
     }
     function mount(){ if(document.getElementById('lyr-presets')) { render(); return; }
@@ -2182,10 +2185,10 @@ window.IntMapModules.layerPresets=function(HOST){
     window.addEventListener('intmap-lang',render);
     window.IntMapPresets={ render, _get:()=>presets, _set:(a)=>{ if(Array.isArray(a)){ presets=a; try{ localStorage.setItem(KEY,JSON.stringify(presets)); }catch(_){} render(); } } };
   })();
-};
+}
 
-window.IntMapModules.labelPopup=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function labelPopup(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
 
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
@@ -2383,8 +2386,8 @@ window.IntMapModules.labelPopup=function(HOST){
       const de=HOST.lang==='de';   /* (#R33) 3-language labels */
       /* (#R122) Isolate is available for ANY outlined place now (not just countries) via the outline geometry;
          Move drags the place (true-size) to a new spot. */
-      const isoLbl=de?'Isolieren':jp?'この地域だけ':window.IntMapLang.t(HOST.lang,'Isolate',undefined,undefined,'Только это','Aislar');
-      const moveLbl=de?'Verschieben':jp?'移動':window.IntMapLang.t(HOST.lang,'Move',undefined,undefined,'Переместить','Mover');
+      const isoLbl=de?'Isolieren':jp?'この地域だけ':IntMapLang.t(HOST.lang,'Isolate',undefined,undefined,'Только это','Aislar');
+      const moveLbl=de?'Verschieben':jp?'移動':IntMapLang.t(HOST.lang,'Move',undefined,undefined,'Переместить','Mover');
       /* (#R123) Isolate/Move are only meaningful for AREA-bearing places (countries, regions, cities with a
          boundary) — NOT for point/line classifications like mountains (ofm-peak), rivers (ofm-river) or seas
          (geo-sea) which have no polygon ("領域のない分類のものはボタンをつけないように"). The terrain/water label
@@ -2402,7 +2405,7 @@ window.IntMapModules.labelPopup=function(HOST){
          over FINISHED text in the reader's language: this function owns the placement, not the
          wording, so no ninth string is created here, and a caller that omits it is unchanged. */
       const subHtml=(opts&&opts.sub)?('<div class="plc-sub" style="font-size:10.5px;color:var(--text-muted);line-height:1.45;margin:-4px 0 8px;padding-right:30px;">'+window.IntMapSafe.html(opts.sub)+'</div>'):'';
-      const html=`<div style="min-width:148px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);margin-bottom:8px;padding-right:30px;display:flex;align-items:center;gap:7px;">${flagHtml}<span>${safe}</span></div>${subHtml}<div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${window.IntMapLang.t(HOST.lang,'Copy name','地名をコピー','Namen kopieren','Копировать название','Copiar el nombre')}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':window.IntMapLang.t(HOST.lang,'AI brief','AI調査','KI-Kurzbericht','Обзор ИИ','Informe de IA')}</button>${isoBtn}${moveBtn}</div></div>`;
+      const html=`<div style="min-width:148px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);margin-bottom:8px;padding-right:30px;display:flex;align-items:center;gap:7px;">${flagHtml}<span>${safe}</span></div>${subHtml}<div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${IntMapLang.t(HOST.lang,'Copy name','地名をコピー','Namen kopieren','Копировать название','Copiar el nombre')}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':IntMapLang.t(HOST.lang,'AI brief','AI調査','KI-Kurzbericht','Обзор ИИ','Informe de IA')}</button>${isoBtn}${moveBtn}</div></div>`;
       try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:false,maxWidth:'268px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html));
         /* (#R59) draw this place's REAL boundary as a polygon (cities/towns/regions; NOT countries). IntMapOutline
            uses point-in-polygon (no fixed threshold → no far same-named place) and draws NOTHING if there is no real
@@ -2418,7 +2421,7 @@ window.IntMapModules.labelPopup=function(HOST){
             for(const f of cg.features){ try{ if(turf.booleanPointInPolygon(pt,f)){ window.IntMapOutline&&window.IntMapOutline.show&&window.IntMapOutline.show(name,{geojson:f.geometry,lng:lngLat.lng,lat:lngLat.lat,fit:false}); break; } }catch(_){} } } }catch(_){} }
         }
         setTimeout(()=>{ try{ const xb=document.querySelector('.plc-popup .maplibregl-popup-close-button'); if(xb) xb.addEventListener('click',()=>{ try{ clearHL(); }catch(_){} }); }catch(_){}
-          const b=document.querySelector('.plc-copy'); if(b) b.onclick=()=>{ try{ navigator.clipboard.writeText(name); }catch(_){} b.textContent=window.IntMapLang.t(HOST.lang,'✓ Copied','✓ コピーしました','✓ Kopiert','✓ Скопировано','✓ Copiado'); };
+          const b=document.querySelector('.plc-copy'); if(b) b.onclick=()=>{ try{ navigator.clipboard.writeText(name); }catch(_){} b.textContent=IntMapLang.t(HOST.lang,'✓ Copied','✓ コピーしました','✓ Kopiert','✓ Скопировано','✓ Copiado'); };
           /* (#R20) Wikipedia button — shown only when an article actually EXISTS for this name
              (REST summary probe, CORS*). Opens the article in a new tab. */
           const w=document.querySelector('.plc-wiki');
@@ -2457,7 +2460,7 @@ window.IntMapModules.labelPopup=function(HOST){
             try{ if(g&&window.IntMapIsolate&&window.IntMapIsolate.enterGeom){ window.IntMapIsolate.enterGeom(g,name); }
               else if(window.IntMapIsolate&&window.IntMapIsolate.enterAt){ window.IntMapIsolate.enterAt(lngLat.lng,lngLat.lat,name); } }catch(_){} }); };
           const mv=document.querySelector('.plc-move');
-          if(mv) mv.onclick=()=>{ _withGeo(g=>{ if(!g){ try{ if(typeof imToast==='function') imToast(window.IntMapLang.t(HOST.lang,'No boundary available for this place','この場所の範囲が取得できませんでした','Für diesen Ort ist keine Grenze verfügbar','Для этого места нет границы','No hay límite disponible para este lugar')); }catch(_){} return; }
+          if(mv) mv.onclick=()=>{ _withGeo(g=>{ if(!g){ try{ if(typeof imToast==='function') imToast(IntMapLang.t(HOST.lang,'No boundary available for this place','この場所の範囲が取得できませんでした','Für diesen Ort ist keine Grenze verfügbar','Для этого места нет границы','No hay límite disponible para este lugar')); }catch(_){} return; }
             try{ popup&&popup.remove(); }catch(_){} try{ window.IntMapOutline&&window.IntMapOutline.clear&&window.IntMapOutline.clear(); }catch(_){}
             try{ window.IntMapMoveShape&&window.IntMapMoveShape.start(g,name); }catch(_){} }); };
         },0);
@@ -2565,7 +2568,7 @@ window.IntMapModules.labelPopup=function(HOST){
       let dates=props&&props.dates;
       try{ if(typeof dates==='string') dates=JSON.parse(dates); }catch(_){ dates=null; }
       const raw=edge=>dates&&dates[edge]&&typeof dates[edge].raw==='string'&&dates[edge].raw.trim()?dates[edge].raw:'?';
-      const line=window.IntMapLang.t(HOST.lang,'Source dates: ','出典の日付: ','Datumsangaben der Quelle: ','Даты в источнике: ','Fechas de la fuente: ')+raw('start')+' – '+raw('end');
+      const line=IntMapLang.t(HOST.lang,'Source dates: ','出典の日付: ','Datumsangaben der Quelle: ','Даты в источнике: ','Fechas de la fuente: ')+raw('start')+' – '+raw('end');
       /* ══ ⚠ (#R730) A «?» HERE MEANS THE MAP IS DRAWING SOMETHING NOBODY DATED ════════════════
          The bundle's `?` was already honest about the source; the map beside it was not, because
          the row still had to be drawn FROM some instant, and that instant used to be a fossil
@@ -2576,7 +2579,7 @@ window.IntMapModules.labelPopup=function(HOST){
       for(const edge of ['start','end']){ const d=dates&&dates[edge];
         if(d&&!d.raw&&d.derived&&d.bound) how.push(edge+' '+d.bound); }
       if(!how.length) return line;
-      return line+' · '+window.IntMapLang.t(HOST.lang,
+      return line+' · '+IntMapLang.t(HOST.lang,
         'undated upstream; drawn from '+how.join(', ')+', taken from other units of the same system',
         '上流は日付を述べていない。同じ制度の他の単位が述べる '+how.join('、')+' から描いている',
         'stromaufwärts undatiert; gezeichnet ab '+how.join(', ')+', von anderen Einheiten desselben Systems',
@@ -2696,10 +2699,10 @@ window.IntMapModules.labelPopup=function(HOST){
        + blue outline). `geojson` lets the caller outline the era polygon (an empire, not just one modern country). */
     window._imPlacePopup=(lngLat,name,isCountry,opts)=>{ try{ showPopup(lngLat,name,isCountry,opts); }catch(_){} };
   })();
-};
+}
 
-window.IntMapModules.geojsonUpload=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function geojsonUpload(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast;
   (function(){
@@ -2891,15 +2894,15 @@ window.IntMapModules.geojsonUpload=function(HOST){
     /* The sentences for every code style() and classify() can return. Here, not inside them, for the
        reason js/geo-import.js gives: a classifier has no business knowing what UI it is in. */
     function styleReason(why){
-      if(why==='no-such-layer') return window.IntMapLang.t(HOST.lang,"That imported layer is no longer on the map","その取り込みレイヤーは地図にありません");
-      if(why==='data-unavailable') return window.IntMapLang.t(HOST.lang,"The analysis module did not load, so this column cannot be read","分析モジュールを読み込めなかったため、この列を読めません");
-      if(why==='field-not-numeric') return window.IntMapLang.t(HOST.lang,"Graduated colours need a column whose every value is a number","段階着色には、すべての値が数値である列が必要です");
-      if(why==='field-empty') return window.IntMapLang.t(HOST.lang,"This column has no values to colour by","この列には着色に使える値がありません");
-      if(why==='no-field') return window.IntMapLang.t(HOST.lang,"No column was chosen","列が選ばれていません");
-      if(why==='no-features') return window.IntMapLang.t(HOST.lang,"This layer holds no features to colour","このレイヤーには着色できる地物がありません");
-      if(why==='paint-failed') return window.IntMapLang.t(HOST.lang,"The map could not apply this colouring","この着色を地図に適用できませんでした");
-      if(why==='mode-unknown') return window.IntMapLang.t(HOST.lang,"Unknown colouring mode","不明な着色方式です");
-      return window.IntMapLang.t(HOST.lang,"This column could not be coloured","この列で着色できませんでした");
+      if(why==='no-such-layer') return IntMapLang.t(HOST.lang,"That imported layer is no longer on the map","その取り込みレイヤーは地図にありません");
+      if(why==='data-unavailable') return IntMapLang.t(HOST.lang,"The analysis module did not load, so this column cannot be read","分析モジュールを読み込めなかったため、この列を読めません");
+      if(why==='field-not-numeric') return IntMapLang.t(HOST.lang,"Graduated colours need a column whose every value is a number","段階着色には、すべての値が数値である列が必要です");
+      if(why==='field-empty') return IntMapLang.t(HOST.lang,"This column has no values to colour by","この列には着色に使える値がありません");
+      if(why==='no-field') return IntMapLang.t(HOST.lang,"No column was chosen","列が選ばれていません");
+      if(why==='no-features') return IntMapLang.t(HOST.lang,"This layer holds no features to colour","このレイヤーには着色できる地物がありません");
+      if(why==='paint-failed') return IntMapLang.t(HOST.lang,"The map could not apply this colouring","この着色を地図に適用できませんでした");
+      if(why==='mode-unknown') return IntMapLang.t(HOST.lang,"Unknown colouring mode","不明な着色方式です");
+      return IntMapLang.t(HOST.lang,"This column could not be coloured","この列で着色できませんでした");
     }
     /* (#R576) `r` is js/geo-import.js's report. Optional: window.GeoJSONUpload.add(fc,name) is
        called by other code with a FeatureCollection it built itself, and that still works.
@@ -3052,16 +3055,16 @@ window.IntMapModules.geojsonUpload=function(HOST){
         datasetId:(opts&&opts.datasetId)||null,spec:null,legend:c.legend};
       let on=false;
       try{ on=!!GE().layers.addDynamicImage(sid,{width:W,height:H,coordinates:coords,opacity:0.85,smooth:false,draw:rasterDrawFn(it,coords)}); }catch(_){ on=false; }
-      if(!on){ toast(window.IntMapLang.t(HOST.lang,"This map view cannot draw grids","この地図表示では格子を描けません")); return null; }
+      if(!on){ toast(IntMapLang.t(HOST.lang,"This map view cannot draw grids","この地図表示では格子を描けません")); return null; }
       items.push(it); renderList();
       try{ GE().camera.fitBounds([[west,south],[east,north]],{padding:60,duration:900,maxZoom:12}); }catch(_){}
       try{ window._imNoteObjects&&window._imNoteObjects(['up_'+n]); }catch(_){}
       const resampled=(W<ds.width||H<ds.height);
-      const num=(ds.width*ds.height).toLocaleString(window.IntMapLang.locale(HOST.lang));
-      let msg=(window.IntMapLang.t(HOST.lang,"Added: ","読み込みました: "))+name+' · '+ds.width+'×'+ds.height+' · '+num;
+      const num=(ds.width*ds.height).toLocaleString(IntMapLang.locale(HOST.lang));
+      let msg=(IntMapLang.t(HOST.lang,"Added: ","読み込みました: "))+name+' · '+ds.width+'×'+ds.height+' · '+num;
       /* ⚠ SAY THAT IT WAS RESAMPLED. A reader looking at a 2048-wide picture of a 10,000-wide grid
          is looking at a resampled one, and 「全部見えている」 is the assumption this sentence removes. */
-      if(resampled) msg+=' · '+window.IntMapLang.t(HOST.lang,"drawn resampled","再標本化して描画")+' ('+W+'×'+H+')';
+      if(resampled) msg+=' · '+IntMapLang.t(HOST.lang,"drawn resampled","再標本化して描画")+' ('+W+'×'+H+')';
       toast(msg);
       return {n,sid,legend:c.legend,drawnAt:{width:W,height:H,resampled:resampled}};
     }
@@ -3069,16 +3072,16 @@ window.IntMapModules.geojsonUpload=function(HOST){
     /* Why a grid could not be painted, in the reader's language. Same split as reasonText() below:
        the codes are produced where the rule is, the sentences are here. */
     function rasterReason(why,detail){
-      if(why==='raster-band-empty') return window.IntMapLang.t(HOST.lang,"This grid has no values in it — every cell is missing","この格子には値がありません。すべてのセルが欠損です");
-      if(why==='raster-band-constant') return window.IntMapLang.t(HOST.lang,"Every cell of this grid holds the same value, so there is no scale to draw","この格子は全セルが同じ値なので、描く尺度がありません")+((detail&&detail.value!=null)?' ('+nfmt(detail.value)+')':'');
-      if(why==='raster-categories-not-stated') return window.IntMapLang.t(HOST.lang,"Say which values are the categories — this reader will not guess them from the numbers","どの値が分類なのかを指定してください。数値からは推測しません");
-      if(why==='raster-stats-missing') return window.IntMapLang.t(HOST.lang,"The grid was not measured, so it cannot be drawn","この格子は測定されていないため描けません");
-      if(why==='raster-mode-unknown') return window.IntMapLang.t(HOST.lang,"That is not a way of colouring a grid","それは格子の着色方法ではありません");
-      return window.IntMapLang.t(HOST.lang,"This grid could not be drawn","この格子を描けませんでした");
+      if(why==='raster-band-empty') return IntMapLang.t(HOST.lang,"This grid has no values in it — every cell is missing","この格子には値がありません。すべてのセルが欠損です");
+      if(why==='raster-band-constant') return IntMapLang.t(HOST.lang,"Every cell of this grid holds the same value, so there is no scale to draw","この格子は全セルが同じ値なので、描く尺度がありません")+((detail&&detail.value!=null)?' ('+nfmt(detail.value)+')':'');
+      if(why==='raster-categories-not-stated') return IntMapLang.t(HOST.lang,"Say which values are the categories — this reader will not guess them from the numbers","どの値が分類なのかを指定してください。数値からは推測しません");
+      if(why==='raster-stats-missing') return IntMapLang.t(HOST.lang,"The grid was not measured, so it cannot be drawn","この格子は測定されていないため描けません");
+      if(why==='raster-mode-unknown') return IntMapLang.t(HOST.lang,"That is not a way of colouring a grid","それは格子の着色方法ではありません");
+      return IntMapLang.t(HOST.lang,"This grid could not be drawn","この格子を描けませんでした");
     }
     function addFC(fc,name,r,opts){
       const n=++seq, sid='ugj-'+n, col=PALETTE[(n-1)%PALETTE.length];
-      try{ GE().layers.addSource(sid,{type:'geojson',data:fc}); }catch(e){ toast(window.IntMapLang.t(HOST.lang,"Failed to add layer","読み込みに失敗しました","Ebene konnte nicht hinzugefügt werden","Не удалось добавить слой","No se pudo añadir la capa")); return null; }
+      try{ GE().layers.addSource(sid,{type:'geojson',data:fc}); }catch(e){ toast(IntMapLang.t(HOST.lang,"Failed to add layer","読み込みに失敗しました","Ebene konnte nicht hinzugefügt werden","Не удалось добавить слой","No se pudo añadir la capa")); return null; }
       const before = GE().layers.has('tool-poly')?'tool-poly':undefined;
       /* ⚠ (#R739) THE CATCH USED TO SWALLOW ALL THREE, AND SILENCE IS NOT AN OUTCOME. A renderer that
          accepts the source and refuses every layer leaves a row in the list, a source in the engine
@@ -3095,7 +3098,7 @@ window.IntMapModules.geojsonUpload=function(HOST){
          the source behind would make the next import's id collide with a ghost, so it goes too. */
       if(!drawn){
         try{ if(GE().layers.hasSource(sid)) GE().layers.removeSource(sid); }catch(_){}
-        toast(window.IntMapLang.t(HOST.lang,"This map view cannot draw imported shapes — switch to the flat map","この地図表示では取り込んだ図形を描けません。平面地図に切り替えてください"));
+        toast(IntMapLang.t(HOST.lang,"This map view cannot draw imported shapes — switch to the flat map","この地図表示では取り込んだ図形を描けません。平面地図に切り替えてください"));
         return null;
       }
       /* ⚠ the SAME FeatureCollection object the renderer holds, not a copy — colouring has to read the
@@ -3120,11 +3123,11 @@ window.IntMapModules.geojsonUpload=function(HOST){
       /* ⚠ (#R576) THE TOAST NAMES WHAT WAS INFERRED, BECAUSE IT WAS INFERRED. When the reader
          drops a CSV, two of its columns were CHOSEN as the coordinates; if the guess is wrong the
          pins are wrong, and the only way to notice is to be told which columns were used. */
-      const num=fc.features.length.toLocaleString(window.IntMapLang.locale(HOST.lang));
-      let msg=(window.IntMapLang.t(HOST.lang,"Added: ","読み込みました: ","Hinzugefügt: ","Добавлено: ","Añadido: "))+name;
+      const num=fc.features.length.toLocaleString(IntMapLang.locale(HOST.lang));
+      let msg=(IntMapLang.t(HOST.lang,"Added: ","読み込みました: ","Hinzugefügt: ","Добавлено: ","Añadido: "))+name;
       if(r&&r.format) msg+=' · '+String(r.format).toUpperCase().replace('-',' ')+' · '+num;
-      if(r&&r.stats&&r.stats.lat) msg+=' · '+window.IntMapLang.t(HOST.lang,"columns","列","Spalten","столбцы","columnas")+': '+r.stats.lat+' / '+r.stats.lon;
-      if(r&&r.stats&&r.stats.dropped>0) msg+=' · '+r.stats.dropped+' '+window.IntMapLang.t(HOST.lang,"skipped","を除外","übersprungen","пропущено","omitidos");
+      if(r&&r.stats&&r.stats.lat) msg+=' · '+IntMapLang.t(HOST.lang,"columns","列","Spalten","столбцы","columnas")+': '+r.stats.lat+' / '+r.stats.lon;
+      if(r&&r.stats&&r.stats.dropped>0) msg+=' · '+r.stats.dropped+' '+IntMapLang.t(HOST.lang,"skipped","を除外","übersprungen","пропущено","omitidos");
       toast(msg);
       return {n,sid};
     }
@@ -3137,7 +3140,7 @@ window.IntMapModules.geojsonUpload=function(HOST){
       try{ if(GE().layers.hasSource(it.sid)) GE().layers.removeSource(it.sid); }catch(_){}
       items.splice(i,1); renderList(); }
     const esc=(s)=>String(s==null?'':s).replace(/[<>&]/g,'');
-    const nfmt=(v)=>{ try{ return Number(v).toLocaleString(window.IntMapLang.locale(HOST.lang),{maximumFractionDigits:3}); }catch(_){ return String(v); } };
+    const nfmt=(v)=>{ try{ return Number(v).toLocaleString(IntMapLang.locale(HOST.lang),{maximumFractionDigits:3}); }catch(_){ return String(v); } };
     /* ══ (#R738) 凡例 — 地図が塗ったのと同じ snapshot を読む ════════════════════════════════════
        ⚠ item.legend is the object paintExpr() was built from. Recomputing the classes here would be
        the #R650 shape: two calculations of one fact, drifting the first time either is edited. */
@@ -3150,20 +3153,20 @@ window.IntMapModules.geojsonUpload=function(HOST){
          same colours say different things under quantile and equal intervals, so the reader is told
          which one they are looking at rather than left to assume. */
       const how=(lg.mode==='graduated'||lg.mode==='continuous')
-        ? (lg.method==='equal'?window.IntMapLang.t(HOST.lang,"equal intervals","等間隔"):window.IntMapLang.t(HOST.lang,"quantiles","分位"))
-        : window.IntMapLang.t(HOST.lang,"categories","分類");
+        ? (lg.method==='equal'?IntMapLang.t(HOST.lang,"equal intervals","等間隔"):IntMapLang.t(HOST.lang,"quantiles","分位"))
+        : IntMapLang.t(HOST.lang,"categories","分類");
       /* (#R749) a band carries its UNIT, and a ladder of numbers without one is not readable —
          「500」 is metres, people, or millimetres depending on a fact the legend was dropping. */
       out.push(note(lg.field+(lg.unit?' ('+lg.unit+')':'')+' · '+how));
       lg.classes.forEach(c=>out.push(row(c.color, c.label!=null?c.label:(nfmt(c.from)+' – '+nfmt(c.to)), c.count)));
-      if(lg.other) out.push(row(lg.other.color, window.IntMapLang.t(HOST.lang,"Other","その他")+' ('+lg.other.distinct+')', lg.other.count));
-      if(lg.missing&&lg.missing.count) out.push(row(lg.missing.color, window.IntMapLang.t(HOST.lang,"No value","値なし"), lg.missing.count));
+      if(lg.other) out.push(row(lg.other.color, IntMapLang.t(HOST.lang,"Other","その他")+' ('+lg.other.distinct+')', lg.other.count));
+      if(lg.missing&&lg.missing.count) out.push(row(lg.missing.color, IntMapLang.t(HOST.lang,"No value","値なし"), lg.missing.count));
       /* 同値が多くて分位が潰れたとき、区分が減ったことを述べる（黙って減らすと凡例が嘘をつく）。 */
-      if(lg.collapsed>0) out.push(note(window.IntMapLang.t(HOST.lang,"Tied values merged classes","同値が多く区分が統合されました")+' (−'+lg.collapsed+')'));
+      if(lg.collapsed>0) out.push(note(IntMapLang.t(HOST.lang,"Tied values merged classes","同値が多く区分が統合されました")+' (−'+lg.collapsed+')'));
       return out.join('');
     }
     function renderList(){ if(!listEl) return;
-      listEl.innerHTML=items.map(it=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0;"><span style="width:11px;height:11px;border-radius:3px;background:${it.legend&&it.legend.classes.length?'linear-gradient(90deg,'+it.legend.classes.map(c=>c.color).join(',')+')':it.col};flex:0 0 auto;"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(it.name)}</span><button data-rm="${it.n}" title="${window.IntMapLang.t(HOST.lang,"Remove","削除","Entfernen","Удалить","Quitar")}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;line-height:1;">×</button></div>`+legendRows(it.legend)).join('');
+      listEl.innerHTML=items.map(it=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0;"><span style="width:11px;height:11px;border-radius:3px;background:${it.legend&&it.legend.classes.length?'linear-gradient(90deg,'+it.legend.classes.map(c=>c.color).join(',')+')':it.col};flex:0 0 auto;"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(it.name)}</span><button data-rm="${it.n}" title="${IntMapLang.t(HOST.lang,"Remove","削除","Entfernen","Удалить","Quitar")}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;line-height:1;">×</button></div>`+legendRows(it.legend)).join('');
       listEl.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>removeItem(+b.getAttribute('data-rm'))); }
     /* ══ (#R576) WHY THE FILE COULD NOT BE READ, IN THE READER'S LANGUAGE ═══════════════════
        js/geo-import.js returns a CODE. The sentences are here because a decoder has no business
@@ -3175,7 +3178,7 @@ window.IntMapModules.geojsonUpload=function(HOST){
         /* ⚠ SAY WHICH COLUMNS WERE CONSIDERED. A refusal the reader cannot act on is a dead end;
            this one names the columns and lets them fix the header or the file. */
         const cols=((detail&&detail.considered)||[]).map(c=>c.column).slice(0,8).join(', ');
-        const head=window.IntMapLang.t(HOST.lang,"No latitude/longitude columns found","緯度・経度の列が見つかりません","Keine Breiten-/Längengrad-Spalten gefunden","Столбцы широты и долготы не найдены","No se encontraron columnas de latitud/longitud");
+        const head=IntMapLang.t(HOST.lang,"No latitude/longitude columns found","緯度・経度の列が見つかりません","Keine Breiten-/Längengrad-Spalten gefunden","Столбцы широты и долготы не найдены","No se encontraron columnas de latitud/longitud");
         return cols?head+' ('+cols+')':head; }
       /* ══ (#R732) THE TWO THE COORDINATE SYSTEM CAN REFUSE FOR ═══════════════════════════════
          Both are new refusals of files that USED TO BE ACCEPTED and drawn in the wrong place, so
@@ -3187,7 +3190,7 @@ window.IntMapModules.geojsonUpload=function(HOST){
       if(why==='crs-unsupported'){
         const code=(detail&&detail.crs)?String(detail.crs):'';
         const reason=(detail&&detail.reason)?String(detail.reason):'';
-        const head=window.IntMapLang.t(HOST.lang,"This file uses a coordinate system this map cannot convert from","このファイルの座標系は、この地図が変換できないものです","Diese Datei nutzt ein Koordinatensystem, aus dem diese Karte nicht umrechnen kann","В файле используется система координат, из которой карта не может пересчитать","Este archivo usa un sistema de coordenadas que este mapa no puede convertir");
+        const head=IntMapLang.t(HOST.lang,"This file uses a coordinate system this map cannot convert from","このファイルの座標系は、この地図が変換できないものです","Diese Datei nutzt ein Koordinatensystem, aus dem diese Karte nicht umrechnen kann","В файле используется система координат, из которой карта не может пересчитать","Este archivo usa un sistema de coordenadas que este mapa no puede convertir");
         const tail=[code,reason].filter(Boolean).join(' · ');
         return tail?head+' ('+tail+')':head; }
       if(why==='crs-not-stated-and-not-degrees'){
@@ -3197,7 +3200,7 @@ window.IntMapModules.geojsonUpload=function(HOST){
         const n=(detail&&detail.outOfRange)!=null?String(detail.outOfRange):'';
         const tot=(detail&&detail.total)!=null?String(detail.total):'';
         const smp=(detail&&Array.isArray(detail.sample))?detail.sample.slice(0,2).join(', '):'';
-        const head=window.IntMapLang.t(HOST.lang,"The file does not say which coordinate system it uses, and its numbers are not degrees","このファイルは座標系を述べておらず、数値も経緯度ではありません","Die Datei nennt kein Koordinatensystem, und ihre Zahlen sind keine Gradangaben","Файл не указывает систему координат, и его числа — не градусы","El archivo no indica su sistema de coordenadas y sus números no son grados");
+        const head=IntMapLang.t(HOST.lang,"The file does not say which coordinate system it uses, and its numbers are not degrees","このファイルは座標系を述べておらず、数値も経緯度ではありません","Die Datei nennt kein Koordinatensystem, und ihre Zahlen sind keine Gradangaben","Файл не указывает систему координат, и его числа — не градусы","El archivo no indica su sistema de coordenadas y sus números no son grados");
         const bits=[];
         if(n&&tot) bits.push(n+'/'+tot);
         if(smp) bits.push(smp);
@@ -3211,40 +3214,40 @@ window.IntMapModules.geojsonUpload=function(HOST){
          ⚠ `shapefile` survives as the one case where the reader could not be fetched at all: the
          archive IS a shapefile and this session cannot read it, which is a different fact from any
          of the six below. */
-      if(why==='shapefile') return window.IntMapLang.t(HOST.lang,"This is a Shapefile, but the module that reads it could not be loaded","これは Shapefile ですが、読み取る部品を読み込めませんでした");
-      if(why==='shapefile-missing-shp') return window.IntMapLang.t(HOST.lang,"The archive has no .shp file in it","この書庫に .shp ファイルがありません");
-      if(why==='shapefile-multiple') return window.IntMapLang.t(HOST.lang,"The archive holds more than one Shapefile — unzip it and add the one you want","この書庫には Shapefile が複数入っています。展開して、必要なものを 1 つ追加してください")+(detail&&Array.isArray(detail.sets)?' ('+detail.sets.slice(0,6).join(', ')+')':'');
-      if(why==='shapefile-type') return window.IntMapLang.t(HOST.lang,"That kind of Shapefile geometry is not one this reader handles","その種類の Shapefile 図形は、この読み取りが扱えないものです")+(detail&&detail.shapeType!=null?' ('+detail.shapeType+')':'');
-      if(why==='shapefile-dbf-field-type') return window.IntMapLang.t(HOST.lang,"A column in the .dbf is of a type this reader will not guess at","'.dbf の列に、この読み取りが推測で扱わない型があります")+(detail&&detail.type?' ('+detail.type+')':'');
+      if(why==='shapefile') return IntMapLang.t(HOST.lang,"This is a Shapefile, but the module that reads it could not be loaded","これは Shapefile ですが、読み取る部品を読み込めませんでした");
+      if(why==='shapefile-missing-shp') return IntMapLang.t(HOST.lang,"The archive has no .shp file in it","この書庫に .shp ファイルがありません");
+      if(why==='shapefile-multiple') return IntMapLang.t(HOST.lang,"The archive holds more than one Shapefile — unzip it and add the one you want","この書庫には Shapefile が複数入っています。展開して、必要なものを 1 つ追加してください")+(detail&&Array.isArray(detail.sets)?' ('+detail.sets.slice(0,6).join(', ')+')':'');
+      if(why==='shapefile-type') return IntMapLang.t(HOST.lang,"That kind of Shapefile geometry is not one this reader handles","その種類の Shapefile 図形は、この読み取りが扱えないものです")+(detail&&detail.shapeType!=null?' ('+detail.shapeType+')':'');
+      if(why==='shapefile-dbf-field-type') return IntMapLang.t(HOST.lang,"A column in the .dbf is of a type this reader will not guess at","'.dbf の列に、この読み取りが推測で扱わない型があります")+(detail&&detail.type?' ('+detail.type+')':'');
       /* ⚠ THE TWO COUNTS ARE THE SENTENCE. Shapes and attribute rows that disagree mean every row
          after the gap describes a different place, and a reader shown 「1,742 / 1,741」 can see which
          of their two files was re-exported. */
-      if(why==='shapefile-count-mismatch') return window.IntMapLang.t(HOST.lang,"The shapes and the attribute rows are different in number, so the attributes would be attached to the wrong shapes","図形の数と属性の行数が違うため、属性が別の図形に付いてしまいます")+(detail&&detail.shapes!=null?' ('+detail.shapes+' / '+detail.records+')':'');
-      if(why==='shapefile-corrupt') return window.IntMapLang.t(HOST.lang,"The Shapefile ends earlier than its own header says it should","Shapefile が、自身のヘッダが述べる長さより前で終わっています")+(detail&&detail.at!=null?' ('+detail.at+')':'');
-      if(why==='gpkg-not-sqlite') return window.IntMapLang.t(HOST.lang,"This is not a SQLite file, so it is not a GeoPackage","これは SQLite ファイルではないため、GeoPackage ではありません");
-      if(why==='gpkg-not-a-geopackage') return window.IntMapLang.t(HOST.lang,"This is a SQLite database, but it holds no GeoPackage contents table","これは SQLite のデータベースですが、GeoPackage の目録表がありません");
-      if(why==='gpkg-truncated'||why==='gpkg-corrupt') return window.IntMapLang.t(HOST.lang,"The GeoPackage ends or breaks part-way through, so the rest cannot be read","GeoPackage が途中で途切れているため、続きを読めません")+(detail&&detail.at!=null?' ('+detail.at+')':'');
-      if(why==='gpkg-page-size') return window.IntMapLang.t(HOST.lang,"The page size in this file's header is not one SQLite defines","このファイルのヘッダのページサイズが、SQLite の定める値ではありません");
-      if(why==='gpkg-wal') return window.IntMapLang.t(HOST.lang,"This GeoPackage was left with a write-ahead log, and the log is not in the file — reopen and close it in the program that wrote it","この GeoPackage には write-ahead log が残っており、その中身がファイルに含まれていません。書き出した側で開き直して閉じてください");
+      if(why==='shapefile-count-mismatch') return IntMapLang.t(HOST.lang,"The shapes and the attribute rows are different in number, so the attributes would be attached to the wrong shapes","図形の数と属性の行数が違うため、属性が別の図形に付いてしまいます")+(detail&&detail.shapes!=null?' ('+detail.shapes+' / '+detail.records+')':'');
+      if(why==='shapefile-corrupt') return IntMapLang.t(HOST.lang,"The Shapefile ends earlier than its own header says it should","Shapefile が、自身のヘッダが述べる長さより前で終わっています")+(detail&&detail.at!=null?' ('+detail.at+')':'');
+      if(why==='gpkg-not-sqlite') return IntMapLang.t(HOST.lang,"This is not a SQLite file, so it is not a GeoPackage","これは SQLite ファイルではないため、GeoPackage ではありません");
+      if(why==='gpkg-not-a-geopackage') return IntMapLang.t(HOST.lang,"This is a SQLite database, but it holds no GeoPackage contents table","これは SQLite のデータベースですが、GeoPackage の目録表がありません");
+      if(why==='gpkg-truncated'||why==='gpkg-corrupt') return IntMapLang.t(HOST.lang,"The GeoPackage ends or breaks part-way through, so the rest cannot be read","GeoPackage が途中で途切れているため、続きを読めません")+(detail&&detail.at!=null?' ('+detail.at+')':'');
+      if(why==='gpkg-page-size') return IntMapLang.t(HOST.lang,"The page size in this file's header is not one SQLite defines","このファイルのヘッダのページサイズが、SQLite の定める値ではありません");
+      if(why==='gpkg-wal') return IntMapLang.t(HOST.lang,"This GeoPackage was left with a write-ahead log, and the log is not in the file — reopen and close it in the program that wrote it","この GeoPackage には write-ahead log が残っており、その中身がファイルに含まれていません。書き出した側で開き直して閉じてください");
       /* ⚠ (#R783) THE SIX ABOVE ARE ABOUT READING A FILE SOMEBODY ELSE WROTE; THESE SIX ARE ABOUT
          WRITING ONE. A writer refuses for different reasons than a reader, and the reader cannot
          guess which — so each says what in THIS data the format cannot carry, rather than that the
          export failed. */
-      if(why==='gpkg-write-empty') return window.IntMapLang.t(HOST.lang,"There is nothing to write: this dataset holds no rows","書き出すものがありません。このデータセットに行が 1 つもありません");
-      if(why==='gpkg-write-crs-unsupported') return window.IntMapLang.t(HOST.lang,"A GeoPackage has to name the coordinate system it stores, and this data does not state one this writer can declare","GeoPackage は座標系を明示する必要がありますが、このデータはこの書き手が宣言できる座標系を述べていません");
-      if(why==='gpkg-write-geometry-unsupported') return window.IntMapLang.t(HOST.lang,"One of these shapes is of a kind this writer does not put into a GeoPackage yet","この形のうち 1 つは、この書き手がまだ GeoPackage に入れられない種類です");
-      if(why==='gpkg-write-geometry-mixed-dimensions') return window.IntMapLang.t(HOST.lang,"Some of these shapes carry a height and some do not, and one GeoPackage layer states a single dimensionality for all of them","この形の一部は高さを持ち一部は持ちません。GeoPackage の 1 レイヤーは全体で 1 つの次元数を述べます");
-      if(why==='gpkg-write-value-unsupported') return window.IntMapLang.t(HOST.lang,"A value in this table is of a kind the format has no column type for","この表の値のうち 1 つは、この形式に対応する列の型がない種類です");
-      if(why==='gpkg-write-table-name') return window.IntMapLang.t(HOST.lang,"That layer name cannot be a table name in a GeoPackage — rename it and write again","そのレイヤー名は GeoPackage の表名にできません。名前を変えてもう一度書き出してください");
-      if(why==='gpkg-text-encoding') return window.IntMapLang.t(HOST.lang,"This GeoPackage stores its text in an encoding this reader will not guess at","この GeoPackage の文字符号化は、この読み取りが推測で扱わないものです");
-      if(why==='gpkg-schema') return window.IntMapLang.t(HOST.lang,"A table definition in this GeoPackage could not be read, and it was not guessed at","この GeoPackage の表定義を読み取れず、推測もしていません")+(detail&&detail.table?' ('+detail.table+')':'');
-      if(why==='gpkg-no-tables') return window.IntMapLang.t(HOST.lang,"This GeoPackage holds nothing this map can read","この GeoPackage に、この地図が読めるものがありません");
-      if(why==='gpkg-multiple-tables') return window.IntMapLang.t(HOST.lang,"This GeoPackage holds several tables — say which one to read","この GeoPackage には表が複数あります。どれを読むか指定してください")+(detail&&Array.isArray(detail.tables)?' ('+detail.tables.slice(0,6).join(', ')+')':'');
-      if(why==='gpkg-no-such-table') return window.IntMapLang.t(HOST.lang,"There is no readable table of that name in this GeoPackage","その名前の読める表は、この GeoPackage にありません")+(detail&&detail.table?' ('+detail.table+')':'');
-      if(why==='gpkg-tiles-unsupported') return window.IntMapLang.t(HOST.lang,"That table holds map tiles rather than features or values","その表は、地物でも数値でもなく地図タイルを持っています");
-      if(why==='gpkg-geometry-column') return window.IntMapLang.t(HOST.lang,"The column this GeoPackage names as its geometry is not in the table","この GeoPackage が幾何として名指している列が、その表にありません");
-      if(why==='gpkg-geometry-blob') return window.IntMapLang.t(HOST.lang,"A geometry in this GeoPackage is not in the format the standard defines","この GeoPackage の幾何が、規格の定める形になっていません");
-      if(why==='gpkg-geometry-type') return window.IntMapLang.t(HOST.lang,"This GeoPackage uses a geometry type this reader does not draw","この GeoPackage は、この読み取りが描かない種類の幾何を使っています")+(detail&&detail.geometryType?' ('+detail.geometryType+')':'');
+      if(why==='gpkg-write-empty') return IntMapLang.t(HOST.lang,"There is nothing to write: this dataset holds no rows","書き出すものがありません。このデータセットに行が 1 つもありません");
+      if(why==='gpkg-write-crs-unsupported') return IntMapLang.t(HOST.lang,"A GeoPackage has to name the coordinate system it stores, and this data does not state one this writer can declare","GeoPackage は座標系を明示する必要がありますが、このデータはこの書き手が宣言できる座標系を述べていません");
+      if(why==='gpkg-write-geometry-unsupported') return IntMapLang.t(HOST.lang,"One of these shapes is of a kind this writer does not put into a GeoPackage yet","この形のうち 1 つは、この書き手がまだ GeoPackage に入れられない種類です");
+      if(why==='gpkg-write-geometry-mixed-dimensions') return IntMapLang.t(HOST.lang,"Some of these shapes carry a height and some do not, and one GeoPackage layer states a single dimensionality for all of them","この形の一部は高さを持ち一部は持ちません。GeoPackage の 1 レイヤーは全体で 1 つの次元数を述べます");
+      if(why==='gpkg-write-value-unsupported') return IntMapLang.t(HOST.lang,"A value in this table is of a kind the format has no column type for","この表の値のうち 1 つは、この形式に対応する列の型がない種類です");
+      if(why==='gpkg-write-table-name') return IntMapLang.t(HOST.lang,"That layer name cannot be a table name in a GeoPackage — rename it and write again","そのレイヤー名は GeoPackage の表名にできません。名前を変えてもう一度書き出してください");
+      if(why==='gpkg-text-encoding') return IntMapLang.t(HOST.lang,"This GeoPackage stores its text in an encoding this reader will not guess at","この GeoPackage の文字符号化は、この読み取りが推測で扱わないものです");
+      if(why==='gpkg-schema') return IntMapLang.t(HOST.lang,"A table definition in this GeoPackage could not be read, and it was not guessed at","この GeoPackage の表定義を読み取れず、推測もしていません")+(detail&&detail.table?' ('+detail.table+')':'');
+      if(why==='gpkg-no-tables') return IntMapLang.t(HOST.lang,"This GeoPackage holds nothing this map can read","この GeoPackage に、この地図が読めるものがありません");
+      if(why==='gpkg-multiple-tables') return IntMapLang.t(HOST.lang,"This GeoPackage holds several tables — say which one to read","この GeoPackage には表が複数あります。どれを読むか指定してください")+(detail&&Array.isArray(detail.tables)?' ('+detail.tables.slice(0,6).join(', ')+')':'');
+      if(why==='gpkg-no-such-table') return IntMapLang.t(HOST.lang,"There is no readable table of that name in this GeoPackage","その名前の読める表は、この GeoPackage にありません")+(detail&&detail.table?' ('+detail.table+')':'');
+      if(why==='gpkg-tiles-unsupported') return IntMapLang.t(HOST.lang,"That table holds map tiles rather than features or values","その表は、地物でも数値でもなく地図タイルを持っています");
+      if(why==='gpkg-geometry-column') return IntMapLang.t(HOST.lang,"The column this GeoPackage names as its geometry is not in the table","この GeoPackage が幾何として名指している列が、その表にありません");
+      if(why==='gpkg-geometry-blob') return IntMapLang.t(HOST.lang,"A geometry in this GeoPackage is not in the format the standard defines","この GeoPackage の幾何が、規格の定める形になっていません");
+      if(why==='gpkg-geometry-type') return IntMapLang.t(HOST.lang,"This GeoPackage uses a geometry type this reader does not draw","この GeoPackage は、この読み取りが描かない種類の幾何を使っています")+(detail&&detail.geometryType?' ('+detail.geometryType+')':'');
       /* ══ (#R749) THE GRID READERS — js/gis-geotiff.js AND js/gis-warp.js ════════════════════
          Both answer in CODES, and both can refuse a file the reader chose deliberately. 「読み込め
          ませんでした」 covering forty causes is the answer this whole table was written to replace,
@@ -3253,89 +3256,89 @@ window.IntMapModules.geojsonUpload=function(HOST){
          and carry their own detail — the shape 'crs-unsupported' above already uses — but every code
          is named, and tests/shell-gis-upload-raster-checks.test.mjs #R749 ⑪ reads the two modules' own refusal
          sets and fails on any that is not. */
-      if(why==='not-tiff') return window.IntMapLang.t(HOST.lang,"This file is not a TIFF","このファイルは TIFF ではありません");
+      if(why==='not-tiff') return IntMapLang.t(HOST.lang,"This file is not a TIFF","このファイルは TIFF ではありません");
       /* ⚠ (#R756) 「これは BigTIFF です」 WAS THE WHOLE SENTENCE, AND IT STOPPED BEING TRUE. BigTIFF is
          read now; what is refused is a BigTIFF whose header states an offset width this reader does
          not implement — a variant, not the container. A message that names the container would send
          the reader to convert a file that would have opened. */
-      if(why==='bigtiff-unsupported') return window.IntMapLang.t(HOST.lang,"This BigTIFF states an offset width this reader does not handle","この BigTIFF は、この読み取りが扱えない offset 幅を述べています")+(detail&&detail.offsetBytes!=null?' ('+detail.offsetBytes+' bytes)':'');
-      if(why==='tiff-truncated'||why==='chunk-short') return window.IntMapLang.t(HOST.lang,"This TIFF ends part way through its pixels — the file is incomplete","この TIFF は画素の途中で終わっています。ファイルが欠けています")+(detail&&detail.need!=null?' ('+detail.need+')':'');
-      if(why==='tiff-corrupt'||why==='lzw-corrupt'||why==='packbits-corrupt') return window.IntMapLang.t(HOST.lang,"The pixel data in this TIFF does not decode — the file is damaged","この TIFF の画素データが復号できません。ファイルが壊れています")+(detail&&detail.at!=null?' ('+detail.at+')':'');
-      if(why==='compression-unsupported') return window.IntMapLang.t(HOST.lang,"This TIFF is compressed in a way this reader does not decode","この TIFF の圧縮方式は、この読み取りが復号しないものです")+(detail?' ('+[detail.name,detail.compression].filter(v=>v!=null).join(' ')+')':'');
-      if(why==='jpeg-in-tiff-unsupported') return window.IntMapLang.t(HOST.lang,"This TIFF holds JPEG-compressed tiles, which this reader does not decode — export it uncompressed or as Deflate","この TIFF は JPEG 圧縮のタイルを持っており、この読み取りは復号しません。無圧縮か Deflate で書き出してください");
-      if(why==='deflate-unavailable') return window.IntMapLang.t(HOST.lang,"This browser cannot decompress the TIFF (no DecompressionStream)","このブラウザでは、この TIFF を展開できません（DecompressionStream が無い）");
-      if(why==='predictor-unsupported'||why==='sample-format-unsupported'||why==='bits-unsupported'||why==='planar-separate-unsupported') return window.IntMapLang.t(HOST.lang,"This TIFF stores its numbers in a form this reader does not read","この TIFF は、この読み取りが読まない形で数値を格納しています")+(detail?' ('+[why,detail.predictor,detail.sampleFormat,detail.bits,detail.planar].filter(v=>v!=null).join(' ')+')':'');
+      if(why==='bigtiff-unsupported') return IntMapLang.t(HOST.lang,"This BigTIFF states an offset width this reader does not handle","この BigTIFF は、この読み取りが扱えない offset 幅を述べています")+(detail&&detail.offsetBytes!=null?' ('+detail.offsetBytes+' bytes)':'');
+      if(why==='tiff-truncated'||why==='chunk-short') return IntMapLang.t(HOST.lang,"This TIFF ends part way through its pixels — the file is incomplete","この TIFF は画素の途中で終わっています。ファイルが欠けています")+(detail&&detail.need!=null?' ('+detail.need+')':'');
+      if(why==='tiff-corrupt'||why==='lzw-corrupt'||why==='packbits-corrupt') return IntMapLang.t(HOST.lang,"The pixel data in this TIFF does not decode — the file is damaged","この TIFF の画素データが復号できません。ファイルが壊れています")+(detail&&detail.at!=null?' ('+detail.at+')':'');
+      if(why==='compression-unsupported') return IntMapLang.t(HOST.lang,"This TIFF is compressed in a way this reader does not decode","この TIFF の圧縮方式は、この読み取りが復号しないものです")+(detail?' ('+[detail.name,detail.compression].filter(v=>v!=null).join(' ')+')':'');
+      if(why==='jpeg-in-tiff-unsupported') return IntMapLang.t(HOST.lang,"This TIFF holds JPEG-compressed tiles, which this reader does not decode — export it uncompressed or as Deflate","この TIFF は JPEG 圧縮のタイルを持っており、この読み取りは復号しません。無圧縮か Deflate で書き出してください");
+      if(why==='deflate-unavailable') return IntMapLang.t(HOST.lang,"This browser cannot decompress the TIFF (no DecompressionStream)","このブラウザでは、この TIFF を展開できません（DecompressionStream が無い）");
+      if(why==='predictor-unsupported'||why==='sample-format-unsupported'||why==='bits-unsupported'||why==='planar-separate-unsupported') return IntMapLang.t(HOST.lang,"This TIFF stores its numbers in a form this reader does not read","この TIFF は、この読み取りが読まない形で数値を格納しています")+(detail?' ('+[why,detail.predictor,detail.sampleFormat,detail.bits,detail.planar].filter(v=>v!=null).join(' ')+')':'');
       /* ⚠ THE ONE REFUSAL THAT IS ABOUT THE FILE'S MEANING RATHER THAN ITS BYTES. A TIFF with no
          tiepoint and no transform is a picture, not a map: nothing in it says where a pixel is, and
          placing it anywhere would be this project's 「誰も述べていない主張」 drawn to scale. */
-      if(why==='no-georeference') return window.IntMapLang.t(HOST.lang,"This TIFF does not say where on Earth its pixels are, so it cannot be placed on the map","この TIFF は、画素が地球上のどこなのかを述べていないため、地図に置けません");
-      if(why==='grid-degenerate') return window.IntMapLang.t(HOST.lang,"This TIFF describes a grid with no size: a pixel of zero or negative extent","この TIFF が述べている格子は大きさを持ちません（画素の幅か高さが 0 以下です）")+(detail&&detail.field?' ('+detail.field+')':'');
-      if(why==='crs-not-stated') return window.IntMapLang.t(HOST.lang,"This grid does not state its coordinate system, so it cannot be converted to lon/lat","この格子は座標系を述べていないため、経緯度へ変換できません");
-      if(why==='align-needs-4326'||why==='resample-source-not-4326') return window.IntMapLang.t(HOST.lang,"That grid is not in lon/lat yet — convert it first, then put the two on one grid","その格子はまだ経緯度ではありません。先に変換してから、2 つを 1 つの格子に合わせてください")+(detail&&detail.crs?' ('+detail.crs+')':'');
-      if(why==='crs-unavailable') return window.IntMapLang.t(HOST.lang,"The coordinate-conversion library did not load, so this grid was not converted — nothing was guessed at","座標変換の部品を読み込めなかったため、この格子は変換していません。推測もしていません");
-      if(why==='raster-unavailable') return window.IntMapLang.t(HOST.lang,"The grid module is not loaded, so this file was not read at all","格子の部品が読み込まれていないため、このファイルは読み取っていません");
-      if(why==='resample-method-not-stated'||why==='resample-method-unknown') return window.IntMapLang.t(HOST.lang,"Say how the grid should be resampled — an interpolation nobody named is an answer nobody made","格子をどう再標本化するかを指定してください。誰も名づけていない補間は、誰も出していない答えです")+(detail&&detail.method?' ('+detail.method+')':'');
+      if(why==='no-georeference') return IntMapLang.t(HOST.lang,"This TIFF does not say where on Earth its pixels are, so it cannot be placed on the map","この TIFF は、画素が地球上のどこなのかを述べていないため、地図に置けません");
+      if(why==='grid-degenerate') return IntMapLang.t(HOST.lang,"This TIFF describes a grid with no size: a pixel of zero or negative extent","この TIFF が述べている格子は大きさを持ちません（画素の幅か高さが 0 以下です）")+(detail&&detail.field?' ('+detail.field+')':'');
+      if(why==='crs-not-stated') return IntMapLang.t(HOST.lang,"This grid does not state its coordinate system, so it cannot be converted to lon/lat","この格子は座標系を述べていないため、経緯度へ変換できません");
+      if(why==='align-needs-4326'||why==='resample-source-not-4326') return IntMapLang.t(HOST.lang,"That grid is not in lon/lat yet — convert it first, then put the two on one grid","その格子はまだ経緯度ではありません。先に変換してから、2 つを 1 つの格子に合わせてください")+(detail&&detail.crs?' ('+detail.crs+')':'');
+      if(why==='crs-unavailable') return IntMapLang.t(HOST.lang,"The coordinate-conversion library did not load, so this grid was not converted — nothing was guessed at","座標変換の部品を読み込めなかったため、この格子は変換していません。推測もしていません");
+      if(why==='raster-unavailable') return IntMapLang.t(HOST.lang,"The grid module is not loaded, so this file was not read at all","格子の部品が読み込まれていないため、このファイルは読み取っていません");
+      if(why==='resample-method-not-stated'||why==='resample-method-unknown') return IntMapLang.t(HOST.lang,"Say how the grid should be resampled — an interpolation nobody named is an answer nobody made","格子をどう再標本化するかを指定してください。誰も名づけていない補間は、誰も出していない答えです")+(detail&&detail.method?' ('+detail.method+')':'');
       /* ⚠ 「3」と「5」の中間の「4」は別の分類であって中間ではない。 A classification is not a scale,
          and smoothing one invents land-cover types nobody defined (docs/GIS-CORE.md §1.4 refuses the
          same thing for 「値ごとの面積」). */
-      if(why==='bilinear-on-categorical') return window.IntMapLang.t(HOST.lang,"This band holds categories, not measurements — interpolating them would invent categories nobody defined; use nearest","このバンドは測定値ではなく分類です。補間すると、誰も定義していない分類を作ってしまいます。nearest を使ってください")+(detail&&detail.band!=null?' ('+detail.band+')':'');
-      if(why==='align-rule-not-stated'||why==='align-rule-unknown') return window.IntMapLang.t(HOST.lang,"Say which of the two grids the result should follow — the finer one, the coarser one, or the first","結果をどちらの格子に合わせるかを指定してください（細かいほう・粗いほう・1 つ目）")+(detail&&detail.rule?' ('+detail.rule+')':'');
-      if(why==='grids-disjoint') return window.IntMapLang.t(HOST.lang,"These two grids do not overlap anywhere, so there is no common grid to put them on","この 2 つの格子はどこも重なっていないため、共通の格子がありません");
-      if(why==='align-grid-rotated'||why==='align-grid-not-north-up'||why==='affine-invalid'||why==='affine-missing'||why==='affine-singular') return window.IntMapLang.t(HOST.lang,"This grid is not a plain north-up grid, and this reader will not straighten it silently","この格子は北が上の単純な格子ではありません。この読み取りは黙って整えることをしません")+(detail&&detail.field?' ('+detail.field+')':'');
-      if(why==='warp-spans-world'||why==='extent-degenerate'||why==='pixel-size-underivable') return window.IntMapLang.t(HOST.lang,"The area this grid covers could not be worked out in lon/lat — it wraps the world, or collapses to nothing","この格子が覆う範囲を経緯度で求められませんでした（地球を一周している、あるいは面積が 0 です）");
-      if(why==='size-invalid'||why==='target-invalid') return window.IntMapLang.t(HOST.lang,"The grid asked for is not a grid: one of its size or spacing values is missing or not positive","指定された格子が格子の形になっていません（大きさか間隔が欠けている、または正の数ではありません）")+(detail&&detail.field?' ('+detail.field+')':'');
-      if(why==='raster-invalid') return window.IntMapLang.t(HOST.lang,"That grid does not describe a grid: one of its size or spacing fields is missing or not a positive number","その格子は格子の形になっていません（大きさか間隔のどれかが欠けている、または正の数ではない）")+(detail&&detail.field?' ('+detail.field+')':'');
-      if(why==='raster-too-large') return window.IntMapLang.t(HOST.lang,"This browser could not allocate a grid that size","このブラウザでは、その大きさの格子を確保できませんでした")+(detail&&detail.cells!=null?' ('+detail.cells+')':'');
-      if(why==='band-out-of-range') return window.IntMapLang.t(HOST.lang,"That grid has fewer bands than the one asked for","その格子には、指定された番号のバンドがありません")+(detail&&detail.bandIndex!=null?' ('+detail.bandIndex+')':'');
-      if(why==='read-failed') return window.IntMapLang.t(HOST.lang,"The grid handed back nothing when its values were asked for","格子に値を求めたところ、何も返ってきませんでした");
+      if(why==='bilinear-on-categorical') return IntMapLang.t(HOST.lang,"This band holds categories, not measurements — interpolating them would invent categories nobody defined; use nearest","このバンドは測定値ではなく分類です。補間すると、誰も定義していない分類を作ってしまいます。nearest を使ってください")+(detail&&detail.band!=null?' ('+detail.band+')':'');
+      if(why==='align-rule-not-stated'||why==='align-rule-unknown') return IntMapLang.t(HOST.lang,"Say which of the two grids the result should follow — the finer one, the coarser one, or the first","結果をどちらの格子に合わせるかを指定してください（細かいほう・粗いほう・1 つ目）")+(detail&&detail.rule?' ('+detail.rule+')':'');
+      if(why==='grids-disjoint') return IntMapLang.t(HOST.lang,"These two grids do not overlap anywhere, so there is no common grid to put them on","この 2 つの格子はどこも重なっていないため、共通の格子がありません");
+      if(why==='align-grid-rotated'||why==='align-grid-not-north-up'||why==='affine-invalid'||why==='affine-missing'||why==='affine-singular') return IntMapLang.t(HOST.lang,"This grid is not a plain north-up grid, and this reader will not straighten it silently","この格子は北が上の単純な格子ではありません。この読み取りは黙って整えることをしません")+(detail&&detail.field?' ('+detail.field+')':'');
+      if(why==='warp-spans-world'||why==='extent-degenerate'||why==='pixel-size-underivable') return IntMapLang.t(HOST.lang,"The area this grid covers could not be worked out in lon/lat — it wraps the world, or collapses to nothing","この格子が覆う範囲を経緯度で求められませんでした（地球を一周している、あるいは面積が 0 です）");
+      if(why==='size-invalid'||why==='target-invalid') return IntMapLang.t(HOST.lang,"The grid asked for is not a grid: one of its size or spacing values is missing or not positive","指定された格子が格子の形になっていません（大きさか間隔が欠けている、または正の数ではありません）")+(detail&&detail.field?' ('+detail.field+')':'');
+      if(why==='raster-invalid') return IntMapLang.t(HOST.lang,"That grid does not describe a grid: one of its size or spacing fields is missing or not a positive number","その格子は格子の形になっていません（大きさか間隔のどれかが欠けている、または正の数ではない）")+(detail&&detail.field?' ('+detail.field+')':'');
+      if(why==='raster-too-large') return IntMapLang.t(HOST.lang,"This browser could not allocate a grid that size","このブラウザでは、その大きさの格子を確保できませんでした")+(detail&&detail.cells!=null?' ('+detail.cells+')':'');
+      if(why==='band-out-of-range') return IntMapLang.t(HOST.lang,"That grid has fewer bands than the one asked for","その格子には、指定された番号のバンドがありません")+(detail&&detail.bandIndex!=null?' ('+detail.bandIndex+')':'');
+      if(why==='read-failed') return IntMapLang.t(HOST.lang,"The grid handed back nothing when its values were asked for","格子に値を求めたところ、何も返ってきませんでした");
       /* ══ ⚠ (#R819) 再投影が、予算・受け皿・footprint の精度について断る十二 ══════════════════
          ⚠ どれも「できませんでした」ではなく「**述べられていないこと**がある」と言う。予算と許容誤差は
          読者が決める値で、この層が既定を発明すれば、読者は自分が選んでいない精度で世界を測ったことに
          なる。受け皿の失敗だけは別で、そこは「穴の空いた格子を成功として返さない」という約束の表れ。
          ⚠ en + jp（CONSTITUTION.md §7）。 */
-      if(why==='warp-budget-invalid') return window.IntMapLang.t(HOST.lang,"The memory budget given for this reprojection is not a positive number of bytes","この再投影に渡されたメモリ予算が、正のバイト数になっていません")+(detail&&detail.budgetBytes!=null?' ('+detail.budgetBytes+')':'');
-      if(why==='warp-budget-not-stated') return window.IntMapLang.t(HOST.lang,"Nothing said how much memory this reprojection may use, and this reader will not pick a limit on your behalf","この再投影が使ってよいメモリ量が述べられていません。この読み取りは、その上限を代わりに決めることをしません");
-      if(why==='warp-sink-invalid') return window.IntMapLang.t(HOST.lang,"The place to write the output to does not have the parts this reader needs — it must at least be able to take a window of rows","出力の書き出し先に、必要な手続きがありません（少なくとも、行の窓を受け取れる必要があります）")+(detail&&detail.needs!=null?' ('+detail.needs+')':'');
-      if(why==='warp-sink-failed') return window.IntMapLang.t(HOST.lang,"The place the output was being written to stopped part way, so the grid is incomplete and is not being handed back as a finished one","出力の書き出し先が途中で止まったため、格子は不完全です。完成したものとしては返しません")+(detail&&detail.row0!=null?' ('+detail.row0+')':'');
-      if(why==='warp-footprint-unknown') return window.IntMapLang.t(HOST.lang,"That is not one of the ways this reader can work out the shape a pixel takes after reprojection","再投影後に画素が取る形の求め方として、その名前は知られていません")+(detail&&detail.footprint!=null?' ('+detail.footprint+')':'');
-      if(why==='warp-footprint-not-areal') return window.IntMapLang.t(HOST.lang,"Working out each pixel's exact shape only means something when the values are combined by area — choose an area-based method, or leave the fast approximation in place","画素の正確な形を求めることに意味があるのは、値を面積で合成するときだけです。面積にもとづく方式を選ぶか、速い近似のままにしてください")+(detail&&detail.method!=null?' ('+detail.method+')':'');
-      if(why==='warp-footprint-unsupported') return window.IntMapLang.t(HOST.lang,"This reprojection cannot refine pixel shapes on the path it is taking, and it says so rather than reporting the approximation as exact","この経路では画素の形を精密化できません。近似を厳密なものとして報告せず、その事実を述べます")+(detail&&detail.reason!=null?' ('+detail.reason+')':'');
-      if(why==='warp-footprint-tolerance-not-stated') return window.IntMapLang.t(HOST.lang,"Ask for exact pixel shapes and you must also say how close is close enough, in source pixels — there is no default that would be yours","画素の形を厳密に求めるなら、どこまで近ければ十分かを（元画素を単位として）述べてください。既定値は、読者のものにはなりません");
-      if(why==='warp-footprint-tolerance-invalid') return window.IntMapLang.t(HOST.lang,"The closeness asked of the pixel shapes is not a positive number of source pixels","画素の形に求める許容誤差が、正の元画素数になっていません")+(detail&&detail.footprintTolerance!=null?' ('+detail.footprintTolerance+')':'');
-      if(why==='warp-area-tolerance-invalid') return window.IntMapLang.t(HOST.lang,"The accuracy asked of the areas is not a positive number","面積に求める精度が正の数になっていません")+(detail&&detail.areaTolerance!=null?' ('+detail.areaTolerance+')':'');
-      if(why==='warp-accuracy-unmeasured') return window.IntMapLang.t(HOST.lang,"The accuracy you asked about could not be measured on this path, and an unmeasured number is not being reported as a met one","求められた精度は、この経路では測れませんでした。測れなかった数を「満たした」とは報告しません")+(detail&&detail.reason!=null?' ('+detail.reason+')':'');
-      if(why==='warp-accuracy-outside-tolerance') return window.IntMapLang.t(HOST.lang,"The areas this reprojection produces are further off than the accuracy you asked for, so the result is refused rather than handed over looking exact","この再投影が出す面積は、求められた精度より大きくずれます。厳密に見える形で渡さず、拒否します")+(detail&&detail.error!=null?' ('+detail.error+')':'');
+      if(why==='warp-budget-invalid') return IntMapLang.t(HOST.lang,"The memory budget given for this reprojection is not a positive number of bytes","この再投影に渡されたメモリ予算が、正のバイト数になっていません")+(detail&&detail.budgetBytes!=null?' ('+detail.budgetBytes+')':'');
+      if(why==='warp-budget-not-stated') return IntMapLang.t(HOST.lang,"Nothing said how much memory this reprojection may use, and this reader will not pick a limit on your behalf","この再投影が使ってよいメモリ量が述べられていません。この読み取りは、その上限を代わりに決めることをしません");
+      if(why==='warp-sink-invalid') return IntMapLang.t(HOST.lang,"The place to write the output to does not have the parts this reader needs — it must at least be able to take a window of rows","出力の書き出し先に、必要な手続きがありません（少なくとも、行の窓を受け取れる必要があります）")+(detail&&detail.needs!=null?' ('+detail.needs+')':'');
+      if(why==='warp-sink-failed') return IntMapLang.t(HOST.lang,"The place the output was being written to stopped part way, so the grid is incomplete and is not being handed back as a finished one","出力の書き出し先が途中で止まったため、格子は不完全です。完成したものとしては返しません")+(detail&&detail.row0!=null?' ('+detail.row0+')':'');
+      if(why==='warp-footprint-unknown') return IntMapLang.t(HOST.lang,"That is not one of the ways this reader can work out the shape a pixel takes after reprojection","再投影後に画素が取る形の求め方として、その名前は知られていません")+(detail&&detail.footprint!=null?' ('+detail.footprint+')':'');
+      if(why==='warp-footprint-not-areal') return IntMapLang.t(HOST.lang,"Working out each pixel's exact shape only means something when the values are combined by area — choose an area-based method, or leave the fast approximation in place","画素の正確な形を求めることに意味があるのは、値を面積で合成するときだけです。面積にもとづく方式を選ぶか、速い近似のままにしてください")+(detail&&detail.method!=null?' ('+detail.method+')':'');
+      if(why==='warp-footprint-unsupported') return IntMapLang.t(HOST.lang,"This reprojection cannot refine pixel shapes on the path it is taking, and it says so rather than reporting the approximation as exact","この経路では画素の形を精密化できません。近似を厳密なものとして報告せず、その事実を述べます")+(detail&&detail.reason!=null?' ('+detail.reason+')':'');
+      if(why==='warp-footprint-tolerance-not-stated') return IntMapLang.t(HOST.lang,"Ask for exact pixel shapes and you must also say how close is close enough, in source pixels — there is no default that would be yours","画素の形を厳密に求めるなら、どこまで近ければ十分かを（元画素を単位として）述べてください。既定値は、読者のものにはなりません");
+      if(why==='warp-footprint-tolerance-invalid') return IntMapLang.t(HOST.lang,"The closeness asked of the pixel shapes is not a positive number of source pixels","画素の形に求める許容誤差が、正の元画素数になっていません")+(detail&&detail.footprintTolerance!=null?' ('+detail.footprintTolerance+')':'');
+      if(why==='warp-area-tolerance-invalid') return IntMapLang.t(HOST.lang,"The accuracy asked of the areas is not a positive number","面積に求める精度が正の数になっていません")+(detail&&detail.areaTolerance!=null?' ('+detail.areaTolerance+')':'');
+      if(why==='warp-accuracy-unmeasured') return IntMapLang.t(HOST.lang,"The accuracy you asked about could not be measured on this path, and an unmeasured number is not being reported as a met one","求められた精度は、この経路では測れませんでした。測れなかった数を「満たした」とは報告しません")+(detail&&detail.reason!=null?' ('+detail.reason+')':'');
+      if(why==='warp-accuracy-outside-tolerance') return IntMapLang.t(HOST.lang,"The areas this reprojection produces are further off than the accuracy you asked for, so the result is refused rather than handed over looking exact","この再投影が出す面積は、求められた精度より大きくずれます。厳密に見える形で渡さず、拒否します")+(detail&&detail.error!=null?' ('+detail.error+')':'');
       /* ══ (#R752) THE EIGHT THE GRID READER RAISES WHILE FETCHING, not while decoding ════════
          js/gis-geotiff.js reads a GeoTIFF over the network in pieces, and every way that can go
          wrong is a DIFFERENT thing for the reader to do: retry, host it elsewhere, ask for the
          whole file, or name the resolution they meant. 「読み込めませんでした」 for all eight is
          the answer this table exists to replace, so each one says what happened to THEIR file and
          what is left to try. ⚠ The set is published by refusals(); the sentences are here. */
-      if(why==='fetch-failed') return window.IntMapLang.t(HOST.lang,"The file could not be fetched from that address at all","そのアドレスからファイルを取得できませんでした")+(detail?' ('+[detail.url,detail.reason].filter(Boolean).join(' · ')+')':'');
-      if(why==='http-status') return window.IntMapLang.t(HOST.lang,"The server answered with an error rather than the file","サーバがファイルではなくエラーを返しました")+(detail&&detail.status!=null?' (HTTP '+detail.status+')':'');
+      if(why==='fetch-failed') return IntMapLang.t(HOST.lang,"The file could not be fetched from that address at all","そのアドレスからファイルを取得できませんでした")+(detail?' ('+[detail.url,detail.reason].filter(Boolean).join(' · ')+')':'');
+      if(why==='http-status') return IntMapLang.t(HOST.lang,"The server answered with an error rather than the file","サーバがファイルではなくエラーを返しました")+(detail&&detail.status!=null?' (HTTP '+detail.status+')':'');
       /* ⚠ THIS ONE IS NOT A FAILURE OF THE FILE. The server sent the WHOLE body where a piece was
          asked for, and reading it as a piece would decode the wrong bytes — so it is refused, and
          the reader is told the one thing that makes it work: ask for the whole file. */
-      if(why==='range-unsupported') return window.IntMapLang.t(HOST.lang,"That server does not serve parts of a file — read the whole file instead of a window of it","そのサーバはファイルの一部だけの取得に対応していません。範囲ではなくファイル全体を読み込んでください")+(detail&&detail.url?' ('+detail.url+')':'');
-      if(why==='source-unreadable') return window.IntMapLang.t(HOST.lang,"The supply of bytes did not answer as it promised — fewer bytes came back than were asked for","バイトの供給元が約束どおりに答えませんでした（要求した長さより短い応答です）")+(detail?' ('+[detail.reason,(detail.want!=null&&detail.got!=null)?(detail.got+'/'+detail.want):null].filter(Boolean).join(' · ')+')':'');
-      if(why==='pixels-not-resident') return window.IntMapLang.t(HOST.lang,"Those pixels have not been fetched yet — read the region, or the whole file, before asking for its values","その画素はまだ取得していません。値を求める前に、範囲またはファイル全体を読み込んでください")+(detail&&detail.level!=null?' ('+detail.level+')':'');
-      if(why==='level-out-of-range') return window.IntMapLang.t(HOST.lang,"This file has no image at that resolution step","このファイルには、その解像度の段がありません")+(detail&&detail.levels!=null?' ('+detail.level+' / '+detail.levels+')':'');
-      if(why==='region-out-of-range') return window.IntMapLang.t(HOST.lang,"The area asked for is outside this image","指定された範囲が、この画像の外にあります")+(detail&&detail.reason?' ('+detail.reason+')':'');
+      if(why==='range-unsupported') return IntMapLang.t(HOST.lang,"That server does not serve parts of a file — read the whole file instead of a window of it","そのサーバはファイルの一部だけの取得に対応していません。範囲ではなくファイル全体を読み込んでください")+(detail&&detail.url?' ('+detail.url+')':'');
+      if(why==='source-unreadable') return IntMapLang.t(HOST.lang,"The supply of bytes did not answer as it promised — fewer bytes came back than were asked for","バイトの供給元が約束どおりに答えませんでした（要求した長さより短い応答です）")+(detail?' ('+[detail.reason,(detail.want!=null&&detail.got!=null)?(detail.got+'/'+detail.want):null].filter(Boolean).join(' · ')+')':'');
+      if(why==='pixels-not-resident') return IntMapLang.t(HOST.lang,"Those pixels have not been fetched yet — read the region, or the whole file, before asking for its values","その画素はまだ取得していません。値を求める前に、範囲またはファイル全体を読み込んでください")+(detail&&detail.level!=null?' ('+detail.level+')':'');
+      if(why==='level-out-of-range') return IntMapLang.t(HOST.lang,"This file has no image at that resolution step","このファイルには、その解像度の段がありません")+(detail&&detail.levels!=null?' ('+detail.level+' / '+detail.levels+')':'');
+      if(why==='region-out-of-range') return IntMapLang.t(HOST.lang,"The area asked for is outside this image","指定された範囲が、この画像の外にあります")+(detail&&detail.reason?' ('+detail.reason+')':'');
       /* ⚠ 「どれでもいい」 は答えではない。 Picking a resolution nobody named would hand back a
          picture of a different grid than the one the reader believes they asked for. */
-      if(why==='resolution-not-stated') return window.IntMapLang.t(HOST.lang,"Say which resolution to read at — this reader will not choose one on your behalf","どの解像度で読むかを指定してください。この読み取りが代わりに選ぶことはしません");
-      if(why==='cancelled') return window.IntMapLang.t(HOST.lang,"Stopped before it finished","完了する前に中止しました");
-      if(why==='too-big') return window.IntMapLang.t(HOST.lang,"File is too large to read","ファイルが大きすぎて読み込めません","Die Datei ist zu groß zum Lesen","Файл слишком велик для чтения","El archivo es demasiado grande");
-      if(why==='too-many-features') return window.IntMapLang.t(HOST.lang,"Too many features to draw","地物が多すぎて描画できません","Zu viele Objekte zum Zeichnen","Слишком много объектов для отрисовки","Demasiados elementos para dibujar");
-      if(why==='no-valid-coordinates') return window.IntMapLang.t(HOST.lang,"No usable coordinates in this file","このファイルに使える座標がありません","Keine brauchbaren Koordinaten in dieser Datei","В этом файле нет пригодных координат","No hay coordenadas utilizables en este archivo");
-      if(why==='no-features') return window.IntMapLang.t(HOST.lang,"The file has no map features","地図に描ける地物がありません","Die Datei enthält keine Kartenobjekte","В файле нет картографических объектов","El archivo no contiene elementos de mapa");
-      if(why==='kml-network-link-only') return window.IntMapLang.t(HOST.lang,"This KML only links to data held elsewhere","この KML は外部データへのリンクだけです","Dieses KML verweist nur auf externe Daten","Этот KML только ссылается на внешние данные","Este KML solo enlaza a datos externos");
-      if(why==='json-not-geojson') return window.IntMapLang.t(HOST.lang,"This JSON is not GeoJSON","この JSON は GeoJSON ではありません","Dieses JSON ist kein GeoJSON","Этот JSON не является GeoJSON","Este JSON no es GeoJSON");
-      if(why==='xml-unknown'||why==='xml-no-parser') return window.IntMapLang.t(HOST.lang,"Unsupported XML format","対応していない XML 形式です","Nicht unterstütztes XML-Format","Неподдерживаемый формат XML","Formato XML no compatible");
-      if(why==='not-geodata'||why==='not-text'||why==='unrecognised'||why==='archive'||why==='not-a-table') return window.IntMapLang.t(HOST.lang,"Unsupported file format","対応していないファイル形式です","Nicht unterstütztes Dateiformat","Неподдерживаемый формат файла","Formato de archivo no compatible");
-      if(why==='empty') return window.IntMapLang.t(HOST.lang,"The file is empty","ファイルが空です","Die Datei ist leer","Файл пуст","El archivo está vacío");
-      if(why==='unreadable') return window.IntMapLang.t(HOST.lang,"Could not read this file","このファイルを読み込めませんでした","Diese Datei konnte nicht gelesen werden","Не удалось прочитать этот файл","No se pudo leer este archivo");
-      return window.IntMapLang.t(HOST.lang,"Could not read this file","このファイルを読み込めませんでした","Diese Datei konnte nicht gelesen werden","Не удалось прочитать этот файл","No se pudo leer este archivo");
+      if(why==='resolution-not-stated') return IntMapLang.t(HOST.lang,"Say which resolution to read at — this reader will not choose one on your behalf","どの解像度で読むかを指定してください。この読み取りが代わりに選ぶことはしません");
+      if(why==='cancelled') return IntMapLang.t(HOST.lang,"Stopped before it finished","完了する前に中止しました");
+      if(why==='too-big') return IntMapLang.t(HOST.lang,"File is too large to read","ファイルが大きすぎて読み込めません","Die Datei ist zu groß zum Lesen","Файл слишком велик для чтения","El archivo es demasiado grande");
+      if(why==='too-many-features') return IntMapLang.t(HOST.lang,"Too many features to draw","地物が多すぎて描画できません","Zu viele Objekte zum Zeichnen","Слишком много объектов для отрисовки","Demasiados elementos para dibujar");
+      if(why==='no-valid-coordinates') return IntMapLang.t(HOST.lang,"No usable coordinates in this file","このファイルに使える座標がありません","Keine brauchbaren Koordinaten in dieser Datei","В этом файле нет пригодных координат","No hay coordenadas utilizables en este archivo");
+      if(why==='no-features') return IntMapLang.t(HOST.lang,"The file has no map features","地図に描ける地物がありません","Die Datei enthält keine Kartenobjekte","В файле нет картографических объектов","El archivo no contiene elementos de mapa");
+      if(why==='kml-network-link-only') return IntMapLang.t(HOST.lang,"This KML only links to data held elsewhere","この KML は外部データへのリンクだけです","Dieses KML verweist nur auf externe Daten","Этот KML только ссылается на внешние данные","Este KML solo enlaza a datos externos");
+      if(why==='json-not-geojson') return IntMapLang.t(HOST.lang,"This JSON is not GeoJSON","この JSON は GeoJSON ではありません","Dieses JSON ist kein GeoJSON","Этот JSON не является GeoJSON","Este JSON no es GeoJSON");
+      if(why==='xml-unknown'||why==='xml-no-parser') return IntMapLang.t(HOST.lang,"Unsupported XML format","対応していない XML 形式です","Nicht unterstütztes XML-Format","Неподдерживаемый формат XML","Formato XML no compatible");
+      if(why==='not-geodata'||why==='not-text'||why==='unrecognised'||why==='archive'||why==='not-a-table') return IntMapLang.t(HOST.lang,"Unsupported file format","対応していないファイル形式です","Nicht unterstütztes Dateiformat","Неподдерживаемый формат файла","Formato de archivo no compatible");
+      if(why==='empty') return IntMapLang.t(HOST.lang,"The file is empty","ファイルが空です","Die Datei ist leer","Файл пуст","El archivo está vacío");
+      if(why==='unreadable') return IntMapLang.t(HOST.lang,"Could not read this file","このファイルを読み込めませんでした","Diese Datei konnte nicht gelesen werden","Не удалось прочитать этот файл","No se pudo leer este archivo");
+      return IntMapLang.t(HOST.lang,"Could not read this file","このファイルを読み込めませんでした","Diese Datei konnte nicht gelesen werden","Не удалось прочитать этот файл","No se pudo leer este archivo");
     }
     /* What the layer is CALLED. The file name, plus the entry when it came out of an archive —
        "route.kmz › doc.kml" says where the shape on screen came from without the reader guessing. */
@@ -3346,7 +3349,7 @@ window.IntMapModules.geojsonUpload=function(HOST){
       let readGeoFile=null;
       /* on demand: nothing about reading a dropped file belongs in the startup bundle */
       try{ readGeoFile=(await import('./geo-import.js')).GEO_IMPORT.readGeoFile; }
-      catch(_){ toast(window.IntMapLang.t(HOST.lang,"Could not read this file","このファイルを読み込めませんでした","Diese Datei konnte nicht gelesen werden","Не удалось прочитать этот файл","No se pudo leer este archivo")); return; }
+      catch(_){ toast(IntMapLang.t(HOST.lang,"Could not read this file","このファイルを読み込めませんでした","Diese Datei konnte nicht gelesen werden","Не удалось прочитать этот файл","No se pudo leer este archivo")); return; }
       for(const f of list){
         let r=null;
         try{ r=await readGeoFile(f); }catch(_){ r={ok:false,why:'unreadable'}; }
@@ -3377,7 +3380,7 @@ window.IntMapModules.geojsonUpload=function(HOST){
       try{ mod=window.IntMapLazy?await window.IntMapLazy.need('gisCore'):false; }
       catch(e){ try{ console.warn('[upload] gisCore failed to load',e); }catch(_){} mod=false; }
       if(!mod||!window.IntMapData||!window.IntMapGisWarp){
-        toast(window.IntMapLang.t(HOST.lang,"This file is a grid, and the module that reads grids did not load","このファイルは格子ですが、格子を扱う部品を読み込めませんでした"));
+        toast(IntMapLang.t(HOST.lang,"This file is a grid, and the module that reads grids did not load","このファイルは格子ですが、格子を扱う部品を読み込めませんでした"));
         return null;
       }
       let g=r.grid, code=g.crs||null, stated=!!code, converted=null;
@@ -3421,8 +3424,8 @@ window.IntMapModules.geojsonUpload=function(HOST){
       /* ⚠ SAY WHAT WAS DONE TO IT ON THE WAY IN. Two facts the reader cannot recover from the
          picture: that the file named no coordinate system, and that the pixels were resampled. */
       const notes=[];
-      if(!stated) notes.push(window.IntMapLang.t(HOST.lang,"the file states no coordinate system; read as lon/lat","ファイルが座標系を述べていないため、経緯度として読みました"));
-      if(converted&&converted.from&&converted.from!=='EPSG:4326') notes.push(window.IntMapLang.t(HOST.lang,"converted from","変換元")+' '+converted.from+' · '+window.IntMapLang.t(HOST.lang,"nearest neighbour","最近傍"));
+      if(!stated) notes.push(IntMapLang.t(HOST.lang,"the file states no coordinate system; read as lon/lat","ファイルが座標系を述べていないため、経緯度として読みました"));
+      if(converted&&converted.from&&converted.from!=='EPSG:4326') notes.push(IntMapLang.t(HOST.lang,"converted from","変換元")+' '+converted.from+' · '+IntMapLang.t(HOST.lang,"nearest neighbour","最近傍"));
       if(notes.length) toast(label+' — '+notes.join(' · '));
       /* Registered and measured; now the picture, through the one door (js/gis-core.js draw()). */
       try{
@@ -3460,7 +3463,7 @@ window.IntMapModules.geojsonUpload=function(HOST){
       catch(e){ try{ console.warn('[upload] gisCore failed to load',e); }catch(_){} mod=false; }
       if(!mod||!window.IntMapData){
         try{ console.warn('[upload] not registered as a dataset: gisCore='+mod+', IntMapData='+!!window.IntMapData); }catch(_){}
-        toast(window.IntMapLang.t(HOST.lang,"Added to the map, but the analysis module did not load — this file cannot be analysed","地図には追加しましたが、分析モジュールを読み込めなかったため、このファイルは分析に使えません"));
+        toast(IntMapLang.t(HOST.lang,"Added to the map, but the analysis module did not load — this file cannot be analysed","地図には追加しましたが、分析モジュールを読み込めなかったため、このファイルは分析に使えません"));
         return null;
       }
       try{
@@ -3472,7 +3475,7 @@ window.IntMapModules.geojsonUpload=function(HOST){
           provenance:{ kind:'import', file:(f&&f.name)||label, format:r.format||null, readAt:Date.now() } });
         if(!rec||!rec.id){
           try{ console.warn('[upload] the dataset registry returned no record for',label); }catch(_){}
-          toast(window.IntMapLang.t(HOST.lang,"Added to the map, but the data panel did not accept this file — it cannot be analysed","地図には追加しましたが、データパネルが受け付けなかったため、このファイルは分析に使えません"));
+          toast(IntMapLang.t(HOST.lang,"Added to the map, but the data panel did not accept this file — it cannot be analysed","地図には追加しましたが、データパネルが受け付けなかったため、このファイルは分析に使えません"));
           return null;
         }
         /* ⚠ (#R738) THE DRAWN LAYER AND THE DATASET ARE TIED BY IDENTIFIER, NOT BY TITLE. Two files
@@ -3483,7 +3486,7 @@ window.IntMapModules.geojsonUpload=function(HOST){
       }catch(e){
         /* a registry failure must not lose the layer that is already drawn — but it must be said */
         try{ console.warn('[upload] the dataset registry refused this file',e); }catch(_){}
-        toast(window.IntMapLang.t(HOST.lang,"Added to the map, but the data panel did not accept this file — it cannot be analysed","地図には追加しましたが、データパネルが受け付けなかったため、このファイルは分析に使えません"));
+        toast(IntMapLang.t(HOST.lang,"Added to the map, but the data panel did not accept this file — it cannot be analysed","地図には追加しましたが、データパネルが受け付けなかったため、このファイルは分析に使えません"));
         return null;
       }
     }
@@ -3502,7 +3505,7 @@ window.IntMapModules.geojsonUpload=function(HOST){
       /* (#R729) the operating surface for everything that was imported or computed. The module is
          fetched when the button is pressed, never before — a session that only looks at layers
          downloads no polygon clipper (js/gis-core.js). */
-      wrap.querySelector('#btn-gis-panel').onclick=async()=>{ try{ const ok=window.IntMapLazy?await window.IntMapLazy.need('gisCore'):false; if(ok&&window.IntMapGis) window.IntMapGis.toggle(); else toast(window.IntMapLang.t(HOST.lang,"Could not open the data panel","データパネルを開けませんでした","Das Datenpanel konnte nicht geöffnet werden","Не удалось открыть панель данных","No se pudo abrir el panel de datos")); }catch(_){} };
+      wrap.querySelector('#btn-gis-panel').onclick=async()=>{ try{ const ok=window.IntMapLazy?await window.IntMapLazy.need('gisCore'):false; if(ok&&window.IntMapGis) window.IntMapGis.toggle(); else toast(IntMapLang.t(HOST.lang,"Could not open the data panel","データパネルを開けませんでした","Das Datenpanel konnte nicht geöffnet werden","Не удалось открыть панель данных","No se pudo abrir el panel de datos")); }catch(_){} };
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     mountButton(); setTimeout(mountButton,1500);
     const mc=document.getElementById('map-container');
@@ -3517,10 +3520,10 @@ window.IntMapModules.geojsonUpload=function(HOST){
     window.GeoJSONUpload={ open:()=>fileInput.click(), add:addFC, addRaster, remove:removeItem,
       find, link, style, styleOf, styleReason, classify, classifyRaster, _items:items };
   })();
-};
+}
 
-window.IntMapModules.viewHash=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function viewHash(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
 
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
@@ -3633,7 +3636,7 @@ window.IntMapModules.viewHash=function(HOST){
       const ls=activeLayers(); let h='#v='+v; if(ls.length) h+='&l='+ls.join(',');
       /* (#R101) time-travel state saved as the kernel's ISO instant (mode-independent — the slider is now year-based),
          so a shared link reproduces the exact moment; compare state too. */
-      try{ const T=window.IntMapTime; if(T&&T.state){ const s=T.state(); if(s&&!s.isLive&&s.iso) h+='&tt='+encodeURIComponent(s.iso); } }catch(_){}
+      try{ const T=IntMapTime; if(T&&T.state){ const s=T.state(); if(s&&!s.isLive&&s.iso) h+='&tt='+encodeURIComponent(s.iso); } }catch(_){}
       try{ const cw=document.getElementById('compare-window'); if(cw && getComputedStyle(cw).display!=='none') h+='&cmp='+(cw.classList.contains('cmp-xray')?'x':'1'); }catch(_){}
       /* (#R42) satellite base view too, so "今の状態をそのまま" share/restore reproduces Map-vs-Satellite. */
       try{ if(typeof HOST.mapType!=='undefined' && HOST.mapType==='sat') h+='&sat=1'; }catch(_){}
@@ -3716,9 +3719,9 @@ window.IntMapModules.viewHash=function(HOST){
         /* (#R101) restore time-travel via the kernel (mode-independent). `tt`=ISO instant; keep `ts` (old day-based
            links) for backward compatibility. */
         const tt=/[#&]tt=([^&]+)/.exec(H);
-        if(tt){ setTimeout(()=>{ try{ const d=new Date(decodeURIComponent(tt[1])); if(!isNaN(d.getTime())&&window.IntMapTime) window.IntMapTime.set(d,{source:'ui'}); }catch(_){} },900); }
+        if(tt){ setTimeout(()=>{ try{ const d=new Date(decodeURIComponent(tt[1])); if(!isNaN(d.getTime())&&IntMapTime) IntMapTime.set(d,{source:'ui'}); }catch(_){} },900); }
         else { const tm=/[#&]ts=(\d+)/.exec(H);
-          if(tm){ setTimeout(()=>{ try{ if(window.IntMapTime) window.IntMapTime.setDaysAgo(3650-parseInt(tm[1],10),{source:'ui'}); }catch(_){} },900); } }
+          if(tm){ setTimeout(()=>{ try{ if(IntMapTime) IntMapTime.setDaysAgo(3650-parseInt(tm[1],10),{source:'ui'}); }catch(_){} },900); } }
         /* (#R211) 3-D terrain, then the simulators' own numbers. The sims go LAST and late: several
            of them are lazy modules that are only fetched when their layer or panel is asked for, so
            applying at 900 ms would reach a module that does not exist yet. Each `set` is expected to
@@ -3755,13 +3758,13 @@ window.IntMapModules.viewHash=function(HOST){
     if(_imCanDraw()) _boot(); else { GE().whenCanDraw().then(_boot); setTimeout(_boot,8000); }
     window.IntMapBookmark={ link:()=>location.origin+location.pathname+location.search+encode(), save:save, restore:restore };
   })();
-};
+}
 
-window.IntMapModules.share=function(HOST){
+export function share(HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const t=HOST.t;
   window.IntMapShare=(function(){
-    const L=window.IntMapLang.pick(()=>HOST.lang);
+    const L=IntMapLang.pick(()=>HOST.lang);
     let panel=null, styled=false;
     function ensureStyle(){ if(styled) return; styled=true; const s=document.createElement('style');
       s.textContent='#share-panel{position:absolute;z-index:calc(var(--z-sheet) + 150);left:50%;top:80px;transform:translateX(-50%);width:min(440px,calc(100vw - 24px));background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);padding:16px 18px;font-size:13px;}'
@@ -3806,4 +3809,4 @@ window.IntMapModules.share=function(HOST){
     }
     return { open, close };
   })();
-};
+}

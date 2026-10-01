@@ -79,8 +79,10 @@
  *  maplibre's own atmosphere pass uses — so the band is registered with the globe by construction
  *  rather than by a screen-space guess that would drift the moment the camera is pitched.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.limbLayer=function(){
+
+import { IntMapGeoEngine } from './geo-engine.js';
+
+function limbLayer(){
   /* how finely the shader marches the VIEW ray. #R226 measured the same march on the CPU against an
      N = 512 reference at the limb: N = 32 was 20 counts out (a lilac collar), N = 128 is 3 and
      N = 256 is exact. 128 is what ships here — the error it carries is a third of a colour step,
@@ -441,4 +443,7 @@ window.IntMapModules.limbLayer=function(){
     };
   }
   return { makeLayer, MARCH_N, SUN_W, SUN_H };
-};
+}
+
+/* (module-graph) handed to the renderer seam, which draws this kind when asked (js/geo-engine.js provideLayerKind) */
+IntMapGeoEngine.provideLayerKind('limbLayer', limbLayer);

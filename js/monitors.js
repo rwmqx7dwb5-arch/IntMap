@@ -19,12 +19,14 @@
  *  The monitor CSS still lives in css/intmap.css (the .mon-* rules), per #R152's
  *  "no CSS-in-JS template literal" rule.
  * ========================================================================== */
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.monitors=function(HOST){
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function monitors(HOST){
   /* (#R173) 脱MapLibre 第7段階 — the monitor's map work goes through the engine facade, never the raw
      renderer. Every call it needed was already in the contract; the `map` parameter stays only because
      every module file shares one factory signature. */
-  const GE=()=>window.IntMapGeoEngine;
+  const GE=()=>IntMapGeoEngine;
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -42,8 +44,8 @@ window.IntMapModules.monitors=function(HOST){
     const FN_URL=((window.SUPABASE_URL||'').replace(/\/$/,''))+'/functions/v1/monitor-run';
     const S=(v)=>window.IntMapSafe.html(v);
     const URLS=(v)=>{ try{ return window.IntMapSafe? window.IntMapSafe.url(v) : (/^https?:\/\//i.test(String(v||''))?String(v):'#'); }catch(_){ return '#'; } };
-    const ML=window.IntMapLang.pick(()=>HOST.lang||'en');
-    const MLA=window.IntMapLang.pickArgs();   /* (#R251) the ARRAY form — see `pickArgs` in js/lang-registry.js */
+    const ML=IntMapLang.pick(()=>HOST.lang||'en');
+    const MLA=IntMapLang.pickArgs();   /* (#R251) the ARRAY form — see `pickArgs` in js/lang-registry.js */
     const _loggedIn=()=> !!HOST.user;
     const _promptLogin=()=>{ try{ if(typeof requireLogin==='function') return requireLogin(); if(typeof openAuthModal==='function') openAuthModal(); }catch(_){} };
 
@@ -408,4 +410,4 @@ window.IntMapModules.monitors=function(HOST){
 
     return { render, create, openCreateDialog, openDetail, openReport, pause, resume, remove, runNow, flyTo, activeArea, mapViewArea, showOnMap, clearMap, atlas,
       _list, _get, statusLabel, sevLabel };
-};
+}

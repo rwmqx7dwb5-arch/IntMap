@@ -30,6 +30,7 @@ import { codeOnly } from '../scripts/code-only.mjs';
 import { histScale, clockFloor } from './helpers/hist-scale.mjs';
 import { eraBundle } from './helpers/hist-eras.mjs';
 import { specFiles } from '../scripts/architecture-spec.mjs';
+import { importModule } from './helpers/import-module.mjs';
 import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -39,29 +40,30 @@ const FLOOR = clockFloor();
 const YMIN = FLOOR;
 const NOW = 2026;
 
-/* a browser-script file evaluated against a fresh `window`, given only what it really needs */
-function evalGlobal(file, preset = {}) {
-  const ctx = { window: Object.assign({}, preset), document: undefined, console };
-  ctx.window.window = ctx.window;
-  vm.createContext(ctx);
-  vm.runInContext(readFileSync(join(ROOT, file), 'utf8'), ctx, { filename: file });
-  return ctx.window;
+/* (module-graph) js/chronos.js IMPORTED fresh against a new `window` given only what it really needs —
+   the kernel is the module's export (`export const IntMapTime`), not something read back off that window.
+   The window stays installed, so the kernel reads `window.IntMapHistScale` at CALL time, as in a page. */
+async function chronos(preset = {}) {
+  const w = Object.assign({}, preset);
+  w.window = w;
+  const { IntMapTime } = await importModule('js/chronos.js', { globals: { window: w, document: undefined } });
+  return { w, T: IntMapTime };
 }
 /* an instant in any astronomical year, built without Date.UTC (whose two-digit rule is the trap) */
 const instant = (y, m, d) => { const t = new Date(0); t.setUTCFullYear(y, m, d); t.setUTCHours(12, 0, 0, 0); return t; };
 
 /* ══ the floor is one number, and everything reads it ═══════════════════════════════════════ */
 
-test('R349 ①: the clock reaches 1850, and js/news-timeline.js has no second copy of the floor', () => {
+test('R349 ①: the clock reaches 1850, and js/news-timeline.js has no second copy of the floor', async () => {
   /* (#R604/#R679) R349's claim was never «the number is 1850» — it was «there is ONE floor and
      everything reads it». EVALUATED (was: a regex that js/chronos.js declares no `YMIN` literal and
      names IntMapHistScale.FLOOR): the kernel is run beside two different owners and its `min` must
      be whichever the owner states, read at call time (src/main.js imports js/chronos.js BEFORE
      js/hist-scale.js, so a value captured at load would be the fallback). */
-  const w = evalGlobal('js/chronos.js', { IntMapHistScale: { FLOOR: -500 } });
-  assert.equal(w.IntMapTime.min, -500, 'js/chronos.js must read the floor from its owner');
+  const { w, T: clock } = await chronos({ IntMapHistScale: { FLOOR: -500 } });
+  assert.equal(clock.min, -500, 'js/chronos.js must read the floor from its owner');
   w.IntMapHistScale = { FLOOR: -9000 };
-  assert.equal(w.IntMapTime.min, -9000, 'js/chronos.js must not hold its own copy of the floor — it reads js/hist-scale.js FLOOR at call time');
+  assert.equal(clock.min, -9000, 'js/chronos.js must not hold its own copy of the floor — it reads js/hist-scale.js FLOOR at call time');
   /* ⚠ (#R679) the floor is a whole year the platform can construct, and it reaches at least as far as
      R349 promised. Upstream writes ASTRONOMICAL years, which have a 0, and carries units to −3700. */
   assert.ok(Number.isInteger(FLOOR), 'the floor must be a whole year');
@@ -147,7 +149,8 @@ test('R380 ③: the comparison panel’s time-travel floor is the kernel’s, no
   const src = R('js/stats-compare.js');
   const m = /function _ttYear\(\)\{[^\n]*/.exec(src);
   assert.ok(m, '_ttYear is gone or was reshaped');
-  const ttYear = (T) => new Function('window', m[0] + '\nreturn _ttYear();')({ IntMapTime: T });
+  /* (module-graph) the fragment reads the bare `IntMapTime` js/stats-compare.js imports — handed in by name */
+  const ttYear = (T) => new Function('window', 'IntMapTime', m[0] + '\nreturn _ttYear();')({}, T);
   const clock = (year, min) => ({ isLive: () => false, year: () => year, min });
   assert.equal(ttYear(clock(1855, 1)), 1855, '_ttYear does not read the kernel floor — 1850-1899 silently reads as LIVE again');
   assert.equal(ttYear(clock(1623, -9999)), 1623, '_ttYear still carries a hard-coded floor of its own');
@@ -161,8 +164,8 @@ test('R380 ③: the comparison panel’s time-travel floor is the kernel’s, no
 
 /* ⚠⚠⚠ `Date.UTC(1,0,1)` IS 1901 — an implementation that only wrote `YMIN=1` satisfies `min === 1`
    while taking the map to 1901. So what is read is the year AFTER setting, not the constant. */
-test('#R604 ① Chronos は西暦1年に到達する（Date.UTC の2桁年規則に落ちない）', () => {
-  const T = evalGlobal('js/chronos.js').IntMapTime;
+test('#R604 ① Chronos は西暦1年に到達する（Date.UTC の2桁年規則に落ちない）', async () => {
+  const { T } = await chronos();
   assert.equal(T.min, 1, 'the kernel floor is year 1');
   for (const y of [1, 5, 50, 99, 100, 1500, 1850]) {
     T.setYear(y);
@@ -282,20 +285,20 @@ test('R679 ②: ymd is a date at every year the clock can reach — toISOString(
   }
 });
 
-test('R679 ③: nothing outside its owner truncates an ISO year to ten characters for a clock instant', () => {
+test('R679 ③: nothing outside its owner truncates an ISO year to ten characters for a clock instant', async () => {
   /* EVALUATED for the kernel (was: regexes that js/chronos.js's ymdISO names IntMapHistScale and never
      writes `toISOString().slice(0,10)`). The clock is stood in 323 BC and asked for its date:
      with the owner present the answer IS the owner's, and on a page where the owner has not evaluated
      the kernel's own fallback body must still write a whole date, not `-000322-06`. */
-  const withOwner = evalGlobal('js/chronos.js', { IntMapHistScale: { FLOOR: -1000, ymd: () => 'answered-by-the-owner' } });
-  withOwner.IntMapTime.set(instant(-322, 5, 15));
-  assert.equal(withOwner.IntMapTime.iso(), 'answered-by-the-owner', 'js/chronos.js holds its own copy of the date rule instead of reading the owner');
-  const alone = evalGlobal('js/chronos.js', { IntMapHistScale: { FLOOR: -1000 } });
-  alone.IntMapTime.set(instant(-322, 5, 15));
-  assert.equal(alone.IntMapTime.iso(), '-000322-06-15', 'js/chronos.js still truncates an ISO year');
+  const withOwner = (await chronos({ IntMapHistScale: { FLOOR: -1000, ymd: () => 'answered-by-the-owner' } })).T;
+  withOwner.set(instant(-322, 5, 15));
+  assert.equal(withOwner.iso(), 'answered-by-the-owner', 'js/chronos.js holds its own copy of the date rule instead of reading the owner');
+  const alone = (await chronos({ IntMapHistScale: { FLOOR: -1000 } })).T;
+  alone.set(instant(-322, 5, 15));
+  assert.equal(alone.iso(), '-000322-06-15', 'js/chronos.js still truncates an ISO year');
   const seen = [];
-  alone.IntMapTime.on((e) => seen.push(e.iso));
-  alone.IntMapTime.set(instant(-9, 0, 2));
+  alone.on((e) => seen.push(e.iso));
+  alone.set(instant(-9, 0, 2));
   assert.equal(seen.at(-1), '-000009-01-02', 'the date broadcast to every subscriber is not a whole date');
   /* ⚠ SPELLING, ON PURPOSE, FOR THE SECOND COPY: js/app-body.js's `ymdISO` is inside the app shell's
      closure (it hands the news feed and the screenshot filename their date). */

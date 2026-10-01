@@ -13,9 +13,11 @@
  * 
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.routing=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function routing(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -490,7 +492,7 @@ window.IntMapModules.routing=function(HOST){
        language but Japanese the English (the eleventh shape; scripts/i18n-langmap-audit.mjs).
        `LA(…)` is IntMapLang.pickArgs() — the same data as an ordinary call site, resolved by
        `LSH.arr()` through pick() itself. */
-    const LA=window.IntMapLang.pickArgs(), LSH=window.IntMapLang.pick(()=>HOST.lang);
+    const LA=IntMapLang.pickArgs(), LSH=IntMapLang.pick(()=>HOST.lang);
     /* @i18n-entity-data  railway STATION names, each row pinned by [lng,lat] and a distance
        (#R249 — declared, and validated by scripts/i18n-pair-audit.mjs against the coordinate).
        ⚠ These rows are written [ja, en, lng, lat, km] — Japanese FIRST. #R248 broke three arrays
@@ -559,7 +561,7 @@ window.IntMapModules.routing=function(HOST){
         if(its&&its.length){ const b=_buildItin(its[0]); return {legs:b.legs,lines:b.lines,stops:b.stops,sec:(b.duration||0),live:true}; } }catch(_){}
       /* no open timetable here (e.g. Nagoya subway) → an honest, clearly-labelled local estimate leg */
       const sec=Math.round((8+d*2.4)*60);
-      const lbl=jpn?'ローカル区間（公開時刻表なし・目安）':(window.IntMapLang.t(HOST.lang,'Local segment (no open timetable, estimate)',undefined,'Lokaler Abschnitt (kein offener Fahrplan, Schätzung)','Местный участок (нет открытого расписания, оценка)','Tramo local (sin horario abierto, estimación)'));
+      const lbl=jpn?'ローカル区間（公開時刻表なし・目安）':(IntMapLang.t(HOST.lang,'Local segment (no open timetable, estimate)',undefined,'Lokaler Abschnitt (kein offener Fahrplan, Schätzung)','Местный участок (нет открытого расписания, оценка)','Tramo local (sin horario abierto, estimación)'));
       return {legs:[{mode:'LOCAL',walk:0,route:'',headsign:lbl,from:toStation?'':stName,to:toStation?stName:'',duration:sec,color:'#9aa0a6',est:1}],
         lines:[{coords:toStation?[[p.lng,p.lat],[st[2],st[3]]]:[[st[2],st[3]],[p.lng,p.lat]],walk:1,col:'#9aa0a6'}],stops:[],sec,est:true}; }
     async function _jrPlan(from,to,opts){
@@ -824,7 +826,7 @@ window.IntMapModules.routing=function(HOST){
     /* ===== (#R84) RICH ROUTING UI ("経路のUIをもっと充実させて。Google MapやApple Mapのように") — a proper
        directions panel: editable start/destination, one-tap mode switch (drive/walk/cycle), swap, live recompute,
        distance + time, and a scrollable turn-by-turn list. ===== */
-    const LL=window.IntMapLang.pick(()=>HOST.lang);
+    const LL=IntMapLang.pick(()=>HOST.lang);
     const escp=s=>window.IntMapSafe.html(s);
     /* (#R126) 経路10-10 §6.3/§6.4: SAME-NAME disambiguation — fetch several candidates and prefer the one near the
        current map view (then the most populous), instead of blindly taking hit #1 ("Potsdam" from a Germany view
@@ -838,7 +840,7 @@ window.IntMapModules.routing=function(HOST){
     async function geo1(q,refLL){ q=String(q||'').trim(); if(!q) return null;
       const m=q.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/); if(m) return {lng:+m[2],lat:+m[1],name:(+m[1]).toFixed(3)+', '+(+m[2]).toFixed(3)};
       try{ const st=stationLL(q); if(st) return st; }catch(_){}
-      try{ const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=5&language='+(window.IntMapLang.locale(HOST.lang,"en"))); const j=await r.json();
+      try{ const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=5&language='+(IntMapLang.locale(HOST.lang,"en"))); const j=await r.json();
         const cs=(j&&j.results||[]).map(g=>({lng:+g.longitude,lat:+g.latitude,pop:+g.population||0,name:g.name+(g.admin1?(', '+g.admin1):'')+(g.country?(', '+g.country):'')}));
         const b=_pickNear(cs,refLL); if(b) return b; }catch(_){}
       try{ const _g=window.IntMapNominatimGate; if(_g) await _g.nominatimSlot();   /* (#R489) the app's ONE one-a-second floor — js/nominatim-gate.js (reached through `window`: no top-level declarations here, tests/layer-boot-graph-checks.test.mjs (#R175) #4) */
@@ -1105,4 +1107,4 @@ window.IntMapModules.routing=function(HOST){
              startAreaDraw, endAreaDraw:_endAreaDraw, areas, removeArea, clearAreas, highlightArea, drawingArea,
              summary };
   })();
-};
+}

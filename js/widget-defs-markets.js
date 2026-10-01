@@ -14,6 +14,7 @@
  *  ⚠ AND `requestKey` IS THE UNIT OF WORK. `markets:crypto` is one string however many cards want
  *  it; a set of coins is SORTED into its key, so {btc,eth} and {eth,btc} are the same question.
  * ==========================================================================*/
+import { IntMapLang } from './lang-registry.js';
 (function () {
   'use strict';
 
@@ -35,7 +36,7 @@
   var _ccyDN = {};
   function ccyLabel(c) {
     try {
-      var tag = window.IntMapLang.locale(WC.lang());
+      var tag = IntMapLang.locale(WC.lang());
       if (_ccyDN[tag] === undefined) { try { _ccyDN[tag] = new Intl.DisplayNames([tag], { type: 'currency' }); } catch (e) { _ccyDN[tag] = null; } }
       var n = _ccyDN[tag] && _ccyDN[tag].of(c);
       return n && n !== c ? c + ' · ' + n : c;

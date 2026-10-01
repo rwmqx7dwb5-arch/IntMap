@@ -20,13 +20,15 @@
  *  ⚠ THE DOWNLOAD STARTS AT THE HINT, NOT AT THE TRIGGER — see pushOut.
  * ==========================================================================*/
 import { lazyBody } from './lazy-modules.js';
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.space=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function space(HOST){
+  const GE=()=>IntMapGeoEngine;
 
   window.IntMapSpace=(function(){
     'use strict';
-    const L=window.IntMapLang.pick(()=>HOST.lang);
+    const L=IntMapLang.pick(()=>HOST.lang);
     /* the explorer, once js/lazy-modules.js has mounted it (window.__imSpaceBody is what its factory returned) */
     const DOOR=lazyBody(()=>window.IntMapLazy.need('spaceBody'));
     const X=()=>(DOOR.arrived()&&window.__imSpaceBody)||null;
@@ -246,4 +248,4 @@ window.IntMapModules.space=function(HOST){
         gaugeVisible:_kit.gaugeShown(), atFloor:atFloor(), atNearLimit:false, err:null }),
     };
   })();
-};
+}

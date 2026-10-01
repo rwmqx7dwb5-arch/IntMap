@@ -18,7 +18,6 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import vm from 'node:vm';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -27,6 +26,7 @@ import { validate } from '../scripts/lib/elections-schema.mjs';
 import { ciRuns, npmTestRuns } from './helpers/ci-reach.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
 import * as LM from '../js/layer-manifest.js';   /* the Layers taxonomy (layer manifest) */
+import { importModule, langRegistry } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -40,17 +40,18 @@ const onShelf = (shelf, key, id) => (LM.layerGroups().find(([k]) => k === shelf)
 
 /* js/layer-home.js, EVALUATED with a stub window: the table of layers that may move the camera and
    the boxes they answer are asked of the module, not read out of its text (#R505). `elections` is
-   the stand-in for window.IntMapElections; `fits` records every camera move the module makes. */
-function layerHome(elections) {
+   the stand-in for window.IntMapElections; `fits` records every camera move the module makes.
+   (module-graph) IMPORTED, fresh per call; the camera is a stub handed at its geo-engine.js import edge. */
+async function layerHome(elections) {
   const fits = [];
-  const win = { IntMapElections: elections,
-    IntMapGeoEngine: { camera: { fitBounds: (box, opts) => fits.push({ box, opts }) } } };
-  win.window = win;
-  const ctx = vm.createContext({ window: win, document: { getElementById: () => null }, console });
-  vm.runInContext(rd('js/layer-home.js'), ctx, { filename: 'js/layer-home.js' });
+  const win = { IntMapElections: elections };
+  await importModule('js/layer-home.js', {
+    globals: { window: win, document: { getElementById: () => null } },
+    mocks: { 'js/geo-engine.js': { IntMapGeoEngine: { camera: { fitBounds: (box, opts) => fits.push({ box, opts }) } } } },
+  });
   return { LH: win.IntMapLayerHome, fits };
 }
-/* vm arrays are another realm's; compare values, not prototypes */
+/* compare values, not prototypes (the boxes come from the module's own data) */
 const plain = (v) => JSON.parse(JSON.stringify(v));
 
 /** the centre of one ring of a feature, good enough to ask «is this district inside the frame» */
@@ -73,7 +74,7 @@ function points(fc) {
 
 /* ══ #R626 — the frame ══════════════════════════════════════════════════════════════════════ */
 
-test('R626 ① the camera goes to the box the PACK states, not to the extent of what is drawn', () => {
+test('R626 ① the camera goes to the box the PACK states, not to the extent of what is drawn', async () => {
   /* EVALUATED (was: the text offsets of `homeBox()` and `bboxOfFC(` inside the dl-elect entry).
      The entry is asked with a pack box AND a drawn collection that disagree, which is France's case:
      the answer must be the pack's box. With no pack box, the drawn extent is the fallback. */
@@ -82,11 +83,11 @@ test('R626 ① the camera goes to the box the PACK states, not to the extent of 
     { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[[55, -21], [56, -21], [56, -20], [55, -21]]] } },
     { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[[-54, 4], [-53, 4], [-53, 5], [-54, 4]]] } },
   ] };
-  const { LH } = layerHome({ homeBox: () => PACK, fc: () => drawn });
+  const { LH } = await layerHome({ homeBox: () => PACK, fc: () => drawn });
   assert.ok(LH.ids().includes('dl-elect'), 'the dl-elect entry was found');
   assert.deepEqual(plain(LH.boxOf('dl-elect')), PACK, 'the pack’s own box is asked before the extent of what is drawn');
   /* the entry still knows both answers: without a pack box it falls back to what is drawn */
-  const { LH: fallback } = layerHome({ homeBox: () => null, fc: () => drawn });
+  const { LH: fallback } = await layerHome({ homeBox: () => null, fc: () => drawn });
   assert.deepEqual(plain(fallback.boxOf('dl-elect')), [[-54, -21], [56, 5]], 'the drawn extent is no longer the fallback');
 });
 
@@ -133,7 +134,7 @@ test('#R588 ① js/elections.js names no polity, party or district from the data
   if (!hasData) return assert.fail('data/elections/index.json is missing — run node scripts/build-elections.mjs');
   const src = rd('js/elections.js');
   const lits = new Set();
-  acorn.parse(src, { ecmaVersion: 2022, sourceType: 'script', onToken: (t) => {
+  acorn.parse(src, { ecmaVersion: 2022, sourceType: 'module', onToken: (t) => {   /* (module-graph) an ES module now */
     if (t.type && t.type.label === 'string' && typeof t.value === 'string') lits.add(t.value);
   } });
 
@@ -166,7 +167,7 @@ test('#R588 ② check:elections is declared AND called by the suite and by CI', 
    (#R313) 「レイヤーを選択しても視点を動かさない」 with one audited exception table. This layer is in
    the table — and it is the first to need a SECOND door in it (the reader changing country inside
    the layer), so both doors are checked to live in js/layer-home.js. */
-test('#R588 ③ dl-elect flies only through js/layer-home.js', () => {
+test('#R588 ③ dl-elect flies only through js/layer-home.js', async () => {
   /* ⚠ SPELLING, ON PURPOSE, FOR THE NEGATIVE HALF: «js/elections.js never calls the camera» is a
      claim about every path of a DOM-bound module (it builds the legend, the selector and the
      popups on a live map), so no evaluation of a stubbed instance could cover all of its paths. */
@@ -175,7 +176,7 @@ test('#R588 ③ dl-elect flies only through js/layer-home.js', () => {
   /* the audited table and its in-layer door, EVALUATED: dl-elect is in the published set, and
      goTo() moves the camera to the pack's box (every time — it is not the once-per-session arrive) */
   const PACK = [[129, 31], [146, 45]];
-  const { LH, fits } = layerHome({ homeBox: () => PACK, fc: () => null });
+  const { LH, fits } = await layerHome({ homeBox: () => PACK, fc: () => null });
   assert.ok(LH.ids().includes('dl-elect'), 'dl-elect is not in the audited table');
   assert.equal(typeof LH.goTo, 'function', 'layer-home.js has no goTo for an in-layer place change');
   assert.equal(LH.goTo('dl-elect'), true, 'goTo did not take the reader to the polity they picked');
@@ -192,12 +193,13 @@ test('#R588 ③ dl-elect flies only through js/layer-home.js', () => {
    An eager module has four ledgers (#R546 measured that a lazy one has five). Missing any of them
    is silent: the row simply is not there. */
 test('#R588 ④ the elections module is in every ledger an eager layer needs', () => {
-  /* ⚠ SPELLING, ON PURPOSE: src/main.js and js/app-body.js are the bundle's entry and the app shell;
-     «this module is imported / called at boot» is a fact about their text that no node evaluation
-     reaches without building the whole app. The manifest half below is evaluated. */
-  assert.match(rd('src/main.js'), /import '\.\.\/js\/elections\.js'/, 'src/main.js does not import it');
-  assert.match(rd('src/main.js'), /'elections'/, "src/main.js's eager list does not name it");
-  assert.match(rd('js/app-body.js'), /IntMapModules\.elections\(IM_HOST\)/, 'js/app-body.js never calls it');
+  /* ⚠ SPELLING, ON PURPOSE: js/app-body.js is the app shell; «this module is imported / called at boot»
+     is a fact about its text that no node evaluation reaches without building the whole app. The
+     manifest half below is evaluated. (module-graph) src/main.js's two ledgers — the import line and the
+     eager factory list — are one edge now: js/app-body.js imports the factory by name, which puts the
+     file in the bundle and makes a missing factory a link error instead of a console line. */
+  assert.match(rd('js/app-body.js'), /^import \{ elections \} from '\.\/elections\.js';/m, 'js/app-body.js does not import it');
+  assert.match(rd('js/app-body.js'), /\belections\(IM_HOST\)/, 'js/app-body.js never calls it');
   /* the fourth ledger is js/layer-manifest.js now (the shelf reorganizeLayerPanel files by, and the id it
      resolves the row through) — a layer it does not declare is swept into Beta and unknown to its readers */
   assert.ok(onShelf('lyrGrpPolitics', 'elect', 'dl-elect'), 'the row is not in 政治 / Politics');
@@ -296,13 +298,10 @@ test('#R588 ⑤m js/elections.js resolves the reader’s language through the re
      of js/elections.js and run against the REAL js/lang-registry.js: a reader whose code is `jp`
      must be shown the pack's `ja` string, and a `zh` reader the `zh-Hant` one — a raw
      `t[HOST.lang]` answers neither, which is what missed `ja` in the first place. */
+  /* (module-graph) the lifted `nm` reads the registry under the name js/elections.js imports it as; the
+     real module, with the shipped language list declared, is handed in under that name */
   const HOST = { lang: 'jp' };
-  const ctx = vm.createContext({ window: {}, HOST, console });
-  ctx.window.window = ctx.window;
-  vm.runInContext(rd('js/locales/_langs.js'), ctx);
-  vm.runInContext(rd('js/lang-registry.js'), ctx);
-  vm.runInContext('var IntMapLang = window.IntMapLang;\n' + liftFunction(rd('js/elections.js'), 'nm') + '\nwindow.__nm = nm;', ctx);
-  const nm = ctx.window.__nm;
+  const nm = new Function('IntMapLang', 'HOST', liftFunction(rd('js/elections.js'), 'nm') + '\nreturn nm;')(langRegistry(), HOST);
   const t = { en: 'Lower house', ja: '衆議院', 'zh-Hant': '眾議院', native: 'Native' };
   assert.equal(nm(t), '衆議院', 'a jp reader was not shown the pack’s ja name');
   HOST.lang = 'zh';
@@ -346,14 +345,15 @@ test('#R588 ⑧ data/elections holds exactly the files the index names', () => {
 
 /* ── ⑨ the U.S. presidential layer is untouched ────────────────────────────────────────────────
    CONSTITUTION §0.3: an existing feature may not be shrunk without asking. */
-test('#R588 ⑨ the U.S. presidential layer still exists and is still registered', () => {
+test('#R588 ⑨ the U.S. presidential layer still exists and is still registered', async () => {
   assert.ok(existsSync(join(ROOT, 'js', 'us-elections.js')));
   assert.ok(existsSync(join(ROOT, 'data', 'us-elections.json')));
   assert.ok(onShelf('lyrGrpPolitics', 'uselect', 'dl-uselect'), 'the U.S. presidential row is still on 政治 / Politics (layer manifest)');
   /* ⚠ SPELLING, ON PURPOSE: the app-shell call is a boot-wiring fact (see ④) */
-  assert.match(rd('js/app-body.js'), /IntMapModules\.usElections\(IM_HOST\)/);
+  assert.match(rd('js/app-body.js'), /^import \{ usElections \} from '\.\/us-elections\.js';/m);   /* (module-graph) imported by name */
+  assert.match(rd('js/app-body.js'), /\busElections\(IM_HOST\)/);
   /* EVALUATED (was: a regex for HOMES['dl-uselect']): the audited table still answers for it */
-  const { LH } = layerHome(null);
+  const { LH } = await layerHome(null);
   assert.ok(LH.ids().includes('dl-uselect'), 'the U.S. presidential layer left the audited camera table');
   assert.ok(Array.isArray(LH.boxOf('dl-uselect')), 'the U.S. presidential layer no longer answers a frame');
 });

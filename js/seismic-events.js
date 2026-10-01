@@ -39,8 +39,9 @@
    ⚠ AND GUARDED, like js/space-cosmos.js's: this is an ES module that others import, so it can
    evaluate before js/lang-registry.js has run. `pickArgs()` only ever returns «the arguments as an
    array», so the fallback is the same function. */
+import { IntMapLang } from './lang-registry.js';
 export const QUAKE_EVENTS = (function () {
-  const LA = (typeof window !== 'undefined' && window.IntMapLang && window.IntMapLang.pickArgs())
+  const LA = (typeof window !== 'undefined' && IntMapLang && IntMapLang.pickArgs())
     || function () { return Array.prototype.slice.call(arguments); };
   return [
 

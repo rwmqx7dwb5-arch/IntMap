@@ -7,9 +7,11 @@
  *  The only edit to the moved text is that free references to closure variables became
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.satellite=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function satellite(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -21,7 +23,7 @@ window.IntMapModules.satellite=function(HOST){
   const satMaxDay=()=>new Date().toISOString().slice(0,10);
   /* (#R246) the provider names are tuples held as data — see IntMapLang.pickArgs(). ⚠ BUILT ON FIRST
      USE, not at factory level: tests/engine-app-shell-split-checks.test.mjs (#R169) #4 requires a factory body to DECLARE and never to run. */
-  let _LS=null; const LS=()=>(_LS||(_LS=window.IntMapLang.pick(()=>HOST.lang)));
+  let _LS=null; const LS=()=>(_LS||(_LS=IntMapLang.pick(()=>HOST.lang)));
   function satMsg(key,p){ return String(HOST.t(key)||'').replace('{provider}',(p&&(LS().arr(p.name)||p.short))||''); }
   function satCaptureLabel(p){ if(!p) return ''; if(!p.dated) return HOST.t('satLatest'); if(p.dateMode==='year') return HOST.satState.year+' '+HOST.t('satMosaicSuffix'); return HOST.satState.day; }
   function satChipHTML(){ const p=satProviderById(HOST.satState.providerId); if(!p) return ''; return `<span class="cr-sat">📡 ${p.short} · ${satCaptureLabel(p)}</span>`; }
@@ -140,7 +142,7 @@ window.IntMapModules.satellite=function(HOST){
     } else {
       dateCtrl=`<div class="satc-row"><label>${HOST.t('satDate')}</label><span class="satc-latest">${HOST.t('satLatest')}</span></div>`;
     }
-    panel.innerHTML=`<div class="satc-head">📡 <span>${HOST.t('satCtrlTitle')}</span><button id="satc-close" title="${window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" aria-label="${window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" style="margin-left:auto;background:transparent;border:none;color:var(--text-muted);width:26px;height:26px;font-size:22px;font-weight:300;line-height:1;cursor:pointer;">×</button></div>`+
+    panel.innerHTML=`<div class="satc-head">📡 <span>${HOST.t('satCtrlTitle')}</span><button id="satc-close" title="${IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" aria-label="${IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" style="margin-left:auto;background:transparent;border:none;color:var(--text-muted);width:26px;height:26px;font-size:22px;font-weight:300;line-height:1;cursor:pointer;">×</button></div>`+
       `<div class="satc-row"><label for="satc-provider">${HOST.t('satProvider')}</label><select id="satc-provider">${opts}</select></div>`+
       dateCtrl+
       `<div class="satc-row"><label for="satc-op">${HOST.t('opacity')}</label><input type="range" id="satc-op" min="0.2" max="1" step="0.05" value="${HOST.satState.opacity}"></div>`+
@@ -164,7 +166,7 @@ window.IntMapModules.satellite=function(HOST){
     if(!satRenderKeyInputs._lang){ satRenderKeyInputs._lang=1; try{ window.addEventListener('intmap-lang',satRelabelKeyInputs); }catch(_){} }
     /* Only Pro users may register their own (paid) satellite imagery providers. */
     if(!HOST.imIsPro()){
-      wrap.innerHTML=`<div style="font-size:12.5px;color:var(--text-muted);line-height:1.55;padding:4px 0;">${window.IntMapLang.t(HOST.lang,'🔒 Only <b>Pro</b> users can add their own satellite imagery services (API integrations).','🔒 独自の衛星画像サービス（API連携）を追加できるのは <b>Pro</b> ユーザーのみです。','🔒 Nur <b>Pro</b>-Nutzer können eigene Satellitenbild-Dienste (API-Integrationen) hinzufügen.','🔒 Только пользователи <b>Pro</b> могут добавлять собственные сервисы спутниковых снимков (API).','🔒 Solo los usuarios <b>Pro</b> pueden añadir sus propios servicios de imágenes satelitales (API).')}<br><button type="button" id="sat-keys-upgrade" style="margin-top:8px;background:linear-gradient(135deg,#ffe08a,#e9b949);color:#7a5a00;border:none;padding:8px 14px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;">${window.IntMapLang.t(HOST.lang,'See IntMap Pro','IntMap Pro を見る','IntMap Pro ansehen','Смотреть IntMap Pro','Ver IntMap Pro')}</button></div>`;
+      wrap.innerHTML=`<div style="font-size:12.5px;color:var(--text-muted);line-height:1.55;padding:4px 0;">${IntMapLang.t(HOST.lang,'🔒 Only <b>Pro</b> users can add their own satellite imagery services (API integrations).','🔒 独自の衛星画像サービス（API連携）を追加できるのは <b>Pro</b> ユーザーのみです。','🔒 Nur <b>Pro</b>-Nutzer können eigene Satellitenbild-Dienste (API-Integrationen) hinzufügen.','🔒 Только пользователи <b>Pro</b> могут добавлять собственные сервисы спутниковых снимков (API).','🔒 Solo los usuarios <b>Pro</b> pueden añadir sus propios servicios de imágenes satelitales (API).')}<br><button type="button" id="sat-keys-upgrade" style="margin-top:8px;background:linear-gradient(135deg,#ffe08a,#e9b949);color:#7a5a00;border:none;padding:8px 14px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;">${IntMapLang.t(HOST.lang,'See IntMap Pro','IntMap Pro を見る','IntMap Pro ansehen','Смотреть IntMap Pro','Ver IntMap Pro')}</button></div>`;
       const up=wrap.querySelector('#sat-keys-upgrade'); if(up) up.onclick=()=>{ try{ if(typeof window.openProModal==='function') window.openProModal(); }catch(_){} };
       return;
     }
@@ -272,4 +274,4 @@ window.IntMapModules.satellite=function(HOST){
     run();
   }
   return { aiCaptureSatAt, satApply, satBuildTiles, satCaptureLabel, satChipHTML, satHasKey, satProviderById, satReady, satRefreshReadout, satRenderController, satRenderKeyInputs, satRevertToFallback, satSaveKeyInputs, satSelectProvider, satSetOpacity, satSetup, satStepDay, satToast };
-};
+}

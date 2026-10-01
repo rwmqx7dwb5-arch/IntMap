@@ -45,6 +45,9 @@
    src/main.js: this file cannot build an instance without it, so the dependency belongs to the
    engine rather than to the entry file’s reading order. */
 import './wx-models.js';
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
 (function () {
   'use strict';
@@ -1098,7 +1101,7 @@ import './wx-models.js';
   var VIEW_PAD = 0.25;                    /* of the span, on each side — the tiles beyond the edge */
   function viewBounds() {
     var b = null;
-    try { b = window.IntMapGeoEngine.camera.getBounds(); } catch (_) { return null; }
+    try { b = IntMapGeoEngine.camera.getBounds(); } catch (_) { return null; }
     if (!b) return null;
     try {
       var w = b.getWest(), s = b.getSouth(), e = b.getEast(), n = b.getNorth();
@@ -1186,7 +1189,7 @@ import './wx-models.js';
        (the tiles are called by MapLibre, not by this module). (#R325) The pin is now a PROXY onto
        the same per-file pool the field reads through — see `tileReader`. */
     try {
-      ok = !!window.IntMapGeoEngine.scene.addProtocol('om', function (params, ctl) {
+      ok = !!IntMapGeoEngine.scene.addProtocol('om', function (params, ctl) {
         try { tileReader(sdk.getProtocolInstance(st)); } catch (_) {}
         try { applyTileBounds(params && params.url); } catch (_) {}
         return sdk.omProtocol(params, ctl, st);
@@ -1948,7 +1951,7 @@ import './wx-models.js';
      ⚠ `_fromClock` is what stops the two writing to each other for ever: a change that arrived FROM
      the clock does not travel back to it. */
   var _fromClock = false;
-  function _clock() { try { return window.IntMapTime; } catch (_) { return null; } }
+  function _clock() { try { return IntMapTime; } catch (_) { return null; } }
   /* the model's own window, as milliseconds — outside it the axis holds at the nearer end and the
      legend says so, rather than pretending the model covers a year it has never heard of. */
   function span() {
@@ -2022,7 +2025,7 @@ import './wx-models.js';
      app's one clock, so an instant chosen THERE has to be the instant every time-aware layer is
      showing. `covers()` is what keeps it honest — travelling to 1972 is not a request for a
      forecast, so the axis holds where it is and the legend prints the caveat. */
-  (function wireClock(n){ try{ var C=window.IntMapTime;
+  (function wireClock(n){ try{ var C=IntMapTime;
     if(C&&C.on){ C.on(function(e){ try{ _followClock(e); }catch(_){} }); return; }
   }catch(_){}
     if((n|0)<60) setTimeout(function(){ wireClock((n|0)+1); },200); })(0);
@@ -2177,9 +2180,9 @@ import './wx-models.js';
   function _styleLayers() {
     if (_lys) return _lys;
     var ls = null;
-    try { ls = (window.IntMapGeoEngine.scene.getStyle() || {}).layers || null; } catch (_) { ls = null; }
+    try { ls = (IntMapGeoEngine.scene.getStyle() || {}).layers || null; } catch (_) { ls = null; }
     if (!ls || !ls.length) return [];                   /* nothing to describe — ask again next time */
-    if (!_idsHooked) { try { window.IntMapGeoEngine.events.on('styledata', _idsDrop); _idsHooked = true; } catch (_) {} }
+    if (!_idsHooked) { try { IntMapGeoEngine.events.on('styledata', _idsDrop); _idsHooked = true; } catch (_) {} }
     if (!_idsHooked) return ls;                         /* no invalidation signal, therefore no cache */
     _lys = ls; _ids = null;
     return _lys;
@@ -2192,7 +2195,7 @@ import './wx-models.js';
     if (_lys === ls) _ids = out;                        /* …only alongside the list it was built from */
     return out;
   }
-  function _hasLayer(id) { try { return !!window.IntMapGeoEngine.layers.has(id); } catch (_) { return false; } }
+  function _hasLayer(id) { try { return !!IntMapGeoEngine.layers.has(id); } catch (_) { return false; } }
   var OURS = /^(wind-field-|ec-)/;
   function firstSymbolId() {
     var ls = _styleLayers();
@@ -2226,7 +2229,7 @@ import './wx-models.js';
   function toTop(layerId) {
     try {
       if (!_hasLayer(layerId)) return false;
-      window.IntMapGeoEngine.layers.move(layerId, before());
+      IntMapGeoEngine.layers.move(layerId, before());
       _idsDrop();
       return true;
     } catch (_) { return false; }
@@ -2242,7 +2245,7 @@ import './wx-models.js';
       var ni = -1;
       for (var i = 0; i < ids.length; i++) if (ids[i].indexOf('im-night') === 0) ni = i;
       if (ni <= wi) return false;                       /* already above the shading */
-      window.IntMapGeoEngine.layers.move(layerId, before());
+      IntMapGeoEngine.layers.move(layerId, before());
       _idsDrop();                                       /* (#R299) the order just changed under it */
       return true;
     } catch (_) { return false; }
@@ -2276,7 +2279,7 @@ import './wx-models.js';
       if (H.userTZ && H.userTZ !== 'auto') tz = H.userTZ;
       var lang = H.lang || 'en';
       var o = Object.assign({ timeZone: tz, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }, opt || {});
-      var loc = window.IntMapLang.locale(lang, 'en-GB');
+      var loc = IntMapLang.locale(lang, 'en-GB');
       var d = new Date(tms(iso));
       if (!isFinite(d.getTime())) return d.toLocaleString(loc, o);
       return _fmtOf(loc, o).format(d);

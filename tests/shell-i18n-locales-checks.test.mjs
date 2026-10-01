@@ -24,6 +24,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { readLF } from '../scripts/eol.mjs';
+import { importModule } from './helpers/import-module.mjs';
 import { shapeOf } from '../scripts/i18n-helpers.mjs';
 import * as acorn from 'acorn';
 import * as OpenCC from 'opencc-js';
@@ -32,17 +33,18 @@ import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 
-/* The language registry, EVALUATED. js/locales/_langs.js and js/lang-registry.js are run in a fresh
-   context against a stub window — the way the two reading pages load them (<script src>) — so a claim
-   about what the registry ANSWERS is asked of the registry, not of how its source happens to be
-   spelled. Each call builds its own context: no test sees another's tables. */
-function langRegistry() {
+/* The language registry, EVALUATED. js/locales/_langs.js (a classic script that sets the list on window)
+   is run against a stub window, and js/lang-registry.js is IMPORTED fresh against it (module-graph: it
+   is an ES module now, and declares the window's list at load) — so a claim about what the registry
+   ANSWERS is asked of the registry, not of how its source happens to be spelled. Each call builds its
+   own window and its own module instance: no test sees another's tables. */
+async function langRegistry() {
   const doc = { documentElement: { lang: 'en', setAttribute() { } }, querySelector: () => null, title: '', addEventListener() { } };
   const w = { document: doc, console };
   w.window = w;
-  const ctx = vm.createContext(w);
-  for (const p of ['js/locales/_langs.js', 'js/lang-registry.js']) vm.runInContext(read(p), ctx, { filename: p });
-  return { w, ctx, L: w.IntMapLang };
+  vm.runInContext(read('js/locales/_langs.js'), vm.createContext(w), { filename: 'js/locales/_langs.js' });
+  const { IntMapLang } = await importModule('js/lang-registry.js', { globals: { window: w, document: doc } });
+  return { w, L: IntMapLang };
 }
 
 /* ═══════════════════════ #R231 · from r231-checks.test.mjs ═══════════════════════ */
@@ -84,10 +86,10 @@ test('R231 i18n: no hand-written five-language chain is left in js/', () => {
   assert.match(out, /convertible: 0\b/, 'nothing convertible is left:\n' + out);
 });
 
-test('R231 i18n: the registry answers for translations AND for Intl', () => {
+test('R231 i18n: the registry answers for translations AND for Intl', async () => {
   /* (tests-by-topic) ASKED OF THE REGISTRY. This used to match `function t(lang)` and
      `t: t, locale: locale` in the source; the registry now runs, and what it RETURNS is the claim. */
-  const { L } = langRegistry();
+  const { L } = await langRegistry();
   assert.equal(typeof L.t, 'function', 't(lang, …) is exported');
   assert.equal(typeof L.locale, 'function', 'and locale(code, enTag)');
   /* t(): positional for the first five, the `inline` table past them, English underneath both */
@@ -107,6 +109,10 @@ test('R231 i18n: the registry answers for translations AND for Intl', () => {
   const src = "window.IntMapLang.t(HOST.lang, 'Close', '閉じる');";
   const call = acorn.parse(src, { ecmaVersion: 'latest' }).body[0].expression;
   assert.equal(shapeOf(call, { names: new Set(), exposed: new Set(), src }), 1, 'the shared resolver counts t(…) call sites, English at argument 1');
+  /* (module-graph) …and the spelling every reader writes now — the IMPORTED binding, no window */
+  const bareSrc = "IntMapLang.t(HOST.lang, 'Close', '閉じる');";
+  const bare = acorn.parse(bareSrc, { ecmaVersion: 'latest' }).body[0].expression;
+  assert.equal(shapeOf(bare, { names: new Set(), exposed: new Set(), src: bareSrc }), 1, 'the shared resolver counts the imported IntMapLang.t(…) too');
   /* spelling kept: the report's WIRING to the resolver is the claim — which function scripts/i18n-report.mjs calls. */
   assert.match(read('scripts/i18n-report.mjs'), /shapeOf\(/, 'the coverage report asks the shared resolver');
 });
@@ -114,7 +120,9 @@ test('R231 i18n: the registry answers for translations AND for Intl', () => {
 /* spelling kept: page markup / inline script (sources.html, science.html) — only a browser document runs it. */
 test('R231 i18n: the reading pages read the ONE registry, and Chinese is there', () => {
   const src = read('js/page-i18n.js');
-  assert.match(src, /window\.IntMapLang && window\.IntMapLang\.list/, 'LANGS is derived from the registry');
+  /* (module-graph) the page script IMPORTS the registry and reads the bare binding */
+  assert.match(src, /^import \{ IntMapLang \} from '\.\/lang-registry\.js';/m, 'js/page-i18n.js imports the registry');
+  assert.match(src, /(?<![\w.])IntMapLang && IntMapLang\.list/, 'LANGS is derived from the registry');
   for (const p of ['sources.html', 'science.html']) {
     const h = noHtml(p);
     assert.ok(h.indexOf('lang-registry.js') >= 0, `${p} loads the registry`);
@@ -357,12 +365,13 @@ test('#R221 ① the registry is the ONE list, and the first five keep their argu
   assert.deepEqual(listed, onDisk, 'js/locales/_langs.js is stale — run `node scripts/i18n-langs.mjs`');
 });
 
-test('#R221 ① a language table falls back to English PER KEY, not per table', () => {
-  /* (tests-by-topic) EVALUATED: the registry and js/i18n.js run, and a table missing a key is read. */
-  const { w, ctx, L } = langRegistry();
+test('#R221 ① a language table falls back to English PER KEY, not per table', async () => {
+  /* (tests-by-topic) EVALUATED: the registry and js/i18n.js run, and a table missing a key is read.
+     (module-graph) js/i18n.js is imported with THIS test's fresh registry handed at its import edge. */
+  const { w, L } = await langRegistry();
   L.define('en', { ui: { a: 'A', b: 'B' } });
   L.define('de', { ui: { a: 'Ah' } });
-  vm.runInContext(read('js/i18n.js'), ctx, { filename: 'js/i18n.js' });
+  await importModule('js/i18n.js', { globals: { window: w }, mocks: { 'js/lang-registry.js': { IntMapLang: L } } });
   const de = w.IntMapI18N.de;
   assert.equal(de.a, 'Ah', 'a key the language has is its own');
   assert.equal(de.b, 'B',

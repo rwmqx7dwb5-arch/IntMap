@@ -15,6 +15,7 @@ import { join, dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
+import { importModule, swappable } from './helpers/import-module.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -187,7 +188,6 @@ function mount(opts) {
   const model = makeModel(log, opts);
 
   const win = globalThis.window;
-  win.IntMapLang = { pick: () => (en) => en, pickArgs: () => () => '' };
   win.IntMapWxModels = {
     all: () => [{ id: 'ecmwf_wam025', nameKey: 'ECMWF WAM', km: 28, map: true, roles: ['wave'] }],
     get: (id) => (id === 'ecmwf_wam025' ? { id, nameKey: 'ECMWF WAM', km: 28, roles: ['wave'] } : null),
@@ -195,7 +195,7 @@ function mount(opts) {
     provenance: (o) => ({ modelId: o.modelId, modelName: 'ECMWF WAM', nativeResolutionKm: 28, validTime: o.validTime, runTime: o.referenceTime })
   };
   win.IntMapWxEngine = { model: () => model, peek: () => model };
-  win.IntMapGeoEngine = {
+  const GEO = {
     hasRenderer: () => true,
     id: () => 'maplibre',
     scene: { getStyle: () => ({ layers: style.layers.slice() }) },   /* custom layers are absent — see above */
@@ -209,9 +209,12 @@ function mount(opts) {
     events: { on: (name, fn) => { (events[name] || (events[name] = [])).push(fn); } },
     render: { triggerRepaint() { } }
   };
-  win.IntMapBelowLabels = belowLabelsFromSource(() => win.IntMapGeoEngine);
+  /* (module-graph) the renderer is js/waves.js's geo-engine.js IMPORT now: this case's engine is swapped in behind
+     the one binding the module imported; the language registry is the real one */
+  geo.set(GEO);
+  win.IntMapBelowLabels = belowLabelsFromSource(() => GEO);
   const HOST = { lang: 'en', unitMode: 'metric', satToast: (m) => toasts.push(m), t: () => 'close' };
-  const api = win.IntMapModules.waves(HOST);
+  const api = WAVES.waves(HOST);
   return {
     api, log, toasts, warns, rec, style, custom, model,
     fire(name) { (events[name] || []).forEach((f) => f({})); },
@@ -228,7 +231,9 @@ globalThis.window = globalThis.window || globalThis;
 globalThis.window.devicePixelRatio = 1;
 globalThis.window.addEventListener = () => { };
 globalThis.document = { createElement: makeElement, getElementById: () => null, body: makeElement('body'), querySelector: () => null };
-await import('file://' + join(ROOT, 'js/waves.js').replace(/\\/g, '/'));
+/* (module-graph) the factory is an export now, read off the namespace; its renderer import edge is a swappable stub */
+const geo = swappable();
+const WAVES = await importModule('js/waves.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: geo.value } } });
 
 const settle = (ms) => new Promise((r) => setTimeout(r, ms == null ? 120 : ms));
 

@@ -15,6 +15,7 @@
  * ==========================================================================*/
 import { overpassQuery } from './overpass.js';   /* the one Overpass client, with a clock — js/overpass.js */
 import { fetchViaProxy } from './proxy-fetch.js';   /* (#R452) the app's ONE relay ladder — see _fetchText below */
+import { IntMapLang } from './lang-registry.js';
 
 export function makeAtlasSources(HOST, CTX) {
   const _fetchJSON=CTX._fetchJSON, askAIJSON=CTX.askAIJSON, countryStats=CTX.countryStats, nm=CTX.nm;
@@ -27,7 +28,7 @@ export function makeAtlasSources(HOST, CTX) {
        itself, so both zh-Hant and zh-Hans resolve to zh.wikipedia.org — and zh-hans.wikipedia.org,
        which the app's own code was composing, does not exist and never answered. Stripping the
        script subtag is what makes the derivation right for nine languages instead of seven. */
-    function wikiLang(code){ try{ return String(window.IntMapLang.htmlTag(code)||'en').split('-')[0].toLowerCase()||'en'; }catch(_){ return 'en'; } }
+    function wikiLang(code){ try{ return String(IntMapLang.htmlTag(code)||'en').split('-')[0].toLowerCase()||'en'; }catch(_){ return 'en'; } }
     async function _leaderData(codes){ try{
       const iso=(codes||[]).filter(Boolean).slice(0,4); if(!iso.length) return null;
       const langQ=(HOST.lang==='jp'?'ja':HOST.lang)+',en';

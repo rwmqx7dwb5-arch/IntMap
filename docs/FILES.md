@@ -95,7 +95,7 @@ css/
   pages.css                         読み物2ページ（science.html / sources.html）のスタイル
   fonts.css                         同梱フォントの @font-face
 src/
-  main.js                           js/ を index.html と同じ順序で import するエントリ
+  main.js                           ページの入口（まだ import の辺を持たない副作用モジュールを並べる。理由は --entry が言う）
   vendor.js                         npm 依存を従来と同じグローバル名で再公開し、Supabase クライアントを作る。
                                     maplibre-gl 6 は namespace で取り、ビルドが entry チャンクとして出す worker の
                                     URL（`virtual:maplibre-gl-worker-url`・vite.config.js）を最初の Map より前に
@@ -511,7 +511,7 @@ basemap-switch.js                 携帯のベースマップ切替 window.IntMa
 opening-view.js                   アプリが開く視点——黒い地球ではなく、光の当たった地球
 theme-sky.js                      テーマと空——アプリの色と、太陽の位置
 sky-model.js                      空自身の色（Rayleigh ＋ Mie を march する）
-limb-layer.js                     このアプリが描く大気の縁 IntMapModules.limbLayer
+limb-layer.js                     このアプリが描く大気の縁（評価時に IntMapGeoEngine.provideLayerKind で engine へ渡す）
 night-side.js                     地球の夜側 window.IntMapNightSide
 night-lights.js                   夜間光がいつの絵かを決める唯一の場所 window.IntMapNightLights
 world-base.js                     全球衛星ベース window.IntMapWorldBase
@@ -545,8 +545,8 @@ osm-facilities.js                 実地調査された施設 IntMapFacilities
 datacenters.js                    データセンターと AI インフラ IntMapDataCenters
 railways.js                       世界の鉄道 IntMapRailways（OSM の実タグ・6軸の塗り分け・駅・詳細カード）
 rail-schema.js                    鉄道の語彙 RailSchema。⚠ ビルド (scripts/rail/) とブラウザが同じこの1本を import する
-cameras.js                        ライブカメラ層 IntMapModules.cameras
-beta-overlays.js                  ベータのオーバーレイ IntMapModules.betaOverlays（火山レイヤー本体＝色モード4種・VEIによる大きさ・凡例・volcano.* コマンド）
+cameras.js                        ライブカメラ層（export cameras）
+beta-overlays.js                  ベータのオーバーレイ（export betaOverlays。火山レイヤー本体＝色モード4種・VEIによる大きさ・凡例・volcano.* コマンド）
 volcano-intel.js                  火山の深さ window.IntMapVolcano（遅延）——噴火履歴11,043件・警戒レベルの4段・気象庁↔GVPの結合・詳細カード
 volcano-layers.js                 火山の3レイヤー window.IntMapVolcanoLayers（遅延）——火山灰SIGMET・USGSハザード域・衛星SO₂
 hist-bundles.js                   リングプールした歴史記録（data/cshapes.js・hist-borders.js・hist-eras.js・
@@ -890,7 +890,7 @@ companies-ui.js                   Companies タブ・比較ビュー・ダッシ
 company-panel.js                  企業プロフィールのパネル（概要・財務・事業・拠点・進出国・組織・出典） IntMapCompanyPanel
 company-facilities.js             選択中の企業の拠点を地図に描く（クラスタリング・6グループ・施設カード） IntMapCompanyFacilities
 dash-extended.js                  ダッシュボードのキャッシュと拡張情報カード
-widgets.js                        ウィジェット板の入口 IntMapModules.widgets ——
+widgets.js                        ウィジェット板の入口（export widgets）——
                                   HOST との接続と window.IntMapWidgets2 の公開契約だけを持つ
 widget-core.js                    ウィジェット基盤の中核 IntMapWidgetCore ——
                                   定義レジストリ・WidgetContext・状態モデル（12状態）・
@@ -1034,7 +1034,7 @@ screenshot.js                     スクリーンショットのボタン（busy
 sidebar-style.js                  左サイドバーの材質（不透明／フロスト2種）と、フロスト時にカメラへ渡す左 inset
 search-geocode.js                 検索欄——問い合わせの前処理・ジオコーディング・結果カード
 compare.js                        並べて／スワイプで比べる地図 IntMapCompare
-playground.js                     Playground (beta) IntMapModules.playground
+playground.js                     Playground (beta)（export playground・遅延）
 pandemic-model.js                 パンデミック・シミュレーターの**数理**——種を取る確率的 SEIR メタ個体群エンジン
                                   （DOM も window も Math.random も持たないので node が直に回せる。
                                   疾患プリセットもここのデータ。描画と UI は playground.js）
@@ -1068,7 +1068,7 @@ map-narrator.js                   地図のテキスト代替——視覚的に�
 legal-page.js                     同じ本文を privacy.html / terms.html として出す（chrome は9言語）
 premium-plan.js                   プレミアムの節——ただしその全機能が無料である
 monitors.js                       Area Monitors IntMapMonitors
-weather.js                        気象 IntMapModules.{wind,weatherEC,weatherPanel}
+weather.js                        気象（export wind / weatherEC / weatherPanel）
 wx-models.js                      予報モデルのレジストリ window.IntMapWxModels——提供モデル・出典・ライセンス。格子／変数／気圧面／予報期間は live metadata から導出（書き写さない）
 wx-source.js                      ガードされた唯一の気象／UV ソース window.IntMapWx
 wx-ecmwf.js                       ECMWF IFS モデル本体 window.IntMapECMWF——予報時刻軸・.om URL・復号済みの場・配色表
@@ -1780,8 +1780,10 @@ tests/
 ### 手順
 
 1. **切り出す単位は「継ぎ目」で選ぶ。** 大きい塊ではなく、外から見た依存が細い所で切る。
-2. **ブロック全文をそのままファクトリで包み、代入なしで呼ぶ**：`window.X=(function(){ … })()`、
-   あるいは `window.IntMapModules.x=function(HOST){ … }`。
+2. **ブロック全文をそのままファクトリで包み、export する**：`export function x(HOST){ … }`（使う側が名前で
+   import して `x(IM_HOST)` と呼ぶ）、あるいは持ち主が値を持つなら `export const X=(function(){ … })()`。
+   ⚠ **`window` に載せて読み返さない**——依存は import の辺にする（`docs/architecture/03-files.md`
+   「ファイル同士の結び方」。`window.IntMapModules` という登録簿はもう無く、`npm run check:static` が拒む）。
 3. **可変値はホスト・インターフェース `IM_HOST` 経由で読む。** クロージャ内で**再代入される**値
    （`currentLang` / `currentUser` / `currentProj` / `currentMapType` / `terrainOn` …）を値渡しすると
    古い値に固定される。`HOST.lang` のように毎回読む。
@@ -1792,7 +1794,7 @@ tests/
 7. **書き込みが必要な値は RW メンバー**にする：`get x(){return x;}, set x(v){x=v;}` の1行ペア。
    変数の実体は元の場所に残る＝**単一の真実の源**。
 8. **巻き上げが要る関数はシムを置く。** 元が巻き上げ関数宣言だったものは、`index.html` 側に
-   `function f(){ return IntMapModules.x.f.apply(this,arguments); }` を置く（レシーバも引数もそのまま透過）。
+   `function f(){ return _IM_X.f.apply(this,arguments); }` を置く（`_IM_X` はファクトリが返した物。レシーバも引数もそのまま透過）。
 9. **変数はエクスポートできない**（シムは関数にしか作れない）。
 
 ### `IM_HOST` の規約
@@ -1816,7 +1818,7 @@ tests/
 ### 分割を守る検査
 
 - `scripts/check-split-scope.mjs` … acorn で、手順3・7・9の不変条件を検査する。
-- `scripts/static-checks.mjs` … 未読込のモジュール／呼ばれていないファクトリ／移設元の残骸を検査する。
+- `scripts/static-checks.mjs` … 未読込のモジュール／`window.IntMapModules` の復活／移設元の残骸を検査する。呼ばれていないファクトリは「読み手の無い export」として `scripts/export-readers.mjs` が拒む。
 - `tests/shell-app-body-modules-checks.test.mjs` (#R162) / `tests/news-module-split-checks.test.mjs` (#R163) / `tests/atlas-console-kernel-checks.test.mjs` (#R165) …
   ホストメンバーと RW 一覧を固定する。
 - `tests/app-source.mjs` … 文字列一致の回帰テスト群が `index.html` だけでなく `css/` ＋ `js/` も読む。

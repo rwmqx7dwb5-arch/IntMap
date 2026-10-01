@@ -30,6 +30,7 @@ import { codeOnly } from '../scripts/code-only.mjs';
 import { readLF } from '../scripts/eol.mjs';
 import { publishedList } from './helpers/layer-groups.mjs';
 import { installSafe } from './helpers/safe-html.mjs';
+import { importModule, langRegistry } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -157,10 +158,13 @@ test('#R453 ④ tz を持たない行は、ファイル自身が名指してい�
   for (const k of measured) assert.ok(C[k], k + ' は行そのものが無い（宣言できるのは「行は在るが tz が無い」だけ）');
 });
 
-/* ══ ⑤ 出荷されるファイルは、素のスクリプトとして実行できる（#R443 が 16件で払った代金） ══ */
-test('#R453 ⑤ js/countries-ui.js は classic script として parse できる（export を足さない）', () => {
-  assert.doesNotThrow(() => new Function(read('js/countries-ui.js')),
-    'この repo の複数のハーネスが new Function(src) でこのファイルを実行する');
+/* ══ ⑤ 出荷されるファイルは、ハーネスが実行できる形である（#R443 が 16件で払った代金） ══
+   (module-graph) このファイルは import / export を持つ ES module になった。ハーネスが実行できる
+   ことの意味は「module として import でき、factory を export している」こと——どのハーネスも
+   本文を文字列で評価せず import する（tests/news-countries-checks.test.mjs R443 ⑩ がそれを見ている）。 */
+test('#R453 ⑤ js/countries-ui.js は module として import でき、factory を export している', async () => {
+  const M = await importModule('js/countries-ui.js', { globals: { window: {} }, mocks: { 'js/geo-engine.js': { IntMapGeoEngine: undefined } } });
+  assert.equal(typeof M.countriesUi, 'function', 'js/countries-ui.js は factory countriesUi を export する');
 });
 
 /* ══ 出荷される module を、出荷されるデータで動かすための最小の窓 ═══════════════════════════
@@ -185,23 +189,14 @@ function stubEl(id) {
 }
 
 /** `factsBody` は fetch('data/country-facts.json') が返すもの。null なら失敗させる。 */
-function runCard({ facts }) {
+async function runCard({ facts }) {
   const els = new Map();
   const getEl = (id) => { if (!els.has(id)) els.set(id, stubEl(id)); return els.get(id); };
   const fetches = [];
   const win = {
     innerWidth: 1280, innerHeight: 800,
-    IntMapModules: {},
-    /* ⚠ `pick()` の戻り値は関数であり、`.arr(table)` を持つ（js/lang-registry.js §264）。
-       ここを素の矢印関数にすると `_regionName` が `_LR.arr is not a function` で落ちる——
-       つまりこのスタブは registry の実際の形に合わせてある。 */
-    IntMapLang: {
-      pick: () => { const fn = (...a) => a[0]; fn.arr = (a) => (Array.isArray(a) ? fn.apply(null, a) : String(a == null ? '' : a)); return fn; },
-      pickArgs: () => ((...a) => a),
-      t: (lang, ...a) => a[0],
-      isLoaded: () => true,
-      htmlTag: () => 'en',
-    },
+    /* (module-graph) the language registry is no longer stubbed on window: js/countries-ui.js and
+       js/tables.js IMPORT the real one (declared below with langRegistry()) */
   };
   const HOST = {
     countryStats: {}, countryGeo: null, lang: 'en', mode: 'map', statsFilters: [],
@@ -235,16 +230,18 @@ function runCard({ facts }) {
     console: { warn() {}, log() {}, error() {} },
     localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
   };
-  const run = (src) => new Function(
-    'window', 'document', 'turf', 'fetch', 'navigator', 'requestIdleCallback', 'console', 'localStorage', src,
-  )(win, doc, env.turf, env.fetch, env.navigator, env.requestIdleCallback, env.console, env.localStorage);
-
+  /* (module-graph) the browser is installed as globals and the files are IMPORTED, fresh per card:
+     js/country-extent.js publishes on this card's window, js/countries-ui.js exports its factory and
+     imports the real js/tables.js and language registry. Its js/geo-engine.js edge is handed
+     `undefined` — this sandbox never had a renderer, which is what the card's own guards are for. */
+  const globals = { window: win, document: doc, turf: env.turf, fetch: env.fetch, navigator: env.navigator,
+    requestIdleCallback: env.requestIdleCallback, localStorage: env.localStorage };
   /* the card escapes names and facts through window.IntMapSafe (output-taint-gate) — the real encoder */
   installSafe(win);
-  run(read('js/tables.js'));
-  run(read('js/country-extent.js'));
-  run(read('js/countries-ui.js'));
-  const mod = win.IntMapModules.countriesUi(HOST);
+  langRegistry();
+  await importModule('js/country-extent.js', { globals });
+  const { countriesUi } = await importModule('js/countries-ui.js', { globals, mocks: { 'js/geo-engine.js': { IntMapGeoEngine: undefined } } });
+  const mod = countriesUi(HOST);
   return { win, HOST, mod, body: getEl('cp-body'), popup: getEl('country-popup'), fetches };
 }
 
@@ -262,7 +259,7 @@ const usaStat = () => ({
    ⚠ 「関数が値を代入したか」ではなく「**カードに行が在るか**」を見る。欠陥は
    `sec()` が null の行を落とすところで起きていて、代入の側からは見えなかった。 */
 test('#R453 ⑥ 同梱データで、カードに Neighbours / Timezones / UN member の3行が出る', async () => {
-  const { HOST, mod, body } = runCard({ facts: FACTS });
+  const { HOST, mod, body } = await runCard({ facts: FACTS });
   HOST.countryStats.USA = usaStat();
   mod.showCountryDetail('USA', 'United States of America');
   const ok = await settle(() => /Neighbours/.test(body.innerHTML));
@@ -279,7 +276,7 @@ test('#R453 ⑥ 同梱データで、カードに Neighbours / Timezones / UN me
   /* ⚠ 「何行あるか」ではなく「**同じ国のカードが、供給者が居ないときと比べて何行増えるか**」。
      報告はまさにその差（16行・Neighbours も Timezones も無い）だったので、比べる相手を
      同じ通過の中に置く。⑧ が、この失敗した側が本当に失敗であることを別に言っている。 */
-  const dead = runCard({ facts: null });
+  const dead = await runCard({ facts: null });
   dead.HOST.countryStats.USA = usaStat();
   dead.mod.showCountryDetail('USA', 'United States of America');
   await settle(() => dead.win.IntMapCountryFacts.state === 'failed');
@@ -291,7 +288,7 @@ test('#R453 ⑥ 同梱データで、カードに Neighbours / Timezones / UN me
 
 /* ══ ⑦ 手書き表の穴が、同じ経路で埋まる ═══════════════════════════════════════════════════ */
 test('#R453 ⑦ js/tables.js に無い国の Capital / Currency / Languages が「—」でなくなる', async () => {
-  const { HOST, mod, body } = runCard({ facts: FACTS });
+  const { HOST, mod, body } = await runCard({ facts: FACTS });
   /* ウルグアイ——LANGS にも CURRENCY にも無い（測定済み） */
   HOST.countryStats.URY = {
     code: 'URY', nameEn: 'Uruguay', a2: 'UY', pop: 3_400_000, area: 176_215,
@@ -315,7 +312,7 @@ test('#R453 ⑦ js/tables.js に無い国の Capital / Currency / Languages が�
 test('#R453 ⑧ 取得が失敗したら、状態に残り、次のカードで retry される', async () => {
   const els = { n: 0 };
   /* まず失敗させる */
-  const failing = runCard({ facts: null });
+  const failing = await runCard({ facts: null });
   failing.HOST.countryStats.USA = usaStat();
   failing.mod.showCountryDetail('USA', 'United States of America');
   const F = failing.win.IntMapCountryFacts;

@@ -139,7 +139,8 @@ function liftInfo(names, expose, lang, cldr) {
   });
   const window = { _imCldrRegion: cldr, IntMapLang: { htmlTag: (l) => ({ jp: 'ja' }[l] || l), t: (_l, en) => en } };
   const text = stmts.sort((a, b) => a.start - b.start).map((n) => INFO.slice(n.start, n.end)).join('\n');
-  return new Function('window', 'HOST', `${text}\nreturn (${expose});`)(window, { lang });
+  /* (module-graph) the file imports IntMapLang, so the lifted fragment reads the bare name: hand it in */
+  return new Function('window', 'HOST', 'IntMapLang', `${text}\nreturn (${expose});`)(window, { lang }, window.IntMapLang);
 }
 
 test('#R384 ① the popup translates a country through its code, never by printing the name', () => {
@@ -162,7 +163,8 @@ test('#R384 ① the popup translates a country through its code, never by printi
     'the countries row does not resolve each name through its code');
   assert.ok(!/row\(T\.countries\(\), esc\(m\.countries\.join/.test(code),
     'the countries row is back to printing the English names it was handed');
-  assert.ok(!/row\(window\.IntMapLang\.t\(HOST\.lang, 'Country'[^)]*\), esc\(m\.country\)\)/.test(code),
+  /* (module-graph) either spelling — the import made `window.` optional, and a pin on one would go blind */
+  assert.ok(!/row\((?:window\.)?IntMapLang\.t\(HOST\.lang, 'Country'[^)]*\), esc\(m\.country\)\)/.test(code),
     'the landing card is back to printing the English country');
   /* …and the fallback is the English name, never an empty row (§11) */
   assert.match(code, /return english \|\| '';/, 'regionName no longer falls back to the name it was given');

@@ -7,10 +7,12 @@
  *  further down the closure than the demo.
  * ==========================================================================*/
 
-window.IntMapModules=window.IntMapModules||{};
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules.onboarding=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
+export function onboarding(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   const ensurePlaceLabels=HOST.ensurePlaceLabels, applyLabelLang=HOST.applyLabelLang, isMobile=HOST.isMobile;
   /* (#R15c) First-visit showcase — a new user reported the map "was initially just black". On the very
      first visit (nothing seen before) we auto-cycle a few colorful layers with a bottom pill that names
@@ -30,7 +32,7 @@ window.IntMapModules.onboarding=function(HOST){
     const jp=()=>HOST.lang==='jp';
     /* ⚠ (#R251) the tour's four captions were `[id, en, ja]` read by `jp()?s[2]:s[1]`, so the
        tutorial narrated itself in English to seven of the nine languages. */
-    const LA=window.IntMapLang.pickArgs(), LT=window.IntMapLang.pick(()=>HOST.lang);
+    const LA=IntMapLang.pickArgs(), LT=IntMapLang.pick(()=>HOST.lang);
     const SHOW=[['dl-climate',LA('Köppen climate','ケッペン気候区分','Köppen-Klima','Климат Кёппена','Clima de Köppen')],['dl-nightsat',LA('Night lights','夜間光（衛星）','Nachtlichter','Ночные огни','Luces nocturnas')],['dl-relief',LA('Elevation relief','標高（段彩）','Höhenrelief','Рельеф высот','Relieve altimétrico')],['dl-popgrid',LA('Population density (1 km grid)','人口密度（1kmグリッド）','Bevölkerungsdichte (1-km-Raster)','Плотность населения (сетка 1 км)','Densidad de población (malla de 1 km)')]];
     /* don't start if a thematic layer is already on */
     if(!force && document.querySelectorAll('#layer-dropdown .lyr-row.on, #layer-dropdown input.geo-layer-cb:checked').length) return;
@@ -44,16 +46,16 @@ window.IntMapModules.onboarding=function(HOST){
     function render(name){ pill.innerHTML='';
       /* (#R22) Make it unmistakable this is a TEMPORARY one-time intro auto-play, not a permanent state —
          a pulsing "AUTO" badge + "intro demo" wording + an explicit "End tour" button. */
-      const badge=document.createElement('span'); badge.textContent=window.IntMapLang.t(HOST.lang,"AUTO","自動再生","AUTO","АВТО","AUTO");
+      const badge=document.createElement('span'); badge.textContent=IntMapLang.t(HOST.lang,"AUTO","自動再生","AUTO","АВТО","AUTO");
       badge.style.cssText='font-size:9.5px;font-weight:800;letter-spacing:0.06em;padding:2px 6px;border-radius:999px;background:var(--primary-fill);color:#fff;text-transform:uppercase;animation:imDemoPulse 1.6s ease-in-out infinite;';
       pill.appendChild(badge);
-      const t=document.createElement('span'); t.innerHTML='<span style="opacity:0.7;">'+(window.IntMapLang.t(HOST.lang,"Intro demo:","初回デモ:","Einführungsdemo:","Вводная демонстрация:","Demostración inicial:"))+'</span> <b>'+name+'</b>'; pill.appendChild(t);
+      const t=document.createElement('span'); t.innerHTML='<span style="opacity:0.7;">'+(IntMapLang.t(HOST.lang,"Intro demo:","初回デモ:","Einführungsdemo:","Вводная демонстрация:","Demostración inicial:"))+'</span> <b>'+name+'</b>'; pill.appendChild(t);
       /* (#R32) iOS-clean controls — SVG play/pause + a circular × instead of the ▶ ⏸ × emoji
          ("中途半端にダサい絵文字を入れるな / iOS風にしろ"). */
       const _svgPlay='<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
       const _svgPause='<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
-      const pb=document.createElement('button'); pb.innerHTML=paused?_svgPlay:_svgPause; pb.title=paused?(window.IntMapLang.t(HOST.lang,"Play","再開","Abspielen","Воспроизвести","Reproducir")):(window.IntMapLang.t(HOST.lang,"Pause","一時停止","Pause","Пауза","Pausa")); pb.style.cssText='background:var(--input-bg);border:none;color:var(--text-main);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;flex:0 0 auto;'; pb.onclick=()=>{ paused=!paused; if(!paused) schedule(); else clearTimeout(timer); render(name); }; pill.appendChild(pb);
-      const xb=document.createElement('button'); xb.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'; xb.title=window.IntMapLang.t(HOST.lang,"End the intro demo","デモを終了","Einführungsdemo beenden","Завершить вводную демонстрацию","Terminar la demostración inicial"); xb.setAttribute('aria-label',window.IntMapLang.t(HOST.lang,"End tour","終了","Tour beenden","Завершить тур","Terminar")); xb.style.cssText='background:var(--input-bg);border:none;border-radius:50%;color:var(--text-main);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;flex:0 0 auto;margin-left:2px;'; xb.onclick=()=>stop(true); pill.appendChild(xb); }
+      const pb=document.createElement('button'); pb.innerHTML=paused?_svgPlay:_svgPause; pb.title=paused?(IntMapLang.t(HOST.lang,"Play","再開","Abspielen","Воспроизвести","Reproducir")):(IntMapLang.t(HOST.lang,"Pause","一時停止","Pause","Пауза","Pausa")); pb.style.cssText='background:var(--input-bg);border:none;color:var(--text-main);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;flex:0 0 auto;'; pb.onclick=()=>{ paused=!paused; if(!paused) schedule(); else clearTimeout(timer); render(name); }; pill.appendChild(pb);
+      const xb=document.createElement('button'); xb.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'; xb.title=IntMapLang.t(HOST.lang,"End the intro demo","デモを終了","Einführungsdemo beenden","Завершить вводную демонстрацию","Terminar la demostración inicial"); xb.setAttribute('aria-label',IntMapLang.t(HOST.lang,"End tour","終了","Tour beenden","Завершить тур","Terminar")); xb.style.cssText='background:var(--input-bg);border:none;border-radius:50%;color:var(--text-main);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;flex:0 0 auto;margin-left:2px;'; xb.onclick=()=>stop(true); pill.appendChild(xb); }
     /* (#R25) 6.5s → 9s dwell: the GIBS night-lights raster and the DEM color-relief need longer to fetch
        + paint than the instant Köppen image, so at 6.5s they were toggled OFF before they finished loading
        ("night lights と elevation relief が表示されない"). 9s gives every showcase layer time to appear. */
@@ -74,7 +76,7 @@ window.IntMapModules.onboarding=function(HOST){
          while the raster stayed VISIBLE — a true orphan ("オンなのにactive layersに出ず消せない"). Hiding the
          actual layers here guarantees the demo can never strand one. */
       /* (#R171) layer visibility through IntMapGeoEngine — this file no longer names the renderer. */
-      try{ const E=window.IntMapGeoEngine; if(E) ['lyr-climate','lyr-nightsat','lyr-relief','lyr-popgrid'].forEach(l=>{ if(E.layers.has(l)) E.layers.setVisible(l,false); }); }catch(_){}
+      try{ const E=IntMapGeoEngine; if(E) ['lyr-climate','lyr-nightsat','lyr-relief','lyr-popgrid'].forEach(l=>{ if(E.layers.has(l)) E.layers.setVisible(l,false); }); }catch(_){}
       window._imDemoActive=false;
       /* (#R27) Re-assert place labels after the demo so the default names aren't left hidden by the
          demo's layer cycling ("デフォルトで地名ラベルが出ない"). */
@@ -99,7 +101,7 @@ window.IntMapModules.onboarding=function(HOST){
     try{ if(localStorage.getItem('intmap_demo_seen')==='1') return; }catch(_){}
     if(document.getElementById('im-welcome')) return;
     /* (#R251) the language helper and its ARRAY form — see `pickArgs` in js/lang-registry.js */
-    const LW=window.IntMapLang.pick(()=>HOST.lang), LA=window.IntMapLang.pickArgs();
+    const LW=IntMapLang.pick(()=>HOST.lang), LA=IntMapLang.pickArgs();
     const jp=HOST.lang==='jp';
     const de=HOST.lang==='de';   /* (#R35) welcome screen now full 3-language (was jp/en only → leaked English in DE) */
     const isM=(typeof isMobile==='function' && isMobile());
@@ -171,9 +173,9 @@ window.IntMapModules.onboarding=function(HOST){
     setTimeout(()=>{ try{ ov.style.opacity='1'; }catch(_){} },80);
   }
   window._imWelcome=_imWelcome;
-};
+}
 
-window.IntMapModules.progressCtl=function(HOST){
+export function progressCtl(HOST){
   /* (#R139) HONEST population-progress control shared by the measure/radius panel and the Draw tool. The bar it
      drives replaced a time-based ease-out that DECELERATED toward 92% and snapped to 100%
      ("100%に近づくほど遅くなる／グラフの意味を成さない"): every number it shows is measured.
@@ -199,4 +201,4 @@ window.IntMapModules.progressCtl=function(HOST){
       done(){ shown=1; put(1); }
     };
   };
-};
+}

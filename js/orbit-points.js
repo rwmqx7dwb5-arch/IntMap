@@ -35,8 +35,10 @@
  *  outside IntMapGeoEngine's `layers.addOrbit/setOrbit/removeOrbit` may reach for it.
  * ==========================================================================*/
 import { LIFTED_GLSL } from './lifted-projection.js';
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.orbitPoints=function(){
+
+import { IntMapGeoEngine } from './geo-engine.js';
+
+function orbitPoints(){
   const D2R=Math.PI/180;
   /* the WGS84 equatorial circumference MapLibre's mercator is built on — one mercator unit of
      altitude at latitude φ is MERC_CIRC·cos φ metres (the #R174 lesson, from js/solid3d.js) */
@@ -201,4 +203,7 @@ void main(){
     };
   }
   return { makeLayer, merc };
-};
+}
+
+/* (module-graph) handed to the renderer seam, which draws this kind when asked (js/geo-engine.js provideLayerKind) */
+IntMapGeoEngine.provideLayerKind('orbitPoints', orbitPoints);

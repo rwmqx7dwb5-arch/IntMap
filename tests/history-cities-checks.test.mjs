@@ -26,6 +26,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createExpression } from '@maplibre/maplibre-gl-style-spec';
 import { asClassicScript } from './app-source.mjs';
+import { importModule } from './helpers/import-module.mjs';
 import { LIC } from '../scripts/histcities/lang.mjs';
 import { loadRecord } from '../scripts/histcities-record.mjs';
 import { pageCodes, pageDoc } from '../scripts/i18n-pages-audit.mjs';
@@ -591,18 +592,20 @@ test('#R705 Kirov in Kaluga retains the dated source record previously lost to i
 
 
 /* ══ #R712 — a failed load of the record recovers ══════════════════════════════════════════ */
-const HC_RAW = rd('js/hist-cities.js');
 const payload = { cities: [{ id: 'source-city', k: ['Modern'], lon: 10, lat: 20, g: 1000,
   e: [{ f: 18000101, t: 18991231, n: { en: 'Historical' } }] }] };
 const ok = () => ({ ok: true, json: async () => payload });
-function runtime(fetcher) {
+/* (module-graph) js/hist-cities.js is IMPORTED, fresh per runtime, with the clock stub handed at its
+   chronos.js import edge; `context` is the window it publishes IntMapHistCities on */
+async function runtime(fetcher) {
   let clock, calls = 0, redraws = 0;
-  const context = { URL, document: { baseURI: 'https://example.invalid/' },
-    fetch: (...args) => { calls++; return fetcher(...args); },
-    IntMapTime: { isLive: () => false, when: () => new Date('1850-06-15T12:00:00Z'), on: fn => { clock = fn; } },
-  };
+  const context = {};
   context.window = context;
-  vm.runInNewContext(HC_RAW, context);
+  await importModule('js/hist-cities.js', {
+    globals: { window: context, document: { baseURI: 'https://example.invalid/' },
+      fetch: (...args) => { calls++; return fetcher(...args); } },
+    mocks: { 'js/chronos.js': { IntMapTime: { isLive: () => false, when: () => new Date('1850-06-15T12:00:00Z'), on: fn => { clock = fn; } } } },
+  });
   const api = context.IntMapHistCities;
   context.applyLabelLang = () => { redraws++; api.textField(['get', 'name'], 'en', 'ui'); api.ensure(); };
   return { api, calls: () => calls, redraws: () => redraws, tick: () => clock({ isLive: false }) };
@@ -617,7 +620,7 @@ for (const [name, fail] of [
 ]) {
   test(`#R712 historical city names recover after ${name} on the next clock request`, async () => {
     let attempt = 0;
-    const h = runtime(() => ++attempt === 1 ? fail() : Promise.resolve(ok()));
+    const h = await runtime(() => ++attempt === 1 ? fail() : Promise.resolve(ok()));
     assert.equal(await h.api.ensure(), null);
     assert.equal(h.api.ready(), false);
     h.tick();
@@ -632,7 +635,7 @@ for (const [name, fail] of [
 
 test('#R712 concurrent requests and redraw re-entry share one load; explicit retries recover', async () => {
   let resolveFetch;
-  const h = runtime(() => new Promise(resolve => { resolveFetch = resolve; }));
+  const h = await runtime(() => new Promise(resolve => { resolveFetch = resolve; }));
   const first = h.api.ensure();
   assert.equal(first, h.api.ensure());
   h.tick();

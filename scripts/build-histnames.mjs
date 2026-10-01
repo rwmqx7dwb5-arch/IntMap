@@ -173,11 +173,11 @@ async function fetchAll() {
    LANGUAGE. Such a name must NOT get a row here: `tagSame` reads `_i18n` first, so a row that
    lacks the language the hand table has would make the hand table unreachable and the reader
    would LOSE a name they already had (#R536). The tables are evaluated, never read (#R505). */
-function ownedNames(rows, langs) {
+async function ownedNames(rows, langs) {
   const owned = new Map();
   for (const lg of langs) {
     if (lg === 'en') continue;
-    const { api } = timeBorders({ lang: lg });
+    const { api } = await timeBorders({ lang: lg });
     for (const row of rows) {
       if (!api.eraLocName(row.name)) continue;
       if (!owned.has(row.name)) owned.set(row.name, new Set());
@@ -210,10 +210,10 @@ function labelRow(ent, english, langs, cc) {
 
 const EMPTY = new Set();
 
-function byMeasure(rows, years, store, langs, cc, why) {
+async function byMeasure(rows, years, store, langs, cc, why) {
   const internal = new Set(store.internal);
   const subject = new Set(store.subject || []);
-  const owned = ownedNames(rows, langs);
+  const owned = await ownedNames(rows, langs);
   const out = {};
   let dropped = 0;
   /* (#R713) which STORE attested the string this row was decided from. Kept because the ledger
@@ -340,8 +340,8 @@ async function build({ check = false } = {}) {
   const eraStore = readJSON(CAND), csStore = readJSON(CS_CAND), qlab = readJSON(QLAB);
   const whyEra = {}, whyCs = {};
 
-  const eras = byMeasure(eraRows, eraB.snaps.map((s) => s.y), eraStore, langs, cc, whyEra);
-  const cshapes = byMeasure(cs.rows, cs.years, csStore, langs, cc, whyCs);
+  const eras = await byMeasure(eraRows, eraB.snaps.map((s) => s.y), eraStore, langs, cc, whyEra);
+  const cshapes = await byMeasure(cs.rows, cs.years, csStore, langs, cc, whyCs);
 
   /* ── the base lane ──────────────────────────────────────────────────────
      «Ceylon (Dutch)» is a polity and its possessor in one string, and js/time-borders.js puts the
@@ -354,7 +354,7 @@ async function build({ check = false } = {}) {
      exists to undo). `--fetch` fills it; until then the lane simply is not in the document. */
   const whyEb = {};
   const eraBase = existsSync(EB_CAND)
-    ? byMeasure(eraBaseCensus(eraRows), eraB.snaps.map((s) => s.y), readJSON(EB_CAND), langs, cc, whyEb)
+    ? await byMeasure(eraBaseCensus(eraRows), eraB.snaps.map((s) => s.y), readJSON(EB_CAND), langs, cc, whyEb)
     : { out: {}, dropped: 0, lanes: { label: 0, article: 0 } };
 
   /* ── the identifier lane ────────────────────────────────────────────────

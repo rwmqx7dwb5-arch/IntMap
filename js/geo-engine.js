@@ -37,7 +37,10 @@ import { makeClickOwnership } from './click-ownership.js';
    PURELY ADDITIVE: existing MapLibre calls keep working; new common code should call IntMapGeoEngine instead of
    `map` directly. A Cesium CONTRACT (capabilities only, NO SDK, NO keys) is declared for the next phase. The raw()
    escape hatch returns the live MapLibre map for the many features not yet generalised (deliberately not forced). ===== */
-window.IntMapGeoEngine=(function(){
+/** (module-graph) the declared contract, stated on the EXPORT: readers import this binding now, so this is where
+    the compiler holds the object to types/ (it used to be the typed window.* assignment) */
+/** @type {import('../types/geo-engine').IntMapGeoEngine} */
+export const IntMapGeoEngine=(function(){
   /* (#R322) the two modules this file was split into are FACTORIES, so nothing sits at the top
      level of either (tests/layer-boot-graph-checks.test.mjs #R175 ③). Destructured once, here, so every call site below reads
      exactly as it did when the code lived in this file.
@@ -49,6 +52,13 @@ window.IntMapGeoEngine=(function(){
    app-body.js's closure variable, which this file no longer shares — app-body publishes the
    handle the moment the map is constructed, so the fallback had nothing left to catch. */
 function _m(){ return window.__imap||null; }
+  /* (module-graph) THE CUSTOM-LAYER KINDS ARE HANDED IN, NOT LOOKED UP. js/solid3d.js, js/limb-layer.js,
+     js/orbit-points.js and js/aircraft-points.js each give this seam their factory when they are
+     evaluated (`IntMapGeoEngine.provideLayerKind(name, make)`). The seam used to reach for them on
+     window.IntMapModules — an edge no bundler could see, and one that could not be written as an
+     import: the aircraft layer is lazy, and a static import here would put it in the start-up bundle.
+     A kind nobody has provided yet answers false, exactly as the missing registry entry did. */
+  const _kinds=Object.create(null);
   /* ══ THE RENDERER'S CAMERA — WHICH MAPLIBRE 6 NO LONGER HANGS ON THE MAP ══════════════════════
      v6's Map COMPOSES a Camera instead of extending one (its 6.0.0 changelog, and the v5→v6
      migration guide: «The internal `map.transform` property has been removed»). The transform the painter
@@ -1493,12 +1503,12 @@ function _m(){ return window.__imap||null; }
        prism as one mesh (js/solid3d.js), a Cesium-class engine would answer with its own primitive,
        and an engine that cannot must say so via capabilities.solid3d. */
     addSolid(id,before){ const m=_m(); if(!m||m.getLayer(id)) return false;
-      try{ if(!(window.IntMapModules&&window.IntMapModules.solid3d)) return false;
+      try{ if(!_kinds.solid3d) return false;
         /* the mesh is written in GLSL 3.00 with 32-bit indices. MapLibre 5 still transpiles ITS own
            shaders down to WebGL1, so a context without WebGL2 is possible — say no there and the
            caller falls back to the open shell rather than drawing nothing. */
         const cv=m.getCanvas&&m.getCanvas(); if(!(cv&&cv.getContext('webgl2'))) return false;
-        const L=(_solids[id]||(_solids[id]=window.IntMapModules.solid3d().makeLayer(id)));
+        const L=(_solids[id]||(_solids[id]=_kinds.solid3d().makeLayer(id)));
         m.addLayer(L,(before&&m.getLayer(before))?before:undefined); return true; }catch(_){ return false; } },
     setSolid(id,o){ const L=_solids[id]; if(!L) return false;
       try{ /* the eye is what makes the absorption an absorption — see the shader's 1/|n·v| */
@@ -1521,7 +1531,7 @@ function _m(){ return window.__imap||null; }
        circle that would slide off the moment the reader tilts.
        ⚠ A CESIUM-CLASS ENGINE ANSWERS THIS WITH ITS OWN SkyAtmosphere and never calls this. */
     addLimb(id,before){ const m=_m(); if(!m||m.getLayer(id)) return false;
-      try{ if(!(window.IntMapModules&&window.IntMapModules.limbLayer)) return false;
+      try{ if(!_kinds.limbLayer) return false;
         const cv=m.getCanvas&&m.getCanvas(); if(!(cv&&cv.getContext('webgl2'))) return false;
         /* ══ ⚠⚠ (#R227) NOT ON A CPU RASTERISER, AND THAT IS A MEASURED REFUSAL ═════════════════════
            The limb is a per-pixel scattering march. On any real GPU it is free — measured, it is
@@ -1578,7 +1588,7 @@ function _m(){ return window.__imap||null; }
         }catch(_){}
         const S=window.IntMapSkyModel; if(!(S&&S.tables&&S.sunOpticalDepth)) return false;
         const model=Object.assign({},S.tables(),{ sunOpticalDepth:S.sunOpticalDepth });
-        const L=(_limbs[id]||(_limbs[id]=window.IntMapModules.limbLayer().makeLayer(id,()=>_limbUniforms(id),model)));
+        const L=(_limbs[id]||(_limbs[id]=_kinds.limbLayer().makeLayer(id,()=>_limbUniforms(id),model)));
         m.addLayer(L,(before&&m.getLayer(before))?before:undefined);
         /* ══ ⚠⚠ (#R236) …AND THE LAST REFUSAL IS THE LAYER'S OWN ═══════════════════════════════════
            Every refusal above is about the CONTEXT (no WebGL2, a software rasteriser, a phone) and
@@ -1617,9 +1627,9 @@ function _m(){ return window.__imap||null; }
        supplies the propagation AND its rate, so the renderer can carry the motion between ticks
        without the catalogue being re-propagated every frame. */
     addOrbit(id,before){ const m=_m(); if(!m||m.getLayer(id)) return false;
-      try{ if(!(window.IntMapModules&&window.IntMapModules.orbitPoints)) return false;
+      try{ if(!_kinds.orbitPoints) return false;
         const cv=m.getCanvas&&m.getCanvas(); if(!(cv&&cv.getContext('webgl2'))) return false;
-        const L=(_orbits[id]||(_orbits[id]=window.IntMapModules.orbitPoints().makeLayer(id)));
+        const L=(_orbits[id]||(_orbits[id]=_kinds.orbitPoints().makeLayer(id)));
         m.addLayer(L,(before&&m.getLayer(before))?before:undefined); return true; }catch(_){ return false; } },
     setOrbit(id,o){ const L=_orbits[id]; if(!L) return false;
       try{ L._set(o); return true; }catch(_){ return false; } },
@@ -1630,9 +1640,9 @@ function _m(){ return window.__imap||null; }
        buffers ALREADY IN GPU LAYOUT plus their rate of change, so neither engine walks 50,000
        aircraft on the main thread. ⚠ WebGL2 absent ⇒ false, never a broken layer. */
     addAircraftCloud(id,before){ const m=_m(); if(!m||m.getLayer(id)) return false;
-      try{ if(!(window.IntMapModules&&window.IntMapModules.aircraftPoints)) return false;
+      try{ if(!_kinds.aircraftPoints) return false;
         const cv=m.getCanvas&&m.getCanvas(); if(!(cv&&cv.getContext('webgl2'))) return false;
-        const L=(_aircraft[id]||(_aircraft[id]=window.IntMapModules.aircraftPoints().makeLayer(id)));
+        const L=(_aircraft[id]||(_aircraft[id]=_kinds.aircraftPoints().makeLayer(id)));
         m.addLayer(L,(before&&m.getLayer(before))?before:undefined); return true; }catch(_){ return false; } },
     setAircraftCloud(id,o){ const L=_aircraft[id]; if(!L) return false;
       try{ L._set(o); return true; }catch(_){ return false; } },
@@ -2309,9 +2319,16 @@ function _m(){ return window.__imap||null; }
        object, and `engineFacade` is a closure here. Exposing the factory is what
        makes "implement this contract" a thing another file can actually do, which
        is the whole premise of the seam. */
+    /** (module-graph) a renderer-specific custom-layer kind, handed in by the module that implements it */
+    provideLayerKind(name,make){ if(typeof make==="function") _kinds[name]=make; return this; },
     makeFacade(adapterOrGetter){
       const g=(typeof adapterOrGetter==='function')?adapterOrGetter:()=>adapterOrGetter;
       return engineFacade(g);
     }
   }, engineFacade(()=>_adapter));
 })();
+/* (module-graph) THE COMPAT WINDOW. Every js/ and src/ reader IMPORTS IntMapGeoEngine from this file; this one
+   publication remains for what cannot import: the browser specs' page.evaluate, the console, and the
+   static pages' inline scripts. scripts/global-surface.mjs counts it, and its `reads` register is what
+   says no module reads it back off the global. */
+globalThis.IntMapGeoEngine=IntMapGeoEngine;

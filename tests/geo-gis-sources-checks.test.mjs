@@ -14,6 +14,18 @@
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { installWindow, isolate, read } from './helpers/geo-shared.mjs';
+import { importModule } from './helpers/import-module.mjs';
+
+/* (module-graph) js/gis-sources.js and js/gis-layers.js IMPORT the renderer contract now, so the fake map a
+   boot builds is handed in at that import edge (it used to be read off window.IntMapGeoEngine). gis-layers
+   also builds its own supplier registry from the gis-sources it imports, so it is handed THIS evaluation of
+   gis-sources — the one that sees the same fake map. One fresh evaluation per boot, one fake map each. */
+async function gisReaders(w) {
+  const edge = { 'js/geo-engine.js': { IntMapGeoEngine: w.IntMapGeoEngine } };
+  const S = await importModule('js/gis-sources.js', { mocks: edge });
+  const L = await importModule('js/gis-layers.js', { mocks: { ...edge, 'js/gis-sources.js': S } });
+  return { makeGisSources: S.makeGisSources, makeGisLayers: L.makeGisLayers };
+}
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R749 · suppliers and completeness   (was tests/r749-gis-sources-checks.test.mjs)
@@ -132,9 +144,8 @@ describe('§ #R749 · suppliers and completeness', () => {
     const { makeGisDatasets } = await import('../js/gis-datasets.js');
     const { makeGisGeometry } = await import('../js/gis-geometry.js');
     const { makeGisRaster } = await import('../js/gis-raster.js');
-    const { makeGisLayers } = await import('../js/gis-layers.js');
-    const { makeGisSources } = await import('../js/gis-sources.js');
     const map = makeFakeMap(w);
+    const { makeGisSources, makeGisLayers } = await gisReaders(w);
     w.IntMapData = makeGisDatasets();
     w.IntMapGisGeometry = makeGisGeometry();
     w.IntMapGisRaster = makeGisRaster();
@@ -490,8 +501,6 @@ describe('§ #R756 · the supplier executes what it claims', () => {
 
   /* ── the app, with a renderer that holds what we put in it ────────────────────────────────────── */
 
-  let FACTORY = null;
-
   async function boot() {
     const w = {};
     globalThis.window = w;
@@ -520,16 +529,17 @@ describe('§ #R756 · the supplier executes what it claims', () => {
 
     const { makeGisDatasets } = await import('../js/gis-datasets.js');
     const { makeGisOps } = await import('../js/gis-ops.js');
-    const { makeGisLayers } = await import('../js/gis-layers.js');
-    const { makeGisSources } = await import('../js/gis-sources.js');
+    const { makeGisSources, makeGisLayers } = await gisReaders(w);
     w.IntMapData = makeGisDatasets();
     w.IntMapGisOps = makeGisOps();
 
-    /* ⚠ THE MODULE PUBLISHES ITS FACTORIES ONCE PER PROCESS, onto whatever `window` existed at import
-       time; a second boot gets a fresh window and would find nothing there. The factory itself is
-       re-run per boot, which is what builds a fresh registry. */
-    if (!FACTORY) { await import('../js/map-ui.js'); FACTORY = w.IntMapModules.layerRegistry; }
-    FACTORY({
+    /* (module-graph) the registry is js/map-ui.js's EXPORTED factory, evaluated by import with this boot's
+       renderer and language shim handed in at its import edges; the factory is run per boot, which is
+       what builds a fresh registry. */
+    const { layerRegistry } = await importModule('js/map-ui.js', {
+      mocks: { 'js/geo-engine.js': { IntMapGeoEngine: w.IntMapGeoEngine }, 'js/lang-registry.js': { IntMapLang: w.IntMapLang } },
+    });
+    layerRegistry({
       lang: 'en', mapType: 'flat', proj: 'mercator', globalData: null, toolMode: null,
       canDraw: () => false, demElevAt: () => null,
     });
@@ -925,9 +935,8 @@ describe('§ #R763 · numbers, not sentences', () => {
     new Function('window', read('js/geodesy.js'))(w);
     const { makeGisDatasets } = await import('../js/gis-datasets.js');
     const { makeGisRaster } = await import('../js/gis-raster.js');
-    const { makeGisSources } = await import('../js/gis-sources.js');
-    const { makeGisLayers } = await import('../js/gis-layers.js');
     const map = makeFakeMap(w);
+    const { makeGisSources, makeGisLayers } = await gisReaders(w);
     w.IntMapData = makeGisDatasets();
     w.IntMapGisRaster = makeGisRaster();
     w.IntMapGisSources = makeGisSources();
@@ -1232,8 +1241,10 @@ describe('§ #R763 · numbers, not sentences', () => {
   const NEW_CODES = ['layer-sample-failed', 'layer-values-all-missing', 'band-not-selectable', 'layer-load-failed', 'layer-is-a-field'];
   async function sentencesFor(codes) {
     const said = [];
-    window.IntMapLang = { t: (which, en, jp) => { said.push([which, en, jp]); return which === 'jp' ? jp : en; }, locale: () => 'en-US' };
-    const { makeGisPanel } = await import('../js/gis-panel.js');
+    const recorder = { t: (which, en, jp) => { said.push([which, en, jp]); return which === 'jp' ? jp : en; }, locale: () => 'en-US' };
+    window.IntMapLang = recorder;
+    /* (module-graph) the panel imports the language registry: the recorder is handed in at that edge */
+    const { makeGisPanel } = await importModule('js/gis-panel.js', { mocks: { 'js/lang-registry.js': { IntMapLang: recorder } } });
     const out = { en: {}, jp: {} };
     for (const which of ['en', 'jp']) {
       const panel = makeGisPanel({ lang: which });
@@ -1368,9 +1379,8 @@ describe('§ #R774 · sampling does not depend on visibility', () => {
     new Function('window', read('js/geodesy.js'))(w);
     const { makeGisDatasets } = await import('../js/gis-datasets.js');
     const { makeGisRaster } = await import('../js/gis-raster.js');
-    const { makeGisSources } = await import('../js/gis-sources.js');
-    const { makeGisLayers } = await import('../js/gis-layers.js');
     const map = makeFakeMap(w);
+    const { makeGisSources, makeGisLayers } = await gisReaders(w);
     w.IntMapData = makeGisDatasets();
     w.IntMapGisRaster = makeGisRaster();
     w.IntMapGisSources = makeGisSources();
@@ -1617,9 +1627,8 @@ describe('§ #R783 · the fetch contract', () => {
     const { makeGisDatasets } = await import('../js/gis-datasets.js');
     const { makeGisOps } = await import('../js/gis-ops.js');
     const { makeGisRaster } = await import('../js/gis-raster.js');
-    const { makeGisSources } = await import('../js/gis-sources.js');
-    const { makeGisLayers } = await import('../js/gis-layers.js');
     const map = makeFakeMap(w);
+    const { makeGisSources, makeGisLayers } = await gisReaders(w);
     w.IntMapData = makeGisDatasets();
     w.IntMapGisOps = makeGisOps();
     w.IntMapGisRaster = makeGisRaster();

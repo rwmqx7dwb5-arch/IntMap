@@ -27,17 +27,27 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const code = codeOnly;
 
-function drawTool() {
+/* (module-graph) js/map-tools.js is EVALUATED BY IMPORT: what it imports (the timer wheel, the Overpass client,
+   the Nominatim gate, the renderer contract, the language registry) is handed in at its import edges, the
+   browser (window, document, the global `turf`) is installed as globals, and the factories are its exports. */
+const mapToolsEdges = (sb) => ({
+  'js/runtime.js': { everyTick: sb.everyTick },
+  'js/overpass.js': { overpassQuery: () => Promise.reject(new Error('no network in a check')) },
+  'js/nominatim-gate.js': { NominatimGate: sb.NominatimGate },
+  'js/geo-engine.js': { IntMapGeoEngine: sb.IntMapGeoEngine },
+  'js/lang-registry.js': { IntMapLang: sb.IntMapLang },
+});
+async function drawTool() {
   const noop = () => {};
   const el = () => ({ style: {}, classList: { add: noop, remove: noop }, appendChild: noop,
                       querySelector: () => null, querySelectorAll: () => [], addEventListener: noop, setAttribute: noop, remove: noop });
@@ -46,15 +56,13 @@ function drawTool() {
   sb.document = { getElementById: () => null, createElement: el, body: el(), head: el(),
                   addEventListener: noop, readyState: 'complete', querySelector: () => null, querySelectorAll: () => [] };
   sb.turf = { distance: () => 1, point: (p) => p };
-  sb.IntMapModules = {};
   sb.IntMapGeoEngine = { hasRenderer: () => true,
     layers: { hasSource: () => true, addSource: noop, has: () => true, add: noop, setSourceData: noop, setLayout: noop },
     render: { canvas: () => ({ style: {} }) }, input: { set: noop }, camera: { getZoom: () => 5 }, events: { on: noop, once: noop } };
   sb.IntMapLang = { t: () => 'x' };
   sb.everyTick = () => noop; sb.NominatimGate = {};
-  vm.createContext(sb);
-  vm.runInContext(read('js/map-tools.js').replace(/^import[^\n]*\n/gm, ''), sb, { filename: 'map-tools.js' });
-  sb.IntMapModules.drawTool({ ringArea: () => 0, t: () => '', distHTML: String, areaHTML: String,
+  const M = await importModule('js/map-tools.js', { globals: { window: sb, document: sb.document, turf: sb.turf }, mocks: mapToolsEdges(sb) });
+  M.drawTool({ ringArea: () => 0, t: () => '', distHTML: String, areaHTML: String,
                               makeDraggable: noop, imToast: noop, exitTool: noop, lang: 'en', isMobile: () => false });
   return sb.DrawTool;
 }
@@ -85,8 +93,8 @@ const wobblyLoop = (n = 360) => {
   return out;
 };
 
-test('#R782 ① the line that is stroked IS the polyline the slider left — no stage in between', () => {
-  const D = drawTool();
+test('#R782 ① the line that is stroked IS the polyline the slider left — no stage in between', async () => {
+  const D = await drawTool();
   assert.ok(D && D._debug && typeof D._debug.simulate === 'function', 'the shipped module evaluated and armed');
   const raw = wobblyLoop();
 
@@ -101,8 +109,8 @@ test('#R782 ① the line that is stroked IS the polyline the slider left — no 
   }
 });
 
-test('#R782 ② at the finest setting the line is the trace, unaltered', () => {
-  const D = drawTool();
+test('#R782 ② at the finest setting the line is the trace, unaltered', async () => {
+  const D = await drawTool();
   const raw = wobblyLoop();
   /* the slider at 0 is «drop nothing», so what the reader drew is what the reader gets. This is the
      complaint in its plainest form: 「そんな挙動は求めてない」. */
@@ -111,8 +119,8 @@ test('#R782 ② at the finest setting the line is the trace, unaltered', () => {
   assert.equal(r.rawN, r.curveN, 'every captured point reaches the map and no other point does');
 });
 
-test('#R782 ③ the slider actually coarsens — fewer vertices and sharper corners as it rises', () => {
-  const D = drawTool();
+test('#R782 ③ the slider actually coarsens — fewer vertices and sharper corners as it rises', async () => {
+  const D = await drawTool();
   const raw = wobblyLoop();
   const steps = [0, 25, 50, 75, 100].map((res) => ({ res, r: D._debug.simulate(raw, res) }));
 
@@ -139,8 +147,8 @@ test('#R782 ③ the slider actually coarsens — fewer vertices and sharper corn
     `at maximum the line's sharpest turn is only ${(coarse * 180 / Math.PI).toFixed(1)}° — that still reads as a curve`);
 });
 
-test('#R782 ④ the area readout stays what it was, at every setting of the slider', () => {
-  const D = drawTool();
+test('#R782 ④ the area readout stays what it was, at every setting of the slider', async () => {
+  const D = await drawTool();
   const raw = wobblyLoop();
   /* #R8c's contract: the area is measured on the 5-px trace, so the slider moves the LINE and never
      the number. Unchanged by this round, and easy to break while changing what the slider feeds. */
@@ -171,7 +179,7 @@ test('#R782 ⑤ the stroke is captured finer than #R719 left it, and the panel s
 /* js/map-tools.js's object-list factory, run against the smallest DOM it builds its panel from and a
    renderer whose click listeners are COUNTED — a universal element stub answers every DOM call the
    panel makes without pretending to lay anything out. */
-function objectPanel() {
+async function objectPanel() {
   const stubEl = () => {
     const t = { style: {}, dataset: {}, children: [], innerHTML: '', textContent: '', value: '' };
     return new Proxy(t, {
@@ -193,22 +201,21 @@ function objectPanel() {
   sb.window = sb; sb.globalThis = sb; sb.addEventListener = noop; sb.innerWidth = 1200; sb.innerHeight = 800;
   sb.document = { getElementById: () => null, createElement: () => stubEl(), body: stubEl(), head: stubEl(),
     addEventListener: noop, readyState: 'complete', querySelector: () => null, querySelectorAll: () => [] };
-  sb.IntMapModules = {}; sb.IntMapSafe = { html: String };
+  sb.IntMapSafe = { html: String };
   sb.IntMapLang = { pick: () => (...a) => a[0], t: () => 'x' };
   sb.IntMapGeoEngine = { hasRenderer: () => true, layers: { sourceData: () => null, has: () => false, hasSource: () => false },
     camera: { getZoom: () => 5 },
     events: { on: (t, f) => { if (t === 'click') clicks.push(f); }, off: (t, f) => { const i = clicks.indexOf(f); if (t === 'click' && i >= 0) clicks.splice(i, 1); }, once: noop } };
   sb.everyTick = () => noop; sb.NominatimGate = {};
-  vm.createContext(sb);
-  vm.runInContext(read('js/map-tools.js').replace(/^import[^\n]*\n/gm, ''), sb, { filename: 'map-tools.js' });
-  sb.IntMapModules.objectList({ lang: 'en', userPins: [], isMobile: () => false, makeDraggable: noop, removePin: noop, refreshTool: noop });
+  const M = await importModule('js/map-tools.js', { globals: { window: sb, document: sb.document }, mocks: mapToolsEdges(sb) });
+  M.objectList({ lang: 'en', userPins: [], isMobile: () => false, makeDraggable: noop, removePin: noop, refreshTool: noop });
   return { O: sb.IntMapObjects, clicks };
 }
 
-test('#R248 ③ the Objects panel closes on a map click, with a listener whose life is the panel\'s', () => {
+test('#R248 ③ the Objects panel closes on a map click, with a listener whose life is the panel\'s', async () => {
   /* EVALUATED: the panel is opened, re-opened, clicked away and closed, and the renderer's own click
      listener list is read after each step. */
-  const { O, clicks } = objectPanel();
+  const { O, clicks } = await objectPanel();
   O.open();
   assert.equal(clicks.length, 1, 'the map-click closer exists, and is bound when the panel opens');
   O.open();

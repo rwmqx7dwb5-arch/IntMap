@@ -56,9 +56,11 @@ import { loadData } from './data-door.js';   /* (data-one-door) the shipped data
 /* (safe-output-single-module) the ONE output encoder — js/safe-html.js publishes globalThis.IntMapSafe
    (window.IntMapSafe in the browser) when imported, in Node as in the app, so this file keeps no copy. */
 import './safe-html.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.atlasQuery = function (HOST) {
+
+export function atlasQuery(HOST) {
   let D = {};
   /* ⚠⚠⚠ (#R747) ONE REPLY, ONE LANGUAGE. This module read the UI language while js/atlas-console.js
      reads the language the READER WROTE IN (`_mirrorLang()`), so a single Atlas answer to a Japanese
@@ -68,8 +70,8 @@ window.IntMapModules.atlasQuery = function (HOST) {
      is untranslated — the two halves were simply answering different questions about who is reading.
      The composer now passes the language of the reply it is composing (`bind({lang})`), and a call
      that passes none keeps the UI language, which is right for the Data-query panel's own use. */
-  const L = window.IntMapLang.pick(() => { try { if (D && typeof D.lang === 'function') { const l = D.lang(); if (l) return l; } } catch (_) { } return HOST.lang; });
-  const LA = window.IntMapLang.pickArgs();
+  const L = IntMapLang.pick(() => { try { if (D && typeof D.lang === 'function') { const l = D.lang(); if (l) return l; } } catch (_) { } return HOST.lang; });
+  const LA = IntMapLang.pickArgs();
   /* the distance-to-the-sea measurement, owned here rather than published as a global: this file is
      its only reader, and both are behind js/lazy-modules.js's `atlasQuery` door */
   const COAST = makeCoastline();
@@ -1540,8 +1542,8 @@ window.IntMapModules.atlasQuery = function (HOST) {
       }
       try {
         const bb = bboxOf(res.rows, 0);
-        if (bb && window.IntMapGeoEngine && window.IntMapGeoEngine.hasRenderer()) {
-          window.IntMapGeoEngine.camera.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: 60, maxZoom: 6, duration: 900 });
+        if (bb && IntMapGeoEngine && IntMapGeoEngine.hasRenderer()) {
+          IntMapGeoEngine.camera.fitBounds([[bb[0], bb[1]], [bb[2], bb[3]]], { padding: 60, maxZoom: 6, duration: 900 });
         }
       } catch (_) { }
     }
@@ -1575,4 +1577,4 @@ window.IntMapModules.atlasQuery = function (HOST) {
     tables: () => { syncUserTables(); return Object.keys(TABLES); }, columnFor, syncUserTables };
   window.IntMapQuery = API;
   return API;
-};
+}

@@ -149,7 +149,8 @@ test('R492 ③b: the four terms the request named are all in the glossary, with 
   }
   /* the two halves are read out of the source so the gate below counts what SHIPS, not what is written here */
   const src = CODE('js/atlas-annotate.js');
-  const calls = (src.match(/window\.IntMapLang\.t\(/g) || []).length;
+  /* (module-graph) the registry is the imported binding `IntMapLang`, no longer `window.IntMapLang` */
+  const calls = (src.match(/\bIntMapLang\.t\(/g) || []).length;
   assert.equal(calls, A.ATLAS_GLOSSARY.length * 2, 'every term has exactly one n() and one d() translation call');
 });
 

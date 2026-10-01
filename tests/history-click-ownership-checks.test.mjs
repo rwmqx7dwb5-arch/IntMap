@@ -11,20 +11,17 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { parse } from 'acorn';
 import { simple } from 'acorn-walk';
-import { makeCameraMath } from '../js/camera-math.js';
-import { makeCommandCensus } from '../js/geo-command-log.js';
-import { makeClickOwnership } from '../js/click-ownership.js';
 import { asClassicScript } from './app-source.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 const rd = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 const ui = rd('js/map-ui.js'), borders = rd('js/time-borders.js');
 const ast = source => parse(source, { ecmaVersion: 'latest', sourceType: 'module' });
-function assignment(source, name) {
-  let found;
-  simple(ast(source), { AssignmentExpression(n) {
-    if (n.left.type === 'MemberExpression' && n.left.property.name === name) found = source.slice(n.right.start, n.right.end);
-  } });
-  assert.ok(found, name + ' is a real module'); return found;
+/* (module-graph) a factory is `export function name(HOST){…}` now; the declaration is lifted as a function
+   expression and run in the harness's context, where its imported names are the context's own */
+function exported(source, name) {
+  const owner = ast(source).body.find(n => n.type === 'ExportNamedDeclaration' && n.declaration?.type === 'FunctionDeclaration' && n.declaration.id.name === name);
+  assert.ok(owner, name + ' is a real module'); return source.slice(owner.declaration.start, owner.declaration.end);
 }
 function declaration(source, name) {
   let found;
@@ -41,11 +38,11 @@ function fillBinding() {
   } });
   assert.ok(found, 'the historical fill has a real reader'); return found;
 }
-const labelModule = assignment(ui, 'labelPopup');
+const labelModule = exported(ui, 'labelPopup');
 const labelDeclarations = ['PLACE_LBL', 'ALL_LBL'].map(n => declaration(ui, n)).join('\n');
 const blankWiring = ['_tapPad', '_ERA_LAYERS', '_ownedElsewhere', '_named'].map(n => declaration(borders, n)).join('\n') + '\n' + fillBinding();
 
-function harness({ mount = true, backgroundFirst = false } = {}) {
+async function harness({ mount = true, backgroundFirst = false } = {}) {
   const layerHandlers = [], mapHandlers = [], layers = new Map(), popups = [], blank = [], timers = [], copied = [], outlines = [];
   const copyButton = {};
   const state = { hits: [], padded: false, queries: [], moves: [] };
@@ -68,11 +65,11 @@ function harness({ mount = true, backgroundFirst = false } = {}) {
     popup: () => ({ html: '', removed: false, setLngLat() { return this; }, setHTML(h) { this.html = h; return this; }, remove() { this.removed = true; }, on() { return this; } }),
     attach: p => { popups.push(p); return p; },
   };
-  const win = { makeCameraMath, makeCommandCensus, makeClickOwnership, console, URL, setTimeout: fn => { timers.push(fn); return timers.length; }, clearTimeout: noop,
+  const win = { console, URL, setTimeout: fn => { timers.push(fn); return timers.length; }, clearTimeout: noop,
     document: { baseURI: 'https://example.invalid/', getElementById: () => null, querySelector: s => s === '.plc-copy' ? copyButton : null },
     navigator: { clipboard: { writeText: text => copied.push(text) } },
     IntMapOutline: { show: name => outlines.push(name), clear: noop },
-    IntMapModules: {}, IntMapLang: { t: (_lang, en) => en },
+    IntMapLang: { t: (_lang, en) => en },
     /* the page's encoder (index.html defines it before any module runs) — the popup heading goes through it */
     IntMapSafe: { html: (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => '&#' + c.charCodeAt(0) + ';') },
     HOST: { lang: 'en', canDraw: () => true, isMobile: () => false },
@@ -80,8 +77,11 @@ function harness({ mount = true, backgroundFirst = false } = {}) {
   };
   win.window = win;
   const ctx = vm.createContext(win);
-  vm.runInContext(rd('js/geo-engine.js').replace(/^import .*;\r?\n/gm, ''), ctx);
-  const GE = win.IntMapGeoEngine; GE.use(adapter);
+  /* (module-graph) the shipped engine registry is IMPORTED, a fresh instance per harness, with its own real
+     imports (camera math, command census, click ownership); the lifted readers below reach it by the name
+     they import it under */
+  const { IntMapGeoEngine: GE } = await importModule('js/geo-engine.js');
+  win.IntMapGeoEngine = GE; GE.use(adapter);
   win.GE = () => GE;
   vm.runInContext(labelDeclarations + '\nthis.labelIds = ALL_LBL;', ctx);
   const labelIds = Array.from(win.labelIds);
@@ -127,8 +127,8 @@ function harness({ mount = true, backgroundFirst = false } = {}) {
 }
 const feature = (id, name, type = 'symbol') => ({ layer: { id, type }, properties: { name, en: name }, geometry: { type: 'Point', coordinates: [139, 35] } });
 
-test('R709: click inventory includes fallback readers, ownership excludes them, and handlers retain their own lifetime', () => {
-  const { GE } = harness({ mount: false });
+test('R709: click inventory includes fallback readers, ownership excludes them, and handlers retain their own lifetime', async () => {
+  const { GE } = await harness({ mount: false });
   const fallback = () => {}, exclusive = () => {};
   GE.events.onLayer('click', 'surface', fallback, { ownership: 'fallback' });
   assert.ok(GE.events.clickLayers().includes('surface'));
@@ -170,7 +170,7 @@ test('R709: click inventory includes fallback readers, ownership excludes them, 
 
 for (const backgroundFirst of [false, true]) for (const padded of [false, true]) {
   test(`R709: every place reader answers over named and unnamed historical territory (background first ${backgroundFirst}, padded ${padded})`, async () => {
-    const H = harness({ backgroundFirst });
+    const H = await harness({ backgroundFirst });
     assert.ok(H.labelIds.length >= 11, 'the population is the actual label inventory, not just cities');
     for (const name of ['Historical territory', '']) for (const id of H.labelIds) {
       await H.click([feature(id, 'Readable place'), feature('imtb-fill', name, 'fill')], { padded });
@@ -182,7 +182,7 @@ for (const backgroundFirst of [false, true]) for (const padded of [false, true])
 }
 
 test('R709: empty land retains its meaning and actual object owners still take precedence', async () => {
-  const H = harness();
+  const H = await harness();
   await H.click([feature('imtb-fill', 'Named territory', 'fill')]);
   assert.equal(H.live().length, 0); assert.equal(H.blank.length, 0);
   await H.click([feature('imtb-fill', '', 'fill')]);
@@ -197,7 +197,7 @@ test('R709: empty land retains its meaning and actual object owners still take p
 });
 
 test('R709: a city popup repeats the historical name that was drawn, preserving its place identity for actions', async () => {
-  const H = harness();
+  const H = await harness();
   const data = await H.loadCities(new Date('1860-06-15T12:00:00Z'));
   const tokyo = data.cities.find(c => c.id === 'tokyo');
   assert.ok(tokyo, 'Tokyo is an actual shipped record');
@@ -233,7 +233,7 @@ test('R709: a city popup repeats the historical name that was drawn, preserving 
 
 for (const reverseHandlers of [false, true]) for (const padded of [false, true]) {
   test(`R709: a dynamically registered source place shares label arbitration (reverse handlers ${reverseHandlers}, padded ${padded})`, async () => {
-    const H = harness();
+    const H = await harness();
     const id = 'test-source-owned-place';
     H.layers.set(id, { id, type: 'symbol' });
     const calls = [];
@@ -286,8 +286,8 @@ for (const reverseHandlers of [false, true]) for (const padded of [false, true])
   });
 }
 
-test('R709: the real label stack restores newly registered source names above opaque data without reorder loops', () => {
-  const H = harness();
+test('R709: the real label stack restores newly registered source names above opaque data without reorder loops', async () => {
+  const H = await harness();
   H.loadOcclusion();
   const id = 'a-source-registered-after-owner-boot';
   H.layers.set(id, { id, type: 'symbol' });

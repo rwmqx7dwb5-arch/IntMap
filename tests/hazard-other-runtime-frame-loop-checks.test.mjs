@@ -87,7 +87,8 @@ test('R234 runtime: the eight private per-camera rAFs are gone from the follower
      MOUNTS that surface. Same ordering claim, at the seam it moved to. */
   assert.ok(ab.indexOf('makeRuntime(IM_HOST);') < ab.indexOf('IM_MOBIN.crosshair();'),
     '…and it is built before the first registration');
-  assert.ok(ab.indexOf('makeRuntime(IM_HOST);') < ab.indexOf('window.IntMapModules.mobileMapInput(IM_HOST)'),
+  /* (module-graph) the factory is an imported binding now — `mobileMapInput(IM_HOST)`, not a registry lookup */
+  assert.ok(ab.indexOf('makeRuntime(IM_HOST);') < ab.indexOf('=mobileMapInput(IM_HOST)'),
     '…and before the factory that will register it is even built');
   assert.match(read('js/mobile-map-input.js'), /RT\(\)\.onCamera\('shell\.crosshair\.read',[\s\S]{0,200}\{phase:'read'\}\)/,
     'the crosshair samples the camera in the READ phase — a WRITE-phase read is a forced layout (#R498)');

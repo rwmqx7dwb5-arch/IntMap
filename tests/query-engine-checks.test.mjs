@@ -75,6 +75,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { importModule } from './helpers/import-module.mjs';
 
 /* install `window` / `document` for ONE test and put back whatever was there when it ends */
 function useWindow(t, win, doc) {
@@ -102,12 +103,12 @@ const FEED = [
   Q('e', 'Scotia Sea', 6.2, '2026-08-18T11:00:00Z', 10),
 ];
 
+/* (module-graph) the engine is IMPORTED, a fresh evaluation per test, and its exported factory called;
+   the language registry is its own real import */
 async function engine(t) {
-  const pick = () => { const f = (...a) => a[0]; f.arr = (a) => (Array.isArray(a) ? a[0] : String(a)); return f; };
-  useWindow(t, { IntMapLang: { pick, pickArgs: () => ((...a) => a) }, IntMapModules: {} }, { baseURI: 'http://localhost/' });
-  const mod = await import('../js/atlas-query.js?' + Math.random());
-  void mod;
-  const API = globalThis.window.IntMapModules.atlasQuery({ lang: 'en', addPin: () => null });
+  useWindow(t, {}, { baseURI: 'http://localhost/' });
+  const { atlasQuery } = await importModule('js/atlas-query.js');
+  const API = atlasQuery({ lang: 'en', addPin: () => null });
   API.bind({ countryStats: () => ({}), countryName: (s) => s.nameEn,
     /* the only network this test allows: the quake feed, answered from FEED whatever is asked */
     fetchJSON: async () => ({ features: FEED }) });
@@ -224,12 +225,11 @@ test('R740 ⑦ a join whose target table does not resolve refuses instead of dro
 
 /* ══════════════════════════ #R747 · the store answers by its own key; a year is a year ══════════════════════════ */
 /* #R747's set-up, per test: `window` IS the global object (as it was in its own file), and the
-   language registry and the engine are loaded for real into it. */
+   engine is loaded for real into it — (module-graph) imported fresh, over its real language registry */
+let atlasQuery747 = null;
 async function load747(t) {
   useWindow(t, globalThis, { baseURI: 'https://example.invalid/' });
-  const nonce = '?r747=' + Math.random().toString(36).slice(2);
-  await import('../js/lang-registry.js' + nonce);
-  await import('../js/atlas-query.js' + nonce);
+  ({ atlasQuery: atlasQuery747 } = await importModule('js/atlas-query.js'));
 }
 /* data/volcanoes_gvp.json is written short: `n` name, `c` country, `e` elevation, `y` the year of
    the last known eruption. Three real rows are enough — two in one country, one in another. */
@@ -247,7 +247,7 @@ const COUNTRY_STATS = {
 };
 
 function engine747() {
-  const Q = window.IntMapModules.atlasQuery({ lang: 'en', base: 'https://example.invalid/' });
+  const Q = atlasQuery747({ lang: 'en', base: 'https://example.invalid/' });
   Q.bind({ countryStats: () => COUNTRY_STATS, loadData: async () => GVP, ensureData: async () => {} });   /* (data-one-door) the engine's injection point for data/ reads */
   return Q;
 }
@@ -282,7 +282,7 @@ test('R747 (4c): the OTHER path still answers the same rows, so the two readers 
 
 test('R747 (4d): "nothing matched" and "this table cannot be asked that" are different answers', async (t) => {
   await load747(t);
-  const Q = window.IntMapModules.atlasQuery({ lang: 'en', base: 'https://example.invalid/' });
+  const Q = atlasQuery747({ lang: 'en', base: 'https://example.invalid/' });
   /* the same table with the country stripped from every row - a table that names no country at all */
   const NAMELESS = { features: GVP.features.map((f) => ({ geometry: f.geometry, properties: Object.assign({}, f.properties, { c: '' }) })) };
   Q.bind({ countryStats: () => COUNTRY_STATS, loadData: async () => NAMELESS, ensureData: async () => {} });

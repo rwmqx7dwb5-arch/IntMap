@@ -10,7 +10,8 @@
  *  onto the English one with Object.create, so a young translation shows its own language wherever
  *  it has one and English only where it does not. Nothing has to be kept in sync by hand.
  * ========================================================================== */
-window.IntMapLang.define('jp', { ui: {
+import { IntMapLang } from '../lang-registry.js';
+IntMapLang.define('jp', { ui: {
       /* ══ ⚠⚠⚠ (#R249) THE FIFTEENTH SURFACE — THE DOCUMENT'S OWN METADATA ═══════════════════════
          「全ての言語について、すべての面において対応が完璧かどうか点検し、未了点があれば修正して。」
          index.html's <title> and <meta name="description"> were literals in the markup, so the

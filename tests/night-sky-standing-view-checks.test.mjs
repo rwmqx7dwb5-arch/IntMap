@@ -10,7 +10,6 @@
  *  every catalogue) or a CLAIM the code makes about itself in prose.
  * ==========================================================================*/
 import test from 'node:test';
-import { asClassicScript } from './app-source.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -20,17 +19,17 @@ import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
+import { importModule } from './helpers/import-module.mjs';
 
 /* js/night-sky.js touches the DOM only inside ensureDOM(), so the whole camera can be exercised
    here with the same stub #R208 used — no browser, no canvas. */
-function nightSky() {
-  const win = { addEventListener() { }, devicePixelRatio: 1 };
+async function nightSky() {
+  const win = { addEventListener() { }, removeEventListener() { }, devicePixelRatio: 1 };
   /* ⚠ (#R221) THE LANGUAGE REGISTRY IS A DEPENDENCY OF EVERY MODULE NOW, exactly as the renderer
-     contract is: js/night-sky.js asks window.IntMapLang for its label helper instead of hand-rolling
-     a five-argument one. A sandbox that does not provide it is not the environment the file runs in,
-     and the module throws on the first line that reaches for it. */
-  new Function('window', asClassicScript(read('js/lang-registry.js')))(win);
-  new Function('window', 'document', asClassicScript(read('js/night-sky.js')))(win, { createElement: () => ({ style: {}, appendChild() { } }) });
+     contract is: js/night-sky.js asks IntMapLang for its label helper instead of hand-rolling a
+     five-argument one. (module-graph) It is an import now, so the module is IMPORTED and its own
+     imports — the real registry and the real clock — come with it; this file only supplies the browser. */
+  await importModule('js/night-sky.js', { globals: { window: win, document: { createElement: () => ({ style: {}, appendChild() { } }) } } });
   return win.IntMapNightSky;
 }
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -41,8 +40,8 @@ const round12 = (v) => (Math.abs(v) < 1e-12 ? 0 : +v.toFixed(12));
 
 /* ═══ ① THE FRAME ═════════════════════════════════════════════════════════════════════════════ */
 
-test('R214 ①a: a horizon coordinate becomes a unit vector in the observer own ENU frame', () => {
-  const NS = nightSky();
+test('R214 ①a: a horizon coordinate becomes a unit vector in the observer own ENU frame', async () => {
+  const NS = await nightSky();
   /* the four facts that DEFINE east-north-up, so a sign slip anywhere shows up here */
   assert.deepEqual(NS.dirOf(0, 0).map(round12), [0, 1, 0], 'due north is +y');
   assert.deepEqual(NS.dirOf(0, 90).map(round12), [1, 0, 0], 'due east is +x');
@@ -53,8 +52,8 @@ test('R214 ①a: a horizon coordinate becomes a unit vector in the observer own 
   }
 });
 
-test('R214 ①b: the camera is orthonormal and CANNOT ROLL, at every attitude', () => {
-  const NS = nightSky();
+test('R214 ①b: the camera is orthonormal and CANNOT ROLL, at every attitude', async () => {
+  const NS = await nightSky();
   for (const alt of [-85, -40, -1, 0, 1, 25, 70, 85]) for (const az of [0, 47, 123, 200, 314]) {
     NS.look({ az, alt });
     const B = NS.viewBasis();
@@ -70,8 +69,8 @@ test('R214 ①b: the camera is orthonormal and CANNOT ROLL, at every attitude', 
 
 /* ═══ ② THE PROJECTION ════════════════════════════════════════════════════════════════════════ */
 
-test('R214 ②a: it is gnomonic — great circles come out STRAIGHT', () => {
-  const NS = nightSky();
+test('R214 ②a: it is gnomonic — great circles come out STRAIGHT', async () => {
+  const NS = await nightSky();
   /* This is the defining property of the gnomonic projection and it is independent of how the code
      is written: every great circle through the sky must land on a straight line on the screen. Take
      an arbitrary great circle (a plane through the origin), walk it, and check the projected points
@@ -94,8 +93,8 @@ test('R214 ②a: it is gnomonic — great circles come out STRAIGHT', () => {
   assert.ok(worst < 1e-6, `a great circle bent by ${worst} px — that projection is not gnomonic`);
 });
 
-test('R214 ②b: the field of view is the field of view', () => {
-  const NS = nightSky();
+test('R214 ②b: the field of view is the field of view', async () => {
+  const NS = await nightSky();
   /* Half the vertical field of view, straight up from the axis, must land exactly on the top edge —
      that is what "the focal length comes from the vertical fov" has to mean, and it is the number
      the drag scale is derived from. */
@@ -109,8 +108,8 @@ test('R214 ②b: the field of view is the field of view', () => {
   }
 });
 
-test('R214 ②c: the horizon is level, and the zenith is straight up the middle', () => {
-  const NS = nightSky();
+test('R214 ②c: the horizon is level, and the zenith is straight up the middle', async () => {
+  const NS = await nightSky();
   for (const alt of [-40, -5, 0, 22, 60, 84]) {
     NS.look({ az: 137, alt, fov: 60 });
     const B = NS.viewBasis(), F = 500;
@@ -128,8 +127,8 @@ test('R214 ②c: the horizon is level, and the zenith is straight up the middle'
   }
 });
 
-test('R214 ②d: nothing behind the eye is drawn in front of it', () => {
-  const NS = nightSky();
+test('R214 ②d: nothing behind the eye is drawn in front of it', async () => {
+  const NS = await nightSky();
   /* The gnomonic projection diverges at 90° and CHANGES SIGN past it — the failure mode is a star
      behind your head appearing in the middle of the frame. Everything at or beyond the cut must be
      refused, and everything comfortably inside it must be accepted. */
@@ -143,8 +142,8 @@ test('R214 ②d: nothing behind the eye is drawn in front of it', () => {
 
 /* ═══ ③ THE CAMERA'S LIMITS AND THE PUBLIC SURFACE ════════════════════════════════════════════ */
 
-test('R214 ③: the camera clamps where the geometry needs it to, and the mode is switchable', () => {
-  const NS = nightSky();
+test('R214 ③: the camera clamps where the geometry needs it to, and the mode is switchable', async () => {
+  const NS = await nightSky();
   /* ⚠ (#R258) 「Night skyはStanding hereをデフォルトに。」 — the FIRST view is the one a person
      standing at the point actually has. The switch itself, which is what this test is for, is
      unchanged in both directions. */

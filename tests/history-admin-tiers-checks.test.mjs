@@ -28,6 +28,8 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { createExpression } from '@maplibre/maplibre-gl-style-spec';
+import { asClassicScript } from './app-source.mjs';
+import { importModule, langRegistry } from './helpers/import-module.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -35,6 +37,7 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const lfBytes = (p) => Buffer.byteLength(
   fs.readFileSync(path.join(ROOT, p), 'latin1').split('\r\n').join('\n'), 'latin1');
 const TA = read('js/time-admin1.js');
+const REAL_SET_TIMEOUT = setTimeout;
 const settle = async (n = 16) => { for (let i = 0; i < n; i++) await Promise.resolve(); };
 
 /* a browser-script file evaluated against a fresh `window` */
@@ -317,7 +320,7 @@ function tierHarness(opts = {}) {
     return { v: 1, src: 'synthetic', since: 1, tolerance: 0.02, levels: [3, 4], rings, feats };
   };
   const win = {}; win.window = win; win.addEventListener = () => {};
-  win.IntMapGeoEngine = GE; win.IntMapModules = {};
+  win.IntMapGeoEngine = GE;
   win.IntMapTime = { on: (f) => { win.__clock = f; }, min: 1 };
   win.IntMapLang = { pickArgs: () => ((...a) => a), pick: () => ({ arr: (a) => a[0] }), htmlTag: () => 'en' };
   win.IntMapMemBudget = { deviceIsPhone: () => true };
@@ -337,8 +340,13 @@ function tierHarness(opts = {}) {
   vm.runInContext('globalThis.__NOW = Date.now(); const _RD = Date; globalThis.Date = class extends _RD { static now() { return globalThis.__NOW; } };', ctx);
   vm.runInContext(read('js/hist-scale.js'), ctx, { filename: 'hist-scale.js' });
   vm.runInContext(read('js/hist-bundles.js'), ctx, { filename: 'hist-bundles.js' });   /* (hist-bundles-off-main) the door the tiers open their records through */
-  vm.runInContext(TA, ctx, { filename: 'time-admin1.js' });
-  const mod = win.IntMapModules.timeAdmin1({ canDraw: () => true, lang: 'en', isMobile: () => true });
+  /* (module-graph) STILL A vm, ON PURPOSE: the grace period is crossed by moving THIS context's
+     `Date.now` (above), and an imported module would share the process's `Date`. So js/time-admin1.js
+     runs as a classic script (tests/app-source.mjs asClassicScript): its four imports bind to the
+     stubs on `window` above, and its exported factory is a top-level function of the context. */
+  vm.runInContext(asClassicScript(TA), ctx, { filename: 'time-admin1.js' });
+  assert.equal(typeof ctx.timeAdmin1, 'function', 'js/time-admin1.js must export its factory timeAdmin1');
+  const mod = ctx.timeAdmin1({ canDraw: () => true, lang: 'en', isMobile: () => true });
   return {
     mod, bus, state, layers,
     travel: (y) => mod._go(vm.runInContext(`new Date(Date.UTC(${y}, 5, 15))`, ctx)),
@@ -532,8 +540,8 @@ test('#R705 rendered features retain raw date precision instead of publishing no
 
 test('#R705 province popup shows only original source dates, including qualification and unknown endpoints', () => {
   const ui = read('js/map-ui.js');
-  const c = vm.createContext({ HOST: { lang: 'jp' }, window: {} });
-  vm.runInContext(read('js/lang-registry.js'), c);
+  /* (module-graph) the fragment reads the bare `IntMapLang` js/map-ui.js imports — handed the REAL registry */
+  const c = vm.createContext({ HOST: { lang: 'jp' }, window: {}, IntMapLang: langRegistry() });
   vm.runInContext(fn('_eraSourceDates', ui), c);
   c.props = { dates: JSON.stringify({ start: { raw: null }, end: { raw: '1871-08~', precision: 'month', qualified: true } }) };
   assert.equal(vm.runInContext('_eraSourceDates(props)', c), '出典の日付: ? – 1871-08~');
@@ -546,8 +554,7 @@ test('#R705 province label click carries source-date supplement; exact hit deleg
   const c = vm.createContext({ HOST: { lang: 'en' }, window: { IntMapTimeAdmin1: { geomAt: () => ({ type: 'Polygon' }), geomFullAt: () => null } },
     _ownedByOther: () => false, _deferLabel: (e, cb) => cb(), labelAnchor: () => [0, 0], _bothNames: (p, n) => n,
     readPlace: () => false, // This fixture is the ordinary province reader; source-owned place arbitration is exercised by R709.
-    showPopup: (...args) => { shown = args[3]; } });
-  vm.runInContext(read('js/lang-registry.js'), c);
+    showPopup: (...args) => { shown = args[3]; }, IntMapLang: langRegistry() });   /* (module-graph) the real registry, as the import binding */
   vm.runInContext(['_eraSourceDates', '_eraGeom', 'onLabel'].map(n => fn(n, ui)).join('\n'), c);
   c.e = { features: [{ layer: { id: 'imta-lbl' }, properties: { name: 'Province', _ix: 0, dates: { start: { raw: '1800' }, end: { raw: null } } } }] };
   vm.runInContext('onLabel(false)(e)', c);
@@ -587,7 +594,7 @@ function synthOrder(n, counts) {
   return { v: 1, src: 'synthetic', since: 1, tolerance: 0.02, levels: [3, 4], rings, feats };
 }
 /* the factory again, at z8 with real Date and no tile-state knobs (#R707's own scaffold) */
-function orderHarness(n, counted) {
+async function orderHarness(n, counted) {
   const layers = new Map(), sources = new Map(), handlers = new Map(), counts = {};
   const L = {
     hasSource: (id) => sources.has(id),
@@ -602,28 +609,36 @@ function orderHarness(n, counted) {
   const GE = { hasRenderer: () => true, ready: () => true, layers: L, events: bus,
                camera: { getZoom: () => 8 }, coords: { queryRenderedFeatures: () => [] } };
   const win = {}; win.window = win; win.addEventListener = () => {};
-  win.IntMapGeoEngine = GE; win.IntMapModules = {};
-  win.IntMapTime = { on: () => {}, min: 1 };
-  win.IntMapLang = { pickArgs: () => ((...a) => a), pick: () => ({ arr: (a) => a[0] }), htmlTag: () => 'en' };
   win.IntMapMemBudget = { deviceIsPhone: () => true };
-  win.IntMapBorderCoast = { marks: () => null, lineGeom: () => null, load: () => Promise.resolve(null),
-                            onArrive: () => {}, wholeLines: () => ({ type: 'FeatureCollection', features: [] }) };
   for (const t of tiers()) { counts[t.key] = []; win[t.global] = synthOrder(n, counted ? counts[t.key] : null); }
-  const ctx = {
-    window: win, console, navigator: {},
-    document: { getElementById: () => ({ checked: true, closest: () => null }),
-                createElement: () => ({ style: {} }), head: { appendChild: () => {} } },
-    setTimeout: (f, ms) => { const h = setTimeout(f, ms); if (h.unref) h.unref(); return h; },
-    clearTimeout, Promise, Math, JSON, Number, Array, Date, Set, Map, isFinite
-  };
+  /* hist-scale.js and hist-bundles.js are classic scripts that publish on `window`; they run against `win` */
+  const ctx = { window: win, console, Promise, Math, JSON, Number, Array, Date, Set, Map, isFinite, URL };
   vm.createContext(ctx);
   vm.runInContext(read('js/hist-scale.js'), ctx, { filename: 'hist-scale.js' });
   vm.runInContext(read('js/hist-bundles.js'), ctx, { filename: 'hist-bundles.js' });   /* (hist-bundles-off-main) the door the tiers open their records through */
-  vm.runInContext(TA, ctx, { filename: 'time-admin1.js' });
-  const mod = win.IntMapModules.timeAdmin1({ canDraw: () => true, lang: 'en', isMobile: () => true });
+  /* (module-graph) js/time-admin1.js is IMPORTED: the renderer, clock, language registry and coast marks
+     it imports are handed in at its own import edges; the page it runs in is installed on the global. */
+  const { timeAdmin1 } = await importModule('js/time-admin1.js', {
+    globals: {
+      window: win, navigator: {},
+      document: { getElementById: () => ({ checked: true, closest: () => null }),
+                  createElement: () => ({ style: {} }), head: { appendChild: () => {} } },
+      /* the module's long timers (a 4 s retry, a 3.5 s idle prefetch) must not hold the runner open */
+      setTimeout: (fn, ms) => { const h = REAL_SET_TIMEOUT(fn, ms); if (h && h.unref) h.unref(); return h; },
+      fetch: () => Promise.reject(new Error('offline')),
+    },
+    mocks: {
+      'js/geo-engine.js': { IntMapGeoEngine: GE },
+      'js/chronos.js': { IntMapTime: { on: () => {}, min: 1 } },
+      'js/lang-registry.js': { IntMapLang: { pickArgs: () => ((...a) => a), pick: () => ({ arr: (a) => a[0] }), htmlTag: () => 'en' } },
+      'js/border-coast.js': { IntMapBorderCoast: { marks: () => null, lineGeom: () => null, load: () => Promise.resolve(null),
+                                                   onArrive: () => {}, wholeLines: () => ({ type: 'FeatureCollection', features: [] }) } },
+    },
+  });
+  const mod = timeAdmin1({ canDraw: () => true, lang: 'en', isMobile: () => true });
   return {
     mod, layers, counts,
-    travel: (y) => mod._go(vm.runInContext(`new Date(Date.UTC(${y}, 5, 15))`, ctx)),
+    travel: (y) => mod._go(new Date(Date.UTC(y, 5, 15))),
     layer: (id) => (layers.has(id) ? layers.get(id).spec : null),
     data: (id) => (sources.has(id) ? sources.get(id).data : null)
   };
@@ -651,7 +666,7 @@ function areaOf(geom) {
   return a;
 }
 async function drawn() {
-  const H = orderHarness(9);
+  const H = await orderHarness(9);
   H.travel(1900);
   await settle();
   const out = [];
@@ -721,7 +736,7 @@ test('#R707 ⑤ 順位は絞り込みではない——有効な区分は1件も
 /* ⚠ 面積は区分の性質であって、その瞬間の性質ではない。別のエポックへ移って `fcAt` が作り直されたとき、
    両方の日付で有効な区分の座標は1度も読み直されないこと（環そのものが読まれた回数を数える proxy）。 */
 test('#R707 ⑥ 面積は区分ごとに1度だけ測られる（別のエポックへ移っても測り直さない）', async () => {
-  const T = tiers(), H = orderHarness(9, true);
+  const T = tiers(), H = await orderHarness(9, true);
   H.travel(1900);
   await settle();
   const src = T[0].src, key = T[0].key;

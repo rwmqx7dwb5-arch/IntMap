@@ -19,14 +19,13 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import vm from 'node:vm';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { asClassicScript } from './app-source.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { installDevice } from './helpers/ui-device.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -89,33 +88,41 @@ test('① a layer the pass itself creates counts as seen; a pass that throws rec
 });
 
 /* ── ② the real label pass, under the witness, through the real facade ───────────────────── */
-function labels() {
+/* (module-graph) js/place-labels.js is IMPORTED: the fake window/document are its browser, the renderer facade
+   and the (empty) sea-label table are its import edges handed in as mocks, the language registry is the real one. It used to run as
+   classic-script text in a vm context with a no-op setTimeout; the one timer it arms (a 250 ms label harvest)
+   now fires after the synchronous assertions below have taken their writes, into a renderer no case reads again. */
+async function labels() {
   const R = renderer();
   const noop = () => { };
-  const ctx = vm.createContext({});
-  ctx.window = ctx; ctx.console = console; ctx.setTimeout = noop;
+  const ctx = { console };
+  ctx.window = ctx;
   ctx.document = { baseURI: 'https://example.invalid/' };
   ctx.matchMedia = () => ({ matches: false });
   installDevice(ctx);   /* (ui-layer-owner) js/ asks window.IntMapDevice now — the real owner, wired to this fake */
   ctx.imLabelLang = 'ui+local';
-  ctx.IntMapGeoEngine = Object.assign(R.GE, { camera: { getZoom: () => 6 }, coords: { querySourceFeatures: () => [] }, events: { on: noop } });
+  const GE = Object.assign(R.GE, { camera: { getZoom: () => 6 }, coords: { querySourceFeatures: () => [] }, events: { on: noop } });
   ctx.IntMapMapTypography = { placeFont: () => ['literal', ['Inter']], readerFont: () => ['literal', ['Inter']], cjkFamily: () => '', glyphRewrite: noop };
-  ctx.IntMapLang = { pick: () => ({ arr: (a) => a[0] }) };
   /* the text sizes are js/label-scale.js's; a size is not what this file is about */
   ctx.IntMapLabelScale = { place: () => 12, sub: () => 11, subCase: () => 11 };
-  ctx.SEA_LABELS = [];
-  vm.runInContext(asClassicScript(rd('js/place-labels.js')), ctx);
+  const M = await importModule('js/place-labels.js', {
+    globals: { window: ctx, document: ctx.document },
+    mocks: {
+      'js/geo-engine.js': { IntMapGeoEngine: GE },
+      'js/tables.js': { SEA_LABELS: [] },
+    },
+  });
   const HOST = { lang: 'en', mapType: 'std', namesOn: true, geoLabelsOn: true, poiOn: true, userTheme: 'dark',
     mapLabelsViaVector: () => true, canDraw: () => true, _stabIdx: { water: new Map() } };
-  const api = ctx.window.IntMapModules.placeLabels(HOST);
+  const api = M.placeLabels(HOST);
   /* the heartbeat exactly as js/app-body.js writes it */
   const beat = R.GE.layers.witness();
   const heartbeat = () => { if (!beat.unchanged()) beat.run(() => { api.ensurePlaceLabels(); api.applyLabelLang(); }); };
   return { ...R, api, heartbeat };
 }
 
-test('② twenty ofm heartbeats over unchanged label layers write nothing; the first one applies them all', () => {
-  const { heartbeat, take, store, api } = labels();
+test('② twenty ofm heartbeats over unchanged label layers write nothing; the first one applies them all', async () => {
+  const { heartbeat, take, store, api } = await labels();
   heartbeat();
   const first = take();
   assert.ok(store.has('ofm-city'), 'the first heartbeat did not create the label layers');
@@ -127,8 +134,8 @@ test('② twenty ofm heartbeats over unchanged label layers write nothing; the f
   assert.ok(take().includes('ofm-city text-field'), 'a direct call was skipped');
 });
 
-test('② a label layer that is recreated, added later or removed is a new answer — the next heartbeat applies the pass', () => {
-  const { heartbeat, take, store } = labels();
+test('② a label layer that is recreated, added later or removed is a new answer — the next heartbeat applies the pass', async () => {
+  const { heartbeat, take, store } = await labels();
   heartbeat(); take();
   store.set('ofm-city', { id: 'ofm-city' });                       /* recreated (#R72's self-heal, a style swap) */
   heartbeat();
@@ -211,10 +218,11 @@ test('③ the reader opening a legend pins it open; shutting it gives the pin up
     classList: { contains: (c) => cls.has(c), toggle: (c) => { if (cls.has(c)) { cls.delete(c); return false; } cls.add(c); return true; } },
     appendChild: (c) => kids.push(c), querySelector: (s) => kids.find((c) => c.classList.contains(s.slice(1))) || null };
   const document = { createElement: () => { const e = { className: '', style: {} }; e.classList = { contains: (c) => e.className === c }; return e; } };
-  const window = { matchMedia: () => ({ matches: true }), IntMapLang: { t: (_l, en) => en } };
+  const window = { matchMedia: () => ({ matches: true }) };
   installDevice(window);   /* (ui-layer-owner) js/ asks window.IntMapDevice now — the real owner, wired to this fake */
-  const make = new Function('document', 'window', 'HOST', body + '\nreturn ensureLegendMinimize;');
-  make(document, window, { lang: 'en' })(el);
+  /* (module-graph) the lifted functions read the bare imported `IntMapLang` now; it is handed in by name */
+  const make = new Function('document', 'window', 'HOST', 'IntMapLang', body + '\nreturn ensureLegendMinimize;');
+  make(document, window, { lang: 'en' }, { t: (_l, en) => en })(el);
   const btn = el.querySelector('.legend-min');
   btn.onclick({ stopPropagation() {} });
   assert.ok(!cls.has('legend-collapsed') && el.dataset.legPinOpen === '1', 'opened by the reader and not pinned — the tiler may fold it straight back');

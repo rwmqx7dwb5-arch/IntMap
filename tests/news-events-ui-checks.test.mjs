@@ -19,6 +19,7 @@ import { DEFAULTS, pairVerdict, buildIdf } from '../supabase/functions/_shared/n
 import { makeNewsClaims } from '../js/news-claims.js';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import { installGlobals } from './helpers/import-module.mjs';
 import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* ════════ #R386 — from tests/r386-checks.test.mjs (8 of its 19 tests) ════════ */
@@ -75,7 +76,7 @@ test('#R386 ⑥ NEWS_EVENT_MODE と USE_SERVER_NEWS は別のスイッチで、�
 
 /* ══ ⑦ 能力表の lazy 列が実在する module を名指している（#R347 の 5 度目を防ぐ） ══ */
 /* 綴りのまま: 主張が配線・不在・一意性（どこが何を呼ぶか／無いこと／1 か所だけ）で、評価して取り出せる値が無い */
-test('#R386 ⑦ news.category が名指す lazy module は loader に実在する', () => {
+test('#R386 ⑦ news.category が名指す lazy module は loader に実在する', async () => {
   const row = (capabilityEntry('news.category') || {}).row;   /* (atlas-capability-modules) the row is declared in its entry */
   assert.ok(row, 'the capability row must exist');
   /* 11 番目の引用符付きの語が lazy 列。(#R801) 最後の語ではない——任意の 12 番目 `ingests` が続く。 */
@@ -85,7 +86,16 @@ test('#R386 ⑦ news.category が名指す lazy module は loader に実在す�
   const loader = rd('js/lazy-modules.js');
   assert.equal(LAZY_REGISTRY["newsEvents"].publishes, 'IntMapNewsEvents', 'the registry must name what it publishes');   /* (#R798) */
   assert.ok(loader.includes("import('./news-events.js')"), 'the registry entry must have a LITERAL import');
-  assert.ok(loader.includes('window.IntMapModules.newsEvents(IM_HOST)'), 'mount must run the factory');
+  /* (module-graph) the factory registry is gone: mount is handed the namespace its own import() resolved to.
+     So it is RUN — with a stand-in namespace, then the real one load() resolves — instead of read for a spelling. */
+  const entry = LAZY_REGISTRY.newsEvents;
+  const win = {};
+  installGlobals({ window: win });
+  const HOST = { lang: 'en' }, api = {};
+  let got = null;
+  entry.mount(HOST, { newsEvents: (h) => { got = h; return api; } });
+  assert.ok(got === HOST && win.IntMapNewsEvents === api, 'mount must run the factory with the host and publish what it returns');
+  assert.equal(typeof (await entry.load()).newsEvents, 'function', 'the module the registry loads must export the factory mount runs');
   /* research.events も同じ module に依存するようになった（サーバーの Event を読むため）。 */
   const ev = (capabilityEntry('research.events') || {}).row;
   assert.ok(ev && ev.includes("'newsEvents'"), 'research.events now needs the events module at execution');

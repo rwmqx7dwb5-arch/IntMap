@@ -16,6 +16,7 @@ import { geometryOf } from './histborders/precision.mjs';
 import { markRing, water, closedRing, INLAND_KM } from './build-border-coast.mjs';
 import { requireData, placed, readManifest } from './data-assets.mjs';
 import { OPENHISTORICALMAP } from './lib/upstream-cadence.mjs';
+import { requireModule } from './lib/import-module.mjs';
 
 /* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
    npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
@@ -35,7 +36,8 @@ export const GOVERNANCE = {
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data/border-detail');
 const read = file => { const w = {}; new Function('window', readFileSync(file, 'utf8'))(w); return Object.values(w)[0]; };
-const BC = read(join(ROOT, 'js/border-coast.js'));
+/* (module-graph) js/border-coast.js is an ES module: imported, not re-evaluated from its text */
+const BC = requireModule('js/border-coast.js').IntMapBorderCoast;
 const TOL = 0.0005, DEC = 5;
 const fp = polys => BC.geometryKey(polys);
 const SETS = [ ['hist-borders', '__HISTB', 'intmap-histb-cache'], ['hist-admin1', '__HISTADM1', 'ohm-adm34-cache'], ['hist-admin2', '__HISTADM2', 'ohm-adm56-cache'] ];

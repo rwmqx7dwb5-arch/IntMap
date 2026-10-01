@@ -24,9 +24,10 @@
  *  The body below is the #R158–#R193 block moved BYTE FOR BYTE (259 lines, proven line by line at
  *  the time of the move), at its original two-space depth so the diff carries no reindentation.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.satProto=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract */
+import { IntMapGeoEngine } from './geo-engine.js';
+
+export function satProto(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract */
   /* (#R179/#R195) the shell's decision, handed over rather than re-derived — see the ⚠ above */
   const _hiDPITiles=HOST.hiDPITiles;
   /* (#R158) SATELLITE TILE PROTOCOL — "限界までズームしても灰色タイルを出さない／同じズームでも高画質". Esri World_Imagery's
@@ -384,4 +385,4 @@ window.IntMapModules.satProto=function(HOST){
         return b?{ok:true, w:b.width, h:b.height, bitmap:(typeof ImageBitmap!=='undefined'&&b instanceof ImageBitmap), via:'main'}:{ok:false}; }
         catch(e){ return {ok:false, err:String(e&&e.message||e)}; } } };
   } }catch(_){}
-};
+}

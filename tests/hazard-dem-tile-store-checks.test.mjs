@@ -16,6 +16,7 @@ import vm from 'node:vm';
 import * as acorn from 'acorn';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { readLF } from '../scripts/eol.mjs';
+import { asClassicScript } from './app-source.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -67,14 +68,20 @@ function demRig({ browseCap = 140, leaseCap = 608, holdLong = false, elev = null
   };
   g.window = g;
   vm.createContext(g);
-  vm.runInContext(read('js/map-readout.js'), g, { filename: 'map-readout.js' });
-  assert.ok(g.window.IntMapModules && g.window.IntMapModules.mapReadout,
-    'js/map-readout.js no longer registers its factory on window.IntMapModules');
+  /* (module-graph) STILL A vm, ON PURPOSE: the counts below (Float32Array, Math.tan, Map#get) are taken
+     from the module's OWN intrinsics, and an imported module shares this process's — only a context of
+     its own can count what the module alone allocates and calls. So the file is run as a classic script
+     (tests/app-source.mjs asClassicScript: import lines dropped, `export` stripped); the factory it
+     exports is then a top-level function of the context. */
+  const src = read('js/map-readout.js');
+  assert.match(src, /^export function mapReadout\(HOST\)\{/m, 'js/map-readout.js no longer exports its factory mapReadout');
+  vm.runInContext(asClassicScript(src), g, { filename: 'map-readout.js' });
+  assert.equal(typeof g.mapReadout, 'function', 'the exported factory was not evaluated');
   const HOST = {
     _DEM_CACHE_MAX: browseCap, _DEM_LEASE_MAX: leaseCap,
     isMobile: () => true, elevText: (v) => String(v), lang: 'en',
   };
-  const api = g.window.IntMapModules.mapReadout(HOST);
+  const api = g.mapReadout(HOST);
   /** fire every Image created so far; returns how many were fired */
   const flush = () => { const batch = imgs.splice(0); batch.forEach(i => { if (i.onload) i.onload(); }); return batch.length; };
   /** fire until nothing new is requested (the parent-tile chase and the pump both add work) */

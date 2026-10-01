@@ -40,7 +40,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
    the file suffix), which is why they are `zh-hant`/`zh-hans` while the app's UI table is `zh`. */
 const JOBS = [
   { src: 'js/locales/ui.zh.js', out: 'js/locales/ui.zh-hans.js', what: 'UI STRINGS',
-    from: "window.IntMapLang.define('zh'", to: "window.IntMapLang.define('zh-hans'" },
+    from: "IntMapLang.define('zh'", to: "IntMapLang.define('zh-hans'" },   /* (module-graph) the table imports the registry */
   { src: 'js/locales/pages.zh-hant.js', out: 'js/locales/pages.zh-hans.js', what: 'READING PAGES',
     from: "window.IntMapPageI18N.define('zh-hant'", to: "window.IntMapPageI18N.define('zh-hans'" },
 ];
@@ -314,7 +314,10 @@ export function build(job) {
   const head = HEAD.split('UI STRINGS').join(job.what)
     .split('js/locales/ui.zh.js').join(job.src)
     .split('ui.zh.js').join(job.src.split('/').pop());
-  return normaliseEol(head, dominantEol(body)) + body;
+  /* (module-graph) the source's `import` lines are part of what it hands over — the table imports the
+     registry it defines into — so they travel with the body instead of being dropped with the header */
+  const imports = (src.slice(0, at).match(/^import [^\n]*\n/gm) || []).join('');
+  return normaliseEol(head + imports, dominantEol(body)) + body;
 }
 
 /* ⚠ (#R548) THE REWRITE IS NO LONGER A TOP-LEVEL SIDE EFFECT — tests/shell-i18n-audits-checks.test.mjs (#R548) drives

@@ -59,11 +59,14 @@
  * ==========================================================================*/
 import { WarGeom } from './war-geom.js';
 import { everyTick, stopTick } from './runtime.js';
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.warLayer = function (HOST) {
-  const L = window.IntMapLang.pick(() => HOST.lang);
-  const GE = () => window.IntMapGeoEngine;
+
+export function warLayer(HOST) {
+  const L = IntMapLang.pick(() => HOST.lang);
+  const GE = () => IntMapGeoEngine;
 
   let data = null, cs = null, loading = null, inWars = [];
   const insts = new Map();          /* war id → the instance, built on that row's first ON */
@@ -75,7 +78,7 @@ window.IntMapModules.warLayer = function (HOST) {
   const esc = (x) => HOST.escapeHtml(String(x == null ? '' : x));
   /* the Wikipedia subdomain for the reader's language — the registry's BCP-47 tag with the script
      subtag stripped, because zh-hans.wikipedia.org does not exist (js/atlas-sources.js, #R318). */
-  const wikiHost = () => { try { return String(window.IntMapLang.htmlTag(HOST.lang) || 'en').split('-')[0].toLowerCase() || 'en'; } catch (_) { return 'en'; } };
+  const wikiHost = () => { try { return String(IntMapLang.htmlTag(HOST.lang) || 'en').split('-')[0].toLowerCase() || 'en'; } catch (_) { return 'en'; } };
   const DAY = 86400000;
   const dayOf = (d) => Math.round(Date.parse(d + 'T00:00:00Z') / DAY);
   const addDays = (d, n) => new Date((dayOf(d) + n) * DAY).toISOString().slice(0, 10);
@@ -87,7 +90,7 @@ window.IntMapModules.warLayer = function (HOST) {
   let _nfKey = null, _nf = null;
   function num(n) {
     try {
-      const tag = window.IntMapLang.htmlTag(HOST.lang) || 'en';
+      const tag = IntMapLang.htmlTag(HOST.lang) || 'en';
       if (_nfKey !== tag) { _nf = new Intl.NumberFormat(tag, { notation: 'compact', maximumFractionDigits: 1 }); _nfKey = tag; }
       return _nf.format(n);
     } catch (_) { return String(n); }
@@ -604,7 +607,7 @@ window.IntMapModules.warLayer = function (HOST) {
           if (a === 'first') setDate(sp[0]);
           else if (a === 'prev') setDate(addDays(curDate || sp[0], -1));
           else if (a === 'next') setDate(addDays(curDate || sp[0], 1));
-          else if (a === 'clock') { let d = null; try { d = window.IntMapTime.isLive() ? iso(new Date()) : window.IntMapTime.iso(); } catch (_) { } if (d) setDate(d); }
+          else if (a === 'clock') { let d = null; try { d = IntMapTime.isLive() ? iso(new Date()) : IntMapTime.iso(); } catch (_) { } if (d) setDate(d); }
           renderPanel();
         };
       });
@@ -755,9 +758,9 @@ window.IntMapModules.warLayer = function (HOST) {
          once, on the way on, and never again — the slider and the play button never touch it. */
       const sp = spanOf(W);
       let clock = null;
-      try { clock = window.IntMapTime.isLive() ? iso(new Date()) : window.IntMapTime.iso(); } catch (_) { }
+      try { clock = IntMapTime.isLive() ? iso(new Date()) : IntMapTime.iso(); } catch (_) { }
       if (!clock || clock < sp[0] || clock > sp[1]) {
-        try { window.IntMapTime.set(new Date(sp[0] + 'T12:00:00Z'), { source: 'ui' }); } catch (_) { }
+        try { IntMapTime.set(new Date(sp[0] + 'T12:00:00Z'), { source: 'ui' }); } catch (_) { }
         clock = sp[0];
       }
       shownKey = null;
@@ -780,7 +783,7 @@ window.IntMapModules.warLayer = function (HOST) {
        playing, for a date that says nothing about it. A layer whose era the clock has left simply
        holds what it was showing, and its legend goes on naming its own day. */
     try {
-      window.IntMapTime.on((e) => {
+      IntMapTime.on((e) => {
         if (!on) return;
         const W = war(); if (!W) return;
         const sp = spanOf(W);
@@ -841,4 +844,4 @@ window.IntMapModules.warLayer = function (HOST) {
     _build: (id, d) => inst(id)._build(d),
   };
   return window.__imWarFronts;
-};
+}

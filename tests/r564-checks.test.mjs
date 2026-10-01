@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { requireModule } from './helpers/import-module.mjs';
 import { buildWater } from '../scripts/bordercoast/water.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -190,9 +191,11 @@ test('⑥ every layer the province row paints is in the layer audit’s list', (
 test('⑦ _eraGeom answers for the era labels and for nothing else', () => {
   const src = liftFunction(MU, '_eraSourceDates') + '\n' + liftFunction(MU, '_eraGeom');
   const asked = [];
-  const sandbox = { HOST: { lang: 'en' }, window: { IntMapTimeAdmin1: { geomAt: (p) => { asked.push(p); return { type: 'Polygon', coordinates: [] }; } } } };
+  /* (module-graph) js/map-ui.js imports IntMapLang and the lifted functions read the bare binding, so the
+     real registry module is bound under that name in the sandbox (it used to be evaluated onto its window) */
+  const sandbox = { HOST: { lang: 'en' }, IntMapLang: requireModule('js/lang-registry.js').IntMapLang,
+    window: { IntMapTimeAdmin1: { geomAt: (p) => { asked.push(p); return { type: 'Polygon', coordinates: [] }; } } } };
   vm.createContext(sandbox);
-  vm.runInContext(rd('js/lang-registry.js'), sandbox);
   vm.runInContext(src + '\nvar EG=_eraGeom;', sandbox);
   const f = (id, props) => ({ layer: { id }, properties: props });
   assert.equal(sandbox.EG(f('ofm-admin1', { name: 'x' })), null, 'the present-day label must keep asking IntMapOutline by name');

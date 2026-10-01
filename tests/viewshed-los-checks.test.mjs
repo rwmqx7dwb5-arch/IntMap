@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
-import { lazyFiles } from './app-source.mjs';
+import { lazyFiles, factoryCalls } from './app-source.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
 
@@ -23,8 +23,10 @@ const read = R;
 const entry = R('src/main.js');
 const LAZY = lazyFiles(root);
 const reached = (rel) => entry.includes(`import '../${rel}';`) || LAZY.includes(rel);
-const body = [R('js/app-body.js'), R('js/geo-engine.js'), R('js/camera-math.js')].join(String.fromCharCode(10));
-const instantiated = () => body + String.fromCharCode(10) + R('js/lazy-modules.js');
+/* (module-graph) a factory is an export now, CALLED by name with IM_HOST from js/app-body.js or from a
+   lazy entry's mount — factoryCalls() reads those calls off the AST, file by file */
+const FACTORIES = factoryCalls(root);
+const instantiated = (file, name) => (FACTORIES[file] || []).includes(name);
 const los = R('js/viewshed.js');
 
 /* ── ② Line of sight ────────────────────────────────────────────────────────────────────────────
@@ -35,8 +37,11 @@ test('R176 ②: the viewshed answers per raster cell, not per bearing', () => {
   /* ⚠ READ, NOT RUN: the sweep reads DEM tiles through the renderer and paints a raster; its per-sample rule and helpers are asked of the text. */
   assert.ok(existsSync(join(ROOT, 'js/viewshed.js')), 'the engine has its own file');
   assert.ok(reached('js/viewshed.js'), 'loaded by the Vite entry, or fetched on demand by js/lazy-modules.js');
-  assert.match(instantiated(), /window\.IntMapModules\.los\((IM_HOST)\);/, 'and instantiated under the same factory name');
-  assert.doesNotMatch(R('js/map-tools.js'), /window\.IntMapModules\.los=function/, 'and no longer defined in map-tools.js');
+  assert.ok(instantiated('js/viewshed.js', 'los'), 'and instantiated under the same factory name');
+  assert.match(R('js/lazy-modules.js'), /m\.los\((IM_HOST)\);/, '…with the host');
+  /* both spellings of a definition: the old registry assignment and the new export */
+  assert.doesNotMatch(codeOnly(R('js/map-tools.js')), /(?:window\.IntMapModules\.los\s*=\s*function|export\s+function\s+los\s*\()/, 'and no longer defined in map-tools.js');
+  assert.ok(!(FACTORIES['js/map-tools.js'] || []).includes('los'), '…nor instantiated from it');
   /* a ray is never truncated: every sample is classified, so a valley beyond a ridge can come back */
   assert.match(los, /if\(angTgt>=hznAng-1e-12\)\{ c=VIS; \}/, 'each sample is tested against the running horizon');
   assert.match(los, /if\(angTerr>hznAng\)\{ hznAng=angTerr; hznIdx=s; hznH=hTerr; hznD=d; \}/, 'which is updated by TERRAIN, not by the target');
@@ -54,7 +59,7 @@ test('R176 ②: the viewshed answers per raster cell, not per bearing', () => {
   assert.ok(L5.length > 25, 'the panel is written through the 5-language helper');
   /* (#R221) the hand-rolled five-argument helper became the shared, variadic one — which is what
      makes a sixth language possible at all (js/lang-registry.js). The claim is unchanged. */
-  assert.match(los, /window\.IntMapLang\.pick\(\(\)=>HOST\.lang\)/, 'EN/JP/DE/RU/ES');
+  assert.match(los, /IntMapLang\.pick\(\(\)=>HOST\.lang\)/, 'EN/JP/DE/RU/ES');   /* (module-graph) the registry is an import */
 });
 
 /* -- js/viewshed.js -- the point-to-point link ------------------------------------------------- */

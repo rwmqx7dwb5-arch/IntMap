@@ -24,7 +24,7 @@ if (!target || !jsonPath) { console.error('usage: i18n-append-inline.mjs <ui.xx.
 
 const src = readFileSync(target, 'utf8');
 const add = JSON.parse(readFileSync(jsonPath, 'utf8'));
-const ast = parse(src, { ecmaVersion: 2022 });
+const ast = parse(src, { ecmaVersion: 2022, sourceType: 'module' });
 
 let node = null;
 walk.simple(ast, {

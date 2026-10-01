@@ -289,7 +289,10 @@ test('#R216 ⑥ tides get a date field and playback, and no clock of their own',
   /* ⚠ (#R297) the instant is SNAPPED to the marine model's own hour on the way in — 「データのある
      時間のみを選べる、離散的な感じに」. What #R216 pinned is unchanged and is what is asserted here:
      the tide layer writes the ONE master clock and keeps no clock of its own. */
-  assert.match(s, /window\.IntMapTime\.set\(new Date\(snapHour\(ms\)\),\{allowFuture:true,source:'tides'\}\)/,
+  /* (module-graph) the clock is an import now — the bare `IntMapTime` IS the master clock only while it is bound
+     to js/chronos.js's export, so the binding is asserted alongside the call */
+  assert.match(s, /^import \{ IntMapTime \} from '\.\/chronos\.js';/m, 'the tide panel does not import the master clock');
+  assert.match(s, /IntMapTime\.set\(new Date\(snapHour\(ms\)\),\{allowFuture:true,source:'tides'\}\)/,
     'playback does not go through the master clock');
   assert.match(s, /const snapHour=\(ms\)=>Math\.round\(ms\/TIDE_STEP_MS\)\*TIDE_STEP_MS;/,
     'and nothing reaches that clock on an hour the model does not publish');
@@ -373,7 +376,7 @@ test('R297 ⑧ the tide clock steps over the marine model’s own hours', () => 
   const s = read('js/world-packs.js');
   assert.match(s, /const TIDE_STEP_MS=3600e3;/);
   assert.match(s, /const snapHour=\(ms\)=>Math\.round\(ms\/TIDE_STEP_MS\)\*TIDE_STEP_MS;/);
-  assert.match(s, /function setWhen\(ms\)\{ try\{ window\.IntMapTime\.set\(new Date\(snapHour\(ms\)\)/,
+  assert.match(s, /function setWhen\(ms\)\{ try\{ IntMapTime\.set\(new Date\(snapHour\(ms\)\)/,
     'nothing reaches the clock unsnapped');
   assert.match(s, /type="datetime-local" step="3600"/, 'and the field cannot offer a minute');
   assert.ok(!/data-d="-?6\.2"/.test(s), 'the 6 h 12 m step, which lands on :12, is gone');

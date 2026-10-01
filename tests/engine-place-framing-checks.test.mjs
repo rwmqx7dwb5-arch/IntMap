@@ -12,17 +12,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
-const framing = (() => {
-  const ctx = { window: {} };
-  vm.createContext(ctx);
-  vm.runInContext(read('js/place-framing.js'), ctx);
-  return ctx.window.IntMapPlaceFraming;
+/* (module-graph) the file imports the language registry, so it is EVALUATED BY IMPORT against an empty
+   window (its one import is the real js/lang-registry.js) and read off the window it publishes on. */
+const framing = await (async () => {
+  const win = {};
+  await importModule('js/place-framing.js', { globals: { window: win } });
+  return win.IntMapPlaceFraming;
 })();
 
 test('R185 framing: a compact country keeps its own footprint', () => {

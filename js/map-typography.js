@@ -38,6 +38,8 @@
  *
  *  ③ THE FLAGS, which are text too — see `installFlagFont` at the bottom.
  * ==========================================================================*/
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 window.IntMapMapTypography = (function () {
   /* the ranges scripts/build-glyphs.mjs emits. ⚠ tests/hazard-seismic-panel-checks.test.mjs (#R242) asserts this list is identical to
      that script's RANGES — one list, two readers ([[intmap-recurring-lessons]] G). */
@@ -58,7 +60,7 @@ window.IntMapMapTypography = (function () {
   function _lang() {
     try {
       var raw = String(document.documentElement.lang || 'en').toLowerCase();
-      var R = window.IntMapLang;
+      var R = IntMapLang;
       if (!R) return raw;
       if (R.has && R.has(raw)) return R.normalise(raw);
       var rows = R.LANGS || [];
@@ -156,7 +158,7 @@ window.IntMapMapTypography = (function () {
   }
   function syncCjkFamily() {
     try {
-      var GE = window.IntMapGeoEngine;
+      var GE = IntMapGeoEngine;
       if (!GE || !GE.scene || !GE.scene.setCjkFontFamily) return false;
       return !!GE.scene.setCjkFontFamily(cjkFamily());
     } catch (_) { return false; }
@@ -179,7 +181,7 @@ window.IntMapMapTypography = (function () {
       if (_glyphRefresh) return;
       _glyphRefresh = requestAnimationFrame(() => {
         _glyphRefresh = 0;
-        try { const GE = window.IntMapGeoEngine; if (GE && GE.scene && GE.scene.refreshCjkGlyphs) GE.scene.refreshCjkGlyphs(); } catch (_) { }
+        try { const GE = IntMapGeoEngine; if (GE && GE.scene && GE.scene.refreshCjkGlyphs) GE.scene.refreshCjkGlyphs(); } catch (_) { }
       });
     } catch (_) { }
   }
@@ -260,7 +262,7 @@ window.IntMapMapTypography = (function () {
   function bandBox(txt) {
     const fallback = { w: Math.min(txt.length, 16) * 6.4 + 28, h: 19 };
     try {
-      const z = window.IntMapGeoEngine.camera.getZoom();
+      const z = IntMapGeoEngine.camera.getZoom();
       const px = Math.max(6, Math.round((window.IntMapLabelScale.subAt(z, 0.92) || 10) * 10) / 10);
       if (px !== _px) { _cache.clear(); _px = px; }
       const got = _cache.get(txt); if (got) return got;
@@ -319,7 +321,7 @@ window.IntMapMapTypography = (function () {
      state. (#R161) everything below talks to IntMapGeoEngine rather than to the raw renderer. */
   function declutterNewsBands(feats) {
     try {
-      const GE = window.IntMapGeoEngine; if (!GE) return;
+      const GE = IntMapGeoEngine; if (!GE) return;
       if (!GE.layers.hasSource('news-points') || !GE.layers.has('news-labels')) return;
       feats = feats || []; if (!feats.length) return;
       const sz = GE.render.size(), W = sz.width, H = sz.height;

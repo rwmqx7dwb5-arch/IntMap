@@ -12,12 +12,13 @@
  *  Everything else arrives through CTX under its ORIGINAL name, which is what lets the body stay
  *  word-for-word what it was. A real ES module: no window.IntMapModules entry, no src/main.js order.
  * ==========================================================================*/
+import { IntMapLang } from './lang-registry.js';
 export function makeKeyboardShortcuts(HOST, CTX) {
   const GE=CTX.GE, applyTheme=CTX.applyTheme, imToast=CTX.imToast, isMobile=CTX.isMobile;
   /* ===== (#R62) Keyboard shortcuts ("その他のキーボードショートカットも大幅に追加") — desktop, no modifier,
      ignored while typing. `?` opens a 5-language cheat-sheet. Esc(sidebar) + Ctrl/⌘+K(Atlas) live elsewhere. ===== */
   (function(){
-    const KL=window.IntMapLang.pick(()=>HOST.lang);
+    const KL=IntMapLang.pick(()=>HOST.lang);
     function helpModal(){
       let m=document.getElementById('kbd-help-modal');
       if(m){ m.style.display=(m.style.display==='none'||!m.style.display)?'flex':'none'; return; }
@@ -65,7 +66,7 @@ export function makeKeyboardShortcuts(HOST, CTX) {
     const singleOn=()=>{ try{ return localStorage.getItem(SINGLE)!=='off'; }catch(_){ return true; } };
     { const sel=document.getElementById('setting-kbd-single'), lbl=document.getElementById('lbl-kbd-single');
       /* the row's words, in the reader's language — written here, next to the rule they describe (en + jp, CONSTITUTION §7) */
-      const words=()=>{ try{ const L2=window.IntMapLang.pick(()=>HOST.lang);
+      const words=()=>{ try{ const L2=IntMapLang.pick(()=>HOST.lang);
         if(lbl) lbl.textContent=L2('Single-key shortcuts','1 文字のショートカットキー');
         if(sel&&sel.options.length>1){ sel.options[0].textContent=L2('On (default)','オン（既定）'); sel.options[1].textContent=L2('Off — only shortcuts that use Ctrl/⌘ or Alt','オフ — Ctrl/⌘ や Alt との組み合わせのみ'); } }catch(_){} };
       words(); window.addEventListener('intmap-lang',words);

@@ -7,9 +7,12 @@
  *  The only edit to the moved text is that free references to closure variables became
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.placeLabels=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+import { SEA_LABELS } from './tables.js';
+
+export function placeLabels(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
  const LS=window.IntMapLabelScale;      /* (#R198) every text size on the map comes from js/label-scale.js */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
@@ -381,7 +384,7 @@ window.IntMapModules.placeLabels=function(HOST){
   }
   let _stabSeaNames=null, _stabDirty={water:false};
   function _seaNameSet(){ if(_stabSeaNames) return _stabSeaNames; _stabSeaNames=new Set();
-    try{ (window.SEA_LABELS||[]).forEach(r=>{ for(let i=3;i<=7;i++){ if(r[i]) _stabSeaNames.add(String(r[i]).toLowerCase()); } }); }catch(_){}
+    try{ (SEA_LABELS||[]).forEach(r=>{ for(let i=3;i<=7;i++){ if(r[i]) _stabSeaNames.add(String(r[i]).toLowerCase()); } }); }catch(_){}
     return _stabSeaNames; }
   function _harvestOne(kind,sourceLayer,filter,cellDeg){
     const idx=HOST._stabIdx[kind]; let feats=[];
@@ -589,8 +592,8 @@ window.IntMapModules.placeLabels=function(HOST){
      endonym column). */
   let _seaL=null;   /* ⚠ built on first use: tests/engine-app-shell-split-checks.test.mjs (#R169) #4 requires this file to only DECLARE while it runs */
   function _seaFC(mode){
-    if(!_seaL){ _seaL=window.IntMapLang.pick(()=>HOST.lang); window.IntMapOsmNameKeys=OSM_NAME_KEYS; }
-    const S=window.SEA_LABELS||[]; const raw=(mode==='en'||mode==='local');
+    if(!_seaL){ _seaL=IntMapLang.pick(()=>HOST.lang); window.IntMapOsmNameKeys=OSM_NAME_KEYS; }
+    const S=SEA_LABELS||[]; const raw=(mode==='en'||mode==='local');
     return {type:'FeatureCollection',features:S.map((r,i)=>({type:'Feature',id:i,geometry:{type:'Point',coordinates:[r[0],r[1]]},
       properties:{z:r[2],big:r[2]<=1?1:0,en:r[3],jp:r[4],de:r[5],ru:r[6],es:r[7],lbl:raw?r[3]:_seaL.arr([r[3],r[4],r[5],r[6],r[7]])}}))};
   }
@@ -758,4 +761,4 @@ window.IntMapModules.placeLabels=function(HOST){
     try{ window._applyAdmin1&&window._applyAdmin1(); }catch(_){}
   }
   return { applyLabelLang, ensurePlaceLabels };
-};
+}

@@ -9,9 +9,11 @@
  *  references to closure variables became HOST.<member> reads (Architecture.md §3.1). The
  *  extraction was done by script and reversed byte-for-byte against the original text.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.community=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function community(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -19,7 +21,7 @@ window.IntMapModules.community=function(HOST){
   function openImageLightbox(src){
     const old=document.getElementById('img-lightbox'); if(old) old.remove();
     const lb=document.createElement('div'); lb.id='img-lightbox';
-    const im=document.createElement('img'); im.src=src; im.alt=window.IntMapLang.t(HOST.lang,'Enlarged image','拡大画像'); lb.appendChild(im);
+    const im=document.createElement('img'); im.src=src; im.alt=IntMapLang.t(HOST.lang,'Enlarged image','拡大画像'); lb.appendChild(im);
     /* (a11y-shared-dialog) a registered dialog: Escape and a press anywhere on it close it (it is all
        «tap to dismiss», cursor:zoom-out), focus goes back to the thumbnail — js/dialog.js. The keydown
        listener this used to add was never removed when the lightbox was closed by a click. */
@@ -32,12 +34,12 @@ window.IntMapModules.community=function(HOST){
     const jp=HOST.lang==='jp';
     const sortBtn=(k,lbl)=>`<button data-sort="${k}" class="${HOST.communitySort===k?'active':''}">${lbl}</button>`;
     const catChip=(id,lbl,color)=>`<button class="comm-cat-chip ${HOST.commCatFilter===id?'active':''}" data-catf="${id}" style="--cc:${color}">${lbl}</button>`;
-    const loginHint = HOST.user ? '' : `<div class="empty-msg" style="padding:10px 16px;">${window.IntMapLang.t(HOST.lang,'Log in to post, comment and vote.','投稿・コメント・投票するにはログインしてください。','Zum Posten, Kommentieren und Abstimmen anmelden.','Войдите, чтобы публиковать, комментировать и голосовать.','Inicie sesión para publicar, comentar y votar.')}</div>`;
+    const loginHint = HOST.user ? '' : `<div class="empty-msg" style="padding:10px 16px;">${IntMapLang.t(HOST.lang,'Log in to post, comment and vote.','投稿・コメント・投票するにはログインしてください。','Zum Posten, Kommentieren und Abstimmen anmelden.','Войдите, чтобы публиковать, комментировать и голосовать.','Inicie sesión para publicar, comentar y votar.')}</div>`;
     /* New post + Hot/New/Top are a STICKY BOTTOM bar, always visible while the feed scrolls (#27). */
     cont.innerHTML=`<div class="comm-scroll" id="comm-scroll">
         <div class="comm-filters">
           <div class="comm-search"><span>🔎</span><input type="text" id="comm-search" placeholder="${HOST.t('commSearchPh')}" value="${HOST.escapeHtml(HOST.commSearch)}"></div>
-          <button class="comm-inview ${HOST.commInView?'active':''}" id="comm-inview" title="${window.IntMapLang.t(HOST.lang,'Only posts in the current map view','地図の表示範囲内の投稿だけ','Nur Beiträge im aktuellen Kartenausschnitt','Только записи в текущей области карты','Sólo publicaciones en la vista actual del mapa')}">🧭 ${HOST.t('commInView')}</button>
+          <button class="comm-inview ${HOST.commInView?'active':''}" id="comm-inview" title="${IntMapLang.t(HOST.lang,'Only posts in the current map view','地図の表示範囲内の投稿だけ','Nur Beiträge im aktuellen Kartenausschnitt','Только записи в текущей области карты','Sólo publicaciones en la vista actual del mapa')}">🧭 ${HOST.t('commInView')}</button>
         </div>
         <div class="comm-cat-row">
           ${catChip('all',HOST.t('commCatAll'),'var(--primary-color)')}
@@ -57,7 +59,7 @@ window.IntMapModules.community=function(HOST){
          mobile collapse the sheet so the map is reachable, and guide with a toast. */
       HOST.pendingPostLoc=null; HOST.communityAddArmed=true;
       try{ if(window.IntMapDevice.compact() && window.__setDetent) window.__setDetent('peek',true); }catch(_){}   /* (#R107) 'mini' disabled → collapse to 'peek' (still frees the map) */
-      HOST.imToast(window.IntMapLang.t(HOST.lang,'📍 Tap the map to choose where to post','📍 地図をタップして投稿する場所を選んでください','📍 Tippe auf die Karte, um den Ort des Beitrags zu wählen','📍 Коснитесь карты, чтобы выбрать место публикации','📍 Toca el mapa para elegir dónde publicar'));
+      HOST.imToast(IntMapLang.t(HOST.lang,'📍 Tap the map to choose where to post','📍 地図をタップして投稿する場所を選んでください','📍 Tippe auf die Karte, um den Ort des Beitrags zu wählen','📍 Коснитесь карты, чтобы выбрать место публикации','📍 Toca el mapa para elegir dónde publicar'));
     };
     cont.querySelectorAll('.comm-sort button').forEach(b=>b.onclick=()=>{ HOST.communitySort=b.dataset.sort; renderCommunity(); });
     cont.querySelectorAll('.comm-cat-chip').forEach(b=>b.onclick=()=>{ HOST.commCatFilter=b.dataset.catf; renderCommunity(); });
@@ -72,7 +74,7 @@ window.IntMapModules.community=function(HOST){
   /* Per-card event wiring (run after every list render). */
   function wireCommList(cont){
     /* (#R171) camera through IntMapGeoEngine — this file no longer names the renderer. */
-    const _fly=(lng,lat)=>{ try{ const E=window.IntMapGeoEngine; if(E) E.camera.flyTo({center:[lng,lat],zoom:5,speed:1.2}); }catch(_){} };
+    const _fly=(lng,lat)=>{ try{ const E=IntMapGeoEngine; if(E) E.camera.flyTo({center:[lng,lat],zoom:5,speed:1.2}); }catch(_){} };
     cont.querySelectorAll('.comm-post-loc').forEach(el=>el.onclick=()=>_fly(+el.dataset.lng,+el.dataset.lat));
     cont.querySelectorAll('.locate-btn').forEach(b=>b.onclick=()=>{ const p=HOST.communityPosts.find(p=>p.id===b.dataset.id); if(p) _fly(p.lng,p.lat); });
     cont.querySelectorAll('.cmt-toggle').forEach(b=>b.onclick=()=>{ const id=b.dataset.id; HOST.commCollapsed[id]=!HOST.commCollapsed[id]; const w=cont.querySelector(`[data-cwrap="${id}"]`); if(w) w.classList.toggle('collapsed',!!HOST.commCollapsed[id]); });
@@ -83,13 +85,13 @@ window.IntMapModules.community=function(HOST){
     });
     cont.querySelectorAll('.edit-btn').forEach(b=>b.onclick=()=>{ const p=HOST.communityPosts.find(p=>p.id===b.dataset.id); if(p) HOST.openComposeModal(p); });
     cont.querySelectorAll('.del-btn').forEach(b=>b.onclick=async()=>{
-      if(!confirm(window.IntMapLang.t(HOST.lang,'Delete this post?','この投稿を削除しますか？','Diesen Beitrag löschen?','Удалить эту публикацию?','¿Eliminar esta publicación?'))) return;
+      if(!confirm(IntMapLang.t(HOST.lang,'Delete this post?','この投稿を削除しますか？','Diesen Beitrag löschen?','Удалить эту публикацию?','¿Eliminar esta publicación?'))) return;
       try{ await cmDelete(b.dataset.id); }catch(e){ HOST.imToast((e&&e.message)||'Delete failed'); return; } await HOST.loadCommunity();
     });
     cont.querySelectorAll('.report-btn').forEach(b=>b.onclick=async()=>{
       if(!HOST.requireLogin()) return;
-      if(!confirm(window.IntMapLang.t(HOST.lang,'Report this post as inappropriate?','この投稿を不適切として通報しますか？','Diesen Beitrag als unangemessen melden?','Пожаловаться на эту публикацию?','¿Denunciar esta publicación como inapropiada?'))) return;
-      try{ await cmReport(b.dataset.id); HOST.imToast(window.IntMapLang.t(HOST.lang,'Reported. Thank you.','通報しました。ご協力ありがとうございます。','Gemeldet. Danke.','Жалоба отправлена. Спасибо.','Denunciado. Gracias.')); }catch(e){ HOST.imToast((e&&e.message)||'Report failed'); }
+      if(!confirm(IntMapLang.t(HOST.lang,'Report this post as inappropriate?','この投稿を不適切として通報しますか？','Diesen Beitrag als unangemessen melden?','Пожаловаться на эту публикацию?','¿Denunciar esta publicación como inapropiada?'))) return;
+      try{ await cmReport(b.dataset.id); HOST.imToast(IntMapLang.t(HOST.lang,'Reported. Thank you.','通報しました。ご協力ありがとうございます。','Gemeldet. Danke.','Жалоба отправлена. Спасибо.','Denunciado. Gracias.')); }catch(e){ HOST.imToast((e&&e.message)||'Report failed'); }
     });
     /* Add comment / reply */
     const submitComment=async(b)=>{
@@ -105,7 +107,7 @@ window.IntMapModules.community=function(HOST){
       const pid=b.dataset.pid, cid=b.dataset.cid, c=_findComment(cid);
       HOST.replyingTo={pid,cid};
       const box=cont.querySelector(`.comm-comment-add input[data-pid="${pid}"]`);
-      if(box){ box.placeholder=(window.IntMapLang.t(HOST.lang,'Reply to ','返信: ','Antwort an ','Ответ: ','Responder a '))+(c?c.author:'')+' …'; box.focus(); }
+      if(box){ box.placeholder=(IntMapLang.t(HOST.lang,'Reply to ','返信: ','Antwort an ','Ответ: ','Responder a '))+(c?c.author:'')+' …'; box.focus(); }
     });
     /* Comment upvote */
     cont.querySelectorAll('.cvote-btn').forEach(b=>b.onclick=async()=>{
@@ -115,13 +117,13 @@ window.IntMapModules.community=function(HOST){
     /* Comment edit (inline prompt) */
     cont.querySelectorAll('.cedit-btn').forEach(b=>b.onclick=async()=>{
       const c=_findComment(b.dataset.cid); if(!c) return;
-      const v=prompt(window.IntMapLang.t(HOST.lang,'Edit comment','コメントを編集','Kommentar bearbeiten','Изменить комментарий','Editar comentario'),c.text); if(v==null) return;
+      const v=prompt(IntMapLang.t(HOST.lang,'Edit comment','コメントを編集','Kommentar bearbeiten','Изменить комментарий','Editar comentario'),c.text); if(v==null) return;
       const nv=v.trim(); if(!nv||nv===c.text) return;
       try{ await cmEditComment(c.id,nv); }catch(e){ HOST.imToast((e&&e.message)||'Edit failed'); return; } await HOST.loadCommunity();
     });
     /* Comment delete */
     cont.querySelectorAll('.cdel-btn').forEach(b=>b.onclick=async()=>{
-      if(!confirm(window.IntMapLang.t(HOST.lang,'Delete this comment?','このコメントを削除しますか？','Diesen Kommentar löschen?','Удалить этот комментарий?','¿Eliminar este comentario?'))) return;
+      if(!confirm(IntMapLang.t(HOST.lang,'Delete this comment?','このコメントを削除しますか？','Diesen Kommentar löschen?','Удалить этот комментарий?','¿Eliminar este comentario?'))) return;
       try{ await cmDeleteComment(b.dataset.cid); }catch(e){ HOST.imToast((e&&e.message)||'Delete failed'); return; } await HOST.loadCommunity();
     });
   }
@@ -158,4 +160,4 @@ window.IntMapModules.community=function(HOST){
 
   /* The names index.html still calls: it keeps a hoisted shim for each (#R168). */
   return { renderCommunity, wireCommList };
-};
+}

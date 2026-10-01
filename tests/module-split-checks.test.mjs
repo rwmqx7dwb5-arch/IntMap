@@ -20,7 +20,7 @@
 // test #5 keeps it that way.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { appShell } from './app-source.mjs';
+import { appShell, factoryCalls, bootGuardKnows } from './app-source.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
@@ -53,9 +53,15 @@ const ALL_FACS = Object.values(MOVED).flat();
 /* mobileUI is the one factory whose RETURN VALUE is bound: index.html still calls initMobileUI()
    by name at the end of boot, so the factory just hands the function back. */
 const RETURNED = { mobileUI: 'initMobileUI' };
+/* (module-graph) the registry is gone: app-body calls each factory by the name it imports it under, so a
+   call is found with a word boundary (`fooLocate(` is not `locate(`), in code only */
 const callOf = (f) => (RETURNED[f]
-  ? `const ${RETURNED[f]}=window.IntMapModules.${f}(IM_HOST);`
-  : `window.IntMapModules.${f}(IM_HOST);`);
+  ? `const ${RETURNED[f]}=${f}(IM_HOST);`
+  : `${f}(IM_HOST);`);
+const callRx = (f) => new RegExp(`(?<![\\w$.])${callOf(f).replace(/[.()$]/g, '\\$&')}`, 'g');
+const callCount = (f) => (code(html).match(callRx(f)) || []).length;
+const callAt = (f) => { const m = callRx(f).exec(code(html)); return m ? m.index : -1; };
+const importsByName = (f, file) => new RegExp(`^import \\{[^}]*\\b${f}\\b[^}]*\\} from '\\./${file.slice(3).replace('.', '\\.')}';$`, 'm').test(rd('js/app-body.js'));
 
 /* The order the blocks occupied in the closure = the order their calls must appear in index.html. */
 const ORDER = [
@@ -85,17 +91,18 @@ test('R167 #1 all eight files are loaded and every factory they define is instan
   assert.ok(html.includes("import '../js/tables.js';"), 'src/main.js imports js/tables.js (#R175)');
   for (const [file, facs] of Object.entries(MOVED)) {
     const src = rd(file);
-    assert.ok(html.includes(`import '../${file}';`), `src/main.js imports ${file} (#R175)`);
-    assert.ok(src.includes('window.IntMapModules=window.IntMapModules||{};'),
-      `${file} extends IntMapModules without clobbering what earlier files put there`);
+    /* (module-graph) «loaded» is «js/app-body.js imports each factory by name» (a missing file or export is
+       a link error); «extends the registry without clobbering» is «does not touch it at all» */
+    assert.doesNotMatch(code(src), /\bIntMapModules\b/, `${file} does not touch the retired window.IntMapModules registry`);
     assert.ok(!/<style>/.test(code(src)), `${file} must not carry CSS — the stylesheet stays in css/intmap.css`);
     for (const f of facs) {
-      assert.ok(src.includes(`window.IntMapModules.${f}=function(HOST){`),
-        `${file} declares the ${f} factory taking (HOST)`);
-      const calls = html.split(callOf(f)).length - 1;
+      assert.ok(importsByName(f, file), `js/app-body.js imports ${f} from ${file}, so the file is in the module graph`);
+      assert.ok(src.includes(`export function ${f}(HOST){`),
+        `${file} exports the ${f} factory taking (HOST)`);
+      const calls = callCount(f);
       assert.equal(calls, 1, `index.html must call ${f} exactly once (found ${calls})`);
     }
-    const defined = [...src.matchAll(/window\.IntMapModules\.(\w+)\s*=\s*function/g)].map((m) => m[1]);
+    const defined = factoryCalls(root)[file] || [];
     assert.deepEqual(defined.slice().sort(), facs.slice().sort(), `${file} defines exactly its declared factories`);
   }
 });
@@ -105,7 +112,7 @@ test('R167 #2 ORDER: every call sits where its block used to run', () => {
   // Same reason as #R166: several of these append to shared containers (the mobile FAB column, the
   // layer dropdown, map controls), so their relative order is user-visible.
   const seen = ALL_FACS
-    .map((f) => ({ f, at: html.indexOf(callOf(f)) }))
+    .map((f) => ({ f, at: callAt(f) }))
     .filter((x) => x.at >= 0)
     .sort((a, b) => a.at - b.at)
     .map((x) => x.f);
@@ -115,8 +122,10 @@ test('R167 #2 ORDER: every call sits where its block used to run', () => {
 test('R167 #3 THE TABLE CONTRACT: js/tables.js is pure data that index.html never mutates', () => {
   /* spelling kept — the tables are parsed with a real parser (acorn) because «never mutated» is a property of every write site in js/, not of a value */
   const src = rd('js/tables.js');
-  assert.ok(src.includes('window.IntMapTables=(function(){'), 'js/tables.js defines window.IntMapTables');
-  assert.ok(src.includes('window.SEA_LABELS=['),
+  /* (module-graph) the owner EXPORTS both now, and keeps publishing them on the global as the compat window */
+  assert.ok(src.includes('export const IntMapTables = (function(){'), 'js/tables.js defines window.IntMapTables');
+  assert.match(src, /^globalThis\.IntMapTables = IntMapTables;/m, '…and still publishes it on the global');
+  assert.ok(src.includes('export const SEA_LABELS = [') && /^globalThis\.SEA_LABELS = SEA_LABELS;/m.test(src),
     'SEA_LABELS keeps its own global — its consumers already read it off window');
 
   // (a) every table is exported, and the app rebinds every one of them. (#R168) the rebinding
@@ -134,8 +143,12 @@ test('R167 #3 THE TABLE CONTRACT: js/tables.js is pure data that index.html neve
   const ret = src.slice(retAt, src.indexOf('};', retAt) + 2);
   for (const t of TABLES) {
     assert.match(ret, new RegExp(`[{,]${t}[,}]`), `js/tables.js returns ${t}`);
-    const where = consumers.filter(([, s]) => new RegExp(`const \\{[^}]*\\b${t}\\b[^}]*\\}=window\\.IntMapTables;`).test(s)).map(([p]) => p);
+    /* (module-graph) rebound from the imported binding (`=IntMapTables;`) — either spelling counts, so a
+       file that went back to reading the global cannot hide from «exactly one» */
+    const where = consumers.filter(([, s]) => new RegExp(`const \\{[^}]*\\b${t}\\b[^}]*\\}=(?:window\\.)?IntMapTables;`).test(s)).map(([p]) => p);
     assert.equal(where.length, 1, `exactly one file must rebind ${t} from window.IntMapTables (found: ${where.join(', ') || 'none'})`);
+    assert.match(consumers.find(([p]) => p === where[0])[1], /^import \{[^}]*\bIntMapTables\b[^}]*\} from '\.\/tables\.js';$/m,
+      `${where[0]} imports IntMapTables from js/tables.js, the file that owns it`);
     for (const [p, s] of consumers) {
       assert.ok(!new RegExp(`(?:^|\\n)\\s*const ${t}\\s*=`).test(s), `${t} must not be declared inline in ${p} again`);
     }
@@ -203,7 +216,7 @@ test('R167 #5 THE DEAD-ZONE RULE: js/feedback.js never binds HOST.DB at factory 
   // helpers were all hoisted FUNCTION DECLARATIONS. A `const` is not hoisted: reading HOST.DB while
   // the factory runs enters that const's temporal dead zone and throws before the modal exists.
   const src = rd('js/feedback.js');
-  const i = src.indexOf('window.IntMapModules.feedback=function(HOST){');
+  const i = src.indexOf('export function feedback(HOST){');   /* (module-graph) the factory is an export now */
   assert.ok(i > 0, 'js/feedback.js declares the feedback factory');
   const bindLine = src.slice(i).split('\n')[1];
   assert.ok(!/\bDB\s*=\s*HOST\.DB\b/.test(bindLine),
@@ -234,7 +247,9 @@ test('R167 #6 the parser-backed split-scope check passes (and covers the eight n
 test('R167 #7 the boot guard names IntMapTables and every new factory', () => {
   /* spelling kept — the claim is how the app shell and its js/ modules are wired (imports, factory calls, host getters) — a fact about the source that no single module can be run to show */
   assert.match(html, /'IntMapTables'/, 'the boot guard lists the IntMapTables data namespace');
-  for (const f of ALL_FACS) assert.ok(html.includes(`'${f}'`), `the boot guard lists the ${f} factory`);
+  /* (module-graph) MODULE_FACTORIES is gone — the shell imports each factory by name, so a missing file is
+     a link error; bootGuardKnows() asks «imported and called by the shell, or mounted by the loader» */
+  for (const f of ALL_FACS) assert.ok(bootGuardKnows(root, f), `the boot guard lists the ${f} factory`);
 });
 
 test('R167 #8 index.html shrank and no moved block came back inline', () => {

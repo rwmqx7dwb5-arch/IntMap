@@ -107,8 +107,10 @@
 import './plane-glyph.js';
 import { LIFTED_GLSL } from './lifted-projection.js';
 
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.aircraftPoints = function () {
+
+import { IntMapGeoEngine } from './geo-engine.js';
+
+function aircraftPoints() {
   const D2R = Math.PI / 180;
   /* the WGS84 equatorial circumference MapLibre's mercator is built on — one mercator unit of
      altitude at latitude φ is MERC_CIRC·cos φ metres (the #R174 lesson, from js/solid3d.js) */
@@ -519,4 +521,7 @@ void main(){
   }
 
   return { makeLayer, merc, metreScale, EXTRAP_MAX_S, MERC_CIRC };
-};
+}
+
+/* (module-graph) handed to the renderer seam, which draws this kind when asked (js/geo-engine.js provideLayerKind) */
+IntMapGeoEngine.provideLayerKind('aircraftPoints', aircraftPoints);

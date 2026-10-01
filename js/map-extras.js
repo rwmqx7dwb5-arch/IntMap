@@ -8,10 +8,12 @@
  *  append rows to shared containers, so their relative order is user-visible.
  * ==========================================================================*/
 
-window.IntMapModules=window.IntMapModules||{};
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules.locate=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
+export function locate(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -27,7 +29,7 @@ window.IntMapModules.locate=function(HOST){
        window.__imap and drove it directly (getSource/addLayer/on/project/flyTo) — the shape #R179
        closed for the additional views and the same shape here, invisible to the coupling gate
        because the alias is `M`, not `map`. Every call below is the 1:1 contract equivalent. */
-    const M=()=>{ try{ const E=window.IntMapGeoEngine; return (E&&E.hasRenderer())?E:null; }catch(_){ return null; } };
+    const M=()=>{ try{ const E=IntMapGeoEngine; return (E&&E.hasRenderer())?E:null; }catch(_){ return null; } };
     function accent(){ try{ const c=(getComputedStyle(document.documentElement).getPropertyValue('--primary-color')||'').trim(); return c||'#0a84ff'; }catch(_){ return '#0a84ff'; } }
     function ensure(){ const E=M(); if(!E||!_imCanDraw()) return false;
       try{
@@ -117,7 +119,7 @@ window.IntMapModules.locate=function(HOST){
        event the compass FAB already updates on, so the two badges now answer at the same moment. */
     try{ const E0=M(); if(E0) E0.events.on('moveend',_syncFab); }catch(_){}
     function start(opts){ opts=opts||{}; const E=M(); if(!E) return;
-      if(!navigator.geolocation){ try{ if(typeof imToast==='function') imToast('⚠ '+(window.IntMapLang.t(HOST.lang,'Geolocation unavailable','位置情報が使えません','Standort nicht verfügbar','Геолокация недоступна','Geolocalización no disponible'))); }catch(_){} return; }
+      if(!navigator.geolocation){ try{ if(typeof imToast==='function') imToast('⚠ '+(IntMapLang.t(HOST.lang,'Geolocation unavailable','位置情報が使えません','Standort nicht verfügbar','Геолокация недоступна','Geolocalización no disponible'))); }catch(_){} return; }
       active=true; _syncFab();
       let firstFly=(opts.fly!==false);
       const onPos=p=>{ const lng=+p.coords.longitude, lat=+p.coords.latitude, ac=+p.coords.accuracy||0; last={lng,lat,acc:ac};
@@ -125,8 +127,8 @@ window.IntMapModules.locate=function(HOST){
         if(firstFly){ firstFly=false; try{ E.camera.flyTo({center:[lng,lat],zoom:Math.max(E.camera.getZoom(),14),duration:1100}); }catch(_){} } };
       const onErr=e=>{ try{ if(typeof imToast==='function'){ const denied=e&&e.code===1;   /* (#R155) distinguish a hard denial (actionable) from a transient failure */
         imToast('⚠ '+(denied
-          ? (window.IntMapLang.t(HOST.lang,'Location blocked — enable it in your browser settings.','位置情報がブロックされています。ブラウザ設定で許可してください。','Standort blockiert — im Browser erlauben.','Геолокация заблокирована — разрешите в браузере.','Ubicación bloqueada — actívala en el navegador.'))
-          : (window.IntMapLang.t(HOST.lang,'Couldn\'t get your location','位置情報を取得できませんでした','Standort nicht verfügbar','Не удалось получить геолокацию','No se pudo obtener la ubicación')))); } }catch(_){}
+          ? (IntMapLang.t(HOST.lang,'Location blocked — enable it in your browser settings.','位置情報がブロックされています。ブラウザ設定で許可してください。','Standort blockiert — im Browser erlauben.','Геолокация заблокирована — разрешите в браузере.','Ubicación bloqueada — actívala en el navegador.'))
+          : (IntMapLang.t(HOST.lang,'Couldn\'t get your location','位置情報を取得できませんでした','Standort nicht verfügbar','Не удалось получить геолокацию','No se pudo obtener la ubicación')))); } }catch(_){}
         if(!last){ active=false; } _syncFab(); };
       /* (#R170) maximumAge 5000/2000 → 0 and a longer first-fix budget: a cached fix is by definition the LAST
          one the device computed (possibly a coarse network fix from another app), so accepting one threw away the
@@ -141,10 +143,10 @@ window.IntMapModules.locate=function(HOST){
     function toggleOrRecenter(){ const E=M(); if(active&&last&&E){ try{ E.camera.flyTo({center:[last.lng,last.lat],zoom:Math.max(E.camera.getZoom(),14),duration:900}); }catch(_){} } else start({fly:true}); }
     return { start, stop, toggleOrRecenter, _paint:paint, isActive:()=>active, last:()=>last };
   })();
-};
+}
 
-window.IntMapModules.annotations=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function annotations(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -176,7 +178,7 @@ window.IntMapModules.annotations=function(HOST){
     function openPop(id, ll){ const it=items.find(x=>x.id===id); if(!it) return; try{ if(popup) popup.remove(); }catch(_){}
       const at=ll||repr(it.geom);
       const valHtml = it.value ? '<div style="font-size:13px;color:var(--primary-color);font-weight:700;margin:0 0 6px;">'+it.value+'</div>' : '';
-      const html='<div style="min-width:172px;">'+valHtml+'<input class="annot-name" value="'+String(it.name).replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;font-weight:700;font-size:13px;background:var(--input-bg);border:1px solid rgba(128,128,128,0.25);border-radius:7px;color:var(--text-main);padding:5px 7px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><input type="color" class="annot-color" value="'+it.color+'"><span style="font-size:11px;color:var(--text-muted);">'+(window.IntMapLang.t(HOST.lang,"Color","色","Farbe","Цвет","Color"))+'</span><button class="annot-del" style="margin-left:auto;background:var(--info-mil);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;">'+(window.IntMapLang.t(HOST.lang,"Delete","削除","Löschen","Удалить","Eliminar"))+'</button></div></div>';
+      const html='<div style="min-width:172px;">'+valHtml+'<input class="annot-name" value="'+String(it.name).replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;font-weight:700;font-size:13px;background:var(--input-bg);border:1px solid rgba(128,128,128,0.25);border-radius:7px;color:var(--text-main);padding:5px 7px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><input type="color" class="annot-color" value="'+it.color+'"><span style="font-size:11px;color:var(--text-muted);">'+(IntMapLang.t(HOST.lang,"Color","色","Farbe","Цвет","Color"))+'</span><button class="annot-del" style="margin-left:auto;background:var(--info-mil);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;">'+(IntMapLang.t(HOST.lang,"Delete","削除","Löschen","Удалить","Eliminar"))+'</button></div></div>';
       popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:false,className:'plc-popup',maxWidth:'260px'}).setLngLat(at).setHTML(html));
       setTimeout(()=>{ const el=popup&&popup.getElement&&popup.getElement(); if(!el) return;
         const nm=el.querySelector('.annot-name'); if(nm) nm.oninput=()=>{ it.name=nm.value; };
@@ -186,14 +188,14 @@ window.IntMapModules.annotations=function(HOST){
     }
     /* (#R11) No auto-popup on finalize — the shape just stays on the map; clicking it later opens the
        dismissable popup with the measured value + rename/recolor/delete. */
-    function add(geom,opts){ opts=opts||{}; const id='an'+(++seq); items.push({id,geom,color:opts.color||'#ff9500',op:(opts.op!=null?opts.op:0.16),name:opts.name||((window.IntMapLang.t(HOST.lang,"Annotation ","注記 ","Anmerkung ","Аннотация ","Anotación "))+seq),value:opts.value||''}); refresh(); return id; }
+    function add(geom,opts){ opts=opts||{}; const id='an'+(++seq); items.push({id,geom,color:opts.color||'#ff9500',op:(opts.op!=null?opts.op:0.16),name:opts.name||((IntMapLang.t(HOST.lang,"Annotation ","注記 ","Anmerkung ","Аннотация ","Anotación "))+seq),value:opts.value||''}); refresh(); return id; }
     function remove(id){ const i=items.findIndex(x=>x.id===id); if(i>=0){ items.splice(i,1); refresh(); } if(popup){ try{popup.remove();}catch(_){} popup=null; } }
     return { add, remove, refresh, clear:()=>{ items.length=0; refresh(); }, open:openPop, _items:items };   /* (#R88) expose refresh so the Object List can recolour an annotation live */
   })();
-};
+}
 
-window.IntMapModules.layerHoverPopup=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function layerHoverPopup(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R29) "通常の状態でも、国名の地名ラベルを押したら、isolate機能を使えるボタンが出るように。"
      In the NORMAL state (Countries(info) OFF, no measuring tool, not already isolated), tapping a country
      NAME place-label pops a small "Isolate <country>" button at the tap point. Tapping it isolates that
@@ -236,7 +238,7 @@ window.IntMapModules.layerHoverPopup=function(HOST){
       }catch(_){ hide(); }
     });
   })();
-};
+}
 
 /* ══ ⚠⚠ (#R296) THE CLASSIC PANEL'S SEARCH BOX STOOD HERE ══════════════════════════════
    `IntMapModules.layerSearch` built `#layer-search-wrap` inside `#layer-dropdown` and filtered its
@@ -248,8 +250,8 @@ window.IntMapModules.layerHoverPopup=function(HOST){
    ⚠ `window.IntMapClearGlyph()` and `window.IntMapPlaceClear()` (js/map-ui.js) STAY: the surviving
    box calls both, and they were shared helpers rather than this module's own. */
 
-window.IntMapModules.runwaySearch=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function runwaySearch(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   const t=HOST.t, makeDraggable=HOST.makeDraggable;
   /* ===== (#R8c) Runway / air-base search SCAFFOLD. Data is NOT auto-fetched (the user: "今はすべての
      データ取ってこなくていい"); it lazy-loads from OurAirports (public-domain, CORS*) only when a search is
@@ -306,18 +308,18 @@ window.IntMapModules.runwaySearch=function(HOST){
     /* (#R243) the Wikipedia a reader can actually read: the registry's BCP-47 tag, minus the script
        subtag (zh-Hant / zh-Hans are both `zh.wikipedia.org`). Was `jp()?'ja':'en'`, i.e. English for
        every language but Japanese. */
-    function wikiLink(name){ const w=String(window.IntMapLang.htmlTag(HOST.lang)||'en').split('-')[0]; return 'https://'+w+'.wikipedia.org/wiki/Special:Search?search='+encodeURIComponent(name||''); }
+    function wikiLink(name){ const w=String(IntMapLang.htmlTag(HOST.lang)||'en').split('-')[0]; return 'https://'+w+'.wikipedia.org/wiki/Special:Search?search='+encodeURIComponent(name||''); }
     function showRwyPopup(d){
       try{ if(rwyPopup) rwyPopup.remove(); }catch(_){}
       const title=esc(d.name||d.apt||'Airport'), rws=[];
-      if(d.apt) rws.push((window.IntMapLang.t(HOST.lang,"Code","コード","Code","Код","Código"))+': <b>'+esc(d.apt)+'</b>');
-      if(d.muni) rws.push((window.IntMapLang.t(HOST.lang,"Municipality","所在地","Gemeinde","Муниципалитет","Municipio"))+': <b>'+esc(d.muni)+'</b>');
-      rws.push((window.IntMapLang.t(HOST.lang,"Type","種別","Art","Тип","Tipo"))+': <b>'+(d.mil?(window.IntMapLang.t(HOST.lang,"Military","軍用","Militärisch","Военный","Militar")):(window.IntMapLang.t(HOST.lang,"Civil","民間","Zivil","Гражданский","Civil")))+'</b>');
-      if(d.len) rws.push((window.IntMapLang.t(HOST.lang,"Longest runway","最長滑走路","Längste Start-/Landebahn","Самая длинная ВПП","Pista más larga"))+': <b>'+lenFmt(d.len)+'</b>');
-      if(d.n) rws.push((window.IntMapLang.t(HOST.lang,"Runways","滑走路数","Start-/Landebahnen","ВПП","Pistas"))+': <b>'+d.n+'</b>');
-      if(d.rwy) rws.push((window.IntMapLang.t(HOST.lang,"Runway","滑走路","Start-/Landebahn","ВПП","Pista"))+': <b>'+esc(d.rwy)+'</b>');
-      rws.push((window.IntMapLang.t(HOST.lang,"Coords","座標","Koordinaten","Координаты","Coordenadas"))+': <b>'+(+d.coords[1]).toFixed(4)+', '+(+d.coords[0]).toFixed(4)+'</b>');
-      const html='<div style="min-width:170px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:6px;">'+(d.mil?'🪖':'🛬')+' '+title+'</div><div style="font-size:12px;color:var(--text-main);line-height:1.65;">'+rws.join('<br>')+'</div><a href="'+wikiLink(d.name||d.apt)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;color:var(--primary-color);font-weight:600;font-size:12px;text-decoration:none;">📖 '+(window.IntMapLang.t(HOST.lang,"Read on Wikipedia ↗","Wikipediaで見る ↗","Auf Wikipedia lesen ↗","Читать в Википедии ↗","Leer en Wikipedia ↗"))+'</a></div>';
+      if(d.apt) rws.push((IntMapLang.t(HOST.lang,"Code","コード","Code","Код","Código"))+': <b>'+esc(d.apt)+'</b>');
+      if(d.muni) rws.push((IntMapLang.t(HOST.lang,"Municipality","所在地","Gemeinde","Муниципалитет","Municipio"))+': <b>'+esc(d.muni)+'</b>');
+      rws.push((IntMapLang.t(HOST.lang,"Type","種別","Art","Тип","Tipo"))+': <b>'+(d.mil?(IntMapLang.t(HOST.lang,"Military","軍用","Militärisch","Военный","Militar")):(IntMapLang.t(HOST.lang,"Civil","民間","Zivil","Гражданский","Civil")))+'</b>');
+      if(d.len) rws.push((IntMapLang.t(HOST.lang,"Longest runway","最長滑走路","Längste Start-/Landebahn","Самая длинная ВПП","Pista más larga"))+': <b>'+lenFmt(d.len)+'</b>');
+      if(d.n) rws.push((IntMapLang.t(HOST.lang,"Runways","滑走路数","Start-/Landebahnen","ВПП","Pistas"))+': <b>'+d.n+'</b>');
+      if(d.rwy) rws.push((IntMapLang.t(HOST.lang,"Runway","滑走路","Start-/Landebahn","ВПП","Pista"))+': <b>'+esc(d.rwy)+'</b>');
+      rws.push((IntMapLang.t(HOST.lang,"Coords","座標","Koordinaten","Координаты","Coordenadas"))+': <b>'+(+d.coords[1]).toFixed(4)+', '+(+d.coords[0]).toFixed(4)+'</b>');
+      const html='<div style="min-width:170px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:6px;">'+(d.mil?'🪖':'🛬')+' '+title+'</div><div style="font-size:12px;color:var(--text-main);line-height:1.65;">'+rws.join('<br>')+'</div><a href="'+wikiLink(d.name||d.apt)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;color:var(--primary-color);font-weight:600;font-size:12px;text-decoration:none;">📖 '+(IntMapLang.t(HOST.lang,"Read on Wikipedia ↗","Wikipediaで見る ↗","Auf Wikipedia lesen ↗","Читать в Википедии ↗","Leer en Wikipedia ↗"))+'</a></div>';
       try{ rwyPopup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,maxWidth:'280px',className:'plc-popup'}).setLngLat(d.coords).setHTML(html)); }catch(_){}
     }
     function ensureLayers(){ if(GE().layers.hasSource(SRC)) return; try{ GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
@@ -330,10 +332,10 @@ window.IntMapModules.runwaySearch=function(HOST){
     function renderMarks(res,mode){ ensureLayers(); const feats=res.slice(0,600).map(r=>({type:'Feature',geometry:{type:'Point',coordinates:[r.lo,r.la]},properties:{mil:!!r.mil,t:mode==='airport'?r.name:(r.apt+' '+r.rwy),name:r.name||'',apt:r.apt||'',muni:r.muni||'',len:(mode==='airport'?r.maxLen:r.lenM)||0,n:(mode==='airport'?(r.n||0):0),rwy:(mode==='runway'?(r.rwy||''):'')}})); try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){} }
     function run(){ const p=panel; const im=imp(); const rIn=+p.querySelector('#rwy-radius').value||(im?186:300), lIn=+p.querySelector('#rwy-len').value||0, use=p.querySelector('#rwy-use').value, mode=p.querySelector('#rwy-mode').value;
       const radiusKm=im?rIn*1.60934:rIn, minLenM=im?lIn*0.3048:lIn;
-      const list=p.querySelector('#rwy-list'); list.innerHTML=window.IntMapLang.t(HOST.lang,"Loading…","読み込み中…","Wird geladen…","Загрузка…","Cargando…");
-      load().then(d=>{ if(!d){ list.innerHTML=window.IntMapLang.t(HOST.lang,"Could not load data","データを取得できませんでした","Daten konnten nicht geladen werden","Не удалось загрузить данные","No se pudieron cargar los datos"); return; }
+      const list=p.querySelector('#rwy-list'); list.innerHTML=IntMapLang.t(HOST.lang,"Loading…","読み込み中…","Wird geladen…","Загрузка…","Cargando…");
+      load().then(d=>{ if(!d){ list.innerHTML=IntMapLang.t(HOST.lang,"Could not load data","データを取得できませんでした","Daten konnten nicht geladen werden","Не удалось загрузить данные","No se pudieron cargar los datos"); return; }
         const res=search({center:center,radiusKm:radiusKm,use:use,minLenM:minLenM,mode:mode}); renderMarks(res,mode);
-        if(!res.length){ list.innerHTML=window.IntMapLang.t(HOST.lang,"No matches","該当なし","Keine Treffer","Совпадений нет","Sin resultados"); return; }
+        if(!res.length){ list.innerHTML=IntMapLang.t(HOST.lang,"No matches","該当なし","Keine Treffer","Совпадений нет","Sin resultados"); return; }
         const shown=res.slice(0,120);
         list.innerHTML=shown.map((r,idx)=>{ const dd=distFmtKm(r._d), len=lenFmt(mode==='airport'?r.maxLen:r.lenM), nm=esc(mode==='airport'?r.name:(r.apt+' '+r.rwy)), extra=mode==='airport'?(jp()?(r.n+'本'):(r.n+' rwy')):'', flag=r.mil?'🪖':'🛬';
           return '<div class="rwy-item" role="button" tabindex="0" data-idx="'+idx+'" style="display:flex;justify-content:space-between;gap:8px;padding:5px 4px;border-radius:6px;cursor:pointer;"><span>'+flag+' '+nm+'</span><span style="color:var(--text-muted);white-space:nowrap;">'+len+' · '+dd+' '+extra+'</span></div>'; }).join('');
@@ -342,19 +344,19 @@ window.IntMapModules.runwaySearch=function(HOST){
     }
     function open(lngLat){ center=[lngLat.lng,lngLat.lat]; if(!panel){ panel=document.createElement('div'); panel.className='tool-panel'; panel.id='rwy-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); } const p=panel; p.style.display='block';
       const im0=isImp();
-      p.innerHTML='<div class="tp-header"><span class="tp-title">🛬 '+(window.IntMapLang.t(HOST.lang,"Runway search","滑走路検索","Bahnsuche","Поиск ВПП","Búsqueda de pistas"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'+
+      p.innerHTML='<div class="tp-header"><span class="tp-title">🛬 '+(IntMapLang.t(HOST.lang,"Runway search","滑走路検索","Bahnsuche","Поиск ВПП","Búsqueda de pistas"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'+
         '<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;">'+
-          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(window.IntMapLang.t(HOST.lang,"Units","単位","Einheiten","Единицы","Unidades"))+' <select id="rwy-unit"><option value="met"'+(im0?'':' selected')+'>'+(window.IntMapLang.t(HOST.lang,"Metric (km/m)","メートル法 (km/m)","Metrisch (km/m)","Метрические (км/м)","Métrico (km/m)"))+'</option><option value="imp"'+(im0?' selected':'')+'>'+(window.IntMapLang.t(HOST.lang,"Imperial (mi/ft)","ヤード・ポンド (mi/ft)","Angloamerikanisch (mi/ft)","Имперские (мили/футы)","Imperial (mi/ft)"))+'</option></select></label>'+
+          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(IntMapLang.t(HOST.lang,"Units","単位","Einheiten","Единицы","Unidades"))+' <select id="rwy-unit"><option value="met"'+(im0?'':' selected')+'>'+(IntMapLang.t(HOST.lang,"Metric (km/m)","メートル法 (km/m)","Metrisch (km/m)","Метрические (км/м)","Métrico (km/m)"))+'</option><option value="imp"'+(im0?' selected':'')+'>'+(IntMapLang.t(HOST.lang,"Imperial (mi/ft)","ヤード・ポンド (mi/ft)","Angloamerikanisch (mi/ft)","Имперские (мили/футы)","Imperial (mi/ft)"))+'</option></select></label>'+
           '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;"><span class="rwy-ulabel-r"></span> <input id="rwy-radius" type="number" value="'+(im0?186:300)+'" min="1" style="width:74px;"></label>'+
           '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;"><span class="rwy-ulabel-l"></span> <input id="rwy-len" type="number" value="'+(im0?6500:2000)+'" min="0" step="'+(im0?500:100)+'" style="width:74px;"></label>'+
-          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(window.IntMapLang.t(HOST.lang,"Runway use","種別","Nutzung","Назначение","Uso"))+' <select id="rwy-use"><option value="all">'+(window.IntMapLang.t(HOST.lang,"All","すべて","Alle","Все","Todos"))+'</option><option value="mil">'+(window.IntMapLang.t(HOST.lang,"Military","軍用","Militärisch","Военный","Militar"))+'</option><option value="civ">'+(window.IntMapLang.t(HOST.lang,"Civil","民間","Zivil","Гражданский","Civil"))+'</option></select></label>'+
-          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(window.IntMapLang.t(HOST.lang,"View","表示","Ansicht","Вид","Vista"))+' <select id="rwy-mode"><option value="airport">'+(window.IntMapLang.t(HOST.lang,"By airport","空港単位","Nach Flughafen","По аэропортам","Por aeropuerto"))+'</option><option value="runway">'+(window.IntMapLang.t(HOST.lang,"By runway","滑走路単位","Nach Bahn","По ВПП","Por pista"))+'</option></select></label>'+
+          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(IntMapLang.t(HOST.lang,"Runway use","種別","Nutzung","Назначение","Uso"))+' <select id="rwy-use"><option value="all">'+(IntMapLang.t(HOST.lang,"All","すべて","Alle","Все","Todos"))+'</option><option value="mil">'+(IntMapLang.t(HOST.lang,"Military","軍用","Militärisch","Военный","Militar"))+'</option><option value="civ">'+(IntMapLang.t(HOST.lang,"Civil","民間","Zivil","Гражданский","Civil"))+'</option></select></label>'+
+          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(IntMapLang.t(HOST.lang,"View","表示","Ansicht","Вид","Vista"))+' <select id="rwy-mode"><option value="airport">'+(IntMapLang.t(HOST.lang,"By airport","空港単位","Nach Flughafen","По аэропортам","Por aeropuerto"))+'</option><option value="runway">'+(IntMapLang.t(HOST.lang,"By runway","滑走路単位","Nach Bahn","По ВПП","Por pista"))+'</option></select></label>'+
         '</div>'+
-        '<button class="tp-clear" id="rwy-go" style="width:100%;margin-top:6px;">'+(window.IntMapLang.t(HOST.lang,"Search (loads data 1st run)","検索（初回データ取得）","Suchen (lädt beim ersten Mal die Daten)","Поиск (при первом запуске загружает данные)","Buscar (la primera vez descarga los datos)"))+'</button>'+
+        '<button class="tp-clear" id="rwy-go" style="width:100%;margin-top:6px;">'+(IntMapLang.t(HOST.lang,"Search (loads data 1st run)","検索（初回データ取得）","Suchen (lädt beim ersten Mal die Daten)","Поиск (при первом запуске загружает данные)","Buscar (la primera vez descarga los datos)"))+'</button>'+
         '<div id="rwy-list" style="margin-top:8px;max-height:230px;overflow:auto;font-size:12.5px;"></div>';
       const relabelUnits=()=>{ const im=imp(); const rl=p.querySelector('.rwy-ulabel-r'), ll=p.querySelector('.rwy-ulabel-l');
-        if(rl) rl.textContent=im?(window.IntMapLang.t(HOST.lang,"Radius (mi)","半径 (mi)","Radius (mi)","Радиус (мили)","Radio (mi)")):(window.IntMapLang.t(HOST.lang,"Radius (km)","半径 (km)","Radius (km)","Радиус (км)","Radio (km)"));
-        if(ll) ll.textContent=im?(window.IntMapLang.t(HOST.lang,"Min length (ft)","最小長 (ft)","Mindestlänge (ft)","Мин. длина (футы)","Longitud mínima (ft)")):(window.IntMapLang.t(HOST.lang,"Min length (m)","最小長 (m)","Mindestlänge (m)","Мин. длина (м)","Longitud mínima (m)")); };
+        if(rl) rl.textContent=im?(IntMapLang.t(HOST.lang,"Radius (mi)","半径 (mi)","Radius (mi)","Радиус (мили)","Radio (mi)")):(IntMapLang.t(HOST.lang,"Radius (km)","半径 (km)","Radius (km)","Радиус (км)","Radio (km)"));
+        if(ll) ll.textContent=im?(IntMapLang.t(HOST.lang,"Min length (ft)","最小長 (ft)","Mindestlänge (ft)","Мин. длина (футы)","Longitud mínima (ft)")):(IntMapLang.t(HOST.lang,"Min length (m)","最小長 (m)","Mindestlänge (m)","Мин. длина (м)","Longitud mínima (m)")); };
       relabelUnits();
       p.querySelector('#rwy-unit').onchange=()=>{ const im=imp(); const ri=p.querySelector('#rwy-radius'), li=p.querySelector('#rwy-len'); if(ri) ri.value=im?186:300; if(li){ li.value=im?6500:2000; li.step=im?500:100; } relabelUnits(); };
       p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} };
@@ -363,9 +365,9 @@ window.IntMapModules.runwaySearch=function(HOST){
     }
     return { open:open, load:load, search:search, ready:()=>!!data };
   })();
-};
+}
 
-window.IntMapModules.terrain=function(HOST){
+export function terrain(HOST){
   /* ===== (#R89) TERRAIN ELEVATION SAMPLER — shared keyless DEM access for the viewshed (RF), drone
      flight planning, the seismic site term and terrain shadows.
      ⚠ (#R469) The slope/aspect layer this was written for is deleted; the sampler is not — the four
@@ -395,12 +397,12 @@ window.IntMapModules.terrain=function(HOST){
         return (t.data[i]*256+t.data[i+1]+t.data[i+2]/256)-32768; }
       return { elevAt, z }; }
     return { sampler, loadTile }; })();
-};
+}
 
-window.IntMapModules.railSeaOverlays=function(HOST){
+export function railSeaOverlays(HOST){
   /* (#R245) the two layer labels and the zoom hint are tuples held as data — see pickArgs() */
-  const LA=window.IntMapLang.pickArgs();
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const LA=IntMapLang.pickArgs();
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -419,7 +421,7 @@ window.IntMapModules.railSeaOverlays=function(HOST){
     ];
     const state={}; LIST.forEach(L=>state[L.id]=false);
     /* (#R245) the labels are tuples held as data — resolved through pick() itself */
-    const LMX=window.IntMapLang.pick(()=>HOST.lang);
+    const LMX=IntMapLang.pick(()=>HOST.lang);
     const lbl=(L)=>LMX.arr(L.label);
     const beforeLabels=()=>['ofm-country','ofm-city','ofm-other','borders-only-line'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
     function ensure(L){ try{ if(!_imCanDraw()) return false;
@@ -449,4 +451,4 @@ window.IntMapModules.railSeaOverlays=function(HOST){
     window.addEventListener('intmap-lang',()=>{ LIST.forEach(L=>{ const s=document.getElementById('ox-'+L.id+'-lbl'); if(s) s.textContent=lbl(L); }); });
     if(document.readyState!=='loading') setTimeout(buildUI,950); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,950));
   })();
-};
+}

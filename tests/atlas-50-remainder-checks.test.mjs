@@ -111,10 +111,11 @@ async function realResolver(extraCtx) {
   /* the SHIPPED matcher over the SHIPPED world gazetteer — not a stub standing in for either */
   await import(pathToFileURL(join(ROOT, 'js/data-door.js')).href);   /* (data-one-door) the gazetteer reads its file through the door, as in the app */
   await import(pathToFileURL(join(ROOT, 'js/gazetteer.js')).href);
-  await import(pathToFileURL(join(ROOT, 'js/search-geocode.js')).href);
+  /* (module-graph) the factory is the module's export, no longer a window.IntMapModules entry */
+  const { searchGeocode } = await import(pathToFileURL(join(ROOT, 'js/search-geocode.js')).href);
   await window.IntMapGazetteer.warm();
   const HOST = { countryStats: {}, lang: 'en', get BUILTIN_GAZETTEER() { return window.IntMapGazetteer.index(); } };
-  const S = window.IntMapModules.searchGeocode(HOST);
+  const S = searchGeocode(HOST);
   const G = makeAtlasGeoResolve(HOST, Object.assign({ L: (e) => e, _setLast: (x) => x, localFuzzyPlaces: S.localFuzzyPlaces,
     lastPlace: () => null, GE: () => ({ camera: { getCenter: () => ({ lng: 0, lat: 0 }) } }) }, extraCtx || {}));
   return { G, S };

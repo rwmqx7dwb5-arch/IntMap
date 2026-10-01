@@ -67,11 +67,13 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.droneOps=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function droneOps(HOST){
+  const GE=()=>IntMapGeoEngine;
   const DRONE=()=>window.IntMapDrone;
-  const L=window.IntMapLang.pick(()=>HOST.lang);
+  const L=IntMapLang.pick(()=>HOST.lang);
   const D2R=Math.PI/180, R_EARTH=6371008.8;
 
   function distM(a,b){ const la1=a[1]*D2R, la2=b[1]*D2R, dla=(b[1]-a[1])*D2R, dlo=(b[0]-a[0])*D2R;
@@ -887,4 +889,4 @@ window.IntMapModules.droneOps=function(HOST){
   };
   window.IntMapDroneOps=API;
   return API;
-};
+}

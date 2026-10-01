@@ -11,7 +11,8 @@
  *  strings written at their call site as L('English', '日本語', …), looked up here BY THEIR ENGLISH
  *  SOURCE STRING. A missing entry falls back to English PER STRING — never per screen.
  * ========================================================================== */
-window.IntMapLang.define('ko', { ui: {
+import { IntMapLang } from '../lang-registry.js';
+IntMapLang.define('ko', { ui: {
       /* ══ ⚠⚠⚠ (#R249) THE FIFTEENTH SURFACE — THE DOCUMENT'S OWN METADATA ═══════════════════════
          「全ての言語について、すべての面において対応が完璧かどうか点検し、未了点があれば修正して。」
          index.html's <title> and <meta name="description"> were literals in the markup, so the

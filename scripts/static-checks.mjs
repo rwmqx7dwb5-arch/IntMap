@@ -451,12 +451,15 @@ try {
     for (const rel of imported) {
       if (!ALL.some((x) => x.rel === rel)) err('split', `src/main.js imports ${rel}, which does not exist`);
     }
-    // Every factory a module file defines must actually be instantiated.
-    for (const f of ALL.filter((x) => /^js\/[^/]+\.js$/.test(x.rel))) {
-      for (const m of read(f).matchAll(/window\.IntMapModules\.(\w+)\s*=\s*function/g)) {
-        if (!t.includes(`window.IntMapModules.${m[1]}(`)) {
-          err('split', `${f.rel} defines factory IntMapModules.${m[1]} but nothing ever calls it`);
-        }
+    // (module-graph) A factory is an `export function` now and its caller imports it by name, so «defined
+    // but never instantiated» is a dead export — scripts/export-readers.mjs holds that, for every export,
+    // not only for the ones spelled as factories. What is held here is that the registry stays dissolved:
+    // a factory handed over by a string key on a shared object is an edge no bundler, no Node import and
+    // no dead-export check can see, which is the whole reason it was taken apart.
+    for (const f of ALL.filter((x) => /^(js|src)\/.+\.js$/.test(x.rel))) {
+      for (const m of codeOnly(read(f)).matchAll(/(?<![\w$.])(?:window|globalThis|self)\.IntMapModules\b/g)) {
+        err('split', `${f.rel} reaches for window.IntMapModules (${m[0]}) — export the factory and import it by name (scripts/module-graph.mjs)`);
+        break;
       }
     }
     // Nothing that moved out may still be defined in the app body (no stale duplicate).

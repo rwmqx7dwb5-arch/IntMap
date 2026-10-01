@@ -13,7 +13,11 @@
  * 
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+import { IntMapBorderCoast } from './border-coast.js';
+
 /* ══ (#R700) `Base (Gloss)` — ONE DECOMPOSITION, READ BY THE PAGE AND BY THE BUILD ═════════════
    ⚠⚠⚠ THE BRACKET IS NOT DROPPED HERE, AND THAT IS THE WHOLE POINT. Two records write a trailing
    "(…)" and they mean OPPOSITE things. data/cshapes.js writes a gloss the reader never sees —
@@ -30,7 +34,7 @@ window.IntMapModules=window.IntMapModules||{};
    the page owns (#R536's cost; the shape of js/outbreaks.js `IntMapWhoDonName`, #R660).
    ⚠ THE JOIN OWNS THE PUNCTUATION, PER LANGUAGE — Japanese brackets are full-width, and that is a
    property of the label, not of the caller. */
-window.IntMapEraName={
+export const IntMapEraName={
   /** «Ceylon (Dutch)» → {base:'Ceylon', gloss:'Dutch'}; anything else → null. */
   split:function(nm){ var m=/^(.+?)\s*\(([^)]+)\)\s*$/.exec(String(nm==null?'':nm).trim()); return m?{base:m[1].trim(),gloss:m[2].trim()}:null; },
   /** The label the reader sees, from the two localized halves. */
@@ -50,21 +54,24 @@ window.IntMapEraName={
       out[lg]=this.join(lb,lc,lg); any=true; }
     return any?out:null; }
 };
-window.IntMapModules.timeBorders=function(HOST){
+/* (module-graph) imported by js/atlas-era-highlight.js and scripts/histeras/census.mjs; this publication remains for the console and the browser specs */
+globalThis.IntMapEraName=IntMapEraName;
+
+export function timeBorders(HOST){
   /* ⚠ (#R245) THE HISTORICAL NAMES THIS FILE HOLDS ARE TUPLES, AND THEY GO THROUGH THE REGISTRY.
      `LA` is `IntMapLang.pickArgs()` — it returns the array it is given, so the data is unchanged and
      the file now contains ordinary CALLS that every translation instrument reads; `_LTB.arr(x)` is
      `pick()` itself, so a language past the five positional slots reaches its inline table keyed by
      the English name instead of falling to English for ever (#R244's eleventh shape). */
-  const LA=window.IntMapLang.pickArgs();
-  const _LTB=window.IntMapLang.pick(()=>HOST.lang);
+  const LA=IntMapLang.pickArgs();
+  const _LTB=IntMapLang.pick(()=>HOST.lang);
   /* (#R178) module state, not renderer state — it was map.__imtbClick (see data-layers.js) */
   let _clickWired=false;
   /* (#R707) the popup for a shape upstream did not name — module state for the same reason, and it
      is closed rather than left behind whenever the collection under it stops being what is drawn. */
   let _blankPop=null;
   function _blankClose(){ try{ if(_blankPop&&_blankPop.remove) _blankPop.remove(); }catch(_){} _blankPop=null; }
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
 
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
@@ -88,7 +95,7 @@ window.IntMapModules.timeBorders=function(HOST){
   function whenStyleReady(){ return GE().whenCanDraw(); }
   const applyTheme=HOST.applyTheme, countryStats=HOST.countryStats, showCountryDetail=HOST.showCountryDetail;
   return (function(){
-    if(!GE().hasRenderer()||!GE().hasRenderer()||!window.IntMapTime) return {};
+    if(!GE().hasRenderer()||!GE().hasRenderer()||!IntMapTime) return {};
     /* (#R349) 1815 and 1880 are new. The clock's floor moved to 1850 (js/chronos.js) and CShapes —
        the YEARLY source below — starts at 1886, so without these two the whole of 1850-1885 had no
        era polygons at all and would have rendered the PRESENT-DAY world under a 19th-century year.
@@ -307,7 +314,7 @@ window.IntMapModules.timeBorders=function(HOST){
        rule and the constant are still scripts/build-border-coast.mjs's; the loading, the late-arrival
        notice and the ring→LineString slice are now one owner's. These six names stay because they are
        what this file reads them by — they are the CALL, not a second copy. */
-    const _BC=()=>window.IntMapBorderCoast;
+    const _BC=()=>IntMapBorderCoast;
     function bcLoad(){ try{ return _BC().load(); }catch(_){ return Promise.resolve(null); } }
     function _bcMarks(set){ try{ return _BC().marks(set); }catch(_){ return null; } }
     const _closedRing=r=>_BC().closedRing(r);
@@ -621,7 +628,7 @@ window.IntMapModules.timeBorders=function(HOST){
        and the table is keyed by the WHOLE string, so a row that already says what «Ceylon» is in
        Japanese was unreachable from the one feature that needed it. Measured on the shipped
        bundle: 314 of the 3,028 era spellings (372 drawn features) are of this shape.
-       ⚠ THE DECOMPOSITION IS NOT RESTATED HERE. `window.IntMapEraName` is the rule `_eraLocName`
+       ⚠ THE DECOMPOSITION IS NOT RESTATED HERE. `IntMapEraName` is the rule `_eraLocName`
        has used since #R110; this lane differs from that one only in WHERE the base's name comes
        from — the hand tables there, data/histnames.json here — and the possessor is put back the
        same way in both.
@@ -639,12 +646,12 @@ window.IntMapModules.timeBorders=function(HOST){
        the base «Sikkim» now has a row, so asked directly this composed 「シッキム王国（Indian
        princely state）」 beside the prose lane's own answer for the same string. Two answers for
        one name is #R536 exactly, and the `||` hid it because only one caller ever asked. */
-    function hnEraGloss(nm){ const R=window.IntMapEraName; if(!R||!_hn) return null;
+    function hnEraGloss(nm){ const R=IntMapEraName; if(!R||!_hn) return null;
       if(hnFor('eras',nm,null,null)) return null;
       const p=R.split(nm); if(!p) return null;
       const b=hnFor('eraBase',p.base,null,null)||hnFor('eras',p.base,null,null);
       if(!b||b._d) return null;
-      return R.compose(nm,b,(g,lg)=>{ const c=_COLONIZER[_normNm(g)]; return c?window.IntMapLang.pick(()=>lg).arr(c):null; },window.IntMapLang.codes()); }
+      return R.compose(nm,b,(g,lg)=>{ const c=_COLONIZER[_normNm(g)]; return c?IntMapLang.pick(()=>lg).arr(c):null; },IntMapLang.codes()); }
 
     /* (hist-bundles-off-main) opened like the two records above. The mirror carries every sheet's
        year and upstream file name from the start (`erYears` reads them), and a sheet's rows and rings
@@ -1429,7 +1436,7 @@ window.IntMapModules.timeBorders=function(HOST){
         /* (#R129) prefer the lifespan-CORRECT former state when several share a name (interwar "Kingdom of Yugoslavia"
            vs post-war "Yugoslavia (SFRY)" both match /yugoslav/i) — otherwise a 1925 label localized to the SFRY name. */
         const HS=window.IntMapHistStates; if(HS&&HS.STATES){ let pick=null, matched=false, y=null;
-          try{ if(window.IntMapTime&&window.IntMapTime.year&&(!window.IntMapTime.isLive||!window.IntMapTime.isLive())) y=window.IntMapTime.year(); }catch(_){}
+          try{ if(IntMapTime&&IntMapTime.year&&(!IntMapTime.isLive||!IntMapTime.isLive())) y=IntMapTime.year(); }catch(_){}
           for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(!(re&&re.test(low))) continue; matched=true;
             const n=S.name&&_LTB.arr(S.name); if(!(n&&n!==low)) continue;
             if(y!=null&&S.from&&S.to){ const a=+new Date(S.from+'T00:00:00Z'),b=+new Date(S.to+'T23:59:59Z'),t=+new Date(y+'-07-01T00:00:00Z'); if(isFinite(t)&&t>=a&&t<=b) return n; }   /* era-correct wins outright */
@@ -1442,10 +1449,10 @@ window.IntMapModules.timeBorders=function(HOST){
         return null; };
       const direct=_loc1(low0); if(direct) return direct;
       /* "(Coloniser)" / occupation suffix → localize the BASE + append the localized possessor (e.g. アルジェリア（フランス）).
-         (#R700) the decomposition and the bracket are `window.IntMapEraName`'s now — the same rule
+         (#R700) the decomposition and the bracket are `IntMapEraName`'s now — the same rule
          the name table's lane below reads, so the two cannot part company over where a name stops. */
-      const m=window.IntMapEraName.split(low0);
-      if(m){ const col=_COLONIZER[_normNm(m.gloss)]; if(col){ const lb=_loc1(m.base)||m.base; const lc=_LTB.arr(col)||m.gloss; return window.IntMapEraName.join(lb,lc,lg); } }
+      const m=IntMapEraName.split(low0);
+      if(m){ const col=_COLONIZER[_normNm(m.gloss)]; if(col){ const lb=_loc1(m.base)||m.base; const lc=_LTB.arr(col)||m.gloss; return IntMapEraName.join(lb,lc,lg); } }
       return null; }catch(_){ return null; } }
     /* ══ (#R410) THE ERA NAME IS A PROPERTY OF THE YEAR, NOT OF WHATEVER `countryStats` HAPPENS TO HOLD ══
        「地図の国名ラベルが、同じ画面の Countries 一覧と食い違う。」 TWO listeners answer the same clock and they
@@ -1615,7 +1622,7 @@ window.IntMapModules.timeBorders=function(HOST){
       /* (#R126) fetch failed (network hiccup on the first, uncached travel) → the map stayed border-less with no
          retry until the user moved the year again. Retry this same request once conditions allow. */
       else setTimeout(()=>{ try{ if(active&&my===seq) go(when); }catch(_){} },4000); }
-    window.IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */
+    IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */
       /* (#R94i) recent years (after the last aourednik snapshot, 2010) → keep the MODERN borders: they are the
          accurate present-day borders (incl. South Sudan 2011, etc.), which the stale 2010 snapshot lacks. */
       if(e.isLive || e.year>=new Date().getFullYear() || e.year>CS_MAX){ clear(); return; }   /* (#R117) CShapes carries accurate borders through 2019 (incl. South Sudan 2011) — only 2020+ keeps the modern base */
@@ -1673,7 +1680,7 @@ window.IntMapModules.timeBorders=function(HOST){
          bought at the reader's first intent to leave the present — the Chronos button pressed or
          focused, a year control touched, or the clock set to a past year by anybody (Atlas, a link,
          a restored session): js/chronos.js `IntMapTime.onIntent`. */
-      try{ window.IntMapTime.onIntent(()=>{
+      try{ IntMapTime.onIntent(()=>{
         try{ if(!window.IntMapMemBudget.maySpeculate(HOST.isMobile)) return; }catch(_){ return; }   /* no owner to ask = no speculative copy; the real load still runs */
         if(typeof requestIdleCallback==='function') requestIdleCallback(pf,{timeout:6000}); else setTimeout(pf,2500); }); }catch(_){} })();
     /* re-assert ONLY when a base-style swap (globe/flat/satellite) WIPED our layers — detected by a missing
@@ -1760,7 +1767,7 @@ window.IntMapModules.timeBorders=function(HOST){
          dependencies carry the "(UK)/(France)/(Japan)…" gloss, which made ^india$-style patterns miss entirely, so a
          click on 1914 British India resolved to NOTHING ("まだ不完全"). */
       const nmBare=String(nm||'').replace(/\s*\([^)]*\)\s*$/,'').trim();
-      try{ const HS=window.IntMapHistStates; const when=(window.IntMapTime&&window.IntMapTime.when)?window.IntMapTime.when():null;
+      try{ const HS=window.IntMapHistStates; const when=(IntMapTime&&IntMapTime.when)?IntMapTime.when():null;
         if(HS&&HS.STATES){ for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(!re||!(re.test(nm)||re.test(nmBare))) continue;
           let act=true; try{ if(when){ const t=+when,a=+new Date(S.from+'T00:00:00Z'),b=+new Date(S.to+'T23:59:59Z'); if(isFinite(t)) act=(t>=a&&t<=b); } }catch(_){}
           if(!act) continue;
@@ -1814,7 +1821,7 @@ window.IntMapModules.timeBorders=function(HOST){
           /* (#R125) the modern country here is HIDDEN because an ACTIVE former state absorbs it this year (India
              1914 → British Raj, Korea 1914 → Empire of Japan). Resolve to THAT state — its aggregate series is the
              comparable data for this territory — instead of returning nothing. */
-          else if(bestHid){ try{ const HS=window.IntMapHistStates, when2=(window.IntMapTime&&window.IntMapTime.when)?window.IntMapTime.when():null;
+          else if(bestHid){ try{ const HS=window.IntMapHistStates, when2=(IntMapTime&&IntMapTime.when)?IntMapTime.when():null;
             if(HS&&HS.STATES){ for(const S of HS.STATES){ const su=(when2&&HS.succAt)?HS.succAt(S,when2):(S.succ||[]);   /* (#R425) …and it must have held it THEN */
               if(!su.length||su.indexOf(bestHid)<0) continue;
               let act=true; try{ if(when2){ const t=+when2,a2=+new Date(S.from+'T00:00:00Z'),b2=+new Date(S.to+'T23:59:59Z'); if(isFinite(t)) act=(t>=a2&&t<=b2); } }catch(_){}
@@ -1825,7 +1832,7 @@ window.IntMapModules.timeBorders=function(HOST){
            Wikipediaに飛ばしてもらえない"): a country that kept its label (France, China, Italy…) resolved to the
            MODERN article. When the clock is in a curated era range, link that era's own article instead (the
            displayed name stays the map's era name; former states with their own registry entry never reach here). */
-        try{ const y=(window.IntMapTime&&!window.IntMapTime.isLive())?window.IntMapTime.year():null;
+        try{ const y=(IntMapTime&&!IntMapTime.isLive())?IntMapTime.year():null;
           if(code&&y!=null&&isFinite(y)){ const spans=_ERA_WIKI[code]; if(spans){ for(const sp of spans){ if(y>=sp[0]&&y<=sp[1]){ out.wiki=sp[2]; break; } } } } }catch(_){}
         /* The historical record's own identity outranks its statistical carrier's. Everything above
            resolves a polygon to a MODERN country so the statistics have somewhere to come from, and then
@@ -2168,7 +2175,7 @@ window.IntMapModules.timeBorders=function(HOST){
     }catch(_){ return {active:false,era:false}; } }
     /* the reader's-language year, through the platform — js/hist-scale.js owns the era convention and
        the tag comes from the registry, because a call site gets `zh` wrong (#R679). */
-    function _yTag(){ try{ return window.IntMapLang.htmlTag(HOST.lang)||'en'; }catch(_){ return 'en'; } }
+    function _yTag(){ try{ return IntMapLang.htmlTag(HOST.lang)||'en'; }catch(_){ return 'en'; } }
     function _yTxt(y){ try{ return window.IntMapHistScale.yearText(y,_yTag(),HOST.lang==='jp'?'年':null); }catch(_){ return String(y); } }
     /* the nine-language sentence the layer row carries while the snapshot tier is drawing.
        ⚠ THE POSITIONS ARE en, jp, de, ru, es, zh-Hant, zh-Hans, fr, ko — not alphabetical and not
@@ -2275,4 +2282,4 @@ window.IntMapModules.timeBorders=function(HOST){
     return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, coverage, note, typeNote, blankNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName, histNames:histNames, histNameFor:hnFor, histNameForGloss:hnEraGloss, loadHistNames:hnLoad,
              changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:_stepMin(),max:CS_MAX}) };   /* (#R518) the range the stepper can walk — both day-exact records, and (#R695) the era sheets below them */
   })();
-};
+}

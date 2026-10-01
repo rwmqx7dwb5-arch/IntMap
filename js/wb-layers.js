@@ -14,9 +14,11 @@
 import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) the World Bank's clock, stated once — this read had none */
 import { readWithin, isUnobserved, untilObserved } from './fetch-deadline.js';   /* (unobserved-is-not-refused) a read that ran out of time is not an empty series */
 import { afterTick, tickKey } from './runtime.js';
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.wbLayers=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function wbLayers(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const computeFilteredNews=HOST.computeFilteredNews, countryStats=HOST.countryStats, imToast=HOST.imToast, loadCountryData=HOST.loadCountryData, renderStats=HOST.renderStats, searchVal=HOST.searchVal;
   (function(){
@@ -105,7 +107,7 @@ window.IntMapModules.wbLayers=function(HOST){
          code changes with its mode, and js/layer-previews.js's copy would then draw the other
          series through this one's colours. One owner, read at draw time. */
       codeOf:(id)=>{ const L=WB.find(x=>x.id===id); return L?V(L).code:null; } }; }catch(_){}
-    const LA=window.IntMapLang.pickArgs(), LWB=window.IntMapLang.pick(()=>HOST.lang);
+    const LA=IntMapLang.pickArgs(), LWB=IntMapLang.pick(()=>HOST.lang);
     const WB=[
       /* ══ ⚠ (#R289) ONE LAYER, TWO WAYS OF DIVIDING THE SAME QUANTITY ═══════════════════════════
          「1人当たりCO₂排出レイヤーとCO₂排出量（百万t）レイヤーは一つに統合し、一人当たりにも切り替え
@@ -291,7 +293,7 @@ window.IntMapModules.wbLayers=function(HOST){
       /* (unobserved-is-not-refused) a host silent through every retry is LATE, not empty: say so and paint nothing,
          rather than a map of grey «no data» countries; nothing was cached, so switching it on again reads again */
       const LATE={};
-      wbSeries(L.code).catch(e=>{ if(!isUnobserved(e)) throw e; try{ if(typeof imToast==='function') imToast(window.IntMapLang.t(HOST.lang,'The data did not arrive in time — try again','データが時間内に届きませんでした — もう一度お試しください')); }catch(_){} return LATE; }).then(S=>{ if(S===LATE) return;
+      wbSeries(L.code).catch(e=>{ if(!isUnobserved(e)) throw e; try{ if(typeof imToast==='function') imToast(IntMapLang.t(HOST.lang,'The data did not arrive in time — try again','データが時間内に届きませんでした — もう一度お試しください')); }catch(_){} return LATE; }).then(S=>{ if(S===LATE) return;
       const key=_wbKey(L.code);
       const year=(wbYear[L.id]!==undefined)?wbYear[L.id]:((S&&S.best)||'');
       let m;
@@ -306,7 +308,7 @@ window.IntMapModules.wbLayers=function(HOST){
          to 2024 itself — every other year shows the World Bank's own coverage, gaps included. */
       if(L.id==='wbdebt'&&(!year||year==='2024')){ try{ Object.keys(DEBT_IMF_GG).forEach(k=>{ if(!(m[k]&&m[k].v!=null)) m[k]={v:DEBT_IMF_GG[k],y:'2024',imf:true}; }); }catch(_){} }
       const feats=[]; let withData=0; geo.features.forEach(f=>{ const d=m[iso(f.properties||{})]; const props={nm:_nmOf(f.properties)}; if(d&&d.v!=null){ props.v=d.v; withData++; } feats.push({type:'Feature',geometry:f.geometry,properties:props}); });
-      if(!withData&&!S){ try{ if(typeof imToast==='function') imToast(window.IntMapLang.t(HOST.lang,"No data right now — please try again in a moment.","データを取得できませんでした。少し待って再試行してください。","Derzeit keine Daten — bitte gleich erneut versuchen.","Сейчас данных нет — попробуйте через мгновение.","Ahora mismo no hay datos; inténtelo en un momento.")); }catch(_){} }
+      if(!withData&&!S){ try{ if(typeof imToast==='function') imToast(IntMapLang.t(HOST.lang,"No data right now — please try again in a moment.","データを取得できませんでした。少し待って再試行してください。","Derzeit keine Daten — bitte gleich erneut versuchen.","Сейчас данных нет — попробуйте через мгновение.","Ahora mismo no hay datos; inténtelo en un momento.")); }catch(_){} }
       const fc={type:'FeatureCollection',features:feats}, src='src-'+L.id, fill=L.id+'-fill', line=L.id+'-line';
       try{ if(GE().layers.hasSource(src)) GE().layers.setSourceData(src,fc); else { GE().layers.addSource(src,{type:'geojson',data:fc});
         GE().layers.add({id:fill,type:'fill',source:src,paint:{'fill-color':['case',['has','v'],['interpolate',['linear'],['get','v']].concat(L.ramp),'#9aa0a6'],'fill-opacity':['case',['has','v'],0.62,0.42]}});
@@ -344,9 +346,9 @@ window.IntMapModules.wbLayers=function(HOST){
             yr.innerHTML='<label style="display:contents;"><span class="bx-yearlbl"></span><select class="bx-year" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"></select></label>';
             el.appendChild(yr);
             yr.querySelector('.bx-year').addEventListener('change',(e)=>{ wbYear[L.id]=e.target.value; choroOn(L); }); }
-          yr.querySelector('.bx-yearlbl').textContent=window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año');
+          yr.querySelector('.bx-yearlbl').textContent=IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año');
           const sel=yr.querySelector('.bx-year');
-          const latestTxt=window.IntMapLang.t(HOST.lang,'Latest per country','最新（国ごと）','Neuester je Land','Последний по стране','Más reciente por país');
+          const latestTxt=IntMapLang.t(HOST.lang,'Latest per country','最新（国ごと）','Neuester je Land','Последний по стране','Más reciente por país');
           const opts=S.years.slice().reverse().map(y=>'<option value="'+y+'">'+y+' ('+S.counts[y]+')</option>').join('')
             +'<option value="">'+HOST.escapeHtml(latestTxt)+'</option>';
           if(sel.getAttribute('data-built')!==String(S.years.length)){ sel.innerHTML=opts; sel.setAttribute('data-built',String(S.years.length)); }
@@ -357,11 +359,11 @@ window.IntMapModules.wbLayers=function(HOST){
            so «the colours are comparable» is a statement the legend actually supports. */
         let ysp='', mode='';
         if(year&&S&&S.counts[year]){ ysp=year;
-          mode=(window.IntMapLang.t(HOST.lang,' · ','・',' · ',' · ',' · '))+S.counts[year]+(window.IntMapLang.t(HOST.lang,' countries reporting','か国が報告',' Länder mit Daten',' стран с данными',' países con datos')); }
+          mode=(IntMapLang.t(HOST.lang,' · ','・',' · ',' · ',' · '))+S.counts[year]+(IntMapLang.t(HOST.lang,' countries reporting','か国が報告',' Länder mit Daten',' стран с данными',' países con datos')); }
         else { let yrs=[]; try{ yrs=Object.values(m).map(d=>+d.y).filter(isFinite); }catch(_){} if(yrs.length){ const a=Math.min.apply(null,yrs),b=Math.max.apply(null,yrs); ysp=(a===b)?(''+a):(a+'–'+b); }
-          mode=window.IntMapLang.t(HOST.lang," · most recent value per country","（国ごとに最新値）"," · jeweils neuester Wert je Land"," · последнее значение по каждой стране"," · valor más reciente por país"); }
+          mode=IntMapLang.t(HOST.lang," · most recent value per country","（国ごとに最新値）"," · jeweils neuester Wert je Land"," · последнее значение по каждой стране"," · valor más reciente por país"); }
         let nn=el.querySelector('.bx-note'); if(!nn){ nn=document.createElement('div'); nn.className='bx-note'; nn.style.cssText='font-size:9.5px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(nn); }
-        nn.textContent=(window.IntMapLang.t(HOST.lang,"Source: World Bank · ","出典: 世界銀行 · ","Quelle: Weltbank · ","Источник: Всемирный банк · ","Fuente: Banco Mundial · "))+(Array.isArray(L.code)?L.code.join(' + '):L.code)+(ysp?(' · '+ysp):'')+mode+((L.id==='wbdebt'&&(!year||year==='2024'))?(window.IntMapLang.t(HOST.lang," + IMF WEO general govt gross debt (gap-fill)"," ＋ IMF WEO（一般政府総債務）で補完"," + IWF WEO Bruttoschuldenstand des Staates (Lückenfüllung)"," + МВФ WEO, валовой долг сектора госуправления (заполнение пробелов)"," + FMI WEO deuda bruta del gobierno general (relleno de huecos)")):''); } } }catch(_){}
+        nn.textContent=(IntMapLang.t(HOST.lang,"Source: World Bank · ","出典: 世界銀行 · ","Quelle: Weltbank · ","Источник: Всемирный банк · ","Fuente: Banco Mundial · "))+(Array.isArray(L.code)?L.code.join(' + '):L.code)+(ysp?(' · '+ysp):'')+mode+((L.id==='wbdebt'&&(!year||year==='2024'))?(IntMapLang.t(HOST.lang," + IMF WEO general govt gross debt (gap-fill)"," ＋ IMF WEO（一般政府総債務）で補完"," + IWF WEO Bruttoschuldenstand des Staates (Lückenfüllung)"," + МВФ WEO, валовой долг сектора госуправления (заполнение пробелов)"," + FMI WEO deuda bruta del gobierno general (relleno de huecos)")):''); } } }catch(_){}
     }); }); }
     function choroOff(L){ [L.id+'-fill',L.id+'-line'].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }catch(_){} }); try{ window._hideGenericLegend&&window._hideGenericLegend(L.id); }catch(_){} }
 
@@ -383,21 +385,21 @@ window.IntMapModules.wbLayers=function(HOST){
            URL is built from (measured: nc + 72282711 → nc72282711). `ids` is the fallback for a feed
            row that carries the merged list instead. */
         const eid=((p.net||'')+(p.code||''))||String(p.ids||'').split(',').filter(Boolean)[0]||'';
-        GE().ui.attach(GE().ui.popup({closeButton:true,className:'plc-popup'}).setLngLat(e.lngLat).setHTML('<div style="font-size:12.5px;line-height:1.5;color:var(--text-main);"><b style="color:#ff453a;">M '+(p.mag!=null?(+p.mag).toFixed(1):'?')+'</b><br>'+IntMapSafe.html(p.place||'')+'<br><span style="color:var(--text-muted);">'+when+'</span>'+(eid?('<br><button data-shk-open="'+IntMapSafe.html(eid)+'" style="margin-top:6px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:7px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">'+IntMapSafe.html(window.IntMapLang.t(HOST.lang,"Ground shaking (ShakeMap)","揺れの分布（ShakeMap）","Bodenerschütterung (ShakeMap)","Сотрясения грунта (ShakeMap)","Sacudida del suelo (ShakeMap)"))+'</button>'):'')+'</div>')); }); GE().events.onLayer('mouseenter','eq-pt',()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave','eq-pt',()=>{ GE().render.canvas().style.cursor=''; });
+        GE().ui.attach(GE().ui.popup({closeButton:true,className:'plc-popup'}).setLngLat(e.lngLat).setHTML('<div style="font-size:12.5px;line-height:1.5;color:var(--text-main);"><b style="color:#ff453a;">M '+(p.mag!=null?(+p.mag).toFixed(1):'?')+'</b><br>'+IntMapSafe.html(p.place||'')+'<br><span style="color:var(--text-muted);">'+when+'</span>'+(eid?('<br><button data-shk-open="'+IntMapSafe.html(eid)+'" style="margin-top:6px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:7px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">'+IntMapSafe.html(IntMapLang.t(HOST.lang,"Ground shaking (ShakeMap)","揺れの分布（ShakeMap）","Bodenerschütterung (ShakeMap)","Сотрясения грунта (ShakeMap)","Sacudida del suelo (ShakeMap)"))+'</button>'):'')+'</div>')); }); GE().events.onLayer('mouseenter','eq-pt',()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave','eq-pt',()=>{ GE().render.canvas().style.cursor=''; });
         /* ONE delegated listener for every popup this layer will ever open — a popup's DOM is rebuilt
            on each click, so a handler bound to the button would have to be re-bound every time. */
         document.addEventListener('click',(ev)=>{ const b=ev.target&&ev.target.closest&&ev.target.closest('[data-shk-open]'); if(!b) return;
           const id=b.getAttribute('data-shk-open'); b.disabled=true;
           Promise.resolve().then(()=>window.IntMapLazy.need('shakeMap')).then(()=>window.IntMapShakeMap.show(id))
             .catch(err=>{ try{ b.disabled=false; if(typeof imToast==='function') imToast(err&&err.code==='NO_SHAKEMAP'
-              ? window.IntMapLang.t(HOST.lang,"USGS published no ShakeMap for this earthquake","この地震について USGS は ShakeMap を公開していません","Für dieses Beben hat USGS keine ShakeMap veröffentlicht","Для этого землетрясения USGS не публиковал ShakeMap","El USGS no publicó un ShakeMap para este sismo")
-              : window.IntMapLang.t(HOST.lang,"Could not load the ShakeMap","ShakeMap を取得できませんでした","ShakeMap konnte nicht geladen werden","Не удалось загрузить ShakeMap","No se pudo cargar el ShakeMap")); }catch(_){} }); }); }catch(_){} }
+              ? IntMapLang.t(HOST.lang,"USGS published no ShakeMap for this earthquake","この地震について USGS は ShakeMap を公開していません","Für dieses Beben hat USGS keine ShakeMap veröffentlicht","Для этого землетрясения USGS не публиковал ShakeMap","El USGS no publicó un ShakeMap para este sismo")
+              : IntMapLang.t(HOST.lang,"Could not load the ShakeMap","ShakeMap を取得できませんでした","ShakeMap konnte nicht geladen werden","Не удалось загрузить ShakeMap","No se pudo cargar el ShakeMap")); }catch(_){} }); }); }catch(_){} }
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('eq',LA('Earthquakes (USGS)','地震（USGS）','Erdbeben (USGS)','Землетрясения (USGS)','Terremotos (USGS)'),['eq-pt'],'bx-eq');
         if(el){ let ctl=el.querySelector('.bx-eqwin'); if(!ctl){ ctl=document.createElement('div'); ctl.className='bx-eqwin'; ctl.style.cssText='display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;'; el.appendChild(ctl); }
-          const opts=[['day',window.IntMapLang.t(HOST.lang,"24h","24時間","24 h","24 ч","24 h")],['week',window.IntMapLang.t(HOST.lang,"7d","7日","7 T","7 дн","7 d")],['month',window.IntMapLang.t(HOST.lang,"30d M4.5+","30日(M4.5+)","30 T M4,5+","30 дн M4.5+","30 d M4,5+")],['year',window.IntMapLang.t(HOST.lang,"1yr M6+","1年(M6+)","1 J M6+","1 год M6+","1 año M6+")]];
+          const opts=[['day',IntMapLang.t(HOST.lang,"24h","24時間","24 h","24 ч","24 h")],['week',IntMapLang.t(HOST.lang,"7d","7日","7 T","7 дн","7 d")],['month',IntMapLang.t(HOST.lang,"30d M4.5+","30日(M4.5+)","30 T M4,5+","30 дн M4.5+","30 d M4,5+")],['year',IntMapLang.t(HOST.lang,"1yr M6+","1年(M6+)","1 J M6+","1 год M6+","1 año M6+")]];
           ctl.innerHTML=opts.map(o=>'<button data-w="'+o[0]+'" style="border:1px solid rgba(128,128,128,0.3);background:'+(eqWin===o[0]?'var(--primary-fill)':'var(--input-bg)')+';color:'+(eqWin===o[0]?'#fff':'var(--text-main)')+';border-radius:7px;padding:4px 7px;font-size:10.5px;font-weight:600;cursor:pointer;">'+o[1]+'</button>').join('');
           ctl.querySelectorAll('button').forEach(b=>b.onclick=()=>{ eqWin=b.getAttribute('data-w'); eqOn(); }); } } }catch(_){}
-    }).catch(()=>{ try{ if(typeof imToast==='function') imToast(window.IntMapLang.t(HOST.lang,"Could not load earthquake data","地震データを取得できませんでした","Erdbebendaten konnten nicht geladen werden","Не удалось загрузить данные о землетрясениях","No se pudieron cargar los datos sísmicos")); }catch(_){} }); }
+    }).catch(()=>{ try{ if(typeof imToast==='function') imToast(IntMapLang.t(HOST.lang,"Could not load earthquake data","地震データを取得できませんでした","Erdbebendaten konnten nicht geladen werden","Не удалось загрузить данные о землетрясениях","No se pudieron cargar los datos sísmicos")); }catch(_){} }); }
     function eqOff(){ try{ if(GE().layers.has('eq-pt')) GE().layers.setLayout('eq-pt','visibility','none'); }catch(_){} try{ window._hideGenericLegend&&window._hideGenericLegend('eq'); }catch(_){} }
 
     /* ---------- Heat of Attention (news-density heatmap) ---------- */
@@ -408,7 +410,7 @@ window.IntMapModules.wbLayers=function(HOST){
       try{ if(GE().layers.hasSource(src)) GE().layers.setSourceData(src,fc); else { GE().layers.addSource(src,{type:'geojson',data:fc});
         GE().layers.add({id:'heat-h',type:'heatmap',source:src,paint:{'heatmap-intensity':1.1,'heatmap-radius':['interpolate',['linear'],['zoom'],1,18,4,42],'heatmap-opacity':0.72,'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(0,0,255,0)',0.2,'#3b82f6',0.4,'#22c55e',0.6,'#eab308',0.8,'#f97316',1,'#ef4444']}}); } }catch(_){}
       const cb=document.getElementById('bx-heat'), on=cb?cb.checked:true; try{ if(GE().layers.has('heat-h')) GE().layers.setLayout('heat-h','visibility',on?'visible':'none'); }catch(_){}
-      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('heat',LA('Heat of Attention','注目度ヒートマップ','Aufmerksamkeits-Heatmap','Карта внимания','Mapa de calor de atención'),['heat-h'],'bx-heat'); if(el){ let h=el.querySelector('.bx-note'); if(!h){ h=document.createElement('div'); h.className='bx-note'; h.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(h);} h.textContent=window.IntMapLang.t(HOST.lang,'Estimated from world news density (approximate)','世界のニュース密度から推定（概算）','Geschätzt aus der weltweiten Nachrichtendichte (näherungsweise)','Оценка по плотности мировых новостей (приблизительно)','Estimado a partir de la densidad de noticias mundiales (aproximado)'); } } }catch(_){}
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('heat',LA('Heat of Attention','注目度ヒートマップ','Aufmerksamkeits-Heatmap','Карта внимания','Mapa de calor de atención'),['heat-h'],'bx-heat'); if(el){ let h=el.querySelector('.bx-note'); if(!h){ h=document.createElement('div'); h.className='bx-note'; h.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(h);} h.textContent=IntMapLang.t(HOST.lang,'Estimated from world news density (approximate)','世界のニュース密度から推定（概算）','Geschätzt aus der weltweiten Nachrichtendichte (näherungsweise)','Оценка по плотности мировых новостей (приблизительно)','Estimado a partir de la densidad de noticias mundiales (aproximado)'); } } }catch(_){}
     }
     function heatOff(){ try{ if(GE().layers.has('heat-h')) GE().layers.setLayout('heat-h','visibility','none'); }catch(_){} try{ window._hideGenericLegend&&window._hideGenericLegend('heat'); }catch(_){} }
 
@@ -472,4 +474,4 @@ window.IntMapModules.wbLayers=function(HOST){
     }catch(_){} }
     if(window.requestIdleCallback) requestIdleCallback(()=>refreshStatsLatest(),{timeout:6000}); else setTimeout(refreshStatsLatest,4500);
   })();
-};
+}

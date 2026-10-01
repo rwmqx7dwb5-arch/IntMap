@@ -30,9 +30,11 @@
  *  ⚠ THE READS IN HERE ARE THE SUBJECT OF #R498, not an accident of the move — see the two ⚠ boxes
  *  below, and Architecture.md §9.3.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.mobileMapInput=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function mobileMapInput(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   const RT=()=>window.IntMapRuntime;     /* (#R234) one frame, one camera subscription, one timer */
 
   /* ══ the long-press that opens the context menu ══════════════════════════════════════════════ */
@@ -112,7 +114,7 @@ window.IntMapModules.mobileMapInput=function(HOST){
   document.head.appendChild(st);
   const cross=document.createElement('div'); cross.id='m-crosshair'; cross.innerHTML=''; mc.appendChild(cross);
   const btn=document.createElement('button'); btn.id='m-addpoint'; btn.type='button'; mc.appendChild(btn);
-  function setLabel(){ btn.textContent=(window.IntMapLang.t(HOST.lang,'＋ Add point','＋ 地点を追加','＋ Punkt hinzufügen','＋ Добавить точку','＋ Añadir punto')); }
+  function setLabel(){ btn.textContent=(IntMapLang.t(HOST.lang,'＋ Add point','＋ 地点を追加','＋ Punkt hinzufügen','＋ Добавить точку','＋ Añadir punto')); }
   setLabel(); window.addEventListener('intmap-lang',setLabel);
   /* (#R12) The crosshair sits at the GEOMETRIC center of the map (50%/50%). map.getCenter() returns the
      PADDED center (the bottom-sheet/sidebar shift the map padding), so it was offset from the crosshair
@@ -209,4 +211,4 @@ window.IntMapModules.mobileMapInput=function(HOST){
 
   const API={ longPress, crosshair };
   return API;
-};
+}

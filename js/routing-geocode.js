@@ -31,11 +31,12 @@
  *  ⚠ NO COORDINATE OF THE READER'S IS SENT ANYWHERE BY THIS FILE. The bias point (`near`) is used
  *  for RANKING, which happens after the response arrives — it is never a query parameter.
  * ==========================================================================*/
+import { IntMapLang } from './lang-registry.js';
 window.IntMapRouteGeocode = (function () {
   'use strict';
 
   var _lang = 'en';
-  var L = window.IntMapLang.pick(function () { return _lang; });
+  var L = IntMapLang.pick(function () { return _lang; });
 
   var R = 6371;
   function hav(a, b) {
@@ -178,7 +179,7 @@ window.IntMapRouteGeocode = (function () {
 
   async function openMeteo(q, signal, Rp) {
     var url = 'https://geocoding-api.open-meteo.com/v1/search?count=8&name=' + encodeURIComponent(q)
-      + '&language=' + encodeURIComponent(window.IntMapLang.locale(_lang, 'en').slice(0, 2));
+      + '&language=' + encodeURIComponent(IntMapLang.locale(_lang, 'en').slice(0, 2));
     var j = await jsonFetch(url, signal);
     /* ⚠ AGREEMENT ONLY, NO IMPORTANCE FLOOR. #R737's floor is a fact about NOMINATIM — it is that
        store's own noise level, published as `importance`, and Open-Meteo publishes no such number. */
@@ -203,7 +204,7 @@ window.IntMapRouteGeocode = (function () {
        named in Japanese (「Mount Fuji」→ 富士山 through `name:en`). Without it the rule below could only
        see the one localised label, which is how a correct row gets refused for the wrong reason. */
     var url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&namedetails=1&limit=8&accept-language='
-      + encodeURIComponent(window.IntMapLang.locale(_lang, 'en')) + '&q=' + encodeURIComponent(q);
+      + encodeURIComponent(IntMapLang.locale(_lang, 'en')) + '&q=' + encodeURIComponent(q);
     var j = await jsonFetch(url, signal);
     /* the #R515 agreement AND the #R737 noise floor, from the one place they are written down.
        ⚠ NOT `namesakeOk` — that clause belongs to a door that CONFIRMS (see its note in
@@ -308,7 +309,7 @@ window.IntMapRouteGeocode = (function () {
     o = o || {};
     if (o.lang) _lang = o.lang;
     var url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&accept-language='
-      + encodeURIComponent(window.IntMapLang.locale(_lang, 'en'))
+      + encodeURIComponent(IntMapLang.locale(_lang, 'en'))
       + '&lat=' + (+lat).toFixed(6) + '&lon=' + (+lng).toFixed(6);
     /* (#R298) the same reservation the search uses, so a reverse lookup and a suggestion cannot both
        decide the second is theirs. A label is worth waiting for, so this one never gives up its turn. */

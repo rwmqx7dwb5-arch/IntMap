@@ -49,11 +49,13 @@ import './navigation-camera.js';
 import './navigation-voice.js';
 import './navigation-sim.js';
 import './navigation-ui.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
 window.IntMapNavigation = (function () {
   'use strict';
 
-  var GE = function () { return window.IntMapGeoEngine; };
+  var GE = function () { return IntMapGeoEngine; };
   var NS = function () { return window.IntMapNavStore; };
   var NM = function () { return window.IntMapNavMatch; };
   var NG = function () { return window.IntMapNavGuide; };
@@ -71,7 +73,7 @@ window.IntMapNavigation = (function () {
      js/lang-registry.js's `normalise` is the one place that knows the mapping, so ask it. */
   function lang() {
     try {
-      var R = window.IntMapLang;
+      var R = IntMapLang;
       var raw = (window.IM_HOST && window.IM_HOST.lang) || document.documentElement.lang || 'en';
       return (R && typeof R.normalise === 'function') ? R.normalise(raw) : (raw === 'ja' ? 'jp' : raw);
     } catch (_) { return 'en'; }
@@ -83,8 +85,8 @@ window.IntMapNavigation = (function () {
   /* ⚠ A TERNARY, NOT AN IIFE — see js/routing-errors.js. An IIFE's callee is a FunctionExpression,
      which scripts/i18n-helpers.mjs cannot resolve to `IntMapLang.pick`, so every string in the file
      would silently leave the four inline-table languages while the report still read 100 %. */
-  var L = (window.IntMapLang && window.IntMapLang.pick)
-    ? window.IntMapLang.pick(lang)
+  var L = (IntMapLang && IntMapLang.pick)
+    ? IntMapLang.pick(lang)
     : function () { return arguments[0]; };
   /* (layer-failure-state) every message here is navigation failing while the reader is following a route, so it is
      the one caller that speaks `urgent` (role=alert) in js/notify.js's region. ⚠ It used to call `window.imToast`,

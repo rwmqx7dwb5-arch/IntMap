@@ -61,17 +61,19 @@ import { makeAtlasLive } from './atlas-live.js';   /* (atlas-live-stream) the tu
 import { CAPABILITY_MODULES } from './atlas-caps-modules.js';   /* (atlas-capability-modules) every capability: its row, its schema and what the dispatch runs for it */
 import { capabilityRunners, unknownAction } from './atlas-caps.js';
 import { makeAtlasMapCompose } from './atlas-map-compose.js';   /* (#R511) one map explanation in ONE call — numbered places with roles, arcs, fills, a frame and a legend the prose is linked to. ⚠ ON A LINE THAT WAS BLANK: this file is AT its shrink-only ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ), and scripts/js-reachability.mjs anchors its import scan at line start, so a new module cannot share a line. */
-window.IntMapModules=window.IntMapModules||{};
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
 const CAP_RUN = capabilityRunners(CAPABILITY_MODULES);   /* dispatch spelling → run, derived once from the entries (js/atlas-caps.js) */
-window.IntMapModules.atlasConsole=function(HOST){
+export function atlasConsole(HOST){
   /* (#R318) THE KERNEL, published by js/app-body.js before Atlas is ever fetched. Named here so the
      capability registry, the observed-result shape, the executor and the state ledger are reached by
      ONE name each rather than by `window.` at forty call sites. They exist without Atlas — that is the
      point of §3: a capability is discoverable before its module loads. */
   const CAPS=window.IntMapCapabilities||makeAtlasCapabilities(HOST);
-  const _KERNEL=(function(){ try{ return installAtlasKernel(window.IntMapOS, HOST, { capabilities:CAPS, GE:()=>window.IntMapGeoEngine, record:window.IntMapOS.emit }); }catch(e){ try{ console.warn('atlas kernel not installed',e); }catch(_){} return null; } })();
+  const _KERNEL=(function(){ try{ return installAtlasKernel(window.IntMapOS, HOST, { capabilities:CAPS, GE:()=>IntMapGeoEngine, record:window.IntMapOS.emit }); }catch(e){ try{ console.warn('atlas kernel not installed',e); }catch(_){} return null; } })();
   const RESULTS=_KERNEL&&_KERNEL.results, EXEC=_KERNEL&&_KERNEL.exec, ASTATE=_KERNEL&&_KERNEL.state;
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const _aiLangName=HOST._aiLangName, addEdgeResize=HOST.addEdgeResize, addPin=HOST.addPin, aiGate=HOST.aiGate, aiLimitMsg=HOST.aiLimitMsg, aiLoginMsg=HOST.aiLoginMsg, aiParseJSON=HOST.aiParseJSON, aiQuotaBlocked=HOST.aiQuotaBlocked, aiToast=HOST.aiToast, aiToday=HOST.aiToday, aiUsage=HOST.aiUsage, aiUsesLeft=HOST.aiUsesLeft, applyAccent=HOST.applyAccent, applyTheme=HOST.applyTheme, askAI=HOST.askAI, askAIJSON=HOST.askAIJSON, askAIJSONEnvelope=HOST.askAIJSONEnvelope, bringToFront=HOST.bringToFront, cName=HOST.cName, clearAllPins=HOST.clearAllPins, compressImage=HOST.compressImage, countryStats=HOST.countryStats, diskFillPolys=HOST.diskFillPolys, exitTool=HOST.exitTool, fetchData=HOST.fetchData, fmtPc=HOST.fmtPc, loadCountryData=HOST.loadCountryData, localFuzzyPlaces=HOST.localFuzzyPlaces, makeDraggable=HOST.makeDraggable, parseDate=HOST.parseDate, refreshTool=HOST.refreshTool, saveSettings=HOST.saveSettings, setGrid=HOST.setGrid, setLang=HOST.setLang, setMode=HOST.setMode, setTool=HOST.setTool, showCountryDetail=HOST.showCountryDetail, t=HOST.t, updateToolPanel=HOST.updateToolPanel, ymdISO=HOST.ymdISO;
   return (function(){
@@ -82,20 +84,20 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R318) nine languages, and derived rather than listed: `codeForEnglishName` is built FROM
        `englishName`, so the two directions cannot disagree, and a language a detector names that
        IntMap does not have resolves to nothing (→ the UI language) rather than to Japanese. */
-    const _mirrorLang=()=>{ try{ return window.IntMapLang.codeForEnglishName(_replyLang())||HOST.lang; }catch(_){ return HOST.lang; } };
+    const _mirrorLang=()=>{ try{ return IntMapLang.codeForEnglishName(_replyLang())||HOST.lang; }catch(_){ return HOST.lang; } };
     /* (#R318) 「ドイツ語にして」「passe en français」「한국어로」 — every spelling ONE language row
        already knows (its internal code, its BCP-47 tag, its aliases, its own name, its English name),
        plus the endonyms a reader is most likely to type. Derived from the registry, so a tenth
        language is still one locale file and no edit here. Returns '' for a language IntMap has not
        got — which the `language` action reports honestly instead of silently doing nothing. */
     const _LANG_ENDONYM={'deutsch':'de','español':'es','espanol':'es','français':'fr','francais':'fr','한국어':'ko','русский':'ru','日本語':'jp','繁體中文':'zh','繁体中文':'zh','正體中文':'zh','简体中文':'zh-hans','簡體中文':'zh-hans','中文':'zh','英語':'en','英语':'en'};
-    function _langCode(x){ try{ const R=window.IntMapLang; const w=String(x==null?'':x).trim().toLowerCase(); if(!w) return '';
+    function _langCode(x){ try{ const R=IntMapLang; const w=String(x==null?'':x).trim().toLowerCase(); if(!w) return '';
       const byName=R.codeForEnglishName(w); if(byName) return byName;
       for(const row of R.LANGS){ const lbl=String(row.label||'').toLowerCase().replace(/s*(beta)s*$/,'');
         if(String(row.code).toLowerCase()===w||String(row.html||'').toLowerCase()===w||lbl===w) return row.code;
         if((row.alias||[]).some(a=>String(a).toLowerCase()===w)) return row.code; }
       return _LANG_ENDONYM[w]||''; }catch(_){ return ''; } }
-    const L=window.IntMapLang.pick(()=>_mirrorLang()), LA=window.IntMapLang.pickArgs();   /* (#R241) LA = the ARRAY form; see `pickArgs` in js/lang-registry.js. ONE statement: this file is under a shrink-only ceiling (tests/atlas-console-kernel-checks.test.mjs #R199 ⑤), and the rule is that a feature moves out, never that the ceiling moves up. */
+    const L=IntMapLang.pick(()=>_mirrorLang()), LA=IntMapLang.pickArgs();   /* (#R241) LA = the ARRAY form; see `pickArgs` in js/lang-registry.js. ONE statement: this file is under a shrink-only ceiling (tests/atlas-console-kernel-checks.test.mjs #R199 ⑤), and the rule is that a feature moves out, never that the ceiling moves up. */
     const esc=s=>window.IntMapSafe.html(s);   /* the one encoder (js/safe-html.js); the local copy did not encode ' */
     const lx=arr=>L.arr(arr);   /* (#R241) through `pick()` itself, so a language past the arguments given gets its inline-table entry instead of English at index 0 */
     const nm=s=>{ try{ return cName(s); }catch(_){ return s&&(s.nameEn||s.nameJp)||'?'; } };
@@ -1985,7 +1987,7 @@ window.IntMapModules.atlasConsole=function(HOST){
          implies Chinese — by mirroring the reader's own UI language, which is now all nine of them.
          ⚠ AND IntMap DOES REPLY IN CHINESE NOW (#R223 added zh-Hant, #R224 zh-Hans). The comment
          above predates both; the RULE it states still holds, its reason no longer does. */
-      if(/[一-鿿㐀-䶿]/.test(s)){ try{ return window.IntMapLang.englishName(HOST.lang); }catch(_){ return 'Japanese'; } }
+      if(/[一-鿿㐀-䶿]/.test(s)){ try{ return IntMapLang.englishName(HOST.lang); }catch(_){ return 'Japanese'; } }
       return (typeof _aiLangName==='function')?_aiLangName():'English'; }
     /* (#R155) Reply-language LOCK. _replyLang() already resolves the right language (kana→Japanese,
        Cyrillic→Russian, …, and — crucially — Han-characters-WITHOUT-kana → the user's UI language, since
@@ -2132,7 +2134,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       wireExamples();
       /* (#R105) re-localize the Atlas panel's static chrome immediately on a language change (was stuck until reload — the ws "すべてがすぐ変わらない" report).
          NOTE: the module's `L` mirrors the last MESSAGE's language, so use a currentLang-based helper for UI chrome. */
-      try{ const _uiL=window.IntMapLang.pick(()=>HOST.lang);
+      try{ const _uiL=IntMapLang.pick(()=>HOST.lang);
         window.addEventListener('intmap-lang',()=>{ try{
         const sub=panel.querySelector('.atl-sub'); if(sub) sub.textContent=_uiL('Ask in plain language — Atlas drives the map for you. Try:','自然言語で指示すると、Atlasが地図を操作します。例:','Stell deine Anfrage in normaler Sprache — Atlas steuert die Karte. Beispiele:','Спросите обычными словами — Atlas управляет картой. Примеры:','Pide en lenguaje natural — Atlas controla el mapa. Ejemplos:');
         const nt=panel.querySelector('.atl-ainote'); if(nt) nt.textContent=_uiL('Atlas can be inaccurate — verify important facts.','Atlasの回答は不正確な場合があります。重要な情報は確認してください。','Atlas kann ungenau sein — wichtige Fakten prüfen.','Atlas может ошибаться — проверяйте важные факты.','Atlas puede equivocarse — verifica los datos importantes.');
@@ -2157,7 +2159,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           else if(mic){ let rec=null, recng=false; /* (#R318) the five-row table that stood here is gone — IntMapLang.locale() answers for all nine, and the five it knew left four of them dictating in American English */
             mic.onclick=()=>{ if(recng){ try{ rec&&rec.stop(); }catch(_){} return; }
               try{ rec=new SR(); }catch(_){ return; }
-              try{ rec.lang=window.IntMapLang.locale(HOST.lang)||'en-US'; }catch(_){ rec.lang='en-US'; } rec.interimResults=true; rec.continuous=false; rec.maxAlternatives=1;
+              try{ rec.lang=IntMapLang.locale(HOST.lang)||'en-US'; }catch(_){ rec.lang='en-US'; } rec.interimResults=true; rec.continuous=false; rec.maxAlternatives=1;
               const base=(inEl&&inEl.value)?inEl.value.replace(/\s+$/,'')+' ':'';
               rec.onstart=()=>{ recng=true; mic.classList.add('rec'); };
               rec.onresult=(ev)=>{ let txt=''; for(let i=ev.resultIndex;i<ev.results.length;i++){ txt+=ev.results[i][0].transcript; } if(inEl){ inEl.value=base+txt; try{ inEl.__autoGrow&&inEl.__autoGrow(); }catch(_){} } try{ _atlSyncGo(); }catch(_){} };
@@ -3026,5 +3028,5 @@ window.IntMapModules.atlasConsole=function(HOST){
       try{ PROG.done(ai); }catch(_){} try{ msgTools(ai,String(label||'')); }catch(_){} }
     return { open, toggle, close:_atlClose, mountTab, run, runDirect, brief:briefEntry, askHere, askReading:()=>READ.askReading(), dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
   })();
-};
+}
 

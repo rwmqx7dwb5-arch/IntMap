@@ -31,7 +31,10 @@ const code = (p) => codeOnly(read(p));
 test('R227 ① the app draws the limb, and the renderer\'s own atmosphere is off where it does', () => {
   /* ⚠ READ, NOT RUN: the limb is a WebGL custom layer and the ownership gate reads the live renderer (globeness, eye altitude). */
   const layer = code('js/limb-layer.js');
-  assert.match(layer, /window\.IntMapModules\.limbLayer\s*=\s*function/,
+  /* (module-graph) the factory is a module-private function handed to the seam at load —
+     IntMapGeoEngine.provideLayerKind — where it used to be assigned onto window.IntMapModules */
+  assert.match(layer, /function limbLayer\(\)\{/, 'js/limb-layer.js defines the factory');
+  assert.match(layer, /\nIntMapGeoEngine\.provideLayerKind\('limbLayer',\s*limbLayer\);/,
     'js/limb-layer.js registers the factory the adapter looks for');
   assert.match(layer, /type:'custom'/, 'it is a custom layer, not a style layer');
 
@@ -39,7 +42,9 @@ test('R227 ① the app draws the limb, and the renderer\'s own atmosphere is off
   for (const fn of ['addLimb', 'setLimb', 'removeLimb', 'hasLimb']) {
     assert.ok(new RegExp('\\b' + fn + '\\s*[:(]').test(eng), fn + ' is part of the engine contract');
   }
-  assert.match(eng, /IntMapModules\.limbLayer\(\)\.makeLayer\(/,
+  assert.match(eng, /provideLayerKind\(name,make\)\{ if\(typeof make==="function"\) _kinds\[name\]=make;/,
+    'the adapter keeps the kinds it is handed');
+  assert.match(eng, /_kinds\.limbLayer\(\)\.makeLayer\(/,
     'the adapter builds it, so a second engine answers the same intent its own way');
   /* ⚠ and it refuses on a CPU rasteriser. Measured: on SwiftShader the full-screen pass that decides
      which pixels are in the band took boot-to-loaded from 10.5 s to 46.5 s. On a GPU the same layer
@@ -152,7 +157,11 @@ test('R227 ⑤ the model is published, and what reads it is what publishes it', 
   /* the module has to be loaded at boot like the other two custom layers, or the factory is absent */
   const main = read('src/main.js');
   assert.match(main, /import '\.\.\/js\/limb-layer\.js'/, 'it is imported');
-  assert.match(main, /'orbitPoints', 'limbLayer'/, 'and named in the module guard\'s list');
+  /* (module-graph) the module guard's MODULE_FACTORIES list is gone: that import is a link — a missing
+     file is refused at build — and the factory is present exactly when the module has evaluated,
+     because evaluating it is what registers the kind (asserted in ① above). */
+  assert.match(code('js/limb-layer.js'), /\nIntMapGeoEngine\.provideLayerKind\('limbLayer',\s*limbLayer\);/,
+    'and evaluating it is what hands the factory over');
 
   /* the model still answers — this is the same march the shader mirrors */
   const c = skyColour(45, 0).rgb;

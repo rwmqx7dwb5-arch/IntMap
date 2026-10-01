@@ -7,8 +7,10 @@
  *  The only edit to the moved text is that free references to closure variables became
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.mapReadout=function(HOST){
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function mapReadout(HOST){
   /* (#R251) the module's language helper. It used to be bound INSIDE `tropicLabel()` only, so the
      tsunami readout below — which this round moved off a private two-language helper — referenced a
      free identifier; scripts/static-checks.mjs `split-scope` caught that before a browser did.
@@ -17,8 +19,8 @@ window.IntMapModules.mapReadout=function(HOST){
      use also means it is bound after the registry exists, which is the ordering every module here
      already relies on. */
   let _L=null;
-  const L=(...a)=>{ if(!_L) _L=window.IntMapLang.pick(()=>HOST.lang); return _L(...a); };
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const L=(...a)=>{ if(!_L) _L=IntMapLang.pick(()=>HOST.lang); return _L(...a); };
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* ===== Grid (zoom-adaptive, red equator, 山吹色 tropics) ===== */
   const TROPIC_LAT=23.4362;   /* (#R210) mean obliquity of the ecliptic, this epoch — not 23.5 */
   function tropicLabel(side){
@@ -1159,4 +1161,4 @@ window.IntMapModules.mapReadout=function(HOST){
      samples answered one level down, `unfilled` samples no level could answer. */
   function demVoidStats(){ return Object.assign({},_demVoid); }
   return { _demZoomForSpan, demElevAt, demElevBilinear, demSnapshot, demTilePoints, demVoidStats, demZoomForMap, releaseDEMHold, fetchBathymetry, fmtElevVal, fmtLL, handleMapClick, refreshGrid, renderCoordReadout, setGrid, showMeasureTip, updateCompass, updateCoord, updateLayerReadout, warmDEMTiles, demStoreStats };
-};
+}

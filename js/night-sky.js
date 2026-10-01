@@ -66,6 +66,8 @@
  * ==========================================================================*/
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
+import { IntMapTime } from './chronos.js';
+import { IntMapLang } from './lang-registry.js';
 window.IntMapNightSky = (function () {
   'use strict';
   const D2R = Math.PI / 180, R2D = 180 / Math.PI;
@@ -75,7 +77,7 @@ window.IntMapNightSky = (function () {
   const EPH = () => window.IntMapEphemeris;
   const TER = () => window.IntMapTerrain;
   const lang = () => { try { return (window.IM_HOST && window.IM_HOST.lang) || document.documentElement.lang || 'en'; } catch (_) { return 'en'; } };
-  const L = window.IntMapLang.pick(()=>lang());
+  const L = IntMapLang.pick(()=>lang());
   const esc = (s) => window.IntMapSafe.html(s);   /* the one encoder — no second copy to fall back to */
 
   /* ── state ──────────────────────────────────────────────────────────────────────────────── */
@@ -104,7 +106,7 @@ window.IntMapNightSky = (function () {
   /* ⚠ THE MASTER CLOCK IS `when()`. #R94 made window.IntMapTime the one clock in this app and #R200
      recorded that `IntMapTime.now` does not exist — reaching for it is the silent-undefined trap. */
   function mapClock() {
-    try { const t = window.IntMapTime; if (t && typeof t.when === 'function') { const w = t.when(); if (w != null) return +w; } } catch (_) { }
+    try { const t = IntMapTime; if (t && typeof t.when === 'function') { const w = t.when(); if (w != null) return +w; } } catch (_) { }
     return Date.now();
   }
   function nowMs() { return live ? mapClock() : whenMs; }
@@ -256,7 +258,7 @@ window.IntMapNightSky = (function () {
      IntMapLang.pickArgs(), which returns the array it is given, so the DATA is unchanged; `L.arr()`
      resolves it through pick() itself — de/ru/es from the arguments, fr/ko/zh/zh-Hans from the
      inline table keyed by the English name. */
-  const LA = window.IntMapLang.pickArgs();
+  const LA = IntMapLang.pickArgs();
   const PLANETS = [
     { id: 'mercury', nm: LA('Mercury', '水星', 'Merkur', 'Меркурий', 'Mercurio'), c: '#c9c0b4' },
     { id: 'venus', nm: LA('Venus', '金星', 'Venus', 'Венера', 'Venus'), c: '#f5e6c8' },

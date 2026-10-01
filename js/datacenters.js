@@ -33,11 +33,13 @@
  *  · Every value that reaches the DOM goes through window.IntMapSafe (#R138).
  *  · Five languages inline (standing rule 3).
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.dataCenters=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
-  const L=window.IntMapLang.pick(()=>HOST.lang);
-  const LA=window.IntMapLang.pickArgs();
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function dataCenters(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const L=IntMapLang.pick(()=>HOST.lang);
+  const LA=IntMapLang.pickArgs();
   const S=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
   const U=(v)=>{ try{ return window.IntMapSafe.url(String(v||'')); }catch(_){ return ''; } };
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
@@ -690,4 +692,4 @@ window.IntMapModules.dataCenters=function(HOST){
     /* the legend key, built here so the colours and the layer cannot disagree.
        (#R258) …and it carries the class id, so the row can switch that class off. */
     key:()=>KEY_ROWS().map(([k,lbl])=>[colOf(k),lbl,k]) };
-};
+}

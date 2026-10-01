@@ -13,10 +13,11 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { test } from 'node:test';
-import { pathToFileURL, fileURLToPath } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import * as LM from '../js/layer-manifest.js';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { importModule, swappable, langRegistry } from './helpers/import-module.mjs';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -49,14 +50,6 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* (on the import of '../js/layer-manifest.js') */ /* (layer-manifest) the Layers taxonomy */
 
 /* ── the harness: the smallest browser the module will accept ─────────────────────────────── */
-function langStub() {
-  return {
-    pick: () => (en) => en,
-    pickArgs: () => (en) => en,
-    t: (_lang, en) => en,
-    list: () => [],
-  };
-}
 function geoStub() {
   const src = Object.create(null), lyr = Object.create(null);
   return {
@@ -71,18 +64,19 @@ function geoStub() {
   };
 }
 
-/* Load the shipped factory once per test with a fresh window. The module is an ES module that
-   writes onto `window` at import time, so `window` has to exist BEFORE the import — and the import
-   is cached by Node, which is why the factory (not the module) is what each test re-runs. */
+/* Load the shipped factory once, and run it once per test. (module-graph) The module EXPORTS the factory
+   and IMPORTS the renderer and the language registry: the renderer is a stub handed at its geo-engine.js
+   import edge (swappable, so a test can hand it an engine that refuses), the registry is the real one. */
+const GE_EDGE = swappable();
 let FACTORY = null;
 async function factory() {
   if (!FACTORY) {
-    globalThis.window = globalThis.window || {};
-    window.IntMapModules = window.IntMapModules || {};
-    window.IntMapLang = langStub();
-    window.document = undefined;
-    await import(pathToFileURL(join(ROOT, 'js', 'net-health-live.js')).href);
-    FACTORY = window.IntMapModules.netHealthLive;
+    langRegistry();   /* the shipped language list, declared on the real registry */
+    const M = await importModule('js/net-health-live.js', {
+      globals: { window: { document: undefined } },
+      mocks: { 'js/geo-engine.js': { IntMapGeoEngine: GE_EDGE.value } },
+    });
+    FACTORY = M.netHealthLive;
   }
   return FACTORY;
 }
@@ -92,7 +86,7 @@ async function factory() {
    nothing" are two different scripts rather than two readings of one. */
 async function api(routes, opts) {
   const f = await factory();
-  window.IntMapGeoEngine = geoStub();
+  GE_EDGE.set(geoStub());
   window.countryGeo = (opts && opts.countryGeo) || null;
   window.IntMapAtlasAdmin1 = (opts && opts.admin1) || null;
   window._registerLayerOpacity = null; window._hideGenericLegend = null;
@@ -274,9 +268,9 @@ test('#R565 ⑦c painted counts what the map holds, not what was handed to it', 
   const broken = geoStub();
   broken.layers.add = () => { throw new TypeError('GE.layers.onClick is not a function'); };
   broken.layers.has = () => false;
-  window.IntMapGeoEngine = broken;
+  GE_EDGE.set(broken);
   const B = await api({});
-  window.IntMapGeoEngine = broken;
+  GE_EDGE.set(broken);
   B._paintOutages(good);
   assert.equal(B.state().painted, 0, 'a layer that was never created reported shapes drawn');
   assert.ok(B.state().paintError.length > 0, 'the failure left no trace anyone could read');
@@ -299,9 +293,10 @@ test('#R565 ⑧ every provider is named in the privacy text and credited in the 
     assert.ok(legal.includes(p.host), `js/legal-text.js §4 does not name the host ${p.host}`);
   }
 
+  /* (module-graph) the registry is IMPORTED; the page tables are classic scripts and still run in a sandbox */
+  const { IntMapRefData } = await importModule('js/reference-data.js');
+  const names = IntMapRefData.dataSources.map((s) => s.n);
   const ctx = { console }; ctx.window = ctx; vm.createContext(ctx);
-  vm.runInContext(read('js/reference-data.js'), ctx, { filename: 'reference-data' });
-  const names = ctx.window.IntMapRefData.dataSources.map((s) => s.n);
   const codes = readdirSync(join(ROOT, 'js', 'locales'))
     .filter((f) => /^pages\.[a-z]{2}(-[a-z]+)?\.js$/.test(f));
   for (const c of codes) vm.runInContext(read('js/locales/' + c), ctx, { filename: c });
@@ -356,7 +351,7 @@ test('#R565 ⑨ an entity with no polygon is counted as unplaced, not dropped', 
 /* ── ⑩ the rows exist at boot, and the control plane can reach them ──────────────────────────
    The row file is EAGER on purpose (a row that appears only after you have found the layer you
    cannot see is not a row). This evaluates it the way the app does and asks what it registered. */
-test('#R565 ⑩ the eager rows build themselves and register control-plane commands', () => {
+test('#R565 ⑩ the eager rows build themselves and register control-plane commands', async () => {
   const rows = [], cmds = [];
   const el = () => {
     const e = { style: {}, dataset: {}, classList: { toggle: () => { }, remove: () => { }, add: () => { } },
@@ -365,20 +360,19 @@ test('#R565 ⑩ the eager rows build themselves and register control-plane comma
     return e;
   };
   const dd = el();
-  const ctx = { console, setTimeout: (f) => f(), clearInterval: () => { }, setInterval: () => 0 };
-  ctx.window = ctx; vm.createContext(ctx);
-  ctx.IntMapLang = ctx.window.IntMapLang = langStub();
-  ctx.IntMapOS = ctx.window.IntMapOS = { register: (id, fn, meta) => cmds.push({ id, meta }) };
-  ctx.window.IntMapLazy = { need: () => Promise.resolve(false) };
-  ctx.document = ctx.window.document = {
+  /* (module-graph) the row file is IMPORTED and its exported factory run, the way js/app-body.js does;
+     the browser it runs in is the stub window and document below, the language registry the real one */
+  const win = { IntMapOS: { register: (id, fn, meta) => cmds.push({ id, meta }) }, IntMapLazy: { need: () => Promise.resolve(false) },
+    addEventListener: () => { } };
+  const doc = win.document = {
     readyState: 'complete',
     getElementById: (id) => (id === 'layer-dropdown' ? dd : null),
     createElement: () => { const e = el(); rows.push(e); return e; },
     addEventListener: () => { },
   };
-  ctx.window.addEventListener = () => { };
-  vm.runInContext(read('js/net-health.js'), ctx, { filename: 'net-health' });
-  const API = ctx.window.IntMapModules.netHealth({ lang: 'en' });
+  langRegistry();
+  const { netHealth } = await importModule('js/net-health.js', { globals: { window: win, document: doc } });
+  const API = netHealth({ lang: 'en' });
   const ids = API.rows();
   assert.ok(ids.length >= 2, 'the row file registers fewer than two rows');
   for (const id of ids) {
@@ -391,7 +385,7 @@ test('#R565 ⑩ the eager rows build themselves and register control-plane comma
   /* the facade answers before the body exists — that is what lets a caller ask for free */
   assert.equal(API.isOn(ids[0]), false);
   assert.equal(API.state().loaded, false);
-  /* ⚠ the arrays come out of the vm realm, so identity of Array.prototype is not the question here */
+  /* the facade has no signals before the body has loaded */
   assert.equal(API.signals().length, 0);
 
   /* every row this file declares is claimed by exactly one shelf in the Layers panel, so none of

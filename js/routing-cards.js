@@ -24,11 +24,12 @@
  *  readable without seeing colour — so every icon is emitted with `aria-hidden` beside real text
  *  rather than instead of it.
  * ==========================================================================*/
+import { IntMapLang } from './lang-registry.js';
 window.IntMapRouteCards = (function () {
   'use strict';
 
   var _lang = 'en';
-  var L = window.IntMapLang.pick(function () { return _lang; });
+  var L = IntMapLang.pick(function () { return _lang; });
   function esc(s) { return window.IntMapSafe.html(s); }   /* the one encoder (js/safe-html.js), read at call time */
   function use(o) { if (o && o.lang) _lang = o.lang; return o || {}; }
 
@@ -118,11 +119,11 @@ window.IntMapRouteCards = (function () {
       var d = (when instanceof Date) ? when : new Date(when);
       if (!isFinite(d.getTime())) return '';
       var opt = { hour: '2-digit', minute: '2-digit' };
-      if (o.tz && o.tz !== 'auto') { opt.timeZone = o.tz; return d.toLocaleTimeString(window.IntMapLang.locale(_lang, 'en-GB'), opt); }
+      if (o.tz && o.tz !== 'auto') { opt.timeZone = o.tz; return d.toLocaleTimeString(IntMapLang.locale(_lang, 'en-GB'), opt); }
       var off = zoneOffsetAt(ll || o.at);
-      if (off == null) return d.toLocaleTimeString(window.IntMapLang.locale(_lang, 'en-GB'), opt);
+      if (off == null) return d.toLocaleTimeString(IntMapLang.locale(_lang, 'en-GB'), opt);
       opt.timeZone = 'UTC';
-      return new Date(d.getTime() + off * 3600000).toLocaleTimeString(window.IntMapLang.locale(_lang, 'en-GB'), opt);
+      return new Date(d.getTime() + off * 3600000).toLocaleTimeString(IntMapLang.locale(_lang, 'en-GB'), opt);
     } catch (e) { return ''; }
   }
   /** the clock time of arrival, and the day offset when the journey lands on another date */

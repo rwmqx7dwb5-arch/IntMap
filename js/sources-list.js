@@ -18,6 +18,7 @@
  *  vanishing. `jp` is the registry's key for Japanese (the app's own code); this page's code for
  *  the same language is `ja`, and the map below is the only place that difference exists.
  * ========================================================================== */
+import { IntMapRefData } from './reference-data.js';
 window.IntMapSourcesList = (function () {
   'use strict';
 
@@ -57,7 +58,7 @@ window.IntMapSourcesList = (function () {
      (js/page-i18n.js `pick`) — and the in-app Sources dialog calls exactly that. A copy here would be
      the same lookup in two places ([[intmap-recurring-lessons]] G). */
   function useText(s, lang) {
-    try { return (s && s.n && window.IntMapRefData.useText(s.n, lang)) || ''; } catch (e) { return ''; }
+    try { return (s && s.n && IntMapRefData.useText(s.n, lang)) || ''; } catch (e) { return ''; }
   }
   var useIn = useText;
 
@@ -68,7 +69,7 @@ window.IntMapSourcesList = (function () {
     if (!host) return;
     var P = window.IntMapPageI18N;
     var list = [];
-    try { list = (window.IntMapRefData && window.IntMapRefData.dataSources) || []; } catch (e) {}
+    try { list = (IntMapRefData && IntMapRefData.dataSources) || []; } catch (e) {}
 
     var cnt = document.getElementById('src-count');
     if (cnt) cnt.textContent = list.length ? (list.length + ' ' + P.pick('sources', 'entries')) : '';

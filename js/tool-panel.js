@@ -9,12 +9,15 @@
  *  references to closure variables became HOST.<member> reads (Architecture.md §3.1). The
  *  extraction was done by script and reversed byte-for-byte against the original text.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.toolPanel=function(HOST){
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+import { IntMapTables } from './tables.js';
+
+export function toolPanel(HOST){
   function bearingHTML(a,b){ const d=HOST.bearingDeg(a,b); return `${d.toFixed(1)}° <span class="unit-sub">(${HOST.compassDir(d)})</span>`; }
 
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
-  const {RADIUS_PRESETS}=window.IntMapTables;
+  const {RADIUS_PRESETS}=IntMapTables;
 
   /* Radius color quick-presets (#R7): R / G / B one-tap swatches alongside the custom color picker. */
   const RADIUS_COLOR_PRESETS=[{col:'#ff3b30',lbl:'R'},{col:'#34c759',lbl:'G'},{col:'#007aff',lbl:'B'}];
@@ -94,10 +97,10 @@ window.IntMapModules.toolPanel=function(HOST){
       const tot=HOST.hasTurf()?HOST.totalDistance(HOST.measurePoints):0; let brg='';
       if(HOST.measurePoints.length>=2){
         const a=HOST.measurePoints[HOST.measurePoints.length-2], b=HOST.measurePoints[HOST.measurePoints.length-1];
-        brg=`<div class="tp-row"><span>${HOST.t('bearing')} (${window.IntMapLang.t(HOST.lang,'last leg','最終区間','letzter Abschnitt','последний отрезок','último tramo')})</span><b>${bearingHTML(a,b)}</b></div>`;
+        brg=`<div class="tp-row"><span>${HOST.t('bearing')} (${IntMapLang.t(HOST.lang,'last leg','最終区間','letzter Abschnitt','последний отрезок','último tramo')})</span><b>${bearingHTML(a,b)}</b></div>`;
         if(HOST.measurePoints.length>=3){
           const s=HOST.measurePoints[0], e=HOST.measurePoints[HOST.measurePoints.length-1];
-          brg+=`<div class="tp-row"><span>${window.IntMapLang.t(HOST.lang,'start → end','始点→終点','Start → Ende','начало → конец','inicio → fin')}</span><b>${bearingHTML(s,e)}</b></div>`;
+          brg+=`<div class="tp-row"><span>${IntMapLang.t(HOST.lang,'start → end','始点→終点','Start → Ende','начало → конец','inicio → fin')}</span><b>${bearingHTML(s,e)}</b></div>`;
         }
       }
       body=`<div class="tp-row"><span>${HOST.t('points')}</span><b>${HOST.measurePoints.length}</b></div><div class="tp-row"><span>${HOST.t('total')}</span><b>${HOST.distHTML(tot)}</b></div>${brg}${HOST.measurePoints.length>=2?`<button class="ai-action-btn" id="tp-profile">📈 ${HOST.t('elevProfile')}</button><button class="ai-action-btn" id="tp-finalize">✓ ${HOST.t('finalizeMeas')}</button>`:''}`;
@@ -112,7 +115,7 @@ window.IntMapModules.toolPanel=function(HOST){
          (#R171) Rebuilt: a shape picker (the footprint is no longer only straight edges), colour and
          opacity, and — the actual defect — derived numbers that refresh IN PLACE. See v3dSync below. */
       const V=window.IntMapVolume3D;
-      const _L=window.IntMapLang.pick(()=>HOST.lang);
+      const _L=IntMapLang.pick(()=>HOST.lang);
       const drag=!!(V&&V.ownsGesture&&V.ownsGesture());
       /* Only the click-vertex shape takes its footprint from measurePoints; a stroke shape owns its own.
          (#R172) …and it goes through syncClicks, which refuses to replace a ring it did not create. The old
@@ -162,35 +165,35 @@ window.IntMapModules.toolPanel=function(HOST){
         +`<div id="v3d-objs"></div>`;
     } else if(HOST.toolMode==='radius'){
       let opts=`<option value="">${HOST.t('presetNone')}</option>`;
-      RADIUS_PRESETS.forEach(grp=>{ opts+=`<optgroup label="${window.IntMapLang.pick(()=>HOST.lang).arr(grp.g)}">`+grp.items.map(it=>`<option value="${it[1]}">${it[0]} — ${it[1]} km</option>`).join('')+`</optgroup>`; });
+      RADIUS_PRESETS.forEach(grp=>{ opts+=`<optgroup label="${IntMapLang.pick(()=>HOST.lang).arr(grp.g)}">`+grp.items.map(it=>`<option value="${it[1]}">${it[0]} — ${it[1]} km</option>`).join('')+`</optgroup>`; });
       let list='';
       if(HOST.radiusItems.length){
-        list=`<div class="tp-sub">${HOST.radiusItems.length} ${HOST.t('radius')}</div><div class="radius-list">`+HOST.radiusItems.map((c,i)=>`<div class="radius-list-item"><span class="rl-sw" style="background:${c.color}"></span><span class="rl-main">${c.radiusKm} km · ${c.center[1].toFixed(2)}°,${c.center[0].toFixed(2)}°</span><button aria-label="${window.IntMapLang.t(HOST.lang,'Delete','削除','Löschen','Удалить','Eliminar')}" class="rl-del" data-radiusdel="${IntMapSafe.html(c.id)}">×</button></div>`).join('')+`</div><button class="tp-clear" onclick="clearAllRadius()" style="margin-top:6px;">${HOST.t('removeAll')}</button>`;
+        list=`<div class="tp-sub">${HOST.radiusItems.length} ${HOST.t('radius')}</div><div class="radius-list">`+HOST.radiusItems.map((c,i)=>`<div class="radius-list-item"><span class="rl-sw" style="background:${c.color}"></span><span class="rl-main">${c.radiusKm} km · ${c.center[1].toFixed(2)}°,${c.center[0].toFixed(2)}°</span><button aria-label="${IntMapLang.t(HOST.lang,'Delete','削除','Löschen','Удалить','Eliminar')}" class="rl-del" data-radiusdel="${IntMapSafe.html(c.id)}">×</button></div>`).join('')+`</div><button class="tp-clear" onclick="clearAllRadius()" style="margin-top:6px;">${HOST.t('removeAll')}</button>`;
       }
-      body=`<div class="tp-row radius-control"><input type="range" id="radius-range" aria-label="${HOST.t('radius')}" min="1" max="20000" step="10" value="${Math.min(20000,HOST.radiusKm)}"><div class="radius-row"><button type="button" id="radius-dec" class="rad-step" title="${window.IntMapLang.t(HOST.lang,'Decrease','小さく','Kleiner','Мельче','Reducir')}">−</button><input type="number" id="radius-num" aria-label="${HOST.t('radius')}" min="1" value="${HOST.radiusKm}"><button type="button" id="radius-inc" class="rad-step" title="${window.IntMapLang.t(HOST.lang,'Increase','大きく','Größer','Крупнее','Aumentar')}">＋</button><select id="radius-unit" aria-label="${window.IntMapLang.t(HOST.lang,'Unit','単位')}" style="background:var(--input-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:6px;padding:2px 4px;font-size:11.5px;"><option value="km">km</option><option value="mi">mi</option></select></div></div>
+      body=`<div class="tp-row radius-control"><input type="range" id="radius-range" aria-label="${HOST.t('radius')}" min="1" max="20000" step="10" value="${Math.min(20000,HOST.radiusKm)}"><div class="radius-row"><button type="button" id="radius-dec" class="rad-step" title="${IntMapLang.t(HOST.lang,'Decrease','小さく','Kleiner','Мельче','Reducir')}">−</button><input type="number" id="radius-num" aria-label="${HOST.t('radius')}" min="1" value="${HOST.radiusKm}"><button type="button" id="radius-inc" class="rad-step" title="${IntMapLang.t(HOST.lang,'Increase','大きく','Größer','Крупнее','Aumentar')}">＋</button><select id="radius-unit" aria-label="${IntMapLang.t(HOST.lang,'Unit','単位')}" style="background:var(--input-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:6px;padding:2px 4px;font-size:11.5px;"><option value="km">km</option><option value="mi">mi</option></select></div></div>
         <div class="rad-stats"><div class="rad-stat"><label>${HOST.t('circumference')}</label><b id="rad-c">${HOST.distHTML(2*Math.PI*HOST.radiusKm)}</b></div><div class="rad-stat"><label>${HOST.t('area')}</label><b id="rad-a">${HOST.areaHTML(Math.PI*HOST.radiusKm*HOST.radiusKm)}</b></div></div><!-- (#R147) dropped the redundant Radius tile (already shown in the slider + number field) to declutter ("項目数が増え、煩雑…UIを整理") -->
-        <details class="tp-more"><summary>${window.IntMapLang.t(HOST.lang,'Style &amp; presets','スタイル・プリセット','Stil und Vorlagen','Стиль и пресеты','Estilo y ajustes')}</summary>
+        <details class="tp-more"><summary>${IntMapLang.t(HOST.lang,'Style &amp; presets','スタイル・プリセット','Stil und Vorlagen','Стиль и пресеты','Estilo y ajustes')}</summary>
         <div class="tp-sub" id="radius-preset-lbl" style="margin-top:4px;">${HOST.t('presetLbl')}</div><select class="tp-select" id="radius-preset" aria-labelledby="radius-preset-lbl">${opts}</select>
-        <div class="radius-color-row"><span>${HOST.t('color')}</span><div class="rad-presets">${RADIUS_COLOR_PRESETS.map(c=>`<button type="button" class="rad-preset${HOST.radiusColor.toLowerCase()===c.col?' on':''}" data-col="${c.col}" title="${c.lbl}" style="background:${c.col}"></button>`).join('')}</div><input type="color" id="radius-color" value="${HOST.radiusColor}" title="${window.IntMapLang.t(HOST.lang,'Custom color','カスタム色','Eigene Farbe','Свой цвет','Color personalizado')}"><span class="tp-sub" id="radius-op-lbl" style="margin:0;">${HOST.t('opacity')}</span><input type="range" id="radius-op" aria-labelledby="radius-op-lbl" min="0" max="0.6" step="0.02" value="${HOST.radiusOpacity}" style="flex:1; accent-color:var(--primary-color);"></div></details>
+        <div class="radius-color-row"><span>${HOST.t('color')}</span><div class="rad-presets">${RADIUS_COLOR_PRESETS.map(c=>`<button type="button" class="rad-preset${HOST.radiusColor.toLowerCase()===c.col?' on':''}" data-col="${c.col}" title="${c.lbl}" style="background:${c.col}"></button>`).join('')}</div><input type="color" id="radius-color" value="${HOST.radiusColor}" title="${IntMapLang.t(HOST.lang,'Custom color','カスタム色','Eigene Farbe','Свой цвет','Color personalizado')}"><span class="tp-sub" id="radius-op-lbl" style="margin:0;">${HOST.t('opacity')}</span><input type="range" id="radius-op" aria-labelledby="radius-op-lbl" min="0" max="0.6" step="0.02" value="${HOST.radiusOpacity}" style="flex:1; accent-color:var(--primary-color);"></div></details>
         ${HOST.radiusItems.length?'':`<div class="tp-hint">${HOST.t('radiusHint')}</div>`}${list}${HOST.radiusItems.length?`<div class="rad-actions"><button class="rad-act" id="tp-pop-btn"><span class="ra-l">${HOST.t('popInArea')}</span></button><button class="rad-act" id="news-area-btn"><span class="ra-l">📍 ${HOST.t('newsInArea')}</span></button><button class="rad-act" id="ai-summarize-btn"><span class="ra-l">📰 ${HOST.t('aiSumBtn')}</span></button></div>`:''}<div class="tp-row" id="tp-pop-row" style="display:none;"><span>${HOST.t('popInArea')}</span><b id="tp-pop-val">—</b></div>`;   /* (#R40/#R142/#R146) circles persist; style/colour/opacity in the "Style" disclosure; 3 area actions in a compact grid (not stacked); usage hint hidden once a circle exists */
     }
     const footBtns = (HOST.toolMode!=='radius')
       ? `<div class="tp-foot-btns">${HOST.measurePoints.length?`<button class="tp-clear" id="tp-undo">↶ ${HOST.t('undoPt')}</button>`:''}<button class="tp-clear" id="tp-clear">${HOST.t('clear')}</button></div>`
       : '';
-    p.innerHTML=`<div class="tp-header"><span class="tp-title">${titles[HOST.toolMode]}</span><span class="tp-hd-btns"><button class="tp-min-btn" title="${window.IntMapLang.t(HOST.lang,'Minimize','最小化','Minimieren','Свернуть','Minimizar')}">–</button><button class="tp-close" title="${HOST.t('close')}">×</button></span></div>${body}${footBtns}`;
+    p.innerHTML=`<div class="tp-header"><span class="tp-title">${titles[HOST.toolMode]}</span><span class="tp-hd-btns"><button class="tp-min-btn" title="${IntMapLang.t(HOST.lang,'Minimize','最小化','Minimieren','Свернуть','Minimizar')}">–</button><button class="tp-close" title="${HOST.t('close')}">×</button></span></div>${body}${footBtns}`;
     p.classList.toggle('tp-radius', HOST.toolMode==='radius');   /* (#R22) drives the compact mobile radius layout */
     if(p.dataset.collapsed==='1'){ p.classList.add('tp-collapsed'); }   /* (#R34) keep minimized state across re-renders */
     p.querySelector('.tp-close').onclick=HOST.exitTool; HOST.makeDraggable(p,p.querySelector('.tp-header'));
     /* (#R34) Minimize button ("Enable − in Radius") — collapses the panel to just its header so the tool no
        longer covers the centre crosshair on mobile ("Radius widget is too big so it hides the cross pointer"). */
-    { const mb=p.querySelector('.tp-min-btn'); if(mb) mb.onclick=(e)=>{ e.stopPropagation(); const on=p.classList.toggle('tp-collapsed'); p.dataset.collapsed=on?'1':'0'; mb.title=(on?window.IntMapLang.t(HOST.lang,'Expand','展開','Ausklappen','Развернуть','Expandir'):window.IntMapLang.t(HOST.lang,'Minimize','最小化','Minimieren','Свернуть','Minimizar')); }; }   /* (#R35) icon (line↔box) is drawn by CSS off .tp-collapsed — no text –/+ */
+    { const mb=p.querySelector('.tp-min-btn'); if(mb) mb.onclick=(e)=>{ e.stopPropagation(); const on=p.classList.toggle('tp-collapsed'); p.dataset.collapsed=on?'1':'0'; mb.title=(on?IntMapLang.t(HOST.lang,'Expand','展開','Ausklappen','Развернуть','Expandir'):IntMapLang.t(HOST.lang,'Minimize','最小化','Minimieren','Свернуть','Minimizar')); }; }   /* (#R35) icon (line↔box) is drawn by CSS off .tp-collapsed — no text –/+ */
     { const sb=p.querySelector('#ai-summarize-btn'); if(sb){ sb.classList.toggle('ai-needs-key',!HOST.aiReady()); sb.title=HOST.aiReady()?'':HOST.t('aiNoKey');
       /* (#R119) the area summary now runs INSIDE the Atlas thread (analyze scope:"drawn-area" = news in the area +
          displayed-layer values + WorldPop population, one conversation surface). The legacy popup stays as fallback. */
       /* (#R224) Atlas is on demand — warm it as soon as this panel is built, so the press is instant */
       try{ if(window.IntMapAtlas) window.IntMapAtlas.hint(); }catch(_){}
       sb.onclick=()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.runDirect){
-          const q5=window.IntMapLang.t(HOST.lang,'Summarize and analyze the situation inside the drawn area','描画した範囲内の状況を要約・分析して','Fasse die Lage im gezeichneten Gebiet zusammen','Сводка по нарисованной области','Resume la situación del área dibujada');
+          const q5=IntMapLang.t(HOST.lang,'Summarize and analyze the situation inside the drawn area','描画した範囲内の状況を要約・分析して','Fasse die Lage im gezeichneten Gebiet zusammen','Сводка по нарисованной области','Resume la situación del área dibujada');
           window.IntMapConsole.runDirect(q5,[{type:'analyze',question:q5,scope:'drawn-area'}]); return; } }catch(_){}
         aiSummarizeArea(); }; } }
     { const nb=p.querySelector('#news-area-btn'); if(nb) nb.onclick=()=>{ try{ window._searchNewsInArea(); }catch(_){} }; }
@@ -207,7 +210,7 @@ window.IntMapModules.toolPanel=function(HOST){
          so `onProg` reports tiles-done/total whatever the size, and multiple radius circles advance per finished
          circle (each circle's own tiling fills its band). That is what let the bespoke indeterminate sweep go —
          see window._imProgCtl (js/onboarding.js) for why it had to. */
-      const _progLbl=()=>window.IntMapLang.t(HOST.lang,'Summing the WorldPop population grid…','WorldPop人口グリッドを集計中…','WorldPop-Bevölkerungsraster wird summiert…','Суммирование сетки населения WorldPop…','Sumando la cuadrícula de población WorldPop…');
+      const _progLbl=()=>IntMapLang.t(HOST.lang,'Summing the WorldPop population grid…','WorldPop人口グリッドを集計中…','WorldPop-Bevölkerungsraster wird summiert…','Суммирование сетки населения WorldPop…','Sumando la cuadrícula de población WorldPop…');
       /* ══ ⚠⚠ (#R252) THE BAR WAS BEING INSERTED INTO A THREE-COLUMN GRID ═══════════════════════════
          「Summing the WorldPop population grid…の進捗バーがおかしい。」 The anchor was `#tp-pop-btn`, and
          since #R146 that button is one of three `.rad-act` children of `.rad-actions`, which is
@@ -264,7 +267,7 @@ window.IntMapModules.toolPanel=function(HOST){
          The derived numbers are refreshed IN PLACE now; nothing under the cursor is ever replaced. */
       const V=window.IntMapVolume3D;
       const bI=p.querySelector('#v3d-base'), tI=p.querySelector('#v3d-top');
-      const _L=window.IntMapLang.pick(()=>HOST.lang);
+      const _L=IntMapLang.pick(()=>HOST.lang);
       const sync=()=>{ if(!V) return; const st=V.state();
         const set=(id,html)=>{ const el=p.querySelector(id); if(el) el.innerHTML=html; };
         set('#v3d-pts', String(st.points));
@@ -402,7 +405,7 @@ window.IntMapModules.toolPanel=function(HOST){
          the two overlap. Point-in-polygon lives in js/volume3d.js (pickAt) so the test is exact and
          renderer-independent. */
       if(!updateToolPanel._v3dClick){ updateToolPanel._v3dClick=true;
-        try{ window.IntMapGeoEngine.events.on('click',(e)=>{
+        try{ IntMapGeoEngine.events.on('click',(e)=>{
           try{ if(HOST.toolMode!=='volume') return; const W=window.IntMapVolume3D; if(!W||!W.pickAt) return;
             const ll=e&&e.lngLat; if(!ll) return;
             const hit=W.pickAt(ll.lng,ll.lat);
@@ -442,7 +445,7 @@ window.IntMapModules.toolPanel=function(HOST){
 
   async function aiSummarizeArea(){
     if(!HOST.aiGate()) return;
-    if(!HOST.hasTurf()){ HOST.aiToast(window.IntMapLang.t(HOST.lang,'Turf.js unavailable','Turf.js（図形計算）を読み込めませんでした')); return; }
+    if(!HOST.hasTurf()){ HOST.aiToast(IntMapLang.t(HOST.lang,'Turf.js unavailable','Turf.js（図形計算）を読み込めませんでした')); return; }
     let inside=null;
     if(HOST.toolMode==='radius'){
       if(!HOST.radiusItems.length){ HOST.aiToast(HOST.t('aiSumNoArea')); return; }
@@ -510,7 +513,7 @@ window.IntMapModules.toolPanel=function(HOST){
   function _set(el,prop,v){ try{ if(el.style[prop]===v) return; }catch(_){} el.style[prop]=v; }
   function showContextMenu(point,lngLat){
     const m=document.getElementById('ctx-menu'); let mc=_boxOf(document.getElementById('map-container'));   /* (#R210) `let`: place() re-reads it */
-    const L=window.IntMapLang.pick(()=>HOST.lang);
+    const L=IntMapLang.pick(()=>HOST.lang);
     /* ══ (#R216) THE MENU SAYS WHICH POINT ONCE, AT THE TOP ═══════════════════════════════════════
        「『この地点: 35.986°N 137.863°E / この地点』ってなんやねんネーミングセンス悪すぎ。右クリック
         したときに、『この』『ここの』『ここ』が多すぎて気持ち悪い。」 — and counted, it was: the
@@ -640,7 +643,7 @@ window.IntMapModules.toolPanel=function(HOST){
          cannot answer (engine swap, style reload). The clamping below is unchanged — a menu
          anchored near the edge still has to stay on screen. */
       let anchor=point;
-      try{ const pj=window.IntMapGeoEngine&&window.IntMapGeoEngine.coords.project([lngLat.lng,lngLat.lat]);
+      try{ const pj=IntMapGeoEngine&&IntMapGeoEngine.coords.project([lngLat.lng,lngLat.lat]);
         if(pj&&isFinite(pj.x)&&isFinite(pj.y)) anchor=pj; }catch(_){}
       let x=anchor.x, y=anchor.y;
       if(x+rect.width>mc.width) x=mc.width-rect.width-8;
@@ -660,7 +663,7 @@ window.IntMapModules.toolPanel=function(HOST){
          costs a function call and nothing else, which is what it cost before. */
       try{ const R=window.IntMapRuntime;
         if(R) R.onCamera('toolpanel.ctxmenu',m._ctxFollow);
-        else { const E=window.IntMapGeoEngine;
+        else { const E=IntMapGeoEngine;
           ['move','zoom','rotate','pitch','resize'].forEach(ev=>{ try{ E.events.on(ev,m._ctxFollow); }catch(_){} }); }
       }catch(_){}
       try{ window.addEventListener('resize',m._ctxFollow); }catch(_){}
@@ -669,4 +672,4 @@ window.IntMapModules.toolPanel=function(HOST){
 
   /* The names index.html still calls: it keeps a hoisted shim for each (#R168). */
   return { updateToolPanel, buildToolFeatures, showContextMenu };
-};
+}

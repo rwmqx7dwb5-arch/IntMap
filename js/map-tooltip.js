@@ -21,8 +21,8 @@
  *  `HOST.mapTooltipEl` answer exactly what they answered before (#R23's beta choropleths and the
  *  #R168/#R175 host invariants both read them).
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.mapTooltip=function(){
+
+export function mapTooltip(){
   let mapTooltipEl=null;
 
   function ensureMapTooltip(){
@@ -141,4 +141,4 @@ window.IntMapModules.mapTooltip=function(){
   const API={ ensureMapTooltip, positionTooltip, setMapTooltipHTML, showMapTooltip, hideMapTooltip, element:()=>mapTooltipEl };
   try{ window.IntMapMapTooltip=API; }catch(_){ }
   return API;
-};
+}

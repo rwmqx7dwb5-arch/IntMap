@@ -40,6 +40,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8').replace(/\r\n/g, '\n');
@@ -226,9 +227,15 @@ test('atlas-legacy-protocol-removal ④: a model that keeps writing the old shap
 });
 
 /* ══ ⑤ ════════════════════════════════════════════════════════════════════════════════════════ */
-function aiCore(respond) {
+/* (module-graph) js/ai-core.js exports its factory and is IMPORTED, fresh per call, with the browser around
+   it installed as globals (its own imports are the real modules). The globals stay installed after an
+   import, so ⑤ puts back the ones it found when it is done — the checks after it ran on globalThis. */
+const BROWSER = ['window', 'document', 'location', 'localStorage', 'navigator', 'fetch'];
+const foundBrowser = Object.fromEntries(BROWSER.map((k) => [k, Object.getOwnPropertyDescriptor(globalThis, k)]));
+const restoreBrowser = () => { for (const k of BROWSER) { if (foundBrowser[k]) Object.defineProperty(globalThis, k, foundBrowser[k]); else delete globalThis[k]; } };
+async function aiCore(respond) {
   const calls = [];
-  const win = { IntMapModules: {}, INTMAP_AI_PROXY: { url: 'https://vpekfwdpurzejrrmacac.supabase.co/functions/v1/ai-proxy' }, SUPABASE_ANON_KEY: 'anon-key' };
+  const win = { INTMAP_AI_PROXY: { url: 'https://vpekfwdpurzejrrmacac.supabase.co/functions/v1/ai-proxy' }, SUPABASE_ANON_KEY: 'anon-key' };
   win.window = win;
   const localStorage = { _m: {}, getItem(k) { return Object.prototype.hasOwnProperty.call(this._m, k) ? this._m[k] : null; }, setItem(k, v) { this._m[k] = String(v); } };
   const location = { protocol: 'https:', hostname: 'rwmqx7dwb5-arch.github.io' };   /* not localhost: aiDev() would lift the gate */
@@ -236,19 +243,18 @@ function aiCore(respond) {
   const row = () => ({ select() { return this; }, eq() { return this; }, async maybeSingle() { return { data: { count: 0 } }; } });
   win.sb = { auth: { async getSession() { return { data: { session: { access_token: 'jwt' } } }; } }, from() { return row(); } };
   const fetchStub = async (url, opts) => { calls.push(JSON.parse(opts.body)); return respond(url, opts); };
-  const load = (p) => new Function('window', 'document', 'location', 'localStorage', 'navigator', 'fetch', readFileSync(join(ROOT, p), 'utf8'))(win, document, location, localStorage, {}, fetchStub);
-  load('js/lang-registry.js');
-  load('js/ai-core.js');
+  const M = await importModule('js/ai-core.js', { globals: { window: win, document, location, localStorage, navigator: {}, fetch: fetchStub } });
   const HOST = { lang: 'en', user: { id: '613271ce-0000-4000-8000-000000000000' }, aiUsage: { date: '', used: 0, limit: 10 }, AI_FREE_DAILY: 10, aiButtonSyncers: [], openAuthModal() {}, t(k) { return k; } };
-  return { IM: win.IntMapModules.aiCore(HOST), calls };
+  return { IM: M.aiCore(HOST), calls };
 }
 const res200 = (body) => ({ status: 200, ok: true, async json() { return JSON.parse(body); }, async text() { return body; } });
 const turnOpts = { task: 'atlas_turn', protocol: 2, input: [{ type: 'message', role: 'user', content: 'q' }], tools: [], turnId: 't1' };
 
 test('atlas-legacy-protocol-removal ⑤: an Atlas turn answered without protocol 2 is malformed — said, never an empty reply, never a second transport', async () => {
+  try {
   for (const [what, body] of [['a body that does not parse', '<html>502</html>'], ['an answer with no meta', JSON.stringify({ text: '{"final_text":"x"}', used: 1, limit: 10 })],
     ['an answer from a protocol-1 server', JSON.stringify({ text: '{"final_text":"x"}', meta: { protocol: 1 } })]]) {
-    const { IM, calls } = aiCore(async () => res200(body));
+    const { IM, calls } = await aiCore(async () => res200(body));
     let err = null;
     try { await IM.askAIJSONEnvelope('', 'sys', null, Object.assign({}, turnOpts)); } catch (e) { err = e; }
     assert.ok(err, what + ': the turn was handed back as if the model had answered');
@@ -258,14 +264,15 @@ test('atlas-legacy-protocol-removal ⑤: an Atlas turn answered without protocol
     assert.equal(calls[0].protocol, 2);
   }
   /* the protocol-2 answer is read as before */
-  const ok = aiCore(async () => res200(JSON.stringify({ text: '{"final_text":"x"}', meta: { protocol: 2 }, output: [{ type: 'function_call', call_id: 'c', name: 'map_view', arguments: '{}' }] })));
+  const ok = await aiCore(async () => res200(JSON.stringify({ text: '{"final_text":"x"}', meta: { protocol: 2 }, output: [{ type: 'function_call', call_id: 'c', name: 'map_view', arguments: '{}' }] })));
   const env = await ok.IM.askAIJSONEnvelope('', 'sys', null, Object.assign({}, turnOpts));
   assert.equal(env.meta.protocol, 2);
   assert.equal(env.output.length, 1);
   /* …and a caller that did not ask for protocol 2 is untouched: the check belongs to the turn protocol, not to every task */
-  const other = aiCore(async () => res200(JSON.stringify({ text: '{"a":1}' })));
+  const other = await aiCore(async () => res200(JSON.stringify({ text: '{"a":1}' })));
   const env2 = await other.IM.askAIJSONEnvelope('p', 'sys', null, { task: 'json_extract' });
   assert.deepEqual(env2.data, { a: 1 });
+  } finally { restoreBrowser(); }
 
   /* the page holds no second transport: no switch, no flattener, no schema for calls in the JSON */
   const con = codeOnly(rd('js/atlas-console.js'));

@@ -8,12 +8,13 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LAZY_REGISTRY } from '../js/lazy-modules.js';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { importModule, langRegistry } from './helpers/import-module.mjs';
+import { graph } from '../scripts/module-graph.mjs';
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R347 · navigation   (was tests/r347-checks.test.mjs)
@@ -36,27 +37,18 @@ const read = (p) => readLF(resolve(ROOT, p));
 /* an «X is gone» check must read the code, not the note that says X is gone (#R291's header) */
 const bare = (p) => codeOnly(read(p));
 
-const IDX = { en: 0, jp: 1, de: 2, ru: 3, es: 4 };
-function makeWindow() {
-  const w = {};
-  w.IntMapLang = {
-    t(lang, ...a) { const i = IDX[lang]; return (i != null && a[i] != null && a[i] !== '') ? a[i] : a[0]; },
-    pick(get) { const f = function () { const i = IDX[(() => { try { return get(); } catch { return 'en'; } })()]; const v = (i != null && i > 0) ? arguments[i] : null; return (v != null && v !== '') ? v : arguments[0]; }; f.arr = (a) => (Array.isArray(a) ? f.apply(null, a) : String(a ?? '')); return f; },
-    locale(l, d) { return ({ en: 'en-GB', jp: 'ja-JP', de: 'de-DE', ru: 'ru-RU', es: 'es-ES' })[l] || d || 'en'; },
-    normalise(c) { const s = String(c || '').toLowerCase(); return s === 'ja' ? 'jp' : s; },
-  };
-  return w;
-}
-function load(w, ...files) {
+/* (module-graph) each file is IMPORTED as the module it is, into a fresh `window` per kit — not read as
+   text into `new Function('window', …)`. Its own import edges (js/lang-registry.js) are the REAL
+   modules, so the sentences the errors carry are the registry's, not a five-language stand-in. */
+langRegistry();   /* declares the shipped language list on the one shared registry instance */
+async function load(w, files, mocks) {
   for (const f of files) {
-    const src = readFileSync(resolve(ROOT, f), 'utf8');
-    // eslint-disable-next-line no-new-func
-    new Function('window', 'Intl', 'Date', 'Math', 'console', 'navigator', src)(w, Intl, Date, Math, console, { onLine: true });
+    await importModule(f, { globals: { window: w, navigator: { onLine: true } }, mocks: mocks || {} });
   }
   return w;
 }
-const navKit = () => load(makeWindow(), 'js/navigation-match.js', 'js/navigation-guidance.js', 'js/navigation-store.js');
-const provKit = () => load(makeWindow(), 'js/routing-providers.js', 'js/routing-errors.js');
+const navKit = () => load({}, ['js/navigation-match.js', 'js/navigation-guidance.js', 'js/navigation-store.js']);
+const provKit = () => load({}, ['js/routing-providers.js', 'js/routing-errors.js']);
 
 /* ══ A ROUTE WITH KNOWN GEOMETRY ══════════════════════════════════════════════════════════════════
    Built rather than captured, so every expected number below is arithmetic rather than a recording.
@@ -89,8 +81,8 @@ function routeOf(w, coords, durations) {
 }
 
 /* ══ ① MAP MATCHING PROJECTS ONTO SEGMENTS, NOT VERTICES (§9) ═════════════════════════════════ */
-test('R347 ① a point beside a long segment matches the segment, not the nearest vertex', () => {
-  const w = navKit(); const M = w.IntMapNavMatch;
+test('R347 ① a point beside a long segment matches the segment, not the nearest vertex', async () => {
+  const w = await navKit(); const M = w.IntMapNavMatch;
   /* one 2 km segment with vertices only at its ends — nearest-vertex would be ~1 km wrong */
   const idx = M.build([[139.70, 35.60], [139.72, 35.60]]);
   const mid = M.project(idx, 139.71, 35.6001, { accuracy: 5 });
@@ -101,8 +93,8 @@ test('R347 ① a point beside a long segment matches the segment, not the neares
     'the along-route distance is the projection, not the distance to a vertex');
 });
 
-test('R347 ② confidence is a likelihood in units of the fix’s own accuracy, not a fixed radius', () => {
-  const w = navKit(); const M = w.IntMapNavMatch;
+test('R347 ② confidence is a likelihood in units of the fix’s own accuracy, not a fixed radius', async () => {
+  const w = await navKit(); const M = w.IntMapNavMatch;
   const idx = M.build(ell());
   /* the SAME 40 m offset, believed by a vague fix and disbelieved by a sharp one */
   const off = M.project(idx, 139.7080, 35.60036, { accuracy: 100 });
@@ -112,8 +104,8 @@ test('R347 ② confidence is a likelihood in units of the fix’s own accuracy, 
   assert.ok(sharp.confidence < 0.01, `a ±3 m fix 40 m off the line is not, got ${sharp.confidence}`);
 });
 
-test('R347 ③ the search window is not allowed to hold the car on the wrong carriageway', () => {
-  const w = navKit(); const M = w.IntMapNavMatch;
+test('R347 ③ the search window is not allowed to hold the car on the wrong carriageway', async () => {
+  const w = await navKit(); const M = w.IntMapNavMatch;
   const idx = M.build(hairpin());
   const half = idx.total / 2;
   /* a point on the RETURN leg, hinted at the same longitude on the OUTBOUND leg. The two are 40 m
@@ -127,8 +119,8 @@ test('R347 ③ the search window is not allowed to hold the car on the wrong car
 });
 
 /* ══ ④ THE GPS GATE (§8, §52) ════════════════════════════════════════════════════════════════ */
-test('R347 ④ a stale fix is refused, and refusing it does not change the carried state', () => {
-  const w = navKit(); const M = w.IntMapNavMatch;
+test('R347 ④ a stale fix is refused, and refusing it does not change the carried state', async () => {
+  const w = await navKit(); const M = w.IntMapNavMatch;
   const a = M.accept(null, { lng: 139.70, lat: 35.60, accuracy: 5, timestamp: 1_000_000 }, { now: 1_000_000 });
   assert.equal(a.accepted, true);
   const stale = M.accept(a.state, { lng: 139.71, lat: 35.60, accuracy: 5, timestamp: 1_000_000 }, { now: 1_100_000 });
@@ -137,8 +129,8 @@ test('R347 ④ a stale fix is refused, and refusing it does not change the carri
   assert.equal(stale.state.lng, 139.70, 'the last good fix is still the carried one');
 });
 
-test('R347 ⑤ a teleport is refused twice and then believed — a filter with no way out strands you', () => {
-  const w = navKit(); const M = w.IntMapNavMatch;
+test('R347 ⑤ a teleport is refused twice and then believed — a filter with no way out strands you', async () => {
+  const w = await navKit(); const M = w.IntMapNavMatch;
   let st = M.accept(null, { lng: 139.70, lat: 35.60, accuracy: 5, speed: 0, timestamp: 0 }, { now: 0 }).state;
   const far = (ts) => ({ lng: 139.90, lat: 35.60, accuracy: 5, speed: 0, timestamp: ts });   /* ~18 km */
   const r1 = M.accept(st, far(1000), { now: 1000, mode: 'driving' });
@@ -150,8 +142,8 @@ test('R347 ⑤ a teleport is refused twice and then believed — a filter with n
   assert.equal(r3.fix.teleported, true, 'and it is flagged, so progress is not carried across it');
 });
 
-test('R347 ⑥ heading is smoothed circularly — 359° and 1° average to 0°, never to 180°', () => {
-  const w = navKit(); const M = w.IntMapNavMatch;
+test('R347 ⑥ heading is smoothed circularly — 359° and 1° average to 0°, never to 180°', async () => {
+  const w = await navKit(); const M = w.IntMapNavMatch;
   /* moving fast enough that the heading is believed at all */
   let st = M.accept(null, { lng: 139.70, lat: 35.60, accuracy: 5, speed: 20, heading: 359, timestamp: 0 }, { now: 0 }).state;
   const r = M.accept(st, { lng: 139.70, lat: 35.6002, accuracy: 5, speed: 20, heading: 1, timestamp: 1000 }, { now: 1000 });
@@ -161,8 +153,8 @@ test('R347 ⑥ heading is smoothed circularly — 359° and 1° average to 0°, 
   assert.ok(Math.abs(M.angleDiff(180, h)) > 170, 'and emphatically not south');
 });
 
-test('R347 ⑦ a stationary receiver does not repoint the puck', () => {
-  const w = navKit(); const M = w.IntMapNavMatch;
+test('R347 ⑦ a stationary receiver does not repoint the puck', async () => {
+  const w = await navKit(); const M = w.IntMapNavMatch;
   let st = M.accept(null, { lng: 139.70, lat: 35.60, accuracy: 5, speed: 12, heading: 90, timestamp: 0 }, { now: 0 }).state;
   st = M.accept(st, { lng: 139.7001, lat: 35.60, accuracy: 5, speed: 12, heading: 90, timestamp: 1000 }, { now: 1000 }).state;
   const parked = M.accept(st, { lng: 139.7001, lat: 35.60, accuracy: 5, speed: 0, heading: 270, timestamp: 2000 }, { now: 2000 });
@@ -172,8 +164,8 @@ test('R347 ⑦ a stationary receiver does not repoint the puck', () => {
 });
 
 /* ══ ⑧ THE STATE MACHINE IS A TABLE, AND THE TABLE IS THE TRUTH (§7) ═════════════════════════ */
-test('R347 ⑧ every state is reachable, every illegal move throws, and the table is enumerable', () => {
-  const w = navKit(); const S = w.IntMapNavStore;
+test('R347 ⑧ every state is reachable, every illegal move throws, and the table is enumerable', async () => {
+  const w = await navKit(); const S = w.IntMapNavStore;
   const states = S.STATES;
   assert.equal(states.length, 10, '§7 names ten states');
   for (const s of states) assert.ok(S.TRANSITIONS[s], `${s} has a row`);
@@ -192,8 +184,8 @@ test('R347 ⑧ every state is reachable, every illegal move throws, and the tabl
   assert.equal(S.to('acquiring_location'), false, 'a move to the state already held is a no-op, not an error');
 });
 
-test('R347 ⑨ the reroute generation drops a reply that a newer reroute has superseded', () => {
-  const w = navKit(); const S = w.IntMapNavStore;
+test('R347 ⑨ the reroute generation drops a reply that a newer reroute has superseded', async () => {
+  const w = await navKit(); const S = w.IntMapNavStore;
   S.reset();
   const a = S.beginReroute();
   const b = S.beginReroute();
@@ -203,8 +195,8 @@ test('R347 ⑨ the reroute generation drops a reply that a newer reroute has sup
 });
 
 /* ══ ⑩ PROGRESS COMES FROM THE ROUTER'S OWN STEP DURATIONS (§10) ═════════════════════════════ */
-test('R347 ⑩ remaining time is the tail of the step list, not distance × average speed', () => {
-  const w = navKit(); const G = w.IntMapNavGuide, M = w.IntMapNavMatch;
+test('R347 ⑩ remaining time is the tail of the step list, not distance × average speed', async () => {
+  const w = await navKit(); const G = w.IntMapNavGuide, M = w.IntMapNavMatch;
   /* two halves of EQUAL length and very unequal duration: a motorway then a city street */
   const coords = ell();
   const r = routeOf(w, coords, [60, 600]);
@@ -224,8 +216,8 @@ test('R347 ⑩ remaining time is the tail of the step list, not distance × aver
   assert.ok(p.remainingDuration < 660, 'and part of the fast one is already behind');
 });
 
-test('R347 ⑪ lanes are shown only near the maneuver, and only when the provider gave them', () => {
-  const w = navKit(); const G = w.IntMapNavGuide;
+test('R347 ⑪ lanes are shown only near the maneuver, and only when the provider gave them', async () => {
+  const w = await navKit(); const G = w.IntMapNavGuide;
   const withLanes = G.lanesOf({ intersections: [{ lanes: [{ valid: true, indications: ['straight'] }, { valid: false, indications: ['right'] }] }] });
   assert.equal(withLanes.length, 2);
   assert.deepEqual(withLanes[0].indications, ['straight']);
@@ -235,8 +227,8 @@ test('R347 ⑪ lanes are shown only near the maneuver, and only when the provide
 });
 
 /* ══ ⑫ OFF-ROUTE (§14, §52) ══════════════════════════════════════════════════════════════════ */
-test('R347 ⑫ one bad fix does not reroute, a sustained departure does, and standing still never does', () => {
-  const w = navKit(); const G = w.IntMapNavGuide;
+test('R347 ⑫ one bad fix does not reroute, a sustained departure does, and standing still never does', async () => {
+  const w = await navKit(); const G = w.IntMapNavGuide;
   const far = { crossTrackDistance: 300, confidence: 0.0000001 };
   const moving = { speed: 14, accuracy: 5 };
 
@@ -257,8 +249,8 @@ test('R347 ⑫ one bad fix does not reroute, a sustained departure does, and sta
   assert.equal(parked.reason, 'stationary');
 });
 
-test('R347 ⑬ a 100 m-accuracy fix 60 m off the line is not a departure, a 4 m one is', () => {
-  const w = navKit(); const G = w.IntMapNavGuide, M = w.IntMapNavMatch;
+test('R347 ⑬ a 100 m-accuracy fix 60 m off the line is not a departure, a 4 m one is', async () => {
+  const w = await navKit(); const G = w.IntMapNavGuide, M = w.IntMapNavMatch;
   const idx = M.build(ell());
   const on = M.pointAt(idx, idx.total * 0.25);
   const shift = 60 / (Math.cos(35.6 * Math.PI / 180) * 111320);   /* 60 m east, in degrees */
@@ -274,8 +266,8 @@ test('R347 ⑬ a 100 m-accuracy fix 60 m off the line is not a departure, a 4 m 
 });
 
 /* ══ ⑭ ARRIVAL (§17) ═════════════════════════════════════════════════════════════════════════ */
-test('R347 ⑭ arrival needs the end of the route, the destination, a low speed AND persistence', () => {
-  const w = navKit(); const G = w.IntMapNavGuide;
+test('R347 ⑭ arrival needs the end of the route, the destination, a low speed AND persistence', async () => {
+  const w = await navKit(); const G = w.IntMapNavGuide;
   const route = { distance: 10000 };
   const dest = { lng: 139.70, lat: 35.60 };
   const near = { remainingDistance: 10, routeProgress: 0.999 };
@@ -294,8 +286,8 @@ test('R347 ⑭ arrival needs the end of the route, the destination, a low speed 
 });
 
 /* ══ ⑮ VOICE CUES (§13, §52) ═════════════════════════════════════════════════════════════════ */
-test('R347 ⑮ each cue fires once per step, and its distance scales with speed', () => {
-  const w = navKit(); const G = w.IntMapNavGuide;
+test('R347 ⑮ each cue fires once per step, and its distance scales with speed', async () => {
+  const w = await navKit(); const G = w.IntMapNavGuide;
   const step = { along: 0, end: 3000 };
   const spoken = new Set();
   const has = (k) => spoken.has(k);
@@ -330,8 +322,8 @@ test('R347 ⑮ each cue fires once per step, and its distance scales with speed'
 });
 
 /* ══ ⑯ THE PROVIDER REGISTRY (§3) ════════════════════════════════════════════════════════════ */
-test('R347 ⑯ every provider answers every capability question — silence is not «no»', () => {
-  const w = provKit(); const P = w.IntMapRouteProviders;
+test('R347 ⑯ every provider answers every capability question — silence is not «no»', async () => {
+  const w = await provKit(); const P = w.IntMapRouteProviders;
   const vocab = P.VOCAB_KEYS;
   assert.ok(vocab.length >= 38, `§3 lists a long vocabulary, got ${vocab.length}`);
   for (const p of P.list()) {
@@ -346,8 +338,8 @@ test('R347 ⑯ every provider answers every capability question — silence is n
   }
 });
 
-test('R347 ⑰ a keyed provider is never offered until a probe says its key is configured', () => {
-  const w = provKit(); const P = w.IntMapRouteProviders;
+test('R347 ⑰ a keyed provider is never offered until a probe says its key is configured', async () => {
+  const w = await provKit(); const P = w.IntMapRouteProviders;
   const keyed = P.list().filter((p) => p.keyed);
   assert.ok(keyed.length >= 1, 'the traffic provider is behind a key');
   for (const p of keyed) {
@@ -364,8 +356,8 @@ test('R347 ⑰ a keyed provider is never offered until a probe says its key is c
   assert.equal(P.forRequest({ mode: 'driving' }).provider.id, 'osrm', 'and it falls back cleanly');
 });
 
-test('R347 ⑱ the fallback chain says what each step down costs (§43)', () => {
-  const w = provKit(); const P = w.IntMapRouteProviders;
+test('R347 ⑱ the fallback chain says what each step down costs (§43)', async () => {
+  const w = await provKit(); const P = w.IntMapRouteProviders;
   P.setAvailable('mapbox', true);
   const r = P.forRequest({ mode: 'driving' });
   assert.ok(r.chain.length >= 2, 'an outage must not take routing off the air');
@@ -374,8 +366,8 @@ test('R347 ⑱ the fallback chain says what each step down costs (§43)', () => 
   P.setAvailable('mapbox', null);
 });
 
-test('R347 ⑲ a provider whose terms forbid it is not allowed to feed the AI or be cached', () => {
-  const w = provKit(); const P = w.IntMapRouteProviders;
+test('R347 ⑲ a provider whose terms forbid it is not allowed to feed the AI or be cached', async () => {
+  const w = await provKit(); const P = w.IntMapRouteProviders;
   const mb = P.byId('mapbox');
   assert.equal(P.allowsAI('mapbox'), false, 'Mapbox Product Terms §1.5(ii)');
   assert.equal(P.noStore('mapbox'), true, 'Mapbox Product Terms §2.10.1');
@@ -388,8 +380,8 @@ test('R347 ⑲ a provider whose terms forbid it is not allowed to feed the AI or
     'a provider marked noStore may not be persisted anywhere');
 });
 
-test('R347 ⑳ FOSSGIS’s attribution requirement is carried by the table that names its servers', () => {
-  const w = provKit(); const P = w.IntMapRouteProviders;
+test('R347 ⑳ FOSSGIS’s attribution requirement is carried by the table that names its servers', async () => {
+  const w = await provKit(); const P = w.IntMapRouteProviders;
   /* the servers this app really calls */
   const fossgis = P.list().filter((p) => JSON.stringify(p.host || {}).includes('openstreetmap.de'));
   assert.ok(fossgis.length >= 1, 'walking, cycling and every avoid request go to FOSSGIS');
@@ -400,8 +392,8 @@ test('R347 ⑳ FOSSGIS’s attribution requirement is carried by the table that 
 });
 
 /* ══ ㉑ THE ERROR TAXONOMY (§44) ══════════════════════════════════════════════════════════════ */
-test('R347 ㉑ every code the spec names exists, and each carries a decision rather than a sentence', () => {
-  const w = provKit(); const E = w.IntMapRouteErrors;
+test('R347 ㉑ every code the spec names exists, and each carries a decision rather than a sentence', async () => {
+  const w = await provKit(); const E = w.IntMapRouteErrors;
   const required = ['NO_ROUTE', 'NO_LOCATION', 'LOCATION_DENIED', 'LOCATION_UNAVAILABLE', 'PROVIDER_TIMEOUT',
     'PROVIDER_RATE_LIMIT', 'PROVIDER_UNAVAILABLE', 'OUT_OF_COVERAGE', 'INVALID_REQUEST',
     'TRAFFIC_UNAVAILABLE', 'TRANSIT_UNAVAILABLE', 'OFFLINE', 'REROUTE_FAILED'];
@@ -454,18 +446,21 @@ test('R347 ㉒ every capability’s lazyModules names a module IntMapLazy actual
 });
 
 /* ══ ㉓ NAVIGATION USES THE WALL CLOCK, NOT CHRONOS (§33) ═════════════════════════════════════ */
-test('R347 ㉓ nothing in navigation reads the history clock', () => {
+test('R347 ㉓ nothing in navigation reads the history clock', async () => {
   const files = ['js/navigation.js', 'js/navigation-store.js', 'js/navigation-match.js',
     'js/navigation-guidance.js', 'js/navigation-camera.js', 'js/navigation-voice.js', 'js/navigation-sim.js'];
   for (const f of files) {
     const src = bare(f);
-    assert.ok(!/IntMapTime/.test(src),
-      `${f} names IntMapTime — a reader who set the map to 1950 is still driving home today (§33)`);
+    /* (module-graph) the clock is now reached by `import { IntMapTime } from './chronos.js'` — that line IS a
+       read of the history clock, so both the name and the edge to its owner are refused */
+    assert.ok(!/IntMapTime/.test(src) && !/chronos\.js/.test(src),
+      `${f} names IntMapTime or imports js/chronos.js — a reader who set the map to 1950 is still driving home today (§33)`);
   }
   /* …and the file that DOES own the distinction says both halves out loud */
   const clock = read('js/routing-time.js');
   assert.ok(/planningNow/.test(clock) && /navNow/.test(clock), 'both clocks are named');
-  const w = load(makeWindow(), 'js/routing-time.js');
+  /* (module-graph) «no Chronos present» is now an import edge that answers nothing */
+  const w = await load({}, ['js/routing-time.js'], { 'js/chronos.js': { IntMapTime: null } });
   assert.equal(typeof w.IntMapRouteClock.navNow(), 'number');
   assert.equal(w.IntMapRouteClock.isHistorical(), false, 'with no Chronos present, the wall clock stands');
 });
@@ -538,17 +533,34 @@ test('R347 ㋕ nothing eager imports the navigation subsystem or the traffic ada
      most expensive recurring defect. CodeQL's «useless regular-expression character escape» found
      it; nothing in the suite would have. An import specifier is an exact string, so comparing it as
      one removes the whole class of error — and the assertion below proves a red is still reachable. */
-  const entry = bare('src/main.js');
+  /* (module-graph) src/main.js no longer names every eager file: most are reached through js/app-body.js's
+     imports. So «eager» is the STATIC CLOSURE of src/main.js — every `import`/`export … from` edge
+     followed, `import()` not — read off scripts/module-graph.mjs's parsed graph (specifiers are the
+     parser's exact strings, so the template-literal trap above cannot recur). */
+  const G = graph();
+  const eager = new Set();
+  const stack = ['src/main.js'];
+  while (stack.length) {
+    const at = stack.pop();
+    if (eager.has(at) || !G.facts.has(at)) continue;
+    eager.add(at);
+    for (const spec of G.facts.get(at).imports) {
+      if (!spec.startsWith('.')) continue;
+      const parts = at.split('/').slice(0, -1);
+      for (const seg of spec.split('/')) { if (seg === '..') parts.pop(); else if (seg !== '.') parts.push(seg); }
+      stack.push(parts.join('/'));
+    }
+  }
   const NAV = ['navigation', 'navigation-store', 'navigation-match', 'navigation-guidance',
     'navigation-camera', 'navigation-voice', 'navigation-sim', 'navigation-ui', 'routing-traffic'];
   for (const f of NAV) {
-    assert.ok(!entry.includes(`'../js/${f}.js'`),
-      `src/main.js statically imports js/${f}.js — it would be in the boot bundle`);
+    assert.ok(!eager.has(`js/${f}.js`),
+      `src/main.js statically reaches js/${f}.js — it would be in the boot bundle`);
   }
-  /* ⚠ THE LOOP ABOVE IS NOT VACUOUS — the same comparison finds a module that really IS eager.
-     Without this line it would pass just as happily against an empty file, which is exactly how the
-     version it replaced passed. */
-  assert.ok(entry.includes(`'../js/routing.js'`),
+  /* ⚠ THE LOOP ABOVE IS NOT VACUOUS — the same walk finds a module that really IS eager (js/routing.js,
+     now reached through js/app-body.js). Without this line it would pass just as happily against an
+     empty graph, which is exactly how the version it replaced passed. */
+  assert.ok(eager.size > 100 && eager.has('js/routing.js'),
     'the same comparison finds an eager import when there is one — so a red is reachable');
 
   /* the ONE file that may reach them does so dynamically, through the loader */

@@ -23,6 +23,7 @@
 import { skyColour, limbViewElev, sunOpticalDepth, skyModelTables } from './sky-model.js';
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
+import { IntMapTime } from './chronos.js';
 /* ⚠ (#R227) THE MODEL IS PUBLISHED, NOT COPIED. js/limb-layer.js is a `window.IntMapModules` factory
    (a MapLibre adapter implementation detail, like js/solid3d.js) and cannot `import` an ES module,
    but the whole point of that layer is that it marches THIS model — same coefficients, same ozone
@@ -153,7 +154,7 @@ export function makeThemeSky(HOST, CTX) {
          no matter where the time machine stood. Four files carried the same line; all four are fixed,
          and tests/shell-app-body-modules-checks.test.mjs (#R200) derives the real surface from js/app-body.js so this cannot come back.
          `when()` is the one to call: it returns the travelled instant, or now when the clock is live. */
-      let ms=Date.now(); try{ const T=window.IntMapTime; if(T&&T.when){ const d=T.when(); const v=(d instanceof Date)?d.getTime():+d; if(isFinite(v)) ms=v; } }catch(_){}
+      let ms=Date.now(); try{ const T=IntMapTime; if(T&&T.when){ const d=T.when(); const v=(d instanceof Date)?d.getTime():+d; if(isFinite(v)) ms=v; } }catch(_){}
       const s=S.sunPosition(ms), g=S.gmstDeg(ms);
       return { lng:((s.ra-g+540)%360)-180, lat:s.dec };
     }catch(_){ return null; }
@@ -1077,7 +1078,7 @@ export function makeThemeSky(HOST, CTX) {
   function _followClock(){
     if(_followClock._on) return false;
     try{
-      const T=window.IntMapTime;
+      const T=IntMapTime;
       if(!(T&&T.on)) return false;
       _followClock._on=true;
       T.on(()=>{ try{ if(_applySkyAtmosphere._on){ _aimSun(); _skyFollowCamera(); } }catch(_){} });

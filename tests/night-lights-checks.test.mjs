@@ -8,8 +8,8 @@
  *    性質を確認してください。」
  *
  *  ⚠ SO js/night-lights.js IS RUN, NOT READ. #R505's lesson is that a check which reads source
- *  cannot see evaluation order and cannot see behaviour; this file loads the shipped module into a
- *  Node vm with a stub clock and then ASKS IT QUESTIONS — every year from before the sensor existed
+ *  cannot see evaluation order and cannot see behaviour; this file imports the shipped module with a
+ *  stub clock handed at its import edge (module-graph) and then ASKS IT QUESTIONS — every year from before the sensor existed
  *  to beyond the last epoch, a fake scrub through the gap, a subscriber that counts how often it is
  *  told anything. What is asserted is what the module DOES.
  *
@@ -20,9 +20,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 /* ⚠ the Atlas state module is RUN here too, the way tests/r534-checks.test.mjs runs it — that
    round's whole defect was a last line that printed the key instead of the value, and only
@@ -46,20 +46,19 @@ function clockStub() {
     go(y) { this._y = y; this.subs.forEach((f) => f()); return this; }
   };
 }
-function loadNL() {
-  const clock = clockStub();
-  const sandbox = { window: { IntMapTime: clock } };
-  sandbox.window.window = sandbox.window;
-  vm.createContext(sandbox);
-  vm.runInContext(rd('js/night-lights.js'), sandbox, { filename: 'js/night-lights.js' });
-  const NL = sandbox.window.IntMapNightLights;
+/* (module-graph) the file imports IntMapTime from js/chronos.js, so the stub clock is handed at that
+   import edge; each call evaluates the module afresh and reads what it published on window */
+async function loadNL(clock = clockStub()) {
+  delete globalThis.window.IntMapNightLights;
+  await importModule('js/night-lights.js', { mocks: { 'js/chronos.js': { IntMapTime: clock } } });
+  const NL = globalThis.window.IntMapNightLights;
   assert.ok(NL, 'js/night-lights.js must publish window.IntMapNightLights');
   return { NL, clock };
 }
 
 /* ── ① the clock picks the epoch, for every year the clock can hold ────────────────────────── */
-test('R550 ① every year Chronos can reach resolves to an epoch that exists, or to none at all', () => {
-  const { NL } = loadNL();
+test('R550 ① every year Chronos can reach resolves to an epoch that exists, or to none at all', async () => {
+  const { NL } = await loadNL();
   const ids = NL.epochs().map((e) => e.id);
   assert.ok(ids.length >= 2, `expected the measured epochs, found ${ids.length}`);
   const era = NL.eraFrom();
@@ -71,8 +70,8 @@ test('R550 ① every year Chronos can reach resolves to an epoch that exists, or
   }
 });
 
-test('R550 ① …and it is the NEAREST one, which is the whole content of the substitution', () => {
-  const { NL } = loadNL();
+test('R550 ① …and it is the NEAREST one, which is the whole content of the substitution', async () => {
+  const { NL } = await loadNL();
   const years = NL.epochs().map((e) => e.year);
   for (let y = NL.eraFrom(); y <= 2035; y++) {
     const got = NL.forYear(y).year;
@@ -91,8 +90,8 @@ test('R550 ① …and it is the NEAREST one, which is the whole content of the s
   assert.equal(NL.forYear(2011), null, 'VIIRS had not launched');
 });
 
-test('R550 ① live means the most recent record, not «no record»', () => {
-  const { NL, clock } = loadNL();
+test('R550 ① live means the most recent record, not «no record»', async () => {
+  const { NL, clock } = await loadNL();
   assert.equal(clock.isLive(), true);
   const now = NL.current();
   assert.ok(now, 'a live clock must still show night lights');
@@ -102,8 +101,8 @@ test('R550 ① live means the most recent record, not «no record»', () => {
 });
 
 /* ── ② the clock is the only authority ─────────────────────────────────────────────────────── */
-test('R550 ② the epoch is a function of the clock — there is no second place to set it', () => {
-  const { NL, clock } = loadNL();
+test('R550 ② the epoch is a function of the clock — there is no second place to set it', async () => {
+  const { NL, clock } = await loadNL();
   clock.go(2012); assert.equal(NL.current().year, 2012);
   clock.go(2020); assert.equal(NL.current().year, 2016);
   clock.go(1990); assert.equal(NL.current(), null);
@@ -127,8 +126,8 @@ test('R550 ② …and nothing else in the app spells a night-lights epoch any mo
 });
 
 /* ── ③ a year change inside one epoch costs nothing ────────────────────────────────────────── */
-test('R550 ③ subscribers hear about EPOCHS, so scrubbing within one re-points nothing', () => {
-  const { NL, clock } = loadNL();
+test('R550 ③ subscribers hear about EPOCHS, so scrubbing within one re-points nothing', async () => {
+  const { NL, clock } = await loadNL();
   let calls = 0; NL.on(() => { calls++; });
   clock.go(2017); const afterFirst = calls;
   clock.go(2018); clock.go(2019); clock.go(2020); clock.go(2021);
@@ -142,16 +141,15 @@ test('R550 ③ subscribers hear about EPOCHS, so scrubbing within one re-points 
 });
 
 /* ── ④ the 2012 / 2016 URLs are byte-for-byte the ones #R268 shipped ───────────────────────── */
-test('R550 ④ the existing GIBS path is unchanged — same product, same level, same URL', () => {
-  const { NL } = loadNL();
+test('R550 ④ the existing GIBS path is unchanged — same product, same level, same URL', async () => {
+  const { NL } = await loadNL();
   /* this is what js/data-layers.js's `gibs('VIIRS_Black_Marble',8,'png',epoch)` produced before this
      round. Written out rather than re-derived, because the point is that the QUALITY PATH did not
      move: any drift in host, product, tile matrix or extension changes the pixels on screen. */
   const expect = (d) => 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_Black_Marble/default/' + d +
     '/GoogleMapsCompatible_Level8/{z}/{y}/{x}.png';
   for (const e of NL.epochs()) {
-    /* ⚠ the array comes from another vm realm, so its prototype is not this realm's Array —
-       deepStrictEqual would fail on two identical strings. The VALUE is what is being asserted. */
+    /* the VALUE is what is being asserted: one template, spelled exactly */
     assert.equal(NL.tiles(e).length, 1, `${e.id}: one template`);
     assert.equal(NL.tiles(e)[0], expect(e.id), `${e.id}: the tile template must not have moved`);
     assert.equal(NL.maxzoom(e), 8, 'GoogleMapsCompatible_Level8 — z9 answers HTTP 400');
@@ -163,8 +161,8 @@ test('R550 ④ the existing GIBS path is unchanged — same product, same level,
 });
 
 /* ── ⑤ no data and a failed fetch are different states ─────────────────────────────────────── */
-test('R550 ⑤ «before the sensor» is a state of its own, and it is not an error', () => {
-  const { NL, clock } = loadNL();
+test('R550 ⑤ «before the sensor» is a state of its own, and it is not an error', async () => {
+  const { NL, clock } = await loadNL();
   clock.go(1975);
   const st = NL.state();
   assert.equal(st.epoch, null);
@@ -181,20 +179,20 @@ test('R550 ⑤ «before the sensor» is a state of its own, and it is not an err
 });
 
 /* ── ⑥ the module is inert: it knows URLs, it never fetches ────────────────────────────────── */
-test('R550 ⑥ turning the layer off can cost nothing, because this module never touches the network', () => {
+test('R550 ⑥ turning the layer off can cost nothing, because this module never touches the network', async () => {
   const src = codeOnly(rd('js/night-lights.js'));
   for (const bad of ['fetch(', 'XMLHttpRequest', 'new Image', 'importScripts', 'navigator.sendBeacon']) {
     assert.ok(!src.includes(bad), `js/night-lights.js must not ${bad}`);
   }
-  /* proved by construction too: it loaded and answered in a vm with no fetch, no DOM and no Image */
-  const { NL, clock } = loadNL();
+  /* proved by construction too: it loaded and answered with no fetch, no DOM and no Image */
+  const { NL, clock } = await loadNL();
   clock.go(2016);
   assert.equal(NL.current().id, '2016-01-01');
 });
 
 /* ── ⑦ the state a reader (and Atlas) is shown names both years ────────────────────────────── */
-test('R550 ⑦ the published state distinguishes the clock year from the data year', () => {
-  const { NL, clock } = loadNL();
+test('R550 ⑦ the published state distinguishes the clock year from the data year', async () => {
+  const { NL, clock } = await loadNL();
   clock.go(2016);
   let st = NL.state();
   assert.equal(st.matches, true, '2016 asks for 2016 and gets it');
@@ -238,18 +236,15 @@ test('R550 ⑦b Atlas is told the year of the IMAGE, and never the year of the c
 });
 
 /* the provider half: it reads the one owner, and only when something is actually showing it */
-test('R550 ⑦c the provider publishes the epoch only while it is on screen', () => {
+test('R550 ⑦c the provider publishes the epoch only while it is on screen', async () => {
   const S = makeAtlasState();
   const clock = clockStub();
   const prev = { w: globalThis.window.IntMapTime, nl: globalThis.window.IntMapNightLights,
                  ns: globalThis.window.IntMapNightSide, doc: globalThis.document };
   try {
-    const sandbox = { window: { IntMapTime: clock } };
-    sandbox.window.window = sandbox.window;
-    vm.createContext(sandbox);
-    vm.runInContext(rd('js/night-lights.js'), sandbox, { filename: 'js/night-lights.js' });
+    const { NL } = await loadNL(clock);
     globalThis.window.IntMapTime = clock;
-    globalThis.window.IntMapNightLights = sandbox.window.IntMapNightLights;
+    globalThis.window.IntMapNightLights = NL;
     globalThis.window.IntMapNightSide = { state: () => ({ built: false }) };
     let checked = false;
     globalThis.document = { getElementById: (id) => (id === 'dl-nightsat' ? { checked } : null) };

@@ -12,7 +12,8 @@
  *
  *      node scripts/zh-hans.mjs
  * ==========================================================================*/
-window.IntMapLang.define('zh-hans', {
+import { IntMapLang } from '../lang-registry.js';
+IntMapLang.define('zh-hans', {
   /* ① the keyed table — Settings, tabs, layer names, the static UI */
   ui: {
       /* ══ ⚠⚠⚠ (#R249) THE FIFTEENTH SURFACE — THE DOCUMENT'S OWN METADATA ═══════════════════════

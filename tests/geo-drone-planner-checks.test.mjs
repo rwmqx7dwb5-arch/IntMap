@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { appShell } from './app-source.mjs';
 import { isolate } from './helpers/geo-shared.mjs';
+import { importModule } from './helpers/import-module.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
@@ -50,8 +51,11 @@ describe('§ #R174 · the drone planner', () => {
   test('#R174 the drone planner is wired into the app', () => {
     /* 綴りのまま: 主張が app shell／バンドルの import グラフという静的な構造で、実行しても観測できない。 */
     const idx = appShell(root);
-    assert.match(idx, /import '\.\.\/js\/drone-nav\.js';/, 'the file is loaded by the Vite entry (#R175)');
-    assert.match(idx, /window\.IntMapModules\.droneNav\((IM_HOST)\)/, 'and instantiated');
+    /* (module-graph) src/main.js loads the shell, the shell imports the factory BY NAME (a missing export is
+       a link error) and calls it with the host */
+    assert.match(idx, /import '\.\.\/js\/app-body\.js';/, 'the shell is loaded by the Vite entry (#R175)');
+    assert.match(idx, /^import \{ droneNav \} from '\.\/drone-nav\.js';/m, 'the file is loaded by the shell');
+    assert.match(idx, /(?<![\w.$])droneNav\((IM_HOST)\)/, 'and instantiated');
     /* (#R176) 「DronesはMeasureに置くな。どこにも置くな。」 — the launcher was removed from the Measure menu
        AND from the mobile tools sheet. The planner itself is untouched: the assertions above (loaded,
        instantiated) and the Atlas ones below are what keep the feature alive. */
@@ -65,9 +69,17 @@ describe('§ #R174 · the drone planner', () => {
      A spelling is kept by a refactor that breaks the arithmetic and broken by one that keeps it. The
      planner's MODEL needs no DOM: the ground comes from HOST.demElevBilinear, storage from localStorage
      and the map from window.IntMapGeoEngine — so all three are handed in here and the SHIPPED factory
-     is run. The panel (open/render) builds DOM and is not asked; where a claim is about the panel, the
+     is run. (module-graph) The module is EVALUATED BY IMPORT: the map is handed in at its geo-engine import
+     edge, the language registry is the real one, and `droneNav` is its export. The panel (open/render) builds DOM and is not asked; where a claim is about the panel, the
      check says so and still reads the source. */
-  function planner(o = {}) {
+  /* ⚠ (module-graph) `localStorage` is a GLOBAL to an imported module, and a test holds two pages at once
+     (P saves after P2 exists). Each page keeps its own store: the one global forwards to the store of the
+     page whose api is being called — the same separation the per-call sandbox used to give. */
+  let pageStore = null;
+  const sharedLS = {
+    getItem: (k) => pageStore.getItem(k), setItem: (k, v) => pageStore.setItem(k, v), removeItem: (k) => pageStore.removeItem(k),
+  };
+  async function planner(o = {}) {
     const store = new Map(Object.entries(o.stored || {}));
     const ls = {
       getItem: (k) => (store.has(k) ? store.get(k) : null),
@@ -88,11 +100,6 @@ describe('§ #R174 · the drone planner', () => {
     });
     const handlers = [];
     const w = {
-      IntMapModules: {},
-      IntMapLang: {
-        pick: () => { const f = (...a) => a[0]; f.arr = (a) => (Array.isArray(a) ? a[0] : String(a == null ? '' : a)); return f; },
-        pickArgs: () => (...a) => a,
-      },
       addEventListener() {},
       IntMapGeoEngine: {
         canDraw: () => true, camera, layers,
@@ -110,9 +117,15 @@ describe('§ #R174 · the drone planner', () => {
       demElevBilinear: (lng, lat) => { log.push('sample'); return ground(lng, lat); },
       demElevAt: () => null,
     };
-    // eslint-disable-next-line no-new-func
-    new Function('window', 'localStorage', R('js/drone-nav.js'))(w, ls);
-    const api = w.IntMapModules.droneNav(HOST);
+    const M = await importModule('js/drone-nav.js', {
+      globals: { window: w, localStorage: sharedLS },
+      mocks: { 'js/geo-engine.js': { IntMapGeoEngine: w.IntMapGeoEngine } },
+    });
+    pageStore = ls;
+    const real = M.droneNav(HOST);
+    const api = new Proxy(real, {
+      get: (t, k) => (typeof t[k] === 'function' ? (...a) => { pageStore = ls; return t[k](...a); } : t[k]),
+    });
     return { api, w, store, log, handlers };
   }
   /* a point `m` metres east of 138.70°E on 35.30°N — the routes below are built in metres, so every
@@ -124,7 +137,7 @@ describe('§ #R174 · the drone planner', () => {
 
   test('#R174 the planner reads REAL terrain and keeps AMSL and AGL apart', async () => {
     /* ground rises 10 m per 100 m eastward, from 100 m AMSL */
-    const P = planner({ ground: (lng) => 100 + (lng - 138.70) * M_PER_DEG_LNG * 0.1 });
+    const P = await planner({ ground: (lng) => 100 + (lng - 138.70) * M_PER_DEG_LNG * 0.1 });
     assert.equal(P.api.setRoute(route([
       { lng: east(0), alt: 50, ref: 'agl' },          /* 50 m above ground 100 → 150 AMSL */
       { lng: east(1000), alt: 300, ref: 'amsl' },     /* 300 AMSL above ground 200 → 100 AGL */
@@ -157,7 +170,7 @@ describe('§ #R174 · the drone planner', () => {
   });
 
   test('#R174 every limit in the brief is actually computed, and each has a specific reason', async () => {
-    const P = planner();                                      /* flat ground at 100 m AMSL */
+    const P = await planner();                                      /* flat ground at 100 m AMSL */
     /* every limit is an editable aircraft field, and what is set is what the model reads */
     const patch = { cruiseSpeed: 12, maxSpeed: 18, maxAgl: 120, minAgl: 20, rangeKm: 1, batteryWh: 1, massKg: 1, payloadKg: 0.5, climbRate: 2, descentRate: 3 };
     P.api.newRoute();
@@ -187,7 +200,7 @@ describe('§ #R174 · the drone planner', () => {
     near(m.climbWh({ massKg: 1, payloadKg: 0.5 }, 100), 1.5 * 9.80665 * 100 / 0.5 / 3600, 1e-12, 'climbWh');
     assert.equal(m.climbWh({ massKg: 1, payloadKg: 0 }, -100), 0, 'descending gives nothing back');
     /* a leg takes the longer of flying it and climbing it */
-    const Q = planner();
+    const Q = await planner();
     Q.api.setRoute(route([{ lng: east(0), alt: 10, ref: 'agl' }, { lng: east(100), alt: 310, ref: 'agl' }], { cruiseSpeed: 15, climbRate: 5 }));
     const steep = await Q.api.compute();
     near(steep.legs[0].timeS, 300 / 5, 1e-6, 'a 300 m climb at 5 m/s over 100 m takes the climb’s time');
@@ -198,7 +211,7 @@ describe('§ #R174 · the drone planner', () => {
   });
 
   test('#R174 the planner can be edited, recomputed, saved and deleted', async () => {
-    const P = planner();
+    const P = await planner();
     P.api.newRoute();
     assert.equal(P.api.addWaypoint(east(0), 35.30, 60, 'agl'), 1);
     assert.equal(P.api.addWaypoint(east(500), 35.30, 70, 'agl'), 2);
@@ -210,7 +223,7 @@ describe('§ #R174 · the drone planner', () => {
     const first = await P.api.compute();
     assert.equal(first.legs.length, 1, 'the recomputation sees the edited route');
     /* follow the terrain lifts what is too low, and computes again */
-    const P2 = planner({ ground: (lng) => (Math.abs(lng - east(500)) < 0.001 ? 400 : 100) });
+    const P2 = await planner({ ground: (lng) => (Math.abs(lng - east(500)) < 0.001 ? 400 : 100) });
     P2.api.setRoute(route([{ lng: east(0), alt: 50, ref: 'agl' }, { lng: east(1000), alt: 50, ref: 'agl' }], { minAgl: 10 }));
     const lifted = await P2.api.followTerrain();
     assert.ok(lifted.minClearance >= 10 - 1e-6, 'followTerrain leaves the whole route above the floor: ' + lifted.minClearance);
@@ -219,7 +232,7 @@ describe('§ #R174 · the drone planner', () => {
     assert.equal(P.api.save(), true);
     const persisted = JSON.parse(P.store.get('intmap_drone_routes'));
     assert.equal(persisted.length, 1, 'routes persist');
-    const P3 = planner({ stored: { intmap_drone_routes: P.store.get('intmap_drone_routes') } });
+    const P3 = await planner({ stored: { intmap_drone_routes: P.store.get('intmap_drone_routes') } });
     assert.deepEqual(P3.api.routes().map((r) => r.id), [id], 'a new page reads the saved route back');
     assert.equal(P3.api.load(id), true);
     assert.equal(P3.api.route().wp.length, 2);
@@ -229,7 +242,7 @@ describe('§ #R174 · the drone planner', () => {
   });
 
   test('#R174 the future-integration list has a seam, and it is one seam', async () => {
-    const P = planner();
+    const P = await planner();
     /* weather / NFZ / wires / traffic all attach here — and the sources are actually consulted by compute() */
     assert.equal(P.api.registerHazardSource('nfz', (ctx) => [{ kind: 'no-fly', i: 2, severity: 'error', text: 'inside a zone at ' + ctx.samples.length }]), true);
     P.api.setRoute(route([{ lng: east(0), alt: 50, ref: 'agl' }, { lng: east(3000), alt: 50, ref: 'agl' }], { cruiseSpeed: 10 }));
@@ -313,7 +326,7 @@ describe('§ #R174 · the drone planner', () => {
       assert.equal(r.presetId, 'custom', where);
     };
     /* ⑴ setRoute() */
-    const P = planner();
+    const P = await planner();
     assert.equal(P.api.setRoute(hostile), true);
     check(P.api.route(), 'setRoute()');
     /* ⑵ setSpec() */
@@ -321,11 +334,11 @@ describe('§ #R174 · the drone planner', () => {
     assert.ok(Object.values(spec).every((v) => typeof v === 'number' && isFinite(v)), 'setSpec(): every limit is a finite number');
     assert.equal(spec.massKg, 0.05, 'setSpec(): clamped to the field minimum');
     /* ⑶ localStorage */
-    const Q = planner({ stored: { intmap_drone_routes: JSON.stringify([hostile, 'junk', null, 7]) } });
+    const Q = await planner({ stored: { intmap_drone_routes: JSON.stringify([hostile, 'junk', null, 7]) } });
     assert.equal(Q.api.routes().length, 1, 'localStorage: what is not a route is not loaded');
     assert.equal(Q.api.load(Q.api.routes()[0].id), true);
     check(Q.api.route(), 'localStorage');
-    const junk = planner({ stored: { intmap_drone_routes: '{not json' } });
+    const junk = await planner({ stored: { intmap_drone_routes: '{not json' } });
     assert.deepEqual(junk.api.routes(), [], 'a corrupt store is an empty one, not an exception');
     /* 綴りのまま: the SINK is the panel's markup (render() builds DOM strings), which Node cannot build.
        …and the sink escapes anyway — CodeQL found it there, and one of the two being right is not a design */
@@ -337,7 +350,7 @@ describe('§ #R174 · the drone planner', () => {
   test('#R174 the planner owns no camera and hijacks no gesture', async () => {
     /* EVALUATED for everything the model does: the whole non-panel surface is driven against a map
        whose camera records every write and whose raw handle records being reached for */
-    const P = planner({ ground: (lng) => 100 + 300 * Math.exp(-Math.pow(((lng - 138.70) * M_PER_DEG_LNG - 500) / 120, 2)) });
+    const P = await planner({ ground: (lng) => 100 + 300 * Math.exp(-Math.pow(((lng - 138.70) * M_PER_DEG_LNG - 500) / 120, 2)) });
     P.api.setRoute(route([{ lng: east(0), alt: 30, ref: 'agl' }, { lng: east(1000), alt: 30, ref: 'agl' }]));
     await P.api.compute();
     await P.api.followTerrain();

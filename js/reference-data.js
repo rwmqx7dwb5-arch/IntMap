@@ -6,7 +6,8 @@
  *    • dataSources  — the attribution / data-source registry shown in the Sources modal
  *  Editing a data source here must still keep the attribution + terms text accurate.
  * ========================================================================== */
-window.IntMapRefData=(function(){
+import { IntMapLang } from './lang-registry.js';
+export const IntMapRefData = (function(){
   const _dc=(id,cat,type,lng,lat,en,jp,ben,bjp,wiki,badge)=>({id,cat,type,loc:[lng,lat],img:'',badge:badge||'',title:{en,jp},body:{en:ben,jp:bjp},wiki:wiki?{en:'https://en.wikipedia.org/wiki/'+wiki,jp:'https://ja.wikipedia.org/wiki/'+wiki}:null});
   const DEFAULT_DASH_CARDS=[
     _dc('d-ramstein','mil','mil',7.6,49.44,'Ramstein Air Base','ラムシュタイン空軍基地','Largest US Air Force base in Europe and USAFE/NATO air command hub.','在欧米空軍とNATO航空作戦の中枢。','Ramstein_Air_Base','USAF'),
@@ -589,7 +590,7 @@ window.IntMapRefData=(function(){
      (js/sources-list.js) had a copy each, and two copies of one lookup is [[recurring-lessons]] G.
      ⚠ The page files are keyed by BCP-47 tag, not by the app's code (`jp`→`ja`, `zh`→`zh-hant`), and
      the tag comes from the registry — which is also what keeps a raw code out of the <script> src. */
-  const _pgCode=(l)=>{ try{ return String(window.IntMapLang.htmlTag(l)||l).toLowerCase(); }catch(_){ return l==='jp'?'ja':l; } };
+  const _pgCode=(l)=>{ try{ return String(IntMapLang.htmlTag(l)||l).toLowerCase(); }catch(_){ return l==='jp'?'ja':l; } };
   const _pgDoc=(l)=>{ try{ const P=window.IntMapPageI18N; return (P&&P.doc&&P.doc(_pgCode(l)))||null; }catch(_){ return null; } };
   /* ⚠ (#R700) AND THE TERMS TRAVEL WITH THE DESCRIPTION. A row that declares `lic` (and optionally
      `cite`) is a row whose upstream makes credit a condition of redistribution, so the licence name
@@ -658,8 +659,9 @@ window.IntMapRefData=(function(){
     return (base?base+' — ':'')+tail; };
   /* fetch the English document and the reader's, then call back; already-loaded languages are free */
   const ensureDocs=(lang,cb)=>{ const one=(l)=>{ if(_pgDoc(l)){ cb(); return; }
-      const c=_pgCode(l); let ok=false; try{ ok=(window.IntMapLang.list()||[]).some(r=>String(r.html).toLowerCase()===c); }catch(_){}
+      const c=_pgCode(l); let ok=false; try{ ok=(IntMapLang.list()||[]).some(r=>String(r.html).toLowerCase()===c); }catch(_){}
       if(!ok) return; const sc=document.createElement('script'); sc.src='./js/locales/pages.'+c+'.js'; sc.async=true; sc.onload=cb; sc.onerror=cb; document.head.appendChild(sc); };
     one('en'); if(_pgCode(lang)!=='en') one(lang); };
   return { dashCards:DEFAULT_DASH_CARDS, dataSources:DATA_SOURCES, useText, ensureDocs };
 })();
+globalThis.IntMapRefData = IntMapRefData;   /* (module-graph) the compat window: importers get the binding above */

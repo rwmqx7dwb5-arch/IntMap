@@ -19,6 +19,7 @@
  *  when it was measured, which is all it actually knows. (The markets family is js/widget-defs-
  *  markets.js and holds itself to the same rule.)
  * ==========================================================================*/
+import { IntMapLang } from './lang-registry.js';
 window.IntMapWidgetDefsData = (function () {
   'use strict';
 
@@ -470,7 +471,7 @@ window.IntMapWidgetDefsData = (function () {
      card opens on, never anything a reader sees. The NAME comes from CLDR through WC.countryName(),
      so no translator ever touches this table and no instrument has to be told to ignore it. */
   var DEF_CC = { jp: 'JP', ko: 'KR', zh: 'TW', 'zh-hans': 'CN', de: 'DE', fr: 'FR', es: 'ES', ru: 'RU' };
-  function langKey() { try { return window.IntMapLang.normalise(WC.lang()); } catch (e) { return 'en'; } }
+  function langKey() { try { return IntMapLang.normalise(WC.lang()); } catch (e) { return 'en'; } }
 
   /* ══════════════════════════════════════════════════════════════════════════════════════════════
      WORLD — country, population, holidays
@@ -658,7 +659,7 @@ window.IntMapWidgetDefsData = (function () {
      ══════════════════════════════════════════════════════════════════════════════════════════════ */
   function wikiLangs() {
     var t = 'en';
-    try { t = String(window.IntMapLang.htmlTag(WC.lang()) || 'en').toLowerCase().split('-')[0]; } catch (e) {}
+    try { t = String(IntMapLang.htmlTag(WC.lang()) || 'en').toLowerCase().split('-')[0]; } catch (e) {}
     return t === 'en' ? ['en'] : [t, 'en'];
   }
   function wikiFeed(kind, signal) {

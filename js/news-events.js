@@ -24,10 +24,13 @@
  * ==========================================================================*/
 import { makeNewsClaims } from './news-claims.js';   /* (#R394) 数量の相違の規則 — ブラウザの外からも測れる 1 本 */
 import { makeNewsBrief } from './news-brief.js';     /* (#R405) 出来事の「読める中身」を組み立てる規則 — 同上 */
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.newsEvents = function (HOST) {
-  const L = window.IntMapLang.pick(() => HOST.lang);
-  const LA = window.IntMapLang.pickArgs();
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function newsEvents(HOST) {
+  const L = IntMapLang.pick(() => HOST.lang);
+  const LA = IntMapLang.pickArgs();
   const S = (v) => { try { return window.IntMapSafe.html(v == null ? '' : String(v)); } catch (_) { return ''; } };
   const U = (v) => { try { return window.IntMapSafe.url(String(v || '')); } catch (_) { return ''; } };
 
@@ -103,7 +106,7 @@ window.IntMapModules.newsEvents = function (HOST) {
   /* ── 時刻の文言 ─────────────────────────────────────────────────────────
      ⚠ **1 つの時計に訊く。** 「n 分前」は端末のいまではなく IntMap のマスタークロックで
        決まる（window.IntMapTime。#R288 以降の全レイヤーの規則）。 */
-  const nowMs = () => { try { const st = window.IntMapTime.state(); return (st.isLive ? new Date() : st.when).getTime(); } catch (_) { return Date.now(); } };
+  const nowMs = () => { try { const st = IntMapTime.state(); return (st.isLive ? new Date() : st.when).getTime(); } catch (_) { return Date.now(); } };
   function ago(iso) {
     const t = Date.parse(iso);
     if (!isFinite(t)) return '';
@@ -492,7 +495,7 @@ window.IntMapModules.newsEvents = function (HOST) {
     const rows = ev.members.slice().sort((a, b) => Date.parse(a.publishedAt || 0) - Date.parse(b.publishedAt || 0));
     const firstFam = rows.length ? rows[0].family : null;
 
-    const fmt = (iso) => { try { return new Date(iso).toLocaleString(window.IntMapLang.locale(HOST.lang), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (_) { return iso || ''; } };
+    const fmt = (iso) => { try { return new Date(iso).toLocaleString(IntMapLang.locale(HOST.lang), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (_) { return iso || ''; } };
 
     /* ⚠⚠⚠ (#R435) **`.nrp-bar` / `.nrp-back` — 記事 reader と同じ綴り。** ここは `.reader-bar` /
        `.btn-back` と書いていて、css/intmap.css の規則は `.ev-detail .reader-bar` と
@@ -724,7 +727,7 @@ window.IntMapModules.newsEvents = function (HOST) {
          タブの切り替えや背景の再描画で閉じたときには走らなかった）。 */
     if (b) b.onclick = () => { selected = null; try { HOST.closeReaderPane(); } catch (_) { } };
     /* 詳細を開いたら、その出来事の場所へ寄る（カードのクリックと同じ約束）。 */
-    try { if (item.analysis && item.analysis.loc) window.IntMapGeoEngine.camera.flyTo({ center: item.analysis.loc, zoom: 4, speed: 1.0 }); } catch (_) { }
+    try { if (item.analysis && item.analysis.loc) IntMapGeoEngine.camera.flyTo({ center: item.analysis.loc, zoom: 4, speed: 1.0 }); } catch (_) { }
   }
 
   /* ── Atlas 用の状態（docs/NEWS-EVENTS.md §10）─────────────────────────────
@@ -746,7 +749,7 @@ window.IntMapModules.newsEvents = function (HOST) {
     const shown = all.filter(passes);
     let pins = 0;
     try {
-      const E = window.IntMapGeoEngine;
+      const E = IntMapGeoEngine;
       if (E && E.layers.hasSource('news-points')) pins = (HOST.newsFeatures || []).length;
     } catch (_) { }
     const cats = {};
@@ -829,4 +832,4 @@ window.IntMapModules.newsEvents = function (HOST) {
   };
   try { window.IntMapNewsEvents = API; } catch (_) { }
   return API;
-};
+}

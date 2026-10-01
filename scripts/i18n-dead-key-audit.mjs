@@ -82,7 +82,7 @@ export function tableOf(code, name) {
   const p = join(LOCALES, `ui.${code}.js`);
   const out = [];
   if (!existsSync(p)) return out;
-  const ast = parse(readFileSync(p, 'utf8'), { ecmaVersion: 2022, locations: true });
+  const ast = parse(readFileSync(p, 'utf8'), { ecmaVersion: 2022, sourceType: 'module', locations: true });
   walk.simple(ast, {
     Property(n) {
       if (!(n.key && (n.key.name === name || n.key.value === name)

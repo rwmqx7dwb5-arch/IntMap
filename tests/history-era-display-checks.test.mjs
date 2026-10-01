@@ -14,8 +14,9 @@
  *  the popup and is shown as a dash, never invented. #R711 — a visible, uncollided name stays eligible
  *  above the old zoom cutoffs.
  *
- *  ⚠ THE MODULE IS EVALUATED, NOT READ (#R505). js/time-borders.js is loaded into a vm context with the
- *  shipped data/hist-eras.js; a recording engine captures the layer specs and source writes the module
+ *  ⚠ THE MODULE IS EVALUATED, NOT READ (#R505). js/time-borders.js is IMPORTED (module-graph) into a stub
+ *  window holding the shipped data/hist-eras.js, its renderer, clock and language registry handed at its
+ *  import edges; a recording engine captures the layer specs and source writes the module
  *  makes; #R520's label arithmetic is lifted out and run over a real CShapes snapshot. The stubs are
  *  deliberately inert (#R585: a stub richer than the real thing repairs bugs in passing).
  *  ⚠ The two other bundles are honestly absent in this context: data/cshapes.js and
@@ -31,6 +32,7 @@ import { validateStyleMin, createExpression } from '@maplibre/maplibre-gl-style-
 import { transformSync } from 'esbuild';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { importModule, swappable } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -40,51 +42,58 @@ const TBC = codeOnly(TB);
 /* the nine positions the app resolves a tuple by, in the order js/time-admin1.js records */
 const SLOT = { en: 0, jp: 1, de: 2, ru: 3, es: 4, zh: 5, 'zh-hans': 6, fr: 7, ko: 8 };
 
-/* the module, evaluated, with the era bundle published and the renderer an inert proxy */
-function loadModule(lang = 'en') {
+/* the module, evaluated, with the era bundle published and the renderer an inert proxy.
+   (module-graph) IMPORTED, a fresh instance per call: `win` is the browser window it runs in (the timers
+   are inert, as they were in the vm context this replaced), and the renderer (`ge`, swappable — see
+   drawnLayers), the clock and the language registry are stubs handed at the module's import edges. */
+async function loadModule(lang = 'en') {
   const noop = () => {};
   const chain = new Proxy(function () {}, { get: () => chain, apply: () => chain });
+  const ge = swappable(chain);
   const win = {
     addEventListener: noop, setTimeout: () => 0, clearTimeout: noop, setInterval: () => 0,
-    IntMapModules: {}, IntMapGeoEngine: chain, IntMapTime: { on: noop },
     document: {
       getElementById: () => null,
       createElement: () => { const el = {}; queueMicrotask(() => { try { el.onerror && el.onerror(); } catch (_) {} }); return el; },
       head: { appendChild: noop },
     },
-    IntMapLang: {
+  };
+  const LANG = {
       pickArgs: () => ((...a) => a),
       pick: (get) => ({ arr: (a) => a[SLOT[get()] ?? 0] }),
       htmlTag: (l) => (l === 'zh' ? 'zh-Hant' : l === 'jp' ? 'ja' : l === 'zh-hans' ? 'zh-Hans' : l),
       t: (_l, ...r) => r[0], index: () => ({}),
-    },
-    /* the era word is the platform's (js/hist-scale.js); this context has Intl, so use the owner */
-    IntMapHistScale: null,
   };
+  /* the era word is the platform's (js/hist-scale.js); this context has Intl, so use the owner */
+  win.IntMapHistScale = null;
   win.window = win;
-  const ctx = vm.createContext(win);
-  vm.runInContext(rd('js/hist-scale.js'), ctx);
-  vm.runInContext(rd('data/hist-eras.js'), ctx);
-  vm.runInContext(rd('js/hist-bundles.js'), ctx);   /* (hist-bundles-off-main) the door the module opens its records through */
-  vm.runInContext(TB, ctx);
+  const globals = { window: win, document: win.document, setTimeout: win.setTimeout, clearTimeout: noop, setInterval: win.setInterval };
+  await importModule('js/hist-scale.js', { globals });
+  vm.runInContext(rd('data/hist-eras.js'), vm.createContext({ window: win }));   /* the shipped data, a classic script */
+  await importModule('js/hist-bundles.js', { globals });   /* (hist-bundles-off-main) the door the module opens its records through */
+  const { timeBorders } = await importModule('js/time-borders.js', { globals, mocks: {
+    'js/geo-engine.js': { IntMapGeoEngine: ge.value },
+    'js/chronos.js': { IntMapTime: { on: noop } },
+    'js/lang-registry.js': { IntMapLang: LANG },
+  } });
   const HOST = { lang, canDraw: () => false, isMobile: () => false };
-  return { mod: ctx.window.IntMapModules.timeBorders(HOST), bundle: ctx.window.__HISTERAS, HOST, win, ctx };
+  return { mod: timeBorders(HOST), bundle: win.__HISTERAS, HOST, win, ge };
 }
 
 /* the same module with a drawable style: a recording engine captures every layer spec, every source
    spec and every source write, then the deepest era sheet is drawn. `defs`/`sources`/`writes` are
    what the module asked the renderer to hold. */
 async function drawnLayers() {
-  const { mod, bundle, HOST, win, ctx } = loadModule();
+  const { mod, bundle, HOST, win, ge } = await loadModule();
   /* the name layers take their size from the real js/label-scale.js (the page evaluates it before any layer is added) */
-  vm.runInContext(rd('js/label-scale.js'), ctx);
+  await importModule('js/label-scale.js', { globals: { window: win } });
   const defs = new Map(), sources = new Map(), writes = [];
   const noop = () => {};
   const chain = new Proxy(function () {}, { get: () => chain, apply: () => chain });
-  win.IntMapGeoEngine = new Proxy({ layers: { has: id => defs.has(id), hasSource: id => sources.has(id),
+  ge.set(new Proxy({ layers: { has: id => defs.has(id), hasSource: id => sources.has(id),
     add: def => defs.set(def.id, def), addSource: (id, def) => sources.set(id, def),
     setSourceData: (id, data) => writes.push([id, data]) } },
-    { get: (t, k) => k in t ? t[k] : chain });
+    { get: (t, k) => k in t ? t[k] : chain }));
   win._applyBorders = noop; HOST.canDraw = () => true;
   await mod._go(bundle.snaps[0].y);
   return { mod, bundle, defs, sources, writes };
@@ -368,7 +377,7 @@ test('#R531 ⑤ the source that draws carries the credit', async () => {
    ⚠ NOT MEASURED: the spelling of any sentence (#R488), and whether js/map-ui.js paints `opts.sub`
    on screen (a rendering fact, measured in a browser on the built site). */
 test('#R682 ① the sentence exists only while the snapshot tier is what is drawn', async () => {
-  const { mod } = loadModule();
+  const { mod } = await loadModule();
   assert.equal(mod.note(), '', 'a live clock draws no era snapshot, so there is nothing to state');
   assert.equal(mod.coverage().era, false);
   await mod._go(-122999);
@@ -379,7 +388,7 @@ test('#R682 ① the sentence exists only while the snapshot tier is what is draw
 });
 
 test('#R682 ② the numbers are counted off the collection on the source, not typed', async () => {
-  const { mod, bundle } = loadModule();
+  const { mod, bundle } = await loadModule();
   /* every bundled sheet, so this cannot pass by being right about one of them */
   for (const snap of bundle.snaps) {
     await mod._go(snap.y);
@@ -396,7 +405,7 @@ test('#R682 ② the numbers are counted off the collection on the source, not ty
 });
 
 test('#R682 ③ the neighbouring sheets are read out of the record, so the gaps are not typed anywhere', async () => {
-  const { mod, bundle } = loadModule();
+  const { mod, bundle } = await loadModule();
   const ys = bundle.snaps.map((s) => s.y).slice().sort((a, b) => a - b);
   await mod._go(ys[0]);
   let c = mod.coverage();
@@ -411,7 +420,7 @@ test('#R682 ③ the neighbouring sheets are read out of the record, so the gaps 
 });
 
 test('#R682 ④ upstream classifies the shapes or it does not, and nothing is invented for the rest', async () => {
-  const { mod, bundle } = loadModule();
+  const { mod, bundle } = await loadModule();
   let sheetsWithType = 0, classified = 0;
   for (const snap of bundle.snaps) {
     await mod._go(snap.y);
@@ -437,7 +446,7 @@ test('#R682 ⑤ the sentence is nine different sentences, and every one carries 
   const langs = Object.keys(SLOT);
   const seen = new Set();
   for (const lang of langs) {
-    const { mod } = loadModule(lang);
+    const { mod } = await loadModule(lang);
     await mod._go(-9999);           /* a sheet that has both unnamed shapes and classified ones */
     const c = mod.coverage(), n = mod.note();
     assert.ok(n && n.length > 60, `${lang}: the row carries a sentence`);
@@ -455,8 +464,8 @@ test('#R682 ⑤ the sentence is nine different sentences, and every one carries 
   assert.equal(seen.size, langs.length);
 });
 
-test('#R682 ⑥ the classification of one shape is upstream\'s word, or nothing', () => {
-  const { mod } = loadModule();
+test('#R682 ⑥ the classification of one shape is upstream\'s word, or nothing', async () => {
+  const { mod } = await loadModule();
   assert.equal(mod.typeNote({ properties: { NAME: 'Neanderthal' } }), '',
     'a shape upstream did not classify gets no line rather than a guess');
   assert.equal(mod.typeNote(null), '');
@@ -467,12 +476,12 @@ test('#R682 ⑥ the classification of one shape is upstream\'s word, or nothing'
     assert.ok(out.includes('hunter-gatherers'), `the «${spelling}» spelling is read, verbatim`);
     assert.ok(out.length > 'hunter-gatherers'.length, 'and it is marked as upstream\'s word, not a name');
   }
-  const nine = new Set(Object.keys(SLOT).map((l) => loadModule(l).mod.typeNote({ properties: { TYPE: 'culture' } })));
+  const nine = new Set(await Promise.all(Object.keys(SLOT).map(async (l) => (await loadModule(l)).mod.typeNote({ properties: { TYPE: 'culture' } }))));
   assert.equal(nine.size, 9, 'all nine languages carry their own wording for «upstream says»');
 });
 
 test('#R682 ⑦ a day-exact tier answering must not be described as a snapshot', async () => {
-  const { mod } = loadModule();
+  const { mod } = await loadModule();
   /* 1900 is inside CShapes' band; its bundle is absent here, so the era tier answers — the point is
      the PREDICATE: the sentence only describes a collection `shownY` identifies as a snapshot */
   await mod._go(1900);
@@ -488,7 +497,7 @@ test('#R682 ⑦ a day-exact tier answering must not be described as a snapshot',
 
 /* ══ #R705 — a source's border precision, from the record to the stroke ══════════════════════ */
 test('#R705 shipped era precision survives decoding into map and popup features', async () => {
-  const { mod, bundle } = loadModule();
+  const { mod, bundle } = await loadModule();
   const snap = bundle.snaps.find(s => s.y < 0 && s.feats.some(f => f[1].bp != null));
   await mod._go(snap.y);
   const fc = mod.currentFC();
@@ -503,9 +512,10 @@ test('#R705 shipped era precision survives decoding into map and popup features'
   }
   assert.ok(checked > 0);
 });
-test('#R705 polygon to coast-trimmed lines preserves source properties', () => {
+test('#R705 polygon to coast-trimmed lines preserves source properties', async () => {
+  /* (module-graph) the module is IMPORTED into a window that already holds the coast record */
   const win = { __IMBCOAST: { sets: {} } }; win.window = win;
-  vm.runInNewContext(rd('js/border-coast.js'), win);
+  win.IntMapBorderCoast = (await importModule('js/border-coast.js', { globals: { window: win } })).IntMapBorderCoast;
   const properties = { NAME: 'source feature', BORDERPRECISION: 2, TYPE: 'region' };
   const f = { type: 'Feature', properties, geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] } };
   const lines = win.IntMapBorderCoast.wholeLines({ type: 'FeatureCollection', features: [f] });
@@ -513,9 +523,9 @@ test('#R705 polygon to coast-trimmed lines preserves source properties', () => {
   assert.deepEqual(JSON.parse(JSON.stringify(lines.features[0].properties)), properties);
   assert.notEqual(lines.features[0].properties, properties);
 });
-test('#R705 precision note uses source semantics and never invents a classification', () => {
+test('#R705 precision note uses source semantics and never invents a classification', async () => {
   for (const lang of ['en', 'jp']) {
-    const { mod } = loadModule(lang);
+    const { mod } = await loadModule(lang);
     const notes = [1, 2, 3].map(bp => mod.typeNote({ properties: { BORDERPRECISION: bp } }));
     assert.equal(new Set(notes).size, 3);
     assert.ok(notes.every(Boolean));
@@ -525,7 +535,7 @@ test('#R705 precision note uses source semantics and never invents a classificat
   }
 });
 test('#R705 unnamed geometry retains its own source precision without gaining a name', async () => {
-  const { mod, bundle } = loadModule();
+  const { mod, bundle } = await loadModule();
   let checked = 0;
   for (const snap of bundle.snaps.filter(s => s.y < 0)) {
     assert.equal(snap.blankPrecision.length, snap.blank.length);

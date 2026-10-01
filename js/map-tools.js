@@ -20,10 +20,12 @@
 import { everyTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
 import { overpassQuery } from './overpass.js';   /* the one Overpass client, with a clock — js/overpass.js */
 import { NominatimGate } from './nominatim-gate.js';   /* (#R489) the one Nominatim floor — js/nominatim-gate.js. The outline tool asks for `polygon_geojson` up to ten results at a time; that is exactly the shape the host's policy is about. */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules=window.IntMapModules||{};
 
-window.IntMapModules.projView=function(HOST){
+
+export function projView(HOST){
   window.ProjView=(function(){
     const RAD=Math.PI/180, EARTH_KM=6371;
     let host=null, cv=null, ctx=null, sel=null, titleEl=null, entry=null, mEntry=null;
@@ -47,7 +49,7 @@ window.IntMapModules.projView=function(HOST){
        array it is handed, so the DATA is unchanged; what changes is that this is now a call site the
        positional audit reads, and `LP.arr()` resolves it through `pick()` itself — de/ru/es
        positionally, fr/ko/zh/zh-Hans from the inline table keyed by the English name. */
-    const LA=window.IntMapLang.pickArgs(), LP=window.IntMapLang.pick(()=>HOST.lang);
+    const LA=IntMapLang.pickArgs(), LP=IntMapLang.pick(()=>HOST.lang);
     const PROJS={
       equalEarth:{name:LA('Equal Earth','イコールアース図法','Equal-Earth-Projektion','Проекция Equal Earth','Proyección Equal Earth'), fn(loD,laD){ const l=loD*RAD,p=laD*RAD,M=Math.sqrt(3)/2,A1=1.340264,A2=-0.081106,A3=0.000893,A4=0.003796; const th=Math.asin(M*Math.sin(p)),t2=th*th,t6=t2*t2*t2; return [l*Math.cos(th)/(M*(A1+3*A2*t2+t6*(7*A3+9*A4*t2))), th*(A1+A2*t2+t6*(A3+A4*t2))]; }},
       robinson:{name:LA('Robinson','ロビンソン図法','Robinson-Projektion','Проекция Робинсона','Proyección de Robinson'), fn(loD,laD){ const a=Math.min(17.9999,Math.abs(laD)/5),i=Math.floor(a),f=a-i; const xl=ROBX[i]+(ROBX[i+1]-ROBX[i])*f, yl=ROBY[i]+(ROBY[i+1]-ROBY[i])*f; return [0.8487*xl*loD*RAD, 1.3523*yl*(laD<0?-1:1)]; }},
@@ -131,9 +133,9 @@ window.IntMapModules.projView=function(HOST){
       sel=document.createElement('select');
       sel.innerHTML=Object.keys(PROJS).map(k=>`<option value="${k}">${LP.arr(PROJS[k].name)}</option>`).join('');
       sel.onchange=()=>{ cur=sel.value; zoom=1;panx=0;pany=0; if(entry)entry.value=cur; updateTitle(); render(); };
-      const zin=document.createElement('button'); zin.textContent='＋'; zin.title=window.IntMapLang.t(HOST.lang,'Zoom in','ズームイン'); zin.onclick=()=>{ zoom=Math.min(8,zoom*1.25); render(); };
-      const zout=document.createElement('button'); zout.textContent='－'; zout.title=window.IntMapLang.t(HOST.lang,'Zoom out','ズームアウト'); zout.onclick=()=>{ zoom=Math.max(0.5,zoom/1.25); render(); };
-      const cl=document.createElement('button'); cl.className='proj-close'; cl.textContent=(window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')); cl.onclick=()=>api.close();
+      const zin=document.createElement('button'); zin.textContent='＋'; zin.title=IntMapLang.t(HOST.lang,'Zoom in','ズームイン'); zin.onclick=()=>{ zoom=Math.min(8,zoom*1.25); render(); };
+      const zout=document.createElement('button'); zout.textContent='－'; zout.title=IntMapLang.t(HOST.lang,'Zoom out','ズームアウト'); zout.onclick=()=>{ zoom=Math.max(0.5,zoom/1.25); render(); };
+      const cl=document.createElement('button'); cl.className='proj-close'; cl.textContent=(IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')); cl.onclick=()=>api.close();
       bar.appendChild(titleEl); bar.appendChild(sel); bar.appendChild(zout); bar.appendChild(zin); bar.appendChild(cl);
       host.appendChild(bar); mc.appendChild(host); ctx=cv.getContext('2d');
       /* input: drag to pan, wheel to zoom */
@@ -162,10 +164,10 @@ window.IntMapModules.projView=function(HOST){
     if(document.readyState!=='loading') setTimeout(_wireProjAutoClose,0); else document.addEventListener('DOMContentLoaded',_wireProjAutoClose);
     return api;
   })();
-};
+}
 
-window.IntMapModules.drawTool=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function drawTool(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const ringArea=HOST.ringArea, t=HOST.t, distHTML=HOST.distHTML, areaHTML=HOST.areaHTML, makeDraggable=HOST.makeDraggable, imToast=HOST.imToast, exitTool=HOST.exitTool;
   window.DrawTool=(function(){
@@ -284,7 +286,7 @@ window.IntMapModules.drawTool=function(HOST){
     function renderPanel(){ const p=ensurePanel(); if(silent){ p.style.display='none'; return; } p.style.display='block';
       /* (#R139) touch devices trace by PRESS-DRAG-RELEASE (not tap) — the hint must say so, or a user taps and
          nothing draws. Detect coarse pointers and give the right instruction; 5 languages. */
-      const _L5=window.IntMapLang.pick(()=>HOST.lang);
+      const _L5=IntMapLang.pick(()=>HOST.lang);
       const _coarse=(()=>{ try{ return !!(window.matchMedia&&matchMedia('(pointer:coarse)').matches); }catch(_){ return false; } })();
       const hint = state==='armed'
                    ? (_coarse ? _L5('Press and drag on the map to trace an area','地図を指でなぞって範囲を描く（押したまま動かす）','Auf der Karte gedrückt ziehen, um eine Fläche zu zeichnen','Проведите пальцем по карте, чтобы обвести область','Mantén y arrastra en el mapa para trazar un área')
@@ -293,11 +295,11 @@ window.IntMapModules.drawTool=function(HOST){
                    ? (_coarse ? _L5('Lift your finger to finish','指を離すと確定','Finger anheben zum Abschließen','Поднимите палец, чтобы завершить','Levanta el dedo para finalizar')
                               : _L5('Move the cursor to trace → click to finish','カーソルを動かして描画 → クリックで確定','Cursor bewegen zum Zeichnen → Klick zum Abschließen','Двигайте курсор для обводки → клик для завершения','Mueve el cursor para trazar → clic para finalizar'))
                  : _L5('Done — use Redraw to start over','完了。「やり直し」で再描画','Fertig — „Neu zeichnen“ zum Neustart','Готово — «Перерисовать», чтобы начать заново','Listo — usa Redibujar para empezar de nuevo');
-      p.innerHTML=`<div class="tp-header"><span class="tp-title">✏️ ${window.IntMapLang.t(HOST.lang,"Draw / trace","描画測定","Zeichnen / nachzeichnen","Рисование и трассировка","Dibujar / trazar")}</span><button class="tp-close" title="${t('close')}">×</button></div>`+
-        `<div class="tp-row"><span>${window.IntMapLang.t(HOST.lang,"Length","距離","Länge","Длина","Longitud")}</span><b>${distHTML(lengthKm)}</b></div>`+
-        `<div class="tp-row"><span>${window.IntMapLang.t(HOST.lang,"Area (loops)","面積（閉領域）","Fläche (geschlossen)","Площадь (замкнутые)","Superficie (cerrado)")}</span><b>${lockedArea>0?areaHTML(lockedArea):'—'}</b></div>`+
-        `<div class="tp-row"><span>${window.IntMapLang.t(HOST.lang,"Points (simpl/raw)","点数（簡略/元）","Punkte (vereinfacht/roh)","Точки (упрощ./исходн.)","Puntos (simplif./bruto)")}</span><b>${simplified.length}/${raw.length}</b></div>`+
-        `<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:5px;"><span id="draw-res-lbl">${window.IntMapLang.t(HOST.lang,"Resolution (right = coarser)","解像度（右ほど粗く）","Auflösung (rechts = gröber)","Разрешение (правее — грубее)","Resolución (derecha = más basto)")}</span>`+
+      p.innerHTML=`<div class="tp-header"><span class="tp-title">✏️ ${IntMapLang.t(HOST.lang,"Draw / trace","描画測定","Zeichnen / nachzeichnen","Рисование и трассировка","Dibujar / trazar")}</span><button class="tp-close" title="${t('close')}">×</button></div>`+
+        `<div class="tp-row"><span>${IntMapLang.t(HOST.lang,"Length","距離","Länge","Длина","Longitud")}</span><b>${distHTML(lengthKm)}</b></div>`+
+        `<div class="tp-row"><span>${IntMapLang.t(HOST.lang,"Area (loops)","面積（閉領域）","Fläche (geschlossen)","Площадь (замкнутые)","Superficie (cerrado)")}</span><b>${lockedArea>0?areaHTML(lockedArea):'—'}</b></div>`+
+        `<div class="tp-row"><span>${IntMapLang.t(HOST.lang,"Points (simpl/raw)","点数（簡略/元）","Punkte (vereinfacht/roh)","Точки (упрощ./исходн.)","Puntos (simplif./bruto)")}</span><b>${simplified.length}/${raw.length}</b></div>`+
+        `<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:5px;"><span id="draw-res-lbl">${IntMapLang.t(HOST.lang,"Resolution (right = coarser)","解像度（右ほど粗く）","Auflösung (rechts = gröber)","Разрешение (правее — грубее)","Resolución (derecha = más basto)")}</span>`+
           `<input type="range" id="draw-res" aria-labelledby="draw-res-lbl" min="0" max="100" step="1" value="${resolution}" style="width:100%;accent-color:var(--primary-color);"></div>`+
         `<div class="tp-hint">${hint}</div>`+
         /* (#R123) POPULATION inside the drawn loop(s) — same WorldPop 100m grid as the measure/radius tools, now
@@ -307,8 +309,8 @@ window.IntMapModules.drawTool=function(HOST){
            Elevation profileを使えるように"). Profiles the traced path (simplified, raw fallback). */
         ((simplified.length>=2) ? `<button class="ai-action-btn" id="draw-profile" style="margin-top:6px;">📈 ${t('elevProfile')}</button>` : '')+
         `<div style="display:flex;gap:6px;margin-top:8px;">`+
-          `<button class="tp-clear" id="draw-finish" style="flex:1;">${window.IntMapLang.t(HOST.lang,"Keep on map","地図に残す","Auf der Karte behalten","Оставить на карте","Mantener en el mapa")}</button>`+
-          `<button class="tp-clear" id="draw-redo" style="flex:1;">${window.IntMapLang.t(HOST.lang,"Redraw","やり直し","Neu zeichnen","Перерисовать","Redibujar")}</button>`+
+          `<button class="tp-clear" id="draw-finish" style="flex:1;">${IntMapLang.t(HOST.lang,"Keep on map","地図に残す","Auf der Karte behalten","Оставить на карте","Mantener en el mapa")}</button>`+
+          `<button class="tp-clear" id="draw-redo" style="flex:1;">${IntMapLang.t(HOST.lang,"Redraw","やり直し","Neu zeichnen","Перерисовать","Redibujar")}</button>`+
         `</div>`;
       p.querySelector('.tp-close').onclick=()=>api.exit();
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
@@ -356,7 +358,7 @@ window.IntMapModules.drawTool=function(HOST){
       let box=p.querySelector('.tp-prog'); if(!box){ box=document.createElement('div'); box.className='tp-prog'; box.style.cssText='margin:7px 0 2px;';
         box.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--text-muted);margin-bottom:3px;"><span class="tp-prog-lbl" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span><b class="tp-prog-pct" style="flex:0 0 auto;">0%</b></div><div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div class="tp-prog-fill" style="height:100%;width:0%;background:var(--prog-grad);transition:width .2s;"></div></div>';
         if(btn.parentNode) btn.parentNode.insertBefore(box, btn.nextSibling); else p.appendChild(box); }
-      const lbl=window.IntMapLang.t(HOST.lang,'Summing the WorldPop population grid…','WorldPop人口グリッドを集計中…','WorldPop-Bevölkerungsraster wird summiert…','Суммирование сетки населения WorldPop…','Sumando la cuadrícula de población WorldPop…');
+      const lbl=IntMapLang.t(HOST.lang,'Summing the WorldPop population grid…','WorldPop人口グリッドを集計中…','WorldPop-Bevölkerungsraster wird summiert…','Суммирование сетки населения WorldPop…','Sumando la cuadrícula de población WorldPop…');
       box.querySelector('.tp-prog-lbl').textContent=lbl; box.style.display='block';
       /* (#R139) HONEST progress (shared window._imProgCtl): a real, monotonic fraction, never a fake decelerating
          ease-out. (#R254) js/sims.js tiles EVERY area, so that fraction exists from the first cell for any size —
@@ -376,10 +378,10 @@ window.IntMapModules.drawTool=function(HOST){
     function keepOnMap(){
       if(state==='drawing') finish();
       try{
-        (loopRings||[]).forEach(r=>{ if(r&&r.length>=4){ try{ window.IntMapAnnotations.add({type:'Polygon',coordinates:[r]},{color:'#ffcc00',op:0.22,name:(window.IntMapLang.t(HOST.lang,"Drawn area","描画範囲","Gezeichneter Bereich","Нарисованная область","Área dibujada")),value:(lockedArea>0?areaHTML(lockedArea):'')}); }catch(_){} } });
+        (loopRings||[]).forEach(r=>{ if(r&&r.length>=4){ try{ window.IntMapAnnotations.add({type:'Polygon',coordinates:[r]},{color:'#ffcc00',op:0.22,name:(IntMapLang.t(HOST.lang,"Drawn area","描画範囲","Gezeichneter Bereich","Нарисованная область","Área dibujada")),value:(lockedArea>0?areaHTML(lockedArea):'')}); }catch(_){} } });
         const ln=(simplified&&simplified.length>=2)?simplified:((raw&&raw.length>=2)?raw:null);
-        if(ln){ try{ window.IntMapAnnotations.add({type:'LineString',coordinates:ln},{color:'#ff9500',name:(window.IntMapLang.t(HOST.lang,"Drawing","描画","Zeichnen","Рисование","Dibujando")),value:(lengthKm>0?distHTML(lengthKm):'')}); }catch(_){} }
-        try{ if(typeof imToast==='function') imToast(window.IntMapLang.t(HOST.lang,"Kept on the map","地図に残しました","Auf der Karte behalten","Оставлено на карте","Mantenido en el mapa")); }catch(_){}   /* (#R149) imToast is closure-scoped, not on window */
+        if(ln){ try{ window.IntMapAnnotations.add({type:'LineString',coordinates:ln},{color:'#ff9500',name:(IntMapLang.t(HOST.lang,"Drawing","描画","Zeichnen","Рисование","Dibujando")),value:(lengthKm>0?distHTML(lengthKm):'')}); }catch(_){} }
+        try{ if(typeof imToast==='function') imToast(IntMapLang.t(HOST.lang,"Kept on the map","地図に残しました","Auf der Karte behalten","Оставлено на карте","Mantenido en el mapa")); }catch(_){}   /* (#R149) imToast is closure-scoped, not on window */
       }catch(_){}
       api.exit();
     }
@@ -438,10 +440,10 @@ window.IntMapModules.drawTool=function(HOST){
     { const b=document.getElementById('btn-tool-draw'); if(b) b.onclick=()=>api.toggle(); }
     return api;
   })();
-};
+}
 
-window.IntMapModules.isolate=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function isolate(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -493,7 +495,7 @@ window.IntMapModules.isolate=function(HOST){
              applies — until a reload warms the cache. POLL instead (reliable regardless of render state), with
              the idle listener kept as a last-resort. */
           if(tries++<60){ setTimeout(apply,120); } else { try{ GE().events.once('idle',apply); }catch(_){} } return; }
-        if(!feat){ try{ imToast(window.IntMapLang.t(HOST.lang,"Country border not found","国境データが見つかりません","Landesgrenze nicht gefunden","Границы страны не найдены","No se ha encontrado la frontera del país")); }catch(_){} return; }
+        if(!feat){ try{ imToast(IntMapLang.t(HOST.lang,"Country border not found","国境データが見つかりません","Landesgrenze nicht gefunden","Границы страны не найдены","No se ha encontrado la frontera del país")); }catch(_){} return; }
         try{ GE().layers.setSourceData('iso-src',maskFC(feat)); GE().layers.setPaint('iso-mask','fill-color',bg()); GE().layers.setLayout('iso-mask','visibility','visible'); toTop(); }catch(_){}
         /* (#R107) auto-clear any place highlight / blue boundary outline on isolate — a historical-country click
            draws the era outline (IntMapOutline) + place-hl, which otherwise linger on top of the isolated view
@@ -505,7 +507,7 @@ window.IntMapModules.isolate=function(HOST){
            fight the isolate mask ("isolateを押したらCountries (info)は選択解除"). Dispatch change so the
            checkbox, the map layer and the Active-layers list all update together. */
         try{ const cc=document.getElementById('cb-countries'); if(cc&&cc.checked){ cc.checked=false; cc.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){}
-        active=true; const b=exitBtn(); b.textContent='× '+(window.IntMapLang.t(HOST.lang,"Exit country view","全体表示に戻る","Länderansicht verlassen","Выйти из вида страны","Salir de la vista del país")); b.style.display='block';
+        active=true; const b=exitBtn(); b.textContent='× '+(IntMapLang.t(HOST.lang,"Exit country view","全体表示に戻る","Länderansicht verlassen","Выйти из вида страны","Salir de la vista del país")); b.style.display='block';
         try{ const bb=bbox(feat); if(bb[0][0]>-179&&bb[1][0]<179){ GE().camera.fitBounds(bb,{padding:60,duration:800});
           /* (#R11) Restrict panning to roughly the country's extent so you can only roam that country. */
           const padX=(bb[1][0]-bb[0][0])*0.18+0.6, padY=(bb[1][1]-bb[0][1])*0.18+0.6;
@@ -535,10 +537,10 @@ window.IntMapModules.isolate=function(HOST){
     GE().events.on('idle',()=>{ if(active) toTop(); });
     return { enter, enterByName, enterAt, enterGeom, exit, active:()=>active };
   })();
-};
+}
 
-window.IntMapModules.seaRoute=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function seaRoute(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -658,14 +660,14 @@ window.IntMapModules.seaRoute=function(HOST){
     function compute(){ if(!start||!end||busy) return; busy=true;
       if(pureDist){ let line; try{ line=turf.greatCircle(turf.point(start),turf.point(end),{npoints:128}); }catch(_){ line=null; }
         const coords=line?(line.geometry.type==='MultiLineString'?[].concat(...line.geometry.coordinates):line.geometry.coordinates):[start,end];
-        draw(coords); const km=hav(start,end); setBody((window.IntMapLang.t(HOST.lang,"Straight-line (shortest): ","直線距離（最短）: ","Luftlinie (kürzeste): ","По прямой (кратчайшее): ","En línea recta (la más corta): "))+'<b>'+km.toFixed(0)+' km</b>'); busy=false; return; }
-      setBody(window.IntMapLang.t(HOST.lang,"Computing sea route…","航路を計算中…","Seeroute wird berechnet…","Расчёт морского маршрута…","Calculando la ruta marítima…"));
+        draw(coords); const km=hav(start,end); setBody((IntMapLang.t(HOST.lang,"Straight-line (shortest): ","直線距離（最短）: ","Luftlinie (kürzeste): ","По прямой (кратчайшее): ","En línea recta (la más corta): "))+'<b>'+km.toFixed(0)+' km</b>'); busy=false; return; }
+      setBody(IntMapLang.t(HOST.lang,"Computing sea route…","航路を計算中…","Seeroute wird berechnet…","Расчёт морского маршрута…","Calculando la ruta marítima…"));
       setTimeout(()=>{ try{
-        if(!buildMask()){ setBody(window.IntMapLang.t(HOST.lang,"Country data still loading — try again.","国境データ読み込み待ち…再試行してください","Länderdaten werden noch geladen — bitte erneut versuchen.","Данные по странам ещё загружаются — попробуйте снова.","Los datos de países aún se están cargando; inténtelo de nuevo.")); busy=false; return; }
+        if(!buildMask()){ setBody(IntMapLang.t(HOST.lang,"Country data still loading — try again.","国境データ読み込み待ち…再試行してください","Länderdaten werden noch geladen — bitte erneut versuchen.","Данные по странам ещё загружаются — попробуйте снова.","Los datos de países aún se están cargando; inténtelo de nuevo.")); busy=false; return; }
         const s=snapSea(start[0],start[1]), e=snapSea(end[0],end[1]);
-        if(!s||!e){ setBody(window.IntMapLang.t(HOST.lang,"No sea cell found near a point (is it on land?).","海上の点が見つかりません（陸地の可能性）","In der Nähe eines Punktes wurde keine Seezelle gefunden (liegt er an Land?).","Рядом с точкой не найдено морской ячейки (она на суше?).","No se ha encontrado celda marina cerca de un punto (¿está en tierra?).")); busy=false; return; }
+        if(!s||!e){ setBody(IntMapLang.t(HOST.lang,"No sea cell found near a point (is it on land?).","海上の点が見つかりません（陸地の可能性）","In der Nähe eines Punktes wurde keine Seezelle gefunden (liegt er an Land?).","Рядом с точкой не найдено морской ячейки (она на суше?).","No se ha encontrado celda marina cerca de un punto (¿está en tierra?).")); busy=false; return; }
         let path=astar(s,e);
-        if(!path){ setBody(window.IntMapLang.t(HOST.lang,"No sea route found (blocked or unreachable).","航路が見つかりません（封鎖/到達不可）","Keine Seeroute gefunden (blockiert oder unerreichbar).","Морской маршрут не найден (заблокирован или недостижим).","No se ha encontrado ruta marítima (bloqueada o inalcanzable).")); busy=false; return; }
+        if(!path){ setBody(IntMapLang.t(HOST.lang,"No sea route found (blocked or unreachable).","航路が見つかりません（封鎖/到達不可）","Keine Seeroute gefunden (blockiert oder unerreichbar).","Морской маршрут не найден (заблокирован или недостижим).","No se ha encontrado ruta marítima (bloqueada o inalcanzable).")); busy=false; return; }
         /* (#R14) if the click landed on a coastal/shallow cell the mask reads as land, anchor the drawn route
            at the nearest navigable water (the snapped cell) rather than drawing a leg across land or failing —
            this is what lets the user start/end at ports & shallows. A water click keeps its exact point. */
@@ -675,21 +677,21 @@ window.IntMapModules.seaRoute=function(HOST){
         const pulled=stringPull(path);
         let km=0; for(let i=1;i<pulled.length;i++){ if(Math.abs(pulled[i][0]-pulled[i-1][0])<180) km+=hav(pulled[i-1],pulled[i]); }
         draw(pulled);
-        setBody((window.IntMapLang.t(HOST.lang,"Sea route: ","航路距離: ","Seeroute: ","Морской маршрут: ","Ruta marítima: "))+'<b>'+km.toFixed(0)+' km</b> · '+pulled.length+(window.IntMapLang.t(HOST.lang," pts"," 点"," Pkt."," точек"," ptos"))+(noGo.length?(jp()?(' · 禁止域 '+noGo.length):(' · '+noGo.length+' no-go')):''));
-      }catch(err){ setBody((window.IntMapLang.t(HOST.lang,"Error: ","エラー: ","Fehler: ","Ошибка: ","Error: "))+err); } busy=false; },30);
+        setBody((IntMapLang.t(HOST.lang,"Sea route: ","航路距離: ","Seeroute: ","Морской маршрут: ","Ruta marítima: "))+'<b>'+km.toFixed(0)+' km</b> · '+pulled.length+(IntMapLang.t(HOST.lang," pts"," 点"," Pkt."," точек"," ptos"))+(noGo.length?(jp()?(' · 禁止域 '+noGo.length):(' · '+noGo.length+' no-go')):''));
+      }catch(err){ setBody((IntMapLang.t(HOST.lang,"Error: ","エラー: ","Fehler: ","Ошибка: ","Error: "))+err); } busy=false; },30);
     }
     function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='route-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
     function refreshPanel(){ const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:calc(var(--z-sheet) - 50);width:248px;';
-      p.innerHTML='<div class="tp-header"><span class="tp-title">🚢 '+(window.IntMapLang.t(HOST.lang,"Sea route","洋上ルート","Seeroute","Морской маршрут","Ruta marítima"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
+      p.innerHTML='<div class="tp-header"><span class="tp-title">🚢 '+(IntMapLang.t(HOST.lang,"Sea route","洋上ルート","Seeroute","Морской маршрут","Ruta marítima"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
         +'<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;font-size:12px;">'
-        +'<div>'+(window.IntMapLang.t(HOST.lang,"Start","始点","Start","Начало","Inicio"))+': <b>'+(start?fmtLL(start[0],start[1]):'—')+'</b></div>'
-        +'<div>'+(window.IntMapLang.t(HOST.lang,"End","終点","Ziel","Конец","Fin"))+': <b>'+(end?fmtLL(end[0],end[1]):'—')+'</b></div>'
-        +'<label style="display:flex;align-items:center;gap:7px;color:var(--text-muted);"><input type="checkbox" id="route-pure"'+(pureDist?' checked':'')+'> '+(window.IntMapLang.t(HOST.lang,"Pure shortest distance (ignore land)","純粋な最短距離（陸地無視）","Reine kürzeste Distanz (Land ignorieren)","Чистое кратчайшее расстояние (игнорируя сушу)","Distancia más corta pura (ignorar la tierra)"))+'</label>'
-        +'<label style="display:flex;align-items:center;gap:7px;color:var(--text-muted);"><input type="checkbox" id="route-nogo-add"'+(addNoGoMode?' checked':'')+'> '+(window.IntMapLang.t(HOST.lang,"Click map to add a no-go zone","地図クリックで禁止域を追加","Karte anklicken, um eine Sperrzone hinzuzufügen","Кликните по карте, чтобы добавить запретную зону","Haga clic en el mapa para añadir una zona prohibida"))+'</label>'
+        +'<div>'+(IntMapLang.t(HOST.lang,"Start","始点","Start","Начало","Inicio"))+': <b>'+(start?fmtLL(start[0],start[1]):'—')+'</b></div>'
+        +'<div>'+(IntMapLang.t(HOST.lang,"End","終点","Ziel","Конец","Fin"))+': <b>'+(end?fmtLL(end[0],end[1]):'—')+'</b></div>'
+        +'<label style="display:flex;align-items:center;gap:7px;color:var(--text-muted);"><input type="checkbox" id="route-pure"'+(pureDist?' checked':'')+'> '+(IntMapLang.t(HOST.lang,"Pure shortest distance (ignore land)","純粋な最短距離（陸地無視）","Reine kürzeste Distanz (Land ignorieren)","Чистое кратчайшее расстояние (игнорируя сушу)","Distancia más corta pura (ignorar la tierra)"))+'</label>'
+        +'<label style="display:flex;align-items:center;gap:7px;color:var(--text-muted);"><input type="checkbox" id="route-nogo-add"'+(addNoGoMode?' checked':'')+'> '+(IntMapLang.t(HOST.lang,"Click map to add a no-go zone","地図クリックで禁止域を追加","Karte anklicken, um eine Sperrzone hinzuzufügen","Кликните по карте, чтобы добавить запретную зону","Haga clic en el mapa para añadir una zona prohibida"))+'</label>'
         +'</div>'
-        +'<button class="tp-clear" id="route-go" style="width:100%;margin-top:6px;">'+(window.IntMapLang.t(HOST.lang,"Compute route","ルート計算","Route berechnen","Рассчитать маршрут","Calcular la ruta"))+'</button>'
-        +'<button class="tp-clear" id="route-clr" style="width:100%;margin-top:6px;">'+(window.IntMapLang.t(HOST.lang,"Clear","消去","Löschen","Очистить","Borrar"))+'</button>'
-        +'<div id="route-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.5;">'+(window.IntMapLang.t(HOST.lang,"Pick two sea points (right-click → set start/end), then Compute.","海上の2点を選びます。右クリック→「始点/終点に設定」、または計算を押す。","Zwei Seepunkte wählen (Rechtsklick → Start/Ziel festlegen), dann Berechnen.","Выберите две морские точки (правый клик → задать начало/конец), затем нажмите «Рассчитать».","Elija dos puntos marinos (clic derecho → fijar inicio/fin) y pulse Calcular."))+'</div>';
+        +'<button class="tp-clear" id="route-go" style="width:100%;margin-top:6px;">'+(IntMapLang.t(HOST.lang,"Compute route","ルート計算","Route berechnen","Рассчитать маршрут","Calcular la ruta"))+'</button>'
+        +'<button class="tp-clear" id="route-clr" style="width:100%;margin-top:6px;">'+(IntMapLang.t(HOST.lang,"Clear","消去","Löschen","Очистить","Borrar"))+'</button>'
+        +'<div id="route-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.5;">'+(IntMapLang.t(HOST.lang,"Pick two sea points (right-click → set start/end), then Compute.","海上の2点を選びます。右クリック→「始点/終点に設定」、または計算を押す。","Zwei Seepunkte wählen (Rechtsklick → Start/Ziel festlegen), dann Berechnen.","Выберите две морские точки (правый клик → задать начало/конец), затем нажмите «Рассчитать».","Elija dos puntos marinos (clic derecho → fijar inicio/fin) y pulse Calcular."))+'</div>';
       /* × now clears the drawn route + no-go zones too — the "can't remove it once used" bug was that
          closing the panel left everything painted with the Clear button no longer reachable. */
       p.querySelector('.tp-close').onclick=()=>{ clear(); p.style.display='none'; };
@@ -707,11 +709,11 @@ window.IntMapModules.seaRoute=function(HOST){
        menu, so normal clicks/measure tools aren't hijacked). */
     GE().events.on('click',(e)=>{ if(!panel||panel.style.display==='none'||!addNoGoMode) return;
       noGo.push({lng:e.lngLat.lng,lat:e.lngLat.lat,km:120}); draw(null);
-      const b=panel.querySelector('#route-body'); if(b) b.innerHTML=(window.IntMapLang.t(HOST.lang,"No-go added (120 km circle). Press Compute route.","禁止域を追加（計500km毎に120km円）。「ルート計算」を押す。","Sperrzone hinzugefügt (120-km-Kreis). „Route berechnen“ drücken.","Запретная зона добавлена (круг 120 км). Нажмите «Рассчитать маршрут».","Zona prohibida añadida (círculo de 120 km). Pulse «Calcular la ruta».")); });
+      const b=panel.querySelector('#route-body'); if(b) b.innerHTML=(IntMapLang.t(HOST.lang,"No-go added (120 km circle). Press Compute route.","禁止域を追加（計500km毎に120km円）。「ルート計算」を押す。","Sperrzone hinzugefügt (120-km-Kreis). „Route berechnen“ drücken.","Запретная зона добавлена (круг 120 км). Нажмите «Рассчитать маршрут».","Zona prohibida añadida (círculo de 120 km). Pulse «Calcular la ruta».")); });
     GE().events.on('styledata',()=>{ if(panel&&panel.style.display!=='none'){ setTimeout(()=>{ if(ensureLayers()) draw(null); },80); } });
     return { open, setStart, setEnd, clear, active:()=>!!(panel&&panel.style.display!=='none'), _astar:()=>({buildMask, snapSea, astar, stringPull}) };
   })();
-};
+}
 
 /* (#R176) IntMapModules.los MOVED OUT of this file to js/viewshed.js.
  * It was the 900-ray first-horizon star polygon; 「Line of sightを超高精度化して」 replaced it with a
@@ -719,11 +721,11 @@ window.IntMapModules.seaRoute=function(HOST){
  * this file is 125 lines lighter for it (standing instruction 13). The factory name and the
  * window.IntMapLOS API it publishes are unchanged, so every call site — the map right-click menu and
  * the Atlas los/viewshed actions — is untouched. */
-window.IntMapModules.outline=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function outline(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   window.IntMapOutline=(function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { show(){}, clear(){} };
-    const L=window.IntMapLang.pick(()=>HOST.lang);
+    const L=IntMapLang.pick(()=>HOST.lang);
     let _last=null, _active=false, _seq=0, _col='#0a84ff';   /* (#R61) _col: Atlas can recolor the outline */
     function setVis(v){ try{ if(GE().layers.has('pl-outline-fill')) GE().layers.setLayout('pl-outline-fill','visibility',v); if(GE().layers.has('pl-outline-line')) GE().layers.setLayout('pl-outline-line','visibility',v); }catch(_){} }
     function ensureLayers(){ try{
@@ -874,10 +876,10 @@ window.IntMapModules.outline=function(HOST){
       current:()=>(_active&&_last)?{name:_last.name, geo:_last.geo}:null,   /* (#R122) expose the geometry (Move/Isolate) */
       focus:()=>{ try{ if(_active&&_last){ const bb=bboxOf(_last.geo); if(bb&&(bb[1][0]-bb[0][0])<340) GE().camera.fitBounds(bb,{padding:60,maxZoom:12,duration:800}); } }catch(_){} } };
   })();
-};
+}
 
-window.IntMapModules.moveShape=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function moveShape(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   window.IntMapMoveShape=(function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { start(){}, stop(){}, active:()=>false };
     let baseGeo=null, baseCen=null, on=false, pill=null, handlers=[];
@@ -940,7 +942,7 @@ window.IntMapModules.moveShape=function(HOST){
     function showPill(name){ try{ if(pill) pill.remove();
       pill=document.createElement('div'); pill.id='immove-pill';
       pill.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + var(--safe-bottom));z-index:calc(var(--z-dropdown) + 150);display:flex;align-items:center;gap:10px;background:var(--popup-bg,#141414);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:22px;padding:8px 10px 8px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.4);font-size:13px;';
-      const L=window.IntMapLang.pick(()=>HOST.lang);
+      const L=IntMapLang.pick(()=>HOST.lang);
       /* (#R123) honest suffix: flat map = true-area preserved (Mercator counter-scale); globe = plain reposition. */
       const sizeNote=_mercNow()?L('— true size preserved','（実面積を保持）','— echte Größe','— истинный размер','— tamaño real'):L('— true shape preserved','（形状を保持して移動）','— Form bleibt erhalten','— форма сохраняется','— forma conservada');
       const rotNote=L(' · right-drag to rotate',' · 右ドラッグで回転',' · Rechtsziehen: drehen',' · правая кнопка — поворот',' · clic derecho: girar');
@@ -979,14 +981,14 @@ window.IntMapModules.moveShape=function(HOST){
       try{ if(GE().layers.hasSource('immove-src')) GE().layers.removeSource('immove-src'); }catch(_){}
       if(pill){ try{ pill.remove(); }catch(_){} pill=null; } }
     return { start, stop, active:()=>on, _reshape:(cen,rot)=>reshape(cen,rot||0) }; })();
-};
+}
 
-window.IntMapModules.isochrone=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function isochrone(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const makeDraggable=HOST.makeDraggable, bringToFront=HOST.bringToFront;
   window.IntMapIsochrone=(function(){
-    const LL=window.IntMapLang.pick(()=>HOST.lang);
+    const LL=IntMapLang.pick(()=>HOST.lang);
     const SRC='im-iso-src';
     /* ══ ⚠⚠ (#R296) 「到達圏と公共交通機関の到達圏に分離するのを辞めろ」 ═════════════════════════
        They were two rows in the tools list and two separate models: this one (Valhalla contours over
@@ -1128,10 +1130,10 @@ window.IntMapModules.isochrone=function(HOST){
     /* (atlas-observer-undo) the reach claims its source with the renderer under the effect key routing.isochrone declares, so the verdict asks the renderer, not a typed id */
     try{ GE().render.claim(SRC,'map.isochrone',{clear}); }catch(_){}
     return { open, close, isOpen, run, clear, ensureLayers, _src:SRC }; })();
-};
+}
 
-window.IntMapModules.arc3d=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function arc3d(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   window.IntMapArc3D=(function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { show(){}, hide(){}, animate(){}, draw(){} };
     let cv=null, ctx=null, data=null, raf=0, prog=1, dpr=1, bound=false;
@@ -1185,15 +1187,15 @@ window.IntMapModules.arc3d=function(HOST){
     function animate(secs,done){ cancelAnimationFrame(raf); const t0=performance.now(), dur=Math.max(4,secs||16)*1000;
       const fr=now=>{ if(!data) return; const t=Math.min(1,(now-t0)/dur); prog=t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2; draw(); if(t<1){ raf=requestAnimationFrame(fr); } else { prog=1; draw(); if(done) done(); } }; raf=requestAnimationFrame(fr); }
     return { show, hide, animate, draw }; })();
-};
+}
 
-window.IntMapModules.objectList=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+export function objectList(HOST){
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const removePin=HOST.removePin, refreshTool=HOST.refreshTool, makeDraggable=HOST.makeDraggable, isMobile=HOST.isMobile;
   window.IntMapObjects=(function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return { open(){}, close(){}, toggle(){}, refresh(){}, count(){ return 0; } };
-    const OL=window.IntMapLang.pick(()=>HOST.lang);
+    const OL=IntMapLang.pick(()=>HOST.lang);
     const labels={}, hiddenUp={};   /* labels: rename side-store for objects with no native name; hiddenUp: upload sid→hidden */
     let panel=null, fab=null, openState=false;
     const esc=s=>window.IntMapSafe.html(s);
@@ -1270,7 +1272,7 @@ window.IntMapModules.objectList=function(HOST){
          defect shape #R243 spent a round on). Measured: 9 px padding + a 16 px × on its default
          line-height made a 37 px band; 4 px padding, a 12.5 px title and `line-height:1` on the two
          buttons (below) make it 25 px, and the head is still the drag handle it always was. */
-      panel.innerHTML='<div class="iol-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:4px 11px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:12.5px;font-weight:700;color:var(--text-main);">🗂 '+esc(OL('Objects','オブジェクト一覧','Objekte','Объекты','Objetos'))+'</span><button class="iol-clear" style="border:none;background:transparent;color:var(--info-mil,#ff3b30);font-size:10.5px;font-weight:700;cursor:pointer;">'+esc(OL('Clear all','全消去','Alles löschen','Очистить','Borrar todo'))+'</button><button aria-label="'+window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="iol-close" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;">×</button></div>'
+      panel.innerHTML='<div class="iol-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:4px 11px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:12.5px;font-weight:700;color:var(--text-main);">🗂 '+esc(OL('Objects','オブジェクト一覧','Objekte','Объекты','Objetos'))+'</span><button class="iol-clear" style="border:none;background:transparent;color:var(--info-mil,#ff3b30);font-size:10.5px;font-weight:700;cursor:pointer;">'+esc(OL('Clear all','全消去','Alles löschen','Очистить','Borrar todo'))+'</button><button aria-label="'+IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="iol-close" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;">×</button></div>'
         +'<div class="iol-body" style="flex:1 1 auto;overflow-y:auto;padding:6px 10px 12px;"></div>';
       document.body.appendChild(panel);
       if(!document.getElementById('iol-css')){ const st=document.createElement('style'); st.id='iol-css';
@@ -1389,4 +1391,4 @@ window.IntMapModules.objectList=function(HOST){
     function focusObj(id){ const o=get(id); if(o&&o.focus){ try{ o.focus(); return true; }catch(_){} } return false; }
     function renameObj(id,v){ const o=get(id); if(o&&o.rename){ try{ o.rename(String(v||'').slice(0,60)); refresh(); return true; }catch(_){} } return false; }
     return { open, close, toggle, refresh, count, list, get, remove:removeObj, focus:focusObj, rename:renameObj }; })();
-};
+}

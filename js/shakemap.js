@@ -71,11 +71,13 @@
  *  samples the grid there (js/seismic.js:1265 keeps `mY`/`latOfY` for the same
  *  reason; this file needs them before that module is ever loaded).
  * ==========================================================================*/
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.shakeMap = function (HOST) {
-  const GE = () => window.IntMapGeoEngine;
-  const LA = window.IntMapLang.pickArgs();
-  const _LT = window.IntMapLang.pick(() => HOST.lang);
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function shakeMap(HOST) {
+  const GE = () => IntMapGeoEngine;
+  const LA = IntMapLang.pickArgs();
+  const _LT = IntMapLang.pick(() => HOST.lang);
   /* ⚠ FIVE ARGUMENTS — en, ja, de, ru, es — AND THE OTHER FOUR LANGUAGES COME
      FROM THE `inline` TABLES, keyed by the English string (js/locales/ui.{fr,ko,
      zh,zh-hans}.js). Nine were written here first, and both reasons to stop are
@@ -603,4 +605,4 @@ window.IntMapModules.shakeMap = function (HOST) {
     _roster: roster, _readCoverage: readCoverage, _parsePalette: parsePalette,
     _toContourUnit: _toContourUnit, _preferred: preferred, _render: _render, _mercY: mY, _latOfY: latOfY
   };
-};
+}

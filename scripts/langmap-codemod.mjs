@@ -21,6 +21,7 @@
  *      node scripts/langmap-codemod.mjs --write    # …and do it
  * ==========================================================================*/
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { ensureImport } from './module-graph.mjs';   /* (module-graph) what this writes imports the registry */
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
@@ -85,7 +86,7 @@ for (const [full, rel] of files) {
       return;
     }
     const lang = src.slice(langNode.start, langNode.end);
-    edits.push({ start, end, text: `window.IntMapLang.t(${lang},${ORDER.map((k) => m[k]).join(',')})` });
+    edits.push({ start, end, text: `IntMapLang.t(${lang},${ORDER.map((k) => m[k]).join(',')})` });
     done++;
   };
   walk.simple(ast, {
@@ -107,7 +108,7 @@ for (const [full, rel] of files) {
   let last = -1;
   for (const e of edits) { if (e.start >= last) { keep.push(e); last = e.end; } else done--; }
   for (let i = keep.length - 1; i >= 0; i--) src = src.slice(0, keep[i].start) + keep[i].text + src.slice(keep[i].end);
-  if (WRITE) writeFileSync(full, src);
+  if (WRITE) writeFileSync(full, ensureImport(src, rel, 'IntMapLang', 'js/lang-registry.js'));
   console.log(`${WRITE ? 'wrote' : 'would write'}  ${rel}  (${keep.length} site(s))`);
 }
 console.log(`\n${done} site(s) converted, ${skipped} left for a translator:`);

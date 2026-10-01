@@ -686,9 +686,11 @@ let gis, scope;
 if (MODE === 'browser') {
   /* The page: a window exists before anything is imported, and it carries what the app supplies. */
   const w = {}; globalThis.window = w; geodesyInto(w);
-  await import(${JSON.stringify(url('js/gis-core.js'))});
-  out.doorOnScope = typeof (w.IntMapModules && w.IntMapModules.gisCore) === 'function';
-  gis = w.IntMapModules.gisCore({ lang: 'en' });
+  /* (module-graph) the shell's door in the page is the module's own export, which js/lazy-modules.js
+     calls on the namespace its import() resolves to — there is no window registry to find it on. */
+  const mod = await import(${JSON.stringify(url('js/gis-core.js'))});
+  out.door = typeof mod.gisCore === 'function';
+  gis = mod.gisCore({ lang: 'en' });
   out.scopeInstalled = false;
   scope = w;
 } else {
@@ -703,7 +705,7 @@ if (MODE === 'browser') {
   gis = r.gis;
   out.scopeInstalled = r.scopeInstalled;
   out.externals = r.externals;
-  out.doorOnScope = typeof (scope.IntMapModules && scope.IntMapModules.gisCore) === 'function';
+  out.door = typeof (scope.IntMapModules && scope.IntMapModules.gisCore) === 'function';
 }
 
 /* ── THE ANALYSIS. 探す → 確認する → 演算する → 根拠を返す, through gis.flow, which is the same
@@ -787,10 +789,10 @@ console.log('##JSON##' + JSON.stringify(out));
        globals, so a second set mounted beside them is the defect this file exists to refuse. */
     assert.equal(head.oneRegistry, true, 'headless: 組み立てたカーネルが scope から辿れない');
     assert.equal(browser.oneRegistry, true);
-    /* And the shell's door exists in both worlds — the browser gets it at import time, the headless
-       assembly gets it on the scope it was given. */
-    assert.equal(head.doorOnScope, true);
-    assert.equal(browser.doorOnScope, true);
+    /* And the shell's door exists in both worlds — the browser gets it as the module's export (module-graph),
+       the headless assembly gets it on the scope it was given. */
+    assert.equal(head.door, true);
+    assert.equal(browser.door, true);
   });
 
   /* ══ ② 依存が欠けたら、黙って既定へ落ちずに理由を述べて断る ═══════════════════════════════════ */

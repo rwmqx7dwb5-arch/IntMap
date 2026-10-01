@@ -26,6 +26,7 @@
  *  `render()` builds DOM and subscribes; the scheduler decides on its own whether anything is due.
  *  A language change, an edit-mode toggle and a resize therefore cost zero requests.
  * ==========================================================================*/
+import { IntMapTime } from './chronos.js';
 window.IntMapWidgetLayout = (function () {
   'use strict';
 
@@ -82,10 +83,10 @@ window.IntMapWidgetLayout = (function () {
       openRoutePanel: function () { try { if (window.IntMapRouting && window.IntMapRouting.openPanel) { window.IntMapRouting.openPanel(); return true; } } catch (e) {} return runCommand('tool.directions'); },
       openAtlasBrief: function () { openAtlasBrief(); },
       addCountryWatch: function (cc) { addCountryWatch(cc); },
-      chronosNow: function () { try { window.IntMapTime.setNow({ source: 'widget' }); } catch (e) {} WC.invalidateContext(); repaintAll(); },
+      chronosNow: function () { try { IntMapTime.setNow({ source: 'widget' }); } catch (e) {} WC.invalidateContext(); repaintAll(); },
       chronosShift: function (days) {
         try {
-          var T = window.IntMapTime, base = T.when();
+          var T = IntMapTime, base = T.when();
           T.set(new Date(+base + days * 864e5), { source: 'widget' });
         } catch (e) {}
         WC.invalidateContext(); repaintAll();

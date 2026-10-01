@@ -7,8 +7,8 @@
  *  The only edit to the moved text is that free references to closure variables became
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.windowManager=function(HOST){
+
+export function windowManager(HOST){
   /* (#R14) Draggable panels now support TOUCH too (mobile users reported the tool panel "couldn't be
      moved" — only onmousedown was wired) and CLAMP to the offset-parent so a panel can never be dragged
      off-screen and become unreachable (the other half of the mobile measure complaint, #7). */
@@ -735,4 +735,4 @@ window.IntMapModules.windowManager=function(HOST){
   }
   return { addEdgeResize, bringToFront, makeDraggable, registerWindow,
            setDocked, isDocked, dockedCount, dockRefresh, wireDock };
-};
+}

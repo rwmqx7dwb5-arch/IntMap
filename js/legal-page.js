@@ -20,6 +20,7 @@
  *  language picker) so the four reading pages are one family.
  * ==========================================================================*/
 
+import { IntMapLang } from './lang-registry.js';
 window.IntMapLegalPage = (function () {
   'use strict';
 
@@ -51,7 +52,7 @@ window.IntMapLegalPage = (function () {
   };
   var FALLBACK = 'en';
 
-  function reg() { return window.IntMapLang || null; }
+  function reg() { return IntMapLang || null; }
 
   /* the app writes Japanese as 'jp' and Traditional Chinese as 'zh'; every page writes the
      BCP-47 tag. The registry owns both spellings, so ask it and fall back to the 'jp' case. */

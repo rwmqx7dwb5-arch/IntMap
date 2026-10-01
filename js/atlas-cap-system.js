@@ -14,6 +14,7 @@
  *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
  * ==========================================================================*/
 import { str, bool, one, loose, noArgs } from './atlas-caps.js';
+import { IntMapLang } from './lang-registry.js';
 
 export default [
   {
@@ -54,7 +55,7 @@ export default [
          it says so. Restoring the feature: this case, the catalogue note below, the tab button in
          index.html, and the two routes in js/session-tabs.js. See DEV-NOTES #R231 §Monitors. */
     async run(a, dctx, K) { const R = K.R, warn = K.warn, HOST = K.HOST;
-      return R(false, warn('⚠ '+window.IntMapLang.t(HOST.lang,'Area monitors are not available right now.','エリア監視は現在ご利用いただけません。','Gebietsmonitore sind derzeit nicht verfügbar.','Мониторы районов сейчас недоступны.','Los monitores de área no están disponibles por ahora.')), {meta:{code:'FEATURE_WITHDRAWN',category:'capability',retryable:false,userGoalSatisfied:false,produced:[]}});
+      return R(false, warn('⚠ '+IntMapLang.t(HOST.lang,'Area monitors are not available right now.','エリア監視は現在ご利用いただけません。','Gebietsmonitore sind derzeit nicht verfügbar.','Мониторы районов сейчас недоступны.','Los monitores de área no están disponibles por ahora.')), {meta:{code:'FEATURE_WITHDRAWN',category:'capability',retryable:false,userGoalSatisfied:false,produced:[]}});
     },
   },
   {

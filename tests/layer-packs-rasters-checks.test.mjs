@@ -580,7 +580,8 @@ test('#R254 ⑩ the data-center layer is its own module, sourced, and invents no
   const loader = code(read('js/lazy-modules.js'));
   assert.equal((String(LAZY_REGISTRY["dataCenters"] && LAZY_REGISTRY["dataCenters"].load).match(/import\('([^']+)'\)/) || [])[1], './datacenters.js',
     'js/datacenters.js is not fetched by the on-demand loader — nothing imports it at all');   /* (#R798) the registry entry */
-  assert.match(loader, /window\.IntMapModules\.dataCenters\(IM_HOST\)/, 'the module is never instantiated');
+  /* (module-graph) the mount calls the export off the namespace its own import() resolved to */
+  assert.match(loader, /\bm\.dataCenters\(IM_HOST\)/, 'the module is never instantiated');
   assert.doesNotMatch(code(read('src/main.js')), /datacenters\.js/, 'the shell imports it again — that is what tripped the line budget');
   assert.doesNotMatch(code(read('js/layer-packs.js')), /^import '\.\/datacenters\.js';/m,
     'the pack imports it statically again — the whole layer is then back in the boot bundle');

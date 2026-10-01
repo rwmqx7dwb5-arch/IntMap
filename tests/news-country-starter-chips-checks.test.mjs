@@ -164,6 +164,10 @@ function raw(stats, opts) {
                              getZoom: () => (o.zoom == null ? 6 : o.zoom) } }),
       codeAtPoint: () => o.code || '',
       countryStats: stats,
+      /* (module-graph) …and no named water: this harness never put a sea gazetteer on `window`, so the
+         view had none. The module imports the shipped table now, so the empty one is handed in, and
+         the view keeps contributing nothing to what is a measurement of the country pool. */
+      seas: [],
       cName: (st) => st.nameEn,
       loadCountryData: () => Promise.resolve(),
       panelEl: () => null,

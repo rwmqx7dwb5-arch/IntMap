@@ -30,7 +30,6 @@ interface IntMapPublished {
   /* the typed seam */
   IntMapGeoEngine: import('./geo-engine').IntMapGeoEngine;
   IntMapTime: import('./chronos').Chronos;
-  IntMapModules: Record<string, (...args: any[]) => any>;
 
   /* the renderer handle and the engine's own diagnostics — untyped escape hatches by design */
   __imap: any;

@@ -72,51 +72,53 @@
  *  · `also`      — modules that cannot be asked for alone (the seismic panel calls the tsunami
  *                  module directly; the satellite layer calls its detail card)
  *  ⚠ Order is the order the boot guard reports in; it carries no other meaning. */
+import { IntMapLang } from './lang-registry.js';
+
 export const LAZY_REGISTRY = Object.freeze({
-  flightSim: { publishes: 'IntMapFlightSim', load: () => import('./flight-sim.js'), mount: (IM_HOST) => { window.IntMapFlightSim=window.IntMapModules.flightSim(IM_HOST); } },
-  playground: { publishes: '_openPlayground', load: () => import('./playground.js'), mount: (IM_HOST) => { window.IntMapModules.playground(IM_HOST); } },
+  flightSim: { publishes: 'IntMapFlightSim', load: () => import('./flight-sim.js'), mount: (IM_HOST, m) => { window.IntMapFlightSim=m.flightSim(IM_HOST); } },
+  playground: { publishes: '_openPlayground', load: () => import('./playground.js'), mount: (IM_HOST, m) => { m.playground(IM_HOST); } },
   pandemicSim: { publishes: 'IntMapPandemicAtlas', load: () => import('./pandemic-atlas.js'), self: true },
-  seismic: { publishes: 'IntMapSeismic', load: () => import('./seismic.js'), mount: (IM_HOST) => { window.IntMapModules.seismic(IM_HOST); }, also: ['tsunami'] },
-  tsunami: { publishes: 'IntMapTsunami', load: () => import('./tsunami.js'), mount: (IM_HOST) => { window.IntMapModules.tsunami(IM_HOST); } },
-  terrainWater: { publishes: 'IntMapTerrainWater', load: () => import('./terrain-water.js'), mount: (IM_HOST) => { window.IntMapModules.terrainWater(IM_HOST); } },
-  los: { publishes: 'IntMapLOS', load: () => import('./viewshed.js'), mount: (IM_HOST) => { window.IntMapModules.los(IM_HOST); } },
-  streetView: { publishes: 'IntMapStreetView', load: () => import('./street-view.js'), mount: (IM_HOST) => { window.IntMapStreetView=window.IntMapModules.streetView(IM_HOST); } },
+  seismic: { publishes: 'IntMapSeismic', load: () => import('./seismic.js'), mount: (IM_HOST, m) => { m.seismic(IM_HOST); }, also: ['tsunami'] },
+  tsunami: { publishes: 'IntMapTsunami', load: () => import('./tsunami.js'), mount: (IM_HOST, m) => { m.tsunami(IM_HOST); } },
+  terrainWater: { publishes: 'IntMapTerrainWater', load: () => import('./terrain-water.js'), mount: (IM_HOST, m) => { m.terrainWater(IM_HOST); } },
+  los: { publishes: 'IntMapLOS', load: () => import('./viewshed.js'), mount: (IM_HOST, m) => { m.los(IM_HOST); } },
+  streetView: { publishes: 'IntMapStreetView', load: () => import('./street-view.js'), mount: (IM_HOST, m) => { window.IntMapStreetView=m.streetView(IM_HOST); } },
   nightSky: { publishes: 'IntMapNightSky', load: () => import('./night-sky.js'), self: true },
-  atlasConsole: { publishes: 'IntMapConsole', load: () => import('./atlas-console.js'), mount: (IM_HOST) => { window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST); } },
-  atlasQuery: { publishes: 'IntMapQuery', load: () => import('./atlas-query.js'), mount: (IM_HOST) => { window.IntMapQuery=window.IntMapModules.atlasQuery(IM_HOST); } },
-  atlasChart: { publishes: 'IntMapAtlasChart', load: () => import('./atlas-chart.js'), mount: (IM_HOST) => { window.IntMapAtlasChart=window.IntMapModules.atlasChart(IM_HOST); } },
-  atlasAnswerView: { publishes: 'IntMapAnswerView', load: () => import('./atlas-answer-view.js'), mount: (IM_HOST) => { window.IntMapAnswerView=window.IntMapModules.atlasAnswerView(IM_HOST); } },
-  routeUi: { publishes: 'IntMapRouteUI', load: () => import('./routing-ui.js'), mount: (IM_HOST) => { window.IntMapRouteUI=window.IntMapModules.routeUi(IM_HOST); } },
-  gisCore: { publishes: 'IntMapGis', load: () => import('./gis-core.js'), mount: (IM_HOST) => { window.IntMapGis=window.IntMapModules.gisCore(IM_HOST); } },
-  dataCenters: { publishes: 'IntMapDataCenters', load: () => import('./datacenters.js'), mount: (IM_HOST) => { window.IntMapModules.dataCenters(IM_HOST); } },
-  railways: { publishes: 'IntMapRailways', load: () => import('./railways.js'), mount: (IM_HOST) => { window.IntMapModules.railways(IM_HOST); } },
-  aircraftDetail: { publishes: 'IntMapAircraftPanel', load: () => import('./aircraft-detail.js'), mount: (IM_HOST) => { window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(IM_HOST); } },
-  volume3d: { publishes: 'IntMapVolume3D', load: () => import('./volume3d.js'), mount: (IM_HOST) => { window.IntMapVolume3D=window.IntMapModules.volume3d(IM_HOST); } },
-  statsCompare: { publishes: 'IntMapStatsCompare', load: () => import('./stats-compare.js'), mount: (IM_HOST) => { window.IntMapStatsCompare=window.IntMapModules.statsCompare(IM_HOST); } },
-  aviationLive: { publishes: 'IntMapAviation', load: () => import('./aviation-live.js'), mount: (IM_HOST) => { window.IntMapAviation=window.IntMapModules.aviationLive(IM_HOST); } },
-  satellitesLive: { publishes: 'IntMapSatellites', load: () => import('./satellites-live.js'), mount: (IM_HOST) => { window.IntMapModules.satellitesLive(IM_HOST); }, also: ['satelliteDetail'] },
-  satelliteDetail: { publishes: 'IntMapSatPanel', load: () => import('./satellite-detail.js'), mount: (IM_HOST) => { window.IntMapModules.satelliteDetail(IM_HOST); } },
-  volcanoIntel: { publishes: 'IntMapVolcano', load: () => import('./volcano-intel.js'), mount: (IM_HOST) => { window.IntMapModules.volcanoIntel(IM_HOST); } },
-  volcanoLayers: { publishes: 'IntMapVolcanoLayers', load: () => import('./volcano-layers.js'), mount: (IM_HOST) => { window.IntMapModules.volcanoLayers(IM_HOST); } },
-  companyData: { publishes: 'IntMapCompanyData', load: () => import('./company-data.js'), mount: (IM_HOST) => { window.IntMapCompanyData=window.IntMapModules.companyData(IM_HOST); } },
-  companyPanel: { publishes: 'IntMapCompanyPanel', load: () => import('./company-panel.js'), mount: (IM_HOST) => { window.IntMapCompanyPanel=window.IntMapModules.companyPanel(IM_HOST); }, also: ['companyData', 'companyFacilities'] },
-  companyFacilities: { publishes: 'IntMapCompanyFacilities', load: () => import('./company-facilities.js'), mount: (IM_HOST) => { window.IntMapCompanyFacilities=window.IntMapModules.companyFacilities(IM_HOST); }, also: ['companyData'] },
-  analysisTimeSeries: { publishes: '__imAnalysisTimeSeries', load: () => import('./analysis-timeseries.js'), mount: (IM_HOST) => { window.IntMapModules.analysisTimeSeries(IM_HOST); } },
-  analysisResearch: { publishes: '__imAnalysisResearch', load: () => import('./analysis-research.js'), mount: (IM_HOST) => { window.IntMapModules.analysisResearch(IM_HOST); } },
-  analysisCorrelate: { publishes: '__imAnalysisCorrelate', load: () => import('./analysis-correlate.js'), mount: (IM_HOST) => { window.IntMapModules.analysisCorrelate(IM_HOST); } },
-  analysisEvents: { publishes: '__imAnalysisEvents', load: () => import('./analysis-world-events.js'), mount: (IM_HOST) => { window.IntMapModules.analysisEvents(IM_HOST); } },
-  analysisEdu: { publishes: '__imAnalysisEdu', load: () => import('./analysis-edu.js'), mount: (IM_HOST) => { window.IntMapModules.analysisEdu(IM_HOST); } },
-  warLayer: { publishes: '__imWarFronts', load: () => import('./war-layer.js'), mount: (IM_HOST) => { window.IntMapModules.warLayer(IM_HOST); } },
-  waves: { publishes: 'IntMapWaves', load: () => import('./waves.js'), mount: (IM_HOST) => { window.IntMapWaves=window.IntMapModules.waves(IM_HOST); } },
+  atlasConsole: { publishes: 'IntMapConsole', load: () => import('./atlas-console.js'), mount: (IM_HOST, m) => { window.IntMapConsole=m.atlasConsole(IM_HOST); } },
+  atlasQuery: { publishes: 'IntMapQuery', load: () => import('./atlas-query.js'), mount: (IM_HOST, m) => { window.IntMapQuery=m.atlasQuery(IM_HOST); } },
+  atlasChart: { publishes: 'IntMapAtlasChart', load: () => import('./atlas-chart.js'), mount: (IM_HOST, m) => { window.IntMapAtlasChart=m.atlasChart(IM_HOST); } },
+  atlasAnswerView: { publishes: 'IntMapAnswerView', load: () => import('./atlas-answer-view.js'), mount: (IM_HOST, m) => { window.IntMapAnswerView=m.atlasAnswerView(IM_HOST); } },
+  routeUi: { publishes: 'IntMapRouteUI', load: () => import('./routing-ui.js'), mount: (IM_HOST, m) => { window.IntMapRouteUI=m.routeUi(IM_HOST); } },
+  gisCore: { publishes: 'IntMapGis', load: () => import('./gis-core.js'), mount: (IM_HOST, m) => { window.IntMapGis=m.gisCore(IM_HOST); } },
+  dataCenters: { publishes: 'IntMapDataCenters', load: () => import('./datacenters.js'), mount: (IM_HOST, m) => { m.dataCenters(IM_HOST); } },
+  railways: { publishes: 'IntMapRailways', load: () => import('./railways.js'), mount: (IM_HOST, m) => { m.railways(IM_HOST); } },
+  aircraftDetail: { publishes: 'IntMapAircraftPanel', load: () => import('./aircraft-detail.js'), mount: (IM_HOST, m) => { window.IntMapAircraftPanel=m.aircraftDetail(IM_HOST); } },
+  volume3d: { publishes: 'IntMapVolume3D', load: () => import('./volume3d.js'), mount: (IM_HOST, m) => { window.IntMapVolume3D=m.volume3d(IM_HOST); } },
+  statsCompare: { publishes: 'IntMapStatsCompare', load: () => import('./stats-compare.js'), mount: (IM_HOST, m) => { window.IntMapStatsCompare=m.statsCompare(IM_HOST); } },
+  aviationLive: { publishes: 'IntMapAviation', load: () => import('./aviation-live.js'), mount: (IM_HOST, m) => { window.IntMapAviation=m.aviationLive(IM_HOST); } },
+  satellitesLive: { publishes: 'IntMapSatellites', load: () => import('./satellites-live.js'), mount: (IM_HOST, m) => { m.satellitesLive(IM_HOST); }, also: ['satelliteDetail'] },
+  satelliteDetail: { publishes: 'IntMapSatPanel', load: () => import('./satellite-detail.js'), mount: (IM_HOST, m) => { m.satelliteDetail(IM_HOST); } },
+  volcanoIntel: { publishes: 'IntMapVolcano', load: () => import('./volcano-intel.js'), mount: (IM_HOST, m) => { m.volcanoIntel(IM_HOST); } },
+  volcanoLayers: { publishes: 'IntMapVolcanoLayers', load: () => import('./volcano-layers.js'), mount: (IM_HOST, m) => { m.volcanoLayers(IM_HOST); } },
+  companyData: { publishes: 'IntMapCompanyData', load: () => import('./company-data.js'), mount: (IM_HOST, m) => { window.IntMapCompanyData=m.companyData(IM_HOST); } },
+  companyPanel: { publishes: 'IntMapCompanyPanel', load: () => import('./company-panel.js'), mount: (IM_HOST, m) => { window.IntMapCompanyPanel=m.companyPanel(IM_HOST); }, also: ['companyData', 'companyFacilities'] },
+  companyFacilities: { publishes: 'IntMapCompanyFacilities', load: () => import('./company-facilities.js'), mount: (IM_HOST, m) => { window.IntMapCompanyFacilities=m.companyFacilities(IM_HOST); }, also: ['companyData'] },
+  analysisTimeSeries: { publishes: '__imAnalysisTimeSeries', load: () => import('./analysis-timeseries.js'), mount: (IM_HOST, m) => { m.analysisTimeSeries(IM_HOST); } },
+  analysisResearch: { publishes: '__imAnalysisResearch', load: () => import('./analysis-research.js'), mount: (IM_HOST, m) => { m.analysisResearch(IM_HOST); } },
+  analysisCorrelate: { publishes: '__imAnalysisCorrelate', load: () => import('./analysis-correlate.js'), mount: (IM_HOST, m) => { m.analysisCorrelate(IM_HOST); } },
+  analysisEvents: { publishes: '__imAnalysisEvents', load: () => import('./analysis-world-events.js'), mount: (IM_HOST, m) => { m.analysisEvents(IM_HOST); } },
+  analysisEdu: { publishes: '__imAnalysisEdu', load: () => import('./analysis-edu.js'), mount: (IM_HOST, m) => { m.analysisEdu(IM_HOST); } },
+  warLayer: { publishes: '__imWarFronts', load: () => import('./war-layer.js'), mount: (IM_HOST, m) => { m.warLayer(IM_HOST); } },
+  waves: { publishes: 'IntMapWaves', load: () => import('./waves.js'), mount: (IM_HOST, m) => { window.IntMapWaves=m.waves(IM_HOST); } },
   navigation: { publishes: 'IntMapNavigation', load: () => import('./navigation.js'), self: true },
   routingTraffic: { publishes: 'IntMapRouteTraffic', load: () => import('./routing-traffic.js'), self: true },
-  newsEvents: { publishes: 'IntMapNewsEvents', load: () => import('./news-events.js'), mount: (IM_HOST) => { window.IntMapNewsEvents=window.IntMapModules.newsEvents(IM_HOST); } },
-  photoGeo: { publishes: 'IntMapPhotoGeo', load: () => import('./photo-geo.js'), mount: (IM_HOST) => { window.IntMapPhotoGeo=window.IntMapModules.photoGeo(IM_HOST); } },
-  shakeMap: { publishes: 'IntMapShakeMap', load: () => import('./shakemap.js'), mount: (IM_HOST) => { window.IntMapShakeMap=window.IntMapModules.shakeMap(IM_HOST); } },
-  radiationLayer: { publishes: 'IntMapRadiationObs', load: () => import('./radiation-layer.js'), mount: (IM_HOST) => { window.IntMapRadiationObs=window.IntMapModules.radiationLayer(IM_HOST); } },
-  netHealthLive: { publishes: '__imNetHealth', load: () => import('./net-health-live.js'), mount: (IM_HOST) => { window.IntMapModules.netHealthLive(IM_HOST); } },
-  spaceBody: { publishes: '__imSpaceBody', load: () => import('./space.js'), mount: (IM_HOST) => { window.__imSpaceBody=window.IntMapModules.spaceBody(IM_HOST); } },
-  worldPacksBody: { publishes: '__wpTrade', load: () => import('./world-packs.js'), mount: (IM_HOST) => { window.IntMapModules.worldPacksBody(IM_HOST); } },
+  newsEvents: { publishes: 'IntMapNewsEvents', load: () => import('./news-events.js'), mount: (IM_HOST, m) => { window.IntMapNewsEvents=m.newsEvents(IM_HOST); } },
+  photoGeo: { publishes: 'IntMapPhotoGeo', load: () => import('./photo-geo.js'), mount: (IM_HOST, m) => { window.IntMapPhotoGeo=m.photoGeo(IM_HOST); } },
+  shakeMap: { publishes: 'IntMapShakeMap', load: () => import('./shakemap.js'), mount: (IM_HOST, m) => { window.IntMapShakeMap=m.shakeMap(IM_HOST); } },
+  radiationLayer: { publishes: 'IntMapRadiationObs', load: () => import('./radiation-layer.js'), mount: (IM_HOST, m) => { window.IntMapRadiationObs=m.radiationLayer(IM_HOST); } },
+  netHealthLive: { publishes: '__imNetHealth', load: () => import('./net-health-live.js'), mount: (IM_HOST, m) => { m.netHealthLive(IM_HOST); } },
+  spaceBody: { publishes: '__imSpaceBody', load: () => import('./space.js'), mount: (IM_HOST, m) => { window.__imSpaceBody=m.spaceBody(IM_HOST); } },
+  worldPacksBody: { publishes: '__wpTrade', load: () => import('./world-packs.js'), mount: (IM_HOST, m) => { m.worldPacksBody(IM_HOST); } },
 });
 /* the boot guard's two lists, derived: the factory-backed names, and the one registered by a file
    nobody fetches on its own (js/aviation-live.js imports js/aircraft-points.js statically — #R408) */
@@ -164,9 +166,8 @@ export const lazyBody = (ask) => {
 };
 /** @type {(HOST: any, cb: HTMLInputElement|null|undefined) => void} */
 export const lazyRowFailed = (HOST, cb) => {
-  const w = /** @type {any} */ (window);
   try {
-    HOST.imToast(w.IntMapLang.t(HOST.lang, 'This layer could not be loaded — check your connection and try again.',
+    HOST.imToast(IntMapLang.t(HOST.lang, 'This layer could not be loaded — check your connection and try again.',
       'このレイヤーを読み込めませんでした。接続を確認して、もう一度お試しください。'));
   } catch (_) { }
   if (cb && cb.checked) { cb.checked = false; const r = cb.closest('.lyr-row'); if (r) r.classList.remove('on'); }
@@ -242,14 +243,14 @@ export const makeChunkFailureCheck = (io) => {
       } catch (_) { }
     }
 
-    function fetchModule(name) {
+    function fetchModule(name) {   /* resolves to the module NAMESPACE — mount() calls the factory on it */
       return R[name] ? R[name].load() : Promise.reject(new Error('no such lazy module: ' + name));
     }
     /* Run the factory at the point js/app-body.js used to run it, with the same host object. */
-    function mount(name) {
-      const e = R[name]; if (!e) return !!window.IntMapModules;
+    function mount(name, mod) {
+      const e = R[name]; if (!e) return false;
       if (e.self) return typeof window[e.publishes] !== 'undefined';
-      e.mount(IM_HOST); return true;
+      e.mount(IM_HOST, mod); return true;
     }
 
     /* ⚠ (#R372) A DOWNLOAD FAILURE IS NOT A PERMANENT ANSWER, AND A PRELOAD MUST NOT DECIDE ONE — but a
@@ -261,15 +262,15 @@ export const makeChunkFailureCheck = (io) => {
       const f = FAILED[name]; if (f && Date.now() - f.at < RETRY_MS && (hinted || !f.hinted)) return Promise.resolve(false); delete FAILED[name];
       const p = Promise.all(ALSO(name).map((d) => demand(d, hinted)))   /* ⚠ not `.map(demand)` — map passes the INDEX second, which would mark every dependency as a preload */
         .then(() => fetchModule(name))
-        .then(() => {
+        .then((mod) => {
           /* The factory must have arrived with the file. If it did not, the file loaded but did not
              register — say so rather than throwing an undefined-is-not-a-function further down. */
-          if (!SELF_PUBLISHING(name) && !(window.IntMapModules && typeof window.IntMapModules[name] === 'function')) {
-            record(name, 'the file loaded but registered no IntMapModules.' + name + ' factory');
+          if (!SELF_PUBLISHING(name) && !(mod && typeof mod[name] === 'function')) {
+            record(name, 'the file loaded but exports no ' + name + ' factory');
             return false;
           }
           let mounted = false;
-          try { mounted = mount(name); } catch (e) { record(name, 'its factory threw: ' + (e && e.message)); return false; }
+          try { mounted = mount(name, mod); } catch (e) { record(name, 'its factory threw: ' + (e && e.message)); return false; }
           const g = PUBLISHES(name);
           if (mounted && g && typeof window[g] === 'undefined') { record(name, 'nothing was published on window.' + g); return false; }
           if (mounted) ok(name);

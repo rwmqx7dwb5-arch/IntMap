@@ -48,10 +48,11 @@
  *  they will tilt — and that is not a yes/no question, it is `camera.getMaxPitch()`, which the
  *  contract already answers with a quantity. The follow pitch is clamped to it.
  * ==========================================================================*/
+import { IntMapGeoEngine } from './geo-engine.js';
 window.IntMapNavCamera = (function () {
   'use strict';
 
-  var GE = function () { return window.IntMapGeoEngine; };
+  var GE = function () { return IntMapGeoEngine; };
   var NS = function () { return window.IntMapNavStore; };
   var NM = function () { return window.IntMapNavMatch; };
 

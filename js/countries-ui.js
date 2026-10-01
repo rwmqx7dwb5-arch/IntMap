@@ -31,6 +31,9 @@
    is. `window._imCldrRegion` is the whole surface app-body reaches for. */
 /* ⚠ the cache hangs off the function itself — tests/layer-boot-graph-checks.test.mjs #R175 ③ refuses an unexported top-level
    declaration in js/, and this file has exactly one thing to publish. */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+import { IntMapTables } from './tables.js';
 window._imCldrRegion=function(a2,lang){
   try{
     /* ⚠ (#R313 追記2) 追記1 widened this to accept M49 codes so the Atlas chips could name a
@@ -39,7 +42,7 @@ window._imCldrRegion=function(a2,lang){
        bought nothing in a browser and only made this helper look able to answer something it cannot.
        The chips ship their own strings now (js/atlas-examples.js). Two-letter countries again. */
     if(!a2||a2.length!==2) return '';
-    const tag=(window.IntMapLang&&window.IntMapLang.htmlTag)?window.IntMapLang.htmlTag(lang):'';
+    const tag=(IntMapLang&&IntMapLang.htmlTag)?IntMapLang.htmlTag(lang):'';
     if(!tag||tag==='en') return '';
     const c=window._imCldrRegion._c||(window._imCldrRegion._c={});
     let dn=c[tag];
@@ -96,7 +99,7 @@ window._imSubregionName=function(sub,lang){
        scripts/i18n-report.mjs and scripts/i18n-positional-audit.mjs count zero of it and print
        100 % — the seventh SHAPE #R241 removed. The cache hangs off the function itself, as
        `window._imCldrRegion._c` above does, so there is no unexported top-level declaration. */
-    const A=window.IntMapLang.pickArgs();
+    const A=IntMapLang.pickArgs();
     T=window._imSubregionName._t={
       'Eastern Asia':A('Eastern Asia','東アジア','Ostasien','Восточная Азия','Asia oriental'),
       'South-Eastern Asia':A('South-Eastern Asia','東南アジア','Südostasien','Юго-Восточная Азия','Sudeste Asiático'),
@@ -132,7 +135,7 @@ window._imSubregionName=function(sub,lang){
   }
   const a=T[sub];
   if(!a) return sub;
-  try{ return window.IntMapLang.t.apply(null,[lang].concat(a))||sub; }catch(_){ return sub; }
+  try{ return IntMapLang.t.apply(null,[lang].concat(a))||sub; }catch(_){ return sub; }
 };
 
 /* ══ ⚠⚠⚠ (#R453) THE CARD WAS ASKING A SERVER THAT NO LONGER EXISTS ═══════════════════
@@ -194,8 +197,8 @@ window.IntMapCountryFacts=(function(){
   return S;
 })();
 
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.countriesUi=function(HOST){
+
+export function countriesUi(HOST){
   /* the one encoder (js/safe-html.js). A country's name comes from the map feature's NAME_EN / ADMIN /
      NAME when the stats table has no row, and its capital, currency, languages, neighbours and time
      zones from the facts file — data, not our text, so each is escaped where it enters markup. */
@@ -209,8 +212,8 @@ window.IntMapModules.countriesUi=function(HOST){
   function _regionName(r){
     if(!r) return r;
     if(!_REGIONS){
-      _LR=window.IntMapLang.pick(()=>HOST.lang);
-      const A=window.IntMapLang.pickArgs();
+      _LR=IntMapLang.pick(()=>HOST.lang);
+      const A=IntMapLang.pickArgs();
       _REGIONS={
         'Africa':A('Africa','アフリカ','Afrika','Африка','África'),
         'Asia':A('Asia','アジア','Asien','Азия','Asia'),
@@ -252,10 +255,10 @@ window.IntMapModules.countriesUi=function(HOST){
     }
     const t=_REGIONS[r]; return t?_LR.arr(t):r;
   }
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
 
   /* (#R172) THROUGH IntMapGeoEngine — this module no longer names the renderer. */
-  const _GE=()=>window.IntMapGeoEngine;
+  const _GE=()=>IntMapGeoEngine;
   const _LY=()=>{ const E=_GE(); return E?E.layers:null; };
   const _EV=()=>{ const E=_GE(); return E?E.events:null; };
   const _CM=()=>{ const E=_GE(); return E?E.camera:null; };
@@ -266,7 +269,7 @@ window.IntMapModules.countriesUi=function(HOST){
   const GDP_YEAR='2023', POP_YEAR='2024';
 
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
-  const {GDP,HDI,DEM,MILSPEND,LIFE,INTERNET,CAPITAL,CURRENCY,LANGS}=window.IntMapTables;
+  const {GDP,HDI,DEM,MILSPEND,LIFE,INTERNET,CAPITAL,CURRENCY,LANGS}=IntMapTables;
 
   function flagFromISO2(a2){ if(!a2||a2.length!==2||a2==='-9')return'🏳️'; try{return a2.toUpperCase().replace(/./g,c=>String.fromCodePoint(127397+c.charCodeAt(0)));}catch(e){return'🏳️';} }
 
@@ -557,8 +560,8 @@ window.IntMapModules.countriesUi=function(HOST){
           /* (unobserved-is-not-refused) nothing is kept either way (the promise is cleared above, so the next call reads
              again); a last rung that ran out of time is said to be late, not to have no data */
           const FWu=window.IntMapFetchWithin;
-          if(grabFail&&grabFail!=='aborted'&&FWu&&typeof FWu.isUnobserved==='function'&&FWu.isUnobserved(grabErr)){ try{ HOST.imToast(window.IntMapLang.t(HOST.lang,'The data did not arrive in time — try again','データが時間内に届きませんでした — もう一度お試しください')); }catch(_){} }
-          else if(grabFail&&grabFail!=='aborted'){ try{ HOST.imToast(window.IntMapLang.t(HOST.lang,'Could not load country data — try again.','国データを取得できませんでした。再度お試しください。','Länderdaten konnten nicht geladen werden.','Не удалось загрузить данные стран.','No se pudieron cargar los datos de países.')); }catch(_){} }
+          if(grabFail&&grabFail!=='aborted'&&FWu&&typeof FWu.isUnobserved==='function'&&FWu.isUnobserved(grabErr)){ try{ HOST.imToast(IntMapLang.t(HOST.lang,'The data did not arrive in time — try again','データが時間内に届きませんでした — もう一度お試しください')); }catch(_){} }
+          else if(grabFail&&grabFail!=='aborted'){ try{ HOST.imToast(IntMapLang.t(HOST.lang,'Could not load country data — try again.','国データを取得できませんでした。再度お試しください。','Länderdaten konnten nicht geladen werden.','Не удалось загрузить данные стран.','No se pudieron cargar los datos de países.')); }catch(_){} }
         }
       } }
     )();
@@ -679,7 +682,7 @@ window.IntMapModules.countriesUi=function(HOST){
   function renderCountryDetailBody(s){
     if(!s) return `<div class="cm-row"><span>${HOST.t('dataNA')}</span><b>—</b></div>`;
     const _de=HOST.lang==='de', _jp=HOST.lang==='jp', _ru=HOST.lang==='ru', _es=HOST.lang==='es';
-    const TR=window.IntMapLang.pick(()=>HOST.lang);
+    const TR=IntMapLang.pick(()=>HOST.lang);
     const yn=v=>v?TR('Yes','はい','Ja','Да','Sí'):TR('No','いいえ','Nein','Нет','No');
     const sec=(title,rows)=>{ const r=rows.filter(Boolean); if(!r.length) return ''; return `<div class="cp-sec"><div class="cp-sec-h">${title}</div>`+r.map(([k,v])=>`<div class="cm-row"><span>${k}</span><b>${escC(v)}</b></div>`).join('')+`</div>`; };
     /* ⚠ (#R443) THE COLLAPSE IS COMPARED AFTER RESOLUTION, NOT BEFORE. Natural Earth's CONTINENT
@@ -786,10 +789,10 @@ window.IntMapModules.countriesUi=function(HOST){
          which is invisible to the positional audit (scripts/i18n-positional-audit.mjs reads `L(…)`
          call sites, and these are `t(…)` with a ternary in front — #R231's blind spot, one level
          further in). Folded back into the call so every language is one argument in one place. */
-      +`<button data-cpact="isolate" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_isoSvg}</span>${window.IntMapLang.t(HOST.lang,'Isolate','この国だけ','Nur dieses Land','Только эту страну','Solo este país')}</button>`
-      +`<button data-cpact="timeseries" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_tsSvg}</span>${window.IntMapLang.t(HOST.lang,'Time-series','時系列グラフ','Zeitverlauf','Динамика','Series temporales')}</button>`
-      +`<button data-cpact="brief" data-cpname="${_aiName}" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_aiSvg}</span>${window.IntMapLang.t(HOST.lang,'AI brief','AI調査','KI-Bericht','ИИ-справка','Informe de IA')}</button>`
-      +`<button data-cpact="compare" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_cmpSvg}</span>${window.IntMapLang.t(HOST.lang,'Compare','国を比較','Vergleichen','Сравнить','Comparar')}</button>`
+      +`<button data-cpact="isolate" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_isoSvg}</span>${IntMapLang.t(HOST.lang,'Isolate','この国だけ','Nur dieses Land','Только эту страну','Solo este país')}</button>`
+      +`<button data-cpact="timeseries" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_tsSvg}</span>${IntMapLang.t(HOST.lang,'Time-series','時系列グラフ','Zeitverlauf','Динамика','Series temporales')}</button>`
+      +`<button data-cpact="brief" data-cpname="${_aiName}" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_aiSvg}</span>${IntMapLang.t(HOST.lang,'AI brief','AI調査','KI-Bericht','ИИ-справка','Informe de IA')}</button>`
+      +`<button data-cpact="compare" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_cmpSvg}</span>${IntMapLang.t(HOST.lang,'Compare','国を比較','Vergleichen','Сравнить','Comparar')}</button>`
       +`</div>`;
     if(s && s.latlng) window._cpCurrent._ll={lng:s.latlng[1],lat:s.latlng[0]};
     /* ⚠ SEC: A VALUE INTERPOLATED INTO AN EVENT ATTRIBUTE HAS BECOME JAVASCRIPT SOURCE.
@@ -896,13 +899,13 @@ window.IntMapModules.countriesUi=function(HOST){
       case 'gdppcPPP': return (s.gdppcPPP&&isFinite(s.gdppcPPP))?('$'+Math.round(s.gdppcPPP).toLocaleString()):'—';
       case 'hdi': return s.hdi?(+s.hdi).toFixed(3):'—';
       case 'milSpend': return s.milSpend?'$'+s.milSpend+'B':'—';
-      case 'lifeExp': return (s.lifeExp&&isFinite(s.lifeExp))?((+s.lifeExp).toFixed(1)+(window.IntMapLang.t(HOST.lang,' yr','歳',' J',' л',' a'))):'—';
+      case 'lifeExp': return (s.lifeExp&&isFinite(s.lifeExp))?((+s.lifeExp).toFixed(1)+(IntMapLang.t(HOST.lang,' yr','歳',' J',' л',' a'))):'—';
       case 'tfr': return (s.tfr&&isFinite(s.tfr))?(+s.tfr).toFixed(2):'—';
       default: return HOST.fmtMoney(s.gdp);   /* gdp + name */
     } };
     /* (#R94/#R101) Time-machine status bar — year + the CURRENTLY-SORTED indicator. (#R103) it used to always say
        "real GDP" no matter which indicator was chosen ("どの指標を選んでもGDPとなっている") — reflect the selection. */
-    const _L5b=window.IntMapLang.pick(()=>HOST.lang);
+    const _L5b=IntMapLang.pick(()=>HOST.lang);
     const _bMetric=(key==='pop')?_L5b('population','人口','Bevölkerung','население','población')
       :(key==='area')?_L5b('area','面積','Fläche','площадь','superficie')
       :(key==='hdi')?'HDI'
@@ -911,8 +914,8 @@ window.IntMapModules.countriesUi=function(HOST){
       :(key==='tfr')?_L5b('fertility rate','合計特殊出生率','Geburtenrate','рождаемость','fecundidad')
       :_L5b('real GDP (2011 int$)','実質GDP（2011年国際ドル）','reales BIP (int$ 2011)','реальный ВВП (межд.$ 2011)','PIB real (int$ 2011)');
     try{ const _ty=_histY, _pw=window._imTimePreWB;
-      if(_ty){ html+=`<div class="stats-timebanner"><b>${_ty}${window.IntMapLang.t(HOST.lang,'','年')}</b> · ${_bMetric}</div>`; }
-      else if(_pw){ html+=`<div class="stats-timebanner warn"><b>${_pw}</b> · ${window.IntMapLang.t(HOST.lang,'latest available figures','最新の入手可能な値','neueste verfügbare Werte','последние доступные значения','últimos valores disponibles')}</div>`; }
+      if(_ty){ html+=`<div class="stats-timebanner"><b>${_ty}${IntMapLang.t(HOST.lang,'','年')}</b> · ${_bMetric}</div>`; }
+      else if(_pw){ html+=`<div class="stats-timebanner warn"><b>${_pw}</b> · ${IntMapLang.t(HOST.lang,'latest available figures','最新の入手可能な値','neueste verfügbare Werte','последние доступные значения','últimos valores disponibles')}</div>`; }
     }catch(_){}
     /* (#R70) the separate "Compare countries (up to 5)" button is RETIRED per instruction — country-row clicks
        build the selection and the dock's view button opens the unified comparison. */
@@ -953,4 +956,4 @@ window.IntMapModules.countriesUi=function(HOST){
 
   /* The names index.html still calls: it keeps a hoisted shim for each (#R168). */
   return { renderStats, showCountryDetail, renderCountryDetailBody, loadCountryData, addCountryLayers };
-};
+}

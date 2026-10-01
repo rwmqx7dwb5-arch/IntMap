@@ -7,8 +7,11 @@
  *  The only edit to the moved text is that free references to closure variables became
  *  HOST.<member> reads/writes.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.newsContext=function(HOST){
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+import { IntMapTables } from './tables.js';
+
+export function newsContext(HOST){
   /* ══ (#R212) THE OUTLET IS OFTEN NAMED BY ITS DOMAIN, AND THE TABLE IS KEYED BY ITS NAME ═════════
      「ニュースの発信地が全然発信地の場所になっていない。」 Part of the mechanism, measured on a real feed:
      Google News hands the publisher as a DISPLAY NAME for some items and as a HOST for others
@@ -156,7 +159,7 @@ window.IntMapModules.newsContext=function(HOST){
     return out;
   }
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
-  const {_DERU_GZ,_DERU_DEM,_ES_GZ,_ES_DEM}=window.IntMapTables;
+  const {_DERU_GZ,_DERU_DEM,_ES_GZ,_ES_DEM}=IntMapTables;
   /* ── (#R208) hand the world rows to the locator a slice at a time ──────────────────────────────
      ⚠ A `function` DECLARATION, not a `const` arrow: rebuildGeoIndex() is defined above this point
      and calls it, and #R200 lost a whole boot to exactly that shape (a const initialised later is
@@ -203,7 +206,7 @@ window.IntMapModules.newsContext=function(HOST){
     const BATCH=250;                     /* ≈7 ms of registration at the measured 27 µs/row */
     const SLACK=4;                       /* ms of the idle deadline to leave unspent */
     let moving=false;
-    try{ const E=window.IntMapGeoEngine;
+    try{ const E=IntMapGeoEngine;
       E.events.on('movestart',()=>{ moving=true; }); E.events.on('moveend',()=>{ moving=false; });
     }catch(_){}
     const rIC=(typeof requestIdleCallback==='function')?requestIdleCallback:null;
@@ -243,8 +246,8 @@ window.IntMapModules.newsContext=function(HOST){
          it fires during a boot too, because a boot has gaps. */
       await new Promise(res=>{
         const go=()=>yieldToBrowser().then(res);
-        try{ if(window.IntMapGeoEngine&&window.IntMapGeoEngine.canDraw&&window.IntMapGeoEngine.canDraw()) return go(); }catch(_){}
-        try{ window.IntMapGeoEngine.events.once('idle',go); }catch(_){ go(); return; }
+        try{ if(IntMapGeoEngine&&IntMapGeoEngine.canDraw&&IntMapGeoEngine.canDraw()) return go(); }catch(_){}
+        try{ IntMapGeoEngine.events.once('idle',go); }catch(_){ go(); return; }
         setTimeout(go,6000);                                  /* …and never wait for ever */
       });
       schedule();
@@ -432,11 +435,11 @@ window.IntMapModules.newsContext=function(HOST){
     if(!subjectLoc){ const cf=_countryFallback(title+' '+desc); if(cf){ subjectLoc=cf.loc; subjectName=cf.name; subjectType='country'; } }
     /* ---- Publisher HQ (expanded gazetteer, longest-key-first, word-boundary safe) ---- */
     const pm=matchPublisher(publisher,seed);   /* `seed` IS the article link (#R212) */
-    const pubLoc=pm?pm.loc:null, pubName=pm?((window.IntMapLang.t(HOST.lang,'Source: ','発信: ','Quelle: ','Источник: ','Fuente: '))+pm.label):null;
+    const pubLoc=pm?pm.loc:null, pubName=pm?((IntMapLang.t(HOST.lang,'Source: ','発信: ','Quelle: ','Источник: ','Fuente: '))+pm.label):null;
     /* Remember title/publisher so the toggle/AI passes can re-seed fallbacks later */
     const res={ subjectLoc, subjectName, subjectType, subjectConf, pubLoc, pubName, short, _title:title, _pub:publisher };
     HOST.applyPinMode(res);
     return res;
   }
   return { analyzeContext, rebuildGeoIndex };
-};
+}

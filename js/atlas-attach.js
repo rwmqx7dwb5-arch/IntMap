@@ -32,6 +32,7 @@
    このファイルのものが 1 本きりで、あちらは中に置く要素を組むだけ（枠を 2 つ作らない）。 */
 import { ATTACH_STORE, ATTACH_VIEW } from './atlas-file-view.js';
 import './ui-device.js';   /* (atlas-ui-owners) the phone/desktop boundary is window.IntMapDevice.COMPACT (js/ui-device.js), which that file installs on window when one exists and on globalThis otherwise (Node); in the browser they are the same object, and a Node harness may swap window after the import */
+import { IntMapLang } from './lang-registry.js';
 
 /** THE ONE ENTRY POINT: delegate from the chat element, once. Every picture the conversation will
  *  ever hold is covered, nothing is attached per image, and nothing leaks when the panel is rebuilt.
@@ -157,7 +158,7 @@ export function attachLightbox(chatEl, closeLabel, fileStrings) {
 
     const x = document.createElement('button');
     x.className = 'atl-lb-x'; x.type = 'button';
-    x.setAttribute('aria-label', closeLabel || window.IntMapLang.t(document.documentElement.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')); x.textContent = '×';
+    x.setAttribute('aria-label', closeLabel || IntMapLang.t(document.documentElement.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')); x.textContent = '×';
     /* ⚠ (#R773) 中身の上のクリックで閉じない——画像と同じ約束（閉じるのは周りと × と Escape）。
        これが無いと、表のセルを選ぶ・PDF を触るたびにビューアが畳まれる（実測）。 */
     if (node) node.addEventListener('click', (e) => e.stopPropagation());

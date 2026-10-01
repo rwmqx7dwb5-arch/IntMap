@@ -17,7 +17,7 @@
  *  code; the ones that still read say, in one line, why running is not possible (「read, not run: …」).
  * ==========================================================================*/
 import { test } from 'node:test';
-import { bootGuardKnows, lazyModules, appShell, lazyFiles } from './app-source.mjs';
+import { bootGuardKnows, lazyModules, appShell, lazyFiles, factoryCalls } from './app-source.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { checkSplitScope } from '../scripts/check-split-scope.mjs';
@@ -199,17 +199,20 @@ test('R165 #1 the Atlas kernel was moved out, loaded, and instantiated at its or
   const lazy = rd('js/lazy-modules.js');
   assert.ok(lazyModules(root).some((m) => m.name === 'atlasConsole' && m.file === 'js/atlas-console.js'),
     'js/lazy-modules.js fetches the kernel on demand');   /* (#R798) from the registry */
-  assert.ok(lazy.includes("window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST);"),
+  /* (module-graph) the mount calls the factory on the namespace the loader's own import() resolved to */
+  assert.ok(lazy.includes("mount: (IM_HOST, m) => { window.IntMapConsole=m.atlasConsole(IM_HOST); }"),
     '…and mounts it with the shared host, exactly as app-body did');
-  assert.ok(mod.includes('window.IntMapModules=window.IntMapModules||{};'),
-    'js/atlas-console.js extends IntMapModules without clobbering what earlier files put there');
-  assert.ok(mod.includes('window.IntMapModules.atlasConsole=function(HOST){'),
-    'js/atlas-console.js declares the atlasConsole factory taking (HOST)');
+  /* (module-graph) the registry is gone: «extends without clobbering» became «does not touch it at all,
+     and exports the factory» — scripts/static-checks.mjs fails any window.IntMapModules in js/ */
+  assert.ok(!/\bIntMapModules\s*[.=[]/.test(code(rd('js/atlas-console.js'))),
+    'js/atlas-console.js does not touch the retired window.IntMapModules registry');
+  assert.ok(mod.includes('export function atlasConsole(HOST){'),
+    'js/atlas-console.js exports the atlasConsole factory taking (HOST)');
   /* (#R224) …and js/app-body.js no longer mounts it itself: it wires the entry points to
      window.IntMapAtlas, which fetches first. A second mount anywhere would be a second kernel. */
   const ab2 = rd('js/app-body.js');
-  assert.ok(!ab2.includes('window.IntMapModules.atlasConsole(IM_HOST)'),
-    'app-body must not mount the kernel eagerly any more');
+  assert.ok(!/(?<![\w$])atlasConsole\(IM_HOST\)/.test(ab2) && !/import\s*\{[^}]*\batlasConsole\b[^}]*\}\s*from/.test(ab2),
+    'app-body must not import or mount the kernel eagerly any more');
   assert.ok(ab2.includes('window.IntMapAtlas.wire()'), 'app-body wires the entry points through the loader');
   assert.ok(rd('js/atlas-loader.js').includes("A.call('toggle')"),
     '…and the ⌘K / button entry points go through the on-demand kernel');
@@ -459,8 +462,10 @@ test('R199 ①: the seven subsystems are real ES modules — no window.IntMapMod
     assert.doesNotMatch(read('src/main.js'), new RegExp(rel.replace('.', '\\.')),
       `${rel} must NOT be in the entry's ordered list either — the import graph is what orders it now`);
   }
-  /* and the kernel is still the ONE thing on the registry, so nothing about how the app boots changed */
-  assert.match(KERNEL, /^window\.IntMapModules\.atlasConsole=function\(HOST\)\{$/m, 'the kernel itself is still a registered factory');
+  /* and the kernel is still the ONE factory of these files, so nothing about how the app boots changed.
+     (module-graph) the registry is gone: «registered» is «exported, and mounted by the loader» */
+  assert.match(KERNEL, /^export function atlasConsole\(HOST\)\{$/m, 'the kernel itself is still an exported factory');
+  assert.ok(lazyModules(root).some((m) => m.name === 'atlasConsole' && m.factory), '…which the loader mounts');
 });
 
 test('R199 ②: what each module returns is exactly what its host takes — derived from both files', () => {
@@ -604,9 +609,10 @@ test('R209 ②: the loader is a single top-level export, and every specifier is 
      import() specifiers is the claim. */
   const ast = acorn.parse(loader, { ecmaVersion: 'latest', sourceType: 'module' });
   /* (#R798) the file is the factory PLUS its registry (LAZY_REGISTRY, LAZY_NAMES, CARRIED_NAMES): every
-     top-level statement is exported, and exactly one of them is the function the shell calls. */
+     top-level statement is exported, and exactly one of them is the function the shell calls.
+     (module-graph) …or a static import: an import binds what another file owns, it declares nothing private */
   const kinds = ast.body.map((n) => n.type);
-  assert.ok(kinds.every((k) => k === 'ExportNamedDeclaration'), 'every top-level statement of js/lazy-modules.js is exported — nothing is a private binding the app cannot reach');
+  assert.ok(kinds.every((k) => k === 'ExportNamedDeclaration' || k === 'ImportDeclaration'), 'every top-level statement of js/lazy-modules.js is exported (or an import) — nothing is a private binding the app cannot reach');
   const fns = ast.body.filter((n) => n.declaration && n.declaration.type === 'FunctionDeclaration').map((n) => n.declaration.id.name);
   assert.deepEqual(fns, ['makeLazyModules'], 'exactly one exported factory');
   /* The reachability gate reads LITERALS. A table keyed by name passes node --check, passes the
@@ -627,20 +633,27 @@ test('R209 ③: every lazy factory is named in LAZY_FACTORIES, and in no other l
      same object the entry reads, not from a regex over a second list. */
   assert.match(entry, /import \{ LAZY_NAMES, CARRIED_NAMES \} from '\.\.\/js\/lazy-modules\.js'/, 'src/main.js derives its deferred list from the registry');
   const lazyKeys = LAZY_NAMES.slice();
-  const eager = /const MODULE_FACTORIES = \[([\s\S]*?)\]/.exec(entry)[1];
+  /* (module-graph) MODULE_FACTORIES is gone: the eager half is the factories the shell imports by name and
+     calls (factoryCalls, minus what the loader mounts) — a missing one is a link error, not a guard entry */
+  assert.doesNotMatch(code(entry), /MODULE_FACTORIES/, 'src/main.js keeps no hand list of eager factories any more');
+  const lazyMounted = new Set(lazyModules(root).filter((m) => m.factory).map((m) => m.name));
+  const eagerCalled = new Set(Object.values(factoryCalls(root)).flat().filter((k) => !lazyMounted.has(k)));
 
   /* Derived from the loader, not written down again: the factory keys it mounts. */
   const mounted = Object.keys(LAZY_REGISTRY).filter((k) => typeof LAZY_REGISTRY[k].mount === 'function');
-  for (const k of mounted) assert.ok(new RegExp('window\\.IntMapModules\\.' + k + '\\(IM_HOST\\)').test(code(loader)), k + "'s mount spells the factory call the static gate reads");
+  /* (module-graph) the mount calls the factory on the namespace the loader's import() resolved to */
+  for (const k of mounted) assert.ok(new RegExp('\\(IM_HOST, m\\) => \\{[^}]*\\bm\\.' + k + '\\(IM_HOST\\)').test(code(loader)), k + "'s mount calls its factory on the module the loader fetched");
   assert.ok(mounted.length >= 7, 'the loader mounts the factories it fetches');
   for (const k of mounted) {
     assert.ok(lazyKeys.includes(k), `${k} is mounted by the loader, so src/main.js must list it in LAZY_FACTORIES`);
     /* ⚠ THIS IS THE ONE THAT GOES RED FIRST IF SOMEBODY "FIXES" A FAILING BOOT GUARD BY PUTTING THE
        KEY BACK. The boot guard runs before any of these files is fetched, so a lazy key in
        MODULE_FACTORIES makes __imModuleCheck.missingFactories non-empty on every clean load, and
-       eight browser specs assert it is empty. */
-    assert.ok(!new RegExp(`'${k}'`).test(eager),
-      `${k} is fetched on demand — it must not be in MODULE_FACTORIES, where the boot guard would report it missing on every load`);
+       eight browser specs assert it is empty.
+       (module-graph) the eager form now is a static import + call in the shell, which would pull the file
+       into the boot bundle — so a lazy factory must not be among the ones the shell instantiates */
+    assert.ok(!eagerCalled.has(k),
+      `${k} is fetched on demand — the shell must not also import and instantiate it, which would download it at boot`);
   }
   for (const k of lazyKeys) {
     assert.ok(mounted.includes(k),
@@ -705,7 +718,8 @@ test('R209 ⑤: the loader reports a failure rather than swallowing it', async (
   /* the two things that can go wrong AFTER the bytes arrive, both checked at load time because the
      boot guard can no longer check them at boot. Read, not run: reaching them needs a real module file
      to arrive and then misbehave, which only the browser half (tests/r209.spec.js) can stage. */
-  assert.match(c, /registered no IntMapModules\./, 'it checks the factory registered');
+  /* (module-graph) the factory is asked of the namespace the loader's own import() resolved to */
+  assert.match(c, /typeof mod\[name\] === 'function'/, 'it checks the factory registered');
   assert.match(c, /nothing was published on window\./, 'and that the global the module owns appeared');
 });
 

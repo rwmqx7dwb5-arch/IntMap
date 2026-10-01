@@ -24,11 +24,13 @@ import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer w
 import { jsonWithin } from './fetch-deadline.js';
 import { clockFor } from './proxy-fetch.js';
 import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each */
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.compare=function(HOST){
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function compare(HOST){
   const cmpRead=(u)=>jsonWithin(u,clockFor(u),undefined,{idle:true});   /* (fetch-deadline-layer) see the note at the imports */
   const cmpFail=(msg)=>{ try{ HOST.imToast(msg); }catch(_){ /* no toast surface yet */ } };
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   const countryStats=HOST.countryStats, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, t=HOST.t;
   /* ══ ⚠⚠ (#R668) 「携帯か」 IS A QUESTION ABOUT THE DEVICE, NOT ABOUT 768 px ═══════════════════════
      `isMobile()` is a max-width media query, so it answers FALSE for an iPhone held sideways (844 px)
@@ -329,12 +331,12 @@ window.IntMapModules.compare=function(HOST){
     function ld(k,fb){ try{ if(typeof layerDates!=='undefined'&&layerDates&&layerDates[k]) return layerDates[k]; }catch(_){} return fb; }
     function addR(id,tiles,maxz,op){ if(cmap.layers.hasSource('cmpx-'+id)) return; cmap.layers.addSource('cmpx-'+id,{type:'raster',tiles:tiles,tileSize:256,maxzoom:maxz||9}); cmap.layers.add({id:'cmpx-'+id,type:'raster',source:'cmpx-'+id,layout:{visibility:'none'},paint:{'raster-opacity':op==null?0.78:op}}); }
     const CMP_LAYERS=[
-      {k:'koppen', n:()=>window.IntMapLang.t(HOST.lang,"Köppen climate","ケッペン気候区分","Köppen-Klima","Климат по Кёппену","Clima de Köppen"), ids:['cmp-lyr-koppen'], add(){ try{ cmap.layers.updateImage('cmp-koppen',{url:koppenUrl(),coordinates:KC}); }catch(_){} }},
-      {k:'worldcover', n:()=>window.IntMapLang.t(HOST.lang,"Land cover (ESA 2021)","土地被覆 (ESA 2021)","Landbedeckung (ESA 2021)","Земной покров (ESA 2021)","Cobertura del suelo (ESA 2021)"), ids:['cmp-lyr-worldcover'], add(){}},
-      {k:'eco', n:()=>window.IntMapLang.t(HOST.lang,"Ecoregions","生態地域","Ökoregionen","Экорегионы","Ecorregiones"), ids:['cmp-lyr-eco','cmp-lyr-eco-l'], add(done){
+      {k:'koppen', n:()=>IntMapLang.t(HOST.lang,"Köppen climate","ケッペン気候区分","Köppen-Klima","Климат по Кёппену","Clima de Köppen"), ids:['cmp-lyr-koppen'], add(){ try{ cmap.layers.updateImage('cmp-koppen',{url:koppenUrl(),coordinates:KC}); }catch(_){} }},
+      {k:'worldcover', n:()=>IntMapLang.t(HOST.lang,"Land cover (ESA 2021)","土地被覆 (ESA 2021)","Landbedeckung (ESA 2021)","Земной покров (ESA 2021)","Cobertura del suelo (ESA 2021)"), ids:['cmp-lyr-worldcover'], add(){}},
+      {k:'eco', n:()=>IntMapLang.t(HOST.lang,"Ecoregions","生態地域","Ökoregionen","Экорегионы","Ecorregiones"), ids:['cmp-lyr-eco','cmp-lyr-eco-l'], add(done){
         const addEco=(gj)=>{ if(!gj) return; try{ if(!cmap.layers.hasSource('cmp-eco')){ cmap.layers.addSource('cmp-eco',{type:'geojson',data:gj}); cmap.layers.add({id:'cmp-lyr-eco',type:'fill',source:'cmp-eco',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['to-color',['get','COLOR']],'#4caf50'],'fill-opacity':0.55}}); cmap.layers.add({id:'cmp-lyr-eco-l',type:'line',source:'cmp-eco',layout:{visibility:'none'},paint:{'line-color':'rgba(0,0,0,0.22)','line-width':0.4}}); } done&&done(); }catch(_){} };
         if(window.__ECOREGIONS_2017) addEco(window.__ECOREGIONS_2017); else if(window.__loadEcoregions) window.__loadEcoregions(addEco); }},
-      {k:'plates', n:()=>window.IntMapLang.t(HOST.lang,"Tectonic plates","プレート境界","Tektonische Platten","Тектонические плиты","Placas tectónicas"), ids:['cmpx-plates-f','cmpx-plates-l'], add(done){
+      {k:'plates', n:()=>IntMapLang.t(HOST.lang,"Tectonic plates","プレート境界","Tektonische Platten","Тектонические плиты","Placas tectónicas"), ids:['cmpx-plates-f','cmpx-plates-l'], add(done){
         if(cmap.layers.hasSource('cmpx-plates')){ done&&done(); return; }
         Promise.all([
           cmpRead('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json'),
@@ -343,25 +345,25 @@ window.IntMapModules.compare=function(HOST){
           cmap.layers.addSource('cmpx-plates',{type:'geojson',data:pl}); cmap.layers.addSource('cmpx-plates-b',{type:'geojson',data:bd||{type:'FeatureCollection',features:[]}});
           cmap.layers.add({id:'cmpx-plates-f',type:'fill',source:'cmpx-plates',layout:{visibility:'none'},paint:{'fill-color':'#e8590c','fill-opacity':0.12}});
           cmap.layers.add({id:'cmpx-plates-l',type:'line',source:'cmpx-plates-b',layout:{visibility:'none'},paint:{'line-color':'#ff5a3c','line-width':1.4,'line-opacity':0.9}});
-          done&&done(); }catch(_){} }).catch(()=>cmpFail(window.IntMapLang.t(HOST.lang,"Could not load plate data","プレートデータを取得できませんでした","Plattendaten konnten nicht geladen werden","Не удалось загрузить данные о плитах","No se pudieron cargar los datos de placas"))); }},
+          done&&done(); }catch(_){} }).catch(()=>cmpFail(IntMapLang.t(HOST.lang,"Could not load plate data","プレートデータを取得できませんでした","Plattendaten konnten nicht geladen werden","Не удалось загрузить данные о плитах","No se pudieron cargar los datos de placas"))); }},
       /* (#R234) the comparison map's DEM was pinned at 13 for every device — two zoom levels below
          what the main map has streamed on desktop since #R20, so the same hillshade was visibly
          coarser here than beside it. It asks the shell for the depth now (window.__imDemMaxZoom),
          so desktop gets terrarium's native 15 and a phone keeps its 13. */
-      {k:'hillshade', n:()=>window.IntMapLang.t(HOST.lang,"Hillshade","陰影起伏","Schummerung","Отмывка рельефа","Sombreado del relieve"), ids:['cmpx-hill'], add(){ try{ if(!cmap.layers.hasSource('cmpx-dem')) cmap.layers.addSource('cmpx-dem',{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:(window.__imDemMaxZoom?window.__imDemMaxZoom():13)});
+      {k:'hillshade', n:()=>IntMapLang.t(HOST.lang,"Hillshade","陰影起伏","Schummerung","Отмывка рельефа","Sombreado del relieve"), ids:['cmpx-hill'], add(){ try{ if(!cmap.layers.hasSource('cmpx-dem')) cmap.layers.addSource('cmpx-dem',{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:(window.__imDemMaxZoom?window.__imDemMaxZoom():13)});
         if(!cmap.layers.has('cmpx-hill')) cmap.layers.add({id:'cmpx-hill',type:'hillshade',source:'cmpx-dem',layout:{visibility:'none'},paint:{'hillshade-exaggeration':0.55}}); }catch(_){} }},
-      {k:'nightsat', n:()=>window.IntMapLang.t(HOST.lang,"Night lights (satellite)","夜の光（衛星）","Nachtlichter (Satellit)","Ночные огни (спутник)","Luces nocturnas (satélite)"), ids:['cmpx-nightsat'], add(){ /* (#R550) the THIRD copy of «which year of night lights» used to live
+      {k:'nightsat', n:()=>IntMapLang.t(HOST.lang,"Night lights (satellite)","夜の光（衛星）","Nachtlichter (Satellit)","Ночные огни (спутник)","Luces nocturnas (satélite)"), ids:['cmpx-nightsat'], add(){ /* (#R550) the THIRD copy of «which year of night lights» used to live
         here as a string replace that spelled 2016 — so the comparison window could contradict the map
         it was opened beside. It asks js/night-lights.js now, like the layer and the globe do. */
         try{ const NL=window.IntMapNightLights; const t=NL.tiles(); if(t.length) addR('nightsat',t,NL.maxzoom(),0.95); }catch(_){} }},
-      {k:'snow', n:()=>window.IntMapLang.t(HOST.lang,"Snow cover","積雪","Schneedecke","Снежный покров","Cubierta de nieve"), ids:['cmpx-snow'], add(){ addR('snow',cmpGibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',ld('snow',CMP_DATE)),8); }},
-      {k:'aod', n:()=>window.IntMapLang.t(HOST.lang,"Aerosol (AOD)","エアロゾル","Aerosol (AOD)","Аэрозоль (AOD)","Aerosol (AOD)"), ids:['cmpx-aod'], add(){ addR('aod',cmpGibs('MODIS_Combined_Value_Added_AOD',6,'png',ld('aod',CMP_DATE)),6); }},
-      {k:'sst', n:()=>window.IntMapLang.t(HOST.lang,"Sea-surface temp","海面水温","Meeresoberflächentemperatur","Температура поверхности моря","Temperatura del mar"), ids:['cmpx-sst'], add(){ addR('sst',cmpGibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',ld('sst',CMP_DATE)),7); }},
-      {k:'temp', n:()=>window.IntMapLang.t(HOST.lang,"Air temperature (monthly)","気温（月平均）","Lufttemperatur (monatlich)","Температура воздуха (по месяцам)","Temperatura del aire (mensual)"), ids:['cmpx-temp'], add(){ addR('temp',cmpGibs('MERRA2_2m_Air_Temperature_Monthly',6,'png',ld('temp','2024-01-01')),6); }},
-      {k:'precip', n:()=>window.IntMapLang.t(HOST.lang,"Precipitation","降水量","Niederschlag","Осадки","Precipitación"), ids:['cmpx-precip'], add(){ addR('precip',cmpGibs('IMERG_Precipitation_Rate',6,'png',ld('precip',CMP_DATE)+'T12:00:00Z'),6); }},
-      {k:'thermal', n:()=>window.IntMapLang.t(HOST.lang,"Thermal anomalies","熱異常（火災）","Wärmeanomalien","Тепловые аномалии","Anomalías térmicas"), ids:['cmpx-thermal'], add(){ addR('thermal',['https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_SNPP_Thermal_Anomalies_375m_All&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+CMP_DATE],9,0.85); }},
-      {k:'popgrid', n:()=>window.IntMapLang.t(HOST.lang,"Population grid","人口密度グリッド","Bevölkerungsraster","Сетка населения","Malla de población"), ids:['cmpx-popgrid'], add(){ addR('popgrid',cmpGibsStatic('GPW_Population_Density_2020',7,'png'),7,0.8); }},
-      {k:'ukr', n:()=>window.IntMapLang.t(HOST.lang,"Ukraine frontline","ウクライナ前線","Frontlinie Ukraine","Линия фронта в Украине","Frente de Ucrania"), ids:['cmpx-ukr-f','cmpx-ukr-l'], add(done){
+      {k:'snow', n:()=>IntMapLang.t(HOST.lang,"Snow cover","積雪","Schneedecke","Снежный покров","Cubierta de nieve"), ids:['cmpx-snow'], add(){ addR('snow',cmpGibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',ld('snow',CMP_DATE)),8); }},
+      {k:'aod', n:()=>IntMapLang.t(HOST.lang,"Aerosol (AOD)","エアロゾル","Aerosol (AOD)","Аэрозоль (AOD)","Aerosol (AOD)"), ids:['cmpx-aod'], add(){ addR('aod',cmpGibs('MODIS_Combined_Value_Added_AOD',6,'png',ld('aod',CMP_DATE)),6); }},
+      {k:'sst', n:()=>IntMapLang.t(HOST.lang,"Sea-surface temp","海面水温","Meeresoberflächentemperatur","Температура поверхности моря","Temperatura del mar"), ids:['cmpx-sst'], add(){ addR('sst',cmpGibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',ld('sst',CMP_DATE)),7); }},
+      {k:'temp', n:()=>IntMapLang.t(HOST.lang,"Air temperature (monthly)","気温（月平均）","Lufttemperatur (monatlich)","Температура воздуха (по месяцам)","Temperatura del aire (mensual)"), ids:['cmpx-temp'], add(){ addR('temp',cmpGibs('MERRA2_2m_Air_Temperature_Monthly',6,'png',ld('temp','2024-01-01')),6); }},
+      {k:'precip', n:()=>IntMapLang.t(HOST.lang,"Precipitation","降水量","Niederschlag","Осадки","Precipitación"), ids:['cmpx-precip'], add(){ addR('precip',cmpGibs('IMERG_Precipitation_Rate',6,'png',ld('precip',CMP_DATE)+'T12:00:00Z'),6); }},
+      {k:'thermal', n:()=>IntMapLang.t(HOST.lang,"Thermal anomalies","熱異常（火災）","Wärmeanomalien","Тепловые аномалии","Anomalías térmicas"), ids:['cmpx-thermal'], add(){ addR('thermal',['https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_SNPP_Thermal_Anomalies_375m_All&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+CMP_DATE],9,0.85); }},
+      {k:'popgrid', n:()=>IntMapLang.t(HOST.lang,"Population grid","人口密度グリッド","Bevölkerungsraster","Сетка населения","Malla de población"), ids:['cmpx-popgrid'], add(){ addR('popgrid',cmpGibsStatic('GPW_Population_Density_2020',7,'png'),7,0.8); }},
+      {k:'ukr', n:()=>IntMapLang.t(HOST.lang,"Ukraine frontline","ウクライナ前線","Frontlinie Ukraine","Линия фронта в Украине","Frente de Ucrania"), ids:['cmpx-ukr-f','cmpx-ukr-l'], add(done){
         if(cmap.layers.hasSource('cmpx-ukr')){ done&&done(); return; }
         fetch('https://deepstatemap.live/api/history/last').then(r=>r.json()).then(j=>{ try{
           let fc=(j&&j.map)?j.map:j; if(typeof fc==='string') fc=JSON.parse(fc);
@@ -376,7 +378,7 @@ window.IntMapModules.compare=function(HOST){
           cmap.layers.add({id:'cmpx-ukr-f',type:'fill',source:'cmpx-ukr',filter:['any',['==',['geometry-type'],'Polygon'],['==',['geometry-type'],'MultiPolygon']],layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','fill'],'#d62b2b'],'fill-opacity':0.3}});
           cmap.layers.add({id:'cmpx-ukr-l',type:'line',source:'cmpx-ukr',layout:{visibility:'none'},paint:{'line-color':['coalesce',['get','stroke'],'#c01616'],'line-width':1.3}});
           done&&done(); }catch(_){} }).catch(()=>{}); }},
-      {k:'volc', n:()=>window.IntMapLang.t(HOST.lang,"Volcanoes","火山","Vulkane","Вулканы","Volcanes"), ids:['cmpx-volc'], add(done){
+      {k:'volc', n:()=>IntMapLang.t(HOST.lang,"Volcanoes","火山","Vulkane","Вулканы","Volcanes"), ids:['cmpx-volc'], add(done){
         if(cmap.layers.hasSource('cmpx-volc')){ done&&done(); return; }
         loadData('data/volcanoes_gvp.json').then(j=>{ try{   /* (data-one-door) the main map's read, shared — js/data-door.js */
           cmap.layers.addSource('cmpx-volc',{type:'geojson',data:j});
@@ -384,7 +386,7 @@ window.IntMapModules.compare=function(HOST){
           done&&done(); }catch(_){} }).catch(()=>{}); }},
       /* (#R36) parity adds — aurora + earthquakes (the main map has them; compare didn't). Same sources/paint
          as the main map so they are byte-identical, not "low quality" clones. */
-      {k:'aurora', n:()=>window.IntMapLang.t(HOST.lang,"Aurora forecast","オーロラ予報","Polarlicht-Vorhersage","Прогноз полярных сияний","Previsión de auroras"), ids:['cmpx-aurora-heat','cmpx-aurora-glow'], add(done){
+      {k:'aurora', n:()=>IntMapLang.t(HOST.lang,"Aurora forecast","オーロラ予報","Polarlicht-Vorhersage","Прогноз полярных сияний","Previsión de auroras"), ids:['cmpx-aurora-heat','cmpx-aurora-glow'], add(done){
         if(cmap.layers.hasSource('cmpx-aurora')){ done&&done(); return; }
         cmap.layers.addSource('cmpx-aurora',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         cmap.layers.add({id:'cmpx-aurora-heat',type:'heatmap',source:'cmpx-aurora',layout:{visibility:'none'},paint:{'heatmap-weight':['interpolate',['linear'],['get','a'],0,0,100,1],
@@ -401,13 +403,13 @@ window.IntMapModules.compare=function(HOST){
           const co=j.coordinates||[], feats=[];
           for(let i=0;i<co.length;i+=2){ const c=co[i]; if(!c) continue; const a=c[2]; if(a<8) continue; let lng=c[0]; if(lng>180) lng-=360; feats.push({type:'Feature',geometry:{type:'Point',coordinates:[lng,c[1]]},properties:{a:a}}); }
           if(cmap.layers.hasSource('cmpx-aurora')) cmap.layers.setSourceData('cmpx-aurora',{type:'FeatureCollection',features:feats});
-          done&&done(); }catch(_){} }).catch(()=>cmpFail(window.IntMapLang.t(HOST.lang,"Could not load — toggle again later.","取得できませんでした — 後でもう一度オンにしてください。","Laden fehlgeschlagen — später erneut einschalten.","Не удалось загрузить — включите позже ещё раз.","No se pudo cargar; vuelva a activarlo más tarde."))); }},
-      {k:'eq', n:()=>window.IntMapLang.t(HOST.lang,"Earthquakes (USGS)","地震（USGS）","Erdbeben (USGS)","Землетрясения (USGS)","Terremotos (USGS)"), ids:['cmpx-eq'], add(done){
+          done&&done(); }catch(_){} }).catch(()=>cmpFail(IntMapLang.t(HOST.lang,"Could not load — toggle again later.","取得できませんでした — 後でもう一度オンにしてください。","Laden fehlgeschlagen — später erneut einschalten.","Не удалось загрузить — включите позже ещё раз.","No se pudo cargar; vuelva a activarlo más tarde."))); }},
+      {k:'eq', n:()=>IntMapLang.t(HOST.lang,"Earthquakes (USGS)","地震（USGS）","Erdbeben (USGS)","Землетрясения (USGS)","Terremotos (USGS)"), ids:['cmpx-eq'], add(done){
         if(cmap.layers.hasSource('cmpx-eq')){ done&&done(); return; }
         cmpRead('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson').then(j=>{ try{
           cmap.layers.addSource('cmpx-eq',{type:'geojson',data:j});
           cmap.layers.add({id:'cmpx-eq',type:'circle',source:'cmpx-eq',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['get','mag'],1,2.5,4,6,6,12,8,22],'circle-color':['interpolate',['linear'],['get','mag'],1,'#ffd24d',3,'#ff9500',5,'#ff3b30',7,'#7a0010'],'circle-opacity':0.78,'circle-stroke-color':'rgba(255,255,255,0.6)','circle-stroke-width':0.4}});
-          done&&done(); }catch(_){} }).catch(()=>cmpFail(window.IntMapLang.t(HOST.lang,"Could not load earthquake data","地震データを取得できませんでした","Erdbebendaten konnten nicht geladen werden","Не удалось загрузить данные о землетрясениях","No se pudieron cargar los datos sísmicos"))); }},
+          done&&done(); }catch(_){} }).catch(()=>cmpFail(IntMapLang.t(HOST.lang,"Could not load earthquake data","地震データを取得できませんでした","Erdbebendaten konnten nicht geladen werden","Не удалось загрузить данные о землетрясениях","No se pudieron cargar los datos sísmicos"))); }},
       /* (#R21) "全部のレイヤーをcompare viewでも使えるように" — country CHOROPLETHS are now cloned:
          the main map paints them via feature-state on its own 'countries' source (unshareable), so
          the compare map gets ONE geojson with every metric baked into properties + the same ramps. */
@@ -440,16 +442,16 @@ window.IntMapModules.compare=function(HOST){
           }
           done&&done(); }catch(_){} }); }}; }
         return [
-          mk('pop',()=>window.IntMapLang.t(HOST.lang,"Population density","人口密度","Bevölkerungsdichte","Плотность населения","Densidad de población")),
-          mk('gdppc',()=>window.IntMapLang.t(HOST.lang,"GDP per capita","1人当たりGDP","BIP pro Kopf","ВВП на душу населения","PIB per cápita")),
+          mk('pop',()=>IntMapLang.t(HOST.lang,"Population density","人口密度","Bevölkerungsdichte","Плотность населения","Densidad de población")),
+          mk('gdppc',()=>IntMapLang.t(HOST.lang,"GDP per capita","1人当たりGDP","BIP pro Kopf","ВВП на душу населения","PIB per cápita")),
           mk('hdi',()=>'HDI'),
-          mk('dem',()=>window.IntMapLang.t(HOST.lang,"Democracy Index","民主主義指数","Demokratieindex","Индекс демократии","Índice de Democracia")),
-          mk('tfr',()=>window.IntMapLang.t(HOST.lang,"Fertility rate","合計特殊出生率","Geburtenrate","Суммарный коэффициент рождаемости","Tasa de fecundidad")),
-          mk('milSpend',()=>window.IntMapLang.t(HOST.lang,"Military spending ($B)","国防費（$B）","Militärausgaben (Mrd. $)","Военные расходы (млрд $)","Gasto militar (miles de mill. $)")),
-          mk('milSpendGDP',()=>window.IntMapLang.t(HOST.lang,"Military spending (%GDP)","国防費（対GDP）","Militärausgaben (% BIP)","Военные расходы (% ВВП)","Gasto militar (% del PIB)"))
+          mk('dem',()=>IntMapLang.t(HOST.lang,"Democracy Index","民主主義指数","Demokratieindex","Индекс демократии","Índice de Democracia")),
+          mk('tfr',()=>IntMapLang.t(HOST.lang,"Fertility rate","合計特殊出生率","Geburtenrate","Суммарный коэффициент рождаемости","Tasa de fecundidad")),
+          mk('milSpend',()=>IntMapLang.t(HOST.lang,"Military spending ($B)","国防費（$B）","Militärausgaben (Mrd. $)","Военные расходы (млрд $)","Gasto militar (miles de mill. $)")),
+          mk('milSpendGDP',()=>IntMapLang.t(HOST.lang,"Military spending (%GDP)","国防費（対GDP）","Militärausgaben (% BIP)","Военные расходы (% ВВП)","Gasto militar (% del PIB)"))
         ];
       })(),
-      {k:'histb', n:()=>window.IntMapLang.t(HOST.lang,"Historical borders","過去の国境","Historische Grenzen","Исторические границы","Fronteras históricas"), ids:['cmp-hb-f','cmp-hb-l'], add(done){
+      {k:'histb', n:()=>IntMapLang.t(HOST.lang,"Historical borders","過去の国境","Historische Grenzen","Исторические границы","Fronteras históricas"), ids:['cmp-hb-f','cmp-hb-l'], add(done){
         const cur=(window.IntMapBeta&&window.IntMapBeta.hbCurrent)?window.IntMapBeta.hbCurrent():null;
         if(cmap.layers.hasSource('cmp-hb')){ try{ if(cur&&cur.fc) cmap.layers.setSourceData('cmp-hb',cur.fc); }catch(_){} done&&done(); return; }
         const use=(fc)=>{ try{ if(!fc||!Array.isArray(fc.features)) return;
@@ -458,8 +460,8 @@ window.IntMapModules.compare=function(HOST){
           cmap.layers.add({id:'cmp-hb-l',type:'line',source:'cmp-hb',layout:{visibility:'none'},paint:{'line-color':'#5e4a33','line-width':0.9,'line-opacity':0.85}});
           done&&done(); }catch(_){} };
         if(cur&&cur.fc){ use(cur.fc); return; }
-        cmpRead('https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_'+((cur&&cur.year)||1914)+'.geojson').then(use).catch(()=>cmpFail(window.IntMapLang.t(HOST.lang,"Could not load — toggle again later.","取得できませんでした — 後でもう一度オンにしてください。","Laden fehlgeschlagen — später erneut einschalten.","Не удалось загрузить — включите позже ещё раз.","No se pudo cargar; vuelva a activarlo más tarde."))); }},
-      {k:'rail', n:()=>window.IntMapLang.t(HOST.lang,"World railways","世界の鉄道","Eisenbahnen","Железные дороги","Ferrocarriles"), ids:['cmp-rail'], add(done){
+        cmpRead('https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_'+((cur&&cur.year)||1914)+'.geojson').then(use).catch(()=>cmpFail(IntMapLang.t(HOST.lang,"Could not load — toggle again later.","取得できませんでした — 後でもう一度オンにしてください。","Laden fehlgeschlagen — später erneut einschalten.","Не удалось загрузить — включите позже ещё раз.","No se pudo cargar; vuelva a activarlo más tarde."))); }},
+      {k:'rail', n:()=>IntMapLang.t(HOST.lang,"World railways","世界の鉄道","Eisenbahnen","Железные дороги","Ferrocarriles"), ids:['cmp-rail'], add(done){
         if(cmap.layers.hasSource('cmp-rail')){ done&&done(); return; }
         if(!window.IntMapBeta2) return;
         window.IntMapBeta2.load('rail',fc=>{ try{ if(cmap.layers.hasSource('cmp-rail')) { done&&done(); return; }
@@ -469,14 +471,14 @@ window.IntMapModules.compare=function(HOST){
              every feature, and the new data has no such property because the bucket is derived. */
           cmap.layers.add({id:'cmp-rail',type:'line',source:'cmp-rail',layout:{visibility:'none'},paint:{'line-color':(window.IntMapRailways&&window.IntMapRailways.colour?window.IntMapRailways.colour():'#888'),'line-width':1.3,'line-opacity':0.85}});
           done&&done(); }catch(_){} }); }},
-      {k:'dc', n:()=>window.IntMapLang.t(HOST.lang,"Data centers / cloud","データセンター","Rechenzentren / Cloud","Дата-центры / облако","Centros de datos / nube"), ids:['cmp-dc'], add(done){
+      {k:'dc', n:()=>IntMapLang.t(HOST.lang,"Data centers / cloud","データセンター","Rechenzentren / Cloud","Дата-центры / облако","Centros de datos / nube"), ids:['cmp-dc'], add(done){
         if(cmap.layers.hasSource('cmp-dc')){ done&&done(); return; }
         if(!window.IntMapBeta2) return;
         window.IntMapBeta2.load('dc',fc=>{ try{ if(cmap.layers.hasSource('cmp-dc')) { done&&done(); return; }
           cmap.layers.addSource('cmp-dc',{type:'geojson',data:fc});
           cmap.layers.add({id:'cmp-dc',type:'circle',source:'cmp-dc',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2.4,6,5.5],'circle-color':['coalesce',['get','col'],'#5e8bff'],'circle-stroke-color':'#fff','circle-stroke-width':0.8,'circle-opacity':0.9}});
           done&&done(); }catch(_){} }); }},
-      {k:'pharma', n:()=>window.IntMapLang.t(HOST.lang,"Pharma & health","医療・製薬","Pharma & Gesundheit","Фармацевтика и здравоохранение","Farmacéuticas y salud"), ids:['cmp-ph'], add(done){
+      {k:'pharma', n:()=>IntMapLang.t(HOST.lang,"Pharma & health","医療・製薬","Pharma & Gesundheit","Фармацевтика и здравоохранение","Farmacéuticas y salud"), ids:['cmp-ph'], add(done){
         if(cmap.layers.hasSource('cmp-ph')){ done&&done(); return; }
         if(!window.IntMapBeta2) return;
         window.IntMapBeta2.load('pharma',fc=>{ try{ if(cmap.layers.hasSource('cmp-ph')) { done&&done(); return; }
@@ -486,26 +488,26 @@ window.IntMapModules.compare=function(HOST){
     ];
     function build(){ if(built) return; built=true; injectCSS();
       win=document.createElement('div'); win.id='compare-window';
-      win.innerHTML='<div class="cmp-head"><span class="cmp-title">'+(window.IntMapLang.t(HOST.lang,"Compare","比較","Vergleichen","Сравнить","Comparar"))+'</span>'+
+      win.innerHTML='<div class="cmp-head"><span class="cmp-title">'+(IntMapLang.t(HOST.lang,"Compare","比較","Vergleichen","Сравнить","Comparar"))+'</span>'+
         '<span class="cmp-seg">'+
-          '<button class="cmp-btn on" data-v="map">'+(window.IntMapLang.t(HOST.lang,"Map","地図","Karte","Карта","Mapa"))+'</button>'+
-          '<button class="cmp-btn" data-v="sat">'+(window.IntMapLang.t(HOST.lang,"Sat","衛星","Sat","Спутник","Sat"))+'</button>'+
+          '<button class="cmp-btn on" data-v="map">'+(IntMapLang.t(HOST.lang,"Map","地図","Karte","Карта","Mapa"))+'</button>'+
+          '<button class="cmp-btn" data-v="sat">'+(IntMapLang.t(HOST.lang,"Sat","衛星","Sat","Спутник","Sat"))+'</button>'+
         '</span>'+
         '<span class="cmp-seg">'+
-          '<button class="cmp-btn on" data-m="sync" title="'+(window.IntMapLang.t(HOST.lang,"Two-way view sync","両方向に視点同期","Ansicht beidseitig synchronisieren","Двусторонняя синхронизация вида","Sincronización de vista bidireccional"))+'">'+(window.IntMapLang.t(HOST.lang,"Sync","同期","Sync","Синхр.","Sinc."))+'</button>'+
-          '<button class="cmp-btn" data-m="free" title="'+(window.IntMapLang.t(HOST.lang,"Independent of the main map","メイン地図と独立","Unabhängig von der Hauptkarte","Независимо от основной карты","Independiente del mapa principal"))+'">'+(window.IntMapLang.t(HOST.lang,"Free","独立","Frei","Свободно","Libre"))+'</button>'+
-          '<button class="cmp-btn" data-m="xray" title="'+(window.IntMapLang.t(HOST.lang,"Pixel-registered lens over the main map","メイン地図に重ねる透視レンズ","Pixelgenaue Lupe über der Hauptkarte","Пиксельно совмещённая линза поверх основной карты","Lente superpuesta al mapa principal, registrada píxel a píxel"))+'">'+(window.IntMapLang.t(HOST.lang,"X-ray","X線","Röntgen","Рентген","Rayos X"))+'</button>'+
+          '<button class="cmp-btn on" data-m="sync" title="'+(IntMapLang.t(HOST.lang,"Two-way view sync","両方向に視点同期","Ansicht beidseitig synchronisieren","Двусторонняя синхронизация вида","Sincronización de vista bidireccional"))+'">'+(IntMapLang.t(HOST.lang,"Sync","同期","Sync","Синхр.","Sinc."))+'</button>'+
+          '<button class="cmp-btn" data-m="free" title="'+(IntMapLang.t(HOST.lang,"Independent of the main map","メイン地図と独立","Unabhängig von der Hauptkarte","Независимо от основной карты","Independiente del mapa principal"))+'">'+(IntMapLang.t(HOST.lang,"Free","独立","Frei","Свободно","Libre"))+'</button>'+
+          '<button class="cmp-btn" data-m="xray" title="'+(IntMapLang.t(HOST.lang,"Pixel-registered lens over the main map","メイン地図に重ねる透視レンズ","Pixelgenaue Lupe über der Hauptkarte","Пиксельно совмещённая линза поверх основной карты","Lente superpuesta al mapa principal, registrada píxel a píxel"))+'">'+(IntMapLang.t(HOST.lang,"X-ray","X線","Röntgen","Рентген","Rayos X"))+'</button>'+
         '</span>'+
         /* (#R31) Minimise = single clean line; Close = centred ×; both SQUARE like the other controls
            ("ふちをまるではなく…四角に", "×は中心からずれている"). */
-        '<button class="cmp-btn cmp-icon" id="cmp-min" title="'+(window.IntMapLang.t(HOST.lang,"Minimize","最小化","Minimieren","Свернуть","Minimizar"))+'"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>'+
+        '<button class="cmp-btn cmp-icon" id="cmp-min" title="'+(IntMapLang.t(HOST.lang,"Minimize","最小化","Minimieren","Свернуть","Minimizar"))+'"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>'+
         '<button class="cmp-btn cmp-icon" id="cmp-close" title="'+t('close')+'"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>'+
         /* (#R31) Layer picker sits in its own row directly UNDER the Map/Sat + Sync/Free/X-ray controls
            ("Select a layerは…欄の下に配置しろ"). */
-        '<div class="cmp-picker"><select id="cmp-layers-sel" title="'+(window.IntMapLang.t(HOST.lang,"Compare layer","比較レイヤー","Vergleichsebene","Слой сравнения","Capa de comparación"))+'"></select></div>'+
+        '<div class="cmp-picker"><select id="cmp-layers-sel" title="'+(IntMapLang.t(HOST.lang,"Compare layer","比較レイヤー","Vergleichsebene","Слой сравнения","Capa de comparación"))+'"></select></div>'+
         '<div class="cmp-body"><div id="compare-map"></div></div>'+
         '<div class="cmp-rz" data-c="nw"></div><div class="cmp-rz" data-c="ne"></div><div class="cmp-rz" data-c="sw"></div><div class="cmp-rz" data-c="se"></div>'+
-        '<div class="cmp-resize" title="'+(window.IntMapLang.t(HOST.lang,"Drag to resize","高さを調節","Zum Ändern der Höhe ziehen","Потяните, чтобы изменить высоту","Arrastre para ajustar la altura"))+'"></div>';
+        '<div class="cmp-resize" title="'+(IntMapLang.t(HOST.lang,"Drag to resize","高さを調節","Zum Ändern der Höhe ziehen","Потяните, чтобы изменить высоту","Arrastre para ajustar la altura"))+'"></div>';
       (document.getElementById('map-container')||document.body).appendChild(win);
       try{ window.registerWindow&&window.registerWindow(win); }catch(_){}   /* (#R47) click-to-front */
       /* (#R27) Pull the close × OUT of the wrapping header flow and make it a direct child of the window,
@@ -551,7 +553,7 @@ window.IntMapModules.compare=function(HOST){
       /* (#R32b) The compare picker offers the SAME high-quality layers as the main map for FREE selection
          (the user's clarification: "同一条件・クオリティのものを選択できるように" — NOT auto-reflect the main
          map's current selection). No auto-mirror; pick any CMP_LAYER (each is the full-quality clone). */
-      function buildLayerDD(){ if(!sel) return; sel.innerHTML='<option value="">'+(window.IntMapLang.t(HOST.lang,"Select a layer…","レイヤーを選択…","Ebene auswählen…","Выберите слой…","Seleccione una capa…"))+'</option>'+CMP_LAYERS.map(L=>'<option value="'+L.k+'">'+L.n()+'</option>').join(''); try{ sel.value=curCmpLayer; }catch(_){} }
+      function buildLayerDD(){ if(!sel) return; sel.innerHTML='<option value="">'+(IntMapLang.t(HOST.lang,"Select a layer…","レイヤーを選択…","Ebene auswählen…","Выберите слой…","Seleccione una capa…"))+'</option>'+CMP_LAYERS.map(L=>'<option value="'+L.k+'">'+L.n()+'</option>').join(''); try{ sel.value=curCmpLayer; }catch(_){} }
       buildLayerDD();
       if(sel) sel.onchange=()=>{
         const prev=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(prev) prev.ids.forEach(id=>setVis(id,false));
@@ -572,7 +574,7 @@ window.IntMapModules.compare=function(HOST){
           mb.innerHTML=minimized
             ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>'
             : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>';
-          mb.title=minimized?(window.IntMapLang.t(HOST.lang,"Restore","元に戻す","Wiederherstellen","Восстановить","Restaurar")):(window.IntMapLang.t(HOST.lang,"Minimize","最小化","Minimieren","Свернуть","Minimizar"));
+          mb.title=minimized?(IntMapLang.t(HOST.lang,"Restore","元に戻す","Wiederherstellen","Восстановить","Restaurar")):(IntMapLang.t(HOST.lang,"Minimize","最小化","Minimieren","Свернуть","Minimizar"));
         }catch(_){}
       };
       win.querySelector('#cmp-close').onclick=close;
@@ -664,7 +666,7 @@ window.IntMapModules.compare=function(HOST){
     /* (#R17) Dedupe by the BUTTON, not the #cmp-mount wrapper — reorganizeLayerPanel MOVES the button into
        #layer-tools and removes the wrapper, so the old wrapper-guard let a later call create a SECOND button
        ("Tools二重" on mobile). Re-file into Tools right after mounting so the section never goes missing. */
-    const cmpBtnLabel=()=>window.IntMapLang.t(HOST.lang,"Open compare view","比較ビューを開く","Vergleichsansicht öffnen","Открыть режим сравнения","Abrir la vista de comparación");
+    const cmpBtnLabel=()=>IntMapLang.t(HOST.lang,"Open compare view","比較ビューを開く","Vergleichsansicht öffnen","Открыть режим сравнения","Abrir la vista de comparación");
     function mountButton(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('btn-compare')) return;
       const wrap=document.createElement('div'); wrap.id='cmp-mount'; wrap.style.marginTop='4px';
       wrap.innerHTML='<button id="btn-compare" class="ai-test-btn" style="width:100%;">🪟 <span>'+cmpBtnLabel()+'</span></button>';
@@ -686,4 +688,4 @@ window.IntMapModules.compare=function(HOST){
     }catch(_){}
     return { open, close, _map:()=>cmap };
   })();
-};
+}

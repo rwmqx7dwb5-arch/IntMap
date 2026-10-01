@@ -1,4 +1,6 @@
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy; see js/atlas-persona.js */
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 /* ============================================================================
  *  IntMap · Research brief — the implementation behind window.IntMapAIResearch  (#R322)
  * ----------------------------------------------------------------------------
@@ -11,15 +13,15 @@ import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is �
  *  ⚠ The published global is `__imAnalysis…`, not `IntMap…`: js/atlas-controls.js discovers
  *  `window.IntMap*` by enumeration and would offer the planner a second, undispatched capability.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.analysisResearch=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
+export function analysisResearch(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const aiGate=HOST.aiGate, t=HOST.t, makeDraggable=HOST.makeDraggable, askAI=HOST.askAI, countryStats=HOST.countryStats;
   window.__imAnalysisResearch=(function(){
     const jp=()=>HOST.lang==='jp';
     /* (#R39) 4-language helper so the brief panel's own UI follows the app language (DE/RU used to fall to EN). */
-    const LL=window.IntMapLang.pick(()=>HOST.lang);   /* (#R40) +Spanish (falls back to EN when a 5th arg isn't supplied) */
+    const LL=IntMapLang.pick(()=>HOST.lang);   /* (#R40) +Spanish (falls back to EN when a 5th arg isn't supplied) */
     let panel=null;
     function esc(s){ return window.IntMapSafe.html(s); }   /* the one encoder — the local copy did not encode quotes */
     /* minimal safe markdown: ## headers, **bold**, bullet lines */
@@ -83,14 +85,14 @@ window.IntMapModules.analysisResearch=function(HOST){
          already reads "Research: X". Two lines, one word, twice.
          ⚠ IT IS FIXED IN BOTH PLACES, because a prompt is a request and not a guarantee: the system
          message says not to, and `_dropLeadTitle` below removes it if one arrives anyway. */
-      const noTitle=(window.IntMapLang.t(HOST.lang," Do NOT open with a heading or bold line that merely repeats the place name — it is already on screen above your reply. Start straight with the content.","見出しや太字で場所の名前だけを繰り返す行を冒頭に置かないでください（画面に既に表示されています）。本文からすぐ始めてください。"," Beginnen Sie NICHT mit einer Überschrift oder Fettzeile, die nur den Ortsnamen wiederholt — er steht bereits über Ihrer Antwort auf dem Bildschirm. Fangen Sie direkt mit dem Inhalt an."," НЕ начинайте с заголовка или жирной строки, которая лишь повторяет название места — оно уже показано над вашим ответом. Сразу переходите к содержанию."," NO empiece con un título ni una línea en negrita que sólo repita el nombre del lugar: ya aparece en pantalla encima de su respuesta. Empiece directamente con el contenido."));
+      const noTitle=(IntMapLang.t(HOST.lang," Do NOT open with a heading or bold line that merely repeats the place name — it is already on screen above your reply. Start straight with the content.","見出しや太字で場所の名前だけを繰り返す行を冒頭に置かないでください（画面に既に表示されています）。本文からすぐ始めてください。"," Beginnen Sie NICHT mit einer Überschrift oder Fettzeile, die nur den Ortsnamen wiederholt — er steht bereits über Ihrer Antwort auf dem Bildschirm. Fangen Sie direkt mit dem Inhalt an."," НЕ начинайте с заголовка или жирной строки, которая лишь повторяет название места — оно уже показано над вашим ответом. Сразу переходите к содержанию."," NO empiece con un título ni una línea en negrita que sólo repita el nombre del lugar: ya aparece en pantalla encima de su respuesta. Empiece directamente con el contenido."));
       const sys=personaPrompt('working here as the geopolitical and area-studies research desk of IntMap')+(jp()   /* (#R285) both branches opened with an identity sentence of their own */
         ?('本日は'+today+'です。事実に忠実に、簡潔な日本語で答えてください。可能な限り具体的な年・日付・数値（人口、GDP、兵力、距離など）を文中に入れてください。不確かな点は「未確認」と明記してください。'+noTitle)
         :('Today is '+today+'. Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain.'+noTitle))+window._aiLangLine();
       const prompt=(jp()
         ?('場所「'+name+'」'+(lngLat?('（座標: '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+'）'):'')+'について、以下の構成で簡潔なインテリジェンス・ブリーフを書いてください。\n## 概要・背景\n## 歴史（重要な出来事は年号つきで）\n## 経済（最新の数値・年を明記）\n## 軍事・戦略的意義\n## 最近の動向（直近1〜2年を最優先。出来事には日付や時期を明記）\n各セクション2〜4文。曖昧な一般論より、固有名詞・日付・数値を優先してください。')
         :('Write a concise intelligence brief on "'+name+'"'+(lngLat?(' (around '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (state the latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritize the last 1–2 years; date each event)\n2–4 sentences per section. Prefer named entities, dates and numbers over generalities.'))
-        +(news.length?('\n\n'+(window.IntMapLang.t(HOST.lang,"Recent nearby news headlines — reflect these in \"Recent developments\":\n","参考: 周辺の最近のニュース見出し（「最近の動向」に反映すること）:\n","Aktuelle Schlagzeilen aus der Umgebung — in „Aktuelle Entwicklungen“ berücksichtigen:\n","Недавние заголовки новостей поблизости — учтите их в разделе «Последние события»:\n","Titulares recientes de la zona — reflejarlos en «Novedades recientes»:\n"))+news.map(s=>'- '+s).join('\n')):'');
+        +(news.length?('\n\n'+(IntMapLang.t(HOST.lang,"Recent nearby news headlines — reflect these in \"Recent developments\":\n","参考: 周辺の最近のニュース見出し（「最近の動向」に反映すること）:\n","Aktuelle Schlagzeilen aus der Umgebung — in „Aktuelle Entwicklungen“ berücksichtigen:\n","Недавние заголовки новостей поблизости — учтите их в разделе «Последние события»:\n","Titulares recientes de la zona — reflejarlos en «Novedades recientes»:\n"))+news.map(s=>'- '+s).join('\n')):'');
       /* (#R22) The brief runs FIRST; the suggested-questions block is appended only AFTER it finishes
          ("Suggested questions は AI brief が終わってから最後に表示") — it used to render immediately. */
       try{
@@ -119,7 +121,7 @@ window.IntMapModules.analysisResearch=function(HOST){
           bubble('user',esc(qq));
           const ai=bubble('ai','<span style="color:var(--text-muted);">'+LL('Thinking…','回答中…','Denke nach…','Думаю…','Pensando…')+'</span>');
           convo.push('User: '+qq);
-          try{ const ctx=(news.length?('\n\n'+(window.IntMapLang.t(HOST.lang,"Context — recent nearby headlines:\n","参考: 周辺の最近のニュース見出し:\n","Kontext — aktuelle Schlagzeilen aus der Umgebung:\n","Контекст — недавние заголовки поблизости:\n","Contexto — titulares recientes de la zona:\n"))+news.map(s=>'- '+s).join('\n')):'')+(convo.length>1?('\n\n'+(window.IntMapLang.t(HOST.lang,"Conversation so far:\n","これまでの会話:\n","Bisheriges Gespräch:\n","Разговор до этого момента:\n","Conversación hasta ahora:\n"))+convo.slice(-6).join('\n')):'');
+          try{ const ctx=(news.length?('\n\n'+(IntMapLang.t(HOST.lang,"Context — recent nearby headlines:\n","参考: 周辺の最近のニュース見出し:\n","Kontext — aktuelle Schlagzeilen aus der Umgebung:\n","Контекст — недавние заголовки поблизости:\n","Contexto — titulares recientes de la zona:\n"))+news.map(s=>'- '+s).join('\n')):'')+(convo.length>1?('\n\n'+(IntMapLang.t(HOST.lang,"Conversation so far:\n","これまでの会話:\n","Bisheriges Gespräch:\n","Разговор до этого момента:\n","Conversación hasta ahora:\n"))+convo.slice(-6).join('\n')):'');
             const out2=await askAI(qq+ctx,sys);
             ai.innerHTML=md(out2||''); convo.push('Assistant: '+String(out2||'').slice(0,600));
           }catch(e2){ ai.innerHTML='<span style="color:#ff453a;">'+esc(e2&&e2.message||'AI error')+'</span>'; }
@@ -200,4 +202,4 @@ window.IntMapModules.analysisResearch=function(HOST){
     }
     return { open, askHere };
   })();
-};
+}

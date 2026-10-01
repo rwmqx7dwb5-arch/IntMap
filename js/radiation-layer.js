@@ -57,13 +57,16 @@
  *  (`map.radiation`, `data.radiationNear`) and the simulators all reach ONE implementation.
  * ==========================================================================*/
 import { makeRadiationObs } from './radiation-obs-core.js';
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.radiationLayer = function (HOST) {
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function radiationLayer(HOST) {
   /* what this layer needs from the host — stated, so a reader (or a test) can hand exactly these */
   const need = { lang: () => HOST.lang, canDraw: () => HOST.canDraw() };
-  const L = window.IntMapLang.pick(need.lang);
-  const LA = window.IntMapLang.pickArgs();
-  const GE = () => window.IntMapGeoEngine;
+  const L = IntMapLang.pick(need.lang);
+  const LA = IntMapLang.pickArgs();
+  const GE = () => IntMapGeoEngine;
   const RT = () => window.IntMapRuntime;
   const S = (v) => { try { return window.IntMapSafe.html(v == null ? '' : String(v)); } catch (_) { return ''; } };
   function canDraw() { try { return !!need.canDraw(); } catch (_) { try { return !!GE().ready(); } catch (__) { return false; } } }
@@ -256,7 +259,7 @@ window.IntMapModules.radiationLayer = function (HOST) {
     setVis(IDS, true);
     /* the clock's decision belongs to the clock; the layer only carries it to load(iso) */
     try {
-      A.own(window.IntMapTime.on(e => {
+      A.own(IntMapTime.on(e => {
         const want = e && e.isLive ? null : ((e && e.iso) || null);
         if (want === obs.state().iso) return;
         obs.load(want);
@@ -303,4 +306,4 @@ window.IntMapModules.radiationLayer = function (HOST) {
     dispose: () => { try { RT().dispose(CAP); } catch (_) { } },
   };
   return window.IntMapRadiationObs;
-};
+}

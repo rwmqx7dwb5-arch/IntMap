@@ -38,14 +38,16 @@
  *  flat colour as soon as you are inside a city — it would stop being "a map image" exactly when the
  *  user is looking at a map. z4 is ~2,500 km across the square, so both faces always show coastline.
  * ==========================================================================*/
-window.IntMapModules = window.IntMapModules || {};
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
 
 window.IntMapBasemapSwitch = (function () {
   'use strict';
 
   var SIZE = 54;                       /* CSS px — matches .bm-square in css/intmap.css */
   var THUMB_Z = 4;                     /* the fixed zoom the thumbnail is drawn at (see the header) */
-  var _GE = function () { return window.IntMapGeoEngine; };
+  var _GE = function () { return IntMapGeoEngine; };
   function _cam() { try { var E = _GE(); return (E && E.camera) ? E.camera : null; } catch (_) { return null; } }
 
   /* the base map's own tones, so the "map" face is this app's map and not a generic one.
@@ -142,7 +144,7 @@ window.IntMapBasemapSwitch = (function () {
 
   /* ⚠ (#R165's rule) `getLang` IS A FUNCTION. The app reassigns the current language at runtime, so a
      captured value would freeze this control in whatever language it was built in. */
-  var L = (window.IntMapLang && window.IntMapLang.pick) ? window.IntMapLang.pick(function () {
+  var L = (IntMapLang && IntMapLang.pick) ? IntMapLang.pick(function () {
     try { return (window.IntMapI18N && window.IntMapI18N.lang()) || 'en'; } catch (_) { return 'en'; }
   }) : function (en) { return en; };
 

@@ -21,11 +21,10 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import vm from 'node:vm';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SUPA = 'https://sb.test';
@@ -149,15 +148,15 @@ test('② a rung that failed is not asked the same question again', async () => 
 });
 
 /* ── the time machine does not ask a year it already knows has no price ─────────────────────── */
-function companies(fetchViaProxyStub) {
-  const window = {};
-  const ctx = vm.createContext({ window, console, setTimeout, clearTimeout, Promise, Date, Math, JSON, Map, Set, URL, encodeURIComponent });
-  vm.runInContext(readFileSync(join(ROOT, 'js/companies.js'), 'utf8'), ctx);
-  return window.IntMapModules.companies({ fetchViaProxy: fetchViaProxyStub });
+/* (module-graph) js/companies.js is imported as the module it is and its exported factory called with
+   the host — no longer run as text in a vm with a hand-made window. */
+async function companies(fetchViaProxyStub) {
+  const M = await importModule('js/companies.js', { globals: { window: {} } });
+  return M.companies({ fetchViaProxy: fetchViaProxyStub });
 }
 test('① Chronos at 1850: no chart is asked for a year before a name\'s known history, and a «no data» is remembered', async () => {
   const charts = [];
-  const C = companies(async (u, o) => {
+  const C = await companies(async (u, o) => {
     if (/\/spark\?/.test(u)) {
       /* the range=max history: every name starts in 1972 except one the history does not cover */
       const syms = decodeURIComponent(/symbols=([^&]*)/.exec(u)[1]).split(',');

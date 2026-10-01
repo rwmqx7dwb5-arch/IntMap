@@ -16,6 +16,8 @@
 import { str, num, int, one, list, lat, lng } from './atlas-caps.js';
 import { personaPrompt } from './atlas-persona.js';
 import { settleWithin, lateNote } from './atlas-deadlines.js';
+import { IntMapTime } from './chronos.js';
+import { IntMapLang } from './lang-registry.js';
 
 export default [
   {
@@ -112,7 +114,7 @@ export default [
           const evBlock=evidence.map(e=>'['+e.id+'] '+e.title+(e.source?(' — '+e.source):'')+(e.date?(' ('+e.date+')'):'')+(e.place?(' — reported location: '+e.place):'')+(e.url?('\n     url: '+e.url):'')).join('\n');
           /* (#R113 §12.3) separate the REAL current date from the map's time-travel date. */
           const _nowISO=new Date().toISOString().slice(0,10);
-          let _mapISO=_nowISO; try{ if(window.IntMapTime&&window.IntMapTime.when){ const w=window.IntMapTime.when(); if(w) _mapISO=new Date(w).toISOString().slice(0,10); } }catch(_){}
+          let _mapISO=_nowISO; try{ if(IntMapTime&&IntMapTime.when){ const w=IntMapTime.when(); if(w) _mapISO=new Date(w).toISOString().slice(0,10); } }catch(_){}
           const dateLine='The real current date is '+_nowISO+'.'+((_mapISO&&_mapISO!==_nowISO)?(' The map is time-traveled to '+_mapISO+'; treat "as of" as '+_mapISO+', but the real current date is still '+_nowISO+' (never call '+_nowISO+' a future date).'):'');
           const sysR=personaPrompt('the research-mapping engine of the IntMap world map')/* (#R285) */+dateLine+' No web-search or function-calling tool is attached to this request — do NOT call tools or functions, and do NOT search the web. The action/type names elsewhere are plain data, not callable functions. Use ONLY the evidence records provided below. Return STRICT JSON only (no prose, no code fence): {"title":str,"overview":str,"items":[{"name":str,"locationName":str,"country":str,"summary":str,"date":"YYYY-MM-DD"|null,"evidenceIds":[str,...]}]}. HARD RULES: each item = ONE concrete, real OCCURRENCE or ENTITY that the evidence supports — for incident topics that means ONE specific incident (what happened, where, when, figures if reported). Every item MUST cite at least one evidenceId (e.g. "e3") from the evidence below; do NOT invent incidents, dates, casualties, place names, sources or URLs that are not in the evidence. Do NOT merge separate incidents into one item unless the evidence explicitly says they are the same incident. Give "locationName" (the specific city/place the evidence indicates) and "country" — do NOT output coordinates; the app resolves the real position from locationName + country. "summary" = 1-2 factual sentences in '+langR+' using only evidence details (date, actors, figures). "date" = the incident date if the evidence gives one, else null. NEVER emit region-level generalities, statistics-as-items, or trends as items. If the evidence supports fewer items than requested, return only those it supports — an EMPTY items array is preferable to a fabricated or generalised item. NEVER state an item count in the title or overview. "overview" = 2-4 sentence synthesis in '+langR+' (patterns are allowed in the overview, never in the items). "title" in '+langR+'.'
             +(wantN?(' The user asked for up to '+wantN+' items — return that many ONLY if the evidence genuinely supports that many distinct real ones.'):'')
@@ -169,10 +171,10 @@ export default [
           const topic=String(a.topic||a.question||a.query||'').trim();
           const place=String(a.place||a.region||a.location||'').trim();
           if(!topic&&!place) return R(false, warn('⚠ '+L('What should I research and map?','何を調べて地図に示しますか？','Was recherchieren & kartieren?','Что исследовать и нанести на карту?','¿Qué investigo y mapeo?')), {meta:{code:'PLACE_NOT_FOUND',category:'input',retryable:false,userGoalSatisfied:false,produced:[]}});
-          let live=true; try{ if(window.IntMapTime) live=window.IntMapTime.isLive(); }catch(_){}
+          let live=true; try{ if(IntMapTime) live=IntMapTime.isLive(); }catch(_){}
           let mode=String(a.temporalMode||a.temporal||'').toLowerCase(); if(!/^(historical|current|mixed)$/.test(mode)) mode=(!live?'historical':'current');
           let year=(a.year!=null&&isFinite(+a.year))?Math.round(+a.year):null;
-          if(year==null&&mode!=='current'){ try{ if(window.IntMapTime&&!live) year=window.IntMapTime.year(); }catch(_){} }
+          if(year==null&&mode!=='current'){ try{ if(IntMapTime&&!live) year=IntMapTime.year(); }catch(_){} }
           if(mode==='current') year=null;
           let evid=String(a.evidenceMode||'').toLowerCase(); if(!/^(historical|live|mixed)$/.test(evid)) evid=(mode==='historical'?'historical':mode==='mixed'?'mixed':'live');
           const semTarget=_lnorm(place||topic);
@@ -498,7 +500,7 @@ export default [
           /* report */
           const cd0=codeAtPoint(ctr.lng,ctr.lat); const cs=cd0&&countryStats[cd0];
           const popSum=(cities||[]).reduce((s2,c2)=>s2+c2.pop,0);
-          let html='<div style="font-weight:600;margin:2px 0 4px;">🎯 '+esc(label)+' — '+L('impact analysis within ','影響分析（半径','Wirkungsanalyse im Umkreis ','анализ воздействия в радиусе ','análisis de impacto en ')+kmR+' km'+(window.IntMapLang.t(HOST.lang,'','）'))+'</div>';
+          let html='<div style="font-weight:600;margin:2px 0 4px;">🎯 '+esc(label)+' — '+L('impact analysis within ','影響分析（半径','Wirkungsanalyse im Umkreis ','анализ воздействия в радиусе ','análisis de impacto en ')+kmR+' km'+(IntMapLang.t(HOST.lang,'','）'))+'</div>';
           if(evLine) html+='<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:5px;">'+esc(evLine)+'</div>';
           kinds.forEach(k=>{ const list=fac.filter(p2=>p2._k===k);
             html+='<div style="font-size:12px;margin:4px 0 1px;"><b>'+esc(k)+'</b>: '+list.length+(list.length?(' — '+list.slice(0,3).map(p2=>esc(p2.name||'?')+' ('+Math.round(p2._d)+' km)').join(', ')+(list.length>3?' …':'')):' '+L('(none found in OSM within the radius)','（半径内にOSM登録なし）','(keine in OSM im Radius)','(в OSM не найдено)','(ninguno en OSM en el radio)'))+'</div>'; });
@@ -560,7 +562,7 @@ export default [
           try{ let a2=180,b2=90,c2=-180,d2=-90; K._pois.forEach(p2=>{ a2=Math.min(a2,p2.lng);b2=Math.min(b2,p2.lat);c2=Math.max(c2,p2.lng);d2=Math.max(d2,p2.lat); });
             if(K._pois.length&&c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:90,maxZoom:8,duration:1100}); }catch(_){}
           const fmtH=h=>h<1?L('<1h ago','1時間以内','<1 h','<1 ч','<1 h'):Math.round(h)+L('h ago','時間前','h','ч назад','h');
-          let html='<div style="font-weight:600;margin:2px 0 4px;">🗞 '+L('Events (grouped news, last ','出来事（ニュースをイベント単位に集約・過去','Ereignisse (letzte ','События (за ','Eventos (últimas ')+hrs+'h'+(window.IntMapLang.t(HOST.lang,')','）'))+(ctx&&ctx.name?(' — '+esc(ctx.name)):'')+'</div>';
+          let html='<div style="font-weight:600;margin:2px 0 4px;">🗞 '+L('Events (grouped news, last ','出来事（ニュースをイベント単位に集約・過去','Ereignisse (letzte ','События (за ','Eventos (últimas ')+hrs+'h'+(IntMapLang.t(HOST.lang,')','）'))+(ctx&&ctx.name?(' — '+esc(ctx.name)):'')+'</div>';
           /* (#R340) the count is the number of articles the events are ACTUALLY built from, not the number
              loaded: the grouper caps the comparison at 600 (pairs are O(n²)) and skips an article whose
              subject will not resolve. Printing items.length would claim a coverage nobody delivered (#R320). */

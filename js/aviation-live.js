@@ -58,12 +58,13 @@ import './aviation-model.js';
 /* (#R408) …and the one timer wheel, so the two polls below are entries in it rather than two more
    independent wake-ups in a backgrounded tab — see js/runtime.js. */
 import { everyTick, stopTick } from './runtime.js';
+import { IntMapGeoEngine } from './geo-engine.js';
 
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.aviationLive = function (HOST) {
+
+export function aviationLive(HOST) {
   'use strict';
 
-  const GE = () => window.IntMapGeoEngine;
+  const GE = () => IntMapGeoEngine;
   const W = () => window.IntMapAviationWorker;
 
   const CLOUD_ID = 'lyr-aircraft-cloud';
@@ -740,4 +741,4 @@ window.IntMapModules.aviationLive = function (HOST) {
     isOn: () => ST.on,
     selected: () => ST.selected,
   };
-};
+}

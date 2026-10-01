@@ -337,16 +337,11 @@ function shellEntry(HOST) {
   return r.gis;
 }
 
-/* Registered where there is a window, which is every browser and no Node import. ⚠ AN UNGUARDED
-   `window.IntMapModules` at module top level made this file the one member of the fifteen that could
-   not be IMPORTED in Node at all (ReferenceError before the first line of anybody's test), which is
-   how the assembly came to be the part nothing headless could measure. */
-try {
-  if (typeof window !== 'undefined' && window) {
-    window.IntMapModules = window.IntMapModules || {};
-    window.IntMapModules.gisCore = shellEntry;
-  }
-} catch (_) { }
-
+/* (module-graph) the browser entry leaves through the module's own export (gisCore, below), not a
+   window registry — js/lazy-modules.js calls it on the namespace its import() resolves to. */
+mount.shellEntry = shellEntry;
 return mount;
 })();
+
+/** The shell's door to the assembler: `gisCore(HOST)` mounts a fresh assembly on the page and returns its API. */
+export function gisCore(HOST) { return mountGis.shellEntry(HOST); }

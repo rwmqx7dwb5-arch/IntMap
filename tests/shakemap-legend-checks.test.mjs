@@ -20,10 +20,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { importModule, langRegistry } from './helpers/import-module.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const FIX = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests/fixtures/shakemap-napa.json'), 'utf8'));
-const SRC = fs.readFileSync(path.join(ROOT, 'js/shakemap.js'), 'utf8');
+/* (module-graph) js/shakemap.js is IMPORTED, fresh per case: the stub renderer is handed at its
+   js/geo-engine.js import edge, and its strings come from the real language registry. */
+langRegistry();
+/* the object-URL statics are stubbed on a subclass, so `new URL` (which the loader itself uses) still works */
+const RealURL = globalThis.URL;
+class StubURL extends RealURL { static createObjectURL() { return 'blob:stub'; } static revokeObjectURL() { } }
 const PROD = FIX.products.reduce((b, p) => (!b || +p.preferredWeight > +b.preferredWeight) ? p : b, null);
 const U = k => PROD.contents[k].url;
 
@@ -53,14 +59,13 @@ function el(tag) {
   return node;
 }
 
-function load(rec) {
+async function load(rec) {
   const layers = rec.layers = { sources: {}, styles: {} };
   const host = el('div'), h4 = el('h4');
   h4.textContent = 'PLACEHOLDER';
   host.appendChild(h4);
   rec.host = host; rec.h4 = h4;
   const win = {
-    IntMapModules: {},
     IntMapGeoEngine: {
       layers: {
         has: id => Object.prototype.hasOwnProperty.call(layers.styles, id),
@@ -73,11 +78,10 @@ function load(rec) {
         setPaint: () => { }, getLayout: () => 'visible'
       }
     },
-    IntMapLang: { pickArgs: () => function () { return Array.prototype.slice.call(arguments); }, pick: () => ({ arr: a => a[0] }) },
     IntMapSafe: { html: s => String(s) },
     dispatchEvent: () => true,
     CustomEvent: function (n, o) { this.detail = o && o.detail; },
-    URL: { createObjectURL: () => 'blob:stub', revokeObjectURL: () => { } },
+    URL: StubURL,
     /* the same signature js/data-layers.js exports, and the same behaviour that
        caused the defect: the heading is written once, by whoever built the box */
     _registerLayerOpacity: () => { rec.registered = (rec.registered || 0) + 1; return host; },
@@ -108,15 +112,15 @@ function load(rec) {
     }
     throw new Error('unstubbed fetch: ' + url);
   };
-  new Function('window', SRC)(win);
-  return win.IntMapModules.shakeMap({ lang: 'en' });
+  const { shakeMap } = await importModule('js/shakemap.js', { globals: { window: win }, mocks: { 'js/geo-engine.js': { IntMapGeoEngine: win.IntMapGeoEngine } } });
+  return shakeMap({ lang: 'en' });
 }
 
 const body = rec => rec.host.kids.filter(k => k.className === 'shk-ctl').map(k => k.innerHTML).join('');
 
 /* ── ① opening a measure draws its legend, whichever door was used ──────────*/
 test('R549 ① open() mounts the legend itself, so a metric change never leaves the previous swatches up', async () => {
-  const rec = {}, M = load(rec);
+  const rec = {}, M = await load(rec);
   await M.open('nc72282711', 'mmi');
   const mmi = body(rec);
   assert.ok(mmi.length > 100, 'the legend body must have been written');
@@ -139,7 +143,7 @@ test('R549 ① open() mounts the legend itself, so a metric change never leaves 
 
 /* ── ② the heading names the measure that is actually drawn ─────────────────*/
 test('R549 ② the legend heading is rewritten on every open, not only when the box is created', async () => {
-  const rec = {}, M = load(rec);
+  const rec = {}, M = await load(rec);
   await M.open('nc72282711', 'mmi');
   const first = rec.h4.textContent;
   assert.ok(/MMI/.test(first), 'the heading names the open measure: ' + first);

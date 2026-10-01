@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
-import { asClassicScript } from './app-source.mjs';
+import { importModule } from './helpers/import-module.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { decodeStarCatalogue } from '../js/star-catalogue.js';
 import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
@@ -159,17 +159,17 @@ test('R208 ③c: the camera can leave the solar system, and the ceiling is one f
 
 /* ═══ #R208 ⑤ THE SKY FROM A POINT ON THE GROUND ═══════════════════════════════════════════════
    js/night-sky.js touches the DOM only inside ensureDOM(), so the astronomy is exercised with a stub. */
-function nightSky() {
+async function nightSky() {
   const win = { addEventListener() { }, devicePixelRatio: 1 };
-  /* ⚠ (#R221) THE LANGUAGE REGISTRY IS A DEPENDENCY OF EVERY MODULE: js/night-sky.js asks
-     window.IntMapLang for its label helper, and throws on the first line that reaches for it without. */
-  new Function('window', asClassicScript(read('js/lang-registry.js')))(win);
-  new Function('window', 'document', asClassicScript(read('js/night-sky.js')))(win, { createElement: () => ({ style: {}, appendChild() { } }) });
+  /* ⚠ (#R221) THE LANGUAGE REGISTRY IS A DEPENDENCY OF EVERY MODULE: js/night-sky.js reads IntMapLang
+     for its label helper. (module-graph) It now IMPORTS it, so the file is evaluated by import and its
+     imports (lang-registry, chronos, runtime) are the real modules — only the browser is a stub. */
+  await importModule('js/night-sky.js', { globals: { window: win, document: { createElement: () => ({ style: {}, appendChild() { } }) } } });
   return win.IntMapNightSky;
 }
 
-test('R208 ⑤a: alt/az is checked against identities, not against itself', () => {
-  const NS = nightSky();
+test('R208 ⑤a: alt/az is checked against identities, not against itself', async () => {
+  const NS = await nightSky();
   /* ⚠ THESE ARE EXACT RELATIONS, not "expected values" copied out of another program. */
   for (const lat of [-70, -23.4, 0, 35.68, 51.5, 78]) {
     /* 1. THE POLE STAR SITS AT YOUR LATITUDE — for every observer at every instant. */
@@ -193,8 +193,8 @@ test('R208 ⑤a: alt/az is checked against identities, not against itself', () =
   }
 });
 
-test('R208 ⑤b: the projection puts the zenith at the centre and EAST ON THE LEFT', () => {
-  const NS = nightSky();
+test('R208 ⑤b: the projection puts the zenith at the centre and EAST ON THE LEFT', async () => {
+  const NS = await nightSky();
   const R = 100;
   /* ⚠ not deepEqual against [0,0]: −cos(0)·0 is NEGATIVE ZERO. The claim is "at the centre". */
   const z = NS.project(90, 0, R);
@@ -210,8 +210,8 @@ test('R208 ⑤b: the projection puts the zenith at the centre and EAST ON THE LE
   assert.ok(w[0] < -R * 0.99, 'and west opposite it');
 });
 
-test('R208 ⑤c: the horizon angle takes the Earth curving away, and the sea is a surface', () => {
-  const NS = nightSky();
+test('R208 ⑤c: the horizon angle takes the Earth curving away, and the sea is a surface', async () => {
+  const NS = await nightSky();
   /* a 1,000 m peak 20 km away, seen from sea level. Flat-earth would be atan(1000/20000) = 2.862°; the
      curvature drop at 20 km with k = 1.13 is 27.8 m, so the real angle is 2.783°. */
   const flat = Math.atan2(1000, 20000) * 180 / Math.PI;

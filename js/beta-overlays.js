@@ -15,11 +15,14 @@ import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer w
 import { jsonWithin } from './fetch-deadline.js';   /* (fetch-deadline-layer) the neighbouring-year prefetch, under a clock — see hbPrefetch */
 import { clockFor } from './proxy-fetch.js';
 import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each — see js/data-door.js */
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.betaOverlays=function(HOST){
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function betaOverlays(HOST){
   /* (#R251) the language helper and its ARRAY form — see `pickArgs` in js/lang-registry.js. The tuples below were bare array literals, which no instrument can see, so every language past the two they listed read English. */
-  const L=window.IntMapLang.pick(()=>HOST.lang), LA=window.IntMapLang.pickArgs();
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  const L=IntMapLang.pick(()=>HOST.lang), LA=IntMapLang.pickArgs();
+ const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
 
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
@@ -79,12 +82,12 @@ window.IntMapModules.betaOverlays=function(HOST){
         if(el){ let d=el.querySelector('.ukr-asof'); if(!d){ d=document.createElement('div'); d.className='ukr-asof'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; el.appendChild(d); }
           /* DeepState's datetime is a non-ISO string ("11.06 o 13:56") — show it verbatim if unparsable */
           let ws=new Date().toLocaleString(); if(when){ const dt=new Date(when); ws=isNaN(dt.getTime())?String(when):dt.toLocaleString(); }
-          d.textContent=(window.IntMapLang.t(HOST.lang,"As of: ","更新: ","Stand: ","По состоянию на: ","Actualizado: "))+ws+' · DeepState'; }
+          d.textContent=(IntMapLang.t(HOST.lang,"As of: ","更新: ","Stand: ","По состоянию на: ","Actualizado: "))+ws+' · DeepState'; }
         return true;
       }catch(_){} }
       const el=document.getElementById('data-legend-ukrfront');
       if(el){ let d=el.querySelector('.ukr-asof'); if(!d){ d=document.createElement('div'); d.className='ukr-asof'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; el.appendChild(d); }
-        d.textContent=window.IntMapLang.t(HOST.lang,"Could not load — toggle again later.","取得できませんでした — 後でもう一度オンにしてください。","Laden fehlgeschlagen — später erneut einschalten.","Не удалось загрузить — включите позже ещё раз.","No se pudo cargar; vuelva a activarlo más tarde."); }
+        d.textContent=IntMapLang.t(HOST.lang,"Could not load — toggle again later.","取得できませんでした — 後でもう一度オンにしてください。","Laden fehlgeschlagen — später erneut einschalten.","Не удалось загрузить — включите позже ещё раз.","No se pudo cargar; vuelva a activarlo más tarde."); }
       return false;
     }
     /* (#R21) Legend mismatch fix ("凡例が、地図とあっていない") — the color key is rebuilt FROM the
@@ -109,11 +112,11 @@ window.IntMapModules.betaOverlays=function(HOST){
       polys.forEach(f=>{ const p=f.properties||{}; const s=ukrStatusOf(p); const c=String(p.fill||'#a52714').toLowerCase();
         const g=groups.get(s)||{n:0,colors:{}}; g.n++; g.colors[c]=(g.colors[c]||0)+1; groups.set(s,g); });
       groups.forEach(g=>{ g.color=Object.entries(g.colors).sort((a,b)=>b[1]-a[1])[0][0]; });
-      const label=(s)=>({ occupied:window.IntMapLang.t(HOST.lang,"Russian-occupied","ロシア占領地域","Russisch besetzt","Оккупировано Россией","Ocupado por Rusia"),
-                          crimea:window.IntMapLang.t(HOST.lang,"Crimea / Donbas (pre-2022)","クリミア・ドンバス（2022年以前）","Krim / Donbas (vor 2022)","Крым / Донбасс (до 2022)","Crimea / Dombás (antes de 2022)"),
-                          liberated:window.IntMapLang.t(HOST.lang,"Liberated","解放地域","Befreit","Освобождено","Liberado"),
-                          unknown:window.IntMapLang.t(HOST.lang,"Unknown status","状況不明の区域","Status unbekannt","Статус неизвестен","Estado desconocido"),
-                          other:window.IntMapLang.t(HOST.lang,"Other claimed area","その他の主張地域","Sonstiges beanspruchtes Gebiet","Прочие спорные территории","Otra zona reclamada") }[s]||s);
+      const label=(s)=>({ occupied:IntMapLang.t(HOST.lang,"Russian-occupied","ロシア占領地域","Russisch besetzt","Оккупировано Россией","Ocupado por Rusia"),
+                          crimea:IntMapLang.t(HOST.lang,"Crimea / Donbas (pre-2022)","クリミア・ドンバス（2022年以前）","Krim / Donbas (vor 2022)","Крым / Донбасс (до 2022)","Crimea / Dombás (antes de 2022)"),
+                          liberated:IntMapLang.t(HOST.lang,"Liberated","解放地域","Befreit","Освобождено","Liberado"),
+                          unknown:IntMapLang.t(HOST.lang,"Unknown status","状況不明の区域","Status unbekannt","Статус неизвестен","Estado desconocido"),
+                          other:IntMapLang.t(HOST.lang,"Other claimed area","その他の主張地域","Sonstiges beanspruchtes Gebiet","Прочие спорные территории","Otra zona reclamada") }[s]||s);
       const order=['occupied','crimea','liberated','unknown','other'];
       const rows=order.filter(s=>groups.has(s)).map(s=>{ const g=groups.get(s);
         return '<div style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:10px;border-radius:2px;flex:none;background:'+g.color+';opacity:0.6;"></span>'+label(s)+' <span style="opacity:0.5;font-size:10px;">('+g.n+')</span></div>'; });
@@ -141,9 +144,9 @@ window.IntMapModules.betaOverlays=function(HOST){
               const key=document.createElement('div'); key.className='ukr-key'; key.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
               const sw=(c,solid)=>'<span style="width:14px;height:'+(solid?'10px':'3px')+';border-radius:2px;flex:none;background:'+c+';'+(solid?'opacity:0.55;':'')+'"></span>';
               key.innerHTML=
-                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#a52714',true)+(window.IntMapLang.t(HOST.lang,"Russian-occupied","ロシア占領地域","Russisch besetzt","Оккупировано Россией","Ocupado por Rusia"))+'</div>'+
-                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#0f9d58',true)+(window.IntMapLang.t(HOST.lang,"Liberated","解放地域","Befreit","Освобождено","Liberado"))+'</div>'+
-                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#bcaaa4',true)+(window.IntMapLang.t(HOST.lang,"Unknown status","状況不明の区域","Status unbekannt","Статус неизвестен","Estado desconocido"))+'</div>';
+                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#a52714',true)+(IntMapLang.t(HOST.lang,"Russian-occupied","ロシア占領地域","Russisch besetzt","Оккупировано Россией","Ocupado por Rusia"))+'</div>'+
+                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#0f9d58',true)+(IntMapLang.t(HOST.lang,"Liberated","解放地域","Befreit","Освобождено","Liberado"))+'</div>'+
+                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#bcaaa4',true)+(IntMapLang.t(HOST.lang,"Unknown status","状況不明の区域","Status unbekannt","Статус неизвестен","Estado desconocido"))+'</div>';
               const op=el.querySelector('.dl-op-row'); if(op) el.insertBefore(key,op); else el.appendChild(key);
             }
           }
@@ -166,7 +169,7 @@ window.IntMapModules.betaOverlays=function(HOST){
       const a=()=>{ if(!bldgEnsure()){ GE().events.once('idle',a); return; } setVis(['ofm-bldg-3d'],on); };
       a();
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('bldg3d',LA('3D buildings (cities)','3D建物（都市）','3D-Gebäude (Städte)','3D-здания (города)','Edificios 3D (ciudades)'),['ofm-bldg-3d'],'beta-dl-bldg3d');
-             if(el&&!el.querySelector('.bldg-hint')){ const d=document.createElement('div'); d.className='bldg-hint'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=window.IntMapLang.t(HOST.lang,"Shows from zoom 14. Tilt (3D button / right-drag) to see depth.","ズーム14以上で表示。3D/ドラッグ右クリックで傾けると立体に。","Ab Zoomstufe 14 sichtbar. Neigen (3D-Schaltfläche / Rechtsziehen) zeigt die Tiefe.","Показывается с 14-го зума. Наклоните (кнопка 3D / перетаскивание правой кнопкой), чтобы увидеть объём.","Se muestra a partir del zoom 14. Incline (botón 3D / arrastrar con el botón derecho) para ver el relieve."); el.appendChild(d); } }
+             if(el&&!el.querySelector('.bldg-hint')){ const d=document.createElement('div'); d.className='bldg-hint'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=IntMapLang.t(HOST.lang,"Shows from zoom 14. Tilt (3D button / right-drag) to see depth.","ズーム14以上で表示。3D/ドラッグ右クリックで傾けると立体に。","Ab Zoomstufe 14 sichtbar. Neigen (3D-Schaltfläche / Rechtsziehen) zeigt die Tiefe.","Показывается с 14-го зума. Наклоните (кнопка 3D / перетаскивание правой кнопкой), чтобы увидеть объём.","Se muestra a partir del zoom 14. Incline (botón 3D / arrastrar con el botón derecho) para ver el relieve."); el.appendChild(d); } }
            else if(window._hideGenericLegend) window._hideGenericLegend('bldg3d'); }catch(_){}
     }
 
@@ -214,10 +217,10 @@ window.IntMapModules.betaOverlays=function(HOST){
           break;
         }catch(_){} }
         const note2=document.querySelector('#data-legend-histb .hb-note');
-        if(note2) note2.textContent=fc?(window.IntMapLang.t(HOST.lang,"Source: historical-basemaps (boundaries approximate)","出典: historical-basemaps（境界は概略）","Quelle: historical-basemaps (Grenzen näherungsweise)","Источник: historical-basemaps (границы приблизительные)","Fuente: historical-basemaps (fronteras aproximadas)")):(window.IntMapLang.t(HOST.lang,"Could not load.","取得できませんでした。","Laden fehlgeschlagen.","Не удалось загрузить.","No se pudo cargar."));
+        if(note2) note2.textContent=fc?(IntMapLang.t(HOST.lang,"Source: historical-basemaps (boundaries approximate)","出典: historical-basemaps（境界は概略）","Quelle: historical-basemaps (Grenzen näherungsweise)","Источник: historical-basemaps (границы приблизительные)","Fuente: historical-basemaps (fronteras aproximadas)")):(IntMapLang.t(HOST.lang,"Could not load.","取得できませんでした。","Laden fehlgeschlagen.","Не удалось загрузить.","No se pudo cargar."));
       } else {
         const note=document.querySelector('#data-legend-histb .hb-note');
-        if(note) note.textContent=window.IntMapLang.t(HOST.lang,"Source: historical-basemaps (boundaries approximate)","出典: historical-basemaps（境界は概略）","Quelle: historical-basemaps (Grenzen näherungsweise)","Источник: historical-basemaps (границы приблизительные)","Fuente: historical-basemaps (fronteras aproximadas)");
+        if(note) note.textContent=IntMapLang.t(HOST.lang,"Source: historical-basemaps (boundaries approximate)","出典: historical-basemaps（境界は概略）","Quelle: historical-basemaps (Grenzen näherungsweise)","Источник: historical-basemaps (границы приблизительные)","Fuente: historical-basemaps (fronteras aproximadas)");
       }
       if(fc&&hbYear===year){ try{ GE().layers.setSourceData('hb-src',fc); }catch(_){} }
       /* warm the neighboring years in the background so slider scrubbing is instant */
@@ -251,7 +254,7 @@ window.IntMapModules.betaOverlays=function(HOST){
             if(isMob){
               /* (#R22) MOBILE: a native iOS pulldown of the available years instead of the fiddly slider
                  ("Historic bordersの凡例は、モバイル版ではiOS対応のプルダウンに"). */
-              row.innerHTML='<label style="display:contents;">'+(window.IntMapLang.t(HOST.lang,"Year","年代","Jahr","Год","Año"))+' <select class="hb-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
+              row.innerHTML='<label style="display:contents;">'+(IntMapLang.t(HOST.lang,"Year","年代","Jahr","Год","Año"))+' <select class="hb-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
                 HB_YEARS.map(y=>'<option value="'+y+'"'+(y===hbYear?' selected':'')+'>'+y+'</option>').join('')+'</select></label>';
               el.appendChild(row); el.appendChild(note);
               row.querySelector('.hb-year-sel').addEventListener('change',(e)=>{ hbYear=+e.target.value||1920; hbLoad(hbYear); });
@@ -259,7 +262,7 @@ window.IntMapModules.betaOverlays=function(HOST){
               /* (#R21) Tick alignment fix: ticks live INSIDE the same flex cell as the range input,
                  each positioned at the exact center of its thumb stop. */
               row.style.alignItems='flex-start';
-              row.innerHTML='<label style="display:contents;">'+(window.IntMapLang.t(HOST.lang,"Year","年代","Jahr","Год","Año"))+' <span class="hb-slider-wrap" style="flex:1;position:relative;display:block;min-width:0;">'+
+              row.innerHTML='<label style="display:contents;">'+(IntMapLang.t(HOST.lang,"Year","年代","Jahr","Год","Año"))+' <span class="hb-slider-wrap" style="flex:1;position:relative;display:block;min-width:0;">'+
                 '<input type="range" min="0" max="'+(HB_YEARS.length-1)+'" step="1" value="'+HB_YEARS.indexOf(hbYear)+'" style="width:100%;display:block;margin:0;box-sizing:border-box;">'+
                 '<span class="hb-ticks" aria-hidden="true" style="display:block;position:relative;height:15px;">'+
                 HB_YEARS.map((y,i)=>'<span style="position:absolute;top:1px;left:calc(8px + (100% - 16px) * '+(i/(HB_YEARS.length-1)).toFixed(4)+');transform:translateX(-50%);font-size:8.5px;color:var(--text-muted);white-space:nowrap;">'+String(y).slice(2)+'</span>').join('')+
@@ -273,7 +276,7 @@ window.IntMapModules.betaOverlays=function(HOST){
     }
     /* (#R94) Historical borders follow the master clock: travel to a year → the nearest snapshot at/before it;
        back to "Now" → the newest snapshot (2010). Only reloads the geojson while the layer is on. */
-    try{ if(window.IntMapTime) window.IntMapTime.on(e=>{
+    try{ if(IntMapTime) IntMapTime.on(e=>{
       let ny; if(e.isLive) ny=HB_YEARS[HB_YEARS.length-1]; else { ny=HB_YEARS[0]; for(const v of HB_YEARS){ if(v<=e.year) ny=v; } }
       if(ny===hbYear) return; hbYear=ny;
       try{ const val=document.querySelector('#data-legend-histb .hb-year-val'); if(val) val.textContent=hbYear;
@@ -305,7 +308,7 @@ window.IntMapModules.betaOverlays=function(HOST){
     const VL_IDS=['volc2-halo','volc2-pt','volc2-lbl'];
     let volcFC=null, volcLoading=false, volcMode='recency';
     const VOLC_MODES=['recency','vei','status','people'];
-    const nowYear=()=>{ try{ return window.IntMapTime.year(); }catch(_){ return new Date().getFullYear(); } };
+    const nowYear=()=>{ try{ return IntMapTime.year(); }catch(_){ return new Date().getFullYear(); } };
 
     /* radius: the largest VEI this volcano has produced, on top of the zoom ramp. An undated volcano
        with no VEI on record sits at the VEI-1 size rather than at zero — absence of a record is not
@@ -366,7 +369,7 @@ window.IntMapModules.betaOverlays=function(HOST){
       }catch(_){ return false; } }
     let popup=null;
     function volcMiniPopup(f,p){
-      const yr=(p.y==null||p.y==='null')?(window.IntMapLang.t(HOST.lang,"No dated eruption","噴火記録なし","Kein datierter Ausbruch","Датированных извержений нет","Sin erupción datada")):((p.y<0?(jp()?('紀元前'+(-p.y)):('BCE '+(-p.y))):p.y)+(window.IntMapLang.t(HOST.lang," last eruption","年に最終噴火"," letzter Ausbruch"," последнее извержение"," última erupción")));
+      const yr=(p.y==null||p.y==='null')?(IntMapLang.t(HOST.lang,"No dated eruption","噴火記録なし","Kein datierter Ausbruch","Датированных извержений нет","Sin erupción datada")):((p.y<0?(jp()?('紀元前'+(-p.y)):('BCE '+(-p.y))):p.y)+(IntMapLang.t(HOST.lang," last eruption","年に最終噴火"," letzter Ausbruch"," последнее извержение"," última erupción")));
       /* ⚠ (#R395) this is the module-unavailable fallback, so the vocabulary may or may not be here.
          When it is, the country and the type are shown in the reader's language like everywhere else;
          when it is not, the catalog's own English is a truthful answer and an empty line is not. */
@@ -381,7 +384,7 @@ window.IntMapModules.betaOverlays=function(HOST){
       if(volcLoading) return; volcLoading=true;
       try{ const j=await loadData('data/volcanoes_gvp.json');
         if(j&&Array.isArray(j.features)){ volcFC=j; try{ GE().layers.setSourceData('volc2-src',volcFC); }catch(_){} volcLegend(); }
-      }catch(_){ try{ imToast(window.IntMapLang.t(HOST.lang,"Could not load volcano data","火山データを読み込めませんでした","Vulkandaten konnten nicht geladen werden","Не удалось загрузить данные о вулканах","No se pudieron cargar los datos de volcanes")); }catch(_){} }
+      }catch(_){ try{ imToast(IntMapLang.t(HOST.lang,"Could not load volcano data","火山データを読み込めませんでした","Vulkandaten konnten nicht geladen werden","Не удалось загрузить данные о вулканах","No se pudieron cargar los datos de volcanes")); }catch(_){} }
       volcLoading=false; }
 
     /* ⚠ THE LIVE STATUS IS WRITTEN ONTO THE FEATURES, NOT LOOKED UP AT PAINT TIME. A paint
@@ -494,7 +497,7 @@ window.IntMapModules.betaOverlays=function(HOST){
     function volcSetTime(on){
       volcTime.on=!!on;
       if(!volcTime.on){ if(volcTime.off){ try{ volcTime.off(); }catch(_){} volcTime.off=null; } volcApplyTime(); return true; }
-      if(!volcTime.off){ try{ volcTime.off=window.IntMapTime.on(()=>{ if(volcTime.on&&nowYear()!==volcTime.year) volcApplyTime(); }); }catch(_){} }
+      if(!volcTime.off){ try{ volcTime.off=IntMapTime.on(()=>{ if(volcTime.on&&nowYear()!==volcTime.year) volcApplyTime(); }); }catch(_){} }
       if(volcTime.index){ volcApplyTime(); return true; }
       try{ window.IntMapLazy.need('volcanoIntel').then(ok=>{
         if(!ok||!window.IntMapVolcano) return;
@@ -589,7 +592,7 @@ window.IntMapModules.betaOverlays=function(HOST){
         const n=volcFC?volcFC.features.length:0;
         const hol=(volcFC&&Number.isFinite(volcFC.holocene))?volcFC.holocene:n;
         const extra=Math.max(0,n-hol);
-        const NUMF=(x)=>{ try{ return x.toLocaleString(window.IntMapLang.locale(HOST.lang,'en-GB')); }catch(_){ return String(x); } };
+        const NUMF=(x)=>{ try{ return x.toLocaleString(IntMapLang.locale(HOST.lang,'en-GB')); }catch(_){ return String(x); } };
         let cat='';
         if(n) cat=(extra
           ?L('{h} Holocene volcanoes + {m} older ones an observatory watches',
@@ -640,7 +643,7 @@ window.IntMapModules.betaOverlays=function(HOST){
           if(ok&&window.IntMapVolcanoLayers){ window.IntMapVolcanoLayers[which](true); return; }
           const cb=document.getElementById('beta-dl-volc'+(which==='hazard'?'haz':which));
           if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); }
-          try{ imToast(window.IntMapLang.t(HOST.lang,'Could not load the volcano overlays','火山オーバーレイを読み込めませんでした','Vulkan-Overlays konnten nicht geladen werden','Не удалось загрузить слои вулканов','No se pudieron cargar las capas volcánicas')); }catch(_){}
+          try{ imToast(IntMapLang.t(HOST.lang,'Could not load the volcano overlays','火山オーバーレイを読み込めませんでした','Vulkan-Overlays konnten nicht geladen werden','Не удалось загрузить слои вулканов','No se pudieron cargar las capas volcánicas')); }catch(_){}
         });
       }catch(_){}
     }
@@ -683,7 +686,7 @@ window.IntMapModules.betaOverlays=function(HOST){
         OS.register('volcano.time',(ctx)=>{
           const p=(ctx&&ctx.params)||{};
           try{ const cb=document.getElementById('beta-dl-volc2'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change')); } }catch(_){}
-          if(p.year!=null){ try{ window.IntMapTime.setYear(+p.year); }catch(_){} }
+          if(p.year!=null){ try{ IntMapTime.setYear(+p.year); }catch(_){} }
           return { ok:volcSetTime(p.on!==false), year:nowYear() };
         },{label:'Volcanoes erupting in the map’s year',group:'volcano'});
         [['volcano.ash','ash','Volcanic ash areas (SIGMET)','beta-dl-volcash'],
@@ -758,7 +761,7 @@ window.IntMapModules.betaOverlays=function(HOST){
        publishes no Traditional Chinese List — so a zh-Hant reader is shown the English name, which
        is true, rather than a Simplified one, which would be the guess. */
     function whsLocale(){
-      let t='en'; try{ t=window.IntMapLang.htmlTag(HOST.lang)||'en'; }catch(_){}
+      let t='en'; try{ t=IntMapLang.htmlTag(HOST.lang)||'en'; }catch(_){}
       const has=(whsDoc&&whsDoc.locales)||['en'];
       return has.indexOf(t)>=0?t:'en';
     }
@@ -849,7 +852,7 @@ window.IntMapModules.betaOverlays=function(HOST){
           try{ if(GE().layers.has('whs-pt')) GE().layers.setPaint('whs-pt','circle-color',whsColour()); }catch(_){}
           whsApplyFilter(); whsLegend();
         }
-      }catch(_){ try{ imToast(window.IntMapLang.t(HOST.lang,'Could not load the World Heritage list','世界遺産の一覧を読み込めませんでした','Die Welterbeliste konnte nicht geladen werden','Не удалось загрузить список всемирного наследия','No se pudo cargar la lista del Patrimonio Mundial')); }catch(_){} }
+      }catch(_){ try{ imToast(IntMapLang.t(HOST.lang,'Could not load the World Heritage list','世界遺産の一覧を読み込めませんでした','Die Welterbeliste konnte nicht geladen werden','Не удалось загрузить список всемирного наследия','No se pudo cargar la lista del Patrimonio Mundial')); }catch(_){} }
       whsLoading=false;
     }
     /* ⚠ THE DESCRIPTIONS ARE ONE FILE PER LANGUAGE and the reader fetches one of them, once, on the
@@ -950,7 +953,7 @@ window.IntMapModules.betaOverlays=function(HOST){
            three properties that publish no coordinate at all are counted here rather than quietly
            dropped: a map that shows 1,270 of 1,273 and says «1,273» is telling the reader something
            it did not do. */
-        const NUMF=(x)=>{ try{ return x.toLocaleString(window.IntMapLang.locale(HOST.lang,'en-GB')); }catch(_){ return String(x); } };
+        const NUMF=(x)=>{ try{ return x.toLocaleString(IntMapLang.locale(HOST.lang,'en-GB')); }catch(_){ return String(x); } };
         if(whsDoc){
           const drawn=new Set(); for(let i=0;i<whsDoc.points.length;i+=4) drawn.add(whsDoc.points[i]);
           const undrawn=whsDoc.sites.length-drawn.size;
@@ -1190,4 +1193,4 @@ window.IntMapModules.betaOverlays=function(HOST){
     }
     window.IntMapBeta={ukrToggle,bldgToggle,hbToggle,volcToggle,whsToggle,featuresOf,hbCurrent:()=>({year:hbYear,fc:hbCache.get(hbYear)||null})};
   })();
-};
+}

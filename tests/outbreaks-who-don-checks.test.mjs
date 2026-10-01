@@ -13,10 +13,10 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import vm from 'node:vm';
 import { createExpression } from '@maplibre/maplibre-gl-style-spec';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { fileUrl } from './helpers/import-module.mjs';
 import { buildTaxonIndex, toEvent, eventName, donName, readCorpus, WHO_ITEM_BASE } from '../scripts/build-who-don.mjs';
 import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
@@ -180,10 +180,14 @@ test('#R650 ⑥ the layer is wired into the eager shell — row, factory, and th
   /* ⚠ READ, NOT RUN: wiring is a property of src/main.js and js/app-body.js (the eager shell), not of anything that runs in Node. */
   const main = read('src/main.js');
   assert.match(main, /import '\.\.\/js\/outbreaks\.js'/, 'imported');
-  assert.match(main, /'outbreaks'/, 'and listed as an eager factory, not a lazy one');
-  assert.match(read('js/app-body.js'), /window\.IntMapModules\.outbreaks\(IM_HOST\)/, 'and instantiated');
+  /* (module-graph) the factory registry is gone: «eager» is now the shell's static import of the
+     factory by name, and the lazy loader's table not naming the file */
+  const body = read('js/app-body.js');
+  assert.match(body, /^import \{ outbreaks \} from '\.\/outbreaks\.js';/m, 'and imported by the eager shell as a factory');
+  assert.ok(!/outbreaks\.js/.test(codeOnly(read('js/lazy-modules.js'))), 'not a lazy one');
+  assert.match(body, /\boutbreaks\(IM_HOST\)/, 'and instantiated');
   const src = read('js/outbreaks.js');
-  assert.match(src, /window\.IntMapModules\.outbreaks = function/);
+  assert.match(src, /export function outbreaks\(HOST\)/);
   assert.match(src, /window\.IntMapOutbreaks =/);
   /* the row must exist before anyone can ask for the layer — that is WHY it is eager */
   assert.match(src, /wp-dl-outbreaks/);
@@ -270,28 +274,27 @@ test('#R650 ⑩ WHO is named in the one source registry the attribution page rea
   assert.match(read('js/reference-data.js'), /WHO Disease Outbreak News/);
 });
 
-test('#R650 ⑪ ONE name rule, TWO readers — the archive and the live tail cannot disagree (#R660)', () => {
+test('#R650 ⑪ ONE name rule, TWO readers — the archive and the live tail cannot disagree (#R660)', async () => {
   /* ⚠⚠⚠ THE DEFECT THIS EXISTS FOR: #R650 kept the rule in scripts/build-who-don.mjs and wrote, in
      both headers, that js/outbreaks.js «never re-derives a name». The layer's live tail was in fact
      taking `EmergencyEvent.Title` RAW, so WHO's newest 100 items came out named 26 ways differently
      from the corpus sitting beside them — including «Mpox (monkeypox)- Democratic Republic of the
      Congo», the exact string a reader saw standing in the pathogen filter. Rebuilding the corpus
      could not reach that path, because the next DON WHO publishes arrives through it. */
-  const ctx = vm.createContext({ window: {} });
-  vm.runInContext(read('js/outbreaks.js'), ctx, { filename: 'js/outbreaks.js' });
-  const browser = ctx.window.IntMapWhoDonName;
+  /* (module-graph) the rule is an EXPORT of js/outbreaks.js, imported — the same module instance the
+     build script's own import resolved to, so identity by REFERENCE now holds and is asserted */
+  const { IntMapWhoDonName: browser } = await import(fileUrl('js/outbreaks.js'));
   assert.ok(browser && typeof browser.donName === 'function',
-    'js/outbreaks.js must publish window.IntMapWhoDonName at TOP LEVEL — the build script evaluates it');
-
-  /* ⚠ identity by REFERENCE cannot hold: this test evaluates the file in its own vm context. So the
-     question is asked of the SOURCE, and then of the build script — which must hold no rule of its
-     own for the two to drift apart in. */
+    'js/outbreaks.js must export IntMapWhoDonName at TOP LEVEL — the build script imports it');
+  assert.equal(eventName, browser.eventName, 'the build script must export the layer’s function, not a copy of it');
+  assert.equal(donName, browser.donName);
+  /* …and of the SOURCE too, so a copy that happens to be wired back cannot hide */
   assert.equal(eventName.toString(), browser.eventName.toString(),
     'the build script must export the layer’s function, not a copy of it');
   assert.equal(donName.toString(), browser.donName.toString());
   const build = codeOnly(read('scripts/build-who-don.mjs'));
-  assert.match(build, /vm\.runInContext\([\s\S]{0,160}outbreaks\.js/,
-    'the build script must READ js/outbreaks.js for the rule');
+  assert.match(build, /import\(['"]\.\.\/js\/outbreaks\.js['"]\)|from ['"]\.\.\/js\/outbreaks\.js['"]/,
+    'the build script must IMPORT js/outbreaks.js for the rule');
   for (const own of ['SEP', 'REVISION', 'BARE_YEAR']) {
     assert.ok(!new RegExp(String.raw`\bconst\s+${own}\s*=`).test(build),
       `scripts/build-who-don.mjs defines its own ${own} — that is the second copy of the rule`);
@@ -299,7 +302,7 @@ test('#R650 ⑪ ONE name rule, TWO readers — the archive and the live tail can
 
   /* and the layer must not read WHO's event title anywhere else. Comments are stripped first,
      because a check that reads prose is a check prose can satisfy (#R505). */
-  const body = codeOnly(read('js/outbreaks.js').split('window.IntMapModules.outbreaks =')[1]);
+  const body = codeOnly(read('js/outbreaks.js').split('export function outbreaks(')[1]);
   assert.ok(!/\bev\s*(?:&&\s*ev)?\.Title\b/.test(body) && !/EmergencyEvent\s*\.\s*Title/.test(body),
     'the live tail must get its name from window.IntMapWhoDonName.donName, never from ev.Title');
 

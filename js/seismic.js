@@ -59,10 +59,12 @@ import { QUAKE_EVENTS, ruptureRing, momentOf, fetchRuptureRing } from './seismic
 import './seismic-site.js';
 import './seismic-subfault.js';
 import './earth-structure.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
 
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.seismic=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+
+export function seismic(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const makeDraggable=HOST.makeDraggable;
   /* (#R189) the DEM the intensity field reads — the same samplers terrain-water uses */
@@ -83,7 +85,7 @@ window.IntMapModules.seismic=function(HOST){
 
   window.IntMapSeismic=(function(){
     if(!GE().hasRenderer()) return { open(){}, close(){}, state:()=>({open:false}) };
-    const L=window.IntMapLang.pick(()=>HOST.lang);
+    const L=IntMapLang.pick(()=>HOST.lang);
     const D=Math.PI/180, RE=6371.0;                       /* IASP91 works in km */
     const SRC='seis-src';
 
@@ -3893,7 +3895,7 @@ window.IntMapModules.seismic=function(HOST){
            give the map back its pixels". The header stays (it is also the drag handle), the body is
            the only thing hidden, and `minimised` lives outside render() so a redraw keeps it. */
         +'<button class="sq-min" title="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" aria-label="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;line-height:1;cursor:pointer;padding:0 4px;">'+(minimised?'▢':'—')+'</button>'
-        +'<button aria-label="'+window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="sq-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
+        +'<button aria-label="'+IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="sq-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
         /* ⚠⚠ (#R215) `display` WAS DECLARED TWICE IN THE SAME INLINE STYLE, AND THE SECOND ONE WON.
            「地震・津波シミュレータウィンドウは最小化可能に」 — #R210 added the button and it has been a no-op ever
            since: the string began `display:none;` when minimised and then unconditionally continued
@@ -5546,4 +5548,4 @@ window.IntMapModules.seismic=function(HOST){
         scaleSet, terrainKm:MMI_TERRAIN_KM, maxKm:MMI_MAX_KM,
         stations:stations.length, mmiRings:mmiRings().map(r=>({I:r.I,km:Math.round(r.km)})) }) };
   })();
-};
+}

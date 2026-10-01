@@ -30,6 +30,7 @@ import { liftFunction } from './helpers/lift-function.mjs';
 import { buildWater } from '../scripts/bordercoast/water.mjs';
 import { discoverBundles, closedRing } from '../scripts/build-border-coast.mjs';
 import { ringArea } from '../scripts/histborders/geom.mjs';
+import { importModule } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -183,8 +184,8 @@ test('#R531 ⑤ the marks are lazy, like the bundles they mark', async () => {
   const appended = [];
   const doc = { createElement: () => ({}), head: { appendChild: (s) => appended.push(s) } };
   const win = {};
-  new Function('window', 'document', readFileSync(join(ROOT, 'js', 'border-coast.js'), 'utf8'))(win, doc);
-  const BC = win.IntMapBorderCoast;
+  /* (module-graph) IMPORTED with this window and document — the reader is the module's export */
+  const { IntMapBorderCoast: BC } = await importModule('js/border-coast.js', { globals: { window: win, document: doc } });
   const first = BC.load();
   assert.equal(appended.length, 1, 'js/border-coast.js no longer loads the marks');
   assert.equal(appended[0].src, 'data/border-coast.js', 'js/border-coast.js no longer loads the marks');
@@ -320,15 +321,17 @@ test('#R695 ④ …and the bundle still carries every one of them', () => {
    key to pass. This is the check that the marks actually reach the map instead of merely existing
    in data/border-coast.js: the same rings, handed over as a collection, come back as the marked
    runs and not as whole rings. */
-function reader(win) {
+/* (module-graph) a fresh import of js/border-coast.js against `win` (no document, as before) — the
+   reader is what the module exports, not what it left on a window */
+async function reader(win) {
   const w = win || {};
-  new Function('window', readFileSync(join(ROOT, 'js', 'border-coast.js'), 'utf8'))(w);
-  return w.IntMapBorderCoast;
+  const { IntMapBorderCoast } = await importModule('js/border-coast.js', { globals: { window: w, document: undefined } });
+  return IntMapBorderCoast;
 }
 
-test('#R695 ⑤ an era collection is stroked by its marks, not whole', () => {
+test('#R695 ⑤ an era collection is stroked by its marks, not whole', async () => {
   const win = { __HISTERAS: ERAS, __IMBCOAST: MARKS };
-  const BC = reader(win);
+  const BC = await reader(win);
   BC.load();
   const snap = ERAS.snaps.find((s) => s.y === 1500);
   const poly = (ids) => ids.map((p) => p.map((ri) => ERAS.rings[ri]));
@@ -353,9 +356,9 @@ test('#R695 ⑤ an era collection is stroked by its marks, not whole', () => {
   assert.equal(drawn, expected, 'exactly the marked runs are stroked');
 });
 
-test('#R695 ⑤ a record nobody has measured is still stroked whole', () => {
+test('#R695 ⑤ a record nobody has measured is still stroked whole', async () => {
   const win = { __HISTERAS: ERAS, __IMBCOAST: MARKS };
-  const BC = reader(win);
+  const BC = await reader(win);
   BC.load();
   /* the aourednik runtime fallback: same shapes, but freshly parsed — no ring of it is one of the
      bundle's own arrays, so nothing knows anything about it and nothing may be removed */
@@ -369,13 +372,13 @@ test('#R695 ⑤ a record nobody has measured is still stroked whole', () => {
   assert.equal(drawn, whole, 'an unmarked collection loses nothing');
 });
 
-test('#R695 ⑤ marks that do not fit their bundle are not applied by position', () => {
+test('#R695 ⑤ marks that do not fit their bundle are not applied by position', async () => {
   /* a stale marks file beside a rebuilt bundle: the entry claims a different number of rings, so the
      index must refuse it rather than mark ring 5 with ring 5-of-something-else's answer */
   const stale = JSON.parse(JSON.stringify({ v: 1, sets: { x: { file: 'data/x.js', global: '__R695X', rings: 2, draw: [0, 0] } } }));
   const bundle = { rings: [[[0, 0], [0, 1], [1, 1]], [[5, 5], [5, 6], [6, 6]], [[8, 8], [8, 9], [9, 9]]] };
   const win = { __R695X: bundle, __IMBCOAST: stale };
-  const BC = reader(win);
+  const BC = await reader(win);
   BC.load();
   const fc = { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [bundle.rings[0]] } }] };
   const out = BC.wholeLines(fc);

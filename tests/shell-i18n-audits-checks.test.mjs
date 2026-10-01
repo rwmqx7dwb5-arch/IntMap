@@ -156,6 +156,9 @@ test('R459 ① a value that goes through a translation call is NOT a finding', (
   /* otherwise the check above proves nothing: an instrument that reports everything reports nothing */
   assert.equal(scanSource(`tg.title=window.IntMapLang.t(lang,'Layers','レイヤー','Ebenen','Слои','Capas');`).length, 0);
   assert.equal(scanSource(`el.setAttribute('aria-label',window.IntMapLang.t(lang,'Close','閉じる','Schließen','Закрыть','Cerrar'));`).length, 0);
+  /* (module-graph) every reader now IMPORTS the registry and calls the bare binding — the same holds for it */
+  assert.equal(scanSource(`tg.title=IntMapLang.t(lang,'Layers','レイヤー','Ebenen','Слои','Capas');`).length, 0);
+  assert.equal(scanSource(`el.setAttribute('aria-label',IntMapLang.t(lang,'Close','閉じる','Schließen','Закрыть','Cerrar'));`).length, 0);
   /* …and neither is a value that is not language: a unit symbol, a URL, a proper noun with punctuation */
   assert.equal(scanSource(`el.title='m'; el.title='https://example.org/x'; el.title='IntMap — '+t;`).length, 0);
 });
@@ -413,7 +416,7 @@ test('#R450 ④ ⚠ a string live ONLY through the lazy wrapper is live here —
       },
     });
   }
-  /* js/map-readout.js: `const L=(...a)=>{ if(!_L) _L=window.IntMapLang.pick(()=>HOST.lang); … }` */
+  /* js/map-readout.js: `const L=(...a)=>{ if(!_L) _L=IntMapLang.pick(()=>HOST.lang); … }` */
   const wrapper = 'Tropic of Cancer';
   const src = R('js/map-readout.js');
   assert.ok(src.includes(`L('${wrapper}'`), 'js/map-readout.js no longer calls L() with this string — pick another witness');
@@ -504,8 +507,9 @@ const LOCALES = join(ROOT, 'js', 'locales');
 const LF = String.fromCharCode(10), CR = String.fromCharCode(13), CRLF = CR + LF;
 const LS = String.fromCharCode(0x2028), PS = String.fromCharCode(0x2029);
 
-/* the line acorn puts the last character of the source on */
-const acornLines = (src) => parse(src, { ecmaVersion: 2022, locations: true }).loc.end.line;
+/* the line acorn puts the last character of the source on — (module-graph) parsed as a module, which is
+   what every js/locales file is now (it imports the registry); line terminators are the same in both goals */
+const acornLines = (src) => parse(src, { ecmaVersion: 2022, sourceType: 'module', locations: true }).loc.end.line;
 /* ⚠ THE RULE AS IT WAS, reproduced so the check can tell the fix from its absence. */
 const oldSplit = (src) => src.split(src.includes(CRLF) ? CRLF : LF);
 
@@ -519,8 +523,10 @@ function mixedLocale({ headEol = LF, bodyEol = CRLF, headLines = 14 } = {}) {
   for (let i = 2; i < headLines; i++) head.push(' *  header line ' + i + ' — this is what a .mjs contributes');
   head.push(' * ' + '='.repeat(70) + '*/');
   assert.equal(head.length, headLines);
+  /* (module-graph) the body is the shape js/locales/ui.*.js has now: an import of the registry, then a bare define */
   const body = [
-    "window.IntMapLang.define('xx', {",
+    "import { IntMapLang } from '../lang-registry.js';",
+    "IntMapLang.define('xx', {",
     '  ui: {',
     '    alive: "A", doomed: "B", stillAlive: "C"',
     '  },',
@@ -589,7 +595,7 @@ test('R548 ② cutDeadRows() removes the row from a mixed-ending locale without 
 
   const cut = cutDeadRows(src, dead, 'ui.xx.js');
   assert.equal(cut.rows, 2, 'both dead rows were found');
-  parse(cut.text, { ecmaVersion: 2022 });                        /* it must still parse */
+  parse(cut.text, { ecmaVersion: 2022, sourceType: 'module' });   /* it must still parse (as the module it is) */
   assert.ok(!cut.text.includes('Dead one'), 'the dead inline row is gone');
   assert.ok(!/\bdoomed\b/.test(cut.text), 'the dead packed row is gone');
   for (const live of ['Live one', 'Another live one', 'alive', 'stillAlive']) {
@@ -616,7 +622,8 @@ test('R548 ③ zh-hans build() introduces no line ending its source does not hav
   try {
     const src = [
       '/* a Traditional table, checked out the way git checks out a .js on Windows */',
-      "window.IntMapLang.define('zh', {",
+      "import { IntMapLang } from '../lang-registry.js';",
+      "IntMapLang.define('zh', {",
       '  ui: {',
       '    a: "網路", b: "資料"',
       '  },',
@@ -632,7 +639,7 @@ test('R548 ③ zh-hans build() introduces no line ending its source does not hav
 
     const out = build({
       src: p, out: join(dir, 'ui.zh-hans.js'), what: 'UI STRINGS',
-      from: "window.IntMapLang.define('zh'", to: "window.IntMapLang.define('zh-hans'",
+      from: "IntMapLang.define('zh'", to: "IntMapLang.define('zh-hans'",
     });
 
     assert.ok(out.length > src.length, 'the header was prepended');
@@ -648,7 +655,7 @@ test('R548 ③ zh-hans build() introduces no line ending its source does not hav
        LF, and gluing it straight onto the CRLF body is what produced the fourteen. */
     const cutAt = splitLines(out).findIndex((l) => l.text.includes('IntMapLang.define'));
     const headLF = normaliseEol(joinLines(splitLines(out).slice(0, cutAt)), LF);
-    const oldWay = headLF + src.slice(src.indexOf('window.IntMapLang'));
+    const oldWay = headLF + src.slice(src.indexOf('IntMapLang.define'));
     assert.ok([...kindsOf(oldWay)].some((e) => !kindsOf(src).has(e)),
       'the shape this replaced must still introduce an ending, or the test is no longer about it');
     assert.notEqual(oldSplit(oldWay).length, acornLines(oldWay),
@@ -665,7 +672,8 @@ test('R548 ④ i18n-append-inline punctuates new rows like the file, not like it
   try {
     const lines = [
       '/* a locale that is LF apart from one stray CRLF */',
-      "window.IntMapLang.define('xx', {",
+      "import { IntMapLang } from '../lang-registry.js';",
+      "IntMapLang.define('xx', {",
       '  inline: {',
       '    "Existing": "E",',
       '  },',
@@ -683,7 +691,7 @@ test('R548 ④ i18n-append-inline punctuates new rows like the file, not like it
     execFileSync(process.execPath, [join(ROOT, 'scripts', 'i18n-append-inline.mjs'), target, add], { stdio: 'pipe' });
 
     const after = readFileSync(target, 'utf8');
-    parse(after, { ecmaVersion: 2022 });
+    parse(after, { ecmaVersion: 2022, sourceType: 'module' });
     assert.ok(after.includes('"Brand new"'), 'the row was added');
     const crlfBefore = splitLines(src).filter((l) => l.eol === CRLF).length;
     const crlfAfter = splitLines(after).filter((l) => l.eol === CRLF).length;

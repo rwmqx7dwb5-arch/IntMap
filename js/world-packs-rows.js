@@ -17,21 +17,24 @@
  * ==========================================================================*/
 /* (startup-lazy-layers) the eager-row / lazy-body rule, once */
 import { lazyBody, lazyRowFailed } from './lazy-modules.js';
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.worldPacks=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+
+export function worldPacks(HOST){
+  const GE=()=>IntMapGeoEngine;
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
 
   window.IntMapWorld=(function(){
     if(!GE().hasRenderer()) return { state:()=>({}) };
-    const L=window.IntMapLang.pick(()=>HOST.lang);
+    const L=IntMapLang.pick(()=>HOST.lang);
     /* ⚠ (#R241) the ARRAY form — see `pickArgs` in js/lang-registry.js. Five tables in this file
        held their translations as a bare tuple and subscripted it with a PRIVATE language→position
        map (`{jp:1,de:2,ru:3,es:4}`). That map is a second copy of the language order, it names a
        fixed set of languages, and an array literal is not a call — so every trade section, crop,
        GAEZ variable and panel title here was English on fr/ko/zh while every instrument read
        100 %. scripts/i18n-positional-array-audit.mjs found them and fails if the shape returns. */
-    const LA=window.IntMapLang.pickArgs();
+    const LA=IntMapLang.pickArgs();
     const D=Math.PI/180;
     const esc=(s)=>window.IntMapSafe.html(s);
 
@@ -39,11 +42,11 @@ window.IntMapModules.worldPacks=function(HOST){
        ONE clock (#R94 standing rule: window.IntMapTime is the master). A layer that needs a year
        asks for it here and re-fetches when the kernel says the time moved, so 「タイムマシン対応」 is
        one subscription rather than five. */
-    function nowYear(){ try{ const st=window.IntMapTime.state();
+    function nowYear(){ try{ const st=IntMapTime.state();
       const d=st.isLive?new Date():new Date(st.when); const y=d.getUTCFullYear();
       return isFinite(y)?y:new Date().getUTCFullYear(); }catch(_){ return new Date().getUTCFullYear(); } }
     const _timeSubs=[];
-    try{ window.IntMapTime.on(()=>{ _timeSubs.forEach(f=>{ try{ f(nowYear()); }catch(_){} }); }); }catch(_){}
+    try{ IntMapTime.on(()=>{ _timeSubs.forEach(f=>{ try{ f(nowYear()); }catch(_){} }); }); }catch(_){}
     const onYear=(f)=>_timeSubs.push(f);
 
     /* ── formatting: the compressed form AND the figure it was compressed from ────────────────────
@@ -534,4 +537,4 @@ window.IntMapModules.worldPacks=function(HOST){
       alerts:STATE.alerts&&STATE.alerts(), tides:STATE.tides&&STATE.tides(), crops:STATE.crops&&STATE.crops(),
       year:nowYear() }) }, STATE);
   })();
-};
+}

@@ -21,6 +21,7 @@ import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { readFileSync } from 'node:fs';
+import { importModule, swappable } from './helpers/import-module.mjs';
 import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* shared by the sections below (each used to declare its own copy) */
@@ -313,7 +314,11 @@ test('R733 ④ the other two axes were always tools, so this is the set being co
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 const { makeHighlightTargets } = await import('../js/atlas-country-ids.js');
-const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
+/* (module-graph) js/atlas-capabilities.js IMPORTS the engine — it no longer reads window.IntMapGeoEngine —
+   so the stub renderer is seated at that import edge for one observation and the seat emptied after it
+   (an empty seat is an engine with nothing to ask, as an absent window.IntMapGeoEngine was). */
+const engineSeat = swappable();
+const { makeAtlasCapabilities } = await importModule('js/atlas-capabilities.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: engineSeat.value } } });
 const { makeEraHighlight } = await import('../js/atlas-era-highlight.js');
 
 /* == (1) THE FIELDS THAT CARRY THE REQUEST ARE ASKED ONCE ================================== */
@@ -395,14 +400,15 @@ function supplier(s) {
   };
 }
 function observe(s) {
-  const hadP = window._imAtlasPaint, hadG = window.IntMapGeoEngine;
-  window._imAtlasPaint = makeEraHighlight({ GE: () => window.IntMapGeoEngine, resolveCountrySync: () => null })
+  const hadP = window._imAtlasPaint, hadG = engineSeat.get();
+  const r = renderer();
+  window._imAtlasPaint = makeEraHighlight({ GE: () => r, resolveCountrySync: () => null })
     .paintState(supplier(s));
-  window.IntMapGeoEngine = renderer();
+  engineSeat.set(r);
   try { return hl.observe(); }
   finally {
     if (hadP === undefined) delete window._imAtlasPaint; else window._imAtlasPaint = hadP;
-    if (hadG === undefined) delete window.IntMapGeoEngine; else window.IntMapGeoEngine = hadG;
+    engineSeat.set(hadG);
   }
 }
 /* what js/atlas-console.js `_CLEARED(...)` produces */

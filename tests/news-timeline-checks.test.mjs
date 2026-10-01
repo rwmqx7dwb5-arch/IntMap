@@ -198,7 +198,8 @@ test('R293 ⑧ Chronos has one time tab, and the clock drives the weather', () =
   assert.match(t, /if\(mode!=='time'\|\|!fcReady\(\)\)\{ fcStop\(\); playerEl\.style\.display='none'/,
     'the transport lives inside the Time tab');
   /* the transport moves the CLOCK — that is what makes it one control rather than two */
-  assert.match(t, /function fcGo\(i\)\{[\s\S]{0,220}window\.IntMapTime\.set\(new Date\(t\),\{allowFuture:true,source:'ui'\}\);/);
+  /* (module-graph) js/news-timeline.js imports IntMapTime from js/chronos.js and writes the bare binding */
+  assert.match(t, /function fcGo\(i\)\{[\s\S]{0,220}IntMapTime\.set\(new Date\(t\),\{allowFuture:true,source:'ui'\}\);/);
   assert.ok(!/E2\.setIndex\(/.test(t), 'and it never writes the model’s index behind the clock’s back');
   /* the date picker can reach where the clock can now go */
   assert.match(t, /function fcMaxISO\(\)\{/);
@@ -566,13 +567,13 @@ test('R378 ④ the picker writes the master clock, debounced, and is allowed to 
   const js = code('js/news-timeline.js');
 
   /* it writes the ONE clock, like every other input in this panel — no second time state */
-  assert.match(js, /function jumpCommit\(\)\{[\s\S]*?window\.IntMapTime\.set\(/, 'the picker does not write the master clock');
+  assert.match(js, /function jumpCommit\(\)\{[\s\S]*?IntMapTime\.set\(/, 'the picker does not write the master clock');
   assert.match(js, /Math\.min\(d\.getTime\(\),fcMaxMs\(\)\)/, 'the picker is not clamped to the reach it advertises');
 
   /* ⚠ WITHOUT `allowFuture` THE KERNEL TURNS ANY FUTURE INSTANT INTO LIVE (js/chronos.js), so a
      control whose `max` reaches the model's last hour would answer 「now」 for every hour past this
      one — silently, which is the shape #R268 and #R290 each had to remove. */
-  assert.match(js, /window\.IntMapTime\.set\(new Date\(Math\.min\(d\.getTime\(\),fcMaxMs\(\)\)\),\{allowFuture:true,source:'ui'\}\)/,
+  assert.match(js, /IntMapTime\.set\(new Date\(Math\.min\(d\.getTime\(\),fcMaxMs\(\)\)\),\{allowFuture:true,source:'ui'\}\)/,
     'the picker cannot reach the future its own max offers');
 
   /* a native date field edited from the keyboard emits a COMPLETE value per keystroke, so 1990
@@ -581,7 +582,7 @@ test('R378 ④ the picker writes the master clock, debounced, and is allowed to 
   assert.match(js, /jumpEl\.addEventListener\('input',jumpQueue\)/, 'keyboard edits do not reach the clock');
   assert.match(js, /jumpEl\.addEventListener\('change',jumpQueue\)/, 'picker choices do not reach the clock');
   assert.match(js, /jumpEl\.addEventListener\('blur'/, 'leaving the field never reconciles it with the clock');
-  assert.match(js, /if\(!jumpEl\.value\)\{ window\.IntMapTime\.setNow/, 'clearing the field does not return to live');
+  assert.match(js, /if\(!jumpEl\.value\)\{ IntMapTime\.setNow/, 'clearing the field does not return to live');
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -860,7 +861,7 @@ test('R421 #9 the stepper is wired to the module that owns the dates', () => {
 test('R421 #10 the stepper writes the MASTER clock, like every other input in the panel', () => {
   const NT = read('js/news-timeline.js');
   // Setting the borders directly would desynchronise them from news, statistics and the climate era.
-  assert.match(NT, /window\.IntMapTime\.set\(d,\{source:'ui'\}\)/, 'it writes IntMapTime');
+  assert.match(NT, /IntMapTime\.set\(d,\{source:'ui'\}\)/, 'it writes IntMapTime');
   assert.ok(
     !/IntMapTimeBorders\.(_go|_clear)\s*\(/.test(NT),
     'the panel must not drive the border renderer behind the clock’s back',

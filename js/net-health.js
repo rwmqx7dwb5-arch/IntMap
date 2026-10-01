@@ -22,9 +22,10 @@
  *  back through `label(id)` for the legend heading it opens, for the reason
  *  #R519 gives: two lists of names that can disagree, disagree.
  * ==========================================================================*/
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.netHealth = function (HOST) {
-  const L = window.IntMapLang.pick(() => HOST.lang);
+import { IntMapLang } from './lang-registry.js';
+
+export function netHealth(HOST) {
+  const L = IntMapLang.pick(() => HOST.lang);
 
   /* The rows, and the only place their ids, swatches, names and IntMapOS labels are written.
      ⚠ `os` IS A FIELD, NOT A TERNARY, for the reason js/war-fronts.js records: a two-branch
@@ -124,4 +125,4 @@ window.IntMapModules.netHealth = function (HOST) {
     report: (p) => need().then((b) => (b ? b.report(p || {}) : null)),
   };
   return window.IntMapNetHealth;
-};
+}

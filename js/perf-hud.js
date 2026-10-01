@@ -70,11 +70,12 @@
    test on every load that does not ask for it. */
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
+import { IntMapGeoEngine } from './geo-engine.js';
 window.IntMapPerfHud = (function () {
   'use strict';
   if (!/[?&]perf=1\b/.test(location.search)) return null;
 
-  const GE = () => window.IntMapGeoEngine;
+  const GE = () => IntMapGeoEngine;
   const N = (v, d) => (typeof v === 'number' && isFinite(v) ? v.toFixed(d == null ? 1 : d) : '—');
   const med = (a) => (a.length ? a.slice().sort((x, y) => x - y)[a.length >> 1] : NaN);
   const pct = (a, p) => (a.length ? a.slice().sort((x, y) => x - y)[Math.min(a.length - 1, Math.floor(a.length * p))] : NaN);

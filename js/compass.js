@@ -39,6 +39,7 @@
  *    Chinese word and a shared CJK table would have been wrong in one of the two.
  *  · ko spells it out north-first like Japanese: 북동, 남서.
  * ==========================================================================*/
+import { IntMapLang } from './lang-registry.js';
 window.IntMapCompass=(function(){
   'use strict';
   /* the sixteen points, clockwise from north. Index i covers bearings [i·22.5 − 11.25, i·22.5 + 11.25). */
@@ -62,7 +63,7 @@ window.IntMapCompass=(function(){
     var c=lang;
     try{ if(c==null) c=String(document.documentElement.lang||'en'); }catch(_){ c='en'; }
     try{
-      var R=window.IntMapLang;
+      var R=IntMapLang;
       if(R){
         if(R.has&&R.has(c)) c=R.normalise(c);
         else{

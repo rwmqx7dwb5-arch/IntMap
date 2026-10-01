@@ -9,7 +9,7 @@
  *    「綴りのまま:」の注記は、評価に置き換えられない検査がなぜそうなのかを 1 行で言う。
  * ==========================================================================*/
 import test from 'node:test';
-import { bootGuardKnows, appShell, lazyFiles } from './app-source.mjs';
+import { bootGuardKnows, appShell, lazyFiles, factoryCalls } from './app-source.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { checkSplitScope } from '../scripts/check-split-scope.mjs';
@@ -71,13 +71,17 @@ test('R163 #1 each module was moved out, loaded, and instantiated at its origina
     /* (#R209) …or js/lazy-modules.js import()s it. The question is unchanged — "is this file
        REACHED, does the feature still exist" — and both loaders are now legitimate answers. The
        lazy list is derived from that loader's own literals, so it cannot drift. */
-    assert.ok(html.includes(`import '../${file}';`) || LAZY.includes(file),
-      `src/main.js imports ${file}, or js/lazy-modules.js fetches it on demand (#R175/#R209)`);
-    assert.ok(src.includes('window.IntMapModules=window.IntMapModules||{};'),
-      `${file} extends IntMapModules without clobbering what earlier files put there`);
-    assert.ok(src.includes(`window.IntMapModules.${key}=function(HOST){`),
-      `${file} declares the ${key} factory taking (HOST)`);
-    assert.ok(html.includes(`window.${global}=window.IntMapModules.${key}(IM_HOST);`),
+    /* (module-graph) an eager module is REACHED because js/app-body.js imports its factory by name (src/main.js
+       no longer lists side-effect-free files; a missing file or export is a link error). The registry is
+       gone: «extends it without clobbering» is «does not touch it, and exports the factory». */
+    const imported = new RegExp(`^import \\{[^}]*\\b${key}\\b[^}]*\\} from '\\./${file.slice(3).replace('.', '\\.')}';$`, 'm').test(rd('js/app-body.js'));
+    assert.ok(imported || LAZY.includes(file),
+      `js/app-body.js imports ${key} from ${file}, or js/lazy-modules.js fetches it on demand (#R175/#R209)`);
+    assert.doesNotMatch(code(src), /\bIntMapModules\b/, `${file} does not touch the retired window.IntMapModules registry`);
+    assert.ok(src.includes(`export function ${key}(HOST){`),
+      `${file} exports the ${key} factory taking (HOST)`);
+    /* app-body calls it by its imported name; the loader on the namespace its import() resolved to (`m.`) */
+    assert.equal((code(html).match(new RegExp(`window\\.${global}=(?:m\\.)?${key}\\(IM_HOST\\);`, 'g')) || []).length, 1,
       `the app instantiates ${key} with the shared host — from the boot closure, or, for a lazy module, from js/lazy-modules.js the moment it lands`);
   }
 });
@@ -178,7 +182,13 @@ test('R163 #6 the boot guard names every factory, so one missing file cannot hid
   for (const [, key] of MOVED) {
     assert.ok(bootGuardKnows(root, key), `the boot guard lists the ${key} factory`);   /* (#R798) eager list or the lazy registry */
   }
-  assert.match(html, /module factories missing/, 'index.html reports missing factories loudly');
+  /* (module-graph) a missing EAGER factory can no longer reach a booted page — it is a link error, refused
+     by the bundler and the browser — so the guard reports `missingFactories: []`, the true answer, and
+     «loudly» is said where a failure can still happen: a required global that did not arrive, and a lazy
+     module whose fetched file exports no factory (recorded by the loader). */
+  assert.match(html, /missingFactories: \[\]/, 'the boot guard still answers for factories, and the answer is a link-time fact');
+  assert.match(html, /required module file\(s\) failed to load/, 'index.html reports missing modules loudly');
+  assert.match(rd('js/lazy-modules.js'), /exports no ' \+ name \+ ' factory/, '…and the loader reports a fetched file with no factory');
   assert.match(html, /window\.__imModuleCheck\s*=/, 'the boot guard exposes its result for the browser test');
 });
 
@@ -294,10 +304,15 @@ function closureBody() {
 }
 const STMTS = closureBody();
 const SKIP = new Set(['loc', 'start', 'end', 'type']);
-const isModulesCall = (n, m) => !!n && n.type === 'CallExpression' && n.callee.type === 'MemberExpression'
-  && !n.callee.computed && (m === null || n.callee.property.name === m)
-  && n.callee.object.type === 'MemberExpression' && n.callee.object.property.name === 'IntMapModules'
-  && n.callee.object.object.type === 'Identifier' && n.callee.object.object.name === 'window';
+/* (module-graph) the registry is gone: a factory call is a call to a name js/app-body.js IMPORTS and that the
+   shell instantiates as a factory (factoryCalls) — `x(IM_HOST)`, no longer `window.IntMapModules.x(IM_HOST)` */
+const FACTORIES = factoryCalls(root);
+const FACTORY_NAMES = new Set();
+for (const st of bodyAst.body) if (st.type === 'ImportDeclaration') for (const sp of st.specifiers) {
+  if (sp.type === 'ImportSpecifier' && sp.imported.name === sp.local.name && Object.values(FACTORIES).some((ns) => ns.includes(sp.local.name))) FACTORY_NAMES.add(sp.local.name);
+}
+const isModulesCall = (n, m) => !!n && n.type === 'CallExpression' && n.callee.type === 'Identifier'
+  && FACTORY_NAMES.has(n.callee.name) && (m === null || n.callee.name === m);
 /* the statement index and the const the shell binds each factory to — DERIVED, not spelled */
 function factorySite(m) {
   const hits = [];
@@ -337,11 +352,11 @@ function factoryExports(file, m) {
   (function walk(n) {
     if (!n || typeof n !== 'object' || fn) return;
     if (Array.isArray(n)) { n.forEach(walk); return; }
-    if (n.type === 'AssignmentExpression' && n.left.type === 'MemberExpression' && !n.left.computed && n.left.property.name === m
-      && n.left.object.type === 'MemberExpression' && n.left.object.property.name === 'IntMapModules' && /Function/.test(n.right.type)) { fn = n.right; return; }
+    /* (module-graph) `export function <m>(HOST){…}` — the factory is an export, not a registry entry */
+    if (n.type === 'ExportNamedDeclaration' && n.declaration && n.declaration.type === 'FunctionDeclaration' && n.declaration.id.name === m) { fn = n.declaration; return; }
     for (const k of Object.keys(n)) { if (SKIP.has(k)) continue; walk(n[k]); }
   })(ast);
-  assert.ok(fn, file + ' declares the ' + m + ' factory on window.IntMapModules');
+  assert.ok(fn, file + ' exports the ' + m + ' factory');
   const body = fn.body.body;
   const ret = body[body.length - 1];
   assert.ok(ret && ret.type === 'ReturnStatement' && ret.argument && ret.argument.type === 'ObjectExpression', file + ': the factory ends by returning its export object');
@@ -359,17 +374,20 @@ test('R168 #1 all six files are loaded and every factory is declared and instant
   for (const m of NAMES) {
     const { file } = MODULES[m];
     const src = rd(file);
-    assert.ok(html.includes(`import '../${file}';`), `src/main.js imports ${file} (#R175)`);
-    assert.ok(src.includes('window.IntMapModules=window.IntMapModules||{};'),
-      `${file} extends IntMapModules without clobbering what earlier files put there`);
+    /* (module-graph) «loaded» is «js/app-body.js imports the factory by name» (a link error if missing);
+       «extends the registry without clobbering» is «does not touch it, and exports the factory» */
+    assert.ok(bodyAst.body.some((st) => st.type === 'ImportDeclaration' && st.source.value === './' + file.slice(3)
+      && st.specifiers.some((sp) => sp.type === 'ImportSpecifier' && sp.imported.name === m && sp.local.name === m)),
+      `js/app-body.js imports ${m} from ${file}, so the file is in the module graph`);
+    assert.doesNotMatch(code(src), /\bIntMapModules\b/, `${file} does not touch the retired window.IntMapModules registry`);
+    assert.ok(src.includes(`export function ${m}(HOST){`), `${file} exports the ${m} factory taking (HOST)`);
     assert.ok(!/<style>/.test(code(src)), `${file} must not carry CSS — the stylesheet stays in css/intmap.css`);
-    const defined = [...src.matchAll(/window\.IntMapModules\.(\w+)\s*=\s*function/g)].map((x) => x[1]);
-    assert.deepEqual(defined, [m], `${file} defines exactly one factory`);
+    assert.deepEqual(FACTORIES[file], [m], `${file} defines exactly one factory`);
     const sites = factorySite(m);
     assert.equal(sites.length, 1, `the shell instantiates ${m} exactly once (found ${sites.length})`);
     assert.ok(sites[0].i > mapAt, `${m} is instantiated AFTER the map is constructed`);
     assert.ok(sites[0].args.length === 1 && sites[0].args[0].type === 'Identifier' && sites[0].args[0].name === 'IM_HOST', `${m} is handed the host object and nothing else`);
-    assert.match(html, new RegExp(`'${m}'`), `the boot guard names the ${m} factory, so a missing file cannot hide`);
+    assert.ok(bootGuardKnows(root, m), `the boot guard knows the ${m} factory, so a missing file cannot hide`);   /* (module-graph) imported by name: a link error if missing */
   }
 });
 
@@ -443,10 +461,9 @@ test('R168 #4 DECLARATION-ONLY: a factory body does nothing while it runs', () =
        the factory DOES is unchanged, and module mode is a strict superset for that question. */
     const ast = acorn.parse(src, { ecmaVersion: 'latest', locations: true, sourceType: 'module' });
     let body = null;
-    for (const st of ast.body) {
-      if (st.type !== 'ExpressionStatement' || st.expression.type !== 'AssignmentExpression') continue;
-      const { left, right } = st.expression;
-      if (left.type === 'MemberExpression' && left.property.name === m && /Function/.test(right.type)) body = right.body.body;
+    for (const st of ast.body) {   /* (module-graph) the factory is `export function <m>(HOST){…}` */
+      const d = st.type === 'ExportNamedDeclaration' ? st.declaration : null;
+      if (d && d.type === 'FunctionDeclaration' && d.id.name === m) body = d.body.body;
     }
     assert.ok(body, `${MODULES[m].file}: found the ${m} factory body`);
     const doers = body.filter((st) => st.type !== 'FunctionDeclaration' && st.type !== 'VariableDeclaration' && st.type !== 'ReturnStatement');

@@ -18,12 +18,16 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { importModule, swappable } from './helpers/import-module.mjs';
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
-await import('../js/geo-engine.js');
-const ENGINE = window.IntMapGeoEngine;
-const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
+/* (module-graph) the façade factory is js/geo-engine.js's export, and js/atlas-capabilities.js IMPORTS the
+   engine — it no longer reads window.IntMapGeoEngine — so each case's façade is seated at that import edge
+   (one swappable seat, put back after the case). */
+const { IntMapGeoEngine: ENGINE } = await import('../js/geo-engine.js');
+const engineSeat = swappable();
+const { makeAtlasCapabilities } = await importModule('js/atlas-capabilities.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: engineSeat.value } } });
 const { makeAtlasState } = await import('../js/atlas-state.js');
 const CAPS = makeAtlasCapabilities({ lang: 'en' });
 
@@ -52,9 +56,9 @@ function facade(w, claims) {
   return f;
 }
 function withEngine(f, fn) {
-  const had = window.IntMapGeoEngine;
-  window.IntMapGeoEngine = f;
-  try { return fn(); } finally { window.IntMapGeoEngine = had; }
+  const had = engineSeat.get();
+  engineSeat.set(f);
+  try { return fn(); } finally { engineSeat.set(had); }
 }
 
 /* ══ ① THE QUESTION IS THE RENDERER'S, AND IT HAS THREE ANSWERS ═══════════════════════════════════ */

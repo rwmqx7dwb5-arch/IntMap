@@ -20,8 +20,9 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.companyData = function (HOST) {
+import { IntMapLang } from './lang-registry.js';
+
+export function companyData(HOST) {
   const API = (function () {
     const INDEX_URL = 'data/companies/index.json';
     const PROFILE_DIR = 'data/companies/profiles/';
@@ -65,8 +66,8 @@ window.IntMapModules.companyData = function (HOST) {
        without touching this table, because an unknown token humanises itself rather than taking a
        wrong label. */
     const LANG = () => { try { return HOST.lang; } catch (_) { return 'en'; } };
-    const L = (function () { try { return window.IntMapLang.pick(LANG); } catch (_) { return (en) => en; } }());
-    const LA = (function () { try { return window.IntMapLang.pickArgs(); } catch (_) { return (...a) => a; } }());
+    const L = (function () { try { return IntMapLang.pick(LANG); } catch (_) { return (en) => en; } }());
+    const LA = (function () { try { return IntMapLang.pickArgs(); } catch (_) { return (...a) => a; } }());
 
     const TYPE_L = {
       headquarters: LA('Headquarters', '本社', 'Hauptsitz', 'Штаб-квартира', 'Sede'),
@@ -333,4 +334,4 @@ window.IntMapModules.companyData = function (HOST) {
 
   window.IntMapCompanyData = API;
   return API;
-};
+}

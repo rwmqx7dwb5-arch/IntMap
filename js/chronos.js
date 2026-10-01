@@ -37,7 +37,10 @@
  *  historical series. Single source of truth = _when (a Date, or null = LIVE/now).
  *  When LIVE, every subsystem holds its own independent default; the moment you travel
  *  to a past instant they all sync to it, and returning to "Now" releases them. ====== */
-window.IntMapTime=(function(){
+/** (module-graph) the declared contract, stated on the EXPORT: readers import this binding now, so this is where
+    the compiler holds the object to types/ (it used to be the typed window.* assignment) */
+/** @type {import('../types/chronos').Chronos} */
+export const IntMapTime=(function(){
   /* ⚠⚠⚠ (#R679) `toISOString().slice(0,10)` WAS NOT A DATE ONCE THE FLOOR WENT BELOW YEAR 0.
      ECMA-262 writes a year outside 0…9999 in the expanded form, so an instant in 323 BC comes
      back as `-000322-01-01T00:00:00.000Z` and its first ten characters are `-000322-01` — a
@@ -179,3 +182,8 @@ window.IntMapTime=(function(){
     document.addEventListener('pointerdown',_onIntentEvent,true); document.addEventListener('focusin',_onIntentEvent,true); } }catch(_){}
   return OS;
 })();
+/* (module-graph) THE COMPAT WINDOW. Every js/ and src/ reader IMPORTS IntMapTime from this file; this one
+   publication remains for what cannot import: the browser specs' page.evaluate, the console, and the
+   static pages' inline scripts. scripts/global-surface.mjs counts it, and its `reads` register is what
+   says no module reads it back off the global. */
+globalThis.IntMapTime=IntMapTime;

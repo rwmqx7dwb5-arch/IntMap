@@ -9,9 +9,13 @@
  *  references to closure variables became HOST.<member> reads (Architecture.md §3.1). The
  *  extraction was done by script and reversed byte-for-byte against the original text.
  * ==========================================================================*/
-window.IntMapModules=window.IntMapModules||{};
-window.IntMapModules.companiesUi=function(HOST){
-  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+import { IntMapTime } from './chronos.js';
+import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapLang } from './lang-registry.js';
+import { IntMapTables } from './tables.js';
+
+export function companiesUi(HOST){
+  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -25,7 +29,7 @@ window.IntMapModules.companiesUi=function(HOST){
   const INFO_COLORS={ choke:'#ff9500', mil:'#ff3b30', tech:'#007aff', space:'#af52de', energy:'#34c759', hub:'#5856d6', maritime:'#30b0c7' };
 
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
-  const {CO_SECTORS,CO_CC}=window.IntMapTables;
+  const {CO_SECTORS,CO_CC}=IntMapTables;
 
   /* (#R145) Companies compare view state — mirrors the Countries #scp-view (Bar / Time-series / Table, metric picker). */
   let _coCmpMode='bar', _coCmpMetOpen=false, _coCmpMet=new Set(['mcap','rev','ni','emp']), _coCmpTsFrom=null, _coCmpTsTo=null, _coCmpCss=0, _coCmpSort={key:null,dir:-1};
@@ -38,14 +42,14 @@ window.IntMapModules.companiesUi=function(HOST){
 
   const _CO_CMP_PAL=['#0a84ff','#ff9f0a','#30d158','#ff375f','#bf5af2','#64d2ff','#ffd60a','#ac8e68'];
 
-  function _coWireTime(){ if(HOST._coTimeWired||!(window.IntMapTime&&window.IntMapTime.on)) return; HOST._coTimeWired=true;
+  function _coWireTime(){ if(HOST._coTimeWired||!(IntMapTime&&IntMapTime.on)) return; HOST._coTimeWired=true;
     const _apply=hy=>{ try{ IntMapCompanies.setYear(hy, ()=>{ if(document.getElementById('co-cmp-view')){ try{ HOST.showCoCompare([...HOST.coCompareSet]); }catch(_){} } else if(HOST.mode==='info'||document.body.classList.contains('ws-mode')){ try{ renderCompanies(); }catch(_){} } }); }catch(_){} };
-    window.IntMapTime.on(e=>{ clearTimeout(HOST._coTimeDeb); HOST._coTimeDeb=setTimeout(()=>{
+    IntMapTime.on(e=>{ clearTimeout(HOST._coTimeDeb); HOST._coTimeDeb=setTimeout(()=>{
       const cur=new Date().getFullYear(); const y=(e&&e.year!=null)?e.year:null; _apply(((e&&e.isLive)||y==null||y>=cur)?null:y);
     }, 320); });
     /* (#R142) initial sync: if the map was ALREADY time-travelled before Companies was first opened, the subscription
        above would miss that past event — reflect the current clock now so the ranking opens on the historical year. */
-    try{ const cur=new Date().getFullYear(); const y=window.IntMapTime.year(); if(!window.IntMapTime.isLive()&&y!=null&&y<cur) _apply(y); }catch(_){}
+    try{ const cur=new Date().getFullYear(); const y=IntMapTime.year(); if(!IntMapTime.isLive()&&y!=null&&y<cur) _apply(y); }catch(_){}
   }
 
   let _coCmpTsGen=0;
@@ -135,8 +139,8 @@ window.IntMapModules.companiesUi=function(HOST){
     h+='</div>';
     if(_coCmpMetOpen&&_coCmpMode!=='ts') h+='<div class="scp-metrics">'+_CO_CMP_METS.map(k=>'<button class="scp-m'+(_coCmpMet.has(k)?' on':'')+'" data-cmpmet="'+k+'">'+IntMapSafe.html(_coCmpMetLbl(k))+'</button>').join('')+'</div>';
     h+='<div style="position:relative;margin:6px 0 2px;"><input class="scp-add" id="co-cmp-add" placeholder="'+HOST._coL('Add a company…','企業を追加…','Firma hinzufügen…','Добавить компанию…','Añadir empresa…')+'" autocomplete="off"><div id="co-cmp-list"></div></div>';
-    h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px;">'+cos.map((c,i)=>'<span class="scp-chip"><span class="scp-dot" style="background:'+_CO_CMP_PAL[i%_CO_CMP_PAL.length]+'"></span>'+IntMapSafe.html(HOST._coName(c))+' <span class="scp-x" role="button" tabindex="0" aria-label="'+IntMapSafe.html(window.IntMapLang.t(HOST.lang,'Remove','削除','Entfernen','Удалить','Quitar'))+'" data-cmpx="'+IntMapSafe.html(c.tk)+'">×</span></span>').join('')+'</div>';
-    if(hy) h+='<div class="stats-timebanner co-banner" style="margin:4px 0 0;"><b>'+hy+(window.IntMapLang.t(HOST.lang,'','年'))+'</b> · '+HOST._coL('market cap at year-end · today\'s share counts · other figures latest reported','その年の年末時点の時価総額 · 株数は現在値 · 他の指標は最新報告値','Marktkap. zum Jahresende · heutige Aktienzahl · übrige Angaben aktuell','капитализация на конец года · число акций текущее · прочие показатели последние','cap. a fin de año · acciones actuales · demás cifras recientes')+'</div>';
+    h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px;">'+cos.map((c,i)=>'<span class="scp-chip"><span class="scp-dot" style="background:'+_CO_CMP_PAL[i%_CO_CMP_PAL.length]+'"></span>'+IntMapSafe.html(HOST._coName(c))+' <span class="scp-x" role="button" tabindex="0" aria-label="'+IntMapSafe.html(IntMapLang.t(HOST.lang,'Remove','削除','Entfernen','Удалить','Quitar'))+'" data-cmpx="'+IntMapSafe.html(c.tk)+'">×</span></span>').join('')+'</div>';
+    if(hy) h+='<div class="stats-timebanner co-banner" style="margin:4px 0 0;"><b>'+hy+(IntMapLang.t(HOST.lang,'','年'))+'</b> · '+HOST._coL('market cap at year-end · today\'s share counts · other figures latest reported','その年の年末時点の時価総額 · 株数は現在値 · 他の指標は最新報告値','Marktkap. zum Jahresende · heutige Aktienzahl · übrige Angaben aktuell','капитализация на конец года · число акций текущее · прочие показатели последние','cap. a fin de año · acciones actuales · demás cifras recientes')+'</div>';
     h+='</div><div id="co-cmp-body"></div>';
     root.innerHTML=h; _coCmpBody(cos); _coCmpWire(cos); }
 
@@ -424,14 +428,14 @@ window.IntMapModules.companiesUi=function(HOST){
     const funnel='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8v6l-4 2v-8z"/></svg>';
     const filterBtn=`<button type="button" class="stats-filter-btn${HOST.coFilterOpen?' on':''}${nAct?' has':''}" onclick="_coSfToggle()" title="${HOST._sfL('Filter by value','値でフィルター','Nach Wert filtern','Фильтр по значению','Filtrar por valor')}">${funnel}${nAct?`<span class="sf-badge">${nAct}</span>`:''}</button>`;   /* (#R152) Countries-parity: filter button now has the same tooltip Countries has */
     const sfPanel=(()=>{ if(!HOST.coFilterOpen) return ''; const opts=(sel)=>_FIND.map(([k,l])=>`<option value="${k}"${sel===k?' selected':''}>${l}</option>`).join('');
-      const rows=HOST.coFilters.map((f,i)=>`<div class="sf-row"><select aria-label="${HOST._sfL('Indicator','指標')}" onchange="_coSfSetKey(${i},this.value)">${opts(f.key)}</select><select class="sf-op" aria-label="${HOST._sfL('Comparison','比較')}" onchange="_coSfSetOp(${i},this.value)"><option value="gte"${f.op!=='lte'?' selected':''}>≥</option><option value="lte"${f.op==='lte'?' selected':''}>≤</option></select><input type="text" class="sf-val" value="${(f.raw||'').replace(/"/g,'&quot;')}" placeholder="${HOST._sfL('value (5B, 100000…)','値（5B, 100000…）','Wert','значение','valor')}" onchange="_coSfSetVal(${i},this.value)"><button aria-label="${window.IntMapLang.t(HOST.lang,'Remove','削除','Entfernen','Удалить','Quitar')}" type="button" class="sf-x" onclick="_coSfRemove(${i})">×</button></div>`).join('');
+      const rows=HOST.coFilters.map((f,i)=>`<div class="sf-row"><select aria-label="${HOST._sfL('Indicator','指標')}" onchange="_coSfSetKey(${i},this.value)">${opts(f.key)}</select><select class="sf-op" aria-label="${HOST._sfL('Comparison','比較')}" onchange="_coSfSetOp(${i},this.value)"><option value="gte"${f.op!=='lte'?' selected':''}>≥</option><option value="lte"${f.op==='lte'?' selected':''}>≤</option></select><input type="text" class="sf-val" value="${(f.raw||'').replace(/"/g,'&quot;')}" placeholder="${HOST._sfL('value (5B, 100000…)','値（5B, 100000…）','Wert','значение','valor')}" onchange="_coSfSetVal(${i},this.value)"><button aria-label="${IntMapLang.t(HOST.lang,'Remove','削除','Entfernen','Удалить','Quitar')}" type="button" class="sf-x" onclick="_coSfRemove(${i})">×</button></div>`).join('');
       return `<div class="stats-filter-panel">${rows||`<div class="sf-empty">${HOST._sfL('No conditions yet.','条件がありません。','Keine Bedingungen.','Нет условий.','Sin condiciones.')}</div>`}<div class="sf-actions"><button type="button" class="sf-add" onclick="_coSfAdd()">+ ${HOST._sfL('Add condition','条件を追加','Bedingung','Условие','Añadir')}</button>${HOST.coFilters.length?`<button type="button" class="sf-clear" onclick="_coSfClear()">${HOST._sfL('Clear','クリア','Löschen','Очистить','Limpiar')}</button>`:''}</div></div>`; })();
     let html=`<div class="stats-toolbar"><select class="stats-sort-sel" aria-label="${HOST._sfL('Sort by','並べ替え')}" onchange="setCoSort(this.value)">${IND.map(([k,l])=>`<option value="${k}"${HOST.coSort===k?' selected':''}>${l}</option>`).join('')}</select><button type="button" class="stats-sort-dir" onclick="toggleCoSortDir()" title="${HOST.t('sortDir')}">${dirLbl}</button>${filterBtn}</div>${sfPanel}`;
     const _hy=(IntMapCompanies.histYear&&IntMapCompanies.histYear())||null;   /* (#R142) time-machine year (null = present) */
     /* (#R170) the banner now names the exact vintages the per-row chips use, instead of a vague
        "latest reported" — header and rows must tell the same story. */
     const _FY=IntMapCompanies.CURATED_FY, _SNAP=IntMapCompanies.CURATED_ASOF;
-    html+=_hy?`<div class="stats-timebanner co-banner"><b>${_hy}${window.IntMapLang.t(HOST.lang,'','年')}</b> · ${HOST._coL('market cap at the '+_hy+' year-end close · current share counts · revenue / profit / employees on a '+_FY+' basis','時価総額は'+_hy+'年の年末終値ベース · 株数は現在値 · 売上・利益・従業員数は'+_FY+'基準','Marktkap. zum Jahresschluss '+_hy+' · heutige Aktienzahl · Umsatz/Gewinn/Mitarbeiter auf Basis '+_FY,'капитализация на закрытие '+_hy+' года · число акций текущее · выручка/прибыль/сотрудники — база '+_FY,'cap. al cierre de '+_hy+' · acciones actuales · ingresos/beneficio/empleados base '+_FY)}</div>`:`<div class="stats-timebanner co-banner">${HOST._coL('Market cap and share price live where available — each value is stamped with its quote time · revenue / profit / employees on a '+_FY+' basis · reported snapshots compiled '+_SNAP,'時価総額・株価は可能な限りライブ（各値に取得時刻を表示） · 売上・利益・従業員数は'+_FY+'基準 · 報告ベースのスナップショットは'+_SNAP+'収録','Marktkap. und Kurs live, wo verfügbar — jeder Wert mit Kurszeit · Umsatz/Gewinn/Mitarbeiter Basis '+_FY+' · berichtete Snapshots vom '+_SNAP,'Капитализация и цена — в реальном времени, где возможно (у каждого значения указано время) · выручка/прибыль/сотрудники — база '+_FY+' · отчётные снимки от '+_SNAP,'Cap. y precio en vivo cuando es posible — cada valor lleva su hora · ingresos/beneficio/empleados base '+_FY+' · instantáneas reportadas del '+_SNAP)}</div>`;
+    html+=_hy?`<div class="stats-timebanner co-banner"><b>${_hy}${IntMapLang.t(HOST.lang,'','年')}</b> · ${HOST._coL('market cap at the '+_hy+' year-end close · current share counts · revenue / profit / employees on a '+_FY+' basis','時価総額は'+_hy+'年の年末終値ベース · 株数は現在値 · 売上・利益・従業員数は'+_FY+'基準','Marktkap. zum Jahresschluss '+_hy+' · heutige Aktienzahl · Umsatz/Gewinn/Mitarbeiter auf Basis '+_FY,'капитализация на закрытие '+_hy+' года · число акций текущее · выручка/прибыль/сотрудники — база '+_FY,'cap. al cierre de '+_hy+' · acciones actuales · ingresos/beneficio/empleados base '+_FY)}</div>`:`<div class="stats-timebanner co-banner">${HOST._coL('Market cap and share price live where available — each value is stamped with its quote time · revenue / profit / employees on a '+_FY+' basis · reported snapshots compiled '+_SNAP,'時価総額・株価は可能な限りライブ（各値に取得時刻を表示） · 売上・利益・従業員数は'+_FY+'基準 · 報告ベースのスナップショットは'+_SNAP+'収録','Marktkap. und Kurs live, wo verfügbar — jeder Wert mit Kurszeit · Umsatz/Gewinn/Mitarbeiter Basis '+_FY+' · berichtete Snapshots vom '+_SNAP,'Капитализация и цена — в реальном времени, где возможно (у каждого значения указано время) · выручка/прибыль/сотрудники — база '+_FY+' · отчётные снимки от '+_SNAP,'Cap. y precio en vivo cuando es posible — cada valor lleva su hora · ingresos/beneficio/empleados base '+_FY+' · instantáneas reportadas del '+_SNAP)}</div>`;
     if(!arr.length) html+=`<div class="empty-msg">${HOST.t('noMatch')}</div>`;
     arr.forEach((c,i)=>{ const nm=HOST._coName(c);
       const cn=_coCountry(c.cc), fl=_coFlag(c.cc);
@@ -485,7 +489,7 @@ window.IntMapModules.companiesUi=function(HOST){
       [HOST._coL('Sector','セクター','Sektor','Сектор','Sector'), _coSec(c.sec)],
       [HOST._coL('Headquarters','本社','Hauptsitz','Штаб-квартира','Sede'), (_coFlag(c.cc)?_coFlag(c.cc)+' ':'')+_coCountry(c.cc)] ];
     const site='https://'+c.dom;
-    ov.innerHTML=`<div class="co-detail" role="dialog" aria-modal="true"><button class="co-detail-x" type="button" aria-label="${window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}">×</button>`+
+    ov.innerHTML=`<div class="co-detail" role="dialog" aria-modal="true"><button class="co-detail-x" type="button" aria-label="${IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}">×</button>`+
       `<div class="co-detail-head"><span class="co-logo-box co-logo-lg">${_coLogoInner(c.dom,nm,hue,c.tk)}</span>`+
       `<div class="co-detail-title"><div class="co-detail-name">${IntMapSafe.html(nm)}</div><div class="co-detail-tk">${IntMapSafe.html(c.tk)}</div></div></div>`+
       `<div class="co-detail-btns"><button class="co-detail-btn${HOST.coCompareSet.has(c.tk)?' on':''}" data-cmp="1" type="button">${HOST.coCompareSet.has(c.tk)?HOST._coL('In comparison','比較中','Im Vergleich','В сравнении','En comparación'):HOST._coL('Compare','比較する','Vergleichen','Сравнить','Comparar')}${HOST.coCompareSet.size?` (${HOST.coCompareSet.size}/8)`:''}</button>`+
@@ -564,9 +568,9 @@ window.IntMapModules.companiesUi=function(HOST){
   }
 
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
-  const {_DASH_BADGE}=window.IntMapTables;
+  const {_DASH_BADGE}=IntMapTables;
 
-  function dashBadgeLabel(b){ if(!b||HOST.lang==='en') return b||''; const e=_DASH_BADGE[b]; return (e&&window.IntMapLang.pick(()=>HOST.lang).arr(e))||b; }
+  function dashBadgeLabel(b){ if(!b||HOST.lang==='en') return b||''; const e=_DASH_BADGE[b]; return (e&&IntMapLang.pick(()=>HOST.lang).arr(e))||b; }
 
   function renderDashboard(){
     /* (#R139) The Information dashboard was RETIRED — the "info" tab is now COMPANIES. Every renderDashboard() call
@@ -590,7 +594,7 @@ window.IntMapModules.companiesUi=function(HOST){
        have been created → pins appeared with a delay. */
     if(_imCanDraw()) HOST.setupIntelLayers();
     /* (#R171) source data through IntMapGeoEngine — this file no longer names the renderer. */
-    try{ const E=window.IntMapGeoEngine; if(E&&E.layers.hasSource('dash-points')) E.layers.setSourceData('dash-points',{type:'FeatureCollection',features:HOST.dashFeatures}); }catch(_){}
+    try{ const E=IntMapGeoEngine; if(E&&E.layers.hasSource('dash-points')) E.layers.setSourceData('dash-points',{type:'FeatureCollection',features:HOST.dashFeatures}); }catch(_){}
     /* Sidebar cards */
     let cards='<div class="dash-cards-container">';
     filtered.forEach(info=>{
@@ -609,7 +613,7 @@ window.IntMapModules.companiesUi=function(HOST){
     });
     cards+='</div>';
     /* (#R20) top-level Places | Events switch, then the existing category nav */
-    const seg=`<div class="dash-nav"><button class="dash-nav-btn active" onclick="_setDashView('places')">${window.IntMapLang.t(HOST.lang,'📍 Places','📍 場所','📍 Orte','📍 Места','📍 Lugares')}</button><button class="dash-nav-btn" onclick="_setDashView('events')">${window.IntMapLang.t(HOST.lang,'🗓 Events','🗓 出来事','🗓 Ereignisse','🗓 События','🗓 Eventos')}</button></div>`;
+    const seg=`<div class="dash-nav"><button class="dash-nav-btn active" onclick="_setDashView('places')">${IntMapLang.t(HOST.lang,'📍 Places','📍 場所','📍 Orte','📍 Места','📍 Lugares')}</button><button class="dash-nav-btn" onclick="_setDashView('events')">${IntMapLang.t(HOST.lang,'🗓 Events','🗓 出来事','🗓 Ereignisse','🗓 События','🗓 Eventos')}</button></div>`;
     const nav=`<div class="dash-nav" id="dash-nav"><button class="dash-nav-btn ${HOST.activeDashCategories.has('mil')?'active':''}" onclick="toggleDashCat('mil')">${dict.dashCatMil}</button><button class="dash-nav-btn ${HOST.activeDashCategories.has('tech')?'active':''}" onclick="toggleDashCat('tech')">${dict.dashCatTech}</button><button class="dash-nav-btn ${HOST.activeDashCategories.has('maritime')?'active':''}" onclick="toggleDashCat('maritime')">${dict.dashCatMar}</button><button class="dash-nav-btn ${HOST.activeDashCategories.has('geo')?'active':''}" onclick="toggleDashCat('geo')">${dict.dashCatGeo}</button></div>`;
 /* ⚠ SEC: A VALUE INTERPOLATED INTO AN EVENT ATTRIBUTE HAS BECOME JAVASCRIPT SOURCE.
      Each attribute rewritten here carried a runtime value inside an `on…="…"` string, so the only thing
@@ -650,4 +654,4 @@ window.IntMapModules.companiesUi=function(HOST){
 
   /* The names index.html still calls: it keeps a hoisted shim for each (#R168). */
   return { renderCompanies, showCompanyDetail, renderDashboard, _coCmpEnsureCss, _coCmpRender };
-};
+}

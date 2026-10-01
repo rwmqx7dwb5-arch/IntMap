@@ -189,7 +189,9 @@ test('#R395 ⑧ the eruption record on the master clock closes an open-ended eru
   assert.ok(B.includes('r[4]==null?r[1]:r[4]'),
     'an eruption with no recorded end must count for its start year alone — GVP leaves the end blank both for «still going» and for «not recorded»');
   assert.ok(B.includes('r[9]!==1'), 'the clock index must use confirmed eruptions only');
-  assert.ok(B.includes("window.IntMapTime.on("), 'the volcano layer does not follow the master clock');
+  /* (module-graph) the master clock is an import of js/chronos.js now, read as the bare binding */
+  assert.match(B, /\bIntMapTime\.on\(/, 'the volcano layer does not follow the master clock');
+  assert.match(B, /import \{[^}]*\bIntMapTime\b[^}]*\} from '\.\/chronos\.js'/, '…the master clock, js/chronos.js');
   /* the index is built from the SAME bundled file the card uses — no second fetch, no second truth */
   assert.ok(B.includes('window.IntMapVolcano.detail()'), 'the clock index must come from the bundled eruption record');
 });

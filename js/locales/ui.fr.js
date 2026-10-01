@@ -19,7 +19,8 @@
  *  what lets a translation ship while it is still being filled in, and `node scripts/i18n-report.mjs`
  *  prints exactly how much of each table is done.
  * ========================================================================== */
-window.IntMapLang.define('fr', { ui: {
+import { IntMapLang } from '../lang-registry.js';
+IntMapLang.define('fr', { ui: {
       /* ══ ⚠⚠⚠ (#R249) THE FIFTEENTH SURFACE — THE DOCUMENT'S OWN METADATA ═══════════════════════
          「全ての言語について、すべての面において対応が完璧かどうか点検し、未了点があれば修正して。」
          index.html's <title> and <meta name="description"> were literals in the markup, so the

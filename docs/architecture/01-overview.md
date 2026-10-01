@@ -81,10 +81,12 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   「モジュールマップに記録される前に失敗したもの（依存の失敗・自前の判定）を再試行できる」ことと、
   **一度の 404 がタブの寿命いっぱい `false` を返し続けるのをやめる**ことにある。
   だから案内（上の `.im-reload`）が本体の手当で、忘れることはその補助である。
-- `js/*.js` は **`src/main.js` が index.html と同じ順序で `import`** する。安全な根拠は、
-  **全ファイルにトップレベル宣言が1つも無い**ことを AST で確認していること（module のトップレベル
-  `const`/`function` は private、classic script のそれは global。宣言が無ければ名前解決は1つも変わらない）。
-  `tests/layer-boot-graph-checks.test.mjs` が毎回再検証する。
+- **ファイル同士は `import` で結ぶ。読み込み順は import のグラフが決める。** 依存は `import`／`export` と
+  依存注入（`HOST`・`provideLayerKind` のように、使う側へ渡す）で書き、`window` は**後方互換とデバッグの窓口**
+  （ブラウザの spec・コンソール・静的ページのインライン script が読むもの）に限る。`src/main.js` に残る
+  `import` の行は「まだ import の辺を持たない副作用モジュール」だけで、その一覧は手で覚える順序ではなく
+  移行の残りである（`node scripts/module-graph.mjs --entry` が 1 行ずつ「なぜ残るか」を言う）。
+  規約・移し方・門は [§3 ファイル構成](03-files.md) の「ファイル同士の結び方」。
 - **実行時依存は npm から取る**（CDN の浮動タグは使わない）。`src/vendor.js` が
   `maplibregl` / `turf` / `topojson` / `mlcontour` / `supabase` / `sb` を同じグローバル名で
   再公開するので、呼び出し側は1行も変わらない。KaTeX と html2canvas は動的 import で別チャンク。

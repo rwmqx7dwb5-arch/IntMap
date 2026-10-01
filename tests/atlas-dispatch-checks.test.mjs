@@ -38,6 +38,7 @@ import { auditLines, catalogueText, dispatchCapabilities } from '../scripts/atla
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly, codeOnly as stripComments } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { importModule } from './helpers/import-module.mjs';
 import { appSource } from './app-source.mjs';
 import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
@@ -49,7 +50,10 @@ const TOOLS = () => stripComments(read('js/map-tools.js'));
 const src = (p) => codeOnly(readLF(join(ROOT, p)));   /* (#R726's reader) */
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
-const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
+/* (module-graph) the registry IMPORTS the engine now. The verdicts below are each observer's own, judged
+   with no renderer to ask — what an absent window.IntMapGeoEngine was — so the engine edge is handed null.
+   (The real engine with no map answers observable:false, which rightly turns a negative into unobserved.) */
+const { makeAtlasCapabilities } = await importModule('js/atlas-capabilities.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: null } } });
 const { makeAtlasSchemas } = await import('../js/atlas-schemas.js');
 const CONSOLE = (src('js/atlas-console.js') + '\n' + capsSource());
 const CAPS_SRC = src('js/atlas-capabilities.js');

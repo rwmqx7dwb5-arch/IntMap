@@ -42,7 +42,9 @@ test('R176 ⑤: arrivals are ray-traced through IASP91 and the ground motion nam
   /* ⚠ READ, NOT RUN: the tracer and the ground-motion chain are closures of the seismic panel factory, which builds DOM and a renderer source on construction. */
   assert.ok(existsSync(join(ROOT, 'js/seismic.js')), 'the simulator has its own file');
   assert.ok(reached('js/seismic.js'), 'loaded by the Vite entry, or fetched on demand by js/lazy-modules.js');
-  assert.match(instantiated(), /window\.IntMapModules\.seismic\((IM_HOST)\);/, 'and instantiated');
+  /* (module-graph) the factory is an export, called on the namespace the lazy loader's import() resolved to */
+  assert.match(quake, /export function seismic\(HOST\)\{/, 'the factory is exported by the file');
+  assert.match(instantiated(), /\bm\.seismic\((IM_HOST)\);/, 'and instantiated');
   assert.match(quake, /const IASP91=\[/, 'the velocity model is the data in the file');
   assert.match(quake, /\{ d0:2889, d1:5153\.9,p:\[10\.03904,3\.75665,-13\.67046\], *s:\[0\] \}/, 'including an outer core with no S');
   assert.match(quake, /function trace\(p,srcDepth,phase,dir\)\{/, 'and the travel times are TRACED, not tabulated');

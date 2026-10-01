@@ -34,6 +34,7 @@
  *  annotation, no incidents — this returns `null` or an empty array. A traffic colour drawn from a
  *  guess is worse than no traffic colour, because it cannot be told apart from a measured one.
  * ==========================================================================*/
+import { IntMapLang } from './lang-registry.js';
 window.IntMapRouteTraffic = (function () {
   'use strict';
 
@@ -155,7 +156,7 @@ window.IntMapRouteTraffic = (function () {
      measurement (`evidence: 'documented'` in the capability table). */
   function mbLang() {
     var tag = '';
-    try { tag = window.IntMapLang.htmlTag(appLang()) || ''; } catch (_) { tag = ''; }
+    try { tag = IntMapLang.htmlTag(appLang()) || ''; } catch (_) { tag = ''; }
     if (!tag) return '';
     return /^zh-hant/i.test(tag) ? 'zh-Hans' : tag;
   }
