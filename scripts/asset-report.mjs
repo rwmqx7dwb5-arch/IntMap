@@ -77,12 +77,22 @@ const ALLOW = {
     { match: /^assets\//, why: 'bundler output — index.html references it by hashed name at build time' },
     { match: /^katex\//, why: 'KaTeX ships its own stylesheet and font tree; dist/katex/katex.min.css names the faces by relative URL and js/page-i18n.js loads the stylesheet, so the individual faces are named inside a file that is itself an asset (#R221)' },
     { match: /^fonts\/Inter Regular\//, why: 'SDF glyph atlas — the range is computed from the map view (js/app-body.js transformRequest)' },
+    /* (hist-vector-tiles) the historical records cut by time. No string names them: js/hist-bundles.js
+       DERIVES each index from its record's own name (`tilesOf`: data/<name>.js → data/hvt/<name>.idx.json)
+       and reads the archive the index names — and scripts/build-hist-tiles.mjs asks the door for the same
+       name, so the pair cannot drift. Every one of them exists because a record under data/ does. */
+    { match: /^data\/hvt\/[^/]+\.(idx\.json|jsonl\.gz)$/, why: 'the historical records as time-cut tiles — the index name is derived from the record (js/hist-bundles.js tilesOf) and the archive is named by its index (scripts/build-hist-tiles.mjs)' },
     { match: /^cesium\//, why: "the Cesium SDK's own runtime tree (workers, shaders, IAU2006 tables, widget CSS). The SDK builds these URLs from CESIUM_BASE_URL at run time, so no string in this repository names any of them — which is exactly why vite.config.js cesiumAssets() copies the directory whole rather than listing it." },
   ],
   /* a production file larger than this needs a reason of its own */
   sizeCeiling: 6 * 1024 * 1024,
   bigFile: [
-    { match: /^data\/cshapes\.js$/, why: 'day-exact historical country borders: source-matched records retain source geometry at zero simplification tolerance while corrected records remain intact; loaded separately from the startup bundle, with measured size and vertex counts in DEV-NOTES.md R711' },
+    /* (hist-vector-tiles) an archive is never fetched whole: js/hist-bundles.js reads the gzip members an
+       instant needs with Range requests (1900 reads 0.96 MB of the cshapes archive and 1.34 MB of the
+       first-tier one — dev-notes/2026-10-01-hist-vector-tiles.md). Its size is the record's, cut, not a
+       transfer anybody pays. */
+    { match: /^data\/hvt\/[^/]+\.jsonl\.gz$/, why: 'a historical record cut into gzip members by time — read by Range, one instant\'s chunks at a time, never whole (js/hist-bundles.js)' },
+    { match: /^data\/cshapes\.js$/, why: 'day-exact historical country borders: source-matched records retain source geometry at zero simplification tolerance while corrected records remain intact; loaded separately from the startup bundle, with measured size and vertex counts in DEV-NOTES.md R711 — the app reads it as time-cut tiles (data/hvt/, by Range); the whole file is read only where no tiles are served (js/hist-bundles.js)' },
     { match: /^data\/ecoregions_2017\.geojson$/, why: 'the WWF terrestrial ecoregions layer — one file is the dataset (#R311 removed its duplicate)' },
     /* (#R530) the admin-1 twin of data/cshapes.js (5.3 MB), and it is over the ceiling for the same
        reason that one is near it: one file IS the dataset — 4,820 dated subdivisions with the days
@@ -92,7 +102,7 @@ const ALLOW = {
        unit (0.025° drops 13 of them under MIN_AREA). ⚠ It is NOT on the boot path and not in any
        chunk: js/time-admin1.js injects it as a <script> at idle, and skips even that on a phone or
        Data Saver, exactly as #R192/#R201 settled for CShapes. */
-    { match: /^data\/hist-admin1\.js$/, why: 'the dated first-level subdivisions (OpenHistoricalMap, CC0) — one file is the dataset, fetched at idle by js/time-admin1.js and never bundled (#R530)' },
+    { match: /^data\/hist-admin1\.js$/, why: 'the dated first-level subdivisions (OpenHistoricalMap, CC0) — one file is the dataset, fetched at idle by js/time-admin1.js and never bundled (#R530) — the app reads it as time-cut tiles (data/hvt/, by Range); the whole file is read only where no tiles are served (js/hist-bundles.js)' },
     /* (#R679) THE ERA SNAPSHOTS, AND THE REASON IS THE ROUND ITSELF. Below 1850 this file is the
        ONLY country answer there is, and until this round that answer came over the wire from
        raw.githubusercontent and, failing that, two public CORS proxies — a century that exists
@@ -106,7 +116,7 @@ const ALLOW = {
        ⚠ IT IS NOT ON THE BOOT PATH AND NOT IN ANY CHUNK: js/time-borders.js injects it as a
        <script> the first time the clock asks for a year only it can answer. Measured after:
        eager requests 6/6 and eager modules 295/295, both unchanged. */
-    { match: /^data\/hist-eras\.js$/, why: 'the era snapshots, 54 of them incl. 17 before the common era (aourednik/historical-basemaps, GPL-3.0) — below 1850 this file is the only country answer, and it replaced a runtime dependency on two public CORS proxies. Injected as a <script> only when the clock asks; eager cost unchanged.' },
+    { match: /^data\/hist-eras\.js$/, why: 'the era snapshots, 54 of them incl. 17 before the common era (aourednik/historical-basemaps, GPL-3.0) — below 1850 this file is the only country answer, and it replaced a runtime dependency on two public CORS proxies. Injected as a <script> only when the clock asks; eager cost unchanged. — the app reads it as time-cut tiles (data/hvt/, by Range); the whole file is read only where no tiles are served (js/hist-bundles.js)' },
     /* (#R564) …and the DEEPER tier of the same record. It is bigger than the first level and it is
        also the one nobody pays for unless they ask: js/time-admin1.js does not fetch it until the
        camera passes z6, where a county is a shape rather than a smudge, and it is not in the idle
@@ -114,7 +124,7 @@ const ALLOW = {
        way its twin was, on the same extract: 0.02°/3 dec built 6.27 MB but lost 183 units under
        MIN_AREA, 0.008°/4 dec built 13.99 MB, and 0.012°/4 dec — 1.3 km, finer than the first tier,
        because this one is only ever read zoomed IN — builds this and loses 82. */
-    { match: /^data\/hist-admin2\.js$/, why: 'the dated second-level subdivisions (OpenHistoricalMap, CC0) — one file is the dataset, and js/time-admin1.js fetches it only once the camera passes z6 (#R564)' },
+    { match: /^data\/hist-admin2\.js$/, why: 'the dated second-level subdivisions (OpenHistoricalMap, CC0) — one file is the dataset, and js/time-admin1.js fetches it only once the camera passes z6 (#R564) — the app reads it as time-cut tiles (data/hvt/, by Range); the whole file is read only where no tiles are served (js/hist-bundles.js)' },
     /* ⚠ (#R690) THE COUNTRY RECORD CROSSED THE CEILING BECAUSE IT STOPPED BEING A 36-YEAR WINDOW.
        #R518 built data/hist-borders.js for 1850–1885 and it came out at 5.3 MB, just under. The
        source was never a 19th-century dataset though: 2,101 of OpenHistoricalMap's 3,985
@@ -162,7 +172,7 @@ const ALLOW = {
        record boundary, and moving our simplification on one side alone changes its size or its sign).
        ⚠ ITS POSITION IS NOT CHOSEN EITHER: 1689 is derived from coverage by
        scripts/build-hist-borders.mjs, so the step moves down the moment OHM fills in below it. */
-    { match: /^data\/hist-borders\.js$/, why: 'the day-exact country borders below CShapes, 1689–1885 (OpenHistoricalMap, CC0) — one file is the dataset, injected as a <script> only when the clock asks, retaining source-matched finer geometry and existing territorial corrections, with measured cost in DEV-NOTES.md R710' },
+    { match: /^data\/hist-borders\.js$/, why: 'the day-exact country borders below CShapes, 1689–1885 (OpenHistoricalMap, CC0) — one file is the dataset, injected as a <script> only when the clock asks, retaining source-matched finer geometry and existing territorial corrections, with measured cost in DEV-NOTES.md R710 — the app reads it as time-cut tiles (data/hvt/, by Range); the whole file is read only where no tiles are served (js/hist-bundles.js)' },
   ],
 };
 

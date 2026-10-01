@@ -191,6 +191,24 @@ function copyStatic() {
   };
 }
 
+/* ── (hist-vector-tiles) THE HISTORICAL RECORDS, CUT BY TIME ─────────────────
+   js/hist-bundles.js reads each ring-pooled record under data/ as an index and an archive of gzip members
+   in dist/data/hvt/, taking only the chunks an instant needs with Range requests. They are DERIVED here,
+   from the records the copy above has just shipped, by scripts/build-hist-tiles.mjs — which reads every
+   chunk back through the door's own job and throws on any difference, so a build cannot ship tiles that
+   are not the record. Cut once per content (a store outside the checkout keeps them by hash), so the
+   build pays the ~30 s only when a record or the cutter changes. */
+function histTiles() {
+  return {
+    name: 'intmap-hist-tiles',
+    apply: 'build',
+    async closeBundle() {
+      const { buildTiles } = await import('./scripts/build-hist-tiles.mjs');
+      await buildTiles({ dataDir: join(ROOT, 'data'), outDir: join(ROOT, 'dist', 'data', 'hvt'), log: () => {} });
+    },
+  };
+}
+
 /* ── (#R221) KaTeX, FOR THE TWO STATIC PAGES ─────────────────────────────────
    「数式はそのままのテキストだから、もっとちゃんとした数式用のテキストに。」
    science.html is a SHELL served verbatim (see STATIC_ASSETS above) — it is not part of the app
@@ -631,5 +649,5 @@ export default defineConfig({
      than read off filenames. scripts/perf-budget.mjs is the gate that reads it; it runs on
      every build because the report is what stops "the biggest chunk is big" from being
      mistaken for "startup is slow". */
-  plugins: [buildStampPlugin(ROOT), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets()],
+  plugins: [buildStampPlugin(ROOT), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets()],
 });

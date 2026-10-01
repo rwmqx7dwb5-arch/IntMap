@@ -552,7 +552,10 @@ hist-bundles.js                   リングプールした歴史記録（data/cs
                                   **その瞬間に描く行と環だけ**を同じ形の疎な写し（mirror）へ送る（環は1回だけ・
                                   SLICE_POINTS ごとに分けて）。穴埋め記録の継ぎ足しもここ。Worker が無いときは
                                   同じ関数（histJob）をページで走らせる。読み手は time-borders.js・time-admin1.js・
-                                  war-layer.js・border-coast.js（docs/MAP-LAYERS.md・Architecture.md §7.4）
+                                  war-layer.js・border-coast.js（docs/MAP-LAYERS.md・Architecture.md §7.4）。
+                                  記録は丸ごとではなく、ビルドが年で切ったタイル（data/hvt/<名>.idx.json と
+                                  <名>.jsonl.gz）から、その瞬間に要るチャンクだけを Range で読む（need → feed →
+                                  問い）。タイルの名前は tilesOf が記録の名前から導く
 border-coast.js                   歴史的な輪郭のどの辺が「国境／区分境界」で、どの辺が「その記録が持つ海岸線の
                                   写し」かの**読み手** window.IntMapBorderCoast。印そのものは data/border-coast.js
                                   （規則と定数は scripts/build-border-coast.mjs）。#R564 で time-borders.js から
@@ -1449,6 +1452,11 @@ scripts/
                                   上流に登録された日この build は自動的にその国を出さなくなる。
                                   ⚠ **`--check` は 130 MB のラスタを要求しない**（`npm run check:kuni`・
                                   残余は docs/TESTING.md）
+  build-hist-tiles.mjs            リングプールした歴史記録を年で切ったタイルへ（dist/data/hvt/。vite.config.js の
+                                  histTiles() がビルドのたびに走らせ、内容のハッシュで store に保持する）。索引は
+                                  扉の job が答える head と全行の期間・チャンクの対応・バイト範囲、アーカイブは
+                                  独立した gzip メンバー（JSON 1 行）の連結。並びは時間（区間木の段と桶→開始→終了）
+                                  →場所。切ったものは扉の job で読み戻して記録と照合し、違えば失敗する
   build-border-coast.mjs          同梱の海岸線（`data/coastline.json.gz`）に照らして、歴史国境の各辺が国境か海岸線の
                                   写しかを印す → `data/border-coast.js`。⚠ **`--check` は全リングを再導出して突き合わせる**
                                   （上流不要）。`--report` が唯一の定数 `INLAND_KM` を読み取る分布を出す

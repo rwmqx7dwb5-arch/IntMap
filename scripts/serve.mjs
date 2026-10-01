@@ -126,6 +126,36 @@ const server = createServer(async (req, res) => {
     const type = MIME[extname(filePath).toLowerCase()] || 'application/octet-stream';
     const enc = pickEncoding(req.headers['accept-encoding'], filePath, raw.length);
     const body = enc ? await compress(raw, enc, `${enc}:${filePath}:${s.mtimeMs}:${s.size}`) : raw;
+    /* ══ (hist-vector-tiles) RANGE, THE WAY PAGES ANSWERS IT ══════════════════════════════════════
+       js/hist-bundles.js reads one chunk of a historical archive with `Range: bytes=a-b`. MEASURED
+       2026-10-01 against the live site: Pages answers a single range with 206 and `Content-Range`, and
+       the range is taken of the bytes AS SENT — for a type it compresses that is the gzipped stream
+       (`bytes 0-99/3961350` for the 12.96 MB data/cshapes.js), for `.gz` and images it is the file.
+       This server does the same, so a reader that asked for a range of a compressed type fails here
+       exactly as it would on Pages instead of passing locally. A list of ranges is not something the
+       app asks for; it is answered whole, as a server may. */
+    const range = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range || '').trim());
+    if (range && (range[1] !== '' || range[2] !== '')) {
+      const n = body.length;
+      let a = range[1] === '' ? n - Number(range[2]) : Number(range[1]);
+      let b = range[1] === '' || range[2] === '' ? n - 1 : Math.min(Number(range[2]), n - 1);
+      if (a < 0) a = 0;
+      if (!(a <= b) || a >= n) {
+        res.writeHead(416, { 'content-range': `bytes */${n}`, 'cache-control': 'no-store' }).end();
+        return;
+      }
+      res.writeHead(206, {
+        'content-type': type,
+        'content-length': b - a + 1,
+        'content-range': `bytes ${a}-${b}/${n}`,
+        'accept-ranges': 'bytes',
+        ...(enc ? { 'content-encoding': enc, vary: 'Accept-Encoding' } : {}),
+        'cache-control': 'no-store',
+        'service-worker-allowed': '/',
+      });
+      res.end(req.method === 'HEAD' ? undefined : body.subarray(a, b + 1));
+      return;
+    }
     res.writeHead(200, {
       'content-type': type,
       'content-length': body.length,
