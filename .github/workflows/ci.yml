@@ -34,11 +34,14 @@ permissions:
 # So a `schedule` goes to a group of its own and can only be superseded by the next schedule. Every
 # other event falls through to `github.ref`, so the group string a push or a PR gets is byte-for-byte
 # what it was before this line changed.
-# ⚠ `workflow_dispatch` DELIBERATELY STAYS ON `github.ref`. It is the button a round presses on its
-#   own branch before opening a PR (#R205/#R207), and it has to go on cancelling that branch's own
-#   earlier run — a constant group would instead make two branches' dispatches cancel each other.
+# ⚠ `workflow_dispatch` is grouped PER REF, AND APART FROM PUSH. It is the button a round presses on its
+#   own branch (#R205/#R207) and has to go on cancelling that branch's own earlier dispatch — a constant
+#   group would make two branches' dispatches cancel each other. But it must not share the push group:
+#   MEASURED 2026-10-01, three deep-tier dispatches on main cancelled the push runs of c3990ff and
+#   281e584 (the runs that publish), and production stayed on 1a66ec7 while three merges waited —
+#   a dispatch never publishes (event_name is not push), so cancelling the run that does was pure loss.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event_name == 'schedule' && 'nightly' || github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event_name == 'schedule' && 'nightly' || github.event_name == 'workflow_dispatch' && format('dispatch-{0}', github.ref) || github.ref }}
   cancel-in-progress: true
 
 jobs:
