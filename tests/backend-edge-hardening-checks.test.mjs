@@ -123,7 +123,10 @@ test('R801 ③ ai-proxy settles the turn before answering and refunds only the c
   assert.match(ledger, /db\.rpc\("settle_ai_turn"/, 'settle_ai_turn is never called');
   const settleCall = proxy.indexOf('await settle();');
   assert.ok(settleCall > 0, 'settle() is never awaited');
-  assert.match(proxy.slice(settleCall, settleCall + 80), /await settle\(\);\s*return json\(\{/, 'settle() must run at the success return, immediately before the answer leaves');
+  /* (atlas-live-stream) the success return is a VALUE — sent as the JSON body, or as the stream's `done`
+     event — so the settle stands before that value; tests/atlas-live-stream-checks ② runs both ways and
+     checks that `done` is read only after settle_ai_turn was called */
+  assert.match(proxy.slice(settleCall, settleCall + 80), /await settle\(\);\s*return (json\(\{|\{ status: 200, body: \{)/, 'settle() must run at the success return, immediately before the answer leaves');
   const refund = proxy.slice(proxy.indexOf('const refund = async'), proxy.indexOf('const settle = async'));
   assert.match(refund, /if \(isDev \|\| !charged\) return;/, 'a call that did not charge must not ask for a refund');
   assert.match(refund, /refundTurn\(db, account, turnId\)/, 'the turn is still released with the charge (#R318)');

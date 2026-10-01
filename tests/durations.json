@@ -130,5 +130,6 @@
  "tests/form-control-names.spec.js": 80,
  "solo": [
   "-cesium.*.spec.js$"
- ]
+ ],
+ "tests/atlas-live-stream.spec.js": 36
 }
