@@ -58,7 +58,7 @@ const RETURNED = { mobileUI: 'initMobileUI' };
 const callOf = (f) => (RETURNED[f]
   ? `const ${RETURNED[f]}=${f}(IM_HOST);`
   : `${f}(IM_HOST);`);
-const callRx = (f) => new RegExp(`(?<![\\w$.])${callOf(f).replace(/[.()$]/g, '\\$&')}`, 'g');
+const callRx = (f) => new RegExp(`(?<![\\w$.])${callOf(f).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
 const callCount = (f) => (code(html).match(callRx(f)) || []).length;
 const callAt = (f) => { const m = callRx(f).exec(code(html)); return m ? m.index : -1; };
 const importsByName = (f, file) => new RegExp(`^import \\{[^}]*\\b${f}\\b[^}]*\\} from '\\./${file.slice(3).replace('.', '\\.')}';$`, 'm').test(rd('js/app-body.js'));

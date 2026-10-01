@@ -1141,10 +1141,10 @@ test('R443 ⑩ the card resolves the subregion, and no second copy of the table 
     for (const m of code.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*([^;\n]*)/g)) {
       if (PATH.test(m[2]) && !FRAGMENT.test(m[2])) whole.add(m[1]);
     }
-    const mentionsFile = (s) => !FRAGMENT.test(s) && (PATH.test(s) || [...whole].some((v) => new RegExp('\\b' + v.replace(/\$/g, '\\$') + '\\b').test(s)));
+    const mentionsFile = (s) => !FRAGMENT.test(s) && (PATH.test(s) || [...whole].some((v) => new RegExp('\\b' + v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b').test(s)));
     const calls = [...code.matchAll(EVAL)].map((m) => argOf(code, m.index + m[0].length - 1));
     for (const h of helpers) {
-      for (const m of code.matchAll(new RegExp('(?<![\\w$.])' + h.replace(/\$/g, '\\$') + '\\s*\\(', 'g'))) calls.push(argOf(code, m.index + m[0].length - 1));
+      for (const m of code.matchAll(new RegExp('(?<![\\w$.])' + h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\(', 'g'))) calls.push(argOf(code, m.index + m[0].length - 1));
     }
     if (calls.some(mentionsFile)) runners.push(f);
   }

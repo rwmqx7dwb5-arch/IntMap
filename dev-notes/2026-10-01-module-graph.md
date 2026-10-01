@@ -61,6 +61,14 @@ pr: 860
 - **計器の約束違反**: `scripts/perf-compare.mjs` は見出しで「2 つのビルドを 2 つの URL で比べられる」と言いながら、腕を必ず `--base` に連結していた。完全な URL をそのまま使うようにした。
 - **新しい `window` 読み 1 件**: 着手中に main へ入った commit（News の過去時刻の修正）が `window.IntMapSafe` を 1 か所足した。`IntMapSafe` の持ち主 `js/safe-html.js` は `admin.html` が classic script として読むので、まだ export できない。`reads` 登録に 115 → 116 として記録した（このラチェットが最初に捕まえた実例）。
 
+- **CodeQL が見えるようになった流れ**: PR の CodeQL が「変更した行の上の警告」24 件で赤になった。どれも `main` で 2026-07 / 09 から開いていた既存の警告で、`window.IntMapX` → `IntMapX` の書き換えで行が変わったため、この PR に数えられた。却下せず直した——
+  - `js/data-layers.js` の AIS: #R801 の MMSI の門が `/^d{1,9}$/`（**バックスラッシュが落ちて「d」という文字だけに一致**）で、実在の MMSI は全部拒まれて**船が 1 隻も保持されていなかった**うえ、汚染の警告も閉じていなかった。`\d` に戻し、保持先を `Map` にした（鍵が `Object.prototype` に届く経路そのものが無い）。`tests/module-graph-checks.test.mjs` ⑨。
+  - `js/map-ui.js` の凡例: 局所の `esc` が `< > &` を消すだけで `"` を残し、二重引用符の属性に入っていた → 唯一の符号器 `IntMapSafe.html`。
+  - `js/app-body.js` の時計ウィジェット: 読者の設定（タイムゾーン）を `innerHTML` に符号化せず入れていた → `IntMapSafe.html`。
+  - 検査 3 本の正規表現の作り方（`$` や `.()$` だけを逃がしていた）→ 全メタ文字。
+  - この 2 か所で `window.IntMapSafe` の読みが 116 → 118（`reads` 登録に記録。`safe-html.js` はまだ export できない——§5）。
+- **着地後に入った検査**: 全件テストの後に main へ入った `tests/atlas-live-stream-checks.test.mjs` が `js/ai-core.js` を文字列で評価していた（CI の Regression 3/3 で赤）→ import に。
+
 ## 4. 起動が遅くならないこと
 
 **束（`check:perf` と build-report、同じ機械で両方をビルド）**: eager JS raw 4,564.3 → 4,533.5 kB（−30.8）、gzip 1,487.5 → 1,491.3（+3.8、+0.26%）、brotli 1,125.7 → 1,124.9（−0.8）、要求 9 → 9、モジュール 291 → 291。`check:perf` は天井の内側。

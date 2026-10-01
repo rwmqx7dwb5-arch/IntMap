@@ -3139,7 +3139,7 @@ export function geojsonUpload(HOST){
       PARTS.forEach(p=>{ const l=it.sid+p.sfx; try{ if(GE().layers.has(l)) GE().layers.remove(l); }catch(_){} });
       try{ if(GE().layers.hasSource(it.sid)) GE().layers.removeSource(it.sid); }catch(_){}
       items.splice(i,1); renderList(); }
-    const esc=(s)=>String(s==null?'':s).replace(/[<>&]/g,'');
+    const esc=window.IntMapSafe.html;   /* the one encoder: this copy stripped < > & and left " in double-quoted attributes */
     const nfmt=(v)=>{ try{ return Number(v).toLocaleString(IntMapLang.locale(HOST.lang),{maximumFractionDigits:3}); }catch(_){ return String(v); } };
     /* ══ (#R738) 凡例 — 地図が塗ったのと同じ snapshot を読む ════════════════════════════════════
        ⚠ item.legend is the object paintExpr() was built from. Recomputing the classes here would be

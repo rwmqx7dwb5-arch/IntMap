@@ -160,3 +160,21 @@ test('⑧ the real tree: no registry, no exported global read off window, and ev
   const m = measure();
   for (const n of ['IntMapLang', 'IntMapTime', 'IntMapGeoEngine']) assert.equal(m.reads[n] || 0, 0, `${n} is read off window again`);
 });
+
+test('⑨ the AIS guard reads digits again: a real MMSI is kept, a key that names the prototype is not', async () => {
+  /* Found while clearing CodeQL for this change: the #R801 guard read `/^d{1,9}$/` — the letter d —
+     so every numeric MMSI was refused and the ship layer kept nothing, while the pollution alert it
+     was written for stayed open. The store is a Map now and the guard reads `\d`. The function is
+     lifted from the shipped factory (it lives in its closure) and run on the store it declares. */
+  const { liftFunction } = await import('./helpers/lift-function.mjs');
+  const src = codeOnly(readFileSync(new URL('../js/data-layers.js', import.meta.url), 'utf8'));
+  const body = liftFunction(src, 'handleAIS');
+  const shipsByMMSI = new Map();
+  const handleAIS = new Function('shipsByMMSI', 'scheduleShipRefresh', body + '\nreturn handleAIS;')(shipsByMMSI, () => {});
+  handleAIS({ MessageType: 'PositionReport', MetaData: { MMSI: 244123456, latitude: 52.1, longitude: 4.3 }, Message: { PositionReport: { Latitude: 52.1, Longitude: 4.3, Sog: 3 } } });
+  assert.equal(shipsByMMSI.size, 1, 'a nine-digit MMSI is a ship');
+  assert.equal(shipsByMMSI.get('244123456').lat, 52.1);
+  handleAIS({ MessageType: 'PositionReport', MetaData: { MMSI: '__proto__', latitude: 1, longitude: 1 } });
+  assert.equal(shipsByMMSI.size, 1, '«__proto__» is not an MMSI');
+  assert.equal({}.lat, undefined, 'and nothing reached Object.prototype');
+});

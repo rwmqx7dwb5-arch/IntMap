@@ -4218,7 +4218,7 @@ export function dataLayers(HOST){
        stream real vessel positions for the current viewport; WITHOUT a key we show an honest prompt
        and NO ships — we never fabricate vessels. */
     let aisKey=''; try{ aisKey=localStorage.getItem('intmap_ais_key')||''; }catch(_){}
-    let aisWS=null, shipsByMMSI={}, aisRefreshT=null, _aisMove=null, _aisMoveT=null, aisReconnectT=null;
+    let aisWS=null, shipsByMMSI=new Map(), aisRefreshT=null, _aisMove=null, _aisMoveT=null, aisReconnectT=null;
     function updateShipsZoomHint(){
       const on=GE().layers.get('lyr-ships')&&GE().layers.getLayout('lyr-ships','visibility')==='visible';
       const el=zoomHintEl('ships-zoom-hint',SHIPS_MIN_ZOOM);
@@ -4243,7 +4243,7 @@ export function dataLayers(HOST){
     }
     function shipMaterialize(){
       const cutoff=Date.now()-15*60000;   /* drop vessels not heard from in 15 min */
-      shipsData=Object.values(shipsByMMSI).filter(s=>s.lat!=null&&s.lng!=null&&s.t>cutoff).map(s=>({
+      shipsData=Array.from(shipsByMMSI.values()).filter(s=>s.lat!=null&&s.lng!=null&&s.t>cutoff).map(s=>({
         lng:s.lng, lat:s.lat, mmsi:s.mmsi, name:s.name||'', callsign:s.callsign||'',
         speed:(s.sog!=null?s.sog:null), cog:(s.cog!=null?s.cog:null), heading:(s.heading!=null?s.heading:(s.cog!=null?s.cog:0)),
         navStatus:(s.navStatus!=null?s.navStatus:null), shipType:(s.shipType!=null?s.shipType:null),
@@ -4258,9 +4258,13 @@ export function dataLayers(HOST){
       /* (#R801) The MMSI is the KEY of shipsByMMSI and it arrives from the upstream feed, so it is held to
          what an MMSI is (ITU-R M.585: up to nine decimal digits) before it may name a property — a frame
          whose identity reads "__proto__" or "constructor" would otherwise write into Object.prototype
-         (CodeQL js/prototype-polluting-assignment). A non-MMSI identity is not a ship; the frame is dropped. */
-      if(!/^d{1,9}$/.test(String(mmsi))) return;
-      const s=shipsByMMSI[mmsi]||(shipsByMMSI[mmsi]={mmsi});
+         (CodeQL js/prototype-polluting-assignment). A non-MMSI identity is not a ship; the frame is dropped.
+         ⚠ (module-graph) THE GUARD HAD LOST ITS BACKSLASH: `/^d{1,9}$/` matches only the letter d, so every
+         real MMSI was refused and no ship was ever kept (and the pollution alert stayed open). It reads
+         digits again, and the store is a Map — a key can no longer reach Object.prototype at all. */
+      if(!/^\d{1,9}$/.test(String(mmsi))) return;
+      const key=String(mmsi);
+      let s=shipsByMMSI.get(key); if(!s){ s={mmsi}; shipsByMMSI.set(key,s); }
       if(md.latitude!=null) s.lat=md.latitude; if(md.longitude!=null) s.lng=md.longitude;
       if(md.ShipName) s.name=String(md.ShipName).trim();
       s.t=md.time_utc?(Date.parse(md.time_utc)||Date.now()):Date.now();
@@ -4278,7 +4282,7 @@ export function dataLayers(HOST){
     }
     function connectAIS(){
       if(!aisKey||!GE().hasRenderer()) return;
-      stopAIS(); shipsByMMSI={}; shipsData=[]; refreshTrafficLayer('ships');
+      stopAIS(); shipsByMMSI=new Map(); shipsData=[]; refreshTrafficLayer('ships');
       /* (#R556) ⚠ AISSTREAM SENDS BINARY FRAMES. The default binaryType is 'blob', so JSON.parse(ev.data)
          parses the literal string "[object Blob]", throws, and the catch below swallows it — the reader
          with their OWN key saw exactly the empty ocean the keyless reader saw, for exactly the same

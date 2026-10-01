@@ -3742,7 +3742,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     function updateClock(){ const el=panel&&panel.querySelector('#wdg-clock'); if(!el||!cfg.clock||(panel&&panel.style.display==='none')) return; const now=new Date(); let tz; try{ if(typeof userTZ!=='undefined'&&userTZ&&userTZ!=='auto') tz=userTZ; }catch(_){}
       let tstr,dstr; try{ tstr=now.toLocaleTimeString(IntMapLang.locale(currentLang,'en-GB'),{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:tz}); }catch(_){ tstr=now.toLocaleTimeString(); }
       try{ dstr=now.toLocaleDateString(IntMapLang.locale(currentLang,'en-GB'),{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=now.toLocaleDateString(); }
-      el.innerHTML='<div style="font-size:27px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text-main);line-height:1.1;">'+tstr+'</div><div style="font-size:11px;color:var(--text-muted);">'+dstr+(tz?' · '+tz:'')+'</div>'; }
+      const _E=window.IntMapSafe.html; /* (module-graph) the zone is the reader's setting (DOM text): encoded like everything else */ el.innerHTML='<div style="font-size:27px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text-main);line-height:1.1;">'+_E(tstr)+'</div><div style="font-size:11px;color:var(--text-muted);">'+_E(dstr)+(tz?' · '+_E(tz):'')+'</div>'; }
     function wIcon(c){ if(c==null) return '🌡'; if(c===0) return '☀️'; if(c<=3) return '⛅'; if(c<=48) return '🌫'; if(c<=67) return '🌧'; if(c<=77) return '❄️'; if(c<=82) return '🌦'; if(c<=99) return '⛈'; return '🌡'; }
     function fxF(v){ return v==null?'—':(v<10?(+v).toFixed(3):(+v).toFixed(2)); }
     async function refreshData(){

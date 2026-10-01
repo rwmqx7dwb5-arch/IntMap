@@ -17,6 +17,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { importModule } from './helpers/import-module.mjs';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
@@ -268,9 +269,11 @@ test('atlas-live-stream ② only an Atlas turn streams; every refusal before the
 });
 
 /* ══ ③ js/ai-core.js reads the stream into the answer it always read ═══════════════════════════ */
-function core(respond) {
+/* (module-graph) js/ai-core.js exports its factory and imports the language registry: it is IMPORTED,
+   fresh per harness, with the browser as globals — not evaluated from its text. */
+async function core(respond) {
   const calls = [];
-  const win = { IntMapModules: {}, INTMAP_AI_PROXY: { url: 'https://vpekfwdpurzejrrmacac.supabase.co/functions/v1/ai-proxy' }, SUPABASE_ANON_KEY: 'anon-key' };
+  const win = { INTMAP_AI_PROXY: { url: 'https://vpekfwdpurzejrrmacac.supabase.co/functions/v1/ai-proxy' }, SUPABASE_ANON_KEY: 'anon-key' };
   win.window = win;
   const localStorage = { _m: {}, getItem(k) { return this._m[k] ?? null; }, setItem(k, v) { this._m[k] = String(v); } };
   const location = { protocol: 'https:', hostname: 'rwmqx7dwb5-arch.github.io' };
@@ -278,11 +281,11 @@ function core(respond) {
   const row = () => ({ select() { return this; }, eq() { return this; }, async maybeSingle() { return { data: { count: 0 } }; } });
   win.sb = { auth: { async getSession() { return { data: { session: { access_token: 'jwt' } } }; } }, from() { return row(); } };
   const fetchStub = async (url, opts) => { calls.push(JSON.parse(opts.body)); return respond(calls.length, opts); };
-  const load = (p) => new Function('window', 'document', 'location', 'localStorage', 'navigator', 'fetch', read(p))(win, document, location, localStorage, {}, fetchStub);
-  load('js/lang-registry.js');
-  load('js/ai-core.js');
+  const { aiCore } = await importModule('js/ai-core.js', {
+    globals: { window: win, document, location, localStorage, navigator: {}, fetch: fetchStub },
+  });
   const HOST = { lang: 'jp', user: { id: 'u' }, aiUsage: { date: '', used: 0, limit: 10 }, AI_FREE_DAILY: 10, aiButtonSyncers: [], openAuthModal() {}, t(k) { return k; } };
-  return { IM: win.IntMapModules.aiCore(HOST), calls };
+  return { IM: aiCore(HOST), calls };
 }
 const ANSWER = { text: '{"turn":"final","final_text":"東京"}', used: 1, limit: 10, remaining: 9, charged: true, meta: { protocol: 2, provider: 'openai' }, output: [{ type: 'message', role: 'assistant', content: '{"turn":"final","final_text":"東京"}' }], citations: [] };
 const sseResponse = (text, cut) => {
@@ -297,7 +300,7 @@ const TURN_OPTS = (onEvent, signal) => ({ task: 'atlas_turn', protocol: 2, input
 
 test('atlas-live-stream ③ the done event becomes the answer every line after the fetch already reads', async () => {
   const seen = [];
-  const { IM, calls } = core(() => sseResponse('event: open\ndata: {}\n\n: keep-alive\n\nevent: text\ndata: {"d":"東"}\n\nevent: done\ndata: ' + JSON.stringify({ status: 200, body: ANSWER }) + '\n\n'));
+  const { IM, calls } = await core(() => sseResponse('event: open\ndata: {}\n\n: keep-alive\n\nevent: text\ndata: {"d":"東"}\n\nevent: done\ndata: ' + JSON.stringify({ status: 200, body: ANSWER }) + '\n\n'));
   const env = await IM.askAIJSONEnvelope('', 'sys', [], TURN_OPTS((n, d) => seen.push([n, d])));
   assert.equal(calls[0].stream, true);
   assert.deepEqual(env.output, ANSWER.output);
@@ -305,13 +308,13 @@ test('atlas-live-stream ③ the done event becomes the answer every line after t
   assert.equal(env.streamRetried, undefined);
   assert.deepEqual(seen, [['open', {}], ['text', { d: '東' }]], 'the keep-alive comment and `done` are not previews');
   /* a typed provider error delivered as `done` is the same typed error a plain 503 raises */
-  const { IM: IM2 } = core(() => sseResponse('event: done\ndata: ' + JSON.stringify({ status: 503, body: { error: 'provider_unavailable', retryable: true } }) + '\n\n'));
+  const { IM: IM2 } = await core(() => sseResponse('event: done\ndata: ' + JSON.stringify({ status: 503, body: { error: 'provider_unavailable', retryable: true } }) + '\n\n'));
   await assert.rejects(IM2.askAIJSONEnvelope('', 'sys', [], TURN_OPTS(() => {})), (e) => e.code === 'provider_unavailable');
 });
 
 test('atlas-live-stream ③ a stream that breaks before done is retried ONCE, plainly, under the same turn key', async () => {
   const seen = [];
-  const { IM, calls } = core((n) => n === 1
+  const { IM, calls } = await core((n) => n === 1
     ? sseResponse('event: open\ndata: {}\n\nevent: text\ndata: {"d":"途中"}\n\n', true)
     : new Response(JSON.stringify(ANSWER), { status: 200, headers: { 'content-type': 'application/json' } }));
   const env = await IM.askAIJSONEnvelope('', 'sys', [], TURN_OPTS((n) => seen.push(n)));
@@ -322,14 +325,14 @@ test('atlas-live-stream ③ a stream that breaks before done is retried ONCE, pl
   assert.equal(env.text, ANSWER.text);
   assert.deepEqual(seen, ['open', 'text', 'reset'], 'what the broken stream showed was not withdrawn');
   /* …and a body that simply ends without `done` is the same broken stream */
-  const { IM: IM3, calls: c3 } = core((n) => n === 1 ? sseResponse('event: open\ndata: {}\n\n') : new Response(JSON.stringify(ANSWER), { status: 200, headers: { 'content-type': 'application/json' } }));
+  const { IM: IM3, calls: c3 } = await core((n) => n === 1 ? sseResponse('event: open\ndata: {}\n\n') : new Response(JSON.stringify(ANSWER), { status: 200, headers: { 'content-type': 'application/json' } }));
   assert.equal((await IM3.askAIJSONEnvelope('', 'sys', [], TURN_OPTS(() => {}))).streamRetried, true);
   assert.equal(c3.length, 2);
 });
 
 test('atlas-live-stream ③ a stop the reader pressed is not a broken stream — nothing is retried', async () => {
   const ac = new AbortController();
-  const { IM, calls } = core(() => new Response(new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode('event: open\ndata: {}\n\n')); ac.signal.addEventListener('abort', () => c.error(new DOMException('aborted', 'AbortError'))); } }),
+  const { IM, calls } = await core(() => new Response(new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode('event: open\ndata: {}\n\n')); ac.signal.addEventListener('abort', () => c.error(new DOMException('aborted', 'AbortError'))); } }),
     { status: 200, headers: { 'content-type': 'text/event-stream' } }));
   const p = IM.askAIJSONEnvelope('', 'sys', [], TURN_OPTS(() => { ac.abort(); }, ac.signal));
   await assert.rejects(p, (e) => e.name === 'AbortError');

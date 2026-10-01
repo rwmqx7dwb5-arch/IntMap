@@ -96,7 +96,7 @@ test('R164 #1 each block was moved out, loaded, and instantiated at its original
       : `${key}(IM_HOST);`;
     const at = new RegExp(`(?<![\\w$.])${key}\\(IM_HOST\\)`, 'g');
     assert.equal((code(html).match(at) || []).length, 1, `index.html instantiates ${key} exactly once`);
-    assert.ok(new RegExp(`(?<![\\w$.])${call.replace(/[.()$]/g, '\\$&')}`).test(html), `index.html instantiates ${key} with the shared host at the original position`);
+    assert.ok(new RegExp(`(?<![\\w$.])${call.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(html), `index.html instantiates ${key} with the shared host at the original position`);
   }
 });
 
