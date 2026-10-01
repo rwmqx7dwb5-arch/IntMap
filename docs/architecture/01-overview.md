@@ -81,6 +81,33 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   「モジュールマップに記録される前に失敗したもの（依存の失敗・自前の判定）を再試行できる」ことと、
   **一度の 404 がタブの寿命いっぱい `false` を返し続けるのをやめる**ことにある。
   だから案内（上の `.im-reload`）が本体の手当で、忘れることはその補助である。
+- **インストールできるアプリとして配る。** `manifest.webmanifest` と `icons/` は
+  `scripts/build-app-manifest.mjs` の**生成物**で、名前は `<title>` の語標（「IntMap」は訳さない）、
+  色は `css/intmap.css` の `--bg-color`（暗色＝アイコンの地の色）、アイコンは `IntMap.Icon.png` から導く。
+  `index.html` は `vite-ignore` でそれらを**そのまま**指し（Vite に `assets/` へハッシュ化させると、
+  manifest の中の相対パスが `assets/` 基準で解決されて壊れる）、`STATIC_ASSETS` がコピーする。
+  theme-color は OS の配色ごとに 2 本で、アプリ内のテーマ選択は `js/installable-app.js` が実行時に
+  上書きする。`--check` が index.html のそれらの値も源と照合する。
+  ⚠ 暗色のマークは 384 px しか無いので、512 px は**拡大**である（より大きい原版が来れば無変更で置き換わる）。
+- **Service Worker はアプリ本体の殻（app shell）も持つ——オフラインで開くためだけに。**
+  一覧は手で持たない: `scripts/app-shell.mjs`（vite.config.js の `appShell`、copyStatic の後）が
+  build-report の **eager 集合**（＝`check:perf` が測るのと同じ定義）＋`dist/index.html` と manifest が
+  名指すもの＋eager CSS の `url()` を導出し、ビルド印と一緒に `dist/sw.js` に書き込む。
+  ビルドしていない `sw.js`（dev サーバ）は殻を持たず、タイルのキャッシュだけである。
+  殻のキャッシュ名はビルド印を含むので、配信のたびに新しい worker になり、activate が前の殻を消す（古い版を生き残らせない規則のまま）。
+  install は**この build の文書だけ**を貯める（`cache:'reload'` で取り、印を確かめる——Pages の
+  `max-age=600` が前の文書を返しうるため）。前の殻が持つ同名のハッシュ付き資産は**引き継ぐ**（再取得しない）。
+  答え方は 3 通り: **ハッシュ付き資産**は殻から（再検証しない——名前が中身）、**manifest とアイコン**は
+  殻から答えて裏で取り直す（stale-while-revalidate）、**文書（navigation）はブラウザがオフラインと言う
+  ときだけ**殻から答える。⚠ オンラインの navigation には触らない——`DECISIONS.md` の判断（温まった起動に
+  往復を足さない・ハンドラの不具合で戻ってきた読者を締め出さない）はオンラインの経路についての理由で、
+  オフラインでは代わりがブラウザのエラー頁しか無い。⚠ 「つながっていると言いながら通らない」回線
+  （`onLine` が true のまま失敗する）では殻は答えない——その時は従来どおりのエラーになる。
+  殻から開いた頁は Service Worker に `shell-status` で訊いてそれを知り、**オフライン通知**
+  （`#im-offline`、`.im-reload` と同じカード）を出す——取得できなかったデータが無言の空白に見えないように。
+  回線が戻ると「再読み込みで取得し直す」に変わる。設定 ▸ About & support の「アプリとして追加」は、
+  Chromium が渡した `beforeinstallprompt` を保持して押されたときに出し、iOS では共有シートの手順を 1 文で
+  示し、どちらも無い環境と既にインストール済みの窓では**出さない**（`js/installable-app.js`）。
 - **ファイル同士は `import` で結ぶ。読み込み順は import のグラフが決める。** 依存は `import`／`export` と
   依存注入（`HOST`・`provideLayerKind` のように、使う側へ渡す）で書き、`window` は**後方互換とデバッグの窓口**
   （ブラウザの spec・コンソール・静的ページのインライン script が読むもの）に限る。`src/main.js` に残る

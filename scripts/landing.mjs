@@ -15,8 +15,8 @@
  *                         era snapshots (data/hist-eras.js), the border bands (js/time-borders.js
  *                         HB_MIN/HB_MAX/CS_MIN/CS_MAX), the layer count (js/layer-manifest.js
  *                         LAYERS), the site's address (NOT written here: see SITE below), and
- *                         the donation links (js/app-body.js
- *                         INTMAP_STRIPE_URL_*).
+ *                         the donation links (js/supporter.js
+ *                         STRIPE_DONATE).
  *  Every page is a real HTML document with its words in it — readable with scripts off, and by a
  *  crawler without rendering — so the language versions are separate URLs (hreflang), not a
  *  runtime switch.
@@ -35,6 +35,7 @@ import { SHOWCASE, WITHHELD, CAPTURED, CURRICULUM } from '../js/showcase.js';
 import { LAYERS, sharedIds } from '../js/layer-manifest.js';
 import { SITE_BASE_PATH } from '../supabase/functions/_shared/site-origin.js';
 import { SITE_TOKEN } from './site-url.mjs';
+import { STRIPE_DONATE } from '../js/supporter.js';   /* the donation links' one owner (supporter-funnel) */
 
 /* ══ THE SITE'S ADDRESS IS NOT WRITTEN INTO THE PAGES — A TOKEN IS ═══════════════════════════════════
    canonical, hreflang, og:url, og:image and the sitemap's <loc> need ABSOLUTE addresses, and the address
@@ -59,9 +60,7 @@ export function facts() {
   const er = rd('data/hist-eras.js');
   const eras = JSON.parse(er.slice(er.indexOf('=') + 1).replace(/;\s*$/, ''));
   const site = SITE;
-  const ab = rd('js/app-body.js');
-  const stripeEn = need(/INTMAP_STRIPE_URL_EN = '(https:\/\/donate\.stripe\.com\/[^']+)'/, ab, 'js/app-body.js INTMAP_STRIPE_URL_EN')[1];
-  const stripeJp = need(/INTMAP_STRIPE_URL_JP = '(https:\/\/donate\.stripe\.com\/[^']+)'/, ab, 'js/app-body.js INTMAP_STRIPE_URL_JP')[1];
+  const stripeEn = STRIPE_DONATE.en, stripeJp = STRIPE_DONATE.jp;
   return {
     floor, bcYears: 1 - floor,                    /* astronomical year y ≤ 0 is (1 − y) BC */
     snapshots: eras.snaps.length, firstSnap: eras.snaps[0].y,

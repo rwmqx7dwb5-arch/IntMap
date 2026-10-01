@@ -35,7 +35,71 @@ export default [
     schema: () => ({ type: 'object', properties: { year: int(), date: str(), on: bool() } }),
     async run(a, dctx, K) { return coverage(a, K); },
   },
+  {
+    row: ['time.compare',               'timeCompare',    'compareTime,compareYear',                                     'time',    'timeView', 'panel.compare,time.compare', 'panel,time',         'session', 'none',   '',         ''],
+    /* (time-compare-lapse) THE COMPARISON WINDOW AT AN INSTANT OF ITS OWN — 「1914 年 | 今日」. Opens the window if it is
+       closed, and sets ITS clock (js/compare.js `setTime`) without moving the main map's: a year, a date, «now», or
+       `follow:true` to move with the main map again. The picked layer is judged at that instant by the main map's
+       rule, so the result says what the window draws there and why not. */
+    schema: () => ({ type: 'object', properties: { year: int(), date: str(), now: bool(), follow: bool(), layer: str() }, anyOf: [{ required: ['year'] }, { required: ['date'] }, { required: ['now'] }, { required: ['follow'] }] }),
+    async run(a, dctx, K) { return compareAt(a, K); },
+  },
+  {
+    row: ['time.lapse',                 'timeLapse',      'playTime,playYears',                                          'time',    'timeView', 'time,time.lapse',        'time',                'session', 'none',   '',         ''],
+    /* (time-compare-lapse) THE CLOCK PLAYED FORWARD — js/time-lapse.js: from a start to an end (default: the present) by
+       a step in years, days or hours, one DRAWN frame at a time (a frame waits for the map to draw it). `play:false`
+       stops it where it is. Layers begin and stop being drawn as their sources begin and stop stating the instants. */
+    schema: () => ({ type: 'object', properties: { play: bool(), from: str(), to: str(), year: int(), toYear: int(), unit: str(), step: int(), fps: num(), loop: bool() } }),
+    async run(a, dctx, K) { return lapse(a, K); },
+  },
 ];
+
+/* ══ (time-compare-lapse) THE TWO NEW DOORS ═════════════════════════════════════════════════════════════════
+   Each result carries `meta.want` — the state the call set out to reach, in the shape the observer reads
+   (js/atlas-capabilities.js `timeView`): the verdict compares it with what the app reports AFTER, so a window
+   that did not move or a lapse that did not start is not called done. */
+async function compareAt(a, K) {
+  const R = K.R, L = K.L, warn = K.warn, note = K.note, esc = K.esc;
+  /* ⚠ READ OFF THE WINDOW'S PUBLISHED CONTROLLER, NOT IMPORTED FROM js/compare.js: this module is in Atlas's lazy chunk,
+     and a lazy chunk importing js/compare.js (eager, and itself importing modules other lazy chunks share) split three
+     shared modules out of the boot chunk — eager.requests 9 → 12, measured with scripts/perf-budget.mjs. */
+  const C = window.IntMapCompare;
+  if (!C || typeof C.setTime !== 'function') return R(false, warn('⚠ ' + L('The comparison window is not available', '比較ウィンドウが使えません')));
+  C.open();
+  if (a.layer) {
+    /* a layer named for the window: the picker's own option, by its key or its visible name */
+    const sel = document.getElementById('cmp-layers-sel');
+    const want = String(a.layer).trim().toLowerCase();
+    const opt = sel ? Array.from(sel.options).find((o) => o.value && (o.value.toLowerCase() === want || o.textContent.trim().toLowerCase() === want)) : null;
+    if (opt && sel.value !== opt.value) { sel.value = opt.value; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+  }
+  let spec;
+  if (a.follow === true) spec = { follow: true };
+  else if (a.now) spec = { now: true };
+  else if (a.year != null) spec = { year: Math.round(+a.year) };
+  else if (a.date) spec = { date: String(a.date) };
+  else return R(false, warn('⚠ ' + L('Give the window a year, a date, now, or follow:true', '年・日付・now・follow:true のいずれかを指定してください')));
+  if (spec.year != null && spec.year < IntMapTime.min) return R(false, warn('⚠ ' + L('Chronos reaches back to ' + IntMapTime.min, 'Chronos は ' + IntMapTime.min + ' 年まで遡れます')));
+  const s = C.setTime(spec);
+  /* the picked layer is judged asynchronously (js/compare.js applyTime) — the answer waits for that verdict */
+  const st = await C.judged();
+  const want = { compare: { open: true, follow: !!s.follow, live: s.live, iso: s.iso } };
+  let h = '<div>' + esc(L('Compare window', '比較ウィンドウ')) + ': <b>' + esc(st.label) + '</b> | ' + esc(L('main map', 'メイン地図')) + ': ' + esc(st.main.label) + '</div>';
+  if (st.layer && st.verdict) h += '<div>' + esc(st.held ? L('Not drawn here', 'ここでは描いていません') : L('Drawn', '描いています')) + (st.note || st.verdict.why ? ' — ' + esc(st.note || st.verdict.why) : '') + '</div>';
+  return R(true, note('✓ ') + h, { want, compare: st });
+}
+async function lapse(a, K) {
+  const R = K.R, L = K.L, warn = K.warn, note = K.note, esc = K.esc;
+  const TL = await import('./time-lapse.js');
+  if (a.play === false) { const s = TL.stopLapse('stopped'); return R(true, note('✓ ' + L('Time-lapse stopped at ', 'タイムラプスを停止: ') + esc(s.at || L('now', '現在'))), { want: { lapse: { playing: false } }, lapse: s }); }
+  const from = a.from != null && a.from !== '' ? a.from : (a.year != null ? Math.round(+a.year) : null);
+  const to = a.to != null && a.to !== '' ? a.to : (a.toYear != null ? Math.round(+a.toYear) : undefined);
+  const s = TL.startLapse({ from, to, unit: a.unit, step: a.step, fps: a.fps, loop: a.loop });
+  if (s.error === 'no-start') return R(false, warn('⚠ ' + L('Give the lapse a start (a year or a date)', 'タイムラプスの開始（年か日付）を指定してください')));
+  if (s.error === 'empty-range') return R(false, warn('⚠ ' + L('The end is before the start', '終了が開始より前です')));
+  const unitW = s.unit === 'year' ? L('year(s)', '年') : s.unit === 'day' ? L('day(s)', '日') : L('hour(s)', '時間');
+  return R(true, note('✓ ' + L('Time-lapse playing', 'タイムラプスを再生中') + ': ' + esc(s.from) + ' → ' + esc(s.to || L('now', '現在')) + ' · ' + s.step + ' ' + unitW + ' · ' + s.rate + '×' + (s.loop ? ' · ' + L('loop', 'ループ') : '') + (s.reducedMotion ? ' · ' + L('reduced motion: slowest speed', '視差効果を減らす: 最も遅い速度') : '')), { want: { lapse: { playing: true } }, lapse: s });
+}
 
 async function travel(a, dctx, K) { const L = K.L, R = K.R, note = K.note, warn = K.warn, ymdISO = K.ymdISO;
       { try{ const T=IntMapTime;

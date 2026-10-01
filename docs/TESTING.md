@@ -78,7 +78,7 @@ through the auth listener and checks that 45 cards and the reading position surv
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**132 measured spec files / 87.4 min** of serial browser time against a ceiling of 87.4 min; and
+**133 measured spec files / 87.9 min** of serial browser time against a ceiling of 87.9 min; and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
 
@@ -99,7 +99,7 @@ also runs, in core, **every spec it added or edited** (read from the diff, `scri
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **126 spec files** — is the whole suite minus core
+**deep** tier — **127 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -877,7 +877,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **126 spec files** against core's 6 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **127 spec files** against core's 6 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
@@ -2611,6 +2611,23 @@ viewport に入るまで**ポーリング**し、入らなかった扉は `reach
 （[[intmap-co-designed-reader-cannot-falsify]]）。実測: `_placeLayerTools` を `return;` で潰すと
 **①②③ すべてが単独実行で赤くなる**（`-g` を使わないと①しか赤く見えない）。
 
+**インストールできるアプリ（installable-app）——smoke の末尾 5 本と node 検査 11 本。**
+
+`tests/smoke.spec.js` の **installable-app ①〜⑤** はブラウザにしか答えられないことを訊く: ① Chromium 自身の
+`Page.getAppManifest`（errors 空）と `Page.getInstallabilityErrors`（空）、アイコンが 200・PNG ② Atlas の
+view.locate がエミュレートした位置へ地図を動かし、**同じ読み取り**から位置の点と精度円を描く ③ 方位磁針の下の
+`#btn-locate` が同じことをし、地図の中心が位置に乗っている間だけ `.on` ④ 許可が無いと「拒否」と言う
+⑤ 殻が満ちてから `setOffline(true)` で開き直すとアプリが開き通知が出て、復帰で「再読み込み」に変わる。
+⚠ **独立した spec にしなかった**——新しいファイルは未計測の p75 で core と全体の天井に課金される（上の前例）。
+①〜④ は smoke の起動を使い、⑤ だけは**自分の起動を払う**: 試験全体の設定は Service Worker を塞いでいる
+（`playwright.config.js`）のに、⑤ の主題は worker そのものなので、`serviceWorkers:'allow'` の文脈を自分で作る。
+最後に置くのは、オフライン往復が共有ページに残らないようにするため（⑤ は別の文脈で、共有ページは触らない）。
+⚠ **位置エミュレーションの実測**: 1 回目の読み取りに続けて同じ文脈で 2 回目を読むと（以前の view.locate →
+`IntMapLocate.start` がそうだった）**2 回目は永久に返らない**。② が「同じ読み取りから描く」を測るのはこのため。
+Node 側は `tests/installable-app-checks.test.mjs`（manifest・アイコン・head の照合、maskable の安全域を実画素で、
+殻の導出と拒否、`sw.js` を評価して install／activate／**オフラインだけの** navigation／不変資産と SWR、
+`requestFix` の 5 理由、view.locate を実際に呼ぶ）。
+
 `tests/shell-layer-panel-checks.test.mjs` (#R766)（4 本・147 ms）は**ソースが答えられることだけ**を測る
 ——運んだノードが捨てられる前に救い出されているか（**順序**）・二重の扉の判定が宣言からの計算の
 ままか・`data-os-act` が実在するコマンドを名乗っているか・帯を動かす各経路のあとに再配置が走るか。
@@ -3935,6 +3952,13 @@ core と全体の両方に課金される）: RainViewer の索引を 503 にし
 「何も触らない地図では整合器が走らない」はブラウザで 1 回測って記録した（`dev-notes/2026-09-30-layer-failure-state.md`
 §2）。常設の検査は node の ⑦（`everyTick` に整合器の鍵が無い・見直しは当たり 1 回の箱だけ・静かなら 0 回）。
 
+**二時点比較とタイムラプス**（`dev-notes/2026-10-01-time-compare-lapse.md`）も同じ前例に従い、ブラウザの検査は新しい
+spec ファイルではなく `tests/smoke.spec.js` の末尾の 2 本（time-compare-lapse ①②）に入れた——比較窓 1914 とメイン 1960 が
+別々の記録の国境を描くこと、窓にも年代の規則（滅んだ政体の名前を外す）が効くこと、`ct=` のハッシュ遷移で窓の時刻が戻ること、
+ラプスが 1 年 1 コマで飛ばさず進みケッペンが 1901 年に描き始めること。共有ページなので各検査は時計・窓・箱・パネルを戻し、
+ハッシュ遷移の復元は `js/map-ui.js` の自分の時計が走り終えるまで待つ（待たないと次の検査の箱を外す——実測）。
+node の半分は `tests/time-compare-lapse-checks.test.mjs`（2 つの時計・`onMap`・窓の全層の宣言・ラプスの刻みと停止・`timeView` の判定）。
+
 ## 企業アトラスの門 - `npm run check:companies`
 
 `scripts/companies-audit.mjs`。**他の `check:*` が source を読むのに対し、これは出荷される
@@ -4476,3 +4500,11 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
 ドメイン直下でも `/IntMap/` 配下でも同じビルドが動く**こと。正本以外にアドレスの綴りが無いこと
 （`check:static` の規則 `site-address`）、`CUSTOM_DOMAIN` が空なら `dist/CNAME` を出さず値があれば出すこと、
 1 つのビルドを 2 つのベースパスに置いて index が参照するローカル資源が両方で取れることを、実際に配信して確かめる。
+
+### `tests/migration-order-guard-checks.test.mjs` (migration-order-guard)
+
+5 本。**変更が足した migration は base の最新より後に並ぶ**こと（`check:static` の規則 `migration-order`、判定は
+`scripts/migration-order.mjs` の純関数）。実測した事例（base の最新 20261002100000 に対して 20261002090000 を足す）が
+名指されること、後の時刻と base 自身のファイルは通ること、同じ時刻も拒むこと、このリポジトリの migration が
+全部 14 桁の版を持ち重複しないこと。base は `IM_DIFF_BASE`、PR では `HEAD^1`、手元では `origin/main` で、
+読めなければ測れなかったと警告する（本番の db push が最後の柵として残る）。

@@ -194,7 +194,7 @@ test('#R218 ⑤ …and the app fetches those descriptions only when it needs the
 {
 
 /* ── ⑩ the sixth language ─────────────────────────────────────────────────────────────────────── */
-test('R223 ⑩ Traditional Chinese is registered, complete, and appended at the end', () => {
+test('R223 ⑩ Traditional Chinese is registered, complete, and appended at the end', async () => {
   const reg = read('js/lang-registry.js');
   const rows = [...reg.matchAll(/\{\s*code:\s*'([a-z-]+)'/g)].map((m) => m[1]);
   /* ⚠ (#R224) A PREFIX, NOT AN EXACT LIST. #R221's own lesson — 「『5言語ちょうど』を数えるテストは
@@ -238,13 +238,20 @@ test('R223 ⑩ Traditional Chinese is registered, complete, and appended at the 
     return n;
   })();
   assert.ok(enUi > 300, 'the English keyed table was read (got ' + enUi + ')');
-  /* ⚠ (share-embed-distribution) …and «at least what English declares» stopped being the rule on 2026-09-11:
-     CONSTITUTION.md §7 narrowed what IntMap WRITES NEXT to en + jp, so English now grows past the seven carried
-     languages by design (the share panel's Embed tab added 16 en/jp keys). What must still hold is the half that
-     protects the reader — zh keeps every keyed row it HAS — and that number is the one the i18n gate already holds,
-     tests/i18n-coverage-floor.json, read here rather than restated. */
+  /* ⚠ «AT LEAST WHAT ENGLISH DECLARES» WAS THE 9-LANGUAGE RULE, and CONSTITUTION.md §7 narrowed it on
+     2026-09-11: IntMap AUTHORS new text in en+jp only (scripts/lang-policy.mjs), so English now grows past the
+     CARRIED languages by design (measured twice: six installable-app keys made this read 423 vs 428, and the
+     share panel's Embed tab added sixteen). ONE RULE, BOTH HALVES (installable-app × share-embed-distribution):
+     ① whatever the policy says, zh keeps every keyed row it HAS — the number the i18n gate already holds,
+       tests/i18n-coverage-floor.json, read here rather than restated;
+     ② and if the policy makes zh a language IntMap WRITES, it keeps up with English as before — asked of the
+       policy, not of a typed list, so `return all;` in lang-policy turns it back on with no edit here. */
   const floor = JSON.parse(read('tests/i18n-coverage-floor.json')).langs.zh.keyed;
   assert.ok(floor > 300 && ui >= floor, 'the keyed table keeps every row it carries (got ' + ui + ' vs the floor ' + floor + '; en has ' + enUi + ')');
+  const { authoredLangs } = await import('../scripts/lang-policy.mjs');
+  if (authoredLangs().includes('zh')) {
+    assert.ok(ui >= enUi, 'an authored language carries the late-registered keys too (got ' + ui + ' vs en ' + enUi + ')');
+  }
   assert.ok(inl >= 1800, 'every inline L(…) string has an entry (got ' + inl + ')');
   /* …and it is really Chinese, not a copy of the template */
   const cjk = (zh.match(/[一-鿿]/g) || []).length;

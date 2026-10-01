@@ -8,10 +8,17 @@
 # wrong decision. Each was a step nobody was assigned.
 #
 #   deploy  — push to main touching supabase/functions/**, supabase/migrations/** or
-#             supabase/config.toml: deploys exactly the functions that changed (all of them when
-#             _shared/ or config.toml changed — the roster is config.toml's [functions.*]), and
-#             applies the migrations that push ADDED with `supabase db push`, but only when a dry
-#             run shows db push would apply exactly those (scripts/supabase-deploy.mjs says why).
+#             supabase/config.toml: deploys exactly the functions that changed SINCE THE LAST
+#             SUCCESSFUL DEPLOY (all of them when _shared/ or config.toml changed — the roster is
+#             config.toml's [functions.*]), plus every declared function production does not have,
+#             and applies the migrations ADDED since then with `supabase db push`, but only when a
+#             dry run shows db push would apply exactly those (scripts/supabase-deploy.mjs says why).
+#             Then it lists production and is red if a declared function is not there.
+#             ⚠ The base is the headSha of this workflow's last green push run, not the push's own
+#             parent. MEASURED 2026-10-01: #869 and #874 were red (nothing deployed), #878 fixed the
+#             migrations and was green — and deployed no function, because #878 changed none.
+#             usage-count stayed absent (404) and #874's _shared change stayed undeployed. No
+#             readable record, or a base off this line → every function.
 #   drift   — nightly: scripts/release-state.mjs --edge --db --check (deployed function SOURCE vs
 #             the repository, byte for byte; remote migration history vs supabase/migrations).
 #             Any difference, or anything it could not measure, is red.
@@ -46,6 +53,7 @@ on:
 
 permissions:
   contents: read
+  actions: read               # the deploy base: this workflow's last successful push run (gh run list)
   issues: write               # the two incident issues (deploy failing / production drifted)
 
 # Never two deploys at once, never cancel one half way.
@@ -62,7 +70,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
-          fetch-depth: 0      # both ends of the push's diff must exist here
+          fetch-depth: 0      # the last successful deploy's commit must exist here (and its copy of the script)
 
       - name: Require Supabase secret
         id: gate
@@ -83,14 +91,14 @@ jobs:
       - name: Deploy
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          BEFORE: ${{ github.event.before }}
+          GH_TOKEN: ${{ github.token }}   # read-only: gh run list (the deploy base)
           AFTER: ${{ github.sha }}
           MODE: ${{ github.event_name == 'workflow_dispatch' && 'all' || 'diff' }}
         run: |
           if [ "$MODE" = "all" ]; then
-            node scripts/supabase-deploy.mjs --all
+            node scripts/supabase-deploy.mjs --all --after "$AFTER"
           else
-            node scripts/supabase-deploy.mjs --before "$BEFORE" --after "$AFTER"
+            node scripts/supabase-deploy.mjs --base-from-runs --after "$AFTER"
           fi
 
       - name: Open / rewrite / close the deploy incident issue

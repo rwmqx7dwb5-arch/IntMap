@@ -95,7 +95,7 @@ DB（migration）。`main` が緑であることは、その 3 つが同じ組�
 
 **Edge Functions と migration は `.github/workflows/supabase-deploy.yml` が出す。** `main` への push で
 `supabase/functions/**`・`supabase/migrations/**`・`supabase/config.toml` が変わったとき、
-`scripts/supabase-deploy.mjs` が差分から**変わった関数だけ**を `supabase functions deploy <name> --use-api` で出す
+`scripts/supabase-deploy.mjs` が**最後に成功した配備から**変わった関数（本番に無い宣言済みの関数を含む・起点は docs/RELEASE.md）を `supabase functions deploy <name> --use-api` で出す
 （`_shared/` か `config.toml` が変わったら全関数。名簿は `config.toml` の `[functions.*]`）。その push が
 **足した** migration は `supabase db push` で出すが、`--dry-run` が流すものが**足したものと完全に一致する
 ときだけ**——本番の履歴は baseline を記録していないので、無防備な `db push` は live DB に baseline を

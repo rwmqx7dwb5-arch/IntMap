@@ -3,8 +3,9 @@
 Every database change is a migration file in [`supabase/migrations/`](../supabase/migrations),
 reviewed in a PR, tested locally + in CI, and applied to production **by
 [`.github/workflows/supabase-deploy.yml`](../.github/workflows/supabase-deploy.yml) when the PR
-merges** — `supabase db push`, but only when its dry run would apply exactly the migrations that
-push added (see [Why `db push` is guarded](#why-db-push-is-guarded--the-history-is-not-reconciled)).
+merges** — `supabase db push`, but only when its dry run would apply exactly the migrations added
+since the last successful deploy (not only by that push: a red run's migrations are carried to the
+next run — [`RELEASE.md`](RELEASE.md) → "Supabase: Edge Functions and migrations") (see [Why `db push` is guarded](#why-db-push-is-guarded--the-history-is-not-reconciled)).
 This page is the procedure.
 
 ## Prerequisites (one time)
@@ -20,7 +21,7 @@ work branch → migration → local rebuild → RLS/permission tests → PR (aut
            → merged → supabase-deploy.yml: guarded db push → changed functions → prod smoke test
 ```
 
-⚠ **A merge to `main` applies the migrations that merge added.** Review and back up **before**
+⚠ **A merge to `main` applies the migrations added since the last successful deploy** (normally: the ones that merge added). Review and back up **before**
 you open the PR with auto-merge — for a destructive migration (below), open it without `--auto`,
 take the backup, then merge by hand.
 

@@ -289,6 +289,18 @@ export function explain(decl, v, at) {
   }
 }
 
+/** onMap(decl, drawnBy) — the declaration as it holds on ANOTHER map (time-compare-lapse). `follows` / `self` /
+    `ownDate` name the MODULE that applies the instant, and on a second map that module is a different one: the
+    comparison window draws its own copy of a layer (js/compare.js), which follows its own clock or does not. That map
+    states who draws there — `{ follows?, self?, ownDate? }`, each a «<file> <symbol>» or absent — and the rest of the
+    declaration (what the SOURCE states about time) is unchanged: the source is the same whichever map draws it. */
+export function onMap(decl, drawnBy) {
+  if (!decl || !drawnBy) return decl;
+  const out = Object.assign({}, decl);
+  for (const k of ['follows', 'self', 'ownDate']) { if (drawnBy[k]) out[k] = drawnBy[k]; else delete out[k]; }
+  return out;
+}
+
 /** the kernel withholds a layer only when it is unstated AND its module does not apply the instant
     itself — a `self` module draws per instant and says so on its own (js/satellites-live.js). */
 export const withholds = (decl, v) => !!decl && v.status === 'unstated' && !decl.self;

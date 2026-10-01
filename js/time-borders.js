@@ -1638,36 +1638,42 @@ export function timeBorders(HOST){
       try{ GE().layers.setSourceData('imtb-lbl-src',{type:'FeatureCollection',features:[]}); }catch(_){}
       try{ ['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }); }catch(_){}
       _restoreBase(); try{ window._applyBorders&&window._applyBorders(); }catch(_){} }
-    /* (#R421) `go` takes the INSTANT now, not the year. Callers that still hand it a number keep the old
-       meaning (that year's July 1) so nothing that predates this round has to change. */
-    async function go(when){ active=true; const my=++seq;
+    /* ══ (time-compare-lapse) WHICH COLLECTION ANSWERS AN INSTANT — ONE CHAIN, ANY MAP ══════════════════
+       「1914 年 | 今日」: the comparison window (js/compare.js) is a second map at an instant of its own, and its
+       borders must be the same answer this map would give at that instant — CShapes day-exact, then
+       OpenHistoricalMap, then the historical-basemaps sheets, with every fall-through below. That chain lived
+       inside `go`, interleaved with drawing on THIS map, so a second map could only have copied it. It is a
+       function of the instant now; `go` draws what it answers, and js/compare.js asks it for its own clock.
+       ⚠ IT DRAWS NOTHING AND OWNS NO «WHAT IS SHOWN» STATE (`shownY`, `seq`, `active` stay `go`'s): two maps
+       asking at once share the caches, never each other's screen.
+       → { modern:true } when the present-day base map is the answer (the clock is live, in the current year, or
+         past the last CShapes year); { key, fc, corr, tier } for a collection; null when nothing answered yet
+         (a bundle or a sheet did not arrive — the caller decides whether to try again). */
+    function modernAt(when,live){
+      const isD=(when instanceof Date)&&!isNaN(when.getTime());
+      const year=isD?when.getFullYear():Math.round(+when);
+      return !!live || year>=new Date().getFullYear() || year>CS_MAX; }   /* (#R94i/#R117) recent years keep the MODERN borders — CShapes carries accurate borders through 2019 */
+    async function collectionAt(when,o){ o=o||{};
+      if(modernAt(when,o.live)) return { modern:true, key:null, fc:null };
       const isD=(when instanceof Date)&&!isNaN(when.getTime());
       const year=isD?when.getFullYear():Math.round(+when), mon=isD?(when.getMonth()+1):7, day=isD?when.getDate():1;
-      shownYear=year;   /* (#R410) the reader's year, set BEFORE any early return — `shownY` is a snapshot key and one snapshot answers many years. ⚠ (#R421) it is derived from the INSTANT now, so it still answers "which year is on screen" while the borders under it moved to day precision. */
-      /* (#R117/#R421) 1886–2019 → DAY-EXACT CShapes borders. Falls back to the aourednik snapshot path
-         below if the CShapes bundle can't be loaded. */
+      /* (#R117/#R421) 1886–2019 → DAY-EXACT CShapes borders. Falls back to the snapshot path below if the
+         CShapes bundle can't be loaded. */
       if(year>=CS_MIN&&year<=CS_MAX){ const d=(await Promise.all([csLoad(),bcLoad(),hnLoad()]))[0];   /* (#R531) the marks settle before the first collection is built, so nothing is cached unmarked */
-        if(my!==seq||!active) return;
         if(d){ let key; try{ key='cs'+csEpoch(d,year,mon,day); }catch(_){ key='cs'+year; }   /* the EPOCH, not the date: a quiet decade keeps one cache entry and re-renders nothing */
-          if(shownY===key){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===key&&ensure()) window._applyBorders(); }); }catch(_){} return; }   /* (#R140) don't silently give up when the style is mid-load — retry once ready */
-          let fc=cache.get(key); if(!fc){ try{ fc=await csFC(d,year,mon,day); cache.set(key,fc); }catch(_){ fc=null; } if(my!==seq||!active) return; }
-          if(fc){ shownY=key; shownCorr=false; apply(fc); return; } } }
+          let fc=cache.get(key); if(!fc){ try{ fc=await csFC(d,year,mon,day); cache.set(key,fc); }catch(_){ fc=null; } }
+          if(fc) return { key, fc, corr:false, tier:'cshapes' }; } }
       /* (#R518, widened #R690) HB_MIN–1885 → the same day-exact treatment, off data/hist-borders.js.
-         Same shape as the block above on purpose: the aourednik snapshot below stays the fallback for
-         both bands, so a bundle that fails to load still leaves a world on the screen instead of a
-         blank one.
          ⚠ AND THE FALL-THROUGH IS PER INSTANT, NOT PER BAND — `fc.features.length`. #R690 widened the
          band by nearly two centuries and the record does not fill it evenly, so a day inside the
          window for which OHM holds nothing must reach the snapshot below rather than blank the map. */
       if(year>=HB_MIN&&year<=HB_MAX){ const d=(await Promise.all([hbLoad(),bcLoad(),hnLoad()]))[0];   /* (#R531) as above */
-        if(my!==seq||!active) return;
         if(d){ let key; try{ key='hb'+hbEpoch(d,year,mon,day); }catch(_){ key='hb'+year; }
-          if(shownY===key){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===key&&ensure()) window._applyBorders(); }); }catch(_){} return; }
-          let fc=cache.get(key); if(!fc){ try{ fc=await hbFC(d,year,mon,day); cache.set(key,fc); }catch(_){ fc=null; } if(my!==seq||!active) return; }
-          if(fc&&fc.features.length){ shownY=key; shownCorr=false; apply(fc); return; } } }
+          let fc=cache.get(key); if(!fc){ try{ fc=await hbFC(d,year,mon,day); cache.set(key,fc); }catch(_){ fc=null; } }
+          if(fc&&fc.features.length) return { key, fc, corr:false, tier:'ohm' }; } }
       /* (#R679) the reach comes from the record, so the seventeen pre-common-era snapshots are
          selectable the moment the bundle is there and the fallback list still answers without it. */
-      const _erd=await erLoad(); if(my!==seq||!active) return;
+      const _erd=await erLoad();
       /* ══ ⚠⚠⚠ (#R679) A DEGRADED DEEP YEAR MUST BE ABSENT, NOT TWO THOUSAND YEARS WRONG ═══════
          The fallback list holds only the snapshots whose upstream file name is a plain decimal
          year, so it starts at 100. Ask `nearest` for 323 BC with that list and it answers 100 —
@@ -1677,25 +1683,36 @@ export function timeBorders(HOST){
          ⚠ #R604's own rule says years 1-99 taking world_100 is fine — that is the dataset's
          RESOLUTION there. Below year 1 it is not resolution: upstream HAS those snapshots, they
          are in the bundle, and answering with AD 100 would be jumping past something it holds.
-         So a deep year with no bundle is honestly blank, and the existing four-second retry gets
-         another chance at the file. CONSTITUTION「偽物・ハリボテ禁止」. */
-      if(!_erd&&year<1){ setTimeout(()=>{ try{ if(active&&my===seq) go(when); }catch(_){} },4000); return; }
+         So a deep year with no bundle is honestly blank, and the caller's retry gets another chance
+         at the file. CONSTITUTION「偽物・ハリボテ禁止」. */
+      if(!_erd&&year<1) return null;
       const ny=nearest(year,erYears(_erd));
       /* (#R106) the Tibet merge is DISPLAY-year based — re-apply when it flips (e.g. 1950→1951) even on the same snapshot. */
       /* (#R106) the Tibet merge is DISPLAY-year based, and (hist-era-span-fidelity) so is which names the
-         sheet may carry — the state compared here is both, so 1591→1592 re-applies on the same sheet. A sheet
-         not yet cached cannot be the one on screen, so its state is never the deciding half. */
-      const corr=_eraState(cache.get(ny)||null,year);
-      if(shownY===ny&&shownCorr===corr){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===ny&&shownCorr===corr&&ensure()) window._applyBorders(); }); }catch(_){} return; }   /* (#R140) retry once the style is ready instead of latching absent borders */
-      const fc=await fetchFC(ny); if(my!==seq||!active) return;
-      if(fc){ shownY=ny; shownCorr=_eraState(fc,year); apply(_eraShow(fc,year)); }
-      /* (#R126) fetch failed (network hiccup on the first, uncached travel) → the map stayed border-less with no
-         retry until the user moved the year again. Retry this same request once conditions allow. */
-      else setTimeout(()=>{ try{ if(active&&my===seq) go(when); }catch(_){} },4000); }
+         sheet may carry — `corr` is both, so 1591→1592 re-applies on the same sheet */
+      const fc=await fetchFC(ny); if(!fc) return null;
+      return { key:ny, fc:_eraShow(fc,year), corr:_eraState(fc,year), tier:'snapshot' }; }
+    /* (#R421) `go` takes the INSTANT now, not the year. Callers that still hand it a number keep the old
+       meaning (that year's July 1) so nothing that predates this round has to change.
+       (time-compare-lapse) It draws what `collectionAt` answers; the choice of record is no longer here. */
+    async function go(when){ active=true; const my=++seq;
+      const isD=(when instanceof Date)&&!isNaN(when.getTime());
+      const year=isD?when.getFullYear():Math.round(+when);
+      shownYear=year;   /* (#R410) the reader's year, set BEFORE any early return — `shownY` is a snapshot key and one snapshot answers many years. ⚠ (#R421) it is derived from the INSTANT now, so it still answers "which year is on screen" while the borders under it moved to day precision. */
+      const r=await collectionAt(when); if(my!==seq||!active) return;
+      /* (#R126) nothing answered (a network hiccup on the first, uncached travel, or a deep year whose bundle has not
+         arrived) → the map stayed border-less with no retry until the user moved the year again. Retry this same
+         request once conditions allow. */
+      if(!r){ setTimeout(()=>{ try{ if(active&&my===seq) go(when); }catch(_){} },4000); return; }
+      if(r.modern){ clear(); return; }
+      /* (#R140) the same collection already on screen: don't re-push it — and don't silently give up when the style is
+         mid-load, retry once ready instead of latching absent borders */
+      if(shownY===r.key&&shownCorr===r.corr){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===r.key&&shownCorr===r.corr&&ensure()) window._applyBorders(); }); }catch(_){} return; }
+      shownY=r.key; shownCorr=r.corr; apply(r.fc); }
     IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */
       /* (#R94i) recent years (after the last aourednik snapshot, 2010) → keep the MODERN borders: they are the
          accurate present-day borders (incl. South Sudan 2011, etc.), which the stale 2010 snapshot lacks. */
-      if(e.isLive || e.year>=new Date().getFullYear() || e.year>CS_MAX){ clear(); return; }   /* (#R117) CShapes carries accurate borders through 2019 (incl. South Sudan 2011) — only 2020+ keeps the modern base */
+      if(modernAt(e.when,e.isLive)){ clear(); return; }   /* (#R117) CShapes carries accurate borders through 2019 (incl. South Sudan 2011) — only 2020+ keeps the modern base (the rule is `modernAt`, shared with every map that asks) */
       const w=e.when;   /* (#R421) the whole instant — `e.year` alone was the July-1 rounding */
       go._t=setTimeout(()=>{ try{ go(w); }catch(_){} },45); });   /* (#R122) 120→45ms: a single year change applies almost immediately, while a fast slider drag still coalesces */
     /* (#R107) re-localize the era LABELS (renamed states via _locName, unchanged countries via _modName) when the
@@ -2387,7 +2404,7 @@ export function timeBorders(HOST){
        already answer?» had no answer — the shape #R575 and #R673 each paid for. It is published
        here so tests/history-era-names-checks.test.mjs (#R686) can hold the bundled table and this one
        apart: a name answered by both would be one judgement in two places (#R536). */
-    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, coverage, note, typeNote, blankNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>_drawnFC(), geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName, histNames:histNames, histNameFor:hnFor, histNameForGloss:hnEraGloss, loadHistNames:hnLoad,
+    return { _go:go, _clear:clear, collectionAt, modernAt, current:()=>shownY, active:()=>active, coverage, note, typeNote, blankNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>_drawnFC(), geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName, histNames:histNames, histNameFor:hnFor, histNameForGloss:hnEraGloss, loadHistNames:hnLoad,
              /* (hist-era-span-fidelity) a sheet as the reader's year draws it, and the reviewed spans it is
                 drawn under — a real question about the record («which names does 1600 withhold?»), the same
                 kind `histNameFor` answers; scripts/hist-fidelity.mjs gates the map through it */

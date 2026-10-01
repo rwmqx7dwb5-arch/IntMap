@@ -427,7 +427,9 @@ test('R679 ⑨: the datetime-local control clamps to the lowest year HTML can ex
    inside the border layer's loader, and there is nothing on screen to query. */
 test('R679 ⑩: with no era bundle, a year before the common era is answered by nothing', () => {
   const tb = R('js/time-borders.js');
-  assert.match(tb, /if\(!_erd&&year<1\)\{[\s\S]{0,220}?return;\s*\}/,
+  /* (time-compare-lapse) the refusal lives in the chain's own function now, `collectionAt` — it answers null (nothing),
+     and `go` keeps the map border-less and retries on a null answer — so either form is the same claim */
+  assert.match(tb, /if\(!_erd&&year<1\)(?:\{[\s\S]{0,220}?return;\s*\}| return null;)/,
     'js/time-borders.js no longer refuses a pre-common-era year it cannot source');
   /* …and the fallback path itself must not reach for a file name it cannot spell */
   assert.match(tb, /if\(year<1\) return null;/,

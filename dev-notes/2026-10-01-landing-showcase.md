@@ -133,3 +133,9 @@ JPEG の SOF から読む（画像が正本）。人は meta refresh・`location
 - `scripts/test-budget.mjs` の全体の天井は両方の加算を合わせて 5,245 秒（main の +9 `anonymous-usage-counts` とこの +40）、註も両方。
 - `tests/perf-baseline.json` は main 側から build して `--update`（async.raw・`atlas-console`・dist.assets。増分の中身は §4、
   `atlas-console` には #875 の埋め込みの分も入る）。`tests/global-surface-baseline.json` も `--update`（この回の読みは §4 の 1 件）。
+
+## 8. #872・#874・#876・#878・#879 との合流
+
+能力は main の 151 に 2 つで 153（到達可能 152）、catalogue 60 ブロック。全体のテスト天井は 5,273 秒（main の
+supporter-funnel +28 とこの +40）。perf-baseline は main 側から build して `--update`（`atlas-console` の増分は §4 と同じ
+見本データと Atlas の 2 能力）、global-surface も `--update`。

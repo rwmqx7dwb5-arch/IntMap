@@ -168,17 +168,23 @@ test('R480 ② the five view buttons stay in two pills, one selection each', () 
 /* spelling kept: page markup / inline script (index.html) — only a browser document runs it. */
 test('R480 ③ the compass is a row of the stack, not an item in a pill', () => {
   const rows = rowsOfStack();
-  assert.equal(rows.length, 3, `three rows: views, tools, compass — found ${rows.length}`);
   assert.equal(idOf(rows[1]), 'map-tools-group', 'the tools row is the second');
 
-  const last = rows[2];
-  assert.equal(idOf(last), 'btn-compass', 'the compass is the third and last row');
-  assert.equal(last.tag, 'button', 'and it is the button itself, not a wrapper');
-
-  /* ⚠ `.view-btn` paints a transparent, borderless chip that only reads as a control INSIDE a pill.
-     Standing alone the compass must not wear it, or it is an invisible button floating over the map. */
-  assert.ok(!cls(last).includes('view-btn'), 'a standalone compass cannot use the in-pill chip class');
-  assert.ok(cls(last).includes('compass-btn'), 'it carries its own class');
+  /* 「方位磁針ボタンは分離し、三行目の右側に丸く配置。」 — the third row, on its own */
+  const third = rows[2];
+  assert.ok(third, `the stack has a third row (found ${rows.length})`);
+  assert.equal(idOf(third), 'btn-compass', 'the compass is the third row');
+  /* ⚠ (installable-app) …and what stands UNDER it is the same kind of thing: a round control of its own
+     (the desktop 「現在地へ移動」, the twin of the phone's FAB under the phone's compass). The claim is not
+     «there are exactly three rows» — that pinned today's count — but that no pill and no wrapper sits
+     below the compass, so every row from the compass down is a standalone round button. */
+  for (const row of rows.slice(2)) {
+    assert.equal(row.tag, 'button', `${idOf(row)}: a row below the pills is the button itself, not a wrapper`);
+    /* ⚠ `.view-btn` paints a transparent, borderless chip that only reads as a control INSIDE a pill.
+       Standing alone a control must not wear it, or it is an invisible button floating over the map. */
+    assert.ok(!cls(row).includes('view-btn'), `${idOf(row)}: a standalone control cannot use the in-pill chip class`);
+    assert.ok(cls(row).includes('compass-btn'), `${idOf(row)}: it wears the round glass control's class`);
+  }
 });
 
 /* ── ④ ROUND, WITH A SURFACE OF ITS OWN, IN THE ONE SHARED MATERIAL ──────────────────────────── */
