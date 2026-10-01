@@ -58,7 +58,7 @@ window.IntMapLang.define('en', { ui: {
       lnkTerms:"Terms of Service", lnkPrivacy:"Privacy Policy", legalTabTerms:"Terms", legalTabPrivacy:"Privacy", commAddImage:"Add image",
       tabNews:"News", tabCompanies:"Companies", tabStats:"Countries",
       searchPh:"Search news / places...", filterCountriesPh:"Filter countries...", filterCompaniesPh:"Filter companies...", evCatsAria:"Event categories", pickCountryMap:"Pick a country on the map", searchBtn:"Search", searchLoadBtn:"Search / Load", loading:"Loading articles...",
-      noMatch:"No results found.", networkError:"Couldn't load the news. Retrying…",
+      noNewsForDate:"No articles are dated within {days} days of {date}. Articles exist only around the day they were published — set the clock back to now to see current news.", noMatch:"No results found.", networkError:"Couldn't load the news. Retrying…",
       emptyHint:"No tab selected — the map is clear.<br>Pick a tab above to show content.",
       viewMap:"Map", viewSat:"Satellite", settings:"Settings", modalTitle:"Settings", close:"Close",
       setSecAppearance:"Appearance", setSecLayout:"Layout & panels", setSecMap:"Map behavior", setSecUnits:"Units & time", setSecNews:"News & ticker", setSecAI:"AI", setSecKeys:"Integrations & keys", setSecAbout:"About & support",
