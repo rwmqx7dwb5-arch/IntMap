@@ -12,7 +12,7 @@
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **37 表**（`profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
+実証手順も同じファイル）。現在 **38 表**（`ai_turn_answers` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
 `user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` /
 `atlas_capability_vectors` /
 `community_*` 5 表 / `feedback` /

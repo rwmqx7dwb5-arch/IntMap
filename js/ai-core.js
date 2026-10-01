@@ -287,6 +287,15 @@ export function aiCore(HOST){
      envelope, and js/atlas-evidence.js refuses a citation stamped with a different one. */
   let _aiCallSeq=0;
   function aiNewCallId(){ _aiCallSeq++; let t=0; try{ t=Date.now(); }catch(_){ t=0; } return 'c'+t.toString(36)+'-'+_aiCallSeq; }
+  /* (atlas-stream-replay) ONE KEY PER STREAMED REQUEST. Not the callId: a caller may pass its own callId
+     (opts.callId), and a key that two requests share would hand one of them the other's answer. The key
+     is minted here, where the request is, and nowhere else. */
+  function aiNewReplayKey(){
+    try{ if(typeof crypto!=='undefined'&&crypto&&typeof crypto.randomUUID==='function') return 'r'+crypto.randomUUID(); }catch(_){}
+    let s='r'+Date.now().toString(36)+'-';
+    try{ const b=new Uint8Array(12); crypto.getRandomValues(b); for(const x of b) s+=x.toString(16).padStart(2,'0'); }catch(_){ s+=Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2); }
+    return s;
+  }
   async function aiCallServerFull(prompt, system, imgs, opts){
     const callId=(opts&&opts.callId)?String(opts.callId):aiNewCallId();
     const cfg=window.INTMAP_AI_PROXY||{};
@@ -317,7 +326,9 @@ export function aiCore(HOST){
          so every other caller's body is byte-for-byte what it was. */
       if(opts.protocol===2&&Array.isArray(opts.input)){ body.protocol=2; body.input=opts.input; if(Array.isArray(opts.tools)) body.tools=opts.tools; if(opts.toolChoice) body.toolChoice=String(opts.toolChoice);
         /* (atlas-live-stream) someone is watching this turn — ai-proxy answers as a stream of previews and one `done` (aiReadStream) */
-        if(opts.stream&&typeof opts.stream.onEvent==='function') body.stream=true; }
+        if(opts.stream&&typeof opts.stream.onEvent==='function'){ body.stream=true;
+          /* (atlas-stream-replay) …and the key its answer is held under, so a retry after a broken stream receives that answer instead of a new one */
+          body.replayKey=aiNewReplayKey(); } }
       /* ══ (#R318) THE TURN KEY — ONE USER REQUEST, ONE USE ══════════════════════════════════════
          Atlas finishes one question with up to three calls: the planner, then up to two bounded
          repairs (or, for an image, the read and its self-check re-read). Every one of them used to
@@ -347,12 +358,16 @@ export function aiCore(HOST){
        both 429s, the typed provider errors, the protocol-2 check, the quota mirror — reads a streamed
        answer and a plain one identically. Refusals before the provider call (auth, quota, a bad body)
        are never streamed, so they reach those lines as the plain JSON they always were.
-       ⚠ A STREAM THAT STOPS WITHOUT `done` ANSWERED NOTHING. It is not an empty reply, and its previews
-       are not a reply either. It is retried ONCE, without streaming — a failure that was observed, and a
-       different way of asking (one-pass-or-a-reason §5) — under the same turn key, so the reader's daily
-       use is not charged again (the server finished and settled the first request on its own). The
-       caller is told (`onEvent('reset')`) so the previews it showed are withdrawn, and the envelope
-       says `streamRetried`. ⚠ A STOP THE READER PRESSED IS NOT A BROKEN STREAM: an abort propagates. */
+       ⚠ A STREAM THAT STOPS WITHOUT `done` ANSWERED NOTHING HERE — but the server went on and answered
+       (it runs the request to its end and settles it). So the retry is a RE-RECEIPT, not a re-run
+       (atlas-stream-replay): ONCE, without streaming, under the same turn key and with the same
+       replay key in `x-intmap-replay`. ai-proxy hands back the answer it already produced (no provider
+       call, no charge), waits for it if the first request is still running, and runs the request
+       again only after a failure it observed — the envelope's `streamReplay` is the server's own
+       statement of which (meta.replay: replayed | rerun | unheld), or `unreported` when the server
+       said nothing (one older than the replay key). The caller is told (`onEvent('reset')`) so the
+       previews it showed are withdrawn, and the envelope says `streamRetried`.
+       ⚠ A STOP THE READER PRESSED IS NOT A BROKEN STREAM: an abort propagates. */
     let _streamRetried=false;
     if(body.stream&&r.ok&&/text\/event-stream/i.test(String((r.headers&&r.headers.get&&r.headers.get('content-type'))||''))){
       try{ r=await aiReadStream(r, opts.stream); }
@@ -361,6 +376,7 @@ export function aiCore(HOST){
         if(!(e&&e.code==='stream_broken')) throw e;
         try{ opts.stream.onEvent('reset',{reason:'stream_broken'}); }catch(_){}
         delete body.stream; fetchOpts.body=JSON.stringify(body);
+        if(body.replayKey) fetchOpts.headers={...headers,'x-intmap-replay':String(body.replayKey)};
         r=await fetch(cfg.url,fetchOpts); _streamRetried=true;
       }
     }
@@ -420,7 +436,9 @@ export function aiCore(HOST){
     else if(j.choices&&j.choices[0]) text=(j.choices[0].message&&j.choices[0].message.content)||j.choices[0].text||'';
     return {text, meta, citations, callId, turnId:String((opts&&opts.turnId)||''), task:String((opts&&opts.task)||'free_text'),
       output:(j&&Array.isArray(j.output))?j.output:null,   /* (atlas-native-tools) a protocol-2 turn's items */
-      streamRetried:_streamRetried||undefined};   /* (atlas-live-stream) the stream broke and this answer came from the one plain retry */
+      streamRetried:_streamRetried||undefined,   /* (atlas-live-stream) the stream broke and this answer came from the one plain retry */
+      /* (atlas-stream-replay) …and what that retry was, as the server states it: replayed (the first request's own answer), rerun (after an observed failure), unheld — never guessed here */
+      streamReplay:_streamRetried?((meta&&meta.replay&&typeof meta.replay==='object')?meta.replay:{kind:'unreported'}):undefined};
   }
   /* ══ (atlas-live-stream) aiReadStream(response, {onEvent}) → the `done` answer as a Response ═════════
      Server-sent events, decoded as they arrive (a chunk may end inside a line or inside a character).
@@ -472,7 +490,7 @@ export function aiCore(HOST){
     const env=await askAIEnvelope(prompt, systemPrompt, imageDatas, opts);
     /* (#R350) …and the CALL IDENTITY travels with it. Without callId the caller cannot tell its own
        provider citations from a concurrent call's, which is what window._aiLastCitations could never do. */
-    return { data:aiParseJSON(env.text), text:env.text, meta:env.meta, citations:env.citations, callId:env.callId, turnId:env.turnId, task:env.task, output:env.output||null, streamRetried:env.streamRetried }; }
+    return { data:aiParseJSON(env.text), text:env.text, meta:env.meta, citations:env.citations, callId:env.callId, turnId:env.turnId, task:env.task, output:env.output||null, streamRetried:env.streamRetried, streamReplay:env.streamReplay }; }
   /* ══ (#R491) askAIGloss — THE ONE ENTRY POINT OF THE SEPARATE LANE ═════════════════════════
      Deliberately NOT built on askAI/askAIEnvelope: those two gate on aiQuotaBlocked(), which asks
      whether the reader has QUESTIONS left — and a lane that stopped working because the reader had

@@ -117,7 +117,7 @@ const cors = {
   /* (#R318) x-intmap-turn — the turn key. It is a HEADER because the quota is consumed before the
      body is read (see the consumption step), and a preflight that does not name it makes the whole
      request fail in the browser rather than merely dropping the field. */
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane, x-intmap-replay",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const json = (body: unknown, status = 200) =>
@@ -157,6 +157,29 @@ const MAX_GLOSS_PROMPT = 8_000;   // the selection + the sentence around it + th
 const TURN_MAX_CALLS = 12;
 const TURN_TTL_S = 900;
 const MAX_TURN_KEY = 120;
+/* ══ (atlas-stream-replay) A BROKEN STREAM IS RECEIVED AGAIN, NOT COMPUTED AGAIN ═══════════════════
+   A streamed Atlas request carries a REPLAY KEY (js/ai-core.js mints one per streamed request; its
+   retry after a stream that broke before `done` sends the same key in the x-intmap-replay header).
+   The answer of a keyed request is held in public.ai_turn_answers (migration 20261001090000) until the
+   turn key expires, so the retry receives the answer the first request produced — no provider call,
+   no charge, no second answer that may differ from the first. A retry re-runs ONLY after an observed
+   failure (the first run stored `failed`) or a run whose isolate stopped beating (`abandoned`), and
+   says so (meta.replay) — one-pass-or-a-reason §5.
+     · ANSWER_LEASE_S — two heartbeats of the stream (HEARTBEAT_MS, _shared/ai-stream.js): the running
+       request renews its lease every heartbeat, so one late renewal is tolerated and an isolate that
+       died is recognised within two. Moves with HEARTBEAT_MS; canonical place: that constant.
+     · ANSWER_POLL_MS — how often a retry that found the first request still running reads the row
+       again. ESTIMATE, not a measurement: an Atlas provider round-trip is measured in seconds
+       (dev-notes/2026-10-01-atlas-live-stream.md: the first visible character at 6.9–71.5 s), so a
+       one-second read adds at most a second to a wait that is already that long, at one indexed row
+       read a second. Expires if a provider round-trip becomes sub-second.
+     · The answer is kept for TURN_TTL_S, the turn key's own lifetime: after it the same turn key opens
+       a new turn, so an older answer has no turn to be replayed into.
+   ⚠ NOT A LIMIT (CONSTITUTION.md §5): nothing is refused, TURN_MAX_CALLS is untouched, and a replay
+   that finds a stored answer returns before consume_ai_turn, so it does not use up one of the calls. */
+const ANSWER_LEASE_S = Math.ceil((2 * HEARTBEAT_MS) / 1000);
+const ANSWER_POLL_MS = 1000;
+const REPLAY_KEY_OK = /^[A-Za-z0-9._:-]{8,120}$/;
 
 /* ══ (edge-spend-and-models) THE PROJECT-WIDE CEILING — a fence on the invoice, not on Atlas ══════
    Everything above bounds ONE ACCOUNT: PLAN_LIMITS a day of turns, TURN_MAX_CALLS the calls one turn
@@ -1640,6 +1663,62 @@ async function listModels(): Promise<{ provider: string; models: string[]; avail
   return out;
 }
 
+/* ══ (atlas-stream-replay) THE HELD ANSWER'S FOUR DOORS — see ANSWER_LEASE_S for what they are for ═══
+   Each returns null / false when the ledger does not answer, and the caller then behaves exactly as
+   before this file held answers (the request runs). A replay that cannot be looked up is not a
+   replay that was refused — and the run that follows still says what it was (meta.replay). */
+type HeldAnswer = { state: string; attempts: number; status: number; body: Record<string, unknown> | null };
+type Claim = { outcome: string; attempts: number; status: number; body: Record<string, unknown> | null; after: string };
+// deno-lint-ignore no-explicit-any
+type Db = { rpc: (fn: string, args: Record<string, unknown>) => any };
+const firstOf = (data: unknown) => (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null | undefined;
+async function peekAnswer(db: Db, user: string, turn: string, key: string): Promise<HeldAnswer | null> {
+  try {
+    const { data, error } = await db.rpc("peek_ai_answer", { p_user: user, p_turn: turn, p_key: key });
+    if (error) return null;
+    const row = firstOf(data);
+    if (!row || typeof row.state !== "string") return null;
+    return { state: row.state, attempts: Number(row.attempts) || 1, status: Number(row.status) || 0, body: (row.body && typeof row.body === "object") ? row.body as Record<string, unknown> : null };
+  } catch (_) { return null; }
+}
+async function claimAnswer(db: Db, user: string, turn: string, key: string): Promise<Claim | null> {
+  try {
+    const { data, error } = await db.rpc("claim_ai_answer", { p_user: user, p_turn: turn, p_key: key, p_ttl_seconds: TURN_TTL_S, p_lease_seconds: ANSWER_LEASE_S });
+    if (error) return null;
+    const row = firstOf(data);
+    if (!row || typeof row.outcome !== "string") return null;
+    return { outcome: row.outcome, attempts: Number(row.attempts) || 1, status: Number(row.status) || 0, body: (row.body && typeof row.body === "object") ? row.body as Record<string, unknown> : null, after: String(row.after_state || "") };
+  } catch (_) { return null; }
+}
+async function beatAnswer(db: Db, user: string, turn: string, key: string, attempt: number): Promise<void> {
+  try { await db.rpc("beat_ai_answer", { p_user: user, p_turn: turn, p_key: key, p_attempt: attempt, p_lease_seconds: ANSWER_LEASE_S }); } catch (_) { /* the lease runs out; a retry then re-runs */ }
+}
+async function finishAnswer(db: Db, user: string, turn: string, key: string, attempt: number, a: { status: number; body: Record<string, unknown> }): Promise<boolean> {
+  try {
+    const ok = a.status === 200;
+    const { error } = await db.rpc("finish_ai_answer", { p_user: user, p_turn: turn, p_key: key, p_attempt: attempt, p_ok: ok, p_status: a.status, p_body: ok ? a.body : null });
+    return !error;
+  } catch (_) { return false; }
+}
+/* A retry that found the first request still running waits for it — reading the row, never running
+   the request. It returns what the row last said: done, failed, abandoned, or null (nothing there). */
+async function awaitAnswer(db: Db, user: string, turn: string, key: string): Promise<HeldAnswer | null> {
+  for (;;) {
+    const s = await peekAnswer(db, user, turn, key);
+    if (!s || s.state !== "running") return s;
+    await new Promise((r) => setTimeout(r, ANSWER_POLL_MS));
+  }
+}
+/* The stored answer, as THIS request's answer: it charged nothing (`charged` false), it did not
+   travel as a stream, and it says it is a replay and of which run. Everything else is the first
+   request's body byte for byte — the same text, the same items, the same citations. */
+function replayed(status: number, body: Record<string, unknown>, attempts: number): { status: number; body: Record<string, unknown> } {
+  const meta = (body.meta && typeof body.meta === "object") ? { ...(body.meta as Record<string, unknown>) } : {};
+  delete meta.streamed;
+  meta.replay = { kind: "replayed", attempts };
+  return { status: status || 200, body: { ...body, charged: false, meta } };
+}
+
 // ---------------------------------------------------------------------------
 Deno.serve(async (req) => {
  try {
@@ -1691,6 +1770,20 @@ Deno.serve(async (req) => {
   const lane = String(req.headers.get("x-intmap-lane") || "").toLowerCase().slice(0, 16);
   const isGloss = lane === GLOSS_LANE;
   const glossLimit = GLOSS_PLAN_LIMITS[plan] ?? GLOSS_PLAN_LIMITS.free;
+  /* (atlas-stream-replay) …and a RETRY's replay key, read here for the same reason, and acted on
+     BEFORE the allowance: a retry whose answer is already held receives it without consume_ai_turn,
+     so it neither charges nor spends one of TURN_MAX_CALLS. A first request still running is waited
+     for (awaitAnswer reads the row; it never runs the request). Anything else — an observed failure,
+     a run whose isolate stopped beating, nothing registered — falls through to the ordinary path
+     below, which claims the key and runs (claim_ai_answer counts the attempt). */
+  const replayHdr = String(req.headers.get("x-intmap-replay") || "").slice(0, MAX_TURN_KEY);
+  if (replayHdr && REPLAY_KEY_OK.test(replayHdr) && turnId && !isGloss) {
+    const held = await awaitAnswer(db, user.id, turnId, replayHdr);
+    if (held && held.state === "done" && held.body) {
+      const a = replayed(held.status, held.body, held.attempts);
+      return json(a.body, a.status);
+    }
+  }
 
   // 3) Consume one use for TODAY, once per TURN (the developer is exempt — no consumption).
   let used = 0;
@@ -1777,6 +1870,8 @@ Deno.serve(async (req) => {
     op?: string; provider?: string; model?: string;
     /* (atlas-native-tools) protocol 2 — see normalizeTurn */
     protocol?: number; input?: unknown[]; tools?: unknown[]; toolChoice?: string;
+    /* (atlas-stream-replay) the key this request's answer is held under — see ANSWER_LEASE_S */
+    replayKey?: string;
   } = {};
   /* ⚠ REFUSED BEFORE IT IS READ, when the caller declares a size — and CUT OFF WHILE IT IS READ when
      the caller does not. (#R801) This used to be `req.arrayBuffer()` followed by a length check,
@@ -2123,6 +2218,54 @@ Deno.serve(async (req) => {
   }
   };
 
+  /* ══ (atlas-stream-replay) ONE KEYED REQUEST, RUN ONCE ═══════════════════════════════════════════
+     A protocol-2 turn that carries a replay key (the body's `replayKey`, or the retry's header — the
+     same key) claims it before the provider is called:
+       · claimed  → it runs; its {status, body} is stored before it is returned (and so before `done`
+                    is sent), so a reader whose connection breaks at that moment still finds it. While
+                    it runs, it renews its lease every heartbeat.
+       · done     → another request with this key already answered: that answer, marked a replay.
+       · running  → another request holds it and is alive: wait for it, then take its answer — or,
+                    if it failed or its isolate stopped beating, claim again (one row lock decides
+                    who runs, so two retries cannot both run it).
+     A run after a failure says so: meta.replay {kind:"rerun", after, attempt}. The ledger was
+     consulted for this request like any other, so a re-run after a refunded failure is charged like
+     a first run and a re-run of a continuation is a continuation (consume_ai_turn decides, as before).
+     A request without a key runs exactly as it did. */
+  const replayKey = (() => {
+    if (!turnReq || !turnId) return "";
+    const k = String(payload.replayKey || replayHdr || "").slice(0, MAX_TURN_KEY);
+    return REPLAY_KEY_OK.test(k) ? k : "";
+  })();
+  const keyedAnswer = async (sink: StreamSink | null): Promise<{ status: number; body: Record<string, unknown> }> => {
+    if (!replayKey) return answer(sink);
+    for (;;) {
+      const c = await claimAnswer(db, user.id, turnId, replayKey);
+      if (!c) {
+        /* the ledger did not answer: run as before this table existed, and say the answer is not held */
+        const a = await answer(sink);
+        a.body.meta = { ...((a.body.meta as Record<string, unknown>) || {}), replay: { kind: "unheld" } };
+        return a;
+      }
+      if (c.outcome === "done" && c.body) return replayed(c.status, c.body, c.attempts);
+      if (c.outcome === "running") {
+        const held = await awaitAnswer(db, user.id, turnId, replayKey);
+        if (held && held.state === "done" && held.body) return replayed(held.status, held.body, held.attempts);
+        continue;   /* failed / abandoned / expired: claim again — the claim, not this loop, decides who runs */
+      }
+      const beat = setInterval(() => { beatAnswer(db, user.id, turnId, replayKey, c.attempts); }, HEARTBEAT_MS);
+      let a: { status: number; body: Record<string, unknown> };
+      try { a = await answer(sink); } finally { clearInterval(beat); }
+      await finishAnswer(db, user.id, turnId, replayKey, c.attempts, a);
+      /* a first run says nothing; a run that is not the first says why it ran */
+      if (c.attempts > 1 || replayHdr) {
+        a.body.meta = { ...((a.body.meta as Record<string, unknown>) || {}),
+          replay: { kind: "rerun", after: c.after || "absent", attempt: c.attempts } };
+      }
+      return a;
+    }
+  };
+
   /* ══ (atlas-live-stream) WHO IS WATCHING ══════════════════════════════════════════════════════════
      Only an Atlas turn may ask (`stream: true` with protocol 2); every other task is answered exactly as
      before. A stream opens with `open`, carries the provider's previews (_shared/ai-stream.js
@@ -2137,7 +2280,7 @@ Deno.serve(async (req) => {
      refunded exactly as it would have been — leaving cannot turn a charged call into a free one, nor
      a failed one into a charged one. EdgeRuntime.waitUntil keeps the isolate for it. */
   if (!(turnReq && (payload as Record<string, unknown>).stream === true)) {
-    const a = await answer(null);
+    const a = await keyedAnswer(null);   /* (atlas-stream-replay) */
     return json(a.body, a.status);
   }
   const enc = new TextEncoder();
@@ -2159,7 +2302,7 @@ Deno.serve(async (req) => {
       ctl = c;
       send("open", { protocol: 2 });
       beat = setInterval(() => { if (!live || !ctl) return; try { ctl.enqueue(enc.encode(KEEP_ALIVE)); } catch (_) { live = false; } }, HEARTBEAT_MS);
-      const work = answer(previewSink(send))
+      const work = keyedAnswer(previewSink(send))   /* (atlas-stream-replay) stored before `done` is sent */
         .then((a) => send("done", a))
         .catch(() => send("done", { status: 500, body: { error: "provider_unavailable", message: "The AI service hit an unexpected error — please try again.", retryable: true } }))
         .finally(finish);
