@@ -17,6 +17,10 @@
 //       never sees a key or a model picker).
 //    5. Returns { text, used, limit, remaining, charged, meta } (+ `output` for a protocol-2 turn, atlas-native-tools). On a provider failure the
 //       consumed slot is refunded so a failed call never costs the user a use.
+//       (atlas-live-stream) An Atlas turn that asks with `stream: true` gets the SAME body as the
+//       `done` event of a text/event-stream, preceded by previews of what the provider is producing
+//       (think / text / call / search / reset — _shared/ai-stream.js). Steps 1–3 and every refusal
+//       before the provider call are unchanged plain JSON; the ledger settles before `done` is sent.
 //    6. (ai-one-ledger) Records what the provider answers COST — input / cached read / cache write /
 //       output tokens, normalised by _shared/ai-usage.js — in the same ledger (record_ai_usage).
 //
@@ -94,6 +98,9 @@ import { readCapped, RelayError } from "../_shared/relay-guard.js";
    plus the Anthropic prompt-cache breakpoints). */
 import { accountFor, openTurn, refundTurn, settleTurn, recordUsage, LedgerUnavailable, cohortOf, NEWCOMER } from "../_shared/ai-ledger.js";
 import { usageMeter, withPromptCache } from "../_shared/ai-usage.js";
+/* (atlas-live-stream) The provider's server-sent events, read twice: as previews for the reader while
+   they arrive, and folded back into the body the parsers below already read. */
+import { providerStream, previewSink, sseEncode, HEARTBEAT_MS } from "../_shared/ai-stream.js";
 /* (edge-spend-and-models) The model table, the provider-answer ceilings and the one door to a paid
    provider are shared with every other function that holds a provider key — see that file's header
    for what was found when each of them lived here and in four other places. */
@@ -900,9 +907,9 @@ function filesBlock(files: FilePart[]): string {
    What remains HERE is only the translation into this file's own failure type, because the callers
    below decide on ProviderError's fields (the OpenAI path retries a web call on meta.timeout, the
    Gemini path retries a 5xx on meta.providerStatus), and the ceiling that every request takes from. */
-async function providerCall(url: string, init: RequestInit, ms = PROVIDER_TIMEOUT_MS, meter?: Meter): Promise<Response> {
+async function providerCall(url: string, init: RequestInit, ms = PROVIDER_TIMEOUT_MS, meter?: Meter, onChunk?: (b: Uint8Array) => void): Promise<Response> {
   try {
-    return await providerFetch(url, init, { ceiling: meter?.ceiling || CEILING, timeoutMs: ms });
+    return await providerFetch(url, init, { ceiling: meter?.ceiling || CEILING, timeoutMs: ms, onChunk });
   } catch (e) {
     const code = e instanceof ProviderFail ? e.code : "";
     /* (ai-quota-fairness) The reader's COHORT has spent its share of the project ceiling; the rest of
@@ -982,6 +989,31 @@ function classifyGemini(status: number, bodyText: string, finishReason: string, 
     return new ProviderError("provider_unavailable", "The AI provider is temporarily unavailable.", 503, true, { providerStatus: status });
   }
   return new ProviderError("provider_unavailable", "AI provider error " + status + ".", 502, false, { providerStatus: status });
+}
+
+/* ══ (atlas-live-stream) THE STREAMED BODY, AND A FAILURE THAT ARRIVED INSIDE A 200 ══════════════════
+   A turn call given a `sink` asks its provider to stream, and the bytes of the 2xx answer go through
+   providerStream (_shared/ai-stream.js) while they arrive. When the body is complete this returns what
+   `r.json()` would have returned for the same request without streaming, so everything after that line
+   in each provider function is the code that already ran. A provider that reports an error INSIDE the
+   stream (OpenAI `response.failed` / `error`, Anthropic `error`, Gemini an `error` chunk) is classified
+   by the same classifyGemini the HTTP errors go through — one taxonomy, whichever way it arrived.
+   A stream that simply stops — no terminal event — is `provider_unavailable`, retryable: nothing was
+   answered, and nothing is pretended to have been. */
+/* OpenAI refused a reasoning summary on this isolate (see callOpenAI `summary`). OBSERVED: not yet —
+   whether this project is entitled to summaries is unknown until a stream asks. EXPIRES WITH THE
+   ISOLATE, so an entitlement granted later is picked up without a deploy. */
+let summaryRefused = false;
+type StreamSink = ReturnType<typeof previewSink>;
+type Streamed = ReturnType<typeof providerStream>;
+function streamedBody(ps: Streamed, provider: string, meter?: Meter): Record<string, unknown> {
+  const out = ps.result() as { json?: Record<string, unknown>; fail?: { status: number; text: string; partial?: unknown } };
+  if (out.fail) {
+    /* what the provider had already billed when it failed — the caller's meter.add never runs on this path */
+    if (out.fail.partial) meter?.add(provider, out.fail.partial);
+    throw classifyGemini(out.fail.status, out.fail.text, "", "");
+  }
+  return out.json || {};
 }
 
 // ---------------------------------------------------------------------------
@@ -1067,7 +1099,7 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
    alternates roles and opens with the user, so consecutive same-role items are merged and a
    conversation that opens mid-way is said to. No JSON mode here (the instruction states the final
    shape, and the client reads a prose final as the answer — as it always did on this provider). */
-async function callAnthropicTurn(model: string, key: string, turn: TurnReq, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, meter?: Meter): Promise<{ text: string; finishReason: string; served?: string; output: TurnItem[]; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
+async function callAnthropicTurn(model: string, key: string, turn: TurnReq, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, meter?: Meter, sink?: StreamSink): Promise<{ text: string; finishReason: string; served?: string; output: TurnItem[]; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
   const attached = filesBlock(files);
   const msgs: { role: string; content: unknown[] }[] = [];
   const add = (role: string, block: unknown) => {
@@ -1106,13 +1138,17 @@ async function callAnthropicTurn(model: string, key: string, turn: TurnReq, syst
      re-bills that prefix in full unless the request marks it (no cache_control was sent before this).
      Breakpoints at the end of the tools and of the system prompt — _shared/ai-usage.js withPromptCache
      says why these two and why this changes nothing the model reads. */
+  /* (atlas-live-stream) asked to stream when the page is watching; folded back into this same `j` below */
+  const ps = sink ? providerStream("anthropic", sink) : null;
+  if (ps) body.stream = true;
   const r = await providerCall("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
     body: JSON.stringify(withPromptCache(body)),
-  }, PROVIDER_TIMEOUT_MS, meter);
+  }, PROVIDER_TIMEOUT_MS, meter, ps ? ps.onChunk : undefined);
   if (!r.ok) throw classifyGemini(r.status, (await r.text().catch(() => "")).slice(0, 400), "", "");
-  const j = await r.json();
+  // deno-lint-ignore no-explicit-any
+  const j: any = ps ? streamedBody(ps, "anthropic", meter) : await r.json();
   meter?.add("anthropic", j);
   const output: TurnItem[] = [];
   let text = "";
@@ -1125,7 +1161,7 @@ async function callAnthropicTurn(model: string, key: string, turn: TurnReq, syst
   return { text, finishReason, served: String(j?.model || ""), output, ...anthropicWeb(j, web) };
 }
 
-async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", noFallback = false, schemaFormat: Record<string, unknown> | null = null, turn: TurnReq | null = null, cacheKey = "", meter?: Meter): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[]; schemaAttached: boolean; served?: string; output?: TurnItem[] }> {
+async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", noFallback = false, schemaFormat: Record<string, unknown> | null = null, turn: TurnReq | null = null, cacheKey = "", meter?: Meter, sink?: StreamSink): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[]; schemaAttached: boolean; served?: string; output?: TurnItem[] }> {
   // GPT-5.6 models (gpt-5.6-luna) work best through the Responses API. `max_output_tokens`
   // includes invisible reasoning tokens, so leave a reasoning allowance above IntMap's
   // visible-output budget — bigger when effort is "medium" (#R116) — under a hard ceiling.
@@ -1146,6 +1182,13 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
      on OpenAI's side, so this is how the model keeps its thinking between calls) — dropped by the
      first 400 rung below, together with the cache key, as the extras a model may not accept. */
   let replay = !!turn;
+  /* (atlas-live-stream) WHAT THE MODEL IS THINKING, IN ITS OWN SUMMARY. The longest wait in a turn is
+     reasoning that produces no visible token; Responses publishes a summary of it as it goes, and that
+     summary is the first thing the reader can be shown. Asked for only when someone is watching (a
+     stream), and only on a turn. ⚠ A project may not be entitled to summaries (OpenAI gates them on
+     organisation verification), so the FIRST 400 rung below drops exactly this and nothing else, and
+     the isolate remembers the refusal so the next step does not pay for it again. */
+  let summary = !!(turn && sink) && !summaryRefused;
   const turnInput = (): unknown[] => {
     const out: unknown[] = [];
     for (const it of placeAttachments<unknown>(turn!.items, (ch) => {
@@ -1172,7 +1215,7 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
       model,
       input: turn ? turnInput() : [{ role: "user", content }],
       max_output_tokens: Math.min(12_000, maxTokens + (effort === "high" ? 5_000 : effort === "medium" ? 3_500 : 1_500)),
-      reasoning: { effort: effort === "high" ? "high" : effort === "medium" ? "medium" : "low" },   /* (#R117) pass "high" through (the old mapping silently crushed anything ≠ medium down to low) */
+      reasoning: { effort: effort === "high" ? "high" : effort === "medium" ? "medium" : "low", ...(summary ? { summary: "auto" } : {}) },   /* (#R117) pass "high" through (the old mapping silently crushed anything ≠ medium down to low) · (atlas-live-stream) summary — see `summary` above */
       store: false,
     };
     if (system) b.instructions = system;
@@ -1196,11 +1239,17 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     }
     return b;
   };
-  const post = (body: Record<string, unknown>, ms: number) => providerCall("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
-    body: JSON.stringify(body),
-  }, ms, meter);
+  /* (atlas-live-stream) each request of the ladder is its own stream; the one whose answer is read is the last */
+  let ps = null as Streamed | null;   /* the cast keeps the checker from narrowing to the initial null — it is assigned inside `post` */
+  const post = (body: Record<string, unknown>, ms: number) => {
+    ps = (turn && sink) ? providerStream("openai", sink) : null;
+    if (ps) body.stream = true;
+    return providerCall("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify(body),
+    }, ms, meter, ps ? ps.onChunk : undefined);
+  };
 
   // (#R116) OUTAGE-PROOFING. The user hit a blanket "AI service temporarily unavailable": any
   // request-shape rejection (400) or a slow hosted web_search run must DEGRADE, never kill the
@@ -1227,6 +1276,12 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     } else {
       throw e;
     }
+  }
+  /* (atlas-live-stream) the rung below every other: a summary this project may not request costs one request, once per isolate */
+  if (!r.ok && r.status === 400 && summary) {
+    summary = false;
+    summaryRefused = true;
+    r = await post(build(web && forceWeb ? "required" : null, usedJson, usedTools), usedTools ? WEB_TIMEOUT : PROVIDER_TIMEOUT_MS);
   }
   /* (atlas-native-tools) the first rung for a turn: the replayed reasoning and the cache key are optimisations,
      and a model that will not take another model's reasoning (the fallback chain) or the key must
@@ -1265,7 +1320,7 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     if (nextModel && (r.status === 403 || r.status === 404) &&
         /model_not_found|does not have access to model|does not exist|unknown model|no access/i.test(t)) {
       try { console.error("ai-proxy model fallback", JSON.stringify({ from: model, to: nextModel, status: r.status })); } catch (_) { /* ignore */ }
-      return await callOpenAI(nextModel, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, forceWeb, effort, imageDetail, false, schemaFormat, turn, cacheKey, meter);
+      return await callOpenAI(nextModel, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, forceWeb, effort, imageDetail, false, schemaFormat, turn, cacheKey, meter, sink);
     }
     const pe = classifyGemini(r.status, t, "", "");
     /* ⚠ THE UPSTREAM BODY IS NOT OURS TO REPEAT. `pe.meta.bodySnippet = t.slice(0,160)` was written
@@ -1278,7 +1333,8 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     pe.meta.bodyLen = t.length;
     throw pe;
   }
-  const j = await r.json();
+  // deno-lint-ignore no-explicit-any
+  const j: any = ps ? streamedBody(ps, "openai", meter) : await r.json();   /* (atlas-live-stream) the same body, folded from the stream */
   meter?.add("openai", j);
   // deno-lint-ignore no-explicit-any
   const outputArr: any[] = Array.isArray(j?.output) ? j.output : [];
@@ -1462,7 +1518,7 @@ async function geminiRetry<T>(call: () => Promise<T>): Promise<T> {
      · function declarations cannot be combined with JSON mode or with Google Search grounding on this
        endpoint, so a turn carries neither: the final shape is stated by the instruction, and the
        client reads a prose final as the answer (as it always did when JSON mode was dropped). */
-async function callGeminiTurn(model: string, key: string, turn: TurnReq, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], maxTokens: number, meter?: Meter): Promise<{ text: string; finishReason: string; webAttached: boolean; served?: string; output: TurnItem[] }> {
+async function callGeminiTurn(model: string, key: string, turn: TurnReq, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], maxTokens: number, meter?: Meter, sink?: StreamSink): Promise<{ text: string; finishReason: string; webAttached: boolean; served?: string; output: TurnItem[] }> {
   const attached = filesBlock(files);
   const nameOf: Record<string, string> = {};
   const contents: { role: string; parts: unknown[] }[] = [];
@@ -1492,13 +1548,19 @@ async function callGeminiTurn(model: string, key: string, turn: TurnReq, system:
     body.tools = [{ functionDeclarations: turn.tools.map((t) => { const f = fnParameters(t); return { name: t.name, description: f.description, parametersJsonSchema: f.parameters }; }) }];
     if (turn.toolChoice === "none") body.toolConfig = { functionCallingConfig: { mode: "NONE" } };
   }
+  /* (atlas-live-stream) the streaming method of the same model, when the page is watching. Its thought
+     SUMMARIES are asked for too — the parse below already skips `thought` parts, so they reach the
+     reader as a preview and never the answer. */
+  const ps = sink ? providerStream("gemini", sink) : null;
+  if (ps) body.generationConfig = { ...(body.generationConfig as Record<string, unknown>), thinkingConfig: { thinkingLevel: "low", includeThoughts: true } };
   const r = await providerCall(
-    "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + (ps ? ":streamGenerateContent?alt=sse" : ":generateContent"),
     { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body) },
-    PROVIDER_TIMEOUT_MS, meter,
+    PROVIDER_TIMEOUT_MS, meter, ps ? ps.onChunk : undefined,
   );
   if (!r.ok) throw classifyGemini(r.status, (await r.text().catch(() => "")).slice(0, 1500), "", "");
-  const j = await r.json();
+  // deno-lint-ignore no-explicit-any
+  const j: any = ps ? streamedBody(ps, "gemini", meter) : await r.json();
   meter?.add("gemini", j);
   const c = j?.candidates?.[0];
   const finishReason = String(c?.finishReason || "NO_CANDIDATE");
@@ -1937,6 +1999,12 @@ Deno.serve(async (req) => {
      routed together, which is what makes the cache hit. */
   const cacheKey = turnReq ? "atlas_turn:" + await sha256Hex(cacheBasis(system, turnReq.tools)) : "";   /* (atlas-turn-engine) the fixed functions only — see cacheBasis */
 
+  /* ══ (atlas-live-stream) THE ANSWER, AS A VALUE — sent as JSON, or as the last event of a stream ═══════
+     Everything from the provider call to the refund was `try { … return json(…) } catch { … return json(…) }`.
+     It is the same code returning { status, body } instead, so the plain request and the streamed one
+     cannot answer differently: the stream's `done` event carries exactly this body under exactly this
+     status. `sink` is null for every request that did not ask to stream. */
+  const answer = async (sink: StreamSink | null): Promise<{ status: number; body: Record<string, unknown> }> => {
   try {
     let out: { text: string; finishReason: string; webAttached?: boolean; webUsed?: boolean; webCount?: number; citations?: WebCitation[]; schemaAttached?: boolean; served?: string; output?: TurnItem[] };
     if (provider === "openai") {
@@ -1949,13 +2017,13 @@ Deno.serve(async (req) => {
          null = this schema cannot be expressed strictly → the call behaves exactly as it did before. */
       const oaFormat = (wantJson && responseSchema) ? openAiSchemaFormat(responseSchema, task) : null;
       try {
-        out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, webMode === "required", effort, imageDetail, noFallbackForPick, oaFormat, turnReq, cacheKey, meter);
+        out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, webMode === "required", effort, imageDetail, noFallbackForPick, oaFormat, turnReq, cacheKey, meter, sink || undefined);
       } catch (e) {
         // (#R115) Responses can come back EMPTY/incomplete when invisible reasoning tokens eat the whole
         // max_output_tokens budget. That is retryable and budget-dependent → retry ONCE with a bigger
         // budget (still capped) instead of surfacing "empty response" to the user.
         if (e instanceof ProviderError && e.code === "provider_empty" && e.retryable) {
-          out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, Math.min(HARD_MAX_OUTPUT, maxTokens + 1200), wantJson, webMode === "required", effort, imageDetail, false, oaFormat, turnReq, cacheKey, meter);
+          out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, Math.min(HARD_MAX_OUTPUT, maxTokens + 1200), wantJson, webMode === "required", effort, imageDetail, false, oaFormat, turnReq, cacheKey, meter, sink || undefined);
         } else {
           throw e;
         }
@@ -1966,10 +2034,10 @@ Deno.serve(async (req) => {
       if (turnReq) {
         /* (atlas-native-tools) the same MALFORMED rule as below, in the turn's terms: once more with calling turned
            off (the declarations stay — the conversation names them), so the model answers in words */
-        try { out = await geminiRetry(() => callGeminiTurn(model, key, turnReq, system, imgs, files, docs, maxTokens, meter)); }
+        try { out = await geminiRetry(() => callGeminiTurn(model, key, turnReq, system, imgs, files, docs, maxTokens, meter, sink || undefined)); }
         catch (e) {
           if (!(e instanceof ProviderError && e.code === "provider_malformed")) throw e;
-          out = await callGeminiTurn(model, key, { ...turnReq, toolChoice: "none" }, system, imgs, files, docs, maxTokens, meter);
+          out = await callGeminiTurn(model, key, { ...turnReq, toolChoice: "none" }, system, imgs, files, docs, maxTokens, meter, sink || undefined);
         }
       } else try {
         out = await callGeminiRetry(model, key, prompt, system, imgs, files, docs, { meter, maxTokens, web, searchEnabled, wantJson, responseSchema });
@@ -1994,7 +2062,7 @@ Deno.serve(async (req) => {
     } else {
       const key = Deno.env.get("ANTHROPIC_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "ANTHROPIC_API_KEY not set", 502, false, {});
-      out = turnReq ? await callAnthropicTurn(model, key, turnReq, system, imgs, files, docs, web, maxTokens, meter)
+      out = turnReq ? await callAnthropicTurn(model, key, turnReq, system, imgs, files, docs, web, maxTokens, meter, sink || undefined)
         : await callAnthropic(model, key, prompt, system, imgs, files, docs, web, maxTokens, meter);
     }
     // (#R350) 5a) A structured answer that will not parse is a TYPED failure, refunded like any
@@ -2005,7 +2073,7 @@ Deno.serve(async (req) => {
     // 5) Success. (#R801) Settled BEFORE the answer leaves, so the turn cannot be refunded after it.
     await record();   // (ai-one-ledger) what it cost — off the answer's path where the platform allows (EdgeRuntime.waitUntil)
     await settle();
-    return json({
+    return { status: 200, body: {
       text: out.text,
       /* /!\ (#R491) A GLOSS RETURNS NO `used`/`limit`, ON PURPOSE. js/ai-core.js mirrors those two
          into the reader's QUESTION counter the moment it sees them (aiSetUsage), so sending the
@@ -2031,27 +2099,77 @@ Deno.serve(async (req) => {
       meta: { provider, model, modelServed: out.served || "", modelChosenBy: devPick?.model ? "developer" : "server", ...(graderProvider ? { independentGrader: true } : {}), task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason,
         /* (atlas-native-tools) which protocol answered (js/ai-core.js refuses an Atlas turn answered without 2), and what
            this function's own fence cut from the request — null when nothing was */
-        protocol: turnReq ? 2 : 1, inputTrimmed: (turnReq ? turnReq.trim : legacyTrim) || undefined },
+        protocol: turnReq ? 2 : 1, inputTrimmed: (turnReq ? turnReq.trim : legacyTrim) || undefined,
+        streamed: sink ? true : undefined },   /* (atlas-live-stream) this body is the `done` event of a stream */
       /* (atlas-native-tools) the provider's items — reasoning to replay, what it wrote, the calls with their ids */
       ...(turnReq ? { output: Array.isArray(out.output) ? out.output : [] } : {}),
       // (#R131) Hosted web-search citation URLs (OpenAI url_citation annotations). The client shows
       // these as the primary, web-verified sources — separate from the client-gathered headlines.
       citations: Array.isArray(out.citations) ? out.citations : [],
-    });
+    } };
   } catch (e) {
     await refund();   // a failed provider call never costs the user a use (dev never consumed one)
     await record();   // (ai-one-ledger) …but what the provider billed before failing is still a cost, and is recorded
     if (e instanceof ProviderError) {
       // Non-sensitive telemetry only (no prompt / key / JWT).
       try { console.error("ai-proxy provider fail", JSON.stringify({ provider, model, task, code: e.code, http: e.http, meta: e.meta })); } catch (_) { /* ignore */ }
-      return json({ error: e.code, message: e.message, retryable: e.retryable, meta: { provider, model, task, ...e.meta } }, e.http);
+      return { status: e.http, body: { error: e.code, message: e.message, retryable: e.retryable, meta: { provider, model, task, ...e.meta } } };
     }
     /* ⚠ AN UNCLASSIFIED FAILURE IS STILL NOT A PLACE TO PUT AN EXCEPTION MESSAGE. Anything that
        reaches here came from code that has the prompt, the provider key and the caller's JWT in
        scope, so the message is a generic one and the detail stays in the log line above. */
     try { console.error("ai-proxy unclassified fail", JSON.stringify({ provider, model, task, name: String((e as Error)?.name || "") })); } catch (_) { /* ignore */ }
-    return json({ error: "provider_unavailable", message: "The AI provider could not be reached.", retryable: false, meta: { provider, model, task } }, 502);
+    return { status: 502, body: { error: "provider_unavailable", message: "The AI provider could not be reached.", retryable: false, meta: { provider, model, task } } };
   }
+  };
+
+  /* ══ (atlas-live-stream) WHO IS WATCHING ══════════════════════════════════════════════════════════
+     Only an Atlas turn may ask (`stream: true` with protocol 2); every other task is answered exactly as
+     before. A stream opens with `open`, carries the provider's previews (_shared/ai-stream.js
+     previewSink), keeps the connection alive with comments while the model is silent, and ends with ONE
+     `done` event: {status, body} — what this request would have answered without streaming.
+     ⚠⚠⚠ THE LEDGER IS NOT MOVED BY ANY OF THIS. The charge was taken above, before the body was read;
+     `answer` settles before it returns, so `done` still leaves only after the turn is settled (#R801),
+     and a provider failure still refunds. A preview is not an answer: a stream that ends without
+     `done` is a failure the page reports, never a reply it keeps.
+     ⚠ A READER WHO LEAVES DOES NOT STOP THE TURN'S BOOKKEEPING. If the connection closes, writes stop
+     and the provider call runs to its end anyway, so the usage is recorded and the turn is settled or
+     refunded exactly as it would have been — leaving cannot turn a charged call into a free one, nor
+     a failed one into a charged one. EdgeRuntime.waitUntil keeps the isolate for it. */
+  if (!(turnReq && (payload as Record<string, unknown>).stream === true)) {
+    const a = await answer(null);
+    return json(a.body, a.status);
+  }
+  const enc = new TextEncoder();
+  const KEEP_ALIVE = ": keep-alive\n\n";   /* an SSE comment: the page's reader skips it */
+  let live = true;
+  let ctl: ReadableStreamDefaultController<Uint8Array> | null = null;
+  let beat: number | undefined;
+  const send = (event: string, data: unknown) => {
+    if (!live || !ctl) return;
+    try { ctl.enqueue(enc.encode(sseEncode(event, data))); } catch (_) { live = false; }
+  };
+  const finish = () => {
+    if (beat !== undefined) { try { clearInterval(beat); } catch (_) { /* gone */ } beat = undefined; }
+    if (live && ctl) { try { ctl.close(); } catch (_) { /* already closed */ } }
+    live = false;
+  };
+  const stream = new ReadableStream<Uint8Array>({
+    start(c) {
+      ctl = c;
+      send("open", { protocol: 2 });
+      beat = setInterval(() => { if (!live || !ctl) return; try { ctl.enqueue(enc.encode(KEEP_ALIVE)); } catch (_) { live = false; } }, HEARTBEAT_MS);
+      const work = answer(previewSink(send))
+        .then((a) => send("done", a))
+        .catch(() => send("done", { status: 500, body: { error: "provider_unavailable", message: "The AI service hit an unexpected error — please try again.", retryable: true } }))
+        .finally(finish);
+      // deno-lint-ignore no-explicit-any
+      const rt = (globalThis as any).EdgeRuntime;
+      if (rt && typeof rt.waitUntil === "function") { try { rt.waitUntil(work); } catch (_) { /* the stream itself keeps it */ } }
+    },
+    cancel() { live = false; if (beat !== undefined) { try { clearInterval(beat); } catch (_) { /* gone */ } beat = undefined; } },
+  });
+  return new Response(stream, { status: 200, headers: { ...cors, "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no" } });
  } catch (topErr) {
   // (#R113b) LAST-RESORT guard: any error not caught above (auth/parse/etc.) returns a clean, CLASSIFIED JSON error
   // instead of a bare 546 the client can't display. (A hard runtime resource-kill can't reach here — the per-fetch

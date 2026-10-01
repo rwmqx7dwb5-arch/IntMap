@@ -275,7 +275,9 @@ function makeAtlasExecutor(HOST, CTX) {
         op.settled = true;
         op.result = r;
         phase(op, (r.status === 'completed' || r.status === 'partial' || r.status === 'unobserved' || r.status === 'failed' ||
-          r.status === 'cancelled' || r.status === 'superseded') ? r.status : 'started');
+          r.status === 'cancelled' || r.status === 'superseded') ? r.status : 'started',
+          /* (atlas-live-stream) what the verdict says it produced — js/atlas-live.js times the first draw from it */
+          { produced: Array.isArray(r.produced) ? r.produced.slice() : [] });
         try { if (op.turnId && State) State.recordOperation(op.turnId, {
           operationId: r.operationId, capabilityId: r.capabilityId, args: args,
           status: r.status, code: r.code, objectIds: r.objectIds, unresolved: r.unresolved,

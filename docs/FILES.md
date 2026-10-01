@@ -673,6 +673,11 @@ atlas-progress.js                 Atlas — 回答中の作業一覧。実行器
                                   返答の泡の兄弟として 1 操作 1 行を積む（済んだ行は消えない）。行の言葉は
                                   能力の category から、引数は能力の引数 schema から導く（綴りの一覧を持たない）。
                                   `.atl-stage` の生成・再武装・撤去もここが正本。
+atlas-live.js                     Atlas — ストリームで届く 1 手を、届いている間に見せる。返答の JSON を
+                                  届いた順に読み（`turn` が先に来るので、文が答えか途中の一言かを文より先に知る）、
+                                  答えは泡の下書きへ・途中の一言は作業一覧へ・推論の要約と「次: …」は考え中の行へ。
+                                  地図の上の HUD（操作の開始と終了）と、体感の待ち時間の計測
+                                  （`IntMapAtlasDebug.latency()`）もここ。⚠ 何も決めない——下書きは答えではない
 atlas-highlight.js                Atlas — コードブロックのシンタックスハイライト（#R494）。外部依存なしの
                                   8 文法（js/ts・python・json・html/xml・css・sql・bash・yaml）＋
                                   未知言語のフォールバック。出力は必ず esc 済み。配色は
@@ -1307,7 +1312,7 @@ supabase/
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
                                   rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
                                   bbox.js / read-budget.js / client-error-shape.js /
-                                  fetch-relay-policy.js / ai-ledger.js / ai-usage.js /
+                                  fetch-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
                                   atlas-grade-schema.js）
                                   ⚠ atlas-grade-schema.js は ai-proxy `atlas_grade` の形・予算・
                                   **採点 provider の規則（答えている provider とは別）**で、評価側の
@@ -1315,7 +1320,8 @@ supabase/
                                   ⚠ ai-ledger.js は AI 枠の**唯一の台帳の扉**（プラン表・アカウント解決・
                                   consume/refund/settle/record。ai-proxy と monitor-run が共有）、
                                   ai-usage.js は 3 社の使用量を 1 つの形にする純関数と Anthropic の
-                                  prompt cache の印（ai-one-ledger）
+                                  prompt cache の印（ai-one-ledger）、ai-stream.js は提供元の SSE を
+                                  **プレビューとして流しつつ、非ストリームと同じ本文へ畳み戻す**（Atlas のターンだけ）
                                   ⚠ fetch-relay-policy.js も**ブラウザが import する**（js/proxy-fetch.js。
                                   許可表の写しを作らない・own-fetch-relay）
                                   ⚠ client-error-shape.js は**ブラウザも import する**

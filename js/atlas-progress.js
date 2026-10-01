@@ -167,6 +167,7 @@ export function makeAtlasProgress(HOST, deps) {
   const SVG_WARN = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v7"/><path d="M12 17.5v.01"/></svg>';
   const SVG_CHEV = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>';
 
+  const SVG_SAY = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>';   /* (atlas-live-stream) a note Atlas wrote on the way */
   const MARK = { run: '', ok: SVG_OK, fail: SVG_BAD, warn: SVG_WARN, skip: SVG_BAD };
   /* status → row state. The eight statuses are js/atlas-results.js's, not a set invented here. */
   const STATE_OF = {
@@ -260,7 +261,7 @@ export function makeAtlasProgress(HOST, deps) {
       const ms = tr.el.querySelector('.atl-trace-ms');
       if (ms) ms.textContent = fmtMs((tr.doneAt || now()) - tr.t0);
       if (!sum) return;
-      const n = tr.rows.length;
+      const n = tr.rows.filter((r) => !r.say).length;   /* (atlas-live-stream) a note Atlas wrote is not a step it took */
       if (!tr.done) {
         let s = sum.querySelector('.atl-stage');
         if (!s) {
@@ -485,7 +486,35 @@ export function makeAtlasProgress(HOST, deps) {
     } catch (_) { }
   }
 
-  return { open, step, phase, plan, watch, done, live, stageHtml, setStage, setLive, wordFor, detailFor,
+  /* ── (atlas-live-stream) WHAT THE MODEL CALL IS DOING WHILE IT RUNS ──────────────────────────
+     The thinking row used to be one word and a clock for the whole of a model call — the longest
+     wait in a turn, with nothing in it. js/atlas-live.js now hears the call as it streams and puts
+     what it hears in that row's detail column: the latest headline of the model's reasoning summary,
+     then 「次: …」 once it has named the functions it is about to call. A statement about the call in
+     flight, so it lives on the row that times that call and goes when the row closes. */
+  function detail(bubble, text) {
+    const tr = traces.get(bubble); if (!tr || tr.done) return;
+    const rec = (tr.live && tr.live.state === 'run') ? tr.live : null;
+    if (!rec || !rec.row) return;
+    try { const d = rec.row.querySelector('.atl-trace-det'); if (d) d.textContent = String(text || '').slice(0, 160); } catch (_) { }
+  }
+  /* say(bubble) → a row for what Atlas wrote ON THE WAY — 「まず〜を確認します」. #R663 keeps such a
+     note out of the answer; it is still something Atlas said, in order, between the things it did,
+     and the trace is the record of that order. sayText fills it while it is being written. */
+  function say(bubble, text) {
+    const tr = traces.get(bubble); if (!tr || tr.done) return null;
+    const rec = addRow(tr, { word: '', detail: '', state: 'ok' });
+    if (!rec || !rec.row) return null;
+    rec.say = true;
+    try { rec.row.classList.add('say'); const m = rec.row.querySelector('.atl-trace-mark'); if (m) m.innerHTML = SVG_SAY; } catch (_) { }
+    sayText(rec, text);
+    return rec;
+  }
+  function sayText(rec, text) {
+    try { const d = rec && rec.row && rec.row.querySelector('.atl-trace-det'); if (d) d.textContent = String(text || ''); } catch (_) { }
+  }
+
+  return { open, step, phase, plan, watch, done, live, stageHtml, setStage, setLive, wordFor, detailFor, detail, say, sayText,
     /* ⚠ (#R744) phaseWord() EXISTS BECAUSE A CHECK NEEDS THE WORD, NOT THE MARKUP. #R723 ② asked
        「does any capability announce itself as thinking?」 by testing stageHtml('think') for the
        capability's word; the marker no longer carries text, so that question would now be answered

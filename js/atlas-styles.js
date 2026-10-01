@@ -27,6 +27,7 @@ import { MSG_TOOLS_CSS, MSG_TOOLS_CSS_MOBILE } from './atlas-msg-tools.js';
 import { GLOSS_CSS, GLOSS_CSS_MOBILE } from './atlas-gloss.js';   /* (#R491) the term-gloss card + its touch pill */
 import { ATLAS_ANNOTATE_CSS } from './atlas-annotate.js';
 import { ATLAS_PROGRESS_CSS } from './atlas-progress.js';   /* (#R723) the work trace, beside the module that emits its classes */
+import { ATLAS_LIVE_CSS, ATLAS_LIVE_CSS_MOBILE } from './atlas-live.js';   /* (atlas-live-stream) the streamed draft, the notes on the way and the map HUD */
 import { HIGHLIGHT_CSS } from './atlas-highlight.js';   /* (#R494) the code-block token palette, beside the grammars that emit the classes */
 
 export function atlasPanelCSS() {
@@ -158,6 +159,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
          word per line beside a run of nowrap number columns. */
       +'.atl-md-table .atl-c-wrap{white-space:normal;min-width:10em;line-break:strict;overflow-wrap:anywhere;}'
       +ATLAS_PROGRESS_CSS
+      +ATLAS_LIVE_CSS
       +HIGHLIGHT_CSS
       +'.atl-codebtns{display:flex;align-items:center;gap:5px;}'
       +'.atl-codewrapbtn{font-size:11px;font-weight:600;color:var(--text-muted);background:transparent;border:1px solid var(--glass-border,rgba(128,128,128,.28));border-radius:7px;padding:2px 9px;cursor:pointer;transition:color .15s,border-color .15s,background .15s;}'
@@ -410,5 +412,6 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-msgt button{font-size:11.5px;padding:4px 8px;}'
       +MSG_TOOLS_CSS_MOBILE
       +GLOSS_CSS_MOBILE   /* (#R491) on a phone the card stops chasing the selection and becomes a sheet */
+      +ATLAS_LIVE_CSS_MOBILE   /* (atlas-live-stream) the map HUD moves above the sheet */
       +'}';
 }

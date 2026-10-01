@@ -239,7 +239,7 @@ export function shareCeiling(o) {
 }
 
 /* ══ ⑤ THE DOOR ══════════════════════════════════════════════════════════════════════════════
-   providerFetch(url, init, { ceiling | receipt, timeoutMs, maxBytes, cost }) → Response
+   providerFetch(url, init, { ceiling | receipt, timeoutMs, maxBytes, cost, onChunk }) → Response
 
    · `ceiling` — take `cost` (default 1) from it now; one request is one unit, which is how every
      function here counts its day. A refusal throws ProviderFail and nothing is sent.
@@ -266,6 +266,7 @@ export async function providerFetch(url, init, opts) {
     return await fetchBounded(url, init, {
       timeoutMs: (o.timeoutMs > 0) ? o.timeoutMs : PROVIDER_TIMEOUT_MS,
       maxBytes: (o.maxBytes > 0) ? o.maxBytes : PROVIDER_MAX_BYTES,
+      onChunk: o.onChunk,   /* (atlas-live-stream) a 2xx body, as it arrives — _shared/ai-stream.js */
     });
   } catch (e) {
     const c = (e instanceof RelayError) ? e.code : "";

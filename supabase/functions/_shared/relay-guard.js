@@ -81,8 +81,11 @@ export class RelayError extends Error {
    drained, so an endless body costs this function the cap and not the wall clock.
    Exported (#R801): ai-proxy read its own request body with `req.arrayBuffer()` and checked the
    length AFTERWARDS, which is a check on what was parsed, not a bound on what was read; a Request
-   is a Response-shaped thing for this purpose (headers + body stream), so the same reader bounds it. */
-export async function readCapped(res, maxBytes) {
+   is a Response-shaped thing for this purpose (headers + body stream), so the same reader bounds it.
+   (atlas-live-stream) `onChunk`, when given, is handed each chunk AS IT IS READ — after the ceiling
+   has counted it, so a body cut off at the cap was never forwarded past it. It is an observer: the
+   bytes are still kept and returned whole, and a throw inside it does not stop the read. */
+export async function readCapped(res, maxBytes, onChunk) {
   const declared = Number(res.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > maxBytes) throw new RelayError("upstream_too_large");
   const body = res.body;
@@ -103,6 +106,7 @@ export async function readCapped(res, maxBytes) {
       throw new RelayError("upstream_too_large");
     }
     chunks.push(step.value);
+    if (onChunk) { try { onChunk(step.value); } catch (_) { /* an observer's fault is not the body's */ } }
   }
   const out = new Uint8Array(n);
   let off = 0;
@@ -190,7 +194,10 @@ export async function followRedirects(url, init, opts) {
    caps the bytes while they stream, and hands back a Response built from what was read — so a
    caller's `r.ok` / `r.status` / `r.json()` / `r.text()` are unchanged and can no longer hang.
    Redirects are NOT followed: provider APIs are called by their fixed URL, and a POST that is
-   redirected is a misconfiguration to surface, not a hop to take. */
+   redirected is a misconfiguration to surface, not a hop to take.
+   (atlas-live-stream) `opts.onChunk` sees the body of a 2xx answer while it streams (readCapped
+   above) — the deadline, the ceiling and the returned Response are exactly as without it. An error
+   status's body is never forwarded: it is the caller's to classify, not a preview. */
 export async function fetchBounded(url, init, opts) {
   const o = opts || {};
   const maxBytes = o.maxBytes || 4 * 1024 * 1024;
@@ -210,7 +217,7 @@ export async function fetchBounded(url, init, opts) {
     }
     let bytes;
     try {
-      bytes = await readCapped(res, maxBytes);
+      bytes = await readCapped(res, maxBytes, (typeof o.onChunk === "function" && res.ok) ? o.onChunk : undefined);
     } catch (e) {
       if (e instanceof RelayError) throw e;
       throw new RelayError(ctl.signal.aborted ? "upstream_timeout" : "upstream_unreachable", 503);

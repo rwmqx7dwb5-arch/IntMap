@@ -313,7 +313,9 @@ window.IntMapModules.aiCore=function(HOST){
          js/atlas-agent.js composeInput builds `input`; `tools` are the functions Atlas holds. ai-proxy
          answers with `output` (the provider's items) and meta.protocol 2. Forwarded only when asked for,
          so every other caller's body is byte-for-byte what it was. */
-      if(opts.protocol===2&&Array.isArray(opts.input)){ body.protocol=2; body.input=opts.input; if(Array.isArray(opts.tools)) body.tools=opts.tools; if(opts.toolChoice) body.toolChoice=String(opts.toolChoice); }
+      if(opts.protocol===2&&Array.isArray(opts.input)){ body.protocol=2; body.input=opts.input; if(Array.isArray(opts.tools)) body.tools=opts.tools; if(opts.toolChoice) body.toolChoice=String(opts.toolChoice);
+        /* (atlas-live-stream) someone is watching this turn — ai-proxy answers as a stream of previews and one `done` (aiReadStream) */
+        if(opts.stream&&typeof opts.stream.onEvent==='function') body.stream=true; }
       /* ══ (#R318) THE TURN KEY — ONE USER REQUEST, ONE USE ══════════════════════════════════════
          Atlas finishes one question with up to three calls: the planner, then up to two bounded
          repairs (or, for an image, the read and its self-check re-read). Every one of them used to
@@ -335,7 +337,31 @@ window.IntMapModules.aiCore=function(HOST){
     { const mp=aiModelPick(); if(mp){ body.model=mp.model; if(mp.provider) body.provider=mp.provider; } }
     const fetchOpts={method:'POST',headers,body:JSON.stringify(body)};
     if(opts&&opts.signal) fetchOpts.signal=opts.signal;   /* (#R132) real Abort */
-    const r=await fetch(cfg.url,fetchOpts);
+    let r=await fetch(cfg.url,fetchOpts);
+    /* ══ (atlas-live-stream) A STREAMED ANSWER IS THE SAME ANSWER, READ AS IT IS MADE ══════════════════
+       ai-proxy sends previews (think / text / call / search / reset) and ends with ONE `done` event whose
+       {status, body} is exactly what it would have answered without streaming. aiReadStream hands the
+       previews to the caller and turns `done` back into that Response, so EVERY line below — the 401,
+       both 429s, the typed provider errors, the protocol-2 check, the quota mirror — reads a streamed
+       answer and a plain one identically. Refusals before the provider call (auth, quota, a bad body)
+       are never streamed, so they reach those lines as the plain JSON they always were.
+       ⚠ A STREAM THAT STOPS WITHOUT `done` ANSWERED NOTHING. It is not an empty reply, and its previews
+       are not a reply either. It is retried ONCE, without streaming — a failure that was observed, and a
+       different way of asking (one-pass-or-a-reason §5) — under the same turn key, so the reader's daily
+       use is not charged again (the server finished and settled the first request on its own). The
+       caller is told (`onEvent('reset')`) so the previews it showed are withdrawn, and the envelope
+       says `streamRetried`. ⚠ A STOP THE READER PRESSED IS NOT A BROKEN STREAM: an abort propagates. */
+    let _streamRetried=false;
+    if(body.stream&&r.ok&&/text\/event-stream/i.test(String((r.headers&&r.headers.get&&r.headers.get('content-type'))||''))){
+      try{ r=await aiReadStream(r, opts.stream); }
+      catch(e){
+        if((e&&e.name==='AbortError')||(opts&&opts.signal&&opts.signal.aborted)) throw e;
+        if(!(e&&e.code==='stream_broken')) throw e;
+        try{ opts.stream.onEvent('reset',{reason:'stream_broken'}); }catch(_){}
+        delete body.stream; fetchOpts.body=JSON.stringify(body);
+        r=await fetch(cfg.url,fetchOpts); _streamRetried=true;
+      }
+    }
     if(r.status===401){ try{ HOST.openAuthModal(aiLoginMsg()); }catch(_){} throw new Error(aiLoginMsg()); }
     if(r.status===429){
       /* ⚠ (#R447) READ THE BODY ONCE AND KEEP IT. This used to consume the response with r.json()
@@ -391,7 +417,32 @@ window.IntMapModules.aiCore=function(HOST){
     else if(j.content&&Array.isArray(j.content)) text=j.content.map(b=>b.text||'').join('');
     else if(j.choices&&j.choices[0]) text=(j.choices[0].message&&j.choices[0].message.content)||j.choices[0].text||'';
     return {text, meta, citations, callId, turnId:String((opts&&opts.turnId)||''), task:String((opts&&opts.task)||'free_text'),
-      output:(j&&Array.isArray(j.output))?j.output:null};   /* (atlas-native-tools) a protocol-2 turn's items */
+      output:(j&&Array.isArray(j.output))?j.output:null,   /* (atlas-native-tools) a protocol-2 turn's items */
+      streamRetried:_streamRetried||undefined};   /* (atlas-live-stream) the stream broke and this answer came from the one plain retry */
+  }
+  /* ══ (atlas-live-stream) aiReadStream(response, {onEvent}) → the `done` answer as a Response ═════════
+     Server-sent events, decoded as they arrive (a chunk may end inside a line or inside a character).
+     Every event but `done` is a preview and goes to onEvent(name, data); `done` becomes the Response the
+     caller reads. A body that ends — or a connection that fails — before `done` throws `stream_broken`;
+     an abort throws the AbortError the reader raised. */
+  async function aiReadStream(r, hooks){
+    const rd=r.body&&r.body.getReader?r.body.getReader():null;
+    if(!rd){ const _e=new Error(aiProviderErrMsg('provider_unavailable')); _e.code='stream_broken'; throw _e; }
+    const dec=new TextDecoder('utf-8'); let buf='', ev='', data=[], done=null;
+    const emit=()=>{ if(!data.length&&!ev){ return; } const name=ev||'message'; let d=null; try{ d=JSON.parse(data.join('\n')); }catch(_){ d=null; } ev=''; data=[];
+      if(name==='done'){ if(d&&typeof d==='object') done=d; return; }
+      try{ if(hooks&&typeof hooks.onEvent==='function') hooks.onEvent(name,d||{}); }catch(_){} };
+    const line=(l)=>{ if(l===''){ emit(); return; } if(l.charCodeAt(0)===58) return; const c=l.indexOf(':'); const f=c<0?l:l.slice(0,c); let v=c<0?'':l.slice(c+1); if(v.charCodeAt(0)===32) v=v.slice(1);
+      if(f==='event') ev=v; else if(f==='data') data.push(v); };
+    try{
+      for(;;){ const st=await rd.read(); if(st.done) break; buf+=dec.decode(st.value,{stream:true});
+        let i; while((i=buf.search(/\r\n|\n|\r/))>=0){ const two=buf.charCodeAt(i)===13&&buf.charCodeAt(i+1)===10; if(!two&&buf.charCodeAt(i)===13&&i===buf.length-1) break; line(buf.slice(0,i)); buf=buf.slice(i+(two?2:1)); }
+        if(done) break; }
+      buf+=dec.decode(); if(buf){ line(buf); } line('');
+    }catch(e){ if(e&&e.name==='AbortError') throw e; if(!done){ const _e=new Error(aiProviderErrMsg('provider_unavailable')); _e.code='stream_broken'; throw _e; } }
+    if(!done){ const _e=new Error(aiProviderErrMsg('provider_unavailable')); _e.code='stream_broken'; throw _e; }
+    try{ const _c=rd.cancel(); if(_c&&_c.catch) _c.catch(()=>{}); }catch(_){}
+    return new Response(JSON.stringify(done.body==null?null:done.body),{status:(+done.status>=200&&+done.status<600)?+done.status:500,headers:{'content-type':'application/json'}});
   }
   async function aiCallServer(prompt, system, imgs, opts){ return (await aiCallServerFull(prompt, system, imgs, opts)).text; }
   /* ---- Unified entry point used by every AI feature ---- */
@@ -419,7 +470,7 @@ window.IntMapModules.aiCore=function(HOST){
     const env=await askAIEnvelope(prompt, systemPrompt, imageDatas, opts);
     /* (#R350) …and the CALL IDENTITY travels with it. Without callId the caller cannot tell its own
        provider citations from a concurrent call's, which is what window._aiLastCitations could never do. */
-    return { data:aiParseJSON(env.text), text:env.text, meta:env.meta, citations:env.citations, callId:env.callId, turnId:env.turnId, task:env.task, output:env.output||null }; }
+    return { data:aiParseJSON(env.text), text:env.text, meta:env.meta, citations:env.citations, callId:env.callId, turnId:env.turnId, task:env.task, output:env.output||null, streamRetried:env.streamRetried }; }
   /* ══ (#R491) askAIGloss — THE ONE ENTRY POINT OF THE SEPARATE LANE ═════════════════════════
      Deliberately NOT built on askAI/askAIEnvelope: those two gate on aiQuotaBlocked(), which asks
      whether the reader has QUESTIONS left — and a lane that stopped working because the reader had
