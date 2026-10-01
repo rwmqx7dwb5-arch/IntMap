@@ -1,0 +1,584 @@
+{
+  "id": "layer-values-refused-every-time",
+  "text": "Compare the population density of Tokyo, Delhi and Lagos",
+  "lang": "en",
+  "origin": {
+    "kind": "scripted",
+    "from": "R802 §4 — data.layerValues ×17, all failed with 「No readable data on the active layers here」, step_budget, no reply"
+  },
+  "question": {
+    "set": "records",
+    "id": "population-density-tokyo-delhi-lagos"
+  },
+  "model": [
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.layerValues",
+            "args": {
+              "place": "Tokyo",
+              "layer": "population density"
+            }
+          }
+        },
+        {
+          "id": "c1",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.layerValues",
+            "args": {
+              "place": "Delhi",
+              "layer": "population density"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.layerValues",
+            "args": {
+              "place": "Lagos",
+              "layer": "population density"
+            }
+          }
+        },
+        {
+          "id": "c1",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.layerValues",
+            "args": {
+              "place": "Tokyo, Japan",
+              "layer": "population density"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.layerValues",
+            "args": {
+              "place": "Delhi, India",
+              "layer": "population density"
+            }
+          }
+        },
+        {
+          "id": "c1",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.layerValues",
+            "args": {
+              "place": "Lagos, Nigeria",
+              "layer": "population density"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.layerValues",
+            "args": {
+              "place": "東京",
+              "layer": "population density"
+            }
+          }
+        },
+        {
+          "id": "c1",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.layerValues",
+            "args": {
+              "place": "デリー",
+              "layer": "population density"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.layerValues",
+            "args": {
+              "place": "ラゴス",
+              "layer": "population density"
+            }
+          }
+        },
+        {
+          "id": "c1",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.layerValues",
+            "args": {
+              "place": "Tokyo Metropolis",
+              "layer": "population density"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.layerValues",
+            "args": {
+              "place": "New Delhi",
+              "layer": "population density"
+            }
+          }
+        },
+        {
+          "id": "c1",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.layerValues",
+            "args": {
+              "place": "Lagos State",
+              "layer": "population density"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.layerValues",
+            "args": {
+              "place": "Tokyo 23 wards",
+              "layer": "population density"
+            }
+          }
+        },
+        {
+          "id": "c1",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.layerValues",
+            "args": {
+              "place": "National Capital Territory",
+              "layer": "population density"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.layerValues",
+            "args": {
+              "place": "Lagos Island",
+              "layer": "population density"
+            }
+          }
+        },
+        {
+          "id": "c1",
+          "name": "run_capability",
+          "arguments": {
+            "id": "data.layerValues",
+            "args": {
+              "place": "Tokyo-to",
+              "layer": "population density"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "final": true,
+      "text": "",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [
+      {
+        "action": {
+          "place": "Tokyo",
+          "layer": "population density",
+          "type": "layerData"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>⚠ No readable data on the active layers here.</div>",
+          "meta": {
+            "status": "failed",
+            "code": "no_data"
+          }
+        }
+      },
+      {
+        "action": {
+          "place": "Delhi",
+          "layer": "population density",
+          "type": "layerData"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>⚠ No readable data on the active layers here.</div>",
+          "meta": {
+            "status": "failed",
+            "code": "no_data"
+          }
+        }
+      },
+      {
+        "action": {
+          "place": "Lagos",
+          "layer": "population density",
+          "type": "layerData"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>⚠ No readable data on the active layers here.</div>",
+          "meta": {
+            "status": "failed",
+            "code": "no_data"
+          }
+        }
+      },
+      {
+        "action": {
+          "place": "Tokyo, Japan",
+          "layer": "population density",
+          "type": "layerData"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>⚠ No readable data on the active layers here.</div>",
+          "meta": {
+            "status": "failed",
+            "code": "no_data"
+          }
+        }
+      },
+      {
+        "action": {
+          "place": "Delhi, India",
+          "layer": "population density",
+          "type": "layerData"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>⚠ No readable data on the active layers here.</div>",
+          "meta": {
+            "status": "failed",
+            "code": "no_data"
+          }
+        }
+      },
+      {
+        "action": {
+          "place": "Lagos, Nigeria",
+          "layer": "population density",
+          "type": "layerData"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>⚠ No readable data on the active layers here.</div>",
+          "meta": {
+            "status": "failed",
+            "code": "no_data"
+          }
+        }
+      },
+      {
+        "action": {
+          "place": "東京",
+          "layer": "population density",
+          "type": "layerData"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>⚠ No readable data on the active layers here.</div>",
+          "meta": {
+            "status": "failed",
+            "code": "no_data"
+          }
+        }
+      },
+      {
+        "action": {
+          "place": "デリー",
+          "layer": "population density",
+          "type": "layerData"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>⚠ No readable data on the active layers here.</div>",
+          "meta": {
+            "status": "failed",
+            "code": "no_data"
+          }
+        }
+      },
+      {
+        "action": {
+          "place": "ラゴス",
+          "layer": "population density",
+          "type": "layerData"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>⚠ No readable data on the active layers here.</div>",
+          "meta": {
+            "status": "failed",
+            "code": "no_data"
+          }
+        }
+      },
+      {
+        "action": {
+          "place": "Tokyo Metropolis",
+          "layer": "population density",
+          "type": "layerData"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>⚠ No readable data on the active layers here.</div>",
+          "meta": {
+            "status": "failed",
+            "code": "no_data"
+          }
+        }
+      },
+      {
+        "action": {
+          "place": "New Delhi",
+          "layer": "population density",
+          "type": "layerData"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>⚠ No readable data on the active layers here.</div>",
+          "meta": {
+            "status": "failed",
+            "code": "no_data"
+          }
+        }
+      },
+      {
+        "action": {
+          "place": "Lagos State",
+          "layer": "population density",
+          "type": "layerData"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>⚠ No readable data on the active layers here.</div>",
+          "meta": {
+            "status": "failed",
+            "code": "no_data"
+          }
+        }
+      },
+      {
+        "action": {
+          "place": "Tokyo 23 wards",
+          "layer": "population density",
+          "type": "layerData"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>⚠ No readable data on the active layers here.</div>",
+          "meta": {
+            "status": "failed",
+            "code": "no_data"
+          }
+        }
+      },
+      {
+        "action": {
+          "place": "National Capital Territory",
+          "layer": "population density",
+          "type": "layerData"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>⚠ No readable data on the active layers here.</div>",
+          "meta": {
+            "status": "failed",
+            "code": "no_data"
+          }
+        }
+      },
+      {
+        "action": {
+          "place": "Lagos Island",
+          "layer": "population density",
+          "type": "layerData"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>⚠ No readable data on the active layers here.</div>",
+          "meta": {
+            "status": "failed",
+            "code": "no_data"
+          }
+        }
+      },
+      {
+        "action": {
+          "place": "Tokyo-to",
+          "layer": "population density",
+          "type": "layerData"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>⚠ No readable data on the active layers here.</div>",
+          "meta": {
+            "status": "failed",
+            "code": "no_data"
+          }
+        }
+      }
+    ],
+    "find": [],
+    "snapshot": {}
+  },
+  "golden": {
+    "stopped": "step_budget",
+    "calls": [
+      {
+        "name": "run_capability:data.layerValues",
+        "status": "failed",
+        "code": "no_data"
+      },
+      {
+        "name": "run_capability:data.layerValues",
+        "status": "failed",
+        "code": "no_data"
+      },
+      {
+        "name": "run_capability:data.layerValues",
+        "status": "failed",
+        "code": "no_data"
+      },
+      {
+        "name": "run_capability:data.layerValues",
+        "status": "failed",
+        "code": "no_data"
+      },
+      {
+        "name": "run_capability:data.layerValues",
+        "status": "failed",
+        "code": "no_data"
+      },
+      {
+        "name": "run_capability:data.layerValues",
+        "status": "failed",
+        "code": "no_data"
+      },
+      {
+        "name": "run_capability:data.layerValues",
+        "status": "failed",
+        "code": "no_data"
+      },
+      {
+        "name": "run_capability:data.layerValues",
+        "status": "failed",
+        "code": "no_data"
+      },
+      {
+        "name": "run_capability:data.layerValues",
+        "status": "failed",
+        "code": "no_data"
+      },
+      {
+        "name": "run_capability:data.layerValues",
+        "status": "failed",
+        "code": "no_data"
+      },
+      {
+        "name": "run_capability:data.layerValues",
+        "status": "failed",
+        "code": "no_data"
+      },
+      {
+        "name": "run_capability:data.layerValues",
+        "status": "failed",
+        "code": "no_data"
+      },
+      {
+        "name": "run_capability:data.layerValues",
+        "status": "failed",
+        "code": "no_data"
+      },
+      {
+        "name": "run_capability:data.layerValues",
+        "status": "failed",
+        "code": "no_data"
+      },
+      {
+        "name": "run_capability:data.layerValues",
+        "status": "failed",
+        "code": "no_data"
+      },
+      {
+        "name": "run_capability:data.layerValues",
+        "status": "failed",
+        "code": "no_data"
+      }
+    ],
+    "text": ""
+  },
+  "expect": {
+    "verdict": "fail",
+    "failures": [
+      "capability",
+      "result",
+      "reply"
+    ]
+  }
+}

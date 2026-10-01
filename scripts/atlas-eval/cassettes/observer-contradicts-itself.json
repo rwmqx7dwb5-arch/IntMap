@@ -1,0 +1,117 @@
+{
+  "id": "observer-contradicts-itself",
+  "text": "日本の令制国を1750年の地図に描いて",
+  "lang": "jp",
+  "origin": {
+    "kind": "scripted",
+    "from": "R802 §3 — research.situationMap returned a result that was drawn (html) and `not_rendered` at once, and Atlas called it again"
+  },
+  "question": {
+    "set": "records",
+    "id": "ryoseikoku-1750"
+  },
+  "model": [
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "research.situationMap",
+            "args": {
+              "topic": "日本の令制国",
+              "year": 1750,
+              "temporalMode": "historical"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "run_capability",
+          "arguments": {
+            "id": "research.situationMap",
+            "args": {
+              "topic": "令制国 1750年",
+              "year": 1750,
+              "temporalMode": "historical"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "text": "1750年の令制国を地図に描きました。",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [
+      {
+        "action": {
+          "topic": "日本の令制国",
+          "year": 1750,
+          "temporalMode": "historical",
+          "type": "researchMap"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>令制国（1750）</div>",
+          "meta": {
+            "status": "partial",
+            "code": "not_rendered",
+            "produced": []
+          }
+        }
+      },
+      {
+        "action": {
+          "topic": "令制国 1750年",
+          "year": 1750,
+          "temporalMode": "historical",
+          "type": "researchMap"
+        },
+        "out": {
+          "ok": false,
+          "html": "<div>令制国（1750）</div>",
+          "meta": {
+            "status": "partial",
+            "code": "not_rendered",
+            "produced": []
+          }
+        }
+      }
+    ],
+    "find": [],
+    "snapshot": {}
+  },
+  "golden": {
+    "stopped": "answered",
+    "calls": [
+      {
+        "name": "run_capability:research.situationMap",
+        "status": "partial",
+        "code": "not_rendered"
+      },
+      {
+        "name": "run_capability:research.situationMap",
+        "status": "partial",
+        "code": "not_rendered"
+      }
+    ],
+    "text": "1750年の令制国を地図に描きました。"
+  },
+  "expect": {
+    "verdict": "fail",
+    "failures": [
+      "observer"
+    ]
+  }
+}

@@ -958,6 +958,77 @@ coming back. This section is the 正本 for the instrument.
 | `scripts/atlas-eval.mjs` | **the driver.** Playwright opens the site, makes a session, asks each question with `IntMapConsole.run(q)` on a fresh page, and reads the existing observation ports (below). `--alarm` raises or clears the issue. |
 | `.github/workflows/atlas-eval.yml` | **the nightly** (05:41 UTC, and the dispatch button) against production. |
 | `tests/atlas-eval-harness-checks.test.mjs` | feeds the judge records shaped like the ones the manual rounds read off the page and requires each recorded defect to be **detected**. |
+| `scripts/atlas-eval/answer-key.json` | **the answer key** — questions with an objective answer (distance, duration, population, date, area, elevation, length, count, name; jp and en), each with the value, its tolerance or range, and the source URL it was **verified at**. A drifting answer is pinned by the question (the census year, the survey edition). |
+| `scripts/atlas-eval/grade.mjs` | **is the answer right** (pure). `gradeAnswer` reads the quantities, dates and names the reply actually states and grades `correct` / `incorrect` / `absent`; `rubricRequest` / `readRubric` are the independent grader's request and its strict reading-back. |
+| `scripts/atlas-eval/replay.mjs`, `lab.mjs`, `cassettes/`, `scripted-cassettes.mjs` | **the replay** — a recorded turn run again with no model and no browser (below). |
+| `tests/atlas-quality-lab-checks.test.mjs` | the answer key's schema, the grader on the shapes the replies write, the grader-is-never-the-answerer rule, **every cassette replayed**, and four injected regressions the replay must catch. |
+
+### The quality lab — is the answer right, and can a PR break a turn unseen?
+
+Until 2026-10 the judge asked what a turn **did** (the capability it reached, the stop, the same call twice)
+and nothing that asks whether the answer is **true**: a turn that reached `routing.route` and wrote
+「約 2 時間、900 km」 passed. And nothing between the model and the map was exercised as a whole turn on
+a PR. The lab adds both halves.
+
+**Grading** (every turn whose question has `answer`):
+
+* **Deterministic** — `gradeAnswer(answer, reply)`. Units in the key are `km`, `m`, `km2`, `people`,
+  `minutes`; a reply in miles, feet or square miles is converted, km and m are one dimension, hours and
+  minutes one duration, 「1億2614万6099人」 one number, 「海面下 86 m」 negative. `absent` (the reply states
+  nothing of the asked kind) is kept apart from `incorrect` — 「did not answer」 and 「answered wrong」
+  have different causes.
+* **Language** — `languageOf(reply)` against the question's `lang`, on every turn: a reply in the other
+  language is a defect (red), as R802's German reply was.
+* **Independent grader** (`--rubric`) — ai-proxy task `atlas_grade`. The **server** picks the provider:
+  the first of `GRADER_ORDER` that is **not** `AI_PROVIDER` and has a key (today: Gemini grading OpenAI),
+  with that provider's default model; a developer's model pick does not apply; with no second provider the
+  task refuses (`no_independent_grader`, refunded) rather than self-grade. The grader is given the
+  verified answer and its source, and scores `correctness` / `commitment` / `grounding` / `language`
+  0–2 (`supabase/functions/_shared/atlas-grade-schema.js`, shared by both sides). The evaluation
+  re-derives the verdict (pass = correctness 2 and nothing 0) instead of trusting the grader's word, and
+  a malformed grade is **not graded**, not failed. One grade is one use and lands in the cost ledger.
+* **What reddens a night.** A wrong answer is a regression only once the question was answered right
+  (the reference rule above); a question never answered right is a quality gap the report shows, not an
+  alarm (`judge.mjs` `GRADED`).
+
+**The report** gains an *Answers* section — right / wrong / not stated / grader pass, overall and by
+kind of question, by language and by capability, worst first — and *Over time*: the report carries its
+predecessor's `history` forward (`lab.mjs` `historyOf`, 180 nights), so the trend needs no store of its
+own. The workflow writes the report to the run's job summary.
+
+**The replay** (`node scripts/atlas-eval.mjs --replay`, and on every PR through
+`tests/atlas-quality-lab-checks.test.mjs`). A cassette is one turn, both sides:
+
+* `model` — the model's reply at each step, in the shape `readReply` hands the loop (the **script**);
+* `world` — what the dispatch returned for each action (`{ok, html, meta}`, observers' verdicts
+  included), the `find_capability` answers that used the meaning search, and the final map;
+* `golden` — the calls in order with their status, the stop, the reply; `expect` — what the judge must
+  conclude (a defect cassette names the failure kinds it must find).
+
+`replayCassette` runs the **real** `runTurn` over the real tool surface, schemas, registry and catalogue.
+What node can compute is recomputed (the surface turning calls into actions, schema rejection, the lexical
+search, the reuse ledger, parallel calls, the forced final answer); only what came from outside the
+process is replayed (dispatch results matched by the action's canonical form, meaning-search answers).
+A **divergence** — an action the world never answered, a recorded action never made, a different stop,
+call sequence or reply, a moved lexical ranking, the script running out — is red. When it is the intended
+change, re-record: `node scripts/atlas-eval/scripted-cassettes.mjs --write` for a scripted cassette.
+
+⚠ The dispatch is replayed, so an observer's verdict inside it is the **recorded** verdict — the replay
+tests what the loop does with it, not whether it is right (that is the observers' own checks), and a
+change on the embedding side is not seen.
+
+**Recording production turns.** `js/atlas-console.js` keeps both sides of each turn in
+`IntMapAtlasDebug.lastPlan()` (`replies`, `dispatches` — the action as the surface built it, before the
+dispatch stamps it). `--record <dir>` writes every measured turn as a cassette whose `expect` is what the
+judge concluded live; the nightly uploads them under `cassettes/` in its artifact. Copy the ones worth
+keeping into `scripts/atlas-eval/cassettes/` — they then replay on every PR.
+
+```bash
+node scripts/atlas-eval.mjs --replay                           # every cassette, no model, no browser (exit 1 on any red)
+node scripts/atlas-eval/scripted-cassettes.mjs [--write]       # are the scripted cassettes current / re-record them
+node scripts/atlas-eval.mjs --validate                         # both problem sets against the capability registry
+ATLAS_EVAL_REFRESH_TOKEN=… node scripts/atlas-eval.mjs --set answers --rubric --record _cassettes
+```
 
 ```bash
 node scripts/atlas-eval.mjs --dry-run                          # no session, no question sent: the page, the ports, the place probes
@@ -1000,10 +1071,13 @@ run) · 3 regressed.
 ### The one-time setup (secrets, the account, its allowance)
 
 1. **The account.** A dedicated evaluation account is the least entangled; any account works.
-2. **Its daily allowance.** One turn is one use (`ai-proxy` keys uses by turn), and the set has 16
-   sendable questions — over the free plan's 10. Either
-   * give the account a plan: `update public.profiles set plan = 'plus' where id = '<uuid>';`
-     (50 a day, `PLAN_LIMITS` in `supabase/functions/ai-proxy/index.ts`; run in the Supabase SQL editor
+2. **Its daily allowance.** One turn is one use (`ai-proxy` keys uses by turn) and one independent grade
+   is one more. A night asks every sendable question of both sets (16 recorded + the answer key) and
+   grades each answer-key reply — `node scripts/atlas-eval.mjs --validate` and the report's header give
+   today's counts; with the answer key's 74 questions that is about 90 turns and up to 74 grades, over
+   every plan but `pro` (200) and `unlimited`. Either
+   * give the account a plan: `update public.profiles set plan = 'pro' where id = '<uuid>';`
+     (`PLAN_LIMITS` in `supabase/functions/_shared/ai-ledger.js`; run in the Supabase SQL editor
      — the column is guarded against the account itself), or
    * add its `auth.users.id` to the developer list:
      `supabase secrets set DEV_USER_IDS=<existing ids>,<uuid> --project-ref vpekfwdpurzejrrmacac`.
@@ -1024,9 +1098,17 @@ Without both secrets the workflow **fails** and says which one is missing. A tok
 
 ### What it does not measure yet
 
-* **Only the recorded questions.** The manual rounds asked 46 and 50+; 11 and 6 of their texts are
-  recorded. The rest exist only as findings, and the 12 questions a round left to ask were never
-  written down. A new evaluation round adds its questions **to the problem set**, with its criteria.
+* **The recorded questions are still only the recorded ones.** The manual rounds asked 46 and 50+; 11
+  and 6 of their texts are recorded. The rest exist only as findings. A new evaluation round adds its
+  questions **to the problem set**, with its criteria. (The answer key is a separate set: questions
+  written for their verified answers, not recovered from a round.)
+* **The deterministic grade reads numbers, not sentences.** A reply that lists several values, one of
+  them right, grades `correct`; whether it COMMITTED to the right one is the independent grader's
+  `commitment` score. A number written out in words (「二十」, "twenty") is not read and grades `absent`.
+* **The replay sees the loop, not the map.** Observer verdicts and meaning-search answers are replayed
+  as recorded (above). The cassettes in the repository today are scripted (reconstructions of recorded
+  defects and representative turns); recorded production cassettes start with the first night the
+  secrets exist.
 * **A call the agent answered from its reuse ledger** reaches no executor, so the tap cannot see its
   arguments; it is counted per tool name (`reusedByAgent`) from the step trace, not keyed.
 * **`gate_refused`** is inferred from the turn record (opened, never ended, nothing done); the page does

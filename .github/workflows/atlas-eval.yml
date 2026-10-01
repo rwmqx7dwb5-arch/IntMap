@@ -33,11 +33,17 @@ concurrency:
 
 jobs:
   eval:
-    name: Ask the recorded questions
+    name: Ask the recorded questions and the answer key
     runs-on: ubuntu-latest
-    # Worst case, derived: 16 sendable questions × the harness's patience per turn (js/atlas-agent.js
-    # turnBudgetMs + 2 × toolTimeoutMs = 18 min) = 288 min, plus boot and install. A normal night is
-    # far shorter (R775 measured a median turn of about 2.5 min). GitHub's ceiling for a job is 360.
+    # (atlas-quality-lab) The run now asks BOTH problem sets: the recorded questions (questions.json) and
+    # the verified answer key (answer-key.json) — about 90 turns, each answer-key reply also graded by the
+    # independent grader. At R775's measured median of about 2.5 min a turn that is ≈ 225 min; the worst
+    # case (every turn using the harness's whole patience, js/atlas-agent.js turnBudgetMs + 2 ×
+    # toolTimeoutMs = 18 min) no longer fits any job. So the HARNESS keeps the ceiling: --deadline-min
+    # starts no question that could not finish before it, and the questions it could not reach are
+    # reported 「not measured: deadline」 — never as failures. GitHub's ceiling for a job is 360; 330
+    # leaves the after-steps (token rotation, upload, the issue) their time, and the deadline below
+    # leaves them 15 minutes inside it.
     timeout-minutes: 330
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -86,6 +92,10 @@ jobs:
           node scripts/atlas-eval.mjs
           --out _report
           --previous _prev/atlas-eval.json
+          --set all
+          --rubric
+          --deadline-min 300
+          --record _report/cassettes
           --screenshots
           --run-url "$RUN_URL"
           --rotated-token-out "$RUNNER_TEMP/atlas-eval-rt"
@@ -112,6 +122,13 @@ jobs:
           path: _report/
           retention-days: 30
           if-no-files-found: warn
+
+      # (atlas-quality-lab) the report — answers by kind, language and capability, and the nights before
+      # — on the run page itself, so reading it does not mean downloading the artifact
+      - name: Put the report on the run page
+        if: ${{ always() && steps.gate.outcome == 'success' }}
+        run: |
+          if [ -f _report/atlas-eval.md ]; then head -c 900000 _report/atlas-eval.md >> "$GITHUB_STEP_SUMMARY"; else echo "no report was written" >> "$GITHUB_STEP_SUMMARY"; fi
 
       - name: Open, rewrite or close the issue
         if: ${{ always() }}

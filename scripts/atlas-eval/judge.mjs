@@ -39,8 +39,11 @@ export const UNMEASURED = Object.freeze({
   page_error: 'the page threw before the turn finished',
   no_observation: 'the page does not publish the Atlas records this harness reads',
   dry_run: 'dry run — no question is sent',
+  deadline: 'the run\'s time ran out before this question (the job has a ceiling; the next night starts from the top)',
   not_reached: 'the harness stopped before this question (an earlier gate refusal applies to every later turn)',
 });
+
+import { gradeAnswer, languageOf } from './grade.mjs';
 
 const str = (v) => (v == null ? '' : String(v));
 const re = (p) => new RegExp(p.pattern, p.flags == null ? 'i' : p.flags);
@@ -102,7 +105,11 @@ export function at(obj, path) {
  *   ctx  { cutStops, turnBudgetMs, callKey } — handed in from js/atlas-agent.js / js/atlas-turn-results.js
  */
 export function judgeTurn(q, obs, ctx) {
-  const base = { id: q.id, lang: q.lang, text: q.text, knownOpen: q.knownOpen || null };
+  /* (atlas-quality-lab) what the report breaks the results down by: the kind of question (an answer-key
+     category, or `record` for a question a manual round recorded), and the capabilities it is about —
+     the key's own list, or the capability the recorded round required it to reach */
+  const base = { id: q.id, lang: q.lang, text: q.text, knownOpen: q.knownOpen || null,
+    category: q.category || 'record', capabilities: (q.capabilities || (q.expect && q.expect.reach) || []).slice() };
   if (!q.sendable) return { ...base, measured: false, unmeasured: 'not_sendable', failures: [], metrics: null };
   if (!obs || obs.measured === false) {
     return { ...base, measured: false, unmeasured: (obs && obs.unmeasured) || 'no_observation', detail: (obs && obs.detail) || '', failures: [], metrics: null };
@@ -182,6 +189,26 @@ export function judgeTurn(q, obs, ctx) {
   }
   /* the generic observations that ARE defects wherever they occur (R802 §3 / §5) */
   if (stopped === 'error') fail('error', 'the turn threw: ' + reply.slice(0, 200));
+  /* ── (atlas-quality-lab) IS THE ANSWER RIGHT — the half no rule above asks ─────────────────────
+     `answer` is a verified value from scripts/atlas-eval/answer-key.json; grade.mjs reads what the
+     reply states and says correct / incorrect / absent. `language` is the reader's language, by
+     script. `rubric` is the independent grader's verdict, when the run asked for one. */
+  metrics.grade = null;
+  if (q.answer) {
+    const g = gradeAnswer(q.answer, reply);
+    metrics.grade = g;
+    if (g.verdict !== 'correct') fail('answer', g.verdict === 'absent'
+      ? 'the reply states no ' + (q.answer.kind === 'name' ? 'accepted name' : q.answer.kind === 'date' ? 'date' : 'value in ' + (q.answer.unit || 'the asked unit')) + ' — expected ' + g.expected
+      : 'the reply states ' + g.stated.slice(0, 4).join(', ') + ' — expected ' + g.expected);
+  }
+  const replyLang = languageOf(reply);
+  metrics.replyLang = replyLang || null;
+  if (reply.trim() && replyLang && q.lang && replyLang !== q.lang) fail('language', 'asked in ' + q.lang + ', answered in ' + replyLang);
+  metrics.rubric = null;
+  if (obs.rubric) {
+    metrics.rubric = obs.rubric;
+    if (obs.rubric.measured && obs.rubric.verdict === 'fail') fail('rubric', 'the independent grader (' + (obs.rubric.model || 'model') + ') failed it — ' + Object.entries(obs.rubric.scores || {}).map(([k, v]) => k + ' ' + v).join(', ') + (obs.rubric.evidence ? ' — «' + obs.rubric.evidence + '»' : ''));
+  }
   if (contradictions) fail('observer', contradictions + ' result(s) said rendered:true and code:not_rendered at once (R802 §3)');
   if (centre) fail('resolution', centre + ' call(s) named a place and were answered about the map centre (R802 §5)');
 
@@ -261,9 +288,50 @@ export function metricsOf(turns, probes) {
       answeredAboutCentre: m.reduce((s, t) => s + (t.metrics.answeredAboutCentre || 0), 0),
     },
     expectationFailures: {
-      alarming: m.filter((t) => counted(t) && t.failures.length).length + pm.filter((p) => counted(p) && p.failures.length).length,
+      alarming: m.filter((t) => counted(t) && t.failures.some((f) => !GRADED[f.kind])).length + pm.filter((p) => counted(p) && p.failures.length).length,
       knownOpen: m.filter((t) => !counted(t) && t.failures.length).length + pm.filter((p) => !counted(p) && p.failures.length).length,
     },
+    answers: answersOf(m),
+  };
+}
+
+/* (atlas-quality-lab) The failures that grade the ANSWER rather than restate a recorded defect. A
+   question from the answer key that Atlas has never answered right is a quality gap, not a defect
+   that came back: it reddens the night only when it got worse than its reference (`advance`), the
+   way every other measured fact does. `language` is not here — a reply in another language than the
+   question's is a defect wherever it happens. */
+export const GRADED = Object.freeze({ answer: 1, rubric: 1 });
+
+function tally(rows, keyOf) {
+  const out = {};
+  for (const t of rows) {
+    for (const k of [].concat(keyOf(t))) {
+      if (!k) continue;
+      const o = out[k] || (out[k] = { n: 0, correct: 0, incorrect: 0, absent: 0, rubricPass: 0, rubricGraded: 0 });
+      o.n++;
+      o[t.metrics.grade.verdict]++;
+      if (t.metrics.rubric && t.metrics.rubric.measured) { o.rubricGraded++; if (t.metrics.rubric.verdict === 'pass') o.rubricPass++; }
+    }
+  }
+  return out;
+}
+
+/** answersOf(measuredTurns) — accuracy over the turns that had a verified answer, overall and broken
+ *  down by category, by language and by capability (a turn about two capabilities counts for both). */
+export function answersOf(m) {
+  const g = m.filter((t) => t.metrics && t.metrics.grade);
+  const r = m.filter((t) => t.metrics && t.metrics.rubric && t.metrics.rubric.measured);
+  return {
+    graded: g.length,
+    correct: g.filter((t) => t.metrics.grade.verdict === 'correct').length,
+    incorrect: g.filter((t) => t.metrics.grade.verdict === 'incorrect').length,
+    absent: g.filter((t) => t.metrics.grade.verdict === 'absent').length,
+    rubric: { graded: r.length, pass: r.filter((t) => t.metrics.rubric.verdict === 'pass').length,
+      unmeasured: m.filter((t) => t.metrics && t.metrics.rubric && !t.metrics.rubric.measured).length },
+    wrongLanguage: m.filter((t) => t.failures.some((f) => f.kind === 'language')).map((t) => t.id),
+    byCategory: tally(g, (t) => t.category),
+    byLang: tally(g, (t) => t.lang),
+    byCapability: tally(g, (t) => (t.capabilities && t.capabilities.length ? t.capabilities : ['(none named)'])),
   };
 }
 
@@ -282,7 +350,9 @@ export function badnessOf(turns, probes) {
     b[id + ':noReply'] = x.noReply ? 1 : 0;
     b[id + ':overBudget'] = x.overBudget ? 1 : 0;
     if (x.secondOfSameOp !== null) b[id + ':secondOfSameOp'] = x.secondOfSameOp;
-    b[id + ':expectationFailures'] = t.failures.length;
+    b[id + ':expectationFailures'] = t.failures.filter((f) => !GRADED[f.kind]).length;
+    if (x.grade) b[id + ':answer'] = x.grade.verdict === 'correct' ? 0 : 1;
+    if (x.rubric && x.rubric.measured) b[id + ':rubric'] = x.rubric.verdict === 'pass' ? 0 : 1;
   }
   for (const p of probes || []) if (p.measured) b['probe:' + p.asked + ':wrong'] = p.failures.length ? 1 : 0;
   return b;
@@ -322,7 +392,7 @@ export function verdictOf({ dryRun, turns, probes, regressions }) {
   if (dryRun) return 'dry-run';
   const sent = turns.filter((t) => t.unmeasured !== 'not_sendable');
   if (sent.length && !sent.some((t) => t.measured)) return 'unmeasured';
-  const back = turns.some((t) => t.measured && !t.knownOpen && t.failures.length)
+  const back = turns.some((t) => t.measured && !t.knownOpen && t.failures.some((f) => !GRADED[f.kind]))
     || (probes || []).some((p) => p.measured && !p.knownOpen && p.failures.length);
   if ((regressions && regressions.length) || back) return 'regressed';
   return 'ok';
@@ -370,7 +440,7 @@ export function renderMarkdown(r) {
   L.push('');
   L.push('* target: ' + r.url + (r.build ? ' (build ' + r.build + ')' : ''));
   L.push('* when: ' + r.when + (r.runUrl ? ' · run: ' + r.runUrl : ''));
-  L.push('* problem set: `scripts/atlas-eval/questions.json` — ' + M.questions + ' question(s), ' + M.measured + ' measured');
+  L.push('* problem sets: `scripts/atlas-eval/questions.json` (recorded) and `scripts/atlas-eval/answer-key.json` (verified answers) — ' + M.questions + ' question(s), ' + M.measured + ' measured');
   if (r.dryRun) L.push('* ⚠ DRY RUN — no question was sent. Every turn below is 「not measured」, which is not 「0 operations」 and not 「failed」.');
   if (r.session) L.push('* session: ' + r.session);
   L.push('');
@@ -388,6 +458,24 @@ export function renderMarkdown(r) {
   L.push('| misresolved place probes | ' + M.misresolution.probes.length + ' / ' + M.misresolution.probesMeasured + (M.misresolution.probes.length ? ' — ' + M.misresolution.probes.join(', ') : '') + ' |');
   L.push('| named places answered about the map centre | ' + M.misresolution.answeredAboutCentre + ' |');
   L.push('| failed expectations (alarming / known open) | ' + M.expectationFailures.alarming + ' / ' + M.expectationFailures.knownOpen + ' |');
+  const A = M.answers;
+  if (A && (A.graded || A.rubric.graded || A.rubric.unmeasured)) {
+    const pc = (o) => (o.n ? Math.round((100 * o.correct) / o.n) + '% (' + o.correct + '/' + o.n + ')' : '—');
+    L.push('');
+    L.push('## Answers — graded against the verified answer key');
+    L.push('');
+    L.push('* right: **' + A.correct + ' / ' + A.graded + '** · wrong: ' + A.incorrect + ' · no answer stated: ' + A.absent
+      + ' · independent grader pass: ' + (A.rubric.graded ? A.rubric.pass + ' / ' + A.rubric.graded : '—') + (A.rubric.unmeasured ? ' (' + A.rubric.unmeasured + ' not graded)' : '')
+      + (A.wrongLanguage.length ? ' · answered in another language: ' + A.wrongLanguage.join(', ') : ''));
+    for (const [title, by] of [['kind of question', A.byCategory], ['language', A.byLang], ['capability', A.byCapability]]) {
+      const rows = Object.entries(by || {}).sort((a, b) => (a[1].correct / a[1].n) - (b[1].correct / b[1].n));
+      if (!rows.length) continue;
+      L.push('');
+      L.push('| by ' + title + ' (worst first) | right | wrong | not stated | grader pass |');
+      L.push('|---|---|---|---|---|');
+      for (const [k, o] of rows) L.push('| ' + k + ' | ' + pc(o) + ' | ' + o.incorrect + ' | ' + o.absent + ' | ' + (o.rubricGraded ? o.rubricPass + '/' + o.rubricGraded : '—') + ' |');
+    }
+  }
   const un = Object.entries(M.unmeasured);
   if (un.length) {
     L.push('');
@@ -421,6 +509,8 @@ export function renderMarkdown(r) {
       + (x.findCapability != null ? ' · find_capability ×' + x.findCapability : '')
       + (x.secondOfSameOp ? ' · same call again ×' + x.secondOfSameOp : '')
       + (x.reusedByAgent ? ' · answered from the reuse ledger ×' + x.reusedByAgent : ''));
+    if (x.grade) L.push('* answer: ' + x.grade.verdict + ' — expected ' + x.grade.expected + (x.grade.stated.length ? '; stated ' + x.grade.stated.slice(0, 4).join(', ') : ''));
+    if (x.rubric) L.push('* independent grader: ' + (x.rubric.measured ? x.rubric.verdict + ' (' + Object.entries(x.rubric.scores).map(([k, v]) => k + ' ' + v).join(', ') + (x.rubric.model ? ' · ' + x.rubric.model : '') + ')' : 'not graded — ' + x.rubric.reason));
     if (x.repeats && x.repeats.length) for (const p of x.repeats) L.push('  * again: `' + p.capability + '` (#' + p.n + ') after ' + (p.after || '?') + (p.afterCode ? '/' + p.afterCode : ''));
     for (const f of t.failures) L.push('* ✗ ' + f.kind + ': ' + f.detail);
     if (!t.failures.length) L.push('* every recorded expectation held');

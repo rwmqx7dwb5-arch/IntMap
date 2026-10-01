@@ -1307,7 +1307,11 @@ supabase/
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
                                   rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
                                   bbox.js / read-budget.js / client-error-shape.js /
-                                  fetch-relay-policy.js / ai-ledger.js / ai-usage.js）
+                                  fetch-relay-policy.js / ai-ledger.js / ai-usage.js /
+                                  atlas-grade-schema.js）
+                                  ⚠ atlas-grade-schema.js は ai-proxy `atlas_grade` の形・予算・
+                                  **採点 provider の規則（答えている provider とは別）**で、評価側の
+                                  scripts/atlas-eval/grade.mjs も同じファイルを import する
                                   ⚠ ai-ledger.js は AI 枠の**唯一の台帳の扉**（プラン表・アカウント解決・
                                   consume/refund/settle/record。ai-proxy と monitor-run が共有）、
                                   ai-usage.js は 3 社の使用量を 1 つの形にする純関数と Anthropic の
@@ -1676,7 +1680,18 @@ scripts/
                                   開く／書き直す／閉じる。正本は docs/TESTING.md「Atlas evaluation」
   atlas-eval/questions.json       その問題集。**記録された問いと、その回が実際に判定に使った基準だけ**。記録に無い
                                   基準は `unset` に理由つきで空ける
-  atlas-eval/judge.mjs            判定（純粋）。`CUT_STOPS`・`turnBudgetMs`・`callKey` は製品から受け取り、写さない
+  atlas-eval/judge.mjs            判定（純粋）。`CUT_STOPS`・`turnBudgetMs`・`callKey` は製品から受け取り、写さない。
+                                  答えの正誤（grade.mjs）・返答の言語・独立採点の結果も判定し、種類別・言語別・
+                                  能力別に集計する
+  atlas-eval/answer-key.json      **検証済みの答えを持つ問題集**（日英・距離／所要時間／人口／日付／面積／標高／
+                                  長さ／数／名前）。各行に答え・許容誤差か範囲・確かめた出典の URL
+  atlas-eval/grade.mjs            答えの採点（純粋）。返答が述べた量・日付・名前を読み、正しい／誤り／述べていない。
+                                  独立採点（ai-proxy `atlas_grade`）への依頼文と、その結果の厳密な読み戻し
+  atlas-eval/replay.mjs           **モデル無しの再生**。カセット（台本＝モデルの各手、世界＝ディスパッチの結果）を
+                                  現在の `runTurn`・道具の面・スキーマ・レジストリに流し、録画との乖離を述べる
+  atlas-eval/lab.mjs              全カセットの再生と判定（毎 PR・`--replay`）、夜ごとの報告の時系列（`history`）
+  atlas-eval/scripted-cassettes.mjs  手で書いたカセットの台本（記録された欠陥の再構成と代表ターン）。`--write` で再録
+  atlas-eval/cassettes/*.json     カセット。手書き（scripted）と本番の録画（recorded・`--record`）
   backup-db.sh / restore-test.sh  DB のバックアップと隔離復元
   supabase-deploy.mjs             `supabase-deploy.yml` の中身。push の差分から出す関数（名簿は config.toml の
                                   `[functions.*]`・`_shared/` か config.toml なら全関数）と足された migration を決める。
@@ -1716,7 +1731,8 @@ tests/
   supabase-deploy.yml             main の push で変わった Edge Function と足された migration を配備／nightly のドリフト検査
   security.yml                    CodeQL ほかセキュリティ検査
   uptime.yml                      6時間ごとの死活監視＋Issue の自動起票／自動クローズ
-  atlas-eval.yml                  毎晩、本番の Atlas に記録済みの問いを送って評価（Secret 2本が無ければ**赤**。休眠しない）
+  atlas-eval.yml                  毎晩、本番の Atlas に記録済みの問いと検証済みの答えを持つ問いを送り、答えを独立採点して
+                                  評価（Secret 2本が無ければ**赤**。休眠しない）。報告は run のページにも出る
   tle-refresh.yml                 衛星軌道要素スナップショットの定期更新（PR → 検査 → merge のあと deploy.yml を起動する——GITHUB_TOKEN の push は他の workflow を起こさない）。同じ PR に、期限の来た他の束も載せる（`scripts/data-refresh.mjs`・宣言 `autoRefresh`）
   perf-ceiling.yml                main の CI が完了するたびに、その build の実測で起動予算の天井を下げる（`perf-budget.mjs --tighten`。上げない）。bot の PR を `land-bot-pr` で、測った main の上にまだ乗っているときだけ着地させる
   upstream-liveness.yml           毎晩、ブラウザが要求する上流ホストの代表 probe を訊く（`scripts/upstream-liveness.mjs`）。赤は up→2 晩続けて down の晩だけ。結果は artifact と job summary

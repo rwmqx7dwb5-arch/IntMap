@@ -1,0 +1,82 @@
+{
+  "id": "malformed-call-handed-back",
+  "text": "What is the capital of Australia? Fly there.",
+  "lang": "en",
+  "origin": {
+    "kind": "scripted",
+    "from": "js/atlas-agent.js reject — a call whose arguments do not match the schema never reaches the dispatch; it is handed back typed, and the corrected call runs"
+  },
+  "question": {
+    "set": "answers",
+    "id": "australia-capital-name"
+  },
+  "model": [
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "map_view",
+          "arguments": {
+            "zoom": "far"
+          }
+        }
+      ]
+    },
+    {
+      "text": "",
+      "turnState": "continuing",
+      "toolCalls": [
+        {
+          "id": "c0",
+          "name": "map_view",
+          "arguments": {
+            "place": "Canberra"
+          }
+        }
+      ]
+    },
+    {
+      "text": "The capital of Australia is Canberra; the map is now centred on it.",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [
+      {
+        "action": {
+          "place": "Canberra",
+          "type": "flyTo"
+        },
+        "out": {
+          "ok": true,
+          "html": "<div>Canberra</div>",
+          "meta": {
+            "status": "completed",
+            "produced": [
+              "map"
+            ]
+          }
+        }
+      }
+    ],
+    "find": [],
+    "snapshot": {}
+  },
+  "golden": {
+    "stopped": "answered",
+    "calls": [
+      {
+        "name": "map_view",
+        "status": "completed"
+      }
+    ],
+    "text": "The capital of Australia is Canberra; the map is now centred on it."
+  },
+  "expect": {
+    "verdict": "pass",
+    "grade": "correct",
+    "dispatched": 1
+  }
+}

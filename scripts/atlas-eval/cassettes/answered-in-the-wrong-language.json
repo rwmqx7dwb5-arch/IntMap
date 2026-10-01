@@ -1,0 +1,36 @@
+{
+  "id": "answered-in-the-wrong-language",
+  "text": "日本の都道府県はいくつある？",
+  "lang": "jp",
+  "origin": {
+    "kind": "scripted",
+    "from": "R802 recorded a German reply to a question asked in another language; the language of the reply is judged on every turn"
+  },
+  "question": {
+    "set": "answers",
+    "id": "japan-prefecture-count"
+  },
+  "model": [
+    {
+      "text": "Japan has 47 prefectures (1 metropolis, 1 circuit, 2 urban prefectures and 43 prefectures).",
+      "toolCalls": []
+    }
+  ],
+  "world": {
+    "dispatch": [],
+    "find": [],
+    "snapshot": {}
+  },
+  "golden": {
+    "stopped": "answered",
+    "calls": [],
+    "text": "Japan has 47 prefectures (1 metropolis, 1 circuit, 2 urban prefectures and 43 prefectures)."
+  },
+  "expect": {
+    "verdict": "fail",
+    "failures": [
+      "language"
+    ],
+    "grade": "correct"
+  }
+}
