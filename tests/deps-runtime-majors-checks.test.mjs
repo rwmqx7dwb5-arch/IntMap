@@ -20,6 +20,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { join } from 'node:path';
+import { SITE_HOST } from '../supabase/functions/_shared/site-origin.js';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 
@@ -185,14 +186,14 @@ test('deps-runtime-majors ⑤ a passkey failure is classified from the error the
   globalThis.window = { location: { hostname: '127.0.0.1' } };   /* the SDK reads the origin it runs on */
   try {
     const rp = W.identifyAuthenticationError({ error: dom('SecurityError', 'The relying party ID is not a registrable domain suffix of, nor equal to the current domain.'),
-      options: { publicKey: { rpId: 'rwmqx7dwb5-arch.github.io' } } });
+      options: { publicKey: { rpId: SITE_HOST } } });
     assert.match(String(rp.code), /^ERROR_INVALID_(RP_ID|DOMAIN)$/, 'the SDK names the relying-party refusal');
     assert.equal(classify(rp), 'unavailable', 'an origin the project cannot serve withdraws the controls');
     const cancel = W.identifyAuthenticationError({ error: dom('NotAllowedError', 'The operation either timed out or was not allowed.'), options: { publicKey: {} } });
     assert.equal(classify(cancel), 'cancel', 'a dismissed prompt is offered again');
     const aborted = W.identifyAuthenticationError({ error: dom('AbortError', 'aborted'), options: { publicKey: {}, signal: {} } });
     assert.equal(classify(aborted), 'cancel');
-    const reg = W.identifyRegistrationError({ error: dom('SecurityError', 'rp'), options: { publicKey: { rp: { id: 'rwmqx7dwb5-arch.github.io' }, user: { id: new Uint8Array(8) } } } });
+    const reg = W.identifyRegistrationError({ error: dom('SecurityError', 'rp'), options: { publicKey: { rp: { id: SITE_HOST }, user: { id: new Uint8Array(8) } } } });
     assert.equal(classify(reg), 'unavailable', 'the same refusal on registration');
   } finally { if (had) globalThis.window = prev; else delete globalThis.window; }
   assert.equal(classify(new E.AuthApiError('Not Found', 404, 'not_found')), 'unavailable', 'no passkey endpoint on the project');

@@ -1,6 +1,6 @@
 /* atlas-50-remainder — the six things R802 §10 saw on production and left, written as the defects themselves.
  *
- * Every assertion names what a reader SAW on https://rwmqx7dwb5-arch.github.io/IntMap/ (build
+ * Every assertion names what a reader SAW on production (build
  * 2026-09-18-R783, signed in; DEV-NOTES.md #R802 §6 / §9 / §10), not the shape of the repair —
  * [[intmap-restate-the-defect-not-the-fix]]. Where a check needs upstream data it uses the shipped
  * data files (the world gazetteer, the era sheets, the historical-name table) or a response captured

@@ -898,3 +898,17 @@ id から再生できないので、戻せなかった区画を名前で返す�
 作業台なので月を持たない。費用列は 2026-09-29 から記録を始めたので、`metered_since` を必ず添える。開発者の
 呼び出しも費用として記録されるので「IntMap 自身の検証を含む」と画面に書く。関数は集計だけを返し、
 anon も呼べる（コメントに理由）。ページは GET で呼ぶ——PostgREST は GET を読み取り専用の transaction で走らせる。
+
+## サイトのアドレスは 1 か所に書き、ドメインは CNAME ファイルではなく Pages の設定で結ぶ
+
+本番のアドレスは 48 ファイル・89 か所に綴られていて、独自ドメインへ移る日にはその全部を書き換える必要があった。
+利用者が独自ドメインを取る方針を決めた（2026-10-01）ので、決めたこと:
+
+- **正本は `supabase/functions/_shared/site-origin.js` の 1 か所**（`CUSTOM_DOMAIN` が空なら github.io）。
+  Edge Function はこのディレクトリの下しか bundle に運べないので、ブラウザ・node・テストもここから import する。
+  workflow は `node scripts/site-url.mjs` で読む。正本以外にアドレスが現れたら `check:static` の `site-address` が
+  赤にする（記録の `dev-notes/` と `DEV-NOTES-ARCHIVE.md` は、その日のアドレスで測った事実なので除外）。
+- **ドメインは Pages の設定（`gh api`）で結ぶ。** Actions で公開するサイトでは GitHub は `CNAME` ファイルを
+  無視する（公式文書で確認）。公開後に GitHub の `page_url` と正本を突き合わせ、食い違えば赤にする。
+- **旧アドレスは 301 で転送されるが、オリジンは変わる。** localStorage・Service Worker・ログインのセッション・
+  パスキーは移らないので、読者には再ログインが要る。エラー報告の受け口は新旧両方のオリジンを受け付け続ける。

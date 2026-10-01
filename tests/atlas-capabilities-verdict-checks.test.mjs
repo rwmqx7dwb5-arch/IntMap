@@ -553,7 +553,7 @@ test("R740 ㉑: every branch of the shipped flyTo case declares the destination 
  *  R742 — THE SIX COUNTRIES WERE ON THE MAP AND THE VERDICT SAID
  *         「not_rendered」, UNTIL THE TURN DIED RE-PAINTING THEM
  * ----------------------------------------------------------------------------
- *  Measured on production (https://rwmqx7dwb5-arch.github.io/IntMap/), 2026-09-15, signed in:
+ *  Measured on production, 2026-09-15, signed in:
  *
  *    「Which countries border Kazakhstan?」   highlight [FAIL/failed] → [FAIL/not_rendered]
  *                                            → [FAIL/not_rendered]      10 steps, 26.2 s
@@ -776,7 +776,7 @@ test('R742 ⑦: an observation that could not be taken is not read as agreement'
  *  R768 — 「IT DID NOT MOVE」 AND 「I COULD NOT SEE IT MOVE」 WERE THE SAME ANSWER,
  *         SO ATLAS SPENT A WHOLE TURN RETRYING A MOVE THAT NEVER FAILED
  * ----------------------------------------------------------------------------
- *  Measured on production (https://rwmqx7dwb5-arch.github.io/IntMap/), 2026-09-16, signed in,
+ *  Measured on production, 2026-09-16, signed in,
  *  gpt-5.6-luna, the SAME question twice:
  *
  *    tab in the background   「アイスランドに飛んで」  9 model calls, 8 operations,

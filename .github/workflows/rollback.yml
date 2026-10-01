@@ -168,5 +168,12 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - env:
-          PROD_URL: ${{ needs.deploy.outputs.page_url || vars.PROD_URL || 'https://rwmqx7dwb5-arch.github.io/IntMap/' }}
+          # empty → tests/prod-smoke.spec.js reads the address from site-origin.js (domain-portable)
+          PROD_URL: ${{ needs.deploy.outputs.page_url || vars.PROD_URL }}
         run: npx playwright test --config playwright.prod.config.js
+      # (domain-portable) GitHub's own answer to «where is the site» is page_url; the repository's is
+      # supabase/functions/_shared/site-origin.js. They disagree when the Pages custom-domain setting and
+      # CUSTOM_DOMAIN were not changed together — docs/RELEASE.md «Moving the site to its own domain».
+      - name: The published address is the one site-origin.js names
+        if: ${{ !cancelled() }}
+        run: node scripts/site-url.mjs --pages-agrees "${{ needs.deploy.outputs.page_url }}"

@@ -6,7 +6,7 @@
 > [`../Architecture.md`](../Architecture.md)、ファイルの役割は [`FILES.md`](FILES.md)。
 >
 > ⚠ **ここに書いてある「使える／使えない」は全部 2026-09-09 に本番オリジン
-> `https://rwmqx7dwb5-arch.github.io` から実際に `fetch` して確かめたもので、文書からの引用ではない。**
+> （当時の本番のアドレス。今の値は `supabase/functions/_shared/site-origin.js`）から実際に `fetch` して確かめたもので、文書からの引用ではない。**
 
 ---
 

@@ -44,6 +44,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DERIVED_FROM_THE_REPOSITORY } from './lib/upstream-cadence.mjs';
+import { readLedger, displayRanges, candidates, judged, LEDGER } from './histeras/spans.mjs';
+import { pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
@@ -242,7 +244,108 @@ function coverage(bs, y) {
     full: per.filter((p) => p.pct >= 95).length, per };
 }
 
+/* ══ 4. ERA NAMES PAST THEIR POLITY ═════════════════════════════════════════════════════════
+   (hist-era-span-fidelity) «Songhai» and «Watassid Morocco» were drawn at 1600 — the Songhai Empire
+   fell in 1591, the Wattasids in 1554 — and every gate was green, because the era sheets carry no
+   span per feature and the sheet was well formed. The three measures above look only at the
+   first-level bundles; this one asks the era record the same question: is a name drawn in a year
+   the polity it names did not exist?
+   ⚠ THE YEARS ARE THE PAGE'S. Which years a sheet is drawn for is asked of js/time-borders.js
+   `nearest` (evaluated, not copied), so «world_1600 is drawn from 1566» is measured, not assumed.
+   ⚠ THE FINDINGS ARE DISCOVERED, THE VERDICTS ARE REVIEWED. Every name with a lifespan — #R686's
+   matcher binding or a reviewed row — whose drawn years cross that lifespan is a finding, and a
+   finding nobody judged is red (scripts/histeras/spans.mjs explains why the machine does not judge).
+   ⚠ AND THE MAP IS ASKED, NOT THE LEDGER: an applied row is checked by handing the sheet to the
+   page's own `eraShown` at a year past the bound and reading what comes back. */
+export const repoFetch = async (u) => {
+  const rel = String(u).replace(/^https?:\/\/[^/]+\//, '').replace(/^\.?\//, '').split('?')[0];
+  const p = path.join(ROOT, rel);
+  if (!fs.existsSync(p)) return { ok: false, status: 404, json: async () => null, text: async () => '', arrayBuffer: async () => new ArrayBuffer(0) };
+  const b = fs.readFileSync(p);
+  return { ok: true, status: 200, json: async () => JSON.parse(b.toString('utf8')), text: async () => b.toString('utf8'),
+    arrayBuffer: async () => b.buffer.slice(b.byteOffset, b.byteOffset + b.length) };
+};
+let _era = null;
+export async function eraContext() {
+  if (_era) return _era;
+  const { er, hbLo } = records();
+  const { timeBorders } = await import('./histeras/time-borders.mjs');
+  const { api } = await timeBorders({ lang: 'en', fetch: repoFetch });
+  await api.loadEraSpans();
+  const ledger = readLedger(ROOT);
+  const histnames = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'histnames.json'), 'utf8'));
+  /* the band below the day-exact record is where the sheets are the answer; hbLo is that record's own window */
+  const ranges = displayRanges(er.snaps.map((s) => s.y), (y, ys) => api._nearest(y, ys), hbLo);
+  const found = candidates({ bundle: er, ledger, histnames, ranges });
+  _era = { er, ledger, histnames, ranges, found, api, hbLo };
+  return _era;
+}
+/** a sheet as a FeatureCollection of names only — what `eraShown` decides on is the name, not the ring */
+const sheetFC = (s) => ({ type: 'FeatureCollection', features: s.feats.map((f) => ({ type: 'Feature',
+  properties: { NAME: (f[0] && f[0].en) || '' }, geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [0, 1], [0, 0]]] } })) });
+export function eraSpanProblems(ctx) {
+  const { er, ledger, found, api, ranges } = ctx, out = [];
+  const facts = ledger.facts || {};
+  const unjudged = found.filter((c) => !judged(c, ledger));
+  if (unjudged.length) out.push(['era-span-unjudged', unjudged.length + ' finding(s) of a name drawn outside the years its polity existed have no verdict in ' + LEDGER + ' — ' +
+    unjudged.slice(0, 6).map((c) => `«${c.name}» (${c.q} ${c.side} ${c.year}; drawn ${c.sheets.map((x) => x.drawn.join('..')).join(', ')})`).join(', ') +
+    '. Judge each against the historical record: a row if Wikidata and history agree, `refuted` with the reason if not (.agents/rules/historical-verification.md §2-2, §4-3)']);
+  for (const r of ledger.rows || []) {
+    const fa = facts[r.q];
+    const tag = `«${r.name}» → ${r.q}`;
+    if (!fa) { out.push(['era-span-row-unfetched', tag + ' has no Wikidata facts — run node scripts/histeras/spans.mjs --fetch']); continue; }
+    if (!(r.history && String(r.history).trim())) out.push(['era-span-row-unreviewed', tag + ' states no historical check (`history`) — a Wikidata date alone is not history']);
+    if (r.e != null && !(fa.e || []).includes(r.e)) out.push(['era-span-row-unstated', tag + ' ends at ' + r.e + ', which Wikidata does not state (it states ' + JSON.stringify(fa.e) + ')']);
+    if (r.s != null && !(fa.s || []).includes(r.s)) out.push(['era-span-row-unstated', tag + ' begins at ' + r.s + ', which Wikidata does not state (it states ' + JSON.stringify(fa.s) + ')']);
+    /* the row must still act on something the map draws — a judgement about nothing is a stale photograph */
+    const live = found.some((c) => c.name === r.name && c.q === r.q && ((c.side === 'end' && r.e != null) || (c.side === 'start' && r.s != null)));
+    if (!live) out.push(['era-span-row-dead', tag + ' no longer crosses any drawn year of any sheet — the record changed; re-judge or remove the row']);
+    /* evaluated on the page: past the bound the name is gone, inside it the name stays */
+    for (const s of er.snaps) {
+      const rg = ranges.get(s.y); if (!rg || !s.feats.some((f) => f[0] && f[0].en === r.name)) continue;
+      const fc = sheetFC(s);
+      const bad = [];
+      if (r.e != null && rg[1] > r.e) bad.push(Math.max(r.e + 1, rg[0]));
+      if (r.s != null && rg[0] < r.s) bad.push(rg[0]);
+      for (const y of bad) {
+        const shown = api.eraShown(fc, y);
+        if (shown.features.some((f) => f.properties.NAME === r.name)) out.push(['era-span-not-enforced', tag + ' is still named by the page at ' + y + ' on sheet ' + s.y]);
+      }
+      const inside = [rg[0], rg[1], s.y].find((y) => y >= (r.s != null ? r.s : -Infinity) && y <= (r.e != null ? r.e : Infinity) && y >= rg[0] && y <= rg[1]);
+      if (inside != null && !api.eraShown(fc, inside).features.some((f) => f.properties.NAME === r.name)) {
+        out.push(['era-span-overreach', tag + ' is withheld by the page at ' + inside + ', inside its own span']);
+      }
+    }
+  }
+  for (const r of ledger.refuted || []) {
+    if (!(r.why && r.note)) out.push(['era-span-refuted-unexplained', `«${r.name}» → ${r.q} ${r.side} is refuted without a reason and a note`]);
+    if (!found.some((c) => c.name === r.name && c.q === r.q && c.side === r.side)) out.push(['era-span-refuted-dead', `«${r.name}» → ${r.q} ${r.side} is refuted, but nothing raises it any more — remove the entry`]);
+  }
+  return out;
+}
+
 /* ══ main ════════════════════════════════════════════════════════════════════════════════ */
+/* (hist-era-span-fidelity) the polities the era sheet draws there that year, as the page draws them —
+   the sheet `nearest` picks for that year, and every name the reader's year withholds marked as such.
+   Listed only below the day-exact record, where the sheets are what the map shows. */
+async function listEra(y, box) {
+  const ctx = await eraContext();
+  if (y >= ctx.hbLo) return;
+  const sy = ctx.api._nearest(y, ctx.er.snaps.map((s) => s.y));
+  const s = ctx.er.snaps.find((x) => x.y === sy); if (!s) return;
+  const shown = ctx.api.eraShown(sheetFC(s), y);
+  const hits = [];
+  s.feats.forEach((f, i) => {
+    let sx = 0, sy2 = 0, n = 0;
+    for (const poly of f[2]) for (const ri of poly.slice(0, 1)) for (const p of ctx.er.rings[ri]) { sx += p[0]; sy2 += p[1]; n++; }
+    const cx = sx / n, cy = sy2 / n;
+    if (cx < box[0] || cx > box[2] || cy < box[1] || cy > box[3]) return;
+    const p = shown.features[i].properties;
+    hits.push((f[0] && f[0].en) + (p._wName ? `   ✂ 名前を描かない（${p._wQ} ${p._wLabel || ''} が ${p._wYear} に${p._wSide === 'end' ? '終焉' : '成立'}）` : ''));
+  });
+  console.log(`data/hist-eras.js: sheet ${sy} drawn for ${y} — ${hits.length} named shape(s) in the box`);
+  for (const h of [...new Set(hits)].sort()) console.log('    ' + h);
+}
 function listYear(bs, y, box) {
   for (const { file, b } of bs) {
     const hits = [];
@@ -263,10 +366,12 @@ function listYear(bs, y, box) {
   }
 }
 
-function main() {
+async function main() {
   const bs = bundles();
   if (has('--year')) {
-    return listYear(bs, parseInt(arg('--year', '1900'), 10), arg('--in', '-180,-90,180,90').split(',').map(Number));
+    const y = parseInt(arg('--year', '1900'), 10), box = arg('--in', '-180,-90,180,90').split(',').map(Number);
+    listYear(bs, y, box);
+    return listEra(y, box);
   }
 
   const spans = unsourcedSpans(bs);
@@ -298,6 +403,14 @@ function main() {
       `${kinds[k]} pair(s) of one unit drawn twice over one instant (was ${observed.selfOverlaps[k]})`);
   }
 
+  const era = await eraContext();
+  const eraBad = eraSpanProblems(era);
+  for (const [tag, msg] of eraBad) say(false, tag, msg);
+  if (!eraBad.length) {
+    const applied = era.found.filter((c) => { const j = judged(c, era.ledger); return j && j.by === 'row'; }).length;
+    say(true, 'era-span', `${era.found.length} finding(s) of an era name drawn outside its polity's lifespan, every one judged — ${applied} withheld on the map by a reviewed row, ${era.found.length - applied} refuted with a reason`);
+  }
+
   for (const c of cov) {
     const was = observed.years.find((r) => r.year === c.year);
     /* The grid is deterministic, so the floor is the last measurement itself. The slack exists
@@ -310,6 +423,11 @@ function main() {
   if (has('--report')) {
     console.log('\n── 開始日を誰も述べていない行: ' + spans.length + ' 件');
     for (const r of spans.slice(0, 90)) console.log(`   ${r.file.replace('data/', '').padEnd(20)} ${r.name} (L${r.level})  地図は ${r.from} から描く / 上流が述べる終わり ${r.end || 'なし'}`);
+    console.log('\n── 時代の名前が、その政体の存在しない年に描かれる所見: ' + era.found.length + ' 件');
+    for (const c of era.found) {
+      const j = judged(c, era.ledger);
+      console.log(`   ${j ? (j.by === 'row' ? '名前を外す' : '反証(' + j.ref.why + ')') : '未判定'}  «${c.name}» ${c.q} ${c.label || ''} ${c.side === 'end' ? '終焉' : '成立'} ${c.year}  描かれる年 ${c.sheets.map((x) => x.drawn.join('..')).join(', ')}`);
+    }
     console.log('\n── 同じ単位が同じ瞬間に二度描かれる組: identical ' + kinds.identical + ' / nested ' + kinds.nested + ' / seam ' + kinds.seam);
     console.log('\n── 年ごとの被覆（母集合＝その年、地図が政体の中に置いている陸地）');
     for (const c of cov) {
@@ -325,4 +443,6 @@ function main() {
   console.log('\ncheck:histfidelity — the historical map is measured as a claim, not as a shape');
   if (problems.length) process.exit(1);
 }
-main();
+/* (hist-era-span-fidelity) run only as a program — scripts/histeras/spans.mjs and the checks import
+   `eraContext` / `eraSpanProblems` from here, and an import must not run the gate */
+if (import.meta.url === pathToFileURL(process.argv[1] || '').href) await main();

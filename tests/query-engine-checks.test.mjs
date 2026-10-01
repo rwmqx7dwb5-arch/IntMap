@@ -43,7 +43,7 @@
  *  R747 — THE STORE REFUSED ITS OWN KEY, ONE READER OVER FROM #R742,
  *         AND PRINTED A YEAR AS A QUANTITY
  * ----------------------------------------------------------------------------
- *  Measured on https://rwmqx7dwb5-arch.github.io/IntMap/ (build R746), 2026-09-16, signed in.
+ *  Measured on production (build R746), 2026-09-16, signed in.
  *  "List every active volcano in Indonesia with its last known eruption year" — ONE turn, four
  *  `data.query` calls, and the first two disagreed with each other about the same table:
  *

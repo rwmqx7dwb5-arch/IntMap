@@ -4439,3 +4439,10 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   従来どおり。
 - ⑥ `SYS()` は 1 つの形しか持たず（`_aiProto` を環境に置いても同じバイト）、道具を JSON で貼らず、
   `tool_calls` という語を含まない。`FINAL_SCHEMA` に呼び出しの欄は無い。
+
+### `tests/domain-portable-checks.test.mjs` (domain-portable)
+
+9 本。**サイトのアドレスは 1 つの正本（`supabase/functions/_shared/site-origin.js`）から導かれ、
+ドメイン直下でも `/IntMap/` 配下でも同じビルドが動く**こと。正本以外にアドレスの綴りが無いこと
+（`check:static` の規則 `site-address`）、`CUSTOM_DOMAIN` が空なら `dist/CNAME` を出さず値があれば出すこと、
+1 つのビルドを 2 つのベースパスに置いて index が参照するローカル資源が両方で取れることを、実際に配信して確かめる。
