@@ -174,7 +174,7 @@ test('the two Stripe links are declared once, in supporter.js, and are AGENTS.md
   assert.match(body, /window\.INTMAP_STRIPE_URL_JP = STRIPE_DONATE\.jp;/);
   /* the hosts of the URLs app-body.js spells — compared as hosts, not searched for as a substring */
   const hosts = [...body.matchAll(/https?:\/\/[^\s'"`)]+/g)].map((m) => { try { return new URL(m[0]).host; } catch (_) { return ''; } });
-  assert.ok(!hosts.includes('donate.stripe.com'), 'app-body.js spells a Stripe link again');
+  assert.ok(!hosts.some((h) => h === 'donate.stripe.com'), 'app-body.js spells a Stripe link again');
   assert.match(body, /window\.stripeDonateURL = \(\)=> \(currentLang==='jp' \? window\.INTMAP_STRIPE_URL_JP : window\.INTMAP_STRIPE_URL_EN\);/);
 });
 
