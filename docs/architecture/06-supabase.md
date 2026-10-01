@@ -12,9 +12,9 @@
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **38 表**（`ai_turn_answers` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
+実証手順も同じファイル）。現在 **39 表**（`ai_turn_answers` / `usage_counts` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
 `user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` /
-`atlas_capability_vectors` /
+`atlas_capability_vectors` / `usage_counts`（匿名の利用統計） /
 `community_*` 5 表 / `feedback` /
 `bug_reports` / `donations` / Area Monitors の 5 表 / News Events の 8 表
 ＝`news_sources` / `news_source_feeds` / `news_articles` / `news_events` /
@@ -25,9 +25,9 @@
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](../MIGRATIONS.md)。
-### 6.2 Edge Functions — **21本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **22本**（`_shared/` は関数ではない）
 
-> ⚠ **21本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
+> ⚠ **22本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
 > ファイルのヘッダコメントに書いた deploy フラグは設定ではない。
 > `supabase/functions/_shared/` は `newsgeo.js`・`relay-guard.js`・`rate-limit.js`・`volcano-parse.js` などを置く
 > ライブラリ用ディレクトリで、import した関数の中に CLI がバンドルする。
@@ -288,6 +288,19 @@
   （pg_cron `client-errors-purge` が毎日 `purge_client_errors` を呼ぶ）。
   詳細は [`docs/MONITORING.md`](../MONITORING.md) §2。
 
+- **`usage-count`** … **匿名の利用統計の書き込み先**（`--no-verify-jwt`・秘密なし）。`js/usage-counts.js` が
+  ページ読み込み 1 回ぶんの件数を束ね、ページが隠れる・閉じるときに `navigator.sendBeacon` で POST する（本番のオリジンから
+  だけ。ブラウザの Do Not Track / Global Privacy Control が有効なとき、設定「匿名の利用統計」がオフのときは何も送らない。
+  オフにした瞬間に未送信分を捨てる。Atlas の `settings.usageCounts` も同じスイッチ）。貯める先は `usage_counts`（§6.1）で、
+  **（UTC の日, metric, dimension）→ 件数**の upsert だけ。⚠ **何を数えてよいかの正本は `supabase/functions/usage-count/shape.js`**
+  ——ブラウザとこの関数が同じファイルを import し、関数は宣言に無い metric・規則に合わない dimension を**捨てる**
+  （各行の 3 つの位置以外は読まない）。日はサーバーの時計で決め、**IP・User-Agent・アカウント・セッション・時刻は読まず
+  持たない**（表に列が無い）。守りは POST 限定・本文上限 16 KiB・Origin（`client-errors` と同じ許可）・共有 token bucket 2 つ
+  （呼び手ごと＝アドレスの HMAC／プロジェクト全体の 1 日。どちらも閉じて失敗）・**metric ごと 1 日の dimension 数の上限**
+  （`record_usage_counts` の中で、新しい値は拒み既知の値は数える）。1 日の上限は `USAGE_COUNT_GLOBAL_PER_DAY`。
+  保持は **400 日**（pg_cron `usage-counts-purge`）。読むのは `admin.html` の **Usage** タブ（`usage_counts_summary` は
+  SECURITY INVOKER なので admin の SELECT policy がそのまま効く）。詳細は [`docs/MONITORING.md`](../MONITORING.md) §2b。
+
 - **`reader-reports`** … **フィードバックとバグ報告の書き込み先**（`--no-verify-jwt`・秘密なし）。`js/feedback.js` の
   2 つのフォームがここへ POST し、関数が service_role で `feedback` / `bug_reports` に 1 行書く。**表へ直接は書けない**
   （`anon`・`authenticated` の INSERT policy と grant は `20260930090000_anon_write_guard.sql` が閉じた——
@@ -309,7 +322,7 @@
 `x-intmap-forced: capped` / `unavailable`（強制したときは `granted`）で理由を述べる。拒否ではない。
 
 ⚠ **公開の関数はすべて、上流へ出る前に共有 bucket から 1 トークン取る。** `verify_jwt = false` の関数のうち
-秘密で守られた 3 本（`refresh-news`・`news-ingest`・`monitor-run`）と、自前の 2 段の bucket を持つ `client-errors`・`reader-reports` 以外——
+秘密で守られた 3 本（`refresh-news`・`news-ingest`・`monitor-run`）と、自前の 2 段の bucket を持つ `client-errors`・`reader-reports`・`usage-count` 以外——
 `alerts-relay`・`ais-feed`・`aviation-feed`・`cable-geo`・`fetch-relay`・`gdelt-relay`・`news-relay`・`quotes-relay`・
 `radiation-feed`・`sv-cov`・`volcano-feed`・`who-don`（公開 GET）——は `_shared/rate-limit.js` の `callerGate()` で
 `<関数名>:ip` の bucket（`public.relay_rate_buckets`）から取る。容量＝その関数の読者 1 人のページが 1 分に送る最大数
@@ -318,10 +331,10 @@
 拒否は `429 rate_limit`＋`Retry-After`。`<関数名>_PER_IP_PER_MIN` で 1 本の容量を deploy なしに動かせる。
 `routing-relay` は従来どおり自前の fail-closed の全体上限を持つ。
 
-⚠ **`_shared/relay-guard.js` を共有するのは19本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` /
-`fetch-relay` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` / `radiation-feed` / `reader-reports` / `routing-relay` / `sv-cov` / `volcano-feed` / `who-don`）**。** そのうち
-`ai-proxy`（JWT）・`atlas-embed`（JWT）・`monitor-run`（共有秘密または JWT）・`news-ingest`（`x-news-ingest-secret`）の 4 本が認証を持ち、`reader-reports` は任意（送られた token だけを Auth サーバーで検証する）、**残り14本は無認証**。
-`ai-proxy`・`monitor-run`・`client-errors`・`reader-reports` が共有するのは**読み手だけ**（`readCapped`＝要求本文を読みながら上限で切る、`fetchBounded`＝提供者への
+⚠ **`_shared/relay-guard.js` を共有するのは20本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `atlas-embed` / `aviation-feed` / `cable-geo` / `client-errors` /
+`fetch-relay` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` / `radiation-feed` / `reader-reports` / `routing-relay` / `sv-cov` / `usage-count` / `volcano-feed` / `who-don`）**。** そのうち
+`ai-proxy`（JWT）・`atlas-embed`（JWT）・`monitor-run`（共有秘密または JWT）・`news-ingest`（`x-news-ingest-secret`）の 4 本が認証を持ち、`reader-reports` は任意（送られた token だけを Auth サーバーで検証する）、**残り15本は無認証**。
+`ai-proxy`・`monitor-run`・`client-errors`・`reader-reports`・`usage-count` が共有するのは**読み手だけ**（`readCapped`＝要求本文を読みながら上限で切る、`fetchBounded`＝提供者への
 POST をヘッダではなく**本文の最後のバイトまで**同じ期限と上限で読む——提供者への要求では `_shared/ai-provider.js` の扉の中で使う）で、URL allowlist の側ではない。
 ⚠ **リダイレクトは手で辿る**（`followRedirects`）。`redirect:"follow"` は最初の 1 ホップにしか allowlist を訊いていなかったので、
 各ホップを同じ https オリジンか、呼び出し側が渡した `allowRedirect(next, from)` で検査し、上限は 3 ホップ（`MAX_REDIRECTS`）。
@@ -348,4 +361,5 @@ POST をヘッダではなく**本文の最後のバイトまで**同じ期限�
   `ATLAS_EMBED_GLOBAL_PER_DAY`（任意・プロジェクト全体の 1 日の上限）
 - monitor-run: `MONITOR_SECRET`
 - reader-reports: `READER_REPORTS_GLOBAL_PER_DAY`（任意・プロジェクト全体の 1 日の上限。既定 500）
+- usage-count: `USAGE_COUNT_GLOBAL_PER_DAY`（任意・プロジェクト全体の 1 日の要求数の上限。既定 100,000）
 - Gemini 経路のみ: `GEMINI_SEARCH_ENABLED`（既定 OFF）

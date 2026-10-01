@@ -126,3 +126,10 @@ JPEG の SOF から読む（画像が正本）。人は meta refresh・`location
   原因は突き止めていない。文は地図が持つ名前だけで書く。
 - spec の名前の問い合わせは、読み込み済みタイルの地物（`querySourceFeatures`）ではなく、その日付のソースの集合全体
   （`serialize().data`）に訊く。タイルの読み込みは事実ではなくタイミングだから。
+
+## 7. #868・#869・#871・#875 との合流
+
+- 能力は main の 148 に 2 つ足して 150（到達可能 149）。catalogue は実測 59 ブロック。件数は `check:docs` が求める実数へ。
+- `scripts/test-budget.mjs` の全体の天井は両方の加算を合わせて 5,245 秒（main の +9 `anonymous-usage-counts` とこの +40）、註も両方。
+- `tests/perf-baseline.json` は main 側から build して `--update`（async.raw・`atlas-console`・dist.assets。増分の中身は §4、
+  `atlas-console` には #875 の埋め込みの分も入る）。`tests/global-surface-baseline.json` も `--update`（この回の読みは §4 の 1 件）。

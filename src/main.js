@@ -48,6 +48,9 @@ import '../js/safe-html.js';
    any module evaluated after this line, or by the app at any later time, reaches IntMap's own record
    (public.client_errors) instead of nowhere — the Sentry loader it replaces never had a DSN. */
 import '../js/client-error-report.js';
+/* (anonymous-usage-counts) …and the anonymous usage counter, early enough to read the arrival (referrer,
+   utm tags, a link's map view) before js/map-ui.js rewrites the address with this session's own view. */
+import '../js/usage-counts.js';
 /* (ui-layer-owner) …and the two owners of the screen's shape, before any module that builds a style
    string: which LAYOUT this viewport gets and which DEVICE it is (window.IntMapDevice — the 768 px
    boundary written once, and the classes on <body>), and who is IN FRONT (window.IntMapStack — the
@@ -305,6 +308,10 @@ import '../js/ephemeris.js';
    the classic tag block had. */
 import '../js/app-body.js';
 import { LAZY_NAMES, CARRIED_NAMES } from '../js/lazy-modules.js';
+/* (share-embed-distribution) …and the EMBED VIEW, only in an embed. index.html's first script sets <html data-embed>
+   from `?embed=1`; js/embed-mode.js — the stylesheet that keeps only the map, its legends and the credits, the
+   read-only gate and the bar — is a chunk of its own, so a normal start-up neither fetches nor parses it. */
+if (window.IntMapDevice.embedded()) import('../js/embed-mode.js');   /* js/ui-device.js — the one answer to «is this an embed» */
 
 /* ── (#R162/#R163 → module-graph) THE REQUIRED-MODULE GUARD ─────────────────────────────────────
    It used to hold MODULE_FACTORIES — 107 names, checked AFTER boot against window.IntMapModules,

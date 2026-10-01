@@ -58,7 +58,10 @@ export function makeSessionTabs(HOST, CTX) {
         base:(typeof HOST.mapType!=='undefined'?HOST.mapType:'map'), terr3d:!!(typeof HOST.terrain3D!=='undefined'&&HOST.terrain3D),
         sbOpen, lsrOpen,
         year:(year&&year<new Date().getFullYear())?year:null }; }catch(_){ return null; } }
-    function _save(){ if(_restoring) return; clearTimeout(_saveT); _saveT=setTimeout(()=>{ try{ const s=_snapshot(); if(s) localStorage.setItem(KEY,JSON.stringify(s)); }catch(_){} },400); }
+    /* (share-embed-distribution) an EMBED (js/ui-device.js `embedded()`) neither reads nor writes this session: it shows
+       the map its link describes, and a frame of IntMap on the same origin (the share panel's preview) must not
+       rewrite the reader's own saved IntMap with the frame's state */
+    function _save(){ if(_restoring||window.IntMapDevice.embedded()) return; clearTimeout(_saveT); _saveT=setTimeout(()=>{ try{ const s=_snapshot(); if(s) localStorage.setItem(KEY,JSON.stringify(s)); }catch(_){} },400); }
     window._imSaveSession=_save;
     /* save on the events that change persisted state */
     try{ document.addEventListener('change',e=>{ try{ if(e.target&&e.target.closest&&e.target.closest('#layer-dropdown')){
@@ -82,11 +85,12 @@ export function makeSessionTabs(HOST, CTX) {
     function _defaultTab(){ try{
       _tabInit=true; setTimeout(_save,1800);   /* persist the "already offered" flag once _restoring has cleared */
       if(HOST.mode) return;
+      if(window.IntMapDevice.embedded()) return;   /* (share-embed-distribution) no sidebar in an embed, so no tab to open */
       if(typeof isMobile==='function' ? isMobile() : window.IntMapDevice.compact()) return;
       if(document.body.classList.contains('ws-mode')) return;
       if(window.IntMapOS) IntMapOS.exec('tab.stats',{source:'default'});
     }catch(_){} }
-    function _restore(){ let s=null; try{ s=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(_){} if(!s){ setTimeout(_defaultTab,500); setTimeout(()=>{ _restoring=false; },1600); return; }
+    function _restore(){ if(window.IntMapDevice.embedded()){ setTimeout(()=>{ _restoring=false; },1600); return; } let s=null; try{ s=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(_){} if(!s){ setTimeout(_defaultTab,500); setTimeout(()=>{ _restoring=false; },1600); return; }
       _tabInit=!!s.tabInit;
       if(!s.mode&&!_tabInit) setTimeout(_defaultTab,500);
       /* base map + 3-D first (they swap the style) */
@@ -166,7 +170,10 @@ export function makeSessionTabs(HOST, CTX) {
          button, and such a session simply restores no tab (the app's own default takes over). */
       try{ if(s.mode){ const map2={news:'tab.news',saved:'tab.news',info:'tab.info',stats:'tab.stats',atlas:'tab.atlas'}[s.mode]; if(map2&&window.IntMapOS) setTimeout(()=>{ try{ if(!HOST.mode) IntMapOS.exec(map2,{source:'restore'}); }catch(_){} },500); } }catch(_){}
       /* set the time-machine year */
-      try{ if(s.year&&IntMapTime&&IntMapTime.setYear){ setTimeout(()=>{ try{ IntMapTime.setYear(s.year,{source:'restore'}); }catch(_){} },900); } }catch(_){}
+      /* (share-embed-distribution) …unless the address opened on a map state: a link (and a reload, whose address
+         bar the share-link writer keeps current) states its own instant — `tt`, or «now» when it has none — and
+         two restorers setting the clock at the same 900 ms was a race the link could lose (js/map-ui.js carriesState) */
+      try{ if(s.year&&IntMapTime&&IntMapTime.setYear){ setTimeout(()=>{ try{ const B=window.IntMapBookmark; if(B&&B.carriesState&&B.carriesState()) return; IntMapTime.setYear(s.year,{source:'restore'}); }catch(_){} },900); } }catch(_){}
       setTimeout(()=>{ _restoring=false; },1600);   /* stop suppressing saves once the restore settles */ }
     /* run the restore once the map + initial layer UI are ready */
     /* (restored-layer-before-style) on the style being able to take layers, not on MapLibre's `load`,
