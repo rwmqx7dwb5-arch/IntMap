@@ -22,7 +22,7 @@
    supabase db diff --schema public # drift がゼロであることを確認
    ```
    ローカル検証は `supabase start && supabase db reset`（migrations ＋ `supabase/seed.sql`）。
-4. **Edge Functions を21本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
+4. **Edge Functions を22本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
    ```bash
    for f in ai-proxy delete-account atlas-embed; do supabase functions deploy $f --project-ref <REF>; done
    for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed ais-feed news-ingest routing-relay volcano-feed gdelt-relay quotes-relay who-don client-errors fetch-relay reader-reports; do

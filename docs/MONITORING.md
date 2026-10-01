@@ -8,6 +8,8 @@ Two independent layers:
    error record (no external account): uncaught exceptions are sent to the `client-errors` Edge
    Function and kept, one row per distinct defect, for the **Errors** tab of `admin.html`. A
    ring buffer in the page keeps the last errors for the Bug Report tool as well.
+3. **Usage (anonymous counts)** — how is the site found and used? IntMap's **own** aggregate
+   counters (no cookie, no vendor, no person) in the **Usage** tab of `admin.html` — §2b.
 
 ## 1. Uptime monitoring
 
@@ -324,6 +326,44 @@ the body ceiling and report count; the `Origin` allow-list (keeps other sites' p
 bounds a scripted caller); two shared token buckets in `public.relay_rate_buckets` — per caller
 (30/hour) and project-wide (5,000/day, raised on purpose via `CLIENT_ERRORS_GLOBAL_PER_DAY`), both
 **fail closed**; and a 10,000-row ceiling enforced inside `record_client_error`.
+
+## 2b. Anonymous usage counts (anonymous-usage-counts)
+
+### Why it is our own counter, and only a counter
+The operator decided (2026-10-01) to measure what marketing reaches — page views per day, where readers
+arrive from, which features they use — with IntMap's **own** aggregate counters only: no cookie, no
+analytics vendor, no IP, no user id (not even for a signed-in reader), no session, no raw event row.
+
+### The path
+```
+js/usage-counts.js          counts one page load: view · entry (link / embed) · ref (host name) · utm_* ·
+                            lang (en/jp/other) · device (mobile/desktop) · layer · feature · atlas (questions)
+  → navigator.sendBeacon     when the page is hidden or closed (text/plain, no preflight)
+  → supabase/functions/usage-count   validates every row against usage-count/shape.js, drops the rest
+  → record_usage_counts      (server UTC day, metric, dimension) += n
+  → admin.html «Usage»       page views per day + top values per metric (usage_counts_summary)
+```
+**What may be counted is declared once**, in `supabase/functions/usage-count/shape.js` — the browser and the
+function import the same file. Each feature is heard where the app already speaks (a click on its control,
+its Atlas capability completing on the IntMapOS bus, the browser's `appinstalled`); a layer is counted when the
+**reader** switches it on in the Layers registry (a session restore at boot is not); an Atlas question is
+counted from the console's turn-start event on the same bus — the count only, never the text.
+
+### When nothing is sent
+Do Not Track or Global Privacy Control on; the Settings switch «Anonymous usage statistics» off (or Atlas asked
+to turn it off — `settings.usageCounts`), which also discards what the page had not yet sent; any origin but
+production (a local preview and the test suite never send — `window.IntMapUsage.preview()` shows what would be).
+
+### Bounds on the endpoint
+A 16 KiB body of at most 64 rows; the `Origin` allow-list; per-caller (120 requests/hour, an HMAC of the
+address) and project-wide (100,000/day, `USAGE_COUNT_GLOBAL_PER_DAY`) buckets, both **fail closed**; a per-request
+maximum per metric; and a per-metric **daily ceiling on distinct dimensions** inside `record_usage_counts`
+(`maxDims` in shape.js — a new value is refused at the ceiling, a known one still counts). A metric at its
+ceiling in the Usage tab is the signal that the ceiling (an estimate) has expired.
+
+### Retention
+400 days — a year plus a month, so a day can be compared with the same day a year earlier — removed daily by
+the pg_cron job `usage-counts-purge`, which the migration schedules itself (idempotently, when pg_cron exists).
 
 ## Error classification (§8.5)
 

@@ -2429,6 +2429,12 @@ test('time-compare-lapse ① the comparison window draws 1914 beside the main ma
     await page.waitForFunction(() => !/[#&]ct=/.test(location.hash), null, { timeout: 15_000 });
     navAt = await page.evaluate((h) => { location.hash = h; return Date.now(); }, hash);
     await page.waitForFunction(() => { const s = window.IntMapCompare.timeState(); return s.open && s.follow === false && s.iso && s.iso.startsWith('1914'); }, null, { timeout: 30_000 });
+    /* …and a link with the window open but no `ct` is a window at the main map's instant, as a link with no `tt` is a
+       map at «now» (js/map-ui.js). Pasted after the first restore has run its timers (see `finally`), so the two are
+       not one restore queued behind the other */
+    await page.waitForFunction((t) => Date.now() - t > 3600, navAt, { timeout: 15_000 });
+    navAt = await page.evaluate((h) => { location.hash = h.replace(/&ct=[^&]*/, ''); return Date.now(); }, hash);
+    await page.waitForFunction(() => { const s = window.IntMapCompare.timeState(); return s.open && s.follow === true && s.live === true; }, null, { timeout: 30_000 });
 
     /* Atlas sets the window through the capability; its verdict is read off the window */
     const res = await page.evaluate(async () => {

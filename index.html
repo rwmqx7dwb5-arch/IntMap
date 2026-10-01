@@ -220,7 +220,13 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
        applyTheme reads (intmap_settings.theme, with #R33's retired skin names coerced to auto) makes
        the first frame the right one; the module that runs later now agrees with it instead of
        correcting it. -->
+  <!-- (share-embed-distribution) …and the same first frame decides whether this page is an EMBED (`?embed=1`,
+       `&interactive=0` for a still picture — js/embed-mode.js writes that grammar and says why). The attribute is
+       the one fact three readers key on: js/embed-mode.js's stylesheet (what an embed shows), src/main.js (whether
+       to fetch that module at all — a normal start-up does not) and js/atlas-loader.js (no Atlas warm-up in a frame).
+       tests/share-embed-distribution-checks.test.mjs evaluates this script's text against embedFlags(). -->
   <script>(function(){var t='auto';
+    var q=location.search; if(/[?&]embed=1(&|$)/.test(q)) document.documentElement.setAttribute('data-embed',/[?&]interactive=0(&|$)/.test(q)?'static':'1');
     try{ var s=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(s&&s.theme) t=s.theme; }catch(e){}
     if(t!=='light'&&t!=='dark') t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
     document.documentElement.setAttribute('data-theme',t);})();</script>
@@ -740,6 +746,9 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
       <button type="button" id="btn-send-feedback" class="ai-test-btn" style="width:100%;margin-bottom:8px;" data-i18n="sendFeedbackBtn">⭐ Send feedback</button>
       <button type="button" id="btn-report-bug" class="ai-test-btn" style="width:100%;" data-i18n="reportBugBtn">🐞 Report a bug</button>
     </div>
+    <!-- (anonymous-usage-counts) IntMap's own anonymous counters — on by default, off stops them at once.
+         Wired by js/usage-counts.js (the same switch Atlas's settings.usageCounts flips). -->
+    <div class="setting-group"><label for="setting-usage-counts" data-i18n="lblUsageCounts">Anonymous usage statistics</label><select id="setting-usage-counts"><option value="on" data-i18n="usageCountsOn">On (default) — send anonymous counts</option><option value="off" data-i18n="usageCountsOff">Off — send nothing</option></select></div>
     <!-- (#R9) Support button — always the last item before Apply, so future settings push it down but it
          stays directly above Apply. -->
     

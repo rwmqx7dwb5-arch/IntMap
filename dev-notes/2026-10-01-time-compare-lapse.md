@@ -66,3 +66,11 @@ date: 2026-10-01
 ## 起動費の天井を上げた理由
 
 比較窓の時計（`makeClock`）とカーネルの `verdict(id, clock, drawnBy)` は起動時の `chronos.js` / `layer-time*.js` に入り（eager.raw / brotli）、タイムラプスの再生器と `time.compare` / `time.lapse` の能力は Atlas のチャンクと遅延チャンクに入る（async.gzip・atlas-console）。どれもこの変更の分で、`node scripts/perf-budget.mjs --update` で超えた行だけを上げた。eager にはこの機械の計測差が乗っている可能性があり、天井は main の実測で bot が下げる。
+
+## 6. origin/main との合流（#868・#869・#871・#875）
+
+- 能力は 150（#869 の `settings.usageCounts` と本作業の 2 つ）、到達可能 149。文書の件数は `check:docs` の実数に合わせた。
+- #875 の「`tt` の無いリンクは現在」と揃え、**`cmp=` があって `ct=` の無いリンクは、比較窓をメイン地図の時計に従わせる**（`js/map-ui.js`）。smoke ① で `ct=1914` のリンクと `ct` の無いリンクを順に開き、窓が 1914 → 従属に戻ることを測る（2 本目は 1 本目の復元のタイマーが済んでから開く——重ねると #875 の待ち行列で 2 つ目の復元が後ろへずれ、次の検査の箱を外した。実測）。
+- 起動費の台帳（`perf --update`: async.raw・dist.assets）と global surface の台帳は main の台帳から作り直した。増分は main 側の合流分と §1 のもの。
+- `tests/history-chronos-clock-checks.test.mjs` R679 ⑩ は、紀元前の年を答えない拒否を `go()` の形（`{…return;}`）でだけ読んでいた。拒否は連鎖の持ち主 `collectionAt` の `return null` に移ったので、両方の形を受ける（主張は不変）。
+- 台本カセット `rail-request-reached-nothing` は能力検索の結果に新しい 2 能力が並ぶので書き直した（`scripted-cassettes.mjs --write`）。
