@@ -181,8 +181,14 @@ function gate(e) {
   if (!cb.checked) { if (held.has(cb.id)) { held.delete(cb.id); unmark(cb.id); } return; }
   const at = clockAt();
   if (!shouldHold(cb.id, at)) { if (held.has(cb.id)) { held.delete(cb.id); unmark(cb.id); } return; }
-  /* the reader's own tick on a layer that opens on its record's first day (a war): let it move the clock */
-  if (!cb.__syn && R.entersOnTick(DECL && DECL[cb.id])) { held.delete(cb.id); unmark(cb.id); return; }
+  /* the reader's own tick on a layer that opens on its record's first day (a war): let it move the clock.
+     ⚠ (restore-clock-and-elam) A RESTORE'S TICK IS NOT THE READER'S. js/map-ui.js and js/session-tabs.js tick
+     the boxes they restore with the same `change` a finger produces and mark each one `__imRestored` (the
+     mark js/layer-home.js already spends instead of flying); the restore states the instant itself, so its
+     tick is held like any other until the clock it sets reaches the record. Telling the two apart only by
+     `__syn` let a restored war row through as the reader's, and the war then moved the clock off the
+     instant the link named. */
+  if (!cb.__syn && !cb.__imRestored && R.entersOnTick(DECL && DECL[cb.id])) { held.delete(cb.id); unmark(cb.id); return; }
   e.stopPropagation();
   held.set(cb.id, at.when);
   /* after the other capture listeners on the document (js/layer-state.js clears a record on every change) */

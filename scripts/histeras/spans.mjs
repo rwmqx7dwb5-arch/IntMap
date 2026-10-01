@@ -36,6 +36,10 @@
  *    · `rows`    — a name, the QID that is verified to be the unit the upstream draws, and the
  *                  bound (`s` and/or `e`, astronomical years) that BOTH Wikidata states AND the
  *                  historical record (the `history` sentence) agrees with. Only these act on the map.
+ *                  A row with `s` also carries `hs`, the earliest year its `history` places the unit
+ *                  (restore-clock-and-elam: «Elam» was withheld at 3000 BCE by Wikidata's 2700 BCE
+ *                  while its own sentence said c. 3200 BCE) — the gate fails when the map withholds
+ *                  the name in any year from `hs` on, and when the sentence does not name `hs`.
  *    · `refuted` — a mechanical finding that was examined and does not hold, with the reason
  *                  (`other-identity`: the QID is not the unit drawn; `date-disputed`: the date is
  *                  not the historical one; `name-not-claim`: the string is a place, not a polity).

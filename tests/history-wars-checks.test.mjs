@@ -490,7 +490,7 @@ test('R409 ③: only toggle() writes window.IntMapTime — the slider, the trans
   assert.equal(writes.length, 1, 'js/war-layer.js writes the master clock ' + writes.length + ' time(s); exactly one — the seed in toggle() — is allowed');
   /* the one write is inside toggle(), not inside the control wiring or the play loop */
   const fnAt = (name) => { const i = src.indexOf(name); assert.ok(i > 0, name + ' is gone'); return i; };
-  const tog = fnAt('async function toggle(want)');
+  const tog = fnAt('async function toggle(want');   /* (restore-clock-and-elam) toggle(want, opts) — the restore's tick is passed in */
   const wire = fnAt('function wireLegend(');
   const play = fnAt('function togglePlay(');
   const at = writes[0].index;

@@ -67,7 +67,7 @@ export function warFronts(HOST) {
     return pending;
   }
 
-  async function toggle(id, want) {
+  async function toggle(id, want, opts) {
     /* switching OFF something that was never fetched is already true — do not download a layer in
        order to turn it off */
     if (!want && !body) return false;
@@ -81,7 +81,7 @@ export function warFronts(HOST) {
       if (el) { el.checked = false; el.closest('.lyr-row').classList.remove('on'); }
       return false;
     }
-    return b.toggle(id, want);
+    return b.toggle(id, want, opts);
   }
 
   /* ── the rows ───────────────────────────────────────────────────────────────────────────────── */
@@ -96,7 +96,12 @@ export function warFronts(HOST) {
       dd.appendChild(w);
       w.querySelector('input').addEventListener('change', (ev) => {
         ev.target.closest('.lyr-row').classList.toggle('on', ev.target.checked);
-        toggle(R.id, ev.target.checked);
+        /* (restore-clock-and-elam) whether THIS change is a restore's (js/map-ui.js / js/session-tabs.js mark the
+           box `__imRestored`) is read now, synchronously, and the mark is spent — the war decides about the clock
+           only after data/wars.json has arrived, by which time the box can have been ticked again by the reader.
+           Spent on every change this row receives, so the reader's own next tick is the reader's. */
+        const restored = !!ev.target.__imRestored; ev.target.__imRestored = 0;
+        toggle(R.id, ev.target.checked, { restored });
       });
     }
     relabel();
