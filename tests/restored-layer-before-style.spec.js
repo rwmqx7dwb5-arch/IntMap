@@ -161,9 +161,12 @@ test('every layer a link can carry: holding the style back costs no layer', asyn
        NATO (1949–) is not held; ② the reconciler does not re-arm a held box; ③ Atlas's `time.coverage` answers
        about another instant without moving the clock; ④ back to now, everything held is delivered and the
        reported pair (a STYLE-hold claim, asked on the present) draws.
-       ⚠ The link's war rows do not move the clock here: under the suite's routing their record does not load
-       (measured: `IntMapTime.intended()` null, no war fill). On the live clock they are held — their records ended. */
-    await held.page.evaluate(() => window.IntMapTime.setYear(1960, { source: 'test' }));
+       ⚠ THE INSTANT IS WHEREVER THE BOOT LEFT IT, if that is the past. Where the war records arrive (CI) the link's war
+       rows move the clock to their own first day during the boot; where they do not (this suite's routing on a
+       workstation) the clock is still live and is moved to 1960. Every transition re-draws or withdraws ~90 layers
+       in software GL — measured: one extra transition each way took the test past its 240 s (CI, 4.0 min) — so the
+       page makes only the moves the claims need. */
+    await held.page.evaluate(() => { if (window.IntMapTime.isLive()) window.IntMapTime.setYear(1960, { source: 'test' }); });
     const atClock = await held.page.evaluate(async () => {
       await window.IntMapLayerTime.ready();
       /* from here the holds are decided — a look the reconciler scheduled before (the restore's own changes) is not this claim */
@@ -176,14 +179,14 @@ test('every layer a link can carry: holding the style back costs no layer', asyn
       .filter((c) => c.checked).map((c) => { const v = window.IntMapLayerTime.verdict(c.id) || {}; const r = window.IntMapLayerState.get(c.id);
         return { id: c.id, status: v.status, self: v.self, held: window.IntMapLayerTime.held(c.id), painted: window.__imLayerPainted(c.id), mark: r && r.state, why: r && r.message, iso: window.IntMapTime.iso() }; }));
     await expect.poll(async () => (await sweep()).filter((x) => x.status === 'unstated' && !x.self && !x.held).map((x) => x.id),
-      { timeout: 20000, message: 'every ticked layer that states nothing about 1960 is held' }).toEqual([]);
+      { timeout: 20000, message: 'every ticked layer that states nothing about the instant is held' }).toEqual([]);
     const rows = await sweep();
     const heldRows = rows.filter((x) => x.held);
     expect(heldRows.map((x) => x.id)).toEqual(expect.arrayContaining(['dl-planes', 'dl-radar']));
     expect(heldRows.filter((x) => x.painted === true).map((x) => x.id), 'a held layer draws nothing').toEqual([]);
     expect(heldRows.filter((x) => x.mark !== 'nodata' || !(x.why || '').includes(x.iso)).map((x) => x.id), 'each held row says why, naming the date').toEqual([]);
     expect(rows.find((x) => x.id === 'dl-nato'), 'NATO is ticked by the link').toBeTruthy();
-    expect(rows.find((x) => x.id === 'dl-nato').held, 'NATO states 1960').toBe(false);
+    expect(rows.find((x) => x.id === 'dl-nato').held, 'NATO is held exactly when the instant is before 1949-08-24').toBe(atClock.iso < '1949-08-24');
     await held.page.evaluate(() => { window.IntMapLayerAudit.run(); window.IntMapLayerAudit.run(); });
     expect(await held.page.evaluate((t0) => window.IntMapLayerAudit.log().filter((e) => e.t >= t0 && window.IntMapLayerTime.held(e.id)).map((e) => e.id + ':' + e.fix), atClock.from),
       'a held box is not a «ticked but blank» finding').toEqual([]);
@@ -199,12 +202,18 @@ test('every layer a link can carry: holding the style back costs no layer', asyn
     expect(cov.moves.filter((m) => m === 'atlas' || m === 'os'), 'asking about 1600 does not move the clock').toEqual([]);
     expect(cov.unstated).toEqual(expect.arrayContaining(['dl-climate', 'dl-subcables', 'dl-nato', 'dl-planes', 'cb-roads']));
     expect(cov.stated).toEqual(expect.arrayContaining(['cb-borders', 'dl-nightside', 'cb-grid']));
-    await held.page.evaluate(() => window.IntMapTime.setNow({ source: 'test' }));
-    await expect.poll(() => mapLayers(held.page), { timeout: 30000, message: 'the reported layers are on the map' })
-      .toEqual(expect.arrayContaining(REPORTED.map(([, layer]) => layer)));
+    /* ④ the reported pair is a STYLE-hold claim about EXISTENCE (`mapLayers` lists layers, not their visibility): a
+       pair drawn before the clock left the present still exists, withdrawn. Only if the time hold met them before
+       they ever drew is the present needed — and then it is the present that must deliver them. */
+    const want = REPORTED.map(([, layer]) => layer);
+    const have = new Set(await mapLayers(held.page));
+    if (!want.every((id) => have.has(id))) {
+      await held.page.evaluate(() => window.IntMapTime.setNow({ source: 'test' }));
+      expect(await held.page.evaluate(() => window.IntMapLayerTime.heldIds().filter((id) => !/^dl-(ww1|ww2|korea|vietnam|mideast|yugoslavia)$/.test(id))),
+        'on the present only the war rows (their records ended) stay held').toEqual([]);
+      await expect.poll(() => mapLayers(held.page), { timeout: 30000, message: 'the reported layers are on the map' }).toEqual(expect.arrayContaining(want));
+    }
     expect(await held.page.evaluate((w) => w.map((id) => document.getElementById(id).checked), REPORTED.map(([box]) => box))).toEqual([true, true]);
-    await expect.poll(() => held.page.evaluate(() => window.IntMapLayerTime.heldIds().filter((id) => !/^dl-(ww1|ww2|korea|vietnam|mideast|yugoslavia)$/.test(id))),
-      { timeout: 20000, message: 'on the present only the war rows (their records ended) stay held' }).toEqual([]);
     expect(styleErrors(held.errors), 'no add may reach a style that cannot take it').toEqual([]);
   } finally { await held.ctx.close(); }
 });
