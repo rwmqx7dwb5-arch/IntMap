@@ -1196,6 +1196,23 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   `window`, and the three readers open through the door. The in-browser before/after (feature sets
   per year, place, deep tier and war day; page long tasks and heap) is in
   `dev-notes/2026-09-30-hist-bundles-off-main.md`.
+- **The historical records are read as time-cut tiles** (hist-vector-tiles) —
+  `tests/hist-vector-tiles-checks.test.mjs` cuts the shipped records with
+  `scripts/build-hist-tiles.mjs` and opens each one through two doors, one reading the whole file and
+  one reading only the tiles (with `Range`): ① for every record (CShapes, OHM countries, the first tier
+  with both gap records, the second and third tiers) and every year the history gates name, the rows in
+  force are the same and the page copy holds the same rows, the same rings (every coordinate
+  `Object.is` the same double), the same dates, the same head and the same ring origins; ①′ the same on
+  a real `worker_threads` thread; ② `edges`, the war span (`during`) and all 54 era sheets likewise;
+  ③ 1900 reads under a fifth of each record, by Range only, and an instant already read is not read
+  again; ④ no tiles, an index for another record, or a range that is not the chunk fall back to the
+  whole file with the same answer; ⑤ a chunk altered after cutting is refused by the builder's
+  read-back; ⑥ `scripts/serve.mjs` answers a Range as Pages does (a range of the bytes as sent — so a
+  compressible type is ranged over its gzip); ⑦ `sw.js` does not answer the archive's requests; ⑧ every
+  discovered record is tiled under the name `tilesOf` derives. `tests/history-prefetch-on-demand.spec.js`
+  holds the browser side: the intent reads the indexes, the journey reads the archive with 206s, and the
+  whole record is never fetched. The before/after on a phone profile is in
+  `dev-notes/2026-10-01-hist-vector-tiles.md`.
 - **A comment stripper that is not the shared one** (`comment-stripper`, test-code-only-one) —
   `scripts/comment-strippers.mjs` reads every `.js`/`.mjs`/`.cjs` under `tests/` and `scripts/` from
   the parser and finds a stripper by what it DOES, not what it is called: a `.replace()` whose

@@ -18,6 +18,11 @@
  *  records what that brings in; the claim is that NONE of those files was requested during the boot.
  *  The two files the report named are required to be among them, so an intent that fetched nothing
  *  cannot pass vacuously.
+ *  ⚠ (hist-vector-tiles) WHAT THE INTENT FETCHES IS THE INDEX, NOT THE RECORD. The door now reads each
+ *  record as time-cut tiles (scripts/build-hist-tiles.mjs): opening it reads `data/hvt/<name>.idx.json`
+ *  (tens of kB), and the journey reads only the chunks the instant needs from `data/hvt/<name>.jsonl.gz`
+ *  with Range requests (206). The named files are therefore asked of the door (`tilesOf`), and the
+ *  journey must read the archive by range and NEVER the whole record.
  *  ⚠ «ARRIVED» IS ASKED OF THE PAGE, NOT OF THE PROTOCOL. Since hist-bundles-off-main the bundles
  *  are read by js/hist-bundles.js through js/fetch-deadline.js `readWithin` — a fetch whose body is
  *  read chunk by chunk from its stream — no longer by a <script> tag. MEASURED 2026-10-01 (local
@@ -36,7 +41,7 @@ import { installHermeticRouting } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
 
 const QUIET_MS = 12000;
-const NAMED = ['data/cshapes.js', 'data/hist-admin1.js'];
+const RECORDS = ['data/cshapes.js', 'data/hist-admin1.js'];
 
 /* same-origin files under data/, keyed by their path relative to the site root */
 function dataPath(url) {
@@ -73,6 +78,9 @@ test('the history bundles are not fetched at boot, and are fetched once the read
     await page.waitForTimeout(QUIET_MS);
     expect(await page.evaluate(() => window.IntMapTime.intended()), 'nothing in the boot may count as the reader\'s intent').toBeNull();
     const bootPaths = new Set(seen.filter((s) => s.phase === 'boot').map((s) => s.path));
+    /* the files the intent must bring in: each record's index, named by the door itself */
+    const NAMED = await page.evaluate((recs) => recs.map((f) => window.IntMapHistBundles.tilesOf(f)), RECORDS);
+    expect(NAMED.every((p) => /^data\/hvt\/.+\.idx\.json$/.test(p)), 'the door names an index for each record').toBe(true);
 
     /* ── the reader presses Chronos ── */
     phase = 'intent';
@@ -101,5 +109,12 @@ test('the history bundles are not fetched at boot, and are fetched once the read
     }, null, { timeout: 60000, polling: 250 });
     const after = await arrived();
     console.log('[history-prefetch] after the intent and the journey: ' + JSON.stringify(seen.filter((s) => s.phase !== 'boot').map((s) => [s.path, (after.get(s.path) || {}).bytes])));
+    /* (hist-vector-tiles) the journey read the archive by range — and the whole record never */
+    expect(await page.evaluate(() => window.IntMapHistBundles.mode('__CSHAPES')), 'the door read cshapes as tiles').toBe('tiled');
+    const ranged = await page.evaluate(() => window.__imDataReads.filter((e) => /\/data\/hvt\/cshapes\.jsonl\.gz$/.test(new URL(e.url).pathname)).map((e) => e.status));
+    expect(ranged.length, 'chunks of the cshapes archive were read').toBeGreaterThan(0);
+    expect(ranged.every((st) => st === 206), 'every archive read was a Range answer: ' + JSON.stringify(ranged)).toBe(true);
+    const whole = seen.map((x) => x.path).filter((p) => RECORDS.includes(p));
+    expect(whole, 'the whole record was fetched although its tiles were there').toEqual([]);
   } finally { await ctx.close(); }
 });

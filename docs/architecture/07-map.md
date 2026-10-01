@@ -601,6 +601,8 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   `data-time-intent` を宣言した要素（Chronos ボタン `#ntl-toggle`、凡例の年の行 `.dl-clockrow`）の中での
   最初の `pointerdown`／`focusin`（カーネルは文書に 1 本の capture リスナを置くだけで、コントロールを名指さない）。
   `IntMapTime.intended()` が誰がいつ立てたかを返す。
+  先読みで取るのは各記録の**索引**（数 kB〜150 kB）で、行と環は年を変えたときにその瞬間の分だけを取る
+  （下の「年で切ったタイル」）。
 - **先読みしてよいかは 1 か所が答える**：`window.IntMapMemBudget.maySpeculate(旧テスト)`
   （`js/mem-budget.js`）。Data Saver・2G（`slow-2g` を含む）・**携帯（端末で訊く `deviceIsPhone`）**では
   意図のあとでも先読みしない。意図のあとの先読みも `requestIdleCallback`（上限つき）で main thread の空きを待つ。
@@ -629,6 +631,29 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   ページで走らせ、束が `window` に既に載っているとき（node の足場）はそれをそのまま使う。
   前後の実測と、描かれる集合が年と場所ごとに同一であることの確認は開発記録
   `dev-notes/2026-09-30-hist-bundles-off-main.md`、回帰は `tests/hist-bundles-off-main-checks.test.mjs`。
+- **歴史の束は丸ごと取得しない——年で切ったタイルから、その瞬間に要る分だけを取る。** ビルドが各記録を
+  `data/hvt/<名>.idx.json`（索引）と `data/hvt/<名>.jsonl.gz`（独立した gzip メンバーの連結。1 メンバー
+  ＝JSON 1 行のチャンク）に切る（`scripts/build-hist-tiles.mjs`、`vite.config.js` の `histTiles()`）。
+  索引は扉が `open` で答えていた head・全行の `[開始, 終了]`（YYYYMMDD の整数）・各行のチャンクと
+  その環のチャンク・時代の各 1 枚のチャンク・各チャンクのバイト範囲を持つ。扉は索引を読み、Worker の
+  同じ `histJob` に「その問いが読むチャンク」を訊き（`need`）、それだけを `readWithin`（同じ時計）と
+  `Range` 要求で読み、バイトのまま Worker へ渡して（`feed`）から問いを訊く。だから読み手が受け取る行と環は
+  **ファイルを丸ごと読んだときと同じ値・同じ索引**で、写しの規則（疎・1 回だけ・差し替えない）も同じ。
+  ⚠ **範囲は表示範囲ではなく全世界**——Atlas の名前検索・比較ウィンドウの `geomForCode`・`coverage()`・
+  クリック救済・ナレーター・`edges` は「その瞬間の全世界」を同期で読むので、切るのは**年**だけ。
+  ズームの門は従来どおり（第 2 層は z6・第 3 層は z8 になってから開く）。
+  ⚠ **アーカイブは `.gz`（`application/gzip`）で配る。** GitHub Pages は `application/javascript` と
+  `application/octet-stream` を gzip で送り、`Range` には**圧縮後のバイト列の範囲**を返す（実測。
+  `scripts/serve.mjs` も同じ振る舞いを再現する）ので、その型ではオフセットが使えない。
+  ⚠ **環は整数差分で持つが、値は元の倍精度と一致する**（記録の小数桁数の 10 の冪で割る。一致しない環は
+  書かれたまま持つ）。ビルドは毎回、切ったものを扉の job で読み戻して全行・全環・全日付・全シートを
+  記録と照合し、違えば失敗する。⚠ 記録（`data/*.js`）は源で、門はそれを測り、**配信もされる**——タイルの
+  無いサーバ（`npm run dev`）・別の記録の索引・チャンクでないバイトでは扉が丸ごと読む側へ戻る
+  （同じ答えになる）。⚠ **穴埋め記録の継ぎ足しはタイルでも Worker が行う**（各記録は自分の索引と
+  アーカイブを持ち、継ぎ足しは `openTiled` が `splice` と同じ規則で行う）。
+  ⚠ **Service Worker は `data/` を扱わない**（タイルのホストだけを持つ）ので、`Range` はそのままネットワークへ行く。
+  実測（転送量・待ち・メモリの前後、年と場所ごとのバイト一致）は `dev-notes/2026-10-01-hist-vector-tiles.md`、
+  回帰は `tests/hist-vector-tiles-checks.test.mjs`。
   ⚠ **取得を外から観測するとき、DevTools プロトコルの「完了」を完了と読まない。** 本文を `getReader()` で
   最後まで読む fetch は、読み切ってページが全バイトを受け取ったあとでも、プロトコル（Playwright の
   `requestfinished` / `requestfailed`）が `net::ERR_ABORTED` と報告することがある（実測は開発記録

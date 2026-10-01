@@ -80,6 +80,17 @@ window.IntMapHistBundles = (function () {
       var t = new Date(0); t.setUTCFullYear(y, mo - 1, d); t.setUTCDate(t.getUTCDate() + 1);
       return ymd(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate());
     };
+    /* YYYYMMDD back into its three parts — exact for every row the tile builder accepts, which refuses a
+       month or day outside 0-99 (scripts/build-hist-tiles.mjs) */
+    var partsOf = function (k) { var y = Math.floor(k / 10000), r = k - y * 10000, mo = Math.floor(r / 100); return [y, mo, r - mo * 100]; };
+    /* every row's [start, end] as sortable ints, side by side — what `at`, `during` and `edges` walk.
+       A whole record derives it from its rows; a tiled one is handed it by its index file, which is the
+       point: the questions that need every record need only this, never the rows themselves. */
+    function spanOf(d) {
+      var n = Array.isArray(d.feats) ? d.feats.length : 0, sp = new Array(2 * n), i, f;
+      for (i = 0; i < n; i++) { f = d.feats[i]; sp[2 * i] = ymd(f[2], f[3], f[4]); sp[2 * i + 1] = ymd(f[5], f[6], f[7]); }
+      return sp;
+    }
     /* the file's bytes (read on the page under the app's clock, and TRANSFERRED here) → the object.
        The files are `window.<GLOBAL>=` followed by strict JSON, so the assignment is checked and the
        rest is JSON.parse — the literal is never evaluated as a script. */
@@ -102,9 +113,127 @@ window.IntMapHistBundles = (function () {
       return h;
     }
     function hold(global, d, preset) {
-      S[global] = { d: d, preset: !!preset, sentF: new Uint8Array(Array.isArray(d.feats) ? d.feats.length : 0),
+      S[global] = { d: d, preset: !!preset, span: spanOf(d), sentF: new Uint8Array(Array.isArray(d.feats) ? d.feats.length : 0),
         sentR: new Uint8Array(Array.isArray(d.rings) ? d.rings.length : 0) };
       return head(d);
+    }
+
+    /* ══ THE TILED RECORD (hist-vector-tiles) ══════════════════════════════════════════════════════
+       The same record, cut by the build (scripts/build-hist-tiles.mjs) into an INDEX — the head this job
+       would have answered `open` with, every row's span, which chunk holds each row and which chunks
+       hold its rings — and an ARCHIVE of independent gzip members, one JSON line each. This thread
+       never holds the record whole: it is told which records an instant needs by the span, says which
+       chunks those live in (`need`), is handed exactly those bytes (`feed` — read on the page under the
+       app's one clock, with a Range request) and then answers `at`/`during`/`snap` with the SAME code,
+       from the SAME rows and rings, by the SAME indices. A gap record is its own index and archive and
+       is spliced here, as `splice` does with whole files: its rings after the record's, its rows after
+       the record's rows, rewritten to the same thirteen columns.
+       ⚠ A CHUNK NAMES ITSELF (`c`), and gzip carries its own CRC, so bytes that are not that chunk —
+       a server that answered another range, or a body it compressed again — fail here instead of
+       becoming geometry. */
+    function gunzip(bytes) {
+      return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+    }
+    /* a ring stored as integer deltas at the record's own scale. Exact: the builder keeps this form only
+       for rings whose every coordinate comes back as the same double (IEEE division is correctly
+       rounded, and the quotient of the integer and the power of ten IS the decimal it was written as) */
+    function ringFrom(a, sc) {
+      var n = a.length / 2, out = new Array(n), x = 0, y = 0, k;
+      for (k = 0; k < n; k++) { x += a[2 * k]; y += a[2 * k + 1]; out[k] = [x / sc, y / sc]; }
+      return out;
+    }
+    function openTiled(global, dirs) {
+      var main = dirs[0], h = {}, k, parts = [{ dir: main, rOff: 0, fOff: 0, cOff: 0, gi: -1 }];
+      var nR = main.head.nRings, nF = main.head.nFeats, nC = main.chunks.length, span = main.span.slice();
+      /* the head in the order `head()` builds it: the record's own facts, the splice's, then the counts and
+         the sheets — so a tiled record's mirror is the same object, key for key, as a whole one's */
+      for (k in main.head) if (k !== 'nRings' && k !== 'nFeats' && k !== 'hasDates' && k !== 'snaps') h[k] = main.head[k];
+      if (dirs.length > 1 && nF > 0) {
+        h.gapPools = [];
+        for (var gi = 0; gi < dirs.length - 1; gi++) {
+          var g = dirs[gi + 1];
+          if (!g) { h.gapPools.push(null); continue; }
+          parts.push({ dir: g, rOff: nR, fOff: nF, cOff: nC, gi: gi });
+          h.gapSrcs = (h.gapSrcs || []).concat(g.head.src ? [g.head.src] : []);
+          h.gapSrc = h.gapSrcs.join(' · ') || null;
+          h.gapPools.push({ global: g.global, off: nR, nRings: g.head.nRings, nFeats: g.head.nFeats, gi: gi, precision: g.head.precision || null });
+          for (k = 0; k < g.span.length; k++) span.push(g.span[k]);
+          nR += g.head.nRings; nF += g.head.nFeats; nC += g.chunks.length;
+        }
+      }
+      h.nRings = nR; h.nFeats = nF; h.hasDates = !!main.head.hasDates;
+      if (Array.isArray(main.head.snaps)) h.snaps = main.head.snaps;
+      var d = { feats: new Array(nF), rings: new Array(nR) };
+      if (h.hasDates) d.dates = {};
+      /* the thread's own sheets, never the objects handed back as the head (on the page they would be
+         the mirror's own) */
+      if (Array.isArray(main.head.snaps)) d.snaps = main.head.snaps.map(function (s) { var o = {}, j; for (j in s) o[j] = s[j]; return o; });
+      S[global] = { d: d, tiled: parts, h: h, span: span, have: new Uint8Array(nC), sheetIn: new Uint8Array(d.snaps ? d.snaps.length : 0), preset: false,
+        sentF: new Uint8Array(nF), sentR: new Uint8Array(nR) };
+      return h;
+    }
+    function partOfRow(B, i) { for (var p = B.tiled.length - 1; p >= 0; p--) if (i >= B.tiled[p].fOff) return B.tiled[p]; return B.tiled[0]; }
+    function partOfChunk(B, c) { for (var p = B.tiled.length - 1; p >= 0; p--) if (c >= B.tiled[p].cOff) return p; return 0; }
+    /* the chunks a question will read that this thread does not hold: [chunk, part, offset, length] */
+    function needOf(B, q) {
+      var want = {}, list = [], i, n, p, lc, rr;
+      var add = function (part, pi, l) {
+        var c = l + part.cOff;
+        if (B.have[c] || want[c]) return;
+        want[c] = 1; list.push([c, pi, part.dir.chunks[l][0], part.dir.chunks[l][1]]);
+      };
+      if (q.op === 'snap') {
+        var sn = B.h.snaps || [];
+        for (i = 0; i < sn.length; i++) if (sn[i].y === q.y) { rr = (B.tiled[0].dir.snapChunks || [])[i] || []; for (n = 0; n < rr.length; n++) add(B.tiled[0], 0, rr[n]); break; }
+      } else if (q.op === 'at' || q.op === 'during') {
+        var idx = rowsFor(B, q);
+        for (n = 0; n < idx.length; n++) {
+          i = idx[n]; p = partOfRow(B, i); lc = i - p.fOff;
+          var pi = B.tiled.indexOf(p);
+          if (B.d.feats[i] === undefined) add(p, pi, p.dir.rowChunk[lc]);
+          rr = p.dir.rowRings[lc] || [];
+          for (var r = 0; r < rr.length; r++) add(p, pi, rr[r]);
+        }
+      }
+      return list.sort(function (a, b) { return a[0] - b[0]; });
+    }
+    function install(B, c, obj) {
+      var pi = partOfChunk(B, c), p = B.tiled[pi], d = B.d, j, e, f;
+      if (!obj || obj.c !== c - p.cOff) { var err = new Error('chunk ' + c + ' is not the bytes asked for'); err.reason = 'tiles'; throw err; }
+      for (j = 0; j < (obj.f || []).length; j++) {
+        e = obj.f[j]; f = e[1];
+        if (d.feats[p.fOff + e[0]] !== undefined) continue;
+        d.feats[p.fOff + e[0]] = p.gi < 0 ? f : [f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7],
+          f[8].map(function (poly) { return poly.map(function (ri) { return ri + p.rOff; }); }), f[9], null, e[0], p.gi];
+      }
+      if (d.dates && p.gi < 0) for (j = 0; j < (obj.d || []).length; j++) { e = obj.d[j]; if (d.dates[e[0]] === undefined) d.dates[e[0]] = e[1]; }
+      for (j = 0; j < (obj.r || []).length; j++) { e = obj.r[j]; if (d.rings[p.rOff + e[0]] === undefined) d.rings[p.rOff + e[0]] = ringFrom(e[1], p.dir.scale); }
+      for (j = 0; j < (obj.j || []).length; j++) { e = obj.j[j]; if (d.rings[p.rOff + e[0]] === undefined) d.rings[p.rOff + e[0]] = e[1]; }
+      for (j = 0; j < (obj.s || []).length; j++) { e = obj.s[j]; var sh = d.snaps[e[0]]; sh.feats = e[1]; sh.blank = e[2]; sh.blankPrecision = e[3]; B.sheetIn[e[0]] = 1; }
+      B.have[c] = 1;
+    }
+    /* the rows a question reads — the one predicate, for both the answer and the chunks it needs */
+    function rowsFor(B, q) {
+      var sp = B.span, n = sp.length / 2, out = [], i, s, e;
+      if (q.op === 'at') {
+        /* in force ON that date: started at or before it and not yet ended — `s <= t <= e` for an
+           inclusive end, `s <= t < e` for an exclusive one. The record's own order is kept. */
+        var t = q.t, incl = (q.end === 'inclusive');
+        for (i = 0; i < n; i++) { s = sp[2 * i]; e = sp[2 * i + 1];
+          if (s > t) continue;
+          if (incl ? (e < t) : (e <= t)) continue;
+          out.push(i); }
+      } else {
+        /* in force at SOME instant of [t0, t1] (inclusive end — the one caller reads CShapes) */
+        for (i = 0; i < n; i++) { if (sp[2 * i] > q.t1 || sp[2 * i + 1] < q.t0) continue; out.push(i); }
+      }
+      return out;
+    }
+    /* a tiled record must hold every row a question reads before it answers: a hole here is a chunk
+       that never arrived, and answering around it would draw a world with a country missing */
+    function complete(B, idx) {
+      if (!B.tiled) return;
+      for (var n = 0; n < idx.length; n++) if (B.d.feats[idx[n]] === undefined) { var e = new Error('row ' + idx[n] + ' did not arrive'); e.reason = 'tiles'; throw e; }
     }
     /* ⚠ THE GAP RECORDS ARE APPENDED TO THE FIRST ONE, NOT HELD BESIDE IT (#R669/#R719 — the reason
        is in js/time-admin1.js). Moved here from that file unchanged: column 11 is the row's index in
@@ -172,50 +301,56 @@ window.IntMapHistBundles = (function () {
 
     if (m.op === 'adopt') return hold(m.global, m.value, true);
     if (m.op === 'open') {
-      if (S[m.global]) return head(S[m.global].d);
+      /* a record already held whole answers from what it holds; one held as tiles is replaced by the
+         whole file (the page falls back to it only after the tiles failed — the rows and rings it already
+         sent stay sent, because the page never replaces an entry it holds) */
+      if (S[m.global] && !S[m.global].tiled) return head(S[m.global].d);
       return Promise.resolve().then(function () { return parse(m.bytes, m.global); }).then(function (d) {
         if (!d || typeof d !== 'object') throw new Error('empty bundle ' + m.global);
         return (m.gaps && m.gaps.length && Array.isArray(d.feats)) ? splice(d, m.gaps) : d;
       }).then(function (d) { return hold(m.global, d, false); });
     }
+    if (m.op === 'openTiled') {
+      if (S[m.global] && S[m.global].tiled) return S[m.global].h;
+      return openTiled(m.global, m.dirs);
+    }
     var B = S[m.global];
     if (!B) { var e = new Error('not open: ' + m.global); e.reason = 'closed'; throw e; }
-    var d = B.d, out = [], i, f;
+    var d = B.d, out = [], i, sp = B.span;
+    if (m.op === 'need') return B.tiled ? needOf(B, m.q) : [];
+    if (m.op === 'feed') {
+      if (!B.tiled) return 0;
+      var parts = m.parts || [];
+      return parts.reduce(function (pr, part) {
+        return pr.then(function () {
+          if (B.have[part.c]) return;
+          return gunzip(part.bytes).then(function (text) { install(B, part.c, JSON.parse(text)); });
+        });
+      }, Promise.resolve()).then(function () { return parts.length; });
+    }
     if (m.op === 'edges') {
       /* every instant on which the record changes: a START, and an END — the end itself where the
          record's end is exclusive (OpenHistoricalMap), the day after it where it is inclusive
          (CShapes). Both edges, because a unit that vanishes with no successor still ends an epoch. */
       var set = new Set();
-      for (i = 0; i < d.feats.length; i++) { f = d.feats[i];
-        set.add(ymd(f[2], f[3], f[4]));
-        set.add(m.end === 'inclusive' ? dayAfter(f[5], f[6], f[7]) : ymd(f[5], f[6], f[7])); }
+      for (i = 0; i < sp.length; i += 2) {
+        set.add(sp[i]);
+        set.add(m.end === 'inclusive' ? dayAfter.apply(null, partsOf(sp[i + 1])) : sp[i + 1]); }
       set.forEach(function (k) { if (k >= m.lo && k <= m.hi) out.push(k); });
       return out.sort(function (a, b) { return a - b; });
     }
-    if (m.op === 'at') {
-      /* in force ON that date: started at or before it and not yet ended — `s <= t <= e` for an
-         inclusive end, `s <= t < e` for an exclusive one. The record's own order is kept. */
-      var t = m.t, incl = (m.end === 'inclusive');
-      for (i = 0; i < d.feats.length; i++) { f = d.feats[i];
-        if (ymd(f[2], f[3], f[4]) > t) continue;
-        var e2 = ymd(f[5], f[6], f[7]);
-        if (incl ? (e2 < t) : (e2 <= t)) continue;
-        out.push(i); }
-      ship(B, out);
-      return out;
-    }
-    if (m.op === 'during') {
-      /* in force at SOME instant of [t0, t1] (inclusive end — the one caller reads CShapes) */
-      for (i = 0; i < d.feats.length; i++) { f = d.feats[i];
-        if (ymd(f[2], f[3], f[4]) > m.t1 || ymd(f[5], f[6], f[7]) < m.t0) continue;
-        out.push(i); }
+    if (m.op === 'at' || m.op === 'during') {
+      out = rowsFor(B, m);
+      complete(B, out);
       ship(B, out);
       return out;
     }
     if (m.op === 'snap') {
-      var sn = null;
-      for (i = 0; i < (d.snaps || []).length; i++) if (d.snaps[i].y === m.y) { sn = d.snaps[i]; break; }
+      var sn = null, si = -1;
+      for (i = 0; i < (d.snaps || []).length; i++) if (d.snaps[i].y === m.y) { sn = d.snaps[i]; si = i; break; }
       if (!sn) return null;
+      /* a sheet that has not arrived is not an empty sheet */
+      if (B.tiled && !B.sheetIn[si]) { var e3 = new Error('sheet ' + m.y + ' did not arrive'); e3.reason = 'tiles'; throw e3; }
       if (!B.preset) {
         var ids = [], seen = {};
         var add = function (list) { for (var a = 0; a < (list || []).length; a++) { var ps = list[a]; for (var b = 0; b < ps.length; b++) for (var c = 0; c < ps[b].length; c++) { var r = ps[b][c]; if (!seen[r]) { seen[r] = 1; ids.push(r); } } } };
@@ -252,7 +387,8 @@ window.IntMapHistBundles = (function () {
     const D = deps || {};
     const W = D.win || ((typeof window !== 'undefined') ? window : {});
     const pageState = {};
-    const counts = { opened: 0, worker: 0, page: 0, preset: 0, slices: 0, rows: 0, rings: 0 };
+    const counts = { opened: 0, worker: 0, page: 0, preset: 0, slices: 0, rows: 0, rings: 0,
+      tiled: 0, indexes: 0, ranges: 0, rangeBytes: 0, chunks: 0, wholeFiles: 0, fellBack: 0 };
     const ringOf = (typeof WeakMap === 'function') ? new WeakMap() : null;   /* ring array → [global, index, pool length] */
     const globalOfObj = (typeof WeakMap === 'function') ? new WeakMap() : null;
     const entries = new Map();   /* global → { p, handle, mirror, preset } */
@@ -317,6 +453,90 @@ window.IntMapHistBundles = (function () {
       });
     }
 
+    /* ══ TILES (hist-vector-tiles) ══════════════════════════════════════════════════════════════════
+       ⚠ THE NAME IS DERIVED, NOT LISTED: `data/<name>.js` is tiled as `data/hvt/<name>.idx.json` (the
+       index) and the archive that index names beside it. The builder asks THIS function for the name,
+       so the two cannot disagree (scripts/build-hist-tiles.mjs). */
+    function tilesOf(file) { return /\.js$/.test(String(file)) ? String(file).replace(/([^/]+)\.js$/, 'hvt/$1.idx.json') : null; }
+    function readText(url) {
+      const FW = D.fetchWithin || W.IntMapFetchWithin;
+      if (!FW || typeof FW.readWithin !== 'function') { const e = new Error('no clocked reader for ' + url); e.reason = 'unsupported'; return Promise.reject(e); }
+      return FW.readWithin(url, FW.clockFor(url), undefined, { idle: true }).then((r) => {
+        if (!r || !r.ok) { const e = new Error('http ' + (r && r.status) + ' ' + url); e.reason = 'http'; throw e; }
+        return r.text;
+      });
+    }
+    /* ⚠ ONE RANGE, UNDER THE SAME CLOCK. An archive is served `application/gzip` (a `.gz` name) because
+       that is the type GitHub Pages sends WITHOUT a Content-Encoding: MEASURED 2026-10-01 against the
+       live site, a Range on `application/javascript` or `application/octet-stream` came back as a range
+       of the GZIPPED stream (`Content-Range: bytes 0-99/3961350` for the 12.96 MB data/cshapes.js) — an
+       offset into bytes nobody can address — while `.gz` and `.png` came back as ranges of the file.
+       A 206 must be exactly the bytes asked for; a 200 is a server that ignored the Range and sent the
+       whole archive, which is still the archive. Anything else is not the archive. */
+    function readRange(url, a, b, total) {
+      const FW = D.fetchWithin || W.IntMapFetchWithin;
+      if (!FW || typeof FW.readWithin !== 'function') { const e = new Error('no clocked reader for ' + url); e.reason = 'unsupported'; return Promise.reject(e); }
+      return FW.readWithin(url, FW.clockFor(url), { headers: { Range: 'bytes=' + a + '-' + b } }, { idle: true, bytes: true }).then((r) => {
+        const n = r && r.bytes ? r.bytes.byteLength : -1;
+        if (r && r.status === 206 && n === b - a + 1) { counts.ranges++; counts.rangeBytes += n; return { base: a, bytes: r.bytes }; }
+        if (r && r.status === 200 && n === total) { counts.ranges++; counts.rangeBytes += n; return { base: 0, bytes: r.bytes }; }
+        const e = new Error('range ' + a + '-' + b + ' of ' + url + ' answered ' + (r && r.status) + ' with ' + n + ' bytes'); e.reason = 'tiles'; throw e;
+      });
+    }
+    /* ⚠ GAP_BYTES — two needed chunks of one archive are read in ONE request when fewer than this many
+       unneeded bytes lie between them: the request saved costs a round trip, the bytes read cost their
+       transfer time. ESTIMATE, from Chrome's Fast 4G preset (150 ms RTT, 1.6 Mb/s ≈ 200 kB/s down): one
+       round trip is worth ~30 kB of transfer. What it did to the first travel's request count is
+       measured in dev-notes/2026-10-01-hist-vector-tiles.md. LAPSES if the builder re-cuts chunks
+       (its CHUNK_BYTES) or the archive's order changes.
+       PARALLEL — requests in flight per door: what HTTP/1.1 gives one origin (Chromium: 6). On HTTP/2
+       (Pages) more would multiplex, but the instant is answered only when its last chunk arrives, so a
+       wider fan-out changes the order bytes arrive in, not when the answer does. */
+    const GAP_BYTES = 32 * 1024;
+    const PARALLEL = 6;
+    let running = 0;
+    const waiting = [];
+    function limited(fn) {
+      return new Promise((res, rej) => {
+        const go = () => { running++; Promise.resolve().then(fn).then(res, rej).finally(() => { running--; const n = waiting.shift(); if (n) n(); }); };
+        if (running < PARALLEL) go(); else waiting.push(go);
+      });
+    }
+    /* the chunks a question needs, read and handed to the thread. A chunk another question is already
+       reading is waited for, not read twice. */
+    function fetchNeed(e, list) {
+      const wait = [], todo = new Map();
+      for (const it of list || []) {
+        const p = e.inflight.get(it[0]);
+        if (p) { wait.push(p); continue; }
+        if (!todo.has(it[1])) todo.set(it[1], []);
+        todo.get(it[1]).push(it);
+      }
+      const runs = [];
+      for (const [pi, items] of todo) {
+        items.sort((x, y) => x[2] - y[2]);
+        let cur = null;
+        for (const it of items) {
+          if (cur && it[2] - cur.end <= GAP_BYTES) { cur.items.push(it); cur.end = it[2] + it[3]; }
+          else { cur = { pi, start: it[2], end: it[2] + it[3], items: [it] }; runs.push(cur); }
+        }
+      }
+      const reads = runs.map((run) => {
+        const dir = e.tiles[run.pi], url = e.archives[run.pi];
+        const pr = limited(() => readRange(url, run.start, run.end - 1, dir.archive.bytes)).then(({ base, bytes }) => {
+          const parts = run.items.map((it) => ({ c: it[0], bytes: bytes.slice(it[2] - base, it[2] - base + it[3]) }));
+          counts.chunks += parts.length;
+          return ask({ op: 'feed', global: e.global, parts }, parts.map((x) => x.bytes));
+        });
+        for (const it of run.items) e.inflight.set(it[0], pr);
+        const clear = () => { for (const it of run.items) if (e.inflight.get(it[0]) === pr) e.inflight.delete(it[0]); };
+        pr.then(clear, clear);
+        return pr;
+      });
+      return Promise.all(wait.concat(reads));
+    }
+    const validIndex = (d, global) => !!(d && d.hvt === 1 && d.global === global && d.head && Array.isArray(d.span) && Array.isArray(d.chunks) && d.archive);
+
     /* the page's copy, filled as slices arrive. ⚠ AN ENTRY ALREADY HELD IS NEVER REPLACED: the
        geometry memos and the line records downstream key on the ring and row OBJECTS, so a second copy
        of the same ring would be a second identity for one boundary. */
@@ -365,17 +585,30 @@ window.IntMapHistBundles = (function () {
       const global = spec.global;
       const e0 = entries.get(global);
       if (e0) return e0.p;
-      const e = { p: null, handle: null, mirror: null, preset: false, epoch: -1 };
+      const e = { p: null, handle: null, mirror: null, preset: false, epoch: -1, global, mode: null, tiles: null, archives: null, inflight: new Map() };
       entries.set(global, e);
-      const gaps = (spec.gaps || []).map((g) => ({ url: abs(g.file), global: g.global }));
-      const doOpen = () => {
-        /* already published on `window` (the node harnesses; nothing on the page does it any more):
-           read it where it is — no fetch, no copy, the mirror IS the bundle */
-        if (W[global] && typeof W[global] === 'object') {
-          e.preset = true; counts.preset++;
-          return onPage({ op: 'adopt', global, value: W[global] }).then(() => { e.epoch = epoch; e.mirror = W[global]; return true; });
-        }
-        requested.add(global);
+      const gaps = (spec.gaps || []).map((g) => ({ url: abs(g.file), file: g.file, global: g.global }));
+      /* the record as tiles: its index and every gap record's, ALL of them or none — a record whose gap
+         could not be tiled is opened whole, so the splice is the same splice either way */
+      const openTiles = () => {
+        const ix = tilesOf(spec.file);
+        if (!ix || gaps.some((g) => !tilesOf(g.file))) return Promise.resolve(false);
+        const urls = [abs(ix), ...gaps.map((g) => abs(tilesOf(g.file)))];
+        return Promise.all(urls.map((u) => readText(u).then((t) => JSON.parse(t)))).then((dirs) => {
+          counts.indexes += dirs.length;
+          if (!dirs.every((d, i) => validIndex(d, i ? gaps[i - 1].global : global))) return false;
+          e.tiles = dirs;
+          /* the archive sits beside its index (a relative base — the node harnesses — is not a URL) */
+          e.archives = dirs.map((d, i) => String(urls[i]).replace(/[^/]*$/, String(d.archive.file)));
+          return ask({ op: 'openTiled', global, dirs }).then((h) => {
+            if (!e.mirror) e.mirror = mirrorOf(global, h);
+            e.mode = 'tiled'; e.epoch = epoch; counts.opened++; counts.tiled++;
+            return true;
+          });
+        });
+      };
+      const openWhole = () => {
+        e.mode = 'whole'; counts.wholeFiles++;
         /* a gap record that cannot be read is left out (the splice records null for it), as the old
            loader did; the record itself failing fails the open */
         return Promise.all([readBytes(abs(spec.file)), ...gaps.map((g) => readBytes(g.url).catch(() => null))]).then(([bytes, ...gb]) => {
@@ -387,14 +620,45 @@ window.IntMapHistBundles = (function () {
           return true;
         });
       };
+      /* «nothing was observed» (the clock ran out, the caller stopped, the thread died) is not a refusal:
+         it fails or re-asks as before. A refusal — no index on this server (`npm run dev` serves the
+         repository, where the build has not cut any), an index for another record, bytes that are not
+         the chunk — is an observed failure, and the whole file is the different thing to try
+         (.agents/rules/one-pass-or-a-reason.md §5). */
+      const unobserved = (err) => !!(err && (err.reason === 'timeout' || err.reason === 'aborted' || err.reason === 'worker'));
+      const doOpen = () => {
+        /* already published on `window` (the node harnesses; nothing on the page does it any more):
+           read it where it is — no fetch, no copy, the mirror IS the bundle */
+        if (W[global] && typeof W[global] === 'object') {
+          e.preset = true; counts.preset++;
+          return onPage({ op: 'adopt', global, value: W[global] }).then(() => { e.epoch = epoch; e.mirror = W[global]; return true; });
+        }
+        requested.add(global);
+        e.inflight = new Map();
+        if (e.mode === 'whole') return openWhole();
+        return openTiles().then((ok) => (ok ? true : openWhole()), (err) => {
+          if (unobserved(err)) throw err;
+          counts.fellBack++;
+          return openWhole();
+        });
+      };
       /* a question after the thread died re-opens the bundle on whatever answers now, into the SAME
          mirror (so nothing already drawn changes identity) */
       const call = (m) => {
-        const go = () => (e.preset ? onPage(m) : ask(m));
-        if (e.preset || e.epoch === epoch) return go().catch((err) => {
+        /* a tiled record first says which chunks the question reads, is handed them, then answers —
+           `edges` reads only the index, so it is asked at once */
+        const go = () => {
+          if (e.preset) return onPage(m);
+          if (e.mode !== 'tiled' || m.op === 'edges') return ask(m);
+          return ask({ op: 'need', global, q: { op: m.op, t: m.t, end: m.end, t0: m.t0, t1: m.t1, y: m.y } })
+            .then((list) => fetchNeed(e, list)).then(() => ask(m));
+        };
+        const retry = (err) => {
           if (err && err.reason === 'worker') { e.epoch = -1; return call(m); }
+          if (e.mode === 'tiled' && !unobserved(err)) { counts.fellBack++; e.mode = 'whole'; e.epoch = -1; return call(m); }
           throw err;
-        });
+        };
+        if (e.preset || e.epoch === epoch) return go().catch(retry);
         return doOpen().then(go);
       };
       e.handle = {
@@ -430,8 +694,13 @@ window.IntMapHistBundles = (function () {
       ringOrigin: (ring) => { try { return (ringOf && ringOf.get(ring)) || null; } catch (_) { return null; } },
       loaded: (global) => { const e = entries.get(global); return !!(e && e.mirror); },
       requested: (global) => requested.has(global) || !!(entries.get(global) && entries.get(global).preset),
-      /* what this door has done, for a check and for the console — never a decision input */
-      counts: () => Object.assign({ thread: !!w, broken, inFlight: jobs.size }, counts),
+      /* 'tiled' | 'whole' | 'preset' | null — how a record is being read, for a check and the console */
+      mode: (global) => { const e = entries.get(global); return e ? (e.preset ? 'preset' : e.mode) : null; },
+      tilesOf,
+      /* what this door has done, for a check and for the console — never a decision input. `inFlight` is
+       questions on the thread, `reading` the Range reads under way or queued: between the two a tiled
+       question is busy while NEITHER thread has a job, so an observer that waits for quiet reads both */
+      counts: () => Object.assign({ thread: !!w, broken, inFlight: jobs.size, reading: running + waiting.length }, counts),
       workerSource,
       histJob,
       SLICE_POINTS,
