@@ -15,6 +15,8 @@
  * ==========================================================================*/
 import { str, bool, num, one, lat, lng, noArgs } from './atlas-caps.js';
 import { EMBED_SIZES, EMBED_PX } from './embed-mode.js';   /* (share-embed-distribution) the frame presets `share` offers are the share panel's own */
+import { IntMapTime } from './chronos.js';   /* (landing-showcase) the clock, by import (#860) */
+import { SHOWCASE, showcaseById, showcaseLink } from './showcase.js';   /* (landing-showcase) the example maps — pure data */
 import { openSupport, operatingFacts } from './supporter.js';   /* (supporter-funnel) `operatingCosts` */
 
 export default [
@@ -184,6 +186,60 @@ export default [
     schema: () => (noArgs('donate')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
       { const ok=clickId('btn-blueberry'); return R(ok, ok?note('💙 '+L('Donate','寄付','Spenden','Поддержать','Donar')):warn('⚠')); }
+    },
+  },
+  {
+    row: ['panel.about',                'about',          'aboutIntMap,forTeachers,teachingGuide,landingPage',          'panel',   'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    /* (landing-showcase) what IntMap is and how to teach with it — the two static pages scripts/landing.mjs
+       writes. `page:'teachers'` names the teacher page; anything else, the landing page. The link is the
+       English URL: the page itself moves a reader whose app language is Japanese to its ja/ twin
+       (scripts/landing.mjs PAGE_SCRIPT), so that rule lives in one place and not also here. */
+    schema: () => ({ type: 'object', properties: { page: str() } }),
+    async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, esc = K.esc;
+      { const teach=/^(teach|teacher|teachers|class|classroom|lesson|school|edu)/i.test(String(a.page||''));
+          const href=new URL('./'+(teach?'teachers':'about')+'.html', location.href).href;
+          const label=teach?L('Teaching with IntMap','授業での IntMap'):L('About IntMap','IntMap について');
+          return R(true, note('ℹ '+esc(label))+'<div style="margin:4px 0;"><a href="'+esc(IntMapSafe.url(href))+'" target="_blank" rel="noopener">'+esc(label)+' ↗</a></div>'); }
+    },
+  },
+  {
+    row: ['panel.showcase',             'showcase',       'example,exampleMap,showcaseMap,gallery',                      'panel',   'time',    'camera,map.layer,time',  'map,time',            'session', 'none',   '',         ''],
+    /* (landing-showcase) the example maps of js/showcase.js. With `id`, the map is put into that example
+       through the share link's own restore (js/map-ui.js IntMapBookmark.restore — the path a reader who
+       clicks the example takes), and the result is READ BACK from the clock and the layer boxes before it
+       is reported: completed only when the date and every declared layer are what the example says.
+       Without `id`, it lists them (id, title, link) so the next call can name one. */
+    schema: () => ({ type: 'object', properties: { id: str() } }),
+    async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, L = K.L, esc = K.esc;
+      { const want=String(a.id||a.example||a.name||'').trim();
+          const s=want?showcaseById(want):null;
+          const abs=(rel)=>IntMapSafe.url(new URL(rel, location.href).href);
+          if(!s){
+            const rows=SHOWCASE.map(x=>{ const href=showcaseLink(x.id); return '<li><b>'+esc(x.id)+'</b> — '+(href?'<a href="'+esc(abs(href))+'">'+esc(L.arr(x.title))+'</a>':esc(L.arr(x.title)))+'</li>'; }).join('');
+            return R(!want, (want?warn('⚠ '+esc(L('No example is called','この名前の見本はありません'))+' «'+esc(want)+'»'):note(esc(L('Example maps','見本の地図'))))+'<ul style="margin:4px 0 4px 18px;padding:0;">'+rows+'</ul>'); }
+          const href=showcaseLink(s.id);
+          if(!href) return R(false, warn('⚠ '+esc(L('This example has no captured link yet','この見本にはまだリンクがありません'))));
+          const hash=href.slice(href.indexOf('#'));
+          try{ history.replaceState(null,'',location.pathname+location.search+hash); window.IntMapBookmark.restore({shared:true});
+            /* a link with no `tt` leaves the clock where it is (restore() sets it only when the link names one), so a
+               «now» example returns the clock to now itself — the example's intent is the present, whatever the
+               map was showing before */
+            if(s.at==null) IntMapTime.setNow({source:'ui'}); }catch(e){ return R(false, warn('⚠ '+esc(String(e&&e.message||e)))); }
+          /* read the state back. The restore applies the clock at +900 ms and the layer boxes at +700 / +1800 /
+             +3200 ms (js/map-ui.js restore()); 6 s is its last pass plus room for a busy page. It returns the
+             moment both agree — the wait is a bound, not a sleep — and a changed restore schedule is the
+             thing that invalidates the number. */
+          const T=IntMapTime, at=s.at;
+          const met=()=>{ try{ const st=T.state(); const timeOk=at==null?!!st.isLive:(!st.isLive&&st.iso===at);
+              const off=s.layers.filter(id=>{ const cb=document.getElementById(id); return !(cb&&cb.checked); });
+              return { timeOk, off }; }catch(_){ return { timeOk:false, off:s.layers.slice() }; } };
+          let m=met(); const t0=Date.now();
+          while(!(m.timeOk&&!m.off.length)&&Date.now()-t0<6000){ await new Promise(r=>setTimeout(r,250)); m=met(); }
+          const body='<div style="font-weight:600;margin:2px 0;">'+esc(L.arr(s.title))+'</div><div style="font-size:12px;margin:2px 0;">'+esc(L.arr(s.blurb))+'</div>'
+            +'<div style="font-size:12px;margin:4px 0;color:var(--text-muted);">'+esc(L('Question for class','授業での問い'))+': '+esc(L.arr(s.question))+'</div>';
+          if(m.timeOk&&!m.off.length) return R(true, note('✓ '+esc(L('Example opened','見本を開きました')))+body);
+          const miss=[]; if(!m.timeOk) miss.push(L('the date','日付')); if(m.off.length) miss.push(L('layers not on','オンにならないレイヤー')+' '+m.off.join(', '));
+          return R(false, warn('⚠ '+esc(L('The example did not fully apply','見本が一部しか適用されていません'))+' — '+esc(miss.join(' / ')))+body); }
     },
   },
   {

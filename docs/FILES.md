@@ -47,6 +47,11 @@ icons/                          manifest と index.html が名指すアイコン
                                 apple-touch-icon 180）。同じスクリプトの生成物
 science.html / sources.html     読み物2ページ（手法の説明・出典の一覧）。バンドラを通らないので
                                 言語一覧は scripts/i18n-langs.mjs が生成する js/locales/_langs.js から読む
+about.html / teachers.html     紹介ページと授業での使い方（英語）。ja/about.html・ja/teachers.html が日本語版。
+                                sitemap.xml・robots.txt とともに scripts/landing.mjs が生成する（手で編集しない。
+                                文は scripts/landing-text.mjs、見本は js/showcase.js）。Architecture.md §8.6
+img/showcase/<id>.jpg           見本の地図の画面写真（と共有カード用の <id>-card.jpg・1200×630）。scripts/showcase-capture.mjs がビルドしたアプリから撮る
+s/<id>.html / ja/s/<id>.html    見本ごとの共有ページ（og カード＋その見本の地図への転送）。scripts/landing.mjs が生成する
 google….html                    Google Search Console 認証用
 package.json / package-lock     npm スクリプトと依存。dependencies がアプリに入る依存の唯一のリスト
 data-assets.json                **git の外にあるデータ集合の目録**（正本）。集合ごとにパス・中身の sha256・
@@ -102,6 +107,7 @@ css/
   intmap.css                        アプリのスタイルシート全体。重なり順は :root の層（`--z-inset` … `--z-system`）で名づけ、
                                     z-index はすべてそれを読む（台帳は scripts/z-layers.mjs）
   pages.css                         読み物2ページ（science.html / sources.html）のスタイル
+  landing.css                       紹介・授業ページ（about / teachers と ja/）のスタイル。pages.css の配色の上に載る
   fonts.css                         同梱フォントの @font-face
 src/
   main.js                           ページの入口（まだ import の辺を持たない副作用モジュールを並べる。理由は --entry が言う）
@@ -748,7 +754,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  151 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  153 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行そのものは能力の項目（atlas-cap-*.js）の写しで、`GENERATED ROWS` の印の間を
                                   `node scripts/atlas-caps.mjs --write` が書く（手で編集しない）
@@ -852,7 +858,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全151を検索・到達可能 150）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全153を検索・到達可能 152）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -868,7 +874,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 151能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 153能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1114,6 +1120,8 @@ map-narrator.js                   地図のテキスト代替——視覚的に�
                                   落ち着いてから 1 文で。#map を名前つき region にし、Alt+N / Alt+Shift+N で中心付近の
                                   地物をレンダラ自身のクリック経路（GE().events.pressAt）で押す（map-a11y-structure）
 legal-page.js                     同じ本文を privacy.html / terms.html として出す（chrome は9言語）
+showcase.js                       見本の地図の宣言（純データ）と、scripts/showcase-capture.mjs が書くリンク・写真の生成領域。
+                                  紹介ページ・Atlas の panel.showcase・spec・landing.mjs --check が読む
 premium-plan.js                   プレミアムの節——ただしその全機能が無料である
 supporter.js                      IntMap を支援する——支援パネルの「支援の使い道」（プラン表の 1 日の上限と
                                   public.operating_stats() の今月の AI 要求数・トークン数）と、控えめな提案カード
@@ -1411,6 +1419,10 @@ docs/
   AREA-MONITORS.md                Area Monitors の運用
 scripts/
   serve.mjs                       依存ゼロの静的サーバ（GitHub Pages と同じ配信＝gzip も含む）
+  landing.mjs                     紹介・授業ページ（en と ja/）・sitemap.xml・robots.txt の**生成器と門**。文は
+                                  landing-text.mjs、見本は js/showcase.js、数字はその持ち主のファイルから読む（§8.6）
+  landing-text.mjs                紹介・授業ページの文の唯一の写し（en + jp）
+  showcase-capture.mjs            見本の地図のリンクと画面写真を、ビルドしたアプリ自身に作らせる（サーバと実ネットワークが要る）
   static-checks.mjs               構文・JSON・YAML・マージ衝突・秘密検出・HTML 参照の存在
   runtime-scripts.mjs             配信物が他 origin から読む <script> は integrity＋crossorigin を持つか、
                                   理由の文つきで UNPINNABLE に宣言されているか。CSP script-src の各ホストは
@@ -1757,7 +1769,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 126 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 127 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

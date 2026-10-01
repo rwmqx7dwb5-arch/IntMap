@@ -15,6 +15,7 @@ import { join, extname, relative, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { jsReachability } from './js-reachability.mjs';
 import { codeOnly } from './code-only.mjs';
+import { SITE_TOKEN } from './site-url.mjs';
 import { outOfOrder } from './migration-order.mjs';
 
 const ROOT = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'));
@@ -345,6 +346,9 @@ for (const htmlName of ALL.filter((x) => !x.rel.includes('/') && x.rel.endsWith(
   for (const m of t.matchAll(/(?<![\w.$])url\(\s*['"]?([^'")]+)['"]?\s*\)/g)) refs.add(m[1]);
   for (let r0 of refs) {
     r0 = r0.trim();
+    /* (landing-showcase) an ABSOLUTE address the build writes in (scripts/site-url.mjs fillSiteToken) — the
+       canonical / hreflang of a generated page — is not a local file */
+    if (r0.startsWith(SITE_TOKEN)) continue;
     if (!r0 || /^(https?:|data:|blob:|mailto:|tel:|#|\/\/|javascript:)/i.test(r0)) continue;
     const clean = r0.split('?')[0].split('#')[0].replace(/^\.?\//, '');
     // Only verify refs that are plain relative paths. Anything with a JS operator/quote/

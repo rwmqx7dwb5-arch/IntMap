@@ -784,7 +784,9 @@ const ANALYSED = new Map();
    the page. A page that cannot be listed is a failure of the gate, never an empty universe. */
 export function discoverPages(root = ROOT) {
   const out = execFileSync('git', ['ls-files', '-z', '--', '*.html'], { cwd: root, encoding: 'utf8' });
-  const rels = out.split('\0').filter(Boolean).sort();
+  /* tracked AND present: a page deleted in the work tree (a generator withdrew it, not yet committed) is no
+     longer a page anybody is served, and reading it failed the gate on a file that does not exist */
+  const rels = out.split('\0').filter(Boolean).filter((r) => existsSync(join(root, r))).sort();
   if (!rels.length) throw new Error('git ls-files found no *.html in ' + root);
   return Object.fromEntries(rels.map((r) => [r, readFileSync(join(root, r), 'utf8')]));
 }

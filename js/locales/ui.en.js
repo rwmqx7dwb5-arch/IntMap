@@ -197,6 +197,8 @@ IntMapLang.define('en', { ui: {
       lblDataSources:"Data sources",
       lblScience:"Science & logic",
       viewScience:"How every simulation works ↗",
+      lblAboutIntMap:"About IntMap",
+      viewAboutPage:"What IntMap is, examples and classroom use ↗",
       viewSourcesPage:"Open the data-sources page ↗",
       srcModalTitle:"Data sources & attribution",
       srcModalSub:"IntMap aggregates the following third-party data, imagery and APIs. All trademarks belong to their owners.",
