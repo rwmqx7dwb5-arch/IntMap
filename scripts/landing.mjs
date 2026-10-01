@@ -453,6 +453,45 @@ export function outputs(F = facts()) {
   return out;
 }
 
+/* ══ WHICH EXAMPLES THE RECORD ITSELF CAN ANSWER FOR — without a browser ════════════════════════════
+   tests/landing-showcase.spec.js asks the running map whether an example's `drawn` names are there. That
+   costs a browser restore per example, and the suite's whole time may only go down (scripts/test-budget.mjs,
+   #R205). An example whose claim can be answered from the record the map draws from, read the way the map
+   reads it, does not need to pay for it: the answer is asked here instead (tests/landing-showcase-checks).
+   It qualifies only when nothing about it needs the page:
+     · no layer (whether a layer PAINTS is a fact about the page);
+     · names only, no first-level units (their tiers are assembled in js/time-admin1.js);
+     · a date the record answers EXACTLY: an era sheet whose own year is the date (which sheet a year
+       BETWEEN two sheets shows is the page's rule, not restated here), or a day-dated record in force;
+     · every name spelled in the record as the map labels it (CShapes's own «Turkey (Ottoman Empire)» is
+       labelled «Ottoman Empire» by a table in js/time-borders.js — such an example stays in the browser
+       rather than this file copying that table).
+   Everything else is opened in the browser. The partition is DERIVED here, so a new example lands on
+   the side its own facts put it on. Returns { names } — the names the record holds for the date — or null. */
+const RECORD_CACHE = new Map();
+const readBundle = (rel) => {
+  if (!RECORD_CACHE.has(rel)) { const t = rd(rel); RECORD_CACHE.set(rel, JSON.parse(t.slice(t.indexOf('=') + 1).replace(/;\s*$/, ''))); }
+  return RECORD_CACHE.get(rel);
+};
+export function recordNamesFor(s) {
+  const want = (s.drawn && s.drawn.labels) || [];
+  if (s.layers.length || s.at == null || !want.length || (s.drawn.admin && s.drawn.admin.length)) return null;
+  const m = /^(-?\d+)-(\d{2})-(\d{2})$/.exec(s.at); const y = +m[1], mo = +m[2], d = +m[3];
+  const F = facts();
+  const cmp = (a, b) => (a[0] !== b[0] ? a[0] - b[0] : a[1] !== b[1] ? a[1] - b[1] : a[2] - b[2]);
+  const inForce = (f) => cmp([f[2], f[3], f[4]], [y, mo, d]) <= 0 && cmp([y, mo, d], [f[5], f[6], f[7]]) < 0;
+  const nm = (v) => (typeof v === 'string' ? v : (v && v.en) || '');
+  let names = null;
+  if (y >= F.csFrom && y <= F.csTo) names = readBundle('data/cshapes.js').feats.filter(inForce).map((f) => nm(f[0]));
+  else if (y >= F.ohmFrom && y <= F.ohmTo) names = readBundle('data/hist-borders.js').feats.filter(inForce).map((f) => nm(f[0]));
+  else if (y < F.ohmFrom) {
+    const sheet = readBundle('data/hist-eras.js').snaps.find((x) => x.y === y);
+    if (sheet) names = sheet.feats.map((f) => nm(f[0]));
+  }
+  if (!names || !want.every((n) => names.includes(n))) return null;
+  return { names };
+}
+
 /* ── the captured examples, held to their intent ──────────────────────────────────────────────── */
 export function showcaseProblems(captured = CAPTURED) {
   const bad = [];

@@ -78,7 +78,7 @@ through the auth listener and checks that 45 cards and the reading position surv
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**133 measured spec files / 87.9 min** of serial browser time against a ceiling of 87.9 min; and
+**133 measured spec files / 87.5 min** of serial browser time against a ceiling of 87.5 min; and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
 
@@ -4489,10 +4489,12 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   宣言外のパラメータ・レイヤー・カメラのずれを入れると**それぞれ**落ちる。en/jp が同じ鍵、ページの数字が持ち主の値、
   ページが名指す資産が全部 dist/ へ写る、sitemap に全ページと共有ページ、共有ページが og/twitter/canonical/1200×630・
   meta refresh を持つ、設定の導線、Atlas の catalogue が全見本を名指す。
-- browser（ヘルメティック・1 起動）: 見せている見本（`SHOWCASE`。`withheld` は除く）を全部、共有リンクの復元で開き、時計・カメラ・宣言したレイヤー（と描画）・
+- node ⑦: レイヤーが無く名前だけを主張し日付を記録がちょうど述べる見本は、その日付に効力のある記録に名前があるかを
+  記録に訊く（`scripts/landing.mjs` `recordNamesFor`。分け方は導出）。
+- browser（ヘルメティック・1 起動）: 記録だけでは答えられない見本（レイヤー・行政区分・地図が名前を付け替えるもの）を、共有リンクの復元で開き、時計・カメラ・宣言したレイヤー（と描画）・
   `drawn` の国名と行政区分を地図に訊く。4 ページのリンク・画像・アンカー、共有ページ全部の card と、配信時に絶対アドレス（`site-origin.js` の値）になっていること（canonical・og:url・sitemap・robots）、、スクリプト有り
   （`location.replace`）・無し（meta refresh）の両方で自分の見本の地図へ移ること、320/390 px で横スクロール無し、
-  日本語を選んだ読者だけが ja/ へ移ること。実測 39.4 / 34.8 秒（1 worker）。
+  日本語を選んだ読者だけが ja/ へ移ること。実測 14.4 / 15.5 / 15.4 秒（1 worker）。
 
 ### `tests/domain-portable-checks.test.mjs` (domain-portable)
 

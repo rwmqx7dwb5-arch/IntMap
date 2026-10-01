@@ -21,7 +21,7 @@ import { join, dirname, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { TEXT } from '../scripts/landing-text.mjs';
-import { facts, outputs, showcaseProblems, PAGES, pagePath } from '../scripts/landing.mjs';
+import { facts, outputs, showcaseProblems, PAGES, pagePath, recordNamesFor } from '../scripts/landing.mjs';
 import { SHOWCASE, CAPTURED } from '../js/showcase.js';
 import { STATIC_ASSETS, STATIC_EXCLUDE } from '../vite.config.js';
 import { SITE_TOKEN, fillSiteToken, guardedHosts } from '../scripts/site-url.mjs';
@@ -172,4 +172,18 @@ test('⑥ the address: the generated files carry only the token, and the build f
     assert.ok(readFileSync(join(dir, 'robots.txt'), 'utf8').includes('Sitemap: ' + SITE_URL + 'sitemap.xml'));
     assert.equal(readFileSync(join(dir, 'data', 'x.txt'), 'utf8'), SITE_TOKEN);
   } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('⑦ the examples the record answers for: every name its text claims is in force in the record on its date', () => {
+  /* the browser half (tests/landing-showcase.spec.js) opens the rest; together they are every example */
+  const offline = SHOWCASE.filter((s) => recordNamesFor(s));
+  assert.ok(offline.length > 0 && offline.length < SHOWCASE.length, 'the split has both halves: ' + offline.map((s) => s.id));
+  for (const s of offline) {
+    const { names } = recordNamesFor(s);
+    for (const n of s.drawn.labels) assert.ok(names.includes(n), s.id + ': the record holds «' + n + '» on ' + s.at);
+  }
+  /* …and it is not vacuous: a name the record does not hold on that date takes the example out of this half */
+  const s = offline[0];
+  assert.equal(recordNamesFor({ ...s, drawn: { labels: [...s.drawn.labels, 'Atlantis'] } }), null);
+  assert.equal(recordNamesFor({ ...s, at: '1066-10-14' }), null, 'a year with no sheet of its own is the page’s rule, not this one');
 });
