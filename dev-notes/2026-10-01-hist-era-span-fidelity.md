@@ -316,3 +316,8 @@ Pegu（1552）・Watassid Morocco の 6 つ。`--year 1570 --in 0,45,10,55`: Dut
 - ⚠ `tests/history-era-borders-checks.test.mjs` の R710 の 2 件は、`featureAt` を関数名で切り出して vm で
   走らせる足場が `_drawnFC` を切り出しておらず赤くなる。足場の一覧に `_drawnFC` を足し、ctx に
   `shownFC: null` を置けば元の意味のまま通る（この作業の触ってよいファイルの外なので、統合時に直す）。
+
+## 門の台帳を 2 つ動かした理由
+
+- **`check:surface`（`window.IntMapHistScale` の読み 12 → 13）**: `js/time-borders.js` の `_spanOff` が規則の持ち主 `eraSpanOut` を `window.IntMapHistScale` から読む。import に替えることを試したが、`js/hist-scale.js` は 8 本以上の検査が `vm.runInContext` で classic script として評価しており（`tests/history-admin-tiers-checks.test.mjs` ほか）、`export` を書くとそれらが構文エラーになる。モジュール化はこの作業の範囲を越えるので、既存の 12 の読みと同じ経路で 1 つ足し、ベースラインを `--update` した。
+- **`check:perf`（eager.gzip）**: CI で 1502.1 kB（天井 1493.9 kB・帯 7.5 kB）。増分は `js/time-borders.js` に足した規則の適用・`blankNote`・描いている collection を読む 4 つの読み手で、起動直後に描かれる地図に効く規則なので遅延読み込みにしない。`--update` で超えた行だけを上げた。
