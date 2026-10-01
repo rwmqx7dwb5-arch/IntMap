@@ -158,22 +158,38 @@ test('R169 #3b an auth event does not take the reader back to the first batch', 
   // 45 cards #3 reached went back to 30 and the reader lost their place. A genuine supabase-js
   // SIGNED_OUT drives the real path (listener → renderUI → startNews). The node half is
   // tests/news-list-keeps-position-checks.test.mjs.
+  // ⚠ THE READER IS PUT ON CARD 34 WITH `behavior:'instant'`, NOT `scrollTop +=` — the same trap
+  // #3 documents above. The feed is a `.content-area` (`scroll-behavior:smooth`), so `scrollTop +=`
+  // only STARTS a flight from where #3 left it (card 25) to card 34, and `before` was read at that
+  // instant. MEASURED in run 36783323529 (Linux, rest 2/2, try and retry) and here under CPU ×4,
+  // 5 of 5: before = card 25 every time, after = 30 / 32 / 33 / 34 — wherever the flight had got to
+  // when the redraw ran. Reading the flight's start and comparing it with a point along the flight
+  // is not a test of the redraw. From a SETTLED position under the same ×4 throttle the redraw
+  // kept card 21 at 0 px offset in every run, so the product half was not what failed.
+  // The wait is for the redraw itself, not for a time: startNews() empties, refills and puts the
+  // place back in one task, so the MutationObserver's callback (the microtask after that task) sees
+  // the finished list — and the test now fails if no redraw happened at all, instead of comparing
+  // an untouched list with itself after a 5-second fallback.
   const where = () => page.evaluate(() => {
     const f = document.getElementById('live-news-feed'); const top = f.getBoundingClientRect().top;
     const c = [...f.querySelectorAll('.news-item')].find((x) => x.getBoundingClientRect().bottom > top);
     return { n: f.querySelectorAll('.news-item').length,
       card: c ? c.querySelector('.news-title').textContent : null, off: c ? Math.round(top - c.getBoundingClientRect().top) : null };
   });
-  await page.evaluate(() => { const f = document.getElementById('live-news-feed'); const c = f.querySelectorAll('.news-item')[33]; f.scrollTop += c.getBoundingClientRect().top - f.getBoundingClientRect().top + 12; });
+  await page.evaluate(() => {
+    const f = document.getElementById('live-news-feed'); const c = f.querySelectorAll('.news-item')[33];
+    f.scrollTo({ top: f.scrollTop + c.getBoundingClientRect().top - f.getBoundingClientRect().top + 12, behavior: 'instant' });
+  });
   const before = await where();
   expect(before.n).toBe(45);
-  const redrawn = page.evaluate(() => new Promise((res) => {
+  expect(before.card, 'the reader is settled on card 34 before the auth event').toBe('Tokyo test headline number 34');
+  /* armed before the event is raised; resolves on the redraw's first mutation */
+  await page.evaluate(() => {
     const f = document.getElementById('live-news-feed');
-    const mo = new MutationObserver(() => { mo.disconnect(); setTimeout(res, 300); }); mo.observe(f, { childList: true });
-    setTimeout(res, 5000);
-  }));
+    window.__r169Redrawn = new Promise((res) => { const mo = new MutationObserver(() => { mo.disconnect(); res(true); }); mo.observe(f, { childList: true }); });
+  });
   await page.evaluate(() => window.sb.auth.signOut());
-  await redrawn;
+  expect(await page.evaluate(() => window.__r169Redrawn), 'the auth event redrew the list').toBe(true);
   const after = await where();
   expect(after.n, 'the second batch is still rendered').toBe(45);
   expect(after.card, 'the reader is on the same card').toBe(before.card);
