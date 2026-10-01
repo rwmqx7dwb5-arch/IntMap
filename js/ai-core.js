@@ -197,6 +197,10 @@ export function aiCore(HOST){
   function _aiLangLine(){ const L=_aiLangName(); return ' IMPORTANT: Write your ENTIRE response in '+L+' only — every sentence, heading and bullet must be in '+L+', regardless of the language of the input or these instructions. Do not reply in English unless '+L+' is English.'; }   /* (#R285 追記) THE THIRD COPY OF THE REGISTER RULE lived right here, and #R285 missed it: it looked for hand-written IDENTITY lines and this is a hand-written REGISTER line. It carried the escape the specification supersedes (「ただし常に自然な敬語」), and it is appended to four prompts — all four of which now open with personaPrompt(), whose `address` clause owns the register. What this line is FOR (the reply-language lock) is untouched. */
   function aiLoginMsg(){ return aiJP()?'AI機能を使うにはログインが必要です。':'Please log in to use AI features.'; }
   function aiLimitMsg(){ return aiJP()?'本日の無料AI使用回数に達しました。':'You have reached today’s free AI limit.'; }
+  /* (supporter-funnel) raised at the two places a signed-in reader is TOLD today's questions are gone
+     (the click-time gate, the two askAI gates, and ai-proxy's own 429 «limit») — never for turn_calls or the gloss lane.
+     js/supporter.js listens; this file does not know what it does with it. */
+  function aiLimitReached(){ try{ window.dispatchEvent(new CustomEvent('intmap:ai-limit')); }catch(_){} }
   /* (#R318) NOT the daily limit — this one request asked the model more times than a request may.
      It means IntMap's own repair loop is stuck, so it must never read as "you are out of uses":
      the reader has not spent anything they did not intend to. Nine languages, through the registry
@@ -258,7 +262,7 @@ export function aiCore(HOST){
   function aiGate(){
     if(typeof HOST.user==='undefined' || !HOST.user){ try{ HOST.openAuthModal(aiLoginMsg()); }catch(_){ try{ aiToast(aiLoginMsg()); }catch(__){} } return false; }
     if(aiOverQuota()){ try{ aiResyncUsage(); }catch(_){}   /* (#R447) ask the row, so a stale mirror costs one click and not a reload */
-      try{ aiToast(aiLimitMsg()); }catch(_){} return false; }
+      try{ aiToast(aiLimitMsg()); }catch(_){} aiLimitReached(); return false; }
     return true;
   }
   /* (#R113) Map a typed PROVIDER error (ai-proxy 502/503) to a clear, localized message. These are DISTINCT from
@@ -405,7 +409,7 @@ export function aiCore(HOST){
          request has already asked the model as many times as a request may — a bug in the repair
          loop, not a bill the reader owes, so it must not read as "you are out of uses". */
       if(j.error==='turn_calls') throw new Error(aiTurnCallsMsg());
-      throw new Error(aiLimitMsg()); }
+      aiLimitReached(); throw new Error(aiLimitMsg()); }
     if(!r.ok){
       /* (#R113) a typed PROVIDER error (502/503) is NOT the IntMap daily limit — surface a clear, distinct message
          (and never mislabel a Google-side 429 as "out of free uses"). */
@@ -471,7 +475,7 @@ export function aiCore(HOST){
     /* Account-based path (always on). Gate first so we never spend a network round-trip when the user
        is logged out / over quota, and so the auth modal opens immediately. */
     if(!HOST.user){ try{ HOST.openAuthModal(aiLoginMsg()); }catch(_){} throw new Error(aiLoginMsg()); }
-    if(await aiQuotaBlocked()){ throw new Error(aiLimitMsg()); }   /* (#R447) the SERVER's number, re-read when the mirror says no */
+    if(await aiQuotaBlocked()){ aiLimitReached(); throw new Error(aiLimitMsg()); }   /* (#R447) the SERVER's number, re-read when the mirror says no */
     if(aiProxyOn()) return aiCallServer(prompt, systemPrompt, imgs, opts);
     throw new Error(aiLimitMsg());
   }
@@ -483,7 +487,7 @@ export function aiCore(HOST){
   async function askAIEnvelope(prompt, systemPrompt, imageDatas, opts){
     const imgs=(imageDatas||[]).filter(Boolean);
     if(!HOST.user){ try{ HOST.openAuthModal(aiLoginMsg()); }catch(_){} throw new Error(aiLoginMsg()); }
-    if(await aiQuotaBlocked()){ throw new Error(aiLimitMsg()); }   /* (#R447) the same one answer */
+    if(await aiQuotaBlocked()){ aiLimitReached(); throw new Error(aiLimitMsg()); }   /* (#R447) the same one answer */
     if(aiProxyOn()) return aiCallServerFull(prompt, systemPrompt, imgs, opts);
     throw new Error(aiLimitMsg()); }
   async function askAIJSONEnvelope(prompt, systemPrompt, imageDatas, opts){ opts=opts||{}; if(!opts.task) opts.task='json_extract';

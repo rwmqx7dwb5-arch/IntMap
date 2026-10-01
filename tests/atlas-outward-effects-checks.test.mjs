@@ -27,6 +27,7 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
+import { rpcIsRead } from '../scripts/data-effects.mjs';   /* (supporter-funnel) a GET/HEAD rpc is a read — one predicate, not a second spelling */
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
@@ -190,7 +191,8 @@ test('C①: a personal-information field is never named by its placeholder in th
    A handler REACHES A WRITE when its body — or a function it calls by name, in its own file or
    exported under that name from another — contains one of:
      · `.from(t).insert|upsert|update|delete(…)`      (a Supabase table write)
-     · `.rpc(…)`                                       (a Postgres function)
+     · `.rpc(…)`                                       (a Postgres function — unless sent as GET/HEAD,
+                                                        which PostgREST runs read-only: rpcIsRead)
      · a method call on an `auth` chain that changes the account or the session
      · `fetch('…/functions/v1/…', {method: POST|PUT|PATCH|DELETE})`
    Handlers registered INSIDE that body are separate handlers (a dialog's own «Create» button is
@@ -219,7 +221,7 @@ function sinkOf(n) {
   if (n.type !== 'CallExpression') return null;
   const p = prop(n.callee);
   if (TABLE_WRITES.has(p) && n.callee.object.type === 'CallExpression' && prop(n.callee.object.callee) === 'from') return 'table.' + p;
-  if (p === 'rpc') return 'rpc';
+  if (p === 'rpc') return rpcIsRead(n) ? null : 'rpc';
   if (AUTH_WRITES.has(p) && chainHas(n.callee.object, 'auth')) return 'auth.' + p;
   if (n.callee.type === 'Identifier' && n.callee.name === 'fetch' && n.arguments[0]) {
     const u = n.arguments[0];

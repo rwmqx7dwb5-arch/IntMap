@@ -52,6 +52,7 @@ import { makeLayerDropdown } from './layer-dropdown.js';
 import { makeLayerFavs } from './layer-favs.js';
 import { makeProjection } from './map-projection.js';   /* (#R298) Globe / Flat and the flat map's free scroll — one subject, five places, see the file */
 import { makePremiumPlan } from './premium-plan.js';
+import { STRIPE_DONATE, installSupporter, renderSupportCosts } from './supporter.js';   /* (supporter-funnel) where support goes, and when to mention it */
 import { makeScreenshot } from './screenshot.js';
 import { installCapabilityKernel } from './atlas-capabilities.js';   /* (#R318) EAGER: the 124 capability descriptors, so a capability is discoverable before its module loads (§3/§10). The executor, the result shape and the state ledger are NOT — installCapabilityKernel installs IntMapOS.execute() as a thin await over an import(), because nothing needs the machinery until something actually runs. #R311's startup budget measured what mounting all of it eagerly costs a reader who never asks a question: +18.9 kB brotli. */
 import { makeSessionTabs } from './session-tabs.js';
@@ -2975,8 +2976,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* ===== (#R9/#R10) "Buy me a blueberry" / 開発を支援する =====
      Stripe Payment Links — JPY page for the Japanese UI, USD page for the English UI. The "Continue"
      button is a direct <a href> to the hosted Stripe page (opens in a new tab). */
-  window.INTMAP_STRIPE_URL_EN = 'https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en';
-  window.INTMAP_STRIPE_URL_JP = 'https://donate.stripe.com/8x29AM9Qa2se7JYetA5gc00?locale=ja';
+  window.INTMAP_STRIPE_URL_EN = STRIPE_DONATE.en;   /* (supporter-funnel) the two links are declared in js/supporter.js */
+  window.INTMAP_STRIPE_URL_JP = STRIPE_DONATE.jp;
   window.stripeDonateURL = ()=> (currentLang==='jp' ? window.INTMAP_STRIPE_URL_JP : window.INTMAP_STRIPE_URL_EN);
   (function(){
     const bm=document.getElementById('blueberry-modal'); if(!bm) return;
@@ -2985,7 +2986,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       const go=document.getElementById('blueberry-go'); if(go) go.href=window.stripeDonateURL();
       /* (#R22) Blueberry emoji removed everywhere per request (was EN-only before). */
       const em=document.getElementById('blueberry-emoji'); if(em) em.style.display='none'; }
-    function open(){ fill(); bm.style.display='flex'; }
+    function open(){ fill(); bm.style.display='flex'; renderSupportCosts(bm); }   /* (supporter-funnel) «where support goes» — js/supporter.js */
     function close(){ bm.style.display='none'; }
     const btn=document.getElementById('btn-blueberry'); if(btn) btn.onclick=open;
     const x=document.getElementById('blueberry-close-x'); if(x) x.onclick=close;
@@ -2998,6 +2999,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        The actual payment is confirmed by Stripe; a webhook → Supabase can later upgrade this row. */
     const go=document.getElementById('blueberry-go'); if(go) go.setAttribute('data-effect','outward');   /* (atlas-outward-effects) its markup is index.html's; the write is wired here */
     if(go) go.addEventListener('click', ()=>{ try{ if(typeof DB!=='undefined' && DB && typeof currentUser!=='undefined' && currentUser){ DB.from('donations').insert({ user_id:currentUser.id, email:currentUser.email||null, locale:currentLang, source:'support_button', status:'initiated' }); } }catch(_){} });
+    /* (supporter-funnel) the offer card and the Atlas door reach this panel through js/supporter.js; DB is read at use time (its `const` is declared below this block) */
+    installSupporter({ lang:()=>currentLang, t, db:()=>{ try{ return (typeof DB!=='undefined')?DB:null; }catch(_){ return null; } }, openPanel:open });
   })();
 
   /* (#R167) moved to js/feedback.js — see Architecture.md §3.1. */

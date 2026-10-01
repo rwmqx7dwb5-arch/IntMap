@@ -1,11 +1,11 @@
 {
   "eager": {
-    "raw": 4666965,
+    "raw": 4691409,
     "gzip": 1537528,
-    "brotli": 1156161,
+    "brotli": 1162794,
     "requests": 9,
-    "modules": 292,
-    "cssRaw": 360208,
+    "modules": 294,
+    "cssRaw": 362437,
     "cssGzip": 59206
   },
   "async": {
@@ -82,7 +82,7 @@
       "ui.de": 16366,
       "ui.es": 16642,
       "ui.fr": 446528,
-      "ui.jp": 17966,
+      "ui.jp": 20044,
       "ui.ko": 439960,
       "ui.ru": 23805,
       "ui.zh": 417405,

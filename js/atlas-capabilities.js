@@ -269,6 +269,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["map.outbreaks","outbreaks","diseaseOutbreaks,outbreakLayer,epidemics,whoOutbreaks,diseaseMap","map","paint","map.outbreaks","map,explanation","session","none","",""],
       ["dialog.answer","answer","","dialog","none","","explanation","read","none","",""],
       ["time.coverage","timeCoverage","layerTime,whatCanBeDrawn","time","none","","explanation","read","none","",""],
+      ["panel.operatingCosts","operatingCosts","runningCosts,supportCosts,whereSupportGoes","panel","panel","panel.donate","panel,explanation","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 

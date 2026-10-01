@@ -223,10 +223,10 @@ test('R500 ⑤ ai-proxy says the free quota its own PLAN_LIMITS grants', () => {
   const src = rd('supabase/functions/ai-proxy/index.ts');
   /* (ai-one-ledger) PLAN_LIMITS moved to _shared/ai-ledger.js when monitor-run began charging the same
      allowance; the prose in ai-proxy's header is still held to it */
-  const limits = rd('supabase/functions/_shared/ai-ledger.js').match(/const PLAN_LIMITS[^=]*=\s*(?:Object\.freeze\()?\{([^}]*)\}/);
-  assert.ok(limits, '_shared/ai-ledger.js no longer declares PLAN_LIMITS — that constant is the 正本 for every quota');
-  const free = limits[1].match(/free:\s*([\d_]+)/);
-  assert.ok(free, 'PLAN_LIMITS no longer names a `free` plan');
+  /* (supporter-funnel) …and PLAN_LIMITS is now the `aiTurnsPerDay` column of the plan table in
+     _shared/plans.js, so the free number is read from there: one row per plan, in an object literal */
+  const free = rd('supabase/functions/_shared/plans.js').match(/^\s*free:\s*Object\.freeze\(\{[^}]*aiTurnsPerDay:\s*([\d_]+)/m);
+  assert.ok(free, '_shared/plans.js no longer gives the `free` plan an aiTurnsPerDay — that table is the 正本 for every quota');
   const n = Number(free[1].replace(/_/g, ''));
 
   /* every stated free quota in the file's own commentary — the header said 30 for the whole time

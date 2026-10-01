@@ -14,6 +14,7 @@
  *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
  * ==========================================================================*/
 import { str, bool, lat, lng, noArgs } from './atlas-caps.js';
+import { openSupport, operatingFacts } from './supporter.js';   /* (supporter-funnel) `operatingCosts` */
 
 export default [
   {
@@ -169,6 +170,23 @@ export default [
     schema: () => (noArgs('donate')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
       { const ok=clickId('btn-blueberry'); return R(ok, ok?note('💙 '+L('Donate','寄付','Spenden','Поддержать','Donar')):warn('⚠')); }
+    },
+  },
+  {
+    row: ['panel.operatingCosts',       'operatingCosts', 'runningCosts,supportCosts,whereSupportGoes',                  'panel',   'panel',   'panel.donate',           'panel,explanation',   'session', 'none',   '',         ''],
+    /* (supporter-funnel) «運営費を見る» / "what does IntMap cost to run" — opens the support panel at «where
+       support goes» AND hands Atlas the same facts the panel shows, so it can answer in words without
+       inventing a figure: the daily allowance from the plan table and this month's AI requests and
+       tokens from public.operating_stats(). A month that could not be read is said to be unreadable. */
+    schema: () => (noArgs('operatingCosts')),
+    async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, esc = K.esc, warn = K.warn;
+      { const opened=openSupport({ section:'costs' }); let f=null; try{ f=await operatingFacts(); }catch(_){ f=null; }
+          if(!opened&&!f) return R(false, warn('⚠'));
+          const al=f&&f.allowance;
+          const lines=[ L('Where support goes','支援の使い道'),
+            al? L('Atlas allowance: ','Atlas の1日の上限: ')+al.aiTurnsPerDay+L(' questions and ',' 回の質問と ')+al.aiGlossPerDay+L(' term look-ups a day (free plan — every reader has it; no paid plan exists).',' 回の用語解説（無料プラン。全員が同じで、有料プランはありません）') : '',
+            f? f.monthLine : '' ].filter(Boolean);
+          return R(true, note(lines.map(esc).join('<br>'))); }
     },
   },
   {
