@@ -133,7 +133,7 @@ function dialogOpen() {
 }
 
 /* Show the card for `reason` if it is allowed. → true when it is now on screen. */
-export function offerSupport(reason, now) {
+function offerSupport(reason, now) {
   if (!CTX || !offerAllowed(reason, now)) return false;
   if (dialogOpen()) return false;
   const c = buildCard();
@@ -159,7 +159,7 @@ export function offerSupport(reason, now) {
 /* ── ① WHERE SUPPORT GOES ──────────────────────────────────────────────────────────────────────── */
 /* This month's project-wide AI requests and tokens, as public.operating_stats() reports them.
    → { ok:true, stats } | { ok:false } — «could not be read» is its own answer, never zeros. */
-export async function readOperatingStats() {
+async function readOperatingStats() {
   try {
     const db = CTX && CTX.db ? CTX.db() : null;
     if (!db || typeof db.rpc !== 'function') return { ok: false };
