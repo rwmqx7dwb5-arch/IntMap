@@ -107,7 +107,8 @@ function registries(list) {
        declaration says, so that is what it holds (js/outbreaks.js) */
     for (const m of src.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=[^;]*?IntMapLayers\.declaration\(\s*'([^']+)'\s*\)/g)) {
       const d = byId.get(m[2]); if (!d) continue;
-      const v = m[1].replace(/\$/g, '\\$');
+      /* every regex metacharacter, not only `$` — the same full escape scripts/export-readers.mjs uses (CodeQL js/incomplete-sanitization) */
+      const v = m[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       for (const r of src.matchAll(new RegExp('IntMapLayers\\.register\\(\\s*' + v + '\\.registry\\[(\\d+)\\]', 'g'))) if (d.registry && d.registry[+r[1]]) reg.add(d.registry[+r[1]]);
       if (new RegExp('ShareState\\.register\\(\\s*' + v + '\\.state\\b').test(src) && d.state) state.add(d.state);
     }
