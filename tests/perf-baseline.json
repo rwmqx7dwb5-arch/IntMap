@@ -9,7 +9,7 @@
     "cssGzip": 59206
   },
   "async": {
-    "raw": 11662904,
+    "raw": 11662869,
     "gzip": 3815212,
     "chunks": {
       "aircraft-detail": 17009,
@@ -24,7 +24,7 @@
       "atlas-chart": 10493,
       "atlas-console": 1137547,
       "atlas-executor": 56924,
-      "atlas-geo-resolve": 49608,
+      "atlas-geo-resolve": 49405,
       "atlas-query": 48520,
       "atlas-view-capture": 8511,
       "atlas-view-ground": 3790,
@@ -40,6 +40,7 @@
       "company-panel": 21448,
       "datacenters": 40859,
       "dist": 39790,
+      "embed-mode": 10145,
       "esm": 286281,
       "flight-sim": 115313,
       "geo-import": 17728,
@@ -78,6 +79,7 @@
       "street-view": 15113,
       "subcable-info": 9100,
       "terrain-water": 83098,
+      "time-lapse": 8681,
       "tsunami": 37469,
       "ui.de": 16366,
       "ui.es": 16642,
