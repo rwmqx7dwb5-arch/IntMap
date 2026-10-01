@@ -112,3 +112,7 @@ raw は +14.5 kB（帯の内側）。
 - `scripts/asset-report.mjs`: manifest を消費者として**発見**する（ページの `<link rel="manifest">` から）。
   無いと 512 px のアイコンが「生成スクリプトだけが名指す（build）」と分類されていた。
 - `DECISIONS.md` の「Service Worker に navigation を持たせない」に、オフライン時だけの例外とその理由を足した。
+
+## eager.brotli の天井は CI の実測で上げた
+
+このマシンのビルドでは eager.brotli は天井の内側だったが、CI（LF でチェックアウトする Linux）は 1135.5 kB と測って帯を超えた。`--update` は手元の実測で超えた行しか上げないので、CI が測った値（1,162,803 B）をそのまま天井にした。増分は上の 2 モジュール（installable-app・locate-me）の分で、天井は main の実測で bot が下げる。
