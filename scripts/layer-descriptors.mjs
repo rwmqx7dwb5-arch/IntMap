@@ -47,7 +47,7 @@
 import { readFileSync, readdirSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import vm from 'node:vm';
+import { requireModule, langRegistry } from './lib/import-module.mjs';
 import { codeOnly } from './code-only.mjs';
 
 const argv = process.argv.slice(2);
@@ -122,10 +122,11 @@ function registries(list) {
   const sources = new Set([...read('js/reference-data.js').matchAll(/\bn\s*:\s*'((?:[^'\\]|\\.)*)'/g)].map((m) => m[1].replace(/\\(.)/g, '$1')));
   return { reg, state, cmds, atlas, sources };
 }
+/* (module-graph) a locale table is an ES module that imports the registry and calls define() when it is
+   evaluated: it is REQUIRED (the one shared instance) and its table read back from the real registry */
 function uiTable(code) {
-  let got = null;
-  vm.runInNewContext(read('js/locales/ui.' + code + '.js'), { window: { IntMapLang: { define: (c, t) => { if (c === code) got = t.ui; } } } });
-  return got || {};
+  requireModule('js/locales/ui.' + code + '.js');
+  return langRegistry()._ui[code] || {};
 }
 
 /** load the declarations and the shelves of the tree at ROOT */

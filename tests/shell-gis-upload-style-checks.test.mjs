@@ -91,6 +91,8 @@ async function boot() {
   };
   const origWarn = console.warn;
   console.warn = (...a) => { warned.push(a.map(String).join(' ')); };
+  /* (module-graph) the page's one output encoder, as index.html has it before any module renders */
+  await import('../js/safe-html.js'); w.IntMapSafe = globalThis.IntMapSafe;
   const { makeGisDatasets } = await import('../js/gis-datasets.js');
   const rules = makeGisDatasets();          /* the app's one typing rule — handed to the classifier */
   const { geojsonUpload } = await importModule('js/map-ui.js', { mocks: { 'js/geo-engine.js': { IntMapGeoEngine: R.api } } });

@@ -129,6 +129,8 @@ async function bootUpload(opts) {
   ENGINE.set(R.api);
   globalThis.window = w;
   globalThis.document = { createElement: () => stubEl(), body: { appendChild() { } }, getElementById: () => null, addEventListener() { } };
+  /* (module-graph) the page's one output encoder, as index.html has it before any module renders */
+  await import('../js/safe-html.js'); w.IntMapSafe = globalThis.IntMapSafe;
   const { makeGisRaster } = await import('../js/gis-raster.js');
   w.IntMapGisRaster = makeGisRaster();
   const origWarn = console.warn; console.warn = () => { };

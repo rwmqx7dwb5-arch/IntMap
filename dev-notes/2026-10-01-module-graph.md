@@ -67,7 +67,7 @@ pr: 860
   - `js/app-body.js` の時計ウィジェット: 読者の設定（タイムゾーン）を `innerHTML` に符号化せず入れていた → `IntMapSafe.html`。
   - 検査 3 本の正規表現の作り方（`$` や `.()$` だけを逃がしていた）→ 全メタ文字。
   - この 2 か所で `window.IntMapSafe` の読みが 116 → 118（`reads` 登録に記録。`safe-html.js` はまだ export できない——§5）。
-- **着地後に入った検査**: 全件テストの後に main へ入った `tests/atlas-live-stream-checks.test.mjs` が `js/ai-core.js` を文字列で評価していた（CI の Regression 3/3 で赤）→ import に。
+- **着地後に入った検査**: 全件テストの後に main へ入った `tests/atlas-live-stream-checks.test.mjs` が `js/ai-core.js` を文字列で評価していた（CI の Regression 3/3 で赤）→ import に。続けて main に入ったレイヤー宣言化（`js/layers/`）とは `js/satellites-live.js` 1 本で衝突した——main 側を採って道具を掛け直した（冪等なので手で混ぜない）。その変更が持ち込んだ `scripts/layer-descriptors.mjs` はロケールの表を `vm` で評価していたので require に、`window.IntMapLayers` の読みは 20 → 23（`reads` に記録）。CodeQL の残り 1 件（`js/app-body.js:3156` アバター切り抜きの `blob:` URL を `<img>` に入れる箇所）は利用者の承認を得て誤検知として dismiss（alert #66）。
 
 ## 4. 起動が遅くならないこと
 
