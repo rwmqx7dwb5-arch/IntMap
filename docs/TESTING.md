@@ -1351,6 +1351,18 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   `tests/output-taint-gate-checks.test.mjs`, which also runs `sw.js`'s `isTileRequest` on every DEM
   URL template in `js/` and on foreign buckets, and holds `index.html`'s CSP unpkg path to the URL
   `js/wx-ecmwf.js` builds from `SDK_VER`.
+  The same rule reads the **markup tag** (safe-dom-template): a template tagged with
+  `IntMapSafe.markup` (aliased `html`, `js/safe-html.js`) is safe whatever it interpolates; every
+  `IntMapSafe.trusted(x)` call is judged where it is written, by `x`; a non-call reference to
+  `trusted` is a leaf; and the tag's own `plan` is run on the static text of every tagged template,
+  so a template the tag would refuse at run time (a value in a tag or attribute name, unquoted, in an
+  `on*` handler, in `<script>`) is a `check:static` failure. The universe is `js/**/*.js` plus the
+  inline scripts of every tracked `*.html` (`git ls-files`, read through `scripts/safe-output.mjs`
+  `inlineScripts`, which blanks HTML comments first). `tests/safe-dom-template-checks.test.mjs` holds
+  the tag's placement rules, the gate's reading of it, the ledger after the `js/data-layers.js` /
+  `js/stats-compare.js` / `admin.html` migration (one migrated sink put back raw turns each red, in
+  memory), and EVALUATES the migrated builders to show none was left returning a string (which the
+  tag would print as text).
 - **A control that writes and does not say so** (`data-effect`, output-taint-gate) —
   `scripts/data-effects.mjs` finds every UI handler (click / change / input / keydown / keypress /
   submit — what Atlas's `doControl` can fire) that reaches a Supabase table write, `rpc`,
@@ -3873,8 +3885,11 @@ Docker + the Supabase CLI (`supabase db start && supabase db reset --local && su
 
 ### Adding a case
 
-- **New XSS sink?** Route the untrusted value through `IntMapSafe.html()` (text/attr) or
-  `IntMapSafe.html(IntMapSafe.url(v,{allowData}))` (href/src/style). Add its payload/context to
+- **New XSS sink?** Build the markup with the tag — ``const html=window.IntMapSafe.markup;`` then
+  ``el.innerHTML=html`<a href="${u}">${name}</a>` `` — which escapes text and attribute values and
+  passes the value that starts an href/src through `IntMapSafe.url`; a builder returns ``html`…` ``
+  and goes into another ``html`…` `` (never `+`). Outside a template, route the value through
+  `IntMapSafe.html()` (text/attr) or `IntMapSafe.html(IntMapSafe.url(v,{allowData}))` (href/src/style). Add its payload/context to
   `XSS_PAYLOADS` in `tests/security.spec.js` if it exercises a new context.
 - **New Edge-Function auth rule?** Add an assertion to `tests/security-logic.test.mjs` (unit or a
   source regression guard).
@@ -4441,3 +4456,10 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   従来どおり。
 - ⑥ `SYS()` は 1 つの形しか持たず（`_aiProto` を環境に置いても同じバイト）、道具を JSON で貼らず、
   `tool_calls` という語を含まない。`FINAL_SCHEMA` に呼び出しの欄は無い。
+
+### `tests/domain-portable-checks.test.mjs` (domain-portable)
+
+9 本。**サイトのアドレスは 1 つの正本（`supabase/functions/_shared/site-origin.js`）から導かれ、
+ドメイン直下でも `/IntMap/` 配下でも同じビルドが動く**こと。正本以外にアドレスの綴りが無いこと
+（`check:static` の規則 `site-address`）、`CUSTOM_DOMAIN` が空なら `dist/CNAME` を出さず値があれば出すこと、
+1 つのビルドを 2 つのベースパスに置いて index が参照するローカル資源が両方で取れることを、実際に配信して確かめる。

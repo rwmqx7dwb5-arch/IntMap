@@ -6,6 +6,7 @@
 // reading its spelling. See dev-notes/2026-10-01-installable-app.md.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -30,9 +31,9 @@ test('installable-app ② the manifest meets the install criteria and resolves u
   assert.equal(mf.short_name, mf.name);
   assert.equal(mf.display, 'standalone');
   /* relative, so the same file is right at https://…/IntMap/ and at a local server's root */
-  const base = 'https://rwmqx7dwb5-arch.github.io/IntMap/manifest.webmanifest';
-  assert.equal(new URL(mf.start_url, base).href, 'https://rwmqx7dwb5-arch.github.io/IntMap/');
-  assert.equal(new URL(mf.scope, base).href, 'https://rwmqx7dwb5-arch.github.io/IntMap/');
+  const base = SITE_URL + 'manifest.webmanifest';
+  assert.equal(new URL(mf.start_url, base).href, SITE_URL);
+  assert.equal(new URL(mf.scope, base).href, SITE_URL);
   /* Chromium: a 192 and a 512 PNG, each a real file of that size */
   for (const want of [192, 512]) {
     const ic = mf.icons.find((i) => i.sizes === `${want}x${want}` && /\bany\b/.test(i.purpose));

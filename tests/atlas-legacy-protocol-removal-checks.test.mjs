@@ -41,6 +41,7 @@ import { fileURLToPath } from 'node:url';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { importModule } from './helpers/import-module.mjs';
+import { SITE_HOST } from '../supabase/functions/_shared/site-origin.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8').replace(/\r\n/g, '\n');
@@ -238,7 +239,7 @@ async function aiCore(respond) {
   const win = { INTMAP_AI_PROXY: { url: 'https://vpekfwdpurzejrrmacac.supabase.co/functions/v1/ai-proxy' }, SUPABASE_ANON_KEY: 'anon-key' };
   win.window = win;
   const localStorage = { _m: {}, getItem(k) { return Object.prototype.hasOwnProperty.call(this._m, k) ? this._m[k] : null; }, setItem(k, v) { this._m[k] = String(v); } };
-  const location = { protocol: 'https:', hostname: 'rwmqx7dwb5-arch.github.io' };   /* not localhost: aiDev() would lift the gate */
+  const location = { protocol: 'https:', hostname: SITE_HOST };   /* not localhost: aiDev() would lift the gate */
   const document = { getElementById() { return null; }, createElement() { return { classList: { add() {}, remove() {} }, style: {}, addEventListener() {}, querySelector() { return null; } }; }, body: { appendChild() {} } };
   const row = () => ({ select() { return this; }, eq() { return this; }, async maybeSingle() { return { data: { count: 0 } }; } });
   win.sb = { auth: { async getSession() { return { data: { session: { access_token: 'jwt' } } }; } }, from() { return row(); } };

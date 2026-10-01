@@ -4,7 +4,8 @@
  *  The passkey sign-in button and the account sheet's passkey list were written in #R155 against an
  *  SDK that did not have the methods yet, so they were feature-detected away for every session until
  *  this update. 2.117 has them, and the project answers the challenge request with its relying party
- *  (rpId rwmqx7dwb5-arch.github.io — measured on production, the body below is that answer). So on
+ *  (rpId = the production host, site-origin.js SITE_HOST — measured on production, the body below is
+ *  that answer). So on
  *  production the controls work; everywhere else they must fail in a way the reader can act on, and
  *  must not stay on screen as a button that can only fail.
  *
@@ -18,6 +19,7 @@
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
+import { SITE_HOST } from '../supabase/functions/_shared/site-origin.js';
 
 const UNTIL = `const until = async (f, ms = 8000) => { const t = Date.now();
   while (Date.now() - t < ms) { try { if (f()) return true; } catch {} await new Promise((r) => setTimeout(r, 20)); } return false; };`;
@@ -26,7 +28,7 @@ const withUntil = (fn, arg) => new Function('arg', UNTIL + 'return (' + fn.toStr
 /* The production answer to POST /auth/v1/passkeys/authentication/options, measured 2026-09-27. */
 const OPTIONS_FIXTURE = {
   challenge_id: '28661140-2142-4089-bfa0-049143d2812f',
-  options: { challenge: 'D6d730q_Lwo6IUkk5-IlWTmLaI-y4-M6Oe7RFtfUoWw', timeout: 300000, rpId: 'rwmqx7dwb5-arch.github.io', userVerification: 'preferred' },
+  options: { challenge: 'D6d730q_Lwo6IUkk5-IlWTmLaI-y4-M6Oe7RFtfUoWw', timeout: 300000, rpId: SITE_HOST, userVerification: 'preferred' },
   expires_at: 1790456706,
 };
 

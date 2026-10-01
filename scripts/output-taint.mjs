@@ -49,6 +49,15 @@
  *
  *  Sinks:  X.innerHTML = / += v   X.outerHTML = / += v   X.insertAdjacentHTML(pos, v)
  *          X.setHTML(v)  (MapLibre Popup — parses its argument as HTML, 30 call sites in js/)
+ *          IntMapSafe.trusted(v)  (not a sink: the one door through which markup no template made
+ *          enters a template — judged where it is written, safe-dom-template)
+ *  Where:  js/**.js, and the inline scripts of every TRACKED *.html (admin.html builds its tables there).
+ *
+ *  ⚠ THE MARKUP TAG (js/safe-html.js IntMapSafe.markup, aliased `html`) escapes every value for where it
+ *  lands unless it is markup a template made, so a tagged template is SAFE whatever it interpolates —
+ *  that is what lets a file reach zero here without reasoning about each value. The tag also REFUSES some
+ *  templates (a value in a tag name, unquoted, in an on* handler…); its plan is a pure function of the
+ *  static text, so this runs the same plan on every tagged template and reports the ones it would refuse.
  *
  *      node scripts/output-taint.mjs            report every unjudged leaf, per file
  *      node scripts/output-taint.mjs --check    compare with the ledger (exit 1 on any difference)
@@ -58,7 +67,10 @@
 import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 import { parseSource } from '../tests/helpers/ast.mjs';
+import { inlineScripts } from './safe-output.mjs';
+import '../js/safe-html.js';   /* publishes globalThis.IntMapSafe — the markup tag's plan is read from it */
 
 const ROOT = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'));
 export const LEDGER = join(ROOT, 'tests', 'output-taint-baseline.json');
@@ -83,7 +95,14 @@ const FN = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionE
 const SCOPE = (n) => FN.has(n.type) || n.type === 'Program';
 /* `flag` is an encoder too: it returns escaped text, or the one inline-SVG image the flag builders make,
    rebuilt from its parsed data: URI (js/safe-html.js) — nothing the caller passes reaches the output as markup */
-const ESCAPER_PATH = /(?:^|\.)IntMapSafe\.(?:html|esc|url|text|flag)$/;
+const ESCAPER_PATH = /(?:^|\.)IntMapSafe\.(?:html|esc|url|text|flag|markup)$/;
+/* the template tag (js/safe-html.js `markup`, aliased `html` where it is used) escapes every value it is
+   not handed as a markup object, so a tagged template is safe whatever is interpolated into it. A markup
+   object that is NOT the tag's own output comes from `IntMapSafe.trusted(x)`, and every call of it is
+   judged where it is written — as a sink of its own (kind 'trusted'), by what x is. A reference to it
+   that is not a call (an alias, a callback) hides what it will be given, so the reference is the leaf. */
+const MARKUP_PATH = /(?:^|\.)IntMapSafe\.markup$/;
+const TRUSTED_PATH = /(?:^|\.)IntMapSafe\.trusted$/;
 /* methods whose result is a number or a boolean, whatever the receiver */
 const NUM_METHODS = new Set(['toFixed', 'toPrecision', 'toExponential', 'indexOf', 'lastIndexOf', 'findIndex', 'findLastIndex',
   'search', 'charCodeAt', 'codePointAt', 'localeCompare', 'getTime', 'includes', 'some', 'every', 'startsWith', 'endsWith',
@@ -510,6 +529,7 @@ export function analyse(src, { file = '', names: namesIn = null } = {}) {
     if (FN.has(c.type)) { const f = summary(c, ctx); return f === 'unconditional' ? [] : f === 'transparent' ? n.arguments.flatMap((a) => leaves(a, ctx)) : [n]; }
     const p = pathOf(c);
     if (p && ESCAPER_PATH.test(p)) return [];
+    if (p && TRUSTED_PATH.test(p)) return [];   /* judged at its own site — sinks(), kind 'trusted' */
     const t = trustedFor(p);
     if (t && !t.factory) return t.args === 'none' ? [] : argsOk(n, t, ctx);
     if (c.type === 'Identifier') {
@@ -636,6 +656,14 @@ export function analyse(src, { file = '', names: namesIn = null } = {}) {
         const k = propName(n.callee);
         if (k === 'insertAdjacentHTML') { kind = k; value = n.arguments[1]; }
         else if (k === 'setHTML') { kind = k; value = n.arguments[0]; }
+        else if (TRUSTED_PATH.test(pathOf(n.callee))) { kind = 'trusted'; value = n.arguments[0]; }
+      } else if (n.type === 'MemberExpression' && TRUSTED_PATH.test(pathOf(n))) {
+        const p = parent.get(n);
+        if (!(p && ((p.type === 'CallExpression' && p.callee === n) || (p.type === 'MemberExpression' && p.object === n)))) {
+          const leaf = { line: n.loc.start.line, text: text(n), why: () => [{ line: n.loc.start.line, text: text(n) }] };
+          out.push({ line: n.loc.start.line, kind: 'trusted', leaves: [leaf] });
+        }
+        continue;
       }
       if (!kind) continue;
       if (kind === 'innerHTML' && inertElement(n.left.object)) continue;
@@ -708,7 +736,29 @@ export function analyse(src, { file = '', names: namesIn = null } = {}) {
     return fns.flatMap((f) => returnsOf(f).flatMap((r) => leaves(r, EMPTY)))
       .map((x) => ({ line: x.loc.start.line, text: text(x).replace(/\s+/g, ' ').slice(0, 80) }));
   }
-  return { sinks, definedFunctions, calledPaths, file, setNames, functionLeaves };
+  /* the tag's plan, run on the static text of every template it tags: a template the tag would refuse at
+     run time (a value in a tag name, an unquoted value, an on* handler, inside <script>) is refused here,
+     before anyone opens the panel that builds it. The plan is the tag's own (js/safe-html.js), not a copy. */
+  const isMarkupTag = (t, depth = 0) => {
+    if (!t || depth > 4) return false;
+    if (MARKUP_PATH.test(pathOf(t))) return true;
+    if (t.type !== 'Identifier') return false;
+    const b = bindingOf(t);
+    return !!b && !b.e.opaque && !b.e.param && !b.e.fns.length && !b.e.mut.length && b.e.defs.length > 0
+      && b.e.defs.every((d) => isMarkupTag(d, depth + 1));
+  };
+  function templateProblems() {
+    const plan = globalThis.IntMapSafe && globalThis.IntMapSafe.markup && globalThis.IntMapSafe.markup.plan;
+    const out = [];
+    for (const n of all) {
+      if (n.type !== 'TaggedTemplateExpression' || !isMarkupTag(n.tag)) continue;
+      if (!plan) { out.push({ line: n.loc.start.line, msg: 'js/safe-html.js published no IntMapSafe.markup.plan to read this template with' }); continue; }
+      try { plan(n.quasi.quasis.map((q) => (q.value.cooked != null ? q.value.cooked : q.value.raw))); }
+      catch (e) { out.push({ line: n.loc.start.line, msg: e.message }); }
+    }
+    return out;
+  }
+  return { sinks, definedFunctions, calledPaths, file, setNames, functionLeaves, templateProblems };
 }
 
 /* ══ the repository ══════════════════════════════════════════════════════════════════════════════ */
@@ -725,13 +775,34 @@ function walkJs(dir, acc = []) {
    the regression test re-runs the gate on mutated copies of the tree. Every verdict is dropped by
    setNames() before it is reused, so nothing computed under another tree's index survives. */
 const ANALYSED = new Map();
-/** Scan js/ (or the given { rel: source } map). */
-export function scan(root = ROOT, sources = null) {
+
+/* ── the pages ────────────────────────────────────────────────────────────────────────────────────
+   admin.html writes ~30 sinks from its own inline script and was outside this rule until the markup
+   tag came (safe-dom-template). The universe is every TRACKED *.html — discovered from git, not
+   listed — and a page's code is what scripts/safe-output.mjs reads as its code (inlineScripts): each
+   block is analysed on its own, padded with the lines before it so a sink is reported at its line in
+   the page. A page that cannot be listed is a failure of the gate, never an empty universe. */
+export function discoverPages(root = ROOT) {
+  const out = execFileSync('git', ['ls-files', '-z', '--', '*.html'], { cwd: root, encoding: 'utf8' });
+  const rels = out.split('\0').filter(Boolean).sort();
+  if (!rels.length) throw new Error('git ls-files found no *.html in ' + root);
+  return Object.fromEntries(rels.map((r) => [r, readFileSync(join(root, r), 'utf8')]));
+}
+const pageUnits = (rel, html) => inlineScripts(html).map(({ code, lineOffset }) => ({ rel, key: rel + '@' + (lineOffset + 1), src: '\n'.repeat(lineOffset) + code }));
+
+/** Scan js/ (or the given { rel: source } map) and the pages (every tracked *.html when js/ is read
+    from the tree; none unless given when a map is — a map is a small program or a mutated js/ tree). */
+export function scan(root = ROOT, sources = null, pages = sources ? {} : discoverPages(root)) {
   const srcs = sources || Object.fromEntries(walkJs(join(root, 'js')).map((a) => [relative(root, a).replace(/\\/g, '/'), readFileSync(a, 'utf8')]));
-  const unparsed = []; const A = {};
+  const units = [];
   for (const [rel, src] of Object.entries(srcs)) {
-    const key = rel + ' ' + src;
-    try { A[rel] = ANALYSED.get(key) || ANALYSED.set(key, analyse(src, { file: rel })).get(key); } catch (e) { unparsed.push(rel + ' — ' + e.message); }
+    if (rel.endsWith('.html')) units.push(...pageUnits(rel, src)); else units.push({ rel, key: rel, src });
+  }
+  for (const [rel, html] of Object.entries(pages || {})) units.push(...pageUnits(rel, html));
+  const unparsed = []; const A = {}; const fileOf = {};
+  for (const { rel, key: k, src } of units) {
+    const key = k + ' ' + src;
+    try { A[k] = ANALYSED.get(key) || ANALYSED.set(key, analyse(src, { file: rel })).get(key); fileOf[k] = rel; } catch (e) { unparsed.push(rel + ' — ' + e.message); }
   }
   /* the name index is a fixpoint: `esc = (x) => HOST.escapeHtml(x)` is an escaper only once escapeHtml is
      known to be one. Each round can only turn «unjudged» into «safe» (a name is safe when every offered
@@ -753,14 +824,16 @@ export function scan(root = ROOT, sources = null) {
     if (s === sig) break;
     sig = s;
   }
-  const files = {}; const called = new Set();
-  for (const [rel, a] of Object.entries(A)) {
+  const files = {}; const called = new Set(); const templates = [];
+  for (const [k, a] of Object.entries(A)) {
     a.setNames(names);
+    const rel = fileOf[k];
     const ss = a.sinks();
-    if (ss.length) files[rel] = ss;
+    if (ss.length) (files[rel] ||= []).push(...ss);
     for (const p of a.calledPaths) called.add(p);
+    for (const t of a.templateProblems()) templates.push(`${rel}:${t.line} ${t.msg}`);
   }
-  return { files, unparsed, called, srcs, analyzers: A };
+  return { files, unparsed, called, srcs, analyzers: A, templates };
 }
 
 export const unjudged = (sinks) => (sinks || []).reduce((a, s) => a + s.leaves.length, 0);
@@ -785,20 +858,23 @@ export function trustedProblems({ called, srcs }, trusted = TRUSTED) {
   return out;
 }
 
-export function measure(root = ROOT, sources = null) {
-  const r = scan(root, sources);
+export function measure(root = ROOT, sources = null, pages = sources ? {} : discoverPages(root)) {
+  const r = scan(root, sources, pages);
   const counts = {};
   for (const [f, sinks] of Object.entries(r.files)) { const n = unjudged(sinks); if (n) counts[f] = n; }
   return { counts, ...r };
 }
 const total = (m) => Object.values(m).reduce((a, b) => a + b, 0);
 
-export function check(root = ROOT, ledgerPath = LEDGER, sources = null) {
+/* the ledger is about the whole tree, so the pages are always read with it — a mutated js/ map is
+   compared together with the pages as they are (or as given) */
+export function check(root = ROOT, ledgerPath = LEDGER, sources = null, pages = discoverPages(root)) {
   const lines = [];
   if (!existsSync(ledgerPath)) return { ok: false, lines: [`no ledger at ${ledgerPath} — run: node scripts/output-taint.mjs --update`] };
   const was = JSON.parse(readFileSync(ledgerPath, 'utf8')).files || {};
-  const m = measure(root, sources);
+  const m = measure(root, sources, pages);
   for (const u of m.unparsed) lines.push(`${u} — could not be parsed, so what flows into its HTML sinks is not measured`);
+  for (const t of m.templates) lines.push(`${t} — the markup tag refuses this template (js/safe-html.js)`);
   lines.push(...trustedProblems(m));
   for (const f of [...new Set([...Object.keys(was), ...Object.keys(m.counts)])].sort()) {
     const a = was[f] || 0, b = m.counts[f] || 0;

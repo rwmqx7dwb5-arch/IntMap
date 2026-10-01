@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------------------
  *  #R567 shipped the layer and its production verification found this: changing the interface
  *  language a second time left the map drawing the FIRST language's names. Measured on
- *  https://rwmqx7dwb5-arch.github.io/IntMap/ —
+ *  production —
  *
  *    · `__imWhsLayer.locale()`, `__imWhsLayer.fc()` and the style's own
  *      `sources['whs-src'].data` were all correct for the new language;

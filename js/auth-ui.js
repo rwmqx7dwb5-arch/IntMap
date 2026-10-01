@@ -78,7 +78,7 @@ export function authUi(HOST){
      ⚠ (supabase-js 2.117) …AND THIS ORIGIN HAS NOT ALREADY BEEN REFUSED. 2.58's auth-js had none of
      these methods, so every passkey control stayed hidden from #R155 until the SDK update; 2.117
      has them, and the project answers `passkeys/authentication/options` with its relying party
-     (rpId rwmqx7dwb5-arch.github.io, measured). A page served from any OTHER origin — a preview, a
+     (rpId = the production host, measured). A page served from any OTHER origin — a preview, a
      fork, 127.0.0.1 — gets a WebAuthn SecurityError on every press, forever. What the reader must not
      be shown is a button that can only fail, so the first failure that says «this origin / this
      project cannot do passkeys» (_pkFailure → 'unavailable') switches them off for the session and

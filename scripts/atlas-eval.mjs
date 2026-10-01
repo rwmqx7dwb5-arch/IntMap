@@ -52,11 +52,12 @@ import {
 } from './atlas-eval/judge.mjs';
 import { rubricRequest, readRubric, validateAnswerKey } from './atlas-eval/grade.mjs';
 import { goldenOf } from './atlas-eval/replay.mjs';
+import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 import { historyOf, renderTrend } from './atlas-eval/lab.mjs';
 import { sectionsRead } from './atlas-eval/map-state.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-export const PROD_URL = 'https://rwmqx7dwb5-arch.github.io/IntMap/';
+export const PROD_URL = SITE_URL;   // (domain-portable) the address is site-origin.js, written nowhere else
 export const ALARM_TITLE = 'Atlas evaluation (nightly) is red';
 
 const argv = process.argv.slice(2);
