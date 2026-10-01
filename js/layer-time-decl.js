@@ -15,6 +15,9 @@
  *  ⚠ PURE DATA, LOADED WHEN IT CAN MATTER (js/layer-time-kernel.js): on the live clock no held kind is
  *  unstated, so this file is not on the boot path.
  *
+ *  ⚠ A `by` THAT CITES A PUBLICATION IS WRITTEN AS A CITATION (doi:, a treaty's number), NOT AS A URL — nothing here
+ *  fetches it, and a URL literal in js/ is read by check:datagov as a host the browser contacts (outbound-disclosed).
+ *
  *  ⚠ A SHARED OBJECT BELOW IS ONE STATEMENT ABOUT ONE SOURCE, read by every row that draws from it —
  *  the 61 World Bank rows are one series reader (js/wb-layers.js) and say one thing. A row is not
  *  matched to it by its id's spelling: every id is written out.
@@ -40,7 +43,7 @@ const OFM = Object.freeze(Object.assign({}, OSM, {
    ice-covered land were not these shapes (sea level within a few metres of today since ~7,000 years
    ago — Lambeck et al. 2014, PNAS 111:15296), so the measurement speaks from 5000 BC (astronomical −4999). */
 const LANDFORM = Object.freeze({
-  kind: 'enduring', from: -4999, by: 'https://doi.org/10.1073/pnas.1411762111 (Lambeck et al. 2014: sea level near today’s since ~7 ka)',
+  kind: 'enduring', from: -4999, by: 'Lambeck et al. 2014, PNAS 111:15296, doi:10.1073/pnas.1411762111 (sea level near today’s since ~7 ka)',
   says: LA('The terrain model', '地形モデル'),
   why: LA('Landforms change by less than this layer resolves over the last ~7,000 years, except where mines, reservoirs, glaciers or volcanoes moved them; before that the sea stood far lower and ice covered the north', '過去約7,000年の地形の変化はこのレイヤーの解像度より小さい（鉱山・貯水池・氷河・火山を除く）。それより前は海面がはるかに低く、北半球は氷床に覆われていた'),
 });
@@ -167,7 +170,7 @@ export const TIME = Object.freeze({
   /* ── hazards ── */
   'wp-dl-alerts': live(LA('National weather & disaster warnings (in force now)', '各国の気象・災害警報（現在発令中）')),
   'bx-eq': live(LA('USGS earthquake feed (the window chosen in its legend, ending now)', 'USGS 地震フィード（凡例で選ぶ、現在までの期間）')),
-  'beta-dl-volc2': { kind: 'enduring', from: -9699, by: 'https://volcano.si.edu/ (Smithsonian GVP: the Holocene volcano list)',
+  'beta-dl-volc2': { kind: 'enduring', from: -9699, by: 'Smithsonian Global Volcanism Program, Volcanoes of the World — the Holocene list',
     says: LA('Holocene volcanoes (Smithsonian GVP)', '完新世の火山（スミソニアン GVP）'),
     why: LA('The list is of volcanoes active in the Holocene (the last 11,700 years); a volcano’s position does not move at this scale', '一覧は完新世（過去11,700年）に活動した火山で、位置はこの縮尺では動かない') },
   'dl-thermal': live(LA('NASA FIRMS active fires (the last 24 h – 7 days)', 'NASA FIRMS 火災（直近24時間〜7日）')),
@@ -183,7 +186,7 @@ export const TIME = Object.freeze({
   'dl-uselect': { kind: 'record', from: 1789, to: 2024, carry: 'last', by: 'data/us-elections.json',
     cite: { from: 'data/us-elections.json#elections.$min(y)', to: 'data/us-elections.json#elections.$max(y)' }, ownDate: 'js/us-elections.js year',
     says: LA('U.S. presidential elections (1789–2024)', 'アメリカ大統領選挙（1789〜2024 年）') },
-  'dl-eu': { kind: 'record', from: '1958-01-01', by: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:11957E/TXT (Treaty of Rome, in force 1958-01-01)',
+  'dl-eu': { kind: 'record', from: '1958-01-01', by: 'Treaty establishing the European Economic Community (Treaty of Rome, CELEX 11957E), in force 1958-01-01',
     follows: 'js/data-layers.js EU_JOIN', says: LA('EU (EEC from 1958) members by accession year', 'EU（1958 年の EEC から）加盟国') },
   'dl-ww2': war('ww2', '1939-08-23', '1945-10-18', LA('The Second World War (data/wars.json)', '第二次世界大戦（data/wars.json）')),
   'dl-elect': { kind: 'record', from: '1949-08-14', to: '2026-02-08', carry: 'last', by: 'data/elections/index.json',
@@ -202,7 +205,7 @@ export const TIME = Object.freeze({
   /* ── security ── */
   'dl-milSpend': { kind: 'series', from: 1960, carry: 'last', by: 'js/time-countries.js WB_FLOOR', follows: 'js/time-countries.js WB_FLOOR',
     says: LA('Military expenditure (World Bank, from 1960)', '国防費（世界銀行、1960 年〜）') },
-  'dl-nato': { kind: 'record', from: '1949-08-24', by: 'https://www.nato.int/cps/en/natohq/official_texts_17120.htm (North Atlantic Treaty, in force 1949-08-24)',
+  'dl-nato': { kind: 'record', from: '1949-08-24', by: 'The North Atlantic Treaty (NATO official texts no. 17120), in force 1949-08-24',
     follows: 'js/data-layers.js NATO_JOIN', says: LA('NATO members by accession year', 'NATO 加盟国（加盟年）') },
   'beta-dl-ukrfront': { kind: 'live', says: LA('Ukraine front line (the latest published line)', 'ウクライナの前線（最新の公表線）') },
   'bx-wbmilgdp': WB, 'bx-wbmilppl': WB,
