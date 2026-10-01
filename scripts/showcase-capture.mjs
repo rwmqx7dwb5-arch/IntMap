@@ -31,7 +31,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { SHOWCASE } from '../js/showcase.js';
+import { SHOWCASE, WITHHELD } from '../js/showcase.js';
 import { sharedIds } from '../js/layer-manifest.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -155,7 +155,7 @@ function readCaptured(src) {
 function writeCaptured(src, captured) {
   const a = src.indexOf(BEGIN), b = src.indexOf(END);
   const ordered = {};
-  for (const s of SHOWCASE) if (captured[s.id]) ordered[s.id] = captured[s.id];
+  for (const s of [...SHOWCASE, ...WITHHELD]) if (captured[s.id]) ordered[s.id] = captured[s.id];
   const json = JSON.stringify(ordered, null, 2);
   return src.slice(0, a + BEGIN.length) + '\nexport const CAPTURED = ' + json + ';\n' + src.slice(b);
 }

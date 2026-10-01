@@ -5,4 +5,4 @@ User-agent: *
 Disallow: /IntMap/admin.html
 Allow: /IntMap/
 
-Sitemap: https://rwmqx7dwb5-arch.github.io/IntMap/sitemap.xml
+Sitemap: __INTMAP_SITE_URL__sitemap.xml

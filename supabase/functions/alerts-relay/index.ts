@@ -32,6 +32,7 @@
 
 import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
 import { callerGate } from "../_shared/rate-limit.js";
+import { SITE_USER_AGENT } from "../_shared/site-origin.js";
 
 const CORS = corsFor();
 /* (#R297) 「更新が遅すぎる。リアルタイムにと言っている。」 — this is the floor the app's rotation
@@ -433,7 +434,7 @@ async function summarisePAGASA() {
   /* (#R801) bounded like every other upstream read here — see CAP_INDEX_MAX_BYTES */
   const r = await fetchGuarded(PH_FEED, {
     timeoutMs: CAP_TIMEOUT_MS, maxBytes: CAP_INDEX_MAX_BYTES, contentTypeRe: /xml/i,
-    headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)" },
+    headers: { "user-agent": SITE_USER_AGENT },
   });
   if (!r.ok) throw new Error("upstream_error");
   const feed = r.text();
@@ -463,7 +464,7 @@ async function summarisePAGASA() {
     try {
       const rr = await fetchGuarded(pk.href, {
         timeoutMs: CAP_TIMEOUT_MS, maxBytes: CAP_FILE_MAX_BYTES, contentTypeRe: /xml/i,
-        headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)" },
+        headers: { "user-agent": SITE_USER_AGENT },
       });
       if (!rr.ok) { drop.unread++; return; }
       const cap = rr.text();
@@ -600,7 +601,7 @@ async function summariseCAP(key) {
   /* (#R801) bounded like every other upstream read here — see CAP_INDEX_MAX_BYTES */
   const r = await fetchGuarded(cfg.url, {
     timeoutMs: CAP_TIMEOUT_MS, maxBytes: CAP_INDEX_MAX_BYTES, contentTypeRe: /xml/i,
-    headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)" },
+    headers: { "user-agent": SITE_USER_AGENT },
   });
   if (!r.ok) throw new Error("upstream_error");
   const feed = r.text();
@@ -622,7 +623,7 @@ async function summariseCAP(key) {
     try {
       const rr = await fetchGuarded(pk.href, {
         timeoutMs: CAP_TIMEOUT_MS, maxBytes: CAP_FILE_MAX_BYTES, contentTypeRe: /xml/i,
-        headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)" },
+        headers: { "user-agent": SITE_USER_AGENT },
       });
       if (!rr.ok) { drop.unread++; return; }
       const cap = rr.text();
@@ -929,9 +930,9 @@ Deno.serve(async (req) => {
     try {
       const [mr, cr] = await Promise.all([
         fetchGuarded(SWIC + "/json/wmo_member.json", { timeoutMs: SWIC_TIMEOUT_MS, maxBytes: 2 * 1024 * 1024, contentTypeRe: /json|text\//i,
-          headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" } }),
+          headers: { "user-agent": SITE_USER_AGENT, accept: "application/json" } }),
         fetchGuarded(SWIC + "/json/cap-status.json", { timeoutMs: SWIC_TIMEOUT_MS, maxBytes: 512 * 1024, contentTypeRe: /json|text\//i,
-          headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" } }),
+          headers: { "user-agent": SITE_USER_AGENT, accept: "application/json" } }),
       ]);
       if (!mr.ok || !cr.ok) throw new Error("upstream_error");
       const members = [];
@@ -962,7 +963,7 @@ Deno.serve(async (req) => {
         timeoutMs: SWIC_TIMEOUT_MS,
         maxBytes: SWIC_MAX_BYTES,
         contentTypeRe: /json|text\//i,
-        headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" },
+        headers: { "user-agent": SITE_USER_AGENT, accept: "application/json" },
       });
       if (!r.ok) throw new Error("upstream_error");
       return new Response(JSON.stringify(summariseSWICScan(r.text())), {
@@ -993,7 +994,7 @@ Deno.serve(async (req) => {
           timeoutMs: SWIC_TIMEOUT_MS,
           maxBytes: SWIC_MAX_BYTES,
           contentTypeRe: /json|text\//i,
-          headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" },
+          headers: { "user-agent": SITE_USER_AGENT, accept: "application/json" },
         });
         if (!r.ok) { out[m] = { error: "upstream_error" }; continue; }
         out[m] = summariseSWIC(r.text(), m);
@@ -1019,7 +1020,7 @@ Deno.serve(async (req) => {
           timeoutMs: SWIC_TIMEOUT_MS,
           maxBytes: SWIC_MAX_BYTES,
           contentTypeRe: /json|text\//i,
-          headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" },
+          headers: { "user-agent": SITE_USER_AGENT, accept: "application/json" },
         });
         if (!r.ok) { out[m] = { error: "upstream_error" }; continue; }
         out[m] = summariseSWICGeo(r.text(), m);
@@ -1041,7 +1042,7 @@ Deno.serve(async (req) => {
   /* ══ ⚠⚠⚠ `?cngeo=100000_full_city` — THE CHINESE DIVISION BOUNDARIES ════════════════
      DataV.GeoAtlas is CORS-open, and the browser still cannot read it FROM THE DEPLOYED ORIGIN.
      MEASURED, same second, same url: `Referer: http://127.0.0.1:4277/` → **200, 569 KB**;
-     `Referer: https://rwmqx7dwb5-arch.github.io/IntMap/` → **403**. A hotlink guard, and one a
+     `Referer:` the production page (`_shared/site-origin.js` SITE_URL, then the Pages address) → **403**. A hotlink guard, and one a
      localhost preview cannot see — which is exactly why this shipped drawing China locally and
      nothing at all in production. A relay has no Referer, so it reads what the page cannot.
      ⚠ A boundary set is not this minute's weather: a DAY of edge cache, not sixty seconds. */
@@ -1056,7 +1057,7 @@ Deno.serve(async (req) => {
         timeoutMs: U_TIMEOUT_MS,
         maxBytes: 12 * 1024 * 1024,
         contentTypeRe: /json|text\//i,
-        headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" },
+        headers: { "user-agent": SITE_USER_AGENT, accept: "application/json" },
       });
       if (!r.ok) throw new Error("upstream_error");
       const body = r.text();
@@ -1119,7 +1120,7 @@ Deno.serve(async (req) => {
           timeoutMs: MA_TIMEOUT_MS,
           maxBytes: MA_MAX_BYTES,
           contentTypeRe: /json|text\//i,
-          headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" },
+          headers: { "user-agent": SITE_USER_AGENT, accept: "application/json" },
         });
         if (!r.ok) { out[n] = { error: "upstream_error" }; return; }
         out[n] = summariseMeteoAlarm(r.text(), lang);
@@ -1158,7 +1159,7 @@ Deno.serve(async (req) => {
           timeoutMs: U_TIMEOUT_MS,
           maxBytes: U_MAX_BYTES,
           contentTypeRe: /json|text\//i,
-          headers: { "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)", accept: "application/json" },
+          headers: { "user-agent": SITE_USER_AGENT, accept: "application/json" },
         });
       } catch (_e) { r = null; if (i) throw _e; }
     }

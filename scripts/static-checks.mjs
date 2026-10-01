@@ -15,6 +15,7 @@ import { join, extname, relative, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { jsReachability } from './js-reachability.mjs';
 import { codeOnly } from './code-only.mjs';
+import { SITE_TOKEN } from './site-url.mjs';
 
 const ROOT = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'));
 const rel = (p) => relative(ROOT, p).replace(/\\/g, '/');
@@ -321,6 +322,9 @@ for (const htmlName of ALL.filter((x) => !x.rel.includes('/') && x.rel.endsWith(
   for (const m of t.matchAll(/(?<![\w.$])url\(\s*['"]?([^'")]+)['"]?\s*\)/g)) refs.add(m[1]);
   for (let r0 of refs) {
     r0 = r0.trim();
+    /* (landing-showcase) an ABSOLUTE address the build writes in (scripts/site-url.mjs fillSiteToken) — the
+       canonical / hreflang of a generated page — is not a local file */
+    if (r0.startsWith(SITE_TOKEN)) continue;
     if (!r0 || /^(https?:|data:|blob:|mailto:|tel:|#|\/\/|javascript:)/i.test(r0)) continue;
     const clean = r0.split('?')[0].split('#')[0].replace(/^\.?\//, '');
     // Only verify refs that are plain relative paths. Anything with a JS operator/quote/
@@ -758,6 +762,21 @@ try {
   for (const p of treeWriterProblems()) err('tree-writer', p);
 } catch (e) {
   err('tree-writer', 'could not run the tree-writer rule: ' + (e && e.message));
+}
+
+// ── 23. (domain-portable) the production address is written in one place ──
+// It was spelled by hand in 69 tracked files, so moving the site to a domain of its own would have
+// been 69 edits with nothing to say which one was missed. supabase/functions/_shared/site-origin.js
+// is the value and everything derives from it; this refuses the host spelled anywhere else in the
+// tracked tree except the history (dev-notes/, DEV-NOTES-ARCHIVE.md — what was measured on the address
+// of that day) and a `[site:<path>]: <url>` definition that `node scripts/site-url.mjs --write`
+// rendered from the value. The rule and its reasons are in scripts/site-url.mjs. A rule here and not a
+// check:* of its own for the reason given at 15.
+try {
+  const { siteSpellings } = await import('./site-url.mjs');
+  for (const p of siteSpellings(ROOT)) err('site-address', `${p.file}:${p.line}: ${p.why}`);
+} catch (e) {
+  err('site-address', 'could not run the site-address rule: ' + (e && e.message));
 }
 
 // ── Report ───────────────────────────────────────────────────────────────────

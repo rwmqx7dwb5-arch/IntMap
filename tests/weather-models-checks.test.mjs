@@ -14,6 +14,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 
 /* ════════ #R356 — from tests/r356-checks.test.mjs ════════ */
 {
@@ -455,7 +456,7 @@ test('R514 ④ the bucket is not mistaken for an Open-Meteo API host by the quot
   /* js/wx-source.js trips a day-long breaker on Open-Meteo's `Daily API request limit` 429. The
      bucket has no such quota and must not share the breaker: a tripped API breaker used to take
      the model metadata down with it. Asked of the shipped predicate, not of a copy. */
-  const win = { location: { href: 'https://rwmqx7dwb5-arch.github.io/IntMap/' } };
+  const win = { location: { href: SITE_URL } };
   const src = read('js/wx-source.js');
   const iife = src.indexOf('(function');
   assert.ok(iife >= 0, 'js/wx-source.js is an IIFE');

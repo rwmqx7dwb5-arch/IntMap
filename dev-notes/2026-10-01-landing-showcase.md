@@ -106,3 +106,23 @@ Atlas が見本を開いて題・説明・問いを返すために `js/showcase.
 JPEG の SOF から読む（画像が正本）。人は meta refresh・`location.replace`・リンクの 3 段でその見本の地図へ。
 絶対 URL は今の方式（`index.html` の `og:url`）1 か所から——アドレスの正本が別 PR で入ったら `facts().site` を
 そこへ向ける。spec はスクリプト有り・無しの両方で転送先の断片が捕えたリンクと一致することを確かめる。
+
+## 6. main の domain-portable を取り込んだあと
+
+- **アドレス**: 生成物（about/teachers/ja・共有ページ・sitemap・robots）は `index.html` の og:url を読むのをやめ、
+  `scripts/site-url.mjs` の `SITE_TOKEN` を書く。生成ページは copyStatic で写されるので `transformIndexHtml` が
+  効かない——`siteUrlPlugin` に `closeBundle`（order:'post'・sequential）を足し、dist/ の .html/.xml/.txt のトークンを
+  `site-origin.js` の `SITE_URL` で埋める（`fillSiteToken`。assets・data・fonts・katex・cesium は歩かない）。robots.txt の
+  基底パスは `SITE_BASE_PATH`。ドメインを変えた日にページも sitemap も再生成なしで追従する。
+- **見本 2 件を見せるのをやめた（`withheld`）**: 取り込み後の spec で、1942 年の見本が **1939-08-23** で開いた
+  （失敗時の画面で実測）。`js/map-ui.js` の復元は戦争の行を +700 ms でチェックし時計を +900 ms で合わせるが、
+  `js/war-layer.js` は行が点いたとき時計が戦争の外なら記録の初日へ動かし、その判断を `data/wars.json`（954 kB）の
+  到着**後**にする——到着が +900 ms より遅いと戦争の層が勝つ。負荷の高い機械で再現し、実ネットワークでは
+  ふつうに起こりうる。1985 年の見本で「West Germany」が無かった回も、直前のこの見本が時計を 1939 年へ戻していた。
+  朝鮮戦争も同じ形。⇒ `ww2-1942`・`korea-1950` に理由の文を付けて `SHOWCASE` から外した（宣言・リンク・写真は残し、
+  1 欄消せば戻る）。生成器は古い共有ページを消し、`--check` は残っていれば落とす。
+- **紀元前 3000 年の「エラム」を文から外した**: `data/hist-eras.js` の紀元前 3000 年の表には Elam があり、10-01 の撮影では
+  描かれていたが、10-02 の取り込み後のビルドでは境界のソース（`imtb-src`）が 138 地物を持ち、その中に Elam が無かった。
+  原因は突き止めていない。文は地図が持つ名前だけで書く。
+- spec の名前の問い合わせは、読み込み済みタイルの地物（`querySourceFeatures`）ではなく、その日付のソースの集合全体
+  （`serialize().data`）に訊く。タイルの読み込みは事実ではなくタイミングだから。

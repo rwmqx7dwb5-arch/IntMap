@@ -1232,7 +1232,7 @@ test('R663 ⑦: SYS() carries the new wire shape, and js/atlas-console.js stayed
 /* ============================================================================
  *  R742 — A TURN THAT SAID NOTHING, AND A TURN THAT SAID WHAT IT WAS ABOUT TO DO
  * ----------------------------------------------------------------------------
- *  Measured on https://rwmqx7dwb5-arch.github.io/IntMap/ on 2026-09-15, 33 questions:
+ *  Measured on production on 2026-09-15, 33 questions:
  *
  *    A. THREE questions ended with the single word 「Done.」 — 「Show me the Roman Empire at its
  *       greatest extent…」, 「Which countries have never been members of the United Nations?」,

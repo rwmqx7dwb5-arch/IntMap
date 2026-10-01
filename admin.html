@@ -266,6 +266,10 @@
      same-origin relative/anchor path (no scheme to decide) as before, anything else only if the app's
      scheme guard admits it (http(s)/mailto/tel) — javascript:/data:/vbscript: come back empty. */
   const esc=(s)=>window.IntMapSafe.html(s);
+  /* (safe-dom-template) the markup tag: a value interpolated into html`…` is escaped for where it lands
+     (text / attribute value / the start of an href or src) unless it is markup the tag itself made — so
+     a template here holds no esc() of its own (that would escape twice). js/safe-html.js. */
+  const html=window.IntMapSafe.markup;
   const safeUrl=(u)=>{ const s=String(u==null?'':u).trim(); return /^[\/.#?]/.test(s)?s:window.IntMapSafe.url(s); };
   let toastT;
   function toast(msg,kind){ const el=$('toast'); el.textContent=msg; el.className='toast show'+(kind?(' '+kind):''); clearTimeout(toastT); toastT=setTimeout(()=>el.className='toast',3200); }
@@ -437,40 +441,44 @@
     }
     const rows=nevRows.filter(r=>!q||String(r.representative_title||'').toLowerCase().includes(q));
     if(!rows.length){ box.innerHTML='<p class="muted">Nothing here.</p>'; return; }
-    let h='';
+    /* (safe-dom-template) every value below is placed by the markup tag — escaped as text or as an
+       attribute value, the article link's href through IntMapSafe.url — so none can be forgotten. The
+       pieces are an array (the tag concatenates it) so the markup stays byte-for-byte what it was. */
+    const cards=[];
     for(const e of rows){
       const mem=(e.news_event_articles||[])
         .filter(l=>l.relation==='same_event'||l.relation==='update')
         .map(l=>({...l.news_articles,_by:l.assigned_by,_score:l.assignment_score}))
         .filter(Boolean)
         .sort((a,b)=>Date.parse(a.published_at||0)-Date.parse(b.published_at||0));
-      h+='<div class="card" style="margin:0 0 10px;padding:12px 14px;">'
-        +'<div style="display:flex;gap:10px;align-items:flex-start;">'
-        +'<input type="checkbox" data-ev="'+esc(e.id)+'" aria-labelledby="ev-title-'+esc(e.id)+'" style="margin-top:3px;">'
-        +'<div style="flex:1;min-width:0;">'
-        +'<div id="ev-title-'+esc(e.id)+'" style="font-weight:600;font-size:13px;line-height:1.4;">'+esc(e.representative_title)+'</div>'
-        +'<div class="muted" style="font-size:11.5px;margin-top:3px;">#'+esc(e.id)+' · '+esc(e.public_id)
-        +' · '+esc(e.primary_category)+(e.category_override?' (override)':'')
-        +' · '+esc(e.rep_place_name_en||'no location')
-        +' · '+e.article_count+' articles / '+e.independent_source_count+' independent'
-        +' · confidence '+(e.cluster_confidence==null?'—':e.cluster_confidence)
-        +(e.manual_lock?' · LOCKED':'')+(e.reviewed_at?' · reviewed':'')+'</div>'
-        +'<div style="margin-top:7px;">';
-      for(const m of mem){
+      const arts=mem.map(m=>{
         const artHref=safeUrl(m.canonical_url);
-        h+='<label style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:12px;">'
-          +'<input type="checkbox" data-art="'+esc(m.id)+'" data-from="'+esc(e.id)+'" style="margin-top:2px;">'
-          +'<span style="flex:1;min-width:0;"><b>'+esc(m.source_id)+'</b> · '+esc(m.title)
-          +' <span class="muted">('+esc(m._by||'?')+(m._score==null?'':(' '+m._score))+')</span>'
-          +(artHref?(' <a href="'+esc(artHref)+'" target="_blank" rel="noopener">↗</a>'):'')+'</span></label>';
-      }
-      h+='</div>'
-        +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">'
-        +'<button class="btn sec sm" data-edit="'+esc(e.id)+'">Edit title / category / location</button>'
-        +'<button class="btn sec sm" data-lock="'+esc(e.id)+'">'+(e.manual_lock?'Unlock':'Lock')+'</button>'
-        +'</div></div></div></div>';
+        return [
+          html`<label style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:12px;">`,
+          html`<input type="checkbox" data-art="${m.id}" data-from="${e.id}" style="margin-top:2px;">`,
+          html`<span style="flex:1;min-width:0;"><b>${m.source_id}</b> · ${m.title}`,
+          html` <span class="muted">(${m._by||'?'}${m._score==null?'':(' '+m._score)})</span>`,
+          artHref?html` <a href="${artHref}" target="_blank" rel="noopener">↗</a>`:'', html`</span></label>`];
+      });
+      cards.push([
+        html`<div class="card" style="margin:0 0 10px;padding:12px 14px;">`,
+        html`<div style="display:flex;gap:10px;align-items:flex-start;">`,
+        html`<input type="checkbox" data-ev="${e.id}" aria-labelledby="ev-title-${e.id}" style="margin-top:3px;">`,
+        html`<div style="flex:1;min-width:0;">`,
+        html`<div id="ev-title-${e.id}" style="font-weight:600;font-size:13px;line-height:1.4;">${e.representative_title}</div>`,
+        html`<div class="muted" style="font-size:11.5px;margin-top:3px;">#${e.id} · ${e.public_id}`,
+        html` · ${e.primary_category}${e.category_override?' (override)':''}`,
+        html` · ${e.rep_place_name_en||'no location'}`,
+        html` · ${e.article_count} articles / ${e.independent_source_count} independent`,
+        html` · confidence ${e.cluster_confidence==null?'—':e.cluster_confidence}`,
+        html`${e.manual_lock?' · LOCKED':''}${e.reviewed_at?' · reviewed':''}</div>`,
+        html`<div style="margin-top:7px;">`, arts, html`</div>`,
+        html`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">`,
+        html`<button class="btn sec sm" data-edit="${e.id}">Edit title / category / location</button>`,
+        html`<button class="btn sec sm" data-lock="${e.id}">${e.manual_lock?'Unlock':'Lock'}</button>`,
+        html`</div></div></div></div>`]);
     }
-    box.innerHTML=h;
+    box.innerHTML=html`${cards}`;
     box.querySelectorAll('[data-ev]').forEach(cb=>cb.onchange=()=>{
       const id=+cb.dataset.ev;
       if(cb.checked) nevSelEvents.add(id); else nevSelEvents.delete(id);
@@ -617,10 +625,10 @@
         const {data,error}=await sb.from('community_comments').select('id,author_name,body,created_at,post_id').order('created_at',{ascending:false}).limit(500);
         if(error) throw error;
         $('comm-count').textContent='· '+data.length+' comments';
-        tb.innerHTML=data.length?data.map(c=>`<tr>
-          <td style="white-space:nowrap;color:var(--muted)">${esc(fmtTime(c.created_at))}</td>
-          <td>${esc(c.author_name||'?')}</td>
-          <td style="max-width:520px;">${esc(c.body||'')}</td>
+        tb.innerHTML=data.length?data.map(c=>html`<tr>
+          <td style="white-space:nowrap;color:var(--muted)">${fmtTime(c.created_at)}</td>
+          <td>${c.author_name||'?'}</td>
+          <td style="max-width:520px;">${c.body||''}</td>
           <td><button class="btn danger sm" data-del-comment="${c.id}">Del</button></td></tr>`).join(''):'<tr><td colspan="4" class="muted">No comments.</td></tr>';
         tb.querySelectorAll('[data-del-comment]').forEach(b=>b.onclick=()=>delComment(b.dataset.delComment));
         return;
@@ -637,10 +645,10 @@
         const pm={}; (posts||[]).forEach(p=>pm[p.id]=p);
         const rows=ids.sort((a,b)=>counts[b]-counts[a]).map(id=>({id,n:counts[id],p:pm[id]||{}}));
         $('comm-count').textContent='· '+rows.length+' reported';
-        tb.innerHTML=rows.map(r=>`<tr>
+        tb.innerHTML=rows.map(r=>html`<tr>
           <td><span class="pill" style="background:var(--danger);color:#fff">⚠ ${r.n}</span></td>
-          <td>${esc(r.p.title||'(no title)')}</td><td>${esc(r.p.author_name||'?')}</td>
-          <td style="max-width:420px;color:var(--muted)">${esc((r.p.body||'').slice(0,160))}</td>
+          <td>${r.p.title||'(no title)'}</td><td>${r.p.author_name||'?'}</td>
+          <td style="max-width:420px;color:var(--muted)">${(r.p.body||'').slice(0,160)}</td>
           <td><button class="btn danger sm" data-del-post="${r.id}">Del post</button></td></tr>`).join('');
         tb.querySelectorAll('[data-del-post]').forEach(b=>b.onclick=()=>delPost(b.dataset.delPost));
         return;
@@ -650,11 +658,11 @@
       const {data,error}=await sb.from('community_posts').select('id,title,body,author_name,created_at,community_votes(user_id),community_comments(id)').order('created_at',{ascending:false}).limit(500);
       if(error) throw error;
       $('comm-count').textContent='· '+data.length+' posts';
-      tb.innerHTML=data.length?data.map(p=>`<tr>
-        <td style="white-space:nowrap;color:var(--muted)">${esc(fmtTime(p.created_at))}</td>
-        <td>${esc(p.title||'(no title)')}<div class="muted" style="font-size:11px;">▲${(p.community_votes||[]).length} · 💬${(p.community_comments||[]).length}</div></td>
-        <td>${esc(p.author_name||'?')}</td>
-        <td style="max-width:420px;color:var(--muted)">${esc((p.body||'').slice(0,160))}</td>
+      tb.innerHTML=data.length?data.map(p=>html`<tr>
+        <td style="white-space:nowrap;color:var(--muted)">${fmtTime(p.created_at)}</td>
+        <td>${p.title||'(no title)'}<div class="muted" style="font-size:11px;">▲${(p.community_votes||[]).length} · 💬${(p.community_comments||[]).length}</div></td>
+        <td>${p.author_name||'?'}</td>
+        <td style="max-width:420px;color:var(--muted)">${(p.body||'').slice(0,160)}</td>
         <td><button class="btn danger sm" data-del-post="${p.id}">Del</button></td></tr>`).join(''):'<tr><td colspan="5" class="muted">No posts.</td></tr>';
       tb.querySelectorAll('[data-del-post]').forEach(b=>b.onclick=()=>delPost(b.dataset.delPost));
     }catch(e){ tb.innerHTML='<tr><td colspan="7">'+esc(e.message||e)+'</td></tr>'; }
@@ -681,11 +689,11 @@
     const tb=$('geo-table').querySelector('tbody');
     if(error){ tb.innerHTML='<tr><td colspan="7">'+esc(error.message)+'</td></tr>'; return; }
     $('geo-count').textContent='· '+data.length;
-    tb.innerHTML=data.map(r=>`<tr>
-      <td><span class="pill">${esc(r.type)}</span></td>
-      <td>${esc(r.name_en)}</td><td>${esc(r.name_jp)}</td>
+    tb.innerHTML=data.map(r=>html`<tr>
+      <td><span class="pill">${r.type}</span></td>
+      <td>${r.name_en}</td><td>${r.name_jp}</td>
       <td>${r.lng}</td><td>${r.lat}</td>
-      <td style="max-width:240px;color:var(--muted)">${esc((r.terms||[]).join(', '))}</td>
+      <td style="max-width:240px;color:var(--muted)">${(r.terms||[]).join(', ')}</td>
       <td><div class="row-actions">
         <button class="btn sec sm" data-edit-geo="${r.id}">Edit</button>
         <button class="btn danger sm" data-del-geo="${r.id}">Del</button>
@@ -734,9 +742,9 @@
     const tb=$('dash-table').querySelector('tbody');
     if(error){ tb.innerHTML='<tr><td colspan="7">'+esc(error.message)+'</td></tr>'; return; }
     $('dash-count').textContent='· '+data.length;
-    tb.innerHTML=data.map(r=>`<tr>
-      <td><span class="pill">${esc(r.cat)}</span></td><td>${esc(r.type)}</td>
-      <td>${esc(r.title_en)}</td><td style="color:var(--muted)">${esc(r.badge)}</td>
+    tb.innerHTML=data.map(r=>html`<tr>
+      <td><span class="pill">${r.cat}</span></td><td>${r.type}</td>
+      <td>${r.title_en}</td><td style="color:var(--muted)">${r.badge}</td>
       <td>${r.lng}</td><td>${r.lat}</td>
       <td><div class="row-actions">
         <button class="btn sec sm" data-edit-dash="${r.id}">Edit</button>
@@ -771,12 +779,15 @@
   function openModal(title,fields,values,onSave){
     $('modal-title').textContent=title;
     $('modal-body').innerHTML=fields.map(f=>{
-      const v=esc(values[f.k]==null?'':values[f.k]);
+      const v=values[f.k]==null?'':values[f.k];
       const inp = f.area
-        ? `<textarea id="f-${f.k}">${v}</textarea>`
-        : `<input id="f-${f.k}" type="${f.type||'text'}" ${f.list?('list="'+f.list+'"'):''} value="${v}">`;
-      return `<div class="field"><label>${esc(f.label)}</label>${inp}</div>`;
+        ? html`<textarea id="f-${f.k}">${v}</textarea>`
+        : html`<input id="f-${f.k}" type="${f.type||'text'}" value="${v}">`;
+      return html`<div class="field"><label>${f.label}</label>${inp}</div>`;
     }).join('');
+    /* an attribute that is there or not is set on the element: the tag places only values and bare
+       names between attributes, never a name="value" pair spliced in as a string */
+    fields.forEach(f=>{ if(f.list&&!f.area) $('f-'+f.k).setAttribute('list',f.list); });
     modalSave=async()=>{
       const vals={}; fields.forEach(f=>vals[f.k]=$('f-'+f.k).value);
       $('modal-save').disabled=true;

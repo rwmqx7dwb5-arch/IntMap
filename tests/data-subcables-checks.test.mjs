@@ -242,7 +242,7 @@ test('#R384 ② the caveat’s class belongs to the caveat alone, and is not hid
 
 test('#R384 ② the note lives INSIDE the .dl-desc block, so a language switch cannot duplicate it', () => {
   const code = codeOnly(DL);
-  assert.match(code, /return '<div class="dl-desc">'\+desc\+note\+'<\/div>';/,
+  assert.match(code, /return html`<div class="dl-desc">\$\{desc\}\$\{note\}<\/div>`;/,
     'the note is not wrapped by the element ensureGenericLegend() removes on refresh');
   /* the refresh really does remove only `.dl-desc` — that is the premise above */
   assert.match(code, /const old=el\.querySelector\('\.dl-desc'\); if\(old\) old\.remove\(\);/);

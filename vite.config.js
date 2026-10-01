@@ -10,9 +10,14 @@
  *  is still one directory and nothing has to be assembled by hand.
  *
  *  ── base: './' ─────────────────────────────────────────────────────────────────────────────
- *  The site lives at https://rwmqx7dwb5-arch.github.io/IntMap/ — a project page, not a domain root.
+ *  The site lives at a project page's sub-path (/IntMap/) today and at a domain root once it has a
+ *  domain of its own — the address is supabase/functions/_shared/site-origin.js, nowhere else.
  *  Relative URLs make the build independent of that prefix, so the same dist/ works from the Pages
- *  sub-path, from `vite preview`, and from scripts/serve.mjs during tests.
+ *  sub-path, from a domain root, from `vite preview`, and from scripts/serve.mjs during tests
+ *  (tests/domain-portable-checks.test.mjs serves one build under both).
+ *  (domain-portable) The one place the build needs the ABSOLUTE address — index.html's social card —
+ *  is filled in by scripts/site-url.mjs siteUrlPlugin(), which also emits dist/CNAME when the site has
+ *  a domain of its own.
  *
  *  ── WHY THE STATIC ASSETS ARE AN EXPLICIT LIST ─────────────────────────────────────────────
  *  Vite's `publicDir` copies one directory verbatim; here the "public directory" is the repo root
@@ -30,6 +35,7 @@ import { buildReportPlugin } from './scripts/build-report.mjs';
 /* the build stamp in index.html is DERIVED from the commit being built (scripts/build-stamp.mjs) —
    it used to be typed by hand every round, and a forgotten bump left stale caches looking current */
 import { buildStampPlugin } from './scripts/build-stamp.mjs';
+import { siteUrlPlugin } from './scripts/site-url.mjs';
 
 const ROOT = resolve(import.meta.dirname);
 
@@ -664,5 +670,5 @@ export default defineConfig({
      than read off filenames. scripts/perf-budget.mjs is the gate that reads it; it runs on
      every build because the report is what stops "the biggest chunk is big" from being
      mistaken for "startup is slow". */
-  plugins: [buildStampPlugin(ROOT), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets()],
+  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets()],
 });

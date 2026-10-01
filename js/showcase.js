@@ -38,7 +38,7 @@ import { IntMapLang } from './lang-registry.js';   /* the translation helper, by
    instrument reads; the browser resolves it with L.arr(), node reads [0] / [1]. */
 const LA = /** @type {(...a: string[]) => string[]} */ (IntMapLang.pickArgs());
 
-export const SHOWCASE = [
+const DECLARED = [
   {
     id: 'europe-1914',
     topic: 'history',
@@ -77,6 +77,7 @@ export const SHOWCASE = [
   },
   {
     id: 'ww2-1942',
+    withheld: 'MEASURED 2026-10-02: opened from its link, the map can end on the war\u2019s first day instead of the link\u2019s date. js/map-ui.js restore() ticks the war row at +700 ms and sets the clock at +900 ms; js/war-layer.js moves the clock to the record\u2019s first day when its row comes on with the clock outside the war, and decides that only after data/wars.json (954 kB) has arrived. When the record arrives after +900 ms the war layer wins (1939-08-23 instead of 1942-11-01, seen in tests/landing-showcase.spec.js under load); on a real network that is the usual case. Returns when the share-link restore owns the clock over a row\u2019s entry move.',
     topic: 'history',
     audience: ['curious', 'teachers'],
     curriculum: ['rekishi-c'],
@@ -117,6 +118,7 @@ export const SHOWCASE = [
   },
   {
     id: 'korea-1950',
+    withheld: 'the same race as ww2-1942 (js/war-layer.js\u2019s entry move against the share-link restore\u2019s clock)',
     topic: 'history',
     audience: ['teachers'],
     curriculum: ['rekishi-d'],
@@ -176,8 +178,8 @@ export const SHOWCASE = [
     curriculum: [],
     title: LA('The world in 3000 BC', '紀元前3000年の世界'),
     blurb: LA(
-      'Egypt, Ur, Elam, the Indus valley civilisation and Minoan Crete — the historical-basemaps snapshot for 3000 BC.',
-      'エジプト、ウル、エラム、インダス文明、ミノア文明。historical-basemaps の紀元前3000年のスナップショットです。'),
+      'Egypt, Ur, the Indus valley civilisation and Minoan Crete — the historical-basemaps snapshot for 3000 BC.',
+      'エジプト、ウル、インダス文明、ミノア文明。historical-basemaps の紀元前3000年のスナップショットです。'),
     question: LA(
       'Which of these early civilisations grew up beside a great river, and why would a river matter?',
       'これらの初期の文明のうち、大河のそばで生まれたのはどれでしょう。なぜ川が大切だったのでしょう。'),
@@ -185,7 +187,10 @@ export const SHOWCASE = [
     base: 'map',
     at: '-002999-07-01',
     layers: [],
-    drawn: { labels: ['Egypt', 'Ur', 'Elam', 'Indus valley civilization', 'Minoan'] },
+    /* ⚠ not Elam: it is in data/hist-eras.js's 3000 BC sheet, and was drawn on 2026-10-01, but MEASURED
+       2026-10-02 the border source (imtb-src) held 138 features for that date and not Elam — reported, cause
+       not established. The text names only what the map is asked for below. */
+    drawn: { labels: ['Egypt', 'Ur', 'Indus valley civilization', 'Minoan'] },
   },
   {
     id: 'ring-of-fire',
@@ -224,6 +229,14 @@ export const SHOWCASE = [
     drawn: {},
   },
 ];
+
+/* ══ AN EXAMPLE THAT DOES NOT OPEN AS ITS PICTURE SAYS IS NOT SHOWN ═════════════════════════════════
+   `withheld` is a sentence: the measured reason an example would open differently from its page. A
+   withheld example stays declared (its text, view and captured link are kept, so it returns by deleting
+   one field) and every reader — the pages, the sitemap, Atlas, the spec — reads SHOWCASE, which does
+   not hold it. scripts/landing.mjs --check requires the sentence. */
+export const SHOWCASE = DECLARED.filter((s) => !s.withheld);
+export const WITHHELD = DECLARED.filter((s) => s.withheld);
 
 /* The curriculum keys an entry may name. The words are the headings of 文部科学省「高等学校学習指導要領
    （平成30年告示）」 第2章第2節 地理歴史, quoted as they stand there (read 2026-10-01 from

@@ -15,7 +15,8 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, existsSync, statSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, dirname, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -23,6 +24,8 @@ import { TEXT } from '../scripts/landing-text.mjs';
 import { facts, outputs, showcaseProblems, PAGES, pagePath } from '../scripts/landing.mjs';
 import { SHOWCASE, CAPTURED } from '../js/showcase.js';
 import { STATIC_ASSETS, STATIC_EXCLUDE } from '../vite.config.js';
+import { SITE_TOKEN, fillSiteToken, guardedHosts } from '../scripts/site-url.mjs';
+import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -97,7 +100,7 @@ test('④ every asset a generated page names is copied into dist/, and the sitem
     const dir = dirname(page) === '.' ? '' : dirname(page) + '/';
     for (const m of html.matchAll(/\s(?:href|src)="([^"#]+)(?:#[^"]*)?"/g)) {
       const ref = m[1];
-      if (/^(https?:)?\/\//.test(ref) || ref.startsWith('mailto:')) continue;
+      if (/^(https?:)?\/\//.test(ref) || ref.startsWith('mailto:') || ref.startsWith(SITE_TOKEN)) continue;   /* absolute: the build fills the token (⑥) */
       const rel = normalize(dir + ref).replace(/\\/g, '/');
       assert.ok(existsSync(join(ROOT, rel)), page + ' names ' + ref + ', which does not exist');
       if (rel !== 'index.html') assert.ok(copied(rel), page + ' names ' + rel + ', which the build does not copy');
@@ -140,4 +143,33 @@ test('⑤ the ways in: Settings links the page, its words exist in en and jp, an
   const { makeAtlasCatalogText } = await import('../js/atlas-catalog-text.js');
   const text = makeAtlasCatalogText({ lang: 'en' }, {}).text(['panel.showcase']);
   for (const s of SHOWCASE) assert.ok(text.includes(s.id + ' — ' + s.title[0]), 'the planner is not told about ' + s.id);
+});
+
+test('⑥ the address: the generated files carry only the token, and the build fills it in every copied page', () => {
+  /* the sources: no host spelled (scripts/site-url.mjs's rule), the token wherever an absolute address is needed */
+  const hosts = guardedHosts();
+  for (const rel of GENERATED) {
+    const t = rd(rel);
+    for (const h of hosts) assert.ok(!t.toLowerCase().includes(h), rel + ' spells the address ' + h + ' — it must carry the token');
+    assert.ok(t.includes(SITE_TOKEN), rel + ' carries no token where an absolute address is needed');
+  }
+  assert.ok(rd('about.html').includes('<link rel="canonical" href="' + SITE_TOKEN + 'about.html">'));
+  /* the build half, run on a copy of what vite.config.js copies: every .html/.xml/.txt comes out absolute */
+  const dir = mkdtempSync(join(tmpdir(), 'im-site-token-'));
+  try {
+    for (const rel of GENERATED) { mkdirSync(dirname(join(dir, rel)), { recursive: true }); writeFileSync(join(dir, rel), rd(rel)); }
+    mkdirSync(join(dir, 'data'), { recursive: true }); writeFileSync(join(dir, 'data', 'x.txt'), SITE_TOKEN);   /* a payload directory is not walked */
+    const changed = fillSiteToken(dir, SITE_URL).sort();
+    assert.deepEqual(changed, [...GENERATED].sort());
+    for (const rel of GENERATED) {
+      const t = readFileSync(join(dir, rel), 'utf8');
+      assert.ok(!t.includes(SITE_TOKEN), rel + ' still holds the token after the build');
+    }
+    const about = readFileSync(join(dir, 'about.html'), 'utf8');
+    assert.ok(about.includes('<link rel="canonical" href="' + SITE_URL + 'about.html">'));
+    assert.ok(about.includes('<meta property="og:image" content="' + SITE_URL + CAPTURED['europe-1914'].image + '">'));
+    assert.ok(readFileSync(join(dir, 'sitemap.xml'), 'utf8').includes('<loc>' + SITE_URL + 'ja/s/koppen.html</loc>'));
+    assert.ok(readFileSync(join(dir, 'robots.txt'), 'utf8').includes('Sitemap: ' + SITE_URL + 'sitemap.xml'));
+    assert.equal(readFileSync(join(dir, 'data', 'x.txt'), 'utf8'), SITE_TOKEN);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

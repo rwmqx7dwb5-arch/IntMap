@@ -197,7 +197,7 @@ export const { fetchViaProxy, ownRelayUrl, peekOwnRelay, clockFor } = (() => {
      function and parses the result as HTML. An article page contains neither `<rss` nor `<feed`, so
      `isFeed` refused it; Strategy 2 could not succeed, it could only take twenty seconds to fail.
 
-     MEASURED from the live site (https://rwmqx7dwb5-arch.github.io, 2026-08-25), the two article
+     MEASURED from the live site (production, 2026-08-25), the two article
      URLs on the front page that day, through this exact ladder:
 
         corsfix       403                                                    986 ms / 320 ms

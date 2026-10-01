@@ -30,13 +30,18 @@ import { installHermeticRouting } from './helpers/network.js';
 import { seededStorageState, BASE } from './helpers/session-seed.js';
 import { SHOWCASE, CAPTURED } from '../js/showcase.js';
 import { sharedIds } from '../js/layer-manifest.js';
+import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
+import { SITE_TOKEN } from '../scripts/site-url.mjs';
 
 const PAGES = ['about.html', 'teachers.html', 'ja/about.html', 'ja/teachers.html'];
 const SHARE = SHOWCASE.flatMap((s) => [['s/' + s.id + '.html', s], ['ja/s/' + s.id + '.html', s]]);
 
 /* what the map holds for the open date: polity labels and first-level units, every spelling a label can use */
 const HELD = () => {
-  const names = (src) => { try { return (window.__imap.querySourceFeatures(src) || []).flatMap((f) => {
+  /* the source's whole collection for the date (serialize), not the features in the tiles loaded so far:
+     the claim is what the map holds for that date, and tile loading is a timing, not a fact (MEASURED: a 1985
+     run read the previous date's tiles while the collection already held «West Germany») */
+  const names = (src) => { try { const d = window.__imap.getSource(src).serialize().data; return ((d && d.features) || []).flatMap((f) => {
     const p = f.properties || {}; return [p._locName, p._modName, p.NAME, p.name, p.n, p.nm].filter(Boolean).map(String); }); } catch (_) { return []; } };
   const srcs = Object.keys((window.__imap.getStyle() || {}).sources || {});
   return { labels: [...new Set(names('imtb-lbl-src'))], admin: [...new Set(srcs.filter((s) => /^imta\d?-(src|gap-src)$/.test(s)).flatMap(names))] };
@@ -59,7 +64,7 @@ async function assertExample(page, s) {
   expect(Math.abs(cam.lat - s.view.lat), s.id + ' camera lat').toBeLessThan(1e-3);
   expect(Math.abs(cam.z - s.view.zoom), s.id + ' camera zoom').toBeLessThan(0.02);
   for (const id of s.layers) {
-    await page.waitForFunction((id) => { try { return !!window.__imLayerPainted(id); } catch (_) { return false; } }, id, { timeout: 30000 })
+    await page.waitForFunction((id) => { try { return !!window.__imLayerPainted(id); } catch (_) { return false; } }, id, { timeout: 60000 })
       .catch(() => {});
     expect(await page.evaluate((id) => { try { return !!window.__imLayerPainted(id); } catch (_) { return false; } }, id), s.id + ': layer ' + id + ' painted').toBe(true);
   }
@@ -68,7 +73,7 @@ async function assertExample(page, s) {
     await page.waitForFunction(({ fn, want }) => {
       const h = (0, eval)('(' + fn + ')')();
       return (want.labels || []).every((n) => h.labels.includes(n)) && (want.admin || []).every((n) => h.admin.includes(n));
-    }, { fn: HELD.toString(), want }, { timeout: 30000 }).catch(() => {});
+    }, { fn: HELD.toString(), want }, { timeout: 60000 }).catch(() => {});
     const held = await page.evaluate(HELD);
     for (const n of want.labels || []) expect(held.labels, s.id + ': the map holds the label «' + n + '» for ' + at).toContain(n);
     for (const n of want.admin || []) expect(held.admin, s.id + ': the map holds the unit «' + n + '» for ' + at).toContain(n);
@@ -76,7 +81,7 @@ async function assertExample(page, s) {
 }
 
 test('every example opens from its link, at its date, with its layers and the names its text claims', async ({ browser }) => {
-  test.setTimeout(420000);
+  test.setTimeout(900000);   /* ten examples; each wait is on a condition and bounded at 60 s for a shared, loaded machine */
   expect(SHOWCASE.length).toBeGreaterThanOrEqual(8);
   const ctx = await browser.newContext({ storageState: seededStorageState() });
   await installHermeticRouting(ctx);
@@ -133,6 +138,17 @@ test('the landing and teacher pages: links, pictures, anchors and the captured e
       return imgs.filter((i) => !(i.naturalWidth > 0)).map((i) => i.src);
     });
     expect(broken, p + ': every picture decodes').toEqual([]);
+  }
+  /* AS SERVED, the address is absolute and the site's own (the build filled SITE_TOKEN — scripts/site-url.mjs
+     fillSiteToken): canonical, hreflang, og:url / og:image, the sitemap's <loc> and robots.txt's Sitemap */
+  for (const rel of [...PAGES, 'sitemap.xml', 'robots.txt', SHARE[0][0], SHARE[SHARE.length - 1][0]]) {
+    const body = await (await page.request.get('/' + rel)).text();
+    expect(body.includes(SITE_TOKEN), rel + ' still carries the token as served').toBe(false);
+    const abs = rel.endsWith('.txt') ? /Sitemap: (\S+)/.exec(body)[1]
+      : rel.endsWith('.xml') ? /<loc>([^<]+)<\/loc>/.exec(body)[1]
+        : /<link rel="canonical" href="([^"]+)"/.exec(body)[1];
+    expect(abs.startsWith(SITE_URL), rel + ' names the site’s own address: ' + abs).toBe(true);
+    if (rel.endsWith('.html')) expect(/<meta property="og:url" content="([^"]+)"/.exec(body)[1], rel + ' og:url').toBe(SITE_URL + rel);
   }
   /* the share pages: each one's card, as a crawler reads it (no script), and the way on — with a script
      (location.replace) and without one (the meta refresh) — to its own example's map */

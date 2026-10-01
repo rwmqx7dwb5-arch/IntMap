@@ -41,6 +41,7 @@ import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from '
 import { join, dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
+import { codeOnly } from './code-only.mjs';
 
 const ROOT = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'));
 const LEDGER_PATH = join(ROOT, 'scripts', 'safe-output-ledger.json');
@@ -256,6 +257,15 @@ export function scanSource(src, { lineOffset = 0 } = {}) {
     }
     return false;
   };
+  const MARKUP = /^(?:(?:window|globalThis|self)\.)?IntMapSafe\.markup$/;
+  const markupTagged = (lit) => {
+    const p = parent.get(lit);
+    if (!p || p.type !== 'TaggedTemplateExpression' || p.quasi !== lit) return false;
+    const t = p.tag;
+    if (MARKUP.test(text(t))) return true;
+    const bs = t.type === 'Identifier' ? (inits.get(t.name) || []) : [];
+    return bs.length > 0 && bs.every((b) => MARKUP.test(text(b)));
+  };
   for (const n of all) {
     let parts;
     if (n.type === 'BinaryExpression' && n.operator === '+') {
@@ -268,6 +278,9 @@ export function scanSource(src, { lineOffset = 0 } = {}) {
         if (!urlPassed(parts[i + 1])) out.rawUrlAttr.push({ line: line(parts[i + 1]), name: text(parts[i + 1]).slice(0, 60) });
       }
     } else if (n.type === 'TemplateLiteral' && n.expressions.length) {
+      /* the markup tag (js/safe-html.js) passes the value that starts a quoted href/src through
+         IntMapSafe.url itself, and refuses an unquoted one — its templates have no raw URL attribute */
+      if (markupTagged(n)) continue;
       n.quasis.forEach((q, i) => {
         if (i >= n.expressions.length || !ATTR_START.test(q.value.cooked || '')) return;
         if (!urlPassed(n.expressions[i])) out.rawUrlAttr.push({ line: line(n.expressions[i]), name: text(n.expressions[i]).slice(0, 60) });
@@ -298,16 +311,30 @@ export function measure(root = ROOT) {
     catch (e) { ((res[rel(abs)] ||= {}).unparsed = [{ line: 0, name: String(e.message) }]); }
   }
   for (const name of readdirSync(root).filter((n) => n.endsWith('.html'))) {
-    const html = readFileSync(join(root, name), 'utf8');
-    /* an end tag may carry blanks or junk before its `>` (</script >, </script\tfoo>) and still close */
-    const re = /<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi; let m;
-    while ((m = re.exec(html))) {
-      if (/\bsrc\s*=/.test(m[1]) || /type\s*=\s*["']?(?:application\/(?:ld\+)?json|importmap|text\/template)/i.test(m[1])) continue;
-      const lineOffset = html.slice(0, m.index + m[0].indexOf('>') + 1).split('\n').length - 1;
-      try { add(name, scanSource(m[2], { lineOffset })); } catch { /* a non-JS inline block is not a sink */ }
+    for (const { code, lineOffset } of inlineScripts(readFileSync(join(root, name), 'utf8'))) {
+      try { add(name, scanSource(code, { lineOffset })); } catch { /* a non-JS inline block is not a sink */ }
     }
   }
   return res;
+}
+
+/* The inline <script> blocks of a page that run as script (no src, not JSON / an import map / a
+   template), each with the number of lines before it. scripts/output-taint.mjs reads pages through
+   this too, so the two rules agree on what a page's code is. */
+export function inlineScripts(html) {
+  const out = [];
+  /* a comment is not markup: index.html's notes say «the <script> is inserted», and a match that opened
+     there ran to the NEXT </script> and swallowed the real block after it (measured 2026-10-01: the
+     Clarity loader was never read). Blanked in place by the one comment reader, so offsets and line
+     numbers do not move. */
+  html = codeOnly(html, { lang: 'html', offsets: true });
+  /* an end tag may carry blanks or junk before its `>` (</script >, </script\tfoo>) and still close */
+  const re = /<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi; let m;
+  while ((m = re.exec(html))) {
+    if (/\bsrc\s*=/.test(m[1]) || /type\s*=\s*["']?(?:application\/(?:ld\+)?json|importmap|text\/template)/i.test(m[1])) continue;
+    out.push({ code: m[2], lineOffset: html.slice(0, m.index + m[0].indexOf('>') + 1).split('\n').length - 1 });
+  }
+  return out;
 }
 
 export function readLedger() {
