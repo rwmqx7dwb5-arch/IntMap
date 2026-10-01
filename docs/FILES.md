@@ -155,6 +155,12 @@ map-ui.js                         地図の周りの UI（レイヤーレジス�
                                   `styleOf` / `classify` / `find` / `link`——分類器は純粋で「数か」の判定は
                                   `IntMapData` から渡してもらい、凡例と地図の塗りは同じ 1 つの `legend` から
                                   作る）。⚠ データセットとして**登録できなかったことも読者に述べる**
+embed-mode.js                     **埋め込み表示**（`?embed=1`・`&interactive=0` で静止画）。共有リンクに 1 つ足しただけの
+                                  文法（`embedFlags`）・URL の組み立て（`embedUrl` / `appUrl`）・枠の大きさ（`EMBED_SIZES`・
+                                  `EMBED_PX`・`frameSize`）・`<iframe>` コード（`iframeCode`。符号化は IntMapSafe）。埋め込みの
+                                  ときだけ `<html data-embed>` を立て、読み取り専用の門（読者の click・change・キーを地図内で止める）
+                                  と上端右の帯（時計の瞬間・「IntMap で開く」）を作る。window グローバルを持たない
+                                  ——共有パネル・Atlas の `share`・`js/atlas-loader.js` が名前で import する
 geo-import.js                     落とされたファイルを FeatureCollection にする（GeoJSON / KML / KMZ / GPX /
                                   CSV・TSV / WKT）。⚠ **拡張子の一覧を持たない**——容器（zip・gzip・文字
                                   コード）は `js/atlas-attach.js` の `ATL_FILE` に訊き（写さず共有）、文法は

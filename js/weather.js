@@ -2025,7 +2025,12 @@ export function weatherEC(HOST){
            every reader of every old URL. */
         try{ const def=WXM().defaultId();
           LAYERS.forEach(l=>{ if(state[l.id].on&&state[l.id].model&&state[l.id].model!==def) mdl[l.id]=state[l.id].model; }); }catch(_){}
-        const vt=EC().validTime(); if(vt&&EC().index()!==EC().nowIndex()) o.t=vt;
+        /* ⚠ (share-embed-distribution) …AND ONLY WHILE A WEATHER LAYER IS ON, like every other field here. The
+           forecast hour is a property of the weather layers' picture; with none of them on it describes nothing
+           on the map, yet it was written whenever the hour had moved — MEASURED: no `dl-ec-*` box ticked,
+           IntMapECMWF.setIndex(nowIndex()+3) → the share link gained `s={"weatherEC":{"t":…}}`, and every
+           link and embed made after that carried an hour that showed nothing. */
+        const vt=EC().validTime(); if(vt&&anyOn()&&EC().index()!==EC().nowIndex()) o.t=vt;
         if(Object.keys(ops).length) o.op=ops;
         if(Object.keys(mdl).length) o.m=mdl;
         /* ⚠ (#R439) THE TWO SWITCHES THAT ARE NO LONGER CHECKBOXES HAVE TO TRAVEL HERE. The `l=`

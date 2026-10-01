@@ -177,3 +177,177 @@ test('every layer a link can carry: holding the style back costs no layer', asyn
     expect(styleErrors(held.errors), 'no add may reach a style that cannot take it').toEqual([]);
   } finally { await held.ctx.close(); }
 });
+
+/* ══ (share-embed-distribution) THE SAME LINK, OPENED IN A FRAME — AND RESTORED COMPLETELY ═════════════
+ *  Folded into this file rather than a spec of its own (docs/TESTING.md: a new file is charged an
+ *  unmeasured price against both test-budget ceilings, which have no room). Its subject is the one this
+ *  file has — what a share link restores — seen from the embed (`?embed=1`, js/embed-mode.js), which is
+ *  that link in another site's <iframe>. ONE app boot; the frames are the share panel's own preview,
+ *  i.e. exactly the code a reader copies, booted and read back:
+ *    ① the panel's embed tab and Atlas `share` hand over the link / the code themselves
+ *    ② the frame shows only the map, its legends, the instant and the credits (elementFromPoint over the
+ *       whole frame — «visible» is not «on top»), the credits wholly inside a 480×320 frame and uncut,
+ *       the link's camera / layer / instant, no Atlas kernel, and a camera padding of 0 (the phone sheet
+ *       is not drawn in a frame — before the fix 171 px put the shared place 85 px above the middle)
+ *    ③ read-only: a click on the frame's map reaches no renderer `click`, a drag still pans; with
+ *       interactive=0 a drag does nothing
+ *    ④ a shared link naming a layer that flies to its home (NATO, js/layer-home.js) opens at `v=`
+ *       (measured before the fix: `#v=15,50,3…&l=dl-nato` settled at `#v=-48.1019,54.7064,1.20`)
+ *    ⑤ the share-link restorer itself: a link with no `tt` returns the clock to «now» (it used to leave
+ *       1990 on); a second link pasted during a restore is applied, not dropped (the map used to stay on
+ *       the first while the address showed the second); the forecast hour is not written into the link
+ *       while no weather layer is on (it used to be, after any move of the hour)
+ *  ⚠ NOT installHermeticRouting: it reaches for the Atlas kernel in every frame (ensureAtlasOnDemand),
+ *  and whether an embed starts Atlas is one of the things asked. The parent reaches for it itself. */
+const EMBED_STATE = '#v=15.0000,50.0000,3.00,0,0,f&l=dl-nato&tt=1990-06-15';
+async function embedHermetic(ctx) {
+  await ctx.route('**/*', (route) => {
+    let h = ''; try { h = new URL(route.request().url()).hostname; } catch (_) { }
+    if (h === '127.0.0.1' || h === 'localhost' || h === '' || /(^|\.)unpkg\.com$|(^|\.)cdn\.jsdelivr\.net$/.test(h)) return route.continue();
+    return route.abort('blockedbyclient');
+  });
+}
+/* the share-link restore has applied the layer and the instant (the layer pass ends at 3.2 s and a
+   move is saved 400 ms later — wait those out so a later move cannot be read as the restore) */
+async function stateRestored(frame, timeout = 120000) {
+  await frame.waitForFunction(() => {
+    try { const cb = document.getElementById('dl-nato'); const l = window.IntMapBookmark && window.IntMapBookmark.link();
+      return !!(window.__imap && cb && cb.checked && l && /[#&]tt=1990-06-15/.test(l)); } catch (_) { return false; }
+  }, null, { timeout });
+  await frame.waitForTimeout(3800);
+}
+const camOf = (frame) => frame.evaluate(() => { const c = window.__imap.getCenter(); return { lng: c.lng, lat: c.lat, z: window.__imap.getZoom(), pad: window.__imap.getPadding() }; });
+/* boot the panel's preview for the given options and hand back the frame */
+async function preview(page, opts) {
+  await page.evaluate(async (o) => { if ((await window.IntMapShare.open(Object.assign({ tab: 'embed' }, o))) !== true) throw new Error('the Embed tab was not built'); }, opts);
+  await page.locator('#share-panel .sh-pvbtn').evaluate((b) => b.click());
+  const el = page.locator('#share-panel .sh-pv iframe');
+  await expect(el).toHaveCount(1);
+  const frame = await (await el.elementHandle()).contentFrame();
+  await stateRestored(frame);
+  return { el, frame, src: await el.getAttribute('src') };
+}
+
+test('share-embed-distribution: the share link in a frame shows only the map, read-only, exactly as linked — and the restorer applies a link completely', async ({ browser }) => {
+  test.setTimeout(300000);
+  const ctx = await browser.newContext({ storageState: seededStorageState(), viewport: { width: 1280, height: 800 } });
+  await embedHermetic(ctx);
+  const page = await ctx.newPage();
+  await page.goto('/' + EMBED_STATE, { waitUntil: 'domcontentloaded' });
+  await stateRestored(page);
+
+  /* ④ the shared view, not the NATO layer's home */
+  const c0 = await camOf(page);
+  expect(c0.lng).toBeCloseTo(15, 3); expect(c0.lat).toBeCloseTo(50, 3); expect(c0.z).toBeCloseTo(3, 2);
+
+  /* ③'s control: the same kind of click IS seen by the renderer in the app, so the frame's zero is not a dead counter */
+  await page.evaluate(() => { window.__appClicks = 0; window.IntMapGeoEngine.events.on('click', () => { window.__appClicks++; }); });
+  const mb = await page.locator('#map').boundingBox();
+  await page.mouse.click(mb.x + mb.width * 0.55, mb.y + mb.height * 0.6);
+  await expect.poll(() => page.evaluate(() => window.__appClicks)).toBeGreaterThan(0);
+  await page.keyboard.press('Escape');
+
+  /* ① Atlas and the panel hand over the values themselves */
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const atl = await page.evaluate(async () => {
+    const a = await window.IntMapAtlas.call('dispatch', { type: 'share' });
+    const b = await window.IntMapAtlas.call('dispatch', { type: 'share', embed: true, size: 'small' });
+    const p = document.getElementById('share-panel');
+    return { a: { ok: !!a.ok, html: String(a.html || '') }, b: { ok: !!b.ok, html: String(b.html || '') },
+      link: window.IntMapBookmark.link(), code: p.querySelector('.sh-code').value, size: p.querySelector('.sh-size').value,
+      tab: p.querySelector('.sh-tab[aria-selected="true"]').dataset.tab };
+  });
+  expect(atl.a.ok).toBe(true);
+  expect(atl.a.html).toContain(esc(atl.link));
+  expect(atl.b.ok).toBe(true);
+  expect(atl.tab, 'the panel shows the tab Atlas answered from').toBe('embed');
+  expect(atl.size).toBe('small');
+  expect(atl.b.html).toContain(esc(atl.code));
+  expect(atl.code).toMatch(/width="480" height="320"/);
+  const src = new URL(/src="([^"]+)"/.exec(atl.code)[1].replace(/&amp;/g, '&'));
+  expect(src.searchParams.get('embed')).toBe('1');
+  expect(src.hash, 'the code carries exactly the hash the address bar holds').toBe(new URL(atl.link).hash);
+
+  /* ② the frame, booted from that code */
+  const { el, frame, src: fsrc } = await preview(page, { size: 'small', interactive: true });
+  expect(new URL(fsrc).hash).toBe(new URL(atl.link).hash);
+  expect(await frame.evaluate(() => document.documentElement.dataset.embed)).toBe('1');
+  await frame.waitForFunction(() => { const s = document.getElementById('boot-splash'); return !s || !s.isConnected || getComputedStyle(s).display === 'none' || getComputedStyle(s).opacity === '0'; }, null, { timeout: 60000 }).catch(() => { });
+  const seen = await frame.evaluate(() => {
+    const KEEP = '#map, .data-legend, .koppen-legend, #map-credit, #im-embed-bar, #boot-splash';
+    const stray = new Set();
+    for (let x = 4; x < innerWidth; x += 16) for (let y = 4; y < innerHeight; y += 16) {
+      const e = document.elementFromPoint(x, y); if (e && !e.closest(KEEP)) stray.add(e.tagName + '#' + e.id + '.' + String(e.className).slice(0, 40));
+    }
+    const cr = document.getElementById('map-credit'), r = cr.getBoundingClientRect();
+    const bar = document.getElementById('im-embed-bar');
+    return { w: innerWidth, h: innerHeight, stray: [...stray], credit: { text: cr.innerText, top: r.top, bottom: r.bottom, right: r.right, cut: cr.scrollWidth > cr.clientWidth + 1 },
+      bar: bar.innerText, open: bar.querySelector('a').href, atlas: typeof window.IntMapConsole };
+  });
+  expect([seen.w, seen.h]).toEqual([480, 320]);
+  expect(seen.stray, 'nothing but the map, legends, credits and the embed bar is on screen').toEqual([]);
+  expect(seen.credit.text).toContain('©');
+  expect(seen.credit.top).toBeGreaterThanOrEqual(0);
+  expect(seen.credit.bottom).toBeLessThanOrEqual(seen.h + 0.5);
+  expect(seen.credit.right).toBeLessThanOrEqual(seen.w + 0.5);
+  expect(seen.credit.cut, 'the credit line wraps instead of being clipped').toBe(false);
+  expect(seen.bar).toMatch(/1990/);
+  expect(new URL(seen.open).searchParams.get('embed'), '「Open in IntMap」 opens the app').toBeNull();
+  expect(new URL(seen.open).hash).toContain('l=dl-nato');
+  expect(seen.atlas, 'no Atlas kernel in a frame').toBe('undefined');
+  const f0 = await camOf(frame);
+  expect(f0.lng).toBeCloseTo(15, 3); expect(f0.lat).toBeCloseTo(50, 3); expect(f0.z).toBeCloseTo(3, 2);
+  expect(f0.pad.bottom, 'the hidden phone sheet pads nothing').toBe(0);
+
+  /* ③ read-only, with the reader's own (trusted) pointer: the frame is scaled into the panel, so frame
+     coordinates are mapped through its box */
+  const box = await el.boundingBox(), k = box.width / seen.w;
+  const pt = await frame.evaluate(() => { const cv = window.IntMapGeoEngine.render.canvas();
+    for (let fy = 0.5; fy < 0.95; fy += 0.05) for (let fx = 0.9; fx > 0.3; fx -= 0.05) { const x = innerWidth * fx, y = innerHeight * fy; if (document.elementFromPoint(x, y) === cv) return { x, y }; }
+    return null; });
+  expect(pt, 'some of the frame is bare map').not.toBeNull();
+  const px = box.x + pt.x * k, py = box.y + pt.y * k;
+  await frame.evaluate(() => { window.__embClicks = 0; window.IntMapGeoEngine.events.on('click', () => { window.__embClicks++; }); });
+  await page.mouse.click(px, py);
+  await page.mouse.click(px, py, { button: 'right' });
+  await page.waitForTimeout(600);
+  expect(await frame.evaluate(() => window.__embClicks)).toBe(0);
+  expect(await frame.locator('.maplibregl-popup').count()).toBe(0);
+  await page.mouse.move(px, py); await page.mouse.down(); await page.mouse.move(px - 90, py, { steps: 8 }); await page.mouse.up();
+  await page.waitForTimeout(800);
+  expect(Math.abs((await camOf(frame)).lng - f0.lng), 'an interactive embed still pans').toBeGreaterThan(0.5);
+
+  /* ③ a still picture */
+  const still = await preview(page, { size: 'small', interactive: false });
+  expect(await still.frame.evaluate(() => document.documentElement.dataset.embed)).toBe('static');
+  const s0 = await camOf(still.frame);
+  const sb = await still.el.boundingBox();
+  await page.mouse.move(sb.x + sb.width * 0.7, sb.y + sb.height * 0.6); await page.mouse.down();
+  await page.mouse.move(sb.x + sb.width * 0.3, sb.y + sb.height * 0.6, { steps: 8 }); await page.mouse.up();
+  await page.mouse.wheel(0, -600);
+  await page.waitForTimeout(800);
+  const s1 = await camOf(still.frame);
+  expect(s1.lng).toBeCloseTo(s0.lng, 6); expect(s1.z).toBeCloseTo(s0.z, 6);
+  await page.locator('#share-panel .sh-x').evaluate((b) => b.click());
+  await expect(page.locator('#share-panel .sh-pv iframe'), 'closing the panel unloads the second map').toHaveCount(0);
+
+  /* ⑤ the forecast hour is not written while no weather layer is on */
+  const wx = await page.evaluate(() => { const E = window.IntMapECMWF; E.setIndex(E.nowIndex() + 3);
+    const on = [...document.querySelectorAll('input[id^="dl-ec-"]')].some((x) => x.checked);
+    const c = window.IntMapShareState.collect(); return { on, weather: !!(c && c.weatherEC && c.weatherEC.t) }; });
+  expect(wx.on).toBe(false);
+  expect(wx.weather, 'no weather layer, no forecast hour in the link').toBe(false);
+
+  /* ⑤ a link with no `tt` is a link at «now» */
+  await page.evaluate(() => { location.hash = '#v=20.0000,40.0000,4.00,0,0,f'; });
+  await expect.poll(() => page.evaluate(() => window.IntMapBookmark.link()), { timeout: 15000 }).not.toMatch(/tt=/);
+  expect((await camOf(page)).lng).toBeCloseTo(20, 3);
+
+  /* ⑤ two links 0.8 s apart: the second is applied once the first has finished, not dropped */
+  await page.waitForTimeout(3800);
+  await page.evaluate(() => { location.hash = '#v=30.0000,10.0000,4.00,0,0,f'; });
+  await page.waitForTimeout(800);
+  await page.evaluate(() => { location.hash = '#v=-60.0000,-10.0000,4.00,0,0,f'; });
+  await expect.poll(async () => Math.round((await camOf(page)).lng), { timeout: 15000 }).toBe(-60);
+  await ctx.close();
+});

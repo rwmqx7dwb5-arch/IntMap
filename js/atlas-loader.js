@@ -102,7 +102,13 @@ window.IntMapAtlas = (function () {
         const phone = /Mobi|Android|iPhone|iPad/.test(navigator.userAgent);
         let save = false;
         try { const c = navigator.connection; save = !!(c && (c.saveData === true || /(^|-)2g$/.test(c.effectiveType || ''))); } catch (_) { }
-        if (!phone && !save) {
+        /* ⚠ (share-embed-distribution) …AND NOT IN AN EMBED. An embed (?embed=1, js/embed-mode.js) is a
+           read-only frame on somebody else's page with no Atlas panel in it, so the 658 kB warm-up would
+           be downloaded and parsed for nothing in every frame, on every page that carries one. A reader
+           who wants Atlas follows 「Open in IntMap」, which is the app and warms it as above.
+           The question is js/ui-device.js `embedded()` — the one answer every start-up path reads. */
+        const embed = window.IntMapDevice.embedded();
+        if (!phone && !save && !embed) {
           /* ⚠ A PLAIN TIMER, NOT `requestIdleCallback`. An idle callback on a page whose main thread
              never goes quiet fires only at its timeout, and stacking that on top of the map's own
              `idle` made the warm-up arrive tens of seconds late (measured: three browser specs timed
