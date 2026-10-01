@@ -1553,6 +1553,8 @@ scripts/
                                   （USB ミラーが読む）／`unlink`（`worktree.mjs done`）／`materialize`／`publish`
                                   （`npm run data:publish`）。中身の sha256 の定義と、ストアが OneDrive の外である
                                   ことの強制はここが正本。⚠ 置けない・目録と違うときは集合と理由を言って exit 1
+  migration-order.mjs             追加された migration が base の最新より**後に並ぶか**（check:static の規則 `migration-order`）。本番の
+                                  `supabase db push` は記録済みより古い migration を適用しないので、並行 PR が同じ「次」を取ると壊れる
   site-url.mjs                    **本番のアドレス**（`supabase/functions/_shared/site-origin.js`）を import できない読み手
                                   （workflow）に印字し、正本以外に綴られていれば拒む（`check:static` の `site-address`）。
                                   `--write` は文書の `[site:<path>]: <url>` 定義を描き直す。Vite の
