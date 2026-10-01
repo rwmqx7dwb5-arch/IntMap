@@ -1,5 +1,6 @@
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy; see js/atlas-persona.js */
 import { jsonWithin } from './fetch-deadline.js';   /* (#R452) Nominatim, with a clock — see the file header there */
+import { requestFix } from './locate-me.js';   /* (installable-app) the ONE reading of the device position — `_selfLoc` below */
 import { NominatimGate } from './nominatim-gate.js';   /* (#R489) …and with the app's ONE one-a-second floor in front of it. Both calls below used to go straight out, so fourteen Atlas oblast outlines left as fast as the network took them. */
 /* ============================================================================
  *  IntMap · Atlas — place / region resolution and camera framing  (#R199)
@@ -295,13 +296,15 @@ export function makeAtlasGeoResolve(HOST, CTX) {
       .map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))
       .sort((a,b)=>b.length-a.length).join('|')+')\\s*$','i');
     let _selfLocCache=null,_selfLocT=0;
-    function _selfLoc(){ return new Promise(res=>{ try{
-        if(_selfLocCache && Date.now()-_selfLocT<300000) return res(_selfLocCache);
-        if(!navigator.geolocation) return res(null);
-        navigator.geolocation.getCurrentPosition(
-          p=>{ res(_selfLocSeed({lng:+p.coords.longitude,lat:+p.coords.latitude,acc:+p.coords.accuracy||0})); },
-          ()=>res(null), {enableHighAccuracy:true,timeout:20000,maximumAge:0});   /* (#R170) GPS-grade fix, never a cached one — the 5-min _selfLocCache above still avoids re-prompting */
-      }catch(_){ res(null); } }); }
+    /* (installable-app) THE READING IS js/locate-me.js's — the same permission pre-check, budget and
+       GPS-grade fix (#R170) view.locate uses. A refusal of any kind is still `null` to this caller:
+       geocode() below turns it into the reader-visible miss. */
+    const SELFLOC_MAX_AGE_MS=300000;   /* (#R85) the five minutes this cache has always kept a fix */
+    async function _selfLoc(){ try{
+        if(_selfLocCache && Date.now()-_selfLocT<SELFLOC_MAX_AGE_MS) return _selfLocCache;
+        const fix=await requestFix();
+        return fix.ok?_selfLocSeed(fix):null;
+      }catch(_){ return null; } }
     /* (#R413) a fix obtained ELSEWHERE (the my_location capability) becomes this cache, so the very
        next 「現在地から…」 resolves from memory instead of putting a second permission prompt in front
        of the reader for a position IntMap already has. */

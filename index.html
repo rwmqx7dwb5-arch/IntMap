@@ -209,6 +209,25 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
 
   <meta property="og:type" content="website">
 
+  <!-- ══ (installable-app) IntMap AS AN INSTALLED APP ═══════════════════════════════════════════
+       PRODUCT.md said 「PWA としても入る」 and none of this existed. The manifest and the icons are
+       GENERATED (scripts/build-app-manifest.mjs) from this document's <title>, the --bg-color tokens in
+       css/intmap.css and IntMap.Icon.png; the three values repeated below in markup are compared with
+       the same sources by `node scripts/build-app-manifest.mjs --check`, so they cannot drift.
+       `vite-ignore`: Vite would otherwise hash the manifest into assets/, where the relative icon paths
+       and start_url inside it would resolve against the wrong directory — they are copied verbatim
+       instead (vite.config.js STATIC_ASSETS). theme-color follows the OS scheme the inline script above
+       also falls back to; an in-app choice is applied over it at run time by js/installable-app.js. -->
+  <link rel="manifest" href="manifest.webmanifest" vite-ignore>
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" vite-ignore>
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" vite-ignore>
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="IntMap">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
   <!-- ══ (#R205) THE SAVED THEME DECIDES THE FIRST FRAME, NOT ONLY THE OS ═══════════════════════════
        「ライトモード時に表示する読み込み画面でのロゴはIntMap.Icon_BW-inverted.pngに。」
 
@@ -488,6 +507,10 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
       </div>
       <!-- (#R480) 方位磁針は直下の子＝3行目に単独。id/class/title は不変（7つの呼び出し元は行を知らない）— 丸型と glass は css `.compass-btn` -->
       <button class="compass-btn" id="btn-compass" title="Reset North" data-i18n-title="ttlResetNorth"><svg class="compass-svg" width="34" height="34" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="16.8" fill="none" stroke="currentColor" stroke-opacity="0.16" stroke-width="1"/><path d="M36 20h-2.4M20 36v-2.4M4 20h2.4M20 4v2.4" stroke="currentColor" stroke-opacity="0.34" stroke-width="1.6" stroke-linecap="round"/><path d="M31.31 8.69l-1.11 1.11M31.31 31.31l-1.11-1.11M8.69 31.31l1.11-1.11M8.69 8.69l1.11 1.11" stroke="currentColor" stroke-opacity="0.2" stroke-width="1.1" stroke-linecap="round"/><polygon points="20,7.4 14.5,20 20,20" fill="#ff453a"/><polygon points="20,7.4 25.5,20 20,20" fill="#d2312a"/><polygon points="20,32.6 14.5,20 20,20" fill="currentColor" fill-opacity="0.32"/><polygon points="20,32.6 25.5,20 20,20" fill="currentColor" fill-opacity="0.6"/><circle cx="20" cy="20" r="2.5" fill="currentColor" fill-opacity="0.14"/><circle cx="20" cy="20" r="1.15" fill="currentColor" fill-opacity="0.72"/></svg></button>
+      <!-- (installable-app) 「現在地へ移動」 on the desktop: the twin of the phone's #m-fab-locate, under the compass
+           as that one is, with the same dart (outline until the map centre is ON the fix, solid when it is —
+           the `.on` class the live-location marker toggles). The reading is js/locate-me.js's. -->
+      <button class="compass-btn locate-btn" id="btn-locate" type="button" aria-label="My location" data-i18n-aria="ttlMyLocation" title="My location" data-i18n-title="ttlMyLocation"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><polygon points="20.6,3.4 3.4,10.2 11.1,12.9 13.8,20.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
     </div>
     <div id="map"></div>
     <canvas id="wind-canvas"></canvas>
@@ -706,6 +729,13 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     </div>
     <div class="settings-sech" data-i18n="setSecAbout">About &amp; support</div>
     <div class="settings-sec">
+    <!-- (installable-app) 「アプリとして追加」. Hidden until js/installable-app.js knows this browser can do it:
+         the button where Chromium handed over its install prompt, the one sentence on iOS (whose only path is
+         Safari's Share sheet), and nothing at all where neither exists or IntMap is already installed. -->
+    <div class="setting-group" id="setting-install-group" hidden><label data-i18n="lblInstallApp">App</label>
+      <button type="button" id="setting-install-app" class="ai-test-btn" style="width:100%;" data-i18n="installAppBtn" hidden>Add IntMap as an app</button>
+      <div class="sat-keys-hint" id="setting-install-ios" data-i18n="installAppIos" hidden>To add IntMap to your Home Screen, tap Share in Safari, then “Add to Home Screen”.</div>
+    </div>
     <!-- ⚠ (#R215) ONE ENTRY, AND IT IS THE PAGE. 「アプリ内で簡易一覧を見る←ふざけんじゃねえよ」
          #R213 put the page first and kept the in-app list as a secondary line underneath. Offering a
          "quick list" beside the real thing is offering the reader a worse version of the same answer
@@ -905,6 +935,10 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
        DOMContentLoaded — the same point in the boot the classic tag block used to reach.
      `npm run dev` serves this file from source with HMR; `npm run build` emits the hashed, minified,
      code-split tree in dist/ that GitHub Pages publishes. -->
+<!-- (installable-app) THE OFFLINE NOTICE. An installed IntMap opened with no network draws its shell and none
+     of what a layer had to download; this says so, so an empty map is not read as a calm world. Shown and
+     worded by js/installable-app.js; the words are keyed, so a language switch re-words it. -->
+<div class="im-reload im-offline" id="im-offline" role="status" hidden><span id="im-offline-now" data-i18n="offlineNow" hidden>You’re offline. Anything IntMap could not download is not shown until you reconnect.</span><span id="im-offline-back" data-i18n="offlineBack" hidden>You’re back online. Reload to download what could not be fetched.</span><button type="button" id="im-offline-reload" data-i18n="offlineReload" hidden>Reload</button></div>
 <script type="module" src="/src/main.js"></script>
 <!-- (#R156) KaTeX — ChatGPT-quality math rendering for Atlas replies (inline/display math, matrices, fractions,
      sub/superscripts). VERSION-PINNED on jsDelivr (already in the script-src allowlist; style-src/font-src are

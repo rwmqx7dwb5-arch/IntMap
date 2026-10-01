@@ -10,6 +10,10 @@
  *  z/x/y, and dated/satellite URLs carry the date, so a cache hit is always valid).
  *  Only CORS-clean responses are stored, so MapLibre can still render them to WebGL
  *  without tainting the canvas. A soft LRU cap keeps the cache from growing forever.
+ *
+ *  (installable-app) …AND A COPY OF THE APP ITSELF, for one purpose: an installed IntMap that is
+ *  opened with no network opens. See APP_SHELL below — what it holds, what it answers, and the two
+ *  things it deliberately does NOT do (answer a navigation while online; revalidate a hashed file).
  * ========================================================================== */
 /* ══ ⚠⚠ (#R224) A CACHE-FIRST STORE WITH NO EXPIRY AND NO VERSION CANNOT HEAL ═══════════════════════
  *  「キャッシュの残っているブラウザで開くと、地図が全くちゃんと表示されない」——報告は二つの症状で、
@@ -33,7 +37,17 @@ const CACHE = 'intmap-tiles-v2';
 /* A cache whose name starts with this belongs to the page (js/), which writes and expires it itself;
    activate never deletes it. Every other name but CACHE is this worker's past or a stranger's. */
 const PAGE_CACHE_PREFIX = 'intmap-page-';
-const keepOnActivate = (name) => name === CACHE || String(name).startsWith(PAGE_CACHE_PREFIX);
+/* ══ (installable-app) THE APP SHELL — WHAT OPENS IntMap WITHOUT A NETWORK ════════════════════════
+   The literal below is EMPTY in the repository and filled by the build (scripts/app-shell.mjs, run from
+   vite.config.js): the build stamp, and the files the app needs to open, derived from the eager module
+   graph check:perf already measures — never typed. `immutable` are bundler outputs whose name is their
+   content; `mutable` are the manifest and its icons. A worker that was never built (the dev server)
+   has no build, so it caches no shell and answers nothing below: the tile cache is all it is.
+   The cache is named for the build, so a new deploy is a new worker whose activate drops the old shell
+   with every other name that is not its own — the #R16 rule, unchanged. */
+const APP_SHELL = /*__INTMAP_APP_SHELL__*/{ build: '', immutable: [], mutable: [] }/*__INTMAP_APP_SHELL_END__*/;
+const SHELL_CACHE = APP_SHELL.build ? 'intmap-shell-' + APP_SHELL.build : '';
+const keepOnActivate = (name) => name === CACHE || (!!SHELL_CACHE && name === SHELL_CACHE) || String(name).startsWith(PAGE_CACHE_PREFIX);
 /* (#R178) 4000 → 12000. The cap is what makes a REVISIT free, and 4000 was set before the DEM
    reached terrarium's native z15 (#R20) and before 3-D became a normal way to use the app: one
    tilted city view at z15 is already several hundred DEM tiles on top of its imagery, so a session
@@ -218,13 +232,109 @@ function isStale(hit, url) {
   return (Date.now() - t) > maxAgeFor(url);
 }
 
-self.addEventListener('install', (e) => { self.skipWaiting(); });
+self.addEventListener('install', (e) => { self.skipWaiting(); e.waitUntil(precacheShell()); });
+
+/* ── (installable-app) the shell: where it lives, and filling it ─────────────────────────────────── */
+function shellScope() { try { return (self.registration && self.registration.scope) || ''; } catch (_) { return ''; } }
+let _shellIndex = null;                   /* absolute URL → true when the bundler named it by its content */
+function shellIndex() {
+  if (_shellIndex || !SHELL_CACHE) return _shellIndex;
+  const scope = shellScope(); if (!scope) return null;
+  _shellIndex = new Map();
+  for (const f of APP_SHELL.immutable) _shellIndex.set(new URL(f, scope).href, true);
+  for (const f of APP_SHELL.mutable) _shellIndex.set(new URL(f, scope).href, false);
+  return _shellIndex;
+}
+/* the document is the scope itself (start_url './') or its index.html — the app, and no other page */
+function isAppDocument(url) {
+  const scope = shellScope(); if (!scope) return false;
+  try { const u = new URL(url); const p = u.origin + u.pathname; return p === scope || p === scope + 'index.html'; } catch (_) { return false; }
+}
+/* ⚠ NEVER FAILS THE INSTALL. A worker whose install rejects is not installed at all, and the tile cache
+   would go with it; a shell that could not be filled only means the offline open is not available yet. */
+async function precacheShell() {
+  try {
+    if (!SHELL_CACHE) return;
+    const scope = shellScope(), idx = shellIndex(); if (!scope || !idx) return;
+    const cache = await caches.open(SHELL_CACHE);
+    /* ⚠ THE DOCUMENT HAS TO BE THIS BUILD'S. GitHub Pages answers max-age=600 on every response
+       (#R465), so the HTTP cache can hold the previous deploy's index.html for ten minutes after this
+       worker's own deploy — and a stored document naming another build's assets is the dead page
+       #R465 exists to prevent. `reload` bypasses that cache, and the stamp is checked anyway. */
+    try {
+      const doc = await fetch(scope, { cache: 'reload', credentials: 'same-origin' });
+      if (doc && doc.ok && (await doc.clone().text()).indexOf(APP_SHELL.build) >= 0) await cache.put(scope, doc);
+    } catch (_) {}
+    /* A hashed file the previous build's shell already holds is the same bytes under the same name, so it
+       is carried over rather than downloaded again — a deploy that changed one chunk costs one chunk.
+       (`caches.match` searches every cache; the previous shell is purged only at activate, after this.) */
+    await Promise.all([...idx.entries()].map(async ([u, immutable]) => {
+      try {
+        if (await cache.match(u)) return;
+        const prev = immutable ? await caches.match(u) : null;
+        if (prev) { await cache.put(u, prev); return; }
+        const r = await fetch(u, { credentials: 'same-origin' });
+        if (r && r.ok) await cache.put(u, r);
+      } catch (_) {}
+    }));
+  } catch (_) {}
+}
+/* clients whose document THIS worker answered from the shell — the page asks (`shell-status`) so it can
+   say «offline» rather than look like a map that simply has nothing on it */
+const _openedFromShell = new Set();
+/* ══ WHAT THE SHELL ANSWERS ═════════════════════════════════════════════════════════════════════
+   ⚠ A NAVIGATION ONLY WHEN THE BROWSER SAYS IT IS OFFLINE. DECISIONS.md records why this worker does
+   not own navigations: on every warm start it would add a round trip, and a fault in the handler would
+   lock out every returning reader — where the inline recovery in index.html (#R465) costs a healthy
+   start nothing. Both reasons are about the ONLINE path, and online this returns without answering:
+   the browser navigates exactly as it did before this file had a shell. Offline the alternative to an
+   answer is the browser's own error page, so there is nothing for a fault here to lock anyone out of.
+   ⚠ A HASHED FILE FROM THE SHELL, NEVER REVALIDATED: its name is its content, so a stored copy is
+   correct for as long as anything names it. The manifest and its icons keep their names across
+   builds, so those are answered from the shell and refreshed behind the answer (stale-while-revalidate).
+   A miss goes to the network exactly as before. */
+function answerFromShell(event) {
+  if (!SHELL_CACHE) return false;
+  const req = event.request;
+  if (req.mode === 'navigate') {
+    if (!isAppDocument(req.url)) return false;
+    if (!(self.navigator && self.navigator.onLine === false)) return false;
+    event.respondWith((async () => {
+      const hit = await (await caches.open(SHELL_CACHE)).match(shellScope());
+      if (hit) { if (event.resultingClientId) _openedFromShell.add(event.resultingClientId); return hit; }
+      return fetch(req);                   /* nothing stored: the browser's own offline page, as before */
+    })());
+    return true;
+  }
+  const idx = shellIndex(); if (!idx) return false;
+  const url = req.url.split('#')[0];
+  if (!idx.has(url)) return false;
+  const immutable = idx.get(url);
+  event.respondWith((async () => {
+    const cache = await caches.open(SHELL_CACHE);
+    const hit = await cache.match(url);
+    const refresh = () => fetch(req).then(async (r) => { if (r && r.ok) await cache.put(url, r.clone()); return r; });
+    if (hit) { if (!immutable) event.waitUntil(refresh().catch(() => {})); return hit; }
+    return refresh();
+  })());
+  return true;
+}
+self.addEventListener('message', (event) => {
+  const d = event.data;
+  if (!d || d.type !== 'shell-status') return;
+  event.waitUntil((async () => {
+    if (!(await senderIsOurWindow(event))) return;
+    const id = (event.source && event.source.id) || '';
+    try { event.source.postMessage({ type: 'shell-status', build: APP_SHELL.build, openedFromShell: _openedFromShell.has(id) }); } catch (_) {}
+  })());
+});
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
-    // Drop EVERY cache except the current tile cache and the page's own data caches. This SW only ever
-    // caches immutable tiles (never the HTML/app shell), but purging any legacy cache name too guarantees
-    // a stale index.html can't survive here and resurface as an "old version" (#R16 先祖返り defence on the
-    // hosted path). (#R189) 'intmap-subcables-v1' is written by PAGE JS as the offline copy of the
+    // Drop EVERY cache except the current tile cache, THIS build's shell and the page's own data caches.
+    // (installable-app) The shell is named for its build, so the previous deploy's index.html and assets
+    // are purged here the moment this worker activates, and a stale index.html can't survive and resurface
+    // as an "old version" (#R16 先祖返り defence on the hosted path) — the shell only ever answers a
+    // navigation while the browser is offline (see answerFromShell). (#R189) 'intmap-subcables-v1' is written by PAGE JS as the offline copy of the
     // submarine-cable GeoJSON (#R188) — deleting it here on every deploy silently re-created the
     // 「片方しかつかない」 outage window this SW was never meant to own. Keep page-owned intmap-* caches.
     // ⚠ OWNERSHIP IS READ FROM THE NAME, NOT FROM A LIST OF EXCEPTIONS. #R189 excepted the one page
@@ -286,7 +396,8 @@ async function trim(cache, force) {
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  if (req.method !== 'GET' || !isTileRequest(req.url)) return;   // let everything else hit the network normally
+  if (req.method !== 'GET') return;
+  if (!isTileRequest(req.url)) { answerFromShell(event); return; }   // (installable-app) the shell, else the network as always
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);

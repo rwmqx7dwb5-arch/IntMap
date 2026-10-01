@@ -2339,3 +2339,112 @@ test('R766 ③ every door is reachable on a phone viewport too', async () => {
       .catch(() => { /* restore is courtesy — nothing below asserts on the layout */ });
   }
 });
+
+/* ══ (installable-app) INTMAP AS AN INSTALLED APP, ASKED OF THE BROWSER ══════════════════════════
+   PRODUCT.md §1 said 「PWA としても入る」 while there was no manifest. tests/installable-app-checks.test.mjs
+   evaluates the generator, the shell list and the worker in Node; these ask Chromium what only it can
+   answer. ⚠ IN THIS SUITE, NOT A FILE OF THEIR OWN (docs/TESTING.md: a new spec file is charged to the
+   gate's ceiling at the unmeasured p75): ①–④ reuse the boot above. ⑤ is the one that cannot — the
+   suite's context blocks service workers (playwright.config.js), and the subject IS the worker — so it
+   pays for a second boot in a context of its own, and runs last. */
+const IA_TOKYO = { latitude: 35.6812, longitude: 139.7671, accuracy: 30 };
+const iaCentreOff = () => page.evaluate((t) => { const c = window.IntMapGeoEngine.camera.getCenter(); return Math.hypot(c.lng - t.longitude, c.lat - t.latitude); }, IA_TOKYO);
+const iaMarker = () => page.evaluate(() => {
+  try { const f = window.IntMapLocate.last(); return { fix: f ? [f.lng, f.lat, f.acc] : null, circle: window.IntMapGeoEngine.layers.hasSource('imloc-acc') }; } catch (_) { return { fix: null, circle: false }; }
+});
+const iaAway = () => page.evaluate(() => { try { window.IntMapLocate.stop(); } catch (_) {} window.IntMapGeoEngine.camera.jumpTo({ center: [-60, -20], zoom: 3 }); });
+
+test('installable-app ① Chromium parses the manifest and finds nothing that stops installation', async () => {
+  const href = await page.evaluate(() => document.querySelector('link[rel="manifest"]').href);
+  expect(href).toMatch(/\/manifest\.webmanifest$/);
+  const cdp = await page.context().newCDPSession(page);
+  try {
+    const mf = await cdp.send('Page.getAppManifest');
+    expect(mf.errors, 'the manifest parses without errors').toEqual([]);
+    const parsed = JSON.parse(mf.data);
+    expect(parsed.name).toBe(await page.evaluate(() => document.querySelector('meta[name="apple-mobile-web-app-title"]').content));
+    for (const ic of parsed.icons) {
+      const r = await page.request.get(new URL(ic.src, href).href);
+      expect(r.status(), ic.src).toBe(200);
+      expect(r.headers()['content-type']).toMatch(/image\/png/);
+    }
+    /* Chromium's own install criteria — the list the address bar's install button reads */
+    await expect.poll(async () => (await cdp.send('Page.getInstallabilityErrors')).installabilityErrors.map((e) => e.errorId),
+      { timeout: 30_000, message: 'the page is installable' }).toEqual([]);
+  } finally { await cdp.detach().catch(() => {}); }
+  expect(await page.evaluate(() => ({ apple: !!document.querySelector('link[rel="apple-touch-icon"]'), themes: document.querySelectorAll('meta[name="theme-color"]').length })))
+    .toEqual({ apple: true, themes: 2 });
+});
+
+test('installable-app ② Atlas\'s view.locate moves the map to the device and draws the live marker from the SAME reading', async () => {
+  const ctx = page.context();
+  await ctx.grantPermissions(['geolocation']);
+  await ctx.setGeolocation(IA_TOKYO);
+  await iaAway();
+  const res = await page.evaluate(() => window.IntMapConsole.dispatch({ type: 'locate' }));
+  expect(res && res.ok, JSON.stringify(res)).toBe(true);
+  expect(res.exec).toMatchObject({ lat: IA_TOKYO.latitude, lng: IA_TOKYO.longitude, provenance: 'device_location' });
+  await expect.poll(iaCentreOff, { timeout: 20_000 }).toBeLessThan(0.01);
+  /* the marker is drawn from the fix view.locate handed over — not from a second reading of the sensor */
+  await expect.poll(iaMarker, { timeout: 20_000 }).toEqual({ fix: [IA_TOKYO.longitude, IA_TOKYO.latitude, IA_TOKYO.accuracy], circle: true });
+});
+
+test('installable-app ③ the desktop control under the compass does the same, and lights up only when the map is on the fix', async () => {
+  await page.context().grantPermissions(['geolocation']);
+  await page.context().setGeolocation(IA_TOKYO);
+  await iaAway();
+  const btn = page.locator('#btn-locate');
+  await expect(btn).toBeVisible();
+  await expect(btn).not.toHaveClass(/\bon\b/);
+  await btn.click();
+  await expect.poll(iaCentreOff, { timeout: 20_000 }).toBeLessThan(0.01);
+  await expect.poll(iaMarker, { timeout: 20_000 }).toEqual({ fix: [IA_TOKYO.longitude, IA_TOKYO.latitude, IA_TOKYO.accuracy], circle: true });
+  await expect(btn).toHaveClass(/\bon\b/, { timeout: 10_000 });
+  await page.evaluate(() => window.IntMapGeoEngine.camera.jumpTo({ center: [-60, -20] }));
+  await expect(btn).not.toHaveClass(/\bon\b/, { timeout: 10_000 });
+  await page.evaluate(() => { try { window.IntMapLocate.stop(); } catch (_) {} });
+});
+
+test('installable-app ④ a refused permission is said as a refusal, not swallowed', async () => {
+  await page.context().clearPermissions();
+  /* headless Chromium answers an ungranted geolocation as PERMISSION_DENIED */
+  const res = await page.evaluate(() => window.IntMapConsole.dispatch({ type: 'locate' }));
+  expect(res.ok).toBe(false);
+  expect(String(res.html || '')).toMatch(/denied|blocked/i);
+});
+
+test('installable-app ⑤ with the shell filled, the app opens offline and says so — and says when it is back', async ({ browser }) => {
+  test.setTimeout(240_000);
+  const context = await browser.newContext({ storageState: seededStorageState(), serviceWorkers: 'allow' });
+  await installHermeticRouting(context);
+  try {
+    const p = await context.newPage();
+    await p.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await p.waitForFunction(() => !!(navigator.serviceWorker && navigator.serviceWorker.controller), null, { timeout: 60_000 });
+    /* the worker has filled its shell: the document and every file the build wrote into dist/sw.js */
+    const filled = await (await p.waitForFunction(async () => {
+      const lit = /\/\*__INTMAP_APP_SHELL__\*\/(.*?)\/\*__INTMAP_APP_SHELL_END__\*\//s.exec(await (await fetch('sw.js')).text());
+      const shell = JSON.parse(lit[1]);
+      if (!shell.build) return { error: 'dist/sw.js carries no build — the shell was not injected' };
+      const scope = (await navigator.serviceWorker.ready).scope;
+      const keys = (await (await caches.open('intmap-shell-' + shell.build)).keys()).map((r) => r.url);
+      const want = [scope, ...shell.immutable, ...shell.mutable].map((f) => new URL(f, scope).href);
+      return want.every((u) => keys.includes(u)) ? { files: want.length } : false;
+    }, null, { timeout: 90_000, polling: 1000 })).jsonValue();
+    expect(filled.error, filled.error).toBeUndefined();
+    expect(filled.files).toBeGreaterThan(5);
+
+    await context.setOffline(true);
+    await p.reload({ waitUntil: 'domcontentloaded' });
+    await expect(p).toHaveTitle(/IntMap/);
+    /* the module graph ran out of the shell: js/installable-app.js is what shows the notice */
+    await expect(p.locator('#im-offline')).toBeVisible({ timeout: 60_000 });
+    await expect(p.locator('#im-offline-now')).toBeVisible();
+    await expect(p.locator('#im-offline-reload')).toBeHidden();
+
+    await context.setOffline(false);
+    await expect(p.locator('#im-offline-back')).toBeVisible({ timeout: 30_000 });
+    await expect(p.locator('#im-offline-now')).toBeHidden();
+    await expect(p.locator('#im-offline-reload')).toBeVisible();
+  } finally { await context.close().catch(() => {}); }
+});

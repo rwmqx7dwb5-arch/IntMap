@@ -35,7 +35,16 @@ admin.html                      管理コンソール（geo_pins / dashboard_car
                                 バンドラを通らない独立ページ。Supabase SDK は同梱版を読む
 sw.js                           Service Worker。タイル等のキャッシュとオフライン補助。キャッシュ名は
                                 バージョン付きで、activate が旧世代を消す。cache-first の対象は
-                                「自分が知っているホストの、不変なタイル」だけに限定する
+                                「自分が知っているホストの、不変なタイル」だけに限定する。
+                                ＋**アプリ本体の殻（app shell）**: ビルドが書き込む一覧（scripts/app-shell.mjs）を
+                                install で貯め、ハッシュ付きの資産は殻から、manifest とアイコンは
+                                stale-while-revalidate で答える。**文書（navigation）はブラウザがオフラインと
+                                言うときだけ**殻から答える（オンラインでは触らない）。殻はビルドごとに名前が変わる
+manifest.webmanifest            Web App Manifest（インストール可能にする）。**生成物**——
+                                scripts/build-app-manifest.mjs が index.html の <title>・説明、css の --bg-color、
+                                IntMap.Icon.png から書く。`--check` が index.html の theme-color 等も照合する
+icons/                          manifest と index.html が名指すアイコン（192 / 512〔maskable 兼用〕/
+                                apple-touch-icon 180）。同じスクリプトの生成物
 science.html / sources.html     読み物2ページ（手法の説明・出典の一覧）。バンドラを通らないので
                                 言語一覧は scripts/i18n-langs.mjs が生成する js/locales/_langs.js から読む
 google….html                    Google Search Console 認証用
@@ -443,6 +452,11 @@ map-tooltip.js                  地図のホバー用ツールチップ 1 面（
                                 反転・`--tip-ax`）は #R175 の本文そのまま。⚠ 出した理由は `tests/r168 #8` の
                                 shell 予算——**天井は上げず、同量以上を外へ出す**（#R195/#R196 の規則）
 map-extras.js                     残りの自己完結した地図表面モジュール
+locate-me.js                      **端末の現在地を 1 回読む唯一の実装** `requestFix()`。許可の事前確認（ブロック済みは
+                                  待たずに言う）・25 秒の予算と外側の見張り・失敗の理由 5 種（unsupported / blocked /
+                                  denied / unavailable / timeout）。文言は持たない（言うのは各入口）。Atlas の
+                                  view.locate・「現在地から…」・map-extras.js の IntMapLocate（携帯 FAB とデスクトップの
+                                  #btn-locate）が使う。読み取った位置は `IntMapLocate.start({fix})` に渡し、同じ要求で 2 回読まない
 map-pick.js                       地図上の1点を拾う window.IntMapPick
 map-typography.js                 このアプリの文字——どの書体が描き、どれだけの幅で出るか
 place-labels.js                   地名・海洋名ラベルと、そのローカライズ。⚠ `name:ja` のうち**上流が壊している組**
@@ -1019,6 +1033,11 @@ aviation-model.js                 provider 正規化・出典・タイル格子�
 
 ```
 mobile-ui.js                      モバイル UI とレスポンシブのシェル
+installable-app.js                **インストールされたアプリとしての頁側**——設定の「アプリとして追加」
+                                  （Chromium の beforeinstallprompt を保持して押されたら出す／iOS は共有シートの
+                                  手順文／どちらも無ければ出さない）、オフライン通知（Service Worker に
+                                  「この文書は殻から開いたか」を訊く・復帰したら再読み込みを促す）、
+                                  アプリ内テーマに合わせた theme-color
 mobile-map-input.js               **指が地図に届く経路 1 面**——長押し（コンテキストメニュー）／中央クロス
                                   ヘア／中心の座標・標高・レイヤー値の読み出し／「地点を追加」ピル。
                                   `js/app-body.js` から**まるごと**出したもので、幾何（#R16 の「シートに
@@ -1718,6 +1737,14 @@ scripts/
   build-stamp.mjs                 **ビルド印**（vite プラグイン）: `index.html` の `__INTMAP_BUILD_STAMP__` を
                                   `<built commit の committer 時刻>Z-<短い sha>` に置き換える。手で上げる印は
                                   上げ忘れられ、古いキャッシュを現行に見せていた。
+  app-shell.mjs                   **Service Worker の殻の一覧**を導出して `dist/sw.js` に書き込む（vite.config.js の
+                                  `appShell` が copyStatic の後に呼ぶ）。build-report の eager 集合＋dist/index.html と
+                                  その manifest が名指すもの＋eager CSS の url()。束ね器の出力は immutable、
+                                  それ以外は mutable。印が無い・名指したファイルが無い・トークンが無いならビルドを落とす
+  build-app-manifest.mjs          `manifest.webmanifest` と `icons/` を書く（`--check` は再導出して照合し、
+                                  index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
+                                  マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
+                                  なるなら 1 ファイルで両方を名乗る
   tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 126 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。

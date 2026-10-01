@@ -274,6 +274,13 @@ IntMapLang.define('jp', { ui: {
     
       ttlLayersPanel:"レイヤー",
       ttlFavorite:"お気に入り",
+      /* (installable-app) 設定のアプリ追加と、オフラインの通知 — js/installable-app.js */
+      lblInstallApp:"アプリ",
+      installAppBtn:"IntMap をアプリとして追加",
+      installAppIos:"ホーム画面に追加するには、Safari の共有ボタンをタップし、「ホーム画面に追加」を選んでください。",
+      offlineNow:"オフラインです。再接続するまで、取得できなかったデータは表示されません。",
+      offlineBack:"オンラインに戻りました。再読み込みすると、取得できなかったデータを読み込みます。",
+      offlineReload:"再読み込み",
       /* (share-embed-distribution) 共有パネルの「リンク／埋め込み」タブと、埋め込み表示そのもの（js/map-ui.js share・js/embed-mode.js） */
       shareTabLink:"リンク",
       shareTabEmbed:"埋め込み",

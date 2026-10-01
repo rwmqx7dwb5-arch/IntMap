@@ -274,6 +274,13 @@ IntMapLang.define('en', { ui: {
     
       ttlLayersPanel:"Layers",
       ttlFavorite:"Favorite",
+      /* (installable-app) the install entry in Settings and the offline notice — js/installable-app.js */
+      lblInstallApp:"App",
+      installAppBtn:"Add IntMap as an app",
+      installAppIos:"To add IntMap to your Home Screen, tap Share in Safari, then “Add to Home Screen”.",
+      offlineNow:"You’re offline. Anything IntMap could not download is not shown until you reconnect.",
+      offlineBack:"You’re back online. Reload to download what could not be fetched.",
+      offlineReload:"Reload",
       /* (share-embed-distribution) the share panel's Link / Embed tabs and the embedded view itself (js/map-ui.js share, js/embed-mode.js) */
       shareTabLink:"Link",
       shareTabEmbed:"Embed",
