@@ -2,7 +2,7 @@
   "eager": {
     "raw": 4666965,
     "gzip": 1537528,
-    "brotli": 1156161,
+    "brotli": 1162576,
     "requests": 9,
     "modules": 293,
     "cssRaw": 360208,
@@ -10,7 +10,7 @@
   },
   "async": {
     "raw": 11596753,
-    "gzip": 3793199,
+    "gzip": 3815212,
     "chunks": {
       "aircraft-detail": 17009,
       "analysis-correlate": 24199,

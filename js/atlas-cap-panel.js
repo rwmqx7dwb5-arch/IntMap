@@ -13,7 +13,8 @@
  *  an entry is added or removed, and `npm run check:capabilities` fails while they disagree.
  *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
  * ==========================================================================*/
-import { str, bool, lat, lng, noArgs } from './atlas-caps.js';
+import { str, bool, num, one, lat, lng, noArgs } from './atlas-caps.js';
+import { EMBED_SIZES, EMBED_PX } from './embed-mode.js';   /* (share-embed-distribution) the frame presets `share` offers are the share panel's own */
 
 export default [
   {
@@ -80,9 +81,22 @@ export default [
   },
   {
     row: ['panel.share',                'share',          '',                                                            'panel',   'panel',   'panel.share',            'panel',               'session', 'none',   '',         ''],
-    schema: () => (noArgs('share')),
-    async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
-      { let ok=false; try{ if(window.IntMapShare&&window.IntMapShare.open){ window.IntMapShare.open(); ok=true; } else ok=clickId('btn-share'); }catch(_){} return R(ok, ok?note('✓ '+L('Share panel','共有パネル','Teilen','Поделиться','Compartir')):warn('⚠')); }
+    /* ⚠ (share-embed-distribution) IT USED TO OPEN THE PANEL AND SAY 「✓ 共有パネル」 — and nothing else, so
+       「共有リンクを作って」 ended with Atlas unable to give the reader the link it had just made, and
+       「ブログに貼るコードをちょうだい」 had no capability at all. The result now CARRIES what was made:
+       the address (the same IntMapBookmark.link() the panel shows) or, with embed:true, the <iframe>
+       code for the current map (js/embed-mode.js — the share link with ?embed=1). The panel is opened
+       on the matching tab, so what Atlas hands over and what the reader sees are one value. */
+    schema: () => ({ type: 'object', properties: { embed: bool(), size: one.apply(null, Object.keys(EMBED_SIZES)), width: num(EMBED_PX.min, EMBED_PX.max), height: num(EMBED_PX.min, EMBED_PX.max), interactive: bool() } }),
+    async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn, esc = K.esc;
+      { const S=window.IntMapShare, wantEmbed=(a.embed===true);
+        if(!(S&&S.open)){ const ok=clickId('btn-share'); return R(ok, ok?note('✓ '+L('Share panel','共有パネル','Teilen','Поделиться','Compartir')):warn('⚠')); }
+        let made=null; try{
+          await S.open(wantEmbed?{ tab:'embed', size:a.size, width:a.width, height:a.height, interactive:a.interactive }:{ tab:'link' });
+          made=wantEmbed?S.embed():{ url:S.link() }; }catch(_){ made=null; }
+        if(!made||!made.url) return R(false, warn('⚠ '+L('Could not build the share link','共有リンクを作れませんでした')));
+        if(wantEmbed) return R(true, note('✓ '+L('Embed code','埋め込みコード')+' ('+esc(String(made.size.w))+' × '+esc(String(made.size.h))+(made.interactive?'':(', '+L('no pan or zoom','パン・ズーム無効')))+'): '+esc(made.code)));
+        return R(true, note('✓ '+L('Share link','共有リンク')+': '+esc(made.url))); }
     },
   },
   {

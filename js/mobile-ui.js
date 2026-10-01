@@ -193,6 +193,13 @@ export function mobileUI(HOST){
       const fx=t=>((ax*t+bx)*t+cx)*t, dfx=t=>(3*ax*t+2*bx)*t+cx, fy=t=>((ay*t+by)*t+cy)*t;
       return function(x){ if(x<=0)return 0; if(x>=1)return 1; let t=x; for(let i=0;i<6;i++){ const e=fx(t)-x; if(Math.abs(e)<1e-4)break; const dv=dfx(t); if(Math.abs(dv)<1e-6)break; t-=e/dv; } return fy(t); }; }
     const _sheetEase=_cubicBezier(0.32,0.72,0,1);   /* === --sheet-ease in CSS */
+    /* How much of the map the sheet covers at translate `ty` — what the camera padding and --sheet-cover
+       follow. ONE formula for the settled detent (setDetent) and the live drag (liveMapPad); it was written
+       out in both. ⚠ (share-embed-distribution) An EMBED draws no sheet (js/embed-mode.js keeps only the map,
+       legends and credits; js/ui-device.js embedded() is the one answer), so it covers nothing — measured
+       before this: a 480×320 frame got a bottom padding of 171 px from the hidden sheet's detent, and the
+       shared place sat 85 px above the middle of the frame. */
+    function sheetCovers(d,ty){ if(!mq.matches||window.IntMapDevice.embedded()) return 0; return Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82)); }
     function setDetent(name,animate){
       if(animate===undefined) animate=true; const d=recompute(); currentDetent=name;
       const ty=(d[name]!=null)?d[name]:d.half;
@@ -203,7 +210,7 @@ export function mobileUI(HOST){
       /* keep the map's optical center inside the area visible ABOVE the sheet — but ONLY on mobile.
          (#R13) On desktop there is no bottom sheet; if this ever runs there it must not pad the bottom,
          which was dropping the map's optical center toward the bottom of the screen. */
-      const covered=mq.matches?Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82)):0;
+      const covered=sheetCovers(d,ty);
       /* --sheet-cover tracks how much the sheet currently covers, so floating controls (timebar,
          Summarize, legends) sit just above the sheet's CURRENT top — not the fixed peek line — and
          therefore stay visible at every detent (#32). */
@@ -231,7 +238,7 @@ export function mobileUI(HOST){
        the live re-center feel janky. The --sheet-cover CSS var still tracks every frame (cheap, so the
        floating controls glide), but the expensive setPadding is gated to ≥2px movement and one call/rAF. */
     function liveMapPad(ty,d){ d=d||dragD||recompute();
-      const covered=mq.matches?Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82)):0;
+      const covered=sheetCovers(d,ty);
       if(mapContainer) mapContainer.style.setProperty('--sheet-cover', covered+'px');   /* controls follow the sheet live (#32) */
       if(!_cam()) return;
       /* (#R140) map padding is rAF-coalesced for perf (setPadding reprojects the whole camera), but R139 applied the

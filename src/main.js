@@ -305,6 +305,10 @@ import '../js/ephemeris.js';
    the classic tag block had. */
 import '../js/app-body.js';
 import { LAZY_NAMES, CARRIED_NAMES } from '../js/lazy-modules.js';
+/* (share-embed-distribution) …and the EMBED VIEW, only in an embed. index.html's first script sets <html data-embed>
+   from `?embed=1`; js/embed-mode.js — the stylesheet that keeps only the map, its legends and the credits, the
+   read-only gate and the bar — is a chunk of its own, so a normal start-up neither fetches nor parses it. */
+if (window.IntMapDevice.embedded()) import('../js/embed-mode.js');   /* js/ui-device.js — the one answer to «is this an embed» */
 
 /* ── (#R162/#R163 → module-graph) THE REQUIRED-MODULE GUARD ─────────────────────────────────────
    It used to hold MODULE_FACTORIES — 107 names, checked AFTER boot against window.IntMapModules,

@@ -238,7 +238,13 @@ test('R223 ⑩ Traditional Chinese is registered, complete, and appended at the 
     return n;
   })();
   assert.ok(enUi > 300, 'the English keyed table was read (got ' + enUi + ')');
-  assert.ok(ui >= enUi, 'the keyed table carries the late-registered keys too (got ' + ui + ' vs en ' + enUi + ')');
+  /* ⚠ (share-embed-distribution) …and «at least what English declares» stopped being the rule on 2026-09-11:
+     CONSTITUTION.md §7 narrowed what IntMap WRITES NEXT to en + jp, so English now grows past the seven carried
+     languages by design (the share panel's Embed tab added 16 en/jp keys). What must still hold is the half that
+     protects the reader — zh keeps every keyed row it HAS — and that number is the one the i18n gate already holds,
+     tests/i18n-coverage-floor.json, read here rather than restated. */
+  const floor = JSON.parse(read('tests/i18n-coverage-floor.json')).langs.zh.keyed;
+  assert.ok(floor > 300 && ui >= floor, 'the keyed table keeps every row it carries (got ' + ui + ' vs the floor ' + floor + '; en has ' + enUi + ')');
   assert.ok(inl >= 1800, 'every inline L(…) string has an entry (got ' + inl + ')');
   /* …and it is really Chinese, not a copy of the template */
   const cjk = (zh.match(/[一-鿿]/g) || []).length;
