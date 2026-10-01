@@ -115,3 +115,18 @@ migration を発見して読む）。購入できるのは `free` だけ（② �
 ## 起動費の天井を上げた理由
 
 支援の提案カードは `intmap:ai-limit`（上限を告げた瞬間）と起動時の「異なる 7 日目」を聞くので、`js/supporter.js` と `_shared/plans.js` は起動時から読まれる（eager.modules +2）。カードの CSS（eager.cssRaw）と en/jp の 17 キー（ui.jp チャンク）もそれに伴う。どれもこの変更の分で、`node scripts/perf-budget.mjs --update` で超えた行だけを上げた。eager.raw / brotli にはこの機械の計測差が乗っている可能性があり、天井は main の実測で bot が下げる。
+
+## 9. main（#868・#869・#871・#875）を取り込んだときに上げた天井
+
+`node scripts/perf-budget.mjs --update`（超えた行だけ）: eager.gzip 1,501.5 → 1,511.4 kB、eager.modules 295 → 297、
+eager.cssRaw 351.8 → 353.9 kB、async `ui.jp` 17.5 → 20.7 kB、dist.assets 18,561.4 → 18,655.4 kB。
+- **modules +2** はこの作業の 2 本（`js/supporter.js` と、ページが import する `_shared/plans.js`）で全部。
+- **cssRaw +2.1 kB** は支援パネルの節と提案カードの規則（`css/intmap.css` に 33 行）。
+- **ui.jp +3.2 kB** はこの作業の 17 キー（日本語で約 2.2 kB）と、取り込んだ #869 の設定の文言。
+- **eager.gzip +9.9 kB と dist.assets +94 kB** は、この branch と取り込んだ main の変更の合計を 1 回のビルドで測った
+  もので、内訳は測っていない（main 側の増分は main の CI がまだ天井に記録していなかった——`embed-mode` の新しい
+  chunk は同じ理由で注記だけ出ている）。この branch の 2 本はコメント込みのソースで gzip 7.4 kB、minify 後はそれより小さい。
+- `scripts/test-budget.mjs` の全体の天井は main の +9（anonymous-usage-counts）とこの作業の +28 を合算して 5,233。
+- `js/atlas-capabilities.js` は `atlas-caps.mjs --write`、カセット `rail-request-reached-nothing` は main 側を取って
+  `scripted-cassettes.mjs --write` で作り直した（カタログに `operatingCosts` が足された分だけ変わる）。
+- プライバシーポリシーは main の匿名の利用統計の追記と、この作業の 2 点を両方残し、最終更新日は 2026-10-02。

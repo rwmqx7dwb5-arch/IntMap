@@ -59,6 +59,7 @@ is the human explanation.
 | `feedback` | 5-star + free text (**PII: email + text**). | **Admin only.** | **Nobody directly** *(anon-write-guard)* — only service_role, i.e. the `reader-reports` Edge Function, which any reader (signed in or not) sends to; it takes a token from two shared `relay_take` buckets first and sets `user_id` / `email` from the verified session, never from the body. |
 | `bug_reports` | Bug reports (**PII: email + diagnostics**). | **Admin only.** | **Nobody directly** — the same `reader-reports` path as `feedback`. |
 | `client_errors` *(client-error-log)* | Uncaught exceptions / unhandled rejections from readers' browsers, **one row per distinct defect** (`fingerprint`, 32 hex = SHA-256 of kind + message with numbers collapsed + top frame, computed by the Edge Function) with `count`, `first_seen`, `last_seen` and the latest `release` / `path` / `browser` (name + major version). **No PII by construction** — there is no column for an IP, a user, a session, a query string or a raw User-Agent, and message/stack are scrubbed before storage (`supabase/functions/_shared/client-error-shape.js`). Purged 30 days after `last_seen` (pg_cron `client-errors-purge` → `purge_client_errors`). | **Admin only** (`SELECT` policy on `is_admin()`; admins cannot edit it). | **Nobody directly** — only `record_client_error` (service_role, the `client-errors` Edge Function). |
+| `usage_counts` *(anonymous-usage-counts)* | Anonymous aggregate usage counters: **(UTC day, metric, dimension) → count** and nothing else. What a metric and a dimension may be is declared once in `supabase/functions/usage-count/shape.js` (page view, entry by link/embed, referring host name, utm tags, language bucket, device class, layer switched on, feature used, number of Atlas questions); the CHECK constraints are the database's own outer bound on the same shape. **No PII by construction** — there is no column for an IP, a user, a session, a User-Agent or a time finer than the day. Purged after 400 days (pg_cron `usage-counts-purge` → `purge_usage_counts`). | **Admin only** (`SELECT` policy on `is_admin()`; admins cannot edit it; totals through `usage_counts_summary`). | **Nobody directly** — only `record_usage_counts` (service_role, the `usage-count` Edge Function). |
 
 ### Public reference data
 | Table | Purpose | Read | Write |
@@ -163,6 +164,9 @@ itself; `grant execute` means "may call", never "may do".
 | `public.sweep_relay_rate_buckets(integer)` | SECURITY DEFINER, `search_path=''` | Deletes buckets idle longer than the argument (default two days). EXECUTE = service_role only. |
 | `public.record_client_error(text, text, text, text, text, text, text, integer)` | SECURITY DEFINER, `search_path=''` | *(client-error-log)* Inserts a new defect or adds one to a known fingerprint's `count` (one `insert … on conflict do update`, so concurrent reports add up). Refuses a NEW fingerprint once the table holds `p_max_rows` rows (a known one still counts). Returns `inserted` / `counted` / `full`. EXECUTE = service_role only. |
 | `public.purge_client_errors(integer)` | SECURITY DEFINER, `search_path=''` | *(client-error-log)* Deletes defects last seen more than the argument's days ago (default 30 — the retention the privacy policy states). Scheduled daily as pg_cron job `client-errors-purge` (the migration schedules it idempotently when pg_cron exists). EXECUTE = service_role only. |
+| `public.record_usage_counts(jsonb)` | SECURITY DEFINER, `search_path=''` | *(anonymous-usage-counts)* Adds one request's rows — `[{m, d, n, cap}]`, already validated by the `usage-count` function against `shape.js` — to **today's (server UTC)** counters, one `insert … on conflict do update` per row inside one transaction. A NEW dimension is refused once its metric already holds `cap` dimensions that day (a known one still counts). Returns how many rows were counted. EXECUTE = service_role only. |
+| `public.purge_usage_counts(integer)` | SECURITY DEFINER, `search_path=''` | *(anonymous-usage-counts)* Deletes days older than the argument (default 400 — the retention the privacy policy states). Scheduled daily as pg_cron job `usage-counts-purge`. EXECUTE = service_role only. |
+| `public.usage_counts_summary(integer)` | **SECURITY INVOKER**, `search_path=''` | *(anonymous-usage-counts)* Each (metric, dimension)'s total over the last N days (1-400), for the admin console's **Usage** tab. Invoker on purpose: the admin-only SELECT policy is what decides who sees a row, so a non-admin gets none. EXECUTE = authenticated (not anon). |
 | `public.sweep_ai_turns()` | SECURITY DEFINER, `search_path=''` | Deletes turn rows older than a day. The ledger is a scratch pad, not a history. EXECUTE = service_role only. |
 | `public.claim_ai_answer(uuid, text, text, integer, integer)` | SECURITY DEFINER, `search_path=''` | *(atlas-stream-replay)* Decides whether the request with this replay key runs: `claimed` (run it — `attempts` is this run's number, `after_state` is `failed` / `abandoned` when it runs again after an observed failure or a dead run), `done` (the stored answer — do not run), `running` (another request holds it and is beating — wait). One row lock decides, so two retries cannot both run it. Deletes the account's expired rows first. EXECUTE = service_role only. |
 | `public.peek_ai_answer(uuid, text, text)` | SECURITY DEFINER, `search_path=''` | *(atlas-stream-replay)* What a retry finds, without claiming: `done` (with the body) / `failed` / `running` / `abandoned`; no row when nothing was registered or it expired. ai-proxy asks it **before** `consume_ai_turn`, so a stored answer is returned without spending a call. EXECUTE = service_role only. |
@@ -309,7 +313,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **38**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **39**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin` (and is not a view).
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't
@@ -352,6 +356,12 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
   `abandoned` and claimed again; a superseded attempt can neither write nor renew; an expired answer is
   never returned and is swept; the owner reads only their own rows; no client role may call the RPCs,
   insert or update.
+- **`16_usage_counts_test.sql`** *(anonymous-usage-counts)* — the usage counters: RLS on; anon and a non-admin
+  reader can neither read nor write them nor call `record_usage_counts` / the purge (anon not even the summary);
+  an admin reads every row and cannot update one; the column set is exactly `(day, metric, dimension, count)`;
+  a repeated row **adds to `count`**; at the per-metric daily ceiling a new dimension is refused and a known one
+  still counts; a dimension the CHECK refuses rolls the whole request back; the purge removes exactly the day
+  older than 400 days.
 - **`14_anon_write_guard_test.sql`** *(anon-write-guard)* — ① a census over `pg_class` × `pg_policies`: no
   table in `public` accepts a direct INSERT from `anon` (an INSERT privilege on any column **and** either
   RLS off or an INSERT/ALL policy for `anon`/PUBLIC); ② `feedback` / `bug_reports` have no INSERT policy and

@@ -1,10 +1,10 @@
 {
   "eager": {
-    "raw": 4699510,
-    "gzip": 1537528,
+    "raw": 4700232,
+    "gzip": 1547680,
     "brotli": 1162576,
     "requests": 9,
-    "modules": 295,
+    "modules": 297,
     "cssRaw": 362437,
     "cssGzip": 59206
   },
@@ -22,7 +22,7 @@
       "atlas-answer-view": 2513,
       "atlas-attach": 23189,
       "atlas-chart": 10493,
-      "atlas-console": 1115229,
+      "atlas-console": 1116105,
       "atlas-executor": 56924,
       "atlas-geo-resolve": 49608,
       "atlas-query": 48520,
@@ -82,7 +82,7 @@
       "ui.de": 16366,
       "ui.es": 16642,
       "ui.fr": 446528,
-      "ui.jp": 21059,
+      "ui.jp": 21208,
       "ui.ko": 439960,
       "ui.ru": 23805,
       "ui.zh": 417405,
@@ -99,6 +99,6 @@
   "dist": {
     "total": 800125309,
     "data": 742828119,
-    "assets": 19006921
+    "assets": 19103118
   }
 }
