@@ -48,6 +48,9 @@ import '../js/safe-html.js';
    any module evaluated after this line, or by the app at any later time, reaches IntMap's own record
    (public.client_errors) instead of nowhere — the Sentry loader it replaces never had a DSN. */
 import '../js/client-error-report.js';
+/* (anonymous-usage-counts) …and the anonymous usage counter, early enough to read the arrival (referrer,
+   utm tags, a link's map view) before js/map-ui.js rewrites the address with this session's own view. */
+import '../js/usage-counts.js';
 /* (ui-layer-owner) …and the two owners of the screen's shape, before any module that builds a style
    string: which LAYOUT this viewport gets and which DEVICE it is (window.IntMapDevice — the 768 px
    boundary written once, and the classes on <body>), and who is IN FRONT (window.IntMapStack — the

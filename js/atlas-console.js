@@ -2765,7 +2765,7 @@ export function atlasConsole(HOST){
          many calls one key may carry, so a client that reuses a key gains nothing.
          `supersede` is the other half of the same idea: the previous turn's unfinished operations
          are replaced rather than left to land on top of this turn's answer (§12). */
-      const _turnKey=(_curTurnKey='t'+turn+'-'+Math.floor(Date.now()/1000)); try{ EXEC.supersede(turn); }catch(_){} try{ ASTATE.beginTurn(turn,q); }catch(_){}   /* (#R298) the turn id every bubble and every history entry of THIS exchange carries, so an edit can rewind to exactly here */
+      const _turnKey=(_curTurnKey='t'+turn+'-'+Math.floor(Date.now()/1000)); try{ EXEC.supersede(turn); }catch(_){} try{ ASTATE.beginTurn(turn,q); }catch(_){} try{ window.IntMapOS.emit({ kernel:'atlas', phase:'turn', turnId:turn }); }catch(_){}   /* (anonymous-usage-counts) a question was sent — announced on the kernel bus with its turn id and NOTHING of the question; js/usage-counts.js counts it */   /* (#R298) the turn id every bubble and every history entry of THIS exchange carries, so an edit can rewind to exactly here */
       try{ chatEl.querySelectorAll('.atl-b.a .atl-stage').forEach(d=>{ const b=d.closest('.atl-b'); if(b) _markCancelled(b); }); }catch(_){}
       /* (#R231) 「画像については…吹き出しで囲わなくてそのまま表示でいい」 — the image row is its own
          element. It keeps the `u` class (_scrollUserTop reads previousElementSibling.classList) and

@@ -101,6 +101,7 @@
       <button class="tab" data-tab="fb">Feedback</button>
       <button class="tab" data-tab="nev">News Events</button>
       <button class="tab" data-tab="err">Errors</button>
+      <button class="tab" data-tab="use">Usage</button>
     </div>
 
     <!-- GEO PINS -->
@@ -212,6 +213,31 @@
         <div style="overflow:auto;"><table id="err-table"><thead><tr>
           <th>Last seen</th><th>Count</th><th>Message</th><th>Release</th><th>Page</th><th>Browser</th><th>First seen</th>
         </tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- USAGE (anonymous-usage-counts · docs/MONITORING.md)
+         IntMap's own anonymous counters — public.usage_counts, (UTC day, metric, dimension) -> count, written
+         by the usage-count Edge Function. READ-ONLY: an admin has SELECT and nothing else. What each metric
+         means is declared in supabase/functions/usage-count/shape.js; this tab shows whatever the table holds
+         rather than a second list of names. Rows go after 400 days. -->
+    <section id="tab-use" class="hide">
+      <div class="card">
+        <div class="bar">
+          <h2>Usage <span class="count" id="use-total"></span></h2>
+          <label for="use-days" class="muted" style="font-size:12px;align-self:center;">Period</label>
+          <select id="use-days" class="btn sec sm"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option><option value="400">400 days</option></select>
+          <button class="btn sec sm" id="use-refresh">Refresh</button>
+        </div>
+        <p class="muted" style="margin:0 0 10px;">
+          Anonymous daily counts only — no IP, user, session, User-Agent or time finer than the day is stored, and
+          nothing is counted from a browser with Do Not Track / Global Privacy Control or with the setting off.
+          Days are UTC. Layers and features count page loads in which they were used; Atlas counts questions.
+        </p>
+        <h3 style="margin:14px 0 6px;font-size:14px;">Page views per day</h3>
+        <div style="overflow:auto;max-height:320px;"><table id="use-days-table"><thead><tr><th>Day (UTC)</th><th>Views</th><th></th></tr></thead><tbody></tbody></table></div>
+        <h3 style="margin:18px 0 6px;font-size:14px;">Top values per metric</h3>
+        <div id="use-top" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;"></div>
       </div>
     </section>
   </div>
@@ -357,6 +383,51 @@
         '<td style="white-space:nowrap;">'+esc(r.browser||'—')+'</td>'+
         '<td style="white-space:nowrap;">'+esc(fmtTime(r.first_seen))+'</td></tr>').join('');
     }catch(e){ tb.innerHTML='<tr><td colspan="7" class="muted">'+esc(e.message||String(e))+'</td></tr>'; }
+  }
+
+  /* ---------------- USAGE (anonymous-usage-counts) ----------------
+     Read-only. ⚠ THE TAB SWITCH ABOVE IS NOT EDITED: it hides the sections it names, and this listener
+     shows or hides only #tab-use, so clicking any other tab still hides this one. Every value is a string
+     a browser sent (validated by the usage-count function, but still untrusted), so each one goes through
+     the app's one encoder, window.IntMapSafe.html (js/safe-html.js). The totals come from
+     usage_counts_summary (SECURITY INVOKER — the admin-only SELECT policy decides who sees a row). */
+  document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
+    $('tab-use').classList.toggle('hide',b.dataset.tab!=='use');
+    if(b.dataset.tab==='use') loadUse();
+  }));
+  $('use-refresh').onclick=()=>loadUse();
+  $('use-days').onchange=()=>loadUse();
+  async function loadUse(){
+    const H=(s)=>window.IntMapSafe.html(s);
+    const days=Math.max(1,Math.min(400,parseInt($('use-days').value,10)||30));
+    const tb=$('use-days-table').querySelector('tbody'), top=$('use-top');
+    tb.innerHTML='<tr><td colspan="3" class="muted">Loading…</td></tr>'; top.innerHTML='';
+    try{
+      const since=new Date(Date.now()-days*86400000).toISOString().slice(0,10);
+      const [daily,sum]=await Promise.all([
+        sb.from('usage_counts').select('day,count').eq('metric','view').gt('day',since).order('day',{ascending:false}).limit(400),
+        sb.rpc('usage_counts_summary',{p_days:days})
+      ]);
+      const err=daily.error||sum.error;
+      if(err){ tb.innerHTML='<tr><td colspan="3" class="muted">'+H(err.message)+' — is the anonymous-usage-counts migration applied?</td></tr>'; return; }
+      const rows=daily.data||[];
+      const peak=rows.reduce((m,r)=>Math.max(m,Number(r.count)||0),0)||1;
+      const total=rows.reduce((a,r)=>a+(Number(r.count)||0),0);
+      $('use-total').textContent=total+' views';
+      tb.innerHTML=rows.length?rows.map(r=>'<tr><td style="white-space:nowrap;">'+H(r.day)+'</td>'+
+        '<td style="text-align:right;font-variant-numeric:tabular-nums;">'+H(r.count)+'</td>'+
+        '<td style="width:60%;"><div style="height:8px;border-radius:4px;background:var(--primary,#0a84ff);width:'+Math.round((Number(r.count)||0)/peak*100)+'%;"></div></td></tr>').join('')
+        :'<tr><td colspan="3" class="muted">No page views recorded in this period.</td></tr>';
+      /* group the totals by metric, in the order the table returns them (metric, then total) */
+      const by=new Map();
+      for(const r of (sum.data||[])){ if(!by.has(r.metric)) by.set(r.metric,[]); by.get(r.metric).push(r); }
+      by.delete('view');
+      top.innerHTML=by.size?Array.from(by.entries()).map(([m,list])=>'<div class="card" style="margin:0;padding:10px 12px;">'+
+        '<div style="font-weight:700;margin-bottom:6px;">'+H(m)+' <span class="muted" style="font-weight:400;">'+H(list.length)+'</span></div>'+
+        '<table style="width:100%;"><tbody>'+list.slice(0,15).map(r=>'<tr><td style="word-break:break-all;">'+H(r.dimension===''?'(count)':r.dimension)+'</td>'+
+        '<td style="text-align:right;font-variant-numeric:tabular-nums;">'+H(r.total)+'</td></tr>').join('')+'</tbody></table></div>').join('')
+        :'<div class="muted">Nothing counted in this period.</div>';
+    }catch(e){ tb.innerHTML='<tr><td colspan="3" class="muted">'+H(e.message||String(e))+'</td></tr>'; }
   }
 
   /* ---------------- NEWS EVENTS (#R386 · docs/NEWS-EVENTS.md §11) ----------------

@@ -14,6 +14,7 @@
  *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
  * ==========================================================================*/
 import { str, bool, one } from './atlas-caps.js';
+import { usage } from './usage-counts.js';   /* (anonymous-usage-counts) the Settings switch settings.usageCounts flips */
 
 export default [
   {
@@ -115,6 +116,26 @@ export default [
           try{ if(window.IntMapEyeAlt){ window.IntMapEyeAlt.set(want); ok=true; } }catch(_){}
           const now=(()=>{ try{ const v=window.IntMapEyeAlt.altitude(); return (v==null)?'':' — '+window.IntMapEyeAlt.text(); }catch(_){ return ''; } })();
           return R(ok, ok?note('✓ '+L('Viewpoint altitude in the readout','常時表示欄の視点高度','Kamerahöhe in der Anzeige','Высота камеры в строке','Altitud del punto de vista')+': '+(want?'on':'off')+(want?now:''))+_featTogHtml('eyeAltitude'):warn('⚠')); }
+    },
+  },
+  {
+    row: ['settings.usageCounts',       'usageCounts',    'usageStats,anonymousStats,telemetry',                         'settings','setting', 'settings.usageCounts',   'setting',             'persist', 'explicit','',        ''],
+    /* (anonymous-usage-counts) the «Anonymous usage statistics» switch in Settings — js/usage-counts.js
+       owns it (its `usage` export). No `on` and no mode = REPORT the state, including when nothing is
+       sent for a reason the switch does not control (the browser's Do Not Track / Global Privacy
+       Control, or a page that is not the production site). */
+    schema: () => ({ type: 'object', properties: { on: bool(), mode: str() } }),
+    async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, warn = K.warn;
+      { const U=usage; if(!U||typeof U.status!=='function') return R(false, warn('⚠ '+L('Usage statistics are not available on this page','このページでは利用統計を扱えません')));
+          const m=String(a.mode||'').toLowerCase();
+          const want=(a.on===true||/^(on|enable|enabled|true)$/.test(m))?true:(a.on===false||/^(off|disable|disabled|false|stop)$/.test(m))?false:null;
+          const st=(want===null)?U.status():U.set(want);
+          const why=st.reason==='dnt'?L('your browser asks not to be tracked (Do Not Track), so nothing is sent','ブラウザの「トラッキング拒否（Do Not Track）」が有効なので、何も送りません')
+            :st.reason==='gpc'?L('your browser sends Global Privacy Control, so nothing is sent','ブラウザの Global Privacy Control が有効なので、何も送りません')
+            :st.reason==='local'?L('this is not the production site, so nothing is sent','本番サイトではないので、何も送りません')
+            :st.reason==='off'?L('nothing is sent','何も送りません')
+            :L('anonymous counts are sent when the page is hidden or closed','ページを閉じる・隠すときに匿名の件数を送ります');
+          return R(want===null||st.on===want, note('✓ '+L('Anonymous usage statistics','匿名の利用統計')+': '+(st.on?L('on','オン'):L('off','オフ'))+' — '+why)); }
     },
   },
 ];
