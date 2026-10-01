@@ -17,6 +17,22 @@ window.IntMapModules.newsFeed=function(HOST){
   /* (#R372) «has anybody asked for news yet» — declared HERE, above both readers, because a `let`
      below a function that reads it is a TDZ waiting for the first caller that runs early. */
   let _asked=false;
+  /* ══ «THE SOURCES ANSWERED AND NOTHING IS DATED THEN» IS AN ANSWER, NOT A LOAD IN PROGRESS ═══════
+     MEASURED (production 2026-10-01, clock at 1900-06-15): the panel said 「Loading articles...」 for
+     more than 50 s and never changed. The fetch HAD finished — Google News ignores after:/before:
+     outside its recent window and sent today's headlines, buildItems() rightly kept none of them
+     (none is dated near 1900), and globalData became []. startNews() reads an empty list as «not
+     loaded yet», and `_asked` (correctly) stops it asking again, so the loading line was final.
+     `_answeredFor` is the instant (ms, or 'live') for which the last fetch ended with sources that
+     ANSWERED and an empty list; startNews() says so for that instant instead of 「Loading」. It is
+     cleared when a fetch starts, so a new day, a new search or the timer gets the loading line
+     while it is really loading. A fetch where no source answered at all still says networkError. */
+  let _answeredFor=null;
+  const _instantKey=()=>{ try{ return HOST.newsDate?String(HOST.newsDate.getTime()):'live'; }catch(_){ return 'live'; } };
+  /* the ± window buildItems() keeps around a past instant — ONE number, read by the filter and by
+     the sentence that tells the reader what the filter kept (the fetch query itself asks ±3 days;
+     the extra days are timezone slack, #R107) */
+  const DATE_WINDOW_DAYS=8;
   /* ══ A REDRAW OF THE LIST THE READER IS ALREADY READING IS NOT A RESET ═══════════════════════
      startNews() is called by every background event that might have changed what the list shows —
      the auth listener (js/auth-ui.js), a settings save, a language switch, a realtime row — and it
@@ -69,6 +85,13 @@ window.IntMapModules.newsFeed=function(HOST){
        leaves the message rather than asking again. The 3-minute timer resumes behind it either
        way, because the latch is now lifted. */
     if(HOST.globalData.length===0){
+      if(_answeredFor!==null&&_answeredFor===_instantKey()){
+        const msg=HOST.newsDate
+          ? HOST.t('noNewsForDate').replace('{date}',HOST.ymdISO(HOST.newsDate)).replace('{days}',String(DATE_WINDOW_DAYS))
+          : HOST.t('noMatch');
+        feed.innerHTML=`<div class="empty-msg" data-news-empty="answered">${window.IntMapSafe.html(msg)}</div>`;
+        return;
+      }
       feed.innerHTML=`<div class="empty-msg">${HOST.t('loading')}</div>`;
       if(!_asked) { try{ fetchData(); }catch(_){} }
       return;
@@ -228,7 +251,7 @@ window.IntMapModules.newsFeed=function(HOST){
        after:/before: for dates outside its recent window and returns TODAY's headlines, which then wrongly showed as
        "past" news ("時間を過去に設定しても最新ニュースが表示される"). Filtering by pubDate drops that leakage, and
        undated items too — so the feed shows genuine period news around that date, or NOTHING (never latest-as-past). */
-    try{ if(typeof HOST.newsDate!=='undefined' && HOST.newsDate){ const t0=HOST.newsDate.getTime(), win=8*864e5;   /* ±8 days (the fetch query uses ±3; allow timezone slack) */
+    try{ if(typeof HOST.newsDate!=='undefined' && HOST.newsDate){ const t0=HOST.newsDate.getTime(), win=DATE_WINDOW_DAYS*864e5;   /* ±8 days (the fetch query uses ±3; allow timezone slack) */
       uniq=uniq.filter(it=>{ const pd=HOST.parseDate(it.pubDate); return pd && isFinite(pd) && Math.abs(pd-t0)<=win; }); } }catch(_){}
     return uniq.slice(0,150).map(it=>{ const sp=it.title.split(' - '); const publisher=sp.length>1?sp.pop():window.IntMapLang.t(HOST.lang,'News','報道','Nachrichten','Новости','Noticias'); const title=sp.join(' - '); const desc=it.desc||''; return { title, publisher, link:it.link, pubDate:it.pubDate, desc, analysis:HOST.analyzeContext(title,publisher,it.link,desc) }; });
   }
@@ -301,6 +324,8 @@ window.IntMapModules.newsFeed=function(HOST){
       return;
     }
     _asked=true;
+    _answeredFor=null;
+    const askedFor=_instantKey();
     /* 1) Instant: show cached headlines immediately while fresh ones load. */
     if(HOST.globalData.length===0){ const cached=loadNewsCache(); if(cached&&cached.length){ HOST.globalData=cached; if(HOST.mode==='news'||HOST.mode==='saved') startNews(); } }
     if((HOST.mode==='news'||HOST.mode==='saved')&&feed&&HOST.globalData.length===0) feed.innerHTML=`<div class="empty-msg">${HOST.t('loading')}</div>`;
@@ -330,9 +355,10 @@ window.IntMapModules.newsFeed=function(HOST){
        (#R40) TEMPORARILY DISABLED via USE_SERVER_NEWS — always fall through to the client non-AI locator. */
     if(HOST.USE_SERVER_NEWS && await loadNewsFromSupabase()) return;
     /* 2) FALLBACK: live RSS via CORS proxies + client-side analysis (function not deployed, or search/time-travel/multi-lang). */
-    const parser=new DOMParser(); const byLink=new Map(); let any=false;
+    const parser=new DOMParser(); const byLink=new Map(); let any=false, answered=false;
     const ingest=(txt)=>{
       if(!txt) return;
+      answered=true;   /* fetchViaProxy hands back only a document that IS a feed (proxy-fetch.js isFeed) */
       const xml=parser.parseFromString(txt,'text/xml');
       xml.querySelectorAll('item, entry').forEach(it=>{
         const le=it.querySelector('link'); const link=(le&&(le.textContent||le.getAttribute('href')))||'';
@@ -354,6 +380,11 @@ window.IntMapModules.newsFeed=function(HOST){
     };
     try{
       await Promise.all(feedUrls().map(async u=>{ try{ ingest(await HOST.fetchViaProxy(u)); }catch(_){} }));
+      if(answered && HOST.globalData.length===0){
+        _answeredFor=askedFor;
+        if(HOST.mode==='news'||HOST.mode==='saved') startNews();
+        return;
+      }
       if(!any && HOST.globalData.length===0) throw new Error('no items');
       if(any) saveNewsCache();
     }catch(e){ if(HOST.globalData.length===0&&feed&&(HOST.mode==='news'||HOST.mode==='saved')) feed.innerHTML=`<div class="empty-msg" style="color:var(--threat-unmapped);">${HOST.t('networkError')}</div>`; console.warn('fetchData failed:',e); }
