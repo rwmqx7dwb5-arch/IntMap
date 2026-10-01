@@ -270,6 +270,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["dialog.answer","answer","","dialog","none","","explanation","read","none","",""],
       ["time.coverage","timeCoverage","layerTime,whatCanBeDrawn","time","none","","explanation","read","none","",""],
       ["settings.usageCounts","usageCounts","usageStats,anonymousStats,telemetry","settings","setting","settings.usageCounts","setting","persist","explicit","",""],
+      ["panel.operatingCosts","operatingCosts","runningCosts,supportCosts,whereSupportGoes","panel","panel","panel.donate","panel,explanation","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 

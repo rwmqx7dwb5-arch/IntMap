@@ -12,7 +12,8 @@
  *  onkeypress / onsubmit, or addEventListener for those events — what doControl can fire) whose body
  *  reaches a WRITE, and asks whether the element it is registered on declares `data-effect`.
  *
- *    a WRITE   `.from(t).insert | upsert | update | delete(…)` (a Supabase table write), `.rpc(…)`,
+ *    a WRITE   `.from(t).insert | upsert | update | delete(…)` (a Supabase table write), `.rpc(…)` — except
+ *              one sent as GET/HEAD (`{ get: true }`, see rpcIsRead: PostgREST runs it read-only),
  *              `.functions.invoke(…)`, an auth change (`auth.updateUser | signOut | resetPasswordForEmail
  *              | signUp | registerPasskey | delete | unenroll | linkIdentity | unlinkIdentity`), or
  *              `fetch('…/functions/v1/…', { method: POST | PUT | PATCH | DELETE })`
@@ -76,12 +77,37 @@ const urlText = (u) => {
   return null;
 };
 
+/** (supporter-funnel) Is this `.rpc(…)` call a READ by construction? → true only for
+ *  `.rpc(name, args, { get: true })` / `{ head: true }` written as an object literal in the call.
+ *  supabase-js sends those as HTTP GET / HEAD, and PostgREST executes a GET or HEAD in a READ ONLY
+ *  transaction — the function cannot write whatever its body says (a volatile function is refused
+ *  outright). So the read-ness is a property of the CALL, checked here on the call, not a claim about
+ *  a function name. A POST rpc (the default) stays a write, whatever it is called.
+ *  ⚠ supabase-js turns a `head` call with an object-valued argument back into a POST; an argument
+ *    object the parser cannot see through (anything but an object literal of literals) is therefore
+ *    NOT read as a read. tests/atlas-outward-effects-checks.test.mjs imports this predicate rather
+ *    than spelling it again. */
+export function rpcIsRead(n) {
+  if (!n || n.type !== 'CallExpression' || prop(n.callee) !== 'rpc') return false;
+  const o = n.arguments[2];
+  if (!o || o.type !== 'ObjectExpression') return false;
+  const flag = (name) => o.properties.some((q) => q.type === 'Property' && !q.computed && q.key
+    && (q.key.name || q.key.value) === name && q.value.type === 'Literal' && q.value.value === true);
+  if (flag('get')) return true;
+  if (flag('head')) {
+    const a = n.arguments[1];
+    if (!a) return true;
+    return a.type === 'ObjectExpression' && a.properties.every((q) => q.type === 'Property' && q.value.type === 'Literal');
+  }
+  return false;
+}
+
 /** Is this node a write? → a short name of what it writes, or null. */
 export function writeOf(n) {
   if (n.type !== 'CallExpression') return null;
   const p = prop(n.callee);
   if (TABLE_WRITES.has(p) && n.callee.object.type === 'CallExpression' && prop(n.callee.object.callee) === 'from') return 'table.' + p;
-  if (p === 'rpc') return 'rpc';
+  if (p === 'rpc') return rpcIsRead(n) ? null : 'rpc';
   if (p === 'invoke' && chainHas(n.callee.object, 'functions')) return 'functions.invoke';
   if (AUTH_WRITES.has(p) && chainHas(n.callee.object, 'auth')) return 'auth.' + p;
   if (n.callee.type === 'Identifier' && n.callee.name === 'fetch' && n.arguments[0]) {
