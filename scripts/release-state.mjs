@@ -74,6 +74,18 @@ export const edgeRoster = (root) => {
     .sort();
 };
 
+/** `supabase functions list -o json` の出力を配列に。CLI は版によって更新案内を混ぜるので、
+ *  配列そのものだけを取り出す。配列が無ければ throw する——「読めなかった」を「0 本」にしない。
+ *  `scripts/supabase-deploy.mjs` の存在検査も同じものを読む（同じ判断を 2 か所に持たない）。 */
+export const parseFunctionsList = (raw) => {
+  const s = String(raw || '');
+  const a = s.indexOf('['), b = s.lastIndexOf(']');
+  if (a < 0 || b < a) throw new Error('supabase functions list printed no JSON array');
+  const listed = JSON.parse(s.slice(a, b + 1));
+  if (!Array.isArray(listed)) throw new Error('supabase functions list did not print an array');
+  return listed;
+};
+
 /** `supabase migration list` の表を、local だけ / remote だけ / 両方に分ける。
  *  ⚠ 見出しと罫線と CLI の更新案内を落とす。行は `local | remote | time` の 3 欄で、
  *  片側が空欄のとき「もう片方にしか無い」。 */
@@ -237,9 +249,7 @@ const measureEdge = () => {
        「エージェントの中から呼ばれたか」を環境変数で推測して決める——Claude Code の中では JSON、
        `--agent no`（＝GitHub Actions の nightly）では表を出す。表からは配列が取れないので、
        nightly は毎晩「測れなかった」になるところだった。 */
-    const raw = run('supabase', ['functions', 'list', '--project-ref', REF, '-o', 'json'], { cwd: ROOT });
-    /* CLI は版によって更新案内を混ぜるので、配列そのものだけを取り出す。 */
-    listed = JSON.parse(raw.slice(raw.indexOf('['), raw.lastIndexOf(']') + 1));
+    listed = parseFunctionsList(run('supabase', ['functions', 'list', '--project-ref', REF, '-o', 'json'], { cwd: ROOT }));
   } catch (e) { return { state: 'unknown', why: `supabase functions list が失敗した: ${String(e.message).split('\n')[0]}`, roster }; }
 
   const deployed = new Map(listed.map((f) => [f.slug || f.name, f]));

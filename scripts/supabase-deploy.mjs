@@ -4,10 +4,26 @@
  * ----------------------------------------------------------------------------
  *  `.github/workflows/supabase-deploy.yml` が main への push ごとに呼ぶ。手でも同じものが走る:
  *
- *      node scripts/supabase-deploy.mjs --before <sha> --after <sha>      # その push の差分だけ
- *      node scripts/supabase-deploy.mjs --all                             # 全関数（migration は出さない）
- *      node scripts/supabase-deploy.mjs --before <sha> --after <sha> --plan   # 何を出すかを印字するだけ
+ *      node scripts/supabase-deploy.mjs --base-from-runs --after <sha>    # 最後に成功した配備からの差分（CI）
+ *      node scripts/supabase-deploy.mjs --base <sha> --after <sha>        # 起点を手で与える
+ *      node scripts/supabase-deploy.mjs --all                             # 全関数（migration は選ばない）
+ *      node scripts/supabase-deploy.mjs --base <sha> --after <sha> --plan # 何を出すかを印字するだけ
  *      node scripts/supabase-deploy.mjs --link                            # link だけ（ドリフト検査の前段）
+ *
+ *  ⚠⚠⚠ 差分の起点は「その push の 1 つ前」ではなく「**最後に配備が成功した commit**」。
+ *  実測 2026-10-01: #869 の run は migration の dry run が拒まれて関数を 1 本も出さず
+ *  （"22 function(s) were NOT deployed"）、#874（_shared を変えた）の run も同じ理由で赤。#878 が
+ *  migration を直して run は緑になったが、#878 自身は関数を変えていないので HEAD^..HEAD は関数 0 本
+ *  ——`usage-count` は本番に存在しないまま 404、#874 の _shared も未配備で、**緑の run がそれを覆った**。
+ *  失敗した run の差分は、次の run が拾わない限り永久に落ちる。だから起点は記録から読む:
+ *    · 記録＝この workflow の**成功した push run** の headSha（`gh run list`）。配備した commit を
+ *      別に書き残す仕組みは作らない——run の結論そのものが「そこまで出た」の記録である。
+ *    · ⚠ その run が**この規則で走っていた**ときだけ信じる（`DEPLOY_BASE_CONTRACT`）。前の規則の緑は
+ *      HEAD^..HEAD しか出していないので、#878 の緑は「#878 までが本番にある」を意味しない。
+ *    · 記録が読めない・起点が HEAD の祖先でない（履歴が書き換わった）・規則を守った run が無い
+ *      → **全関数**（安全側）。「起点を測れなかった」を「何も変わっていない」にしない。
+ *  加えて: 本番に存在しない宣言済みの関数は差分に関係なく常に出し、出した後に
+ *  `functions list` と `config.toml` を突き合わせて、宣言された関数が本番に無ければ赤にする。
  *
  *  ⚠ なぜ要るのか。Pages は deploy.yml が push ごとに出していたのに、Edge Function 17 本と migration は
  *  **人が覚えていたときだけ**出ていた。実測: 2026-09-16 に Edge 17 本中 7 本がリポジトリと別のソースで
@@ -38,10 +54,20 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-/* project ref の導出は release-state.mjs が正本（同じ判断を 2 か所に持たない） */
-import { supabaseRefFrom } from './release-state.mjs';
+/* project ref の導出と functions list の読み方は release-state.mjs が正本（同じ判断を 2 か所に持たない） */
+import { supabaseRefFrom, parseFunctionsList } from './release-state.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+/* この script 自身のリポジトリ内の位置（過去の commit の中の自分を `git show` で読むのに使う） */
+const SELF = path.relative(ROOT, fileURLToPath(import.meta.url)).split(path.sep).join('/');
+
+/** 差分の起点の規則。過去の成功 run を起点に使ってよいのは、その run の commit の中のこの script が
+ *  同じ規則（＝「最後に成功した配備から」）で走っていたときだけ。前の規則（HEAD^..HEAD）の緑は、
+ *  それより前に失敗した run の分を出していない（#869→#874→#878 の実測）。
+ *  失効条件: 起点の決め方をまた変えるなら、この値も変える——前の規則の緑を信じなくなる（1 回全関数）。 */
+export const DEPLOY_BASE_CONTRACT = 'since-last-successful-deploy';
+export const carriesContract = (scriptSource) =>
+  String(scriptSource || '').includes(`DEPLOY_BASE_CONTRACT = '${DEPLOY_BASE_CONTRACT}'`);
 
 /* ---------------------------------------------------------------- 純関数（検査が直に測る） */
 
@@ -99,6 +125,47 @@ export const migrationMismatch = (pending, added) => {
   return why.join('; ');
 };
 
+/** `GITHUB_WORKFLOW_REF`（`owner/repo/.github/workflows/<file>@refs/heads/main`）から workflow のファイル名。
+ *  名前を手で書かない——この run を走らせている workflow 自身の履歴を訊く。 */
+export const workflowFileFromRef = (ref) => {
+  const m = /\.github\/workflows\/([^@/]+)@/.exec(String(ref || ''));
+  return m ? m[1] : null;
+};
+
+/** 差分の起点＝最後に配備が成功した commit。
+ *  runs: `gh run list --json databaseId,headSha,createdAt,conclusion`（この workflow・main・push）。
+ *  新しい順に見て、
+ *    · HEAD の祖先でない run に当たったら → null（全関数）。本番はこの系譜に無い commit を走らせている
+ *      ので、それより古い起点からの差分は、その commit が変えたものを出し直さない。
+ *    · この規則で走っていなかった run は飛ばす（緑でも「そこまで出た」を意味しない）。
+ *    · 規則で走っていた祖先の run → その headSha。
+ *  返り値 { base: sha|null, run, why }。base が null なら呼び手は全関数を出す。 */
+export const chooseDeployBase = (runs, { head, isAncestor, honoursContract }) => {
+  const ok = (runs || []).filter((r) => r && r.conclusion === 'success' && r.headSha)
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  if (!ok.length) return { base: null, run: null, why: 'no successful deploy run on record' };
+  let skipped = 0;
+  for (const r of ok) {
+    if (!isAncestor(r.headSha, head)) {
+      return { base: null, run: r.databaseId, why: `the successful deploy at ${r.headSha.slice(0, 8)} (run ${r.databaseId}) is not an ancestor of ${String(head).slice(0, 8)} — production runs a commit off this line` };
+    }
+    if (!honoursContract(r.headSha)) { skipped++; continue; }
+    return { base: r.headSha, run: r.databaseId, why: `last successful deploy: ${r.headSha.slice(0, 8)} (run ${r.databaseId})${skipped ? `; ${skipped} newer green run(s) predate the ${DEPLOY_BASE_CONTRACT} rule and do not prove what they deployed` : ''}` };
+  }
+  return { base: null, run: null, why: `none of the ${ok.length} successful deploy run(s) ran the ${DEPLOY_BASE_CONTRACT} rule — what is in production cannot be bounded by a commit` };
+};
+
+/** 宣言された関数のうち本番に無いもの（roster の順）。deployed が null（測れなかった）なら null。 */
+export const missingFromProduction = (roster, deployed) =>
+  deployed == null ? null : roster.filter((n) => !deployed.includes(n));
+
+/** 計画に「本番に無い関数」を足す。差分に関係なく常に出す（新しい関数・前の失敗で落ちた関数）。 */
+export const withMissing = (plan, roster, missing) => {
+  if (!missing || !missing.length) return { ...plan, absentInProduction: missing ? [] : null };
+  const want = new Set([...plan.functions, ...missing]);
+  return { ...plan, functions: roster.filter((n) => want.has(n)), absentInProduction: [...missing] };
+};
+
 /* ---------------------------------------------------------------- 実行 */
 
 const sh = (cmd, args, opts = {}) => {
@@ -129,40 +196,98 @@ const main = () => {
   };
   if (A.includes('--link')) { doLink(); console.log(`linked ${REF}`); return; }
 
-  /* 差分。before が無い（新しい branch・force push・手動）ときは全関数——「差分を測れなかった」を
-     「何も変わっていない」にしない。migration はその場合流さない（どれを流すかを選べないので）。 */
+  /* 本番に在る関数の slug。測れなければ null（「0 本」でも「全部在る」でもない）。 */
+  const listDeployed = () => {
+    const r = sh('supabase', ['functions', 'list', '--project-ref', REF, '-o', 'json'], { timeout: 180_000 });
+    if (r.code !== 0) return { slugs: null, why: `supabase functions list exited ${r.code}: ${r.out.trim().split('\n').at(-1) || ''}` };
+    try { return { slugs: parseFunctionsList(r.out).map((f) => f.slug || f.name) }; }
+    catch (e) { return { slugs: null, why: e.message }; }
+  };
+
+  /* ---- 差分の起点（冒頭の ⚠⚠⚠）。起点が無ければ全関数——「起点を測れなかった」を
+     「何も変わっていない」にしない。 */
+  const after = val('--after') || 'HEAD';
+  const head = sh('git', ['rev-parse', '--verify', `${after}^{commit}`]).out.trim();
+  if (!/^[0-9a-f]{40}$/.test(head)) { err(`cannot resolve --after ${after}`); process.exit(1); }
+  let base = null, baseWhy;
+  if (A.includes('--all')) baseWhy = '--all';
+  else if (A.includes('--base-from-runs')) {
+    const wf = workflowFileFromRef(process.env.GITHUB_WORKFLOW_REF);
+    const repo = process.env.GITHUB_REPOSITORY;
+    const branch = process.env.GITHUB_REF_NAME || 'main';
+    if (!wf || !repo) baseWhy = `cannot name this workflow's run history (GITHUB_WORKFLOW_REF=${process.env.GITHUB_WORKFLOW_REF || ''}, GITHUB_REPOSITORY=${repo || ''})`;
+    else {
+      /* push の run だけ: workflow_dispatch の run は drift だけのこともあり、run の一覧は inputs を持たない。
+         push の run は deploy job しか走らせない（drift の if: は schedule / dispatch）。 */
+      const r = sh('gh', ['run', 'list', '--repo', repo, '--workflow', wf, '--branch', branch, '--event', 'push',
+        '--status', 'success', '--limit', '100', '--json', 'databaseId,headSha,createdAt,conclusion']);
+      let runs = null;
+      if (r.code === 0) { try { runs = JSON.parse(r.out.slice(r.out.indexOf('['), r.out.lastIndexOf(']') + 1)); } catch { runs = null; } }
+      if (!Array.isArray(runs)) baseWhy = `could not read the run history of ${wf} (gh exit ${r.code}): ${r.out.trim().split('\n').at(-1) || ''}`;
+      else {
+        const chosen = chooseDeployBase(runs, {
+          head,
+          isAncestor: (sha) => sh('git', ['merge-base', '--is-ancestor', sha, head]).code === 0,
+          honoursContract: (sha) => {
+            const s = sh('git', ['show', `${sha}:${SELF}`]);
+            return s.code === 0 && carriesContract(s.out);
+          },
+        });
+        base = chosen.base; baseWhy = chosen.why;
+      }
+    }
+  } else if (val('--base')) {
+    const b = val('--base');
+    if (sh('git', ['cat-file', '-e', `${b}^{commit}`]).code === 0) base = b;
+    else baseWhy = `--base ${b} is not a commit in this checkout`;
+  } else baseWhy = 'no base given (--base / --base-from-runs)';
+
   let plan;
-  const before = val('--before'), after = val('--after') || 'HEAD';
-  const zero = !before || /^0+$/.test(before);
-  const known = !zero && sh('git', ['cat-file', '-e', `${before}^{commit}`]).code === 0;
-  if (A.includes('--all') || !known) {
-    plan = { functions: [...roster], all: A.includes('--all') ? '--all' : `the push has no usable base (${before || 'none'}) — deploying every function`, unknownFunctionDirs: [], migrations: { added: [], edited: [] } };
+  if (!base) {
+    plan = { functions: [...roster], all: baseWhy === '--all' ? '--all' : `no usable base — ${baseWhy} — deploying every function`, unknownFunctionDirs: [], migrations: { added: [], edited: [], unbounded: true } };
   } else {
-    const d = sh('git', ['diff', '--name-status', '--no-renames', before, after]);
-    if (d.code !== 0) { err(`git diff ${before}..${after} failed:\n${d.out}`); process.exit(1); }
-    plan = planDeploy(parseNameStatus(d.out), roster);
+    const d = sh('git', ['diff', '--name-status', '--no-renames', base, head]);
+    if (d.code !== 0) { err(`git diff ${base}..${head} failed:\n${d.out}`); process.exit(1); }
+    plan = { ...planDeploy(parseNameStatus(d.out), roster), base: `${base} — ${baseWhy || 'given by --base'}` };
   }
 
-  console.log(JSON.stringify({ ref: REF, ...plan }, null, 2));
+  console.log(JSON.stringify({ ref: REF, head, ...plan }, null, 2));
   let failed = 0;
   for (const dir of plan.unknownFunctionDirs) { err(`supabase/functions/${dir}/ changed but supabase/config.toml has no [functions.${dir}] — its verify_jwt is undeclared, so it is not deployed`); failed++; }
   for (const v of plan.migrations.edited) console.log(`::warning::migration ${v} was EDITED. db push never re-applies a recorded version — ship the change as a new migration.`);
   if (onlyPlan) process.exit(failed ? 1 : 0);
-  if (!plan.functions.length && !plan.migrations.added.length) {
-    console.log('nothing under supabase/ that deploys changed in this push — nothing to do');
+
+  /* ---- 本番に無い宣言済みの関数は、差分に関係なく出す（新しい関数・前の失敗で落ちたもの）。
+     測れなければ全関数（安全側）。 */
+  const before = listDeployed();
+  const missing = missingFromProduction(roster, before.slugs);
+  if (missing == null) {
+    console.log(`::warning::could not list the functions in production (${before.why}) — deploying every function`);
+    plan = { ...plan, functions: [...roster], all: plan.all || `production could not be listed (${before.why})` };
+  } else if (missing.length) {
+    console.log(`declared in supabase/config.toml but absent from production: ${missing.join(' ')} — deploying them regardless of the diff`);
+    plan = withMissing(plan, roster, missing);
+  }
+
+  if (!plan.functions.length && !plan.migrations.added.length && !plan.migrations.unbounded) {
+    console.log(`nothing under supabase/ that deploys changed since ${plan.base || 'the base'} — nothing to do; every declared function exists in production`);
     process.exit(failed ? 1 : 0);
   }
 
   doLink();
 
   /* ① migration を先に（新しい関数が新しい列を読むことがある） */
-  if (plan.migrations.added.length) {
+  if (plan.migrations.added.length || plan.migrations.unbounded) {
     const dry = sh('supabase', ['db', 'push', '--linked', '--dry-run']);
     console.log(dry.out);
     const pending = pendingFromDryRun(dry.out);
     if (dry.code !== 0 || /not found in local migrations|Found local migration files to be inserted before/i.test(dry.out)) {
       err(`supabase db push --dry-run refused (exit ${dry.code}) — the production migration history does not match supabase/migrations. Nothing was applied. See docs/MIGRATIONS.md.`);
       failed++;
+    } else if (plan.migrations.unbounded) {
+      /* 起点が無いと「どれを流すか」を選べない。流すものが残っているなら、この run を緑にしない
+         ——緑の run は次の run の起点になり、残った migration は二度と差分に現れない。 */
+      if (pending.length) { err(`no deploy base, so this run cannot choose which migrations to apply, and db push would apply ${pending.join(' ')}. Nothing was applied. Apply them by hand (docs/MIGRATIONS.md → "5. Apply to production").`); failed++; }
     } else {
       const why = migrationMismatch(pending, plan.migrations.added);
       if (why) { err(`${why}. Nothing was applied.`); failed++; }
@@ -176,7 +301,7 @@ const main = () => {
 
   /* ② 関数。migration が出なかったときは出さない——新しい関数が、まだ無い列を読みに行く。
      1 本の失敗で残りは止めない（どれが出てどれが出なかったかを全部言う）。 */
-  if (failed && plan.migrations.added.length) {
+  if (failed && (plan.migrations.added.length || plan.migrations.unbounded)) {
     err(`the migration step failed, so ${plan.functions.length} function(s) were NOT deployed: ${plan.functions.join(' ') || '(none)'}`);
     process.exit(1);
   }
@@ -185,6 +310,14 @@ const main = () => {
     console.log(`--- ${name}: exit ${r.code}\n${r.out.trim()}`);
     if (r.code !== 0) { err(`functions deploy ${name} failed (exit ${r.code})`); failed++; }
   }
+
+  /* ③ 存在の検査。宣言された関数が本番に 1 本でも無ければ赤——「出したはず」ではなく本番に訊く。
+     測れなかったことも赤（緑の run は次の起点になるので、確かめていない緑を作らない）。 */
+  const after_ = listDeployed();
+  const absent = missingFromProduction(roster, after_.slugs);
+  if (absent == null) { err(`could not confirm the deploy: ${after_.why}`); failed++; }
+  else if (absent.length) { err(`declared in supabase/config.toml but NOT in production after the deploy: ${absent.join(' ')}`); failed++; }
+  else console.log(`all ${roster.length} declared function(s) exist in production`);
   process.exit(failed ? 1 : 0);
 };
 
