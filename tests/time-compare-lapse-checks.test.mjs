@@ -11,7 +11,7 @@
  *    ④ js/time-lapse.js steps the clock in its unit and stops at the end; a hand on the clock pauses it.
  *    ⑤ the `timeView` verdict: done is «the state reached is the state asked for» — not «the call returned».
  *  The browser half (the window drawing 1914's borders beside today's, layers entering during a lapse) is
- *  tests/time-compare-lapse.spec.js.
+ *  the time-compare-lapse tests at the end of tests/smoke.spec.js.
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';

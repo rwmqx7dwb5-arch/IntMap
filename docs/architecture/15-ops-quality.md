@@ -68,8 +68,11 @@ Pages の artifact も組み、`build`・「Static checks」・「Regression sui
 再公開ボタン（自前でビルドする）だけが残る。bot の PR（衛星カタログ `tle-refresh.yml`・起動予算の天井
 `perf-ceiling.yml`）は `.github/actions/land-bot-pr` が merge し、`GITHUB_TOKEN` の push は CI を
 起こさないので、同じ手が続けて `deploy.yml` を起動する。着地の確認は
-`curl -s https://rwmqx7dwb5-arch.github.io/IntMap/build-info.json` の `sha` が
-`git rev-parse origin/main` と一致すること。ロールバックは `.github/workflows/rollback.yml`
+`curl -s "$(node scripts/site-url.mjs)build-info.json"` の `sha` が
+`git rev-parse origin/main` と一致すること。本番のアドレスは `supabase/functions/_shared/site-origin.js` の 1 か所だけが持ち
+（`CUSTOM_DOMAIN` が空なら Pages のアドレス）、Edge Function・ビルド・workflow・テスト・文書はそこから導く
+——他の場所に書くと `check:static` の `site-address` が赤になる。独自ドメインへの移り方は
+`docs/RELEASE.md`「Moving the site to its own domain」。ロールバックは `.github/workflows/rollback.yml`
 （履歴に実在する ref のみ・対象 ref を **Vite ビルドして `dist` を配信**）。
 ⚠ ビルドする前に、**そのコミット自身の** `data-assets.json` が名指すデータ集合を取得する
 （`.github/actions/data-assets`。ロールバックは対象コミットの目録とスクリプトで取り、目録を持たない

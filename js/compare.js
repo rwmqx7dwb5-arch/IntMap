@@ -581,12 +581,12 @@ export function compare(HOST){
           cmap.layers.add({id:'cmp-hb-l',type:'line',source:'cmp-hb',layout:{visibility:'none'},paint:{'line-color':'#5e4a33','line-width':0.9,'line-opacity':0.85}}); }catch(_){} }
         done&&done(); },
         /* → the sentence the window shows under the picker, or null */
-        at(){ const when=CT.when(), live=CT.isLive(), my=++_hbSeq;
+        at(){ const when=CT.when(), live=CT.isLive(), iso=live?null:CT.iso(), my=++_hbSeq;
           const put=(fc)=>{ try{ if(my===_hbSeq&&cmap.layers.hasSource('cmp-hb')) cmap.layers.setSourceData('cmp-hb',fc); }catch(_){} };
           const TB=window.IntMapTimeBorders;
           return Promise.resolve().then(()=>TB.collectionAt(when,{live})).then(r=>{
             if(my!==_hbSeq) return null;
-            _hbShown=r?{key:r.key,features:r.fc?r.fc.features.length:0,names:r.fc?r.fc.features.filter(f=>f&&f.properties&&(f.properties.NAME||f.properties.name)).length:0,modern:!!r.modern}:null;
+            _hbShown=r?{iso,key:r.key,features:r.fc?r.fc.features.length:0,names:r.fc?r.fc.features.filter(f=>f&&f.properties&&(f.properties.NAME||f.properties.name)).length:0,modern:!!r.modern}:null;
             if(r&&r.fc){ put(r.fc); return null; }
             put({type:'FeatureCollection',features:[]});
             if(r&&r.modern) return LA('Borders at this instant are today’s — the base map draws them','この日時の国境は現在のもの——ベースマップが描いています');

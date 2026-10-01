@@ -2339,3 +2339,140 @@ test('R766 ③ every door is reachable on a phone viewport too', async () => {
       .catch(() => { /* restore is courtesy — nothing below asserts on the layout */ });
   }
 });
+
+/* ══ (time-compare-lapse) 「1914 年 | 今日」 AND THE CLOCK PLAYED FORWARD — on this suite's booted page ══════════
+   Not a spec of its own (docs/TESTING.md: a new file is charged an unmeasured p75 to core and to the whole suite,
+   and the boot is the whole price). Each test puts back what it moved — the clock, the window, the box it ticked,
+   the panel — because the page is shared. The node half is tests/time-compare-lapse-checks.test.mjs.
+   ① The comparison window holds its own clock: at 1914 beside a main map at 1960 BOTH draw borders and they are
+     different records (js/time-borders.js `collectionAt` for each clock); the window's base is physical geography
+     while an era record answers; a present-only feed is not drawn in it, with the reason; the era rule of the main
+     map (a polity that had ended is drawn without its name — hist-era-span-fidelity) holds in the window too; the
+     share link (`ct=`) brings the window's instant back; Atlas `time.compare` is verified off the window.
+   ② The time-lapse plays 1898→1903 one drawn frame per year without skipping, and Köppen (first period 1901) is
+     held at 1899 and drawn at the end — which the lapse reports to Atlas. */
+const tclWindow = () => page.evaluate(() => {
+  const C = window.IntMapCompare, s = C.timeState(), m = C._map();
+  let data = null; try { data = m.layers.sourceData('cmp-hb'); } catch (_) { data = null; }
+  const feats = data && data.features ? data.features : [];
+  const names = [...new Set(feats.map((f) => f.properties && (f.properties.NAME || f.properties.name)).filter(Boolean))];
+  const withheld = [...new Set(feats.map((f) => f.properties && f.properties._wName).filter(Boolean))];
+  return { s, names, withheld, badge: (document.getElementById('cmp-when') || {}).textContent || '' };
+});
+
+test('time-compare-lapse ① the comparison window draws 1914 beside the main map at another instant', async () => {
+  test.setTimeout(240_000);
+  let navAt = 0;
+  try {
+    await page.evaluate(() => window.IntMapCompare.open());
+    await expect(page.locator('#compare-window')).toBeVisible();
+    /* a present-only layer in a 1914 window: not drawn, and the window says why */
+    await page.selectOption('#cmp-layers-sel', 'eq');
+    await page.click('#compare-window [data-t="own"]');
+    await page.fill('#cmp-year', '1914');
+    await page.locator('#cmp-year').evaluate((el) => el.dispatchEvent(new Event('change', { bubbles: true })));
+    await page.waitForFunction(() => { const s = window.IntMapCompare.timeState(); return s.iso && s.iso.startsWith('1914') && s.verdict; }, null, { timeout: 60_000 });
+    let w = await tclWindow();
+    expect(w.s.follow).toBe(false);
+    expect(w.s.verdict.status).toBe('unstated');
+    expect(w.s.held).toBe(true);
+    expect(((await page.locator('#cmp-tnote').textContent()) || '').length).toBeGreaterThan(10);
+    expect(await page.evaluate(() => window.IntMapCompare._map().layers.getLayout('cmpx-eq', 'visibility'))).not.toBe('visible');
+
+    /* the historical borders: the window at 1914, the main map at 1960 */
+    await page.selectOption('#cmp-layers-sel', 'histb');
+    await page.evaluate(() => window.IntMapTime.setYear(1960, { source: 'ui' }));
+    await page.waitForFunction(() => { const s = window.IntMapCompare.timeState(); return s.layer === 'histb' && s.drawn && s.drawn.features > 0 && String(s.drawn.iso).startsWith('1914'); }, null, { timeout: 120_000 });
+    await page.waitForFunction(() => { const TB = window.IntMapTimeBorders; return TB.active() && !!TB.currentFC() && String(TB.current()).startsWith('cs196'); }, null, { timeout: 120_000 });
+    await page.waitForFunction(() => { try { return window.IntMapCompare._map().coords.queryRenderedFeatures(undefined, { layers: ['cmp-hb-l'] }).length > 0; } catch (_) { return false; } }, null, { timeout: 60_000 });
+    w = await tclWindow();
+    const main = await page.evaluate(() => { const TB = window.IntMapTimeBorders, fc = TB.currentFC();
+      return { key: TB.current(), names: fc ? [...new Set(fc.features.map((f) => f.properties && (f.properties.NAME || f.properties.name)).filter(Boolean))] : [] }; });
+    expect(w.s.main.iso.startsWith('1960')).toBe(true);
+    expect(w.names.length).toBeGreaterThan(20);
+    expect(main.names.length).toBeGreaterThan(20);
+    /* two records, not one: each instant has polities the other does not */
+    expect(w.names.filter((n) => !main.names.includes(n)).length).toBeGreaterThan(0);
+    expect(main.names.filter((n) => !w.names.includes(n)).length).toBeGreaterThan(0);
+    expect(w.s.drawn.key).not.toBe(main.key);
+    expect(w.badge).toContain('1914');
+    expect(w.badge).toContain('1960');
+    /* under 1914's borders the window does not draw today's political base */
+    const base = await page.evaluate(() => { const L = window.IntMapCompare._map().layers;
+      return { carto: L.getLayout('cmp-base-carto', 'visibility'), dark: L.getLayout('cmp-base-dark', 'visibility'), water: L.has('cmp-imhb-water') ? L.getLayout('cmp-imhb-water', 'visibility') : 'absent' }; });
+    expect(base.carto).not.toBe('visible');
+    expect(base.dark).not.toBe('visible');
+    expect(base.water).toBe('visible');
+
+    /* the era rule holds in the window: at 1600 the sheet's polities that had already ended are drawn without their
+       names (data/hist-era-spans.json — Songhai ended 1591), exactly as the main map's chain answers for 1600 */
+    await page.evaluate(() => window.IntMapCompare.setTime({ year: 1600 }));
+    await page.waitForFunction(() => { const s = window.IntMapCompare.timeState(); return s.drawn && s.drawn.features > 0 && String(s.drawn.iso).startsWith('1600'); }, null, { timeout: 120_000 });
+    w = await tclWindow();
+    expect(w.withheld.length).toBeGreaterThan(0);
+    for (const n of w.withheld) expect(w.names).not.toContain(n);
+    const mainAt1600 = await page.evaluate(async () => { const TB = window.IntMapTimeBorders, H = window.IntMapHistScale;
+      const r = await TB.collectionAt(H.utcAt(1600, 5, 15, 12, 0, 0)); return [...new Set(r.fc.features.map((f) => f.properties._wName).filter(Boolean))]; });
+    expect([...w.withheld].sort()).toEqual([...mainAt1600].sort());
+    await page.evaluate(() => window.IntMapCompare.setTime({ year: 1914 }));
+
+    /* the main map back to today: it draws no era record; the window keeps 1914 */
+    await page.evaluate(() => window.IntMapTime.setNow({ source: 'ui' }));
+    await page.waitForFunction(() => !window.IntMapTimeBorders.active(), null, { timeout: 30_000 });
+    await page.waitForFunction(() => { const s = window.IntMapCompare.timeState(); return s.drawn && s.drawn.features > 0 && String(s.drawn.iso).startsWith('1914'); }, null, { timeout: 60_000 });
+    expect((await tclWindow()).s.main.live).toBe(true);
+
+    /* the share link carries the window's instant, and a hash navigation to it brings it back */
+    await page.waitForFunction(() => /[#&]ct=1914(&|$)/.test(location.hash) && /[#&]cmp=1/.test(location.hash), null, { timeout: 15_000 });
+    const hash = await page.evaluate(() => location.hash);
+    await page.evaluate(() => window.IntMapCompare.setTime({ follow: true }));
+    await page.waitForFunction(() => !/[#&]ct=/.test(location.hash), null, { timeout: 15_000 });
+    navAt = await page.evaluate((h) => { location.hash = h; return Date.now(); }, hash);
+    await page.waitForFunction(() => { const s = window.IntMapCompare.timeState(); return s.open && s.follow === false && s.iso && s.iso.startsWith('1914'); }, null, { timeout: 30_000 });
+
+    /* Atlas sets the window through the capability; its verdict is read off the window */
+    const res = await page.evaluate(async () => {
+      const r = await window.IntMapOS.execute('time.compare', { year: 1500 }, { source: 'test' });
+      return { status: r.status, iso: window.IntMapCompare.timeState().iso, state: window.IntMapOS.state() };
+    });
+    expect(res.status).toBe('completed');
+    expect(res.iso.startsWith('1500')).toBe(true);
+    expect(res.state).toContain('COMPARISON WINDOW is open at 1500');
+    expect(await page.evaluate(async () => (await window.IntMapOS.execute('time.compare', { year: 1500 }, { source: 'test' })).code)).toBe('already_there');
+  } finally {
+    /* a hash navigation is a full restore whose last passes run on js/map-ui.js's own timers (the layer set re-applied
+       at 3.2 s, `restoring` cleared at 3.5 s): let them finish here, or they untick the next test's boxes */
+    if (navAt) await page.waitForFunction((t) => Date.now() - t > 3600, navAt, { timeout: 15_000 }).catch(() => {});
+    await page.evaluate(() => { try { window.IntMapCompare.setTime({ follow: true }); window.IntMapCompare.close(); } catch (_) { /* nothing open */ }
+      try { window.IntMapTime.setNow({ source: 'ui' }); } catch (_) { /* live */ } });
+  }
+});
+
+test('time-compare-lapse ② the time-lapse plays one drawn frame per year, and Köppen begins to be drawn at 1901', async () => {
+  test.setTimeout(240_000);
+  const ticked = await page.evaluate(() => document.getElementById('dl-climate').checked);
+  try {
+    await page.evaluate(() => { window.__lapseYears = []; window.IntMapTime.on((e) => { if (e.source === 'lapse') window.__lapseYears.push(e.isLive ? 'now' : e.year); }); });
+    await page.evaluate(() => { const cb = document.getElementById('dl-climate'); if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); } });
+    if (await page.evaluate(() => document.getElementById('news-timeline').classList.contains('collapsed'))) await page.click('#ntl-toggle');
+    await expect(page.locator('#ntl-lapse-play')).toBeVisible({ timeout: 30_000 });
+    await page.click('#ntl-lapse [data-unit="year"]');
+    await page.fill('#ntl-lapse-from', '1898');
+    await page.fill('#ntl-lapse-to', '1903');
+    await page.click('#ntl-lapse [data-fps="4"]');
+    await page.click('#ntl-lapse-play');
+    await page.waitForFunction(() => window.IntMapTime.when().getUTCFullYear() === 1899 && window.IntMapLayerTime && window.IntMapLayerTime.held('dl-climate'), null, { timeout: 120_000 });
+    await page.waitForFunction(() => window.IntMapTime.when().getUTCFullYear() === 1903 && !document.getElementById('ntl-lapse-play').classList.contains('on'), null, { timeout: 180_000 });
+    expect(await page.evaluate(() => window.__lapseYears)).toEqual([1898, 1899, 1900, 1901, 1902, 1903]);
+    expect(await page.evaluate(() => window.IntMapLayerTime.held('dl-climate'))).toBe(false);
+    const st = await page.evaluate(() => window.IntMapOS.state());
+    expect(st).toMatch(/TIME-LAPSE stopped \(end\): 1898-06-15 → 1903-06-15/);
+    expect(st).toMatch(/began to be drawn: (?!none)/);
+    expect(await page.evaluate(async () => (await window.IntMapOS.execute('time.lapse', { from: '1950', to: '1990', unit: 'year', step: 10, fps: 1 }, { source: 'test' })).status)).toBe('completed');
+    expect(await page.evaluate(async () => (await window.IntMapOS.execute('time.lapse', { play: false }, { source: 'test' })).status)).toBe('completed');
+  } finally {
+    await page.evaluate((was) => { try { window.IntMapTime.setNow({ source: 'ui' }); } catch (_) { /* live */ }
+      const cb = document.getElementById('dl-climate'); if (cb && cb.checked !== was) { cb.checked = was; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+      const x = document.getElementById('ntl-x'); if (x && !document.getElementById('news-timeline').classList.contains('collapsed')) x.click(); }, ticked);
+  }
+});

@@ -25,6 +25,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { scratchTree } from './helpers/scratch-tree.mjs';
+import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 import { chapters, readSpec } from '../scripts/architecture-spec.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -135,7 +136,7 @@ test('#R257 ② AGENTS.md still carries each standing rule', () => {
 test('#R257 ③ AGENTS.md carries the project information block', () => {
   const md = read('AGENTS.md');
   for (const needle of [
-    'https://rwmqx7dwb5-arch.github.io/IntMap/',        // production
+    SITE_URL,                                           // production (domain-portable: site-origin.js)
     'https://github.com/rwmqx7dwb5-arch/IntMap',        // repo
     'npm run serve',                                    // local
     '127.0.0.1:4173',                                   // local port

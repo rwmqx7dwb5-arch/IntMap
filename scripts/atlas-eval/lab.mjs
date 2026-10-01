@@ -16,6 +16,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { judgeTurn, metricsOf } from './judge.mjs';
 import { replayCassette, validateCassette } from './replay.mjs';
+import { eraReference } from './map-state.mjs';
 
 export function loadSets(root) {
   return {
@@ -48,12 +49,14 @@ export function rulesOf(P) {
 }
 
 /**
- * evaluateCassettes(cassettes, {P, sets}) → [{ id, file, origin, judged, divergences, problems }]
+ * evaluateCassettes(cassettes, {P, sets, root}) → [{ id, file, origin, judged, divergences, problems }]
  * `problems` is everything that makes the replay red: a malformed cassette, a question it names that
  * does not exist or reads differently, a divergence, and a judgement other than the one declared.
  */
-export async function evaluateCassettes(cassettes, { P, sets }) {
-  const rules = rulesOf(P);
+export async function evaluateCassettes(cassettes, { P, sets, root }) {
+  /* (atlas-eval-map-state) the era criterion's enumeration (scripts/hist-fidelity.mjs) is handed in like
+     every other rule; it runs only when a replayed snapshot is graded against an `era` */
+  const rules = Object.assign(rulesOf(P), { eraReference: eraReference(root) });
   const out = [];
   for (const cas of cassettes) {
     const problems = validateCassette(cas);
@@ -74,6 +77,13 @@ export async function evaluateCassettes(cassettes, { P, sets }) {
       if (extra.length) problems.push('the judge finds failures the cassette does not declare: ' + extra.join(', ') + ' — ' + judged.failures.filter((f) => extra.indexOf(f.kind) >= 0).map((f) => f.detail).join(' | '));
     }
     if (e.grade && (!judged.metrics.grade || judged.metrics.grade.verdict !== e.grade)) problems.push('the answer grades ' + (judged.metrics.grade ? judged.metrics.grade.verdict : '(not graded)') + '; recorded ' + e.grade);
+    /* (atlas-eval-map-state) the map axis, held to what the cassette declares. ⚠ A cassette that declares
+       nothing is graded and reported (the table's `map` column) but not held: a production recording made
+       by scripts/atlas-eval.mjs `cassetteOf` does not write `expect.map` yet. Every SCRIPTED cassette whose
+       question states a map declares it (tests/atlas-eval-map-state-checks.test.mjs). */
+    const mv = judged.metrics.map ? judged.metrics.map.verdict : null;
+    if (!q.mapState && e.map != null) problems.push('expect.map is declared but the question states no map (mapState)');
+    else if (e.map != null && mv !== e.map) problems.push('the map grades ' + mv + '; recorded ' + e.map + ' — ' + judged.metrics.map.criteria.map((c) => c.criterion + ' ' + c.verdict + ': ' + c.detail).join(' | '));
     if (e.dispatched != null && r.dispatched !== e.dispatched) problems.push(r.dispatched + ' action(s) reached the dispatch; recorded ' + e.dispatched);
     out.push({ id: cas.id, file: cas.__file, origin: cas.origin, judged, divergences: r.divergences, problems });
   }
@@ -90,11 +100,11 @@ export function renderReplay(results) {
   L.push('');
   L.push('No model was called. Each cassette is one turn (the model\'s replies and what the browser returned), replayed through the current `js/atlas-agent.js`, `js/atlas-toolsurface.js`, registry and schemas, and judged by `scripts/atlas-eval/judge.mjs` + `grade.mjs`.');
   L.push('');
-  L.push('| cassette | origin | stop | grade | judged | result |');
-  L.push('|---|---|---|---|---|---|');
+  L.push('| cassette | origin | stop | grade | map | judged | result |');
+  L.push('|---|---|---|---|---|---|---|');
   for (const r of results) {
     const j = r.judged;
-    L.push('| `' + r.id + '` | ' + (r.origin ? r.origin.kind : '?') + ' | ' + (j ? '`' + (j.metrics.stopped || '?') + '`' : '—') + ' | ' + (j && j.metrics.grade ? j.metrics.grade.verdict : '—') + ' | '
+    L.push('| `' + r.id + '` | ' + (r.origin ? r.origin.kind : '?') + ' | ' + (j ? '`' + (j.metrics.stopped || '?') + '`' : '—') + ' | ' + (j && j.metrics.grade ? j.metrics.grade.verdict : '—') + ' | ' + (j && j.metrics.map ? j.metrics.map.verdict : '—') + ' | '
       + (j ? (j.failures.length ? [...new Set(j.failures.map((f) => f.kind))].join(', ') : 'clean') : '—') + ' | ' + (r.problems.length ? '**red**' : 'green') + ' |');
   }
   if (bad.length) {
@@ -102,6 +112,8 @@ export function renderReplay(results) {
     L.push('## Red');
     for (const r of bad) { L.push(''); L.push('### `' + r.id + '` (' + r.file + ')'); for (const p of r.problems) L.push('* ' + p); }
   }
+  L.push('');
+  L.push('Map axis in the replayed set: ' + M.map.match + ' match / ' + M.map.mismatch + ' mismatch / ' + M.map.unobserved + ' unobserved of ' + M.map.graded + ' (a separate axis from the answer — scripts/atlas-eval/map-state.mjs).');
   L.push('');
   L.push('Graded answers in the replayed set: ' + M.answers.correct + ' correct / ' + M.answers.incorrect + ' incorrect / ' + M.answers.absent + ' absent of ' + M.answers.graded + ' (these are the cassettes\' own answers — the measure of Atlas is the nightly).');
   return L.join('\n');
@@ -119,6 +131,10 @@ export function summaryOf(r) {
   const M = r.metrics || {};
   const A = M.answers || { byCategory: {}, byLang: {}, byCapability: {} };
   const map = (o) => Object.fromEntries(Object.entries(o || {}).map(([k, v]) => [k, pair(v)]));
+  /* (atlas-eval-map-state) the map axis as [match, observed] — unobserved is its own count, never a 0 */
+  const MA = M.map || null;
+  const mpair = (v) => [v.match, v.match + v.mismatch];
+  const mmap = (o) => Object.fromEntries(Object.entries(o || {}).map(([k, v]) => [k, mpair(v)]));
   return {
     when: r.when, build: r.build || null, verdict: r.verdict, runUrl: r.runUrl || null,
     measured: M.measured || 0, questions: M.questions || 0,
@@ -128,6 +144,8 @@ export function summaryOf(r) {
     cut: M.cutTurns ? M.cutTurns.n : 0, sameCallAgain: M.secondOfSameOp ? M.secondOfSameOp.total : 0,
     p50: M.durationMs ? M.durationMs.p50 : null,
     byCategory: map(A.byCategory), byLang: map(A.byLang), byCapability: map(A.byCapability),
+    map: MA ? mpair(MA) : null, mapUnobserved: MA ? MA.unobserved : 0,
+    mapByCategory: MA ? mmap(MA.byCategory) : {}, mapByLang: MA ? mmap(MA.byLang) : {}, mapByCapability: MA ? mmap(MA.byCapability) : {},
   };
 }
 
@@ -147,16 +165,18 @@ export function renderTrend(history, nights = 14) {
   const L = ['## Over time', ''];
   if (!rows.length) { L.push('No measured night yet — the trend starts with the first night that measures something.'); return L.join('\n'); }
   const day = (r) => String(r.when || '').slice(0, 10);
-  L.push('| night | verdict | measured | reach | answers right | rubric pass | cut short | same call again | p50 |');
-  L.push('|---|---|---|---|---|---|---|---|---|');
-  for (const r of rows) L.push('| ' + day(r) + ' | ' + r.verdict + ' | ' + r.measured + '/' + r.questions + ' | ' + pct(r.reach) + ' | ' + pct(r.answers) + ' | ' + pct(r.rubric) + ' | ' + r.cut + ' | ' + r.sameCallAgain + ' | ' + (r.p50 == null ? '—' : (r.p50 / 1000).toFixed(0) + ' s') + ' |');
-  for (const [title, field] of [['By kind of question', 'byCategory'], ['By language', 'byLang'], ['By capability', 'byCapability']]) {
+  L.push('| night | verdict | measured | reach | answers right | map right (observed) | map unobserved | rubric pass | cut short | same call again | p50 |');
+  L.push('|---|---|---|---|---|---|---|---|---|---|---|');
+  for (const r of rows) L.push('| ' + day(r) + ' | ' + r.verdict + ' | ' + r.measured + '/' + r.questions + ' | ' + pct(r.reach) + ' | ' + pct(r.answers) + ' | ' + pct(r.map) + ' | ' + (r.map ? (r.mapUnobserved || 0) : '—') + ' | ' + pct(r.rubric) + ' | ' + r.cut + ' | ' + r.sameCallAgain + ' | ' + (r.p50 == null ? '—' : (r.p50 / 1000).toFixed(0) + ' s') + ' |');
+  for (const [title, field] of [['By kind of question', 'byCategory'], ['By language', 'byLang'], ['By capability', 'byCapability'],
+    ['Map by kind of question', 'mapByCategory'], ['Map by language', 'mapByLang'], ['Map by capability', 'mapByCapability']]) {
     const keys = [...new Set(rows.flatMap((r) => Object.keys(r[field] || {})))].sort();
     if (!keys.length) continue;
     L.push('');
-    L.push('### ' + title + ' — answers right, night by night (oldest → newest)');
+    const isMap = field.startsWith('map');
+    L.push('### ' + title + ' — ' + (isMap ? 'final map right of the observed' : 'answers right') + ', night by night (oldest → newest)');
     L.push('');
-    L.push('| ' + field.replace(/^by/, '').toLowerCase() + ' | ' + rows.map(day).join(' | ') + ' |');
+    L.push('| ' + field.replace(/^(?:map)?[bB]y/, '').toLowerCase() + ' | ' + rows.map(day).join(' | ') + ' |');
     L.push('|---|' + rows.map(() => '---|').join(''));
     /* worst first: the row a reader should look at is the one at the top */
     const latest = (k) => { const p = rows[rows.length - 1][field] && rows[rows.length - 1][field][k]; return p && p[1] ? p[0] / p[1] : 2; };

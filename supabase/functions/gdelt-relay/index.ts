@@ -71,6 +71,7 @@
 
 import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
 import { callerGate } from "../_shared/rate-limit.js";
+import { SITE_USER_AGENT } from "../_shared/site-origin.js";
 
 /* ⚠⚠⚠ (#R468) THE DIAGNOSTIC HEADERS HAVE TO BE EXPOSED, OR THEY DO NOT EXIST WHERE THEY ARE READ.
    #R464 added `x-intmap-gdelt-cache` / `-age-ms` / `-store` for one stated reason: a cache that
@@ -331,7 +332,7 @@ async function refresh(canonUrl, key, budgetMs, maxTries) {
         contentTypeRe: /json/i,
         headers: {
           accept: "application/json",
-          "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)",
+          "user-agent": SITE_USER_AGENT,
         },
       });
     } catch (e) {

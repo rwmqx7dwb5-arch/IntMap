@@ -35,12 +35,15 @@
    · stack 4000 / STACK_LINES 20 — a V8 stack is 10 frames by default (Error.stackTraceLimit), each
      frame ~100-200 characters with a full asset URL; 20 lines covers Firefox/Safari, which do not
      cap, at the depth that identifies a call site. Bounds a row at roughly 5 KB.
-   · path 200 — the deployed paths are /IntMap/, /IntMap/admin.html and the two policy pages.
+   · path 200 — the deployed paths are the site's base path (site-origin.js SITE_BASE_PATH — /IntMap/
+     on Pages, / on a domain of its own), its admin.html and the two policy pages.
    · release 64 — window.INTMAP_BUILD is what scripts/build-stamp.mjs writes: `<committer time>Z-<short sha>`
      (27 characters, e.g. 2026-09-25T00:52:08Z-fd7ffef). Expires if that format grows past 64.
    · browser 40 — «Samsung Internet 25» is the longest name browserOf() returns.
    The canonical place for all of these is THIS FILE; the migration's CHECK constraints restate them
    as the database's own ceiling (a row that exceeds them is refused, not stored). */
+import { SITE_ORIGIN, isSiteOrigin } from "./site-origin.js";
+
 export const MAX = { message: 500, stack: 4000, path: 200, release: 64, browser: 40 };
 export const STACK_LINES = 20;
 
@@ -53,16 +56,23 @@ export const STACK_LINES = 20;
 export const MAX_PER_SESSION = 10;
 export const MAX_PER_REQUEST = 10;
 
-/* The one production origin, and the local previews. The function answers only these; the client
-   sends only from the first (a local preview is a development machine, not a reader). The site's
-   address is also written in vite.config.js's header and scripts/probe-relay-ladder.mjs's default;
-   neither is code that decides anything, so there is no second rule to keep in step. */
-export const PRODUCTION_ORIGIN = "https://rwmqx7dwb5-arch.github.io";
+/* The production origins, and the local previews. The function answers only these; the client
+   sends only from the first kind (a local preview is a development machine, not a reader).
+   (domain-portable) The address is NOT written here any more: site-origin.js is the one place it is,
+   and SITE_ORIGINS is the site plus — once it has a domain of its own — the Pages address a reader
+   with an old tab or service worker is still on (that file says why that is not a time-limited
+   window). PRODUCTION_ORIGIN stays exported as the site's own origin. */
+export const PRODUCTION_ORIGIN = SITE_ORIGIN;
 const LOCAL_ORIGIN = /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d{1,5})?$/;
+
+/** Is `origin` one of the site's own (not a local preview)? The client reports only from these. */
+export function isProductionOrigin(origin) {
+  return isSiteOrigin(origin);
+}
 
 export function originAllowed(origin) {
   const o = String(origin || "");
-  return o === PRODUCTION_ORIGIN || LOCAL_ORIGIN.test(o);
+  return isSiteOrigin(o) || LOCAL_ORIGIN.test(o);
 }
 
 /* Exceptions that are not IntMap's defects. Moved here verbatim from the Sentry `beforeSend` filter it

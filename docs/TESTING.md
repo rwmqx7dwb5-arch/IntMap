@@ -1017,8 +1017,10 @@ coming back. This section is the 正本 for the instrument.
 | `tests/atlas-eval-harness-checks.test.mjs` | feeds the judge records shaped like the ones the manual rounds read off the page and requires each recorded defect to be **detected**. |
 | `scripts/atlas-eval/answer-key.json` | **the answer key** — questions with an objective answer (distance, duration, population, date, area, elevation, length, count, name; jp and en), each with the value, its tolerance or range, and the source URL it was **verified at**. A drifting answer is pinned by the question (the census year, the survey edition). |
 | `scripts/atlas-eval/grade.mjs` | **is the answer right** (pure). `gradeAnswer` reads the quantities, dates and names the reply actually states and grades `correct` / `incorrect` / `absent`; `rubricRequest` / `readRubric` are the independent grader's request and its strict reading-back. |
+| `scripts/atlas-eval/map-state.mjs` | **is the map right** (grading is pure) — a question's `mapState` against the final map's snapshot: `match` / `mismatch` / `unobserved`, a separate axis from the answer (below). Its vocabulary (layer ids, snapshot sections, drawing fields, object kinds, historical units) is discovered from the product. |
 | `scripts/atlas-eval/replay.mjs`, `lab.mjs`, `cassettes/`, `scripted-cassettes.mjs` | **the replay** — a recorded turn run again with no model and no browser (below). |
 | `tests/atlas-quality-lab-checks.test.mjs` | the answer key's schema, the grader on the shapes the replies write, the grader-is-never-the-answerer rule, **every cassette replayed**, and four injected regressions the replay must catch. |
+| `tests/atlas-eval-map-state-checks.test.mjs` | the map axis: the vocabulary is discovered, a key naming what the product lacks is red, an era key is held to the historical enumeration, unobserved is not mismatch, the two axes stay apart, the replay holds each cassette's map verdict, and the report and its history carry the axis. |
 
 ### The quality lab — is the answer right, and can a PR break a turn unseen?
 
@@ -1048,10 +1050,39 @@ a PR. The lab adds both halves.
   (the reference rule above); a question never answered right is a quality gap the report shows, not an
   alarm (`judge.mjs` `GRADED`).
 
+**The map axis** (every turn whose question has `mapState` — `scripts/atlas-eval/map-state.mjs`).
+PRODUCT.md §2.2-2 says the answer appears as the map's state; the text grade cannot see it (a turn that
+wrote 「515.4 km」 and left the start-up view passed 「ルートを地図に出して」). A question may state what
+the **final map** must hold, only where its own words ask the map for something, and only the criteria
+written are graded:
+
+* `view.contains` — named points (each with the URL its coordinate was read at) inside the visible frame
+  (`viewport`, antimeridian-aware); `layers.on` / `off` — rows of `js/layers/` (`activeLayers`; a ticked
+  row that is not painted is not on); `clock` — a year, a date or live (`time`); `comparison` — the
+  statistics-comparison panel; `drawn` — a count read off the snapshot (`atlas.lines`,
+  `objects.kind:route` …), with `anyOf` where more than one capability can draw what was asked.
+* `era` — **history graded as history** (`.agents/rules/historical-verification.md`): the units the shipped
+  bundles draw are a function of the clock and the frame, so `scripts/hist-fidelity.mjs --year --in`
+  enumerates the units in force at the **observed** year in the observed frame and compares them with the
+  asked year. The key itself is held to the same enumeration and the institution's dates (`includes`,
+  `excludes` — e.g. no 国 in 1900, after 1871-08-29), so a key cannot ask for a map the record says never
+  existed. ⚠ That is the bundle reader; the line itself is also drawn from OHM's tiles, which no node
+  process reads — the report says so.
+* ⚠ **`unobserved` is not `mismatch`.** A criterion whose section the snapshot does not carry (no provider,
+  not captured, or a replay that diverged — its recorded map is not this run's) is counted apart. Only a
+  section that was read and says otherwise is a miss.
+* ⚠ **The two axes are never folded together.** The map grade adds no failure to the turn; it has its own
+  regression key (`<id>:map`, observed verdicts only) and its own rows in the report and the history.
+* The vocabulary is **discovered**, not listed: layer ids from the declarations, sections from the providers
+  registered in `js/`, `atlas.*` fields from the function the console registers, object kinds from
+  `js/map-tools.js`'s inventory. A key naming anything else is red in `--validate` and in the tests.
+
 **The report** gains an *Answers* section — right / wrong / not stated / grader pass, overall and by
 kind of question, by language and by capability, worst first — and *Over time*: the report carries its
 predecessor's `history` forward (`lab.mjs` `historyOf`, 180 nights), so the trend needs no store of its
-own. The workflow writes the report to the run's job summary.
+own. The workflow writes the report to the run's job summary. *Map* is its own section (right of the
+observed / wrong / unobserved, by kind, language and capability), and the history carries the map axis in
+its own columns and tables — a night that predates it reads as no data, never as 0.
 
 **The replay** (`node scripts/atlas-eval.mjs --replay`, and on every PR through
 `tests/atlas-quality-lab-checks.test.mjs`). A cassette is one turn, both sides:
@@ -1060,7 +1091,9 @@ own. The workflow writes the report to the run's job summary.
 * `world` — what the dispatch returned for each action (`{ok, html, meta}`, observers' verdicts
   included), the `find_capability` answers that used the meaning search, and the final map;
 * `golden` — the calls in order with their status, the stop, the reply; `expect` — what the judge must
-  conclude (a defect cassette names the failure kinds it must find).
+  conclude (a defect cassette names the failure kinds it must find, and `expect.map` the map axis's
+  verdict — every scripted cassette whose question states a map declares it; a scenario whose world does
+  not say where the map ended carries no snapshot and declares `unobserved`).
 
 `replayCassette` runs the **real** `runTurn` over the real tool surface, schemas, registry and catalogue.
 What node can compute is recomputed (the surface turning calls into actions, schema rejection, the lexical
@@ -1318,6 +1351,18 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   `tests/output-taint-gate-checks.test.mjs`, which also runs `sw.js`'s `isTileRequest` on every DEM
   URL template in `js/` and on foreign buckets, and holds `index.html`'s CSP unpkg path to the URL
   `js/wx-ecmwf.js` builds from `SDK_VER`.
+  The same rule reads the **markup tag** (safe-dom-template): a template tagged with
+  `IntMapSafe.markup` (aliased `html`, `js/safe-html.js`) is safe whatever it interpolates; every
+  `IntMapSafe.trusted(x)` call is judged where it is written, by `x`; a non-call reference to
+  `trusted` is a leaf; and the tag's own `plan` is run on the static text of every tagged template,
+  so a template the tag would refuse at run time (a value in a tag or attribute name, unquoted, in an
+  `on*` handler, in `<script>`) is a `check:static` failure. The universe is `js/**/*.js` plus the
+  inline scripts of every tracked `*.html` (`git ls-files`, read through `scripts/safe-output.mjs`
+  `inlineScripts`, which blanks HTML comments first). `tests/safe-dom-template-checks.test.mjs` holds
+  the tag's placement rules, the gate's reading of it, the ledger after the `js/data-layers.js` /
+  `js/stats-compare.js` / `admin.html` migration (one migrated sink put back raw turns each red, in
+  memory), and EVALUATES the migrated builders to show none was left returning a string (which the
+  tag would print as text).
 - **A control that writes and does not say so** (`data-effect`, output-taint-gate) —
   `scripts/data-effects.mjs` finds every UI handler (click / change / input / keydown / keypress /
   submit — what Atlas's `doControl` can fire) that reaches a Supabase table write, `rpc`,
@@ -3823,8 +3868,11 @@ Docker + the Supabase CLI (`supabase db start && supabase db reset --local && su
 
 ### Adding a case
 
-- **New XSS sink?** Route the untrusted value through `IntMapSafe.html()` (text/attr) or
-  `IntMapSafe.html(IntMapSafe.url(v,{allowData}))` (href/src/style). Add its payload/context to
+- **New XSS sink?** Build the markup with the tag — ``const html=window.IntMapSafe.markup;`` then
+  ``el.innerHTML=html`<a href="${u}">${name}</a>` `` — which escapes text and attribute values and
+  passes the value that starts an href/src through `IntMapSafe.url`; a builder returns ``html`…` ``
+  and goes into another ``html`…` `` (never `+`). Outside a template, route the value through
+  `IntMapSafe.html()` (text/attr) or `IntMapSafe.html(IntMapSafe.url(v,{allowData}))` (href/src/style). Add its payload/context to
   `XSS_PAYLOADS` in `tests/security.spec.js` if it exercises a new context.
 - **New Edge-Function auth rule?** Add an assertion to `tests/security-logic.test.mjs` (unit or a
   source regression guard).
@@ -3868,6 +3916,13 @@ core と全体の両方に課金される）: RainViewer の索引を 503 にし
 `{failed, http, 503}` を持ち、region が 1 回だけ告げ、次の ON で pill が消える。
 「何も触らない地図では整合器が走らない」はブラウザで 1 回測って記録した（`dev-notes/2026-09-30-layer-failure-state.md`
 §2）。常設の検査は node の ⑦（`everyTick` に整合器の鍵が無い・見直しは当たり 1 回の箱だけ・静かなら 0 回）。
+
+**二時点比較とタイムラプス**（`dev-notes/2026-10-01-time-compare-lapse.md`）も同じ前例に従い、ブラウザの検査は新しい
+spec ファイルではなく `tests/smoke.spec.js` の末尾の 2 本（time-compare-lapse ①②）に入れた——比較窓 1914 とメイン 1960 が
+別々の記録の国境を描くこと、窓にも年代の規則（滅んだ政体の名前を外す）が効くこと、`ct=` のハッシュ遷移で窓の時刻が戻ること、
+ラプスが 1 年 1 コマで飛ばさず進みケッペンが 1901 年に描き始めること。共有ページなので各検査は時計・窓・箱・パネルを戻し、
+ハッシュ遷移の復元は `js/map-ui.js` の自分の時計が走り終えるまで待つ（待たないと次の検査の箱を外す——実測）。
+node の半分は `tests/time-compare-lapse-checks.test.mjs`（2 つの時計・`onMap`・窓の全層の宣言・ラプスの刻みと停止・`timeView` の判定）。
 
 ## 企業アトラスの門 - `npm run check:companies`
 
@@ -4391,3 +4446,10 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   従来どおり。
 - ⑥ `SYS()` は 1 つの形しか持たず（`_aiProto` を環境に置いても同じバイト）、道具を JSON で貼らず、
   `tool_calls` という語を含まない。`FINAL_SCHEMA` に呼び出しの欄は無い。
+
+### `tests/domain-portable-checks.test.mjs` (domain-portable)
+
+9 本。**サイトのアドレスは 1 つの正本（`supabase/functions/_shared/site-origin.js`）から導かれ、
+ドメイン直下でも `/IntMap/` 配下でも同じビルドが動く**こと。正本以外にアドレスの綴りが無いこと
+（`check:static` の規則 `site-address`）、`CUSTOM_DOMAIN` が空なら `dist/CNAME` を出さず値があれば出すこと、
+1 つのビルドを 2 つのベースパスに置いて index が参照するローカル資源が両方で取れることを、実際に配信して確かめる。

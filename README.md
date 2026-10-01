@@ -6,7 +6,7 @@
 
 A browser-based geospatial platform that brings geography, climate, infrastructure, history, statistics, current events, and interactive tools together on one map.
 
-[**Open IntMap**](https://rwmqx7dwb5-arch.github.io/IntMap/) · [**Support IntMap**](https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en) · [Report an issue](https://github.com/rwmqx7dwb5-arch/IntMap/issues)
+[**Open IntMap**][site:] · [**Support IntMap**](https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en) · [Report an issue](https://github.com/rwmqx7dwb5-arch/IntMap/issues)
 
 **Free to use · No ads · No installation required**
 
@@ -283,10 +283,10 @@ Bug reports and feature suggestions are welcome through [GitHub Issues](https://
 
 ## Terms, privacy, and how it works
 
-* [**Terms of Service**](https://rwmqx7dwb5-arch.github.io/IntMap/terms.html) — also in the app, under Settings
-* [**Privacy Policy**](https://rwmqx7dwb5-arch.github.io/IntMap/privacy.html) — what each layer and feature sends, and to whom
-* [**Data sources**](https://rwmqx7dwb5-arch.github.io/IntMap/sources.html) — every organization whose data IntMap shows, and its licence
-* [**Science & logic**](https://rwmqx7dwb5-arch.github.io/IntMap/science.html) — what each simulation actually computes
+* [**Terms of Service**][site:terms.html] — also in the app, under Settings
+* [**Privacy Policy**][site:privacy.html] — what each layer and feature sends, and to whom
+* [**Data sources**][site:sources.html] — every organization whose data IntMap shows, and its licence
+* [**Science & logic**][site:science.html] — what each simulation actually computes
 
 For the repository itself, [`docs/README.md`](docs/README.md) is the index of the documentation: which file owns which fact, who it is for, and when it has to be updated.
 
@@ -368,6 +368,13 @@ Historical borders and territorial classifications are technical representations
 
 **Explore the world freely—without having to know which tool to open first.**
 
-[Open IntMap](https://rwmqx7dwb5-arch.github.io/IntMap/) · [Support IntMap](https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en)
+[Open IntMap][site:] · [Support IntMap](https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en)
 
 </div>
+
+<!-- The site's address: rendered from supabase/functions/_shared/site-origin.js by `node scripts/site-url.mjs --write`. Do not type it. -->
+[site:]: https://rwmqx7dwb5-arch.github.io/IntMap/
+[site:terms.html]: https://rwmqx7dwb5-arch.github.io/IntMap/terms.html
+[site:privacy.html]: https://rwmqx7dwb5-arch.github.io/IntMap/privacy.html
+[site:sources.html]: https://rwmqx7dwb5-arch.github.io/IntMap/sources.html
+[site:science.html]: https://rwmqx7dwb5-arch.github.io/IntMap/science.html

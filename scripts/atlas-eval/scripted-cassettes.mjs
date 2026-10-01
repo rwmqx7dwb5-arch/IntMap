@@ -44,6 +44,18 @@ const run = (id, args) => ['run_capability', { id, args }];
 const done = (html, produced = ['map']) => ({ ok: true, html, meta: { status: 'completed', produced } });
 const failed = (html, code) => ({ ok: false, html, meta: { status: 'failed', code } });
 
+/* (atlas-eval-map-state) the FINAL MAP the world reports — in the shapes IntMapAtlasState.snapshot() publishes
+   (js/atlas-state.js `viewport` / `objects`, js/atlas-console.js `atlas`), and only the sections the
+   scenario's own world speaks for. A scenario whose world does not say what the map became (a camera move
+   that was never observed, a turn R802 recorded without its clock) carries NO snapshot: the map axis is then
+   `unobserved`, which is the point of keeping it apart from `mismatch`.
+   ⚠ The frame's numbers are the scripted world's, like the 「1,554 km」 its dispatch returns — what the replay
+   holds is the grader reading them, not the renderer producing them. */
+const frame = (west, south, east, north) => ({ viewport: { west, south, east, north } });
+/* js/atlas-console.js `_atlasOverlayState` as it starts: every drawing null, no country highlighted */
+const ATLAS_EMPTY = { highlightCountries: 0, highlight: null, choropleth: null, customScore: null, pins: null, polygons: null, lines: null, measure: null, radius: null, userPins: null, tool: '' };
+const objects = (...kinds) => ({ objects: { n: kinds.length, items: kinds.map((k, i) => ({ id: k + '-' + i, kind: k, name: '' })) } });
+
 export const SCENARIOS = [
   {
     id: 'tokaido-route-answered',
@@ -55,7 +67,9 @@ export const SCENARIOS = [
       say('東海道新幹線の東京駅から新大阪駅までのルートを地図に引きました。線路の実際の長さ（実キロ）は515.4 km、運賃計算に使う営業キロは552.6 kmです（JR東海）。'),
     ],
     respond: () => done('<div>東京駅 → 新大阪駅 · 鉄道 · 552.6 km · 2時間27分</div>', ['map', 'route']),
-    expect: { verdict: 'pass', grade: 'correct' },
+    /* the route the world drew, framed: the inventory holds it as kind `route` (js/map-tools.js) */
+    snapshot: { ...frame(134.6, 34.2, 140.6, 36.2), ...objects('route') },
+    expect: { verdict: 'pass', grade: 'correct', map: 'match' },
   },
   {
     id: 'rail-request-reached-nothing',
@@ -66,7 +80,10 @@ export const SCENARIOS = [
       finalSay(''),
     ],
     respond: () => { throw new Error('this turn reaches no dispatch'); },
-    expect: { verdict: 'fail', failures: ['reach', 'operations'] },
+    /* zero operations on the fresh page the harness asks every question on (scripts/atlas-eval.mjs): nothing
+       was drawn, so the map is the one the page started with — no object, no Atlas drawing */
+    snapshot: { ...objects(), atlas: ATLAS_EMPTY },
+    expect: { verdict: 'fail', failures: ['reach', 'operations'], map: 'mismatch' },
   },
   {
     id: 'layer-values-refused-every-time',
@@ -91,7 +108,8 @@ export const SCENARIOS = [
       say('富士山へ移動しました。標高は3,776 mです（国土地理院）。'),
     ],
     respond: () => ({ ok: false, html: '<div>Mount Fuji</div>', meta: { status: 'unobserved', code: 'not_rendering', produced: [] } }),
-    expect: { verdict: 'pass', grade: 'correct', dispatched: 1 },
+    /* no snapshot: the page was not compositing, so where the camera ended is exactly what was not observed */
+    expect: { verdict: 'pass', grade: 'correct', dispatched: 1, map: 'unobserved' },
   },
   {
     id: 'cut-short-answer-written-after',
@@ -128,7 +146,10 @@ export const SCENARIOS = [
       say('羽田空港から那覇空港までの直線距離は約1,000 kmです。'),
     ],
     respond: () => done('<div>羽田空港 → 那覇空港 · 1,554 km</div>', ['map']),
-    expect: { verdict: 'fail', failures: ['answer'], grade: 'incorrect' },
+    /* the map was right and the sentence was wrong: map.measure holds its two points (`atlas.measure`) in a
+       frame around both — the two axes disagree, which is why they are kept apart */
+    snapshot: { ...frame(124.5, 24.0, 143.0, 37.5), atlas: { ...ATLAS_EMPTY, measure: { n: 2 }, tool: 'measure' } },
+    expect: { verdict: 'fail', failures: ['answer'], grade: 'incorrect', map: 'match' },
   },
   {
     id: 'answered-in-the-wrong-language',
@@ -148,7 +169,8 @@ export const SCENARIOS = [
       say('1750年の令制国を地図に描きました。'),
     ],
     respond: () => ({ ok: false, html: '<div>令制国（1750）</div>', meta: { status: 'partial', code: 'not_rendered', produced: [] } }),
-    expect: { verdict: 'fail', failures: ['observer'] },
+    /* no snapshot: R802 recorded that the last operation cleared the pins, not where the clock or the frame ended */
+    expect: { verdict: 'fail', failures: ['observer'], map: 'unobserved' },
   },
   {
     id: 'promoted-tool-runs-the-capability',
@@ -160,7 +182,8 @@ export const SCENARIOS = [
       say('The great-circle distance from Sydney Airport to Auckland Airport is about 2,160 km (measured on the map).'),
     ],
     respond: () => done('<div>Sydney Airport → Auckland Airport · 2,159 km</div>', ['map']),
-    expect: { verdict: 'pass', grade: 'correct' },
+    snapshot: { ...frame(147.0, -41.0, 178.0, -31.0), atlas: { ...ATLAS_EMPTY, measure: { n: 2 }, tool: 'measure' } },
+    expect: { verdict: 'pass', grade: 'correct', map: 'match' },
   },
   {
     id: 'independent-calls-run-together',
@@ -172,7 +195,9 @@ export const SCENARIOS = [
       say('羽田空港と新千歳空港にピンを立てました。2点間の大圏距離は約820 kmです。'),
     ],
     respond: (a) => done('<div>' + (a.place || ((a.from || '') + ' → ' + (a.to || '') + ' · 820 km')) + '</div>', ['map']),
-    expect: { verdict: 'pass', grade: 'correct' },
+    /* the two pins in the object inventory (kind `pin`), the measure's two points, both in the frame */
+    snapshot: { ...frame(136.5, 33.5, 145.0, 44.5), ...objects('pin', 'pin'), atlas: { ...ATLAS_EMPTY, userPins: { n: 2 }, measure: { n: 2 }, tool: 'measure' } },
+    expect: { verdict: 'pass', grade: 'correct', map: 'match' },
   },
   {
     id: 'malformed-call-handed-back',
@@ -184,7 +209,8 @@ export const SCENARIOS = [
       say('The capital of Australia is Canberra; the map is now centred on it.'),
     ],
     respond: () => done('<div>Canberra</div>', ['map']),
-    expect: { verdict: 'pass', grade: 'correct', dispatched: 1 },
+    snapshot: frame(148.6, -35.7, 149.6, -34.9),
+    expect: { verdict: 'pass', grade: 'correct', dispatched: 1, map: 'match' },
   },
 ];
 

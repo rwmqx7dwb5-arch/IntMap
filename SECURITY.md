@@ -48,7 +48,7 @@ disclosure is appreciated.
 - Missing HTTP response headers that **GitHub Pages cannot set** (e.g. `X-Frame-Options`,
   HSTS, `Permissions-Policy`, a header-form CSP). These are documented limitations with the
   compensating in-page controls listed in `docs/SECURITY-ARCHITECTURE.md §CSP`. MEASURED on
-  production 2026-08-20, `GET https://rwmqx7dwb5-arch.github.io/IntMap/` returns
+  production 2026-08-20, `GET` of the production page returns
   `Strict-Transport-Security: max-age=31556952` and `Access-Control-Allow-Origin: *` from
   GitHub's edge and **no** `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
   `Permissions-Policy` or CSP header — the in-page `<meta>` policy is the whole of it.

@@ -24,7 +24,7 @@ date: 2026-10-01
 
 **ウィンドウの層は時計に従うか、従わないと述べる。** 日付つき GIBS 4 層と MERRA-2 はウィンドウの日（月）のタイルへ張り替え（`setSourceTiles`）、ケッペンはウィンドウの年を含む 30 年期間（`KOPPEN_PERIODS` から読む）。WorldCover・人口グリッド・統計の塗り分けは自前の日付（`ownDate`）として「自分の日付を表示」と述べ、ライブ（地震・オーロラ・火災・前線）は過去では描かずに理由を出す。
 
-**国境の選択を 1 つの関数にした——ただし実装担当の触ってよい範囲の外なので、パッチとして渡した。** `js/time-borders.js` の `collectionAt(when, {live})`（描かない・「何を表示中か」の状態を持たない）と `modernAt(when, live)`。`go()` はその答えを描くだけになり、メイン地図の購読者も `modernAt` を使う。比較ウィンドウとタイムラプスはこれに訊く。⚠ **このパッチが当たっていない木では、ウィンドウの歴史国境は「国境の記録を読めませんでした」と述べて描かない**（偽の線は出さない）。
+**国境の選択を 1 つの関数にした。** `js/time-borders.js` の `collectionAt(when, {live})`（描かない・「何を表示中か」の状態を持たない）と `modernAt(when, live)`。`go()` はその答えを描くだけになり、メイン地図の購読者も `modernAt` を使う。比較ウィンドウとタイムラプスはこれに訊く。#868（滅んだ政体の名前を外す年代の規則）を取り込んだ後は、枚の段の答えが `_eraShow` / `_eraState` を通るので、**比較ウィンドウにも同じ年代の規則が効く**（1600 年の窓で、上流の名前を保ったまま外された政体の集合がメイン地図の連鎖の答えと一致することを smoke で測る）。⚠ 枚の段の順序を読む既存の検査（`tests/history-era-borders-checks.test.mjs` #R518 ④・#R690 ④）は `go()` の本文を切り出していたので、連鎖の持ち主である `collectionAt` の本文を読むように直した——主張（日単位の帯が枚より先・帯の中で空なら枚へ落ちる）は変えていない。
 
 **ウィンドウの基図も時刻に従う。** 最初の版は 1914 の国境の下に CARTO のラスタ（**今日の**政治境界と国名——South Sudan・Rwanda）を描いていた（スクリーンショットで確認）。メイン地図は era の記録が答える瞬間に物理地理へ替える（`js/historical-basemap.js`）ので、ウィンドウも同じ層定義を自分の OpenFreeMap ソースで描き、その瞬間は CARTO を隠す（判定は `modernAt`、メイン地図と同じ 1 つの規則）。
 
@@ -36,7 +36,7 @@ date: 2026-10-01
 
 ## 2. 歴史の主張として何が描かれたか（`.agents/rules/historical-verification.md`）
 
-ウィンドウ 1914-06-15・メイン 1960-06-15 の実測（spec ①、パッチを当てたビルド）。両側とも CShapes 2.0 の日単位の枚: ウィンドウ `cs19140421`（1914-04-21 から有効）150 形、メイン `cs19600427` 164 形。
+ウィンドウ 1914-06-15・メイン 1960-06-15 の実測（smoke の time-compare-lapse ①）。両側とも CShapes 2.0 の日単位の枚: ウィンドウ `cs19140421`（1914-04-21 から有効）150 形、メイン `cs19600427` 164 形。
 
 - 1914 だけにあるもの: Austria-Hungary・Serbia・Montenegro・Russia・Germany（帝国）・Newfoundland（自治領）・German Togoland・Kamerun・Italian Somaliland・Dahomey (France)・Niger (France)・Cote d'Ivoire (France)・Nigeria (UK)・Iceland (Denmark)・Alaska (USA)。**第一次世界大戦の開戦（1914-07-28）より前**の世界として正しい（サラエボ事件は 6-28）。
 - 1960 だけにあるもの: Ireland・West/East Germany・Austria・Hungary・Czechoslovakia・Yugoslavia・Soviet Union・Cyprus・Finland・Iceland・Mali・Upper Volta・Ghana・Togo・Cameroon・British Cameroons・Congo・Democratic Republic of the Congo。
@@ -50,16 +50,19 @@ date: 2026-10-01
 - **タイムラプスに打ち切りを置かない。** 描画が永遠に終わらないタイルは、コマを永遠に止める（状態行が「地図の描画を待っています」と述べ、読者は止められる）。上限で先へ進めば「描けていないコマを描けたと言う」観測器になる。
 - **再生の記号は CSS で描く。** 予報再生器の SVG（`IntMapWxPlayer.IC`）を innerHTML に入れると、別モジュールの値として `output-taint` の台帳に未判定の葉が 2 つ増える。形（三角・二本線）は同じ語彙。
 
-## 4. 統合時に要ること（実装担当の範囲外）
+## 4. 統合で片付いたこと
 
-1. **`js/time-borders.js` のパッチ**（`collectionAt` / `modernAt` の切り出し）を当てる。無いと spec ① と比較側の国境が落ちる。
-2. **`node scripts/global-surface.mjs --update`**: `window.IntMapBeta` の読みが 3 減り（ウィンドウが `hbCurrent` を読まなくなった）、増えるのは `window.IntMapCompare` +2（Atlas の能力と観測器——どちらも遅延チャンクか「時計と描画だけを import する」と決まった能力登録簿で、`js/compare.js` を import すると起動チャンクから 3 モジュールが割れた: `eager.requests` 9 → 12 を `scripts/perf-budget.mjs` で実測して取りやめ）、`window.IntMapHistScale` +1（ラプスの年の約束事 `utcAt`／`ymd`）、`window.IntMapTimeBorders` +2（ウィンドウとラプスが `collectionAt`／`modernAt` を訊く）、`window.IntMapHistoricalBasemap` +1（ウィンドウの物理地理の層定義）。どれも持ち主がファクトリ／IIFE の公開で export を持たないので import にできない。
-3. **`check:perf`**: 新しい遅延チャンク `time-lapse`（8.6 kB）。起動チャンクの増分は、変更した 6 ファイルを esbuild で縮めて gzip した差で **+4.0 kB**（うち `js/compare.js` +3.3 kB）、`eager.requests` は 9 のまま。このマシンの build は `dist/data` まで main の天井と 82 kB ずれる（改行コード）ので、天井を上げる判断は CI の数で。CSS は Chronos パネルの既存の分節コントロール（`.ntl-modes`）を再利用して足し分を抑えた。
-4. **能力の数の文**（`check:docs` capability-count）: `PRODUCT.md`・`docs/FILES.md` は 149／148 に直した。`DECISIONS.md` と `docs/architecture/02-features.md` の「147 / 146」は実装担当の範囲外。
-5. **`tests/durations.json` に `time-compare-lapse` の実測秒**（`check:docs` deep-tier-size・`check:testbudget`）: 計られていない spec は固定の core に数えられ、core 7・全体 131 になる。spec 2 本は 2 workers で 38 秒（パッチを当てたビルド・ビルド時間を除く）。`docs/TESTING.md`／`package.json` の「全体 130」は 131 に。
+- `js/time-borders.js` の切り出しは統合側で #868 と合流済み（枚の段は `_eraShow` / `_eraState`）。
+- `check:surface`・`check:perf` の台帳は統合側で作り直し済み（読みの増減と起動費の理由は下の節）。
+- 能力の数の文（`check:docs` capability-count）: `PRODUCT.md`・`docs/FILES.md`・`DECISIONS.md`・`docs/architecture/02-features.md` を 149／148 に。
+- **新しい spec ファイルは作らない**（`docs/TESTING.md` の前例）: ブラウザの検査は `tests/smoke.spec.js` の末尾に 2 本として入れた。smoke は `CORE_ALWAYS` で既に起動しているので起動の値段を払わず、`check:testbudget` と `deep-tier-size` の本数は動かない。共有ページなので各検査は時計・窓・チェックした箱・パネルを元に戻し、①はハッシュ遷移の復元が `js/map-ui.js` の自分の時計（3.2 s の層の再適用・3.5 s の `restoring` 解除）で走り終えるのを待つ——待たないと②の箱を外していた（実測）。共有リンクの復元は 2 回目の起動ではなく同じページのハッシュ遷移で測る。
 
 ## 5. 検査
 
 - `node --test tests/time-compare-lapse-checks.test.mjs`（5 件）: 2 つの時計が独立でメインのメンバーは不変・意思はページで 1 つ／`onMap` で典拠の述べることは変わらず当てる者だけ変わる（ケッペン 1890 unstated・1950 stated・2024 carried、人口の塗り分け 1914 own-date）／ウィンドウの全層が読める宣言を名乗る（MERRA-2 は `validate` を通り 1914 unstated・1990 stated）／ラプスが 1900→1902 を毎年 1 コマで進み終端で止まる・日単位・時計を動かされたら止まる・空の範囲を拒む／`timeView` が状態を観測し、狙いと違えば `no_change`、訊けなければ `unobserved`。
-- `tests/time-compare-lapse.spec.js`: ① ウィンドウ 1914 の地震は描かず理由を出す、ウィンドウ 1914 とメイン 1960 が**別々の枚**の国境を描く（上の名前の差）、メインを今日に戻してもウィンドウは 1914、`ct=1914` のリンクから開き直せる、Atlas `time.compare` が completed、同じ呼び出しの二度目は `already_there`。② ラプス 1898→1903 が `[1898,1899,1900,1901,1902,1903]` を 1 つも飛ばさず進み、ケッペンは 1899 で預かられ 1903 では描かれ、状態に「描き始め」が載る、Atlas `time.lapse` の再生・停止が completed。
-- 実測: パッチを当てたビルド（ビルド設定の外側で `js/time-borders.js` を差し替え、作業ツリーの原文は不変）で ①② とも緑。パッチ無しのビルドでは ② 緑・① は国境の段で時間切れ（ウィンドウが「読めませんでした」と述べる）。
+- `tests/smoke.spec.js` の time-compare-lapse ①②: ① ウィンドウ 1914 の地震は描かず理由を出す、ウィンドウ 1914 とメイン 1960 が**別々の枚**の国境を描く、窓の基図は物理地理、1600 年の窓で滅んだ政体の名前が外れメイン地図の連鎖と同じ集合、メインを今日に戻してもウィンドウは 1914、`ct=1914` へのハッシュ遷移で窓の時刻が戻る、Atlas `time.compare` が completed・二度目は `already_there`。② ラプス 1898→1903 が `[1898,…,1903]` を飛ばさず進み、ケッペンは 1899 で預かられ終端では描かれ、状態に「描き始め」が載る、Atlas `time.lapse` の再生・停止が completed。
+- 実測: smoke 全体 57/57 緑（2.2 分、うち time-compare-lapse の 2 本で約 1 分）。
+
+## 起動費の天井を上げた理由
+
+比較窓の時計（`makeClock`）とカーネルの `verdict(id, clock, drawnBy)` は起動時の `chronos.js` / `layer-time*.js` に入り（eager.raw / brotli）、タイムラプスの再生器と `time.compare` / `time.lapse` の能力は Atlas のチャンクと遅延チャンクに入る（async.gzip・atlas-console）。どれもこの変更の分で、`node scripts/perf-budget.mjs --update` で超えた行だけを上げた。eager にはこの機械の計測差が乗っている可能性があり、天井は main の実測で bot が下げる。

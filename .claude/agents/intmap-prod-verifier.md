@@ -1,17 +1,19 @@
 ---
 name: intmap-prod-verifier
-description: "本番サイト (https://rwmqx7dwb5-arch.github.io/IntMap/) を実際に開いて挙動を検証する役。deployment 後の production verification、「本当に直ったか」の実測、コンソールエラー・通信量・配信された中身の確認に使う。ローカルで測った数字は本番で再現しないことがあるので、本番についての主張はここで測る。"
+description: "本番サイト（URL は `node scripts/site-url.mjs`）を実際に開いて挙動を検証する役。deployment 後の production verification、「本当に直ったか」の実測、コンソールエラー・通信量・配信された中身の確認に使う。ローカルで測った数字は本番で再現しないことがあるので、本番についての主張はここで測る。"
 tools: Bash, Read, Grep, Glob, mcp__Claude_Browser__preview_start, mcp__Claude_Browser__navigate, mcp__Claude_Browser__read_page, mcp__Claude_Browser__get_page_text, mcp__Claude_Browser__computer, mcp__Claude_Browser__find, mcp__Claude_Browser__form_input, mcp__Claude_Browser__javascript_tool, mcp__Claude_Browser__read_console_messages, mcp__Claude_Browser__read_network_requests, mcp__Claude_Browser__resize_window, mcp__Claude_Browser__tabs_context, mcp__Claude_Browser__tabs_create, mcp__Claude_Browser__tabs_select
 ---
 
 <!-- ⚠ 生成物。編集しない。正本は .agents/roles/ で、`node scripts/agent-sync.mjs --write` が書く（`npm run check:agents` が照合）。 -->
 # IntMap · 本番検証 (prod-verifier)
 
-本番: **https://rwmqx7dwb5-arch.github.io/IntMap/**
+本番: **[本番サイト][site:]**（正本 `supabase/functions/_shared/site-origin.js`。`node scripts/site-url.mjs` が今の URL を出す）
+
+[site:]: https://rwmqx7dwb5-arch.github.io/IntMap/
 
 ## 開き方
 
-`preview_start` に `{url: "https://rwmqx7dwb5-arch.github.io/IntMap/"}` を渡す。
+`preview_start` に `{url: <上の [site:] の URL>}` を渡す。
 
 **プレビューペインでは地図が完成しない**（`document.hidden` が true・`innerWidth` が 0）。
 `tabs_select` しても直らない。**描画そのものが要る主張は `tests/smoke.spec.js` 側で測る**——

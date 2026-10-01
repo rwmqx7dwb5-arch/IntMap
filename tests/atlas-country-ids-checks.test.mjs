@@ -140,7 +140,7 @@ test('R157 #5 IntMapAtlasDebug exposes the new pure spine', () => {
 /* R742 — the identifiers the border store itself declares (Atlas → highlight)
 
    ⚠⚠⚠ MEASURED ON PRODUCTION 2026-09-15, not reasoned about. Atlas was asked 16 questions against
-   https://rwmqx7dwb5-arch.github.io/IntMap/ . Three of the failures were one defect:
+   production. Three of the failures were one defect:
      · "Which EU countries use the euro?" — 12 consecutive `highlight:FAIL/failed`, 27 steps, 2m14s.
      · "Which countries border Kazakhstan?" — the reply carried "⚠ … UZ → UZB" beside a correct map.
      · "Which African countries are landlocked?" — DZA BWA BFA BDI CAF TCD SWZ ETH LSO MWI MLI NER RWA

@@ -1126,7 +1126,8 @@ overpass.js                       **Overpass の唯一のクライアント** `o
 atlas-deadlines.js                Atlas の証拠集めが使ってよい時間——予算3つ・締切つきの gather・停止の届く JSON 取得器
 perf-hud.js                       実機の計器 `?perf=1`
 admin-literal.js                  admin.html の初期データ読み取り——**評価器ではなくパーサ**
-safe-html.js                      **出力の無害化の唯一の正本** `window.IntMapSafe`＝{html, esc, url, text}。アプリ
+safe-html.js                      **出力の無害化の唯一の正本** `window.IntMapSafe`＝{html, esc, url, text, flag,
+                                  markup（落ちる場所で escape するタグ）, trusted, isMarkup}。アプリ
                                   （src/main.js）・sources.html・admin.html・ES module（import）・Node の検査が同じ
                                   ファイルを読む。他の場所の独自エスケープは scripts/safe-output.mjs の台帳が数える
 ```
@@ -1328,9 +1329,9 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全21本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（33本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（35本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
-  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数。16本）
+  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ AI の日次カウンタは負にならない。18本）
   functions/<name>/index.ts       Edge Functions（21本。一覧と各本の役割は Architecture.md §6.2）
   functions/_shared/              関数ではないライブラリ（ai-provider.js / atlas-persona.js / aviation-codec.js /
                                   aviation-model.js / news-cluster.js / news-geo-prompt.js /
@@ -1338,7 +1339,10 @@ supabase/
                                   rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
                                   bbox.js / read-budget.js / client-error-shape.js /
                                   fetch-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
-                                  atlas-grade-schema.js）
+                                  atlas-grade-schema.js / site-origin.js）
+                                  ⚠ site-origin.js は**本番のアドレスの唯一の置き場**（`CUSTOM_DOMAIN` が
+                                  変える値）。ブラウザ・Edge Function・スクリプト・テストが import し、
+                                  workflow は scripts/site-url.mjs 経由で読む（domain-portable）
                                   ⚠ atlas-grade-schema.js は ai-proxy `atlas_grade` の形・予算・
                                   **採点 provider の規則（答えている provider とは別）**で、評価側の
                                   scripts/atlas-eval/grade.mjs も同じファイルを import する
@@ -1521,13 +1525,17 @@ scripts/
                                   （USB ミラーが読む）／`unlink`（`worktree.mjs done`）／`materialize`／`publish`
                                   （`npm run data:publish`）。中身の sha256 の定義と、ストアが OneDrive の外である
                                   ことの強制はここが正本。⚠ 置けない・目録と違うときは集合と理由を言って exit 1
+  site-url.mjs                    **本番のアドレス**（`supabase/functions/_shared/site-origin.js`）を import できない読み手
+                                  （workflow）に印字し、正本以外に綴られていれば拒む（`check:static` の `site-address`）。
+                                  `--write` は文書の `[site:<path>]: <url>` 定義を描き直す。Vite の
+                                  `siteUrlPlugin()`（`og:url`・`dist/CNAME`）もここ
   release-state.mjs               **本番がどの組み合わせで走っているか**を 3 面（静的サイト・Edge Functions・
                                   DB migration）まとめて測る（`npm run release:state` / `release:check`）。
                                   ⚠ **判定は時刻ではなく配備されたソースの中身**（`supabase functions download`
                                   で取り寄せてバイトで突き合わせる）。merge 前に worktree から deploy すると
                                   時刻は必ず「ソースが新しい」と言うので、時刻は文脈としてしか使わない。
                                   ⚠ **名前を 1 つも手で書かない**——関数の名簿は `supabase/functions/` の実体、
-                                  project ref は `src/vendor.js`、Pages の URL は `origin` の remote から導く。
+                                  project ref は `src/vendor.js`、本番の URL は `supabase/functions/_shared/site-origin.js` から導く。
                                   ⚠ `npm test` には入れない（本番と資格情報が要る）。CI が証明できることは
                                   `tests/process-release-state-checks.test.mjs` (#R745)。
   worktree.mjs                    **セッションの作業場**（`status` / `new <slug>` / `done`）。`AGENTS.md` §6 が
@@ -1723,12 +1731,17 @@ scripts/
                                   `--dry-run` は送らず、未ログインを「測れない」と報告する。`--alarm` が Issue 1 本を
                                   開く／書き直す／閉じる。正本は docs/TESTING.md「Atlas evaluation」
   atlas-eval/questions.json       その問題集。**記録された問いと、その回が実際に判定に使った基準だけ**。記録に無い
-                                  基準は `unset` に理由つきで空ける
+                                  基準は `unset` に理由つきで空ける。`mapState`（地図の期待状態）は別の軸で、
+                                  問いの文言そのものが地図に求めること（年・行政区分・経路）だけを書く
   atlas-eval/judge.mjs            判定（純粋）。`CUT_STOPS`・`turnBudgetMs`・`callKey` は製品から受け取り、写さない。
-                                  答えの正誤（grade.mjs）・返答の言語・独立採点の結果も判定し、種類別・言語別・
-                                  能力別に集計する
+                                  答えの正誤（grade.mjs）・返答の言語・独立採点の結果・地図の状態（map-state.mjs、
+                                  別の軸）も判定し、種類別・言語別・能力別に集計する
   atlas-eval/answer-key.json      **検証済みの答えを持つ問題集**（日英・距離／所要時間／人口／日付／面積／標高／
-                                  長さ／数／名前）。各行に答え・許容誤差か範囲・確かめた出典の URL
+                                  長さ／数／名前）。各行に答え・許容誤差か範囲・確かめた出典の URL。地図に何かを
+                                  求める問いには `mapState`（視野に入る地点と座標の出典・描くもの）
+  atlas-eval/map-state.mjs        **地図の採点**（採点は純粋）。最終の地図のスナップショットを `mapState` と照らし
+                                  一致／不一致／観測できず。語彙（層 ID・節・描画の欄・地物の種類・歴史の単位）は
+                                  製品と scripts/hist-fidelity.mjs から発見し、無いものを書いた鍵を赤にする
   atlas-eval/grade.mjs            答えの採点（純粋）。返答が述べた量・日付・名前を読み、正しい／誤り／述べていない。
                                   独立採点（ai-proxy `atlas_grade`）への依頼文と、その結果の厳密な読み戻し
   atlas-eval/replay.mjs           **モデル無しの再生**。カセット（台本＝モデルの各手、世界＝ディスパッチの結果）を

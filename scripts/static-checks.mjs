@@ -760,6 +760,21 @@ try {
   err('tree-writer', 'could not run the tree-writer rule: ' + (e && e.message));
 }
 
+// ── 23. (domain-portable) the production address is written in one place ──
+// It was spelled by hand in 69 tracked files, so moving the site to a domain of its own would have
+// been 69 edits with nothing to say which one was missed. supabase/functions/_shared/site-origin.js
+// is the value and everything derives from it; this refuses the host spelled anywhere else in the
+// tracked tree except the history (dev-notes/, DEV-NOTES-ARCHIVE.md — what was measured on the address
+// of that day) and a `[site:<path>]: <url>` definition that `node scripts/site-url.mjs --write`
+// rendered from the value. The rule and its reasons are in scripts/site-url.mjs. A rule here and not a
+// check:* of its own for the reason given at 15.
+try {
+  const { siteSpellings } = await import('./site-url.mjs');
+  for (const p of siteSpellings(ROOT)) err('site-address', `${p.file}:${p.line}: ${p.why}`);
+} catch (e) {
+  err('site-address', 'could not run the site-address rule: ' + (e && e.message));
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 const byCheck = (arr) => arr.reduce((m, x) => ((m[x.check] = (m[x.check] || 0) + 1), m), {});
 console.log(`\nIntMap static checks — scanned ${ALL.length} files (${codeFiles.length} JS/TS, ${yamlFiles.length} YAML)\n`);

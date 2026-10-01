@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { readLF } from '../scripts/eol.mjs';
 import { generatedStampProblems } from './helpers/build-stamp.mjs';
+import { SITE_BASE_PATH, SITE_ORIGIN, SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -113,9 +114,9 @@ function run(opts = {}) {
   /* ⚠ `origin` is not decoration: the recovery compares it against the failing element's URL, so a
      stub without one silently answers «different origin» and nothing below ever runs. */
   const loc = {
-    href: 'https://rwmqx7dwb5-arch.github.io/IntMap/',
-    origin: 'https://rwmqx7dwb5-arch.github.io',
-    pathname: '/IntMap/',
+    href: SITE_URL,
+    origin: SITE_ORIGIN,
+    pathname: SITE_BASE_PATH,
     reload: () => { calls.reload++; },
   };
   const fetchImpl = (url, init) => {
@@ -130,7 +131,7 @@ function run(opts = {}) {
   return { calls, listeners, errorListener: l, fire: (target) => l.fn({ target }), win };
 }
 
-const ORIGIN = 'https://rwmqx7dwb5-arch.github.io/IntMap/';
+const ORIGIN = SITE_URL;
 const ENTRY = { tagName: 'SCRIPT', type: 'module', src: ORIGIN + 'assets/main-OLDHASH1.js' };
 const FRESH = '<script type="module" src="./assets/main-NEWHASH2.js"></script>';
 const settle = () => new Promise((r) => setImmediate(() => setImmediate(r)));

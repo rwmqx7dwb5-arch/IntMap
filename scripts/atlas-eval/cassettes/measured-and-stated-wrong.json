@@ -54,7 +54,29 @@
       }
     ],
     "find": [],
-    "snapshot": {}
+    "snapshot": {
+      "viewport": {
+        "west": 124.5,
+        "south": 24,
+        "east": 143,
+        "north": 37.5
+      },
+      "atlas": {
+        "highlightCountries": 0,
+        "highlight": null,
+        "choropleth": null,
+        "customScore": null,
+        "pins": null,
+        "polygons": null,
+        "lines": null,
+        "measure": {
+          "n": 2
+        },
+        "radius": null,
+        "userPins": null,
+        "tool": "measure"
+      }
+    }
   },
   "golden": {
     "stopped": "answered",
@@ -71,6 +93,7 @@
     "failures": [
       "answer"
     ],
-    "grade": "incorrect"
+    "grade": "incorrect",
+    "map": "match"
   }
 }

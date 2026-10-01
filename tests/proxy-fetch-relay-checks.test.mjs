@@ -9,7 +9,7 @@
  *  test was `isFeed` (「the body contains `<rss` or `<feed`」). An article page contains neither, so
  *  the branch could not succeed; it could only take twenty seconds to fail.
  *
- *  MEASURED from the live site (https://rwmqx7dwb5-arch.github.io, 2026-08-25), the two article
+ *  MEASURED from the live site (production, 2026-08-25), the two article
  *  URLs on the front page that day, through the shipped ladder:
  *
  *      corsproxy.io  200 · text/html · 217,509 B (dw.com)    → rejected «not feed»  3,362 ms

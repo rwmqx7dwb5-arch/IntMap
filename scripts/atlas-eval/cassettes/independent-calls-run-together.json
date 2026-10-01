@@ -112,7 +112,46 @@
       }
     ],
     "find": [],
-    "snapshot": {}
+    "snapshot": {
+      "viewport": {
+        "west": 136.5,
+        "south": 33.5,
+        "east": 145,
+        "north": 44.5
+      },
+      "objects": {
+        "n": 2,
+        "items": [
+          {
+            "id": "pin-0",
+            "kind": "pin",
+            "name": ""
+          },
+          {
+            "id": "pin-1",
+            "kind": "pin",
+            "name": ""
+          }
+        ]
+      },
+      "atlas": {
+        "highlightCountries": 0,
+        "highlight": null,
+        "choropleth": null,
+        "customScore": null,
+        "pins": null,
+        "polygons": null,
+        "lines": null,
+        "measure": {
+          "n": 2
+        },
+        "radius": null,
+        "userPins": {
+          "n": 2
+        },
+        "tool": "measure"
+      }
+    }
   },
   "golden": {
     "stopped": "answered",
@@ -134,6 +173,7 @@
   },
   "expect": {
     "verdict": "pass",
-    "grade": "correct"
+    "grade": "correct",
+    "map": "match"
   }
 }
