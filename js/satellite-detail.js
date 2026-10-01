@@ -133,7 +133,9 @@ window.IntMapModules.satelliteDetail=function(HOST){
     let passHTML='';
     if(passBusy) passHTML='<div class="tp-hint">'+S(L('Searching the next 24 hours…','今後24時間を計算中…','Suche in den nächsten 24 Stunden…','Ищем в ближайшие 24 часа…','Buscando en las próximas 24 horas…'))+'</div>';
     else if(pass&&passFor===curId){
-      if(pass.none) passHTML='<div class="tp-hint">'+S(L('This satellite does not rise above the horizon here in the next 24 hours.','今後24時間、この地点では地平線の上に出ません。','Er geht hier in den nächsten 24 Stunden nicht auf.','В ближайшие 24 часа он здесь не восходит.','No se eleva sobre el horizonte aquí en las próximas 24 horas.'))+'</div>';
+      /* (restored-layers-under-load) the element set stops speaking before the 24 hours end — say that, not «does not rise» */
+      if(pass.none&&pass.limited) passHTML='<div class="tp-hint">'+S(L('Its orbital elements do not reach far enough ahead to predict a pass (they are good until '+new Date(pass.elementsTo).toISOString().slice(0,10)+').','軌道要素の有効期間が足りず、通過を予測できません（要素の有効期限は '+new Date(pass.elementsTo).toISOString().slice(0,10)+'）。'))+'</div>';
+      else if(pass.none) passHTML='<div class="tp-hint">'+S(L('This satellite does not rise above the horizon here in the next 24 hours.','今後24時間、この地点では地平線の上に出ません。','Er geht hier in den nächsten 24 Stunden nicht auf.','В ближайшие 24 часа он здесь не восходит.','No se eleva sobre el horizonte aquí en las próximas 24 horas.'))+'</div>';
       else passHTML=row(pass.inProgress?L('Pass in progress','通過中','Überflug läuft','Пролёт идёт','Paso en curso')
                                        :L('Rises','出現','Aufgang','Восход','Sale'),
                         pass.inProgress?L('now','現在','jetzt','сейчас','ahora'):(clock(pass.riseMs)+' · '+inTxt(pass.riseMs)))

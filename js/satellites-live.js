@@ -325,13 +325,21 @@ window.IntMapModules.satellitesLive=function(HOST){
        catalogue (the preview tile, Atlas's `find`, a test) hung with it. Measured in CI: seven jobs
        each timing out at 60 s inside a single `await`. A refusal is a fact the layer can act on — it
        falls back to the cached elements below and labels them — so make sure one arrives. */
+    /* ⚠ (restored-layers-under-load) …AND THE DEADLINE COUNTS THE HOST'S SILENCE, NOT THIS PAGE'S OWN STALL.
+       This was a bare `setTimeout(abort, 15000)` over the whole read of the 2.5 MB shipped catalogue.
+       MEASURED (a share link restoring every layer, 4 cores, the deep tier's neighbour spec running): the
+       same-origin file took 15–25 s to come through a page whose main thread was taken, the timer fired,
+       the read was aborted (status −1 in the trace), the live rungs are blocked in that run, and the layer
+       ended «could not load the catalog» with its layers never added — the held boot lacked
+       lyr-sats* while the normal boot had them. js/fetch-deadline.js `readWithin` is the shared reader
+       for exactly this: its clock is counted in steps so a frozen stretch is not charged to the host, and
+       with `idle` it bounds the longest SILENCE (headers included) rather than the length of a download
+       that keeps delivering. The same reader for the live rungs, so one rule. */
     const grab=(url,ms)=>{
-      const ac=(typeof AbortController!=='undefined')?new AbortController():null;
-      const killer=setTimeout(()=>{ try{ ac&&ac.abort(); }catch(_){} },ms||FETCH_MS);
-      return fetch(url,Object.assign({cache:'no-store'},ac?{signal:ac.signal}:{}))
-        .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
-        .then(t=>{ if(!t||t.length<140) throw new Error('empty catalog'); return t; })
-        .finally(()=>clearTimeout(killer));
+      const FW=window.IntMapFetchWithin;
+      return FW.readWithin(url,ms||FETCH_MS,{cache:'no-store'},{idle:true})
+        .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.text; })
+        .then(t=>{ if(!t||t.length<140) throw new Error('empty catalog'); return t; });
     };
     /* ══ (#R185) FOUR WAYS TO THE SAME ELEMENT SETS, TRIED IN ORDER ═══════════════════════════
        The layer must not be able to end up empty (「何も表示されないのは論外」), and on 2026-08-01
@@ -422,15 +430,87 @@ window.IntMapModules.satellitesLive=function(HOST){
      propagated three weeks are different claims, and travelling makes the second kind common.
      The panel already prints it; it now prints the truth about the frame being drawn. */
   function clockNow(){ try{ const T=window.IntMapTime; if(T&&T.when) return T.when(); }catch(_){} return new Date(); }
+  /* ══ ⚠⚠⚠ (restored-layers-under-load) AN ELEMENT SET SPEAKS FOR THE DAYS AROUND ITS EPOCH, NOT FOR AN ERA ══
+     SGP4 will turn any element set into a position at any instant, and until this round the layer drew
+     whatever came out: with the clock at 1914-06-28 it drew **5,234** objects, at 1991-06-25 **8,355**
+     — 2026 element sets run back 112 and 35 years. No source states those positions; they are made by
+     the arithmetic (.agents/rules/historical-verification.md §2 ③). So an object is computed and drawn
+     only while the instant is inside the span its OWN element set is good for, judged per element set
+     (each has its own epoch) — and never before the year its international designator says it was
+     launched (`98067A` → 1998; the epoch window alone could reach back before a launch for a young
+     high orbit).
+     THE SPAN, MEASURED (not quoted): the repository's own catalogue history — 61 snapshots of
+     data/tle/catalogue.tle, 2026-08-01 … 2026-09-30, the same satellite.js 7.1.0 — each object's older
+     element set propagated to the epoch of its newest one and compared with the newest set there.
+     Criterion: half the objects within 100 km and nine in ten within 1,000 km (a dot that is still on
+     the right place at a world view, and a footprint that still covers the right ground).
+         band (mean motion)        median / p90 error at the age              span kept
+         LEO   > 11 rev/day        5 d: 38 / 394 km   · 7 d: 115 / 2,473 km    5 days
+         MEO/HEO 1.5–11 rev/day    60 d: 18 / 226 km  (the longest age measured) 60 days
+         GEO   ≤ 1.5 rev/day       14 d: 85 / 253 km  · 21 d: 185 / 480 km     14 days
+     ⚠ ESTIMATE where it reaches past the measurement: the history runs FORWARD from older sets; the
+       span is applied the same way backwards (the clock in the past), and MEO/HEO is capped at the
+       60 days the history covers, not at a limit it showed. EXPIRES when satellite.js's propagator
+       changes, when the catalogue source changes, or when a longer history lets the MEO/HEO cap be
+       measured — re-run the measurement in dev-notes/2026-10-01-restored-layers-under-load.md.
+       This table is the ONE copy; everything that propagates asks `_elementSpan()`.
+     The «a few days either side» use — playing the clock to watch the objects move — stays inside it. */
+  const _SPAN_BANDS=[ [11, 5], [1.5, 60], [-Infinity, 14] ];   /* [mean motion above (rev/day), days] — see above */
+  const _DAY_MS=86400000;
+  function _elementSpan(s){
+    if(s._span) return s._span;
+    const r=s.satrec||{};
+    const epoch=((r.jdsatepoch||0)+(r.jdsatepochF||0)-2440587.5)*_DAY_MS;
+    const revDay=(r.no||0)*1440/(2*Math.PI);
+    let days=_SPAN_BANDS[_SPAN_BANDS.length-1][1];
+    for(const b of _SPAN_BANDS) if(revDay>b[0]){ days=b[1]; break; }
+    let from=epoch-days*_DAY_MS;
+    const yy=parseInt(String(s.intl||'').slice(0,2),10);
+    if(isFinite(yy)){ const launch=Date.UTC(yy<57?2000+yy:1900+yy,0,1); if(launch>from) from=launch; }
+    s._span={ from, to:epoch+days*_DAY_MS, epoch, days };
+    return s._span;
+  }
+  function _elementsCover(s,ms){ const sp=_elementSpan(s); return ms>=sp.from&&ms<=sp.to; }
+  /* ══ ⚠⚠⚠ (restored-layers-under-load) THE SAME INSTANT IS ONE PROPAGATION, NOT ONE PER CALLER ══════
+     The positions are a pure function of two things: the catalogue (`sats`, which is only ever
+     REPLACED — load, setGroup, dispose — never edited in place) and the instant. The tick, every
+     `moveend`, the clock subscriber and `snapshot()` all ask, and while the clock is live each of
+     them names a new instant, so each of them has work to do. While the clock is STOPPED they all
+     name the same one, and every call after the first recomputed a catalogue whose answer it
+     already held.
+     MEASURED, and why it is not the 21 ms the note above budgets: that figure is for elements a
+     day old. SGP4's deep-space integrator (satellite.js `dspace`) re-steps resonant orbits from the
+     element epoch in 720-minute strides on EVERY call — 7.1.0's `sgp4` does not keep the
+     integrator's `atime`/`xli`/`xni` between calls — so its cost grows with the distance from the
+     epoch to the instant. A share link carrying every layer opens with the clock stopped at
+     1991-06-25 (the last war layer's start): the whole catalogue then took **1,748 ms** a call
+     against **60 ms** at the present (desktop, unthrottled, 8,355 fixes), and the globe's spin
+     (`setCenter` every frame) fires `moveend` every frame on top of the 3 s tick. Over 30 s of that
+     settled page `dspace` was **7.3 s** of main-thread CPU — each call one uninterrupted task —
+     recomputing an answer that had not changed (dev-notes/2026-10-01-restored-layers-under-load.md).
+     → the last answer is kept with the two things it is a function of and handed back when both are
+       the same. A fresh array each time, as before, so no caller shares the kept one; the fix
+       objects themselves are read-only everywhere they go. `_diverged` is part of the answer and is
+       restored with it. Nothing about WHAT is drawn changes — the same instant gives the same fixes.
+     The memo hangs on the function (`propagateAll._last`: { sats, ms, out, dropped }) so the function
+     stays self-contained for tests/engine-satellites-checks.test.mjs, which lifts and runs it. */
   function propagateAll(when){
     if(!SAT) return [];
     const t=when||clockNow();
+    const ms=+t;
+    const last=propagateAll._last;
+    if(last&&last.sats===sats&&last.ms===ms){ _diverged=last.dropped; return last.out.slice(); }
     const gmst=SAT.gstime(t), sun=sunAt(t);
     const out=[];
-    let dropped=0;
+    let dropped=0, outside=0, coverFrom=Infinity, coverTo=-Infinity;
     for(let i=0;i<sats.length;i++){
       const s=sats[i];
       try{
+        /* (restored-layers-under-load) outside its element set's span → not computed, not drawn — see _elementSpan */
+        const sp=_elementSpan(s);
+        if(sp.from<coverFrom) coverFrom=sp.from;
+        if(sp.to>coverTo) coverTo=sp.to;
+        if(!(ms>=sp.from&&ms<=sp.to)){ outside++; continue; }
         const pv=SAT.propagate(s.satrec,t);
         if(!pv||!pv.position) continue;                       /* decayed / un-propagatable */
         const gd=SAT.eciToGeodetic(pv.position,gmst);
@@ -503,7 +583,11 @@ window.IntMapModules.satellitesLive=function(HOST){
       }catch(_){}
     }
     _diverged=dropped;
-    return out;
+    /* what the catalogue could speak for is kept with the answer: state() and the legend say it when the
+       clock is outside every span (`outside` === the whole catalogue) */
+    if(isFinite(ms)) propagateAll._last={ sats, ms, out, dropped, outside,
+      cover:(coverFrom<=coverTo)?{ from:coverFrom, to:coverTo }:null };
+    return out.slice();
   }
 
   /* ── observer geometry ────────────────────────────────────────────────────────────────────────
@@ -541,8 +625,16 @@ window.IntMapModules.satellitesLive=function(HOST){
     const obs=observer(at); if(!obs) return null;   /* (#R298) the caller's point when it has one */
     let s=null; for(let i=0;i<sats.length;i++) if(sats[i].id===id){ s=sats[i]; break; }
     if(!s) return null;
-    const t0=(fromT||new Date()).getTime(), horizon=(horizonH||24)*3600000;
-    const elAt=(ms)=>{ const t=new Date(ms);
+    const t0=(fromT||new Date()).getTime();
+    /* (restored-layers-under-load) a pass is only predicted where the element set speaks: outside its span
+       there is nothing to search, and a search that would run past its end stops there; both say so
+       (`limited`, the hours it could search, and where the elements end) rather than reporting «no
+       pass in 24 h» for hours it never had elements for. See _elementSpan. */
+    const span=_elementSpan(s);
+    if(!(t0>=span.from&&t0<=span.to)) return { none:true, limited:true, horizonH:0, elementsTo:span.to };
+    let horizon=(horizonH||24)*3600000, limited=false;
+    if(t0+horizon>span.to){ horizon=span.to-t0; limited=true; }
+    const elAt=(ms)=>{ if(!(ms>=span.from&&ms<=span.to)) return null; const t=new Date(ms);
       try{ const pv=SAT.propagate(s.satrec,t); if(!pv||!pv.position) return null;
         const la=SAT.ecfToLookAngles(obs,SAT.eciToEcf(pv.position,SAT.gstime(t)));
         return la.elevation*R2D; }catch(_){ return null; } };
@@ -558,7 +650,7 @@ window.IntMapModules.satellitesLive=function(HOST){
           for(let k=0;k<24;k++){ const mid=(lo+hi)/2; const em=elAt(mid); if(em==null) break; if(em<=0) lo=mid; else hi=mid; }
           riseMs=hi; break; }
         prev=e; ms=nx; }
-      if(riseMs==null) return { none:true, horizonH:horizonH||24 };
+      if(riseMs==null) return limited ? { none:true, limited:true, horizonH:+(horizon/3600000).toFixed(1), elementsTo:span.to } : { none:true, horizonH:horizonH||24 };
     }
     /* walk the pass to its maximum and its end */
     let cur=inProgress?t0:riseMs, maxEl=-90, maxMs=cur, setMs=null;
@@ -597,6 +689,7 @@ window.IntMapModules.satellitesLive=function(HOST){
     const segs=[]; let cur=[], prev=null;
     for(let k=-180;k<=180;k++){
       const t=new Date(t0+k*step*60000);
+      if(!_elementsCover(s,+t)) continue;   /* (restored-layers-under-load) only where the element set speaks */
       try{
         const pv=SAT.propagate(s.satrec,t); if(!pv||!pv.position) continue;
         const gd=SAT.eciToGeodetic(pv.position,SAT.gstime(t));
@@ -1032,6 +1125,11 @@ window.IntMapModules.satellitesLive=function(HOST){
     /* diagnostics — Atlas and the tests read these instead of poking at the renderer (#R183: a
        GeoJSON source's data is not readable back out of MapLibre 5, so it would lie) */
     state:()=>({ on, group, catalogue:sats.length, drawn:shown().length, computed:fixes.length,
+      /* (restored-layers-under-load) how many element sets do not speak for the instant drawn, and the span the
+         catalogue as a whole speaks for — what the legend and js/layer-state.js say when it is all of them */
+      ...(function(){ const P=propagateAll._last; if(!P||P.sats!==sats) return { outsideSpan:null, elementsCover:null };
+        let cover=null; try{ if(P.cover) cover={ from:new Date(P.cover.from).toISOString(), to:new Date(P.cover.to).toISOString() }; }catch(_){}
+        return { outsideSpan:P.outside, elementsCover:cover }; })(),
       /* (#R289) the instant these positions are for, and how far it is from now — a reader who has
          travelled is looking at a propagation, not at a report, and this is what says so. */
       when:clockNow().toISOString(), clockOffsetH:+(((clockNow().getTime()-Date.now())/3600000).toFixed(2)),

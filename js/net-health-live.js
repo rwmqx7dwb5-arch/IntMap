@@ -300,30 +300,38 @@ window.IntMapModules.netHealthLive = function (HOST) {
      ⚠ A POLL, NOT `once('idle')` — a map that is ALREADY idle never fires idle again, so the cheapest
      case to satisfy is the one an idle listener would wait for for ever. */
   const canDraw = () => { try { return !!HOST.canDraw(); } catch (_) { try { return !!GE().ready(); } catch (__) { return false; } } };
-  let _pending = null, _timer2 = null, _tries = 0;
-  const RETRY_MS = 300, RETRY_MAX = 60;   /* 18 s: longer than a cold style load measured on this app,
-                                             and short enough that a dead renderer stops being asked.
-                                             The 5-minute refresh re-tries after that in any case. */
+  /* ⚠⚠ (restored-layers-under-load) …AND THE WAIT IS FOR THE RENDERER'S EVENT, NOT FOR 60 TRIES. This was 300 ms ×
+     60 («18 s: longer than a cold style load measured on this app») and then silence. MEASURED: a share link
+     restoring every layer on a 4-core runner took the main thread for longer than that, the tries ran out, and
+     the held boot lacked `nr-pt` while the normal boot had it. `GE().whenCanDraw()` answers on the renderer's
+     own styledata / load / idle the moment the style is PARSED (not `isStyleLoaded()`, which is the
+     predicate the note below found stuck false) and never before. If the paint still does not take once the
+     renderer can take it, it is tried once more on the renderer's next change; a second refusal is an
+     observed failure and is said on the row (js/layer-state.js), not dropped. */
+  let _pending = null, _waiting = false, _box = null;
   /* ⚠ AND THE PREDICATE IS NOT THE ANSWER EITHER. `ready()` was still false on this app minutes
      after a load that had visibly finished — MapLibre's `isStyleLoaded()` stays false while ANY
      source is still settling — so a retry that only watched the predicate would have given up on a
      map that was perfectly able to draw. What decides is whether the paint ACTUALLY SUCCEEDED, which
      is why `ok()` is asked after every attempt and the predicate only gates the first one. */
-  function whenDrawable(fn, ok) {
+  function whenDrawable(fn, ok, box) {
     const attempt = () => { try { fn(); } catch (_) { } return ok ? !!ok() : true; };
     if (canDraw() && attempt()) return true;
-    _pending = attempt; _tries = 0;
-    if (_timer2) return false;
-    const tick = () => {
-      _timer2 = null;
-      const f = _pending; if (!f) return;
-      /* ⚠ the RETRY does not consult the predicate — see above: a map whose `ready()` never turns
-         true would never be attempted again, which is the state this app was actually in. */
-      if (f()) { _pending = null; return; }
-      if (++_tries > RETRY_MAX) { _pending = null; return; }
-      _timer2 = setTimeout(tick, RETRY_MS);
+    _pending = attempt; _box = box || null;
+    if (_waiting) return false;
+    _waiting = true;
+    let again = 0;
+    const run = () => {
+      const f = _pending; if (!f) { _waiting = false; return; }
+      if (f()) { _pending = null; _waiting = false; return; }
+      if (again++ < 1) {
+        const h = () => { try { GE().events.off('styledata', h); GE().events.off('idle', h); } catch (_) { } run(); };
+        try { GE().events.on('styledata', h); GE().events.on('idle', h); return; } catch (_) { /* no renderer to listen to */ }
+      }
+      const b = _box; _pending = null; _waiting = false;
+      if (b) { try { window.IntMapLayerState && window.IntMapLayerState.report(b, 'failed', { reason: 'unsupported' }); } catch (_) { } }
     };
-    _timer2 = setTimeout(tick, RETRY_MS);
+    try { GE().whenCanDraw().then(run); } catch (_) { _waiting = false; }
     return false;
   }
 
@@ -514,7 +522,7 @@ window.IntMapModules.netHealthLive = function (HOST) {
     const use = S.signal ? S.obs.filter((o) => o.datasource === S.signal) : S.obs;
     const g = (S.scope === 'region') ? await geomForRegions(use) : geomForCountries(use);
     S.missed = g.missed;
-    whenDrawable(() => { paintOutages(g.feats); legend(); }, () => !S.paintError);
+    whenDrawable(() => { paintOutages(g.feats); legend(); }, () => !S.paintError, 'dl-nethlth');
     legend();
   }
 
@@ -548,7 +556,7 @@ window.IntMapModules.netHealthLive = function (HOST) {
       if (want) await refresh(); else { paintOutages([]); legend(); }
     } else if (id === 'netreach') {
       S.netreach = want;
-      if (want) { const p = await fetchProbes(); S.probes = p; whenDrawable(() => { paintProbes(p.pts); probeLegend(); }, () => { try { return GE().layers.has(PPT); } catch (_) { return false; } }); }
+      if (want) { const p = await fetchProbes(); S.probes = p; whenDrawable(() => { paintProbes(p.pts); probeLegend(); }, () => { try { return GE().layers.has(PPT); } catch (_) { return false; } }, 'dl-netreach'); }
       else paintProbes([]);
       probeLegend();
     } else return false;

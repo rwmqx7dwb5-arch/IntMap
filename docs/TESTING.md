@@ -901,6 +901,17 @@ says which of a run's failures `main` already has.
 - **Input round-trips are not free.** Each `page.mouse.move` / `wheel` waits for the renderer to
   acknowledge it (0.3-2.7 s each on a loaded runner); repeating a move to the same point spends the
   test's budget on nothing (`tests/r203.spec.js` ②).
+
+⚠ **A failure that follows the shard is a failure that follows the neighbour.** Each test gets a
+fresh context (and `serviceWorkers: 'block'`), so what one spec leaves behind does not reach the
+next; what does reach it is the CPU the other worker is using at the same moment. A runner has
+4 vCPUs, and the software GL of every page shares them. CDP CPU throttling slows only the page's own
+main thread, and on a 22-core desktop it did not reproduce `tests/restored-layer-before-style.spec.js`
+(8/8 green at 2× and 4×). What reproduced it was the runner's shape: the whole run pinned to four cores
+(`start "" /affinity F /wait /b node …` on Windows, `taskset -c 0-3` on Linux) with the spec the
+failing shard ran beside it (`tests/r170.spec.js`) in a second process. Then **profile the page**
+(CDP `Profiler`): the dominant task was the product's, not the renderer's
+(`dev-notes/2026-10-01-restored-layers-under-load.md`).
 ## The process without round numbers — `tests/process-without-round-numbers-checks.test.mjs`
 
 利用者承認済み（2026-09-25）: 「ラウンド番号を名前として使うのをやめる」「DEV-NOTES の 1 本ファイルをやめる」

@@ -4777,8 +4777,24 @@ window.IntMapModules.dataLayers=function(HOST){
       /* Two numbers, because they answer two different questions and conflating them would hide the
          filter: how many objects are being propagated, and how many are being drawn right now. */
       const drawn=s.drawn, total=s.catalogue;
+      /* ══ (restored-layers-under-load) AN ELEMENT SET SPEAKS FOR DAYS, NOT ERAS ══════════════════════════════
+         js/satellites-live.js draws an object only while the clock is inside its own element set's span
+         (`_elementSpan` — the measured table is there). When the clock is outside EVERY span, the map has
+         no satellites and that is the answer, said here and in js/layer-state.js (`nodata`, which Atlas reads
+         through the layerStates section); back inside, the mark goes and the count returns. */
+      const day=(iso)=>String(iso||'').slice(0,10);
+      const none=total>0&&drawn===0&&s.outsideSpan===total&&!!s.elementsCover;
+      const note=none?window.IntMapLang.t(HOST.lang,
+        'No orbital elements for this date — the catalogue speaks for '+day(s.elementsCover.from)+' to '+day(s.elementsCover.to),
+        'この日時の軌道要素はありません（手元の要素が述べるのは '+day(s.elementsCover.from)+'〜'+day(s.elementsCover.to)+'）'):null;
+      try{ const cur=layerState.get('dl-sats');
+        if(none){ if(!cur||cur.state!=='nodata'||cur.message!==note) layerState.report('dl-sats','nodata',{reason:'out-of-epoch',message:note}); }
+        else if(cur&&cur.state==='nodata') layerState.set('dl-sats',null); }catch(_){}
+      if(none){ box.textContent=note; return; }
+      const away=(s.outsideSpan>0)?window.IntMapLang.t(HOST.lang,' · '+s.outsideSpan.toLocaleString()+' with no elements for this date','・'+s.outsideSpan.toLocaleString('ja-JP')+' 機はこの日時の軌道要素なし'):'';
       box.textContent = (jp ? (drawn.toLocaleString('ja-JP')+' / '+total.toLocaleString('ja-JP')+' 機を表示中'+(s.sunlit?('・'+s.sunlit+' 機が太陽光下'):''))
         : (drawn.toLocaleString()+' / '+total.toLocaleString()+' shown'+(s.sunlit?(' · '+s.sunlit+' sunlit'):'')))
+        + away
         + (s.loading ? window.IntMapLang.t(HOST.lang,' · updating from the live feed…','・ライブ配信から更新中…') : '');
     }
     /* (#R311) THE ROW IS THE DOOR: js/satellites-live.js (and its detail card) are fetched here, and

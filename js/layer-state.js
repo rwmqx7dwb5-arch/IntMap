@@ -21,6 +21,11 @@
  *      unobserved  — nothing arrived that could be read: the host's clock ran out
  *                    (js/fetch-deadline.js `isUnobserved`). «Could not confirm» is NOT «failed»
  *                    (.agents/rules/one-pass-or-a-reason.md §5), and the row says which.
+ *      nodata      — (restored-layers-under-load) the layer HAS its data and it has nothing to state for the
+ *                    moment the clock is at: each live-satellite element set speaks for days around its
+ *                    epoch, and with the clock in 1914 no source states a position. Not a failure (nothing
+ *                    went wrong, so no toast) and not «ok» (nothing is drawn): a neutral mark on the row,
+ *                    `message` says why, and Atlas reads it here like the other three.
  *  …plus `reason` (the vocabulary js/fetch-deadline.js and js/data-door.js already speak: 'timeout',
  *  'network', 'http' with `status`, 'parse', 'unsupported', 'worker'), the message the reader was
  *  given, and when. A caller's own Stop ('aborted') is neither — the record is dropped.
@@ -67,7 +72,9 @@ function words(lang) {
   const IntMapLang = (typeof window !== 'undefined' && window.IntMapLang && typeof window.IntMapLang.t === 'function')
     ? window.IntMapLang : { t: (_l, en) => en };
   return {
-    badge: (st) => (st === 'failed' ? IntMapLang.t(lang, "Couldn't load", '読み込めません') : IntMapLang.t(lang, 'No reply', '応答なし')),
+    badge: (st) => (st === 'failed' ? IntMapLang.t(lang, "Couldn't load", '読み込めません')
+      : st === 'nodata' ? IntMapLang.t(lang, 'No data for this date', 'この日時のデータなし')
+        : IntMapLang.t(lang, 'No reply', '応答なし')),
     detail: (rec) => {
       if (rec.message) return rec.message;
       switch (rec.reason) {
@@ -128,7 +135,7 @@ export function makeLayerState(opts) {
     const st = rec ? rec.state : '';
     try { if (host.classList && host.classList.contains('lst-tile')) { if (st) host.dataset.imState = st; else delete host.dataset.imState; } } catch (_) { /* not an element */ }
     let m = host.querySelector(':scope > .lyr-state');
-    if (st !== 'failed' && st !== 'unobserved') { if (m) m.remove(); return; }
+    if (st !== 'failed' && st !== 'unobserved' && st !== 'nodata') { if (m) m.remove(); return; }
     if (!m) { m = doc.createElement('span'); m.className = 'lyr-state'; host.appendChild(m); }
     const W = words(lang());
     m.dataset.state = st;
@@ -149,7 +156,7 @@ export function makeLayerState(opts) {
   let tileMo = null;
   function watchTiles() {
     let need = false;
-    for (const r of recs.values()) if (r.state === 'failed' || r.state === 'unobserved') { need = true; break; }
+    for (const r of recs.values()) if (r.state === 'failed' || r.state === 'unobserved' || r.state === 'nodata') { need = true; break; }
     if (!need) { if (tileMo) { tileMo.disconnect(); tileMo = null; } return; }
     if (tileMo || !doc || !doc.body || typeof MutationObserver === 'undefined') return;
     tileMo = new MutationObserver((ms) => {
@@ -194,7 +201,7 @@ export function makeLayerState(opts) {
 
   /** report(id, what, info) — `what` is a state name, or an error to classify (shared-reader errors carry `reason`) */
   function report(id, what, info) {
-    if (typeof what === 'string' && (what === 'ok' || what === 'loading' || what === 'failed' || what === 'unobserved')) return set(id, what, info);
+    if (typeof what === 'string' && (what === 'ok' || what === 'loading' || what === 'failed' || what === 'unobserved' || what === 'nodata')) return set(id, what, info);
     const c = classify(what);
     if (!c) return set(id, null);
     return set(id, c.state, Object.assign({}, c, info || {}));

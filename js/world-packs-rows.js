@@ -183,10 +183,20 @@ window.IntMapModules.worldPacks=function(HOST){
     let _cgReady=null;
     function withCountryGeo(){ if(!_cgReady) _cgReady=Promise.resolve().then(()=>HOST.loadCountryData()).catch(()=>{}); return _cgReady; }
     /* the `countries` SOURCE (for feature-state choropleths) — the same wait js/data-layers.js does */
-    function withCountrySource(){ return withCountryGeo().then(()=>new Promise(res=>{ let n=0;
-      (function w(){ try{ if(GE().layers.hasSource('countries')&&HOST.countryGeo) return res(true); }catch(_){}
-        try{ if(_imCanDraw()&&HOST.countryGeo&&!GE().layers.hasSource('countries')) HOST.addCountryLayers(); }catch(_){}
-        if(n++<200) setTimeout(w,200); else res(false); })(); })); }
+    /* ⚠ (restored-layers-under-load) answered by the two facts it waits on, not by 200 polls of 200 ms: the
+       country collection (the latched loadCountryData — when it settles, HOST.countryGeo either holds the
+       collection or the load failed, and nothing later fills it in) and the renderer being able to take a
+       source (GE().whenCanDraw()). The poll gave up after 200 tries and resolved `false` exactly like a
+       failed load, so a page busy for longer than the tries lasted lost the choropleths silently.
+       Resolves true once the `countries` source exists; false only when the collection did NOT arrive
+       (an observed failure, which js/countries-ui.js reports) or the renderer refused the add. */
+    function withCountrySource(){ return withCountryGeo().then(()=>{
+      const has=()=>{ try{ return !!(GE().layers.hasSource('countries')&&HOST.countryGeo); }catch(_){ return false; } };
+      if(has()) return true;
+      if(!HOST.countryGeo) return false;
+      const add=()=>{ try{ if(!GE().layers.hasSource('countries')) HOST.addCountryLayers(); }catch(e){ console.warn('worldPacks: countries source',e); } return has(); };
+      if(_imCanDraw()) return add();
+      return GE().whenCanDraw().then(add); }); }
     /* ⚠ (#R212) 「なぜか国の塗が荒い。おかしい。国境線がおかしい。」 — AND IT WAS, BY DESIGN, FOR SOMEBODY
        ELSE. js/countries-ui.js boots on Natural Earth **110 m** so the Countries tab can list its rows
        without waiting on 4.3 MB, then pulls the 10 m outline on an idle and parks it in
@@ -339,7 +349,10 @@ window.IntMapModules.worldPacks=function(HOST){
         hide(){ _want=false; _openKey=null; _openEl=null;   /* (#R499) a closed panel is not "already showing this" */
           try{ window._hideGenericLegend&&window._hideGenericLegend(LID); }catch(_){}
           const el=legend(); if(el) el.style.display='none'; },
-        shown(){ const el=legend(); return !!(el&&el.style.display!=='none'&&el.style.display!==''); } };
+        shown(){ const el=legend(); return !!(el&&el.style.display!=='none'&&el.style.display!==''); },
+        /* (restored-layers-under-load) an OBSERVED failure on the way to drawing — said on the row and to Atlas
+           through js/layer-state.js, the one owner of that fact, instead of a draw that is silently dropped */
+        failed(reason,message){ try{ window.IntMapLayerState&&window.IntMapLayerState.report(cbId,'failed',{ reason, message }); }catch(_){} } };
       return P; }
 
     /* a colour-scale legend, so a choropleth says what its colours mean where the colours are.
@@ -384,9 +397,16 @@ window.IntMapModules.worldPacks=function(HOST){
        while the page is not being composited. Every pack in this app therefore retries rather than
        calling ensure() once; this is that retry, plus the `styledata` re-apply a basemap swap needs
        (a style change drops layers, and #R72 records what happens when nothing puts them back). */
-    function whenDrawable(fn,tries){ tries=(tries==null)?80:tries;
-      (function t(){ if(_imCanDraw()){ try{ fn(); }catch(e){ console.warn('worldPacks draw',e); } return; }
-        if(--tries<=0) return; setTimeout(t,250); })(); }
+    /* ⚠ (restored-layers-under-load) THE WAIT IS FOR THE EVENT, NOT FOR A NUMBER OF TRIES. This was 80 polls
+       of 250 ms and then silence — on a page whose main thread was taken (all layers restored at once, CI
+       measured timers 20 s late) the 80 tries were spent before the style was parsed and the draw was
+       dropped with nothing left to retry. `GE().whenCanDraw()` resolves on the renderer's own styledata /
+       load / idle the moment canDraw() is true, and never before (js/geo-engine.js) — the same door
+       js/layer-rows.js holds every restored change behind. */
+    function whenDrawable(fn){
+      const run=()=>{ try{ fn(); }catch(e){ console.warn('worldPacks draw',e); } };
+      if(_imCanDraw()){ run(); return; }
+      try{ GE().whenCanDraw().then(run); }catch(e){ console.warn('worldPacks draw: no renderer to wait for',e); } }
     /* ══ ⚠⚠⚠ (#R297) `styledata` IS NOT 「THE BASEMAP CHANGED」 — IT IS 「ANYTHING CHANGED」 ═══════
        「警報レイヤーが重すぎる。品質保ったまま爆速にしろ。」 MEASURED with a control on the deployed
        build (z4 over Europe, 60 s): the map ran at **3.4 fps** with this layer on against **36.5 fps**

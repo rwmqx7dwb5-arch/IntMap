@@ -109,7 +109,9 @@ test('R211 world layers: nothing is shipped, every fetch is checked, and silence
 
 test('R211 world layers: a refused layer add is retried, and a style swap puts them back', () => {
   const src = read('js/world-packs-rows.js') + read('js/world-packs.js');
-  assert.match(src, /function whenDrawable\(fn,tries\)\{/, 'adds retry rather than being tried once');
+  /* (restored-layers-under-load) the retry waits for the renderer's event, not for 80 tries — evaluated in
+     tests/restored-layers-under-load-checks.test.mjs; here only that the door is the shared one */
+  assert.match(src, /function whenDrawable\(fn\)\{[\s\S]{0,300}GE\(\)\.whenCanDraw\(\)\.then\(run\)/, 'adds wait for the renderer rather than being tried once');
   assert.match(src, /GE\(\)\.events\.on\('styledata'/, 'and a basemap swap re-applies them');
   const hooks = src.match(/onRestyle\(\(\)=>/g) || [];
   assert.ok(hooks.length >= 3, `every geojson family re-applies (got ${hooks.length})`);
