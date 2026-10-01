@@ -24,11 +24,22 @@ jobs:
     name: HTTP probe
     runs-on: ubuntu-latest
     steps:
+      # (domain-portable) the address is supabase/functions/_shared/site-origin.js; scripts/site-url.mjs
+      # prints it and needs nothing but node (package.json for the module type), so a sparse checkout.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          sparse-checkout: |
+            package.json
+            scripts/site-url.mjs
+            supabase/functions/_shared/site-origin.js
+          sparse-checkout-cone-mode: false
       - name: Probe production URL
         id: probe
         env:
-          URL: ${{ vars.PROD_URL || 'https://rwmqx7dwb5-arch.github.io/IntMap/' }}
+          URL: ${{ vars.PROD_URL }}
         run: |
+          URL="${URL:-$(node scripts/site-url.mjs)}"   # before set +e: no address is a failed run, not a probe of ""
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
           set +e
           code=$(curl -sS -o body.html -w '%{http_code}' -L --max-time 30 "$URL")
           ok=1
@@ -45,7 +56,7 @@ jobs:
         env:
           OK: ${{ steps.probe.outputs.ok }}
           STATUS: ${{ steps.probe.outputs.status }}
-          URL: ${{ vars.PROD_URL || 'https://rwmqx7dwb5-arch.github.io/IntMap/' }}
+          URL: ${{ steps.probe.outputs.url }}
         with:
           script: |
             const ok = process.env.OK === '1';

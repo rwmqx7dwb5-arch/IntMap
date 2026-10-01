@@ -13,8 +13,9 @@ import { deltaE00, VISIBLE_AT_A_GLANCE } from './helpers/colour-difference.js';
 import { findEye, describeEye } from './helpers/cyclone-eye.js';
 import { fileURLToPath } from 'node:url';
 import { repoCorsContract, parseAllowHeaders } from './helpers/fn-cors.js';
+import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 
-const PROD_URL = process.env.PROD_URL || 'https://rwmqx7dwb5-arch.github.io/IntMap/';
+const PROD_URL = process.env.PROD_URL || SITE_URL;   // (domain-portable) the address is site-origin.js
 
 /* (#R333) Where the Edge Functions answer from. The project ref is a public identifier (it is in
    every request the site already makes), so naming it here reveals nothing a visitor cannot see. */

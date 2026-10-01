@@ -1,6 +1,6 @@
 // Playwright config for smoke-testing the LIVE production site (post-deploy + uptime).
-// No local webServer — it drives the real deployed URL (PROD_URL env or the default
-// GitHub Pages URL). Unlike the hermetic suite, it lets real external APIs load, so it
+// No local webServer — it drives the real deployed URL (PROD_URL env or the site's address,
+// supabase/functions/_shared/site-origin.js). Unlike the hermetic suite, it lets real external APIs load, so it
 // tolerates transient upstream blips via retries and lenient console classification.
 import { defineConfig, devices } from '@playwright/test';
 

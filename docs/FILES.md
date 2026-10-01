@@ -1328,7 +1328,10 @@ supabase/
                                   rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
                                   bbox.js / read-budget.js / client-error-shape.js /
                                   fetch-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
-                                  atlas-grade-schema.js）
+                                  atlas-grade-schema.js / site-origin.js）
+                                  ⚠ site-origin.js は**本番のアドレスの唯一の置き場**（`CUSTOM_DOMAIN` が
+                                  変える値）。ブラウザ・Edge Function・スクリプト・テストが import し、
+                                  workflow は scripts/site-url.mjs 経由で読む（domain-portable）
                                   ⚠ atlas-grade-schema.js は ai-proxy `atlas_grade` の形・予算・
                                   **採点 provider の規則（答えている provider とは別）**で、評価側の
                                   scripts/atlas-eval/grade.mjs も同じファイルを import する
@@ -1511,13 +1514,17 @@ scripts/
                                   （USB ミラーが読む）／`unlink`（`worktree.mjs done`）／`materialize`／`publish`
                                   （`npm run data:publish`）。中身の sha256 の定義と、ストアが OneDrive の外である
                                   ことの強制はここが正本。⚠ 置けない・目録と違うときは集合と理由を言って exit 1
+  site-url.mjs                    **本番のアドレス**（`supabase/functions/_shared/site-origin.js`）を import できない読み手
+                                  （workflow）に印字し、正本以外に綴られていれば拒む（`check:static` の `site-address`）。
+                                  `--write` は文書の `[site:<path>]: <url>` 定義を描き直す。Vite の
+                                  `siteUrlPlugin()`（`og:url`・`dist/CNAME`）もここ
   release-state.mjs               **本番がどの組み合わせで走っているか**を 3 面（静的サイト・Edge Functions・
                                   DB migration）まとめて測る（`npm run release:state` / `release:check`）。
                                   ⚠ **判定は時刻ではなく配備されたソースの中身**（`supabase functions download`
                                   で取り寄せてバイトで突き合わせる）。merge 前に worktree から deploy すると
                                   時刻は必ず「ソースが新しい」と言うので、時刻は文脈としてしか使わない。
                                   ⚠ **名前を 1 つも手で書かない**——関数の名簿は `supabase/functions/` の実体、
-                                  project ref は `src/vendor.js`、Pages の URL は `origin` の remote から導く。
+                                  project ref は `src/vendor.js`、本番の URL は `supabase/functions/_shared/site-origin.js` から導く。
                                   ⚠ `npm test` には入れない（本番と資格情報が要る）。CI が証明できることは
                                   `tests/process-release-state-checks.test.mjs` (#R745)。
   worktree.mjs                    **セッションの作業場**（`status` / `new <slug>` / `done`）。`AGENTS.md` §6 が

@@ -36,6 +36,7 @@ import { fileURLToPath } from 'node:url';
 import { join, dirname, resolve } from 'node:path';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { importModule } from './helpers/import-module.mjs';
+import { SITE_HOST } from '../supabase/functions/_shared/site-origin.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -60,7 +61,7 @@ async function harness({ serverCount = 0, respond, user = { id: '613271ce-0000-4
   };
   /* ⚠ NOT localhost — aiDev() treats a local origin as the developer and lifts the gate entirely,
      which would make every one of these checks pass on nothing. */
-  const location = { protocol: 'https:', hostname: 'rwmqx7dwb5-arch.github.io' };
+  const location = { protocol: 'https:', hostname: SITE_HOST };
   const document = {
     getElementById() { return null; },
     createElement() { return { classList: { add() {}, remove() {} }, style: {}, addEventListener() {}, querySelector() { return null; } }; },

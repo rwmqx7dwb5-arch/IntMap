@@ -33,8 +33,8 @@ const R = await import(modUrl('js/client-error-report.js'));   // Node: no windo
 const PROD = S.PRODUCTION_ORIGIN;
 const STACK = [
   "TypeError: Cannot read properties of undefined (reading 'lat')",
-  '    at renderCard (https://rwmqx7dwb5-arch.github.io/IntMap/assets/app-body-B3x9.js?v=2#frag:1:234567)',
-  '    at HTMLButtonElement.<anonymous> (https://rwmqx7dwb5-arch.github.io/IntMap/assets/main-Q1.js:3:9)',
+  `    at renderCard (${PROD}/IntMap/assets/app-body-B3x9.js?v=2#frag:1:234567)`,
+  `    at HTMLButtonElement.<anonymous> (${PROD}/IntMap/assets/main-Q1.js:3:9)`,
 ].join('\n');
 
 /* ── ① 例外は届く／ローカルからは送らない／Sentry は消えた ───────────────────────────────── */
@@ -89,7 +89,7 @@ test('client-error-log ① an exception thrown on the production page reaches cl
   assert.equal(beacons.length, 1, 'the same fingerprint is sent once per page load');
 
   /* a rejection with an Error reason is reported; a network failure is not */
-  const rej = new Error('boom in the layer loader'); rej.stack = 'Error: boom in the layer loader\n    at load (https://rwmqx7dwb5-arch.github.io/IntMap/assets/x.js:9:9)';
+  const rej = new Error('boom in the layer loader'); rej.stack = `Error: boom in the layer loader\n    at load (${PROD}/IntMap/assets/x.js:9:9)`;
   listeners.unhandledrejection[0]({ reason: rej });
   listeners.unhandledrejection[0]({ reason: new TypeError('Failed to fetch') });
   listeners.unhandledrejection[0]({ reason: 'a bare string' });
@@ -124,7 +124,7 @@ test('client-error-log ① the dormant Sentry loader is gone, and the reporter i
 /* ── ② 洗浄・fingerprint・上限 ─────────────────────────────────────────────────────────── */
 
 test('client-error-log ② query strings and fragments are removed from the path, the message and the stack', () => {
-  assert.equal(S.cleanPath('https://rwmqx7dwb5-arch.github.io/IntMap/?lat=35.6&lng=139#layer=quakes'), '/IntMap/');
+  assert.equal(S.cleanPath(`${PROD}/IntMap/?lat=35.6&lng=139#layer=quakes`), '/IntMap/');
   assert.equal(S.cleanPath('/IntMap/admin.html?code=abc'), '/IntMap/admin.html');
   assert.equal(S.cleanPath('/IntMap/#access_token=eyJabc'), '/IntMap/');
   const shaped = S.shapeReport({

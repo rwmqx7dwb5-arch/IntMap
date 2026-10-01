@@ -48,6 +48,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync }
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 
 /* ---------------------------------------------------------------- 導出（手で書かない） */
 
@@ -193,7 +194,11 @@ const MASTER = path.dirname(run('git', ['-C', ROOT, 'rev-parse', '--path-format=
 const git = (args, opts = {}) => run('git', ['-C', ROOT, ...args], { allowFail: opts.allowFail !== false });
 
 const REF = supabaseRefFrom(existsSync(path.join(ROOT, 'src/vendor.js')) ? readFileSync(path.join(ROOT, 'src/vendor.js'), 'utf8') : '');
-const PAGES = process.env.PROD_URL || pagesUrlFromRemote(git(['remote', 'get-url', 'origin'], { allowFail: true }));
+/* (domain-portable) the site's address is site-origin.js. It used to be derived from the git remote here,
+   which is right only while the site has no domain of its own (the remote names the Pages address, and
+   after a move that answers with a redirect). pagesUrlFromRemote stays: the test that keeps PAGES_URL
+   honest compares the two. */
+const PAGES = process.env.PROD_URL || SITE_URL;
 
 const planes = ['web', 'edge', 'db'].filter((p) => flag('--' + p));
 const WANT = planes.length ? new Set(planes) : new Set(['web', 'edge', 'db']);

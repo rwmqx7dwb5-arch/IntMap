@@ -9,7 +9,8 @@
 //  relays. #R214 measured those relays FROM A PAGE and added proxy.corsfix.com because
 //  it was the only one that answered the ja-JP edition — but that measurement was taken
 //  on `http://127.0.0.1`. Measured again from the REAL origin
-//  (`https://rwmqx7dwb5-arch.github.io`), the same second, the same build:
+//  (the production origin — `_shared/site-origin.js`, then the Pages address), the same second,
+//  the same build:
 //
 //      proxy.corsfix.com  → 403  {"corsfix_error":"domain_not_registered"}   (255 ms)
 //      corsproxy.io       → 503  Google's "Sorry…" bot page, 2,041 B         (8.1 s)
