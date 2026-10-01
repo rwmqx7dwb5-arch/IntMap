@@ -63,9 +63,8 @@ async function travel(a, dctx, K) { const L = K.L, R = K.R, note = K.note, warn 
    instant and any layer; `time.travel` appends, for the instant it just moved to, the TICKED layers that
    are not drawn and the ones showing another date — so Atlas learns it in the same result that moved the
    clock, not by asking again (.agents/rules/one-pass-or-a-reason.md §2 ②). */
-const esc = (s) => window.IntMapSafe.html(s);
 function coverageHtml(c, K, all) {
-  const L = K.L;
+  const L = K.L, esc = K.esc;   /* the kernel's escaper, as every capability uses it */
   const line = (r) => '<li><b>' + esc(r.name) + '</b>' + (r.why ? ' — ' + esc(r.why) : '') + '</li>';
   const names = (rows) => rows.map((r) => esc(r.name)).join(L(', ', '、'));
   let h = '';
@@ -76,7 +75,7 @@ function coverageHtml(c, K, all) {
   return h;
 }
 async function coverage(a, K) {
-  const R = K.R, L = K.L, warn = K.warn;
+  const R = K.R, L = K.L, warn = K.warn, esc = K.esc;
   const LT = window.IntMapLayerTime;
   if (!LT) return R(false, warn('⚠ ' + L('The layer time table is not available', 'レイヤーの時間表が使えません')));
   let when = null;
