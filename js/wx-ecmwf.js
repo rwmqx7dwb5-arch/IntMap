@@ -503,6 +503,9 @@ import { IntMapLang } from './lang-registry.js';
         variables: (j.variables || []).slice(),
         fetchedAt: Date.now()
       };
+      /* (world-at-time) the run's valid times are what every ECMWF row can state — js/layer-time-kernel.js
+         holds those rows back on an instant outside them (a forecast says nothing about 1914) and says why */
+      try { var LT = window.IntMapLayerTime; if (LT && LT.range) LT.range('@ecmwf-ifs', { from: meta.validTimes[0], to: meta.validTimes[meta.validTimes.length - 1], by: 'ECMWF open data run ' + meta.referenceTime }); } catch (_) { }
       /* A new model run re-bases the whole axis. Keep the reader on the SAME WALL-CLOCK INSTANT
          rather than on the same index — index 6 of the 06Z run and index 6 of the 12Z run are six
          hours apart, and silently jumping the map forward is the kind of change nobody asks for. */

@@ -141,8 +141,10 @@ test('every layer a link can carry: holding the style back costs no layer', asyn
      (fewer slow layers in it), never wrong. */
   const heldP = openLink(browser, ids, { hold: true });
   const plain = await openLink(browser, ids, { hold: false });
-  let reference;
-  try { await plain.page.waitForTimeout(SETTLE_MS); reference = await mapLayers(plain.page); }
+  let reference, plainOwned = {};
+  try { await plain.page.waitForTimeout(SETTLE_MS); reference = await mapLayers(plain.page);
+    /* which layers each box owns, read where they DREW (the held boot may never draw a box the time hold met first) */
+    plainOwned = await plain.page.evaluate(() => { const o = {}; document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach((c) => { try { o[c.id] = window.IntMapLayerAudit.owned(c.id); } catch (_) { } }); return o; }); }
   finally { await plain.ctx.close(); }
   const held = await heldP;
   try {
@@ -150,12 +152,27 @@ test('every layer a link can carry: holding the style back costs no layer', asyn
     expect((held.heldAtRelease || []).length, "the restore's changes were held by the gate").toBeGreaterThan(0);
     /* everything has been delivered (openLink waited for that state); what is left is the layers whose
        handlers fetch their data first — the same wait the normal boot's reference already had */
-    await expect.poll(async () => { const have = new Set(await mapLayers(held.page)); return reference.filter((id) => !have.has(id)); },
+    /* (world-at-time) a layer whose box the TIME hold keeps back (the link's war rows move the clock into the past) may
+       exist in one boot and not the other — whether it drew before the hold is a race between the clock and the
+       style, not a cost of the style hold. Its layers are set aside — the reconciler's own ownership, read in the boot that drew them. */
+    const timeHeldLayers = async () => (await held.page.evaluate(() => window.IntMapLayerTime.heldIds())).flatMap((id) => plainOwned[id] || []);
+    await expect.poll(async () => { const have = new Set(await mapLayers(held.page)); const aside = new Set(await timeHeldLayers()); return reference.filter((id) => !have.has(id) && !aside.has(id)); },
       { timeout: 60000, intervals: [2000], message: 'layers the normal boot drew and the held boot did not' }).toEqual([]);
     /* the reported pair, by name: held by the gate, then on the map with their boxes still ticked */
     expect(held.heldAtRelease, 'both reported changes were held by the gate').toEqual(expect.arrayContaining(REPORTED.map(([box]) => box)));
-    await expect.poll(() => mapLayers(held.page), { timeout: 30000, message: 'the reported layers are on the map' })
-      .toEqual(expect.arrayContaining(REPORTED.map(([, layer]) => layer)));
+    /* (world-at-time) the map at an instant is measured in tests/history-prefetch-on-demand.spec.js (the same journey to
+       1900, a first-time reader's layers) — this page carries every layer and costs most of its 240 s booting, so it
+       asks only what the time hold changes about ITS claim: below. */
+    /* A pair the TIME hold met before it ever drew is not a cost of the STYLE hold — it is held for the instant, with its
+       row saying why, in both boots alike (the comparison above holds either way). So each reported box is on the map
+       or held for the instant; returning to the present to watch ~90 layers re-draw is what took this test past 240 s
+       in CI (4.1 min), and the delivery back is not this test's claim. */
+    const have = new Set(await mapLayers(held.page));
+    const pair = await held.page.evaluate((r) => r.map(([box]) => ({ box, held: window.IntMapLayerTime.held(box),
+      mark: (window.IntMapLayerState.get(box) || {}).state })), REPORTED);
+    REPORTED.forEach(([box, layer], i) => {
+      expect(have.has(layer) || (pair[i].held && pair[i].mark === 'nodata'), box + ': on the map, or held for the instant with its reason').toBe(true);
+    });
     expect(await held.page.evaluate((w) => w.map((id) => document.getElementById(id).checked), REPORTED.map(([box]) => box))).toEqual([true, true]);
     expect(styleErrors(held.errors), 'no add may reach a style that cannot take it').toEqual([]);
   } finally { await held.ctx.close(); }

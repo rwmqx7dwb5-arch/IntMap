@@ -954,6 +954,21 @@ main thread, and on a 22-core desktop it did not reproduce `tests/restored-layer
 failing shard ran beside it (`tests/r170.spec.js`) in a second process. Then **profile the page**
 (CDP `Profiler`): the dominant task was the product's, not the renderer's
 (`dev-notes/2026-10-01-restored-layers-under-load.md`).
+## The map at instant T — `tests/world-at-time-checks.test.mjs` / `tests/history-prefetch-on-demand.spec.js`
+
+The gate is `scripts/world-at-time.mjs --check`: every layer of `js/layer-manifest.js` has a time
+declaration (`js/layer-time-decl.js`) and nothing else does, every declaration passes the rule's own
+`validate` (closed kinds, en + jp, a literal date with no `by` is refused), every cited file and symbol
+exists, and no layer of today is held back on the live clock. The node checks also hold the rule kind by
+kind, institutions against their founding dates (NATO 1949-08-24, the EEC 1958-01-01, the wars of
+`data/wars.json`, the HDI series, the night lights), and the two former second clocks (World Bank, GIBS).
+The running app is measured inside `tests/history-prefetch-on-demand.spec.js` (a boot of its own did not fit the
+suite's total — `check:testbudget`): on the journey to 1900 the reader ticks today's cables and roads and Köppen
+(from 1901) — each is held, draws nothing, stays ticked and says why naming the date; the borders are not held;
+the reconciler does not re-arm a held box; Atlas's `time.coverage` moves no clock; the present delivers them back.
+`tests/restored-layer-before-style.spec.js` sets aside the layers of time-held boxes from its style-hold comparison.
+The enumeration for one instant is `node scripts/world-at-time.mjs --year 1914`.
+
 ## The process without round numbers — `tests/process-without-round-numbers-checks.test.mjs`
 
 利用者承認済み（2026-09-25）: 「ラウンド番号を名前として使うのをやめる」「DEV-NOTES の 1 本ファイルをやめる」

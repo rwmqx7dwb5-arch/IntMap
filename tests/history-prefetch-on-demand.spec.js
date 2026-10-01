@@ -116,5 +116,45 @@ test('the history bundles are not fetched at boot, and are fetched once the read
     expect(ranged.every((st) => st === 206), 'every archive read was a Range answer: ' + JSON.stringify(ranged)).toBe(true);
     const whole = seen.map((x) => x.path).filter((p) => RECORDS.includes(p));
     expect(whole, 'the whole record was fetched although its tiles were there').toEqual([]);
+
+    /* ══ (world-at-time) THE SAME JOURNEY, ASKED WHAT THE MAP AT 1900 DRAWS ══════════════════════════════════════
+       measured here rather than in a boot of its own (scripts/test-budget.mjs: the suite's total has no room for one).
+       The reader ticks today's submarine cables and roads (snapshots of the present) and Köppen
+       (whose first period begins in 1901): at 1900 js/layer-time-kernel.js holds all three — boxes ticked, nothing
+       of theirs drawn, each row saying why with the date — while the borders (a dated record) draw. The reconciler
+       does not re-arm what is held; Atlas's `time.coverage` answers about another instant without moving the clock;
+       the present delivers the three back. */
+    const HELD = ['dl-subcables', 'dl-climate', 'cb-roads'];
+    await page.evaluate(() => window.IntMapLayerTime.ready());
+    /* the reader ticks them AT 1900 — the gate's own path: the tick never reaches the module */
+    await page.evaluate((b) => b.forEach((id) => { const c = document.getElementById(id); if (c && !c.checked) { c.checked = true; c.dispatchEvent(new Event('change', { bubbles: true })); } }), HELD);
+    await expect.poll(() => page.evaluate((b) => b.filter((id) => !window.IntMapLayerTime.held(id)), HELD), { timeout: 20000, message: 'held at 1900' }).toEqual([]);
+    expect(await page.evaluate(() => window.IntMapLayerTime.held('cb-borders')), 'the borders state 1900').toBe(false);
+    const rows = await page.evaluate((b) => b.map((id) => { const r = window.IntMapLayerState.get(id) || {}; return { id, painted: window.__imLayerPainted(id), mark: r.state, why: r.message || '', checked: document.getElementById(id).checked }; }), HELD);
+    for (const r of rows) {
+      expect(r.checked, r.id + ' stays ticked').toBe(true);
+      expect(r.painted, r.id + ' draws nothing').not.toBe(true);
+      expect(r.mark, r.id + ' says why').toBe('nodata');
+      expect(r.why, r.id + ' names the date').toMatch(/1900/);
+    }
+    const t0 = Date.now();
+    await page.evaluate(() => { window.IntMapLayerAudit.run(); window.IntMapLayerAudit.run(); });
+    expect(await page.evaluate((t) => window.IntMapLayerAudit.log().filter((e) => e.t >= t && window.IntMapLayerTime.held(e.id)).map((e) => e.id + ':' + e.fix), t0),
+      'a held box is not a «ticked but blank» finding').toEqual([]);
+    const cov = await page.evaluate(async () => {
+      const moves = []; const off = window.IntMapTime.on((e) => moves.push(e.source));
+      const r = await window.IntMapOS.execute('time.coverage', { year: 1600 });
+      off();
+      const c = (r && (r.coverage || (r.result && r.result.coverage))) || await window.IntMapLayerTime.coverage(1600);
+      return { unstated: c.unstated.map((x) => x.id), stated: c.stated.map((x) => x.id), moves, year: window.IntMapTime.year() };
+    });
+    expect(cov.moves, 'asking about 1600 moves no clock').toEqual([]);
+    expect(cov.year).toBe(1900);
+    expect(cov.unstated).toEqual(expect.arrayContaining(['dl-climate', 'dl-subcables', 'dl-nato', 'dl-planes', 'cb-roads']));
+    expect(cov.stated).toEqual(expect.arrayContaining(['cb-borders', 'dl-nightside', 'cb-grid']));
+    await page.evaluate(() => window.IntMapTime.setNow({ source: 'test' }));
+    await expect.poll(() => page.evaluate(() => window.IntMapLayerTime.heldIds()), { timeout: 20000, message: 'the present holds nothing back' }).toEqual([]);
+    await expect.poll(() => page.evaluate(() => [window.__imLayerPainted('dl-subcables'), window.__imLayerPainted('dl-climate')]), { timeout: 30000, message: 'delivered back and drawn' }).toEqual([true, true]);
+    expect(await page.evaluate((b) => b.filter((id) => (window.IntMapLayerState.get(id) || {}).state === 'nodata'), HELD), 'no row still says «no data for this date»').toEqual([]);
   } finally { await ctx.close(); }
 });

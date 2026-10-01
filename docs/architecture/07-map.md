@@ -1547,6 +1547,43 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   記録が無いとき（`No data` と、なぜ無いか）／**取得に失敗したとき**（レンダラの `error` イベントが
   `src-nightsat` について言ったときだけ）。⚠ **失敗と未提供を同じ絵にしない。**
 
+### 7.4a 時刻 T の地図——レイヤーは典拠が述べる範囲でだけ描く
+
+- **1 つの機構**: `js/layer-time.js`（規則・純粋）／`js/layer-time-decl.js`（174 層の宣言・純データ）／
+  `js/layer-time-kernel.js`（`window.IntMapLayerTime`）。時計（`IntMapTime`）の上に乗り、2 つ目の時計は作らない。
+- **宣言は 1 層 1 つ**、`TIME[id]`（`js/layer-manifest.js` の id）。1 層の記述の `time` 欄としてそのまま入る形で、
+  DOM も `window` も参照しない。語彙は閉じている——`kind`（instant / convention / enduring / record / series /
+  snapshot / live / forecast）、時計の当て方（`follows`＝範囲の中で時計の瞬間を描く・`self`＝範囲の外も自分で
+  述べる・`entry`＝読者のクリックで時計を自分の記録へ動かす・`ownDate`＝自前の日付を持つ）、範囲（`from` /
+  `to` / `asOf` / `period` / `carry`）、`says`（何が範囲を述べるか、en+jp）。**日付の値には必ず `by`（その値を
+  述べているファイルか上流のページ）が付く**。小さなファイルなら値そのものを指せる（`data/gibs-range.json#layers.gxndvi.from`。
+  機構が実行時に読む）。大きなファイル（`data/wars.json` 954 kB など）は値を書いて `cite` で出典の位置を示し
+  （`wars[id=ww1].span.0`・`elections.$min(date)`）、**門がファイルを読んで一致を確かめる**。実行時に読む範囲は `runtime` で、
+  読んだモジュールが `IntMapLayerTime.range(id, …)` で報告する（世界銀行は系列の年、ECMWF は予報ランの有効時刻を
+  `@ecmwf-ifs` の 1 回で 10 行ぶん）。範囲を誰も述べていない行は `rangeUnstated` で「未決」と書き、描くとも
+  止めるとも決めない（計器が穴として数える）。
+- **判定は `verdict` 1 つ**: stated（典拠が T を述べる→描く）／carried（別の時点を述べ、それと言って描く——系列の
+  最終年より後・日付つきスナップショットの後・自前の日付を持つ行）／unstated（どの典拠も述べない→描かない）。
+  スナップショットの 1 版は直前の版からの期間（上流の周期 `period`）を述べる——OpenStreetMap は 1 日
+  （`scripts/lib/upstream-cadence.mjs` の `OPENSTREETMAP`）。ライブは現在だけ。
+- **描かないとは**: 箱の `change` を預かり（`js/layer-rows.js` の `holdUntilDrawable` と同じ形）、既に描いて
+  いた箱にはモジュール自身の「オフ」を地図自身の変更として送り（`__syn`）、箱はイベント無しでチェックに戻す。
+  読者の選択・共有リンク・セッションはそのまま。述べる時刻に戻れば 1 回の「オン」で配る。`self` の層は預からず、
+  何も無い時刻には行に印だけを出す（モジュール自身の文があればそちらを優先）。自己修復（`IntMapLayerAudit`）は
+  預かっている箱を「チェックされているのに空」と数えない（`timeHeld`）。
+- **現在の時計で止まってよいのは `entry` の層だけ**（戦争の行は記録が終わっている）——門が検査する。
+- **読み手は 3 つ**: 行（`js/layer-state.js` の `nodata`。en+jp の文）／凡例 `#data-legend-worldtime`（「描いて
+  いません」と「別の時点の記録を表示」。現在の時計では前者だけ）／Atlas（`layerStates`・`time` 節の `layers`・
+  能力 `time.coverage`。`time.travel` の結果にも、描けなくなったチェック済みの層を添える）。
+- **宣言は時計が現在を離れたときに読む**（`import()`）。現在の時計で預かる層は、時計が一度でも過去へ行った後の
+  戦争の行だけなので、起動経路に載せない。
+- **自前の時計を持っていた行は時計に従う**: 世界銀行の 61 行（`js/wb-layers.js` `yearFor`。凡例の年は時計を
+  動かし、「最新（国ごと）」は現在に戻す）、NASA GIBS の 4 行（`js/layer-packs.js` `gxAt`。日付欄と ‹ › は時計を
+  動かす）。自前の日付を残している行（年降水量・人口グリッド・WorldCover・海流・選挙）は `ownDate` で宣言し、
+  範囲の中では carried と述べる。
+- 計器は `node scripts/world-at-time.mjs --year <年|now>`（全層の判定と理由）・`--years`（主要年）・`--check`（門）。
+  実測と主要年の史実照合は `dev-notes/2026-10-01-world-at-time.md`。
+
 ### 7.5 ウィジェット基盤
 
 **板そのものの不変条件**

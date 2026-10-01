@@ -25,7 +25,19 @@ export default [
       /* (#R94) time-travel now drives the WHOLE spacetime OS (IntMapTime): news, the Countries statistics,
          borders, the climate era, NATO/EU accession & the day/night terminator all move together. Accepts a
          year (deep time back to `IntMapTime.min` — AD 1 since #R604), an exact date, or daysAgo; "now/reset" returns everything to live. */
-    async run(a, dctx, K) { const L = K.L, R = K.R, note = K.note, warn = K.warn, ymdISO = K.ymdISO;
+    async run(a, dctx, K) { const res = await travel(a, dctx, K); return withCoverage(res, K); },
+  },
+  {
+    row: ['time.coverage',              'timeCoverage',   'layerTime,whatCanBeDrawn',                                    'time',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    /* (world-at-time) WHAT A MAP AT ONE INSTANT CAN DRAW — for every layer, from what its source states
+       (js/layer-time-decl.js through js/layer-time-kernel.js), without switching anything on or moving
+       the clock. `on` limits it to the ticked layers. No instant → the clock's. */
+    schema: () => ({ type: 'object', properties: { year: int(), date: str(), on: bool() } }),
+    async run(a, dctx, K) { return coverage(a, K); },
+  },
+];
+
+async function travel(a, dctx, K) { const L = K.L, R = K.R, note = K.note, warn = K.warn, ymdISO = K.ymdISO;
       { try{ const T=IntMapTime;
           const synced=L('the whole map (news, countries, borders, climate era) moves with it','地図全体（ニュース・国データ・国境・気候区分）が同期します','die ganze Karte bewegt sich mit','вся карта движется вместе','todo el mapa se mueve con él');
           const nowMsg=()=>R(true, note('✓ '+L('Back to now','現在に戻しました','Zurück zu jetzt','Вернулись в настоящее','Volvimos al presente')));
@@ -44,6 +56,42 @@ export default [
           if(a.value!=null){ T.setDaysAgo(3650-(+a.value),{source:'atlas'}); return R(true, note(ymdISO(T.when()))); }
           return R(false, warn('⚠ '+L('Give a year or date','年か日付を指定してください','Jahr/Datum angeben','Укажите год/дату','Indica un año o fecha')));
         }catch(_){ return R(false, warn('⚠ '+L('Time machine unavailable','タイムマシンが使えません','Zeitmaschine nicht verfügbar','Машина времени недоступна','Máquina del tiempo no disponible'))); } }
-    },
-  },
-];
+}
+
+/* ══ (world-at-time) THE TWO ANSWERS ABOUT WHAT THE MAP AT AN INSTANT CAN DRAW ══════════════════════
+   One reader (window.IntMapLayerTime, js/layer-time-kernel.js), two doors: `time.coverage` asks about any
+   instant and any layer; `time.travel` appends, for the instant it just moved to, the TICKED layers that
+   are not drawn and the ones showing another date — so Atlas learns it in the same result that moved the
+   clock, not by asking again (.agents/rules/one-pass-or-a-reason.md §2 ②). */
+function coverageHtml(c, K, all) {
+  const L = K.L, esc = K.esc;   /* the kernel's escaper, as every capability uses it */
+  const line = (r) => '<li><b>' + esc(r.name) + '</b>' + (r.why ? ' — ' + esc(r.why) : '') + '</li>';
+  const names = (rows) => rows.map((r) => esc(r.name)).join(L(', ', '、'));
+  let h = '';
+  if (c.unstated.length) h += '<div>' + esc(L('Not drawn — no source states this date', '描けない——この日時を述べる典拠がない')) + ' (' + c.unstated.length + ')</div><ul>' + c.unstated.map(line).join('') + '</ul>';
+  if (c.carried.length) h += '<div>' + esc(L('Drawn from another date', '別の時点の記録で描く')) + ' (' + c.carried.length + ')</div><ul>' + c.carried.map(line).join('') + '</ul>';
+  if (all && c.stated.length) h += '<div>' + esc(L('Drawn — the source states this date', '描ける——典拠がこの日時を述べている')) + ' (' + c.stated.length + '): ' + names(c.stated) + '</div>';
+  if (c.unknown.length) h += '<div>' + esc(L('Range read when the layer loads', '範囲は読み込み時に分かる')) + ' (' + c.unknown.length + '): ' + names(c.unknown) + '</div>';
+  return h;
+}
+async function coverage(a, K) {
+  const R = K.R, L = K.L, warn = K.warn, esc = K.esc;
+  const LT = window.IntMapLayerTime;
+  if (!LT) return R(false, warn('⚠ ' + L('The layer time table is not available', 'レイヤーの時間表が使えません')));
+  let when = null;
+  if (a.year != null) when = Math.round(+a.year);
+  else if (a.date) when = String(a.date);
+  const c = await LT.coverage(when, { on: !!a.on });
+  if (!c) return R(false, warn('⚠ ' + L('Give a year or an ISO date', '年か ISO 形式の日付を指定してください')));
+  const day = c.at.live ? L('now', '現在') : c.at.date.slice(0, 10);
+  return R(true, '<div>' + esc(L('What the map at ' + day + ' can draw', day + ' の地図に描けるもの')) + '</div>' + coverageHtml(c, K, true), { coverage: c });
+}
+async function withCoverage(res, K) {
+  try {
+    const LT = window.IntMapLayerTime, T = IntMapTime;
+    if (!res || !res.ok || !LT || !T || T.isLive()) return res;
+    const c = await LT.coverage(null, { on: true });
+    if (!c || (!c.unstated.length && !c.carried.length)) return res;
+    return Object.assign({}, res, { html: (res.html || '') + coverageHtml(c, K, false), coverage: c });
+  } catch (_) { return res; }
+}

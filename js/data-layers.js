@@ -5959,7 +5959,11 @@ export function dataLayers(HOST){
          The periodic audit already refused to judge an undrawable map (#R170); the per-box half is
          the same fact, asked of the gate that is doing the holding. */
       const heldNow=cb=>{ try{ const H=window.IntMapLayerHold; return !!(H&&H.pending().indexOf(cb.id)>=0); }catch(_){ return false; } };
-      const observable=cb=>_canDraw()&&!heldNow(cb);
+      /* (world-at-time) …and a box js/layer-time-kernel.js is holding back because no source states the instant on the clock:
+         its module was sent the map's own «off» and the box stays ticked for the reader, so «ticked and blank» is the
+         answer there, not a finding — the heal would re-deliver the very tick that was held. */
+      const timeHeld=cb=>{ try{ const T=window.IntMapLayerTime; return !!(T&&T.held(cb.id)); }catch(_){ return false; } };
+      const observable=cb=>_canDraw()&&!heldNow(cb)&&!timeHeld(cb);
       /* ══ ⚠⚠ …NOR WHILE THE ASK IS STILL BEING ANSWERED (heal-waits-for-inflight) ════════════════════
          `heldNow` is the time BEFORE a change reaches its row; this is the time AFTER — the row has
          been asked and the request it started has not settled. Its layer is absent because it has not
@@ -5977,7 +5981,10 @@ export function dataLayers(HOST){
       function inFlightNow(cb){ try{ return layerInflight.has(cb.id); }catch(_){ return false; } }
       const idsFor=cbId=>STATIC[cbId]||BASE[cbId]||window._imAuditReg[cbId]||null;
       function painted(ids){ try{ for(const lid of ids){ if(GE().layers.has(lid)&&GE().layers.getLayout(lid,'visibility')!=='none') return true; } }catch(_){} return false; }
-      function check(cbId){ let ids=idsFor(cbId); if(!ids||!ids.length){ const own=window._imLayerOwn&&window._imLayerOwn[cbId]; ids=(own&&own.size)?Array.from(own):null; } if(!ids||!ids.length) return null; return painted(ids); }
+      /* which renderer layers a box owns — the id tables, then the learned ownership. (world-at-time) also handed out
+         read-only as IntMapLayerAudit.owned, so a reader can tell a layer held for the instant from one the style hold lost */
+      function owned(cbId){ let ids=idsFor(cbId); if(!ids||!ids.length){ const own=window._imLayerOwn&&window._imLayerOwn[cbId]; ids=(own&&own.size)?Array.from(own):[]; } return ids.slice(); }
+      function check(cbId){ const ids=owned(cbId); if(!ids.length) return null; return painted(ids); }
       /* (#R190) "is this checkbox's layer really on the map?" — the launch screen asks it too, to
          decide when the map is FINISHED rather than merely quiet (js/app-body.js). Exposing the
          existing reconciler answer is the alternative to a second id table that would rot. */
@@ -6018,7 +6025,7 @@ export function dataLayers(HOST){
            exists precisely to fix "box on, nothing painted" was itself mostly asleep. It reads getLayer() +
            visibility, which need only a parsed style. */
         if(!_canDraw()) return;
-        document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(heldNow(cb)||inFlightNow(cb)){ sus[cb.id]=0; return; }
+        document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(heldNow(cb)||timeHeld(cb)||inFlightNow(cb)){ sus[cb.id]=0; return; }
           const ids=idsFor(cb.id); if(!ids||!ids.length){ _auditLearned(cb); return; }
           if(userTouched(cb)){ sus[cb.id]=0; return; }   /* (#R85) defer to a very recent user toggle — never race it */
           const vis=painted(ids);
@@ -6089,7 +6096,7 @@ export function dataLayers(HOST){
       try{ layerState.useLang(()=>HOST.lang); }catch(_){}   /* (layer-failure-state) the row marks speak the reader's language — HOST.lang is live (#R165) */
       /* `runs()` — how many times each reconciler ran, by trigger (layer-failure-state): the measurement that the
          quiet map runs neither. `states()` — the one owner's record (js/layer-state.js), for a reader already here. */
-      window.IntMapLayerAudit={run:audit,check,log:()=>log.slice(-20),
+      window.IntMapLayerAudit={run:audit,check,owned,log:()=>log.slice(-20),
         runs:()=>({ sweep:Object.assign({},_reconcileRuns.sweep), audit:Object.assign({},_reconcileRuns.audit) }),
         states:()=>layerState.snapshot()};
     })();
