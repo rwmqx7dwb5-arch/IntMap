@@ -62,7 +62,14 @@
       }
     ],
     "find": [],
-    "snapshot": {}
+    "snapshot": {
+      "viewport": {
+        "west": 148.6,
+        "south": -35.7,
+        "east": 149.6,
+        "north": -34.9
+      }
+    }
   },
   "golden": {
     "stopped": "answered",
@@ -77,6 +84,7 @@
   "expect": {
     "verdict": "pass",
     "grade": "correct",
-    "dispatched": 1
+    "dispatched": 1,
+    "map": "match"
   }
 }

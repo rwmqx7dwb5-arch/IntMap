@@ -32,6 +32,9 @@
    node imports it here. */
 import { ATLAS_GRADE_SCHEMA, ATLAS_GRADE_CRITERIA } from '../../supabase/functions/_shared/atlas-grade-schema.js';
 export { ATLAS_GRADE_SCHEMA, ATLAS_GRADE_CRITERIA };
+/* (atlas-eval-map-state) the map axis — a row's `mapState` is checked against the vocabulary the product
+   actually has (layer declarations, registered snapshot sections, the historical enumeration) */
+import { mapVocabulary, validateMapState } from './map-state.mjs';
 
 const str = (v) => (v == null ? '' : String(v));
 
@@ -277,11 +280,12 @@ export function readRubric(data) {
 }
 
 /**
- * validateAnswerKey(key, capabilityExists) → [problem…] — the answer key's own schema. A row with no
+ * validateAnswerKey(key, capabilityExists, mapVocab) → [problem…] — the answer key's own schema. A row with no
  * source, an unknown unit or a capability the registry does not have would grade nothing or grade
- * against an unverifiable claim; the check names it instead.
+ * against an unverifiable claim; the check names it instead. A row's `mapState` is checked against
+ * `mapVocab` (scripts/atlas-eval/map-state.mjs mapVocabulary — discovered from this checkout when not given).
  */
-export function validateAnswerKey(key, capabilityExists) {
+export function validateAnswerKey(key, capabilityExists, mapVocab) {
   const bad = [];
   const ids = new Set();
   const KINDS = new Set(['number', 'range', 'date', 'name', 'count']);
@@ -303,6 +307,7 @@ export function validateAnswerKey(key, capabilityExists) {
     const s = q.source || {};
     if (!/^https?:\/\//.test(str(s.url)) || !str(s.title).trim() || !str(s.states).trim()) bad.push(q.id + ': every answer names the source it was verified at (title, url, what it states)');
     for (const c of q.capabilities || []) if (capabilityExists && !capabilityExists(c)) bad.push(q.id + ': names capability «' + c + '», which the registry does not have');
+    if (q.mapState != null) bad.push(...validateMapState(q.mapState, mapVocab || mapVocabulary(), q.id));
   }
   return bad;
 }

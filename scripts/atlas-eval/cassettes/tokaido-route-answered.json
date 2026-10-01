@@ -254,7 +254,24 @@
         }
       }
     ],
-    "snapshot": {}
+    "snapshot": {
+      "viewport": {
+        "west": 134.6,
+        "south": 34.2,
+        "east": 140.6,
+        "north": 36.2
+      },
+      "objects": {
+        "n": 1,
+        "items": [
+          {
+            "id": "route-0",
+            "kind": "route",
+            "name": ""
+          }
+        ]
+      }
+    }
   },
   "golden": {
     "stopped": "answered",
@@ -272,6 +289,7 @@
   },
   "expect": {
     "verdict": "pass",
-    "grade": "correct"
+    "grade": "correct",
+    "map": "match"
   }
 }

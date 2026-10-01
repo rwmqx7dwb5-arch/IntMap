@@ -197,6 +197,10 @@ and the one-time secret setup are in [`docs/TESTING.md`](TESTING.md) 「Atlas ev
 - **The report is also on the run page** (the job summary): whether each answer-key question was answered
   right, wrong or not at all — overall and by kind of question, language and capability, worst first —
   and the same numbers for the nights before (the report carries its own history forward).
+- **The map is a second axis in the same report**: whether the final map held what the question asked of
+  it (the place in the frame, the route or outline drawn, the year and the units of that year) — right,
+  wrong, or **unobserved** (the snapshot did not carry what the criterion reads; not a miss). A map that
+  was right and is now wrong is a regression of its own; it never changes the answer's grade.
 - **A wrong answer reddens the night only when it was right before** (a regression against the
   reference). A question Atlas has never answered right is a quality gap the report shows, not an alarm.
 - ⚠ It costs real model calls every night, on the evaluation account's allowance — about 90 turns and up

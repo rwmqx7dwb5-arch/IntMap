@@ -77,6 +77,7 @@
   "expect": {
     "verdict": "pass",
     "grade": "correct",
-    "dispatched": 1
+    "dispatched": 1,
+    "map": "unobserved"
   }
 }

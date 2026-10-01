@@ -44,6 +44,7 @@ export const UNMEASURED = Object.freeze({
 });
 
 import { gradeAnswer, languageOf } from './grade.mjs';
+import { gradeMap, mapVocabulary, validateMapState } from './map-state.mjs';
 
 const str = (v) => (v == null ? '' : String(v));
 const re = (p) => new RegExp(p.pattern, p.flags == null ? 'i' : p.flags);
@@ -103,6 +104,7 @@ export function at(obj, path) {
  *        `calls` is null when the tool-surface tap could not be installed — the checks that need it
  *        then say 「not observed」 instead of passing.
  *   ctx  { cutStops, turnBudgetMs, callKey } — handed in from js/atlas-agent.js / js/atlas-turn-results.js
+ *        (+ eraReference, optional — scripts/atlas-eval/map-state.mjs eraReference, for an `era` criterion)
  */
 export function judgeTurn(q, obs, ctx) {
   /* (atlas-quality-lab) what the report breaks the results down by: the kind of question (an answer-key
@@ -209,6 +211,10 @@ export function judgeTurn(q, obs, ctx) {
     metrics.rubric = obs.rubric;
     if (obs.rubric.measured && obs.rubric.verdict === 'fail') fail('rubric', 'the independent grader (' + (obs.rubric.model || 'model') + ') failed it — ' + Object.entries(obs.rubric.scores || {}).map(([k, v]) => k + ' ' + v).join(', ') + (obs.rubric.evidence ? ' — «' + obs.rubric.evidence + '»' : ''));
   }
+  /* (atlas-eval-map-state) IS THE MAP RIGHT — a SEPARATE AXIS. The final map against the question's
+     `mapState` (scripts/atlas-eval/map-state.mjs). It adds no failure: the words and the map are graded
+     apart and reported apart, and a criterion the snapshot could not show is `unobserved`, never a miss. */
+  metrics.map = q.mapState ? gradeMap(q.mapState, obs.snapshot, { eraReference: ctx.eraReference }) : null;
   if (contradictions) fail('observer', contradictions + ' result(s) said rendered:true and code:not_rendered at once (R802 §3)');
   if (centre) fail('resolution', centre + ' call(s) named a place and were answered about the map centre (R802 §5)');
 
@@ -292,6 +298,31 @@ export function metricsOf(turns, probes) {
       knownOpen: m.filter((t) => !counted(t) && t.failures.length).length + pm.filter((p) => !counted(p) && p.failures.length).length,
     },
     answers: answersOf(m),
+    map: mapAxisOf(m),
+  };
+}
+
+/** (atlas-eval-map-state) mapAxisOf(measuredTurns) — the map axis over the turns whose question states a map:
+ *  match / mismatch / unobserved, overall and by category, language and capability. The rate is over the
+ *  OBSERVED turns (match + mismatch); unobserved is counted apart, never as 0. */
+export function mapAxisOf(m) {
+  const g = m.filter((t) => t.metrics && t.metrics.map);
+  const by = (keyOf) => {
+    const out = {};
+    for (const t of g) for (const k of [].concat(keyOf(t))) {
+      if (!k) continue;
+      const o = out[k] || (out[k] = { n: 0, match: 0, mismatch: 0, unobserved: 0 });
+      o.n++; o[t.metrics.map.verdict]++;
+    }
+    return out;
+  };
+  return {
+    graded: g.length,
+    match: g.filter((t) => t.metrics.map.verdict === 'match').length,
+    mismatch: g.filter((t) => t.metrics.map.verdict === 'mismatch').length,
+    unobserved: g.filter((t) => t.metrics.map.verdict === 'unobserved').length,
+    byCategory: by((t) => t.category), byLang: by((t) => t.lang),
+    byCapability: by((t) => (t.capabilities && t.capabilities.length ? t.capabilities : ['(none named)'])),
   };
 }
 
@@ -353,6 +384,8 @@ export function badnessOf(turns, probes) {
     b[id + ':expectationFailures'] = t.failures.filter((f) => !GRADED[f.kind]).length;
     if (x.grade) b[id + ':answer'] = x.grade.verdict === 'correct' ? 0 : 1;
     if (x.rubric && x.rubric.measured) b[id + ':rubric'] = x.rubric.verdict === 'pass' ? 0 : 1;
+    /* the map axis: only an observed verdict is a fact that can regress (unobserved produces no key) */
+    if (x.map && x.map.verdict !== 'unobserved') b[id + ':map'] = x.map.verdict === 'match' ? 0 : 1;
   }
   for (const p of probes || []) if (p.measured) b['probe:' + p.asked + ':wrong'] = p.failures.length ? 1 : 0;
   return b;
@@ -400,8 +433,9 @@ export function verdictOf({ dryRun, turns, probes, regressions }) {
 
 /** validateQuestionSet(set, capabilityExists) — the problem set's own schema. Returns a list of
  *  problems; empty means well formed. A capability named by an expectation that does not exist in
- *  the registry would never be reached and never fail — the check reports it instead. */
-export function validateQuestionSet(set, capabilityExists) {
+ *  the registry would never be reached and never fail — the check reports it instead. A `mapState`
+ *  is checked against `mapVocab` (map-state.mjs mapVocabulary, discovered when not given). */
+export function validateQuestionSet(set, capabilityExists, mapVocab) {
   const bad = [];
   const ids = new Set();
   const KNOWN = new Set(['reach', 'minOperations', 'requireReply', 'replyMustNotMatch', 'replyMustMatch', 'notAllFailed', 'codeMustNotOccur', 'resultMustNotMatch', 'map']);
@@ -419,6 +453,7 @@ export function validateQuestionSet(set, capabilityExists) {
       ...((q.expect && q.expect.codeMustNotOccur) || []).map((p) => p.capability),
       ...((q.expect && q.expect.resultMustNotMatch) || []).map((p) => p.capability)].filter(Boolean);
     for (const c of caps) if (capabilityExists && !capabilityExists(c)) bad.push(q.id + ': names capability «' + c + '», which the registry does not have');
+    if (q.mapState != null) bad.push(...validateMapState(q.mapState, mapVocab || mapVocabulary(), q.id));
     for (const p of [...(q.expect && q.expect.replyMustNotMatch) || [], ...(q.expect && q.expect.replyMustMatch) || [], ...(q.expect && q.expect.resultMustNotMatch) || [], ...(q.expect && q.expect.codeMustNotOccur) || [], ...(q.expect && q.expect.map) || []]) {
       if (!str(p.why).trim()) bad.push(q.id + ': an expectation without «why» — every criterion must say which record it came from');
       if (p.pattern != null) { try { re(p); } catch (e) { bad.push(q.id + ': bad pattern ' + p.pattern); } }
@@ -476,6 +511,25 @@ export function renderMarkdown(r) {
       for (const [k, o] of rows) L.push('| ' + k + ' | ' + pc(o) + ' | ' + o.incorrect + ' | ' + o.absent + ' | ' + (o.rubricGraded ? o.rubricPass + '/' + o.rubricGraded : '—') + ' |');
     }
   }
+  const MA = M.map;
+  if (MA && MA.graded) {
+    const rate = (o) => (o.match + o.mismatch ? o.match / (o.match + o.mismatch) : 2);
+    const pm = (o) => (o.match + o.mismatch ? Math.round((100 * o.match) / (o.match + o.mismatch)) + '% (' + o.match + '/' + (o.match + o.mismatch) + ')' : '—');
+    L.push('');
+    L.push('## Map — the final map against the state the question asks for');
+    L.push('');
+    L.push('A separate axis from the answer above (`scripts/atlas-eval/map-state.mjs`). `unobserved` = the snapshot did not carry the section a criterion reads — not a miss.');
+    L.push('');
+    L.push('* right: **' + MA.match + ' / ' + (MA.match + MA.mismatch) + '** observed · wrong: ' + MA.mismatch + ' · unobserved: ' + MA.unobserved + ' (of ' + MA.graded + ' turn(s) with an expected map)');
+    for (const [title, by] of [['kind of question', MA.byCategory], ['language', MA.byLang], ['capability', MA.byCapability]]) {
+      const rows = Object.entries(by || {}).sort((a, b) => rate(a[1]) - rate(b[1]));
+      if (!rows.length) continue;
+      L.push('');
+      L.push('| map by ' + title + ' (worst first) | right | wrong | unobserved |');
+      L.push('|---|---|---|---|');
+      for (const [k, o] of rows) L.push('| ' + k + ' | ' + pm(o) + ' | ' + o.mismatch + ' | ' + o.unobserved + ' |');
+    }
+  }
   const un = Object.entries(M.unmeasured);
   if (un.length) {
     L.push('');
@@ -510,6 +564,7 @@ export function renderMarkdown(r) {
       + (x.secondOfSameOp ? ' · same call again ×' + x.secondOfSameOp : '')
       + (x.reusedByAgent ? ' · answered from the reuse ledger ×' + x.reusedByAgent : ''));
     if (x.grade) L.push('* answer: ' + x.grade.verdict + ' — expected ' + x.grade.expected + (x.grade.stated.length ? '; stated ' + x.grade.stated.slice(0, 4).join(', ') : ''));
+    if (x.map) L.push('* map: ' + x.map.verdict + ' — ' + x.map.criteria.map((c) => c.criterion + ' ' + c.verdict + (c.verdict === 'match' ? '' : ' (' + c.detail + ')')).join(' · '));
     if (x.rubric) L.push('* independent grader: ' + (x.rubric.measured ? x.rubric.verdict + ' (' + Object.entries(x.rubric.scores).map(([k, v]) => k + ' ' + v).join(', ') + (x.rubric.model ? ' · ' + x.rubric.model : '') + ')' : 'not graded — ' + x.rubric.reason));
     if (x.repeats && x.repeats.length) for (const p of x.repeats) L.push('  * again: `' + p.capability + '` (#' + p.n + ') after ' + (p.after || '?') + (p.afterCode ? '/' + p.afterCode : ''));
     for (const f of t.failures) L.push('* ✗ ' + f.kind + ': ' + f.detail);
