@@ -4464,3 +4464,11 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
 ドメイン直下でも `/IntMap/` 配下でも同じビルドが動く**こと。正本以外にアドレスの綴りが無いこと
 （`check:static` の規則 `site-address`）、`CUSTOM_DOMAIN` が空なら `dist/CNAME` を出さず値があれば出すこと、
 1 つのビルドを 2 つのベースパスに置いて index が参照するローカル資源が両方で取れることを、実際に配信して確かめる。
+
+### `tests/migration-order-guard-checks.test.mjs` (migration-order-guard)
+
+5 本。**変更が足した migration は base の最新より後に並ぶ**こと（`check:static` の規則 `migration-order`、判定は
+`scripts/migration-order.mjs` の純関数）。実測した事例（base の最新 20261002100000 に対して 20261002090000 を足す）が
+名指されること、後の時刻と base 自身のファイルは通ること、同じ時刻も拒むこと、このリポジトリの migration が
+全部 14 桁の版を持ち重複しないこと。base は `IM_DIFF_BASE`、PR では `HEAD^1`、手元では `origin/main` で、
+読めなければ測れなかったと警告する（本番の db push が最後の柵として残る）。

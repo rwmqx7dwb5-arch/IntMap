@@ -15,6 +15,7 @@ import { join, extname, relative, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { jsReachability } from './js-reachability.mjs';
 import { codeOnly } from './code-only.mjs';
+import { outOfOrder } from './migration-order.mjs';
 
 const ROOT = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'));
 const rel = (p) => relative(ROOT, p).replace(/\\/g, '/');
@@ -214,6 +215,29 @@ for (const f of ALL.filter((x) => x.rel.startsWith('supabase/migrations/') && x.
   const t = stripSqlComments(read(f));   // scan executable DDL only, not comments
   for (const d of DESTRUCTIVE) {
     if (d.re.test(t)) warn('migration-destructive', `${f.rel}: contains ${d.name} — destructive; back up + review before applying (docs/MIGRATIONS.md)`);
+  }
+}
+
+// (migration-order-guard) A migration a change ADDS must sort after every migration already on the base.
+// Measured 2026-10-01: #869 added 20261002090000_usage_counts.sql after #867 had already applied
+// 20261002100000 to production; supabase db push --dry-run then refused the whole history (it will not apply a
+// migration older than one the remote has recorded), so the post-merge deploy failed and 22 Edge Functions were
+// left undeployed. Two PRs written in parallel each picked a timestamp that was "next" on the main they forked
+// from; nothing compared them until production did. The rule reads the base's own migration list (not a
+// hand-kept latest timestamp) and compares only names, so it is true for any later file as well.
+{
+  const MIG = 'supabase/migrations/';
+  const stamp = (n) => (/^(\d{14})_/.exec(n.split('/').pop()) || [])[1] || null;
+  const base = process.env.IM_DIFF_BASE || (process.env.GITHUB_EVENT_NAME === 'pull_request' ? 'HEAD^1' : 'origin/main');
+  let onBase = null;
+  try {
+    onBase = (await new Promise((res, rej) => execFile('git', ['ls-tree', '--name-only', base, MIG], { cwd: ROOT }, (e, out) => (e ? rej(e) : res(out)))))
+      .split('\n').map((x) => x.trim().split('/').pop()).filter(Boolean);
+  } catch { /* the base is not in this checkout */ }
+  if (!onBase) warn('migration-order', 'could not read ' + base + ':' + MIG + ' — the order of added migrations was not measured here (the post-merge deploy still refuses an out-of-order history)');
+  else {
+    const inTree = ALL.filter((y) => y.rel.startsWith(MIG) && y.ext === '.sql').map((y) => y.rel.slice(MIG.length));
+    for (const o of outOfOrder(onBase, inTree)) err('migration-order', MIG + o.name + ': added with timestamp ' + o.stamp + ', not after ' + o.latest + ' (the newest migration on ' + base + ') — production refuses a migration older than one it has applied; rename it to a later timestamp');
   }
 }
 

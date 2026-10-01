@@ -9,7 +9,7 @@
  *    ① WHERE SUPPORT GOES — a section inside the same panel, built from what IntMap actually records:
  *       the daily Atlas allowance (the plan table, supabase/functions/_shared/plans.js — the same
  *       numbers ai-proxy charges by) and this month's AI requests and tokens (public.operating_stats(),
- *       supabase/migrations/20261001120000_operating_stats.sql). PRODUCT.md §2.1-3 — what is shown is
+ *       supabase/migrations/20261002110000_operating_stats.sql). PRODUCT.md §2.1-3 — what is shown is
  *       honest: a figure no record holds is not shown, a figure that could not be read says so, and
  *       «requests» are never called «answers» (the migration says why the ledger cannot count answers).
  *    ② THE MOMENT IT IS RELEVANT — one small, non-modal card, at two moments only:
