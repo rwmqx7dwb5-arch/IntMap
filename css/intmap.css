@@ -211,6 +211,10 @@
     .im-reload{ position:fixed; left:50%; top:calc(12px + var(--safe-top)); transform:translateX(-50%); z-index:calc(var(--z-system) + 1); display:flex; align-items:center; gap:12px; max-width:min(520px,92vw); padding:10px 12px 10px 16px; border-radius:14px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); box-shadow:var(--shadow); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); color:var(--text-main); font-size:13px; font-weight:500; line-height:1.45; }
     .im-reload > button{ flex:0 0 auto; border:none; border-radius:999px; padding:7px 14px; background:var(--primary-fill); color:#fff; font-size:13px; font-weight:600; white-space:nowrap; }
     .im-reload > button:hover{ filter:brightness(1.06); }
+    /* (installable-app) the offline notice (#im-offline, index.html) wears this same card — it is the same kind of
+       fact: what the reader is looking at is not everything — and, because the card sets display:flex, it has
+       to say [hidden] out loud */
+    .im-offline[hidden]{ display:none; }
     /* the stale-build case is a fault the app already tried and failed to heal (it purged the caches and reloaded once), so it keeps the red of the banner it replaces */
     .im-reload-stale{ border-color:rgba(176,0,32,0.45); } .im-reload-stale > button{ background:#b00020; }
 
@@ -576,6 +580,13 @@
       color:var(--text-main); }
     .compass-btn:hover{ box-shadow:0 6px 18px rgba(0,0,0,0.16); }
     .compass-btn:active{ transform:scale(0.94); }
+    /* (installable-app) #btn-locate wears .compass-btn too — the same 42px circle in the same glass, one rule for
+       both, so nothing here repeats it. .locate-btn adds only the phone FAB's two states (#R232): an outline
+       dart until the map centre sits ON the fix, then solid on the accent. !important for the reason #R23 gives
+       for .m-fab.on — the shared glass list sets background-color !important. */
+    .locate-btn svg polygon{ fill:none; transition:fill 0.2s; }
+    .locate-btn.on{ background:var(--primary-fill) !important; color:#fff; border-color:transparent; }
+    .locate-btn.on svg polygon{ fill:currentColor; }
     /* ⚠ THE WHOLE ROSE COUNTER-ROTATES, TICKS AND ALL, because that is what a compass card does —
        js/map-readout.js writes `rotate(-bearing)` here (#R480 lists the seven callers that know this
        class). transform-origin stays at its default 50% 50%, which is the dial's centre only because
@@ -5569,4 +5580,37 @@ body.sidebar-translucent .pg-panel, body.sidebar-glass2 .pg-panel{
   *, *::before, *::after{ backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
   [aria-pressed="true"], [aria-selected="true"], [aria-current]:not([aria-current="false"]){ outline:2px solid Highlight; outline-offset:-2px; }
   #map{ forced-color-adjust:none; }
+}
+
+/* ══ (supporter-funnel) SUPPORTING INTMAP — js/supporter.js ═══════════════════════════════════════
+   ① «Where support goes», inside the support panel (#blueberry-modal): an iOS grouped list, left-aligned
+   inside a centred panel. ② The offer card: NON-MODAL — no overlay, nothing behind it is blocked, the
+   map keeps every gesture. It sits where the reload prompt sits (.im-reload, top centre) because that
+   place is proven not to cover a control the reader is using, but BELOW it and below every dialog
+   (--z-toast, set by js/supporter.js as a named layer), so it can never stand in front of something
+   more urgent. No emoji, no shadow on text. */
+.supporter-costs{ text-align:left; margin:0 0 18px; }
+.supporter-costs-title{ margin:0 0 8px; font-size:13px; font-weight:600; color:var(--text-muted); letter-spacing:0.1px; }
+.supporter-costs-list{ border-radius:12px; background:var(--input-bg); overflow:hidden; }
+.supporter-costs-row{ padding:10px 14px; }
+.supporter-costs-row + .supporter-costs-row{ border-top:1px solid rgba(128,128,128,0.18); }
+.supporter-costs-label{ font-size:13px; font-weight:600; color:var(--text-main); margin-bottom:3px; }
+.supporter-costs-value{ font-size:12.5px; line-height:1.55; color:var(--text-muted); }
+.supporter-offer{ position:fixed; left:50%; top:calc(12px + var(--safe-top)); transform:translateX(-50%); display:flex; align-items:center; gap:14px; width:max-content; max-width:min(560px,calc(100vw - 24px)); box-sizing:border-box; padding:12px 12px 12px 16px; border-radius:16px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); box-shadow:var(--shadow); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); color:var(--text-main); }
+.supporter-offer[hidden]{ display:none; }
+.supporter-offer-text{ min-width:0; }
+.supporter-offer-title{ display:block; font-size:13.5px; font-weight:600; }
+.supporter-offer-body{ margin:2px 0 0; font-size:12.5px; line-height:1.45; color:var(--text-muted); }
+.supporter-offer-actions{ display:flex; flex:0 0 auto; gap:6px; }
+.supporter-offer-actions > button{ border:none; border-radius:999px; padding:7px 13px; font-size:13px; font-weight:600; white-space:nowrap; cursor:pointer; }
+.supporter-offer-later{ background:var(--input-bg); color:var(--text-main); }
+.supporter-offer-go{ background:var(--primary-fill); color:#fff; }
+.supporter-offer-actions > button:hover{ filter:brightness(1.06); }
+@media (max-width:768px){
+  .supporter-offer{ flex-direction:column; align-items:stretch; gap:10px; width:calc(100vw - 24px); }
+  .supporter-offer-actions{ justify-content:flex-end; }
+}
+@media (prefers-reduced-motion:no-preference){
+  .supporter-offer:not([hidden]){ animation:supporter-offer-in 0.32s cubic-bezier(0.22,1,0.36,1); }
+  @keyframes supporter-offer-in{ from{ opacity:0; transform:translate(-50%,-8px); } to{ opacity:1; transform:translate(-50%,0); } }
 }

@@ -210,6 +210,20 @@ function sourceCorpus() {
     const p = join(ROOT, f);
     if (existsSync(p)) corpus.push({ path: f, role: 'runtime', text: readFileSync(p, 'utf8') });
   }
+  /* ⚠ (installable-app) A WEB APP MANIFEST IS A CONSUMER TOO — the browser fetches every icon it names,
+     and nothing else in the tree has to. DISCOVERED from the pages above (`<link rel="manifest" href>`),
+     not listed: without it the 512 px icon was attributed to the script that generates it (`build`),
+     which is true and says the opposite of what it means — the same shape as the data/ manifests below. */
+  for (const f of ROOT_SOURCES) {
+    const p = join(ROOT, f);
+    if (!existsSync(p)) continue;
+    for (const m of readFileSync(p, 'utf8').matchAll(/<link\b[^>]*\brel="manifest"[^>]*>/gi)) {
+      const href = (/\bhref="([^"#?]+)"/.exec(m[0]) || [])[1];
+      if (!href || /^[a-z]+:|^\/\//i.test(href)) continue;
+      const rel = href.replace(/^\.\//, '');
+      if (existsSync(join(ROOT, rel)) && !corpus.some((c) => c.path === rel)) corpus.push({ path: rel, role: 'runtime', text: readFileSync(join(ROOT, rel), 'utf8') });
+    }
+  }
   for (const f of walk(ROOT).filter((x) => /^[^/]+\.md$/.test(x))) {
     corpus.push({ path: f, role: 'doc', text: readFileSync(join(ROOT, f), 'utf8') });
   }

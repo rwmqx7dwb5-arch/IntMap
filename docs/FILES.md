@@ -35,7 +35,16 @@ admin.html                      管理コンソール（geo_pins / dashboard_car
                                 バンドラを通らない独立ページ。Supabase SDK は同梱版を読む
 sw.js                           Service Worker。タイル等のキャッシュとオフライン補助。キャッシュ名は
                                 バージョン付きで、activate が旧世代を消す。cache-first の対象は
-                                「自分が知っているホストの、不変なタイル」だけに限定する
+                                「自分が知っているホストの、不変なタイル」だけに限定する。
+                                ＋**アプリ本体の殻（app shell）**: ビルドが書き込む一覧（scripts/app-shell.mjs）を
+                                install で貯め、ハッシュ付きの資産は殻から、manifest とアイコンは
+                                stale-while-revalidate で答える。**文書（navigation）はブラウザがオフラインと
+                                言うときだけ**殻から答える（オンラインでは触らない）。殻はビルドごとに名前が変わる
+manifest.webmanifest            Web App Manifest（インストール可能にする）。**生成物**——
+                                scripts/build-app-manifest.mjs が index.html の <title>・説明、css の --bg-color、
+                                IntMap.Icon.png から書く。`--check` が index.html の theme-color 等も照合する
+icons/                          manifest と index.html が名指すアイコン（192 / 512〔maskable 兼用〕/
+                                apple-touch-icon 180）。同じスクリプトの生成物
 science.html / sources.html     読み物2ページ（手法の説明・出典の一覧）。バンドラを通らないので
                                 言語一覧は scripts/i18n-langs.mjs が生成する js/locales/_langs.js から読む
 google….html                    Google Search Console 認証用
@@ -443,6 +452,11 @@ map-tooltip.js                  地図のホバー用ツールチップ 1 面（
                                 反転・`--tip-ax`）は #R175 の本文そのまま。⚠ 出した理由は `tests/r168 #8` の
                                 shell 予算——**天井は上げず、同量以上を外へ出す**（#R195/#R196 の規則）
 map-extras.js                     残りの自己完結した地図表面モジュール
+locate-me.js                      **端末の現在地を 1 回読む唯一の実装** `requestFix()`。許可の事前確認（ブロック済みは
+                                  待たずに言う）・25 秒の予算と外側の見張り・失敗の理由 5 種（unsupported / blocked /
+                                  denied / unavailable / timeout）。文言は持たない（言うのは各入口）。Atlas の
+                                  view.locate・「現在地から…」・map-extras.js の IntMapLocate（携帯 FAB とデスクトップの
+                                  #btn-locate）が使う。読み取った位置は `IntMapLocate.start({fix})` に渡し、同じ要求で 2 回読まない
 map-pick.js                       地図上の1点を拾う window.IntMapPick
 map-typography.js                 このアプリの文字——どの書体が描き、どれだけの幅で出るか
 place-labels.js                   地名・海洋名ラベルと、そのローカライズ。⚠ `name:ja` のうち**上流が壊している組**
@@ -734,7 +748,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  150 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  151 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行そのものは能力の項目（atlas-cap-*.js）の写しで、`GENERATED ROWS` の印の間を
                                   `node scripts/atlas-caps.mjs --write` が書く（手で編集しない）
@@ -838,7 +852,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全150を検索・到達可能 149）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全151を検索・到達可能 150）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -854,7 +868,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 150能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 151能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1026,6 +1040,11 @@ aviation-model.js                 provider 正規化・出典・タイル格子�
 
 ```
 mobile-ui.js                      モバイル UI とレスポンシブのシェル
+installable-app.js                **インストールされたアプリとしての頁側**——設定の「アプリとして追加」
+                                  （Chromium の beforeinstallprompt を保持して押されたら出す／iOS は共有シートの
+                                  手順文／どちらも無ければ出さない）、オフライン通知（Service Worker に
+                                  「この文書は殻から開いたか」を訊く・復帰したら再読み込みを促す）、
+                                  アプリ内テーマに合わせた theme-color
 mobile-map-input.js               **指が地図に届く経路 1 面**——長押し（コンテキストメニュー）／中央クロス
                                   ヘア／中心の座標・標高・レイヤー値の読み出し／「地点を追加」ピル。
                                   `js/app-body.js` から**まるごと**出したもので、幾何（#R16 の「シートに
@@ -1096,6 +1115,10 @@ map-narrator.js                   地図のテキスト代替——視覚的に�
                                   地物をレンダラ自身のクリック経路（GE().events.pressAt）で押す（map-a11y-structure）
 legal-page.js                     同じ本文を privacy.html / terms.html として出す（chrome は9言語）
 premium-plan.js                   プレミアムの節——ただしその全機能が無料である
+supporter.js                      IntMap を支援する——支援パネルの「支援の使い道」（プラン表の 1 日の上限と
+                                  public.operating_stats() の今月の AI 要求数・トークン数）と、控えめな提案カード
+                                  （Atlas の 1 日の上限に達したとき・7 日目に一度だけ。閉じたら眠る）。Stripe の 2 リンクの宣言。
+                                  window に何も出さない（app-body.js が install し、atlas-cap-panel.js の `operatingCosts` が開く）
 monitors.js                       Area Monitors IntMapMonitors
 weather.js                        気象（export wind / weatherEC / weatherPanel）
 wx-models.js                      予報モデルのレジストリ window.IntMapWxModels——提供モデル・出典・ライセンス。格子／変数／気圧面／予報期間は live metadata から導出（書き写さない）
@@ -1340,7 +1363,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全22本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（36本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（37本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない。19本）
   functions/<name>/index.ts       Edge Functions（22本。一覧と各本の役割は Architecture.md §6.2。
@@ -1351,10 +1374,13 @@ supabase/
                                   rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
                                   bbox.js / read-budget.js / client-error-shape.js /
                                   fetch-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
-                                  atlas-grade-schema.js / site-origin.js）
+                                  atlas-grade-schema.js / site-origin.js / plans.js）
                                   ⚠ site-origin.js は**本番のアドレスの唯一の置き場**（`CUSTOM_DOMAIN` が
                                   変える値）。ブラウザ・Edge Function・スクリプト・テストが import し、
                                   workflow は scripts/site-url.mjs 経由で読む（domain-portable）
+                                  ⚠ plans.js は**プランで変わる値の唯一の表**（AI の 1 日の質問数・用語解説数・
+                                  監視の件数・購入できるか）。ai-ledger.js の PLAN_LIMITS はその 1 列で、
+                                  **ブラウザも import する**（js/supporter.js。写しを作らない・supporter-funnel）
                                   ⚠ atlas-grade-schema.js は ai-proxy `atlas_grade` の形・予算・
                                   **採点 provider の規則（答えている provider とは別）**で、評価側の
                                   scripts/atlas-eval/grade.mjs も同じファイルを import する
@@ -1721,7 +1747,15 @@ scripts/
   build-stamp.mjs                 **ビルド印**（vite プラグイン）: `index.html` の `__INTMAP_BUILD_STAMP__` を
                                   `<built commit の committer 時刻>Z-<短い sha>` に置き換える。手で上げる印は
                                   上げ忘れられ、古いキャッシュを現行に見せていた。
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 125 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  app-shell.mjs                   **Service Worker の殻の一覧**を導出して `dist/sw.js` に書き込む（vite.config.js の
+                                  `appShell` が copyStatic の後に呼ぶ）。build-report の eager 集合＋dist/index.html と
+                                  その manifest が名指すもの＋eager CSS の url()。束ね器の出力は immutable、
+                                  それ以外は mutable。印が無い・名指したファイルが無い・トークンが無いならビルドを落とす
+  build-app-manifest.mjs          `manifest.webmanifest` と `icons/` を書く（`--check` は再導出して照合し、
+                                  index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
+                                  マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
+                                  なるなら 1 ファイルで両方を名乗る
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 126 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

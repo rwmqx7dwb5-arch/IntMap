@@ -74,3 +74,4 @@ date: 2026-10-01
 - 起動費の台帳（`perf --update`: async.raw・dist.assets）と global surface の台帳は main の台帳から作り直した。増分は main 側の合流分と §1 のもの。
 - `tests/history-chronos-clock-checks.test.mjs` R679 ⑩ は、紀元前の年を答えない拒否を `go()` の形（`{…return;}`）でだけ読んでいた。拒否は連鎖の持ち主 `collectionAt` の `return null` に移ったので、両方の形を受ける（主張は不変）。
 - 台本カセット `rail-request-reached-nothing` は能力検索の結果に新しい 2 能力が並ぶので書き直した（`scripted-cassettes.mjs --write`）。
+- 2 回目の合流（#872 PWA・#874 寄付導線）: 能力は 151、到達可能 150。smoke の末尾は両方の追記（time-compare-lapse ①② と installable-app ①〜⑤）を残す。`atlas-console` 遅延チャンクの天井は 1089.9 → 1095.7 kB（main 側の能力追加と本作業の能力 2 つの和）。

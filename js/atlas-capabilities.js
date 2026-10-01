@@ -272,6 +272,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.compare","timeCompare","compareTime,compareYear","time","timeView","panel.compare,time.compare","panel,time","session","none","",""],
       ["time.lapse","timeLapse","playTime,playYears","time","timeView","time,time.lapse","time","session","none","",""],
       ["settings.usageCounts","usageCounts","usageStats,anonymousStats,telemetry","settings","setting","settings.usageCounts","setting","persist","explicit","",""],
+      ["panel.operatingCosts","operatingCosts","runningCosts,supportCosts,whereSupportGoes","panel","panel","panel.donate","panel,explanation","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 

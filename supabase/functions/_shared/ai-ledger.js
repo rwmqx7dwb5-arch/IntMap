@@ -29,12 +29,15 @@
 //  the node tests import it directly.
 // ============================================================================
 
-/* ---- Plan → daily free-use limit (turns per day). Extend here for future paid tiers. ----
-   (#R101) free 10→30/day; (#R147) 30→10/day. The canonical place for these numbers is THIS table;
-   ai-proxy's header states the free number in prose and tests/process-doc-facts-claims holds the
-   two to each other. */
-export const PLAN_LIMITS = Object.freeze({ free: 10, plus: 50, pro: 200, unlimited: 1_000_000 });
-export const DEFAULT_PLAN = "free";
+/* ---- Plan → daily free-use limit (turns per day). ----
+   (#R101) free 10→30/day; (#R147) 30→10/day. (supporter-funnel) The numbers are no longer written
+   here: every value that differs by plan is one column of the plan table in _shared/plans.js, and
+   this is its `aiTurnsPerDay` column under the name every caller already uses. A future tier is a row
+   there, not an edit here. ai-proxy's header states the free number in prose and
+   tests/process-doc-facts-claims holds the two to each other. */
+import { planColumn, DEFAULT_PLAN as PLANS_DEFAULT } from "./plans.js";
+export const PLAN_LIMITS = planColumn("aiTurnsPerDay");
+export const DEFAULT_PLAN = PLANS_DEFAULT;
 
 /* (#R31/#R32 → #R801) The developer override, by the immutable auth.users.id carried in the
    DEV_USER_IDS secret — never by e-mail (a mutable field, and a public repository). `env` is
