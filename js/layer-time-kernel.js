@@ -279,6 +279,10 @@ const API = {
   loaded: () => !!DECL,
   /** is this box being held back for the instant on the clock? (js/data-layers.js's reconciler asks) */
   held: (id) => held.has(id),
+  /** draws(id) — should this box's layer be on the map: ticked AND not held for the instant. A module that re-reads its
+      box later (a retry, a tile reload) asks this, not `checked` — the box stays ticked for the reader while held.
+      MEASURED: the roads reappeared on a 1900 map when the base tiles reloaded (js/app-body.js `_wireRef`). */
+  draws: (id) => { const d = D(); const cb = /** @type {any} */ (d && d.getElementById(id)); return !!(cb && cb.checked) && !held.has(id); },
   heldIds: () => Array.from(held.keys()),
   /** verdict(id, when?) — when: a year, an ISO date, a Date; omitted → the clock */
   verdict: (id, when) => { const at = atOf(when); return at && DECL ? verdictOf(id, at) : null; },

@@ -160,57 +160,9 @@ test('every layer a link can carry: holding the style back costs no layer', asyn
       { timeout: 60000, intervals: [2000], message: 'layers the normal boot drew and the held boot did not' }).toEqual([]);
     /* the reported pair, by name: held by the gate, then on the map with their boxes still ticked */
     expect(held.heldAtRelease, 'both reported changes were held by the gate').toEqual(expect.arrayContaining(REPORTED.map(([box]) => box)));
-    /* ══ (world-at-time) THE SAME PAGE, MOVED TO 1960 — the map at an instant, measured here rather than in a boot
-       of its own (scripts/test-budget.mjs: the suite's total has no room for one). Every layer a link carries is
-       ticked, so this is the widest case the time hold meets: ① the present-only layers (aircraft, radar) and
-       today's snapshots (the cables) are held — boxes ticked, nothing of theirs drawn, their rows saying why;
-       NATO (1949–) is not held; ② the reconciler does not re-arm a held box; ③ Atlas's `time.coverage` answers
-       about another instant without moving the clock; ④ back to now, everything held is delivered and the
-       reported pair (a STYLE-hold claim, asked on the present) draws.
-       ⚠ THE INSTANT IS WHEREVER THE BOOT LEFT IT, if that is the past. Where the war records arrive (CI) the link's war
-       rows move the clock to their own first day during the boot; where they do not (this suite's routing on a
-       workstation) the clock is still live and is moved to 1960. Every transition re-draws or withdraws ~90 layers
-       in software GL — measured: one extra transition each way took the test past its 240 s (CI, 4.0 min) — so the
-       page makes only the moves the claims need. */
-    await held.page.evaluate(() => { if (window.IntMapTime.isLive()) window.IntMapTime.setYear(1960, { source: 'test' }); });
-    const atClock = await held.page.evaluate(async () => {
-      await window.IntMapLayerTime.ready();
-      /* from here the holds are decided — a look the reconciler scheduled before (the restore's own changes) is not this claim */
-      return { live: window.IntMapTime.isLive(), iso: window.IntMapTime.iso(), from: Date.now() };
-    });
-    expect(atClock.live).toBe(false);
-    /* ① THE INVARIANT, over every ticked box: unstated and not answering for itself ⇒ held, its row says why, and
-       (where the reconciler knows its layers) nothing of it is drawn; NATO (1949–) states 1960 and is not held */
-    const sweep = () => held.page.evaluate(() => Array.from(document.querySelectorAll('#layer-dropdown input[type=checkbox]'))
-      .filter((c) => c.checked).map((c) => { const v = window.IntMapLayerTime.verdict(c.id) || {}; const r = window.IntMapLayerState.get(c.id);
-        return { id: c.id, status: v.status, self: v.self, held: window.IntMapLayerTime.held(c.id), painted: window.__imLayerPainted(c.id), mark: r && r.state, why: r && r.message, iso: window.IntMapTime.iso() }; }));
-    await expect.poll(async () => (await sweep()).filter((x) => x.status === 'unstated' && !x.self && !x.held).map((x) => x.id),
-      { timeout: 20000, message: 'every ticked layer that states nothing about the instant is held' }).toEqual([]);
-    const rows = await sweep();
-    const heldRows = rows.filter((x) => x.held);
-    expect(heldRows.map((x) => x.id)).toEqual(expect.arrayContaining(['dl-planes', 'dl-radar']));
-    expect(heldRows.filter((x) => x.painted === true).map((x) => x.id), 'a held layer draws nothing').toEqual([]);
-    expect(heldRows.filter((x) => x.mark !== 'nodata' || !(x.why || '').includes(x.iso)).map((x) => x.id), 'each held row says why, naming the date').toEqual([]);
-    expect(rows.find((x) => x.id === 'dl-nato'), 'NATO is ticked by the link').toBeTruthy();
-    expect(rows.find((x) => x.id === 'dl-nato').held, 'NATO is held exactly when the instant is before 1949-08-24').toBe(atClock.iso < '1949-08-24');
-    await held.page.evaluate(() => { window.IntMapLayerAudit.run(); window.IntMapLayerAudit.run(); });
-    expect(await held.page.evaluate((t0) => window.IntMapLayerAudit.log().filter((e) => e.t >= t0 && window.IntMapLayerTime.held(e.id)).map((e) => e.id + ':' + e.fix), atClock.from),
-      'a held box is not a «ticked but blank» finding').toEqual([]);
-    /* ③ asked about 1600, Atlas moves nothing: no clock change is made by the call (the link's war rows may still
-       move the clock on their own when their record arrives late — that is their entry, measured: 1960 → 1991) */
-    const cov = await held.page.evaluate(async () => {
-      const moves = []; const off = window.IntMapTime.on((e) => moves.push(e.source));
-      const r = await window.IntMapOS.execute('time.coverage', { year: 1600 });
-      off();
-      const c = (r && (r.coverage || (r.result && r.result.coverage))) || await window.IntMapLayerTime.coverage(1600);
-      return { unstated: c.unstated.map((x) => x.id), stated: c.stated.map((x) => x.id), moves };
-    });
-    expect(cov.moves.filter((m) => m === 'atlas' || m === 'os'), 'asking about 1600 does not move the clock').toEqual([]);
-    expect(cov.unstated).toEqual(expect.arrayContaining(['dl-climate', 'dl-subcables', 'dl-nato', 'dl-planes', 'cb-roads']));
-    expect(cov.stated).toEqual(expect.arrayContaining(['cb-borders', 'dl-nightside', 'cb-grid']));
-    /* ④ the reported pair is a STYLE-hold claim about EXISTENCE (`mapLayers` lists layers, not their visibility): a
-       pair drawn before the clock left the present still exists, withdrawn. Only if the time hold met them before
-       they ever drew is the present needed — and then it is the present that must deliver them. */
+    /* (world-at-time) the map at an instant is measured in tests/history-prefetch-on-demand.spec.js (the same journey to
+       1900, a first-time reader's layers) — this page carries every layer and costs most of its 240 s booting, so it
+       asks only what the time hold changes about ITS claim: below. */
     /* A pair the TIME hold met before it ever drew is not a cost of the STYLE hold — it is held for the instant, with its
        row saying why, in both boots alike (the comparison above holds either way). So each reported box is on the map
        or held for the instant; returning to the present to watch ~90 layers re-draw is what took this test past 240 s

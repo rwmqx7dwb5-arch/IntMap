@@ -5981,7 +5981,10 @@ export function dataLayers(HOST){
       function inFlightNow(cb){ try{ return layerInflight.has(cb.id); }catch(_){ return false; } }
       const idsFor=cbId=>STATIC[cbId]||BASE[cbId]||window._imAuditReg[cbId]||null;
       function painted(ids){ try{ for(const lid of ids){ if(GE().layers.has(lid)&&GE().layers.getLayout(lid,'visibility')!=='none') return true; } }catch(_){} return false; }
-      function check(cbId){ let ids=idsFor(cbId); if(!ids||!ids.length){ const own=window._imLayerOwn&&window._imLayerOwn[cbId]; ids=(own&&own.size)?Array.from(own):null; } if(!ids||!ids.length) return null; return painted(ids); }
+      /* which renderer layers a box owns — the id tables, then the learned ownership. (world-at-time) also handed out
+         read-only as IntMapLayerAudit.owned, so a reader can tell a layer held for the instant from one the style hold lost */
+      function owned(cbId){ let ids=idsFor(cbId); if(!ids||!ids.length){ const own=window._imLayerOwn&&window._imLayerOwn[cbId]; ids=(own&&own.size)?Array.from(own):[]; } return ids.slice(); }
+      function check(cbId){ const ids=owned(cbId); if(!ids.length) return null; return painted(ids); }
       /* (#R190) "is this checkbox's layer really on the map?" — the launch screen asks it too, to
          decide when the map is FINISHED rather than merely quiet (js/app-body.js). Exposing the
          existing reconciler answer is the alternative to a second id table that would rot. */
@@ -6093,9 +6096,6 @@ export function dataLayers(HOST){
       try{ layerState.useLang(()=>HOST.lang); }catch(_){}   /* (layer-failure-state) the row marks speak the reader's language — HOST.lang is live (#R165) */
       /* `runs()` — how many times each reconciler ran, by trigger (layer-failure-state): the measurement that the
          quiet map runs neither. `states()` — the one owner's record (js/layer-state.js), for a reader already here. */
-      /* (world-at-time) which renderer layers a box owns — the same answer check() reads (the id tables, then the learned
-         ownership), handed out read-only so a reader can tell a layer held for the instant from one the style hold lost */
-      const owned=(cbId)=>{ let ids=idsFor(cbId); if(!ids||!ids.length){ const own=window._imLayerOwn&&window._imLayerOwn[cbId]; ids=(own&&own.size)?Array.from(own):[]; } return ids.slice(); };
       window.IntMapLayerAudit={run:audit,check,owned,log:()=>log.slice(-20),
         runs:()=>({ sweep:Object.assign({},_reconcileRuns.sweep), audit:Object.assign({},_reconcileRuns.audit) }),
         states:()=>layerState.snapshot()};

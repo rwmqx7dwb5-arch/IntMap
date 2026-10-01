@@ -1985,11 +1985,14 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     }catch(e){ console.warn('ensureRefLayers',e); return false; }
   }
   window.ensureRefLayers=ensureRefLayers;
+  /* (world-at-time) ticked AND not held for the instant (js/layer-time-kernel.js) — the box stays ticked for the reader while
+     the clock is somewhere its layer states nothing about, so a re-assert that read `checked` drew it back */
+  function _drawsBox(cb){ try{ const LT=window.IntMapLayerTime; return LT&&LT.draws?LT.draws(cb.id):!!cb.checked; }catch(_){ return !!cb.checked; } }
   function _wireRef(cbId,layerId){ const cb=document.getElementById(cbId); if(!cb) return;
     /* (#R38) Apply from the LIVE box state, and re-assert several times + when the OFM vector tiles arrive.
        Root of "Roads/Railways/State borders をチェックしても表示されない、再読み込みで治る": the `ofm` source/layer
        often settled AFTER the single 400ms retry, so the visibility set hit nothing and never re-ran. */
-    const apply=()=>{ try{ const on=cb.checked; if(on) ensureRefLayers(); if(GE().layers.has(layerId)) GE().layers.setLayout(layerId,'visibility',on?'visible':'none'); if(GE().layers.has(layerId+'-dash')) GE().layers.setLayout(layerId+'-dash','visibility',on?'visible':'none'); if(layerId==='ref-admin1'){ try{ window._applyAdmin1&&window._applyAdmin1(); }catch(_){} }   /* (#R530) the province row also owns an ERA layer, so the box hands the decision straight back to the switchboard (js/time-admin1.js) — otherwise this line would re-show today's boundaries over a past year every time the box, the four retries or the `sourcedata` heal re-fired. */ }catch(_){} };
+    const apply=()=>{ try{ const on=_drawsBox(cb); if(on) ensureRefLayers(); if(GE().layers.has(layerId)) GE().layers.setLayout(layerId,'visibility',on?'visible':'none'); if(GE().layers.has(layerId+'-dash')) GE().layers.setLayout(layerId+'-dash','visibility',on?'visible':'none'); if(layerId==='ref-admin1'){ try{ window._applyAdmin1&&window._applyAdmin1(); }catch(_){} }   /* (#R530) the province row also owns an ERA layer, so the box hands the decision straight back to the switchboard (js/time-admin1.js) — otherwise this line would re-show today's boundaries over a past year every time the box, the four retries or the `sourcedata` heal re-fired. */ }catch(_){} };
     cb.__refApply=apply;
     cb.addEventListener('change',()=>{
       if(cb.checked && !canDraw()){ GE().events.once('idle',apply); }
@@ -1999,7 +2002,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   _wireRef('cb-admin1','ref-admin1'); _wireRef('cb-roads','ref-roads'); _wireRef('cb-rail2','ref-rail');
   /* (#R38) re-assert any checked state/road/rail ref layer the moment the OFM vector tiles (re)load. */
   /* …and, like the label pass above, only when a layer it looks at is new, recreated or gone (layers.witness, js/geo-engine.js). */
-  try{ const beat=GE().layers.witness(); GE().events.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded&&!beat.unchanged()) beat.run(()=>{ ['cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const c=document.getElementById(id); if(c&&c.checked&&c.__refApply) c.__refApply(); });
+  try{ const beat=GE().layers.witness(); GE().events.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded&&!beat.unchanged()) beat.run(()=>{ ['cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const c=document.getElementById(id); if(c&&c.__refApply) c.__refApply(); });
     /* (#R40) re-assert OFM-sourced country borders the moment the vector tiles (re)load too */
     try{ if(bordersOn) ensureBordersLayer(); window._applyBorders(); }catch(_){}
     try{ window._imCoastReassert&&window._imCoastReassert(); }catch(_){}   /* (#R289) the coastline rides the same source, so the same race */ }); }); }catch(_){}

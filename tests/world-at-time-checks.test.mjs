@@ -208,6 +208,10 @@ test('④ a module that waits before drawing asks again whether it is still on �
   assert.ok(read('js/cameras.js').includes('setTimeout(()=>{ if(on&&ensure()){'), 'the webcams re-show after a styledata timer without asking');
   assert.ok(read('js/elections.js').includes('setTimeout(() => { if (on && ensure()) {'), 'the election map re-shows after a styledata timer without asking');
   assert.ok(read('js/us-elections.js').includes('setTimeout(()=>{ if(on&&ensure()){'), 'the U.S. election map re-shows after a styledata timer without asking');
+  /* …and a re-assert that reads its box later asks whether the box DRAWS (ticked and not held), not whether it is ticked */
+  const app = read('js/app-body.js');
+  assert.ok(app.includes('const on=_drawsBox(cb);'), 'the base road/rail/province re-assert reads `checked` — it drew the roads back on a 1900 map');
+  assert.ok(read('js/layer-time-kernel.js').includes('draws: (id) =>'));
 });
 
 test('the kernel is not on the boot path: the declarations are fetched when they can matter', () => {
