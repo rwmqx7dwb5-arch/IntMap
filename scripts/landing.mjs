@@ -31,7 +31,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmSync
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { TEXT } from './landing-text.mjs';
-import { SHOWCASE, WITHHELD, CAPTURED, CURRICULUM } from '../js/showcase.js';
+import { SHOWCASE, WITHHELD, CAPTURED, CURRICULUM, RECORD_ANSWERED } from '../js/showcase.js';
 import { LAYERS, sharedIds } from '../js/layer-manifest.js';
 import { SITE_BASE_PATH } from '../supabase/functions/_shared/site-origin.js';
 import { SITE_TOKEN } from './site-url.mjs';
@@ -492,6 +492,17 @@ export function recordNamesFor(s) {
   return { names };
 }
 
+/* the generated list in js/showcase.js — what the spec reads instead of data/ */
+const RA_BEGIN = '/* ⚠ GENERATED RECORD-ANSWERED — BEGIN (node scripts/landing.mjs --write; DO NOT EDIT) */';
+const RA_END = '/* ⚠ GENERATED RECORD-ANSWERED — END */';
+export const recordAnswered = () => SHOWCASE.filter((s) => recordNamesFor(s)).map((s) => s.id);
+function writeRecordAnswered(ids) {
+  const p = join(ROOT, 'js/showcase.js'); const t = readFileSync(p, 'utf8'); const eol = t.includes('\r\n') ? '\r\n' : '\n';
+  const a = t.indexOf(RA_BEGIN), b = t.indexOf(RA_END);
+  if (a < 0 || b < 0) throw new Error('landing: the RECORD-ANSWERED markers are gone from js/showcase.js');
+  writeFileSync(p, t.slice(0, a + RA_BEGIN.length) + eol + 'export const RECORD_ANSWERED = ' + JSON.stringify(ids) + ';' + eol + t.slice(b));
+}
+
 /* ── the captured examples, held to their intent ──────────────────────────────────────────────── */
 export function showcaseProblems(captured = CAPTURED) {
   const bad = [];
@@ -538,7 +549,9 @@ if (isMain) {
   /* the share directories are the generator's own: a page there that it no longer writes (an example
      withdrawn or withheld) is stale, and a stale share page is a card for a map nobody vouches for */
   const stale = LANGS.flatMap((L) => { const d = join(ROOT, shareDir(L)); return existsSync(d) ? readdirSync(d).map((n) => shareDir(L) + n).filter((rel) => !(rel in out)) : []; });
+  const answered = recordAnswered();
   if (mode === 'write') {
+    writeRecordAnswered(answered);
     for (const rel of stale) rmSync(join(ROOT, rel));
     for (const [rel, body] of Object.entries(out)) { mkdirSync(dirname(join(ROOT, rel)), { recursive: true }); writeFileSync(join(ROOT, rel), body); }
     console.log('landing: wrote ' + Object.keys(out).join(', '));
@@ -550,6 +563,7 @@ if (isMain) {
       else if (readFileSync(p, 'utf8').replace(/\r\n/g, '\n') !== body) bad.push(rel + ' differs from what scripts/landing.mjs generates — run --write');
     }
     for (const rel of stale) bad.push(rel + ' is not generated any more — run --write (it removes it)');
+    if (JSON.stringify(RECORD_ANSWERED) !== JSON.stringify(answered)) bad.push('js/showcase.js RECORD_ANSWERED says ' + JSON.stringify(RECORD_ANSWERED) + ', the record says ' + JSON.stringify(answered) + ' — run --write');
   }
   if (bad.length) { console.error('landing: ' + bad.length + ' problem(s)\n  ' + bad.join('\n  ')); process.exit(1); }
   if (mode === 'check') console.log('landing: ' + Object.keys(out).length + ' generated files in step · ' + SHOWCASE.length + ' examples held to their intent');

@@ -155,3 +155,10 @@ supporter-funnel +28 とこの +40）。perf-baseline は main 側から build �
 - 静的ページ（紹介・授業・共有ページ・幅）は元からアプリを起動しない文脈で測っている。
 - 実測 14.4 / 15.5 / 15.4 秒 → `tests/durations.json` に 16、全体の天井 5,233 → 5,249（HISTORY に記録）。⚠ 手元の実測で、
   CI での較正（他の spec の手元比）はしていない——CI の `shard-plan --update` が置き換える。
+
+## 10. ブラウザの job には data/ が無い
+
+PR #873 の CI「Browser rest 2/2」で spec が `ENOENT data/hist-eras.js`——spec が振り分けのために記録を読んでいた。
+ブラウザの job が受け取るのはビルドしたサイトで、データの置き場ではない。⇒ 振り分けは `scripts/landing.mjs --write` が
+導いて `js/showcase.js` の生成領域 `RECORD_ANSWERED` に書き、`--check` と node の ⑦ が記録から導き直して照合する。
+spec はその宣言だけを読む。`data/hist-eras.js` を一時的に別名にして spec が 3/3 通ることを確かめた（戻した）。

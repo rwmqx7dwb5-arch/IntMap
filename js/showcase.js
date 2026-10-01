@@ -321,3 +321,13 @@ export const CAPTURED = {
   }
 };
 /* ⚠ GENERATED SHOWCASE — END */
+
+/* ══ WHICH EXAMPLES THE RECORD ANSWERS FOR BY ITSELF — derived where the data is, read where it is not ═══
+   scripts/landing.mjs recordNamesFor decides it from data/ (the era sheets, CShapes, OpenHistoricalMap),
+   and `node scripts/landing.mjs --write` writes the answer here; `--check` re-derives it and fails when this
+   list is not what the record says. tests/landing-showcase.spec.js READS this list to choose what it opens in
+   the browser and never reads data/ itself: a CI browser job is given the built site, not the data store
+   (MEASURED on PR #873: ENOENT data/hist-eras.js in «Browser rest 2/2»). */
+/* ⚠ GENERATED RECORD-ANSWERED — BEGIN (node scripts/landing.mjs --write; DO NOT EDIT) */
+export const RECORD_ANSWERED = ["europe-1920","world-100","world-3000bc"];
+/* ⚠ GENERATED RECORD-ANSWERED — END */

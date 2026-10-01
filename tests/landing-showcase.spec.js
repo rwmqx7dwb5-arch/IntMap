@@ -4,7 +4,7 @@
  *  js/showcase.js declares the example maps; about.html / teachers.html (and ja/) show them with a
  *  picture, a sentence and a link. The sentence is a claim about the map, so it is asked OF THE MAP:
  *
- *  ① EVERY EXAMPLE THE RECORD CANNOT ANSWER FOR, OPENED FROM ITS LINK (the rest: see recordNamesFor). The first one is opened the way a visitor from the landing
+ *  ① EVERY EXAMPLE THE RECORD CANNOT ANSWER FOR, OPENED FROM ITS LINK (the rest: js/showcase.js RECORD_ANSWERED). The first one is opened the way a visitor from the landing
  *     page opens it — a new page at `index.html#v=…`; every following one in the same tab through the
  *     share link's FULL restore (`IntMapBookmark.restore({shared:true})` on the link's address — the
  *     path Atlas's `panel.showcase` takes). ⚠ Not `location.hash = …`: MEASURED 2026-10-02, js/map-ui.js's
@@ -28,8 +28,7 @@
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting } from './helpers/network.js';
 import { seededStorageState, BASE } from './helpers/session-seed.js';
-import { SHOWCASE, CAPTURED } from '../js/showcase.js';
-import { recordNamesFor } from '../scripts/landing.mjs';
+import { SHOWCASE, CAPTURED, RECORD_ANSWERED } from '../js/showcase.js';
 import { sharedIds } from '../js/layer-manifest.js';
 import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 import { SITE_TOKEN } from '../scripts/site-url.mjs';
@@ -94,8 +93,9 @@ test('every example the record cannot answer for opens from its link, at its dat
      is live — and the dated ones follow. Atlas's panel.showcase returns the clock to now itself. */
   /* (test-budget, #R205) only the examples the record cannot answer for by itself are opened here; the
      others — no layer, names only, a date the record states exactly — are asked of the record in
-     tests/landing-showcase-checks.test.mjs (scripts/landing.mjs recordNamesFor). The split is derived. */
-  const inPage = SHOWCASE.filter((s) => !recordNamesFor(s));
+     tests/landing-showcase-checks.test.mjs (scripts/landing.mjs recordNamesFor). The split is derived there
+     and DECLARED in js/showcase.js RECORD_ANSWERED, which this reads — the browser job has no data/. */
+  const inPage = SHOWCASE.filter((s) => !RECORD_ANSWERED.includes(s.id));
   expect(inPage.length, 'at least one example needs the page').toBeGreaterThan(0);
   const ordered = inPage.filter((s) => s.at == null).concat(inPage.filter((s) => s.at != null));
   const [first, ...rest] = ordered;

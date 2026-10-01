@@ -22,7 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { TEXT } from '../scripts/landing-text.mjs';
 import { facts, outputs, showcaseProblems, PAGES, pagePath, recordNamesFor } from '../scripts/landing.mjs';
-import { SHOWCASE, CAPTURED } from '../js/showcase.js';
+import { SHOWCASE, CAPTURED, RECORD_ANSWERED } from '../js/showcase.js';
 import { STATIC_ASSETS, STATIC_EXCLUDE } from '../vite.config.js';
 import { SITE_TOKEN, fillSiteToken, guardedHosts } from '../scripts/site-url.mjs';
 import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
@@ -177,6 +177,8 @@ test('⑥ the address: the generated files carry only the token, and the build f
 test('⑦ the examples the record answers for: every name its text claims is in force in the record on its date', () => {
   /* the browser half (tests/landing-showcase.spec.js) opens the rest; together they are every example */
   const offline = SHOWCASE.filter((s) => recordNamesFor(s));
+  /* the declaration the browser spec reads is the record's answer (it never reads data/ itself) */
+  assert.deepEqual(RECORD_ANSWERED, offline.map((s) => s.id));
   assert.ok(offline.length > 0 && offline.length < SHOWCASE.length, 'the split has both halves: ' + offline.map((s) => s.id));
   for (const s of offline) {
     const { names } = recordNamesFor(s);
