@@ -361,7 +361,7 @@ function clickHarness() {
       BBB: { nameEn: 'Modern eastern country', wiki: 'Modern_east', flag: 'eastern flag' },
     },
     window: { countryGeo: { features: [{ id: 'AAA', geometry: square(-180, 0) }, { id: 'BBB', geometry: square(0, 180) }] } },
-    cache: new Map(), shownY: 1500, _hn: JSON.parse(rd('data/histnames.json')),
+    cache: new Map(), shownY: 1500, shownFC: null, _hn: JSON.parse(rd('data/histnames.json')),
     _LTB: { arr: n => Array.isArray(n) ? n[0] : n },
     _VANISHED: [], _GW2ISO: { 123: 'AAA' }, _ERA_WIKI: {},
     _ERA_LOC: [], _COLONIZER: {}, _normNm: n => n.toLowerCase().trim(),
@@ -370,7 +370,7 @@ function clickHarness() {
     IntMapTime: undefined,
   };
   vm.createContext(ctx);
-  vm.runInContext(['_bbox', '_bboxArea', '_contains', 'featureAt', 'hnFor', '_eraLocName', 'resolveHist'].map(n => functions.get(n)).join('\n'), ctx);
+  vm.runInContext(['_bbox', '_bboxArea', '_contains', '_drawnFC', 'featureAt', 'hnFor', '_eraLocName', 'resolveHist'].map(n => functions.get(n)).join('\n'), ctx);
   return { ctx, resolve(name, properties = {}, lng = -20) {
     const f = { properties: { NAME: name, ...properties }, geometry: square(-40, 40) };
     ctx.cache.set(ctx.shownY, { features: [f] });

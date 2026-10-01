@@ -1160,6 +1160,13 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   700〜10000 年の 9 枚だけ）が `culture` / `hunter-gatherers` / `state society` などと言う範囲で
   それを feature に運び、**言っていないものには何も足さない**（`world_bc123000` の Neanderthal・
   Homo heidelbergensis は `TYPE` を持たない）。
+  ⚠⚠⚠ **枚に載った名前は、読者の年にその政体が存在したときだけ描く。** 上流は政体が終わった後の枚
+  にも名前を持ち越すことがあり（`world_1600` の «Songhai»・«Watassid Morocco»）、1 枚はその前後の
+  年も答える（`world_1600` は 1566〜1625 年）。`data/hist-era-spans.json` の審査済みの行
+  （Wikidata の P571 / P576 で、史実と一致するものだけ）が期間の外と言う年は、**名前を外して形だけを
+  描き**、その形をクリックすると上流が付けた名前と外した理由（QID と年）を述べる。レイヤー行の注記も
+  外した名前を列挙する。規則は `js/hist-scale.js` の `eraSpanOut` 1 か所で、門
+  `npm run check:histfidelity` が同じ関数でページを評価する。
   ⚠⚠⚠ **この層は、いま何を描いているかを地図の上で述べる。** レイヤー行「国境」の注記
   （`js/time-borders.js` の `note()` ＝ `coverage()` の 9 言語版。`js/time-admin1.js` の `note()` と
   同じ機構・同じ規則）が、**いま載っている枚の年**・**上流が次に持っている枚**・**その枚の形の件数**・

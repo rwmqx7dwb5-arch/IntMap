@@ -256,4 +256,20 @@ IntMapLang.define('jp', { ui: {
     
       ttlLayersPanel:"レイヤー",
       ttlFavorite:"お気に入り",
+      /* (share-embed-distribution) 共有パネルの「リンク／埋め込み」タブと、埋め込み表示そのもの（js/map-ui.js share・js/embed-mode.js） */
+      shareTabLink:"リンク",
+      shareTabEmbed:"埋め込み",
+      embedDesc:"この地図を他のウェブサイトに載せます。フレームには、いま表示している状態がそのまま読み取り専用で表示されます。",
+      embedSize:"サイズ",
+      embedInteractive:"パンとズームを許可",
+      embedCodeLabel:"埋め込みコード",
+      embedCopy:"コードをコピー",
+      embedPreview:"プレビュー",
+      embedPreviewHide:"プレビューを閉じる",
+      embedInc:"埋め込んだ地図には、地図・凡例・時刻・すべてのデータの出典表記と、同じ表示を IntMap で開くリンクが表示されます。読み取り専用で、パネル・検索・Atlas は含まれません。",
+      embedFrameTitle:"IntMap の地図",
+      embedLive:"ライブ",
+      embedOpen:"IntMap で開く",
+      embedOpenTitle:"この地図を IntMap で開く（新しいタブ）",
+      embedUnavailable:"埋め込みコードを読み込めませんでした。接続を確かめて、このパネルをもう一度開いてください。",
     } });

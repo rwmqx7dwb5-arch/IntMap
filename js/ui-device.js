@@ -101,6 +101,18 @@
     return 'tablet';
   }
 
+  /* ③ (share-embed-distribution) THE PRESENTATION — «is this page a read-only EMBED in another site's
+     frame (`?embed=1`)?» The third question about the screen, and like the other two it has ONE
+     answer: <html data-embed>, which index.html's first script sets from the query before any module
+     exists (js/embed-mode.js writes the grammar). Every start-up path that prepares something an
+     embed cannot show — the default sidebar tab, the session written back, the account and data
+     boot, the widget board, the layer-panel thumbnails, the Atlas warm-up, the phone sheet's camera
+     padding — asks THIS, instead of each reading the query (or the attribute) its own way. */
+  function embedded() {
+    try { const d = G.document; return !!(d && d.documentElement && d.documentElement.hasAttribute('data-embed')); }
+    catch (_) { return false; }
+  }
+
   const KINDS = ['phone', 'phone-landscape', 'tablet', 'desktop'];
   const _subs = new Set();
   function state() { return { compact: compact(), kind: kind(), landscape: landscape() }; }
@@ -134,6 +146,6 @@
     else if (d && d.addEventListener) d.addEventListener('DOMContentLoaded', paint, { once: true });
   }
 
-  G.IntMapDevice = { COMPACT, WIDE, compact, media, phoneBudget, touchPrimary, landscape, kind, state, on, paint };
+  G.IntMapDevice = { COMPACT, WIDE, compact, media, phoneBudget, touchPrimary, landscape, kind, state, on, paint, embedded };
   wire();
 })(typeof window !== 'undefined' ? window : globalThis);
