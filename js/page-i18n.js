@@ -48,7 +48,6 @@
  *  markup they replaced had. Nothing here ever renders a string that came from a fetch.
  * ========================================================================== */
 import { IntMapLang } from './lang-registry.js';
-import './safe-html.js';   /* (icon-system) icon() draws with IntMapSafe.markup, and science.html loads no encoder of its own */
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — copied beside this file (vite.config.js STATIC_ASSETS) */
 window.IntMapPageI18N = (function () {
   'use strict';

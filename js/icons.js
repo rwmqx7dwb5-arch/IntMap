@@ -46,14 +46,8 @@
  *  ⚠ An emoji written as an icon is refused by `npm run check:static` (rule `icon-glyphs`,
  *  scripts/icon-glyphs.mjs) — this file is where the picture goes instead.
  * ==========================================================================*/
-/* ⚠ NO import of js/safe-html.js HERE, ON PURPOSE. Both files are shared between the boot chunk and lazy chunks, and a
-   static edge between two such modules keeps one of them out of main as a request of its own (vite.config.js,
-   «THE MERGE REFUSES CYCLES» — MEASURED: this file became icons-<hash>.js, eager requests 9 → 10). The encoder is
-   read off globalThis when an icon is drawn; src/main.js imports it before any module that renders, and the
-   static pages that draw markup load it themselves (js/page-i18n.js imports it, admin.html and sources.html load
-   it with a <script>). */
+import './safe-html.js';   /* the one encoder (icon() builds with IntMapSafe.markup) — an ES module that reads IntMapSafe imports it (tests/safe-output-single-module-checks ④) */
 
-const SVG_NS = 'http://www.w3.org/2000/svg';
 const WEIGHT = 1.75;
 const DEFAULT_SIZE = '1.2em';
 
@@ -195,9 +189,7 @@ export function icon(name, opts) {
   const o = opts || {};
   const s = shape(name), w = sizeOf(o), c = classOf(o);
   const fill = s.filled ? 'currentColor' : 'none', stroke = s.filled ? 'none' : 'currentColor';
-  const S = globalThis.IntMapSafe;
-  if (!S || !S.markup) throw new Error('IntMapIcons: js/safe-html.js is not loaded — icon() builds its markup with IntMapSafe.markup');
-  const markup = S.markup;
+  const markup = globalThis.IntMapSafe.markup;
   return o.label
     ? markup`<svg class="${c}" viewBox="0 0 24 24" width="${w}" height="${w}" fill="${fill}" stroke="${stroke}" stroke-width="${WEIGHT}" stroke-linecap="round" stroke-linejoin="round" focusable="false" role="img" aria-label="${o.label}"><path d="${s.d}"/></svg>`
     : markup`<svg class="${c}" viewBox="0 0 24 24" width="${w}" height="${w}" fill="${fill}" stroke="${stroke}" stroke-width="${WEIGHT}" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><path d="${s.d}"/></svg>`;
@@ -208,14 +200,14 @@ export function iconNode(name, opts) {
   const o = opts || {};
   const s = shape(name), w = sizeOf(o);
   const doc = o.doc || globalThis.document;
-  const svg = doc.createElementNS(SVG_NS, 'svg');
+  const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
   const set = (k, v) => svg.setAttribute(k, v);
   set('class', classOf(o)); set('viewBox', '0 0 24 24'); set('width', w); set('height', w);
   set('fill', s.filled ? 'currentColor' : 'none'); set('stroke', s.filled ? 'none' : 'currentColor');
   set('stroke-width', String(WEIGHT)); set('stroke-linecap', 'round'); set('stroke-linejoin', 'round');
   set('focusable', 'false');
   if (o.label) { set('role', 'img'); set('aria-label', String(o.label)); } else set('aria-hidden', 'true');
-  const p = doc.createElementNS(SVG_NS, 'path');
+  const p = doc.createElementNS('http://www.w3.org/2000/svg', 'path');
   p.setAttribute('d', s.d);
   svg.appendChild(p);
   return svg;

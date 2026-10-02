@@ -279,8 +279,10 @@
      so this console no longer keeps an escaper and a URL allow-list of its own. -->
 <script src="./js/safe-html.js"></script>
 <!-- (icon-system) the one icon set, window.IntMapIcons — static [data-icon] slots are drawn when it loads, and the
-     tables below draw their marks with it (they were emoji). -->
-<script type="module" src="./js/icons.js"></script>
+     tables below draw their marks with it (they were emoji). `vite-ignore`: this page is copied verbatim and the
+     file is copied beside it (vite.config.js STATIC_ASSETS) — left to Vite, the second entry made js/icons.js a module
+     shared by two entries, which no entry chunk may hold, and every app session paid a request for it (MEASURED). -->
+<script type="module" src="./js/icons.js" vite-ignore></script>
 <script>
   window.SUPABASE_URL='https://vpekfwdpurzejrrmacac.supabase.co';
   window.SUPABASE_ANON_KEY='sb_publishable_yI9Rf2s4nzrIuqFyUq4OOA_h83PrRd0';

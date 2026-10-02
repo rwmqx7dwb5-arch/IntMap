@@ -94,13 +94,16 @@ test('the flight simulator is silent by default and the SOUND key says so', asyn
   await page.waitForTimeout(1500);
   const deck = await page.evaluate(() => {
     const b = document.querySelector('.fs-deck [data-act="mute"]');
-    return { exists: !!b, on: b ? b.classList.contains('on') : null, icon: b ? b.firstChild.textContent : null,
+    /* (icon-system) the key's glyph is js/icons.js «speaker-off» / «speaker»: read which one by its path */
+    const pathOf = (n) => { const m = /<path d="([^"]+)"/.exec(String(window.IntMapIcons.icon(n))); return m && m[1]; };
+    const d = b && b.firstChild && b.firstChild.querySelector ? (b.firstChild.querySelector('path') || { getAttribute: () => null }).getAttribute('d') : null;
+    return { exists: !!b, on: b ? b.classList.contains('on') : null, icon: d === pathOf('speaker-off') ? 'speaker-off' : (d === pathOf('speaker') ? 'speaker' : d),
              stored: localStorage.getItem('intmap_fs_sound'),
              ctx: (() => { try { return document.querySelectorAll('*').length > 0 && window.__fsCamActive; } catch (_) { return null; } })() };
   });
   expect(deck.exists).toBe(true);
   expect(deck.on, 'the SOUND key must not start lit — silence is the default now').toBe(false);
-  expect(deck.icon).toBe('🔇');
+  expect(deck.icon).toBe('speaker-off');
   expect(deck.stored, 'nothing is stored until the pilot chooses').toBeNull();
   // turning it on persists, and the key flips
   await page.evaluate(() => document.querySelector('.fs-deck [data-act="mute"]').click());

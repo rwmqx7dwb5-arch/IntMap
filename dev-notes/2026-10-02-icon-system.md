@@ -55,8 +55,9 @@ CSS は 1 か所・製品のコード／index.html／静的ページ／ロケー
 ## 4. 翻訳の行が「減った」理由（門の床を下げた）
 
 - 絵文字を外したことで、`"🕸 Industry web"` と既にあった `"Industry web"` のように**同じ英語キーに合流した**
-  行が fr/ko/zh/zh-hans で 9、de/es の位置引数で 1。消した訳は無い。`tests/i18n-coverage-floor.json` を
-  `--update-floor` で更新した。
+  行が fr/ko/zh/zh-hans で 9。消した訳は無い。`tests/i18n-coverage-floor.json` を `--update-floor` で更新した
+  （de/es の位置引数も一時 1 減ったが、それは「Web」が独語・西語でも同じ語であることを
+  `scripts/i18n-positional-audit.mjs` の SAME_AS_EN が地球の絵文字つきの綴りで覚えていたためで、綴りを直して元の数に戻った）。
 - 合流で**意味が衝突した** 3 キーは `i18n-key-collision-audit` が捕まえた: 「海流／海流（暖流・寒流）」
   「現在の地図の中心／現在の地図表示」は 1 行で両方に正しい（BENIGN に理由つきで追加）。
   「出来事／件数」（ダッシュボードの切替と火山の件数）は 1 行では務まらないので、ダッシュボード側の英語を

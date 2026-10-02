@@ -45,7 +45,6 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = (p) => codeOnly(readLF(join(ROOT, p)));
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
-await import('../js/safe-html.js');   /* (icon-system) the app loads the encoder before any module that draws an icon (src/main.js); so does this */
 const { makeAtlasVerify } = await import('../js/atlas-verify.js');
 const { makeAtlasGeoObject } = await import('../js/atlas-geo-object.js');
 const { makeAtlasGeoLedger } = await import('../js/atlas-geo-ledger.js');

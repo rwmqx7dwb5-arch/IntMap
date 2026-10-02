@@ -141,7 +141,9 @@ test('#R251 (deep) every language: nothing on screen is English while IntMap hol
 
   const favSeen = [await page.evaluate(() => ({
     lang: 'en',
-    text: document.querySelector('#layer-fav-section > .layer-fav-title').textContent.replace(/\s+/g, ' ').trim(),
+    /* (icon-system) the markup's star is a drawn icon now (js/icons.js «star» in a data-icon slot), read as the ⭐ it stands for */
+    text: ((document.querySelector('#layer-fav-section > .layer-fav-title [data-icon="star"] svg') ? '⭐ ' : '')
+      + document.querySelector('#layer-fav-section > .layer-fav-title').textContent).replace(/\s+/g, ' ').trim(),
     own: (window.IntMapLang._ui.en || {}).favLayers,
   }))];
 
@@ -247,7 +249,7 @@ test('#R251 (deep) every language: nothing on screen is English while IntMap hol
       }
       /* (#R474) ③ — 同じ切り替えの上で、お気に入りの見出しを1行読む。判定はループの外 */
       const favEl = document.querySelector('#layer-fav-section > .layer-fav-title');
-      const fav = { text: favEl ? favEl.textContent.replace(/\s+/g, ' ').trim() : null,
+      const fav = { text: favEl ? ((favEl.querySelector('[data-icon="star"] svg') ? '⭐ ' : '') + favEl.textContent).replace(/\s+/g, ' ').trim() : null,   /* (icon-system) the drawn star, read as the ⭐ it stands for */
         own: ((window.IntMapLang._ui && window.IntMapLang._ui[lang]) || {}).favLayers };
       return { switched: true, why: '', found, fav };
     }, { screens: SCREENS, lang, exclude: EXCLUDE_SELECTOR });

@@ -7,7 +7,6 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
-import '../js/safe-html.js';   /* the app loads the encoder before any module that draws (src/main.js); so does this */
 import { icon, iconNode, withIcons, hydrateIcons, ICON_NAMES } from '../js/icons.js';
 import { sitesIn, iconGlyphProblems, glyphSites, DECLARED } from '../scripts/icon-glyphs.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
