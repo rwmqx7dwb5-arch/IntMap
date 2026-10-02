@@ -60,3 +60,7 @@ date: 2026-10-02
 - `check:static` が最初の版で 2 件を止めた: 検査ファイルの自前のコメント除去（`codeOnly` に替えた）と、カードの行を文字列で組んで `innerHTML` に入れていたこと（DOM で組むように直した）。
 - `tests/atlas-console-replies-checks.test.mjs` #R370 が、手順の「停止」を `L('Stopped','停止')` としたのを止めた——同じ英語の鍵が別の場所で「停止しました」なので、1 行の訳が 2 つの意味を持つ。「停止しました」にそろえた。
 - 走らせたゲート: `check:catalog`・`check:capabilities`・`check:atlasrepeat`・`check:static`・`check:engine`・`check:types`・`check:i18n`・`check:surface`・`check:docs`・`check:archfiles`・`check:perf`・`check:testbudget`、Atlas の node 検査（`tests/atlas-*checks.test.mjs` 56 本）、再生回帰 `node scripts/atlas-eval.mjs --replay`（カセットは台帳を渡さないので道具の列も結果も前と同一——作り直しは不要だった）。
+
+## eager.modules を 1 つ上げた理由
+
+`js/atlas-plan.js` は HUD が起動時から計画の台帳を持つために eager に入る（+1 モジュール）。`node scripts/perf-budget.mjs --update` で超えた行だけを上げた。
