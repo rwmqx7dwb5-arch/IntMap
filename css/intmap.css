@@ -22,6 +22,11 @@
      controls    1000   the chrome: sidebar, map buttons, search, tool panels
      m-legend    1040   (mobile-shell) the PHONE's legend tray — under the phone's chrome and its sheet, so no
                         legend can cover a control (it shared 1100 with Chronos and the search results)
+     m-card      1100   (mobile-shell-flow) a card the map answers with — the picked place's card — over the legends,
+                        under the control group (it is placed beside the group, never under it) and under the sheet.
+                        ⚠ #map-container is position:fixed and so its own stacking context: everything inside it
+                        (legends, this card, the renderer's popups) paints under the group and the sheet whatever
+                        its number. These rows are the order inside it, written to agree with that fact.
      m-chrome    1150   (mobile-shell) the phone's control group, legend chip and compass
      m-sheet     1200   (mobile-shell) the phone's one bottom sheet — search, Chronos and every screen are in it
      dropdown    1300   menus and result lists that open from the chrome, map tooltips
@@ -44,7 +49,7 @@
    MEASURED 2026-09-30: `env(safe-area-inset-*)` was written out 141 times outside comments — 24 here, 117 in fourteen
    js/ files, with and without a `0px` fallback. Every surface reads `var(--safe-top)` and its three
    siblings now; the fallback is stated once, below. */
-:root{ --z-inset:0; --z-marker:100; --z-map-overlay:900; --z-controls:1000; --z-m-legend:1040; --z-m-chrome:1150; --z-m-sheet:1200; --z-dropdown:1300; --z-sheet:1650; --z-popup:2000; --z-window:2200; --z-menu:2500; --z-shell-front:2600; --z-front:2650; --z-toast:3000; --z-modal:10000; --z-overlay:99990; --z-system:200000; --z-max:2147483647; }
+:root{ --z-inset:0; --z-marker:100; --z-map-overlay:900; --z-controls:1000; --z-m-legend:1040; --z-m-card:1100; --z-m-chrome:1150; --z-m-sheet:1200; --z-dropdown:1300; --z-sheet:1650; --z-popup:2000; --z-window:2200; --z-menu:2500; --z-shell-front:2600; --z-front:2650; --z-toast:3000; --z-modal:10000; --z-overlay:99990; --z-system:200000; --z-max:2147483647; }
 :root{ --safe-top:env(safe-area-inset-top,0px); --safe-right:env(safe-area-inset-right,0px); --safe-bottom:env(safe-area-inset-bottom,0px); --safe-left:env(safe-area-inset-left,0px); }
     /* (#R101) --text-muted darkened for legibility ("灰色文字は見えにくい") — was #6c6c70 */
     /* ══ (ui-a11y-polish) THE ACCENT HAS TWO JOBS, SO IT IS TWO TOKENS ══════════════════════════════
@@ -2265,6 +2270,10 @@
       .ios-segment-btn{ padding:6px 10px; font-size:12px; min-height:30px; }
       .m-sheet-title{ font-size:18px; }
       .m-tool-btn{ padding:13px 8px; } .m-tool-btn .ico{ font-size:18px; }
+      /* (mobile-shell-flow) the widget board's Edit / Add: their 44 px hit areas (the board's own coarse-pointer rule)
+         were cut to 41 by the board's scroll box, whose top the title row touched. The row is 44 tall and starts at
+         the box's top, so the hit area lies inside it. */
+      .sidebar .wgt-titlerow{ min-height:44px; margin-top:0; }
 
       /* the desktop edge-toggle is replaced by the grip */
       .btn-toggle-sidebar{ display:none !important; }
@@ -2293,6 +2302,19 @@
 
       /* ---------- Hide the cramped desktop control cluster ---------- */
       .map-controls-top{ display:none !important; }
+
+      /* ---------- (mobile-shell-flow) the place card: between the screen's edge and the control group ----------
+         MEASURED on production (390 × 844): the card was centred on its pin, 280 px wide, so a pin anywhere right of
+         the middle put its close × under the control group — and its two buttons were 28 px tall. Its edges are
+         now the room the legend tray already uses (`--m-edge` to `--m-legend-right`, derived from the group), so it
+         cannot reach the group wherever the pin is; only the tail follows the pin (`--src-x`, js/search-geocode.js). */
+      .search-result-card{ left:calc(var(--m-edge) + var(--safe-left)) !important; right:var(--m-legend-right); width:auto; max-width:none; box-sizing:border-box;
+        transform:translateY(calc(-100% - 48px)); z-index:var(--z-m-card); padding:12px 14px 14px; }
+      .search-result-card::after{ left:clamp(18px, calc(var(--src-x, 50%) - var(--m-edge) - var(--safe-left)), calc(100% - 18px)); }
+      .src-card-close{ top:0; right:0; width:44px; height:44px; padding:0; font-size:18px; border-radius:14px; }
+      .src-card h4{ padding-right:34px; min-height:22px; }
+      .src-card .src-actions{ gap:8px; margin-top:12px; }
+      .src-card .src-actions button{ min-height:44px; font-size:14px; border-radius:11px; }
 
       /* ---------- (mobile-shell) ONE control group, top right ----------
          Layers · Map (base map, projection, map display) · Tools · my location, as one connected glass
@@ -2451,9 +2473,9 @@
       #sat-controller{ display:none !important; }
       .m-sheet .lsr-mount{ display:block; margin:0 0 6px; }
       .m-sheet .lsr-mount .lsr-search{ padding:2px 0 8px; position:sticky; top:0; z-index:calc(var(--z-inset) + 4); background:var(--sidebar-bg); }
-      .m-sheet .lsr-mount .lsr-search input{ width:100%; box-sizing:border-box; height:38px; border-radius:19px;
+      .m-sheet .lsr-mount .lsr-search input{ width:100%; box-sizing:border-box; height:44px; border-radius:22px;   /* (mobile-shell-flow) 44 px, 16 px text (no iOS focus zoom) */
         border:1px solid rgba(128,128,128,0.28); background:var(--card-bg); color:var(--text-main);
-        font-size:13px; padding:0 15px; outline:none; }
+        font-size:16px; padding:0 16px; outline:none; }
       .m-sheet .lsr-mount .lsr-search input:focus{ border-color:var(--primary-color); }
       .m-sheet .lsr-mount .lsr-body{ padding:0; }
       /* ⚠ (#R313) THE SAME SIZES AS THE DESKTOP BLOCK IN js/map-ui.js — that block is written under
@@ -2461,7 +2483,8 @@
          the phone's only copy. 「レイヤーカテゴリの見出しをもっと大きく目立つ感じにしろ。」 moved both.
          One step under the desktop 17px because the sheet is 360 px wide, not 400. */
       .m-sheet .lsr-mount .lst-sech{ font-size:16px; font-weight:700; letter-spacing:-0.015em; color:var(--text-main); margin:16px 0 8px;
-        display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; padding:4px 2px; border-radius:8px; }
+        display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; padding:4px 2px; border-radius:8px;
+        min-height:44px; box-sizing:border-box; }   /* (mobile-shell-flow) the header folds its section: a 44 px row to the finger */
       .m-sheet .lsr-mount .lst-sech .lst-chev{ flex:0 0 auto; width:8.5px; height:8.5px;
         border-right:2px solid var(--text-muted); border-bottom:2px solid var(--text-muted);
         transform:rotate(45deg); transition:transform .18s ease; position:relative; top:-2px; }
@@ -2700,6 +2723,10 @@
       #iso-exit-btn{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px) !important; z-index:calc(var(--z-sheet) + 100) !important; }
       .news-timeline .ntl-body{ min-width:0; } .ntl-label{ min-width:0; flex:1; font-size:11px; }
       .pin-popup{ min-width:0; width:max-content; max-width:calc(100vw - 24px); font-size:13px; }
+      /* (mobile-shell-flow) a news point's card dims the page and waits for Read or Close — a popup opened from the map.
+         It sat at --z-controls + 190 = 1190, which was over the old sheet (1100); the sheet's row is 1200 now, so the
+         card's lower half and its buttons went UNDER the sheet at `half`. Its row is the popup row. */
+      .m-news-pop-back{ z-index:var(--z-popup); }
       .ctx-menu{ min-width:210px; } .ctx-menu button{ padding:13px 12px; font-size:15px; }
 
       /* ---------- Modals → bottom sheets ---------- */
@@ -2801,6 +2828,13 @@
         background-color:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; overflow-y:auto !important; overscroll-behavior:contain;
         font-size:14px; display:flex; flex-direction:column; }
       #m-screens .news-timeline .ntl-body{ width:auto !important; min-width:0; gap:10px; padding:0 0 max(14px,var(--safe-bottom)) !important; }
+      /* ⚠ (mobile-shell-flow) WHAT THE FINGER SCRUBS COMES FIRST. Chronos opens at `half` so the map stays in view while
+         the year moves — MEASURED at 390 × 844: the year slider was the 6th row, at y 819–863 on an 844 px screen, under
+         the clock-source picker and the date field. In the sheet the value, its slider, its ruler and its player follow
+         the tabs; the clock source, the jump-to-date field and the Date / Time pickers — typed once, not scrubbed — move
+         to the end. One markup
+         (index.html), two orders: the floating desktop panel is unchanged. */
+      #m-screens .news-timeline .ntl-body > :is(.ntl-zonerow, .ntl-jumprow, .ntl-date){ order:1; }
       #m-screens .news-timeline .ntl-title{ font-size:20px; font-weight:700; letter-spacing:-0.3px; }
       #m-screens .news-timeline .ntl-x{ width:44px; height:44px; min-width:44px; font-size:22px; border-radius:22px; }
       #m-screens .news-timeline .ntl-bigval{ font-size:34px; line-height:1.15; font-weight:700; letter-spacing:-0.5px; }
@@ -3208,6 +3242,11 @@
     @media(max-width:768px){
       .alc-row input[type=range]{ display:none; }
       .alc-row .alc-x{ width:30px; height:30px; font-size:14px; }
+      /* (mobile-shell-flow) List and Turn-all-off were 26 × 24 and 73 × 21 to the finger. THE HIT AREA GROWS, THE
+         PAINTED CONTROL DOES NOT (the widget board's rule): a 44 px row of buttons would push the chip strip under it. */
+      .alc-exp, .alc-clear-all{ position:relative; }
+      .alc-exp{ margin-right:2px; }   /* its 44 px hit area reaches 9 px each side; the row's 8 px gap would let Turn all off take the last one */
+      .alc-exp::after, .alc-clear-all::after{ content:""; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:max(100%,44px); height:max(100%,44px); }
       .active-lyr-chip .alc-x{ width:22px; height:22px; font-size:13px; }
       /* (#R115) mobile layer NAMES all use the BIGGER of the two sizes that coexisted (13.5px list rows vs
          11px active-chips / 12px expander rows) — "adopt the bigger one". Chip strip stays a CONSTANT height

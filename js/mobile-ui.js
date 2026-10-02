@@ -11,7 +11,7 @@
 
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
-import { detentHeights, settleDetent, spring, makeScreens, makeLegendTray } from './mobile-sheet.js';
+import { detentHeights, settleDetent, spring, detentFor, MAP_ANSWER_EVENT, makeScreens, makeLegendTray } from './mobile-sheet.js';
 import { BootStage } from './boot-stage.js';
 
 
@@ -204,6 +204,12 @@ export function mobileUI(HOST){
     const ALIAS={ peek:'min', mini:'hidden' };
     const RANK={ hidden:0, min:1, half:2, full:3 };
     let currentDetent='min';
+    /* where the sheet was when the search field raised it — the field's raise is transient, the reader's is not */
+    let fieldBefore=null;
+    /* (mobile-shell-flow) every «what is the reader doing» signal lands here; js/mobile-sheet.js detentFor decides */
+    function go(activity){ const want=detentFor(activity,{current:currentDetent, before:fieldBefore});
+      if(activity!=='type') fieldBefore=null;
+      if(want!==currentDetent) setDetent(want); }
     let _safeProbe=null;
     function safeBottom(){ try{ if(!_safeProbe){ _safeProbe=document.createElement('div'); _safeProbe.style.cssText='position:fixed;left:0;bottom:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-bottom:var(--safe-bottom)'; document.body.appendChild(_safeProbe); }
       return parseFloat(getComputedStyle(_safeProbe).paddingBottom)||0; }catch(_){ return 0; } }
@@ -250,9 +256,21 @@ export function mobileUI(HOST){
          animated form (setPadding is instantaneous). (#R142) a queued live-drag setPadding would abort it. */
       const _pad={top:0,left:0,right:0,bottom:covered};
       if(_padRAF){ try{ cancelAnimationFrame(_padRAF); }catch(_){} _padRAF=0; } _lastPad=_padPending=covered;
-      try{ const C=_cam(); if(C){ if(sp) C.easeTo({padding:_pad, duration:Math.round(sp.duration*1000), easing:sp.ease}); else C.setPadding(_pad); } }catch(_){}
+      camPad(_pad,sp);
     }
     window.__setDetent=setDetent;
+    /* ══ (mobile-shell-flow) THE SHEET'S OWN CAMERA WRITES ARE MARKED, AND THEY WAIT FOR THE APP'S FLIGHT ══════════
+       Two facts the detent rule needs. ① A camera move the SHEET starts (its padding) is not an answer, so it is
+       counted while it is being issued (MapLibre fires movestart inside easeTo/setPadding, synchronously).
+       ② While the app is flying somewhere (a picked place, an Atlas fit), easing the padding would CANCEL that
+       flight — an easeTo stops the animation in progress — so the sheet moves now and the camera's padding
+       follows when the flight lands: the place then glides into the middle of the map the sheet left visible. */
+    let _selfCam=0, _appMoving=false, _padLater=null;
+    function camPad(pad,sp){ const C=_cam(); if(!C) return;
+      if(_appMoving){ _padLater={pad,sp}; return; }
+      _selfCam++;
+      try{ if(sp) C.easeTo({padding:pad, duration:Math.round(sp.duration*1000), easing:sp.ease}); else C.setPadding(pad); }catch(_){}
+      finally{ _selfCam--; } }
 
     let dragging=false,startY=0,startTy=0,lastY=0,lastT=0,vel=0,maxTy=0,dragD=null,_padRAF=0,_lastPad=-1,_padPending=-1;
     /* Keep the map's optical centre inside the area visible ABOVE the sheet, live. (#R12) setPadding reprojects
@@ -262,7 +280,7 @@ export function mobileUI(HOST){
       setCover(covered);
       if(!_cam()) return;
       _padPending=covered;
-      if(_padRAF) return; _padRAF=requestAnimationFrame(()=>{ _padRAF=0; if(_padPending===_lastPad) return; _lastPad=_padPending; try{ const C=_cam(); if(C) C.setPadding({top:0,left:0,right:0,bottom:_padPending}); }catch(_){} }); }
+      if(_padRAF) return; _padRAF=requestAnimationFrame(()=>{ _padRAF=0; if(_padPending===_lastPad) return; _lastPad=_padPending; _selfCam++; try{ const C=_cam(); if(C) C.setPadding({top:0,left:0,right:0,bottom:_padPending}); }catch(_){} finally{ _selfCam--; } }); }
     function curTy(){ return parseFloat(sidebar.style.getPropertyValue('--sheet-ty'))||0; }
     function dragStart(y){ try{ const C=_cam(); if(C) C.stop(); }catch(_){}   /* (#R140) a re-grab mid-animation hands control straight back to the finger */
       dragD=recompute(); maxTy=dragD.ty('hidden'); dragging=true; startY=y;
@@ -363,21 +381,38 @@ export function mobileUI(HOST){
        draw its answer on the map; reading a long reply is one pull to `full`.
        The delay lets this win over any earlier detent set in the same click. */
     document.querySelectorAll('.control-panel .mode-btn').forEach(b=>{
-      b.addEventListener('click',()=>{ if(!mq.matches) return; const low=RANK[currentDetent]<RANK.half; setTimeout(()=>{ if(low) setDetent('half'); else setDetent(currentDetent,false); },70); });
+      b.addEventListener('click',()=>{ if(!mq.matches) return; const want=detentFor('tab',{current:currentDetent, before:fieldBefore}); fieldBefore=null;
+        setTimeout(()=>{ if(want!==currentDetent) setDetent(want); else setDetent(currentDetent,false); },70); });
     });
-    const si=document.getElementById('search-input'); if(si) si.addEventListener('focus',()=>{ if(mq.matches && currentDetent!=='full') setDetent('full'); });
+    const si=document.getElementById('search-input'); if(si) si.addEventListener('focus',()=>{ if(mq.matches) go('type'); });
 
     /* ══ (mobile-shell) THE ONE FIELD: A PLACE, OR A QUESTION FOR ATLAS ═════════════════════════════════════
        Focusing it raises the sheet to `full` so the candidates (js/search-geocode.js, which offers «Ask Atlas»
        as the last row on a phone) have the room; leaving it empty puts the sheet back where it was. */
     (function(){
       const input=document.getElementById('ms-input'); if(!input) return;
-      let before=null;
-      input.addEventListener('focus',()=>{ if(!mq.matches) return; if(currentDetent!=='full'){ before=currentDetent; setDetent('full'); } });
-      input.addEventListener('blur',()=>{ if(!mq.matches) return; setTimeout(()=>{ const res=document.getElementById('ms-results');
+      input.addEventListener('focus',()=>{ if(!mq.matches) return; if(currentDetent!=='full' && fieldBefore==null) fieldBefore=currentDetent; go('type'); });
+      input.addEventListener('blur',()=>{ if(!mq.matches) return; setTimeout(()=>{ if(fieldBefore==null || document.activeElement===input) return;
+        const res=document.getElementById('ms-results');
         const showing=res && res.style.display!=='none' && res.childElementCount>0;
-        if(!input.value.trim() && !showing && before && currentDetent==='full'){ setDetent(before); } before=null; },180); });
+        if(!input.value.trim() && !showing) go('leave'); },180); });
     })();
+
+    /* ══ (mobile-shell-flow) AN ANSWER ON THE MAP BRINGS THE SHEET DOWN ═══════════════════════════════════════
+       ① a module that put a card on the map says so (MAP_ANSWER_EVENT — js/search-geocode.js when a place is
+         picked); ② a flight that no finger started is the app showing the reader somewhere (an Atlas fit, a
+         picked place, a feed item's location). Which detent each means is js/mobile-sheet.js detentFor's table.
+       ⚠ «no finger started it» is read twice: MapLibre hands a gesture's movestart its originalEvent, and the
+       3-D engine does not, so the fingers down OFF the sheet are counted too. The sheet's own padding moves are
+       marked by camPad and are not answers. */
+    window.addEventListener(MAP_ANSWER_EVENT,(e)=>{ if(!mq.matches) return; const k=e&&e.detail&&e.detail.kind; if(k) go(k); });
+    { const fingers=new Set();
+      window.addEventListener('pointerdown',(e)=>{ if(!sidebar.contains(e.target)) fingers.add(e.pointerId); },true);
+      ['pointerup','pointercancel'].forEach((t)=>window.addEventListener(t,(e)=>{ fingers.delete(e.pointerId); },true));
+      try{ const E=_GE(); if(E){
+        E.events.on('movestart',(e)=>{ if(!mq.matches || _selfCam || fingers.size || (e&&e.originalEvent)) return; _appMoving=true; go('move'); });
+        E.events.on('moveend',()=>{ if(!_appMoving) return; _appMoving=false; const p=_padLater; _padLater=null; if(p) camPad(p.pad,p.sp); });
+      } }catch(_){} }
 
     /* =================== screens =================== */
     let _beforeScreen=null;

@@ -228,3 +228,108 @@ test.describe('③ phone shell', () => {
     expect(rows.filter(Boolean).length).toBe(1);
   });
 });
+
+/* ══ ③b (mobile-shell-flow) THE SHEET RESTS WHERE THE READER'S ANSWER CAN BE SEEN ══════════════════════════════
+   MEASURED on production (0cb41ee, 390 × 844), the flow through the rebuilt sheet: a candidate picked from the search
+   left the sheet at `full` 5 s later (the map was the top 118 px, the place card cut off above the screen, eight
+   candidate rows still open); the card's × sat under the control group and its buttons were 28 px; Chronos opened at
+   `half` with its year slider at y 819–863 of 844; Edit / Add / the layer screen's List, Turn all off, section rows and
+   search field were under 44 px. The rule is js/mobile-sheet.js detentFor; this walks it the way a reader does.
+   ⚠ 44 px HERE IS THE HIT AREA, read through elementFromPoint — a control may paint smaller and answer a finger over
+   44 px (the widget board's and the legends' rule), and a hit area its scroll box clips does not count. */
+const HIT = (root) => [...document.querySelector(root).querySelectorAll('button, a[href], input:not([type=hidden]), select, textarea, summary, [role=button], [role=tab], .lst-sech')].filter((el) => {
+  if (!el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return false;
+  const r = el.getBoundingClientRect(); if (r.width < 1 || r.height < 1 || r.bottom < 0 || r.top > innerHeight) return false;
+  const own = (x, y) => { const k = document.elementFromPoint(x, y); return !!(k && (k === el || el.contains(k))); };
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2; if (!own(cx, cy)) return false;
+  let up = 0, dn = 0; while (up < 30 && own(cx, cy - up - 1)) up++; while (dn < 30 && own(cx, cy + dn + 1)) dn++;
+  let lf = 0, rt = 0; while (lf < 30 && own(cx - lf - 1, cy)) lf++; while (rt < 30 && own(cx + rt + 1, cy)) rt++;
+  return Math.min(up + dn + 1, lf + rt + 1) < 44;
+}).map((el) => (el.id ? '#' + el.id : el.tagName.toLowerCase() + '.' + String(el.className).split(' ')[0]));
+const DETENT = () => (document.body.className.match(/sheet-(full|min|hidden)/) || ['sheet-half'])[0].replace('sheet-', '');
+
+test.describe('③b phone shell — the flow', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test('③b a picked place brings the sheet down to its card; an app flight at full shows the map; Chronos, the layer screen and the board answer a finger at half', async ({ page }) => {
+    test.setTimeout(150_000);
+    await boot(page);
+
+    /* ── search → a candidate → the card. The last letter is typed and the row tapped inside the 120 ms the
+       suggestion timer waits, which is the race that reopened the list on production. ── */
+    await page.click('#ms-input');
+    await page.keyboard.type('Pari', { delay: 40 });
+    await page.waitForFunction(() => document.querySelectorAll('#ms-results .ms-item:not(.ms-atlas)').length >= 1, null, { timeout: 10_000 });
+    expect(await page.evaluate(DETENT), 'the field raises the sheet for its candidates').toBe('full');
+    await page.waitForTimeout(300);
+    await page.keyboard.type('s');
+    await page.click('#ms-results .ms-item:not(.ms-atlas)');
+    /* the flight lands first, then the camera's padding follows the sheet (an ease during the flight would cancel it) */
+    await page.waitForTimeout(1000);
+    await page.waitForFunction(() => !window.__imap.isMoving(), null, { timeout: 15_000 });
+    await page.waitForTimeout(1200);
+    const card = await page.evaluate(() => {
+      const box = (q) => { const r = document.querySelector(q).getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; };
+      const res = document.getElementById('ms-results'), x = document.querySelector('.src-card-close'), xb = x.getBoundingClientRect();
+      const hit = document.elementFromPoint(xb.left + xb.width / 2, xb.top + xb.height / 2);
+      return { open: res.style.display !== 'none' && res.childElementCount > 0,
+        card: box('.search-result-card'), group: box('.m-ctl-group'), sheet: box('#sidebar'), xHits: hit === x || x.contains(hit),
+        buttons: [...document.querySelectorAll('.src-actions button')].map((b) => b.getBoundingClientRect().height), focused: document.activeElement && document.activeElement.id };
+    });
+    expect(await page.evaluate(DETENT), 'the card is the answer — the sheet comes down to its search row').toBe('min');
+    expect(card.open, 'the candidates closed with the pick (and stayed closed after the suggestion timer fired)').toBe(false);
+    expect(card.focused, 'the keyboard went away with the pick').not.toBe('ms-input');
+    expect(card.card.t >= 0 && card.card.b <= card.sheet.t, `the card is on the map above the sheet ${JSON.stringify(card)}`).toBe(true);
+    expect(card.card.r <= card.group.l, 'the card stops short of the control group').toBe(true);
+    expect(card.xHits, 'the card\'s × answers its own tap').toBe(true);
+    expect(Math.min(...card.buttons), 'Copy / Drop a pin are 44 px').toBeGreaterThanOrEqual(44);
+    await page.click('.src-card-close');
+    /* the home board at half (Atlas's own chips are measured by Atlas's styles, not here) */
+    await page.evaluate(() => window.__setDetent('half', false));
+    await page.waitForTimeout(700);
+    expect(await page.evaluate(HIT, '#sidebar'), 'targets in the sheet at half under 44 px').toEqual([]);
+
+    /* ── an app flight with the sheet at full (an Atlas fit) brings it to half, and the flight is not cut short;
+       a finger panning the strip of map at full is the reader's own move and changes nothing ── */
+    await page.click('#btn-community');
+    await page.waitForTimeout(400);
+    await page.evaluate(() => window.__setDetent('full', false));
+    await page.waitForTimeout(400);
+    await page.evaluate(() => window.__imap.fitBounds([[2, 41], [8, 51]], { padding: 60, duration: 700 }));
+    await page.waitForTimeout(1500);
+    await page.waitForFunction(() => !window.__imap.isMoving(), null, { timeout: 10_000 });
+    await page.waitForTimeout(900);
+    const fl = await page.evaluate(() => ({ c: window.__imap.getCenter(), pad: window.__imap.getPadding().bottom, top: document.getElementById('sidebar').getBoundingClientRect().top }));
+    expect(await page.evaluate(DETENT), 'an answer drawn on the map while the sheet covered it').toBe('half');
+    expect(Math.abs(fl.c.lng - 5), `the flight was cut short (centre ${fl.c.lng})`).toBeLessThan(0.5);
+    expect(Math.abs(fl.pad - (844 - fl.top)), 'the camera\'s padding followed the sheet once the flight landed').toBeLessThan(4);
+    await page.evaluate(() => window.__setDetent('full', false));
+    await page.waitForTimeout(400);
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 100, y: 60, id: 1 }] });
+    for (let i = 1; i < 8; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 100 + i * 12, y: 60, id: 1 }] }); await page.waitForTimeout(16); }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await page.waitForTimeout(1200);
+    expect(await page.evaluate(DETENT), 'a finger on the map is not an answer').toBe('full');
+
+    /* ── at half: Chronos (every tab's own control on the screen), then the layer screen ── */
+    await page.evaluate(() => window.__setDetent('half', false));
+    await page.waitForTimeout(700);
+    await page.click('#m-clock');
+    await page.waitForFunction(() => !!document.querySelector('#m-screens > #news-timeline'), null, { timeout: 15_000 });
+    await page.waitForTimeout(700);
+    for (const mode of ['year', 'date', 'time']) {
+      await page.click('#ntl-mode-' + mode);
+      await page.waitForTimeout(300);
+      const s = await page.evaluate(() => ({ bottom: document.getElementById('ntl-slider').getBoundingClientRect().bottom, vh: innerHeight }));
+      expect(await page.evaluate(DETENT)).toBe('half');
+      expect(s.bottom, `Chronos ${mode}: the slider is below the screen at half`).toBeLessThanOrEqual(s.vh);
+    }
+    expect(await page.evaluate(HIT, '#news-timeline'), 'Chronos targets under 44 px').toEqual([]);
+    await page.click('#ntl-x');
+    await page.click('#m-fab-map');
+    await page.waitForFunction(() => !!document.querySelector('#m-screens > #mo-sheet'), null, { timeout: 15_000 });
+    await page.waitForTimeout(900);
+    expect(await page.evaluate(HIT, '#mo-sheet'), 'layer screen targets under 44 px').toEqual([]);
+  });
+});
