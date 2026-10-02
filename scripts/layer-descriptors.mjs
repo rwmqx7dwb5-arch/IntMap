@@ -38,6 +38,9 @@
  *    sources   a row `n:'<name>'` of js/reference-data.js
  *    lazy      a key of js/lazy-modules.js LAZY_REGISTRY
  *    label     a key of the en AND jp ui tables (js/locales/ui.<code>.js)
+ *    pkg       (layer-packages) js/layer-pkg-<pkg>.js exists and exports `function <camel(pkg)>Package(` — what the
+ *              factory returns for each of its rows is evaluated by tests/layer-packages-checks.test.mjs (a file
+ *              cannot be read for that); the region carries one literal loader per package
  *  Comments are stripped first (scripts/code-only.mjs): a sentence that QUOTES a registration is not one.
  *  ⚠ THE REVERSE IS REPORTED, NOT REQUIRED. A literal IntMapLayers registration that no layer claims is
  *  printed by --report — some are not rows at all (`elevation` is always on, `news` is the news panel's
@@ -87,11 +90,18 @@ export function renderRegion(shelves, list, kit) {
   const fileOf = new Map(list.map((x) => [x.d, x.file]));
   const ordered = shelves.flatMap((s) => ds.filter((d) => d.shelf === s.key).sort((a, b) => a.order - b.order));
   const derived = kit.deriveShelves(shelves, ds);
+  /* (layer-packages) every package a declaration names, once, sorted. The loader is a LITERAL single-quoted
+     `./` dynamic import because that is the only shape scripts/static-checks.mjs (reachability) and the bundler
+     can see, and the factory is read by name so scripts/export-readers.mjs counts it as read. */
+  const pkgs = [...new Set(ds.map((d) => d.pkg).filter(Boolean))].sort();
   return '/** the Layers list — every shelf of js/layers/_shelves.js in panel order, its rows in `order` (scripts/lib/layer-descriptor.mjs deriveShelves) */\n'
     + 'const DERIVED = [\n' + derived.map((s) => '  { key: ' + JSON.stringify(s.key) + ', layers: ['
       + (s.layers.length ? '\n' + s.layers.map((l) => '    ' + lit(l) + ',').join('\n') + '\n  ' : '') + '] },').join('\n') + '\n];\n'
     + '/** every declaration whole, links included, in panel order */\n'
-    + 'const DECLARATIONS = [\n' + ordered.map((d) => '  ' + lit(d) + ',   // ' + fileOf.get(d)).join('\n') + '\n];\n';
+    + 'const DECLARATIONS = [\n' + ordered.map((d) => '  ' + lit(d) + ',   // ' + fileOf.get(d)).join('\n') + '\n];\n'
+    + '/** (layer-packages) every layer package a declaration names → its factory, fetched on first use (js/data-layers.js) */\n'
+    + 'const PACKAGES = {\n' + pkgs.map((k) => '  ' + JSON.stringify(k) + ": () => import('./" + kit.packageFile(k) + "').then((m) => m." + kit.packageExport(k) + '),\n').join('')
+    + '};\n';
 }
 
 /* ── what each registry holds, read from the tree ─────────────────────────────────────────── */
@@ -167,6 +177,11 @@ export async function problems() {
     for (const v of d.sources || []) if (!R.sources.has(v)) miss(d, 'source', v, 'no row with that name in js/reference-data.js DATA_SOURCES');
     for (const v of d.lazy || []) if (!Object.prototype.hasOwnProperty.call(LAZY_REGISTRY, v)) miss(d, 'lazy module', v, 'not in js/lazy-modules.js LAZY_REGISTRY');
     if (d.label && !(en[d.label] && jp[d.label])) miss(d, 'label', d.label, 'not in both the en and the jp ui tables');
+    if (d.pkg) {
+      const file = 'js/' + kit.packageFile(d.pkg), fn = kit.packageExport(d.pkg);
+      if (!existsSync(join(ROOT, file))) miss(d, 'layer package', d.pkg, file + ' does not exist');
+      else if (!new RegExp('^export function ' + fn + '\\(', 'm').test(codeOnly(read(file)))) miss(d, 'layer package', d.pkg, file + ' does not export function ' + fn + '(kit)');
+    }
   }
   for (const s of shelves) if (/^lyrGrp/.test(s.key) && !(en[s.key] && jp[s.key])) out.push('js/layers/_shelves.js: the heading `' + s.key + '` is not in both the en and the jp ui tables');
   return { out, list: ds, R };

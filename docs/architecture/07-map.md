@@ -40,12 +40,16 @@
 - **他の登録簿の中の同じレイヤー**——`registry`（`IntMapLayers`）・`state`（共有リンクの状態）・`commands`（`IntMapOS`）・
   `atlas`（能力の項目）・`sources`（出典の行）・`time`（Chronos の契約）。それぞれの登録簿が別の綴りで持っていた
   同じレイヤーを、宣言が 1 つに結ぶ
+- **実装のモジュール**——`pkg`（レイヤー・パッケージ `js/layer-pkg-<pkg>.js`）。`js/data-layers.js` はその行に分岐を持たず、
+  1 本の経路で委ね、初めて切り替えたときにモジュールを取る（MAP-LAYERS §7.2「レイヤー・パッケージ」）
 
 **レイヤーを 1 本足す:**
 
 1. `js/layers/<id>.js` を書く（`id`・`shelf`・`order` と、上の欄のうちそのレイヤーに当てはまるもの）
 2. 行を作るモジュールを書く（行のハンドラ・凡例・名前の組み立ては行の持ち主に残る）。`IntMapLayers` に
-   登録したら、その id を宣言の `registry` に書く——描かれているものを Atlas が読めるかはこれで決まる
+   登録したら、その id を宣言の `registry` に書く——描かれているものを Atlas が読めるかはこれで決まる。
+   `js/data-layers.js` が行を作る棚なら、切替と不透明度は `js/data-layers.js` に分岐を足さず、レイヤー・パッケージ
+   `js/layer-pkg-<pkg>.js` に書いて宣言の `pkg` で名指す（分岐の追加・行数の増加は `check:static` が拒む）
 3. それだけ。`js/layer-manifest.js` の生成領域（宣言から導いた一覧と宣言の値の写し）は `npm run build` が書き直し（`node scripts/layer-descriptors.mjs --write`）、
    門（`tests/layer-descriptor-checks.test.mjs`）が、宣言の形・棚・位置の重なり・索引の鮮度・各欄の結び目を
    それを持つ登録簿と照らす。結び目の欄は主張で、照らせない主張（実行時に組み立てる登録）は書かない

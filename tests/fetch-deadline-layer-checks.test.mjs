@@ -226,11 +226,12 @@ test('④ the cable and radar thumbnails call the rows\' own reads, and hold no 
   assert.doesNotMatch(LP, /submarinecablemap\.com|api\.rainviewer\.com\/public\/weather-maps/,
     'js/layer-previews.js still names a source the row owns — a second copy of how the layer gets its data');
 
-  /* …and js/data-layers.js fills those names with the row's functions */
-  const dl = parse(read('js/data-layers.js'));
+  /* …and the rows fill those names with their own functions. (layer-packages) The two rows are layer packages
+     now: js/data-layers.js exports the object, and the package that implements each row (js/layer-pkg-*.js, its
+     declaration's `pkg`) assigns its function there — before that, js/data-layers.js forwards to the package */
   const filled = {};
   let exported = false;
-  walk(dl, (n) => {
+  for (const f of ['js/data-layers.js', 'js/layer-pkg-subcables.js', 'js/layer-pkg-radar.js']) walk(parse(read(f)), (n) => {
     if (n.type === 'ExportNamedDeclaration' && n.declaration && n.declaration.declarations && n.declaration.declarations.some((d) => d.id.name === 'layerReads')) exported = true;
     if (n.type === 'AssignmentExpression' && n.left.type === 'MemberExpression' && n.left.object.name === 'layerReads' && n.right.type === 'Identifier') filled[n.left.property.name] = n.right.name;
   });

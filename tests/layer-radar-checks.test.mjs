@@ -52,14 +52,15 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const MEASURED_MAX_Z = 7;
 
 function rvMaxZ() {
-  const m = /const\s+RV_MAX_Z\s*=\s*(\d+)\s*;/.exec(codeOnly(read('js/data-layers.js')));
-  assert.ok(m, 'js/data-layers.js は RV_MAX_Z を数値リテラルで宣言する（1か所で変えられる形）');
+  /* (layer-packages) the radar row's implementation is its layer package js/layer-pkg-radar.js (dl-radar `pkg`) */
+  const m = /const\s+RV_MAX_Z\s*=\s*(\d+)\s*;/.exec(codeOnly(read('js/layer-pkg-radar.js')));
+  assert.ok(m, 'js/layer-pkg-radar.js は RV_MAX_Z を数値リテラルで宣言する（1か所で変えられる形）');
   return Number(m[1]);
 }
 
 /* ── ① 天井は名前を持ち、1か所にしか無い ─────────────────────────────────────────────── */
 test('R482 ① RV_MAX_Z is declared exactly once and is at most the measured ceiling', () => {
-  const src = codeOnly(read('js/data-layers.js'));
+  const src = codeOnly(read('js/data-layers.js') + '\n' + read('js/layer-pkg-radar.js'));   /* once across both — the package and the file it left */
   const all = src.match(/const\s+RV_MAX_Z\s*=/g) || [];
   assert.equal(all.length, 1, '天井が2つ綴られていると、片方だけ直った状態が作れてしまう');
   assert.ok(rvMaxZ() <= MEASURED_MAX_Z,
@@ -68,7 +69,7 @@ test('R482 ① RV_MAX_Z is declared exactly once and is at most the measured cei
 
 /* ── ② レーダーのラスターソースはその天井で作られる（数値リテラルを直に書かない） ───────── */
 test('R482 ② the radar raster source is built with RV_MAX_Z, not a bare number', () => {
-  const src = codeOnly(read('js/data-layers.js'));
+  const src = codeOnly(read('js/data-layers.js') + '\n' + read('js/layer-pkg-radar.js'));   /* (layer-packages) once across both */
   const calls = [...src.matchAll(/addRaster\(\s*'radar'\s*,\s*([^)]*)\)/g)].map((m) => m[1].trim());
   assert.equal(calls.length, 1, 'レーダーのラスターは1か所でしか作られない');
   assert.match(calls[0], /,\s*RV_MAX_Z\s*$/,

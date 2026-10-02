@@ -3480,6 +3480,20 @@ hard links into the checkout; `writeFileSync` on one writes the real file. Measu
 wrote its probe layer into the real tree through `--write` (the index file it wrote then; the generated region of `js/layer-manifest.js` now). `scripts/layer-descriptors.mjs` unlinks
 first now, and the test lists the index among the paths `mutate()` puts back.
 
+**A row's implementation is its layer package, and what it draws is compared with the tree before the move**
+(layer-packages). `tests/layer-manifest.spec.js` ⑥ ticks each packaged row, moves its opacity slider and unticks it
+in a fresh context, and after each step reads every style layer and source the row added (paint, layout, tiles, its
+place in the stack) and its legend — against `tests/fixtures/layer-packages-before.json`, the SAME evaluation run on
+the tree before the implementation moved (`IM_LAYER_PACKAGES_CAPTURE=<file>` writes it outside the checkout; the
+upstreams it needs are answered by the spec). `tests/layer-packages-checks.test.mjs` runs each package's factory with
+a kit that refuses any name `packageKit()` does not provide, holds the one package path of toggleLayer /
+setLayerOpacity, and mutates a scratch copy to show the gate (`scripts/layer-packages.mjs`) refuses a branch, a line, a
+window assignment and a ledger that was not lowered. ⚠ **A check that lifts code out of `js/data-layers.js` lifts it
+from the package once the row is packaged** — the factory is found by the parser (a brace matcher misreads the fire
+probe's `/named '([^']+)'/`), and run in the same rig through toggleLayer's package path (`packageOf` from the
+manifest, `loadPackage` answering with the lifted factory): `tests/stalled-fetch-and-surface-gauge-checks.test.mjs`,
+`tests/layer-failure-state-checks.test.mjs`, `tests/unobserved-is-not-refused-checks.test.mjs` do this.
+
 **A capability's code is its ENTRY, and a check reads the entry, not a `case`** (atlas-capability-modules).
 There is no dispatch switch: each capability is one entry — `{ row, schema, run }` — in
 `js/atlas-cap-<namespace>.js`, and the registry rows (copied into `js/atlas-capabilities.js` between its `GENERATED ROWS` markers), the dispatch

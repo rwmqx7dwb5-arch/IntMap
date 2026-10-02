@@ -1,0 +1,30 @@
+{
+  "//": "written by scripts/layer-packages.mjs --update — the size of js/data-layers.js and the rows it still switches by name; only ever lowered (check:static `layer-packages`)",
+  "lines": 5246,
+  "windowAssignments": 114,
+  "branches": [
+    "aod",
+    "climate",
+    "contours",
+    "dem",
+    "eez",
+    "gdppc",
+    "hdi",
+    "hillshade",
+    "milSpendGDP",
+    "nightsat",
+    "nightside",
+    "planes",
+    "pop",
+    "popgrid",
+    "precip",
+    "relief",
+    "sats",
+    "sealevel",
+    "ships",
+    "snow",
+    "sst",
+    "tfr",
+    "wind"
+  ]
+}

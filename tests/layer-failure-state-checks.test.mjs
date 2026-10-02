@@ -29,6 +29,8 @@ import { liftFunction } from './helpers/lift-function.mjs';
 import { inFlight } from '../js/layer-rows.js';
 import { makeLayerState, classify, layerState } from '../js/layer-state.js';
 import { makeNotify } from '../js/notify.js';
+import * as acorn from 'acorn';
+import { packageOf } from '../js/layer-manifest.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const code = (f) => codeOnly(readLF(join(ROOT, f)));
@@ -376,6 +378,14 @@ test('⑧ the satellite legend counts what is drawn while the live feed is still
 });
 
 /* ── ⑨ ─────────────────────────────────────────────────────────────────────────────────────────────── */
+/* (layer-packages) the radar package's factory, found by the parser in the shipped file */
+const RADAR_FACTORY = (() => {
+  const text = code('js/layer-pkg-radar.js');
+  const d = acorn.parse(text, { ecmaVersion: 'latest', sourceType: 'module' }).body
+    .find((n) => n.type === 'ExportNamedDeclaration' && n.declaration && n.declaration.id && n.declaration.id.name === 'radarPackage');
+  assert.ok(d, 'js/layer-pkg-radar.js does not export function radarPackage');
+  return text.slice(d.declaration.start, d.declaration.end);
+})();
 test('⑨ the radar row\'s failure arm hands the read\'s own error to the owner, and the reader is told once', async () => {
   for (const [thrown, want] of [[err('http', { status: 404 }), 'failed'], [err('timeout'), 'unobserved']]) {
     const toasts = [], reports = [];
@@ -391,12 +401,19 @@ test('⑨ the radar row\'s failure arm hands the read\'s own error to the owner,
       document: { getElementById: (id) => (id === 'dl-radar' ? cb : null) },
       window: { IntMapLang: { t: (_l, en) => en } }, HOST: { lang: 'en' },
       setTimeout: () => 0, requestAnimationFrame: () => 0, ensureGenericLegend: () => null,
+      /* (layer-packages) the radar row is its layer package (dl-radar `pkg`): toggleLayer reaches it through its one path,
+         and «fetching» the package hands the factory lifted below — the row's switch is the package's, as shipped */
+      packageOf, loadPackage: () => Promise.resolve(F.radarPackage),
     };
+    let F = null;
     const scope = new Proxy(over, {
       has: (tg, k) => typeof k === 'string' && (k in tg || !(k in globalThis)),
       get: (tg, k) => (k in tg ? tg[k] : (typeof k === 'symbol' ? undefined : () => undefined)),
     });
-    const toggleLayer = new Function('scope', 'with (scope) { ' + liftFunction(DL, 'toggleLayer') + '\nreturn toggleLayer; }')(scope);
+    F = new Function('scope', 'with (scope) { const _pkgs=Object.create(null); let _kit=null;\n'
+      + ['toggleLayer', 'packageKit', '_pkgLoad', '_pkgSwitch'].map((n) => liftFunction(DL, n)).join('\n') + '\n' + RADAR_FACTORY
+      + '\nreturn { toggleLayer, radarPackage }; }')(scope);
+    const toggleLayer = F.toggleLayer;
     await toggleLayer('radar', true);
     assert.equal(reports.length, 1, `${want}: the failure was not reported to the owner`);
     assert.equal(reports[0][0], 'dl-radar');

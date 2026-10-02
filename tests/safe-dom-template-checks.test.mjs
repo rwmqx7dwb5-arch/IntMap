@@ -211,7 +211,9 @@ test('③ the migrated builders, evaluated: their markup is markup, not text (no
   assert.ok(String(SC.barBlockHtml(b)).includes(IMG), 'the former state\'s flag is an image');
   assert.match(String(SC.secHtml(ind, 'IMF', '', true)), /<button class="scp-focus" style="display:none;" data-k="g"/);
 
-  const DL = run(lift(TREE['js/data-layers.js'], ['_CHEV_L', '_CHEV_R', 'LEGEND_DESC', 'LEGEND_NOTE', '_legendDesc', 'yearKeyHTML', '_dateBoxHTML']), {
+  /* (layer-packages) the accession-year key moved with the NATO / EU rows to their layer package */
+  const DL = run(lift(TREE['js/data-layers.js'], ['_CHEV_L', '_CHEV_R', 'LEGEND_DESC', 'LEGEND_NOTE', '_legendDesc', '_dateBoxHTML'])
+    + '\n' + lift(TREE['js/layer-pkg-alliances.js'], ['yearKeyHTML']), {
     window: { IntMapSafe: S }, html, LA: (...a) => a, LDL: { arr: (a) => a[0] }, t: () => 'Date',
     _dateBounds: () => ({ min: '2020-01-01', max: '2024-02-02' }), layerDates: { x: '2023-05-05' },
   }, ['_legendDesc', 'yearKeyHTML', '_dateBoxHTML']);

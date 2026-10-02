@@ -1068,6 +1068,7 @@ IntMapLang.define('fr', { ui: {
   "2022 World Bank": "Banque mondiale 2022",
   "3-D volume": "Volume 3D",
   "32 members": "32 membres",
+  " members": " membres",   /* (hist-fidelity) the NATO legend's count is the members drawn at the clock's instant — the number is prefixed (js/layer-pkg-alliances.js natoCountHint) */
   "3D globe": "Globe 3D",
   "3D terrain": "Relief 3D",
   "5 psi — most buildings collapse": "5 psi — la plupart des bâtiments s'effondrent",

@@ -36,7 +36,8 @@ import { byKey, publishedList } from './helpers/layer-groups.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readLF(path.join(ROOT, p));
-const DL = read('js/data-layers.js');
+/* (layer-packages) the cable row is js/data-layers.js plus its layer package js/layer-pkg-subcables.js (dl-subcables `pkg`): the source read here is both */
+const DL = read('js/data-layers.js') + '\n' + read('js/layer-pkg-subcables.js');
 
 /* the whole `GE().layers.add({ … })` call that creates a layer, by its id */
 function layerDecl(src, id) {
@@ -84,7 +85,8 @@ test('#R355 ① default opacity, default-ON state and the opacity control are un
   /* ⚠ READ, NOT RUN: the opacity control and the default-ON list are wiring inside js/data-layers.js, which needs a live map. */
   assert.match(DL, /subcables:0\.95/, 'the cable layer\'s default opacity is no longer 0.95');
   assert.deepEqual(publishedList('IntMapDefaultLayers'), ['dl-climate', 'dl-subcables'], 'the cable layer is no longer default-ON');
-  assert.match(DL, /else if\(id==='subcables'\)\{ if\(GE\(\)\.layers\.has\('lyr-subcables'\)\)GE\(\)\.layers\.setPaint\('lyr-subcables','line-opacity',v\); \}/,
+  /* (layer-packages) the setLayerOpacity branch became the row's `opacity` in its package — the same statement */
+  assert.match(DL, /opacity: \(v\) => \{ if\(GE\(\)\.layers\.has\('lyr-subcables'\)\)GE\(\)\.layers\.setPaint\('lyr-subcables','line-opacity',v\); \}/,
     'the per-layer opacity control for the cables changed');
   assert.match(DL, /'dl-subcables':\['lyr-subcables','lyr-subcables-glow','lyr-subcables-pts'\]/,
     'the layer audit no longer knows all three cable sublayers');

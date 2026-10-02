@@ -44,6 +44,12 @@
  *    time      when its data can answer for (Chronos): { kind: 'elements', bands } — each feature carries
  *              its own validity, widest around its epoch by orbit class (js/satellites-live.js reads the
  *              bands from here); a declaration with no `time` makes no claim
+ *    pkg       (layer-packages) the LAYER PACKAGE that implements the row's switch: js/layer-pkg-<pkg>.js,
+ *              whose factory `<camel(pkg)>Package(kit)` returns, for every row naming it, what switching the
+ *              row on and off and moving its opacity does. js/data-layers.js loads it the first time one of
+ *              those rows is switched (packageFile / packageExport below are the names, written once); a row
+ *              without `pkg` is still implemented inside js/data-layers.js. Several rows may name one package
+ *              (a family that shares its implementation). scripts/layer-packages.mjs holds the rest of the rule.
  *
  *  ⚠ A LINK IS A CLAIM, AND EVERY CLAIM HAS A READER THAT CAN REFUSE IT. scripts/layer-descriptors.mjs
  *  checks each link against the registry that holds it (the literal registration in js/, the capability
@@ -55,7 +61,7 @@
 /** the row facts js/layer-manifest.js has always carried, in the order it carried them */
 const ROW_FIELDS = Object.freeze(['id', 'key', 'label', 'rest', 'on', 'share', 'html', 'lazy']);
 /** the facts that join the layer to the other registries */
-const LINK_FIELDS = Object.freeze(['registry', 'state', 'commands', 'atlas', 'sources', 'time']);
+const LINK_FIELDS = Object.freeze(['registry', 'state', 'commands', 'atlas', 'sources', 'time', 'pkg']);
 const FIELDS = Object.freeze(['id', 'shelf', 'order'].concat(ROW_FIELDS.slice(1), LINK_FIELDS));
 
 const isStr = (v) => typeof v === 'string' && v.length > 0;
@@ -84,6 +90,7 @@ export function descriptorProblems(d, file, shelves) {
   if (!shelves.has(d.shelf)) at('is on the shelf `' + d.shelf + '`, which js/layers/_shelves.js does not have');
   if (typeof d.order !== 'number' || !Number.isFinite(d.order)) at('has no numeric `order` on its shelf');
   for (const k of ['key', 'label', 'state']) if (k in d && !isStr(d[k])) at('`' + k + '` must be a non-empty string');
+  if ('pkg' in d && !PKG_NAME.test(String(d.pkg))) at('`pkg` must be a lower-case kebab name (it names js/layer-pkg-<pkg>.js)');
   for (const k of ['rest', 'on', 'share', 'html']) if (k in d && d[k] !== true) at('`' + k + '` is written only when it is true (absent means false)');
   for (const k of ['lazy', 'registry', 'commands', 'atlas', 'sources']) if (k in d && !isStrList(d[k])) at('`' + k + '` must be a list of distinct names');
   if (d.html && !isStr(d.label)) at('a generated row (`html`) names itself through an i18n `label`');
@@ -93,6 +100,13 @@ export function descriptorProblems(d, file, shelves) {
   }
   return out;
 }
+
+/* (layer-packages) a package's name, and the two names derived from it — the file and its factory — written here once */
+const PKG_NAME = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+/** the module of a layer package, relative to js/ */
+export const packageFile = (pkg) => 'layer-pkg-' + pkg + '.js';
+/** the factory a layer package exports: `subcables` → `subcablesPackage`, `sea-level` → `seaLevelPackage` */
+export const packageExport = (pkg) => pkg.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase()) + 'Package';
 
 /** problems across the whole set: one id, one key, one place on a shelf, one owner of each link */
 export function setProblems(list) {

@@ -9,4 +9,5 @@ export default {
   share: true,
   registry: ['thermal'],
   sources: ['NASA FIRMS'],
+  pkg: 'thermal',   // (layer-packages) implemented by js/layer-pkg-thermal.js
 };

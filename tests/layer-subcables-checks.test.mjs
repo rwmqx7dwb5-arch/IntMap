@@ -24,12 +24,13 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* ══════════ from tests/r187-checks.test.mjs — 1 of its 14 test(s) ══════════ */
 {
 /* 綴りのまま残した検査の理由: js/data-layers.js は DOM・MapLibre・fetch に閉じた Layers パネル全体のファクトリで node では組み立てられない */
+/* (layer-packages) the cable row is js/data-layers.js plus its layer package js/layer-pkg-subcables.js (dl-subcables `pkg`) — the source read here is both */
 /* (#R187) the round's header note is kept with its largest block, in tests/layer-globe-rendering-checks.test.mjs */
 /* (on the import of './helpers/layer-groups.mjs') */ /* (layer-manifest) the lists are views of js/layer-manifest.js */
 
 /* ── 7. a refused layer add is retried ───────────────────────────────────────────────────────── */
 test('R187 default layers: the cables survive a style that is not ready yet', () => {
-  const src = read('js/data-layers.js');
+  const src = (read('js/data-layers.js') + '\n' + read('js/layer-pkg-subcables.js'));
   assert.deepEqual(publishedList('IntMapDefaultLayers'), ['dl-climate', 'dl-subcables'], 'both still default on');
   /* REPRODUCED on a cold load: whenStyleReady() hard-resolves after ~6 s (that escape hatch is #R41's
      and is deliberate), MapLibre then refuses addSource with "Style is not done loading", and the old
@@ -60,7 +61,7 @@ test('R187 default layers: the cables survive a style that is not ready yet', ()
 /* ── 2. the default layers: a failed download is not a preference ────────────────────────────── */
 test('R188 default layers: the cable data is kept, and an outage is never saved as a choice', () => {
   /* (#R200) the snapshot moved to js/session-tabs.js with the rest of the session block. */
-  const dl = read('js/data-layers.js'), ab = read('js/session-tabs.js');
+  const dl = (read('js/data-layers.js') + '\n' + read('js/layer-pkg-subcables.js')), ab = read('js/session-tabs.js');
   assert.deepEqual(publishedList('IntMapDefaultLayers'), ['dl-climate', 'dl-subcables'],
     'both layers still start on');
   /* measured: the direct fetch is `TypeError: Failed to fetch` every time (no ACAO), so this layer
@@ -117,7 +118,7 @@ test('R190 default layers: the cables come through our own origin', async () => 
   /* THE DEFECT: the layer was up only while a VOLUNTEER proxy happened to be alive — a stranger's
      uptime, and a stranger on the path. (own-fetch-relay) The relay URL is no longer spelled in this file; it
      is asked of js/proxy-fetch.js, so what is checked is what that router ANSWERS for the two URLs. */
-  const dl = read('js/data-layers.js');
+  const dl = (read('js/data-layers.js') + '\n' + read('js/layer-pkg-subcables.js'));
   const net = /async function _cableNet\(u,scale,seen\)\{[^\n]*/.exec(dl);
   assert.ok(net, 'the cable fetcher is still one function');
   /* (cable-relay-first) our relay FIRST, the bare URL only for a build with no relay: the bare URL is refused by

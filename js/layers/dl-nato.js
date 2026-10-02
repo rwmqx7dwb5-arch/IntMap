@@ -6,4 +6,5 @@ export default {
   key: 'nato',
   label: 'lyrNATO',
   share: true,
+  pkg: 'alliances',   // (layer-packages) implemented by js/layer-pkg-alliances.js
 };

@@ -775,7 +775,7 @@ test('R289 ③ the coastline uses the border line’s own source, colour and wid
   /* (layer-manifest) the row, its tick and the two lists are js/layer-manifest.js — the markup is generated from it */
   const coast = LM.LAYERS.find((l) => l.id === 'cb-coast');
   assert.match(LM.rowHTML(coast), /<input type="checkbox" id="cb-coast">/, 'the row ships unchecked');
-  const dl = read('js/data-layers.js');
+  const dl = (read('js/data-layers.js') + '\n' + read('js/layer-pkg-alliances.js'));
   const basic = publishedList('IntMapBasicLayerRows');
   assert.deepEqual(basic.slice(basic.indexOf('cb-borders'), basic.indexOf('cb-borders') + 3), ['cb-borders', 'cb-coast', 'cb-admin1'],
     'it sits with the base displays in the panel order');
@@ -816,11 +816,12 @@ test('R289 ④ CO₂ and defence spending are one row each, with both views stil
   assert.match(read('js/layer-previews.js'), /function wbCode\(id,spec\)\{/, 'and the thumbnail reads it');
   /* defence spending: one row, two fills, and the switch lives in BOTH legends because the reader
      is looking at the one for the mode that is on */
-  const dl = read('js/data-layers.js');
+  const dl = (read('js/data-layers.js') + '\n' + read('js/layer-pkg-alliances.js'));
   assert.ok(!/\['milSpendGDP','lyrMilSpendGDP'\]/.test(dl), 'the second defence row is gone from the panel');
   assert.match(dl, /\['milSpend','lyrMilSpend'\],\['nato','lyrNATO'\]/, 'one defence row remains');
   assert.match(dl, /function applyMilMode\(\)\{/, 'and a mode decides which of the two is showing');
-  assert.match(dl, /milModeRow\(lgdMil\); milModeRow\(lgdMilGDP\);/, 'the switch is in both legends');
+  /* (layer-packages) the defence row's package reads the two legends — rebuilt on a language change — through the kit's `live` getters */
+  assert.match(dl, /milModeRow\(live\.lgdMil\); milModeRow\(live\.lgdMilGDP\);/, 'the switch is in both legends');
   assert.match(dl, /addChoro\('milSpendGDP'\); applyChoro\('milSpendGDP',s=>\(s\.milSpend!=null&&s\.gdp\)\?s\.milSpend\/s\.gdp\*100:null\)/,
     'the % of GDP picture is the one that was already there');
   /* a saved session that had either retired row on lands on the row that stayed */
@@ -834,7 +835,7 @@ test('R289 ④ CO₂ and defence spending are one row each, with both views stil
    disagreed with the map; a flat blue bar over a year-coloured map is the same statement. */
 /* spelling kept: browser script (js/data-layers.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('R289 ⑤ NATO and the EU can be coloured by accession year, and the bar goes away with it', () => {
-  const dl = read('js/data-layers.js');
+  const dl = (read('js/data-layers.js') + '\n' + read('js/layer-pkg-alliances.js'));
   assert.match(dl, /function yearColors\(years\)\{/, 'one palette builder');
   assert.match(dl, /function yearFillExpr\(years,colors,fallback\)\{/, 'one fill-expression builder');
   assert.match(dl, /function styleModeRow\(el,cls,get,set\)\{/, 'one switch builder — not two');
@@ -1024,7 +1025,7 @@ const read = (p) => (p === 'js/i18n.js'
 
 /* spelling kept: browser script (js/data-layers.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('R186 sea level: nothing between the ramp and the opacity slider', () => {
-  const src = read('js/data-layers.js');
+  const src = (read('js/data-layers.js') + '\n' + read('js/layer-pkg-alliances.js'));
   const m = /const cand=\[(.*?)\];/s.exec(src);
   assert.ok(m, 'the sea-level ramp candidates must still be one literal');
   /* Every FLOODED stop has to be fully opaque, or the slider can never reach 100 % — which is

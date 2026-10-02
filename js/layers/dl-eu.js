@@ -6,4 +6,5 @@ export default {
   key: 'eu',
   label: 'lyrEU',
   share: true,
+  pkg: 'alliances',   // (layer-packages) implemented by js/layer-pkg-alliances.js
 };

@@ -29,6 +29,7 @@ import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { inFlight } from '../js/layer-rows.js';
+import { LAYERS, packageOf } from '../js/layer-manifest.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DL = codeOnly(readLF(join(ROOT, 'js/data-layers.js')));
@@ -165,7 +166,10 @@ test('③ the periodic audit does not count a box in flight, and judges it as be
 /* ── ④ toggleLayer returns the request each branch started ──────────────────────────────────────── */
 const TOGGLE = liftFunction(DL, 'toggleLayer');
 /* every id the function branches on — read from the function, so a new branch is covered by being written */
-const BRANCH_IDS = [...new Set([...TOGGLE.matchAll(/\bid===\s*'([^']+)'/g)].map((m) => m[1]))];
+const BRANCH_IDS = [...new Set([...TOGGLE.matchAll(/\bid===\s*'([^']+)'/g)].map((m) => m[1])
+  /* (layer-packages) …and every row the function hands to its layer package by its one path (the declaration's `pkg`):
+     the radar row is one of them — what the package's own switch returns is held in tests/layer-packages-checks ⑥ */
+  .concat(LAYERS.filter((l) => packageOf(l.id) && /^dl-/.test(l.id)).map((l) => l.id.slice(3))))];
 
 /* Anything the function reaches that is not overridden below is an inert stand-in: callable, every
    property another stand-in, and NOT thenable — so no stand-in can pose as a request. */
@@ -197,6 +201,8 @@ function runToggle(id) {
        startTraffic starts its stream synchronously and returns nothing, as it always has */
     startTraffic: (id) => (id === 'planes' ? wait() : undefined),
     rvFetch: () => Promise.resolve(),
+    /* (layer-packages) the package path: the declaration says which rows take it, and the package's switch is a request */
+    packageOf, _pkgSwitch: () => wait(),
     fetch: () => gate.p,
     setTimeout: (fn, ms) => { timers.push(ms); return 0; },
     requestAnimationFrame: () => 0,
