@@ -17,6 +17,8 @@ import { afterTick, tickKey } from './runtime.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTime } from './chronos.js';
+/* (mobile-performance) when a phone may refresh the World Bank figures */
+import { BootStage } from './boot-stage.js';
 
 export function wbLayers(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -485,7 +487,7 @@ export function wbLayers(HOST){
        recent World Bank GDP / population / GDP-per-capita / life-expectancy and merge into countryStats
        (only overwriting where WB has a value), then re-render Stats if it's open. Runs once, low-priority. */
     function refreshStatsLatest(){ try{ const cs=(typeof countryStats!=='undefined'&&countryStats)||null; if(!cs) return;
-      Promise.all([wbFetch('NY.GDP.MKTP.CD'),wbFetch('SP.POP.TOTL'),wbFetch('NY.GDP.PCAP.CD'),wbFetch('SP.DYN.LE00.IN')]).then(([gdp,pop,pc,le])=>{
+      return Promise.all([wbFetch('NY.GDP.MKTP.CD'),wbFetch('SP.POP.TOTL'),wbFetch('NY.GDP.PCAP.CD'),wbFetch('SP.DYN.LE00.IN')]).then(([gdp,pop,pc,le])=>{
         Object.keys(cs).forEach(code=>{ const s=cs[code]; if(!s) return;
           if(gdp[code]&&gdp[code].v>0) s.gdp=gdp[code].v/1e9;
           if(pop[code]&&pop[code].v>0) s.pop=pop[code].v;
@@ -495,6 +497,15 @@ export function wbLayers(HOST){
         try{ if(typeof HOST.mode!=='undefined'&&HOST.mode==='stats'&&typeof renderStats==='function') renderStats(typeof searchVal==='function'?searchVal():''); }catch(_){}
       }).catch(()=>{});
     }catch(_){} }
-    if(window.requestIdleCallback) requestIdleCallback(()=>refreshStatsLatest(),{timeout:6000}); else setTimeout(refreshStatsLatest,4500);
+    /* (mobile-performance) the idle callback was the whole schedule, and a phone whose main thread is busy
+       for nine seconds is idle INSIDE its boot: MEASURED, the four indicators (137 kB of World Bank JSON,
+       parsed on the page) started at 7.6 s of an 8.4 s boot. js/boot-stage.js row `world-bank` puts them
+       behind the moment a phone can be touched; every other device keeps this exact schedule. */
+    const _go=()=>{ if(window.requestIdleCallback) requestIdleCallback(()=>refreshStatsLatest(),{timeout:6000}); else setTimeout(refreshStatsLatest,4500); };
+    /* ⚠ …AND AFTER THE TABLE IT REFRESHES EXISTS. The merge only writes rows that are already in countryStats,
+       and on a phone the country table is itself a settled read: MEASURED in the old schedule the indicators
+       landed at 7.6 s and the country file at 8.8 s, so this refresh merged into an empty table and changed
+       nothing. The turn therefore asks for the table first (the same latched promise every reader awaits). */
+    if(BootStage.stageOf('world-bank')!=='boot') BootStage.at('world-bank',()=>Promise.resolve(typeof loadCountryData==='function'?loadCountryData():null).catch(()=>null).then(refreshStatsLatest)); else _go();
   })();
 }

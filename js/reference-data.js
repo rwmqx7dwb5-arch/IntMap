@@ -425,7 +425,9 @@ export const IntMapRefData = (function(){
     /* (#R290) …and the warning layer's world administrative index — `data/admin1-world.json.gz`,
        4,515 first-level units across 247 countries, simplified from Natural Earth 10 m at build
        time by scripts/build-admin1.mjs. It is what lets 「発令なし」 be drawn at the UNIT for every
-       country rather than for the fifty this map held a closer index for. Public domain. */
+       country rather than for the fifty this map held a closer index for. Public domain.
+       The same row covers data/ne-countries/ — the admin-0 countries at 110 m / 50 m / 10 m, served
+       from this site at one pinned commit by scripts/build-ne-countries.mjs. */
     {n:'Natural Earth',u:'https://www.naturalearthdata.com/',lic:'Public domain',credit:false},
     /* (#R197) the three sources the global tsunami model and the space explorer added */
     {n:'AWS Terrain Tiles — the bundled global sea floor',u:'https://registry.opendata.aws/terrain-tiles/'},

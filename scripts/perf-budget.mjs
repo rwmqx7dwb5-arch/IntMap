@@ -76,6 +76,12 @@ import { fileURLToPath } from 'node:url';
 import { IntMapLang } from '../js/lang-registry.js';
 /* (perf-measure-parity) the build stamp names the commit a dist/ was built from — the one parser of it */
 import { STAMP_RE } from './build-stamp.mjs';
+/* (mobile-performance) WHEN a phone reads each shipped file — the declaration the start-up rows below are
+   judged against. An IIFE on globalThis with no imports and no DOM work at evaluation, so Node reads the
+   same plan the page runs. */
+import { BootStage } from '../js/boot-stage.js';
+/* …and comments are not code: a file NAMED in a header note is not a file the module reads */
+import { codeOnly } from './code-only.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REPORT = join(ROOT, '.perf', 'build-report.json');
@@ -116,7 +122,7 @@ export const band = (k, ceil) => (COUNTS.has(String(k).trim()) ? 0 : Math.max(GR
    either side's 300 (or seeing «both wrote 300» as agreement) dropped one of the two decisions. The
    driver asks this function, per row, rather than holding a second list of which rows count. */
 /** The clash rule for the row at `keys` of the baseline: 'sum' for a count, null for the file's default. */
-export const mergeClash = (keys) => (Array.isArray(keys) && keys.length === 2 && keys[0] === 'eager' && COUNTS.has(String(keys[1])) ? 'sum' : null);
+export const mergeClash = (keys) => (Array.isArray(keys) && keys.length === 2 && (keys[0] === 'eager' || keys[0] === 'phone') && COUNTS.has(String(keys[1])) ? 'sum' : null);
 
 function dirBytes(p) {
   let n = 0;
@@ -193,6 +199,57 @@ export function localeErrors(locales, LANG = IntMapLang) {
   return errs;
 }
 
+/* ══ (mobile-performance) WHAT A PHONE READS BEFORE IT CAN BE TOUCHED — DECLARED, AND THE DECLARATION COMPLETE ══
+   「起動時に読む資源の一覧が宣言と一致・増えたら赤」. js/boot-stage.js declares, for every shipped file the
+   start-up path can reach, WHO reads it and WHEN a phone does (boot / settled / need). Two things are judged
+   here, offline and deterministically, like every other row of this gate:
+     · THE DECLARATION IS COMPLETE. The universe is DISCOVERED, never listed: every `data/…` string literal in
+       every source module of the EAGER graph (the modules the build report says the start-up chunks hold).
+       One without a plan row fails — a new file on the start-up path has to say when a phone reads it. A
+       plan row that names no file in dist/ fails too (a declaration of nothing asserts nothing).
+     · THE BOOT STAGE IS A CEILING. The bytes and the count of the files a phone reads at `boot` are rows
+       `phone.bytes` / `phone.requests`, ratcheted exactly like eager.* — moving a file to `boot`, or a
+       `boot` file growing, is a decision a pull request states with --update.
+   What a static gate cannot see — that a row declared `settled` really is read after the launch screen
+   lifts — is measured by scripts/frame-profile.mjs --boot --detail, which prints every request a phone
+   made before it was ready against this same plan (docs/TESTING.md).
+   ⚠ A literal that is not a file name (a prefix the code concatenates, e.g. `data/whc-detail.`) matches a
+   row by prefix, which is how the plan states families of files; the asset gate's own rule for a computed
+   name (`prefix`, never «unreferenced») is the same idea from the other side. */
+const DATA_LITERAL = /['"`](data\/[A-Za-z0-9_\-./]+)['"`$]/g;
+export function bootPlanFrom(r, distDir, root = ROOT, BS = BootStage) {
+  if (!r || !r.eager || !Array.isArray(r.eager.chunks) || !r.chunks || !BS) return null;
+  const ids = new Set();
+  for (const f of r.eager.chunks) for (const id of Object.keys((r.chunks[f] && r.chunks[f].modules) || {})) if (/^(js|src)\/.+\.m?js$/.test(id)) ids.add(id);
+  const errors = [], refs = new Map();
+  const base = 'http://plan.invalid/';
+  for (const id of ids) {
+    const p = join(root, id);
+    if (!existsSync(p)) continue;
+    const src = codeOnly(readFileSync(p, 'utf8'));
+    for (const m of src.matchAll(DATA_LITERAL)) {
+      const lit = m[1];
+      if (!refs.has(lit)) refs.set(lit, new Set());
+      refs.get(lit).add(id);
+    }
+  }
+  for (const [lit, by] of refs) {
+    if (!BS.rowFor(lit, base)) errors.push(`${lit} is reachable from the start-up graph (${[...by].join(', ')}) and js/boot-stage.js does not say when a phone reads it — add a row (boot / settled / need) with who reads it and why.`);
+  }
+  const files = [];
+  const walk = (d) => { if (!existsSync(d)) return; for (const e of readdirSync(d, { withFileTypes: true })) { const q = join(d, e.name); if (e.isDirectory()) walk(q); else files.push(relative(distDir, q).split('\\').join('/')); } };
+  walk(join(distDir, 'data'));
+  let bytes = 0, requests = 0;
+  for (const row of BS.plan()) {
+    if (!row.path) continue;
+    const hits = files.filter((f) => f.startsWith(row.path));
+    if (row.shipped === false) { if (hits.length) errors.push(`js/boot-stage.js row "${row.id}" says ${row.path} is not shipped, and dist/ has ${hits.join(', ')} — say when a phone reads it.`); continue; }
+    if (!hits.length && files.length) errors.push(`js/boot-stage.js row "${row.id}" (${row.path}) names no file in dist/ — a declaration of nothing asserts nothing; remove the row or correct its path.`);
+    if (row.phone === 'boot') for (const h of hits) { bytes += statSync(join(distDir, h)).size; requests++; }
+  }
+  return { errors, bytes, requests, refs: refs.size };
+}
+
 /** The measurement from a build report and a dist/ directory — exported so a test can hand it a
     synthetic report and a directory it wrote, and judge the numbers the gate would see. */
 export function measureFrom(r, distDir) {
@@ -203,8 +260,11 @@ export function measureFrom(r, distDir) {
     const c = r.chunks[f];
     asyncChunks[c.name] = Math.max(asyncChunks[c.name] || 0, c.raw);
   }
+  const plan = bootPlanFrom(r, distDir);
   return {
     eagerLocales: eagerLocales(r),
+    bootPlanErrors: plan ? plan.errors : null,
+    ...(plan ? { phone: { bytes: plan.bytes, requests: plan.requests } } : {}),
     eager: {
       raw: r.eager.raw, gzip: r.eager.gzip, brotli: r.eager.brotli,
       requests: r.eager.requests, modules: r.eager.modules,
@@ -237,6 +297,44 @@ const gitIn = (cwd, args) => {
   try { return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 20000 }).trim(); }
   catch { return null; }
 };
+/* ══ (mobile-performance) THE PHONE'S RUNTIME LEDGER — RECORDED, NOT GATED ═════════════════════════════
+   「起動の操作可能時刻・long task の合計・操作中の 16.7 ms 超の割合」 are the numbers a phone user feels, and
+   none of them can stand in front of a pull request: they need a GPU and the replay cache .frame-cache/
+   (gitignored, recorded third-party tiles), so a CI runner would measure a map that never drew — the reason
+   this file has never gated a runtime number (docs/TESTING.md «What is deliberately NOT in this gate»).
+   What CI CAN hold is held above (phone.bytes / phone.requests). The rest is WRITTEN DOWN by the two
+   instruments that measure it — scripts/frame-profile.mjs --boot --ledger and scripts/mobile-trace.mjs
+   --ledger — into tests/perf-phone-ledger.json, with the commit and the profile it was taken on, and every
+   check:perf run prints it beside the gated rows, saying how old it is. A record that does not say which
+   tree it measured is a photograph with no date ([[intmap-discovered-list-is-a-photograph]]). */
+export const PHONE_LEDGER = join(ROOT, 'tests', 'perf-phone-ledger.json');
+const LEDGER_NOTE = "IntMap · the phone's runtime numbers (390x844, iPhone user agent, CPU x4, replayed third-party bytes). Written by scripts/frame-profile.mjs --boot --ledger and scripts/mobile-trace.mjs --ledger; printed by npm run check:perf; NOT a gate (needs a GPU and .frame-cache/). docs/TESTING.md.";
+export function readPhoneLedger(p = PHONE_LEDGER) { try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return null; } }
+export function writePhoneLedger(section, data, p = PHONE_LEDGER) {
+  const cur = readPhoneLedger(p) || {};
+  const out = { _: LEDGER_NOTE };
+  for (const k of Object.keys(cur)) if (k !== '_') out[k] = cur[k];
+  /* a measurement of an uncommitted tree names the commit it sits on AND says it was not that commit */
+  const head = gitIn(ROOT, ['rev-parse', '--short', 'HEAD']);
+  const dirty = !!gitIn(ROOT, ['status', '--porcelain', '--untracked-files=no']);
+  out[section] = Object.assign({ measuredAt: new Date().toISOString().slice(0, 10), commit: head && dirty ? head + '+uncommitted' : head }, data);
+  writeFileSync(p, JSON.stringify(out, null, 2) + '\n');
+  return out[section];
+}
+/** the ledger as printed lines (empty when there is none) */
+export function phoneLedgerLines(L, head = gitIn(ROOT, ['rev-parse', '--short', 'HEAD'])) {
+  if (!L) return [];
+  const age = (x) => (x && x.commit && head && x.commit !== head ? ` — measured on ${x.commit} (${x.measuredAt}), not this tree` : (x ? ` — ${x.measuredAt}` : ''));
+  const out = [];
+  if (L.boot) {
+    const b = L.boot;
+    out.push(`boot: interactive ${b.readyMs} ms · first draw ${b.firstDrawMs} ms · long tasks ${b.longTasks.n50}≥50 ms, total ${b.longTasks.totalMs} ms, max ${b.longTasks.maxMs} ms · before ready ${b.beforeReady.requests} requests / ${b.beforeReady.kB} kB${age(b)}`);
+  }
+  if (L.interaction && L.interaction.phases) {
+    for (const [p, x] of Object.entries(L.interaction.phases)) out.push(`${p}: ${x.fps} fps · ${x.over16_7Pct}% of frames over 16.7 ms · ${x.missedVsyncPct}% missed a vsync · worst ${x.worstFrameMs} ms · lat p95 ${x.latP95 ?? '—'} ms${age(L.interaction)}`);
+  }
+  return out;
+}
 /** The commit a dist/ was built from: the sha in its build stamp, or null when it carries none. */
 export function builtFrom(distDir = DIST) {
   const f = join(distDir, 'index.html');
@@ -293,6 +391,9 @@ export function metrics(m, b) {
     add('chunk', ['async', 'chunks', name], 'bytes', mc[name], bc[name]);
   }
   for (const k of ['total', 'data', 'assets']) add('dist', ['dist', k], 'bytes', m.dist[k], b.dist[k]);
+  /* (mobile-performance) the phone's boot-stage files — only where either side has them, so a synthetic
+     report without a plan is not «not measured» */
+  if (m.phone || b.phone) for (const k of ['bytes', 'requests']) add('phone', ['phone', k], k, m.phone ? m.phone[k] : null, b.phone ? b.phone[k] : null);
   return out;
 }
 const label = (x) => (x.section === 'chunk' ? `async chunk "${x.path[2]}"` : x.path.join('.'));
@@ -321,7 +422,7 @@ const due = (x) => x.v != null && x.ceil != null && x.ceil - x.v > band(x.key, x
 export function judge(m, b) {
   const errors = [], notes = [], rows = [], loose = [];
   let section = null, slackest = null;
-  const titles = { eager: 'EAGER — start-up', async: 'ASYNC — totals', chunk: 'ASYNC — per chunk (rows over their ceiling)', dist: 'DEPLOY — dist/' };
+  const titles = { eager: 'EAGER — start-up', async: 'ASYNC — totals', chunk: 'ASYNC — per chunk (rows over their ceiling)', dist: 'DEPLOY — dist/', phone: 'PHONE — files read at boot (js/boot-stage.js)' };
   for (const x of metrics(m, b)) {
     if (x.section !== section) { section = x.section; rows.push([titles[section], null, null]); }
     if (x.ceil == null) { notes.push(`new ${label(x)} (${fmt(x.key, x.v)}) — main's CI records its ceiling after the merge`); continue; }
@@ -341,6 +442,7 @@ export function judge(m, b) {
     }
   }
   for (const e of localeErrors(m.eagerLocales)) errors.push(e);
+  for (const e of (m.bootPlanErrors || [])) errors.push(e);
   const dueN = loose.filter((l) => l.due).length;
   if (dueN) notes.push(`${dueN} ceiling(s) sit more than their band above this build — green: main's CI lowers them after the merge (.github/workflows/perf-ceiling.yml). Nothing to edit here.`);
   return { errors, notes, rows, loose, slackest };
@@ -417,6 +519,9 @@ function main() {
   for (const l of dueRows.slice(0, 8)) console.log(`    ${l.what}: ${fmt(l.key, l.v)} under ${fmt(l.key, l.ceil)} (−${fmt(l.key, l.by)})`);
   if (dueRows.length > 8) console.log(`    … and ${dueRows.length - 8} more`);
 
+  /* (mobile-performance) the runtime half, recorded and printed — never judged here */
+  const _pl = phoneLedgerLines(readPhoneLedger());
+  if (_pl.length) { console.log('\n  PHONE — recorded, not gated (tests/perf-phone-ledger.json):'); for (const l of _pl) console.log('    ' + l); }
   if (m.eagerLocales) console.log(`  eager locales: ${Object.entries(m.eagerLocales).map(([c, n]) => `ui.${c} ${kb(n)}`).join(', ') || '(none)'}`);
   for (const n of notes) console.log(`\n  note: ${n}`);
   /* (perf-measure-parity) a verdict about a tree CI will not build is said to be one. It does not change

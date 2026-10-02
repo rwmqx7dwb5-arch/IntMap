@@ -553,7 +553,7 @@
     },
     {
       "host": "cdn.jsdelivr.net",
-      "what": "jsDelivr CDN: open datasets from GitHub (Natural Earth, time zones, OpenTrafficCamMap, Japanese municipalities, Taiwan towns) and the Open-Meteo weather-map layer fallback",
+      "what": "jsDelivr CDN: open datasets from GitHub (Natural Earth time zones and admin-1, OpenTrafficCamMap, Japanese municipalities, Taiwan towns) and the Open-Meteo weather-map layer fallback",
       "sends": {
         "code": "nothing",
         "detail": "the request itself"
@@ -563,7 +563,7 @@
         "jp": "jsDelivr CDN"
       },
       "probe": {
-        "url": "https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_110m_admin_0_countries.geojson"
+        "url": "https://cdn.jsdelivr.net/gh/AidanWelch/OpenTrafficCamMap@362223187b5b00b87d78cb8a321e25dbb89aae32/cameras/USA.json"
       }
     },
     {

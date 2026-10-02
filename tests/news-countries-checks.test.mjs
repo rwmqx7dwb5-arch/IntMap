@@ -189,7 +189,11 @@ async function runLoader({ coarse, fine }) {
      loads it in the same order. Without it every row is built with a null footprint — which
      is what ③ and ⑤ below catch. */
   await importModule('js/country-extent.js', { globals });
-  const M = await importModule('js/countries-ui.js', { globals, mocks: { 'js/geo-engine.js': { IntMapGeoEngine: GEO } } });
+  /* (mobile-performance) the three Natural Earth files are this site's now and come through js/ne-countries.js
+     (the data door + the lossless decoder); this harness answers that seam with the same bodies, by scale */
+  const neCountries = { loadNECountries: async (scale) => { const r = await env.fetch('data/ne-countries/ne_' + scale + '_admin_0_countries.json.gz');
+    if (!r.ok) throw Object.assign(new Error('http ' + r.status), { reason: 'http' }); return r.json(); } };
+  const M = await importModule('js/countries-ui.js', { globals, mocks: { 'js/geo-engine.js': { IntMapGeoEngine: GEO }, 'js/ne-countries.js': neCountries } });
   const mod = M.countriesUi(HOST);
   await mod.loadCountryData();
   return { HOST, win, calls, fetched, mod };
@@ -551,7 +555,11 @@ async function runLoader({ coarse, fine }) {
   /* (module-graph) imported as in #R375's harness above: the stubs are the browser, the renderer is the mock */
   const globals = { window: win, document: env.document, turf: env.turf, fetch: env.fetch, navigator: env.navigator,
     requestIdleCallback: env.requestIdleCallback, localStorage: env.localStorage };
-  const M = await importModule('js/countries-ui.js', { globals, mocks: { 'js/geo-engine.js': { IntMapGeoEngine: GEO } } });
+  /* (mobile-performance) the three Natural Earth files are this site's now and come through js/ne-countries.js
+     (the data door + the lossless decoder); this harness answers that seam with the same bodies, by scale */
+  const neCountries = { loadNECountries: async (scale) => { const r = await env.fetch('data/ne-countries/ne_' + scale + '_admin_0_countries.json.gz');
+    if (!r.ok) throw Object.assign(new Error('http ' + r.status), { reason: 'http' }); return r.json(); } };
+  const M = await importModule('js/countries-ui.js', { globals, mocks: { 'js/geo-engine.js': { IntMapGeoEngine: GEO }, 'js/ne-countries.js': neCountries } });
   const mod = M.countriesUi(HOST);
   await mod.loadCountryData();
   return { HOST, mod };

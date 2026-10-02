@@ -781,6 +781,12 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
   served by the `ais-feed` Edge Function and the browser never connects to aisstream.io.
   ⚠ The CSP's `connect-src` admits `wss:` for any host, so it does not by itself bound WebSocket
   recipients; the ledger is what does.
+- **(mobile-performance) The country outlines are shipped, not asked for.** Natural Earth's admin-0
+  countries (110 m / 50 m / 10 m) used to be read from `cdn.jsdelivr.net` at `@master` — a moving branch
+  on a host this site does not answer for, whose bytes became the country table, the outline layer and
+  the country hit-test. They are `data/ne-countries/` now, built from one pinned commit
+  (`scripts/build-ne-countries.mjs`, lossless — the build proves the decode equals the upstream file).
+  jsDelivr is still a recipient (time zones, admin-1, other open datasets), so its ledger row stays.
 - **(#R533) Company logos are shipped, not asked for.** The Companies tab used to name a
   third-party logo API (`logo.clearbit.com`) once per company, which both told that host which
   companies a reader was looking at and, after the service was shut down on 2025-12-08, produced

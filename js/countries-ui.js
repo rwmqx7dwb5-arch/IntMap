@@ -35,6 +35,8 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTables } from './tables.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+/* (mobile-performance) the Natural Earth admin-0 files are this site's (data/ne-countries/) — js/ne-countries.js decodes them */
+import { loadNECountries } from './ne-countries.js';
 window._imCldrRegion=function(a2,lang){
   try{
     /* ⚠ (#R313 追記2) 追記1 widened this to accept M49 codes so the Atlas chips could name a
@@ -299,7 +301,13 @@ export function countriesUi(HOST){
            browser is idle, replacing the geometry WITHOUT disturbing the records (see upgrade below).
            The 10 m outline still ends up in `countryGeo`, so hit-testing, the silhouette quiz and the
            projection viewer are exactly as precise as before; they simply are not what boot pays for. */
-        const NE='https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/';
+        /* ══ (mobile-performance) …AND THE THREE FILES ARE THIS SITE'S NOW, AT ONE PINNED COMMIT ══════════════════
+           They were read from cdn.jsdelivr.net at `@master` — a moving branch on a host this site does not answer for —
+           and the 10 m one was 4.34 MB on the wire (MEASURED in production on a phone, 2026-10-02). They are
+           data/ne-countries/ now (scripts/build-ne-countries.mjs): the same pinned upstream, properties verbatim and
+           coordinates delta-encoded LOSSLESSLY (the build asserts the decode is deep-equal to the upstream file), 2.81 MB
+           for the 10 m, inflated and parsed on the data door's thread and decoded in slices. js/ne-countries.js is the
+           one decoder. */
         /* ⚠ (fetch-deadline-layer) A READ WITH NO END MADE THIS LOADER WAIT FOR EVER. `grab` was a bare fetch, so a jsDelivr
            connection that stopped answering never reached the 50 m rung, never reached the #R40 retry below (which only runs
            when this promise SETTLES), and left `countryDataPromise` pending — every Countries click awaiting it, for the
@@ -308,11 +316,11 @@ export function countriesUi(HOST){
            (published by js/fetch-deadline.js with the host table's `clockFor`) and not an import, because this file
            must stay a classic script — several node harnesses run it with `new Function` (tests/shell-data-layers-checks.test.mjs #R453 ⑤). `grabFail` keeps WHY the last rung failed, so a load that
            reached nothing says so (below) instead of looking exactly like a load that is still coming. */
-        const grab=async(f)=>{ try{ const FW=window.IntMapFetchWithin; return await FW.jsonWithin(NE+f,FW.clockFor(NE+f),undefined,{idle:true}); }catch(e){ grabFail=(e&&e.reason)||'network'; grabErr=e; } return null; };
+        const grab=async(scale)=>{ try{ return await loadNECountries(scale); }catch(e){ grabFail=(e&&e.reason)||'network'; grabErr=e; } return null; };
         let coarse=true;
-        gj=await grab('ne_110m_admin_0_countries.geojson');
-        if(!(gj&&gj.features)) gj=await grab('ne_50m_admin_0_countries.geojson');
-        if(!(gj&&gj.features)){ gj=await grab('ne_10m_admin_0_countries.geojson'); coarse=false; }
+        gj=await grab('110m');
+        if(!(gj&&gj.features)) gj=await grab('50m');
+        if(!(gj&&gj.features)){ gj=await grab('10m'); coarse=false; }
         if(gj&&gj.features){
           HOST.countryGeo=gj; window.countryGeo=HOST.countryGeo;   /* reused by the projection viewer (#16,#17) */
           /* ══ ⚠⚠⚠ (#R426) TWO BOXES, BECAUSE THEY ANSWER TWO DIFFERENT QUESTIONS ═════════════
@@ -444,7 +452,7 @@ export function countriesUi(HOST){
              file could stand in for the rows in the first place. */
           if(coarse){
             const upgrade=async()=>{
-              const hi=await grab('ne_10m_admin_0_countries.geojson');
+              const hi=await grab('10m');
               if(!(hi&&hi.features&&hi.features.length)) return;
               /* ⚠ (#R195) IN CHUNKS, WITH A YIELD. This walks ~548,000 vertices and runs turf.area on
                  every feature; as one loop it is a single long task, and it lands 4-10 s after boot —
@@ -530,8 +538,15 @@ export function countriesUi(HOST){
                  fallback for the boot window before `_imPhoneClass` is published. */
               try{ if(window.IntMapMemBudget.deviceIsPhone(HOST.isMobile)) slow=true; }
               catch(_){ try{ if(HOST.isMobile&&HOST.isMobile()) slow=true; }catch(__){} }
-              const run=()=>{ upgrade().catch(()=>{}); };
-              if(slow) setTimeout(run,15000);              /* on Data Saver the 4.3 MB is a real cost */
+              let ran=false; const run=()=>{ if(ran) return; ran=true; upgrade().catch(()=>{}); };
+              /* (mobile-performance) …AND ON A PHONE THE ZOOM SAYS WHEN THE OUTLINE IS WORTH ITS BYTES. The 110 m
+                 outline is indistinguishable from the 10 m one on a 390-pixel globe; it is not at country scale,
+                 where a tap near a border is resolved against this geometry. So the first time the camera
+                 settles at z ≥ 4 the upgrade starts at once instead of waiting out the timer — the same upgrade,
+                 sooner, exactly where it shows. The timer below still guarantees it either way. */
+              if(slow){ try{ const E=GE(); const z=()=>{ try{ return E.camera.getZoom(); }catch(_){ return 0; } };
+                  if(z()>=4) run(); else { const onEnd=()=>{ if(z()>=4){ try{ E.events.off('moveend',onEnd); }catch(_){} run(); } }; E.events.on('moveend',onEnd); } }catch(_){} }
+              if(slow) setTimeout(run,15000);              /* on Data Saver the 10 m file (2.8 MB since mobile-performance; 4.3 MB from the CDN) is a real cost */
               else if(typeof requestIdleCallback==='function') requestIdleCallback(run,{timeout:6000});
               else setTimeout(run,3000); };
             let started=false; const once=()=>{ if(started) return; started=true; go(); };

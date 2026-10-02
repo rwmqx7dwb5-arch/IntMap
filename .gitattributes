@@ -45,6 +45,7 @@
 # ledgers
 tests/perf-baseline.json                 merge=intmap-generated intmap-merge=json intmap-clash=upstream intmap-clash-by=scripts/perf-budget.mjs intmap-regen=!npm,run,build,&&,node,scripts/perf-budget.mjs,--update
 tests/durations.json                     merge=intmap-generated intmap-merge=json intmap-clash=upstream
+tests/perf-phone-ledger.json             merge=intmap-generated intmap-merge=json intmap-clash=upstream
 tests/global-surface-baseline.json       merge=intmap-generated intmap-merge=json intmap-clash=sum
 tests/control-names-baseline.json        merge=intmap-generated intmap-merge=json intmap-clash=sum
 tests/data-effect-baseline.json          merge=intmap-generated intmap-merge=json intmap-clash=sum

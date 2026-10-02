@@ -228,9 +228,12 @@ test('R195 ④: the satellite protocol lives in js/sat-proto.js and nowhere else
 
 /* ── ⑤ boot: the 4.3 MB geometry is no longer what the first seconds pay for ──────────────────── */
 test('R195 ⑤: the country table loads coarse-first and upgrades the geometry at idle', () => {
-  assert.match(countries, /gj=await grab\('ne_110m_admin_0_countries\.geojson'\)/,
-    'the rows come from the small file');
-  assert.match(countries, /grab\('ne_10m_admin_0_countries\.geojson'\)[\s\S]{0,200}?if\(!\(hi&&hi\.features/,
+  /* (mobile-performance) the three scales are this site's now (data/ne-countries/), read through
+     js/ne-countries.js; \`grab\` takes the SCALE, and the coarsest is the first one it is asked for */
+  assert.match(countries, /const grab=async\(scale\)=>\{ try\{ return await loadNECountries\(scale\);/,
+    'the rungs read the shipped files through js/ne-countries.js');
+  assert.match(countries, /gj=await grab\('110m'\)/, 'the rows come from the small file');
+  assert.match(countries, /grab\('10m'\)[\s\S]{0,200}?if\(!\(hi&&hi\.features/,
     'the 10 m geometry still arrives');
   assert.match(countries, /requestIdleCallback\(run,\{timeout:6000\}\)/, 'and it waits for an idle main thread');
   /* ⚠ MERGE, DO NOT REPLACE: countryStats records are enriched in place by the PPP pass, the

@@ -551,6 +551,30 @@ instrument below. ⚠ That instrument needs `.frame-cache/`, which is gitignored
 third-party tiles, so it is a LOCAL measurement: a CI runner with an empty cache would block every
 external request and measure a map that never drew.
 
+### Gating: what a PHONE reads before it can be touched — the boot plan (mobile-performance)
+
+`js/boot-stage.js` declares, for every shipped file the start-up path can reach, **who reads it and
+when a phone does**: `boot` (while the launch screen is up), `settled` (after it lifts, one read per
+idle period, in the order asked) or `need` (only when a reader asks). Every other device reads every
+row at `boot`, so a desktop starts as it did. `check:perf` judges the declaration from two sides,
+offline:
+
+* **complete** — every `data/…` string literal in every source module of the EAGER graph (comments
+  stripped by `scripts/code-only.mjs`) must match a plan row; a row that names no file in `dist/` fails
+  too (`shipped: false` states a file the code names and the site does not ship);
+* **a ceiling** — the bytes and count of the rows a phone reads at `boot` are rows `phone.bytes` /
+  `phone.requests`, ratcheted like `eager.*` (`requests` is a count: band 0).
+
+What a static gate cannot see — that a `settled` row really is read after the launch screen lifts — is
+measured, not gated: `node scripts/frame-profile.mjs --boot --detail` prints every request a phone
+started before the ready mark (on the PAGE's clock — the harness's wall clock lags by its polling) and
+lists, under PLAN, each undeclared `data/` read and each row read earlier than its stage.
+The runtime numbers (interactive time, long tasks, the share of frames over 16.7 ms while a finger
+moves the map) are written by `frame-profile.mjs --boot --ledger` and `mobile-trace.mjs --ledger` into
+`tests/perf-phone-ledger.json` with the commit and profile they were taken on; `check:perf` prints
+them beside the gated rows and says when they were measured on another tree. They are a RECORD: they
+need a GPU and `.frame-cache/`, which CI does not have.
+
 ### Gating: the other half of the deploy — `npm run check:assets` (#R322)
 
 The budget above weighs what the bundler produced. That is the smaller half: JavaScript is 12.5 MB of a
@@ -590,6 +614,8 @@ node scripts/frame-profile.mjs --boot --record                 # once, to fill t
 node scripts/frame-profile.mjs --boot --net fast4g             # start-up, iPhone-13 profile, CPU/4
 node scripts/frame-profile.mjs --sweep --sat                   # frame time over a zoom + hover sweep
 node scripts/frame-profile.mjs --boot --desktop --cpu 1        # …or the desktop profile
+node scripts/frame-profile.mjs --boot --detail                 # (mobile-performance) + requests before ready, the boot plan, long frames by script
+node scripts/frame-profile.mjs --boot --ledger                 # …and write the phone's boot numbers to tests/perf-phone-ledger.json
 node scripts/frame-profile.mjs --mem --cycles 10               # heap/nodes/listeners over open-close cycles
 node scripts/frame-profile.mjs --commands                      # (#R322) renderer commands per phase
 node scripts/frame-profile.mjs --commands --skip sourceData    # …the other arm of the same build
@@ -653,6 +679,7 @@ node scripts/mobile-trace.mjs --engine webkit --reps 1
 node scripts/mobile-trace.mjs --cpu 4 --engine chromium   # the historical throttled profile
 node scripts/mobile-trace.mjs --verify             # + the CDP sampler cross-check
 node scripts/mobile-trace.mjs --attribute --reps 1 # + WHO asked for each layout read
+node scripts/mobile-trace.mjs --cpu 4 --engine chromium --ledger   # (mobile-performance) finger phases → tests/perf-phone-ledger.json
 ```
 
 One continuous trace per rep — **boot → settle → pan-first → zoom-first → warm-up → pan-warm →

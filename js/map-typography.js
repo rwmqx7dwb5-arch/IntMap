@@ -207,7 +207,15 @@ window.IntMapMapTypography = (function () {
      the UI until the map is ready. What this does NOT fix: MapLibre's TinySDF keeps a CJK glyph it
      rasterised before the face arrived — a race the lazily fetched font files already had, which
      moves the rule sheet's arrival into it too (dev-notes/2026-09-30-startup-lazy-layers.md). */
-  const WEB_FONT_WEIGHTS = '400;500;600;700';   /* the weights index.html requested since #R242 */
+  /* the weights index.html requested since #R242 — 400 to 700 — asked for as the RANGE of one variable face.
+     ⚠ (mobile-performance) THE FILES WERE ALREADY ONE; THE RULES WERE FOUR. MEASURED 2026-10-02 (the css2 URL
+     this built, an iPhone user agent): `wght@400;500;600;700` answers 496 @font-face rules for Noto Sans JP
+     (458,744 bytes) over 124 DISTINCT file URLs — Google serves the variable font for every static weight, so
+     each subset file was declared four times, once per weight, and a page that drew one character in four
+     weights could fetch the same subset under four faces. `wght@400..700` answers 124 rules (115,182 bytes;
+     SC 113,332, TC 125,340) naming the SAME 124 files with `font-weight: 400 700`: the same glyphs and the
+     same instances at 400/500/600/700, a quarter of the rule sheet to parse, one face per subset. */
+  const WEB_FONT_WEIGHTS = '400..700';
   function _declared(family) {
     try {
       const fs = document.fonts; if (!fs || typeof fs.forEach !== 'function') return false;
