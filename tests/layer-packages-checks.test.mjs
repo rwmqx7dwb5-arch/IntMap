@@ -140,7 +140,7 @@ test('layer-packages ④ the gate holds here and refuses a branch, a line, a win
   const cases = [
     ['a new row switched by name', (t) => at(t, ON, "        else if(id==='zzprobe'){ req=null; }\n"), /switch the row `zzprobe` by name/],
     ['a packaged row switched by name', (t) => at(t, ON, "        else if(id==='radar'){ req=null; }\n"), /`radar` is implemented by js\/layer-pkg-radar\.js/],
-    ['a line more', (t) => t.replace('\n', '\n\n'), /lines, the ledger allows/],
+    ['a line more', (t) => '\n' + t, /lines, the ledger allows/],
     ['a window assignment more', (t) => at(t, '    function toggleLayer(id,on){', '    window.__zzProbe=1;\n'), /assignments to window\.\*, the ledger allows/],
     ['a line fewer, ledger not lowered', (t) => t.replace(/\n\s*\/\* the reads js\/layer-previews\.js asks for[^\n]*\n/, '\n'), /lines, the ledger still says .* lower it/],
   ];
@@ -150,7 +150,7 @@ test('layer-packages ④ the gate holds here and refuses a branch, a line, a win
     assert.match(r.out, want, what);
   }
   /* --update lowers and never raises */
-  const up = S.mutate([{ file: dl, edit: (t) => t.replace('\n', '\n\n') }, { file: 'tests/data-layers-baseline.json', edit: (t) => t }], () => run(['--update']));
+  const up = S.mutate([{ file: dl, edit: (t) => '\n' + t }, { file: 'tests/data-layers-baseline.json', edit: (t) => t }], () => run(['--update']));
   assert.equal(up.code, 1); assert.match(up.out, /refusing to raise/);
 });
 

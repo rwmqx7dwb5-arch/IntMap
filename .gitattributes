@@ -51,6 +51,7 @@ tests/data-effect-baseline.json          merge=intmap-generated intmap-merge=jso
 tests/fetch-deadline-baseline.json       merge=intmap-generated intmap-merge=json intmap-clash=sum
 tests/keyboard-reach-baseline.json       merge=intmap-generated intmap-merge=json intmap-clash=sum
 tests/output-taint-baseline.json         merge=intmap-generated intmap-merge=json intmap-clash=sum
+tests/data-layers-baseline.json          merge=intmap-generated intmap-merge=json intmap-clash=sum
 tests/ui-owners-baseline.json            merge=intmap-generated intmap-merge=json intmap-clash=sum
 tests/z-layers-baseline.json             merge=intmap-generated intmap-merge=json intmap-clash=sum
 tests/i18n-coverage-floor.json           merge=intmap-generated intmap-merge=json intmap-clash=sum
