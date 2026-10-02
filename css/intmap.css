@@ -1313,6 +1313,22 @@
     .ntl-lapse-loop{ display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--text-main); margin-left:auto; cursor:pointer; }
     .ntl-lapse-status{ min-height:14px; font-size:10.5px; line-height:1.4; color:var(--text-muted); font-variant-numeric:tabular-nums; }
     .ntl-lapse-note{ font-size:10.5px; line-height:1.4; color:var(--text-muted); }
+    /* (timelapse-video-export) the export row beside the lapse (js/time-lapse.js mounts it, js/map-recorder.js fills it): the
+       lapse's own vocabulary — hairline, segmented .ntl-modes, the transport's filled primary — and a preview of the frame
+       exactly as it will be written (its crop, its year, its credit). */
+    .ntl-rec{ margin-top:8px; padding-top:8px; border-top:1px solid rgba(128,128,128,0.18); display:flex; flex-direction:column; gap:6px; }
+    .ntl-rec[hidden], .ntl-rec [hidden]{ display:none; }
+    .ntl-rec .ntl-mode{ padding:4px 9px; font-size:11px; font-variant-numeric:tabular-nums; }
+    .ntl-rec .ntl-mode:disabled{ opacity:0.4; cursor:default; }
+    .ntl-rec-open, .ntl-rec-btn{ display:inline-flex; align-items:center; justify-content:center; height:30px; padding:0 12px; border-radius:9px;
+      border:1px solid rgba(128,128,128,0.28); background:var(--input-bg); color:var(--text-main); font-size:12px; font-weight:600; cursor:pointer; text-decoration:none; }
+    .ntl-rec-open{ align-self:flex-start; }
+    .ntl-rec-primary{ background:var(--primary-fill); border-color:transparent; color:#fff; }
+    .ntl-rec-btn:disabled{ opacity:0.4; cursor:default; }
+    .ntl-rec-open:active, .ntl-rec-btn:active{ transform:scale(0.97); }
+    .ntl-rec-preview{ display:block; width:auto; height:auto; max-width:100%; max-height:150px; align-self:flex-start; border-radius:8px; background:#0b0d12; box-shadow:0 1px 4px rgba(0,0,0,0.18); }
+    .ntl-rec-progress{ width:100%; height:6px; accent-color:var(--primary-fill); }
+    .ntl-rec-credits{ flex:1 1 100%; }
     /* (#11) bigval fills the left (fixed body width) so the "現在へ戻る" button never shifts as the date text length
        changes ("Dateスライダーを動かすと…激しくUIが動いてしまう"); and the value is NOT bold ("太字にするな"). */
     .ntl-valrow{ display:flex; align-items:center; gap:10px; margin:0; }

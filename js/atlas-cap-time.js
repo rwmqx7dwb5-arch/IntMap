@@ -60,11 +60,15 @@ export default [
     row: ['time.lapse',                 'timeLapse',      'playTime,playYears',                                          'time',    'timeView', 'time,time.lapse',        'time',                'session', 'none',   '',         ''],
     /* (time-compare-lapse) THE CLOCK PLAYED FORWARD — js/time-lapse.js: from a start to an end (default: the present) by
        a step in years, days or hours, one DRAWN frame at a time (a frame waits for the map to draw it). `play:false`
-       stops it where it is. Layers begin and stop being drawn as their sources begin and stop stating the instants. */
+       stops it where it is. Layers begin and stop being drawn as their sources begin and stop stating the instants.
+       (timelapse-video-export) `record:true` writes the same run to a video (js/map-recorder.js) — one video frame per drawn
+       instant, the year, the data credits and the IntMap link burned into every frame — in a `size` (square · landscape ·
+       portrait) and a `format` (mp4 · webm, the first the browser can record when none is asked); the Chronos panel shows
+       the progress and offers Save when it ends. */
     doc: [
-      { in: 'time-compare', at: 20, text: '{"type":"timeLapse","from":YEAR|"YYYY-MM-DD","to"?:YEAR|"YYYY-MM-DD" (default: the present),"unit"?:"year"|"day"|"hour","step"?:int,"fps"?:0.5|1|2|4,"loop"?:bool} = PLAY the main map\'s clock from "from" to "to" by "step" units, one frame per instant, each frame held until the map has drawn it (tiles in, layers judged, borders of that instant on screen) — layers begin and stop being drawn as their sources begin and stop stating the instants; {"type":"timeLapse","play":false} stops it where it is. Use for 「1900年から1950年まで国境の変化を再生して」 / 「比較ウィンドウを1914年にして」. The current window instant and the lapse state are in the map state.' },
+      { in: 'time-compare', at: 20, text: '{"type":"timeLapse","from":YEAR|"YYYY-MM-DD","to"?:YEAR|"YYYY-MM-DD" (default: the present),"unit"?:"year"|"day"|"hour","step"?:int,"fps"?:0.5|1|2|4,"loop"?:bool} = PLAY the main map\'s clock from "from" to "to" by "step" units, one frame per instant, each frame held until the map has drawn it (tiles in, layers judged, borders of that instant on screen) — layers begin and stop being drawn as their sources begin and stop stating the instants; {"type":"timeLapse","play":false} stops it where it is. Add "record":true (with "size"?:"square"|"landscape"|"portrait" — 1080×1080, 1920×1080, 1080×1920 — and "format"?:"mp4"|"webm") to WRITE THE SAME RUN TO A VIDEO the reader can save and post: one video frame per drawn instant (never a half-drawn or blank one), held for 1/fps; the instant, the data credits and the IntMap link are burned into every frame; the Chronos panel opens, shows the progress and offers Save (and Share where the device can) when the run ends — a stop before the end keeps nothing. Frame the region first (move the camera), then record: 「1900〜1950年のヨーロッパのタイムラプスを動画にして」 = the camera on Europe, then {"type":"timeLapse","from":"1900","to":"1950","record":true} (from/to are strings, a year or a date); 「縦長の動画で」 = size:"portrait". Use for 「1900年から1950年まで国境の変化を再生して」 / 「比較ウィンドウを1914年にして」. The current window instant and the lapse state are in the map state.' },
     ],
-    schema: () => ({ type: 'object', properties: { play: bool(), from: str(), to: str(), year: int(), toYear: int(), unit: str(), step: int(), fps: num(), loop: bool() } }),
+    schema: () => ({ type: 'object', properties: { play: bool(), from: str(), to: str(), year: int(), toYear: int(), unit: str(), step: int(), fps: num(), loop: bool(), record: bool(), size: str(), format: str() } }),
     async run(a, dctx, K) { return lapse(a, K); },
   },
 ];
@@ -109,11 +113,36 @@ async function lapse(a, K) {
   if (a.play === false) { const s = TL.stopLapse('stopped'); return R(true, note('✓ ' + L('Time-lapse stopped at ', 'タイムラプスを停止: ') + esc(s.at || L('now', '現在'))), { want: { lapse: { playing: false } }, lapse: s }); }
   const from = a.from != null && a.from !== '' ? a.from : (a.year != null ? Math.round(+a.year) : null);
   const to = a.to != null && a.to !== '' ? a.to : (a.toYear != null ? Math.round(+a.toYear) : undefined);
+  if (a.record) return record(a, from, to, TL, K);
   const s = TL.startLapse({ from, to, unit: a.unit, step: a.step, fps: a.fps, loop: a.loop });
   if (s.error === 'no-start') return R(false, warn('⚠ ' + L('Give the lapse a start (a year or a date)', 'タイムラプスの開始（年か日付）を指定してください')));
   if (s.error === 'empty-range') return R(false, warn('⚠ ' + L('The end is before the start', '終了が開始より前です')));
   const unitW = s.unit === 'year' ? L('year(s)', '年') : s.unit === 'day' ? L('day(s)', '日') : L('hour(s)', '時間');
   return R(true, note('✓ ' + L('Time-lapse playing', 'タイムラプスを再生中') + ': ' + esc(s.from) + ' → ' + esc(s.to || L('now', '現在')) + ' · ' + s.step + ' ' + unitW + ' · ' + s.rate + '×' + (s.loop ? ' · ' + L('loop', 'ループ') : '') + (s.reducedMotion ? ' · ' + L('reduced motion: slowest speed', '視差効果を減らす: 最も遅い速度') : '')), { want: { lapse: { playing: true } }, lapse: s });
+}
+
+/* (timelapse-video-export) THE LAPSE WRITTEN TO A VIDEO — the recorder sits in the Chronos panel's export row (js/time-lapse.js
+   `openRecorder`), which is where the reader watches the progress and saves the file, so the panel is opened first. */
+async function record(a, from, to, TL, K) {
+  const R = K.R, L = K.L, warn = K.warn, note = K.note, esc = K.esc;
+  if (from == null) return R(false, warn('⚠ ' + L('Give the lapse a start (a year or a date)', 'タイムラプスの開始（年か日付）を指定してください')));
+  try { const tl = document.getElementById('news-timeline'), tg = document.getElementById('ntl-toggle'); if (tl && tg && tl.classList.contains('collapsed')) tg.click(); } catch (_) { /* no panel: openRecorder says so */ }
+  const M = await TL.openRecorder();
+  if (!M) return R(false, warn('⚠ ' + L('The export row of the Chronos panel is not available', 'Chronos パネルの書き出し欄が使えません')));
+  const s = M.recordLapse({ from, to, unit: a.unit, step: a.step, fps: a.fps, size: a.size, format: a.format });
+  if (s.error) {
+    const why = s.error === 'unsupported' ? L('this browser cannot record video', 'このブラウザは動画を録画できません')
+      : s.error === 'busy' ? L('a recording is already running', '別の録画が進行中です')
+        : s.error === 'empty-range' ? L('the end is before the start', '終了が開始より前です')
+          : L('the lapse has no start', 'タイムラプスの開始がありません');
+    return R(false, warn('⚠ ' + L('Could not record: ', '録画できません: ') + esc(why)), { recording: s });
+  }
+  const l = TL.lapseState();
+  const unitW = l.unit === 'year' ? L('year(s)', '年') : l.unit === 'day' ? L('day(s)', '日') : L('hour(s)', '時間');
+  return R(true, note('✓ ' + L('Recording the time-lapse to a video', 'タイムラプスを動画に録画中') + ': ' + esc(l.from) + ' → ' + esc(l.to || L('now', '現在')) + ' · ' + l.step + ' ' + unitW
+    + ' · ' + (l.total != null ? l.total + ' ' + L('frames', 'コマ') + ' · ' : '') + s.w + '×' + s.h + ' ' + esc(String(s.ext).toUpperCase()) + ' · ' + l.fps + ' ' + L('frames/s', 'コマ/秒')
+    + ' — ' + L('each frame is written once the map has drawn it; the Chronos panel shows the progress and offers Save when it ends. The year, the data credits and the IntMap link are in every frame.', '地図が描き終えたコマだけを書き込みます。進み具合は Chronos パネルに出て、終わると保存できます。年・データの出典・IntMap のリンクはすべてのコマに入ります。')),
+  { want: { lapse: { playing: true } }, lapse: l, recording: s });
 }
 
 async function travel(a, dctx, K) { const L = K.L, R = K.R, note = K.note, warn = K.warn, ymdISO = K.ymdISO;

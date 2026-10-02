@@ -547,7 +547,12 @@ layer-time-kernel.js              **時刻 T の地図の機構** window.IntMapL
 time-lapse.js                     **タイムラプス**——メイン地図の時計を年／日／時の刻みで開始〜終了まで進める再生器。1 コマは
                                   描画が追いついてから（時間カーネルの判定・全タイル・その瞬間の国境）次へ進む。速度・ループ・
                                   prefers-reduced-motion（最遅に固定）。UI は Chronos パネル #ntl-lapse（news-timeline.js が初回に読む）、
-                                  Atlas `time.lapse` と状態 `lapseState()`
+                                  Atlas `time.lapse` と状態 `lapseState()`。録画のときはコマの受け手（sink）に描き終えたコマを渡す。
+                                  書き出し欄 #ntl-rec を置き、開いたときに map-recorder.js を読む（`openRecorder`）
+map-recorder.js                   **タイムラプスの動画書き出しと、比較の 1 枚画像**——1 つの合成器（地図・その瞬間・出典・語標と
+                                  リンク）。描き終えたコマだけを MediaRecorder に 1/fps ずつ書く（地図を待つ間は録画を止める）。
+                                  出典は描いている層の典拠と #map-credit から（`drawnCredits`）、切らずに折り返す（`layoutFrame`）。
+                                  遅延チャンク（Chronos の書き出し欄か Atlas `time.lapse` record:true が読む）
 notify.js                         **通知の唯一の実装** `notify`（window.IntMapNotify）。1 つの要素 #ai-toast・1 つの時計・
                                   role=status（polite）と role=alert（assertive）の 2 声を持つ 1 つの live region。同じ文の
                                   表示中の重複は読み上げ直さない。aiToast / satToast / imToast / _toast / toast / majorToast はここへ委譲

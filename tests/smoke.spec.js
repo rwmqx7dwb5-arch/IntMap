@@ -5,6 +5,7 @@
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
+import { readdirSync } from 'node:fs';
 
 // Critical globals that MUST exist for the app to be functional. (The page defines ~60
 // window.IntMap* modules; these are the load-bearing ones checked as a boot signal.)
@@ -2480,6 +2481,144 @@ test('time-compare-lapse ② the time-lapse plays one drawn frame per year, and 
     await page.evaluate((was) => { try { window.IntMapTime.setNow({ source: 'ui' }); } catch (_) { /* live */ }
       const cb = document.getElementById('dl-climate'); if (cb && cb.checked !== was) { cb.checked = was; cb.dispatchEvent(new Event('change', { bubbles: true })); }
       const x = document.getElementById('ntl-x'); if (x && !document.getElementById('news-timeline').classList.contains('collapsed')) x.click(); }, ticked);
+  }
+});
+
+/* ══ (timelapse-video-export) THE TIME-LAPSE AS A FILE, AND THE COMPARISON AS ONE PICTURE — on this suite's booted page ══
+   Not a spec of its own (docs/TESTING.md, the reason above). The node half (the sink, the layout, the credit rule, the
+   container) is tests/timelapse-video-export-checks.test.mjs; these ask Chromium what only it can answer — does the file
+   the reader saves DECODE, does it hold one frame per drawn instant (plus the one hold frame that gives the last instant
+   its time), and is the credit in its PIXELS. The recorder's own state is read from the same module instance the page
+   loaded — its chunk in the dist/ this suite serves (the resource timing list is not a register: it stops at 250
+   entries, and a Cesium page is past that before the recorder loads) — nothing is published on window for a test.
+   ① the export row records 1900→1903 (square, the default container); the decoded file is 1080×1080, has 4 + 1 frames,
+     and each credit line of the band is text on the band in the decoded frame; the credit names the borders' sources.
+   ② Atlas `time.lapse {record:true}` writes a portrait WebM; ③ the comparison window at 1914 beside the main map is one
+     1920×1080 PNG with both instants credited. */
+/* read when asked, not at load: the suite's web server builds dist/ after the spec files are collected */
+const tveChunk = () => readdirSync(new URL('../dist/assets/', import.meta.url)).find((f) => /^map-recorder-[^.]+\.js$/.test(f));
+const tveRecorder = () => page.evaluate(async (f) => (await import(new URL('./assets/' + f, document.baseURI).href)).recorderState(), tveChunk());
+const tveWaitDone = async (timeout) => {
+  await expect.poll(async () => { const s = await tveRecorder(); return s && s.phase; }, { timeout, intervals: [500] }).toMatch(/^(done|failed|cancelled)$/);
+  return tveRecorder();
+};
+/* decode the file the reader would save: frames presented while playing it through, its size, and — on its first frame —
+   whether each credit line is text on the band (bright strokes on the band's dark ground) and the band's bottom margin,
+   where no line is, is that dark ground with no strokes (the map shows through it at 18 %, so it is dark, not uniform) */
+const tveDecode = (s) => page.evaluate(async (s) => {
+  const blob = await (await fetch(s.url)).blob();
+  const out = { type: blob.type, bytes: blob.size };
+  const read = (src) => {
+    const c = document.createElement('canvas'); c.width = src.width || src.videoWidth; c.height = src.height || src.videoHeight;
+    const x = c.getContext('2d'); x.drawImage(src, 0, 0); return { w: c.width, h: c.height, d: x.getImageData(0, 0, c.width, c.height).data };
+  };
+  const luma = (im, x, y) => { const i = (y * im.w + x) * 4; return 0.2126 * im.d[i] + 0.7152 * im.d[i + 1] + 0.0722 * im.d[i + 2]; };
+  const inspect = (im) => {
+    const lines = s.band.lines.map((l) => {
+      let bright = 0, n = 0;
+      for (let y = l.y; y < l.y + l.h; y++) for (let x = l.x; x < l.x + l.w; x += 1) { n++; if (luma(im, x, y) > 150) bright++; }
+      return bright / n;
+    });
+    /* the band's bottom margin (below the last line): the band's ground — dark, and no stroke in it */
+    let sum = 0, bright = 0, n = 0;
+    for (let y = im.h - Math.round(s.band.h * 0.08); y < im.h - 2; y++) for (let x = 0; x < im.w; x += 3) { const v = luma(im, x, y); sum += v; if (v > 150) bright++; n++; }
+    return { lines, groundMean: sum / n, groundBright: bright / n };
+  };
+  if (s.kind === 'image') {
+    const img = new Image(); img.src = URL.createObjectURL(blob); await img.decode();
+    const im = read(img); return Object.assign(out, { w: im.w, h: im.h }, inspect(im));
+  }
+  const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.src = URL.createObjectURL(blob);
+  await new Promise((r, j) => { v.onloadedmetadata = r; v.onerror = () => j(new Error('the file does not decode: ' + (v.error && v.error.message))); });
+  out.w = v.videoWidth; out.h = v.videoHeight; out.duration = v.duration;
+  await new Promise((r) => { v.onseeked = r; v.currentTime = 0; });
+  Object.assign(out, inspect(read(v)));
+  const shown = []; const cb = (_, md) => { shown.push(md.mediaTime); v.requestVideoFrameCallback(cb); }; v.requestVideoFrameCallback(cb);
+  await v.play(); await new Promise((r) => { v.onended = r; setTimeout(r, 30_000); });
+  out.decoded = v.getVideoPlaybackQuality().totalVideoFrames; out.shown = shown.length;
+  return out;
+}, s);
+const tveBandIsText = (d) => {
+  for (const f of d.lines) { expect(f, 'a credit line of the band holds no text').toBeGreaterThan(0.02); expect(f, 'a credit line is a solid block, not text').toBeLessThan(0.7); }
+  expect(d.groundMean, 'the band\'s ground is not the dark band').toBeLessThan(70);
+  expect(d.groundBright, 'the band\'s margin has strokes in it').toBeLessThan(0.01);
+};
+
+test('timelapse-video-export ① the lapse is written to a file that decodes, one frame per drawn instant, with the credit in its pixels', async () => {
+  test.setTimeout(300_000);
+  try {
+    await page.evaluate(() => { window.__tveYears = []; window.IntMapTime.on((e) => { if (e.source === 'lapse') window.__tveYears.push(e.isLive ? 'now' : e.year); }); });
+    if (await page.evaluate(() => document.getElementById('news-timeline').classList.contains('collapsed'))) await page.click('#ntl-toggle');
+    await expect(page.locator('#ntl-lapse-play')).toBeVisible({ timeout: 30_000 });
+    await page.click('#ntl-lapse [data-unit="year"]');
+    await page.fill('#ntl-lapse-from', '1900');
+    await page.fill('#ntl-lapse-step', '1');   /* the page is shared: an earlier run (Atlas, step 10) leaves its step in the field */
+    await page.fill('#ntl-lapse-to', '1903');
+    await page.click('#ntl-lapse [data-fps="4"]');
+    await page.click('#ntl-rec-open');
+    await expect(page.locator('#ntl-rec-video')).toBeVisible({ timeout: 30_000 });
+    await page.click('#ntl-rec [data-size="square"]');
+    await page.click('#ntl-rec-video');
+    const s = await tveWaitDone(180_000);
+    expect(s.phase, JSON.stringify(s)).toBe('done');
+    expect(await page.evaluate(() => window.__tveYears)).toEqual([1900, 1901, 1902, 1903]);
+    expect(s.frames).toBe(4); expect(s.total).toBe(4); expect(s.encoded).toBe(5);
+    expect(s.instants).toEqual(['1900', '1901', '1902', '1903']);
+    /* 1900–1903 is answered by CShapes 2.0's day-dated sheets: the band credits them — and the base credit the page shows
+       (#map-credit), whichever base this page is on, is in the band or inside a fuller credit of the same source */
+    expect(s.credits.join(' | ')).toMatch(/CShapes/);
+    const base = (await page.locator('#map-credit').textContent()).replace(/\s+/g, ' ').trim();
+    expect(base.length).toBeGreaterThan(0);
+    expect(s.credits.some((c) => c.includes(base)), base + ' is not in ' + s.credits.join(' | ')).toBe(true);
+    await expect(page.locator('#ntl-rec-credits')).toContainText('CShapes');
+    expect(await page.locator('#ntl-rec-save').getAttribute('download')).toMatch(new RegExp('^intmap-timelapse-1900-1903-1080x1080\\.' + s.ext + '$'));
+    const d = await tveDecode(s);
+    expect([d.w, d.h]).toEqual([1080, 1080]);
+    expect(d.type).toBe(s.ext === 'mp4' ? 'video/mp4' : 'video/webm');
+    expect(d.decoded, 'decoded frames ≠ drawn instants + the hold').toBe(s.frames + 1);
+    /* the map's waits are not in the file: four frames at 4 a second play for about a second (1.05 s measured alone).
+       A frame's length is real time with the recorder running, so a loaded machine stretches it — 1.75 s measured with
+       a Cesium page booting beside this one — while a single tile wait would add seconds; the bound sits between */
+    expect(d.duration).toBeGreaterThan((s.frames - 0.5) / 4); expect(d.duration).toBeLessThan(s.frames * 2.5 / 4);
+    tveBandIsText(d);
+  } finally {
+    await page.evaluate(() => { try { window.IntMapTime.setNow({ source: 'ui' }); } catch (_) { /* live */ } });
+  }
+});
+
+test('timelapse-video-export ② Atlas records a portrait WebM; ③ the comparison window beside the main map is one picture', async () => {
+  test.setTimeout(240_000);
+  try {
+    const r = await page.evaluate(async () => { const x = await window.IntMapOS.execute('time.lapse', { from: '1910', to: '1911', unit: 'year', step: 1, fps: 4, record: true, size: 'portrait', format: 'webm' }, { source: 'test' }); return { status: x.status }; });
+    expect(r.status).toBe('completed');
+    const s = await tveWaitDone(120_000);
+    expect(s.phase, JSON.stringify(s)).toBe('done');
+    expect([s.ext, s.w, s.h, s.frames]).toEqual(['webm', 1080, 1920, 2]);
+    const d = await tveDecode(s);
+    expect([d.w, d.h, d.decoded]).toEqual([1080, 1920, 3]);
+    tveBandIsText(d);
+    /* ③ the comparison: the window at 1914, the main map at 1960 */
+    /* both maps have drawn their instant's borders — the same waits as time-compare-lapse ① */
+    await page.evaluate(() => window.IntMapCompare.open());
+    await page.selectOption('#cmp-layers-sel', 'histb');
+    await page.evaluate(() => { window.IntMapCompare.setTime({ year: 1914 }); window.IntMapTime.setYear(1960, { source: 'ui' }); });
+    await page.waitForFunction(() => { const s = window.IntMapCompare.timeState(); return s.layer === 'histb' && s.drawn && s.drawn.features > 0 && String(s.drawn.iso).startsWith('1914'); }, null, { timeout: 120_000 });
+    await page.waitForFunction(() => { const TB = window.IntMapTimeBorders; return TB.active() && !!TB.currentFC() && String(TB.current()).startsWith('cs196'); }, null, { timeout: 120_000 });
+    await page.waitForFunction(() => { try { return window.IntMapCompare._map().coords.queryRenderedFeatures(undefined, { layers: ['cmp-hb-l'] }).length > 0; } catch (_) { return false; } }, null, { timeout: 60_000 });
+    await page.click('#ntl-rec [data-size="landscape"]');
+    await page.click('#ntl-rec-image');
+    const p = await tveWaitDone(60_000);
+    expect(p.phase, JSON.stringify(p)).toBe('done');
+    expect(p.kind).toBe('image');
+    expect(p.instants[0]).toMatch(/1914/); expect(p.instants[1]).toMatch(/1960/);
+    expect(p.credits.join(' | ')).toMatch(/CShapes/);
+    const im = await tveDecode(p);
+    expect([im.type, im.w, im.h]).toEqual(['image/png', 1920, 1080]);
+    tveBandIsText(im);
+  } finally {
+    await page.evaluate(() => { try { window.IntMapCompare.setTime({ follow: true }); window.IntMapCompare.close(); } catch (_) { /* nothing open */ }
+      try { window.IntMapTime.setNow({ source: 'ui' }); } catch (_) { /* live */ }
+      const x = document.getElementById('ntl-x'); if (x && !document.getElementById('news-timeline').classList.contains('collapsed')) x.click(); });
   }
 });
 
