@@ -307,7 +307,12 @@ test('hist-bundles-off-main ⑦: js/time-admin1.js writes the same polygons, bor
 });
 
 /* ═══ ⑧ the rule, as a fact about the tree ══════════════════════════════════════════════════════ */
-test('hist-bundles-off-main ⑧: no page file injects a ring-pooled record; each is opened through the door', () => {
+test('hist-bundles-off-main ⑧: no page file injects a ring-pooled record; each is opened through the door', async () => {
+  /* (mobile-performance) js/boot-stage.js's PLAN names files to say WHEN their reader may read them on a
+     phone; it never reads one (its header: 「NOT A LOADER」). So it is the one page file allowed to
+     spell a ring-pooled record — once, as a row's `path`, and only when the reader the row
+     names (`who`) opens that file through the door. Anything else it says about the file still fails. */
+  const { BootStage } = await import('../js/boot-stage.js');
   /* the pools are DISCOVERED: data/border-coast.js marks every ring-pooled record and names the global
      its file assigns; the file is found by its first bytes */
   const pools = Object.values(bundle('border-coast.js').sets).map((s) => s.global);
@@ -324,6 +329,17 @@ test('hist-bundles-off-main ⑧: no page file injects a ring-pooled record; each
     const users = js.filter(({ s }) => s.includes("'" + file + "'"));
     assert.ok(users.length, file + ' is not read by any page file');
     for (const { f, s } of users) {
+      if (f === 'boot-stage.js') {
+        const row = BootStage.plan().find((r) => r.path === file);
+        assert.ok(row, 'js/boot-stage.js spells ' + file + ' outside a PLAN row');
+        assert.equal(s.split("'" + file + "'").length, 2, 'js/boot-stage.js spells ' + file + ' more than once');
+        const at = s.indexOf("'" + file + "'");
+        assert.match(s.slice(Math.max(0, at - 40), at), /path:\s*$/, 'js/boot-stage.js names ' + file + ' other than as a row path');
+        const opensIt = (r) => { const c = codeOnly(rd(r)); const i = c.indexOf("'" + file + "'"); return i >= 0 && /file:\s*$/.test(c.slice(Math.max(0, i - 40), i)); };
+        const readers = row.who.match(/js\/[\w-]+\.js/g) || [];
+        assert.ok(readers.some(opensIt), 'the row for ' + file + ' names ' + (readers.join(', ') || 'no reader') + ', none of which opens it through the door');
+        continue;
+      }
       for (let at = s.indexOf("'" + file + "'"); at >= 0; at = s.indexOf("'" + file + "'", at + 1)) {
         const near = s.slice(Math.max(0, at - 160), at);
         assert.ok(!/createElement\(\s*['"]script['"]\s*\)/.test(near), `js/${f} injects ${file} as a <script> — the main thread evaluates it`);

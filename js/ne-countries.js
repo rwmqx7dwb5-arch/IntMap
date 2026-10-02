@@ -30,7 +30,7 @@
 import { loadData } from './data-door.js';   /* the one reader of data/ — inflate and parse off the page's thread */
 
 export const NE_SCALES = ['110m', '50m', '10m'];
-export const NE_FORMAT = 'IntMapNECountries';
+const NE_FORMAT = 'IntMapNECountries';
 
 /** the site path of one scale's file */
 export function neCountriesPath(scale) { return 'data/ne-countries/ne_' + scale + '_admin_0_countries.json.gz'; }
