@@ -9,7 +9,8 @@
  *
  *  WHAT IS COUNTED, AND WHERE IT IS HEARD — each from ONE place the app already has, never by a line
  *  added to a feature:
- *    · at load: one page view; the entry (a link carrying a map view / ?embed=1); the referring
+ *    · at load: one page view; the entry (a link carrying a map view / ?embed=1 / one of IntMap's own
+ *      landing pages); the referring
  *      HOST NAME only; the three utm_* tags of the address. At the first send: the app language as
  *      en/jp/other and the device as mobile/desktop (js/ui-device.js IntMapDevice.kind()).
  *    · a LAYER the reader switches on: the Layers registry's checkboxes (`#layer-dropdown`), heard as
@@ -23,6 +24,8 @@
  *      lifecycle there), or the browser's own `appinstalled` event. Counted once per page load.
  *    · an ATLAS QUESTION: the console's turn-start event on the same bus — the COUNT only. The
  *      question is never read here and never sent.
+ *    · an ATLAS ANSWER's declared kind (text / map / chart / mixed): the turn loop's 'answered' event on
+ *      the same bus (growth-loop) — the kind only, never the question or the answer.
  *  Nothing else is read: no User-Agent string, no account, no time, no address beyond the above.
  *
  *  WHEN NOTHING IS SENT AT ALL:
@@ -44,6 +47,7 @@ import {
   referrerOf,
   campaignOf,
   entryOf,
+  sitePageOf,
 } from '../supabase/functions/usage-count/shape.js';
 import { isLayer, isDisplay } from './layer-manifest.js';
 
@@ -153,15 +157,26 @@ export function createCounter(deps) {
 
 /* ── what the page says about itself at load ─────────────────────────────────────────────────── */
 
-/** the counts a page load records before anything is used */
+/** the counts a page load records before anything is used.
+    (growth-loop) A visitor who reached the map through one of IntMap's own landing pages (an example's
+    share page, the about or teacher page — shape.js SITE_PAGES) arrives with that page as the referrer and
+    WITHOUT its query: the share page redirects to a fixed address, the others link to one. So a campaign
+    link pointed at a landing page (admin.html «Growth» builds them) would lose its utm_* tags at the hop.
+    The browser sends a same-origin referrer whole, so the tags are read from there — only from IntMap's own
+    landing page, and only when the map's own address carries none (the address the reader opened wins). */
 export function arrivalRows(page) {
   const p = page || {};
   const rows = [{ m: 'view', d: '' }];
-  const entry = entryOf(p.search, p.hash, p.navType);
+  const fromPage = sitePageOf(p.referrer, p.host);
+  const entry = entryOf(p.search, p.hash, p.navType, fromPage);
   if (entry) rows.push({ m: 'entry', d: entry });
   const ref = referrerOf(p.referrer, p.host);
   if (ref) rows.push({ m: 'ref', d: ref });
-  return rows.concat(campaignOf(p.search));
+  let tags = campaignOf(p.search);
+  if (!tags.length && fromPage && entry === fromPage) {
+    try { tags = campaignOf(new URL(String(p.referrer)).search); } catch (_) { tags = []; }
+  }
+  return rows.concat(tags);
 }
 
 /** the feature a click inside `el` uses, or null */
@@ -199,6 +214,14 @@ export let usage = null;
 /** the console's turn-start event (js/atlas-console.js emits it on IntMapOS when a question is sent) */
 export function isAtlasQuestion(ev) {
   return !!(ev && ev.kernel === 'atlas' && ev.phase === 'turn' && !ev.capabilityId);
+}
+
+/** (growth-loop) the kind of answer a finished Atlas turn declared, or null — js/atlas-agent.js runTurn
+    announces {kernel:'atlas', phase:'answered', answerMode} on the same bus when a turn ends with an
+    answer. Only the mode is read; shape.js's closed rule decides whether it is one that may be counted. */
+function atlasAnswerModeOf(ev) {
+  if (!ev || ev.kernel !== 'atlas' || ev.phase !== 'answered' || ev.capabilityId) return null;
+  return METRICS.atlas_mode.dim(ev.answerMode);
 }
 
 /* ── install, in a browser only (Node evaluates this file for the tests; Deno never loads it) ──── */
@@ -283,6 +306,8 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof w
     attached = true;
     os.on((ev) => {
       if (isAtlasQuestion(ev)) { counter.add('atlas', ''); return; }
+      const mode = atlasAnswerModeOf(ev);
+      if (mode) { counter.add('atlas_mode', mode); return; }
       const f = featureOfOperation(ev);
       if (f) counter.add('feature', f);
     });

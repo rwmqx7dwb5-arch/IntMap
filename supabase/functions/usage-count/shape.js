@@ -95,10 +95,11 @@ function layerId(d) {
        metric at its ceiling.
      · atlas max 100 — a page load that asks Atlas more than 100 questions before it is hidden is far
        past any observed session; the daily AI allowance (ai_usage) ends such a session sooner.
-       Expires if that allowance is raised past it. */
+       Expires if that allowance is raised past it. atlas_mode shares it: one answer per question, so
+       its count per page load can never pass the questions' (growth-loop). */
 export const METRICS = Object.freeze({
   view:         { dim: closed(['']),                                          max: 1,   maxDims: 1 },   // the map was opened (one per page load)
-  entry:        { dim: closed(['link', 'embed']),                             max: 1,   maxDims: 2 },   // opened from a link that carries a map view (a shared or saved link), or embedded in another page (?embed=1)
+  entry:        { dim: closed(['link', 'embed', 'showcase', 'about', 'teachers']), max: 1, maxDims: 5 },   // opened from a link that carries a map view (a shared or saved link), embedded in another page (?embed=1), or reached from one of IntMap's own pages a visitor lands on first (an example's share page s/, the about page, the teacher page — SITE_PAGES below)
   ref:          { dim: referrer,                                              max: 1,   maxDims: 200 },   // the host name of the page the reader came from (direct = none)
   utm_source:   { dim: token,                                                 max: 1,   maxDims: 100 },   // the utm_source tag of the address
   utm_medium:   { dim: token,                                                 max: 1,   maxDims: 100 },   // the utm_medium tag of the address
@@ -108,6 +109,7 @@ export const METRICS = Object.freeze({
   layer:        { dim: layerId,                                               max: 1,   maxDims: 400 },   // page loads in which the reader switched this layer on
   feature:      { dim: closed(['compare', 'timelapse', 'share', 'donate', 'install']), max: 1, maxDims: 5 },   // page loads in which the feature was used
   atlas:        { dim: closed(['']),                                          max: 100, maxDims: 1 },   // questions asked to Atlas (the count only — never the question)
+  atlas_mode:   { dim: closed(['text', 'map', 'chart', 'mixed']),             max: 100, maxDims: 4 },   // Atlas answers by the kind Atlas declared for them (js/atlas-agent.js ANSWER_MODES) — counted when a turn ends with an answer; never the question or the answer
 });
 
 /** acceptRow(metric, dimension, n) → { m, d, n, cap } | null — the ONE validator both sides use. */
@@ -123,7 +125,7 @@ export function acceptRow(metric, dimension, n) {
 }
 
 /* How many rows one request may carry. The browser splits a larger batch; the server refuses more.
-   Derived: the closed metrics are at most 1+2+3+2+5+1 = 14 rows, a page load records one ref and
+   Derived: the closed metrics are at most 1+5+3+2+5+1+4 = 21 rows, a page load records one ref and
    three tags, and a reader who switches on more than ~40 distinct layers before the page is hidden
    simply sends two requests. Expires with the declaration above. */
 export const MAX_ROWS_PER_REQUEST = 64;
@@ -190,13 +192,39 @@ export function campaignOf(search) {
   return out;
 }
 
-/** how the page was entered: 'embed' when ?embed=1, 'link' when a fresh navigation (not a reload or
-    back/forward) arrived with a map view in the address's hash (js/map-ui.js IntMapBookmark writes
-    `v=` there), else null. */
-export function entryOf(search, hash, navType) {
+/* ══ IntMap's OWN PAGES A VISITOR LANDS ON FIRST (growth-loop) ═════════════════════════════════════
+   scripts/landing.mjs generates them — about.html and teachers.html (its PAGES), and one share page per
+   example under s/ (its shareDir), each also under ja/ — and every one of them sends the visitor on to the
+   map by a plain link or, for a share page, at once (meta refresh + location.replace). They are static
+   pages that do not run this counter, so the ARRIVAL they produce is the only place they can be seen:
+   the map's referrer is then the landing page's own address — same-origin, so the browser sends it whole
+   (path and query; Referrer-Policy strict-origin-when-cross-origin, the default those pages keep).
+   This file cannot import landing.mjs (it is bundled into the page and the Deno function, landing.mjs reads
+   the disk), so the page kinds are declared here as the closed `entry` values they become, and
+   tests/growth-loop-checks.test.mjs holds them equal to landing.mjs's PAGES and shareDir. */
+export const SITE_PAGES = Object.freeze({ showcase: /(?:^|\/)s\/[^/]+\.html$/, about: /(?:^|\/)about\.html$/, teachers: /(?:^|\/)teachers\.html$/ });
+
+/** the kind of IntMap page the visitor came from ('showcase' | 'about' | 'teachers'), or null — only for a
+    referrer on IntMap's own host (`selfHost`); any other referrer is `referrerOf`'s. */
+export function sitePageOf(referrer, selfHost) {
+  if (!selfHost) return null;
+  let u = null;
+  try { u = new URL(String(referrer == null ? '' : referrer)); } catch (_) { return null; }
+  if (u.hostname.toLowerCase() !== String(selfHost).toLowerCase()) return null;
+  for (const k of Object.keys(SITE_PAGES)) if (SITE_PAGES[k].test(u.pathname)) return k;
+  return null;
+}
+
+/** how the page was entered: 'embed' when ?embed=1; on a fresh navigation (not a reload or back/forward,
+    which keep the first referrer and hash), the IntMap page it came from (`fromPage`, sitePageOf) — the
+    more specific answer, since a share page's link carries a map view too — else 'link' when the address's
+    hash carries a map view (js/map-ui.js IntMapBookmark writes `v=` there); else null. */
+export function entryOf(search, hash, navType, fromPage) {
   let q = null;
   try { q = new URLSearchParams(String(search == null ? '' : search)); } catch (_) { q = null; }
   if (q && q.get('embed') === '1') return 'embed';
-  if ((navType == null || navType === 'navigate') && /[#&]v=/.test(String(hash == null ? '' : hash))) return 'link';
+  if (navType != null && navType !== 'navigate') return null;
+  if (fromPage && Object.prototype.hasOwnProperty.call(SITE_PAGES, fromPage)) return fromPage;
+  if (/[#&]v=/.test(String(hash == null ? '' : hash))) return 'link';
   return null;
 }
