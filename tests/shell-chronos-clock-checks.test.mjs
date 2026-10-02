@@ -28,16 +28,17 @@ const importsClock = (src) => /^import \{[^}]*\bIntMapTime\b[^}]*\} from '\.\/ch
 /* (#R231 — the round's own account of why these checks exist heads its other half, in tests/shell-i18n-locales-checks.test.mjs) */
 {
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
-test('R231 time machine: the collapsed pill is a round icon button on a phone', () => {
+test('R231 time machine: on a phone the clock is reached from the sheet, not a floating pill', () => {
+  /* (mobile-shell, 2026-10-02) the owner asked for the phone screen to be REBUILT, not patched: the floating
+     54 px pill this test used to pin is gone on a phone and the clock entry lives in the sheet's head
+     (#m-clock), opening Chronos as one of the sheet's screens. What #R231 protected — the time machine is
+     one tap away on a phone and the entry is a real button — is what this measures now. */
   const css = read('css/intmap.css');
-  const m = css.match(/\.news-timeline\.collapsed\{[^}]*\}/g) || [];
-  const round = m.find((r) => /border-radius:27px/.test(r));
-  assert.ok(round, 'the collapsed timeline becomes a circle');
-  assert.match(round, /width:54px; height:54px/, 'one size up from the 46 px FABs');
-  assert.match(css, /\.news-timeline\.collapsed \.ntl-open-txt\{ display:none; \}/, 'the two label lines are hidden, not deleted');
-  /* it has to be inside the phone media block — the desktop pill keeps its words */
-  const at = css.indexOf('.news-timeline.collapsed{ width:54px');
-  assert.ok(css.lastIndexOf('@media(max-width:768px){', at) > css.lastIndexOf('\n    }\n', at) - 60000, 'inside the mobile block');
+  const html = read('index.html');
+  assert.ok(/<button[^>]*\sid="m-clock"/.test(html), 'the sheet head carries the clock button');
+  assert.ok(css.includes('.news-timeline.collapsed{ display:none !important; }'), 'the floating collapsed pill is not drawn on a phone');
+  const at = css.indexOf('.news-timeline.collapsed{ display:none !important; }');
+  assert.ok(css.lastIndexOf('@media(max-width:768px){', at) >= 0, 'that rule is inside a phone media block');
 });
 }
 

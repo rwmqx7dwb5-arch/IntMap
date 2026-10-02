@@ -179,7 +179,7 @@ export function setCrosshairWanted(on) {
 export const LEGEND_SEL = '[class*="legend"], [id*="legend"]';
 
 /** is this legend switched on — its owner writes `display` inline (34 sites in js/data-layers.js) */
-export function legendOn(el) {
+function legendOn(el) {
   if (!el || el.hidden || !el.isConnected) return false;
   if (el.style && el.style.display === 'none') return false;
   try { return getComputedStyle(el).display !== 'none'; } catch (_) { return true; }
