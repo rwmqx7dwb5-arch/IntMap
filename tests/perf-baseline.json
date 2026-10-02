@@ -1,8 +1,8 @@
 {
   "eager": {
-    "raw": 4726461,
-    "gzip": 1555808,
-    "brotli": 1174836,
+    "raw": 4711311,
+    "gzip": 1550982,
+    "brotli": 1170780,
     "requests": 9,
     "modules": 301,
     "cssRaw": 364543,
@@ -52,6 +52,10 @@
       "html2canvas.esm": 199257,
       "katex": 259214,
       "katex.min": 0,
+      "layer-pkg-alliances": 18803,
+      "layer-pkg-radar": 3683,
+      "layer-pkg-subcables": 6412,
+      "layer-pkg-thermal": 3119,
       "layer-time": 8905,
       "layer-time-decl": 19656,
       "lib": 129791,
