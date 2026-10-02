@@ -156,16 +156,25 @@ test('every layer a link can carry: holding the style back costs no layer', asyn
        first day (1939-08-23 → 1914-06-28 → 1950-06-25 → …). The world-at-time hold then took the present-day layers off
        the held boot — the 39 this test listed as «drawn normally, missing after the hold». The pulse is replayed here,
        in exactly the shape the heal sends (`__syn` raised for the dispatch, js/data-layers.js `rearm`), with no table
-       to hold it for the instant, after the war's record has arrived — so the war, and only the war, decides. */
-    await plain.page.waitForFunction(() => { try { return !!(window.__imWarFronts && window.__imWarFronts.span('ww2')); } catch (_) { return false; } }, null, { timeout: 60000 });
+       to hold it for the instant — so the war, and only the war, decides.
+       ⚠ THE WAR DECIDES WHEN ITS RECORD HAS ARRIVED, AND THIS ASKS THE WAR, NOT THE CLOCK ON THE WALL. The record is
+       data/wars.json AND CShapes (13 MB, opened off the main thread) — MEASURED in CI on this 175-layer page: not there
+       60 s after the restore. So nothing waits for it to «have arrived». After the pulse, the test asks the same door
+       the row uses (IntMapWarFronts.toggle, with the restore's provenance — it cannot move the clock itself) and awaits
+       ITS answer: that request fetches the record if nobody has, and resolves on the same latched load the pulse's own
+       request is queued on, after it (one turn more for its continuation). `record` says the load delivered — a load
+       that failed decides nothing and would pass vacuously, so it is asserted. */
     const pulse = await plain.page.evaluate(async () => {
       const cb = document.getElementById('dl-ww2'); const before = { live: window.IntMapTime.isLive(), table: window.IntMapLayerTime.loaded(), ticked: cb.checked };
       const fire = (on) => { cb.checked = on; cb.__syn = (cb.__syn || 0) + 1; try { cb.dispatchEvent(new Event('change', { bubbles: true })); } finally { cb.__syn = Math.max(0, cb.__syn - 1); } };
       fire(false); fire(true);
-      await new Promise((r) => setTimeout(r, 1500));
-      return { before, live: window.IntMapTime.isLive(), day: window.IntMapTime.iso(), ticked: cb.checked };
+      await window.IntMapWarFronts.toggle('ww2', true, { restored: true });
+      await new Promise((r) => setTimeout(r, 0));
+      let record = false; try { record = !!window.__imWarFronts.span('ww2'); } catch (_) { }
+      return { before, record, live: window.IntMapTime.isLive(), day: window.IntMapTime.iso(), ticked: cb.checked };
     });
     expect(pulse.before, 'the fixture: the restored war is ticked on the live clock and no table can hold the pulse').toEqual({ live: true, table: false, ticked: true });
+    expect(pulse.record, "the fixture: the war's record arrived, so the war decided").toBe(true);
     expect(pulse, "the map's own off→on on a restored war leaves the link's instant (now) where it was").toMatchObject({ live: true, ticked: true }); }
   finally { await plain.ctx.close(); }
   const held = await heldP;
