@@ -769,6 +769,18 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
   Still third-party by design: `r.jina.ai` (the article reader's first strategy, which receives the
   article URL) — it is a reader service, not a CORS relay. The second strategy is the publisher
   itself, then our own `fetch-relay` article rule (§5).
+- **The recipient list is checked against the code, for every network scheme.** `npm run check:datagov`
+  (rule `outbound-disclosed`, `scripts/outbound-hosts.mjs`) discovers every host the browser code
+  names in a string literal — `http(s)://`, `ws(s)://` and `ftp://`, whatever API receives it
+  (fetch, WebSocket, EventSource, sendBeacon, `import()`, Worker), in `js/`, `src/`, `css/`, `sw.js`
+  and every page the build serves — and requires each to be in `scripts/outbound-hosts.json` with
+  words that appear in Privacy §4 in en and jp. The one WebSocket recipient today is
+  `stream.aisstream.io`: only when a reader enters **their own** aisstream.io key, the browser
+  connects there directly and sends that key and the map area in view; the key is kept only in
+  that browser's `localStorage` and never reaches our server. Without a key the ships layer is
+  served by the `ais-feed` Edge Function and the browser never connects to aisstream.io.
+  ⚠ The CSP's `connect-src` admits `wss:` for any host, so it does not by itself bound WebSocket
+  recipients; the ledger is what does.
 - **(#R533) Company logos are shipped, not asked for.** The Companies tab used to name a
   third-party logo API (`logo.clearbit.com`) once per company, which both told that host which
   companies a reader was looking at and, after the service was shut down on 2025-12-08, produced

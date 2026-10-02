@@ -20,8 +20,10 @@
  *
  *  ⚠ THE UNIVERSE IS DISCOVERED, NEVER LISTED ([[intmap-discovered-list-is-a-photograph]]). The
  *  files are `git ls-files` of what the browser loads (js/, src/, the root .html pages, sw.js,
- *  css/); the hosts are read by the PARSER from string and template literals only — a URL in a
- *  comment is not a request, and a regular expression over the source cannot tell the two apart.
+ *  css/, and every .html page vite.config.js's STATIC_ASSETS copies to the site); the hosts are
+ *  read by the PARSER from string and template literals only — a URL in a comment is not a
+ *  request, and a regular expression over the source cannot tell the two apart. Every scheme that
+ *  names a network host is read (http, https, ws, wss, ftp), so a WebSocket is a recipient too.
  *
  *  ⚠ A LINK IS DECIDED BY ITS CONTEXT, NOT BY ITS HOST. The same host can be a hyperlink in one
  *  place and a fetch in another; only the occurrence is classified. The contexts recognised as
@@ -44,6 +46,7 @@ import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
 import { SPELLINGS } from '../js/data-governance.js';
 import { codeOnly } from './code-only.mjs';
+import { viteStaticAssets } from './runtime-scripts.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const LEDGER = 'scripts/outbound-hosts.json';
@@ -57,16 +60,40 @@ export const LEGAL = 'js/legal-text.js';
    server's relays as the recipient of what the browser sends them. */
 const BROWSER = /^(?:(?:js|src)\/.+\.m?js|[^/]+\.html|sw\.js|css\/.+\.css)$/;
 
+/* ⚠ (outbound-websocket-disclosure) A SERVED PAGE IS NOT ONLY A ROOT PAGE. ja/*.html and s/*.html
+   are copied to the site verbatim by vite.config.js's STATIC_ASSETS, and BROWSER above reads only
+   the root — so a <link rel=stylesheet> or a <script src> in a nested page was never seen. The
+   pages are taken from the build's own list (read from its AST by scripts/runtime-scripts.mjs —
+   that reader, not a second list), less its STATIC_EXCLUDE. Only *.html is taken from it: the *.js
+   under data/ are shipped DATA, whose URLs are credits and values, not requests. */
+function servedPages(root) {
+  const vite = viteStaticAssets(fs.readFileSync(path.join(root, 'vite.config.js'), 'utf8'));
+  const excluded = (r) => vite.exclude.some((x) => r === x || r.startsWith(x.replace(/\/$/, '') + '/'));
+  if (!vite.assets.length) return [];
+  return execFileSync('git', ['ls-files', '-z', '--', ...vite.assets], { cwd: root, maxBuffer: 1 << 26 })
+    .toString('utf8').split('\0').filter((f) => f && f.endsWith('.html') && !excluded(f));
+}
+
 export function browserFiles(root = ROOT) {
-  return execFileSync('git', ['ls-files', '-z', 'js', 'src', 'css', '*.html', 'sw.js'], { cwd: root, maxBuffer: 1 << 26 })
-    .toString('utf8').split('\0').filter((f) => f && BROWSER.test(f))
+  const tracked = execFileSync('git', ['ls-files', '-z', 'js', 'src', 'css', '*.html', 'sw.js'], { cwd: root, maxBuffer: 1 << 26 })
+    .toString('utf8').split('\0').filter((f) => f && BROWSER.test(f));
+  return [...new Set([...tracked, ...servedPages(root)])].sort()
     .map((file) => ({ file, text: fs.readFileSync(path.join(root, file), 'utf8') }));
 }
 
 /* ── hosts inside one piece of text ──────────────────────────────────────────────────────────
    `{s}` / `{a-c}` / `${…}` label placeholders become `*`, so a tile template is one host, and a
    URL whose whole host is an expression is reported as DYNAMIC rather than guessed at. */
-const URL_RE = /\bhttps?:\/\/((?:[a-z0-9-]|\{[^{}\s/]*\})+(?:\.(?:[a-z0-9-]|\{[^{}\s/]*\})+)*)/gi;
+/* ⚠ (outbound-websocket-disclosure) THE SCHEME IS THE URL STANDARD'S, NOT HTTP'S. The pattern read
+   `https?://` only, so `new WebSocket('wss://stream.aisstream.io/v0/stream')` — the reader's own
+   AIS key, sent to a third party — was neither in the ledger nor compared with Privacy §4. The
+   schemes that name a NETWORK host are the WHATWG URL Standard's special schemes (ftp, file, http,
+   https, ws, wss) less `file`, which has none. A custom scheme (`om://`, `imapsat://`) is a protocol
+   the page registers and answers in-page; whatever its handler fetches is an https literal of its
+   own and is found as one. The API that receives the string (fetch, WebSocket, EventSource,
+   sendBeacon, import(), new Worker, importScripts) decides nothing: the literal is found wherever
+   it stands, and only a LINK context (linkByAncestry) excuses it. */
+const URL_RE = /\b(?:https?|wss?|ftp):\/\/((?:[a-z0-9-]|\{[^{}\s/]*\})+(?:\.(?:[a-z0-9-]|\{[^{}\s/]*\})+)*)/gi;
 /* a placeholder inside a label keeps the label's fixed part: `mts{}` → `mts*` (Google's mts0…mts3) */
 const hostOf = (raw) => raw.toLowerCase().split('.').map((l) => l.replace(/\{[^{}]*\}/g, '*').replace(/\*+/g, '*')).join('.');
 

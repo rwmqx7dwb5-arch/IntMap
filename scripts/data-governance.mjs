@@ -39,7 +39,7 @@
  *    outbound-disclosed (outbound-hosts-disclosed) the other half of provenance: not what we SHIP but
  *                       whom the reader's browser TALKS TO. Every host the browser code can request
  *                       (parsed from js/, src/, the served pages, sw.js and css/ — string and template
- *                       literals only) is in scripts/outbound-hosts.json with what it is sent, and the
+ *                       literals only, under every network scheme: http(s), ws(s), ftp) is in scripts/outbound-hosts.json with what it is sent, and the
  *                       words that say so are in Privacy §4 of js/legal-text.js in BOTH en and jp; a
  *                       ledger row whose host the code no longer requests fails too. The rule itself
  *                       lives in scripts/outbound-hosts.mjs (tests/outbound-hosts-disclosed-checks
