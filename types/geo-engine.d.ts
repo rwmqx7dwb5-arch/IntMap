@@ -222,7 +222,7 @@ export interface MapLibreOnly {
   viewFrame(): any;
   setHorizonReach(on?: any): any;
   setCjkFontFamily(fam?: any): any;
-  refreshCjkGlyphs(): any;
+  refreshCjkGlyphs(cover?: any): any;
   instrumentFrames(cb?: any): any;
   commandStats(): any;
   commandsReset(): any;
@@ -409,7 +409,7 @@ export interface GeoEngineScene {
   addProtocol(n?: any, fn?: any): any;
   setImageConcurrency(n?: any): any;
   setCjkFontFamily(f?: any): any;
-  refreshCjkGlyphs(): any;
+  refreshCjkGlyphs(cover?: any): any;
   demContourSource(o?: any): any;
 }
 

@@ -173,17 +173,38 @@ window.IntMapMapTypography = (function () {
      finished loading; on that, the glyph cache is emptied once (coalesced: one burst of subsets is one
      refresh), never on a timer. */
   const CJK_FACE = /Noto Sans (JP|SC|TC)|Pretendard/i;
-  let _glyphRefresh = 0;
+  /* ⚠ (mobile-heavy-work) …AND WHAT THE FACE CAN DRAW GOES WITH IT. Each Noto subset is a face with its own
+     `unicodeRange`, so the refresh names those ranges and the engine drops only the glyphs inside them (see
+     js/geo-engine.js `_redrawLocalGlyphs`). A face that states no range (or one that cannot be read) covers
+     everything, which is the old refresh. */
+  let _glyphRefresh = 0, _pendingCover = [];
   function refreshAfterFaces(ev) {
     try {
-      const faces = (ev && ev.fontfaces) || [];
-      if (!faces.some((f) => CJK_FACE.test(String(f && f.family || '')))) return;
+      const faces = ((ev && ev.fontfaces) || []).filter((f) => CJK_FACE.test(String(f && f.family || '')));
+      if (!faces.length) return;
+      for (const f of faces) { const r = unicodeRanges(f && f.unicodeRange); if (r && _pendingCover) _pendingCover.push(...r); else _pendingCover = null; }
       if (_glyphRefresh) return;
       _glyphRefresh = requestAnimationFrame(() => {
         _glyphRefresh = 0;
-        try { const GE = IntMapGeoEngine; if (GE && GE.scene && GE.scene.refreshCjkGlyphs) GE.scene.refreshCjkGlyphs(); } catch (_) { }
+        const cover = _pendingCover; _pendingCover = [];
+        try { const GE = IntMapGeoEngine; if (GE && GE.scene && GE.scene.refreshCjkGlyphs) GE.scene.refreshCjkGlyphs(cover || undefined); } catch (_) { }
       });
     } catch (_) { }
+  }
+  /** CSS `unicode-range` → [[lo,hi],…]; null when the face covers everything or the text cannot be read */
+  function unicodeRanges(text) {
+    const s = String(text == null ? '' : text).trim();
+    if (!s) return null;
+    const out = [];
+    for (const part of s.split(',')) {
+      const m = /^u\+([0-9a-f?]{1,6})(?:-([0-9a-f]{1,6}))?$/i.exec(part.trim());
+      if (!m) return null;
+      const lo = parseInt(m[1].replace(/\?/g, '0'), 16), hi = m[2] ? parseInt(m[2], 16) : parseInt(m[1].replace(/\?/g, 'f'), 16);
+      if (!(lo <= hi)) return null;
+      if (lo === 0 && hi >= 0x10ffff) return null;
+      out.push([lo, hi]);
+    }
+    return out;
   }
   try { if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', refreshAfterFaces); } catch (_) { }
 
@@ -400,7 +421,9 @@ window.IntMapMapTypography = (function () {
       const nativeFlags = () => {
         try {
           const c = document.createElement('canvas'); c.width = c.height = 16;
-          const x = c.getContext('2d'); if (!x) return true;
+          /* (mobile-heavy-work) a CPU-backed canvas: the probe reads its pixels back once, and a GPU canvas pays a
+             synchronous readback for that. MEASURED (CPU ×4, 16×16): getImageData 10.8–31.7 ms → 3.7–4.0 ms. */
+          const x = c.getContext('2d', { willReadFrequently: true }); if (!x) return true;
           x.textBaseline = 'top'; x.font = '16px sans-serif'; x.fillStyle = '#000';
           x.fillText(String.fromCodePoint(0x1F1E8, 0x1F1E6), 0, 0);   /* CA — red and white */
           const d = x.getImageData(0, 0, 16, 16).data;

@@ -3,7 +3,7 @@
  * ----------------------------------------------------------------------------
  *  The ALWAYS-present place rows the non-AI news locator falls back on, moved verbatim
  *  out of index.html. Pure data (row = [type,[terms…],lng,lat,nameEn,nameJp]); the
- *  matcher index is still compiled in index.html by rebuildGeoIndex(), and the newer
+ *  matchers are compiled by js/place-terms.js the first time a headline reaches a row, and the newer
  *  deterministic scorer lives in js/newsgeo.js.
  * ========================================================================== */
 window.IntMapGazetteer=(function(){
@@ -174,7 +174,7 @@ window.IntMapGazetteer=(function(){
      US states / conflict regions (Donbas, Kurdistan, Xinjiang, Texas, Catalonia…), and (3) government-seat
      metonyms (Kremlin, Pentagon, White House, Downing Street…). Same row format as _BUILTIN_GZ:
      [type, [match terms…], lng, lat, nameEn, nameJp]. Government seats are type 'city' (a precise location
-     reference). Word boundaries (Latin) / substring (CJK) are compiled in rebuildGeoIndex. */
+     reference). Word boundaries (Latin) / substring (CJK) are compiled by js/place-terms.js. */
   /* @i18n-entity-data  PLACE names, pinned by [lng,lat] — the news locator matches on them  (#R249 — declared, and validated by scripts/i18n-pair-audit.mjs
      against the row carrying a coordinate / ISO code / ticker / domain) */
   const _EXTRA_GZ=[

@@ -701,6 +701,8 @@ news-events.js                    出来事単位の News（一覧・カテゴ�
 news-feed.js                      ニュースの取得・キャッシュ・見出しの翻訳
 news-ui.js                        ニュース一覧・ピン・リーダー
 news-context.js                   記事 → 場所／媒体の解決
+place-terms.js                    news-context.js の地名照合器——語ごとの正規表現を最初に届いた照合で作り、
+                                  取りこぼしの無い前置フィルタ（先頭／末尾 3 単位）で届きうる項目だけを調べる
 news-cluster.js                   Atlas `research.events` の**ブラウザ側アダプタ**。判定は共有の
                                   `supabase/functions/_shared/news-cluster.js`（#R334）が行う。ここは記事の形の
                                   適合と、主題の点の選び方だけ（#R340）

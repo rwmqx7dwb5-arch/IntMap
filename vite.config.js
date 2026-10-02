@@ -183,6 +183,9 @@ export const STATIC_EXCLUDE = [
      ⚠ NOTHING IS DELETED. The file stays in the repository — it is the source css/intmap.css names
      and the input Rollup hashes; it simply stops being copied a second time. */
   'IntMap.Icon_BW-inverted.png',
+  /* (mobile-heavy-work) …and the same holds for the launch-sized copy css/intmap.css names now: Rollup hashes it, so
+     the unhashed copy at the root of dist/ would be a second, unreachable one (scripts/boot-icon-flatten.mjs). */
+  'IntMap.Icon_BW-inverted.boot.png',
   /* ══ (#R322) FIVE SIDECARS THE BUILD WRITES AND THE BROWSER NEVER ASKS FOR ═════════════════════
      Each is a manifest a generator in scripts/ emits beside the payload it describes, and in every
      case the app reads the payload directly with dimensions of its own:

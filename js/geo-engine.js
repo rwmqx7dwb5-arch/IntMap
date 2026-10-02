@@ -66,22 +66,77 @@ function _m(){ return window.__imap||null; }
      tiles exactly as `setGlyphs` would — the same re-layout, without a single request.
      ⚠ Internal fields of MapLibre's GlyphManager (6.x: entries[stack].{glyphs,ranges,…TinySDF}); if they are
      not there this answers false and the caller falls back to the public `setGlyphs` — slower, never wrong. */
-function _redrawLocalGlyphs(m){
+/* ══ (mobile-heavy-work) …AND ONLY THE GLYPHS THE NEW FACE CAN DRAW ═══════════════════════════════════════════
+   `cover` is the code-point ranges of the faces that just finished loading ([[lo,hi],…]; absent = a new
+   FAMILY, which can change every local glyph). The Noto faces are unicode-range SUBSETS that arrive one by one
+   as labels first need them, and each arrival used to empty EVERY locally drawn glyph — the Hangul, the Thai,
+   the Devanagari and Khmer clusters no Noto CJK subset has a glyph for, and the ideographs of every OTHER
+   subset — and re-lay out every symbol tile. MEASURED (390×844, CPU ×4, a fresh phone boot over the replay
+   cache): 166 TinySDF draws for 34 distinct glyphs; TinySDF was the largest single item of script in the boot
+   (~0.8 s of the profile in `draw` and its distance transform). Narrowing the refresh took that to 144; most of
+   the remaining repeats were the in-flight duplicates below (with both: 45). A glyph none of whose
+   code points the new face covers is drawn by the same face as before, so it is kept — and when nothing is
+   dropped the style is not told anything changed (no re-layout at all). */
+function _covers(cover,id){
+  if(!cover) return true;
+  for(const ch of id){ const cp=ch.codePointAt(0);
+    for(let i=0;i<cover.length;i++){ const r=cover[i]; if(cp>=r[0]&&cp<=r[1]) return true; } }
+  return false;
+}
+/* ══ (mobile-heavy-work) ONE DRAW PER GLYPH, NOT ONE PER TILE THAT ASKED FOR IT ══════════════════════════════════
+   MapLibre 6's GlyphManager caches a locally drawn glyph only when the draw has FINISHED
+   (`glyph = glyphs[id] = await this._drawGlyph(…)`, src/render/glyph_manager.ts), and the draw awaits the
+   rasteriser's `document.fonts.load` first. Every symbol tile that asks for the same character inside that
+   window draws it again. MEASURED (390×844, CPU ×4, fresh phone boot over the replay cache): 대 and 日 drawn
+   four times each within 150 ms (4169 / 4286 / 4306 / 4321 ms), all from `getGlyphs` of different tiles —
+   144 TinySDF draws for 34 distinct glyphs (45 with this in: each glyph once, plus the redraws of the
+   glyphs whose Noto subset arrived after them). So the request in flight is the one every later asker waits for:
+   the same (stack, variant, id) is one promise until it settles. The answer handed back is the same object
+   MapLibre would have built (getGlyphs only reads it). Installed on the class, once, so every style's
+   manager — including one a later setStyle() makes — shares it. ⚠ Internal method of 6.x; if it is not there
+   nothing is installed and MapLibre draws as it always did. */
+const _glyphInflight=new WeakMap();
+function _dedupeGlyphDraws(m){
+  try{
+    const gm=m&&m.style&&m.style.glyphManager; if(!gm) return false;
+    const P=Object.getPrototypeOf(gm), orig=P&&P._getAndCacheGlyphsPromise;
+    if(typeof orig!=='function') return false;
+    if(orig.__imOnce) return true;
+    const once=function(stack,id,variant){
+      let fl=_glyphInflight.get(this); if(!fl){ fl=new Map(); _glyphInflight.set(this,fl); }
+      const k=stack+'\u0001'+variant+'\u0001'+id, p=fl.get(k);
+      if(p) return p;
+      const q=orig.call(this,stack,id,variant);
+      fl.set(k,q);
+      const done=()=>{ if(fl.get(k)===q) fl.delete(k); };
+      Promise.resolve(q).then(done,done);
+      return q;
+    };
+    once.__imOnce=true; P._getAndCacheGlyphsPromise=once;
+    return true;
+  }catch(_){ return false; }
+}
+function _redrawLocalGlyphs(m,cover){
   try{
     const st=m&&m.style, gm=st&&st.glyphManager;
     if(!gm||!gm.entries||typeof gm.entries!=='object'||typeof m._update!=='function') return false;
     const local=(cp)=>{ try{ return typeof gm._charUsesLocalIdeographFontFamily==='function'&&gm._charUsesLocalIdeographFontFamily(cp); }catch(_){ return true; } };
+    let dropped=0;
     for(const stack of Object.keys(gm.entries)){
       const e=gm.entries[stack]; if(!e||typeof e!=='object') continue;
       if(!e.glyphs||!e.ranges) return false;                    /* not the shape this was written against */
+      let here=0;
       for(const v of Object.keys(e.glyphs)){ const tab=e.glyphs[v]; if(!tab) continue;
         for(const id of Object.keys(tab)){
           const cp=id.codePointAt(0), single=id.length===(cp>0xffff?2:1);
           const fromFile=v==='default'&&single&&e.ranges[Math.floor(cp/256)]===true&&!local(cp);
-          if(!fromFile) delete tab[id];
+          if(!fromFile&&_covers(cover,id)){ delete tab[id]; here++; }
         } }
-      delete e.tinySDF; delete e.ideographTinySDF; delete e.clusterTinySDFs; delete e.fontFaceTinySDFs;
+      if(here||!cover){ delete e.tinySDF; delete e.ideographTinySDF; delete e.clusterTinySDFs; delete e.fontFaceTinySDFs; }
+      dropped+=here;
     }
+    if(!dropped&&cover) return true;                            /* the face changes nothing already drawn */
+    _glyphInflight.delete(gm);                                  /* a draw begun with the old face is not shared onward */
     st._changed=true; st._glyphsDidChange=true; m._update(true);
     return true;
   }catch(_){ return false; }
@@ -236,6 +291,7 @@ function _redrawLocalGlyphs(m){
     delete opts.credit; delete opts.customAttribution; opts.attributionControl=false;
     let mm=null; try{ mm=new maplibregl.Map(opts); }catch(_){ return null; }
     if(!mm) return null;
+    if(!_dedupeGlyphDraws(mm)){ try{ mm.once('styledata',()=>_dedupeGlyphDraws(mm)); }catch(_){} }
     let credit=null; if(wantCredit){ try{ credit=_mountCredit(mm,extra); }catch(_){} }
     return { mm, credit };
   }
@@ -1452,9 +1508,10 @@ function _redrawLocalGlyphs(m){
     }catch(_){ return false; } },
     /* the SAME family, a NEW face: the web font behind it arrived after the rasteriser had already drawn
        CJK with the browser's fallback, and TinySDF keeps what it drew. Same public door as above —
-       js/map-typography.js calls it when document.fonts reports a CJK face finished loading. */
-    refreshCjkGlyphs(){ const m=_m(); try{ const u=(m&&typeof m.getGlyphs==='function')?m.getGlyphs():null;
-      if(!u||typeof m.setGlyphs!=='function') return false; if(!_redrawLocalGlyphs(m)) m.setGlyphs(u); return true; }catch(_){ return false; } },
+       js/map-typography.js calls it when document.fonts reports a CJK face finished loading, with the code-point
+       ranges of the faces that loaded (`cover`; absent = every local glyph). */
+    refreshCjkGlyphs(cover){ const m=_m(); try{ const u=(m&&typeof m.getGlyphs==='function')?m.getGlyphs():null;
+      if(!u||typeof m.setGlyphs!=='function') return false; if(!_redrawLocalGlyphs(m,Array.isArray(cover)?cover:null)) m.setGlyphs(u); return true; }catch(_){ return false; } },
     /* ══ (#R225) THE FRAME'S OWN COST, AND WHAT THE SCENE COSTS IT ══════════════════════════════════
        「スマホでの地図スクロール、ズームが壊滅的に遅いです」 — four rounds have argued about this and
        three measured the wrong machine, so js/perf-hud.js exists to take the number ON THE DEVICE.
@@ -2277,7 +2334,7 @@ function _redrawLocalGlyphs(m){
       addProtocol:(n,fn)=>A().addProtocol(n,fn), setImageConcurrency:n=>A().setImageConcurrency(n),
       /* (#R252) the CSS family the renderer rasterises CJK/Hangul from — the glyph source, hence here */
       setCjkFontFamily:f=>A().setCjkFontFamily?A().setCjkFontFamily(f):false,
-      refreshCjkGlyphs:()=>A().refreshCjkGlyphs?A().refreshCjkGlyphs():false,
+      refreshCjkGlyphs:c=>A().refreshCjkGlyphs?A().refreshCjkGlyphs(c):false,
       /* (#R179) contour tiles derived from a DEM — the last thing that needed the library by name */
       demContourSource:o=>A().demContourSource?A().demContourSource(o):null },
     /* (#R178) RENDERER-OWNED UI + a SECOND VIEW. `new maplibregl.Popup/Marker/Map` were the last
