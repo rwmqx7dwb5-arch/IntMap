@@ -94,6 +94,25 @@
 
 - **CSP は `<meta http-equiv>`**（GitHub Pages は独自のレスポンスヘッダを設定できない）。
   `index.html` は `default-src 'self'` を持ち、**14 の directive** を明示的に書く。
+  ⚠ **配信する HTML ページは全部 CSP を持つ**（`index.html`・`admin.html`・紹介／授業／共有ページ
+  〔en と ja〕・privacy・terms・science・sources）。**どの `script-src` にも `'unsafe-inline'` は無い**——
+  インラインの `<script>` は本文の sha256 で 1 本ずつ許す。nonce は使えない（応答ごとに変える値で、
+  同じバイトを全員に配る静的配信では誰でも読める定数になる）。`index.html` の本文はビルドがスタンプを
+  入れて初めて確定するので、ハッシュは `scripts/csp.mjs` の `cspHashesPlugin()`（最後の
+  `transformIndexHtml`。閉じるときに `dist/` の全ページも）がその後で導く。逐語コピーのページは
+  ソースに持つ（`node scripts/csp.mjs --write`・生成ページは `scripts/landing.mjs`）。
+  ⚠ **インラインのイベント属性（`onclick=` 等）は配信しない。** マークアップは `data-im-click="名前"`
+  で**名前を述べ**、`js/inline-actions.js` の 1 つのリスナが宣言済みの語彙だけを実行する
+  （未知の名前は拒んで記録）。`npm run check:static`（規則 `script-policy`）が、CSP の無いページ・
+  `'unsafe-inline'`／`'unsafe-hashes'`・ハッシュの過不足・イベント属性・宣言に無い／使われていない
+  action 名を落とし、`tests/security.spec.js` がビルドした全ページを違反記録つきで開いて**違反 0 件**を
+  実測する。
+  ⚠ `style-src` の `'unsafe-inline'` は `index.html`・`admin.html`・privacy・terms・science に残る
+  （アプリのマークアップと KaTeX と規約本文が style 属性を書く）。紹介・共有ページと sources は持たない。
+  ⚠ `connect-src`・`img-src`・`frame-src` の `https:` は**評価した上で残す**——記事リーダーは出版元の
+  ページを直接読み、ウェブカメラの画像と枠は OSM で誰でも書ける URL、7 つの URL はホストを実行時に
+  組み立て、外部ホストの台帳（`scripts/outbound-hosts.json`）は scheme も WebSocket も持たない。
+  理由の全文は `docs/SECURITY-ARCHITECTURE.md` §6。
 - ⚠ **アナリティクスは在るが、止まっている。** Google Analytics（`G-57X5MX0ZPW`）と
   Microsoft Clarity（`x2colhytq7`）のタグは `index.html` に残り、CSP にもホストが載ったままだが、
   **どちらのローダも `window.INTMAP_ANALYTICS`（`false` で宣言）の後ろに在る**ので、
@@ -119,6 +138,7 @@
   ⚠ ホスト全体が実行時の式で決まる URL（OSRM の `'https://'+prof[0]` 等）は発見できず、
   門が件数と場所を note として印字する。正本 [`docs/DATA-GOVERNANCE.md`](../DATA-GOVERNANCE.md) §4.3。
 - ⚠ **`index.html` の `script-src` には現在 `'unsafe-eval'` と 7 つの CDN の source が入っている**
+  （インラインの `<script>` のハッシュはこの数に入らない）
   （`unpkg.com` / `maps.googleapis.com` / `www.googletagmanager.com` / `www.google-analytics.com` /
   `ssl.google-analytics.com` / `www.clarity.ms` / `*.clarity.ms`）。`unpkg.com` だけは**ホストではなく
   1 ファイルの完全なパス**（`https://unpkg.com/@openmeteo/weather-map-layer@0.0.19/dist/index.js`）で、

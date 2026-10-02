@@ -37,6 +37,9 @@ import { injectAppShell } from './scripts/app-shell.mjs';
    it used to be typed by hand every round, and a forgotten bump left stale caches looking current */
 import { buildStampPlugin } from './scripts/build-stamp.mjs';
 import { siteUrlPlugin } from './scripts/site-url.mjs';
+/* (csp-without-inline) the pages' script-src admits each inline <script> by its hash, taken over the text the build
+   ships — LAST in the plugin list, after the stamp and the site URL have changed that text */
+import { cspHashesPlugin } from './scripts/csp.mjs';
 
 const ROOT = resolve(import.meta.dirname);
 
@@ -700,5 +703,5 @@ export default defineConfig({
      than read off filenames. scripts/perf-budget.mjs is the gate that reads it; it runs on
      every build because the report is what stops "the biggest chunk is big" from being
      mistaken for "startup is slow". */
-  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets()],
+  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin()],
 });

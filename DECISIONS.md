@@ -663,6 +663,19 @@ SheetJS の CDN でしか配布されない。開発用依存（選挙データ�
 読む工程なので影響範囲に入る。`package.json` は tarball URL を指し、lock に integrity が入る。
 `npm ls xlsx` が 1 本であることが更新の証拠。
 
+## インラインのコードはハッシュで 1 本ずつ許す——nonce ではなく、'unsafe-inline' でもなく
+
+`script-src` から `'unsafe-inline'` を外した（全ページ）。決めたこと: ⑴ **nonce は使わない**——応答ごとに
+変える値なので、同じバイトを全員に配る GitHub Pages では読める定数になり、意味を持たない ⑵ インラインの
+`<script>` は**本文の sha256** で許し、ハッシュは**人が書かない**——`index.html` はビルドがスタンプを入れた後の
+本文から導き（`scripts/csp.mjs` の `order:'post'` 変換）、逐語コピーのページはソースに持って門が照合する
+⑶ インラインのイベント属性はハッシュで許せない（`'unsafe-hashes'` が要り、`${i}` を含む属性は定まった本文を
+持たない）ので、**属性に名前を書き、1 つのリスナが宣言済みの語彙だけを実行する**（`js/inline-actions.js`）。
+`window` の関数名を属性の文字列で引く汎用の実行器にはしない——それは注入された名前も実行する。
+⑷ `connect-src`・`img-src`・`frame-src` は台帳から生成しない（記事リーダーの直接取得・OSM の URL・実行時に
+組み立てるホスト・台帳が WebSocket を見ない、の 4 つで列挙できない）。`style-src` の `'unsafe-inline'` は、
+style 属性を書くページにだけ残す。
+
 ## `'unsafe-eval'` は Cesium が要らなくなるまで残す——外せるかは検査が毎回測る
 
 CSP から `'unsafe-eval'` を外す実測: MapLibre だけなら違反ゼロ、Cesium は同梱の knockout が読み込み時に
