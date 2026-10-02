@@ -1,14 +1,17 @@
 /* ============================================================================
  *  IntMap · Mobile UI & responsive layout chrome  (#R167)
  * ----------------------------------------------------------------------------
- *  initMobileUI() — the bottom sheet, the FAB column and the mobile tab bar — plus the three
- *  responsive-layout blocks that follow it (map-search reflow, sidebar width, device class).
+ *  initMobileUI() — the phone shell: the one bottom sheet (four detents, a spring, its screens), the control
+ *  group, the legend tray and the mobile tab bar — plus the three responsive-layout blocks that follow it
+ *  (map-search reflow, sidebar width, device class). The sheet's arithmetic, the spring, the screens and
+ *  the tray live in js/mobile-sheet.js; this file wires them to the page.
  *  initMobileUI is RETURNED rather than instantiated: index.html still calls it by name at the
  *  end of boot, so the factory only has to hand the function back.
  * ==========================================================================*/
 
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { detentHeights, settleDetent, spring, makeScreens, makeLegendTray } from './mobile-sheet.js';
 
 
 export function mobileUI(HOST){
@@ -18,16 +21,18 @@ export function mobileUI(HOST){
   const _GE=()=>IntMapGeoEngine;
   const _cam=()=>{ try{ const E=_GE(); return (E&&E.camera)?E.camera:null; }catch(_){ return null; } };
   /* =====================================================================
-   *  iOS-native mobile UI controller — built from scratch.
+   *  iOS-native mobile UI controller (mobile-shell: rebuilt as the map-app pattern).
    *  Only active at <=768px; desktop layout is left completely untouched.
-   *  Owns: the draggable bottom sheet, the round control FABs + their
-   *  slide-up option sheets, the place-search FAB, and the auto compass.
+   *  Owns: the bottom sheet and its head (the one search field + Chronos), the screens lent into it
+   *  (Layers, Tools, Map, Chronos, Settings), the control group, the legend tray and the auto compass.
    * ===================================================================== */
   function initMobileUI(){
     const mq=window.matchMedia(window.IntMapDevice.COMPACT);
     const sidebar=document.getElementById('sidebar');
     const mapContainer=document.getElementById('map-container');
     if(!sidebar) return;
+    const RT=()=>window.IntMapRuntime;
+    const frame=(key,fn)=>{ const R=RT(); if(R&&R.frame) R.frame(key,fn); else requestAnimationFrame(fn); };
 
     /* ---- node relocation (keeps handlers + state across orientation flips) ---- */
     function rememberHome(node){ if(node && !node.__home && node.parentNode){ const ph=document.createComment('home'); node.parentNode.insertBefore(ph,node); node.__home=ph; } }
@@ -36,38 +41,53 @@ export function mobileUI(HOST){
     const layerDropdown=document.getElementById('layer-dropdown');
     const satController=document.getElementById('sat-controller');
     const moMountLayers=document.getElementById('mo-mount-layers');
-    const moMountSat=document.getElementById('mo-mount-sat');
+    /* (mobile-shell) the head of the sheet: the place search and the readout are LENT into it on a phone */
+    const mSearch=document.getElementById('map-search'), mSearchSlot=document.getElementById('m-search-slot');
+    const mReadout=document.getElementById('coord-readout'), mReadoutSlot=document.getElementById('m-readout-slot');
+    const mHead=document.getElementById('m-head');
+    /* ⚠ (mobile-shell) WHERE THE SHEET'S COVER IS WRITTEN. `--sheet-cover` was written on #map-container only, and
+       the map credit is NOT inside it (it is #map-container's sibling in .map-column since #R485) — so on a phone
+       the credit read the stylesheet's fixed `--peek-h` fallback and sat 196 px up whatever the sheet did. It is
+       written on the column too, so everything above the sheet follows the same number; #map-container keeps its
+       inline copy because js/mobile-map-input.js reads it from there as a CSSOM string. */
+    const coverHosts=[mapContainer, mapContainer&&mapContainer.parentElement].filter(Boolean);
+    const setCover=(px)=>{ for(const h of coverHosts) h.style.setProperty('--sheet-cover', px+'px'); };
 
-    /* ---- option sheets (Map / Tools) ---- */
-    const scrim=document.getElementById('m-scrim');
+    /* ══ (mobile-shell) LAYERS / TOOLS / MAP / CHRONOS / SETTINGS ARE SCREENS OF THE ONE SHEET ═══════════════
+       They were separate overlays — #mo-sheet and #tools-sheet slid up over a full-viewport scrim, the base-map
+       square opened its own popover, Chronos floated over the map and Settings was a modal. Now each is lent
+       into #m-screens while its OWNER says it is open (js/mobile-sheet.js makeScreens), so the reader stays in
+       one sheet whose height they control, and the map above it stays visible and live.
+       ⚠ The two option sheets keep their own open state (`.show`), their own Done, their own data-proxy
+       buttons and their own dialog registration — what changed is only where they are drawn. */
     const moSheet=document.getElementById('mo-sheet');
     const toolsSheet=document.getElementById('tools-sheet');
     const fabMap=document.getElementById('m-fab-map');
     const fabTools=document.getElementById('m-fab-tools');
+    const fabBase=document.getElementById('m-fab-base');
     let openSheetEl=null;
-    function openSheet(el){ if(!el) return; if(openSheetEl && openSheetEl!==el) openSheetEl.classList.remove('show'); openSheetEl=el; syncControls(); if(scrim) scrim.classList.add('show'); el.classList.add('show');
+    function openSheet(el){ if(!el) return; if(openSheetEl && openSheetEl!==el) openSheetEl.classList.remove('show'); openSheetEl=el; syncControls(); el.classList.add('show');
       /* (#R18) The Layers list inside the Map sheet must never carry desktop collapse state. */
       if(el===moSheet){ try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){}
         /* (#R232) …and the tile grid re-reads the row set on every open, because rows are still being
            built for ~1.5 s after boot (eco / l9 / beta) and because Atlas or a legend may have toggled
            something while the sheet was shut. mountInto() is idempotent and only rebuilds on a change. */
         try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.mountInto&&window.IntMapLayerSidebar.mountInto(moMountLayers); }catch(_){} } }
-    function closeSheet(){ if(openSheetEl){ openSheetEl.classList.remove('show'); openSheetEl=null; } if(scrim) scrim.classList.remove('show'); }
-    if(scrim) scrim.addEventListener('click',closeSheet);
+    function closeSheet(){ if(openSheetEl){ openSheetEl.classList.remove('show'); openSheetEl=null; } }
     /* (a11y-shared-dialog) both sheets already say role=dialog aria-modal — now they keep it: Escape closes, Tab stays in.
-       Open is the .show class (a closed sheet is still laid out, parked below the screen); focus is not moved on a phone. */
+       Open is the .show class; focus is not moved on a phone. */
     [moSheet,toolsSheet].forEach(sh=>{ if(sh) window.IntMapDialog.adopt(sh,{ close:closeSheet, isOpen:()=>sh.classList.contains('show'), focus:false }); });
     const moDone=document.getElementById('mo-done'); if(moDone) moDone.addEventListener('click',closeSheet);
     const toolsDone=document.getElementById('tools-done'); if(toolsDone) toolsDone.addEventListener('click',closeSheet);
     if(fabMap) fabMap.addEventListener('click',()=>{ openSheetEl===moSheet?closeSheet():openSheet(moSheet); });
     if(fabTools) fabTools.addEventListener('click',()=>{ openSheetEl===toolsSheet?closeSheet():openSheet(toolsSheet); });
+    if(fabBase) fabBase.addEventListener('click',()=>{ try{ const B=window.IntMapBasemapSwitch; if(B) B.toggle(); }catch(_){} });
 
     /* ---- proxy buttons drive the real (hidden) desktop controls ---- */
-    /* (#R231) `#bm-pop` joins the two sheets: the base-map / projection segments moved out of
-       #mo-sheet into the square's popover (js/basemap-switch.js) and they are the SAME [data-proxy]
-       buttons, so they must be relabelled and mirrored by the same pass. A selector that still named
-       only the two sheets would have left "Globe/Flat/Satellite" in English on a Japanese phone —
-       which is exactly the #R8 defect this function was written to fix. */
+    /* (#R231) `#bm-pop` joins the two sheets: the base-map / projection segments live in the Map screen
+       (js/basemap-switch.js) and they are the SAME [data-proxy] buttons, so they must be relabelled and
+       mirrored by the same pass. A selector that still named only the two sheets would have left
+       "Globe/Flat/Satellite" in English on a Japanese phone — the #R8 defect this function was written to fix. */
     const PROXY_SEL='#mo-sheet [data-proxy], #tools-sheet [data-proxy], #bm-pop [data-proxy]';
     function proxy(btn){ const id=btn.getAttribute('data-proxy'); const real=document.getElementById(id); if(!real) return; real.click(); setTimeout(syncControls,0); if(/^btn-tool-/.test(id)) closeSheet(); }
     document.querySelectorAll('#mo-sheet [data-proxy], #tools-sheet [data-proxy]').forEach(b=>b.addEventListener('click',()=>proxy(b)));
@@ -78,29 +98,22 @@ export function mobileUI(HOST){
         else if(b.classList.contains('m-tool-btn')){ const m=(real.textContent||'').trim().match(/^(\S+)\s+([\s\S]+)$/); const lbl=b.querySelector('span:last-child'); if(lbl&&m) lbl.textContent=m[2].trim(); }
         b.classList.toggle('active', real.classList.contains('active')||real.classList.contains('tool-on'));
       });
-      /* (#R139) the "Map & layers" FAB is accent-coloured ONLY when a thematic layer is selected (was tied to
-         the satellite basemap). `_imActiveLayerCount` is published by _refreshActiveLayers on every change. */
+      /* (#R139) the Layers button is accent-coloured ONLY when a thematic layer is selected.
+         `_imActiveLayerCount` is published by _refreshActiveLayers on every change. */
       if(fabMap) fabMap.classList.toggle('on', (window._imActiveLayerCount||0)>0);
       if(fabTools) fabTools.classList.toggle('on', !!HOST.toolMode || HOST.isGridOn);
-      /* (#R231) the base-map square's own two headings and its caption are not [data-proxy] labels —
-         they are its own words — so they are re-read here, where every other mobile label is. */
+      /* (#R231) the Map screen's own headings are not [data-proxy] labels — they are its own words — so they
+         are re-read here, where every other mobile label is. */
       try{ const B=window.IntMapBasemapSwitch; if(B){ B.relabel(); B.redraw(); } }catch(_){ }
     }
-    /* (#R231) THE LANGUAGE BUTTONS COME FROM THE REGISTRY, NOT FROM A LIST WRITTEN HERE.
-       This was `['lang-en','lang-jp','lang-de','lang-ru','lang-es']` — one of the places a sixth and
-       seventh language had to be remembered by hand, and were not: tapping 繁 or 简 in the header did
-       NOT relabel the mobile proxies, so the phone kept Globe/Flat/Satellite in the previous language
-       until something else called syncControls. js/lang-registry.js already knows every code and
-       js/lang-registry.js `syncChrome` already creates every button, so ask it. */
+    /* (#R231) THE LANGUAGE BUTTONS COME FROM THE REGISTRY, NOT FROM A LIST WRITTEN HERE — js/lang-registry.js
+       knows every code, so a sixth and seventh language relabel the proxies without anyone remembering them. */
     (IntMapLang ? IntMapLang.codes() : ['en','jp','de','ru','es'])
       .forEach(code=>{ const b=document.getElementById('lang-'+code); if(b) b.addEventListener('click',()=>setTimeout(syncControls,40)); });
-    /* (#R8 JP/EN) Re-label the mobile segment/tool proxies on EVERY language change — not just the lang
-       toggle buttons. Changing language via the Settings dropdown (or any programmatic switch) used to
-       leave "Globe/Flat/Satellite" in English on the phone ("日本語版で英語が出てくる"). updateI18n() now
-       calls this after it relabels the desktop controls the proxies copy from. */
+    /* (#R8 JP/EN) updateI18n() calls this after it relabels the desktop controls the proxies copy from. */
     window._imSyncMobile=syncControls;
 
-    /* ---- compass FAB: appears only when the map is rotated/tilted ---- */
+    /* ---- compass: exists only while the map is rotated/tilted ---- */
     const fabCompass=document.getElementById('m-fab-compass');
     const compassSvg=fabCompass?fabCompass.querySelector('.m-compass-svg'):null;
     if(fabCompass) fabCompass.addEventListener('click',()=>{ const r=document.getElementById('btn-compass'); if(r) r.click(); });
@@ -108,179 +121,157 @@ export function mobileUI(HOST){
       fabCompass.classList.toggle('show', Math.abs(b)>1 || p>1); if(compassSvg) compassSvg.style.transform='rotate('+(-b)+'deg)'; }
     try{ const E=_GE(); if(E){ E.events.on('rotate',updateCompass); E.events.on('pitch',updateCompass); E.events.on('moveend',updateCompass); } }catch(_){}
 
-    /* ---- (#R137) locate FAB: fly to my location + show the accent dot / accuracy circle (they follow me) ---- */
+    /* ---- (#R137) locate: fly to my location + show the accent dot / accuracy circle (they follow me) ---- */
     { const fabLoc=document.getElementById('m-fab-locate');
       if(fabLoc) fabLoc.addEventListener('click',()=>{ try{ window.IntMapLocate&&window.IntMapLocate.toggleOrRecenter(); }catch(_){} }); }
 
-    /* ---- swipe down on an option-sheet grip to dismiss it ---- */
-    function makeDismiss(sheet){ if(!sheet) return; const grip=sheet.querySelector('.m-sheet-grip'); if(!grip) return; let drag=false,sy=0;
-      grip.addEventListener('pointerdown',e=>{ drag=true; sy=e.clientY; sheet.style.transition='none'; try{grip.setPointerCapture(e.pointerId);}catch(_){} });
-      grip.addEventListener('pointermove',e=>{ if(!drag) return; sheet.style.transform='translateY('+Math.max(0,e.clientY-sy)+'px)'; });
-      const end=e=>{ if(!drag) return; drag=false; sheet.style.transition=''; const dy=((e&&e.clientY)||sy)-sy; sheet.style.transform=''; if(dy>90) closeSheet(); };
-      grip.addEventListener('pointerup',end); grip.addEventListener('pointercancel',()=>{ if(drag){ drag=false; sheet.style.transition=''; sheet.style.transform=''; } });
+    /* ---- (mobile-shell) Chronos is entered from the sheet's head ---- */
+    const tl=document.getElementById('news-timeline'), clock=document.getElementById('m-clock');
+    if(clock && tl){
+      clock.addEventListener('click',()=>{ const tg=document.getElementById('ntl-toggle'); if(tg) tg.click(); });
+      /* the clock says what the collapsed Chronos button says: accent while the map shows another time, and
+         its accessible name is that button's own two lines (js/news-timeline.js writes them) */
+      const mirror=()=>{ clock.classList.toggle('on', tl.classList.contains('active'));
+        const t=document.getElementById('ntl-open-t'), s=document.getElementById('ntl-open-s');
+        const name=[t&&t.textContent,s&&s.textContent].filter(Boolean).join(' — ');
+        if(name && clock.getAttribute('aria-label')!==name){ clock.setAttribute('aria-label',name); clock.title=name; } };
+      try{ new MutationObserver(mirror).observe(tl,{attributes:true,attributeFilter:['class']}); const so=document.getElementById('ntl-open-s'); if(so) new MutationObserver(mirror).observe(so,{childList:true,characterData:true,subtree:true}); }catch(_){}
+      mirror();
     }
-    makeDismiss(moSheet); makeDismiss(toolsSheet);
 
     /* ---- responsive: relocate config panels in/out of the sheets ---- */
     function applyLayout(isM){
       /* ══ ⚠ (#R235) 「モバイル版のレイヤー選択欄は、デスクトップ版とおなじUIに。下部の比較ビューや
-             衛星画像プロバイダ等のやつはなくていい。」 ════════════════════════════════════════════════
-         #R232 mounted the desktop's tile grid at the TOP of this sheet, which made the layer list
-         itself identical. What was still different was everything UNDER it: the satellite-imagery
-         provider panel (`#sat-controller`, moved in here by the line below since #R12) and the
-         `#layer-tools` strip that `reorganizeLayerPanel` fills with 比較ビュー / 相関分析. Neither is
-         in the desktop layer sidebar — that is search + tiles + the Active-layers bar and nothing
-         else — so they are what the two panels still had to stop differing by.
-         ⚠ `#sat-controller` IS NO LONGER REACHABLE ON A PHONE. That is the instruction 「なくていい」
-         and it is a real reduction, so it is called out in the round's notes rather than left to be
-         discovered. Nothing is deleted: the element keeps its desktop home and the phone simply
-         stops borrowing it, so widening the window brings it straight back. */
+             衛星画像プロバイダ等のやつはなくていい。」 — the desktop layer sidebar is search + tiles + the
+         Active-layers bar, so the phone's is too. ⚠ `#sat-controller` IS NOT REACHABLE ON A PHONE (the
+         instruction 「なくていい」); nothing is deleted — widening the window brings it straight back. */
       if(isM){ moveTo(layerDropdown,moMountLayers);
-        /* Mobile shows every layer group expanded (the carets are hidden there, #12) so nothing stays
-           hidden behind a collapsed header the user can no longer toggle. */
+        /* Mobile shows every layer group expanded (the carets are hidden there, #12). */
         try{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ h.classList.remove('lyr-collapsed'); let el=h.nextElementSibling; while(el && !el.matches('.layer-group-title,.lyr-head,.premium-group-title') && el.tagName!=='HR'){ if(el.style) el.style.display=''; el=el.nextElementSibling; } }); }catch(_){}
         /* (#R28) every group (incl. Others(beta)) shows fully expanded on mobile — no pulldown. */
         try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){}
-        /* ══ (#R232) 「モバイル版のレイヤー選択欄についても、タイル形式のものに。」 ═══════════════════
-           The classic dropdown stays mounted here and stays the source of truth — every tile toggles a
-           REAL checkbox in it — but on a phone it is now the hidden data source rather than the UI
-           (`body.m-lyr-tiles` hides its rows; see css/intmap.css). Nothing is lost by hiding them: the
-           per-row sliders and date pickers have been `display:none !important` app-wide since #R16
-           (every such control lives in that layer's legend), so a row was only ever a checkbox and a
-           name — which is exactly what a tile is, plus the picture. */
+        /* (#R232) the classic dropdown stays mounted here as the CHECKBOX STORE — every tile toggles a real
+           checkbox in it — and the tile grid is the phone's UI (`body.m-lyr-tiles` hides the rows). */
         try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.mountInto&&window.IntMapLayerSidebar.mountInto(moMountLayers); document.body.classList.add('m-lyr-tiles'); }catch(_){}
+        /* (mobile-shell) the search field and the readout belong to the sheet's head on a phone */
+        moveTo(mSearch,mSearchSlot); moveTo(mReadout,mReadoutSlot);
       }
-      else{ restoreHome(layerDropdown); restoreHome(satController); closeSheet(); document.body.classList.remove('sheet-full');
+      else{ restoreHome(layerDropdown); restoreHome(satController); restoreHome(mSearch); restoreHome(mReadout); closeSheet(); document.body.classList.remove('sheet-full','sheet-min','sheet-hidden');
         /* ⚠ restoreHome(satController) STAYS: a session that was narrow when #R234 shipped may still
            have the element parked in #mo-mount-sat, and widening has to bring it back either way. */
-        /* (#R232) back to the desktop: drop the phone's grid so it cannot go stale behind the real one */
         try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.unmountFrom&&window.IntMapLayerSidebar.unmountFrom(moMountLayers); }catch(_){}
-        document.body.classList.remove('m-lyr-tiles'); }
+        document.body.classList.remove('m-lyr-tiles');
+        try{ legendTray&&legendTray.close(); }catch(_){}
+        sidebar.style.removeProperty('--sheet-hide'); }
       try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){}   /* (#R34) re-home the Active-layers bar for the new layout */
+      try{ screens&&screens.syncAll(); }catch(_){}
     }
 
     /* =================== THE BOTTOM SHEET =================== */
-    let currentDetent='peek';
-    function curTy(){ return parseFloat(getComputedStyle(sidebar).getPropertyValue('--sheet-ty'))||0; }
-    function detents(){
-      /* (#R240) the fallback follows `--sheet-h` (was a second copy of the old 0.92) — the sheet's
-         height has one owner in the stylesheet and this is the only place that has to guess. */
+    /* (mobile-shell) FOUR resting heights — `hidden` (the grip), `min` (the search row), `half`, `full` — and a
+       spring on release (js/mobile-sheet.js). The names other modules have always passed still work:
+       'peek' was the lowest stop the reader used and is `min` now; 'mini' was the stop below it. */
+    const ALIAS={ peek:'min', mini:'hidden' };
+    const RANK={ hidden:0, min:1, half:2, full:3 };
+    let currentDetent='min';
+    let _safeProbe=null;
+    function safeBottom(){ try{ if(!_safeProbe){ _safeProbe=document.createElement('div'); _safeProbe.style.cssText='position:fixed;left:0;bottom:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-bottom:var(--safe-bottom)'; document.body.appendChild(_safeProbe); }
+      return parseFloat(getComputedStyle(_safeProbe).paddingBottom)||0; }catch(_){ return 0; } }
+    function recompute(){
+      /* (#R240) the sheet's height has one owner in the stylesheet (`--sheet-h`); this is the only guess */
       const H=sidebar.offsetHeight||Math.round(window.innerHeight*0.86);
-      /* Peek collapses the sheet down to JUST BELOW the News/Information tab row, so everything
-         beneath the tabs (pin toggle, filters, the feed) hides away — maximising the map. */
-      const tabs=sidebar.querySelector('.control-panel');
-      let peek;
-      if(tabs && tabs.offsetParent!==null){ peek=tabs.offsetTop+tabs.offsetHeight+10; }
-      else { const vis=['live-news-feed','info-dashboard','community-feed','news-reader-pane'].map(id=>document.getElementById(id)).find(e=>e && e.offsetParent!==null); peek=vis?vis.offsetTop:196; }
-      peek=Math.min(Math.max(peek,120),Math.round(H*0.62));
-      /* (#R22) MINI now collapses BELOW the IntMap logo too ("ロゴが見えなくなるまで格納できるように") —
-         only the drag grip stays, maximising the map. The grip remains the handle to pull it back up. */
-      const grip=sidebar.querySelector('.sheet-grip');
-      const header=sidebar.querySelector('.header-area');
-      let mini;
-      if(header && header.offsetParent!==null) mini=Math.max(26, header.offsetTop - 4);   /* cut just ABOVE the logo */
-      else if(grip && grip.offsetParent!==null) mini=grip.offsetTop+grip.offsetHeight+10;
-      else mini=40;
-      mini=Math.min(Math.max(mini,26), Math.max(40,peek-24));
-      const tyPeek=Math.max(0,H-peek); const tyHalf=Math.min(Math.round(H*0.5),tyPeek); const tyMini=Math.max(0,H-mini);
-      return { full:0, half:tyHalf, peek:tyPeek, mini:tyMini, H:H, peekH:peek };
+      const headH=(mHead && mHead.offsetParent!==null)? mHead.offsetTop+mHead.offsetHeight : 64;
+      const h=detentHeights({ H, vh:window.innerHeight, headH, safeBottom:safeBottom() });
+      if(mapContainer) mapContainer.style.setProperty('--peek-h',h.min+'px');
+      return { H, h, ty:(n)=>Math.max(0,H-h[n]) };
     }
-    function recompute(){ const d=detents(); if(mapContainer) mapContainer.style.setProperty('--peek-h',d.peekH+'px'); return d; }
-    /* (#R139) exact evaluator for the sheet's CSS timing curve so the map's optical centre re-pads on the SAME
-       curve+duration as the sheet slide (was 300ms / default easing vs the sheet's 460ms cubic-bezier — they
-       settled out of phase, the "同期がまだよわい"). Newton-Raphson invert of the bezier x, then read y. */
-    function _cubicBezier(x1,y1,x2,y2){ const cx=3*x1,bx=3*(x2-x1)-cx,ax=1-cx-bx, cy=3*y1,by=3*(y2-y1)-cy,ay=1-cy-by;
-      const fx=t=>((ax*t+bx)*t+cx)*t, dfx=t=>(3*ax*t+2*bx)*t+cx, fy=t=>((ay*t+by)*t+cy)*t;
-      return function(x){ if(x<=0)return 0; if(x>=1)return 1; let t=x; for(let i=0;i<6;i++){ const e=fx(t)-x; if(Math.abs(e)<1e-4)break; const dv=dfx(t); if(Math.abs(dv)<1e-6)break; t-=e/dv; } return fy(t); }; }
-    const _sheetEase=_cubicBezier(0.32,0.72,0,1);   /* === --sheet-ease in CSS */
     /* How much of the map the sheet covers at translate `ty` — what the camera padding and --sheet-cover
-       follow. ONE formula for the settled detent (setDetent) and the live drag (liveMapPad); it was written
-       out in both. ⚠ (share-embed-distribution) An EMBED draws no sheet (js/embed-mode.js keeps only the map,
-       legends and credits; js/ui-device.js embedded() is the one answer), so it covers nothing — measured
-       before this: a 480×320 frame got a bottom padding of 171 px from the hidden sheet's detent, and the
-       shared place sat 85 px above the middle of the frame. */
+       follow. ONE formula for the settled detent and the live drag.
+       ⚠ (share-embed-distribution) An EMBED draws no sheet (js/ui-device.js embedded() is the one answer), so it
+       covers nothing. */
     function sheetCovers(d,ty){ if(!mq.matches||window.IntMapDevice.embedded()) return 0; return Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82)); }
-    function setDetent(name,animate){
-      if(animate===undefined) animate=true; const d=recompute(); currentDetent=name;
-      const ty=(d[name]!=null)?d[name]:d.half;
+    const _reduceMotion=()=>{ try{ return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(_){ return false; } };
+    const _cssLinear=(()=>{ try{ return CSS.supports('transition-timing-function','linear(0, 1)'); }catch(_){ return false; } })();
+    function setDetent(name,animate,v0){
+      if(animate===undefined) animate=true;
+      name=ALIAS[name]||name; if(!(name in RANK)) name='half';
+      const d=recompute(); currentDetent=name;
+      const ty=d.ty(name);
+      /* the spring this release rides: the finger's velocity at release is its initial velocity, so a
+         hard flick arrives faster than a gentle let-go (the motion UIKit gives a sheet) */
+      let sp=null;
+      if(animate && !_reduceMotion()){ sp=spring(v0||0);
+        sidebar.style.setProperty('--sheet-dur',sp.duration.toFixed(3)+'s');
+        sidebar.style.setProperty('--sheet-curve',_cssLinear?sp.css:'var(--sheet-ease)'); }
       if(!animate) sidebar.classList.add('sheet-dragging');
       sidebar.style.setProperty('--sheet-ty',ty+'px');
+      /* the content ends where the screen ends: everything below the fold is padding, so a feed scrolls to
+         its last row and Atlas's composer sits on the screen at `half` (written once per settle, never per frame) */
+      sidebar.style.setProperty('--sheet-hide',ty+'px');
       if(!animate){ void sidebar.offsetHeight; sidebar.classList.remove('sheet-dragging'); }
-      document.body.classList.toggle('sheet-full', name==='full');
-      /* keep the map's optical center inside the area visible ABOVE the sheet — but ONLY on mobile.
-         (#R13) On desktop there is no bottom sheet; if this ever runs there it must not pad the bottom,
-         which was dropping the map's optical center toward the bottom of the screen. */
+      const b=document.body.classList;
+      b.toggle('sheet-full', name==='full'); b.toggle('sheet-min', name==='min'); b.toggle('sheet-hidden', name==='hidden');
+      /* keep the map's optical centre inside the area visible ABOVE the sheet — ONLY on a phone (#R13) */
       const covered=sheetCovers(d,ty);
-      /* --sheet-cover tracks how much the sheet currently covers, so floating controls (timebar,
-         Summarize, legends) sit just above the sheet's CURRENT top — not the fixed peek line — and
-         therefore stay visible at every detent (#32). */
-      if(mapContainer) mapContainer.style.setProperty('--sheet-cover', covered+'px');
-      /* (#R140) glide the camera in TRUE lock-step with the sheet. R139 tried map.setPadding(pad,{duration,easing})
-         but in MapLibre GL JS v5 setPadding is INSTANTANEOUS — its 2nd arg is eventData, NOT animation options — so
-         that duration/easing was silently ignored and the camera JUMPED in one frame while the sheet slid 460ms
-         ("同期がまだよわい"). The real animated-padding API is easeTo({padding,…}); feed it the SAME 460ms + the sheet's
-         own cubic-bezier so the optical centre and the sheet ride the identical curve. Non-animated → instant setPadding. */
+      /* --sheet-cover tracks how much the sheet covers, so the floating controls and the legend tray sit just
+         above the sheet's CURRENT top at every detent (#32) */
+      setCover(covered);
+      /* (#R140) the camera's padding glides on the SAME curve and duration as the sheet — easeTo({padding}) is the
+         animated form (setPadding is instantaneous). (#R142) a queued live-drag setPadding would abort it. */
       const _pad={top:0,left:0,right:0,bottom:covered};
-      /* (#R142) A live-drag setPadding can still be queued for the NEXT animation frame at this moment (liveMapPad's
-         rAF). MapLibre GL JS v5 setPadding IS jumpTo(), and jumpTo() begins with stop() — so that one stale frame would
-         ABORT this settle easeTo and freeze the camera padding at the drag-RELEASE value, leaving the map's optical
-         centre offset from the settled sheet until the next drag ("ボトムシートを移動した際に地図中心がずれる・再び動かすと
-         直る"). Cancel the pending rAF and sync the live-pad bookkeeping so nothing can interrupt the settle. */
       if(_padRAF){ try{ cancelAnimationFrame(_padRAF); }catch(_){} _padRAF=0; } _lastPad=_padPending=covered;
-      try{ const C=_cam(); if(C){ if(animate) C.easeTo({padding:_pad, duration:460, easing:_sheetEase}); else C.setPadding(_pad); } }catch(_){}
+      try{ const C=_cam(); if(C){ if(sp) C.easeTo({padding:_pad, duration:Math.round(sp.duration*1000), easing:sp.ease}); else C.setPadding(_pad); } }catch(_){}
     }
     window.__setDetent=setDetent;
 
     let dragging=false,startY=0,startTy=0,lastY=0,lastT=0,vel=0,maxTy=0,dragD=null,_padRAF=0,_lastPad=-1,_padPending=-1;
-    /* Keep the map's optical center inside the area visible ABOVE the sheet, live (no animation)
-       so the centerd point never drifts while the sheet is being dragged.
-       (#R12) map.setPadding reprojects the whole camera — doing it 60×/s on a WebGL globe is what made
-       the live re-center feel janky. The --sheet-cover CSS var still tracks every frame (cheap, so the
-       floating controls glide), but the expensive setPadding is gated to ≥2px movement and one call/rAF. */
+    /* Keep the map's optical centre inside the area visible ABOVE the sheet, live. (#R12) setPadding reprojects
+       the whole camera, so it is one call per frame with the NEWEST value (#R140); --sheet-cover tracks every move. */
     function liveMapPad(ty,d){ d=d||dragD||recompute();
       const covered=sheetCovers(d,ty);
-      if(mapContainer) mapContainer.style.setProperty('--sheet-cover', covered+'px');   /* controls follow the sheet live (#32) */
+      setCover(covered);
       if(!_cam()) return;
-      /* (#R140) map padding is rAF-coalesced for perf (setPadding reprojects the whole camera), but R139 applied the
-         value captured when the rAF was SCHEDULED — the OLDEST move in the frame — so during a fast flick the camera
-         trailed the finger by the whole flick. Store the NEWEST covered value and read it inside the rAF; the sheet
-         transform is written synchronously in dragMove, so sheet+map now stay within one frame (~16ms) of each other. */
       _padPending=covered;
       if(_padRAF) return; _padRAF=requestAnimationFrame(()=>{ _padRAF=0; if(_padPending===_lastPad) return; _lastPad=_padPending; try{ const C=_cam(); if(C) C.setPadding({top:0,left:0,right:0,bottom:_padPending}); }catch(_){} }); }
-    function dragStart(y){ try{ const C=_cam(); if(C) C.stop(); }catch(_){}   /* (#R140) cancel any in-flight snap easeTo so a re-grab mid-animation hands control straight back to the finger */
-      dragD=recompute(); maxTy=dragD.peek; dragging=true; startY=y; startTy=curTy(); lastY=y; lastT=performance.now(); vel=0; _lastPad=-1; _padPending=-1; sidebar.classList.add('sheet-dragging'); }   /* (#R107) PEEK is now the lowest detent — the MINI (logo-hidden) stop is disabled per request */
-    function dragMove(y){ if(!dragging) return; let ty=Math.max(0,Math.min(maxTy,startTy+(y-startY))); sidebar.style.setProperty('--sheet-ty',ty+'px'); liveMapPad(ty,dragD); const now=performance.now(),dt=now-lastT; if(dt>0) vel=(y-lastY)/dt; lastY=y; lastT=now; }
+    function curTy(){ return parseFloat(sidebar.style.getPropertyValue('--sheet-ty'))||0; }
+    function dragStart(y){ try{ const C=_cam(); if(C) C.stop(); }catch(_){}   /* (#R140) a re-grab mid-animation hands control straight back to the finger */
+      dragD=recompute(); maxTy=dragD.ty('hidden'); dragging=true; startY=y;
+      /* the sheet is where it is DRAWN — mid-spring that is not its target, so read the transform, not the variable */
+      let t=curTy(); try{ const m=/matrix(?:3d)?\(([^)]+)\)/.exec(getComputedStyle(sidebar).transform||''); if(m){ const v=m[1].split(',').map(Number); const y=v.length===16?v[13]:v[5]; if(isFinite(y)) t=y; } }catch(_){}
+      startTy=t; lastY=y; lastT=performance.now(); vel=0; _lastPad=-1; _padPending=-1;
+      sidebar.classList.add('sheet-dragging'); sidebar.style.setProperty('--sheet-ty',t+'px'); }
+    /* past `full` the sheet follows a third of the finger — the rubber band that says «this is the top» */
+    function dragMove(y){ if(!dragging) return; let ty=startTy+(y-startY); if(ty<0) ty=ty/3; ty=Math.min(maxTy,ty);
+      sidebar.style.setProperty('--sheet-ty',ty+'px'); liveMapPad(Math.max(0,ty),dragD); const now=performance.now(),dt=now-lastT; if(dt>0) vel=0.6*((y-lastY)/dt)+0.4*vel; lastY=y; lastT=now; }
     function dragEnd(){ if(!dragging) return; dragging=false; sidebar.classList.remove('sheet-dragging'); const d=recompute(); const ty=curTy();
-      const order=[{n:'full',v:d.full},{n:'half',v:d.half},{n:'peek',v:d.peek}]; let target;   /* (#R107) 'mini' removed — 'peek' is the lowest detent now */
-      if(vel>0.45) target=order.find(o=>o.v>ty+2)||order[order.length-1];
-      else if(vel<-0.45){ const rev=order.slice().reverse(); target=rev.find(o=>o.v<ty-2)||order[0]; }
-      else target=order.reduce((a,b)=>Math.abs(b.v-ty)<Math.abs(a.v-ty)?b:a);
-      setDetent(target.n);
+      if(performance.now()-lastT>80) vel=0;   /* the finger stopped before it lifted: that is a placement, not a flick */
+      const target=settleDetent(d.H-Math.max(0,ty), vel, d.h);
+      const dist=d.ty(target)-ty;
+      setDetent(target,true, Math.abs(dist)>1 ? (vel*1000*Math.sign(dist))/Math.abs(dist) : 0);
     }
+    /* ══ (mobile-shell) THE WHOLE HEAD IS THE HANDLE, NOT A 48 px GRIP ═══════════════════════════════════════
+       The grip, the search row, the title row and the tab row are one handle: a vertical stroke on any of them
+       moves the sheet, and a tap on a control in them is still a tap (the stroke has to travel 7 px, more up or
+       down than sideways, before it becomes a drag; the click that follows a drag is swallowed). */
+    function grabbable(zone){ if(!zone) return; let armed=false,on=false,sy=0,sx=0,pid=null;
+      zone.addEventListener('pointerdown',e=>{ if(!mq.matches||(e.button||0)>0||dragging) return; armed=true; on=false; sy=e.clientY; sx=e.clientX; pid=e.pointerId; });
+      zone.addEventListener('pointermove',e=>{ if(!armed||e.pointerId!==pid) return;
+        if(!on){ const dy=e.clientY-sy, dx=e.clientX-sx; if(Math.abs(dy)<7||Math.abs(dx)>Math.abs(dy)) return;
+          on=true; try{ zone.setPointerCapture(pid); }catch(_){} dragStart(sy); }
+        dragMove(e.clientY); });
+      const end=()=>{ if(!armed) return; armed=false; if(!on) return; on=false; dragEnd();
+        const swallow=(ev)=>{ ev.stopPropagation(); ev.preventDefault(); }; window.addEventListener('click',swallow,true); setTimeout(()=>window.removeEventListener('click',swallow,true),60); };
+      zone.addEventListener('pointerup',end); zone.addEventListener('pointercancel',end); }
+    [mHead, sidebar.querySelector('.header-area'), sidebar.querySelector('.control-panel')].forEach(grabbable);
+    /* a TAP on the grip steps the sheet: up from the bottom two stops, down from the top two */
     const grip=sidebar.querySelector('.sheet-grip');
-    if(grip){
-      grip.addEventListener('pointerdown',e=>{ if(!mq.matches) return; try{grip.setPointerCapture(e.pointerId);}catch(_){} dragStart(e.clientY); });
-      grip.addEventListener('pointermove',e=>{ if(dragging) dragMove(e.clientY); });
-      grip.addEventListener('pointerup',dragEnd); grip.addEventListener('pointercancel',dragEnd);
-    }
+    if(grip) grip.addEventListener('click',()=>{ if(!mq.matches) return; setDetent({hidden:'min',min:'half',half:'min',full:'half'}[currentDetent]||'min'); });
     /* ══ (#R231) SCROLL TO THE TOP AND KEEP PULLING → THE SHEET COMES DOWN ═══════════════════════
        「モバイル版で、ウィジェットを上下スクロールした時に、一番上までスクロールしたら、そこから
          ボトムシートを下げる動作に自然に移行するように。（Countries、Atlasでも）」
-
-       This existed, and it was a LIST OF FIVE ELEMENT IDS — so the two tabs the report names were the
-       two it did not cover (#countries-feed was split out of the news feed in #R78e and #atlas-feed was
-       added in #R112; neither was added here), and neither was any scroller NESTED inside a tab, which
-       is what an Atlas reply or a Countries card actually is.
-
-       ⚠ SO IT NO LONGER NAMES ELEMENTS. One delegated listener on the sheet finds, at touchstart, the
-       nearest genuinely-scrollable ancestor of whatever was touched, and hands over to the sheet drag
-       when that scroller is at its top (or when there is nothing scrollable under the finger at all).
-       A tab added later is covered for free, which is the property the id list never had.
-
-       ⚠ AND THE `currentDetent==='full'` GATE IS GONE. The instruction is about scrolling a widget to
-       the top, not about the sheet being at its maximum; at 'half' the same pull now lowers it to
-       'peek' instead of doing nothing. `dragStart(y)` is called with the CURRENT finger position, so
-       the sheet picks the gesture up exactly where the scroll ended — that is the 自然に移行. */
+       ⚠ IT DOES NOT NAME ELEMENTS. One delegated listener finds, at touchstart, the nearest genuinely-scrollable
+       ancestor of whatever was touched and hands over to the sheet drag when that scroller is at its top — so a
+       tab, or a SCREEN (Layers, Tools, Chronos, Settings), added later is covered for free. */
     {
       let active=false, sy=0, sx=0, sc=null, armed=false;
       /* computed ONCE per gesture (getComputedStyle in a touchmove would be a per-frame cost) */
@@ -293,10 +284,10 @@ export function mobileUI(HOST){
       }
       sidebar.addEventListener('touchstart',e=>{
         active=false; armed=false; sc=null;
-        if(!mq.matches || dragging || currentDetent==='peek') return;
+        if(!mq.matches || dragging || RANK[currentDetent]<=RANK.min) return;
         const t=e.touches[0]; sy=t.clientY; sx=t.clientX;
-        /* the grip has its own drag; anything that takes a horizontal gesture keeps it */
-        if(e.target.closest && (e.target.closest('.sheet-grip')||e.target.closest('input[type=range]')||e.target.closest('.m-sheet'))) return;
+        /* the head has its own drag (grabbable above); anything that takes a horizontal gesture keeps it */
+        if(e.target.closest && (e.target.closest('#m-head,.header-area,.control-panel')||e.target.closest('input[type=range]'))) return;
         sc=scrollerUnder(e.target); armed=true;
       },{passive:true});
       sidebar.addEventListener('touchmove',e=>{
@@ -317,18 +308,10 @@ export function mobileUI(HOST){
     /* ══ (#R231) A FULLY-RAISED SHEET MAKES THE VISIBLE MAP UNTAPPABLE ══════════════════════════
        「ボトムシートを最大まで上げた時点では、地図が見えている部分のタップは無効化し、（ホバーは
          可能）タップすればボトムシートを中の高さまで自動で下げるように。」
-
-       ⚠ IT IS A `click` SWALLOW, NOT A POINTER BLOCK, AND THAT IS THE WHOLE DESIGN. The two obvious
-       implementations — `pointer-events:none` on #map, or a transparent catcher over it — both take
-       the HOVER with them, and hover is explicitly to be kept. Pointer events are therefore never
-       touched: the canvas still gets pointerover/pointermove (hover, the coordinate readout, the
-       feature highlight) and still gets pointerdown/move/up, so the map can still be panned and
-       pinched with the sheet up. Only the tap's `click` (and its long-press `contextmenu`) is caught,
-       in the CAPTURE phase on window — which runs before the renderer's own listeners on #map — and
-       turned into "lower the sheet to the middle detent".
-
-       ⚠ The target test is `#map` and not `.map-container`: the search pill, the time machine, the
-       legends and the readout are siblings inside the container, and they are chrome, not map. */
+       ⚠ IT IS A `click` SWALLOW, NOT A POINTER BLOCK: pointer events (hover, panning, pinching) are never
+       touched; only the tap's `click` (and its long-press `contextmenu`) is caught, in the CAPTURE phase on
+       window, and turned into "lower the sheet to the middle detent". ⚠ The target test is `#map`, not
+       `.map-container` — the chrome inside the container is not map. */
     window.addEventListener('click',e=>{
       if(!mq.matches || currentDetent!=='full') return;
       const t=e.target;
@@ -343,51 +326,77 @@ export function mobileUI(HOST){
       e.stopPropagation(); e.preventDefault();
       setDetent('half');
     },true);
-    /* tapping a tab while collapsed lifts the sheet; focusing search expands it */
-    /* (#R112) The Atlas tab is a chat whose INPUT sits at the bottom of the panel, so 'half' would leave it off-screen —
-       it lifts the sheet to FULL (matching how a messaging sheet opens). Other tabs keep the peek→half behaviour. The
-       Atlas lift uses animate=false because (per #R110) changing --sheet-ty while the transform-transition is live does
-       NOT re-trigger it in Chromium (the sheet stays stuck at peek); animate=false forces the reflow so it snaps to full.
+    /* ══ (mobile-shell) A TAB OPENS AT HALF — ATLAS INCLUDED ══════════════════════════════════════════════
+       (#R112) lifted Atlas to FULL because its composer sits at the bottom of the panel and a translated sheet
+       left it below the screen at `half`. The sheet's content now ENDS where the screen ends (`--sheet-hide`,
+       written in setDetent), so the composer is on screen at `half` — and at `half` the reader watches Atlas
+       draw its answer on the map; reading a long reply is one pull to `full`.
        The delay lets this win over any earlier detent set in the same click. */
     document.querySelectorAll('.control-panel .mode-btn').forEach(b=>{
-      const isAtlas=(b.id==='btn-community');
-      b.addEventListener('click',()=>{ if(!mq.matches) return; const wasPeek=currentDetent==='peek'; setTimeout(()=>{ if(isAtlas) setDetent('full', false); else if(wasPeek) setDetent('half'); else setDetent(currentDetent,false); },70); });
+      b.addEventListener('click',()=>{ if(!mq.matches) return; const low=RANK[currentDetent]<RANK.half; setTimeout(()=>{ if(low) setDetent('half'); else setDetent(currentDetent,false); },70); });
     });
     const si=document.getElementById('search-input'); if(si) si.addEventListener('focus',()=>{ if(mq.matches && currentDetent!=='full') setDetent('full'); });
 
-    /* =================== place-search FAB =================== */
+    /* ══ (mobile-shell) THE ONE FIELD: A PLACE, OR A QUESTION FOR ATLAS ═════════════════════════════════════
+       Focusing it raises the sheet to `full` so the candidates (js/search-geocode.js, which offers «Ask Atlas»
+       as the last row on a phone) have the room; leaving it empty puts the sheet back where it was. */
     (function(){
-      const ms=document.getElementById('map-search'); const input=document.getElementById('ms-input'); if(!ms) return;
-      function open(){ ms.classList.add('ms-open'); document.body.classList.add('search-open'); setTimeout(()=>{ try{input.focus();}catch(_){} },60); }
-      function close(){ ms.classList.remove('ms-open'); document.body.classList.remove('search-open'); }
-      ms.addEventListener('click',e=>{ if(!mq.matches) return; if(!ms.classList.contains('ms-open')){ e.stopPropagation(); e.preventDefault(); open(); } },true);
-      if(input) input.addEventListener('blur',()=>{ if(mq.matches && !input.value.trim()) setTimeout(close,150); });
-      document.addEventListener('click',e=>{ if(mq.matches && ms.classList.contains('ms-open') && !ms.contains(e.target) && (!input||!input.value.trim())) close(); });
+      const input=document.getElementById('ms-input'); if(!input) return;
+      let before=null;
+      input.addEventListener('focus',()=>{ if(!mq.matches) return; if(currentDetent!=='full'){ before=currentDetent; setDetent('full'); } });
+      input.addEventListener('blur',()=>{ if(!mq.matches) return; setTimeout(()=>{ const res=document.getElementById('ms-results');
+        const showing=res && res.style.display!=='none' && res.childElementCount>0;
+        if(!input.value.trim() && !showing && before && currentDetent==='full'){ setDetent(before); } before=null; },180); });
     })();
+
+    /* =================== screens =================== */
+    let _beforeScreen=null;
+    const screens=makeScreens({ host:document.getElementById('m-screens'), sheet:sidebar, active:()=>mq.matches,
+      onChange:(top,how)=>{
+        if(how==='open' && top){ if(screens.depth()===1) _beforeScreen=currentDetent; const want=top.detent||'half'; if(RANK[currentDetent]<RANK[want]) setDetent(want); }
+        else if(how==='close' && !top){ const back=_beforeScreen; _beforeScreen=null; if(back && RANK[back]<RANK[currentDetent]) setDetent(back); }
+      } });
+    if(moSheet) screens.adopt(moSheet,{ isOpen:()=>moSheet.classList.contains('show'), close:closeSheet, detent:'half', dialog:true });
+    if(toolsSheet) screens.adopt(toolsSheet,{ isOpen:()=>toolsSheet.classList.contains('show'), close:closeSheet, detent:'half', dialog:true });
+    if(tl) screens.adopt(tl,{ isOpen:()=>!tl.classList.contains('collapsed'), close:()=>{ const x=document.getElementById('ntl-x'); if(x) x.click(); else tl.classList.add('collapsed'); }, detent:'half' });
+    { const sm=document.getElementById('settings-modal');
+      if(sm) screens.adopt(sm,{ isOpen:()=>!!sm.style.display && sm.style.display!=='none', close:()=>{ const x=document.getElementById('settings-close-x'); if(x) x.click(); else sm.style.display='none'; }, detent:'full', dialog:true }); }
+    /* Escape closes the screen on top when it is not a registered dialog (a dialog's own registration
+       already answers Escape — js/dialog.js — and two answers would close two screens) */
+    document.addEventListener('keydown',e=>{ if(e.key!=='Escape' || !mq.matches || e.defaultPrevented) return; const t=screens.top(); if(t && !t.dialog) screens.closeTop(); });
+
+    /* =================== the legend tray =================== */
+    const chip=document.getElementById('m-legend-chip');
+    /* the cards are laid out while they are invisible (the tiler measures them all the same), so opening is a
+       class change and nothing has to be asked to place them */
+    const legendTray=(chip && mapContainer)? makeLegendTray({ container:mapContainer, chip, count:document.getElementById('m-legend-n'), frame }) : null;
+
+    /* the head grows a line while the centre readout is on (js/mobile-map-input.js) — the lowest two
+       detents are measured from the head, so they are re-taken when it changes size */
+    /* …and the screens and the search candidates are placed under it (`--m-head-h`, read by the stylesheet) */
+    const headSize=()=>{ if(!mHead) return 0; const h=mHead.offsetParent!==null? mHead.offsetTop+mHead.offsetHeight : 0; if(h) sidebar.style.setProperty('--m-head-h',h+'px'); return h; };
+    try{ if(mHead && typeof ResizeObserver==='function'){ let last=0; new ResizeObserver(()=>{ const h=headSize(); if(h===last) return; last=h; if(mq.matches && RANK[currentDetent]<=RANK.min && !dragging) setDetent(currentDetent,false); }).observe(mHead); } }catch(_){}
 
     /* =================== boot + responsive (self-healing) =================== */
     let lastIsM=null;
     function syncResponsive(){
       const isM=mq.matches; const crossed=(isM!==lastIsM);
       if(crossed){ applyLayout(isM); lastIsM=isM; }
-      /* (#R15b) Entering the mobile layout (first load OR crossing 768px) snaps to PEEK — the requested
-         default — synchronously, so there's no half→peek flash and no dependency on the rAF below firing. */
-      if(isM){ recompute(); setDetent(crossed?'peek':currentDetent,false); if(crossed){ try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){} } }
-      else{ document.body.classList.remove('sheet-full'); try{ const C=_cam(); if(C) C.setPadding({top:0,left:0,right:0,bottom:0}); }catch(_){} }
+      /* (#R15b) Entering the phone layout (first load OR crossing 768px) snaps to the lowest reading stop
+         synchronously, so there is no half→min flash. */
+      if(isM){ recompute(); setDetent(crossed?'min':currentDetent,false); if(crossed){ try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){} } }
+      else{ document.body.classList.remove('sheet-full','sheet-min','sheet-hidden'); try{ const C=_cam(); if(C) C.setPadding({top:0,left:0,right:0,bottom:0}); }catch(_){} }
     }
     syncResponsive();                                                     // initial layout at load width
-    /* (#R15) Default the sheet to PEEK on load: the News/Information/Stats/Community tab row stays visible
-       but everything beneath it is tucked away, maximising the map (the user's requested default). */
-    if(mq.matches) requestAnimationFrame(()=>setDetent('peek',true));     // animated entrance on phones
     if(mq.addEventListener) mq.addEventListener('change',syncResponsive); // width crosses 768 in either direction
-    window.addEventListener('resize',syncResponsive);                    // dvh / toolbar / rotation changes
+    window.addEventListener('resize',()=>frame('mobile.sheet.resize',syncResponsive));   // dvh / toolbar / rotation changes, once a frame
     window.addEventListener('orientationchange',()=>setTimeout(syncResponsive,220));
     updateCompass();
-    /* (#R231) the base-map square lives under the search FAB and owns the five view controls that used
-       to sit at the top of the Map & layers sheet. It builds itself only at phone widths and watches
-       the same 768 px query this function does, so it is installed once, here, next to the chrome it
-       belongs with. */
-    try{ window.IntMapBasemapSwitch && window.IntMapBasemapSwitch.install(); }catch(_){ }
+    /* (#R231) the Map screen (base map · projection · map display) builds itself only at phone widths
+       and watches the same 768 px query; it is installed here, next to the chrome it belongs with, and lent
+       to the sheet like the other screens. */
+    try{ const B=window.IntMapBasemapSwitch; if(B){ B.install(); const pop=document.getElementById('bm-pop');
+      if(pop) screens.adopt(pop,{ isOpen:()=>pop.classList.contains('show'), close:()=>B.close(), detent:'half' }); } }catch(_){ }
   }
   return initMobileUI;
 }
@@ -529,8 +538,10 @@ export function layoutReflow(HOST){
       const fits=(txt)=>{ try{ const cs=getComputedStyle(inp); ctx=ctx||document.createElement('canvas').getContext('2d');
         ctx.font=[cs.fontStyle,cs.fontWeight,cs.fontSize,cs.fontFamily].join(' ');
         return ctx.measureText(txt).width<=inp.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0); }catch(_){ return true; } };
-      const fit=()=>{ if(!inp.clientWidth) return;   /* the collapsed phone FAB has no field to fit */
-        const want=fits(full)?full:IntMapLang.t(HOST.lang,'Search places','地名を検索');
+      /* (mobile-shell) on a phone the field is the ONE entry — a place or a question for Atlas — and says so */
+      const fit=()=>{ if(!inp.clientWidth) return;
+        const want=HOST.isMobile()? IntMapLang.t(HOST.lang,'Search places or ask Atlas','場所を検索・Atlas に質問')
+          : (fits(full)?full:IntMapLang.t(HOST.lang,'Search places','地名を検索'));
         if(inp.placeholder!==want){ mine=want; inp.placeholder=want; } };
       new MutationObserver(()=>{ if(inp.placeholder!==mine){ full=inp.placeholder; fit(); } }).observe(inp,{attributes:true,attributeFilter:['placeholder']});
       new ResizeObserver(fit).observe(inp); fit(); }

@@ -9,6 +9,8 @@
  *  ② also opens each of those cards with its own button and asks the same five points (an opened card
  *  used to sit under the next one), and fires the `ofm` tile heartbeat twenty times to see it write
  *  nothing — both ride this boot because the phone profile cannot share the worker page (see ② itself).
+ *  (mobile-shell) The phone's chrome is now the legend chip and one control group, and a legend is not DRAWN
+ *  until the reader opens the tray from the chip — so ② opens it the way a reader does before it asks.
  *
  *  ⚠ THE POPULATION IS DISCOVERED, NOT LISTED. ① asks the DOM for every input / select / textarea
  *  there is, visible or not, with one layer of every family the Layers panel offers switched on — so a
@@ -163,8 +165,9 @@ test.describe('② phone', () => {
     await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => !!window.__imap && window.__imap.isStyleLoaded(), null, { timeout: 60_000 });
     /* switch on layers that own a legend, found in the Layers panel, until three cards are up */
+    /* «up» is laid out: (mobile-shell) a legend is invisible until the tray is opened, but it is placed all the same */
     const legendsUp = () => page.evaluate(() => [...document.querySelectorAll('.data-legend, .koppen-legend')]
-      .filter((el) => { const cs = getComputedStyle(el); const r = el.getBoundingClientRect(); return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 1 && r.height > 1; }).length);
+      .filter((el) => { const cs = getComputedStyle(el); const r = el.getBoundingClientRect(); return cs.display !== 'none' && r.width > 1 && r.height > 1; }).length);
     const rows = await page.evaluate(() => [...document.querySelectorAll('#layer-dropdown .lyr-row.has-legend input[type=checkbox]')]
       .filter((c) => c.id && !c.checked).map((c) => c.id));
     /* ⚠ WAITS ON THE CONDITION, NOT ON THE CLOCK. This used to sleep 1.5 s per layer and 1.5 s more
@@ -181,6 +184,11 @@ test.describe('② phone', () => {
     }
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(r)))));
     expect(await legendsUp(), 'three legend cards are on screen').toBeGreaterThanOrEqual(3);
+    /* (mobile-shell) the tray opens from the chip, which says how many legends are on */
+    expect(await page.locator('#m-legend-n').textContent(), 'the chip counts the legends that are on').toMatch(/^[3-9]$|^\d{2}$/);
+    await page.locator('#m-legend-chip').click();
+    await page.waitForFunction(() => document.body.classList.contains('m-leg-open'));
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 
     expect(await page.evaluate(COVERED)).toEqual([]);
 

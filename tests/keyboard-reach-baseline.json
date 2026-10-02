@@ -1,11 +1,10 @@
 {
  "//": "written by scripts/keyboard-reach.mjs --update — click receivers no keyboard can reach, per file; ratcheted both ways by check:static",
- "total": 7,
+ "total": 6,
  "files": {
   "js/atlas-attach.js": 3,
   "js/atlas-console.js": 1,
   "js/atlas-map-compose.js": 1,
-  "js/map-tools.js": 1,
-  "js/mobile-ui.js": 1
+  "js/map-tools.js": 1
  }
 }

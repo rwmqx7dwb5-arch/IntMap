@@ -73,6 +73,15 @@ a list whose head changed starts from the top, and a counter reset underneath th
 duplicates. The browser half is `tests/r169.spec.js` #3b, which drives a genuine supabase-js `SIGNED_OUT`
 through the auth listener and checks that 45 cards and the reading position survive it.
 
+`tests/mobile-shell-checks.test.mjs` (mobile-shell) imports `js/mobile-sheet.js` as shipped and runs the
+phone sheet's parts: the four detents and where a released sheet goes, the spring (its CSS `linear()` form and
+its JS easing are the same curve, its start slope is the finger's velocity, a let-go does not bounce), screens
+lent to the sheet and handed back to the exact place they came from, and the legend tray's count; it reads the
+stylesheet for the phone's three stacking rows and for the legend set it hides, which must be the set
+`js/window-manager.js` docks. The browser half is `tests/ui-a11y-polish.spec.js` ③ (390 × 844: the painted
+share of the map, every tap target ≥ 44 px, legends invisible until the chip, Chronos as a sheet screen, the
+candidates ending in «Ask Atlas»).
+
 
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-09-25): the **core** tier that
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR

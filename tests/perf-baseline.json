@@ -1,12 +1,12 @@
 {
   "eager": {
-    "raw": 4711311,
-    "gzip": 1550982,
-    "brotli": 1170780,
+    "raw": 4739600,
+    "gzip": 1560524,
+    "brotli": 1177489,
     "requests": 9,
-    "modules": 302,
-    "cssRaw": 364543,
-    "cssGzip": 59206
+    "modules": 303,
+    "cssRaw": 374532,
+    "cssGzip": 61518
   },
   "async": {
     "raw": 11794437,

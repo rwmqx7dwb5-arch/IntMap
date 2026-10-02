@@ -32,6 +32,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { crosshairWanted } from './mobile-sheet.js';
 
 export function mobileMapInput(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -103,11 +104,9 @@ export function mobileMapInput(HOST){
     #m-crosshair::after{ top:50%; left:0; height:1.4px; width:100%; margin-top:-0.7px; }
     #m-addpoint{ display:none; position:absolute; left:50%; bottom:calc(var(--sheet-cover, 80px) + 14px); transform:translateX(-50%); z-index:calc(var(--z-dropdown) - 100); background:var(--primary-fill); color:#fff; border:none; border-radius:999px; padding:11px 22px; font-size:14px; font-weight:700; box-shadow:0 4px 16px rgba(0,0,0,0.32); cursor:pointer; }
     #m-addpoint:active{ transform:translateX(-50%) scale(0.96); }
-    /* (#R15c) Mobile readout: ALWAYS one line (was wrapping to two when the layer value was long),
-       smaller, and tucked into the very corner. nowrap + ellipsis keeps it compact. */
-    /* (#R18) The always-on readout hugs the sheet — only a sliver of a gap ("ボトムシートとの間にわずかに隙間がある程度まで下げて"). */
-    @media${window.IntMapDevice.COMPACT}{ .coord-readout{ left:6px !important; right:auto !important; bottom:calc(var(--sheet-cover, 80px) + 4px) !important; top:auto !important; font-size:9.5px !important; padding:3px 7px !important; gap:7px !important; max-width:calc(100vw - 12px); flex-wrap:nowrap !important; white-space:nowrap !important; overflow:hidden; text-overflow:ellipsis; border-radius:8px !important; }
-      .coord-readout span{ white-space:nowrap; flex-shrink:0; }
+    /* (#R15c) the phone readout is ONE line — (mobile-shell) and it is the line under the search field in the
+       sheet's head now (css/intmap.css #m-readout-slot), not a bar hugging the sheet over the map. */
+    @media${window.IntMapDevice.COMPACT}{
       /* (#R16) The crosshair must mark the center of the VISIBLE map space — the area NOT covered by the
          bottom sheet — not the center of the phone screen. Sit it halfway down the uncovered area. */
       #m-crosshair{ top:calc((100% - var(--sheet-cover, var(--peek-h, 196px))) / 2) !important; } }`;
@@ -166,20 +165,28 @@ export function mobileMapInput(HOST){
   /* (#R13) The +Add point button (and the center crosshair) now appear ONLY while a measurement tool
      is active — the user didn't want a permanent button cluttering the mobile map. When idle, long-press
      drives the context menu instead. */
-  /* (#R15 / #1) The crosshair is now ALWAYS visible on mobile (the user wants the center point's
-     coords/elevation/layer value shown at all times), while the +Add-point button stays tool-only. */
+  /* (#R15 / #1) The crosshair was ALWAYS visible on mobile (the centre point's coords/elevation/layer value
+     shown at all times), while the +Add-point button stays tool-only.
+     ⚠ (mobile-shell) …and now it is shown WHEN IT IS ASKED FOR: while a measuring tool is active (the point a
+     tap acts on), and whenever the reader keeps «Centre point readout» on in the Map screen
+     (js/basemap-switch.js → js/mobile-sheet.js crosshairWanted). The readout itself is the line under the
+     search field in the sheet's head (js/mobile-ui.js lends #coord-readout there), not a bar over the map.
+     `body.m-xhair` is the one switch the stylesheet reads; it is written only when it changes. */
+  let _xhWant=crosshairWanted();
+  const xhOn=()=>mob()&&(!!(HOST.toolMode)||_xhWant);
   /* (#R33) "Add point" pill is MOBILE-ONLY now — on desktop you add points by clicking the map, so the
      pill is redundant ("Don't show 'Add point' pill in desktop mode"). */
   /* (#R498) …and the two display writes only happen when the value actually differs. Assigning the
      string that is already there still invalidates layout, which is what made the reads above
      forced ones — #R311 learned this on the tooltip's left/top; it is the same defect here. */
-  function update(){ const m=mob(); const tool=!!(HOST.toolMode);
-    const cd=m?'block':'none', bd=(tool&&m)?'block':'none';
-    if(cross._imDisp!==cd){ cross._imDisp=cd; cross.style.display=cd; }
+  function update(){ const m=mob(); const tool=!!(HOST.toolMode); const xh=xhOn();
+    const cd=xh?'block':'none', bd=(tool&&m)?'block':'none';
+    if(cross._imDisp!==cd){ cross._imDisp=cd; cross.style.display=cd; try{ document.body.classList.toggle('m-xhair',xh); }catch(_){} if(xh) readout(); }
     if(btn._imDisp!==bd){ btn._imDisp=bd; btn.style.display=bd; } }
   /* (#R12) Mobile bottom-left readout = coords + elevation + active-layer value at the crosshair
      center, mirroring desktop. updateCoord() early-returns on mobile, so compute them here directly. */
-  function readout(){ if(!mob()) return; try{ const c=centerLL();
+  /* ⚠ (mobile-shell) the DEM lookup and the rendered-feature query run only while the readout is shown */
+  function readout(){ if(!xhOn()) return; try{ const c=centerLL();
     const dem=HOST.demElevAt(c.lng,c.lat,()=>{ const d2=HOST.demElevAt(c.lng,c.lat); if(d2!=null){ HOST.lastElev=HOST.elevText(d2); HOST.renderCoordReadout(c.lng,c.lat); } });
     if(dem!=null) HOST.lastElev=HOST.elevText(dem);
     try{ HOST.updateLayerReadout(c.lng,c.lat); }catch(_){}
@@ -198,11 +205,12 @@ export function mobileMapInput(HOST){
      phases could not separate it. The READ half samples the centre; the WRITE half applies it. */
   let _crossSample=null;
   RT().onCamera('shell.crosshair.read',()=>{ _crossSample=null;
-    if(!mob()) return;
+    if(!xhOn()) return;
     try{ const c=centerLL(); _crossSample={lng:c.lng,lat:c.lat}; }catch(_){} },{phase:'read'});
   RT().onCamera('shell.crosshair',()=>{ update();
     const s=_crossSample; if(s){ try{ HOST.renderCoordReadout(s.lng,s.lat); }catch(_){} } });
   window.addEventListener('resize',update);
+  window.addEventListener('intmap-m-xhair',(e)=>{ _xhWant=!!(e&&e.detail&&e.detail.on); update(); });
   btn.onclick=()=>{ try{ const c=centerLL(); if(HOST.toolMode){ HOST.handleMapClick(c.lng,c.lat,c.px,true); } else { HOST.showContextMenu({x:c.px.x,y:c.px.y},{lng:c.lng,lat:c.lat}); } }catch(_){} };
   setTimeout(()=>{ update(); readout(); },400);
   window._mAddPoint=btn; window._mAddPointUpdate=update;

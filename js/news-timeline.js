@@ -826,7 +826,11 @@ export function newsTimeline(HOST){
           try{ fetchData(); }catch(_){}
         },230); } });
     /* (#R101) close the popup when the user starts operating elsewhere on the map (pan / zoom / click-away). */
-    (function autoClose(){ const closeIf=()=>{ try{ if(!tl.classList.contains('collapsed')){ tl.classList.add('collapsed'); _tmSyncTerminator(); } }catch(_){} };
+    /* ⚠ (mobile-shell) …EXCEPT ON A PHONE, WHERE CHRONOS IS A SCREEN OF THE SHEET (js/mobile-sheet.js lends the
+       panel into #m-screens). There it covers no map: the reader scrubs a year and pans to look at it, which is the
+       whole point, so a pan, a pinch or a tap on the map must not shut it. It closes by its own × or the sheet. */
+    (function autoClose(){ const inSheet=()=>{ try{ return !!tl.closest('#m-screens'); }catch(_){ return false; } };
+      const closeIf=()=>{ try{ if(!tl.classList.contains('collapsed') && !inSheet()){ tl.classList.add('collapsed'); _tmSyncTerminator(); } }catch(_){} };
       function wireMap(){ try{ const E=GE(); if(E&&E.hasRenderer()){ E.events.on('dragstart',closeIf); E.events.on('zoomstart',ev=>{ if(ev&&ev.originalEvent) closeIf(); }); E.events.on('click',closeIf); E.events.on('styledata',()=>{ try{ _tmSyncTerminator(); }catch(_){} }); return true; } }catch(_){} return false; }
       if(!wireMap()) setTimeout(wireMap,1500);
       document.addEventListener('pointerdown',ev=>{ try{ if(tl.classList.contains('collapsed')) return; if(ev.target&&ev.target.closest&&ev.target.closest('#news-timeline')) return; closeIf(); }catch(_){} },true); })();

@@ -1828,17 +1828,19 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      (input width:0, opacity:0) and nothing ever expanded it, so tapping Search just ran doGeocode() on an
      invisible empty input → no results. Now the button expands the field first, then searches. */
   (function wireMapSearch(){
-    const box=document.getElementById('map-search'), btn=document.getElementById('ms-btn'), inp=document.getElementById('ms-input'), res=document.getElementById('ms-results');
+    const box=document.getElementById('map-search'), btn=document.getElementById('ms-btn'), inp=document.getElementById('ms-input');
     if(!box||!btn||!inp) return;
     const mob=()=>window.IntMapDevice.compact();
-    const collapse=()=>{ box.classList.remove('ms-open'); if(res) res.style.display='none'; };
+    /* (mobile-shell) on a phone the field is no longer a circle that has to be opened first: it is the head of the
+       sheet (js/mobile-ui.js), always a field. An empty press puts the caret in it; a press with text searches. */
     btn.onclick=()=>{
-      if(mob() && !box.classList.contains('ms-open')){ box.classList.add('ms-open'); setTimeout(()=>{ try{ inp.focus(); }catch(_){}} ,60); return; }
-      if(mob() && !inp.value.trim()){ collapse(); return; }
+      if(mob() && !inp.value.trim()){ try{ inp.focus(); }catch(_){} return; }
       doGeocode();
     };
     /* Enter searches — unless a result is highlighted with the arrow keys, which Enter then picks (js/search-geocode.js listbox) */
     inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter'&&!e.defaultPrevented&&!inp.getAttribute('aria-activedescendant')) doGeocode(); });
+    /* (mobile-shell) …and on a phone the candidates follow the typing — local rows only, no network (js/search-geocode.js) */
+    let _sugT=0; inp.addEventListener('input',()=>{ if(!mob()) return; clearTimeout(_sugT); _sugT=setTimeout(()=>doGeocode({suggest:true}),120); });
     /* (#R106) blue only while the field has text — toggle a class the CSS keys off. */
     const _msHas=()=>{ try{ box.classList.toggle('has-text', !!inp.value.trim()); }catch(_){} };
     inp.addEventListener('input',_msHas); _msHas();
@@ -1846,7 +1848,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        names match LOCALLY (instant, offline) by the time they finish typing — without slowing startup. */
     inp.addEventListener('focus',()=>{ try{ if(typeof loadCountryData==='function') loadCountryData(); }catch(_){} },{once:true});
     btn.addEventListener('pointerdown',()=>{ try{ if(typeof loadCountryData==='function') loadCountryData(); }catch(_){} },{once:true});
-    document.addEventListener('click',(e)=>{ if(mob() && box.classList.contains('ms-open') && !box.contains(e.target) && !inp.value.trim()) collapse(); });
   })();
   document.addEventListener('click',(e)=>{ const ms=document.getElementById('map-search'); if(ms&&!ms.contains(e.target)) document.getElementById('ms-results').style.display='none'; });
 

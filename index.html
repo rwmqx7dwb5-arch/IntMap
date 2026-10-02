@@ -345,7 +345,10 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
 </script>
 <div class="operation-room">
   <div class="sidebar" id="sidebar">
-    <div class="sheet-grip" id="sheet-grip" aria-hidden="true"></div>
+    <!-- (mobile-shell) THE PHONE SHEET'S HEAD — the grip and the one field that both finds a place and asks Atlas, with
+         Chronos beside it. Phone only (css hides it on the desktop); js/mobile-ui.js lends #map-search and
+         #coord-readout into the two slots at phone widths and hands them back when the window widens. -->
+    <div class="m-head" id="m-head"><div class="sheet-grip" id="sheet-grip" aria-hidden="true"></div><div class="m-head-row"><div class="m-search-slot" id="m-search-slot"></div><button class="m-clock" id="m-clock" type="button" aria-label="Chronos" data-i18n-aria="tlMachine" title="Chronos" data-i18n-title="tlMachine"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M12 6.9V12l3.7 2.2"/></svg></button></div><div class="m-readout-slot" id="m-readout-slot"></div></div>
     <div class="header-area">
       <div class="title-group"><h2>IntMap</h2><div class="lang-toggle"><button class="lang-btn active" id="lang-en" data-effect="private">EN</button><button class="lang-btn" id="lang-jp" data-effect="private">JP</button><button class="lang-btn" id="lang-de" data-effect="private">DE</button><button class="lang-btn" id="lang-ru" data-effect="private">RU</button><button class="lang-btn" id="lang-es" data-effect="private" title="Español">ES</button></div></div>
       <!-- (#R123) desktop normal mode: the action buttons (WS / Log in / Feedback / Settings) live on a fixed
@@ -418,6 +421,9 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <div class="news-reader-pane" id="news-reader-pane" style="display:none;"></div>
     <div class="stats-compare-fixed" id="stats-compare-fixed"></div>
     <div class="co-compare-fixed" id="co-compare-fixed"></div>
+    <!-- (mobile-shell) where Layers, Tools, the Map menu, Chronos and Settings are shown on a phone — js/mobile-sheet.js lends
+         each one in here while its owner says it is open; nothing is rebuilt -->
+    <div class="m-screens" id="m-screens"></div>
   </div>
 
   <div class="map-column"><div class="map-container" id="map-container">
@@ -881,33 +887,41 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
 
 <!-- ===================== iOS mobile chrome (phones only; CSS-hidden on desktop) ===================== -->
 <div class="m-fab-stack" id="m-fab-stack">
-  <button class="m-fab" id="m-fab-map" type="button" aria-label="Map & layers" data-i18n-aria="ttlMapLayers" title="Map" data-i18n-title="viewMap">
-    <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 7.7l9 4.7 9-4.7L12 3Z"/><path d="m3 12 9 4.7L21 12"/><path d="m3 16.3 9 4.7 9-4.7"/></svg>
-  </button>
-  <button class="m-fab" id="m-fab-tools" type="button" aria-label="Map tools" data-i18n-aria="ttlMapTools" title="Tools" data-i18n-title="ttlTools">
-    <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 3.3a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4L8.6 21 3 21l0-5.6L14.7 3.3Z"/><path d="m11.5 6.5 6 6M8 10l2 2M5.5 12.5l2 2"/></svg>
-  </button>
+  <!-- (mobile-shell) ONE glass group, top right: Layers · the Map menu (base map, projection, map display) · Tools ·
+       my location. The base-map square, the four separate circles and the floating clock were five places for one idea. -->
+  <div class="m-ctl-group" role="toolbar" aria-label="Map & layers" data-i18n-aria="ttlMapLayers">
+    <button class="m-fab" id="m-fab-map" type="button" aria-label="Layers" data-i18n-aria="mLayers" title="Layers" data-i18n-title="mLayers">
+      <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 7.7l9 4.7 9-4.7L12 3Z"/><path d="m3 12 9 4.7L21 12"/><path d="m3 16.3 9 4.7 9-4.7"/></svg>
+    </button>
+    <button class="m-fab" id="m-fab-base" type="button" aria-label="Map options" data-i18n-aria="ttlMapOptions" title="Map" data-i18n-title="mTitleMap"><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6.3 9 4l6 2.4 5.5-2.3v13.6L15 20l-6-2.4-5.5 2.3Z"/><path d="M9 4v13.6M15 6.4V20"/></svg></button>
+    <button class="m-fab" id="m-fab-tools" type="button" aria-label="Map tools" data-i18n-aria="ttlMapTools" title="Tools" data-i18n-title="ttlTools">
+      <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 3.3a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4L8.6 21 3 21l0-5.6L14.7 3.3Z"/><path d="m11.5 6.5 6 6M8 10l2 2M5.5 12.5l2 2"/></svg>
+    </button>
+    <!-- (#R137) "Go to my location" — the last button of the group. Flies to the user's position and shows an accent
+         dot + accuracy circle that follow them (see window.IntMapLocate). -->
+    <button class="m-fab m-fab-locate" id="m-fab-locate" type="button" aria-label="My location" data-i18n-aria="ttlMyLocation" title="My location" data-i18n-title="ttlMyLocation">
+      <!-- (#R231) 「現在地移動ボタンは現在のアイコンから、現在地表示によくあるシンプルなブーメラン型四角形
+           アイコンに。」 The dart every map app uses for "where I am": four points — the tip, the two wings
+           and the notch between them — pointing north-east.
+           ⚠ (#R232) THE FILL IS NOT SET HERE ANY MORE — it is a function of state, and state lives in CSS.
+           「現在地移動ボタンは現在地に合わせてないときは中塗りなしの線アイコンで、現在地に合わせていると
+             きは現状のままで。」 `.m-fab-locate.on` is the class js/map-extras.js already toggles when the
+           map centre sits on the fix, so the outline↔solid pair costs one rule rather than a second icon. -->
+      <svg viewBox="0 0 24 24" width="23" height="23" aria-hidden="true"><polygon points="20.6,3.4 3.4,10.2 11.1,12.9 13.8,20.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+  <!-- the compass only exists while the map is turned or tilted (js/mobile-ui.js updateCompass) -->
   <button class="m-fab m-fab-compass" id="m-fab-compass" type="button" aria-label="Reset bearing" data-i18n-aria="ttlResetBearing" title="Compass" data-i18n-title="ttlCompass">
     <svg class="m-compass-svg" width="38" height="38" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="16.8" fill="none" stroke="currentColor" stroke-opacity="0.16" stroke-width="1"/><path d="M36 20h-2.4M20 36v-2.4M4 20h2.4M20 4v2.4" stroke="currentColor" stroke-opacity="0.34" stroke-width="1.6" stroke-linecap="round"/><path d="M31.31 8.69l-1.11 1.11M31.31 31.31l-1.11-1.11M8.69 31.31l1.11-1.11M8.69 8.69l1.11 1.11" stroke="currentColor" stroke-opacity="0.2" stroke-width="1.1" stroke-linecap="round"/><polygon points="20,7.4 14.5,20 20,20" fill="#ff453a"/><polygon points="20,7.4 25.5,20 20,20" fill="#d2312a"/><polygon points="20,32.6 14.5,20 20,20" fill="currentColor" fill-opacity="0.32"/><polygon points="20,32.6 25.5,20 20,20" fill="currentColor" fill-opacity="0.6"/><circle cx="20" cy="20" r="2.5" fill="currentColor" fill-opacity="0.14"/><circle cx="20" cy="20" r="1.15" fill="currentColor" fill-opacity="0.72"/></svg>
   </button>
-  <!-- (#R137) "Go to my location" FAB — same UI as the three above; sits directly under the compass. Flies to the
-       user's position and shows an accent dot + accuracy circle that follow them (see window.IntMapLocate). -->
-  <button class="m-fab m-fab-locate" id="m-fab-locate" type="button" aria-label="My location" data-i18n-aria="ttlMyLocation" title="My location" data-i18n-title="ttlMyLocation">
-    <!-- (#R231) 「現在地移動ボタンは現在のアイコンから、現在地表示によくあるシンプルなブーメラン型四角形
-         アイコンに。」 The dart every map app uses for "where I am": four points — the tip, the two wings
-         and the notch between them — pointing north-east.
-         ⚠ (#R232) THE FILL IS NOT SET HERE ANY MORE — it is a function of state, and state lives in CSS.
-         「現在地移動ボタンは現在地に合わせてないときは中塗りなしの線アイコンで、現在地に合わせていると
-           きは現状のままで。」 `.m-fab-locate.on` is the class js/map-extras.js already toggles when the
-         map centre sits on the fix, so the outline↔solid pair costs one rule rather than a second icon. -->
-    <svg viewBox="0 0 24 24" width="23" height="23" aria-hidden="true"><polygon points="20.6,3.4 3.4,10.2 11.1,12.9 13.8,20.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
-  </button>
 </div>
+<!-- (mobile-shell) the legends no longer open over the map by themselves; this chip says how many are switched on and opens them -->
+<button class="m-legend-chip" id="m-legend-chip" type="button" hidden aria-expanded="false" aria-controls="map-container"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="3.5" y="5" width="4" height="4" rx="1"/><rect x="3.5" y="15" width="4" height="4" rx="1"/><path d="M11 7h9.5M11 17h9.5"/></svg><span class="m-legend-t" data-i18n="mLegend">Legend</span><span class="m-legend-n" id="m-legend-n"></span></button>
 <div class="m-scrim" id="m-scrim" aria-hidden="true"></div>
 
-<div class="m-sheet" id="mo-sheet" role="dialog" aria-modal="true" aria-label="Map options" data-i18n-aria="ttlMapOptions">
+<div class="m-sheet" id="mo-sheet" role="dialog" aria-modal="true" aria-label="Layers" data-i18n-aria="mLayers">
   <div class="m-sheet-grip"></div>
-  <div class="m-sheet-head"><span class="m-sheet-title" id="mo-title" data-i18n="mTitleMap">Map</span><button class="m-sheet-done" id="mo-done" type="button" data-i18n="mDone">Done</button></div>
+  <div class="m-sheet-head"><span class="m-sheet-title" id="mo-title" data-i18n="mLayers">Layers</span><button class="m-sheet-done" id="mo-done" type="button" data-i18n="mDone">Done</button></div>
   <div class="m-sheet-scroll">
     <!-- ══ (#R231) THE BASE-MAP / PROJECTION SEGMENTS LEFT THIS SHEET ═══════════════════════════
          「モバイル版ではMap/Satellite/Globe/Flat/⛰️3Dの選択欄をレイヤー選択欄から分離し、画面左上…に

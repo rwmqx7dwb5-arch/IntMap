@@ -148,3 +148,83 @@ test.describe('② phone', () => {
     }
   });
 });
+
+/* ══ ③ (mobile-shell) THE PHONE IS THE MAP — measured the way production was measured before the rebuild ══════
+   390 × 844, the iPhone the report used. Before (production, 2026-10-02): 45.2 % of the map under chrome, 14 of
+   21 tap targets under 44 px, two legend cards opened over the map by default and drawn over the search results
+   and Chronos. Now: the sheet's search row and one control group; legends behind a chip; every control 44 px.
+   ⚠ COVERAGE IS PAINTED PIXELS, NOT BOXES: an element counts where it draws (a background, a backdrop filter,
+   text, a canvas, an image, a control), clipped to the screen; the map and its own canvases do not count.
+   ⚠ THE ONE ALLOWED SMALL TARGET is the data credit's link — licence text, kept small on purpose, with its own
+   24 px floor measured by ② above. */
+const PAINTED = () => {
+  const W = innerWidth, H = innerHeight, S = 3, cols = Math.ceil(W / S), grid = new Uint8Array(cols * Math.ceil(H / S));
+  const map = document.getElementById('map');
+  for (const el of document.querySelectorAll('body *')) {
+    if ((map && map.contains(el)) || el.closest('#boot-splash') || /^(space-canvas|wind-canvas|map-container)$/.test(el.id)) continue;
+    if (el.tagName === 'CANVAS' && el.parentElement && /map-container/.test(el.parentElement.id)) continue;
+    if (!el.checkVisibility || !el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) continue;
+    const cs = getComputedStyle(el);
+    const paints = /^(CANVAS|IMG|svg|INPUT|SELECT|TEXTAREA)$/.test(el.tagName) || !/rgba\(\d+, \d+, \d+, 0\)|transparent/.test(cs.backgroundColor)
+      || cs.backgroundImage !== 'none' || (cs.backdropFilter && cs.backdropFilter !== 'none') || [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+    if (!paints) continue;
+    const r = el.getBoundingClientRect();
+    for (let y = Math.max(0, Math.floor(r.top / S)); y < Math.min(H, r.bottom) / S; y++) for (let x = Math.max(0, Math.floor(r.left / S)); x < Math.min(W, r.right) / S; x++) grid[y * cols + x] = 1;
+  }
+  let n = 0; for (const v of grid) n += v; return n / grid.length;
+};
+const SMALL = (root) => [...document.querySelector(root || 'body').querySelectorAll('button, a[href], input:not([type=hidden]), select, textarea, summary, [role=button], [role=tab]')].filter((el) => {
+  if (!el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return false;
+  const r = el.getBoundingClientRect(); if (r.width < 1 || r.height < 1 || r.bottom < 0 || r.top > innerHeight) return false;
+  const h = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); if (!(h && (h === el || el.contains(h) || (h.closest('label') && h.closest('label').contains(el))))) return false;
+  if (el.closest('#map-credit')) return false;
+  return Math.min(r.width, r.height) < 43.5;
+}).map((el) => (el.id ? '#' + el.id : el.tagName.toLowerCase() + '.' + String(el.className).split(' ')[0]) + ' ' + Math.round(el.getBoundingClientRect().width) + '×' + Math.round(el.getBoundingClientRect().height));
+
+test.describe('③ phone shell', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test('③ one sheet and one control group: the map is ≥ 80 % uncovered, every target is 44 px, legends wait behind their chip, Chronos and the candidates are in the sheet', async ({ page }) => {
+    test.setTimeout(150_000);
+    await boot(page);
+    /* one legend-owning layer, switched the way every route switches it */
+    await page.evaluate(() => { const c = document.getElementById('dl-climate'); if (c && !c.checked) { c.checked = true; c.dispatchEvent(new Event('change', { bubbles: true })); } });
+    await page.waitForFunction(() => !document.getElementById('m-legend-chip').hidden, null, { timeout: 30_000 });
+    await page.waitForTimeout(900);   /* the sheet's spring and the legend's own layout */
+
+    const cover = await page.evaluate(PAINTED);
+    expect(cover, `the chrome paints ${(cover * 100).toFixed(1)} % of the map (production before: 45.2 %)`).toBeLessThan(0.2);
+    expect(await page.evaluate(SMALL), 'tap targets under 44 px').toEqual([]);
+
+    /* the legend is laid out but not on the map until the chip opens it; and then it is under the chrome's row */
+    const lg = await page.evaluate(() => { const el = document.getElementById('koppen-legend'); const r = el.getBoundingClientRect();
+      const at = () => { const h = document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(20, r.height / 2)); return !!(h && el.contains(h)); };
+      const shut = at(); document.getElementById('m-legend-chip').click(); const open = at();
+      const z = (q) => +getComputedStyle(document.querySelector(q)).zIndex;
+      return { shut, open, legend: z('#koppen-legend'), group: z('#m-fab-stack'), sheet: z('#sidebar') }; });
+    expect(lg.shut, 'a legend is drawn over the map before anyone asked for it').toBe(false);
+    expect(lg.open, 'the chip did not open the legend').toBe(true);
+    expect(lg.legend < lg.group && lg.group < lg.sheet, `stacking ${JSON.stringify(lg)} — a legend can cover a control again`).toBe(true);
+    await page.click('#m-legend-chip');
+
+    /* Chronos is a screen of the sheet, with the map still above it, and every control in it is 44 px */
+    await page.click('#m-clock');
+    await page.waitForFunction(() => !!document.querySelector('#m-screens > #news-timeline'), null, { timeout: 15_000 });
+    await page.waitForTimeout(900);
+    const ch = await page.evaluate(() => ({ sheetTop: document.getElementById('sidebar').getBoundingClientRect().top / innerHeight,
+      slider: document.getElementById('ntl-slider').getBoundingClientRect().height }));
+    expect(ch.sheetTop, 'Chronos covered the map').toBeGreaterThan(0.4);
+    expect(ch.slider, 'the year slider is a 44 px row to the finger').toBeGreaterThanOrEqual(44);
+    expect(await page.evaluate(SMALL, '#news-timeline'), 'Chronos targets under 44 px').toEqual([]);
+    await page.click('#ntl-x');
+    await page.waitForFunction(() => !document.querySelector('#m-screens > #news-timeline'));
+
+    /* the one field: candidates as the reader types (no Enter), the last of them «Ask Atlas» */
+    await page.click('#ms-input');
+    await page.keyboard.type('Par', { delay: 40 });
+    await page.waitForFunction(() => document.querySelectorAll('#ms-results .ms-item').length >= 2, null, { timeout: 10_000 });
+    const rows = await page.evaluate(() => [...document.querySelectorAll('#ms-results .ms-item')].map((e) => e.classList.contains('ms-atlas')));
+    expect(rows[rows.length - 1], 'the last candidate is «Ask Atlas»').toBe(true);
+    expect(rows.filter(Boolean).length).toBe(1);
+  });
+});

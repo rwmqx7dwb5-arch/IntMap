@@ -156,6 +156,7 @@ IntMapLang.define('en', { ui: {
       mTitleMap:"Map",
       mTitleTools:"Tools",
       mDone:"Done",
+      mLayers:"Layers", mLegend:"Legend",   /* (mobile-shell) the phone control group's Layers button and the legend chip */
       lyrRelief:"Elevation (color relief)",
       lyrSubcables:"Submarine cables",
       lyrMilSpend:"Military spending",
