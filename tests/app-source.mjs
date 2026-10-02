@@ -304,15 +304,27 @@ export function jsFiles(root) {
    exported」 and js/tables.js exports 25, because #R225 deleted `geoLayersDB` and `GEO_LABEL_JP`
    with the nine geopolitics layers the user asked to be rid of (「大昔に捨てたはずの地政学レイヤーが
    勝手にオンになる。ふざけるな。」). A count is a copy of a fact; this reads the fact.
+   ⚠ (module-graph) THE MODULE IS SPELLED TWO WAYS, AND ONLY ONE OF THEM WAS READ. #860 turned
+   `window.IntMapTables=(function(){…})()` into `export const IntMapTables=(function(){…})()` (and a
+   `globalThis.IntMapTables=IntMapTables` compat line that holds no IIFE). This went on looking for the
+   first shape only, returned [] for js/tables.js, and tests/r167.spec.js — deep tier, so not run on
+   that PR — was red on the next nightly while the page exported every table. Both spellings bind the
+   SAME object to the name, so both are read: the fact is «the IIFE bound to <globalName>», not the
+   statement that binds it.
    @returns {string[]} the keys of the object literal the module's IIFE returns, sorted */
 export function exportedKeys(root, file, globalName) {
   const u = new URL(file, root);
   if (!existsSync(u)) return [];
   const ast = parse(readFileSync(u, 'utf8'));
   for (const st of ast.body) {
-    if (st.type !== 'ExpressionStatement' || st.expression.type !== 'AssignmentExpression') continue;
-    if (!isWindowProp(st.expression.left, globalName)) continue;
-    const body = iifeBody(st.expression.right);
+    let init = null;
+    if (st.type === 'ExpressionStatement' && st.expression.type === 'AssignmentExpression'
+      && isWindowProp(st.expression.left, globalName)) init = st.expression.right;
+    else if (st.type === 'ExportNamedDeclaration' && st.declaration && st.declaration.type === 'VariableDeclaration') {
+      const d = st.declaration.declarations.find((x) => x.id.type === 'Identifier' && x.id.name === globalName);
+      if (d) init = d.init;
+    }
+    const body = iifeBody(init);
     if (!body || body.type !== 'BlockStatement') continue;
     /* the IIFE's OWN return, not one belonging to a function defined inside it */
     for (const s of body.body) {
@@ -321,6 +333,49 @@ export function exportedKeys(root, file, globalName) {
         .filter((p) => p.type === 'Property' && !p.computed)
         .map((p) => (p.key.type === 'Identifier' ? p.key.name : String(p.key.value)))
         .sort();
+    }
+  }
+  return [];
+}
+
+/* ══ (module-graph) «THIS FACTORY EXISTS, AND THE SHELL INSTANTIATES IT» — WITHOUT A REGISTRY ═══════
+   tests/r168.spec.js and tests/r169.spec.js asked the page `typeof window.IntMapModules.<name>`. #860
+   dissolved that registry: a factory is `export function <name>(HOST)` in its own file, imported BY
+   NAME by whoever instantiates it, so a missing file or a misspelt factory is a link error the bundler
+   refuses before a page exists. The registry question has no page to be asked on any more; its two
+   halves are facts about the source, and this reads both of them from the source:
+     · who calls it — factoryCalls() (the shell, a module handing it HOST, or the lazy loader's mount)
+     · that the file it is imported from really declares it as an exported function.
+   @returns {{name: string, files: string[], declared: boolean}[]} in the order asked */
+export function factoryHomes(root, names) {
+  const calls = factoryCalls(root);
+  return names.map((name) => {
+    const files = Object.keys(calls).filter((f) => calls[f].includes(name)).sort();
+    const declared = files.length > 0 && files.every((f) => {
+      const u = new URL(f, root);
+      if (!existsSync(u)) return false;
+      return parse(readFileSync(u, 'utf8')).body.some((st) => st.type === 'ExportNamedDeclaration' && st.declaration
+        && st.declaration.type === 'FunctionDeclaration' && st.declaration.id.name === name);
+    });
+    return { name, files, declared };
+  });
+}
+
+/* (module-graph) THE OBJECT A FACTORY HANDS BACK, IN THE ORDER IT IS WRITTEN. tests/r545.spec.js used to wrap one
+   method of it by trapping `window.IntMapModules.countriesUi`; that registry is gone and the object now only exists
+   inside the bundle, written as the factory's own `return { … }`. A bundler keeps a literal's keys in order, so the
+   source's order is how the served file spells the same object — read here, never typed into a test.
+   @returns {string[]} the keys of the object literal the exported function `name` returns at its top level, in order */
+export function returnedKeys(root, file, name) {
+  const u = new URL(file, root);
+  if (!existsSync(u)) return [];
+  for (const st of parse(readFileSync(u, 'utf8')).body) {
+    const fn = st.type === 'ExportNamedDeclaration' && st.declaration && st.declaration.type === 'FunctionDeclaration' ? st.declaration : null;
+    if (!fn || fn.id.name !== name) continue;
+    for (const s of fn.body.body) {
+      if (s.type !== 'ReturnStatement' || !s.argument || s.argument.type !== 'ObjectExpression') continue;
+      return s.argument.properties.filter((p) => p.type === 'Property' && !p.computed)
+        .map((p) => (p.key.type === 'Identifier' ? p.key.name : String(p.key.value)));
     }
   }
   return [];

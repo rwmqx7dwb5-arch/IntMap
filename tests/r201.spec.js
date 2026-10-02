@@ -21,6 +21,7 @@
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
+import { constFrom } from './app-source.mjs';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -122,16 +123,29 @@ test('R201 ① the terminator is a per-pixel gradient, and full night is the nig
      the same time, and drawing dark wedges at both poles is correct. The first version of this line
      asserted the solstice sky on every date and started failing on 2026-09-15 with the product
      behaving exactly right (`{"north":1,"south":15}`). The declination comes from the layer's own
-     solar(), so this cannot drift away from what is drawn. */
+     solar(), so this cannot drift away from what is drawn.
+     ⚠⚠ (deep-tier-after-module-graph) …AND «|dec| < 90 − joinLat ⇒ BOTH POLES DARK» WAS STILL WRONG.
+     That is the band in which the Sun is merely BELOW the horizon somewhere on the join; the layer
+     draws a wedge only where the NIGHTNESS rounds to at least one CAP_STEP-th, and nightness is the
+     twilight ramp — smoothstep(el / twilightEnd) — so the first degrees below the horizon are almost
+     nothing. Measured on main's nightly 2026-10-01: dec −3.29°, the south join's lowest Sun −1.66°,
+     nightness 0.024, rounded to 0 — no south wedge, which is the layer doing exactly what it says,
+     and the old line called it a failure. So the claim is now computed per pole from the same three
+     things the layer uses: the lowest Sun on the join (on the antisolar meridian, where
+     el = joinLat ± dec − 90 for the north/south pole), the twilight ramp the page reports, and the
+     rounding step read out of js/night-side.js. A margin of a fifth of a step either side of the
+     rounding edge claims nothing — the wedges sample 180 centres, not the exact antisolar point. */
   const sun = await page.evaluate(() => window.IntMapNightSide._solar());
-  const edge = 90 - sun.joinLat;
-  const margin = 0.5;                    /* ±0.5° of declination ≈ ±1.3 days — claim nothing there */
-  if (Math.abs(sun.decDeg) > edge + margin) {
-    expect(cap.north === 0 || cap.south === 0,
-      `one pole must be wholly lit at declination ${sun.decDeg.toFixed(2)}°: ${JSON.stringify(cap)}`).toBe(true);
-  } else if (Math.abs(sun.decDeg) < edge - margin) {
-    expect(cap.north > 0 && cap.south > 0,
-      `both caps hold night at declination ${sun.decDeg.toFixed(2)}°: ${JSON.stringify(cap)}`).toBe(true);
+  const CAP_STEP = /** @type {number} */ (constFrom(new URL('../', import.meta.url), 'js/night-side.js', 'CAP_STEP'));
+  expect(CAP_STEP, 'js/night-side.js still names its rounding step').toBeGreaterThan(0);
+  const tEnd = style.st.twilightEnd;
+  const nightness = (el) => { const t = Math.max(0, Math.min(1, el / tEnd)); return t * t * (3 - 2 * t); };
+  const half = 1 / (2 * CAP_STEP), slack = 1 / (5 * CAP_STEP);   /* round(v·STEP) ≥ 1 ⇔ v ≥ half a step */
+  for (const [pole, sgn] of /** @type {const} */ ([['north', 1], ['south', -1]])) {
+    const n = nightness(sun.joinLat + sgn * sun.decDeg - 90);
+    const why = `${pole} pole at declination ${sun.decDeg.toFixed(2)}°, peak nightness on the join ${n.toFixed(3)}: ${JSON.stringify(cap)}`;
+    if (n >= half + slack) expect(cap[pole], `the ${pole} cap holds night — ${why}`).toBeGreaterThan(0);
+    else if (n < half - slack) expect(cap[pole], `the ${pole} cap is wholly lit — ${why}`).toBe(0);
   }
   expect(cap.n, 'and the dark one is covered').toBeGreaterThan(0);
 

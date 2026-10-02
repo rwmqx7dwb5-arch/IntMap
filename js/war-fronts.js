@@ -101,7 +101,15 @@ export function warFronts(HOST) {
            only after data/wars.json has arrived, by which time the box can have been ticked again by the reader.
            Spent on every change this row receives, so the reader's own next tick is the reader's. */
         const restored = !!ev.target.__imRestored; ev.target.__imRestored = 0;
-        toggle(R.id, ev.target.checked, { restored });
+        /* ⚠ (deep-tier-after-module-graph) …AND THE MAP'S OWN RE-DISPATCH IS NOT THE READER'S EITHER. `__syn` is
+           raised for exactly the duration of a change the map sends itself — js/data-layers.js's heal pulse
+           (off→on on a box it finds «ticked and blank»), js/layer-time-kernel.js's delivery — and the time gate
+           already reads a tick as the reader's only when it carries neither mark. Reading only the restore's mark
+           here let the heal pulse a restored war (blank on purpose: the link's instant is outside its record) and
+           the pulse's «on» moved the clock to the war's first day. MEASURED: the share link carrying every layer,
+           no `tt`, ended on 1939-08-23 → 1914-06-28 → 1950-06-25 → … one war per pulse, and the world-at-time hold
+           then took 39 present-day layers off the map (CI nightly 2026-10-01, tests/restored-layer-before-style). */
+        toggle(R.id, ev.target.checked, { restored, own: !!ev.target.__syn });
       });
     }
     relabel();

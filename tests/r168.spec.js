@@ -33,6 +33,7 @@
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics, isBenign } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
+import { factoryHomes } from './app-source.mjs';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -91,15 +92,25 @@ test.afterAll(async () => {
 });
 
 test('R168 #1 all six files loaded, all six factories ran, and no factory is missing', async () => {
-  const res = await page.evaluate(() => ({
-    check: window.__imModuleCheck,
-    facs: ['countriesUi', 'newsUi', 'companiesUi', 'toolPanel', 'authUi', 'community']
-      .map((f) => [f, typeof (window.IntMapModules || {})[f]]),
-  }));
-  expect(res.check, 'the boot guard ran').toBeTruthy();
-  expect(res.check.missing, 'no required module namespace is missing').toEqual([]);
-  expect(res.check.missingFactories, 'no factory is missing — a js/ file that failed to deploy shows up here').toEqual([]);
-  for (const [f, t] of res.facs) expect(t, `window.IntMapModules.${f} is a function`).toBe('function');
+  /* ⚠ (module-graph) THE REGISTRY THIS ASKED IS GONE; THE CLAIM IS NOT. It read
+     `typeof window.IntMapModules.<name>`, and #860 dissolved that object: each factory is now
+     `export function <name>(HOST)` imported BY NAME by the shell, so a missing file or factory is a
+     link error and the page never boots to be asked. The two halves are therefore asked where they
+     now live — the source says each factory is declared and instantiated (tests/app-source.mjs
+     factoryHomes), the page says the boot guard is clean and no factory threw while the shell ran
+     them (a throwing factory is an uncaught error at boot, nothing else). That they DID their work is
+     #2 onward, through the shims. */
+  const homes = factoryHomes(new URL('../', import.meta.url), ['countriesUi', 'newsUi', 'companiesUi', 'toolPanel', 'authUi', 'community']);
+  for (const h of homes) {
+    expect(h.files.length, `${h.name} is instantiated from exactly one file`).toBe(1);
+    expect(h.declared, `${h.files[0]} declares ${h.name} as an exported function`).toBe(true);
+  }
+  expect(new Set(homes.map((h) => h.files[0])).size, 'six factories, six files').toBe(homes.length);
+  const check = await page.evaluate(() => window.__imModuleCheck);
+  expect(check, 'the boot guard ran').toBeTruthy();
+  expect(check.missing, 'no required module namespace is missing').toEqual([]);
+  expect(check.missingFactories, 'no factory is missing — a js/ file that failed to deploy shows up here').toEqual([]);
+  expect(diag.pageErrors.filter((t) => !isBenign(t)), 'no factory threw while the shell instantiated it').toEqual([]);
 });
 
 test('R168 #2 THE SHIMS FORWARD: each shim reaches the module and does the real work', async () => {
@@ -108,7 +119,6 @@ test('R168 #2 THE SHIMS FORWARD: each shim reaches the module and does the real 
   const res = await page.evaluate(async () => {
     const out = {};
     // countries — renderStats() fills the Countries feed from the (stubbed) boundary data
-    await window.IntMapModules && null;
     document.getElementById('btn-stats')?.click();
     await new Promise((r) => setTimeout(r, 1200));
     out.countryRows = document.querySelectorAll('#countries-feed .stat-item, #countries-feed .country-row, #countries-feed [data-cid]').length;
