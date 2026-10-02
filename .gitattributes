@@ -1,5 +1,21 @@
+# (perf-measure-parity) A CHECKOUT HOLDS THE REPOSITORY'S BYTES, ON EVERY MACHINE.
+# MEASURED 2026-10-02 (9e0662a9): the Windows development machine has core.autocrlf=true, which put a
+# carriage return before every line break of every text file this file did not name — and the build
+# copies data/ and the static pages into dist/ VERBATIM, so the same commit built locally weighed
+# 121,742 bytes more in dist/ (85,104 of them in data/) than the identical build on CI, whose checkout
+# is the blob bytes. Nothing is served from a Windows checkout: the deploy is CI's build, so the
+# carriage returns were bytes no reader is ever handed, and every size measured here was a size of
+# nothing. `text=auto` is the same detection core.autocrlf=true already applies (a file with a NUL or a
+# lone CR is binary and never converted, and a file committed WITH CRLF is left as committed — git's
+# own rule for text=auto); `eol=lf` makes the checkout write the blob back unchanged. Attributes
+# override core.autocrlf, so this needs no per-machine configuration. A tree checked out before this
+# line keeps its CRLF until git rewrites each file (git status reads it as clean); the bundler's half
+# of the build never depended on it (measured: eager and async identical from both checkouts).
+*      text=auto eol=lf
+
 # Force Unix (LF) line endings for files that are executed or parsed on Linux
 # (CI runners, Supabase, servers). A CRLF here can break bash / psql / YAML.
+# (Forced `text`, not `auto`: these are LF even if a CRLF was committed.)
 *.sh   text eol=lf
 *.sql  text eol=lf
 *.mjs  text eol=lf
@@ -18,6 +34,8 @@
 # region, a ledger whose "//" or "_" names its writer) and fails while one is missing here.
 #   json    a ledger: three-way by key and by member; a number both sides moved → intmap-clash
 #           (sum = add both moves, a count; upstream = take main's value, a measurement). Never regenerated.
+#           intmap-clash-by=<script> lets the ledger's WRITER name the rule per row (its mergeClash(keys)),
+#           for a ledger that holds both counts and measurements.
 #   regen   a function of tracked inputs: hunks inside the generated region take main's side, and
 #           `node scripts/merge-driver.mjs --finish` runs intmap-regen after the merge (`!` = print, do not run)
 #   tokens  hand-written text that states counts: an integer both sides moved → base + both moves,
@@ -25,7 +43,7 @@
 # intmap-regen: commands separated by `;`, words by `,` (an attribute value has no spaces).
 
 # ledgers
-tests/perf-baseline.json                 merge=intmap-generated intmap-merge=json intmap-clash=upstream intmap-regen=!npm,run,build,&&,node,scripts/perf-budget.mjs,--update
+tests/perf-baseline.json                 merge=intmap-generated intmap-merge=json intmap-clash=upstream intmap-clash-by=scripts/perf-budget.mjs intmap-regen=!npm,run,build,&&,node,scripts/perf-budget.mjs,--update
 tests/durations.json                     merge=intmap-generated intmap-merge=json intmap-clash=upstream
 tests/global-surface-baseline.json       merge=intmap-generated intmap-merge=json intmap-clash=sum
 tests/control-names-baseline.json        merge=intmap-generated intmap-merge=json intmap-clash=sum
