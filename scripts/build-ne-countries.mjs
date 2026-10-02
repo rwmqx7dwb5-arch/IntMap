@@ -27,27 +27,78 @@ import { gzipSync, gunzipSync } from 'node:zlib';
 import { isDeepStrictEqual } from 'node:util';
 import { NATURAL_EARTH } from './lib/upstream-cadence.mjs';
 import { NE_SCALES, neCountriesPath, encodeNECountries, decodeNECountries } from '../js/ne-countries.js';
+import { measureQuality } from '../js/data-governance.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /* the commit `master` pointed at when this was built (read 2026-10-02 from api.github.com: the
    repository's last commit, 2022-06-02). Pinned so that the bytes a reader gets are the bytes this
    build checked; moving it is a rebuild, not a drift. */
 const COMMIT = 'ca96624a56bd078437bca8184e78163e5039ad19';
+/* the day COMMIT was read and these bytes were written from it. ⚠ ONE DATE FOR BOTH, AND THAT IS A
+   PROPERTY OF THE PIN, NOT A SHORTCUT: the build is deterministic from COMMIT (lossless encoding,
+   gzip -9), so rebuilding at the same pin reproduces these bytes exactly, and moving the pin is the
+   only thing that writes different ones — which is when this date moves with it. */
+const PINNED_AT = '2026-10-02';
+/* what the data is ABOUT: the edition at COMMIT, whose own date is 2022-06-02T07:25:00Z (read
+   2026-10-02 from api.github.com/repos/nvkelso/natural-earth-vector/commits/<COMMIT>). */
+const EDITION_AT = '2022-06-02';
 const upstreamUrl = (scale) => `https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@${COMMIT}/geojson/ne_${scale}_admin_0_countries.geojson`;
+
+/* ⚠ THE QUALITY FACETS ARE A MEASUREMENT, WRITTEN HERE SO THAT THE DECLARATION CAN BE READ WITHOUT
+   RUNNING THIS FILE (scripts/data-governance.mjs evaluates GOVERNANCE apart from its builder), and
+   RE-MEASURED by --check from the shipped files with js/data-governance.js measureQuality — a value
+   that differs from the bytes fails the check rather than standing. Per scale, because each file is
+   its own table. `missing` counts the fields every reader of countryGeo keys on; `duplicates` is
+   keyed by ADM0_A3, Natural Earth's own identity column (not ISO_A3, which is "-99" for 5 / 8 / 22
+   features at 110m / 50m / 10m by the upstream's design); `outOfRange` counts vertices off the globe. */
+const NE_QUALITY = {
+  key: ['ADM0_A3'],
+  rows: { '110m': 177, '50m': 242, '10m': 258 },
+  missing: {
+    '110m': { geometry: 0, ADM0_A3: 0, NAME: 0 },
+    '50m': { geometry: 0, ADM0_A3: 0, NAME: 0 },
+    '10m': { geometry: 0, ADM0_A3: 0, NAME: 0 },
+  },
+  outOfRange: { '110m': { vertexOffGlobe: 0 }, '50m': { vertexOffGlobe: 0 }, '10m': { vertexOffGlobe: 0 } },
+  duplicates: { '110m': 0, '50m': 0, '10m': 0 },
+};
 
 /* ⚠ (#729) 出自は値である（散文ではない）。読むのは js/data-governance.js の read() で、
    npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
-   突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
+   突き合わせる。⚠ ここに書くのは「上流が述べていること」と「この build が測ったこと」だけ。
+   ⚠ 同じ記録を data/ne-countries/index.json も `gov` として運ぶ——束を手にした読者は、この
+   ファイルを開かずに同じ答えを得る（2 つの主体は別の読者に答える。scripts/data-governance.mjs）。 */
 export const GOVERNANCE = {
   'data/ne-countries/index.json': {
     publisher: 'Natural Earth',
     url: 'https://github.com/nvkelso/natural-earth-vector/tree/ca96624a56bd078437bca8184e78163e5039ad19/geojson',
+    retrievedAt: PINNED_AT,
     licence: 'public domain',
+    licenceUrl: 'https://www.naturalearthdata.com/about/terms-of-use/',
     attribution: false,
+    generatedAt: PINNED_AT,
+    asOf: EDITION_AT,
     ...NATURAL_EARTH,
     builtBy: 'scripts/build-ne-countries.mjs',
+    schema: 'js/ne-countries.js decodeNECountries (format IntMapNECountries) — node scripts/build-ne-countries.mjs --check',
+    quality: NE_QUALITY,
   },
 };
+
+/* the quality facets, measured from a decoded file with the vocabulary's own measurer */
+function measureScale(fc) {
+  const q = measureQuality(fc.features.map((f) => ({ geometry: f.geometry, ...f.properties })), {
+    fields: { geometry: {}, ADM0_A3: {}, NAME: {} }, key: NE_QUALITY.key,
+  });
+  let off = 0;
+  for (const f of fc.features) {
+    const g = f.geometry; if (!g) continue;
+    for (const p of (g.type === 'Polygon' ? [g.coordinates] : g.coordinates)) for (const r of p) {
+      for (const [x, y] of r) if (!(x >= -180 && x <= 180 && y >= -90 && y <= 90)) off++;
+    }
+  }
+  return { rows: q.rows, missing: q.missing, outOfRange: { vertexOffGlobe: off }, duplicates: q.duplicates };
+}
 
 const argv = process.argv.slice(2);
 const has = (f) => argv.includes(f);
@@ -107,6 +158,10 @@ export async function check(cache) {
       const t = await upstream(scale, cache);
       if (t) { if (!isDeepStrictEqual(fc, JSON.parse(t))) throw new Error(`${scale}: decodes to something other than the upstream file`); vs = 'deep-equal to the upstream file'; }
     }
+    /* the declared quality facets are what these bytes measure, or the declaration is wrong */
+    const q = measureScale(fc);
+    const declared = { rows: NE_QUALITY.rows[scale], missing: NE_QUALITY.missing[scale], outOfRange: NE_QUALITY.outOfRange[scale], duplicates: NE_QUALITY.duplicates[scale] };
+    if (!isDeepStrictEqual(q, declared)) throw new Error(`${scale}: NE_QUALITY declares ${JSON.stringify(declared)} but the file measures ${JSON.stringify(q)}`);
     out.push(`${scale}: ${fc.features.length} features, ${verts.toLocaleString()} vertices — ${vs}`);
   }
   if (!existsSync(INDEX) || readFileSync(INDEX, 'utf8').replace(/\r\n/g, '\n') !== indexText()) throw new Error('data/ne-countries/index.json is not what the shipped files say — run node scripts/build-ne-countries.mjs --index');
@@ -121,6 +176,8 @@ export async function check(cache) {
 const INDEX = join(ROOT, 'data', 'ne-countries', 'index.json');
 function indexDoc() {
   return {
+    /* the builder's declaration, carried by the bundle itself (js/data-governance.js recordOf reads `gov`) */
+    gov: GOVERNANCE['data/ne-countries/index.json'],
     source: { publisher: 'Natural Earth', commit: COMMIT, url: GOVERNANCE['data/ne-countries/index.json'].url },
     files: NE_SCALES.map((scale) => {
       const p = neCountriesPath(scale);

@@ -153,9 +153,16 @@ test('③ the Natural Earth files are this site\'s, pinned, and decode losslessl
     assert.match(doc.source.commit, /^[0-9a-f]{40}$/, 'not pinned to a commit');
     assert.doesNotMatch(doc.source.url, /@master\b/, 'a moving branch again');
   }
-  const { check } = await import('../scripts/build-ne-countries.mjs');
+  const { check, GOVERNANCE } = await import('../scripts/build-ne-countries.mjs');
   const lines = await check(null);
-  assert.equal(lines.length, 3);
+  assert.equal(lines.length, NE.NE_SCALES.length + 1, lines.join('\n'));
+  /* the provenance is stated in full — by the builder and by the bundle a reader holds — so this
+     subject never enters data/governance-ledger.json (check:datagov's ledger-shrinks) */
+  const { account } = await import('../js/data-governance.js');
+  const index = JSON.parse(read('data/ne-countries/index.json'));
+  for (const [who, rec] of [['builder', GOVERNANCE['data/ne-countries/index.json']], ['data/ne-countries/index.json', index]]) {
+    assert.deepEqual(account(rec, { hasBuilder: true }).undeclared, [], who + ' leaves a facet unstated');
+  }
   /* …and nothing in the browser reads the CDN's copy any more */
   for (const f of ['js/countries-ui.js', 'js/map-tools.js']) assert.doesNotMatch(codeOnly(read(f)),/natural-earth-vector@master\/geojson\/ne_\d+m_admin_0_countries/, f);
 });

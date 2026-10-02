@@ -1,4 +1,65 @@
 {
+ "gov": {
+  "publisher": "Natural Earth",
+  "url": "https://github.com/nvkelso/natural-earth-vector/tree/ca96624a56bd078437bca8184e78163e5039ad19/geojson",
+  "retrievedAt": "2026-10-02",
+  "licence": "public domain",
+  "licenceUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+  "attribution": false,
+  "generatedAt": "2026-10-02",
+  "asOf": "2022-06-02",
+  "cadence": "P1Y",
+  "cadenceBasis": {
+   "observed": "measured 2026-09-30 on github.com/nvkelso/natural-earth-vector: releases v3.3.0 2016-09, v4.0.0 2017-10, v4.1.0 2018-05, v5.0.0 2021-12, v5.0.1 2022-03, v5.1.0-v5.1.2 2022-05; no commit since 2022-06-02. At most one release a year while the project is active.",
+   "expires": "when Natural Earth publishes more than one release in a year, or states a release schedule of its own",
+   "canon": "scripts/lib/upstream-cadence.mjs NATURAL_EARTH, spread by every builder that reads Natural Earth"
+  },
+  "builtBy": "scripts/build-ne-countries.mjs",
+  "schema": "js/ne-countries.js decodeNECountries (format IntMapNECountries) — node scripts/build-ne-countries.mjs --check",
+  "quality": {
+   "key": [
+    "ADM0_A3"
+   ],
+   "rows": {
+    "110m": 177,
+    "50m": 242,
+    "10m": 258
+   },
+   "missing": {
+    "110m": {
+     "geometry": 0,
+     "ADM0_A3": 0,
+     "NAME": 0
+    },
+    "50m": {
+     "geometry": 0,
+     "ADM0_A3": 0,
+     "NAME": 0
+    },
+    "10m": {
+     "geometry": 0,
+     "ADM0_A3": 0,
+     "NAME": 0
+    }
+   },
+   "outOfRange": {
+    "110m": {
+     "vertexOffGlobe": 0
+    },
+    "50m": {
+     "vertexOffGlobe": 0
+    },
+    "10m": {
+     "vertexOffGlobe": 0
+    }
+   },
+   "duplicates": {
+    "110m": 0,
+    "50m": 0,
+    "10m": 0
+   }
+  }
+ },
  "source": {
   "publisher": "Natural Earth",
   "commit": "ca96624a56bd078437bca8184e78163e5039ad19",
