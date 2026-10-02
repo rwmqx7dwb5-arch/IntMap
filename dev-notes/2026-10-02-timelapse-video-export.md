@@ -112,6 +112,6 @@ Chronos パネルを開いたとき（以前から）、録画器のチャンク
 （門の判定が走者の性質になる形。チャンクの中身はチェックアウトのバイトそのもの）と main 側の未記録の増分が混じっている。天井は CI（LF）の
 実測で判定し、超えたら `node scripts/perf-budget.mjs --update` で上げる——上げる理由は上の 3 行。
 
-## 起動費の天井（async）を上げた理由
+## 起動費の天井を上げた理由（origin/main への rebase 後）
 
-書き出しの合成器 `js/map-recorder.js`（gzip 7,546 B）は書き出し欄を開いたときか Atlas が頼んだときだけ読まれる遅延チャンクで、起動時の要求・モジュールは変わらない。async.gzip の増分はこの分と `time-lapse`・`atlas-console` の追記。`node scripts/perf-budget.mjs --update` で超えた行だけを上げた。
+main が async.gzip の天井を自分の実測へ上げたあとは、この変更で超えたのは **dist.assets** だけだった（18,655.4 → 18,757.6 kB。`node scripts/perf-budget.mjs --update` は超えた行だけを上げる）。うち、この変更が足したのは `map-recorder` の新規チャンク 18,644 B（gzip 7,841 B。書き出し欄を開いたときか Atlas が録画を頼んだときだけ読む）と、`time-lapse`・`atlas-console` の追記。残りは上に書いたこの機械の CRLF による差で、main の CI（LF）が実測で下げる。
