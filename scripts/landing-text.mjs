@@ -66,6 +66,7 @@ export const TEXT = {
         sub: 'Students open the link on any device with a web browser and see exactly the map you chose — the same place, date and layers. No installation, no student accounts.',
         ctaPlan: 'A lesson in five steps',
         ctaExamples: 'Examples for class',
+        ctaTours: 'Classroom tours',
       },
       plan: {
         h2: 'A 50-minute lesson in five steps',
@@ -78,6 +79,12 @@ export const TEXT = {
           { h: 'Wrap up (5 min)', p: 'Each pair moves the clock (the button at the bottom right of the map) to a year of its choice and reports one change. The Share button turns their view into a link you can collect.' },
         ],
         note: 'Nothing in this lesson needs an account. A teacher who signs in can also ask Atlas questions in words; Atlas has a daily limit per account.',
+      },
+      tours: {
+        h2: 'Classroom tours',
+        sub: 'A tour is a short lesson already laid out: a few maps in order, each with sentences to read out and a question for the class. It opens full screen in the map — large type for a projector, everything else put away — and you move through it with Next and Previous.',
+        start: 'Start the tour',
+        note: 'Move with the arrow keys, Space or a presentation clicker (Page Up / Page Down); F switches to full screen, T hides the text, Esc leaves the tour. The address bar always holds a link to the step on screen, so you can hand that one step to the students. No account is needed.',
       },
       examples: { h2: 'Examples for class', question: 'Question for class', open: 'Open this map', fits: 'Fits' },
       curriculum: {
@@ -149,6 +156,7 @@ export const TEXT = {
         sub: '生徒はブラウザのある端末でリンクを開くだけで、先生が選んだ地図——同じ場所・日付・レイヤー——をそのまま見られます。インストールも、生徒のアカウントも要りません。',
         ctaPlan: '5つのステップで1コマ',
         ctaExamples: '授業で使える見本',
+        ctaTours: '授業ツアー',
       },
       plan: {
         h2: '50分の授業を5つのステップで',
@@ -161,6 +169,12 @@ export const TEXT = {
           { h: 'まとめ（5分）', p: '各ペアが時計（地図の右下のボタン）を好きな年に動かし、変化を1つ発表します。「共有」ボタンで、その画面をリンクとして集められます。' },
         ],
         note: 'この授業にアカウントは要りません。ログインした先生は Atlas に言葉で質問することもできます（アカウントごとに1日の上限あり）。',
+      },
+      tours: {
+        h2: '授業ツアー',
+        sub: 'ツアーは、組み立て済みの短い授業です。いくつかの地図を順に並べ、それぞれに読み上げる文と生徒への問いを添えています。地図の中で全画面に開き——プロジェクターでも読める大きな文字で、ほかの画面要素はしまって——「次へ」「前へ」で進みます。',
+        start: 'ツアーを始める',
+        note: '矢印キー、スペース、プレゼンテーション用のリモコン（Page Up / Page Down）で進みます。F で全画面、T で文を隠し、Esc でツアーを終えます。アドレスバーには常にいま映しているステップへのリンクが入っているので、そのステップだけを生徒に渡すこともできます。アカウントは要りません。',
       },
       examples: { h2: '授業で使える見本', question: '授業での問い', open: 'この地図を開く', fits: '対応' },
       curriculum: {

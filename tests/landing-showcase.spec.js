@@ -24,11 +24,17 @@
  *     example's 1200×630 picture, summary_large_image) and sends a person to its own map — with a script
  *     and, with scripts off, by the meta refresh alone.
  *  ③ A reader who chose Japanese in the app is taken to ja/; a reader with no choice is not moved.
+ *  (classroom-tours) THE FIRST EXAMPLE IS OPENED THE WAY A TEACHER OPENS IT: from the address of a tour that
+ *     passes through it (`?tour=<id>&step=<n>` + its link — js/tours.js tourLink, what the teacher page links),
+ *     so the same boot asks the classroom mode too — the panel shows that step, → moves to the next step
+ *     (its address and camera are the step's), Esc leaves (the mode is gone and the address names no tour).
+ *     It costs one camera move, not a boot (no new spec: the suite's time may only go down, #R205).
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting } from './helpers/network.js';
 import { seededStorageState, BASE } from './helpers/session-seed.js';
 import { SHOWCASE, CAPTURED, RECORD_ANSWERED } from '../js/showcase.js';
+import { TOURS, tourSteps, tourLink } from '../js/tours.js';
 import { sharedIds } from '../js/layer-manifest.js';
 import { decode } from '../js/map-state.js';   /* (map-state-store) the codec the app writes the link with */
 import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
@@ -107,9 +113,30 @@ test('every example the record cannot answer for opens from its link, at its dat
   expect(inPage.length, 'at least one example needs the page').toBeGreaterThan(0);
   const ordered = inPage.filter((s) => s.at == null).concat(inPage.filter((s) => s.at != null));
   const [first, ...rest] = ordered;
-  await page.goto('/index.html' + CAPTURED[first.id].hash, { waitUntil: 'domcontentloaded' });
+  /* (classroom-tours) a tour that passes through the first example, with a step after it the classroom mode can move to */
+  const via = TOURS.map((t) => ({ t, steps: tourSteps(t) })).map(({ t, steps }) => ({ t, steps, i: steps.findIndex((st) => st.example === first.id) }))
+    .find((x) => x.i >= 0 && x.i < x.steps.length - 1);
+  await page.goto(via ? tourLink(via.t.id, via.i + 1).replace(/^\./, '') : '/index.html' + CAPTURED[first.id].hash, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   await assertExample(page, first);
+  if (via) {
+    const here = via.steps[via.i], then = via.steps[via.i + 1];
+    await expect(page.locator('html')).toHaveAttribute('data-classroom', '1');
+    const panel = page.locator('#im-tour');
+    await expect(panel, 'the classroom panel shows the step it opened on').toContainText(here.say[0]);
+    await expect(panel).toContainText((via.i + 1) + ' / ' + via.steps.length);
+    await expect(page.locator('#sidebar'), 'everything but the map is put away').toBeHidden();
+    await page.keyboard.press('ArrowRight');
+    await page.waitForFunction((h) => location.hash === h && /[?&]step=/.test(location.search), then.hash, { timeout: 15000 });
+    expect(new URL(page.url()).searchParams.get('step'), 'the address names the step on screen').toBe(String(via.i + 2));
+    await expect(panel).toContainText(then.say[0]);
+    const cam = await page.evaluate(() => { const c = window.IntMapGeoEngine.camera.getCenter(); return { lng: c.lng, lat: c.lat }; });
+    expect(Math.abs(cam.lng - then.view.lng) + Math.abs(cam.lat - then.view.lat), 'the camera is the next step\'s').toBeLessThan(2e-3);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('html')).not.toHaveAttribute('data-classroom', '1');
+    await expect(panel).toHaveCount(0);
+    expect(new URL(page.url()).search, 'leaving the tour leaves no tour in the address').toBe('');
+  }
   for (const s of rest) {
     await page.evaluate((h) => { history.replaceState(null, '', location.pathname + location.search + h); window.IntMapBookmark.restore({ shared: true }); }, CAPTURED[s.id].hash);
     await assertExample(page, s);

@@ -276,6 +276,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["panel.operatingCosts","operatingCosts","runningCosts,supportCosts,whereSupportGoes","panel","panel","panel.donate","panel,explanation","session","none","",""],
       ["panel.about","about","aboutIntMap,forTeachers,teachingGuide,landingPage","panel","none","","explanation","read","none","",""],
       ["panel.showcase","showcase","example,exampleMap,showcaseMap,gallery","panel","time","camera,map.layer,time","map,time","session","none","",""],
+      ["panel.tour","tour","classroomTour,lessonTour,guidedTour,startTour,nextStep","panel","time","camera,map.layer,time","map,time","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
