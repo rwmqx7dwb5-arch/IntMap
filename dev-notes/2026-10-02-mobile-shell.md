@@ -60,6 +60,10 @@ date: 2026-10-02
 
 残る 1 つは出典表記のリンク（24 px・ライセンス上必須の文字で、`ui-a11y-polish` ② が 24 px の床を測る）。⚠ 測定は初回訪問で Köppen と海底ケーブルが既定オン（main の状態）。#900 で両方が既定オフになると、起動時のチップも出ない。
 
+**ぼかし（backdrop-filter）を描く面**（起動直後・画面に見えているもの）: **10 面・画面の 43.8 % → 2 面・11.8 %**（シートとグループ。凡例チップも閉じた凡例も描かない）。前はシート・検索の丸・座標バー・時計・凡例 2 枚・丸ボタン 4 つが、それぞれ動く地図の上で毎フレーム背後をぼかしていた。⚠ 後の値は #900 の後（Köppen と海底ケーブルが既定オフ）に測ったので、凡例の 2 枚はそもそも点いていない。凡例が点いていても、トレイを開くまで描かない（`visibility:hidden` はぼかしを作らない）。
+
+**起動時の費用（`check:perf`）——上げた天井と、その理由**: `eager.modules` 301→302（`js/mobile-sheet.js`。携帯は起動時からシートを使うので遅延にできない）、`eager.cssRaw` 356.0→365.8 kB、`eager.cssGzip` 57.8→60.1 kB（+2.3 kB gzip）。CSS の増分は携帯の殻そのもの——シートの画面 5 種の描き方・地図画面・凡例トレイと 44 px の当たり判定・指で扱える年スライダー（webkit と moz の 2 組）——で、消した四角／丸い検索／浮く時計の規則を差し引いた残り。代わりに上の通り、動いている地図の上でぼかしを描く面積が 1/4 になった。
+
 **主要操作のタップ数**
 
 | 操作 | 前 | 後 |
@@ -81,7 +85,7 @@ date: 2026-10-02
 - `tests/form-control-names.spec.js` ②: 凡例 3 枚を点けた後、**チップから開いてから**四隅と中心を測る（チップの数も確かめる）。
 - `tests/shell-map-input-checks.test.mjs` ②: 読み取りを入れた状態で従来の 3 本、**切った状態で 60 フレームが読み取りを 1 度も書かず container を測らない**ことを追加。
 - 期待値を変えた検査: `hazard-other-dock-window-checks`（JS 前の既定位置 196→96 px——`--sheet-h` から測る、という主張は同じ）、`shell-panels-tools-checks`（capture mode が隠すものに `.bm-square` の代わりに `.m-legend-chip`）。
-- 台帳: `tests/z-layers-baseline.json`・`tests/keyboard-reach`（スクリムの click 受け手が 1 減）・`tests/i18n-coverage-floor.json`（de/es/ru の位置引数行 7657→7655: 消えた四角の `L('Satellite',…)` と 2 つ目の `L('Base map',…)` の**呼び出し箇所**。文字列そのものは `viewSat` キーと残る呼び出しに在る）・`tests/global-surface-baseline.json`（新しい読み: `IntMapConsole`／`IntMapLazy` は「Atlas に訊く」が遅延読込の console を呼ぶため、`IntMapRuntime` は凡例チップの数え直しを 1 フレームに合流させるため、`IntMapBaseDisplay` は基本表示の一覧）。
+- 台帳: `tests/perf-baseline.json`（上の 3 行・理由は §2）・`tests/z-layers-baseline.json`・`tests/keyboard-reach`（スクリムの click 受け手が 1 減）・`tests/i18n-coverage-floor.json`（de/es/ru の位置引数行 7657→7655: 消えた四角の `L('Satellite',…)` と 2 つ目の `L('Base map',…)` の**呼び出し箇所**。文字列そのものは `viewSat` キーと残る呼び出しに在る）・`tests/global-surface-baseline.json`（新しい読み: `IntMapConsole`／`IntMapLazy` は「Atlas に訊く」が遅延読込の console を呼ぶため、`IntMapRuntime` は凡例チップの数え直しを 1 フレームに合流させるため、`IntMapBaseDisplay` は基本表示の一覧）。
 - 段 1: static・engine・types・i18n・surface・docs・archfiles・perf・testbudget。段 2: `ui-a11y-polish`・`form-control-names`・`r668`・smoke の R766 ③（携帯でツール帯の扉が届く）・`r347-navigation` ⑧・`r435`・`map-a11y-structure`。
 
 ## 4. アイコン
@@ -94,4 +98,5 @@ date: 2026-10-02
 - デスクトップのタブ文字の大きさの競合（§2）。`_fitTabFont` をサイドバーの ResizeObserver で再実行すれば決まるが、`js/session-tabs.js` は今回の範囲外。
 - `#m-scrim` は誰も出さなくなった（要素と CSS は残した——`tests/shell-css-surface-checks` が #R230 の性能の主張をその規則に付けている）。消すなら検査ごと。
 - 設定はシートの画面として開くが、その中身（8 セクション）は従来どおり。
+- ⚠ `tests/r668.spec.js`（deep tier）は #900 の後に rebase した木で**赤**（2 回とも）: 回転の 120 ms 後に `innerWidth` が 844 ではなく 1150。原因は右のレイヤーパネル `#layer-sidebar-r`（デスクトップ配置で 844〜1150 にはみ出す）を、携帯の端末エミュレーションがはみ出しごと縮小表示すること。**変更前のビルド（3cbfa244）でも同じ 120 ms 後に 1150 を測った**ので、この作業の欠陥ではない。rebase 前（既定の凡例 2 枚で起動が遅かった）は通っていたので、#900 で起動が速くなりパネルが回転より先にできるようになった、という時刻の差と見ている（未確認）。
 - `role="dialog" aria-modal="true"` の Layers / Tools は、シートの中では地図が操作できるので厳密には modal ではない。属性はダイアログ登録（Escape・Tab の閉じ込め）と対で、今回は変えていない。
