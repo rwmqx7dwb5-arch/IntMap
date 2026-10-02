@@ -28,6 +28,11 @@
  *
  *  The UI is mounted into the Chronos panel by js/news-timeline.js the first time the panel opens
  *  (`mountLapse`); Atlas drives the same player (js/atlas-cap-time.js `time.lapse`) and reads `lapseState()`.
+ *  ⚠ (timelapse-video-export) A FRAME CAN HAVE A SINK. `startLapse({ …, sink })` hands every drawn frame to
+ *  `sink.frame(state)` and waits for it instead of the dwell — js/map-recorder.js films it and holds it for its own
+ *  1/fps of recorded time — and `sink.end(reason)` hears how the run ended. Only drawn frames reach it (the three
+ *  conditions above), so a recording has no blank and no half-drawn instant. The export row beside the lapse
+ *  (index.html #ntl-rec) is mounted here and fetches the recorder only when it is opened (`openRecorder`).
  * ==========================================================================*/
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
@@ -57,18 +62,33 @@ const st = {
   unit: /** @type {'year'|'day'|'hour'} */ ('year'), step: 1, fps: 1, loop: false,
   /** @type {number|null} */ from: null,   /* ms */
   /** @type {number|null} */ to: null,     /* ms; null = the present */
-  frames: 0, /** @type {string|null} */ ended: null,
+  frames: 0, /** @type {number|null} */ total: null, /** @type {string|null} */ ended: null,
   /** @type {{at:string, entered:{id:string,name:string}[], left:{id:string,name:string}[]}[]} */ changes: [],
 };
 /** @type {Map<string,{name:string,drawn:boolean}>|null} */
 let lastDrawn = null;
 let runToken = 0;
+/** the frame sink of this run (js/map-recorder.js) — null when the lapse is only played on screen
+    @type {{frame:(s:any)=>Promise<boolean>, end:(reason:string)=>void}|null} */
+let sink = null;
 let ownWrite = false;
 /** @type {Set<(s:any)=>void>} */
 const subs = new Set();
 const emit = () => { const s = lapseState(); subs.forEach((f) => { try { f(s); } catch (_) { /* a reader */ } }); };
 
 /** the next instant after `ms` by the player's step, or null past the end */
+/** how many instants the run from st.from to its end holds — what a recording's progress counts against */
+function countFrames() {
+  if (st.from == null) return null;
+  const end = st.to == null ? Date.now() : st.to;
+  if (st.unit === 'year') {
+    const a = new Date(st.from).getUTCFullYear(), b = new Date(end).getUTCFullYear();
+    let n = Math.floor((b - a) / st.step) + 1;
+    while (n > 1 && yearInstant(a + (n - 1) * st.step) > end) n--;
+    return n;
+  }
+  return Math.floor((end - st.from) / (st.step * (st.unit === 'day' ? DAY : HOUR))) + 1;
+}
 function nextAfter(ms) {
   let n;
   if (st.unit === 'year') { const y = new Date(ms).getUTCFullYear() + st.step; n = yearInstant(y); }
@@ -124,12 +144,20 @@ async function run(token) {
     st.waiting = false; st.frames++;
     await noteChanges();
     emit();
-    const rate = reducedMotion() ? RATES[0] : st.fps;
-    await sleep(1000 / rate - (Date.now() - t0));
-    if (!alive()) return;
+    if (sink) {
+      /* a recording: the sink films the frame and holds it for its own time — no screen dwell on top of it */
+      const k = sink; let ok = false;
+      try { ok = (await k.frame(lapseState())) !== false; } catch (_) { ok = false; }
+      if (!alive()) return;
+      if (!ok) { stopLapse('record-failed'); return; }
+    } else {
+      const rate = reducedMotion() ? RATES[0] : st.fps;
+      await sleep(1000 / rate - (Date.now() - t0));
+      if (!alive()) return;
+    }
     const n = nextAfter(IntMapTime.when().getTime());
     if (n == null) {
-      if (st.loop && st.from != null) { lastDrawn = null; st.changes = []; put(st.from); continue; }
+      if (st.loop && !sink && st.from != null) { lastDrawn = null; st.changes = []; put(st.from); continue; }
       stopLapse('end'); return;
     }
     put(n);
@@ -153,8 +181,9 @@ async function noteChanges() {
   } catch (_) { /* nothing to compare */ }
 }
 
-/** start({ from, to?, unit?, step?, fps?, loop? }) — from/to: a year (number) or an ISO date/instant; to omitted = the
-    present. Starts at `from` unless the clock already stands inside the range. → lapseState() */
+/** start({ from, to?, unit?, step?, fps?, loop?, sink? }) — from/to: a year (number) or an ISO date/instant; to omitted = the
+    present. Starts at `from` unless the clock already stands inside the range (a recording always starts at `from`,
+    and does not loop). → lapseState() */
 export function startLapse(o) {
   o = o || {};
   if (o.unit && UNITS.indexOf(o.unit) >= 0) st.unit = o.unit;
@@ -174,9 +203,12 @@ export function startLapse(o) {
   if (st.from < floor) st.from = floor;
   const cur = IntMapTime.isLive() ? null : IntMapTime.when().getTime();
   const end = st.to == null ? Date.now() : st.to;
-  st.ended = null; st.changes = []; st.frames = 0; lastDrawn = null;
+  /* a run that replaces a recording ends that recording first — it hears why */
+  if (sink) { const k = sink; sink = null; try { k.end('replaced'); } catch (_) { /* the recorder */ } }
+  sink = o.sink && typeof o.sink.frame === 'function' ? o.sink : null;
+  st.ended = null; st.changes = []; st.frames = 0; lastDrawn = null; st.total = countFrames();
   st.playing = true; const token = ++runToken;
-  if (cur == null || cur < st.from || cur >= end) put(st.from);
+  if (sink || cur == null || cur < st.from || cur >= end) put(st.from);
   run(token);
   emit();
   return lapseState();
@@ -185,6 +217,8 @@ export function startLapse(o) {
 export function stopLapse(reason) {
   if (!st.playing) return lapseState();
   st.playing = false; st.waiting = false; st.ended = reason || 'stopped'; runToken++;
+  const k = sink; sink = null;
+  if (k) { try { k.end(st.ended); } catch (_) { /* the recorder */ } }
   emit();
   return lapseState();
 }
@@ -195,7 +229,7 @@ export function lapseState() {
     playing: st.playing, waiting: st.waiting, unit: st.unit, step: st.step, fps: st.fps,
     rate: reducedMotion() ? RATES[0] : st.fps, reducedMotion: reducedMotion(), loop: st.loop,
     from: iso(st.from), to: st.to == null ? null : iso(st.to), at: IntMapTime.isLive() ? null : IntMapTime.iso(),
-    frames: st.frames, ended: st.ended, changes: st.changes.slice(),
+    frames: st.frames, total: st.total, recording: !!sink, ended: st.ended, changes: st.changes.slice(),
   };
 }
 /** onLapse(fn) — fn(state) on every change; returns the unsubscribe */
@@ -210,6 +244,8 @@ IntMapTime.on((e) => { if (st.playing && !ownWrite && e && e.source !== 'lapse')
  */
 export function mountLapse(el, host) {
   const d = D(); if (!el || !d) return null;
+  /** @type {{f:HTMLInputElement, to:HTMLInputElement, stp:HTMLInputElement}|null} */
+  let form = null;
   const t = (en, jp) => IntMapLang.t(host.lang(), en, jp);
   const unitOfMode = (m) => (m === 'date' ? 'day' : m === 'time' ? 'hour' : 'year');
   if (!st.playing) st.unit = unitOfMode(host.mode());
@@ -256,6 +292,7 @@ export function mountLapse(el, host) {
     stp.type = 'number'; stp.min = '1'; stp.step = '1'; stp.value = String(st.step); stp.id = 'ntl-lapse-step';
     const sl = node('label', 'ntl-lapse-f'); sl.append(node('span', '', t('Step', '刻み')), stp);
     range.append(f.lb, to.lb, sl);
+    form = { f: f.inp, to: to.inp, stp };
     const opts = node('div', 'ntl-lapse-row');
     const rates = node('span', 'ntl-modes'); rates.setAttribute('role', 'group'); rates.setAttribute('aria-label', t('Speed', '速度'));
     const rm = reducedMotion();
@@ -277,13 +314,20 @@ export function mountLapse(el, host) {
     if (rm) el.appendChild(node('div', 'ntl-lapse-note', t('Reduced motion is on in your system settings: the lapse plays at its slowest speed.', 'システム設定で「視差効果を減らす」が有効なため、最も遅い速度で再生します。')));
     play.onclick = () => {
       if (st.playing) { stopLapse('stopped'); return; }
-      const read = (inp) => (inp.value === '' ? null : st.unit === 'year' ? Math.round(+inp.value) : st.unit === 'day' ? inp.value : new Date(inp.value).toISOString());
-      const from = read(f.inp);
-      if (from == null) { f.inp.focus(); paintStatus(t('Give a start', '開始を入れてください')); return; }
-      const res = startLapse({ from, to: read(to.inp), unit: st.unit, step: Math.round(+stp.value) || 1 });
+      const s = readForm();
+      if (s.error) { f.inp.focus(); paintStatus(t('Give a start', '開始を入れてください')); return; }
+      const res = startLapse({ from: s.from, to: s.to, unit: s.unit, step: s.step });
       if (res.error === 'empty-range') paintStatus(t('The end is before the start', '終了が開始より前です'));
     };
     paint(lapseState());
+  }
+  /* the range as the reader set it in the fields — what Play starts and what the export row records */
+  function readForm() {
+    if (!form) return { error: 'no-start' };
+    const read = (inp) => (inp.value === '' ? null : st.unit === 'year' ? Math.round(+inp.value) : st.unit === 'day' ? inp.value : new Date(inp.value).toISOString());
+    const from = read(form.f);
+    if (from == null) return { error: 'no-start' };
+    return { from, to: read(form.to), unit: st.unit, step: Math.round(+form.stp.value) || 1, fps: st.fps };
   }
   function paintStatus(s) { const n = el.querySelector('#ntl-lapse-status'); if (n) n.textContent = s; }
   function paint(s) {
@@ -303,17 +347,52 @@ export function mountLapse(el, host) {
     else if (s.playing) line = (s.at || t('Now', '現在'));
     else if (s.ended === 'end') line = t('Reached the end', '終了時点に達しました');
     else if (s.ended === 'clock-moved') line = t('Paused — the clock was moved', '一時停止——時計が操作されました');
+    if (s.recording) line = t('Recording', '録画中') + ' · ' + line;
     if (last) {
       if (last.entered.length) line += (line ? ' · ' : '') + t('Began to be drawn at ', '描き始め ') + last.at + ': ' + names(last.entered);
       if (last.left.length) line += (line ? ' · ' : '') + t('Stopped being drawn at ', '描かれなくなった ') + last.at + ': ' + names(last.left);
     }
     if (line !== lastPainted) { paintStatus(line); lastPainted = line; }
   }
+  /* the export row (index.html #ntl-rec): one button until it is opened — the recorder is fetched then */
+  const recEl = d.getElementById('ntl-rec');
+  recHost = { lang: host.lang, settings: readForm };
+  function buildRec() {
+    if (!recEl || recMount) return;
+    recEl.replaceChildren(); recEl.hidden = false;
+    const b = /** @type {HTMLButtonElement} */ (node('button', 'ntl-rec-open', t('Export video or image', '動画・画像に書き出す')));
+    b.type = 'button'; b.id = 'ntl-rec-open';
+    b.onclick = () => { openRecorder(); };
+    recEl.appendChild(b);
+  }
   build();
+  buildRec();
   onLapse(paint);
+  mounted();
   return {
     /** the panel's tab moved — the lapse's unit follows it while nothing is playing */
     panelMode(m) { if (st.playing) return; const u = unitOfMode(m); if (u !== st.unit) { st.unit = /** @type {any} */ (u); st.from = null; st.to = null; build(); } },
-    relabel() { build(); },
+    relabel() { build(); buildRec(); if (recMount) recMount.then((r) => { if (r && r.ui) r.ui.relabel(); }); },
   };
+}
+
+/* ══ THE EXPORT ROW'S RECORDER — fetched on first use (js/map-recorder.js) ═══════════════════════════════════ */
+/** @type {{lang:()=>string, settings:()=>any}|null} */
+let recHost = null;
+/** @type {Promise<{M:any, ui:any}|null>|null} */
+let recMount = null;
+/** @type {()=>void} */
+let mounted = () => {};
+const whenMounted = new Promise((r) => { mounted = () => r(true); });
+/** openRecorder() → Promise<the recorder module | null> — mounts the export row's recorder into #ntl-rec (once). Waits
+    for the panel to have mounted the lapse (Atlas may open the panel and ask in the same breath); null when there is
+    no panel to put it in. */
+export async function openRecorder() {
+  if (!recHost) await Promise.race([whenMounted, sleep(15000)]);
+  const d = D(); const el = d && d.getElementById('ntl-rec');
+  if (!el || !recHost) return null;
+  const host = recHost;
+  if (!recMount) recMount = import('./map-recorder.js').then((M) => ({ M, ui: M.mountRecorder(el, host) })).catch(() => { recMount = null; return null; });
+  const r = await recMount;
+  return r ? r.M : null;
 }
