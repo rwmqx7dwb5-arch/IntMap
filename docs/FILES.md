@@ -1669,9 +1669,12 @@ scripts/
                                   数値リテラルの z-index をファイルごとに両方向で ratchet する
   outbound-hosts.mjs              **ブラウザが通信しうるホストと、それを述べるプライバシー §4 の照合**
                                   （`npm run check:datagov` の `outbound-disclosed` 規則。門は data-governance.mjs が走らせる）。
-                                  `js/`・`src/`・配信する `*.html`・`sw.js`・`css/` の**文字列とテンプレートの
+                                  `js/`・`src/`・ルートと `vite.config.js` の STATIC_ASSETS が配る `*.html`
+                                  （`ja/`・`s/` を含む）・`sw.js`・`css/` の**文字列とテンプレートの
                                   リテラルだけ**を acorn で読み（コメントは要求ではない）、`+` で組み立てた URL も
-                                  1 本として読む。`<a href>`・XML 名前空間・`window.open`・DATA_SOURCES の `u`・
+                                  1 本として読む。scheme はネットワークのホストを名指すもの全部
+                                  （`http(s)`・`ws(s)`・`ftp`）で、受け取る API（WebSocket・EventSource・
+                                  sendBeacon・`import()`・Worker）を問わない。`<a href>`・XML 名前空間・`window.open`・DATA_SOURCES の `u`・
                                   licence を述べる記録の `url` は文脈から機械的に「リンク」とする。
                                   `node scripts/outbound-hosts.mjs` でホストごとの一覧を出す
   outbound-hosts.json             上の台帳（追跡対象・手で書く判断）。ホストごとに `what`・`sends`（符号＋補足）と、

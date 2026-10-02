@@ -1481,6 +1481,25 @@
       }
     },
     {
+      "host": "stream.aisstream.io",
+      "what": "aisstream.io live AIS WebSocket (wss://) — only with the reader's own aisstream.io key; without one the ships layer is served by the ais-feed Edge Function and the browser never connects here",
+      "sends": {
+        "code": "area",
+        "detail": "the reader's own aisstream.io API key (kept only in this browser's localStorage, intmap_ais_key) and the bounding box of the map area in view, in the subscription message sent when the socket opens"
+      },
+      "disclosure": {
+        "en": "opens a WebSocket connection directly to aisstream.io (stream.aisstream.io) and sends it that key and the map area in view",
+        "jp": "aisstream.io（stream.aisstream.io）に WebSocket で直接接続し、そのキーと表示中の地図範囲を aisstream.io に送って購読します"
+      },
+      "probe": {
+        "url": "https://stream.aisstream.io/v0/stream",
+        "expect": [
+          400
+        ],
+        "why": "the endpoint is a WebSocket; a plain HTTPS GET without an Upgrade is answered 400 «handshake error: bad \"Upgrade\" header» (measured 2026-10-02) — which is the endpoint answering"
+      }
+    },
+    {
       "host": "tie.digitraffic.fi",
       "what": "Digitraffic weather-camera stations",
       "sends": {
