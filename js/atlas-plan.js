@@ -56,7 +56,7 @@ export const PLAN_TOOL = {
 
 /* The states a step can be in, worst first. A step is in the WORST state of its operations (the latest
    attempt of each capability — a retry that worked replaces the failure it retried). */
-export const STEP_STATES = ['running', 'failed', 'stopped', 'waiting', 'partial', 'unobserved', 'completed', 'noop', 'pending'];
+const STEP_STATES = ['running', 'failed', 'stopped', 'waiting', 'partial', 'unobserved', 'completed', 'noop', 'pending'];
 const RANK = { running: 0, failed: 1, stopped: 2, waiting: 3, partial: 4, unobserved: 5, completed: 6 };
 
 /** opState(rec) — what one call's record says happened, in the plan's words. Read off the record the
