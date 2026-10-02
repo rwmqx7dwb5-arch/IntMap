@@ -224,7 +224,15 @@ test('atlas-capability-modules ⑤: the generated files agree with the entries, 
     if (!ast) continue;
     for (const st of ast.body) if (st.type === 'ImportDeclaration' && /^\.\/atlas-caps?(-modules)?\.js$|^\.\/atlas-cap-/.test(st.source.value) && !/^js\/atlas-cap(s|-)/.test(f)) importers.push(f);
   }
-  assert.deepEqual([...new Set(importers)].sort(), ['js/atlas-console.js', 'js/atlas-schemas.js'], 'only the Atlas kernel reaches the runs');
+  /* (atlas-capability-single-source) js/atlas-catalog-text.js assembles the catalogue from the entries' `doc`, so it
+     imports them too — and it is itself reached only from the kernel */
+  assert.deepEqual([...new Set(importers)].sort(), ['js/atlas-catalog-text.js', 'js/atlas-console.js', 'js/atlas-schemas.js'], 'only the Atlas kernel reaches the runs');
+  const catImporters = [];
+  for (const f of fs.readdirSync(path.join(ROOT, 'js')).filter((x) => x.endsWith('.js')).map((x) => 'js/' + x)) {
+    const ast = parseSource(read(f), { sourceType: 'module', orNull: true });
+    if (ast && ast.body.some((st) => st.type === 'ImportDeclaration' && st.source.value === './atlas-catalog-text.js')) catImporters.push(f);
+  }
+  assert.deepEqual(catImporters, ['js/atlas-console.js'], 'and js/atlas-catalog-text.js is reached only from the kernel');
   const { LAZY_REGISTRY } = await import('../js/lazy-modules.js');
   assert.ok(Object.values(LAZY_REGISTRY).some((m) => /atlas-console\.js/.test(String(m.load))), 'and the kernel itself is loaded on demand');
 });

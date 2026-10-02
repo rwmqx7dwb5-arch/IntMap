@@ -11,7 +11,10 @@
  *  The registry rows (copied into js/atlas-capabilities.js), the dispatch and the schema table are
  *  DERIVED from these entries — `node scripts/atlas-caps.mjs --write` rewrites what is generated after
  *  an entry is added or removed, and `npm run check:capabilities` fails while they disagree.
- *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
+ *  (atlas-capability-single-source) An entry also holds `doc` — its fragment of each catalogue block the planner
+ *  reads (js/atlas-catalog-text.js keeps only the blocks' order and headings) — and, where it has them, `phrases`,
+ *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
+ *  entry names them.
  * ==========================================================================*/
 import { bool, num, one, noArgs } from './atlas-caps.js';
 
@@ -33,6 +36,9 @@ export default [
     /* ══ (#R347) ACTIVE NAVIGATION — the live half of routing ══════════════════════════════════
        None of the four takes a target: they act on the route and the guidance that already exist,
        and `navigation.start` refuses with «plan a route first» rather than inventing one. */
+    doc: [
+      { in: 'navigation', at: 10, text: '{"type":"startNavigation","simulate"?:bool,"speed"?:num} = begin guided navigation along the route ALREADY PLANNED and selected. It asks the browser for the device location, follows it, matches it to the route, announces each turn by voice, detects leaving the route and re-plans automatically, and reports arrival \u2014 at every stop and at the destination. ⚠ A ROUTE MUST EXIST FIRST: emit {"type":"directions",…} in the SAME plan when the user names places («名古屋駅から京都駅まで車で案内して» = directions THEN startNavigation). "simulate":true drives a synthetic vehicle along the route instead of using the real GPS (for demonstrating or testing; "speed" is the multiplier, e.g. 5). Use for 「このルートで案内開始」「ナビ開始して」「案内を始めて」, "start navigation", "navigate this route", "guide me there", "drive there"; ' },
+    ],
     schema: () => ({ type: 'object', properties: { simulate: bool(), sim: bool(), speed: num(0) } }),
       /* ══ (#R347) ACTIVE NAVIGATION — §34 ════════════════════════════════════════════
          「Atlasが独自 route state を持つことは禁止。RouteStore / NavigationStore を唯一の正本に。」
@@ -61,6 +67,10 @@ export default [
   },
   {
     row: ['navigation.stop',            'stopNavigation', 'endNavigation,stopNav',                              'routing', 'none',    'navigation',             'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'navigation', at: 20, text: '{"type":"stopNavigation"} = end it and put the map back (「案内停止」「ナビをやめて」, "stop navigation"); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('stopNavigation')),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L;
       {
@@ -73,6 +83,9 @@ export default [
   },
   {
     row: ['navigation.status',          'navStatus',      'howLongLeft,etaNow,remaining,nextTurn,arrivalTime',           'routing', 'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    doc: [
+      { in: 'navigation', at: 30, text: '{"type":"navStatus"} = ANSWER FROM THE LIVE NAVIGATION STATE \u2014 remaining time, remaining distance, arrival clock time, the next maneuver and the road it is on, whether the driver is off route, and whether the time includes traffic or is the router\u2019s plain estimate. Use for 「あと何分？」「このまま行ったら何時着？」「次の曲がり角は？」「残りどのくらい？」, "how much longer", "what time will I arrive", "what is the next turn", "am I still on route"; ' },
+    ],
     schema: () => (noArgs('navStatus')),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, HOST = K.HOST, note = K.note, esc = K.esc;
       {
@@ -95,6 +108,9 @@ export default [
   },
   {
     row: ['navigation.camera',          'navCamera',      'recenter,overview,followMe,northUp',                          'routing', 'camera',  'camera,camera.follow',                 'map,camera',          'session', 'none',   '',         ''],
+    doc: [
+      { in: 'navigation', at: 40, text: '{"type":"navCamera","mode"?:"follow"|"north"|"overview"|"free"} = how the camera behaves while navigating \u2014 "follow" turns with the vehicle (heading-up) and keeps it low on the screen, "north" keeps north up, "overview" frames the whole remaining route, "free" stops following. {"type":"recenter"} alone resumes following after the user has panned away. Use for 「全体表示」「現在地に戻して」「北を上に」, "show the whole route", "recenter", "overview"; ' },
+    ],
     schema: () => ({ type: 'object', properties: { mode: one('follow', 'north', 'overview', 'free'), camera: one('follow', 'north', 'overview', 'free') } }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, t = K.t, note = K.note, esc = K.esc;
       {
@@ -109,6 +125,9 @@ export default [
   },
   {
     row: ['navigation.voice',           'navVoice',       'mute,unmute,voiceGuidance',                                   'routing', 'setting', 'navigation',             'setting',             'session', 'none',   '',         ''],
+    doc: [
+      { in: 'navigation', at: 50, text: '{"type":"navVoice","mode"?:"off"|"alerts"|"guidance"} = spoken guidance \u2014 "guidance" announces every turn at four distances, "alerts" speaks only the final call and re-routes, "off" is silent. {"type":"mute"} / {"type":"unmute"} are shortcuts. Use for 「音声案内を止めて」「ミュート」, "mute", "turn the voice back on". ⚠ THE TIME AND DISTANCE COME FROM THE NAVIGATION STATE, NEVER FROM YOUR OWN ARITHMETIC: do not estimate an arrival time, and do not say a route is traffic-aware unless navStatus said so \u2014 the open routers carry no traffic and the reply says which it is.\n' },
+    ],
     schema: () => ({ type: 'object', properties: { mode: one('off', 'alerts', 'guidance'), voice: one('off', 'alerts', 'guidance') } }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, t = K.t, note = K.note, esc = K.esc;
       {

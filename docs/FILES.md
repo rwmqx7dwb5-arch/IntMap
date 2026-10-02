@@ -770,10 +770,13 @@ atlas-country-ids.js              境界データが宣言している国の識�
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
                                   153 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
-                                  行そのものは能力の項目（atlas-cap-*.js）の写しで、`GENERATED ROWS` の印の間を
+                                  行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
+                                  `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
                                   `node scripts/atlas-caps.mjs --write` が書く（手で編集しない）
-atlas-caps.js                     **能力ひとつ＝項目ひとつ**の仕組み — 項目（行・schema・run）の検証と、そこから dispatch の表・
-                                  schema の表・登録表の行を導く関数、旧 switch の default（unknownAction）、schema の組み立て関数
+atlas-caps.js                     **能力ひとつ＝項目ひとつ**の仕組み — 項目（行・説明文 doc・方針 policy・事後条件 goal・
+                                  チップ chips・schema・run）の検証と、そこから dispatch の表・schema の表・登録表の行・
+                                  方針の表・カタログのブロック（catalogueBlocks）を導く関数、旧 switch の default
+                                  （unknownAction）、schema の組み立て関数
 atlas-caps-modules.js             ⚠ 生成物（`node scripts/atlas-caps.mjs --write`）— 能力の名前空間ファイルの一覧（js/ から発見・遅延チャンクだけが読む）
 atlas-cap-attach.js               Atlas の能力 — 添付の取り寄せ（attach.recall）
 atlas-cap-chart.js                Atlas の能力 — グラフの合成（chart.compose）
@@ -801,8 +804,9 @@ atlas-query.js                    **データ横断クエリエンジン** windo
                                   1 行登録すれば同じ条件・結合・出典表示がその日から効く。条件は**費用の安い順**に
                                   評価し、ネットワーク列は生き残った行にだけ払う。打ち切りは必ず結果に印字する。
                                   遅延モジュール（`atlasQuery`）。dispatch の入口は js/atlas-cap-data.js の data.query の run。
-atlas-catalog-text.js             Atlas — planner に渡す能力の説明文 40 ブロック（旧 SYS() の本文を逐語で移設）。
-                                  各ブロックが「どの能力を説明しているか」を持つので関連分だけ送れる
+atlas-catalog-text.js             Atlas — planner に渡す能力の説明文。**チャンクの順と見出し**（CATALOGUE_CHUNKS・60）だけを
+                                  持ち、本文は各能力の項目の `doc` 断片から組み立てる（旧 SYS() の本文とバイト単位で同じ）。
+                                  ブロックが「どの能力を説明しているか」を断片から知るので関連分だけ送れる
 atlas-anomaly-score.js            **分野横断の異常度**（#R397）— 地震・台風・洪水・火山・警報・紛争などを
                                   1つの尺度に載せる。深刻度は**種別ごとの固有スケール**（Mw／カテゴリ／VAL／
                                   CAP の4段）、他に影響人口・地理的範囲・平常時からの乖離・新しさ・確度・
@@ -1842,7 +1846,9 @@ scripts/
   atlas-eval/grade.mjs            答えの採点（純粋）。返答が述べた量・日付・名前を読み、正しい／誤り／述べていない。
                                   独立採点（ai-proxy `atlas_grade`）への依頼文と、その結果の厳密な読み戻し
   atlas-eval/replay.mjs           **モデル無しの再生**。カセット（台本＝モデルの各手、世界＝ディスパッチの結果）を
-                                  現在の `runTurn`・道具の面・スキーマ・レジストリに流し、録画との乖離を述べる
+                                  現在の `runTurn`・道具の面・スキーマ・レジストリに流し、録画との乖離を述べる。
+                                  find_capability の答えは**順位だけ**を録る（compactFind）——説明文は宣言から再導出し、
+                                  意味検索の答えは各能力の宣言の版（declVersion）で変化を `notes` に述べる
   atlas-eval/lab.mjs              全カセットの再生と判定（毎 PR・`--replay`）、夜ごとの報告の時系列（`history`）
   atlas-eval/scripted-cassettes.mjs  手で書いたカセットの台本（記録された欠陥の再構成と代表ターン）。`--write` で再録
   atlas-eval/cassettes/*.json     カセット。手書き（scripted）と本番の録画（recorded・`--record`）

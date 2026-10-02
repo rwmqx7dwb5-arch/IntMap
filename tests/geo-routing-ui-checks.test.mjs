@@ -862,7 +862,7 @@ describe('§ #R299 · the route panel as a window, selection and closing', () =>
     const m = code.match(/'map\.route':\[[^\]]*\]/);
     assert.ok(m, 'the overlay table no longer adds routing-ops\' analyses to the route');
     for (const id of ['imroute-diff', 'imroute-hist']) assert.ok(m[0].includes(id), 'the toggle covers ' + id);
-    assert.match(code, /'routing\.route':'map\.route'/, 'the route chip switches what map.route claimed');
+    assert.match(code, /chips: 'map\.route'/, 'the route chip switches what map.route claimed');   /* (atlas-capability-single-source) routing.route's `chips` (capsSource) */
     const rt = noComments(read('js/routing.js'));
     assert.match(rt, /render\.claim\(SRC,'map\.route'\)/, 'js/routing.js claims the journey (imroute-hit included: it reads SRC)');
     assert.match(rt, /render\.claim\(AREA_SRC,'map\.route'\)/, 'js/routing.js claims the drawn keep-out areas'); 

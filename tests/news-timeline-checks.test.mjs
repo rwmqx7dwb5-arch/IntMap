@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import path, { resolve, dirname } from 'node:path';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';
 
 /* ════════ #R290 — from tests/r290-checks.test.mjs (2 of its 16 tests) ════════ */
 {
@@ -911,7 +912,7 @@ test('R421 #14 the Atlas catalogue no longer tells the planner to round to a yea
   // #R115/#R231: what the catalogue does not describe does not exist for the planner. The behaviour
   // changed, so the description had to. Without this the planner keeps emitting bare years and the
   // day-exact borders are unreachable through Atlas for anyone who asks in words.
-  const CAT = read('js/atlas-catalog-text.js');
+  const CAT = capsSource();   /* (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given: the fragments are in the entries */
   assert.match(CAT, /HISTORICAL BORDERS ARE DAY-EXACT/, 'the catalogue states the precision');
   assert.match(CAT, /"date":"1920-10-28"/, 'and shows the planner a worked example');
 });

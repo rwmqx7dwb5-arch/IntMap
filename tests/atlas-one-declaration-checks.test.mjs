@@ -139,7 +139,10 @@ test('atlas-one-declaration ②: updateWctx counts every declared spelling — `
 /* the kinds that became the effect key their painter claims under */
 const RENAMED = { poi: 'map.poi', elevation: 'map.elevation', historical: 'map.factions', fly: 'map.fly', blast: 'map.ballistic', isochrone: 'map.isochrone', compose: 'map.compose',
   route: 'map.route', radiation: 'map.radiation', compare: 'panel.compare', los: 'map.los', shakemap: 'map.shakemap', outbreaks: 'map.outbreaks' };
-const OVL_OF = Function('return ' + liftLiteral(CON, 'OVL_OF'))();
+/* (atlas-capability-single-source) the table is each entry's `chips` now — js/atlas-console.js derives OVL_OF from them the same way */
+const OVL_OF = Object.create(null);
+for (const e of (await import('../js/atlas-caps.js')).capabilityEntries((await import('../js/atlas-caps-modules.js')).CAPABILITY_MODULES)) if (e.chips) OVL_OF[e.id] = e.chips;
+assert.ok(CON.includes('const OVL_OF=Object.create(null); capabilityEntries(CAPABILITY_MODULES).forEach(e=>{ if(e.chips) OVL_OF[e.id]=e.chips; });'), 'js/atlas-console.js derives its chip table from the entries');
 const ovlOf = new Function('CAPS', 'OVL_OF', liftFunction(CON, '_ovlOf') + '\nreturn _ovlOf;')(CAPS, OVL_OF);
 const kindsOf = (v) => (v == null ? null : [].concat(v));
 

@@ -41,7 +41,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readSpec } from '../scripts/architecture-spec.mjs';
-import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
+import { capsSource, catalogueText } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
@@ -502,7 +502,7 @@ test('R537 ②: state() answers during the window between the drop and the decod
     'no unguarded read of state.orig survives');
 });
 
-test('R537 ③: opening the tool does not start a search that costs minutes', () => {
+test('R537 ③: opening the tool does not start a search that costs minutes', async () => {
   /* ⚠ READ, NOT RUN: the gate is a branch inside js/atlas-console.js's dispatcher, which needs the whole Atlas kernel and a map. */
   const s = (src('js/atlas-console.js') + '\n' + capsSource());
   assert.match(s, /if\(pgAct!=='search'\) return R\(true,note\(L\('The photograph and the search area are both ready/,
@@ -510,7 +510,7 @@ test('R537 ③: opening the tool does not start a search that costs minutes', ()
   /* the sweep is still reachable — this is a gate, not a removal */
   assert.match(s, /const pgP=PG\.search\(\);/, 'action:"search" still runs it');
   /* and the model is told, where it reads what the call does */
-  const cat = src('js/atlas-catalog-text.js');
+  const cat = await catalogueText(['photo.locate']);   /* (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given */
   assert.match(cat, /THE SWEEP IS NOT STARTED BY OPENING THE TOOL/,
     'the catalogue says the sweep needs to be asked for');
   assert.match(cat, /"photoLocate"/, 'and the spelling the dispatcher answers to is still quoted');

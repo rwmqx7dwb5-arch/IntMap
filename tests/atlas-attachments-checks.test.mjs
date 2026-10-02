@@ -174,14 +174,14 @@ test('#R773 ⑩ 編集で履歴を巻き戻すと、そのターンの添付も�
   assert.match(carried[0].name, /keep\.txt/);
 });
 
-test('#R773 ⑪ 取り寄せは実装されている — 宣言だけして繋がっていない道具を作らない', () => {
+test('#R773 ⑪ 取り寄せは実装されている — 宣言だけして繋がっていない道具を作らない', async () => {
   /* kept as a spelling: the chips, the viewer and the dispatch are wired inside DOM closures (js/atlas-console.js, js/atlas-attach.js) that need the page */
-  const con = (read('js/atlas-console.js') + '\n' + capsSource()), cat = read('js/atlas-catalog-text.js'), cap = read('js/atlas-capabilities.js'), sch = read('js/atlas-schemas.js');
+  const con = (read('js/atlas-console.js') + '\n' + capsSource()), cat = (await catalogue()).blocks(), cap = read('js/atlas-capabilities.js'), sch = read('js/atlas-schemas.js');
   assert.ok(capabilityEntry('attach.recall'), 'レジストリの行（js/atlas-cap-attach.js の entry の row）');
   assert.ok(capabilityEntry('attach.recall').schema, '引数の schema（同じ entry）');
   /* ⚠ 常設の道具にはしない——毎ターン全リクエストに載る面は 12,000 字の天井を持ち、そこへ足すと
      道具の面が再びカタログになる（tests/r406-turn ②）。find_capability が返す 1 件として置く。 */
-  assert.match(cat, /ids: \['attach\.recall'\]/, 'カタログの 1 件');
+  assert.ok(cat.some((b) => b.ids.length === 1 && b.ids[0] === 'attach.recall'), 'カタログの 1 件');   /* (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given */
   assert.equal(read('js/atlas-toolsurface.js').indexOf('attach.recall'), -1, '常設ツールに置かない');
   assert.equal(capabilityEntry('attach.recall').spelling, 'recallAttachment', 'dispatch の綴り（行の 1 列目）');
   assert.ok(capabilityEntry('attach.recall').run, 'dispatch が走らせる run（監査は entry を数える）');
@@ -204,7 +204,7 @@ test('#R773 ⑪ 取り寄せは実装されている — 宣言だけして繋�
    js/atlas-console.js's factory (the whole app), and ai-proxy is a Deno TypeScript Edge Function.
    ══════════════════════════════════════════════════════════════════════════════════════════════ */
 import { appSource } from './app-source.mjs';
-import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
+import { capsSource, capabilityEntry, catalogue } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 const html = appSource(new URL('../', import.meta.url));   /* (#R162) index.html + css/intmap.css + js/*.js */
 const aiproxy = read('supabase/functions/ai-proxy/index.ts');
 test('R149 #9 image paste/vision wired on the client (transport + proxy already support images)', () => {

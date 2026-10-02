@@ -35,6 +35,20 @@
  *                  reply. A cassette of a recorded DEFECT declares the failures the judge must find
  *                  (`expect.failures`) — that is how the judge itself is held to catching them.
  *
+ *  ⚠⚠ (atlas-capability-single-source) A CASSETTE HOLDS WHAT CAME FROM OUTSIDE, NOT WHAT THE CODE WILL SAY AGAIN.
+ *    A find_capability answer used to be recorded whole — each match's summary and schema and the catalogue
+ *    documentation of all of them, 200 kB in one cassette — so every PR that touched one capability's
+ *    description made the scripted cassettes stale and had to re-record them. None of that text came from
+ *    outside: it is the declarations, which the replay has. A find answer is now recorded as its RANKING
+ *    (compactFind: the ids in order, the callable names and the basis) and:
+ *      · a lexical answer is recomputed, and the ranking compared — as before;
+ *      · a meaning-search answer (a network call) is REPLAYED as its recorded ranking, DESCRIBED by the current
+ *        declarations (js/atlas-toolsurface.js describe) — so the loop sees what the model would be shown today
+ *        for the answer the world gave then. Each match carries `v`, the version of what the model was shown
+ *        about it (declVersion), and a match whose declaration has changed since is REPORTED in `notes` — not a
+ *        divergence: what the turn did is unchanged, what it would be told is newer.
+ *    An older cassette that holds the whole answer replays the same way (the extra text is ignored).
+ *
  *  ⚠ WHAT A REPLAY CANNOT SEE. The dispatch is replayed, so an observer's verdict inside it (the camera
  *    verifier, the not_rendered check) is the RECORDED verdict: the replay tests what the loop and the
  *    surface do with it, not whether the observer is right — that is tests/atlas-turn-engine-checks and
@@ -65,6 +79,33 @@ function statusOf(r) {
   return str(o.status) || (o.ok === false ? 'failed' : (o.ok === true ? 'completed' : ''));
 }
 function codeOf(r) { const o = resultObj(r) || {}; return str(o.code || o.error); }
+
+/* FNV-1a, 32 bits, hex — a version label, not a security property */
+function fnv(t) { let h = 0x811c9dc5; const s = str(t); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+
+/** declVersion(surface, id) — the version of what the model is shown about one capability: what find_capability
+ *  says of it alone (callable name, summary, schema, confirmation and its documentation), hashed. It changes when
+ *  the capability's declaration changes in any way the model can read, and only then. */
+export function declVersion(surface, id) {
+  try { const d = surface.describe('', [id], 'lexical'); return fnv(JSON.stringify([d.matches, d.documentation || ''])); } catch (_) { return ''; }
+}
+
+/** compactFind(result, surface?) — a find_capability answer as a cassette records it: the ranking and what came
+ *  with it, without the prose the declarations will produce again. A meaning-search answer's matches carry `v`
+ *  (declVersion) when a surface is given, so its replay can say which descriptions have changed since. */
+export function compactFind(result, surface) {
+  const r = result && typeof result === 'object' ? result : {};
+  const sem = r.basis === 'lexical+semantic';
+  const out = { ok: r.ok, query: r.query, basis: r.basis,
+    matches: (r.matches || []).map((m) => {
+      const o = { id: m.id, tool: m.tool };
+      if (m.needsConfirmation) o.needsConfirmation = m.needsConfirmation;
+      if (sem && surface) o.v = declVersion(surface, m.id);
+      return o;
+    }) };
+  if (r.semantic !== undefined) out.semantic = r.semantic;
+  return out;
+}
 
 /**
  * productModules(importer) — the modules a replay drives, imported the way the harness imports them.
@@ -124,13 +165,21 @@ export async function replayCassette(cas, P) {
 
   /* the meaning-search answers are the world's; a lexical one is recomputed (that is the code under test) */
   const findRec = new Map((world.find || []).map((f) => [str(f.query), f.result]));
-  const calls = [];
+  const calls = [], notes = [];
   const execute = async (call, turn) => {
     const rec = { name: str(call && call.name), args: JSON.parse(JSON.stringify((call && call.arguments) || {})) };
     calls.push(rec);
     let r;
     const recorded = rec.name === 'find_capability' ? findRec.get(str(rec.args.query)) : undefined;
-    if (recorded && recorded.basis === 'lexical+semantic') { r = recorded; rec.replayed = true; }
+    if (recorded && recorded.basis === 'lexical+semantic') {
+      /* the world's ranking, described by the declarations as they are now (see the header) */
+      const ids = (recorded.matches || []).map((mm) => mm && mm.id).filter(Boolean);
+      r = surface.describe(recorded.query != null ? recorded.query : rec.args.query, ids, recorded.basis, recorded.semantic);
+      rec.replayed = true;
+      for (const mm of recorded.matches || []) {
+        if (mm && mm.v && mm.v !== declVersion(surface, mm.id)) notes.push({ kind: 'declaration_changed', detail: mm.id + ' — the model would now be told something different about it than when «' + str(rec.args.query) + '» was recorded' });
+      }
+    }
     else {
       r = await execBase(call, turn);
       /* a lexical answer is recomputed — and if the registry now ranks differently than when the turn was
@@ -197,7 +246,7 @@ export async function replayCassette(cas, P) {
     stopped: str(out.stopped), reply: str(out.text), operations, calls, steps,
     snapshot: divergences.length ? {} : (world.snapshot || {}),   /* the recorded map is only the map of THIS run while nothing diverged */
   };
-  return { obs, divergences, calls, stopped: out.stopped, text: out.text, reused: (out.trace && out.trace.reused) || 0, dispatched: dispatched.length };
+  return { obs, divergences, notes, calls, stopped: out.stopped, text: out.text, reused: (out.trace && out.trace.reused) || 0, dispatched: dispatched.length };
 }
 
 /**
@@ -252,8 +301,9 @@ export async function recordScripted(scn, P) {
   const world = { dispatch: [], find: [], snapshot: scn.snapshot || {} };
   const probe = { id: scn.id, text: scn.text, lang: scn.lang, model: scn.model, limits: scn.limits, world: { dispatch: [] }, golden: {} };
   /* run once with a world that answers through respond(), recording what it was asked */
+  let surface = null;
   const P2 = Object.assign({}, P, {
-    makeAtlasToolSurface: (deps) => P.makeAtlasToolSurface(Object.assign({}, deps, {
+    makeAtlasToolSurface: (deps) => surface = P.makeAtlasToolSurface(Object.assign({}, deps, {
       runAction: async (action) => {
         const out = await scn.respond(action);
         world.dispatch.push({ action: JSON.parse(JSON.stringify(action, (k, v) => (k.startsWith('__') ? undefined : v))), out });
@@ -265,7 +315,7 @@ export async function recordScripted(scn, P) {
   /* a script that does not fit its own turn (too few replies, a final where a step was) is a broken
      scenario, not a recording — refuse it rather than freeze the mismatch into the golden record */
   if (r.divergences.length) throw new Error(scn.id + ': the script does not fit the turn — ' + r.divergences.map((d) => d.kind + ': ' + d.detail).join(' | '));
-  for (const c of r.calls) if (c.name === 'find_capability') { try { world.find.push({ query: String(c.args.query || ''), result: stable(JSON.parse(c.resultText)) }); } catch (_) { } }
+  for (const c of r.calls) if (c.name === 'find_capability') { try { world.find.push({ query: String(c.args.query || ''), result: compactFind(stable(JSON.parse(c.resultText)), surface) }); } catch (_) { } }
   return {
     id: scn.id, text: scn.text, lang: scn.lang, origin: scn.origin, question: scn.question || undefined,
     limits: scn.limits || undefined, recordedMs: scn.recordedMs, model: scn.model, world,

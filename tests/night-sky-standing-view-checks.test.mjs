@@ -205,10 +205,12 @@ test('R214 ④c: the standing view is reachable by hand and by Atlas, and the pl
     'the standing view is not reachable by hand — the panel has no switch to it');
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
      The question below is unchanged; the read follows the answer to where it lives now. */
-  const atlas = (read('js/atlas-console.js') + '\n' + capsSource()) + '\n' + read('js/atlas-catalog-text.js');
+  /* (atlas-capability-single-source) the prose moved into the entries: the chunk's heading is in js/atlas-catalog-text.js and
+     the capability's own words are its entry's `doc` — read as source, so no browser module is evaluated here */
+  const atlas = read('js/atlas-catalog-text.js') + '\n' + capabilityEntry('sim.nightSky').text;
   assert.ok(!!capabilityEntry('nightSky') && dispatchName('standHere') === 'nightSky', 'Atlas has an action for it — `standHere` reaches the night-sky case through its row (atlas-one-declaration)');
   /* ⚠ #R115: a parameter the SYS catalogue does not name DOES NOT EXIST to the planner. */
-  const sys = atlas.slice(atlas.indexOf('NIGHT SKY FROM A POINT:'), atlas.indexOf('NIGHT SKY FROM A POINT:') + 2000);
+  const sys = atlas.slice(atlas.indexOf('NIGHT SKY FROM A POINT:'));
   for (const p of ['"mode"', '"az"', '"alt"', '"fov"', 'stand']) {
     assert.ok(sys.includes(p), `the catalogue does not mention ${p}, so Atlas can never send it`);
   }

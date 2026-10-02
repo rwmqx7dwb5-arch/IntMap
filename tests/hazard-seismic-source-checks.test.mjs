@@ -18,6 +18,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
+import { capsSource } from './helpers/atlas-kernel.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -330,7 +331,7 @@ test('R189 seismic: a free-drawn rupture with slip yields Mw, Rrup and finite-so
   assert.match(src, /DT\.currentGeometry/, 'captured from the SHARED free-draw tool (#R141), not a private one');
   /* (#R318) the action catalogue moved to js/atlas-catalog-text.js and SYS() composes from it.
      The question below is unchanged; the read follows the answer to where it lives now. */
-  const atlas = read('js/atlas-console.js') + '\n' + read('js/atlas-catalog-text.js');
+  const atlas = read('js/atlas-console.js') + '\n' + capsSource();   /* (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given: the fragments are in the entries, escapes as written */
   assert.ok(atlas.includes('"scale"?:"mmi"|"jma"'), 'the SYS catalogue advertises the scale');
   assert.ok(atlas.includes('"slip"?:m'), '…and the slip');
 });

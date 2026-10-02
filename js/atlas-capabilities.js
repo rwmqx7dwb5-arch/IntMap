@@ -25,8 +25,9 @@
  *      · what the UI button and Atlas both hit → the same capability id
  *
  *  ⚠ WHAT THIS FILE IS *NOT*: a second hand-written catalogue. The 58 kB of planner documentation
- *  did not get retyped — js/atlas-catalog-text.js holds the SYS blocks VERBATIM, and this file
- *  names which capability each block documents. Retyping them would have created exactly the
+ *  did not get retyped — the SYS blocks are kept VERBATIM, each capability's part of them as the `doc`
+ *  of its entry (js/atlas-cap-<namespace>.js), assembled into blocks by js/atlas-catalog-text.js
+ *  (atlas-capability-single-source). Retyping them would have created exactly the
  *  duplicate-source-of-truth this round exists to remove.
  *
  *  ⚠ WHY THE TEXT IS IN A SIBLING FILE. js/atlas-console.js is loaded ON DEMAND (#R224: it is
@@ -278,43 +279,37 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     ];
     /* ⚠ GENERATED ROWS — END */
 
-    /* Capabilities that are DELIBERATELY not offered to the planner, with the reason and the proof.
-       ⚠ THE ENTRY IS THE ONLY WAY TO BE ABSENT. The audit fails on anything else that is missing. */
-    var WITHDRAWN = {
-      'system.monitor': {
-        why: '#R231 withdrew area monitors 「一旦撤去」 — the dispatch case exists only to answer FEATURE_WITHDRAWN, and docs/AREA-MONITORS.md is the record of the design that is waiting',
-        proofCode: 'FEATURE_WITHDRAWN'
-      }
-    };
-    /* Capabilities documented by the ALWAYS-SENT rules text rather than by a catalogue block.
-       `ask` is the clarification action, and it is described where the rule about WHEN to clarify
-       is (the PRECISION vs AMBIGUITY paragraph) — separating the two would be worse prompt. The
-       value is the literal the audit looks for, so this cannot become a claim nobody checks. */
-    var RULE_DOCUMENTED = { 'dialog.ask': '{"type":"ask"' };
-
-    /* Capabilities the planner may reach but that are not user-facing FEATURES: they exist so that
-       anything not otherwise modelled is still reachable. Kept out of relevance search's front rank
-       so they cannot crowd out a real capability (§14: the fallback is a fallback). */
-    var FALLBACKS = { 'system.control': 1, 'system.module': 1, 'ui.inlineControls': 1, 'dialog.answer': 1, 'dialog.ask': 1 };
-
-    /* Non-equivalent substitutions the planner has actually made, recorded so it cannot make them
-       again. #R115: 「徒歩1時間で行ける範囲」 became a radius circle, because a circle was in the
-       catalogue and an isochrone was not. Both are in it now; this says they are not the same thing. */
-    var FORBIDDEN_SUBSTITUTES = {
-      'routing.isochrone': ['map.radius'],
-      'map.radius': ['routing.isochrone'],
-      'routing.route': ['sim.flyAnimate', 'map.drawLine'],
-      'research.mapReport': ['research.historicalMap'],
-      'research.historicalMap': ['research.mapReport'],
-      'sim.ballistic': ['sim.flyAnimate'],
-      'sim.tsunami': ['sim.earthquake']
-    };
-    /* Genuinely interchangeable pairs — the ONLY substitutions repair is allowed to make. */
-    var EQUIVALENTS = {
-      'research.mapReport': ['research.situationMap'],
-      'research.situationMap': ['research.mapReport'],
-      'data.countryCard': ['data.timeSeries']
-    };
+    /* ══ THE PLANNER POLICY — DECLARED WITH EACH CAPABILITY, COPIED HERE (atlas-capability-single-source) ══
+       Five tables, each keyed by capability id, and each written in the capability's own entry as `policy`
+       (js/atlas-cap-<namespace>.js; js/atlas-caps.js POLICY_KEYS). Copied between the markers below by
+       `node scripts/atlas-caps.mjs --write` and held to the entries by check:capabilities — for the same
+       reason as the rows: this file is eager and the entries are not. What each one is:
+         WITHDRAWN             DELIBERATELY not offered to the planner, with the reason and the proof.
+                               ⚠ THE ENTRY IS THE ONLY WAY TO BE ABSENT. The audit fails on anything else
+                               that is missing.
+         RULE_DOCUMENTED       documented by the ALWAYS-SENT rules text rather than by a catalogue fragment.
+                               `ask` is the clarification action, and it is described where the rule about
+                               WHEN to clarify is (the PRECISION vs AMBIGUITY paragraph) — separating the two
+                               would be worse prompt. The value is the literal the audit looks for, so this
+                               cannot become a claim nobody checks.
+         FALLBACKS             reachable, but not user-facing FEATURES: they exist so that anything not
+                               otherwise modelled is still reachable. Kept out of relevance search's front
+                               rank so they cannot crowd out a real capability (§14: the fallback is a fallback).
+         FORBIDDEN_SUBSTITUTES non-equivalent substitutions the planner has actually made, recorded so it
+                               cannot make them again. #R115: 「徒歩1時間で行ける範囲」 became a radius circle,
+                               because a circle was in the catalogue and an isochrone was not. Both are in it
+                               now; this says they are not the same thing.
+         EQUIVALENTS           genuinely interchangeable pairs — the ONLY substitutions repair is allowed to make.
+         ANSWERS               the families whose results are ANSWERS about a topic (#R159) — js/atlas-turn-results.js
+                               keys them by topic, reading `isAnswer` here. */
+    /* ⚠ GENERATED POLICY — BEGIN. Written by `node scripts/atlas-caps.mjs --write` from the entries' `policy` — do not edit by hand. */
+    var WITHDRAWN = {"system.monitor":{"why":"#R231 withdrew area monitors 「一旦撤去」 — the dispatch case exists only to answer FEATURE_WITHDRAWN, and docs/AREA-MONITORS.md is the record of the design that is waiting","proofCode":"FEATURE_WITHDRAWN"}};
+    var RULE_DOCUMENTED = {"dialog.ask":"{\"type\":\"ask\""};
+    var FALLBACKS = {"ui.inlineControls":1,"dialog.ask":1,"system.module":1,"system.control":1,"dialog.answer":1};
+    var FORBIDDEN_SUBSTITUTES = {"routing.isochrone":["map.radius"],"routing.route":["sim.flyAnimate","map.drawLine"],"map.radius":["routing.isochrone"],"sim.tsunami":["sim.earthquake"],"research.mapReport":["research.historicalMap"],"sim.ballistic":["sim.flyAnimate"],"research.historicalMap":["research.mapReport"]};
+    var EQUIVALENTS = {"data.countryCard":["data.timeSeries"],"research.mapReport":["research.situationMap"],"research.situationMap":["research.mapReport"]};
+    var ANSWERS = {"research.brief":1,"research.mapReport":1,"research.situationMap":1,"research.historicalMap":1,"research.analyze":1};
+    /* ⚠ GENERATED POLICY — END */
 
     /* ══ OBSERVERS ═══════════════════════════════════════════════════════════════════════════════
        「すべての副作用付きCapabilityは、`observe()`と`verify()`を持たなければ登録できない。」
@@ -611,20 +606,24 @@ export function makeAtlasCapabilities(HOST, OPTS) {
        `case 'query'` already does with `resultKey`), and this table reads it. ⚠ READS, NOT TRUSTS:
        the declared destination is held against the viewport below, so a dispatch that declares a
        destination it did not fly to still answers `no_change`. */
+    /* (atlas-capability-single-source) Each goal is the `goal` of its capability's entry (js/atlas-cap-view.js),
+       beside the run that moves the camera and declares `meta.dest` — COPIED here between the markers, like the rows.
+       A goal reads only its arguments: (a, raw, h) with h = GOAL_HELPERS. */
+    var GOAL_HELPERS = { boxOf: boxOf };
+    /* ⚠ GENERATED CAMERA GOALS — BEGIN. Written by `node scripts/atlas-caps.mjs --write` from the entries' `goal` — do not edit by hand. */
     var CAMERA_GOAL = {
-      'view.flyTo': function (a, raw) {
-        /* THE MOVER'S OWN DECLARATION FIRST. js/atlas-console.js's `case 'flyTo'` now returns the
-           destination it actually handed to the camera in `meta.dest` — every branch that moves, and
-           nothing at all from a branch that resolved nothing. That is what makes a NAMED place
-           measurable here: the gazetteer answer never reached this file before, and guessing that an
-           unmoved camera must already have been looking at 「ヨーロッパ」 is the one thing a verdict
-           may not do. ⚠ The declaration is read, not trusted: what it says is held against the
-           viewport, so a dispatch that declared a destination it did not fly to still fails. */
+      "view.flyTo": function (a, raw, h) {
+        /* THE MOVER'S OWN DECLARATION FIRST. The run below returns the destination it actually handed to the camera
+           in `meta.dest` — every branch that moves, and nothing at all from a branch that resolved nothing. That is
+           what makes a NAMED place measurable: the gazetteer answer never reached the verifier before, and guessing
+           that an unmoved camera must already have been looking at 「ヨーロッパ」 is the one thing a verdict may not do.
+           ⚠ The declaration is read, not trusted: what it says is held against the viewport, so a dispatch that
+           declared a destination it did not fly to still fails. */
         var d = raw && raw.meta && raw.meta.dest;
         if (d) {
           var g0 = [];
           /* a fitted box is the request; its centre alone would pass a camera zoomed into one street */
-          if (d.box && boxOf(d.box)) g0.push({ kind: 'box', box: d.box });
+          if (d.box && h.boxOf(d.box)) g0.push({ kind: 'box', box: d.box });
           else if (d.lng != null && d.lat != null) g0.push({ kind: 'point', lng: +d.lng, lat: +d.lat });
           else return null;                                    /* declared something unmeasurable */
           if (d.zoom != null) g0.push({ axis: 'zoom', want: +d.zoom, tol: 0.05 });
@@ -635,23 +634,24 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         if (a.zoom != null) g.push({ axis: 'zoom', want: +a.zoom, tol: 0.05 });
         return g;
       },
-      'view.zoom': function (a) { return (a.to != null) ? [{ axis: 'zoom', want: +a.to, tol: 0.05 }] : null; },
-      'view.bearing': function (a) {
+      "view.zoom": function (a) { return (a.to != null) ? [{ axis: 'zoom', want: +a.to, tol: 0.05 }] : null; },
+      "view.bearing": function (a) {   /* the camera's postcondition (see view.flyTo) */
         if (a.deg == null) return null;
         var g = [{ axis: 'bearing', want: +a.deg, tol: 0.5, wrap: 360 }];
         if (a.pitch != null) g.push({ axis: 'pitch', want: +a.pitch, tol: 0.5 });   /* the case eases both at once */
         return g;
       },
-      'view.pitch': function (a) {
+      "view.pitch": function (a) {   /* the camera's postcondition (see view.flyTo) */
         if (a.deg != null) return [{ axis: 'pitch', want: +a.deg, tol: 0.5 }];
         if (a.on === false) return [{ axis: 'pitch', want: 0, tol: 0.5 }];          /* 「傾きを戻して」 */
         return null;
-      }
+      },
     };
+    /* ⚠ GENERATED CAMERA GOALS — END */
     function cameraGoalMet(capId, args, cam, raw) {
       var mk = CAMERA_GOAL[capId];
       if (!mk || !args || !cam) return null;
-      var goal = null; try { goal = mk(args, raw); } catch (_) { goal = null; }
+      var goal = null; try { goal = mk(args, raw, GOAL_HELPERS); } catch (_) { goal = null; }
       if (!goal || !goal.length) return null;
       for (var i = 0; i < goal.length; i++) {
         var g = goal[i];
@@ -1363,6 +1363,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
         withdrawn: withdrawn, isFallback: !!FALLBACKS[id],
         forbiddenSubstitutes: FORBIDDEN_SUBSTITUTES[id] || [],
         equivalents: EQUIVALENTS[id] || [],
+        isAnswer: !!ANSWERS[id],
         availability: function () {
           if (withdrawn) return { available: false, reason: 'withdrawn' };
           if (!runtime.dispatch) return { available: false, reason: 'atlas-kernel-not-loaded' };

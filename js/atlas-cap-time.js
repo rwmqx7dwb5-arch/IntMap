@@ -11,7 +11,10 @@
  *  The registry rows (copied into js/atlas-capabilities.js), the dispatch and the schema table are
  *  DERIVED from these entries — `node scripts/atlas-caps.mjs --write` rewrites what is generated after
  *  an entry is added or removed, and `npm run check:capabilities` fails while they disagree.
- *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
+ *  (atlas-capability-single-source) An entry also holds `doc` — its fragment of each catalogue block the planner
+ *  reads (js/atlas-catalog-text.js keeps only the blocks' order and headings) — and, where it has them, `phrases`,
+ *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
+ *  entry names them.
  * ==========================================================================*/
 import { str, bool, num, int } from './atlas-caps.js';
 import { IntMapTime } from './chronos.js';
@@ -21,6 +24,9 @@ export default [
     row: ['time.travel',                'timeTravel',     'setTime,timeSet',                                             'time',    'time',    'time',                   'map,time',            'session', 'none',   '',         ''],
     /* Chronos: a year, a date, a number of days — or the return to live. With none of them the
        case says «give a year or date», which is what this branch list makes it stop needing to. */
+    doc: [
+      { in: 'tools-panels', at: 220, text: '{"type":"timeTravel","year":int} (year uses astronomical numbering: 0 is 1 BC; supported range comes from the master clock) or {"type":"timeTravel","date":"YYYY-MM-DD"} or {"type":"timeTravel","daysAgo":int}, and {"type":"timeTravel","now":true} to return to live = CHRONOS, the MASTER SPACETIME CLOCK (window.IntMapTime; the panel bottom-right is called Chronos and 「time machine」 is its old name): it moves the WHOLE map together — the news feed, the Countries statistics (real World Bank figures for that year: GDP, population, life-expectancy…), the country choropleths, historical borders (and a country highlight drawn while a past year is shown uses that year\'s polity shapes), historical city names and Pleiades settlement-name records (approximate source periods and representative points, not exact founding dates or surveyed sites), the Köppen climate era, NATO/EU accession, the day/night terminator, the live-satellite positions and — while the chosen instant is inside the forecast window — the ECMWF weather layers. Use a YEAR for history ("1990年の世界", "show the world in 1949", "rewind to 1980"); use daysAgo/date for the recent decade of news. ⚠ THE HISTORICAL BORDERS ARE DAY-EXACT, NOT YEARLY (CShapes validity dates, 1886-2019: 369 distinct border-change days). A full "date" really does draw the world as it stood on THAT DAY, so when the user asks about a treaty, a partition, an independence or a dissolution, emit the date it took effect — {"type":"timeTravel","date":"1920-10-28"} — instead of rounding to the year. A bare year lands on mid-June and shows only the world in force then, which for a dense year is a small part of the story: 1920 alone contains fourteen border-change days and five genuinely different worlds. Prefer this over Earth Replay for setting the time; ' },
+    ],
     schema: () => ({ type: 'object', properties: { year: int(), date: str(), daysAgo: int(), value: num(), now: bool(), reset: bool(), live: bool() }, anyOf: [{ required: ['year'] }, { required: ['date'] }, { required: ['daysAgo'] }, { required: ['value'] }, { required: ['now'] }, { required: ['reset'] }, { required: ['live'] }] }), /* `timeTravel` */
       /* (#R94) time-travel now drives the WHOLE spacetime OS (IntMapTime): news, the Countries statistics,
          borders, the climate era, NATO/EU accession & the day/night terminator all move together. Accepts a
@@ -32,6 +38,9 @@ export default [
     /* (world-at-time) WHAT A MAP AT ONE INSTANT CAN DRAW — for every layer, from what its source states
        (js/layer-time-decl.js through js/layer-time-kernel.js), without switching anything on or moving
        the clock. `on` limits it to the ticked layers. No instant → the clock's. */
+    doc: [
+      { in: 'time.coverage', text: 'WHAT A MAP AT ONE INSTANT CAN DRAW: {"type":"timeCoverage","year"?:int (astronomical: 0 is 1 BC),"date"?:"YYYY-MM-DD","on"?:bool} = for EVERY layer (or only the ticked ones with on:true), whether its source states that instant — DRAWN (the source states it), DRAWN FROM ANOTHER DATE (a series past its last year, a dated snapshot on a later day — the layer names the date it shows), or NOT DRAWN (nothing states it: a live feed in the past, a modern snapshot before its date, a record outside its years) — with the reason in words. Nothing is switched on and the clock does not move. No year/date = the instant on the clock. Use for 「1914年の地図に何が描ける？」 / 「which layers work in 1600」 / before turning layers on for a past date. When the clock is in the past, a layer that states nothing about it is NOT drawn even with its box ticked, and its row says why — {"type":"timeTravel"} reports those ticked layers in its own result.' },
+    ],
     schema: () => ({ type: 'object', properties: { year: int(), date: str(), on: bool() } }),
     async run(a, dctx, K) { return coverage(a, K); },
   },
@@ -41,6 +50,9 @@ export default [
        closed, and sets ITS clock (js/compare.js `setTime`) without moving the main map's: a year, a date, «now», or
        `follow:true` to move with the main map again. The picked layer is judged at that instant by the main map's
        rule, so the result says what the window draws there and why not. */
+    doc: [
+      { in: 'time-compare', at: 10, text: '{"type":"timeCompare","year"?:int (astronomical: 0 is 1 BC),"date"?:"YYYY-MM-DD","now"?:bool,"follow"?:bool,"layer"?:str} = open the COMPARISON WINDOW (if closed) and set ITS OWN clock, leaving the main map\'s where it is — e.g. the main map at today and the window at 1914 («1914 | 今日»). follow:true makes the window move with the main map again. "layer" picks the window\'s layer (its key, e.g. "histb" for historical borders, or its name). The window draws its layer only where the layer\'s source states the window\'s instant (the same rule as the main map), and its historical borders are the borders OF THAT INSTANT; the result says what it draws and, when it does not, why. ' },
+    ],
     schema: () => ({ type: 'object', properties: { year: int(), date: str(), now: bool(), follow: bool(), layer: str() }, anyOf: [{ required: ['year'] }, { required: ['date'] }, { required: ['now'] }, { required: ['follow'] }] }),
     async run(a, dctx, K) { return compareAt(a, K); },
   },
@@ -49,6 +61,9 @@ export default [
     /* (time-compare-lapse) THE CLOCK PLAYED FORWARD — js/time-lapse.js: from a start to an end (default: the present) by
        a step in years, days or hours, one DRAWN frame at a time (a frame waits for the map to draw it). `play:false`
        stops it where it is. Layers begin and stop being drawn as their sources begin and stop stating the instants. */
+    doc: [
+      { in: 'time-compare', at: 20, text: '{"type":"timeLapse","from":YEAR|"YYYY-MM-DD","to"?:YEAR|"YYYY-MM-DD" (default: the present),"unit"?:"year"|"day"|"hour","step"?:int,"fps"?:0.5|1|2|4,"loop"?:bool} = PLAY the main map\'s clock from "from" to "to" by "step" units, one frame per instant, each frame held until the map has drawn it (tiles in, layers judged, borders of that instant on screen) — layers begin and stop being drawn as their sources begin and stop stating the instants; {"type":"timeLapse","play":false} stops it where it is. Use for 「1900年から1950年まで国境の変化を再生して」 / 「比較ウィンドウを1914年にして」. The current window instant and the lapse state are in the map state.' },
+    ],
     schema: () => ({ type: 'object', properties: { play: bool(), from: str(), to: str(), year: int(), toYear: int(), unit: str(), step: int(), fps: num(), loop: bool() } }),
     async run(a, dctx, K) { return lapse(a, K); },
   },

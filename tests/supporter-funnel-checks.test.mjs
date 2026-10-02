@@ -162,8 +162,10 @@ test('⑦ Atlas reaches it: operatingCosts is a row with a run, and the planner 
   assert.equal(typeof e.run, 'function');
   assert.ok(caps.find((c) => c.row[0] === 'panel.donate'), 'panel.donate is gone');
   assert.match(rd('js/atlas-capabilities.js'), /\["panel\.operatingCosts","operatingCosts"/, 'the generated rows were not rewritten (node scripts/atlas-caps.mjs --write)');
-  assert.match(rd('js/atlas-catalog-text.js'), /\{"type":"operatingCosts"\}/);
-  assert.match(rd('js/atlas-catalog-text.js'), /'panel\.donate', 'panel\.operatingCosts'/);
+  /* (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given */
+  const C = await (await import('./helpers/atlas-kernel.mjs')).catalogue();
+  assert.match(C.text(['panel.operatingCosts']), /\{"type":"operatingCosts"\}/);
+  assert.ok(C.blocks().some((b) => b.ids.includes('panel.donate') && b.ids.includes('panel.operatingCosts')), 'documented in the same block as panel.donate');
 });
 
 test('the two Stripe links are declared once, in supporter.js, and are AGENTS.md\'s', () => {

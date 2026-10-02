@@ -11,15 +11,23 @@
  *  The registry rows (copied into js/atlas-capabilities.js), the dispatch and the schema table are
  *  DERIVED from these entries — `node scripts/atlas-caps.mjs --write` rewrites what is generated after
  *  an entry is added or removed, and `npm run check:capabilities` fails while they disagree.
- *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
+ *  (atlas-capability-single-source) An entry also holds `doc` — its fragment of each catalogue block the planner
+ *  reads (js/atlas-catalog-text.js keeps only the blocks' order and headings) — and, where it has them, `phrases`,
+ *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
+ *  entry names them.
  * ==========================================================================*/
 import { str, bool, num, one, lat, lng, noArgs } from './atlas-caps.js';
 import { IntMapGeoEngine } from './geo-engine.js';
+import { makeAtlasGeoResolve } from './atlas-geo-resolve.js';   /* (#732) `placeRules.selfLocWords` — view.locate's `phrases` */
 import { requestFix, FIX_FAILURE } from './locate-me.js';   /* (installable-app) the ONE reading of the device position — view.locate below */
 
 export default [
   {
     row: ['view.projection',            'projection',     '',                                                            'view',    'camera',  'camera',                 'map',                 'session', 'none',   '',         ''],
+    doc: [
+      { in: 'navigation-view', at: 50, text: '{"type":"projection","mode":"globe"|"flat"}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { mode: one('globe', 'flat') }, required: ['mode'] }),
     async run(a, dctx, K) { const kexec = K.kexec, R = K.R, note = K.note, esc = K.esc, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
       { const flat=(a.mode==='flat'); const ok=kexec(flat?'view.proj.flat':'view.proj.globe', flat?'btn-view-flat':'btn-view-globe'); return R(ok, ok?note('✓ '+esc(flat?L('Flat map','平面地図','Flache Karte','Плоская карта','Mapa plano'):L('Globe','地球儀','Globus','Глобус','Globo')))+_featTogHtml('globe'):warn('⚠')); }   /* (#R151) offer the 3D-globe on/off switch */
@@ -27,6 +35,10 @@ export default [
   },
   {
     row: ['view.basemap',               'base',           '',                                                            'view',    'layer',   'map.basemap',            'map',                 'session', 'none',   '',         ''],
+    doc: [
+      { in: 'navigation-view', at: 70, text: '{"type":"base","mode":"map"|"satellite"}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { mode: one('map', 'satellite', 'sat') }, required: ['mode'] }),
     async run(a, dctx, K) { const kexec = K.kexec, R = K.R, note = K.note, esc = K.esc, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
       { const sat=(a.mode==='satellite'||a.mode==='sat'); const ok=kexec(sat?'view.base.sat':'view.base.map', sat?'btn-view-sat':'btn-view-map'); return R(ok, ok?note('✓ '+esc(sat?L('Satellite','衛星','Satellit','Спутник','Satélite'):L('Map','地図','Karte','Карта','Mapa')))+_featTogHtml('satellite'):warn('⚠')); }   /* (#R147) offer the Satellite on/off button */
@@ -34,6 +46,36 @@ export default [
   },
   {
     row: ['view.flyTo',                 'flyTo',          '',                                                            'view',    'camera',  'camera',                 'camera,map',          'session', 'none',   'place',    ''],
+    doc: [
+      { in: 'navigation-view', at: 10, text: '{"type":"flyTo","place":str} — just give the place name; the engine frames it to its REAL size automatically (a country fills like a country, a city like a city — you do NOT pick a zoom). For the whole planet use {"type":"flyTo","place":"world"}. Only add "zoom":num if the user explicitly asked for a specific closeness. (lng/lat form: {"type":"flyTo","lng":num,"lat":num,"zoom":num}.) ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
+    /* (#R736/#R742) THE CAMERA'S POSTCONDITION — what the view must show after this ran, as goals the camera
+       verifier (js/atlas-capabilities.js cameraGoalMet) holds against the viewport. COPIED into the eager registry
+       by `node scripts/atlas-caps.mjs --write`, so it reads ONLY its arguments: `a` the action, `raw` what the
+       dispatch returned, `h` the registry's helpers ({ boxOf }). null = nothing measurable was asked. */
+    goal: function (a, raw, h) {
+      /* THE MOVER'S OWN DECLARATION FIRST. The run below returns the destination it actually handed to the camera
+         in `meta.dest` — every branch that moves, and nothing at all from a branch that resolved nothing. That is
+         what makes a NAMED place measurable: the gazetteer answer never reached the verifier before, and guessing
+         that an unmoved camera must already have been looking at 「ヨーロッパ」 is the one thing a verdict may not do.
+         ⚠ The declaration is read, not trusted: what it says is held against the viewport, so a dispatch that
+         declared a destination it did not fly to still fails. */
+      var d = raw && raw.meta && raw.meta.dest;
+      if (d) {
+        var g0 = [];
+        /* a fitted box is the request; its centre alone would pass a camera zoomed into one street */
+        if (d.box && h.boxOf(d.box)) g0.push({ kind: 'box', box: d.box });
+        else if (d.lng != null && d.lat != null) g0.push({ kind: 'point', lng: +d.lng, lat: +d.lat });
+        else return null;                                    /* declared something unmeasurable */
+        if (d.zoom != null) g0.push({ axis: 'zoom', want: +d.zoom, tol: 0.05 });
+        return g0;
+      }
+      if (!(a.lng != null && a.lat != null)) return null;
+      var g = [{ kind: 'point', lng: +a.lng, lat: +a.lat }];
+      if (a.zoom != null) g.push({ axis: 'zoom', want: +a.zoom, tol: 0.05 });
+      return g;
+    },
     schema: () => ({ type: 'object', properties: { place: str(), lng: lng(), lat: lat(), zoom: num(0, 24), scale: str() }, anyOf: [{ required: ['place'] }, { required: ['lat', 'lng'] }] }),
       /* ⚠⚠⚠ (#R740) THE MOVER DECLARES WHERE IT ACTUALLY SENT THE CAMERA (`meta.dest`, read by js/atlas-capabilities.js). Without it a re-flight to where the reader already was answered `no_change`, i.e. FAILED, and 「ヨーロッパの気温を…」 spent 7 steps and 92 s flying to Europe four times (it even switched language) before `repeated_calls` ended the turn. Every branch that moves declares; a branch that resolved nothing declares nothing, which is the honest 「cannot be measured」 and leaves the old verdict. #R736's rule, on the camera. */
     async run(a, dctx, K) { const WORLD_RE = K.WORLD_RE, GE = K.GE, R = K.R, note = K.note, L = K.L, DEIXIS_RE = K.DEIXIS_RE, placeExtent = K.placeExtent, _setLast = K._setLast, flyToBox = K.flyToBox, esc = K.esc, _ambigNote = K._ambigNote, geocode = K.geocode, _bboxOK = K._bboxOK, warn = K.warn;
@@ -55,6 +97,10 @@ export default [
   },
   {
     row: ['view.terrain3d',             'terrain3d',      '',                                                            'view',    'layer',   'map.terrain',            'map',                 'session', 'none',   '',         ''],
+    doc: [
+      { in: 'navigation-view', at: 60, text: '{"type":"terrain3d","on":bool}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { on: bool() } }),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, _featTogHtml = K._featTogHtml, warn = K.warn;
       { const ok=(a.on===false)?clickId('btn-view-globe'):clickId('btn-view-3d'); return R(ok, ok?note('✓ 3D '+(a.on===false?'off':'on'))+_featTogHtml('terrain3d'):warn('⚠')); }
@@ -62,6 +108,10 @@ export default [
   },
   {
     row: ['view.grid',                  'grid',           '',                                                            'view',    'layer',   'map.grid',               'map',                 'session', 'none',   '',         ''],
+    doc: [
+      { in: 'layers', at: 40, text: '{"type":"grid","on":bool}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { on: bool() } }),
     async run(a, dctx, K) { const setGrid = K.setGrid, clickId = K.clickId, R = K.R, note = K.note, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
       { let ok=false; try{ if(typeof setGrid==='function'){ setGrid(a.on!==false); ok=true; } else ok=clickId('btn-tool-grid'); }catch(_){ ok=clickId('btn-tool-grid'); } return R(ok, ok?note('✓ '+L('Grid','グリッド','Gitter','Сетка','Cuadrícula')+': '+(a.on===false?'off':'on'))+_featTogHtml('grid'):warn('⚠')); }
@@ -69,6 +119,10 @@ export default [
   },
   {
     row: ['view.resetNorth',            'resetNorth',     'resetView',                                                   'view',    'camera',  'camera',                 'camera',              'session', 'none',   '',         ''],
+    doc: [
+      { in: 'navigation-view', at: 90, text: '{"type":"resetNorth"}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('resetNorth')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
       { const ok=clickId('btn-compass'); return R(ok, ok?note('✓ '+L('Reset north','北を上に','Norden zurücksetzen','Сброс на север','Restablecer norte')):warn('⚠')); }
@@ -76,6 +130,11 @@ export default [
   },
   {
     row: ['view.zoom',                  'zoom',           '',                                                            'view',    'camera',  'camera',                 'camera',              'session', 'none',   '',         ''],
+    doc: [
+      { in: 'navigation-view', at: 20, text: '{"type":"zoom","to":num|"delta":num|"dir":"in"|"out"}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
+    goal: function (a) { return (a.to != null) ? [{ axis: 'zoom', want: +a.to, tol: 0.05 }] : null; },   /* the camera's postcondition (see view.flyTo) */
     schema: () => ({ type: 'object', properties: { to: num(0, 24), delta: num(), dir: one('in', 'out') } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L;
       { let tz=null; try{ const GE=IntMapGeoEngine.camera; if(a.to!=null){ tz=+a.to; GE.zoomTo(tz,{duration:600}); } else if(a.delta!=null){ tz=GE.getZoom()+(+a.delta); GE.zoomTo(tz,{duration:400}); } else if(String(a.dir||'')==='out'){ tz=GE.getZoom()-1; GE.zoomOut(); } else { tz=GE.getZoom()+1; GE.zoomIn(); } }catch(_){}   /* (#R160) zoom control via IntMapGeoEngine (renderer abstraction) */
@@ -88,6 +147,16 @@ export default [
     row: ['view.bearing',               'bearing',        'rotate',                                                      'view',    'camera',  'camera',                 'camera',              'session', 'none',   '',         ''],
     /* `deg` is unbounded on purpose: a bearing may be negative, and pitch reaches 180 once
        settings.tiltLimit is on (the standard ceiling is 78) */
+    doc: [
+      { in: 'navigation-view', at: 80, text: '{"type":"bearing","deg":num} (rotate); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
+    goal: function (a) {   /* the camera's postcondition (see view.flyTo) */
+      if (a.deg == null) return null;
+      var g = [{ axis: 'bearing', want: +a.deg, tol: 0.5, wrap: 360 }];
+      if (a.pitch != null) g.push({ axis: 'pitch', want: +a.pitch, tol: 0.5 });   /* the case eases both at once */
+      return g;
+    },
     schema: () => ({ type: 'object', properties: { deg: num(), delta: num(), dir: str(), toward: str(), pitch: num(0, 180) } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L;
       { let tb=null; try{ const GE=IntMapGeoEngine.camera; const DIRB={north:0,n:0,northeast:45,ne:45,east:90,e:90,southeast:135,se:135,south:180,s:180,southwest:225,sw:225,west:270,w:270,northwest:315,nw:315,'北':0,'北東':45,'東':90,'南東':135,'南':180,'南西':225,'西':270,'北西':315}; const dd=DIRB[String(a.dir||a.toward||'').toLowerCase().trim()]; tb=(a.deg!=null)?+a.deg:(dd!=null?dd:(a.delta!=null?(GE.getBearing()+(+a.delta)):0)); GE.easeTo({bearing:tb,pitch:a.pitch!=null?+a.pitch:GE.getPitch(),duration:600}); }catch(_){}   /* (#R152/#R160) camera read+drive via IntMapGeoEngine (renderer abstraction) */
@@ -96,6 +165,15 @@ export default [
   },
   {
     row: ['view.pitch',                 'pitch',          'tilt',                                                        'view',    'camera',  'camera',                 'camera',              'session', 'none',   '',         ''],
+    doc: [
+      { in: 'navigation-view', at: 40, text: '{"type":"pitch","deg":0-85} (tilt; 0=top-down, 60=oblique); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
+    goal: function (a) {   /* the camera's postcondition (see view.flyTo) */
+      if (a.deg != null) return [{ axis: 'pitch', want: +a.deg, tol: 0.5 }];
+      if (a.on === false) return [{ axis: 'pitch', want: 0, tol: 0.5 }];          /* 「傾きを戻して」 */
+      return null;
+    },
     schema: () => ({ type: 'object', properties: { deg: num(0, 180), delta: num(), on: bool() } }),
       /* (#R171) the ceiling comes from the CAMERA now, not a literal 85 — with Settings ▸ "Map tilt limit"
          set to Unlimited, Atlas can tilt as far as the map itself can, and an angle past the top is resolved
@@ -113,6 +191,10 @@ export default [
     row: ['view.pan',                   'pan',            'move',                                                        'view',    'camera',  'camera',                 'camera',              'session', 'none',   '',         ''],
     /* `dir` carries compass words in five languages, so it stays a string — but a pan with no
        direction is a no-op the case reports as success */
+    doc: [
+      { in: 'navigation-view', at: 30, text: '{"type":"pan","dir":"north"|"south"|"east"|"west"|"northeast"|…}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { dir: str(), direction: str(), fraction: num(0, 1) }, anyOf: [{ required: ['dir'] }, { required: ['direction'] }] }),
     async run(a, dctx, K) { const GE = K.GE, R = K.R, note = K.note, L = K.L, esc = K.esc;
       { try{ const dir=String(a.dir||a.direction||'').toLowerCase().trim(); const f=(a.fraction!=null?+a.fraction:0.45); const D={north:[0,-1],south:[0,1],east:[1,0],west:[-1,0],northeast:[1,-1],northwest:[-1,-1],southeast:[1,1],southwest:[-1,1],up:[0,-1],down:[0,1],left:[-1,0],right:[1,0],'北':[0,-1],'南':[0,1],'東':[1,0],'西':[-1,0]}; const v=D[dir]||[0,0]; const el=GE().render.container&&GE().render.container(); const W=(el&&el.clientWidth)||800,H=(el&&el.clientHeight)||600; GE().camera.panBy([v[0]*W*f, v[1]*H*f],{duration:700}); }catch(_){} return R(true, note('✓ '+L('Pan','移動','Verschieben','Сдвиг','Desplazar')+(a.dir?(' '+esc(a.dir)):''))); }
@@ -120,6 +202,10 @@ export default [
   },
   {
     row: ['view.fullscreen',            'fullscreen',     '',                                                            'view',    'none',    'view.fullscreen',        'view',                'session', 'none',   '',         ''],
+    doc: [
+      { in: 'navigation-view', at: 130, text: '{"type":"fullscreen","on":bool}. "bearing" also takes {"dir":"west"|"northeast"|…}; zoom/pitch/bearing/pan accept exact numbers for precise commands ("zoom to 5" → {"type":"zoom","to":5}; "tilt 30°" → {"type":"pitch","deg":30}).\n' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { on: bool(), mode: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
       { const want=!(a.on===false||/^(off|exit)$/i.test(String(a.mode||'')));
@@ -134,6 +220,14 @@ export default [
      navigation.start above. */
   {
     row: ['view.locate',                'locate',         'myLocation,whereAmI',                                         'view',    'camera',  'camera,map.location',                 'camera,map',          'session', 'explicit','',        ''],
+    doc: [
+      { in: 'navigation-view', at: 120, text: '{"type":"locate"} flies to the user\'s real GPS position — where the reader IS, right now, from the device itself (asks browser permission; use for 「現在地を表示して」「今いる場所に移動して」, "where am I", "go to my location"). ' },
+    ],
+    /* (#732) the reader's own words for this act, where the product already holds them: js/atlas-geo-resolve.js's
+       「現在地」 table (all nine languages), which also decides on every call that such a phrase means the device.
+       The capability search scores them as it scores the row's spellings (js/atlas-catalog-text.js `phrases`). */
+    phrases: () => { const w = makeAtlasGeoResolve.placeRules.selfLocWords || {}; return Object.keys(w).reduce((acc, k) => acc.concat(w[k]), []); },
+    chips: 'pin',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => (noArgs('locate')),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, GE = K.GE, _selfLocSeed = K._selfLocSeed, note = K.note;
       { /* (installable-app) THE READING IS js/locate-me.js's — the permission pre-check (#R155), the 25 s
@@ -173,6 +267,9 @@ export default [
        and neither argument is required: an inspect with no arguments takes the whole screen, which
        is the right default for 「今見えているもの」. `reason` is free text — what Atlas is looking
        FOR — carried into the frame's caption so the reader can see why their view was captured. */
+    doc: [
+      { in: 'view.inspect', text: 'LOOK AT THE MAP (your eyes — the ONLY capability that returns a picture): {"type":"inspect","include":"screen"|"map","reason":str}. It captures the frame the reader is looking at RIGHT NOW and attaches it to your next step as a real image, together with the machine facts of that same instant (bounding box, centre, zoom, bearing, pitch, base, projection, which layers were on, the Chronos time). "include":"screen" (the default) is the map PLUS everything drawn on top of it — legends, the scale bar, markers, the news band, the timebar — and is the only one that can answer a question about those. "include":"map" is the renderer\'s frame alone: cheaper and faster, right when the question is about the data painted on the map itself. USE IT when the request points at something visual — 「これ」「ここ」「見えてるもの」 / "this", "that band", "the thing in the corner" — or asks about colour, shape, density, arrangement, overlap, a label\'s text, whether a layer actually rendered, or what a satellite image or 3D terrain shows. You may also call it AFTER you move the camera or toggle a layer, to see the result of your own action, and more than once in a turn (the frames arrive in order, the most recent ones attached). DO NOT use it for anything the state block above already tells you exactly — coordinates, zoom, layer names, the time, the selection: those numbers are machine-true and the picture can only be read approximately. Read the image for how things LOOK; read the state for what things ARE.' },
+    ],
     schema: () => ({ type: 'object', properties: { include: { type: 'string', enum: ['screen', 'map'] }, reason: str() } }),
     async run(a, dctx, K) { const VFRAMES = K.VFRAMES, R = K.R, warn = K.warn, esc = K.esc;
       { const _vf=await VFRAMES.captureFrame(a); return _vf.ok?R(true,_vf.html,{exec:_vf.facts}):R(false,warn('⚠ '+esc(_vf.message))); }   /* ⚠⚠⚠ (#R493) THE ONE CASE WHOSE RESULT IS A PICTURE. `facts` is the mechanical record Atlas reads — bbox, zoom, bearing, pitch, layers, all exact; the PIXELS stay in the ledger and ride the vision channel, because js/atlas-agent.js serialises every tool result into the prompt TEXT and a data URL put there is not an image, it is half a megabyte of base64. The capture itself is the screenshot button's, unchanged: js/atlas-view-capture.js. */

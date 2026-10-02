@@ -11,7 +11,10 @@
  *  The registry rows (copied into js/atlas-capabilities.js), the dispatch and the schema table are
  *  DERIVED from these entries — `node scripts/atlas-caps.mjs --write` rewrites what is generated after
  *  an entry is added or removed, and `npm run check:capabilities` fails while they disagree.
- *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
+ *  (atlas-capability-single-source) An entry also holds `doc` — its fragment of each catalogue block the planner
+ *  reads (js/atlas-catalog-text.js keeps only the blocks' order and headings) — and, where it has them, `phrases`,
+ *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
+ *  entry names them.
  * ==========================================================================*/
 import { str, bool, num, one, obj, lat, lng } from './atlas-caps.js';
 import { IntMapLang } from './lang-registry.js';
@@ -19,6 +22,11 @@ import { IntMapLang } from './lang-registry.js';
 export default [
   {
     row: ['sim.lineOfSight',            'los',            'lineOfSight',                                                 'sim',     'sim',     'map.los',                'map',                 'session', 'none',   'place',    'los'],
+    doc: [
+      { in: 'tools-panels', at: 90, text: '{"type":"los","place":str} (line-of-sight / radar shadow); ' },
+      { in: 'more-features', at: 150, text: '{"type":"los"} with radio refraction (k=4/3), first-Fresnel clearance and knife-edge diffraction, and a range from the link budget; antenna height, power and frequency are adjustable in the panel and the site can be moved by clicking. Use for 「電波の届く範囲」「基地局のカバーエリア」「受信できるか」, "radio coverage from here", "where would this antenna reach", "reception area". (For pure visibility / radar shadow with no radio budget use {"type":"los"} above.)\n' },
+    ],
+    chips: 'map.los',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { place: str(), from: str() }, anyOf: [{ required: ['place'] }, { required: ['from'] }] }), /* `los` */
     async run(a, dctx, K) { const geocode = K.geocode, GE = K.GE, R = K.R, note = K.note, L = K.L, esc = K.esc, warn = K.warn;
       { const ll=await geocode(a.place||a.from); if(ll){ try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),8)}); }catch(_){} await window.IntMapLazy.need('los'); let ok=false; try{ if(window.IntMapLOS&&window.IntMapLOS.open){ if(window.IntMapLOS.setMode) window.IntMapLOS.setMode('los');   /* (#R296) the merged panel has two analyses; 「見通し線」 is this one */
@@ -29,6 +37,10 @@ export default [
     row: ['sim.radiation',              'radiation',      'fallout,dispersion,plume,radiationSim',                       'sim',     'sim',     'map.radiation',          'map',                 'session', 'none',   'place',    ''],
     /* `source` is BOTH a preset key and a place name (the preset carries its own coordinates), so
        it can stand alone as the release point and cannot be an enum */
+    doc: [
+      { in: 'radiation-dispersion', at: 10, text: '{"type":"radiation","place":str,"source"?:"chernobyl"|"fukushima"|"dirtybomb"|"research","bq"?:number,"pbq"?:number,"isotope"?:"cs137"|"i131"|"cs134"|"sr90","emitHours"?:num,"hours"?:6-80,"date"?:"YYYY-MM-DDTHH:MM"} = a real Lagrangian particle plume from a release point advected by the LIVE Open-Meteo wind field (or the ERA5 archive for a past "date"), spread by turbulent diffusion, scavenged by precipitation and decayed by the isotope half-life. It animates the plume AND maps the FINAL ground deposition, classified into the real Chernobyl Cs-137 dose zones, and reports the external dose rate (µSv/h) and annual dose (mSv/yr) at the peak with health context. The user can set the source term (preset, or bq/pbq), emission duration, isotope and start date-time. Use for "福島からの放射性物質の拡散", "simulate a Chernobyl-scale release at X on 2011-03-15", "dirty bomb fallout in Y". ' },
+    ],
+    chips: 'map.radiation',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { place: str(), from: str(), at: str(), source: str(), lng: lng(), lat: lat(), isotope: one('cs137', 'i131', 'cs134', 'sr90'), bq: num(0), pbq: num(0), tbq: num(0), becquerel: num(0), emitHours: num(0), halfLife: num(0), halfLifeHours: num(0), hours: num(0), seconds: num(0), date: str(), datetime: str(), when: str() }, anyOf: [{ required: ['place'] }, { required: ['from'] }, { required: ['at'] }, { required: ['source'] }, { required: ['lat', 'lng'] }] }),
     async run(a, dctx, K) { const geocode = K.geocode, R = K.R, warn = K.warn, whereMiss = K.whereMiss, L = K.L, esc = K.esc, HOST = K.HOST, radiationChain = K.radiationChain, note = K.note;
       {
@@ -94,6 +106,9 @@ export default [
   },
   {
     row: ['sim.flightSim',              'flightSim',      'flightsim,flightsimulator,flysim,pilot',                      'sim',     'sim',     'camera,map.flightsim',   'map,camera',          'session', 'none',   'place?',   'flightSim'],
+    doc: [
+      { in: 'sim.flightSim', text: 'FLIGHT SIMULATOR: {"type":"flightSim","place"?:str,"alt"?:meters} = starts a real, flyable arcade flight simulator over the actual world map (the camera becomes the cockpit; keyboard W/S throttle, ↑/↓ pitch, ←/→ bank, A/D rudder, Esc to exit; live HUD with airspeed/altitude/heading/artificial-horizon; coordinated-turn physics, stall and ground collision). Use for "フライトシミュレーターを起動して", "let me fly a plane over the Alps" → pass place. {"type":"flightSim","on":false} exits it.\n' },
+    ],
     schema: () => ({ type: 'object', properties: { place: str(), over: str(), from: str(), lng: lng(), lat: lat(), alt: num(), aircraft: str(), plane: str(), craft: str(), mode: str(), action: str(), on: bool() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, geocode = K.geocode, GE = K.GE, esc = K.esc, warn = K.warn;
       {
@@ -114,6 +129,11 @@ export default [
   },
   {
     row: ['sim.rfCoverage',             'rfCoverage',     'coverage,radioCoverage,signalCoverage,reception,viewshed',    'sim',     'sim',     'map.coverage',           'map',                 'session', 'none',   'point',    'los'],
+    doc: [
+      { in: 'more-features', at: 140, text: '{"type":"rfCoverage","place"?:str,"lng"?:num,"lat"?:num,"height"?:num (antenna height in m),"power"?:num (dBm),"frequency"?:num (MHz)} = the line-of-sight service area over the REAL terrain, solved by the same viewshed as ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
+    chips: 'map.los',   /* ⚠ the line-of-sight kind, because that is what it switched before; its own painter claims nothing */
     schema: () => ({ type: 'object', properties: { place: str(), at: str(), location: str(), lng: lng(), lat: lat(), height: num(0), antennaHeight: num(0), frequency: num(0), freq: num(0) }, anyOf: [{ required: ['place'] }, { required: ['at'] }, { required: ['location'] }, { required: ['lat', 'lng'] }] }),
       /* (#R89) RF / radio coverage from an antenna */
       /* (#R318) `lineOfSight` WAS ALSO LISTED HERE, AND WAS UNREACHABLE. A switch enters the FIRST
@@ -137,6 +157,10 @@ export default [
   },
   {
     row: ['sim.sunPosition',            'sun',            'shadow,shadows,sunlight,sunPosition,daylight,insolation',     'sim',     'sim',     'map.sun',                'map',                 'session', 'none',   'point',    ''],
+    doc: [
+      { in: 'sunlight', at: 20, text: '{"type":"sun"} instead. ⚠ BOTH OF THEM NEED A POINT: give "place" or "lng"/"lat", or let the spot the user tapped on the map supply it. Neither falls back to the map centre any more — every number they print is a function of one coordinate — so an action with no point at all is answered with a question rather than with a guess.\n' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { place: str(), at: str(), location: str(), lng: lng(), lat: lat(), date: str(), datetime: str(), time: str() }, anyOf: [{ required: ['place'] }, { required: ['at'] }, { required: ['location'] }, { required: ['lat', 'lng'] }] }), /* `sun` */
       /* (#R90) sun & shadow */
     async run(a, dctx, K) { const geocode = K.geocode, GE = K.GE, R = K.R, warn = K.warn, whereMiss = K.whereMiss, L = K.L, note = K.note;
@@ -149,6 +173,9 @@ export default [
   },
   {
     row: ['sim.terrainWater',           'terrainWater',   'waterFlow,terrainEdit,watershedSim,sculpt',                   'sim',     'sim',     'map.terrainWater',       'map',                 'session', 'none',   'point',    'terrainWater'],
+    doc: [
+      { in: 'terrain-water', at: 10, text: '{"type":"terrainWater","place"?:str,"lng"?:num,"lat"?:num,"rainMm"?:num,"waterM3"?:num,"flowM3s"?:num,"raiseM"?:num,"lowerM"?:num,"radiusM"?:num,"mode"?:"pan"|"raise"|"lower"|"levee"|"source","pour"?:"once"|"cont"|"stop","pourRateM3s"?:num,"timeSpeed"?:num,"resetTerrain"?:bool} = opens the terrain sculptor over the REAL elevation model for the area in view: the user brushes the ground up or down, draws levees and dams as lines, and drops any amount of water on it. The water is routed by priority-flood depression filling plus downslope volume accounting, so the FLOW PATHS, the PONDED AREA and the OVERTOPPING (breach) DIRECTION all change with every edit, in real time. It reports the ponded volume, the flooded area, the maximum depth and every spill point with the volume going over it. "rainMm" applies a uniform rainfall, "waterM3" drops that volume at the point, "flowM3s" sets the downstream channel DISCHARGE in m³/s (the drawn channel width/depth follows it; omit = derive from the placed volume), "raiseM"/"lowerM" sculpt there (with "radiusM"). "pour":"cont" keeps water arriving at the last placed source at "pourRateM3s" cubic meters per SIMULATED second, sped up by "timeSpeed" (the quasi-static filling sequence — the solver is steady-state, so this repeats the same solve as the volume grows); "pour":"stop" halts it and "pour":"once" restores the single fixed volume per click. "resetTerrain":true undoes the sculpting and the levees but LEAVES the placed water, so the same water can be re-run on the original ground. Use for "この谷にダムを作ったらどこまで水没する", "地形を編集して水を流したい", "sculpt the terrain and pour water on it", "what happens if I build a levee here". NOTE this is a where-does-the-water-END-UP model, not a wave-speed model — for tsunami ARRIVAL use ' },
+    ],
     schema: () => ({ type: 'object', properties: { place: str(), at: str(), location: str(), lng: lng(), lat: lat(), rainMm: num(0), waterM3: num(0), flowM3s: num(0), raiseM: num(), lowerM: num(), radiusM: num(0), mode: str(), pour: one('once', 'cont', 'continuous', 'stop'), pourRateM3s: num(0), timeSpeed: num(0), resetTerrain: bool() }, anyOf: [{ required: ['place'] }, { required: ['at'] }, { required: ['location'] }, { required: ['lat', 'lng'] }] }),
       /* (#R176) terrain sculpting + water routing */
     async run(a, dctx, K) { const geocode = K.geocode, R = K.R, note = K.note, L = K.L, warn = K.warn;
@@ -175,6 +202,9 @@ export default [
   },
   {
     row: ['sim.earthquake',             'earthquake',     'seismic,quakeSim,seismicWaves,earthquakeSim',                 'sim',     'sim',     'map.seismic',            'map',                 'session', 'none',   'point',    'seismic'],
+    doc: [
+      { in: 'sim.earthquake', text: 'SEISMIC WAVE SIMULATION: {"type":"earthquake","place"?:str,"lng"?:num,"lat"?:num,"depth"?:km,"magnitude"?:Mw,"t"?:seconds,"site"?:"hard"|"rock"|"stiff"|"soft","scale"?:"mmi"|"jma","speed"?:num,"slip"?:m,"opacity"?:0-1,"tsunami"?:bool,"hours"?:1-30,"maximum"?:bool,"play"?:bool,"amplitude"?:m,"contours"?:bool,"real"?:bool} = set an epicentre, depth and magnitude and watch the P wave, the S wave and the surface waves spread over the globe in REAL TIME (playback "speed" ×1 default, user-adjustable). Arrival times are RAY-TRACED through the IASP91 reference Earth model (the same model the USGS locates earthquakes with), so the travel-time curve, its triplications and the core shadow all come out of the physics. The intensity is PAINTED as a terrain-aware field: Vs30 is estimated from real DEM topographic slope (Wald & Allen 2007) cell by cell, so basins amplify and hard ground does not — not concentric circles. "scale" switches between Modified-Mercalli (Worden et al. 2012, the ShakeMap GMICE, on PGV taken over the usable band of a strong-motion record) and the JMA shindo, which is computed by its own definition (the JMA period/10 Hz/0.5 Hz filters and the level exceeded for a total of 0.3 s) rather than converted. In the panel the user can FREE-DRAW a rupture area and set the average "slip" (m): the magnitude then comes from M0=μAD and all distances become distance-to-rupture, so the field follows the fault shape. "site" sets the fallback ground class where no DEM is available; "real":true loads the largest real earthquake of the past month from the USGS feed. The field is computed on demand: the panel has a COMPUTE button with a real progress percentage, and "opacity" (0-1) sets how solidly the intensity is painted over the map (default 0.85). The painted field runs out to where the LOWEST class of the chosen scale ends; past 1,000 km the regional attenuation law is extrapolated and the panel says how many cells that is. Crustal attenuation is frequency-dependent, Q = Q0*f^eta (Raoof, Herrmann & Malagnini 1999), and both numbers are adjustable in the panel. When the event is TSUNAMIGENIC by the operational screening (Mw>=6.5, focal depth <=100 km, and the epicentre under the sea per the real DEM) the panel offers the TSUNAMI PROPAGATION SIMULATOR and "tsunami":true opens it directly: shallow-water long waves (total-depth pressure and Manning bottom friction) solved on a spherical staggered grid over the real sea floor IN A BACKGROUND THREAD, so the page never freezes and the frames stream in as they are computed — the wave is watchable within seconds of pressing the button. It is initialized with the Okada (1985) co-seismic sea-floor displacement summed over a tapered sub-fault grid, ANIMATED (interpolated between frames, so it is smooth at any playback speed) so the wave is seen crossing the ocean, with TRAVEL-TIME CONTOURS every hour, a maximum-wave-height field ("maximum":true), a coastal height by Green law, and a click anywhere on the sea to read the arrival time and wave height there. "hours" (1-30) is how long to simulate, "play":true starts the animation, "amplitude" (m) sets the sea-surface amplitude at which the color ramp saturates and "contours":false hides the hour lines. The domain is the WHOLE PLANET at 0.25° — longitude wraps, so a wave leaves one side of the Pacific and arrives at the other instead of running off the edge of a box. Use for "東京の真下でM7の地震が起きたら", "simulate an M8 off Chile and tell me when it reaches Tokyo", "地震波の伝わり方を見せて", "震度分布を気象庁階級で見せて".\n' },
+    ],
     schema: () => ({ type: 'object', properties: { place: str(), at: str(), location: str(), epicentre: str(), epicenter: str(), lng: lng(), lat: lat(), depth: num(0), magnitude: num(), mw: num(), t: num(), site: one('hard', 'rock', 'stiff', 'soft'), scale: one('mmi', 'jma'), speed: num(0), slip: num(0), opacity: num(0, 1), tsunami: bool(), hours: num(1, 30), maximum: bool(), play: bool(), amplitude: num(0), contours: bool(), real: bool(), seconds: num(0) }, anyOf: [{ required: ['place'] }, { required: ['at'] }, { required: ['location'] }, { required: ['epicentre'] }, { required: ['epicenter'] }, { required: ['lat', 'lng'] }] }),
       /* (#R176) seismic wave propagation */
     async run(a, dctx, K) { const geocode = K.geocode, L = K.L, esc = K.esc, warn = K.warn, R = K.R, note = K.note;
@@ -213,6 +243,9 @@ export default [
   },
   {
     row: ['sim.sunHours',               'sunHours',       'shadeHours,terrainShadow,solarHours,insolationYear',          'sim',     'sim',     'map.sunhours',           'map',                 'session', 'none',   'point',    ''],
+    doc: [
+      { in: 'sunlight', at: 10, text: '{"type":"sunHours","place"?:str,"lng"?:num,"lat"?:num,"solstice"?:bool,"terrainOnly"?:bool} = the Sun & shadow panel\'s terrain half. Without options it analyses ONE POINT for a whole year: it builds a 360° horizon from the real elevation model (with earth curvature and refraction) and steps a year of sun positions against it, giving the annual sunlight hours, how many hours the terrain costs compared with an open horizon, the hours on the winter solstice / summer solstice / equinox, the days a year with no sun at all, the hours a solar panel could work and the clear-sky direct-beam total in kWh/m². "solstice":true instead paints every cell in view that the sun NEVER reaches on the winter solstice; "terrainOnly":true just switches the live terrain-shadow (mountain shade) overlay on. Use for "この土地の年間日照時間は", "冬至にこの家に日は当たる", "山影がかかるのはどこ", "how many hours of sun does this valley get", "solar potential here". For BUILDING shadows at one moment, use ' },
+    ],
     schema: () => ({ type: 'object', properties: { place: str(), at: str(), location: str(), lng: lng(), lat: lat(), solstice: bool(), terrainOnly: bool() }, anyOf: [{ required: ['place'] }, { required: ['at'] }, { required: ['location'] }, { required: ['lat', 'lng'] }] }),
       /* (#R176) terrain shade + the annual sunlight budget (the Sun panel owns the controls) */
     async run(a, dctx, K) { const geocode = K.geocode, GE = K.GE, R = K.R, warn = K.warn, whereMiss = K.whereMiss, L = K.L, note = K.note;
@@ -237,6 +270,10 @@ export default [
   {
     row: ['sim.nightSky',               'nightSky',       'starsFromHere,skyFromHere,stargazing,standHere,skyStanding',  'sim',     'sim',     'map.nightsky',           'map',                 'session', 'none',   'point',    'nightSky'],
     /* `alt` here is how far UP to look, not an altitude; the point is place/at/location or lng+lat */
+    doc: [
+      { in: 'night-sky', at: 10, text: '{"type":"nightSky","place"?:str,"lng"?:num,"lat"?:num,"when"?:ISO-8601 str,"play"?:bool,"rate"?:num (simulated seconds per real second),"mode"?:"dome"|"stand","az"?:num (0-360, compass direction to face),"alt"?:num (-85..85, how far up to look),"fov"?:num (15-110, field of view in degrees)} = the sky a person STANDING at that point has: the Hipparcos catalog precessed to the instant and resolved into the observer own horizon, the Sun, Moon and planets from the JPL elements, and — this is the part that makes it a place and not a chart — the SKYLINE MEASURED off the elevation model, so a mountain to the west really does hide the stars setting behind it. TWO VIEWS of the same sky: "dome" (default) is the all-sky chart, the whole hemisphere at once; "mode":"stand" is FIRST PERSON — a rectilinear lens you point with "az"/"alt" and zoom with "fov", the way it looks to someone actually standing there, and the one to use when asked what the sky looks like FROM somewhere, what is visible toward a direction, or to stand/be at a place. {"type":"standHere"} is the same thing. Defaults to NOW at the point; "when" sets an instant and "play" runs the sky forward at "rate". For the solar system seen from outside, use ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { place: str(), at: str(), location: str(), lng: lng(), lat: lat(), when: str(), time: str(), date: str(), play: bool(), rate: num(), mode: str(), view: str(), stand: bool(), az: num(0, 360), alt: num(-85, 85), fov: num(15, 110), bearing: num() }, anyOf: [{ required: ['place'] }, { required: ['at'] }, { required: ['location'] }, { required: ['lat', 'lng'] }] }),
       /* (#R208) 「ある地点からの星空」— reachable from Atlas as well as the right-click item (#R112) */
     async run(a, dctx, K) { const R = K.R, warn = K.warn, geocode = K.geocode, whereMiss = K.whereMiss, L = K.L, note = K.note;
@@ -254,6 +291,10 @@ export default [
   {
     row: ['sim.space',                  'space',          'solarSystem,planet,planets,explore Space',                    'sim',     'sim',     'map.space',              'map',                 'session', 'none',   '',         ''],
     /* leaving the Earth needs nothing: the default is the solar system, live, at model scale */
+    doc: [
+      { in: 'sim.space', text: 'SPACE EXPLORER (planets as globes, and the solar system in time): {"type":"space"|"solarSystem"|"planet","body"?:"sun"|"mercury"|"venus"|"earth"|"moon"|"mars"|"jupiter"|"saturn"|"uranus"|"neptune"|"pluto","mode"?:"system"|"body","scale"?:"real"|"model","date"?:ISO,"rate"?:seconds-per-second} = leave the Earth. "mode":"body" (or naming a "body" with {"type":"planet"}) shows that world AS A GLOBE in the same form the app shows the Earth — the real surface imagery, lit by the real Sun direction for the instant on the clock, turning about its real IAU pole and prime meridian, with the IAU-approved place names from the USGS Gazetteer placed at their published coordinates. "mode":"system" shows the SOLAR SYSTEM: the Sun, the eight planets, Pluto and the Moon at their real positions for ANY instant from 3000 BC to 3000 AD (JPL approximate elements; the Moon from truncated ELP-2000/82), with orbits, a clock that can run forwards or backwards at any "rate", and two honest scales — "real" (1 unit = 1 AU and true radii, so a planet is a fraction of a pixel) and "model" (orbits compressed, bodies enlarged, so the whole system is legible). Default: live, model scale, the solar system. ⚠ Satellites other than the Moon are NOT modeled — their phase cannot be computed faithfully from published elements alone, and the app says so rather than drawing an invented one. Reachable in the UI only from the button that appears when the map cannot zoom out any further. Use for "太陽系を見せて", "show me Mars", "火星の地名を見たい", "where were the planets on my birthday", "show the solar system in the year 2200", "冥王星まで行って".\n' },
+      { in: 'night-sky', at: 20, text: '{"type":"space"} instead.\n' },
+    ],
     schema: () => ({ type: 'object', properties: { body: str(), planet: str(), target: str(), mode: one('system', 'body'), scale: one('real', 'model'), date: str(), datetime: str(), when: str(), rate: num() } }),
       /* (#R197) the space explorer — the same surface the button at the zoom floor opens */
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, note = K.note;
@@ -280,6 +321,12 @@ export default [
   },
   {
     row: ['sim.tsunami',                'tsunami',        'tsunamiSim,tsunamiPropagation',                               'sim',     'sim',     'map.tsunami',            'map',                 'session', 'none',   'point',    'tsunami'],
+    doc: [
+      { in: 'terrain-water', at: 20, text: '{"type":"tsunami"}.\n' },
+      { in: 'sim.tsunami', text: 'TSUNAMI PROPAGATION (its own model — NOT a hazard of the disaster simulator): {"type":"tsunami","place"?:str,"lng"?:num,"lat"?:num,"magnitude"?:Mw,"depth"?:km,"scope"?:"global"|"near","hours"?:1-30,"amplitude"?:m,"maximum"?:bool,"contours"?:bool,"play"?:bool} = solve the tsunami a given earthquake would radiate and watch it cross the ocean. Shallow-water long waves (total-depth pressure, Manning bottom friction, Coriolis) on a spherical Arakawa C-grid over the WHOLE PLANET at 0.25° — longitude wraps, so the wave keeps going round rather than reflecting off the edge of a box, and a Chilean event really does arrive in Japan about twenty-two hours later. "scope":"near" solves the SAME physics on a latitude band around the epicentre at FOUR TIMES the resolution (about 9 km a cell instead of 28) — use it when the question is about the source region rather than about a trans-ocean arrival; it is capped at 3 hours, because past that the wave reaches the band edge. The sea floor is the same bundled 0.25° bathymetry in both scopes, so "near" refines the source, the numerics and the arrival field, NOT the coastline. The sea floor is the bundled global bathymetry (every cell has a measured depth; nothing falls back to a constant). The source is the Okada (1985) co-seismic sea-floor displacement over a tapered sub-fault grid, with the Tanioka & Satake (1996) horizontal-motion term added over sloping floor. It is solved in a background thread and the frames STREAM in, so the animation is watchable within a second or two. Reports travel-time contours, a maximum-crest field ("maximum":true), a Green\'s-law coastal height, and a click anywhere on the sea reads the arrival time and wave height there. Defaults: Mw 8.5, focal depth 20 km, 6 hours. Use for "チリでM9が起きたら日本にいつ津波が来る", "simulate the 2011 Tōhoku tsunami", "津波シミュレーター", "show me a tsunami from the Aleutians". ⚠ Its cells are tens of kilometers and it does not claim run-up, so it cannot say which street floods.\n' },
+    ],
+    /* #R115: non-equivalent substitutions the planner has actually made, recorded so it cannot make them again */
+    policy: { forbidden: ['sim.earthquake'] },
     schema: () => ({ type: 'object', properties: { place: str(), at: str(), location: str(), lng: lng(), lat: lat(), magnitude: num(), mw: num(), depth: num(0), scope: one('global', 'near'), near: bool(), resolution: str(), hours: num(1, 30), amplitude: num(0), maximum: bool(), contours: bool(), play: bool() }, anyOf: [{ required: ['place'] }, { required: ['at'] }, { required: ['location'] }, { required: ['lat', 'lng'] }] }),
       /* ⚠ (#R197) `tsunami` IS NOT A HAZARD OF THE DISASTER SIMULATOR ANY MORE — it is its own model.
          「勝手に災害シミュレータ内の津波シミュレータを起動するな」. Both the type and the free-text
@@ -332,6 +379,10 @@ export default [
        ⚠ `days` IS REQUIRED because «simulate a pandemic» with no horizon has no answer to report;
        the origin is the capability's `place` target and is checked by targetPolicy, which accepts
        place / country / origin / lng+lat. */
+    doc: [
+      { in: 'pandemic', at: 10, text: '{"type":"pandemicRun","days":int,"country"|"place"|"origin":str or "lng"+"lat":num,"preset"?:"covid"|"flu"|"sars"|"ebola"|"measles","scenario"?:"naive"|"real-world","seed"?:int,"params"?:{…}} — a CITY is fine for "place" (it is resolved to the country that contains it, and the reply says which). It returns THE STATE at the day you asked for: world totals, and per country the cumulative infections, deaths, currently infectious, arrival day and border tier. IT DRAWS NOTHING — so if the reader said "show", "map", "draw", "見せ" or anything else that asks to SEE it, the run alone has not answered them and you MUST make the second call in the same turn. ONE RUN PER TURN: if a call is refused, CHANGE it (the refusal says how) — never repeat the same arguments, and never print two different runs of the same question as if both were the answer. TO PUT IT ON THE MAP: ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { place: str(), country: str(), origin: str(), lng: num(-180, 180), lat: num(-90, 90), preset: str(), scenario: str(), days: num(1), seed: num(), params: obj() }, required: ['days'] }),
       /* (#R52) features the user could not reach reliably through the fuzzy "control" path are now FIRST-CLASS
          actions (verified window fns / element ids), so "open the pandemic simulator", "switch news pins to the
@@ -342,6 +393,12 @@ export default [
   },
   {
     row: ['sim.ballistic',              'missile',        'ballistic,ballisticMissile,strike,icbm',                      'sim',     'sim',     'map.ballistic',          'map',                 'session', 'none',   'place',    ''],
+    doc: [
+      { in: 'ballistic', at: 10, text: '{"type":"missile","from":str,"to":str,"missile"?:str,"loft"?:"minenergy"|"lofted"|"depressed","marv"?:bool,"yield"?:number_kt,"blast"?:bool,"seconds"?:8-55} = solves the Keplerian trajectory for the great-circle range at a SELECTABLE launch angle (loft: minimum-energy default, "lofted"=steep/high-apogee, "depressed"=flat/low), applies Allen–Eggers atmospheric DRAG for the impact velocity, curves the ground track by the Earth\'s rotation (Coriolis), optionally adds a MaRV terminal weave ("marv":true), and draws a WORLD-SCALE 3-D altitude-colored arc (correct under any zoom). Reports apogee, launch angle, burn-out / re-entry / drag-reduced impact velocity, Coriolis cross-range and flight time. "missile" may name a class ("Minuteman III","DF-41","Sarmat","Trident II"); pass "yield" (kt) or "blast":true for warhead-effect rings. The reply has buttons to re-fly it lofted/depressed/MaRV. Use for "モスクワからワシントンへ弾道ミサイル", "lofted ICBM from X to Y", "depressed trajectory strike on Z". ' },
+    ],
+    /* #R115: non-equivalent substitutions the planner has actually made, recorded so it cannot make them again */
+    policy: { forbidden: ['sim.flyAnimate'] },
+    chips: ['arc', 'map.fly', 'map.ballistic'],   /* (#R142) the blast ring too, so a strike's blast overlay gets a chip (#9). ⚠ map.fly stays its own kind: the trajectory is also the fly kind's surface, and a later fly call taking it over must still turn this chip OFF (#R122) */
     schema: () => ({ type: 'object', properties: { from: str(), to: str(), place: str(), target: str(), missile: str(), weapon: str(), name: str(), loft: str(), trajectory: str(), traj: str(), mode: str(), marv: bool(), maneuver: bool(), maneuvering: bool(), coriolis: bool(), nuclear: bool(), warhead: str(), yield: num(0), blast: bool(), seconds: num(1) }, anyOf: [{ required: ['from', 'to'] }, { required: ['from', 'place'] }, { required: ['from', 'target'] }] }), /* `missile` */
     async run(a, dctx, K) { const geocode = K.geocode, R = K.R, warn = K.warn, L = K.L, _gcKm = K._gcKm, missileClass = K.missileClass, esc = K.esc, ballisticSolve = K.ballisticSolve, clearFly = K.clearFly, _ballTrack = K._ballTrack, GE = K.GE, clearBlast = K.clearBlast, drawBlastRings = K.drawBlastRings, ballisticProfileSVG = K.ballisticProfileSVG, note = K.note;
       {
@@ -393,6 +450,11 @@ export default [
   },
   {
     row: ['sim.flyAnimate',             'fly',            'flight,trajectory',                                           'sim',     'sim',     'camera,map.fly',         'camera,map',          'session', 'none',   'place',    ''],
+    doc: [
+      { in: 'animated-flight', at: 10, text: '{"type":"fly","from":str,"to":str,"mode"?:"plane"|"cruise","seconds"?:6-90} = cinematic camera flight along the real great-circle from A to B with a drawn trajectory (plane/cruise stay level; use for "fly me from London to Tokyo"). It reports the real-world flight time honestly. User interaction cancels it. ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
+    chips: 'map.fly',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { from: str(), to: str(), mode: str(), seconds: num(1), missile: str(), yield: num(0), blast: bool() }, required: ['from', 'to'] }), /* `fly` */
     async run(a, dctx, K) { const dispatch = K.dispatch, geocode = K.geocode, R = K.R, warn = K.warn, L = K.L, flyAnimate = K.flyAnimate, note = K.note, esc = K.esc;
       { /* (#R72) animated camera flight ("モスクワからワシントンまで

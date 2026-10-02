@@ -362,7 +362,7 @@ HTML を返し（CORS も無い）、機械可読で権威のある全球フィ�
 | `js/beta-overlays.js`（volc2 の節） | **レイヤー本体**（eager）。4つの色モード・VEI による半径・活動中のハロー・**4つの絞り込みと時間軸**（§7.7）・凡例・Layers 欄の4行・`volcano.*` の7つのカーネルコマンド |
 | `js/volcano-intel.js`（**遅延**・`IntMapVolcano`） | カタログの深さ・状態のはしご・気象庁の結合表・**分類語の9言語表と国名の CLDR 解決**（§7.5）・噴火の性格・地震／空港の問い合わせ・詳細カード |
 | `js/volcano-layers.js`（**遅延**・`IntMapVolcanoLayers`） | 火山灰域・ハザード域・SO₂ の3レイヤーと凡例。**ハザード区分名の正本**（`HAZ_NAME`） |
-| `js/atlas-capabilities.js` / `js/atlas-console.js` / `js/atlas-catalog-text.js` | Atlas の2つの capability（§7.8）——**3つとも同時に更新する** |
+| `js/atlas-cap-*.js` の該当項目 | Atlas の2つの capability（§7.8）——**項目 1 つが正本**（説明文・方針・チップは項目の欄で、カタログと登録表はそこから導出される） |
 | `scripts/i18n/r395-a.json` | 分類語 256 件の fr / ko / 繁體中文（`scripts/i18n-apply-inline.mjs` が locale へ流し込み、簡体は生成） |
 | `supabase/functions/volcano-feed` | ACAO を返さない2本の中継＋サーバー側解析（§4③・§5.1） |
 | `supabase/functions/_shared/volcano-parse.js` | その解析の正本。`node --test` から実応答で検査できるようにここに置いてある |

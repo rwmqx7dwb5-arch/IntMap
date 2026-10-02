@@ -41,7 +41,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
-import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
+import { capsSource, capabilityEntry, catalogueText } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readLF(resolve(ROOT, p));
@@ -219,9 +219,9 @@ test('R455 ②d Atlas can be asked for the streaks over the precipitation layer'
   assert.ok(ACS.indexOf("['ec-slp',") < ACS.indexOf("['ec-precip',"), 'pressure is tested before precipitation');
 });
 
-test('R455 ②e the model’s own catalogue no longer says all three are off', () => {
+test('R455 ②e the model’s own catalogue no longer says all three are off', async () => {
   /* kept as a spelling: js/weather.js, js/map-readout.js and js/wx-ecmwf.js are built with the page (map, legend DOM, tile protocol); the catalogue text is what the planner is shown */
-  const CT = rd('js/atlas-catalog-text.js');
+  const CT = await catalogueText();   /* (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given */
   assert.ok(!CT.includes('all three are OFF by default'), 'the stale claim is gone');
   assert.ok(CT.includes('"over":"temperature" | "gusts" | "pressure" | "precipitation"'),
     'the fourth value is offered to the model');

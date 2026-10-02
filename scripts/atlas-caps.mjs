@@ -8,10 +8,16 @@
  *    js/atlas-caps-modules.js  — the list of namespace files, imported by the Atlas kernel (lazy).
  *                                DISCOVERED from js/: every `atlas-cap-<namespace>.js`, so a new
  *                                namespace is a new file and nothing else.
- *    js/atlas-capabilities.js  — the registry rows alone, between the GENERATED ROWS markers. That file is
- *      (one region)            EAGER (a capability is discoverable before Atlas loads). The rows are copied
- *                              rather than imported from the entries because the entries carry the
- *                              executors, which do not belong on the boot path — and they are copied INTO
+ *    js/atlas-capabilities.js  — three regions, each between its GENERATED markers. That file is EAGER (a
+ *      (three regions)         capability is discoverable before Atlas loads):
+ *                                ROWS          the registry rows (each entry's `row`)
+ *                                POLICY        withdrawn / rule-documented / fallback / forbidden / equivalents / answer
+ *                                              (each entry's `policy`, js/atlas-caps.js capabilityPolicy)
+ *                                CAMERA GOALS  each entry's `goal`, its source copied as written — so a goal may
+ *                                              read only its own arguments, and a name it reads from anywhere
+ *                                              else is refused here (it would mean something else in the copy)
+ *                              They are copied rather than imported from the entries because the entries
+ *                              carry the executors, which do not belong on the boot path — and copied INTO
  *                              the registry rather than into a module of their own, because a module of
  *                              their own is one more module every session loads at boot (check:perf).
  *
@@ -38,14 +44,41 @@ const HERE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 export const NS_PREFIX = 'atlas-cap-';
 export const KIT = 'js/atlas-caps.js';
 export const GENERATED_FILES = ['js/atlas-caps-modules.js', 'js/atlas-capabilities.js'];
-/* the region of js/atlas-capabilities.js that is generated: from the line after BEGIN to the line before END */
+/* the regions of js/atlas-capabilities.js that are generated: each from the line after its BEGIN to the line before its END */
 const ROWS_HOST = GENERATED_FILES[1];
-const BEGIN = '/* ⚠ GENERATED ROWS — BEGIN', END = '/* ⚠ GENERATED ROWS — END */';
-function rowsRegion(text) {
+const REGION_NAMES = ['ROWS', 'POLICY', 'CAMERA GOALS'];
+function region(text, name) {
+  const BEGIN = '/* ⚠ GENERATED ' + name + ' — BEGIN', END = '/* ⚠ GENERATED ' + name + ' — END */';
   const b = text.indexOf(BEGIN), e = text.indexOf(END);
-  if (b < 0 || e < b) return null;
+  if (b < 0 || e < b || text.indexOf(BEGIN, b + 1) >= 0) return null;
   const from = text.indexOf('\n', b) + 1, to = text.lastIndexOf('\n', e) + 1;
-  return { from, to, body: text.slice(from, to) };
+  return { name, from, to, body: text.slice(from, to) };
+}
+const rowsRegion = (text) => region(text, 'ROWS');
+
+/* the names a goal's source READS that it does not declare itself — anything here would resolve to whatever the
+   eager registry happens to call that name, so the copy would not be the function the entry shows */
+const GOAL_GLOBALS = new Set(['undefined', 'Math', 'Number', 'isFinite', 'Array', 'Object', 'String', 'Infinity', 'NaN', 'JSON']);
+export function freeNames(fnNode) {
+  const declared = new Set(), read = new Set();
+  const decl = (pat) => { if (!pat) return; if (pat.type === 'Identifier') declared.add(pat.name); else if (pat.type === 'AssignmentPattern') decl(pat.left); else if (pat.type === 'RestElement') decl(pat.argument); else if (pat.type === 'ArrayPattern') pat.elements.forEach(decl); else if (pat.type === 'ObjectPattern') pat.properties.forEach((pp) => decl(pp.value || pp.argument)); };
+  (function visit(n, parent, key) {
+    if (!n || typeof n.type !== 'string') return;
+    if (n.type === 'Identifier') {
+      if (parent && parent.type === 'MemberExpression' && key === 'property' && !parent.computed) return;
+      if (parent && parent.type === 'Property' && key === 'key' && !parent.computed) return;
+      read.add(n.name); return;
+    }
+    if (/Function/.test(n.type)) { if (n.id) declared.add(n.id.name); n.params.forEach(decl); }
+    if (n.type === 'VariableDeclarator') decl(n.id);
+    if (n.type === 'CatchClause') decl(n.param);
+    for (const k of Object.keys(n)) {
+      if (k === 'params' || (k === 'id' && n.type !== 'MemberExpression')) continue;
+      const v = n[k];
+      if (Array.isArray(v)) v.forEach((x) => visit(x, n, k)); else if (v && typeof v.type === 'string') visit(v, n, k);
+    }
+  })(fnNode, null, null);
+  return [...read].filter((x) => !declared.has(x) && !GOAL_GLOBALS.has(x)).sort();
 }
 const GENERATED = '⚠ GENERATED by `node scripts/atlas-caps.mjs --write` from js/atlas-cap-<namespace>.js — DO NOT EDIT.';
 
@@ -62,6 +95,14 @@ function idsOfTable(text) {
   return ids;
 }
 
+/** the entries under `root`, validated (js/atlas-caps.js capabilityEntries) — what the audit reads its ledgers from */
+export async function loadEntries(root = HERE_ROOT) {
+  const modules = {};
+  for (const f of namespaceFiles(root)) modules[namespaceOfFile(f)] = (await import(pathToFileURL(path.join(root, f)).href)).default;
+  const kit = await import(pathToFileURL(path.join(root, KIT)).href);
+  return kit.capabilityEntries(modules);
+}
+
 /** what the two files should hold, from the entries under `root` */
 export async function expected(root = HERE_ROOT) {
   const files = namespaceFiles(root);
@@ -69,10 +110,13 @@ export async function expected(root = HERE_ROOT) {
   for (const f of files) modules[namespaceOfFile(f)] = (await import(pathToFileURL(path.join(root, f)).href)).default;
   const kit = await import(pathToFileURL(path.join(root, KIT)).href);
   const host = LF(fs.readFileSync(path.join(root, ROWS_HOST), 'utf8'));
-  const region = rowsRegion(host);
-  if (!region) throw new Error(ROWS_HOST + ' has no GENERATED ROWS region (the markers are gone)');
-  const prevIds = idsOfTable(region.body);
+  const regions = REGION_NAMES.map((n) => region(host, n));
+  regions.forEach((r, i) => { if (!r) throw new Error(ROWS_HOST + ' has no GENERATED ' + REGION_NAMES[i] + ' region (the markers are gone, or are there twice)'); });
+  const prevIds = idsOfTable(regions[0].body);
   const rows = kit.capabilityRows(modules, prevIds);
+  const order = rows.map((r) => r[0]);
+  const P = kit.capabilityPolicy(modules, order);
+  const goals = goalSources(root, order);
   const names = files.map(namespaceOfFile);
   const ident = (n) => 'caps_' + n.replace(/[^\w$]/g, '_');
   const modulesJs = `/* ${GENERATED}
@@ -84,7 +128,15 @@ export const CAPABILITY_MODULES = {
 ${names.map((n) => `  ${JSON.stringify(n)}: ${ident(n)},`).join('\n')}
 };
 `;
-  const hostJs = host.slice(0, region.from) + '    var T = [\n' + rows.map((r) => '      ' + JSON.stringify(r) + ',').join('\n') + '\n    ];\n' + host.slice(region.to);
+  const table = (name, o) => '    var ' + name + ' = ' + JSON.stringify(o) + ';\n';
+  const bodies = {
+    ROWS: '    var T = [\n' + rows.map((r) => '      ' + JSON.stringify(r) + ',').join('\n') + '\n    ];\n',
+    POLICY: table('WITHDRAWN', P.withdrawn) + table('RULE_DOCUMENTED', P.ruleDocumented) + table('FALLBACKS', P.fallbacks)
+      + table('FORBIDDEN_SUBSTITUTES', P.forbidden) + table('EQUIVALENTS', P.equivalents) + table('ANSWERS', P.answers),
+    'CAMERA GOALS': '    var CAMERA_GOAL = {\n' + goals.map((g) => '      ' + JSON.stringify(g.id) + ': ' + g.src + ',').join('\n') + (goals.length ? '\n' : '') + '    };\n',
+  };
+  let hostJs = host;
+  regions.slice().sort((a, b) => b.from - a.from).forEach((r) => { hostJs = hostJs.slice(0, r.from) + bodies[r.name] + hostJs.slice(r.to); });
   return { [GENERATED_FILES[0]]: modulesJs, [ROWS_HOST]: hostJs, rows, modules };
 }
 
@@ -106,7 +158,7 @@ export function entrySources(root = HERE_ROOT) {
     if (!def || def.declaration.type !== 'ArrayExpression') continue;
     def.declaration.elements.forEach((el) => {
       const prop = (k) => el.properties.find((p) => p.key && (p.key.name === k || p.key.value === k));
-      const row = prop('row'), run = prop('run'), sch = prop('schema');
+      const row = prop('row'), run = prop('run'), sch = prop('schema'), goal = prop('goal');
       if (!row || row.value.type !== 'ArrayExpression') return;
       const id = row.value.elements[0].value, spelling = row.value.elements[1].value;
       let runNode = run ? run.value : null, runFile = file, runText = '';
@@ -125,10 +177,30 @@ export function entrySources(root = HERE_ROOT) {
       }
       if (runNode && !runText) runText = text.slice(runNode.start, runNode.end);
       out.push({ file, id, spelling, line: el.loc.start.line, text: text.slice(el.start, el.end), row: text.slice(row.value.start, row.value.end),
-        schema: sch ? text.slice(sch.value.start, sch.value.end) : '', run: runText, runStart: runNode ? runNode.start : -1, runFile });
+        schema: sch ? text.slice(sch.value.start, sch.value.end) : '', run: runText, runStart: runNode ? runNode.start : -1, runFile,
+        goalNode: goal ? { node: goal.value, method: !!goal.method, text: text.slice(goal.value.start, goal.value.end) } : null });
     });
   }
   _entries.set(root, out);
+  return out;
+}
+
+/** every entry's `goal` as source, in registry `order`: [{ id, src }] — the function as written, re-indented to
+    where it is copied. A goal that reads a name it does not declare is refused (see freeNames). */
+export function goalSources(root = HERE_ROOT, order = null) {
+  const out = [], bad = [];
+  for (const e of entrySources(root)) {
+    if (!e.goalNode) continue;
+    const free = freeNames(e.goalNode.node);
+    if (free.length) bad.push(e.file + ' ' + e.id + ': its goal reads ' + free.join(', ') + ' — a goal may read only its arguments (a, raw, h)');
+    let src = e.goalNode.text;
+    if (e.goalNode.method) src = 'function ' + src;
+    /* the entry's goal sits at a 4-space property indent; the copy sits at 6 */
+    src = src.split('\n').map((l, i) => (i ? '  ' + l : l)).join('\n');
+    out.push({ id: e.id, src });
+  }
+  if (bad.length) throw new Error(bad.join('; '));
+  if (order) out.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   return out;
 }
 

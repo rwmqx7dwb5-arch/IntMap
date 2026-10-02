@@ -11,7 +11,10 @@
  *  The registry rows (copied into js/atlas-capabilities.js), the dispatch and the schema table are
  *  DERIVED from these entries — `node scripts/atlas-caps.mjs --write` rewrites what is generated after
  *  an entry is added or removed, and `npm run check:capabilities` fails while they disagree.
- *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
+ *  (atlas-capability-single-source) An entry also holds `doc` — its fragment of each catalogue block the planner
+ *  reads (js/atlas-catalog-text.js keeps only the blocks' order and headings) — and, where it has them, `phrases`,
+ *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
+ *  entry names them.
  * ==========================================================================*/
 import { str, bool, num, int, one, list, obj, loose, noArgs } from './atlas-caps.js';
 import { volcanoFilterRun, heritageFilterRun, radiationNearRun } from './atlas-cap-data.js';
@@ -20,6 +23,10 @@ export default [
   {
     row: ['map.clearHighlights',        'reset',          '',                                                            'map',     'paint',   'map.highlight,map.compose',          'map',                 'session', 'none',   '',         ''],
     /* ── map, layers, view, panels, country data — the first run of the registry table ──────── */
+    doc: [
+      { in: 'country-statistics', at: 70, text: '{"type":"reset"} clears highlights & shading.\n' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('reset')),
     async run(a, dctx, K) { const clearHl = K.clearHl, clearChoro = K.clearChoro, clearPolyHl = K.clearPolyHl, clearLineHl = K.clearLineHl, COMPOSE = K.COMPOSE, R = K.R, note = K.note, L = K.L, _CLEARED = K._CLEARED;
       clearHl(); clearChoro(); clearPolyHl(); clearLineHl(); try{ COMPOSE.clear(); }catch(_){} return R(true, note('✓ '+L('Cleared map highlights.','ハイライトを消去しました。','Hervorhebungen gelöscht.','Выделение очищено.','Resaltado borrado.')), _CLEARED('countries','polys','lines','choro'));
@@ -39,6 +46,9 @@ export default [
        a capability it does not use ([[intmap-prompt-that-hid-the-tools-in-hand]]). ⚠ The band is
        checked against the grid by js/gis-core.js (`band-out-of-range`), not by a ceiling invented
        here — this file knows how many bands no dataset has. */
+    doc: [
+      { in: 'spatial-analysis', at: 20, text: '{"type":"gisDraw","dataset":REF,"band"?:int} puts a finished dataset on the map — a GRID HAS ONE PICTURE PER BAND, so name the band you mean (the catalogue row lists them with their units; omitted = the first). So 「施設から5km圏を作り、統合し、その範囲の人口を集計して地図に出して」 is buffer → dissolve → zonal → gisDraw, carrying the id forward each time.\n' },
+    ],
     schema: () => ({ type: 'object', properties: { dataset: str(), band: int(0, null), spec: obj() }, required: ['dataset'] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L;
       { await window.IntMapLazy.need('gisCore'); const _GD=window.IntMapGis&&window.IntMapGis.atlas; if(!_GD) return R(false, warn('⚠ '+L('The GIS engine could not be loaded.','GIS エンジンを読み込めませんでした。','Die GIS-Engine konnte nicht geladen werden.','Не удалось загрузить GIS-движок.','No se pudo cargar el motor GIS.'))); const _gd=await _GD.draw(a); return _gd.ok ? R(true,_gd.html,{meta:{gis:{dataset:_gd.dataset.id,drawn:true}}}) : R(false, warn(_gd.html)); }   /* (#R743) the second door: drawing a dataset is a separate promise from making one, because an observer that measures the map must be declared by something that always moves it. */   /* ⚠⚠ (#R743) THE OTHER HALF OF THE LINE ABOVE — 「読める」 に対する 「作らせられる」. The ops, their declarations, the input resolution and the reply are js/gis-atlas.js, which sits inside the gisCore chunk BECAUSE THE OPS DECLARE THEMSELVES: a list of ops written here would be invisible to the op added to DECL tomorrow. This line is the door and the argument binding, because the file it sits in may not grow (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ). */
@@ -46,6 +56,11 @@ export default [
   },
   {
     row: ['map.choropleth',             'mapMetric',      'choropleth',                                                  'map',     'paint',   'map.choropleth',         'map',                 'session', 'none',   'metric',   ''],
+    doc: [
+      { in: 'country-statistics', at: 40, text: '{"type":"mapMetric","metric":KEY,"order":"top"|"bottom","color"?:str} = CHOROPLETH that shades EVERY country by the metric with a legend (use for "color/shade/heat-map the world by …"; optional "color" sets the shading hue, e.g. "red"); ' },
+      { in: 'metric-keys', at: undefined },   /* documented by the chunk's own text, not a fragment */
+    ],
+    chips: 'choropleth',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { metric: str(), order: one('top', 'bottom'), color: str() }, required: ['metric'] }), /* `mapMetric` */
     async run(a, dctx, K) { const ensureData = K.ensureData, metSpec = K.metSpec, unknownMetric = K.unknownMetric, _fillMetric = K._fillMetric, drawChoro = K.drawChoro;
       { await ensureData(); const _sp=metSpec(a.metric); if(!_sp) return unknownMetric(a.metric);
@@ -56,6 +71,11 @@ export default [
   {
     row: ['map.isolateCountry',         'isolate',        '',                                                            'map',     'paint',   'map.isolate',            'map',                 'session', 'none',   'country',  ''],
     /* `on:false` (or country "off"/"exit"/"clear") leaves isolation — a complete call with no country */
+    doc: [
+      { in: 'country', at: 30, text: '{"type":"isolate","country":str,"on":bool} (show only it); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
+    chips: 'isolate',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { country: str(), place: str(), on: bool() }, anyOf: [{ required: ['country'] }, { required: ['place'] }, { required: ['on'] }] }), /* `isolate` */
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, resolveCountry = K.resolveCountry, GE = K.GE, esc = K.esc, warn = K.warn;
       { if(a.on===false||/^(off|exit|clear)$/i.test(String(a.country||''))){ try{ window.IntMapIsolate&&window.IntMapIsolate.exit(); }catch(_){} return R(true, note('✓ '+L('Isolate off','分離解除','Isolierung aus','Изоляция выкл','Aislar: off'))); } const c=await resolveCountry(a.country||a.place); if(c){ if(c.ll){ try{ GE().camera.flyTo({center:[c.ll.lng,c.ll.lat],zoom:Math.max(GE().camera.getZoom(),4)}); }catch(_){} } let ok=false; try{ if(c.code&&window.IntMapIsolate&&window.IntMapIsolate.enter){ window.IntMapIsolate.enter(c.code); ok=true; } else if(c.ll&&window.IntMapIsolate&&window.IntMapIsolate.enterAt){ window.IntMapIsolate.enterAt(c.ll.lng,c.ll.lat,c.name); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+L('Isolate','分離','Isolieren','Изолировать','Aislar')+': '+esc(c.name||'')):warn('⚠')); } return R(false, warn('⚠ '+esc(a.country||a.place||''))); }
@@ -64,6 +84,10 @@ export default [
   {
     row: ['map.object',                 'object',         'mapObject',                                                   'map',     'object',  'map.object',             'object',              'session', 'explicit','',        ''],
     /* op defaults to `list`, which needs nothing; the kinds are js/map-tools.js's own */
+    doc: [
+      { in: 'more-features', at: 130, text: '{"type":"object",…} above.)\n' + 'RADIO / SIGNAL COVERAGE FROM A MAST: ' },
+      { in: 'map.object', text: 'MAP OBJECTS: {"type":"object","op":"list"|"remove"|"focus"|"rename","id"?:str,"kind"?:"pin"|"radius"|"annot"|"poly"|"outline"|"upload"|"route"|"iso","index"?:num,"name"?:str} = operate on objects ALREADY drawn on the map (ids are listed in CURRENT MAP STATE; "poly"=Atlas-drawn polygons, "outline"=the active boundary outline). "2番目の円を消して" → {"type":"object","op":"remove","kind":"radius","index":2}.\n' },
+    ],
     schema: () => ({ type: 'object', properties: { op: one('list', 'remove', 'delete', 'focus', 'zoom', 'rename'), action: one('list', 'remove', 'delete', 'focus', 'zoom', 'rename'), id: str(), kind: one('pin', 'radius', 'annot', 'poly', 'outline', 'upload', 'route', 'iso', 'nogo', 'pt'), index: int(1), name: str(), to: str() } }),
       /* (#R118) MAP-OBJECT operations by id (see IntMapObjects.list in the state context) */
     async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, esc = K.esc, L = K.L;
@@ -83,6 +107,10 @@ export default [
   },
   {
     row: ['map.pin',                    'pin',            '',                                                            'map',     'object',  'map.object',             'object,map',          'session', 'none',   'place',    ''],
+    doc: [
+      { in: 'tools-panels', at: 30, text: '{"type":"pin","place":str,"country"?:str,"title"?:str,"description"?:str,"date"?:str,"source"?:str,"url"?:str,"confidence"?:"high"|"medium"|"low"} = a MARKER THAT CARRIES ITS OWN EXPLANATION: the popup shows the title, the description, the date/source line and a link. Emit ONE pin per concrete place with its own text — never a bare pin followed by a second research pass to describe it, and never a whole province as a pin when what happened happened in a town. ALWAYS pass "country" (and "countryCode" when you have it) with a settlement or district name: a bare 「オクチャブリスキー」 is ambiguous across dozens of places and will fail; ' },
+    ],
+    chips: 'pin',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { place: str(), country: str(), title: str(), description: str(), source: str(), url: str(), date: str(), confidence: str(), kind: str(), countryCode: str() }, required: ['place'] }), /* (#R489) a pin may carry what it IS — the marker's popup shows title/description/date/source/link. Before this the action took a bare place, so a turn that wanted described incident markers had to improvise with a second research pass (js/atlas-console.js case 'pin'). `country` is not decoration: 「オクチャブリスキー」 alone is a query that cannot succeed. */
     async run(a, dctx, K) { const GLEDGER = K.GLEDGER, _lnorm = K._lnorm, geocode = K.geocode, addPin = K.addPin, GE = K.GE, HOST = K.HOST, R = K.R, note = K.note, esc = K.esc, warn = K.warn;
       { const _pm={title:String(a.title||a.name||'').trim(),description:String(a.description||a.summary||a.note||a.text||'').trim(),source:String(a.source||a.src||'').trim(),url:String(a.url||'').trim(),when:String(a.date||a.when||'').trim(),confidence:String(a.confidence||'').trim()}; const _pk=GLEDGER.resolve(a.place); const _pp=String(a.place||'').trim(), _pc=String(a.country||'').trim(); const _pq=(_pc&&_pp&&_lnorm(_pp).indexOf(_lnorm(_pc))<0)?(_pp+', '+_pc):_pp;   /* ⚠ (#R489) THE COUNTRY IS APPENDED ONLY WHEN IT IS NOT ALREADY THERE. Measured on the live endpoint: 「Kotovsk, Russia」 returns 1 result and 「Kotovsk, Russia, Russia」 returns 0 — and a model that fills both `place` and `country` writes the doubled form every time. */ const ll=(_pk&&_pk.lng!=null)?{lng:_pk.lng,lat:_pk.lat,name:_pk.canonicalName||_pk.name}:await geocode(_pq||a.place);   /* ⚠⚠ (#R489) A PIN CAN SAY WHAT IT IS, AND THAT IS THE WHOLE OF THE SECOND REPORT. `pin` accepted a place and nothing else, and `addPin(lng,lat)` made a marker whose popup reads 「Pin #3」 — so a turn asked for 「これらの着弾地点を説明付きでピンして」 had NO action that could carry the explanation, and improvised: research → bare pin → research again → pin again, four independent passes whose conclusions disagreed because each one re-searched. The description travels with the marker now. ⚠ AND THE PLACE IS ASKED FOR WITH ITS COUNTRY (js/atlas-geo-ledger.js first, so a name this conversation already resolved is not geocoded a second time) — 「オクチャブリスキー」 with no parent oblast and no country code is a query that cannot succeed, which is what the transcript shows it doing. */
@@ -93,6 +121,10 @@ export default [
   },
   {
     row: ['map.tool',                   'tool',           '',                                                            'map',     'panel',   'map.tool',               'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'tools-panels', at: 110, text: '{"type":"tool","name":"measure"|"radius"|"draw"|"volume"|"drone"}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { name: str() }, required: ['name'] }),
       /* (#R172) …and "volume". The catalogue has advertised {"type":"tool","name":"volume"} since #R170, but
          there was no branch for it, so it fell through to doControl() and quietly did nothing. */
@@ -107,6 +139,11 @@ export default [
   },
   {
     row: ['map.radius',                 'radius',         '',                                                            'map',     'object',  'map.object',             'object,map',          'session', 'none',   'place',    ''],
+    doc: [
+      { in: 'tools-panels', at: 40, text: '{"type":"radius","place":str,"km":num,"color"?:str} = a STRAIGHT-LINE distance circle and nothing else. ⚠ A circle is NOT an answer to a travel-TIME question ("現在地から徒歩1時間で行ける範囲", "how far can I get in an hour", "30分で車で行ける範囲", "15 minute walk from the station"): rivers, motorways and dead ends make the real reach nothing like a disc, and the user has explicitly rejected the substitution. For every such request emit "isochrone" (REACHABLE AREA, below) — never a radius circle standing in for it; ' },
+    ],
+    /* #R115: non-equivalent substitutions the planner has actually made, recorded so it cannot make them again */
+    policy: { forbidden: ['routing.isochrone'] },
     schema: () => ({ type: 'object', properties: { place: str(), km: num(0), color: str() }, required: ['place'] }),
     async run(a, dctx, K) { const geocode = K.geocode, HOST = K.HOST, parseColor = K.parseColor, warn = K.warn, L = K.L, esc = K.esc, GE = K.GE, R = K.R, note = K.note;
       { const ll=await geocode(a.place); if(ll){ try{ if(a.km!=null&&typeof HOST.radiusKm!=='undefined') HOST.radiusKm=Math.max(1,+a.km); }catch(_){} let cw=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc){ try{ HOST.radiusColor=pc; }catch(_){} } else cw=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); } try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),4)}); }catch(_){} let ok=false; try{ if(window._radiusFromPoint){ window._radiusFromPoint(ll.lng,ll.lat); ok=true; } }catch(_){} let _oid=null; try{ _oid=(HOST.radiusItems&&HOST.radiusItems.length)?String(HOST.radiusItems[HOST.radiusItems.length-1].id):null; }catch(_){} return R(ok, (ok?note('⭕ '+esc(ll.name||a.place||'')+(a.km?(' · '+a.km+' km'):'')):warn('⚠'))+cw, (ok&&_oid)?{objectIds:[_oid]}:null); } return R(false, warn('⚠ '+esc(a.place||''))); }
@@ -115,6 +152,9 @@ export default [
   {
     row: ['map.volume3d',               'volume3d',       'volume',                                                      'map',     'object',  'map.object,map.volume',             'object,map',          'session', 'none',   'place',    ''],
     /* base and top are ALTITUDES; without both the case refuses, whatever the footprint */
+    doc: [
+      { in: 'tools-panels', at: 120, text: '{"type":"volume3d","place":str,"km"?:num (footprint size in km, default 5),"base":num,"top":num,"unit"?:"m"|"km"|"ft"|"mi" (the unit "base"/"top" are given in — default "m"),"shape"?:"square"|"circle","color"?:str (hex),"opacity"?:num 0.05-0.95} = draw a REAL-SCALE 3-D VOLUME standing in the air over a place: a square (default) or CIRCULAR footprint centered on it, extruded between the "base" and "top" ALTITUDES ABOVE SEA LEVEL, so a 1000-3000 m band really is 2 km thick against the terrain beside it. There is NO upper limit — a 35,786 km geostationary shell is a valid request (unit:"km"). Use for "東京上空1000mから3000mを立体で描画", "draw the airspace over Paris from 2000 m to 5000 m", "show a 3-D volume above X", "富士山の上に赤い円柱を高度3000-8000mで" (shape:"circle", color:"#ff3b30"), "10kmから14kmの航空路を描いて" (unit:"km", base:10, top:14); ' },
+    ],
     schema: () => ({ type: 'object', properties: { place: str(), km: num(0), base: num(), top: num(), unit: one('m', 'km', 'ft', 'mi'), shape: str(), color: str(), opacity: num(0, 1) }, required: ['place', 'base', 'top'] }),
       /* (#R170) 3-D VOLUME — the Atlas face of Measure ▸ 3-D volume (js/volume3d.js). base/top are ALTITUDES
          ABOVE SEA LEVEL in metres; the module compensates for 3-D terrain so the band lands where it was asked for. */
@@ -157,6 +197,10 @@ export default [
   {
     row: ['map.measure',                'measure',        '',                                                            'map',     'panel',   'map.tool',               'panel',               'session', 'none',   '',         ''],
     /* ── tools, workspace, the terrain simulations ──────────────────────────────────────────── */
+    doc: [
+      { in: 'tools-panels', at: 50, text: '{"type":"measure","from":str,"to":str} (distance); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { from: str(), to: str() }, required: ['from', 'to'] }),
     async run(a, dctx, K) { const geocode = K.geocode, setTool = K.setTool, HOST = K.HOST, refreshTool = K.refreshTool, updateToolPanel = K.updateToolPanel, GE = K.GE, R = K.R, note = K.note, esc = K.esc, warn = K.warn, L = K.L;
       { const A=await geocode(a.from); const B=await geocode(a.to); if(A&&B){ try{ if(typeof setTool==='function') setTool('measure'); if(typeof HOST.measurePoints!=='undefined') HOST.measurePoints=[[A.lng,A.lat],[B.lng,B.lat]]; if(typeof refreshTool==='function') refreshTool(); if(typeof updateToolPanel==='function') updateToolPanel(); }catch(_){} try{ GE().camera.flyTo({center:[(A.lng+B.lng)/2,(A.lat+B.lat)/2],zoom:Math.max(GE().camera.getZoom()-1,2)}); }catch(_){} let _mr=null; try{ _mr=HOST.measureReading&&HOST.measureReading([[A.lng,A.lat],[B.lng,B.lat]]); }catch(_){}   /* (#R747) the figure travels with the result — see HOST.measureReading in js/app-body.js */
@@ -165,6 +209,9 @@ export default [
   },
   {
     row: ['map.objectList',             'objects',        'objectList,manageObjects,listObjects,myObjects',              'map',     'panel',   'panel.objects',          'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'more-features', at: 120, text: '{"type":"objects"} = open the panel listing EVERY object on the map — pins, drawings, radius circles, polygons, boundary outlines, uploaded layers, routes and reachable areas — each with fly-to / rename / recolour / hide / delete. Use for 「オブジェクト一覧」「地図上のものを管理」, "manage my objects", "show everything I have drawn". (To operate on ONE object by its id use ' },
+    ],
     schema: () => (noArgs('objects')),
       /* (#R88) universal object list — see & manage every pin/drawing/radius/route/upload/isochrone in one panel */
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L;
@@ -174,6 +221,10 @@ export default [
   },
   {
     row: ['map.clearAll',               'clearAll',       '',                                                            'map',     'paint',   'map.all',                'map',                 'session', 'explicit','',        ''],
+    doc: [
+      { in: 'tools-panels', at: 240, text: '{"type":"clearAll"} (clear highlights, shading, pins, radius & isolate); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('clearAll')),
     async run(a, dctx, K) { const clearHl = K.clearHl, clearChoro = K.clearChoro, COMPOSE = K.COMPOSE, clearPolyHl = K.clearPolyHl, clearLineHl = K.clearLineHl, clearPois = K.clearPois, clearFly = K.clearFly, clearBlast = K.clearBlast, clearElev = K.clearElev, clearFac = K.clearFac, clearAllPins = K.clearAllPins, R = K.R, note = K.note, L = K.L, _CLEARED = K._CLEARED;
       { K._herePoint=null; try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ COMPOSE.clear(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearLineHl(); }catch(_){} try{ clearPois(); }catch(_){} try{ clearFly(); }catch(_){} try{ clearBlast(); }catch(_){} try{ clearElev(); }catch(_){} try{ clearFac(); }catch(_){} try{ window.IntMapRouting&&window.IntMapRouting.clear&&window.IntMapRouting.clear(); }catch(_){} try{ window.IntMapRadiation&&window.IntMapRadiation.clear&&window.IntMapRadiation.clear(); }catch(_){} try{ window.IntMapArc3D&&window.IntMapArc3D.hide(); }catch(_){} try{ if(typeof clearAllPins==='function') clearAllPins(); }catch(_){} try{ window.clearAllRadius&&window.clearAllRadius(); }catch(_){} try{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }catch(_){} try{ window.IntMapOutline&&window.IntMapOutline.clear&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Cleared the map','地図をクリアしました','Karte geleert','Карта очищена','Mapa despejado')), _CLEARED('countries','era','polys','lines','choro','outline','poi')); }   /* (#R802) …and the markers, which this case takes off (`clearPois()` above) and did not declare */   /* ⚠ (#R760) THE OTHER HALF OF #R747's DECLARATION, WHICH `reset` GOT AND THIS DID NOT: clearing an already-clear map moves no count, so `paint.verify` fell to its last line and called it `not_rendered`. Measured on production 2026-09-16, 「Actually, go back to the previous view」: `map.clearAll` → `not_rendered` while the map was in fact clear. */
@@ -181,6 +232,11 @@ export default [
   },
   {
     row: ['map.outline',                'outline',        'extent,showExtent',                                           'map',     'paint',   'map.highlight,map.outline',          'object,map',          'session', 'none',   'place',    ''],
+    doc: [
+      { in: 'navigation-view', at: 110, text: '{"type":"outline","place":str,"color"?:str} draws the real boundary of that place or region as a polygon on the map (and {"type":"outline","place":"clear"} removes it). ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
+    chips: 'outline',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { place: str(), country: str(), name: str(), color: str(), on: bool() }, anyOf: [{ required: ['place'] }, { required: ['country'] }, { required: ['name'] }, { required: ['on'] }] }),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, _CLEARED = K._CLEARED, warn = K.warn, parseColor = K.parseColor, esc = K.esc, placeExtent = K.placeExtent, _ambigNote = K._ambigNote;
       { if(a.on===false||/^(off|clear|hide|none)$/i.test(String(a.place||a.country||''))){ try{ window.IntMapOutline&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Outline cleared','範囲表示を消去','Umriss gelöscht','Контур очищен','Contorno borrado')), _CLEARED('outline')); }
@@ -197,6 +253,10 @@ export default [
   },
   {
     row: ['map.pandemicDay',            'pandemicDraw',   'drawPandemic,showPandemicDay,pandemicMap',                    'map',     'pandemic','map.object',             'map',                 'session', 'none',   '',         'pandemicSim'],
+    doc: [
+      { in: 'pandemic', at: 20, text: '{"type":"pandemicDraw","metric"?:"cases"|"deaths"} draws the run you just did. "params" accepts r0, baseFatality, latentDays, infectiousDays, naturalImmunityMonths, naturalImmunityLifelong, seasonality, startDayOfYear, initialCases, initialImmunity, mobility, scenario, interventions, vaccineAtStart, vaccineEfficacy, vaccineMonths, vaccineImmunityLifelong, vaccinateUnreached; a value out of range or a key that does not exist is REFUSED WITH THE RANGE (or the list of keys), so correct it once rather than guessing. Anything you do not set comes from the preset, and the reply states every such assumption with the field it came from — repeat those to the reader rather than presenting the numbers as unconditional. The same seed reproduces a run exactly.' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { metric: str() } }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, loadCountryData = K.loadCountryData, countryStats = K.countryStats, HOST = K.HOST;
       { await window.IntMapLazy.need('pandemicSim'); const _P=window.IntMapPandemicAtlas; if(!_P) return R(false, warn('⚠ '+L('The pandemic engine could not be loaded.','パンデミックエンジンを読み込めませんでした。','Die Pandemie-Engine konnte nicht geladen werden.','Не удалось загрузить движок пандемии.','No se pudo cargar el motor de pandemia.'))); _P.bind({loadCountryData, countryStats:()=>countryStats, lang:()=>HOST.lang}); const _pd=await _P.draw(a); return _pd.ok ? R(true,_pd.html,{meta:{pandemic:_pd.meta,painted:true}}) : R(false, warn(_pd.html), {meta:{code:(_pd.meta&&_pd.meta.code)||'failed'}}); }   /* (#R754) the second door: drawing a run is a separate promise from computing one, because an observer that measures the map must be declared by something that ALWAYS moves it — #R743's finding, and the shape that made #R742 call 52 of 207 correct calls failures. */
@@ -204,6 +264,10 @@ export default [
   },
   {
     row: ['map.highlight',              'highlight',      '',                                                            'map',     'paint',   'map.highlight',          'map',                 'session', 'none',   '',         ''],
+    doc: [
+      { in: 'country-statistics', at: 60, text: '{"type":"highlight","interpretation":str,"targets":[{"name":"<English country name>","iso3":"<ISO 3166-1 alpha-3>"},…],"color"?:str} = highlight a SET OF WHOLE COUNTRIES with their REAL national borders (⚠ THE MAP\'S YEAR APPLIES: while Chronos shows a past year each country is drawn as THAT year\'s polity from the historical border record, possessions included — «Taiwan (Japan)» joins Japan in 1900 — so for "X\'s territory in YEAR" set the year with timeTravel FIRST, then highlight; at the live date the modern polygon is drawn). THE MEANING IS YOURS TO RESOLVE — IntMap has NO concept dictionary and will NOT expand a phrase for you: YOU enumerate the member countries and give EACH its ISO3 code, and IntMap validates every code against real borders and draws them. This is how you highlight ANY cultural / linguistic / ethnic / religious / political / economic / historical / geographic country grouping — "ゲルマン諸国"/Germanic-speaking countries, "スラブ諸国"/Slavic countries, "英語圏"/the English-speaking world, "旧フランス植民地"/former French colonies, "主要産油国"/major oil producers, OPEC, the G7, ASEAN, landlocked countries, the Nordic countries, the former USSR, Western/Eastern/Southern/Northern Europe, "南米"/South America — NEVER pass the concept phrase itself for the code to resolve, ALWAYS the explicit ISO3 list. Put a SHORT plain-language description of the set (in the user\'s language) in "interpretation" — IntMap displays it so the user sees exactly which definition you used. For SEVERAL sets in ONE command, each in its own color: {"type":"highlight","groups":[{"label":str,"targets":[{"name","iso3"},…]},…]}. If a phrase has TWO+ genuinely different common readings that change the members a lot, emit an "ask" instead of guessing; otherwise take the most standard reading, execute, and let the stated interpretation show it. A GENUINE SINGLE FEATURE that is NOT a set of whole countries — an admin SUBDIVISION ("Stavropol Krai","奈良県","Bavaria" → its real sub-national boundary, NOT the whole country), a NAMED/INFORMAL/NATURAL region ("Blue Banana","肥沃な三日月帯","the Sahel","the Alps"), a RIVER ("信濃川","the Danube" → its real course as a line) or a RIVER BASIN ("アマゾン川の流域","the Nile basin" → main stem + tributaries + faint basin fill) — use {"type":"highlight","query":"<the place name exactly as the user said it, keep 流域/basin words>","color"?:str} and IntMap resolves its real geometry; use "query" ONLY for one concrete named feature, NEVER for a country set. "on":false clears; "color" WITHOUT targets recolors the CURRENT highlights. RANKED/FILTERED form (top/bottom N by a metric): {"type":"highlight","metric":KEY,"n":int,"order":"top"|"bottom","minPop"?:num,"maxPop"?:num,"color"?:str} — IntMap computes the members from the REAL data itself (never guess them) after excluding any below "minPop" / above "maxPop" (people; accept "5M"/"5000000"). e.g. "人口5M未満を除外したGDP per capita上位10ヵ国をハイライト" → {"type":"highlight","metric":"gdppc","n":10,"order":"top","minPop":5000000}; "highlight the 5 least populous countries" → {"type":"highlight","metric":"pop","n":5,"order":"bottom"}. metric KEYs are the same as rank/mapMetric below. "color" accepts ANY color: basic + compound names in 5 languages ("emerald green","紺","türkis","бирюзовый") + all CSS names + #rrggbb; ALWAYS pass it when the user names a color. ' },
+    ],
+    chips: 'highlight',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { targets: list(), groups: list(), iso3: list(), codes: list(), countries: loose(), country: str(), name: str(), place: str(), region: str(), query: str(), interpretation: str(), metric: str(), rankBy: str(), rankMetric: str(), by: str(), order: str(), rankOrder: str(), n: int(1, 40), top: int(1, 40), count: int(1, 40), minPop: loose(), maxPop: loose(), excludeBelowPop: loose(), filter: obj(), color: str(), on: bool() }, anyOf: [{ required: ['targets'] }, { required: ['groups'] }, { required: ['iso3'] }, { required: ['codes'] }, { required: ['countries'] }, { required: ['country'] }, { required: ['name'] }, { required: ['place'] }, { required: ['region'] }, { required: ['query'] }, { required: ['metric'] }, { required: ['rankBy'] }, { required: ['rankMetric'] }, { required: ['by'] }, { required: ['color'] }, { required: ['on'] }] }),
       /* (#R60) FINE-GRAINED first-class actions ("Atlasで、まだ使えない操作がある。特に細かい指示や操作"):
          highlight named countries, look up ONE country's actual figure, all-layers-off, SELECTIVE clear,
@@ -485,6 +549,10 @@ export default [
     /* (#R511) one map explanation. `from`/`to` are loose because an endpoint may be an item's NAME
        or its 1-based NUMBER — both are how a person refers to «the second one». No coordinate
        field exists here and none may be added: the model names, IntMap resolves. */
+    doc: [
+      { in: 'map.compose', text: 'EXPLAIN WITH THE MAP, IN ONE CALL (the map as an OUTPUT of your answer, not a side effect): {"type":"compose","title"?:str,"items":[{"name":str,"country"?:str,"kind"?:str,"role"?:str,"color"?:str,"fill"?:bool}],"relations"?:[{"from":str|int,"to":str|int,"type"?:"flow"|"route"|"supply"|"link"|"influence"|"border"|"claim","label"?:str}],"camera"?:"fit"|"keep"}. `items` are the places IN THE ORDER TO NUMBER THEM; `role` is what the place IS in your explanation (「主要な輸入経路の入口」, "chokepoint", "capital"); `fill:true` shades a country or region through the highlight path instead of (as well as) marking a point. `relations` join two items by NAME or by their 1-based NUMBER: "flow"/"route"/"supply" draw a great-circle arc with arrowheads, "influence"/"border"/"claim" a dashed line, "link" a plain line. IntMap resolves every name itself — the ledger of places this conversation already resolved first, the gazetteer second, and for anything the gazetteer cannot name, one live web-search-grounded verification third (those come back with `provenance":"web_verified"`, and are worth naming as such if the answer turns on exactly where the point is) — numbers the markers, frames the camera over everything that landed ("camera":"keep" leaves it), shows a legend with the same numbers, and links each name in your final_text to its marker. NEVER write a coordinate: name the place and its country. The result’s `placed` / `unplaced` lists are the truth about what is on the map — an unplaced item is NOT shown; say so. ⚠ A NAME THE GAZETTEER CANNOT FIND IS REPORTED AS `not_found`, NEVER SUBSTITUTED: IntMap would rather place nothing than stand a stranger under your label, so when another name means the same place (the municipality it sits in, its official or local spelling) you may call this again with that name. ⚠ A RELATION IS A CLAIM YOU ARE MAKING, and the line is drawn as a GREAT-CIRCLE ARC between the two points — the shortest path over the globe, NOT a surveyed road, shipping lane or pipeline. Draw one only for a connection you would defend in the prose and can name in `label`; sharing an industry, a region or a list is not a connection — when that is all you can say, number the places and leave them unjoined. For an actual path over the road or rail network between two points, use `directions` instead. When the map carries part of your answer, declare answer_mode "map" or "mixed" and make this (or highlight / map_view) the call that fulfils it.\n' },
+    ],
+    chips: 'map.compose',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', required: ['items'], properties: { title: str(), camera: one('fit', 'keep'),
         items: list({ type: 'object', required: ['name'], properties: { name: str(), country: str(), kind: str(), stableId: str(), geoId: str(), role: str(), note: str(), color: str(), fill: bool(), style: one('marker', 'fill') } }, 1, 24),
         relations: list({ type: 'object', required: ['from', 'to'], properties: { from: loose(), to: loose(), type: one('flow', 'route', 'supply', 'link', 'influence', 'border', 'claim'), label: str(), color: str() } }, null, 24) } }),
@@ -502,6 +570,11 @@ export default [
        to FIND one in the USGS catalogue when the reader described the quake instead of naming it.
        `metric` is not an enum: the roster is discovered from the product, so a period USGS adds
        tomorrow must be passable today. */
+    doc: [
+      { in: 'map.shakemap', text: 'WHAT THE GROUND ACTUALLY DID IN ONE EARTHQUAKE (USGS ShakeMap — the ground-motion FIELD, not the magnitude): {"type":"shakemap","action"?:"open"|"close"|"exposure","eventId"?:str,"metric"?:str,"place"?:str,"from"?:"YYYY-MM-DD","to"?:"YYYY-MM-DD","minMagnitude"?:num,"minMMI"?:num,"limit"?:int}. "open" draws USGS\'s own contours for that quake and, where USGS ships a colour scale for the measure, paints the intensity surface under them. NAME THE EVENT with "eventId" when you have one (the earthquakes layer and the earthquakes table both carry USGS ids); otherwise describe it — "from"/"to" bound the date, "minMagnitude" the size, and "place" is matched against the place strings USGS itself writes. "metric" picks WHICH measure is drawn, out of the roster the product actually contains ("mmi" = Modified Mercalli intensity, "pga", "pgv", and the spectral periods such as "psa1p0"); leave it out for intensity. "action":"exposure" answers WHO WAS INSIDE WHICH SHAKING: it samples the intensity grid at every named city in the gazetteer and returns how many cities, and how much of their population, were at or above "minMMI" (default 6). ⚠ THAT POPULATION IS THE POPULATION OF NAMED CITIES, not everyone inside the contour — say so, in those words, whenever you quote the number; there is no population raster behind it. ⚠ MAGNITUDE IS NOT INTENSITY. Magnitude is one number about the source; ShakeMap is a field over the land, so a distant M7 can shake a city less than a shallow M5 beneath it, and an answer about who felt what has to come from here rather than from the magnitude. ⚠ NOT EVERY EARTHQUAKE HAS ONE — the result says `no_shakemap` when USGS published only a catalogue entry, and that is an answer about the record, not a failure of the tool. When this carries part of your answer, declare answer_mode "map" or "mixed".\n' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
+    chips: 'map.shakemap',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { action: one('open', 'close', 'exposure'), eventId: str(), metric: str(), place: str(), from: str(), to: str(), minMagnitude: num(0, 10), minMMI: num(1, 12), limit: int(1, 200) } }),
     async run(a, dctx, K) { const R = K.R;
       { await window.IntMapLazy.need('shakeMap'); const _sk=await window.IntMapShakeMap.run(a); return R(_sk.ok,_sk.html,_sk.meta); }   /* (#R546) map.shakemap — js/shakemap.js owns the body BECAUSE this file has no line left */   /* (#R511) map.compose — js/atlas-map-compose.js. ⚠ THE LINE CAME FROM A BLANK ONE ABOVE THE TIME-AXIS BLOCK: this file is at its ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ) */
@@ -509,6 +582,16 @@ export default [
   },
   {
     row: ['map.clear',                  'clear',          '',                                                            'map',     'clear',   'map.all',                'map',                 'session', 'none',   '',         ''],
+    doc: [
+      { in: 'tools-panels', at: 230, text: '{"type":"clear","what":"pins"|"radius"|"highlights"|"outline"|"measure"|"isolate"|"poi"|"flight"|"lines"|"route"|"historical"|"elevation"|"weather"|"satellite"} removes ONE kind of thing (fine-grained — use when the user names what to remove; "weather" / "satellite" close the floating cards those capabilities opened; a clear that finds nothing of that kind is complete, not a failure); ' },
+      { in: 'facilities', at: 20, text: '{"type":"clear","what":"poi"} removes the pins.\n' },
+      { in: 'animated-flight', at: 20, text: '{"type":"clear","what":"flight"} removes the trajectory.\n' },
+      { in: 'ballistic', at: 20, text: '{"type":"clear","what":"missile"} removes it.\n' },
+      { in: 'elevation-highlight', at: 20, text: '{"type":"clear","what":"elevation"} removes it.\n' },
+      { in: 'historical-alliances', at: 20, text: '{"type":"clear","what":"historical"} removes it.\n' },
+      { in: 'radiation-dispersion', at: 20, text: '{"type":"clear","what":"radiation"} removes it.\n' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { what: str(), target: str() } }),
     async run(a, dctx, K) { const clearAllPins = K.clearAllPins, L = K.L, clearHl = K.clearHl, clearChoro = K.clearChoro, clearPolyHl = K.clearPolyHl, clearLineHl = K.clearLineHl, exitTool = K.exitTool, clearPois = K.clearPois, clearFly = K.clearFly, clearBlast = K.clearBlast, clearElev = K.clearElev, clearFac = K.clearFac, R = K.R, warn = K.warn, esc = K.esc, note = K.note;
       { const w=String(a.what||a.target||'all').toLowerCase(); const did=[]; const all=/^(all|everything|全部|すべて|todo|alles|всё)$/.test(w); const wants=re=>all||re.test(w);
@@ -543,6 +626,9 @@ export default [
      it cannot put back (a drawing the turn REPLACED, an object it deleted) the verdict names. */
   {
     row: ['map.undo',                   'undo',           'undoTurn,undoLast,revertTurn',                                'map',     'undo',    'camera,time,map.basemap,map.layer,map.highlight,map.choropleth,map.polygon,map.line,map.poi,map.object,map.isochrone,map.fly,map.ballistic,map.elevation,map.factions,map.compose,map.shakemap', 'map', 'session', 'none', '', ''],
+    doc: [
+      { in: 'map.undo', text: 'UNDO — PUT THE MAP BACK TO HOW IT WAS BEFORE A TURN (元に戻す・取り消し・さっきの変更を戻して・undo that, go back, revert): {"type":"undo","turn"?:int} — 元に戻す／取り消し: 直前の依頼で地図に加えた変更を取り消し、その依頼の前の地図に戻す. With no `turn` it takes back the most recent turn that changed the map (a second undo in a later turn walks one further back; a turn that was itself an undo is skipped, so it never redoes). It restores, as they were when that turn began: the camera and the globe/flat/3-D and map/satellite view, the Chronos date, which layers were switched on and their opacity, the highlights, shading, polygons, lines and markers you drew, and it takes off the objects and drawn surfaces that turn added. Its result names every section it could NOT put back and every operation whose effect no snapshot holds (`unresolved` — e.g. a drawing that turn REPLACED, an object it deleted, a forecast-model switch); say so to the reader rather than claiming the map is as it was. Calling it twice in one turn does not rewind twice — the second answers already_there.' },
+    ],
     schema: () => ({ type: 'object', properties: { turn: int() } }), /* (atlas-observer-undo) no `turn` = the most recent turn that changed the map */  /* no `what` = everything, which is the case's own default */
       /* (atlas-observer-undo) put the map back to before a turn — the ONE undo, js/atlas-state.js `undo()`. The verdict re-reads every section (js/atlas-capabilities.js OBSERVERS.undo). */
     async run(a, dctx, K) { const ASTATE = K.ASTATE, R = K.R, warn = K.warn, L = K.L, note = K.note, esc = K.esc;
@@ -556,6 +642,10 @@ export default [
     row: ['map.poi',                    'poi',            'mapPois,facilities',                                          'map',     'paint',   'map.poi',                'map',                 'session', 'none',   'place?',   ''],
     /* the place is optional (no place = the current view) but the KIND is not: without it the
        case asks «what kind of facilities?» */
+    doc: [
+      { in: 'facilities', at: 10, text: '{"type":"poi","kind":str,"place"?:str,"color"?:str} = find REAL facilities from OpenStreetMap AND Wikidata (merged, per-source counts reported) and PIN them on the map with name labels + click popups (use for "show the oil facilities in X", "map the nuclear plants in Y", 「日本の原子力発電所を地図に出して」「ドイツの発電所を表示」, "軍事基地を表示"). kind understands oil/gas/nuclear/wind/solar/power plants/dams/airports/ports/military/mines/steel/factories/hospitals/universities/stadiums/prisons/lighthouses/embassies/stations/data centers in 5 languages, and falls back to a name search. ⚠ THE SCOPE IS ONE PLACE, NOT THE PLANET: a country or region in "place" is searched WHOLE (an area query over its real boundary), and with "place" omitted — or set to "world" — the search is the CURRENT VIEW clamped to about 30°×24°. So 「世界の原子力発電所を地図に表示して」 is answered COUNTRY BY COUNTRY — one call per country, naming each one — never by a single global call, and the reply says which countries were mapped. This — not flyTo, not highlight — is the action for "show me the X facilities in Y". ' },
+    ],
+    chips: 'map.poi',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { kind: str(), query: str(), what: str(), name: str(), place: str(), color: str() }, anyOf: [{ required: ['kind'] }, { required: ['query'] }, { required: ['what'] }, { required: ['name'] }] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, WORLD_RE = K.WORLD_RE, DEIXIS_RE = K.DEIXIS_RE, placeExtent = K.placeExtent, geocode = K.geocode, esc = K.esc, resolveCountrySync = K.resolveCountrySync, _nomExtent = K._nomExtent, _bboxOK = K._bboxOK, GE = K.GE, parseColor = K.parseColor, wikidataPOIs = K.wikidataPOIs, overpassPOIs = K.overpassPOIs, aiFacilities = K.aiFacilities, clearPois = K.clearPois, paintPois = K.paintPois, flyToBox = K.flyToBox, note = K.note, _PINNED = K._PINNED;
       { /* (#R62) "○○にある石油施設を表示して" → REAL facilities mapped from OpenStreetMap */
@@ -625,6 +715,10 @@ export default [
   },
   {
     row: ['map.elevationHighlight',     'elevationBelow', 'belowSeaLevel,elevationHighlight,elevationScan',              'map',     'paint',   'map.elevation',          'map',                 'session', 'none',   'place',    ''],
+    doc: [
+      { in: 'elevation-highlight', at: 10, text: '{"type":"elevationBelow","place":str,"threshold"?:meters,"above"?:bool,"km"?:num} = samples the real Copernicus elevation model on a grid over the place/region and shades every cell below (default) or above the threshold, graduated by depth/height. Use for "カスピ海周辺の海抜0m以下地点をハイライトして" → {"type":"elevationBelow","place":"Caspian Sea","threshold":0}, "highlight land below sea level around the Dead Sea", "show areas above 3000 m in the Alps" → add "above":true,"threshold":3000. Omit place to scan the current view. ' },
+    ],
+    chips: 'map.elevation',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { place: str(), region: str(), around: str(), country: str(), threshold: num(), meters: num(), above: bool(), km: num(0), dir: str(), mode: str() }, anyOf: [{ required: ['place'] }, { required: ['region'] }, { required: ['around'] }, { required: ['country'] }] }), /* `elevationBelow` */
     async run(a, dctx, K) { const clearElev = K.clearElev, WORLD_RE = K.WORLD_RE, placeExtent = K.placeExtent, geocode = K.geocode, GE = K.GE, R = K.R, warn = K.warn, L = K.L, elevGrid = K.elevGrid, _mixc = K._mixc, ensureElevLayers = K.ensureElevLayers, note = K.note, esc = K.esc;
       {
@@ -652,6 +746,11 @@ export default [
   },
   {
     row: ['map.drawLine',               'drawLine',       'line',                                                        'map',     'paint',   'map.line',               'object,map',          'session', 'none',   'points',   ''],
+    doc: [
+      { in: 'free-drawing', at: 10, text: '{"type":"drawLine","points":[[lng,lat],...]|"places":[str,...],"color"?:str,"width"?:num,"label"?:str} draws a line; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
+    chips: 'lines',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { points: list(list(), 2), places: list(str(), 2), color: str(), width: num(0), label: str() }, anyOf: [{ required: ['points'] }, { required: ['places'] }] }),
     async run(a, dctx, K) { const geocode = K.geocode, R = K.R, warn = K.warn, L = K.L, parseColor = K.parseColor, paintLines = K.paintLines, GE = K.GE, note = K.note, esc = K.esc;
       { /* (#R72) free line drawing — AI-supplied coordinates or place names */
@@ -672,6 +771,9 @@ export default [
   },
   {
     row: ['map.drawPolygon',            'drawPolygon',    'polygon',                                                     'map',     'paint',   'map.polygon',            'object,map',          'session', 'none',   'points',   ''],
+    doc: [
+      { in: 'free-drawing', at: 20, text: '{"type":"drawPolygon","points":[[lng,lat],...]|"places":[str,...],"color"?:str,"label"?:str} draws a polygon. Use these to sketch fronts, corridors, routes, zones or areas that no dataset provides — you supply the real coordinates from your knowledge/search. Combine freely with pin/highlight/outline/poi/mapReport for multi-step tasks ("ピン立てやライン、ポリゴンのハイライト等のマッピングやネット検索や推論等を自在に組み合わせた高度なタスク").\n' },
+    ],
     schema: () => ({ type: 'object', properties: { points: list(list(), 3), places: list(str(), 3), color: str(), label: str() }, anyOf: [{ required: ['points'] }, { required: ['places'] }] }),
     async run(a, dctx, K) { const geocode = K.geocode, R = K.R, warn = K.warn, L = K.L, parseColor = K.parseColor, paintPolys = K.paintPolys, GE = K.GE, note = K.note, esc = K.esc;
       { let pts=[]; if(Array.isArray(a.points)) pts=a.points.filter(p=>Array.isArray(p)&&isFinite(+p[0])&&isFinite(+p[1])).map(p=>[+p[0],+p[1]]);
@@ -688,6 +790,10 @@ export default [
   {
     row: ['map.scoreMap',               'scoreMap',       'customLayer,evaluate',                                        'map',     'paint',   'map.choropleth',         'map',                 'session', 'none',   '',         ''],
     /* a composed score is its components; fewer than two is refused by the case */
+    doc: [
+      { in: 'map.scoreMap', text: 'CUSTOM EVALUATION LAYER (build a NEW map view from criteria): {"type":"scoreMap","name":str,"components":[{"metric":KEY,"weight"?:num,"invert"?:bool} | {"wb":"WB_INDICATOR_CODE","label":str,"weight"?:num,"invert"?:bool}, … 2-8],"color"?:str,"n"?:int} — composes a weighted 0-100 score from REAL indicators and shades every country by it, with an honest method/coverage note (use for "評価して/スコア化して/ランキングを作って from criteria X, Y, Z", e.g. 住みやすさ = hdi + gdppc + dem; "invert" = lower is better, e.g. military burden). metric uses the metric KEYs below + lifeExp, internet; "wb" takes a real World Bank indicator code you are confident exists (e.g. SP.DYN.LE00.IN) — a wrong code is skipped and reported, never faked. When the user then says "weight X more" / "drop Y" / "add Z", re-emit scoreMap with the ADJUSTED components (the current components are in the conversation history).\n' },
+      { in: 'metric-keys', at: undefined },   /* documented by the chunk's own text, not a fragment */
+    ],
     schema: () => ({ type: 'object', properties: { components: list(obj(), 2), name: str(), color: str(), n: int(1, 40) }, required: ['components'] }),
     async run(a, dctx, K) { const ensureData = K.ensureData, R = K.R, warn = K.warn, L = K.L, _seriesFor = K._seriesFor, _normSeries = K._normSeries, esc = K.esc, countryStats = K.countryStats, isRankableCountry = K.isRankableCountry, parseColor = K.parseColor, rampFrom = K.rampFrom, clearHl = K.clearHl, clearChoro = K.clearChoro, clearPolyHl = K.clearPolyHl, clearLineHl = K.clearLineHl, ensureChoroLayer = K.ensureChoroLayer, GE = K.GE, _choroFillExpr = K._choroFillExpr, nm = K.nm, note = K.note;
       { /* (#R75) vision §13 — a NEW evaluation layer composed
@@ -735,12 +841,18 @@ export default [
   },
   {
     row: ['map.volcanoFilter',          'volcanoFilter',  'volcanoMode,volcanoTime',                                     'map',     'paint',   'map.volcano',            'map',                 'session', 'none',   '',         'volcanoIntel'],
+    doc: [
+      { in: 'volcanoes', at: 20, text: '{"type":"volcanoFilter","mode"?:"recency"|"vei"|"status"|"people","spoken"?:bool,"elevated"?:bool,"big"?:bool,"recent"?:bool,"clear"?:bool,"time"?:bool,"year"?:num} = change WHICH volcanoes are drawn and what their colour answers. "mode" is the colour question: recency = when it last erupted, vei = the largest explosion it has produced, status = what an observatory says today, people = how many live within 30 km. The filters AND together and narrow the catalog: "spoken" = only volcanoes some observatory publishes a current level for, "elevated" = only those above normal, "big" = only those that have produced VEI 4 or more, "recent" = only those that have erupted since 1950, "clear" = drop every filter. "time":true puts the ERUPTION RECORD on the master clock — the map then shows only the volcanoes GVP records as erupting in the year the map is set to, and "year" moves that clock (the clock reaches back to AD 1, and GVP’s record runs back further still — those earlier eruptions stay readable in the volcano’s card). Use for 「今活動している火山だけ表示」「VEI4以上の火山」「1883年に噴火していた火山」, "show only erupting volcanoes", "colour volcanoes by explosivity", "which volcanoes were erupting in 1980". ⚠ THE GREY DOTS ARE NOT CALM VOLCANOES — in "status" they are volcanoes no observatory publishes a readable level for, and the answer must never call them quiet.\n' },
+    ],
     schema: () => ({ type: 'object', properties: { mode: one('recency', 'vei', 'status', 'people'), time: bool(), year: int(), spoken: bool(), elevated: bool(), big: bool(), recent: bool(), clear: bool() }, anyOf: [{ required: ['mode'] }, { required: ['time'] }, { required: ['year'] }, { required: ['spoken'] }, { required: ['elevated'] }, { required: ['big'] }, { required: ['recent'] }, { required: ['clear'] }] }),
     /* the same case as `volcanoFilter` — shared with a spelling that fell through to it */
     run: volcanoFilterRun,
   },
   {
     row: ['map.heritageFilter',         'heritageFilter', '',                                                            'map',     'paint',   'map.heritage',           'map',                 'session', 'none',   '',         ''],
+    doc: [
+      { in: 'world-heritage', at: 20, text: '{"type":"heritageFilter","categories"?:[str],"danger"?:bool,"clear"?:bool} = change WHICH properties are drawn. "categories" NAMES THE ONES TO KEEP and the rest go off — the vocabulary is UNESCO’s own (Cultural, Natural, Mixed) and travels in the data file, so a name it does not hold is answered with the list of names it does. "danger":true narrows to the List of World Heritage in Danger; "clear" drops every narrowing. Use for 「自然遺産だけ表示」「危機遺産は？」, "show only natural sites", "which World Heritage sites are in danger". ⚠ WHETHER A PROPERTY IS IN DANGER COMES FROM WIKIDATA, NOT FROM UNESCO’S OWN FEED — that feed’s danger column has not been maintained since 2014 and is empty for Palmyra, Sana’a, Odesa and Kyiv. Say the source when the answer turns on it. ⚠ THREE INSCRIBED PROPERTIES PUBLISH NO COORDINATE AT ALL and cannot be drawn; the action says so rather than reporting that it could not find them. Never invent a location for one.\n' },
+    ],
     schema: () => ({ type: 'object', properties: { categories: { type: 'array', items: str() }, category: str(), danger: bool(), clear: bool() }, anyOf: [{ required: ['categories'] }, { required: ['category'] }, { required: ['danger'] }, { required: ['clear'] }] }),
     /* the same case as `heritageFilter` — shared with a spelling that fell through to it */
     run: heritageFilterRun,
@@ -759,6 +871,9 @@ export default [
        takes no place name: a dose rate quoted for the wrong town is worse than no answer, so
        resolving the name is the caller's job and this schema refuses to paper over it. `km`
        defaults in the code to 150 and is capped here at the width of a national network. */
+    doc: [
+      { in: 'measured-radiation', at: 10, text: '{"type":"radiationObserved","on"?:bool} = switch the measured ambient gamma dose-rate layer on (default) or off (use for 「実測の空間線量を地図に出して」「放射線量の観測値を見せて」, "show the measured radiation levels"). Every station is normalised to nSv/h server-side so one legend covers every country, and each dot carries the quantity its own network named (H*(10), ambient gamma, air kerma) rather than being silently treated as identical. ' },
+    ],
     schema: () => ({ type: 'object', properties: { on: bool() } }),
     /* the same case as `radiationNear` — this spelling fell through to it in the dispatch switch */
     run: radiationNearRun,
@@ -775,6 +890,10 @@ export default [
     /* (#R650) EVERY ARGUMENT IS OPTIONAL, and that is the shape of the feature rather than a
        relaxation of rule (3): 「感染症のアウトブレイクを見せて」 is a complete request, and the
        layer answers it with WHO's most recent year. The arguments only NARROW it. */
+    doc: [
+      { in: 'map.outbreaks', text: 'DISEASE OUTBREAKS, FROM WHO ITSELF (every Disease Outbreak News item WHO has published since 1996 — 3,195 of them — placed on the countries WHO tagged them with): {"type":"outbreaks","action"?:"open"|"close","pathogen"?:str,"country"?:str,"days"?:int,"all"?:bool}. Each circle is ONE COUNTRY and its size is HOW MANY WHO notes fall inside the window ending at the map’s clock; its colour is how recent the newest of them is. "days" sets that window (90 / 365 / 1826 are the presets; "all":true is everything WHO has ever published up to that date), and MOVING THE MAP’S CLOCK moves the window, so this is how to show what was breaking out in any past year. "pathogen" narrows to one disease AS WHO NAMES IT (「Cholera」「Ebola disease caused by Bundibugyo virus」「Mpox」) and is matched against the names actually present — a name that matches nothing is REFUSED with the list of what is there, never quietly ignored. "country" selects one country and opens its items. Use for 「感染症のアウトブレイクを見せて」「コレラの発生状況」「2014年の流行は？」, "show disease outbreaks", "where is cholera right now", "what was WHO reporting in 2003". THE RESULT’S `meta.items` CARRIES THE ITEMS THEMSELVES — pathogen, countries, the outbreak start date, WHO’s publication date, the case and death counts, and a link to each WHO page — so answer from those rather than from the count alone, and cite the WHO item you used. ⚠ THE OUTBREAK START DATE IS OFTEN ABSENT AND THE PUBLICATION DATE IS NOT A SUBSTITUTE: WHO records a start for about 88 % of items since 2019 and almost none before it, so say «WHO published this on…» unless `outbreakStart` is actually there. ⚠ CASE AND DEATH COUNTS ARE NOT PART OF WHO’S STRUCTURED DATA — they exist only inside the prose of each item and are read out of it separately, so `cases`/`deaths` are null when that has not been done, and `countsKnown` says which. NULL IS NOT ZERO: never report an outbreak as having no deaths because the number is missing. ⚠ 179 ITEMS ARE NOT ABOUT ONE COUNTRY («Yellow fever – Global», «Cholera – Multi-country») and are DELIBERATELY NOT ON THE MAP; `meta.unplaced` counts them and the panel lists them. Do not describe them as absent from the data, and never place them at a region’s centre. ⚠ A Disease Outbreak News item is an EPISODE OF REPORTING, not the outbreak itself: several items about one epidemic are several circles’ worth of notes, and the absence of a note means WHO did not publish one, not that nothing was happening. When this carries part of your answer, declare answer_mode "map" or "mixed".\n' },
+    ],
+    chips: 'map.outbreaks',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { action: one('open', 'close'), pathogen: str(), country: str(), days: int(), all: bool() } }),
     async run(a, dctx, K) { const R = K.R;
       { const _r=await window.IntMapOutbreaks.run(a); return R(_r.ok,_r.html,_r.meta); }   /* (#R650) map.outbreaks — js/outbreaks.js owns the body for the same reason shakemap does: this file has no line left */

@@ -11,7 +11,10 @@
  *  The registry rows (copied into js/atlas-capabilities.js), the dispatch and the schema table are
  *  DERIVED from these entries — `node scripts/atlas-caps.mjs --write` rewrites what is generated after
  *  an entry is added or removed, and `npm run check:capabilities` fails while they disagree.
- *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
+ *  (atlas-capability-single-source) An entry also holds `doc` — its fragment of each catalogue block the planner
+ *  reads (js/atlas-catalog-text.js keeps only the blocks' order and headings) — and, where it has them, `phrases`,
+ *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
+ *  entry names them.
  * ==========================================================================*/
 import { str, int } from './atlas-caps.js';
 import { ATTACH_LOG } from './atlas-file-view.js';
@@ -40,6 +43,10 @@ export default [
        その一覧が返る（存在しない名前に対して黙って別のものを返さない）。
        (#R790) `offset` は任意——長いテキストの続きを読むときだけ、前回の応答が返した
        `next` をそのまま渡す。省略すれば先頭の窓（画像・PDF は無関係、この欄は無視される）。 */
+    doc: [
+      { in: 'attach.recall', text: 'BRING BACK A FILE THE READER ATTACHED EARLIER IN THIS CONVERSATION, OR READ FURTHER INTO A LONG TEXT ATTACHMENT: {"type":"recallAttachment","name":str,"offset"?:int}. The [ATTACHED EARLIER IN THIS CONVERSATION] block in your prompt lists what is there, by name and kind; pass that name. The file is put in front of you on your NEXT step — an image through the same channel your own captures use, a PDF as a document, text through the attachment channel. ⚠ A TEXT ATTACHMENT LONGER THAN WHAT IS SENT AUTOMATICALLY IS NOT LOST, IT IS WINDOWED: the tool result tells you `total` (the file\'s full length in characters), `offset`/`next` (what you now have), and `more` (whether anything follows). If `more` is true, call this again with the SAME name and `offset` set to the `next` you were given, and repeat until `more` is false — that is how you read the rest of a file too long for one turn. Images and PDFs are held back entirely until recalled (no windowing — they arrive whole), because re-sending megabytes every turn would charge the reader for a file they attached once. ⚠ NEVER TELL THE READER YOU CANNOT SEE A FILE, OR THE REST OF ONE, THAT THIS BLOCK OR A PRIOR WINDOW NAMES — recall the next window and then answer. A name that matches nothing is REFUSED with the list of what is actually there.\n' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { name: str(), offset: int(0) }, required: ['name'] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, note = K.note;
       { const _r=ATTACH_LOG.find(K._curTurn,a&&a.name); if(!_r){ const _n=ATTACH_LOG.names(K._curTurn); return R(false,warn(L('No attachment called that. In this conversation: '+(_n.join(', ')||'none'),'その名前の添付はありません。この会話にあるのは: '+(_n.join('、')||'なし'),'Kein Anhang mit diesem Namen. In diesem Gespräch: '+(_n.join(', ')||'keine'),'Вложения с таким именем нет. В этом разговоре: '+(_n.join(', ')||'нет'),'No hay ningún adjunto con ese nombre. En esta conversación: '+(_n.join(', ')||'ninguno')))); } let _pg=null; if(_r.kind==='image') K._atlRecallImgs.push(_r.dataUrl); else if(_r.kind==='doc'){ if(K._atlRecallAtts) K._atlRecallAtts.docs.push({name:String(_r.name||'file'),mime:String(_r.mime||''),b64:String(_r.b64||'')}); } else if(K._atlRecallAtts){ _pg=ATTACH_LOG.page(_r,a&&a.offset,ATL_FILE.LIMITS.textPerFile); K._atlRecallAtts.files.push({name:String(_r.name||'file'),text:_pg.text,truncated:_pg.more}); } return R(true,note(L('Brought back '+_r.name+' — it is in front of you on the next step.','「'+_r.name+'」を取り戻しました。次の一手で目の前にあります。',_r.name+' wurde zurückgeholt — beim nächsten Schritt liegt es vor dir.','Вложение '+_r.name+' возвращено — оно перед вами на следующем шаге.','Se recuperó '+_r.name+' — lo tendrás delante en el siguiente paso.')),{exec:_pg?{recalled:_r.name,kind:_r.kind,offset:_pg.offset,next:_pg.more?_pg.next:null,total:_pg.total,more:_pg.more}:{recalled:_r.name,kind:_r.kind}}); }   /* ⚠⚠⚠ (#R773) 取り戻したものは**次のモデル呼び出しのチャネルに載る**（画像は vision、PDF は文書、テキストは添付チャネル）。tool の結果テキストに入れないのは #R493 と同じ理由——プロンプト本文に置いた data URL は画像ではなく数十万文字の base64 である。 ⚠⚠⚠ (#R790) テキストは窓で戻る（js/atlas-attach-log.js の page()）——`exec.more` が真なら、`exec.next` を次回の `offset` に渡せば続きが読める。 */

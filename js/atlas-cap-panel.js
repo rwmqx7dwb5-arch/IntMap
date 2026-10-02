@@ -11,7 +11,10 @@
  *  The registry rows (copied into js/atlas-capabilities.js), the dispatch and the schema table are
  *  DERIVED from these entries — `node scripts/atlas-caps.mjs --write` rewrites what is generated after
  *  an entry is added or removed, and `npm run check:capabilities` fails while they disagree.
- *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
+ *  (atlas-capability-single-source) An entry also holds `doc` — its fragment of each catalogue block the planner
+ *  reads (js/atlas-catalog-text.js keeps only the blocks' order and headings) — and, where it has them, `phrases`,
+ *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
+ *  entry names them.
  * ==========================================================================*/
 import { str, bool, num, one, lat, lng, noArgs } from './atlas-caps.js';
 import { EMBED_SIZES, EMBED_PX } from './embed-mode.js';   /* (share-embed-distribution) the frame presets `share` offers are the share panel's own */
@@ -22,6 +25,10 @@ import { openSupport, operatingFacts } from './supporter.js';   /* (supporter-fu
 export default [
   {
     row: ['panel.compare',              'compare',        '',                                                            'panel',   'panel',   'panel.compare',          'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'tools-panels', at: 20, text: '{"type":"compare","on":bool}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { on: bool() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, _featTogHtml = K._featTogHtml, clickId = K.clickId;
       { try{ if(a.on===false){ const x=document.querySelector('#compare-window .cmp-close'); if(x){ x.click(); return R(true, note('✓ '+L('Compare off','比較オフ','Vergleich aus','Сравнение выкл','Comparar: off'))+_featTogHtml('compare')); } } else if(window.IntMapCompare&&window.IntMapCompare.open){ window.IntMapCompare.open(); return R(true, note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))+_featTogHtml('compare')); } }catch(_){} return R(clickId('btn-compare'), note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))+_featTogHtml('compare')); }   /* (#R151) offer the Compare on/off switch */
@@ -29,6 +36,10 @@ export default [
   },
   {
     row: ['panel.tab',                  'tab',            '',                                                            'panel',   'panel',   'panel.tab',              'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'tools-panels', at: 210, text: '{"type":"tab","name":"news"|"info"|"countries"|"community"} ("countries" = the country statistics tab, formerly Stats/Data); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { name: str() }, required: ['name'] }),
     async run(a, dctx, K) { const kexec = K.kexec, R = K.R, note = K.note, esc = K.esc, warn = K.warn, doControl = K.doControl;
       { const cmd={news:'tab.news',information:'tab.info',info:'tab.info',companies:'tab.info',company:'tab.info','企業':'tab.info',stats:'tab.stats',statistics:'tab.stats',data:'tab.stats',countries:'tab.stats',nations:'tab.stats',atlas:'tab.atlas',community:'tab.atlas'}[String(a.name||'').toLowerCase()];   /* (#R139) 'companies' → the repurposed info tab */
@@ -39,6 +50,10 @@ export default [
   {
     row: ['panel.streetView',           'streetview',     'streetView,pano',                                             'panel',   'panel',   'panel.streetview',       'panel',               'session', 'none',   'point',    'streetView'],
     /* coverage mode paints the streets with no point at all, so it is its own branch */
+    doc: [
+      { in: 'tools-panels', at: 80, text: '{"type":"streetview","place":str} or {"type":"streetview","lng":num,"lat":num} = open embedded Google Street View at a spot (use for "Xのストリートビュー", "street view of Y"); ' },
+    ],
+    chips: 'streetview',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { place: str(), lng: lng(), lat: lat(), mode: str(), coverage: bool(), on: bool() }, anyOf: [{ required: ['place'] }, { required: ['lat', 'lng'] }, { required: ['mode'] }, { required: ['coverage'] }, { required: ['on'] }] }), /* `streetview` */
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn, geocode = K.geocode, whereMiss = K.whereMiss, GE = K.GE, esc = K.esc;
       {
@@ -56,6 +71,10 @@ export default [
   {
     row: ['panel.education',            'edu',            'learn',                                                       'panel',   'panel',   'panel.edu',              'panel',               'session', 'none',   '',         ''],
     /* ── panels, layers, settings, the clock ────────────────────────────────────────────────── */
+    doc: [
+      { in: 'tools-panels', at: 200, text: '{"type":"edu"} (learn mode); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('edu')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
       { let ok=false; try{ if(window.IntMapEdu&&window.IntMapEdu.open){ window.IntMapEdu.open(); ok=true; } }catch(_){} if(!ok) ok=clickId('btn-edu'); return R(ok, ok?note('🎓 '+L('Learn','学ぶ','Lernen','Обучение','Aprender')):warn('⚠')); }
@@ -63,6 +82,10 @@ export default [
   },
   {
     row: ['panel.ecmwf',                'ecmwf',          'weatherLayers',                                               'panel',   'panel',   'panel.ecmwf',            'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'layers', at: 60, text: '{"type":"ecmwf"} (open the weather-layer suite). ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('ecmwf')),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, warn = K.warn;
       { let ok=false; try{ if(window.IntMapWeatherEC&&window.IntMapWeatherEC.open){ window.IntMapWeatherEC.open(); ok=true; } }catch(_){} return R(ok, ok?note('🌦 '+L('Weather layers','気象レイヤー','Wetterebenen','Погодные слои','Capas meteorológicas')):warn('⚠')); }
@@ -70,6 +93,10 @@ export default [
   },
   {
     row: ['panel.widgets',              'widgets',        '',                                                            'panel',   'panel',   'panel.widgets',          'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'tools-panels', at: 150, text: '{"type":"widgets"}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('widgets')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
       { let ok=false; try{ if(window.IntMapWidgets&&window.IntMapWidgets.toggle){ window.IntMapWidgets.toggle(); ok=true; } else ok=clickId('btn-widgets'); }catch(_){} return R(ok, ok?note('✓ '+L('Widgets','ウィジェット','Widgets','Виджеты','Widgets')):warn('⚠')); }
@@ -77,6 +104,10 @@ export default [
   },
   {
     row: ['panel.screenshot',           'screenshot',     '',                                                            'panel',   'panel',   'panel.screenshot',       'panel,file',          'session', 'none',   '',         ''],
+    doc: [
+      { in: 'tools-panels', at: 160, text: '{"type":"screenshot"}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('screenshot')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
       { const ok=clickId('btn-screenshot'); return R(ok, ok?note('✓ '+L('Screenshot','スクショ','Screenshot','Снимок','Captura')):warn('⚠')); }
@@ -90,6 +121,9 @@ export default [
        the address (the same IntMapBookmark.link() the panel shows) or, with embed:true, the <iframe>
        code for the current map (js/embed-mode.js — the share link with ?embed=1). The panel is opened
        on the matching tab, so what Atlas hands over and what the reader sees are one value. */
+    doc: [
+      { in: 'tools-panels', at: 170, text: '{"type":"share","embed"?:bool,"size"?:"small"|"medium"|"large"|"responsive","width"?:num,"height"?:num,"interactive"?:bool} = SHARE THE CURRENT MAP: opens the share panel and the RESULT carries the link itself — one address that reproduces the whole view (position, projection, base map, every active layer, the clock, compare and the simulators\' inputs), so give it to the user verbatim. With "embed":true it returns instead the <iframe> CODE that puts this same view on another website, read-only (the map, its legends, the date on the clock and every data credit, plus a link that opens it in IntMap); "size" picks one of the share panel\'s frame presets (medium is the default; responsive fills the width of the page it is put on) and the result states the size it used, "width"/"height" set pixels instead, and "interactive":false makes it a still picture with no pan or zoom. Use for "共有リンクを作って", "このビューのURLをちょうだい", "share this view", "send me a link to this map", "ブログに埋め込むコードをちょうだい" (embed:true), "embed this map on my website" (embed:true), "動かせない埋め込みにして" (embed:true, interactive:false); ' },
+    ],
     schema: () => ({ type: 'object', properties: { embed: bool(), size: one.apply(null, Object.keys(EMBED_SIZES)), width: num(EMBED_PX.min, EMBED_PX.max), height: num(EMBED_PX.min, EMBED_PX.max), interactive: bool() } }),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn, esc = K.esc;
       { const S=window.IntMapShare, wantEmbed=(a.embed===true);
@@ -104,6 +138,10 @@ export default [
   },
   {
     row: ['panel.search',               'search',         '',                                                            'panel',   'panel',   'panel.search',           'panel',               'session', 'none',   'text',     ''],
+    doc: [
+      { in: 'navigation-view', at: 100, text: '{"type":"search","query":str} (place-search box). For a REGION (continent, "Central Europe", "Southern Italy", "Middle East", "the Caribbean") just pass its name to flyTo — the engine knows region extents and slices directional names from the real country; never substitute a tiny sub-place. ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { query: str(), place: str() }, anyOf: [{ required: ['query'] }, { required: ['place'] }] }),
     async run(a, dctx, K) { const R = K.R, note = K.note, esc = K.esc, WORLD_RE = K.WORLD_RE, GE = K.GE, L = K.L, placeExtent = K.placeExtent, _setLast = K._setLast, flyToBox = K.flyToBox, _ambigNote = K._ambigNote, geocode = K.geocode, _bboxOK = K._bboxOK, warn = K.warn;
       { const q=a.query||a.place||''; const inp=document.getElementById('ms-input')||document.getElementById('search-input'); if(inp&&q){ inp.focus(); inp.value=q; inp.dispatchEvent(new Event('input',{bubbles:true})); const btn=document.getElementById('ms-btn'); if(btn) btn.click(); else inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); return R(true, note('🔍 '+esc(q))); } if(WORLD_RE.test(String(q).trim())){ try{ GE().camera.flyTo({center:[GE().camera.getCenter().lng,20],zoom:1.4,duration:1000}); }catch(_){} return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); } const ext=await placeExtent(q); if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))) GE().camera.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(GE().camera.getZoom(),10),duration:1000}); return R(true, note('🔍 '+esc(ext.name||q))+_ambigNote(q,ext.lng,ext.lat)); } const ll=await geocode(q); if(ll){ try{ if(ll.bbox&&_bboxOK(ll.bbox)) flyToBox(ll.bbox); else GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),10),duration:1000}); }catch(_){} return R(true, note('🔍 '+esc(ll.name||q))+_ambigNote(q,ll.lng,ll.lat)); } return R(false, warn('⚠ '+esc(q))); }
@@ -111,6 +149,10 @@ export default [
   },
   {
     row: ['panel.correlate',            'correlate',      '',                                                            'panel',   'panel',   'panel.correlate',        'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'tools-panels', at: 140, text: '{"type":"correlate"} (scatter tool); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('correlate')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
       { let ok=false; try{ if(window.IntMapCorrelate&&window.IntMapCorrelate.open){ window.IntMapCorrelate.open(); ok=true; } else ok=clickId('btn-correlate'); }catch(_){} return R(ok, ok?note(L('Correlation tool','相関ツール','Korrelationswerkzeug','Корреляция','Correlación')):warn('⚠')); }
@@ -118,6 +160,10 @@ export default [
   },
   {
     row: ['panel.settings',             'settings',       '',                                                            'panel',   'panel',   'panel.settings',         'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'tools-panels', at: 180, text: '{"type":"settings"}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('settings')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
       { const ok=clickId('btn-open-settings'); return R(ok, ok?note('✓ '+L('Settings','設定','Einstellungen','Настройки','Ajustes')):warn('⚠')); }
@@ -125,6 +171,9 @@ export default [
   },
   {
     row: ['panel.workspace',            'workspace',      'windows,windowMode,windowWorkspace',                          'panel',   'panel',   'panel.workspace',        'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'tools-panels', at: 190, text: '{"type":"workspace","on"?:bool} = switch the desktop floating-window WORKSPACE mode on/off (News, Countries, map, layers and Atlas each become a movable/resizable window) — use for "ワークスペースモードにして", "switch to workspace", "exit workspace", "通常モードに戻して" (on:false); ' },
+    ],
     schema: () => ({ type: 'object', properties: { on: bool(), mode: str(), action: str(), state: str() } }),
       /* (#R85) workspace (floating-window) mode via Atlas ("ワークスペースモードの切り替えがAtlasでできない") */
     async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, L = K.L;
@@ -144,6 +193,10 @@ export default [
   },
   {
     row: ['panel.shortcuts',            'shortcuts',      'keyboard,hotkeys',                                            'panel',   'panel',   'panel.shortcuts',        'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'more-features', at: 80, text: '{"type":"shortcuts"} (keyboard-shortcut cheat sheet); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('shortcuts')),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, warn = K.warn;
       { let ok=false; try{ if(window.IntMapKbdHelp){ window.IntMapKbdHelp(); ok=true; } }catch(_){} return R(ok, ok?note(L('Keyboard shortcuts','キーボードショートカット','Tastaturkürzel','Горячие клавиши','Atajos de teclado')):warn('⚠')); }
@@ -151,6 +204,10 @@ export default [
   },
   {
     row: ['panel.playground',           'playground',     'game',                                                        'panel',   'panel',   'panel.playground',       'panel',               'session', 'none',   '',         'playground'],
+    doc: [
+      { in: 'more-features', at: 10, text: '{"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { mode: str(), name: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, esc = K.esc, warn = K.warn, L = K.L;
       { const m=String(a.mode||a.name||'').toLowerCase(); let ok=false, lbl='Playground';
@@ -163,6 +220,10 @@ export default [
   },
   {
     row: ['panel.news',                 'news',           '',                                                            'panel',   'panel',   'panel.news',             'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'more-features', at: 20, text: '{"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { mode: str(), name: str() } }),
     async run(a, dctx, K) { const L = K.L, clickId = K.clickId, R = K.R, note = K.note, esc = K.esc, warn = K.warn;
       { const m=String(a.mode||a.name||'').toLowerCase(); let id=null,lbl='';
@@ -176,6 +237,10 @@ export default [
   },
   {
     row: ['panel.account',              'account',        'login',                                                       'panel',   'panel',   'panel.account',          'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'more-features', at: 30, text: '{"type":"account"} (open login / account); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('account')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
       { const ok=clickId('btn-account'); return R(ok, ok?note('👤 '+L('Account','アカウント','Konto','Аккаунт','Cuenta')):warn('⚠')); }
@@ -183,6 +248,10 @@ export default [
   },
   {
     row: ['panel.donate',               'donate',         '',                                                            'panel',   'panel',   'panel.donate',           'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'more-features', at: 40, text: '{"type":"donate"} (open the support panel — the Stripe page opens only when the reader clicks it); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('donate')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
       { const ok=clickId('btn-blueberry'); return R(ok, ok?note('💙 '+L('Donate','寄付','Spenden','Поддержать','Donar')):warn('⚠')); }
@@ -194,6 +263,9 @@ export default [
        writes. `page:'teachers'` names the teacher page; anything else, the landing page. The link is the
        English URL: the page itself moves a reader whose app language is Japanese to its ja/ twin
        (scripts/landing.mjs PAGE_SCRIPT), so that rule lives in one place and not also here. */
+    doc: [
+      { in: 'about-and-showcase', at: 10, text: '{"type":"about","page"?:"teachers"} = a link to the page that says what IntMap is (or, with page "teachers", how to teach with it), in the reader’s language — an overview of the product for a new visitor, or a lesson plan and classroom guide — for 「IntMap について」「IntMap とは何か」「先生向けの授業での使い方」, "about IntMap", "for teachers". ' },
+    ],
     schema: () => ({ type: 'object', properties: { page: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, esc = K.esc;
       { const teach=/^(teach|teacher|teachers|class|classroom|lesson|school|edu)/i.test(String(a.page||''));
@@ -209,6 +281,9 @@ export default [
        clicks the example takes), and the result is READ BACK from the clock and the layer boxes before it
        is reported: completed only when the date and every declared layer are what the example says.
        Without `id`, it lists them (id, title, link) so the next call can name one. */
+    doc: [
+      { in: 'about-and-showcase', at: 20, text: (c) => '{"type":"showcase","id":ID} = put the map into one of IntMap’s ready-made example maps — the camera, the date and the layers exactly as the example declares them — and report it opened only once the clock and the layers say so; with no id it lists them. The examples (ID — title): ' + c.showcaseList() + ' — for 「見本の地図を見せて」「授業で使える地図の例」, "show me an example map", "a map for my class", or a request that matches one of the titles (「1914年のヨーロッパ」 → europe-1914).' },
+    ],
     schema: () => ({ type: 'object', properties: { id: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, L = K.L, esc = K.esc;
       { const want=String(a.id||a.example||a.name||'').trim();
@@ -248,6 +323,9 @@ export default [
        support goes» AND hands Atlas the same facts the panel shows, so it can answer in words without
        inventing a figure: the daily allowance from the plan table and this month's AI requests and
        tokens from public.operating_stats(). A month that could not be read is said to be unreadable. */
+    doc: [
+      { in: 'more-features', at: 50, text: '{"type":"operatingCosts"} (WHERE SUPPORT GOES — opens the support panel at its costs section AND returns the facts it shows: the daily Atlas allowance from the plan table and the project-wide AI requests and tokens recorded this month; use for 「運営費を見る」「IntMapの維持費は？」「支援は何に使われる？」, "what does IntMap cost to run", "where does my support go"; quote only the figures it returns — it has no figure in money); ' },
+    ],
     schema: () => (noArgs('operatingCosts')),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, esc = K.esc, warn = K.warn;
       { const opened=openSupport({ section:'costs' }); let f=null; try{ f=await operatingFacts(); }catch(_){ f=null; }
@@ -261,6 +339,10 @@ export default [
   },
   {
     row: ['panel.feedback',             'feedback',       '',                                                            'panel',   'panel',   'panel.feedback',         'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'more-features', at: 60, text: '{"type":"feedback"}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('feedback')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
       { let ok=false; try{ if(window._openFeedback){ window._openFeedback(); ok=true; } }catch(_){} if(!ok) ok=clickId('btn-feedback-hdr'); return R(ok, ok?note('✓ '+L('Feedback','フィードバック','Feedback','Отзыв','Comentarios')):warn('⚠')); }
@@ -268,6 +350,10 @@ export default [
   },
   {
     row: ['panel.bugReport',            'bugReport',      'bug',                                                         'panel',   'panel',   'panel.feedback',         'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'more-features', at: 70, text: '{"type":"bugReport"}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('bugReport')),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, warn = K.warn;
       { let ok=false; try{ if(window._openBugReport){ window._openBugReport(); ok=true; } }catch(_){} return R(ok, ok?note('🐞 '+L('Bug report','バグ報告','Fehlerbericht','Сообщить об ошибке','Reportar error')):warn('⚠')); }
@@ -275,6 +361,10 @@ export default [
   },
   {
     row: ['panel.ticker',               'ticker',         '',                                                            'panel',   'panel',   'panel.ticker',           'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'tools-panels', at: 250, text: '{"type":"ticker","on":bool} (the bottom news/markets ticker strip); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { on: bool(), mode: str() } }),
     async run(a, dctx, K) { const saveSettings = K.saveSettings, R = K.R, note = K.note, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
       { const onT=!(a.on===false||/^(off|hide)$/i.test(String(a.mode||''))); let okT=false;
