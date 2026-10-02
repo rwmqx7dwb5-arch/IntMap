@@ -102,14 +102,14 @@ date: 2026-10-02
   `check:surface`・`check:docs`・`check:archfiles`・`check:assets`・`check:testbudget` 緑。Atlas に触れる node 検査
   130 ファイル（2,403 件）緑。`node scripts/atlas-eval.mjs --replay` 12 本 緑。
 
-## 5b. 起動費用（`check:perf` は赤——基準の引き上げが要る）
+## 5b. 起動費用（天井を 1 行上げた）
 
-同じ機械で `HEAD` を別に build して比べた（`git archive` した木で）。差が出たのは **`atlas-console` チャンクだけ**で
+同じ機械で移行前の木を別に build して比べた（`git archive` した木で）。差が出たのは **`atlas-console` チャンクだけ**で
 **+11,151 バイト（raw、+1.0%）／ +7,005 バイト（gzip）**。中身は断片の包み（`{in:…,at:…,text:…}` が 241 個）、
 チャンクの一覧、組み立て関数。起動経路（eager）は +181 バイト／gzip +21 バイト（登録表の生成部分）。
-⚠ `async.gzip` の行は `HEAD` の時点ですでに基準より +15,471 バイト上にあり（幅 18.6 kB の内側）、この回の +7,015 で
-幅を越えた。`tests/perf-baseline.json` の `atlas-console` と `async.gzip` を `node scripts/perf-budget.mjs --update` で
-上げる必要がある（理由はこの節）。包みを詰めて隠すことはしなかった（読み手の欄名を失う割に数 kB）。
+main（#888 の計画で `atlas-console` が増えた後）へ rebase して build し直し、`node scripts/perf-budget.mjs --update` が
+超えた行だけを上げた: `atlas-console` 1127.8 → 1138.8 kB。`async.gzip` は幅の内側。包みを詰めて隠すことはしなかった
+（読み手の欄名を失う割に数 kB）。
 
 ## 6. 残り
 
@@ -118,6 +118,26 @@ date: 2026-10-02
 - `js/atlas-toolsurface.js` の `CORE`（常設の道具）と、コンソールの `effects: { 'system.control': … }` は能力ごとの
   記述として項目の外に残る（前者は道具の定義そのもの、後者はカーネルの関数を束ねる実行時の結合）。
 
-## 起動費の天井（async）を上げた理由
+## 7. 古い形で能力を足した branch を新しい項目へ移す手順（機械的）
 
-増えたのは `atlas-console` チャンクだけ（+11,151 B・gzip +7,005 B）で、能力の断片を包むオブジェクト 241 個・チャンクの一覧・組み立て関数の分。起動経路は +181 B。`node scripts/perf-budget.mjs --update` で超えた行だけを上げた。
+この回より前の形で能力を足した PR（例: `panel.tour`・`time.lapse` の追加）を、この回の後の main へ載せるとき:
+
+1. **項目（`row`・`schema`・`run`）はそのまま**。`js/atlas-cap-<ns>.js` に残す。
+2. **カタログの行**（旧 `js/atlas-catalog-text.js` の `{ ids: [...], t: '…' }`）を断片にする。
+   - その能力**だけ**のブロックだった → `CATALOGUE_CHUNKS` に `{ name: '<能力 id>' }` を 1 行（置きたい位置に）足し、
+     項目に `doc: [{ in: '<能力 id>', text: '<t の本文そのまま>' }]`。
+   - 既存のブロックの `ids` に足し、本文に `{"type":"<綴り>"…}` を書き足していた → 書き足した部分**だけ**を項目の
+     `doc: [{ in: '<そのチャンク名>', at: <隣の断片の間の数>, text: '…' }]` にする（チャンク名と既存の `at` は
+     `CATALOGUE_CHUNKS` と各項目の `doc` で引く。旧ブロック番号はチャンクのコメントに残っている）。
+   - 既存の断片の文を書き換えていた → その能力の項目の `doc` の `text` を同じように書き換える。
+   - 本文中の `' + metricList() + '` 等の実行時の値は `text: (c) => '…' + c.metricList() + '…'`（`c.lang`・
+     `c.moduleCatalog()`・`c.metricList()`・`c.showcaseList()`）。
+3. **項目の外の表**に書いていたものは項目の欄へ: `WITHDRAWN`/`RULE_DOCUMENTED`/`FALLBACKS`/`FORBIDDEN_SUBSTITUTES`/
+   `EQUIVALENTS` → `policy`、`CAMERA_GOAL` → `goal: function (a, raw, h)`（`boxOf` は `h.boxOf`）、コンソールの
+   `OVL_OF` → `chips`、`ANSWER_CAPS` → `policy: { answer: true }`、監査の `CATALOGUE_SILENT` → 足さない（台帳は閉じて
+   いる。説明文に主題の語を en と jp で書く）。
+4. `node scripts/atlas-caps.mjs --write` → `node scripts/atlas-eval/scripted-cassettes.mjs`（説明文だけの変更なら
+   カセットは古くならない。変わったら `--write`）→ `npm run check:catalog` と `check:capabilities` と
+   `node --test tests/atlas-capability-single-source-checks.test.mjs`（⑤ が項目の外の表を名指す）。
+5. ソースとして `js/atlas-catalog-text.js` の本文を読んでいた検査は、`tests/helpers/atlas-kernel.mjs` の
+   `catalogueText([id])` か `capabilityEntry(id).text` を読む。
