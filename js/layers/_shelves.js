@@ -67,7 +67,12 @@ export const SHELVES = [
      shading and 3-D buildings rows). The `html` rows were markup in index.html until layer-manifest; the notes
      that stood above them there are carried below verbatim.
      ⚠ (layer-manifest) #R476's 「the tick and the id in IntMapDefaultOn are ONE edit」 is now ONE FIELD: `on`
-     ticks the generated box AND puts the id in window.IntMapDefaultOn, so the two cannot disagree. */
+     ticks the generated box AND puts the id in window.IntMapDefaultOn, so the two cannot disagree.
+     ══ ⚠⚠⚠ (basic-display-not-layers) THIS SHELF IS THE MAP DISPLAY (基本表示), AND THE MAP DISPLAY IS NOT A LAYER ══
+     「基本表示をレイヤーって言うな。」 (the reader, 2026-10-02.) Every row here says `kind: 'display'`, and only rows that
+     say it may stand here (scripts/lib/layer-descriptor.mjs refuses either half of that). What reads it: the panel's
+     「表示中のレイヤー」 count, the share link (`d=`, not `l=`), the usage count, Atlas's 「all layers off」, the
+     landing page's number of layers — none of them counts a row of this shelf as a layer. */
   { key: 'base' },
     /* ══ (#R268) FOUR ROWS THAT WERE ON THE WRONG SHELF ══════════════════════════════════════
        「レイヤーのカテゴリ分類があきらかに不適切なレイヤーがいくつかある。任せる。」 Only rows whose

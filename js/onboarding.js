@@ -9,6 +9,7 @@
 
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { isLayer, isDisplay } from './layer-manifest.js';
 
 
 export function onboarding(HOST){
@@ -35,7 +36,10 @@ export function onboarding(HOST){
     const LA=IntMapLang.pickArgs(), LT=IntMapLang.pick(()=>HOST.lang);
     const SHOW=[['dl-climate',LA('Köppen climate','ケッペン気候区分','Köppen-Klima','Климат Кёппена','Clima de Köppen')],['dl-nightsat',LA('Night lights','夜間光（衛星）','Nachtlichter','Ночные огни','Luces nocturnas')],['dl-relief',LA('Elevation relief','標高（段彩）','Höhenrelief','Рельеф высот','Relieve altimétrico')],['dl-popgrid',LA('Population density (1 km grid)','人口密度（1kmグリッド）','Bevölkerungsdichte (1-km-Raster)','Плотность населения (сетка 1 км)','Densidad de población (malla de 1 km)')]];
     /* don't start if a thematic layer is already on */
-    if(!force && document.querySelectorAll('#layer-dropdown .lyr-row.on, #layer-dropdown input.geo-layer-cb:checked').length) return;
+    /* (basic-display-not-layers) …a LAYER: the day & night and 3-D buildings rows are `.lyr-row`s too, and they are the
+       map display, not layers (the manifest's `kind`) — so this asks the manifest instead of the row's class */
+    if(!force && Array.prototype.some.call(document.querySelectorAll('#layer-dropdown input[type=checkbox]:checked'),
+      (cb)=>cb.classList.contains('geo-layer-cb') || (isLayer(cb.id) && !isDisplay(cb.id) && !!cb.closest('.lyr-row')))) return;
     let idx=-1,timer=null,paused=false,demoToggling=false,done=false,curId=null;
     const gcb=(id)=>document.getElementById(id);
     const pill=document.createElement('div'); pill.id='im-demo-pill';

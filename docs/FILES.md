@@ -517,9 +517,9 @@ coastline.js                      **海までの距離**（#R495）— data/coas
                                   ⚠ js/coast-line.js（上）は描画用のレイヤーで、こちらは計測用。別物。
 grid-style.js                     経緯線のスタイル層
 layer-home.js                     カメラを動かしてよいレイヤーの表 window.IntMapLayerHome
-layers/                           **レイヤーの宣言** — 1 レイヤー 1 ファイル `<id>.js`（174 本）＋棚の一覧 `_shelves.js`
+layers/                           **レイヤーと基本表示の宣言** — 1 項目 1 ファイル `<id>.js`（174 本＝レイヤー 163 ＋基本表示 11、`kind: 'display'`）＋棚の一覧 `_shelves.js`
 layer-manifest.js                 **どのレイヤーが在るか**（layer-manifest）— js/layers/ の宣言から導出する。`#layer-dropdown` の
-                                  全チェックボックスの id・棚・並び・「その他N件」・名前の i18n キー・既定 ON・共有リンク・
+                                  全チェックボックスの id・種類（レイヤー／基本表示）・棚・並び・「その他N件」・名前の i18n キー・既定 ON・共有リンク・
                                   遅延モジュール、と宣言そのもの（`layerDeclaration`）。⚠ 一覧と宣言の値は GENERATED LAYERS の印の
                                   あいだに写される生成物（`node scripts/layer-descriptors.mjs --write`・`npm run build` が先に書く。
                                   import しないのは起動経路のモジュール数のため）。DOM も window も持たない
@@ -538,7 +538,7 @@ layer-state.js                    **レイヤーの状態の唯一の持ち主**
 layer-time.js                     **時刻 T でレイヤーが何を述べられるかの規則（純粋）** — `verdict(decl, at)` が stated（典拠が T を述べる）/
                                   carried（別の時点を述べ、それと言って描く）/ unstated（どの典拠も述べない）を返す。種類の語彙・
                                   `validate`（著者の無い日付を拒む）・en+jp の文。docs/architecture/07-map.md §7.4a
-layer-time-decl.js                **174 層それぞれの時間の宣言**（純データ・`TIME[id]`。1 層の記述の `time` 欄に入る形）。
+layer-time-decl.js                **174 行（レイヤー 163 ＋基本表示 11）それぞれの時間の宣言**（純データ・`TIME[id]`。1 層の記述の `time` 欄に入る形）。
                                   門は scripts/world-at-time.mjs --check（manifest と一致・全宣言が規則を通る・引用先が実在）
 layer-time-kernel.js              **時刻 T の地図の機構** window.IntMapLayerTime — 述べられない箱を預かり（モジュールには地図自身の
                                   「オフ」、箱はチェックのまま）、述べられる時刻で配り直す。行（`nodata`）・凡例・Atlas

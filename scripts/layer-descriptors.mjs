@@ -139,6 +139,11 @@ function uiTable(code) {
   return langRegistry()._ui[code] || {};
 }
 
+/** (basic-display-not-layers) the set, said the way the product says it: the layers, and the map display apart —
+    a display item is not a layer (scripts/lib/layer-descriptor.mjs `kind`) */
+const tally = (ds) => { const shown = ds.filter((d) => d && d.kind === 'display').length;
+  return (ds.length - shown) + ' layers + ' + shown + ' map display items'; };
+
 /** load the declarations and the shelves of the tree at ROOT */
 export async function load(root = ROOT) {
   const url = (rel) => pathToFileURL(join(root, rel)).href;
@@ -202,18 +207,18 @@ if (isMain) {
       try { unlinkSync(MANIFEST); } catch (e) { if (e.code !== 'ENOENT') throw e; }
       writeFileSync(MANIFEST, text);
     }
-    console.log('layer-descriptors: js/layer-manifest.js holds ' + files.length + ' layers');
+    console.log('layer-descriptors: js/layer-manifest.js holds ' + tally(list.map((x) => x.d)));
   }
   if (argv.includes('--check') || argv.includes('--report')) {
     const { out, list, R } = await problems();
     if (argv.includes('--report')) {
       const claimed = new Set(list.flatMap((d) => d.registry || []));
       const n = (k) => list.filter((d) => k in d).length;
-      console.log('layer-descriptors: ' + list.length + ' layers · registry ' + n('registry') + ' · state ' + n('state') + ' · commands ' + n('commands')
+      console.log('layer-descriptors: ' + tally(list) + ' · registry ' + n('registry') + ' · state ' + n('state') + ' · commands ' + n('commands')
         + ' · atlas ' + n('atlas') + ' · sources ' + n('sources') + ' · time ' + n('time'));
       console.log('  literal IntMapLayers registrations no layer claims: ' + ([...R.reg].filter((r) => !claimed.has(r)).sort().join(', ') || 'none'));
     }
     if (out.length) { for (const p of out) console.error('✗ ' + p); console.error('layer-descriptors: ' + out.length + ' problem(s)'); process.exit(1); }
-    console.log('layer-descriptors: OK — ' + list.length + ' layers, every link found in its registry');
+    console.log('layer-descriptors: OK — ' + tally(list) + ', every link found in its registry');
   }
 }

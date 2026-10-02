@@ -18,6 +18,7 @@
  * ==========================================================================*/
 import { str, bool, num, loose } from './atlas-caps.js';
 import { resolveObserver, satelliteFacts } from './atlas-result-facts.js';
+import { isDisplay } from './layer-manifest.js';   /* (basic-display-not-layers) which rows are the map display, not layers */
 
 export default [
   {
@@ -98,14 +99,18 @@ export default [
   {
     row: ['layers.allOff',              'layersOff',      'allLayersOff',                                                'layers',  'layer',   'map.layer',              'map',                 'session', 'explicit','',        ''],
     doc: [
-      { in: 'layers', at: 30, text: '{"type":"layersOff"} turns EVERY active data layer off at once (use for "turn off all layers"); ' },
+      { in: 'layers', at: 30, text: '{"type":"layersOff"} turns EVERY active data layer off at once (use for "turn off all layers"); the map display (place names, labels, borders, roads, railways, day/night, 3-D buildings) is not a layer and stays as it is — "all":true clears it too; ' },
     ],
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
-    schema: () => ({ type: 'object', properties: { all: bool() } }), /* `layersOff`; all:true drops the base layers too */
+    schema: () => ({ type: 'object', properties: { all: bool() } }), /* `layersOff`; all:true clears the map display too */
     async run(a, dctx, K) { const layerCatalog = K.layerCatalog, R = K.R, note = K.note, L = K.L;
-      { const keepBase=a.all!==true; let n=0;
-          layerCatalog().forEach(c=>{ if(!c.cb.checked) return; if(keepBase&&/^(cb-borders|cb-coast|cb-names|cb-countries)$/.test(c.cb.id||'')) return; try{ c.cb.checked=false; c.cb.dispatchEvent(new Event('change',{bubbles:true})); n++; }catch(_){} });
-          return R(true, note('✓ '+L(n+' layer(s) turned off','レイヤーを '+n+' 件オフにしました',n+' Ebene(n) ausgeschaltet','Слоёв выключено: '+n,n+' capa(s) desactivada(s)'))); }
+      { const keepBase=a.all!==true; let n=0, nd=0;
+          /* (basic-display-not-layers) «all layers» is the layers: the map display is not one (「基本表示をレイヤーって言うな」,
+             2026-10-02), and which rows are display is the manifest's `kind` — this was four ids written out here */
+          layerCatalog().forEach(c=>{ if(!c.cb.checked) return; if(keepBase&&isDisplay(c.cb.id||'')) return; const shown=isDisplay(c.cb.id||''); try{ c.cb.checked=false; c.cb.dispatchEvent(new Event('change',{bubbles:true})); if(shown) nd++; else n++; }catch(_){} });
+          /* …and the reply counts them apart, for the same reason: a display item switched off is not a layer turned off */
+          return R(true, note('✓ '+L(n+' layer(s) turned off','レイヤーを '+n+' 件オフにしました',n+' Ebene(n) ausgeschaltet','Слоёв выключено: '+n,n+' capa(s) desactivada(s)')
+            +(nd?L(' · '+nd+' map display item(s) turned off',' · 基本表示を '+nd+' 件オフにしました'):''))); }
     },
   },
   /* (#R313) the animated streaks inside the Wind layer, on their own switch — the colour

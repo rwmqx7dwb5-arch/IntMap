@@ -5,6 +5,8 @@
  *  on the shelf the panel files them under, with the facts the readers of that registry need:
  *
  *      id      the checkbox id — the key the session, the share link, the favourites and Atlas hold
+ *      kind    'display' for an item of the MAP DISPLAY (基本表示: labels, borders, roads, day & night …);
+ *              absent for a LAYER. Every row of the registry is one or the other — see the note below
  *      key     the short name reorganizeLayerPanel files it by (`climate`, `wbgini`, `nightside` …);
  *              absent for a row nothing names that way
  *      label   the i18n key of its name, when the row names itself through one (`data-i18n`);
@@ -24,6 +26,13 @@
  *  photograph of the hand-kept list it replaced (tests/fixtures/layer-descriptor-before.json).
  *  The history notes that stood beside each row moved into that row's own file.
  *
+ *  ══ ⚠⚠⚠ (basic-display-not-layers) THE MAP DISPLAY IS NOT A LAYER ══════════════════════════════════════
+ *  The reader, 2026-10-02:「基本表示をレイヤーって言うな。」 The registry (`#layer-dropdown`) holds both, because both
+ *  are switched the same way; what they ARE is the declaration's `kind`, and every reader that says «layer» —
+ *  a count, a list, the share link's `l=`, the usage count, Atlas, the landing page — asks it here:
+ *  `isDisplay(id)`, `dataLayers()` (the layers, display items excluded) and `displayItems()`. `LAYERS` and
+ *  `isLayer` keep their meaning of «a row of the registry», display items included: the time kernel, the row
+ *  builder and the panel file every row, whichever it is.
  *  ⚠ ADDING A LAYER: add js/layers/<id>.js — `id`, `shelf`, `order` and the facts above — and build its
  *  row as before. `npm run build` indexes the directory (scripts/layer-descriptors.mjs --write); the gate
  *  fails while the index disagrees with the directory, and on any link a registry does not hold.
@@ -45,20 +54,20 @@
 /** the Layers list — every shelf of js/layers/_shelves.js in panel order, its rows in `order` (scripts/lib/layer-descriptor.mjs deriveShelves) */
 const DERIVED = [
   { key: "base", layers: [
-    { id: "cb-names", label: "placeNames", on: true, html: true },
-    { id: "cb-geolabels", label: "geoLabels", on: true, html: true },
-    { id: "cb-poi", label: "poiLabels", on: true, html: true },
-    { id: "cb-borders", label: "borders", on: true, html: true },
-    { id: "cb-coast", label: "coastline", html: true },
-    { id: "cb-admin1", label: "adminBounds", on: true, html: true },
-    { id: "cb-roads", label: "roadsLayer", on: true, html: true },
-    { id: "cb-rail2", label: "railLayer", on: true, html: true },
-    { id: "cb-grid", label: "gridLayer", html: true },
-    { id: "dl-nightside", key: "nightside", label: "lyrNightSide", share: true },
-    { id: "beta-dl-bldg3d", key: "bldg3d", share: true },
+    { id: "cb-names", kind: "display", label: "placeNames", on: true, html: true },
+    { id: "cb-geolabels", kind: "display", label: "geoLabels", on: true, html: true },
+    { id: "cb-poi", kind: "display", label: "poiLabels", on: true, html: true },
+    { id: "cb-borders", kind: "display", label: "borders", on: true, html: true },
+    { id: "cb-coast", kind: "display", label: "coastline", html: true },
+    { id: "cb-admin1", kind: "display", label: "adminBounds", on: true, html: true },
+    { id: "cb-roads", kind: "display", label: "roadsLayer", on: true, html: true },
+    { id: "cb-rail2", kind: "display", label: "railLayer", on: true, html: true },
+    { id: "cb-grid", kind: "display", label: "gridLayer", html: true },
+    { id: "dl-nightside", kind: "display", key: "nightside", label: "lyrNightSide", share: true },
+    { id: "beta-dl-bldg3d", kind: "display", key: "bldg3d", share: true },
   ] },
   { key: "lyrGrpClimate", layers: [
-    { id: "dl-climate", key: "climate", label: "lyrClimate", on: true, share: true },
+    { id: "dl-climate", key: "climate", label: "lyrClimate", share: true },
     { id: "dl-wind", key: "wind", label: "lyrWind", share: true },
     { id: "dl-annprecip", key: "annprecip", share: true },
     { id: "dl-ec-temp", key: "ec-temp", share: true },
@@ -165,7 +174,7 @@ const DERIVED = [
     { id: "fac-dl-osmwater", key: "osmwater", rest: true },
   ] },
   { key: "lyrGrpTech", layers: [
-    { id: "dl-subcables", key: "subcables", label: "lyrSubcables", on: true, share: true },
+    { id: "dl-subcables", key: "subcables", label: "lyrSubcables", share: true },
     { id: "beta-dl-dc", key: "dc", rest: true, share: true, lazy: ["dataCenters"] },
     { id: "dl-nethlth", key: "nethlth", rest: true, share: true, lazy: ["netHealthLive"] },
     { id: "dl-netreach", key: "netreach", rest: true, share: true, lazy: ["netHealthLive"] },
@@ -261,18 +270,18 @@ const DERIVED = [
 ];
 /** every declaration whole, links included, in panel order */
 const DECLARATIONS = [
-  { id: "cb-names", shelf: "base", order: 10, label: "placeNames", on: true, html: true },   // cb-names.js
-  { id: "cb-geolabels", shelf: "base", order: 20, label: "geoLabels", on: true, html: true },   // cb-geolabels.js
-  { id: "cb-poi", shelf: "base", order: 30, label: "poiLabels", on: true, html: true },   // cb-poi.js
-  { id: "cb-borders", shelf: "base", order: 40, label: "borders", on: true, html: true },   // cb-borders.js
-  { id: "cb-coast", shelf: "base", order: 50, label: "coastline", html: true },   // cb-coast.js
-  { id: "cb-admin1", shelf: "base", order: 60, label: "adminBounds", on: true, html: true },   // cb-admin1.js
-  { id: "cb-roads", shelf: "base", order: 70, label: "roadsLayer", on: true, html: true },   // cb-roads.js
-  { id: "cb-rail2", shelf: "base", order: 80, label: "railLayer", on: true, html: true },   // cb-rail2.js
-  { id: "cb-grid", shelf: "base", order: 90, label: "gridLayer", html: true, atlas: ["view.grid"] },   // cb-grid.js
-  { id: "dl-nightside", shelf: "base", order: 100, key: "nightside", label: "lyrNightSide", share: true, atlas: ["layers.nightSide"] },   // dl-nightside.js
-  { id: "beta-dl-bldg3d", shelf: "base", order: 110, key: "bldg3d", share: true },   // beta-dl-bldg3d.js
-  { id: "dl-climate", shelf: "lyrGrpClimate", order: 10, key: "climate", label: "lyrClimate", on: true, share: true, registry: ["climate"] },   // dl-climate.js
+  { id: "cb-names", kind: "display", shelf: "base", order: 10, label: "placeNames", on: true, html: true },   // cb-names.js
+  { id: "cb-geolabels", kind: "display", shelf: "base", order: 20, label: "geoLabels", on: true, html: true },   // cb-geolabels.js
+  { id: "cb-poi", kind: "display", shelf: "base", order: 30, label: "poiLabels", on: true, html: true },   // cb-poi.js
+  { id: "cb-borders", kind: "display", shelf: "base", order: 40, label: "borders", on: true, html: true },   // cb-borders.js
+  { id: "cb-coast", kind: "display", shelf: "base", order: 50, label: "coastline", html: true },   // cb-coast.js
+  { id: "cb-admin1", kind: "display", shelf: "base", order: 60, label: "adminBounds", on: true, html: true },   // cb-admin1.js
+  { id: "cb-roads", kind: "display", shelf: "base", order: 70, label: "roadsLayer", on: true, html: true },   // cb-roads.js
+  { id: "cb-rail2", kind: "display", shelf: "base", order: 80, label: "railLayer", on: true, html: true },   // cb-rail2.js
+  { id: "cb-grid", kind: "display", shelf: "base", order: 90, label: "gridLayer", html: true, atlas: ["view.grid"] },   // cb-grid.js
+  { id: "dl-nightside", kind: "display", shelf: "base", order: 100, key: "nightside", label: "lyrNightSide", share: true, atlas: ["layers.nightSide"] },   // dl-nightside.js
+  { id: "beta-dl-bldg3d", kind: "display", shelf: "base", order: 110, key: "bldg3d", share: true },   // beta-dl-bldg3d.js
+  { id: "dl-climate", shelf: "lyrGrpClimate", order: 10, key: "climate", label: "lyrClimate", share: true, registry: ["climate"] },   // dl-climate.js
   { id: "dl-wind", shelf: "lyrGrpClimate", order: 20, key: "wind", label: "lyrWind", share: true, registry: ["wind"], atlas: ["layers.windParticles"] },   // dl-wind.js
   { id: "dl-annprecip", shelf: "lyrGrpClimate", order: 30, key: "annprecip", share: true, registry: ["annprecip"] },   // dl-annprecip.js
   { id: "dl-ec-temp", shelf: "lyrGrpClimate", order: 40, key: "ec-temp", share: true, registry: ["temp"] },   // dl-ec-temp.js
@@ -359,7 +368,7 @@ const DECLARATIONS = [
   { id: "bx-wboverwt", shelf: "lyrGrpHealth", order: 130, key: "wboverwt", rest: true },   // bx-wboverwt.js
   { id: "fac-dl-osmhealth", shelf: "lyrGrpHealth", order: 140, key: "osmhealth", rest: true },   // fac-dl-osmhealth.js
   { id: "fac-dl-osmwater", shelf: "lyrGrpHealth", order: 150, key: "osmwater", rest: true },   // fac-dl-osmwater.js
-  { id: "dl-subcables", shelf: "lyrGrpTech", order: 10, key: "subcables", label: "lyrSubcables", on: true, share: true, pkg: "subcables" },   // dl-subcables.js
+  { id: "dl-subcables", shelf: "lyrGrpTech", order: 10, key: "subcables", label: "lyrSubcables", share: true, pkg: "subcables" },   // dl-subcables.js
   { id: "beta-dl-dc", shelf: "lyrGrpTech", order: 20, key: "dc", rest: true, share: true, lazy: ["dataCenters"], registry: ["datacenters"] },   // beta-dl-dc.js
   { id: "dl-nethlth", shelf: "lyrGrpTech", order: 30, key: "nethlth", rest: true, share: true, lazy: ["netHealthLive"], commands: ["nethlth.report", "nethlth.signals"] },   // dl-nethlth.js
   { id: "dl-netreach", shelf: "lyrGrpTech", order: 40, key: "netreach", rest: true, share: true, lazy: ["netHealthLive"] },   // dl-netreach.js
@@ -461,7 +470,7 @@ export const loadPackage = (name) => (Object.prototype.hasOwnProperty.call(PACKA
 
 /** the heading of the shelf an unlisted row is swept onto (and of the listed beta rows) */
 export const BETA = 'lyrGrpOthers';
-/** pseudo-shelves: the always-on switches at the top, and rows that keep a checkbox but no row (#R469) */
+/** pseudo-shelves: the map display at the top (its rows are `kind: 'display'`), and rows that keep a checkbox but no row (#R469) */
 export const BASE = 'base';
 export const HIDDEN = 'hidden';
 
@@ -472,8 +481,15 @@ const BY_KEY = new Map(LAYERS.filter((l) => l.key).map((l) => [l.key, l]));
 
 /** the entry for a short name (`climate`) or, failing that, a checkbox id — reorganizeLayerPanel's `rowFor` */
 export const layerFor = (k) => BY_KEY.get(k) || BY_ID.get(k) || null;
-/** is this id a layer this file declares */
+/** is this id a row this file declares — a layer OR a map display item (`isDisplay` tells them apart) */
 export const isLayer = (id) => BY_ID.has(id);
+/** (basic-display-not-layers) is this id an item of the map display (基本表示) — not a layer */
+export const isDisplay = (id) => { const l = BY_ID.get(id); return !!l && l.kind === 'display'; };
+/** (basic-display-not-layers) the LAYERS, in panel order — the registry without the map display. What every
+    count of layers counts and every list of layers lists (the landing page, Atlas, the usage count) */
+export const dataLayers = () => LAYERS.filter((l) => l.kind !== 'display');
+/** (basic-display-not-layers) the map display, in panel order — the items the 基本表示 section switches */
+export const displayItems = () => LAYERS.filter((l) => l.kind === 'display');
 
 /** the curated shelves in panel order, in the shape reorganizeLayerPanel has always read:
     `[heading key, short names, how many the reader named]` (empty shelves included — their keys are kept) */
@@ -487,16 +503,20 @@ export const betaKeys = () => (SHELVES.find((s) => s.key === BETA) || { layers: 
 /* the four lists js/data-layers.js used to write out by hand — derived, so they cannot disagree */
 /** the always-on switches that are plain markup rows, in panel order (was window.IntMapBasicLayerRows) */
 export const basicRows = () => LAYERS.filter((l) => l.shelf === BASE && l.html).map((l) => l.id);
-/** the whole always-on section (was window.IntMapBasicLayers) */
-export const basicLayers = () => LAYERS.filter((l) => l.shelf === BASE).map((l) => l.id);
+/** the whole always-on section (was window.IntMapBasicLayers) — the map display, which is what every counter
+    of layers subtracts (the `base` shelf holds exactly these: scripts/lib/layer-descriptor.mjs refuses anything else) */
+export const basicLayers = () => displayItems().map((l) => l.id);
 /** the rows that keep their checkbox and lose their row (was window.IntMapHiddenLayerRows) */
 export const hiddenRows = () => LAYERS.filter((l) => l.shelf === HIDDEN).map((l) => l.id);
-/** the thematic layers on for a first-time reader (was window.IntMapDefaultLayers) */
+/** the thematic layers on for a first-time reader (was window.IntMapDefaultLayers) — none since 2026-10-02
+    (basic-display-not-layers:「規定レイヤーは削除」); kept as the one place that would say so if a layer were */
 export const defaultLayers = () => LAYERS.filter((l) => l.on && !l.html).map((l) => l.id);
 /** every id ticked for a first-time reader, markup rows first (was window.IntMapDefaultOn) */
 export const defaultOn = () => LAYERS.filter((l) => l.on && l.html).map((l) => l.id).concat(defaultLayers());
-/** the ids the share link carries (`&l=`) */
-export const sharedIds = () => LAYERS.filter((l) => l.share).map((l) => l.id);
+/** the LAYER ids the share link carries (`&l=`) — display items travel in their own field */
+export const sharedIds = () => dataLayers().filter((l) => l.share).map((l) => l.id);
+/** (basic-display-not-layers) the display items the share link carries (`&d=`, js/map-state.js `display`) */
+export const sharedDisplayIds = () => displayItems().filter((l) => l.share).map((l) => l.id);
 
 /** the rows this file generates (js/layer-rows.js), in the order they are inserted */
 export const htmlRows = () => LAYERS.filter((l) => l.html);
@@ -513,9 +533,9 @@ export function rowHTML(l, text) {
 }
 
 /** what a reader that cannot see the document needs to know about every layer (Atlas's door):
-    `[{ id, key, shelf, label, rest, on, share, lazy }]` — the name is `label` through i18n, or,
+    `[{ id, kind, key, shelf, label, rest, on, share, lazy }]` (`kind` 'layer' or 'display') — the name is `label` through i18n, or,
     for a row that composes its own name, whatever that row says once it is built. */
 export function catalog() {
-  return LAYERS.map((l) => ({ id: l.id, key: l.key || null, shelf: l.shelf, label: l.label || null,
+  return LAYERS.map((l) => ({ id: l.id, kind: l.kind || 'layer', key: l.key || null, shelf: l.shelf, label: l.label || null,
     rest: !!l.rest, on: !!l.on, share: !!l.share, lazy: l.lazy ? l.lazy.slice() : [] }));
 }

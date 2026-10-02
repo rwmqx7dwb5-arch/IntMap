@@ -40,6 +40,11 @@ import { bootPage } from './helpers/app.js';
 
 const LAYERS = ['lyr-subcables', 'lyr-subcables-glow', 'lyr-subcables-pts'];
 const FIRST_VISIT = { cookies: [], origins: [] };
+/* (basic-display-not-layers) the cables are NOT on for a first visit any more (the reader, 2026-10-02:「どちらも規定
+   レイヤーは削除」), so a first-time profile is opened on a share link that names them — the app's default view
+   (js/map-ui.js's measured default, #v=-84.7787,20.0000,1.70,0,0,g) with `l=dl-subcables`. Everything below is
+   about the layer once it is on; the default itself is pinned by tests/r186.spec.js. */
+const CABLES_LINK = '/index.html#v=-84.7787,20.0000,1.70,0,0,g&l=dl-subcables';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -47,7 +52,8 @@ let ctx = null, page = null;
 test.beforeAll(async ({ browser }) => {
   ctx = await browser.newContext({ storageState: FIRST_VISIT });
   page = await ctx.newPage();
-  await bootPage(page, {});
+  /* past the link's restore (js/map-state.js SETTLE_MS 3.5 s): its later layer passes would re-tick a box ② unticks */
+  await bootPage(page, { url: CABLES_LINK, settle: 4000 });
   await installFinder(page);
 });
 test.afterAll(async () => { if (ctx) await ctx.close().catch(() => {}); ctx = null; page = null; });
@@ -121,16 +127,22 @@ const toggleRow = (page, id) => page.evaluate((cbId) => {
   ['pointerdown', 'pointerup'].forEach(t => row.dispatchEvent(new PointerEvent(t, { bubbles: true, cancelable: true, pointerId: 1 })));
 }, id);
 
-test('R355 ① a FIRST-VISIT boot draws the cables, from this app’s own origin, with real routes', async () => {
+test('R355 ① a first-visit profile opening a link to the cables draws them, from this app’s own origin, with real routes', async () => {
   await waitForCables(page);
   const s = await readState(page);
-  expect(s.box, '① the row is ticked with no saved session at all').toBe(true);
+  expect(s.box, '① the row is ticked with no saved session at all — by the link').toBe(true);
   for (const id of LAYERS) expect(s.layers[id], '① ' + id + ' exists and is visible').toBe('visible');
   expect(s.sources['src-subcables']).toBe(true);
   expect(s.sources['src-subcables-lp']).toBe(true);
 
   /* the dataset really is the rebuilt one: every rendered feature carries the
      provenance the pipeline writes, which the schematic never had */
+  /* (basic-display-not-layers) the layer now arrives through the link's restore, mid-boot, rather than as a default
+     ticked in the markup — so the first frame that has drawn it is waited for, not assumed (measured: the same page
+     reports 869 rendered features once it has painted) */
+  await page.waitForFunction(() => { try { const E = window.IntMapGeoEngine, sz = E.render.size();
+    return (E.coords.queryRenderedFeatures([[0, 0], [sz.width, sz.height]], { layers: ['lyr-subcables'] }) || []).length > 20; } catch (_) { return false; } },
+  null, { timeout: 30000 }).catch(() => {});
   const props = await page.evaluate(() => {
     const E = window.IntMapGeoEngine;
     const sz = E.render.size();
@@ -227,7 +239,7 @@ test('R355 ⑥ the layer still appears when the new dataset cannot be fetched', 
   const blockedCtx = await browser.newContext({ storageState: FIRST_VISIT });
   const blocked = await blockedCtx.newPage();
   await blocked.route('**/data/subcables*.json', route => route.abort());
-  await blocked.goto('/index.html', { waitUntil: 'domcontentloaded' });
+  await blocked.goto(CABLES_LINK, { waitUntil: 'domcontentloaded' });
   await blocked.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
   /* the TeleGeography relay is the migration fallback and needs the network; the
      claim under test is that the app KEEPS TRYING and never records the failure

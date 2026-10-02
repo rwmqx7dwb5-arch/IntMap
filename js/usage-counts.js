@@ -16,7 +16,8 @@
  *      their `change` — the one path every layer row, the session restore and Atlas use. Only a change
  *      the READER caused counts (a trusted event, or one inside the browser's user-activation window),
  *      so restoring last session's layers at boot is not counted as using them. Only ids
- *      js/layer-manifest.js holds are sent.
+ *      js/layer-manifest.js holds as LAYERS are sent — a map display item (labels, borders, roads, day & night …)
+ *      is not a layer and is not counted as one (basic-display-not-layers, 2026-10-02).
  *    · a FEATURE (FEATURES below): a click on its control (one delegated listener on the document), or
  *      its Atlas capability completing (IntMapOS's bus — the kernel broadcasts every operation's
  *      lifecycle there), or the browser's own `appinstalled` event. Counted once per page load.
@@ -44,7 +45,7 @@ import {
   campaignOf,
   entryOf,
 } from '../supabase/functions/usage-count/shape.js';
-import { isLayer } from './layer-manifest.js';
+import { isLayer, isDisplay } from './layer-manifest.js';
 
 const FUNCTION = 'usage-count';
 /* the one stored preference — present only when the reader changed it; absent = on (the default) */
@@ -257,7 +258,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof w
   /* ③ a layer the READER switched on */
   document.addEventListener('change', (e) => {
     const cb = e.target;
-    if (!cb || cb.type !== 'checkbox' || !cb.checked || !cb.id || !isLayer(cb.id)) return;
+    if (!cb || cb.type !== 'checkbox' || !cb.checked || !cb.id || !isLayer(cb.id) || isDisplay(cb.id)) return;
     try { if (!(cb.closest && cb.closest('#layer-dropdown'))) return; } catch (_) { return; }
     let byReader = !!e.isTrusted;
     try { if (!byReader && navigator.userActivation) byReader = !!navigator.userActivation.isActive; } catch (_) { /* unknown = not the reader */ }

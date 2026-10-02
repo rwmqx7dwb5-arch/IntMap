@@ -34,8 +34,10 @@
 書けること・検査・導出の正本は `scripts/lib/layer-descriptor.mjs`、欄の一覧と各欄を読む者は
 [`docs/MAP-LAYERS.md`](../MAP-LAYERS.md) §7.2。宣言は 3 つのことを 1 か所で述べる:
 
+- **何であるか**——`kind`。`'display'` は**基本表示**の項目でレイヤーではない（数えず・`l=` で運ばず・Atlas の「全レイヤー」に入れない）。
+  無ければレイヤー。読み手は `js/layer-manifest.js` の `isDisplay` / `dataLayers` / `displayItems` に訊く（MAP-LAYERS §7.2）
 - **どこに立つか**——`id`・`shelf`・`order`（棚そのものの並びは `js/layers/_shelves.js`）
-- **行の事実**——`key`・`label`・`rest`・`on`・`share`・`html`・`lazy`。レイヤー欄の一覧はここから**導出**され
+- **行の事実**——`key`・`label`・`rest`・`on`（既定で点くレイヤーは無い）・`share`・`html`・`lazy`。レイヤー欄の一覧はここから**導出**され
   （索引を書くときに `deriveShelves`）、`js/layer-manifest.js` がそれを読み手に渡す（手で持つ一覧は無い）
 - **他の登録簿の中の同じレイヤー**——`registry`（`IntMapLayers`）・`state`（共有リンクの状態）・`commands`（`IntMapOS`）・
   `atlas`（能力の項目）・`sources`（出典の行）・`time`（Chronos の契約）。それぞれの登録簿が別の綴りで持っていた
@@ -136,7 +138,7 @@
   `placeLegends()` と携帯で地図をタップしたときの `_minimizeOpenLegends()` の両方がそれを読む（配置 1 回につき 1 枚 1 回）。`placeLegends()` の母集合は、持ち主が
   隠しておらず（インラインが `none` でない・`hidden` でない）、計算済みの `display` が `none` でない凡例
   （偽 DOM ではインラインの宣言だけで答える）。`block` だけを数えていた頃は `flex` で出るケッペンの凡例が
-  デスクトップで数えられず、初めての読者の既定（ケッペン＋海底ケーブル）で 2 枚が重なっていた。
+  デスクトップで数えられず、当時の初めての読者の既定（ケッペン＋海底ケーブル）で 2 枚が重なっていた。
   「閉じた」（開閉の記憶 `legSeen`/`legPinOpen` を忘れる）は**持ち主が隠したとき**だけで、飛行中や経路パネルの
   あいだスタイルシートが全凡例を消しても忘れない。
 - **自分の置き場を持つ凡例（`data-own-place`）は動かさず、ほかをその外に積む。** 携帯以外の置き場では、
@@ -1596,7 +1598,7 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
 
 ### 7.4a 時刻 T の地図——レイヤーは典拠が述べる範囲でだけ描く
 
-- **1 つの機構**: `js/layer-time.js`（規則・純粋）／`js/layer-time-decl.js`（174 層の宣言・純データ）／
+- **1 つの機構**: `js/layer-time.js`（規則・純粋）／`js/layer-time-decl.js`（174 行＝レイヤー 163 ＋基本表示 11 の宣言・純データ）／
   `js/layer-time-kernel.js`（`window.IntMapLayerTime`）。時計の上に乗る。**時計は地図ごとに 1 つ**
   （`js/chronos.js` の `makeClock()`）で、メイン地図の時計が `IntMapTime`、比較ウィンドウはもう 1 つを持つ（7.4b）。
   1 つの地図の中で 2 つ目の時計は作らない。

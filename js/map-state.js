@@ -47,7 +47,7 @@
 /** @typedef {{ key:string, cause:string, gen:number, restoring:boolean }} ChangeEvent */
 
 /* ══ THE SCHEMA ══════════════════════════════════════════════════════════════════════════════════
-   ⚠ ORDER IS THE ADDRESS BAR'S ORDER: `#v=…&l=…&tt=…&cmp=…&ct=…&sat=1&t3=1&s=…`, the order js/map-ui.js
+   ⚠ ORDER IS THE ADDRESS BAR'S ORDER: `#v=…&l=…&d=…&tt=…&cmp=…&ct=…&sat=1&t3=1&s=…`, the order js/map-ui.js
    concatenated since #R211. It is also the restore order — every field but the view is staged on a
    timer, and two steps at the same instant (the isobars' switch and the clock, both at 900 ms) fire in
    the order they were scheduled, which is this order, as before.
@@ -66,7 +66,16 @@ export const SCHEMA = Object.freeze([
   { key: 'view',    params: ['v'],         restore: 'always', at: [0],                session: null,     owner: 'js/map-ui.js',
     doc: 'camera centre, zoom, bearing, pitch and projection' },
   { key: 'layers',  params: ['l'],         restore: 'full',   at: [700, 1800, 3200],  session: null,     owner: 'js/map-ui.js',
-    doc: 'the data layers the link carries — the manifest\'s `share` rows that are ticked' },
+    doc: 'the data layers the link carries — the manifest\'s `share` LAYER rows that are ticked (never a map display item)' },
+  /* (basic-display-not-layers) the map display is not a layer (「基本表示をレイヤーって言うな」, 2026-10-02), so the
+     display items a link carries — day & night, 3-D buildings: the manifest's `share` rows of `kind: 'display'` —
+     have their own field, applied at the same instants and in the same way as the layers were. ⚠ A LINK WRITTEN
+     BEFORE THIS FIELD carried them in `l=`, and its silence about them meant «off». So a link with no `d=` reads
+     its display items out of `l=` (decode below): this field's owner keeps the ids that are display items, the
+     layers' owner drops them, and an old link opens the same map. A new link never puts one in `l=`, so the same
+     rule reads a new link's silence as «off» too. */
+  { key: 'display', params: ['d'],         restore: 'full',   at: [700, 1800, 3200],  session: null,     owner: 'js/map-ui.js',
+    doc: 'the map display items the link carries — the manifest\'s `share` rows of `kind: \'display\'` that are ticked; with no `d`, the ids `l` names (links from before this field)' },
   { key: 'time',    params: ['tt', 'ts'],  restore: 'full',   at: [900],              session: 'year',   owner: 'js/map-ui.js',
     doc: 'the master clock: null is «now»; `ts` is the day-based form links used before #R101' },
   { key: 'compare', params: ['cmp', 'ct'], restore: 'full',   at: [1300],             session: null,     owner: 'js/compare.js',
@@ -107,9 +116,9 @@ export function unpackObject(s) { try { const b = s.replace(/-/g, '+').replace(/
 export function carries(hash) { return /[#&]v=/.test(String(hash || '')); }
 
 /** the address-bar form → the state tree. Fields the link does not name are given the value their
-    ABSENCE states (no `tt` is «now», no `l` is «no data layers», no `cmp` is «no window») — a full
+    ABSENCE states (no `tt` is «now», no `l` is «no data layers», no `cmp` is «no window»; no `d` is null, «what `l` names», see `display`) — a full
     restore applies the whole state a link describes (share-embed-distribution).
-    @param {string} hash @returns {{ view: ViewValue|null, layers: string[], time: TimeValue, compare: CompareValue, base: ('map'|'sat'), terrain: boolean, sims: any }} */
+    @param {string} hash @returns {{ view: ViewValue|null, layers: string[], display: (string[]|null), time: TimeValue, compare: CompareValue, base: ('map'|'sat'), terrain: boolean, sims: any }} */
 export function decode(hash) {
   const H = String(hash || '');
   let view = null;
@@ -119,6 +128,11 @@ export function decode(hash) {
       proj: p[5] === 'g' ? 'globe' : (p[5] === 'f' ? 'flat' : null) }; } catch (_) { view = null; } }
   const l = param(H, 'l');
   let layers = []; try { layers = l ? decodeURIComponent(l).split(',') : []; } catch (_) { layers = []; }
+  /* (basic-display-not-layers) null when there is no `d`: a link from before the field, whose display items are
+     whatever `l` names — the owner reads them from `ctx.state.layers` (the codec cannot tell a display id from a
+     layer id, and it imports nothing). Null and not a copy of `l`, so encode(decode(link)) is the link. */
+  const d = param(H, 'd');
+  /** @type {string[]|null} */ let display = null; if (d != null) { try { display = decodeURIComponent(d).split(','); } catch (_) { display = []; } }
   /** @type {TimeValue} */ let time = null;
   const tt = param(H, 'tt');
   if (tt != null) { try { time = { at: decodeURIComponent(tt) }; } catch (_) { time = null; } }
@@ -129,14 +143,14 @@ export function decode(hash) {
     try { at = ct != null ? decodeURIComponent(ct) : ''; } catch (_) { at = ''; }
     compare = { xray: cmp === 'x', at }; }
   const s = param(H, 's');
-  return { view, layers, time, compare,
+  return { view, layers, display, time, compare,
     base: /[#&]sat=1/.test(H) ? 'sat' : 'map',
     terrain: /[#&]t3=1/.test(H),
     sims: s ? unpackObject(s) : null };
 }
 
 /** the state tree → the address-bar form. '' when there is no view (nothing to link to).
-    @param {{ view?: ViewValue|null, layers?: string[], time?: TimeValue, compare?: CompareValue, base?: string, terrain?: boolean, sims?: any }} st
+    @param {{ view?: ViewValue|null, layers?: string[], display?: (string[]|null), time?: TimeValue, compare?: CompareValue, base?: string, terrain?: boolean, sims?: any }} st
     @returns {string} */
 export function encode(st) {
   try {
@@ -144,6 +158,7 @@ export function encode(st) {
     let h = '#v=' + [(+v.lng).toFixed(4), (+v.lat).toFixed(4), (+v.zoom).toFixed(2), Math.round(+v.bearing || 0), Math.round(+v.pitch || 0),
       (v.proj === 'globe' ? 'g' : 'f')].join(',');
     const ls = st.layers || []; if (ls.length) h += '&l=' + ls.join(',');
+    const ds = st.display || []; if (ds.length) h += '&d=' + ds.join(',');
     const t = st.time;
     if (t && 'at' in t && t.at) h += '&tt=' + encodeURIComponent(t.at);
     else if (t && 'daysAgo' in t && isFinite(t.daysAgo)) h += '&ts=' + Math.round(3650 - t.daysAgo);

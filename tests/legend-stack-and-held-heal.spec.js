@@ -81,7 +81,8 @@ const RV_INDEX = () => ({ version: '2.0', generated: Math.floor(Date.now() / 100
 
 test('a tick held while the style loads is not pulsed off by the heal, and the first-time reader\'s legends never overlap', async ({ browser }) => {
   test.setTimeout(120_000);
-  /* the default-on thematic pair a fresh profile starts with (js/layer-manifest.js `on: true`) */
+  /* the thematic pair a fresh profile started with until 2026-10-02 (basic-display-not-layers took their `on` away);
+     a reader who switches both on still gets two legends, so the session seeds them */
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 },
     storageState: seededStorageState([], sessionWith(['dl-climate', 'dl-subcables'])) });
   await installHermeticRouting(ctx);

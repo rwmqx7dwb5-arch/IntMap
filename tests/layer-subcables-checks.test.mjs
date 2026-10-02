@@ -31,7 +31,7 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* ── 7. a refused layer add is retried ───────────────────────────────────────────────────────── */
 test('R187 default layers: the cables survive a style that is not ready yet', () => {
   const src = (read('js/data-layers.js') + '\n' + read('js/layer-pkg-subcables.js'));
-  assert.deepEqual(publishedList('IntMapDefaultLayers'), ['dl-climate', 'dl-subcables'], 'both still default on');
+  assert.deepEqual(publishedList('IntMapDefaultLayers'), [], 'no layer is default on');   /* (basic-display-not-layers) the reader reversed #R186 on 2026-10-02 —「どちらも規定レイヤーは削除」: no layer is on for a first-time reader — the retry below still serves a reader who switches it on */
   /* REPRODUCED on a cold load: whenStyleReady() hard-resolves after ~6 s (that escape hatch is #R41's
      and is deliberate), MapLibre then refuses addSource with "Style is not done loading", and the old
      code logged it and stopped — one of the two default layers on screen, which is the report. */
@@ -62,8 +62,8 @@ test('R187 default layers: the cables survive a style that is not ready yet', ()
 test('R188 default layers: the cable data is kept, and an outage is never saved as a choice', () => {
   /* (#R200) the snapshot moved to js/session-tabs.js with the rest of the session block. */
   const dl = (read('js/data-layers.js') + '\n' + read('js/layer-pkg-subcables.js')), ab = read('js/session-tabs.js');
-  assert.deepEqual(publishedList('IntMapDefaultLayers'), ['dl-climate', 'dl-subcables'],
-    'both layers still start on');
+  assert.deepEqual(publishedList('IntMapDefaultLayers'), [],
+    'no layer starts on');   /* (basic-display-not-layers) the reader reversed #R186 on 2026-10-02 —「どちらも規定レイヤーは削除」: no layer is on for a first-time reader — an outage of a layer the reader switched on is still never saved as a choice */
   /* measured: the direct fetch is `TypeError: Failed to fetch` every time (no ACAO), so this layer
      has ALWAYS come through a volunteer CORS proxy — which is the whole asymmetry with Köppen. */
   assert.match(dl, /const _CABLE_CACHE='intmap-page-subcables-v1';/, 'a successful download must be kept');
@@ -144,7 +144,7 @@ test('R190 default layers: the cables come through our own origin', async () => 
   /* the stored sessions written while that dependency existed are healed once */
   /* (#R200) …in js/session-tabs.js, where the session block lives since this round. */
   const body = read('js/session-tabs.js');
-  assert.match(body, /defv:190/, 'the snapshot stamps the new generation');
+  assert.match(body, /defv:191/, 'the snapshot stamps the new generation');
   assert.match(body, /if\(!\(\+s\.defv>=190\)\)/, 'and an older stamp gets the default-on ids back once');
 });
 }

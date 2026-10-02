@@ -7,6 +7,7 @@
      and only appears from z14, so it starts OFF like Grid and Countries do.  */
 export default {
   id: 'cb-poi',
+  kind: 'display',
   shelf: 'base',
   order: 30,
   label: 'poiLabels',

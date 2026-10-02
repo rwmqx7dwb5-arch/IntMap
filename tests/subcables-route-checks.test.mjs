@@ -81,10 +81,10 @@ test('#R355 ① the three layers are inserted in the same order, at the same anc
   for (const id of Object.keys(FROZEN)) assert.match(layerDecl(DL, id), /,beforeId\)$/, id + ' no longer goes in at `beforeId`');
 });
 
-test('#R355 ① default opacity, default-ON state and the opacity control are unchanged', () => {
+test('#R355 ① default opacity and the opacity control are unchanged, and the cables are not on by default', () => {
   /* ⚠ READ, NOT RUN: the opacity control and the default-ON list are wiring inside js/data-layers.js, which needs a live map. */
   assert.match(DL, /subcables:0\.95/, 'the cable layer\'s default opacity is no longer 0.95');
-  assert.deepEqual(publishedList('IntMapDefaultLayers'), ['dl-climate', 'dl-subcables'], 'the cable layer is no longer default-ON');
+  assert.deepEqual(publishedList('IntMapDefaultLayers'), [], 'a layer is default-ON again');   /* (basic-display-not-layers) the reader reversed #R186 on 2026-10-02 —「どちらも規定レイヤーは削除」: no layer is on for a first-time reader */
   /* (layer-packages) the setLayerOpacity branch became the row's `opacity` in its package — the same statement */
   assert.match(DL, /opacity: \(v\) => \{ if\(GE\(\)\.layers\.has\('lyr-subcables'\)\)GE\(\)\.layers\.setPaint\('lyr-subcables','line-opacity',v\); \}/,
     'the per-layer opacity control for the cables changed');

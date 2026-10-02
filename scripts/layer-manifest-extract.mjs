@@ -166,7 +166,7 @@ const BASE = `http://127.0.0.1:${port}`;
 const browser = await chromium.launch();
 /* the suite's own seed (tests/helpers/session-seed.js): the base map on, nothing else, no launch screen */
 const CTX_OPTS = { viewport: { width: 1400, height: 900 }, locale: 'en-US', timezoneId: 'UTC', serviceWorkers: 'block',
-  storageState: { cookies: [], origins: [{ origin: BASE, localStorage: [{ name: 'intmap_session2', value: '{"v":2,"defv":190,"layers":["cb-names","cb-geolabels","cb-poi","cb-borders","cb-admin1","cb-roads","cb-rail2"],"lsrOpen":false}' }] }] } };
+  storageState: { cookies: [], origins: [{ origin: BASE, localStorage: [{ name: 'intmap_session2', value: '{"v":2,"defv":191,"layers":["cb-names","cb-geolabels","cb-poi","cb-borders","cb-admin1","cb-roads","cb-rail2"],"lsrOpen":false}' }] }] } };
 async function bootInto(page) {
   await page.goto(BASE + '/index.html', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap && typeof window.reorganizeLayerPanel === 'function', null, { timeout: 90000 });

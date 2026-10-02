@@ -67,7 +67,7 @@ export function makeSessionTabs(HOST, CTX) {
       let sbOpen=null, lsrOpen=null;
       try{ const el=document.getElementById('sidebar'); if(el) sbOpen=!el.classList.contains('collapsed'); }catch(_){}
       try{ const el=document.getElementById('layer-sidebar-r'); if(el) lsrOpen=el.classList.contains('open'); }catch(_){}
-      return { v:2, defv:190, layers:m.layers, tabInit:_tabInit, mode:(typeof HOST.mode!=='undefined'?HOST.mode:null),
+      return { v:2, defv:191, layers:m.layers, tabInit:_tabInit, mode:(typeof HOST.mode!=='undefined'?HOST.mode:null),
         base:m.base, terr3d:m.terr3d,
         sbOpen, lsrOpen,
         year:m.year }; }catch(_){ return null; } }
@@ -152,6 +152,14 @@ export function makeSessionTabs(HOST, CTX) {
          stamped below 190 was written while the cable layer's success depended on a stranger's
          server, so its absence is not evidence either. */
       if(!(+s.defv>=190)) (window.IntMapDefaultLayers||[]).forEach(id=>{ if(want.indexOf(id)<0) want.push(id); });
+      /* (basic-display-not-layers, 2026-10-02) THE OWNER REMOVED THE DEFAULT-ON LAYERS:「どちらも規定レイヤーは削除」.
+         A session stamped below 191 was written while Köppen and the submarine cables started ON, so their
+         presence in it is not evidence that the reader chose them — most such sessions carry them only because
+         the default put them there. Drop them ONCE; the next save stamps defv:191 and from then on their presence
+         is the reader's own choice and is restored. This list is a historical fact (the manifest's `on` rows before
+         that day), not a rule: it can be deleted when no session older than defv 191 can still be in a browser. */
+      const FORMER_DEFAULT_ON = ['dl-climate', 'dl-subcables'];
+      if(!(+s.defv>=191)) for(let i=want.length-1;i>=0;i--){ if(FORMER_DEFAULT_ON.indexOf(want[i])>=0) want.splice(i,1); }
       /* (#R186) …and switch a DEFAULT-ON layer back off when this saved session says the user had it
          off. Restore has only ever turned layers ON, which was right while every thematic layer
          started off: absence from the snapshot then meant "nothing to do". Now that Köppen and the
