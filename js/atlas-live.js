@@ -36,6 +36,8 @@
  *  (latency()). window.IntMapAtlasDebug.latency() reads it — the same numbers before and after.
  * ==========================================================================*/
 
+import { makePlanView, ATLAS_PLAN_CSS } from './atlas-plan.js';   /* (atlas-plan-on-map) Atlas's plan, its observed states and the way back to what each step drew — in this HUD's column */
+
 /* ══ makeDraftReader — the top-level string fields of a JSON object that is still arriving ═════
    feed(delta) → { mode: 'json'|'prose'|'', turn, answerMode, text }
    A small resumable scanner: it tracks depth and string state across deltas, decodes escapes (a
@@ -139,6 +141,13 @@ export function makeAtlasLive(HOST, deps) {
   const PROG = deps.progress || null;
   const now = () => { try { return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now(); } catch (_) { return Date.now(); } };
   const raf = (f) => { try { return requestAnimationFrame(f); } catch (_) { return setTimeout(f, 16); } };
+  /* (atlas-plan-on-map) the plan stands in the HUD's column, above the operations — the one place on the
+     map that was measured to be free (below). It outlives the turn: when the turn ends and a plan is
+     showing, the HUD RESTS (the live word and the chips go, the plan stays) instead of fading away. */
+  let planShown = false;
+  const PLANV = deps.plan ? makePlanView(deps.plan, { L, GE: deps.GE, objects: deps.objects,
+    slot: () => { const h = hudEl(); return h ? h.querySelector('.atl-hud-plan') : null; },
+    changed: (on) => { planShown = !!on; try { if (hud && (hud.classList.contains('rest') || hud.classList.contains('off'))) restOrFade(hud); } catch (_) { } } }) : null;
 
   /* ── the per-reply state, keyed by the bubble (one live reply at a time, as js/atlas-progress.js) ── */
   const turns = new WeakMap();
@@ -250,6 +259,8 @@ export function makeAtlasLive(HOST, deps) {
      capabilities go through the same category table js/atlas-progress.js uses) */
   function wordForTool(name) {
     const n = String(name || '');
+    /* (atlas-plan-on-map) the loop's own tool: not a capability, so it has no category to be worded by */
+    if (deps.plan && deps.plan.TOOL && n === deps.plan.TOOL.name) return L('Planning', '計画を立てる');
     try { if (deps.wordForTool) { const w = deps.wordForTool(n); if (w) return w; } } catch (_) { }
     return n;
   }
@@ -303,7 +314,7 @@ export function makeAtlasLive(HOST, deps) {
       hud.className = 'atl-hud';
       hud.setAttribute('role', 'status');
       hud.setAttribute('aria-live', 'polite');
-      hud.innerHTML = '<div class="atl-hud-head"><span class="atl-hud-dot"></span><span class="atl-hud-name">Atlas</span><span class="atl-hud-word"></span></div><div class="atl-hud-ops"></div>';
+      hud.innerHTML = '<div class="atl-hud-head"><span class="atl-hud-dot"></span><span class="atl-hud-name">Atlas</span><span class="atl-hud-word"></span></div><div class="atl-hud-ops"></div><div class="atl-hud-plan"></div>';
       parent.appendChild(hud);
       return hud;
     } catch (_) { return null; }
@@ -313,7 +324,7 @@ export function makeAtlasLive(HOST, deps) {
     try { clearTimeout(hudFade); } catch (_) { }
     try {
       h.querySelector('.atl-hud-ops').innerHTML = '';
-      h.classList.remove('done', 'off');
+      h.classList.remove('done', 'off', 'rest');
       h.classList.add('on');
       h.querySelector('.atl-hud-word').textContent = L('Thinking', '考え中', 'Denke nach', 'Думаю', 'Pensando');
     } catch (_) { }
@@ -332,7 +343,15 @@ export function makeAtlasLive(HOST, deps) {
           : L('Stopped', '停止しました', 'Angehalten', 'Остановлено', 'Detenido'));
       h.querySelectorAll('.atl-hud-op.run').forEach((o) => { o.classList.remove('run'); o.classList.add('skip'); });
       clearTimeout(hudFade);
-      hudFade = setTimeout(() => { try { h.classList.remove('on'); h.classList.add('off'); } catch (_) { } }, 2600);
+      hudFade = setTimeout(() => restOrFade(h), 2600);
+    } catch (_) { }
+  }
+  /* after a turn: a plan on show keeps the HUD at rest (the plan alone); otherwise it fades as before */
+  function restOrFade(h) {
+    try {
+      if (!h.classList.contains('done')) return;
+      if (planShown) { h.classList.remove('off'); h.classList.add('on', 'rest'); }
+      else { h.classList.remove('on', 'rest'); h.classList.add('off'); }
     } catch (_) { }
   }
   const HUD_STATE = { completed: 'ok', partial: 'warn', unobserved: 'warn', failed: 'fail', cancelled: 'skip', superseded: 'skip' };
@@ -371,7 +390,8 @@ export function makeAtlasLive(HOST, deps) {
   }
 
   return { begin, hooks, stepDone, end, answered, watch, draftHtml,
-    latency: () => history.map((r) => Object.assign({}, r)) };
+    latency: () => history.map((r) => Object.assign({}, r)),
+    plan: PLANV };
 }
 
 /* ⚠ CSS IN QUOTED STRINGS ONLY (CONSTITUTION §2 — a back-tick here would blank the site).
@@ -396,7 +416,7 @@ export const ATLAS_LIVE_CSS =
   + '.atl-hud.on{opacity:1;transform:translate(-50%,0);}'
   + '.atl-hud.off{opacity:0;}'
   + '.atl-hud-head,.atl-hud-op{display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;max-width:100%;'
-  + 'background:var(--glass-bg,rgba(28,28,30,0.72));color:var(--text-main,#fff);border:1px solid var(--glass-border,rgba(255,255,255,0.14));'
+  + 'background:var(--sidebar-bg,rgba(28,28,30,0.85));color:var(--text-main,#fff);border:1px solid rgba(127,127,127,0.22);'
   + 'backdrop-filter:blur(18px) saturate(1.6);-webkit-backdrop-filter:blur(18px) saturate(1.6);box-shadow:0 6px 22px rgba(0,0,0,0.18);}'
   + '.atl-hud-name{font-weight:700;}'
   + '.atl-hud-word{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted,rgba(255,255,255,0.75));}'
@@ -413,8 +433,12 @@ export const ATLAS_LIVE_CSS =
   + '.atl-hud-op.fail .atl-hud-mark,.atl-hud-op.skip .atl-hud-mark{background:#ff453a;}'
   + '@keyframes atl-trace-spin{to{transform:rotate(360deg);}}'
   + '@media (prefers-reduced-motion:reduce){.atl-hud,.atl-hud.on{transition:none;transform:translate(-50%,0);}'
-  + '.atl-hud-dot,.atl-hud-op.run .atl-hud-mark,#atlas-panel .atl-caret{animation:none;}}';
+  + '.atl-hud-dot,.atl-hud-op.run .atl-hud-mark,#atlas-panel .atl-caret{animation:none;}}'
+  + ATLAS_PLAN_CSS;
 /* On a phone the Atlas sheet covers the bottom of the map, so the HUD stands under the top bar. Placed
    inside the panel sheet's phone block by js/atlas-styles.js — the boundary is IntMapDevice.COMPACT. */
 export const ATLAS_LIVE_CSS_MOBILE =
-  '.atl-hud{bottom:auto;top:calc(64px + var(--safe-top));flex-direction:column;transform:translate(-50%,-8px);}';
+  '.atl-hud{bottom:auto;top:calc(64px + var(--safe-top));flex-direction:column;transform:translate(-50%,-8px);}'
+  /* (atlas-plan-on-map) measured at 390 px: the round controls stand in two columns at the left and right
+     edges (about 76 px each), so the plan takes the band between them rather than sliding under either */
+  + '.atl-plan{width:min(300px,calc(100vw - 156px));}';

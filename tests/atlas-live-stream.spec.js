@@ -16,7 +16,9 @@
  *    ② the answer is visible WHILE it is written, and is replaced — not appended to — by the answer
  *       the loop returns; the map HUD showed the operation start and finish;
  *    ③ a stop mid-sentence keeps the draft, marked unfinished, and records no answer;
- *    ④ a stream that breaks before `done` is asked again once, plainly, and the turn still answers.
+ *    ④ a stream that breaks before `done` is asked again once, plainly, and the turn still answers;
+ *    ⑤ (atlas-plan-on-map) a plan Atlas declared stands in the HUD with each step's OBSERVED state,
+ *       stays when the turn ends, goes back to what its step drew, and is put in front of the model.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting } from './helpers/network.js';
@@ -50,7 +52,7 @@ function upstream(arg) {
     const L = window.__live;
     if (b.task !== 'atlas_turn') return new Response(JSON.stringify({ text: '{}', used: 1, limit: 100, charged: true, meta: {} }), { status: 200, headers: { 'content-type': 'application/json' } });
     const n = ++L.n;
-    L.bodies.push({ stream: b.stream === true });
+    L.bodies.push({ stream: b.stream === true, plan: JSON.stringify(b.input || []).indexOf('[YOUR PLAN') >= 0 });
     const tool = (b.tools || []).map((t) => t.name).find((x) => /fly|view|camera/i.test(x)) || 'find_capability';
     const call = { type: 'function_call', call_id: 'c' + n, name: tool, arguments: JSON.stringify(/find/.test(tool) ? { query: 'Tokyo' } : { place: 'Tokyo' }) };
     const step1 = JSON.stringify({ turn: 'continuing', answer_mode: 'map', final_text: NOTE });
@@ -58,14 +60,18 @@ function upstream(arg) {
     /* step 1 is the reply to the question alone; a request that carries a call's output is step 2 */
     const first = !(b.input || []).some((it) => it && it.type === 'function_call_output');
     const text = first ? step1 : step2;
-    const done = { status: 200, body: { text, used: 1, limit: 100, charged: true, meta: { protocol: 2 }, output: first ? [call] : [], citations: [] } };
+    /* ⑤ Atlas declares a plan in the same reply as the call of its step 1 */
+    const planCall = { type: 'function_call', call_id: 'p' + n, name: 'plan', arguments: JSON.stringify({ goal: '東京を示す', steps: ['東京へ移動する', '答える'], current: 1 }) };
+    const done = { status: 200, body: { text, used: 1, limit: 100, charged: true, meta: { protocol: 2 }, output: first ? (L.plan ? [planCall, call] : [call]) : [], citations: [] } };
     /* ④ the retry is asked plainly — answer it plainly */
     if (b.stream !== true) return new Response(JSON.stringify(done.body), { status: 200, headers: { 'content-type': 'application/json' } });
     const body = new ReadableStream({ async start(c) {
       c.enqueue(ev('open', { protocol: 2 }));
       c.enqueue(ev('think', { d: first ? '**東京の位置を確かめる**' : '**答えをまとめる**' }));
-      await sleep(150);
-      for (let i = 0; i < text.length; i += 4) { c.enqueue(ev('text', { d: text.slice(i, i + 4) })); await sleep(25); }
+      await sleep(20);
+      /* (atlas-plan-on-map) 4 ms a delta (was 25) and 20 ms before the text (was 150): every claim about the draft is made while `hold` keeps
+         `done` back, so the pace only has to leave the deltas apart — the time went to ⑤ (test budget) */
+      for (let i = 0; i < text.length; i += 4) { c.enqueue(ev('text', { d: text.slice(i, i + 4) })); await sleep(4); }
       if (first) {
         c.enqueue(ev('call', { id: call.call_id, name: call.name }));
         if (L.mode === 'broken') { L.mode = 'normal'; c.error(new TypeError('network error')); return; }
@@ -149,11 +155,37 @@ test('③ a stop mid-sentence keeps the draft, marked unfinished, and records no
 });
 
 test('④ a stream that breaks before done is asked again once, plainly, and the turn answers', async () => {
-  await page.evaluate(() => { window.__live.mode = 'broken'; window.__live.bodies = []; window.__live.hold = false; });
+  /* (atlas-plan-on-map) this turn also declares a plan — ⑤ reads it, so the plan costs no turn of its own */
+  await page.evaluate(() => { window.__live.mode = 'broken'; window.__live.bodies = []; window.__live.hold = false; window.__live.plan = true; });
   await ask('三回目');
   await expect(lastReply()).toContainText('関東平野の南部', { timeout: 30_000 });
   await expect(lastReply().locator('.atl-draft')).toHaveCount(0);
   const bodies = await page.evaluate(() => window.__live.bodies.map((b) => b.stream));
   expect(bodies.slice(0, 2)).toEqual([true, false]);   /* the broken stream, then the one plain retry */
   expect(bodies.filter((x) => x === false).length).toBe(1);
+});
+
+test('⑤ the plan Atlas declared in ④ stands on the map with its observed states, outlives the turn, and goes back to what a step drew', async () => {
+  const steps = page.locator('.atl-hud .atl-plan .atl-plan-step');
+  await expect(steps).toHaveCount(2);
+  const snap = await page.evaluate(() => window.IntMapAtlasDebug.plan());
+  expect(snap.goal).toBe('東京を示す');
+  expect(snap.steps[0].ops.length).toBe(1);                       /* the call made after the plan call serves step 1 */
+  expect(snap.steps[1].state).toBe('pending');                     /* never made current: not started */
+  /* the state is the executor's verdict — and only `completed` wears the tick */
+  await expect(steps.nth(0)).toHaveClass(new RegExp('s-' + snap.steps[0].ops[0].state));
+  expect(await steps.nth(0).locator('.atl-plan-mark.ok').count()).toBe(snap.steps[0].ops[0].state === 'completed' ? 1 : 0);
+  /* the model was shown the plan on the step after it was declared (④: the broken stream, its plain retry, step 2) */
+  expect(await page.evaluate(() => window.__live.bodies.map((b) => b.plan))).toEqual([false, false, true]);
+  /* the way back to what step 1 drew: the camera is sent elsewhere and the step is pressed */
+  await expect(steps.nth(0)).toHaveClass(/(^|\s)can(\s|$)/);
+  await page.evaluate(() => { window.IntMapGeoEngine.camera.jumpTo({ center: [-40, -30], zoom: 2 }); document.querySelector('.atl-hud .atl-plan-step.can').click(); });
+  await page.waitForFunction(() => { const c = window.IntMapGeoEngine.camera.getCenter(); return Math.abs(c.lng - 139.7) < 3 && Math.abs(c.lat - 35.7) < 3; }, null, { timeout: 10_000 });
+  /* the turn ended: the HUD rests with the plan, folded — still there, and it opens again */
+  await expect(page.locator('.atl-hud.rest .atl-plan.collapsed')).toHaveCount(1, { timeout: 10_000 });
+  await page.click('.atl-hud .atl-plan-head');
+  await expect(page.locator('.atl-hud .atl-plan.collapsed')).toHaveCount(0);
+  /* hidden on request */
+  await page.click('.atl-hud .atl-plan-x');
+  await expect(page.locator('.atl-hud .atl-plan')).toHaveCount(0);
 });
