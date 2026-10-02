@@ -12,6 +12,7 @@
 
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 
 export function feedback(HOST){
@@ -124,13 +125,13 @@ export function feedback(HOST){
       if(!ok){ btn.disabled=false; btn.textContent=IntMapLang.t(HOST.lang,"Submit","送信","Senden","Отправить","Enviar"); msg.textContent=IntMapLang.t(HOST.lang,"Could not send — please try again later.","送信できませんでした。時間をおいてもう一度お試しください。","Senden fehlgeschlagen — bitte später erneut versuchen.","Не удалось отправить — попробуйте позже.","No se pudo enviar; inténtelo de nuevo más tarde."); return; }
       if(rating>=4) renderThanksHigh(); else renderThanksLow(); }
     function renderThanksLow(){ const c=modal.querySelector('#fb-card');
-      c.innerHTML='<div style="text-align:center;padding:8px 0 2px;"><div style="font-size:34px;margin-bottom:8px;">🙏</div>'+
+      c.innerHTML=('<div style="text-align:center;padding:8px 0 2px;"><div style="font-size:34px;margin-bottom:8px;">'+icon('heart')+'</div>')+
         '<h3 style="margin:0 0 8px;font-size:17px;">'+(IntMapLang.t(HOST.lang,"Thank you for your feedback","フィードバックありがとうございます","Vielen Dank für Ihr Feedback","Спасибо за отзыв","Gracias por sus comentarios"))+'</h3>'+
         '<p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.6;">'+(IntMapLang.t(HOST.lang,"We read every note and use it to improve IntMap.","いただいたご意見は今後の改善に役立てます。","Wir lesen jede Nachricht und nutzen sie, um IntMap zu verbessern.","Мы читаем каждое сообщение и используем его для улучшения IntMap.","Leemos todos los mensajes y los usamos para mejorar IntMap."))+'</p>'+
         '<button id="fb-done" style="padding:10px 26px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:13.5px;font-weight:600;cursor:pointer;">'+(IntMapLang.t(HOST.lang,"Close","閉じる","Schließen","Закрыть","Cerrar"))+'</button></div>';
       c.querySelector('#fb-done').onclick=closeM; }
     function renderThanksHigh(){ const c=modal.querySelector('#fb-card');
-      c.innerHTML='<div style="text-align:center;padding:8px 0 2px;"><div style="font-size:34px;margin-bottom:8px;">💙</div>'+
+      c.innerHTML=('<div style="text-align:center;padding:8px 0 2px;"><div style="font-size:34px;margin-bottom:8px;">'+icon('heart')+'</div>')+
         '<h3 style="margin:0 0 8px;font-size:17px;">'+(IntMapLang.t(HOST.lang,"Thank you!","ありがとうございます！","Vielen Dank!","Спасибо!","¡Gracias!"))+'</h3>'+
         '<p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.6;">'+(IntMapLang.t(HOST.lang,"Your high rating means a lot. If you enjoy IntMap, you can support its development — entirely optional.","高い評価をいただき励みになります。もしよろしければ、IntMapの開発・運営をご支援いただけると嬉しいです。","Ihre gute Bewertung bedeutet uns viel. Wenn Ihnen IntMap gefällt, können Sie die Entwicklung unterstützen — ganz freiwillig.","Ваша высокая оценка много значит. Если вам нравится IntMap, вы можете поддержать разработку — полностью по желанию.","Su alta valoración significa mucho. Si disfruta de IntMap, puede apoyar su desarrollo; es totalmente opcional."))+'</p>'+
         '<a id="fb-donate" data-effect="outward" href="'+IntMapSafe.html(IntMapSafe.url(window.stripeDonateURL()))+'" target="_blank" rel="noopener" style="display:block;padding:12px;border-radius:10px;background:var(--primary-fill);color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-bottom:8px;">'+(IntMapLang.t(HOST.lang,"Support IntMap","支援する","IntMap unterstützen","Поддержать IntMap","Apoyar IntMap"))+'</a>'+
@@ -194,7 +195,7 @@ export function feedback(HOST){
     function cats(){ return BUG_CATS.map(([id,tuple])=>[id,L.arr(tuple)]); }
     function renderForm(){ const c=modal.querySelector('#bug-card'); const diag=_imDiag();
       c.innerHTML='<button id="bug-x" aria-label="'+IntMapSafe.html(IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar'))+'" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;">×</button>'+
-        '<h3 style="margin:0 0 6px;font-size:17px;">🐞 '+(IntMapLang.t(HOST.lang,"Report a bug","バグを報告","Fehler melden","Сообщить об ошибке","Informar de un error"))+'</h3>'+
+        '<h3 style="margin:0 0 6px;font-size:17px;">'+icon('bug')+' '+(IntMapLang.t(HOST.lang,"Report a bug","バグを報告","Fehler melden","Сообщить об ошибке","Informar de un error"))+'</h3>'+
         '<p style="margin:0 0 12px;color:var(--text-muted);font-size:12.5px;line-height:1.5;">'+(IntMapLang.t(HOST.lang,"Describe what went wrong — steps to reproduce help a lot.","不具合の内容をできるだけ具体的に教えてください。再現手順があると助かります。","Beschreiben Sie, was schiefgelaufen ist — Schritte zum Nachstellen helfen sehr.","Опишите, что пошло не так — шаги воспроизведения очень помогают.","Describa qué ha fallado; los pasos para reproducirlo ayudan mucho."))+'</p>'+
         '<select id="bug-cat" style="width:100%;box-sizing:border-box;margin-bottom:10px;padding:9px 11px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;">'+cats().map(c=>'<option value="'+c[0]+'">'+c[1]+'</option>').join('')+'</select>'+
         '<textarea id="bug-text" maxlength="3000" placeholder="'+(IntMapLang.t(HOST.lang,"e.g. On mobile, tapping X causes Y…","例: モバイルで○○を押すと△△になる…","z. B. Auf dem Handy führt Tippen auf X zu Y…","напр. на телефоне нажатие X приводит к Y…","p. ej. En el móvil, al tocar X ocurre Y…"))+'" style="width:100%;box-sizing:border-box;min-height:110px;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;font-family:inherit;"></textarea>'+
@@ -223,7 +224,7 @@ export function feedback(HOST){
       }
       renderThanks(ok); }
     function renderThanks(sent){ const c=modal.querySelector('#bug-card');
-      c.innerHTML='<div style="text-align:center;padding:8px 0 2px;"><div style="font-size:34px;margin-bottom:8px;">'+(sent?'✅':'📋')+'</div>'+
+      c.innerHTML='<div style="text-align:center;padding:8px 0 2px;"><div style="font-size:34px;margin-bottom:8px;">'+(sent?icon('check-circle'):icon('clipboard'))+'</div>'+
         '<h3 style="margin:0 0 8px;font-size:17px;">'+(sent?(IntMapLang.t(HOST.lang,"Report sent","レポートを送信しました","Bericht gesendet","Отчёт отправлен","Informe enviado")):(IntMapLang.t(HOST.lang,"Report saved","レポートを保存しました","Bericht gespeichert","Отчёт сохранён","Informe guardado")))+'</h3>'+
         '<p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.6;">'+(sent?(IntMapLang.t(HOST.lang,"Thank you — we will look into it.","ご報告ありがとうございます。確認して対応します。","Vielen Dank — wir sehen uns das an.","Спасибо — мы разберёмся.","Gracias; lo revisaremos.")):(IntMapLang.t(HOST.lang,"Saved on this device and copied to your clipboard (offline).","オフラインのため端末に保存し、内容をクリップボードにコピーしました。","Auf diesem Gerät gespeichert und in die Zwischenablage kopiert (offline).","Сохранено на этом устройстве и скопировано в буфер обмена (офлайн).","Guardado en este dispositivo y copiado al portapapeles (sin conexión).")))+'</p>'+
         '<button id="bug-done" style="padding:10px 26px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:13.5px;font-weight:600;cursor:pointer;">'+(IntMapLang.t(HOST.lang,"Close","閉じる","Schließen","Закрыть","Cerrar"))+'</button></div>';

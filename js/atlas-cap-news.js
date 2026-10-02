@@ -38,10 +38,10 @@ export default [
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, HOST = K.HOST, fetchData = K.fetchData, esc = K.esc;
       {
           const want=String(a.text||a.category||a.q||'').trim();
-          if(!want) return R(false, warn('⚠ '+L('Name a category','カテゴリ名を指定してください','Kategorie angeben','Укажите категорию','Indique una categoría')), {meta:{code:'NEEDS_INPUT',category:'input',retryable:true,produced:[],userGoalSatisfied:false}});
+          if(!want) return R(false, warn(L('Name a category','カテゴリ名を指定してください','Kategorie angeben','Укажите категорию','Indique una categoría')), {meta:{code:'NEEDS_INPUT',category:'input',retryable:true,produced:[],userGoalSatisfied:false}});
           const okLazy=await window.IntMapLazy.need('newsEvents');
           const E=okLazy&&window.IntMapNewsEvents;
-          if(!E) return R(false, warn('⚠ '+L('The events surface is not available','出来事の一覧が利用できません','Die Ereignisansicht ist nicht verfügbar','Лента событий недоступна','La vista de sucesos no está disponible')), {meta:{code:'MODULE_UNAVAILABLE',category:'capability',retryable:false,produced:[],userGoalSatisfied:false}});
+          if(!E) return R(false, warn(L('The events surface is not available','出来事の一覧が利用できません','Die Ereignisansicht ist nicht verfügbar','Лента событий недоступна','La vista de sucesos no está disponible')), {meta:{code:'MODULE_UNAVAILABLE',category:'capability',retryable:false,produced:[],userGoalSatisfied:false}});
           if(!(typeof HOST.newsSurfaceMode==='function'&&HOST.newsSurfaceMode()==='events')){ try{ if(typeof fetchData==='function') await fetchData(); }catch(_){} }
           const cats=E.categories();
           const norm=(x)=>String(x).toLowerCase().replace(/[^a-z0-9]+/g,'');
@@ -49,7 +49,7 @@ export default [
             ? {key:'all',label:L('All','すべて','Alle','Все','Todas')}
             : cats.find(c=>norm(c.key)===norm(want)||norm(c.label)===norm(want))
               || cats.find(c=>norm(c.key).indexOf(norm(want))>=0||norm(c.label).indexOf(norm(want))>=0);
-          if(!hit) return R(false, warn('⚠ '+L('No such event category','そのカテゴリはありません','Keine solche Kategorie','Такой категории нет','No existe esa categoría')+': '+esc(want)+' — '+cats.map(c=>esc(c.label)).join(' · ')), {meta:{code:'NOT_FOUND',category:'input',retryable:true,semanticTarget:want,produced:[],userGoalSatisfied:false}});
+          if(!hit) return R(false, warn(L('No such event category','そのカテゴリはありません','Keine solche Kategorie','Такой категории нет','No existe esa categoría')+': '+esc(want)+' — '+cats.map(c=>esc(c.label)).join(' · ')), {meta:{code:'NOT_FOUND',category:'input',retryable:true,semanticTarget:want,produced:[],userGoalSatisfied:false}});
           E.setCategory(hit.key);
           const st=E.state()||{};
           const n=st.visibleEventCount||0, pins=st.visiblePinCount||0;

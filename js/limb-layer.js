@@ -169,7 +169,7 @@ function limbLayer(){
       float rt = sqrt(discT);
       float tIn = max(0.0, -b - rt), tMax = -b + rt;
       if (tMax <= tIn) discard;
-      /* ══ ⚠⚠ (#R237) A RAY THAT MEETS THE PLANET IS MARCHED TOO — THAT IS THE AIR THAT WENT MISSING
+      /* ══(#R237) A RAY THAT MEETS THE PLANET IS MARCHED TOO — THAT IS THE AIR THAT WENT MISSING
          #R227 discarded it and recorded why: compositing L_bg·T + L_inscatter is a product and a sum
          in LINEAR radiance, and a custom layer draws into a gamma-encoded framebuffer where the only
          tool is one alpha — measured, open ocean reading #013a4c came out #588bc1, because the
@@ -202,7 +202,7 @@ function limbLayer(){
       int nA = (lenA > 0.0 && lenB > 0.0) ? int(float(NT)*0.35) : (lenA > 0.0 ? NT : 0);
       int nB = NT - nA;
 
-      /* ⚠ THE SAMPLES ARE PLACED FROM THE LOWEST POINT OUTWARD AND WALKED IN INCREASING t. That is
+      /* THE SAMPLES ARE PLACED FROM THE LOWEST POINT OUTWARD AND WALKED IN INCREASING t. That is
          #R224's rule and it is not a detail: the optical depth accumulated so far is what attenuates
          the next sample, so a warp walked in the order it was generated would light the ray from the
          wrong end. The near half's boundaries are generated toward tIn and then stepped BACKWARDS. */
@@ -241,7 +241,7 @@ function limbLayer(){
       float pR = 3.0/(16.0*3.14159265)*(1.0+mumu);
       float pM = 3.0/(8.0*3.14159265)*((1.0-gg)*(1.0+mumu))/((2.0+gg)*pow(max(1e-6, 1.0+gg-2.0*u_g*mu), 1.5));
       vec3 L = u_sunI*(sumR*u_BR*pR + sumM*u_BM*pM + ms);
-      /* ⚠⚠ THE EXTINCTION IS PER CHANNEL, AND IT IS WHAT MULTIPLIES WHAT IS BEHIND. A scattering
+      /*THE EXTINCTION IS PER CHANNEL, AND IT IS WHAT MULTIPLIES WHAT IS BEHIND. A scattering
          term composites as L_out = L_background·T + L_inscatter, so what dims what is behind is the
          TRANSMITTANCE of the air the ray crossed — exp(−τ) over the whole path — and not how bright
          the in-scattered light happens to be. #R227 had to squeeze that into ONE alpha (a luminance
@@ -249,7 +249,7 @@ function limbLayer(){
          channels keep their own τ, which is the whole reason the air is BLUE: it takes the red out
          of what is behind it at the same time as it adds blue of its own. */
       vec3 T = exp(-(u_BR*odR + u_BM*u_mieExt*odM + u_BO*odO));
-      /* ══ ⚠⚠ (#R237) THE COMPOSITE, IN RADIANCE ════════════════════════════════════════════════
+      /* ══(#R237) THE COMPOSITE, IN RADIANCE ════════════════════════════════════════════════
          bgDisp is the frame as it stands, tone-mapped and gamma-encoded. 1 − exp(−L·E) then
          ^(1/γ) is a bijection from radiance onto [0,1), so running it backwards recovers the
          radiance the renderer would have had to hold — and every term below is then a real product
@@ -258,7 +258,7 @@ function limbLayer(){
       vec2 uv = gl_FragCoord.xy / u_res;
       vec3 bgDisp = texture(u_bg, uv).rgb;
       vec3 bgL = -log(max(vec3(1e-6), 1.0 - pow(clamp(bgDisp, 0.0, 1.0), vec3(u_gamma)))) / u_exposure;
-      /* ⚠ STRENGTH INTERPOLATES THE WHOLE EFFECT, IT DOES NOT SCALE THE COLOUR. #R187 (0.55 over
+      /* STRENGTH INTERPOLATES THE WHOLE EFFECT, IT DOES NOT SCALE THE COLOUR. #R187 (0.55 over
          satellite) and #R205 (0.15 over the light basemap) are answers to "how much atmosphere",
          and scaling only the in-scatter would darken the imagery at full strength while lighting it
          at a fraction of one — the two halves of one physical quantity pulling apart. Mixing the

@@ -34,6 +34,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 
 export function timeSeries(HOST){
@@ -93,7 +94,7 @@ export function correlate(HOST){
     /* ⚠ THE BUTTON IS BUILT AT BOOT and it always was: #btn-correlate is a row of the Layers panel,
        and js/data-layers.js's reorganizeLayerPanel() MOVES it rather than creating it. Deferring this
        would delete a Layers button until somebody asked for the panel it opens (#R311 measured it). */
-    (function mkBtn(){ if(document.getElementById('btn-correlate'))return; const b=document.createElement('button'); b.id='btn-correlate'; b.type='button'; b.className='ai-test-btn'; b.style.cssText='width:100%;text-align:center;'; b.innerHTML='📊 <span>'+esc(btnLbl())+'</span>'; b.onclick=open; (document.getElementById('layer-tools')||document.body).appendChild(b); try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} })();
+    (function mkBtn(){ if(document.getElementById('btn-correlate'))return; const b=document.createElement('button'); b.id='btn-correlate'; b.type='button'; b.className='ai-test-btn'; b.style.cssText='width:100%;text-align:center;'; b.innerHTML=(icon('chart')+' <span>')+esc(btnLbl())+'</span>'; b.onclick=open; (document.getElementById('layer-tools')||document.body).appendChild(b); try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} })();
     /* (#R322) the other half of what this listener always did — relabelling the two metric <select>s
        and re-rendering an open overlay — needs the overlay, so it is in js/analysis-correlate.js and is
        forwarded only when the loader says that file is here. A language switch must never be the thing
@@ -151,14 +152,14 @@ export function edu(HOST){
        Playground hub) — "Playground自体は…旧quiz modeの場所に / Quiz modeをplaygroundに移動". */
     function mount(){ if(document.getElementById('edu-mount')) return;
       const host=document.createElement('div'); host.id='edu-mount'; host.style.marginTop='6px';
-      host.innerHTML='<button id="btn-edu" class="ai-test-btn" style="width:100%;">🎮 <span>'+(IntMapLang.t(HOST.lang,"Playground","プレイグラウンド","Spielwiese","Песочница","Zona de pruebas"))+'</span></button>';
+      host.innerHTML=('<button id="btn-edu" class="ai-test-btn" style="width:100%;">'+icon('gamepad')+' <span>')+(IntMapLang.t(HOST.lang,"Playground","プレイグラウンド","Spielwiese","Песочница","Zona de pruebas"))+'</span></button>';
       const tools=document.getElementById('layer-tools'); const dd=document.getElementById('layer-dropdown');
       (tools||dd||document.body).appendChild(host);
       host.querySelector('#btn-edu').onclick=()=>{ window.IntMapLazy.need('playground').then(()=>{ try{ window._openPlayground&&window._openPlayground(); }catch(_){} }); };
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     if(GE().hasRenderer()) GE().events.on('click',onMapClick);
     if(document.readyState!=='loading') setTimeout(mount,500); else document.addEventListener('DOMContentLoaded',()=>setTimeout(mount,500));
-    window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-edu'); if(b) b.innerHTML='🎮 <span>'+(IntMapLang.t(HOST.lang,"Playground","プレイグラウンド","Spielwiese","Песочница","Zona de pruebas"))+'</span>'; });
+    window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-edu'); if(b) b.innerHTML=(icon('gamepad')+' <span>')+(IntMapLang.t(HOST.lang,"Playground","プレイグラウンド","Spielwiese","Песочница","Zona de pruebas"))+'</span>'; });
     return { open, close };
   })();
 }

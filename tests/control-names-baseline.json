@@ -1,6 +1,6 @@
 {
  "//": "written by scripts/control-names.mjs --update — buttons / inputs / selects / textareas with no accessible name, per file; ratcheted both ways by check:static",
- "total": 55,
+ "total": 53,
  "files": {
   "js/atlas-cap-layers.js": 2,
   "js/atlas-cap-sim.js": 3,
@@ -20,9 +20,9 @@
   "js/page-i18n.js": 1,
   "js/playground.js": 1,
   "js/satellite.js": 4,
-  "js/sims.js": 4,
+  "js/sims.js": 3,
   "js/sources-list.js": 1,
-  "js/space.js": 3,
+  "js/space.js": 2,
   "js/stats-compare.js": 3,
   "js/tool-panel.js": 2,
   "js/tsunami.js": 1,

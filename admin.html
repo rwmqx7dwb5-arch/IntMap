@@ -17,7 +17,7 @@
          operator picked off disk. It calls js/admin-literal.js's PARSER now, which cannot invoke anything, so the whole
          page no longer needs the capability. A CSP that grants eval to a page with no eval in it is
          a grant nobody is watching. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bi5UzGl+THpcxTbS3pEddnFrkN/EJ54B9qeYLMiklJ0=' 'sha256-3OHKZ+ViBKyiUEP3Z8TsVNvIaOif1akJt0G8TYhecw0=' 'sha256-DriVcPIfLJcPntPV+iqqT+AUMzKIdeKionCQV1I2RjY='; connect-src 'self' https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bi5UzGl+THpcxTbS3pEddnFrkN/EJ54B9qeYLMiklJ0=' 'sha256-3OHKZ+ViBKyiUEP3Z8TsVNvIaOif1akJt0G8TYhecw0=' 'sha256-GKsIv2P2dtcu5TDwAEVdVl9HCs3zjfr/nUC8pbr/MJo='; connect-src 'self' https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>IntMap · Admin Console</title>
 <script>document.documentElement.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');</script>
@@ -139,7 +139,7 @@
         </div>
         <div class="seg" style="max-width:520px;">
           <button id="cm-seg-posts" class="active">All posts</button>
-          <button id="cm-seg-reported">⚠ Reported</button>
+          <button id="cm-seg-reported"><span data-icon="warning"></span> Reported</button>
           <button id="cm-seg-comments">All comments</button>
         </div>
         <p class="muted" id="comm-note" style="margin:0 0 10px;">Tip: run <code>supabase_admin_moderation.sql</code> once so admins can see reports and delete any post/comment.</p>
@@ -278,6 +278,11 @@
 <!-- (safe-output-single-module) the app's ONE output encoder, window.IntMapSafe — the same file src/main.js imports,
      so this console no longer keeps an escaper and a URL allow-list of its own. -->
 <script src="./js/safe-html.js"></script>
+<!-- (icon-system) the one icon set, window.IntMapIcons — static [data-icon] slots are drawn when it loads, and the
+     tables below draw their marks with it (they were emoji). `vite-ignore`: this page is copied verbatim and the
+     file is copied beside it (vite.config.js STATIC_ASSETS) — left to Vite, the second entry made js/icons.js a module
+     shared by two entries, which no entry chunk may hold, and every app session paid a request for it (MEASURED). -->
+<script type="module" src="./js/icons.js" vite-ignore></script>
 <script>
   window.SUPABASE_URL='https://vpekfwdpurzejrrmacac.supabase.co';
   window.SUPABASE_ANON_KEY='sb_publishable_yI9Rf2s4nzrIuqFyUq4OOA_h83PrRd0';
@@ -288,6 +293,7 @@
 <script>
 (function(){
   const $=(id)=>document.getElementById(id);
+  const ic=(n)=>(window.IntMapIcons?window.IntMapIcons.icon(n):'');   /* (icon-system) js/icons.js, loaded as a module above */
   /* (#R155 SEC → safe-output-single-module) the HTML escaper and the URL scheme allow-list are the app's
      own, window.IntMapSafe (js/safe-html.js, loaded above) — this console used to keep copies of both.
      Every user-supplied string here is rendered through esc(); every href/src through safeUrl(): a
@@ -713,13 +719,13 @@
         if(error) throw error;
         const counts={}; (reps||[]).forEach(r=>{ counts[r.post_id]=(counts[r.post_id]||0)+1; });
         const ids=Object.keys(counts);
-        if(!ids.length){ $('comm-count').textContent='· 0 reported'; tb.innerHTML='<tr><td colspan="5" class="muted">No reported posts. 🎉</td></tr>'; return; }
+        if(!ids.length){ $('comm-count').textContent='· 0 reported'; tb.innerHTML='<tr><td colspan="5" class="muted">No reported posts. '+ic('check-circle')+'</td></tr>'; return; }
         const {data:posts}=await sb.from('community_posts').select('id,title,body,author_name').in('id',ids);
         const pm={}; (posts||[]).forEach(p=>pm[p.id]=p);
         const rows=ids.sort((a,b)=>counts[b]-counts[a]).map(id=>({id,n:counts[id],p:pm[id]||{}}));
         $('comm-count').textContent='· '+rows.length+' reported';
         tb.innerHTML=rows.map(r=>html`<tr>
-          <td><span class="pill" style="background:var(--danger);color:#fff">⚠ ${r.n}</span></td>
+          <td><span class="pill" style="background:var(--danger);color:#fff">${ic('warning')} ${r.n}</span></td>
           <td>${r.p.title||'(no title)'}</td><td>${r.p.author_name||'?'}</td>
           <td style="max-width:420px;color:var(--muted)">${(r.p.body||'').slice(0,160)}</td>
           <td><button class="btn danger sm" data-del-post="${r.id}">Del post</button></td></tr>`).join('');
@@ -733,7 +739,7 @@
       $('comm-count').textContent='· '+data.length+' posts';
       tb.innerHTML=data.length?data.map(p=>html`<tr>
         <td style="white-space:nowrap;color:var(--muted)">${fmtTime(p.created_at)}</td>
-        <td>${p.title||'(no title)'}<div class="muted" style="font-size:11px;">▲${(p.community_votes||[]).length} · 💬${(p.community_comments||[]).length}</div></td>
+        <td>${p.title||'(no title)'}<div class="muted" style="font-size:11px;">▲${(p.community_votes||[]).length} · ${ic('chat')}${(p.community_comments||[]).length}</div></td>
         <td>${p.author_name||'?'}</td>
         <td style="max-width:420px;color:var(--muted)">${(p.body||'').slice(0,160)}</td>
         <td><button class="btn danger sm" data-del-post="${p.id}">Del</button></td></tr>`).join(''):'<tr><td colspan="5" class="muted">No posts.</td></tr>';

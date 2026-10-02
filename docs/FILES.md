@@ -1211,6 +1211,11 @@ safe-html.js                      **出力の無害化の唯一の正本** `wind
                                   markup（落ちる場所で escape するタグ）, trusted, isMarkup}。アプリ
                                   （src/main.js）・sources.html・admin.html・ES module（import）・Node の検査が同じ
                                   ファイルを読む。他の場所の独自エスケープは scripts/safe-output.mjs の台帳が数える
+icons.js                          **アイコンの唯一の置き場** `window.IntMapIcons`＋ES export。24 グリッド・線幅 1.75・丸い端・
+                                  currentColor の線画を名前で持つ（ICON_NAMES）。icon()＝markup（IntMapSafe.markup 製）、
+                                  iconNode()＝<svg> 要素、withIcons()＝訳文の `{icon:名前}` を描く、iconImageData()＝地図の
+                                  シンボル用の画素、hydrateIcons()＝静的マークアップの `data-icon` 枠。未知の名前は throw。
+                                  見た目の規則は css/intmap.css の `.im-icon` 1 つ。静的ページ用に vite の STATIC_ASSETS でも配る
 inline-actions.js                 **マークアップがコードを動かす唯一の方法**——`data-im-click="名前"`（change／error も）と
                                   `data-im-arg`。window の capture で 1 つのリスナが ACTIONS（語彙の唯一の宣言）を引き、
                                   未知の名前は拒んで記録する。CSP に 'unsafe-inline' が無いので onclick= 等は動かない
@@ -1468,6 +1473,9 @@ scripts/
   showcase-capture.mjs            見本の地図のリンクと画面写真を、ビルドしたアプリ自身に作らせる（サーバと実ネットワークが要る）。
                                   授業ツアーの段（js/tours.js）のリンクも同じ関数で作る（`--shots <dir>` で確認用の写真）
   static-checks.mjs               構文・JSON・YAML・マージ衝突・秘密検出・HTML 参照の存在
+  icon-glyphs.mjs                 **絵文字をアイコンに使わない**門（check:static の icon-glyphs）——配信物の文字列（cooked）・
+                                  ページの文字・CSS の content にある Extended_Pictographic を拒む。例外は TYPOGRAPHIC（©・文中の矢印）、
+                                  UPSTREAM（data/）、DECLARED（利用者が選んだアバター）で、どれも理由の文つき・古い宣言は誤り
   runtime-scripts.mjs             配信物が他 origin から読む <script> は integrity＋crossorigin を持つか、
                                   理由の文つきで UNPINNABLE に宣言されているか。CSP script-src の各ホストは
                                   使われているか CSP_ONLY に宣言されているか（acorn・両方向の照合。check:static が呼ぶ）

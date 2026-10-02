@@ -48,6 +48,7 @@
  *  markup they replaced had. Nothing here ever renders a string that came from a fetch.
  * ========================================================================== */
 import { IntMapLang } from './lang-registry.js';
+import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — copied beside this file (vite.config.js STATIC_ASSETS) */
 window.IntMapPageI18N = (function () {
   'use strict';
 
@@ -288,7 +289,7 @@ window.IntMapPageI18N = (function () {
     else if (kind === 'tagline') host.appendChild(el('p', 'pg-tagline', b[1]));
     else if (kind === 'h3') host.appendChild(el('h3', null, b[1]));
     else if (kind === 'eq') host.appendChild(el('p', 'pg-eq', b[1]));
-    else if (kind === 'lim') host.appendChild(el('div', 'pg-lim', '<b>⚠</b> ' + b[1]));
+    else if (kind === 'lim') host.appendChild(el('div', 'pg-lim', '<b>' + icon('warning') + '</b> ' + b[1]));
     else if (kind === 'note') host.appendChild(el('p', 'pg-note', b[1]));
     else if (kind === 'ul') {
       var ul = document.createElement('ul');
@@ -487,7 +488,8 @@ window.IntMapPageI18N = (function () {
     var host = document.querySelector('.pg-lang');
     if (!host || host.__built) return;
     host.__built = true;
-    var globe = el('span', 'pg-lang-globe', '\u{1F310}');
+    var globe = el('span', 'pg-lang-globe');
+    globe.appendChild(iconNode('world'));   /* (icon-system) drawn by js/icons.js — it was the reader's emoji font's globe */
     var sel = document.createElement('select');
     sel.id = 'pg-lang-select';
     LANGS.forEach(function (l) {

@@ -18,6 +18,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function flightSim(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -62,28 +63,28 @@ export function flightSim(HOST){
        published C172 dataset; the others are scaled to distinct, realistic handling. */
     const _DRV={ Cyb:-0.31, Clb:-0.089, Clp:-0.47, Clr:0.096, Cma:-0.89, Cmq:-12.4, Cm0:0.04, Cnb:0.065, Cnr:-0.099, Cnda:-0.053 };
     const AIRCRAFT={
-      cessna:{ name:LA('Cessna 172 · trainer','セスナ172 · 練習機','Cessna 172 · Schulflugzeug','Cessna 172 · учебный','Cessna 172 · escuela'), icon:'🛩',
+      cessna:{ name:LA('Cessna 172 · trainer','セスナ172 · 練習機','Cessna 172 · Schulflugzeug','Cessna 172 · учебный','Cessna 172 · escuela'), icon:'plane',
         m:1043, S:16.2, b:11.0, c:1.49, Ix:1290, Iy:1825, Iz:2670, Hp:24, propTq:0.9,
         CL0:0.31, CLa:5.14, aStall:0.30, CD0:0.031, k:0.054, Tmax:3400, prop:true, Vne:87, Vstall:27, Vcruise:57, ceil:4100, gLim:4.4, ab:false,
         Clda:0.088, Cmde:-1.12, Cndr:-0.072, drv:{} },
-      warbird:{ name:LA('P-51 Mustang · warbird','P-51 マスタング · 大戦機','P-51 Mustang','P-51 Mustang','P-51 Mustang'), icon:'✈',
+      warbird:{ name:LA('P-51 Mustang · warbird','P-51 マスタング · 大戦機','P-51 Mustang','P-51 Mustang','P-51 Mustang'), icon:'plane',
         m:4300, S:21.8, b:11.3, c:2.0, Ix:9200, Iy:11000, Iz:19000, Hp:150, propTq:1.6,
         CL0:0.24, CLa:5.6, aStall:0.28, CD0:0.025, k:0.05, Tmax:16000, prop:true, Vne:220, Vstall:43, Vcruise:150, ceil:12700, gLim:8, ab:false,
         Clda:0.06, Cmde:-1.25, Cndr:-0.085, drv:{Cma:-0.9,Cmq:-11,Clp:-0.5,Cnb:0.08,Cnr:-0.12,Cyb:-0.4} },
-      airliner:{ name:LA('Airliner A320 · jet','旅客機 A320 · ジェット','Verkehrsjet A320','Авиалайнер A320','Avión A320'), icon:'🛫',
+      airliner:{ name:LA('Airliner A320 · jet','旅客機 A320 · ジェット','Verkehrsjet A320','Авиалайнер A320','Avión A320'), icon:'plane',
         m:64000, S:122, b:34, c:4.3, Ix:1.3e6, Iy:3.3e6, Iz:4.5e6, Hp:0, propTq:0,
         CL0:0.22, CLa:5.4, aStall:0.27, CD0:0.021, k:0.043, Tmax:220000, prop:false, Vne:265, Vstall:64, Vcruise:175, ceil:12500, gLim:2.5, ab:false,
         Clda:0.028, Cmde:-1.0, Cndr:-0.08, drv:{Cma:-1.2,Cmq:-18,Clp:-0.45,Cnb:0.12,Cnr:-0.20,Cyb:-0.6,Cnda:-0.02} },
-      fighter:{ name:LA('F-16 · fighter','F-16 · 戦闘機','F-16 · Jäger','F-16 · истребитель','F-16 · caza'), icon:'🚀',
+      fighter:{ name:LA('F-16 · fighter','F-16 · 戦闘機','F-16 · Jäger','F-16 · истребитель','F-16 · caza'), icon:'rocket',
         m:9500, S:27, b:9.4, c:3.45, Ix:12800, Iy:75000, Iz:85000, Hp:0, propTq:0,
         CL0:0.10, CLa:5.2, aStall:0.42, CD0:0.020, k:0.09, Tmax:76000, abMax:127000, prop:false, Vne:600, Vstall:60, Vcruise:230, ceil:15200, gLim:9, ab:true,
         Clda:0.033, Cmde:-1.6, Cndr:-0.09, drv:{Cma:-0.35,Cmq:-5,Clp:-0.35,Cnb:0.09,Cnr:-0.35,Cyb:-1.0,Cnda:-0.004} },
-      glider:{ name:LA('Glider · sailplane','グライダー · 滑空機','Segelflugzeug','Планёр','Planeador'), icon:'🪂',
+      glider:{ name:LA('Glider · sailplane','グライダー · 滑空機','Segelflugzeug','Планёр','Planeador'), icon:'wind',
         m:600, S:15, b:18, c:0.83, Ix:2500, Iy:1150, Iz:3500, Hp:0, propTq:0,
         CL0:0.35, CLa:5.9, aStall:0.30, CD0:0.011, k:0.026, Tmax:0, prop:false, Vne:75, Vstall:19, Vcruise:33, ceil:8000, gLim:5.3, ab:false,
         Clda:0.13, Cmde:-1.4, Cndr:-0.08, drv:{Cma:-1.0,Cmq:-14,Clp:-0.55,Cnb:0.05,Cnr:-0.08,Cyb:-0.3} },
       /* (#R96) F-35A Lightning II — real-ish figures: ~15 t, S 42.7 m², F135 125 kN dry / 191 kN wet, 9 g, M1.6, high-alpha. */
-      f35:{ name:LA('F-35 Lightning II · stealth fighter','F-35 ライトニングII · ステルス戦闘機','F-35 · Tarnkappenjäger','F-35 · истребитель-невидимка','F-35 · caza furtivo'), icon:'⚡',
+      f35:{ name:LA('F-35 Lightning II · stealth fighter','F-35 ライトニングII · ステルス戦闘機','F-35 · Tarnkappenjäger','F-35 · истребитель-невидимка','F-35 · caza furtivo'), icon:'bolt',
         m:15000, S:42.7, b:10.7, c:4.3, Ix:18000, Iy:190000, Iz:200000, Hp:0, propTq:0,
         CL0:0.06, CLa:4.9, aStall:0.44, CD0:0.022, k:0.11, Tmax:125000, abMax:191000, prop:false, Vne:590, Vstall:68, Vcruise:240, ceil:15240, gLim:9, ab:true,
         Clda:0.032, Cmde:-1.5, Cndr:-0.085, drv:{Cma:-0.4,Cmq:-6,Clp:-0.4,Cnb:0.10,Cnr:-0.4,Cyb:-1.0,Cnda:-0.004} }
@@ -657,7 +658,7 @@ export function flightSim(HOST){
     /* (#R94p) refresh the non-numeric HUD chrome (aircraft name, flap/gear/camera chips, button highlights) —
        called on build and whenever an action key/button changes a discrete state. */
     function syncHUDChrome(){ if(!hud||!st) return; const ac=AC(), q=s=>hud.querySelector(s);
-      const nm=(ac.name&&LL.arr(ac.name))||acKey; const nEl=q('.fs-acname'); if(nEl) nEl.textContent=(ac.icon?ac.icon+' ':'')+nm;
+      const nm=(ac.name&&LL.arr(ac.name))||acKey; const nEl=q('.fs-acname'); if(nEl){ if(ac.icon) nEl.replaceChildren(iconNode(ac.icon),' '+nm); else nEl.textContent=nm; }   /* (icon-system) `icon` is a js/icons.js name */
       const mc=q('.fs-mach'); if(mc) mc.textContent=(!ac.prop&&st.V>120)?('M'+(st.V/300).toFixed(2)):'';
       const upL=LL('UP','格納','EIN','УБР','ARR');
       const fl=q('.fs-cfg-flaps'); if(fl){ const p=st.flaps>0.99?'FULL':st.flaps>0.5?'②':st.flaps>0.1?'①':upL; fl.textContent=LL('FLAPS','フラップ','KLAPPEN','ЗАКРЫЛКИ','FLAPS')+' '+p; fl.classList.toggle('on',st.flaps>0.05); }
@@ -685,11 +686,11 @@ export function flightSim(HOST){
          pad whose presses hold exactly the keys the keyboard holds — ↑↓ pitch, ←→ roll — so there is
          ONE control path for the physics rather than two that can disagree. The rudder pair and the
          draggable throttle bar are unchanged. */
-      +'<div class="fs-btns"><button data-k="a">◀ '+LL('RUD','ラダー','SR','РН','TIM')+'</button><button data-k="d">'+LL('RUD','ラダー','SR','РН','TIM')+' ▶</button></div>'
+      +'<div class="fs-btns"><button data-k="a">'+icon('chevronL')+' '+LL('RUD','ラダー','SR','РН','TIM')+'</button><button data-k="d">'+LL('RUD','ラダー','SR','РН','TIM')+' '+icon('chevronR')+'</button></div>'
       +'<div class="fs-dpad">'
         +'<button class="fs-dp fs-dp-u" data-k="arrowup" aria-label="'+LL('Nose down','機首下げ','Nase runter','Нос вниз','Morro abajo')+'">▲</button>'
-        +'<button class="fs-dp fs-dp-l" data-k="arrowleft" aria-label="'+LL('Roll left','左ロール','Rollen links','Крен влево','Alabeo izq.')+'">◀</button>'
-        +'<button class="fs-dp fs-dp-r" data-k="arrowright" aria-label="'+LL('Roll right','右ロール','Rollen rechts','Крен вправо','Alabeo der.')+'">▶</button>'
+        +'<button class="fs-dp fs-dp-l" data-k="arrowleft" aria-label="'+LL('Roll left','左ロール','Rollen links','Крен влево','Alabeo izq.')+'">'+icon('chevronL')+'</button>'
+        +'<button class="fs-dp fs-dp-r" data-k="arrowright" aria-label="'+LL('Roll right','右ロール','Rollen rechts','Крен вправо','Alabeo der.')+'">'+icon('chevronR')+'</button>'
         +'<button class="fs-dp fs-dp-d" data-k="arrowdown" aria-label="'+LL('Nose up','機首上げ','Nase hoch','Нос вверх','Morro arriba')+'">▼</button>'
       +'</div>'
       +'<div class="fs-thrlbl">'+LL('THR','出力','SCHUB','ТЯГА','GAS')+'</div><div class="fs-thr"><div class="fs-thrfill" style="height:0%"></div></div>'
@@ -704,15 +705,15 @@ export function flightSim(HOST){
          open and this is `display:none`, so the desktop layout is byte-identical to what it was. */
       +'<button class="fs-deck-t" aria-label="'+LL('Controls','操作パネル','Bedienfeld','Панель','Controles')+'" title="'+LL('Controls','操作パネル','Bedienfeld','Панель','Controles')+'">⋯</button>'
       +'<div class="fs-deck">'
-        +'<button class="fs-act" data-act="g">⚙<small>'+LL('GEAR','脚','FAHRW','ШАССИ','TREN')+'</small></button>'
+        +('<button class="fs-act" data-act="g">'+icon('gear')+'<small>')+LL('GEAR','脚','FAHRW','ШАССИ','TREN')+'</small></button>'
         +'<button class="fs-act" data-act="f">⬇<small>'+LL('FLAPS','フラップ','KLAPPEN','ЗАКРЫЛ','FLAPS')+'</small></button>'
-        +'<button class="fs-act amber" data-hold=" ">✋<small>'+LL('BRAKE','抵抗板','BREMSE','ТОРМОЗ','FRENO')+'</small></button>'
-        +'<button class="fs-act" data-act="m">🗺<small>'+LL('MAP','地図','KARTE','КАРТА','MAPA')+'</small></button>'
+        +('<button class="fs-act amber" data-hold=" ">'+icon('hand')+'<small>')+LL('BRAKE','抵抗板','BREMSE','ТОРМОЗ','FRENO')+'</small></button>'
+        +('<button class="fs-act" data-act="m">'+icon('map')+'<small>')+LL('MAP','地図','KARTE','КАРТА','MAPA')+'</small></button>'
         +'<button class="fs-act" data-act="v">⊞<small>'+LL('CAM LVL','視点水平','KAM-HOR','КАМ-ГОР','CÁM NIV')+'</small></button>'
-        +'<button class="fs-act" data-act="p">⏸<small>'+LL('PAUSE','一時停止','PAUSE','ПАУЗА','PAUSA')+'</small></button>'
+        +('<button class="fs-act" data-act="p">'+icon('pause')+'<small>')+LL('PAUSE','一時停止','PAUSE','ПАУЗА','PAUSA')+'</small></button>'
         /* (#R171) the SOUND key shows the REAL audio state — silence is the default now, so hard-coding "on"
            here would have made the deck lie about it on every flight. */
-        +'<button class="fs-act'+(fsAudio.isMuted()?'':' on')+'" data-act="mute">'+(fsAudio.isMuted()?'🔇':'🔊')+'<small>'+LL('SOUND','サウンド','TON','ЗВУК','SONIDO')+'</small></button>'
+        +'<button class="fs-act'+(fsAudio.isMuted()?'':' on')+'" data-act="mute">'+(fsAudio.isMuted()?icon('speaker-off'):icon('speaker'))+'<small>'+LL('SOUND','サウンド','TON','ЗВУК','SONIDO')+'</small></button>'
         +'<button class="fs-act" data-act="r">⟳<small>'+LL('RESET','リセット','RESET','СБРОС','REINICIO')+'</small></button>'
       +'</div>'
       +'<div class="fs-minimap"><div class="fs-mm-map"></div>'
@@ -876,7 +877,7 @@ export function flightSim(HOST){
       else if(k==='m'){ try{ toggleMinimap(); }catch(_){} }                                         /* (#R96) moving-map on/off */
       else if(k==='p'){ paused=!paused; if(st){ if(paused) st._pauseStart=performance.now(); else if(st._pauseStart){ st._pausedMs=(st._pausedMs||0)+(performance.now()-st._pauseStart); st._pauseStart=0; } } }   /* (#R99) exclude paused wall-time from the flight timer */
       else if(k==='r') respawn();                                                                   /* reset in place */
-      else if(k==='mute'){ try{ const m=fsAudio.toggleMute(); const b=hud&&hud.querySelector('.fs-deck [data-act="mute"]'); if(b){ b.classList.toggle('on',!m); b.firstChild.textContent=m?'🔇':'🔊'; } }catch(_){} }   /* (#R101) sound on/off */
+      else if(k==='mute'){ try{ const m=fsAudio.toggleMute(); const b=hud&&hud.querySelector('.fs-deck [data-act="mute"]'); if(b){ b.classList.toggle('on',!m); b.firstChild.replaceWith(iconNode(m?'speaker-off':'speaker')); } }catch(_){} }   /* (#R101) sound on/off */
       else return false;   /* (#R98) no in-flight aircraft switching (keys 1–6 removed) — the airframe is chosen on the pre-flight screen */
       try{ syncHUDChrome(); }catch(_){} return true; }
     function onKey(e){ const k=e.key.toLowerCase(); if(k==='escape'){ stop(); return; }
@@ -1018,21 +1019,21 @@ export function flightSim(HOST){
           +'.fss-go{flex:1;font-size:15px;font-weight:800;letter-spacing:.06em;color:#fff;background:linear-gradient(135deg,#0a84ff,#34c759);border:none;border-radius:11px;padding:12px;cursor:pointer;}';
         document.head.appendChild(s); }
       const selAc=(opts.aircraft&&AIRCRAFT[opts.aircraft])?opts.aircraft:acKey;
-      const acRows=AKEYS.map(k=>{ const a=AIRCRAFT[k], nm=((a.name&&LL.arr(a.name))||k).split('·')[0].trim(); return '<button class="fss-ac'+(k===selAc?' on':'')+'" data-ac="'+k+'">'+(a.icon?a.icon+' ':'')+nm+'</button>'; }).join('');
+      const acRows=AKEYS.map(k=>{ const a=AIRCRAFT[k], nm=((a.name&&LL.arr(a.name))||k).split('·')[0].trim(); return '<button class="fss-ac'+(k===selAc?' on':'')+'" data-ac="'+k+'">'+(a.icon?icon(a.icon)+' ':'')+nm+'</button>'; }).join('');
       /* (#R170) the previous flight's end point is a first-class start location, listed first and preselected
          when we got here from "Fly again" — that IS 「終了地点から再飛行」. It is offered on a fresh launch too
          (it persists), so "carry on from where I came down" doesn't require going through the result screen. */
-      const _lastOpt=lastEnd?('<option value="__last">'+LL('📍 Last flight end point','📍 前回の終了地点','📍 Letzter Endpunkt','📍 Конец прошлого полёта','📍 Fin del vuelo anterior')+' ('+lastEnd.lat.toFixed(2)+', '+lastEnd.lng.toFixed(2)+')</option>'):'';
-      const apOpts=_lastOpt+'<option value="__here">'+LL('📍 Current map view','📍 現在の地図の中心','📍 Aktuelle Kartenmitte','📍 Центр карты','📍 Vista actual')+'</option>'+AIRPORTS.map((a,i)=>'<option value="'+i+'">'+a[1]+' ('+a[0]+')</option>').join('');
+      const _lastOpt=lastEnd?('<option value="__last">'+LL('Last flight end point','前回の終了地点','Letzter Endpunkt','Конец прошлого полёта','Fin del vuelo anterior')+' ('+lastEnd.lat.toFixed(2)+', '+lastEnd.lng.toFixed(2)+')</option>'):'';
+      const apOpts=_lastOpt+'<option value="__here">'+LL('Current map view','現在の地図の中心','Aktuelle Kartenmitte','Центр карты','Vista actual')+'</option>'+AIRPORTS.map((a,i)=>'<option value="'+i+'">'+a[1]+' ('+a[0]+')</option>').join('');
       const ov=document.createElement('div'); ov.id='fs-setup';
-      ov.innerHTML='<div class="fss-card"><div class="fss-h">✈ '+LL('Flight Simulator','フライトシミュレーター','Flugsimulator','Авиасимулятор','Simulador de vuelo')+'</div>'
+      ov.innerHTML='<div class="fss-card"><div class="fss-h">'+icon('plane')+' '+LL('Flight Simulator','フライトシミュレーター','Flugsimulator','Авиасимулятор','Simulador de vuelo')+'</div>'
         +'<div class="fss-lbl">'+LL('Aircraft','機体','Flugzeug','Самолёт','Aeronave')+'</div><div class="fss-grid">'+acRows+'</div>'
         +'<div class="fss-lbl" id="fss-loc-lbl">'+LL('Start location','開始地点','Startort','Место старта','Ubicación')+'</div><select class="fss-sel" aria-labelledby="fss-loc-lbl">'+apOpts+'</select>'
         +'<div class="fss-lbl">'+LL('Start mode','開始状態','Startmodus','Режим старта','Modo')+'</div><div class="fss-mode">'
           /* (#R170) AIRBORNE is the default (「フライトシミュレーターは、空中で開始をデフォルトに」) — the .on class
              moved from the runway button to this one, matching the `mode:'air'` initial state below. */
-          +'<button class="fss-m" data-m="ground">🛫 '+LL('On the runway','滑走路から','Auf der Piste','На полосе','En pista')+'</button>'
-          +'<button class="fss-m on" data-m="air">🛩 '+LL('Airborne','空中（巡航）','In der Luft','В воздухе','En vuelo')+'</button></div>'
+          +'<button class="fss-m" data-m="ground">'+icon('plane')+' '+LL('On the runway','滑走路から','Auf der Piste','На полосе','En pista')+'</button>'
+          +'<button class="fss-m on" data-m="air">'+icon('plane')+' '+LL('Airborne','空中（巡航）','In der Luft','В воздухе','En vuelo')+'</button></div>'
         /* (#R190) 「高度は一律ではなく、実際に今見てる画角と高度で」 — say what an airborne start from
            THIS view will actually use, before it is pressed. The number is the eye's own altitude,
            clamped to the chosen machine's service ceiling (a 737 has no air to fly in at 300 km);
@@ -1197,7 +1198,7 @@ export function flightSim(HOST){
     function _ensureRotate(){
       if(_rotEl) return _rotEl;
       _rotEl=document.createElement('div'); _rotEl.id='fs-rotate';
-      _rotEl.innerHTML='<span class="fs-rot-icon">📱</span> '
+      _rotEl.innerHTML=('<span class="fs-rot-icon">'+icon('phone')+'</span> ')
         +LL('Turn sideways for the full deck','横向きにすると全体が見えます',
             'Quer halten für das ganze Cockpit','Поверните — будет видно всю кабину',
             'Gira el teléfono para ver toda la cabina');
@@ -1226,7 +1227,7 @@ export function flightSim(HOST){
       if(_gateEl) return _gateEl;
       _gateEl=document.createElement('div'); _gateEl.id='fs-gate';
       _gateEl.innerHTML='<div class="fs-gate-in">'
-        +'<div class="fs-gate-ico">📱</div>'
+        +('<div class="fs-gate-ico">'+icon('phone')+'</div>')
         +'<div class="fs-gate-t">'+LL('Turn your phone sideways','端末を横向きにしてください',
             'Bitte quer halten','Поверните телефон горизонтально','Gira el teléfono')+'</div>'
         +'<div class="fs-gate-s">'+LL('The flight starts the moment you do.','横向きにした瞬間に開始します。',

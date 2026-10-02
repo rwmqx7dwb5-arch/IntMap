@@ -19,6 +19,7 @@
 import { str, bool, num, loose } from './atlas-caps.js';
 import { resolveObserver, satelliteFacts } from './atlas-result-facts.js';
 import { isDisplay } from './layer-manifest.js';   /* (basic-display-not-layers) which rows are the map display, not layers */
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export default [
   {
@@ -35,7 +36,7 @@ export default [
              changed. No change after a grace poll → re-fire the toggle once; still nothing → say so honestly
              instead of reporting success. */
           const preSnap=_visSnapshot();
-          const r=toggleLayer(a.name,a.on!==false); if(!r.ok){ const c=doControl({target:a.name,on:a.on}); if(c.ok) return c; return R(false, warn('⚠ '+L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||''))); }
+          const r=toggleLayer(a.name,a.on!==false); if(!r.ok){ const c=doControl({target:a.name,on:a.on}); if(c.ok) return c; return R(false, warn(L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||''))); }
           let verifyNote='', unverified=false;
           if(!r.already){ let changed=false;
             for(let i2=0;i2<6&&!changed;i2++){ await new Promise(r2=>setTimeout(r2,700)); changed=_visDelta(preSnap,_visSnapshot()); }
@@ -48,8 +49,8 @@ export default [
                asked only of a turn-ON; the WARNING did not, so 「✓ Waves★ — off」 shipped followed by
                「⚠ Could not confirm the layer actually painted … toggling it again may help」 (measured
                on production 2026-09-15). The 「— off」 line already states the outcome. */
-            if(!changed&&r.want){ unverified=true; verifyNote=warn('⚠ '+L('Could not confirm the layer actually painted on the map (its data may still be loading or its source may be down) — check the map; toggling it again may help','地図上で実際に描画されたことを確認できませんでした（データ読込中またはソース障害の可能性）。地図をご確認ください。もう一度切り替えると直る場合があります','Konnte nicht bestätigen, dass die Ebene wirklich gezeichnet wurde','Не удалось подтвердить отрисовку слоя на карте','No se pudo confirmar que la capa se dibujó en el mapa')); }
-            else if(r.want) verifyNote=note('☑ '+L('verified on the map','地図上での描画を確認','auf der Karte bestätigt','отрисовка подтверждена','verificado en el mapa')); }
+            if(!changed&&r.want){ unverified=true; verifyNote=warn(L('Could not confirm the layer actually painted on the map (its data may still be loading or its source may be down) — check the map; toggling it again may help','地図上で実際に描画されたことを確認できませんでした（データ読込中またはソース障害の可能性）。地図をご確認ください。もう一度切り替えると直る場合があります','Konnte nicht bestätigen, dass die Ebene wirklich gezeichnet wurde','Не удалось подтвердить отрисовку слоя на карте','No se pudo confirmar que la capa se dibujó en el mapa')); }
+            else if(r.want) verifyNote=note(icon('check')+' '+L('verified on the map','地図上での描画を確認','auf der Karte bestätigt','отрисовка подтверждена','verificado en el mapa')); }
           const onTxt=r.want?L('on','オン','an','вкл','activado'):L('off','オフ','aus','выкл','desactivado');
           /* (#R72/#R142) a WORKING inline toggle appears right in the reply — for BOTH on AND off (turning a layer off still
              leaves a re-toggle switch, #9) — reading THIS exact checkbox r.cb so the switch's default state is the real one
@@ -72,7 +73,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { name: str(), value: num(0, 100), percent: num(0, 100), delta: num(-100, 100) }, anyOf: [{ required: ['name', 'value'] }, { required: ['name', 'percent'] }, { required: ['name', 'delta'] }] }),
     async run(a, dctx, K) { const resolveLayer = K.resolveLayer, R = K.R, warn = K.warn, L = K.L, esc = K.esc, layerOpacityControl = K.layerOpacityControl, note = K.note;
-      { const r=resolveLayer(a.name); if(!r) return R(false, warn('⚠ '+L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||''))); const sl=layerOpacityControl(r.cb); let v=(a.value!=null?+a.value:(a.percent!=null?+a.percent:null)); if(v!=null&&v>1) v=v/100; if(v==null&&a.delta!=null&&sl){ let d=+a.delta; if(!isNaN(d)){ if(Math.abs(d)>1) d/=100; v=Math.max(0,Math.min(1,(parseFloat(sl.value)||0)+d)); } } if(sl&&v!=null&&!isNaN(v)){ if(!r.cb.checked){ r.cb.checked=true; r.cb.dispatchEvent(new Event('change',{bubbles:true})); } sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); return R(true, note('🎚 '+esc(r.label)+' '+Math.round(v*100)+'%')); } return R(false, warn('⚠ '+L('No opacity control: ','不透明度の調整なし: ','Keine Deckkraft: ','Нет управления непрозрачностью: ','Sin opacidad: ')+esc(r.label))); }
+      { const r=resolveLayer(a.name); if(!r) return R(false, warn(L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||''))); const sl=layerOpacityControl(r.cb); let v=(a.value!=null?+a.value:(a.percent!=null?+a.percent:null)); if(v!=null&&v>1) v=v/100; if(v==null&&a.delta!=null&&sl){ let d=+a.delta; if(!isNaN(d)){ if(Math.abs(d)>1) d/=100; v=Math.max(0,Math.min(1,(parseFloat(sl.value)||0)+d)); } } if(sl&&v!=null&&!isNaN(v)){ if(!r.cb.checked){ r.cb.checked=true; r.cb.dispatchEvent(new Event('change',{bubbles:true})); } sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); return R(true, note(icon('sliders')+' '+esc(r.label)+' '+Math.round(v*100)+'%')); } return R(false, warn(L('No opacity control: ','不透明度の調整なし: ','Keine Deckkraft: ','Нет управления непрозрачностью: ','Sin opacidad: ')+esc(r.label))); }
     },
   },
   {
@@ -83,7 +84,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { on: bool() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
-      { const cb=document.getElementById('cb-countries'); if(cb){ const want=a.on!==false; if(cb.checked!==want){ cb.checked=want; cb.dispatchEvent(new Event('change',{bubbles:true})); } return R(cb.checked===want, note('✓ '+L('Country info','国情報','Länderinfo','Инфо о странах','Info de países')+': '+(a.on===false?'off':'on'))+_featTogHtml('countryInfo')); } return R(false, warn('⚠')); }
+      { const cb=document.getElementById('cb-countries'); if(cb){ const want=a.on!==false; if(cb.checked!==want){ cb.checked=want; cb.dispatchEvent(new Event('change',{bubbles:true})); } return R(cb.checked===want, note('✓ '+L('Country info','国情報','Länderinfo','Инфо о странах','Info de países')+': '+(a.on===false?'off':'on'))+_featTogHtml('countryInfo')); } return R(false, warn('')); }
     },
   },
   {
@@ -93,7 +94,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { axis: str(), name: str(), by: str() }, anyOf: [{ required: ['axis'] }, { required: ['name'] }, { required: ['by'] }] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, note = K.note;
-      { const RM=window.IntMapRailways; if(!RM||!RM.setAxis) return R(false,warn('⚠')); const want=String(a.axis||a.name||a.by||'').trim().toLowerCase(); const SYN={gauge:'gauge','track gauge':'gauge','軌間':'gauge',electrification:'electrification',electrified:'electrification',electric:'electrification',power:'electrification','電化':'electrification',speed:'speed',maxspeed:'speed','line speed':'speed','最高速度':'speed',tracks:'tracks','track count':'tracks','single track':'tracks','double track':'tracks','複線':'tracks',traffic:'traffic',passenger:'traffic',freight:'traffic','旅客':'traffic','貨物':'traffic',status:'status',construction:'status','運行状態':'status','建設中':'status',kind:'kind',type:'kind','line type':'kind','線種':'kind'}; const known=RM.axes().map(x=>x[0]); const ax=(known.indexOf(want)>=0)?want:(SYN[want]||''); if(!ax) return R(false,warn('⚠ '+L('no such railway view','その鉄道の塗り分けはありません','keine solche Bahn-Ansicht','нет такого вида для железных дорог','no existe esa vista ferroviaria'))); RM.setAxis(ax); const lbl=(RM.axes().find(x=>x[0]===ax)||[ax,ax])[1]; return R(true,note('🚆 '+lbl)); }   /* (#R388) one layer, one option, named in words — same shape as wxModel; the axis is resolved through the module's OWN list so this table cannot drift from the legend */
+      { const RM=window.IntMapRailways; if(!RM||!RM.setAxis) return R(false,warn('')); const want=String(a.axis||a.name||a.by||'').trim().toLowerCase(); const SYN={gauge:'gauge','track gauge':'gauge','軌間':'gauge',electrification:'electrification',electrified:'electrification',electric:'electrification',power:'electrification','電化':'electrification',speed:'speed',maxspeed:'speed','line speed':'speed','最高速度':'speed',tracks:'tracks','track count':'tracks','single track':'tracks','double track':'tracks','複線':'tracks',traffic:'traffic',passenger:'traffic',freight:'traffic','旅客':'traffic','貨物':'traffic',status:'status',construction:'status','運行状態':'status','建設中':'status',kind:'kind',type:'kind','line type':'kind','線種':'kind'}; const known=RM.axes().map(x=>x[0]); const ax=(known.indexOf(want)>=0)?want:(SYN[want]||''); if(!ax) return R(false,warn(L('no such railway view','その鉄道の塗り分けはありません','keine solche Bahn-Ansicht','нет такого вида для железных дорог','no existe esa vista ferroviaria'))); RM.setAxis(ax); const lbl=(RM.axes().find(x=>x[0]===ax)||[ax,ax])[1]; return R(true,note(icon('train')+' '+lbl)); }   /* (#R388) one layer, one option, named in words — same shape as wxModel; the axis is resolved through the module's OWN list so this table cannot drift from the legend */
     },
   },
   {
@@ -118,7 +119,7 @@ export default [
   {
     row: ['layers.windParticles',       'windParticles',  'windAnimation',                                               'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
     doc: [
-      { in: 'tools-panels', at: 310, text: '{"type":"windParticles","on":bool} = the ANIMATED STREAKS inside the Wind layer, separately from the layer itself. Wind draws two things from one forecast field — a colour raster of speed and thousands of moving particles — and this switches only the particles, so the colours stay. On by default and remembered. Use for "風のパーティクルを消して" (on:false), "風のアニメーションを止めて" (on:false), "turn off the wind particles", "stop the wind animation", "パーティクルを戻して" (on:true). ⚠ This is NOT the same as switching the Wind LAYER off — for that emit {"type":"layer","name":"wind","on":false}. ⚠ ADD "over":"temperature" | "gusts" | "pressure" | "precipitation" TO DRAW THE SAME STREAKS OVER THAT LAYER instead — the wind moving across that field, with no wind colour raster and without switching the Wind layer on. EACH of the four is remembered SEPARATELY, and each needs ITS OWN layer ("ec-temp" / "ec-gust" / "ec-slp" / "ec-precip") to be on to show anything, so turn that layer on in the same answer when it is not. Gusts, sea-level pressure and forecast precipitation have the streaks ON by default (the weather system is what a reader is looking at in those fields); temperature is OFF by default. Use for "気温レイヤーの上に風のパーティクルを出して", "気温の上に風の動きを重ねて", "show the wind over the temperature map", "最大瞬間風速の上に風の動きを重ねて" (over:"gusts"), "気圧レイヤーにパーティクルを出して" (over:"pressure"), "降水量予報の上に風の動きを重ねて" (over:"precipitation"), and with on:false for "気温の上の風を消して"; ' },
+      { in: 'tools-panels', at: 310, text: '{"type":"windParticles","on":bool} = the ANIMATED STREAKS inside the Wind layer, separately from the layer itself. Wind draws two things from one forecast field — a colour raster of speed and thousands of moving particles — and this switches only the particles, so the colours stay. On by default and remembered. Use for "風のパーティクルを消して" (on:false), "風のアニメーションを止めて" (on:false), "turn off the wind particles", "stop the wind animation", "パーティクルを戻して" (on:true). This is NOT the same as switching the Wind LAYER off — for that emit {"type":"layer","name":"wind","on":false}. ADD "over":"temperature" | "gusts" | "pressure" | "precipitation" TO DRAW THE SAME STREAKS OVER THAT LAYER instead — the wind moving across that field, with no wind colour raster and without switching the Wind layer on. EACH of the four is remembered SEPARATELY, and each needs ITS OWN layer ("ec-temp" / "ec-gust" / "ec-slp" / "ec-precip") to be on to show anything, so turn that layer on in the same answer when it is not. Gusts, sea-level pressure and forecast precipitation have the streaks ON by default (the weather system is what a reader is looking at in those fields); temperature is OFF by default. Use for "気温レイヤーの上に風のパーティクルを出して", "気温の上に風の動きを重ねて", "show the wind over the temperature map", "最大瞬間風速の上に風の動きを重ねて" (over:"gusts"), "気圧レイヤーにパーティクルを出して" (over:"pressure"), "降水量予報の上に風の動きを重ねて" (over:"precipitation"), and with on:false for "気温の上の風を消して"; ' },
     ],
     schema: () => ({ type: 'object', properties: { on: bool(), mode: str(), over: str(), layer: str(), on_layer: str() } }),
       /* (#R172) aircraft at their reported altitude, or flat on the map */
@@ -135,9 +136,9 @@ export default [
              temperature field」, so this branch writes the one the reader named and never both. */
           const OVER=[['ec-temp',/temp|気温|気溫|temperatur|температ/,'tempWindParticles'],['ec-gust',/gust|突風|瞬間風速|böe|boe|порыв|racha/,'gustWindParticles'],['ec-slp',/press|気圧|luftdruck|druck|давлен|presi/,'slpWindParticles'],['ec-precip',/precip|降水|雨|niederschlag|regen|осадк|lluvia|precipit/,'precipWindParticles']];   /* ⚠ (#R455) A FOURTH LAYER CAN ASK — the forecast-precipitation raster. ⚠ IT IS LAST ON PURPOSE: `presi`/`precip` both begin with `pre`, and `ec-slp`'s row is tested first, so a bare 'precipitation' must not be caught by the pressure pattern — it is not, because `presi` does not match 'precip', but the ORDER is what keeps that true if either pattern is ever widened. */   /* ⚠ (#R439) THREE LAYERS CAN ASK NOW, each remembering its own answer, so `over` resolves to WHICH one rather than to a boolean. One door: window._imWxParts(layerId,v). ⚠ THE LABEL IS NOT REPEATED HERE — `_FEAT_TOG` already declares one per layer and the reply reads it from there, which is the same rule the legend follows. docs/MAP-LAYERS.md §7.10 */
           const over=String(a.over||a.layer||a.on_layer||'').toLowerCase(), hit=over?OVER.find(o=>o[1].test(over)):null;
-          if(hit){ try{ if(window._imWxParts){ window._imWxParts(hit[0],want); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+_FEAT_TOG[hit[2]].lbl()+': '+(want?'on':'off'))+_featTogHtml(hit[2]):warn('⚠')); }
+          if(hit){ try{ if(window._imWxParts){ window._imWxParts(hit[0],want); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+_FEAT_TOG[hit[2]].lbl()+': '+(want?'on':'off'))+_featTogHtml(hit[2]):warn('')); }
           try{ if(window.Wind&&window.Wind.setParticles){ window.Wind.setParticles(want); ok=true; } }catch(_){}
-          return R(ok, ok?note('✓ '+L('Wind particles','風のパーティクル','Wind-Partikel','Частицы ветра','Partículas de viento')+': '+(want?'on':'off'))+_featTogHtml('windParticles'):warn('⚠')); }
+          return R(ok, ok?note('✓ '+L('Wind particles','風のパーティクル','Wind-Partikel','Частицы ветра','Partículas de viento')+': '+(want?'on':'off'))+_featTogHtml('windParticles'):warn('')); }
     },
   },
   /* (#R439) the 4 hPa contours over the sea-level-pressure field — a switch inside that layer's
@@ -150,7 +151,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { on: bool(), mode: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, _FEAT_TOG = K._FEAT_TOG, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
-      { const want=!(a.on===false||/^(off|hide|none)$/i.test(String(a.mode||''))); let ok=false,lit=false; if(want){ try{ const cb=document.getElementById('dl-ec-slp'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); lit=true; } }catch(_){} } try{ if(window._imWxIsobars){ window._imWxIsobars(want); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+_FEAT_TOG.isobars.lbl()+': '+(want?'on':'off')+(lit?(' · '+L('sea-level pressure switched on','海面気圧をオンにしました','Luftdruck eingeschaltet','слой давления включён','presión al nivel del mar activada')):''))+_featTogHtml('isobars'):warn('⚠')); }   /* ⚠ (#R439) THE ISOBARS ARE A SWITCH, SO ATLAS GETS A SWITCH — a control inside the sea-level-pressure legend rather than a row, so a layer name resolves to nothing. It switches that layer on too, because contours of a field that is not on the map are nothing at all, and the reply says both halves. docs/MAP-LAYERS.md §7.10 */
+      { const want=!(a.on===false||/^(off|hide|none)$/i.test(String(a.mode||''))); let ok=false,lit=false; if(want){ try{ const cb=document.getElementById('dl-ec-slp'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); lit=true; } }catch(_){} } try{ if(window._imWxIsobars){ window._imWxIsobars(want); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+_FEAT_TOG.isobars.lbl()+': '+(want?'on':'off')+(lit?(' · '+L('sea-level pressure switched on','海面気圧をオンにしました','Luftdruck eingeschaltet','слой давления включён','presión al nivel del mar activada')):''))+_featTogHtml('isobars'):warn('')); }   /* ⚠ (#R439) THE ISOBARS ARE A SWITCH, SO ATLAS GETS A SWITCH — a control inside the sea-level-pressure legend rather than a row, so a layer name resolves to nothing. It switches that layer on too, because contours of a field that is not on the map are nothing at all, and the reply says both halves. docs/MAP-LAYERS.md §7.10 */
     },
   },
   /* The base-display preset the layer panel offers as a radio — Default / Clean / Custom
@@ -180,7 +181,7 @@ export default [
           try{ window._imSyncNightSideRow&&window._imSyncNightSideRow(); }catch(_){}   /* (#R232) the Layers row + the Settings picker follow */
           const detail=(want&&st)?(' — '+(st.built?L('drawn','描画中','gezeichnet','нарисовано','dibujado'):L('appears as you zoom out','ズームアウトすると現れます','erscheint beim Herauszoomen','появится при отдалении','aparece al alejar'))
             +(st.lights?(' · '+L('city lights loaded','夜間光を読み込み済み','Nachtlichter geladen','ночные огни загружены','luces nocturnas cargadas')):'')):'';
-          return R(ok, ok?note('✓ '+L('Night side of the Earth','地球の夜側','Nachtseite der Erde','Ночная сторона Земли','Lado nocturno de la Tierra')+': '+(want?'on':'off')+detail)+_featTogHtml('nightSide'):warn('⚠')); }
+          return R(ok, ok?note('✓ '+L('Night side of the Earth','地球の夜側','Nachtseite der Erde','Ночная сторона Земли','Lado nocturno de la Tierra')+': '+(want?'on':'off')+detail)+_featTogHtml('nightSide'):warn('')); }
     },
   },
   {
@@ -193,7 +194,7 @@ export default [
       { const want=!(a.on===false||/^(off|flat|2d)$/i.test(String(a.mode||''))); let ok=false;
           try{ if(window.IntMapPlanes3D){ window.IntMapPlanes3D.set(want); ok=true; } }catch(_){}
           const st=(()=>{ try{ const s=window.IntMapPlanes3D.state(); return s.lifted?(' — '+s.lifted+' '+L('airborne, up to','機が飛行中・最高','in der Luft, bis','в воздухе, до','en vuelo, hasta')+' '+s.maxAlt.toLocaleString()+' m'):''; }catch(_){ return ''; } })();
-          return R(ok, ok?note('✓ '+L('Aircraft at real altitude','航空機を実際の高度で描画','Flugzeuge in echter Höhe','Самолёты на реальной высоте','Aviones a su altitud real')+': '+(want?'on':'off')+(want?st:''))+_featTogHtml('planeAltitude'):warn('⚠')); }
+          return R(ok, ok?note('✓ '+L('Aircraft at real altitude','航空機を実際の高度で描画','Flugzeuge in echter Höhe','Самолёты на реальной высоте','Aviones a su altitud real')+': '+(want?'on':'off')+(want?st:''))+_featTogHtml('planeAltitude'):warn('')); }
     },
   },
   {
@@ -207,15 +208,15 @@ export default [
          history feed behind it, so the reply says how many fixes and how long it covers. */
     async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, L = K.L, esc = K.esc;
       {
-          const P=window.IntMapPlanes3D; if(!P) return R(false,warn('⚠'));
+          const P=window.IntMapPlanes3D; if(!P) return R(false,warn(''));
           const off=(a.on===false)||/^(off|clear|hide|none)$/i.test(String(a.mode||a.aircraft||''));
           if(off){ try{ P.select(null); }catch(_){} return R(true,note('✓ '+L('Aircraft track cleared','航空機の軌跡を消去','Flugspur entfernt','Трек убран','Traza borrada'))); }
           const q=String(a.aircraft||a.callsign||a.flight||a.reg||a.icao24||'').trim();
           const key=q?((await P.find(q))||null):(P.selected()||null);
-          if(!key) return R(false,warn('⚠ '+L('No aircraft matching','該当する航空機がありません','Kein Flugzeug gefunden','Самолёт не найден','Ningún avión coincide')+(q?' “'+esc(q)+'”':'')));
+          if(!key) return R(false,warn(L('No aircraft matching','該当する航空機がありません','Kein Flugzeug gefunden','Самолёт не найден','Ningún avión coincide')+(q?' “'+esc(q)+'”':'')));
           let ok=false; try{ await P.select(key); ok=true; }catch(_){}   /* (#R506) awaited — find/select are worker round trips now, and trackStats below would read an empty track if it ran first */
           const s2=(()=>{ try{ const t=P.trackStats(key); return ' — '+t.fixes+' '+L('fixes','点','Punkte','точек','puntos')+' · '+t.minutes+' '+L('min','分','min','мин','min')+(t.maxAlt?(' · '+L('up to','最高','bis','до','hasta')+' '+t.maxAlt.toLocaleString()+' m'):''); }catch(_){ return ''; } })();
-          return R(ok, ok?note('✓ '+L('Track of','軌跡','Spur von','Трек','Traza de')+' '+esc(q||key)+s2):warn('⚠')); }
+          return R(ok, ok?note('✓ '+L('Track of','軌跡','Spur von','Трек','Traza de')+' '+esc(q||key)+s2):warn('')); }
     },
   },
   {
@@ -231,7 +232,7 @@ export default [
          map is not showing. */
     async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, L = K.L, esc = K.esc, GE = K.GE, geocode = K.geocode;
       {
-          await window.IntMapLazy.need('satellitesLive'); const A=window.IntMapSatellites; if(!A) return R(false,warn('⚠'));   /* (#R311) on-demand, and the OFF branch reads A too */
+          await window.IntMapLazy.need('satellitesLive'); const A=window.IntMapSatellites; if(!A) return R(false,warn(''));   /* (#R311) on-demand, and the OFF branch reads A too */
           const offS=(a.on===false)||/^(off|hide|stop|clear|none)$/i.test(String(a.mode||''));
           if(offS){ try{ const cb=document.getElementById('dl-sats'); if(cb&&cb.checked){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } else A.stop(); }catch(_){}
             return R(true,note('✓ '+L('Live satellites off','人工衛星レイヤーを非表示にしました','Live-Satelliten aus','Спутники выключены','Satélites en vivo desactivados'))); }
@@ -263,7 +264,7 @@ export default [
                `narrow`. ⚠ Not a hidden filter — #R266 removed that; the catalogue is named in the reply. */
             if(!gWant&&found===null){ try{ found=await A.narrow(q); }catch(_){} }
             if(!found) for(let k=0;k<8&&!found;k++){ found=A.find(q); if(found) break; await new Promise(r=>setTimeout(r,250)); }
-            if(!found) return R(okS, warn('⚠ '+L('No satellite matching','該当する衛星がありません','Kein Satellit gefunden','Спутник не найден','Ningún satélite coincide')+' “'+esc(q)+'”'
+            if(!found) return R(okS, warn(L('No satellite matching','該当する衛星がありません','Kein Satellit gefunden','Спутник не найден','Ningún satélite coincide')+' “'+esc(q)+'”'
               +' — '+L('the loaded catalog is','読み込み中のカタログは','geladener Katalog:','загруженный каталог:','el catálogo cargado es')+' '+esc(A.group())));
             try{ A.select(found.id); }catch(_){}
             try{ window.IntMapSatPanel&&window.IntMapSatPanel.open(found.id); }catch(_){}
@@ -276,7 +277,7 @@ export default [
           const st=A.state();
           return R(okS, okS?note('✓ '+L('Live satellites on','人工衛星レイヤーを表示しました','Live-Satelliten an','Спутники включены','Satélites en vivo activados')
               +' — '+esc(A.groups().filter(g=>g.id===(gSet||A.group())).map(g=>g.name)[0]||A.group())
-              +(st.catalogue?(' · '+st.catalogue.toLocaleString()+' '+L('objects','機','Objekte','объектов','objetos')):'')):warn('⚠')); }
+              +(st.catalogue?(' · '+st.catalogue.toLocaleString()+' '+L('objects','機','Objekte','объектов','objetos')):'')):warn('')); }
     },
   },
 ];

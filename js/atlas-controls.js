@@ -15,6 +15,7 @@
  * ==========================================================================*/
 import { everyTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 export function makeAtlasControls(HOST, CTX) {
   const L=CTX.L, R=CTX.R, _ctlTogHtml=CTX._ctlTogHtml, esc=CTX.esc, note=CTX.note, warn=CTX.warn;
     /* ---- generic UI helpers for the full-control action set ---- */
@@ -72,8 +73,8 @@ export function makeAtlasControls(HOST, CTX) {
          one control pressed another and reported success. The candidates travel back in `meta` so
          the kernel can answer `needs_input` with them (js/atlas-capabilities.js, `control`). */
       if(el){ const cand=(_lastControlField&&_lastControlField.near.length>=2)?controlCandidates(a.target):[];
-        if(cand.length>=2) return R(false, warn('⚠ '+L('Several controls match','複数の操作対象が一致します','Mehrere Bedienelemente passen','Совпадает несколько элементов','Coinciden varios controles')+': '+esc(cand.map(function(c){ return c.label||c.id; }).join(' · '))), {meta:{code:'ambiguous_target', candidates:cand}}); }
-      if(!el) return R(false, warn('⚠ '+L('Control not found','操作対象が見つかりません','Steuerung nicht gefunden','Элемент не найден','Control no encontrado')+': '+esc(a.target||'')));
+        if(cand.length>=2) return R(false, warn(L('Several controls match','複数の操作対象が一致します','Mehrere Bedienelemente passen','Совпадает несколько элементов','Coinciden varios controles')+': '+esc(cand.map(function(c){ return c.label||c.id; }).join(' · '))), {meta:{code:'ambiguous_target', candidates:cand}}); }
+      if(!el) return R(false, warn(L('Control not found','操作対象が見つかりません','Steuerung nicht gefunden','Элемент не найден','Control no encontrado')+': '+esc(a.target||'')));
       const tag=el.tagName.toLowerCase(), nm=esc(a.target||el.id||(el.textContent||'').trim().slice(0,24));
       /* (atlas-outward-effects) what pressing it DOES, as the element itself declares it — carried in the result so
          the turn record says «this sent something» rather than only «a control was pressed». The decision to ask the
@@ -83,19 +84,19 @@ export function makeAtlasControls(HOST, CTX) {
          js/atlas-console.js) and none of them is `system.control`, so the executor asked none of them what the
          element does. A fallback that lands on a control declaring it sends or deletes does not press it: the
          one road to such a control is the `control` action (a.type), whose effect 4b has already judged. */
-      if((_eff==='outward'||_eff==='destructive')&&a.type!=='control') return R(false, warn('⚠ '+esc(L('“{x}” sends or deletes something, so it is pressed only when it is named as a control.','「{x}」は送信または削除を行うため、操作対象として名指しされたときだけ押します。','„{x}“ sendet oder löscht etwas und wird nur gedrückt, wenn es als Bedienelement genannt wird.','«{x}» отправляет или удаляет данные и нажимается, только когда названо как элемент управления.','«{x}» envía o elimina algo, así que solo se pulsa cuando se nombra como control.').split('{x}').join(a.target||el.id||''))), X);
+      if((_eff==='outward'||_eff==='destructive')&&a.type!=='control') return R(false, warn(esc(L('“{x}” sends or deletes something, so it is pressed only when it is named as a control.','「{x}」は送信または削除を行うため、操作対象として名指しされたときだけ押します。','„{x}“ sendet oder löscht etwas und wird nur gedrückt, wenn es als Bedienelement genannt wird.','«{x}» отправляет или удаляет данные и нажимается, только когда названо как элемент управления.','«{x}» envía o elimina algo, así que solo se pulsa cuando se nombra como control.').split('{x}').join(a.target||el.id||''))), X);
       try{
-        if(tag==='select'){ if(a.value!=null){ const v=String(a.value).toLowerCase(); const opts=[].slice.call(el.options); const o=opts.find(o=>String(o.value).toLowerCase()===v)||opts.find(o=>(o.textContent||'').toLowerCase().indexOf(v)>=0); if(!o) return R(false, warn('⚠ '+nm+': '+L('option not found','選択肢なし','Option fehlt','нет варианта','sin opción')+' "'+esc(a.value)+'"')); el.value=o.value; el.dispatchEvent(new Event('change',{bubbles:true})); } return R(true, note('✓ '+nm+(a.value!=null?(' = '+esc(a.value)):'')), X); }
+        if(tag==='select'){ if(a.value!=null){ const v=String(a.value).toLowerCase(); const opts=[].slice.call(el.options); const o=opts.find(o=>String(o.value).toLowerCase()===v)||opts.find(o=>(o.textContent||'').toLowerCase().indexOf(v)>=0); if(!o) return R(false, warn(nm+': '+L('option not found','選択肢なし','Option fehlt','нет варианта','sin opción')+' "'+esc(a.value)+'"')); el.value=o.value; el.dispatchEvent(new Event('change',{bubbles:true})); } return R(true, note('✓ '+nm+(a.value!=null?(' = '+esc(a.value)):'')), X); }
         if(el.type==='checkbox'||el.type==='radio'){ const want=(a.on!=null)?(a.on!==false):!el.checked; if(el.checked!==want){ el.checked=want; el.dispatchEvent(new Event('change',{bubbles:true})); } return R(el.checked===want, note('✓ '+nm+': '+(want?'on':'off'))+_ctlTogHtml(a.target||el.id,el), X); }   /* (#R152) attach an on/off switch for any checkbox control */
         if(el.type==='range'||el.type==='number'){ if(a.value!=null){ el.value=a.value; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); } return R(true, note('✓ '+nm+(a.value!=null?(' = '+esc(a.value)):''))); }
         /* (#R77) dated-layer date/month inputs (「気温レイヤーの日付を2023-06-01に」) were unreachable — click() did nothing useful */
         if(el.type==='date'||el.type==='month'){ if(a.value!=null){ let v=String(a.value).trim(); if(el.type==='month') v=v.slice(0,7); else v=v.slice(0,10);
             el.value=v; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true}));
-            return R(el.value===v, el.value===v?note('✓ '+nm+' = '+esc(v)):warn('⚠ '+nm+': '+L('value rejected (out of range?)','値が受理されません（範囲外？）','Wert abgelehnt','значение отклонено','valor rechazado')+' '+esc(v))); }
+            return R(el.value===v, el.value===v?note('✓ '+nm+' = '+esc(v)):warn(nm+': '+L('value rejected (out of range?)','値が受理されません（範囲外？）','Wert abgelehnt','значение отклонено','valor rechazado')+' '+esc(v))); }
           return R(true, note('✓ '+nm)); }
         if(tag==='textarea'||(tag==='input'&&(!el.type||/^(text|search|email|url)$/.test(el.type)))){ if(a.value!=null){ el.focus(); el.value=a.value; el.dispatchEvent(new Event('input',{bubbles:true})); if(a.submit!==false){ el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); } } return R(true, note('✓ '+nm), X); }
         el.click(); return R(true, note('✓ '+nm), X);
-      }catch(_){ return R(false, warn('⚠ '+nm)); } }
+      }catch(_){ return R(false, warn(nm)); } }
     /* Compact catalog of the main controls (buttons + selects), fed to the AI so it can target ANY of them by
        name via {"type":"control",...}. Layer checkboxes are omitted (the `layer` action covers them). */
     const CTL_MAX=140;
@@ -236,8 +237,8 @@ export function makeAtlasControls(HOST, CTX) {
         seenMod.add(g); out.push(g+'('+MOD_METHODS.join(',')+') [loads on demand]'); }); } }catch(_){}
       return out.join('; '); }catch(_){ return ''; } }
     function doModule(a){ const nm0=String(a.name||'').trim(); const meth=String(a.method||'open').trim();
-      if(!MOD_RE.test(nm0)) return R(false, warn('⚠ '+L('Unknown module','不明なモジュール','Unbekanntes Modul','Неизвестный модуль','Módulo desconocido')+': '+esc(nm0)));
-      if(MOD_METHODS.indexOf(meth)<0) return R(false, warn('⚠ '+L('Unsupported method','非対応のメソッド','Methode nicht unterstützt','Метод не поддерживается','Método no admitido')+': '+esc(meth)));
+      if(!MOD_RE.test(nm0)) return R(false, warn(L('Unknown module','不明なモジュール','Unbekanntes Modul','Неизвестный модуль','Módulo desconocido')+': '+esc(nm0)));
+      if(MOD_METHODS.indexOf(meth)<0) return R(false, warn(L('Unsupported method','非対応のメソッド','Methode nicht unterstützt','Метод не поддерживается','Método no admitido')+': '+esc(meth)));
       let m; try{ m=window[nm0]; }catch(_){ m=null; }
       /* ⚠ (#R320) A MODULE THAT HAS NOT LOADED IS NOT A MISSING MODULE. This answered
          「Module/method not found」 for eight on-demand subsystems that exist — the same defect one
@@ -245,10 +246,10 @@ export function makeAtlasControls(HOST, CTX) {
          kernel's completion wait covers the fetch as well as the call. */
       if(!m){ try{ const LZ=window.IntMapLazy; const want=LZ&&LZ.names&&LZ.names().find(function(n){ return LZ.publishes&&LZ.publishes(n)===nm0; });
         if(want) return LZ.need(want).then(function(){ const m2=window[nm0];
-          if(m2&&typeof m2[meth]==='function'){ try{ m2[meth](); return R(true, note('✓ '+esc(nm0)+'.'+esc(meth)+'()')); }catch(e2){ return R(false, warn('⚠ '+esc(nm0)+': '+esc((e2&&e2.message)||'error'))); } }
-          return R(false, warn('⚠ '+esc(nm0)+'.'+esc(meth)+'()')); }); }catch(_){} }
-      if(m&&typeof m[meth]==='function'){ try{ m[meth](); return R(true, note('✓ '+esc(nm0)+'.'+esc(meth)+'()')); }catch(e){ return R(false, warn('⚠ '+esc(nm0)+': '+esc((e&&e.message)||'error'))); } }
-      return R(false, warn('⚠ '+L('Module/method not found','モジュール/メソッドが見つかりません','Modul/Methode nicht gefunden','Модуль/метод не найден','Módulo/método no encontrado')+': '+esc(nm0+'.'+meth))); }
+          if(m2&&typeof m2[meth]==='function'){ try{ m2[meth](); return R(true, note('✓ '+esc(nm0)+'.'+esc(meth)+'()')); }catch(e2){ return R(false, warn(esc(nm0)+': '+esc((e2&&e2.message)||'error'))); } }
+          return R(false, warn(esc(nm0)+'.'+esc(meth)+'()')); }); }catch(_){} }
+      if(m&&typeof m[meth]==='function'){ try{ m[meth](); return R(true, note('✓ '+esc(nm0)+'.'+esc(meth)+'()')); }catch(e){ return R(false, warn(esc(nm0)+': '+esc((e&&e.message)||'error'))); } }
+      return R(false, warn(L('Module/method not found','モジュール/メソッドが見つかりません','Modul/Methode nicht gefunden','Модуль/метод не найден','Módulo/método no encontrado')+': '+esc(nm0+'.'+meth))); }
   /* ══ (#R395) THE VOLCANO ANSWERS ═══════════════════════════════════════════════════════════════
      Two capabilities, one door: `volcano` opens the record for a NAMED volcano and answers from it,
      and `volcanoFilter` / `volcanoMode` / `volcanoTime` change WHICH volcanoes are drawn and what
@@ -264,16 +265,16 @@ export function makeAtlasControls(HOST, CTX) {
     const OSk=window.IntMapOS;
     if(a.type==='volcano'||a.type==='volcanoCard'||a.type==='volcanoInfo'){
       const q=String(a.name||a.text||a.query||a.place||'').trim();
-      if(!q) return R(false, warn('⚠ '+esc(L('Name a volcano.','火山名を指定してください。','Nennen Sie einen Vulkan.','Назовите вулкан.','Indique un volcán.'))));
+      if(!q) return R(false, warn(esc(L('Name a volcano.','火山名を指定してください。','Nennen Sie einen Vulkan.','Назовите вулкан.','Indique un volcán.'))));
       const okm=await window.IntMapLazy.need('volcanoIntel'), V=window.IntMapVolcano;
-      if(!okm||!V) return R(false, warn('⚠'));
+      if(!okm||!V) return R(false, warn(''));
       const hit=V.byName(q)[0];
       /* ⚠ (#R432) NOT «the Holocene catalog» ANY MORE — the bundled set is the GVP Holocene list
          plus the volcanoes an observatory publishes a current level for (Yellowstone among them),
          so naming the epoch here would tell the reader the wrong reason for the miss. */
-      if(!hit) return R(false, warn('⚠ '+esc(L('No volcano called “{q}” is in the Smithsonian GVP catalog this map carries.','この地図が収録しているスミソニアンGVPカタログに「{q}」という火山はありません。','Kein Vulkan namens „{q}“ ist im Smithsonian-GVP-Katalog dieser Karte.','В каталоге Смитсоновского GVP, который содержит эта карта, нет вулкана «{q}».','No hay ningún volcán llamado «{q}» en el catálogo del Smithsonian GVP que incluye este mapa.').split('{q}').join(q))));
+      if(!hit) return R(false, warn(esc(L('No volcano called “{q}” is in the Smithsonian GVP catalog this map carries.','この地図が収録しているスミソニアンGVPカタログに「{q}」という火山はありません。','Kein Vulkan namens „{q}“ ist im Smithsonian-GVP-Katalog dieser Karte.','В каталоге Смитсоновского GVP, который содержит эта карта, нет вулкана «{q}».','No hay ningún volcán llamado «{q}» en el catálogo del Smithsonian GVP que incluye este mapa.').split('{q}').join(q))));
       try{ if(OSk&&OSk.has('volcano.open')) await OSk.exec('volcano.open',{source:'atlas',params:{v:hit.v}}); }catch(_){}
-      const rec=await V.record(hit.v); if(!rec) return R(false, warn('⚠'));
+      const rec=await V.record(hit.v); if(!rec) return R(false, warn(''));
       const st=rec.status||{}, ln=[];
       ln.push('<b>'+esc(rec.name)+'</b> — '+esc([rec.countryL,rec.typeL,rec.elevation!=null?(rec.elevation+' m'):''].filter(Boolean).join(' · ')));
       ln.push(esc(st.tier?((st.label||'')+' — '+(st.source||'')):L('No observatory publishes a current level for it.','現在の警戒レベルを公表している観測機関はありません。','Kein Observatorium veröffentlicht eine aktuelle Stufe.','Ни одна обсерватория не публикует текущий уровень.','Ningún observatorio publica un nivel actual.')));
@@ -282,14 +283,14 @@ export function makeAtlasControls(HOST, CTX) {
         .split('{v}').join(rec.maxVei).split('{n}').join(rec.eruptions||0)));
       return R(true, note(ln.join('<br>')));
     }
-    if(!OSk||!OSk.has('volcano.filter')) return R(false, warn('⚠'));
+    if(!OSk||!OSk.has('volcano.filter')) return R(false, warn(''));
     const did=[]; let shown=null;
     if(a.mode){ await OSk.exec('volcano.mode',{source:'atlas',params:{mode:String(a.mode)}}); did.push(String(a.mode)); }
     if(a.time!=null||a.year!=null){ const r2=await OSk.exec('volcano.time',{source:'atlas',params:{on:a.time!==false,year:a.year}}); did.push(L('map year','地図の年','Kartenjahr','год карты','año del mapa')+' '+((r2&&r2.year)||'')); }
     const f={}; ['spoken','elevated','big','recent'].forEach(k=>{ if(a[k]!=null) f[k]=a[k]!==false; });
     if(a.clear) f.clear=true;
     if(Object.keys(f).length){ const r3=await OSk.exec('volcano.filter',{source:'atlas',params:f}); shown=r3&&r3.shown; did.push(Object.keys(f).join(', ')); }
-    if(!did.length) return R(false, warn('⚠ '+esc(L('Say which volcano view: a colour mode, a filter, or the map’s year.','火山レイヤーの何を変えるか指定してください（色モード・絞り込み・地図の年）。','Sagen Sie, welche Vulkanansicht: Farbmodus, Filter oder Kartenjahr.','Укажите вид: цветовой режим, фильтр или год карты.','Indique qué vista: modo de color, filtro o año del mapa.'))));
+    if(!did.length) return R(false, warn(esc(L('Say which volcano view: a colour mode, a filter, or the map’s year.','火山レイヤーの何を変えるか指定してください（色モード・絞り込み・地図の年）。','Sagen Sie, welche Vulkanansicht: Farbmodus, Filter oder Kartenjahr.','Укажите вид: цветовой режим, фильтр или год карты.','Indique qué vista: modo de color, filtro o año del mapa.'))));
     const tail=shown==null?'':(' — '+L('{n} volcanoes shown','{n} 座を表示','{n} Vulkane sichtbar','показано вулканов: {n}','{n} volcanes mostrados').split('{n}').join(shown));
     return R(true, note('✓ '+esc(did.join(' · ')+tail)));
   }
@@ -304,31 +305,31 @@ export function makeAtlasControls(HOST, CTX) {
   async function doHeritage(a){
     const OSk=window.IntMapOS, W=()=>window.__imWhsLayer;
     if(a.type==='heritageFilter'){
-      if(!OSk||!OSk.has('heritage.filter')) return R(false, warn('⚠'));
+      if(!OSk||!OSk.has('heritage.filter')) return R(false, warn(''));
       const p={};
       if(a.clear) p.clear=true;
       if(a.danger!=null) p.danger=a.danger!==false;
       const cats=Array.isArray(a.categories)?a.categories:(a.category?[a.category]:null);
       if(cats&&cats.length) p.categories=cats.map(String);
-      if(!Object.keys(p).length) return R(false, warn('⚠ '+esc(L('Say what to narrow the World Heritage layer to: a category, or the List in Danger.','世界遺産レイヤーを何で絞るか指定してください（区分、または危機遺産）。','Sagen Sie, worauf das Welterbe eingegrenzt werden soll: eine Kategorie oder die Rote Liste.','Укажите, по чему сузить слой: категория или список под угрозой.','Indique cómo acotar el Patrimonio Mundial: una categoría o la Lista en Peligro.'))));
+      if(!Object.keys(p).length) return R(false, warn(esc(L('Say what to narrow the World Heritage layer to: a category, or the List in Danger.','世界遺産レイヤーを何で絞るか指定してください（区分、または危機遺産）。','Sagen Sie, worauf das Welterbe eingegrenzt werden soll: eine Kategorie oder die Rote Liste.','Укажите, по чему сузить слой: категория или список под угрозой.','Indique cómo acotar el Patrimonio Mundial: una categoría o la Lista en Peligro.'))));
       const r=await OSk.exec('heritage.filter',{source:'atlas',params:p});
       /* ⚠ A NAME THE VOCABULARY DOES NOT HOLD IS ANSWERED WITH THE VOCABULARY, not with silence —
          the categories come from the data file, so the reply can always say what the choices are. */
-      if(!r||!r.ok) return R(false, warn('⚠ '+esc((r&&r.categories)?(L('Categories are: {c}','区分は {c} です','Kategorien: {c}','Категории: {c}','Las categorías son: {c}').split('{c}').join(r.categories.join(', '))):((r&&r.err)||'error'))));
+      if(!r||!r.ok) return R(false, warn(esc((r&&r.categories)?(L('Categories are: {c}','区分は {c} です','Kategorien: {c}','Категории: {c}','Las categorías son: {c}').split('{c}').join(r.categories.join(', '))):((r&&r.err)||'error'))));
       return R(true, note('✓ '+esc(L('{n} World Heritage points shown','世界遺産 {n} 地点を表示','{n} Welterbe-Punkte sichtbar','показано точек: {n}','{n} puntos del Patrimonio Mundial mostrados').split('{n}').join(r.shown==null?'':r.shown))));
     }
     const q=String(a.name||a.text||a.query||a.place||'').trim();
-    if(!q&&a.id==null) return R(false, warn('⚠ '+esc(L('Name a World Heritage property.','世界遺産の名前を指定してください。','Nennen Sie eine Welterbestätte.','Назовите объект всемирного наследия.','Indique un bien del Patrimonio Mundial.'))));
-    if(!OSk||!OSk.has('heritage.open')) return R(false, warn('⚠'));
+    if(!q&&a.id==null) return R(false, warn(esc(L('Name a World Heritage property.','世界遺産の名前を指定してください。','Nennen Sie eine Welterbestätte.','Назовите объект всемирного наследия.','Indique un bien del Patrimonio Mundial.'))));
+    if(!OSk||!OSk.has('heritage.open')) return R(false, warn(''));
     const r=await OSk.exec('heritage.open',{source:'atlas',params:a.id!=null?{id:a.id}:{name:q}});
     const w=W();
     if(!r||!r.ok){
       /* ⚠ «NO COORDINATE» IS NOT «NOT FOUND», and saying so is the answer. Three inscribed
          properties publish none; scripts/build-whs.mjs names them. */
       if(r&&r.id!=null&&w){ const s2=w.site(r.id);
-        if(s2) return R(false, warn('⚠ '+esc(L('UNESCO publishes no coordinate for “{q}”, so it is inscribed but cannot be put on the map.','「{q}」はユネスコが座標を公表していないため、登録されていますが地図には出せません。','Die UNESCO veröffentlicht für „{q}“ keine Koordinate — eingeschrieben, aber nicht kartierbar.','Для «{q}» ЮНЕСКО не публикует координат, поэтому объект нельзя показать на карте.','La UNESCO no publica coordenadas de «{q}», así que no puede situarse en el mapa.').split('{q}').join(s2.n[w.locale()]||s2.n.en))));
+        if(s2) return R(false, warn(esc(L('UNESCO publishes no coordinate for “{q}”, so it is inscribed but cannot be put on the map.','「{q}」はユネスコが座標を公表していないため、登録されていますが地図には出せません。','Die UNESCO veröffentlicht für „{q}“ keine Koordinate — eingeschrieben, aber nicht kartierbar.','Для «{q}» ЮНЕСКО не публикует координат, поэтому объект нельзя показать на карте.','La UNESCO no publica coordenadas de «{q}», así que no puede situarse en el mapa.').split('{q}').join(s2.n[w.locale()]||s2.n.en))));
       }
-      return R(false, warn('⚠ '+esc(L('No World Heritage property called “{q}” is on the List this map carries.','この地図が収録する世界遺産一覧に「{q}」はありません。','Keine Welterbestätte namens „{q}“ steht auf der Liste dieser Karte.','Объекта «{q}» нет в списке, который содержит эта карта.','Ningún bien llamado «{q}» está en la Lista que incluye este mapa.').split('{q}').join(q))));
+      return R(false, warn(esc(L('No World Heritage property called “{q}” is on the List this map carries.','この地図が収録する世界遺産一覧に「{q}」はありません。','Keine Welterbestätte namens „{q}“ steht auf der Liste dieser Karte.','Объекта «{q}» нет в списке, который содержит эта карта.','Ningún bien llamado «{q}» está en la Lista que incluye este mapa.').split('{q}').join(q))));
     }
     const s=w&&w.site(r.id); if(!s) return R(true, note('✓'));
     const cats=w.categories(), cat=cats[s.c]||'';
@@ -359,18 +360,18 @@ export function makeAtlasControls(HOST, CTX) {
     const t=String(a.type||'');
     if(t==='radiationNear'||t==='measuringStations'||t==='doseNear'){
       const lat=+a.lat, lon=+a.lon;
-      if(!(lat>=-90&&lat<=90)||!(lon>=-180&&lon<=180)) return R(false, warn('⚠ '+esc(L('Give a coordinate to measure around.','中心となる座標を指定してください。','Geben Sie eine Koordinate an.','Укажите координату.','Indique una coordenada.'))));
-      if(!OSk||!OSk.has('radiation.near')) return R(false, warn('⚠'));
+      if(!(lat>=-90&&lat<=90)||!(lon>=-180&&lon<=180)) return R(false, warn(esc(L('Give a coordinate to measure around.','中心となる座標を指定してください。','Geben Sie eine Koordinate an.','Укажите координату.','Indique una coordenada.'))));
+      if(!OSk||!OSk.has('radiation.near')) return R(false, warn(''));
       const r=await OSk.exec('radiation.near',{source:'atlas',params:{lat,lon,km:(a.km!=null?+a.km:undefined)}});
       const st=(r&&r.stations)||[];
       const km=(a.km!=null?+a.km:150);
-      if(!r||r.ok===false) return R(false, warn('⚠'));
+      if(!r||r.ok===false) return R(false, warn(''));
       if(!st.length) return R(true, note(esc(L('No monitoring station within {k} km publishes an open-licensed reading. That is a gap in coverage, not a statement about the radiation there.','{k} km 以内に、オープンライセンスで実測値を公開している観測局はありません。これは観測網の空白であって、そこの放射線量についての言明ではありません。','Keine Messstation innerhalb von {k} km veröffentlicht einen offen lizenzierten Messwert. Das ist eine Lücke in der Abdeckung, keine Aussage über die dortige Strahlung.','Ни одна станция в радиусе {k} км не публикует измерения под открытой лицензией. Это пробел в покрытии, а не утверждение об уровне радиации там.','Ninguna estación dentro de {k} km publica una lectura con licencia abierta. Es una laguna de cobertura, no una afirmación sobre la radiación allí.').split('{k}').join(km))));
       const rows=st.slice(0,12).map(s=>esc(s.name||s.code)+' — <b>'+esc(s.nsvh==null?'—':s.nsvh)+' nSv/h</b> <span style="color:var(--text-muted);">'+esc(s.km.toFixed(0)+' km · '+(s.src||''))+'</span>');
       const head=esc(L('{n} stations within {k} km','{k} km 以内に {n} 局','{n} Stationen innerhalb von {k} km','{n} станций в радиусе {k} км','{n} estaciones dentro de {k} km').split('{n}').join(st.length).split('{k}').join(km));
       return R(true, note('<b>'+head+'</b><br>'+rows.join('<br>')));
     }
-    if(!OSk||!OSk.has('radiation.observed')) return R(false, warn('⚠'));
+    if(!OSk||!OSk.has('radiation.observed')) return R(false, warn(''));
     const on=a.on!==false;
     await OSk.exec('radiation.observed',{source:'atlas',params:{on}});
     const S=window.IntMapRadiationObs&&window.IntMapRadiationObs.state?window.IntMapRadiationObs.state():null;
@@ -398,11 +399,11 @@ export function makeAtlasControls(HOST, CTX) {
     let out='';
     try{
       if(!ll) return '';
-      if(ll.ambiguous&&ll.alt&&ll.alt[0]) out+='<div style="font-size:11px;color:var(--text-muted);margin-top:3px;">⚠ '+esc(L('That name also matches {o}; this run uses {u}.','この名前は「{o}」にも一致します。この実行では「{u}」を使いました。','Der Name passt auch auf {o}; dieser Lauf nutzt {u}.','Это название подходит также к {o}; здесь использовано {u}.','Ese nombre también coincide con {o}; esta ejecución usa {u}.').split('{o}').join(ll.alt[0].name).split('{u}').join(ll.name))+'</div>';
+      if(ll.ambiguous&&ll.alt&&ll.alt[0]) out+='<div style="font-size:11px;color:var(--text-muted);margin-top:3px;">'+icon('warning')+' '+esc(L('That name also matches {o}; this run uses {u}.','この名前は「{o}」にも一致します。この実行では「{u}」を使いました。','Der Name passt auch auf {o}; dieser Lauf nutzt {u}.','Это название подходит также к {o}; здесь использовано {u}.','Ese nombre también coincide con {o}; esta ejecución usa {u}.').split('{o}').join(ll.alt[0].name).split('{u}').join(ll.name))+'</div>';
       const obs=await window.IntMapRadiation.observedAround(+ll.lat,+ll.lng,200);
       if(obs.length){
         const top=obs.slice(0,3).map(s=>esc((s.name||s.code)+' '+(s.nsvh==null?'—':s.nsvh)+' nSv/h ('+s.km.toFixed(0)+' km)')).join(' · ');
-        out+='<div style="font-size:11.5px;margin-top:4px;">📟 '+esc(L('Measured right now near the source','いま放出源の近くで実測されている値','Aktuell nahe der Quelle gemessen','Измерено сейчас рядом с источником','Medido ahora cerca de la fuente'))+': '+top+'</div>'
+        out+='<div style="font-size:11.5px;margin-top:4px;">'+icon('gauge')+' '+esc(L('Measured right now near the source','いま放出源の近くで実測されている値','Aktuell nahe der Quelle gemessen','Измерено сейчас рядом с источником','Medido ahora cerca de la fuente'))+': '+top+'</div>'
           +'<div style="font-size:10.5px;color:var(--text-muted);">'+esc(L('These are observations, not part of the model above. 50–200 nSv/h is ordinary natural background, and rain alone can treble a station for a few hours.','これは観測値であって、上のモデルの一部ではありません。50〜200 nSv/h は通常の自然放射線量で、降雨だけでも数時間は3倍になりえます。','Das sind Messwerte, nicht Teil des Modells oben. 50–200 nSv/h ist normaler Untergrund, und Regen allein kann eine Station für Stunden verdreifachen.','Это измерения, а не часть модели выше. 50–200 нЗв/ч — обычный фон, и один только дождь может утроить показания на несколько часов.','Son observaciones, no parte del modelo anterior. 50–200 nSv/h es fondo natural normal, y la lluvia sola puede triplicar una estación durante horas.'))+'</div>';
       }
     }catch(_){ /* the measured half is an addition to the answer, never a reason to lose it */ }
@@ -413,12 +414,12 @@ export function makeAtlasControls(HOST, CTX) {
        It was a control the reader had and Atlas did not: 「基本表示をデフォルトに戻して」 sent Atlas through nine find_capability calls
        and out of steps with nothing done (measured on production, 2026-09-15). ── */
     function doBaseDisplay(a){
-      const B=window.IntMapBaseDisplay; if(!B) return R(false, warn('⚠ '+L('The base display presets are unavailable.','基本表示の切り替えが利用できません。','Basisanzeige-Voreinstellungen nicht verfügbar.','Пресеты базового отображения недоступны.','Los ajustes de visualización base no están disponibles.')));
+      const B=window.IntMapBaseDisplay; if(!B) return R(false, warn(L('The base display presets are unavailable.','基本表示の切り替えが利用できません。','Basisanzeige-Voreinstellungen nicht verfügbar.','Пресеты базового отображения недоступны.','Los ajustes de visualización base no están disponibles.')));
       const lblOf=m=>({default:L('Default','デフォルト','Standard','По умолчанию','Predeterminado'),clean:L('Clean','クリーン','Klar','Чисто','Limpio'),custom:L('Custom','カスタム','Benutzerdefiniert','Свой','Personalizado')})[m]||m; const rowsOn=()=>{ try{ return (window.IntMapBasicLayers||[]).filter(id=>{ const cb=document.getElementById(id); return cb&&cb.checked; }).map(id=>{ const lb=document.querySelector('label[for="'+id+'"]'); return (lb&&lb.textContent.trim())||id; }); }catch(_){ return []; } };
       const want=String(a.mode||'').toLowerCase().trim(); if(!want){ return R(true, note(L('Base display','基本表示','Basisanzeige','Базовое отображение','Visualización base')+': '+lblOf(B.get())+' — '+rowsOn().join(', '))); }
-      if(['default','clean','custom'].indexOf(want)<0) return R(false, warn('⚠ '+L('Unknown base display preset','不明な基本表示','Unbekannte Voreinstellung','Неизвестный пресет','Ajuste desconocido')+': '+esc(want)));
-      try{ B.set(want); }catch(_){ return R(false, warn('⚠')); } const now=B.get(); const ok=(now===want);
-      return R(ok, ok?note('✓ '+L('Base display','基本表示','Basisanzeige','Базовое отображение','Visualización base')+': '+lblOf(now)+(want==='custom'?'':(' — '+rowsOn().join(', ')))):warn('⚠ '+L('The preset did not apply','基本表示を切り替えられませんでした','Voreinstellung nicht übernommen','Пресет не применился','El ajuste no se aplicó')));
+      if(['default','clean','custom'].indexOf(want)<0) return R(false, warn(L('Unknown base display preset','不明な基本表示','Unbekannte Voreinstellung','Неизвестный пресет','Ajuste desconocido')+': '+esc(want)));
+      try{ B.set(want); }catch(_){ return R(false, warn('')); } const now=B.get(); const ok=(now===want);
+      return R(ok, ok?note('✓ '+L('Base display','基本表示','Basisanzeige','Базовое отображение','Visualización base')+': '+lblOf(now)+(want==='custom'?'':(' — '+rowsOn().join(', ')))):warn(L('The preset did not apply','基本表示を切り替えられませんでした','Voreinstellung nicht übernommen','Пресет не применился','El ajuste no se aplicó')));
     }
   return { clickId, controlCatalog, controlEffect, doBaseDisplay, doControl, doHeritage, doModule, doRadiationObs, doVolcano, findControl, kexec, moduleCatalog, radiationChain, setSel };
 }

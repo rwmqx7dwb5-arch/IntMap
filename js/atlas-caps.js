@@ -201,7 +201,7 @@ export function capabilityRows(modules, previousIds) {
 /* What the dispatch answers a spelling no row owns — the switch's `default`, moved whole: a control
    the action names by `target`/`name` is pressed if the page has one, otherwise 「不明な操作」. */
 export async function unknownAction(a, dctx, K) { const doControl = K.doControl, R = K.R, warn = K.warn, L = K.L, esc = K.esc;
-      { if(a.target||a.name){ const c=doControl({target:a.target||a.name,value:a.value,on:a.on}); if(c.ok) return c; } return R(false, warn('⚠ '+L('Unknown action','不明な操作','Unbekannte Aktion','Неизвестное действие','Acción desconocida')+': '+esc(a.type||''))); }
+      { if(a.target||a.name){ const c=doControl({target:a.target||a.name,value:a.value,on:a.on}); if(c.ok) return c; } return R(false, warn(L('Unknown action','不明な操作','Unbekannte Aktion','Неизвестное действие','Acción desconocida')+': '+esc(a.type||''))); }
 }
 
 /* ══ THE ARGUMENT-SCHEMA BUILDERS ═══════════════════════════════════════════════════════════════

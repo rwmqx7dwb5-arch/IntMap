@@ -1,6 +1,7 @@
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy; see js/atlas-persona.js */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 /* ============================================================================
  *  IntMap · Research brief — the implementation behind window.IntMapAIResearch  (#R322)
  * ----------------------------------------------------------------------------
@@ -179,7 +180,7 @@ export function analysisResearch(HOST){
         ['Warum ist dieses Gebiet so dünn besiedelt?','Warum verläuft die Grenze hier so?','Warum ist dieser Ort strategisch wichtig?'],
         ['Почему здесь так мало населения?','Почему граница здесь такой формы?','Почему это место важно?']);
       p.innerHTML='<div class="tp-header" style="cursor:move;"><span class="tp-title">'+esc(title)+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'+
-        '<div style="font-size:11px;color:var(--text-muted);margin:0 2px 8px;">📍 '+coordStr+'</div>'+
+        '<div style="font-size:11px;color:var(--text-muted);margin:0 2px 8px;">'+icon('pin')+' '+coordStr+'</div>'+
         '<div id="air-chat" style="display:flex;flex-direction:column;gap:8px;"></div>'+
         '<div style="font-size:10.5px;color:var(--text-muted);margin:10px 2px 4px;border-top:1px solid rgba(128,128,128,0.18);padding-top:8px;">'+LL('Try asking','質問の例','Beispiele','Примеры вопросов','Ejemplos de preguntas')+'</div>'+
         examples.map(e=>'<button class="ai-test-btn air-q" style="width:100%;text-align:left;margin:3px 0;font-size:11.5px;">'+esc(e)+'</button>').join('')+

@@ -93,6 +93,9 @@ export const STATIC_ASSETS = [
      which is the exact defect this round set out to fix. Caught by opening the built page. */
   'js/lang-registry.js',
   'js/page-i18n.js',
+  /* (icon-system) …and the one icon set those two pages and the legal pages import (the language picker's globe,
+     a limitation's mark): a module they import must be beside them, like js/lang-registry.js above. */
+  'js/icons.js',
   'js/sources-list.js',
   /* (#R280) the Terms and the Privacy Policy as ORDINARY PAGES with their own URL — a policy that
      can only be reached by opening the app and clicking a footer link cannot be linked to, cited

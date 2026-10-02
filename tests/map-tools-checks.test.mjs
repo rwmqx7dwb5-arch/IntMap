@@ -68,7 +68,7 @@ test('R154 #5 Draw — elevation profile for freehand lines', () => {
   /* spelling kept — the tool is DOM + renderer code inside a map-host module and does not run without the map */
   assert.match(html, /window\._profileFromCoords=function\(pts\)\{/, 'reusable coords→profile core extracted');
   assert.match(html, /window\._elevationProfile=function\(\)\{[\s\S]*window\._profileFromCoords\(pts\);/, 'measure/area path delegates to the core');
-  assert.match(html, /id="draw-profile"[^>]*>📈 \$\{t\('elevProfile'\)\}/, 'Draw panel shows an Elevation profile button');
+  assert.match(html, /id="draw-profile"[^>]*>\$\{icon\('chart'\)\} \$\{t\('elevProfile'\)\}/, 'Draw panel shows an Elevation profile button (its glyph is js/icons.js «chart» — icon-system)');
   assert.match(html, /profBtn\.onclick=\(\)=>\{ const c=\(simplified&&simplified\.length>=2\)\?simplified/, 'button profiles the traced line (simplified, raw fallback)');
 });
 

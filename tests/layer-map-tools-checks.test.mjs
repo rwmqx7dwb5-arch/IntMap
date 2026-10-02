@@ -232,7 +232,7 @@ test('#R216 ⑦ the context menu does not repeat 「この」「ここ」 on eve
   const hits = (menu.match(/'(ここ|この地点|ここの|この表示)/g) || []);
   assert.deepEqual(hits, [], 'deictic labels are back in the context menu: ' + hits.join(', '));
   /* the coordinate row is the coordinate, not a label plus the coordinate */
-  assert.match(s, /\{coord:`📍 \$\{HOST\.fmtLL/, 'the coordinate row still carries a label');
+  assert.match(s, /\{coord:HOST\.fmtLL\(/, 'the coordinate row still carries a label (icon-system: its pin is drawn beside it by the menu, js/icons.js «pin»)');
 });
 test('#R216 ⑦ …and the i18n keys it shares carry no deixis either, in all five languages', () => {
   const s = read('js/i18n.js');

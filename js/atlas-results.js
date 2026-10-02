@@ -298,7 +298,7 @@ export function makeAtlasResults(HOST) {
       var lines = [];
       var head = API.text(pickMessageKey(r), paramsOf(r), L);
       var good = (r.status === 'completed');
-      if (head) lines.push(good ? note('✓ ' + esc(head)) : warn('⚠ ' + esc(head)));
+      if (head) lines.push(good ? note('✓ ' + esc(head)) : warn('' + esc(head)));
       if (r.code && r.code !== 'ok') {
         var why = API.text('atlas.code.' + r.code, r.messageParams, L);
         if (why) lines.push(warn(esc(why)));

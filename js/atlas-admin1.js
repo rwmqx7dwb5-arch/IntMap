@@ -539,17 +539,17 @@ export function makeAtlasAdmin1(deps) {
         geo = { type: 'Polygon', coordinates: [pts] };
       } else {
         const place = String(a.place || a.country || a.name || '').trim();
-        if (!place) return { ok: false, html: warn('⚠ ' + L('Name a place to centre on, or give the points of a shape', '中心にする場所名か、形の座標を指定してください', 'Ort oder Form angeben', 'Укажите место или форму', 'Indica un lugar o una forma')) };
-        if (!(km > 0)) return { ok: false, html: warn('⚠ ' + L('How many kilometres is the radius?', '半径は何キロですか', 'Wie groß ist der Radius?', 'Каков радиус?', '¿Cuál es el radio?')) };
+        if (!place) return { ok: false, html: warn('' + L('Name a place to centre on, or give the points of a shape', '中心にする場所名か、形の座標を指定してください', 'Ort oder Form angeben', 'Укажите место или форму', 'Indica un lugar o una forma')) };
+        if (!(km > 0)) return { ok: false, html: warn('' + L('How many kilometres is the radius?', '半径は何キロですか', 'Wie groß ist der Radius?', 'Каков радиус?', '¿Cuál es el radio?')) };
         let g = null;
         try { g = await D.geocode(place); } catch (_) { g = null; }
-        if (!g) return { ok: false, html: warn('⚠ ' + L('Could not place', '場所を特定できません', 'Ort nicht gefunden', 'Место не найдено', 'No se pudo ubicar') + ': ' + esc(place)) };
+        if (!g) return { ok: false, html: warn('' + L('Could not place', '場所を特定できません', 'Ort nicht gefunden', 'Место не найдено', 'No se pudo ubicar') + ': ' + esc(place)) };
         geo = { center: [g.lng, g.lat], radiusKm: km };
       }
       const lim = (a.limit != null && isFinite(+a.limit)) ? Math.max(1, Math.min(400, +a.limit)) : 200;
       const r = await coveredBy(geo, { limit: lim });
       /* «could not be read» and «nothing is there» are different answers and stay different */
-      if (r && r.error) return { ok: false, html: warn('⚠ ' + L('The first-level boundary index could not be read', '第一級行政区分の索引を読み込めませんでした', 'Index nicht lesbar', 'Индекс недоступен', 'Índice no disponible')) };
+      if (r && r.error) return { ok: false, html: warn('' + L('The first-level boundary index could not be read', '第一級行政区分の索引を読み込めませんでした', 'Index nicht lesbar', 'Индекс недоступен', 'Índice no disponible')) };
       const units = (r && r.units) || [];
       let html = '<div style="font-weight:600;margin:2px 0 5px;">'
         + L('First-level subdivisions covered', '覆う第一級行政区分', 'Abgedeckte Verwaltungseinheiten', 'Охваченные регионы', 'Subdivisiones cubiertas')
@@ -559,7 +559,7 @@ export function makeAtlasAdmin1(deps) {
             + (u.countryCode ? (' <span style="color:var(--text-muted);">' + esc(String(u.countryCode)) + '</span>') : '')).join(' · ') + '</div>')
         : ('<div style="font-size:11.5px;color:var(--text-muted);">'
             + L('Nothing of this kind lies inside that shape', 'その形の中に該当する区分はありません', 'Keine Einheit in dieser Form', 'В этой форме ничего нет', 'Nada de este tipo en esa forma') + '</div>');
-      if (r && r.truncated) html += warn('⚠ ' + L('More than the limit — the list above is cut', '上限を超えたため一覧を切りました', 'Liste gekürzt', 'Список обрезан', 'Lista recortada'));
+      if (r && r.truncated) html += warn('' + L('More than the limit — the list above is cut', '上限を超えたため一覧を切りました', 'Liste gekürzt', 'Список обрезан', 'Lista recortada'));
       return { ok: true, html: note(html), meta: { produced: ['explanation'], resultKey: 'coverage:' + JSON.stringify(geo).slice(0, 140) } };
     }
 

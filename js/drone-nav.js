@@ -56,6 +56,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function droneNav(HOST){
   const GE=()=>IntMapGeoEngine;
@@ -627,7 +628,7 @@ export function droneNav(HOST){
     const saved=routes.length?`<div class="dn-saved">${routes.map(r=>`<div class="dn-saved-row"><button type="button" class="dn-open" data-open="${esc(r.id)}">${esc(r.name)}</button><span>${(r.wp||[]).length}</span><button aria-label="${IntMapLang.t(HOST.lang,'Delete','削除','Löschen','Удалить','Eliminar')}" type="button" class="dn-del" data-drop="${esc(r.id)}">×</button></div>`).join('')}</div>`:'';
     const ops=opsSection();
 
-    p.innerHTML=`<div class="tp-header"><span class="tp-title">🛸 ${L('Drone navigation','ドローン航法','Drohnen-Navigation','Навигация дрона','Navegación de dron')}</span>
+    p.innerHTML=`<div class="tp-header"><span class="tp-title">${icon('drone')} ${L('Drone navigation','ドローン航法','Drohnen-Navigation','Навигация дрона','Navegación de dron')}</span>
         <span class="tp-hd-btns"><button class="tp-min-btn" type="button" title="–">–</button><button class="tp-close" type="button" title="${HOST.t('close')}">×</button></span></div>
       <input type="text" id="dn-name" class="dn-name" aria-label="${L('Route name','ルート名')}" value="${esc(route.name)}">
       <div class="dn-sec" id="dn-preset-lbl">${L('Aircraft','機体','Fluggerät','Аппарат','Aeronave')}</div>
@@ -639,8 +640,8 @@ export function droneNav(HOST){
         <button type="button" class="ai-action-btn${addMode?' on':''}" id="dn-add">${addMode?('◉ '+L('Click the map','地図をクリック','Karte anklicken','Кликните по карте','Haz clic en el mapa')):('＋ '+L('Add on map','地図に追加','Auf Karte setzen','Добавить на карте','Añadir en el mapa'))}</button>
         ${HOST.isMobile()?`<button type="button" class="ai-action-btn" id="dn-addc">◎ ${L('Add at center','中心に追加','In der Mitte','В центре','En el centro')}</button>`:''}
         <button type="button" class="ai-action-btn" id="dn-calc">${busy?'…':'⟳ '+L('Compute','計算','Berechnen','Рассчитать','Calcular')}</button>
-        <button type="button" class="ai-action-btn" id="dn-follow">⛰ ${L('Follow terrain','地形に沿わせる','Gelände folgen','По рельефу','Seguir el terreno')}</button>
-        <button type="button" class="ai-action-btn" id="dn-save">💾 ${L('Save','保存','Speichern','Сохранить','Guardar')}</button>
+        <button type="button" class="ai-action-btn" id="dn-follow">${icon('mountain')} ${L('Follow terrain','地形に沿わせる','Gelände folgen','По рельефу','Seguir el terreno')}</button>
+        <button type="button" class="ai-action-btn" id="dn-save">${icon('save')} ${L('Save','保存','Speichern','Сохранить','Guardar')}</button>
         <button type="button" class="tp-clear" id="dn-clear">${L('Clear route','経路を消去','Route löschen','Очистить','Borrar ruta')}</button>
       </div>
       <div class="dn-sec">${L('Result','計算結果','Ergebnis','Результат','Resultado')}</div>
@@ -698,7 +699,7 @@ export function droneNav(HOST){
     /* the last comparison / conflict / RTH answer */
     let out='';
     if(opsOut&&opsOut.kind==='compare'&&opsOut.data){
-      out='<table class="dn-cmp"><tr><th></th><th>'+L('Length','距離','Länge','Длина','Longitud')+'</th><th>'+L('Time','時間','Zeit','Время','Tiempo')+'</th><th>Wh</th><th>'+L('Clear.','余裕','Abst.','Зазор','Marg.')+'</th><th>⚠</th><th></th></tr>'
+      out='<table class="dn-cmp"><tr><th></th><th>'+L('Length','距離','Länge','Длина','Longitud')+'</th><th>'+L('Time','時間','Zeit','Время','Tiempo')+'</th><th>Wh</th><th>'+L('Clear.','余裕','Abst.','Зазор','Marg.')+('</th><th>'+icon('warning')+'</th><th></th></tr>')
         +opsOut.data.variants.map(v=>`<tr><td>${esc(v.name)}</td><td>${fmtKm(v.dist3DM)}</td><td>${fmtT(v.timeS)}</td><td>${v.energyWh.toFixed(1)}</td><td>${v.minClearance==null?'—':fmtM(v.minClearance)}</td><td>${v.violations}</td><td><button type="button" class="acp-mini" data-opuse="${esc(v.id)}">${L('Use','採用','Nutzen','Взять','Usar')}</button></td></tr>`).join('')
         +'</table>';
     } else if(opsOut&&opsOut.kind==='conflicts'&&opsOut.data){
@@ -720,7 +721,7 @@ export function droneNav(HOST){
         +bz('prepare','⤓ '+L('Fetch & check','取得して点検','Laden & prüfen','Загрузить и проверить','Cargar y comprobar'))
         +bz('compare','⇄ '+L('Compare routes','経路を比較','Routen vergleichen','Сравнить маршруты','Comparar rutas'))
         +bz('rth','⤺ '+L('Return to launch','帰投経路を追加','Rückflug anhängen','Добавить возврат','Añadir regreso'))
-        +bz('conflicts','⚠ '+L('Check other routes','他機との干渉','Andere Routen prüfen','Проверить конфликты','Comprobar conflictos'))
+        +bz('conflicts',icon('warning')+' '+L('Check other routes','他機との干渉','Andere Routen prüfen','Проверить конфликты','Comprobar conflictos'))
       +`</div>`
       +out
       +`<details class="tp-more"><summary>${L('Radio link','無線リンク','Funkverbindung','Радиосвязь','Enlace de radio')}</summary><div class="dn-specs">${radioRows}</div>`

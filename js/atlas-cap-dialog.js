@@ -33,7 +33,7 @@ export default [
           const q=String(a.question||a.text||a.say||a.prompt||'').trim();
           const opts=Array.isArray(a.options)?a.options.map(o=>String((o&&o.label)||o||'').trim()).filter(Boolean).slice(0,6):[];
           const allowText=a.allowText!==false&&a.freeText!==false;
-          if(!q&&!opts.length) return R(false, warn('⚠'));
+          if(!q&&!opts.length) return R(false, warn(''));
           /* ══ ⚠⚠ (#R313) THE QUESTION STAYS, THE PICKER GOES ════════════════════════════════
              「ユーザーが回答したら、そのUIは消してください。…きいた文章とユーザーの回答自体は
                そのままでいいけど、選択するためのUIはいらないですよねって話」 Nothing removed or

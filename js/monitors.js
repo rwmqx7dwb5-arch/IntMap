@@ -21,6 +21,7 @@
  * ========================================================================== */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function monitors(HOST){
   /* (#R173) 脱MapLibre 第7段階 — the monitor's map work goes through the engine facade, never the raw
@@ -217,7 +218,7 @@ export function monitors(HOST){
           +'<div class="mon-row-meta">'+S(ML('Last','前回','Zuletzt','Последний','Último'))+': '+S(_fmtWhen(m.last_run_at))+' · '+S(ML('Next','次回','Nächste','Следующий','Próximo'))+': '+S(_fmtNext(m.next_run_at,m.enabled))+'</div>'
         +'</div>'
         +'<div class="mon-row-acts">'
-          +'<button class="mon-ic" data-act="run" data-effect="private" title="'+S(ML('Run now','今すぐ実行','Jetzt ausführen','Запустить','Ejecutar ahora'))+'">▶</button>'
+          +'<button class="mon-ic" data-act="run" data-effect="private" title="'+S(ML('Run now','今すぐ実行','Jetzt ausführen','Запустить','Ejecutar ahora'))+('">'+icon('play')+'</button>')
           +'<button class="mon-ic" data-act="'+(m.enabled===false?'resume':'pause')+'" data-effect="private" title="'+S(m.enabled===false?ML('Resume','再開','Fortsetzen','Возобновить','Reanudar'):ML('Pause','一時停止','Pause','Пауза','Pausar'))+'">'+(m.enabled===false?'▷':'❚❚')+'</button>'
           +'<button class="mon-ic" data-act="map" data-effect="none" title="'+S(ML('Show on map','地図に表示','Auf Karte','На карте','En el mapa'))+'">◎</button>'
         +'</div></div>'; }
@@ -246,7 +247,7 @@ export function monitors(HOST){
           if(act==='pause'){ await pause(id); }
           else if(act==='resume'){ await resume(id); }
           else if(act==='map'){ const m=byId[id]||await _get(id); if(m){ let pts=[]; try{ if(m.last_report_id){ const rep=await _report(m.last_report_id); if(rep&&rep.change_points) pts=rep.change_points; } }catch(_){} showOnMap({geometry:m.geometry,bbox:m.bbox},pts,m.id); _closeSheetIfMobile(); } }
-          else if(act==='run'){ b.disabled=true; b.textContent='…'; const r=await runNow(id); b.disabled=false; b.textContent='▶';
+          else if(act==='run'){ b.disabled=true; b.textContent='…'; const r=await runNow(id); b.disabled=false; b.replaceChildren(iconNode('play'));
             if(r.ok){ _toast(ML('Monitor ran: ','実行しました: ','Ausgeführt: ','Запущено: ','Ejecutado: ')+statusLabel(r.status)); render(); }
             else if(r.error==='login'){ _promptLogin(); }
             else { _toast(r.message||_runReasonMsg(r.error)); } }
@@ -318,10 +319,10 @@ export function monitors(HOST){
           +kv(ML('Next run','次回実行','Nächster Lauf','Следующий','Próximo'),S(_fmtNext(m.next_run_at,m.enabled)))
         +'</div>'
         +'<div class="mon-dlg-acts mon-detail-acts">'
-          +'<button class="mon-btn" data-d="run" data-effect="private">▶ '+S(ML('Run now','今すぐ実行','Jetzt','Запустить','Ejecutar'))+'</button>'
+          +'<button class="mon-btn" data-d="run" data-effect="private">'+icon('play')+' '+S(ML('Run now','今すぐ実行','Jetzt','Запустить','Ejecutar'))+'</button>'
           +'<button class="mon-btn" data-d="map" data-effect="none">◎ '+S(ML('Map','地図','Karte','Карта','Mapa'))+'</button>'
           +'<button class="mon-btn" data-d="'+(m.enabled===false?'resume':'pause')+'" data-effect="private">'+(m.enabled===false?'▷ '+S(ML('Resume','再開','Fortsetzen','Возобновить','Reanudar')):'❚❚ '+S(ML('Pause','一時停止','Pause','Пауза','Pausar')))+'</button>'
-          +'<button class="mon-btn mon-btn-danger" data-d="del" data-effect="destructive">🗑 '+S(ML('Delete','削除','Löschen','Удалить','Eliminar'))+'</button>'
+          +'<button class="mon-btn mon-btn-danger" data-d="del" data-effect="destructive">'+icon('trash')+' '+S(ML('Delete','削除','Löschen','Удалить','Eliminar'))+'</button>'
         +'</div>'
         +'<h4 class="mon-h4">'+S(ML('Run history','実行履歴','Verlauf','История','Historial'))+'</h4>'+runsHtml;
       const ov=_overlay(inner,'mon-ov-detail');

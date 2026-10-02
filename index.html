@@ -393,7 +393,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <!-- (#R30) Translate titles only appears when the news set actually contains a language other than the
          UI language ("設定言語のみなら表示しない"); it translates only those non-UI-language headlines. -->
     <div id="ai-geocode-row" style="display:none; margin:0 0 10px 0;">
-      <button class="ai-action-btn" id="ai-translate-btn" style="margin-top:0;">🌐 <span data-i18n="aiTranslateTitles">Translate titles</span></button>
+      <button class="ai-action-btn" id="ai-translate-btn" style="margin-top:0;"><span data-icon="world"></span> <span data-i18n="aiTranslateTitles">Translate titles</span></button>
     </div>
     <div class="content-area" id="live-news-feed"></div>
     <!-- (#R79b) Countries gets its OWN search bar too — in workspace mode News & Countries are separate
@@ -447,11 +447,11 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
         <div class="map-view-group">
           <button class="view-btn" id="btn-view-flat" data-i18n="flat">Flat</button>
           <button class="view-btn active" id="btn-view-globe" data-i18n="globe">Globe</button>
-          <button class="view-btn" id="btn-view-3d" data-i18n="threeD" title="3D terrain" data-i18n-title="ttl3dTerrain">⛰️ 3D</button>
+          <button class="view-btn" id="btn-view-3d" title="3D terrain" data-i18n-title="ttl3dTerrain"><span data-icon="mountain"></span> <span data-i18n="threeD">3D</span></button>
         </div>
       </div>
       <div class="map-view-group" id="map-tools-group">
-        <button class="view-btn" id="btn-tool-grid" data-i18n="gridBtn" title="Grid + Labels" data-i18n-title="ttlGridLabels" style="display:none;">🌐 Grid</button>
+        <button class="view-btn" id="btn-tool-grid" title="Grid + Labels" data-i18n-title="ttlGridLabels" style="display:none;"><span data-icon="world"></span> <span data-i18n="gridBtn">Grid</span></button>
         <!-- (#R130) Objects manager moved OFF the bottom-left FAB (which read as "in the sidebar") INTO the top-right
              toolbar. Shown only when >=1 map object exists (same visibility as the old FAB); wired + counted by
              IntMapObjects.tickFab. On mobile the toolbar is hidden, so the FAB stays.
@@ -459,14 +459,14 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
              it sat between the Measure menu and the Share menu; it belongs to the LEFT of Measure. Markup order is
              the whole change: .map-view-group is a plain flex row with no first/last-child styling, and the panel
              follows the button on its own (IntMapObjects._placePanel anchors under #btn-tool-objects' own rect). -->
-        <button class="view-btn" id="btn-tool-objects" title="Objects" data-i18n-title="ttlObjects" style="display:none;"><span data-i18n="objectsBtn">🗂 Objects</span><span id="tool-objects-n" style="margin-left:5px;font-weight:700;opacity:0.85;"></span></button>
+        <button class="view-btn" id="btn-tool-objects" title="Objects" data-i18n-title="ttlObjects" style="display:none;"><span data-icon="folder"></span> <span data-i18n="objectsBtn">Objects</span><span id="tool-objects-n" style="margin-left:5px;font-weight:700;opacity:0.85;"></span></button>
         <div class="measure-menu-container">
-          <button class="view-btn" id="btn-measure-menu" title="Measurement tools" data-i18n-title="ttlMeasureTools">📐 <span data-i18n="measureMenuBtn">Measure</span> <span class="caret-sm">▾</span></button>
+          <button class="view-btn" id="btn-measure-menu" title="Measurement tools" data-i18n-title="ttlMeasureTools"><span data-icon="set-square"></span> <span data-i18n="measureMenuBtn">Measure</span> <span class="caret-sm">▾</span></button>
           <div class="measure-dropdown" id="measure-dropdown">
-            <button class="view-btn" id="btn-tool-measure" data-i18n="measureDistBtn" title="Measure distance / area" data-i18n-title="ttlMeasureDA">📏 Distance / area</button>
-            <button class="view-btn" id="btn-tool-draw" data-i18n="drawBtn" title="Freehand draw & trace" data-i18n-title="ttlDrawTrace">✏️ Draw</button>
-            <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius" data-i18n-title="radius">⭕ Radius</button><!-- (#R151) Radius folded INTO the Measure menu (Distance/area · Draw · Radius) per request -->
-            <button class="view-btn" id="btn-tool-volume" data-i18n="vol3dBtn" title="Draw a real-scale 3-D volume in the air" data-i18n-title="ttlVol3d">🧊 3-D volume</button><!-- (#R170) 3-D volume: footprint + an altitude band, extruded at true scale -->
+            <button class="view-btn" id="btn-tool-measure" title="Measure distance / area" data-i18n-title="ttlMeasureDA"><span data-icon="ruler"></span> <span data-i18n="measureDistBtn">Distance / area</span></button>
+            <button class="view-btn" id="btn-tool-draw" title="Freehand draw & trace" data-i18n-title="ttlDrawTrace"><span data-icon="pencil"></span> <span data-i18n="drawBtn">Draw</span></button>
+            <button class="view-btn" id="btn-tool-radius" title="Radius" data-i18n-title="radius"><span data-icon="radius"></span> <span data-i18n="radiusBtn">Radius</span></button><!-- (#R151) Radius folded INTO the Measure menu (Distance/area · Draw · Radius) per request -->
+            <button class="view-btn" id="btn-tool-volume" title="Draw a real-scale 3-D volume in the air" data-i18n-title="ttlVol3d"><span data-icon="cube"></span> <span data-i18n="vol3dBtn">3-D volume</span></button><!-- (#R170) 3-D volume: footprint + an altitude band, extruded at true scale -->
             <!-- (#R176) 「DronesはMeasureに置くな。どこにも置くな。」 — the 🛸 Drone button is gone from this menu
                  and from the mobile Tools sheet. The planner itself (js/drone-nav.js) is untouched and still
                  answers the Atlas `drone` action; only its place in the toolbar was wrong. -->
@@ -474,10 +474,10 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
         </div>
         <!-- (#R151) Screenshot + link folded INTO one Share menu per request -->
         <div class="share-menu-container">
-          <button class="view-btn" id="btn-share-menu" title="Share" data-i18n-title="shareMenuBtn"><span aria-hidden="true">🔗</span> <span data-i18n="shareMenuBtn">Share</span> <span class="caret-sm">▾</span></button>
+          <button class="view-btn" id="btn-share-menu" title="Share" data-i18n-title="shareMenuBtn"><span data-icon="link"></span> <span data-i18n="shareMenuBtn">Share</span> <span class="caret-sm">▾</span></button>
           <div class="share-dropdown" id="share-dropdown">
-            <button class="view-btn" id="btn-screenshot" data-i18n-title="screenshotBtn" title="Screenshot">📷 <span data-i18n="mScreenshot">Screenshot</span></button>
-            <button class="view-btn" id="btn-share" data-i18n-title="shareView" title="Share this view">🔗 <span data-i18n="shareLinkBtn">Share / copy link</span></button>
+            <button class="view-btn" id="btn-screenshot" data-i18n-title="screenshotBtn" title="Screenshot"><span data-icon="camera"></span> <span data-i18n="mScreenshot">Screenshot</span></button>
+            <button class="view-btn" id="btn-share" data-i18n-title="shareView" title="Share this view"><span data-icon="link"></span> <span data-i18n="shareLinkBtn">Share / copy link</span></button>
           </div>
         </div>
         <!-- (#R114) top-bar Atlas launch button removed (requested). Atlas stays reachable via the left-sidebar
@@ -486,7 +486,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
           <button class="view-btn" id="btn-layers" data-i18n="layersBtn" style="background:rgba(0,0,0,0.05); margin-left:4px;">Layers ▾</button>
           <div class="layer-dropdown" id="layer-dropdown">
              <div class="layer-fav-section" id="layer-fav-section">
-               <div class="layer-fav-title">⭐ <span data-i18n="favLayers">Favorite layers</span></div>
+               <div class="layer-fav-title"><span data-icon="star"></span> <span data-i18n="favLayers">Favorite layers</span></div>
                <div class="layer-fav-chips" id="layer-fav-chips"></div>
                <hr style="border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:4px 0 8px;">
              </div>
@@ -776,7 +776,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
          cheat-sheet now has a visible entry point here. -->
     
     <div class="setting-group" id="kbd-help-group"><label data-i18n="lblKbd">Keyboard shortcuts</label>
-      <button type="button" id="btn-kbd-help" class="ai-test-btn" style="width:100%;" data-i18n="viewKbd">⌨ View keyboard shortcuts (or press ?)</button>
+      <button type="button" id="btn-kbd-help" class="ai-test-btn" style="width:100%;"><span data-icon="keyboard"></span> <span data-i18n="viewKbd">View keyboard shortcuts (or press ?)</span></button>
       <label for="setting-kbd-single" id="lbl-kbd-single" style="margin-top:12px;"></label><select id="setting-kbd-single"><option value="on"></option><option value="off"></option></select><!-- (map-a11y-structure) its words are written by js/keyboard-shortcuts.js in the reader's language (en + jp — CONSTITUTION §7) -->
     </div>
     <!-- (#R30) Playground moved OUT of Settings → Layers ▸ Tools (the old Quiz-mode spot). Quiz mode now
@@ -784,8 +784,8 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <!-- (#R29.1) Feedback & bug report — open the existing feedback flow or the new bug reporter anytime. -->
     
     <div class="setting-group" id="feedback-group"><label data-i18n="lblFeedback">Feedback &amp; bug report</label>
-      <button type="button" id="btn-send-feedback" class="ai-test-btn" style="width:100%;margin-bottom:8px;" data-i18n="sendFeedbackBtn">⭐ Send feedback</button>
-      <button type="button" id="btn-report-bug" class="ai-test-btn" style="width:100%;" data-i18n="reportBugBtn">🐞 Report a bug</button>
+      <button type="button" id="btn-send-feedback" class="ai-test-btn" style="width:100%;margin-bottom:8px;"><span data-icon="star"></span> <span data-i18n="sendFeedbackBtn">Send feedback</span></button>
+      <button type="button" id="btn-report-bug" class="ai-test-btn" style="width:100%;"><span data-icon="bug"></span> <span data-i18n="reportBugBtn">Report a bug</span></button>
     </div>
     <!-- (anonymous-usage-counts) IntMap's own anonymous counters — on by default, off stops them at once.
          Wired by js/usage-counts.js (the same switch Atlas's settings.usageCounts flips). -->
@@ -866,12 +866,12 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <div class="compose-cat-label" id="compose-cat-label">Category</div>
     <div class="comm-cat-row compose-cats" id="compose-cats"></div>
     <div class="compose-img-row">
-      <label class="compose-img-btn" for="compose-img">🖼 <span id="compose-img-label" data-i18n="commAddImage">Add image</span></label>
+      <label class="compose-img-btn" for="compose-img"><span data-icon="image"></span> <span id="compose-img-label" data-i18n="commAddImage">Add image</span></label>
       <input type="file" id="compose-img" accept="image/*" style="display:none;">
       <div class="compose-img-preview" id="compose-img-preview"><img id="compose-img-thumb" alt=""><button type="button" class="compose-img-remove" id="compose-img-remove" title="Remove" data-i18n-title="ttlRemove">×</button></div>
     </div>
     <div class="coord-hint" id="compose-coord-hint">Click anywhere on the map to set a location, then return here.</div>
-    <button type="button" id="compose-place" style="width:100%;background:var(--input-bg);color:var(--text-main);border:none;padding:9px;border-radius:9px;font-weight:600;font-size:12.5px;cursor:pointer;margin-bottom:10px;">📍 <span id="compose-place-label">Move pin on map</span></button>
+    <button type="button" id="compose-place" style="width:100%;background:var(--input-bg);color:var(--text-main);border:none;padding:9px;border-radius:9px;font-weight:600;font-size:12.5px;cursor:pointer;margin-bottom:10px;"><span data-icon="pin"></span> <span id="compose-place-label">Move pin on map</span></button>
     <div class="compose-buttons">
       <button class="cancel" id="compose-cancel">Cancel</button>
       <button class="submit" id="compose-submit" data-effect="outward">Post</button>
@@ -926,12 +926,12 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
   <div class="m-sheet-head"><span class="m-sheet-title" data-i18n="mTitleTools">Tools</span><button class="m-sheet-done" id="tools-done" type="button" data-i18n="mDone">Done</button></div>
   <div class="m-sheet-scroll">
     <div class="m-tool-grid">
-      <button class="m-tool-btn" type="button" data-proxy="btn-tool-grid"><span class="ico">🌐</span><span>Grid</span></button>
-      <button class="m-tool-btn" type="button" data-proxy="btn-tool-measure"><span class="ico">📏</span><span>Measure</span></button>
-      <button class="m-tool-btn" type="button" data-proxy="btn-tool-draw"><span class="ico">✏️</span><span data-i18n="drawBtn">Draw</span></button>
-      <button class="m-tool-btn" type="button" data-proxy="btn-tool-volume"><span class="ico">🧊</span><span data-i18n="vol3dBtn">3-D volume</span></button><!-- (#R170) --><!-- (#R176) the 🛸 Drone tile was removed here too — see the note in the Measure menu above -->
-      <button class="m-tool-btn" type="button" data-proxy="btn-tool-radius"><span class="ico">⭕</span><span>Radius</span></button>
-      <button class="m-tool-btn" type="button" data-proxy="btn-screenshot"><span class="ico">📷</span><span data-i18n="mScreenshot">Screenshot</span></button>
+      <button class="m-tool-btn" type="button" data-proxy="btn-tool-grid"><span class="ico" data-icon="world"></span><span>Grid</span></button>
+      <button class="m-tool-btn" type="button" data-proxy="btn-tool-measure"><span class="ico" data-icon="ruler"></span><span>Measure</span></button>
+      <button class="m-tool-btn" type="button" data-proxy="btn-tool-draw"><span class="ico" data-icon="pencil"></span><span data-i18n="drawBtn">Draw</span></button>
+      <button class="m-tool-btn" type="button" data-proxy="btn-tool-volume"><span class="ico" data-icon="cube"></span><span data-i18n="vol3dBtn">3-D volume</span></button><!-- (#R170) --><!-- (#R176) the 🛸 Drone tile was removed here too — see the note in the Measure menu above -->
+      <button class="m-tool-btn" type="button" data-proxy="btn-tool-radius"><span class="ico" data-icon="radius"></span><span>Radius</span></button>
+      <button class="m-tool-btn" type="button" data-proxy="btn-screenshot"><span class="ico" data-icon="camera"></span><span data-i18n="mScreenshot">Screenshot</span></button>
     </div>
   </div>
 </div>

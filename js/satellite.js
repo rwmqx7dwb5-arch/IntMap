@@ -9,6 +9,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function satellite(HOST){
  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -26,7 +27,7 @@ export function satellite(HOST){
   let _LS=null; const LS=()=>(_LS||(_LS=IntMapLang.pick(()=>HOST.lang)));
   function satMsg(key,p){ return String(HOST.t(key)||'').replace('{provider}',(p&&(LS().arr(p.name)||p.short))||''); }
   function satCaptureLabel(p){ if(!p) return ''; if(!p.dated) return HOST.t('satLatest'); if(p.dateMode==='year') return HOST.satState.year+' '+HOST.t('satMosaicSuffix'); return HOST.satState.day; }
-  function satChipHTML(){ const p=satProviderById(HOST.satState.providerId); if(!p) return ''; return `<span class="cr-sat">📡 ${p.short} · ${satCaptureLabel(p)}</span>`; }
+  function satChipHTML(){ const p=satProviderById(HOST.satState.providerId); if(!p) return ''; return `<span class="cr-sat">${icon('antenna')} ${p.short} · ${satCaptureLabel(p)}</span>`; }
   function satRefreshReadout(){ try{ HOST.renderCoordReadout(); }catch(_){} }
   /* (layer-failure-state) delegates to the app's ONE toast and live region, js/notify.js. It used to draw a second
      `.sat-toast` box (#sat-toast) at exactly the spot #ai-toast occupies, on its own 4,400 ms clock, so two
@@ -131,18 +132,18 @@ export function satellite(HOST){
     HOST.SAT_PROVIDERS.forEach(pr=>{
       const sel=pr.id===HOST.satState.providerId?' selected':'', nm=LS().arr(pr.name);
       if(pr.tier==='free') opts+=`<option value="${pr.id}"${sel}>${nm}</option>`;
-      else { const has=satHasKey(pr); opts+=`<option value="${pr.id}"${sel}${has?'':' disabled'}>${has?'':'🔒 '}${nm}${has?'':' — '+HOST.t('satLocked')}</option>`; }
+      else { const has=satHasKey(pr); opts+=`<option value="${pr.id}"${sel}${has?'':' disabled'}>${has?'':''}${nm}${has?'':' — '+HOST.t('satLocked')}</option>`; }
     });
     let dateCtrl;
     if(p.dated&&p.dateMode==='day'){
-      dateCtrl=`<div class="satc-row"><label for="satc-day">${HOST.t('satDate')}</label><div class="satc-date"><button class="satc-step" id="satc-prev" title="${HOST.t('satPrevDay')}">◀</button><input type="date" id="satc-day" value="${HOST.satState.day}" max="${satMaxDay()}"><button class="satc-step" id="satc-next" title="${HOST.t('satNextDay')}">▶</button></div></div>`;
+      dateCtrl=`<div class="satc-row"><label for="satc-day">${HOST.t('satDate')}</label><div class="satc-date"><button class="satc-step" id="satc-prev" title="${HOST.t('satPrevDay')}">${icon('chevronL')}</button><input type="date" id="satc-day" value="${HOST.satState.day}" max="${satMaxDay()}"><button class="satc-step" id="satc-next" title="${HOST.t('satNextDay')}">${icon('chevronR')}</button></div></div>`;
     } else if(p.dated&&p.dateMode==='year'){
       const yo=p.years.map(y=>`<option value="${y}"${y===HOST.satState.year?' selected':''}>${y}</option>`).join('');
       dateCtrl=`<div class="satc-row"><label for="satc-year">${HOST.t('satDate')}</label><select id="satc-year">${yo}</select></div>`;
     } else {
       dateCtrl=`<div class="satc-row"><label>${HOST.t('satDate')}</label><span class="satc-latest">${HOST.t('satLatest')}</span></div>`;
     }
-    panel.innerHTML=`<div class="satc-head">📡 <span>${HOST.t('satCtrlTitle')}</span><button id="satc-close" title="${IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" aria-label="${IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" style="margin-left:auto;background:transparent;border:none;color:var(--text-muted);width:26px;height:26px;font-size:22px;font-weight:300;line-height:1;cursor:pointer;">×</button></div>`+
+    panel.innerHTML=`<div class="satc-head">${icon('antenna')} <span>${HOST.t('satCtrlTitle')}</span><button id="satc-close" title="${IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" aria-label="${IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" style="margin-left:auto;background:transparent;border:none;color:var(--text-muted);width:26px;height:26px;font-size:22px;font-weight:300;line-height:1;cursor:pointer;">×</button></div>`+
       `<div class="satc-row"><label for="satc-provider">${HOST.t('satProvider')}</label><select id="satc-provider">${opts}</select></div>`+
       dateCtrl+
       `<div class="satc-row"><label for="satc-op">${HOST.t('opacity')}</label><input type="range" id="satc-op" min="0.2" max="1" step="0.05" value="${HOST.satState.opacity}"></div>`+
@@ -166,7 +167,7 @@ export function satellite(HOST){
     if(!satRenderKeyInputs._lang){ satRenderKeyInputs._lang=1; try{ window.addEventListener('intmap-lang',satRelabelKeyInputs); }catch(_){} }
     /* Only Pro users may register their own (paid) satellite imagery providers. */
     if(!HOST.imIsPro()){
-      wrap.innerHTML=`<div style="font-size:12.5px;color:var(--text-muted);line-height:1.55;padding:4px 0;">${IntMapLang.t(HOST.lang,'🔒 Only <b>Pro</b> users can add their own satellite imagery services (API integrations).','🔒 独自の衛星画像サービス（API連携）を追加できるのは <b>Pro</b> ユーザーのみです。','🔒 Nur <b>Pro</b>-Nutzer können eigene Satellitenbild-Dienste (API-Integrationen) hinzufügen.','🔒 Только пользователи <b>Pro</b> могут добавлять собственные сервисы спутниковых снимков (API).','🔒 Solo los usuarios <b>Pro</b> pueden añadir sus propios servicios de imágenes satelitales (API).')}<br><button type="button" id="sat-keys-upgrade" style="margin-top:8px;background:linear-gradient(135deg,#ffe08a,#e9b949);color:#7a5a00;border:none;padding:8px 14px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;">${IntMapLang.t(HOST.lang,'See IntMap Pro','IntMap Pro を見る','IntMap Pro ansehen','Смотреть IntMap Pro','Ver IntMap Pro')}</button></div>`;
+      wrap.innerHTML=`<div style="font-size:12.5px;color:var(--text-muted);line-height:1.55;padding:4px 0;">${(icon('lock')+' '+IntMapLang.t(HOST.lang,'Only <b>Pro</b> users can add their own satellite imagery services (API integrations).','独自の衛星画像サービス（API連携）を追加できるのは <b>Pro</b> ユーザーのみです。','Nur <b>Pro</b>-Nutzer können eigene Satellitenbild-Dienste (API-Integrationen) hinzufügen.','Только пользователи <b>Pro</b> могут добавлять собственные сервисы спутниковых снимков (API).','Solo los usuarios <b>Pro</b> pueden añadir sus propios servicios de imágenes satelitales (API).'))}<br><button type="button" id="sat-keys-upgrade" style="margin-top:8px;background:linear-gradient(135deg,#ffe08a,#e9b949);color:#7a5a00;border:none;padding:8px 14px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;">${IntMapLang.t(HOST.lang,'See IntMap Pro','IntMap Pro を見る','IntMap Pro ansehen','Смотреть IntMap Pro','Ver IntMap Pro')}</button></div>`;
       const up=wrap.querySelector('#sat-keys-upgrade'); if(up) up.onclick=()=>{ try{ if(typeof window.openProModal==='function') window.openProModal(); }catch(_){} };
       return;
     }
@@ -230,7 +231,7 @@ export function satellite(HOST){
       const dA=new Date(Date.now()-33*864e5).toISOString().slice(0,10);
       inputs=`<input type="date" id="aic-date-a" value="${dA}" max="${today}"><span>→</span><input type="date" id="aic-date-b" value="${HOST.satState.day}" max="${today}">`;
     }
-    return `<div class="aic-sec"><div class="aic-head">🛰 ${HOST.t('aiVisHead')}</div><div class="aic-dates">${inputs}</div><button class="ai-action-btn" id="ai-satchange-btn">✨ ${HOST.t('aiVisBtn')}</button></div>`;
+    return `<div class="aic-sec"><div class="aic-head">${icon('satellite')} ${HOST.t('aiVisHead')}</div><div class="aic-dates">${inputs}</div><button class="ai-action-btn" id="ai-satchange-btn">${icon('sparkle')} ${HOST.t('aiVisBtn')}</button></div>`;
   }
   function aiDownscaleDataURL(canvas,maxDim){
     try{ const w=canvas.width,h=canvas.height,s=Math.min(1,(maxDim||1024)/Math.max(w,h));

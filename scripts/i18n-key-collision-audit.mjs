@@ -54,6 +54,12 @@ import { parseAll, context, shapeOf } from './i18n-helpers.mjs';
 const BENIGN = new Set([
   /* (#R386) 'World' — 地球のウィジェット（世界）と、ニュースの節（国際）。fr『Monde』/ zh『世界』/ ko『세계』は**どちらの意味でも読める**ので、1 行で務まる。 ⚠ 同じ組の 'Business' / 'Latest' / 'Updated' / 'events' はここに入れていない——あれは一行では務まらないので、英語のほうを変えた。 */
   'World',
+  /* (icon-system) two keys that met when the emoji in front of one site's English came off («🌊 Ocean currents», «📍 Current
+     map view»): 海流 / 海流（暖流・寒流） is the same layer, named shorter and longer; 現在の地図の中心 (where the flight
+     starts) / 現在の地図表示 (what a monitor watches) are both «the map as it is now». fr «Courants océaniques» /
+     «Vue actuelle de la carte», ko and zh likewise, read right at every site. («🗓 Events» did NOT fit — 出来事 / 件数 —
+     so the dashboard's English became «World events».) */
+  'Ocean currents', 'Current map view',
 
   ' d', ' h', ' min', ' s', ' yr', 'active', 'Address', 'Advisory', 'Aerosol / haze',
   'Agricultural land %', 'Aircraft', 'Aircraft at real altitude', 'Altitude', 'Area', 'articles',

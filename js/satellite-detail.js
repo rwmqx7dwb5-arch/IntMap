@@ -34,6 +34,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function satelliteDetail(HOST){
   const GE=()=>IntMapGeoEngine;
@@ -191,7 +192,7 @@ export function satelliteDetail(HOST){
     if(curId==null) return; const e=ensureEl();
     const A=SATS(), f=A&&A.get(curId);
     const h=e.querySelector('#satp-title');
-    if(h) h.innerHTML='🛰 '+S((f&&f.name)||('#'+curId));
+    if(h) h.innerHTML=icon('satellite')+' '+S((f&&f.name)||('#'+curId));
     const b=e.querySelector('#satp-body'); if(!b) return;
     /* The layer re-renders this card every second as the object moves. The card is taller than its box
        and scrolls, so rebuilding the body would jump a reader back to the top once a second — keep

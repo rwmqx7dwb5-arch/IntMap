@@ -74,6 +74,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function tsunami(HOST){
   const GE=()=>IntMapGeoEngine;
@@ -832,7 +833,7 @@ export function tsunami(HOST){
         +L('depth','深さ','Tiefe','глубина','profundidad')+' '+Math.round(depthKm)+' km · '
         +epi[1].toFixed(2)+', '+epi[0].toFixed(2)+'</div>';
       /* (#R212) a drawn rupture is a different source and the panel says so, with what was taken from it */
-      if(rupture) body+='<div style="font-size:'+FS+';color:#7fd4ff;">✏ '
+      if(rupture) body+='<div style="font-size:'+FS+(';color:#7fd4ff;">'+icon('pencil')+' ')
         +L('Rupture area drawn','震源域を描画','Gezeichnete Bruchfläche','Нарисованный очаг','Ruptura dibujada')+' · '
         +Math.round(rupture.areaKm2||0).toLocaleString()+' km² · D̄ '+(+rupture.slipM||0)+' m'
         +(sim&&sim.fault&&sim.fault.drawn?(' · '+L('strike','走向','Streichen','простирание','rumbo')+' '+Math.round(sim.strike||0)+'°'):'')+'</div>';
@@ -875,7 +876,7 @@ export function tsunami(HOST){
           +(sim&&sim.frames.length?(' · '+L('playable now','再生できます','abspielbar','можно смотреть','ya reproducible')):'')+'</div>'
           +'<div style="height:6px;border-radius:3px;background:rgba(128,128,128,0.25);overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:#0a84ff;transition:width .2s;"></div></div>';
       } else {
-        body+='<button class="tsu-run" style="'+BTN+'width:100%;background:rgba(10,132,255,0.16);border-color:rgba(10,132,255,0.5);">▶ '
+        body+='<button class="tsu-run" style="'+BTN+('width:100%;background:rgba(10,132,255,0.16);border-color:rgba(10,132,255,0.5);">'+icon('play')+' ')
           +(sim?L('Recompute','再計算','Neu berechnen','Пересчитать','Recalcular'):L('Compute propagation','伝播を計算','Ausbreitung berechnen','Рассчитать','Calcular propagación'))+'</button>';
       }
       if(lastErr==='nosea') body+='<div style="font-size:'+FS+';color:#ff9f0a;">'
@@ -905,7 +906,7 @@ export function tsunami(HOST){
       if(sim&&sim.frames.length){
         const end=sim.frames[sim.frames.length-1].t;
         body+='<div style="display:flex;align-items:center;gap:6px;">'
-          +'<button class="tsu-play" style="'+BTN+'min-width:34px;">'+(playing?'⏸':'▶')+'</button>'
+          +'<button class="tsu-play" style="'+BTN+'min-width:34px;">'+(playing?icon('pause'):icon('play'))+'</button>'
           +'<input class="tsu-t" type="range" min="0" max="'+Math.round(end)+'" step="1" value="'+Math.round(tSim)+'" style="flex:1;">'
           +'<span class="tsu-clock" style="font-size:'+FS+';color:var(--text-main);min-width:60px;text-align:right;font-variant-numeric:tabular-nums;">'+fmtHM(tSim)+'</span></div>';
         body+='<label style="font-size:'+FS+';color:var(--text-main);display:flex;align-items:center;gap:6px;">'
@@ -965,7 +966,7 @@ export function tsunami(HOST){
            する形式に。注意書き等はそのまま残すように。（津波シミュレータも）」 Same change as the
          seismic panel's, for the same reason and with the same rule: the safety line is OUTSIDE the
          fold, because a notice that can be collapsed is a notice that will be missed. */
-      body+='<div style="font-size:'+FS_S+';color:#ffd23f;line-height:1.5;border-top:1px solid rgba(128,128,128,0.18);padding-top:6px;">⚠ '
+      body+='<div style="font-size:'+FS_S+(';color:#ffd23f;line-height:1.5;border-top:1px solid rgba(128,128,128,0.18);padding-top:6px;">'+icon('warning')+' ')
         +L('Educational model — in a real emergency follow the official authorities.','教育目的のモデルです。実際の災害時は公的機関の指示に従ってください。','Bildungsmodell — im Ernstfall den Behörden folgen.','Учебная модель — в реальной ситуации следуйте указаниям властей.','Modelo educativo — en una emergencia real siga a las autoridades.')
         +'</div>'
         +'<details class="tsu-meth" style="font-size:'+FS_S+';color:var(--text-main);line-height:1.45;">'

@@ -31,7 +31,7 @@ export default [
     async run(a, dctx, K) { const R = K.R, warn = K.warn, resolveLayer = K.resolveLayer, esc = K.esc, layerOpacityControl = K.layerOpacityControl, L = K.L;
       { /* (#R72) interactive UI inside the reply ("Atlasの返答内からもボタンやスライダーを配置") */
           const items=Array.isArray(a.items)?a.items.slice(0,8):[];
-          if(!items.length) return R(false, warn('⚠'));
+          if(!items.length) return R(false, warn(''));
           let h='<div style="display:flex;flex-direction:column;gap:7px;margin:4px 0 2px;">'; let any=false;
           for(const it of items){ const kind=String((it&&it.kind)||'').toLowerCase();
             if(kind==='layertoggle'||kind==='layer'){ const rl=resolveLayer(String(it.layer||it.name||'')); if(!rl) continue; any=true;
@@ -41,7 +41,7 @@ export default [
             else if(kind==='button'){ const lbl=String(it.label||'').slice(0,40); const cmd=String(it.run||it.command||'').slice(0,160); if(!lbl||!cmd) continue; any=true;
               h+='<button class="atl-ctl-btn" data-run="'+esc(encodeURIComponent(cmd))+'">'+esc(lbl)+'</button>'; } }
           h+='</div>';
-          return R(any, any?h:warn('⚠')); }
+          return R(any, any?h:warn('')); }
     },
   },
 ];

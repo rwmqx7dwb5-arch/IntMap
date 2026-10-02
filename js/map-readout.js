@@ -1069,7 +1069,7 @@ export function mapReadout(HOST){
              MECHANISM FOR THIS READOUT — a private two-language helper, so the tsunami readout was
              English in seven of the nine languages, and invisible to every instrument: the
              two-branch audit wants a ternary between two LITERALS, and these are parameters. */
-          HOST.lastLayerVal='🌊 '+(t?(L('arrives','到達','Ankunft','приход','llegada')+' '+t):L('no arrival','未到達','keine Ankunft','нет прихода','sin llegada'))
+          HOST.lastLayerVal=''+(t?(L('arrives','到達','Ankunft','приход','llegada')+' '+t):L('no arrival','未到達','keine Ankunft','нет прихода','sin llegada'))
             +(h?(' · '+L('max','最大波高','max. Höhe','макс.','máx.')+' '+h):'')
             +((p.coastalM!=null)?(' · '+L('coast','沿岸','Küste','побережье','costa')+' '+p.coastalM.toFixed(1)+' m'):'');
           return; } } }catch(_){}

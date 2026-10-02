@@ -9,6 +9,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function aiCore(HOST){
   const saveAIConfig=()=>{ try{ localStorage.setItem('intmap_ai_config',JSON.stringify(HOST.aiConfig)); }catch(_){} };
@@ -531,7 +532,7 @@ export function aiCore(HOST){
       ov.addEventListener('click',e=>{ if(e.target===ov) ov.style.display='none'; }); }
     const imgsHtml=(opts.images&&opts.images.length)?`<div class="ai-report-imgs">${opts.images.map(im=>`<figure><img src="${aiEsc(window.IntMapSafe.url(im.src,{allowData:true}))}" alt="${aiEsc(im.caption||'')}">${im.caption?`<figcaption>${aiEsc(im.caption)}</figcaption>`:''}</figure>`).join('')}</div>`:'';
     ov.innerHTML=`<div class="modal-content">
-      <div class="ai-report-head">✨ <span>${aiEsc(opts.title||'AI')}</span></div>
+      <div class="ai-report-head">${icon('sparkle')} <span>${aiEsc(opts.title||'AI')}</span></div>
       ${opts.sub?`<div class="ai-report-sub">${aiEsc(opts.sub)}</div>`:''}
       ${imgsHtml}
       <div class="ai-report-body loading" id="ai-report-body"><span class="ai-spin"></span><span>${aiEsc(HOST.t('aiThinking'))}</span></div>
@@ -550,7 +551,7 @@ export function aiCore(HOST){
         actEl.querySelector('#ai-rep-close').onclick=api.close;
         actEl.querySelector('#ai-rep-copy').onclick=ev=>{ try{ navigator.clipboard.writeText(String(text||'')); ev.target.textContent=HOST.t('aiCopied'); }catch(_){} };
       },
-      setError(msg,onRetry){ bodyEl.className='ai-report-body'; bodyEl.innerHTML=`<span style="color:#ff453a">⚠ ${aiEsc(HOST.t('aiError'))}</span><br><span style="font-size:12px;color:var(--text-muted)">${aiEsc(msg||'')}</span>`;
+      setError(msg,onRetry){ bodyEl.className='ai-report-body'; bodyEl.innerHTML=`<span style="color:#ff453a">${icon('warning')} ${aiEsc(HOST.t('aiError'))}</span><br><span style="font-size:12px;color:var(--text-muted)">${aiEsc(msg||'')}</span>`;
         actEl.innerHTML=(onRetry?`<button id="ai-rep-retry">${aiEsc(HOST.t('aiRetry'))}</button>`:'')+`<button class="primary" id="ai-rep-close">${aiEsc(HOST.t('aiClose'))}</button>`;
         actEl.querySelector('#ai-rep-close').onclick=api.close;
         const rb=actEl.querySelector('#ai-rep-retry'); if(rb) rb.onclick=()=>{ api.setLoading(); onRetry(); };

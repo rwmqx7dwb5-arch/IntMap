@@ -831,6 +831,20 @@ try {
   err('layer-packages', 'could not run the layer-packages ledger: ' + (e && e.message));
 }
 
+// ── 25. (icon-system) an emoji is not an icon ──
+// The interface drew its icons with emoji (the Tools tiles, every Atlas confirmation line, the players, the
+// locale strings themselves) — pictures the reader's font draws, a different one per platform and deaf to the
+// text colour. js/icons.js is where an icon comes from now. This reads every string literal (cooked, so an
+// escape counts), page text and CSS content in the served site and refuses an Extended_Pictographic character
+// that is neither typographic (© in a licence notice, ↗ in a sentence) nor declared with a reason (an avatar the
+// reader picked); scripts/icon-glyphs.mjs. A rule here and not a check:* of its own for the reason given at 15.
+try {
+  const { iconGlyphProblems } = await import('./icon-glyphs.mjs');
+  for (const p of iconGlyphProblems(ROOT)) err('icon-glyphs', p);
+} catch (e) {
+  err('icon-glyphs', 'could not run the icon-glyph rule: ' + (e && e.message));
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 const byCheck = (arr) => arr.reduce((m, x) => ((m[x.check] = (m[x.check] || 0) + 1), m), {});
 console.log(`\nIntMap static checks — scanned ${ALL.length} files (${codeFiles.length} JS/TS, ${yamlFiles.length} YAML)\n`);

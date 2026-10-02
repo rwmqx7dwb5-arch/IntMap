@@ -12,6 +12,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function analysisCorrelate(HOST){
  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -176,7 +177,7 @@ export function analysisCorrelate(HOST){
       rEl.innerHTML='<div><span class="lab">'+tr('Pearson r','ピアソン r','Pearson r','Пирсон r','r de Pearson')+(mx.log||my.log?' ('+tr('log','対数','log','лог','log')+')':'')+'</span><b style="color:'+(r>0?'#34c759':'#ff453a')+'">'+(r!=null?r.toFixed(3):'—')+'</b></div>'
         +'<div><span class="lab">'+tr('Spearman ρ (rank)','スピアマン ρ (順位)','Spearman ρ (Rang)','Спирмен ρ (ранг)','ρ de Spearman (rango)')+'</span><b>'+(rho!=null?rho.toFixed(3):'—')+'</b></div>'
         +'<div><span class="lab">'+tr('Countries','国数','Länder','Стран','Países')+'</span><b>'+ps.length+'</b></div>'
-        +(mb?'<div style="flex:1 1 100%;margin-top:2px;"><button id="corr-resid-btn" class="ai-test-btn" style="width:100%;">🗺 '+tr('Color map by residual (blue = above, red = below)','残差で地図を塗る（青=上振れ / 赤=下振れ）','Karte nach Residuen färben (blau = über, rot = unter)','Закрасить карту по остаткам (синий = выше, красный = ниже)','Colorear el mapa por residuo (azul = por encima, rojo = por debajo)')+'</button></div>':'');
+        +(mb?'<div style="flex:1 1 100%;margin-top:2px;"><button id="corr-resid-btn" class="ai-test-btn" style="width:100%;">'+icon('map')+' '+tr('Color map by residual (blue = above, red = below)','残差で地図を塗る（青=上振れ / 赤=下振れ）','Karte nach Residuen färben (blau = über, rot = unter)','Закрасить карту по остаткам (синий = выше, красный = ниже)','Colorear el mapa por residuo (azul = por encima, rojo = por debajo)')+'</button></div>':'');
       try{ const rb=ov.querySelector('#corr-resid-btn'); if(rb) rb.onclick=()=>{ try{ residualMap(); }catch(_){} }; }catch(_){}
       nEl.textContent=d+' '+sg+' '+tr('correlation','相関','Korrelation','корреляция','correlación')+' · '+tr('Correlation is not causation; outliers and confounders matter.','相関は因果ではありません。外れ値や交絡因子に注意。','Korrelation ist keine Kausalität; Ausreißer & Störfaktoren beachten.','Корреляция — не причинность; учитывайте выбросы и факторы.','Correlación no es causalidad; atención a valores atípicos y factores de confusión.');
     }

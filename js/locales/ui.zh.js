@@ -171,12 +171,12 @@ IntMapLang.define('zh', {
     "nightSideOn":"開啟（預設）— 讓夜側變暗並顯示城市燈光",
     "optDark":"深色",
     "optLight":"淺色",
-    "proArchive":"🔒 十年時光回溯檔案",
-    "proIntel":"🔒 俄・中在地一手來源情報",
-    "reportBugBtn":"🐞 回報錯誤",
+    "proArchive":"十年時光回溯檔案",
+    "proIntel":"俄・中在地一手來源情報",
+    "reportBugBtn":"回報錯誤",
     "screenshotBtn":"地圖螢幕擷取（隱藏控制項，保留圖例）",
     "screenshotSaved":"已儲存螢幕擷取 ✓",
-    "sendFeedbackBtn":"⭐ 傳送意見回饋",
+    "sendFeedbackBtn":"傳送意見回饋",
     "shareView":"分享此畫面（複製連結）",
     "showRankOff":"關閉",
     "showRankOn":"開啟（預設）",
@@ -203,7 +203,7 @@ IntMapLang.define('zh', {
     "tkgIdx":"指數",
     "importGeoFile":"匯入地圖資料",
     "gisWorkbench":"資料與分析",
-    "viewKbd":"⌨ 檢視鍵盤快速鍵（或按 ?）",
+    "viewKbd":"檢視鍵盤快速鍵（或按 ?）",
     "viewScience":"每一項模擬如何運作 ↗",
     "viewSourcesPage":"開啟資料來源頁面 ↗",
     "wsHint":"新聞、國家、地圖、圖層與 Atlas 各自成為獨立視窗，可自由移動、調整大小、收合與堆疊。你的版面配置會被儲存。",
@@ -222,7 +222,7 @@ IntMapLang.define('zh', {
       statPop:"人口", statGdp:"GDP（名目）", statGdpPc:"人均 GDP", statGdpPPP:"GDP（購買力平價）", statGdpPcPPP:"人均 GDP（購買力平價）", statArea:"面積", statDensity:"人口密度", statRegion:"地區", statCapital:"首都", statCurrency:"貨幣", statLang:"語言", statHDI:"人類發展指數", statDem:"民主指數", statMil:"國防支出", statLife:"平均壽命", statInet:"網路使用人口",
       details:"詳細資料 ↗", loadingData:"正在載入國家資料…", dataNA:"無資料", noData:"查無國家資料。", sortGdp:"GDP", sortPop:"人口", sortArea:"面積", sortName:"A–Z", sortHDI:"HDI", sortMil:"軍費", elev:"海拔", bearing:"方位", presetNone:"— 請選擇 —", presetLbl:"距離預設", opacity:"不透明度", circumference:"圓周長", lblUnits:"度量單位", unitBoth:"公制＋英制", unitMetric:"僅公制", unitImperial:"僅英制", msPh:"搜尋地球上任何地點…",
       spType:"類型", 
-      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 經緯格線", gridLayer:"🌐 格線與標註", lblTempUnit:"溫度", tempBoth:"°C＋°F", tempC:"僅 °C", tempF:"僅 °F", measureMenuBtn:"測量", measureDistBtn:"📏 距離／面積", drawBtn:"✏️ 繪製", vol3dBtn:"🧊 立體體積", radiusBtn:"⭕ 半徑", objectsBtn:"🗂 物件", mScreenshot:"地圖螢幕擷取", shareMenuBtn:"分享", shareLinkBtn:"分享／複製連結", layersBtn:"圖層 ▾",
+      flat:"平面", globe:"地球儀", threeD:"3D", gridBtn:"經緯格線", gridLayer:"格線與標註", lblTempUnit:"溫度", tempBoth:"°C＋°F", tempC:"僅 °C", tempF:"僅 °F", measureMenuBtn:"測量", measureDistBtn:"距離／面積", drawBtn:"繪製", vol3dBtn:"立體體積", radiusBtn:"半徑", objectsBtn:"物件", mScreenshot:"地圖螢幕擷取", shareMenuBtn:"分享", shareLinkBtn:"分享／複製連結", layersBtn:"圖層 ▾",
       ctxDropPin:"放置圖釘", ctxMeasureFrom:"從此開始測量", ctxPostHere:"發佈到社群", ctxDistFrom:"與前一個圖釘的距離", ctxCopy:"複製座標", ctxClearPins:"移除所有圖釘", ctxThisPoint:"此地點", coords:"座標", depth:"深度", climate:"氣候", tlMachine:"Chronos", 
       lyrEEZ:"專屬經濟海域／12浬", lyrShips:"即時船舶動態", lyrPlanes:"即時航班動態", lyrSats:"即時衛星", lyrThermal:"熱異常（火點）", poiLabels:"地點、商家與設施", shipsZoomHint:"放大以載入即時船舶", aisNoKey:"即時船舶暫時無法顯示 — 共用資料來源沒有回應。", aisOutsideCoverage:"共用資料來源未涵蓋這片海域 — 不是這裡沒有船，而是資料範圍不到。在設定中填入你自己的 aisstream.io 金鑰，即可看到全世界。", aisKeyLabel:"即時船舶動態（AISstream 金鑰）", aisKeyHint:"選填。沒有金鑰也能從共用資料來源看到即時船舶。填入 aisstream.io 的免費金鑰後，這個瀏覽器會直接接收全球即時串流，稍微更新一些。金鑰僅儲存在這個瀏覽器中。",
       filtCiv:"民用", filtMil:"軍用", filtAll:"全部", trafficFilter:"篩選", lyrTime:"圖層日期", thermWin24:"過去 24 小時", thermWin48:"過去 48 小時", thermWin72:"過去 72 小時",
@@ -408,15 +408,15 @@ IntMapLang.define('zh', {
     '−10y': "−10年",   /* news-timeline.js */
     '−5y': "−5年",   /* news-timeline.js */
     /* seismic.js */
-    '⚠ Capped at 600 results — zoom into a sub-region for the rest': "⚠ 已限制為 600 筆結果 — 請放大到較小區域查看其餘",   /* atlas-console.js */
-    '⚠ Wikidata is community-maintained, so coverage is uneven: a company nobody has entered is simply absent, and «the largest» means «the largest Wikidata has a revenue for». An ownership graph is not a market-share or influence graph.': "⚠ Wikidata 由社群維護，因此涵蓋程度並不平均：沒有人建檔的公司就是不存在於此，而「最大」的意思是「Wikidata 有營收資料者之中最大」。持股關係圖不等於市佔率或影響力圖。",   /* industry-web.js */
+    'Capped at 600 results — zoom into a sub-region for the rest': "已限制為 600 筆結果 — 請放大到較小區域查看其餘",   /* atlas-console.js */
+    'Wikidata is community-maintained, so coverage is uneven: a company nobody has entered is simply absent, and «the largest» means «the largest Wikidata has a revenue for». An ownership graph is not a market-share or influence graph.': "Wikidata 由社群維護，因此涵蓋程度並不平均：沒有人建檔的公司就是不存在於此，而「最大」的意思是「Wikidata 有營收資料者之中最大」。持股關係圖不等於市佔率或影響力圖。",   /* industry-web.js */
     '✓ LANDED': "✓ 已降落",   /* flight-sim.js */
     '× CRASHED': "× 墜毀",   /* flight-sim.js */
     '⬡ = approximate extent (no official boundary exists — AI-traced outline)': "⬡＝概略範圍（沒有官方界線 — 由 AI 描繪）",   /* atlas-console.js */
     '⬡ = approximate extent (no official boundary exists)': "⬡＝概略範圍（沒有官方界線）",   /* atlas-console.js */
     '⬡ = approximate extent derived from web-verified boundary anchors (no official boundary exists for this region)': "⬡＝依據網路查證的邊界錨點推得的概略範圍（此區域沒有官方界線）",   /* atlas-console.js */
-    '📍 Current map view': "📍 目前地圖畫面",   /* flight-sim.js */
-    '📍 Last flight end point': "📍 上次飛行終點",   /* flight-sim.js */
+    'Current map view': "目前地圖畫面",   /* flight-sim.js */
+    'Last flight end point': "上次飛行終點",   /* flight-sim.js */
     '1 psi — windows shatter, light injuries': "1 psi — 玻璃破碎、輕傷",   /* atlas-sims.js */
     '20 psi — total destruction': "20 psi — 完全摧毀",   /* atlas-sims.js */
     '3-D volume': "立體體積",   /* volume3d.js */
@@ -858,8 +858,8 @@ IntMapLang.define('zh', {
     'Drag headers to reorder · click to sort': "拖曳標題可重新排序・點擊可排序",   /* stats-compare.js */
     'Drag term (B*)': "阻力項（B*）",   /* satellite-detail.js */
     'Drag the map normally. Pick a tool above to edit.': "照常拖曳地圖。請在上方選擇工具以進行編輯。",   /* terrain-water.js */
-    'Drag the slider to move the time of day, or press ▶ to run it. ⛰ adds the shade the terrain itself casts. ◎ then a click on the map reports that spot’s sunlight hours over a whole year.': "拖曳滑桿可改變一天中的時刻，或按 ▶ 播放。⛰ 會加入地形自身投下的陰影。按 ◎ 後點擊地圖，即可回報該處全年的日照時數。",   /* sims.js */
-    'Drag to look; use ◀ ▶ to turn (the map shows your facing).': "拖曳可環顧四周；用 ◀ ▶ 轉向（地圖會顯示你的朝向）。",   /* street-view.js */
+    'Drag the slider to move the time of day, or press {icon:play} to run it. {icon:mountain} adds the shade the terrain itself casts. ◎ then a click on the map reports that spot’s sunlight hours over a whole year.': "拖曳滑桿可改變一天中的時刻，或按 {icon:play} 播放。{icon:mountain} 會加入地形自身投下的陰影。按 ◎ 後點擊地圖，即可回報該處全年的日照時數。",   /* sims.js */
+    'Drag to look; use ↺ ↻ to turn (the map shows your facing).': "拖曳可環顧四周；用 ↺ ↻ 轉向（地圖會顯示你的朝向）。",   /* street-view.js */
     'Drag to move all the borders that meet here': "拖曳可一併移動在此交會的所有邊界",   /* workspace.js */
     'Drag to resize': "拖曳可調整大小",   /* workspace.js */
     'Draw / trace': "繪製／描繪",   /* workspace.js */
@@ -1420,9 +1420,9 @@ IntMapLang.define('zh', {
     'No populated cities/towns within the radius (per OSM population tags)': "半徑內沒有有人居住的城鎮（依 OSM 人口標記）",   /* atlas-console.js */
     'No precise boundary for': "沒有精確界線：",   /* atlas-console.js */
     /* routing.js */
-    'No public-transit route here — the area may have no open transit data yet. Try 🚗 or 🚶 above.': "此處沒有大眾運輸路線 — 該地區可能還沒有開放的運輸資料。請改用上方的 🚗 或 🚶。",   /* atlas-console.js */
+    'No public-transit route here — the area may have no open transit data yet. Try {icon:car} or {icon:walk} above.': "此處沒有大眾運輸路線 — 該地區可能還沒有開放的運輸資料。請改用上方的 {icon:car} 或 {icon:walk}。",   /* atlas-console.js */
     'no published revenue': "未公布營收",   /* industry-web.js */
-    'No rail reachable here in that time (or the rail-data service is busy). Try a point nearer a station, or 🚗/🚶.': "在該時間內鐵路無法到達此處（或鐵路資料服務忙碌）。請改選靠近車站的地點，或使用 🚗／🚶。",   /* atlas-console.js */
+    'No rail reachable here in that time (or the rail-data service is busy). Try a point nearer a station, or {icon:car}/{icon:walk}.': "在該時間內鐵路無法到達此處（或鐵路資料服務忙碌）。請改選靠近車站的地點，或使用 {icon:car}／{icon:walk}。",   /* atlas-console.js */
     'No readable data on the active layers here. Turn a data layer on first.': "此處啟用中的圖層沒有可讀取的資料。請先開啟一個資料圖層。",   /* atlas-console.js */
     /* routing.js */
     'No route found (no road connection between these points).': "找不到路線（這兩點之間沒有道路連通）。",   /* atlas-console.js */
@@ -1624,7 +1624,7 @@ IntMapLang.define('zh', {
     'Period': "週期",   /* satellite-detail.js satellites-live.js space.js */
     'photo: Planespotters.net': "照片：Planespotters.net",   /* aircraft-detail.js */
     'Pick a country on the map': "在地圖上選擇國家",   /* stats-compare.js */
-    'pick a date & time; buildings in view (zoom in) cast real shadows and the 3D scene is lit from the sun. Press ▶ to sweep the day.': "選擇日期與時刻；視野內的建築（請放大）會投下真實陰影，3D 場景也由太陽照明。按 ▶ 可掃過一整天。",   /* atlas-console.js */
+    'pick a date & time; buildings in view (zoom in) cast real shadows and the 3D scene is lit from the sun. Press {icon:play} to sweep the day.': "選擇日期與時刻；視野內的建築（請放大）會投下真實陰影，3D 場景也由太陽照明。按 {icon:play} 可掃過一整天。",   /* atlas-console.js */
     'Pick a point further away.': "請選擇更遠的地點。",   /* viewshed.js */
     /* routing.js */
     /* atlas-console.js */
@@ -1716,7 +1716,7 @@ IntMapLang.define('zh', {
     'reachable': "可到達",   /* atlas-console.js drone-nav.js */
     'Reachable area': "可達範圍",   /* map-tools.js viewshed.js */
     'Reachable area (drive/walk/cycle)': "可達範圍（開車／步行／單車）",   /* tool-panel.js */
-    'Reachable area along the REAL road network (Valhalla / OpenStreetMap) — drive / walk / cycle, not a distance circle. Adjust mode & time in the 🎯 panel.': "依真實道路網（Valhalla／OpenStreetMap）計算的可達範圍 — 開車／步行／單車，不是距離圓。可在 🎯 面板調整方式與時間。",   /* atlas-console.js */
+    'Reachable area along the REAL road network (Valhalla / OpenStreetMap) — drive / walk / cycle, not a distance circle. Adjust mode & time in the {icon:target} panel.': "依真實道路網（Valhalla／OpenStreetMap）計算的可達範圍 — 開車／步行／單車，不是距離圓。可在 {icon:target} 面板調整方式與時間。",   /* atlas-console.js */
     'Reaches the sea': "流入海洋",   /* terrain-water.js */
     'Read and analyze this image. If it is a document, a maths/science problem, a table or text, transcribe it accurately and solve or explain it.': "請閱讀並分析這張圖片。若是文件、數學／科學題目、表格或文字，請正確轉錄並加以解答或說明。",   /* atlas-console.js */
     'Reading the feed…': "正在讀取資料源…",   /* world-packs.js */
@@ -2173,7 +2173,7 @@ IntMapLang.define('zh', {
     'The obstacle is close to the far end, so raising THIS antenna barely helps — raise the other one.': "障礙物靠近另一端，因此提高「這一端」的天線幾乎沒有幫助 — 請提高另一端。",   /* viewshed.js */
     'The orbit': "軌道",   /* satellite-detail.js */
     'The ownership statements could not be fetched this time, so no lines are drawn. That is a failed query, not an absence of ownership.': "這次無法取得持股關係的敘述，因此沒有畫出任何連線。這是查詢失敗，並不代表沒有持股關係。",   /* industry-web.js */
-    'The parameters changed — press ▶ to recompute the intensity map.': "參數已變更 — 請按 ▶ 重新計算震度分布。",   /* seismic.js */
+    'The parameters changed — press {icon:play} to recompute the intensity map.': "參數已變更 — 請按 {icon:play} 重新計算震度分布。",   /* seismic.js */
     'The past 30 days': "過去 30 天",   /* monitors.js */
     'The previous run': "上次執行",   /* monitors.js */
     'the query took longer than 45 s': "查詢超過 45 秒",   /* industry-web.js */
@@ -2469,10 +2469,10 @@ IntMapLang.define('zh', {
     '(depth)': "（深度）",
     '＋ Add point': "＋ 新增點",
     '★ Saved': "★ 已收藏",
-    '🌐 Web': "🌐 網頁",
-    '📍 Tap the map to choose where to post': "📍 點按地圖選擇發文位置",
-    '📖 Reader': "📖 閱讀器",
-    '🔒 Only <b>Pro</b> users can add their own satellite imagery services (API integrations).': "🔒 只有 <b>Pro</b> 使用者才能加入自己的衛星影像服務（API 整合）。",
+    'Web': "網頁",
+    'Tap the map to choose where to post': "點按地圖選擇發文位置",
+    'Reader': "閱讀器",
+    'Only <b>Pro</b> users can add their own satellite imagery services (API integrations).': "只有 <b>Pro</b> 使用者才能加入自己的衛星影像服務（API 整合）。",
     '2022 UNDP': "2022 聯合國開發計劃署",
     '2022 World Bank': "2022 世界銀行",
     '32 members': "32 個成員國",
@@ -2500,7 +2500,7 @@ IntMapLang.define('zh', {
     'Color relief unavailable': "無法取得彩色地勢圖",
     'Computing rail reach…': "正在計算鐵路可達範圍…",
     'Could not add the submarine-cable layer': "無法加入海底電纜圖層",
-    'Could not extract text — use “🌐 Web” above to open the page.': "無法擷取內文 — 請用上方的「🌐 網頁」開啟頁面。",
+    'Could not extract text — use “{icon:world} Web” above to open the page.': "無法擷取內文 — 請用上方的「{icon:world} 網頁」開啟頁面。",
     'Could not initialize contours': "無法初始化等高線",
     'Could not load 3D terrain': "無法載入 3D 地形",
     'Could not load fertility data': "無法載入生育率資料",
@@ -2622,7 +2622,7 @@ IntMapLang.define('zh', {
     'Tap to highlight • long-press for criteria': "點按以標示 • 長按設定條件",
     'The satellite layer is unavailable': "衛星圖層無法使用",
     'Thermal anomalies': "熱異常",
-    'This site blocks embedding. Try “📖 Reader” or open it in a new tab.': "這個網站禁止內嵌。請改用「📖 閱讀器」或在新分頁開啟。",
+    'This site blocks embedding. Try “{icon:book} Reader” or open it in a new tab.': "這個網站禁止內嵌。請改用「{icon:book} 閱讀器」或在新分頁開啟。",
     'Top depth': "頂部深度",
     'Total fertility rate': "總生育率",
     'Tropic of Cancer (23.4°N)': "北回歸線（23.4°N）",
@@ -2677,8 +2677,8 @@ IntMapLang.define('zh', {
   "this service is in the update cycle and has not been read yet, so the map is not saying anything about this country until it has.": "此機關正在更新排程中，尚未取得；在取得之前，本地圖對此國家不作任何陳述。",   /* (#R275) */
   "via WMO SWIC": "經 WMO SWIC",   /* (#R275) */
   "✓ Copied": "✓ 已複製",
-  "📍 Places": "📍 地點",
-  "🗓 Events": "🗓 事件",
+  "Places": "地點",
+  "World events": "事件",
   "Anonymous": "匿名",
   "Build the source": "建立震源",
   "Cargo": "貨船",
@@ -2939,8 +2939,8 @@ IntMapLang.define('zh', {
   "Click on the map:": "在地圖上點選：",
   "Click that country on the map…": "在地圖上點選那個國家…",
   "Skip": "略過",
-  "👥 Which has the larger population?": "👥 哪一個人口較多？",
-  "📐 Which is larger by area?": "📐 哪一個面積較大？",
+  "Which has the larger population?": "哪一個人口較多？",
+  "Which is larger by area?": "哪一個面積較大？",
   "Next →": "下一題 →",
   "Which country is this flag?": "這是哪一國的國旗？",
   "Which country is this shape?": "這是哪一國的形狀？",
@@ -3155,8 +3155,8 @@ IntMapLang.define('zh', {
   "Infectious (d)": "傳染期（天）",
   "Immunity (mo)": "免疫（月）",
   "New outbreak": "重新開始",
-  "⏸ Pause": "⏸ 暫停",
-  "▶ Play": "▶ 播放",
+  "Pause": "暫停",
+  "Play": "播放",
   "No data right now — please try again in a moment.": "目前無法取得資料，請稍後再試。",
   "Source: World Bank · ": "來源：世界銀行 · ",
   " · most recent value per country": "（各國最新值）",
@@ -3263,12 +3263,12 @@ IntMapLang.define('zh', {
   "Calendar": "行事曆",
   "Next new moon": "下一次新月",
   "Time zones (live clock)": "時區（即時時鐘）",
-  "⚠ Weather & disaster warnings": "⚠ 氣象與災害警報",
-  "⚡ Energy mix": "⚡ 能源結構",
-  "🌊 Ocean currents": "🌊 洋流",
-  "🌊 Tides": "🌊 潮汐",
-  "🕸 Industry web": "🕸 產業關聯網",
-  "🚢 Trade flows": "🚢 貿易流動",
+  "Weather & disaster warnings": "氣象與災害警報",
+  "Energy mix": "能源結構",
+  "Ocean currents": "洋流",
+  "Tides": "潮汐",
+  "Industry web": "產業關聯網",
+  "Trade flows": "貿易流動",
   "3C 273 — the first quasar ever identified": "3C 273 — 人類確認的第一個類星體",
   "An educational model. In a real emergency, follow the instructions of the official authorities. It does not predict whether damage will occur. Keep your everyday preparations ready.": "教育用模型。實際災害時請遵循官方機關的指示。本模型不預測是否會造成災害。請平時就做好必要的準備。",
   "Andromeda (M31) — the nearest large galaxy": "仙女座星系（M31）— 最近的大型星系",
@@ -4203,7 +4203,7 @@ IntMapLang.define('zh', {
   "integrated": "積分",   /* (#R267) */
   "flowing": "流動中",   /* (#R267) */
   "still flowing at the edge of the modelled area": "在計算範圍邊緣仍在流動",   /* (#R267) */
-  "still moving when the ⏭ budget ran out": "達到 ⏭ 計算上限時仍在流動",   /* (#R267) */
+  "still moving when the {icon:skip-forward} budget ran out": "達到 {icon:skip-forward} 計算上限時仍在流動",   /* (#R267) */
   "extended": "範圍擴充",   /* (#R267) */
   "drawn at": "繪製解像度",   /* (#R267) */
   "cells with no DEM (closed)": "個儲存格無高程資料（已封閉）",   /* (#R267) */
@@ -4212,7 +4212,7 @@ IntMapLang.define('zh', {
   "The modelled area has reached its limit — water leaving its edge is counted, not drawn.": "計算範圍已達上限；流出邊緣的水只計入統計，不再繪製。",   /* (#R267) */
   "— when the water reached the front, on the run that drew it": "— 與畫面同一次積分中水抵達前端的時刻",   /* (#R267) */
   "Run on until the water stops moving": "繼續計算至水不再流動",   /* (#R267) */
-  "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. The same model runs the whole course: the lattice is extended in whichever direction the water goes, at the same cell size, so there is no second calculation and no second drawing downstream. ⏭ runs this model on until the water stops moving.": "您正在編輯真實高程資料。水以二維淺水方程式的局部慣性形式（Bates 2010；de Almeida 2012 的 q 中心化）進行時間積分，曼寧粗率 n = 0.035，因此洪峰需要多少時間就走多少時間。上游到下游是同一個模型：格網會沿水前進的方向以相同的格子尺寸延伸，因此下游並沒有另一套計算或另一層繪製。⏭ 會讓同一個模型繼續跑到水不再流動為止。",
+  "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. The same model runs the whole course: the lattice is extended in whichever direction the water goes, at the same cell size, so there is no second calculation and no second drawing downstream. {icon:skip-forward} runs this model on until the water stops moving.": "您正在編輯真實高程資料。水以二維淺水方程式的局部慣性形式（Bates 2010；de Almeida 2012 的 q 中心化）進行時間積分，曼寧粗率 n = 0.035，因此洪峰需要多少時間就走多少時間。上游到下游是同一個模型：格網會沿水前進的方向以相同的格子尺寸延伸，因此下游並沒有另一套計算或另一層繪製。{icon:skip-forward} 會讓同一個模型繼續跑到水不再流動為止。",
   "By area": "依地區",
   "cells have no elevation data and the water cannot enter them": "個網格沒有高程資料，水無法進入",
   "Creoles & pidgins": "克里奧爾語與皮欽語",
@@ -6425,7 +6425,7 @@ IntMapLang.define('zh', {
   "WHO published no Disease Outbreak News in this window.": "在這段期間內，WHO 沒有發布 Disease Outbreak News。",   /* outbreaks.js (#R650) */
   "WHO published these about a region or the whole world, so they are listed and not placed.": "這些是 WHO 就某個區域或整個世界發布的，因此只列於清單，不標在地圖上。",   /* outbreaks.js (#R650) */
   "Window ending": "期間結束於",   /* outbreaks.js (#R650) */
-  "▶ Tap a country on the map to start the outbreak there": "▶ 在地圖上點選疫情開始的國家",
+  "Tap a country on the map to start the outbreak there": "在地圖上點選疫情開始的國家",
   "1 dot ≈ ": "1 點 ≈ ",
   "a leading lab": "一家頂尖實驗室",
   "active cases · red = infectious, orange = infected but not yet infectious": "名現症病例 · 紅＝具傳染性、橙＝已感染但尚未具傳染性",

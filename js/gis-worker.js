@@ -221,7 +221,7 @@ export function makeGisWorker() {
       '  var out;',
       '  try { out = rec.fn(d.payload, ctx); }',
       '  catch (e) {',
-      '    /* ⚠ A CAPTURED VARIABLE ARRIVES HERE AND NOWHERE ELSE. The closure was never in the',
+      '    /* A CAPTURED VARIABLE ARRIVES HERE AND NOWHERE ELSE. The closure was never in the',
       '       source text, so the free name is unresolved in this global scope — which is the one',
       '       moment the broken contract is observable. It gets its own code so the caller is told',
       '       what is wrong, rather than the caller reading it as an ordinary failed computation. */',

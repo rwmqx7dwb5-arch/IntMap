@@ -32,6 +32,7 @@ import { loadData } from './data-door.js';   /* (data-one-door) the shipped data
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 /* (startup-lazy-layers) THE FIVE LAYERS, FETCHED THE FIRST TIME ONE OF THEM IS ASKED FOR. The rows, the
    toolkit every member of the family shares and the share-link state are js/world-packs-rows.js, which is
@@ -93,9 +94,9 @@ export function worldPacksBody(HOST){
          so turning the arrows off leaves the choropleth answer 「誰と、どれだけ」 on the map. */
       let arrows=true;
       function applyVis(){ setVis(LYR,on&&arrows); }
-      const panel=makePanel('wp-trade-panel',()=>'🚢 '+L('Trade flows','貿易フロー','Handelsströme','Торговые потоки','Flujos comerciales'),'wp-dl-trade',
+      const panel=makePanel('wp-trade-panel',()=>''+L('Trade flows','貿易フロー','Handelsströme','Торговые потоки','Flujos comerciales'),'wp-dl-trade',
         { legendId:'wptrade', layers:()=>['wp-trade-fill'].concat(LYR),
-          names:()=>(LA('🚢 Trade flows','🚢 貿易フロー','🚢 Handelsströme','🚢 Торговые потоки','🚢 Flujos comerciales')) });
+          names:()=>(LA('Trade flows','貿易フロー','Handelsströme','Торговые потоки','Flujos comerciales')) });
 
       /* ══ (#R212) THEY ARE ARROWS. 「いや矢印って言ってんだろうが。」 ═══════════════════════════════
          A trade flow has a direction and a bare line does not carry one. Two flat-coloured icons
@@ -437,7 +438,7 @@ export function worldPacksBody(HOST){
         const s=b.querySelector('.wp-stat'), l=b.querySelector('.wp-list'); if(!s) return;
         if(busy){ s.textContent=L('Loading trade data…','貿易データを取得中…','Handelsdaten werden geladen…','Загрузка данных…','Cargando datos…'); if(l) l.innerHTML=''; return; }
         if(!iso){ s.textContent=L('Tap a country on the map.','地図で国をタップしてください。','Land auf der Karte antippen.','Нажмите страну на карте.','Toque un país en el mapa.'); if(l) l.innerHTML=''; return; }
-        if(!rows){ s.textContent='⚠ '+L('No data for this country and year.','この国・この年のデータがありません。','Keine Daten.','Нет данных.','Sin datos.'); if(l) l.innerHTML=''; return; }
+        if(!rows){ s.textContent=L('No data for this country and year.','この国・この年のデータがありません。','Keine Daten.','Нет данных.','Sin datos.'); if(l) l.innerHTML=''; return; }
         const tot=rows.reduce((a,d)=>a+d.v,0);
         s.innerHTML='<b>'+esc(countryName(iso))+'</b> · '+(dir==='X'?L('exports','輸出','Ausfuhr','экспорт','exportaciones'):L('imports','輸入','Einfuhr','импорт','importaciones'))
           +' '+usdShort(tot)+' <span style="opacity:.7;">('+usdExact(tot)+')</span> · '+rows.length+' '+L('partners','か国・地域','Partner','партнёров','socios');
@@ -545,9 +546,9 @@ export function worldPacksBody(HOST){
                  ['other_renewables_twh',LA('Other renewables','その他再エネ','Sonstige Erneuerbare','Прочие ВИЭ','Otras renovables'),'#26a69a']],
           clean:['nuclear_twh','hydro_twh','wind_twh','solar_twh','other_renewables_twh'] } };
       let on=false, iso=null, kind='elec';
-      const panel=makePanel('wp-energy-panel',()=>'⚡ '+L('Energy mix','エネルギー構成','Energiemix','Энергобаланс','Mezcla energética'),'wp-dl-energy',
+      const panel=makePanel('wp-energy-panel',()=>''+L('Energy mix','エネルギー構成','Energiemix','Энергобаланс','Mezcla energética'),'wp-dl-energy',
         { legendId:'wpenergy', layers:()=>[fillId('elec'),fillId('prim')],
-          names:()=>(LA('⚡ Energy mix','⚡ エネルギー構成','⚡ Energiemix','⚡ Энергобаланс','⚡ Mezcla energética')) });
+          names:()=>(LA('Energy mix','エネルギー構成','Energiemix','Энергобаланс','Mezcla energética')) });
       /* ⚠ (#R251) the two name slots collapsed into ONE tuple, so the row is [key, name, colour]
          and the colour moved from p[3] to p[2]. Resolved through pick() itself — `L.arr` — so a
          language past the five arguments reaches the inline table instead of falling to English. */
@@ -649,11 +650,11 @@ export function worldPacksBody(HOST){
         const host=(b&&b.querySelector('.wp-e-body'))||render().querySelector('.wp-e-body');
         host.innerHTML=L('Loading…','読み込み中…','Lädt…','Загрузка…','Cargando…');
         try{ const data=await owid(cfg.slug); const yy=pickYear(data,code,y); const rec=yy!=null?data.by[code][yy]:null;
-          if(!rec){ host.innerHTML='⚠ '+L('No data for this country.','この国のデータがありません。','Keine Daten.','Нет данных.','Sin datos.'); return; }
+          if(!rec){ host.innerHTML=icon('warning')+' '+L('No data for this country.','この国のデータがありません。','Keine Daten.','Нет данных.','Sin datos.'); return; }
           host.innerHTML='<div style="font-weight:700;font-size:13px;margin-bottom:2px;">'+esc(countryName(code))+'</div>'
             +'<div style="color:var(--text-muted);margin-bottom:6px;">'+yy+(yy!==y?(' · '+L('latest available at or before','指定年以前で最新','letzte verfügbare','последний доступный','último disponible')+' '+y):'')+'</div>'
             +bar(cfg.parts,rec,cfg.unit);
-        }catch(e){ host.innerHTML='⚠ '+L('Energy data could not be fetched.','エネルギーデータを取得できませんでした。','Daten nicht abrufbar.','Не удалось получить данные.','No se pudieron obtener los datos.'); } }
+        }catch(e){ host.innerHTML=icon('warning')+' '+L('Energy data could not be fetched.','エネルギーデータを取得できませんでした。','Daten nicht abrufbar.','Не удалось получить данные.','No se pudieron obtener los datos.'); } }
 
       /* one row, two questions: switching hides the other fill rather than stacking two choropleths */
       function setKind(k){ kind=(k==='prim')?'prim':'elec';
@@ -813,9 +814,9 @@ export function worldPacksBody(HOST){
          ⚠ KEEP THIS NOTE OUTSIDE THE CALL: tests/layer-world-packs-checks.test.mjs #R212 ② matches `makePanel('…', …)` within 560
          characters to check every family passes a row id, and a comment inside the argument list
          pushes the closing brace past that window. */
-      const panel=makePanel('wp-alert-panel',()=>'⚠ '+L('Warnings','気象・災害警報','Warnungen','Предупреждения','Avisos'),'wp-dl-alerts',
+      const panel=makePanel('wp-alert-panel',()=>''+L('Warnings','気象・災害警報','Warnungen','Предупреждения','Avisos'),'wp-dl-alerts',
         { legendId:'wpalerts', layers:()=>['wp-alert-fill',CHORO,HATCH,HCUT,'wp-alert-line'],
-          names:()=>(LA('⚠ Weather & disaster warnings','⚠ 気象・災害警報','⚠ Wetter- und Katastrophenwarnungen','⚠ Метеопредупреждения','⚠ Avisos meteorológicos')) });
+          names:()=>(LA('Weather & disaster warnings','気象・災害警報','Wetter- und Katastrophenwarnungen','Метеопредупреждения','Avisos meteorológicos')) });
 
       /* ══ ⚠⚠⚠ (#R269) THE JMA CODE TABLE IS THE JMA'S OWN, NOT ONE WRITTEN FROM MEMORY ═══════════
          The table this replaces was written from memory and from code 10 onwards almost every row
@@ -4788,7 +4789,7 @@ export function worldPacksBody(HOST){
           return h; }
         const st=FEED_STATE[feed];
         const stLine=(s)=>s==='loading'?('<div style="margin-top:8px;color:var(--text-muted);">'+L('Reading the feed…','フィードを取得中…','Feed wird gelesen…','Загрузка фида…','Leyendo el feed…')+'</div>')
-          :s==='error'?('<div style="margin-top:8px;color:#ff9f0a;">⚠ '+L('This feed could not be fetched just now, so nothing below is a statement about what is in force.','このフィードを取得できませんでした。したがって以下は「発表状況」を示すものではありません。','Feed nicht abrufbar — die Anzeige sagt nichts über geltende Warnungen.','Не удалось получить фид — показанное ничего не говорит о действующих предупреждениях.','No se pudo obtener el feed — lo mostrado no indica qué avisos están vigentes.')+'</div>')
+          :s==='error'?('<div style="margin-top:8px;color:#ff9f0a;">'+icon('warning')+' '+L('This feed could not be fetched just now, so nothing below is a statement about what is in force.','このフィードを取得できませんでした。したがって以下は「発表状況」を示すものではありません。','Feed nicht abrufbar — die Anzeige sagt nichts über geltende Warnungen.','Не удалось получить фид — показанное ничего не говорит о действующих предупреждениях.','No se pudo obtener el feed — lo mostrado no indica qué avisos están vigentes.')+'</div>')
           :'';
         h+='<div style="margin-top:3px;font-size:11px;color:var(--text-muted);">'+esc(agencyFor(feed,iso3))
           +' · '+esc(unitWord(feed))+'</div>';
@@ -5233,7 +5234,7 @@ export function worldPacksBody(HOST){
         el.innerHTML='<button class="country-popup-close wpa-x" type="button" aria-label="'+esc(L('Close','閉じる','Schließen','Закрыть','Cerrar'))+'">×</button>'
           +'<div style="padding:11px 13px 12px;">'
           +'<div class="wpa-drag" style="display:flex;align-items:center;gap:8px;margin-bottom:2px;padding-right:26px;cursor:move;user-select:none;">'
-          +'<span style="font-weight:700;font-size:12.5px;color:var(--text-main);">⚠ '
+          +('<span style="font-weight:700;font-size:12.5px;color:var(--text-main);">'+icon('warning')+' ')
           +esc(L('Warnings at this point','この地点の警報','Warnungen an diesem Punkt','Предупреждения в этой точке','Avisos en este punto'))+'</span></div>'
           +'<div class="wpa-pt-body"></div></div>';
         const b=el.querySelector('.wpa-pt-body'); if(b) b.innerHTML=pointBody(lng,lat,iso);
@@ -5584,9 +5585,9 @@ export function worldPacksBody(HOST){
          already given, so stepping the clock inside that window is arithmetic; the network is only
          asked again when the instant leaves the window every station actually covers. */
       let playTmr=0, playStep=3600e3, floodTick=0;   /* (#R297) one published hour per frame */
-      const panel=makePanel('wp-tide-panel',()=>'🌊 '+L('Tides','潮汐','Gezeiten','Приливы','Mareas'),'wp-dl-tides',
+      const panel=makePanel('wp-tide-panel',()=>''+L('Tides','潮汐','Gezeiten','Приливы','Mareas'),'wp-dl-tides',
         { legendId:'wptides', layers:()=>[LYR,PT,SEL,LBL,SELLBL],
-          names:()=>(LA('🌊 Tides','🌊 潮汐（満潮・干潮）','🌊 Gezeiten','🌊 Приливы','🌊 Mareas')) });
+          names:()=>(LA('Tides','潮汐（満潮・干潮）','Gezeiten','Приливы','Mareas')) });
       function ensureLayers(){ if(!_imCanDraw()) return false; try{
         if(!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         if(!GE().layers.has(PT)) GE().layers.add({id:PT,type:'circle',source:SRC,layout:{visibility:'none'},
@@ -5767,7 +5768,7 @@ export function worldPacksBody(HOST){
         const t0=when();
         let body;
         if((gridBusy||scanning)&&!stations.length) body='<div class="wp-t-body">'+L('Scanning the coast in view\u2026','\u8868\u793a\u4e2d\u306e\u6d77\u5cb8\u3092\u8d70\u67fb\u3057\u3066\u3044\u307e\u3059\u2026','K\u00fcste wird abgetastet\u2026','\u0421\u043a\u0430\u043d\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435 \u043f\u043e\u0431\u0435\u0440\u0435\u0436\u044c\u044f\u2026','Explorando la costa\u2026')+'</div>';
-        else if(failed) body='<div class="wp-t-body">\u26a0 '+L('The tide model could not be fetched.','\u6f6e\u6c50\u30c7\u30fc\u30bf\u3092\u53d6\u5f97\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002','Gezeitendaten nicht abrufbar.','\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u043e\u043b\u0443\u0447\u0438\u0442\u044c \u0434\u0430\u043d\u043d\u044b\u0435.','No se pudieron obtener los datos.')+'</div>';
+        else if(failed) body='<div class="wp-t-body">'+icon('warning')+' '+L('The tide model could not be fetched.','\u6f6e\u6c50\u30c7\u30fc\u30bf\u3092\u53d6\u5f97\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002','Gezeitendaten nicht abrufbar.','\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u043e\u043b\u0443\u0447\u0438\u0442\u044c \u0434\u0430\u043d\u043d\u044b\u0435.','No se pudieron obtener los datos.')+'</div>';
         else if(!stations.length) body='<div class="wp-t-body">'+L('No coast in this view \u2014 pan to a coastline, or tap one for its tide times.','\u3053\u306e\u8868\u793a\u7bc4\u56f2\u306b\u6d77\u5cb8\u304c\u3042\u308a\u307e\u305b\u3093\u3002\u6d77\u5cb8\u7dda\u307e\u3067\u79fb\u52d5\u3059\u308b\u304b\u3001\u6d77\u5cb8\u3092\u30bf\u30c3\u30d7\u3057\u3066\u304f\u3060\u3055\u3044\u3002','Keine K\u00fcste im Bild.','\u0412 \u044d\u0442\u043e\u043c \u0432\u0438\u0434\u0435 \u043d\u0435\u0442 \u043f\u043e\u0431\u0435\u0440\u0435\u0436\u044c\u044f.','No hay costa en esta vista.')+'</div>';
         else {
           const rows=stations.slice().sort((a,b)=>(a.next?a.next.t:Infinity)-(b.next?b.next.t:Infinity)).slice(0,8);
@@ -5899,7 +5900,7 @@ export function worldPacksBody(HOST){
         return '<div class="wp-t-time" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:5px;">'
           +'<button class="wp-t-step" data-d="-6" title="'+esc(L('back about a quarter cycle (6 h)','1/4周期ほど戻る（6時間）','etwa ein Viertelzyklus zurück','примерно на четверть цикла назад','un cuarto de ciclo atrás (6 h)'))+'" style="'+TB+'">«</button>'
           +'<button class="wp-t-step" data-d="-1" title="'+esc(L('an hour back','1時間前','eine Stunde zurück','на час назад','una hora atrás'))+'" style="'+TB+'">‹</button>'
-          +'<button class="wp-t-play" style="'+TB+'min-width:26px;">'+(playTmr?'⏸':'▶')+'</button>'
+          +'<button class="wp-t-play" style="'+TB+'min-width:26px;">'+(playTmr?icon('pause'):icon('play'))+'</button>'
           +'<button class="wp-t-step" data-d="1" title="'+esc(L('an hour on','1時間後','eine Stunde weiter','на час вперёд','una hora adelante'))+'" style="'+TB+'">›</button>'
           +'<button class="wp-t-step" data-d="6" title="'+esc(L('on about a quarter cycle (6 h)','1/4周期ほど進む（6時間）','etwa ein Viertelzyklus weiter','примерно на четверть цикла вперёд','un cuarto de ciclo adelante (6 h)'))+'" style="'+TB+'">»</button>'
           +'<input class="wp-t-when" type="datetime-local" step="3600" aria-label="'+esc(L('Date and time','日時'))+'" style="flex:1 1 152px;min-width:132px;'+TB+'cursor:auto;font-variant-numeric:tabular-nums;">'
@@ -5916,7 +5917,7 @@ export function worldPacksBody(HOST){
            unwatched would move every time-driven layer and hand the reader back a different hour
            than the one they left. Paused, the playhead is where they left it. */
         else playTmr=everyTick('world-packs:tide-play',420,()=>{ if(!on){ stopPlay(); return; } setWhen(when()+playStep); });
-        const b=panel.body(), pb=b&&b.querySelector('.wp-t-play'); if(pb) pb.textContent=playTmr?'⏸':'▶'; }
+        const b=panel.body(), pb=b&&b.querySelector('.wp-t-play'); if(pb) pb.replaceChildren(iconNode(playTmr?'pause':'play')); }
       function wireTime(b){
         if(!b) return;
         const w=b.querySelector('.wp-t-when');
@@ -5945,11 +5946,11 @@ export function worldPacksBody(HOST){
         try{
           const t0=when();
           series=await fetchSeries(lng,lat,t0);
-          if(!series.length){ host.innerHTML='⚠ '+L('No tide model at this point (inland or outside the model domain).','この地点には潮汐モデルがありません（内陸またはモデル範囲外）。','Kein Gezeitenmodell an diesem Punkt.','Нет модели прилива в этой точке.','Sin modelo de marea en este punto.'); busy=false; return; }
+          if(!series.length){ host.innerHTML=icon('warning')+' '+L('No tide model at this point (inland or outside the model domain).','この地点には潮汐モデルがありません（内陸またはモデル範囲外）。','Kein Gezeitenmodell an diesem Punkt.','Нет модели прилива в этой точке.','Sin modelo de marea en este punto.'); busy=false; return; }
           const lv=levelAt(series,t0);
           const wet=(lv!=null)?paintFlood(lng,lat,lv):0;
           probeHtml(t0,lv,wet);
-        }catch(e){ host.innerHTML='⚠ '+L('The tide model could not be fetched.','潮汐データを取得できませんでした。','Gezeitendaten nicht abrufbar.','Не удалось получить данные.','No se pudieron obtener los datos.'); }
+        }catch(e){ host.innerHTML=icon('warning')+' '+L('The tide model could not be fetched.','潮汐データを取得できませんでした。','Gezeitendaten nicht abrufbar.','Не удалось получить данные.','No se pudieron obtener los datos.'); }
         busy=false; }
       /* (#R216) the tapped point's table, at whatever instant the clock is on — split out of probe()
          so scrubbing and playback can re-draw it from the series that is already in hand */
@@ -6233,7 +6234,7 @@ export function worldPacksBody(HOST){
         const yr=gaezYear();
         const key=[crop,variable,supply,yr].join('|');
         if(!force&&key===drawKey&&GE().layers.hasSource(IMG)) return;
-        if(!ensureProto()){ stat('⚠ '+L('This crop layer could not start.','この作物レイヤーを開始できませんでした。','Diese Ebene konnte nicht starten.','Не удалось запустить слой.','No se pudo iniciar esta capa.')); return; }
+        if(!ensureProto()){ stat(L('This crop layer could not start.','この作物レイヤーを開始できませんでした。','Diese Ebene konnte nicht starten.','Не удалось запустить слой.','No se pudo iniciar esta capa.')); return; }
         drawKey=key; busy=true; stat('');
         const gen=++srcGen;
         try{
@@ -6258,7 +6259,7 @@ export function worldPacksBody(HOST){
           render();
         }catch(e){ console.warn('crops',e);
           drawKey='';
-          stat('⚠ '+L('This crop and variable could not be fetched from GAEZ — it will be tried again when the map moves.','この作物・指標を GAEZ から取得できませんでした（地図を動かすと再試行します）。','Nicht abrufbar — beim nächsten Verschieben wird es erneut versucht.','Не удалось получить — повторим при перемещении карты.','No se pudo obtener; se reintentará al mover el mapa.')); }
+          stat(L('This crop and variable could not be fetched from GAEZ — it will be tried again when the map moves.','この作物・指標を GAEZ から取得できませんでした（地図を動かすと再試行します）。','Nicht abrufbar — beim nächsten Verschieben wird es erneut versucht.','Не удалось получить — повторим при перемещении карты.','No se pudo obtener; se reintentará al mover el mapa.')); }
         busy=false; }
 
       function clearImg(keepKey){ try{ if(GE().layers.has(LYR)) GE().layers.remove(LYR); }catch(_){}

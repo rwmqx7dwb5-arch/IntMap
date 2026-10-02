@@ -29,6 +29,7 @@ import { PANDEMIC_PRESETS, defaultPandemicParams, createPandemicModel, scatterCa
 import { buildPandemicWorld, ensureCountryGeo, resolveStatsRow, pig, bboxOf, cName, loadPlaces, placesFor } from './pandemic-world.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 
 
@@ -654,7 +655,7 @@ export function playground(HOST){
            The badge is the whole of its job when it is closed: a reader who does not open it is told
            HOW MUCH THEY ARE NOT READING, which a stack of cards that deletes itself never was. */
         function renderFeedBadge(){ const b=hud&&hud.querySelector('#pg-feed-btn'); if(!b) return;
-          b.textContent='🗒 '+(feedUnread>0?('+'+feedUnread):String(feed.length));
+          b.replaceChildren(iconNode('note'),' '+(feedUnread>0?('+'+feedUnread):String(feed.length)));
           b.style.background=feedUnread>0?'var(--primary-fill)':'var(--input-bg)';
           b.style.color=feedUnread>0?'#fff':'var(--text-main)'; }
         const FEED_SHOWN=120;
@@ -957,7 +958,7 @@ export function playground(HOST){
                are ASSUMPTIONS rather than measurements were indistinguishable from the ones that
                are not. It also vanished the moment the run started. It is now a drawer, it opens
                from both screens, and it says of every source WHAT IT IS FOR. */
-            const sb=document.createElement('button'); sb.textContent='📖 '+IntMapLang.t(HOST.lang,"Sources and assumptions","出典と仮定","Quellen und Annahmen","Источники и допущения","Fuentes y supuestos");
+            const sb=document.createElement('button'); sb.replaceChildren(iconNode('book'),' '+IntMapLang.t(HOST.lang,"Sources and assumptions","出典と仮定","Quellen und Annahmen","Источники и допущения","Fuentes y supuestos"));
             sb.style.cssText='border:none;background:none;color:var(--primary-color);font-size:11px;font-weight:600;cursor:pointer;padding:4px 0;display:block;';
             sb.onclick=()=>{ srcOpen=!srcOpen; renderConfig(); };
             hud.appendChild(sb);
@@ -967,7 +968,7 @@ export function playground(HOST){
              is nothing to tap and a run started anyway would not be the run its seed names. */
           const hint=document.createElement('div'); hint.style.cssText='margin-top:9px;font-size:12px;color:'+(worldReady?'var(--primary-color)':'var(--text-muted)')+';font-weight:600;';
           hint.textContent=worldReady
-            ? IntMapLang.t(HOST.lang,"▶ Tap a country on the map to start the outbreak there","▶ 地図で最初に流行が始まる国をタップ","▶ Tippen Sie auf der Karte ein Land an, in dem der Ausbruch beginnt","▶ Нажмите на карте страну, где начнётся вспышка","▶ Toque en el mapa el país donde comenzará el brote")
+            ? IntMapLang.t(HOST.lang,"Tap a country on the map to start the outbreak there","地図で最初に流行が始まる国をタップ","Tippen Sie auf der Karte ein Land an, in dem der Ausbruch beginnt","Нажмите на карте страну, где начнётся вспышка","Toque en el mapa el país donde comenzará el brote")
             : IntMapLang.t(HOST.lang,"Loading the border and airport tables — the outbreak starts once the world is fixed.","国境・空港のデータを読み込み中——世界が確定してから流行を開始します。","Grenz- und Flughafentabellen werden geladen — der Ausbruch beginnt, sobald die Welt feststeht.","Загружаются таблицы границ и аэропортов — вспышка начнётся, когда мир будет зафиксирован.","Cargando las tablas de fronteras y aeropuertos: el brote comienza cuando el mundo queda fijado.");
           hud.appendChild(hint);
           hud.appendChild(disclaimer());
@@ -1050,20 +1051,20 @@ export function playground(HOST){
           const evt=document.createElement('div'); evt.id='pg-evt'; evt.style.cssText='font-size:11px;color:var(--text-muted);margin-bottom:8px;min-height:14px;line-height:1.35;'; evt.textContent=lastEvt; hud.appendChild(evt);
           const row=document.createElement('div'); row.style.cssText='display:flex;gap:8px;align-items:center;';
           if(ended){ const again=document.createElement('button'); again.textContent=IntMapLang.t(HOST.lang,"New outbreak","もう一度","Neuer Ausbruch","Новая вспышка","Nuevo brote"); again.style.cssText='flex:1;border:none;border-radius:10px;background:var(--primary-fill);color:#fff;padding:10px;font-weight:700;cursor:pointer;'; again.onclick=()=>{ exit(); setTimeout(()=>window._pgPandemic&&window._pgPandemic(),120); }; row.appendChild(again); }
-          else { const play=document.createElement('button'); const setPlay=()=>play.textContent=running?IntMapLang.t(HOST.lang,"⏸ Pause","⏸ 一時停止","⏸ Pause","⏸ Пауза","⏸ Pausa"):IntMapLang.t(HOST.lang,"▶ Play","▶ 再開","▶ Abspielen","▶ Воспроизвести","▶ Reproducir"); play.style.cssText='flex:1;border:none;border-radius:10px;background:var(--primary-fill);color:#fff;padding:9px;font-weight:700;cursor:pointer;'; play.onclick=()=>{ if(running) stop(); else start(); setPlay(); }; setPlay(); row.appendChild(play);
+          else { const play=document.createElement('button'); const setPlay=()=>play.replaceChildren(iconNode(running?'pause':'play'),' '+(running?IntMapLang.t(HOST.lang,"Pause","一時停止","Pause","Пауза","Pausa"):IntMapLang.t(HOST.lang,"Play","再開","Abspielen","Воспроизвести","Reproducir"))); play.style.cssText='flex:1;border:none;border-radius:10px;background:var(--primary-fill);color:#fff;padding:9px;font-weight:700;cursor:pointer;'; play.onclick=()=>{ if(running) stop(); else start(); setPlay(); }; setPlay(); row.appendChild(play);
             /* ⚠ WALL CLOCK ONLY. ×8 shows the same epidemic sooner; it does not make a different one. */
-            const spd=document.createElement('button'); spd.textContent='⏩ x'+speed; spd.style.cssText='border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:9px 12px;font-weight:700;cursor:pointer;'; spd.onclick=()=>{ speed=speed>=8?1:speed*2; spd.textContent='⏩ x'+speed; }; row.appendChild(spd); }
+            const spd=document.createElement('button'); spd.replaceChildren(iconNode('fast-forward'),' x'+speed); spd.style.cssText='border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:9px 12px;font-weight:700;cursor:pointer;'; spd.onclick=()=>{ speed=speed>=8?1:speed*2; spd.replaceChildren(iconNode('fast-forward'),' x'+speed); }; row.appendChild(spd); }
           const fb=document.createElement('button'); fb.id='pg-feed-btn'; fb.title=IntMapLang.t(HOST.lang,"Event log","出来事の記録","Ereignisprotokoll","Журнал событий","Registro de eventos");
           fb.style.cssText='border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:9px 11px;font-weight:700;font-size:11.5px;cursor:pointer;';
           fb.onclick=()=>{ feedOpen=!feedOpen; if(feedOpen) feedUnread=0; renderFeedBadge(); renderFeedList(); }; row.appendChild(fb);
-          const eb=document.createElement('button'); eb.textContent='📊'; eb.title=IntMapLang.t(HOST.lang,"How much of this is chance?","この結果はどこまで偶然か","Wie viel davon ist Zufall?","Насколько это случайность?","¿Cuánto de esto es azar?");
+          const eb=document.createElement('button'); eb.replaceChildren(iconNode('chart')); eb.title=IntMapLang.t(HOST.lang,"How much of this is chance?","この結果はどこまで偶然か","Wie viel davon ist Zufall?","Насколько это случайность?","¿Cuánto de esto es azar?");
           eb.style.cssText='border:none;border-radius:10px;background:'+(ensOpen?'var(--primary-fill)':'var(--input-bg)')+';color:'+(ensOpen?'#fff':'var(--text-main)')+';padding:9px 11px;font-size:11.5px;cursor:pointer;';
           eb.onclick=()=>{ ensOpen=!ensOpen; renderRun(ended); }; row.appendChild(eb);
           /* ⚠ (#R678) THE SOURCES USED TO VANISH THE MOMENT THE RUN STARTED — `renderRun()` clears
              `hud` and the one line lived in the config panel's «Advanced» fold, which is not
              redrawn. The run is when a reader is actually looking at the numbers, so it is the one
              screen where «where does this come from» must be answerable. */
-          const sb2=document.createElement('button'); sb2.textContent='📖';
+          const sb2=document.createElement('button'); sb2.replaceChildren(iconNode('book'));
           sb2.title=IntMapLang.t(HOST.lang,"Sources and assumptions","出典と仮定","Quellen und Annahmen","Источники и допущения","Fuentes y supuestos");
           sb2.style.cssText='border:none;border-radius:8px;background:'+(srcOpen?'var(--primary-fill)':'var(--input-bg)')+';color:'+(srcOpen?'#fff':'var(--text-main)')+';padding:3px 9px;font-size:11px;cursor:pointer;';
           sb2.onclick=()=>{ srcOpen=!srcOpen; renderRun(ended); }; row.appendChild(sb2);

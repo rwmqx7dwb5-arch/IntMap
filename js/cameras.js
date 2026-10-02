@@ -16,6 +16,7 @@ import { overpassQuery } from './overpass.js';   /* the one Overpass client, wit
 import { fetchViaProxy } from './proxy-fetch.js';   /* (own-fetch-relay) the app's ONE relay ladder — the 511 lists ride fetch-relay */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon, iconNode, iconImageData } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function cameras(HOST){
  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -54,9 +55,10 @@ export function cameras(HOST){
     function contains(a,c){ return a&&c&&a[0]<=c[0]&&a[1]<=c[1]&&a[2]>=c[2]&&a[3]>=c[3]; }
     function ensure(){ try{ if(!_imCanDraw()) return false;
       if(!GE().layers.hasSource('webcams-src')) GE().layers.addSource('webcams-src',{type:'geojson',data:fc()});
+      try{ if(!GE().scene.hasImage('im-icon-camera')) GE().scene.addImage('im-icon-camera',iconImageData('camera',48),{pixelRatio:2}); }catch(_){}   /* (icon-system) re-registered after a style change, which drops images */
       if(!GE().layers.has('webcams-pt')){
         GE().layers.add({id:'webcams-pt',type:'circle',source:'webcams-src',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,3,6,5,11,7],'circle-color':['coalesce',['get','col'],['match',['get','kind'],'tfl','#ff6d00','yt','#ff3b30','pano','#00b8d4','video','#a142f4','#00c853']],'circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});
-        GE().layers.add({id:'webcams-ico',type:'symbol',source:'webcams-src',minzoom:6,layout:{visibility:'none','text-field':'📷','text-size':window.IntMapLabelScale.sub(1),'text-allow-overlap':false}});
+        GE().layers.add({id:'webcams-ico',type:'symbol',source:'webcams-src',minzoom:6,layout:{visibility:'none','icon-image':'im-icon-camera','icon-size':0.5,'icon-allow-overlap':false}});
         GE().events.onLayer('click','webcams-pt',(e)=>{ if(!e.features||!e.features.length) return; openCam(e.features[0]); });
         GE().events.onLayer('mouseenter','webcams-pt',()=>{ GE().render.canvas().style.cursor='pointer'; });
         GE().events.onLayer('mouseleave','webcams-pt',()=>{ GE().render.canvas().style.cursor=''; });
@@ -77,7 +79,7 @@ export function cameras(HOST){
          swaps the main live image (the refresh loop then keeps THAT view live via its data-base). */
       let gallery='';
       if(p.presets){ try{ const arr=JSON.parse(p.presets); if(arr&&arr.length>1){ gallery='<div class="wc-gal" style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;">'+arr.slice(0,8).map((u,i)=>{ const su=IntMapSafe.url(u); if(!su) return '';   /* OSM-editable preset URLs: http(s) only, like the main view above */ return '<button class="wc-thumb" data-u="'+IntMapSafe.html(su)+'" title="'+LLw('View','ビュー','Ansicht','Вид','Vista')+' '+(i+1)+'" style="width:46px;height:34px;border-radius:5px;overflow:hidden;border:1px solid rgba(128,128,128,0.35);background:#000;cursor:pointer;padding:0;"><img src="'+IntMapSafe.html(su+(su.indexOf('?')>=0?'&':'?')+'_t='+Date.now())+'" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;display:block;"></button>'; }).join('')+'</div>'; } }catch(_){} }
-      const html='<div style="font-weight:700;font-size:13px;margin:0 0 7px;display:flex;align-items:center;gap:6px;">📷 '+nm
+      const html='<div style="font-weight:700;font-size:13px;margin:0 0 7px;display:flex;align-items:center;gap:6px;">'+icon('camera')+' '+nm
         +' <span style="font-size:9px;font-weight:800;letter-spacing:.4px;background:#ff3b30;color:#fff;border-radius:4px;padding:1px 5px;">LIVE</span></div>'
         +media+gallery
         +'<div style="margin-top:7px;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span style="font-size:10px;color:var(--text-muted);">'+refreshTxt+srcTxt+'</span>'
@@ -93,8 +95,15 @@ export function cameras(HOST){
          carrying the camera id would be a key that is never reused, i.e. a missed stop could never be replaced. */
       if(kind==='img'||kind==='tfl'){ refreshTimer=everyTick('cameras:popup-refresh',4000,()=>{ try{ const root=popup&&popup.getElement&&popup.getElement(); const el=root&&root.querySelector('img.wc-live'); if(!el){ _stopRefresh(); return; } const b=el.getAttribute('data-base')|| (kind==='tfl'?String(p.img||''):url); if(!b){ _stopRefresh(); return; } el.style.display='block'; const off=el.parentNode&&el.parentNode.querySelector('.wc-off'); if(off) off.style.display='none'; el.src=b+(b.indexOf('?')>=0?'&':'?')+'_t='+Date.now(); }catch(_){ _stopRefresh(); } }); }
     }
+    /* (icon-system) the legend's swatches, in the colours the pins are painted (each feed's `col`, and the circle layer's
+       default for OpenStreetMap) — they were coloured emoji that only approximated them. The markup tag escapes the
+       sentence's words; the swatches are markup it made. */
+    const CAM_COL={osm:'#00c853',tfl:'#ff6d00',ct:'#2979ff',fi:'#ffab00',us:'#e0409a','511':'#00bfa5'};
+    function camLegend(t){
+      const parts=String(t).split(/\{(osm|tfl|ct|fi|us|511)\}/).map((p,i)=>(i%2)?IntMapSafe.markup`<span style="color:${CAM_COL[p]}">${icon('dot',{size:'0.85em'})}</span>`:p);
+      return IntMapSafe.markup`${parts}`; }
     function updateLegend(){ try{ const el=window._registerLayerOpacity&&window._registerLayerOpacity('webcams',[lbl(),lbl(),lbl(),lbl()],['webcams-pt','webcams-ico'],'dl-webcams'); if(el){ let h=el.querySelector('.wc-note'); if(!h){ h=document.createElement('div'); h.className='wc-note'; h.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(h);} const n=Object.keys(camById).length;
-      h.textContent=LLw(n+' live cameras loaded · every pin plays real imagery · pan/zoom for more · OpenStreetMap 🟢 · TfL London 🟠 · Caltrans 🔵 · Fintraffic Finland 🟡 · US DOTs CO/IN/AK/AZ 🩷 · US/Canada 511 DOTs 🟩', 'ライブカメラ '+n+' 台読込 · 各ピンが実映像を再生 · 移動/拡大で追加 · OpenStreetMap🟢 · ロンドンTfL🟠 · Caltrans🔵 · フィンランドFintraffic🟡 · 米州DOT（CO/IN/AK/AZ）🩷 · 米国/カナダ 511 各州DOT🟩', n+' Live-Kameras · jeder Pin zeigt echtes Bild · OpenStreetMap 🟢 · TfL 🟠 · Caltrans 🔵 · Fintraffic 🟡 · US-DOTs 🩷 · US/Kanada 511 🟩', n+' камер · живое изображение · OpenStreetMap 🟢 · TfL 🟠 · Caltrans 🔵 · Fintraffic 🟡 · US-DOT 🩷 · США/Канада 511 🟩', n+' cámaras en vivo · imagen real · OpenStreetMap 🟢 · TfL 🟠 · Caltrans 🔵 · Fintraffic 🟡 · US DOT 🩷 · EE.UU./Canadá 511 🟩'); } }catch(_){} }
+      h.innerHTML=camLegend(LLw(n+' live cameras loaded · every pin plays real imagery · pan/zoom for more · OpenStreetMap {osm} · TfL London {tfl} · Caltrans {ct} · Fintraffic Finland {fi} · US DOTs CO/IN/AK/AZ {us} · US/Canada 511 DOTs {511}', 'ライブカメラ '+n+' 台読込 · 各ピンが実映像を再生 · 移動/拡大で追加 · OpenStreetMap{osm} · ロンドンTfL{tfl} · Caltrans{ct} · フィンランドFintraffic{fi} · 米州DOT（CO/IN/AK/AZ）{us} · 米国/カナダ 511 各州DOT{511}', n+' Live-Kameras · jeder Pin zeigt echtes Bild · OpenStreetMap {osm} · TfL {tfl} · Caltrans {ct} · Fintraffic {fi} · US-DOTs {us} · US/Kanada 511 {511}', n+' камер · живое изображение · OpenStreetMap {osm} · TfL {tfl} · Caltrans {ct} · Fintraffic {fi} · US-DOT {us} · США/Канада 511 {511}', n+' cámaras en vivo · imagen real · OpenStreetMap {osm} · TfL {tfl} · Caltrans {ct} · Fintraffic {fi} · US DOT {us} · EE.UU./Canadá 511 {511}')); } }catch(_){} }
     /* (#R86) Transport for London JamCams — 882 live traffic cams (keyless, refreshing JPEG + MP4 clip). Fetched
        ONCE; every camera plays real live imagery. A genuinely-real, dense example alongside the worldwide OSM set. */
     function loadTfL(){ if(tflDone) return; tflDone=true;
@@ -211,12 +220,12 @@ export function cameras(HOST){
       const lab=document.createElement('label'); lab.className='layer-option';
       const cb=document.createElement('input'); cb.type='checkbox'; cb.id='dl-webcams';
       const sw=document.createElement('span'); sw.className='lyr-sw'; sw.style.background='#00b8d4';
-      const sp=document.createElement('span'); sp.id='dl-webcams-lbl'; sp.textContent='📷 '+lbl();
+      const sp=document.createElement('span'); sp.id='dl-webcams-lbl'; sp.replaceChildren(iconNode('camera'),' '+lbl());
       lab.appendChild(cb); lab.appendChild(document.createTextNode(' ')); lab.appendChild(sw); lab.appendChild(document.createTextNode(' ')); lab.appendChild(sp);
       w.appendChild(lab); dd.appendChild(w);
       cb.addEventListener('change',e=>{ w.classList.toggle('on',e.target.checked); toggle(e.target.checked); });
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
-    window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-webcams-lbl'); if(s) s.textContent='📷 '+lbl(); try{ if(on) updateLegend(); }catch(_){} });
+    window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-webcams-lbl'); if(s) s.replaceChildren(iconNode('camera'),' '+lbl()); try{ if(on) updateLegend(); }catch(_){} });
     if(document.readyState!=='loading') setTimeout(buildUI,900); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,900));
   })();
 }

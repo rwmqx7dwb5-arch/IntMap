@@ -86,9 +86,11 @@ const NEUTRAL = new Set([
        de — Aerosol, Sat(-Schüssel), Sync, Filter, Tanker, Status, Code, Radius, Web, AUTO, Influenza,
             Pause, Countdown, «USD, nominal», «Wind 10 m», «2022 UNDP» (a citation).
        es — Capital, «Error: », General, Civil, Imperial, «Base », «zoom », «lat », AUTO.
-       de/ru/es — COVID-19, SARS, Ebola, «Fear & Greed» (the index's published name). */
-  'Aerosol (AOD)', 'Sync', 'Filter', 'Tanker', 'Status', 'Radius (mi)', 'Radius (km)', '🌐 Web',
-  'AUTO', 'Influenza', 'COVID-19', 'SARS', 'Ebola', '⏸ Pause', 'Fear & Greed', 'Countdown',
+       de/ru/es — COVID-19, SARS, Ebola, «Fear & Greed» (the index's published name).
+     (icon-system) «Web» and «Pause» were written here with the emoji that led them; the emoji is drawn by js/icons.js
+     now, so the words are the entries («Pause» was already one above). */
+  'Aerosol (AOD)', 'Sync', 'Filter', 'Tanker', 'Status', 'Radius (mi)', 'Radius (km)', 'Web',
+  'AUTO', 'Influenza', 'COVID-19', 'SARS', 'Ebola', 'Fear & Greed', 'Countdown',
   'USD, nominal', 'Wind 10 m', '2022 UNDP', 'Capital', 'General', 'Civil', 'Imperial (mi/ft)',
   'Base', 'zoom', 'lat', 'Error:', 'Sat', 'Code',
   /* ⚠ (#R245) …and the three the ELEVENTH surface brought in when #R244's language-keyed objects

@@ -13,6 +13,7 @@
  *  word-for-word what it was. A real ES module: no window.IntMapModules entry, no src/main.js order.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 export function makeKeyboardShortcuts(HOST, CTX) {
   const GE=CTX.GE, applyTheme=CTX.applyTheme, imToast=CTX.imToast, isMobile=CTX.isMobile;
   /* ===== (#R62) Keyboard shortcuts ("その他のキーボードショートカットも大幅に追加") — desktop, no modifier,
@@ -43,7 +44,7 @@ export function makeKeyboardShortcuts(HOST, CTX) {
         ['?',KL('This help','このヘルプ','Diese Hilfe','Эта справка','Esta ayuda')]
       ];
       m.innerHTML='<div style="background:var(--card-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:16px;box-shadow:var(--shadow);width:min(430px,calc(100vw - 32px));max-height:80vh;overflow-y:auto;padding:18px 20px;">'
-        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><b id="kbd-help-title" style="font-size:15px;">⌨ '+KL('Keyboard shortcuts','キーボードショートカット','Tastaturkürzel','Горячие клавиши','Atajos de teclado')+'</b><button id="kbd-x" aria-label="'+KL('Close','閉じる','Schließen','Закрыть','Cerrar')+'" data-i18n-aria="close" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;">×</button></div>'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><b id="kbd-help-title" style="font-size:15px;">'+icon('keyboard')+' '+KL('Keyboard shortcuts','キーボードショートカット','Tastaturkürzel','Горячие клавиши','Atajos de teclado')+'</b><button id="kbd-x" aria-label="'+KL('Close','閉じる','Schließen','Закрыть','Cerrar')+'" data-i18n-aria="close" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;">×</button></div>'
         +rows.map(r=>'<div style="display:flex;justify-content:space-between;gap:14px;padding:5px 0;border-bottom:1px solid rgba(128,128,128,0.12);font-size:12.5px;"><span style="font-family:ui-monospace,monospace;color:var(--primary-color);font-weight:700;white-space:nowrap;">'+r[0]+'</span><span style="text-align:right;color:var(--text-main);">'+r[1]+'</span></div>').join('')
         +'</div>';
       m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; });
@@ -103,7 +104,7 @@ export function makeKeyboardShortcuts(HOST, CTX) {
         case (K==='r'): click('btn-tool-radius'); break;
         case (K==='d'): click('btn-tool-draw'); break;
         case (K==='w'): { try{ if(window.IntMapWidgets&&window.IntMapWidgets.toggle) window.IntMapWidgets.toggle(); else click('btn-widgets'); }catch(_){} break; }
-        case (K==='t'): { try{ const seq={light:'dark',dark:'auto',auto:'light'}; const cur=(typeof HOST.userTheme!=='undefined'?HOST.userTheme:'auto'); const nx=seq[cur]||'light'; const sel=document.getElementById('setting-theme'); if(sel){ sel.value=nx; sel.dispatchEvent(new Event('change',{bubbles:true})); } if(typeof HOST.userTheme!=='undefined'){ HOST.userTheme=nx; if(typeof applyTheme==='function') applyTheme(); } try{ imToast('🎨 '+nx); }catch(_){} }catch(_){} break; }
+        case (K==='t'): { try{ const seq={light:'dark',dark:'auto',auto:'light'}; const cur=(typeof HOST.userTheme!=='undefined'?HOST.userTheme:'auto'); const nx=seq[cur]||'light'; const sel=document.getElementById('setting-theme'); if(sel){ sel.value=nx; sel.dispatchEvent(new Event('change',{bubbles:true})); } if(typeof HOST.userTheme!=='undefined'){ HOST.userTheme=nx; if(typeof applyTheme==='function') applyTheme(); } try{ imToast(''+nx); }catch(_){} }catch(_){} break; }
         case (K==='f'): { try{ if(document.fullscreenElement){ document.exitFullscreen&&document.exitFullscreen().catch(()=>{}); } else { const p=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); if(p&&p.catch) p.catch(()=>{}); } }catch(_){} break; }
         case (k==='0'): click('btn-compass'); break;
         case (k==='+'||k==='='): try{ GE().camera.zoomIn(); }catch(_){} break;

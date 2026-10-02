@@ -53,7 +53,7 @@
 "the Moon is up here": "月亮在此地已升起",
 "The obstacle is close to the far end, so raising THIS antenna barely helps — raise the other one.": "障礙物靠近另一端，因此提高「這一端」的天線幾乎沒有幫助 — 請提高另一端。",
 "The orbit": "軌道",
-"The parameters changed — press ▶ to recompute the intensity map.": "參數已變更 — 請按 ▶ 重新計算震度分布。",
+"The parameters changed — press {icon:play} to recompute the intensity map.": "參數已變更 — 請按 {icon:play} 重新計算震度分布。",
 "The past 30 days": "過去 30 天",
 "The previous run": "上次執行",
 "the region outline was not available, so related places are shown as points": "無法取得該地區的輪廓，因此相關地點以點顯示",

@@ -5630,3 +5630,10 @@ body.sidebar-translucent .pg-panel, body.sidebar-glass2 .pg-panel{
   .supporter-offer:not([hidden]){ animation:supporter-offer-in 0.32s cubic-bezier(0.22,1,0.36,1); }
   @keyframes supporter-offer-in{ from{ opacity:0; transform:translate(-50%,-8px); } to{ opacity:1; transform:translate(-50%,0); } }
 }
+
+/* ══ (icon-system) THE ICON — js/icons.js draws every one of them; this is the one rule that places it ══
+   The glyph's size and stroke are attributes on the <svg> itself (so a page without this sheet still draws
+   it at the text's size). What a line of text needs on top is here: sit on the text's baseline the way a
+   letter does, and never be squeezed by a flex row. A static `[data-icon]` slot is filled by hydrateIcons(). */
+.im-icon{ display:inline-block; flex:none; vertical-align:-0.22em; overflow:visible; }
+[data-icon]{ display:inline-flex; align-items:center; justify-content:center; line-height:1; vertical-align:middle; }

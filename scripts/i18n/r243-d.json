@@ -61,6 +61,6 @@
  "Infectious (d)": ["Ansteckend (T)", "Заразность (дн.)", "Contagiosidad (d)", "Contagiosité (j)", "감염기(일)", "傳染期（天）"],
  "Immunity (mo)": ["Immunität (Mon.)", "Иммунитет (мес.)", "Inmunidad (meses)", "Immunité (mois)", "면역(개월)", "免疫（月）"],
  "New outbreak": ["Neuer Ausbruch", "Новая вспышка", "Nuevo brote", "Nouvelle épidémie", "다시 시작", "重新開始"],
- "⏸ Pause": ["⏸ Pause", "⏸ Пауза", "⏸ Pausa", "⏸ Pause", "⏸ 일시정지", "⏸ 暫停"],
- "▶ Play": ["▶ Abspielen", "▶ Воспроизвести", "▶ Reproducir", "▶ Lecture", "▶ 재생", "▶ 播放"]
+ "Pause": ["Pause", "Пауза", "Pausa", "Pause", "일시정지", "暫停"],
+ "Play": ["Abspielen", "Воспроизвести", "Reproducir", "Lecture", "재생", "播放"]
 }

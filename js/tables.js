@@ -637,16 +637,16 @@ export const IntMapTables = (function(){
     il:'hl=he&gl=IL&ceid=IL:he', ua:'hl=uk&gl=UA&ceid=UA:uk', br:'hl=pt-BR&gl=BR&ceid=BR:pt-419',
     au:'hl=en-AU&gl=AU&ceid=AU:en', sa:'hl=ar&gl=SA&ceid=SA:ar', tr:'hl=tr&gl=TR&ceid=TR:tr', eg:'hl=ar&gl=EG&ceid=EG:ar'
   };
-  /* Post categories — drive the composer chips, feed filter, card chip and pin color. */
+  /* Post categories — drive the composer chips, feed filter, card chip and pin color. (icon-system) `icon` is a js/icons.js name. */
   const COMM_CATEGORIES=[
-    { id:'general',  emoji:'💬', color:'#8e8e93', label:LA('General','全般','Allgemein','Общее','General') },
-    { id:'conflict', emoji:'⚔️', color:'#ff3b30', label:LA('Conflict','紛争','Konflikt','Конфликт','Conflicto') },
-    { id:'military', emoji:'🛡️', color:'#ff9500', label:LA('Military','軍事','Militär','Военное','Militar') },
-    { id:'maritime', emoji:'⚓', color:'#30b0c7', label:LA('Maritime','海事','Maritim','Морское','Marítimo') },
-    { id:'economy',  emoji:'📈', color:'#34c759', label:LA('Economy','経済','Wirtschaft','Экономика','Economía') },
-    { id:'cyber',    emoji:'🖧', color:'#5856d6', label:LA('Cyber','サイバー','Cyber','Кибер','Ciber') },
-    { id:'question', emoji:'❓', color:'#007aff', label:LA('Question','質問','Frage','Вопрос','Pregunta') },
-    { id:'analysis', emoji:'🔍', color:'#af52de', label:LA('Analysis','分析','Analyse','Анализ','Análisis') }
+    { id:'general',  icon:'chat', color:'#8e8e93', label:LA('General','全般','Allgemein','Общее','General') },
+    { id:'conflict', icon:'swords', color:'#ff3b30', label:LA('Conflict','紛争','Konflikt','Конфликт','Conflicto') },
+    { id:'military', icon:'shield', color:'#ff9500', label:LA('Military','軍事','Militär','Военное','Militar') },
+    { id:'maritime', icon:'anchor', color:'#30b0c7', label:LA('Maritime','海事','Maritim','Морское','Marítimo') },
+    { id:'economy',  icon:'chart', color:'#34c759', label:LA('Economy','経済','Wirtschaft','Экономика','Economía') },
+    { id:'cyber',    icon:'network', color:'#5856d6', label:LA('Cyber','サイバー','Cyber','Кибер','Ciber') },
+    { id:'question', icon:'question', color:'#007aff', label:LA('Question','質問','Frage','Вопрос','Pregunta') },
+    { id:'analysis', icon:'search', color:'#af52de', label:LA('Analysis','分析','Analyse','Анализ','Análisis') }
   ];
   const NEWS_COUNTRY_FEEDS={
     us:{name:LA('United States','アメリカ','Vereinigte Staaten','США','Estados Unidos'),flag:'🇺🇸'}, gb:{name:LA('United Kingdom','イギリス','Vereinigtes Königreich','Великобритания','Reino Unido'),flag:'🇬🇧'},

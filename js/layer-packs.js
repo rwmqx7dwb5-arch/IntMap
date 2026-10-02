@@ -35,6 +35,7 @@ import { readWithin, isUnobserved } from './fetch-deadline.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTime } from './chronos.js';
+import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 
 /* ══ ⚠ (railways-handover-idempotent) THE BASEMAP-SWAP SELF-HEAL — ONE RULE FOR EVERY PACK IN THIS FILE ══
@@ -140,8 +141,8 @@ export function earthSky(HOST){
           GE().layers.add({id:'l9-seaice',type:'raster',source:'l9-seaice',layout:{visibility:'none'},paint:{'raster-opacity':0.82}});
         }
         if(!wired){ wired=true;
-          GE().events.onLayer('click','l9-dams-pt',e=>{ if(!e.features[0])return; const p=e.features[0].properties; showPop(e.features[0].geometry.coordinates,'🏞 '+p.name,p.info); });
-          GE().events.onLayer('click','l9-volc-pt',e=>{ if(!e.features[0])return; const p=e.features[0].properties; showPop(e.features[0].geometry.coordinates,'🌋 '+p.name,p.info); });
+          GE().events.onLayer('click','l9-dams-pt',e=>{ if(!e.features[0])return; const p=e.features[0].properties; showPop(e.features[0].geometry.coordinates,icon('tree')+' '+p.name,p.info); });
+          GE().events.onLayer('click','l9-volc-pt',e=>{ if(!e.features[0])return; const p=e.features[0].properties; showPop(e.features[0].geometry.coordinates,icon('volcano')+' '+p.name,p.info); });
           ['l9-dams-pt','l9-volc-pt'].forEach(l=>{ GE().events.onLayer('mouseenter',l,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',l,()=>{ GE().render.canvas().style.cursor=''; }); });
         }
         return true;
@@ -1607,12 +1608,12 @@ export function timeZones(HOST){
       const lab=document.createElement('label'); lab.className='layer-option';
       const cb=document.createElement('input'); cb.type='checkbox'; cb.id='dl-tz';
       const sw=document.createElement('span'); sw.className='lyr-sw'; sw.style.background='#80b1d3';
-      const sp=document.createElement('span'); sp.id='dl-tz-lbl'; sp.textContent='🕒 '+lbl();
+      const sp=document.createElement('span'); sp.id='dl-tz-lbl'; sp.replaceChildren(iconNode('clock'),' '+lbl());
       lab.appendChild(cb); lab.appendChild(document.createTextNode(' ')); lab.appendChild(sw); lab.appendChild(document.createTextNode(' ')); lab.appendChild(sp);
       w.appendChild(lab); dd.appendChild(w);
       cb.addEventListener('change',e=>{ w.classList.toggle('on',e.target.checked); toggle(e.target.checked); });
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
-    window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-tz-lbl'); if(s) s.textContent='🕒 '+lbl(); });
+    window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-tz-lbl'); if(s) s.replaceChildren(iconNode('clock'),' '+lbl()); });
     /* (#R204) the highlight as a fact the app publishes — Atlas and the E2E tests both ask it here
        rather than reading a filter expression back off the renderer. */
     /* ⚠ (#R290) EXTENDS — it used to REPLACE, and that is the whole of the defect above. */

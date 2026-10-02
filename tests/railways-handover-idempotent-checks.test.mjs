@@ -176,6 +176,7 @@ function makeDom() {
     appendChild(c) { c.parent = this; this.children.push(c); return c; }
     insertBefore(c) { return this.appendChild(c); }
     append(...cs) { cs.forEach((c) => typeof c === 'object' && this.appendChild(c)); }
+    replaceChildren(...cs) { this.children = []; this.append(...cs); }   /* (icon-system) a label is drawn as an icon node + its words */
     remove() { }
     all() { const out = []; const w = (e) => { for (const c of e.children) { out.push(c); w(c); } }; w(this); return out; }
     querySelector(sel) { return this.all().find((e) => (sel === 'input' ? e.tagName === 'input' : sel[0] === '#' ? e.id === sel.slice(1) : false)) || null; }
@@ -190,7 +191,7 @@ function makeDom() {
   const document = {
     readyState: 'complete', baseURI: 'http://127.0.0.1/', head: new El('head'), body: new El('body'),
     getElementById: (id) => byId.get(id) || null,
-    createElement: (t) => new El(t), createTextNode: (t) => { const e = new El('#text'); e.textContent = t; return e; },
+    createElement: (t) => new El(t), createElementNS: (ns, t) => new El(t), createTextNode: (t) => { const e = new El('#text'); e.textContent = t; return e; },
     querySelector: () => null, querySelectorAll: () => [],
     addEventListener() { }, removeEventListener() { },
   };

@@ -22,6 +22,7 @@ import { overpassQuery } from './overpass.js';   /* the one Overpass client, wit
 import { NominatimGate } from './nominatim-gate.js';   /* (#R489) the one Nominatim floor — js/nominatim-gate.js. The outline tool asks for `polygon_geojson` up to ten results at a time; that is exactly the shape the host's policy is about. */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 
 
@@ -295,7 +296,7 @@ export function drawTool(HOST){
                    ? (_coarse ? _L5('Lift your finger to finish','指を離すと確定','Finger anheben zum Abschließen','Поднимите палец, чтобы завершить','Levanta el dedo para finalizar')
                               : _L5('Move the cursor to trace → click to finish','カーソルを動かして描画 → クリックで確定','Cursor bewegen zum Zeichnen → Klick zum Abschließen','Двигайте курсор для обводки → клик для завершения','Mueve el cursor para trazar → clic para finalizar'))
                  : _L5('Done — use Redraw to start over','完了。「やり直し」で再描画','Fertig — „Neu zeichnen“ zum Neustart','Готово — «Перерисовать», чтобы начать заново','Listo — usa Redibujar para empezar de nuevo');
-      p.innerHTML=`<div class="tp-header"><span class="tp-title">✏️ ${IntMapLang.t(HOST.lang,"Draw / trace","描画測定","Zeichnen / nachzeichnen","Рисование и трассировка","Dibujar / trazar")}</span><button class="tp-close" title="${t('close')}">×</button></div>`+
+      p.innerHTML=`<div class="tp-header"><span class="tp-title">${icon('pencil')} ${IntMapLang.t(HOST.lang,"Draw / trace","描画測定","Zeichnen / nachzeichnen","Рисование и трассировка","Dibujar / trazar")}</span><button class="tp-close" title="${t('close')}">×</button></div>`+
         `<div class="tp-row"><span>${IntMapLang.t(HOST.lang,"Length","距離","Länge","Длина","Longitud")}</span><b>${distHTML(lengthKm)}</b></div>`+
         `<div class="tp-row"><span>${IntMapLang.t(HOST.lang,"Area (loops)","面積（閉領域）","Fläche (geschlossen)","Площадь (замкнутые)","Superficie (cerrado)")}</span><b>${lockedArea>0?areaHTML(lockedArea):'—'}</b></div>`+
         `<div class="tp-row"><span>${IntMapLang.t(HOST.lang,"Points (simpl/raw)","点数（簡略/元）","Punkte (vereinfacht/roh)","Точки (упрощ./исходн.)","Puntos (simplif./bruto)")}</span><b>${simplified.length}/${raw.length}</b></div>`+
@@ -307,7 +308,7 @@ export function drawTool(HOST){
         ((lockedArea>0 && loopRings.length) ? `<div class="tp-row" id="draw-pop-row" style="display:none;"><span>${t('popInArea')}</span><b id="draw-pop-val">—</b></div><button class="ai-action-btn" id="draw-pop-btn" style="margin-top:6px;">${t('popInArea')}</button>` : '')+
         /* (#R154) Elevation profile for the freehand line too — same DEM pipeline as the measure tool ("Drawでも
            Elevation profileを使えるように"). Profiles the traced path (simplified, raw fallback). */
-        ((simplified.length>=2) ? `<button class="ai-action-btn" id="draw-profile" style="margin-top:6px;">📈 ${t('elevProfile')}</button>` : '')+
+        ((simplified.length>=2) ? `<button class="ai-action-btn" id="draw-profile" style="margin-top:6px;">${icon('chart')} ${t('elevProfile')}</button>` : '')+
         `<div style="display:flex;gap:6px;margin-top:8px;">`+
           `<button class="tp-clear" id="draw-finish" style="flex:1;">${IntMapLang.t(HOST.lang,"Keep on map","地図に残す","Auf der Karte behalten","Оставить на карте","Mantener en el mapa")}</button>`+
           `<button class="tp-clear" id="draw-redo" style="flex:1;">${IntMapLang.t(HOST.lang,"Redraw","やり直し","Neu zeichnen","Перерисовать","Redibujar")}</button>`+
@@ -682,7 +683,7 @@ export function seaRoute(HOST){
     }
     function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='route-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
     function refreshPanel(){ const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:calc(var(--z-sheet) - 50);width:248px;';
-      p.innerHTML='<div class="tp-header"><span class="tp-title">🚢 '+(IntMapLang.t(HOST.lang,"Sea route","洋上ルート","Seeroute","Морской маршрут","Ruta marítima"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
+      p.innerHTML='<div class="tp-header"><span class="tp-title">'+icon('ship')+' '+(IntMapLang.t(HOST.lang,"Sea route","洋上ルート","Seeroute","Морской маршрут","Ruta marítima"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
         +'<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;font-size:12px;">'
         +'<div>'+(IntMapLang.t(HOST.lang,"Start","始点","Start","Начало","Inicio"))+': <b>'+(start?fmtLL(start[0],start[1]):'—')+'</b></div>'
         +'<div>'+(IntMapLang.t(HOST.lang,"End","終点","Ziel","Конец","Fin"))+': <b>'+(end?fmtLL(end[0],end[1]):'—')+'</b></div>'
@@ -1004,7 +1005,7 @@ export function isochrone(HOST){
        so with `transit` chosen the panel uses the largest selected time and prints that it did. */
     const COST={auto:'auto',car:'auto',drive:'auto',driving:'auto',walk:'pedestrian',walking:'pedestrian',foot:'pedestrian',pedestrian:'pedestrian',bike:'bicycle',bicycle:'bicycle',cycle:'bicycle',cycling:'bicycle',
       transit:'transit',rail:'transit',train:'transit','public':'transit',pt:'transit'};
-    const ICON={auto:'🚗',pedestrian:'🚶',bicycle:'🚲',transit:'🚆'};
+    const ICON={auto:icon('car'),pedestrian:icon('walk'),bicycle:icon('bicycle'),transit:icon('train')};
     const TR=()=>window.IntMapTransitReach||null;
     const PAL=['#0a84ff','#34c759','#ff9f0a','#ff375f'];   /* smallest → largest contour */
     let panel=null, center=null, mode='auto', mins=[15,30], busy=false, lastMinutes=[15,30];
@@ -1078,7 +1079,7 @@ export function isochrone(HOST){
          `!important`, so 「フロストガラス」/「より透明」 still reach it — «not transparent by DEFAULT»
          is not «never transparent». */
       panel.style.cssText='position:fixed;left:20px;top:80px;width:min(268px,92vw);z-index:calc(var(--z-sheet) - 150);display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:14px;overflow:hidden;box-shadow:0 16px 46px rgba(0,0,0,0.44);';
-      panel.innerHTML='<div class="iso-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:600;color:var(--text-main);">🎯 '+LL('Reachable area','到達圏','Erreichbarkeit','Зона доступности','Área alcanzable')+'</span><button class="iso-x" title="'+LL('Close','閉じる','Schließen','Закрыть','Cerrar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div><div class="iso-body" style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;"></div>';
+      panel.innerHTML='<div class="iso-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:600;color:var(--text-main);">'+icon('target')+' '+LL('Reachable area','到達圏','Erreichbarkeit','Зона доступности','Área alcanzable')+'</span><button class="iso-x" title="'+LL('Close','閉じる','Schließen','Закрыть','Cerrar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div><div class="iso-body" style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;"></div>';
       (document.getElementById('map-container')||document.body).appendChild(panel);
       panel.querySelector('.iso-x').onclick=()=>clear();
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.iso-head')); }catch(_){}
@@ -1099,11 +1100,11 @@ export function isochrone(HOST){
           +LL('Tap the map to choose a point','地図をタップして地点を選んでください','Zum Wählen eines Punktes auf die Karte tippen','Нажмите на карту, чтобы выбрать точку','Toca el mapa para elegir un punto'),
         onPick:(ll)=>{ run({lng:+ll.lng,lat:+ll.lat},{mode,minutes:mins}); } }); }
     function renderPanel(state){ const p=ensurePanel(); const body=p.querySelector('.iso-body'); if(!body) return;
-      const modes=[['auto','🚗',LL('Drive','車','Auto','Авто','Coche')],['pedestrian','🚶',LL('Walk','徒歩','Zu Fuß','Пешком','A pie')],['bicycle','🚲',LL('Cycle','自転車','Rad','Вело','Bici')],
-        ['transit','🚆',LL('Transit','公共交通','ÖPNV','Транспорт','Transporte')]];
+      const modes=[['auto',icon('car'),LL('Drive','車','Auto','Авто','Coche')],['pedestrian',icon('walk'),LL('Walk','徒歩','Zu Fuß','Пешком','A pie')],['bicycle',icon('bicycle'),LL('Cycle','自転車','Rad','Вело','Bici')],
+        ['transit',icon('train'),LL('Transit','公共交通','ÖPNV','Транспорт','Transporte')]];
       const presets=[10,15,20,30,45,60]; const bs='height:30px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-muted);border-radius:8px;cursor:pointer;font-size:12px;';
       body.innerHTML='<button class="iso-pick" style="width:100%;'+bs+(center?'':'background:var(--primary-fill);color:#fff;border-color:var(--primary-color);')+'">'
-          +(center?('📍 '+LL('Move the site…','地点を変える…','Standort verschieben…','Перенести точку…','Mover el punto…'))
+          +(center?(icon('pin')+' '+LL('Move the site…','地点を変える…','Standort verschieben…','Перенести точку…','Mover el punto…'))
                   :('◎ '+LL('Place the point on the map','地図で地点を設定','Punkt auf der Karte setzen','Задать точку на карте','Colocar el punto en el mapa')))+'</button>'
         +'<div style="font-size:11px;color:var(--text-muted);">'+(center?(center.lat.toFixed(3)+', '+center.lng.toFixed(3))
           :LL('No point placed yet','地点が未設定です','Kein Punkt gesetzt','Точка не задана','Sin punto colocado'))+'</div>'
@@ -1232,7 +1233,7 @@ export function objectList(HOST){
         focus:()=>{ try{ OT.focus&&OT.focus(); }catch(_){} }, rename:v=>{ labels.outline=v; }, remove:()=>{ try{ OT.clear(); }catch(_){} } }); }catch(_){}
       return out; }
     function count(){ try{ return collect().length; }catch(_){ return 0; } }
-    const ICON={ pin:'📍', radius:'⭕', annot:'✏️', poly:'⬠', outline:'▢', upload:'📂', route:'🧭', iso:'🎯' };
+    const ICON={ pin:icon('pin'), radius:icon('radius'), annot:icon('pencil'), poly:icon('polygon'), outline:icon('square'), upload:icon('folder'), route:icon('compass'), iso:icon('target') };   /* (icon-system) one glyph per object kind, from js/icons.js */
     function kindLbl(k){ return ({ pin:OL('Pins','ピン','Pins','Метки','Pines'), radius:OL('Radius circles','半径円','Radien','Радиусы','Radios'), annot:OL('Drawings','図形','Zeichnungen','Фигуры','Dibujos'), poly:OL('Polygons','ポリゴン','Polygone','Полигоны','Polígonos'), outline:OL('Boundary outline','行政界アウトライン','Grenzumriss','Контур границы','Contorno'), upload:OL('Uploaded data','アップロードデータ','Uploads','Загрузки','Cargas'), route:OL('Route','経路','Route','Маршрут','Ruta'), iso:OL('Reachable area','到達圏','Erreichbarkeit','Доступность','Alcanzable') })[k]||k; }
     let _objs=[];
     /* ⚠⚠ (#R293) 「オブジェクト一覧ポップアップは、オブジェクトの数がゼロになったら自動的に消えるように」
@@ -1253,7 +1254,7 @@ export function objectList(HOST){
             +'<span class="iol-dot" style="background:'+esc(o.dot||'#888')+';"></span>'
             +'<span class="iol-name" role="button" tabindex="0" data-act="focus" title="'+esc(OL('Fly to','移動','Anfliegen','Перейти','Ir'))+'">'+esc(o.name)+'</span>'
             +(o.setColor?('<label class="iol-ic" title="'+esc(OL('Color','色','Farbe','Цвет','Color'))+'"><input type="color" value="'+esc(o.color||'#888888')+'" data-act="color"></label>'):'')
-            +(o.toggleHide?('<button class="iol-ic" data-act="hide" title="'+esc(OL('Show / hide','表示切替','Ein/Aus','Показать/скрыть','Mostrar/ocultar'))+'">'+(o.hidden?'🙈':'👁')+'</button>'):'')
+            +(o.toggleHide?('<button class="iol-ic" data-act="hide" title="'+esc(OL('Show / hide','表示切替','Ein/Aus','Показать/скрыть','Mostrar/ocultar'))+'">'+(o.hidden?icon('eye-off'):icon('eye'))+'</button>'):'')
             +'<button class="iol-ic" data-act="focus" title="'+esc(OL('Fly to','移動','Anfliegen','Перейти','Ir'))+'">◎</button>'
             +(o.rename?('<button class="iol-ic" data-act="rename" title="'+esc(OL('Rename','名称変更','Umbenennen','Переименовать','Renombrar'))+'">✎</button>'):'')
             +'<button class="iol-ic iol-del" data-act="del" title="'+esc(OL('Delete','削除','Löschen','Удалить','Eliminar'))+'">×</button>'
@@ -1272,7 +1273,7 @@ export function objectList(HOST){
          defect shape #R243 spent a round on). Measured: 9 px padding + a 16 px × on its default
          line-height made a 37 px band; 4 px padding, a 12.5 px title and `line-height:1` on the two
          buttons (below) make it 25 px, and the head is still the drag handle it always was. */
-      panel.innerHTML='<div class="iol-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:4px 11px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:12.5px;font-weight:700;color:var(--text-main);">🗂 '+esc(OL('Objects','オブジェクト一覧','Objekte','Объекты','Objetos'))+'</span><button class="iol-clear" style="border:none;background:transparent;color:var(--info-mil,#ff3b30);font-size:10.5px;font-weight:700;cursor:pointer;">'+esc(OL('Clear all','全消去','Alles löschen','Очистить','Borrar todo'))+'</button><button aria-label="'+IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="iol-close" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;">×</button></div>'
+      panel.innerHTML='<div class="iol-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:4px 11px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:12.5px;font-weight:700;color:var(--text-main);">'+icon('folder')+' '+esc(OL('Objects','オブジェクト一覧','Objekte','Объекты','Objetos'))+'</span><button class="iol-clear" style="border:none;background:transparent;color:var(--info-mil,#ff3b30);font-size:10.5px;font-weight:700;cursor:pointer;">'+esc(OL('Clear all','全消去','Alles löschen','Очистить','Borrar todo'))+'</button><button aria-label="'+IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="iol-close" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;">×</button></div>'
         +'<div class="iol-body" style="flex:1 1 auto;overflow-y:auto;padding:6px 10px 12px;"></div>';
       document.body.appendChild(panel);
       if(!document.getElementById('iol-css')){ const st=document.createElement('style'); st.id='iol-css';
@@ -1313,7 +1314,7 @@ export function objectList(HOST){
         }catch(_){} }); }
       return panel; }
     function ensureFab(){ if(fab) return fab; ensurePanel(); fab=document.createElement('button'); fab.id='iol-fab';
-      fab.innerHTML='🗂 <span class="iol-fab-n">0</span>'; fab.title=OL('Manage all map objects','地図上のオブジェクトを管理','Objekte verwalten','Управление объектами','Gestionar objetos');
+      fab.innerHTML=(icon('folder')+' <span class="iol-fab-n">0</span>'); fab.title=OL('Manage all map objects','地図上のオブジェクトを管理','Objekte verwalten','Управление объектами','Gestionar objetos');
       fab.onclick=()=>toggle(); document.body.appendChild(fab); return fab; }
     /* (#R130) Drive BOTH the top-right toolbar button (#btn-tool-objects, desktop/normal) and the legacy bottom-left
        FAB (#iol-fab, now mobile-only since the top-right toolbar is hidden on phones). Both show only when >=1 object

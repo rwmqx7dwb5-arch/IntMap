@@ -21,6 +21,7 @@ import { EMBED_SIZES, EMBED_PX } from './embed-mode.js';   /* (share-embed-distr
 import { IntMapTime } from './chronos.js';   /* (landing-showcase) the clock, by import (#860) */
 import { SHOWCASE, showcaseById, showcaseLink } from './showcase.js';   /* (landing-showcase) the example maps — pure data */
 import { openSupport, operatingFacts } from './supporter.js';   /* (supporter-funnel) `operatingCosts` */
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export default [
   {
@@ -44,7 +45,7 @@ export default [
     async run(a, dctx, K) { const kexec = K.kexec, R = K.R, note = K.note, esc = K.esc, warn = K.warn, doControl = K.doControl;
       { const cmd={news:'tab.news',information:'tab.info',info:'tab.info',companies:'tab.info',company:'tab.info','企業':'tab.info',stats:'tab.stats',statistics:'tab.stats',data:'tab.stats',countries:'tab.stats',nations:'tab.stats',atlas:'tab.atlas',community:'tab.atlas'}[String(a.name||'').toLowerCase()];   /* (#R139) 'companies' → the repurposed info tab */
           const bid={'tab.news':'btn-news','tab.info':'btn-info','tab.stats':'btn-stats','tab.atlas':'btn-community','tab.community':'btn-community'}[cmd];
-          if(cmd){ const ok=kexec(cmd,bid); return R(ok, ok?note('✓ '+esc(a.name||'')):warn('⚠')); } return doControl({target:a.name}); }
+          if(cmd){ const ok=kexec(cmd,bid); return R(ok, ok?note('✓ '+esc(a.name||'')):warn('')); } return doControl({target:a.name}); }
     },
   },
   {
@@ -60,12 +61,12 @@ export default [
           /* (#R84) coverage mode: with no place, or when explicitly asked, tint roads blue + make the map clickable */
           if(a.on===false||/^(off|hide|stop)$/i.test(String(a.mode||''))){ try{ window.IntMapStreetView&&window.IntMapStreetView.coverage&&window.IntMapStreetView.coverage(false); }catch(_){} try{ window.IntMapStreetView&&window.IntMapStreetView.close&&window.IntMapStreetView.close(); }catch(_){} return R(true, note('✓ '+L('Street View off','ストリートビューをオフ','Street View aus','Просмотр улиц выкл','Street View apagado'))+_featTogHtml('streetview')); }   /* (#R150) offer the toggle to flip it back on */
           const wantCov=/^(coverage|layer|mode|map|roads?)$/i.test(String(a.mode||''))||a.coverage===true||(!a.place&&a.lng==null&&!(K._herePoint&&isFinite(K._herePoint.lng)));
-          if(wantCov){ await window.IntMapLazy.need('streetView'); let on=false; try{ if(window.IntMapStreetView&&window.IntMapStreetView.coverage) on=window.IntMapStreetView.coverage(true); }catch(_){} return R(!!on, on?note('🧍 '+L('Street View mode on — the light-blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モードをオン — 水色の線はGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus an — die hellblauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам включён — голубые линии это реальное покрытие Google; кликните для просмотра','Modo Street View activado — las líneas celestes son la cobertura real de Google; haz clic para abrir'))+_featTogHtml('streetview'):warn('⚠')); }
+          if(wantCov){ await window.IntMapLazy.need('streetView'); let on=false; try{ if(window.IntMapStreetView&&window.IntMapStreetView.coverage) on=window.IntMapStreetView.coverage(true); }catch(_){} return R(!!on, on?note(icon('person-standing')+' '+L('Street View mode on — the light-blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モードをオン — 水色の線はGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus an — die hellblauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам включён — голубые линии это реальное покрытие Google; кликните для просмотра','Modo Street View activado — las líneas celestes son la cobertura real de Google; haz clic para abrir'))+_featTogHtml('streetview'):warn('')); }
           let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place) ll=await geocode(a.place); else if(K._herePoint&&isFinite(K._herePoint.lng)) ll={lng:K._herePoint.lng,lat:K._herePoint.lat,name:K._herePoint.name||''};
-          if(!ll) return R(false, warn('⚠ '+whereMiss(L('Where? Name a place or right-click a point','場所を指定するか地点を右クリックしてください','Wo? Ort nennen oder Punkt rechtsklicken','Где? Назовите место или ПКМ по точке','¿Dónde? Nombra un lugar'), a.place||a.at||a.location)));
+          if(!ll) return R(false, warn(whereMiss(L('Where? Name a place or right-click a point','場所を指定するか地点を右クリックしてください','Wo? Ort nennen oder Punkt rechtsklicken','Где? Назовите место или ПКМ по точке','¿Dónde? Nombra un lugar'), a.place||a.at||a.location)));
           try{ GE().camera.flyTo({center:[+ll.lng,+ll.lat],zoom:Math.max(GE().camera.getZoom(),15),duration:900}); }catch(_){}
           await window.IntMapLazy.need('streetView'); let ok=false; try{ if(window.IntMapStreetView&&window.IntMapStreetView.open) ok=window.IntMapStreetView.open({lng:+ll.lng,lat:+ll.lat},ll.name||''); }catch(_){}
-          return R(ok, ok?note('🧍 '+L('Street View','ストリートビュー','Street View','Просмотр улиц','Street View')+': '+esc(ll.name||((+ll.lat).toFixed(4)+', '+(+ll.lng).toFixed(4)))):warn('⚠')); }
+          return R(ok, ok?note(icon('person-standing')+' '+L('Street View','ストリートビュー','Street View','Просмотр улиц','Street View')+': '+esc(ll.name||((+ll.lat).toFixed(4)+', '+(+ll.lng).toFixed(4)))):warn('')); }
     },
   },
   {
@@ -77,7 +78,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('edu')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
-      { let ok=false; try{ if(window.IntMapEdu&&window.IntMapEdu.open){ window.IntMapEdu.open(); ok=true; } }catch(_){} if(!ok) ok=clickId('btn-edu'); return R(ok, ok?note('🎓 '+L('Learn','学ぶ','Lernen','Обучение','Aprender')):warn('⚠')); }
+      { let ok=false; try{ if(window.IntMapEdu&&window.IntMapEdu.open){ window.IntMapEdu.open(); ok=true; } }catch(_){} if(!ok) ok=clickId('btn-edu'); return R(ok, ok?note(icon('graduation')+' '+L('Learn','学ぶ','Lernen','Обучение','Aprender')):warn('')); }
     },
   },
   {
@@ -88,7 +89,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('ecmwf')),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, warn = K.warn;
-      { let ok=false; try{ if(window.IntMapWeatherEC&&window.IntMapWeatherEC.open){ window.IntMapWeatherEC.open(); ok=true; } }catch(_){} return R(ok, ok?note('🌦 '+L('Weather layers','気象レイヤー','Wetterebenen','Погодные слои','Capas meteorológicas')):warn('⚠')); }
+      { let ok=false; try{ if(window.IntMapWeatherEC&&window.IntMapWeatherEC.open){ window.IntMapWeatherEC.open(); ok=true; } }catch(_){} return R(ok, ok?note(icon('cloud-rain')+' '+L('Weather layers','気象レイヤー','Wetterebenen','Погодные слои','Capas meteorológicas')):warn('')); }
     },
   },
   {
@@ -99,7 +100,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('widgets')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
-      { let ok=false; try{ if(window.IntMapWidgets&&window.IntMapWidgets.toggle){ window.IntMapWidgets.toggle(); ok=true; } else ok=clickId('btn-widgets'); }catch(_){} return R(ok, ok?note('✓ '+L('Widgets','ウィジェット','Widgets','Виджеты','Widgets')):warn('⚠')); }
+      { let ok=false; try{ if(window.IntMapWidgets&&window.IntMapWidgets.toggle){ window.IntMapWidgets.toggle(); ok=true; } else ok=clickId('btn-widgets'); }catch(_){} return R(ok, ok?note('✓ '+L('Widgets','ウィジェット','Widgets','Виджеты','Widgets')):warn('')); }
     },
   },
   {
@@ -110,7 +111,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('screenshot')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
-      { const ok=clickId('btn-screenshot'); return R(ok, ok?note('✓ '+L('Screenshot','スクショ','Screenshot','Снимок','Captura')):warn('⚠')); }
+      { const ok=clickId('btn-screenshot'); return R(ok, ok?note('✓ '+L('Screenshot','スクショ','Screenshot','Снимок','Captura')):warn('')); }
     },
   },
   {
@@ -127,11 +128,11 @@ export default [
     schema: () => ({ type: 'object', properties: { embed: bool(), size: one.apply(null, Object.keys(EMBED_SIZES)), width: num(EMBED_PX.min, EMBED_PX.max), height: num(EMBED_PX.min, EMBED_PX.max), interactive: bool() } }),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn, esc = K.esc;
       { const S=window.IntMapShare, wantEmbed=(a.embed===true);
-        if(!(S&&S.open)){ const ok=clickId('btn-share'); return R(ok, ok?note('✓ '+L('Share panel','共有パネル','Teilen','Поделиться','Compartir')):warn('⚠')); }
+        if(!(S&&S.open)){ const ok=clickId('btn-share'); return R(ok, ok?note('✓ '+L('Share panel','共有パネル','Teilen','Поделиться','Compartir')):warn('')); }
         let made=null; try{
           await S.open(wantEmbed?{ tab:'embed', size:a.size, width:a.width, height:a.height, interactive:a.interactive }:{ tab:'link' });
           made=wantEmbed?S.embed():{ url:S.link() }; }catch(_){ made=null; }
-        if(!made||!made.url) return R(false, warn('⚠ '+L('Could not build the share link','共有リンクを作れませんでした')));
+        if(!made||!made.url) return R(false, warn(L('Could not build the share link','共有リンクを作れませんでした')));
         if(wantEmbed) return R(true, note('✓ '+L('Embed code','埋め込みコード')+' ('+esc(String(made.size.w))+' × '+esc(String(made.size.h))+(made.interactive?'':(', '+L('no pan or zoom','パン・ズーム無効')))+'): '+esc(made.code)));
         return R(true, note('✓ '+L('Share link','共有リンク')+': '+esc(made.url))); }
     },
@@ -144,7 +145,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { query: str(), place: str() }, anyOf: [{ required: ['query'] }, { required: ['place'] }] }),
     async run(a, dctx, K) { const R = K.R, note = K.note, esc = K.esc, WORLD_RE = K.WORLD_RE, GE = K.GE, L = K.L, placeExtent = K.placeExtent, _setLast = K._setLast, flyToBox = K.flyToBox, _ambigNote = K._ambigNote, geocode = K.geocode, _bboxOK = K._bboxOK, warn = K.warn;
-      { const q=a.query||a.place||''; const inp=document.getElementById('ms-input')||document.getElementById('search-input'); if(inp&&q){ inp.focus(); inp.value=q; inp.dispatchEvent(new Event('input',{bubbles:true})); const btn=document.getElementById('ms-btn'); if(btn) btn.click(); else inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); return R(true, note('🔍 '+esc(q))); } if(WORLD_RE.test(String(q).trim())){ try{ GE().camera.flyTo({center:[GE().camera.getCenter().lng,20],zoom:1.4,duration:1000}); }catch(_){} return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); } const ext=await placeExtent(q); if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))) GE().camera.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(GE().camera.getZoom(),10),duration:1000}); return R(true, note('🔍 '+esc(ext.name||q))+_ambigNote(q,ext.lng,ext.lat)); } const ll=await geocode(q); if(ll){ try{ if(ll.bbox&&_bboxOK(ll.bbox)) flyToBox(ll.bbox); else GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),10),duration:1000}); }catch(_){} return R(true, note('🔍 '+esc(ll.name||q))+_ambigNote(q,ll.lng,ll.lat)); } return R(false, warn('⚠ '+esc(q))); }
+      { const q=a.query||a.place||''; const inp=document.getElementById('ms-input')||document.getElementById('search-input'); if(inp&&q){ inp.focus(); inp.value=q; inp.dispatchEvent(new Event('input',{bubbles:true})); const btn=document.getElementById('ms-btn'); if(btn) btn.click(); else inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); return R(true, note(icon('search')+' '+esc(q))); } if(WORLD_RE.test(String(q).trim())){ try{ GE().camera.flyTo({center:[GE().camera.getCenter().lng,20],zoom:1.4,duration:1000}); }catch(_){} return R(true, note(icon('world')+' '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); } const ext=await placeExtent(q); if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))) GE().camera.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(GE().camera.getZoom(),10),duration:1000}); return R(true, note(icon('search')+' '+esc(ext.name||q))+_ambigNote(q,ext.lng,ext.lat)); } const ll=await geocode(q); if(ll){ try{ if(ll.bbox&&_bboxOK(ll.bbox)) flyToBox(ll.bbox); else GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),10),duration:1000}); }catch(_){} return R(true, note(icon('search')+' '+esc(ll.name||q))+_ambigNote(q,ll.lng,ll.lat)); } return R(false, warn(esc(q))); }
     },
   },
   {
@@ -155,7 +156,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('correlate')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
-      { let ok=false; try{ if(window.IntMapCorrelate&&window.IntMapCorrelate.open){ window.IntMapCorrelate.open(); ok=true; } else ok=clickId('btn-correlate'); }catch(_){} return R(ok, ok?note(L('Correlation tool','相関ツール','Korrelationswerkzeug','Корреляция','Correlación')):warn('⚠')); }
+      { let ok=false; try{ if(window.IntMapCorrelate&&window.IntMapCorrelate.open){ window.IntMapCorrelate.open(); ok=true; } else ok=clickId('btn-correlate'); }catch(_){} return R(ok, ok?note(L('Correlation tool','相関ツール','Korrelationswerkzeug','Корреляция','Correlación')):warn('')); }
     },
   },
   {
@@ -166,7 +167,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('settings')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
-      { const ok=clickId('btn-open-settings'); return R(ok, ok?note('✓ '+L('Settings','設定','Einstellungen','Настройки','Ajustes')):warn('⚠')); }
+      { const ok=clickId('btn-open-settings'); return R(ok, ok?note('✓ '+L('Settings','設定','Einstellungen','Настройки','Ajustes')):warn('')); }
     },
   },
   {
@@ -178,7 +179,7 @@ export default [
       /* (#R85) workspace (floating-window) mode via Atlas ("ワークスペースモードの切り替えがAtlasでできない") */
     async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, L = K.L;
       {
-          if(!window.IntMapWorkspace) return R(false, warn('⚠'));
+          if(!window.IntMapWorkspace) return R(false, warn(''));
           const active=!!(window.IntMapWorkspace.active&&window.IntMapWorkspace.active());
           const m=String(a.mode||a.action||a.state||'').toLowerCase();
           const want = (a.on===false||/^(off|exit|close|normal|stop|disable|leave)$/.test(m)) ? false
@@ -188,7 +189,7 @@ export default [
           let ok=false; try{ if(want){ ok=(window.IntMapWorkspace.open()!==false); } else { window.IntMapWorkspace.close(); ok=true; } }catch(_){}
           return R(ok, ok? note(want?'🗔 '+L('Workspace mode on — News, Countries, the map, layers and Atlas are now free-floating windows','ワークスペースモードをオン — ニュース・国・地図・レイヤー・Atlasが自由なウィンドウになりました','Workspace-Modus an','Оконный режим включён','Modo espacio activado')
                                    :'✓ '+L('Back to the normal layout','通常レイアウトに戻しました','Zurück zum Normal-Layout','Обычный вид','De vuelta al diseño normal'))
-                       : warn('⚠ '+L('Workspace mode is desktop-only','ワークスペースモードはデスクトップ専用です','Workspace nur am Desktop','Оконный режим — только для десктопа','Solo escritorio'))); }
+                       : warn(L('Workspace mode is desktop-only','ワークスペースモードはデスクトップ専用です','Workspace nur am Desktop','Оконный режим — только для десктопа','Solo escritorio'))); }
     },
   },
   {
@@ -199,7 +200,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('shortcuts')),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, warn = K.warn;
-      { let ok=false; try{ if(window.IntMapKbdHelp){ window.IntMapKbdHelp(); ok=true; } }catch(_){} return R(ok, ok?note(L('Keyboard shortcuts','キーボードショートカット','Tastaturkürzel','Горячие клавиши','Atajos de teclado')):warn('⚠')); }
+      { let ok=false; try{ if(window.IntMapKbdHelp){ window.IntMapKbdHelp(); ok=true; } }catch(_){} return R(ok, ok?note(L('Keyboard shortcuts','キーボードショートカット','Tastaturkürzel','Горячие клавиши','Atajos de teclado')):warn('')); }
     },
   },
   {
@@ -215,7 +216,7 @@ export default [
             else if(/pandemic|virus|outbreak|epidemic|disease|感染|パンデミック|эпидеми|pandemia/.test(m)&&window._pgPandemic){ window._pgPandemic(); ok=true; lbl='Pandemic Simulator'; }
             else if(/quiz|test|クイズ|викторин|cuestionario/.test(m)&&window.IntMapEdu&&window.IntMapEdu.open){ window.IntMapEdu.open(); ok=true; lbl='Quiz'; }
             else if(window._openPlayground){ window._openPlayground(); ok=true; } }catch(_){}
-          return R(ok, ok?note('🎮 '+esc(lbl)):warn('⚠ '+L('Playground unavailable','プレイグラウンドを開けません','Playground nicht verfügbar','Playground недоступен','Playground no disponible'))); }
+          return R(ok, ok?note(icon('gamepad')+' '+esc(lbl)):warn(L('Playground unavailable','プレイグラウンドを開けません','Playground nicht verfügbar','Playground недоступен','Playground no disponible'))); }
     },
   },
   {
@@ -231,8 +232,8 @@ export default [
           if(/saved|favorit|bookmark|保存|ブックマーク|сохран|guardad/.test(m)){ id='newsfilter-saved'; lbl=L('Saved','保存','Gespeichert','Сохранённые','Guardados'); }
           else if(/all|unsaved|すべて|全部|все|todo/.test(m)){ id='newsfilter-all'; lbl=L('All','すべて','Alle','Все','Todo'); }
           else if(/translat|翻訳|перевод|traduc/.test(m)){ id='ai-translate-btn'; lbl=L('Translate','翻訳','Übersetzen','Перевод','Traducir'); }
-          if(id){ const ok=clickId(id); return R(ok, ok?note('📰 '+esc(lbl)):warn('⚠')); }
-          const ok=clickId('btn-news'); return R(ok, ok?note('📰 '+L('News','ニュース','Nachrichten','Новости','Noticias')):warn('⚠')); }
+          if(id){ const ok=clickId(id); return R(ok, ok?note(icon('news')+' '+esc(lbl)):warn('')); }
+          const ok=clickId('btn-news'); return R(ok, ok?note(icon('news')+' '+L('News','ニュース','Nachrichten','Новости','Noticias')):warn('')); }
     },
   },
   {
@@ -243,7 +244,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('account')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
-      { const ok=clickId('btn-account'); return R(ok, ok?note('👤 '+L('Account','アカウント','Konto','Аккаунт','Cuenta')):warn('⚠')); }
+      { const ok=clickId('btn-account'); return R(ok, ok?note(icon('person')+' '+L('Account','アカウント','Konto','Аккаунт','Cuenta')):warn('')); }
     },
   },
   {
@@ -254,7 +255,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('donate')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
-      { const ok=clickId('btn-blueberry'); return R(ok, ok?note('💙 '+L('Donate','寄付','Spenden','Поддержать','Donar')):warn('⚠')); }
+      { const ok=clickId('btn-blueberry'); return R(ok, ok?note(icon('heart')+' '+L('Donate','寄付','Spenden','Поддержать','Donar')):warn('')); }
     },
   },
   {
@@ -271,7 +272,7 @@ export default [
       { const teach=/^(teach|teacher|teachers|class|classroom|lesson|school|edu)/i.test(String(a.page||''));
           const href=new URL('./'+(teach?'teachers':'about')+'.html', location.href).href;
           const label=teach?L('Teaching with IntMap','授業での IntMap'):L('About IntMap','IntMap について');
-          return R(true, note('ℹ '+esc(label))+'<div style="margin:4px 0;"><a href="'+esc(IntMapSafe.url(href))+'" target="_blank" rel="noopener">'+esc(label)+' ↗</a></div>'); }
+          return R(true, note(icon('info')+' '+esc(label))+'<div style="margin:4px 0;"><a href="'+esc(IntMapSafe.url(href))+'" target="_blank" rel="noopener">'+esc(label)+' ↗</a></div>'); }
     },
   },
   {
@@ -291,15 +292,15 @@ export default [
           const abs=(rel)=>IntMapSafe.url(new URL(rel, location.href).href);
           if(!s){
             const rows=SHOWCASE.map(x=>{ const href=showcaseLink(x.id); return '<li><b>'+esc(x.id)+'</b> — '+(href?'<a href="'+esc(abs(href))+'">'+esc(L.arr(x.title))+'</a>':esc(L.arr(x.title)))+'</li>'; }).join('');
-            return R(!want, (want?warn('⚠ '+esc(L('No example is called','この名前の見本はありません'))+' «'+esc(want)+'»'):note(esc(L('Example maps','見本の地図'))))+'<ul style="margin:4px 0 4px 18px;padding:0;">'+rows+'</ul>'); }
+            return R(!want, (want?warn(esc(L('No example is called','この名前の見本はありません'))+' «'+esc(want)+'»'):note(esc(L('Example maps','見本の地図'))))+'<ul style="margin:4px 0 4px 18px;padding:0;">'+rows+'</ul>'); }
           const href=showcaseLink(s.id);
-          if(!href) return R(false, warn('⚠ '+esc(L('This example has no captured link yet','この見本にはまだリンクがありません'))));
+          if(!href) return R(false, warn(esc(L('This example has no captured link yet','この見本にはまだリンクがありません'))));
           const hash=href.slice(href.indexOf('#'));
           try{ history.replaceState(null,'',location.pathname+location.search+hash); window.IntMapBookmark.restore({shared:true});
             /* a link with no `tt` leaves the clock where it is (restore() sets it only when the link names one), so a
                «now» example returns the clock to now itself — the example's intent is the present, whatever the
                map was showing before */
-            if(s.at==null) IntMapTime.setNow({source:'ui'}); }catch(e){ return R(false, warn('⚠ '+esc(String(e&&e.message||e)))); }
+            if(s.at==null) IntMapTime.setNow({source:'ui'}); }catch(e){ return R(false, warn(esc(String(e&&e.message||e)))); }
           /* read the state back. The restore applies the clock at +900 ms and the layer boxes at +700 / +1800 /
              +3200 ms (js/map-ui.js restore()); 6 s is its last pass plus room for a busy page. It returns the
              moment both agree — the wait is a bound, not a sleep — and a changed restore schedule is the
@@ -314,7 +315,7 @@ export default [
             +'<div style="font-size:12px;margin:4px 0;color:var(--text-muted);">'+esc(L('Question for class','授業での問い'))+': '+esc(L.arr(s.question))+'</div>';
           if(m.timeOk&&!m.off.length) return R(true, note('✓ '+esc(L('Example opened','見本を開きました')))+body);
           const miss=[]; if(!m.timeOk) miss.push(L('the date','日付')); if(m.off.length) miss.push(L('layers not on','オンにならないレイヤー')+' '+m.off.join(', '));
-          return R(false, warn('⚠ '+esc(L('The example did not fully apply','見本が一部しか適用されていません'))+' — '+esc(miss.join(' / ')))+body); }
+          return R(false, warn(esc(L('The example did not fully apply','見本が一部しか適用されていません'))+' — '+esc(miss.join(' / ')))+body); }
     },
   },
   {
@@ -346,7 +347,7 @@ export default [
               + (s.ask ? '<div style="font-size:12px;margin:4px 0;color:var(--text-muted);">' + esc(L('Question for class', '授業での問い')) + ': ' + esc(s.ask) + '</div>' : '') : '';
             if (r && r.ok) return R(true, note('✓ ' + esc(head)) + body);
             const miss = []; if (r && r.timeOk === false) miss.push(L('the date', '日付')); if (r && r.off && r.off.length) miss.push(L('layers not on', 'オンにならないレイヤー') + ' ' + r.off.join(', '));
-            return R(false, warn('⚠ ' + esc(L('The step did not fully apply', 'ステップが一部しか適用されていません')) + (miss.length ? ' — ' + esc(miss.join(' / ')) : (r && r.reason ? ' — ' + esc(r.reason) : ''))) + body);
+            return R(false, warn('' + esc(L('The step did not fully apply', 'ステップが一部しか適用されていません')) + (miss.length ? ' — ' + esc(miss.join(' / ')) : (r && r.reason ? ' — ' + esc(r.reason) : ''))) + body);
           };
           if (act === 'list') {
             const rows = P.declaredTours().map((t) => '<li><b>' + esc(t.id) + '</b> — ' + esc(L.arr(t.title)) + ' (' + t.steps.length + ')</li>').join('');
@@ -355,16 +356,16 @@ export default [
               + (tmp && tmp.steps.length ? '<li><b>atlas</b> — ' + esc(tmp.title || L('Tour from Atlas', 'Atlas が作ったツアー')) + ' (' + tmp.steps.length + ')</li>' : '') + '</ul>'); }
           if (act === 'addStep') {
             const r = P.addStep({ title: a.title, say: a.say, ask: a.ask, tourTitle: a.tourTitle });
-            if (!r.ok) return R(false, warn('⚠ ' + esc(L('Could not record the map', '地図を記録できませんでした')) + ' — ' + esc(r.reason)));
+            if (!r.ok) return R(false, warn('' + esc(L('Could not record the map', '地図を記録できませんでした')) + ' — ' + esc(r.reason)));
             return R(true, note('✓ ' + esc(L('Step recorded', 'ステップを記録しました')) + ' (' + r.count + ') — ' + esc(L('start it with id "atlas"', 'id "atlas" で開始できます')))); }
           if (act === 'clear') { P.clearTemp(); return R(true, note('✓ ' + esc(L('The assembled tour is cleared', '組み立てたツアーを消しました')))); }
-          if (act === 'exit') { const ok = P.exit(); return R(ok, ok ? note('✓ ' + esc(L('Left the tour', 'ツアーを終えました'))) : warn('⚠ ' + esc(L('No tour is playing', '再生中のツアーはありません')))); }
+          if (act === 'exit') { const ok = P.exit(); return R(ok, ok ? note('✓ ' + esc(L('Left the tour', 'ツアーを終えました'))) : warn('' + esc(L('No tour is playing', '再生中のツアーはありません')))); }
           if (act === 'next') return shown(await P.next(), L('Next step', '次のステップ'));
           if (act === 'prev') return shown(await P.prev(), L('Previous step', '前のステップ'));
           if (act === 'go') return shown(await P.go(a.step), L('Step opened', 'ステップを開きました'));
           const id = String(a.id || a.name || '').trim();
           const r = await P.startTour(id, a.step || 1);
-          if (r && r.reason === 'unknown-tour') return R(false, warn('⚠ ' + esc(L('No tour is called', 'この名前のツアーはありません')) + ' «' + esc(id) + '»'));
+          if (r && r.reason === 'unknown-tour') return R(false, warn('' + esc(L('No tour is called', 'この名前のツアーはありません')) + ' «' + esc(id) + '»'));
           return shown(r, L('Tour started', 'ツアーを始めました')); }
     },
   },
@@ -380,7 +381,7 @@ export default [
     schema: () => (noArgs('operatingCosts')),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, esc = K.esc, warn = K.warn;
       { const opened=openSupport({ section:'costs' }); let f=null; try{ f=await operatingFacts(); }catch(_){ f=null; }
-          if(!opened&&!f) return R(false, warn('⚠'));
+          if(!opened&&!f) return R(false, warn(''));
           const al=f&&f.allowance;
           const lines=[ L('Where support goes','支援の使い道'),
             al? L('Atlas allowance: ','Atlas の1日の上限: ')+al.aiTurnsPerDay+L(' questions and ',' 回の質問と ')+al.aiGlossPerDay+L(' term look-ups a day (free plan — every reader has it; no paid plan exists).',' 回の用語解説（無料プラン。全員が同じで、有料プランはありません）') : '',
@@ -396,7 +397,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('feedback')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
-      { let ok=false; try{ if(window._openFeedback){ window._openFeedback(); ok=true; } }catch(_){} if(!ok) ok=clickId('btn-feedback-hdr'); return R(ok, ok?note('✓ '+L('Feedback','フィードバック','Feedback','Отзыв','Comentarios')):warn('⚠')); }
+      { let ok=false; try{ if(window._openFeedback){ window._openFeedback(); ok=true; } }catch(_){} if(!ok) ok=clickId('btn-feedback-hdr'); return R(ok, ok?note('✓ '+L('Feedback','フィードバック','Feedback','Отзыв','Comentarios')):warn('')); }
     },
   },
   {
@@ -407,7 +408,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('bugReport')),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, warn = K.warn;
-      { let ok=false; try{ if(window._openBugReport){ window._openBugReport(); ok=true; } }catch(_){} return R(ok, ok?note('🐞 '+L('Bug report','バグ報告','Fehlerbericht','Сообщить об ошибке','Reportar error')):warn('⚠')); }
+      { let ok=false; try{ if(window._openBugReport){ window._openBugReport(); ok=true; } }catch(_){} return R(ok, ok?note(icon('bug')+' '+L('Bug report','バグ報告','Fehlerbericht','Сообщить об ошибке','Reportar error')):warn('')); }
     },
   },
   {
@@ -420,7 +421,7 @@ export default [
     async run(a, dctx, K) { const saveSettings = K.saveSettings, R = K.R, note = K.note, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
       { const onT=!(a.on===false||/^(off|hide)$/i.test(String(a.mode||''))); let okT=false;
           try{ if(window.IntMapTicker){ window.imTicker=onT?'on':'off'; window.IntMapTicker.apply(); okT=true; try{ if(typeof saveSettings==='function') saveSettings(); }catch(_){} } }catch(_){}
-          return R(okT, okT?note('✓ '+L('Bottom ticker','下部ティッカー','Ticker','Бегущая строка','Cinta inferior')+': '+(onT?'on':'off'))+_featTogHtml('ticker'):warn('⚠')); }   /* (#R149) offer the ticker on/off toggle */
+          return R(okT, okT?note('✓ '+L('Bottom ticker','下部ティッカー','Ticker','Бегущая строка','Cinta inferior')+': '+(onT?'on':'off'))+_featTogHtml('ticker'):warn('')); }   /* (#R149) offer the ticker on/off toggle */
     },
   },
 ];

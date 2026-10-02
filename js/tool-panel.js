@@ -12,6 +12,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTables } from './tables.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function toolPanel(HOST){
   function bearingHTML(a,b){ const d=HOST.bearingDeg(a,b); return `${d.toFixed(1)}° <span class="unit-sub">(${HOST.compassDir(d)})</span>`; }
@@ -92,7 +93,7 @@ export function toolPanel(HOST){
 
   function updateToolPanel(){
     const p=document.getElementById('tool-panel'); if(!HOST.toolMode){ p.style.display='none'; return; } p.style.display='block';
-    const titles={measure:'📏 '+HOST.t('measure'),area:'📐 '+HOST.t('areaTool'),radius:'⭕ '+HOST.t('radius'),volume:'🧊 '+HOST.t('vol3dTool')}; let body='';
+    const titles={measure:icon('ruler')+' '+HOST.t('measure'),area:icon('set-square')+' '+HOST.t('areaTool'),radius:icon('radius')+' '+HOST.t('radius'),volume:icon('cube')+' '+HOST.t('vol3dTool')}; let body='';
     if(HOST.toolMode==='measure'){
       const tot=HOST.hasTurf()?HOST.totalDistance(HOST.measurePoints):0; let brg='';
       if(HOST.measurePoints.length>=2){
@@ -103,10 +104,10 @@ export function toolPanel(HOST){
           brg+=`<div class="tp-row"><span>${IntMapLang.t(HOST.lang,'start → end','始点→終点','Start → Ende','начало → конец','inicio → fin')}</span><b>${bearingHTML(s,e)}</b></div>`;
         }
       }
-      body=`<div class="tp-row"><span>${HOST.t('points')}</span><b>${HOST.measurePoints.length}</b></div><div class="tp-row"><span>${HOST.t('total')}</span><b>${HOST.distHTML(tot)}</b></div>${brg}${HOST.measurePoints.length>=2?`<button class="ai-action-btn" id="tp-profile">📈 ${HOST.t('elevProfile')}</button><button class="ai-action-btn" id="tp-finalize">✓ ${HOST.t('finalizeMeas')}</button>`:''}`;
+      body=`<div class="tp-row"><span>${HOST.t('points')}</span><b>${HOST.measurePoints.length}</b></div><div class="tp-row"><span>${HOST.t('total')}</span><b>${HOST.distHTML(tot)}</b></div>${brg}${HOST.measurePoints.length>=2?`<button class="ai-action-btn" id="tp-profile">${icon('chart')} ${HOST.t('elevProfile')}</button><button class="ai-action-btn" id="tp-finalize">✓ ${HOST.t('finalizeMeas')}</button>`:''}`;
     } else if(HOST.toolMode==='area'){
       const pe=HOST.hasTurf()?ringPerimeter(HOST.measurePoints):0, ar=(HOST.hasTurf()&&HOST.measurePoints.length>=3)?HOST.ringArea(HOST.measurePoints):0;
-      body=`<div class="tp-row"><span>${HOST.t('points')}</span><b>${HOST.measurePoints.length}</b></div><div class="tp-row"><span>${HOST.t('perimeter')}</span><b>${HOST.distHTML(pe)}</b></div><div class="tp-row"><span>${HOST.t('area')}</span><b>${ar?HOST.areaHTML(ar):'—'}</b></div><div class="tp-row" id="tp-pop-row" style="display:none;"><span>${HOST.t('popInArea')}</span><b id="tp-pop-val">—</b></div>${HOST.measurePoints.length>=3?`<button class="ai-action-btn" id="tp-pop-btn">${HOST.t('popInArea')}</button><button class="ai-action-btn" id="news-area-btn">📍 ${HOST.t('newsInArea')}</button><button class="ai-action-btn" id="ai-summarize-btn">📰 ${HOST.t('aiSumBtn')}</button><button class="ai-action-btn" id="tp-profile">📈 ${HOST.t('elevProfile')}</button><button class="ai-action-btn" id="tp-finalize">✓ ${HOST.t('finalizeMeas')}</button>`:''}`;
+      body=`<div class="tp-row"><span>${HOST.t('points')}</span><b>${HOST.measurePoints.length}</b></div><div class="tp-row"><span>${HOST.t('perimeter')}</span><b>${HOST.distHTML(pe)}</b></div><div class="tp-row"><span>${HOST.t('area')}</span><b>${ar?HOST.areaHTML(ar):'—'}</b></div><div class="tp-row" id="tp-pop-row" style="display:none;"><span>${HOST.t('popInArea')}</span><b id="tp-pop-val">—</b></div>${HOST.measurePoints.length>=3?`<button class="ai-action-btn" id="tp-pop-btn">${HOST.t('popInArea')}</button><button class="ai-action-btn" id="news-area-btn">${icon('pin')} ${HOST.t('newsInArea')}</button><button class="ai-action-btn" id="ai-summarize-btn">${icon('news')} ${HOST.t('aiSumBtn')}</button><button class="ai-action-btn" id="tp-profile">${icon('chart')} ${HOST.t('elevProfile')}</button><button class="ai-action-btn" id="tp-finalize">✓ ${HOST.t('finalizeMeas')}</button>`:''}`;
     } else if(HOST.toolMode==='volume'){
       /* (#R170) 3-D VOLUME — trace a footprint, give it a base and a top ALTITUDE, and the box is drawn
          at true scale in the air. The two altitude fields are metres above SEA LEVEL in both terrain
@@ -175,7 +176,7 @@ export function toolPanel(HOST){
         <details class="tp-more"><summary>${IntMapLang.t(HOST.lang,'Style &amp; presets','スタイル・プリセット','Stil und Vorlagen','Стиль и пресеты','Estilo y ajustes')}</summary>
         <div class="tp-sub" id="radius-preset-lbl" style="margin-top:4px;">${HOST.t('presetLbl')}</div><select class="tp-select" id="radius-preset" aria-labelledby="radius-preset-lbl">${opts}</select>
         <div class="radius-color-row"><span>${HOST.t('color')}</span><div class="rad-presets">${RADIUS_COLOR_PRESETS.map(c=>`<button type="button" class="rad-preset${HOST.radiusColor.toLowerCase()===c.col?' on':''}" data-col="${c.col}" title="${c.lbl}" style="background:${c.col}"></button>`).join('')}</div><input type="color" id="radius-color" value="${HOST.radiusColor}" title="${IntMapLang.t(HOST.lang,'Custom color','カスタム色','Eigene Farbe','Свой цвет','Color personalizado')}"><span class="tp-sub" id="radius-op-lbl" style="margin:0;">${HOST.t('opacity')}</span><input type="range" id="radius-op" aria-labelledby="radius-op-lbl" min="0" max="0.6" step="0.02" value="${HOST.radiusOpacity}" style="flex:1; accent-color:var(--primary-color);"></div></details>
-        ${HOST.radiusItems.length?'':`<div class="tp-hint">${HOST.t('radiusHint')}</div>`}${list}${HOST.radiusItems.length?`<div class="rad-actions"><button class="rad-act" id="tp-pop-btn"><span class="ra-l">${HOST.t('popInArea')}</span></button><button class="rad-act" id="news-area-btn"><span class="ra-l">📍 ${HOST.t('newsInArea')}</span></button><button class="rad-act" id="ai-summarize-btn"><span class="ra-l">📰 ${HOST.t('aiSumBtn')}</span></button></div>`:''}<div class="tp-row" id="tp-pop-row" style="display:none;"><span>${HOST.t('popInArea')}</span><b id="tp-pop-val">—</b></div>`;   /* (#R40/#R142/#R146) circles persist; style/colour/opacity in the "Style" disclosure; 3 area actions in a compact grid (not stacked); usage hint hidden once a circle exists */
+        ${HOST.radiusItems.length?'':`<div class="tp-hint">${HOST.t('radiusHint')}</div>`}${list}${HOST.radiusItems.length?`<div class="rad-actions"><button class="rad-act" id="tp-pop-btn"><span class="ra-l">${HOST.t('popInArea')}</span></button><button class="rad-act" id="news-area-btn"><span class="ra-l">${icon('pin')} ${HOST.t('newsInArea')}</span></button><button class="rad-act" id="ai-summarize-btn"><span class="ra-l">${icon('news')} ${HOST.t('aiSumBtn')}</span></button></div>`:''}<div class="tp-row" id="tp-pop-row" style="display:none;"><span>${HOST.t('popInArea')}</span><b id="tp-pop-val">—</b></div>`;   /* (#R40/#R142/#R146) circles persist; style/colour/opacity in the "Style" disclosure; 3 area actions in a compact grid (not stacked); usage hint hidden once a circle exists */
     }
     const footBtns = (HOST.toolMode!=='radius')
       ? `<div class="tp-foot-btns">${HOST.measurePoints.length?`<button class="tp-clear" id="tp-undo">↶ ${HOST.t('undoPt')}</button>`:''}<button class="tp-clear" id="tp-clear">${HOST.t('clear')}</button></div>`
@@ -311,7 +312,7 @@ export function toolPanel(HOST){
             +`<span class="rl-sw" style="background:${o.color};${o.visible?'':'opacity:0.25;'}"></span>`
             +`<span class="rl-main" style="${o.visible?'':'opacity:0.45;'}">${esc(o.name)}<br>`
             +`<span style="font-size:10px;color:var(--text-muted);">${o.band} · ${o.volume}</span></span>`
-            +`<button class="rl-del" data-v3dvis="${o.id}" title="${o.visible?_L('Hide','非表示','Ausblenden','Скрыть','Ocultar'):_L('Show','表示','Einblenden','Показать','Mostrar')}">${o.visible?'👁':'⚊'}</button>`
+            +`<button class="rl-del" data-v3dvis="${o.id}" title="${o.visible?_L('Hide','非表示','Ausblenden','Скрыть','Ocultar'):_L('Show','表示','Einblenden','Показать','Mostrar')}">${o.visible?icon('eye'):'⚊'}</button>`
             +`<button class="rl-del" data-v3ddel="${o.id}" title="${_L('Delete','削除','Löschen','Удалить','Eliminar')}">×</button></div>`).join('')
           +`</div>`
           +(sel?(()=>{ const o=objs.find(x=>x.id===sel); if(!o) return '';
@@ -524,37 +525,37 @@ export function toolPanel(HOST){
        group is for, and each entry names only what it DOES. Nothing is removed and nothing changes
        behaviour — `items` is the same fifteen actions in the same order. */
     const items=[
-      {coord:`📍 ${HOST.fmtLL(lngLat.lng,lngLat.lat)}`,label2:HOST.t('ctxThisPoint')},
+      {coord:HOST.fmtLL(lngLat.lng,lngLat.lat),label2:HOST.t('ctxThisPoint')},
       {h:L('Actions','操作','Aktionen','Действия','Acciones'),head:true},
       /* (#R224) on-demand kernel: askHere if it has one, otherwise just open it */
       {label:`${L('Ask Atlas','Atlasに聞く','Atlas fragen','Спросить Atlas','Preguntar a Atlas')}`, action:()=>{ try{ if(window.IntMapAtlas){ window.IntMapAtlas.ensure().then(C=>{ try{ if(C&&C.askHere) C.askHere(lngLat); else if(C&&C.open) C.open(); }catch(_){} }); } else if(window.IntMapConsole&&window.IntMapConsole.askHere) window.IntMapConsole.askHere(lngLat); }catch(_){} }},
-      {label:`🧍 ${L('Street View','ストリートビュー','Street View','Просмотр улиц','Street View')}`, action:()=>{ window.IntMapLazy.need('streetView').then(()=>{ try{ window.IntMapStreetView&&window.IntMapStreetView.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
-      {label:`📍 ${HOST.t('ctxDropPin')}`, action:()=>{ const id=HOST.addPin(lngLat.lng,lngLat.lat); HOST.openPinPopup(id); }},
+      {label:`${icon('person-standing')} ${L('Street View','ストリートビュー','Street View','Просмотр улиц','Street View')}`, action:()=>{ window.IntMapLazy.need('streetView').then(()=>{ try{ window.IntMapStreetView&&window.IntMapStreetView.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
+      {label:`${icon('pin')} ${HOST.t('ctxDropPin')}`, action:()=>{ const id=HOST.addPin(lngLat.lng,lngLat.lat); HOST.openPinPopup(id); }},
       /* (#R8c) Alt-projection viewer removed (MapLibre renders only Mercator/Globe). (#R9) "Copy link to
          this view" removed per request — the live-permalink hash still restores a reload. */
-      {label:`📋 ${HOST.t('ctxCopy')}`, action:()=>{ try{ navigator.clipboard.writeText(`${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`); }catch(_){} }},
+      {label:`${icon('clipboard')} ${HOST.t('ctxCopy')}`, action:()=>{ try{ navigator.clipboard.writeText(`${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`); }catch(_){} }},
       /* (#R40/#R42) Share the EXACT current state (position, zoom, projection, base map, layers, time-travel,
          compare) as a link — opens the surfaced IntMapShare panel (link shown + copy + native share). */
-      {label:`🔗 ${L('Share the view','表示を共有','Ansicht teilen','Поделиться видом','Compartir la vista')}`, action:()=>{ try{ window.IntMapShare&&window.IntMapShare.open(); }catch(_){} }},
-      {label:`💬 ${HOST.t('ctxPostHere')}`, action:()=>{ if(!HOST.requireLogin()) return; HOST.pendingPostLoc=[lngLat.lng,lngLat.lat]; HOST.communityAddArmed=false; HOST.openComposeModal(); }},
+      {label:`${icon('link')} ${L('Share the view','表示を共有','Ansicht teilen','Поделиться видом','Compartir la vista')}`, action:()=>{ try{ window.IntMapShare&&window.IntMapShare.open(); }catch(_){} }},
+      {label:`${icon('chat')} ${HOST.t('ctxPostHere')}`, action:()=>{ if(!HOST.requireLogin()) return; HOST.pendingPostLoc=[lngLat.lng,lngLat.lat]; HOST.communityAddArmed=false; HOST.openComposeModal(); }},
       {h:L('Measure','計測','Messen','Измерение','Medir'),head:true},
-      {label:`📏 ${HOST.t('ctxMeasureFrom')}`, action:()=>{ if(HOST.toolMode!=='measure') HOST.setTool('measure'); HOST.measurePoints=[[lngLat.lng,lngLat.lat]]; HOST.refreshTool(); updateToolPanel(); }},
-      {label:`⭕ ${L('Draw a radius','半径を描く','Radius zeichnen','Начертить радиус','Dibujar un radio')}`, action:()=>{ try{ window._radiusFromPoint(lngLat.lng,lngLat.lat); }catch(_){} }},
+      {label:`${icon('ruler')} ${HOST.t('ctxMeasureFrom')}`, action:()=>{ if(HOST.toolMode!=='measure') HOST.setTool('measure'); HOST.measurePoints=[[lngLat.lng,lngLat.lat]]; HOST.refreshTool(); updateToolPanel(); }},
+      {label:`${icon('radius')} ${L('Draw a radius','半径を描く','Radius zeichnen','Начертить радиус','Dibujar un radio')}`, action:()=>{ try{ window._radiusFromPoint(lngLat.lng,lngLat.lat); }catch(_){} }},
       {h:L('Live info','現地の情報','Aktuelle Infos','Данные на месте','Datos en vivo'),head:true},
-      {label:`🌤 ${L('Weather (live)','天気（最新）','Wetter (aktuell)','Погода (сейчас)','El tiempo (ahora)')}`, action:()=>{ try{ window.IntMapWeather&&window.IntMapWeather.open(lngLat); }catch(_){} }},
-      {label:`🛬 ${L('Find runways','滑走路を検索','Landebahnen suchen','Найти ВПП','Buscar pistas')}`, action:()=>{ try{ window.RunwaySearch&&window.RunwaySearch.open(lngLat); }catch(_){} }},
+      {label:`${icon('cloud-sun')} ${L('Weather (live)','天気（最新）','Wetter (aktuell)','Погода (сейчас)','El tiempo (ahora)')}`, action:()=>{ try{ window.IntMapWeather&&window.IntMapWeather.open(lngLat); }catch(_){} }},
+      {label:`${icon('plane')} ${L('Find runways','滑走路を検索','Landebahnen suchen','Найти ВПП','Buscar pistas')}`, action:()=>{ try{ window.RunwaySearch&&window.RunwaySearch.open(lngLat); }catch(_){} }},
       {h:L('Analysis & simulation','解析・シミュレーション','Analyse & Simulation','Анализ и моделирование','Análisis y simulación'),head:true},
-      {label:`📡 ${L('Line of sight (radar shadow)','見通し線解析（レーダー死角）','Sichtlinie (Radarschatten)','Линия видимости (радиотень)','Línea de visión (sombra de radar)')}`, action:()=>{ window.IntMapLazy.need('los').then(()=>{ try{ window.IntMapLOS&&window.IntMapLOS.open(lngLat); }catch(_){} }); }},
-      {label:`🎯 ${L('Reachable area (drive/walk/cycle)','到達圏（車/徒歩/自転車）','Erreichbarkeit (Auto/Fuß/Rad)','Зона доступности (авто/пешком/вело)','Área alcanzable (coche/pie/bici)')}`, action:()=>{ try{ window.IntMapIsochrone&&window.IntMapIsochrone.open(lngLat); }catch(_){} }},
+      {label:`${icon('antenna')} ${L('Line of sight (radar shadow)','見通し線解析（レーダー死角）','Sichtlinie (Radarschatten)','Линия видимости (радиотень)','Línea de visión (sombra de radar)')}`, action:()=>{ window.IntMapLazy.need('los').then(()=>{ try{ window.IntMapLOS&&window.IntMapLOS.open(lngLat); }catch(_){} }); }},
+      {label:`${icon('target')} ${L('Reachable area (drive/walk/cycle)','到達圏（車/徒歩/自転車）','Erreichbarkeit (Auto/Fuß/Rad)','Зона доступности (авто/пешком/вело)','Área alcanzable (coche/pie/bici)')}`, action:()=>{ try{ window.IntMapIsochrone&&window.IntMapIsochrone.open(lngLat); }catch(_){} }},
       /* (#R176) The three simulators this round added. They live HERE and in Atlas — not in the Measure
          menu, which is where the drone planner was and which the user rejected outright. */
-      {label:`⛰💧 ${L('Terrain & water flow','地形編集・水流シミュレーター','Gelände & Wasser bearbeiten','Рельеф и водоток','Terreno y flujo de agua')}`, action:()=>{ window.IntMapLazy.need('terrainWater').then(()=>{ try{ window.IntMapTerrainWater&&window.IntMapTerrainWater.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
+      {label:`${icon('mountain')}${icon('drop')} ${L('Terrain & water flow','地形編集・水流シミュレーター','Gelände & Wasser bearbeiten','Рельеф и водоток','Terreno y flujo de agua')}`, action:()=>{ window.IntMapLazy.need('terrainWater').then(()=>{ try{ window.IntMapTerrainWater&&window.IntMapTerrainWater.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
       /* (#R232) 🌐 removed with the panel header's — same feature, same instruction. */
       {label:`${L('Earthquake simulator (set as epicentre)','地震シミュレーター（震源に設定）','Erdbeben-Simulator (als Epizentrum)','Симулятор землетрясений (как эпицентр)','Simulador de terremotos (como epicentro)')}`, action:()=>{ window.IntMapLazy.need('seismic').then(()=>{ try{ window.IntMapSeismic&&window.IntMapSeismic.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
       /* ⚠ (#R298) THE PANEL OPENS ON THE POINT THAT WAS TAPPED, not on the map centre and then the
          point. `open()` with no argument names the camera's centre in its own heading, so between
          the two calls the reader was shown numbers for a place they did not pick. */
-      {label:`🌇 ${L('Sunlight hours & shade','日照時間・影を解析','Sonnenstunden & Schatten','Часы солнца и тени','Horas de sol y sombra')}`, action:()=>{ try{ if(window.IntMapSun){ window.IntMapSun.open({lng:lngLat.lng,lat:lngLat.lat}); if(window.IntMapSun.analysePoint) window.IntMapSun.analysePoint(lngLat.lng,lngLat.lat); } }catch(_){} }},
+      {label:`${icon('sunset')} ${L('Sunlight hours & shade','日照時間・影を解析','Sonnenstunden & Schatten','Часы солнца и тени','Horas de sol y sombra')}`, action:()=>{ try{ if(window.IntMapSun){ window.IntMapSun.open({lng:lngLat.lng,lat:lngLat.lat}); if(window.IntMapSun.analysePoint) window.IntMapSun.analysePoint(lngLat.lng,lngLat.lat); } }catch(_){} }},
       /* (#R208) 「ある地点からの星空」— the all-sky view a person standing here has, with the skyline
          measured off the DEM so the ground really does hide the part of the sky it hides. */
       /* ══ (#R255) ONE ENTRY, TWO VIEWS — THE SWITCH IS THE PANEL'S OWN ══════════════════════════════
@@ -566,10 +567,10 @@ export function toolPanel(HOST){
          ⚠ NOTHING IS REMOVED. Both views, the keyboard controls, `IntMapNightSky.setMode` and Atlas's
          `standHere` / `skyStanding` spellings are untouched; only the duplicate door is. The panel
          opens in whichever view was last used, so «stand» is one click away and stays chosen. */
-      {label:`✨ ${L('Night sky','星空を見る','Sternhimmel','Звёздное небо','El cielo nocturno')}`, action:()=>{ window.IntMapLazy.need('nightSky').then(()=>{ try{ window.IntMapNightSky&&window.IntMapNightSky.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
+      {label:`${icon('sparkle')} ${L('Night sky','星空を見る','Sternhimmel','Звёздное небо','El cielo nocturno')}`, action:()=>{ window.IntMapLazy.need('nightSky').then(()=>{ try{ window.IntMapNightSky&&window.IntMapNightSky.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }); }},
       /* (#R15c) Sea-route feature removed per request — repeatedly mis-routed (shallow endpoints / linear /
          cut across land). The IntMapRoute engine stays defined but is no longer reachable from the UI. */
-      ...(HOST.userPins.length?[{divider:true},{label:`🗑 ${HOST.t('ctxClearPins')} (${HOST.userPins.length})`, action:HOST.clearAllPins}]:[])
+      ...(HOST.userPins.length?[{divider:true},{label:`${icon('trash')} ${HOST.t('ctxClearPins')} (${HOST.userPins.length})`, action:HOST.clearAllPins}]:[])
     ];
     /* ══ (#R205) THE HEADINGS BECAME THE MENU ═══════════════════════════════════════════════════════
        Each `head` opens a section that holds the entries after it; every section starts CLOSED and
@@ -581,9 +582,9 @@ export function toolPanel(HOST){
        returns the FIRST equal element, which two identically-labelled entries would collide on. */
     let html='', open=false, gi=0;
     items.forEach((it,i)=>{
-      if(it.coord){ html+=`<div class="ctx-coord" title="${IntMapSafe.html(it.label2||'')}">${IntMapSafe.html(it.coord)}</div>`; return; }
+      if(it.coord){ html+=`<div class="ctx-coord" title="${IntMapSafe.html(it.label2||'')}">${icon('pin')} ${IntMapSafe.html(it.coord)}</div>`; return; }
       if(it.head){ if(open) html+='</div>'; gi++; open=true;
-        html+=`<button class="ctx-grp" data-grp="${gi}" aria-expanded="false"><span>${IntMapSafe.html(it.h)}</span><span class="ctx-chev">▶</span></button>`
+        html+=`<button class="ctx-grp" data-grp="${gi}" aria-expanded="false"><span>${IntMapSafe.html(it.h)}</span><span class="ctx-chev">${icon('chevronR')}</span></button>`
              +`<div class="ctx-sec" data-sec="${gi}" hidden>`; return; }
       if(it.divider){ if(open){ html+='</div>'; open=false; } html+=`<div class="ctx-divider"></div>`; return; }
       html+=`<button data-act="${i}">${it.label}</button>`;

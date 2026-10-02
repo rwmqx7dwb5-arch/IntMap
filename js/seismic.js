@@ -61,6 +61,7 @@ import './seismic-subfault.js';
 import './earth-structure.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon, withIcons } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 
 export function seismic(HOST){
@@ -1971,7 +1972,7 @@ export function seismic(HOST){
     /* (#R237) a CLASS, not a cssText — the two states are 「やることがある」 and 「答えを見ている」
        (#R234), and both are now one word in the sheet rather than a string of declarations. */
     function _runBtnClass(){ return 'sq-run sq-btn sq-btn-wide'+(_needsRun()?' sq-btn-accent':''); }
-    function _runBtnLabel(){ return '▶ '+(_needsRun()
+    function _runBtnLabel(){ return icon('play')+' '+(_needsRun()
       ?L('Compute the intensity map','震度分布を計算','Intensitätskarte berechnen','Рассчитать поле интенсивности','Calcular el mapa de intensidad')
       :L('Recompute the intensity map','震度分布を再計算','Intensitätskarte neu berechnen','Пересчитать поле интенсивности','Recalcular el mapa de intensidad')); }
     /* (#R240) the run button lives in the pinned footer now, and its label, its colour AND the
@@ -4263,7 +4264,7 @@ export function seismic(HOST){
            rewording it silently drops fr/ko/zh/zh-Hans back to English unless they are re-keyed in the
            same change — they are (scripts/i18n/r245-a.json). #R235 wrote that warning; this is the
            first round to change the sentence since. */
-        +'<div style="font-size:'+FS_S+';color:#ffd23f;line-height:1.5;">⚠ '
+        +'<div style="font-size:'+FS_S+(';color:#ffd23f;line-height:1.5;">'+icon('warning')+' ')
         +L('An educational model. In a real emergency, follow the instructions of the official authorities. It does not predict whether damage will occur. Keep your everyday preparations ready.',
            '教育目的のモデルです。実際の災害時は公的機関の指示に従ってください。被害の有無を予測するものではありません。日ごろから備えておきましょう。',
            'Ein Bildungsmodell. Folgen Sie im Ernstfall den Anweisungen der Behörden. Es sagt nicht voraus, ob Schäden entstehen. Treffen Sie im Alltag die nötigen Vorkehrungen.',
@@ -4769,12 +4770,12 @@ export function seismic(HOST){
          terrain solution, which is the one way this panel can lie. They appear only in the failure
          cases; the normal case — the line the instruction quotes — now says nothing at all. */
       const _siteWarn=(fld&&fld.stats&&!fld.stats.terrain&&!(fld.stats.bulkSite>0))
-        ? ('<div style="color:#ffd23f;">⚠ '+(fld.stats.slopeUsable
+        ? ('<div style="color:#ffd23f;">'+icon('warning')+' '+(fld.stats.slopeUsable
             ? L('Elevation tiles did not arrive — uniform site class, so the field is distance alone','標高タイルが届かず一様地盤で計算（距離だけの分布になります）','Höhenkacheln kamen nicht an — einheitlicher Untergrund','Тайлы рельефа не пришли — однородный грунт','No llegaron los mosaicos de elevación — terreno uniforme')
             : L('Terrain too coarse here — uniform site class used','この範囲では地形が粗く一様地盤で表示','Gelände zu grob — einheitlicher Untergrund','Рельеф слишком грубый — однородный грунт','Terreno demasiado grueso — terreno uniforme'))+'</div>')
         : '';
       o.innerHTML=(fldBusy?''
-          :(fldStale?('<div style="color:#ffd23f;">'+L('The parameters changed — press ▶ to recompute the intensity map.','設定を変更しました。▶ を押すと震度分布を再計算します。','Parameter geändert — ▶ drücken, um neu zu rechnen.','Параметры изменены — нажмите ▶ для пересчёта.','Los parámetros cambiaron — pulse ▶ para recalcular.')+'</div>')
+          :(fldStale?('<div style="color:#ffd23f;">'+withIcons(L('The parameters changed — press {icon:play} to recompute the intensity map.','設定を変更しました。{icon:play} を押すと震度分布を再計算します。','Parameter geändert — {icon:play} drücken, um neu zu rechnen.','Параметры изменены — нажмите {icon:play} для пересчёта.','Los parámetros cambiaron — pulse {icon:play} para recalcular.'))+'</div>')
           :_siteWarn))
         /* (#R234) one size for the table, and the head is not grey — see the note by FS / ROW. */
         /* ══ ⚠⚠⚠ (#R241) THE TABLE GETS ITS OWN HORIZONTAL SCROLLER ═══════════════════════════════════

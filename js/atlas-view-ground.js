@@ -243,7 +243,7 @@ export function makeViewGround() {
     }
     /* ⚠ the instruction has to name the failure mode, because «be careful» does not survive a
        confident-looking picture. This is the sentence the wrong answer needed and did not have. */
-    p += '⚠ The two lists above are EVERYTHING IntMap knows about what is in this frame. If the object the reader is asking about is not in them, then IntMap does not know its name — say so plainly and describe what it looks like instead. Do NOT name a building, business, tenant, brand or facility that is absent from those lists, and do NOT write a source or a site name you did not actually retrieve this turn.\n';
+    p += 'The two lists above are EVERYTHING IntMap knows about what is in this frame. If the object the reader is asking about is not in them, then IntMap does not know its name — say so plainly and describe what it looks like instead. Do NOT name a building, business, tenant, brand or facility that is absent from those lists, and do NOT write a source or a site name you did not actually retrieve this turn.\n';
     return p;
   }
   return { coordDecimals: coordDecimals, measureFraming: measureFraming, rankFramed: rankFramed,

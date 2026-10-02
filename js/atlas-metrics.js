@@ -152,7 +152,7 @@ export function makeAtlasMetrics(HOST, CTX) {
         if(best.length===1) return {key:best[0],m:metAll()[best[0]]}; }
       return null; }
     /* a refusal that cannot be retried is a loop. Every one of these names the whole valid set. */
-    function unknownMetric(k){ return R(false, warn('⚠ '+L('Unknown metric','不明な指標','Unbekannte Kennzahl','Неизвестный показатель','Métrica desconocida')
+    function unknownMetric(k){ return R(false, warn(L('Unknown metric','不明な指標','Unbekannte Kennzahl','Неизвестный показатель','Métrica desconocida')
       +': '+esc(String(k==null?'':k))+' — '+L('valid','有効','gültig','допустимо','válidos')+': '+esc(metNamed().join(', '))),
       /* ⚠⚠⚠ (#R760) THE LINE ABOVE ALREADY SAID 「a refusal that cannot be retried is a loop」 AND
          THEN SAID IT TO NOBODY. Naming the valid set is necessary and not sufficient: the refusal is

@@ -9,6 +9,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function searchGeocode(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -387,14 +388,14 @@ export function searchGeocode(HOST){
     const restAdmin=parts.slice(1,4).map(s=>s.trim()).filter(Boolean).join(', ');
     searchCardEl.innerHTML=`<button class="src-card-close" title="${HOST.t('close')}">×</button>
       <div class="src-card">
-        <h4>📍 ${IntMapSafe.html(primary)}</h4>
+        <h4>${icon('pin')} ${IntMapSafe.html(primary)}</h4>
         <div class="src-sub">${IntMapSafe.html(restAdmin||country||'')}</div>
         <div class="src-row"><span>${HOST.t('coords')}</span><b>${HOST.fmtLL(lng,lat)}</b></div>
         ${type?`<div class="src-row"><span>${IntMapLang.t(HOST.lang,'Type','種別','Typ','Тип','Tipo')}</span><b>${IntMapSafe.html(type)}</b></div>`:''}
         <div class="src-row"><span>${HOST.t('elev')}</span><b id="src-elev">${IntMapLang.t(HOST.lang,'Loading...','取得中...','Lädt…','Загрузка…','Cargando…')}</b></div>
         <div class="src-actions">
-          <button class="primary" id="src-copy">📋 ${HOST.t('ctxCopy')}</button>
-          <button id="src-pin">📍 ${HOST.t('ctxDropPin')}</button>
+          <button class="primary" id="src-copy">${icon('clipboard')} ${HOST.t('ctxCopy')}</button>
+          <button id="src-pin">${icon('pin')} ${HOST.t('ctxDropPin')}</button>
         </div>
       </div>`;
     searchCardEl.querySelector('.src-card-close').onclick=closeSearchCard;
