@@ -46,6 +46,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { staleDeps, describeStale } from './deps-fresh.mjs';
+import { install as installMergeDriver } from './merge-driver.mjs';
 
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 
@@ -290,6 +291,14 @@ if (want('--sync')) {
   const after = survey({ fetch: false });
   const moved = before.head === after.head ? 'already current' : `${String(before.head).slice(0, 7)} → ${String(after.head).slice(0, 7)}`;
   console.log(`master-sync: ${MASTER} is main @ ${String(after.head).slice(0, 7)} (${moved}).`);
+  /* (generated-file-merge-driver) .gitattributes assigns scripts/merge-driver.mjs to the generated
+     files, ledgers and counted documents, and git honours that only where the CLONE'S CONFIG defines
+     the driver. The config is shared by every worktree, so registering it on the master is
+     registering it for the machine. Idempotent; a failure is said and does not fail the sync — a
+     missing driver costs a hand-resolved conflict, not the merged state this step exists for. */
+  const md = installMergeDriver(MASTER);
+  if (!md.ok) console.error(`master-sync: warning — the merge driver could not be registered (${md.why}); run node scripts/merge-driver.mjs --install`);
+  else if (md.changed.length) console.log('master-sync: registered the generated-file merge driver in this clone\'s config.');
   /* ⚠ (data-outside-git) THE MASTER AT origin/main IS NOT THE WHOLE MASTER ANY MORE. The datasets data-assets.json
      names are not in git, so the fast-forward that untracked them DELETED them here — and the USB
      mirror copies this directory (docs/AGENT-SETUP.md §10), so a master without them would take them

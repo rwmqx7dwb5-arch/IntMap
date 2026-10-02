@@ -53,6 +53,7 @@ import { createServer } from 'node:net';
 import { artefactNames, slugProblem } from './round-names.mjs';
 import { latestEntry, NOTES_DIR } from './dev-notes.mjs';
 import { liveDeployment } from './pages-publish-guard.mjs';
+import { install as installMergeDriver, pending as mergePending } from './merge-driver.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
@@ -406,6 +407,28 @@ function pendingWork(master) {
   return { deploy, verified, copy, items };
 }
 
+/* ── (generated-file-merge-driver) THE MERGE DRIVER IS CONFIGURATION, SO IT IS INSTALLED HERE ──────
+   .gitattributes names the driver, but git runs it only if the clone's config defines it, and the
+   config is not tracked. Every worktree of a clone shares one config (measured), and `status --brief`
+   is what both products run at session start — so registering it here (idempotent, silent when it is
+   already there) is what makes it present in every session on this machine without anyone being told
+   to run a setup step. It also says when a merge left a regeneration waiting: the driver cannot run
+   a generator itself (the working tree is not the merged tree while it runs), so `--finish` is a
+   step, and a step nobody is reminded of is a step that does not happen. */
+function mergeDriver(dir) {
+  const r = installMergeDriver(dir);
+  let waiting = [];
+  try { waiting = mergePending(dir); } catch { /* unreadable = nothing we can name */ }
+  return { ...r, waiting };
+}
+/* ⚠ ONLY WHAT NEEDS SOMEONE. A successful (re-)registration is routine and is not a line in the hook
+   form — a line that appears on a machine's first session and never again would also move the line
+   count the hook is held to (tests/process-worktree-status-checks.test.mjs). */
+const mergeDriverLines = (md) => [
+  ...(md.ok ? [] : [`⚠ merge driver を登録できなかった: ${md.why} → node scripts/merge-driver.mjs --install`]),
+  ...(md.waiting.length ? [`⚠ merge が再生成・確認を保留している: ${[...new Set(md.waiting.map((w) => w.path))].slice(0, 4).join(' / ')}${md.waiting.length > 4 ? ' …' : ''} → node scripts/merge-driver.mjs --finish`] : []),
+];
+
 /* ── STATUS ─────────────────────────────────────────────────────────────────────────────────── */
 function status(brief) {
   const master = masterDir();
@@ -418,6 +441,7 @@ function status(brief) {
      There is no «next free number» to offer any more: a slug is chosen from the work, and `new`
      refuses one that is already held. */
   const mine = (branch.match(/^feat\/(.+)$/) || [])[1] || null;
+  const md = mergeDriver(here);
 
   if (brief) {
     console.log(`IntMap · branch ${branch}${isMaster ? ' (原本＝main の置き場)' : ''} · 未コミット ${dirty.length}件`
@@ -439,6 +463,7 @@ function status(brief) {
        every session, so a line that is always there is a line nobody reads. */
     const pw = pendingWork(master);
     if (pw.items.length) console.log(`⚠ 前回までの未了: ${pw.items.join(' / ')}  → node scripts/worktree.mjs status`);
+    for (const l of mergeDriverLines(md)) console.log(l);
     console.log('実行戦略は .agents/rules/execution-strategy.md ／ 手順は .agents/skills/intmap-round/。');
     return;
   }
@@ -463,6 +488,8 @@ function status(brief) {
   if (dirty.length > 12) console.log(`                       … ほか ${dirty.length - 12}件`);
   console.log(`  最新の記録          ${latest}`);
   if (mine) console.log(`  このセッション      ${mine}（branch feat/${mine}。PR を作ったらその番号が識別子）`);
+  console.log(`  merge driver        ${md.ok ? '登録済み（生成物・台帳・件数の衝突を解く。scripts/merge-driver.mjs）' : '未登録（' + md.why + '）'}`
+    + (md.waiting.length ? ` · 保留 ${md.waiting.length} 件 → node scripts/merge-driver.mjs --finish` : ''));
   const nf = nightly();
   console.log(`  deep tier (nightly) ${nf ? `${nf.what}${nf.ok ? '' : `   → gh run view ${nf.id} --log-failed`}   (${nf.day}${nf.age})` : '不明（gh が無い・未ログイン・オフラインのいずれか）'}`);
   const dh = deepHistory();
@@ -579,6 +606,10 @@ async function makeNew(slug) {
   }
   console.log(`  ✓ branch    ${branch}  (origin/main から)`);
   console.log(`  ✓ worktree  ${dir}`);
+  /* (generated-file-merge-driver) the config is the clone's, so after the first time this is a no-op */
+  const md = installMergeDriver(dir);
+  console.log(md.ok ? `  ✓ merge     生成物の merge driver ${md.changed.length ? 'を登録した' : 'は登録済み'}（scripts/merge-driver.mjs）`
+    : `  ⚠ merge driver を登録できなかった: ${md.why} → node scripts/merge-driver.mjs --install`);
 
   /* node_modules is a junction to the master's, not a copy: #R278 spent a round on a worktree that
      had none, and `npm ci` per worktree is ~31,000 files that package-lock.json can regenerate. */
