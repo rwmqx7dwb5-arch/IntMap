@@ -1,0 +1,97 @@
+---
+title: スマホの画面を作り直した——地図を覆うのはシート 1 枚と操作グループ 1 つだけ。Layers・Tools・地図・Chronos・設定はシートの中の画面、検索欄は場所と Atlas の入口を兼ね、凡例はチップから開く。覆う割合 45.3 % → 13.9 %、44 px 未満のタップ目標 14/21 → 1/9
+date: 2026-10-02
+---
+
+〈依頼〉「スマホのパフォーマンスと UI を改善して。任せる。」→ 追補「**修正じゃなくて作り変えを要求してる。そこをわかれ。意図を理解しろ。**」「地名が切れるのは別に問題ない」。⇒ 個々の重なりの手当てではなく、**スマホの画面の設計そのもの**を作り直す。既存の機能は 1 つも消さない（到達できる場所が変わるのはよい）。デスクトップの見た目は変えない。
+
+## 0. 測った（前）
+
+**本番（390×844・初回訪問・コーディネータの実測 2026-10-02）**: 常設 UI が地図の 45.2 % を覆う（シート peek 17 %・**既定で開いている凡例カード 2 枚 21 %**・右の丸ボタン列・座標バー・時計・Map サムネイル・検索）。凡例カードが**検索結果と Chronos の操作部品の上に重なって操作を塞いでいた**。シートは 3 段（peek 144／half 363／full 726 px）で grip（358×48）でしか掴めず、地図だけの段が無く、Atlas は開くと full 固定（地図の 87.7 % を覆う）。44 px 未満のタップ目標は既定 15/22・Chronos 34/40。検索は Enter まで候補が出ない。
+
+**ローカルで同じ定義を作って測り直した**（`origin/main` 3cbfa244 のビルド、iPhone 相当 390×844・isMobile・hasTouch・初回訪問）。定義は 2 つ:
+- **覆う割合** = 画面を 2 px 格子に切り、`#map` の外で**描いている**要素（背景色・背景画像・backdrop-filter・テキスト・canvas/img/入力欄）の矩形の和集合が占める割合。地図自身の canvas（`#space-canvas` 等）は数えない。
+- **小さいタップ目標** = 見えていて `elementFromPoint` が自分を返す `button, a[href], input, select, textarea, summary, [role=button], [role=tab]` のうち、短辺（`::after` の当たり判定拡大を含む）が 44 px 未満のもの。
+
+| 状態 | 覆う割合 | 小さい目標 / 全目標 |
+|---|---:|---:|
+| 起動直後（前） | **45.3 %** | **14 / 21** |
+| Chronos を開いた（前） | 75.4 % | 31 / 37 |
+
+前の 14 個: Log in・Feedback・Settings（34 px）、4 つのタブ（36 px）、凡例の – ／ ×（27 px）×4、Köppen の期間 select（24 px）、透明度スライダー（**4 px**）、出典リンク（24 px）。Chronos を開くと年スライダー 4 px・Loop 13 px・速度 22 px・タブ 22 px が加わる。
+
+**原因は「部品が多い」ではなく「置き場の設計が無い」**: 四隅に 9 種類の部品が独立に置かれ、凡例・Chronos・検索結果が同じ z（1100）で、後から足された凡例が勝っていた。凡例は携帯では最小化で始まる規則があったのに、tiler が置き場の余白に応じて開いたまま並べていた。
+
+## 1. 作ったもの——iOS の地図アプリの作法
+
+**シート 1 枚（`js/mobile-sheet.js` 新規・`js/mobile-ui.js`）**
+- 段は `hidden`（グリップだけ）／`min`（検索欄の行・home indicator 込み）／`half`（画面の 45 %）／`full` の 4 つ。旧名 `peek`→`min`・`mini`→`hidden` は `window.__setDetent` の別名（`js/community.js`・`js/monitors.js` が呼ぶ）。
+- **頭全体が取っ手**: グリップ・検索欄の行・タイトル行・タブ行のどこでも、縦に 7 px 動けばドラッグ、動かなければ普通のタップ（ドラッグ後の click は飲み込む）。グリップのタップで 1 段上下。
+- 離すと**指の速度を初速にしたばね**（ζ 0.86・応答 0.42 s・停止時の行き過ぎ ≤ 1.5 %）。同じ曲線を CSS `linear()` と JS easing の両方で返すので、シートと地図の padding（`easeTo`）は同じ曲線で止まる（#R139/#R140 の「同期がまだよわい」の形を構造で塞ぐ）。フリックはその向きに 1 段、ゆっくり離せば最寄り。`full` より上はゴムのように 1/3 だけ付いてくる。`prefers-reduced-motion` ではばねを使わない。
+- **中身は画面の下端で終わる**: 段に止まるたびに隠れている分を `--sheet-hide` として `padding-bottom` に書く（1 回だけ・毎フレームではない）。どのフィードも最後まで読め、**Atlas は `half` で開いても入力欄が画面内**（#R112 が full に固定した理由が消えた）。
+- **画面はシートの中で遷移する**: `makeScreens().adopt(el, {isOpen, close})` は、Layers（`#mo-sheet`）・Tools（`#tools-sheet`）・地図（`#bm-pop`）・Chronos（`#news-timeline`）・設定（`#settings-modal`）を**持ち主が開いていると言っている間だけ** `#m-screens` に貸し、閉じたら元の位置へ返す。判定は持ち主が既に書いているクラス／インライン display を読む MutationObserver（属性だけ・その要素だけ）。作り直さないので id・ハンドラ・`[data-proxy]`・ダイアログ登録・Atlas の経路は全部同じ物。スクリム（全画面の別オーバーレイ）はもう出さない。
+- Chronos はシートの中にいる間、地図をパン・ピンチ・タップしても閉じない（`js/news-timeline.js` autoClose——年を動かしながら地図を見るのが目的なので）。
+
+**入口を 1 つ（`js/search-geocode.js`・`js/app-body.js` の `wireMapSearch` に 1 行）**
+- `#map-search` はシートの頭の欄になった（常に欄。丸を開く手順が無い）。打つたびに `doGeocode({suggest:true})` が**端末内の候補**（国・首都・地名辞書——`localFuzzyPlaces`）を、全検索と**同じ行・同じ `gotoPlace`** で出す（ネットワークなし）。最後の行が「Atlas に訊く」で、押すと Atlas タブを開いて同じ文を `IntMapConsole.run` に渡す。Enter は今までの全検索。
+- 古い検索の応答は世代で捨てる（Enter の 3 つの geocoder が、読者が打ち進めた後の欄に行を書き込めた）。
+- 欄にフォーカスすると `full`、空で離れると元の段へ。placeholder は携帯では「場所を検索・Atlas に質問」。
+
+**操作グループ（index.html `.m-ctl-group`）**: レイヤー・地図・ツール・現在地を縦につないだガラス 1 本。コンパスは地図が回転・傾斜しているときだけ下に出る（以前は常時）。Map サムネイル（`#bm-square`）は消え、**「地図」画面**（`js/basemap-switch.js`）になった——ベースマップは**地図／衛星の 2 面の絵**（#R231 が描いた絵をそのまま、同梱データから・ネットワークなし・**開いている間だけ描く**）、投影（地球儀／平面／3D）、**基本表示**（`IntMapBaseDisplay.items()`・basic-display-not-layers #900 の API。レイヤーとは呼ばない）、**中心点の読み取り**のスイッチ。
+
+**凡例トレイ**: 凡例は地図の上に自動で開かない。左上の**凡例チップ**（有効な凡例の数つき。0 なら無い）を押すと開く。凡例は `js/data-layers.js` の tiler が従来どおり並べ、トレイが閉じている間は `visibility:hidden`——`display` は持ち主のスイッチ（オン／オフ）のままなので、配置・計測・ドック・Atlas は何も変わらない。対象は「地図コンテナ直下で class か id が legend を名乗るもの」で、`js/window-manager.js` の `DOCK_SEL` と同じ事実（検査が両者の一致を見る）。
+
+**重なり順の表**: `css/intmap.css` 先頭の `:root` に 3 行——`--z-m-legend` 1040 ＜ `--z-m-chrome` 1150（グループ・チップ・コンパス）＜ `--z-m-sheet` 1200（検索・Chronos・全画面）。凡例が操作部品を覆える番号が存在しない。`tests/z-layers-baseline.json` は `--update` 済み（`.sidebar` 1100→1200、チップ・グループ・凡例の行）。
+
+**座標の読み取りは常設しない**: 十字線と読み取りは計測ツールの間と、地図画面の「中心点の読み取り」を入れている間だけ（`body.m-xhair`・`localStorage intmap_m_xhair`）。出る場所は地図の上のバーではなく検索欄の下の 1 行。出ていない間は `moveend` ごとの DEM 参照とレンダラへの問い合わせ（`updateLayerReadout`）をしない——**性能の改善はここ**。
+
+**44 px**: タブ・Log in・Feedback・Settings・グループ・時計・検索の虫眼鏡・凡例の –／×（指には 44、目には従来の 28 px の箱——content-box の塗り）・Chronos のタブと速度・日付欄・Loop・年スライダー（指には 44 px の行、目には 6 px の溝と 28 px のつまみ）。safe-area は上下左右。
+
+**ついでに見つけた既存の欠陥（直した）**: 携帯の出典表記（`#map-credit`）は `#map-container` の**外**にあるので、`#map-container` に書かれる `--sheet-cover` が届かず、`:root` の `--peek-h:196px` を読んで**シートが何段にあっても 196 px の高さに浮いていた**（#R485 で `.map-column` が挟まって以来）。`--sheet-cover` を `.map-column` にも書く。
+
+## 2. 測った（後）
+
+同じ計器・同じ定義（このブランチのビルド）:
+
+| 状態 | 覆う割合 | 小さい目標 / 全目標 |
+|---|---:|---:|
+| 起動直後 | 45.3 % → **13.9 %** | 14 / 21 → **1 / 9** |
+| Chronos を開いた | 75.4 % → **49.7 %**（シートの半分の段） | 31 / 37 → **1 / 17** |
+
+残る 1 つは出典表記のリンク（24 px・ライセンス上必須の文字で、`ui-a11y-polish` ② が 24 px の床を測る）。⚠ 測定は初回訪問で Köppen と海底ケーブルが既定オン（main の状態）。#900 で両方が既定オフになると、起動時のチップも出ない。
+
+**主要操作のタップ数**
+
+| 操作 | 前 | 後 |
+|---|---|---|
+| 場所を検索して飛ぶ | 3 タップ＋入力（丸を開く→入力→Enter→結果） | **2 タップ＋入力**（欄→入力で候補→候補） |
+| Atlas に質問する | Atlas タブ→入力欄→入力→送信（3）＋シートが全画面 | **2 タップ＋入力**（欄→入力→「Atlas に訊く」）・シートは半分 |
+| 衛星にする | 2（サムネイル→衛星） | 2（地図→衛星の絵） |
+| 凡例を見る | 0（常に地図を覆う） | 1（チップ） |
+| 地図だけにする | できない（最低 144 px） | 下へ 2 回払う（`hidden`） |
+
+**シートの操作**（CDP の touch で実測）: min から上へ払う→half、half から下へ→min、min から下へ→hidden、hidden から上へ→min。`--sheet-dur` は払う速さで 0.59 s 前後。
+
+**デスクトップ**（1280×800、地図の canvas を隠して比較）: 見えている要素数は 2143 → 2143。⚠ ただしタブの文字の大きさが違って写った（前 10 px・後 14 px）。原因はこの変更ではなく**既存の競合**: `js/session-tabs.js` の `_fitTabFont` は `document.fonts.ready` の次のフレームで 1 回だけ測り、そのときサイドバーが確定前だと縮みすぎる。どちらの木でも、読み込み後に `_fitTabFont()` を呼び直すと 14 px になる（実測）。作業範囲外なので直していない（§5）。
+
+## 3. 計器と門
+
+- `tests/mobile-shell-checks.test.mjs`（新規・node）: 段の高さと離したときの行き先／ばね（初速＝指の速度・1 で止まる・CSS と JS が同じ曲線・行き過ぎ < 2 %）／画面の貸し出しと返却（元の位置へ・幅を越えたら全部返す）／凡例チップの数え方／重なり順の 3 行／凡例の集合がドックと同じ。
+- `tests/ui-a11y-polish.spec.js` ③（追記・新しい spec ファイルは作っていない）: 390×844 で覆う割合 < 20 %・44 px 未満が出典以外に 0・凡例はチップまで描かれない・凡例 ＜ グループ ＜ シートの z・Chronos がシートの画面で年スライダーが 44 px・候補が Enter 無しで出て最後が「Atlas に訊く」。
+- `tests/form-control-names.spec.js` ②: 凡例 3 枚を点けた後、**チップから開いてから**四隅と中心を測る（チップの数も確かめる）。
+- `tests/shell-map-input-checks.test.mjs` ②: 読み取りを入れた状態で従来の 3 本、**切った状態で 60 フレームが読み取りを 1 度も書かず container を測らない**ことを追加。
+- 期待値を変えた検査: `hazard-other-dock-window-checks`（JS 前の既定位置 196→96 px——`--sheet-h` から測る、という主張は同じ）、`shell-panels-tools-checks`（capture mode が隠すものに `.bm-square` の代わりに `.m-legend-chip`）。
+- 台帳: `tests/z-layers-baseline.json`・`tests/keyboard-reach`（スクリムの click 受け手が 1 減）・`tests/i18n-coverage-floor.json`（de/es/ru の位置引数行 7657→7655: 消えた四角の `L('Satellite',…)` と 2 つ目の `L('Base map',…)` の**呼び出し箇所**。文字列そのものは `viewSat` キーと残る呼び出しに在る）・`tests/global-surface-baseline.json`（新しい読み: `IntMapConsole`／`IntMapLazy` は「Atlas に訊く」が遅延読込の console を呼ぶため、`IntMapRuntime` は凡例チップの数え直しを 1 フレームに合流させるため、`IntMapBaseDisplay` は基本表示の一覧）。
+- 段 1: static・engine・types・i18n・surface・docs・archfiles・perf・testbudget。段 2: `ui-a11y-polish`・`form-control-names`・`r668`・smoke の R766 ③（携帯でツール帯の扉が届く）・`r347-navigation` ⑧・`r435`・`map-a11y-structure`。
+
+## 4. アイコン
+
+時計・地図（折り地図）・凡例の 3 つは線画の SVG をインラインで書いた（stroke 1.7・round cap、既存のレイヤー／ツールのアイコンと同じ線）。**別作業 icon-system が SVG の体系（`js/icons.js` 等）を作ったら、そちらの名前に寄せる。** ツール画面のタイル（🌐📏✏️…）と「⛰️ 3D」の絵文字は既存のもので、今回は触っていない（同じく icon-system の対象）。
+
+## 5. 残り・観察
+
+- **横向きの携帯（844×390）はデスクトップ配置のまま**（`docs/architecture/09-mobile.md` §9.2——幅で決めるレイアウトの判断）。今回のシートは縦向きの幅で効く。横向きを電話の配置にするかは別の判断。
+- デスクトップのタブ文字の大きさの競合（§2）。`_fitTabFont` をサイドバーの ResizeObserver で再実行すれば決まるが、`js/session-tabs.js` は今回の範囲外。
+- `#m-scrim` は誰も出さなくなった（要素と CSS は残した——`tests/shell-css-surface-checks` が #R230 の性能の主張をその規則に付けている）。消すなら検査ごと。
+- 設定はシートの画面として開くが、その中身（8 セクション）は従来どおり。
+- `role="dialog" aria-modal="true"` の Layers / Tools は、シートの中では地図が操作できるので厳密には modal ではない。属性はダイアログ登録（Escape・Tab の閉じ込め）と対で、今回は変えていない。

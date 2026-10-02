@@ -100,7 +100,8 @@ test('R231 screenshot: both layers are drawn into the container box, and capture
   assert.match(read('js/atlas-view-capture.js'), /const CAPTURE_CLASS = 'capture-mode';/, 'one spelling of the class, in one place');
   /* the phone's own controls are controls */
   const css = read('css/intmap.css');
-  for (const sel of ['.bm-square', '.bm-pop', '.m-scrim']) {
+  /* (mobile-shell) the base-map square is gone (its choices are the Map screen, #bm-pop); the legend chip is new */
+  for (const sel of ['.m-legend-chip', '.bm-pop', '.m-scrim']) {
     assert.ok(css.includes('body.capture-mode ' + sel), `capture mode hides ${sel}`);
   }
 });

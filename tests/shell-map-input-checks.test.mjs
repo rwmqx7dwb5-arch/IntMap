@@ -282,7 +282,10 @@ test('R498 ① the press still fires at rest, and a 12 px move still cancels it'
 /* ══════════════════════════════════════════════════════════════════════════════════════════════
    ② THE CROSSHAIR TASK, RUN
    ══════════════════════════════════════════════════════════════════════════════════════════════ */
-function crosshairRig({ mobile = true } = {}) {
+/* (mobile-shell) the readout is drawn when it is ASKED FOR — a measuring tool, or the reader's «Centre point readout»
+   switch (js/mobile-sheet.js announces it with `intmap-m-xhair`). The rig turns it on the way the switch does,
+   unless a test asks for it off. */
+function crosshairRig({ mobile = true, xhair = true } = {}) {
   const counts = { rect: 0, style: 0, display: 0, readout: 0 };
   const el = (id) => {
     const e = {
@@ -315,7 +318,8 @@ function crosshairRig({ mobile = true } = {}) {
   g.IntMapGeoEngine = { hasRenderer: () => true, coords: { unproject: () => ({ lng: 5, lat: 6 }) }, events: { on() {} } };
   g.IntMapRuntime = { onCamera: (key, fn, opts) => tasks.push({ key, fn, phase: (opts && opts.phase) || 'write' }) };
   g.IntMapLang = { t: (l, en) => en };
-  g.addEventListener = () => {};
+  const heard = {};
+  g.addEventListener = (type, fn) => { (heard[type] = heard[type] || []).push(fn); };
   g.matchMedia = () => ({ matches: mobile });
   installDevice(g);   /* (ui-layer-owner) js/ asks window.IntMapDevice now — the real owner, wired to this fake */
   const HOST = {
@@ -329,6 +333,7 @@ function crosshairRig({ mobile = true } = {}) {
     showContextMenu: () => {},
   };
   mobileInput(g, HOST).crosshair();
+  if (xhair) for (const fn of heard['intmap-m-xhair'] || []) fn({ detail: { on: true } });
 
   const frame = () => {
     for (const t of tasks) if (t.phase === 'read') t.fn();
@@ -360,6 +365,14 @@ test('R498 ② a camera frame costs ZERO forced layout reads once the box is kno
     `sixty camera frames asked getComputedStyle ${rig.counts.style - after1.style} extra times — `
     + 'a style recalculation per frame is back on the phone');
   assert.ok(rig.counts.readout >= 61, 'the readout stopped being written — the work was dropped, not moved');
+});
+
+test('(mobile-shell) with the readout off, a camera frame samples nothing and writes no readout', () => {
+  const rig = crosshairRig({ xhair: false });
+  for (let i = 0; i < 60; i++) rig.frame();
+  assert.equal(rig.counts.readout, 0, 'the readout was written while nobody asked for it — the DEM and feature queries are back on every frame');
+  assert.ok(rig.counts.rect <= 1 && rig.counts.style === 0, `sixty frames measured the container ${rig.counts.rect} / ${rig.counts.style} times for a readout that is not shown`);
+  assert.notEqual(rig.mc.children.find((c) => c.id === 'm-crosshair')._style.display, 'block', 'the crosshair is drawn over the map with nothing asking for it');
 });
 
 test('R498 ② an unchanged display value is not re-assigned', () => {

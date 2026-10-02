@@ -128,7 +128,9 @@ test('R240 ④ a docked panel expands, arrives open, and runs edge to edge on a 
   assert.match(css, /#docked-feed::-webkit-scrollbar\{ width:10px/, 'and the column still has a rail');
   assert.match(css, /--sheet-h:86dvh/, 'the sheet is shorter, and its height has one owner');
   assert.match(css, /height:var\(--sheet-h\)/);
-  assert.match(css, /translateY\(var\(--sheet-ty,calc\(var\(--sheet-h\) - 196px\)\)\)/, 'the default detent follows it');
+  /* (mobile-shell) the pre-JS fallback is the LOWEST reading stop, which is the search row now (96 px), not the
+     old 196 px peek — what is pinned is that it is measured from --sheet-h, the one owner of the height */
+  assert.match(css, /translateY\(var\(--sheet-ty,calc\(var\(--sheet-h\) - 96px\)\)\)/, 'the default detent follows it');
 
   const dl = code(R('js/data-layers.js'));
   assert.match(dl, /const inDock=\(window\.imDockPanels==='on'\)/, 'the phone auto-collapse knows about the dock');

@@ -156,6 +156,7 @@ IntMapLang.define('jp', { ui: {
       mTitleMap:"地図",
       mTitleTools:"ツール",
       mDone:"完了",
+      mLayers:"レイヤー", mLegend:"凡例",   /* (mobile-shell) */
       lyrRelief:"標高（カラー段彩）",
       lyrSubcables:"海底ケーブル",
       lyrMilSpend:"国防費",

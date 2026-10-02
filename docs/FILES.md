@@ -564,7 +564,8 @@ tile-warm.js                      カメラがこれから必要とするタイ�
 wheel-zoom.js                     ホイールと、地図がどれだけ速く応えるか
 view-controls.js                  傾きの上限と、視点高度の読み出し
 map-projection.js                 投影——地球儀か平面か。平面地図は必ず巻き、それが再確認され続ける
-basemap-switch.js                 携帯のベースマップ切替 window.IntMapBasemapSwitch
+basemap-switch.js                 携帯の「地図」画面 window.IntMapBasemapSwitch——ベースマップ（2 面の絵）・投影・
+                                  基本表示（IntMapBaseDisplay.items() をスイッチで）・中心点の読み取り
 opening-view.js                   アプリが開く視点——黒い地球ではなく、光の当たった地球
 theme-sky.js                      テーマと空——アプリの色と、太陽の位置
 sky-model.js                      空自身の色（Rayleigh ＋ Mie を march する）
@@ -1077,7 +1078,11 @@ aviation-model.js                 provider 正規化・出典・タイル格子�
 ### 3.10 `js/` — シェル・アカウント・その他
 
 ```
-mobile-ui.js                      モバイル UI とレスポンシブのシェル
+mobile-ui.js                      モバイル UI とレスポンシブのシェル——シートの頭（検索欄・Chronos）・操作グループ・
+                                  画面の貸し出し・凡例チップを頁へ配線する
+mobile-sheet.js                   **携帯のシート 1 枚の部品**——4 つの段（hidden/min/half/full）と離したときの行き先・
+                                  指の速度で始まるばね（CSS linear() と JS easing は同じ曲線）・画面の貸し出し
+                                  （既存の要素を開いている間だけシートに貸す）・凡例トレイ・中心点読み取りの設定
 installable-app.js                **インストールされたアプリとしての頁側**——設定の「アプリとして追加」
                                   （Chromium の beforeinstallprompt を保持して押されたら出す／iOS は共有シートの
                                   手順文／どちらも無ければ出さない）、オフライン通知（Service Worker に
