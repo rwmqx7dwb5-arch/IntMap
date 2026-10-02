@@ -76,7 +76,7 @@ export const CLASSROOM_CSS = [
   '#im-tour .imt-nav{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:0.72em;}',
   '#im-tour .imt-dots{flex:1 1 auto;display:flex;gap:7px;align-items:center;justify-content:center;flex-wrap:wrap;}',
   '#im-tour .imt-dot{width:11px;height:11px;padding:0;border:none;border-radius:50%;background:rgba(128,128,128,0.35);cursor:pointer;}',
-  '#im-tour .imt-dot[aria-current="step"]{background:var(--primary-color);transform:scale(1.25);}',
+  '#im-tour .imt-dot[aria-current="step"]{background:var(--primary-fill);transform:scale(1.25);}',
   '#im-tour button.imt-b{min-height:44px;padding:0 18px;border-radius:12px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font:inherit;font-weight:600;cursor:pointer;}',
   '#im-tour button.imt-b.imt-next{background:var(--primary-fill);border-color:transparent;color:#fff;}',
   '#im-tour button.imt-b:disabled{opacity:0.4;cursor:default;}',
