@@ -66,3 +66,7 @@ importScripts に渡す新しいリテラルは全部赤 ③ `om://`・`imapsat:
 ④ wss の行を台帳から消すと赤 ⑤ build が配る全 `*.html` が母集合にあり、入れ子のページに足した
 `<script src>` は赤 ⑥ §2 が英日で aisstream.io のキーを述べる。
 変異: scheme を `https?` に戻すと ① ② が赤になることを確かめた。
+
+## main の eager.modules の天井を 301 にした理由（この変更の分ではない）
+
+main で `check:perf` が赤だった（実測 301 > 天井 300）。#886（`js/map-state.js`）と #887（`js/inline-actions.js`）はそれぞれ 299 → 300 と上げたが、両方が着地すると実際は 301 になる。天井の行は merge driver が main 側（測った値）を取るので、**件数の行が 2 本の PR の加算を合算しない**。この PR で 301 にした。数える行（modules・requests）を合算にするかは perf-measure-parity の作業で扱う。
