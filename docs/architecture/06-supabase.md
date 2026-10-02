@@ -298,7 +298,7 @@
   持たない**（表に列が無い）。守りは POST 限定・本文上限 16 KiB・Origin（`client-errors` と同じ許可）・共有 token bucket 2 つ
   （呼び手ごと＝アドレスの HMAC／プロジェクト全体の 1 日。どちらも閉じて失敗）・**metric ごと 1 日の dimension 数の上限**
   （`record_usage_counts` の中で、新しい値は拒み既知の値は数える）。1 日の上限は `USAGE_COUNT_GLOBAL_PER_DAY`。
-  保持は **400 日**（pg_cron `usage-counts-purge`）。読むのは `admin.html` の **Usage** タブ（`usage_counts_summary` は
+  保持は **400 日**（pg_cron `usage-counts-purge`）。読むのは `admin.html` の **Usage** と **Growth** タブ（Growth は同じ集計をマーケティングの問い——入口・流入元・utm・Atlas の回答の型——で読み、utm 付きの発信リンクも作る。`usage_counts_summary` は
   SECURITY INVOKER なので admin の SELECT policy がそのまま効く）。詳細は [`docs/MONITORING.md`](../MONITORING.md) §2b。
 
 - **`reader-reports`** … **フィードバックとバグ報告の書き込み先**（`--no-verify-jwt`・秘密なし）。`js/feedback.js` の

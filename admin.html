@@ -17,8 +17,13 @@
          operator picked off disk. It calls js/admin-literal.js's PARSER now, which cannot invoke anything, so the whole
          page no longer needs the capability. A CSP that grants eval to a page with no eval in it is
          a grant nobody is watching. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bi5UzGl+THpcxTbS3pEddnFrkN/EJ54B9qeYLMiklJ0=' 'sha256-3OHKZ+ViBKyiUEP3Z8TsVNvIaOif1akJt0G8TYhecw0=' 'sha256-GKsIv2P2dtcu5TDwAEVdVl9HCs3zjfr/nUC8pbr/MJo='; connect-src 'self' https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bi5UzGl+THpcxTbS3pEddnFrkN/EJ54B9qeYLMiklJ0=' 'sha256-3OHKZ+ViBKyiUEP3Z8TsVNvIaOif1akJt0G8TYhecw0=' 'sha256-8yFC1CS0oyFYs4s+QIzrgt2jxtvGodtxYTRY6bNA0no='; connect-src 'self' https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- (growth-loop) the site's address, for the «Growth» tab's campaign links. NOT written here: the build fills the
+     token in every copied page (scripts/site-url.mjs fillSiteToken — the address has one owner,
+     supabase/functions/_shared/site-origin.js). It sits in an attribute, not in a script, so filling it never
+     changes the text a script-src hash names. -->
+<meta name="intmap-site" content="__INTMAP_SITE_URL__">
 <title>IntMap · Admin Console</title>
 <script>document.documentElement.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');</script>
 <style>
@@ -67,6 +72,19 @@
   .bar h2{ font-size:16px; margin:0; }
   .count{ font-size:12px; color:var(--muted); }
   .hide{ display:none !important; }
+  /* (growth-loop) the «Growth» tab */
+  .g-kpis{ display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:12px; margin:0 0 16px; }
+  .g-kpi{ background:var(--in); border-radius:12px; padding:12px 14px; }
+  .g-kpi .v{ font-size:22px; font-weight:700; letter-spacing:-.3px; font-variant-numeric:tabular-nums; }
+  .g-kpi .k{ font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+  .g-kpi .d{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .g-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; }
+  .g-box{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
+  .g-box h3{ margin:0 0 6px; font-size:13px; }
+  .g-bar{ height:6px; border-radius:3px; background:var(--pri); }
+  .g-num{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .g-link{ display:flex; gap:8px; align-items:center; }
+  .g-link input{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; }
 </style>
 </head>
 <body>
@@ -104,6 +122,7 @@
       <button class="tab" data-tab="nev">News Events</button>
       <button class="tab" data-tab="err">Errors</button>
       <button class="tab" data-tab="use">Usage</button>
+      <button class="tab" data-tab="growth">Growth</button>
     </div>
 
     <!-- GEO PINS -->
@@ -240,6 +259,55 @@
         <div style="overflow:auto;max-height:320px;"><table id="use-days-table"><thead><tr><th>Day (UTC)</th><th>Views</th><th></th></tr></thead><tbody></tbody></table></div>
         <h3 style="margin:18px 0 6px;font-size:14px;">Top values per metric</h3>
         <div id="use-top" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;"></div>
+      </div>
+    </section>
+
+    <!-- GROWTH (growth-loop · docs/MONITORING.md §2b)
+         The same anonymous counters as «Usage», read as the questions marketing asks: how many visits, through
+         which door, from where, under which campaign, and what readers then did — and a builder for the tagged
+         links whose effect this tab shows. READ-ONLY, from the same two readers «Usage» uses (the admin-only
+         SELECT on public.usage_counts and usage_counts_summary, SECURITY INVOKER) — no new path into the table.
+         ⚠ NO NUMBER HERE IS MADE UP: a metric with no row in the period says so; the previous period is shown
+         only where the 400-day retention still holds it. -->
+    <section id="tab-growth" class="hide">
+      <div class="card">
+        <div class="bar">
+          <h2>Growth <span class="count" id="g-range"></span></h2>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <label for="g-days" class="muted" style="font-size:12px;margin:0;">Period</label>
+            <select id="g-days" class="btn sec sm" style="width:auto;"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option><option value="400">400 days</option></select>
+            <button class="btn sec sm" id="g-refresh">Refresh</button>
+          </div>
+        </div>
+        <p class="muted" style="margin:0 0 14px;">
+          Anonymous daily counts (UTC) from IntMap's own counters — see «Usage» for what is and is not stored. Each
+          arrival is counted from what the page saw when the map opened: an entry door, a referring host and up to
+          three utm tags are separate counters, so the rows of one table do not add up to the visits. The change is
+          against the period of the same length just before.
+        </p>
+        <div class="g-kpis" id="g-kpis"></div>
+        <h3 style="margin:4px 0 6px;font-size:14px;">Visits and Atlas questions per day</h3>
+        <div style="overflow:auto;max-height:300px;margin-bottom:16px;"><table id="g-daily"><thead><tr><th>Day (UTC)</th><th class="g-num">Visits</th><th class="g-num">Atlas</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div class="g-grid" id="g-boxes"></div>
+      </div>
+
+      <div class="card">
+        <div class="bar"><h2>Campaign link</h2></div>
+        <p class="muted" style="margin:0 0 12px;">
+          A link to one of IntMap's pages with utm tags, counted in the tables above once a visitor opens the map with
+          it. Tags are stored lower-case, 1–40 of a–z 0–9 . _ - (anything else is not stored at all). A landing page
+          (an example, About, For teachers) does not run the counter itself: its tags are counted when the visitor
+          goes on to the map from it.
+        </p>
+        <div class="grid">
+          <div class="field" style="grid-column:1/-1;"><label for="g-dest">Destination</label><select id="g-dest"><option value="">The map</option></select></div>
+          <div class="field"><label for="g-src">utm_source</label><input id="g-src" autocomplete="off" spellcheck="false"></div>
+          <div class="field"><label for="g-med">utm_medium</label><input id="g-med" autocomplete="off" spellcheck="false"></div>
+          <div class="field" style="grid-column:1/-1;"><label for="g-camp">utm_campaign</label><input id="g-camp" autocomplete="off" spellcheck="false"></div>
+        </div>
+        <label for="g-url">Link</label>
+        <div class="g-link"><input id="g-url" readonly><button class="btn sm" id="g-copy">Copy</button></div>
+        <p class="muted" id="g-note" style="margin:8px 0 0;"></p>
       </div>
     </section>
   </div>
@@ -436,6 +504,171 @@
         '<td style="text-align:right;font-variant-numeric:tabular-nums;">'+H(r.total)+'</td></tr>').join('')+'</tbody></table></div>').join('')
         :'<div class="muted">Nothing counted in this period.</div>';
     }catch(e){ tb.innerHTML='<tr><td colspan="3" class="muted">'+H(e.message||String(e))+'</td></tr>'; }
+  }
+
+  /* ---------------- GROWTH (growth-loop) ----------------
+     Read-only, through the two readers «Usage» uses: usage_counts_summary (totals per metric and dimension;
+     SECURITY INVOKER, so the admin-only SELECT policy decides) and the table itself for the per-day series
+     (view and atlas only: at most 2 rows a day, so 400 days stay under PostgREST's 1,000-row page).
+     THE PREVIOUS PERIOD is summary(2·days) minus summary(days) — the same function asked twice, no second
+     aggregate — and only where 2·days is within the 400-day retention; beyond it the tab says so.
+     ⚠ THE METRIC AND DIMENSION NAMES BELOW ARE READ, NOT DECLARED: what may be counted is declared once in
+     supabase/functions/usage-count/shape.js, and tests/growth-loop-checks.test.mjs fails if a name read here
+     is not declared there, or if a declared entry door or answer kind has no label here.
+     Every value is a string a browser sent (validated, still untrusted), so each goes through H(). */
+  const G_ENTRY={ direct:'Direct (no referring page)', link:'Shared or saved map link', embed:'Embedded in another page',
+    showcase:'Example page (s/)', about:'About page', teachers:'For teachers page' };
+  const G_MODE={ text:'Text only', map:'Map', chart:'Chart', mixed:'Mixed (words with a map or chart)' };
+  /* the counter's tag rule — shape.js TOKEN, which this page cannot import (admin.html is copied verbatim and
+     shape.js is not among the files copied beside it); the test holds the two equal */
+  const G_TAG=/^[a-z0-9][a-z0-9._-]{0,39}$/;
+  document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
+    $('tab-growth').classList.toggle('hide',b.dataset.tab!=='growth');
+    if(b.dataset.tab==='growth'){ loadGrowth(); gLinkInit(); }
+  }));
+  $('g-refresh').onclick=()=>loadGrowth();
+  $('g-days').onchange=()=>loadGrowth();
+  function gTotals(rows){
+    const m=new Map();
+    for(const r of (rows||[])){ if(!m.has(r.metric)) m.set(r.metric,new Map()); const x=m.get(r.metric); x.set(r.dimension,(x.get(r.dimension)||0)+(Number(r.total)||0)); }
+    return m;
+  }
+  const gSum=(m,metric)=>{ const x=m&&m.get(metric); let n=0; if(x) for(const v of x.values()) n+=v; return n; };
+  const gGet=(m,metric,dim)=>{ const x=m&&m.get(metric); return x?(x.get(dim)||0):0; };
+  const gFmt=(n)=>Number(n||0).toLocaleString('en-US');
+  /* the change against the period before: null = that period is past the retention, so nothing is claimed */
+  function gDelta(now,prev){
+    if(prev==null) return 'no earlier period held';
+    if(!prev) return now?'none in the period before':'none before either';
+    const p=Math.round((now-prev)/prev*100);
+    return (p>0?'+':'')+p+'% vs '+gFmt(prev)+' before';
+  }
+  function gBox(title,rows,opts){
+    const H=(s)=>window.IntMapSafe.html(s), o=opts||{};
+    const peak=rows.reduce((a,r)=>Math.max(a,r.n),0)||1;
+    const body=rows.length?rows.map(r=>'<tr><td style="overflow-wrap:anywhere;">'+H(r.label)+(r.sub?'<div class="muted" style="font-size:11px;">'+H(r.sub)+'</div>':'')+'</td>'+
+      '<td class="g-num">'+H(gFmt(r.n))+(o.of?' <span class="muted">'+H(Math.round(r.n/o.of*100))+'%</span>':'')+'</td>'+
+      '<td style="width:30%;"><div class="g-bar" style="width:'+Math.round(r.n/peak*100)+'%;"></div></td></tr>').join('')
+      :'<tr><td class="muted" colspan="3">Nothing counted in this period.</td></tr>';
+    return '<div class="g-box"><h3>'+H(title)+'</h3><table><tbody>'+body+'</tbody></table>'+(o.foot?'<p class="muted" style="margin:6px 0 0;font-size:11.5px;">'+H(o.foot)+'</p>':'')+'</div>';
+  }
+  /* the top values of an open metric, with the period-before figure beside each */
+  function gTop(cur,prev,metric,limit,skip){
+    const x=cur.get(metric); if(!x) return [];
+    return Array.from(x.entries()).filter(([d])=>!(skip&&skip.includes(d))).sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?-1:1)).slice(0,limit)
+      .map(([d,n])=>({ label:d===''?'(count)':d, n, sub:prev?gDelta(n,gGet(prev,metric,d)):'' }));
+  }
+  async function loadGrowth(){
+    const H=(s)=>window.IntMapSafe.html(s);
+    const days=Math.max(1,Math.min(400,parseInt($('g-days').value,10)||30));
+    const hasPrev=days*2<=400;
+    const tb=$('g-daily').querySelector('tbody'), kp=$('g-kpis'), bx=$('g-boxes');
+    tb.innerHTML='<tr><td colspan="4" class="muted">Loading…</td></tr>'; kp.innerHTML=''; bx.innerHTML='';
+    try{
+      const since=new Date(Date.now()-days*86400000).toISOString().slice(0,10);
+      const [daily,sum,sum2]=await Promise.all([
+        sb.from('usage_counts').select('day,metric,count').in('metric',['view','atlas']).gt('day',since).order('day',{ascending:false}).limit(1000),
+        sb.rpc('usage_counts_summary',{p_days:days}),
+        hasPrev?sb.rpc('usage_counts_summary',{p_days:days*2}):Promise.resolve({data:null,error:null})
+      ]);
+      const err=daily.error||sum.error||sum2.error;
+      if(err){ tb.innerHTML='<tr><td colspan="4" class="muted">'+H(err.message)+' — is the anonymous-usage-counts migration applied?</td></tr>'; return; }
+      const cur=gTotals(sum.data);
+      /* the period before = (2·days) − (days), per metric and dimension */
+      let prev=null;
+      if(hasPrev){
+        prev=gTotals(sum2.data);
+        for(const [m,x] of cur) for(const [d,n] of x){ const p=prev.get(m); if(p) p.set(d,Math.max(0,(p.get(d)||0)-n)); }
+      }
+      $('g-range').textContent='last '+days+' days (UTC)';
+      const views=gSum(cur,'view'), qs=gSum(cur,'atlas'), tagged=gSum(cur,'utm_source');
+      const pv=prev?gSum(prev,'view'):null, pq=prev?gSum(prev,'atlas'):null, pt=prev?gSum(prev,'utm_source'):null;
+      const kpi=(k,v,d)=>'<div class="g-kpi"><div class="k">'+H(k)+'</div><div class="v">'+H(v)+'</div><div class="d">'+H(d)+'</div></div>';
+      kp.innerHTML=kpi('Visits',gFmt(views),gDelta(views,pv))+
+        kpi('Atlas questions',gFmt(qs),gDelta(qs,pq))+
+        kpi('Questions per visit',views?(qs/views).toFixed(2):'—',views?'questions ÷ visits':'no visits counted')+
+        kpi('Visits with utm_source',gFmt(tagged),gDelta(tagged,pt));
+      /* per day: visits and questions side by side */
+      const byDay=new Map();
+      for(const r of (daily.data||[])){ const e=byDay.get(r.day)||{v:0,a:0}; if(r.metric==='view') e.v+=Number(r.count)||0; else e.a+=Number(r.count)||0; byDay.set(r.day,e); }
+      const dayRows=Array.from(byDay.entries()).sort((a,b)=>(a[0]<b[0]?1:-1));
+      const peak=dayRows.reduce((m,[,e])=>Math.max(m,e.v),0)||1;
+      tb.innerHTML=dayRows.length?dayRows.map(([d,e])=>'<tr><td style="white-space:nowrap;">'+H(d)+'</td><td class="g-num">'+H(gFmt(e.v))+'</td><td class="g-num">'+H(gFmt(e.a))+'</td>'+
+        '<td style="width:55%;"><div class="g-bar" style="width:'+Math.round(e.v/peak*100)+'%;"></div></td></tr>').join('')
+        :'<tr><td colspan="4" class="muted">No visits recorded in this period.</td></tr>';
+      /* doors: «direct» is the ref counter's word for no referrer; the rest are entry's dimensions, plus any
+         the table holds that this page has no label for (shown by their stored name rather than dropped) */
+      const doorRows=[{k:'direct',n:gGet(cur,'ref','direct'),p:prev?gGet(prev,'ref','direct'):null}];
+      const entryDims=new Set(Object.keys(G_ENTRY).filter(k=>k!=='direct'));
+      const ex=cur.get('entry'); if(ex) for(const d of ex.keys()) entryDims.add(d);
+      for(const d of entryDims) doorRows.push({k:d,n:gGet(cur,'entry',d),p:prev?gGet(prev,'entry',d):null});
+      const doors=doorRows.filter(r=>r.n>0).sort((a,b)=>b.n-a.n).map(r=>({label:G_ENTRY[r.k]||r.k,n:r.n,sub:prev?gDelta(r.n,r.p):''}));
+      /* Atlas answers by the kind Atlas declared (atlas_mode), as a share of the answers counted */
+      const answers=gSum(cur,'atlas_mode');
+      const modeDims=new Set(Object.keys(G_MODE)); const mx=cur.get('atlas_mode'); if(mx) for(const d of mx.keys()) modeDims.add(d);
+      const modes=Array.from(modeDims).map(d=>({label:G_MODE[d]||d,n:gGet(cur,'atlas_mode',d),sub:prev?gDelta(gGet(cur,'atlas_mode',d),gGet(prev,'atlas_mode',d)):''})).filter(r=>r.n>0).sort((a,b)=>b.n-a.n);
+      bx.innerHTML=
+        gBox('Entry doors',doors,{of:views||0,foot:'Share of visits. A landing page or a map link is counted only on a fresh navigation; a referring host is counted separately below.'})+
+        gBox('Referring hosts',gTop(cur,prev,'ref',15,['direct']),{of:views||0,foot:'Host names only. «other» is a referrer that is not a public host name.'})+
+        gBox('utm_source',gTop(cur,prev,'utm_source',15),{of:views||0})+
+        gBox('utm_medium',gTop(cur,prev,'utm_medium',15),{of:views||0})+
+        gBox('utm_campaign',gTop(cur,prev,'utm_campaign',15),{of:views||0})+
+        gBox('Features used',gTop(cur,prev,'feature',15),{of:views||0,foot:'Page loads in which the feature was used.'})+
+        gBox('Layers switched on',gTop(cur,prev,'layer',20),{of:views||0,foot:'Page loads in which the reader switched the layer on.'})+
+        gBox('Atlas answers by kind',modes,{of:answers||0,foot:gFmt(qs)+' questions, '+gFmt(answers)+' answers with a declared kind. The difference is turns cancelled, failed, answered with a question back, or asked before this kind was counted.'});
+    }catch(e){ tb.innerHTML='<tr><td colspan="4" class="muted">'+H(e.message||String(e))+'</td></tr>'; }
+  }
+
+  /* ---------------- GROWTH · campaign link (growth-loop) ----------------
+     THE ADDRESS IS THE SITE'S ONE ADDRESS, the <meta name="intmap-site"> the build fills (scripts/site-url.mjs).
+     THE DESTINATIONS ARE DISCOVERED, NOT LISTED: the pages are the ones sitemap.xml names (scripts/landing.mjs
+     writes it from the same declarations the pages are made from), read when the tab first opens — a new
+     example appears here the day it is published. The map itself is always offered. */
+  let gLinkReady=false;
+  function gSite(){
+    const m=document.querySelector('meta[name="intmap-site"]');
+    const raw=m?String(m.getAttribute('content')||''):'';
+    const built=/^https:\/\//.test(raw);
+    return { raw, built, base:built?raw.replace(/\/?$/,'/'):new URL('./',location.href).href };
+  }
+  async function gLinkInit(){
+    if(gLinkReady) return;
+    gLinkReady=true;
+    ['g-src','g-med','g-camp'].forEach(id=>$(id).addEventListener('input',gLinkBuild));
+    $('g-dest').addEventListener('change',gLinkBuild);
+    $('g-copy').onclick=gCopy;
+    gLinkBuild();
+    try{
+      const r=await fetch('./sitemap.xml',{cache:'no-store'});
+      if(!r.ok) return;
+      const doc=new DOMParser().parseFromString(await r.text(),'application/xml');
+      const site=gSite(), sel=$('g-dest');
+      for(const l of Array.from(doc.getElementsByTagNameNS('*','loc'))){
+        const loc=String(l.textContent||'').trim();
+        if(!site.raw||!loc.startsWith(site.raw)) continue;   /* the sitemap and this page carry the same address (or the same unfilled token) */
+        const rel=loc.slice(site.raw.length);
+        if(!rel||!/^[A-Za-z0-9][A-Za-z0-9/._-]*\.html$/.test(rel)) continue;
+        const o=document.createElement('option'); o.value=rel; o.textContent=rel; sel.appendChild(o);
+      }
+    }catch(_){ /* no sitemap here: the map is still offered */ }
+  }
+  function gLinkBuild(){
+    const site=gSite(), dest=$('g-dest').value||'';
+    const tags=[['utm_source','g-src'],['utm_medium','g-med'],['utm_campaign','g-camp']].map(([k,id])=>[k,String($(id).value||'').trim().toLowerCase()]);
+    const bad=tags.filter(([,v])=>v&&!G_TAG.test(v)).map(([k])=>k);
+    const notes=[];
+    if(!site.built) notes.push('This copy of the console was not built, so the address is this page\'s own — use the console on the published site for links to share.');
+    if(bad.length){ $('g-url').value=''; $('g-copy').disabled=true; notes.unshift(bad.join(', ')+': use 1–40 of a–z 0–9 . _ - (the counter would not store this tag).'); $('g-note').textContent=notes.join(' '); return; }
+    const u=new URL(dest,site.base);
+    for(const [k,v] of tags) if(v) u.searchParams.set(k,v);
+    if(!tags.some(([,v])=>v)) notes.unshift('Add at least utm_source, or visits from this link cannot be told apart from any other.');
+    if(dest) notes.push('A landing page\'s tags are counted when the visitor goes on to the map from it.');
+    $('g-url').value=u.href; $('g-copy').disabled=false; $('g-note').textContent=notes.join(' ');
+  }
+  async function gCopy(){
+    const v=$('g-url').value; if(!v) return;
+    try{ await navigator.clipboard.writeText(v); toast('Link copied','ok'); }
+    catch(_){ $('g-url').focus(); $('g-url').select(); toast('The clipboard refused — the link is selected, copy it with the keyboard','err'); }
   }
 
   /* ---------------- NEWS EVENTS (#R386 · docs/NEWS-EVENTS.md §11) ----------------

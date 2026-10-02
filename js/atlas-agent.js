@@ -1295,6 +1295,21 @@ export function makeAtlasAgent() {
       const produced = [];
       results.forEach((r) => producedBy(r).forEach((m) => { if (produced.indexOf(m) < 0) produced.push(m); }));
       endPlan(stopped);
+      /* (growth-loop) THE KIND OF ANSWER, ANNOUNCED — the one line this loop says to the outside. When the
+         turn hands the reader an answer (Atlas finished, or a ceiling closed it after the answer was
+         written — CUT_STOPS; not a cancelled turn, a transport failure, a question back to the reader or an
+         empty reply), the mode Atlas DECLARED is broadcast on the kernel bus the console already announces
+         the question on: {kernel:'atlas', phase:'answered', answerMode}. js/usage-counts.js counts it under
+         the same consent as the question (Do Not Track / GPC / the Settings switch). Nothing of the question
+         or the answer travels. ⚠ A broadcast, not a dependency: `opts.os` injects the bus (the node checks);
+         otherwise the page's one bus, IntMapOS, if it exists — absent (node, a test) it is simply not said,
+         and nothing about the turn depends on it either way. */
+      if (String(text || '').trim() && (stopped === 'answered' || CUT_STOPS[stopped]) && ANSWER_MODES.indexOf(answerMode) >= 0) {
+        try {
+          const bus = (opts.os !== undefined) ? opts.os : (typeof globalThis !== 'undefined' ? globalThis.IntMapOS : null);
+          if (bus && typeof bus.emit === 'function') bus.emit({ kernel: 'atlas', phase: 'answered', answerMode });
+        } catch (_) { /* counting never breaks the turn */ }
+      }
       return { text: String(text || ''), calls: trace.calls, results, trace, stopped, answerMode,
         produced, mapDrawn: produced.indexOf('map') >= 0, externalContentSeen: turn.externalContentSeen,
         plan: PLAN ? PLAN.snapshot() : undefined };
