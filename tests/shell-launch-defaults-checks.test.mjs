@@ -331,12 +331,12 @@ const read = (p) => (p === 'js/i18n.js'
 const bytes = (p) => fs.readFileSync(path.join(ROOT, p));
 
 /* spelling kept: browser script (js/data-layers.js, js/session-tabs.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
-test('R186 defaults: Köppen and the submarine cables are named once, and read by three places', () => {
+test('R186 defaults: the default layers are named once (none since 2026-10-02), and read by three places', () => {
   /* (#R200) the reader is js/session-tabs.js now — the session block left js/app-body.js for its own
      real ES module. Asked of that file directly rather than of a concatenation: stricter, because a
      third move would have to say so here. */
   const dl = read('js/data-layers.js'), ab = read('js/session-tabs.js');
-  assert.deepEqual(publishedList('IntMapDefaultLayers'), ['dl-climate', 'dl-subcables']);   /* (layer-manifest) one field, \`on\`, in js/layer-manifest.js */
+  assert.deepEqual(publishedList('IntMapDefaultLayers'), []);   /* (layer-manifest) one field, \`on\`, in js/layer-manifest.js */   /* (basic-display-not-layers) the reader reversed #R186 on 2026-10-02 —「どちらも規定レイヤーは削除」: no layer is on for a first-time reader */
   assert.ok(/IntMapDefaultLayers/.test(ab), 'the session block must read the same list');
   /* …and the session restore must be able to turn one OFF again, or "default on" becomes "stuck on" */
   assert.match(ab, /defOff/, 'the restore has to switch a default-on layer back off when the session says so');

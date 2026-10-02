@@ -667,7 +667,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 呼ばない。携帯では同じタイル盤が「Map & layers」シートに載る。**「どちらのレイヤー欄を使うか」という
 設定は無い。**
 
-⚠⚠⚠ **レイヤーは 1 つの宣言である——`js/layers/<id>.js`。** `#layer-dropdown` の**全チェックボックス**（174 個）が
+⚠⚠⚠ **レイヤーは 1 つの宣言である——`js/layers/<id>.js`。** `#layer-dropdown` の**全チェックボックス**（174 個＝**レイヤー 163 ＋基本表示 11**）が
 それぞれ 1 本のファイルを持ち、`export default { … }` で自分のことを述べる。何を書けるかの正本は
 `scripts/lib/layer-descriptor.mjs`（欄・検査・導出）で、棚の一覧とその並びだけは 1 つのレイヤーが述べられない事実なので
 `js/layers/_shelves.js` が持つ。**どのレイヤーが在るかは、ディレクトリが答える**——一覧に足す行は無い。
@@ -675,13 +675,14 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 | 欄 | 意味 |
 |---|---|
 | `id` | チェックボックスの id（セッション・共有リンク・お気に入り・Atlas が持つ鍵）。ファイル名と同じ |
+| `kind` | `'display'` なら**基本表示**の項目（レイヤーではない）。無ければレイヤー。下の「基本表示はレイヤーではない」 |
 | `shelf` | 載る棚（`_shelves.js` のキー） |
 | `order` | 棚の中の位置（昇順）。移行時に 10 刻みで振ったので、間に新しい行を差し込める |
 | `key` | 棚の並べ替えが使う短い名前（`climate`・`wbgini`・`nightside` …）。無い行もある |
 | `label` | 名前の i18n キー（行が `data-i18n` で名乗るとき）。**136 行は行を作るモジュールが名前を組み立てるので無い**（下の ⚠） |
 | `rest` | 棚の中の「その他N件」に畳む |
-| `on` | 初回訪問者に ON（`window.IntMapDefaultOn` はここから導く） |
-| `share` | 共有リンクの `&l=` が運ぶ |
+| `on` | 初回訪問者に ON（`window.IntMapDefaultOn` はここから導く）。**レイヤーには 1 つも無い**（基本表示の 7 項目だけ） |
+| `share` | 共有リンクが運ぶ——レイヤーは `&l=`、基本表示は `&d=` |
 | `html` | 行そのものを宣言から書く（`js/layer-rows.js`。以前は `index.html` の markup） |
 | `lazy` | その行を ON にすると読まれる遅延モジュール（`js/lazy-modules.js` の `LAZY_REGISTRY`） |
 | `registry` | `window.IntMapLayers` に登録する id（Atlas が「描かれているもの」を読む入口） |
@@ -925,11 +926,25 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 - ⚠ **行が0のグループはキーを残す**（保存済みセッションや共有リンクが名指しできる。描画はされない）。
 - ⚠ **`lyrGrpOthers` のキーは変えない。** `js/map-ui.js`（タイルのベータ判定）と `js/layer-dropdown.js`
   （携帯での折りたたみ）が名指しで使っているので、改名すると携帯でベータ節が畳まれなくなる。
+- ⚠⚠⚠ **基本表示はレイヤーではない（利用者 2026-10-02「基本表示をレイヤーって言うな」）。** 宣言の `kind: 'display'` が
+  その事実で、`base` 棚には `kind: 'display'` の行だけが立ち、その行は `base` 棚にしか立てない
+  （`scripts/lib/layer-descriptor.mjs` が両方向で拒む。1 つの棚に 2 種類を混ぜることも拒む）。
+  「レイヤー」と言う読み手は**全部 `js/layer-manifest.js` の `isDisplay(id)` / `dataLayers()` / `displayItems()` に訊く**:
+  紹介ページの「N のレイヤー」（`scripts/landing.mjs`＝`dataLayers().length`、いま **163**）・共有リンク（レイヤーは
+  `l=`、基本表示は `d=`。`js/map-state.js` の `display`。⚠ `d=` の無い古いリンクは基本表示を `l=` で運んでいたので、
+  `d=` が無ければ `l=` の中の基本表示を読む——同じ地図が開く）・利用統計の `layer`（基本表示は数えない）・
+  Atlas の `layersOff`（基本表示は残す。`all:true` で基本表示も消し、返答は 2 つを分けて数える）・
+  `IntMapBaseDisplay.items()`（基本表示を描く面のための一覧——id・行が今名乗る名前・オン・既定）。
+  ⚠ `LAYERS` と `isLayer` は「登録簿の行」（基本表示を含む）のまま——時間の宣言・行の生成・棚の振り分けは両方を扱う。
+- ⚠⚠ **既定で点いているレイヤーは無い**（利用者 2026-10-02「どちらも規定レイヤーは削除」——携帯もデスクトップも）。
+  #R186 以来のケッペンと海底ケーブルの `on` を外した。レイヤーそのものは残り、点ければ従来どおり。基本表示の既定
+  （地名・ラベル・施設・国境・州県境・道路・鉄道、昼夜）は変えていない。⚠ 保存済みのセッションは、点いていた行を
+  そのまま復元する（既定ではなく読者のセッションとして扱う）。
 - **基本表示カテゴリ（`Base map & labels`）は「地図をどう描くか」の常設スイッチであって、レイヤーではない。**
   中身は **11 行**——地名・水と地形のラベル・施設名・国境・**海岸線**・州県境・道路・鉄道・グリッドの
   9 個の `cb-*` に、**昼夜の表示**（`dl-nightside`）・**3D 建物**（`beta-dl-bldg3d`）が加わる。
   ⚠ **その一覧の正本は `window.IntMapBasicLayers` ただ1つ**（`js/data-layers.js` の先頭で、manifest の
-  `base` 棚から導く——`basicLayers()`）。
+  `kind: 'display'` から導く——`basicLayers()`）。
   「レイヤーが何個オンか」を数えるものは**全部これを引く**——`_refreshActiveLayers()` の `skip`
   （＝パネル上部の `Active layers (N)`）、`window._imActiveLayerCount`（携帯 FAB の着色）、
   `IntMapWidgetCore.activeLayers()`（ウィジェットの `N layers on` と**おすすめレイヤーのルーレット**）。

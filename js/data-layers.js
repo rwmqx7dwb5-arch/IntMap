@@ -47,7 +47,7 @@ export const layerReads = {};
      · the session restore in js/app-body.js switches one back OFF when the saved snapshot says the
        user had switched it off, so "default on" never means "cannot be turned off".
    Ids, not layer keys, because that is what all three readers hold. */
-window.IntMapDefaultLayers=defaultLayers();   /* (layer-manifest) the manifest's `on` rows that are not markup rows — dl-climate, dl-subcables */
+window.IntMapDefaultLayers=defaultLayers();   /* (layer-manifest) the manifest's `on` rows that are not markup rows — EMPTY since basic-display-not-layers (2026-10-02,「どちらも規定レイヤーは削除」: no layer is on for a first-time reader; until then dl-climate, dl-subcables) */
 /* ══ ⚠⚠ (#R225) THE BASE TOGGLES SHIP `checked` AND THE RESTORE NEVER TURNED THEM BACK OFF ══════════
    「base map & labelsも勝手に全部オンになる」 — and it was structural, not a glitch. index.html ships
    `cb-names / cb-geolabels / cb-poi / cb-borders / cb-admin1 / cb-roads / cb-rail2` CHECKED. The session
@@ -104,7 +104,7 @@ window.IntMapDefaultOn=defaultOn();   /* (layer-manifest) every `on` row of the 
      · `dl-tz` 🕒 タイムゾーン — 「基本表示ではなく普通のレイヤーにして」. It is a row of `lyrGrpPolitics`
        now and is counted like any other layer. */
 window.IntMapBasicLayerRows=basicRows();   /* (layer-manifest) the manifest's `base` shelf, markup rows, in panel order */
-window.IntMapBasicLayers=basicLayers();     /* (layer-manifest) …and the whole `base` shelf (+ dl-nightside, beta-dl-bldg3d) */
+window.IntMapBasicLayers=basicLayers();     /* (layer-manifest) …and the whole map display — the rows of `kind: 'display'`, which are the `base` shelf (+ dl-nightside, beta-dl-bldg3d) — not layers (basic-display-not-layers) */
 /* ══ ⚠⚠⚠ (#R469) ROWS THAT KEEP THEIR CHECKBOX AND LOSE THEIR ROW ═════════════════════════════════
    A layer the panel never draws is not a layer that was deleted: the checkbox stays in the
    permanently-hidden `#layer-dropdown` registry, so its change handler, its legend, its opacity, its
@@ -168,7 +168,7 @@ window.IntMapBaseDisplay=(function(){
   const reconcileSoon=()=>{ try{ clearTimeout(rcT); }catch(_){} rcT=setTimeout(reconcile,400); };
   try{ document.addEventListener('change',(e)=>{ try{ const t=e.target; if(!t||t.type!=='checkbox'||!t.id) return;
     if(rows().indexOf(t.id)<0) return; reconcileSoon(); }catch(_){} },true); }catch(_){}
-  return { get, set, rows, defOn, matches, reconcile, MODES };
+  return { get, set, rows, defOn, matches, reconcile, MODES, items:()=>rows().map(id=>{ const cb=document.getElementById(id), lab=cb&&(cb.closest('label')||cb.closest('.lyr-row')), sp=lab&&lab.querySelector('span[data-i18n], span[id^="lyrname-"], span:not(.lyr-sw):not(.lsr-thumb)'); return { id, label:String((sp?sp.textContent:(lab?lab.textContent:''))||id).replace(/\s+/g,' ').trim(), on:!!(cb&&cb.checked), defaultOn:defOn(id) }; }) };   /* (basic-display-not-layers) `items()` — the map display as a list any surface can draw (the phone's 「地図」 menu): id, the name its row says now, on, default */
 })();
 
 export function dataLayers(HOST){

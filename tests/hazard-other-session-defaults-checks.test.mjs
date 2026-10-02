@@ -36,9 +36,12 @@ const read = (p) => readLF(join(ROOT, p));
 test('R189 defaults: poisoned sessions are migrated, and the SW keeps the cable cache', () => {
   /* (#R200) the session block is js/session-tabs.js now — a real ES module, imported by name. */
   const body = read('js/session-tabs.js');
-  assert.match(body, /defv:190/, 'the snapshot stamps its generation (#R190 bumped it — see js/session-tabs.js)');
+  assert.match(body, /defv:191/, 'the snapshot stamps its generation (basic-display-not-layers bumped it — see js/session-tabs.js)');
   assert.match(body, /if\(!\(\+s\.defv>=190\)\) \(window\.IntMapDefaultLayers\|\|\[\]\)\.forEach/,
     'a session from an older generation gets the default-on ids back once');
+  /* (basic-display-not-layers) a session written while Köppen and the cables were default-on sheds them once */
+  assert.ok(body.includes("if(!(+s.defv>=191)) for(let i=want.length-1;i>=0;i--){ if(FORMER_DEFAULT_ON.indexOf(want[i])>=0) want.splice(i,1); }"),
+    'a session older than defv 191 sheds the former default-on layers once');
   const sw = read('sw.js');
   /* the SW activate purge spares the page-owned cable cache — now by the page-owned name prefix, and
      EVALUATED against every cache the page opens in tests/sw-cache-names-owned-checks.test.mjs */

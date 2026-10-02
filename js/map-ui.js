@@ -18,7 +18,7 @@
  *  unchanged. The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { everyTick, stopTick, tickKey } from './runtime.js';
-import { sharedIds, LAYERS, BASE, HIDDEN, BETA, layerDeclaration } from './layer-manifest.js';   /* (layer-manifest) which layers exist — the share link and the tile browser ask this, not the rows */   /* the one timer wheel — js/runtime.js */
+import { sharedIds, sharedDisplayIds, isDisplay, LAYERS, BASE, HIDDEN, BETA, layerDeclaration } from './layer-manifest.js';   /* (layer-manifest) which layers exist — the share link and the tile browser ask this, not the rows */   /* the one timer wheel — js/runtime.js */
 import { ownRelayUrl, clockFor } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the ticker's second rung; (fetch-deadline-layer) and each rung's clock */
 import { readWithin } from './fetch-deadline.js';   /* (fetch-deadline-layer) the ticker's reads, under that clock — see fjson */
 import { IntMapTime } from './chronos.js';
@@ -3693,7 +3693,9 @@ export function viewHash(HOST){
       apply:(obj)=>{ if(obj){ try{ window.IntMapShareState.apply(obj); }catch(_){} } } });
     MapState.own('layers',{ read:()=>activeLayers(),
       prepare:(list,ctx)=>{ const later=ctx.later;
-        const want=(list||[]).slice(); const wantSet=new Set(want);
+        /* (basic-display-not-layers) a link from before the `display` field carried day & night and 3-D buildings
+           here; they are the `display` field's now (js/map-state.js), so this field opens layers only */
+        const want=(list||[]).filter(k=>!isDisplay(k)); const wantSet=new Set(want);
         /* ⚠ (#R409) A LINK THAT NAMES THE ROW THAT NO LONGER EXISTS OPENS THE TWO THAT REPLACED IT.
            「WW1とWW2でレイヤーを分けろ。」 split `dl-wars` into `dl-ww1` and `dl-ww2`; every link
            shared, bookmarked or restored from a session tab before that names the old id, and the
@@ -3731,6 +3733,15 @@ export function viewHash(HOST){
            link is pasted into a tab that already had layers on). Base toggles (names/borders/…) are untouched. */
         /* (layer-manifest) «any data layer» is the manifest's `share` set — the same rows the link can carry */
         sharedIds().forEach(k=>{ const cb=document.getElementById(k); if(cb && cb.checked && !wantSet.has(k)){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } }); } });
+    /* (basic-display-not-layers) THE MAP DISPLAY THE LINK CARRIES, in its own field — 「基本表示をレイヤーって言うな」.
+       Exactly what the layers' loop above did for these rows while they travelled in `l=`: tick what the link
+       names, untick the carried ones it does not (a full restore reproduces the map). The value is `d=`; for a
+       link from before that field the codec hands null, and the ids are the ones in `l=` (the restore's state).
+       Only display items are taken from either. */
+    MapState.own('display',{ read:()=>sharedDisplayIds().filter(id=>{ const cb=document.getElementById(id); return !!(cb&&cb.checked); }),
+      apply:(list,ctx)=>{ const src=list==null?((ctx&&ctx.state&&ctx.state.layers)||[]):list; const want=new Set(src.filter(k=>isDisplay(k)));
+        want.forEach(k=>{ const cb=document.getElementById(k); if(cb&&!cb.checked){ cb.__imRestored=1; cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } });
+        sharedDisplayIds().forEach(k=>{ const cb=document.getElementById(k); if(cb && cb.checked && !want.has(k)){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } }); } });
     /* (#R23) never persist layers while the intro AUTO-demo is toggling them — otherwise a demo layer
        lands in the URL hash and gets restored on the next load, so a layer the user never chose appears
        on its own ("なにも操作していないのに勝手にレイヤーがオンになる"). */
@@ -3791,7 +3802,10 @@ export function viewHash(HOST){
        so toggling a layer OFF without panning left it in the hash → it "came back" on the next/crash reload
        ("表示を辞めたはずのレイヤーが残り続ける"). Persist the hash on EVERY layer change so the restored set
        always matches what's actually on. (map-state-store) …by telling the store the field moved. */
-    document.addEventListener('change',(e)=>{ const el=e.target; if(el && (el.id&&/^dl-/.test(el.id) || (el.classList&&el.classList.contains('geo-layer-cb')))) MapState.changed('layers'); });
+    /* (basic-display-not-layers) a carried display item (day & night, 3-D buildings) moves its own field, not the layers' */
+    document.addEventListener('change',(e)=>{ const el=e.target; if(!el) return;
+      if(el.id&&sharedDisplayIds().indexOf(el.id)>=0){ MapState.changed('display'); return; }
+      if(el.id&&/^dl-/.test(el.id) || (el.classList&&el.classList.contains('geo-layer-cb'))) MapState.changed('layers'); });
     /* ⚠ (#R244) ONE boot pass, whichever way the renderer becomes ready — and a backstop, because
        `load` may already have fired when this module is evaluated, in which case `on('load',…)`
        never calls back and `booted` would stay false for the whole session (the address bar would

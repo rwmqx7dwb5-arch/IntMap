@@ -178,7 +178,7 @@ const read = (p) => readFileSync(new URL(p, root), 'utf8');
    value drifts (#R220): they import it. */
 test('R225 ⑦ the seeded session lives in exactly one place, and it states the base toggles', () => {
   const seed = read('tests/helpers/session-seed.js');
-  assert.match(seed, /export const SESSION_VALUE = '\{"v":2,"defv":190,"layers":\["cb-names","cb-geolabels","cb-poi","cb-borders","cb-admin1","cb-roads","cb-rail2"\],"lsrOpen":false\}';/);
+  assert.match(seed, /export const SESSION_VALUE = '\{"v":2,"defv":191,"layers":\["cb-names","cb-geolabels","cb-poi","cb-borders","cb-admin1","cb-roads","cb-rail2"\],"lsrOpen":false\}';/);
   const files = readdirSync(new URL('tests/', root)).filter((f) => f.endsWith('.spec.js'));
   for (const f of files) {
     const src = read('tests/' + f);

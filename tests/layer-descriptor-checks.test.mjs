@@ -8,7 +8,9 @@
  *  What this file RUNS to hold the change:
  *    ① the derived Layers list is BYTE-FOR-BYTE what the hand-kept list handed its readers — every export
  *       of js/layer-manifest.js, called as its readers call it, against the photograph taken from the
- *       hand-kept manifest at 281e584c (tests/fixtures/layer-descriptor-before.json)
+ *       hand-kept manifest at 281e584c (tests/fixtures/layer-descriptor-before.json) — with the one change made on
+ *       purpose since, stated as a transformation of the photograph and nothing more (basic-display-not-layers:
+ *       the map display rows say `kind: 'display'`, and the two layers that were on for a first-time reader are not)
  *    ② the gate passes on this tree: every declaration well-formed, the index is the directory, and every
  *       link (registry · state · commands · atlas · sources · lazy · label) is held by its registry
  *    ③ ADDING A LAYER IS ONE FILE: in a private copy of the checkout, one new js/layers/<id>.js — and
@@ -38,10 +40,33 @@ const gate = (args) => {
 };
 
 /* ── ① ──────────────────────────────────────────────────────────────────────────────────── */
+/* (basic-display-not-layers, 2026-10-02) the ONE deliberate change to what the manifest hands its readers since the
+   photograph, written as an edit of the photograph — so ① still proves that nothing ELSE moved. The reader:
+   「どちらも規定レイヤーは削除。基本表示をレイヤーって言うな。」 ⇒ every row of the `base` shelf (the map display) says
+   `kind: 'display'` right after its id; the catalogue states every row's kind; the two layers that were `on` are not
+   (so they leave defaultLayers/defaultOn); the share link's `l=` no longer carries the display rows. */
+const NO_LONGER_ON = new Set(['dl-climate', 'dl-subcables']);
+function amendPhotograph(text) {
+  const P = JSON.parse(text);
+  const display = new Set(P.SHELVES.filter((s) => s.key === 'base').flatMap((s) => s.layers.map((l) => l.id)));
+  const row = (r) => { const o = {}; for (const [k, v] of Object.entries(r)) {
+    if (k === 'on' && NO_LONGER_ON.has(r.id)) continue;
+    o[k] = v; if (k === 'id' && display.has(r.id)) o.kind = 'display'; } return o; };
+  P.SHELVES = P.SHELVES.map((s) => ({ key: s.key, layers: s.layers.map(row) }));
+  P.LAYERS = P.LAYERS.map(row); P.htmlRows = P.htmlRows.map(row);
+  P.defaultLayers = P.defaultLayers.filter((id) => !NO_LONGER_ON.has(id));
+  P.defaultOn = P.defaultOn.filter((id) => !NO_LONGER_ON.has(id));
+  P.sharedIds = P.sharedIds.filter((id) => !display.has(id));
+  P.catalog = P.catalog.map((c) => { const o = {}; for (const [k, v] of Object.entries(c)) {
+    o[k] = (k === 'on' && NO_LONGER_ON.has(c.id)) ? false : v; if (k === 'id') o.kind = display.has(c.id) ? 'display' : 'layer'; } return o; });
+  return JSON.stringify(P, null, 1) + '\n';
+}
 test('layer-descriptor ① the derived Layers list is byte-for-byte the list the hand-kept manifest handed its readers', () => {
   const now = layerDerivedText(M);
-  const before = read('tests/fixtures/layer-descriptor-before.json');
-  assert.ok(before.length > 50000, 'the photograph is there');
+  const photo = read('tests/fixtures/layer-descriptor-before.json');
+  assert.ok(photo.length > 50000, 'the photograph is there');
+  assert.equal(JSON.stringify(JSON.parse(photo), null, 1) + '\n', photo, 'the photograph re-serialises to itself (so the amendment below changes only what it says)');
+  const before = amendPhotograph(photo);
   assert.equal(now, before, 'a reader of js/layer-manifest.js would receive different bytes');
   /* and the file holds no list of its own any more — one source */
   /* …and the manifest writes no row by hand: outside its GENERATED LAYERS region there is none, and the region is
@@ -104,7 +129,7 @@ test('layer-descriptor ③ adding a layer is ONE file: a new js/layers/<id>.js r
   assert.equal(s.climate.indexOf('zz-probe-layer'), 1, 'between the rows at order 10 and 20');
   assert.ok(s.shared, 'the share link carries it');
   assert.equal(s.row, '<label class="layer-option"><input type="checkbox" id="zz-probe-layer"> <span data-i18n="lyrSnow">lyrSnow</span></label>', 'its row is generated');
-  assert.deepEqual(s.catalog, { id: 'zz-probe-layer', key: 'zzprobe', shelf: 'lyrGrpClimate', label: 'lyrSnow', rest: false, on: false, share: true, lazy: [] });
+  assert.deepEqual(s.catalog, { id: 'zz-probe-layer', kind: 'layer', key: 'zzprobe', shelf: 'lyrGrpClimate', label: 'lyrSnow', rest: false, on: false, share: true, lazy: [] });
   assert.ok(s.groups.includes('zzprobe'), 'reorganizeLayerPanel files it by its short name');
   assert.equal(s.decl.id, 'zz-probe-layer');
   /* and the real tree was never written */

@@ -15,7 +15,7 @@
  *    · the FACTS        → the files that own them: the clock's floor (js/hist-scale.js FLOOR), the
  *                         era snapshots (data/hist-eras.js), the border bands (js/time-borders.js
  *                         HB_MIN/HB_MAX/CS_MIN/CS_MAX), the layer count (js/layer-manifest.js
- *                         LAYERS), the site's address (NOT written here: see SITE below), and
+ *                         dataLayers() — the map display is not counted), the site's address (NOT written here: see SITE below), and
  *                         the donation links (js/supporter.js
  *                         STRIPE_DONATE).
  *  Every page is a real HTML document with its words in it — readable with scripts off, and by a
@@ -34,7 +34,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { TEXT } from './landing-text.mjs';
 import { SHOWCASE, WITHHELD, CAPTURED, CURRICULUM, RECORD_ANSWERED } from '../js/showcase.js';
 import { TOURS, CAPTURED_STEPS, tourSteps, tourCover, tourLink } from '../js/tours.js';   /* (classroom-tours) the tours section of the teacher pages */
-import { LAYERS, sharedIds } from '../js/layer-manifest.js';
+import { dataLayers, sharedIds } from '../js/layer-manifest.js';
 import { SITE_BASE_PATH } from '../supabase/functions/_shared/site-origin.js';
 import { SITE_TOKEN } from './site-url.mjs';
 import { STRIPE_DONATE } from '../js/supporter.js';
@@ -68,7 +68,9 @@ export function facts() {
     floor, bcYears: 1 - floor,                    /* astronomical year y ≤ 0 is (1 − y) BC */
     snapshots: eras.snaps.length, firstSnap: eras.snaps[0].y,
     ohmFrom: +hbMin, ohmTo: +hbMax, csFrom: +csMin, csTo: +csMax,
-    layers: LAYERS.length,
+    /* (basic-display-not-layers) the LAYERS — the map display (labels, borders, roads, day & night …) is not a layer
+       and is not counted as one (「基本表示をレイヤーって言うな」, 2026-10-02); 174 rows were 163 layers + 11 display items */
+    layers: dataLayers().length,
     site, stripe: { en: stripeEn, jp: stripeJp },
   };
 }

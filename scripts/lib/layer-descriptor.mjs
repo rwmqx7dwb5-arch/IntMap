@@ -22,6 +22,16 @@
  *    shelf     the shelf it is filed on (a key of js/layers/_shelves.js)
  *    order     its position on that shelf — rows are shown in ascending order; numbers, not a list,
  *              so a new layer stands between two without moving either
+ *  WHAT IT IS
+ *    kind      (basic-display-not-layers) `'display'` for an item of the MAP DISPLAY (基本表示) — place names,
+ *              water & terrain labels, places & facilities, borders, coastlines, state borders, roads, railways,
+ *              the grid, day & night, 3-D buildings: how the base map itself is drawn. Absent for a LAYER (data
+ *              laid over the map). The reader's decision (2026-10-02):「基本表示をレイヤーって言うな」— a display
+ *              item is not called a layer and is not counted as one, anywhere: the panel's 「表示中のレイヤー」,
+ *              the share link's `l=` (display items travel in `d=`, js/map-state.js), the usage count, Atlas,
+ *              the landing page's number of layers. Every one of those reads THIS field, through
+ *              js/layer-manifest.js (`isDisplay` / `dataLayers` / `displayItems`). A shelf holds one kind only
+ *              (setProblems), and the panel's top shelf `base` holds exactly the display items.
  *  THE ROW (exactly the facts js/layer-manifest.js has always carried — derived from here unchanged)
  *    key       the short name reorganizeLayerPanel files it by (`climate`); absent when nothing names it so
  *    label     the i18n key of its name, when the row names itself through one (`data-i18n`)
@@ -59,7 +69,11 @@
  * ==========================================================================*/
 
 /** the row facts js/layer-manifest.js has always carried, in the order it carried them */
-const ROW_FIELDS = Object.freeze(['id', 'key', 'label', 'rest', 'on', 'share', 'html', 'lazy']);
+const ROW_FIELDS = Object.freeze(['id', 'kind', 'key', 'label', 'rest', 'on', 'share', 'html', 'lazy']);
+/** (basic-display-not-layers) the kinds a declaration may state — absent is a layer */
+export const KINDS = Object.freeze(['display']);
+/** the shelf whose rows are the map display, and nothing else (js/layers/_shelves.js) */
+const DISPLAY_SHELF = 'base';
 /** the facts that join the layer to the other registries */
 const LINK_FIELDS = Object.freeze(['registry', 'state', 'commands', 'atlas', 'sources', 'time', 'pkg']);
 const FIELDS = Object.freeze(['id', 'shelf', 'order'].concat(ROW_FIELDS.slice(1), LINK_FIELDS));
@@ -93,6 +107,10 @@ export function descriptorProblems(d, file, shelves) {
   if ('pkg' in d && !PKG_NAME.test(String(d.pkg))) at('`pkg` must be a lower-case kebab name (it names js/layer-pkg-<pkg>.js)');
   for (const k of ['rest', 'on', 'share', 'html']) if (k in d && d[k] !== true) at('`' + k + '` is written only when it is true (absent means false)');
   for (const k of ['lazy', 'registry', 'commands', 'atlas', 'sources']) if (k in d && !isStrList(d[k])) at('`' + k + '` must be a list of distinct names');
+  if ('kind' in d && !KINDS.includes(d.kind)) at('`kind` is one of ' + KINDS.join(', ') + ' (absent means a layer)');
+  if ((d.kind === 'display') !== (d.shelf === DISPLAY_SHELF)) at(d.kind === 'display'
+    ? "is a display item (`kind: 'display'`) on the shelf `" + d.shelf + '` — the map display is the shelf `' + DISPLAY_SHELF + '`'
+    : 'is on the shelf `' + DISPLAY_SHELF + "`, which holds the map display only — a layer there would be counted as neither (state `kind: 'display'` or move it)");
   if (d.html && !isStr(d.label)) at('a generated row (`html`) names itself through an i18n `label`');
   if ('time' in d) {
     const t = d.time, ok = t && typeof t === 'object' && Object.prototype.hasOwnProperty.call(TIME_KINDS, t.kind) && TIME_KINDS[t.kind](t);
@@ -123,6 +141,12 @@ export function setProblems(list) {
   dup('the position', (d) => d.shelf + ' #' + d.order);
   dup('the IntMapLayers id', (d) => d.registry);
   dup('the kernel command', (d) => d.commands);
+  /* (basic-display-not-layers) a shelf is a shelf of layers or of display items, never both: the panel heads,
+     counts and folds a shelf as one thing */
+  const kindOf = new Map();
+  for (const d of list) { const k = d.kind || 'layer', was = kindOf.get(d.shelf);
+    if (!was) kindOf.set(d.shelf, { k, id: d.id });
+    else if (was.k !== k) out.push('the shelf `' + d.shelf + '` mixes a ' + was.k + ' (' + was.id + ') and a ' + k + ' (' + d.id + ')'); }
   return out;
 }
 

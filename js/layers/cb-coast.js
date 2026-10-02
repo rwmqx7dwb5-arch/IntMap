@@ -5,6 +5,7 @@
      「カスタム」 400 ms after boot, and an id without the tick paints nothing (#R34).  */
 export default {
   id: 'cb-coast',
+  kind: 'display',
   shelf: 'base',
   order: 50,
   label: 'coastline',

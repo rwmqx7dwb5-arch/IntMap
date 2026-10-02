@@ -60,18 +60,22 @@ test('R186 launch screen: covers the app from the first frame and lifts on real 
 test.describe('R186 default layers', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test('R186 defaults: Köppen and the submarine cables are painting on a first visit', async ({ page }) => {
+  /* (basic-display-not-layers) THE DEFAULT REVERSED — the reader, 2026-10-02:「どちらも規定レイヤーは削除」. #R186 put
+     Köppen and the cables on for a first visit; now no LAYER is ticked and neither paints. The map display
+     (基本表示 — labels, borders, roads, day & night …) is not a layer and keeps its own defaults. */
+  test('R186 defaults: no layer is on for a first visit — Köppen and the submarine cables included', async ({ page }) => {
   test.setTimeout(180_000);
   await page.goto('/');
   await booted(page);
+  await page.waitForTimeout(2500);
   const r = await page.evaluate(() => {
     const G = window.IntMapGeoEngine, vis = (id) => G.layers.has(id) && G.layers.getLayout(id, 'visibility') === 'visible';
-    return { climateBox: !!document.getElementById('dl-climate')?.checked,
-             cablesBox: !!document.getElementById('dl-subcables')?.checked,
-             climate: vis('lyr-climate'), cables: vis('lyr-subcables') };
+    const display = new Set(window.IntMapBasicLayers || []);
+    const ticked = Array.from(document.querySelectorAll('#layer-dropdown input[type=checkbox]'))
+      .filter((cb) => cb.checked && cb.id && !display.has(cb.id)).map((cb) => cb.id);
+    return { ticked, defaults: window.IntMapDefaultLayers, climate: vis('lyr-climate'), cables: vis('lyr-subcables') };
   });
-  /* a checked box paints nothing on its own — #R34 recorded that for the place-name toggle */
-  expect(r).toEqual({ climateBox: true, cablesBox: true, climate: true, cables: true });
+  expect(r).toEqual({ ticked: [], defaults: [], climate: false, cables: false });
 });
 
   test('R186 defaults: a session that switched one off is not overruled on the next load', async ({ page }) => {

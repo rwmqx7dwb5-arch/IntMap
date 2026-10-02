@@ -77,6 +77,10 @@ async function assertExample(page, s) {
   expect([shared.view.lng, shared.view.lat, shared.view.zoom, shared.view.proj], s.id + ': the store view').toEqual([linked.view.lng, linked.view.lat, linked.view.zoom, linked.view.proj]);
   expect(shared.time, s.id + ': the store instant').toEqual(linked.time);
   expect(shared.layers.slice().sort(), s.id + ': the store layers').toEqual(linked.layers.slice().sort());
+  /* (basic-display-not-layers) every example link was written before `d=` and names no map display item, which has
+     always meant «off» — the restore turned day & night and 3-D buildings off, so the link the app shares back
+     carries no `d=` either (js/map-state.js `display`) */
+  expect(shared.display, s.id + ': the map display the store reads back').toBeNull();
   for (const id of s.layers) {
     await page.waitForFunction((id) => { try { return !!window.__imLayerPainted(id); } catch (_) { return false; } }, id, { timeout: 60000 })
       .catch(() => {});
