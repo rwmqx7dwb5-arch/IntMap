@@ -157,9 +157,9 @@ cesium-input.js                   Cesium のカメラを MapLibre のジェス�
 i18n.js                           window.IntMapI18N — キー付き UI 表の組み立て
 i18n-late.js                      後から足す翻訳と、ティッカー自身の設定パネル
 lang-registry.js                  言語の唯一のリスト window.IntMapLang（code / label / html / alias と pick）
-lang-switch.js                    言語変更は「待てるイベント」——文字列が届く前に描き直さない
+lang-switch.js                    言語変更は「待てるイベント」——文字列が届く前に描き直さない。locale の取得失敗を理由つきで読者に言う
 locales/_langs.js                 生成物。読み物2ページ用の言語コード一覧（scripts/i18n-langs.mjs が書く）
-locales/ui.<code>.js              1言語＝1ファイルの UI 文字列表（9言語）
+locales/ui.<code>.js              1言語＝1ファイルの UI 文字列表（9言語）。起動時に読むのは en だけ、他は言語ごとの遅延チャンク
 locales/pages.<code>.js           読み物2ページの文字列表（9言語）
 page-i18n.js                      読み物2ページの言語機械 window.IntMapPageI18N
 sources-list.js                   sources.html の出典レジストリ（生成された一覧）
@@ -1636,6 +1636,7 @@ scripts/
                                   超えた行だけを上げる）。下げるのは main の CI（`--tighten`、
                                   `perf-ceiling.yml`。上げない）。
                                   ⚠ `requests` と `modules` は**バイトではなく個数**なので幅 0。
+                                  起動時の locale は英語（フォールバック）だけ——他が eager に入ったら赤。
                                   基準は `tests/perf-baseline.json`（追跡対象）。
   typecheck.mjs                   **型検査のゲート**（`npm run check:types`）。同梱の typescript で
                                   `tsc --noEmit -p tsconfig.json` を走らせ、その終了コードを返す。typescript が
