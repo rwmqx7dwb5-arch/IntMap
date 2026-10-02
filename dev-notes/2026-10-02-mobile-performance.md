@@ -168,6 +168,8 @@ idle になるまで出ない・他の端末はすぐ・仕事が終わるまで
   どちらも起動の最初から要る（読み手が eager で、段の判断はその読み手が自分の読みの前にする）。
 - `dist.data`・`dist.total` +3.78 MB: `data/ne-countries/` の 3 縮尺（第三者 CDN の `@master` から読んでいたもの）。
   読者の転送は減る（10m 4.34 MB → 2.81 MB）。
+- `dist.assets` 18,757.6 kB → 18,851.4 kB（+93.8 kB）: rebase 前のこの branch は天井の内側だった。#901（mobile-shell）を
+  取り込んだ木で `check:perf` が初めて超えた——両者を合わせた木の実測で、どちらか片方の内訳はこの回では測っていない。
 - 新しい行 `phone.bytes` 342,631 B／`phone.requests` 3（boot の 3 行: world-basemap・land-mask・hdi-series）。
 - ⚠ この木は `origin/main` より遅れているので `--update` は拒否する（perf-measure-parity）。rebase → build →
   `node scripts/perf-budget.mjs --update` で上の行だけが上がる。
