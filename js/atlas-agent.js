@@ -619,8 +619,21 @@ export function makeAtlasAgent() {
       const promote = (typeof opts.promote === 'function') ? opts.promote : null;
       const footprint = (typeof opts.footprint === 'function') ? opts.footprint : null;
       const promoted = [];
-      const offered = () => Object.keys(tools).map((k) => tools[k]).concat(promoted);
-      const offeredCount = () => Object.keys(tools).length + promoted.length + 1;   /* + read_result, which a cut step adds */
+      /* ══ (atlas-plan-on-map) ATLAS'S OWN PLAN, WHEN THE CALLER KEEPS ONE ════════════════════════════════
+         `opts.plan` is the conversation's plan ledger (js/atlas-plan.js). Given one, the loop offers the
+         `plan` tool — a FIXED declaration, placed after the base tools and before every promotion, so the
+         prefix a provider caches is the same bytes on every step and every turn — answers its calls from
+         the ledger (they touch no app state), and files every call that reaches the app under the step
+         Atlas said it serves, with the executor's verdict as that step's state. ⚠ NOTHING IS DECIDED FOR
+         ATLAS: whether to plan, the steps and their order are the model's; no call is refused or reordered
+         for a plan's sake, and no ceiling here is read or moved (CONSTITUTION.md §5). */
+      const PLAN = (opts.plan && typeof opts.plan.declare === 'function' && opts.plan.TOOL && !tools[opts.plan.TOOL.name]) ? opts.plan : null;
+      if (PLAN) localTools[PLAN.TOOL.name] = PLAN.TOOL;
+      const offered = () => Object.keys(tools).map((k) => tools[k]).concat(PLAN ? [PLAN.TOOL] : []).concat(promoted);
+      const offeredCount = () => Object.keys(tools).length + (PLAN ? 1 : 0) + promoted.length + 1;   /* + read_result, which a cut step adds */
+      /* the capability a call reaches, for the plan's record before its result names it */
+      const capOfCall = (c) => (c && c.name === 'run_capability') ? String((c.arguments && c.arguments.id) || '')
+        : String((c && localTools[c.name] && localTools[c.name].capabilityId) || (c && c.name) || '');
       /* ══ ⚠⚠⚠ (#R801) HAS THIS TURN'S MODEL INPUT CARRIED CONTENT FROM OUTSIDE THE CONVERSATION? ═══
          A fact about the turn, not a judgment about the request. It becomes true on any of three
          events, each a statement by the thing that knows: ① a tool result stamped `ingests:'external'`
@@ -670,6 +683,8 @@ export function makeAtlasAgent() {
       /* (#R452) the turn's clock. `now()` is injected in the node checks, which have no wall time. */
       const now = (typeof opts.now === 'function') ? opts.now : (() => Date.now());
       const startedAt = now();
+      if (PLAN) { try { PLAN.beginTurn(); } catch (_) { /* a ledger never breaks the turn */ } }
+      const endPlan = (how) => { if (PLAN) { try { PLAN.endTurn(how); } catch (_) { /* as above */ } } };
       const outOfTime = () => (lim.turnBudgetMs > 0) && ((now() - startedAt) >= lim.turnBudgetMs);
       /* ⚠ (atlas-legacy-protocol-removal) THE NOTE FOR CALLS WRITTEN INTO THE MESSAGE. Nothing written there runs, and
          the model is TOLD so — one-pass-or-a-reason §2's second cause is a result that never reaches the
@@ -723,7 +738,7 @@ export function makeAtlasAgent() {
              raises when a turn has spent its call budget, which is a ceiling being reached rather
              than anything going wrong. Only a first step with nothing behind it is fatal. */
           trace.steps.push({ step, error: (e && e.message) || 'model error' });
-          if (step === 0) throw e;
+          if (step === 0) { endPlan('error'); throw e; }
           stopped = 'transport';
           trace.transportError = (e && e.message) || 'model error';
           break;
@@ -905,6 +920,15 @@ export function makeAtlasAgent() {
             try { const r0 = tool.route(call.arguments || {}); if (r0 && r0.name) routed = { id: call.id, name: String(r0.name), arguments: r0.arguments || {} }; } catch (_) { routed = call; }
           }
           p.routed = routed;
+          /* (atlas-plan-on-map) a plan call is applied HERE, in call order, so the calls after it in the same
+             reply are filed under the step it names — whatever order they then run in. Its answer is the
+             ledger's; it has no identity to reuse and no footprint (it touches nothing in the app). */
+          if (PLAN && call.name === PLAN.TOOL.name) {
+            try { p.planRec = PLAN.declare(call.arguments || {}); } catch (e) { p.planRec = { ok: false, error: 'plan_failed', message: (e && e.message) || 'the plan could not be recorded' }; }
+            p.fp = { pure: true };
+            return p;
+          }
+          p.planStep = PLAN ? PLAN.attribute() : -1;
           p.ckey = TR.callKey(routed.name, routed.arguments);
           let fp = null;
           if (call.name === 'read_result') fp = { pure: true };
@@ -948,6 +972,13 @@ export function makeAtlasAgent() {
                next step. The old console printed 「何を分析しますか？」 for exactly this case. */
             return { id: call.id, name: call.name, ok: false, error: p.bad.code, message: p.bad.message, schema: p.bad.schema };
           }
+          /* (atlas-plan-on-map) the plan tool's answer, from the ledger — see `planRec` above */
+          if (p.planRec) {
+            const prec = Object.assign({ id: call.id, name: call.name }, p.planRec);
+            callById[call.id] = prec;
+            executedHere++; trace.executed++;
+            return prec;
+          }
           /* (#R489) …and the identity check, after `reject` has confirmed the call is well formed
              so a malformed repeat still gets its own schema note. See `doneCalls` above. */
           const ckey = p.ckey;
@@ -969,6 +1000,8 @@ export function makeAtlasAgent() {
                `malformedRun` below is about a model emitting calls that go nowhere, which this is
                the opposite of. */
             executedHere++;
+            /* (atlas-plan-on-map) the step this call serves holds what that earlier run returned */
+            if (PLAN && p.planStep >= 0) { try { PLAN.started(call.id, { step: p.planStep, capability: capOfCall(p.routed) }); PLAN.settled(call.id, rec0); } catch (_) { } }
             return rec0;
           }
           /* (atlas-native-tools) the rest of a result the input had to cut. Answered HERE, from this turn's own
@@ -995,6 +1028,8 @@ export function makeAtlasAgent() {
           }
           let out = null;
           const t0 = now();
+          /* (atlas-plan-on-map) the step this call serves shows it running until its verdict arrives */
+          if (PLAN && p.planStep >= 0) { try { PLAN.started(call.id, { step: p.planStep, capability: capOfCall(p.routed) }); } catch (_) { } }
           try {
             out = await runTool(p.routed);   /* (#R452) …with a deadline. See `runTool` above. */
           } catch (e) {
@@ -1084,6 +1119,7 @@ export function makeAtlasAgent() {
                 + 'same one, and nothing new was produced. Use that result, or do something different.';
             } else if (!doneResults[rid]) doneResults[rid] = ckey || rid;
           }
+          if (PLAN && p.planStep >= 0) { try { PLAN.settled(call.id, rec); } catch (_) { } }
           toResults[p.i] = rec;
           /* the TOOL may declare it, or the RESULT may — the second is how a generic invoker
              (`run_capability`) reports that the capability it reached was a turn-ending one. */
@@ -1258,8 +1294,10 @@ export function makeAtlasAgent() {
          disagree after the bounces ran out, both are visible. */
       const produced = [];
       results.forEach((r) => producedBy(r).forEach((m) => { if (produced.indexOf(m) < 0) produced.push(m); }));
+      endPlan(stopped);
       return { text: String(text || ''), calls: trace.calls, results, trace, stopped, answerMode,
-        produced, mapDrawn: produced.indexOf('map') >= 0, externalContentSeen: turn.externalContentSeen };
+        produced, mapDrawn: produced.indexOf('map') >= 0, externalContentSeen: turn.externalContentSeen,
+        plan: PLAN ? PLAN.snapshot() : undefined };
     }
 
     /**

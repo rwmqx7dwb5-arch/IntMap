@@ -736,6 +736,10 @@ atlas-live.js                     Atlas — ストリームで届く 1 手を、
                                   答えは泡の下書きへ・途中の一言は作業一覧へ・推論の要約と「次: …」は考え中の行へ。
                                   地図の上の HUD（操作の開始と終了）と、体感の待ち時間の計測
                                   （`IntMapAtlasDebug.latency()`）もここ。⚠ 何も決めない——下書きは答えではない
+atlas-plan.js                     Atlas — 計画の台帳と地図の上の計画。`plan` 道具（Atlas が目標・手順・いまの手順を
+                                  宣言する）、手順ごとの状態を実行器の判定から導く台帳（`makeAtlasPlan`。DOM なし・
+                                  `runTurn` の `opts.plan`）、モデルへ戻す `promptBlock()`、HUD の中の計画カードと
+                                  手順が描いたものへの移動（`makePlanView`）。⚠ 手順を決めない・観測できなかったものを完了にしない
 atlas-highlight.js                Atlas — コードブロックのシンタックスハイライト（#R494）。外部依存なしの
                                   8 文法（js/ts・python・json・html/xml・css・sql・bash・yaml）＋
                                   未知言語のフォールバック。出力は必ず esc 済み。配色は
