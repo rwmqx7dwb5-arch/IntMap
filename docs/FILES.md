@@ -478,6 +478,12 @@ chronos.js                        Chronos＝統一時間カーネル window.IntM
                                   100 年未満の瞬間は `atUTC()`（`setUTCFullYear`）で作る
                                   ——`Date.UTC(1,…)` は 1901 年になるから（#R604）。時計は `makeClock()` が作る
                                   **地図ごと**の物で、IntMapTime はメイン地図の 1 個目（比較ウィンドウは 2 個目を持つ）
+map-state.js                      地図の状態の**正本**（MapState）。視野・基図・時刻・共有レイヤー・比較窓・3D 地形・
+                                  シミュレータ入力・セッションのレイヤー集合を `SCHEMA` で 1 回だけ宣言し、URL ハッシュ
+                                  （`encode` / `decode`）・共有リンク・セッション保存（`session()`）・Atlas の camera / time
+                                  節はその写像。値は持ち主（`own`）の `read()` が返し、ストアは複製を持たない。復元は
+                                  世代つきの 1 回の適用（`restore`）で、変化の通知は「復元」か「読者」かを述べる。
+                                  window 公開なし（import で読む）
 historical-basemap.js             Chronos旅行中の自然地理ベクタ背景。現代政治境界を含むCARTO画像を置換し、Nowで復帰
 hist-scale.js                     深い時間の**算術**だけを持つ純関数 window.IntMapHistScale。DOM も地図も時計も
                                   言語も触らないので検査が**評価**できる（#R570 の教訓）。①`decYear()`＝

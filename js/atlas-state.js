@@ -32,6 +32,14 @@ import { makeViewGround } from './atlas-view-ground.js';   /* (#R589) the coordi
 let _lapse = null;
 try { import('./time-lapse.js').then((m) => { _lapse = m; }, () => { }); } catch (_) { }
 
+/* (map-state-store) the map's one named state — js/map-state.js. The camera and the clock sections below are its
+   fields. Reached by a dynamic import, like the lapse above: the module is in the app's start-up graph already
+   (js/chronos.js imports it), so this settles long before Atlas reads a snapshot, and this file stays loadable on
+   its own (tests/atlas-state-checks.test.mjs imports a mutated copy of it as a lone data: module). Until it has
+   arrived — it never fails to, in the app — the two sections are null: «nobody owns this», never a guess. */
+let _ms = null;
+try { import('./map-state.js').then((m) => { _ms = m; }, () => { }); } catch (_) { }
+
 export function makeAtlasState(HOST) {
   var GROUND = makeViewGround();
   return (function () {
@@ -87,14 +95,24 @@ export function makeAtlasState(HOST) {
       /* `active` on a view button is how the app itself records which base/projection is showing. */
       var isActive = function (id) { var d = DOC(); var e = d && d.getElementById(id); return !!(e && e.classList && e.classList.contains('active')); };
 
-      reg('camera', function () {
-        var E = GE(); var cam = E && E.camera; if (!cam) return null;
-        var c = cam.getCenter(); var z = cam.getZoom();
-        if (!c || !isFinite(z)) return null;
-        return { lat: +c.lat, lng: +c.lng, zoom: +z, bearing: +cam.getBearing() || 0, pitch: +cam.getPitch() || 0,
-          base: isActive('btn-view-sat') ? 'satellite' : 'map',
-          projection: isActive('btn-view-3d') ? '3d-terrain' : (isActive('btn-view-flat') ? 'flat' : 'globe') };
-      });
+      /* ══ (map-state-store) THE CAMERA IS THE MAP STATE'S `view` + `base` + `terrain`, NOT A FOURTH READING ═════════
+         This section and the restorer below each read the renderer and the view buttons for themselves — the
+         same facts the share link read off IM_HOST, two sources that agreed only while nothing drifted. They are
+         the store's fields now (js/map-state.js); a headless Atlas (no app has registered the owners — the node
+         checks) gets the SAME assembly, `viewOf`, over the engine and host it was handed, and the view buttons. */
+      var mapView = function () {
+        if (!_ms) return null;
+        var MapState = _ms.MapState;
+        var v = MapState.owns('view') ? MapState.read('view') : _ms.viewOf(GE(), host);
+        if (!v) return null;
+        var base = MapState.owns('base') ? MapState.read('base') : (isActive('btn-view-sat') ? 'sat' : 'map');
+        var terr = MapState.owns('terrain') ? !!MapState.read('terrain') : isActive('btn-view-3d');
+        var proj = v.proj || (isActive('btn-view-flat') ? 'flat' : 'globe');
+        return { lat: +v.lat, lng: +v.lng, zoom: +v.zoom, bearing: +v.bearing || 0, pitch: +v.pitch || 0,
+          base: base === 'sat' ? 'satellite' : 'map',
+          projection: terr ? '3d-terrain' : (proj === 'flat' ? 'flat' : 'globe') };
+      };
+      reg('camera', function () { return mapView(); });
 
       /* The contract's `getBounds()` returns the renderer's bounds object (MapLibre's LngLatBounds, or
          the Cesium adapter's stand-in for it) — never a plain box, so it is unpacked here. */
@@ -261,17 +279,13 @@ export function makeAtlasState(HOST) {
 
       /* The one master clock (js/chronos.js). `travelDate` is null while live, so "the map is showing a
          past date" is a fact with exactly one representation instead of a truthiness test on a Date. */
+      /* (map-state-store) the clock's value is the map state's `time` field — the one the share link writes as
+         `tt` — read through its owner (js/chronos.js); a headless Atlas reads the same `timeOf` over the clock it sees. */
       reg('time', function () {
-        var T = GLOBAL('IntMapTime');
+        if (!_ms) return null;
         var out = { live: true, travelDate: null, instant: null };
-        if (T && typeof T.isLive === 'function') {
-          out.live = !!T.isLive();
-          if (!out.live) {
-            if (typeof T.iso === 'function') out.travelDate = T.iso();
-            var d = (typeof T.get === 'function') ? T.get() : null;
-            if (d) { try { out.instant = d.toISOString(); } catch (_) { } }
-          }
-        }
+        var tv = _ms.MapState.owns('time') ? _ms.MapState.read('time') : _ms.timeOf(GLOBAL('IntMapTime'));
+        if (tv && tv.at != null) { out.live = false; out.travelDate = tv.at; out.instant = tv.instant || null; }
         var LD = GLOBAL('_imLayerDates'), doc = DOC();
         if (LD && doc) {
           var dl = [];
@@ -419,14 +433,7 @@ export function makeAtlasState(HOST) {
          switches and Atlas's drawings). See `API.undo` below for the one mechanism that uses them. */
       var click = function (id) { var d = DOC(); var b = d && d.getElementById(id); if (!b) return false; try { b.click(); return true; } catch (_) { return false; } };
       API.registerRestorer('camera', { covers: ['camera', 'map.basemap'],
-        capture: function () {
-          var E = GE(); var cam = E && E.camera; if (!cam) return null;
-          var c = cam.getCenter(); var z = +cam.getZoom();
-          if (!c || !isFinite(+c.lng) || !isFinite(+c.lat) || !isFinite(z)) return null;
-          return { lng: +c.lng, lat: +c.lat, zoom: z, bearing: +cam.getBearing() || 0, pitch: +cam.getPitch() || 0,
-            base: isActive('btn-view-sat') ? 'satellite' : 'map',
-            projection: isActive('btn-view-3d') ? '3d-terrain' : (isActive('btn-view-flat') ? 'flat' : 'globe') };
-        },
+        capture: function () { return mapView(); },   /* (map-state-store) the same reading the `camera` section reports */
         /* the view buttons first (a projection switch may move the camera), then the camera itself —
            through the same buttons the reader presses, so the app's own state follows */
         restore: function (want, now) {

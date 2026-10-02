@@ -22,7 +22,7 @@ import { sharedIds, LAYERS, BASE, HIDDEN, BETA, layerDeclaration } from './layer
 import { ownRelayUrl, clockFor } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the ticker's second rung; (fetch-deadline-layer) and each rung's clock */
 import { readWithin } from './fetch-deadline.js';   /* (fetch-deadline-layer) the ticker's reads, under that clock — see fjson */
 import { IntMapTime } from './chronos.js';
-import { compareTime } from './compare.js';   /* (time-compare-lapse) the comparison window's own instant, for the share link */
+import { MapState, viewOf, timeOf } from './map-state.js';   /* (map-state-store) the map's one named state — the share link and its restore are its projections */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 
@@ -118,6 +118,30 @@ window.IntMapPlaceClear=function(inp,btn,gap){
   try{ window.addEventListener('resize',place); }catch(_){}
   try{ if(window.ResizeObserver){ var ro=new ResizeObserver(place); ro.observe(inp); } }catch(_){}
   return place; };
+
+/* ══ (map-state-store) THE CLOCK IS A FIELD OF THE MAP'S STATE — Chronos decides it, this file wires it ═══════════
+   The value of the store's `time` field is the master clock's (js/chronos.js), read through the same `timeOf` Atlas's
+   picture uses; a restore hands it back to the clock: an instant (`tt` — a day, or any instant Date parses), the
+   day-based form links used before #R101 (`ts`), or — a link with no instant — «now» (share-embed-distribution: the
+   absence is a statement). Its source is 'restore', so a subscriber that must not answer a restore as if the reader
+   had moved the clock (a war layer jumping to its first day, a forecast writing its hour) can tell from the event.
+   ⚠ REGISTERED HERE, NOT IN js/chronos.js, FOR A MEASURED REASON. js/chronos.js is imported by lazy chunks as well
+   as by main, so Rolldown gives it a common chunk and folds that into main; a static import from it to
+   js/map-state.js (shared with Atlas's lazy chunks too) is the edge vite.config.js's note describes — the fold would
+   make a cycle, so js/map-state.js was left as a chunk of its own: MEASURED eager.requests 9 → 10, modules 299 → 300,
+   gzip +8.5 kB for every session. This module is main's alone, so the edge costs nothing here and the clock keeps
+   importing nothing it does not need. Registered at import: the store and the clock both exist by then. */
+MapState.own('time', {
+  read: () => timeOf(IntMapTime),
+  apply: (v) => { try {
+    if (v && 'at' in v) { const d = new Date(v.at); if (!isNaN(d.getTime())) IntMapTime.set(d, { source: 'restore' }); }
+    else if (v && 'daysAgo' in v) IntMapTime.setDaysAgo(v.daysAgo, { source: 'restore' });
+    else if (!IntMapTime.isLive()) IntMapTime.setNow({ source: 'restore' });
+  } catch (_) { } },
+});
+/* ⚠ this subscriber is registered at import, i.e. BEFORE js/app-body.js's newsDate keeper (js/chronos.js, #R289); it
+   only tells the store, whose readers act on timers, so nothing it reaches reads a stale newsDate */
+IntMapTime.on(() => MapState.changed('time'));
 
 export function layerRegistry(HOST){
  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -3533,7 +3557,8 @@ export function viewHash(HOST){
   (function(){
     if(!GE().hasRenderer()) return;
     let restoring=false, t=null, queued=false;   /* queued: a link that arrived during a restore (share-embed-distribution — see the hashchange listener) */
-    let restoreGen=0;   /* (restore-clock-and-elam) which restore owns the staged steps — see `later` in restore() */
+    /* (map-state-store) which restore owns the staged steps is the store's generation now (js/map-state.js
+       `restore` — #881's restoreGen moved there), so every owner's staged step answers to the same one */
     /* ══ ⚠⚠⚠ (#R244) THE URL THE READER OPENED IS READ ONCE, BEFORE ANYTHING CAN OVERWRITE IT ═══════
        「再読み込み時に情報が保持されなくなっている。」
 
@@ -3559,6 +3584,7 @@ export function viewHash(HOST){
        exists because `load` may already have fired when this module is evaluated, in which case
        `on('load',…)` never calls back and the hash would freeze for the whole session. */
     const BOOT_HASH=(function(){ try{ return location.hash||''; }catch(_){ return ''; } })();
+    MapState.boot(BOOT_HASH);   /* (map-state-store) the store answers carriesState() from the same latch */
     let booted=false, bootDone=false, bootRan=false;
     /* (#R42b) Per-TAB flag: true on the FIRST load of a tab (a fresh open / a shared link / a copied address
        bar opened on another device), false on a plain RELOAD of the same tab. sessionStorage survives reload
@@ -3619,12 +3645,8 @@ export function viewHash(HOST){
     try{ const early=window._imShareEarly; if(Array.isArray(early)){
       early.splice(0).forEach(e=>{ try{ window.IntMapShareState.register(e[0],e[1]); }catch(_){} }); } }catch(_){}
     try{ window._imShareEarly={ push(e){ try{ window.IntMapShareState.register(e[0],e[1]); }catch(_){} } }; }catch(_){}
-    /* base64url of the JSON — short enough for an address bar, and opaque so nobody hand-edits it */
-    function packSims(){ try{ const o=window.IntMapShareState.collect(); if(!o) return '';
-      const b=btoa(unescape(encodeURIComponent(JSON.stringify(o))));
-      return b.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }catch(_){ return ''; } }
-    function unpackSims(s){ try{ const b=s.replace(/-/g,'+').replace(/_/g,'/');
-      return JSON.parse(decodeURIComponent(escape(atob(b)))); }catch(_){ return null; } }
+    /* (map-state-store) the base64url packing of the simulators' values is the codec's now (js/map-state.js
+       `packObject` / `unpackObject`), so the link and its reader cannot spell it two ways */
     function activeLayers(){ const ids=new Set(); try{
       /* (#R40) capture EVERY data-layer checkbox convention so the share link carries ALL selected layers
          (previously only dl-* / geo-layer-cb → GIBS gx-*, eco-dl-*, round-9 l9-dl-*, beta-dl-* were lost). */
@@ -3634,22 +3656,81 @@ export function viewHash(HOST){
          read them off the document), one field per layer instead of one prefix per family. */
       sharedIds().forEach(id=>{ const cb=document.getElementById(id); if(cb&&cb.checked) ids.add(id); });
     }catch(_){} return Array.from(ids); }
-    function encode(){ try{ const c=GE().camera.getCenter(); const v=[c.lng.toFixed(4),c.lat.toFixed(4),GE().camera.getZoom().toFixed(2),Math.round(GE().camera.getBearing()),Math.round(GE().camera.getPitch()),(HOST.proj==='globe'?'g':'f')].join(',');
-      const ls=activeLayers(); let h='#v='+v; if(ls.length) h+='&l='+ls.join(',');
-      /* (#R101) time-travel state saved as the kernel's ISO instant (mode-independent — the slider is now year-based),
-         so a shared link reproduces the exact moment; compare state too. */
-      try{ const T=IntMapTime; if(T&&T.state){ const s=T.state(); if(s&&!s.isLive&&s.iso) h+='&tt='+encodeURIComponent(s.iso); } }catch(_){}
-      try{ const cw=document.getElementById('compare-window'); if(cw && getComputedStyle(cw).display!=='none'){ h+='&cmp='+(cw.classList.contains('cmp-xray')?'x':'1');
-        /* (time-compare-lapse) …and the compare window's own instant, when it holds one (js/compare.js `timeParam`: '' while it follows the main map) */
-        const ct=compareTime.param(); if(ct) h+='&ct='+encodeURIComponent(ct); } }catch(_){}
-      /* (#R42) satellite base view too, so "今の状態をそのまま" share/restore reproduces Map-vs-Satellite. */
-      try{ if(typeof HOST.mapType!=='undefined' && HOST.mapType==='sat') h+='&sat=1'; }catch(_){}
-      /* (#R211) 「視点の高度と角度」 — bearing and pitch were already in `v`; 3-D terrain was not, and
-         without it the same zoom/pitch produces a flat scene where the shared one had relief. */
-      try{ if(HOST.terrain3D) h+='&t3=1'; }catch(_){}
-      /* (#R211) …and every simulator's own inputs, in one opaque parameter (see IntMapShareState). */
-      try{ const s=packSims(); if(s) h+='&s='+s; }catch(_){}
-      return h; }catch(_){ return ''; } }
+    /* ══ (map-state-store) THE ADDRESS IS THE STORE'S PROJECTION, NOT A STRING THIS FILE CONCATENATES ══════
+       encode() was nine hand-appended `h+='&…='` segments and restore() nine hand-written `[#&]…=` regular
+       expressions — the same state spelled twice in one closure, and a third and fourth time by the session
+       and by Atlas. The spelling is js/map-state.js's SCHEMA now and both directions are its codec; what this
+       closure keeps is what only it can do: OWN the fields that live in this app's DOM and host (the camera,
+       the base map, the terrain, the shared layer rows, the simulators' registry) and carry out a restore's
+       intent through the same buttons and checkboxes the reader presses. (#R101) the clock's field is wired at the
+       top of this file (its value is js/chronos.js's) and (time-compare-lapse) the comparison window registers its own. */
+    function encode(){ return MapState.hash(); }
+    MapState.own('view',{ read:()=>viewOf(GE(),HOST),
+      /* the projection buttons first (a projection switch may move the camera), then the camera */
+      apply:(v)=>{ try{ const lng=v.lng,lat=v.lat,z=v.zoom,br=v.bearing,pi=v.pitch,proj=v.proj;
+        if(proj==='flat'&&HOST.proj!=='flat'){ const b=document.getElementById('btn-view-flat'); if(b) b.click(); }
+        else if(proj==='globe'&&HOST.proj!=='globe'){ const b=document.getElementById('btn-view-globe'); if(b) b.click(); }
+        if(isFinite(lng)&&isFinite(lat)) GE().camera.jumpTo({center:[lng,lat],zoom:isFinite(z)?z:2,bearing:br,pitch:pi}); }catch(_){} } });
+    /* (#R42) satellite base view too, so "今の状態をそのまま" share/restore reproduces Map-vs-Satellite.
+       Switch ON if wanted; on a FULL restore also switch back to Map if NOT wanted (so a shared link reproduces the
+       base exactly, e.g. pasting a no-sat link over a satellite session). Decided when the restore begins, pressed
+       at the schema's instant. */
+    MapState.own('base',{ read:()=>((typeof HOST.mapType!=='undefined'&&HOST.mapType==='sat')?'sat':'map'),
+      prepare:(want,ctx)=>{ if(typeof HOST.mapType==='undefined') return null;
+        if(want==='sat') return HOST.mapType!=='sat'?document.getElementById('btn-view-sat'):null;
+        return (ctx.full&&HOST.mapType==='sat')?document.getElementById('btn-view-map'):null; },
+      apply:(_v,_ctx,btn)=>{ try{ if(btn) btn.click(); }catch(_){} } });
+    /* (#R211) 「視点の高度と角度」 — bearing and pitch were already in `v`; 3-D terrain was not, and
+       without it the same zoom/pitch produces a flat scene where the shared one had relief. */
+    MapState.own('terrain',{ read:()=>!!HOST.terrain3D,
+      apply:(on)=>{ if(!on) return; const tb=document.getElementById('btn-terrain-3d')||document.getElementById('setting-terrain-3d'); if(!tb) return;
+        try{ if(tb.type==='checkbox'){ if(!tb.checked){ tb.checked=true; tb.dispatchEvent(new Event('change',{bubbles:true})); } } else tb.click(); }catch(_){} } });
+    /* (#R211) …and every simulator's own inputs, in one opaque parameter (see IntMapShareState). The sims go LAST
+       and late: several of them are lazy modules that are only fetched when their layer or panel is asked for, so
+       applying at 900 ms would reach a module that does not exist yet. Each `set` is expected to no-op safely when
+       its module is absent (they all guard). */
+    MapState.own('sims',{ read:()=>{ try{ return window.IntMapShareState.collect(); }catch(_){ return null; } },
+      apply:(obj)=>{ if(obj){ try{ window.IntMapShareState.apply(obj); }catch(_){} } } });
+    MapState.own('layers',{ read:()=>activeLayers(),
+      prepare:(list,ctx)=>{ const later=ctx.later;
+        const want=(list||[]).slice(); const wantSet=new Set(want);
+        /* ⚠ (#R409) A LINK THAT NAMES THE ROW THAT NO LONGER EXISTS OPENS THE TWO THAT REPLACED IT.
+           「WW1とWW2でレイヤーを分けろ。」 split `dl-wars` into `dl-ww1` and `dl-ww2`; every link
+           shared, bookmarked or restored from a session tab before that names the old id, and the
+           loop below resolves ids by getElementById — so without this it would silently open
+           nothing and then, one line further down, be treated as «not wanted» and close the rest.
+           Renaming a control is not a reason to break the links people already sent each other. */
+        if(wantSet.has('dl-wars')){ wantSet.delete('dl-wars');
+          for(const k of ['dl-ww1','dl-ww2']){ if(!wantSet.has(k)){ wantSet.add(k); want.push(k); } }
+          const i=want.indexOf('dl-wars'); if(i>=0) want.splice(i,1); }
+        /* ⚠ (#R439) …AND THE SAME FOR THE ISOBARS, WHICH ARE NOT A ROW ANY MORE. 「等圧線レイヤーを
+           取り込み」 moved that switch into the sea-level-pressure legend, so a link that names
+           `dl-ec-isobars` resolves to nothing. It means 「pressure, with contours」 and it is opened
+           as exactly that: the raster's row plus the switch, through the one door the legend box
+           and Atlas also use. ⚠ The switch is set LATE, with `apply`, because the module that owns
+           it is only wired once the layer has been turned on. */
+        if(wantSet.has('dl-ec-isobars')){ wantSet.delete('dl-ec-isobars');
+          if(!wantSet.has('dl-ec-slp')){ wantSet.add('dl-ec-slp'); want.push('dl-ec-slp'); }
+          const i=want.indexOf('dl-ec-isobars'); if(i>=0) want.splice(i,1);
+          [900,2000,3400].forEach(ms=>later(()=>{ try{ window._imWxIsobars&&window._imWxIsobars(true); }catch(_){} },ms)); }
+        return { want, wantSet }; },
+      apply:(_list,_ctx,p)=>{ const want=p.want, wantSet=p.wantSet;
+        /* ⚠ (#R225) A RETIRED KEY MUST STOP BEING READ, NOT MERELY STOP BEING WRITTEN. `activeLayers()` no
+           longer WRITES `.geo-layer-cb` keys into the hash, but a link (or an address bar) saved months
+           ago still CARRIES them — and this loop resolving them by `data-layer` is precisely how the nine
+           geopolitics layers kept switching themselves on («大昔に捨てたはずの地政学レイヤーが勝手にオンに
+           なる»). Only ids are resolved now, so a retired key finds nothing. */
+        /* ⚠ (share-embed-distribution) …AND MARKED AS A RESTORE, like js/session-tabs.js marks its own.
+           A layer in js/layer-home.js (EU, NATO, Ukraine, the U.S. election) flies the camera to its
+           data when the READER switches it on, and it tells the two apart only by `__imRestored`.
+           This loop did not set it, so a shared link naming one of those layers opened at the
+           layer's home instead of the view in `v=` — MEASURED: `#v=15,50,3…&l=dl-nato` settled at
+           `#v=-48.1019,54.7064,1.20` — and every embed of such a map showed the wrong place. */
+        want.forEach(k=>{ const cb=document.getElementById(k); if(cb&&!cb.checked){ cb.__imRestored=1; cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } });
+        /* turn OFF any data layer NOT in the link so the shared state is reproduced EXACTLY (matters when a
+           link is pasted into a tab that already had layers on). Base toggles (names/borders/…) are untouched. */
+        /* (layer-manifest) «any data layer» is the manifest's `share` set — the same rows the link can carry */
+        sharedIds().forEach(k=>{ const cb=document.getElementById(k); if(cb && cb.checked && !wantSet.has(k)){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } }); } });
     /* (#R23) never persist layers while the intro AUTO-demo is toggling them — otherwise a demo layer
        lands in the URL hash and gets restored on the next load, so a layer the user never chose appears
        on its own ("なにも操作していないのに勝手にレイヤーがオンになる"). */
@@ -3670,108 +3751,32 @@ export function viewHash(HOST){
          the bar by the time the renderer got round to calling back — see BOOT_HASH above. A hash
          NAVIGATION (`opts.shared`) is a new intention and reads the live value, as it must. */
       const H=(opts&&opts.shared===true)?location.hash:(bootDone?location.hash:BOOT_HASH);
-      const m=/[#&]v=([^&]+)/.exec(H); if(!m){ booted=true; return; } restoring=true;
-      /* ⚠⚠ (restore-clock-and-elam) A NEWER RESTORE SUPERSEDES THE STAGED STEPS OF AN OLDER ONE. Every step below
-         is a timer (layers at 700/1800/3200 ms, the clock at 900, the simulators to 4000), and a restore called
-         while an earlier one was still staged (IntMapBookmark.restore — the door Atlas's showcase and the landing
-         examples use) used to leave the earlier timers running. They
-         re-applied the EARLIER link over the newer one: its layer pass re-ticked a war row the newer link had
-         switched off, at the newer link's instant, and js/war-layer.js then moved the clock to the war's first
-         day. MEASURED: `l=dl-ww2&tt=1942-11-01` and, 1 s later, `tt=1985-07-01` ended on 1939-08-23. So each
-         restore takes a generation, and a step whose restore is no longer the latest does nothing. (The
-         hashchange listener below still queues a link that arrives mid-restore; the queued one starts from this
-         restore's closing step, so it takes the next generation and every later step of this one — the 4 s
-         simulator pass included — stops. Every step is staged through `later`: layers, clock, terrain, simulators,
-         the compare window and its own instant `ct`.) */
-      const my=++restoreGen; const later=(fn,ms)=>setTimeout(()=>{ if(my===restoreGen) fn(); },ms);
+      if(!MapState.decode(H).view){ booted=true; return; } restoring=true;
       /* (#R211) a plain reload restores everything too — unless the previous attempt at this very
          hash did not survive, in which case only the view comes back (see `crashed` above). */
       const full = (!!(opts&&opts.shared===true) || firstLoad!==false || !crashed);
       if(full) markAttempt(H);
-      try{ const p=decodeURIComponent(m[1]).split(','); const lng=+p[0],lat=+p[1],z=+p[2],br=+p[3]||0,pi=+p[4]||0,proj=p[5];
-        if(proj==='f'&&HOST.proj!=='flat'){ const b=document.getElementById('btn-view-flat'); if(b) b.click(); }
-        else if(proj==='g'&&HOST.proj!=='globe'){ const b=document.getElementById('btn-view-globe'); if(b) b.click(); }
-        if(isFinite(lng)&&isFinite(lat)) GE().camera.jumpTo({center:[lng,lat],zoom:isFinite(z)?z:2,bearing:br,pitch:pi});
-        /* satellite base view: switch ON if wanted; on a FULL restore also switch back to Map if NOT wanted (so a
-           shared link reproduces the base exactly, e.g. pasting a no-sat link over a satellite session). */
-        try{ const wantSat=/[#&]sat=1/.test(H);
-          if(wantSat){ const sb=document.getElementById('btn-view-sat'); if(sb&&typeof HOST.mapType!=='undefined'&&HOST.mapType!=='sat') later(()=>{ try{ sb.click(); }catch(_){} },300); }
-          else if(full){ const mb=document.getElementById('btn-view-map'); if(mb&&typeof HOST.mapType!=='undefined'&&HOST.mapType==='sat') later(()=>{ try{ mb.click(); }catch(_){} },300); } }catch(_){}
-      }catch(_){}
-      if(full){
-        const lm=/[#&]l=([^&]+)/.exec(H);
-        const want=lm?decodeURIComponent(lm[1]).split(','):[]; const wantSet=new Set(want);
-        /* ⚠ (#R409) A LINK THAT NAMES THE ROW THAT NO LONGER EXISTS OPENS THE TWO THAT REPLACED IT.
-           「WW1とWW2でレイヤーを分けろ。」 split `dl-wars` into `dl-ww1` and `dl-ww2`; every link
-           shared, bookmarked or restored from a session tab before that names the old id, and the
-           loop below resolves ids by getElementById — so without this it would silently open
-           nothing and then, one line further down, be treated as «not wanted» and close the rest.
-           Renaming a control is not a reason to break the links people already sent each other. */
-        if(wantSet.has('dl-wars')){ wantSet.delete('dl-wars');
-          for(const k of ['dl-ww1','dl-ww2']){ if(!wantSet.has(k)){ wantSet.add(k); want.push(k); } }
-          const i=want.indexOf('dl-wars'); if(i>=0) want.splice(i,1); }
-        /* ⚠ (#R439) …AND THE SAME FOR THE ISOBARS, WHICH ARE NOT A ROW ANY MORE. 「等圧線レイヤーを
-           取り込み」 moved that switch into the sea-level-pressure legend, so a link that names
-           `dl-ec-isobars` resolves to nothing. It means 「pressure, with contours」 and it is opened
-           as exactly that: the raster's row plus the switch, through the one door the legend box
-           and Atlas also use. ⚠ The switch is set LATE, with `apply`, because the module that owns
-           it is only wired once the layer has been turned on. */
-        if(wantSet.has('dl-ec-isobars')){ wantSet.delete('dl-ec-isobars');
-          if(!wantSet.has('dl-ec-slp')){ wantSet.add('dl-ec-slp'); want.push('dl-ec-slp'); }
-          const i=want.indexOf('dl-ec-isobars'); if(i>=0) want.splice(i,1);
-          [900,2000,3400].forEach(ms=>later(()=>{ try{ window._imWxIsobars&&window._imWxIsobars(true); }catch(_){} },ms)); }
-        const apply=()=>{
-          /* ⚠ (#R225) A RETIRED KEY MUST STOP BEING READ, NOT MERELY STOP BEING WRITTEN. `activeLayers()` no
-             longer WRITES `.geo-layer-cb` keys into the hash, but a link (or an address bar) saved months
-             ago still CARRIES them — and this loop resolving them by `data-layer` is precisely how the nine
-             geopolitics layers kept switching themselves on («大昔に捨てたはずの地政学レイヤーが勝手にオンに
-             なる»). Only ids are resolved now, so a retired key finds nothing. */
-          /* ⚠ (share-embed-distribution) …AND MARKED AS A RESTORE, like js/session-tabs.js marks its own.
-             A layer in js/layer-home.js (EU, NATO, Ukraine, the U.S. election) flies the camera to its
-             data when the READER switches it on, and it tells the two apart only by `__imRestored`.
-             This loop did not set it, so a shared link naming one of those layers opened at the
-             layer's home instead of the view in `v=` — MEASURED: `#v=15,50,3…&l=dl-nato` settled at
-             `#v=-48.1019,54.7064,1.20` — and every embed of such a map showed the wrong place. */
-          want.forEach(k=>{ const cb=document.getElementById(k); if(cb&&!cb.checked){ cb.__imRestored=1; cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } });
-          /* turn OFF any data layer NOT in the link so the shared state is reproduced EXACTLY (matters when a
-             link is pasted into a tab that already had layers on). Base toggles (names/borders/…) are untouched. */
-          /* (layer-manifest) «any data layer» is the manifest's `share` set — the same rows the link can carry */
-          sharedIds().forEach(k=>{ const cb=document.getElementById(k); if(cb && cb.checked && !wantSet.has(k)){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } });
-        };
-        [700,1800,3200].forEach(ms=>later(apply,ms));
-        /* (#R101) restore time-travel via the kernel (mode-independent). `tt`=ISO instant; keep `ts` (old day-based
-           links) for backward compatibility. */
-        const tt=/[#&]tt=([^&]+)/.exec(H);
-        if(tt){ later(()=>{ try{ const d=new Date(decodeURIComponent(tt[1])); if(!isNaN(d.getTime())&&IntMapTime) IntMapTime.set(d,{source:'ui'}); }catch(_){} },900); }
-        else { const tm=/[#&]ts=(\d+)/.exec(H);
-          if(tm){ later(()=>{ try{ if(IntMapTime) IntMapTime.setDaysAgo(3650-parseInt(tm[1],10),{source:'ui'}); }catch(_){} },900); }
-          /* ⚠ (share-embed-distribution) A LINK WITH NO INSTANT IS A LINK AT «NOW». encode() writes `tt` only while
-             the clock is off live, so its absence is a statement, not a silence — and a full restore applies the
-             WHOLE state the link describes. Before this, pasting a no-`tt` link into a tab standing in 1990
-             moved the camera and the layers and left the clock in 1990 (measured: the address bar then read
-             `#v=20,40,4…&tt=1990-06-15`, a link to a different map than the one pasted). The reader's own saved
-             year does not compete with it: js/session-tabs.js asks `carriesState()` below and yields. */
-          else later(()=>{ try{ if(IntMapTime&&!IntMapTime.isLive()) IntMapTime.setNow({source:'ui'}); }catch(_){} },900); }
-        /* (#R211) 3-D terrain, then the simulators' own numbers. The sims go LAST and late: several
-           of them are lazy modules that are only fetched when their layer or panel is asked for, so
-           applying at 900 ms would reach a module that does not exist yet. Each `set` is expected to
-           no-op safely when its module is absent (they all guard). */
-        try{ if(/[#&]t3=1/.test(H)){ const tb=document.getElementById('btn-terrain-3d')||document.getElementById('setting-terrain-3d');
-          if(tb) later(()=>{ try{ if(tb.type==='checkbox'){ if(!tb.checked){ tb.checked=true; tb.dispatchEvent(new Event('change',{bubbles:true})); } } else tb.click(); }catch(_){} },1200); } }catch(_){}
-        const sm=/[#&]s=([^&]+)/.exec(H);
-        if(sm){ const obj=unpackSims(sm[1]);
-          if(obj) [1500,4000].forEach(ms=>later(()=>{ try{ window.IntMapShareState.apply(obj); }catch(_){} },ms)); }
-        const cm2=/[#&]cmp=([^&]+)/.exec(H);
-        const ct2=/[#&]ct=([^&]+)/.exec(H);   /* (time-compare-lapse) the compare window's own instant */
-        if(cm2){ later(()=>{ try{ window.IntMapCompare&&window.IntMapCompare.open(); compareTime.set(ct2?{param:decodeURIComponent(ct2[1])}:{follow:true});   /* no `ct` is a statement too, as no `tt` is (above): the window follows the main map's clock */ if(cm2[1]==='x'){ later(()=>{ const xb=Array.from(document.querySelectorAll('#compare-window .cmp-btn')).find(b=>/x-ray/i.test(b.textContent)); if(xb) xb.click(); },700); } }catch(_){} },1300); }
-      }
-      later(()=>{ restoring=false;
+      /* ⚠⚠ (restore-clock-and-elam → map-state-store) ONE application of the decoded state. The store hands each
+         field to its owner at the instants js/map-state.js SCHEMA declares (layers 700/1800/3200 ms, the clock 900,
+         terrain 1200, the comparison window 1300, the simulators 1500/4000), and a newer restore supersedes every
+         staged step of an older one — MEASURED before #881: `l=dl-ww2&tt=1942-11-01` and, 1 s later,
+         `tt=1985-07-01` ended on 1939-08-23, because the older link's layer pass re-ticked a war the newer one had
+         switched off. The generation that prevents it is the store's, so it now covers every owner, the ones in
+         other files included. ⚠ A LINK WITH NO INSTANT IS A LINK AT «NOW», and a link with no `ct` follows the
+         main clock: the codec gives every absent field the value its absence states (js/map-state.js `decode`). */
+      MapState.restore(H,{ full, onSettle:()=>{ restoring=false;
         /* (share-embed-distribution) a link that arrived while this one was being applied — see the hashchange listener */
-        if(queued){ queued=false; try{ restore({shared:true}); }catch(_){} } },3500);   /* a shared restore reads the live address (H) and does nothing if it names no view */
+        if(queued){ queued=false; try{ restore({shared:true}); }catch(_){} } } });   /* a shared restore reads the live address (H) and does nothing if it names no view */
       booted=true;   /* (#R244) the boot restore has read the address — the bar may be written now */
     }
-    GE().events.on('moveend',()=>{ clearTimeout(t); t=setTimeout(save,400); });
-    compareTime.on(()=>{ clearTimeout(t); t=setTimeout(save,300); });   /* (time-compare-lapse) the window's instant is part of the link */
+    /* (map-state-store) the address bar follows the STORE: any field the link spells that moves — the camera on
+       `moveend`, a shared layer row, the clock, the comparison window, the base map, the terrain — re-arms the
+       one writer. The camera keeps its 400 ms settle; the rest 300 ms, as before. */
+    const LINKED=new Set(MapState.SCHEMA.filter(f=>f.params.length).map(f=>f.key));
+    MapState.on(e=>{ if(!LINKED.has(e.key)) return; clearTimeout(t); t=setTimeout(save,e.key==='view'?400:300); });
+    GE().events.on('moveend',()=>MapState.changed('view'));
+    /* the base map and the terrain are this file's fields; their buttons are where they move */
+    [['btn-view-map','base'],['btn-view-sat','base'],['btn-view-3d','terrain']].forEach(([id,k])=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>MapState.changed(k)); });
     /* (#R42b) ROOT CAUSE of "コピーしたリンクを開いてもそのままにならない": pasting a link into the SAME tab is a
        hash-only navigation — no reload — so restore() never re-ran. history.replaceState (used by save) does NOT
        fire hashchange, so this can't loop. Re-run a FULL restore on any user hash navigation to a state link. */
@@ -3781,12 +3786,12 @@ export function viewHash(HOST){
        address bar showed the SECOND. Running the second at once would interleave two sets of staged steps, so
        it is remembered and applied when the first finishes; it reads the live address then, so of several
        links pasted in that window the LAST one is the one applied. (`queued` is declared with `restoring`.) */
-    window.addEventListener('hashchange',()=>{ try{ if(!/[#&]v=/.test(location.hash)) return; if(restoring){ queued=true; return; } restore({shared:true}); }catch(_){} });
+    window.addEventListener('hashchange',()=>{ try{ if(!MapState.carries(location.hash)) return; if(restoring){ queued=true; return; } restore({shared:true}); }catch(_){} });
     /* (#R16) GHOST-LAYER fix: the hash (which restore() re-applies on reload) used to update ONLY on pan,
        so toggling a layer OFF without panning left it in the hash → it "came back" on the next/crash reload
        ("表示を辞めたはずのレイヤーが残り続ける"). Persist the hash on EVERY layer change so the restored set
-       always matches what's actually on. */
-    document.addEventListener('change',(e)=>{ const el=e.target; if(el && (el.id&&/^dl-/.test(el.id) || (el.classList&&el.classList.contains('geo-layer-cb')))){ clearTimeout(t); t=setTimeout(save,300); } });
+       always matches what's actually on. (map-state-store) …by telling the store the field moved. */
+    document.addEventListener('change',(e)=>{ const el=e.target; if(el && (el.id&&/^dl-/.test(el.id) || (el.classList&&el.classList.contains('geo-layer-cb')))) MapState.changed('layers'); });
     /* ⚠ (#R244) ONE boot pass, whichever way the renderer becomes ready — and a backstop, because
        `load` may already have fired when this module is evaluated, in which case `on('load',…)`
        never calls back and `booted` would stay false for the whole session (the address bar would
@@ -3797,9 +3802,10 @@ export function viewHash(HOST){
     const _boot=()=>{ if(bootRan) return; bootRan=true; try{ restore(); }catch(_){} bootDone=true; booted=true; };
     if(_imCanDraw()) _boot(); else { GE().whenCanDraw().then(_boot); setTimeout(_boot,8000); }
     /* carriesState(): did this document open on a map state (`v=`)? Then the link — not the reader's saved
-       session — owns everything it describes, the clock included (js/session-tabs.js yields its year to it). */
-    window.IntMapBookmark={ link:()=>location.origin+location.pathname+location.search+encode(), save:save, restore:restore,
-      carriesState:()=>/[#&]v=/.test(BOOT_HASH) };
+       session — owns everything it describes, the clock included (js/session-tabs.js asks the store, which
+       holds the same BOOT_HASH). `state()` is the store's tree, for the specs' page.evaluate (no new global). */
+    window.IntMapBookmark={ link:()=>MapState.link(), save:save, restore:restore,
+      carriesState:()=>MapState.carriesState(), state:()=>MapState.snapshot() };
   })();
 }
 

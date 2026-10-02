@@ -30,6 +30,7 @@ import { installHermeticRouting } from './helpers/network.js';
 import { seededStorageState, BASE } from './helpers/session-seed.js';
 import { SHOWCASE, CAPTURED, RECORD_ANSWERED } from '../js/showcase.js';
 import { sharedIds } from '../js/layer-manifest.js';
+import { decode } from '../js/map-state.js';   /* (map-state-store) the codec the app writes the link with */
 import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 import { SITE_TOKEN } from '../scripts/site-url.mjs';
 
@@ -63,6 +64,13 @@ async function assertExample(page, s) {
   expect(Math.abs(cam.lng - s.view.lng), s.id + ' camera lng').toBeLessThan(1e-3);
   expect(Math.abs(cam.lat - s.view.lat), s.id + ' camera lat').toBeLessThan(1e-3);
   expect(Math.abs(cam.z - s.view.zoom), s.id + ' camera zoom').toBeLessThan(0.02);
+  /* (map-state-store) …and the map's one state reads the same map back: the link the app would share NOW names this
+     example's view, instant and layers — the store's projection of the live map, decoded by the same codec that read
+     the captured link (js/map-state.js). */
+  const shared = decode(new URL(await page.evaluate(() => window.IntMapBookmark.link())).hash), linked = decode(CAPTURED[s.id].hash);
+  expect([shared.view.lng, shared.view.lat, shared.view.zoom, shared.view.proj], s.id + ': the store view').toEqual([linked.view.lng, linked.view.lat, linked.view.zoom, linked.view.proj]);
+  expect(shared.time, s.id + ': the store instant').toEqual(linked.time);
+  expect(shared.layers.slice().sort(), s.id + ': the store layers').toEqual(linked.layers.slice().sort());
   for (const id of s.layers) {
     await page.waitForFunction((id) => { try { return !!window.__imLayerPainted(id); } catch (_) { return false; } }, id, { timeout: 60000 })
       .catch(() => {});
