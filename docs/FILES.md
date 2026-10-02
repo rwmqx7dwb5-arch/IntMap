@@ -1182,6 +1182,10 @@ safe-html.js                      **出力の無害化の唯一の正本** `wind
                                   markup（落ちる場所で escape するタグ）, trusted, isMarkup}。アプリ
                                   （src/main.js）・sources.html・admin.html・ES module（import）・Node の検査が同じ
                                   ファイルを読む。他の場所の独自エスケープは scripts/safe-output.mjs の台帳が数える
+inline-actions.js                 **マークアップがコードを動かす唯一の方法**——`data-im-click="名前"`（change／error も）と
+                                  `data-im-arg`。window の capture で 1 つのリスナが ACTIONS（語彙の唯一の宣言）を引き、
+                                  未知の名前は拒んで記録する。CSP に 'unsafe-inline' が無いので onclick= 等は動かない
+                                  （scripts/csp.mjs が両方向に照合。src/main.js が描画より前に import）
 ```
 
 ### 3.11 `data/`
@@ -1437,6 +1441,10 @@ scripts/
   runtime-scripts.mjs             配信物が他 origin から読む <script> は integrity＋crossorigin を持つか、
                                   理由の文つきで UNPINNABLE に宣言されているか。CSP script-src の各ホストは
                                   使われているか CSP_ONLY に宣言されているか（acorn・両方向の照合。check:static が呼ぶ）
+  csp.mjs                         **ページの script-src**——インライン <script> を本文の sha256 で許す（'unsafe-inline' 無し）。
+                                  `--write` が逐語コピーのページへ書き、`cspHashesPlugin()` がビルド後の本文（スタンプ入り）
+                                  で書き直す。門（check:static の script-policy）: 全ページに CSP・ハッシュの過不足・
+                                  インラインのイベント属性ゼロ・data-im-* の名前が js/inline-actions.js と両方向に一致
   doc-facts.mjs                   **文書間の固定事実の照合**（§15.5）
   architecture-spec.mjs           現状仕様書の**在り処の唯一の実装**——章を docs/architecture/ から発見し、
                                   案内図の表から節番号を共有するファイルを導く（doc-facts の `arch-split`・

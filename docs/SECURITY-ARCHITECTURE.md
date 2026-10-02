@@ -166,9 +166,9 @@ flowchart LR
 > renderer's sanitizer does in a given release. `tests/maplibre-attribution-xss-checks.test.mjs` evaluates
 > the engine with a recording fake and feeds hostile attribution strings to the credit painter.
 
-Because the boot code is still inline (§6) and the app holds the session token in
-`localStorage`, **correct output-encoding at every sink is the primary XSS defense** (CSP is
-secondary — see §6). The app IS built (Vite, since #R175) and what ships is `dist/`, but that
+Because the app holds the session token in `localStorage`, **correct output-encoding at every
+sink is the primary XSS defense** (CSP is the second line — see §6; since csp-without-inline that
+line refuses inline code it was not told about by hash). The app IS built (Vite, since #R175) and what ships is `dist/`, but that
 changes nothing here: a bundled sink is exactly as exploitable as an inline one. All untrusted text now routes through one canonical, dependency-free,
 globally-defined helper, `window.IntMapSafe`, whose one body is the file `js/safe-html.js`:
 
@@ -604,11 +604,48 @@ unauthenticated GET could ask it to pull ~400 MB from EUMETNET.
 
 ## 6. Browser security — CSP & the GitHub Pages limits
 
-IntMap is served by **GitHub Pages**, which **cannot set custom HTTP response headers**. Since
-#R175 it *is* built (Vite), but the boot code is still inline in `index.html` — measured, the
-published `dist/index.html` contains five inline `<script>` blocks — and the app fetches from
-**60+ external hosts**, so a nonce/hash `script-src` and a host-list `connect-src` remain out
-of reach. The chosen posture:
+IntMap is served by **GitHub Pages**, which **cannot set custom HTTP response headers**, so every
+policy is an in-page `<meta>` — on **every** served HTML page (until csp-without-inline only
+`index.html` and `admin.html` had one; about, teachers, the share pages, privacy, terms, science
+and sources, in both languages, had none). The chosen posture:
+
+- **No `'unsafe-inline'` in any `script-src`. Inline `<script>`s are admitted one by one, by the
+  sha256 of their text.** A nonce is not possible here: it must differ per response, and Pages
+  serves the same bytes to everyone, so a nonce in a static file is a constant anyone can read.
+  A hash names the script's own text, which a static page *can* promise. `index.html`'s seven
+  inline scripts carry the build stamp, so their hashes are derived **after** the build fills it in
+  — `scripts/csp.mjs` `cspHashesPlugin()` is the last `transformIndexHtml` step and runs again
+  over every page in `dist/` when the build closes (the build fails if a page still admits inline
+  code wholesale). The pages copied verbatim hold their hashes in the source
+  (`node scripts/csp.mjs --write`; `scripts/landing.mjs` for the pages it generates). The hash is
+  taken over CR LF → LF, as the HTML tokenizer hands the text to the CSP.
+- **No inline event attribute is served.** A hash cannot admit `onclick="…"` (that needs
+  `'unsafe-hashes'`, and a handler with an interpolated index has no fixed hash), so the 39 that
+  markup-building code in `js/` carried became **named actions**: `data-im-click="coFilterRemove"
+  data-im-arg="3"`, run by one capture listener per event on `window` (`js/inline-actions.js`).
+  The vocabulary is declared once there; an undeclared name is refused and recorded (nothing is
+  looked up on `window` by the attribute's text), and `data-im-arg` is data — an index is refused
+  unless it is a non-negative integer.
+- `npm run check:static` (rule `script-policy`) holds it: every served HTML page has a policy
+  with a `script-src`; none carries `'unsafe-inline'` or `'unsafe-hashes'`; a page's sha256
+  sources are exactly the hashes of its inline scripts (missing = a script the browser refuses,
+  extra = a permission for text that is gone); no event attribute in served markup or in a
+  string/template that builds markup; every action name is declared, for its event, and every
+  declared one is used. `tests/security.spec.js` loads the built pages with a
+  `securitypolicyviolation` recorder installed before the first byte and requires an empty record
+  — and shows an injected `<img onerror>` does not run.
+- **`connect-src`, `img-src` and `frame-src` keep `https:` — evaluated, not assumed
+  (csp-without-inline).** `scripts/outbound-hosts.json` lists 176 requested hosts, but it cannot be
+  the policy: ⑴ the article reader fetches the **publisher's own page** directly
+  (`js/article-reader.js`, `direct:true`) — any host a news feed links to; ⑵ webcam images and
+  panorama frames come from **OSM-editable URLs** and news thumbnails from feeds, any host;
+  ⑶ seven URLs have a host assembled at run time (the 511 traffic-camera domains, OSRM profiles —
+  `node scripts/outbound-hosts.mjs` prints them); ⑷ the ledger reads `https?://` only, so it records
+  no scheme and no WebSocket: `wss:` reaches Supabase Realtime (its URL is built from
+  `SUPABASE_URL` at run time) and `wss://stream.aisstream.io` (the reader's own AIS key), neither
+  of which it discovers. A host list built from it would turn each of these into a silently empty
+  layer. The pages that fetch nothing beyond this origin (admin, the reading and landing pages)
+  name exactly what they use.
 
 - **In-page CSP (`<meta http-equiv>`), verified in a real browser against the built site.**
   ⚠ **The policy used to name five directives and have no `default-src`.** A directive that is
@@ -673,8 +710,15 @@ of reach. The chosen posture:
   into the deploy; measured on production, `assets/main-VdS_tG39.js.map` answered **200 with
   8,810,729 bytes** — a complete copy of every original source, comments included. The build
   emits none unless `IM_SOURCEMAP=1`.
-- **Because `'unsafe-inline'` is unavoidable, output-encoding (§4) — not CSP — is the primary
-  XSS defense.** The CSP is defense-in-depth.
+- **Output-encoding (§4) — not CSP — is still the primary XSS defense.** The CSP is
+  defense-in-depth: without `'unsafe-inline'` it now refuses an injected script or event
+  attribute that an escaping slip let through, but `'unsafe-eval'` (Cesium, §8) and
+  `style-src 'unsafe-inline'` (below) remain.
+- **`style-src` keeps `'unsafe-inline'` on `index.html`, `admin.html`, privacy, terms and
+  science.** The app's markup sets style attributes in thousands of places (`index.html` alone
+  has 91), KaTeX positions each typeset glyph with one, and the legal text sets them on its
+  headings. A style attribute cannot run code; what it can do (exfiltrate through `url()`) is
+  bounded by `img-src`. The landing pages and sources set none and admit none.
 - **Header-only controls GitHub Pages cannot provide** — `X-Frame-Options` / CSP
   `frame-ancestors` (clickjacking), HSTS, `Permissions-Policy`, a header-form CSP. Documented
   here as a residual limitation. Mitigations: IntMap performs no sensitive state-changing
@@ -763,17 +807,16 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
 
 ## 8. Residual risks (accepted / tracked)
 
-1. **`'unsafe-inline'`/`'unsafe-eval'` in `script-src`** — the boot code is inline (five
-   `<script>` blocks in the built `index.html`) and Cesium/KaTeX compile at runtime. Removing
-   either is a rewrite of how the app loads, not a policy edit. ⚠ **Measured 2026-09-18 (#R801)**
+1. **`'unsafe-eval'` in `index.html`'s `script-src`** — Cesium compiles at runtime.
+   (`'unsafe-inline'` left every `script-src` in csp-without-inline: inline scripts are admitted
+   by hash and the 39 inline event attributes became named actions — §6.) ⚠ **Measured 2026-09-18 (#R801)**
    with a `securitypolicyviolation` listener installed from the first byte of the built page:
    the MapLibre engine raises **zero** violations without `'unsafe-eval'`; Cesium raises one at
    load — its bundled knockout evaluates `(0,eval)("this")` — and `'wasm-unsafe-eval'` alone
    leaves the 3-D engine on the splash screen. So the directive stays exactly as long as Cesium
    needs it, and `tests/backend-edge-hardening-checks.test.mjs` #R801 ⑦ reads `node_modules/cesium` for
    that need and turns red the day it is gone. Mitigated by output-encoding
-   (§4). ⚠ **Not removable by moving the remaining inline event attributes**, which is why they
-   were only moved where a *value* was being interpolated into one (see §11.4).
+   (§4).
 2. **JWT in `localStorage`** — Supabase JS default; mitigated by the XSS fixes. An httpOnly
    cookie would need a different auth transport.
 3. **Header-only browser controls** not settable on GitHub Pages (§6). MEASURED 2026-08-20:
@@ -1044,7 +1087,8 @@ one thing vanilla CI could not otherwise reproduce.
 ### 11.4 Admin console isolation (`admin.html`)
 Removed the public **Sign Up** (admins are DB-provisioned; the real boundary is RLS/RPC + the
 profiles guard trigger, so a non-admin who signs in is bounced by `gate()`). Added a **strict CSP**
-(`connect-src` locked to self + `*.supabase.co`; `object-src 'none'`; `base-uri`/`form-action 'self'`),
+(`connect-src` locked to self + `*.supabase.co`; `object-src 'none'`; `base-uri`/`form-action 'self'`;
+since csp-without-inline its three inline scripts are admitted by hash and nothing else inline runs),
 hardened the local escaper to also escape the single quote, added a `safeUrl()` scheme allow-list,
 and a **re-authentication ("sudo") gate** before the destructive starter-dataset import. Behavioural
 XSS tests for `esc()`/`safeUrl()` live in `tests/auth-security-checks.test.mjs` (#R155).

@@ -44,6 +44,11 @@ import '../js/newsgeo.js';
    keeping copies. Neither the three slots above nor anything they import touches IntMapSafe
    (tests/safe-output-single-module-checks measures that), and no inline script in index.html does. */
 import '../js/safe-html.js';
+/* (csp-without-inline) …and the one listener that runs what markup NAMES (`data-im-click="…"`) instead of
+   what it used to CARRY (`onclick="…"`): the page's CSP admits no inline event attribute any more. It must
+   be listening before any module renders such markup — an <img data-im-error> can fail the moment it is
+   inserted. Nothing it does at load is more than three addEventListener calls on window. */
+import '../js/inline-actions.js';
 /* (client-error-log) …and, as early as the pinned first three allow, the error reporter: an exception thrown by
    any module evaluated after this line, or by the app at any later time, reaches IntMap's own record
    (public.client_errors) instead of nowhere — the Sentry loader it replaces never had a DSN. */

@@ -665,6 +665,21 @@ try {
   err('runtime-scripts', 'could not run the cross-origin script check: ' + (e && e.message));
 }
 
+// ── 14b. (csp-without-inline) inline code is admitted by hash, never wholesale ──
+// Every served page states a script policy; no script-src carries 'unsafe-inline'; a page's sha256
+// sources are exactly the hashes of its inline <script>s; no inline event attribute (onclick=…) is
+// served — not in markup, not in a string that builds markup — and every data-im-* action name is
+// declared in js/inline-actions.js, and every declared one is used. The rule and the hashing live in
+// scripts/csp.mjs (which the build runs too, over dist/). A rule here and not a check:* of its own for
+// the reason given at 15.
+try {
+  const { collectServed } = await import('./runtime-scripts.mjs');
+  const { scriptPolicyProblems, declaredActions } = await import('./csp.mjs');
+  for (const p of scriptPolicyProblems(collectServed(ROOT), await declaredActions(ROOT))) err('script-policy', p);
+} catch (e) {
+  err('script-policy', 'could not run the script-policy check: ' + (e && e.message));
+}
+
 // ── 15. (fetch-deadline-layer) a request that cannot end is not added unseen ──
 // A `fetch()` with no signal against a host that has stopped answering is permanent, and whatever
 // awaits it — a layer row, a shared in-flight entry, an Atlas turn — inherits that. The app's way
