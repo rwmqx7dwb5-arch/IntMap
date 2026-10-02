@@ -73,7 +73,11 @@ export function mobileMapInput(HOST){
     const cancel=(e)=>{
       if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; }
       startClient=null;   /* (#R498) disarm — every later touchmove in this gesture returns on its first line */
-      if(fired && e && e.cancelable){ e.preventDefault(); }
+      /* (mobile-shell-flow) suppressing the click a long-press would otherwise end in is a touchEND's job —
+         the only listener registered {passive:false}. touchmove and touchcancel are passive (a pan must not
+         wait on this file), and calling preventDefault from them only made the browser log «Unable to
+         preventDefault inside passive event listener» on every pinch that followed a long-press. */
+      if(fired && e && e.type==='touchend' && e.cancelable){ e.preventDefault(); }
     };
     canvas.addEventListener('touchmove',(e)=>{
       if(!startClient) return;                      /* (#R498) already cancelled: no read, no work */
