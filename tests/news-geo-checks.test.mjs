@@ -227,7 +227,8 @@ test('#R161 #14 index.html loads the engine and uses it FIRST in analyzeContext'
   assert.ok(html.includes("subjectType=_NG_KIND[r.kind]||'city'"), 'engine result not mapped to a place type');
   /* the legacy scorer must still be reachable as the fallback */
   /* line-ending tolerant: index.html is stored with CRLF */
-  assert.ok(/if\(!subjectLoc\)\{\s+let best=null, bestScore=0;/.test(html), 'legacy gazetteer fallback removed');
+  /* (mobile-heavy-work) the scan itself is js/place-terms.js bestSubject — prefiltered, compiled on first reach */
+  assert.ok(/if\(!subjectLoc\)\{\s+const db=HOST\.geoDB;\s+const best=bestSubject\(/.test(html), 'legacy gazetteer fallback removed');
   /* de/ru/es used to render an undefined subject name.
      (#R169) analyzeContext moved into js/news-context.js, where the closure read `currentLang`
      became the host read `HOST.lang` — accept either spelling so the guard tracks the code. */

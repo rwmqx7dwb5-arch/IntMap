@@ -158,19 +158,68 @@ function flatten(im, bg) {
   return { px: out, F, maxF, moved };
 }
 
-const file = path.join(ROOT, TARGET.file);
-const im = pngDecode(fs.readFileSync(file));
-const { px, F, maxF, moved } = flatten(im, TARGET.bg);
-const check = process.argv.includes('--check');
-console.log(`${TARGET.file}  ${im.w}×${im.h}  field measured (${F.join(',')})  →  (${TARGET.bg.join(',')})  · ${moved} channel values moved`);
-if (check) {
-  const already = F[0] === TARGET.bg[0] && F[1] === TARGET.bg[1] && F[2] === TARGET.bg[2];
-  console.log(already ? 'OK — the shipped mark already wears the screen colour' : 'STALE — run without --check');
-  process.exit(already ? 0 : 1);
+/* ══ (mobile-heavy-work) THE LIGHT MARK AT THE SIZE THE LAUNCH SCREEN DRAWS IT ═══════════════════════════════
+   The light launch screen named the supplied master, IntMap.Icon_BW-inverted.png — 1254 px, 206,207 B — for a
+   box css/intmap.css draws 156 CSS px wide. MEASURED in production on a phone: 201 kB of the launch screen's
+   own bytes were this one picture, fetched before anything else could be shown. A phone draws the box at
+   156 × its device pixel ratio, and no phone this app supports draws above DPR 3 (iPhone Pro / Max), so the
+   file the CSS names is the master box-filtered to 156 × 3 px: every device pixel of the box still gets its own
+   source average, and nothing finer than a device pixel is shipped. The width is READ from the .boot-icon rule
+   (a resized box re-derives the file); the master stays in the repository as the source.
+   ⚠ BOOT_ICON_DPR EXPIRES IF a device with a higher ratio is supported — raise it and re-run. */
+export const LIGHT = { src: 'IntMap.Icon_BW-inverted.png', out: 'IntMap.Icon_BW-inverted.boot.png' };
+export const BOOT_ICON_DPR = 3;
+export function bootIconCssPx(css = fs.readFileSync(path.join(ROOT, 'css/intmap.css'), 'utf8')) {
+  const m = /\.boot-icon\{\s*width:(\d+)px/.exec(css);
+  if (!m) throw new Error('css/intmap.css: no .boot-icon{ width:…px } rule to size the launch mark from');
+  return +m[1];
 }
-if (F[0] === TARGET.bg[0] && F[1] === TARGET.bg[1] && F[2] === TARGET.bg[2]) {
-  console.log('nothing to do — already flattened onto the screen colour (this script is idempotent)');
-} else {
-  fs.writeFileSync(file, pngRGB(px, im.w, im.h));
-  console.log(`wrote ${TARGET.file} (${(fs.statSync(file).size / 1024).toFixed(0)} KB, maxF ${maxF})`);
+function toRGB(im) {
+  if (im.bpp === 3) return im.data;
+  const out = Buffer.alloc(im.w * im.h * 3);
+  for (let i = 0, j = 0; i < im.data.length; i += 4, j += 3) { out[j] = im.data[i]; out[j + 1] = im.data[i + 1]; out[j + 2] = im.data[i + 2]; }
+  return out;
+}
+/** the derived light mark as { S, px } — the master resampled with the manifest builder's own filter */
+export async function deriveLight() {
+  const { resample } = await import('./build-app-manifest.mjs');
+  const src = pngDecode(fs.readFileSync(path.join(ROOT, LIGHT.src)));
+  const S = bootIconCssPx() * BOOT_ICON_DPR;
+  if (S >= src.w) throw new Error(LIGHT.src + ' (' + src.w + ' px) is not larger than the box it would be derived for (' + S + ' px)');
+  const { F } = fieldColour(src);
+  return { S, px: resample(toRGB(src), src.w, src.h, S, S / src.w, F) };
+}
+export function readLight() {
+  const f = path.join(ROOT, LIGHT.out);
+  if (!fs.existsSync(f)) return null;
+  const im = pngDecode(fs.readFileSync(f));
+  return { w: im.w, h: im.h, px: toRGB(im) };
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const check = process.argv.includes('--check');
+  const file = path.join(ROOT, TARGET.file);
+  const im = pngDecode(fs.readFileSync(file));
+  const { px, F, maxF, moved } = flatten(im, TARGET.bg);
+  console.log(`${TARGET.file}  ${im.w}×${im.h}  field measured (${F.join(',')})  →  (${TARGET.bg.join(',')})  · ${moved} channel values moved`);
+  const darkOk = F[0] === TARGET.bg[0] && F[1] === TARGET.bg[1] && F[2] === TARGET.bg[2];
+  const light = await deriveLight();
+  const have = readLight();
+  const lightOk = !!have && have.w === light.S && have.h === light.S && have.px.equals(light.px);
+  if (check) {
+    console.log(darkOk ? 'OK — the shipped mark already wears the screen colour' : 'STALE — run without --check');
+    console.log(lightOk ? `OK — ${LIGHT.out} is ${LIGHT.src} at ${light.S} px` : `STALE — ${LIGHT.out} is not ${LIGHT.src} resampled to ${light.S} px; run without --check`);
+    process.exit(darkOk && lightOk ? 0 : 1);
+  }
+  if (darkOk) console.log('nothing to do — already flattened onto the screen colour (this script is idempotent)');
+  else {
+    fs.writeFileSync(file, pngRGB(px, im.w, im.h));
+    console.log(`wrote ${TARGET.file} (${(fs.statSync(file).size / 1024).toFixed(0)} KB, maxF ${maxF})`);
+  }
+  if (lightOk) console.log(`${LIGHT.out} is current (${light.S} px)`);
+  else {
+    const { pngEncodeRGB } = await import('./build-app-manifest.mjs');
+    fs.writeFileSync(path.join(ROOT, LIGHT.out), pngEncodeRGB(light.px, light.S, light.S));
+    console.log(`wrote ${LIGHT.out} (${light.S}×${light.S}, ${(fs.statSync(path.join(ROOT, LIGHT.out)).size / 1024).toFixed(0)} KB)`);
+  }
 }

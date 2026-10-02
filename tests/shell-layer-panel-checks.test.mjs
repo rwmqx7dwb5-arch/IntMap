@@ -843,7 +843,13 @@ test('R408 追記 ⑥b: 門は必ず開く——シートを開く経路が .sho
   /* そして起動時の経路（applyLayout）は、シートを表示しないまま mountInto を呼ぶ——それでよい。
      グリッドは用意され、絵だけが読者の操作を待つ。 */
   const apply = m.slice(m.indexOf('function applyLayout('), m.indexOf('function applyLayout(') + 4000);
-  assert.match(apply, /mountInto\(moMountLayers\)/, '起動時も格子は組む（行は用意されている）');
+  /* ⚠ (mobile-heavy-work) 起動時の経路はもう格子を組まない——閉じたシートの中に組む費用（CPU ×4 で 196 ms
+     ＋強制レイアウト）が DOMContentLoaded の処理の最大の項目だった。組むのは openSheet（上で検査）と、
+     起動画面が上がってしばらく後の idle に 1 度だけの prebuildGrid。どちらも .show とは独立に門を通る。 */
+  assert.ok(!/mountInto\(moMountLayers\)/.test(apply), '起動時の経路は格子を組まない');
+  assert.match(apply, /prebuildGrid\(\)/, '…代わりに後で 1 度組む予約をする');
+  const pre = m.slice(m.indexOf('function prebuildGrid('), m.indexOf('function prebuildGrid(') + 1600);
+  assert.match(pre, /mountInto\(moMountLayers\)/, 'その予約が組むのは同じ格子');
   assert.ok(!/classList\.add\('show'\)/.test(apply), '起動時にシートを表示していない');
 });
 

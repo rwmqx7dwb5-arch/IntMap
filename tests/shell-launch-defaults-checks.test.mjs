@@ -47,10 +47,12 @@ test('R206 ① the light launch mark carries the launch screen’s own colour, i
   assert.ok(light, 'the light launch icon has its own rule');
   assert.match(light[1], /background-color:\s*var\(--bg-color\)/,
     'the tile under the mark is the screen’s colour, not a literal white');
-  assert.match(light[1], /IntMap\.Icon_BW-inverted\.png/, 'and it is still the light mark (#R205)');
+  /* (mobile-heavy-work) the launch-sized copy of the light mark — scripts/boot-icon-flatten.mjs derives it from the
+     1254 px master and its --check holds the two together; the pixels below are read from the file the CSS names */
+  assert.match(light[1], /IntMap\.Icon_BW-inverted\.boot\.png/, 'and it is still the light mark (#R205), at the size it is drawn');
 
   /* the PNG's own corner pixel, read straight out of the file (no image library in CI) */
-  const buf = fs.readFileSync(path.join(ROOT, 'IntMap.Icon_BW-inverted.png'));
+  const buf = fs.readFileSync(path.join(ROOT, 'IntMap.Icon_BW-inverted.boot.png'));
   assert.equal(buf.readUInt32BE(12), 0x49484452, 'IHDR is where PNG puts it');
   const w = buf.readUInt32BE(16), bitDepth = buf[24], colorType = buf[25];
   assert.equal(bitDepth, 8, 'the mark is 8 bits per channel');

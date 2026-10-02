@@ -10,6 +10,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTables } from './tables.js';
+import { makePlaceTerms, bestSubject, bestPublisherPlace } from './place-terms.js';
 
 export function newsContext(HOST){
   /* ══ (#R212) THE OUTLET IS OFTEN NAMED BY ITS DOMAIN, AND THE TABLE IS KEYED BY ITS NAME ═════════
@@ -50,114 +51,20 @@ export function newsContext(HOST){
        ("Manila Bulletin", "Kashmir Observer", "Texas Tribune", "Nairobi News"…). When the curated dict
        misses, scan the publisher string against the place gazetteer and use the most specific match, so far
        fewer publisher pins land "unknown". Skip demonyms/orgs and very short terms to avoid false hits. */
-    try{ if(typeof HOST.geoDB!=='undefined' && HOST.geoDB){ let best=null,bestLen=0,bestLocal=-1;
-      for(const g of HOST.geoDB){ if(g.demonym||g.org||!g._terms) continue;
-        for(const t of g._terms){ const term=t.term; if(!term||term.length<4) continue;
-          const hit = t.jp ? publisher.includes(term) : (t.matchRe&&t.matchRe.test(publisher));
-          if(hit){ const loc=(typeof TYPE_LOCAL!=='undefined'?(TYPE_LOCAL[g.type]||0):0);
-            if(term.length>bestLen || (term.length===bestLen && loc>bestLocal)){ best=g; bestLen=term.length; bestLocal=loc; } } } }
+    try{ if(typeof HOST.geoDB!=='undefined' && HOST.geoDB){ const db=HOST.geoDB;
+      const best=bestPublisherPlace(db,publisher,_PT().termsOf,_PT().candidates(db,publisher));
       /* ⚠ (#R212) THE LABEL IS THE OUTLET, NOT THE PLACE ITS NAME CONTAINS. This branch found the
          New York Post by the words «New York» and then labelled the pin 「Source: New York」 — which
          reads as though a city were the publisher. The place decides WHERE; the publisher string is
          WHO, and it is the one the reader asked about. */
       if(best) return { loc:best.loc, label:publisher, place:(best.name&&(best.name[HOST.lang]||best.name.en))||'', cjk:false }; } }catch(_){}
     return null; }
-  /* Precompile per-term matchers once (runs ≈290 entries × N news items on every refresh):
-       jp      — CJK terms match by substring; Latin terms match on word boundaries
-       matchRe — word-boundary matcher for Latin terms
-       ctxRe   — "is this place governed by a locational preposition / particle?"
-                 EN: in/at/to/from/near/into <place>   ·   JP: <place>で/へ/に/を/から */
-  function isCJKTerm(term){ return /[　-鿿]/.test(term); }
-  function _compileTerm(term){
-    const jp=isCJKTerm(term), cyr=/[Ѐ-ӿ]/.test(term), esc=term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-    /* (#R39) Cyrillic/Russian path: JS `\b` word-boundaries don't fire around Cyrillic (it isn't `\w`),
-       AND Russian inflects heavily — so match the supplied STEM plus up to 4 trailing Cyrillic letters,
-       bounded by a non-Cyrillic-letter on the left (a consuming prefix, not lookbehind, for old-Safari
-       safety). e.g. stem «Москв» → Москва/Москве/Москвы/Москву; «Росси» → России/Россию. */
-    if(cyr){ return { term, jp:false, cyr:true,
-      matchRe: new RegExp('(?:^|[^А-Яа-яЁёІіЇїЄє])'+esc+'[а-яёіїєa-z]{0,4}','i'),
-      ctxRe:   new RegExp('(?:в|во|на|из|под|у|около)\\s+'+esc,'i') }; }
-    return { term, jp,
-      matchRe: jp?null:new RegExp(`\\b${esc}\\b`,'i'),
-      ctxRe:   jp?new RegExp(`${esc}(?:で|へ|に|を|から|では)`)
-                 :new RegExp(`\\b(?:in|at|to|from|near|into)\\s+${esc}\\b`,'i') };
-  }
-  /* ══ (#R311) FIVE REBUILDS PER BOOT, AND FOUR OF THEM COMPILE THE SAME MATCHERS AGAIN ═══════════
-     MEASURED on a desktop boot against the dev server (`frame-profile.mjs --attribute` puts 326.5 ms
-     of self time in this file, 212.9 ms of it in the compile loop at the end of rebuildGeoIndex —
-     the second-largest boot cost in IntMap's own code). The loop is not the problem; how often it
-     runs, and how little of each run is NEW work, is:
-
-       rebuildGeoIndex() is re-entered FIVE times on one boot, by five separate and CORRECT callers —
-       the boot's own heavy() (js/app-body.js), countryStats landing and then the 10 m upgrade
-       (js/countries-ui.js, twice), the world gazetteer arriving (this file's own
-       `intmap-gazetteer-world` hook below) and the geo_pins load (js/auth-ui.js). Each pass rebuilds
-       HOST.geoDB from scratch as fresh `{...g,type}` objects, so no `_terms` from the previous pass
-       can survive ON AN ENTRY, and every term was compiled again:
-
-         call   entries   terms compiled   of those, already compiled by an earlier call
-           1        650            1,210                                            123
-           2     15,650           47,248                                          1,388
-           3     15,827           47,766                                         47,470
-           4     16,121           48,395                                         48,325
-           5     16,121           48,395                                         48,395
-                              ──────────   ───────────────────────────────────────────
-                                 193,014                             145,701  (75.5 %)
-
-       …over 47,313 DISTINCT term strings. (The jump at call 2 is js/gazetteer.js's INDEX_WORLD_CAP:
-       BUILTIN_GAZETTEER takes the head of the world list once that file lands.) Three of the five
-       passes are ≥99.4 % re-compilation of strings this page has already compiled.
-
-     The entry object is new every pass, but ITS `terms` ARRAY IS NOT: js/gazetteer.js memoises the
-     matcher-shaped index and each of its rows keeps the row's own `terms` array, so passes 3-5 hand
-     this loop the very same arrays pass 2 was given. So the compiled array is cached against the
-     `terms` array itself, which is the one thing that does persist across a rebuild. RE-MEASURED
-     with the cache in, same machine, alternating with the old loop over seven boots:
-
-         call   cache hits / misses   terms compiled   median ms  (was)
-           1              0 / 650              1,210     2.4      (2.1)
-           2            334 / 15,316          46,514    88.2..184 (104.4)   ← the new arrays
-           3         15,334 / 610              1,105     11.2     (106.0)
-           4         15,628 / 493                994      9.9      (75.3)
-           5         15,628 / 493                994     12.8      (96.4)
-
-       193,014 compilations a boot become 50,817 (−73.7 %), and the whole loop's share of the boot
-       drops from a median 396.9 ms to 221.1 ms (median of the seven PAIRED differences −162.7 ms;
-       all seven negative). Pass 2 is the one that is not repeat work — those 46,514 matchers have
-       never existed on this page — and it is left alone: its paired median moves +7.2 ms, the cost
-       of 15,650 WeakMap probes. The ~500 misses that remain on every pass are the entries this
-       function BUILDS each time (countryStats, demonyms, orgs, the DE/RU/ES tables), whose arrays
-       are new by construction.
-
-     ⚠ THE CACHE IS VERIFIED, NOT ASSUMED. A WeakMap hit only says "this array object was compiled
-     before"; it does not say the array still holds those strings. Nothing in the repo mutates a
-     published `terms` array today (the two `terms.push` sites both fill a local array before handing
-     it out), but a stale matcher would be a SILENT wrong-place bug, so the hit is confirmed term by
-     term against the array before it is used — n pointer comparisons over arrays of one to four
-     strings, against the two `new RegExp` per term it skips. A mismatch simply recompiles.
-
-     ⚠ THE RegExp OBJECTS ARE THEREFORE SHARED BETWEEN PASSES, WHICH IS SAFE ONLY BECAUSE THESE
-     CARRY NO `g` OR `y` FLAG: `lastIndex` is consulted and written by `test`/`search` for a global
-     or sticky pattern only, so two readers cannot leave match state on one another. Nothing mutates
-     a compiled entry either — every reader of `_terms` (matchPublisher above, scoreGeo below) reads
-     term/jp/matchRe/ctxRe and nothing else.
-
-     ⚠ NOTHING ABOUT THE RESULT MOVES. The same terms in the same order, the same longest-first sort,
-     the same regex source and flags, the same scoring — only the number of `new RegExp` calls
-     changes. Built on first use and kept, exactly like _pubDomIdx above and _cfIdx below. */
-  let _termsCache=null;
-  function _compileTerms(terms){
-    if(!_termsCache) _termsCache=new WeakMap();
-    const hit=_termsCache.get(terms);
-    if(hit&&hit.length===terms.length){
-      let same=true;
-      for(let i=0;i<hit.length;i++){ if(hit[i].term!==terms[i]){ same=false; break; } }
-      if(same) return hit;
-    }
-    const out=terms.map(_compileTerm);
-    _termsCache.set(terms,out);
-    return out;
-  }
+  /* The per-term matchers, the scorer and the prefilter that decides which entries a headline can
+     reach live in js/place-terms.js (one instance per page: its compile cache is what #R311 measured
+     saving 73.7 % of the compiles across the five rebuilds of a boot). */
+  /* made on first use, not at factory time: a factory body only DECLARES (tests/engine-app-shell-split-checks R169 #4) */
+  let _pt=null;
+  function _PT(){ return _pt||(_pt=makePlaceTerms()); }
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
   const {_DERU_GZ,_DERU_DEM,_ES_GZ,_ES_DEM}=IntMapTables;
   /* ── (#R208) hand the world rows to the locator a slice at a time ──────────────────────────────
@@ -335,42 +242,19 @@ export function newsContext(HOST){
           registerSlices(w);
         }
       } }catch(_){}
-    /* longer keywords first → "Tel Aviv" wins over "Israel" (stable tiebreaker on equal scores) */
-    HOST.geoDB.sort((a,b)=>Math.max(...b.terms.map(t=>t.length)) - Math.max(...a.terms.map(t=>t.length)));
-    /* (#R311) …through the cache above, so a `terms` array this page has already compiled is not
-       compiled again. Same entries, same order, same matchers. */
-    HOST.geoDB.forEach(g=>{ g._terms=_compileTerms(g.terms); });
+    /* longer keywords first → "Tel Aviv" wins over "Israel" (stable tiebreaker on equal scores).
+       The key is computed once per entry instead of inside the comparator (the same numbers, so the
+       same stable order — Math.max over an empty list is -Infinity there as here). */
+    { const db=HOST.geoDB, ml=new Map();
+      for(const g of db) ml.set(g,Math.max(...g.terms.map(t=>t.length)));
+      db.sort((a,b)=>ml.get(b)-ml.get(a)); }
+    /* ⚠ NO MATCHER IS COMPILED HERE ANY MORE. This line compiled every term of every entry
+       (≈46,000 new RegExp pairs when the world gazetteer lands — MEASURED ≈0.55 s in one task on a
+       phone at CPU ×4) for a scan that reaches a handful of them per headline. js/place-terms.js
+       compiles an entry the first time a question reaches it, through a prefilter that cannot drop
+       a hit (the reasoning is in its header). */
   }
-  /* ===== Scoring model (replaces the old "first geo term wins" loop) =====
-     Every geo entry is scored over the title + description; the highest score is the Subject.
-        title hit          +10   strong signal — the headline names the place
-        description hit     +3    supporting signal from the article snippet
-        type "flashpoint"   +5    conflict zone / chokepoint → high news relevance
-        type "city"         +2    precise locality
-        locational context  +4    "in Gaza" / "ガザで" → the place is the story's setting
-     Ties break toward the more local type (flashpoint > city > country > region). */
-  const TYPE_SCORE={ flashpoint:5, city:2, country:0, region:0 };
-  const TYPE_LOCAL={ flashpoint:4, city:3, country:2, region:1 };
-  function scoreGeo(g,title,desc){
-    let titleHit=false, descHit=false, ctx=false, firstIdx=Infinity;
-    for(const t of g._terms){
-      if(t.jp){ const i=title.indexOf(t.term); if(i>=0){ titleHit=true; if(i<firstIdx) firstIdx=i; if(!ctx&&t.ctxRe.test(title)) ctx=true; } }
-      else { const i=title.search(t.matchRe); if(i>=0){ titleHit=true; if(i<firstIdx) firstIdx=i; if(!ctx&&t.ctxRe.test(title)) ctx=true; } }
-      if(desc&&(t.jp?desc.includes(t.term):t.matchRe.test(desc))){ descHit=true; if(!ctx&&t.ctxRe.test(desc)) ctx=true; }
-    }
-    if(!titleHit&&!descHit) return 0;
-    /* (#R25/#28) Lead-subject bonus: a place named EARLY in the headline is much more likely to be what the
-       story is about (e.g. "Kyiv strikes …" → Kyiv, not a country mentioned at the end). Up to +3. */
-    const tl=title.length||1; const posBonus = titleHit ? Math.max(0, 3-Math.floor((Math.min(firstIdx,tl)/tl)*4)) : 0;
-    /* (#R27) Corroboration bonus: a place named in BOTH the title AND the description is a stronger subject
-       signal (+2). Demonym entries ("Ukrainian"…) are docked 3 so an explicit place name always outranks
-       them — they only win when nothing more specific matched, preserving precision while adding coverage. */
-    const corro = (titleHit&&descHit) ? 2 : 0;
-    /* (#R28) demonyms AND organizations/groups are docked so an explicit place name always outranks them
-       (an "Ukrainian"/"Hamas"/"NATO" mention only places a story that names no explicit city/country). */
-    const demPen = (g.demonym||g.org) ? 3 : 0;
-    return (titleHit?10:0)+(descHit?3:0)+(TYPE_SCORE[g.type]||0)+(ctx?4:0)+posBonus+corro-demPen;
-  }
+  /* (the scoring model — title/description/type/context/position — is js/place-terms.js scoreGeo) */
   /* (#R107) COUNTRY-LEVEL FALLBACK for the non-AI locator ("more reliable and flawless"): when the gazetteer scored
      no specific place, anchor a country-level story to the country actually named (its polygon center) instead of a
      meaningless deterministic scatter point — so far fewer "location unknown" pins, and always a REAL, correct place.
@@ -421,12 +305,8 @@ export function newsContext(HOST){
     /* ---- FALLBACK: the in-page gazetteer scorer (also the only path for the
        admin-curated geo_pins types the engine has no opinion about). ---- */
     if(!subjectLoc){
-      let best=null, bestScore=0;
-      for(const g of HOST.geoDB){
-        const s=scoreGeo(g,title,desc);
-        if(s<=0) continue;
-        if(s>bestScore || (s===bestScore && (!best||(TYPE_LOCAL[g.type]||0)>(TYPE_LOCAL[best.type]||0)))){ best=g; bestScore=s; }
-      }
+      const db=HOST.geoDB;
+      const best=bestSubject(db,title,desc,_PT().termsOf,_PT().candidates(db,title,desc));
       /* name{} only carries en/jp — for de/ru/es fall back to English instead of
          `undefined`, which used to surface as a blank pin label. */
       if(best){ subjectLoc=best.loc; subjectName=best.name[HOST.lang]||best.name.en||best.name.jp||null; subjectType=best.type; }

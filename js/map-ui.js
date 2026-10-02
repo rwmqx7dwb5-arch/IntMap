@@ -115,9 +115,15 @@ window.IntMapPlaceClear=function(inp,btn,gap){
     btn.style.right=Math.round(host.clientWidth-(inp.offsetLeft+inp.offsetWidth)+pad)+'px';
     btn.style.transform='none';   /* the CSS fallback centred on the wrapper; the measurement wins */
   }catch(_){} }
-  place();
+  /* ⚠ (mobile-heavy-work) THE FIRST PLACEMENT IS THE OBSERVER'S, NOT A SYNCHRONOUS READ. Measuring here forced a
+     layout of the whole page at wiring time — MEASURED (390×844, CPU ×4) 73 ms inside the phone's boot, for the
+     desktop sidebar's field, which a phone never shows. A ResizeObserver delivers its first observation after the
+     next layout and before that frame paints, for any field that is rendered (a hidden one has nothing to place
+     until it is shown, which the observer also reports), so the button is placed in the same frame as before. */
+  var ro=null;
+  try{ if(window.ResizeObserver){ ro=new ResizeObserver(place); ro.observe(inp); } }catch(_){ ro=null; }
+  if(!ro) place();
   try{ window.addEventListener('resize',place); }catch(_){}
-  try{ if(window.ResizeObserver){ var ro=new ResizeObserver(place); ro.observe(inp); } }catch(_){}
   return place; };
 
 /* ══ (map-state-store) THE CLOCK IS A FIELD OF THE MAP'S STATE — Chronos decides it, this file wires it ═══════════

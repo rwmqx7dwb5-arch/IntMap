@@ -12,6 +12,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { detentHeights, settleDetent, spring, makeScreens, makeLegendTray } from './mobile-sheet.js';
+import { BootStage } from './boot-stage.js';
 
 
 export function mobileUI(HOST){
@@ -139,6 +140,29 @@ export function mobileUI(HOST){
       mirror();
     }
 
+    /* ══ (mobile-heavy-work) THE LAYER GRID, BUILT WHEN IT IS NEEDED ═══════════════════════════════════
+       Asked for by the reader: openSheet() mounts it (that path never waits). Not asked for yet: built ONCE,
+       as a settled job (js/boot-stage.js — one job per idle period, after the deferred reads), no sooner
+       than GRID_PREBUILD_AFTER_MS after the launch screen lifted.
+       ⚠ GRID_PREBUILD_AFTER_MS: OBSERVED, the first seconds after the launch screen lifts are where the
+       deferred reads land and where the reader's first touches are (tests/perf-phone-ledger.json measures
+       that window as `afterReady3s`); the grid is a 0.2–0.4 s build on a phone at CPU ×4, so it must not be
+       one more thing in that window. EXPIRES IF the build becomes cheap enough to run inside a frame, or the
+       ledger's window changes. A desktop (no sheet) never reaches this. */
+    const GRID_PREBUILD_AFTER_MS=3000;
+    let _gridAsked=false;
+    function prebuildGrid(){
+      if(_gridAsked) return; _gridAsked=true;
+      const build=()=>{ try{ if(mq.matches&&window.IntMapLayerSidebar&&window.IntMapLayerSidebar.mountInto) window.IntMapLayerSidebar.mountInto(moMountLayers); }catch(_){} };
+      const S=BootStage;
+      if(!S||typeof S.interactive!=='function'){ build(); return; }   /* no stage table → the old order */
+      S.interactive().then(()=>setTimeout(()=>{
+        /* the job runs at its turn; requestIdleCallback puts the build itself in an idle period */
+        S.whenStage('settled',()=>new Promise((res)=>{ const go=()=>{ build(); res(); };
+          try{ if(typeof requestIdleCallback==='function'){ requestIdleCallback(go,{timeout:S.SETTLE_CEILING_MS||6000}); return; } }catch(_){}
+          setTimeout(go,0); }));
+      },GRID_PREBUILD_AFTER_MS));
+    }
     /* ---- responsive: relocate config panels in/out of the sheets ---- */
     function applyLayout(isM){
       /* ══ ⚠ (#R235) 「モバイル版のレイヤー選択欄は、デスクトップ版とおなじUIに。下部の比較ビューや
@@ -151,8 +175,14 @@ export function mobileUI(HOST){
         /* (#R28) every group (incl. Others(beta)) shows fully expanded on mobile — no pulldown. */
         try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){}
         /* (#R232) the classic dropdown stays mounted here as the CHECKBOX STORE — every tile toggles a real
-           checkbox in it — and the tile grid is the phone's UI (`body.m-lyr-tiles` hides the rows). */
-        try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.mountInto&&window.IntMapLayerSidebar.mountInto(moMountLayers); document.body.classList.add('m-lyr-tiles'); }catch(_){}
+           checkbox in it — and the tile grid is the phone's UI (`body.m-lyr-tiles` hides the rows).
+           ⚠ (mobile-heavy-work) THE GRID IS NOT BUILT HERE ANY MORE. This line built it at boot, inside the
+           DOMContentLoaded handler, for a sheet nobody had opened — MEASURED (390×844, CPU ×4) 196 ms of script
+           plus the forced layouts it triggered (the desktop sidebar's own build and the tools strip asking
+           every host for its rects), the largest single item of the boot handler. openSheet() mounts it on
+           every open (idempotent), and `prebuildGrid` builds it once in an idle period after the app has been
+           usable for a while, so the first pull-up finds it ready. */
+        document.body.classList.add('m-lyr-tiles'); prebuildGrid();
         /* (mobile-shell) the search field and the readout belong to the sheet's head on a phone */
         moveTo(mSearch,mSearchSlot); moveTo(mReadout,mReadoutSlot);
       }

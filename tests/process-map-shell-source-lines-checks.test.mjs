@@ -321,7 +321,8 @@ test('R205 ④ the launch screen picks its mark from the SAVED theme, before the
   assert.ok(!/boot-icon[^>]*>\s*<img/.test(html), 'two <img> tags would fetch both marks');
   const css = rd('css/intmap.css');
   assert.match(css, /\.boot-icon\{[^}]*IntMap\.Icon\.png/);
-  assert.match(css, /:root\[data-theme="light"\] \.boot-icon\{[^}]*IntMap\.Icon_BW-inverted\.png/);
+  /* (mobile-heavy-work) the launch-sized copy of that mark (scripts/boot-icon-flatten.mjs derives it from the master) */
+  assert.match(css, /:root\[data-theme="light"\] \.boot-icon\{[^}]*IntMap\.Icon_BW-inverted\.boot\.png/);
 });
 
 /* ── ⑤ 「衛星画像の読み込み時の動作を、極限までシームレスに」「ズームのfpsを劇的に」 ─────────── */

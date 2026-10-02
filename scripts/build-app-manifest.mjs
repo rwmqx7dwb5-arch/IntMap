@@ -140,7 +140,7 @@ function cubic(t) {
  * k < 1 averages every source pixel the output pixel covers (a box filter — no aliasing on the way
  * down); k ≥ 1 interpolates bicubically.
  */
-function resample(src, w, h, S, k, F) {
+export function resample(src, w, h, S, k, F) {
   const out = Buffer.alloc(S * S * 3);
   const cxS = w / 2, cyS = h / 2, cxD = S / 2, cyD = S / 2;
   const sample = (x, y, c) => (x < 0 || y < 0 || x >= w || y >= h) ? F[c] : src[(y * w + x) * 3 + c];
