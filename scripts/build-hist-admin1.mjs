@@ -83,6 +83,7 @@ import { labelsFor, labelsByTag } from './histadmin/wikidata.mjs';
 import { plainLabel } from './histeras/match.mjs';
 import { geometryOf, repoolGeometry, generatedPrecision } from './histborders/precision.mjs';
 import { OPENHISTORICALMAP } from './lib/upstream-cadence.mjs';
+import { readEdges, successions, applyEdges, LEDGER as EDGES_LEDGER, GOVERNANCE as EDGES_GOVERNANCE } from './histadmin/edges.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const EP = 'https://overpass-api.openhistoricalmap.org/api/interpreter';
@@ -101,7 +102,7 @@ const args = process.argv.slice(2);
 const argOf = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
 const OUT   = path.resolve(ROOT, argOf('--out', 'data/hist-admin1.js'));
 const PREVIOUS = {};
-if (!args.includes('--check') && !args.includes('--names') && !args.includes('--dates') && fs.existsSync(OUT))
+if (!args.includes('--check') && !args.includes('--names') && !args.includes('--dates') && !args.includes('--edges') && fs.existsSync(OUT))
   new Function('window', fs.readFileSync(OUT, 'utf8'))(PREVIOUS);
 const previousData = Object.values(PREVIOUS).find(d => Array.isArray(d?.feats));
 const TOL   = parseFloat(argOf('--tol', previousData?.tolerance ?? '0.004'));
@@ -112,7 +113,7 @@ function clockFloor() {
   if (!Number.isInteger(floor)) throw new Error('hist-scale FLOOR is missing');
   return floor;
 }
-const SINCE = args.includes('--check') || args.includes('--names') || args.includes('--dates') ? null : parseInt(argOf('--since', clockFloor()), 10);
+const SINCE = args.includes('--check') || args.includes('--names') || args.includes('--dates') || args.includes('--edges') ? null : parseInt(argOf('--since', clockFloor()), 10);
 const BATCH = parseInt(argOf('--batch', '20'), 10);
 /* (#R564) THE LEVELS ARE AN ARGUMENT, AND THERE IS ONE FILE PER TIER. The first-level tier (3,4) is
    what the province row draws at every zoom; the deeper tier is fetched only when the reader zooms
@@ -1193,8 +1194,52 @@ function topologyOnly() {
   console.log(JSON.stringify(result.data.topology));
 }
 
+/* ══ (hist-fidelity-sweep) `--edges` — ONE HANDOVER, TWO STATEMENTS OF ITS YEAR ═══════════════════════
+   The third pass of the `--names` / `--dates` shape: it reads the shipped rows and their upstream tags,
+   re-finds every succession upstream ties by one event whose two year statements disagree
+   (scripts/histadmin/edges.mjs explains why that is the population), asks Wikidata what it states for
+   the reviewed ones, writes both photographs into data/hist-admin-edges.json, and applies the reviewed
+   days to the rows. No ring moves, and a tier no verdict touches is not rewritten. */
+async function refreshEdges() {
+  const units = [];
+  for (const t of tiers()) units.push(await tierUnit(t, true));
+  const ledger = readEdges(ROOT);
+  const { pairs, found } = successions(units.map(u => ({ file: u.tier.file, feats: u.feats, tagsById: u.tagsById })));
+  console.error('· successions tied by one event: ' + pairs + ' | whose two years disagree: ' + found.length);
+  ledger.found = found;
+  /* what Wikidata states for every unit a reviewed verdict names — day precision, as written there */
+  const qs = [...new Set((ledger.reviewed || []).map(r => r.q))].sort();
+  const facts = {};
+  for (let i = 0; i < qs.length; i += 10) {
+    const ids = qs.slice(i, i + 10).join('|');
+    const r = await fetch('https://www.wikidata.org/w/api.php?format=json&action=wbgetentities&props=claims&ids=' + encodeURIComponent(ids),
+      { headers: { 'User-Agent': 'IntMap/build-hist-admin1 (+https://github.com/rwmqx7dwb5-arch/IntMap)' } });
+    if (!r.ok) throw new Error('wbgetentities HTTP ' + r.status);
+    const j = await r.json();
+    for (const q of qs.slice(i, i + 10)) {
+      const c = (j.entities && j.entities[q] && j.entities[q].claims) || {};
+      const day = p => [...new Set((c[p] || []).map(x => x.mainsnak && x.mainsnak.datavalue && x.mainsnak.datavalue.value)
+        .filter(v => v && v.precision >= 11).map(v => /^[+]?(-?\d{4,})-(\d\d)-(\d\d)/.exec(v.time)).filter(Boolean)
+        .map(m => String(+m[1]) + '-' + m[2] + '-' + m[3]))].sort();
+      facts[q] = { P571: day('P571'), P576: day('P576') };
+    }
+  }
+  ledger.facts = facts;
+  ledger.gov = { ...EDGES_GOVERNANCE[EDGES_LEDGER], retrievedAt: new Date().toISOString().slice(0, 10) };
+  fs.writeFileSync(path.join(ROOT, EDGES_LEDGER), JSON.stringify(ledger, null, 1) + '\n');
+  const touched = applyEdges(units.map(u => ({ file: u.tier.file, data: u.data })), ledger);
+  for (const u of units) {
+    if (!touched.includes(u.tier.file)) continue;
+    const body = 'window.' + u.tier.global + '=' + JSON.stringify({ ...u.data, built: new Date().toISOString().slice(0, 10) }) + ';\n';
+    fs.writeFileSync(path.join(ROOT, u.tier.file), body);
+    console.error('· wrote ' + u.tier.file + ' (rings untouched: ' + u.data.rings.length + ')');
+  }
+  console.error('· ' + EDGES_LEDGER + ': ' + found.length + ' finding(s), ' + (ledger.reviewed || []).length + ' reviewed, ' + (ledger.refuted || []).length + ' refuted');
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
 if (args.includes('--check')) check();
+else if (args.includes('--edges')) refreshEdges().catch(e => { console.error('FAILED', e); process.exit(1); });
 else if (args.includes('--topology-only')) topologyOnly();
 else if (args.includes('--precision-only')) precisionOnly();
 else if (args.includes('--dates')) refreshDates().catch(e => { console.error('FAILED', e); process.exit(1); });

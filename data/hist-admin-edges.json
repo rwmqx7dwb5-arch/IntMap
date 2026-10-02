@@ -1,0 +1,57 @@
+{
+ "v": 1,
+ "note": "Reviewed handovers for the subdivision record (data/hist-admin{1,2,3}.js). `found` is every succession OpenHistoricalMap ties by ONE event (the last row of one unit and the first row of another carry the same end_date:event / start_date:event) whose two statements name different years — refreshed by node scripts/build-hist-admin1.mjs --edges. `reviewed` moves both edges to a day Wikidata states for one of the two units AND the historical record (`history`) agrees with; the rows keep upstream's own words and carry the correction beside them (`dates[id].<edge>.corrected`). `refuted` leaves a finding as upstream wrote it, with the reason. `facts` is what Wikidata states at day precision for the reviewed units. Gate: npm run check:histfidelity. See scripts/histadmin/edges.mjs.",
+ "reviewed": [
+  {
+   "end": 2890077,
+   "start": 2890076,
+   "at": "1879-04-04",
+   "q": "Q707474",
+   "p": "P576",
+   "history": "The Ryukyu Disposition: the Meiji government's order abolishing Ryukyu Domain was delivered at Shuri on 27 March 1879 and Okinawa Prefecture was proclaimed on 4 April 1879, the day Wikidata gives for the domain's dissolution (Q707474 P576). Upstream's 1879 for the domain is the event's year; its 1880 for the prefecture is not."
+  }
+ ],
+ "refuted": [],
+ "found": [
+  {
+   "file": "data/hist-admin1.js",
+   "event": "Ryukyu Domain becomes Okinawa Prefecture",
+   "end": {
+    "id": 2890077,
+    "name": "Ryukyu Domain",
+    "raw": "1879"
+   },
+   "start": {
+    "id": 2890076,
+    "name": "Okinawa Prefecture",
+    "raw": "1880"
+   }
+  }
+ ],
+ "facts": {
+  "Q707474": {
+   "P571": [
+    "1872-10-16"
+   ],
+   "P576": [
+    "1879-04-04"
+   ]
+  }
+ },
+ "gov": {
+  "publisher": "Wikidata",
+  "url": "https://www.wikidata.org/",
+  "licence": "CC0 1.0",
+  "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "attribution": false,
+  "paidBy": "Wikidata (CC0 1.0)",
+  "cadence": "P1D",
+  "cadenceBasis": {
+   "observed": "estimate, not measured per class: Wikidata is edited continuously and its Query Service reflects an edit within minutes, so any day can change what a query answers",
+   "expires": "if the builders read a Wikidata dump or a frozen snapshot instead of the live Query Service",
+   "canon": "scripts/lib/upstream-cadence.mjs WIKIDATA"
+  },
+  "builtBy": "scripts/build-hist-admin1.mjs",
+  "retrievedAt": "2026-10-02"
+ }
+}

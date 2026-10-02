@@ -218,11 +218,27 @@ export function timeBorders(HOST){
         .catch(()=>null)
         .then(d=>{ if(!d) _csP=null; return d; });
       return _csP; }
-    /* era display names: gwcode → ordered [beforeYear, name] rules (first rule with year<beforeYear wins);
-       null name = default (the CShapes name with any "(…)" gloss stripped). "(UK)/(France)…" suffixes reuse the
-       existing coloniser-suffix localization. This is the R117 歴史国家拡充 curation table. */
+    /* era display names: gwcode → ordered [before, name] rules (the first rule whose `before` the reader's
+       date has not reached wins); null name = default (the CShapes name with any "(…)" gloss stripped).
+       "(UK)/(France)…" suffixes reuse the existing coloniser-suffix localization. This is the R117 歴史国家拡充
+       curation table.
+       ══ ⚠⚠⚠ (hist-fidelity-sweep) `before` IS AN INSTANT, AND THE RECORD SAYS WHICH DAY OF THE YEAR IT IS ══
+       The table was written in YEARS and compared as `y<before`, so every change was read as happening on
+       1 January. MEASURED 2026-10-02 on 1960-06-15: «Dahomey», «Niger», «Cote d'Ivoire» and «Nigeria» were
+       drawn without their coloniser — 7 to 15 weeks before 1960-08-01 · 08-03 · 08-07 · 10-01 — and «India»
+       stood un-bracketed from 1947-01-01 to 08-14. Of the 123 dated rules, 81 fall in a year in which
+       CShapes ITSELF starts a new record for that gwcode: the record states the day.
+       ⇒ a bare year Y means «this gwcode's record boundary in Y» (`_csBefore`): the drawn record is asked
+       whether it began before Y and ends in Y (the change is still ahead) or began in Y (it is behind). A
+       year in which the record has NO boundary keeps the 1-January reading — the table's own precision,
+       which `npm run check:histfidelity --report` lists as such rather than inventing a day for it.
+       A year with TWO boundaries cannot say which it means, so it is written [y,m,d], and that day must be
+       one of the record's own — the gate evaluates `_csName` on both sides of every boundary.
+       ⚠ The reason for a rule is the curated fact's, not this function's: Hawaii's republic ended with the
+       1898 annexation, which is where the record's first row begins (1898-07-06) — the old «1899» drew a
+       republic over ground the record itself had already annexed. */
     const _CS_ERA={
-      2:[[9999,'United States']], 3:[[9999,'Alaska (USA)']], 4:[[1894,'Kingdom of Hawaii'],[1899,'Republic of Hawaii'],[9999,'Hawaii (USA)']],
+      2:[[9999,'United States']], 3:[[9999,'Alaska (USA)']], 4:[[1894,'Kingdom of Hawaii'],[1898,'Republic of Hawaii'],[9999,'Hawaii (USA)']],
       6:[[1899,'Puerto Rico (Spain)'],[9999,'Puerto Rico (USA)']], 31:[[1973,'Bahamas (UK)']], 51:[[1962,'Jamaica (UK)']],
       52:[[1962,'Trinidad and Tobago (UK)']], 53:[[1966,'Barbados (UK)']], 65:[[9999,'Guadeloupe (France)']], 66:[[9999,'Martinique (France)']],
       80:[[1981,'British Honduras (UK)']], 110:[[1966,'British Guiana (UK)']], 115:[[1975,'Dutch Guiana (Netherlands)'],[9999,'Suriname']],
@@ -232,7 +248,7 @@ export function timeBorders(HOST){
       365:[[1923,'Russia'],[1992,'Soviet Union'],[9999,'Russia']], 370:[[9999,'Belarus']],
       395:[[1918,'Iceland (Denmark)'],[1944,'Iceland (Denmark)'],[9999,'Iceland']],
       404:[[1974,'Portuguese Guinea (Portugal)'],[9999,'Guinea-Bissau']], 411:[[1968,'Spanish Guinea (Spain)'],[9999,'Equatorial Guinea']],
-      420:[[1965,'Gambia (UK)']], 432:[[1960,'French Sudan (France)'],[9999,'Mali']], 433:[[1960,'Senegal (France)']],
+      420:[[1965,'Gambia (UK)']], 432:[[[1960,6,20],'French Sudan (France)'],[9999,'Mali']], 433:[[1960,'Senegal (France)']],
       434:[[1960,'Dahomey (France)'],[1975,'Dahomey'],[9999,'Benin']], 435:[[1960,'Mauritania (France)']],
       436:[[1960,'Niger (France)']], 437:[[1960,"Cote d'Ivoire (France)"]], 438:[[1958,'French Guinea (France)'],[9999,'Guinea']],
       439:[[1960,'Upper Volta (France)'],[1984,'Upper Volta'],[9999,'Burkina Faso']],
@@ -249,15 +265,15 @@ export function timeBorders(HOST){
       531:[[1941,'Eritrea (Italy)'],[1952,'Eritrea (UK)'],[1993,'Eritrea (Ethiopia)'],[9999,'Eritrea']],
       540:[[1975,'Angola (Portugal)']], 541:[[1975,'Mozambique (Portugal)']],
       551:[[1964,'Northern Rhodesia (UK)'],[9999,'Zambia']], 552:[[1965,'Southern Rhodesia (UK)'],[1980,'Rhodesia'],[9999,'Zimbabwe']],
-      553:[[1964,'Nyasaland (UK)'],[9999,'Malawi']], 560:[[1961,'Union of South Africa'],[9999,'South Africa']],
+      553:[[[1964,7,6],'Nyasaland (UK)'],[9999,'Malawi']], 560:[[1961,'Union of South Africa'],[9999,'South Africa']],
       565:[[1916,'German South-West Africa'],[1990,'South West Africa (South Africa)'],[9999,'Namibia']],
       570:[[1966,'Basutoland (UK)'],[9999,'Lesotho']], 571:[[1966,'Bechuanaland (UK)'],[9999,'Botswana']],
       572:[[1968,'Swaziland (UK)'],[2018,'Swaziland'],[9999,'Eswatini']],
       580:[[1960,'Madagascar (France)'],[9999,'Madagascar']], 581:[[1975,'Comoros (France)']], 585:[[9999,'Reunion (France)']],
-      590:[[1968,'Mauritius (UK)']], 600:[[1912,'Morocco'],[1956,'Morocco (France)'],[9999,'Morocco']],
+      590:[[1968,'Mauritius (UK)']], 600:[[1912,'Morocco'],[[1956,3,2],'Morocco (France)'],[9999,'Morocco']],
       615:[[1962,'Algeria (France)']], 616:[[1956,'Tunisia (France)']],
       620:[[1943,'Libya (Italy)'],[1951,'Libya (UK)'],[9999,'Libya']], 625:[[1956,'Anglo-Egyptian Sudan'],[9999,'Sudan']],
-      630:[[9999,'Iran']], 640:[[1923,'Ottoman Empire'],[9999,'Turkey']], 645:[[1932,'Iraq (UK)'],[9999,'Iraq']],
+      630:[[9999,'Iran']], 640:[[1923,'Ottoman Empire'],[9999,'Turkey']], 645:[[[1932,10,3],'Iraq (UK)'],[9999,'Iraq']],
       651:[[1922,'Egypt (UK)'],[9999,'Egypt']], 652:[[1946,'Syria (France)']], 660:[[1943,'Lebanon (France)']],
       663:[[1946,'Transjordan (UK)'],[1949,'Transjordan'],[9999,'Jordan']], 665:[[9999,'Mandatory Palestine']],
       678:[[1967,'Yemen'],[1991,'North Yemen'],[9999,'Yemen']], 680:[[9999,'South Yemen']], 681:[[9999,'Aden (UK)']],
@@ -292,8 +308,21 @@ export function timeBorders(HOST){
       7020:[[9999,'Emirate of Bukhara']], 7030:[[9999,'Khanate of Khiva']],
       7351:[[9999,'Karafuto (Japan)']], 9401:[[9999,'German Solomon Islands']]
     };
-    function _csName(nm,gw,y){ const rules=_CS_ERA[gw];
-      if(rules){ for(const r of rules){ if(y<r[0]) return r[1]; } }
+    /* is the reader's instant `t` (YYYYMMDD) still before a rule's `before`, given the record `row` drawn at
+       `t`? [y,m,d] is an instant as written. A bare year is the record's boundary in that year (see the
+       note on the table): a row that began before the year and ends inside it has the change still ahead;
+       a row that began inside it has it behind. A row with no edge in that year — or no row at all (a
+       year-only caller) — reads the year as 1 January, the precision the table states. */
+    function _csBefore(cut,t,row){
+      if(Array.isArray(cut)) return t<_ymd(cut[0],cut[1],cut[2]);
+      const y0=_ymd(cut,1,1), y1=_ymd(cut+1,1,1);
+      if(t<y0) return true; if(t>=y1) return false;
+      if(row){ const rs=_ymd(row[2],row[3],row[4]), re=_ymd(row[5],row[6],row[7]);
+        if(rs<y0&&re>=y0&&re<y1) return true; }
+      return false; }
+    function _csName(nm,gw,y,m,d,row){ const rules=_CS_ERA[gw];
+      const t=_ymd(y,(m>=1&&m<=12)?m:7,(d>=1&&d<=31)?d:1);   /* no month = the July-1 sample csFC has always meant */
+      if(rules){ for(const r of rules){ if(_csBefore(r[0],t,row)) return r[1]; } }
       return String(nm||'').replace(/\s*\([^)]*\)\s*$/,''); }   /* default: drop the "(…)" gloss (e.g. "Madagascar (Malagasy)") */
     /* ══ (#R531) WHICH EDGES OF AN OUTLINE ARE BORDER ═════════════════════════════════════════════
        data/border-coast.js marks, for every pooled ring of BOTH bundles, the runs that are a
@@ -363,7 +392,7 @@ export function timeBorders(HOST){
          when it answers, in the record's own order */
       const ix=await _csH.at(t,'inclusive');
       for(const i of ix){ const f=d.feats[i];
-        const NAME=_csName(f[0],f[1],year);
+        const NAME=_csName(f[0],f[1],year,M,D,f);   /* (hist-fidelity-sweep) the instant and the drawn record: a change falls on the record's day, not on 1 January */
         /* (#R695) CShapes names are bare English; the table is what makes 1886-2019 readable in
            anything else. `_gw` is untouched — it is the record's identifier, not a name. */
         const i18=hnFor('cshapes',NAME,null,null);
@@ -673,6 +702,10 @@ export function timeBorders(HOST){
            survive that trip */
         p._wName=x.nm; p._wQ=x.row.q; p._wSide=x.o.side; p._wYear=x.o.year;
         const lb=_spLabel(x.row.q); if(lb) p._wLabel=lb;
+        /* (hist-fidelity-sweep) a start the historical record states and Wikidata does not (`sBy:'history'`)
+           — the card must say whose year it is, and the later year Wikidata states instead */
+        if(x.o.side==='start'&&x.row.sBy==='history'){ p._wBy='history'; if(x.row.circa) p._wCirca=1;
+          const wf=_sp&&_sp.facts&&_sp.facts[x.row.q]; if(wf&&Array.isArray(wf.s)&&wf.s.length) p._wWd=Math.min(...wf.s); }
         return Object.assign({},f,{properties:p}); });
       const r={type:'FeatureCollection',features:feats}; m.set(sig,r); return r; }catch(_){ return fc; } }
     function _spanSig(fc,year){ return _spanOff(fc,year).map(x=>x.i).join(','); }
@@ -950,12 +983,34 @@ export function timeBorders(HOST){
        identity as equality. MEASURED at 1916: `imtb-src` re-parsed with «Austria-Hungary», the era
        labels kept drawing the untagged name, and the push that should have fixed them ran, built its
        151 features, and was dropped one layer below. A copy is a different object, so a real change is
-       a real difference — and an unchanged year still skips, which is the point of that comparison. */
-    function _labelFC(fc){ const feats=[];
+       a real difference — and an unchanged year still skips, which is the point of that comparison.
+       ══ ⚠⚠ (hist-fidelity-sweep) ONE NAME PER UNIT IS ONE RULE, AND THE SUBDIVISIONS WERE STILL ON THE OLD ONE ══
+       js/time-admin1.js drew its era province names straight off the polygon source, so MapLibre made one
+       candidate per OUTER RING — the #R520 thicket, one layer down. MEASURED on the 1950 view of Korea that
+       landing-showcase photographed: Japan's 46 prefectures from data/hist-admin-fill.js are 135 outer rings
+       — Okinawa 20, Tokyo 14, Kagoshima 12, Nagasaki 12 (Tsushima, Iki, the Gotō islands…) — so a name was
+       offered up to twenty times (measured on the shipped bundle, 1950-07-01). So the subdivisions ask
+       THIS function too (through `labelFC`), with `keyOf` naming a unit by its row rather than by its NAME:
+       two different provinces may share a name at one instant (two «Washington County»), and one name per
+       NAME would label only the larger of them.
+       ══ ⚠⚠ …AND THE ORDER A NAME IS PLACED IN TRAVELS WITH IT ═══════════════════════════════════════════
+       `_sort` is #R707's collision order, and its owner is js/time-admin1.js `sortKeyOf` (a polygon record
+       publishes no rank, so the AREA a name stands on is the one quantity that orders two of them; MapLibre
+       places the smallest key first, so the key is −log10 of the area). A subdivision arrives already
+       stamped by `fcAt` and keeps its stamp (the copy below lets the feature's own properties win); a name
+       that arrives without one is stamped here with the same key — tests/hist-fidelity-sweep-checks.test.mjs
+       evaluates both and holds them equal. The era country names had no `symbol-sort-key` at all,
+       and with `text-variable-anchor` a small country's name stepped onto its neighbour: MEASURED at
+       1914-06-27, «Netherlands» (anchor 6.28°E 52.89°N, 0.7° from the German border) was placed over
+       Germany while «Germany» — its pole 40 km from Kassel, under «Frankfurt am Main» — lost its only
+       candidate. The area is the name's LARGEST part (`_partKm2`, the sphere) — every point of one name
+       carries the same properties (#R707 ⑤), so a far territory's label is ordered with its polity's
+       first one. The floor keeps log10 finite. */
+    function _labelFC(fc,keyOf,asParts){ const feats=[];
       try{ const by=new Map();
         for(const f of ((fc&&fc.features)||[])){ const p=f.properties||{};
           if(p._corrected||!f.geometry) continue;
-          const key=String((p.NAME||p.name)||'').trim(); if(!key) continue;
+          const key=keyOf?String(keyOf(f)||''):String((p.NAME||p.name)||'').trim(); if(!key) continue;
           const ps=_partsOf(f.geometry); if(!ps.length) continue;
           /* ⚠ (#R707) EVERY part of EVERY feature of the name, not the largest feature's largest
              part. A record is free to list one polity as several features (Denmark and Greenland
@@ -989,13 +1044,18 @@ export function timeBorders(HOST){
               const mid=_partMid(it.part);
               if(!mid||!kept.every(k=>{ const km=_partMid(k); return km&&_gcKm(mid,km)>_discKm(it.part.km)+_discKm(_partKm2(k)); })) continue;
             }
-            const pt=_anchor(it.part,i===0?it.geom:null); if(!pt) continue;
+            /* (hist-fidelity-sweep) `asParts`: hand back the chosen PART as a polygon instead of its pole —
+               the renderer finds the pole itself, in its own worker, once per outer ring, and a part is one
+               ring. The subdivisions ask this way: MEASURED on the shipped tier 1, searching the poles here
+               took 391 ms for the 794 units in force at 1950-07-01 and 512 ms for the 688 of 1900, on the
+               thread that paints; choosing the parts is the cheap half of this function. */
+            const pt=asParts?null:_anchor(it.part,i===0?it.geom:null); if(!asParts&&!pt) continue;
             kept.push(it.part);
             /* every point of a name carries the SAME feature's properties — the one the single
                label carried before — so `_same` still decides which of the two layers draws it,
                `_locName`/`_modName` still say the same words, and `_clk` opens the same country
                from whichever of them was tapped. The copy is #R520's: see the note above. */
-            feats.push({type:'Feature',geometry:{type:'Point',coordinates:[pt[0],pt[1]]},properties:Object.assign({},own.properties)}); } });
+            feats.push({type:'Feature',geometry:asParts?{type:'Polygon',coordinates:it.part.poly}:{type:'Point',coordinates:[pt[0],pt[1]]},properties:Object.assign({_sort:-Math.log10(Math.max(_partKm2(list[0].part),1e-6))},own.properties)}); } });
       }catch(_){}
       return {type:'FeatureCollection',features:feats}; }
     /* the names follow the borders on every push — one state, two sources. */
@@ -1072,7 +1132,10 @@ export function timeBorders(HOST){
          left of its anchor). ⚠ `ofm-country` does not need this and does not have it: its anchors come
          from OSM's `place` layer, where a cartographer put them in clear space. These anchors are
          computed from a border, which knows nothing about what else is drawn. */
-      const _ERAVAR={'text-variable-anchor':['center','top','bottom','left','right'],'text-radial-offset':0.65,'text-justify':'auto'};
+      /* (hist-fidelity-sweep) …and the order they are tried in is the area each name stands on (`_sort`,
+         stamped by `_labelFC` — see the note there): a variable anchor lets a small country's name step
+         aside, and without an order it stepped onto the larger neighbour whose own name then had no room. */
+      const _ERAVAR={'text-variable-anchor':['center','top','bottom','left','right'],'text-radial-offset':0.65,'text-justify':'auto','symbol-sort-key':['coalesce',['get','_sort'],0]};
       /* (#R711) Keep names eligible when zooming into their territory. The former z7 cutoff
          removed every country name even with its anchor in view and no competing symbol.
          Collision placement and the existing interior anchors still decide what fits. */
@@ -2358,6 +2421,16 @@ export function timeBorders(HOST){
       const wn=String(p._wName||'').trim();
       if(wn){ const Y=_yTxt(shownYear), B=_yTxt(+p._wYear), q=String(p._wQ||''), lb=String(p._wLabel||'').trim();
         const id=lb?(lb+', '+q):q;
+        /* (hist-fidelity-sweep) …or the bound is history's, because Wikidata's start is later than the
+           historical record (Elam: the Proto-Elamite period, against Wikidata's Old Elamite 2700 BCE) */
+        if(p._wSide==='start'&&p._wBy==='history'){
+          const Bc=p._wCirca?_LTB.arr(LA('c. '+B,B+'頃')):B, Wd=(p._wWd!=null&&isFinite(+p._wWd))?_yTxt(+p._wWd):null;
+          lines.push(_LTB.arr(LA('The historical record places the beginning of this polity '+(p._wCirca?'at about ':'in ')+B+', so the name is not drawn before that year.'+(Wd?' Wikidata ('+id+') states a later beginning, '+Wd+', which the historical record contradicts; that later year is not used.':'')+' The shape is drawn as upstream drew it.',
+                                  '史実はこの政体の成立を '+Bc+' に置く。そのためその年より前はこの名前を描かない。'+(Wd?'Wikidata（'+id+'）はそれより後の '+Wd+' を成立とするが、史実と食い違うため用いていない。':'')+'形は上流が描いたとおりに描いている。')));
+          const tn=typeNote(f); if(tn) lines.push(tn);
+          return { title:_LTB.arr(LA('Upstream names this shape «'+wn+'», but that polity did not exist in '+Y,
+                                     '上流はこの形を「'+wn+'」と呼ぶが、その政体は '+Y+' には存在しない')),
+                   lines:lines }; }
         lines.push(p._wSide==='start'
           ? _LTB.arr(LA('Wikidata ('+id+') states that this polity began in '+B+', and the historical record agrees, so the name is not drawn before that year. The shape is drawn as upstream drew it.',
                         'Wikidata（'+id+'）はこの政体の成立を '+B+' と述べ、史実もそれと一致する。そのためその年より前はこの名前を描かず、形だけを上流が描いたとおりに描いている。'))
@@ -2409,6 +2482,10 @@ export function timeBorders(HOST){
                 drawn under — a real question about the record («which names does 1600 withhold?»), the same
                 kind `histNameFor` answers; scripts/hist-fidelity.mjs gates the map through it */
              eraShown:(fc,year)=>_eraShow(fc,year), loadEraSpans:spLoad,
+             /* (hist-fidelity-sweep) the CShapes display name at an instant given the record drawn there, the table
+                it reads, and the era names as the label source receives them — scripts/hist-fidelity.mjs asks the
+                page which side of every record boundary a coloniser is named on, and what the name layer is handed */
+             csName:(nm,gw,y,m,d,row)=>_csName(nm,gw,y,m,d,row), csEra:()=>_CS_ERA, labelFC:(fc,keyOf,asParts)=>_labelFC(fc,keyOf,asParts),
              changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:_stepMin(),max:CS_MAX}) };   /* (#R518) the range the stepper can walk — both day-exact records, and (#R695) the era sheets below them */
   })();
 }

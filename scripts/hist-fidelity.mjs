@@ -45,6 +45,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DERIVED_FROM_THE_REPOSITORY } from './lib/upstream-cadence.mjs';
 import { readLedger, displayRanges, candidates, judged, LEDGER } from './histeras/spans.mjs';
+import { readEdges, edgeProblems } from './histadmin/edges.mjs';
 import { pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -72,7 +73,7 @@ const load = (rel) => {
 /* ⚠ THE TIERS AND THE GAP RECORDS ARE DISCOVERED FROM data/, NOT LISTED HERE. js/time-admin1.js
    builds T1/T2/T3 and its GAPS list from the bundles present; a hand-written copy of that list
    silently drops the fourth record the day one is added (.agents/rules/no-ad-hoc-hardcoding.md §2-4). */
-const bundles = () => fs.readdirSync(path.join(ROOT, 'data'))
+export const bundles = () => fs.readdirSync(path.join(ROOT, 'data'))
   .filter((f) => /^hist-(admin\d|admin-fill|kuni)\.js$/.test(f))
   .map((f) => ({ file: 'data/' + f, b: load('data/' + f) }))
   .sort((a, b) => Math.min(...a.b.levels) - Math.min(...b.b.levels));
@@ -215,7 +216,7 @@ function firstLevelAt(bs, y) {
   }
   return out;
 }
-function coverage(bs, y) {
+export function coverage(bs, y) {
   const pol = politiesAt(y), adm = firstLevelAt(bs, y);
   const cid = new Int32Array(NX * NY).fill(-1), names = [];
   pol.forEach((c, ix) => {
@@ -313,7 +314,18 @@ export function eraSpanProblems(ctx) {
     if (!fa) { out.push(['era-span-row-unfetched', tag + ' has no Wikidata facts — run node scripts/histeras/spans.mjs --fetch']); continue; }
     if (!(r.history && String(r.history).trim())) out.push(['era-span-row-unreviewed', tag + ' states no historical check (`history`) — a Wikidata date alone is not history']);
     if (r.e != null && !(fa.e || []).includes(r.e)) out.push(['era-span-row-unstated', tag + ' ends at ' + r.e + ', which Wikidata does not state (it states ' + JSON.stringify(fa.e) + ')']);
-    if (r.s != null && !(fa.s || []).includes(r.s)) out.push(['era-span-row-unstated', tag + ' begins at ' + r.s + ', which Wikidata does not state (it states ' + JSON.stringify(fa.s) + ')']);
+    /* ⚠ (hist-fidelity-sweep) A START HISTORY STATES AND WIKIDATA DOES NOT. «Elam» was moved to `refuted` on
+       2026-10-01 because the card could only say «Wikidata states…», so the 5000 and 4000 BCE sheets named
+       Elam two millennia before the Proto-Elamite period. `sBy: "history"` is the reviewed answer: the bound
+       is the year the `history` sentence names (`hs`), and it is admitted only where it is EARLIER than every
+       start Wikidata states — history refuting Wikidata as too late, the one case where Wikidata's year would
+       withhold years the polity existed. A history bound later than Wikidata's is not a correction but a
+       second opinion, and is refused. */
+    if (r.sBy != null && r.sBy !== 'history') out.push(['era-span-row-bad-basis', tag + ' says its start is by «' + r.sBy + '»; the only other basis is "history"']);
+    if (r.s != null && r.sBy === 'history') {
+      if (r.s !== r.hs) out.push(['era-span-history-bound-not-hs', tag + ' takes its start from history but begins at ' + r.s + ', not at `hs` ' + r.hs]);
+      if (!(fa.s || []).length || !(fa.s || []).every((w) => w > r.s)) out.push(['era-span-history-bound-not-earlier', tag + ' takes its start from history (' + r.s + ') where Wikidata states ' + JSON.stringify(fa.s) + ' — a history bound is admitted only where it is earlier than every start Wikidata states']);
+    } else if (r.s != null && !(fa.s || []).includes(r.s)) out.push(['era-span-row-unstated', tag + ' begins at ' + r.s + ', which Wikidata does not state (it states ' + JSON.stringify(fa.s) + ')']);
     /* ⚠ (restore-clock-and-elam) A START BOUND THAT IS LATER THAN HISTORY WITHHOLDS YEARS THE POLITY EXISTED.
        MEASURED: «Elam» → Q128904 carried Wikidata's 2700 BCE (the Old Elamite period) as its bound, while the
        row's own sentence named the Proto-Elamite period, c. 3200 BCE — so the 3000 BCE map drew Elam's shape
@@ -359,6 +371,92 @@ export function eraSpanProblems(ctx) {
   return out;
 }
 
+/* ══ 5. A CHANGE OF NAME FALLS ON THE RECORD'S DAY, NOT ON 1 JANUARY ══════════════════════════════
+   (hist-fidelity-sweep) 1960-06-15 drew «Dahomey», «Niger», «Cote d'Ivoire» and «Nigeria» without their
+   coloniser — weeks before 1960-08-01 · 08-03 · 08-07 · 10-01 — because js/time-borders.js `_CS_ERA` was
+   written in years and compared as `y < before`. The record beside it, data/cshapes.js, starts a new row
+   for that gwcode on the day of the change; a year is therefore asked of the record (`_csBefore`).
+   ⚠ THE PAGE IS ASKED. For every dated rule, the record's own boundaries of that gwcode in that year are
+   found, and the page's `csName` is evaluated the day before and the day of the boundary with the row the
+   page draws there: the rule's name must stand before it and be gone on it. A year holding two boundaries
+   cannot say which one it means and must be written as a day; a written day in a year the record has
+   boundaries in must be one of them. A year with no boundary is the table's own precision — listed by
+   `--report`, not failed. */
+export function csNameProblems(ctx) {
+  const { api } = ctx, out = [], yearOnly = [];
+  if (!api.csName || !api.csEra) return { out: [['cs-name-unmeasurable', 'js/time-borders.js publishes no csName/csEra — the dated name table cannot be asked']], yearOnly };
+  const { cs } = records();
+  const ymd = (y, m, d) => y * 10000 + m * 100 + d;
+  const un = (v) => [Math.floor(v / 10000), Math.floor(v / 100) % 100, v % 100];
+  const shift = (y, m, d, k) => { const t = new Date(0); t.setUTCFullYear(y, m - 1, d + k); return [t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate()]; };
+  const byGw = new Map();
+  for (const f of cs.feats) { if (!byGw.has(f[1])) byGw.set(f[1], []); byGw.get(f[1]).push(f); }
+  const rowAt = (rows, t) => rows.find((f) => ymd(f[2], f[3], f[4]) <= t && t <= ymd(f[5], f[6], f[7])) || null;
+  for (const [gwS, rules] of Object.entries(api.csEra())) {
+    const gw = +gwS, rows = byGw.get(gw) || [];
+    rules.forEach(([cut, name], ri) => {
+      if (cut === 9999) return;
+      /* the next rule may carry the same words (Iceland under the Danish crown both before and after 1918) —
+         then the boundary changes the rule, not the name, and only the day before is asked */
+      const sameAfter = rules[ri + 1] && rules[ri + 1][1] === name;
+      const Y = Array.isArray(cut) ? cut[0] : cut;
+      const y0 = ymd(Y, 1, 1), y1 = ymd(Y + 1, 1, 1);
+      /* the instants inside Y at which the record of this gwcode changes: a row starting, or the day after one ends */
+      const B = new Set();
+      for (const f of rows) {
+        const s = ymd(f[2], f[3], f[4]); if (s >= y0 && s < y1 && s > ymd(rows[0][2], rows[0][3], rows[0][4])) B.add(s);
+        const e = ymd(...shift(f[5], f[6], f[7], 1)); if (e >= y0 && e < y1) B.add(e);
+      }
+      const tag = `gw ${gw} «${name}» before ${Array.isArray(cut) ? cut.join('-') : cut}`;
+      let at;
+      if (Array.isArray(cut)) {
+        at = ymd(cut[0], cut[1], cut[2]);
+        if (B.size && !B.has(at)) { out.push(['cs-name-day-off-record', tag + ' names a day the record does not change on (its boundaries in ' + Y + ': ' + [...B].sort().map((v) => un(v).join('-')).join(', ') + ')']); return; }
+        if (!B.size) return;   /* a written day with no record boundary is the table's own statement */
+      } else {
+        if (B.size > 1) { out.push(['cs-name-ambiguous-year', tag + ' falls in a year in which the record changes ' + B.size + ' times (' + [...B].sort().map((v) => un(v).join('-')).join(', ') + ') — write the day']); return; }
+        if (!B.size) { yearOnly.push(tag); return; }
+        at = [...B][0];
+      }
+      /* evaluated on the page: the rule's name before the boundary, and not on it */
+      const [ay, am, ad] = un(at), [by, bm, bd] = shift(ay, am, ad, -1), tb = ymd(by, bm, bd);
+      const rb = rowAt(rows, tb), ra = rowAt(rows, at);
+      if (rb) { const nb = api.csName(rb[0], gw, by, bm, bd, rb); if (nb !== name) out.push(['cs-name-not-before', tag + ': the page names it «' + nb + '» on ' + [by, bm, bd].join('-') + ', the day before the record changes']); }
+      if (ra && !sameAfter) { const na = api.csName(ra[0], gw, ay, am, ad, ra); if (na === name) out.push(['cs-name-still-after', tag + ': the page still names it «' + na + '» on ' + [ay, am, ad].join('-') + ', the day the record changes']); }
+    });
+  }
+  return { out, yearOnly };
+}
+
+/* ══ 6. A CARRIED-BACK UNIT IS NOT DRAWN BEFORE ITS COUNTRY'S SET WAS COMPLETE ═════════════════════
+   (hist-fidelity-sweep) data/hist-admin-fill.js drew Japan's 45 prefectures from 1881-02-07: the build
+   took each code's EARLIEST stated inception, and a refounded unit states several — 香川県 1871, 1875 and
+   1888-12-03 — so 1881-1888 drew Kagawa over 愛媛県, Nara over 大阪府, Toyama / Saga / Miyazaki before
+   1883. The bundle now carries the latest inception each code states (`inception`), and this re-derives
+   from the shipped bytes the two things a row claims: it is not drawn before its own last founding, and
+   not before the latest founding any unit of its country states (the whole-country set floor). A gap
+   record without that evidence cannot be measured, and says so. */
+export function fillInceptionProblems(bs) {
+  const out = [];
+  for (const { file, b } of bs) {
+    if (!/admin-fill/.test(file)) continue;
+    const inc = b.inception;
+    if (!inc || typeof inc !== 'object') { out.push(['fill-inception-unstated', file + ' carries no `inception` — the floor its rows are drawn from cannot be re-derived']); continue; }
+    const iso3Of = new Map();
+    for (const f of b.feats) iso3Of.set(String(f[10]).split('-')[0], f[11]);
+    const F = new Map();
+    for (const [code, s] of Object.entries(inc)) { const c = iso3Of.get(code.split('-')[0]); if (c && (!F.has(c) || s > F.get(c))) F.set(c, s); }
+    const bad = [];
+    for (const f of b.feats) {
+      const s = f[2] * 10000 + f[3] * 100 + f[4];
+      const own = inc[f[10]], floor = F.get(f[11]);
+      if ((own != null && s < own) || (floor != null && s < floor)) bad.push(f[0] + ' ' + f[10] + ' from ' + [f[2], f[3], f[4]].join('-') + ' (own ' + own + ', country ' + floor + ')');
+    }
+    if (bad.length) out.push(['fill-before-inception', bad.length + ' row(s) of ' + file + ' are drawn before a founding Wikidata states for them or for their country — ' + bad.slice(0, 6).join('; ')]);
+  }
+  return out;
+}
+
 /* ══ main ════════════════════════════════════════════════════════════════════════════════ */
 /* (hist-era-span-fidelity) the polities the era sheet draws there that year, as the page draws them —
    the sheet `nearest` picks for that year, and every name the reader's year withholds marked as such.
@@ -394,7 +492,9 @@ function listYear(bs, y, box) {
       const mark = !d || (d.start && d.start.raw) ? ''
         : d.start && d.start.derived ? '   · 開始日は上流に無く、同じ制度の他の単位から導出（' + d.start.bound + '）'
         : '   ⚠ 開始日を誰も述べていない';
-      hits.push(`${f[0]} (L${f[1]} ${[f[2], f[3], f[4]].join('-')} → ${[f[5], f[6], f[7]].join('-')})${mark}`);
+      /* (hist-fidelity-sweep) a reviewed handover says whose day it is, beside upstream's own */
+      const cor = d && ['start', 'end'].filter((k) => d[k] && d[k].corrected).map((k) => `${k === 'start' ? '開始' : '終了'}は上流 ${d[k].raw} → 審査済み ${d[k].corrected.at}（${d[k].corrected.q} ${d[k].corrected.p}）`).join('・');
+      hits.push(`${f[0]} (L${f[1]} ${[f[2], f[3], f[4]].join('-')} → ${[f[5], f[6], f[7]].join('-')})${mark}${cor ? '   · ' + cor : ''}`);
     }
     console.log(`${file}: ${hits.length}`);
     for (const h of hits) console.log('    ' + h);
@@ -446,6 +546,20 @@ async function main() {
     say(true, 'era-span', `${era.found.length} finding(s) of an era name drawn outside its polity's lifespan, every one judged — ${applied} withheld on the map by a reviewed row, ${era.found.length - applied} refuted with a reason`);
   }
 
+  /* ⑦ (hist-fidelity-sweep) one handover, two statements of its year — scripts/histadmin/edges.mjs */
+  const edges = readEdges(ROOT);
+  const edp = edgeProblems(bs, edges, historyNames);
+  for (const [tag, msg] of edp) say(false, tag, msg);
+  if (!edp.length) say(true, 'edge-handover', (edges.found || []).length + ' succession(s) upstream ties by one event while naming two years, every one judged — ' + (edges.reviewed || []).length + ' moved to the day Wikidata states and history agrees with, ' + (edges.refuted || []).length + ' left as upstream wrote it');
+
+  const fip = fillInceptionProblems(bs);
+  for (const [tag, msg] of fip) say(false, tag, msg);
+  if (!fip.length) say(true, 'fill-inception', 'no carried-back row is drawn before its own latest stated founding or its country\'s');
+
+  const csn = csNameProblems(era);
+  for (const [tag, msg] of csn.out) say(false, tag, msg);
+  if (!csn.out.length) say(true, 'cs-name-day', `every dated name rule that falls in a year the CShapes record changes in is named on the record's day — ${csn.yearOnly.length} rule(s) fall in a year with no record boundary and keep the table's year precision`);
+
   for (const c of cov) {
     const was = observed.years.find((r) => r.year === c.year);
     /* The grid is deterministic, so the floor is the last measurement itself. The slack exists
@@ -463,6 +577,8 @@ async function main() {
       const j = judged(c, era.ledger);
       console.log(`   ${j ? (j.by === 'row' ? '名前を外す' : '反証(' + j.ref.why + ')') : '未判定'}  «${c.name}» ${c.q} ${c.label || ''} ${c.side === 'end' ? '終焉' : '成立'} ${c.year}  描かれる年 ${c.sheets.map((x) => x.drawn.join('..')).join(', ')}`);
     }
+    console.log('\n── 国名の切り替えが年の精度のままの規則（記録がその年に変わらない）: ' + csn.yearOnly.length + ' 件');
+    for (const t of csn.yearOnly) console.log('   ' + t);
     console.log('\n── 同じ単位が同じ瞬間に二度描かれる組: identical ' + kinds.identical + ' / nested ' + kinds.nested + ' / seam ' + kinds.seam);
     console.log('\n── 年ごとの被覆（母集合＝その年、地図が政体の中に置いている陸地）');
     for (const c of cov) {

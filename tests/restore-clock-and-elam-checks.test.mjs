@@ -29,9 +29,13 @@ test('① the 3000 BCE map names Elam again, and the shape was never the problem
   const s = sheet(-2999);
   assert.ok(s && s.feats.some((f) => f[0].en === 'Elam'), 'the −2999 sheet carries Elam');
   for (const y of [-3000, -2999, -2800]) assert.ok(named(ctx.api.eraShown(fcOf(s), y), 'Elam'), 'Elam is named at ' + y);
-  assert.ok(!ctx.ledger.rows.some((r) => r.name === 'Elam'), 'no row acts on Elam');
-  const ref = ctx.ledger.refuted.find((r) => r.name === 'Elam' && r.side === 'start');
-  assert.ok(ref && ref.why === 'date-disputed' && /3200 BCE/.test(ref.note), 'the start is refuted, with the historical year');
+  /* (hist-fidelity-sweep) the start Wikidata states stays unused; the bound that acts is history's
+     (`sBy: "history"`, the Proto-Elamite c. 3200 BCE), which the card can now say — so the 5000 and
+     4000 BCE sheets no longer name Elam, and 3000 BCE still does */
+  const row = ctx.ledger.rows.find((r) => r.name === 'Elam');
+  assert.ok(row && row.sBy === 'history' && row.s === -3199 && row.hs === -3199 && /3200-2700 BCE/.test(row.history), 'the start that acts is history\'s');
+  assert.ok(!ctx.ledger.refuted.some((r) => r.name === 'Elam' && r.side === 'start'), 'a refutation beside the row would be two verdicts on one finding');
+  for (const y of [-5000, -4000, -3300]) assert.ok(!named(ctx.api.eraShown(fcOf(sheet(ctx.api._nearest(y, ctx.er.snaps.map((x) => x.y)))), y), 'Elam'), 'Elam is not named at ' + y);
 });
 
 test('② the shipped ledger passes, and every start row states the year history places it from', () => {
