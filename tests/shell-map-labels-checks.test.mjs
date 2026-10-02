@@ -956,7 +956,9 @@ test('#R253 ⑦ the CJK face is chosen per label, and the renderer is told which
     for (const f of t.T.readerFont().concat(e[2][1], e[3][1])) {
       if (/^Noto Sans /.test(f)) assert.ok(asked.has(f), `${l.html}: labels are drawn in «${f}» and the page never requests it`);
     }
-    for (const w of t.T.webFonts()) assert.match(w.href, /^https:\/\/fonts\.googleapis\.com\/css2\?family=Noto\+Sans\+(JP|SC|TC):wght@400;500;600;700&display=swap$/);
+    /* (mobile-performance) the same 400–700 the page has used since #R242, asked for as ONE variable face
+       (four static weights declared each subset file four times — js/map-typography.js WEB_FONT_WEIGHTS) */
+    for (const w of t.T.webFonts()) assert.match(w.href, /^https:\/\/fonts\.googleapis\.com\/css2\?family=Noto\+Sans\+(JP|SC|TC):wght@400\.\.700&display=swap$/);
   }
   /* …and a family no label on this reader's map can use is not requested (TC was 480 kB of rules on every page) */
   assert.ok(!(await typography('ja')).T.webFonts().some((w) => w.family === 'Noto Sans TC'), 'a Japanese page asks for Noto Sans TC again');

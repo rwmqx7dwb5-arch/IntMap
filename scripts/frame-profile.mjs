@@ -59,6 +59,9 @@
  *
  *  USAGE
  *    node scripts/frame-profile.mjs --boot            start-up: first draw, ready, long tasks, heap
+ *    node scripts/frame-profile.mjs --boot --detail   …+ every request started before ready, checked against
+ *                                                     js/boot-stage.js, and the long animation frames by script
+ *    node scripts/frame-profile.mjs --boot --ledger   …and write the phone's boot numbers to tests/perf-phone-ledger.json
  *    node scripts/frame-profile.mjs --sweep           frame time over a scripted zoom + hover
  *    node scripts/frame-profile.mjs --mem             heap / nodes / listeners over N open-close cycles
  *    node scripts/frame-profile.mjs --commands       renderer commands per phase: attempted vs already-there
@@ -75,6 +78,9 @@ import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
+/* (mobile-performance) the plan a phone's boot is read against, and the ledger --ledger writes into */
+import { BootStage } from '../js/boot-stage.js';
+import { writePhoneLedger } from './perf-budget.mjs';
 
 const require = createRequire(import.meta.url);
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -92,6 +98,10 @@ const CPU = Number(val('--cpu', MOBILE ? 4 : 1));
 const REPS = Number(val('--reps', 5));
 const NET = val('--net', 'none');
 const RECORD = has('--record');
+/* (mobile-performance) --detail: who asked for what at boot, and who spent each long frame. */
+const LEDGER = has('--ledger');
+const DETAIL = has('--detail') || LEDGER;
+const SETTLE_MS = Number(val('--settle', 3000));
 
 /* An iPhone 13's UA — see the header: three mobile caps in this app are gated on it, not on width. */
 const MOBILE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
@@ -154,6 +164,18 @@ async function newContext(browser) {
       new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__imLT.push(Math.round(e.duration)); })
         .observe({ type: 'longtask', buffered: true });
     } catch (_) { /* Safari has no longtask observer; the number is simply absent there */ }
+    /* (mobile-performance) WHO spent each long frame. A long-task entry says that the main thread was
+       blocked, never by what; the long-animation-frame entry carries the scripts that ran in it
+       (invoker, source URL, function, self duration). Same rule as above: installed before the first
+       script, because a frame that has already happened is only kept while the buffer lasts. */
+    window.__imLoAF = [];
+    try {
+      new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__imLoAF.push({
+        t: Math.round(e.startTime), d: Math.round(e.duration), b: Math.round(e.blockingDuration || 0),
+        r: Math.round(e.renderStart ? (e.startTime + e.duration) - e.renderStart : 0),
+        s: (e.scripts || []).map((x) => ({ i: String(x.invoker || ''), k: x.invokerType, u: x.sourceURL || '', f: x.sourceFunctionName || '', d: Math.round(x.duration), fl: Math.round(x.forcedStyleAndLayoutDuration || 0) })),
+      }); }).observe({ type: 'long-animation-frame', buffered: true });
+    } catch (_) { /* Chromium only */ }
   });
   return ctx;
 }
@@ -281,7 +303,8 @@ async function runBoot() {
       await page.waitForFunction(() => window.__imBoot && window.__imBoot.isDone(), null, { timeout: 60_000 });
       ready = Date.now() - t0;
     } catch (_) { /* left null — printed as "—" */ }
-    const d = await page.evaluate(() => {
+    if (DETAIL) await page.waitForTimeout(SETTLE_MS);
+    const d = await page.evaluate((detail) => {
       const res = performance.getEntriesByType('resource');
       const js = res.filter((r) => /\.js(\?|$)/.test(r.name));
       const lt = (window.__imLT || []).slice();
@@ -292,8 +315,12 @@ async function runBoot() {
         lt50: lt.filter((x) => x >= 50).length, lt100: lt.filter((x) => x >= 100).length,
         ltMax: lt.length ? Math.max(...lt) : 0, ltTotal: lt.reduce((a, b) => a + b, 0),
         marks: (window.__imBoot && window.__imBoot.marks) ? window.__imBoot.marks() : {},
+        /* (mobile-performance) --detail: every request with when it STARTED (so the list can be cut at
+           the ready mark), and every long animation frame with its scripts. */
+        res: detail ? res.map((r) => ({ u: r.name, t: Math.round(r.startTime), e: Math.round(r.responseEnd), b: r.encodedBodySize || 0, k: r.initiatorType })) : null,
+        loaf: detail ? (window.__imLoAF || []).slice() : null,
       };
-    });
+    }, DETAIL);
     const h = await heap(cdp);
     rows.push({ tDom, tDraw, ready, ...d, ...h });
     console.log(`  rep${i + 1}${i < 2 ? ' (warm-up)' : '         '}  draw ${String(tDraw).padStart(6)} ms  ready ${String(ready ?? '—').padStart(6)}  FCP ${String(d.fcp).padStart(5)}  JS ${d.jsFiles}f/${d.jsBytes}kB  reqs ${String(d.reqs).padStart(3)}  LT ${d.lt50}/${d.lt100} max ${String(d.ltMax).padStart(4)}  heap ${String(h.heapMB).padStart(6)} MB`);
@@ -307,6 +334,17 @@ async function runBoot() {
   console.log(`      heap ${meanF('heapMB')} MB · ${mean('nodes')} nodes · ${mean('listeners')} listeners`);
   console.log(`      milestones (last rep): ${JSON.stringify(keep[keep.length - 1].marks)}`);
   console.log(`cache: ${stats.hit} replayed, ${stats.miss} missed, ${stats.blocked} blocked`);
+  const plan = DETAIL ? printDetail(keep) : null;
+  if (LEDGER && MOBILE) {
+    const w = writePhoneLedger('boot', {
+      profile: { viewport: '390x844', dpr: 3, ua: 'iPhone', cpu: CPU, net: NET, reps: keep.length, base: 'local build (dist/)' },
+      readyMs: mean('ready'), firstDrawMs: mean('tDraw'),
+      longTasks: { n50: meanF('lt50'), n100: meanF('lt100'), maxMs: mean('ltMax'), totalMs: mean('ltTotal') },
+      beforeReady: plan ? { requests: plan.requests, kB: plan.kB } : null,
+      planViolations: plan ? plan.violations : null,
+    });
+    console.log(`  → tests/perf-phone-ledger.json boot (${w.commit}, ${w.measuredAt})`);
+  }
   writeJson({ mode: 'boot', mobile: MOBILE, cpu: CPU, net: NET, reps: keep });
   await browser.close();
 }
@@ -394,6 +432,69 @@ async function runAttribute() {
   for (const [f, ms] of top(byFn, 25)) console.log(`   ${ms.toFixed(1).padStart(8)} ms  ${f}`);
   writeJson({ mode: 'attribute', base: BASE, totalMs: total / 1000, byUrl: top(byUrl, 200), byFn: top(byFn, 200) });
   await browser.close();
+}
+
+/* (mobile-performance) --detail's two tables, over the kept reps.
+   REQUESTS BEFORE READY: every resource whose fetch STARTED before __imBoot's ready mark, with its
+   body bytes — the list a phone pays before it can be touched. Sorted by bytes, path without query.
+   LONG FRAMES: self duration per script, keyed by invoker + function + file, summed over the boot
+   (the long-animation-frame entry is the only browser record of WHO ran in a long frame). */
+/* the moment the launch screen lifted, ON THE PAGE'S CLOCK — the same clock resource and frame entries carry.
+   r.ready is the harness's wall clock when it noticed, which lags by its polling and starts before navigation;
+   comparing a page timestamp with it misfiles reads made just after the lift as reads made before it. */
+function readyAt(r) {
+  const m = r.marks || {};
+  for (const k of ['idle', 'timeout', 'no-renderer', 'ready']) if (m[k] != null) return m[k];
+  return r.ready ?? Infinity;
+}
+function printDetail(keep) {
+  const short = (u) => { try { const x = new URL(u); return (x.origin === BASE ? '' : x.host) + x.pathname.replace(/-[A-Za-z0-9_-]{8}\.(js|css)$/, '.$1'); } catch (_) { return u; } };
+  const by = new Map();
+  for (const r of keep) {
+    const ready = readyAt(r);
+    for (const x of r.res || []) {
+      if (x.t > ready) continue;
+      const k = short(x.u);
+      const o = by.get(k) || { n: 0, b: 0, t: 0, k: x.k };
+      o.n++; o.b += x.b; o.t += x.t; by.set(k, o);
+    }
+  }
+  const rows = [...by.entries()].map(([k, o]) => ({ k, n: o.n / keep.length, b: o.b / keep.length, t: o.t / o.n, kind: o.k })).sort((a, b) => b.b - a.b);
+  const tot = rows.reduce((s, r) => s + r.b, 0), cnt = rows.reduce((s, r) => s + r.n, 0);
+  console.log(`
+REQUESTS STARTED BEFORE READY  (${cnt.toFixed(0)} requests, ${(tot / 1024).toFixed(0)} kB body, mean over ${keep.length} reps; top 40 by bytes)`);
+  for (const r of rows.slice(0, 40)) console.log(`  ${(r.b / 1024).toFixed(1).padStart(8)} kB  x${r.n.toFixed(1).padStart(4)}  @${String(Math.round(r.t)).padStart(6)} ms  ${String(r.kind).padEnd(15)} ${r.k}`);
+  const sc = new Map(); let lafTot = 0, lafN = 0;
+  for (const r of keep) {
+    const ready = readyAt(r);
+    for (const f of r.loaf || []) {
+      if (f.t > ready) continue;
+      lafTot += f.d; lafN++;
+      for (const x of f.s) {
+        const k = `${x.k}  ${x.i.slice(0, 60)}  ${x.f || '(anon)'}  ${short(x.u)}`;
+        const o = sc.get(k) || { d: 0, n: 0, fl: 0 }; o.d += x.d; o.n++; o.fl += x.fl; sc.set(k, o);
+      }
+    }
+  }
+  /* the request list against js/boot-stage.js: an undeclared data/ file, or a row this device should read
+     later, read during the boot, is a VIOLATION of the plan — the runtime half of what check:perf proves statically */
+  const violations = [];
+  const stageOf = (row) => (MOBILE ? row.phone : (row.other || 'boot')) || 'boot';
+  for (const r of rows) {
+    let u; try { u = new URL(r.k.startsWith('/') ? BASE + r.k : 'https://' + r.k); } catch (_) { continue; }
+    const same = u.origin === new URL(BASE).origin;
+    const row = BootStage.rowFor(u.href, BASE + '/');
+    if (same && !u.pathname.startsWith('/data/')) continue;           /* the bundle, fonts, glyphs: judged by the byte rows */
+    if (!row) { if (same) violations.push(`undeclared: ${r.k}`); continue; }
+    if (stageOf(row) !== 'boot') violations.push(`${row.id} is declared ${stageOf(row)} on this device and was read before ready: ${r.k}`);
+  }
+  console.log(`
+PLAN (js/boot-stage.js, ${MOBILE ? 'phone' : 'other'} column): ${violations.length ? violations.length + ' violation(s)' : 'every request before ready is a declared boot read'}`);
+  for (const v of violations) console.log('  ✗ ' + v);
+  console.log(`
+LONG ANIMATION FRAMES BEFORE READY  (${(lafN / keep.length).toFixed(1)} frames, ${Math.round(lafTot / keep.length)} ms per boot; scripts by self time, per boot)`);
+  for (const [k, o] of [...sc.entries()].sort((a, b) => b[1].d - a[1].d).slice(0, 30)) console.log(`  ${String(Math.round(o.d / keep.length)).padStart(6)} ms  x${(o.n / keep.length).toFixed(1).padStart(4)}  layout ${String(Math.round(o.fl / keep.length)).padStart(4)}  ${k}`);
+  return { requests: Math.round(cnt), kB: Math.round(tot / 1024), violations };
 }
 
 function writeJson(obj) {

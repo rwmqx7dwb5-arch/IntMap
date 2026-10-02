@@ -52,6 +52,40 @@ export const IntMapGeoEngine=(function(){
    app-body.js's closure variable, which this file no longer shares — app-body publishes the
    handle the moment the map is constructed, so the fallback had nothing left to catch. */
 function _m(){ return window.__imap||null; }
+  /* ══ (mobile-performance) A NEW CJK FACE REDRAWS WHAT THE BROWSER DREW — NOT WHAT THE SERVER SENT ══════════
+     `setGlyphs(url)` was the door both CJK paths used, and it empties the WHOLE glyph cache: every
+     `fonts/Inter Regular/{range}.pbf` and every Noto range from the glyph server is requested, parsed and
+     rasterised again, and every symbol tile re-laid out — to replace glyphs none of which came from those
+     files. MEASURED (390×844, CPU ×4, scripts/frame-profile.mjs --boot --detail): the same twelve Inter
+     ranges requested twice in one boot, 2.4 s apart; production saw the same duplicated ranges.
+     What a new face invalidates is exactly the glyphs the renderer drew LOCALLY with TinySDF — the CJK
+     codepoints `localIdeographFontFamily` covers, grapheme clusters, and a range's glyphs drawn as a
+     fallback when its file failed — plus the rasterisers that drew them. A glyph that came from a
+     downloaded range (`ranges[r] === true`, single codepoint, not a local ideograph) does not depend on
+     any web font and is kept. Then the style is told its glyphs changed, which reloads the glyph-dependent
+     tiles exactly as `setGlyphs` would — the same re-layout, without a single request.
+     ⚠ Internal fields of MapLibre's GlyphManager (6.x: entries[stack].{glyphs,ranges,…TinySDF}); if they are
+     not there this answers false and the caller falls back to the public `setGlyphs` — slower, never wrong. */
+function _redrawLocalGlyphs(m){
+  try{
+    const st=m&&m.style, gm=st&&st.glyphManager;
+    if(!gm||!gm.entries||typeof gm.entries!=='object'||typeof m._update!=='function') return false;
+    const local=(cp)=>{ try{ return typeof gm._charUsesLocalIdeographFontFamily==='function'&&gm._charUsesLocalIdeographFontFamily(cp); }catch(_){ return true; } };
+    for(const stack of Object.keys(gm.entries)){
+      const e=gm.entries[stack]; if(!e||typeof e!=='object') continue;
+      if(!e.glyphs||!e.ranges) return false;                    /* not the shape this was written against */
+      for(const v of Object.keys(e.glyphs)){ const tab=e.glyphs[v]; if(!tab) continue;
+        for(const id of Object.keys(tab)){
+          const cp=id.codePointAt(0), single=id.length===(cp>0xffff?2:1);
+          const fromFile=v==='default'&&single&&e.ranges[Math.floor(cp/256)]===true&&!local(cp);
+          if(!fromFile) delete tab[id];
+        } }
+      delete e.tinySDF; delete e.ideographTinySDF; delete e.clusterTinySDFs; delete e.fontFaceTinySDFs;
+    }
+    st._changed=true; st._glyphsDidChange=true; m._update(true);
+    return true;
+  }catch(_){ return false; }
+}
   /* (module-graph) THE CUSTOM-LAYER KINDS ARE HANDED IN, NOT LOOKED UP. js/solid3d.js, js/limb-layer.js,
      js/orbit-points.js and js/aircraft-points.js each give this seam their factory when they are
      evaluated (`IntMapGeoEngine.provideLayerKind(name, make)`). The seam used to reach for them on
@@ -1413,13 +1447,14 @@ function _m(){ return window.__imap||null; }
     setCjkFontFamily(fam){ const m=_m(); try{ const gm=m&&m.style&&m.style.glyphManager;
       if(!fam||!gm||gm.localIdeographFontFamily===fam||typeof m.setGlyphs!=='function') return false;   /* same family → never pay for a reload */
       const u=(typeof m.getGlyphs==='function')?m.getGlyphs():null; if(!u) return false;
-      gm.localIdeographFontFamily=fam; m._localIdeographFontFamily=fam; m.setGlyphs(u); return true;
+      gm.localIdeographFontFamily=fam; m._localIdeographFontFamily=fam;
+      if(!_redrawLocalGlyphs(m)) m.setGlyphs(u); return true;
     }catch(_){ return false; } },
     /* the SAME family, a NEW face: the web font behind it arrived after the rasteriser had already drawn
        CJK with the browser's fallback, and TinySDF keeps what it drew. Same public door as above —
        js/map-typography.js calls it when document.fonts reports a CJK face finished loading. */
     refreshCjkGlyphs(){ const m=_m(); try{ const u=(m&&typeof m.getGlyphs==='function')?m.getGlyphs():null;
-      if(!u||typeof m.setGlyphs!=='function') return false; m.setGlyphs(u); return true; }catch(_){ return false; } },
+      if(!u||typeof m.setGlyphs!=='function') return false; if(!_redrawLocalGlyphs(m)) m.setGlyphs(u); return true; }catch(_){ return false; } },
     /* ══ (#R225) THE FRAME'S OWN COST, AND WHAT THE SCENE COSTS IT ══════════════════════════════════
        「スマホでの地図スクロール、ズームが壊滅的に遅いです」 — four rounds have argued about this and
        three measured the wrong machine, so js/perf-hud.js exists to take the number ON THE DEVICE.

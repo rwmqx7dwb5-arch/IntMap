@@ -38,6 +38,8 @@
  *    node scripts/mobile-trace.mjs --cpu 4 --engine chromium # the historical throttled profile
  *    node scripts/mobile-trace.mjs --verify                  # + the CDP sampler cross-check
  *      …with  --desktop  --reps N (default 3)  --base http://127.0.0.1:4373  --json <path>
+ *      --ledger  (mobile-performance) write the chromium finger phases (fps, % of frames over 16.7 ms, % that
+ *                missed a vsync, worst frame, touch latency) to tests/perf-phone-ledger.json — a record, not a gate
  *
  *  ── ⚠⚠⚠ (#R498) AND SINCE #R498, TWO PHASES DRIVEN BY A REAL FINGER ──────────────────────────
  *  Everything above is driven through `IntMapGeoEngine.camera` — an animated easeTo/panBy — for the
@@ -236,6 +238,12 @@ function phaseOf(a, b, frames) {
     frames: f.length,
     fps: f.length ? +(1000 / avg(f)).toFixed(1) : null,
     worstFrameMs: f.length ? +q(f, 0.99).toFixed(1) : null,
+    /* (mobile-performance) the share of frames that took longer than a 60 Hz frame (16.7 ms — the figure
+       production reported, 15.7 % while operating), and the share that MISSED a vsync outright (> 1.5
+       frames, 25 ms): rAF intervals jitter around 16.7 ms, so the first counts the jitter as well and the
+       second is the one that is a dropped frame on any refresh rate this profile emulates. */
+    over16_7Pct: f.length ? +(100 * f.filter((x) => x > 16.7).length / f.length).toFixed(1) : null,
+    missedVsyncPct: f.length ? +(100 * f.filter((x) => x > 25).length / f.length).toFixed(1) : null,
   };
 }
 
@@ -789,6 +797,24 @@ if (VERIFY) {
   console.log(`\n  CROSS-CHECK (chromium only) · CDP sampler over ${verify.sampledMs.toFixed(0)} ms`);
   console.log(`    probe, same interval: placement ${verify.probe.self.placement} ms · render ${verify.probe.self.render} ms · mapRender ${verify.probe.self.mapRender} ms · texUpload ${verify.probe.self.texUpload} ms`);
   for (const [fn, ms] of verify.sampler.slice(0, 12)) console.log(`    ${pad(ms.toFixed(1), 9)} ms  ${fn}`);
+}
+
+/* (mobile-performance) --ledger: the finger phases, chromium only (CDP), into the phone's runtime ledger
+   tests/perf-phone-ledger.json — recorded beside the gated rows by check:perf, never judged there */
+if (has('--ledger')) {
+  const { writePhoneLedger } = await import('./perf-budget.mjs');
+  const pick = ['pan-touch', 'pinch-touch', 'pan-alerts-city'];
+  const phases = {};
+  for (const p of pick) {
+    const xs = runs.filter((r) => r.engine === 'chromium' && r.phases[p] && r.phases[p].frames).map((r) => r.phases[p]);
+    if (!xs.length) continue;
+    const m = (g) => { const v = xs.map(g).filter((x) => x != null && isFinite(x)); return v.length ? +(v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : null; };
+    phases[p] = { fps: m((x) => x.fps), over16_7Pct: m((x) => x.over16_7Pct), missedVsyncPct: m((x) => x.missedVsyncPct), worstFrameMs: m((x) => x.worstFrameMs), blockingMs: m((x) => x.blockingMs), latP95: m((x) => x.touch && x.touch.latP95) };
+  }
+  if (Object.keys(phases).length) {
+    const w = writePhoneLedger('interaction', { profile: { viewport: '390x844', dpr: 3, ua: 'iPhone', cpu: CPU, engine: 'chromium', reps: runs.filter((r) => r.engine === 'chromium').length }, phases });
+    console.log(`  → tests/perf-phone-ledger.json interaction (${w.commit}, ${w.measuredAt})`);
+  } else console.log('  --ledger: no chromium finger phase was measured — nothing written');
 }
 
 const out = val('--json', null);

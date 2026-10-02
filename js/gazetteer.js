@@ -488,7 +488,13 @@ window.IntMapGazetteer=(function(){
      is a smaller gazetteer and not a broken one). Never rejects, and never fetches twice. */
   function warm(){
     if(_worldPromise) return _worldPromise;
-    _worldPromise=(async()=>{
+    /* (mobile-performance) THE READ, THE CONVERSION AND THE ANNOUNCEMENT ARE ONE JOB, and on a phone it runs once
+       the app can be touched (js/boot-stage.js, row `gazetteer`). The first warm() comes from the news locator's
+       first pass, inside the boot; MEASURED (390×844, CPU ×4) the 551 kB read and the matcher build that the
+       announcement below triggers were ~0.7 s of one long task before the launch screen lifted. Until the rows
+       land the curated table answers, exactly as it does offline — the state this function already documents as
+       correct. The job includes the announcement so the next settled read does not stack its arrival on this one. */
+    const job=async()=>{
       try{
         /* (#R208) un-gzip in the browser — but DECIDE FROM THE BYTES, not from the file name.
            ⚠ Whether the body still needs decompressing here depends on the host: a static server
@@ -510,7 +516,9 @@ window.IntMapGazetteer=(function(){
       }catch(e){ _worldRows=[]; _worldMatchable=null; try{ console.warn('[IntMap] world gazetteer unavailable —',e.message); }catch(_){} }
       try{ window.dispatchEvent(new Event('intmap-gazetteer-world')); }catch(_){}
       return _worldRows;
-    })();
+    };
+    let S=null; try{ S=window.__imBootStage||null; }catch(_){}
+    _worldPromise=S?S.at('gazetteer',job):job();
     return _worldPromise;
   }
   /* (#R198) …and the matcher-shaped index built from all three sets. It lived as one expression in

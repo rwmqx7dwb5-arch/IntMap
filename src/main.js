@@ -63,6 +63,10 @@ import '../js/usage-counts.js';
    No imports and no work at load beyond reading media queries, so their place costs nothing. */
 import '../js/ui-device.js';
 import '../js/ui-stack.js';
+/* (mobile-performance) …and WHEN a phone may read each shipped file — boot / settled / need — before any
+   reader of one. No imports beyond the device predicate js/ui-device.js published just above; nothing is
+   read here. js/boot-stage.js has the plan and the measurement. */
+import '../js/boot-stage.js';
 import '../js/mem-budget.js';   /* (#R669) …and, before anything that decodes an elevation tile, the ONE owner of how many of them this device may hold. Five stores kept five hand-written ceilings for the same 262,144-byte tile and four of them never asked what device they were on (about 600 MB authorised on a phone), and it is also where 「携帯か」 is answered for the thirty-nine cost decisions that used to ask the viewport width. No DOM and no `window`, so the photo-search worker imports the same file and the two cannot disagree. */
 /* (#R479) CARTO's key, the two tile-URL builders and the basemap credit. Anywhere before
    js/app-body.js works (it builds tile URLs at map setup); the first three slots and the last one

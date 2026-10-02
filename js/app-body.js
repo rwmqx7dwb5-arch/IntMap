@@ -128,6 +128,8 @@ import { worldPacks } from './world-packs-rows.js';
 import { IntMapRefData } from './reference-data.js';
 import { IntMapTables } from './tables.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+/* (mobile-performance) when a phone may warm the country table — js/boot-stage.js */
+import { BootStage } from './boot-stage.js';
 
 /* (fetch-deadline-layer) the classic scripts' handle on the fetch clock (js/countries-ui.js, js/routing-ops.js —
    see the end of js/fetch-deadline.js). Assembled HERE because this file is in main alone and imports both
@@ -4220,6 +4222,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   (function(){ const warm=()=>{ try{ if(typeof loadCountryData==='function') loadCountryData(); }catch(_){} };
     const go=()=>{ try{ const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
         if(c&&(c.saveData===true||/(^|-)2g$/.test(c.effectiveType||''))) return; }catch(_){}
+      /* (mobile-performance) a phone's main thread is busy for most of its boot, so «idle» landed INSIDE it
+         (MEASURED 390×844 CPU ×4: the country file started at 8.8 s of a 8.4–9 s boot). js/boot-stage.js row
+         `ne-countries` puts it behind the moment a phone can be touched; every other device keeps this schedule. */
+      if(BootStage.stageOf('ne-countries')!=='boot'){ BootStage.at('ne-countries',()=>{ try{ return loadCountryData(); }catch(_){ return null; } }); return; }
       if('requestIdleCallback' in window) requestIdleCallback(warm,{timeout:7000}); else setTimeout(warm,4000); };
     let started=false; const once=()=>{ if(started) return; started=true; go(); };
     try{ GE().events.once('idle',()=>setTimeout(once,300)); }catch(_){}

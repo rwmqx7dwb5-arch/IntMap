@@ -49,6 +49,8 @@
  * ==========================================================================*/
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
+/* (mobile-performance) when a phone may read the star catalogue */
+import { BootStage } from './boot-stage.js';
 /* (startup-lazy-layers) data/stars.bin, one read and one decoder for both skies */
 import { loadStarCatalogue } from './star-catalogue.js';
 import { IntMapTime } from './chronos.js';
@@ -161,7 +163,12 @@ window.IntMapSky=(function(){
      colours and sizes below, and the precession buffers. */
   function loadStars(){
     if(stars||starsLoading) return starsLoading||Promise.resolve(stars);
-    starsLoading=loadStarCatalogue()
+    /* (mobile-performance) …and on a phone, not before the app can be touched. js/boot-stage.js holds the
+       plan: the sky is the background of the dark globe, the globe is usable without it, and the read
+       plus the 98,887-row derivation below was 773 kB and a long task inside the boot. Same bytes, same
+       sky — it arrives on the first idle after the launch screen lifts. Every other device: `boot`.
+       The read AND the derivation below are the job, so the next settled read waits for both. */
+    starsLoading=BootStage.at('stars',()=>loadStarCatalogue()
       .then(cat=>{
         const n=cat.n, ra=cat.ra, dec=cat.dec, mag=cat.mag;
         const cr=new Uint8Array(n), cg=new Uint8Array(n), cb=new Uint8Array(n);
@@ -182,7 +189,7 @@ window.IntMapSky=(function(){
           stars.css[i]='rgba('+cr[i]+','+cg[i]+','+cb[i]+','+a.toFixed(3)+')';
         }
         starsLoading=null; schedule(); return stars;
-      }).catch(e=>{ starErr=String(e&&e.message||e); starsLoading=null;
+      })).catch(e=>{ starErr=String(e&&e.message||e); starsLoading=null;
         console.warn('[sky] star catalog unavailable — the sky falls back to the plain background:',starErr);
         return null; });
     return starsLoading;

@@ -1,0 +1,71 @@
+{
+  "_": "IntMap · the phone's runtime numbers (390x844, iPhone user agent, CPU x4, replayed third-party bytes). Written by scripts/frame-profile.mjs --boot --ledger and scripts/mobile-trace.mjs --ledger; printed by npm run check:perf; NOT a gate (needs a GPU and .frame-cache/). docs/TESTING.md.",
+  "boot": {
+    "measuredAt": "2026-10-02",
+    "commit": "3cbfa244+uncommitted",
+    "profile": {
+      "viewport": "390x844",
+      "dpr": 3,
+      "ua": "iPhone",
+      "cpu": 4,
+      "net": "none",
+      "reps": 3,
+      "base": "local build (dist/)"
+    },
+    "readyMs": 7758,
+    "firstDrawMs": 4981,
+    "longTasks": {
+      "n50": 38,
+      "n100": 17,
+      "maxMs": 1708,
+      "totalMs": 6611
+    },
+    "beforeReady": {
+      "requests": 83,
+      "kB": 5123
+    },
+    "planViolations": [
+      "subcables is declared need on this device and was read before ready: /data/subcables.json",
+      "subcables is declared need on this device and was read before ready: /data/subcables-meta.json",
+      "subcables is declared need on this device and was read before ready: /data/subcables-lp.json"
+    ]
+  },
+  "interaction": {
+    "measuredAt": "2026-10-02",
+    "commit": "3cbfa244+uncommitted",
+    "profile": {
+      "viewport": "390x844",
+      "dpr": 3,
+      "ua": "iPhone",
+      "cpu": 4,
+      "engine": "chromium",
+      "reps": 1
+    },
+    "phases": {
+      "pan-touch": {
+        "fps": 31.1,
+        "over16_7Pct": 52.7,
+        "missedVsyncPct": 30.9,
+        "worstFrameMs": 150,
+        "blockingMs": 1870,
+        "latP95": 99.3
+      },
+      "pinch-touch": {
+        "fps": 54.3,
+        "over16_7Pct": 34.8,
+        "missedVsyncPct": 7.6,
+        "worstFrameMs": 50.1,
+        "blockingMs": 33,
+        "latP95": null
+      },
+      "pan-alerts-city": {
+        "fps": 50.6,
+        "over16_7Pct": 19.2,
+        "missedVsyncPct": 7.8,
+        "worstFrameMs": 83.3,
+        "blockingMs": 222,
+        "latP95": null
+      }
+    }
+  }
+}

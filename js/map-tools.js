@@ -23,6 +23,8 @@ import { NominatimGate } from './nominatim-gate.js';   /* (#R489) the one Nomina
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+/* (mobile-performance) the projection viewer's land: this site's pinned Natural Earth 110 m */
+import { loadNECountries } from './ne-countries.js';
 
 
 
@@ -37,7 +39,8 @@ export function projView(HOST){
     function loadLand(){
       if(window.countryGeo&&window.countryGeo.features) return Promise.resolve(window.countryGeo);
       if(landPromise) return landPromise;
-      landPromise=fetch('https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_110m_admin_0_countries.geojson').then(r=>r.ok?r.json():null).catch(()=>null);
+      /* (mobile-performance) this site's own copy at the pinned commit (js/ne-countries.js), not the CDN's @master */
+      landPromise=loadNECountries('110m').catch(()=>null);
       return landPromise;
     }
     const sinc=a=>Math.abs(a)<1e-12?1:Math.sin(a)/a;

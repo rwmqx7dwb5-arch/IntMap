@@ -1198,6 +1198,14 @@ fetch-deadline.js                 締切つきの取得 `jsonWithin()` / `readWi
                                   投げる例外は `reason`（timeout／aborted／network／http／parse）を持つ。
                                   import できない classic script 向けの `window.IntMapFetchWithin` は `js/app-body.js` が置く
                                   （このファイルは何も import しない——共通チャンクの循環を作らないため）
+boot-stage.js                     **携帯がいつ読むか**の宣言 window.__imBootStage。起動時の段（boot／settled／need）を
+                                  資源ごとに「誰が・いつ・なぜ」の行で持ち、読み手は自分の発意の読みの前に `at(行)` を待つ。
+                                  settled＝起動画面が上がった後の idle、1 つの idle につき 1 件。携帯以外は全行 boot。
+                                  `npm run check:perf` が起動グラフの `data/…` を全部発見して宣言との一致を測り、
+                                  boot 行の合計を phone.bytes／phone.requests の天井にする
+ne-countries.js                   Natural Earth admin-0（110m／50m／10m）の復号器 window.__imNECountries。
+                                  data/ne-countries/ の可逆形式（属性はそのまま・座標は整数マイクロ度の差分）を上流と
+                                  深く等しい FeatureCollection に戻す。10m は区切って復号する
 data-door.js                      **同梱データ `data/` を読む唯一の扉** `loadData(url, {as, cache})`（ES import。classic script は window.IntMapDataDoor.load）。
                                   解決後の URL と形（json／text／arrayBuffer）ごとに Promise を 1 つだけ共有し、読めた値は
                                   WeakRef で持つ（誰かが持っている間は再取得しない・生の文書を常駐させない）。失敗は保持せず
@@ -1233,6 +1241,9 @@ inline-actions.js                 **マークアップがコードを動かす�
 admin1-world.json.gz              世界の第1級行政区画（Natural Earth 10m 由来・247か国 4,515区分・2.38 MB）。
                                   気象警報レイヤーが「発令なし」を区分単位で塗るための索引で、警報の
                                   形を引く最後の段でもある。生成は scripts/build-admin1.mjs
+ne-countries/                     Natural Earth admin-0 の 3 縮尺（110m 187 kB・50m 705 kB・10m 2.81 MB、gzip）。
+                                  natural-earth-vector の固定コミットから scripts/build-ne-countries.mjs が作る可逆形式
+                                  （上流の CDN から @master で 4.34 MB を読んでいたものの置き換え）。パブリックドメイン
 gazetteer-world.json.gz           世界の地名の長い尾（cities1000 由来・18言語）。必要になった時に取得する
 histcities-homonyms.json.gz       歴史都市名の記録が使う綴りに一致する**世界中の全集落**（cities500 由来・
                                   重複排除なし）。ブラウザには配信されない——`check:histcities` が
@@ -1694,7 +1705,15 @@ scripts/
                                   `perf-ceiling.yml`。上げない）。
                                   ⚠ `requests` と `modules` は**バイトではなく個数**なので幅 0。
                                   起動時の locale は英語（フォールバック）だけ——他が eager に入ったら赤。
+                                  **携帯の起動の段**: 起動グラフのモジュールが名指す `data/…` を全部発見し、
+                                  `js/boot-stage.js` に行の無いもの・何も指さない行を赤にする。boot 行の合計が
+                                  `phone.bytes`／`phone.requests` の天井。実行時の数（操作可能時刻・long task・
+                                  16.7 ms 超の割合）は `tests/perf-phone-ledger.json` の**記録**として印字だけする（門ではない）。
                                   基準は `tests/perf-baseline.json`（追跡対象）。
+  build-ne-countries.mjs          Natural Earth admin-0 の 3 縮尺を**固定コミット**から読み、`data/ne-countries/` に
+                                  可逆形式で書く（`js/ne-countries.js` が符号化も復号も持つ）。`--check` はオフラインで
+                                  全ファイルの復号・再符号化の一致・固定コミットを確かめ、`--cache <dir>` に上流があれば
+                                  上流との深い一致まで確かめる
   typecheck.mjs                   **型検査のゲート**（`npm run check:types`）。同梱の typescript で
                                   `tsc --noEmit -p tsconfig.json` を走らせ、その終了コードを返す。typescript が
                                   入っていなければ「`npm install` が要る」と言って落ちる（退行と区別するため）
@@ -1757,6 +1776,10 @@ scripts/
                                   `getBoundingClientRect` / `getComputedStyle` 回数**と
                                   **touchmove →次フレームの遅延**を出す。CDP は Chromium だけなので
                                   WebKit 側には**この相が無い**（0 ではなく「無い」と印字する）。
+                                  各相は 16.7 ms を超えたフレームの割合（`over16_7Pct`）と vsync を落とした割合
+                                  （25 ms 超・`missedVsyncPct`）も出す。`--ledger` は Chromium の指の 3 相を
+                                  `tests/perf-phone-ledger.json` の `interaction` に書く（`frame-profile.mjs --boot --ledger`
+                                  が `boot` を書く。`check:perf` が印字する記録で、門ではない）。
   layer-sweep.mjs                 **全レイヤーを 1 つずつ同じ指で測る計器**（ゲートではない）。
                                   `#layer-dropdown` の checkbox 全部（＝レイヤーの唯一のレジストリ）を
                                   1 行ずつ ON → 待機 → 指パン＋ピンチ → OFF → 待機と回し、基準値との
