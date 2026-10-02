@@ -1,8 +1,8 @@
 {
   "eager": {
-    "raw": 4711311,
-    "gzip": 1550982,
-    "brotli": 1170780,
+    "raw": 4739600,
+    "gzip": 1560524,
+    "brotli": 1177489,
     "requests": 9,
     "modules": 303,
     "cssRaw": 374532,
