@@ -2476,6 +2476,7 @@ IntMapLang.define('zh', {
     '2022 UNDP': "2022 聯合國開發計劃署",
     '2022 World Bank': "2022 世界銀行",
     '32 members': "32 個成員國",
+    ' members': " 個成員國",   /* (hist-fidelity) the NATO legend's count is the members drawn — the number is prefixed (js/layer-pkg-alliances.js natoCountHint) */
     'A satellite where-am-I geography game — dropped somewhere on Earth, guess your location.': "衛星影像猜位置的地理遊戲 — 被丟到地球上的某處，猜猜你在哪裡。",
     'Active layers': "使用中的圖層",
     'Active-fire data unavailable': "無法取得即時火點資料",

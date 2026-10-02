@@ -1,0 +1,1526 @@
+{
+ "dl-subcables": {
+  "on": {
+   "checked": true,
+   "rowOn": true,
+   "layers": [
+    {
+     "id": "lyr-subcables-glow",
+     "type": "line",
+     "source": "src-subcables",
+     "before": "layer-sat-labels",
+     "paint": {
+      "line-color": [
+       "coalesce",
+       [
+        "get",
+        "color"
+       ],
+       "#30b0c7"
+      ],
+      "line-width": 3.2,
+      "line-opacity": 0.2,
+      "line-blur": 3
+     },
+     "layout": {
+      "line-cap": "round",
+      "line-join": "round",
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "lyr-subcables",
+     "type": "line",
+     "source": "src-subcables",
+     "before": "layer-sat-labels",
+     "paint": {
+      "line-color": [
+       "coalesce",
+       [
+        "get",
+        "color"
+       ],
+       "#30b0c7"
+      ],
+      "line-width": [
+       "interpolate",
+       [
+        "linear"
+       ],
+       [
+        "zoom"
+       ],
+       0,
+       0.6,
+       4,
+       1.1,
+       8,
+       2
+      ],
+      "line-opacity": 0.95
+     },
+     "layout": {
+      "line-cap": "round",
+      "line-join": "round",
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "lyr-subcables-pts",
+     "type": "circle",
+     "source": "src-subcables-lp",
+     "before": "layer-sat-labels",
+     "paint": {
+      "circle-radius": [
+       "interpolate",
+       [
+        "linear"
+       ],
+       [
+        "zoom"
+       ],
+       3,
+       1.6,
+       8,
+       3.5
+      ],
+      "circle-color": "#ffd23f",
+      "circle-stroke-color": "#1a1a1a",
+      "circle-stroke-width": 0.6,
+      "circle-opacity": 0.9
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": 3,
+     "maxzoom": null
+    }
+   ],
+   "sources": [
+    [
+     "src-subcables",
+     {
+      "type": "geojson",
+      "data": {
+       "features": 3491,
+       "chars": 2188656,
+       "hash": -1533986161
+      }
+     }
+    ],
+    [
+     "src-subcables-lp",
+     {
+      "type": "geojson",
+      "data": {
+       "features": 1922,
+       "chars": 329084,
+       "hash": 419101911
+      }
+     }
+    ]
+   ],
+   "legend": {
+    "display": "block",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"subcables\" title=\"Close\">×</button><h#>Submarine cables</h#><div class=\"dl-desc\">Submarine fiber-optic cables carrying almost all intercontinental internet traffic.<div class=\"dl-caveat\">Routes are approximate: a few stretches are published survey positions, most are reconstructed from sea-floor terrain. A line is not the exact position of the cable. Click one for the accuracy of that stretch.</div></div><div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.##\"></label><span class=\"dl-op-val\">##%</span></div><button class=\"legend-min\" title=\"Minimize\">–</button>"
+   }
+  },
+  "opacity": {
+   "checked": true,
+   "rowOn": true,
+   "layers": [
+    {
+     "id": "lyr-subcables-glow",
+     "type": "line",
+     "source": "src-subcables",
+     "before": "layer-sat-labels",
+     "paint": {
+      "line-color": [
+       "coalesce",
+       [
+        "get",
+        "color"
+       ],
+       "#30b0c7"
+      ],
+      "line-width": 3.2,
+      "line-opacity": 0.2,
+      "line-blur": 3
+     },
+     "layout": {
+      "line-cap": "round",
+      "line-join": "round",
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "lyr-subcables",
+     "type": "line",
+     "source": "src-subcables",
+     "before": "layer-sat-labels",
+     "paint": {
+      "line-color": [
+       "coalesce",
+       [
+        "get",
+        "color"
+       ],
+       "#30b0c7"
+      ],
+      "line-width": [
+       "interpolate",
+       [
+        "linear"
+       ],
+       [
+        "zoom"
+       ],
+       0,
+       0.6,
+       4,
+       1.1,
+       8,
+       2
+      ],
+      "line-opacity": 0.5
+     },
+     "layout": {
+      "line-cap": "round",
+      "line-join": "round",
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "lyr-subcables-pts",
+     "type": "circle",
+     "source": "src-subcables-lp",
+     "before": "layer-sat-labels",
+     "paint": {
+      "circle-radius": [
+       "interpolate",
+       [
+        "linear"
+       ],
+       [
+        "zoom"
+       ],
+       3,
+       1.6,
+       8,
+       3.5
+      ],
+      "circle-color": "#ffd23f",
+      "circle-stroke-color": "#1a1a1a",
+      "circle-stroke-width": 0.6,
+      "circle-opacity": 0.9
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": 3,
+     "maxzoom": null
+    }
+   ],
+   "sources": [
+    [
+     "src-subcables",
+     {
+      "type": "geojson",
+      "data": {
+       "features": 3491,
+       "chars": 2188656,
+       "hash": -1533986161
+      }
+     }
+    ],
+    [
+     "src-subcables-lp",
+     {
+      "type": "geojson",
+      "data": {
+       "features": 1922,
+       "chars": 329084,
+       "hash": 419101911
+      }
+     }
+    ]
+   ],
+   "legend": {
+    "display": "block",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"subcables\" title=\"Close\">×</button><h#>Submarine cables</h#><div class=\"dl-desc\">Submarine fiber-optic cables carrying almost all intercontinental internet traffic.<div class=\"dl-caveat\">Routes are approximate: a few stretches are published survey positions, most are reconstructed from sea-floor terrain. A line is not the exact position of the cable. Click one for the accuracy of that stretch.</div></div><div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.##\"></label><span class=\"dl-op-val\">##%</span></div><button class=\"legend-min\" title=\"Minimize\">–</button>"
+   }
+  },
+  "off": {
+   "checked": false,
+   "rowOn": false,
+   "layers": [
+    {
+     "id": "lyr-subcables-glow",
+     "type": "line",
+     "source": "src-subcables",
+     "before": "layer-sat-labels",
+     "paint": {
+      "line-color": [
+       "coalesce",
+       [
+        "get",
+        "color"
+       ],
+       "#30b0c7"
+      ],
+      "line-width": 3.2,
+      "line-opacity": 0.2,
+      "line-blur": 3
+     },
+     "layout": {
+      "line-cap": "round",
+      "line-join": "round",
+      "visibility": "none"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "lyr-subcables",
+     "type": "line",
+     "source": "src-subcables",
+     "before": "layer-sat-labels",
+     "paint": {
+      "line-color": [
+       "coalesce",
+       [
+        "get",
+        "color"
+       ],
+       "#30b0c7"
+      ],
+      "line-width": [
+       "interpolate",
+       [
+        "linear"
+       ],
+       [
+        "zoom"
+       ],
+       0,
+       0.6,
+       4,
+       1.1,
+       8,
+       2
+      ],
+      "line-opacity": 0.5
+     },
+     "layout": {
+      "line-cap": "round",
+      "line-join": "round",
+      "visibility": "none"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "lyr-subcables-pts",
+     "type": "circle",
+     "source": "src-subcables-lp",
+     "before": "layer-sat-labels",
+     "paint": {
+      "circle-radius": [
+       "interpolate",
+       [
+        "linear"
+       ],
+       [
+        "zoom"
+       ],
+       3,
+       1.6,
+       8,
+       3.5
+      ],
+      "circle-color": "#ffd23f",
+      "circle-stroke-color": "#1a1a1a",
+      "circle-stroke-width": 0.6,
+      "circle-opacity": 0.9
+     },
+     "layout": {
+      "visibility": "none"
+     },
+     "filter": null,
+     "minzoom": 3,
+     "maxzoom": null
+    }
+   ],
+   "sources": [
+    [
+     "src-subcables",
+     {
+      "type": "geojson",
+      "data": {
+       "features": 3491,
+       "chars": 2188656,
+       "hash": -1533986161
+      }
+     }
+    ],
+    [
+     "src-subcables-lp",
+     {
+      "type": "geojson",
+      "data": {
+       "features": 1922,
+       "chars": 329084,
+       "hash": 419101911
+      }
+     }
+    ]
+   ],
+   "legend": {
+    "display": "none",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"subcables\" title=\"Close\">×</button><h#>Submarine cables</h#><div class=\"dl-desc\">Submarine fiber-optic cables carrying almost all intercontinental internet traffic.<div class=\"dl-caveat\">Routes are approximate: a few stretches are published survey positions, most are reconstructed from sea-floor terrain. A line is not the exact position of the cable. Click one for the accuracy of that stretch.</div></div><div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.##\"></label><span class=\"dl-op-val\">##%</span></div><button class=\"legend-min\" title=\"Minimize\">–</button>"
+   }
+  }
+ },
+ "dl-radar": {
+  "on": {
+   "checked": true,
+   "rowOn": true,
+   "layers": [
+    {
+     "id": "lyr-radar",
+     "type": "raster",
+     "source": "src-radar",
+     "before": "layer-sat-labels",
+     "paint": {
+      "raster-opacity": 0.8
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    }
+   ],
+   "sources": [
+    [
+     "src-radar",
+     {
+      "type": "raster",
+      "tiles": [
+       "https://tilecache.rainviewer.com/v2/radar/1700000600/256/{z}/{x}/{y}/4/1_1.png"
+      ],
+      "tileSize": 256,
+      "maxzoom": 7
+     }
+    ]
+   ],
+   "legend": {
+    "display": "block",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"radar\" title=\"Close\">×</button><h# style=\"cursor: move; touch-action: none; user-select: none;\">Rain rate</h#>\n      <div class=\"dl-bar\" style=\"background:linear-gradient(to right,##bd#ff,#####ff,###c###,#ffe###,#ff####,#ff####,#c###c#);\"></div>\n      <div class=\"dl-scale\"><span>Light</span><span>Heavy</span></div>\n      <div class=\"rv-player\">\n        <div class=\"rv-btns\"><button class=\"rv-b\" data-act=\"first\" title=\"Oldest frame\">⏮</button><button class=\"rv-b\" data-act=\"prev\" title=\"Previous frame\">◀</button><button class=\"rv-b\" data-act=\"play\" title=\"Animate\">▶</button><button class=\"rv-b\" data-act=\"next\" title=\"Next frame\">▶</button><button class=\"rv-b\" data-act=\"last\" title=\"Latest frame\">⏭</button></div>\n        <input type=\"range\" id=\"rv-time\" min=\"#\" max=\"#\" step=\"#\" value=\"#\" style=\"width:###%;accent-color:var(--primary-color);\">\n        <div class=\"rv-when\">##:## · −####### min · #/#</div>\n      </div>\n      <div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.#\"></label><span class=\"dl-op-val\">##%</span></div><div class=\"dl-hint\">RainViewer radar — the last two hours, ## min apart</div><div class=\"dl-when\" style=\"font-size: ##px; color: var(--text-muted); margin-top: #px; border-top: #px solid rgba(###, ###, ###, #.##); padding-top: #px; display: flex; align-items: center; gap: #px; flex-wrap: wrap;\">🕒 <span class=\"dl-when-t\">Latest frame (live)</span></div><button class=\"legend-min\" title=\"Minimize\">–</button>"
+   }
+  },
+  "opacity": {
+   "checked": true,
+   "rowOn": true,
+   "layers": [
+    {
+     "id": "lyr-radar",
+     "type": "raster",
+     "source": "src-radar",
+     "before": "layer-sat-labels",
+     "paint": {
+      "raster-opacity": 0.5
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    }
+   ],
+   "sources": [
+    [
+     "src-radar",
+     {
+      "type": "raster",
+      "tiles": [
+       "https://tilecache.rainviewer.com/v2/radar/1700000600/256/{z}/{x}/{y}/4/1_1.png"
+      ],
+      "tileSize": 256,
+      "maxzoom": 7
+     }
+    ]
+   ],
+   "legend": {
+    "display": "block",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"radar\" title=\"Close\">×</button><h# style=\"cursor: move; touch-action: none; user-select: none;\">Rain rate</h#>\n      <div class=\"dl-bar\" style=\"background:linear-gradient(to right,##bd#ff,#####ff,###c###,#ffe###,#ff####,#ff####,#c###c#);\"></div>\n      <div class=\"dl-scale\"><span>Light</span><span>Heavy</span></div>\n      <div class=\"rv-player\">\n        <div class=\"rv-btns\"><button class=\"rv-b\" data-act=\"first\" title=\"Oldest frame\">⏮</button><button class=\"rv-b\" data-act=\"prev\" title=\"Previous frame\">◀</button><button class=\"rv-b\" data-act=\"play\" title=\"Animate\">▶</button><button class=\"rv-b\" data-act=\"next\" title=\"Next frame\">▶</button><button class=\"rv-b\" data-act=\"last\" title=\"Latest frame\">⏭</button></div>\n        <input type=\"range\" id=\"rv-time\" min=\"#\" max=\"#\" step=\"#\" value=\"#\" style=\"width:###%;accent-color:var(--primary-color);\">\n        <div class=\"rv-when\">##:## · −####### min · #/#</div>\n      </div>\n      <div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.#\"></label><span class=\"dl-op-val\">##%</span></div><div class=\"dl-hint\">RainViewer radar — the last two hours, ## min apart</div><div class=\"dl-when\" style=\"font-size: ##px; color: var(--text-muted); margin-top: #px; border-top: #px solid rgba(###, ###, ###, #.##); padding-top: #px; display: flex; align-items: center; gap: #px; flex-wrap: wrap;\">🕒 <span class=\"dl-when-t\">Latest frame (live)</span></div><button class=\"legend-min\" title=\"Minimize\">–</button>"
+   }
+  },
+  "off": {
+   "checked": false,
+   "rowOn": false,
+   "layers": [
+    {
+     "id": "lyr-radar",
+     "type": "raster",
+     "source": "src-radar",
+     "before": "layer-sat-labels",
+     "paint": {
+      "raster-opacity": 0.5
+     },
+     "layout": {
+      "visibility": "none"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    }
+   ],
+   "sources": [
+    [
+     "src-radar",
+     {
+      "type": "raster",
+      "tiles": [
+       "https://tilecache.rainviewer.com/v2/radar/1700000600/256/{z}/{x}/{y}/4/1_1.png"
+      ],
+      "tileSize": 256,
+      "maxzoom": 7
+     }
+    ]
+   ],
+   "legend": {
+    "display": "none",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"radar\" title=\"Close\">×</button><h# style=\"cursor: move; touch-action: none; user-select: none;\">Rain rate</h#>\n      <div class=\"dl-bar\" style=\"background:linear-gradient(to right,##bd#ff,#####ff,###c###,#ffe###,#ff####,#ff####,#c###c#);\"></div>\n      <div class=\"dl-scale\"><span>Light</span><span>Heavy</span></div>\n      <div class=\"rv-player\">\n        <div class=\"rv-btns\"><button class=\"rv-b\" data-act=\"first\" title=\"Oldest frame\">⏮</button><button class=\"rv-b\" data-act=\"prev\" title=\"Previous frame\">◀</button><button class=\"rv-b\" data-act=\"play\" title=\"Animate\">▶</button><button class=\"rv-b\" data-act=\"next\" title=\"Next frame\">▶</button><button class=\"rv-b\" data-act=\"last\" title=\"Latest frame\">⏭</button></div>\n        <input type=\"range\" id=\"rv-time\" min=\"#\" max=\"#\" step=\"#\" value=\"#\" style=\"width:###%;accent-color:var(--primary-color);\">\n        <div class=\"rv-when\">##:## · −####### min · #/#</div>\n      </div>\n      <div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.#\"></label><span class=\"dl-op-val\">##%</span></div><div class=\"dl-hint\">RainViewer radar — the last two hours, ## min apart</div><div class=\"dl-when\" style=\"font-size: ##px; color: var(--text-muted); margin-top: #px; border-top: #px solid rgba(###, ###, ###, #.##); padding-top: #px; display: flex; align-items: center; gap: #px; flex-wrap: wrap;\">🕒 <span class=\"dl-when-t\">Latest frame (live)</span></div><button class=\"legend-min\" title=\"Minimize\">–</button>"
+   }
+  }
+ },
+ "dl-thermal": {
+  "on": {
+   "checked": true,
+   "rowOn": true,
+   "layers": [
+    {
+     "id": "lyr-thermal",
+     "type": "raster",
+     "source": "src-thermal-0",
+     "before": "layer-sat-labels",
+     "paint": {
+      "raster-opacity": 0.75
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "lyr-thermal-1",
+     "type": "raster",
+     "source": "src-thermal-1",
+     "before": "layer-sat-labels",
+     "paint": {
+      "raster-opacity": 0.75
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    }
+   ],
+   "sources": [
+    [
+     "src-thermal-0",
+     {
+      "type": "raster",
+      "tiles": [
+       "https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_SNPP_Thermal_Anomalies_375m_All,MODIS_Terra_Thermal_Anomalies_All,MODIS_Aqua_Thermal_Anomalies_All&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME=DATE"
+      ],
+      "tileSize": 256,
+      "attribution": "NASA FIRMS / GIBS — MODIS & VIIRS active fire"
+     }
+    ],
+    [
+     "src-thermal-1",
+     {
+      "type": "raster",
+      "tiles": [
+       "https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_SNPP_Thermal_Anomalies_375m_All,MODIS_Terra_Thermal_Anomalies_All,MODIS_Aqua_Thermal_Anomalies_All&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME=DATE"
+      ],
+      "tileSize": 256,
+      "attribution": "NASA FIRMS / GIBS — MODIS & VIIRS active fire"
+     }
+    ]
+   ],
+   "legend": {
+    "display": "block",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"thermal\" title=\"Close\">×</button><h# style=\"cursor: move; touch-action: none; user-select: none;\">Thermal anomalies</h#>\n      <div style=\"display:flex; align-items:center; gap:#px; font-size:##px; padding:#px #;\"><span style=\"display:inline-block;width:##px;height:##px;background:#ff#b##;border-radius:##%;box-shadow:# # #px rgba(###,##,##,#.#);\"></span> Detected active fire / heat source</div>\n      <label style=\"display:flex; align-items:center; gap:#px; font-size:##px; margin:#px # #px; color:var(--text-muted);\">Time window: <select class=\"thermal-window\" style=\"flex:#; padding:#px #px; border-radius:#px; border:#px solid rgba(###,###,###,#.#); background:var(--input-bg); color:var(--text-main); font-size:##px;\"><option value=\"##\" data-i##n=\"thermWin##\">Last ## h</option><option value=\"##\" data-i##n=\"thermWin##\">Last ## h</option><option value=\"##\" data-i##n=\"thermWin##\">Last ## h</option></select></label>\n      <div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.##\"></label><span class=\"dl-op-val\">##%</span></div><div class=\"dl-hint\">NASA FIRMS · MODIS + VIIRS (real, near-real-time)</div><div class=\"dl-when\" style=\"font-size: ##px; color: var(--text-muted); margin-top: #px; border-top: #px solid rgba(###, ###, ###, #.##); padding-top: #px; display: flex; align-items: center; gap: #px; flex-wrap: wrap;\">🕒 <label style=\"display:contents;\"><span>Time window</span> <select class=\"dl-win\" style=\"padding:#px #px;border-radius:#px;border:#px solid var(--glass-border,rgba(###,###,###,#.##));background:var(--input-bg);color:var(--text-main);font-size:##.#px;\"><option value=\"##\">## h</option><option value=\"##\">## h</option><option value=\"##\">## h</option></select></label></div><button class=\"legend-min\" title=\"Minimize\">–</button>"
+   }
+  },
+  "opacity": {
+   "checked": true,
+   "rowOn": true,
+   "layers": [
+    {
+     "id": "lyr-thermal",
+     "type": "raster",
+     "source": "src-thermal-0",
+     "before": "layer-sat-labels",
+     "paint": {
+      "raster-opacity": 0.5
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "lyr-thermal-1",
+     "type": "raster",
+     "source": "src-thermal-1",
+     "before": "layer-sat-labels",
+     "paint": {
+      "raster-opacity": 0.5
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    }
+   ],
+   "sources": [
+    [
+     "src-thermal-0",
+     {
+      "type": "raster",
+      "tiles": [
+       "https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_SNPP_Thermal_Anomalies_375m_All,MODIS_Terra_Thermal_Anomalies_All,MODIS_Aqua_Thermal_Anomalies_All&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME=DATE"
+      ],
+      "tileSize": 256,
+      "attribution": "NASA FIRMS / GIBS — MODIS & VIIRS active fire"
+     }
+    ],
+    [
+     "src-thermal-1",
+     {
+      "type": "raster",
+      "tiles": [
+       "https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_SNPP_Thermal_Anomalies_375m_All,MODIS_Terra_Thermal_Anomalies_All,MODIS_Aqua_Thermal_Anomalies_All&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME=DATE"
+      ],
+      "tileSize": 256,
+      "attribution": "NASA FIRMS / GIBS — MODIS & VIIRS active fire"
+     }
+    ]
+   ],
+   "legend": {
+    "display": "block",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"thermal\" title=\"Close\">×</button><h# style=\"cursor: move; touch-action: none; user-select: none;\">Thermal anomalies</h#>\n      <div style=\"display:flex; align-items:center; gap:#px; font-size:##px; padding:#px #;\"><span style=\"display:inline-block;width:##px;height:##px;background:#ff#b##;border-radius:##%;box-shadow:# # #px rgba(###,##,##,#.#);\"></span> Detected active fire / heat source</div>\n      <label style=\"display:flex; align-items:center; gap:#px; font-size:##px; margin:#px # #px; color:var(--text-muted);\">Time window: <select class=\"thermal-window\" style=\"flex:#; padding:#px #px; border-radius:#px; border:#px solid rgba(###,###,###,#.#); background:var(--input-bg); color:var(--text-main); font-size:##px;\"><option value=\"##\" data-i##n=\"thermWin##\">Last ## h</option><option value=\"##\" data-i##n=\"thermWin##\">Last ## h</option><option value=\"##\" data-i##n=\"thermWin##\">Last ## h</option></select></label>\n      <div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.##\"></label><span class=\"dl-op-val\">##%</span></div><div class=\"dl-hint\">NASA FIRMS · MODIS + VIIRS (real, near-real-time)</div><div class=\"dl-when\" style=\"font-size: ##px; color: var(--text-muted); margin-top: #px; border-top: #px solid rgba(###, ###, ###, #.##); padding-top: #px; display: flex; align-items: center; gap: #px; flex-wrap: wrap;\">🕒 <label style=\"display:contents;\"><span>Time window</span> <select class=\"dl-win\" style=\"padding:#px #px;border-radius:#px;border:#px solid var(--glass-border,rgba(###,###,###,#.##));background:var(--input-bg);color:var(--text-main);font-size:##.#px;\"><option value=\"##\">## h</option><option value=\"##\">## h</option><option value=\"##\">## h</option></select></label></div><button class=\"legend-min\" title=\"Minimize\">–</button>"
+   }
+  },
+  "off": {
+   "checked": false,
+   "rowOn": false,
+   "layers": [
+    {
+     "id": "lyr-thermal",
+     "type": "raster",
+     "source": "src-thermal-0",
+     "before": "layer-sat-labels",
+     "paint": {
+      "raster-opacity": 0.5
+     },
+     "layout": {
+      "visibility": "none"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "lyr-thermal-1",
+     "type": "raster",
+     "source": "src-thermal-1",
+     "before": "layer-sat-labels",
+     "paint": {
+      "raster-opacity": 0.5
+     },
+     "layout": {
+      "visibility": "none"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    }
+   ],
+   "sources": [
+    [
+     "src-thermal-0",
+     {
+      "type": "raster",
+      "tiles": [
+       "https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_SNPP_Thermal_Anomalies_375m_All,MODIS_Terra_Thermal_Anomalies_All,MODIS_Aqua_Thermal_Anomalies_All&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME=DATE"
+      ],
+      "tileSize": 256,
+      "attribution": "NASA FIRMS / GIBS — MODIS & VIIRS active fire"
+     }
+    ],
+    [
+     "src-thermal-1",
+     {
+      "type": "raster",
+      "tiles": [
+       "https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_SNPP_Thermal_Anomalies_375m_All,MODIS_Terra_Thermal_Anomalies_All,MODIS_Aqua_Thermal_Anomalies_All&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME=DATE"
+      ],
+      "tileSize": 256,
+      "attribution": "NASA FIRMS / GIBS — MODIS & VIIRS active fire"
+     }
+    ]
+   ],
+   "legend": {
+    "display": "none",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"thermal\" title=\"Close\">×</button><h# style=\"cursor: move; touch-action: none; user-select: none;\">Thermal anomalies</h#>\n      <div style=\"display:flex; align-items:center; gap:#px; font-size:##px; padding:#px #;\"><span style=\"display:inline-block;width:##px;height:##px;background:#ff#b##;border-radius:##%;box-shadow:# # #px rgba(###,##,##,#.#);\"></span> Detected active fire / heat source</div>\n      <label style=\"display:flex; align-items:center; gap:#px; font-size:##px; margin:#px # #px; color:var(--text-muted);\">Time window: <select class=\"thermal-window\" style=\"flex:#; padding:#px #px; border-radius:#px; border:#px solid rgba(###,###,###,#.#); background:var(--input-bg); color:var(--text-main); font-size:##px;\"><option value=\"##\" data-i##n=\"thermWin##\">Last ## h</option><option value=\"##\" data-i##n=\"thermWin##\">Last ## h</option><option value=\"##\" data-i##n=\"thermWin##\">Last ## h</option></select></label>\n      <div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.##\"></label><span class=\"dl-op-val\">##%</span></div><div class=\"dl-hint\">NASA FIRMS · MODIS + VIIRS (real, near-real-time)</div><div class=\"dl-when\" style=\"font-size: ##px; color: var(--text-muted); margin-top: #px; border-top: #px solid rgba(###, ###, ###, #.##); padding-top: #px; display: flex; align-items: center; gap: #px; flex-wrap: wrap;\">🕒 <label style=\"display:contents;\"><span>Time window</span> <select class=\"dl-win\" style=\"padding:#px #px;border-radius:#px;border:#px solid var(--glass-border,rgba(###,###,###,#.##));background:var(--input-bg);color:var(--text-main);font-size:##.#px;\"><option value=\"##\">## h</option><option value=\"##\">## h</option><option value=\"##\">## h</option></select></label></div><button class=\"legend-min\" title=\"Minimize\">–</button>"
+   }
+  }
+ },
+ "dl-nato": {
+  "on": {
+   "checked": true,
+   "rowOn": true,
+   "layers": [
+    {
+     "id": "nato-fill",
+     "type": "fill",
+     "source": "src-nato",
+     "before": "layer-sat-labels",
+     "paint": {
+      "fill-color": "#2f6bff",
+      "fill-opacity": 0.55
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "nato-line",
+     "type": "line",
+     "source": "src-nato",
+     "before": "layer-sat-labels",
+     "paint": {
+      "line-color": "#7fb0ff",
+      "line-width": 1.6
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "nato-tropic-line",
+     "type": "line",
+     "source": "src-tropic",
+     "before": "layer-sat-labels",
+     "paint": {
+      "line-color": "#f4b740",
+      "line-width": 1.4,
+      "line-dasharray": [
+       3,
+       3
+      ],
+      "line-opacity": 0.9
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "nato-tropic-label",
+     "type": "symbol",
+     "source": "src-tropic",
+     "before": "layer-sat-labels",
+     "paint": {
+      "text-color": "#f4b740",
+      "text-halo-color": "rgba(0,0,0,0.65)",
+      "text-halo-width": 1.3
+     },
+     "layout": {
+      "symbol-placement": "line",
+      "text-field": "Tropic of Cancer (23.4°N)",
+      "text-size": [
+       "interpolate",
+       [
+        "linear"
+       ],
+       [
+        "zoom"
+       ],
+       1,
+       7.4,
+       4,
+       10.2,
+       22,
+       10.2
+      ],
+      "text-font": [
+       "literal",
+       [
+        "Noto Sans Regular"
+       ]
+      ],
+      "symbol-spacing": 340,
+      "text-letter-spacing": 0.04,
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    }
+   ],
+   "sources": [
+    [
+     "src-nato",
+     {
+      "type": "geojson",
+      "data": {
+       "features": 32,
+       "chars": 4008574,
+       "hash": -1178316443
+      },
+      "promoteId": "__code"
+     }
+    ],
+    [
+     "src-tropic",
+     {
+      "type": "geojson",
+      "data": {
+       "features": 1,
+       "chars": 1141,
+       "hash": 2097323720
+      }
+     }
+    ]
+   ],
+   "legend": {
+    "display": "block",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"nato\" title=\"Close\">×</button><h# style=\"cursor: move; touch-action: none; user-select: none;\">NATO members</h#><div class=\"dl-bar\" style=\"background:linear-gradient(to right,##a#d##,##e##ff);\"></div><div class=\"dl-scale\"><span>Member</span><span></span></div><div class=\"nato-style-row\" style=\"display: flex; gap: #px; margin-top: #px;\"><button type=\"button\" data-s=\"uniform\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--primary-fill); color: rgb(###, ###, ###);\" aria-pressed=\"true\">One colour</button><button type=\"button\" data-s=\"byYear\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--input-bg); color: var(--text-main);\" aria-pressed=\"false\">By accession year</button></div><div class=\"nato-yearkey-wrap\"></div><div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.##\"></label><span class=\"dl-op-val\">##%</span></div><div class=\"dl-hint\">## members</div><button class=\"legend-min\" title=\"Minimize\">–</button><div class=\"nato-year-row\" style=\"font-size: ##px; color: var(--text-muted); margin-top: #px; display: flex; align-items: center; gap: #px;\"><label style=\"display:contents;\">Year <span style=\"flex:#;min-width:##px;display:flex;flex-direction:column;gap:#px;\"><input type=\"range\" min=\"#\" max=\"##\" step=\"#\" value=\"##\" style=\"width:###%;display:block;margin:#;box-sizing:border-box;\"><span aria-hidden=\"true\" style=\"display:flex;justify-content:space-between;font-size:#px;line-height:#;color:var(--text-muted);\"><span>####</span><span>####</span></span></span></label> <b class=\"nato-year-val\" style=\"color:var(--text-main);min-width:##px;text-align:right;\">####</b></div>"
+   }
+  },
+  "opacity": {
+   "checked": true,
+   "rowOn": true,
+   "layers": [
+    {
+     "id": "nato-fill",
+     "type": "fill",
+     "source": "src-nato",
+     "before": "layer-sat-labels",
+     "paint": {
+      "fill-color": "#2f6bff",
+      "fill-opacity": 0.5
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "nato-line",
+     "type": "line",
+     "source": "src-nato",
+     "before": "layer-sat-labels",
+     "paint": {
+      "line-color": "#7fb0ff",
+      "line-width": 1.6
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "nato-tropic-line",
+     "type": "line",
+     "source": "src-tropic",
+     "before": "layer-sat-labels",
+     "paint": {
+      "line-color": "#f4b740",
+      "line-width": 1.4,
+      "line-dasharray": [
+       3,
+       3
+      ],
+      "line-opacity": 0.9
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "nato-tropic-label",
+     "type": "symbol",
+     "source": "src-tropic",
+     "before": "layer-sat-labels",
+     "paint": {
+      "text-color": "#f4b740",
+      "text-halo-color": "rgba(0,0,0,0.65)",
+      "text-halo-width": 1.3
+     },
+     "layout": {
+      "symbol-placement": "line",
+      "text-field": "Tropic of Cancer (23.4°N)",
+      "text-size": [
+       "interpolate",
+       [
+        "linear"
+       ],
+       [
+        "zoom"
+       ],
+       1,
+       7.4,
+       4,
+       10.2,
+       22,
+       10.2
+      ],
+      "text-font": [
+       "literal",
+       [
+        "Noto Sans Regular"
+       ]
+      ],
+      "symbol-spacing": 340,
+      "text-letter-spacing": 0.04,
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    }
+   ],
+   "sources": [
+    [
+     "src-nato",
+     {
+      "type": "geojson",
+      "data": {
+       "features": 32,
+       "chars": 4008574,
+       "hash": -1178316443
+      },
+      "promoteId": "__code"
+     }
+    ],
+    [
+     "src-tropic",
+     {
+      "type": "geojson",
+      "data": {
+       "features": 1,
+       "chars": 1141,
+       "hash": 2097323720
+      }
+     }
+    ]
+   ],
+   "legend": {
+    "display": "block",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"nato\" title=\"Close\">×</button><h# style=\"cursor: move; touch-action: none; user-select: none;\">NATO members</h#><div class=\"dl-bar\" style=\"background:linear-gradient(to right,##a#d##,##e##ff);\"></div><div class=\"dl-scale\"><span>Member</span><span></span></div><div class=\"nato-style-row\" style=\"display: flex; gap: #px; margin-top: #px;\"><button type=\"button\" data-s=\"uniform\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--primary-fill); color: rgb(###, ###, ###);\" aria-pressed=\"true\">One colour</button><button type=\"button\" data-s=\"byYear\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--input-bg); color: var(--text-main);\" aria-pressed=\"false\">By accession year</button></div><div class=\"nato-yearkey-wrap\"></div><div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.##\"></label><span class=\"dl-op-val\">##%</span></div><div class=\"dl-hint\">## members</div><button class=\"legend-min\" title=\"Minimize\">–</button><div class=\"nato-year-row\" style=\"font-size: ##px; color: var(--text-muted); margin-top: #px; display: flex; align-items: center; gap: #px;\"><label style=\"display:contents;\">Year <span style=\"flex:#;min-width:##px;display:flex;flex-direction:column;gap:#px;\"><input type=\"range\" min=\"#\" max=\"##\" step=\"#\" value=\"##\" style=\"width:###%;display:block;margin:#;box-sizing:border-box;\"><span aria-hidden=\"true\" style=\"display:flex;justify-content:space-between;font-size:#px;line-height:#;color:var(--text-muted);\"><span>####</span><span>####</span></span></span></label> <b class=\"nato-year-val\" style=\"color:var(--text-main);min-width:##px;text-align:right;\">####</b></div>"
+   }
+  },
+  "off": {
+   "checked": false,
+   "rowOn": false,
+   "layers": [
+    {
+     "id": "nato-fill",
+     "type": "fill",
+     "source": "src-nato",
+     "before": "layer-sat-labels",
+     "paint": {
+      "fill-color": "#2f6bff",
+      "fill-opacity": 0.5
+     },
+     "layout": {
+      "visibility": "none"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "nato-line",
+     "type": "line",
+     "source": "src-nato",
+     "before": "layer-sat-labels",
+     "paint": {
+      "line-color": "#7fb0ff",
+      "line-width": 1.6
+     },
+     "layout": {
+      "visibility": "none"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "nato-tropic-line",
+     "type": "line",
+     "source": "src-tropic",
+     "before": "layer-sat-labels",
+     "paint": {
+      "line-color": "#f4b740",
+      "line-width": 1.4,
+      "line-dasharray": [
+       3,
+       3
+      ],
+      "line-opacity": 0.9
+     },
+     "layout": {
+      "visibility": "none"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "nato-tropic-label",
+     "type": "symbol",
+     "source": "src-tropic",
+     "before": "layer-sat-labels",
+     "paint": {
+      "text-color": "#f4b740",
+      "text-halo-color": "rgba(0,0,0,0.65)",
+      "text-halo-width": 1.3
+     },
+     "layout": {
+      "symbol-placement": "line",
+      "text-field": "Tropic of Cancer (23.4°N)",
+      "text-size": [
+       "interpolate",
+       [
+        "linear"
+       ],
+       [
+        "zoom"
+       ],
+       1,
+       7.4,
+       4,
+       10.2,
+       22,
+       10.2
+      ],
+      "text-font": [
+       "literal",
+       [
+        "Noto Sans Regular"
+       ]
+      ],
+      "symbol-spacing": 340,
+      "text-letter-spacing": 0.04,
+      "visibility": "none"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    }
+   ],
+   "sources": [
+    [
+     "src-nato",
+     {
+      "type": "geojson",
+      "data": {
+       "features": 32,
+       "chars": 4008574,
+       "hash": -1178316443
+      },
+      "promoteId": "__code"
+     }
+    ],
+    [
+     "src-tropic",
+     {
+      "type": "geojson",
+      "data": {
+       "features": 1,
+       "chars": 1141,
+       "hash": 2097323720
+      }
+     }
+    ]
+   ],
+   "legend": {
+    "display": "none",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"nato\" title=\"Close\">×</button><h# style=\"cursor: move; touch-action: none; user-select: none;\">NATO members</h#><div class=\"dl-bar\" style=\"background:linear-gradient(to right,##a#d##,##e##ff);\"></div><div class=\"dl-scale\"><span>Member</span><span></span></div><div class=\"nato-style-row\" style=\"display: flex; gap: #px; margin-top: #px;\"><button type=\"button\" data-s=\"uniform\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--primary-fill); color: rgb(###, ###, ###);\" aria-pressed=\"true\">One colour</button><button type=\"button\" data-s=\"byYear\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--input-bg); color: var(--text-main);\" aria-pressed=\"false\">By accession year</button></div><div class=\"nato-yearkey-wrap\"></div><div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.##\"></label><span class=\"dl-op-val\">##%</span></div><div class=\"dl-hint\">## members</div><button class=\"legend-min\" title=\"Minimize\">–</button><div class=\"nato-year-row\" style=\"font-size: ##px; color: var(--text-muted); margin-top: #px; display: flex; align-items: center; gap: #px;\"><label style=\"display:contents;\">Year <span style=\"flex:#;min-width:##px;display:flex;flex-direction:column;gap:#px;\"><input type=\"range\" min=\"#\" max=\"##\" step=\"#\" value=\"##\" style=\"width:###%;display:block;margin:#;box-sizing:border-box;\"><span aria-hidden=\"true\" style=\"display:flex;justify-content:space-between;font-size:#px;line-height:#;color:var(--text-muted);\"><span>####</span><span>####</span></span></span></label> <b class=\"nato-year-val\" style=\"color:var(--text-main);min-width:##px;text-align:right;\">####</b></div>"
+   }
+  }
+ },
+ "dl-eu": {
+  "on": {
+   "checked": true,
+   "rowOn": true,
+   "layers": [
+    {
+     "id": "eu-fill",
+     "type": "fill",
+     "source": "src-eu",
+     "before": "layer-sat-labels",
+     "paint": {
+      "fill-color": "#1c3faa",
+      "fill-opacity": 0.85
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "eu-line",
+     "type": "line",
+     "source": "src-eu",
+     "before": "layer-sat-labels",
+     "paint": {
+      "line-color": "#ffd617",
+      "line-width": 1.5
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    }
+   ],
+   "sources": [
+    [
+     "src-eu",
+     {
+      "type": "geojson",
+      "data": {
+       "features": 28,
+       "chars": 1038242,
+       "hash": 265012155
+      },
+      "promoteId": "__code"
+     }
+    ]
+   ],
+   "legend": {
+    "display": "block",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"dl-eu\" title=\"Close\">×</button><h#>EU members</h#><div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.##\"></label><span class=\"dl-op-val\">##%</span></div><button class=\"legend-min\" title=\"Minimize\">–</button><div class=\"eu-year-row\" style=\"font-size: ##px; color: var(--text-muted); margin-top: #px; display: flex; align-items: center; gap: #px;\"><label style=\"display:contents;\">Year <span style=\"flex:#;min-width:##px;display:flex;flex-direction:column;gap:#px;\"><input type=\"range\" min=\"#\" max=\"#\" step=\"#\" value=\"#\" style=\"width:###%;display:block;margin:#;box-sizing:border-box;\"><span aria-hidden=\"true\" style=\"display:flex;justify-content:space-between;font-size:#px;line-height:#;color:var(--text-muted);\"><span>####</span><span>####</span></span></span></label> <b class=\"eu-year-val\" style=\"color:var(--text-main);min-width:##px;text-align:right;\">####</b></div><div class=\"eu-style-row\" style=\"display: flex; gap: #px; margin-top: #px;\"><button type=\"button\" data-s=\"uniform\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--primary-fill); color: rgb(###, ###, ###);\" aria-pressed=\"true\">One colour</button><button type=\"button\" data-s=\"byYear\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--input-bg); color: var(--text-main);\" aria-pressed=\"false\">By accession year</button></div><div class=\"eu-yearkey-wrap\"></div>"
+   }
+  },
+  "opacity": {
+   "checked": true,
+   "rowOn": true,
+   "layers": [
+    {
+     "id": "eu-fill",
+     "type": "fill",
+     "source": "src-eu",
+     "before": "layer-sat-labels",
+     "paint": {
+      "fill-color": "#1c3faa",
+      "fill-opacity": 0.5
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "eu-line",
+     "type": "line",
+     "source": "src-eu",
+     "before": "layer-sat-labels",
+     "paint": {
+      "line-color": "#ffd617",
+      "line-width": 1.5
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    }
+   ],
+   "sources": [
+    [
+     "src-eu",
+     {
+      "type": "geojson",
+      "data": {
+       "features": 28,
+       "chars": 1038242,
+       "hash": 265012155
+      },
+      "promoteId": "__code"
+     }
+    ]
+   ],
+   "legend": {
+    "display": "block",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"dl-eu\" title=\"Close\">×</button><h#>EU members</h#><div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.##\"></label><span class=\"dl-op-val\">##%</span></div><button class=\"legend-min\" title=\"Minimize\">–</button><div class=\"eu-year-row\" style=\"font-size: ##px; color: var(--text-muted); margin-top: #px; display: flex; align-items: center; gap: #px;\"><label style=\"display:contents;\">Year <span style=\"flex:#;min-width:##px;display:flex;flex-direction:column;gap:#px;\"><input type=\"range\" min=\"#\" max=\"#\" step=\"#\" value=\"#\" style=\"width:###%;display:block;margin:#;box-sizing:border-box;\"><span aria-hidden=\"true\" style=\"display:flex;justify-content:space-between;font-size:#px;line-height:#;color:var(--text-muted);\"><span>####</span><span>####</span></span></span></label> <b class=\"eu-year-val\" style=\"color:var(--text-main);min-width:##px;text-align:right;\">####</b></div><div class=\"eu-style-row\" style=\"display: flex; gap: #px; margin-top: #px;\"><button type=\"button\" data-s=\"uniform\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--primary-fill); color: rgb(###, ###, ###);\" aria-pressed=\"true\">One colour</button><button type=\"button\" data-s=\"byYear\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--input-bg); color: var(--text-main);\" aria-pressed=\"false\">By accession year</button></div><div class=\"eu-yearkey-wrap\"></div>"
+   }
+  },
+  "off": {
+   "checked": false,
+   "rowOn": false,
+   "layers": [
+    {
+     "id": "eu-fill",
+     "type": "fill",
+     "source": "src-eu",
+     "before": "layer-sat-labels",
+     "paint": {
+      "fill-color": "#1c3faa",
+      "fill-opacity": 0.5
+     },
+     "layout": {
+      "visibility": "none"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    },
+    {
+     "id": "eu-line",
+     "type": "line",
+     "source": "src-eu",
+     "before": "layer-sat-labels",
+     "paint": {
+      "line-color": "#ffd617",
+      "line-width": 1.5
+     },
+     "layout": {
+      "visibility": "none"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    }
+   ],
+   "sources": [
+    [
+     "src-eu",
+     {
+      "type": "geojson",
+      "data": {
+       "features": 28,
+       "chars": 1038242,
+       "hash": 265012155
+      },
+      "promoteId": "__code"
+     }
+    ]
+   ],
+   "legend": {
+    "display": "none",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"dl-eu\" title=\"Close\">×</button><h#>EU members</h#><div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.##\"></label><span class=\"dl-op-val\">##%</span></div><button class=\"legend-min\" title=\"Minimize\">–</button><div class=\"eu-year-row\" style=\"font-size: ##px; color: var(--text-muted); margin-top: #px; display: flex; align-items: center; gap: #px;\"><label style=\"display:contents;\">Year <span style=\"flex:#;min-width:##px;display:flex;flex-direction:column;gap:#px;\"><input type=\"range\" min=\"#\" max=\"#\" step=\"#\" value=\"#\" style=\"width:###%;display:block;margin:#;box-sizing:border-box;\"><span aria-hidden=\"true\" style=\"display:flex;justify-content:space-between;font-size:#px;line-height:#;color:var(--text-muted);\"><span>####</span><span>####</span></span></span></label> <b class=\"eu-year-val\" style=\"color:var(--text-main);min-width:##px;text-align:right;\">####</b></div><div class=\"eu-style-row\" style=\"display: flex; gap: #px; margin-top: #px;\"><button type=\"button\" data-s=\"uniform\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--primary-fill); color: rgb(###, ###, ###);\" aria-pressed=\"true\">One colour</button><button type=\"button\" data-s=\"byYear\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--input-bg); color: var(--text-main);\" aria-pressed=\"false\">By accession year</button></div><div class=\"eu-yearkey-wrap\"></div>"
+   }
+  }
+ },
+ "dl-milSpend": {
+  "on": {
+   "checked": true,
+   "rowOn": true,
+   "layers": [
+    {
+     "id": "milSpend-fill",
+     "type": "fill",
+     "source": "countries",
+     "before": "layer-sat-labels",
+     "paint": {
+      "fill-color": [
+       "case",
+       [
+        "<=",
+        [
+         "to-number",
+         [
+          "feature-state",
+          "milSpend"
+         ],
+         0
+        ],
+        0
+       ],
+       "#9aa0a6",
+       [
+        "interpolate",
+        [
+         "linear"
+        ],
+        [
+         "to-number",
+         [
+          "feature-state",
+          "milSpend"
+         ],
+         -1
+        ],
+        1,
+        "#fff7ec",
+        5,
+        "#fdd49e",
+        20,
+        "#fc8d59",
+        75,
+        "#d7301f",
+        300,
+        "#7f0000",
+        916,
+        "#4d0000"
+       ]
+      ],
+      "fill-opacity": [
+       "case",
+       [
+        "<=",
+        [
+         "to-number",
+         [
+          "feature-state",
+          "milSpend"
+         ],
+         0
+        ],
+        0
+       ],
+       0.5249999999999999,
+       0.7
+      ]
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    }
+   ],
+   "sources": [],
+   "legend": {
+    "display": "block",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"milSpend\" title=\"Close\">×</button><h# style=\"cursor: move; touch-action: none; user-select: none;\">Mil. spending ($B)</h#><div class=\"dl-bar\" style=\"background:linear-gradient(to right,#fff#ec,#fdd##e,#fc#d##,#d####f,##f####);\"></div><div class=\"dl-scale\"><span>$#B</span><span>$###B+</span></div><div class=\"dl-milmode\" style=\"display: flex; gap: #px; margin-top: #px;\"><button type=\"button\" data-m=\"total\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--primary-fill); color: rgb(###, ###, ###);\" aria-pressed=\"true\">Total ($B)</button><button type=\"button\" data-m=\"gdp\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--input-bg); color: var(--text-main);\" aria-pressed=\"false\">% of GDP</button></div><div style=\"display:flex;align-items:center;gap:#px;margin-top:#px;font-size:##px;color:var(--text-muted);\"><span style=\"display:inline-block;width:##px;height:##px;border-radius:#px;background:##aa#a#;border:#px solid rgba(#,#,#,#.##);\"></span>No data</div><div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.#\"></label><span class=\"dl-op-val\">##%</span></div><div class=\"dl-hint\" data-base=\"SIPRI / IISS ####\">SIPRI / IISS ####</div><div class=\"dl-desc\">Total annual defense budget in US$ billions.</div><div class=\"dl-clockrow\" data-time-intent=\"\" style=\"display: flex; align-items: center; gap: #px; margin-top: #px; font-size: ##.#px; color: var(--text-muted);\"><span class=\"dl-clocklbl\">Year</span><input type=\"number\" step=\"#\" class=\"dl-clockyear\" style=\"width:##px;min-width:#;padding:#px #px;border-radius:#px;border:#px solid var(--glass-border,rgba(###,###,###,#.##));background:var(--input-bg);color:var(--text-main);font-size:##.#px;\" min=\"####\" max=\"####\" placeholder=\"Now\"><button type=\"button\" class=\"dl-clocknow\" style=\"padding:#px #px;border-radius:#px;border:#px solid var(--glass-border,rgba(###,###,###,#.##));background:var(--input-bg);color:var(--text-main);font-size:##.#px;cursor:pointer;\">Now</button></div><button class=\"legend-min\" title=\"Minimize\">–</button>"
+   }
+  },
+  "opacity": {
+   "checked": true,
+   "rowOn": true,
+   "layers": [
+    {
+     "id": "milSpend-fill",
+     "type": "fill",
+     "source": "countries",
+     "before": "layer-sat-labels",
+     "paint": {
+      "fill-color": [
+       "case",
+       [
+        "<=",
+        [
+         "to-number",
+         [
+          "feature-state",
+          "milSpend"
+         ],
+         0
+        ],
+        0
+       ],
+       "#9aa0a6",
+       [
+        "interpolate",
+        [
+         "linear"
+        ],
+        [
+         "to-number",
+         [
+          "feature-state",
+          "milSpend"
+         ],
+         -1
+        ],
+        1,
+        "#fff7ec",
+        5,
+        "#fdd49e",
+        20,
+        "#fc8d59",
+        75,
+        "#d7301f",
+        300,
+        "#7f0000",
+        916,
+        "#4d0000"
+       ]
+      ],
+      "fill-opacity": [
+       "case",
+       [
+        "<=",
+        [
+         "to-number",
+         [
+          "feature-state",
+          "milSpend"
+         ],
+         0
+        ],
+        0
+       ],
+       0.375,
+       0.5
+      ]
+     },
+     "layout": {
+      "visibility": "visible"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    }
+   ],
+   "sources": [],
+   "legend": {
+    "display": "block",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"milSpend\" title=\"Close\">×</button><h# style=\"cursor: move; touch-action: none; user-select: none;\">Mil. spending ($B)</h#><div class=\"dl-bar\" style=\"background:linear-gradient(to right,#fff#ec,#fdd##e,#fc#d##,#d####f,##f####);\"></div><div class=\"dl-scale\"><span>$#B</span><span>$###B+</span></div><div class=\"dl-milmode\" style=\"display: flex; gap: #px; margin-top: #px;\"><button type=\"button\" data-m=\"total\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--primary-fill); color: rgb(###, ###, ###);\" aria-pressed=\"true\">Total ($B)</button><button type=\"button\" data-m=\"gdp\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--input-bg); color: var(--text-main);\" aria-pressed=\"false\">% of GDP</button></div><div style=\"display:flex;align-items:center;gap:#px;margin-top:#px;font-size:##px;color:var(--text-muted);\"><span style=\"display:inline-block;width:##px;height:##px;border-radius:#px;background:##aa#a#;border:#px solid rgba(#,#,#,#.##);\"></span>No data</div><div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.#\"></label><span class=\"dl-op-val\">##%</span></div><div class=\"dl-hint\" data-base=\"SIPRI / IISS ####\">SIPRI / IISS ####</div><div class=\"dl-desc\">Total annual defense budget in US$ billions.</div><div class=\"dl-clockrow\" data-time-intent=\"\" style=\"display: flex; align-items: center; gap: #px; margin-top: #px; font-size: ##.#px; color: var(--text-muted);\"><span class=\"dl-clocklbl\">Year</span><input type=\"number\" step=\"#\" class=\"dl-clockyear\" style=\"width:##px;min-width:#;padding:#px #px;border-radius:#px;border:#px solid var(--glass-border,rgba(###,###,###,#.##));background:var(--input-bg);color:var(--text-main);font-size:##.#px;\" min=\"####\" max=\"####\" placeholder=\"Now\"><button type=\"button\" class=\"dl-clocknow\" style=\"padding:#px #px;border-radius:#px;border:#px solid var(--glass-border,rgba(###,###,###,#.##));background:var(--input-bg);color:var(--text-main);font-size:##.#px;cursor:pointer;\">Now</button></div><button class=\"legend-min\" title=\"Minimize\">–</button>"
+   }
+  },
+  "off": {
+   "checked": false,
+   "rowOn": false,
+   "layers": [
+    {
+     "id": "milSpend-fill",
+     "type": "fill",
+     "source": "countries",
+     "before": "layer-sat-labels",
+     "paint": {
+      "fill-color": [
+       "case",
+       [
+        "<=",
+        [
+         "to-number",
+         [
+          "feature-state",
+          "milSpend"
+         ],
+         0
+        ],
+        0
+       ],
+       "#9aa0a6",
+       [
+        "interpolate",
+        [
+         "linear"
+        ],
+        [
+         "to-number",
+         [
+          "feature-state",
+          "milSpend"
+         ],
+         -1
+        ],
+        1,
+        "#fff7ec",
+        5,
+        "#fdd49e",
+        20,
+        "#fc8d59",
+        75,
+        "#d7301f",
+        300,
+        "#7f0000",
+        916,
+        "#4d0000"
+       ]
+      ],
+      "fill-opacity": [
+       "case",
+       [
+        "<=",
+        [
+         "to-number",
+         [
+          "feature-state",
+          "milSpend"
+         ],
+         0
+        ],
+        0
+       ],
+       0.375,
+       0.5
+      ]
+     },
+     "layout": {
+      "visibility": "none"
+     },
+     "filter": null,
+     "minzoom": null,
+     "maxzoom": null
+    }
+   ],
+   "sources": [],
+   "legend": {
+    "display": "none",
+    "html": "<span class=\"dl-drag\" title=\"Drag to move\">⋮⋮</span><button class=\"layer-popup-x\" data-x=\"milSpend\" title=\"Close\">×</button><h# style=\"cursor: move; touch-action: none; user-select: none;\">Mil. spending ($B)</h#><div class=\"dl-bar\" style=\"background:linear-gradient(to right,#fff#ec,#fdd##e,#fc#d##,#d####f,##f####);\"></div><div class=\"dl-scale\"><span>$#B</span><span>$###B+</span></div><div class=\"dl-milmode\" style=\"display: flex; gap: #px; margin-top: #px;\"><button type=\"button\" data-m=\"total\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--primary-fill); color: rgb(###, ###, ###);\" aria-pressed=\"true\">Total ($B)</button><button type=\"button\" data-m=\"gdp\" style=\"flex: # # #%; min-width: #px; border: #px solid rgba(###, ###, ###, #.#); border-radius: #px; padding: #px #px; font-size: ##.#px; font-weight: ###; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--input-bg); color: var(--text-main);\" aria-pressed=\"false\">% of GDP</button></div><div style=\"display:flex;align-items:center;gap:#px;margin-top:#px;font-size:##px;color:var(--text-muted);\"><span style=\"display:inline-block;width:##px;height:##px;border-radius:#px;background:##aa#a#;border:#px solid rgba(#,#,#,#.##);\"></span>No data</div><div class=\"dl-op-row\"><label style=\"display:contents;\">Opacity<input type=\"range\" min=\"#\" max=\"#\" step=\"#.##\" value=\"#.#\"></label><span class=\"dl-op-val\">##%</span></div><div class=\"dl-hint\" data-base=\"SIPRI / IISS ####\">SIPRI / IISS ####</div><div class=\"dl-desc\">Total annual defense budget in US$ billions.</div><div class=\"dl-clockrow\" data-time-intent=\"\" style=\"display: flex; align-items: center; gap: #px; margin-top: #px; font-size: ##.#px; color: var(--text-muted);\"><span class=\"dl-clocklbl\">Year</span><input type=\"number\" step=\"#\" class=\"dl-clockyear\" style=\"width:##px;min-width:#;padding:#px #px;border-radius:#px;border:#px solid var(--glass-border,rgba(###,###,###,#.##));background:var(--input-bg);color:var(--text-main);font-size:##.#px;\" min=\"####\" max=\"####\" placeholder=\"Now\"><button type=\"button\" class=\"dl-clocknow\" style=\"padding:#px #px;border-radius:#px;border:#px solid var(--glass-border,rgba(###,###,###,#.##));background:var(--input-bg);color:var(--text-main);font-size:##.#px;cursor:pointer;\">Now</button></div><button class=\"legend-min\" title=\"Minimize\">–</button>"
+   }
+  }
+ }
+}

@@ -54,7 +54,7 @@ const EC = () => codeOnly(read('js/wx-ecmwf.js'));
    above what it replaced. MEASURED for the shipped ramp: closest pair 23.9 (CIE76), and it is
    always an ADJACENT pair — two waves that could be confused are neighbours in time. */
 test('R290 ⑮ the accession palette is measurably easier to tell apart', () => {
-  const dl = read('js/data-layers.js');
+  const dl = (read('js/data-layers.js') + '\n' + read('js/layer-pkg-alliances.js'));
   const m = /const _WAVEPAL=(\[[^\]]*\]);/.exec(dl);
   assert.ok(m, 'the palette must be one array literal');
   const PAL = new Function(`return ${m[1]};`)();
@@ -153,7 +153,7 @@ const WP = () => codeOnly(read('js/world-packs.js'));
 const WX = () => codeOnly(read('js/weather.js'));
 const EC = () => codeOnly(read('js/wx-ecmwf.js'));
 const TL = () => codeOnly(read('js/news-timeline.js'));
-const DL = () => codeOnly(read('js/data-layers.js'));
+const DL = () => codeOnly((read('js/data-layers.js') + '\n' + read('js/layer-pkg-alliances.js')));
 const MT = () => codeOnly(read('js/map-tools.js'));
 
 /* ── ⑭ 「NATO/EU は赤から紫に連続的に」 — the ramp is measured in tests/news-country-layers-checks.test.mjs #R290 ⑮; here it is the
@@ -343,7 +343,7 @@ const qs = (stats, opts) => mask((opts && opts.code) || '@none@', raw(stats, opt
 /* 綴りのまま: 主張が配線・不在・一意性（どこが何を呼ぶか／無いこと／1 か所だけ）で、評価して取り出せる値が無い */
 test('R337 ③ the NATO layer frames the members it actually paints, through the one table', () => {
   const home = code('js/layer-home.js');
-  const dl = code('js/data-layers.js');
+  const dl = (code('js/data-layers.js') + '\n' + code('js/layer-pkg-alliances.js'));
 
   assert.match(home, /HOMES\['dl-nato'\]/, 'NATO is in the table');
   assert.match(home, /IntMapNatoFC/, '…and is framed from the collection the layer paints');

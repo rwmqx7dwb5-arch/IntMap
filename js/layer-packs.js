@@ -492,13 +492,16 @@ export function landCover(HOST){
         if(_phoneDev()){ try{ SETS.ecoregions.forEach(l=>{ if(GE().layers.has(l)) GE().layers.remove(l); }); if(GE().layers.hasSource('eco-regions')) GE().layers.removeSource('eco-regions'); }catch(_){} ecoBuilt=false; window.__ECOREGIONS_2017=null; }
       } }
       /* (#R19) opacity slider for these too — worldcover reuses its own class legend, the rest get a generic one */
-      try{ const nm=[ECLBL[which][1],ECLBL[which][0],ECLBL[which][2],ECLBL[which][3]];
+      /* (hist-fidelity-sweep) the legend title is the row's own name tuple, in the order LA wrote it (en, jp, de, ru, es).
+         It was rebuilt here by hand as [jp, en, de, ru] — the English screen titled the plate, land-cover and ecoregion
+         legends in Japanese, and Spanish fell off the end; ensureGenericLegend reads the tuple positionally. */
+      try{ const nm=ECLBL[which];
         if(on&&window._registerLayerOpacity) window._registerLayerOpacity(which==='worldcover'?'worldcover':'eco-'+which, nm, SETS[which], 'eco-dl-'+which);
         else if(!on&&window._hideGenericLegend&&which!=='worldcover') window._hideGenericLegend('eco-'+which);
       }catch(_){}
     }
     healWhenLost(GE,60,()=>Object.keys(SETS).map(k=>({key:k,on:!!state[k],ids:SETS[k]})),(lost)=>{ if(ensureRaster()&&ensurePlateLayers()){ setVis(SETS.worldcover,state.worldcover); setVis(SETS.plates,state.plates); if(lost.includes('plates')) loadPlates(()=>{}); } if(lost.includes('ecoregions')){ if(!GE().layers.hasSource('eco-regions')){ ecoBuilt=false; addEcoLayers(ECO_URL); } setVis(SETS.ecoregions,true); } });
-    /* (#R38) [JP, EN, DE, RU]; ecoLbl() picks the active language. */
+    /* (#R38) LA tuples — [EN, JP, DE, RU, ES], the positional order js/lang-registry.js pickArgs writes; ecoLbl() picks the active language. */
     const ECLBL={worldcover:LA('Land cover (ESA 2021)','土地被覆 (ESA 2021)','Bodenbedeckung (ESA 2021)','Земной покров (ESA 2021)','Cobertura del suelo (ESA 2021)'),ecoregions:LA('Ecoregions (WWF/RESOLVE)','生態地域 (WWF/RESOLVE)','Ökoregionen (WWF/RESOLVE)','Экорегионы (WWF/RESOLVE)','Ecorregiones (WWF/RESOLVE)'),plates:LA('Tectonic plates','プレート境界','Tektonische Platten','Тектонические плиты','Placas tectónicas')};
     const ecoLbl=(k)=>LPK.arr(ECLBL[k]);
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('eco-dl-worldcover')) return;

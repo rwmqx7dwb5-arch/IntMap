@@ -13,14 +13,14 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { everyTick, stopTick, afterTick, tickKey } from './runtime.js';   /* the one timer wheel — js/runtime.js */
-import { ownRelayUrl, clockFor } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the TeleGeography fallback's second rung; (stalled-fetch) and how long one read of a host may take */
+import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch) how long one read of a host may take. (layer-packages) The relay rung of the cable ladder (ownRelayUrl) went with the cables to js/layer-pkg-subcables.js */
 import './night-lights.js';   /* (#R550) which night-lights epoch is on screen — window.IntMapNightLights */
 import { layerInflight } from './layer-rows.js';   /* (heal-waits-for-inflight) the request a row started and has not finished — see ④ there */
 import { layerState } from './layer-state.js';   /* (layer-failure-state) what became of a row's request — failed / unobserved and why — kept, shown on the row, told once, readable by Atlas */
-import { jsonWithin, readWithin, untilObserved, isUnobserved } from './fetch-deadline.js';   /* (stalled-fetch) every read a row's request waits on, under a clock — see rvFetch; (unobserved-is-not-refused) and what a row does when that clock runs out — see rowUntilObserved */
+import { readWithin, untilObserved, isUnobserved } from './fetch-deadline.js';   /* (stalled-fetch) every read a row's request waits on, under a clock (the radar's rvFetch is js/layer-pkg-radar.js now); (unobserved-is-not-refused) and what a row does when that clock runs out — see rowUntilObserved */
 /* (layer-manifest) WHICH LAYERS EXIST, their shelves and their defaults are js/layer-manifest.js. The five lists
    below and reorganizeLayerPanel's taxonomy used to be written out here by hand; they are derived now. */
-import { defaultLayers, defaultOn, basicRows, basicLayers, hiddenRows, layerGroups, betaKeys, layerFor } from './layer-manifest.js';
+import { defaultLayers, defaultOn, basicRows, basicLayers, hiddenRows, layerGroups, betaKeys, layerFor, packageOf, loadPackage } from './layer-manifest.js';   /* (layer-packages) …and which rows a package implements, and the package's literal import */
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
@@ -31,7 +31,11 @@ import { IntMapLang } from './lang-registry.js';
    layer gets its data» had already disagreed once, so the preview no longer keeps one: the factory below
    puts the layer's own functions here (`subcables` → fetchSubcables, `radarIndex` → rvFetch) and the
    preview calls them. One ladder, one clock, one cache, and an order that cannot drift because there is
-   only one of it. Empty until the factory has run; a reader finding a name absent draws its sketch. */
+   only one of it. Empty until the factory has run; a reader finding a name absent draws its sketch.
+   (layer-packages) Both rows are layer packages now (js/layer-pkg-subcables.js, js/layer-pkg-radar.js): the factory
+   below puts a forwarder here that fetches the package, and the package, once it has arrived, puts its own function
+   in its place — the same assignment it always made, so after the first switch the preview calls the row's read
+   directly, and before it the preview still reads through the row's ladder rather than through a copy. */
 export const layerReads = {};
 /* ── (#R186) THE DATA LAYERS THAT ARE ON BEFORE ANYONE TOUCHES ANYTHING ──────────────────────────
    「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。」
@@ -174,7 +178,7 @@ export function dataLayers(HOST){
   /* (#R178) "have I already wired this hover / click?" — module state, not renderer state. These three
      were properties hung on the map object itself (map.__choroHover / __natoHover / __euHover), which
      is both invisible to anyone reading this file and something no other engine would carry. */
-  const _hoverWired={}; let _natoHoverWired=false, _euHoverWired=false;
+  const _hoverWired={};   /* (layer-packages) the NATO and EU hover latches moved with their rows to js/layer-pkg-alliances.js */
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const _collapseGroup=HOST._collapseGroup, _imTouchPrimary=HOST._imTouchPrimary, addCountryLayers=HOST.addCountryLayers, cName=HOST.cName, convTempText=HOST.convTempText, countryStats=HOST.countryStats, ensureMapTooltip=HOST.ensureMapTooltip, ensureTerrainSource=HOST.ensureTerrainSource, escapeHtml=HOST.escapeHtml, fmtPc=HOST.fmtPc, fmtTemp=HOST.fmtTemp, i18n=HOST.i18n, imToast=HOST.imToast, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, positionTooltip=HOST.positionTooltip, renderCoordReadout=HOST.renderCoordReadout, satToast=HOST.satToast, t=HOST.t;
@@ -651,7 +655,7 @@ export function dataLayers(HOST){
     lgdHDI=makeLegend('hdi',140,(HOST.lang==='jp'?'HDI':'HDI'),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#a6d96a,#1a9850)',['0.45','0.95'], IntMapLang.t(HOST.lang,'2022 UNDP','2022 国連UNDP','2022 UNDP','2022 ПРООН','2022 PNUD'));
     lgdDem=makeLegend('dem',140,(IntMapLang.t(HOST.lang,'Democracy Index','民主主義指数','Demokratieindex','Индекс демократии','Índice de democracia')),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#74add1,#313695)',['1','10'], HOST.lang==='jp'?'2023 EIU':'2023 EIU');
     lgdPop=makeLegend('pop',140,(IntMapLang.t(HOST.lang,'Pop. density','人口密度','Bevölkerungsdichte','Плотность населения','Densidad de población')),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',['2','3000+'], HOST.lang==='jp'?'per km²':'per km²');
-    lgdNATO=makeLegend('nato',140,'NATO',`linear-gradient(to right,#0a3d91,#1e63ff)`,[IntMapLang.t(HOST.lang,'Member','加盟国','Mitglied','Член','Miembro'),''],IntMapLang.t(HOST.lang,'32 members','32か国','32 Mitglieder','32 членов','32 miembros'));
+    lgdNATO=makeLegend('nato',140,'NATO',`linear-gradient(to right,#0a3d91,#1e63ff)`,[IntMapLang.t(HOST.lang,'Member','加盟国','Mitglied','Член','Miembro'),''],html``);   /* (hist-fidelity) an EMPTY hint: it said «32 members» at every year (16 in 1985). The slot stays where the other controls anchor on it (ensureLegendOpacity puts its row before it); the count is what the layer draws at the clock's instant, written by the NATO package each time it paints (js/layer-pkg-alliances.js natoLegend → natoCountHint) */
     /* (#R15b / #38) Legends the value-scale layers were missing — choropleths (GDP pc, fertility, military
        spend $B & %GDP) and the snow / aerosol / night-lights rasters. They auto-gain an opacity slider via
        ensureLegendOpacity (their ids exist in `opacities`), moving that control onto the legend too. */
@@ -945,7 +949,7 @@ export function dataLayers(HOST){
       try{ _refreshLegendDates(); }catch(_){}
       /* (#R289) the 国防費 mode switch is INSIDE those two legends, so a rebuild drops it; re-assert
          the mode rather than leaving a row that can no longer be switched. */
-      try{ applyMilMode(); }catch(_){}
+      try{ _pkgEach('onLegendsRebuilt'); }catch(_){}   /* (layer-packages) the defence row's own re-assert (js/layer-pkg-alliances.js), once it has arrived */
     }
     window.addEventListener('intmap-lang', _rebuildCoreLegends);
     /* The Köppen legend's drag handle is (re)injected inside buildLegend() so it survives the
@@ -1346,71 +1350,9 @@ export function dataLayers(HOST){
     }
     window._refreshLegendDates=_refreshLegendDates;
     _refreshLegendDates();
-    /* Thermal anomalies / active fire (#R7) — REAL NASA FIRMS detections served through NASA GIBS WMS.
-       Why GIBS, not FIRMS' own WMS: the FIRMS MapServer caps requests per IP, so a tiled web map (dozens
-       of tiles per view) quickly trips its quota and every tile comes back as the red error image
-       "You have exceeded the transaction limit" — exactly what the user saw. GIBS is NASA's purpose-built
-       high-volume tile/WMS service (no per-IP transaction cap), it rasterizes the VIIRS (NOAA-20 + SNPP)
-       and MODIS (Terra + Aqua) thermal-anomaly point layers to PNG, needs no key and returns CORS:*.
-       Verified live: 200 image/png, Access-Control-Allow-Origin:*.
-       Each WMS GetMap takes a single day (TIME=YYYY-MM-DD), so the 24/48/72 h "window" is built by
-       stacking the most-recent N UTC days as separate raster layers (today + previous days). */
+    /* (layer-packages) 火災・熱異常 dl-thermal lives in its own module now — js/layer-pkg-thermal.js (its declaration says `pkg`).
+       The rolling window stays here: it is the reader's setting, which the fire legend and js/map-ui.js read before the row is ever switched. */
     window._thermalWindow=window._thermalWindow||'24';        /* rolling window: 24 | 48 | 72 (h) → 2 | 3 | 4 recent UTC days */
-    const GIBS_FIRE_LAYERS='VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_SNPP_Thermal_Anomalies_375m_All,MODIS_Terra_Thermal_Anomalies_All,MODIS_Aqua_Thermal_Anomalies_All';
-    const THERMAL_IDS=['lyr-thermal','lyr-thermal-1','lyr-thermal-2','lyr-thermal-3'];
-    let _thermalOn=false;
-    function _utcDayISO(back){ return new Date(Date.now()-back*86400000).toISOString().slice(0,10); }
-    function gibsThermalWMS(dayISO,layers){ return 'https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS='+(layers||GIBS_FIRE_LAYERS)+'&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+dayISO; }
-    function thermalDayOffsets(){ const n={'24':2,'48':3,'72':4}[window._thermalWindow||'24']||2; const out=[]; for(let i=0;i<n;i++) out.push(i); return out; }
-    /* (#R121) ROOT FIX — a combined LAYERS= GetMap fails ENTIRELY ("msShapefileOpen(): The requested shapefile
-       cannot be found") when ANY one product has no data for that day (live-verified: VIIRS_SNPP missing for
-       today & yesterday blanked the whole thermal layer). Probe each day once with a tiny GetMap, parse the
-       failing product out of the ServiceException, and request only the products that actually draw. */
-    /* (stalled-fetch) THE PROBE IS READ UNDER A CLOCK. It is the fire row's request (addFirmsThermal
-       returns the day slots, each waiting on this), and a bare `fetch` to a GIBS that stopped answering
-       held the row «in flight» for the session. js/fetch-deadline.js `readWithin` hands back the status,
-       the type and the ServiceException text, all read inside the clock js/proxy-fetch.js `clockFor`
-       gives the host read directly (DIRECT_TIMEOUT_MS, 6 s). A timed-out probe lands in the `catch`
-       below — the path a refused one always took: keep the current list and let the layer try to draw.
-         · observed 2026-09-28: three 4×4 probes, 1.19–1.35 s, 83 B image/png.
-         · lapses if GIBS's WMS stops answering a 4×4 GetMap in about a second. */
-    const _thermalDayCache={};
-    async function _thermalLayersFor(day){ if(_thermalDayCache[day]!==undefined) return _thermalDayCache[day];
-      let list=GIBS_FIRE_LAYERS.split(',');
-      for(let t=0;t<4&&list.length;t++){
-        try{ const M=20037508.34;
-          const u='https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS='+list.join(',')+'&CRS=EPSG:3857&BBOX='+(-M)+','+(-M)+','+M+','+M+'&WIDTH=4&HEIGHT=4&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+day;
-          const r=await readWithin(u,clockFor(u));
-          const ct=r.type;
-          if(r.ok&&ct.indexOf('image')>=0) break;
-          const tx=r.text; const m=tx.match(/named '([^']+)'/)||tx.match(/named &#39;([^&#]+)&#39;/);
-          if(!m||list.indexOf(m[1])<0){ list=[]; break; }
-          list=list.filter(x=>x!==m[1]);
-        }catch(_){ break; } }   /* network error or the clock → keep the current list (the layer may still draw) */
-      _thermalDayCache[day]=list; return list; }
-    function _clearThermal(){ THERMAL_IDS.forEach((lid,i)=>{ try{ if(GE().layers.has(lid)) GE().layers.remove(lid); }catch(_){} try{ const sid='src-thermal-'+i; if(GE().layers.hasSource(sid)) GE().layers.removeSource(sid); }catch(_){} }); }
-    /* (heal-waits-for-inflight) returns the request — every day slot settled (js/layer-rows.js ④) */
-    function addFirmsThermal(){
-      _clearThermal();
-      return Promise.all(thermalDayOffsets().map((off,i)=>{
-        const sid='src-thermal-'+i, lid=THERMAL_IDS[i], day=_utcDayISO(off);
-        return _thermalLayersFor(day).then(list=>{
-          if(!list||!list.length) return;   /* no fire product at all for that day (yet) — skip the slot honestly */
-          try{
-            if(GE().layers.hasSource(sid)||GE().layers.has(lid)) return;   /* a re-toggle raced us */
-            GE().layers.addSource(sid,{type:'raster',tiles:[gibsThermalWMS(day,list.join(','))],tileSize:256,attribution:'NASA FIRMS / GIBS — MODIS & VIIRS active fire'});
-            GE().layers.add({id:lid,type:'raster',source:sid,layout:{visibility:_thermalOn?'visible':'none'},paint:{'raster-opacity':opacities.thermal}},beforeId);
-          }catch(_){}
-        }).catch(()=>{});
-      }));
-    }
-    function setThermalVis(on){ _thermalOn=on; THERMAL_IDS.forEach(lid=>{ if(GE().layers.has(lid)) GE().layers.setLayout(lid,'visibility',on?'visible':'none'); }); }
-    window._setThermalOpacity=function(v){ THERMAL_IDS.forEach(lid=>{ if(GE().layers.has(lid)) GE().layers.setPaint(lid,'raster-opacity',v); }); };
-    /* Rebuild the stacked layers when the user switches the 24/48/72 h window in the legend. */
-    window._refreshThermal=function(){
-      const was=_thermalOn;
-      try{ addFirmsThermal(); setThermalVis(was); }catch(e){ console.warn('thermal rebuild fail',e); }
-    };
     /* (#R12) Layer taxonomy re-organized into clearer, purpose-built categories (per request to
        re-classify the panel): Climate & weather · Terrain & elevation · Oceans & maritime ·
        Hazards & night sky · Population & economy · Geopolitics & defense. */
@@ -2188,372 +2130,7 @@ export function dataLayers(HOST){
       /* (#R270) the year on the source line is repainted with the map it describes */
       try{ if(_syncYearHints) _syncYearHints(); }catch(_){}
     }catch(_){} };
-    /* NATO members fill (#R7): brighter blue so it's clearly visible on the dark basemap, with a crisp
-       outline. Built from a DEDICATED geojson (not the shared country feature-state) so we can drop the
-       two member territories that lie SOUTH of the Tropic of Cancer — French Guiana (France) and Hawaii
-       (USA) — which fall outside NATO's Article-6 treaty area. The Tropic of Cancer (23.4366°N) is drawn
-       as a labeled gold line so the exclusion is self-explanatory. */
-    const TROPIC_CANCER=23.4366;
-    /* (#R7) NATO Article 6 limits the treaty area to Europe/North America and North-Atlantic islands
-       NORTH of the Tropic of Cancer. So we drop EVERY member sub-polygon whose centroid is south of that
-       line — French Guiana, Guadeloupe, Martinique, Saint-Martin, Mayotte, Réunion, New Caledonia, French
-       Polynesia, Hawaii, Puerto Rico, Guam, … — while keeping all mainlands and the Atlantic islands
-       (Azores, Madeira, Canaries) that ARE covered. Mainland polygons aren't clipped (centroid is north),
-       so e.g. southern Florida/Texas stay whole. */
-    /* ══ ⚠ (#R289) 「加盟年ごとに色分けされたバージョンも用意して」 ═══════════════════════════════════
-       NATO and the EU each paint every member ONE colour, which answers 「who is in」 and says
-       nothing about 「since when」 — although both layers have carried the real accession year
-       since #R14/#R26 and both already have a year slider driven by it. A second colouring makes
-       that year visible instead of only filterable, and the switch is in the legend beside the
-       slider that uses the same numbers.
-       ⚠ ONE PALETTE FOR BOTH.
-       ⚠ AND THE BAR GOES AWAY WITH IT. #R270's defect was a legend whose gradient contradicted
-       the colours on the map; a flat blue bar over a year-coloured map is the same statement. So
-       the mode hides `.dl-bar`/`.dl-scale` and shows a chip per wave instead. */
-    /* ══ ⚠⚠⚠ (#R290) 「加盟年別の色分けの色味が分かりにくい」 — AND THAT IS MEASURABLE ═══════════
-       #R289 chose viridis for this on the argument that 「a rainbow would imply an order the eye
-       has to be taught」. The reader has now looked at the result and cannot read it, so the
-       trade-off is settled by the other criterion: how far apart two waves actually LOOK.
-       MEASURED, CIEDE2000 between the closest pair in the set (which for a monotone ramp is
-       always an adjacent pair — the one a reader has to tell apart on the legend):
-
-           waves   viridis (before)   this palette (after)
-             8         ΔE00 12.2            ΔE00 19.7      ← the EU
-            11         ΔE00  8.1            ΔE00 19.7      ← NATO
-            14         ΔE00  6.1            ΔE00 13.0
-
-       ΔE00 ≈ 2.3 is the just-noticeable difference for large flat areas; 8.1 across eleven country
-       fills at 55 % opacity over a basemap is not enough, and it is why 「分かりにくい」 is a fact
-       about the palette rather than about the reader. The new set sweeps hue a full turn instead
-       of a third of one, so the separation stops shrinking as waves are added — at eleven it is
-       the same 19.7 as at eight. Order is still read off the sequence and off the legend chips,
-       which name the year beside every swatch.
-       ⚠ AND IT IS INDEXED, NOT INTERPOLATED. Sampling eleven colours out of a ten-anchor gradient
-       is what put the closest pair at 8.1 in the first place; when there are no more waves than
-       entries, each wave takes an ENTRY, so the measured separation is the separation on screen.
-       (More entries than that — no such layer today — falls back to interpolation.) */
-    /* ══ ⚠⚠ (#R293) 「ランダムな色の分け方ではなく、古いのから新しいのまで、赤から紫に連続的に」 ═══
-       #R290 maximised how far apart the waves LOOK and got 26.1 (CIE76) by sweeping hue a full turn
-       — which starts at dark blue, ends at lavender, and passes red in the middle. That is far apart
-       and it is not an ORDER anybody can read off the map, which is what 「ランダム」 names.
-       This ramp is the one the reader asked for: hue sweeps MONOTONICALLY from red (oldest) through
-       orange, yellow, green and blue to purple (newest), so where a country sits in the sequence is
-       legible without the key.
-       ⚠ THE SEPARATION IS NOW A CONSEQUENCE, NOT THE OBJECTIVE, AND IT IS SMALLER — MEASURED:
-       closest pair 23.9 (CIE76) against #R290's 26.1, and the closest pair is always an ADJACENT
-       one, which is the signature of a continuous ramp: two waves that could be confused are
-       neighbours in time, and no two distant waves ever are. It is still an order of magnitude
-       above the 2.3 JND and roughly twice the 12.8 of the viridis sampling both of these replace.
-       `tests/weather-warnings-checks.test.mjs (#R293)` asserts the monotone red→purple sweep AND re-computes the separation. */
-    const _WAVEPAL=['#cf0032','#ea4a1c','#fa8b00','#f2c200','#c9df00','#5fbb46','#00a878','#0096bf','#2f66cf','#5a3cc4','#902fa6'];
-    function _mixHex(a,b,t){ const p=(h)=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
-      const A=p(a),B=p(b),o=A.map((v,i)=>Math.round(v+(B[i]-v)*t));
-      return '#'+o.map(v=>v.toString(16).padStart(2,'0')).join(''); }
-    function _rampAt(f){ const x=Math.max(0,Math.min(1,f))*(_WAVEPAL.length-1), i=Math.min(_WAVEPAL.length-2,Math.floor(x));
-      return _mixHex(_WAVEPAL[i],_WAVEPAL[i+1],x-i); }
-    /* year → colour, ordered oldest-first. ONE entry means one colour, not a division by zero. */
-    function yearColors(years){ const o={}; const n=years.length, P=_WAVEPAL.length;
-      years.forEach((y,i)=>{ o[y]=(n<2)?_WAVEPAL[0]
-        :(n<=P)?_WAVEPAL[Math.round(i*(P-1)/(n-1))]
-        :_rampAt(i/(n-1)); }); return o; }
-    /* the fill expression: an exact match on the accession year, with the uniform colour as the
-       fallback so a member whose year is missing is never invisible. */
-    function yearFillExpr(years,colors,fallback){
-      const e=['match',['to-number',['get','__y'],0]];
-      years.forEach(y=>{ e.push(y,colors[y]); });
-      e.push(fallback); return e; }
-    /* the chips: one per wave that is actually on the map at the selected year, with its count */
-    function yearKeyHTML(years,colors,joinTable,upTo,leftTable){
-      const rows=[];
-      years.forEach(y=>{ if(upTo!=null&&y>upTo) return;
-        let n=0; Object.keys(joinTable).forEach(code=>{ if(joinTable[code]!==y) return;
-          if(upTo!=null&&leftTable&&leftTable[code]&&upTo>=leftTable[code]) return; n++; });
-        if(!n) return;
-        rows.push(html`<span style="display:inline-flex;align-items:center;gap:4px;"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${colors[y]};"></i>${y} (${n})</span>`); });
-      return html`<div class="dl-yearkey" style="display:flex;flex-wrap:wrap;gap:5px 9px;margin-top:6px;font-size:10px;color:var(--text-muted);font-variant-numeric:tabular-nums;">${rows}</div>`; }
-    /* the two-button switch every one of these legends gets. `get`/`set` keep the state with its
-       own layer rather than making a second copy here. */
-    function styleModeRow(el,cls,get,set){ if(!el) return;
-      let r=el.querySelector('.'+cls);
-      const OPT=[['uniform',()=>IntMapLang.t(HOST.lang,'One colour','単色','Eine Farbe','Один цвет','Un color')],
-                 ['byYear', ()=>IntMapLang.t(HOST.lang,'By accession year','加盟年別','Nach Beitrittsjahr','По году вступления','Por año de ingreso')]];
-      if(!r){ r=document.createElement('div'); r.className=cls;
-        r.style.cssText='display:flex;gap:5px;margin-top:7px;';
-        r.innerHTML=html`${OPT.map(o=>html`<button type="button" data-s="${o[0]}" style="flex:1;min-width:0;border:1px solid rgba(128,128,128,0.3);border-radius:7px;padding:4px 6px;font-size:10.5px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></button>`)}`;
-        const bar=el.querySelector('.dl-scale'); if(bar&&bar.parentNode===el) el.insertBefore(r,bar.nextSibling); else el.appendChild(r);
-        r.addEventListener('click',(ev)=>{ const b=ev.target.closest('button[data-s]'); if(b&&r.contains(b)) set(b.getAttribute('data-s')); }); }
-      r.querySelectorAll('button[data-s]').forEach(b=>{ const k=b.getAttribute('data-s');
-        const o=OPT.filter(x=>x[0]===k)[0]; if(o) b.textContent=o[1]();
-        const act=(k===get());
-        b.style.background=act?'var(--primary-fill)':'var(--input-bg)';
-        b.style.color=act?'#fff':'var(--text-main)';
-        b.setAttribute('aria-pressed',act?'true':'false'); });
-      /* the gradient bar describes the uniform colouring only — see the note above */
-      const byYear=(get()==='byYear');
-      ['.dl-bar','.dl-scale'].forEach(sel=>{ const e2=el.querySelector(sel); if(e2) e2.style.display=byYear?'none':''; });
-      return r; }
-    function _ringCentroidLat(ring){ if(!ring||!ring.length) return 0; let sy=0; for(const p of ring) sy+=p[1]; return sy/ring.length; }
-    function _dropSouthOfTropic(geom){
-      if(!geom) return null;
-      const keep=pc=>_ringCentroidLat(pc[0])>=TROPIC_CANCER;
-      if(geom.type==='Polygon') return keep(geom.coordinates)?geom:null;
-      if(geom.type==='MultiPolygon'){ const polys=geom.coordinates.filter(keep); return polys.length?{type:'MultiPolygon',coordinates:polys}:null; }
-      return geom;
-    }
-    /* (#R337) the collection this layer paints, published so js/layer-home.js frames the geometry
-       that is actually on screen — the members who had acceded by whatever year Chronos is set to,
-       already clipped to the treaty area north of the Tropic of Cancer. Same contract as
-       window.IntMapEuFC below; see that file for why the frame takes each member's largest landmass. */
-    window.IntMapNatoFC=()=>{ try{ return buildNatoFC(); }catch(_){ return null; } };
-    function buildNatoFC(){
-      const feats=[];
-      if(HOST.countryGeo&&HOST.countryGeo.features){
-        HOST.countryGeo.features.forEach(f=>{ const code=String(f.id); if(!NATO.has(code)) return;
-          /* (#R25) Time-travel like Historical borders: only show members who had ALREADY joined by the
-             selected year (based on each country's real accession year). */
-          const jy=NATO_JOIN[code]; if(jy && _natoYear && jy>_natoYear) return;
-          const g=_dropSouthOfTropic(f.geometry);
-          /* (#R289) the accession year travels WITH the feature, so the fill can colour by it */
-          if(g) feats.push({type:'Feature',id:code,properties:{__code:code,__y:(jy||0)},geometry:g});
-        });
-      }
-      return {type:'FeatureCollection',features:feats};
-    }
-    function tropicFC(){ const c=[]; for(let lo=-180;lo<=180;lo+=5) c.push([lo,TROPIC_CANCER]); return {type:'FeatureCollection',features:[{type:'Feature',properties:{},geometry:{type:'LineString',coordinates:c}}]}; }
-    function addNato(){
-      if(!GE().layers.hasSource('src-nato')) GE().layers.addSource('src-nato',{type:'geojson',data:buildNatoFC(),promoteId:'__code'});
-      if(!GE().layers.has('nato-fill')) GE().layers.add({id:'nato-fill',type:'fill',source:'src-nato',layout:{visibility:'none'},paint:{'fill-color':natoFillColor(),'fill-opacity':opacities.nato}},beforeId);
-      if(!GE().layers.has('nato-line')) GE().layers.add({id:'nato-line',type:'line',source:'src-nato',layout:{visibility:'none'},paint:{'line-color':'#7fb0ff','line-width':1.6}},beforeId);
-      if(!GE().layers.hasSource('src-tropic')) GE().layers.addSource('src-tropic',{type:'geojson',data:tropicFC()});
-      if(!GE().layers.has('nato-tropic-line')) GE().layers.add({id:'nato-tropic-line',type:'line',source:'src-tropic',layout:{visibility:'none'},paint:{'line-color':'#f4b740','line-width':1.4,'line-dasharray':[3,3],'line-opacity':0.9}},beforeId);
-      if(!GE().layers.has('nato-tropic-label')) GE().layers.add({id:'nato-tropic-label',type:'symbol',source:'src-tropic',layout:{visibility:'none','symbol-placement':'line','text-field':(IntMapLang.t(HOST.lang,'Tropic of Cancer (23.4°N)','北回帰線 (北緯23.4°)','Wendekreis des Krebses (23,4°N)','Северный тропик (23,4° с.ш.)','Trópico de Cáncer (23,4°N)')),'text-size':window.IntMapLabelScale.sub(0.9),'text-font':['literal',['Noto Sans Regular']],'symbol-spacing':340,'text-letter-spacing':0.04},paint:{'text-color':'#f4b740','text-halo-color':'rgba(0,0,0,0.65)','text-halo-width':1.3}},beforeId);
-    }
-    function natoFillColor(){ return (_natoStyle==='byYear')
-      ? yearFillExpr(NATO_YEARS,yearColors(NATO_YEARS),'#2f6bff') : '#2f6bff'; }
-    function applyNato(){ try{ GE().layers.setSourceData('src-nato',buildNatoFC()); }catch(_){}
-      /* (#R289) the colouring is re-asserted on every repaint, not only at creation — the same
-         rule the World-Bank ramp needed: the addLayer branch runs once and the mode can change
-         afterwards. */
-      try{ if(GE().layers.has('nato-fill')) GE().layers.setPaint('nato-fill','fill-color',natoFillColor()); }catch(_){}
-      /* ⚠ the legend is only re-drawn while the layer is ON — `_registerLayerOpacity` SHOWS the
-         box, so calling it from a repaint that ran with the layer off would open a legend for a
-         layer that is not on the map. */
-      try{ const cb=document.getElementById('dl-nato'); if(cb&&cb.checked) natoLegend(); }catch(_){} }
-    function setNatoVis(on){ ['nato-fill','nato-line','nato-tropic-line','nato-tropic-label'].forEach(l=>setVis(l,on)); }
-    /* NATO accession years (#14) — shown on hover alongside the member's defense spend as % of GDP. */
-    const NATO_JOIN={USA:1949,CAN:1949,GBR:1949,FRA:1949,ITA:1949,NLD:1949,BEL:1949,LUX:1949,DNK:1949,NOR:1949,ISL:1949,PRT:1949,GRC:1952,TUR:1952,DEU:1955,ESP:1982,CZE:1999,HUN:1999,POL:1999,BGR:2004,EST:2004,LVA:2004,LTU:2004,ROU:2004,SVK:2004,SVN:2004,ALB:2009,HRV:2009,MNE:2017,MKD:2020,FIN:2023,SWE:2024};
-    /* (#R25 / #24) NATO enlargement time-travel: a year control (like Historical borders) filters the
-       members fill to those who had joined by the chosen year. NATO_YEARS = the distinct accession years. */
-    const NATO_YEARS=[...new Set(Object.values(NATO_JOIN))].sort((a,b)=>a-b);
-    let _natoYear=NATO_YEARS[NATO_YEARS.length-1];   /* default: latest = all current members */
-    let _natoStyle='uniform';                        /* (#R289) 'uniform' | 'byYear' */
-    function setNatoStyle(k){ if(k!=='uniform'&&k!=='byYear') return; if(k===_natoStyle) return; _natoStyle=k; applyNato(); }
-    function natoLegend(){
-      try{
-        const el=window._registerLayerOpacity&&window._registerLayerOpacity('nato',LA('NATO members','NATO加盟国','NATO-Mitglieder','Страны НАТО','Países de la OTAN'),['nato-fill','nato-line'],'dl-nato');
-        if(!el) return;
-        /* ⚠ (#R289) THE «BUILT ONCE» GUARD IS NOW A BRANCH, NOT A RETURN. It used to leave the
-           function the moment the year row existed, which is right for the row (rebuilding a
-           <select> under the finger that opened it is #R266's defect) and wrong for everything
-           added after it: the colouring switch's own selected state and its key CHANGE while the
-           legend stays up, so a return would have made this round's control build once and never
-           update — which looks exactly like a button that does nothing. */
-        if(el.querySelector('.nato-year-row')){ const lbl=el.querySelector('.nato-year-val'); if(lbl) lbl.textContent=_natoYear; }
-        else {
-        const jp=HOST.lang==='jp';
-        const row=document.createElement('div'); row.className='nato-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:7px;display:flex;align-items:center;gap:7px;';
-        if(typeof isMobile==='function'&&isMobile()){
-          row.innerHTML=html`<label style="display:contents;">${IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año')} <select class="nato-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">${
-            NATO_YEARS.map(y=>html`<option value="${y}"${y===_natoYear?' selected':''}>${y}</option>`)}</select></label>`;
-          row.querySelector('.nato-year-sel').addEventListener('change',(e)=>{ _natoYear=+e.target.value||_natoYear; applyNato(); const v=el.querySelector('.nato-year-val'); if(v) v.textContent=_natoYear; });
-        } else {
-          /* (#R27) Only the START and END years are labeled (a flex space-between row), not every
-             accession year — the dense per-year ticks collided (1999/2004/2009/2017/2020/2023/2024 all
-             bunched at the right) which was the "範囲のテキストが重なるクソUI". The selected year shows in
-             the <b> readout, so no information is lost. */
-          row.innerHTML=html`${[html`<label style="display:contents;">${IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año')} <span style="flex:1;min-width:90px;display:flex;flex-direction:column;gap:1px;">`,
-            html`<input type="range" min="0" max="${NATO_YEARS.length-1}" step="1" value="${NATO_YEARS.indexOf(_natoYear)}" style="width:100%;display:block;margin:0;box-sizing:border-box;">`,
-            html`<span aria-hidden="true" style="display:flex;justify-content:space-between;font-size:8px;line-height:1;color:var(--text-muted);"><span>${NATO_YEARS[0]}</span><span>${NATO_YEARS[NATO_YEARS.length-1]}</span></span>`,
-            html`</span></label> <b class="nato-year-val" style="color:var(--text-main);min-width:34px;text-align:right;">${_natoYear}</b>`]}`;
-          row.querySelector('input').addEventListener('input',(e)=>{ _natoYear=NATO_YEARS[+e.target.value]||_natoYear; const v=el.querySelector('.nato-year-val'); if(v) v.textContent=_natoYear; clearTimeout(natoLegend._t); natoLegend._t=setTimeout(applyNato,120); });
-        }
-        el.appendChild(row);
-        }
-      }catch(_){}
-      /* (#R289) …and the colouring switch, which is OUTSIDE the «built once» early return above
-         because its selected state and its key both change while the legend stays up. */
-      try{ const el2=document.getElementById('data-legend-nato'); if(el2){
-        styleModeRow(el2,'nato-style-row',()=>_natoStyle,setNatoStyle);
-        let k=el2.querySelector('.nato-yearkey-wrap');
-        if(!k){ k=document.createElement('div'); k.className='nato-yearkey-wrap';
-          const r=el2.querySelector('.nato-style-row'); if(r&&r.parentNode===el2) el2.insertBefore(k,r.nextSibling); else el2.appendChild(k); }
-        k.innerHTML=(_natoStyle==='byYear')?yearKeyHTML(NATO_YEARS,yearColors(NATO_YEARS),NATO_JOIN,_natoYear,null):'';
-        try{ tileLegends(); }catch(_){}
-      } }catch(_){}
-    }
-    /* ══ (#R289) 国防費: ONE ROW, TWO WAYS OF EXPRESSING THE SAME BUDGET ═════════════════════════
-       Total US$ billions and the same figure as a share of the country's GDP were `dl-milSpend` and
-       `dl-milSpendGDP`: two rows side by side in 政治・軍事 painting one series. They are one row
-       now, with the switch in the legend — and NOTHING about either picture changed. Both fills,
-       both ramps, both legends and both `applyChoro` expressions are the ones that were already
-       there; this function only decides which of the two is showing.
-       ⚠ THE MODE BUTTONS GO IN BOTH LEGENDS, because the legend a reader is looking at is the one
-       for the ACTIVE mode — a switch that lived in only one of them would be unreachable from the
-       other half of its own toggle. */
-    let milMode='total';                       /* 'total' = US$ billions · 'gdp' = % of GDP */
-    const MIL_MODES=[['total',()=>IntMapLang.t(HOST.lang,'Total ($B)','総額（$B）','Gesamt ($ Mrd.)','Всего ($ млрд)','Total ($ mil M)')],
-                     ['gdp',  ()=>IntMapLang.t(HOST.lang,'% of GDP','対GDP比','% des BIP','% ВВП','% del PIB')]];
-    function milIsOn(){ try{ const cb=document.getElementById('dl-milSpend'); return !!(cb&&cb.checked); }catch(_){ return false; } }
-    function milModeRow(el){ if(!el) return;
-      let r=el.querySelector('.dl-milmode');
-      if(!r){ r=document.createElement('div'); r.className='dl-milmode';
-        r.style.cssText='display:flex;gap:5px;margin-top:7px;';
-        r.innerHTML=html`${MIL_MODES.map(m=>html`<button type="button" data-m="${m[0]}" style="flex:1;min-width:0;border:1px solid rgba(128,128,128,0.3);border-radius:7px;padding:4px 6px;font-size:10.5px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></button>`)}`;
-        const bar=el.querySelector('.dl-scale'); if(bar&&bar.parentNode===el) el.insertBefore(r,bar.nextSibling); else el.appendChild(r);
-        r.addEventListener('click',(ev)=>{ const b=ev.target.closest('button[data-m]'); if(b&&r.contains(b)) setMilMode(b.getAttribute('data-m')); }); }
-      r.querySelectorAll('button[data-m]').forEach(b=>{ const k=b.getAttribute('data-m');
-        const m=MIL_MODES.filter(x=>x[0]===k)[0]; if(m) b.textContent=m[1]();
-        const act=(k===milMode);
-        b.style.background=act?'var(--primary-fill)':'var(--input-bg)';
-        b.style.color=act?'#fff':'var(--text-main)';
-        b.setAttribute('aria-pressed',act?'true':'false'); }); }
-    function applyMilMode(){
-      const gdp=(milMode==='gdp'), on=milIsOn();
-      try{ if(lgdMil) lgdMil.style.display=(on&&!gdp)?'block':'none'; }catch(_){}
-      try{ if(lgdMilGDP) lgdMilGDP.style.display=(on&&gdp)?'block':'none'; }catch(_){}
-      try{ milModeRow(lgdMil); milModeRow(lgdMilGDP); }catch(_){}
-      try{ tileLegends(); }catch(_){}
-      try{ setVis('milSpend-fill',on&&!gdp); }catch(_){}
-      try{ setVis('milSpendGDP-fill',on&&gdp); }catch(_){}
-      if(!on) return;
-      return withCountries(()=>{ try{
-        if(gdp){ addChoro('milSpendGDP'); applyChoro('milSpendGDP',s=>(s.milSpend!=null&&s.gdp)?s.milSpend/s.gdp*100:null); setVis('milSpendGDP-fill',true); }
-        else   { addChoro('milSpend');    applyChoro('milSpend',   s=>s.milSpend);                                          setVis('milSpend-fill',true); }
-      }catch(e){ console.warn('milSpend choro fail',e); } });
-    }
-    function setMilMode(k){ if(k!=='gdp'&&k!=='total') return; if(k===milMode) return; milMode=k; applyMilMode(); }
-    function defensePctGDP(s){ if(!s||s.milSpend==null||!s.gdp) return null; const p=(s.milSpend/s.gdp)*100; return isFinite(p)?p:null; }
-    function wireNatoHover(){
-      if(_natoHoverWired) return; _natoHoverWired=true;
-      GE().events.onLayer('mousemove','nato-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; if(!s) return;
-        const yr=NATO_JOIN[s.code], pct=defensePctGDP(s);
-        const el=ensureMapTooltip(); window.showMapTooltip(el);
-        window.setMapTooltipHTML(el,String(html`${[html`<div style="font-weight:600;font-size:14px;">${s.flag?[flagM(s.flag),' ']:''}${cName(s)}</div>`,
-          html`<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${IntMapLang.t(HOST.lang,'Joined NATO','NATO加盟年','NATO-Beitritt','Вступление в НАТО','Ingreso en la OTAN')}: <b style="color:var(--text-main);">${yr||'—'}</b></div>`,
-          html`<div style="color:var(--text-muted);font-size:12px;">${IntMapLang.t(HOST.lang,'Defense spending','国防費','Verteidigungsausgaben','Расходы на оборону','Gasto en defensa')}: <b style="color:var(--text-main);">${s.milSpend!=null?'$'+s.milSpend+'B (2023)':'—'}</b></div>`,
-          html`<div style="color:var(--text-muted);font-size:12px;">${IntMapLang.t(HOST.lang,'Defense (% GDP)','国防費 (対GDP)','Verteidigung (% BIP)','Оборона (% ВВП)','Defensa (% PIB)')}: <b style="color:var(--text-main);">${pct!=null?pct.toFixed(2)+'%':'—'}</b></div>`]}`));
-        positionTooltip(e.point);
-      });
-      GE().events.onLayer('mouseleave','nato-fill',()=>{ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); });
-    }
-
-    /* (#R26 / EU) European Union members fill + accession-year time-travel control (mirrors NATO). Real
-       enlargement years; the UK is dropped from 2020 (Brexit). EU outermost regions are NOT clipped. */
-    const EU=new Set(['BEL','FRA','DEU','ITA','LUX','NLD','DNK','IRL','GBR','GRC','ESP','PRT','AUT','FIN','SWE','CYP','CZE','EST','HUN','LVA','LTU','MLT','POL','SVK','SVN','BGR','ROU','HRV']);
-    const EU_JOIN={BEL:1958,FRA:1958,DEU:1958,ITA:1958,LUX:1958,NLD:1958,DNK:1973,IRL:1973,GBR:1973,GRC:1981,ESP:1986,PRT:1986,AUT:1995,FIN:1995,SWE:1995,CYP:2004,CZE:2004,EST:2004,HUN:2004,LVA:2004,LTU:2004,MLT:2004,POL:2004,SVK:2004,SVN:2004,BGR:2007,ROU:2007,HRV:2013};
-    const EU_LEFT={GBR:2020};
-    const EU_YEARS=[1958,1973,1981,1986,1995,2004,2007,2013,2020,2024];
-    let _euYear=EU_YEARS[EU_YEARS.length-1];
-    function euMemberAt(code,y){ const j=EU_JOIN[code]; if(j==null||j>y) return false; const l=EU_LEFT[code]; if(l&&y>=l) return false; return true; }
-    /* (#R313) the collection this layer paints, published so js/layer-home.js frames the geometry
-       that is actually on screen — including whichever accession year the reader has Chronos set to —
-       instead of a box somebody typed. See that file for why it takes each member's largest landmass. */
-    window.IntMapEuFC=()=>{ try{ return buildEuFC(); }catch(_){ return null; } };
-    function buildEuFC(){ const feats=[]; if(HOST.countryGeo&&HOST.countryGeo.features){ HOST.countryGeo.features.forEach(f=>{ const code=String(f.id); if(!EU.has(code)) return; if(!euMemberAt(code,_euYear)) return; feats.push({type:'Feature',id:code,properties:{__code:code,__y:(EU_JOIN[code]||0)},geometry:f.geometry}); }); } return {type:'FeatureCollection',features:feats}; }
-    /* (#R289) 2020 and 2024 are in EU_YEARS as SLIDER stops (Brexit, and «today»); nobody joined in
-       either, so the colour key is built from the years countries actually acceded in — otherwise
-       the ramp would spend two of its eight steps on waves with no members. */
-    const EU_JOIN_YEARS=[...new Set(Object.values(EU_JOIN))].sort((a,b)=>a-b);
-    let _euStyle='uniform';                          /* (#R289) 'uniform' | 'byYear' */
-    function euFillColor(){ return (_euStyle==='byYear')
-      ? yearFillExpr(EU_JOIN_YEARS,yearColors(EU_JOIN_YEARS),'#1c3faa') : '#1c3faa'; }
-    function setEuStyle(k){ if(k!=='uniform'&&k!=='byYear') return; if(k===_euStyle) return; _euStyle=k; applyEu(); }
-    function addEu(){
-      if(!GE().layers.hasSource('src-eu')) GE().layers.addSource('src-eu',{type:'geojson',data:buildEuFC(),promoteId:'__code'});
-      if(!GE().layers.has('eu-fill')) GE().layers.add({id:'eu-fill',type:'fill',source:'src-eu',layout:{visibility:'none'},paint:{'fill-color':euFillColor(),'fill-opacity':opacities.eu!=null?opacities.eu:0.5}},beforeId);
-      if(!GE().layers.has('eu-line')) GE().layers.add({id:'eu-line',type:'line',source:'src-eu',layout:{visibility:'none'},paint:{'line-color':'#ffd617','line-width':1.5}},beforeId);
-    }
-    function applyEu(){ try{ GE().layers.setSourceData('src-eu',buildEuFC()); }catch(_){}
-      try{ if(GE().layers.has('eu-fill')) GE().layers.setPaint('eu-fill','fill-color',euFillColor()); }catch(_){}
-      /* ⚠ the legend is only re-drawn while the layer is ON — `_registerLayerOpacity` SHOWS the
-         box, so calling it from a repaint that ran with the layer off would open a legend for a
-         layer that is not on the map. */
-      try{ const cb=document.getElementById('dl-eu'); if(cb&&cb.checked) euLegend(); }catch(_){} }
-    function setEuVis(on){ ['eu-fill','eu-line'].forEach(l=>setVis(l,on)); }
-    function euLegend(){
-      try{
-        const el=window._registerLayerOpacity&&window._registerLayerOpacity('eu',LA('EU members','EU加盟国','EU-Mitglieder','Страны ЕС','Países de la UE'),['eu-fill','eu-line'],'dl-eu');
-        if(!el) return;
-        /* ⚠ (#R289) THE «BUILT ONCE» GUARD IS NOW A BRANCH, NOT A RETURN. It used to leave the
-           function the moment the year row existed, which is right for the row (rebuilding a
-           <select> under the finger that opened it is #R266's defect) and wrong for everything
-           added after it: the colouring switch's own selected state and its key CHANGE while the
-           legend stays up, so a return would have made this round's control build once and never
-           update — which looks exactly like a button that does nothing. */
-        if(el.querySelector('.eu-year-row')){ const lbl=el.querySelector('.eu-year-val'); if(lbl) lbl.textContent=_euYear; }
-        else {
-        const jp=HOST.lang==='jp';
-        const row=document.createElement('div'); row.className='eu-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:7px;display:flex;align-items:center;gap:7px;';
-        if(typeof isMobile==='function'&&isMobile()){
-          row.innerHTML='<label style="display:contents;">'+(IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año'))+' <select class="eu-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
-            EU_YEARS.map(y=>'<option value="'+y+'"'+(y===_euYear?' selected':'')+'>'+y+'</option>').join('')+'</select></label>';
-          row.querySelector('.eu-year-sel').addEventListener('change',(e)=>{ _euYear=+e.target.value||_euYear; applyEu(); const v=el.querySelector('.eu-year-val'); if(v) v.textContent=_euYear; });
-        } else {
-          /* (#R27) Same fix as NATO: label only the first/last year (space-between), not every dense
-             enlargement year, so the range text no longer overlaps. */
-          row.innerHTML=html`${[html`<label style="display:contents;">${IntMapLang.t(HOST.lang,'Year','加盟年','Beitrittsjahr','Год','Año')} <span style="flex:1;min-width:90px;display:flex;flex-direction:column;gap:1px;">`,
-            html`<input type="range" min="0" max="${EU_YEARS.length-1}" step="1" value="${EU_YEARS.indexOf(_euYear)}" style="width:100%;display:block;margin:0;box-sizing:border-box;">`,
-            html`<span aria-hidden="true" style="display:flex;justify-content:space-between;font-size:8px;line-height:1;color:var(--text-muted);"><span>${EU_YEARS[0]}</span><span>${EU_YEARS[EU_YEARS.length-1]}</span></span>`,
-            html`</span></label> <b class="eu-year-val" style="color:var(--text-main);min-width:34px;text-align:right;">${_euYear}</b>`]}`;
-          row.querySelector('input').addEventListener('input',(e)=>{ _euYear=EU_YEARS[+e.target.value]||_euYear; const v=el.querySelector('.eu-year-val'); if(v) v.textContent=_euYear; clearTimeout(euLegend._t); euLegend._t=setTimeout(applyEu,120); });
-        }
-        el.appendChild(row);
-        }
-      }catch(_){}
-      /* (#R289) …and the same colouring switch the NATO legend gets, for the same instruction:
-         「EU加盟国レイヤーでも同じことをやって。」 ⚠ The key is built from EU_JOIN_YEARS and it
-         subtracts a member who has LEFT by the selected year — the United Kingdom is in EU_JOIN
-         for ever and off the map from 2020, so counting the 1973 wave as three after Brexit would
-         put a number in the legend that is not on the map. */
-      try{ const el2=document.getElementById('data-legend-eu'); if(el2){
-        styleModeRow(el2,'eu-style-row',()=>_euStyle,setEuStyle);
-        let k=el2.querySelector('.eu-yearkey-wrap');
-        if(!k){ k=document.createElement('div'); k.className='eu-yearkey-wrap';
-          const r=el2.querySelector('.eu-style-row'); if(r&&r.parentNode===el2) el2.insertBefore(k,r.nextSibling); else el2.appendChild(k); }
-        k.innerHTML=(_euStyle==='byYear')?yearKeyHTML(EU_JOIN_YEARS,yearColors(EU_JOIN_YEARS),EU_JOIN,_euYear,EU_LEFT):'';
-        try{ tileLegends(); }catch(_){}
-      } }catch(_){}
-    }
-    function wireEuHover(){
-      if(_euHoverWired) return; _euHoverWired=true;
-      GE().events.onLayer('mousemove','eu-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; const code=e.features[0].id; if(!s) return;
-        const el=ensureMapTooltip(); window.showMapTooltip(el);
-        window.setMapTooltipHTML(el,String(html`${[html`<div style="font-weight:600;font-size:14px;">${s.flag?[flagM(s.flag),' ']:''}${cName(s)}</div>`,
-          html`<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${IntMapLang.t(HOST.lang,'Joined EU','EU加盟年','EU-Beitritt','Вступление в ЕС','Ingreso en la UE')}: <b style="color:var(--text-main);">${EU_JOIN[code]||'—'}${EU_LEFT[code]?(' → '+EU_LEFT[code]+(IntMapLang.t(HOST.lang,' left',' 離脱',' ausgetreten',' вышла',' salió'))):''}</b></div>`]}`));
-        positionTooltip(e.point);
-      });
-      GE().events.onLayer('mouseleave','eu-fill',()=>{ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); });
-    }
-
-    /* (#R94) NATO & EU enlargement follow the master spacetime clock: travel to a year → only members that
-       had already joined by then are shown; back to "Now" → every current member. The per-layer year sliders
-       in the legend still work as instant overrides and are kept in step with the clock. */
-    function _syncYearLegend(prefix,years,val){ try{
-      const v=document.querySelector('.'+prefix+'-year-val'); if(v) v.textContent=val;
-      const row=document.querySelector('.'+prefix+'-year-row'); if(!row) return;
-      const rg=row.querySelector('input[type=range]'); if(rg){ let idx=0; for(let i=0;i<years.length;i++){ if(years[i]<=val) idx=i; } rg.value=idx; }
-      const se=row.querySelector('select'); if(se){ let best=years[0]; years.forEach(y=>{ if(y<=val) best=y; }); se.value=best; }
-    }catch(_){} }
-    try{ if(IntMapTime) IntMapTime.on(e=>{
-      const nt=e.isLive?NATO_YEARS[NATO_YEARS.length-1]:e.year;
-      if(nt!==_natoYear){ _natoYear=nt;
-        try{ if(GE().layers.has('nato-fill')&&GE().layers.getLayout('nato-fill','visibility')==='visible') applyNato(); }catch(_){}
-        _syncYearLegend('nato',NATO_YEARS,_natoYear); }
-      const et=e.isLive?EU_YEARS[EU_YEARS.length-1]:e.year;
-      if(et!==_euYear){ _euYear=et;
-        try{ if(GE().layers.has('eu-fill')&&GE().layers.getLayout('eu-fill','visibility')==='visible') applyEu(); }catch(_){}
-        _syncYearLegend('eu',EU_YEARS,_euYear); }
-    }); }catch(_){}
+    /* (layer-packages) NATO 加盟国 dl-nato・EU 加盟国 dl-eu・国防費 dl-milSpend live in their own module now — js/layer-pkg-alliances.js (their declarations say `pkg`) */
 
     /* Sea-level-rise simulator (#24): a color-relief layer over the DEM that floods everything at or
        below the chosen +rise (window._seaLevelM, meters) in blue, leaving higher land transparent so
@@ -4849,161 +4426,7 @@ export function dataLayers(HOST){
       GE().layers.addSource('src-eez',{type:'raster',tiles:[wms],tileSize:256});
       GE().layers.add({id:'lyr-eez',type:'raster',source:'src-eez',layout:{visibility:'none'},paint:{'raster-opacity':opacities.eez}},beforeId);
     }
-    /* === Submarine cables (#36) — TeleGeography "Submarine Cable Map" open data ===
-       Their public API serves all cable routes + landing points as GeoJSON; each cable
-       carries its own color. Loaded lazily with the same CORS-proxy fallbacks used elsewhere. */
-    let _subcablesLoading=false;
-    /* ══ (#R188) WHY IT WAS ALWAYS THE CABLES THAT WENT MISSING ════════════════════════════════════
-       「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。（追記：片方しかつかない）」
-
-       #R187 found a real defect (a refused addSource that was logged and abandoned) and fixed it. The
-       report came back, so the asymmetry between the two default layers was measured from the page's
-       own origin instead of reasoned about:
-
-           fetch('https://www.submarinecablemap.com/api/v3/cable/cable-geo.json')
-               → TypeError: Failed to fetch          (no Access-Control-Allow-Origin, EVERY time)
-
-       So the direct request in the proxy list below has never once succeeded from a browser: the
-       submarine cables have ALWAYS come through a free public CORS proxy, and the layer is up only
-       when one of three volunteer proxies happens to be up. Köppen has no such dependency — it is a
-       bundled PNG on the app's own origin — which is exactly why 「片方しかつかない」 names this one
-       every time and never that one.
-
-       Two changes, and neither invents a data source:
-
-       1. THE ANSWER IS KEPT. A successful download goes into the Cache API and is served from there
-          on the next visit BEFORE the network is tried, with a refresh behind it that updates the
-          source in place when it lands. Same data, same attribution; a proxy outage now costs a
-          refresh rather than the layer. (#R186's rule: a fallback that only appears after the
-          network has timed out is not a fallback, it is a delay.)
-       2. A FAILED DOWNLOAD IS NOT A PREFERENCE. When everything failed, the old code unticked the
-          box — and _snapshot() saves the ticked boxes, so the next thing the user toggled wrote a
-          session in which this layer was OFF. From then on the restore switched it off deliberately,
-          for ever: one bad afternoon for corsproxy.io became a permanent 「片方しかつかない」.
-          The box is now marked `imAutoOff` when the app is the one unticking it, the session keeps
-          wanting it (js/app-body.js), and it is retried with backoff before giving up at all. */
-    const _CABLE_CACHE='intmap-page-subcables-v1';   /* `intmap-page-` = the page owns it; sw.js keeps every such cache across deploys */
-    async function _cableCached(u){ try{ if(!self.caches) return null;
-        const c=await caches.open(_CABLE_CACHE); const r=await c.match(u); if(!r) return null;
-        const j=await r.json(); return (j&&j.features)?j:null; }catch(_){ return null; } }
-    async function _cableStore(u,j){ try{ if(!self.caches||!j||!j.features) return;
-        const c=await caches.open(_CABLE_CACHE);
-        await c.put(u,new Response(JSON.stringify(j),{headers:{'content-type':'application/json'}})); }catch(_){} }
-    const CABLE_URL='https://www.submarinecablemap.com/api/v3/cable/cable-geo.json';
-    const CABLE_LP_URL='https://www.submarinecablemap.com/api/v3/landing-point/landing-point-geo.json';
-    /* ══ (#R190) THE LAYER STOPS DEPENDING ON A STRANGER'S UPTIME ══════════════════════════════════
-       「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。（追記：片方しかつかない）」
-
-       #R188 measured why it is always THIS layer: submarinecablemap.com sends no ACAO, so the direct
-       request has never once succeeded from a browser, and the layer was up only when one of three
-       VOLUNTEER proxies happened to be alive. #R188 kept the answer (Cache API) and #R189 stopped a
-       failure being recorded as a preference — both real, both about the SECOND visit. The first
-       visit still asked a stranger.
-
-       So the app now relays it through its own Edge Function, exactly as #R145 did for the
-       Street-View coverage tiles: supabase/functions/cable-geo, an allowlist of these two URLs and
-       nothing else, `Access-Control-Allow-Origin: *`, one day of edge cache. Same data, same source,
-       same attribution — a request to our origin instead of to someone else's goodwill.
-
-       ⚠ the bare URL stays FIRST even though it is measured to fail from a browser: the app is also
-       opened from origins that are allowed to read it (a local file server, an extension host), and
-       the data should not travel through anyone — including us — when it need not.
-       (own-fetch-relay) The volunteer proxies that stood LAST are gone: a build with no Supabase URL has the bundled routes
-       (step 1 below) and the Cache API, and the relay URL is asked of js/proxy-fetch.js at call time instead of being
-       built here once when this module was evaluated (the #R216 shape — a base read too early is '' for good). */
-    /* ⚠ (cable-relay-first) OUR RELAY FIRST WHEN THERE IS ONE. submarinecablemap.com sends no ACAO, so the bare
-       URL is refused in EVERY page context a reader has (measured again on production 2026-09-29: two CORS errors +
-       two net::ERR_FAILED in the console whenever the bundled file missed its clock). The #R190 reason for keeping it
-       first — «origins that are allowed to read it» — has no such origin in a browser. It stays as the last rung for a
-       build with no relay (ownRelayUrl → ''), where it is the only thing left to try. */
-    async function _cableNet(u,scale,seen){ for(const src of [ownRelayUrl(u), u]){ if(!src) continue; try{ const j=await jsonWithin(src,clockFor(u,src===u?'direct':'relay')*(scale||1),undefined,{idle:true}); if(j&&j.features){ _cableStore(u,j); return j; } }catch(e){ if(seen&&isUnobserved(e)) seen.unobserved=e; } } return null; }
-    /* ══ (#R355) THE ROUTES COME FROM THIS APP'S OWN ORIGIN NOW ═══════════════════════════════════
-       「世界中の全海底ケーブルが…実際に海底を通っていると考えられる場所に描画され」
-
-       What used to be drawn here was TeleGeography's SCHEMATIC geometry — 702 cables in 1,933 rings
-       and 14,103 vertices, a median of FOUR points per leg — fetched live, through a relay, from an
-       origin that sends no ACAO. scripts/build-subcables.mjs now rebuilds every route offline from
-       surveyed government route data where it exists and a least-cost path over the sea floor where
-       it does not, and the result SHIPS WITH THE APP as data/subcables*.json.
-
-       ⚠ THAT MAKES THE LAYER MORE ROBUST, NOT LESS, AND THE ORDER IS WHY. The brief's §3 forbids
-       trading display reliability for route accuracy, so the four sources are tried strictly in
-       order of how little can go wrong with them:
-
-         1. data/subcables.json — the app's own origin, same deploy, no CORS, no third party. If the
-            page loaded, this loads.
-         2. the Cache API copy of (1) — written on every success, so a second visit paints with no
-            network at all, and an offline start still paints. (The service worker deliberately
-            keeps every `intmap-page-*` cache across deploys; see sw.js.)
-         3. the Cache API copy of the TeleGeography answer — what #R188 put there. Every browser that
-            has ever shown this layer still has one.
-         4. the TeleGeography relay chain — #R190's Edge Function (the volunteer proxies behind it went in own-fetch-relay).
-
-       Steps 3 and 4 are the MIGRATION path the brief's §3 asks to be kept: a build that somehow
-       shipped without the dataset still draws cables, exactly as it did before this round. Nothing
-       below touches the layer's paint, its layout, its order or its default state. */
-    const CABLE_LOCAL=(p)=>{ try{ return new URL(p,document.baseURI).toString(); }catch(_){ return p; } };
-    const CABLE_LOCAL_URL=CABLE_LOCAL('data/subcables.json');
-    const CABLE_LOCAL_LP_URL=CABLE_LOCAL('data/subcables-lp.json');
-    /* ══ (stalled-fetch) EVERY CABLE READ HAS A CLOCK — AND IT MEASURES SILENCE, NOT LENGTH ══════════
-       The cable row's request is `_subcRequest()`, settled only where the download or the build ends.
-       Its reads were bare `fetch`es, so a connection that stopped answering held the row «in flight» for
-       the session. Each read now goes through js/fetch-deadline.js `jsonWithin` with the IDLE clock:
-       data/subcables.json is 2,188,692 B, and a deadline on the whole transfer would measure the
-       reader's line, not a stall — the clock restarts on every chunk, so `ms` is the longest silence.
-       The numbers are js/proxy-fetch.js `clockFor`:
-         · our own origin and submarinecablemap.com, read directly — DIRECT_TIMEOUT_MS (6 s). Observed
-           2026-09-28 from the live site: subcables.json in 1.06 / 1.87 s, subcables-lp.json (329,206 B)
-           in 0.71 / 0.92 s; not one of those reads was silent for anything like 6 s.
-         · the cable-geo relay — the clock the relay ladder races that same relay at (PROXY_TIMEOUT_MS,
-           8 s, since its row carries no clock of its own).
-         Lapses if a read of ours or the relay's legitimately goes silent for longer (a cold relay whose
-         upstream answers after 8 s — the ladder would then need the relay's own row clock, as gdelt-relay has).
-       A failed read is a null here and the ladder falls through: kept copy → TeleGeography. When nothing
-       came back, (unobserved-is-not-refused) a rung that timed out makes the answer 「not observed」 and
-       the row asks the whole ladder again with its clocks doubled (rowUntilObserved, up to 8×); only a
-       ladder whose every rung answered takes the 5 / 15 / 45 s back-off (#R188), and either ends in the
-       toast 「Submarine cable data unavailable」, `imAutoOff`, and the request settled.
-       ⚠ THE 90 s HORIZON IS NOT THE DOWNLOAD'S BOUND. `BUILD_HORIZON_MS` in addSubcables starts only once
-       fetchSubcables() has handed back data, and it bounds the renderer refusing the add. The download
-       is bounded by these clocks: per attempt, the two local reads in parallel, then the direct and relay
-       reads — at most one silence each — and either four attempts separated by 65 s of back-off (every
-       rung answered) or four at 1 / 2 / 4 / 8 × the clocks, paused by the clock each one had (a rung was
-       silent). */
-    async function _cableLocal(u,scale,seen){
-      try{ const j=await jsonWithin(u,clockFor(u)*(scale||1),{cache:'default'},{idle:true});
-        /* a truncated or half-written answer is not data — the layer must fall through, not draw a
-           fragment and call it the world's cables */
-        if(!j||!Array.isArray(j.features)||!j.features.length) return null;
-        _cableStore(u,j); return j; }catch(e){ if(seen&&isUnobserved(e)) seen.unobserved=e; return null; }
-    }
-    /* (unobserved-is-not-refused) `scale` multiplies every clock of the ladder, and `unobserved` on the
-       answer is the error of a rung whose read ran out of time — set only when no cables came back. A
-       ladder that got nothing is 「refused」 only if every rung it asked ANSWERED; one silent rung (our own
-       origin, under a loaded page) means the answer may have been there, and the row asks again
-       (rowUntilObserved) instead of reporting the data unavailable. */
-    async function fetchSubcables(scale){
-      const seen={unobserved:null};
-      /* 1 · this app's own dataset */
-      const [cab,lp]=await Promise.all([_cableLocal(CABLE_LOCAL_URL,scale,seen),_cableLocal(CABLE_LOCAL_LP_URL,scale,seen)]);
-      if(cab&&lp) return {cab,lp,from:'local'};
-      /* 2 · the kept copy of it */
-      const [cKept,lKept]=await Promise.all([_cableCached(CABLE_LOCAL_URL),_cableCached(CABLE_LOCAL_LP_URL)]);
-      if(cKept&&lKept) return {cab:cKept,lp:lKept,from:'local-cache',fromCache:true};
-      /* 3 · the kept TeleGeography copy, refreshed behind the drawing */
-      const [cCache,lCache]=await Promise.all([_cableCached(CABLE_URL),_cableCached(CABLE_LP_URL)]);
-      if(cCache){
-        Promise.all([_cableNet(CABLE_URL),_cableNet(CABLE_LP_URL)]).then(([c2,l2])=>{
-          try{ if(c2&&GE().layers.hasSource('src-subcables')) GE().layers.setSourceData('src-subcables',c2); }catch(_){}
-          try{ if(l2&&GE().layers.hasSource('src-subcables-lp')) GE().layers.setSourceData('src-subcables-lp',l2); }catch(_){}
-        });
-        return {cab:cCache,lp:lCache,from:'telegeography-cache',fromCache:true};
-      }
-      /* 4 · the relay chain */
-      const [cNet,lNet]=await Promise.all([_cableNet(CABLE_URL,scale,seen),_cableNet(CABLE_LP_URL,scale,seen)]);
-      return {cab:cNet,lp:lNet,from:'telegeography',fromCache:false,unobserved:cNet?null:seen.unobserved};
-    }
-    layerReads.subcables=fetchSubcables;   /* (fetch-deadline-layer) the preview draws from THIS ladder — see layerReads at the top */
+    /* (layer-packages) 海底ケーブル dl-subcables lives in its own module now — js/layer-pkg-subcables.js (its declaration says `pkg`) */
     /* The app — not the user — is switching this box off. Recorded on the element so the session
        snapshot can tell the two apart (js/app-body.js reads `imAutoOff`). */
     function autoUncheck(id){ const cb=document.getElementById(id); if(!cb) return;
@@ -5042,7 +4465,6 @@ export function dataLayers(HOST){
           if(!told){ told=true; try{ satToast(IntMapLang.t(HOST.lang,'Still waiting for the data — asking again','データの応答を待っています — もう一度問い合わせます')); }catch(_){} } }
       }).finally(()=>{ if(mine()) busy(false); });
     }
-    let _subcableTries=0;
     /* ⚠ (#R224) THE #R208 OCEAN-CURRENT LAYER LIVED HERE AND IS GONE.
        「海流レイヤー、二つあるなんていうややこしいことするな。統一しろ。」 What stood here was ~100 lines
        that fetched data/ocean-currents.json, drew its 61 named lines, strided the shared 0.25° field
@@ -5054,136 +4476,6 @@ export function dataLayers(HOST){
        `wp-dl-currents` under World data, and js/session-tabs.js migrates a saved `dl-oceancur` to it.
        ⚠ `data/ocean-currents.json` and `data/ocean-currents-field.bin.gz` are UNCHANGED and still
        shipped — they were always the plate's data; this file was the second reader. */
-    /* ── (#R355) the click/tap info popup, in its OWN chunk ────────────────────────────────────
-       js/subcable-info.js draws nothing on the map: it reads the feature the reader clicked and
-       opens the same `.plc-popup` every other place card uses. It is imported dynamically so a
-       session that never switches this layer on never downloads it, and so that it cannot enter the
-       eager bundle (scripts/perf-budget.mjs). A failed import costs the popup, never the layer. */
-    let _subcInfo=null,_subcInfoP=null;
-    function _wireSubcableInfo(){
-      if(_subcInfo){ try{ _subcInfo.attach(); }catch(_){} return; }
-      if(_subcInfoP) return;
-      _subcInfoP=import('./subcable-info.js').then(()=>{
-        try{ _subcInfo=window.IntMapSubcableInfo(HOST); _subcInfo.attach(); }catch(e){ console.warn('subcable info',e); }
-      }).catch(e=>{ console.warn('subcable info',e); });
-    }
-    /* (heal-waits-for-inflight) the request addSubcables() returns — ONE across the download, its
-       back-off (#R188) and the build ladder (#R355), settled where any of them ends: drawn, given up
-       (autoUncheck), or abandoned because the box was unticked. Bounded by those: three back-offs
-       (5 + 15 + 45 s) or three unobserved retries (rowUntilObserved), and the horizon of the ladder itself
-       (BUILD_HORIZON_MS). js/layer-rows.js ④. */
-    let _subcReq=null,_subcDone=null;
-    function _subcRequest(){ if(!_subcReq) _subcReq=new Promise(r=>{ _subcDone=r; }); return _subcReq; }
-    function _subcSettle(){ const d=_subcDone; _subcReq=null; _subcDone=null; if(d) d(); }
-    function addSubcables(){
-      if(GE().layers.has('lyr-subcables')){ setVis('lyr-subcables',true); setVis('lyr-subcables-glow',true); setVis('lyr-subcables-pts',true); _wireSubcableInfo(); _subcSettle(); return; }
-      const req=_subcRequest();
-      if(_subcablesLoading) return req; _subcablesLoading=true;
-      /* (unobserved-is-not-refused) a ladder that got nothing because a rung was not observed asks again
-         with longer clocks (rowUntilObserved) and keeps the box; 'aborted' = the box was unticked while
-         it waited. The #R188 back-off below is for a ladder whose every rung ANSWERED — after the policy
-         has already asked four times, a fourth silence goes straight to the report, not round again. */
-      rowUntilObserved('dl-subcables',s=>fetchSubcables(s).then(r=>{ if(!r.cab&&r.unobserved) throw r.unobserved; return r; }),clockFor(CABLE_LOCAL_URL))
-        .catch(e=>((e&&e.reason==='aborted')?null:{cab:null,lp:null,silent:isUnobserved(e)})).then(res=>{
-        _subcablesLoading=false;
-        if(res===null){ _subcableTries=0; _subcSettle(); return; }
-        const {cab,lp}=res;
-        if(!cab){
-          /* (#R188) three volunteer proxies all refusing at the same second is a bad minute, not an
-             answer. Back off and ask again while the box is still ticked; only a fourth failure is
-             reported — and even then as `imAutoOff`, which the session does not record as a choice. */
-          const cb=document.getElementById('dl-subcables');
-          if(cb&&cb.checked&&!res.silent&&_subcableTries<3){ const wait=[5000,15000,45000][_subcableTries++];
-            setTimeout(()=>{ const c2=document.getElementById('dl-subcables'); if(c2&&c2.checked) addSubcables(); else _subcSettle(); },wait); return; }
-          _subcableTries=0; autoUncheck('dl-subcables'); _subcSettle();
-          try{ satToast(IntMapLang.t(HOST.lang,'Submarine cable data unavailable','海底ケーブルデータを取得できませんでした','Seekabel-Daten nicht verfügbar','Данные о подводных кабелях недоступны','Datos de cables submarinos no disponibles')); }catch(_){} return; }
-        _subcableTries=0;
-        /* ══ (#R187) A REFUSED ADD IS NOT AN ANSWER — TRY AGAIN ═══════════════════════════════════
-           「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。（追記：片方しかつかない）」
-
-           Reproduced on a cold first load, and the console says it outright:
-               addSubcables Error: Style is not done loading.
-           whenStyleReady() resolves for real when the style is parsed, but it also HARD-RESOLVES
-           after ~6 s (#R41 put that there because the promise could otherwise hang forever and the
-           layer would never appear at all). On a slow first load — and #R186 measured that its own two
-           new default layers push "ready" from 3.2 s to 9.2 s, so this load is exactly the slow one —
-           the hard resolve wins, MapLibre refuses addSource, and the old code logged the refusal and
-           stopped. The box stayed ticked, the row stayed lit, and the layer did not exist: one of the
-           two default layers on screen, which is the report.
-
-           Köppen survives the same race because its branch polls for `lyr-climate` for 5 s and calls
-           setVis when it appears. This gives the cables the same persistence at the point where it
-           actually failed: build, and if the style refused, wait and build again. Bounded (12 tries
-           over ~9 s), abandoned the moment the user unticks the box, and a no-op once the layers are
-           there — so the successful path is byte-for-byte what it was. */
-        /* ══ (#R355) THE LADDER IS TIED TO THE STYLE, NOT TO A STOPWATCH ═══════════════════════════
-           #R187's ladder is twelve tries at 750 ms — about nine seconds — and it was measured
-           against a style that was merely SLOW. Measured this round on a machine whose basemap host
-           was answering 429/503: `isStyleLoaded()` was still false at 22 s, every addSource threw
-           "Style is not done loading.", the ladder ran out, and the box was unticked with
-           `imAutoOff` — correct bookkeeping for the wrong outcome.
-
-           ⚠ AND THIS ROUND MADE THAT RACE TIGHTER, WHICH IS WHY IT IS FIXED HERE. The routes now
-           come from this app's own origin: measured, `data/subcables.json` answers in 12 ms where
-           the relay took seconds. Arriving earlier means arriving while the style is less ready.
-
-           So the ladder keeps its 750 ms rhythm and stops asking a clock whether to continue: it
-           continues while the box is ticked and the horizon has not passed, and — the part that
-           actually matters — it retries THE MOMENT the renderer says the style changed, instead of
-           waiting out the next tick. A style that becomes usable at 40 s now paints at 40 s.
-           ⚠ `on`, not `once`: a `styledata` that has already fired never fires again for a listener
-           registered afterwards, and this listener is registered after the first refusal by
-           construction. It is removed on success, on giving up, and when the box is unticked. */
-        const BUILD_HORIZON_MS=90000;
-        const _giveUpAt=Date.now()+BUILD_HORIZON_MS;
-        let _styleHook=null, _retryT=null;
-        const stopHook=()=>{ if(_styleHook){ try{ GE().events.off('styledata',_styleHook); }catch(_){} _styleHook=null; }
-          if(_retryT){ clearTimeout(_retryT); _retryT=null; } };
-        const again=()=>{
-          const cb=document.getElementById('dl-subcables');
-          if(!cb||!cb.checked||Date.now()>_giveUpAt) return false;
-          if(!_styleHook){ _styleHook=()=>{ if(_retryT){ clearTimeout(_retryT); _retryT=null; } build(); };
-            try{ GE().events.on('styledata',_styleHook); }catch(_){} }
-          if(!_retryT) _retryT=setTimeout(()=>{ _retryT=null; build(); },750);
-          return true;
-        };
-        const build=()=>{
-          if(_retryT){ clearTimeout(_retryT); _retryT=null; }
-          try{
-            if(!GE().layers.hasSource('src-subcables')) GE().layers.addSource('src-subcables',{type:'geojson',data:cab});
-            if(!GE().layers.has('lyr-subcables-glow')) GE().layers.add({id:'lyr-subcables-glow',type:'line',source:'src-subcables',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','color'],'#30b0c7'],'line-width':3.2,'line-opacity':0.20,'line-blur':3}},beforeId);
-            if(!GE().layers.has('lyr-subcables')) GE().layers.add({id:'lyr-subcables',type:'line',source:'src-subcables',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','color'],'#30b0c7'],'line-width':['interpolate',['linear'],['zoom'],0,0.6,4,1.1,8,2],'line-opacity':opacities.subcables}},beforeId);
-            if(lp){ if(!GE().layers.hasSource('src-subcables-lp')) GE().layers.addSource('src-subcables-lp',{type:'geojson',data:lp});
-              if(!GE().layers.has('lyr-subcables-pts')) GE().layers.add({id:'lyr-subcables-pts',type:'circle',source:'src-subcables-lp',minzoom:3,layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],3,1.6,8,3.5],'circle-color':'#ffd23f','circle-stroke-color':'#1a1a1a','circle-stroke-width':0.6,'circle-opacity':0.9}},beforeId); }
-          }catch(e){
-            /* the style refused this add. whenStyleReady() no longer answers «ready» early (it used to
-               hard-resolve at ~6 s — see its note), so this is now a style that went away between the
-               wait and this line; the ladder stays for exactly that */
-            if(again()) return;
-            stopHook();
-            /* (#R189) giving up QUIETLY here left the one state #R187 was hunting: box ticked, layer
-               absent. Say so the same way the download path does — imAutoOff, so the session still
-               wants the layer, and a toast, so the screen is not silently missing what the row claims. */
-            console.warn('addSubcables',e); autoUncheck('dl-subcables'); _subcSettle();
-            try{ satToast(IntMapLang.t(HOST.lang,'Could not add the submarine-cable layer','海底ケーブルレイヤーを追加できませんでした','Seekabel-Ebene konnte nicht hinzugefügt werden','Не удалось добавить слой подводных кабелей','No se pudo añadir la capa de cables submarinos')); }catch(_){} return;
-          }
-          if(!GE().layers.has('lyr-subcables')){                 /* refused without throwing */
-            if(again()) return;
-            stopHook();
-            console.warn('addSubcables: the style never accepted the cable layers'); autoUncheck('dl-subcables'); _subcSettle();
-            try{ satToast(IntMapLang.t(HOST.lang,'Could not add the submarine-cable layer','海底ケーブルレイヤーを追加できませんでした','Seekabel-Ebene konnte nicht hinzugefügt werden','Не удалось добавить слой подводных кабелей','No se pudo añadir la capa de cables submarinos')); }catch(_){} return;
-          }
-          stopHook();
-          setVis('lyr-subcables-glow',true); setVis('lyr-subcables',true); if(GE().layers.has('lyr-subcables-pts')) setVis('lyr-subcables-pts',true);
-          /* the layer is up — whatever an earlier failure recorded is settled (#R188) */
-          try{ const cb=document.getElementById('dl-subcables'); if(cb&&cb.dataset) delete cb.dataset.imAutoOff; }catch(_){}
-          _wireSubcableInfo();
-          _subcSettle();
-        };
-        build();
-      }).then(null,e=>{ _subcSettle(); throw e; });   /* a download or build that threw has ended too */
-      return req;
-    }
     /* === Contour lines — generated on the fly from the terrarium DEM ===
        (#R179) the DEM source itself now lives in the engine (scene.demContourSource): it has to be
        handed the renderer's namespace to register a tile protocol, which is not this file's business.
@@ -5229,151 +4521,7 @@ export function dataLayers(HOST){
         return true;
       }catch(e){ console.warn('addContours',e); return false; }
     }
-    /* ══ (#R276) RAINVIEWER IS A LOOP NOW, AND THE DEAD HALF OF IT IS GONE ═══════════════════
-       「RainViewerは最新1枚だけでなく、利用可能な過去フレームをアニメーション可能にする。フレーム時刻と
-         経過時間を表示する。廃止済みSatellite IRと旧配色番号への依存は削除または現行データ源へ置換する。」
-
-       MEASURED against the live API on 2026-08-20:
-         · radar.past           -> 13 frames, 10 min apart, covering the last two hours;
-         · radar.nowcast        -> 0 frames (a paid feature; handled if it ever appears);
-         · satellite.infrared   -> 0 frames. The free satellite product is RETIRED, so `frames[len-1]`
-           read `undefined`, rvTiles returned null, and the Clouds layer could only ever toast
-           「Live weather data unavailable」 and untick itself. It has not worked since RainViewer
-           withdrew it. It is replaced below by NASA GIBS geostationary clean-IR, which is current.
-         · the colour-scheme number: schemes 0/2/3/6/7/8 return BYTE-IDENTICAL tiles and 1/4/5/9
-           return the other one, so the free tier serves two palettes behind ten numbers. The app
-           asked for 「4」 as if it were a choice. RV_SCHEME names the one we actually get. */
-    let _rvData=null, _rvAt=0, _rvPending=null, _rvTimer=null;
-    let _rvFrames=[], _rvIdx=-1, _rvPlay=false, _rvPlayT=0;
-    const RV_SCHEME=4;                 /* the blue->red palette the two-palette free tier gives back */
-    const RV_STEP_MS=520;              /* one radar frame per ~half second, the RainViewer pace */
-    /* ══ ⚠⚠⚠ (#R482) THE FREE TILE CACHE STOPS AT z7, AND IT SAYS SO **IN THE PICTURE** ═════════
-       「降水レーダー（実時間）レイヤーはある程度以上ズームしたら zoom level not supported と
-         透かしがなります」
-       MEASURED against tilecache.rainviewer.com on 2026-08-28, four continents, both tile sizes:
-         z4-z7  real radar (neighbouring tiles differ from one another: 435 B – 19,100 B)
-         z8+    ONE byte-identical 1,370 B PNG everywhere — a grey plate reading
-                「Zoom Level Not Supported」. HTTP **200**. Same at z9…z15, over Tokyo / New York /
-                London / Miami / Sydney, at /256/ and at /512/.
-       ⚠ This is #R479's shape again: the request SUCCEEDS and the failure is painted into the
-       image, so no error path, no onerror, no tile-count instrument can ever see it. The only
-       place it is visible is the source's own zoom ceiling — which said **12**, five levels past
-       the data, so MapLibre and Cesium dutifully asked for z8…z12 and got the plate back.
-       ⚠ The fix is NOT to hide the layer above z7. Overzooming the z7 tile keeps the rain field on
-       screen at every zoom, which is what the reader asked for, and the free mosaic is ~2 km/px:
-       z7 (~1.2 km/px at the equator) is already at its native resolution, so the stretch adds
-       blur, not error. ⚠ Do not raise this number again — a taller ceiling does not buy detail the
-       free tier has, it buys the grey plate. */
-    const RV_MAX_Z=7;                  /* deepest zoom the free tile cache serves radar at (measured) */
-    /* ══ ⚠⚠ (stalled-fetch) THE FRAME INDEX IS READ UNDER A CLOCK — A STALLED READ IS A FAILED ONE ════
-       The radar row's request (toggleLayer → `req`, handed to js/layer-rows.js `layerInflight`) is this
-       read. With a bare `fetch` it had no end: a host that stopped answering left `_rvPending` pending
-       for ever, so (a) the box stayed «in flight» and the reconciler never judged it again, (b) no toast
-       ever said the weather could not be fetched, and (c) every later tick got the SAME dead promise
-       back, because `_rvPending` is what a second caller is handed while a read is on its way.
-       js/fetch-deadline.js `jsonWithin` is the app's clock for a direct JSON read, and it covers the
-       BODY as well as the headers (#R452). Its deadline clears `_rvPending` (the next request starts a
-       new read). ⚠ (unobserved-is-not-refused) It no longer reaches the row's failure arm the way a
-       refusal does: the deadline is `isUnobserved`, so the row keeps its box and asks again with a longer
-       clock (rowUntilObserved); only an answer — a status, a refusal, no frames — toasts 「Live weather
-       data unavailable」 and unticks it.
-       THE CLOCK is js/proxy-fetch.js `clockFor` — the host read directly, so DIRECT_TIMEOUT_MS (6 s,
-       «hosts that answer quickly»), stated once, there.
-         · observed 2026-09-28: five reads of the index from a home line, 0.97–1.24 s to the last byte,
-           818 B each.
-         · lapses if RainViewer's index stops being a sub-kilobyte file answered in about a second (the
-           host then needs its own row in proxy-fetch's per-host table, as GDELT and the World Bank have). */
-    const RV_INDEX_URL='https://api.rainviewer.com/public/weather-maps.json';
-    /* (unobserved-is-not-refused) `scale` multiplies the clock — js/fetch-deadline.js `untilObserved` asks
-       again with it doubled after a read that was not observed — and `_rvWhy` keeps what the last failed
-       read threw, so the row can tell 「nothing was read in time」 from 「RainViewer said no」. The
-       thumbnail (layerReads.radarIndex) still receives the index or null, as before. */
-    let _rvWhy=null;
-    function rvFetch(scale){
-      if(_rvData && Date.now()-_rvAt<5*60000) return Promise.resolve(_rvData);
-      if(_rvPending) return _rvPending;
-      _rvPending=jsonWithin(RV_INDEX_URL,clockFor(RV_INDEX_URL)*Math.max(1,+scale||1))
-        .then(j=>{ if(j){ _rvData=j; _rvAt=Date.now(); _rvWhy=null; rvRefreshFrames(); } _rvPending=null; return _rvData; })
-        .catch(e=>{ _rvWhy=e||null; _rvPending=null; return null; });
-      return _rvPending;
-    }
-    /* the row's read: the index, or a throw carrying why there is none */
-    function rvRead(scale){ return rvFetch(scale).then(d=>{ if(d) return d;
-      throw (_rvWhy||Object.assign(new Error('no radar index'),{reason:'empty'})); }); }
-    layerReads.radarIndex=rvFetch;   /* (fetch-deadline-layer) the preview reads the frame index through the row's own read */
-    function rvRefreshFrames(){
-      const r=(_rvData&&_rvData.radar)||{};
-      const was=(_rvIdx>=0)?_rvFrames[_rvIdx]:null;
-      _rvFrames=(r.past||[]).concat(r.nowcast||[]);
-      /* stay on the SAME INSTANT across a refresh; a reader watching -60 min should not be jumped to
-         «now» just because a newer frame arrived at the end of the list */
-      if(was&&_rvFrames.length){ let best=_rvFrames.length-1,bd=Infinity;
-        _rvFrames.forEach((f,i)=>{ const d=Math.abs(f.time-was.time); if(d<bd){bd=d;best=i;} });
-        _rvIdx=best; }
-      else _rvIdx=_rvFrames.length-1;
-    }
-    function rvTiles(idx){
-      if(!_rvData||!_rvFrames.length) return null;
-      const host=_rvData.host||'https://tilecache.rainviewer.com';
-      const f=_rvFrames[Math.max(0,Math.min(_rvFrames.length-1,idx==null?_rvIdx:idx))];
-      if(!f) return null;
-      return [host+f.path+'/256/{z}/{x}/{y}/'+RV_SCHEME+'/1_1.png'];
-    }
-    function rvFrameTime(){ const f=_rvFrames[_rvIdx]; return f?f.time*1000:null; }
-    function addRainViewer(){
-      const tiles=rvTiles(); if(!tiles) return false;
-      try{ if(GE().layers.has('lyr-radar')) GE().layers.remove('lyr-radar'); if(GE().layers.hasSource('src-radar')) GE().layers.removeSource('src-radar'); }catch(_){}
-      addRaster('radar',tiles,RV_MAX_Z);
-      setVis('lyr-radar',true);
-      rvUpdateLegend();
-      return true;
-    }
-    /* Re-point the tiles rather than rebuild the source — MapLibre cross-fades between the old and the
-       new tile set (raster-fade-duration), which is what stops a step looking like a blink. */
-    function rvShow(idx){
-      if(!_rvFrames.length) return;
-      _rvIdx=Math.max(0,Math.min(_rvFrames.length-1,idx));
-      const tiles=rvTiles();
-      if(!(tiles&&GE().layers.setSourceTiles('src-radar',tiles))&&tiles) addRainViewer();
-      rvUpdateLegend();
-    }
-    function rvStep(n){ if(!_rvFrames.length) return; rvShow((_rvIdx+n+_rvFrames.length)%_rvFrames.length); }
-    function rvSetPlay(on){
-      _rvPlay=!!on; clearTimeout(_rvPlayT);
-      if(_rvPlay){ const tick=()=>{ if(!_rvPlay) return; rvStep(1);
-        /* hold the newest frame a beat longer so the loop reads as a loop, not a stutter */
-        _rvPlayT=setTimeout(tick,(_rvIdx===_rvFrames.length-1)?RV_STEP_MS*3:RV_STEP_MS); };
-        _rvPlayT=setTimeout(tick,RV_STEP_MS); }
-      rvUpdateLegend();
-    }
-    window._rvPlayer={ show:rvShow, step:rvStep, play:rvSetPlay, playing:()=>_rvPlay,
-      frames:()=>_rvFrames.slice(), index:()=>_rvIdx, time:rvFrameTime };
-    function rvUpdateLegend(){
-      const box=lgdRadar&&lgdRadar.querySelector('.rv-player'); if(!box) return;
-      const n=_rvFrames.length, tt=rvFrameTime();
-      const sl=box.querySelector('#rv-time'); if(sl){ sl.max=Math.max(0,n-1); sl.value=Math.max(0,_rvIdx); }
-      const pb=box.querySelector('.rv-b[data-act="play"]'); if(pb) pb.textContent=_rvPlay?'⏸':'▶';
-      const cap=box.querySelector('.rv-when');
-      if(cap){
-        if(!tt) cap.textContent=IntMapLang.t(HOST.lang,'no frames','フレームなし','keine Bilder','нет кадров','sin fotogramas');
-        else{
-          const mins=Math.round((Date.now()-tt)/60000);
-          const clock=new Date(tt).toLocaleTimeString(IntMapLang.locale(HOST.lang,'en-GB'),{hour:'2-digit',minute:'2-digit'});
-          const rel=(mins<=0)?IntMapLang.t(HOST.lang,'now','現在','jetzt','сейчас','ahora')
-            :('−'+mins+' '+IntMapLang.t(HOST.lang,'min','分','Min.','мин','min'));
-          cap.textContent=clock+' · '+rel+' · '+(_rvIdx+1)+'/'+n;
-        }
-      }
-    }
-    function rvAutoRefresh(){
-      if(_rvTimer) return;
-      _rvTimer=everyTick('data-layers:rainviewer-frames',240000,()=>{ _rvAt=0; rvFetch().then(()=>{
-        if(GE().layers.has('lyr-radar')&&GE().layers.getLayout('lyr-radar','visibility')==='visible'){
-          try{ const tiles=rvTiles(); if(!(tiles&&GE().layers.setSourceTiles('src-radar',tiles))&&tiles) addRainViewer(); }catch(_){}
-          rvUpdateLegend();
-        }
-      }); });
-    }
+    /* (layer-packages) RainViewer 雨雲レーダー dl-radar lives in its own module now — js/layer-pkg-radar.js (its declaration says `pkg`) */
     /* === Refresh tiles for dated layers when the date selector changes === */
     function refreshDatedLayer(id){
       const date=layerDates[id]||GIBS_DATE;
@@ -5393,6 +4541,53 @@ export function dataLayers(HOST){
       addRaster(id,tiles, maxzMap[id]||6);
       if(wasVis) setVis('lyr-'+id,true);
     }
+    /* ══ (layer-packages) A ROW WHOSE IMPLEMENTATION IS ITS OWN MODULE ═══════════════════════════════════
+       A row whose declaration (js/layers/<id>.js) names a `pkg` is implemented by js/layer-pkg-<pkg>.js, not by a
+       branch of toggleLayer below: the switch, the opacity and everything behind them live there, beside the notes
+       that explain them. This is the one path toggleLayer and setLayerOpacity take for every such row, and adding
+       a layer as a package touches nothing here (the gate in scripts/layer-packages.mjs refuses a new branch).
+         · the module is fetched the first time one of its rows is switched (js/layer-manifest.js loadPackage — the
+           literal imports are generated from the declarations), so a session that never switches the row never
+           downloads, parses or runs it, and the boot carries none of it. The factory runs ONCE, with the kit below.
+         · switches made while it is on its way are applied in the order they were made once it has arrived — on,
+           off, on replays as on, off, on. An off for a package nobody asked for has nothing to undo (nothing of it
+           can have been drawn) and fetches nothing.
+         · a download that fails is an observed failure of the row (layerState says so, on the row and aloud),
+           never a silent no-op, and is not remembered: the next switch asks again.
+       THE KIT is what a package may use of this file — the very objects the branches used through the closure,
+       nothing copied, so `opacities` written here is the one read there. The legends a language change rebuilds
+       are bindings, not values, so they are getters under `live`, read where they are used. */
+    const _pkgs=Object.create(null);   /* name → { p: the promise of the instance, v: the instance once it has arrived } */
+    let _kit=null;
+    function packageKit(){
+      return _kit||(_kit=Object.freeze({ HOST, GE, setVis, beforeId, opacities, layerReads, satToast, tileLegends,
+        whenStyleReady, addRaster, rowUntilObserved, autoUncheck,
+        withCountries, addChoro, applyChoro, countryStats, cName, ensureMapTooltip, positionTooltip, isMobile, flagM, NATO,
+        live:Object.freeze({ get lgdRadar(){ return lgdRadar; }, get lgdThermal(){ return lgdThermal; }, get lgdMil(){ return lgdMil; }, get lgdMilGDP(){ return lgdMilGDP; } }) }));
+    }
+    function _pkgLoad(name){
+      const P=_pkgs[name]||(_pkgs[name]={p:null,v:null});
+      if(P.v) return Promise.resolve(P.v);
+      if(!P.p) P.p=loadPackage(name).then(f=>{ P.v=f(packageKit()); return P.v; },e=>{ P.p=null; throw e; });
+      return P.p;
+    }
+    /* switch a packaged row: at once when its package is here, in order once it arrives, not at all when it is
+       an off for a package never asked for. Returns what the row's own switch returns (its request). */
+    function _pkgSwitch(cbId,on){
+      const name=packageOf(cbId), P=_pkgs[name];
+      const act=(v)=>{ const r=v.rows[cbId]; return on?r.on():r.off(); };
+      if(P&&P.v) return act(P.v);
+      if(!on&&!(P&&P.p)) return undefined;
+      return _pkgLoad(name).then(act,e=>{ console.error('[IntMap] layer package '+name+' for '+cbId,e); try{ layerState.report(cbId,e); }catch(_){} });
+    }
+    /* a moment the whole file announces (a language change rebuilt the legends): every package that has arrived and answers it */
+    function _pkgEach(hook){ for(const n in _pkgs){ const v=_pkgs[n].v; if(v&&typeof v[hook]==='function'){ try{ v[hook](); }catch(e){ console.warn('[IntMap] layer package '+n+' '+hook,e); } } } }
+    /* the opacity reaches a package that is here; before that it is only `opacities[id]`, which the package reads when it draws */
+    function _pkgOpacity(cbId,v){ const P=_pkgs[packageOf(cbId)]; if(P&&P.v) P.v.rows[cbId].opacity(v); }
+    /* the reads js/layer-previews.js asks for (layerReads, top of this file), forwarded until the package puts its own there */
+    const _pkgRead=(cbId,read)=>{ const fwd=(...a)=>_pkgLoad(packageOf(cbId)).then(()=>(layerReads[read]!==fwd?layerReads[read](...a):null),()=>null); return fwd; };   /* a package that did not put its read there answers «none», not this forwarder again */
+    layerReads.subcables=_pkgRead('dl-subcables','subcables');
+    layerReads.radarIndex=_pkgRead('dl-radar','radarIndex');
     /* ══ (heal-waits-for-inflight) RETURNS THE REQUEST THE SWITCH STARTED ═══════════════════════════
        Most rows cannot draw in the same tick they are switched on: they wait for the renderer, fetch an
        index or a table, or climb a build ladder. `req` is the last asynchronous step of each branch, and
@@ -5403,34 +4598,10 @@ export function dataLayers(HOST){
     function toggleLayer(id,on){
       let req;
       if(on){
-        if(id==='climate'){ req=addKoppen(); /* layer added async after CORS preflight; setVis once it appears */ const t0=Date.now(); (function w(){ if(GE().layers.has('lyr-climate')){ setVis('lyr-climate',true); } else if(Date.now()-t0<5000){ setTimeout(w,150); } })(); legend.style.display='flex'; try{ const _f=()=>{ try{ window._fitKoppenLegend&&window._fitKoppenLegend(); }catch(_){} }; requestAnimationFrame(()=>{ requestAnimationFrame(_f); }); setTimeout(_f,120); }catch(_){} }   /* (#R147/#R148) fit legend height to content once visible — double-rAF + a timeout backstop so it runs after layout settles */
+        /* (layer-packages) a row its declaration gives to a package is switched there, and only there */
+        if(packageOf('dl-'+id)){ req=_pkgSwitch('dl-'+id,true); }
+        else if(id==='climate'){ req=addKoppen(); /* layer added async after CORS preflight; setVis once it appears */ const t0=Date.now(); (function w(){ if(GE().layers.has('lyr-climate')){ setVis('lyr-climate',true); } else if(Date.now()-t0<5000){ setTimeout(w,150); } })(); legend.style.display='flex'; try{ const _f=()=>{ try{ window._fitKoppenLegend&&window._fitKoppenLegend(); }catch(_){} }; requestAnimationFrame(()=>{ requestAnimationFrame(_f); }); setTimeout(_f,120); }catch(_){} }   /* (#R147/#R148) fit legend height to content once visible — double-rAF + a timeout backstop so it runs after layout settles */
         else if(id==='precip'){ req=whenStyleReady().then(()=>{ try{ addRaster('precip',gibs('IMERG_Precipitation_Rate',6,'png',layerDates.precip+'T12:00:00Z'),6); }catch(_){} try{ setVis('lyr-precip',true); }catch(_){} }); }
-        else if(id==='thermal'){
-          lgdThermal.style.display='block'; tileLegends();
-          req=whenStyleReady().then(()=>{ try{ const built=addFirmsThermal(); setThermalVis(true); return built; }catch(e){ console.warn('thermal (GIBS) fail',e); try{ layerState.report('dl-thermal',e,{told:true}); }catch(_){} const cb=document.getElementById('dl-thermal'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(IntMapLang.t(HOST.lang,'Active-fire data unavailable','火災データを取得できませんでした','Branddaten nicht verfügbar','Данные о пожарах недоступны','Datos de incendios no disponibles')); }catch(_){} } });
-        }
-        else if(id==='radar'){
-          lgdRadar.style.display='block'; tileLegends();
-          /* (unobserved-is-not-refused) a read that was not observed keeps the box ticked and asks again
-             (rowUntilObserved); only an answer — a status, a refusal, an index with no frames — reaches
-             the failure arm below. 'aborted' = unticked or re-ticked meanwhile: that switch owns the row. */
-          /* (layer-failure-state) `why` is what the read threw — kept so the row's state says whether the host
-             refused (failed) or never answered in time (unobserved); js/layer-state.js classifies it */
-          let why=null;
-          req=whenStyleReady().then(()=>rowUntilObserved('dl-radar',rvRead,clockFor(RV_INDEX_URL)))
-            .then(()=>true,e=>{ if(e&&e.reason==='aborted') return null; why=e; return false; }).then(got=>{
-            if(got===null) return;
-            const on=document.getElementById('dl-radar'); if(!(on&&on.checked)) return;   /* nothing drawn behind a box that is off (CONSTITUTION §3) */
-            if(!got||!addRainViewer()){
-              try{ satToast(IntMapLang.t(HOST.lang,'Live weather data unavailable','気象データを取得できませんでした','Wetterdaten nicht verfügbar','Данные о погоде недоступны','Datos meteorológicos no disponibles')); }catch(_){}
-              try{ layerState.report('dl-radar',got?{reason:'not-drawn'}:why,{told:true}); }catch(_){}
-              const cb=document.getElementById('dl-radar'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); }
-              lgdRadar.style.display='none'; tileLegends();
-              return;
-            }
-            rvAutoRefresh();
-          });
-        }
         else if(id==='sst'){
           lgdSST.style.display='block'; tileLegends();
           req=whenStyleReady().then(()=>{ try{ addRaster('sst',gibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',layerDates.sst),7); }catch(_){} try{ setVis('lyr-sst',true); }catch(_){} });
@@ -5465,7 +4636,6 @@ export function dataLayers(HOST){
           lgdSeaLevel.style.display='block'; tileLegends();
           req=whenStyleReady().then(()=>{ try{ addSeaLevel(); setVis('lyr-sealevel',true); window._refreshSeaLevel(); }catch(e){ console.warn('sealevel fail',e); try{ layerState.report('dl-sealevel',e); }catch(_){} const cb=document.getElementById('dl-sealevel'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} } });
         }
-        else if(id==='subcables'){ req=whenStyleReady().then(()=>{ try{ return addSubcables(); }catch(e){ console.warn('subcables',e); } }); }
         else if(id==='hillshade'){
           req=whenStyleReady().then(()=>{ try{
             ensureTerrainSource();
@@ -5499,7 +4669,6 @@ export function dataLayers(HOST){
           lgdDem.style.display='block'; tileLegends();
           req=withCountries(()=>{ try{ addChoro('dem'); applyChoro('dem',s=>s.dem); setVis('dem-fill',true); }catch(e){ console.warn('dem choro fail',e); } });
         }
-        else if(id==='milSpend'){ req=applyMilMode(); }   /* (#R289) whichever of the two modes is selected */
         else if(id==='gdppc'){
           lgdGdppc.style.display='block'; tileLegends();
           req=withCountries(()=>{ try{ addChoro('gdppc'); applyChoro('gdppc',s=>s.gdppc!=null?s.gdppc:null); setVis('gdppc-fill',true); }catch(e){ console.warn('gdppc choro fail',e); } });
@@ -5522,27 +4691,6 @@ export function dataLayers(HOST){
               try{ imToast(IntMapLang.t(HOST.lang,'Could not load fertility data','出生率データを取得できませんでした','Fruchtbarkeitsdaten nicht verfügbar','Не удалось загрузить данные о рождаемости','No se pudieron cargar los datos de fecundidad')); }catch(_){} }); }
           }catch(e){ console.warn('tfr choro fail',e); } });
         }
-        else if(id==='nato'){
-          /* NATO members fill (#14) + accession-year time-travel control (#R25/#24); accession year +
-             defense %GDP also show on hover. */
-          req=withCountries(()=>{ try{ addNato(); applyNato(); wireNatoHover(); setNatoVis(true); natoLegend();
-            /* ⚠ (#R337) 「NATO membersレイヤーをオンにしたら、自動的にNATOに行くように。」 Inside
-               `withCountries` for the same reason the EU branch below is: the frame is measured from
-               the members' own footprints and those arrive with the country table. The «may this layer
-               move the camera / has it already / did the READER ask» decision is js/layer-home.js's. */
-            try{ window.IntMapLayerHome&&window.IntMapLayerHome.arrive('dl-nato'); }catch(_){}
-          }catch(e){ console.warn('nato fail',e); } });
-        }
-        else if(id==='eu'){
-          /* (#R26) EU members fill + accession-year time-travel control (mirrors NATO). */
-          req=withCountries(()=>{ try{ addEu(); applyEu(); wireEuHover(); setEuVis(true); euLegend();
-            /* ⚠ (#R313) 「EU membersレイヤーをオンにしたら、自動的にEUに行くように。」 Inside
-               `withCountries` because the frame is the union of the members' own footprints and
-               those arrive with the country table. The «may this layer move the camera / has it
-               already / did the READER ask» decision is js/layer-home.js's, not this branch's. */
-            try{ window.IntMapLayerHome&&window.IntMapLayerHome.arrive('dl-eu'); }catch(_){}
-          }catch(e){ console.warn('eu fail',e); } });
-        }
         /* (#R232) the day/night SHADING — one call to its owner, and the Settings picker follows. */
         else if(id==='nightside'){ _setNightSide(true); }
         /* (#R15c) layers without a dedicated legend get a generic one (so opacity moves out of the panel) */
@@ -5557,15 +4705,12 @@ export function dataLayers(HOST){
            toggleLayer(id,false) runs the full per-id hide path, so map ⇄ checkbox ⇄ active-list stay in sync. */
         { const _dlid='dl-'+id; [600,1500,3200].forEach(ms=>setTimeout(()=>{ try{ const cb=document.getElementById(_dlid); if(cb && !cb.checked){ toggleLayer(id,false); try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){} } }catch(_){} }, ms)); }
       } else {
-        if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='gdppc'||id==='tfr'){ setVis(id+'-fill',false); }
-        else if(id==='nato'){ setNatoVis(false); try{ window._hideGenericLegend&&window._hideGenericLegend('nato'); }catch(_){} }
-        else if(id==='eu'){ setEuVis(false); try{ window._hideGenericLegend&&window._hideGenericLegend('eu'); }catch(_){} }
+        if(packageOf('dl-'+id)){ _pkgSwitch('dl-'+id,false); }
+        else if(id==='hdi'||id==='dem'||id==='pop'||id==='gdppc'||id==='tfr'){ setVis(id+'-fill',false); }
         else if(id==='ships'||id==='planes'){ stopTraffic(id); }
         else if(id==='sats'){ stopSats(); }
         else if(id==='contours'){ setVis('contour-lines',false); setVis('contour-labels',false); }
         else if(id==='wind'){ try{ window.Wind&&window.Wind.toggle(false); const l=document.getElementById('data-legend-wind'); if(l) l.style.display='none'; }catch(_){} }
-        else if(id==='thermal'){ setThermalVis(false); }
-        else if(id==='subcables'){ setVis('lyr-subcables',false); setVis('lyr-subcables-glow',false); setVis('lyr-subcables-pts',false); }
         else { setVis('lyr-'+id,false); }
         if(id==='climate'){ legend.style.display='none';
           /* (#R19) Phones: drop the Köppen sampling work-set (4096² canvas + pixel copies, ~150 MB)
@@ -5587,17 +4732,13 @@ export function dataLayers(HOST){
         if(id==='sealevel') lgdSeaLevel.style.display='none';
         if(id==='eez') lgdEEZ.style.display='none';
 
-        if(id==='thermal') lgdThermal.style.display='none';
-        if(id==='radar') lgdRadar.style.display='none';
         if(id==='sst') lgdSST.style.display='none';
         if(id==='gdppc') lgdGdppc.style.display='none';
         if(id==='tfr') lgdTfr.style.display='none';
-        if(id==='milSpend'){ lgdMil.style.display='none'; lgdMilGDP.style.display='none'; setVis('milSpendGDP-fill',false); }   /* (#R289) both halves of the one row */
         if(id==='snow') lgdSnow.style.display='none';
         if(id==='aod') lgdAod.style.display='none';
         if(id==='nightsat') lgdNightsat.style.display='none';
         if(GENERIC_LEG[id]){ const gl=document.getElementById('data-legend-'+id); if(gl){ gl.style.display='none'; tileLegends(); } }   /* (#R15c) */
-        if(id==='radar'){ if(_rvTimer){ stopTick(_rvTimer); _rvTimer=null; } try{ rvSetPlay(false); }catch(_){} }
         tileLegends();
         if(id==='nightside'){ _setNightSide(false); }   /* (#R232) */
       }
@@ -5746,12 +4887,11 @@ export function dataLayers(HOST){
       try{ _refreshLegendDates(); }catch(_){}
     };
     function setLayerOpacity(id,v){ opacities[id]=v;
-      if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='milSpendGDP'||id==='gdppc'||id==='tfr'){
+      if(packageOf('dl-'+id)){ _pkgOpacity('dl-'+id,v); }   /* (layer-packages) the package's own, once it is here */
+      else if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpendGDP'||id==='gdppc'||id==='tfr'){
         /* Keep no-data countries gray (0.45) — see addChoro for the "<= 0" reasoning. */
         if(GE().layers.has(id+'-fill')) GE().layers.setPaint(id+'-fill','fill-opacity',['case',['<=',['to-number',['feature-state',id],0],0],Math.max(0,v*0.75),v]);
       }
-      else if(id==='nato'){ if(GE().layers.has('nato-fill'))GE().layers.setPaint('nato-fill','fill-opacity',v); }
-      else if(id==='eu'){ if(GE().layers.has('eu-fill'))GE().layers.setPaint('eu-fill','fill-opacity',v); }
       /* (#R232) the 'night' opacity branch went with the layer — the day/night shading has no opacity knob. */
       else if(id==='planes'){
         /* (#R341) the GPU cloud is the aircraft layer, and follows the slider */
@@ -5768,8 +4908,6 @@ export function dataLayers(HOST){
          handing it on, on top of a colour field that was already being painted at 0.50 — 「風色面の
          二重透過を解消する」. The module applies it to the raster and to the particle canvas itself. */
       else if(id==='wind'){ try{ window.Wind&&window.Wind.setOpacity&&window.Wind.setOpacity(v); }catch(_){} }
-      else if(id==='subcables'){ if(GE().layers.has('lyr-subcables'))GE().layers.setPaint('lyr-subcables','line-opacity',v); }
-      else if(id==='thermal'){ try{ window._setThermalOpacity(v); }catch(_){} }
       else if(window._opacityTargets&&window._opacityTargets[id]){ _applyGenericOpacity(window._opacityTargets[id],v); }
       else { if(GE().layers.has('lyr-'+id))GE().layers.setPaint('lyr-'+id,'raster-opacity',v); }
     }

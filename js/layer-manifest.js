@@ -31,6 +31,10 @@
  *  safety sweep puts it under Beta), but tests/layer-manifest.spec.js fails.
  *  ⚠ PURE DATA + PURE FUNCTIONS: no DOM, no `window`. Node tests import it as it is; the DOM side is
  *  js/layer-rows.js.
+ *  (layer-packages) …and the one thing here that is not data: `loadPackage(name)`, the literal dynamic import of
+ *  each LAYER PACKAGE a declaration names (`pkg` → js/layer-pkg-<pkg>.js). It fetches nothing until called, so
+ *  importing this file still runs no code of any layer; js/data-layers.js calls it the first time one of the
+ *  package's rows is switched, which is what keeps a package off the boot path.
  * ==========================================================================*/
 /* ⚠ THE REGION BELOW IS GENERATED: the list already derived from the declarations (scripts/lib/layer-descriptor.mjs
    deriveShelves, run by `node scripts/layer-descriptors.mjs --write`, which `npm run build` runs first) and every
@@ -273,7 +277,7 @@ const DECLARATIONS = [
   { id: "dl-annprecip", shelf: "lyrGrpClimate", order: 30, key: "annprecip", share: true, registry: ["annprecip"] },   // dl-annprecip.js
   { id: "dl-ec-temp", shelf: "lyrGrpClimate", order: 40, key: "ec-temp", share: true, registry: ["temp"] },   // dl-ec-temp.js
   { id: "dl-ec-precip", shelf: "lyrGrpClimate", order: 50, key: "ec-precip", share: true },   // dl-ec-precip.js
-  { id: "dl-radar", shelf: "lyrGrpClimate", order: 60, key: "radar", label: "lyrRadar", share: true },   // dl-radar.js
+  { id: "dl-radar", shelf: "lyrGrpClimate", order: 60, key: "radar", label: "lyrRadar", share: true, pkg: "radar" },   // dl-radar.js
   { id: "dl-ec-slp", shelf: "lyrGrpClimate", order: 70, key: "ec-slp", share: true, atlas: ["layers.isobars"] },   // dl-ec-slp.js
   { id: "dl-ec-gust", shelf: "lyrGrpClimate", order: 80, key: "ec-gust", share: true },   // dl-ec-gust.js
   { id: "dl-snow", shelf: "lyrGrpClimate", order: 90, key: "snow", label: "lyrSnow", share: true, registry: ["snow"], sources: ["Open-Meteo"] },   // dl-snow.js
@@ -316,14 +320,14 @@ const DECLARATIONS = [
   { id: "wp-dl-alerts", shelf: "lyrGrpHazard", order: 10, key: "alerts", share: true, lazy: ["worldPacksBody"] },   // wp-dl-alerts.js
   { id: "bx-eq", shelf: "lyrGrpHazard", order: 20, key: "eq", registry: ["earthquakes"] },   // bx-eq.js
   { id: "beta-dl-volc2", shelf: "lyrGrpHazard", order: 30, key: "volc2", share: true, registry: ["volcanoes"], commands: ["volcano.open", "volcano.mode", "volcano.filter", "volcano.time"], atlas: ["map.volcanoFilter"], sources: ["Smithsonian GVP"] },   // beta-dl-volc2.js
-  { id: "dl-thermal", shelf: "lyrGrpHazard", order: 40, key: "thermal", label: "lyrThermal", rest: true, share: true, registry: ["thermal"], sources: ["NASA FIRMS"] },   // dl-thermal.js
+  { id: "dl-thermal", shelf: "lyrGrpHazard", order: 40, key: "thermal", label: "lyrThermal", rest: true, share: true, registry: ["thermal"], sources: ["NASA FIRMS"], pkg: "thermal" },   // dl-thermal.js
   { id: "fac-dl-osmemg", shelf: "lyrGrpHazard", order: 50, key: "osmemg", rest: true },   // fac-dl-osmemg.js
   { id: "beta-dl-radobs", shelf: "lyrGrpHazard", order: 60, key: "radobs", rest: true, share: true, lazy: ["radiationLayer"], registry: ["radiation"], commands: ["radiation.observed", "radiation.near"], atlas: ["map.radiation"] },   // beta-dl-radobs.js
   { id: "dl-dem", shelf: "lyrGrpPolitics", order: 10, key: "dem", label: "lyrDem", share: true },   // dl-dem.js
   { id: "beta-dl-cpi", shelf: "lyrGrpPolitics", order: 20, key: "cpi", share: true },   // beta-dl-cpi.js
   { id: "dl-eez", shelf: "lyrGrpPolitics", order: 30, key: "eez", label: "lyrEEZ", share: true },   // dl-eez.js
   { id: "dl-uselect", shelf: "lyrGrpPolitics", order: 40, key: "uselect", share: true },   // dl-uselect.js
-  { id: "dl-eu", shelf: "lyrGrpPolitics", order: 50, key: "eu", label: "lyrEU", share: true },   // dl-eu.js
+  { id: "dl-eu", shelf: "lyrGrpPolitics", order: 50, key: "eu", label: "lyrEU", share: true, pkg: "alliances" },   // dl-eu.js
   { id: "dl-ww2", shelf: "lyrGrpPolitics", order: 60, key: "ww2", share: true, lazy: ["warLayer"] },   // dl-ww2.js
   { id: "dl-elect", shelf: "lyrGrpPolitics", order: 70, key: "elect", rest: true, share: true },   // dl-elect.js
   { id: "dl-ww1", shelf: "lyrGrpPolitics", order: 80, key: "ww1", rest: true, share: true, lazy: ["warLayer"] },   // dl-ww1.js
@@ -334,8 +338,8 @@ const DECLARATIONS = [
   { id: "dl-tz", shelf: "lyrGrpPolitics", order: 130, key: "tz", rest: true, share: true },   // dl-tz.js
   { id: "bx-wbwomparl", shelf: "lyrGrpPolitics", order: 140, key: "wbwomparl", rest: true },   // bx-wbwomparl.js
   { id: "fac-dl-osmdiplo", shelf: "lyrGrpPolitics", order: 150, key: "osmdiplo", rest: true },   // fac-dl-osmdiplo.js
-  { id: "dl-milSpend", shelf: "lyrGrpSecurity", order: 10, key: "milSpend", label: "lyrMilSpend", share: true },   // dl-milSpend.js
-  { id: "dl-nato", shelf: "lyrGrpSecurity", order: 20, key: "nato", label: "lyrNATO", share: true },   // dl-nato.js
+  { id: "dl-milSpend", shelf: "lyrGrpSecurity", order: 10, key: "milSpend", label: "lyrMilSpend", share: true, pkg: "alliances" },   // dl-milSpend.js
+  { id: "dl-nato", shelf: "lyrGrpSecurity", order: 20, key: "nato", label: "lyrNATO", share: true, pkg: "alliances" },   // dl-nato.js
   { id: "beta-dl-ukrfront", shelf: "lyrGrpSecurity", order: 30, key: "ukrfront", share: true },   // beta-dl-ukrfront.js
   { id: "bx-wbmilgdp", shelf: "lyrGrpSecurity", order: 40, key: "wbmilgdp", rest: true },   // bx-wbmilgdp.js
   { id: "bx-wbmilppl", shelf: "lyrGrpSecurity", order: 50, key: "wbmilppl", rest: true },   // bx-wbmilppl.js
@@ -355,7 +359,7 @@ const DECLARATIONS = [
   { id: "bx-wboverwt", shelf: "lyrGrpHealth", order: 130, key: "wboverwt", rest: true },   // bx-wboverwt.js
   { id: "fac-dl-osmhealth", shelf: "lyrGrpHealth", order: 140, key: "osmhealth", rest: true },   // fac-dl-osmhealth.js
   { id: "fac-dl-osmwater", shelf: "lyrGrpHealth", order: 150, key: "osmwater", rest: true },   // fac-dl-osmwater.js
-  { id: "dl-subcables", shelf: "lyrGrpTech", order: 10, key: "subcables", label: "lyrSubcables", on: true, share: true },   // dl-subcables.js
+  { id: "dl-subcables", shelf: "lyrGrpTech", order: 10, key: "subcables", label: "lyrSubcables", on: true, share: true, pkg: "subcables" },   // dl-subcables.js
   { id: "beta-dl-dc", shelf: "lyrGrpTech", order: 20, key: "dc", rest: true, share: true, lazy: ["dataCenters"], registry: ["datacenters"] },   // beta-dl-dc.js
   { id: "dl-nethlth", shelf: "lyrGrpTech", order: 30, key: "nethlth", rest: true, share: true, lazy: ["netHealthLive"], commands: ["nethlth.report", "nethlth.signals"] },   // dl-nethlth.js
   { id: "dl-netreach", shelf: "lyrGrpTech", order: 40, key: "netreach", rest: true, share: true, lazy: ["netHealthLive"] },   // dl-netreach.js
@@ -432,6 +436,13 @@ const DECLARATIONS = [
   { id: "cb-countries", shelf: "hidden", order: 10, label: "countries", html: true },   // cb-countries.js
   { id: "dl-contours", shelf: "hidden", order: 20, label: "lyrContours", share: true },   // dl-contours.js
 ];
+/** (layer-packages) every layer package a declaration names → its factory, fetched on first use (js/data-layers.js) */
+const PACKAGES = {
+  "alliances": () => import('./layer-pkg-alliances.js').then((m) => m.alliancesPackage),
+  "radar": () => import('./layer-pkg-radar.js').then((m) => m.radarPackage),
+  "subcables": () => import('./layer-pkg-subcables.js').then((m) => m.subcablesPackage),
+  "thermal": () => import('./layer-pkg-thermal.js').then((m) => m.thermalPackage),
+};
 /* ⚠ GENERATED LAYERS — END */
 
 /** every shelf in panel order, each with its rows — derived from js/layers/ */
@@ -441,6 +452,12 @@ const DECL_BY = new Map();
 for (const d of DECLARATIONS) for (const k of [d.id].concat(d.registry || [])) if (!DECL_BY.has(k)) DECL_BY.set(k, d);
 /** the declaration of a layer, asked by its checkbox id or by any IntMapLayers id it registers */
 export const layerDeclaration = (id) => DECL_BY.get(id) || null;
+/** (layer-packages) the layer package that implements a row's switch (its declaration's `pkg`), by checkbox id —
+    null while js/data-layers.js still implements it itself */
+export const packageOf = (id) => { const d = DECL_BY.get(id); return (d && d.pkg) || null; };
+/** (layer-packages) fetch a layer package's factory (js/layer-pkg-<name>.js). One request per call — js/data-layers.js
+    keeps the one instance; a name no declaration gives has no module, and that is a rejection, not an empty package */
+export const loadPackage = (name) => (Object.prototype.hasOwnProperty.call(PACKAGES, name) ? PACKAGES[name]() : Promise.reject(new Error('no layer package `' + name + '` is declared (js/layers/<id>.js `pkg`)')));
 
 /** the heading of the shelf an unlisted row is swept onto (and of the listed beta rows) */
 export const BETA = 'lyrGrpOthers';

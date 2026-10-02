@@ -351,7 +351,10 @@ test('R313 ⑤ exactly one file moves the camera on a layer toggle, and it is th
 
   /* ⚠ THE PREVIOUS STATE OF THE WORLD: js/us-elections.js carried a bare fitBounds, which is the copy
      a fourth layer would have become a fifth of. The check is that no layer file has its own. */
-  for (const f of ['js/us-elections.js', 'js/beta-overlays.js', 'js/data-layers.js']) {
+  /* (layer-packages) the NATO and EU rows went to their layer package with the arrive() call they make; js/data-layers.js
+     keeps only the absence half — it moves no camera of its own */
+  assert.ok(!/camera\.fitBounds\(\s*\[\[/.test(code('js/data-layers.js')), 'js/data-layers.js does not carry its own hard-coded frame');
+  for (const f of ['js/us-elections.js', 'js/beta-overlays.js', 'js/layer-pkg-alliances.js']) {
     const src = code(f);
     assert.ok(!/camera\.fitBounds\(\s*\[\[/.test(src),
       f + ' does not carry its own hard-coded frame — it asks IntMapLayerHome');
@@ -396,10 +399,10 @@ test('R313 ⑤ exactly one file moves the camera on a layer toggle, and it is th
 
   /* the EU frame is measured from the layer's own geometry, and the module that paints it publishes it */
   assert.match(home, /IntMapEuFC/, 'EU is framed from the collection the layer paints');
-  assert.match(code('js/data-layers.js'), /window\.IntMapEuFC\s*=/, 'and that collection is published');
+  assert.match(code('js/layer-pkg-alliances.js'), /window\.IntMapEuFC\s*=/, 'and that collection is published');   /* (layer-packages) by the rows' package */
   /* (#R337) NATO is framed the same way, from the collection the layer paints */
   assert.match(home, /IntMapNatoFC/, 'NATO is framed from the collection the layer paints');
-  assert.match(code('js/data-layers.js'), /window\.IntMapNatoFC\s*=/, 'and that collection is published too');
+  assert.match(code('js/layer-pkg-alliances.js'), /window\.IntMapNatoFC\s*=/, 'and that collection is published too');
   assert.match(code('js/beta-overlays.js'), /window\.IntMapUkrFrontFC\s*=/, 'as is the frontline collection');
 
   /* it has to be imported, or none of the above runs */

@@ -6,4 +6,5 @@ export default {
   key: 'radar',
   label: 'lyrRadar',
   share: true,
+  pkg: 'radar',   // (layer-packages) implemented by js/layer-pkg-radar.js
 };

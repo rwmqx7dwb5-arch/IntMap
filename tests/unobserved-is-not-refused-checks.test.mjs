@@ -117,17 +117,24 @@ test('③ afterTick fires once and leaves nothing armed', async () => {
 });
 
 /* ── ④ the shipped radar row ──────────────────────────────────────────────────────────────────── */
-const DL = read('js/data-layers.js');
-const AST = acorn.parse(DL, { ecmaVersion: 'latest', sourceType: 'module' });
+/* (layer-packages) the radar and cable rows are js/data-layers.js plus their layer packages (js/layer-pkg-radar.js,
+   js/layer-pkg-subcables.js — the declarations' `pkg`): the policy (rowUntilObserved) stays in js/data-layers.js and is
+   handed to the packages in the kit; the radar state, its reads and its switch are the radar package's. Each file is
+   parsed as itself and searched together — the code lifted below is the shipped code wherever it now lives. */
+const FILES = ['js/data-layers.js', 'js/layer-pkg-radar.js', 'js/layer-pkg-subcables.js'].map((f) => { const text = read(f); return { f, text, ast: acorn.parse(text, { ecmaVersion: 'latest', sourceType: 'module' }) }; });
+const DL = FILES.map((x) => x.text).join('\n');
 const walk = (n, f, parent) => { if (!n || typeof n !== 'object') return; if (Array.isArray(n)) { n.forEach((c) => walk(c, f, parent)); return; } f(n, parent); for (const k of Object.keys(n)) if (!['type', 'start', 'end', 'loc'].includes(k)) walk(n[k], f, n); };
-const src = (n) => DL.slice(n.start, n.end);
-function fnDecl(name) { let hit = null; walk(AST, (n) => { if (n.type === 'FunctionDeclaration' && n.id && n.id.name === name) hit = n; }); assert.ok(hit, name + ' not found in js/data-layers.js'); return src(hit); }
-function varDecl(name) { let hit = null; walk(AST, (n) => { if (n.type === 'VariableDeclaration' && n.declarations.some((d) => d.id.name === name)) hit = n; }); assert.ok(hit, name + ' not declared in js/data-layers.js'); return src(hit); }
+const find = (pred) => { for (const x of FILES) { let hit = null; walk(x.ast, (n) => { if (!hit && pred(n)) hit = n; }); if (hit) return x.text.slice(hit.start, hit.end); } return null; };
+function fnDecl(name) { const s = find((n) => n.type === 'FunctionDeclaration' && n.id && n.id.name === name); assert.ok(s, name + ' not found in ' + FILES.map((x) => x.f).join(' / ')); return s; }
+function varDecl(name) { const s = find((n) => n.type === 'VariableDeclaration' && n.declarations.some((d) => d.id.name === name)); assert.ok(s, name + ' not declared in ' + FILES.map((x) => x.f).join(' / ')); return s; }
+/* the radar row's switch-on: the package's `'dl-radar': { on }` — what toggleLayer's radar arm was, statement for statement */
 function radarBranch() {
-  let hit = null;
-  walk(AST, (n) => { if (n.type === 'IfStatement' && n.test.type === 'BinaryExpression' && n.test.left.name === 'id' && n.test.right.value === 'radar' && /req=/.test(src(n.consequent))) hit = n.consequent; });
-  assert.ok(hit, 'the radar arm of toggleLayer was not found');
-  return src(hit);
+  const x = FILES.find((y) => y.f === 'js/layer-pkg-radar.js');
+  let on = null;
+  walk(x.ast, (n) => { if (n.type === 'Property' && (n.key.value || n.key.name) === 'dl-radar' && n.value.type === 'ObjectExpression') on = n.value.properties.find((p) => p.key.name === 'on'); });
+  assert.ok(on && on.value.body.type === 'BlockStatement', 'the radar row\'s switch-on was not found in its package');
+  const body = on.value.body.body.filter((s) => !(s.type === 'VariableDeclaration' && s.declarations[0].id.name === 'req') && s.type !== 'ReturnStatement');
+  return '{\n' + body.map((s) => x.text.slice(s.start, s.end)).join('\n') + '\n}';
 }
 
 function radarRow({ fetch: fakeFetch }) {
@@ -146,9 +153,9 @@ function radarRow({ fetch: fakeFetch }) {
     'return function toggleRadar(){ let req; const id="radar";', radarBranch(), 'return req; };',
   ].join('\n');
   const make = new Function('document', 'window', 'HOST', 'satToast', 'lgdRadar', 'tileLegends', 'whenStyleReady', 'clockFor',
-    'jsonWithin', 'untilObserved', 'afterTick', 'tickKey', 'rvRefreshFrames', 'addRainViewer', 'rvAutoRefresh', 'IntMapLang', code);
+    'jsonWithin', 'untilObserved', 'afterTick', 'tickKey', 'rvRefreshFrames', 'addRainViewer', 'rvAutoRefresh', 'IntMapLang', 'live', code);
   const toggle = make(document, window, { lang: 'en' }, (m) => toasts.push(m), lgdRadar, () => {}, () => Promise.resolve(), clockFor,
-    jsonWithin, untilObserved, afterTick, tickKey, () => {}, () => { drawn.push('lyr-radar'); return true; }, () => {}, window.IntMapLang);
+    jsonWithin, untilObserved, afterTick, tickKey, () => {}, () => { drawn.push('lyr-radar'); return true; }, () => {}, window.IntMapLang, { lgdRadar });   /* (layer-packages) the package reads the rebuilt legend through the kit's live getter */
   const real = globalThis.fetch;
   globalThis.fetch = fakeFetch;
   return { toggle, cb, row, toasts, drawn, restore: () => { globalThis.fetch = real; } };
@@ -205,7 +212,7 @@ test('④ radar: unticked while waiting → nothing drawn, the box is not touche
 /* ── ⑤ which rows go through it — found, not listed ───────────────────────────────────────────── */
 test('⑤ every row that goes through the policy names its box, and the policy is not copied', () => {
   const boxes = [];
-  walk(AST, (n) => { if (n.type === 'CallExpression' && n.callee.name === 'rowUntilObserved') { const a = n.arguments[0]; assert.equal(a && a.type, 'Literal', 'rowUntilObserved is called without a literal box id'); boxes.push(a.value); } });
+  for (const x of FILES) walk(x.ast, (n) => { if (n.type === 'CallExpression' && n.callee.name === 'rowUntilObserved') { const a = n.arguments[0]; assert.equal(a && a.type, 'Literal', 'rowUntilObserved is called without a literal box id'); boxes.push(a.value); } });
   assert.ok(boxes.length >= 2, 'the radar and cable rows no longer go through the policy: ' + boxes.join(','));
   for (const b of boxes) assert.ok(DL.includes(`'${b}'`) && /^dl-/.test(b), b + ' is not a data-layer box');
   /* the retry decision exists once: the rows ask js/fetch-deadline.js isUnobserved rather than spelling `reason==='timeout'` themselves */
@@ -318,6 +325,6 @@ test('⑥ countries-ui and the fertility row: the classifier reaches the classic
   assert.match(AB, /window\.IntMapFetchWithin = \{[^}]*\bisUnobserved\b[^}]*\};/, 'window.IntMapFetchWithin does not carry isUnobserved');
   assert.match(CODE('js/countries-ui.js'), /FWu\.isUnobserved\(grabErr\)/, 'js/countries-ui.js does not ask the classifier why its last rung failed');
   const boxes = [];
-  walk(AST, (n) => { if (n.type === 'CallExpression' && n.callee.name === 'rowUntilObserved') boxes.push(n.arguments[0].value); });
+  for (const x of FILES) walk(x.ast, (n) => { if (n.type === 'CallExpression' && n.callee.name === 'rowUntilObserved') boxes.push(n.arguments[0].value); });
   assert.ok(boxes.includes('dl-tfr'), 'the fertility row does not go through the policy');
 });

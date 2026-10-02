@@ -690,6 +690,33 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 | `atlas` | そのレイヤー専用の Atlas の能力（`js/atlas-cap-<namespace>.js` の項目 id） |
 | `sources` | 描く元の出典（`js/reference-data.js` の `DATA_SOURCES` の `n`） |
 | `time` | データが何時について答えられるか（Chronos の契約）。いまは `{ kind: 'elements', bands }`——地物ごとに元期の周りの有効幅を持つ（衛星。`js/satellites-live.js` がここから読む） |
+| `pkg` | その行を実装する**レイヤー・パッケージ** `js/layer-pkg-<pkg>.js`（下の「レイヤー・パッケージ」）。無い行は今も `js/data-layers.js` が実装する |
+
+**レイヤー・パッケージ——宣言の実装の半分。** 宣言の `pkg` が名指すモジュール `js/layer-pkg-<pkg>.js` は、工場関数
+`<pkg>Package(kit)`（名前の導き方は `scripts/lib/layer-descriptor.mjs` の `packageFile` / `packageExport`）が、
+その名を持つ**全行**について `{ rows: { '<チェックボックス id>': { on, off, opacity } } }` を返す。`on` は行の要求
+（`js/layer-rows.js` の `layerInflight` が見る promise）を返す。`js/data-layers.js` の toggleLayer と setLayerOpacity は
+`pkg` を持つ行に**分岐を持たず**、先頭の 1 本の経路（`_pkgSwitch` / `_pkgOpacity`）で委ねる:
+- **取るのは初めて切り替えたとき**——`js/layer-manifest.js` の生成領域にパッケージごとの literal な動的 import
+  （`PACKAGES`）が書かれ、`loadPackage(name)` が呼ぶ。起動経路のモジュールは増えず、点けない人は取らない。
+  工場関数は 1 回だけ走る
+- **届く前の切替は順に再生する**（on・off・on は on・off・on）。求められていないパッケージへの off は何も取らない
+  （何も描かれていない）。取得の失敗は行の観測された失敗（`layerState`）で、覚えない——次の切替がもう一度取る
+- **kit** は `js/data-layers.js` の `packageKit()` が組む——閉包で共有していた同じ物（`opacities` は同じ 1 つ）。
+  言語の切替で作り直される凡例は値ではなく束縛なので `live` の getter で渡す
+- 行の**凡例のカード・行の構築・既定の不透明度**は今も `js/data-layers.js` が持つ（起動時に要るもの）
+- Layers 欄のサムネイル（`js/layer-previews.js`）が読む `layerReads.subcables` / `.radarIndex` は、パッケージが届く
+  までは取りに行く転送で、届けばパッケージ自身の関数に置き換わる
+
+いま 4 つ: `subcables`（`dl-subcables`）・`radar`（`dl-radar`）・`thermal`（`dl-thermal`）・`alliances`（`dl-nato`・`dl-eu`・
+`dl-milSpend`——加盟年の色・凡例・hover・時計への追従を共有する 1 族）。`alliances` は届いたときに時計の今の状態を 1 回
+通す（その行は起動時から時計に追従していた——届く前に時計が動いていても加盟年がずれない）。NATO の凡例が述べる
+加盟国数は**描いている加盟国**から書く（`IntMapNatoFC().features.length` と同じ集合。1985 年なら 16）——凡例の中の数は
+隣の絵の関数であって、固定の文ではない。⚠ **`js/data-layers.js` は
+小さくなるだけ**——行数・`window.*` への代入数・名前で切り替える行は `tests/data-layers-baseline.json` と両方向で
+照らされ（`check:static` の `layer-packages` 規則・`scripts/layer-packages.mjs`）、新しい分岐と `pkg` を持つ行の分岐は
+赤。移した行が読者に同じものを見せることは、移す前の木で撮った評価（`tests/fixtures/layer-packages-before.json`）と
+同じ評価で `tests/layer-manifest.spec.js` ⑥ が示す。
 
 **行の欄（`id`〜`lazy`）から一覧が導出される**（`scripts/lib/layer-descriptor.mjs` の `deriveShelves` を索引を書くときに走らせ、`js/layer-manifest.js` がそれを渡す）——`SHELVES`・`LAYERS` とそこからの一覧
 （`layerGroups()`・`betaKeys()`・`basicRows()`・`defaultOn()`・`sharedIds()`・`htmlRows()`・`catalog()` …）は
@@ -850,7 +877,8 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 `#layer-dropdown` という要素は残っていて、それは UI ではなくレジストリである——行を作るのは今も各モジュールの
 `buildUI()` で（ハンドラ・凡例・スライダーを持つのは行の持ち主）、**状態**（チェック）は今もその箱にある。
 **常時 `display:none`**（表示させる `.show` クラスは存在しない）。
-**新しいレイヤーは、`js/layers/<id>.js` を 1 本足し、行をこれまでどおりここに追加する。** 宣言の無い行も
+**新しいレイヤーは、`js/layers/<id>.js` を 1 本足し、行をこれまでどおりここに追加する。** 行の切替・不透明度の
+実装は `js/data-layers.js` の分岐ではなく、宣言の `pkg` が名指すレイヤー・パッケージに書く（上。新しい分岐は門が拒む）。宣言の無い行も
 ベータへ掃かれて描かれるが、`tests/layer-manifest.spec.js` が落ちる——一覧を読む全員がその行を知らない。
 一時コピーに宣言を 1 本足しただけで、棚・位置・共有・生成行・目録の全部に届き門が通ることは
 `tests/layer-descriptor-checks.test.mjs` ③ が実際に足して確かめている。

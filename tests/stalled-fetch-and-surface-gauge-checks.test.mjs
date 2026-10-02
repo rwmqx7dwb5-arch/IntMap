@@ -41,6 +41,7 @@ import { codeOnly, windowPublications } from '../scripts/global-surface.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { jsonWithin, readWithin, untilObserved, isUnobserved, UNOBSERVED_RETRIES } from '../js/fetch-deadline.js';
 import { afterTick, tickKey, stopEarlyTimers } from '../js/runtime.js';
+import { LAYERS, packageOf } from '../js/layer-manifest.js';
 import { clockFor, ownRelayUrl } from '../js/proxy-fetch.js';
 import { inFlight } from '../js/layer-rows.js';
 
@@ -50,13 +51,26 @@ const DL = stripComments(readLF(join(ROOT, 'js/data-layers.js')));
 const settle = async () => { for (let i = 0; i < 6; i++) await new Promise((r) => setImmediate(r)); };
 
 /* ── ① rvFetch, as shipped ─────────────────────────────────────────────────────────────────────── */
-/* the radar state and constants, exactly as they stand above rvFetch in the shipped file */
-const RV_STATE = (() => {
-  const a = DL.indexOf('let _rvData='), b = DL.indexOf('function rvFetch(');
-  assert.ok(a >= 0 && b > a, 'the radar state was not found above rvFetch');
-  return DL.slice(a, b);
-})();
-const RV_FNS = ['rvFetch', 'rvRead', 'rowUntilObserved', 'rvRefreshFrames', 'rvTiles', 'addRainViewer', 'toggleLayer'].map((n) => liftFunction(DL, n)).join('\n');
+/* (layer-packages) the radar row is a layer package now: its state, its reads and its switch are
+   js/layer-pkg-radar.js's factory (dl-radar `pkg`), which js/data-layers.js toggleLayer reaches through its one
+   package path (_pkgSwitch → _pkgLoad → the factory, with packageKit()). All of it is lifted as shipped and run
+   in the same rig: the factory function whole, and the path that loads and calls it. */
+const PKG = (name) => stripComments(readLF(join(ROOT, 'js/layer-pkg-' + name + '.js')));
+/* the factory declaration, found by the parser (a regular-expression literal with quotes in it — the fire probe's
+   /named '([^']+)'/ — is exactly what a brace matcher reads wrong, ② below) */
+const PKG_FACTORY = (name) => {
+  const text = PKG(name), fn = name.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase()) + 'Package';
+  const d = acorn.parse(text, { ecmaVersion: 'latest', sourceType: 'module' }).body
+    .find((n) => n.type === 'ExportNamedDeclaration' && n.declaration && n.declaration.id && n.declaration.id.name === fn);
+  assert.ok(d, 'js/layer-pkg-' + name + '.js does not export function ' + fn);
+  return text.slice(d.declaration.start, d.declaration.end);
+};
+const PKG_PATH = 'const _pkgs=Object.create(null); let _kit=null;\n'
+  + ['packageKit', '_pkgLoad', '_pkgSwitch', '_pkgOpacity'].map((n) => liftFunction(DL, n)).join('\n');
+assert.match(DL, /const _pkgs=Object\.create\(null\);/, 'the package register is not declared as the rig declares it');
+assert.match(DL, /let _kit=null;/, 'the kit is not declared as the rig declares it');
+const RV_INDEX = (() => { const m = /const RV_INDEX_URL='([^']+)';/.exec(PKG('radar')); assert.ok(m, 'RV_INDEX_URL is not declared in js/layer-pkg-radar.js'); return m[1]; })();
+const RV_FNS = ['rowUntilObserved', 'toggleLayer'].map((n) => liftFunction(DL, n)).join('\n') + '\n' + PKG_PATH + '\n' + PKG_FACTORY('radar');
 /* (unobserved-is-not-refused) the generation register rowUntilObserved keeps, as declared */
 const UNOBS_STATE = (() => { const m = /const _unobsGen=\{\};/.exec(DL); assert.ok(m, '_unobsGen was not found'); return m[0]; })();
 
@@ -90,16 +104,20 @@ function rig() {
     HOST: { lang: 'en' },
     setTimeout: () => 0,                           /* toggleLayer's shared tail (#R30 orphan guard) */
     requestAnimationFrame: () => 0,
+    /* (layer-packages) which rows take the package path is the declarations' answer; the package's module is the factory lifted below */
+    packageOf, layerReads: {}, loadPackage: (name) => Promise.resolve(name === 'radar' ? fns.radarPackage : null),
   };
+  let fns = null;
   const scope = new Proxy(over, {
     has: (t, k) => typeof k === 'string' && (k in t || !(k in globalThis)),
     get: (t, k) => (k in t ? t[k] : (typeof k === 'symbol' ? undefined : (t[k] = inert()))),
     set: (t, k, v) => { t[k] = v; return true; },
   });
   /* eslint-disable no-new-func */
-  const fns = new Function('scope', 'with (scope) { ' + UNOBS_STATE + '\n' + RV_STATE + '\n' + RV_FNS
-    + '\nreturn { rvFetch, toggleLayer, deadline: clockFor(RV_INDEX_URL) }; }')(scope);
-  return { ...fns, toasts, cb, row, lgdRadar };
+  fns = new Function('scope', 'with (scope) { ' + UNOBS_STATE + '\n' + RV_FNS
+    + '\nreturn { toggleLayer, radarPackage }; }')(scope);
+  /* the row's own read is the one the package hands layerReads once it has arrived — as the thumbnail reads it */
+  return { toggleLayer: fns.toggleLayer, rvFetch: (...a) => over.layerReads.radarIndex(...a), deadline: clockFor(RV_INDEX), toasts, cb, row, lgdRadar };
 }
 
 /* a host that accepts the connection and never answers — it ends only when the caller aborts */
@@ -357,8 +375,17 @@ const CLOSURE = (() => {
   return kept.map((d) => RAW.slice(d.start, d.end)).join('\n') + '\n'
     + unset.map((n) => `if (${n} === undefined) ${n} = __standIn('${n}');`).join('\n');
 })();
-const OWN_GLOBALS = new Set([...codeOnly(RAW, 'js/data-layers.js').matchAll(/(?<![\w$.])window\.([A-Za-z_$][\w$]*)\s*(?:\|\||\?\?)?=(?!=)/g)].map((m) => m[1]));
-const TOGGLE_BRANCHES = [...new Set([...liftFunction(DL, 'toggleLayer').matchAll(/\bid===\s*'([^']+)'/g)].map((m) => m[1]))];
+/* (layer-packages) a row whose declaration names a layer package is switched by the package's factory, reached
+   from toggleLayer by its one path (loadPackage → the factory, with packageKit()). Each package's factory is
+   lifted whole into the same closure — it IS that closure's continuation: the kit hands it the same names — so
+   its rows are run exactly as the branches they were. */
+const PKG_NAMES = [...new Set(LAYERS.map((l) => packageOf(l.id)).filter(Boolean))].sort();
+const PKG_FACTORIES = PKG_NAMES.map((n) => PKG_FACTORY(n)).join('\n')
+  + '\nconst __layerPackages = {' + PKG_NAMES.map((n) => JSON.stringify(n) + ': ' + n.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase()) + 'Package').join(', ') + '};';
+const OWN_GLOBALS = new Set([RAW].concat(PKG_NAMES.map((n) => readLF(join(ROOT, 'js/layer-pkg-' + n + '.js'))))
+  .flatMap((t) => [...codeOnly(t, 'js/data-layers.js').matchAll(/(?<![\w$.])window\.([A-Za-z_$][\w$]*)\s*(?:\|\||\?\?)?=(?!=)/g)].map((m) => m[1])));
+const TOGGLE_BRANCHES = [...new Set([...liftFunction(DL, 'toggleLayer').matchAll(/\bid===\s*'([^']+)'/g)].map((m) => m[1])
+  .concat(LAYERS.filter((l) => packageOf(l.id) && /^dl-/.test(l.id)).map((l) => l.id.slice(3))))];
 
 function layerEnv() {
   const toasts = [], added = [], els = new Map();
@@ -424,7 +451,11 @@ function layerEnv() {
     set: (t, k, v) => { t[k] = v; return true; },
   });
   /* eslint-disable no-new-func */
-  const toggleLayer = new Function('scope', 'with (scope) { ' + CLOSURE + '\nreturn toggleLayer; }')(scope);
+  const F = new Function('scope', 'with (scope) { ' + CLOSURE + '\n' + PKG_FACTORIES + '\nreturn { toggleLayer, __layerPackages }; }')(scope);
+  /* (layer-packages) the declarations say which rows take the package path; «fetching» a package hands its lifted factory */
+  over.packageOf = packageOf;
+  over.loadPackage = (name) => Promise.resolve(F.__layerPackages[name]);
+  const toggleLayer = F.toggleLayer;
   return { toggleLayer, toasts, added, el, win };
 }
 

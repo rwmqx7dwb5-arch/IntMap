@@ -7,4 +7,5 @@ export default {
   label: 'lyrSubcables',
   on: true,
   share: true,
+  pkg: 'subcables',   // (layer-packages) implemented by js/layer-pkg-subcables.js
 };

@@ -134,3 +134,100 @@ test('layer-manifest ⑤ each lazy link is real: switching the row on loads the 
     await page.evaluate((id) => { const cb = document.getElementById(id); if (cb.checked) { cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true })); } }, l.id);
   }
 });
+
+/* ══ (layer-packages) ⑥ A ROW WHOSE IMPLEMENTATION MOVED INTO ITS OWN MODULE DRAWS WHAT THE MONOLITH DREW ══════════
+   js/layer-pkg-<name>.js holds the implementation js/data-layers.js used to carry for the rows whose declaration names
+   it (`pkg`), and js/data-layers.js loads it the first time one of them is switched. The claim is that the reader sees
+   no difference, so the evaluation is the reader's: tick the row, move its opacity slider, untick it — and after each
+   step read what is on the map (every style layer and source the row added, with its paint, layout, tiles and its place
+   in the stack) and the row's legend. tests/fixtures/layer-packages-before.json is that same evaluation, run on the tree
+   BEFORE the move (IM_LAYER_PACKAGES_CAPTURE=<file> writes the evaluation there — never into the checkout, scripts/tree-writers.mjs
+   — and the file was copied over the fixture; how it was taken is in dev-notes/2026-10-02-layer-packages.md).
+   The upstreams are answered from here so the drawing is deterministic: RainViewer's frame index (two frames) and the
+   GIBS 4×4 probe the fire row makes; every other external host stays blocked (tests/helpers/network.js). Calendar dates
+   and digits inside legend text are masked — they are the day and the timezone the run happens in, not the drawing —
+   and so are the names js/atlas-controls.js writes onto every control when it runs.
+   ⚠ A fresh context, not the shared page: «where in the stack did the row's layer land» is only comparable on a map
+   nothing else has drawn on. */
+import { readFileSync as _lpRead, writeFileSync as _lpWrite, existsSync as _lpExists } from 'node:fs';
+import { installHermeticRouting } from './helpers/network.js';
+const LP_FIXTURE = new URL('./fixtures/layer-packages-before.json', import.meta.url);
+const LP_CAPTURE = process.env.IM_LAYER_PACKAGES_CAPTURE || '';
+/* the rows the evaluation is run on, with the short name the row's legend and slider are keyed by */
+const LP_ROWS = [['dl-subcables', 'subcables'], ['dl-radar', 'radar'], ['dl-thermal', 'thermal'],
+  ['dl-nato', 'nato'], ['dl-eu', 'eu'], ['dl-milSpend', 'milSpend']];
+const LP_RV = { version: '2.0', generated: 1700000600, host: 'https://tilecache.rainviewer.com',
+  radar: { past: [{ time: 1700000000, path: '/v2/radar/1700000000' }, { time: 1700000600, path: '/v2/radar/1700000600' }], nowcast: [] } };
+/* 1×1 transparent PNG — what the GIBS probe needs to hear to keep every fire product */
+const LP_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+
+/* the map has settled when what it holds (or what a row added to it) has read the same for `ms` — the boot draws the
+   country table and the night side after the style is up, and a row's tiles and legend arrive after its tick; this
+   waits for that, not for a fixed time */
+const lpSettled = (page, sig, arg, ms) => page.waitForFunction(({ sig, arg, ms }) => {
+  const s = JSON.stringify(sig === 'map' ? (() => { const st = window.__imap.getStyle(); return [st.layers.map((l) => l.id), Object.keys(st.sources)]; })() : window.__lpSnap(arg));
+  const w = window.__lpSettle || (window.__lpSettle = {});
+  if (w.s !== s) { w.s = s; w.at = performance.now(); return false; }
+  return performance.now() - w.at >= ms;
+}, { sig, arg, ms }, { timeout: 60000, polling: 250 });
+/* what the row added to the map and to its legend, relative to the map before it was ticked */
+function lpSnapshot({ base, key, cbId }) {
+  const mask = (s) => String(s).replace(/\d{4}-\d{2}-\d{2}/g, 'DATE');
+  const st = window.__imap.getStyle();
+  const ids = st.layers.map((l) => l.id);
+  const layers = st.layers.map((l, i) => [l, i]).filter(([l]) => base.layers.indexOf(l.id) < 0).map(([l, i]) => ({
+    id: l.id, type: l.type, source: l.source || null,
+    before: ids.slice(i + 1).find((x) => base.layers.indexOf(x) >= 0) || null,
+    paint: JSON.parse(mask(JSON.stringify(l.paint || {}))), layout: l.layout || {}, filter: l.filter || null,
+    minzoom: l.minzoom == null ? null : l.minzoom, maxzoom: l.maxzoom == null ? null : l.maxzoom }));
+  const sources = Object.keys(st.sources).filter((s) => base.sources.indexOf(s) < 0).sort().map((s) => {
+    const o = Object.assign({}, st.sources[s]);
+    if (o.data && typeof o.data === 'object') { const j = JSON.stringify(o.data); let h = 0; for (let i = 0; i < j.length; i++) h = (h * 31 + j.charCodeAt(i)) | 0;
+      o.data = { features: (o.data.features || []).length, chars: j.length, hash: h }; }
+    if (o.tiles) o.tiles = o.tiles.map(mask);
+    return [s, o]; });
+  const lg = document.getElementById('data-legend-' + key);
+  const cb = document.getElementById(cbId);
+  const row = cb && cb.closest('.lyr-row');
+  return { checked: !!(cb && cb.checked), rowOn: !!(row && row.classList.contains('on')), layers, sources,
+    /* `aria-label` / `data-imname` are js/atlas-controls.js naming every control whenever it runs — another owner, on its own clock */
+    legend: lg ? { display: lg.style.display, html: mask(lg.innerHTML).replace(/ (?:aria-label|data-imname)="[^"]*"/g, '').replace(/\d/g, '#') } : null };
+}
+
+test('layer-packages ⑥ each packaged row draws, fades and clears exactly what js/data-layers.js drew before the move', async ({ browser }) => {
+  test.setTimeout(LP_CAPTURE ? 300000 : 120000);
+  const ctx = await browser.newContext({ storageState: seededStorageState(), viewport: { width: 1280, height: 800 } });
+  await installHermeticRouting(ctx);
+  await ctx.route((u) => u.hostname === 'api.rainviewer.com', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(LP_RV) }));
+  await ctx.route((u) => u.hostname === 'gibs.earthdata.nasa.gov' && /WIDTH=4&/.test(u.search), (r) => r.fulfill({ status: 200, contentType: 'image/png', body: LP_PNG }));
+  const page = await ctx.newPage();
+  const want = !LP_CAPTURE && _lpExists(LP_FIXTURE) ? JSON.parse(_lpRead(LP_FIXTURE, 'utf8')) : null;
+  const got = {};
+  try {
+    await page.goto(ORIGIN + '/index.html', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction((ids) => window.__imap && window.__imap.isStyleLoaded() && ids.every((id) => document.getElementById(id)), LP_ROWS.map((r) => r[0]), { timeout: 60000 });
+    await page.evaluate('window.__lpSnap = ' + lpSnapshot.toString());
+    for (const [cbId, key] of LP_ROWS) {
+      await lpSettled(page, 'map', null, 3000);
+      const base = await page.evaluate(() => { const st = window.__imap.getStyle(); return { layers: st.layers.map((l) => l.id), sources: Object.keys(st.sources) }; });
+      const arg = { base, key, cbId };
+      const steps = [
+        ['on', () => page.evaluate((id) => { const cb = document.getElementById(id); cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }, cbId)],
+        ['opacity', () => page.evaluate((k) => { const s = document.getElementById('op-' + k); s.value = '0.5'; s.dispatchEvent(new Event('input', { bubbles: true })); }, key)],
+        ['off', () => page.evaluate((id) => { const cb = document.getElementById(id); cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true })); }, cbId)],
+      ];
+      got[cbId] = {};
+      for (const [phase, act] of steps) {
+        await act();
+        if (want) {
+          await expect.poll(() => page.evaluate(lpSnapshot, arg), { timeout: 30000, message: cbId + ' ' + phase }).toEqual(want[cbId][phase]);
+        } else {
+          await lpSettled(page, 'row', arg, 2000);
+          got[cbId][phase] = await page.evaluate(lpSnapshot, arg);
+        }
+      }
+    }
+    if (LP_CAPTURE) _lpWrite(LP_CAPTURE,JSON.stringify(got, null, 1) + '\n');
+    else expect(want, 'tests/fixtures/layer-packages-before.json is the evaluation of the tree before the move').not.toBeNull();
+  } finally { await ctx.close(); }
+});

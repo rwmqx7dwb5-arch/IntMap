@@ -818,6 +818,19 @@ try {
   err('site-address', 'could not run the site-address rule: ' + (e && e.message));
 }
 
+// ── 24. (layer-packages) js/data-layers.js only gets smaller ──
+// A row's implementation is a layer package (js/layers/<id>.js `pkg` → js/layer-pkg-<pkg>.js), reached from
+// js/data-layers.js through one path. This holds the rows js/data-layers.js still switches by name, its
+// lines and its assignments to window.* to tests/data-layers-baseline.json — a new branch fails, a row with a
+// package that is still switched by name fails, and the two sizes are ratcheted both ways (only `--update`
+// lowers them, and it refuses to raise); scripts/layer-packages.mjs. A rule here for the reason given at 15.
+try {
+  const { check: layerPackagesCheck } = await import('./layer-packages.mjs');
+  for (const l of await layerPackagesCheck()) err('layer-packages', l);
+} catch (e) {
+  err('layer-packages', 'could not run the layer-packages ledger: ' + (e && e.message));
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 const byCheck = (arr) => arr.reduce((m, x) => ((m[x.check] = (m[x.check] || 0) + 1), m), {});
 console.log(`\nIntMap static checks — scanned ${ALL.length} files (${codeFiles.length} JS/TS, ${yamlFiles.length} YAML)\n`);

@@ -395,7 +395,8 @@ test('R276 ⑨ the readout answers from the displayed layer, or says which datas
    colour schemes 0/2/3/6/7/8 and 1/4/5/9 return byte-identical tiles. */
 /* 綴りのまま: 対象は DOM・地図（MapLibre / WebGL）に触れる closure の中で、ブラウザの外では走らない（実ブラウザ側は spec が持つ） */
 test('R276 ⑩ RainViewer animates its past frames, and its retired satellite product is not used', () => {
-  const s = DL();
+  /* (layer-packages) the radar row is js/data-layers.js plus its layer package js/layer-pkg-radar.js (dl-radar `pkg`) */
+  const s = DL() + '\n' + codeOnly(read('js/layer-pkg-radar.js'));
   assert.match(s, /_rvFrames=\(r\.past\|\|\[\]\)\.concat\(r\.nowcast\|\|\[\]\)/, 'every available frame is a frame');
   assert.ok(!/satellite&&_rvData\.satellite\.infrared|satellite\.infrared/.test(s),
     'nothing reads the retired satellite.infrared');

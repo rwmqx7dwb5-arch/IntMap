@@ -9,7 +9,9 @@
 **比較的安全（加算的に拡張しやすい）**
 
 - 辞書の追加（`geo_pins`、クライアントの追加辞書、サーバー側の埋め込み辞書）。
-- データレイヤーの追加（既存の setup パターンに倣う）。出典は `DATA_SOURCES` に追記する。
+- データレイヤーの追加。宣言 `js/layers/<id>.js` を 1 本足し、実装はレイヤー・パッケージ `js/layer-pkg-<pkg>.js`
+  （宣言の `pkg` が名指す・既存の 3 本に倣う）に書く——`js/data-layers.js` に分岐を足さない（行数・`window.*` への
+  代入数・名前で切り替える行は下がるだけで、`check:static` の `layer-packages` 規則が拒む）。出典は `DATA_SOURCES` に追記する。
 - i18n 文言、ウィジェット、設定項目の追加。
 - Atlas の能力の追加。`js/atlas-cap-<名前空間>.js` に**項目を 1 つ**足し、説明文はその項目の `doc` に書く
   （既存のブロックに入るなら `{ in, at, text }` だけ）。続けて `node scripts/atlas-caps.mjs --write`。手順は §2 の
@@ -19,6 +21,8 @@
 
 - `reorganizeLayerPanel()` / `_refreshActiveLayers()` / レイヤーパネルの DOM 順序とスクロール補正。
 - レイヤーの宣言 `js/layers/<id>.js` と棚 `js/layers/_shelves.js`、そこから一覧を導く `js/layer-manifest.js`、それを読む `js/layer-rows.js`。
+- レイヤー・パッケージの継ぎ目——`js/data-layers.js` の `packageKit()`（パッケージに渡す物の一覧）と `_pkgSwitch`
+  （届く前の切替を順に再生する）。kit に物を足すときは写さず同じ物を渡し、作り直される束縛は `live` の getter にする。
 - チェックボックスの決定論的トグル（`#layer-dropdown` の pointerdown/click ハンドラ）。
 - `applyTheme()` / `_reassertBase()` / `styledata` の自己修復まわり。
 - 投影・3D・compare の同期。Isolate のマスク順序。

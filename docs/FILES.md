@@ -524,7 +524,8 @@ layer-manifest.js                 **どのレイヤーが在るか**（layer-man
                                   あいだに写される生成物（`node scripts/layer-descriptors.mjs --write`・`npm run build` が先に書く。
                                   import しないのは起動経路のモジュール数のため）。DOM も window も持たない
                                   （Node の検査がそのまま import する）。棚の並べ替え（reorganizeLayerPanel）・既定 ON の一覧・
-                                  タイル盤・共有リンク・お気に入りがここを読む
+                                  タイル盤・共有リンク・お気に入りがここを読む。`packageOf(id)` / `loadPackage(name)` は宣言の
+                                  `pkg` が名指すレイヤー・パッケージと、その literal な動的 import（呼ばれるまで何も取らない）
 layer-rows.js                     manifest の DOM 側 — 基本表示 10 行を manifest から書く（index.html から移った）＋
                                   `whenBoxes`（行が挿入された瞬間に適用する。セッション復元の 220ms×25 回ポーリングの後継）＋
                                   `holdUntilDrawable`（スタイルが受け取れる前のレイヤーの `change` を預かり、受け取れる
@@ -585,7 +586,15 @@ geodesy.js                        極と日付変更線に安全な幾何 window
 ### 3.5 `js/` — データレイヤー
 
 ```
-data-layers.js                    データレイヤーの目録＋エンジン（495 KB）。GROUPS が棚を決める
+data-layers.js                    データレイヤーの目録＋エンジン。宣言が `pkg` を持つ行はここに分岐を持たず、レイヤー・パッケージ
+                                  （下の layer-pkg-*.js）へ 1 本の経路で委ねる（`_pkgSwitch` / `_pkgOpacity`・初めて切り替えたときに取る）。
+                                  ⚠ 行数・window への代入数・名前で切り替える行は下がるだけ（scripts/layer-packages.mjs）
+layer-pkg-subcables.js            **レイヤー・パッケージ** 海底ケーブル dl-subcables — 取得の梯子・描画の梯子・クリック情報・切替・不透明度
+layer-pkg-radar.js                **レイヤー・パッケージ** RainViewer レーダー dl-radar — フレーム索引・再生（window._rvPlayer）・4 分ごとの更新・切替
+layer-pkg-thermal.js              **レイヤー・パッケージ** 火災・熱異常 dl-thermal — GIBS の日ごとの探査・24/48/72 h の重ね・再構築・不透明度
+layer-pkg-alliances.js            **レイヤー・パッケージ** NATO dl-nato・EU dl-eu・国防費 dl-milSpend（部品を共有する 1 族）— 加盟年の色と凡例・
+                                  Article 6 の切り取り・hover（window.IntMapNatoFC / IntMapEuFC）・国防費の 2 つの表し方・時計への追従・
+                                  凡例が述べる加盟国数（描いている加盟国から）
 layer-packs.js                    追加レイヤーパック（地球と空／土地被覆／ベータ2／宗教・言語／
                                   タイムゾーン／GIBS の科学プロダクト）
 wb-layers.js                      世界銀行指標の塗り分けと最新統計の更新
@@ -595,7 +604,7 @@ precip-annual.js                  年降水量——国別平均ではなく実�
 ocean-currents.js                 海流——同梱のアトラス盤
 subcable-info.js                  海底ケーブル／陸揚げ地点のクリック情報ポップアップ。
                                   **地図には一切描かない**（線の paint/layout を読み書きしない）。
-                                  `js/data-layers.js` から動的 import されるので eager には入らない
+                                  `js/layer-pkg-subcables.js` から動的 import されるので eager には入らない
 ocean-currents-field.js           海流——場のファイルの復号とストライド
 osm-facilities.js                 実地調査された施設 IntMapFacilities
 datacenters.js                    データセンターと AI インフラ IntMapDataCenters
@@ -1751,7 +1760,11 @@ scripts/
                                   宣言の集合からレイヤー欄の SHELVES を導く関数。ブラウザには配らない（導出は生成時に済む）
   layer-descriptors.mjs           レイヤーの宣言の**索引と門** — js/layers/ を発見して js/layer-manifest.js の生成領域を書き（`--write`）、
                                   宣言の形・棚・位置の重なり・索引の鮮度・結び目（registry・state・commands・atlas・
-                                  sources・lazy・label）をそれを持つ登録簿と照らす（`--check`）。`--report` は主張されない登録
+                                  sources・lazy・label・pkg）をそれを持つ登録簿と照らす（`--check`）。`--report` は主張されない登録。
+                                  生成領域にはレイヤー・パッケージごとの literal な動的 import（PACKAGES）も書く
+  layer-packages.mjs              **js/data-layers.js は小さくなるだけ**（check:static の `layer-packages` 規則）— 名前で切り替える行・
+                                  行数・window への代入数を tests/data-layers-baseline.json と両方向で照らす。新しい分岐と、`pkg` を
+                                  持つ行の分岐は赤。`--update` は下げるだけで、上げることを拒む
   layer-descriptor-migrate.mjs    **移行の記録**（ゲートではない）。手書きの manifest の SHELVES を 1 レイヤー 1 宣言に分け、
                                   注記を行と棚へ運び、登録の証拠から結び目を書いた（`--rev 281e584c`）
   lib/layer-derived.mjs           レイヤー欄の読み手が受け取る全部を 1 つの値にする（移行前後のバイト一致の比較に使う）
