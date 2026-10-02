@@ -2,7 +2,7 @@
   "_": "IntMap · the phone's runtime numbers (390x844, iPhone user agent, CPU x4, replayed third-party bytes). Written by scripts/frame-profile.mjs --boot --ledger and scripts/mobile-trace.mjs --ledger; printed by npm run check:perf; NOT a gate (needs a GPU and .frame-cache/). docs/TESTING.md.",
   "boot": {
     "measuredAt": "2026-10-02",
-    "commit": "3cbfa244+uncommitted",
+    "commit": "545951ad+uncommitted",
     "profile": {
       "viewport": "390x844",
       "dpr": 3,
@@ -12,27 +12,23 @@
       "reps": 3,
       "base": "local build (dist/)"
     },
-    "readyMs": 7758,
-    "firstDrawMs": 4981,
+    "readyMs": 4704,
+    "firstDrawMs": 3060,
     "longTasks": {
-      "n50": 38,
-      "n100": 17,
-      "maxMs": 1708,
-      "totalMs": 6611
+      "n50": 22.67,
+      "n100": 8.67,
+      "maxMs": 1389,
+      "totalMs": 3588
     },
     "beforeReady": {
-      "requests": 83,
-      "kB": 5123
+      "requests": 70,
+      "kB": 2833
     },
-    "planViolations": [
-      "subcables is declared need on this device and was read before ready: /data/subcables.json",
-      "subcables is declared need on this device and was read before ready: /data/subcables-meta.json",
-      "subcables is declared need on this device and was read before ready: /data/subcables-lp.json"
-    ]
+    "planViolations": []
   },
   "interaction": {
     "measuredAt": "2026-10-02",
-    "commit": "3cbfa244+uncommitted",
+    "commit": "545951ad+uncommitted",
     "profile": {
       "viewport": "390x844",
       "dpr": 3,
@@ -43,28 +39,28 @@
     },
     "phases": {
       "pan-touch": {
-        "fps": 31.1,
-        "over16_7Pct": 52.7,
-        "missedVsyncPct": 30.9,
-        "worstFrameMs": 150,
-        "blockingMs": 1870,
-        "latP95": 99.3
+        "fps": 44.6,
+        "over16_7Pct": 61.4,
+        "missedVsyncPct": 19.9,
+        "worstFrameMs": 83.4,
+        "blockingMs": 615,
+        "latP95": 34.9
       },
       "pinch-touch": {
-        "fps": 54.3,
-        "over16_7Pct": 34.8,
+        "fps": 55.7,
+        "over16_7Pct": 38.9,
         "missedVsyncPct": 7.6,
-        "worstFrameMs": 50.1,
-        "blockingMs": 33,
-        "latP95": null
+        "worstFrameMs": 33.4,
+        "blockingMs": 110,
+        "latP95": 16.2
       },
       "pan-alerts-city": {
-        "fps": 50.6,
-        "over16_7Pct": 19.2,
-        "missedVsyncPct": 7.8,
-        "worstFrameMs": 83.3,
-        "blockingMs": 222,
-        "latP95": null
+        "fps": 41.7,
+        "over16_7Pct": 48.8,
+        "missedVsyncPct": 37.8,
+        "worstFrameMs": 50,
+        "blockingMs": 76,
+        "latP95": 28.9
       }
     }
   }
