@@ -10,7 +10,7 @@
   },
   "async": {
     "raw": 11730418,
-    "gzip": 3835935,
+    "gzip": 3864555,
     "chunks": {
       "aircraft-detail": 17009,
       "analysis-correlate": 24199,
