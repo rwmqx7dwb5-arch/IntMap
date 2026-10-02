@@ -38,7 +38,7 @@ const CAPS = (await imp('js/atlas-capabilities.js')).makeAtlasCapabilities({}, {
 const GEN = await imp('scripts/atlas-caps.mjs');
 const ENTRIES = KIT.capabilityEntries(CAPABILITY_MODULES);
 const DOCS = makeAtlasCatalogText({}, {});
-const C0 = { lang: 'English', moduleCatalog: () => '', metricList: () => '', showcaseList: () => '' };
+const C0 = { lang: 'English', moduleCatalog: () => '', metricList: () => '', showcaseList: () => '', tourList: () => '' };
 
 /* the blocks as text, cut out of text(null) by their own lengths (what SYS() and find_capability read) */
 function blockTexts(docs) {
@@ -50,7 +50,7 @@ function blockTexts(docs) {
 test('atlas-capability-single-source ①: the catalogue is assembled from the entries, and every capability is documented by its entry', () => {
   const names = CATALOGUE_CHUNKS.map((k) => k.name);
   assert.equal(new Set(names).size, names.length, 'a chunk is declared once');
-  const val = (t) => (typeof t === 'function' ? t({ lang: 'English', moduleCatalog: () => '', metricList: () => '', showcaseList: () => '' }) : t);
+  const val = (t) => (typeof t === 'function' ? t({ lang: 'English', moduleCatalog: () => '', metricList: () => '', showcaseList: () => '', tourList: () => '' }) : t);
   /* recomputed here from the entries, independently of the assembler: head + the fragments that name the chunk, by `at` */
   const blocks = blockTexts(DOCS);
   assert.deepEqual(blocks.map((b) => b.name), names, 'one block per chunk, in the chunks\' order');

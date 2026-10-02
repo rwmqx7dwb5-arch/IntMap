@@ -112,7 +112,7 @@ export function capabilityEntries(modules) {
 
 /** the catalogue blocks the planner reads, ASSEMBLED from the entries (atlas-capability-single-source).
     `chunks` is the ordered list of js/atlas-catalog-text.js ({ name, head? }); `c` is what a function-valued
-    text or head reads ({ lang, moduleCatalog, metricList, showcaseList }). A block is its head followed by
+    text or head reads ({ lang, moduleCatalog, metricList, showcaseList, tourList }). A block is its head followed by
     the fragments that name it in `at` order; its `ids` are those fragments' capabilities, then the ones that
     name it without text (documented by the head). Throws on a fragment naming an undeclared chunk, two
     fragments at one position, or a chunk nothing documents — each is a catalogue that would be silently wrong. */

@@ -115,3 +115,15 @@ PRODUCT.md §2.4）に向けて、登録なしで 1 コマを回せる「授業�
    レイヤーだけを見るので、この間もパネルは「開いた」と表示する。
 5. 地震（`bx-eq`）は共有リンクが運ばない（既知）。
 6. 授業モードでは凡例（「この日付の地図」の注記など）がパネルと重なることがある（凡例は消さない一覧に入れている）。
+
+## 5. #890・#886 の着地のあと
+
+- **Atlas の宣言の形**: #890（能力 1 つを 1 宣言に）が着地したので、`panel.tour` の catalogue の文を項目の `doc`
+  （`{ in: 'panel.tour', text: (c) => … + c.tourList() + … }`）へ移し、`js/atlas-catalog-text.js` は塊の名前
+  （`CATALOGUE_CHUNKS` の 1 行）と `tourList`（`TOURS` から導く）を渡すだけにした。`tourList` は catalogue の文が読む
+  実行時の値なので、`js/atlas-caps.js` の註と `tests/atlas-capability-single-source-checks.test.mjs` の文脈の見本にも足した。
+- **アドレスバー**: #886 の門（直接の `location.hash` / `history.*State(` の箇所は増やさない）が `js/tour-player.js` の
+  3 か所で赤になった。`?tour=&step=` は地図の状態ではなくページの欄なので SCHEMA には入れず、`js/map-state.js` に
+  `MapState.address(query, hash)`（ページの欄と、codec が書いた断片をバーに置く唯一の扉。復元はしない）を足して、
+  プレイヤーはそれと `MapState.link()` / `hash()` / `carriesState()` だけを使う。門の台帳には map-state.js の
+  1 読み・1 書きを理由つきで足した（tour-player は 0）。
