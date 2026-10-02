@@ -180,7 +180,8 @@ export function timeAdmin1(HOST) {
          of which 1,142 and 1,600 end before 1800.
 
        The fallback geometry now uses 0.004° / 4 decimals in both tiers. Measured
-       2026-09-15: data/hist-admin1.js is 41,457,870 B and 2,180,014 vertices;
+       2026-09-15: data/hist-admin1.js is 41,458,052 B (2026-10-02, after the reviewed handover dates
+       were written into its `dates`; the rings did not move) and 2,180,014 vertices;
        data/hist-admin2.js is 40,660,406 B and 1,871,841 vertices (LF bytes); and (#R719)
        data/hist-admin3.js is 1,164,385 B and 39,725 vertices.
        This is the build target, not a guarantee about the source's survey accuracy.
@@ -470,6 +471,31 @@ export function timeAdmin1(HOST) {
         try { if (cfg.gaps && GE().layers.hasSource(cfg.gapSrc)) GE().layers.setSourceData(cfg.gapSrc, gapLinesFor(fc)); } catch (_) {}
       }
 
+      /* ══ (hist-fidelity-sweep) ONE NAME PER UNIT — #R520'S RULE, ONE LAYER DOWN ══════════════════════
+         「1950 年の朝鮮半島の地図で日本の府県名ラベルが何度も繰り返される」. The label layer read the POLYGON
+         source with `symbol-placement: point`, and MapLibre's symbol bucket makes one candidate per OUTER
+         RING of a polygon — measured on the shipped data/hist-admin-fill.js at 1950-07-01: Japan's 46
+         prefectures are 135 outer rings (Okinawa 20, Tokyo 14, Kagoshima 12, Nagasaki 12). js/time-borders.js
+         removed exactly that from the era country names in #R520 (and #R707 added the far-territory rule);
+         its `labelFC` is the one owner of «where does a unit's name go», so this asks it rather than
+         carrying a second copy. `keyOf` names the unit by its ROW (`_ix`), not by NAME: two provinces may
+         share a name at one instant, and grouping by NAME would label only the larger.
+         ⚠ WHAT IT HANDS BACK IS THE UNIT'S LABELLED PART(S) AS POLYGONS (`asParts`), and `cfg.src` — whose
+         only reader is the label layer — holds those: the renderer still finds each pole in its own
+         worker, once per part, so nothing heavy runs on the thread that paints (measured: choosing the
+         parts of the 794 units in force at 1950-07-01 took 35 ms; searching their poles here, 391 ms).
+         Each part carries a COPY of the unit's properties (`_ix`, `_tier`, `dates`, `_sort`…), so
+         js/map-ui.js's click (`geomAt`, `_eraSourceDates`) reads exactly what it read off the polygon.
+         ⚠ Without the era module (a harness that runs this file alone) the whole polygons are handed over
+         as before — the defect, not a silence; in the app js/time-borders.js is built first (js/app-body.js). */
+      function labelsFor(fc) {
+        try {
+          const TB = window.IntMapTimeBorders;
+          if (TB && typeof TB.labelFC === 'function') return TB.labelFC(fc, f => (f.properties && f.properties._ix != null) ? 'ix' + f.properties._ix : '', true);
+        } catch (_) {}
+        return fc;
+      }
+
       function linesFor(fc) {
         const m = BC() ? BC().marks(cfg.set) : null;
         if (!_D || !m) { try { return BC().wholeLines(fc); } catch (_) { return { type: 'FeatureCollection', features: [] }; } }
@@ -630,10 +656,10 @@ export function timeAdmin1(HOST) {
         const my = seq; shownFC = fc;
         try {
           if (GE().layers.hasSource(cfg.src) && GE().layers.has(cfg.line)) {
-            GE().layers.setSourceData(cfg.src, fc); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); _setGap(fc); _applyNow(); return;
+            GE().layers.setSourceData(cfg.src, labelsFor(fc)); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); _setGap(fc); _applyNow(); return;
           }
         } catch (_) {}
-        if (ensure()) { try { GE().layers.setSourceData(cfg.src, fc); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); _setGap(fc); } catch (_) {} _applyNow(); }
+        if (ensure()) { try { GE().layers.setSourceData(cfg.src, labelsFor(fc)); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); _setGap(fc); } catch (_) {} _applyNow(); }
         /* (#R140's shape) the style was mid-load — don't latch the era units absent until a reload. */
         else whenStyleReady().then(() => { if (active && seq === my) apply(fc); });
       }
@@ -692,7 +718,7 @@ export function timeAdmin1(HOST) {
         try {
           if (active && _imCanDraw() && !GE().layers.has(cfg.line)) {
             ensure(); const fc = cache.get(shownKey);
-            if (fc) { try { GE().layers.setSourceData(cfg.src, fc); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); _setGap(fc); } catch (_) {} }
+            if (fc) { try { GE().layers.setSourceData(cfg.src, labelsFor(fc)); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); _setGap(fc); } catch (_) {} }
             _applyNow();
           }
         } catch (_) {}

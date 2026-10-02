@@ -186,7 +186,9 @@ const ISO2_STRICT = /^[A-Z]{2}-[A-Z0-9]{1,3}$/;
 
 /* ── plumbing ───────────────────────────────────────────────────────────────────────────── */
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-function cacheDir() { const d = path.join(ROOT, 'node_modules', '.cache', 'intmap-histfill'); fs.mkdirSync(d, { recursive: true }); return d; }
+/* (hist-fidelity-sweep) INTMAP_HISTFILL_CACHE moves the cache — a worktree's node_modules is a junction
+   into the master copy, and a build run there would otherwise write its cache into the original. */
+function cacheDir() { const d = process.env.INTMAP_HISTFILL_CACHE || path.join(ROOT, 'node_modules', '.cache', 'intmap-histfill'); fs.mkdirSync(d, { recursive: true }); return d; }
 
 async function sparql(query, key) {
   const f = path.join(cacheDir(), key + '.json');
@@ -385,7 +387,7 @@ function stampOf(iso, floorTo) {
    which is also why it still refuses the two rows #R719 measured: Armenia is drawn from the
    latest of its eleven provinces, not from Yerevan's 782 BC, and Ukraine from the latest of its
    twenty-five oblasts. A country whose units state nothing is admitted by neither rule. */
-async function wikidataSpans() {
+export async function wikidataSpans() {
   const rows = await sparql(`SELECT ?code ?item ?inc ?dis WHERE {
   ?item wdt:P300 ?code .
   OPTIONAL { ?item wdt:P571 ?inc }
@@ -398,12 +400,105 @@ async function wikidataSpans() {
     if (s == null) continue;
     const e = stampOf(r.dis && r.dis.value, 'end');
     const prev = out.get(code);
-    /* one code, several items happens where a unit was re-founded; the EARLIEST stated inception
-       is the one that can be defended, and a stated dissolution always wins over none. */
-    if (!prev || s < prev.s) out.set(code, { qid: r.item.value.split('/').pop(), s, e: e == null ? null : e });
-    else if (prev && e != null && prev.e == null) prev.e = e;
+    /* ══ ⚠⚠⚠ (hist-fidelity-sweep) SEVERAL STATED INCEPTIONS: THE UNIT IS DRAWN FROM THE LAST ONE ═════
+       This took the EARLIEST, on the reasoning that «one code, several items happens where a unit was
+       re-founded». A re-founded unit is exactly the case where the earliest date is FALSE for the outline
+       drawn: 香川県 (Q161454) states 1871-12-26, 1875-09-05 and 1888-12-03 — founded, merged into 名東県,
+       refounded, merged into 愛媛県, refounded — and today's Kagawa exists continuously only from the last.
+       Taking the first made Japan's set floor 1881-02-07 (福井県's single date) instead of the 1888-12-03
+       the note on the set floor below itself expects, so 1881-1888 drew Kagawa over what was 愛媛県, Nara
+       (refounded 1887-11-04) over 大阪府, and Toyama / Saga / Miyazaki (1883) over 石川 / 長崎 / 鹿児島 —
+       units whose today's outline did not exist. MEASURED 2026-10-02 on the shipped bundle: all 45
+       Japanese rows began 1881-02-07.
+       ⇒ every stated inception is kept (`ss`) and the unit is drawn from the LATEST of them: the one date
+       every statement about its beginning has passed. That can only make a span shorter, never invent a
+       year, and where the dates are several opinions about ONE founding it is the cautious one. */
+    const qid = r.item.value.split('/').pop();
+    const cur = prev || { qid, s, ss: [], es: [], e: null };
+    if (!prev) out.set(code, cur);
+    if (!cur.ss.includes(s)) cur.ss.push(s);
+    if (s > cur.s) { cur.s = s; cur.qid = qid; }
+    if (e != null && !cur.es.includes(e)) cur.es.push(e);
+  }
+  /* …and a dissolution the unit was refounded AFTER is the end of an earlier incarnation, not of this
+     one (香川県's 1876 merger into 愛媛県): the end that bounds the outline is the first stated one after
+     the latest inception, or none. */
+  for (const v of out.values()) {
+    const after = v.es.filter((x) => x > v.s);
+    v.e = after.length ? Math.min(...after) : null;
   }
   return out;
+}
+
+/* ══ (hist-fidelity-sweep) THE STATED INCEPTIONS TRAVEL WITH THE BUNDLE ═══════════════════════════
+   `inception[code]` is the latest inception Wikidata states for that ISO 3166-2 code (YYYYMMDD, the
+   stamp the rows use), for every unit of every admitted country that states one. It is the evidence
+   for the two claims the rows make — «not before my own last founding» and «not before my country's
+   set was complete» — so npm run check:histfidelity can re-derive both OFFLINE from the shipped bytes,
+   the way `deferred` lets `--check` re-derive the whole-country rule. */
+function inceptionOf(countries, byCountry, spans) {
+  const out = {};
+  for (const iso3 of countries) for (const u of byCountry.get(iso3).all) {
+    const w = u.code && spans.get(u.code);
+    if (w && Number.isFinite(w.s)) out[u.code] = w.s;
+  }
+  return Object.fromEntries(Object.entries(out).sort((a, b) => (a[0] < b[0] ? -1 : 1)));
+}
+
+/* ══ (hist-fidelity-sweep) `--redate` — RE-DATE THE COMMITTED ROWS, MOVE NO LINE ═════════════════════
+   The same shape as scripts/build-hist-admin1.mjs `--dates`, and for the same reason: a full build
+   re-asks today's Wikidata which units of every country are dated at all and re-runs the geometric tests
+   over the whole world, which is a larger and different change than the one rule this pass exists for.
+   This pass applies that ONE rule to the rows already shipped: a country is drawn from the
+   latest inception any of its units states — each unit's own latest (`wikidataSpans`), maximised over
+   the country, exactly the set floor the build computes — and no row starts before it. A row that ends
+   on or before the new floor leaves with its rings; nothing else changes. */
+async function redate() {
+  const rel = path.relative(ROOT, OUT).replace(/\\/g, '/');
+  const d = loadBundle(rel).data;
+  const ne = JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(ROOT, 'data', 'admin1-world.json.gz'))));
+  const spans = await wikidataSpans();
+  const byCountry = new Map();
+  for (const f of ne.f) {
+    const code = f.n.split('|').find((p) => ISO2.test(p)) || null;
+    const c = byCountry.get(f.i) || { all: [] };
+    c.all.push({ code });
+    byCountry.set(f.i, c);
+  }
+  const countries = [...new Set(d.feats.map((f) => f[11]))].sort();
+  const floor = new Map(), before = new Map();
+  for (const iso3 of countries) {
+    let F = null;
+    for (const u of byCountry.get(iso3).all) { const w = u.code && ISO2_STRICT.test(u.code) && spans.get(u.code); if (w && (F == null || w.s > F)) F = w.s; }
+    if (F != null) floor.set(iso3, F);
+  }
+  const keep = [], moved = new Map(), dropped = [];
+  for (const f of d.feats) {
+    const F = floor.get(f[11]);
+    const s = ymd(f[2], f[3], f[4]), e = ymd(f[5], f[6], f[7]);
+    if (!before.has(f[11]) || s < before.get(f[11])) before.set(f[11], s);
+    if (F == null || s >= F) { keep.push(f); continue; }
+    if (e <= F) { dropped.push(f); continue; }
+    const [y, m, dd] = splitYmd(F);
+    f[2] = y; f[3] = m; f[4] = dd;
+    moved.set(f[11], (moved.get(f[11]) || 0) + 1);
+    keep.push(f);
+  }
+  for (const [iso3, n] of [...moved].sort()) console.error('  ' + iso3 + ': ' + n + ' row(s) from ' + splitYmd(before.get(iso3)).join('-') + ' → ' + splitYmd(floor.get(iso3)).join('-'));
+  if (dropped.length) console.error('  dropped ' + dropped.length + ' row(s) that end before their country\'s floor: ' + dropped.map((f) => f[10] + ' ' + f[0]).join(', '));
+  /* the ring pool is rebuilt only when a row left, so a pass that only moved dates leaves every ring index as it was */
+  if (dropped.length) {
+    const remap = new Map(), pool = [];
+    for (const f of keep) f[8] = f[8].map((poly) => poly.map((ix) => { if (!remap.has(ix)) { remap.set(ix, pool.length); pool.push(d.rings[ix]); } return remap.get(ix); }));
+    d.rings = pool;
+  }
+  d.feats = keep;
+  const admitted = countries.filter((c) => byCountry.has(c));
+  const head = { ...d, built: new Date().toISOString().slice(0, 10), inception: inceptionOf(admitted, new Map(admitted.map((c) => [c, { all: byCountry.get(c).all }])), spans) };
+  /* the key order the build writes: inception sits before the rings, so the file stays diffable */
+  const { rings, feats, ...rest } = head;
+  fs.writeFileSync(OUT, 'window.' + GLOBAL + '=' + JSON.stringify({ ...rest, rings, feats }) + ';\n');
+  console.error('· wrote ' + rel + ' — ' + [...moved.values()].reduce((a, b) => a + b, 0) + ' row(s) re-dated in ' + moved.size + ' country(ies), ' + dropped.length + ' dropped');
 }
 
 /* ── interval arithmetic on [start, end) stamps ─────────────────────────────────────────── */
@@ -698,6 +793,7 @@ async function main() {
        can re-derive «a country is answered whole» over what the READER sees rather than over one
        record's half of it. */
     deferred: [...deferred].sort(),
+    inception: inceptionOf(admitted, byCountry, spans),
     rings,
     feats,
   };
@@ -823,5 +919,6 @@ function check() {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (args.includes('--check')) check();
+  else if (args.includes('--redate')) redate().catch((e) => { console.error('FAILED', e); process.exit(1); });
   else main().catch((e) => { console.error('FAILED', e); process.exit(1); });
 }

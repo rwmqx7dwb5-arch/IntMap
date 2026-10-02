@@ -1,6 +1,6 @@
 {
  "v": 1,
- "note": "Reviewed lifespans for the era record (data/hist-eras.js). `rows` act on the map (js/hist-scale.js eraSpanOut): the name is withheld in a year after `e` or before `s` (astronomical years; the bound year itself is inside). A row is written only where Wikidata states the bound AND the historical record agrees, and only if the bound withholds no year history says the polity existed: a row with `s` carries `hs`, the earliest year its `history` sentence places the unit, and the gate fails if the map withholds the name in any year from `hs` on. `refuted` are mechanical findings examined and NOT applied, with the reason. `facts` is what Wikidata states (P571/P576), refreshed by node scripts/histeras/spans.mjs --fetch. Gate: npm run check:histfidelity.",
+ "note": "Reviewed lifespans for the era record (data/hist-eras.js). `rows` act on the map (js/hist-scale.js eraSpanOut): the name is withheld in a year after `e` or before `s` (astronomical years; the bound year itself is inside). A row is written only where Wikidata states the bound AND the historical record agrees — or, marked `sBy: \"history\"`, where history places a start EARLIER than every start Wikidata states (the card then says the bound is history's, `circa` when the record gives it as approximate) — and only if the bound withholds no year history says the polity existed: a row with `s` carries `hs`, the earliest year its `history` sentence places the unit, and the gate fails if the map withholds the name in any year from `hs` on. `refuted` are mechanical findings examined and NOT applied, with the reason. `facts` is what Wikidata states (P571/P576), refreshed by node scripts/histeras/spans.mjs --fetch. Gate: npm run check:histfidelity.",
  "gov": {"publisher":"Wikidata","url":"https://www.wikidata.org/","licence":"CC0 1.0","licenceUrl":"https://creativecommons.org/publicdomain/zero/1.0/","attribution":false,"paidBy":"Wikidata (CC0 1.0)","cadence":"P1D","cadenceBasis":{"observed":"estimate, not measured per class: Wikidata is edited continuously and its Query Service reflects an edit within minutes, so any day can change what a query answers","expires":"if the builders read a Wikidata dump or a frozen snapshot instead of the live Query Service","canon":"scripts/lib/upstream-cadence.mjs WIKIDATA"},"builtBy":"scripts/histeras/spans.mjs","retrievedAt":"2026-10-01"},
  "rows": [
   {"name":"Songhai","q":"Q202687","e":1591,"history":"Battle of Tondibi (13 March 1591): the Saadian army defeated Askia Ishaq II and the empire broke up; the Dendi successor kingdom is a different unit."},
@@ -118,7 +118,8 @@
   {"name":"Xiongnu","q":"Q188836","s":-299,"hs":-317,"history":"The Xiongnu first appear in the record in 318 BCE (and as a confederation under Modu, 209 BCE); every year the sheet draws them in precedes both."},
   {"name":"Achaemenid Empire","q":"Q389688","s":-549,"hs":-549,"history":"Cyrus II overthrew Astyages in 550 BCE."},
   {"name":"Assyria","q":"Q41137","e":-608,"history":"The Neo-Assyrian Empire ended at Harran, 609 BCE."},
-  {"name":"Urartu","q":"Q185068","s":-859,"hs":-859,"history":"The Kingdom of Urartu is attested from Aramu, c. 860 BCE."}
+  {"name":"Urartu","q":"Q185068","s":-859,"hs":-859,"history":"The Kingdom of Urartu is attested from Aramu, c. 860 BCE."},
+  {"name":"Elam","q":"Q128904","s":-3199,"hs":-3199,"sBy":"history","circa":true,"history":"The historical record begins Elamite civilization with the Proto-Elamite period, c. 3200-2700 BCE (Susa and Anshan, the Proto-Elamite script); Wikidata's 2700 BCE is the start of the Old Elamite period, so the bound is history's and Wikidata's is refuted as later."}
  ],
  "refuted": [
   {"name":"Songhai","q":"Q202687","side":"start","why":"other-identity","note":"Before 1464 the Songhai state of Gao (Sonni dynasty) already existed; 1464 is the start of the imperial expansion under Sonni Ali."},
@@ -179,8 +180,7 @@
   {"name":"Surinam","q":"Q7646305","side":"start","why":"other-identity","note":"The English colony of Surinam (1650-1667) is a different unit from the Dutch colony (1667)."},
   {"name":"Cayenne","q":"Q44401","side":"start","why":"other-identity","note":"The upstream draws French Guiana, not the town founded in 1664."},
   {"name":"Ceylon","q":"Q918153","side":"start","why":"name-not-claim","note":"A geographic name for the island, not British Ceylon (1815)."},
-  {"name":"Khanate of the Golden Horde","q":"Q79965","side":"start","why":"date-disputed","note":"Batu established the Golden Horde on his return from the western campaign, 1242-43 (and the Ulus of Jochi it continued existed from the 1220s); Wikidata's 1243 would withhold the name in 1242."},
-  {"name":"Elam","q":"Q128904","side":"start","why":"date-disputed","note":"Wikidata's 2700 BCE is the start of the Old Elamite period; the historical record dates Elamite civilization from the Proto-Elamite period, c. 3200 BCE (Susa and Anshan, the Proto-Elamite script), so the bound would withhold the name from the 3000 BCE sheet in years Elam existed (the row did so from 2026-10-01 until this verdict)."}
+  {"name":"Khanate of the Golden Horde","q":"Q79965","side":"start","why":"date-disputed","note":"Batu established the Golden Horde on his return from the western campaign, 1242-43 (and the Ulus of Jochi it continued existed from the 1220s); Wikidata's 1243 would withhold the name in 1242."}
  ],
  "facts": {
   "Q16": {"en":"Canada","s":[1867],"e":[]},
