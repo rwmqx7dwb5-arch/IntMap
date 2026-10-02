@@ -15,7 +15,7 @@ SNS で広げる読者にとって、タイムラプスと時間比較は投稿�
 | 地図の画素の読み手 | `js/atlas-view-capture.js` の `captureCanvas`（スクリーンショットと Atlas が共有）。`preserveDrawingBuffer` は切ってあり、`render.onNextFrame` で tick の中で読む | 3 つ目の読み手を書かずに、同じ扉から読める |
 | Cesium の描画通知 | `scene.postRender` → `fire('render')`（`js/cesium-engine.js`） | 両エンジンで同じ `onNextFrame` が効く |
 | 画面の出典 | メイン地図はレンダラの帰属表示を切り（GHSA-jrc7-96c5-q579）、`#map-credit` は**基図だけ**を名指す | データ層（CShapes 2.0 など）の帰属は画面に出ていない。ファイルにする以上、描いている典拠全部を入れる必要がある |
-| 製品の住所 | `supabase/functions/_shared/site-origin.js` の `SITE_URL`（Vite がページに束ねる） | リンクは書き写さずそこから読む |
+| 製品の住所 | `supabase/functions/_shared/site-origin.js` の `SITE_URL`。ビルドが index.html の og:url に書き込む | リンクは書き写さず og:url から読む（js/ から site-origin.js を import すると、js/ と types/ だけを写す型検査の門〈typecheck-gate〉で解決できない——CI で実測） |
 | MediaRecorder（Chromium 実測） | `start` 直後の `pause`／`resume` の間だけ時間が進む。200〜800 ms の待ちを挟んだ 7 コマのブロック時刻 0・250・501・785・1014・1268・1519 ms | 地図を待つ時間はファイルに入れずに済む |
 | 同（終わり） | 長さは最後のコマの時刻で終わる（7 コマで 1519 ms） | 最後の瞬間は表示時間 0。ループ再生では見えない |
 | 同（コマの取り方） | キャンバスのトラックは `requestFrame` の**後の描画**でコマを取る。待ってから要求したコマ → 4 中 1 しか残らない。描画と要求を同じタスクにすると全部 | 合成と要求を同じタスクにする |
@@ -28,7 +28,7 @@ SNS で広げる読者にとって、タイムラプスと時間比較は投稿�
 ## 1. 何を作ったか
 
 **`js/map-recorder.js`（遅延チャンク）——1 つの合成器。** 地図（枠いっぱいに中央で切り抜き）・各面の左上にその瞬間・
-下の帯に語標（`apple-mobile-web-app-title`）とリンク（`SITE_URL`）、そして出典。枠は 1080×1080・1920×1080・
+下の帯に語標（`apple-mobile-web-app-title`）とリンク（og:url）、そして出典。枠は 1080×1080・1920×1080・
 1080×1920。配置は純関数 `layoutFrame`（文字幅を測る関数を受け取る）で、出典は 24 px で 4 行を超えると 20 px まで
 縮め、それでも入らなければ**帯を高くする——切らない**。
 
@@ -49,6 +49,8 @@ SNS で広げる読者にとって、タイムラプスと時間比較は投稿�
 （上の表のとおり、要求の仕方でコマの数が変わるので、この形は実測で決めた）。終点に達したら同じ絵をもう 1 コマ
 （`encoded` = `frames` + 1）。終点より前に止まった録画は何も残さない。形式は録れる最初のもの（MP4 の H.264
 レベル 4.0〈1920×1080 に要る〉High → Main → Baseline → 素の `video/mp4`〈Safari〉 → WebM VP9 → VP8）。
+
+**出典の読み方。** 帰属表示は典拠がマークアップで書くので、文字列置換で「消毒」せず、左から 1 度だけ読む（タグの外は文字・タグは何も出さない・script/style の中身は捨てる。`js/geo-engine.js` の `_creditParts` と同じ読み方）。結果はキャンバスの `fillText` と `textContent` にしか渡らない。最初の版の置換は CodeQL（js/incomplete-multi-character-sanitization）に止められた。
 
 **比較の 1 枚。** 比較ウィンドウ（公開された制御 `window.IntMapCompare`。`js/compare.js` をこの遅延チャンクに
 import しない理由は `js/atlas-cap-time.js` と同じ）の地図とメイン地図を、それぞれの瞬間の札つきで左右（縦長なら

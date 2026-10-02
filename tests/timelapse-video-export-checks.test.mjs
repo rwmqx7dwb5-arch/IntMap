@@ -137,6 +137,13 @@ test('③ the credit is the credit of what is drawn, as text, folded', () => {
     'the credit names what is not drawn (a hidden layer, an empty collection), misses what is, keeps markup, or does not fold «© CARTO» into the page\'s base credit');
   assert.ok(M.drawnCredits(style, 10, []).includes('Only from zoom 9'), 'a layer inside its zoom range credits its source');
   assert.deepEqual(M.drawnCredits(null, 0, []), [], 'no style, nothing to credit');
+  /* the credit is READ as text, not rewritten as markup: a script body is not text, a nested or unclosed tag leaves nothing
+     behind, and a «<» that opens no tag is a character */
+  assert.deepEqual(M.drawnCredits(null, 0, ['<script>alert(1)</script>© A', '<b onclick="x>y">B</b> &lt;C&gt; 1 < 2', '<a href=x>D<br>E', 'F <unclosed']),
+    ['© A', 'B <C> 1 < 2', 'D E', 'F']);
+  /* a split tag is read the way a browser reads it — «<scr<script>» is ONE tag named scr<script — so what is left is text
+     that names no element */
+  assert.deepEqual(M.drawnCredits(null, 0, ['<scr<script>ipt>x</script>© A']), ['ipt>x© A']);
 });
 
 test('④ the container: MP4 first, WebM where MP4 cannot be recorded; the sizes as a reader names them', () => {

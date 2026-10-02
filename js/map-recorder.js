@@ -36,7 +36,6 @@ import { IntMapLang } from './lang-registry.js';
 import { IntMapTime } from './chronos.js';
 import { makeViewCapture } from './atlas-view-capture.js';
 import { startLapse, stopLapse, lapseState } from './time-lapse.js';
-import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 
 /* The three frames offered: square, landscape, portrait. 1080 is the short edge all three share, so the overlay's
    sizes are written once against it (`u` below) and are the same physical size in each. */
@@ -78,17 +77,41 @@ export function pickMime(format, isSupported) {
 }
 
 /* ══ THE CREDIT ═══════════════════════════════════════════════════════════════════════════════════════════
-   An attribution is written by its source as markup (`<a href>©&nbsp;OpenStreetMap</a>`); on a frame it is text. */
+   An attribution is written by its source as markup (`<a href>©&nbsp;OpenStreetMap</a>`); on a frame it is TEXT, painted
+   with `fillText`, which never parses anything. So this is not a sanitiser and does not rewrite markup into safer markup:
+   it READS the string once, left to right, the way js/geo-engine.js `_creditParts` reads a credit for the page — what is
+   outside a tag is text (its entities decoded), a tag contributes nothing (`<br>` a space), and the body of a
+   script/style element is dropped. What it returns only ever reaches a canvas and the export row's `textContent`. */
 const ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', copy: '©', reg: '®', middot: '·', ndash: '–', mdash: '—' };
-function plain(s) {
-  return String(s == null ? '' : s)
-    .replace(/<(script|style)[\s\S]*?<\/\1\s*>/gi, ' ')
-    .replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]*>/g, '')
-    .replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, (m, k) => {
-      if (k[0] === '#') { const n = k[1] === 'x' || k[1] === 'X' ? parseInt(k.slice(2), 16) : parseInt(k.slice(1), 10); try { return n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : m; } catch (_) { return m; } }
-      const v = ENT[k.toLowerCase()]; return v != null ? v : m;
-    })
-    .replace(/\s+/g, ' ').trim();
+const SKIP = { script: 1, style: 1, template: 1, noscript: 1, textarea: 1, title: 1 };
+function decode(t) {
+  return t.replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, (m, k) => {
+    if (k[0] === '#') { const n = k[1] === 'x' || k[1] === 'X' ? parseInt(k.slice(2), 16) : parseInt(k.slice(1), 10); try { return n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : m; } catch (_) { return m; } }
+    const v = ENT[k.toLowerCase()]; return v != null ? v : m;
+  });
+}
+function plain(src) {
+  const str = String(src == null ? '' : src);
+  let out = '', i = 0, skip = '';
+  while (i < str.length) {
+    const lt = str.indexOf('<', i);
+    const chunk = lt < 0 ? str.slice(i) : str.slice(i, lt);
+    if (!skip) out += decode(chunk);
+    if (lt < 0) break;
+    if (!/[a-z\/!?]/i.test(str[lt + 1] || '')) { if (!skip) out += '<'; i = lt + 1; continue; }   /* «a < b» is text */
+    let j = lt + 1, q = '';
+    for (; j < str.length; j++) { const c = str[j]; if (q) { if (c === q) q = ''; } else if (c === '"' || c === "'") q = c; else if (c === '>') break; }
+    if (j >= str.length) break;                                     /* an unterminated tag ends the text */
+    const m = /^(\/?)([a-z][a-z0-9-]*)/i.exec(str.slice(lt + 1, j));
+    i = j + 1;
+    if (!m) continue;                                               /* comments, doctypes */
+    const name = m[2].toLowerCase();
+    if (m[1]) { if (skip === name) skip = ''; continue; }
+    if (skip) continue;
+    if (SKIP[name]) { skip = name; continue; }
+    if (name === 'br') out += ' ';
+  }
+  return out.replace(/\s+/g, ' ').trim();
 }
 /**
  * drawnCredits(style, zoom, extra?) → string[] — the credit of what is DRAWN: the attribution of each source a layer
@@ -234,7 +257,14 @@ function brand() {
   let name = '';
   try { const m = document.querySelector('meta[name="apple-mobile-web-app-title"]'); name = (m && m.getAttribute('content')) || ''; } catch (_) { /* below */ }
   if (!name) name = String(document.title || '').split(/\s+[—–-]\s+/)[0];
-  return { name, link: SITE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '') };
+  /* the address the build writes into the page's social card — scripts/site-url.mjs fills og:url from
+     supabase/functions/_shared/site-origin.js, the one place it is written (importing that file from js/ would put a
+     path outside js/ into the type-checked graph). A page that was not built carries the token instead, and then the
+     address it is being read at is the honest answer. */
+  let url = '';
+  try { const og = document.querySelector('meta[property="og:url"]'); url = (og && og.getAttribute('content')) || ''; } catch (_) { url = ''; }
+  if (!/^https?:\/\//.test(url)) url = location.origin + location.pathname.replace(/[^/]*$/, '');
+  return { name, link: url.replace(/^https?:\/\//, '').replace(/\/$/, '') };
 }
 
 /* ══ READING THE MAPS ═════════════════════════════════════════════════════════════════════════════════════ */
