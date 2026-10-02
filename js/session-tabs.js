@@ -19,6 +19,7 @@
  * ==========================================================================*/
 import { whenBoxes } from './layer-rows.js';   /* (layer-manifest) «as soon as its row exists», from the manifest — not a poll */
 import { IntMapTime } from './chronos.js';
+import { MapState } from './map-state.js';   /* (map-state-store) the map's fields of the session are the store's projection */
 export function makeSessionTabs(HOST, CTX) {
   const GE=CTX.GE, isMobile=CTX.isMobile, setMode=CTX.setMode;
   /* ===== (#R122) SESSION STATE PERSISTENCE — a browser reload used to reset everything except the map coordinates
@@ -26,7 +27,16 @@ export function makeSessionTabs(HOST, CTX) {
      and 3-D terrain are saved to localStorage and restored on load. Map lat/lng/zoom/projection stay in the hash. ===== */
   (function(){
     const KEY='intmap_session2'; let _restoring=true, _saveT=null, _tabInit=false;
-    function _snapshot(){ try{
+    /* ══ (map-state-store) THE MAP'S HALF OF THE SESSION IS THE STORE'S `session()` PROJECTION ═════════════════
+       The base map, the terrain and the year used to be read here off IM_HOST and the clock — the third copy of
+       facts the share link and Atlas each read for themselves. js/map-state.js SCHEMA now says which fields the
+       session carries and under which key; this file adds the app chrome around them (tab, sidebars, `tabInit`,
+       the `defv` generation) and owns ONE field of the map's state itself: `toggles`.
+       ⚠ `toggles` IS NOT `layers`. The link carries the manifest's `share` rows (js/map-ui.js `activeLayers`);
+       the session carries EVERY ticked row of the panel — the base toggles (names, borders, …) included, which a
+       reader expects back after a reload but a link must not impose on someone else's map — plus the default-on
+       rows the app itself unticked after a failure (below). Two facts, two fields, one schema. */
+    function _toggles(){
       const layers=[]; document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(cb.checked&&cb.id) layers.push(cb.id); });
       /* ⚠ (#R188) A LAYER THE APP SWITCHED OFF IS NOT A LAYER THE USER SWITCHED OFF. When the
          submarine-cable download failed, js/data-layers.js unticked the box — and this snapshot
@@ -37,7 +47,10 @@ export function makeSessionTabs(HOST, CTX) {
          cleared the moment a real click touches the box, so the session keeps wanting the layer. */
       (window.IntMapDefaultLayers||[]).forEach(id=>{ const cb=document.getElementById(id);
         if(cb&&!cb.checked&&cb.dataset&&cb.dataset.imAutoOff==='1'&&layers.indexOf(id)<0) layers.push(id); });
-      let year=null; try{ const T=IntMapTime; if(T&&T.isLive&&!T.isLive()&&T.year) year=T.year(); }catch(_){}
+      return layers; }
+    MapState.own('toggles',{ read:_toggles });
+    function _snapshot(){ try{
+      const m=MapState.session();   /* { layers, base, terr3d, year } — the keys SCHEMA's `session` column names */
       /* (#R189) `defv` stamps WHICH generation of default-on handling wrote this session. Sessions
          written before #R188's imAutoOff fix (defv absent) may record an outage as an opt-out, and
          no amount of fixing the writer heals what is already in storage — the reader has to.
@@ -54,10 +67,10 @@ export function makeSessionTabs(HOST, CTX) {
       let sbOpen=null, lsrOpen=null;
       try{ const el=document.getElementById('sidebar'); if(el) sbOpen=!el.classList.contains('collapsed'); }catch(_){}
       try{ const el=document.getElementById('layer-sidebar-r'); if(el) lsrOpen=el.classList.contains('open'); }catch(_){}
-      return { v:2, defv:190, layers, tabInit:_tabInit, mode:(typeof HOST.mode!=='undefined'?HOST.mode:null),
-        base:(typeof HOST.mapType!=='undefined'?HOST.mapType:'map'), terr3d:!!(typeof HOST.terrain3D!=='undefined'&&HOST.terrain3D),
+      return { v:2, defv:190, layers:m.layers, tabInit:_tabInit, mode:(typeof HOST.mode!=='undefined'?HOST.mode:null),
+        base:m.base, terr3d:m.terr3d,
         sbOpen, lsrOpen,
-        year:(year&&year<new Date().getFullYear())?year:null }; }catch(_){ return null; } }
+        year:m.year }; }catch(_){ return null; } }
     /* (share-embed-distribution) an EMBED (js/ui-device.js `embedded()`) neither reads nor writes this session: it shows
        the map its link describes, and a frame of IntMap on the same origin (the share panel's preview) must not
        rewrite the reader's own saved IntMap with the frame's state */
@@ -69,10 +82,12 @@ export function makeSessionTabs(HOST, CTX) {
          here on the box says what the user wants, either way. Synthetic change events (the default-on
          dispatcher, the session restore) are not trusted and leave the mark alone. */
       if(e.isTrusted&&e.target.dataset) delete e.target.dataset.imAutoOff;
-      _save(); } }catch(_){} },true); }catch(_){}
+      MapState.changed('toggles'); } }catch(_){} },true); }catch(_){}
     try{ document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.addEventListener('click',()=>setTimeout(_save,60))); }catch(_){}
-    try{ ['btn-view-map','btn-view-sat','btn-view-3d'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(_save,120)); }); }catch(_){}
-    try{ if(IntMapTime&&IntMapTime.on) IntMapTime.on(()=>_save()); }catch(_){}
+    /* (map-state-store) the map's fields of the session — the rows, the base map, the terrain, the clock — are saved
+       when the STORE says one moved (their owners announce it), instead of this file listening to each source */
+    try{ const SESSION=new Set(MapState.SCHEMA.filter(f=>f.session).map(f=>f.key));
+      MapState.on(e=>{ if(SESSION.has(e.key)) setTimeout(_save,120); }); }catch(_){}
     /* (#R170) DESKTOP BOOT → open the Countries tab ("デスクトップ版は通常モードをデフォルトに。（Countries が選択
        された状態で）"). #R11 deliberately left every tab deselected; that stays true for mobile (the tab is a bottom
        sheet, so auto-opening one would cover the map) and for workspace mode (which has its own windows).
@@ -173,7 +188,7 @@ export function makeSessionTabs(HOST, CTX) {
       /* (share-embed-distribution) …unless the address opened on a map state: a link (and a reload, whose address
          bar the share-link writer keeps current) states its own instant — `tt`, or «now» when it has none — and
          two restorers setting the clock at the same 900 ms was a race the link could lose (js/map-ui.js carriesState) */
-      try{ if(s.year&&IntMapTime&&IntMapTime.setYear){ setTimeout(()=>{ try{ const B=window.IntMapBookmark; if(B&&B.carriesState&&B.carriesState()) return; IntMapTime.setYear(s.year,{source:'restore'}); }catch(_){} },900); } }catch(_){}
+      try{ if(s.year&&IntMapTime&&IntMapTime.setYear){ setTimeout(()=>{ try{ if(MapState.carriesState()) return; IntMapTime.setYear(s.year,{source:'restore'}); }catch(_){} },900); } }catch(_){}
       setTimeout(()=>{ _restoring=false; },1600);   /* stop suppressing saves once the restore settles */ }
     /* run the restore once the map + initial layer UI are ready */
     /* (restored-layer-before-style) on the style being able to take layers, not on MapLibre's `load`,

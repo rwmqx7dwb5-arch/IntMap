@@ -28,11 +28,12 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 /* (time-compare-lapse) the main map's clock, and the factory this window makes its own clock with */
 import { IntMapTime, makeClock } from './chronos.js';
+import { MapState } from './map-state.js';   /* (map-state-store) this file owns the map state's `compare` field — see below */
 
 /* ══ (time-compare-lapse) THE WINDOW'S TIME, BY IMPORT ═════════════════════════════════════════════════════
-   The comparison window holds a clock of its own (below). The readers of that fact — the share link
-   (js/map-ui.js), Atlas's capability, its observer and its state (js/atlas-cap-time.js,
-   js/atlas-capabilities.js, js/atlas-state.js) — import this face from its owner rather than reaching
+   The comparison window holds a clock of its own (below). The readers of that fact — the share link (through
+   this file's own `compare` field of the map state, below), Atlas's capability, its observer and its state
+   (js/atlas-cap-time.js, js/atlas-capabilities.js, js/atlas-state.js) — import this face from its owner rather than reaching
    through `window.IntMapCompare` (scripts/global-surface.mjs counts every such reach). It answers null until
    js/app-body.js has created the window's controller with `compare(HOST)`. */
 let _cmpApi=null; const _cmpSubs=new Set();
@@ -49,6 +50,22 @@ export const compareTime={
   /** fn() whenever the window's instant or its follow choice changes; returns the unsubscribe */
   on:(fn)=>{ if(typeof fn!=='function') return ()=>{}; _cmpSubs.add(fn); return ()=>{ _cmpSubs.delete(fn); }; },
 };
+
+/* ══ (map-state-store) THE WINDOW IS A FIELD OF THE MAP'S STATE, AND THIS FILE IS ITS OWNER ═══════════════════
+   js/map-state.js spells it in the address bar as `cmp=1|x` and `ct=<the window's instant>` (absent `ct`: the
+   window follows the main map's clock — a statement, as an absent `tt` is). The value is read off the window
+   itself, and a restore opens the window through the same door the reader's button and Atlas use; the X-ray
+   mode is pressed 700 ms later (its button exists once the window has built), under the same restore generation. */
+MapState.own('compare', {
+  read: () => { try { const cw = document.getElementById('compare-window');
+    if (!cw || getComputedStyle(cw).display === 'none') return null;
+    return { xray: cw.classList.contains('cmp-xray'), at: compareTime.param() }; } catch (_) { return null; } },
+  apply: (v, ctx) => { if (!v) return; try {
+    compareTime.open(); compareTime.set(v.at ? { param: v.at } : { follow: true });
+    if (v.xray) ctx.later(() => { const xb = Array.from(document.querySelectorAll('#compare-window .cmp-btn')).find((b) => /x-ray/i.test(b.textContent)); if (xb) xb.click(); }, 700);
+  } catch (_) { } },
+});
+compareTime.on(() => MapState.changed('compare'));   /* the window's instant is part of the link */
 
 /* (time-compare-lapse) the window's own layer that no main-map layer reads, declared in js/layer-time.js's vocabulary
    (exported: tests/time-compare-lapse-checks.test.mjs runs it through the same `validate` the gate uses) */

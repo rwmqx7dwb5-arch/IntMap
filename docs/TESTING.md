@@ -4528,3 +4528,11 @@ merge 後の入力で走らせ、`--check` が一致を認める。⑤ script �
 形（`JSON.stringify` とその字下げ）と 1 バイトも違わないこと。⑦ 整数を足すのは件数に読めるときだけ（日付・版・
 `#PR`・百分率・時刻・先頭ゼロ・負になる結果は衝突のまま）。⑧ `worktree.mjs`（`new`・`status`）と
 `master-sync.mjs --sync` が登録を呼ぶ。
+
+### `tests/map-state-store-checks.test.mjs` (map-state-store)
+
+15 本。**地図の状態は `js/map-state.js` の SCHEMA が 1 回だけ宣言し、URL・共有リンク・セッション・Atlas の snapshot はその写像**
+であること。`encode` / `decode` が純関数で、無い欄は「無いこと」が意味する値（`tt` 無し＝今・`ct` 無し＝主の時計に従う）、
+出荷済みの見本リンク 10 本がバイト単位で往復一致、復元は世代つきの 1 回の適用で新しい復元が古い段を止め、変化の通知は
+`restore` と `reader` を区別する。門: `js/map-state.js` 以外で URL の状態パラメータを手で解析・連結したら赤（パラメータ名は
+SCHEMA から導く）、`location.hash` と `history.*State(` の直接の使用はファイルごとの件数で固定。

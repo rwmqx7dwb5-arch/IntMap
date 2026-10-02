@@ -375,6 +375,10 @@ test('share-embed-distribution: the share link in a frame shows only the map, re
   await restoreTo(Y1985);
   await page.waitForTimeout(5000);   /* past every staged step of both restores (the last layer pass is at +3.2 s) */
   expect(await page.evaluate(() => [window.IntMapTime.iso(), document.getElementById('dl-ww2').checked]), '(b) the newer link, whole').toEqual(['1985-07-01', false]);
+  /* (map-state-store) the map's one state says the same: the newer link's instant and no war row — what the store reads
+     back from its owners is what the address bar, the session and Atlas are all derived from */
+  const st = await page.evaluate(() => window.IntMapBookmark.state());
+  expect([st.time && st.time.at, (st.layers || []).includes('dl-ww2'), Math.round(st.view.lng)], '(b) the store reads the newer link back').toEqual(['1985-07-01', false, 16]);
   /* the reader's own tick still opens a war on its record */
   await page.evaluate(() => { const cb = document.getElementById('dl-ww2'); cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); });
   const first = await page.evaluate(() => window.__imWarFronts.span('ww2')[0]);
