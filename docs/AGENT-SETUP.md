@@ -46,9 +46,11 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
 
 #### ⚠ 数えるのは「ディスク上のバイト」で、それはチェックアウトごとに違う（#R718 の実測）
 
-`.gitattributes` が LF に固定しているのは **Linux で実行・解析される拡張子だけ**（`*.sh` `*.sql`
-`*.mjs` `*.yml` `*.yaml` `*.toml`）。**`*.md` はそこに無い**ので `core.autocrlf` が決める——
+`.gitattributes` が LF に固定していたのは **Linux で実行・解析される拡張子だけ**（`*.sh` `*.sql`
+`*.mjs` `*.yml` `*.yaml` `*.toml`）。**`*.md` はそこに無かった**ので `core.autocrlf` が決めた——
 このマシンでは `true`＝**行の終わりごとに復帰文字が 1 バイト余分に載る**。
+（2026-10-02 から `* text=auto eol=lf` で、新しいチェックアウトはどのマシンでも LF。それ以前に
+チェックアウトした木は git が書き直すまで CRLF のままなので、門が最悪値を測る理由は変わらない。）
 
 **実測 2026-09-14（`ea7664a1`）**: `AGENTS.md` は LF で 32,718 バイト・改行 465 本、
 このマシンのチェックアウトでは **33,183 バイト**。天井は 32,768。
@@ -435,6 +437,10 @@ CI も同じ旗で出す（runner の Docker に依存しない）。
   add/add 衝突の衝突マーカーが commit されて検査ファイルが 1 本丸ごと走らなくなった）。
   今は slug を `git worktree add -b feat/<slug>` で**原子的に**取る——同じマシンの worktree は ref の
   名前空間を共有するので、同じ slug は 2 つ目が git に拒まれる（`tests/process-without-round-numbers-checks.test.mjs` ①）。
+- ⚠⚠ **`git stash` は全 worktree で共有される**（`refs/stash` は clone に 1 本）。clean な木で
+  stash→pop すると、自分は何も積んでいないので**別セッションの stash を pop する**（2026-10-02 実測・
+  中身は失われなかった）。統合の退避に stash を使わず、**commit か一時 branch** で。main の取り込みは
+  `git rebase origin/main` と merge driver（`node scripts/merge-driver.mjs --finish`・§12）。
 
 ---
 
@@ -452,6 +458,13 @@ CI も同じ旗で出す（runner の Docker に依存しない）。
   `worktree.mjs new`、`master-sync.mjs --sync`。手で行うなら `node scripts/merge-driver.mjs --install`。
   ⚠ **config は clone の全 worktree が共有する**（実測）ので、1 回の登録がこのマシンの全セッションに効く。
   Codex で hook が未 trust でも、`new` と `--sync` が同じものを書く——**製品による差は無い**。
+  ⚠ **登録は「書いた」ではなく「git が読み返した」で判定する**（2026-10-02 実測: config に driver が無く、
+  rebase が台帳を 1 つも解かなかった。`--sync` は fast-forward が成功した最後の行でしか登録していなかった）。
+  `master-sync.mjs` は**どのモードでも終了より前に**登録し、`--sync` の後は原本自身の新しい
+  `merge-driver.mjs --install` でもう一度登録する。読み返せなければ `--check` も `--sync` も赤
+  （`tests/generated-file-merge-driver-checks.test.mjs` ⑨ が一時 clone で全経路を走らせる）。
+- **台帳の行ごとの規則**は書き手が持つ: `intmap-clash-by=<script>` の `mergeClash(keys)`。
+  `tests/perf-baseline.json` は数（`requests`・`modules`）を合算し、量は main の値を取る。
 - ⚠ **driver が走る間、作業ツリーは merge 後の木ではない**（git 2.54・merge-ort 実測: main だけが変えた
   ファイルが、driver の呼び出し時点ではまだ branch 側の中身だった）。だから生成物は driver の中で
   作り直さず、**記録だけして** merge／rebase の後に `node scripts/merge-driver.mjs --finish` が生成器を

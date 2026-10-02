@@ -493,6 +493,29 @@ each against its own ceiling.
   push-to-`main` cycle: a commit merged with `GITHUB_TOKEN` (this bot's, or the catalogue's) starts no
   CI run, so when the newest commit on `main` is a bot's, the next human push closes the gap.
 
+⚠ **A local measurement is of the tree CI measures — or it says it is not** (perf-measure-parity,
+2026-10-02). A `pull_request` run builds `refs/pull/N/merge` («Merge <head> into <main as it is now>»,
+the `HEAD is now at` line of every CI log), not the branch. Reproduced on #872: the branch head built
+to eager brotli 1134.3 kB, the merge CI built to 1135.5 kB — CI's number to the byte. So `check:perf`
+reads the commit in `dist/index.html`'s build stamp and asks git whether it is `HEAD` and whether
+`HEAD` contains `origin/main`; a gap is printed under the verdict (`⚠ not the tree CI measures`), and
+**`--update` fetches `origin main` and refuses to write a ceiling from such a build** — rebase
+(`git rebase origin/main`, then `node scripts/merge-driver.mjs --finish`), rebuild, measure again.
+The bound is the fetch: main can still move before CI runs. ⚠ **Line endings were suspected and are
+not the cause of those rows** — the same commit built from a CRLF and an LF checkout gives
+byte-identical eager and async halves (the bundler drops the carriage returns), equal to CI's. They
+did reach `dist/` through the verbatim copies (121,742 bytes, 85,104 in `data/`), which is why
+`.gitattributes` now says `* text=auto eol=lf`: a checkout holds the repository's bytes on every
+machine (see «Determinism»). `tests/perf-measure-parity-checks.test.mjs` builds one commit from a
+`core.autocrlf=true` clone and an LF clone through the real build-report plugin and asserts the same
+`measureFrom()` and the same `dist/` — and that without the declaration they differ.
+⚠ **The ledger merges its counts as counts.** `tests/perf-baseline.json` is declared to the merge
+driver with `intmap-clash-by=scripts/perf-budget.mjs`: `mergeClash()` there says `requests`/`modules`
+are `sum` (two PRs that each raised `eager.modules` 299 → 300 merge to 301 — measured: #886 + #887,
+main red at 301 > 300), every byte row takes main's value and asks for a rebuild. ⚠ GitHub's own
+squash does not run the driver: two identical `299 → 300` edits merge there as one, so only a branch
+rebased on the other gets 301.
+
 ⚠ **`requests` and `modules` are counts, not bytes: their band is zero.** A byte-sized slack
 swallows them whole — `6 > 6 + 2048` is false for every value a count can take — so both rows would
 have sat in the table looking gated while being incapable of failing. One more fails the pull
@@ -1464,8 +1487,10 @@ printed to any log. `.codex/config.toml` raises the limit, but that layer loads 
 **trusted** project and trust is per path — so the number always in force is the default.
 
 ⚠ **And it measures the WORST CASE rather than this runner's bytes (#R718).** `.gitattributes`
-pins only the extensions executed or parsed on Linux to LF; `*.md` is left to `core.autocrlf`, so
-the same commit is two different file sizes. MEASURED 2026-09-14 on `ea7664a1`: `AGENTS.md` was
+pinned only the extensions executed or parsed on Linux to LF and left `*.md` to `core.autocrlf`, so
+the same commit was two different file sizes (since 2026-10-02 `* text=auto eol=lf` checks it out
+LF everywhere, but a tree checked out before that keeps its CRLF, so the worst case stays the
+number). MEASURED 2026-09-14 on `ea7664a1`: `AGENTS.md` was
 32,718 bytes with LF endings over 465 line breaks and **33,183 bytes as checked out on the
 development machine** — CI passed with 50 bytes to spare while the file Codex opened there was 415
 bytes over and had lost the tail of §12. Both verdicts were right about their own runner, which is
@@ -3722,10 +3747,15 @@ Tests are order-independent and repeatable: a fresh browser context per file (no
 Workers blocked, and a hermetic network. Nothing depends on the developer's clock,
 language, or prior runs.
 
-**…nor on the line endings the checkout produced.** `.gitattributes` pins the extensions that
-are executed or parsed on Linux (`*.sh`, `*.sql`, `*.mjs`, `*.yml`, `*.yaml`, `*.toml`) to LF;
-`js/`, `css/` and the HTML shells are left to `core.autocrlf`, which is `true` on the Windows
-development machine and hands those files back with CRLF — while CI reads them with LF. A
+**…nor on the line endings the checkout produced.** Since 2026-10-02 (perf-measure-parity)
+`.gitattributes` says `* text=auto eol=lf`, so a checkout writes every text file back as the
+repository holds it — LF — on every machine, whatever `core.autocrlf` says; the extensions executed
+or parsed on Linux (`*.sh`, `*.sql`, `*.mjs`, `*.yml`, `*.yaml`, `*.toml`) are forced `text eol=lf`
+as before. ⚠ That is not a guarantee about a working tree: one checked out before that line keeps
+its CRLF until git rewrites each file (git reads it as clean), and ten files were committed with CRLF
+and stay so (`git ls-files --eol`). Before it, `js/`, `css/` and the HTML shells were left to
+`core.autocrlf` — `true` on the Windows development machine — and came back with CRLF while CI read
+them with LF. A
 source-level check that asserts something about a file's **content** must therefore read the
 content, not the bytes: use `readLF` / `sameText` from **`scripts/eol.mjs`**, never a bare
 `readFileSync(p, 'utf8')` feeding a pattern that names a line break. Two checks did the latter

@@ -67,12 +67,15 @@
  *                                            main's CI runs (.github/workflows/perf-ceiling.yml);
  *                                            --measured reads a --report JSON instead of measuring
  * ==========================================================================*/
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 /* (locale-on-demand) the ONE answer to «which language is the fallback every other table chains onto» —
    asked of the registry the app runs, not typed here. Pure at import: no window, no document. */
 import { IntMapLang } from '../js/lang-registry.js';
+/* (perf-measure-parity) the build stamp names the commit a dist/ was built from — the one parser of it */
+import { STAMP_RE } from './build-stamp.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REPORT = join(ROOT, '.perf', 'build-report.json');
@@ -105,6 +108,15 @@ export const GROW = { rel: 0.005, abs: 2048 };     /* above ceiling × 1.005, or
 export const COUNTS = new Set(['requests', 'modules']);
 /** The churn band for one metric, in its own unit. */
 export const band = (k, ceil) => (COUNTS.has(String(k).trim()) ? 0 : Math.max(GROW.abs, ceil * GROW.rel));
+/* (perf-measure-parity) …AND A COUNT IS ALSO MERGED AS A COUNT. tests/perf-baseline.json is declared to
+   scripts/merge-driver.mjs with `intmap-clash=upstream intmap-clash-by=scripts/perf-budget.mjs`: a byte row
+   both sides moved is a MEASUREMENT and takes main's value (and the merge asks for a rebuild), but a count
+   both sides moved is two events. MEASURED 2026-10-02: #886 and #887 each raised eager.modules 299 → 300
+   for a module of its own, and with both landed main measured 301 against a ceiling of 300 — taking
+   either side's 300 (or seeing «both wrote 300» as agreement) dropped one of the two decisions. The
+   driver asks this function, per row, rather than holding a second list of which rows count. */
+/** The clash rule for the row at `keys` of the baseline: 'sum' for a count, null for the file's default. */
+export const mergeClash = (keys) => (Array.isArray(keys) && keys.length === 2 && keys[0] === 'eager' && COUNTS.has(String(keys[1])) ? 'sum' : null);
 
 function dirBytes(p) {
   let n = 0;
@@ -201,6 +213,63 @@ export function measureFrom(r, distDir) {
     async: { raw: r.async.raw, gzip: r.async.gzip, chunks: asyncChunks },
     dist: { total: dirBytes(distDir), data: dirBytes(join(distDir, 'data')), assets: dirBytes(join(distDir, 'assets')) },
   };
+}
+
+/* ══ (perf-measure-parity) WHICH TREE THIS IS A MEASUREMENT OF ═════════════════════════════════════
+   MEASURED 2026-10-01/02: five pull requests in a row were green here and red in CI on eager.brotli
+   (sometimes gzip, async), and each one raised its ceiling by hand to CI's number. The carriage returns
+   of this machine's checkout were suspected and are NOT the cause of those rows: the same commit built
+   from a CRLF and an LF checkout gives byte-identical eager and async halves, equal to CI's to the byte
+   (9e0662a9; the CRLF did reach dist/ through the verbatim copies — .gitattributes `* text=auto eol=lf`).
+   The cause is WHICH TREE is built. A pull_request run checks out refs/pull/N/merge — «Merge <head>
+   into <main as it is now>» (every CI log says so on its `HEAD is now at` line) — while a local build is
+   the branch. Reproduced on #872: its head 22df7e01 built here to brotli 1134.3 kB; the merge CI built
+   (22df7e01 into 2bacd112, one commit of main the branch did not have) builds here to 1135.5 kB, which
+   is CI's number exactly (raw 4580.1 kB and gzip 1505.1 kB too). And `--update` raises only what THIS
+   measurement is over, so it accepted the branch's growth and not the merge's.
+   So the measurement says which tree it is of: the commit the build stamp in dist/index.html names
+   (a dist/ built before a rebase is not a measurement of the rebased tree), and whether that commit
+   contains origin/main (if not, CI is going to build something else). A judgement prints the gap;
+   `--update` refuses to write a ceiling from it. In CI there is nothing to compare against — the run
+   IS the reference — and a checkout without git or without a stamp is said to be unknowable, not
+   assumed to be fine. ⚠ The bound is the moment of the fetch: main can still move before CI runs. */
+const gitIn = (cwd, args) => {
+  try { return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 20000 }).trim(); }
+  catch { return null; }
+};
+/** The commit a dist/ was built from: the sha in its build stamp, or null when it carries none. */
+export function builtFrom(distDir = DIST) {
+  const f = join(distDir, 'index.html');
+  if (!existsSync(f)) return null;
+  for (const m of readFileSync(f, 'utf8').matchAll(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z-(?:[0-9a-f]{7,40}|nogit)/g)) {
+    const s = STAMP_RE.exec(m[0]);
+    if (s) return s[2] === 'nogit' ? null : s[2];
+  }
+  return null;
+}
+/** What git says about the tree a measurement is of. `fetch` asks origin first (best effort). */
+export function treeState({ cwd = ROOT, distDir = DIST, env = process.env, fetch = false } = {}) {
+  if (env.GITHUB_ACTIONS === 'true') return { ci: true };
+  const head = gitIn(cwd, ['rev-parse', 'HEAD']);
+  let fetched = null;
+  if (fetch && head) fetched = gitIn(cwd, ['fetch', '--quiet', 'origin', 'main']) !== null;
+  const main = head && gitIn(cwd, ['rev-parse', '--verify', '--quiet', 'refs/remotes/origin/main']);
+  const behind = main ? Number(gitIn(cwd, ['rev-list', '--count', `HEAD..${main}`])) : null;
+  return { ci: false, head, built: builtFrom(distDir), main: main || null, behind: Number.isFinite(behind) ? behind : null, fetched };
+}
+/** The reasons this measurement is not of the tree CI will measure (empty when it is). Pure. */
+export function parityProblems(s) {
+  if (!s || s.ci) return [];
+  const out = [];
+  if (!s.head) return ['this is not a git checkout — which tree CI will build cannot be known here'];
+  if (!s.built) out.push('dist/index.html carries no build stamp with a commit — which commit this build is of cannot be known; rebuild (the package.json "build" script)');
+  else if (!s.head.startsWith(s.built)) out.push(`dist/ was built from ${s.built}, and HEAD is ${s.head.slice(0, s.built.length)} — this measurement is of a tree that is no longer checked out; rebuild`);
+  if (!s.main) out.push('there is no origin/main here — CI builds this branch merged into main, and which main cannot be known; git fetch origin main');
+  else if (s.behind > 0) {
+    out.push(`origin/main has ${s.behind} commit(s) this branch does not — CI builds «Merge HEAD into origin/main», not this tree; `
+      + 'git rebase origin/main (then node scripts/merge-driver.mjs --finish), rebuild, and measure again');
+  }
+  return out;
 }
 
 const kb = (n) => (n / 1024).toFixed(1) + ' kB';
@@ -350,6 +419,10 @@ function main() {
 
   if (m.eagerLocales) console.log(`  eager locales: ${Object.entries(m.eagerLocales).map(([c, n]) => `ui.${c} ${kb(n)}`).join(', ') || '(none)'}`);
   for (const n of notes) console.log(`\n  note: ${n}`);
+  /* (perf-measure-parity) a verdict about a tree CI will not build is said to be one. It does not change
+     the verdict (main having moved is not this pull request's regression), but it is the gap a green run
+     here and a red one in CI fell into five times. */
+  for (const p of parityProblems(treeState())) console.log(`\n  ⚠ not the tree CI measures: ${p}`);
   if (errors.length) {
     console.error('\nperf-budget FAILED:');
     for (const e of errors) console.error('  · ' + e);
@@ -373,6 +446,15 @@ const TIGHTEN_SUMMARY = (changes) => [
    import. Same shape as scripts/build-report.mjs. */
 if (process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
   if (has('--update')) {
+    /* (perf-measure-parity) a ceiling is written only from the tree CI is going to measure */
+    const tree = treeState({ fetch: true });
+    const gaps = parityProblems(tree);
+    if (gaps.length) {
+      console.error('perf-budget --update: refused — this build is not the tree CI measures, so a ceiling written from it is not the one CI will hold it to:');
+      for (const g of gaps) console.error('  · ' + g);
+      process.exit(1);
+    }
+    if (tree.fetched === false) console.log('perf-budget: origin could not be asked — origin/main is as of the last fetch.');
     const m = measure();
     if (!existsSync(BASELINE)) {
       writeFileSync(BASELINE, JSON.stringify(m, null, 2) + '\n');

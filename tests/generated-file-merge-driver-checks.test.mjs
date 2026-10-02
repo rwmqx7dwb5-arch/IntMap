@@ -18,6 +18,8 @@
  *      .gitattributes, every regen command exists and accepts its flags, every json ledger round-trips
  *   ⑦ an integer is summed only when it reads as a count
  *   ⑧ the two session tools register it (worktree.mjs new/status, master-sync.mjs --sync)
+ *   ⑨ …on EVERY way through them, run in throwaway clones: --sync with nothing to do, --sync refused,
+ *      --check, status --brief — and a registration git does not read back is red
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -26,7 +28,7 @@ import { mkdtempSync, rmSync, writeFileSync, readFileSync, mkdirSync, existsSync
 import { join, dirname, resolve, posix } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { install, declarations, DRIVER, DRIVER_CMD, mergeTokens, mergeJson, parseRegen, pending } from '../scripts/merge-driver.mjs';
+import { install, declarations, DRIVER, DRIVER_CMD, mergeTokens, mergeJson, parseRegen, pending, loadClashOf } from '../scripts/merge-driver.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const LF = (s) => s.replace(/\r\n/g, '\n');
@@ -43,6 +45,20 @@ function ok(cwd, args) {
 function put(file, text) { mkdirSync(dirname(file), { recursive: true }); writeFileSync(file, text); }
 const get = (dir, rel) => readFileSync(join(dir, rel), 'utf8');
 
+/* the `intmap-clash-by` writers and their relative imports, transitively */
+let _writers = null;
+function clashWriters() {
+  if (_writers) return _writers;
+  const seen = new Set(), todo = declarations(ROOT).map((d) => d.clashBy).filter(Boolean);
+  while (todo.length) {
+    const f = posix.normalize(todo.pop());
+    if (seen.has(f)) continue;
+    seen.add(f);
+    for (const m of real(f).matchAll(/^\s*import\s[^'"]*['"](\.{1,2}\/[^'"]+)['"]/gm)) todo.push(posix.join(posix.dirname(f), m[1]));
+  }
+  return (_writers = [...seen]);
+}
+
 /* a throwaway repository holding THIS checkout's driver and declarations */
 function repo(t, { withScript = true } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'intmap-mergedrv-'));
@@ -51,6 +67,9 @@ function repo(t, { withScript = true } = {}) {
   for (const [k, v] of [['user.email', 't@example.invalid'], ['user.name', 'test'], ['core.autocrlf', 'false'], ['commit.gpgsign', 'false']]) ok(dir, ['config', k, v]);
   put(join(dir, '.gitattributes'), real('.gitattributes'));
   if (withScript) put(join(dir, 'scripts/merge-driver.mjs'), real('scripts/merge-driver.mjs'));
+  /* (perf-measure-parity) …and every ledger WRITER a declaration asks for its per-row rule
+     (`intmap-clash-by`), with the files it imports — discovered from the declarations, not listed */
+  if (withScript) for (const f of clashWriters()) put(join(dir, f), real(f));
   assert.equal(install(dir).ok, true);
   return dir;
 }
@@ -267,7 +286,7 @@ function selfDeclared() {
   return out;
 }
 
-test('⑥ every file that declares itself generated or a ledger is declared, with the generator it names', () => {
+test('⑥ every file that declares itself generated or a ledger is declared, with the generator it names', async () => {
   const decl = new Map(declarations(ROOT).map((d) => [d.path, d]));
   const found = selfDeclared();
   assert.ok(found.length >= 40, `the discovery still finds the generated files (${found.length})`);
@@ -282,6 +301,7 @@ test('⑥ every file that declares itself generated or a ledger is declared, wit
     assert.ok(['json', 'regen', 'tokens'].includes(d.kind), `${d.path}: intmap-merge=${d.kind}`);
     if (d.kind === 'json') {
       assert.ok(['sum', 'upstream'].includes(d.clash), `${d.path}: intmap-clash=${d.clash}`);
+      if (d.clashBy) assert.equal(typeof (await loadClashOf(d, ROOT)), 'function', `${d.path}: intmap-clash-by=${d.clashBy} exports mergeClash(keys)`);
       const blob = execFileSync('git', ['cat-file', '-p', 'HEAD:' + d.path], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28 });
       const ind = (/\n([ \t]+)\S/.exec(blob) || [])[1];
       assert.equal(JSON.stringify(JSON.parse(blob), null, ind) + '\n', blob, `${d.path}: the driver writes a ledger byte-for-byte the way its writer does`);
@@ -319,5 +339,63 @@ test('⑧ the session tools register it: worktree.mjs (new and status) and maste
   assert.match(wt, /function makeNew[\s\S]*installMergeDriver\(dir\)[\s\S]*function markVerified/, 'new registers it');
   assert.match(wt, /function status\(brief\)[\s\S]*mergeDriver\(here\)/, 'status (the SessionStart hook in both products) registers it');
   assert.match(ms, /import \{ install as installMergeDriver \} from '\.\/merge-driver\.mjs'/);
-  assert.match(ms, /if \(want\('--sync'\)\)[\s\S]*installMergeDriver\(MASTER\)/, '--sync registers it on the master');
+  assert.match(ms, /installMergeDriver\(MASTER\)[\s\S]*if \(want\('--check'\)\)[\s\S]*if \(want\('--sync'\)\)/, 'master-sync registers it before either mode can exit');
+});
+
+/* (perf-measure-parity) MEASURED 2026-10-02: the clone's config had no driver — a rebase resolved no
+   ledger — and a --sync in the master did not put it back: it was registered only at the end of a
+   --sync whose fast-forward succeeded. ⑧ reads where the calls are; this RUNS every way out. */
+test('⑨ every way through the session tools leaves the driver registered, and a registration git does not read is red', (t) => {
+  const tmp = mkdtempSync(join(tmpdir(), 'intmap-mergedrv-reg-'));
+  t.after(() => rmSync(tmp, { recursive: true, force: true }));
+  const origin = join(tmp, 'origin.git'), work = join(tmp, 'work'), master = join(tmp, 'master');
+  ok(tmp, ['init', '-q', '--bare', '-b', 'main', origin]);
+  ok(tmp, ['clone', '-q', origin, work]);
+  for (const [k, v] of [['user.email', 't@example.invalid'], ['user.name', 'test'], ['core.autocrlf', 'false']]) ok(work, ['config', k, v]);
+  /* the tools and everything they import, from this checkout */
+  const seen = new Set(), todo = ['scripts/master-sync.mjs', 'scripts/worktree.mjs'];
+  while (todo.length) {
+    const f = posix.normalize(todo.pop());
+    if (seen.has(f) || !existsSync(join(ROOT, f))) continue;
+    seen.add(f);
+    put(join(work, f), real(f));
+    for (const m of real(f).matchAll(/\bfrom\s*['"](\.{1,2}\/[^'"]+)['"]/g)) todo.push(posix.join(posix.dirname(f), m[1]));
+  }
+  put(join(work, '.gitattributes'), real('.gitattributes'));
+  commitAll(work, 'tools');
+  ok(work, ['push', '-q', 'origin', 'HEAD:main']);
+  ok(tmp, ['clone', '-q', origin, master]);
+  const driver = (dir) => git(dir, ['config', '--get', `merge.${DRIVER}.driver`]).stdout.trim();
+  const unregister = (dir) => git(dir, ['config', '--local', '--remove-section', `merge.${DRIVER}`]);
+  const env = { ...process.env, INTMAP_WORKTREE_BASE: join(tmp, 'wts'), CODEX_HOME: join(tmp, 'codex') };
+  const node = (dir, script, ...args) => spawnSync(process.execPath, [join(dir, script), ...args], { cwd: dir, encoding: 'utf8', env, timeout: 120000 });
+
+  assert.equal(driver(master), '', 'a fresh clone starts without it (the config is not tracked)');
+  let r = node(master, 'scripts/master-sync.mjs', '--sync');
+  assert.equal(driver(master), DRIVER_CMD, '--sync with nothing to fast-forward registers it: ' + r.stdout + r.stderr);
+
+  unregister(master);
+  r = node(master, 'scripts/master-sync.mjs', '--check', '--offline');
+  assert.equal(driver(master), DRIVER_CMD, '--check registers it: ' + r.stdout + r.stderr);
+
+  unregister(master);
+  ok(master, ['checkout', '-q', '-b', 'somebody-else']);
+  r = node(master, 'scripts/master-sync.mjs', '--sync');
+  assert.notEqual(r.status, 0, 'a master off main is refused');
+  assert.equal(driver(master), DRIVER_CMD, '…and a refused --sync still registered it');
+  ok(master, ['checkout', '-q', 'main']);
+
+  unregister(master);
+  r = node(master, 'scripts/worktree.mjs', 'status', '--brief');
+  assert.equal(driver(master), DRIVER_CMD, 'status --brief (the SessionStart hook in both products) registers it: ' + r.stdout + r.stderr);
+
+  /* red: a scope that outranks --local holds something else — written is not registered */
+  ok(master, ['config', 'extensions.worktreeConfig', 'true']);
+  ok(master, ['config', '--worktree', `merge.${DRIVER}.driver`, 'true']);
+  const res = install(master);
+  assert.equal(res.ok, false, 'install() reads back what git will use');
+  assert.match(res.why, /outranks/);
+  r = node(master, 'scripts/master-sync.mjs', '--check', '--offline');
+  assert.equal(r.status, 1, '--check is red while git would run no driver: ' + r.stdout + r.stderr);
+  assert.match(r.stderr, /merge driver is not registered/);
 });

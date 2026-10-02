@@ -13,12 +13,15 @@
  *  This is that procedure, as a git merge driver. .gitattributes assigns it per path — the one list
  *  git itself requires, so the declaration lives there and nowhere else:
  *
- *      <path>  merge=intmap-generated  intmap-merge=<kind>  [intmap-clash=sum|upstream]  [intmap-regen=<cmd>[;<cmd>]]
+ *      <path>  merge=intmap-generated  intmap-merge=<kind>  [intmap-clash=sum|upstream]  [intmap-clash-by=<script>]  [intmap-regen=<cmd>[;<cmd>]]
  *
  *    json    A LEDGER. Three-way merge by key, and by member for an array of names. A key only one
  *            side moved takes that side; a number BOTH sides moved takes `intmap-clash`: `sum` adds
  *            the two moves (a count — the ratchet ledgers), `upstream` takes main's value and says
- *            so (a measurement — durations, start-up sizes). A ledger is never regenerated here: its
+ *            so (a measurement — durations, start-up sizes). Under `sum` two moves to the SAME number
+ *            are still two moves. `intmap-clash-by=<script>` lets the ledger's writer name the rule
+ *            row by row (its `mergeClash(keys)`): perf-baseline's counts sum, its sizes take main's.
+ *            A ledger is never regenerated here: its
  *            `--update` would ACCEPT whatever the tree holds, which is the ratchet's whole question.
  *    regen   A FUNCTION OF TRACKED INPUTS. Conflicting hunks inside a GENERATED … BEGIN/END region
  *            (or anywhere, when the file has no region) take main's side, and the generator named
@@ -54,7 +57,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, mkdtempSync, rmSync, unlinkSync } from 'node:fs';
 import { join, resolve, extname } from 'node:path';
 import { tmpdir } from 'node:os';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const DRIVER = 'intmap-generated';
 export const KINDS = ['json', 'regen', 'tokens'];
@@ -84,6 +87,12 @@ export function install(cwd = process.cwd()) {
       runGit(['config', '--local', k, v], cwd);
       changed.push(k);
     }
+    /* (perf-measure-parity) «written» is not «registered»: read back what git will actually use. MEASURED
+       2026-10-02: a rebase on this machine ran no driver at all — `git config --get` was empty — while
+       every entry point had reported success. A value in a scope that outranks --local (a worktree's
+       config.worktree, with extensions.worktreeConfig on, as it is here) would win the same way. */
+    const got = qGit(['config', '--get', `merge.${DRIVER}.driver`], cwd);
+    if (got !== DRIVER_CMD) return { ok: false, changed, why: `written to the clone's config, but git reads ${got ? `«${got.slice(0, 60)}…» from a scope that outranks it (git config --show-origin --get merge.${DRIVER}.driver)` : 'nothing'}` };
     return { ok: true, changed };
   } catch (e) {
     return { ok: false, changed, why: String(e.message || e).split('\n')[0] };
@@ -92,7 +101,11 @@ export function install(cwd = process.cwd()) {
 export const installed = (cwd = process.cwd()) => qGit(['config', '--get', `merge.${DRIVER}.driver`], cwd) === DRIVER_CMD;
 
 /* ══ DECLARATIONS — read from git, never restated ═════════════════════════════════════════════ */
-const ATTRS = ['merge', 'intmap-merge', 'intmap-clash', 'intmap-regen'];
+const ATTRS = ['merge', 'intmap-merge', 'intmap-clash', 'intmap-clash-by', 'intmap-regen'];
+/* `intmap-clash-by=<script>` (perf-measure-parity): the ledger's WRITER says, per row, which numbers are
+   counts — it exports `mergeClash(keys)` → 'sum' | 'upstream' | null (null = the file's `intmap-clash`).
+   The writer already knows; a list of row names here would be a second copy of it. */
+const clashBy = (v) => (v && v !== 'set' && v !== 'unset' ? v : null);
 function parseCheckAttr(out) {
   const by = new Map();
   for (const line of out.split('\n')) {
@@ -106,7 +119,7 @@ function parseCheckAttr(out) {
 /** the declaration for one path (as git resolves .gitattributes for it) */
 export function declarationOf(path, cwd = process.cwd()) {
   const d = parseCheckAttr(qGit(['check-attr', ...ATTRS, '--', path], cwd)).get(path) || {};
-  return d.merge === DRIVER ? { path, kind: d['intmap-merge'] || null, clash: d['intmap-clash'] || 'upstream', regen: parseRegen(d['intmap-regen']) } : null;
+  return d.merge === DRIVER ? { path, kind: d['intmap-merge'] || null, clash: d['intmap-clash'] || 'upstream', clashBy: clashBy(d['intmap-clash-by']), regen: parseRegen(d['intmap-regen']) } : null;
 }
 /** every tracked path the driver is assigned to */
 export function declarations(cwd = process.cwd()) {
@@ -115,7 +128,7 @@ export function declarations(cwd = process.cwd()) {
   const out = [];
   for (const [path, d] of parseCheckAttr(r.stdout || '')) {
     if (d.merge !== DRIVER) continue;
-    out.push({ path, kind: d['intmap-merge'] || null, clash: d['intmap-clash'] || 'upstream', regen: parseRegen(d['intmap-regen']) });
+    out.push({ path, kind: d['intmap-merge'] || null, clash: d['intmap-clash'] || 'upstream', clashBy: clashBy(d['intmap-clash-by']), regen: parseRegen(d['intmap-regen']) });
   }
   return out;
 }
@@ -282,11 +295,23 @@ class Clash extends Error {}
 
 /**
  * Three-way merge of parsed JSON. `up` is 'a' or 'b'; `clash` is 'sum' or 'upstream'.
+ * `clashOf(keys)` (optional) names the rule for one number by its key path — 'sum', 'upstream', or
+ * null for `clash` — so a ledger that holds both counts and measurements is merged row by row.
  * Returns { value, notes, tookUpstream } or throws Clash.
  */
-export function mergeJson(o, a, b, { up = 'b', clash = 'upstream' } = {}) {
+export function mergeJson(o, a, b, { up = 'b', clash = 'upstream', clashOf = null } = {}) {
   const notes = []; let tookUpstream = 0;
-  const walk = (o, a, b, at) => {
+  const rule = (keys) => (clashOf && clashOf(keys)) || clash;
+  const walk = (o, a, b, at, path = []) => {
+    /* (perf-measure-parity) A COUNT BOTH SIDES MOVED TO THE SAME NUMBER IS TWO MOVES, NOT AGREEMENT.
+       MEASURED 2026-10-02: #886 and #887 each raised eager.modules 299 → 300 for a module of its own;
+       «both wrote 300» read as agreement left the merged ceiling at 300 for a tree of 301. Under `sum`
+       the base is what makes the two moves independent events, so they are added like any others. */
+    if (typeof a === 'number' && typeof b === 'number' && typeof o === 'number' && a !== o && b !== o && rule(path) === 'sum') {
+      const v = a + b - o;
+      notes.push(`${at.slice(0, -1)}: ${o} → ${v} (both moves added: ${a}, ${b})`);
+      return v;
+    }
     if (eq(a, b)) return a;
     if (eq(o, a)) return b;
     if (eq(o, b)) return a;
@@ -310,7 +335,7 @@ export function mergeJson(o, a, b, { up = 'b', clash = 'upstream' } = {}) {
           if (inO) throw new Clash(`${at}${k}: removed on one side, changed on the other`);
           res[k] = kept; continue;                                           /* one side added it */
         }
-        res[k] = walk(inO ? base[k] : undefined, a[k], b[k], `${at}${k}.`);
+        res[k] = walk(inO ? base[k] : undefined, a[k], b[k], `${at}${k}.`, [...path, k]);
       }
       return res;
     }
@@ -329,7 +354,7 @@ export function mergeJson(o, a, b, { up = 'b', clash = 'upstream' } = {}) {
       return res;
     }
     if (typeof a === 'number' && typeof b === 'number' && (o === undefined || typeof o === 'number')) {
-      if (clash === 'sum') {
+      if (rule(path) === 'sum') {
         const v = a + b - (o || 0);
         notes.push(`${at.slice(0, -1)}: ${o ?? '(new)'} → ${v} (both moves added: ${a}, ${b})`);
         return v;
@@ -379,7 +404,7 @@ function record(p, entry) {
  * Resolve one file: given the declaration, the three texts and the three files git handed over
  * (git merge-file reads those), returns { text, clean, notes, regen }. Writes nothing.
  */
-export function resolveFile({ path, kind, clash, regen }, oText, aText, bText, files, { up = 'b', L = 7, style = 'merge' } = {}) {
+export function resolveFile({ path, kind, clash, regen }, oText, aText, bText, files, { up = 'b', L = 7, style = 'merge', clashOf = null } = {}) {
   const fallback = (why) => {
     const segs = mergeFile(files.A, files.O, files.B);
     return { text: segs.map((s) => (s.text != null ? s.text : markers(s.conflict, L, style))).join(''), clean: !segs.some((s) => s.conflict), notes: why ? [why] : [], regen: [] };
@@ -389,7 +414,7 @@ export function resolveFile({ path, kind, clash, regen }, oText, aText, bText, f
     try { po = JSON.parse(oText); pa = JSON.parse(aText); pb = JSON.parse(bText); }
     catch { return fallback('a side does not parse as JSON — left to git'); }
     try {
-      const r = mergeJson(po, pa, pb, { up, clash });
+      const r = mergeJson(po, pa, pb, { up, clash, clashOf });
       return { text: formatLike(up === 'a' ? aText : bText, r.value), clean: true, notes: r.notes, regen: r.tookUpstream ? regen : [] };
     } catch (e) {
       if (e instanceof Clash) return fallback(e.message);
@@ -434,7 +459,17 @@ export function resolveFile({ path, kind, clash, regen }, oText, aText, bText, f
   return fallback(`no kind «${kind}» — left to git`);
 }
 
-function driverMain([O, A, B, L, P]) {
+/** The per-row clash rule a declaration names (`intmap-clash-by`), loaded from THIS worktree's copy of
+    the writer. A writer that cannot be loaded or exports no `mergeClash` throws — and the driver then
+    hands the file to git's own merge: any doubt is a conflict, never a guess. */
+export async function loadClashOf(decl, cwd = process.cwd()) {
+  if (!decl || !decl.clashBy) return null;
+  const mod = await import(pathToFileURL(resolve(cwd, decl.clashBy)).href);
+  if (typeof mod.mergeClash !== 'function') throw new Error(`${decl.clashBy} exports no mergeClash(keys)`);
+  return mod.mergeClash;
+}
+
+async function driverMain([O, A, B, L, P]) {
   const cwd = process.cwd();
   const decl = declarationOf(P, cwd) || { path: P, kind: null, clash: 'upstream', regen: [] };
   const { up, pending: pendingFile } = repoState(cwd);
@@ -442,7 +477,8 @@ function driverMain([O, A, B, L, P]) {
   const rd = (f) => readFileSync(f, 'utf8');
   let r;
   try {
-    r = resolveFile(decl, rd(O), rd(A), rd(B), { O, A, B }, { up, L: Number(L) || 7, style });
+    const clashOf = await loadClashOf(decl, cwd);
+    r = resolveFile(decl, rd(O), rd(A), rd(B), { O, A, B }, { up, L: Number(L) || 7, style, clashOf });
   } catch (e) {
     /* never leave the file holding one side silently: hand it back to git's own merge */
     process.stderr.write(`merge-driver: ${P}: ${e.message} — falling back to git merge-file\n`);
@@ -520,10 +556,10 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     }
   } else if (argv[0] === '--list') {
     for (const d of declarations(process.cwd())) {
-      console.log(`${d.path.padEnd(52)} ${String(d.kind).padEnd(7)}${d.kind === 'json' ? ' clash=' + d.clash : ''}${d.regen.length ? '  ' + d.regen.map((c) => (c.manual ? '!' : '') + c.text).join(' ; ') : ''}`);
+      console.log(`${d.path.padEnd(52)} ${String(d.kind).padEnd(7)}${d.kind === 'json' ? ' clash=' + d.clash + (d.clashBy ? ' by ' + d.clashBy : '') : ''}${d.regen.length ? '  ' + d.regen.map((c) => (c.manual ? '!' : '') + c.text).join(' ; ') : ''}`);
     }
   } else if (argv.length >= 5 && !argv[0].startsWith('--')) {
-    driverMain(argv);
+    await driverMain(argv);
   } else {
     console.error('usage: node scripts/merge-driver.mjs --install | --finish | --pending | --list   (git calls it with %O %A %B %L %P)');
     process.exit(2);

@@ -83,6 +83,17 @@ if (want('--path')) {
   process.exit(0);
 }
 
+/* (perf-measure-parity) THE MERGE DRIVER IS REGISTERED BEFORE ANYTHING CAN EXIT, IN EVERY MODE.
+   It used to be registered only at the end of a --sync that fast-forwarded cleanly, so every other
+   way out — a refused fast-forward, a master on the wrong branch, --check — left a clone without it.
+   MEASURED 2026-10-02: the clone's config had no driver, a rebase resolved nothing, and a --sync run in
+   the master did not put it back. Idempotent and writes nothing when it is there; --check is red when
+   it cannot be (a rebase on this machine would otherwise resolve no ledger, silently). */
+const MERGE_DRIVER = installMergeDriver(MASTER);
+if (MERGE_DRIVER.ok && MERGE_DRIVER.changed.length) console.log('master-sync: registered the generated-file merge driver in this clone\'s config.');
+const mergeDriverProblem = () => (MERGE_DRIVER.ok ? null
+  : `the generated-file merge driver is not registered (${MERGE_DRIVER.why}) — node scripts/merge-driver.mjs --install`);
+
 /* ── HOW IT STANDS ─────────────────────────────────────────────────────────────────────────────
    Three separate claims, reported separately because they fail separately: which branch is
    checked out, whether the tree is clean, and how far behind origin/main the checkout is. */
@@ -111,6 +122,8 @@ const blocking = (s) => {
   if (s.branch !== 'main') out.push(`the master is on «${s.branch}», not main — it is not a workspace (AGENTS.md §6).`);
   if (s.behind) out.push(`the master is ${s.behind} commit(s) behind origin/main.`);
   if (s.ahead) out.push(`the master is ${s.ahead} commit(s) ahead of origin/main (not pushed).`);
+  const md = mergeDriverProblem();
+  if (md) out.push(md);
   return out;
 };
 const advisory = (s) => {
@@ -294,11 +307,19 @@ if (want('--sync')) {
   /* (generated-file-merge-driver) .gitattributes assigns scripts/merge-driver.mjs to the generated
      files, ledgers and counted documents, and git honours that only where the CLONE'S CONFIG defines
      the driver. The config is shared by every worktree, so registering it on the master is
-     registering it for the machine. Idempotent; a failure is said and does not fail the sync — a
-     missing driver costs a hand-resolved conflict, not the merged state this step exists for. */
-  const md = installMergeDriver(MASTER);
-  if (!md.ok) console.error(`master-sync: warning — the merge driver could not be registered (${md.why}); run node scripts/merge-driver.mjs --install`);
-  else if (md.changed.length) console.log('master-sync: registered the generated-file merge driver in this clone\'s config.');
+     registering it for the machine. THIS process registered it above, before anything could exit
+     (and blocking() makes the run red when that failed). It is registered again here by the MASTER'S
+     OWN copy of the script — the file the fast-forward just brought — for the reason deps-fresh runs
+     that way below: this process may be the pre-merge file (master-sync-follow-through), and a
+     changed driver command exists only in the new one. */
+  if (existsSync(path.join(MASTER, 'scripts', 'merge-driver.mjs'))) {
+    try {
+      execFileSync(process.execPath, [path.join(MASTER, 'scripts', 'merge-driver.mjs'), '--install', MASTER], { cwd: MASTER, stdio: ['ignore', 'ignore', 'inherit'] });
+    } catch {
+      console.error('master-sync: the master is at origin/main, but the merge driver could not be registered (above). Run node scripts/merge-driver.mjs --install in the master.');
+      process.exit(1);
+    }
+  }
   /* ⚠ (data-outside-git) THE MASTER AT origin/main IS NOT THE WHOLE MASTER ANY MORE. The datasets data-assets.json
      names are not in git, so the fast-forward that untracked them DELETED them here — and the USB
      mirror copies this directory (docs/AGENT-SETUP.md §10), so a master without them would take them
