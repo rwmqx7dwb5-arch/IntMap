@@ -401,6 +401,8 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-sub{font-size:12.5px;}'
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ex{gap:7px;padding:6px 11px 2px;}'
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-chip{font-size:12.5px;padding:8px 12px;}'
+      /* (mobile-shell-flow) (inside the COMPACT block above) the example chips are tap targets like every other control in the sheet: 44 px */
+      +'#atlas-panel .atl-chip{min-height:44px;}'
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar{gap:8px;padding:8px 11px 6px;}'
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-in{height:48px;min-height:48px;border-radius:24px;padding:12px 16px;font-size:16px;}'   /* (#R118) textarea paddings (16px font kills iOS zoom, unchanged) */
       /* (#R309) the frosted-glass material for this input is in css/intmap.css, beside the three

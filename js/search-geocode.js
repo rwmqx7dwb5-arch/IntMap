@@ -10,6 +10,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { MAP_ANSWER_EVENT } from './mobile-sheet.js';
 
 export function searchGeocode(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -181,6 +182,10 @@ export function searchGeocode(HOST){
      ⚠ A SEARCH THAT HAS BEEN OVERTAKEN WRITES NOTHING. Each call takes a generation; the three geocoders of an
      earlier Enter can answer after the reader has typed on, and their rows would land under the new letters. */
   let _gcGen=0;
+  function _wirePicked(inp){ if(!inp||inp._imPickWired) return; inp._imPickWired=true; try{ inp.addEventListener('input',()=>{ inp._imPicked=null; }); }catch(_){} }
+  /* a row was chosen: later answers of the same search write nothing, the field holds a name, and on a phone the
+     keyboard goes away (the answer is on the map) */
+  function _picked(inp,name){ _gcGen++; inp.value=name; inp._imPicked=name.trim(); try{ if(HOST.isMobile()) inp.blur(); }catch(_){} }
   function _askAtlasRow(res,q){
     try{ if(!HOST.isMobile()) return; }catch(_){ return; }
     const d=document.createElement('div'); d.className='ms-item ms-atlas'; d.setAttribute('role','option');
@@ -195,8 +200,17 @@ export function searchGeocode(HOST){
     res.appendChild(d);
   }
   async function doGeocode(opt){
-    const suggest=!!(opt&&opt.suggest), gen=++_gcGen;
-    const inp=document.getElementById('ms-input'), q=inp.value.trim(), res=document.getElementById('ms-results'); if(!q){ if(suggest&&res){ res.style.display='none'; res.innerHTML=''; } return; }
+    const suggest=!!(opt&&opt.suggest);
+    const inp=document.getElementById('ms-input'), q=inp.value.trim(), res=document.getElementById('ms-results');
+    /* ⚠ (mobile-shell-flow) A PICK ENDS THE SEARCH. The suggestion timer (js/app-body.js, 120 ms after a keystroke)
+       can fire AFTER the reader has already picked a row — MEASURED on production: 「Paris」 typed and its first row
+       tapped left eight candidate rows open five seconds later, over the sheet raised for them. What the pick wrote
+       into the field is the place's NAME, not a question, so a suggestion for exactly that text is not asked; any
+       keystroke after the pick clears the mark (`_wirePicked` below). */
+    _wirePicked(inp);
+    if(suggest && inp._imPicked!=null && inp._imPicked===q) return;
+    const gen=++_gcGen;
+    if(!q){ if(suggest&&res){ res.style.display='none'; res.innerHTML=''; } return; }
     /* (a11y-shared-dialog) the results are a listbox driven from the field — ArrowDown/ArrowUp move, Enter picks,
        Escape closes the list; focus stays in the field (the combobox pattern js/routing-ui.js's stop field uses).
        Wired once per field, here, because this is the file that renders the rows. */
@@ -253,7 +267,7 @@ export function searchGeocode(HOST){
       const same=rows.find((r)=>_sameFeature(r.f,f,_nameKey));
       if(same){ if(f.rich>same.f.rich){ same.f=f; _paint(); } return; }   /* the row that knows more stays, rewritten in place */
       const d=document.createElement('div'); d.className='ms-item'; d.setAttribute('role','option'); const row={f,el:d};
-      d.onclick=()=>{ const g=row.f; gotoPlace(g.lng,g.lat,g.label,g.raw||null,g.kind||null); res.style.display='none'; inp.value=String(g.label).split(',')[0].split(' · ')[0]; };
+      d.onclick=()=>{ const g=row.f; res.style.display='none'; _picked(inp,String(g.label).split(',')[0].split(' · ')[0]); gotoPlace(g.lng,g.lat,g.label,g.raw||null,g.kind||null); };
       rows.push(row); res.appendChild(d); _paint(); };
     /* (#R15e) Show strong LOCAL matches IMMEDIATELY — was awaiting Nominatim with no timeout, so a slow /
        unreachable geocoder left the box frozen on "Loading…" forever ("結果が出てこない"). Now local
@@ -332,6 +346,9 @@ export function searchGeocode(HOST){
     const pt=E.coords.project([searchCardData.lng,searchCardData.lat]); if(!pt) return;
     searchCardEl.style.left=pt.x+'px';
     searchCardEl.style.top=pt.y+'px';
+    /* (mobile-shell-flow) on a phone the card's two edges are the stylesheet's (between the screen edge and the
+       control group — css/intmap.css), so only its tail follows the pin across: that is this variable */
+    try{ searchCardEl.style.setProperty('--src-x',pt.x+'px'); }catch(_){}
   }
   /* ── (#R244) postcode → its own boundary ─────────────────────────────────────────────────────
      `_looksPostal` asks the RESULT first (Nominatim types a postcode as `postcode` / `postal_code`,
@@ -444,6 +461,9 @@ export function searchGeocode(HOST){
       if(_scRAF) return; _scRAF=requestAnimationFrame(()=>{ _scRAF=0; try{ positionSearchCard(); }catch(_){} }); };
     GEO.events.on('move',searchCardOnMove);
     positionSearchCard();
+    /* (mobile-shell-flow) the card IS the answer, and it is on the map: say so — js/mobile-ui.js brings a phone's
+       sheet down to show it (js/mobile-sheet.js detentFor 'card'); this file chooses no detent */
+    try{ window.dispatchEvent(new CustomEvent(MAP_ANSWER_EVENT,{detail:{kind:'card'}})); }catch(_){}
     /* ══ ⚠⚠ (#R244) A POSTCODE SEARCH OUTLINES ITS AREA ═══════════════════════════════════════════
        「郵便番号で地点検索したら、その範囲が、地名ラベルをクリックした時みたいにハイライトされるように。」
        A place label already does this — js/map-ui.js's popup calls `IntMapOutline.show`, which draws

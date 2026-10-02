@@ -22,7 +22,8 @@
  *      that says how many there are (`makeLegendTray`).
  *
  *  ⚠ PURE WHERE IT CAN BE. `detentHeights`, `settleDetent` and `spring` take numbers and return
- *  numbers, so tests/mobile-shell-checks.test.mjs runs them as they are shipped.
+ *  numbers, so tests/mobile-shell-checks.test.mjs runs them as they are shipped; `detentFor` (where the sheet
+ *  rests, from what the reader is doing) is run the same way by tests/mobile-shell-flow-checks.test.mjs.
  * ==========================================================================*/
 
 /* ── the resting heights ─────────────────────────────────────────────────────────────────────── */
@@ -66,6 +67,49 @@ export function settleDetent(vis, v, heights) {
   if (v > 0.45) { const below = order.filter((o) => o.h < vis - 2); return (below.length ? below[below.length - 1] : order[0]).n; }
   if (v < -0.45) { const above = order.find((o) => o.h > vis + 2); return (above || order[order.length - 1]).n; }
   return order.reduce((a, b) => (Math.abs(b.h - vis) < Math.abs(a.h - vis) ? b : a)).n;
+}
+
+/* ── what the reader is doing decides the detent ─────────────────────────────────────────────── */
+
+/* ══ (mobile-shell-flow) ONE RULE FOR WHERE THE SHEET RESTS ══════════════════════════════════════════════
+   MEASURED on production (0cb41ee, 390 × 844): a place picked from the search candidates left the sheet at
+   `full` five seconds later — the map was the top 118 px, and the place card the pick had just put on the map
+   was cut off above the screen. The field had raised the sheet for its candidates and nothing said the search
+   was over: the decisions were scattered (a focus handler, a blur handler with its own conditions, a tab
+   handler), and none of them heard «the answer is on the map now».
+   So the detent is decided here, from what the reader is doing, and every signal in js/mobile-ui.js asks this:
+     type     the search field has the caret — the candidates need the room            → full
+     leave    the field let go with nothing chosen — back where the reader was           → `before`, never higher
+     card     an answer is a card ON THE MAP (a place picked) and the sheet holds none
+              of it — the map is the answer                                              → min, never higher
+     move     the app moved the map to show something (a flight that no finger made) —
+              the sheet must not hide where it went                                      → half, never higher
+     tab      a tab of the sheet was chosen — its content is the answer (Atlas writes in
+              it and draws on the map at once) — half, unless the reader had it higher
+              themselves; a raise the FIELD made is not the reader's                     → half
+   ⚠ «never higher»: an answer lowers the sheet; it never lifts a sheet the reader put lower. */
+/* The one way a module says «I have put an answer on the map»: `detail.kind` is a row above ('card'). The
+   module states what it did; it does not choose a detent (that is this table's job, and only on a phone). */
+export const MAP_ANSWER_EVENT = 'intmap-map-answer';
+const RANK_OF = Object.freeze({ hidden: 0, min: 1, half: 2, full: 3 });
+const lower = (a, b) => (RANK_OF[a] <= RANK_OF[b] ? a : b);
+/**
+ * @param {'type'|'leave'|'card'|'move'|'tab'} activity
+ * @param {{current:string, before?:string|null}} s  current — the detent now · before — where the sheet was
+ *   when the search field raised it (null when the field has not raised it)
+ * @returns {string} the detent to rest at
+ */
+export function detentFor(activity, s) {
+  const cur = (s && s.current in RANK_OF) ? s.current : 'min';
+  const before = s && s.before in RANK_OF ? s.before : null;
+  switch (activity) {
+    case 'type': return 'full';
+    case 'leave': return before ? lower(cur, before) : cur;
+    case 'card': return lower(cur, 'min');
+    case 'move': return lower(cur, 'half');
+    case 'tab': return (before || RANK_OF[cur] < RANK_OF.half) ? 'half' : cur;
+    default: return cur;
+  }
 }
 
 /* ── the spring ──────────────────────────────────────────────────────────────────────────────── */
