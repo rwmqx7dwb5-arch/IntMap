@@ -39,6 +39,7 @@
  *  designed per-key fallback), not with a pill that does nothing — so the failure path applies too.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
+import { notify } from './notify.js';
 (function () {
   'use strict';
 
@@ -67,6 +68,28 @@ import { IntMapLang } from './lang-registry.js';
   /* True while a switch is waiting on its chunk — the pills use it to show the choice has landed
      even though the document has not been repainted yet. */
   function pending() { return _want; }
+
+  /* ══ (locale-on-demand) …AND A FAILURE IS SAID, WITH ITS REASON ══════════════════════════════
+     The rule above applies the switch even when the chunk never came (English underneath, by design),
+     which left the reader looking at a language that did not change and told nothing. Measured cause
+     on a static host: a tab opened before a deploy asks for a chunk whose hashed name the new deploy
+     no longer has — «Failed to fetch dynamically imported module». The registry now keeps the reason
+     and tells its `onFail` listeners; this is the one listener that tells the READER, through the
+     app's one live region (js/notify.js), for the language asked for or on screen — the cold boot's
+     saved language included, which is asked before any switch is bound. A second ask fetches again
+     (the registry no longer caches the failure), which is what «reload to try again» falls back to. */
+  function tellFailure(code, why) {
+    var LANG = IntMapLang;
+    try {
+      if (!(_want === code || !_getLang || LANG.normalise(_getLang()) === code)) return;
+      var name = code;
+      try { (LANG.list() || []).forEach(function (r) { if (r.code === code) name = r.label; }); } catch (e) {}
+      var head = IntMapLang.t(code, 'Could not load this language. Text without a translation is shown in English; reload the page to try again.',
+        'この言語を読み込めませんでした。訳のない文字は英語で表示されます。ページを再読み込みして、もう一度お試しください。');
+      notify.show(head + ' (' + name + (why ? ': ' + why : '') + ')');
+    } catch (e) {}
+  }
+  try { if (IntMapLang.onFail) IntMapLang.onFail(tellFailure); } catch (e) {}
 
   try {
     IntMapLang.onDefine(function (code) {

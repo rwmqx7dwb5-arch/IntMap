@@ -70,6 +70,9 @@
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+/* (locale-on-demand) the ONE answer to «which language is the fallback every other table chains onto» —
+   asked of the registry the app runs, not typed here. Pure at import: no window, no document. */
+import { IntMapLang } from '../js/lang-registry.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REPORT = join(ROOT, '.perf', 'build-report.json');
@@ -126,7 +129,56 @@ function measure() {
     console.error(`perf-budget: no build report at ${relative(ROOT, REPORT)} — build the site first (the package.json "build" script writes it).`);
     process.exit(1);
   }
-  return measureFrom(JSON.parse(readFileSync(REPORT, 'utf8')), DIST);
+  const r = JSON.parse(readFileSync(REPORT, 'utf8'));
+  /* ⚠ the locale rule below reads the eager graph's MODULES; a report without them would make that rule
+     silently assert nothing (#R301's shape), so the gate refuses to run on one instead */
+  if (!Array.isArray(r.eager && r.eager.chunks) || !r.chunks) {
+    console.error(`perf-budget: ${relative(ROOT, REPORT)} does not list the eager chunks and their modules — rebuild with the current scripts/build-report.mjs.`);
+    process.exit(1);
+  }
+  return measureFrom(r, DIST);
+}
+
+/* ══ (locale-on-demand) WHICH LANGUAGES START-UP READS ═══════════════════════════════════════════
+   「起動時に読者の言語以外の locale を読んだら赤」. src/locale-boot.js globs js/locales/ui.*.js LAZILY,
+   so every language but the fallback is its own async chunk and the reader's own one is fetched on the
+   boot barrier (js/app-body.js). The fallback is eager because it is the PROTOTYPE every other table
+   chains onto (js/i18n.js) — it has to exist before anything reads a key.
+   Measured 2026-10-02 (dist/, this rule's first build): eager holds ui.en (19,238 B rendered) and
+   nothing else; an en reader fetches no locale chunk, a jp reader one of 21,846 B, an fr reader one of
+   446,528 B — and a switch fetches exactly the target's chunk. A static import of any other locale
+   (one line in src/main.js, or `{eager:true}` on the glob) would put up to 450 kB per language back on
+   every session's critical path, and the byte ceilings would only see it as «grew». This names it.
+   Codes come from the module paths; the fallback from the registry. Returns null when the report
+   carries no module lists (the synthetic reports some checks hand measureFrom). */
+export const LOCALE_MODULE = /^js\/locales\/ui\.([A-Za-z0-9-]+)\.js$/;
+export function eagerLocales(r) {
+  if (!r || !r.eager || !Array.isArray(r.eager.chunks) || !r.chunks) return null;
+  const out = {};
+  for (const f of r.eager.chunks) {
+    for (const [id, n] of Object.entries((r.chunks[f] && r.chunks[f].modules) || {})) {
+      const mm = LOCALE_MODULE.exec(id);
+      if (mm) { const c = mm[1].toLowerCase(); out[c] = (out[c] || 0) + (n || 0); }
+    }
+  }
+  return out;
+}
+/** The errors the locale rule finds in one measurement (empty when it holds or was not measured). */
+export function localeErrors(locales, LANG = IntMapLang) {
+  if (!locales) return [];
+  const fb = LANG.FALLBACK, codes = Object.keys(locales);
+  const others = codes.filter((c) => LANG.normalise(c) !== fb);
+  const errs = [];
+  if (others.length) {
+    errs.push(`start-up reads locale(s) other than the fallback: ${others.map((c) => `ui.${c} (${kb(locales[c])})`).join(', ')}. `
+      + `Only "${fb}" (the table every other one chains onto) may be eager; the reader's own language is fetched on the boot barrier `
+      + `and every other one on a switch (src/locale-boot.js). Make the import dynamic.`);
+  }
+  if (!codes.some((c) => LANG.normalise(c) === fb)) {
+    errs.push(`the fallback locale ui.${fb} is not in the start-up graph — every other table chains onto it per key (js/i18n.js, `
+      + `js/lang-registry.js keyed()), so it must be present before anything reads a key.`);
+  }
+  return errs;
 }
 
 /** The measurement from a build report and a dist/ directory — exported so a test can hand it a
@@ -140,6 +192,7 @@ export function measureFrom(r, distDir) {
     asyncChunks[c.name] = Math.max(asyncChunks[c.name] || 0, c.raw);
   }
   return {
+    eagerLocales: eagerLocales(r),
     eager: {
       raw: r.eager.raw, gzip: r.eager.gzip, brotli: r.eager.brotli,
       requests: r.eager.requests, modules: r.eager.modules,
@@ -218,6 +271,7 @@ export function judge(m, b) {
       if (!slackest || l.bands > slackest.bands) slackest = l;
     }
   }
+  for (const e of localeErrors(m.eagerLocales)) errors.push(e);
   const dueN = loose.filter((l) => l.due).length;
   if (dueN) notes.push(`${dueN} ceiling(s) sit more than their band above this build — green: main's CI lowers them after the merge (.github/workflows/perf-ceiling.yml). Nothing to edit here.`);
   return { errors, notes, rows, loose, slackest };
@@ -294,6 +348,7 @@ function main() {
   for (const l of dueRows.slice(0, 8)) console.log(`    ${l.what}: ${fmt(l.key, l.v)} under ${fmt(l.key, l.ceil)} (−${fmt(l.key, l.by)})`);
   if (dueRows.length > 8) console.log(`    … and ${dueRows.length - 8} more`);
 
+  if (m.eagerLocales) console.log(`  eager locales: ${Object.entries(m.eagerLocales).map(([c, n]) => `ui.${c} ${kb(n)}`).join(', ') || '(none)'}`);
   for (const n of notes) console.log(`\n  note: ${n}`);
   if (errors.length) {
     console.error('\nperf-budget FAILED:');

@@ -216,17 +216,37 @@ export const IntMapLang=(function () {
     return LANG_ROWS.length;
   }
   /* Load one language's strings. Idempotent and cached; resolves (with null) rather than rejecting,
-     because a locale that fails to arrive must leave the reader with English, not with no app. */
+     because a locale that fails to arrive must leave the reader with English, not with no app.
+     ⚠ (locale-on-demand) A FAILURE IS A FACT WITH A REASON, AND IT IS NOT CACHED. Until 2026-10-02 the
+     rejected fetch was swallowed into a console line and its `null` was cached in `pendingLoad`
+     forever, so (a) the reader saw a language that did not change and was told nothing, and (b) asking
+     again — the pill clicked a second time — returned the same cached `null` without fetching: a real
+     failure could never be retried short of a reload. Now the reason is kept (`failure(code)`), every
+     `onFail` listener is told once per failure (js/lang-switch.js tells the reader), and the cache
+     entry is dropped so the NEXT ask fetches again. Only a real failure is retried, and only when
+     somebody asks again — nothing here loops (.agents/rules/one-pass-or-a-reason.md §5). */
+  var failures = Object.create(null);     /* code → the reason the last fetch failed, until one succeeds */
+  var failHooks = [];
+  function onFail(fn) { if (typeof fn === 'function') failHooks.push(fn); }
   function ensure(code) {
     var c = normalise(code);
     if (pendingLoad[c]) return pendingLoad[c];
     var f = loaders[c];
     pendingLoad[c] = f
-      ? Promise.resolve().then(f).catch(function (e) { try { console.warn('[IntMap] locale ' + c + ' failed to load', e); } catch (_) {} return null; })
+      ? Promise.resolve().then(f).then(function (m) { delete failures[c]; return m; }, function (e) {
+          var why = (e && (e.message || e.name)) ? String(e.message || e.name) : String(e);
+          failures[c] = why;
+          delete pendingLoad[c];
+          try { console.warn('[IntMap] locale ' + c + ' failed to load', e); } catch (_) {}
+          for (var h = 0; h < failHooks.length; h++) { try { failHooks[h](c, why); } catch (_) {} }
+          return null;
+        })
       : Promise.resolve(null);
     return pendingLoad[c];
   }
   function isLoaded(code) { return !!ui[normalise(code)]; }
+  /* the reason the last fetch of `code` failed, or null — `null` also when it never failed */
+  function failure(code) { var w = failures[normalise(code)]; return w == null ? null : w; }
 
   /* 'ja' → 'jp', 'EN-gb' → 'en'; anything unknown is returned lower-cased so `has()` can reject it */
   function normalise(c) {
@@ -509,6 +529,8 @@ export const IntMapLang=(function () {
            englishName: englishName, codeForEnglishName: codeForEnglishName,
            /* (#R232) discovery + lazy loading */
            declare: declare, ensure: ensure, isLoaded: isLoaded, onDefine: onDefine,
+           /* (locale-on-demand) a failed fetch, as a fact with a reason */
+           failure: failure, onFail: onFail,
            /* for the coverage report and the tests */
            _ui: ui, _inline: inline, _derive: derive };
 })();
