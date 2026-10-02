@@ -39,7 +39,7 @@ const upstreamUrl = (scale) => `https://cdn.jsdelivr.net/gh/nvkelso/natural-eart
    npm run check:datagov がこの宣言と data/ の実体・js/reference-data.js の DATA_SOURCES を
    突き合わせる。⚠ ここに書くのは「上流が述べていること」だけ——述べていないものは書かない。 */
 export const GOVERNANCE = {
-  'data/ne-countries': {
+  'data/ne-countries/index.json': {
     publisher: 'Natural Earth',
     url: 'https://github.com/nvkelso/natural-earth-vector/tree/ca96624a56bd078437bca8184e78163e5039ad19/geojson',
     licence: 'public domain',
@@ -109,8 +109,27 @@ export async function check(cache) {
     }
     out.push(`${scale}: ${fc.features.length} features, ${verts.toLocaleString()} vertices — ${vs}`);
   }
+  if (!existsSync(INDEX) || readFileSync(INDEX, 'utf8').replace(/\r\n/g, '\n') !== indexText()) throw new Error('data/ne-countries/index.json is not what the shipped files say — run node scripts/build-ne-countries.mjs --index');
+  out.push('index.json: agrees with the shipped files');
   return out;
 }
+
+/* the shard directory's index (data/ne-countries/index.json): which scales ship, from which pinned
+   commit, at what size — derived from the shipped files themselves, so --check can re-derive and
+   compare it. It is the file check:datagov reads as the directory's one declaration (the same place
+   data/border-detail/ keeps its own). */
+const INDEX = join(ROOT, 'data', 'ne-countries', 'index.json');
+function indexDoc() {
+  return {
+    source: { publisher: 'Natural Earth', commit: COMMIT, url: GOVERNANCE['data/ne-countries/index.json'].url },
+    files: NE_SCALES.map((scale) => {
+      const p = neCountriesPath(scale);
+      const bytes = readFileSync(join(ROOT, p)).length;
+      return { scale, path: p, bytes, features: decodeNECountries(readShipped(scale)).features.length };
+    }),
+  };
+}
+const indexText = () => JSON.stringify(indexDoc(), null, 1) + '\n';
 
 export async function build(cache) {
   mkdirSync(join(ROOT, 'data', 'ne-countries'), { recursive: true });
@@ -123,13 +142,18 @@ export async function build(cache) {
     writeFileSync(join(ROOT, neCountriesPath(scale)), gz);
     out.push(`${neCountriesPath(scale)}  ${(gzipSync(Buffer.from(t), { level: 9 }).length / 1024).toFixed(0)} kB as upstream text → ${(gz.length / 1024).toFixed(0)} kB`);
   }
+  writeFileSync(INDEX, indexText());
+  out.push('data/ne-countries/index.json');
   return out;
 }
+
+/* --index: write the index from the files already shipped (no network) */
+export function writeIndex() { writeFileSync(INDEX, indexText()); return ['data/ne-countries/index.json']; }
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
   const cache = val('--cache');
   try {
-    const lines = has('--check') ? await check(cache) : await build(cache);
+    const lines = has('--check') ? await check(cache) : has('--index') ? writeIndex() : await build(cache);
     for (const l of lines) console.log('  ' + l);
     if (has('--check')) console.log('✓ data/ne-countries/ is the pinned Natural Earth admin-0, losslessly');
   } catch (e) { console.error('✗ ' + e.message); process.exit(1); }

@@ -1,0 +1,27 @@
+{
+ "source": {
+  "publisher": "Natural Earth",
+  "commit": "ca96624a56bd078437bca8184e78163e5039ad19",
+  "url": "https://github.com/nvkelso/natural-earth-vector/tree/ca96624a56bd078437bca8184e78163e5039ad19/geojson"
+ },
+ "files": [
+  {
+   "scale": "110m",
+   "path": "data/ne-countries/ne_110m_admin_0_countries.json.gz",
+   "bytes": 191955,
+   "features": 177
+  },
+  {
+   "scale": "50m",
+   "path": "data/ne-countries/ne_50m_admin_0_countries.json.gz",
+   "bytes": 722137,
+   "features": 242
+  },
+  {
+   "scale": "10m",
+   "path": "data/ne-countries/ne_10m_admin_0_countries.json.gz",
+   "bytes": 2878064,
+   "features": 258
+  }
+ ]
+}
