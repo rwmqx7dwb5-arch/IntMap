@@ -196,7 +196,7 @@ function paint(waiting) {
   const tools = '<span class="imt-tools">'
       + '<button type="button" data-imt="fold" title="' + H(t('Hide the text (T)', '文を隠す（T）')) + '" aria-label="' + H(t('Hide the text', '文を隠す')) + '">' + (panel.classList.contains('imt-folded') ? '▴' : '▾') + '</button>'
       + '<button type="button" data-imt="full" title="' + H(t('Full screen (F)', '全画面（F）')) + '" aria-label="' + H(t('Full screen', '全画面')) + '">⛶</button>'
-      + '<button type="button" data-imt="exit" title="' + H(t('Leave the tour (Esc)', 'ツアーを終える（Esc）')) + '" aria-label="' + H(t('Leave the tour', 'ツアーを終える')) + '">✕</button></span>';
+      + '<button type="button" data-imt="exit" title="' + H(t('Leave the tour (Esc)', 'ツアーを終える（Esc）')) + '" aria-label="' + H(t('Leave the tour', 'ツアーを終える')) + '">×</button></span>';
   panel.innerHTML = '<div class="imt-top"><span class="imt-tour">' + H(txt(playing.title)) + ' · ' + H(t('Step ', 'ステップ ') + (at + 1) + ' / ' + N) + '</span><span class="imt-when">' + H(instantText()) + '</span>' + tools + '</div>'
     + '<div class="imt-body' + (waiting ? ' imt-wait' : '') + '">'
       + (st.title ? '<h2>' + H(txt(st.title)) + '</h2>' : '')

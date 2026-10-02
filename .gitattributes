@@ -63,6 +63,7 @@ js/atlas-caps-modules.js                 merge=intmap-generated intmap-merge=reg
 js/layer-manifest.js                     merge=intmap-generated intmap-merge=regen intmap-regen=scripts/layer-descriptors.mjs,--write
 js/locales/_langs.js                     merge=intmap-generated intmap-merge=regen intmap-regen=scripts/i18n-langs.mjs
 js/showcase.js                           merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write;!scripts/showcase-capture.mjs,--base,http://127.0.0.1:<port>
+js/tours.js                              merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write;!scripts/showcase-capture.mjs,--base,http://127.0.0.1:<port>
 js/place-labels.js                       merge=intmap-generated intmap-merge=regen intmap-regen=!scripts/build-osm-ja-rejects.mjs
 scripts/atlas-eval/cassettes/*.json      merge=intmap-generated intmap-merge=regen intmap-regen=scripts/atlas-eval/scripted-cassettes.mjs,--write
 /about.html                              merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
