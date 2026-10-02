@@ -47,19 +47,19 @@ pr: 883
 
 ## 3. 検査に足したもの（新しい spec は作っていない）
 
-`tests/restored-layer-before-style.spec.js` の全層テスト:
-- 通常側の起動は時刻の表を最後まで押さえる（`lateTable`）。基準を読んだあと、自己修復と同じ形の off→on（`__syn` を立てて配る）を WW2 の行に送り、**時計が今のまま**であることを断言する。前提（今・表なし・チェック済み）も断言するので、門が預かって通る空振りにはならない。**修正を外すと `live: false` で赤くなることを確かめた。**
-  - ⚠ 最初の版は「戦争の記録が届くまで 60 s 待つ」をしていて、PR の CI（Browser rest 1/2）で時間切れになった。記録は data/wars.json と CShapes（13 MB、別スレッドで開く）で、175 層のページでは CI で 60 s 以内に揃わない。待つのをやめ、pulse の直後に行と同じ扉 `IntMapWarFronts.toggle('ww2', true, { restored: true })` を呼んでその答えを待つ形にした——記録の読み込みを（まだなら）自分で起こし、pulse の要求と同じ latched な load の上で、その後に解決する。記録が届いたこと（`record`）も断言する（読み込みが失敗すれば戦争は何も決めず、空振りになるため）。修正を外すと同じく赤。
-- 比較の poll は「欠けた層」と並べて**押さえた側の時計**を返す（`{ clock: 'now', missing: [] }`）。時計が動いたら、それが名指される。
+`tests/deep-tier-after-module-graph-checks.test.mjs`（node・約 0.2 s）: 本物の `js/war-fronts.js` と `js/war-layer.js` を import して、ブラウザと同じ形に配線する（行の checkbox の `change` → war-fronts の listener → war-layer の toggle → 同梱の `data/wars.json` を読んで判定）。差し替えるのは描画（`js/geo-engine.js`）・主時計（`js/chronos.js`、書き込みを記録）・タイマーの import の辺だけ。復元の tick と地図自身の off→on（`__syn`）は時計を書かず、読者の tick は開戦日へ 1 回書くことを断言する。**`js/war-fronts.js` の `own` を外しても、`js/war-layer.js` の `opts.own` を外しても赤くなる**ことを確かめた。
+
+⚠ **最初は `tests/restored-layer-before-style.spec.js` に足して、2 回 CI で落ちた。** ① 戦争の記録（`data/wars.json` と CShapes 13 MB）の到着を 60 s 待つ形は、175 層のページでは CI で揃わずに時間切れ。② 行と同じ入口に要求してその答えを待つ形は、記録の読み込みがテスト全体の 240 s を食い切った。2 起動＋175 層の重いページで測る主張ではなかったので、そこから外して元の主張（スタイルを押さえても層が欠けない）だけに戻し、判定そのものを node で評価する形にした。テスト時間の総量は増えていない。
 
 ## 4. 検査
 
 | 何 | 結果 |
 |---|---|
+| `node --test tests/deep-tier-after-module-graph-checks.test.mjs` | 1/1（修正を外すと赤） |
 | `IM_TIER=all npx playwright test r167 r168 r169 r201 --workers=1` | 33 passed |
-| `… restored-layer-before-style r545 --workers=1` | 2 + 3 passed |
-| `… 上の 6 本 + r355-cables + r185 --workers=2`（CI に近い負荷） | 47 passed (3.5 m) |
-| 修正を外した build で restored-layer-before-style | 赤（`live: false`）——検査は欠陥を捕まえる |
+| `… restored-layer-before-style r545 --workers=1` | 2 + 3 passed |（restored-layer-before-style に足した確認を外す前の版。外した後の版は下）
+| 確認を外した後の restored-layer-before-style + r355-cables `--workers=2` | 8 passed (2.1 m) |
+| `… 上の 6 本 + r355-cables + r185 --workers=2`（CI に近い負荷） | 47 passed (3.5 m) |（restored-layer-before-style に足した確認を外す前の版。外した後の版は下）
 | `node --test` module-split / suite-hygiene / engine-app-shell-split / history-wars / world-at-time / restored-layers-under-load / shell-app-body-modules | 120 / 120 |
 | `check:static` `check:docs` `check:testbudget` `check:types` `dev-notes --check` | 緑 |
 

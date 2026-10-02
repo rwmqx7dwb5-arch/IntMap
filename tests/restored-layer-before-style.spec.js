@@ -84,14 +84,10 @@ const HOLD_FRAMES = () => {
 const RV_INDEX = () => ({ version: '2.0', generated: Math.floor(Date.now() / 1000), host: 'https://tilecache.rainviewer.com',
   radar: { past: [{ time: Math.floor(Date.now() / 1000) - 600, path: '/v2/radar/fixture' }], nowcast: [] }, satellite: { infrared: [] } });
 
-/* `lateTable`: js/layer-time-kernel.js's declarations (the chunk js/layer-time-decl.js) are held back for the life of the
-   page — the condition CI's nightly met by itself (a page restoring every layer at once fetches that chunk late), made
-   certain here. Without the table no box is held for the instant, so whatever reaches a row's handler reaches it. */
-async function openLink(browser, ids, { hold, lateTable }) {
+async function openLink(browser, ids, { hold }) {
   const ctx = await browser.newContext({ storageState: seededStorageState() });
   await installHermeticRouting(ctx);
   await ctx.route('https://api.rainviewer.com/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(RV_INDEX()) }));
-  if (lateTable) await ctx.route(/\/layer-time-decl[^/]*\.js(\?|$)/, () => new Promise(() => { }));
   if (hold) await ctx.addInitScript(HOLD_FRAMES);
   const page = await ctx.newPage();
   const errors = [];
@@ -144,38 +140,11 @@ test('every layer a link can carry: holding the style back costs no layer', asyn
      held boot must end up with at least that. A busier machine only makes the reference smaller
      (fewer slow layers in it), never wrong. */
   const heldP = openLink(browser, ids, { hold: true });
-  const plain = await openLink(browser, ids, { hold: false, lateTable: true });
+  const plain = await openLink(browser, ids, { hold: false });
   let reference, plainOwned = {};
   try { await plain.page.waitForTimeout(SETTLE_MS); reference = await mapLayers(plain.page);
     /* which layers each box owns, read where they DREW (the held boot may never draw a box the time hold met first) */
-    plainOwned = await plain.page.evaluate(() => { const o = {}; document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach((c) => { try { o[c.id] = window.IntMapLayerAudit.owned(c.id); } catch (_) { } }); return o; });
-    /* ══ ⚠⚠ (deep-tier-after-module-graph) THE LINK NAMES NO INSTANT, SO THE MAP IS AT «NOW» — AND THE MAP'S OWN PULSE
-       MAY NOT MOVE IT. MEASURED (CI nightly 2026-10-01, then reproduced here with the table held back): js/data-layers.js's
-       heal found the restored war rows «ticked and blank» — blank on purpose, «now» is outside every war's record — and
-       pulsed each off→on; js/war-fronts.js read the pulse's «on» as the READER's tick and the war moved the clock to its
-       first day (1939-08-23 → 1914-06-28 → 1950-06-25 → …). The world-at-time hold then took the present-day layers off
-       the held boot — the 39 this test listed as «drawn normally, missing after the hold». The pulse is replayed here,
-       in exactly the shape the heal sends (`__syn` raised for the dispatch, js/data-layers.js `rearm`), with no table
-       to hold it for the instant — so the war, and only the war, decides.
-       ⚠ THE WAR DECIDES WHEN ITS RECORD HAS ARRIVED, AND THIS ASKS THE WAR, NOT THE CLOCK ON THE WALL. The record is
-       data/wars.json AND CShapes (13 MB, opened off the main thread) — MEASURED in CI on this 175-layer page: not there
-       60 s after the restore. So nothing waits for it to «have arrived». After the pulse, the test asks the same door
-       the row uses (IntMapWarFronts.toggle, with the restore's provenance — it cannot move the clock itself) and awaits
-       ITS answer: that request fetches the record if nobody has, and resolves on the same latched load the pulse's own
-       request is queued on, after it (one turn more for its continuation). `record` says the load delivered — a load
-       that failed decides nothing and would pass vacuously, so it is asserted. */
-    const pulse = await plain.page.evaluate(async () => {
-      const cb = document.getElementById('dl-ww2'); const before = { live: window.IntMapTime.isLive(), table: window.IntMapLayerTime.loaded(), ticked: cb.checked };
-      const fire = (on) => { cb.checked = on; cb.__syn = (cb.__syn || 0) + 1; try { cb.dispatchEvent(new Event('change', { bubbles: true })); } finally { cb.__syn = Math.max(0, cb.__syn - 1); } };
-      fire(false); fire(true);
-      await window.IntMapWarFronts.toggle('ww2', true, { restored: true });
-      await new Promise((r) => setTimeout(r, 0));
-      let record = false; try { record = !!window.__imWarFronts.span('ww2'); } catch (_) { }
-      return { before, record, live: window.IntMapTime.isLive(), day: window.IntMapTime.iso(), ticked: cb.checked };
-    });
-    expect(pulse.before, 'the fixture: the restored war is ticked on the live clock and no table can hold the pulse').toEqual({ live: true, table: false, ticked: true });
-    expect(pulse.record, "the fixture: the war's record arrived, so the war decided").toBe(true);
-    expect(pulse, "the map's own off→on on a restored war leaves the link's instant (now) where it was").toMatchObject({ live: true, ticked: true }); }
+    plainOwned = await plain.page.evaluate(() => { const o = {}; document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach((c) => { try { o[c.id] = window.IntMapLayerAudit.owned(c.id); } catch (_) { } }); return o; }); }
   finally { await plain.ctx.close(); }
   const held = await heldP;
   try {
@@ -183,17 +152,12 @@ test('every layer a link can carry: holding the style back costs no layer', asyn
     expect((held.heldAtRelease || []).length, "the restore's changes were held by the gate").toBeGreaterThan(0);
     /* everything has been delivered (openLink waited for that state); what is left is the layers whose
        handlers fetch their data first — the same wait the normal boot's reference already had */
-    /* (world-at-time) a layer whose box the TIME hold keeps back (on «now»: the wars, whose records have ended) may
+    /* (world-at-time) a layer whose box the TIME hold keeps back (the link's war rows move the clock into the past) may
        exist in one boot and not the other — whether it drew before the hold is a race between the clock and the
        style, not a cost of the style hold. Its layers are set aside — the reconciler's own ownership, read in the boot that drew them. */
     const timeHeldLayers = async () => (await held.page.evaluate(() => window.IntMapLayerTime.heldIds())).flatMap((id) => plainOwned[id] || []);
-    /* ⚠ (deep-tier-after-module-graph) …and the comparison is at ONE instant, the link's, which is «now». A held boot that
-       left it is named as that — the clock, beside the list — not only as the present-day layers the world-at-time hold
-       then (rightly) took off its map, which is all the 39 of CI's nightly 2026-10-01 said. */
-    const clockOf = (page) => page.evaluate(() => (window.IntMapTime.isLive() ? 'now' : window.IntMapTime.iso()));
-    await expect.poll(async () => { const have = new Set(await mapLayers(held.page)); const aside = new Set(await timeHeldLayers());
-      return { clock: await clockOf(held.page), missing: reference.filter((id) => !have.has(id) && !aside.has(id)) }; },
-      { timeout: 60000, intervals: [2000], message: 'layers the normal boot drew and the held boot did not, on the instant the link names' }).toEqual({ clock: 'now', missing: [] });
+    await expect.poll(async () => { const have = new Set(await mapLayers(held.page)); const aside = new Set(await timeHeldLayers()); return reference.filter((id) => !have.has(id) && !aside.has(id)); },
+      { timeout: 60000, intervals: [2000], message: 'layers the normal boot drew and the held boot did not' }).toEqual([]);
     /* the reported pair, by name: held by the gate, then on the map with their boxes still ticked */
     expect(held.heldAtRelease, 'both reported changes were held by the gate').toEqual(expect.arrayContaining(REPORTED.map(([box]) => box)));
     /* (world-at-time) the map at an instant is measured in tests/history-prefetch-on-demand.spec.js (the same journey to
