@@ -11,6 +11,9 @@
 - 辞書の追加（`geo_pins`、クライアントの追加辞書、サーバー側の埋め込み辞書）。
 - データレイヤーの追加（既存の setup パターンに倣う）。出典は `DATA_SOURCES` に追記する。
 - i18n 文言、ウィジェット、設定項目の追加。
+- Atlas の能力の追加。`js/atlas-cap-<名前空間>.js` に**項目を 1 つ**足し、説明文はその項目の `doc` に書く
+  （既存のブロックに入るなら `{ in, at, text }` だけ）。続けて `node scripts/atlas-caps.mjs --write`。手順は §2 の
+  Capability Registry。
 
 **慎重に（壊れやすい中核）**
 
@@ -20,5 +23,8 @@
 - `applyTheme()` / `_reassertBase()` / `styledata` の自己修復まわり。
 - 投影・3D・compare の同期。Isolate のマスク順序。
 - ai-proxy / refresh-news の鍵・上限・再利用ロジック。
+- Atlas のカタログ: `js/atlas-catalog-text.js` のチャンクの順と見出し、項目の `doc` 断片の `at`——組み立てた本文が
+  そのまま planner へ渡る（順も 1 バイトも回答品質に効く）。断片を言い換えない。項目の外に能力 ID の表を作らない
+  （方針・事後条件・チップ・回答の族・監査の台帳は項目の欄。登録表の `GENERATED` の間は生成物）。
 - `js/geo-engine.js` の契約（アダプタにだけメソッドを足さない。足すなら `types/geo-engine.d.ts` にも
   宣言する——`npm run check:types` が両エンジンを突き合わせる）。

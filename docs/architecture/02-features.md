@@ -21,10 +21,13 @@
 UI のボタンも Atlas の自然文も、テストも監査も、**同じ能力 ID** を名指す。
 
 **能力ひとつにつき、書く場所はひとつ。** 能力は **`js/atlas-cap-<名前空間>.js` の 1 項目**で、名前空間は能力 ID の先頭
-（`view.flyTo` は `js/atlas-cap-view.js`）。1 項目が **宣言と実行の両方**を持つ:
+（`view.flyTo` は `js/atlas-cap-view.js`）。1 項目が **宣言・説明文・方針・実行のすべて**を持つ（項目が持てる欄は
+`js/atlas-caps.js` の `ENTRY_KEYS`、綴り違いの欄は読み込み時に名指しで拒む）:
 
 ```js
 { row:    ['view.flyTo', 'flyTo', '', 'view', 'camera', 'camera', 'camera,map', 'session', 'none', 'place', ''],
+  doc:    [{ in: 'navigation-view', at: 10, text: '{"type":"flyTo","place":str} — just give the place name; …' }],
+  goal:   function (a, raw, h) { … },          // カメラの事後条件（任意）
   schema: () => ({ type: 'object', properties: { place: str(), … }, anyOf: [ … ] }),
   async run(a, dctx, K) { const R = K.R, geocode = K.geocode, …; …本体… } }
 ```
@@ -32,6 +35,18 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 - **`row`** — 登録表の 1 行（列の意味は `js/atlas-capabilities.js` の「THE TABLE」）: ID・列 1 の綴り
   （dispatch が引く名前）・別名・分類・**観測器**（列 4）・副作用（列 5＝競合キー）・生成物・危険度・確認・
   必要な対象・遅延モジュール・外部内容。
+- **`doc`** — planner が読む説明文の、この能力の**断片**。`{ in: <チャンク>, at: <位置>, text }` を、属するブロック
+  （チャンク）ごとに 1 つ。`text` は文字列か、実行時の値（返答言語・モジュール一覧・指標キー・見本の地図）を読む
+  `(c) => …` の関数。本文を持たず `{ in: <チャンク> }` だけなら、そのチャンクの見出しが説明している能力。
+- **`phrases`**（任意） — 読者がこの行為を呼ぶ言葉のうち、製品がすでに持っているもの（`view.locate` は
+  `js/atlas-geo-resolve.js` の「現在地」表）。検索は行の綴りと同じに採点する。
+- **`policy`**（任意） — planner の方針: `withdrawn`（撤去と証拠のコード）・`ruleDocumented`（常時送る規則文が説明）・
+  `fallback`・`forbidden`（置き換えてはならない能力）・`equivalents`（置き換えてよい能力）・`answer`（結果が話題の
+  答えになる族）。意味は `js/atlas-caps.js` の `POLICY_KEYS`。
+- **`goal`**（任意） — カメラの**事後条件**（何が画面に見えていれば済んだか）。自分の引数 `(a, raw, h)` だけを読む。
+- **`chips`**（任意） — 完了した run が切り替える地図のチップの種類（下の「地図チップ」）。
+- **`catalogueSilent`**（任意） — 監査 ㉓ の台帳: 説明文がまだ自分の主題を en と jp で述べていない。値は測った日で、
+  台帳は 2026-09-18 で閉じている（それより後の日付は名指しで拒まれる——足せるのは減らす方向だけ）。
 - **`schema`** — 引数の schema。`js/atlas-caps.js` の組み立て関数で書き、**呼ぶたびに新しいオブジェクト**を返す。
 - **`run(a, dctx, K)`** — dispatch がこの能力に対して走らせるもの。`K` は Atlas カーネル
   （`js/atlas-console.js` の閉包）から**この run が読む名前だけ**を渡す依存オブジェクトで、run の先頭の
@@ -53,20 +68,36 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 - **名前空間の一覧** — `js/atlas-caps-modules.js`。同じコマンドが `js/` の `atlas-cap-*.js` を**発見して**書く。
   読むのは遅延チャンクの `js/atlas-console.js` と `js/atlas-schemas.js` だけ。
 - **schema の表** — `js/atlas-schemas.js` が `capabilitySchemas()` で項目から組む（能力 ID がキー）。
-- **観測器の選択** — 行の列 4。**説明文**は今までどおり `js/atlas-catalog-text.js` の各ブロックが自分の説明する
-  能力 ID を持つ。
+- **観測器の選択** — 行の列 4（種類ごとに共有）。能力に固有の事後条件は `goal`。
+- **説明文（カタログ）** — `js/atlas-catalog-text.js` は**チャンクの順と見出し（と各ブロックの経緯）だけ**を持つ。
+  ブロック＝見出し＋そのチャンクを名指す `doc` 断片を `at` の順に並べたもの（`catalogueBlocks()`）。ブロックが
+  どの能力を説明するかも断片から決まる。**共有ブロックへ能力を足しても触るのは自分の項目だけ**なので、並行する
+  PR が同じ行を書き換えることはない。見出し＋断片の分割は各能力の `{"type":"<綴り>"` の開始位置で行い、組み立て
+  結果は分割前の本文と**バイト単位で同じ**（検索の `docBlocks()` が証拠を帰属させる継ぎ目と同じ）。
+- **planner の方針とカメラの事後条件** — `policy` と `goal` を `node scripts/atlas-caps.mjs --write` が登録表の
+  `GENERATED POLICY`・`GENERATED CAMERA GOALS` の間へ写す（行と同じ理由: 登録表は起動時に要る）。`goal` は
+  ソースのまま写すので、自分の引数以外の名前を読むものは生成器が拒む。
+- **監査の台帳** — `catalogueSilent` を `scripts/atlas-capability-audit.mjs` が項目から読む。撤去の例外は
+  `scripts/atlas-catalog.mjs` が登録表（＝`policy.withdrawn`）から読む。
 
 **能力を 1 つ足す手順**:
 
 1. 名前空間のファイル `js/atlas-cap-<名前空間>.js` に項目を 1 つ足す（無い名前空間なら新しいファイルを 1 本）。
+   **説明文はその項目の `doc`**——既存のブロックに入るなら `{ in: '<チャンク>', at: <空いている位置>, text }` を書く
+   だけ（書かない能力は planner に存在しない——`check:catalog`）。**新しいブロックを立てるときだけ**
+   `js/atlas-catalog-text.js` の `CATALOGUE_CHUNKS` に 1 行（名前と、要るなら見出し）を足す。
    カーネルの名前で `K` にまだ無いものが要るときだけ、`js/atlas-console.js` の `capDeps()` に getter を 1 行足す。
-2. `js/atlas-catalog-text.js` にその能力を説明するブロックを書く（書かない能力は planner に存在しない——`check:catalog`）。
-3. `node scripts/atlas-caps.mjs --write`（行の写しと名前空間の一覧を書き直す）。忘れると `check:capabilities` が名指しで落ちる。
+2. `node scripts/atlas-caps.mjs --write`（行・方針・カメラの事後条件の写しと名前空間の一覧を書き直す）。忘れると
+   `check:capabilities` が名指しで落ちる。
+
+⚠ **それ以外の場所に能力の表を手で書かない。** 能力 ID をキーにした表や能力 ID を並べた名前つきの一覧が項目の外に
+あると `tests/atlas-capability-single-source-checks.test.mjs` ⑤ が赤くなる（生成物の印の間は除く）。
 
 これで登録表・dispatch・schema の表・観測器の選択に現れる。`tests/atlas-capability-modules-checks.test.mjs` ④ が
 作業ツリーの外の写しにファイルを 1 本足してこれを実際に確かめる。項目の不備（名前空間違い・綴りの重複・run 無し・
 列数違い）は読み込み時に**名指しで拒む**。
-- **地図チップ** — `OVL_OF` は**能力 ID** をキーにし、どの綴りで呼ばれても `CAPS.ofSpelling` で同じ行に着く。
+- **地図チップ** — `OVL_OF` は各項目の `chips` から `js/atlas-console.js` が導出し（能力 ID がキー）、どの綴りで
+  呼ばれても `CAPS.ofSpelling` で同じ行に着く。
   チップが切り替えるレイヤーは `_ovlIds(kind)`: kind が効果キー（`map.isochrone`・`map.route`・`map.radiation`・
   `map.los`・`map.shakemap`・`map.outbreaks`・`panel.compare`・`map.poi`・`map.elevation`・`map.factions`・
   `map.fly`・`map.ballistic`・`map.compose`）なら、**その効果キーで `render.claim` されたソースを読むスタイル上の
@@ -77,7 +108,7 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
   ソース単位なので 3 つが一緒に切り替わってしまう）、`js/map-tools.js` の輪郭と孤立化マスク（claim すると
   `paint` 判定の入力が変わる）、`js/app-body.js` のピン、どのファイルも作らない id を持つストリートビューの行、
   `js/routing-ops.js` の 2 解析（`map.route` の claim に**足される**）。
-- **回答の族** — `js/atlas-turn-results.js` の `ANSWER_TYPES` は 5 つの能力 ID から綴りを導出する。登録表は
+- **回答の族** — `js/atlas-turn-results.js` の `ANSWER_TYPES` は登録表の `isAnswer`（各項目の `policy.answer`）から綴りを導出する。登録表は
   依存として注入され（`capabilities`）、無ければ同じ表の**公開しない**複製（`makeAtlasCapabilities({}, { publish: false })`）を使う。
 - **system prompt の順序** — `SYS()` は persona → 中核指示 → 返答形式 → 能力の索引 → 道具 →
   **最後に返答言語の 1 行**。言語で変わるのはこの 1 行だけなので、その前はどの言語でも同じバイト列になる。
@@ -88,8 +119,8 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 |---|---|---|
 | Capability Registry | `js/atlas-capabilities.js`（行は `js/atlas-cap-*.js` の項目の写し＝`GENERATED ROWS`） | **153 能力**。ID・別名（**440 綴り**＝ID＋別名の重複を除いた実測。**照合は camelCase を語に割ってから**——割らないと `myLocation` は「my location」で引けず、実測 143 綴り中 60 がどの言語からも届かなかった）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・**必要な対象**・遅延モジュール・観測器・検証器 |
 | 能力の索引 | `js/atlas-capabilities.js` の `index()` | **毎ターン system prompt に載る、ID だけの一覧**（カテゴリ別・撤去済みは除く）。レジストリから導出するので手で保守しない。これが「IntMap に何があるか」の唯一の常時提示 |
-| 能力の説明文 | `js/atlas-catalog-text.js` | 47 ブロック。**各ブロックがどの能力を説明しているか**を持つ。`find_capability` が要求されたときだけ返す |
-| 能力の項目 | `js/atlas-cap-<名前空間>.js`（19 本）・`js/atlas-caps.js` | **能力ひとつに項目ひとつ**: 行・schema・run。dispatch・登録表・schema の表はここから導出 |
+| 能力の説明文 | 各項目の `doc` ＋ `js/atlas-catalog-text.js`（チャンクの順と見出し） | 60 ブロック。ブロックは項目の断片から組み立てる。`find_capability` が要求されたときだけ返す |
+| 能力の項目 | `js/atlas-cap-<名前空間>.js`（19 本）・`js/atlas-caps.js` | **能力ひとつに項目ひとつ**: 行・説明文・方針・事後条件・チップ・schema・run。dispatch・登録表・方針の表・カタログ・schema の表・監査の台帳はここから導出 |
 | 引数の schema | `js/atlas-schemas.js`（項目から組む） | **153 能力ぶんの引数定義**。型・列挙・範囲と、`required` / `anyOf`（「地点 か 緯度経度」）|
 | 実行 | `js/atlas-executor.js` | `IntMapOS.execute()` の 11 段 |
 | 結果の形 | `js/atlas-results.js` | 全操作が返す 1 つの構造。7 つの status |

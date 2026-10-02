@@ -23,7 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { after } from 'node:test';
-import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
+import { capsSource, catalogueText } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -139,11 +139,9 @@ test('R754 ④: an impossible parameter is refused, and the refusal quotes the e
    The catalogue block names the presets and the parameter keys inline, because the planner must
    SEE them. A list written in prose and checked nowhere is the one that goes stale the first time a
    preset is added (.agents/rules/no-ad-hoc-hardcoding.md §2.4), so it is checked here. */
-test('R754 ⑤: the catalogue offers exactly the presets and parameters that exist', () => {
-  const cat = read('js/atlas-catalog-text.js');
-  const i = cat.indexOf("ids: ['sim.pandemicRun', 'map.pandemicDay']");
-  assert.ok(i > 0, 'the pandemic capabilities have a catalogue block at all — their ABSENCE was the defect');
-  const block = cat.slice(i, cat.indexOf('\n', cat.indexOf("' },", i)));
+test('R754 ⑤: the catalogue offers exactly the presets and parameters that exist', async () => {
+  const block = await catalogueText(['sim.pandemicRun', 'map.pandemicDay']);   /* (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given */
+  assert.ok(block.length > 0, 'the pandemic capabilities have a catalogue block at all — their ABSENCE was the defect');
   for (const p of Object.keys(PANDEMIC_PRESETS)) assert.ok(block.includes('"' + p + '"'), 'preset ' + p + ' is not offered to the planner');
   for (const k of Object.keys(PANDEMIC_PARAMS)) assert.ok(block.includes(k), 'parameter ' + k + ' is not offered to the planner');
   assert.ok(/NEVER answer that it does not/.test(block),
@@ -436,11 +434,9 @@ test('R757 ⑯: the ramp is logarithmic, because prevalence is', () => {
    MEASURED: a run that SUCCEEDED still left `mapDrawn:false` — Atlas never made the second call,
    and the same turn printed two different day-60 answers from two runs of one question. The
    catalogue is the only place that can tell a planner either thing. */
-test('R757 ⑰: the catalogue says that showing needs the second call, and that one question is one run', () => {
+test('R757 ⑰: the catalogue says that showing needs the second call, and that one question is one run', async () => {
   /* kept as a spelling: js/pandemic-atlas.js and js/playground.js build their replies and panels with the page (DOM, map canvas); the catalogue text is what the planner is shown */
-  const cat = read('js/atlas-catalog-text.js');
-  const i = cat.indexOf("ids: ['sim.pandemicRun', 'map.pandemicDay']");
-  const block = cat.slice(i, cat.indexOf("' },", i));
+  const block = await catalogueText(['sim.pandemicRun', 'map.pandemicDay']);   /* (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given */
   assert.match(block, /MUST make the second call/, 'a request to SEE it is not answered by the run alone');
   assert.match(block, /ONE RUN PER TURN/, 'and one question is not answered by two contradictory runs');
   assert.match(block, /never repeat the same arguments/,

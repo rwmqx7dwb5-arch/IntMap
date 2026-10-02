@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { RailSchema } from '../js/rail-schema.js';
-import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
+import { capsSource, capabilityEntry, catalogue } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const {
   AXES, UNKNOWN_COLOUR, gaugeOf, speedOf, freqOf, tracksOf, voltageOf, elecOf,
@@ -282,7 +282,7 @@ test('R388 ⑨ the layer ids the opacity registration, the self-heal and Compare
 });
 
 /* ── ⑩ the layer is reachable from Atlas, and so is the one it displaced ──── */
-test('R388 ⑩ Atlas can name this layer, the basemap reference keeps its own words', () => {
+test('R388 ⑩ Atlas can name this layer, the basemap reference keeps its own words', async () => {
   /* ⚠ READ, NOT RUN: the Atlas alias table and catalogue live in the Atlas kernel. */
   const ac = (code('js/atlas-console.js') + '\n' + capsSource());
   assert.match(ac, /'railways':'beta-dl-rail'/, 'the bare word still points at the basemap reference line, which is ON by default');
@@ -292,9 +292,9 @@ test('R388 ⑩ Atlas can name this layer, the basemap reference keeps its own wo
   const caps = capabilityEntry('layers.railAxis').row;   /* (atlas-capability-modules) the row is declared in its entry */
   assert.match(caps, /'layers\.railAxis'/);
   assert.match(caps, /'railways'\]/, 'the railAxis capability must declare the lazy module it needs at execution');
-  const cat = read('js/atlas-catalog-text.js');
-  assert.match(cat, /'layers\.railAxis'/, 'a capability the planner is never told about cannot be used');
-  assert.match(cat, /"type":"railAxis"/);
+  const C = await catalogue();   /* (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given */
+  assert.ok(C.idsCovered().includes('layers.railAxis'), 'a capability the planner is never told about cannot be used');
+  assert.match(C.text(['layers.railAxis']), /"type":"railAxis"/);
 });
 
 /* ── ⑭ the card never says the same thing twice ───────────────────────────── */

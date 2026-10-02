@@ -40,7 +40,7 @@ import { codeOnly, codeOnly as stripComments } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { importModule } from './helpers/import-module.mjs';
 import { appSource } from './app-source.mjs';
-import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
+import { capsSource, capabilityEntry, catalogueText as plannerCatalogue } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
@@ -289,7 +289,7 @@ test('R726 ⑧ a successful result carries the text of what the reader was shown
 
 test('R726 ⑫ an empty find_capability result ends the search instead of inviting a rephrase', () => {
   /* kept as a spelling: the dispatch cases and the map tools are closure code inside js/atlas-console.js / js/map-tools.js, which need the page and the map */
-  const fn = liftFunction(SURF, 'find');
+  const fn = liftFunction(SURF, 'describe');   /* (atlas-capability-single-source) find() ranks; describe() says what was found */
   assert.match(fn, /registry is complete/i);
   assert.match(fn, /IntMap has no such control/);
 });
@@ -324,7 +324,7 @@ test('R726 ⑨ routing: the journey is on the result, for the transit and the ro
 });
 
 /* ── ⑩ the map's year applies to areas ─────────────────────────────────────────────────────── */
-test('R726 ⑩ a country highlight while a past year is shown is drawn from that year\'s polities', () => {
+test('R726 ⑩ a country highlight while a past year is shown is drawn from that year\'s polities', async () => {
   /* kept as a spelling: the dispatch cases and the map tools are closure code inside js/atlas-console.js / js/map-tools.js, which need the page and the map */
   const hl = liftFunction(CONSOLE, 'highlight');
   assert.match(hl, /_eraGeomsFor\(cs\)/, 'the era rung is asked first');
@@ -335,8 +335,8 @@ test('R726 ⑩ a country highlight while a past year is shown is drawn from that
   assert.match(era, /IntMapEraName/, 'a possessor gloss joins the possessor');
   assert.match(era, /resolveCountrySync\(p\.gloss\)/);
   assert.match(liftFunction(CONSOLE, 'clearHl'), /nlq-era-src/, 'and clearing the highlight clears it');
-  const doc = src('js/atlas-catalog-text.js');
-  assert.match(doc, /THE MAP\\'S YEAR APPLIES/, 'Atlas is told');
+  const doc = await plannerCatalogue();   /* (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given */
+  assert.match(doc, /THE MAP'S YEAR APPLIES/, 'Atlas is told');
 });
 
 /* ── ⑬ a clear that found nothing to remove is complete, and the cards close through it ────── */

@@ -74,7 +74,10 @@ export function makeAtlasTurnResults(deps) {
        copy of the same table (js/atlas-capabilities.js `{ publish: false }`) — this module still reads no global. */
     const CAPS = (deps.capabilities && typeof deps.capabilities.ofSpelling === 'function')
       ? deps.capabilities : ownRegistry();
-    const ANSWER_CAPS = ['research.mapReport', 'research.situationMap', 'research.historicalMap', 'research.analyze', 'research.brief'];
+    /* (atlas-capability-single-source) WHICH capabilities are answer families is declared in each one's entry
+       (`policy: { answer: true }`, js/atlas-cap-research.js) and read here through the registry (`isAnswer`) — it was
+       the five ids written out a second time in this file. */
+    const ANSWER_CAPS = CAPS.all().filter(function (c) { return c && c.isAnswer; }).map(function (c) { return c.id; });
     const ANSWER_TYPES = {};
     ANSWER_CAPS.forEach(function (id) { const c = CAPS.resolve(id); if (c) c.aliases.forEach(function (a) { if (CAPS.ofSpelling(a) === c) ANSWER_TYPES[a] = 1; }); });
 

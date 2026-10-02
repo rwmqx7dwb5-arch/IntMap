@@ -20,7 +20,7 @@ import { dirname, join } from 'node:path';
 /* (#R763) the acquisition vocabulary, from the module that owns it — see realLayers() below */
 import { makeGisLayers } from '../js/gis-layers.js';
 import { codeOnly } from '../scripts/code-only.mjs';
-import { capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does is its entry in js/atlas-cap-<namespace>.js */
+import { capabilityEntry, catalogueText } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does is its entry in js/atlas-cap-<namespace>.js */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
@@ -697,10 +697,8 @@ test('#R759 ⑨ data.gis の schema は op を要求せず、acquire を宣言�
 });
 
 test('#R759 ⑩ planner が読む目録が acquire と coverage を述べている', async () => {
-  const src = read('js/atlas-catalog-text.js');
-  const i = src.indexOf("ids: ['data.gis'");
-  assert.ok(i > 0);
-  const block = src.slice(i, src.indexOf('\n', src.indexOf("t: '", i) + 4000) + 1);
+  const block = await catalogueText(['data.gis']);   /* (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given */
+  assert.ok(block.length > 0);
   for (const word of ['"acquire"', 'coverage', 'cursor']) {
     assert.ok(block.indexOf(word) >= 0, '目録が ' + word + ' を述べていない（述べられていない能力は無い能力）');
   }

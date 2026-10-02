@@ -22,7 +22,7 @@ IntMap には放射線に関するものが 2 つあり、混ぜてはならな�
 | 色 | §4 の 1 本の尺度 | `js/sims.js` の `ZONES`（Chernobyl の 40/15/5/1 Ci/km²） |
 
 ⚠ **配色を共有してはならない。** 一方は観測、他方は仮説であり、同じ色で描けば読者は
-区別できない。⚠ **Atlas は実測の問いに模型で答えてはならない**（`js/atlas-catalog-text.js`
+区別できない。⚠ **Atlas は実測の問いに模型で答えてはならない**（該当する能力の項目〔`js/atlas-cap-*.js` の `doc` 欄〕
 の該当ブロックが planner にそう書いてある）。
 
 **両者は連結している**——`IntMapRadiationObs.near(lat,lon,km)` と Atlas の `data.radiationNear`

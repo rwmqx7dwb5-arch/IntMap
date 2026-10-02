@@ -39,7 +39,7 @@ import { LAZY_NAMES, LAZY_REGISTRY } from '../js/lazy-modules.js';
 import { codeOnly } from '../scripts/code-only.mjs';   /* (#R497) the forbidden names below appear in that round's own COMMENT explaining them */
 import { makeAtlasTurnResults } from '../js/atlas-turn-results.js';
 import { importModule } from './helpers/import-module.mjs';
-import { capsSource, capabilityEntry, runAst } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
+import { capsSource, capabilityEntry, runAst, catalogueText, catalogue } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -222,22 +222,24 @@ test('R495 ③: data.query is a capability, a schema, a catalogue block, a dispa
 });
 
 
-test('R495 ③: the catalogue sends multi-condition questions HERE instead of to the essay writers', () => {
+test('R495 ③: the catalogue sends multi-condition questions HERE instead of to the essay writers', async () => {
   /* kept as a spelling: the caps, the cost order and the borrowed fields are wiring inside js/atlas-query.js / js/gazetteer.js / js/precip-annual.js that only a network-backed run would exercise; the catalogue text is what the planner is shown */
-  const cat = read('js/atlas-catalog-text.js');
-  const i = cat.indexOf('CROSS-DATASET QUERY');
-  const block = cat.slice(i, cat.indexOf("' },", i));
+  const block = await catalogueText(['data.query']);   /* (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given */
+  assert.match(block, /^CROSS-DATASET QUERY/);
   /* the failure this round is about is not a missing dataset — it is Atlas reaching for prose. */
   assert.match(block, /INSTEAD OF "analyze"\/"mapReport"\/"researchMap"/, 'the redirection has to be explicit');
   assert.match(block, /Never answer a multi-condition question by explaining what would have to be checked/);
   /* ⚠ AND IT HAS TO POINT BOTH WAYS. A planner that reaches for `analyze` first never reads the
      query block, and #R115's rule is that the catalogue is what the planner acts on — so the three
      prose actions carry the reciprocal sentence. */
+  const C = await catalogue(), cat = C.text(null);
   assert.equal((cat.match(/NOT FOR A MULTI-CONDITION FILTER/g) || []).length, 3,
     'analyze, mapReport and researchMap must each say that a multi-condition filter is a query');
   for (const head of ['INTEGRATED ANALYSIS', 'RESEARCH MAPPED ONTO THE MAP', 'RESEARCH & SITUATION MAP']) {
-    const j = cat.indexOf(head);
-    assert.ok(j > 0 && cat.lastIndexOf('NOT FOR A MULTI-CONDITION FILTER', j) > cat.lastIndexOf("t: '", j) - 1,
+    /* the block the heading is in, cut out of the whole by the blocks' own lengths */
+    let at = 0; const blk = C.blocks().map((b) => { const t = cat.slice(at, at + b.bytes); at += b.bytes; return t; }).find((t) => t.includes(head)) || '';
+    const j = blk.indexOf(head);
+    assert.ok(j > 0 && blk.lastIndexOf('NOT FOR A MULTI-CONDITION FILTER', j) >= 0,
       `the «${head}» block does not carry the pointer back to query`);
   }
   /* every table and every first-class column the engine registers must be nameable by the planner */
@@ -415,14 +417,13 @@ test('R497 ③: reading the real file that way produces NAMED rows with real num
   assert.ok(Math.abs(fuji.lng - 138.73) < 0.5 && Math.abs(fuji.lat - 35.36) < 0.5, 'Fuji is where Fuji is');
 });
 
-test('R497 ④: the two facts the row carries are reachable as columns, and documented', () => {
+test('R497 ④: the two facts the row carries are reachable as columns, and documented', async () => {
   /* kept as a spelling: the caps, the cost order and the borrowed fields are wiring inside js/atlas-query.js / js/gazetteer.js / js/precip-annual.js that only a network-backed run would exercise; the catalogue text is what the planner is shown */
   const eng = read('js/atlas-query.js');
   assert.match(eng, /col\('country', \['volcanoes'\]/, 'the volcano country is a column');
   assert.match(eng, /col\('lastEruptionYear', \['volcanoes'\]/, 'the last known eruption is a column');
   /* #R115's rule: a column the catalogue does not name does not exist for the planner */
-  const cat = read('js/atlas-catalog-text.js');
-  const block = cat.slice(cat.indexOf('CROSS-DATASET QUERY'), cat.indexOf("' },", cat.indexOf('CROSS-DATASET QUERY')));
+  const block = await catalogueText(['data.query']);   /* (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given */
   assert.match(block, /volcanoes \(Smithsonian GVP, offline\)[^·]*country/, 'the catalogue names the country column');
   assert.match(block, /lastEruptionYear/, 'the catalogue names the last-eruption column');
 });

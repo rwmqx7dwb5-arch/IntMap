@@ -11,7 +11,10 @@
  *  The registry rows (copied into js/atlas-capabilities.js), the dispatch and the schema table are
  *  DERIVED from these entries — `node scripts/atlas-caps.mjs --write` rewrites what is generated after
  *  an entry is added or removed, and `npm run check:capabilities` fails while they disagree.
- *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
+ *  (atlas-capability-single-source) An entry also holds `doc` — its fragment of each catalogue block the planner
+ *  reads (js/atlas-catalog-text.js keeps only the blocks' order and headings) — and, where it has them, `phrases`,
+ *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
+ *  entry names them.
  * ==========================================================================*/
 import { str, bool, num, one, list, lat, lng, loose } from './atlas-caps.js';
 import { routeFacts } from './atlas-result-facts.js';
@@ -23,6 +26,12 @@ export default [
   {
     row: ['routing.isochrone',          'isochrone',      'reach,reachability,reachable,catchment',                      'routing', 'isochrone','map.isochrone',         'map',                 'session', 'none',   'place',    ''],
     /* ── routing ────────────────────────────────────────────────────────────────────────────── */
+    doc: [
+      { in: 'more-features', at: 100, text: '{"type":"isochrone","place"?:str,"lng"?:num,"lat"?:num,"mode"?:"auto"|"pedestrian"|"bicycle"|"transit","minutes"?:num|[num,…] (1-120 minutes; up to 4 nested contours; default [15,30])} = paints everywhere that can ACTUALLY BE REACHED inside the time budget, traced over the REAL road network (Valhalla / OpenStreetMap) — a true reachability area, NOT a distance circle. "auto" drives the roads, "pedestrian" walks the footpaths, "bicycle" takes the cycleways; "transit" instead rides the REAL OSM rail network and answers with the stations reachable in the budget. The origin may be a place name, "現在地" / "my location" (the device GPS), "here" (the point the user clicked), or explicit lng/lat. Give several times at once for nested bands ("minutes":[15,30,60]). Use for 「現在地から徒歩一時間で行ける範囲」「車で30分の範囲」「駅から徒歩15分圏内」「到達圏」, "how far can I walk in an hour", "30 minute drive from X", "reachable area / catchment / isochrone".\n' + 'MULTI-STOP ROUTE OPTIMISATION: ' },
+    ],
+    /* #R115: non-equivalent substitutions the planner has actually made, recorded so it cannot make them again */
+    policy: { forbidden: ['map.radius'] },
+    chips: 'map.isochrone',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { place: str(), from: str(), origin: str(), center: str(), lng: lng(), lat: lat(), minutes: loose(), time: num(1, 120), mins: num(1, 120), mode: str(), profile: str(), by: str() }, anyOf: [{ required: ['place'] }, { required: ['from'] }, { required: ['origin'] }, { required: ['center'] }, { required: ['lat', 'lng'] }] }),
     async run(a, dctx, K) { const geocode = K.geocode, R = K.R, warn = K.warn, whereMiss = K.whereMiss, L = K.L, esc = K.esc, GE = K.GE, note = K.note;
       {   /* ⚠ (#R278) lng/lat used to be DROPPED here: every sibling case (rfCoverage, earthquake, tsunami, nightSky, sunHours…) reads explicit coordinates first, this one only ever called geocode(a.place||…), and geocode('') falls back to the last place or the map centre. So {type:'isochrone',lng:136.934,lat:35.133} answered «✓ 60分の到達圏» and drew it at 10°E 20°N — measured, not supposed. A wrong place reported as success is the same lie as a circle reported as a reach. */
@@ -50,6 +59,10 @@ export default [
   },
   {
     row: ['routing.setEndpoints',       'route',          '',                                                            'routing', 'route',   'map.route',              'panel',               'session', 'none',   'place',    ''],
+    doc: [
+      { in: 'tools-panels', at: 70, text: '{"type":"route","from":str,"to":str} = MARITIME/sea route only (ships); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { from: str(), to: str() }, required: ['from', 'to'] }), /* `route` = the MARITIME route */
     async run(a, dctx, K) { const geocode = K.geocode, GE = K.GE, R = K.R, note = K.note, L = K.L, esc = K.esc, warn = K.warn;
       { const A=await geocode(a.from); const B=await geocode(a.to); let any=false; try{ if(window.IntMapRoute&&window.IntMapRoute.open) window.IntMapRoute.open(); }catch(_){} try{ if(A&&window.IntMapRoute&&window.IntMapRoute.setStart){ window.IntMapRoute.setStart({lng:A.lng,lat:A.lat}); any=true; } }catch(_){} try{ if(B&&window.IntMapRoute&&window.IntMapRoute.setEnd){ window.IntMapRoute.setEnd({lng:B.lng,lat:B.lat}); any=true; } }catch(_){} if(A&&B){ try{ GE().camera.fitBounds([[Math.min(A.lng,B.lng),Math.min(A.lat,B.lat)],[Math.max(A.lng,B.lng),Math.max(A.lat,B.lat)]],{padding:80,duration:900}); }catch(_){} } return R(any, any?note('🚢 '+L('Sea route','海路','Seeroute','Морской путь','Ruta marítima')+': '+esc((A&&A.name)||a.from||'')+' → '+esc((B&&B.name)||a.to||'')):warn('⚠ '+L('Need start & destination','始点と終点が必要','Start & Ziel nötig','Нужны старт и финиш','Origen y destino'))); }
@@ -57,6 +70,9 @@ export default [
   },
   {
     row: ['routing.optimizeStops',      'optimizeRoute',  'tsp,multiStop,optimize,optimizeStops',                        'routing', 'route',   'map.route',              'route,map,panel',     'session', 'none',   'points',   ''],
+    doc: [
+      { in: 'more-features', at: 110, text: '{"type":"optimizeRoute","places"?:[str,…] (2-12 stops; omit to use the pins already on the map),"mode"?:"driving"|"walking"|"cycling"} = the SHORTEST ORDER to visit several places (nearest-neighbour + 2-opt), then actually routed on the OSM road network (OSRM) with the total distance and time; the first stop is kept as the start. Use for 「A・B・Cを最短で回る順番」, "best order to visit X, Y and Z", "optimize this trip".\n' + 'OBJECT MANAGER: ' },
+    ],
     schema: () => ({ type: 'object', properties: { places: loose(), points: loose(), stops: loose(), mode: str(), profile: str() }, anyOf: [{ required: ['places'] }, { required: ['points'] }, { required: ['stops'] }] }), /* `optimizeRoute` */
     async run(a, dctx, K) { const geocode = K.geocode, HOST = K.HOST, L = K.L, R = K.R, warn = K.warn, _tspOrder = K._tspOrder, esc = K.esc, GE = K.GE, note = K.note;
       {
@@ -83,6 +99,12 @@ export default [
   {
     row: ['routing.route',              'directions',     'roadRoute,navigate,drivingRoute,walkingRoute,transitRoute',   'routing', 'route',   'map.route',              'route,map,panel',     'session', 'none',   'place',    'routeUi'],
     /* `directions` — both endpoints, in any of the spellings the case reads for the destination */
+    doc: [
+      { in: 'tools-panels', at: 60, text: '{"type":"directions","from":str,"to":str,"mode"?:"driving"|"walking"|"cycling"|"transit","via"?:[str,…],"time"?:"ISO 8601 date-time","arriveBy"?:bool (true = "time" is the ARRIVAL deadline, e.g. "9時までに着きたい" — transit only),"avoid"?:["toll"|"motorway"|"ferry",…] (driving only — e.g. "有料道路を避けて" → ["toll"], "高速を使わずに" → ["motorway"]),"avoidAreas"?:[[[lng,lat],…closed ring…],…] (areas the route MUST NOT enter — road modes only, honoured through Valhalla; each ring is [lng,lat] pairs, first point repeated last),"transitModes"?:["RAIL"|"SUBWAY"|"TRAM"|"BUS"|"FERRY",…] (transit only — the modes the planner MAY use, so excluding ferries means listing the other four: "フェリーを使わずに" / "no ferries" / "電車だけで"),"maxWalkM"?:num (transit only — the furthest the traveler will walk to or from a stop, in meters: "あまり歩きたくない" → 400)} = REAL Google/Apple-Maps-style directions: driving/walking/cycling via OSRM (turn-by-turn on OpenStreetMap) OR — with mode "transit" (train / 電車 / 鉄道 / subway / bus / 公共交通) — REAL public-transit routing via Transitous/MOTIS that actually rides the rails, drawing each leg color-coded (walk dotted, rail blue, subway orange, tram green, bus purple) with a transfer-by-transfer leg list. ALWAYS pass mode:"transit" when the user says train/電車/鉄道/subway/bus/公共交通 — never silently route them on roads. Use for "東京から大阪への経路", "電車で新宿から横浜", "directions from A to B", "how do I get from X to Y by train"; ' },
+    ],
+    /* #R115: non-equivalent substitutions the planner has actually made, recorded so it cannot make them again */
+    policy: { forbidden: ['sim.flyAnimate', 'map.drawLine'] },
+    chips: 'map.route',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { from: str(), to: str(), place: str(), destination: str(), via: list(str()), mode: str(), profile: str(), time: str(), datetime: str(), depart: str(), arrive: str(), arriveBy: bool(), avoid: loose(), avoids: loose(), exclude: loose(), avoidArea: list(), avoidAreas: list(), transitModes: list(str()), maxWalkM: num(0) }, anyOf: [{ required: ['from', 'to'] }, { required: ['from', 'place'] }, { required: ['from', 'destination'] }] }),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, geocode = K.geocode, GE = K.GE, warn = K.warn, HOST = K.HOST, esc = K.esc;
       {
@@ -213,6 +235,9 @@ export default [
     row: ['routing.drone',              'drone',          '',                                                            'routing', 'route',   'map.drone',              'route,map,panel',     'session', 'none',   '',         ''],
     /* `drone` with nothing opens the planner; `action` is compared lower-cased, so the catalogue's
        own `followTerrain` would fail an enum — it stays a string */
+    doc: [
+      { in: 'tools-panels', at: 130, text: '{"type":"drone","action"?:"plan"|"open"|"close"|"compute"|"followTerrain"|"clear","from"?:str,"to"?:str,"via"?:[str,…],"alt"?:num (altitude for every waypoint, default 80),"ref"?:"agl"|"amsl" (what "alt" is measured from — default "agl", above the ground),"aircraft"?:"micro"|"prosumer"|"heavylift"|"fixedwing","name"?:str} = DRONE FLIGHT PLANNING over the real terrain: builds a waypoint route from the named places, samples the DEM along it, and answers with the ground distance, the 3-D path length, the estimated flight time, the highest point (AMSL and AGL), the lowest ground clearance, the estimated battery use, and EVERY point where the plan breaks one of the aircraft\'s limits, with the reason and the place. Altitudes are never ambiguous: "agl" is above the ground under that point, "amsl" is above sea level, and both are reported. action "followTerrain" raises the route (and inserts waypoints over ridges) until it clears the aircraft\'s minimum ground clearance everywhere; "compute" re-runs the numbers; "clear" empties the route. Use for "東京駅から羽田空港までドローンの経路を作って", "plan a drone flight from A to B at 100 m", "高度120mで富士山周辺を飛ばせて", "make the drone route follow the terrain" (action:"followTerrain"); action "prepare" (or "check") fetches the operational data and re-runs every check that is on; naming one of "wind" | "link" | "nofly" | "reserve" | "sites" turns that check on and runs it. WHAT EACH CHECK IS: "wind" reads the REAL forecast wind at the flight altitude (Open-Meteo model levels 10/80/120/180 m, at the hour the leg is actually flown) and folds the along-track component into ground speed, time and energy, reporting head/tail/crosswind; "link" walks the terrain back to the ground station with earth curvature and refraction applied and answers BOTH "does the radio reach" (free-space path loss against the link budget) and "where does line of sight break" (first-Fresnel clearance + knife-edge diffraction); "nofly" checks the route against airports, heliports, military areas, nuclear plants, prisons, nature reserves and national parks from OpenStreetMap with their conventional advisory buffers — say clearly that this is ADVISORY and not an airspace clearance; "reserve" adds the energy needed to fly HOME again into the same wind and checks the round trip against the usable battery; "sites" finds EMERGENCY LANDING SITES by measuring DEM slope on open OSM land and keeping only those the aircraft can actually reach at its rated descent rate. action "compare" computes three real plans over the same waypoints (shortest / least power / safest) and reports the distance, time, energy and violations of each; action "rth" appends a RETURN-TO-LAUNCH leg that climbs to the route’s own highest terrain plus the aircraft’s minimum clearance before transiting home; action "conflicts" checks the current route against the other SAVED routes in 3-D and in TIME and reports the closest approach. Use for "風を考慮して", "check the wind on this route" (action:"wind"), "通信が届くか確認して" (action:"link"), "飛行禁止区域にかからないか" (action:"nofly"), "帰りの電池は足りる？" (action:"reserve"), "緊急着陸できる場所を出して" (action:"sites"), "最短と最省電力と最安全を比べて" (action:"compare"), "離陸地点に戻る経路を作って" (action:"rth"), "他の機体とぶつからないか" (action:"conflicts"); ' },
+    ],
     schema: () => ({ type: 'object', properties: { action: str(), from: str(), to: str(), via: list(str()), alt: num(), ref: one('agl', 'amsl'), aircraft: one('micro', 'prosumer', 'heavylift', 'fixedwing'), name: str() } }),
       /* (#R174) DRONE NAVIGATION — the Atlas face of js/drone-nav.js. Every number in the reply comes
          from the same compute() the panel shows; Atlas never re-derives one, and it never claims a

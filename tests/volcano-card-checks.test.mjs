@@ -32,7 +32,7 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { capsSource, capabilityEntry, dispatchRuns } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
+import { capsSource, capabilityEntry, dispatchRuns, catalogue } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const { readLF } = await import('../scripts/eol.mjs');
@@ -197,11 +197,11 @@ test('#R395 ⑧ the eruption record on the master clock closes an open-ended eru
 });
 
 /* ── ⑨ the two new Atlas capabilities exist in all three lists at once ── */
-test('#R395 ⑨ Atlas can reach the volcano subsystem, and every list that must agree does', () => {
+test('#R395 ⑨ Atlas can reach the volcano subsystem, and every list that must agree does', async () => {
   /* spelling kept — the three lists are declarations in three files that must agree; scripts/atlas-capability-audit.mjs (check:capabilities) is the runtime half */
   const CAPS = codeOnly(readLF(join(ROOT, 'js', 'atlas-capabilities.js')));
   const CONSOLE = codeOnly((readLF(join(ROOT, 'js', 'atlas-console.js')) + '\n' + capsSource()));
-  const CATALOG = readLF(join(ROOT, 'js', 'atlas-catalog-text.js'));
+  const CAT = await catalogue();   /* (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given */
   /* the dispatch groups, read the way scripts/atlas-capability-audit.mjs reads them: a line that
      STARTS with eight spaces and `case '`, carrying every spelling on it. ⚠ Both capabilities share
      one line here — js/atlas-console.js's ceiling only ever comes down (#R199 5,300, #R318 5,270)
@@ -212,8 +212,8 @@ test('#R395 ⑨ Atlas can reach the volcano subsystem, and every list that must 
     assert.ok(capabilityEntry(id), `the capability registry has no row for ${id}`);
     assert.ok(spellings.has(legacy),
       `no dispatch case line carries '${legacy}' — the capability audit finds a capability unrunnable when its legacy type has no case`);
-    assert.ok(CATALOG.includes(`'${id}'`), `the planner is never told about ${id}`);
-    assert.ok(CATALOG.includes(`"type":"${legacy}"`), `the catalogue does not show the planner how to emit ${legacy}`);
+    assert.ok(CAT.idsCovered().includes(id), `the planner is never told about ${id}`);
+    assert.ok(CAT.text([id]).includes(`"type":"${legacy}"`), `the catalogue does not show the planner how to emit ${legacy}`);
   }
   /* …and the body really is out of the switch, where the ceiling forced it */
   assert.ok(codeOnly(readLF(join(ROOT, 'js', 'atlas-controls.js'))).includes('async function doVolcano('),

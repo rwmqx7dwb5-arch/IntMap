@@ -37,7 +37,7 @@ import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { makeAtlasGloss, GLOSS_CSS, GLOSS_CSS_MOBILE } from '../js/atlas-gloss.js';
-import { capsSource, capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
+import { capsSource, capabilityEntry, catalogueText } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* ⚠ THE SHIPPED FUNCTIONS, NOT A COPY. `makeAtlasGloss` touches nothing at construction time — no
    DOM, no globals, no network — so the factory runs here and hands back the three it decides
@@ -171,7 +171,7 @@ test('R491 ⑦ the gloss counter is its own table, written only by SECURITY DEFI
 });
 
 /* ── ⑧ the card is reachable both ways, and is one card ───────────────────────────────────── */
-test('R491 ⑧ the reader raises the card by gesture and Atlas raises the SAME card by action', () => {
+test('R491 ⑧ the reader raises the card by gesture and Atlas raises the SAME card by action', async () => {
   /* kept as a spelling: ai-proxy is Deno TypeScript, js/ai-core.js needs the signed-in page, the migration needs Postgres; the gesture and the dispatch live in DOM closures */
   const gloss = CODE('js/atlas-gloss.js');
   const console_ = (CODE('js/atlas-console.js') + '\n' + capsSource());
@@ -187,7 +187,7 @@ test('R491 ⑧ the reader raises the card by gesture and Atlas raises the SAME c
     'ONE line in the capability\'s run — the body is in the module (js/atlas-gloss.js)');
   assert.match(gloss, /function dispatch\(a\)/);
   assert.match(gloss, /try \{ open\(term, null\); \}/, 'the action opens the same card the gesture does');
-  assert.match(CODE('js/atlas-catalog-text.js'), /"type":"gloss"/,
+  assert.match(await catalogueText(['reader.gloss']), /"type":"gloss"/,   /* (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given */
     'an action the catalogue does not describe does not exist for the planner (#R278)');
   assert.match(capabilityEntry('reader.gloss').row, /'reader\.gloss'/, 'the registry row (declared in its entry)');
   assert.ok(capabilityEntry('reader.gloss').schema, 'and its argument schema, in the same entry');

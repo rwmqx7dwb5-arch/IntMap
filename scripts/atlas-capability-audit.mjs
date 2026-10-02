@@ -34,7 +34,7 @@ import { fileURLToPath } from 'node:url';
    become the second copy — so the stripper moved to scripts/code-only.mjs and both import it. */
 import { codeOnly } from './code-only.mjs';
 import { appLangs, authoredLangs } from './lang-policy.mjs';
-import { entrySources, namespaceFiles, stale as capsStale } from './atlas-caps.mjs';
+import { entrySources, namespaceFiles, stale as capsStale, loadEntries } from './atlas-caps.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -80,23 +80,18 @@ export function kernelLines(root = ROOT) {
    one describes itself, ㉓ says so by name and the line is deleted — the list may only shrink, and a
    capability NOT on it that goes silent fails the gate. IT IS NOT REMEMBERED, IT IS RE-DERIVED:
    `node scripts/atlas-capability-audit.mjs` prints the current set. */
-export const CATALOGUE_SILENT = [
-  'map.clearHighlights', 'layers.toggle', 'layers.opacity', 'view.projection', 'view.basemap',
-  'panel.compare', 'view.flyTo', 'research.askHere', 'settings.theme', 'settings.accent',
-  'settings.language', 'view.terrain3d', 'view.grid', 'view.resetNorth', 'view.zoom', 'view.bearing',
-  'view.pitch', 'view.pan', 'panel.tab', 'layers.countryInfo', 'data.countryCard', 'data.timeSeries',
-  'map.isolateCountry', 'routing.setEndpoints', 'data.runways', 'panel.education', 'panel.ecmwf',
-  'panel.widgets', 'panel.screenshot', 'panel.search', 'settings.units', 'map.tool',
-  'navigation.stop', 'map.measure', 'panel.correlate', 'panel.settings', 'panel.shortcuts',
-  'sim.rfCoverage', 'sim.sunPosition', 'sim.nightSky', 'map.clearAll', 'map.outline',
-  'sim.pandemicRun', 'map.pandemicDay', 'panel.playground', 'panel.news', 'panel.account',
-  'panel.donate', 'panel.feedback', 'panel.bugReport', 'map.shakemap', 'layers.allOff', 'map.clear',
-  'view.fullscreen', 'sim.flyAnimate', 'map.drawLine', 'ui.inlineControls', 'attach.recall',
-  'panel.ticker', 'system.module', 'photo.locate',
-];
+/* (atlas-capability-single-source) THE LEDGER IS DECLARED BY THE ENTRIES, NOT LISTED HERE. Each recorded
+   capability carries `catalogueSilent: '2026-09-18'` in its own entry (js/atlas-cap-<namespace>.js), so fixing its
+   description and deleting its line are one edit in one place. ⚠ THE LEDGER IS CLOSED: a flag may name only the day
+   it was measured, LEDGER_CLOSED — a capability added later that is silent fails ㉓ rather than joining the ledger
+   (a later date is refused by name), which is what «the list may only shrink» meant when it was a list here. */
+export const LEDGER_CLOSED = '2026-09-18';
+const capsEntries = await loadEntries();
+export const CATALOGUE_SILENT = capsEntries.filter((e) => e.catalogueSilent).map((e) => e.id);
+const CATALOGUE_SILENT_DATED = capsEntries.filter((e) => e.catalogueSilent).map((e) => ({ id: e.id, on: String(e.catalogueSilent) }));
 
 /* ── the twenty checks. Each takes DATA and returns {id, title, failures[], note} ───────────── */
-export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas }) {
+export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas, silentLedger }) {
   const J = caps.toJSON();
   const byId = Object.create(null);
   J.capabilities.forEach((c) => { byId[c.id] = c; });
@@ -387,7 +382,9 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
       if (!bl[i].bytes) bad.push(`catalogue block ${i} is empty`);
     }
     /* a selection returns WHOLE blocks or none — never a prefix */
-    const one = docs.text(['routing.route']);
+    /* (atlas-capability-single-source) the probe is a capability of the first SHARED block, found rather than named */
+    const shared = bl.find((b) => b && b.ids.length > 1);
+    const one = shared ? docs.text([shared.ids[0]]) : '';
     if (one && !all.includes(one)) bad.push('a selected catalogue is not a subsequence of the full one — selection is rewriting blocks');
     if (/\.\.\.$|…$/.test(all.trim())) bad.push('the catalogue ends in an ellipsis — something truncated it');
     add('catalogue-intact', 'the catalogue is sent whole or not at all', bad, `${all.length} bytes across ${docs.count()} blocks`);
@@ -629,12 +626,15 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
         const jp = subject([...new Set(d.match(/[぀-ヿ㐀-鿿]+/g) || [])]);
         if (!en || !jp) silent.push({ id: c.id, miss: !en && !jp ? 'en and jp' : (en ? 'jp' : 'en') });
       });
-      const known = new Set(CATALOGUE_SILENT);
+      /* the ledger is DATA too (default: the entries' `catalogueSilent`), so a fixture can hand the check one */
+      const ledger = silentLedger || CATALOGUE_SILENT_DATED;
+      const known = new Set(ledger.filter((x) => x.on <= LEDGER_CLOSED).map((x) => x.id));
+      ledger.filter((x) => x.on > LEDGER_CLOSED).forEach((x) => bad.push(`${x.id}: \`catalogueSilent: '${x.on}'\` — the ledger closed on ${LEDGER_CLOSED}; a capability silent since then is described, not recorded`));
       silent.forEach((r) => {
         if (!known.has(r.id)) bad.push(`${r.id}: its own catalogue entry says nothing about what it is, in ${r.miss} — the search cannot rank a subject nobody wrote down`);
       });
-      const fixed = CATALOGUE_SILENT.filter((id) => !silent.some((r) => r.id === id));
-      if (fixed.length) bad.push(`${fixed.length} recorded id(s) now describe themselves — delete them from CATALOGUE_SILENT: ${fixed.join(', ')}`);
+      const fixed = [...known].filter((id) => !silent.some((r) => r.id === id));
+      if (fixed.length) bad.push(`${fixed.length} recorded id(s) now describe themselves — delete \`catalogueSilent\` from their entries: ${fixed.join(', ')}`);
     }
     add('subject-findable', 'a capability is findable by the words of its own subject, en and jp', bad,
       `${silent.length} of ${pop} documented capabilities are silent about themselves`);
@@ -643,7 +643,8 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
   return checks;
 }
 
-export async function audit() {
+/* `opts.silentLedger` — [{ id, on }] in place of the entries' `catalogueSilent` (a fixture for check ㉓) */
+export async function audit(opts = {}) {
   const { caps, docs, results } = await loadRegistry();
   /* the result messages the four non-positional locales must carry */
   caps.resultEnglish = () => results.messageEnglish();
@@ -660,6 +661,7 @@ export async function audit() {
       resultsSrc: read('js/atlas-results.js'),
       toolsSrc: read('js/atlas-toolsurface.js'),
       schemas: await loadSchemas(),
+      silentLedger: opts.silentLedger || null,
     }),
   };
 }

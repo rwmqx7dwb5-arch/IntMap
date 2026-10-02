@@ -11,7 +11,10 @@
  *  The registry rows (copied into js/atlas-capabilities.js), the dispatch and the schema table are
  *  DERIVED from these entries — `node scripts/atlas-caps.mjs --write` rewrites what is generated after
  *  an entry is added or removed, and `npm run check:capabilities` fails while they disagree.
- *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
+ *  (atlas-capability-single-source) An entry also holds `doc` — its fragment of each catalogue block the planner
+ *  reads (js/atlas-catalog-text.js keeps only the blocks' order and headings) — and, where it has them, `phrases`,
+ *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
+ *  entry names them.
  * ==========================================================================*/
 import { str } from './atlas-caps.js';
 
@@ -25,6 +28,9 @@ export default [
         「存在しない lazy を名指しした行」を測っている）。`newsEvents` はそこに在る。 */
   {
     row: ['news.category',              'newsCategory',   'newsFilter,eventCategory',                                    'data',    'paint',   'panel.news',             'map,explanation',     'session', 'none',   'text',     'newsEvents', 'external'],
+    doc: [
+      { in: 'news.category', text: 'NEWS CATEGORY FILTER: {"type":"newsCategory","text":str} \u2014 narrows the News list AND the map pins to ONE event category, or "all" to clear it. The eight categories are world, politics, business, technology, science_health, climate_weather, disasters, society (their localised names work too). Use when the user asks to see only one kind of news \u2014 \u300c\u707d\u5bb3\u306e\u30cb\u30e5\u30fc\u30b9\u3060\u3051\u8868\u793a\u3057\u3066\u300d, "show me just the business events", "clear the news filter". It filters what is ALREADY loaded: it does not fetch a new topic (use mapReport for that) and it does not answer a question (use events or analyze). The reply states how many events and how many pins remain, so an empty category is REPORTED rather than looking like a broken filter.\n' },
+    ],
     schema: () => ({ type: 'object', properties: { text: str(), category: str(), q: str() }, anyOf: [{ required: ['text'] }, { required: ['category'] }, { required: ['q'] }] }), /* `newsCategory`; "all" clears the filter */
       /* (#R386) news.category — 一覧と地図を同時に絞る（docs/NEWS-EVENTS.md §9/§10）。述語は
          js/news-events.js の `passes()` 1 本なので片方だけに効く状態が作れない。⚠ **観測してから

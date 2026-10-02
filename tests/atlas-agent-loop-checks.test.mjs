@@ -994,7 +994,7 @@ test('R511 ⑨: map.compose is registered, documented, observed, dispatched and 
      the ones reading that source. tests/atlas-one-declaration-checks.test.mjs RUNS the module's painter and the chip's
      resolver against one renderer and holds the result equal to C.LAYERS. */
   assert.doesNotMatch(con, /compose:\['atl-compose/, '_OVL types the compose layers again — the claim is the list');
-  assert.match(con, /'map\.compose':'map\.compose'/, 'the compose chip switches what map.compose claimed');
+  assert.match(capabilityEntry('map.compose').text, /chips: 'map\.compose'/, 'the compose chip switches what map.compose claimed');   /* (atlas-capability-single-source) the chip is the entry's `chips` */
   /* (#R795) the line ceiling that stood here is retired: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. */
   assert.match(R('docs/FILES.md'), /atlas-map-compose\.js/, 'docs/FILES.md describes the file');
   assert.match(R('js/atlas-styles.js'), /\.atl-geo-n\{/, 'the badge is styled');

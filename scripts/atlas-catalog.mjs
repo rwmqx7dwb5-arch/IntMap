@@ -33,8 +33,10 @@
  *
  *  WITHDRAWN, NOT MISSING. `monitor` is deliberately absent from the catalogue: #R231 withdrew the
  *  feature 「一旦撤去」 and its dispatch case exists only to answer FEATURE_WITHDRAWN. That is the one
- *  allowed exception, it is named here with its reason, and it is verified to still BE withdrawn —
- *  if the case stops returning FEATURE_WITHDRAWN the exception stops applying and the gate fails.
+ *  allowed exception, and it is verified to still BE withdrawn — if the case stops returning its proof
+ *  code the exception stops applying and the gate fails. (atlas-capability-single-source) The exception
+ *  is the capability's own `policy.withdrawn` ({ why, proofCode }, js/atlas-cap-system.js), read through
+ *  the registry — it was written here a second time, under a different key, and the two could disagree.
  *
  *    node scripts/atlas-catalog.mjs            # report every capability and its catalogue status
  *    node scripts/atlas-catalog.mjs --check    # gate (used by npm test and CI)
@@ -42,18 +44,25 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { dispatchGroups } from './atlas-capability-audit.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FILE = 'js/atlas-console.js';
 
-/* The only capability allowed to have no catalogue entry, with the reason and the proof required. */
-const WITHDRAWN = {
-  monitor: {
-    why: '#R231 withdrew area monitors 「一旦撤去」 — the case exists only to answer FEATURE_WITHDRAWN',
-    proof: /FEATURE_WITHDRAWN/,
-  },
-};
+/* The capabilities allowed to have no catalogue entry, with the reason and the proof required — each one's
+   `policy.withdrawn`, as the registry holds it, keyed by its dispatch spelling (what this gate's rows carry). */
+if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
+const REGISTRY = (await import(pathToFileURL(path.join(ROOT, 'js/atlas-capabilities.js')).href)).makeAtlasCapabilities({}, { publish: false });
+export const WITHDRAWN = Object.fromEntries(REGISTRY.toJSON().capabilities.filter((c) => c.withdrawn).map((c) => {
+  const proofCode = REGISTRY.resolve(c.id).withdrawn.proofCode;
+  return [c.legacy, { why: c.withdrawn, proof: new RegExp(proofCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) }];
+}));
+/* (atlas-capability-single-source) the catalogue as the planner is given it — ASSEMBLED from the entries' `doc`
+   fragments by js/atlas-catalog-text.js — rather than the source text of one file. Read once, here, so
+   catalogueText() stays synchronous for the fixtures of tests/atlas-dispatch-checks.test.mjs. */
+let CATALOGUE = '';
+try { CATALOGUE = (await import(pathToFileURL(path.join(ROOT, 'js/atlas-catalog-text.js')).href)).makeAtlasCatalogText({}, {}).text(null); } catch { CATALOGUE = ''; }
 
 export function readAtlas() {
   return fs.readFileSync(path.join(ROOT, FILE), 'utf8').split(/\r?\n/);
@@ -92,10 +101,8 @@ export function catalogueText(lines) {
     try { corpus += '\n' + fs.readFileSync(path.join(ROOT, 'js/atlas-toolsurface.js'), 'utf8'); } catch { /* absent in a fixture */ }
   }
   if (!/_DOCS\.text\(/.test(body) && !/_capIndex\(/.test(body)) return corpus;
-  let blocks = '';
-  try { blocks = fs.readFileSync(path.join(ROOT, 'js/atlas-catalog-text.js'), 'utf8'); }
-  catch { throw new Error('js/atlas-catalog-text.js is missing — SYS() composes its catalogue from it'); }
-  return corpus + '\n' + blocks;
+  if (!CATALOGUE) throw new Error('js/atlas-catalog-text.js could not be assembled — SYS() composes its catalogue from it');
+  return corpus + '\n' + CATALOGUE;
 }
 
 /* Every capability the dispatch can execute: one per capability entry in js/atlas-cap-<namespace>.js —
@@ -146,9 +153,9 @@ if (missing.length) {
   for (const r of missing) console.error(`    ${FILE}:${r.line}   ${r.names.join(' / ')}`);
   console.error(`\n  An action the SYS catalogue does not describe does not exist for the planner (#R115/#R231/#R278):`);
   console.error(`  asked for it, the model substitutes something it HAS been shown (this is how 「徒歩1時間で行ける範囲」`);
-  console.error(`  became a radius circle) or answers that IntMap cannot do it. Add a {"type":"<name>",…} entry to`);
-  console.error(`  function SYS() in ${FILE} describing what it really does — or, if the feature is being withdrawn,`);
-  console.error(`  say so in WITHDRAWN in scripts/atlas-catalog.mjs with the reason.\n`);
+  console.error(`  became a radius circle) or answers that IntMap cannot do it. Give its entry in js/atlas-cap-<namespace>.js`);
+  console.error(`  a \`doc\` fragment ({ in: <chunk>, text: '{"type":"<name>",…} …' }) describing what it really does — or, if it is being withdrawn,`);
+  console.error(`  say so in its entry's policy.withdrawn ({ why, proofCode }) with the reason.\n`);
   process.exit(1);
 }
 console.log(`✓ atlas catalogue: all ${rows.length - rows.filter((r) => r.withdrawn).length} live Atlas capabilities are described to the planner` + (rows.some((r) => r.withdrawn) ? ` (${rows.filter((r) => r.withdrawn).map((r) => r.names[0]).join(', ')} withdrawn on purpose)` : ''));

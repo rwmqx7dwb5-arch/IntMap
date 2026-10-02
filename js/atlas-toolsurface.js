@@ -212,7 +212,17 @@ export function makeAtlasToolSurface(deps) {
           ? await CAPS.searchFused(q, { want: 3, min: 1 })
           : CAPS.search(q, { want: 3, min: 1 });
       } catch (_) { r = null; }
-      var ranked = (r && r.ranked) || [];
+      return describe(query, ((r && r.ranked) || []).map(function (x) { return x.id; }), (r && r.basis) || 'lexical', (r && r.semantic) || undefined);
+    }
+    /* describe(query, ids, basis, semantic) — what find_capability hands the model for a RANKING: each id's
+       callable name, summary, schema and confirmation, and the documentation of all of them at once, read from
+       the declarations as they are NOW. (atlas-capability-single-source) Split from the ranking so a replay of a
+       recorded turn (scripts/atlas-eval/replay.mjs) can hand back the RECORDED ranking — the meaning search is a
+       network call it cannot repeat — described by the CURRENT declarations, instead of carrying 200 kB of
+       catalogue prose that goes stale with the next PR that touches a description. */
+    function describe(query, rankedIds, basis, semantic) {
+      var ranked = (rankedIds || []).map(function (id) { return { id: id }; });
+      var r = { basis: basis, semantic: semantic };
       var lexicalOnly = !r || r.basis !== 'lexical+semantic';
       if (!ranked.length) {
         return { ok: true, query: query, matches: [], basis: (r && r.basis) || 'lexical',
@@ -554,7 +564,7 @@ export function makeAtlasToolSurface(deps) {
       return '[LIVE VALUES] ' + toolName + ' "' + prop + '" is exactly one of: ' + v.join('; ') + '\n\n';
     }
 
-    var API = { CORE, baseTools, find, actionFor, makeExecute, schemaOf, footprintOf, promotionsOf, toolNameOf, liveEnum };
+    var API = { CORE, baseTools, find, describe, actionFor, makeExecute, schemaOf, footprintOf, promotionsOf, toolNameOf, liveEnum };
     try { window.IntMapAtlasTools = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

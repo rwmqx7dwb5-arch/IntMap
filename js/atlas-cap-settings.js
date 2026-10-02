@@ -11,7 +11,10 @@
  *  The registry rows (copied into js/atlas-capabilities.js), the dispatch and the schema table are
  *  DERIVED from these entries — `node scripts/atlas-caps.mjs --write` rewrites what is generated after
  *  an entry is added or removed, and `npm run check:capabilities` fails while they disagree.
- *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
+ *  (atlas-capability-single-source) An entry also holds `doc` — its fragment of each catalogue block the planner
+ *  reads (js/atlas-catalog-text.js keeps only the blocks' order and headings) — and, where it has them, `phrases`,
+ *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
+ *  entry names them.
  * ==========================================================================*/
 import { str, bool, one } from './atlas-caps.js';
 import { usage } from './usage-counts.js';   /* (anonymous-usage-counts) the Settings switch settings.usageCounts flips */
@@ -19,6 +22,10 @@ import { usage } from './usage-counts.js';   /* (anonymous-usage-counts) the Set
 export default [
   {
     row: ['settings.theme',             'theme',          '',                                                            'settings','setting', 'settings.theme',         'setting',             'persist', 'explicit','',        ''],
+    doc: [
+      { in: 'settings', at: 10, text: '{"type":"theme","mode":"light"|"dark"|"auto"}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { mode: one('light', 'dark', 'auto', 'system') }, required: ['mode'] }),
     async run(a, dctx, K) { const setSel = K.setSel, HOST = K.HOST, applyTheme = K.applyTheme, R = K.R, note = K.note, L = K.L;
       { const m=({dark:'dark',light:'light',auto:'auto',system:'auto'})[String(a.mode||'').toLowerCase()]||'auto'; const ok=setSel('setting-theme',m); try{ if(typeof HOST.userTheme!=='undefined'){ HOST.userTheme=m; if(typeof applyTheme==='function') applyTheme(); } }catch(_){} return R(ok||(typeof HOST.userTheme!=='undefined'&&HOST.userTheme===m), note('✓ '+L('Theme','テーマ','Thema','Тема','Tema')+': '+m)); }
@@ -26,6 +33,10 @@ export default [
   },
   {
     row: ['settings.accent',            'accent',         'accentColor,accentColour',                                    'settings','setting', 'settings.accent',        'setting',             'persist', 'explicit','',        ''],
+    doc: [
+      { in: 'settings', at: 20, text: '{"type":"accent","color":"blue"|"green"|"purple"|"red"|"orange"|"teal"|"#rrggbb"|"default"} (recolours the UI accent); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { color: str(), value: str(), mode: str(), name: str() }, anyOf: [{ required: ['color'] }, { required: ['value'] }, { required: ['mode'] }, { required: ['name'] }] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc, applyAccent = K.applyAccent, saveSettings = K.saveSettings, note = K.note;
       {   /* (#R114) recolour the UI accent (--primary-color) */
@@ -44,6 +55,10 @@ export default [
   {
     row: ['settings.language',          'language',       '',                                                            'settings','setting', 'settings.language',      'setting',             'persist', 'explicit','',        ''],
     /* any code, endonym, English name or alias js/lang-registry.js knows — not a closed set */
+    doc: [
+      { in: 'settings', at: 30, text: '{"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { lang: str() }, required: ['lang'] }),
       /* (#R318) NINE, FROM THE REGISTRY. The hand-written table below covered five, so 「한국어로して」
          and «passe en français» were answered with 「非対応の言語」 by an app that has both. Every
@@ -55,6 +70,9 @@ export default [
   },
   {
     row: ['settings.tempUnit',          'tempUnit',       '',                                                            'settings','setting', 'settings.units',         'setting',             'persist', 'explicit','',        ''],
+    doc: [
+      { in: 'settings', at: 40, text: '{"type":"tempUnit","unit":"c"|"f"|"both"} = the TEMPERATURE SCALE every reading in the app is written in — Celsius, Fahrenheit, or both at once (use for 「華氏で表示して」, "show temperatures in Fahrenheit", 「摄氏に戻して」); ' },
+    ],
     schema: () => ({ type: 'object', properties: { unit: one('c', 'celsius', 'f', 'fahrenheit', 'both') }, required: ['unit'] }),
     async run(a, dctx, K) { const setSel = K.setSel, R = K.R, note = K.note, warn = K.warn, esc = K.esc;
       { const u=({c:'c',celsius:'c',f:'f',fahrenheit:'f',both:'both'})[String(a.unit||'').toLowerCase()]; if(u){ const ok=setSel('setting-temp-unit',u); try{ window.imUnitTemp=u; localStorage.setItem('intmap_temp_unit',u); }catch(_){} return R(ok, note('✓ °'+String(u).toUpperCase())); } return R(false, warn('⚠ '+esc(a.unit||''))); }
@@ -62,6 +80,10 @@ export default [
   },
   {
     row: ['settings.units',             'units',          '',                                                            'settings','setting', 'settings.units',         'setting',             'persist', 'explicit','',        ''],
+    doc: [
+      { in: 'settings', at: 50, text: '{"type":"units","mode":"metric"|"imperial"|"both"} = the same choice for everything else that carries a unit.\n' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { mode: one('metric', 'imperial', 'both') }, required: ['mode'] }),
     async run(a, dctx, K) { const setSel = K.setSel, HOST = K.HOST, R = K.R, note = K.note, esc = K.esc, warn = K.warn;
       { const m=({metric:'metric',imperial:'imperial',both:'both'})[String(a.mode||'').toLowerCase()]; if(m){ const ok=setSel('setting-units',m); try{ if(typeof HOST.unitMode!=='undefined') HOST.unitMode=m; }catch(_){} return R(ok, note('✓ '+esc(m))); } return R(false, warn('⚠ '+esc(a.mode||''))); }
@@ -70,6 +92,9 @@ export default [
   {
     row: ['settings.engine',            'engine',         '',                                                            'settings','setting', 'settings.engine',        'setting',             'persist', 'explicit','',        ''],
     /* ── settings and the layer switches that carry their own state ─────────────────────────── */
+    doc: [
+      { in: 'tools-panels', at: 260, text: '{"type":"engine","name":"maplibre"|"cesium"} = choose the MAP RENDERING ENGINE. MapLibre is the default 2-D/3-D map; Cesium is a real 3-D globe (a true ellipsoid at every zoom) drawing the SAME satellite imagery and the SAME elevation data through a second adapter, downloaded only when chosen. Switching RELOADS the page, and contour lines plus the closed 3-D solid tool remain MapLibre-only — say so rather than promising them. Omit "name" to REPORT which engine is running (use for "Cesiumに切り替えて", "3D地球儀モードにして", "switch to Cesium", "use the globe engine", "MapLibreに戻して", "which map engine is running?"); ' },
+    ],
     schema: () => ({ type: 'object', properties: { name: str(), engine: str(), mode: str() } }), /* no name = REPORT which engine is running */
       /* (#R180) THE RENDERING ENGINE — Atlas is the control plane (STANDING RULE since #R82),
          so the second engine is selectable from here too. It cannot take effect on the live
@@ -100,6 +125,9 @@ export default [
   },
   {
     row: ['settings.tiltLimit',         'tiltLimit',      '',                                                            'settings','setting', 'settings.camera',        'setting',             'persist', 'explicit','',        ''],
+    doc: [
+      { in: 'tools-panels', at: 270, text: '{"type":"tiltLimit","on":bool} = lift the MAP TILT CEILING from the standard 78° to the renderer\'s whole 0-180° range, so the camera can lean past the horizon until it looks straight up (use for "傾きの制限を外して", "地図をもっと倒したい", "let me tilt the map further", "unlimited tilt"); ' },
+    ],
     schema: () => ({ type: 'object', properties: { on: bool(), mode: str() } }),
       /* (#R171) the two new Map-behaviour settings, operable from Atlas like every other feature. */
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
@@ -110,6 +138,9 @@ export default [
   },
   {
     row: ['settings.eyeAltitude',       'eyeAltitude',    '',                                                            'settings','setting', 'settings.camera',        'setting',             'persist', 'explicit','',        ''],
+    doc: [
+      { in: 'tools-panels', at: 280, text: '{"type":"eyeAltitude","on":bool} = show the VIEWPOINT\'s own altitude above sea level in the always-on readout at the bottom-left, next to the coordinates and the ground elevation (use for "視点の高度も表示して", "show the camera altitude", "how high is the viewpoint"); ' },
+    ],
     schema: () => ({ type: 'object', properties: { on: bool(), mode: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
       { const want=!(a.on===false||/^(off|hide)$/i.test(String(a.mode||''))); let ok=false;
@@ -124,6 +155,9 @@ export default [
        owns it (its `usage` export). No `on` and no mode = REPORT the state, including when nothing is
        sent for a reason the switch does not control (the browser's Do Not Track / Global Privacy
        Control, or a page that is not the production site). */
+    doc: [
+      { in: 'tools-panels', at: 290, text: '{"type":"usageCounts","on"?:bool} = the «Anonymous usage statistics» switch in Settings: IntMap\'s own aggregate counters (page views per day, the referring site\'s host name, utm tags, app language en/jp/other, mobile/desktop, which layers and features were used, how MANY Atlas questions — never their text; no cookie, IP, account or session). on:false stops it at once and discards what was not yet sent; no "on" = report the state, including when the browser\'s Do Not Track / Global Privacy Control already stops it (use for "利用統計を送らないで", "統計をオフ", "opt out of analytics", "stop sending usage data", "do you track me?"); ' },
+    ],
     schema: () => ({ type: 'object', properties: { on: bool(), mode: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, warn = K.warn;
       { const U=usage; if(!U||typeof U.status!=='function') return R(false, warn('⚠ '+L('Usage statistics are not available on this page','このページでは利用統計を扱えません')));

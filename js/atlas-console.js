@@ -60,7 +60,7 @@ import { makeAtlasProgress } from './atlas-progress.js';
 import { makeAtlasPlan } from './atlas-plan.js';   /* (atlas-plan-on-map) the conversation's plan ledger — Atlas declares the steps, the executor's verdicts are their states */
 import { makeAtlasLive } from './atlas-live.js';   /* (atlas-live-stream) the turn as it streams — the draft answer, the notes on the way, the reasoning headline, the map HUD and the measured wait */   /* (#R723) the work trace — what Atlas is doing, as a list that keeps what already happened. ⚠ ITS OWN LINE, and the room for it came from DELETING the fifteen lines the one-word indicator occupied here: this file is at a shrink-only ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ) and the subject that leaves is the one being replaced. */
 import { CAPABILITY_MODULES } from './atlas-caps-modules.js';   /* (atlas-capability-modules) every capability: its row, its schema and what the dispatch runs for it */
-import { capabilityRunners, unknownAction } from './atlas-caps.js';
+import { capabilityRunners, unknownAction, capabilityEntries } from './atlas-caps.js';
 import { makeAtlasMapCompose } from './atlas-map-compose.js';   /* (#R511) one map explanation in ONE call — numbered places with roles, arcs, fills, a frame and a legend the prose is linked to. ⚠ ON A LINE THAT WAS BLANK: this file is AT its shrink-only ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ), and scripts/js-reachability.mjs anchors its import scan at line start, so a new module cannot share a line. */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
@@ -2375,11 +2375,7 @@ export function atlasConsole(HOST){
        ⚠ sim.ballistic keeps map.fly as its own kind: the trajectory is also the fly kind's surface, and a later fly call taking
        it over must still turn this chip OFF (#R122), which is the per-kind ownership below.
        ⚠ sim.rfCoverage switches the line-of-sight kind because that is what it switched before; its own painter claims nothing. */
-    const OVL_OF={ 'map.highlight':'highlight', 'map.choropleth':'choropleth', 'map.poi':'map.poi', 'map.elevationHighlight':'map.elevation', 'research.historicalMap':'map.factions',
-      'sim.radiation':'map.radiation', 'routing.route':'map.route', 'sim.ballistic':['arc','map.fly','map.ballistic'],   /* (#R142) include the blast ring so a strike's blast overlay also gets a map on/off chip (#9) */
-      'sim.flyAnimate':'map.fly', 'sim.lineOfSight':'map.los', 'sim.rfCoverage':'map.los', 'map.isolateCountry':'isolate', 'map.pin':'pin', 'view.locate':'pin', 'panel.streetView':'streetview',
-      'data.compareStats':'panel.compare', 'map.drawLine':'lines', 'map.outline':'outline', 'research.mapReport':'map.poi', 'research.situationMap':'map.poi', 'research.events':'map.poi', 'research.impact':'map.poi', 'data.runways':'map.poi',
-      'routing.isochrone':'map.isochrone', 'map.compose':'map.compose', 'map.shakemap':'map.shakemap', 'map.outbreaks':'map.outbreaks' };   /* (#R511) (#R650) */
+    const OVL_OF=Object.create(null); capabilityEntries(CAPABILITY_MODULES).forEach(e=>{ if(e.chips) OVL_OF[e.id]=e.chips; });   /* (atlas-capability-single-source) each capability's `chips` — declared in its entry, beside the run that paints it */
     function _ovlOf(t){ const c=CAPS.ofSpelling(t); return c?(OVL_OF[c.id]||null):null; }
     function _ovlVisible(kind){ if(kind==='arc'){ const cv=document.getElementById('arc3d-canvas'); return !!(cv&&cv.parentNode&&cv.style.display!=='none'); } const ids=_ovlIds(kind); for(const id of ids){ try{ if(GE().layers.has(id)&&GE().layers.getLayout(id,'visibility')!=='none') return true; }catch(_){} } return false; }
     /* (#R122) PER-MESSAGE overlay OWNERSHIP — the shared nlq-* canvas can only paint one message's snapshot of a

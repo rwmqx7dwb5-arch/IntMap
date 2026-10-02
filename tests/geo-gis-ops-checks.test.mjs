@@ -17,7 +17,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { installWindow, isolate, read } from './helpers/geo-shared.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
-import { capabilityEntry } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does is its entry in js/atlas-cap-<namespace>.js */
+import { capabilityEntry, catalogueText } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does is its entry in js/atlas-cap-<namespace>.js */
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    § #R743 · the surface Atlas is handed   (was tests/r743-gis-atlas-surface-checks.test.mjs)
@@ -112,7 +112,6 @@ describe('§ #R743 · the surface Atlas is handed', () => {
 
   test('R743 ⑨ the planner text names every declared op — a new op cannot hide in it', async () => {
     const { ops } = await boot();
-    const src = read('js/atlas-catalog-text.js');
 
     /* ⚠ THIS IS THE ONE HAND-WRITTEN LIST THE ROUND COULD NOT REMOVE: the catalogue is prose sent to
        a model, and js/atlas-catalog-text.js is evaluated before the GIS chunk is loaded, so it cannot
@@ -120,9 +119,8 @@ describe('§ #R743 · the surface Atlas is handed', () => {
        fails this line until the sentence the planner reads knows about it. #R733 is why it must be
        named rather than searched for: a capability the model is not told it can pass is a capability
        it does not use. */
-    const block = src.split('/* 02b */')[1];
-    assert.ok(block, 'the GIS catalogue block is gone');
-    const text = block.split("\\n' }")[0];
+    const text = await catalogueText(['data.gis']);   /* (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given */
+    assert.ok(text, 'the GIS catalogue block is gone');
     const named = new Set();
     const re = /([a-zA-Z][a-zA-Z0-9]*)\((1|2)[:)]/g;
     let m;

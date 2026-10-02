@@ -316,7 +316,7 @@ test('R197 ②d thirty hours, everywhere it is written down', () => {
   assert.match(tsu, /\[3,6,9,12,18,24,30\]/, 'the panel offers it');
   assert.match(tsu, /setHours\(h\)\{ hours=Math\.max\(1,Math\.min\(30,\+h\|\|6\)\); /, 'the API accepts it');
   assert.match(rd('src/tsunami-worker.js'), /Math\.min\(30, m\.hours\)/, 'and the solver honours it');
-  assert.match(rd('js/atlas-catalog-text.js'), /"hours"\?:1-30/, 'and the catalogue documents it');   /* (#R318) the catalogue moved out of SYS() */
+  assert.match(capabilityEntry('sim.tsunami').text, /"hours"\?:1-30/, 'and the catalogue documents it');   /* (#R318) the catalogue moved out of SYS(); (atlas-capability-single-source) the prose moved into the entries — read the catalogue the planner is given — the capability's own `doc` */
 });
 }
 

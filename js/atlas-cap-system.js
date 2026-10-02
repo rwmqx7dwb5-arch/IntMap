@@ -11,7 +11,10 @@
  *  The registry rows (copied into js/atlas-capabilities.js), the dispatch and the schema table are
  *  DERIVED from these entries — `node scripts/atlas-caps.mjs --write` rewrites what is generated after
  *  an entry is added or removed, and `npm run check:capabilities` fails while they disagree.
- *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
+ *  (atlas-capability-single-source) An entry also holds `doc` — its fragment of each catalogue block the planner
+ *  reads (js/atlas-catalog-text.js keeps only the blocks' order and headings) — and, where it has them, `phrases`,
+ *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
+ *  entry names them.
  * ==========================================================================*/
 import { str, bool, one, loose, noArgs } from './atlas-caps.js';
 import { IntMapLang } from './lang-registry.js';
@@ -20,6 +23,9 @@ export default [
   {
     row: ['system.diagnose',            'diagnose',       'health,selfCheck,systemStatus,status',                        'system',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
     /* ── clearing, outlining, the first-class panels ────────────────────────────────────────── */
+    doc: [
+      { in: 'more-features', at: 90, text: '{"type":"diagnose"} (IntMap SELF-DIAGNOSIS — checks news-feed freshness, whether enabled layers are actually painting, and whether the live data APIs are reachable; use for "diagnose", "any issues?", "システムの状態", "データは最新？", "何か問題ある？").\n' + 'REACHABLE AREA / ISOCHRONE — the ONLY correct answer to a travel-TIME question: ' },
+    ],
     schema: () => (noArgs('diagnose')),
       /* ⚠⚠ (#R296) TWO CASES STOOD HERE. `disaster`/`flood`/`ashfall` — 「4つのうち、放射性物質拡散シミュ
          レーションを残し全削除」: what survives is `radiation`, its own capability; the tsunami spelling it
@@ -40,6 +46,12 @@ export default [
   },
   {
     row: ['system.module',              'module',         '',                                                            'system',  'panel',   'panel.any',              'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'system.module', text: (c) => 'MODULE fallback (advanced — open/close any IntMap subsystem panel by name, incl. ones with no toolbar button): {"type":"module","name":"IntMapX","method":"open"|"toggle"|"close"|"clear"}. Use only when no specific action or "control" fits. Available modules: ' + c.moduleCatalog() + '\n' },
+    ],
+    /* (§14) a FALLBACK: reachable, but not a user-facing feature — kept out of the search's front rank so it cannot crowd out a real capability */
+    policy: { fallback: true },
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { name: str(), method: one('open', 'toggle', 'close', 'clear', 'exit', 'refresh', 'render') }, required: ['name'] }),
     async run(a, dctx, K) { const doModule = K.doModule;
       return doModule(a);
@@ -47,6 +59,8 @@ export default [
   },
   {
     row: ['system.monitor',             'monitor',        '',                                                            'system',  'none',    '',                       '',                    'read',    'none',   '',         ''],
+    /* DELIBERATELY not offered to the planner, with the reason and the proof (the only way to be absent from the catalogue) */
+    policy: { withdrawn: { why: '#R231 withdrew area monitors 「一旦撤去」 — the dispatch case exists only to answer FEATURE_WITHDRAWN, and docs/AREA-MONITORS.md is the record of the design that is waiting', proofCode: 'FEATURE_WITHDRAWN' } },
     schema: () => (noArgs('monitor')), /* withdrawn (#R231) — the case answers FEATURE_WITHDRAWN */
       /* (#R231) 「Monitorsは…一旦撤去」 — the ~120-line body is deleted (it is in git; the file has
          a line ceiling). It ended in IntMapOS.exec('tab.monitors'), which is no longer registered,
@@ -60,6 +74,11 @@ export default [
   },
   {
     row: ['system.control',             'control',        '',                                                            'system',  'control', 'ui.any',                 'panel',               'session', 'none',   '',         ''],
+    doc: [
+      { in: 'system.control', text: 'UNIVERSAL fallback for anything not listed above (so EVERY operation is possible): {"type":"control","target":"<on-screen control name or #id>","value"?:str|num,"on"?:bool} — finds & clicks/sets/toggles any button, checkbox, dropdown, slider, date picker or input. Useful addressable patterns (every UI element is named, incl. per-layer micro-controls): "favorite: <layer name>" (★), "date: <layer name>" with value "YYYY-MM-DD" (change a dated raster layer\'s date — e.g. 「気温レイヤーの日付を2023-06-01に」), "close legend: <name>", "opacity: <layer>". Prefer a specific action; otherwise ALWAYS use "control" rather than refusing.\n' },
+    ],
+    /* (§14) a FALLBACK: reachable, but not a user-facing feature — kept out of the search's front rank so it cannot crowd out a real capability */
+    policy: { fallback: true },
     schema: () => ({ type: 'object', properties: { target: str(), value: loose(), on: bool(), submit: bool() }, required: ['target'] }),
     async run(a, dctx, K) { const doControl = K.doControl;
       return doControl(a);

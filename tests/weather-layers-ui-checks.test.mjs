@@ -451,7 +451,7 @@ test('R337 ① the preference lives in the temperature legend, has one door, and
      legend follows and, measured, 1.6 kB of the Atlas chunk. */
   assert.match(ac, /,'tempWindParticles'\]/, 'and the temperature row names that toggle');
   assert.match(ac, /_FEAT_TOG\[hit\[2\]\]\.lbl\(\)/, '…and the reply reads its label from that one entry');
-  assert.match(read('js/atlas-catalog-text.js'), /"over":"temperature"/,
+  assert.match(capsSource(), /"over":"temperature"/,   /* (atlas-capability-single-source) the catalogue's fragments are in the entries */
     'the SYS catalogue documents the argument, or the planner can never emit it');
 
   /* the two variables the streaks read are warmed on a time step in BOTH cases */

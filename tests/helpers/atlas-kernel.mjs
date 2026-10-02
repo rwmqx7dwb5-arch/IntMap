@@ -19,6 +19,11 @@
  *    runAst(s)               — that run, parsed on its own (the function node)
  *    dispatchRuns()          — the spellings grouped by the run they reach: what used to be the runs of
  *                              `case` labels that fell through to one body
+ *    catalogue()             — (atlas-capability-single-source) the planner's catalogue, ASSEMBLED from the
+ *                              entries' `doc` fragments (js/atlas-catalog-text.js makeAtlasCatalogText) — and
+ *    catalogueText(ids?)     — its text, for the blocks that document `ids` (every block when omitted). The prose
+ *                              left js/atlas-catalog-text.js for the entries, so a check that read that file as
+ *                              source reads what the planner is given instead (escapes are evaluated: ' is ')
  *
  *  Every answer is read from the files as they are, and located with the parser (scripts/atlas-caps.mjs
  *  entrySources) — not by a spelling of the layout — so moving an entry between files or reformatting it
@@ -38,6 +43,15 @@ export function kernelFiles(root = ROOT) { return ['js/atlas-console.js', ...nam
 export function capsFiles(root = ROOT) { return namespaceFiles(root); }
 export function kernelSource(root = ROOT) { return kernelFiles(root).map((f) => readRel(root, f)).join('\n'); }
 export function capsSource(root = ROOT) { return capsFiles(root).map((f) => readRel(root, f)).join('\n'); }
+
+let _catalogue = null;
+/** the catalogue the planner is given, assembled the way the app assembles it (no CTX: the metric list,
+    the module list and the reply language take their defaults) */
+export async function catalogue() {
+  if (!_catalogue) _catalogue = (await import('../../js/atlas-catalog-text.js')).makeAtlasCatalogText({}, {});
+  return _catalogue;
+}
+export async function catalogueText(ids) { return (await catalogue()).text(ids || null); }
 
 /** every capability entry in the namespace modules, located by the parser */
 export function capabilityEntries(root = ROOT) { return entrySources(root); }

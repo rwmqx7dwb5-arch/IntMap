@@ -11,7 +11,10 @@
  *  The registry rows (copied into js/atlas-capabilities.js), the dispatch and the schema table are
  *  DERIVED from these entries — `node scripts/atlas-caps.mjs --write` rewrites what is generated after
  *  an entry is added or removed, and `npm run check:capabilities` fails while they disagree.
- *  The prose the planner reads stays in js/atlas-catalog-text.js (a block names the ids it documents).
+ *  (atlas-capability-single-source) An entry also holds `doc` — its fragment of each catalogue block the planner
+ *  reads (js/atlas-catalog-text.js keeps only the blocks' order and headings) — and, where it has them, `phrases`,
+ *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
+ *  entry names them.
  * ==========================================================================*/
 import { str, bool, num, loose } from './atlas-caps.js';
 import { resolveObserver, satelliteFacts } from './atlas-result-facts.js';
@@ -19,6 +22,10 @@ import { resolveObserver, satelliteFacts } from './atlas-result-facts.js';
 export default [
   {
     row: ['layers.toggle',              'layer',          '',                                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   'layer',    ''],
+    doc: [
+      { in: 'layers', at: 10, text: '{"type":"layer","name":EXACT_NAME,"on":bool} — copy the layer name VERBATIM from the "Available layers" list at the very end (do NOT paraphrase — paraphrasing is what selected the WRONG layer before). If you truly cannot find an exact match you MAY use a single common keyword (temperature, rain, precipitation, clouds, snow, sea ice, wind, humidity, pressure, population, gdp, co2, co, earthquakes, aurora, night lights, volcanoes, nato, eu, railways, time zones, webcams, vegetation, soil moisture, land cover, elevation) — Atlas maps these to the correct layer. ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { name: str(), on: bool() }, required: ['name'] }),
     async run(a, dctx, K) { const _visSnapshot = K._visSnapshot, toggleLayer = K.toggleLayer, doControl = K.doControl, R = K.R, warn = K.warn, L = K.L, esc = K.esc, _visDelta = K._visDelta, note = K.note, layerOpacityControl = K.layerOpacityControl;
       {
@@ -58,6 +65,10 @@ export default [
   {
     row: ['layers.opacity',             'opacity',        '',                                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   'layer',    ''],
     /* the case needs the layer AND a value: name alone answers «no opacity control» */
+    doc: [
+      { in: 'layers', at: 20, text: '{"type":"opacity","name":EXACT_NAME,"value":0..1} (or {"delta":±0..1} for "more/less transparent"); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { name: str(), value: num(0, 100), percent: num(0, 100), delta: num(-100, 100) }, anyOf: [{ required: ['name', 'value'] }, { required: ['name', 'percent'] }, { required: ['name', 'delta'] }] }),
     async run(a, dctx, K) { const resolveLayer = K.resolveLayer, R = K.R, warn = K.warn, L = K.L, esc = K.esc, layerOpacityControl = K.layerOpacityControl, note = K.note;
       { const r=resolveLayer(a.name); if(!r) return R(false, warn('⚠ '+L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||''))); const sl=layerOpacityControl(r.cb); let v=(a.value!=null?+a.value:(a.percent!=null?+a.percent:null)); if(v!=null&&v>1) v=v/100; if(v==null&&a.delta!=null&&sl){ let d=+a.delta; if(!isNaN(d)){ if(Math.abs(d)>1) d/=100; v=Math.max(0,Math.min(1,(parseFloat(sl.value)||0)+d)); } } if(sl&&v!=null&&!isNaN(v)){ if(!r.cb.checked){ r.cb.checked=true; r.cb.dispatchEvent(new Event('change',{bubbles:true})); } sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); return R(true, note('🎚 '+esc(r.label)+' '+Math.round(v*100)+'%')); } return R(false, warn('⚠ '+L('No opacity control: ','不透明度の調整なし: ','Keine Deckkraft: ','Нет управления непрозрачностью: ','Sin opacidad: ')+esc(r.label))); }
@@ -65,6 +76,10 @@ export default [
   },
   {
     row: ['layers.countryInfo',         'countryInfo',    '',                                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
+    doc: [
+      { in: 'layers', at: 50, text: '{"type":"countryInfo","on":bool}; ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { on: bool() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
       { const cb=document.getElementById('cb-countries'); if(cb){ const want=a.on!==false; if(cb.checked!==want){ cb.checked=want; cb.dispatchEvent(new Event('change',{bubbles:true})); } return R(cb.checked===want, note('✓ '+L('Country info','国情報','Länderinfo','Инфо о странах','Info de países')+': '+(a.on===false?'off':'on'))+_featTogHtml('countryInfo')); } return R(false, warn('⚠')); }
@@ -72,6 +87,9 @@ export default [
   },
   {
     row: ['layers.railAxis',            'railAxis',       'railwayAxis,gaugeAxis',                                       'data',    'paint',   'map.layer,map.layerOption',              'map,explanation',     'session', 'none',   '',         'railways'],
+    doc: [
+      { in: 'layers', at: 80, text: '{"type":"railAxis","axis":"gauge"|"electrification"|"speed"|"tracks"|"traffic"|"status"|"kind"} = choose WHICH PROPERTY the World railways layer colours by. Every value it draws is OpenStreetMap\'s own tag on that track, and each axis has an explicit "not stated" bucket — OSM answers these questions at very different rates by country, so a grey line means the tag is absent, never a default. Use for "鉄道を電化方式で塗り分けて", "colour the railways by line speed", "show me which lines are single track", "建設中の路線を見せて" (axis "status"). The layer must be on; turn it on with {"type":"layer","name":"World railways","on":true} first.\n' },
+    ],
     schema: () => ({ type: 'object', properties: { axis: str(), name: str(), by: str() }, anyOf: [{ required: ['axis'] }, { required: ['name'] }, { required: ['by'] }] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, note = K.note;
       { const RM=window.IntMapRailways; if(!RM||!RM.setAxis) return R(false,warn('⚠')); const want=String(a.axis||a.name||a.by||'').trim().toLowerCase(); const SYN={gauge:'gauge','track gauge':'gauge','軌間':'gauge',electrification:'electrification',electrified:'electrification',electric:'electrification',power:'electrification','電化':'electrification',speed:'speed',maxspeed:'speed','line speed':'speed','最高速度':'speed',tracks:'tracks','track count':'tracks','single track':'tracks','double track':'tracks','複線':'tracks',traffic:'traffic',passenger:'traffic',freight:'traffic','旅客':'traffic','貨物':'traffic',status:'status',construction:'status','運行状態':'status','建設中':'status',kind:'kind',type:'kind','line type':'kind','線種':'kind'}; const known=RM.axes().map(x=>x[0]); const ax=(known.indexOf(want)>=0)?want:(SYN[want]||''); if(!ax) return R(false,warn('⚠ '+L('no such railway view','その鉄道の塗り分けはありません','keine solche Bahn-Ansicht','нет такого вида для железных дорог','no existe esa vista ferroviaria'))); RM.setAxis(ax); const lbl=(RM.axes().find(x=>x[0]===ax)||[ax,ax])[1]; return R(true,note('🚆 '+lbl)); }   /* (#R388) one layer, one option, named in words — same shape as wxModel; the axis is resolved through the module's OWN list so this table cannot drift from the legend */
@@ -79,6 +97,10 @@ export default [
   },
   {
     row: ['layers.allOff',              'layersOff',      'allLayersOff',                                                'layers',  'layer',   'map.layer',              'map',                 'session', 'explicit','',        ''],
+    doc: [
+      { in: 'layers', at: 30, text: '{"type":"layersOff"} turns EVERY active data layer off at once (use for "turn off all layers"); ' },
+    ],
+    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { all: bool() } }), /* `layersOff`; all:true drops the base layers too */
     async run(a, dctx, K) { const layerCatalog = K.layerCatalog, R = K.R, note = K.note, L = K.L;
       { const keepBase=a.all!==true; let n=0;
@@ -90,6 +112,9 @@ export default [
      raster and the particles come from one forecast field and are toggled separately. */
   {
     row: ['layers.windParticles',       'windParticles',  'windAnimation',                                               'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
+    doc: [
+      { in: 'tools-panels', at: 310, text: '{"type":"windParticles","on":bool} = the ANIMATED STREAKS inside the Wind layer, separately from the layer itself. Wind draws two things from one forecast field — a colour raster of speed and thousands of moving particles — and this switches only the particles, so the colours stay. On by default and remembered. Use for "風のパーティクルを消して" (on:false), "風のアニメーションを止めて" (on:false), "turn off the wind particles", "stop the wind animation", "パーティクルを戻して" (on:true). ⚠ This is NOT the same as switching the Wind LAYER off — for that emit {"type":"layer","name":"wind","on":false}. ⚠ ADD "over":"temperature" | "gusts" | "pressure" | "precipitation" TO DRAW THE SAME STREAKS OVER THAT LAYER instead — the wind moving across that field, with no wind colour raster and without switching the Wind layer on. EACH of the four is remembered SEPARATELY, and each needs ITS OWN layer ("ec-temp" / "ec-gust" / "ec-slp" / "ec-precip") to be on to show anything, so turn that layer on in the same answer when it is not. Gusts, sea-level pressure and forecast precipitation have the streaks ON by default (the weather system is what a reader is looking at in those fields); temperature is OFF by default. Use for "気温レイヤーの上に風のパーティクルを出して", "気温の上に風の動きを重ねて", "show the wind over the temperature map", "最大瞬間風速の上に風の動きを重ねて" (over:"gusts"), "気圧レイヤーにパーティクルを出して" (over:"pressure"), "降水量予報の上に風の動きを重ねて" (over:"precipitation"), and with on:false for "気温の上の風を消して"; ' },
+    ],
     schema: () => ({ type: 'object', properties: { on: bool(), mode: str(), over: str(), layer: str(), on_layer: str() } }),
       /* (#R172) aircraft at their reported altitude, or flat on the map */
       /* ⚠ (#R313) the animated streaks inside the Wind layer, on their own switch — the reader put
@@ -115,6 +140,9 @@ export default [
   {
     row: ['layers.isobars',             'isobars',        'pressureContours,isolines',                                   'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
     /* (#R439) 等圧線 — the contours over the sea-level-pressure field */
+    doc: [
+      { in: 'tools-panels', at: 320, text: '{"type":"isobars","on":bool} = ISOBARS: 4 hPa contours of sea-level pressure, labelled in hPa, drawn over the sea-level-pressure field. They are a SWITCH INSIDE that layer rather than a layer of their own, so ask for them with this and never with {"type":"layer","name":"Isobars"}; switching them on switches the sea-level-pressure layer on too when it is off, and the reply says so. Use for "等圧線を出して", "show the isobars", "気圧の等圧線を重ねて", "draw pressure contours", and with on:false for "等圧線を消して"; ' },
+    ],
     schema: () => ({ type: 'object', properties: { on: bool(), mode: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, _FEAT_TOG = K._FEAT_TOG, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
       { const want=!(a.on===false||/^(off|hide|none)$/i.test(String(a.mode||''))); let ok=false,lit=false; if(want){ try{ const cb=document.getElementById('dl-ec-slp'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); lit=true; } }catch(_){} } try{ if(window._imWxIsobars){ window._imWxIsobars(want); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+_FEAT_TOG.isobars.lbl()+': '+(want?'on':'off')+(lit?(' · '+L('sea-level pressure switched on','海面気圧をオンにしました','Luftdruck eingeschaltet','слой давления включён','presión al nivel del mar activada')):''))+_featTogHtml('isobars'):warn('⚠')); }   /* ⚠ (#R439) THE ISOBARS ARE A SWITCH, SO ATLAS GETS A SWITCH — a control inside the sea-level-pressure legend rather than a row, so a layer name resolves to nothing. It switches that layer on too, because contours of a field that is not on the map are nothing at all, and the reply says both halves. docs/MAP-LAYERS.md §7.10 */
@@ -126,6 +154,9 @@ export default [
      steps with nothing done (measured on production, 2026-09-15). */
   {
     row: ['layers.baseDisplay',         'baseDisplay',    'baseMode,basemapMode,basicDisplay,basePreset,defaultDisplay,cleanDisplay,displayPreset', 'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'persist', 'none',   '',         ''],
+    doc: [
+      { in: 'layers.baseDisplay', text: 'BASE DISPLAY PRESET: {"type":"baseDisplay","mode":"default"|"clean"|"custom"} = the radio at the top of the layer panel that sets the base-map rows (place names, water & terrain labels, places & facilities, country borders, coastlines, state borders, roads, railways, grid, day/night, 3-D buildings) as a set: "default" restores the standard rows, "clean" turns every base row off (an unlabeled globe for an overlay to sit on), and the panel shows "custom" whenever the rows differ from either — a preset is what the reader means by 「基本表示をデフォルトに戻して」 / "reset the base map" / "clean map". Omit "mode" to REPORT the current preset and which base rows are on. Individual rows are still set_layer (a single row name); this is the whole set at once.\n' },
+    ],
     schema: () => ({ type: 'object', properties: { mode: { type: 'string', enum: ['default', 'clean', 'custom'] } } }), /* no mode = REPORT the current preset and the rows it holds */
     async run(a, dctx, K) { const doBaseDisplay = K.doBaseDisplay;
       return doBaseDisplay(a);   /* the Default / Clean / Custom preset — js/atlas-controls.js, through js/data-layers.js IntMapBaseDisplay */
@@ -133,6 +164,9 @@ export default [
   },
   {
     row: ['layers.nightSide',           'nightSide',      '',                                                            'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
+    doc: [
+      { in: 'tools-panels', at: 300, text: '{"type":"nightSide","on":bool} = the DAY/NIGHT SIDE of the planet: as the camera pulls back towards the whole-Earth view, the hemisphere the Sun is not on darkens through a real twilight band and NASA’s VIIRS “Black Marble” city lights appear on it. On by default, and invisible once a continent fills the view. Use for “夜側を消して” / “turn off the night shading” (on:false), “夜間光を見せて” / “show the city lights at night”, “地球の夜側を戻して” (on:true); ' },
+    ],
     schema: () => ({ type: 'object', properties: { on: bool(), mode: str() } }),
       /* (#R196) the day/night side of the planet, and the city lights on it */
     async run(a, dctx, K) { const L = K.L, R = K.R, note = K.note, _featTogHtml = K._featTogHtml, warn = K.warn;
@@ -146,6 +180,9 @@ export default [
   },
   {
     row: ['layers.planeAltitude',       'planeAltitude',  'aircraftAltitude',                                            'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
+    doc: [
+      { in: 'tools-panels', at: 330, text: '{"type":"planeAltitude","on":bool} = draw the LIVE AIRCRAFT layer at each aircraft\'s REAL reported altitude in 3-D space (a jet at 11 km really floats 11 km above the ground, with a hairline down to the point it is over) instead of flat on the map surface; on by default (use for "航空機を実際の高度で描画して", "飛行機を高度どおりに立体表示", "show aircraft at their real altitude", "put the planes back flat" (on:false)); ' },
+    ],
     schema: () => ({ type: 'object', properties: { on: bool(), mode: str() } }),
     async run(a, dctx, K) { const L = K.L, R = K.R, note = K.note, _featTogHtml = K._featTogHtml, warn = K.warn;
       { const want=!(a.on===false||/^(off|flat|2d)$/i.test(String(a.mode||''))); let ok=false;
@@ -156,6 +193,9 @@ export default [
   },
   {
     row: ['layers.aircraftTrack',       'aircraftTrack',  'planeTrack',                                                  'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
+    doc: [
+      { in: 'tools-panels', at: 340, text: '{"type":"aircraftTrack","aircraft":str (callsign, registration or ICAO24 hex; omit for the aircraft already selected),"on"?:bool} = draw the OBSERVED TRACK of one live aircraft — the same thing clicking it on the map does. The track is what this browser has actually received from the ADS-B feed since the Live aircraft layer was switched on (one fix every 20 s), drawn at the reported ALTITUDE of each leg while the 3-D representation is on; there is no historical feed behind it, so an aircraft that has just appeared has only a fix or two. Use for "ANA123の軌跡を出して", "show the track of BAW256", "この機体の飛行経路", and on:false for "軌跡を消して" / "hide the track".\n' },
+    ],
     schema: () => ({ type: 'object', properties: { aircraft: str(), callsign: str(), flight: str(), reg: str(), icao24: str(), on: bool(), mode: str() } }), /* no aircraft = the one already selected */
       /* (#R173) the track of ONE aircraft — the same thing a click on it draws. "clear" (or on:false)
          puts it away. The track is what this browser has observed since the layer came on; there is no
@@ -175,6 +215,9 @@ export default [
   },
   {
     row: ['layers.satellites',          'satellites',     'satellite,sats,orbit',                                        'layers',  'layer',   'map.layer,map.layerOption',              'map',                 'session', 'none',   '',         ''],
+    doc: [
+      { in: 'layers.satellites', text: 'LIVE SATELLITES: {"type":"satellites","on"?:bool,"group"?:"visual"|"stations"|"weather"|"geo"|"gps-ops"|"galileo"|"science"|"starlink"|"active","name"?:str (a satellite NAME, NORAD catalog number or international designator)} = the LIVE SATELLITE layer: real orbital element sets from CelesTrak, propagated in the browser with SGP4/SDP4, drawn at each object\'s SUB-SATELLITE POINT (the spot on the ground it is directly above) — the altitude is reported as a NUMBER and never faked as a height, because geostationary is 5.6 Earth radii up and there is no honest way to draw that to scale on a map. "group" chooses WHICH catalog is propagated; when no group is passed the layer keeps its default, which is the FULL active catalogue (every active object drawn at once — the layer\'s baseline when the reader wants the sky, and thousands of dots around the one object when they asked about a single satellite). Choose the group that fits the question. Passing "name" singles one object out: it draws that satellite\'s FOOTPRINT (the region from which it is above the horizon) and its GROUND TRACK for one orbit either side of now, opens a detail card, and the RESULT states the sub-satellite point (latitude, longitude it is above right now), altitude, speed, orbital period, sunlight/shadow, the elevation angle and the NEXT PASSES (up to three within 48 h, each with rise time, maximum elevation and duration — or that it does not rise within the horizon) as seen from "place" when one is given, else from the reader\'s pinned point, else the map centre. These are computed here from the live element set: ANSWER "where is X now / when does it pass over Y" FROM THIS RESULT — do not research it, and do not call again with another "mode" hoping for a pass table: there is no track/pass mode, ONE call with name (+place) returns everything this layer knows. Use for "人工衛星を表示して", "show live satellites", "ISSは今どこ？" (name:"ISS"), "when does the ISS next pass over Tokyo" (name:"ISS", place:"Tokyo"), "where is Hubble" (name:"HST"), "GPS衛星を見せて" (group:"gps-ops"), "静止衛星" (group:"geo"), "今この空を通る衛星" , and on:false for "衛星を消して".\n' },
+    ],
     schema: () => ({ type: 'object', properties: { on: bool(), mode: str(), group: str(), catalogue: str(), kind: str(), name: str(), satellite: str(), object: str(), norad: loose(), place: str() } }),
       /* (#R184) LIVE SATELLITES — the same three verbs the aircraft layer answers, applied to orbit:
          turn the layer on, choose which CelesTrak catalogue it propagates, and single out one object
