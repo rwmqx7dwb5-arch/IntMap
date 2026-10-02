@@ -37,6 +37,7 @@
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTime } from './chronos.js';
 import { TOURS, tourById, tourSteps, tourQuery, tourFromSearch } from './tours.js';
+import { MapState } from './map-state.js';   /* the map's state and the address bar's one door (js/map-state.js) */
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the encoder every string below is written with */
 
 /* the reader's language, as the app holds it (js/i18n.js) */
@@ -171,9 +172,11 @@ async function show(i, opts) {
   if (!st || !st.hash) { paint(false); return { ok: false, reason: 'no-link' }; }
   const B = await bookmark(); if (!B) { paint(false); return { ok: false, reason: 'no-map' }; }
   if (my !== gen) return { ok: false, reason: 'superseded' };
-  /* the address becomes the step's link — the query names the tour and the step, the fragment is the map */
-  const already = !!(opts && opts.fromBoot) && location.hash === st.hash;
-  try { history.replaceState(null, '', location.pathname + tourQuery(playing.id, n + 1) + st.hash); } catch (_) { }
+  /* the address becomes the step's link — the query (a page field, not map state) names the tour and the step,
+     the fragment is the map. A page opened on a tour's own address already carries the step's link, and the
+     boot restore is applying it (MapState.carriesState): it is not applied a second time. */
+  const already = !!(opts && opts.fromBoot) && MapState.carriesState();
+  MapState.address(tourQuery(playing.id, n + 1), st.hash);
   if (!already) { try { B.restore({ shared: true }); } catch (e) { paint(false); return { ok: false, reason: String(e && e.message || e) }; } }
   const r = await settled(st.hash);
   if (my === gen) paint(false);
@@ -260,7 +263,7 @@ function mount() {
 export async function startTour(id, n, opts) {
   const tour = tourFor(id); if (!tour) return { ok: false, reason: 'unknown-tour' };
   if (!tour.steps.length) return { ok: false, reason: 'no-steps' };
-  if (!playing && !(opts && opts.fromBoot)) { try { before = BM() ? BM().link() : null; } catch (_) { before = null; } }
+  if (!playing && !(opts && opts.fromBoot)) { try { before = MapState.link() || null; } catch (_) { before = null; } }
   playing = tour;
   closePicker();
   try { const x = document.getElementById('settings-close-x'); const m = document.getElementById('settings-modal'); if (x && m && getComputedStyle(m).display !== 'none') x.click(); } catch (_) { }
@@ -281,8 +284,8 @@ export function exit() {
   try { if (document.fullscreenElement) document.exitFullscreen(); } catch (_) { }
   const back = before; before = null;
   try {
-    if (back) { const h = back.slice(back.indexOf('#')); history.replaceState(null, '', location.pathname + h); BM().restore({ shared: true }); }
-    else history.replaceState(null, '', location.pathname + location.hash);
+    if (back) { MapState.address('', back.slice(back.indexOf('#'))); BM().restore({ shared: true }); }
+    else MapState.address('', null);
   } catch (_) { }
   try { window.dispatchEvent(new Event('resize')); } catch (_) { }
   return true;
@@ -297,9 +300,8 @@ export function status() {
 /* ── the tour Atlas assembles: the map as it is now, with words ── */
 export function addStep(o) {
   o = o || {};
-  const B = BM(); if (!(B && B.link)) return { ok: false, reason: 'no-map' };
-  const link = B.link(); const i = link.indexOf('#'); if (i < 0) return { ok: false, reason: 'no-link' };
-  const hash = link.slice(i);
+  if (!BM()) return { ok: false, reason: 'no-map' };
+  const hash = MapState.hash(); if (!MapState.carries(hash)) return { ok: false, reason: 'no-link' };
   const v = readTemp() || { title: '', steps: [] };
   if (o.tourTitle) v.title = String(o.tourTitle);
   v.steps.push({ key: 'atlas-' + (v.steps.length + 1), title: String(o.title || ''), say: String(o.say || ''), ask: String(o.ask || ''), hash });

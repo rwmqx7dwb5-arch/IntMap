@@ -234,6 +234,20 @@ export const MapState = {
   hash() { return encode(MapState.snapshot()); },
   /** the share link of the map as it is now */
   link() { try { return location.origin + location.pathname + location.search + MapState.hash(); } catch (_) { return ''; } },
+  /** (classroom-tours) address(query, hash) — the address bar's PAGE fields and, when given, a link's fragment.
+      The query is the page's mode, not the map: `?tour=<id>&step=<n>` (js/tours.js), `?embed=1`. It carries no
+      field of SCHEMA and the codec never reads it; the map stays in the fragment, which only `encode` writes.
+      This writes; it does not restore — a caller that hands over a new fragment then asks the share link's
+      restore (IntMapBookmark.restore, js/map-ui.js) to apply it, the path a pasted link takes.
+      @param {string|null} query  '?a=b…' ('' clears the query; null keeps it)
+      @param {string|null} [hash] a fragment the codec wrote (null keeps the one in the bar) */
+  address(query, hash) {
+    try {
+      const q = query == null ? location.search : (query ? (query.charAt(0) === '?' ? query : '?' + query) : '');
+      history.replaceState(null, '', location.pathname + q + (hash == null ? location.hash : hash));
+      return true;
+    } catch (_) { return false; }
+  },
   /** the saved session's spelling of the map's fields (js/session-tabs.js adds the app chrome around it) */
   session() { /** @type {Object<string,any>} */ const out = {};
     SCHEMA.forEach((f) => { if (!f.session) return; const v = MapState.read(f.key);

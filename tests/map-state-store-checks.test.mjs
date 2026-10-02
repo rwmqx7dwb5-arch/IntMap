@@ -262,7 +262,10 @@ test('⑤ only js/map-state.js spells the address bar\'s state parameters', () =
      js/usage-counts.js   1 read: the arrival row of the anonymous counts (not map state)
      js/atlas-cap-panel.js, js/auth-ui.js, js/legal-page.js, js/atlas-attach.js  1 write each: the showcase
                           door (then the store's restore), the OAuth return, a static page's query, a lightbox's
-                          back-button entry */
+                          back-button entry
+     js/map-state.js      1 read + 1 write (classroom-tours): `MapState.address` — the page's own query fields
+                          (`?tour=&step=`, not map state) beside a fragment the codec wrote; js/tour-player.js
+                          writes the bar only through it */
 const ADDRESS_SITES = {
   'js/map-ui.js': { hash: 7, history: 1 },
   'js/page-i18n.js': { hash: 2, history: 0 },
@@ -271,6 +274,7 @@ const ADDRESS_SITES = {
   'js/auth-ui.js': { hash: 0, history: 1 },
   'js/legal-page.js': { hash: 0, history: 1 },
   'js/atlas-attach.js': { hash: 0, history: 1 },
+  'js/map-state.js': { hash: 1, history: 1 },
 };
 test('⑤ direct location.hash / history.*State( sites do not grow, and the baseline does not go stale', () => {
   const now = {};
