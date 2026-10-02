@@ -31,12 +31,12 @@
  * ==========================================================================*/
 
 const ESC = /[.*+?^${}()|[\]\\]/g;
-export function isCJKTerm(term){ return /[　-鿿]/.test(term); }
+function isCJKTerm(term){ return /[　-鿿]/.test(term); }
 /* jp      — CJK terms match by substring; Latin terms match on word boundaries
    matchRe — word-boundary matcher for Latin terms
    ctxRe   — "is this place governed by a locational preposition / particle?"
              EN: in/at/to/from/near/into <place>   ·   JP: <place>で/へ/に/を/から */
-export function compileTerm(term){
+function compileTerm(term){
   const jp=isCJKTerm(term), cyr=/[Ѐ-ӿ]/.test(term), esc=term.replace(ESC,'\\$&');
   /* (#R39) Cyrillic/Russian path: JS `\b` word-boundaries don't fire around Cyrillic (it isn't `\w`),
      AND Russian inflects heavily — so match the supplied STEM plus up to 4 trailing Cyrillic letters,
@@ -154,9 +154,9 @@ export function makePlaceTerms(){
       type "city"         +2    precise locality
       locational context  +4    "in Gaza" / "ガザで" → the place is the story's setting
    Ties break toward the more local type (flashpoint > city > country > region). */
-export const TYPE_SCORE={ flashpoint:5, city:2, country:0, region:0 };
-export const TYPE_LOCAL={ flashpoint:4, city:3, country:2, region:1 };
-export function scoreGeo(terms,g,title,desc){
+const TYPE_SCORE={ flashpoint:5, city:2, country:0, region:0 };
+const TYPE_LOCAL={ flashpoint:4, city:3, country:2, region:1 };
+function scoreGeo(terms,g,title,desc){
   let titleHit=false, descHit=false, ctx=false, firstIdx=Infinity;
   for(const t of terms){
     if(t.jp){ const i=title.indexOf(t.term); if(i>=0){ titleHit=true; if(i<firstIdx) firstIdx=i; if(!ctx&&t.ctxRe.test(title)) ctx=true; } }

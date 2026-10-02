@@ -16,6 +16,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
 import { importModule, langRegistry } from './helpers/import-module.mjs';
+import { canonUnit } from '../js/place-terms.js';
 import { gunzipSync } from 'node:zlib';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -162,12 +163,12 @@ test('mobile-heavy-work ①d: canonUnit is the non-unicode /i case rule', async 
     const s = String.fromCharCode(c);
     if (s.toUpperCase() !== s || s.toLowerCase() !== s) cased.push(c);
   }
-  const pool = [...new Set([...cased, ...cased.map((c) => PT.canonUnit(c))])];
+  const pool = [...new Set([...cased, ...cased.map((c) => canonUnit(c))])];
   const hay = String.fromCharCode(...pool);
   for (const c of pool) {
     const re = new RegExp(String.fromCharCode(c).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
     for (const m of hay.matchAll(re)) {
-      assert.equal(PT.canonUnit(m[0].charCodeAt(0)), PT.canonUnit(c),
+      assert.equal(canonUnit(m[0].charCodeAt(0)), canonUnit(c),
         `U+${c.toString(16)} /i matches U+${m[0].charCodeAt(0).toString(16)} but their canonical units differ`);
     }
   }

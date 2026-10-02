@@ -52,7 +52,7 @@ export function newsContext(HOST){
        misses, scan the publisher string against the place gazetteer and use the most specific match, so far
        fewer publisher pins land "unknown". Skip demonyms/orgs and very short terms to avoid false hits. */
     try{ if(typeof HOST.geoDB!=='undefined' && HOST.geoDB){ const db=HOST.geoDB;
-      const best=bestPublisherPlace(db,publisher,_PT.termsOf,_PT.candidates(db,publisher));
+      const best=bestPublisherPlace(db,publisher,_PT().termsOf,_PT().candidates(db,publisher));
       /* ⚠ (#R212) THE LABEL IS THE OUTLET, NOT THE PLACE ITS NAME CONTAINS. This branch found the
          New York Post by the words «New York» and then labelled the pin 「Source: New York」 — which
          reads as though a city were the publisher. The place decides WHERE; the publisher string is
@@ -62,7 +62,9 @@ export function newsContext(HOST){
   /* The per-term matchers, the scorer and the prefilter that decides which entries a headline can
      reach live in js/place-terms.js (one instance per page: its compile cache is what #R311 measured
      saving 73.7 % of the compiles across the five rebuilds of a boot). */
-  const _PT=makePlaceTerms();
+  /* made on first use, not at factory time: a factory body only DECLARES (tests/engine-app-shell-split-checks R169 #4) */
+  let _pt=null;
+  function _PT(){ return _pt||(_pt=makePlaceTerms()); }
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
   const {_DERU_GZ,_DERU_DEM,_ES_GZ,_ES_DEM}=IntMapTables;
   /* ── (#R208) hand the world rows to the locator a slice at a time ──────────────────────────────
@@ -304,7 +306,7 @@ export function newsContext(HOST){
        admin-curated geo_pins types the engine has no opinion about). ---- */
     if(!subjectLoc){
       const db=HOST.geoDB;
-      const best=bestSubject(db,title,desc,_PT.termsOf,_PT.candidates(db,title,desc));
+      const best=bestSubject(db,title,desc,_PT().termsOf,_PT().candidates(db,title,desc));
       /* name{} only carries en/jp — for de/ru/es fall back to English instead of
          `undefined`, which used to surface as a blank pin label. */
       if(best){ subjectLoc=best.loc; subjectName=best.name[HOST.lang]||best.name.en||best.name.jp||null; subjectType=best.type; }
