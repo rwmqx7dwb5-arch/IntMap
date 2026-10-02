@@ -131,3 +131,15 @@ date: 2026-10-02
   しないのは、要るのが関数ではなく `js/app-body.js` が作る**実体**だから（工場関数を import しても `_labelFC` は
   閉包の中）。`--update` した。
 - **`data/hist-fidelity.json`**: 1886 年の被覆 51.01 → 50.72%（§2）。
+- **`check:datagov`（新しい subject 2 つ）**: `data/hist-admin-edges.json` と `scripts/histadmin/edges.mjs → …` は
+  出自・権利・周期を値で述べ（ファイルの `gov` と `GOVERNANCE`）、残る facet（`freshness.asOf`・`integrity.*`、
+  edges.mjs 側は `origin.retrievedAt` も）を `--update` で台帳に記録した——隣の `data/hist-era-spans.json` と同じ形で、
+  審査の台帳には単一の「何年の世界か」が無く、`integrity.*` は宣言の語彙がまだ無い。
+- **`check:perf`（`eager.modules` 300 → 301）**: この変更は eager のモジュールを 1 つも足していない
+  （`js/` で触ったのは `js/time-borders.js` と `js/time-admin1.js` だけで、import は増えていない）。増えた 1 は
+  main に先に着地した #887 の `js/inline-actions.js`（`src/main.js` が eager に import）で、#886 が天井を 300 に
+  下げた後に入ったため main の上で天井を 1 超えていた。main を取り込んだこの branch の build で測って、超えた行だけを
+  `--update` で上げた（他の行は帯の内）。
+- **`js/time-admin1.js` の段落の数**: `data/hist-admin1.js` は `--edges` が `dates` に審査の印を書いたので
+  41,457,870 → 41,458,052 B（LF）。`tests/history-admin-tiers-checks.test.mjs` #R700 ⑤ がその段落と実バイトを
+  照合するので、段落の数を書き直した（環は動いていない）。

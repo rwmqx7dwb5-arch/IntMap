@@ -180,7 +180,8 @@ export function timeAdmin1(HOST) {
          of which 1,142 and 1,600 end before 1800.
 
        The fallback geometry now uses 0.004° / 4 decimals in both tiers. Measured
-       2026-09-15: data/hist-admin1.js is 41,457,870 B and 2,180,014 vertices;
+       2026-09-15: data/hist-admin1.js is 41,458,052 B (2026-10-02, after the reviewed handover dates
+       were written into its `dates`; the rings did not move) and 2,180,014 vertices;
        data/hist-admin2.js is 40,660,406 B and 1,871,841 vertices (LF bytes); and (#R719)
        data/hist-admin3.js is 1,164,385 B and 39,725 vertices.
        This is the build target, not a guarantee about the source's survey accuracy.
