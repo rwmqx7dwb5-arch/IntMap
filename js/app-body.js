@@ -127,6 +127,7 @@ import { workspace } from './workspace.js';
 import { worldPacks } from './world-packs-rows.js';
 import { IntMapRefData } from './reference-data.js';
 import { IntMapTables } from './tables.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 /* (fetch-deadline-layer) the classic scripts' handle on the fetch clock (js/countries-ui.js, js/routing-ops.js —
    see the end of js/fetch-deadline.js). Assembled HERE because this file is in main alone and imports both
@@ -1508,7 +1509,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     let b=document.getElementById('area-news-banner');
     if(!b){ b=document.createElement('div'); b.id='area-news-banner'; b.style.cssText='display:flex;align-items:center;gap:8px;justify-content:space-between;margin:0 0 8px;padding:7px 11px;border-radius:9px;background:rgba(10,132,255,0.12);border:1px solid var(--primary-color);font-size:12px;color:var(--text-main);';
       const feed=document.getElementById('live-news-feed'); if(feed&&feed.parentNode) feed.parentNode.insertBefore(b,feed); }
-    b.innerHTML='<span>📍 '+(IntMapLang.t(currentLang,'Showing news in the selected area','選択範囲のニュースのみ表示中','Nur News im gewählten Bereich','Показаны новости выбранной области','Mostrando noticias del área seleccionada'))+'</span><button data-im-click="newsAreaClear" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap;">× '+(IntMapLang.t(currentLang,'Clear','解除','Aufheben','Сбросить','Quitar'))+'</button>';
+    b.innerHTML='<span>'+icon('pin')+' '+(IntMapLang.t(currentLang,'Showing news in the selected area','選択範囲のニュースのみ表示中','Nur News im gewählten Bereich','Показаны новости выбранной области','Mostrando noticias del área seleccionada'))+'</span><button data-im-click="newsAreaClear" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap;">× '+(IntMapLang.t(currentLang,'Clear','解除','Aufheben','Сбросить','Quitar'))+'</button>';
   }
 
   /* ===== AI FEATURE 3: spatial news summarization (radius / area) =====
@@ -2492,7 +2493,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(!active){ return; }
     if(compareSet.size===0){ panel.innerHTML=`<div class="scf-empty">${t('compareEmpty')}</div>`; return; }
     const items=[...compareSet].map(c=>countryStats[c]).filter(Boolean);
-    const chips=items.map((s)=>`<span class="scb-chip">${window.IntMapSafe.flag(s.flag,'🏳️')} ${cName(s)}<button aria-label="${IntMapLang.t(currentLang,'Remove','削除','Entfernen','Удалить','Quitar')}" data-cmptoggle="${IntMapSafe.html(s.code)}">×</button></span>`).join('');
+    const chips=items.map((s)=>`<span class="scb-chip">${s.flag?window.IntMapSafe.flag(s.flag):icon('flag')} ${cName(s)}<button aria-label="${IntMapLang.t(currentLang,'Remove','削除','Entfernen','Удалить','Quitar')}" data-cmptoggle="${IntMapSafe.html(s.code)}">×</button></span>`).join('');
     let head=`<div class="scf-head"><span class="scf-title">${t('compare')} (${compareSet.size}/10)</span><div style="display:flex;gap:6px;">`+
       (compareSet.size>=2?`<button class="scf-view" data-im-click="compareShow">${t('compareView')}</button>`:'')+
       `<button data-im-click="compareClear">${t('compareClear')}</button></div></div>`;
@@ -3075,11 +3076,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     }
     const pm=pin.meta||{}, pmT=String(pm.title||'').trim(), pmD=String(pm.description||'').trim(), pmS=[String(pm.when||'').trim(),String(pm.source||'').trim()].filter(Boolean).join(' · '), pmU=pm.url?IntMapSafe.url(String(pm.url)):'';   /* ⚠ (#R489) EVERY VALUE HERE IS AN ATLAS-SUPPLIED STRING, so every one reaches innerHTML through IntMapSafe.html and the link through IntMapSafe.url — http(s)/mailto/tel only (index.html). A pin with no meta renders byte-identically to what it always did. */ const pmH=(pmD?`<div style="font-size:11.5px;line-height:1.55;margin:-2px 0 6px;opacity:.9;">${IntMapSafe.html(pmD)}</div>`:'')+(pmS?`<div style="font-size:10.5px;color:var(--text-muted);margin:-3px 0 6px;">${IntMapSafe.html(pmS)}</div>`:'')+(pmU?`<div style="font-size:10.5px;margin:-3px 0 6px;"><a href="${IntMapSafe.html(pmU)}" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;">${IntMapLang.t(currentLang,'source','出典','Quelle','источник','fuente')} ↗</a></div>`:'');
     el.innerHTML=`<button aria-label="${IntMapLang.t(currentLang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" class="pin-popup-close" data-im-click="pinPopupClose">×</button>
-      <div style="font-weight:600; margin-bottom:6px;">📍 ${pmT?IntMapSafe.html(pmT):`${IntMapLang.t(currentLang,'Pin','ピン','Pin','Метка','Pin')} #${idx+1}`}</div>${pmH}
+      <div style="font-weight:600; margin-bottom:6px;">${icon('pin')} ${pmT?IntMapSafe.html(pmT):`${IntMapLang.t(currentLang,'Pin','ピン','Pin','Метка','Pin')} #${idx+1}`}</div>${pmH}
       <div class="pin-popup-row"><span>${t('coords')}</span><b>${fmtLL(pin.lng,pin.lat)}</b></div>
       <div class="pin-popup-row"><span>${pin.elev!=null&&pin.elev<0?t('depth'):t('elev')}</span>${elevHTML}</div>
       ${distHTML2}
-      <div class="pin-popup-actions"><button data-pinact="measure" data-pinid="${IntMapSafe.html(pin.id)}">${t('measure')}</button><button data-pinact="radius" data-pinid="${IntMapSafe.html(pin.id)}">⭕ ${t('radius')}</button><button style="background:var(--info-mil); color:#fff;" data-pinact="remove" data-pinid="${IntMapSafe.html(pin.id)}">${t('deletePin')}</button></div>`;
+      <div class="pin-popup-actions"><button data-pinact="measure" data-pinid="${IntMapSafe.html(pin.id)}">${t('measure')}</button><button data-pinact="radius" data-pinid="${IntMapSafe.html(pin.id)}">${icon('radius')} ${t('radius')}</button><button style="background:var(--info-mil); color:#fff;" data-pinact="remove" data-pinid="${IntMapSafe.html(pin.id)}">${t('deletePin')}</button></div>`;
     /* ⚠ (#R272 SEC) a value interpolated into an event attribute IS JavaScript source — data-attribute + one delegated listener instead (same call; delegation survives the re-render). Full note in js/companies-ui.js. */
     if(!el.__imPinWired){ el.__imPinWired=1; const PIN={measure:'_measureFromPin',radius:'_radiusFromPin',remove:'_removePin'}; el.addEventListener('click',(ev)=>{ const b=ev.target.closest('[data-pinact]'), f=b&&el.contains(b)&&PIN[b.getAttribute('data-pinact')]; if(f) window[f](b.getAttribute('data-pinid')); }); }
   }
@@ -3715,7 +3716,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window.imFlagISO2=function(fl){ try{ const cps=[...String(fl||'')].map(c=>c.codePointAt(0)).filter(c=>c>=0x1F1E6&&c<=0x1F1FF);
     if(cps.length===2) return String.fromCharCode(cps[0]-0x1F1E6+65,cps[1]-0x1F1E6+65).toLowerCase(); }catch(_){} return null; };
   window.imFlagHTML=function(fl,h){ const c=window.imFlagISO2(fl); h=h||20;
-    if(!c) return '<span>'+(fl||'🏳️')+'</span>';
+    if(!c) return '<span>'+(fl||icon('flag'))+'</span>';
     return '<img src="https://flagcdn.com/h'+(h<=24?'24':h<=40?'40':'80')+'/'+c+'.png" alt="'+(fl||'')+'" style="height:'+h+'px;border-radius:3px;vertical-align:-3px;box-shadow:0 0 0 1px rgba(128,128,128,0.25);" loading="lazy">'; };
 
   /* ===== (#R19) Apple-style SIDEBAR widgets — shown ONLY in the no-tab-selected blank state.
@@ -3736,7 +3737,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     function chk(k,label){ return '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" data-w="'+k+'" '+(cfg[k]?'checked':'')+'> '+label+'</label>'; }
     function render(){ const p=ensure();
       p.style.cssText='display:block;position:absolute;top:70px;right:24px;left:auto;bottom:auto;z-index:calc(var(--z-sheet) - 150);width:240px;';
-      p.innerHTML='<div class="tp-header"><span class="tp-title">🧩 '+(IntMapLang.t(currentLang,"Widgets","ウィジェット","Widgets","Виджеты","Widgets"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
+      p.innerHTML='<div class="tp-header"><span class="tp-title">'+icon('grid')+' '+(IntMapLang.t(currentLang,"Widgets","ウィジェット","Widgets","Виджеты","Widgets"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
         +'<div id="wdg-clock" style="'+(cfg.clock?'':'display:none;')+'margin-bottom:7px;"></div>'
         +'<div id="wdg-weather" style="'+(cfg.weather?'':'display:none;')+'font-size:12px;color:var(--text-muted);margin-bottom:7px;">'+(IntMapLang.t(currentLang,"Loading weather…","天気を取得中…","Wetter wird geladen…","Загрузка погоды…","Cargando el tiempo…"))+'</div>'
         +'<div id="wdg-fx" style="'+(cfg.fx?'':'display:none;')+'font-size:12px;color:var(--text-muted);margin-bottom:7px;">'+(IntMapLang.t(currentLang,"Loading FX…","為替を取得中…","Wechselkurse werden geladen…","Загрузка курсов валют…","Cargando tipos de cambio…"))+'</div>'
@@ -3749,7 +3750,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       let tstr,dstr; try{ tstr=now.toLocaleTimeString(IntMapLang.locale(currentLang,'en-GB'),{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:tz}); }catch(_){ tstr=now.toLocaleTimeString(); }
       try{ dstr=now.toLocaleDateString(IntMapLang.locale(currentLang,'en-GB'),{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=now.toLocaleDateString(); }
       const _E=window.IntMapSafe.html; /* (module-graph) the zone is the reader's setting (DOM text): encoded like everything else */ el.innerHTML='<div style="font-size:27px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text-main);line-height:1.1;">'+_E(tstr)+'</div><div style="font-size:11px;color:var(--text-muted);">'+_E(dstr)+(tz?' · '+_E(tz):'')+'</div>'; }
-    function wIcon(c){ if(c==null) return '🌡'; if(c===0) return '☀️'; if(c<=3) return '⛅'; if(c<=48) return '🌫'; if(c<=67) return '🌧'; if(c<=77) return '❄️'; if(c<=82) return '🌦'; if(c<=99) return '⛈'; return '🌡'; }
+    function wIcon(c){ if(c==null) return icon('thermo'); if(c===0) return icon('sun'); if(c<=3) return icon('cloud-sun'); if(c<=48) return icon('fog'); if(c<=67) return icon('cloud-rain'); if(c<=77) return icon('snowflake'); if(c<=82) return icon('cloud-rain'); if(c<=99) return icon('cloud-bolt'); return icon('thermo'); }
     function fxF(v){ return v==null?'—':(v<10?(+v).toFixed(3):(+v).toFixed(2)); }
     async function refreshData(){
       if(cfg.weather && panel){ try{ const c=GE().hasRenderer()?GE().camera.getCenter():{lat:35.68,lng:139.76}; const j=await window.IntMapWx.guardedJSON('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m',300000); if(!j) throw new Error('wx'); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(IntMapLang.t(currentLang,"wind ","風 ","Wind ","ветер ","viento "))+Math.round(cu.wind_speed_10m)+' km/h · '+(IntMapLang.t(currentLang,"map center","地図中心","Kartenmitte","центр карты","centro del mapa"))+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=IntMapLang.t(currentLang,"Weather unavailable","天気を取得できません","Wetter nicht verfügbar","Погода недоступна","Tiempo no disponible"); } }

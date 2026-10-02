@@ -437,9 +437,9 @@ export function makeAtlasGloss(HOST, CTX) {
   function dispatch(a) {
     const R = CTX.R, note = CTX.note, warn = CTX.warn;
     const term = glossTidy((a && (a.term || a.text || a.query)) || '');
-    if (!term) return R(false, warn('⚠ ' + L('Name the phrase to explain.', '解説する語句を指定してください。', 'Bitte den zu erklärenden Ausdruck nennen.', 'Укажите, какое выражение пояснить.', 'Indica la expresión que hay que explicar.')));
+    if (!term) return R(false, warn('' + L('Name the phrase to explain.', '解説する語句を指定してください。', 'Bitte den zu erklärenden Ausdruck nennen.', 'Укажите, какое выражение пояснить.', 'Indica la expresión que hay que explicar.')));
     try { open(term, null); } catch (_) {
-      return R(false, warn('⚠ ' + L('The glossary card could not open.', '解説カードを開けませんでした。', 'Die Erklärungskarte konnte nicht geöffnet werden.', 'Не удалось открыть карточку разбора.', 'No se pudo abrir la tarjeta de explicación.')));
+      return R(false, warn('' + L('The glossary card could not open.', '解説カードを開けませんでした。', 'Die Erklärungskarte konnte nicht geöffnet werden.', 'Не удалось открыть карточку разбора.', 'No se pudo abrir la tarjeta de explicación.')));
     }
     return R(true, note('✓ ' + esc(term) + ' — ' + L('opened the term card', '用語カードを開きました', 'Begriffskarte geöffnet', 'карточка термина открыта', 'tarjeta del término abierta')));
   }

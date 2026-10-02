@@ -25,7 +25,7 @@ export default [
     /* Chronos: a year, a date, a number of days — or the return to live. With none of them the
        case says «give a year or date», which is what this branch list makes it stop needing to. */
     doc: [
-      { in: 'tools-panels', at: 220, text: '{"type":"timeTravel","year":int} (year uses astronomical numbering: 0 is 1 BC; supported range comes from the master clock) or {"type":"timeTravel","date":"YYYY-MM-DD"} or {"type":"timeTravel","daysAgo":int}, and {"type":"timeTravel","now":true} to return to live = CHRONOS, the MASTER SPACETIME CLOCK (window.IntMapTime; the panel bottom-right is called Chronos and 「time machine」 is its old name): it moves the WHOLE map together — the news feed, the Countries statistics (real World Bank figures for that year: GDP, population, life-expectancy…), the country choropleths, historical borders (and a country highlight drawn while a past year is shown uses that year\'s polity shapes), historical city names and Pleiades settlement-name records (approximate source periods and representative points, not exact founding dates or surveyed sites), the Köppen climate era, NATO/EU accession, the day/night terminator, the live-satellite positions and — while the chosen instant is inside the forecast window — the ECMWF weather layers. Use a YEAR for history ("1990年の世界", "show the world in 1949", "rewind to 1980"); use daysAgo/date for the recent decade of news. ⚠ THE HISTORICAL BORDERS ARE DAY-EXACT, NOT YEARLY (CShapes validity dates, 1886-2019: 369 distinct border-change days). A full "date" really does draw the world as it stood on THAT DAY, so when the user asks about a treaty, a partition, an independence or a dissolution, emit the date it took effect — {"type":"timeTravel","date":"1920-10-28"} — instead of rounding to the year. A bare year lands on mid-June and shows only the world in force then, which for a dense year is a small part of the story: 1920 alone contains fourteen border-change days and five genuinely different worlds. Prefer this over Earth Replay for setting the time; ' },
+      { in: 'tools-panels', at: 220, text: '{"type":"timeTravel","year":int} (year uses astronomical numbering: 0 is 1 BC; supported range comes from the master clock) or {"type":"timeTravel","date":"YYYY-MM-DD"} or {"type":"timeTravel","daysAgo":int}, and {"type":"timeTravel","now":true} to return to live = CHRONOS, the MASTER SPACETIME CLOCK (window.IntMapTime; the panel bottom-right is called Chronos and 「time machine」 is its old name): it moves the WHOLE map together — the news feed, the Countries statistics (real World Bank figures for that year: GDP, population, life-expectancy…), the country choropleths, historical borders (and a country highlight drawn while a past year is shown uses that year\'s polity shapes), historical city names and Pleiades settlement-name records (approximate source periods and representative points, not exact founding dates or surveyed sites), the Köppen climate era, NATO/EU accession, the day/night terminator, the live-satellite positions and — while the chosen instant is inside the forecast window — the ECMWF weather layers. Use a YEAR for history ("1990年の世界", "show the world in 1949", "rewind to 1980"); use daysAgo/date for the recent decade of news. THE HISTORICAL BORDERS ARE DAY-EXACT, NOT YEARLY (CShapes validity dates, 1886-2019: 369 distinct border-change days). A full "date" really does draw the world as it stood on THAT DAY, so when the user asks about a treaty, a partition, an independence or a dissolution, emit the date it took effect — {"type":"timeTravel","date":"1920-10-28"} — instead of rounding to the year. A bare year lands on mid-June and shows only the world in force then, which for a dense year is a small part of the story: 1920 alone contains fourteen border-change days and five genuinely different worlds. Prefer this over Earth Replay for setting the time; ' },
     ],
     schema: () => ({ type: 'object', properties: { year: int(), date: str(), daysAgo: int(), value: num(), now: bool(), reset: bool(), live: bool() }, anyOf: [{ required: ['year'] }, { required: ['date'] }, { required: ['daysAgo'] }, { required: ['value'] }, { required: ['now'] }, { required: ['reset'] }, { required: ['live'] }] }), /* `timeTravel` */
       /* (#R94) time-travel now drives the WHOLE spacetime OS (IntMapTime): news, the Countries statistics,
@@ -83,7 +83,7 @@ async function compareAt(a, K) {
      and a lazy chunk importing js/compare.js (eager, and itself importing modules other lazy chunks share) split three
      shared modules out of the boot chunk — eager.requests 9 → 12, measured with scripts/perf-budget.mjs. */
   const C = window.IntMapCompare;
-  if (!C || typeof C.setTime !== 'function') return R(false, warn('⚠ ' + L('The comparison window is not available', '比較ウィンドウが使えません')));
+  if (!C || typeof C.setTime !== 'function') return R(false, warn('' + L('The comparison window is not available', '比較ウィンドウが使えません')));
   C.open();
   if (a.layer) {
     /* a layer named for the window: the picker's own option, by its key or its visible name */
@@ -97,8 +97,8 @@ async function compareAt(a, K) {
   else if (a.now) spec = { now: true };
   else if (a.year != null) spec = { year: Math.round(+a.year) };
   else if (a.date) spec = { date: String(a.date) };
-  else return R(false, warn('⚠ ' + L('Give the window a year, a date, now, or follow:true', '年・日付・now・follow:true のいずれかを指定してください')));
-  if (spec.year != null && spec.year < IntMapTime.min) return R(false, warn('⚠ ' + L('Chronos reaches back to ' + IntMapTime.min, 'Chronos は ' + IntMapTime.min + ' 年まで遡れます')));
+  else return R(false, warn('' + L('Give the window a year, a date, now, or follow:true', '年・日付・now・follow:true のいずれかを指定してください')));
+  if (spec.year != null && spec.year < IntMapTime.min) return R(false, warn('' + L('Chronos reaches back to ' + IntMapTime.min, 'Chronos は ' + IntMapTime.min + ' 年まで遡れます')));
   const s = C.setTime(spec);
   /* the picked layer is judged asynchronously (js/compare.js applyTime) — the answer waits for that verdict */
   const st = await C.judged();
@@ -115,8 +115,8 @@ async function lapse(a, K) {
   const to = a.to != null && a.to !== '' ? a.to : (a.toYear != null ? Math.round(+a.toYear) : undefined);
   if (a.record) return record(a, from, to, TL, K);
   const s = TL.startLapse({ from, to, unit: a.unit, step: a.step, fps: a.fps, loop: a.loop });
-  if (s.error === 'no-start') return R(false, warn('⚠ ' + L('Give the lapse a start (a year or a date)', 'タイムラプスの開始（年か日付）を指定してください')));
-  if (s.error === 'empty-range') return R(false, warn('⚠ ' + L('The end is before the start', '終了が開始より前です')));
+  if (s.error === 'no-start') return R(false, warn('' + L('Give the lapse a start (a year or a date)', 'タイムラプスの開始（年か日付）を指定してください')));
+  if (s.error === 'empty-range') return R(false, warn('' + L('The end is before the start', '終了が開始より前です')));
   const unitW = s.unit === 'year' ? L('year(s)', '年') : s.unit === 'day' ? L('day(s)', '日') : L('hour(s)', '時間');
   return R(true, note('✓ ' + L('Time-lapse playing', 'タイムラプスを再生中') + ': ' + esc(s.from) + ' → ' + esc(s.to || L('now', '現在')) + ' · ' + s.step + ' ' + unitW + ' · ' + s.rate + '×' + (s.loop ? ' · ' + L('loop', 'ループ') : '') + (s.reducedMotion ? ' · ' + L('reduced motion: slowest speed', '視差効果を減らす: 最も遅い速度') : '')), { want: { lapse: { playing: true } }, lapse: s });
 }
@@ -125,17 +125,17 @@ async function lapse(a, K) {
    `openRecorder`), which is where the reader watches the progress and saves the file, so the panel is opened first. */
 async function record(a, from, to, TL, K) {
   const R = K.R, L = K.L, warn = K.warn, note = K.note, esc = K.esc;
-  if (from == null) return R(false, warn('⚠ ' + L('Give the lapse a start (a year or a date)', 'タイムラプスの開始（年か日付）を指定してください')));
+  if (from == null) return R(false, warn('' + L('Give the lapse a start (a year or a date)', 'タイムラプスの開始（年か日付）を指定してください')));
   try { const tl = document.getElementById('news-timeline'), tg = document.getElementById('ntl-toggle'); if (tl && tg && tl.classList.contains('collapsed')) tg.click(); } catch (_) { /* no panel: openRecorder says so */ }
   const M = await TL.openRecorder();
-  if (!M) return R(false, warn('⚠ ' + L('The export row of the Chronos panel is not available', 'Chronos パネルの書き出し欄が使えません')));
+  if (!M) return R(false, warn('' + L('The export row of the Chronos panel is not available', 'Chronos パネルの書き出し欄が使えません')));
   const s = M.recordLapse({ from, to, unit: a.unit, step: a.step, fps: a.fps, size: a.size, format: a.format });
   if (s.error) {
     const why = s.error === 'unsupported' ? L('this browser cannot record video', 'このブラウザは動画を録画できません')
       : s.error === 'busy' ? L('a recording is already running', '別の録画が進行中です')
         : s.error === 'empty-range' ? L('the end is before the start', '終了が開始より前です')
           : L('the lapse has no start', 'タイムラプスの開始がありません');
-    return R(false, warn('⚠ ' + L('Could not record: ', '録画できません: ') + esc(why)), { recording: s });
+    return R(false, warn('' + L('Could not record: ', '録画できません: ') + esc(why)), { recording: s });
   }
   const l = TL.lapseState();
   const unitW = l.unit === 'year' ? L('year(s)', '年') : l.unit === 'day' ? L('day(s)', '日') : L('hour(s)', '時間');
@@ -158,12 +158,12 @@ async function travel(a, dctx, K) { const L = K.L, R = K.R, note = K.note, warn 
              been the real test, but the words were the literal 1900 in all nine languages — so when #R349
              moved the floor to 1850 (and #R604 to AD 1) this refusal went on telling every reader that 1875, a year the
              next statement accepts, is out of reach. The number now comes from the same place the test does. */
-          if(y!=null){ if(y>=curY){ T.setNow({source:'atlas'}); return nowMsg(); } if(y<T.min) return R(false, warn('⚠ '+L('Chronos reaches back to {y}','Chronosは{y}年まで遡れます','Bis {y} zurück','До {y} года','Hasta {y}').replace(/\{y\}/g,String(T.min)))); T.setYear(y,{source:'atlas'}); return R(true, note(y+' — '+synced)); }
+          if(y!=null){ if(y>=curY){ T.setNow({source:'atlas'}); return nowMsg(); } if(y<T.min) return R(false, warn(L('Chronos reaches back to {y}','Chronosは{y}年まで遡れます','Bis {y} zurück','До {y} года','Hasta {y}').replace(/\{y\}/g,String(T.min)))); T.setYear(y,{source:'atlas'}); return R(true, note(y+' — '+synced)); }
           if(a.date){ const t0=Date.parse(String(a.date)); if(!isNaN(t0)){ if(t0>Date.now()){ T.setNow({source:'atlas'}); return nowMsg(); } T.set(new Date(t0),{source:'atlas'}); return R(true, note(ymdISO(new Date(t0))+' — '+synced)); } }
           if(a.daysAgo!=null){ const da=Math.round(+a.daysAgo); if(da<=0){ T.setNow({source:'atlas'}); return nowMsg(); } T.setDaysAgo(da,{source:'atlas'}); return R(true, note(ymdISO(T.when())+' — '+synced)); }
           if(a.value!=null){ T.setDaysAgo(3650-(+a.value),{source:'atlas'}); return R(true, note(ymdISO(T.when()))); }
-          return R(false, warn('⚠ '+L('Give a year or date','年か日付を指定してください','Jahr/Datum angeben','Укажите год/дату','Indica un año o fecha')));
-        }catch(_){ return R(false, warn('⚠ '+L('Time machine unavailable','タイムマシンが使えません','Zeitmaschine nicht verfügbar','Машина времени недоступна','Máquina del tiempo no disponible'))); } }
+          return R(false, warn(L('Give a year or date','年か日付を指定してください','Jahr/Datum angeben','Укажите год/дату','Indica un año o fecha')));
+        }catch(_){ return R(false, warn(L('Time machine unavailable','タイムマシンが使えません','Zeitmaschine nicht verfügbar','Машина времени недоступна','Máquina del tiempo no disponible'))); } }
 }
 
 /* ══ (world-at-time) THE TWO ANSWERS ABOUT WHAT THE MAP AT AN INSTANT CAN DRAW ══════════════════════
@@ -185,12 +185,12 @@ function coverageHtml(c, K, all) {
 async function coverage(a, K) {
   const R = K.R, L = K.L, warn = K.warn, esc = K.esc;
   const LT = window.IntMapLayerTime;
-  if (!LT) return R(false, warn('⚠ ' + L('The layer time table is not available', 'レイヤーの時間表が使えません')));
+  if (!LT) return R(false, warn('' + L('The layer time table is not available', 'レイヤーの時間表が使えません')));
   let when = null;
   if (a.year != null) when = Math.round(+a.year);
   else if (a.date) when = String(a.date);
   const c = await LT.coverage(when, { on: !!a.on });
-  if (!c) return R(false, warn('⚠ ' + L('Give a year or an ISO date', '年か ISO 形式の日付を指定してください')));
+  if (!c) return R(false, warn('' + L('Give a year or an ISO date', '年か ISO 形式の日付を指定してください')));
   const day = c.at.live ? L('now', '現在') : c.at.date.slice(0, 10);
   return R(true, '<div>' + esc(L('What the map at ' + day + ' can draw', day + ' の地図に描けるもの')) + '</div>' + coverageHtml(c, K, true), { coverage: c });
 }

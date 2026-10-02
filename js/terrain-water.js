@@ -52,6 +52,7 @@ import './water-dynamics.js';
 import { everyTick, stopTick } from './runtime.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon, withIcons, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function terrainWater(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -1564,19 +1565,22 @@ export function terrainWater(HOST){
     }
     /* (#R186) what the water has reached, in nine languages — the map label and the panel line share
        it. (#R267) 「まだ流れている」 is now one of the answers, because the clock decides all of them. */
+    /* (icon-system) the label is words — it is also the MAP label (a symbol layer draws text, not pictures); the
+       panel line draws the end's glyph beside it from here */
+    const TRACE_END_ICON={sea:'waves',still:'stop',running:'drop'};
     function traceEndLabel(){
       if(!trace) return '';
       const km=trace.km<10?trace.km.toFixed(1):Math.round(trace.km);
       const far=' · '+km+' km';
       switch(trace.end){
-        case 'sea': return '🌊 '+L('Reaches the sea','海に到達','Erreicht das Meer','Достигает моря','Llega al mar')
+        case 'sea': return L('Reaches the sea','海に到達','Erreicht das Meer','Достигает моря','Llega al mar')
           /* (#R189) the connectedness test could not run (its DEM window failed) — say so instead of
              passing a network outage off as a verified ocean */
           +((trace.endInfo&&trace.endInfo.unchecked)?(' '+L('(unverified — data missing)','（未確認・データ欠損）','(unbestätigt — Daten fehlen)','(не подтверждено — нет данных)','(sin verificar — faltan datos)')):'')
           +far;
-        case 'still': return '⏹ '+L('Flow stops here','ここで流れが止まる','Fluss endet hier','Течение здесь заканчивается','El flujo se detiene aquí')+far;
+        case 'still': return L('Flow stops here','ここで流れが止まる','Fluss endet hier','Течение здесь заканчивается','El flujo se detiene aquí')+far;
         case 'extent': return '… '+L('still flowing at the edge of the modelled area','計算領域の端でもまだ流下中','fließt noch am Rand des Modellgebiets','всё ещё течёт у края области','sigue fluyendo en el borde del área')+far;
-        case 'running': return '💧 '+L('flowing','流下中','fließt','течёт','fluyendo')+far;
+        case 'running': return L('flowing','流下中','fließt','течёт','fluyendo')+far;
         default: return km+' km';
       }
     }
@@ -1633,7 +1637,7 @@ export function terrainWater(HOST){
          maximum depth, cell size, DEM level, solver milliseconds — before it ever said where the
          water went. What a person wants first is the sentence: it flows to here, and it does or
          does not overtop. Nothing is deleted; everything that was on top is one click away. */
-      setStat(((trace&&trace.end)?('<b>'+L('Downstream','流下先','Unterlauf','Ниже по течению','Aguas abajo')+':</b> '+traceEndLabel()):
+      setStat(((trace&&trace.end)?('<b>'+L('Downstream','流下先','Unterlauf','Ниже по течению','Aguas abajo')+':</b> '+(TRACE_END_ICON[trace.end]?icon(TRACE_END_ICON[trace.end])+' ':'')+traceEndLabel()):
                ('<span style="opacity:0.75;">'+L('Place water to see where it goes.','水を配置すると流下先を表示します。','Wasser platzieren, um den Verlauf zu sehen.','Разместите воду, чтобы увидеть путь.','Coloque agua para ver adónde va.')+'</span>'))
         +'<br><b>'+L('Overtopping','決壊・越流','Überströmen','Перелив','Desbordamiento')+':</b> '
         +(result.breaches.length?(result.breaches.length+' '+L('spill points','箇所','Stellen','точек','puntos'))
@@ -1656,8 +1660,8 @@ export function terrainWater(HOST){
                  +' · '+L('left the area','領域外へ','abgeflossen','ушло за пределы','salió del área')+' '+fmtM3(result.sim.outM3)
                  +((result.sim.outM3s>0)?(' ('+n(result.sim.outM3s)+' m³/s)'):'')
                  +' · Δt '+n(result.sim.dt,1)+' s'
-                 +(result.sim.cappedTicks?(' · ⚠ '+result.sim.cappedTicks+' '+L('ticks hit the step cap (the clock ran ahead of the water)','ティックがステップ上限に到達（時計が水より先に進みました）','Ticks am Schrittlimit','тиков упёрлись в предел шагов','ticks alcanzaron el límite de pasos')):'')
-                 +((result.sim.settle&&result.sim.settle.capped)?(' · ⚠ '+L('still moving when the ⏭ budget ran out','⏭ の計算上限に達した時点でまだ移動中','beim ⏭-Limit noch in Bewegung','всё ещё движется на пределе ⏭','aún en movimiento al agotarse el límite de ⏭')):'')))
+                 +(result.sim.cappedTicks?(' · '+icon('warning')+' '+result.sim.cappedTicks+' '+L('ticks hit the step cap (the clock ran ahead of the water)','ティックがステップ上限に到達（時計が水より先に進みました）','Ticks am Schrittlimit','тиков упёрлись в предел шагов','ticks alcanzaron el límite de pasos')):'')
+                 +((result.sim.settle&&result.sim.settle.capped)?(' · '+icon('warning')+' '+withIcons(L('still moving when the {icon:skip-forward} budget ran out','{icon:skip-forward} の計算上限に達した時点でまだ移動中','beim {icon:skip-forward}-Limit noch in Bewegung','всё ещё движется на пределе {icon:skip-forward}','aún en movimiento al agotarse el límite de {icon:skip-forward}'))):'')))
           ):'')
         +(result.breaches.length?('<br><b>'+L('Largest spill','最大の越流','Größter Überlauf','Наибольший перелив','Mayor desbordamiento')+':</b> '+fmtM3(result.breaches[0].over)):'')
         /* ══ (#R267) ONE LATTICE, ONE CELL SIZE, ONE DEM LEVEL — AND ITS SIZE ═══════════════════
@@ -1672,18 +1676,18 @@ export function terrainWater(HOST){
           +' → '+n(result.sim.spanKm,1)+' km'):'')
         +((drawBlock>1)?(' · '+L('drawn at','描画','gezeichnet mit','отрисовка','dibujado a')+' '+n(drawPxM)+' m/px'):'')
         /* (#R189) a repaired DEM hole is a guess — say how many cells are guessed, never silently */
-        +(G.demMissing?(' · ⚠ '+n(G.demMissing)+' '+L('cells interpolated (no DEM)','セルは補間（DEM欠損）','Zellen interpoliert (kein DEM)','ячеек интерполировано (нет DEM)','celdas interpoladas (sin DEM)')):'')
-        +((result.sim&&result.sim.voids)?(' · ⚠ '+n(result.sim.voids)+' '+L('cells with no DEM (closed)','セルはDEM欠損（面を閉鎖）','Zellen ohne DEM (geschlossen)','ячеек без DEM (закрыты)','celdas sin DEM (cerradas)')):'')
+        +(G.demMissing?(' · '+icon('warning')+' '+n(G.demMissing)+' '+L('cells interpolated (no DEM)','セルは補間（DEM欠損）','Zellen interpoliert (kein DEM)','ячеек интерполировано (нет DEM)','celdas interpoladas (sin DEM)')):'')
+        +((result.sim&&result.sim.voids)?(' · '+icon('warning')+' '+n(result.sim.voids)+' '+L('cells with no DEM (closed)','セルはDEM欠損（面を閉鎖）','Zellen ohne DEM (geschlossen)','ячеек без DEM (закрыты)','celdas sin DEM (cerradas)')):'')
         +'</span>'
         /* ⚠ (#R185/#R267) EVERY CAP THAT BIT, IN WORDS. A basin that stopped growing is still
            drawing water at its rim, and a reader who is not told reads that rim as a shoreline. */
-        +((result.sim&&result.sim.capped)?('<br><span style="opacity:0.85;">⚠ '+L('The modelled area has reached its limit — water leaving its edge is counted, not drawn.','計算領域が上限に達しました。端から出た水は集計され、描画されません。','Das Modellgebiet hat seine Grenze erreicht — abfließendes Wasser wird gezählt, nicht gezeichnet.','Область моделирования достигла предела — вода за краем учитывается, но не рисуется.','El área modelada alcanzó su límite: el agua que sale del borde se contabiliza, no se dibuja.')+'</span>'):'')
+        +((result.sim&&result.sim.capped)?('<br><span style="opacity:0.85;">'+icon('warning')+' '+L('The modelled area has reached its limit — water leaving its edge is counted, not drawn.','計算領域が上限に達しました。端から出た水は集計され、描画されません。','Das Modellgebiet hat seine Grenze erreicht — abfließendes Wasser wird gezählt, nicht gezeichnet.','Область моделирования достигла предела — вода за краем учитывается, но не рисуется.','El área modelada alcanzó su límite: el agua que sale del borde se contabiliza, no se dibuja.')+'</span>'):'')
         /* ⚠ (#R267) 0 is the whole point, so it is printed only when it is not 0 — and then loudly */
-        +((result.sim&&result.sim.jumps)?('<br><span style="opacity:0.85;">⚠ '+n(result.sim.jumps)+' '+L('cells hold water that did not flow into them','セルの水が、流れ込んだのではない経路で存在しています','Zellen mit Wasser, das nicht eingeflossen ist','ячеек с водой, которая туда не притекла','celdas con agua que no fluyó hasta allí')+'</span>'):'')
+        +((result.sim&&result.sim.jumps)?('<br><span style="opacity:0.85;">'+icon('warning')+' '+n(result.sim.jumps)+' '+L('cells hold water that did not flow into them','セルの水が、流れ込んだのではない経路で存在しています','Zellen mit Wasser, das nicht eingeflossen ist','ячеек с водой, которая туда не притекла','celdas con agua que no fluyó hasta allí')+'</span>'):'')
         /* (#R268) …and the cells the elevation host never answered for. They are WALLS to the
            solver (a NaN bed closes every face), so a silent count is a silent straight edge. */
-        +((result.sim&&result.sim.voids)?('<br><span style="opacity:0.85;">⚠ '+n(result.sim.voids)+' '+L('cells have no elevation data and the water cannot enter them','セルの標高データが取得できず、水はそこへ入れません','Zellen ohne Höhendaten - dort kann kein Wasser hin','ячеек без данных высот - вода туда не идёт','celdas sin datos de elevación: el agua no puede entrar')+'</span>'):'')
-        +((result.sim&&result.sim.growFailed)?('<br><span style="opacity:0.85;">⚠ '+result.sim.growFailed+' '+L('extensions could not read the elevation data','回、領域拡張が標高データを取得できませんでした','Erweiterungen konnten keine Höhendaten lesen','расширений не смогли прочитать данные высот','ampliaciones no pudieron leer los datos de elevación')+'</span>'):'')
+        +((result.sim&&result.sim.voids)?('<br><span style="opacity:0.85;">'+icon('warning')+' '+n(result.sim.voids)+' '+L('cells have no elevation data and the water cannot enter them','セルの標高データが取得できず、水はそこへ入れません','Zellen ohne Höhendaten - dort kann kein Wasser hin','ячеек без данных высот - вода туда не идёт','celdas sin datos de elevación: el agua no puede entrar')+'</span>'):'')
+        +((result.sim&&result.sim.growFailed)?('<br><span style="opacity:0.85;">'+icon('warning')+' '+result.sim.growFailed+' '+L('extensions could not read the elevation data','回、領域拡張が標高データを取得できませんでした','Erweiterungen konnten keine Höhendaten lesen','расширений не смогли прочитать данные высот','ampliaciones no pudieron leer los datos de elevación')+'</span>'):'')
         +((trace&&trace.frontTS>0)?('<br><b>'+L('Travel time','到達時間','Laufzeit','Время добегания','Tiempo de recorrido')+':</b> '
           +fmtDur(trace.frontTS)+' '+L('over','／','über','на','en')+' '+n(trace.km,1)+' km'
           +' <span style="opacity:0.72;">'+L('— when the water reached the front, on the run that drew it','——描画と同じ積分で先端に水が届いた時刻です','— gemessen an derselben Integration','— по той же интеграции, что и рисунок','— medido en la misma integración que dibuja el agua')+'</span>'):''));
@@ -1900,10 +1904,10 @@ export function terrainWater(HOST){
        block's own caption. `modeName()` is what everything else (the caption, Atlas, the tests)
        reads, so the two can never drift apart. */
     function modes(){ return [
-      ['raise','⛰ '+L('Raise','盛る','Anheben','Поднять','Elevar'),modeName('raise')],
-      ['lower','⛏ '+L('Lower','削る','Abtragen','Срезать','Rebajar'),modeName('lower')],
-      ['levee','🧱 '+L('Levee','堤防','Deich','Дамба','Dique'),modeName('levee')],
-      ['source','💧 '+L('Water','水','Wasser','Вода','Agua'),modeName('source')]]; }
+      ['raise',icon('mountain')+' '+L('Raise','盛る','Anheben','Поднять','Elevar'),modeName('raise')],
+      ['lower',icon('pickaxe')+' '+L('Lower','削る','Abtragen','Срезать','Rebajar'),modeName('lower')],
+      ['levee',icon('wall')+' '+L('Levee','堤防','Deich','Дамба','Dique'),modeName('levee')],
+      ['source',icon('drop')+' '+L('Water','水','Wasser','Вода','Agua'),modeName('source')]]; }
     function modeName(m){ return m==='raise'?L('Raise','盛る','Anheben','Поднять','Elevar')
       :m==='lower'?L('Lower','削る','Abtragen','Срезать','Rebajar')
       :m==='levee'?L('Levee / dam','堤防・ダム','Deich / Damm','Дамба','Dique / presa')
@@ -1919,7 +1923,7 @@ export function terrainWater(HOST){
     function render(){ if(!panel) return;
       _ensureCss();
       panel.innerHTML='<div class="tw-head" style="display:flex;align-items:center;gap:8px;padding:'+TW_PAD+';background:var(--input-bg);cursor:move;">'
-        +'<span style="flex:1;font-size:'+TW_FS_H+';font-weight:700;color:var(--text-main);">⛰💧 '+L('Terrain &amp; water','地形編集・水流','Gelände &amp; Wasser','Рельеф и вода','Terreno y agua')+'</span>'
+        +'<span style="flex:1;font-size:'+TW_FS_H+(';font-weight:700;color:var(--text-main);">'+icon('mountain')+icon('drop')+' ')+L('Terrain &amp; water','地形編集・水流','Gelände &amp; Wasser','Рельеф и вода','Terreno y agua')+'</span>'
         +'<button aria-label="'+IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="tw-close" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;line-height:1;">×</button></div>'
         /* ══ ⚠⚠ (#R275) 「ツールは上部にスティックしろ。」 ═══════════════════════════════════════════
            The tool picker was the first thing INSIDE the scroller, so choosing 🧱 堤防・ダム, scrolling
@@ -1976,32 +1980,32 @@ export function terrainWater(HOST){
         +'<details class="tw-note" style="line-height:1.5;">'
           +'<summary>'+L('About this model','このモデルについて','Über dieses Modell','Об этой модели','Sobre este modelo')+'</summary>'
           +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:4px;">'
-          +L('Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. The same model runs the whole course: the lattice is extended in whichever direction the water goes, at the same cell size, so there is no second calculation and no second drawing downstream. ⏭ runs this model on until the water stops moving.',
-             '実際の標高データを編集しています。水は2次元浅水方程式（局所慣性形：Bates 2010／q中心化 de Almeida 2012、マニング粗度 n = 0.035）で時間積分しており、洪水波は実際にかかる時間をかけて進みます。上流から下流まで同じモデルです——水が進んだ方向へ同じセル寸法の格子を継ぎ足していくので、下流に別の計算も別の描画もありません。⏭ は同じモデルを水が動かなくなるまで進めます。',
-             'Echte Höhendaten. Das Wasser wird zeitlich integriert — 2-D-Flachwassergleichungen in lokal-inertialer Form (Bates 2010, q-zentriert nach de Almeida 2012) mit Manning-Reibung n = 0,035; eine Flutwelle braucht die Zeit, die sie braucht. Dasselbe Modell gilt für den gesamten Lauf: das Gitter wächst in Fließrichtung mit derselben Zellgröße. ⏭ rechnet weiter, bis das Wasser zur Ruhe kommt.',
-             'Реальные высоты. Вода интегрируется по времени: двумерные уравнения мелкой воды в локально-инерционной форме (Bates 2010, q-центрированная схема de Almeida 2012), трение Маннинга n = 0,035 — паводковая волна идёт столько, сколько идёт. Одна и та же модель работает на всём пути: сетка достраивается туда, куда идёт вода, с тем же размером ячейки. ⏭ считает дальше, пока вода не остановится.',
-             'Elevación real. El agua se integra en el tiempo con las ecuaciones de aguas someras en forma inercial local (Bates 2010, esquema centrado en q de de Almeida 2012) y fricción de Manning n = 0,035: una onda de crecida tarda lo que tarda. El mismo modelo cubre todo el recorrido: la malla se extiende hacia donde va el agua, con el mismo tamaño de celda. ⏭ sigue integrando hasta que el agua se detiene.')
+          +withIcons(L('Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. The same model runs the whole course: the lattice is extended in whichever direction the water goes, at the same cell size, so there is no second calculation and no second drawing downstream. {icon:skip-forward} runs this model on until the water stops moving.',
+             '実際の標高データを編集しています。水は2次元浅水方程式（局所慣性形：Bates 2010／q中心化 de Almeida 2012、マニング粗度 n = 0.035）で時間積分しており、洪水波は実際にかかる時間をかけて進みます。上流から下流まで同じモデルです——水が進んだ方向へ同じセル寸法の格子を継ぎ足していくので、下流に別の計算も別の描画もありません。{icon:skip-forward} は同じモデルを水が動かなくなるまで進めます。',
+             'Echte Höhendaten. Das Wasser wird zeitlich integriert — 2-D-Flachwassergleichungen in lokal-inertialer Form (Bates 2010, q-zentriert nach de Almeida 2012) mit Manning-Reibung n = 0,035; eine Flutwelle braucht die Zeit, die sie braucht. Dasselbe Modell gilt für den gesamten Lauf: das Gitter wächst in Fließrichtung mit derselben Zellgröße. {icon:skip-forward} rechnet weiter, bis das Wasser zur Ruhe kommt.',
+             'Реальные высоты. Вода интегрируется по времени: двумерные уравнения мелкой воды в локально-инерционной форме (Bates 2010, q-центрированная схема de Almeida 2012), трение Маннинга n = 0,035 — паводковая волна идёт столько, сколько идёт. Одна и та же модель работает на всём пути: сетка достраивается туда, куда идёт вода, с тем же размером ячейки. {icon:skip-forward} считает дальше, пока вода не остановится.',
+             'Elevación real. El agua se integra en el tiempo con las ecuaciones de aguas someras en forma inercial local (Bates 2010, esquema centrado en q de de Almeida 2012) y fricción de Manning n = 0,035: una onda de crecida tarda lo que tarda. El mismo modelo cubre todo el recorrido: la malla se extiende hacia donde va el agua, con el mismo tamaño de celda. {icon:skip-forward} sigue integrando hasta que el agua se detiene.'))
           +'</div></details>'
         +'</div>'
         +'<div class="tw-foot" style="flex:0 0 auto;position:sticky;bottom:0;padding:'+TW_PAD+';padding-bottom:calc('+TW_GAP+' + var(--safe-bottom));display:flex;flex-direction:column;gap:'+TW_GAP+';background:var(--card-bg,#1c1c1e);border-top:1px solid var(--glass-border,rgba(128,128,128,0.25));">'
         /* ══ (#R258) 「時間は下部スティックしろ。」 — the transport, the multiplier and the clock ═══════ */
         +'<div style="display:flex;align-items:center;gap:8px;">'
-          +'<button class="tw-play tw-pp" aria-label="'+L('Pour','注水','Zulauf','Наполнение','Verter')+'">▶</button>'
+          +'<button class="tw-play tw-pp" aria-label="'+L('Pour','注水','Zulauf','Наполнение','Verter')+('">'+icon('play')+'</button>')
           /* (#R273) 「一回きりの水源、再生できない。」 — the same ground, the same sources, from t = 0 */
           +'<button class="tw-play tw-replay" style="background:var(--input-bg);color:var(--text-main);" aria-label="'
             +L('Replay from the start','最初から再生','Von vorn abspielen','Проиграть сначала','Reproducir desde el inicio')+'">↺</button>'
           +'<div class="tw-segwrap" style="flex:1 1 auto;">'+[1,10,60,600].map(s=>'<button class="tw-seg tw-ts" data-s="'+s+'">'+(s>=60?(s/60)+'m':s+'s')+'</button>').join('')+'</div>'
           /* (#R265) …and the way to the END of the run, for a reader who wants the resting answer
              rather than the journey — it is the routing this file has always computed. */
-          +'<button class="tw-play tw-settle" aria-label="'+L('Run on until the water stops moving','水が動かなくなるまで進める','Bis zur Ruhe weiterrechnen','Считать, пока вода не остановится','Integrar hasta que el agua se detenga')+'">⏭</button>'
+          +'<button class="tw-play tw-settle" aria-label="'+L('Run on until the water stops moving','水が動かなくなるまで進める','Bis zur Ruhe weiterrechnen','Считать, пока вода не остановится','Integrar hasta que el agua se detenga')+('">'+icon('skip-forward')+'</button>')
         +'</div>'
         +'<div class="tw-clock" style="display:flex;justify-content:space-between;gap:8px;"><span class="tw-elapsed"></span><span class="tw-vol" style="opacity:.72;"></span></div>'
         +'<div style="display:flex;gap:5px;flex-wrap:wrap;">'
           +'<button class="tw-btn tw-undo" style="flex:1 1 46%;">↩ '+L('Undo','元に戻す','Rückgängig','Отменить','Deshacer')+'</button>'
           /* (#R211) 「配置した水は残して地形だけ戻す「地形をリセット」を追加」 */
-          +'<button class="tw-btn tw-resetT" style="flex:1 1 46%;">⛰ '+L('Reset terrain','地形をリセット','Gelände zurücksetzen','Сбросить рельеф','Reiniciar terreno')+'</button>'
+          +'<button class="tw-btn tw-resetT" style="flex:1 1 46%;">'+icon('mountain')+' '+L('Reset terrain','地形をリセット','Gelände zurücksetzen','Сбросить рельеф','Reiniciar terreno')+'</button>'
           /* (#R211) 「全消去→リセットに改名」 — 全消去 read as "delete everything on the map" */
-          +'<button class="tw-btn tw-reset" style="flex:1 1 100%;">✖ '+L('Reset','リセット','Zurücksetzen','Сброс','Reiniciar')+'</button>'
+          +'<button class="tw-btn tw-reset" style="flex:1 1 100%;">'+icon('close')+' '+L('Reset','リセット','Zurücksetzen','Сброс','Reiniciar')+'</button>'
         +'</div>'
         /* (#R211) the progress bar — hidden until something is actually computing */
         +'<div class="tw-prog" style="display:none;">'
@@ -2062,7 +2066,7 @@ export function terrainWater(HOST){
        transport is disabled — visibly, not silently — until there is water to pour into. */
     function syncFoot(){ if(!panel) return;
       const pp=panel.querySelector('.tw-pp'); if(!pp) return;
-      pp.textContent=pourT?'⏸':'▶';
+      pp.replaceChildren(iconNode(pourT?'pause':'play'));
       /* (#R261) ▶ pours the CONTINUOUS sources. With only one-shot volumes on the map there is
          nothing running to start, and the disabled title says which of the two cases it is. */
       /* ⚠ (#R265) ▶ IS LIVE WHENEVER THERE IS SOMETHING TO ADVANCE. With a steady-state solver a
@@ -2161,7 +2165,7 @@ export function terrainWater(HOST){
             +'<span class="tw-val"><input class="tw-num tw-lc" type="number" min="1" max="300" step="1" value="'+leveeCrest+'"><span style="opacity:.7;">m</span></span></label>'
           +'<label class="tw-row">'+L('Width','幅','Breite','Ширина','Ancho')
             +'<span class="tw-val"><input class="tw-num tw-lw" type="number" min="10" max="2000" step="10" value="'+leveeWidth+'"><span style="opacity:.7;">m</span></span></label>'
-          +((G&&thin)?('<div class="tw-blk" style="color:var(--text-muted);font-size:'+TW_FS_S+';">⚠ '
+          +((G&&thin)?('<div class="tw-blk" style="color:var(--text-muted);font-size:'+TW_FS_S+(';">'+icon('warning')+' ')
               +L('Thinner than the solver grid ('+Math.round(G.cellM)+' m cells) — it is built '+Math.round(G.cellM*3)+' m wide so the water cannot pass between the cells.',
                  '解像度（'+Math.round(G.cellM)+' m セル）より細いため、セルの隙間を水が抜けないよう幅 '+Math.round(G.cellM*3)+' m で構築します。',
                  'Dünner als das Rechengitter ('+Math.round(G.cellM)+' m) — gebaut mit '+Math.round(G.cellM*3)+' m.',
@@ -2275,7 +2279,7 @@ export function terrainWater(HOST){
                           'Höhenkacheln konnten nicht geladen werden — Verbindung prüfen und erneut versuchen.',
                           'Не удалось загрузить тайлы рельефа — проверьте соединение и повторите.',
                           'No se pudieron descargar los teselas de elevación — revise la conexión e inténtelo de nuevo.');
-    function _bldFail(){ setStat('⚠ '+_DEM_FAIL()); }
+    function _bldFail(){ setStat(icon('warning')+' '+_DEM_FAIL()); }
     /* ══ ⚠ (#R255) THE WORKING AREA MOVES. THE CAMERA DOES NOT ══════════════════════════════════════
        「地形編集・水流で水を置いた場所に画面を移動するのをやめろ。」 This used to `easeTo` the click
        and then wait 520 ms for the camera to land, because `build()` took its rectangle from

@@ -34,6 +34,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTables } from './tables.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 window._imCldrRegion=function(a2,lang){
   try{
     /* ⚠ (#R313 追記2) 追記1 widened this to accept M49 codes so the Atlas chips could name a
@@ -271,7 +272,7 @@ export function countriesUi(HOST){
   /* (#R167) moved verbatim to js/tables.js — see Architecture.md §3.1. */
   const {GDP,HDI,DEM,MILSPEND,LIFE,INTERNET,CAPITAL,CURRENCY,LANGS}=IntMapTables;
 
-  function flagFromISO2(a2){ if(!a2||a2.length!==2||a2==='-9')return'🏳️'; try{return a2.toUpperCase().replace(/./g,c=>String.fromCodePoint(127397+c.charCodeAt(0)));}catch(e){return'🏳️';} }
+  function flagFromISO2(a2){ if(!a2||a2.length!==2||a2==='-9')return''; try{return a2.toUpperCase().replace(/./g,c=>String.fromCodePoint(127397+c.charCodeAt(0)));}catch(e){return'';} }   /* (icon-system) no code → no flag: the record says nothing, and each display draws js/icons.js «flag» in its place */
 
   function loadCountryData(){
     if(HOST.countryDataPromise) return HOST.countryDataPromise;
@@ -628,7 +629,7 @@ export function countriesUi(HOST){
     const id=HOST.resolveCountryId(feat), s=HOST.countryStats[id], p=document.getElementById('country-info'),
           name=HOST.cName(s,feat.properties&&(feat.properties.NAME_EN||feat.properties.ADMIN||feat.properties.NAME));
     const haveAny = s && (s.pop||s.gdp||s.area||s.hdi||s.dem||s.milSpend);
-    p.innerHTML=`<div class="ci-name">${window.IntMapSafe.flag(s&&s.flag,'🏳️')+' '}${escC(name)}</div>
+    p.innerHTML=`<div class="ci-name">${((s&&s.flag)?window.IntMapSafe.flag(s.flag):icon('flag'))+' '}${escC(name)}</div>
       <div class="ci-row"><span>${HOST.t('statPop')} (${POP_YEAR})</span><b>${s&&s.pop?fmtNum(s.pop):HOST.t('dataNA')}</b></div>
       <div class="ci-row"><span>${HOST.t('statGdp')} (${GDP_YEAR})</span><b>${s&&s.gdp?HOST.fmtMoney(s.gdp):HOST.t('dataNA')}</b></div>
       <div class="ci-row"><span>${HOST.t('statGdpPPP')}</span><b>${s&&s.gdpPPP?HOST.fmtMoney(s.gdpPPP):HOST.t('dataNA')}</b></div>
@@ -695,7 +696,7 @@ export function countriesUi(HOST){
        compared is what the reader is about to see. English gains from the same rule: the card said
        «South America / South America» for all 41 South American rows before this round. */
     const _regRow=(a,b)=>(a||'—')+((b&&b!==a)?' / '+b:'');
-    const geo=sec('🌍 '+TR('Geography','地理','Geografie','География','Geografía'),[
+    const geo=sec(icon('world')+' '+TR('Geography','地理','Geografie','География','Geografía'),[
       /* ⚠ (#R424) THE SAME FIELD, THE OTHER SURFACE. The list sub-line was routed through
          `_regionName` by #R251; this row — the Region line of the country card a double-click
          opens — was left printing `s.region` raw, so every reader of every language read
@@ -715,28 +716,28 @@ export function countriesUi(HOST){
        HDI (UNDP) and the Democracy Index (EIU) have no WB annual series so they keep their own year. */
     const _ty=(typeof window!=='undefined'&&window._imTimeYear)||null; const YR=(def)=>_ty||def; const yrTag=()=>(_ty?` (${_ty})`:'');
     const _milB=(v)=>'$'+(Math.round(v*10)/10)+'B';
-    const econ=sec('💰 '+TR('Economy','経済','Wirtschaft','Экономика','Economía'),[
+    const econ=sec(icon('coin')+' '+TR('Economy','経済','Wirtschaft','Экономика','Economía'),[
       [((s._real||window._imTimeReal)?('GDP · '+TR('real 2011 int$','実質2011年国際ドル','real, int$ 2011','реальный, межд.$ 2011','real int$ 2011')):HOST.t('statGdp'))+` (${YR(GDP_YEAR)})`,HOST.fmtMoney(s.gdp)],
       s.gdpPPP?[HOST.t('statGdpPPP'),HOST.fmtMoney(s.gdpPPP)]:null,
       [HOST.t('statGdpPc')+yrTag(),HOST.fmtPc(s.gdppc)],
       s.gdppcPPP?[HOST.t('statGdpPcPPP'),HOST.fmtPc(s.gdppcPPP)]:null,
       [HOST.t('statCurrency'),s.currency||'—']
     ]);
-    const soc=sec('👥 '+TR('Society','社会','Gesellschaft','Общество','Sociedad'),[
+    const soc=sec(icon('users')+' '+TR('Society','社会','Gesellschaft','Общество','Sociedad'),[
       [HOST.t('statPop')+` (${YR(POP_YEAR)})`,fmtNum(s.pop)],
       s.hdi?[HOST.t('statHDI')+' (2022)',s.hdi.toFixed(3)]:null,
       s.lifeExp?[HOST.t('statLife')+yrTag(),s.lifeExp.toFixed(1)+' '+TR('yr','年','J','лет','a')]:null,
       s.internet?[HOST.t('statInet')+yrTag(),(Math.round(s.internet*10)/10)+'%']:null,
       [HOST.t('statLang'),s.languages||'—']
     ]);
-    const pol=sec('🏛 '+TR('Politics & defense','政治・防衛','Politik & Verteidigung','Политика и оборона','Política y defensa'),[
+    const pol=sec(icon('landmark')+' '+TR('Politics & defense','政治・防衛','Politik & Verteidigung','Политика и оборона','Política y defensa'),[
       s.dem?[HOST.t('statDem')+' (2023)',s.dem.toFixed(2)]:null,
       s.milSpend?[HOST.t('statMil')+` (${YR(2023)})`,_milB(s.milSpend)]:null,
       s.unMember!=null?[TR('UN member','国連加盟','UN-Mitglied','Член ООН','Miembro de la ONU'),yn(s.unMember)]:null
     ]);
     let histNote='';
     if(s._hist){ const yrs=(s._from?s._from.slice(0,4):'')+'–'+(s._to?s._to.slice(0,4):'');
-      histNote=`<div class="cp-histnote">🏛 <b>${TR('Former state','かつて存在した国家','Ehemaliger Staat','Бывшее государство','Estado desaparecido')}</b> · ${yrs}<br>${TR('GDP & population: Maddison Project (real GDP, 2011 int$). Other indicators: World Bank aggregate of the successor states.','GDP・人口: マディソン・プロジェクト（実質GDP・2011年国際ドル）。その他の指標: 後継国の世界銀行データを合算。','BIP & Bevölkerung: Maddison-Projekt (reales BIP, int$ 2011). Übrige: Weltbank-Summe der Nachfolgestaaten.','ВВП и население: проект Мэддисона (реальный ВВП, межд.$ 2011). Прочее: сумма стран-преемников (Всемирный банк).','PIB y población: Proyecto Maddison (PIB real, int$ 2011). Resto: suma del Banco Mundial de los estados sucesores.')} ${TR('Borders on the map follow the era.','地図の国境も当時のものになります。','Grenzen folgen der Epoche.','Границы на карте — той эпохи.','Las fronteras del mapa siguen la época.')}</div>`; }
+      histNote=`<div class="cp-histnote">${icon('landmark')} <b>${TR('Former state','かつて存在した国家','Ehemaliger Staat','Бывшее государство','Estado desaparecido')}</b> · ${yrs}<br>${TR('GDP & population: Maddison Project (real GDP, 2011 int$). Other indicators: World Bank aggregate of the successor states.','GDP・人口: マディソン・プロジェクト（実質GDP・2011年国際ドル）。その他の指標: 後継国の世界銀行データを合算。','BIP & Bevölkerung: Maddison-Projekt (reales BIP, int$ 2011). Übrige: Weltbank-Summe der Nachfolgestaaten.','ВВП и население: проект Мэддисона (реальный ВВП, межд.$ 2011). Прочее: сумма стран-преемников (Всемирный банк).','PIB y población: Proyecto Maddison (PIB real, int$ 2011). Resto: suma del Banco Mundial de los estados sucesores.')} ${TR('Borders on the map follow the era.','地図の国境も当時のものになります。','Grenzen folgen der Epoche.','Границы на карте — той эпохи.','Las fronteras del mapa siguen la época.')}</div>`; }
     return `<div id="cp-intro" class="cp-intro"></div>`+histNote+geo+econ+soc+pol;
   }
 
@@ -769,7 +770,7 @@ export function countriesUi(HOST){
     let s=HOST.countryStats[idStr];
     const name=HOST.cName(s,fallback);
     const popup=document.getElementById('country-popup');
-    document.getElementById('cp-title').innerHTML=window.IntMapSafe.flag(s&&s.flag,'🏳️')+' '+escC(name);
+    document.getElementById('cp-title').innerHTML=((s&&s.flag)?window.IntMapSafe.flag(s.flag):icon('flag'))+' '+escC(name);
     const body=document.getElementById('cp-body');
     window._cpCurrent={code:idStr,name:name};   /* read by the isolate + time-series buttons */
     const _isoSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg>';
@@ -829,7 +830,7 @@ export function countriesUi(HOST){
     _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name);
     if(s && s.latlng){ try{ _CM().flyTo({center:[s.latlng[1],s.latlng[0]],zoom:3.5,speed:1.0}); }catch(_){} }
     /* Asynchronously enrich and re-render (#R9b: keep the action buttons at the top) */
-    if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block'){ body.innerHTML=topBtns()+renderCountryDetailBody(HOST.countryStats[idStr]); _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name); } document.getElementById('cp-title').innerHTML=window.IntMapSafe.flag(s.flag,'🏳️')+' '+escC(HOST.cName(s,fallback)); });
+    if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block'){ body.innerHTML=topBtns()+renderCountryDetailBody(HOST.countryStats[idStr]); _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name); } document.getElementById('cp-title').innerHTML=(s.flag?window.IntMapSafe.flag(s.flag):icon('flag'))+' '+escC(HOST.cName(s,fallback)); });
     /* (#R94) let the time-machine refresh THIS card's numbers in place (no re-fly / no re-fetch) when the
        global clock moves — closes over the live idStr/body/topBtns for the currently-open country. */
     window._imCountryCardRefresh=()=>{ try{ if(popup.style.display!=='block'||!window._cpCurrent||window._cpCurrent.code!==idStr) return; const s2=HOST.countryStats[idStr]; if(s2&&body){ body.innerHTML=topBtns()+renderCountryDetailBody(s2); _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name); } }catch(_){} };
@@ -939,7 +940,7 @@ export function countriesUi(HOST){
       const subline=`${s.region?_regionName(s.region):''}${(s.region&&s.capital)?' / ':''}${escC(s.capital||'')}`;
       const rankHTML=_showRank?`<span class="stat-rank">${_rankOf.get(s.code)||'—'}</span>`:'';
       /* (#R115) native hover tooltip = the FULL country name (the .stat-name is ellipsized on narrow cards). */
-      html+=`<div class="stat-row ${active}" role="button" tabindex="0" data-ccn="${s.code}" title="${escC(HOST.cName(s)||'')}">${rankHTML}<span class="stat-flag">${window.IntMapSafe.flag(s.flag,'🏳️')}</span><div class="stat-main"><div class="stat-name">${escC(HOST.cName(s))}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div></div>`;
+      html+=`<div class="stat-row ${active}" role="button" tabindex="0" data-ccn="${s.code}" title="${escC(HOST.cName(s)||'')}">${rankHTML}<span class="stat-flag">${(s.flag?window.IntMapSafe.flag(s.flag):icon('flag'))}</span><div class="stat-main"><div class="stat-name">${escC(HOST.cName(s))}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div></div>`;
     });
     feed.innerHTML=html;
     feed.querySelectorAll('.stat-row').forEach(row=>{

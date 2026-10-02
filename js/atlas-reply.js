@@ -20,6 +20,7 @@ import { makeAtlasAnnotate } from './atlas-annotate.js';   /* (#R492) the in-rep
 import './safe-html.js';   /* (safe-output-single-module) the one output encoder — publishes globalThis.IntMapSafe */
 import { makeAtlasMarkdown } from './atlas-markdown.js';   /* (#R494) the block parser — see the header of that file */
 import { makeAtlasHighlight } from './atlas-highlight.js';  /* (#R494) code-block token colouring */
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 export function makeAtlasReply(HOST, CTX) {
   const L=CTX.L, esc=CTX.esc, fitTo=CTX.fitTo, fmtVal=CTX.fmtVal, highlight=CTX.highlight, note=CTX.note, warn=CTX.warn;
   /* (#R492) the in-reply notes. ⚠ MADE HERE, not at module scope: a js/ module may hold no unexported
@@ -470,11 +471,11 @@ export function makeAtlasReply(HOST, CTX) {
       return '<div class="atl-lc-row">'+shown
         +'<span class="atl-lc-rest" hidden>'+restList.map(card).join('')+'</span>'
         +'<button class="atl-lc-more" type="button" title="'+more+'" aria-label="'+more+'">+'+restList.length+'</button></div>'; }catch(_){ return ''; } }
-    function listHtml(title,list,metric){ if(!list||!list.length) return note('⚠ '+L('No matching countries / metric unavailable.','該当国なし／指標が利用できません。','Keine passenden Länder / Kennzahl nicht verfügbar.','Нет данных по показателю.','Sin países coincidentes / métrica no disponible.'));
+    function listHtml(title,list,metric){ if(!list||!list.length) return note(icon('warning')+' '+L('No matching countries / metric unavailable.','該当国なし／指標が利用できません。','Keine passenden Länder / Kennzahl nicht verfügbar.','Нет данных по показателю.','Sin países coincidentes / métrica no disponible.'));
       const painted=highlight(list.map(r=>r.code)); fitTo(list.map(r=>r.code));
       return '<div style="font-weight:600;margin:2px 0 4px;">'+esc(title)+'</div><ol style="margin:0;padding-left:22px;line-height:1.65;font-size:12px;">'
         +list.map(r=>'<li>'+esc(r.name)+' <span style="color:var(--text-muted);">'+esc(fmtVal(metric,r.val))+'</span></li>').join('')+'</ol>'
-        +(painted?'':warn('⚠ '+L('The map highlight could not be drawn (map still loading)','地図上のハイライトは描画できませんでした（地図読込中）','Kartenhervorhebung konnte nicht gezeichnet werden','Выделение на карте не нарисовано','El resaltado en el mapa no se pudo dibujar')));
+        +(painted?'':warn(L('The map highlight could not be drawn (map still loading)','地図上のハイライトは描画できませんでした（地図読込中）','Kartenhervorhebung konnte nicht gezeichnet werden','Выделение на карте не нарисовано','El resaltado en el mapa no se pudo dibujar')));
     }
   return { _atlBadSourceHost, _atlCleanUrl, _atlRelevantCards, _atlStanza, dropLeadTitle, linkCards, listHtml, mdMini };
 }

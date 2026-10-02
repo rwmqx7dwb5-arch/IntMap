@@ -21,6 +21,7 @@
  * ==========================================================================*/
 
 import { IntMapLang } from './lang-registry.js';
+import { iconNode } from './icons.js';   /* (icon-system) the one icon set — copied beside this file (vite.config.js STATIC_ASSETS) */
 window.IntMapLegalPage = (function () {
   'use strict';
 
@@ -119,7 +120,9 @@ window.IntMapLegalPage = (function () {
     built = true;
     var R = reg();
     var rows = (R && R.LANGS) ? R.LANGS : [{ code: 'en', label: 'English', html: 'en' }];
-    host.appendChild(el('span', 'pg-lang-globe', '\u{1F310}'));
+    var globe = el('span', 'pg-lang-globe');
+    globe.appendChild(iconNode('world'));   /* (icon-system) drawn by js/icons.js — it was the reader's emoji font's globe */
+    host.appendChild(globe);
     var sel = document.createElement('select');
     sel.id = 'pg-lang-select';
     rows.forEach(function (l) {

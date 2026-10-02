@@ -175,12 +175,12 @@ IntMapLang.define('zh-hans', {
     "nightSideOn":"开启（默认）— 让夜侧变暗并显示城市灯光",
     "optDark":"深色",
     "optLight":"浅色",
-    "proArchive":"🔒 十年时光回溯文件",
-    "proIntel":"🔒 俄・中在地一手来源情报",
-    "reportBugBtn":"🐞 回报错误",
+    "proArchive":"十年时光回溯文件",
+    "proIntel":"俄・中在地一手来源情报",
+    "reportBugBtn":"回报错误",
     "screenshotBtn":"地图屏幕撷取（隐藏控制项，保留图例）",
     "screenshotSaved":"已保存屏幕撷取 ✓",
-    "sendFeedbackBtn":"⭐ 传送意见回馈",
+    "sendFeedbackBtn":"传送意见回馈",
     "shareView":"分享此画面（复制链接）",
     "showRankOff":"关闭",
     "showRankOn":"开启（默认）",
@@ -207,7 +207,7 @@ IntMapLang.define('zh-hans', {
     "tkgIdx":"指数",
     "importGeoFile":"导入地图数据",
     "gisWorkbench":"数据与分析",
-    "viewKbd":"⌨ 检视键盘快捷键（或按 ?）",
+    "viewKbd":"检视键盘快捷键（或按 ?）",
     "viewScience":"每一项模拟如何运作 ↗",
     "viewSourcesPage":"开启数据来源页面 ↗",
     "wsHint":"新闻、国家、地图、图层与 Atlas 各自成为独立窗口，可自由移动、调整大小、收合与堆叠。你的版面配置会被保存。",
@@ -226,7 +226,7 @@ IntMapLang.define('zh-hans', {
       statPop:"人口", statGdp:"GDP（名目）", statGdpPc:"人均 GDP", statGdpPPP:"GDP（购买力平价）", statGdpPcPPP:"人均 GDP（购买力平价）", statArea:"面积", statDensity:"人口密度", statRegion:"地区", statCapital:"首都", statCurrency:"货币", statLang:"语言", statHDI:"人类发展指数", statDem:"民主指数", statMil:"国防支出", statLife:"平均寿命", statInet:"网络使用人口",
       details:"详细数据 ↗", loadingData:"正在加载国家数据…", dataNA:"无数据", noData:"查无国家数据。", sortGdp:"GDP", sortPop:"人口", sortArea:"面积", sortName:"A–Z", sortHDI:"HDI", sortMil:"军费", elev:"海拔", bearing:"方位", presetNone:"— 请选择 —", presetLbl:"距离默认", opacity:"不透明度", circumference:"圆周长", lblUnits:"度量单位", unitBoth:"公制＋英制", unitMetric:"仅公制", unitImperial:"仅英制", msPh:"搜索地球上任何地点…",
       spType:"类型", 
-      flat:"平面", globe:"地球仪", threeD:"⛰️ 3D", gridBtn:"🌐 经纬格线", gridLayer:"🌐 格线与标注", lblTempUnit:"温度", tempBoth:"°C＋°F", tempC:"仅 °C", tempF:"仅 °F", measureMenuBtn:"测量", measureDistBtn:"📏 距离／面积", drawBtn:"✏️ 绘制", vol3dBtn:"🧊 立体体积", radiusBtn:"⭕ 半径", objectsBtn:"🗂 对象", mScreenshot:"地图屏幕撷取", shareMenuBtn:"分享", shareLinkBtn:"分享／复制链接", layersBtn:"图层 ▾",
+      flat:"平面", globe:"地球仪", threeD:"3D", gridBtn:"经纬格线", gridLayer:"格线与标注", lblTempUnit:"温度", tempBoth:"°C＋°F", tempC:"仅 °C", tempF:"仅 °F", measureMenuBtn:"测量", measureDistBtn:"距离／面积", drawBtn:"绘制", vol3dBtn:"立体体积", radiusBtn:"半径", objectsBtn:"对象", mScreenshot:"地图屏幕撷取", shareMenuBtn:"分享", shareLinkBtn:"分享／复制链接", layersBtn:"图层 ▾",
       ctxDropPin:"放置图钉", ctxMeasureFrom:"从此开始测量", ctxPostHere:"发布到社区", ctxDistFrom:"与前一个图钉的距离", ctxCopy:"复制坐标", ctxClearPins:"移除所有图钉", ctxThisPoint:"此地点", coords:"坐标", depth:"深度", climate:"气候", tlMachine:"Chronos", 
       lyrEEZ:"专属经济海域／12海里", lyrShips:"实时船舶动态", lyrPlanes:"实时航班动态", lyrSats:"实时卫星", lyrThermal:"热异常（火点）", poiLabels:"地点、商家与设施", shipsZoomHint:"放大以加载实时船舶", aisNoKey:"实时船舶暂时无法显示 — 共用数据来源没有回应。", aisOutsideCoverage:"共用数据来源未涵盖这片海域 — 不是这里没有船，而是数据范围不到。在设置中填入你自己的 aisstream.io 密钥，即可看到全世界。", aisKeyLabel:"实时船舶动态（AISstream 密钥）", aisKeyHint:"选填。没有密钥也能从共用数据来源看到实时船舶。填入 aisstream.io 的免费密钥后，这个浏览器会直接接收全球实时串流，稍微更新一些。密钥仅保存在这个浏览器中。",
       filtCiv:"民用", filtMil:"军用", filtAll:"全部", trafficFilter:"筛选", lyrTime:"图层日期", thermWin24:"过去 24 小时", thermWin48:"过去 48 小时", thermWin72:"过去 72 小时",
@@ -412,15 +412,15 @@ IntMapLang.define('zh-hans', {
     '−10y': "−10年",   /* news-timeline.js */
     '−5y': "−5年",   /* news-timeline.js */
     /* seismic.js */
-    '⚠ Capped at 600 results — zoom into a sub-region for the rest': "⚠ 已限制为 600 笔结果 — 请放大到较小区域查看其余",   /* atlas-console.js */
-    '⚠ Wikidata is community-maintained, so coverage is uneven: a company nobody has entered is simply absent, and «the largest» means «the largest Wikidata has a revenue for». An ownership graph is not a market-share or influence graph.': "⚠ Wikidata 由社区维护，因此涵盖程度并不平均：没有人建档的公司就是不存在于此，而「最大」的意思是「Wikidata 有营收数据者之中最大」。持股关系图不等于市占率或影响力图。",   /* industry-web.js */
+    'Capped at 600 results — zoom into a sub-region for the rest': "已限制为 600 笔结果 — 请放大到较小区域查看其余",   /* atlas-console.js */
+    'Wikidata is community-maintained, so coverage is uneven: a company nobody has entered is simply absent, and «the largest» means «the largest Wikidata has a revenue for». An ownership graph is not a market-share or influence graph.': "Wikidata 由社区维护，因此涵盖程度并不平均：没有人建档的公司就是不存在于此，而「最大」的意思是「Wikidata 有营收数据者之中最大」。持股关系图不等于市占率或影响力图。",   /* industry-web.js */
     '✓ LANDED': "✓ 已降落",   /* flight-sim.js */
     '× CRASHED': "× 坠毁",   /* flight-sim.js */
     '⬡ = approximate extent (no official boundary exists — AI-traced outline)': "⬡＝概略范围（没有官方界线 — 由 AI 描绘）",   /* atlas-console.js */
     '⬡ = approximate extent (no official boundary exists)': "⬡＝概略范围（没有官方界线）",   /* atlas-console.js */
     '⬡ = approximate extent derived from web-verified boundary anchors (no official boundary exists for this region)': "⬡＝依据网络查证的边界锚点推得的概略范围（此区域没有官方界线）",   /* atlas-console.js */
-    '📍 Current map view': "📍 目前地图画面",   /* flight-sim.js */
-    '📍 Last flight end point': "📍 上次飞行终点",   /* flight-sim.js */
+    'Current map view': "目前地图画面",   /* flight-sim.js */
+    'Last flight end point': "上次飞行终点",   /* flight-sim.js */
     '1 psi — windows shatter, light injuries': "1 psi — 玻璃破碎、轻伤",   /* atlas-sims.js */
     '20 psi — total destruction': "20 psi — 完全摧毁",   /* atlas-sims.js */
     '3-D volume': "立体体积",   /* volume3d.js */
@@ -862,8 +862,8 @@ IntMapLang.define('zh-hans', {
     'Drag headers to reorder · click to sort': "拖动标题可重新排序・点击可排序",   /* stats-compare.js */
     'Drag term (B*)': "阻力项（B*）",   /* satellite-detail.js */
     'Drag the map normally. Pick a tool above to edit.': "照常拖动地图。请在上方选择工具以进行编辑。",   /* terrain-water.js */
-    'Drag the slider to move the time of day, or press ▶ to run it. ⛰ adds the shade the terrain itself casts. ◎ then a click on the map reports that spot’s sunlight hours over a whole year.': "拖动滑杆可改变一天中的时刻，或按 ▶ 播放。⛰ 会加入地形自身投下的阴影。按 ◎ 后点击地图，即可回报该处全年的日照时数。",   /* sims.js */
-    'Drag to look; use ◀ ▶ to turn (the map shows your facing).': "拖动可环顾四周；用 ◀ ▶ 转向（地图会显示你的朝向）。",   /* street-view.js */
+    'Drag the slider to move the time of day, or press {icon:play} to run it. {icon:mountain} adds the shade the terrain itself casts. ◎ then a click on the map reports that spot’s sunlight hours over a whole year.': "拖动滑杆可改变一天中的时刻，或按 {icon:play} 播放。{icon:mountain} 会加入地形自身投下的阴影。按 ◎ 后点击地图，即可回报该处全年的日照时数。",   /* sims.js */
+    'Drag to look; use ↺ ↻ to turn (the map shows your facing).': "拖动可环顾四周；用 ↺ ↻ 转向（地图会显示你的朝向）。",   /* street-view.js */
     'Drag to move all the borders that meet here': "拖动可一并移动在此交会的所有边界",   /* workspace.js */
     'Drag to resize': "拖动可调整大小",   /* workspace.js */
     'Draw / trace': "绘制／描绘",   /* workspace.js */
@@ -1424,9 +1424,9 @@ IntMapLang.define('zh-hans', {
     'No populated cities/towns within the radius (per OSM population tags)': "半径内没有有人居住的城镇（依 OSM 人口标记）",   /* atlas-console.js */
     'No precise boundary for': "没有精确界线：",   /* atlas-console.js */
     /* routing.js */
-    'No public-transit route here — the area may have no open transit data yet. Try 🚗 or 🚶 above.': "此处没有大众运输路线 — 该地区可能还没有开放的运输数据。请改用上方的 🚗 或 🚶。",   /* atlas-console.js */
+    'No public-transit route here — the area may have no open transit data yet. Try {icon:car} or {icon:walk} above.': "此处没有大众运输路线 — 该地区可能还没有开放的运输数据。请改用上方的 {icon:car} 或 {icon:walk}。",   /* atlas-console.js */
     'no published revenue': "未公布营收",   /* industry-web.js */
-    'No rail reachable here in that time (or the rail-data service is busy). Try a point nearer a station, or 🚗/🚶.': "在该时间内铁路无法到达此处（或铁路数据服务忙碌）。请改选靠近车站的地点，或使用 🚗／🚶。",   /* atlas-console.js */
+    'No rail reachable here in that time (or the rail-data service is busy). Try a point nearer a station, or {icon:car}/{icon:walk}.': "在该时间内铁路无法到达此处（或铁路数据服务忙碌）。请改选靠近车站的地点，或使用 {icon:car}／{icon:walk}。",   /* atlas-console.js */
     'No readable data on the active layers here. Turn a data layer on first.': "此处启用中的图层没有可读取的数据。请先开启一个数据图层。",   /* atlas-console.js */
     /* routing.js */
     'No route found (no road connection between these points).': "找不到路线（这两点之间没有道路连通）。",   /* atlas-console.js */
@@ -1628,7 +1628,7 @@ IntMapLang.define('zh-hans', {
     'Period': "周期",   /* satellite-detail.js satellites-live.js space.js */
     'photo: Planespotters.net': "照片：Planespotters.net",   /* aircraft-detail.js */
     'Pick a country on the map': "在地图上选择国家",   /* stats-compare.js */
-    'pick a date & time; buildings in view (zoom in) cast real shadows and the 3D scene is lit from the sun. Press ▶ to sweep the day.': "选择日期与时刻；视野内的建筑（请放大）会投下真实阴影，3D 场景也由太阳照明。按 ▶ 可扫过一整天。",   /* atlas-console.js */
+    'pick a date & time; buildings in view (zoom in) cast real shadows and the 3D scene is lit from the sun. Press {icon:play} to sweep the day.': "选择日期与时刻；视野内的建筑（请放大）会投下真实阴影，3D 场景也由太阳照明。按 {icon:play} 可扫过一整天。",   /* atlas-console.js */
     'Pick a point further away.': "请选择更远的地点。",   /* viewshed.js */
     /* routing.js */
     /* atlas-console.js */
@@ -1720,7 +1720,7 @@ IntMapLang.define('zh-hans', {
     'reachable': "可到达",   /* atlas-console.js drone-nav.js */
     'Reachable area': "可达范围",   /* map-tools.js viewshed.js */
     'Reachable area (drive/walk/cycle)': "可达范围（开车／步行／单车）",   /* tool-panel.js */
-    'Reachable area along the REAL road network (Valhalla / OpenStreetMap) — drive / walk / cycle, not a distance circle. Adjust mode & time in the 🎯 panel.': "依真实道路网（Valhalla／OpenStreetMap）计算的可达范围 — 开车／步行／单车，不是距离圆。可在 🎯 面板调整方式与时间。",   /* atlas-console.js */
+    'Reachable area along the REAL road network (Valhalla / OpenStreetMap) — drive / walk / cycle, not a distance circle. Adjust mode & time in the {icon:target} panel.': "依真实道路网（Valhalla／OpenStreetMap）计算的可达范围 — 开车／步行／单车，不是距离圆。可在 {icon:target} 面板调整方式与时间。",   /* atlas-console.js */
     'Reaches the sea': "流入海洋",   /* terrain-water.js */
     'Read and analyze this image. If it is a document, a maths/science problem, a table or text, transcribe it accurately and solve or explain it.': "请阅读并分析这张图片。若是文件、数学／科学题目、表格或文字，请正确转录并加以解答或说明。",   /* atlas-console.js */
     'Reading the feed…': "正在读取数据源…",   /* world-packs.js */
@@ -2177,7 +2177,7 @@ IntMapLang.define('zh-hans', {
     'The obstacle is close to the far end, so raising THIS antenna barely helps — raise the other one.': "障碍物靠近另一端，因此提高「这一端」的天线几乎没有帮助 — 请提高另一端。",   /* viewshed.js */
     'The orbit': "轨道",   /* satellite-detail.js */
     'The ownership statements could not be fetched this time, so no lines are drawn. That is a failed query, not an absence of ownership.': "这次无法取得持股关系的叙述，因此没有画出任何连接。这是查询失败，并不代表没有持股关系。",   /* industry-web.js */
-    'The parameters changed — press ▶ to recompute the intensity map.': "参数已变更 — 请按 ▶ 重新计算震度分布。",   /* seismic.js */
+    'The parameters changed — press {icon:play} to recompute the intensity map.': "参数已变更 — 请按 {icon:play} 重新计算震度分布。",   /* seismic.js */
     'The past 30 days': "过去 30 天",   /* monitors.js */
     'The previous run': "上次执行",   /* monitors.js */
     'the query took longer than 45 s': "查询超过 45 秒",   /* industry-web.js */
@@ -2473,10 +2473,10 @@ IntMapLang.define('zh-hans', {
     '(depth)': "（深度）",
     '＋ Add point': "＋ 新增点",
     '★ Saved': "★ 已收藏",
-    '🌐 Web': "🌐 网页",
-    '📍 Tap the map to choose where to post': "📍 点按地图选择发文位置",
-    '📖 Reader': "📖 阅读器",
-    '🔒 Only <b>Pro</b> users can add their own satellite imagery services (API integrations).': "🔒 只有 <b>Pro</b> 用户才能加入自己的卫星影像服务（API 整合）。",
+    'Web': "网页",
+    'Tap the map to choose where to post': "点按地图选择发文位置",
+    'Reader': "阅读器",
+    'Only <b>Pro</b> users can add their own satellite imagery services (API integrations).': "只有 <b>Pro</b> 用户才能加入自己的卫星影像服务（API 整合）。",
     '2022 UNDP': "2022 联合国开发计划署",
     '2022 World Bank': "2022 世界银行",
     '32 members': "32 个成员国",
@@ -2504,7 +2504,7 @@ IntMapLang.define('zh-hans', {
     'Color relief unavailable': "无法取得彩色地势图",
     'Computing rail reach…': "正在计算铁路可达范围…",
     'Could not add the submarine-cable layer': "无法加入海底电缆图层",
-    'Could not extract text — use “🌐 Web” above to open the page.': "无法撷取内文 — 请用上方的「🌐 网页」开启页面。",
+    'Could not extract text — use “{icon:world} Web” above to open the page.': "无法撷取内文 — 请用上方的「{icon:world} 网页」开启页面。",
     'Could not initialize contours': "无法初始化等高线",
     'Could not load 3D terrain': "无法加载 3D 地形",
     'Could not load fertility data': "无法加载生育率数据",
@@ -2626,7 +2626,7 @@ IntMapLang.define('zh-hans', {
     'Tap to highlight • long-press for criteria': "点按以标示 • 长按设置条件",
     'The satellite layer is unavailable': "卫星图层无法使用",
     'Thermal anomalies': "热异常",
-    'This site blocks embedding. Try “📖 Reader” or open it in a new tab.': "这个网站禁止内嵌。请改用「📖 阅读器」或在新分页开启。",
+    'This site blocks embedding. Try “{icon:book} Reader” or open it in a new tab.': "这个网站禁止内嵌。请改用「{icon:book} 阅读器」或在新分页开启。",
     'Top depth': "顶部深度",
     'Total fertility rate': "总生育率",
     'Tropic of Cancer (23.4°N)': "北回归线（23.4°N）",
@@ -2681,8 +2681,8 @@ IntMapLang.define('zh-hans', {
   "this service is in the update cycle and has not been read yet, so the map is not saying anything about this country until it has.": "此机关正在更新调度中，尚未取得；在取得之前，本地图对此国家不作任何陈述。",   /* (#R275) */
   "via WMO SWIC": "经 WMO SWIC",   /* (#R275) */
   "✓ Copied": "✓ 已复制",
-  "📍 Places": "📍 地点",
-  "🗓 Events": "🗓 事件",
+  "Places": "地点",
+  "World events": "事件",
   "Anonymous": "匿名",
   "Build the source": "建立震源",
   "Cargo": "货船",
@@ -2943,8 +2943,8 @@ IntMapLang.define('zh-hans', {
   "Click on the map:": "在地图上点击：",
   "Click that country on the map…": "在地图上点击那个国家…",
   "Skip": "略过",
-  "👥 Which has the larger population?": "👥 哪一个人口较多？",
-  "📐 Which is larger by area?": "📐 哪一个面积较大？",
+  "Which has the larger population?": "哪一个人口较多？",
+  "Which is larger by area?": "哪一个面积较大？",
   "Next →": "下一题 →",
   "Which country is this flag?": "这是哪一国的国旗？",
   "Which country is this shape?": "这是哪一国的形状？",
@@ -3159,8 +3159,8 @@ IntMapLang.define('zh-hans', {
   "Infectious (d)": "传染期（天）",
   "Immunity (mo)": "免疫（月）",
   "New outbreak": "重新开始",
-  "⏸ Pause": "⏸ 暂停",
-  "▶ Play": "▶ 播放",
+  "Pause": "暂停",
+  "Play": "播放",
   "No data right now — please try again in a moment.": "目前无法取得数据，请稍后再试。",
   "Source: World Bank · ": "来源：世界银行 · ",
   " · most recent value per country": "（各国最新值）",
@@ -3267,12 +3267,12 @@ IntMapLang.define('zh-hans', {
   "Calendar": "行事历",
   "Next new moon": "下一次新月",
   "Time zones (live clock)": "时区（实时时钟）",
-  "⚠ Weather & disaster warnings": "⚠ 气象与灾害警报",
-  "⚡ Energy mix": "⚡ 能源结构",
-  "🌊 Ocean currents": "🌊 洋流",
-  "🌊 Tides": "🌊 潮汐",
-  "🕸 Industry web": "🕸 产业关联网",
-  "🚢 Trade flows": "🚢 贸易流动",
+  "Weather & disaster warnings": "气象与灾害警报",
+  "Energy mix": "能源结构",
+  "Ocean currents": "洋流",
+  "Tides": "潮汐",
+  "Industry web": "产业关联网",
+  "Trade flows": "贸易流动",
   "3C 273 — the first quasar ever identified": "3C 273 — 人类确认的第一个类星体",
   "An educational model. In a real emergency, follow the instructions of the official authorities. It does not predict whether damage will occur. Keep your everyday preparations ready.": "教育用模型。实际灾害时请遵循官方机关的指示。本模型不预测是否会造成灾害。请平时就做好必要的准备。",
   "Andromeda (M31) — the nearest large galaxy": "仙女座星系（M31）— 最近的大型星系",
@@ -4207,7 +4207,7 @@ IntMapLang.define('zh-hans', {
   "integrated": "积分",   /* (#R267) */
   "flowing": "流动中",   /* (#R267) */
   "still flowing at the edge of the modelled area": "在计算范围边缘仍在流动",   /* (#R267) */
-  "still moving when the ⏭ budget ran out": "达到 ⏭ 计算上限时仍在流动",   /* (#R267) */
+  "still moving when the {icon:skip-forward} budget ran out": "达到 {icon:skip-forward} 计算上限时仍在流动",   /* (#R267) */
   "extended": "范围扩充",   /* (#R267) */
   "drawn at": "绘制解像度",   /* (#R267) */
   "cells with no DEM (closed)": "个保存格无高程数据（已封闭）",   /* (#R267) */
@@ -4216,7 +4216,7 @@ IntMapLang.define('zh-hans', {
   "The modelled area has reached its limit — water leaving its edge is counted, not drawn.": "计算范围已达上限；流出边缘的水只计入统计，不再绘制。",   /* (#R267) */
   "— when the water reached the front, on the run that drew it": "— 与画面同一次积分中水抵达前端的时刻",   /* (#R267) */
   "Run on until the water stops moving": "继续计算至水不再流动",   /* (#R267) */
-  "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. The same model runs the whole course: the lattice is extended in whichever direction the water goes, at the same cell size, so there is no second calculation and no second drawing downstream. ⏭ runs this model on until the water stops moving.": "您正在编辑真实高程数据。水以二维浅水方程序的局部惯性形式（Bates 2010；de Almeida 2012 的 q 中心化）进行时间积分，曼宁粗率 n = 0.035，因此洪峰需要多少时间就走多少时间。上游到下游是同一个模型：格网会沿水前进的方向以相同的格子尺寸延伸，因此下游并没有另一套计算或另一层绘制。⏭ 会让同一个模型继续跑到水不再流动为止。",
+  "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. The same model runs the whole course: the lattice is extended in whichever direction the water goes, at the same cell size, so there is no second calculation and no second drawing downstream. {icon:skip-forward} runs this model on until the water stops moving.": "您正在编辑真实高程数据。水以二维浅水方程序的局部惯性形式（Bates 2010；de Almeida 2012 的 q 中心化）进行时间积分，曼宁粗率 n = 0.035，因此洪峰需要多少时间就走多少时间。上游到下游是同一个模型：格网会沿水前进的方向以相同的格子尺寸延伸，因此下游并没有另一套计算或另一层绘制。{icon:skip-forward} 会让同一个模型继续跑到水不再流动为止。",
   "By area": "依地区",
   "cells have no elevation data and the water cannot enter them": "个网格没有高程数据，水无法进入",
   "Creoles & pidgins": "克里奥尔语与皮钦语",
@@ -6429,7 +6429,7 @@ IntMapLang.define('zh-hans', {
   "WHO published no Disease Outbreak News in this window.": "在这段期间内，WHO 没有发布 Disease Outbreak News。",   /* outbreaks.js (#R650) */
   "WHO published these about a region or the whole world, so they are listed and not placed.": "这些是 WHO 就某个区域或整个世界发布的，因此只列于列表，不标在地图上。",   /* outbreaks.js (#R650) */
   "Window ending": "期间结束于",   /* outbreaks.js (#R650) */
-  "▶ Tap a country on the map to start the outbreak there": "▶ 在地图上点击疫情开始的国家",
+  "Tap a country on the map to start the outbreak there": "在地图上点击疫情开始的国家",
   "1 dot ≈ ": "1 点 ≈ ",
   "a leading lab": "一家顶尖实验室",
   "active cases · red = infectious, orange = infected but not yet infectious": "名现症病例 · 红＝具传染性、橙＝已感染但尚未具传染性",

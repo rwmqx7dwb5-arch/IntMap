@@ -9,6 +9,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function communityBoard(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -75,7 +76,7 @@ export function communityBoard(HOST){
         }
         const el=HOST.ensureMapTooltip(); window.showMapTooltip(el);
         const p=f.properties;
-        window.setMapTooltipHTML(el,`<div style="color:#34c759;font-weight:600;font-size:13px;">💬 ${IntMapSafe.html(p.title)}</div><div style="line-height:1.4;margin-top:4px;color:var(--text-muted);font-size:11px;">${IntMapSafe.html(p.body||'')}</div>`);   /* (#R138 SEC) community post title/body are user-generated → escape (stored XSS on pin hover) */
+        window.setMapTooltipHTML(el,`<div style="color:#34c759;font-weight:600;font-size:13px;">${icon('chat')} ${IntMapSafe.html(p.title)}</div><div style="line-height:1.4;margin-top:4px;color:var(--text-muted);font-size:11px;">${IntMapSafe.html(p.body||'')}</div>`);   /* (#R138 SEC) community post title/body are user-generated → escape (stored XSS on pin hover) */
         HOST.positionTooltip(e.point);
       });
       _EV().onLayer('mouseleave','community-dots',()=>{
@@ -127,17 +128,17 @@ export function communityBoard(HOST){
         ${commAvatar(post.author)}
         <div class="comm-post-idn">
           <div class="comm-post-author">${HOST.escapeHtml(post.author||(IntMapLang.t(HOST.lang,'Anonymous','匿名','Anonym','Анонимно','Anónimo')))}</div>
-          <div class="comm-post-sub">${relTime(post.ts)}${edited} · <span class="comm-post-loc" role="button" tabindex="0" data-lat="${post.lat}" data-lng="${post.lng}">📍 ${post.lat.toFixed(1)}°, ${post.lng.toFixed(1)}°</span></div>
+          <div class="comm-post-sub">${relTime(post.ts)}${edited} · <span class="comm-post-loc" role="button" tabindex="0" data-lat="${post.lat}" data-lng="${post.lng}">${icon('pin')} ${post.lat.toFixed(1)}°, ${post.lng.toFixed(1)}°</span></div>
         </div></span>
-        <span class="comm-cat-tag" style="--cc:${cat.color}">${cat.emoji} ${commCatLabel(post.category||'general')}</span>
+        <span class="comm-cat-tag" style="--cc:${cat.color}">${icon(cat.icon)} ${commCatLabel(post.category||'general')}</span>
       </div>
       ${post.title?`<div class="comm-post-title">${HOST.escapeHtml(post.title)}</div>`:''}
       ${imgHtml}
       ${post.body?`<div class="comm-post-body">${linkify(post.body)}</div>`:''}
       <div class="comm-post-actions">
         <button class="vote-btn ${post.voted?'voted':''}" data-effect="outward" data-id="${post.id}" title="${IntMapLang.t(HOST.lang,'Upvote','役に立った','Hilfreich','Полезно','Útil')}">▲ ${post.votes||0}</button>
-        <button class="cmt-toggle" data-id="${post.id}">💬 ${cmts.length}</button>
-        <button class="locate-btn" data-id="${post.id}">🌐 ${HOST.t('commLocate')}</button>
+        <button class="cmt-toggle" data-id="${post.id}">${icon('chat')} ${cmts.length}</button>
+        <button class="locate-btn" data-id="${post.id}">${icon('world')} ${HOST.t('commLocate')}</button>
         ${mine?`<button class="edit-btn" data-id="${post.id}">${HOST.t('commEdit')}</button>`:''}
         <button class="report-btn" data-effect="outward" data-id="${post.id}" title="${IntMapLang.t(HOST.lang,'Report','通報','Melden','Пожаловаться','Denunciar')}">⚑</button>
         ${canDel?`<button class="del-btn" data-effect="destructive" data-id="${post.id}">${HOST.t('commDelete')}</button>`:''}
@@ -177,7 +178,7 @@ export function communityBoard(HOST){
   }
   function renderComposeCats(){
     const wrap=document.getElementById('compose-cats'); if(!wrap) return;
-    wrap.innerHTML=HOST.COMM_CATEGORIES.map(c=>`<button type="button" class="comm-cat-chip ${HOST.composeCat===c.id?'active':''}" data-cc="${c.id}" style="--cc:${c.color}">${c.emoji} ${commCatLabel(c.id)}</button>`).join('');
+    wrap.innerHTML=HOST.COMM_CATEGORIES.map(c=>`<button type="button" class="comm-cat-chip ${HOST.composeCat===c.id?'active':''}" data-cc="${c.id}" style="--cc:${c.color}">${icon(c.icon)} ${commCatLabel(c.id)}</button>`).join('');
     wrap.querySelectorAll('[data-cc]').forEach(b=>b.onclick=()=>{ HOST.composeCat=b.dataset.cc; renderComposeCats(); });
   }
   function openComposeModal(editPost){

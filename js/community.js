@@ -11,6 +11,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function community(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -38,12 +39,12 @@ export function community(HOST){
     /* New post + Hot/New/Top are a STICKY BOTTOM bar, always visible while the feed scrolls (#27). */
     cont.innerHTML=`<div class="comm-scroll" id="comm-scroll">
         <div class="comm-filters">
-          <div class="comm-search"><span>🔎</span><input type="text" id="comm-search" placeholder="${HOST.t('commSearchPh')}" value="${HOST.escapeHtml(HOST.commSearch)}"></div>
-          <button class="comm-inview ${HOST.commInView?'active':''}" id="comm-inview" title="${IntMapLang.t(HOST.lang,'Only posts in the current map view','地図の表示範囲内の投稿だけ','Nur Beiträge im aktuellen Kartenausschnitt','Только записи в текущей области карты','Sólo publicaciones en la vista actual del mapa')}">🧭 ${HOST.t('commInView')}</button>
+          <div class="comm-search"><span>${icon('search')}</span><input type="text" id="comm-search" placeholder="${HOST.t('commSearchPh')}" value="${HOST.escapeHtml(HOST.commSearch)}"></div>
+          <button class="comm-inview ${HOST.commInView?'active':''}" id="comm-inview" title="${IntMapLang.t(HOST.lang,'Only posts in the current map view','地図の表示範囲内の投稿だけ','Nur Beiträge im aktuellen Kartenausschnitt','Только записи в текущей области карты','Sólo publicaciones en la vista actual del mapa')}">${icon('compass')} ${HOST.t('commInView')}</button>
         </div>
         <div class="comm-cat-row">
           ${catChip('all',HOST.t('commCatAll'),'var(--primary-color)')}
-          ${HOST.COMM_CATEGORIES.map(c=>catChip(c.id,c.emoji+' '+HOST.commCatLabel(c.id),c.color)).join('')}
+          ${HOST.COMM_CATEGORIES.map(c=>catChip(c.id,icon(c.icon)+' '+HOST.commCatLabel(c.id),c.color)).join('')}
         </div>${loginHint}
         <div id="comm-list"></div>
       </div>
@@ -59,7 +60,7 @@ export function community(HOST){
          mobile collapse the sheet so the map is reachable, and guide with a toast. */
       HOST.pendingPostLoc=null; HOST.communityAddArmed=true;
       try{ if(window.IntMapDevice.compact() && window.__setDetent) window.__setDetent('peek',true); }catch(_){}   /* (#R107) 'mini' disabled → collapse to 'peek' (still frees the map) */
-      HOST.imToast(IntMapLang.t(HOST.lang,'📍 Tap the map to choose where to post','📍 地図をタップして投稿する場所を選んでください','📍 Tippe auf die Karte, um den Ort des Beitrags zu wählen','📍 Коснитесь карты, чтобы выбрать место публикации','📍 Toca el mapa para elegir dónde publicar'));
+      HOST.imToast(IntMapLang.t(HOST.lang,'Tap the map to choose where to post','地図をタップして投稿する場所を選んでください','Tippe auf die Karte, um den Ort des Beitrags zu wählen','Коснитесь карты, чтобы выбрать место публикации','Toca el mapa para elegir dónde publicar'));
     };
     cont.querySelectorAll('.comm-sort button').forEach(b=>b.onclick=()=>{ HOST.communitySort=b.dataset.sort; renderCommunity(); });
     cont.querySelectorAll('.comm-cat-chip').forEach(b=>b.onclick=()=>{ HOST.commCatFilter=b.dataset.catf; renderCommunity(); });

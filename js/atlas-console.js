@@ -64,6 +64,7 @@ import { capabilityRunners, unknownAction, capabilityEntries } from './atlas-cap
 import { makeAtlasMapCompose } from './atlas-map-compose.js';   /* (#R511) one map explanation in ONE call — numbered places with roles, arcs, fills, a frame and a legend the prose is linked to. ⚠ ON A LINE THAT WAS BLANK: this file is AT its shrink-only ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ), and scripts/js-reachability.mjs anchors its import scan at line start, so a new module cannot share a line. */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 const CAP_RUN = capabilityRunners(CAPABILITY_MODULES);   /* dispatch spelling → run, derived once from the entries (js/atlas-caps.js) */
 export function atlasConsole(HOST){
@@ -290,7 +291,7 @@ export function atlasConsole(HOST){
       if(best<0||bd>250) return '';   /* only when we are confident WHICH candidate is shown */
       const pick=o=>lx(o.n);
       const shown=pick(cands[best]); const others=cands.filter((_,i)=>i!==best).map(pick);
-      return '<div style="font-size:11px;color:var(--text-muted);margin:3px 0;line-height:1.5;border-left:2px solid var(--primary-color);padding-left:7px;">ℹ '
+      return ('<div style="font-size:11px;color:var(--text-muted);margin:3px 0;line-height:1.5;border-left:2px solid var(--primary-color);padding-left:7px;">'+icon('info')+' ')
         +L('“'+esc(rawName)+'” is an ambiguous name — I showed '+esc(shown)+'. Also possible: '+others.map(esc).join(', ')+'. Say e.g. “'+esc(others[0])+'” if you meant that one.',
            '「'+esc(rawName)+'」は同名の場所が複数あります。今回は'+esc(shown)+'を表示しました。他に'+others.map(esc).join('・')+'も。別の場所なら「'+esc(others[0])+'」のように指定してください。',
            '„'+esc(rawName)+'“ ist mehrdeutig — gezeigt: '+esc(shown)+'. Auch möglich: '+others.map(esc).join(', ')+'. Sonst z. B. „'+esc(others[0])+'“ sagen.',
@@ -1031,7 +1032,7 @@ export function atlasConsole(HOST){
     /* (#R43) failures must be VISIBLE — the user reported "実行したと言っている操作が実行されていない". `warn` renders
        in an attention colour and every action now returns a structured {ok,html} via R() so run() can report the
        TRUTH (which steps actually ran) instead of trusting the model's optimistic "say". */
-    const warn=s=>'<div style="font-size:11.5px;color:#ff9f0a;margin:3px 0;font-weight:600;">'+s+'</div>';
+    const warn=s=>'<div style="font-size:11.5px;color:#ff9f0a;margin:3px 0;font-weight:600;">'+icon('warning')+' '+s+'</div>';   /* (icon-system) a warning line draws its own mark — the ⚠ every caller used to spell at the front of its message */
     const R=(ok,html,extra)=>Object.assign({ok:!!ok,html:html||''},extra||null);   /* (#R119) extra e.g. {objectIds:[…]} — creating actions expose what they made */
     /* (#R199) ↳ js/atlas-reply.js — reply rendering — safe markdown, code/math, GFM tables, source cards.
        Moved whole; the 7 names below are what the rest of this file still calls. */
@@ -1185,13 +1186,13 @@ export function atlasConsole(HOST){
     function clearChoro(){ try{ for(const c in _choroState){ try{ GE().layers.setFeatureState({source:'nlq-src',id:c},{choroV:null}); }catch(_){} } }catch(_){} _choroState={}; _choroMetric=null; try{ _customScoreName=null; }catch(_){} }
     function drawChoro(metricKey0,order,color){ const _sp=metSpec(metricKey0); if(!_sp) return unknownMetric(metricKey0);
       const metricKey=_sp.key, m=_sp.m;   /* (#R740) resolved through the ONE resolver, so XMET (lifeExp/internet) shades too */
-      if(!geo()) return R(false, warn('⚠ '+L('Map data not ready yet','地図データが未準備です','Kartendaten noch nicht bereit','Данные карты не готовы','Datos del mapa no listos')));
+      if(!geo()) return R(false, warn(L('Map data not ready yet','地図データが未準備です','Kartendaten noch nicht bereit','Данные карты не готовы','Datos del mapa no listos')));
       /* (#R61) optional shading hue — honoured for REAL (setPaintProperty on the live layer) or honestly flagged. */
-      let cWarn=''; if(color!=null&&String(color).trim()!==''){ const pc=parseColor(color); if(pc) _choroRamp=rampFrom(pc); else cWarn=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(color)); }
-      clearHl(); clearChoro(); clearPolyHl(); clearLineHl(); if(!ensureChoroLayer()) return R(false, warn('⚠ '+L('Could not draw the map shading','地図の濃淡を描けませんでした','Karteneinfärbung fehlgeschlagen','Не удалось окрасить карту','No se pudo sombrear el mapa')));
+      let cWarn=''; if(color!=null&&String(color).trim()!==''){ const pc=parseColor(color); if(pc) _choroRamp=rampFrom(pc); else cWarn=warn(L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(color)); }
+      clearHl(); clearChoro(); clearPolyHl(); clearLineHl(); if(!ensureChoroLayer()) return R(false, warn(L('Could not draw the map shading','地図の濃淡を描けませんでした','Karteneinfärbung fehlgeschlagen','Не удалось окрасить карту','No se pudo sombrear el mapa')));
       try{ GE().layers.setPaint('nlq-choro','fill-color',_choroFillExpr(_choroRamp)); }catch(_){}
       const vals=[]; for(const code in countryStats){ const s=countryStats[code]; if(!isRankableCountry(s)) continue; let v=m.get(s); if(v==null||isNaN(v)) continue; if(m.log&&v<=0) continue; vals.push({code, raw:v, t:(m.log?Math.log(v):v)}); }
-      if(vals.length<3) return R(false, warn('⚠ '+L('Not enough data for this metric','この指標はデータ不足です','Zu wenig Daten','Недостаточно данных','Datos insuficientes')));
+      if(vals.length<3) return R(false, warn(L('Not enough data for this metric','この指標はデータ不足です','Zu wenig Daten','Недостаточно данных','Datos insuficientes')));
       let lo=Infinity,hi=-Infinity; vals.forEach(p=>{ lo=Math.min(lo,p.t); hi=Math.max(hi,p.t); }); const span=(hi-lo)||1; const bottom=(String(order||'')==='bottom'||String(order||'')==='reverse');
       vals.forEach(p=>{ let nv=(p.t-lo)/span; if(bottom) nv=1-nv; _choroState[String(p.code)]=nv; try{ GE().layers.setFeatureState({source:'nlq-src',id:String(p.code)},{choroV:nv}); }catch(_){} });
       _choroMetric=metricKey; try{ GE().camera.flyTo({zoom:Math.min(GE().camera.getZoom(),2.3),duration:600}); }catch(_){}
@@ -2328,7 +2329,7 @@ export function atlasConsole(HOST){
        _stopRun paints THIS same note so an in-flight abort that repaints it stays visually identical (no flicker). */
     /* (#R733) the answer above is where the turn RAN OUT, not where it finished. See _atlCompose. */
     function _cutNote(){ return '<div style="margin-top:6px;color:var(--text-muted);font-size:11.5px;">'+esc(L('This turn reached its working limit, so the answer above may be incomplete — anything asked for that is not described above was not done. Ask again for the missing part on its own.','このターンは作業の上限に達したため、上の回答は途中までの可能性があります——上に書かれていないことは実行されていません。足りない部分だけをもう一度指示してください。','Dieser Zug hat sein Arbeitslimit erreicht; die Antwort oben kann unvollständig sein — was oben nicht beschrieben ist, wurde nicht getan. Frag den fehlenden Teil einzeln nach.','Этот ход достиг рабочего предела, поэтому ответ выше может быть неполным — всё, что не описано выше, не было сделано. Спросите недостающее отдельно.','Este turno alcanzó su límite de trabajo, así que la respuesta puede estar incompleta — lo que no se describe arriba no se hizo. Pide la parte que falta por separado.'))+'</div>'; }
-    function _cancelledNote(){ return '<span style="color:var(--text-muted);font-size:11.5px;">⏹ '+esc(L('Stopped','停止しました','Angehalten','Остановлено','Detenido'))+'</span>'; } function _markCancelled(b){ TCONT.markCancelled(b,_cancelledNote()); try{ PROG.done(b); }catch(_){} try{ LIVE.end(b,'cancelled'); }catch(_){} }   /* (atlas-live-stream) a stopped turn keeps its draft, marked unfinished */   /* ⚠ (#R723) THE ORDER IS THE POINT: markCancelled REPLACES the live word with the Stopped note, and PROG.done takes that word away. Done first and the note would be appended below instead of standing where the work stopped. */   /* ⚠ (#R419) STOPPING A TURN IS NOT ERASING WHAT IT ALREADY DREW — every cancel path below used to paint this over the WHOLE bubble, which is how the reported transcript lost the three questions the reader had just answered. js/atlas-turn-continuity.js has the measurement. */
+    function _cancelledNote(){ return '<span style="color:var(--text-muted);font-size:11.5px;">'+icon('stop')+' '+esc(L('Stopped','停止しました','Angehalten','Остановлено','Detenido'))+'</span>'; } function _markCancelled(b){ TCONT.markCancelled(b,_cancelledNote()); try{ PROG.done(b); }catch(_){} try{ LIVE.end(b,'cancelled'); }catch(_){} }   /* (atlas-live-stream) a stopped turn keeps its draft, marked unfinished */   /* ⚠ (#R723) THE ORDER IS THE POINT: markCancelled REPLACES the live word with the Stopped note, and PROG.done takes that word away. Done first and the note would be appended below instead of standing where the work stopped. */   /* ⚠ (#R419) STOPPING A TURN IS NOT ERASING WHAT IT ALREADY DREW — every cancel path below used to paint this over the WHOLE bubble, which is how the reported transcript lost the three questions the reader had just answered. js/atlas-turn-continuity.js has the measurement. */
     const _GO_SEND_SVG='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg>';
     const _GO_STOP_SVG='<svg viewBox="0 0 24 24" width="20" height="20"><rect x="4.25" y="4.25" width="15.5" height="15.5" rx="3.4" fill="currentColor"/></svg>';   /* (#R150) "四角はほんの少し小さく": rect 17.5→15.5 in a 24 viewBox (rendered ≈14.6px→12.9px) — a gentle trim, still clearly a Stop square */
     /* (#R142) send ⇄ stop: while Atlas is generating a reply, the up-arrow SEND button becomes a red STOP square. */
@@ -2609,7 +2610,7 @@ export function atlasConsole(HOST){
         try{ const _cap=CAPS.resolve(a.type); const _args={}; Object.keys(a).forEach(k=>{ if(k!=='type'&&k.slice(0,2)!=='__') _args[k]=a[k]; });
           _ar=await EXEC.execute(_cap?_cap.id:a.type, _args, {source:'atlas', turnId:_curTurn, externalContent:a.__externalContent===true, confirmed:_confirmedBy(_cap?_cap.id:a.type,_args), signal:(_abortCtl?_abortCtl.signal:undefined)});   /* (#R801) two facts as execution context, never arguments: whether outside content has been in front of the model this turn (`_runOne` stamps it from js/atlas-agent.js's turn record; a chip or a replay carries no stamp and reads false), and whether THIS call is the reader's answer to a confirmation asked in an earlier turn. js/atlas-executor.js 4b reads both */
           r=RESULTS.toLegacy(_ar); }
-        catch(e){ r=R(false, warn('⚠ '+esc(actLabel(a))+': '+esc((e&&e.message)||'error'))); }
+        catch(e){ r=R(false, warn(esc(actLabel(a))+': '+esc((e&&e.message)||'error'))); }
         if(!r||typeof r!=='object') r=R(true, String(r||''));
         if(_ar){ try{ a.__result=_ar; if(_ar.status!=='completed') a.__status=_ar.status; }catch(_){} }
         /* ⚠ A STEP THAT IS WAITING ON THE USER IS NOT A FAILURE, AND MUST NOT BE REPAIRED AS ONE.
@@ -2942,14 +2943,14 @@ export function atlasConsole(HOST){
       /* label the pin with the country it falls in (best-effort, non-blocking) so it reads nicely */
       (async()=>{ try{ let nm=''; const cd=(typeof codeAtPoint==='function')?codeAtPoint(lng,lat):null;
           if(cd&&typeof countryStats!=='undefined'&&countryStats[cd]){ const s=countryStats[cd]; nm=(HOST.lang==='jp'?(s.nameJp||s.nameEn):s.nameEn)||''; }
-          if(nm&&_herePoint){ _herePoint.name=String(nm).slice(0,80); if(_lastPlace) _lastPlace.name=_herePoint.name; const hd=p.querySelector('.atl-here-hd'); if(hd) hd.textContent='📍 '+String(nm).slice(0,80)+' · '+lat.toFixed(3)+', '+lng.toFixed(3); } }catch(_){} })();
+          if(nm&&_herePoint){ _herePoint.name=String(nm).slice(0,80); if(_lastPlace) _lastPlace.name=_herePoint.name; const hd=p.querySelector('.atl-here-hd'); if(hd) hd.replaceChildren(iconNode('pin'),' '+String(nm).slice(0,80)+' · '+lat.toFixed(3)+', '+lng.toFixed(3)); } }catch(_){} })();
       const coordStr=lat.toFixed(3)+', '+lng.toFixed(3);
       /* ⚠⚠⚠ (#R392) THESE THREE USED TO BE FIXED SENTENCES — Hormuz, Lake Baikal and empty Gobi all opened
          with 「なぜこの辺りはこうなっているの？」, from the most location-specific gesture there is. They come
          from the starter chips' own pools now, measured around THE CLICKED POINT (the flyTo above takes
          900 ms, so the camera still shows the old view); #R309's three are the guaranteed tail in `HERE`. */
       let ex=[]; try{ ex=pointExamples(lng,lat,Math.max(GE().camera.getZoom(),5),3)||[]; }catch(_){}
-      READ.arrive('<div class="atl-here-hd" style="font-weight:600;margin-bottom:3px;">📍 '+coordStr+'</div>',
+      READ.arrive('<div class="atl-here-hd" style="font-weight:600;margin-bottom:3px;">'+icon('pin')+' '+coordStr+'</div>',
         L('Ask me anything about this spot — I know exactly where it is.','この地点について何でも聞いてください。正確な位置を把握しています。','Fragen Sie mich alles zu diesem Ort — ich kenne die genaue Position.','Спросите что угодно об этом месте — я знаю его точные координаты.','Pregúntame lo que sea sobre este lugar — sé exactamente dónde está.'),
         ex); }
     /* (#R62) external entry point: the AI-brief buttons all over IntMap now open ATLAS and run the brief inline

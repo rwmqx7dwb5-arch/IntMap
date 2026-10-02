@@ -16,6 +16,7 @@
 import { ownRelayUrl } from './proxy-fetch.js';   /* (own-fetch-relay) our own relays — the coverage tile's second way in */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function streetView(HOST){
   /* (#R173) 脱MapLibre 第7段階 — this module is written against the engine facade, never the raw renderer.
@@ -34,7 +35,7 @@ export function streetView(HOST){
          head/nav's own translucent --input-bg now composits over this solid base, not over the map. */
       panel.style.cssText='position:fixed;right:16px;bottom:64px;width:min(480px,92vw);height:min(360px,54vh);z-index:calc(var(--z-dropdown) + 100);display:none;flex-direction:column;background:var(--card-bg,#111);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:14px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
       panel.innerHTML='<div class="sv-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:7px 11px;background:var(--input-bg);cursor:move;">'
-        +'<span class="sv-title" style="flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🧍 '+LL('Street View','ストリートビュー','Street View','Просмотр улиц','Street View')+'</span>'
+        +'<span class="sv-title" style="flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+icon('person-standing')+' '+LL('Street View','ストリートビュー','Street View','Просмотр улиц','Street View')+'</span>'
         +'<button class="sv-ext" title="'+LL('Open in Google Maps','Googleマップで開く','In Google Maps öffnen','Открыть в Google Maps','Abrir en Google Maps')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;padding:2px 4px;">↗</button>'
         +'<button class="sv-close" title="'+LL('Close','閉じる','Schließen','Закрыть','Cerrar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;padding:2px 4px;">×</button></div>'
         /* (#R85b) heading controls — turn the view; the map marker's cone points the same way so you always see on the map which way you are looking */
@@ -48,7 +49,7 @@ export function streetView(HOST){
           +'<span style="font-size:9px;color:var(--text-muted);flex:0 0 auto;line-height:1.15;">'+LL('move here<br>= map syncs','移動＝<br>地図同期','bewegen<br>= Karte','движение<br>= карта','mover<br>= mapa')+'</span>'
         +'</div>'
         +'<div class="sv-body" style="flex:1 1 auto;position:relative;background:#000;min-height:0;"><iframe class="sv-if" style="width:100%;height:100%;border:0;display:block;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
-        +'<div class="sv-hint" style="position:absolute;left:0;right:0;bottom:0;font-size:10px;color:#ddd;background:rgba(0,0,0,0.5);padding:3px 8px;pointer-events:none;">'+LL('Drag to look; use ◀ ▶ to turn (the map shows your facing).','ドラッグで見回し／◀ ▶ で向きを変更（地図に向きを表示）。','Ziehen zum Umsehen; ◀ ▶ zum Drehen.','Тяните; ◀ ▶ — поворот (направление на карте).','Arrastra; ◀ ▶ para girar (dirección en el mapa).')+'</div></div>';
+        +'<div class="sv-hint" style="position:absolute;left:0;right:0;bottom:0;font-size:10px;color:#ddd;background:rgba(0,0,0,0.5);padding:3px 8px;pointer-events:none;">'+LL('Drag to look; use ↺ ↻ to turn (the map shows your facing).','ドラッグで見回し／↺ ↻ で向きを変更（地図に向きを表示）。','Ziehen zum Umsehen; ↺ ↻ zum Drehen.','Тяните; ↺ ↻ — поворот (направление на карте).','Arrastra; ↺ ↻ para girar (dirección en el mapa).')+'</div></div>';
       document.body.appendChild(panel); iframe=panel.querySelector('.sv-if');
       panel.querySelector('.sv-close').onclick=()=>close();   /* (#R151) route through close() so auto-shown coverage is turned off too */
       panel.querySelector('.sv-turn-l').onclick=()=>_rotateHere(-30);
@@ -140,7 +141,7 @@ export function streetView(HOST){
       const latS=(+lat).toFixed(6), lngS=(+lng).toFixed(6);
       try{ _setHere(+lng,+lat,hdg0); }catch(_){}
       try{ iframe.src='https://maps.google.com/maps?q=&layer=c&cbll='+latS+','+lngS+'&cbp=11,'+hdg0+',0,0,0&output=svembed'; }catch(_){}
-      const t=p.querySelector('.sv-title'); if(t) t.textContent='🧍 '+(label?String(label):(LL('Street View','ストリートビュー','Street View','Просмотр улиц','Street View')))+' · '+latS+', '+lngS;
+      const t=p.querySelector('.sv-title'); if(t) t.replaceChildren(iconNode('person-standing'),' '+(label?String(label):(LL('Street View','ストリートビュー','Street View','Просмотр улиц','Street View')))+' · '+latS+', '+lngS);
       const ext=p.querySelector('.sv-ext'); if(ext) ext.onclick=()=>{ try{ window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint='+latS+','+lngS,'_blank','noopener'); }catch(_){} };
       p.style.display='flex'; try{ if(typeof bringToFront==='function') bringToFront(p); }catch(_){}
       return true; }
@@ -221,17 +222,17 @@ export function streetView(HOST){
         if(!best) return {covered:false};
         const gl=_pxToLl(ox+best.x, oy+best.y, z); return {covered:true, lng:gl.lng, lat:gl.lat};
       }catch(_){ return null; } }
-    function _noCoverageToast(){ try{ imToast('🧍 '+LL('No Street View coverage here','ここにはストリートビューがありません','Hier ist kein Street View verfügbar','Здесь нет панорам Street View','No hay Street View aquí')); }catch(_){} }
+    function _noCoverageToast(){ try{ imToast(LL('No Street View coverage here','ここにはストリートビューがありません','Hier ist kein Street View verfügbar','Здесь нет панорам Street View','No hay Street View aquí')); }catch(_){} }
     /* (#R142) shown when the coverage tiles couldn't be read (even via proxy): the panorama still opens (the embed self-snaps
        to the nearest real pano) but we admit the exact coverage point is unverified — never a silent "moved to your click". */
-    function _coverageUnverifiedToast(){ try{ imToast('🧍 '+LL('Showing the nearest available panorama — exact Street View coverage couldn\'t be verified (a network filter or browser extension may be blocking Google\'s tiles)','最寄りのパノラマを表示中 — 正確なカバレッジを確認できませんでした（拡張機能やネットワークがGoogleのタイルを遮断している可能性）','Zeige das nächste verfügbare Panorama — die genaue Abdeckung ließ sich nicht prüfen (evtl. blockiert eine Erweiterung/das Netzwerk Googles Kacheln)','Показан ближайший доступный панорамный снимок — точное покрытие проверить не удалось (возможно, расширение или сеть блокируют тайлы Google)','Mostrando el panorama más cercano — no se pudo verificar la cobertura exacta (una extensión o red podría bloquear las teselas de Google)')); }catch(_){} }
+    function _coverageUnverifiedToast(){ try{ imToast(LL('Showing the nearest available panorama — exact Street View coverage couldn\'t be verified (a network filter or browser extension may be blocking Google\'s tiles)','最寄りのパノラマを表示中 — 正確なカバレッジを確認できませんでした（拡張機能やネットワークがGoogleのタイルを遮断している可能性）','Zeige das nächste verfügbare Panorama — die genaue Abdeckung ließ sich nicht prüfen (evtl. blockiert eine Erweiterung/das Netzwerk Googles Kacheln)','Показан ближайший доступный панорамный снимок — точное покрытие проверить не удалось (возможно, расширение или сеть блокируют тайлы Google)','Mostrando el panorama más cercano — no se pudo verificar la cobertura exacta (una extensión o red podría bloquear las teselas de Google)')); }catch(_){} }
     function coverage(on){ if(on===undefined) on=!_cov; on=!!on; if(on===_cov) return _cov; _cov=on;
       if(on){ addCoverageTiles();
         _covClick=e=>{ try{ open({lng:e.lngLat.lng,lat:e.lngLat.lat}); }catch(_){} };
         try{ GE().events.on('click',_covClick); GE().render.setCursor('crosshair'); }catch(_){}
         _covHint=document.createElement('div'); _covHint.id='sv-cov-hint';
         _covHint.style.cssText='position:fixed;left:50%;top:58px;transform:translateX(-50%);z-index:calc(var(--z-dropdown) + 50);background:rgba(18,28,44,0.92);color:#dbeaff;border:1px solid rgba(57,179,255,0.55);border-radius:20px;padding:6px 14px;font-size:12px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 18px rgba(0,0,0,0.35);';
-        _covHint.innerHTML='<span>🧍 '+LL('Street View mode — the light-blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モード — 水色の線がGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus — die hellblauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам — голубые линии это реальное покрытие Google; кликните для просмотра','Modo Street View — las líneas celestes son la cobertura real de Google; haz clic para abrir')+'</span><button aria-label="'+IntMapLang.t(HOST.lang,'Exit Street View','ストリートビューを終了')+'" id="sv-cov-off" style="border:none;background:rgba(57,179,255,0.28);color:#dbeaff;border-radius:12px;padding:3px 10px;cursor:pointer;font-size:11px;">×</button>';
+        _covHint.innerHTML='<span>'+icon('person-standing')+' '+LL('Street View mode — the light-blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モード — 水色の線がGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus — die hellblauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам — голубые линии это реальное покрытие Google; кликните для просмотра','Modo Street View — las líneas celestes son la cobertura real de Google; haz clic para abrir')+'</span><button aria-label="'+IntMapLang.t(HOST.lang,'Exit Street View','ストリートビューを終了')+'" id="sv-cov-off" style="border:none;background:rgba(57,179,255,0.28);color:#dbeaff;border-radius:12px;padding:3px 10px;cursor:pointer;font-size:11px;">×</button>';
         document.body.appendChild(_covHint); const off=_covHint.querySelector('#sv-cov-off'); if(off) off.onclick=()=>coverage(false);
         if(!_covStyled){ _covStyled=true; try{ GE().events.on('styledata',()=>{ if(_cov) setTimeout(()=>{ if(_cov) addCoverageTiles(); },250); }); }catch(_){} }   /* re-add over a basemap/theme switch */
       } else {

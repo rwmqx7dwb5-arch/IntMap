@@ -61,6 +61,7 @@ import './space-cosmos.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 /* (startup-lazy-layers) THE EXPLORER, FETCHED AT THE ZOOM FLOOR. The way in — the zoom-out the map can no
    longer spend, its integral and its gauge — and window.IntMapSpace itself are js/space-approach.js, which
@@ -1381,7 +1382,7 @@ export function spaceBody(HOST){
         /* ⚠ the bar's HTML is built ONCE (openView); only refreshChrome runs again. So this button is
            always in the DOM and its `display` is the state — a conditional in the template would
            simply never appear when the mode changed. */
-        +'<button class="sp-out" style="'+BTN+'display:none;">🪐 '+L('Solar system','太陽系','Sonnensystem','Солнечная система','Sistema solar')+'</button>'
+        +'<button class="sp-out" style="'+BTN+'display:none;">'+icon('planet')+' '+L('Solar system','太陽系','Sonnensystem','Солнечная система','Sistema solar')+'</button>'
         /* ══ (#R202) THE SCALE CONTROL SHOWS BOTH CHOICES ═════════════════════════════════════════
            「宇宙を探索で、実寸とモデル大に変えるボタンをもっとわかりやすくしろ。」
            It was ONE button carrying ONE label, and a lone label on a toggle is ambiguous by
@@ -1399,7 +1400,7 @@ export function spaceBody(HOST){
         /* (#R221) the handle the body list hides behind on a phone. It names what the picture is of,
            which is the one thing the horizontal strip never showed. `display:none` on a pointer
            machine — the column is still the column there. */
-        +'<button class="sp-bodyb" style="'+BTN+'">🪐 <span class="sp-bodyb-t"></span> ▾</button>'
+        +'<button class="sp-bodyb" style="'+BTN+('">'+icon('planet')+' <span class="sp-bodyb-t"></span> ▾</button>')
         /* (#R207) 「軌道をオンオフしたりできるように。また、各惑星の地名ラベルをオンオフできるように。」
            State switches, lit from the state by refreshChrome — same language as the scale segments. */
         /* ══ (#R216) SIX SWITCHES, ONE BUTTON ═════════════════════════════════════════════════════
@@ -1450,9 +1451,9 @@ export function spaceBody(HOST){
         +'<button class="sp-timeb" style="'+BTN+'display:none;white-space:nowrap;"><span class="sp-timeb-t">—</span></button>'
         +'<span class="sp-timebox" style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:5px;">'
         +'<button class="sp-live" style="'+BTN+'" title="'+S(L('Follow the app clock — the sky as it is right now','アプリの時計に合わせる（今この瞬間の空）','Der App-Uhr folgen — der Himmel wie er jetzt ist','Следовать часам приложения — небо прямо сейчас','Seguir el reloj de la app — el cielo de ahora mismo'))+'">● '+L('Live','ライブ','Live','Сейчас','En vivo')+'</button>'
-        +'<button class="sp-back" style="'+BTN+'" title="'+S(L('Slower','遅く','Langsamer','Медленнее','Más lento'))+'">⏪</button>'
-        +'<button class="sp-play" style="'+BTN+'" title="'+S(L('Play / pause','再生 / 一時停止'))+'">▶</button>'
-        +'<button class="sp-fwd" style="'+BTN+'" title="'+S(L('Faster','速く','Schneller','Быстрее','Más rápido'))+'">⏩</button>'
+        +'<button class="sp-back" style="'+BTN+'" title="'+S(L('Slower','遅く','Langsamer','Медленнее','Más lento'))+('">'+icon('rewind')+'</button>')
+        +'<button class="sp-play" style="'+BTN+'" title="'+S(L('Play / pause','再生 / 一時停止'))+('">'+icon('play')+'</button>')
+        +'<button class="sp-fwd" style="'+BTN+'" title="'+S(L('Faster','速く','Schneller','Быстрее','Más rápido'))+('">'+icon('fast-forward')+'</button>')
         /* any multiplier, typed. `sp-ratev` is what it currently is, in the unit the ladder speaks. */
         +'<label class="sp-ratebox" style="display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border-radius:8px;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.06);color:#f2f2f2;font-size:11.5px;">'
         +'<span style="opacity:.72;">'+L('Speed','速度','Tempo','Скорость','Velocidad')+'</span>'
@@ -1570,7 +1571,7 @@ export function spaceBody(HOST){
       if(tb){ const d=new Date(nowMs()), p2=(n)=>String(n).padStart(2,'0');
         tb.textContent=(live?'● ':'')+d.getUTCFullYear()+'-'+p2(d.getUTCMonth()+1)+'-'+p2(d.getUTCDate())
           +' '+p2(d.getUTCHours())+':'+p2(d.getUTCMinutes())+' UT'; }
-      const p=root.querySelector('.sp-play'); if(p) p.textContent=playing&&!live?'⏸':'▶';
+      const p=root.querySelector('.sp-play'); if(p) p.replaceChildren(iconNode(playing&&!live?'pause':'play'));
       refreshChrome();
     }
     /* ══ (#R202) WHICH BUTTON IS THE STATE ═══════════════════════════════════════════════════════
@@ -1628,7 +1629,7 @@ export function spaceBody(HOST){
         lv.style.color=live?'#bdf7d2':'#f2f2f2'; }
       const inp=root.querySelector('.sp-rate');
       if(inp&&document.activeElement!==inp){ const v=String(rate); if(inp.value!==v) inp.value=v; }
-      const rv=root.querySelector('.sp-ratev'); if(rv) rv.textContent=live?L('(live)','（ライブ）','(live)','(сейчас)','(en vivo)'):rateLabel(Math.abs(rate))+((rate<0)?' ◀':'');
+      const rv=root.querySelector('.sp-ratev'); if(rv) rv.textContent=live?L('(live)','（ライブ）','(live)','(сейчас)','(en vivo)'):rateLabel(Math.abs(rate))+((rate<0)?' ◂':'');
     }
     /* (#R221) the filter over the body sheet. It matches the row's own visible text, so it works for
        every section (planets, spacecraft, small bodies) and in every language without a second index;

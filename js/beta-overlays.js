@@ -18,6 +18,7 @@ import { loadData } from './data-door.js';   /* (data-one-door) the shipped data
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function betaOverlays(HOST){
   /* (#R251) the language helper and its ARRAY form — see `pickArgs` in js/lang-registry.js. The tuples below were bare array literals, which no instrument can see, so every language past the two they listed read English. */
@@ -376,7 +377,7 @@ export function betaOverlays(HOST){
       const V=window.IntMapVolcano;
       const cN=(V&&V.countryName)?V.countryName(p.c):(p.c||'');
       const tN=(V&&V.term)?V.term('type',p.t):(p.t||'');
-      const html='<div style="min-width:160px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);">🌋 '+(p.n||'')+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">'+(cN||'')+(p.e!=null&&p.e!=='null'?' · '+p.e+' m':'')+'<br>'+(tN||'')+'<br>'+yr+'</div></div>';
+      const html='<div style="min-width:160px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);">'+icon('volcano')+' '+(p.n||'')+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">'+(cN||'')+(p.e!=null&&p.e!=='null'?' · '+p.e+' m':'')+'<br>'+(tN||'')+'<br>'+yr+'</div></div>';
       try{ if(popup) popup.remove(); }catch(_){}
       try{ popup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'280px'}).setLngLat(f.geometry.coordinates).setHTML(html)); }catch(_){}
     }

@@ -33,6 +33,7 @@ import { PANDEMIC_PRESETS, createPandemicModel, defaultPandemicParams, describeP
 import { buildPandemicWorld, resolveOrigin } from './pandemic-world.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 (function () {
   const GE = () => IntMapGeoEngine;
@@ -267,7 +268,7 @@ import { IntMapLang } from './lang-registry.js';
      the same kind of refusal happens; the call still runs (CONSTITUTION.md §5).
      ⚠ `preset-unknown` is the same shape as an unknown metric and carries it too: the refusal
      already enumerates every preset, so another word for the same pathogen cannot help. */
-  function fail(msg, code, permanent) { return { ok: false, html: '⚠ ' + esc(msg), meta: { code: code || 'failed', permanent: permanent ? true : undefined } }; }
+  function fail(msg, code, permanent) { return { ok: false, html: (icon('warning')+' ') + esc(msg), meta: { code: code || 'failed', permanent: permanent ? true : undefined } }; }
 
   function originRefusal(o, W) {
     if (o.why === 'no-origin-given') return L('Say where the outbreak starts — a country, a place name, or coordinates.', '流行の開始地点を指定してください（国名・地名・座標のいずれか）。', 'Geben Sie an, wo der Ausbruch beginnt — Land, Ortsname oder Koordinaten.', 'Укажите, где начинается вспышка — страна, название места или координаты.', 'Indique dónde comienza el brote: un país, un nombre de lugar o coordenadas.');

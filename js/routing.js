@@ -873,8 +873,8 @@ export function routing(HOST){
       const onto=road?(LL(' onto ',' → ',' auf ',' на ',' hacia ')+road):'';
       let icon=ARW[mod]||'↑', text='';
       switch(type){
-        case 'depart': icon='🚩'; text=LL('Start','出発','Start','Старт','Salida')+(road?(' · '+road):''); break;
-        case 'arrive': icon='🏁'; text=LL('Arrive at destination','目的地に到着','Ziel erreicht','Прибытие','Llegar al destino')+(mod==='left'?(' — '+LL('on your left','左側','links','слева','a la izquierda')):mod==='right'?(' — '+LL('on your right','右側','rechts','справа','a la derecha')):''); break;
+        case 'depart': icon='⚐'; text=LL('Start','出発','Start','Старт','Salida')+(road?(' · '+road):''); break;
+        case 'arrive': icon='⚑'; text=LL('Arrive at destination','目的地に到着','Ziel erreicht','Прибытие','Llegar al destino')+(mod==='left'?(' — '+LL('on your left','左側','links','слева','a la izquierda')):mod==='right'?(' — '+LL('on your right','右側','rechts','справа','a la derecha')):''); break;
         case 'roundabout': case 'rotary': { icon='◯'; const ex=m.exit?_ord(m.exit):''; text=LL('At the roundabout take the ','ラウンドアバウトで','Im Kreisverkehr die ','На кольце ','En la rotonda toma la ')+(ex?ex+' ':'')+LL('exit','出口','Ausfahrt','съезд','salida')+onto; break; }
         case 'roundabout turn': case 'exit roundabout': case 'exit rotary': icon='◯'; text=(TURN[mod]||LL('Continue','道なり','weiter','далее','continúa'))+onto; break;
         case 'merge': icon='⇱'; text=LL('Merge','合流','Einfädeln','Перестроение','Incorpórate')+(TURN[mod]&&mod!=='straight'?(' ('+TURN[mod]+')'):'')+onto; break;

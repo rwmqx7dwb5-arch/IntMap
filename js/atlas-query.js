@@ -58,6 +58,7 @@ import { loadData } from './data-door.js';   /* (data-one-door) the shipped data
 import './safe-html.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 
 export function atlasQuery(HOST) {
@@ -1491,7 +1492,7 @@ export function atlasQuery(HOST) {
       h += line(esc(what + ' — ' + s.src + (s.origin ? (' · ' + originLabel(s.origin)) : '')));
     }
     for (const c of res.caps) {
-      h += line('⚠ ' + esc(L.arr(c.what) + ' — ' + L('limited to', '制限', 'begrenzt auf', 'ограничено до', 'limitado a')
+      h += line((icon('warning')+' ') + esc(L.arr(c.what) + ' — ' + L('limited to', '制限', 'begrenzt auf', 'ограничено до', 'limitado a')
         + ' ' + c.cap.toLocaleString() + (c.of ? (' / ' + c.of.toLocaleString()) : '')));
     }
     for (const n of res.notes) h += line(esc(n));
@@ -1510,7 +1511,7 @@ export function atlasQuery(HOST) {
          printed, counted off the registry rather than listed here. */
       if (res.error === 'unknown-column') {
         const tn = TABLES[res.table] ? tableName(TABLES[res.table]) : res.table;
-        return { ok: false, html: '<div style="font-size:11.5px;color:#ff9f0a;margin:3px 0;font-weight:600;">⚠ '
+        return { ok: false, html: ('<div style="font-size:11.5px;color:#ff9f0a;margin:3px 0;font-weight:600;">'+icon('warning')+' ')
           + esc(tn + ' · ' + (res.unknown || []).join(', ') + ' — '
             + L('no such column, so this query was NOT answered',
               'という列は無いため、この問い合わせには回答していません',
@@ -1522,7 +1523,7 @@ export function atlasQuery(HOST) {
             'Die Spalten dieser Tabelle sind', 'Столбцы этой таблицы', 'Las columnas de esta tabla son')
             + ': ' + (res.columns || []).join(', ')) + '</div>' };
       }
-      return { ok: false, html: '<div style="font-size:11.5px;color:#ff9f0a;margin:3px 0;font-weight:600;">⚠ '
+      return { ok: false, html: ('<div style="font-size:11.5px;color:#ff9f0a;margin:3px 0;font-weight:600;">'+icon('warning')+' ')
         + esc(L('This query names something IntMap does not have. The tables it does have are',
           'この問い合わせは IntMap に無いものを指しています。使える表は次のとおりです',
           'Diese Abfrage nennt etwas, das IntMap nicht hat. Vorhandene Tabellen',
@@ -1555,7 +1556,7 @@ export function atlasQuery(HOST) {
     /* ⚠⚠ THE HEADLINE HAS TO CARRY THE HOLE. A table of 69 rows under a question that asked for
        three conditions, when one of them could not be evaluated, reads as 69 answers — and the
        reader has no way to know unless it is said BEFORE the numbers, not under them. */
-    const gap = res.unapplied.length ? ('<div style="font-size:11.5px;color:#ff9f0a;margin:3px 0;font-weight:600;">⚠ '
+    const gap = res.unapplied.length ? (('<div style="font-size:11.5px;color:#ff9f0a;margin:3px 0;font-weight:600;">'+icon('warning')+' ')
       + esc(L('These conditions could NOT be evaluated in this session and are NOT reflected in the rows below',
         'このセッションでは次の条件を評価できず、下の行には反映されていません',
         'Diese Bedingungen konnten NICHT ausgewertet werden und sind unten NICHT berücksichtigt',

@@ -67,7 +67,8 @@ test('R157 #2 dispatch: GPT-decided-targets path validates ISO3 → real borders
      REAL BORDER, which reads as 「その場所は無い」; the reported case was Belgorod Oblast, which has a
      real administrative outline that Nominatim simply did not rank first. A message that blames the
      world for a lookup's failure sent the next turn off to re-verify a place never in doubt. */
-  assert.match(html, /return R\(false, warn\('⚠ '\+L\('None of those identifiers could be matched to a boundary in the data IntMap holds/,
+  /* (icon-system) warn() draws the warning mark itself now, so the message no longer starts with one */
+  assert.match(html, /return R\(false, warn\(L\('None of those identifiers could be matched to a boundary in the data IntMap holds/,
     'all-unresolved → honest ok:false + structured exec back to Terra');
   assert.match(html, /status:\(gUnresolved\.length\?'partial_or_failed':'ok'\)/, 'the mechanical execution-result status');
   // it STATES the interpretation used

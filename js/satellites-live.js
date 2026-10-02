@@ -80,6 +80,7 @@ import SATS_LAYER from './layers/dl-sats.js';   /* (layer-descriptor) the layer'
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function satellitesLive(HOST){
   /* ── (#R184) SGP4 ARRIVES WHEN THE LAYER DOES, NOT WHEN THE PAGE DOES ────────────────────────
@@ -917,7 +918,7 @@ export function satellitesLive(HOST){
     const obs=observer(), la=lookFrom(obs,f);
     const up=!!(la&&la.elDeg>0);
     const n0=(v)=>Math.round(v).toLocaleString(IntMapLang.locale(HOST.lang));
-    return '<div style="font-weight:700;margin-bottom:2px;">🛰 '+S(f.name||('#'+f.id))+'</div>'
+    return '<div style="font-weight:700;margin-bottom:2px;">'+icon('satellite')+' '+S(f.name||('#'+f.id))+'</div>'
       +'<div>'+S(L('Altitude','高度','Höhe','Высота','Altitud'))+': '+n0(f.altKm)+' km'
       +(f.velKmS?(' · '+f.velKmS.toFixed(2)+' km/s'):'')+'</div>'
       +(f.periodMin?('<div>'+S(L('Period','周期','Umlaufzeit','Период','Periodo'))+': '+f.periodMin.toFixed(1)+' min · '+S(L('incl.','傾斜角','Neig.','накл.','incl.'))+' '+(f.inclDeg==null?'—':f.inclDeg.toFixed(1)+'°')+'</div>'):'')

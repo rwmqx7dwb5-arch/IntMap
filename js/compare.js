@@ -29,6 +29,7 @@ import { IntMapLang } from './lang-registry.js';
 /* (time-compare-lapse) the main map's clock, and the factory this window makes its own clock with */
 import { IntMapTime, makeClock } from './chronos.js';
 import { MapState } from './map-state.js';   /* (map-state-store) this file owns the map state's `compare` field — see below */
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 /* ══ (time-compare-lapse) THE WINDOW'S TIME, BY IMPORT ═════════════════════════════════════════════════════
    The comparison window holds a clock of its own (below). The readers of that fact — the share link (through
@@ -922,7 +923,7 @@ export function compare(HOST){
     const cmpBtnLabel=()=>IntMapLang.t(HOST.lang,"Open compare view","比較ビューを開く","Vergleichsansicht öffnen","Открыть режим сравнения","Abrir la vista de comparación");
     function mountButton(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('btn-compare')) return;
       const wrap=document.createElement('div'); wrap.id='cmp-mount'; wrap.style.marginTop='4px';
-      wrap.innerHTML='<button id="btn-compare" class="ai-test-btn" style="width:100%;">🪟 <span>'+cmpBtnLabel()+'</span></button>';
+      wrap.innerHTML=('<button id="btn-compare" class="ai-test-btn" style="width:100%;">'+icon('columns')+' <span>')+cmpBtnLabel()+'</span></button>';
       dd.appendChild(wrap); wrap.querySelector('#btn-compare').onclick=open;
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     mountButton(); setTimeout(mountButton,1600);

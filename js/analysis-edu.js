@@ -12,6 +12,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function analysisEdu(HOST){
  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -33,19 +34,19 @@ export function analysisEdu(HOST){
        bare letters like "DE"); 4 new quiz types: country→capital, population duel, area duel,
        country silhouette. */
     const flagH=(s,h)=>window.imFlagHTML?window.imFlagHTML(s&&s.flag,h||20):((s&&s.flag)||'');
-    function header(){ return '<div class="tp-header" style="cursor:move;"><span class="tp-title">🎓 '+(IntMapLang.t(HOST.lang,"Quiz mode","クイズモード","Quizmodus","Режим викторины","Modo cuestionario"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'+
+    function header(){ return '<div class="tp-header" style="cursor:move;"><span class="tp-title">'+icon('graduation')+' '+(IntMapLang.t(HOST.lang,"Quiz mode","クイズモード","Quizmodus","Режим викторины","Modo cuestionario"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'+
       '<div style="font-size:11px;color:var(--text-muted);margin:0 0 8px;">'+(IntMapLang.t(HOST.lang,"Score ","スコア ","Punkte ","Счёт ","Puntuación "))+score+'/'+total+' · '+(IntMapLang.t(HOST.lang,"streak ","連続正解 ","Serie ","серия ","racha "))+streak+'</div>'; }
     function wire(){ panel.querySelector('.tp-close').onclick=closeP; try{ makeDraggable(panel,panel.querySelector('.tp-header')); }catch(_){} }
     function menu(){ const p=ensure(); mapQuizArmed=false; p.style.display='block';
       p.innerHTML=header()+
         '<div style="display:flex;flex-direction:column;gap:7px;">'+
-        '<button class="ai-test-btn" data-q="flag" style="width:100%;">🚩 '+(IntMapLang.t(HOST.lang,"Flag quiz (flag → country)","国旗クイズ（国旗→国名）","Flaggenquiz (Flagge → Land)","Викторина по флагам (флаг → страна)","Cuestionario de banderas (bandera → país)"))+'</button>'+
-        '<button class="ai-test-btn" data-q="capital" style="width:100%;">🏛 '+(IntMapLang.t(HOST.lang,"Capital quiz (capital → country)","首都クイズ（首都→国名）","Hauptstadtquiz (Hauptstadt → Land)","Викторина о столицах (столица → страна)","Cuestionario de capitales (capital → país)"))+'</button>'+
-        '<button class="ai-test-btn" data-q="capital2" style="width:100%;">🏙 '+(IntMapLang.t(HOST.lang,"Capital quiz (country → capital)","首都クイズ（国名→首都）","Hauptstadtquiz (Land → Hauptstadt)","Викторина о столицах (страна → столица)","Cuestionario de capitales (país → capital)"))+'</button>'+
-        '<button class="ai-test-btn" data-q="map" style="width:100%;">🗺 '+(IntMapLang.t(HOST.lang,"Map quiz (click the country)","地図クイズ（国を地図でクリック）","Kartenquiz (Land anklicken)","Викторина по карте (кликните по стране)","Cuestionario de mapa (haga clic en el país)"))+'</button>'+
-        '<button class="ai-test-btn" data-q="shape" style="width:100%;">⬛ '+(IntMapLang.t(HOST.lang,"Silhouette quiz (shape → country)","シルエットクイズ（国の形→国名）","Umrissquiz (Form → Land)","Викторина по силуэтам (форма → страна)","Cuestionario de siluetas (forma → país)"))+'</button>'+
-        '<button class="ai-test-btn" data-q="duelpop" style="width:100%;">👥 '+(IntMapLang.t(HOST.lang,"Population duel (which is bigger?)","人口対決（どちらが多い?）","Bevölkerungsduell (welches ist größer?)","Дуэль по населению (где больше?)","Duelo de población (¿cuál es mayor?)"))+'</button>'+
-        '<button class="ai-test-btn" data-q="duelarea" style="width:100%;">📐 '+(IntMapLang.t(HOST.lang,"Area duel (which is larger?)","面積対決（どちらが広い?）","Flächenduell (welches ist größer?)","Дуэль по площади (что больше?)","Duelo de superficie (¿cuál es mayor?)"))+'</button>'+
+        '<button class="ai-test-btn" data-q="flag" style="width:100%;">'+icon('flag')+' '+(IntMapLang.t(HOST.lang,"Flag quiz (flag → country)","国旗クイズ（国旗→国名）","Flaggenquiz (Flagge → Land)","Викторина по флагам (флаг → страна)","Cuestionario de banderas (bandera → país)"))+'</button>'+
+        '<button class="ai-test-btn" data-q="capital" style="width:100%;">'+icon('landmark')+' '+(IntMapLang.t(HOST.lang,"Capital quiz (capital → country)","首都クイズ（首都→国名）","Hauptstadtquiz (Hauptstadt → Land)","Викторина о столицах (столица → страна)","Cuestionario de capitales (capital → país)"))+'</button>'+
+        '<button class="ai-test-btn" data-q="capital2" style="width:100%;">'+icon('city')+' '+(IntMapLang.t(HOST.lang,"Capital quiz (country → capital)","首都クイズ（国名→首都）","Hauptstadtquiz (Land → Hauptstadt)","Викторина о столицах (страна → столица)","Cuestionario de capitales (país → capital)"))+'</button>'+
+        '<button class="ai-test-btn" data-q="map" style="width:100%;">'+icon('map')+' '+(IntMapLang.t(HOST.lang,"Map quiz (click the country)","地図クイズ（国を地図でクリック）","Kartenquiz (Land anklicken)","Викторина по карте (кликните по стране)","Cuestionario de mapa (haga clic en el país)"))+'</button>'+
+        '<button class="ai-test-btn" data-q="shape" style="width:100%;">'+icon('square')+' '+(IntMapLang.t(HOST.lang,"Silhouette quiz (shape → country)","シルエットクイズ（国の形→国名）","Umrissquiz (Form → Land)","Викторина по силуэтам (форма → страна)","Cuestionario de siluetas (forma → país)"))+'</button>'+
+        '<button class="ai-test-btn" data-q="duelpop" style="width:100%;">'+icon('users')+' '+(IntMapLang.t(HOST.lang,"Population duel (which is bigger?)","人口対決（どちらが多い?）","Bevölkerungsduell (welches ist größer?)","Дуэль по населению (где больше?)","Duelo de población (¿cuál es mayor?)"))+'</button>'+
+        '<button class="ai-test-btn" data-q="duelarea" style="width:100%;">'+icon('set-square')+' '+(IntMapLang.t(HOST.lang,"Area duel (which is larger?)","面積対決（どちらが広い?）","Flächenduell (welches ist größer?)","Дуэль по площади (что больше?)","Duelo de superficie (¿cuál es mayor?)"))+'</button>'+
         '<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-top:4px;">'+(IntMapLang.t(HOST.lang,"Each answer shows a learning card about the country.","正解すると、その国の解説カードが表示されます。","Nach jeder Antwort erscheint eine Lernkarte zum Land.","После каждого ответа показывается карточка с фактами о стране.","Cada respuesta muestra una ficha didáctica sobre el país."))+'</div></div>';
       wire(); p.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{ mode=b.getAttribute('data-q'); next(); }); }
     /* country silhouette → compact SVG (equirectangular, cos-lat corrected; antimeridian spanners skipped) */
@@ -72,7 +73,7 @@ export function analysisEdu(HOST){
     }catch(_){ return null; } }
     function card(s,ok,extra){ const f=(v)=>{ if(v==null) return '—'; if(v>=1e9) return (v/1e9).toFixed(2)+'B'; if(v>=1e6) return (v/1e6).toFixed(1)+'M'; return Number(Math.round(v)).toLocaleString(); };
       return '<div style="border:1px solid '+(ok?'rgba(52,199,89,0.5)':'rgba(255,69,58,0.5)')+';border-radius:12px;padding:10px 12px;margin-top:8px;background:'+(ok?'rgba(52,199,89,0.08)':'rgba(255,69,58,0.07)')+';font-size:12px;line-height:1.6;">'+
-        '<div style="font-weight:700;font-size:14px;">'+(ok?'⭕':'❌')+' '+flagH(s,18)+' '+esc(cname(s))+'</div>'+(extra||'')+
+        '<div style="font-weight:700;font-size:14px;">'+(ok?icon('check-circle'):icon('close'))+' '+flagH(s,18)+' '+esc(cname(s))+'</div>'+(extra||'')+
         '<div style="color:var(--text-muted);margin-top:3px;">'+(IntMapLang.t(HOST.lang,"Capital","首都","Hauptstadt","Столица","Capital"))+': '+esc(s.capital||'—')+' · '+(IntMapLang.t(HOST.lang,"Pop","人口","Bev.","Нас.","Pobl."))+': '+f(s.pop)+(s.gdp!=null?' · GDP: '+(typeof fmtMoney==='function'?fmtMoney(s.gdp):'$'+s.gdp+'B'):'')+(s.area!=null?' · '+f(s.area)+' km²':'')+'</div></div>'; }
     function next(){ const p=ensure(); const all=pool();
       if(all.length<8){ p.innerHTML=header()+'<div style="font-size:12px;color:var(--text-muted);">'+(IntMapLang.t(HOST.lang,"Country data is still loading — try again in a moment.","国データを読み込み中です。少し待ってから開いてください。","Länderdaten werden noch geladen — bitte gleich erneut versuchen.","Данные по странам ещё загружаются — попробуйте через мгновение.","Los datos de países aún se están cargando; inténtelo en un momento."))+'</div>'; wire(); return; }
@@ -80,7 +81,7 @@ export function analysisEdu(HOST){
       q={answer};
       if(mode==='map'){
         mapQuizArmed=true;
-        p.innerHTML=header()+'<div style="font-size:13px;font-weight:700;margin-bottom:6px;">🗺 '+(IntMapLang.t(HOST.lang,"Click on the map:","地図上でクリック:","Auf die Karte klicken:","Кликните по карте:","Haga clic en el mapa:"))+'</div>'+
+        p.innerHTML=header()+'<div style="font-size:13px;font-weight:700;margin-bottom:6px;">'+icon('map')+' '+(IntMapLang.t(HOST.lang,"Click on the map:","地図上でクリック:","Auf die Karte klicken:","Кликните по карте:","Haga clic en el mapa:"))+'</div>'+
           '<div style="font-size:17px;font-weight:800;color:var(--primary-color);margin-bottom:8px;">'+flagH(answer,18)+' '+esc(cname(answer))+'</div>'+
           '<div id="edu-map-res" style="font-size:12px;color:var(--text-muted);">'+(IntMapLang.t(HOST.lang,"Click that country on the map…","地図のその国をクリックしてください…","Dieses Land auf der Karte anklicken…","Кликните по этой стране на карте…","Haga clic en ese país en el mapa…"))+'</div>'+
           '<button class="ai-test-btn" id="edu-skip" style="width:100%;margin-top:8px;">'+(IntMapLang.t(HOST.lang,"Skip","スキップ","Überspringen","Пропустить","Omitir"))+'</button>';
@@ -99,7 +100,7 @@ export function analysisEdu(HOST){
         const win=metric(a)>=metric(b)?a:b;
         const fmt=(v)=>{ if(v==null) return '—'; if(v>=1e9) return (v/1e9).toFixed(2)+'B'; if(v>=1e6) return (v/1e6).toFixed(1)+'M'; return Number(Math.round(v)).toLocaleString(); };
         const unit=mode==='duelarea'?' km²':'';
-        p.innerHTML=header()+'<div style="font-size:12.5px;font-weight:700;margin-bottom:8px;">'+(mode==='duelpop'?(IntMapLang.t(HOST.lang,"👥 Which has the larger population?","👥 人口が多いのはどっち?","👥 Welches Land hat mehr Einwohner?","👥 Где население больше?","👥 ¿Cuál tiene más población?")):(IntMapLang.t(HOST.lang,"📐 Which is larger by area?","📐 面積が広いのはどっち?","📐 Welches Land ist flächenmäßig größer?","📐 Что больше по площади?","📐 ¿Cuál es mayor en superficie?")))+'</div>'+
+        p.innerHTML=header()+'<div style="font-size:12.5px;font-weight:700;margin-bottom:8px;">'+(mode==='duelpop'?((icon('users')+' '+IntMapLang.t(HOST.lang,"Which has the larger population?","人口が多いのはどっち?","Welches Land hat mehr Einwohner?","Где население больше?","¿Cuál tiene más población?"))):((icon('set-square')+' '+IntMapLang.t(HOST.lang,"Which is larger by area?","面積が広いのはどっち?","Welches Land ist flächenmäßig größer?","Что больше по площади?","¿Cuál es mayor en superficie?"))))+'</div>'+
           '<div style="display:flex;flex-direction:column;gap:6px;">'+[a,b].map((o,i)=>'<button class="ai-test-btn" data-d="'+i+'" style="width:100%;text-align:left;">'+flagH(o,16)+' '+esc(cname(o))+'</button>').join('')+'</div><div id="edu-res"></div>';
         wire();
         p.querySelectorAll('[data-d]').forEach(btn=>btn.onclick=()=>{
@@ -126,7 +127,7 @@ export function analysisEdu(HOST){
         ?'<div style="text-align:center;margin:6px 0 12px;">'+flagH(answer,56)+'</div>'
         :(mode==='shape')?shape
         :cap2?'<div style="font-size:17px;font-weight:800;color:var(--primary-color);text-align:center;margin:6px 0 10px;">'+flagH(answer,18)+' '+esc(cname(answer))+'</div>'
-        :'<div style="font-size:17px;font-weight:800;color:var(--primary-color);text-align:center;margin:6px 0 10px;">🏛 '+esc(answer.capital||'?')+'</div>';
+        :'<div style="font-size:17px;font-weight:800;color:var(--primary-color);text-align:center;margin:6px 0 10px;">'+icon('landmark')+' '+esc(answer.capital||'?')+'</div>';
       const title=(mode==='flag')?(IntMapLang.t(HOST.lang,"Which country is this flag?","この国旗はどこの国?","Zu welchem Land gehört diese Flagge?","Флаг какой страны это?","¿De qué país es esta bandera?"))
         :(mode==='shape')?(IntMapLang.t(HOST.lang,"Which country is this shape?","この形はどこの国?","Welches Land hat diese Form?","Какая страна имеет такую форму?","¿Qué país tiene esta forma?"))
         :cap2?(IntMapLang.t(HOST.lang,"What is this country’s capital?","この国の首都は?","Wie heißt die Hauptstadt dieses Landes?","Какая столица у этой страны?","¿Cuál es la capital de este país?"))

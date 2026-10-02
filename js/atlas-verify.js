@@ -18,6 +18,7 @@ import { jsonWithin } from './fetch-deadline.js';   /* (#R452) Nominatim, with a
 import { NominatimGate } from './nominatim-gate.js';   /* (#R489) …and behind the app's ONE one-a-second floor — js/nominatim-gate.js */
 import { makeAtlasGeoResolve } from './atlas-geo-resolve.js';   /* for its `featureNames` — the ONE rule for a Nominatim feature's names */
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function makeAtlasVerify(HOST, CTX) {
   const L=CTX.L, esc=CTX.esc;   /* ⚠ tests/atlas-console-kernel-checks.test.mjs #R199 ② requires the CTX rebinds to be the factory's FIRST statement */
@@ -124,7 +125,7 @@ export function makeAtlasVerify(HOST, CTX) {
         v.passed+' Berechnung'+(v.passed===1?'':'en')+' unabhängig verifiziert (exakte Arithmetik).',
         v.passed+' вычислени'+(v.passed===1?'е':'й')+' проверено независимо (точная арифметика).',
         v.passed+' cálculo'+(v.passed===1?'':'s')+' verificado(s) de forma independiente (aritmética exacta).'))+'</span></div>';
-      return '<div class="atl-check bad" style="font-size:11px;margin-top:8px;color:#d29922;display:flex;gap:6px;align-items:flex-start;"><span>⚠</span><span>'+esc(L(
+      return ('<div class="atl-check bad" style="font-size:11px;margin-top:8px;color:#d29922;display:flex;gap:6px;align-items:flex-start;"><span>'+icon('warning')+'</span><span>')+esc(L(
         'An independent re-computation did NOT match ('+v.failed.map(f=>f.label).join('; ')+') — the transcription or a step may be wrong; treat the result with caution.',
         '独立した再計算が一致しませんでした（'+v.failed.map(f=>f.label).join('; ')+'）。読み取りまたは計算の一部が誤っている可能性があるため、結果は慎重にご確認ください。',
         'Eine unabhängige Nachrechnung stimmte NICHT überein ('+v.failed.map(f=>f.label).join('; ')+') — Transkription/Schritt evtl. falsch.',
@@ -231,7 +232,7 @@ export function makeAtlasVerify(HOST, CTX) {
       return { mapped, unplaced, ambiguous, unplacedBy: by }; }
     function _atlMappingNoteHtml(v, src, meta){ meta=meta||{}; let h='';
       const n=v.mapped.length;
-      if(n) h+='<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">📍 '+L(
+      if(n) h+='<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">'+icon('pin')+' '+L(
         n+' place'+(n===1?'':'s')+' from this answer mapped — tap a pin for details',
         '本文の主要スポット '+n+' 件を地図にマッピングしました（ピンをタップで詳細）',
         n+' Ort'+(n===1?'':'e')+' aus dieser Antwort auf der Karte — Pin antippen',
@@ -247,7 +248,7 @@ export function makeAtlasVerify(HOST, CTX) {
       h+=_uline(_by.budget,L('Named in the answer but not placed (this answer reached its lookup limit — not a judgement about the place): ','本文に登場したが未配置（今回の照会上限に達したためで、その地点を特定できないという意味ではありません）: ','Genannt, aber nicht verortet (Abfragelimit dieser Antwort erreicht): ','Упомянуты, но не размещены (достигнут лимит запросов для этого ответа): ','Mencionados pero sin ubicar (esta respuesta alcanzó su límite de búsquedas): '));
       h+=_uline(_by.infra,L('Named in the answer but not placed (the map lookup did not answer — not a judgement about the place): ','本文に登場したが未配置（地図検索が応答しなかったためで、その地点を特定できないという意味ではありません）: ','Genannt, aber nicht verortet (Kartensuche antwortete nicht): ','Упомянуты, но не размещены (поиск по карте не ответил): ','Mencionados pero sin ubicar (la búsqueda en el mapa no respondió): '));
       if(meta.infraFail && !n) h+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;opacity:.85;">'+L('Map lookup was unavailable — places could not be verified on the map right now.','地図検索が利用できず、地点を地図上で検証できませんでした。','Kartensuche nicht verfügbar.','Поиск по карте недоступен.','La búsqueda en el mapa no está disponible.')+'</div>';
-      if(src && src.concentrated && !src.official.length) h+='<div style="font-size:10.5px;color:var(--warn-color,#c98a00);margin-top:4px;opacity:.95;">⚠ '+L(
+      if(src && src.concentrated && !src.official.length) h+='<div style="font-size:10.5px;color:var(--warn-color,#c98a00);margin-top:4px;opacity:.95;">'+icon('warning')+' '+L(
         'Sources here concentrate on one site ('+esc(src.dominant)+') — treat with caution and seek an independent or official source.',
         '出典が1サイト（'+esc(src.dominant)+'）に集中しています。独立した情報源や公的情報での裏取りを推奨します。',
         'Quellen konzentrieren sich auf eine Seite ('+esc(src.dominant)+') — mit Vorsicht behandeln.',

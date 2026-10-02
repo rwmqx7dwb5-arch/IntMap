@@ -25,6 +25,7 @@ import { IntMapTime } from './chronos.js';
 import { MapState, viewOf, timeOf } from './map-state.js';   /* (map-state-store) the map's one named state — the share link and its restore are its projections */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 
 /* ══ ⚠⚠⚠ (#R273) THE CLOSE MARK, ONE CHARACTER, EVERYWHERE ════════════════════════════════════════
@@ -2189,10 +2190,10 @@ export function layerPresets(HOST){
         setTimeout(()=>{ try{ if(p.ops) Object.keys(p.ops).forEach(k=>{ try{ setLayerOpacity(k,p.ops[k]); }catch(_){} }); }catch(_){} },900);
       },60); }
     function render(){ const host=document.getElementById('lyr-presets'); if(!host) return;
-      host.innerHTML='<button id="lp-save" data-effect="private" class="ai-test-btn" style="width:100%;">💾 <span>'+(IntMapLang.t(HOST.lang,"Save current layers as preset","現在のレイヤー構成を保存","Aktuelle Ebenen als Voreinstellung speichern","Сохранить текущие слои как пресет","Guardar las capas actuales como preajuste"))+'</span></button>'+
+      host.innerHTML=('<button id="lp-save" data-effect="private" class="ai-test-btn" style="width:100%;">'+icon('save')+' <span>')+(IntMapLang.t(HOST.lang,"Save current layers as preset","現在のレイヤー構成を保存","Aktuelle Ebenen als Voreinstellung speichern","Сохранить текущие слои как пресет","Guardar las capas actuales como preajuste"))+'</span></button>'+
         (presets.length?('<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;">'+presets.map((p,i)=>
           '<div style="display:flex;align-items:center;gap:6px;">'+
-          '<button data-ap="'+i+'" style="flex:1;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.2);color:var(--text-main);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">▶ '+window.IntMapSafe.html(p.name)+' <span style="color:var(--text-muted);font-size:10px;">('+(p.ids||[]).length+')</span></button>'+
+          '<button data-ap="'+i+'" style="flex:1;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.2);color:var(--text-main);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+icon('play')+' '+window.IntMapSafe.html(p.name)+' <span style="color:var(--text-muted);font-size:10px;">('+(p.ids||[]).length+')</span></button>'+
           '<button data-del="'+i+'" data-effect="destructive" title="'+(IntMapLang.t(HOST.lang,"Delete","削除","Löschen","Удалить","Eliminar"))+'" style="flex:0 0 auto;width:26px;height:26px;border:none;border-radius:7px;background:var(--input-bg);color:var(--text-muted);cursor:pointer;font-size:12px;">×</button></div>').join('')+'</div>'):'');
       const sv=host.querySelector('#lp-save');
       if(sv) sv.onclick=()=>{ const snap=capture(); if(!snap||!snap.ids.length){ try{ imToast(IntMapLang.t(HOST.lang,"No layers are on","表示中のレイヤーがありません","Keine Ebene ist eingeschaltet","Ни один слой не включён","No hay capas activas")); }catch(_){} return; }
@@ -3524,7 +3525,7 @@ export function geojsonUpload(HOST){
          on this branch: #btn-gis-panel existed for ~1 s and was gone. Adding one more id to that
          rescue list would fix this button and drop the next one, so the rescue reads the ATTRIBUTE
          instead, and the mark belongs to the button rather than to the list. */
-      wrap.innerHTML=`<hr style="border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;"><button id="btn-upload-geojson" data-lyr-tool="upload" class="ai-test-btn" style="width:100%;">📂 <span data-i18n="importGeoFile">Import map data</span></button><button id="btn-gis-panel" data-lyr-tool="upload" class="ai-test-btn" style="width:100%;margin-top:5px;"><span data-i18n="gisWorkbench">Data &amp; analysis</span></button><div id="ugj-list" style="margin-top:5px;"></div>`;
+      wrap.innerHTML=`<hr style="border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;"><button id="btn-upload-geojson" data-lyr-tool="upload" class="ai-test-btn" style="width:100%;">${icon('folder')} <span data-i18n="importGeoFile">Import map data</span></button><button id="btn-gis-panel" data-lyr-tool="upload" class="ai-test-btn" style="width:100%;margin-top:5px;"><span data-i18n="gisWorkbench">Data &amp; analysis</span></button><div id="ugj-list" style="margin-top:5px;"></div>`;
       dd.appendChild(wrap); listEl=wrap.querySelector('#ugj-list');
       wrap.querySelector('#btn-upload-geojson').onclick=()=>fileInput.click();
       /* (#R729) the operating surface for everything that was imported or computed. The module is
@@ -3866,8 +3867,8 @@ export function share(HOST){
     function link(){ return (window.IntMapBookmark&&window.IntMapBookmark.link)?window.IntMapBookmark.link():location.href; }
     function copyText(btn,text,field,label){ return async()=>{ let ok=false;
       try{ await navigator.clipboard.writeText(text()); ok=true; }catch(_){ try{ field.select(); ok=document.execCommand('copy'); }catch(__){} }
-      btn.textContent=ok?('✓ '+L('Copied!','コピー完了','Kopiert!','Скопировано!','¡Copiado!')):('⚠ Ctrl+C');
-      setTimeout(()=>{ btn.textContent=label(); },1900); }; }
+      btn.replaceChildren(iconNode(ok?'check':'warning'),' '+(ok?L('Copied!','コピー完了','Kopiert!','Скопировано!','¡Copiado!'):'Ctrl+C'));
+      setTimeout(()=>{ btn.replaceChildren(iconNode('clipboard'),' '+label()); },1900); }; }   /* (icon-system) the copy button's glyph is drawn here; label() is its words */
     function loadEmbedTab(){
       if(!embedLoad) embedLoad=import('./embed-mode.js').then(m=>(embedTab=m.createEmbedTab({ link, t, copy:copyText })))
         .catch(e=>{ embedLoad=null; throw e; });   /* a failed fetch is tried again on the next open, not remembered */
@@ -3892,14 +3893,14 @@ export function share(HOST){
         'Включено: позиция, зум, проекция, базовая карта, все активные слои, время и режим сравнения.',
         'Incluye: posición, zoom, proyección, mapa base, todas las capas activas, viaje en el tiempo y comparación.');
       panel.innerHTML='<button class="sh-x" title="'+t('close')+'">×</button>'
-        +'<h4>🔗 '+L('Share this view','このビューを共有','Diese Ansicht teilen','Поделиться видом','Compartir esta vista')+'</h4>'
+        +'<h4>'+icon('link')+' '+L('Share this view','このビューを共有','Diese Ansicht teilen','Поделиться видом','Compartir esta vista')+'</h4>'
         +'<div class="sh-tabs" role="tablist">'
           +'<button class="sh-tab" type="button" role="tab" data-tab="link">'+t('shareTabLink')+'</button>'
           +'<button class="sh-tab" type="button" role="tab" data-tab="embed">'+t('shareTabEmbed')+'</button></div>'
         +'<div class="sh-pane" data-pane="link" role="tabpanel">'
           +'<div style="font-size:11.5px;color:var(--text-muted);">'+L('Anyone who opens this link sees the map exactly as you do now.','このリンクを開くと、今あなたが見ている状態がそのまま再現されます。','Wer den Link öffnet, sieht die Karte genau wie Sie jetzt.','Открывший ссылку увидит карту точно как вы сейчас.','Quien abra el enlace verá el mapa tal como lo ves ahora.')+'</div>'
-          +'<div class="sh-row"><input class="sh-url" type="text" readonly value="'+String(lk).replace(/"/g,'&quot;')+'"><button class="sh-btn sh-copy">📋 '+L('Copy','コピー','Kopieren','Копировать','Copiar')+'</button></div>'
-          +(navigator.share?('<div class="sh-row"><button class="sh-btn sec sh-native" style="flex:1;">📤 '+L('Share…','共有…','Teilen…','Поделиться…','Compartir…')+'</button></div>'):'')
+          +'<div class="sh-row"><input class="sh-url" type="text" readonly value="'+String(lk).replace(/"/g,'&quot;')+'"><button class="sh-btn sh-copy">'+icon('clipboard')+' '+L('Copy','コピー','Kopieren','Копировать','Copiar')+'</button></div>'
+          +(navigator.share?('<div class="sh-row"><button class="sh-btn sec sh-native" style="flex:1;">'+icon('share')+' '+L('Share…','共有…','Teilen…','Поделиться…','Compartir…')+'</button></div>'):'')
           +'<div class="sh-inc">'+inc+'</div></div>'
         +'<div class="sh-pane" data-pane="embed" role="tabpanel"></div>';
       const urlEl=panel.querySelector('.sh-url'), embedPane=panel.querySelector('.sh-pane[data-pane="embed"]');
@@ -3910,13 +3911,13 @@ export function share(HOST){
       if(tab==='link'){ try{ urlEl.focus(); urlEl.select(); }catch(_){} }
       panel.querySelector('.sh-x').onclick=close;
       const copyBtn=panel.querySelector('.sh-copy');
-      copyBtn.onclick=copyText(copyBtn,()=>lk,urlEl,()=>'📋 '+L('Copy','コピー','Kopieren','Копировать','Copiar'));
+      copyBtn.onclick=copyText(copyBtn,()=>lk,urlEl,()=>L('Copy','コピー','Kopieren','Копировать','Copiar'));
       const nb=panel.querySelector('.sh-native'); if(nb) nb.onclick=()=>{ try{ navigator.share({title:'IntMap',url:lk}); }catch(_){} };
       let built=null;
       panel.querySelectorAll('.sh-tab').forEach(b=>{ b.onclick=()=>{ try{ embedTab&&embedTab.stopPreview(); }catch(_){}
         show(b.dataset.tab); if(b.dataset.tab==='embed'&&built) built.refresh(); }; });   /* the map may have moved since the panel opened */
       return loadEmbedTab().then(c=>{ if(o.tab==='embed') c.embed(o); built=c.render(embedPane); return true; })
-        .catch(()=>{ embedPane.textContent='⚠ '+t('embedUnavailable'); return false; });
+        .catch(()=>{ embedPane.replaceChildren(iconNode('warning'),' '+t('embedUnavailable')); return false; });
     }
     return { open, close, link, embed };
   })();

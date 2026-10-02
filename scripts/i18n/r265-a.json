@@ -1,5 +1,5 @@
 {
-  "_": "(#R265) The terrain & water tool stopped being a steady-state model: the clock now drives a 2-D shallow-water solve, ⏭ jumps to the resting answer, and the traced course reports when the water arrives. These are the strings that came with it. Columns: de, ru, es, fr, ko, zh-Hant.",
+  "_": "(#R265) The terrain & water tool stopped being a steady-state model: the clock now drives a 2-D shallow-water solve, jumps to the resting answer, and the traced course reports when the water arrives. These are the strings that came with it. Columns: de, ru, es, fr, ko, zh-Hant.",
 
   "front": ["Front", "фронт", "frente", "front", "선단", "前緣"],
   "Flow": ["Strömung", "Течение", "Flujo", "Écoulement", "흐름", "水流"],

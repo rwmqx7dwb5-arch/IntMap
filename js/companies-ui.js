@@ -13,6 +13,7 @@ import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTables } from './tables.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function companiesUi(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -613,7 +614,7 @@ export function companiesUi(HOST){
     });
     cards+='</div>';
     /* (#R20) top-level Places | Events switch, then the existing category nav */
-    const seg=`<div class="dash-nav"><button class="dash-nav-btn active" data-im-click="dashView" data-im-arg="places">${IntMapLang.t(HOST.lang,'📍 Places','📍 場所','📍 Orte','📍 Места','📍 Lugares')}</button><button class="dash-nav-btn" data-im-click="dashView" data-im-arg="events">${IntMapLang.t(HOST.lang,'🗓 Events','🗓 出来事','🗓 Ereignisse','🗓 События','🗓 Eventos')}</button></div>`;
+    const seg=`<div class="dash-nav"><button class="dash-nav-btn active" data-im-click="dashView" data-im-arg="places">${(icon('pin')+' '+IntMapLang.t(HOST.lang,'Places','場所','Orte','Места','Lugares'))}</button><button class="dash-nav-btn" data-im-click="dashView" data-im-arg="events">${(icon('calendar')+' '+IntMapLang.t(HOST.lang,'World events','出来事','Ereignisse','События','Eventos'))}</button></div>`;
     const nav=`<div class="dash-nav" id="dash-nav"><button class="dash-nav-btn ${HOST.activeDashCategories.has('mil')?'active':''}" data-im-click="dashCategory" data-im-arg="mil">${dict.dashCatMil}</button><button class="dash-nav-btn ${HOST.activeDashCategories.has('tech')?'active':''}" data-im-click="dashCategory" data-im-arg="tech">${dict.dashCatTech}</button><button class="dash-nav-btn ${HOST.activeDashCategories.has('maritime')?'active':''}" data-im-click="dashCategory" data-im-arg="maritime">${dict.dashCatMar}</button><button class="dash-nav-btn ${HOST.activeDashCategories.has('geo')?'active':''}" data-im-click="dashCategory" data-im-arg="geo">${dict.dashCatGeo}</button></div>`;
 /* ⚠ SEC: A VALUE INTERPOLATED INTO AN EVENT ATTRIBUTE HAS BECOME JAVASCRIPT SOURCE.
      Each attribute rewritten here carried a runtime value inside an `on…="…"` string, so the only thing

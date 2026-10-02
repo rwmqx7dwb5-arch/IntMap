@@ -37,7 +37,7 @@ export default [
        None of the four takes a target: they act on the route and the guidance that already exist,
        and `navigation.start` refuses with «plan a route first» rather than inventing one. */
     doc: [
-      { in: 'navigation', at: 10, text: '{"type":"startNavigation","simulate"?:bool,"speed"?:num} = begin guided navigation along the route ALREADY PLANNED and selected. It asks the browser for the device location, follows it, matches it to the route, announces each turn by voice, detects leaving the route and re-plans automatically, and reports arrival \u2014 at every stop and at the destination. ⚠ A ROUTE MUST EXIST FIRST: emit {"type":"directions",…} in the SAME plan when the user names places («名古屋駅から京都駅まで車で案内して» = directions THEN startNavigation). "simulate":true drives a synthetic vehicle along the route instead of using the real GPS (for demonstrating or testing; "speed" is the multiplier, e.g. 5). Use for 「このルートで案内開始」「ナビ開始して」「案内を始めて」, "start navigation", "navigate this route", "guide me there", "drive there"; ' },
+      { in: 'navigation', at: 10, text: '{"type":"startNavigation","simulate"?:bool,"speed"?:num} = begin guided navigation along the route ALREADY PLANNED and selected. It asks the browser for the device location, follows it, matches it to the route, announces each turn by voice, detects leaving the route and re-plans automatically, and reports arrival — at every stop and at the destination. A ROUTE MUST EXIST FIRST: emit {"type":"directions",…} in the SAME plan when the user names places («名古屋駅から京都駅まで車で案内して» = directions THEN startNavigation). "simulate":true drives a synthetic vehicle along the route instead of using the real GPS (for demonstrating or testing; "speed" is the multiplier, e.g. 5). Use for 「このルートで案内開始」「ナビ開始して」「案内を始めて」, "start navigation", "navigate this route", "guide me there", "drive there"; ' },
     ],
     schema: () => ({ type: 'object', properties: { simulate: bool(), sim: bool(), speed: num(0) } }),
       /* ══ (#R347) ACTIVE NAVIGATION — §34 ════════════════════════════════════════════
@@ -50,14 +50,14 @@ export default [
       {
           let N=window.IntMapNavigation;
           if(!N){ try{ await window.IntMapLazy.need('navigation'); N=window.IntMapNavigation; }catch(_){} }
-          if(!N) return R(false, warn('⚠ '+L('Navigation is unavailable in this session.','このセッションでは案内を使えません。','Navigation ist nicht verfügbar.','Навигация недоступна.','La navegación no está disponible.')));
+          if(!N) return R(false, warn(L('Navigation is unavailable in this session.','このセッションでは案内を使えません。','Navigation ist nicht verfügbar.','Навигация недоступна.','La navegación no está disponible.')));
           /* ⚠ A ROUTE HAS TO EXIST FIRST, AND SAYING SO IS MORE USE THAN FAILING. #R278's lesson: a
              capability that answers 「その機能は実行できません」 without naming what is missing is a dead end. */
-          if(!N.canStart()) return R(false, warn('⚠ '+L('Plan a route first — tell me where from and where to.','先に経路を検索してください。出発地と目的地を教えてください。','Erst eine Route planen — nenne Start und Ziel.','Сначала постройте маршрут.','Primero planifica una ruta.')));
+          if(!N.canStart()) return R(false, warn(L('Plan a route first — tell me where from and where to.','先に経路を検索してください。出発地と目的地を教えてください。','Erst eine Route planen — nenne Start und Ziel.','Сначала постройте маршрут.','Primero planifica una ruta.')));
           const _sim=!!(a.simulate||a.sim);
           const _started=await (_sim?N.simulate({speedMultiplier:+a.speed||5}):N.start({}));
           if(!_started){ const _s=N.summary()||{}; const _c=(_s.error&&_s.error.code)||'NO_LOCATION';
-            return R(false, warn('⚠ '+esc(window.IntMapRouteErrors.message(_c)))); }
+            return R(false, warn(esc(window.IntMapRouteErrors.message(_c)))); }
           const _s0=N.summary();
           return R(true, note(L('Navigation started','案内を開始しました','Navigation gestartet','Навигация начата','Navegación iniciada')
             +(_s0.destination&&_s0.destination.name?(' · '+esc(_s0.destination.name)):'')
@@ -90,7 +90,7 @@ export default [
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, HOST = K.HOST, note = K.note, esc = K.esc;
       {
           const N=window.IntMapNavigation;
-          if(!N||N.state()==='idle') return R(false, warn('⚠ '+L('Navigation is not running.','案内は実行されていません。','Navigation läuft nicht.','Навигация не запущена.','La navegación no está activa.')));
+          if(!N||N.state()==='idle') return R(false, warn(L('Navigation is not running.','案内は実行されていません。','Navigation läuft nicht.','Навигация не запущена.','La navegación no está activa.')));
           const _st=N.summary(), _C=window.IntMapRouteCards, _o={lang:HOST.lang};
           const _dist=_C.distance(_st.remainingDistance,_o), _dur=_C.duration(_st.remainingDuration,_o);
           const _eta=_st.eta?_C.clock(new Date(_st.eta),_o):'';
@@ -101,7 +101,7 @@ export default [
           _h+=note((_st.etaMeta&&_st.etaMeta.traffic)
             ? L('Traffic-aware.','交通状況を反映しています。','Verkehrsabhängig.','С учётом пробок.','Con tráfico.')
             : L('Standard travel time — traffic not included.','標準所要時間です（交通状況未反映）。','Standardfahrzeit — ohne Verkehr.','Обычное время — без пробок.','Tiempo estándar — sin tráfico.'));
-          if(_st.offRoute) _h+=warn('⚠ '+L('Off route.','経路を外れています。','Abseits der Route.','Вне маршрута.','Fuera de ruta.'));
+          if(_st.offRoute) _h+=warn(L('Off route.','経路を外れています。','Abseits der Route.','Вне маршрута.','Fuera de ruta.'));
           return R(true, _h);
         }
     },
@@ -115,27 +115,27 @@ export default [
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, t = K.t, note = K.note, esc = K.esc;
       {
           const N=window.IntMapNavigation;
-          if(!N||N.state()==='idle') return R(false, warn('⚠ '+L('Navigation is not running.','案内は実行されていません。','Navigation läuft nicht.','Навигация не запущена.','La navegación no está activa.')));
+          if(!N||N.state()==='idle') return R(false, warn(L('Navigation is not running.','案内は実行されていません。','Navigation läuft nicht.','Навигация не запущена.','La navegación no está activa.')));
           if(t==='recenter'&&!a.mode){ N.recenter(); return R(true, note(L('Following your position again.','現在地の追従を再開しました。','Folge wieder deiner Position.','Снова слежу за позицией.','Siguiendo tu posición de nuevo.'))); }
           const _w=String(a.mode||a.camera||(t==='overview'?'overview':t==='northUp'?'north':'follow')).toLowerCase();
           const _ok=N.setCamera(_w==='north'?'north':_w==='overview'?'overview':_w==='free'?'free':'follow');
-          return R(!!_ok, _ok?note(esc(_w)):warn('⚠'));
+          return R(!!_ok, _ok?note(esc(_w)):warn(''));
         }
     },
   },
   {
     row: ['navigation.voice',           'navVoice',       'mute,unmute,voiceGuidance',                                   'routing', 'setting', 'navigation',             'setting',             'session', 'none',   '',         ''],
     doc: [
-      { in: 'navigation', at: 50, text: '{"type":"navVoice","mode"?:"off"|"alerts"|"guidance"} = spoken guidance \u2014 "guidance" announces every turn at four distances, "alerts" speaks only the final call and re-routes, "off" is silent. {"type":"mute"} / {"type":"unmute"} are shortcuts. Use for 「音声案内を止めて」「ミュート」, "mute", "turn the voice back on". ⚠ THE TIME AND DISTANCE COME FROM THE NAVIGATION STATE, NEVER FROM YOUR OWN ARITHMETIC: do not estimate an arrival time, and do not say a route is traffic-aware unless navStatus said so \u2014 the open routers carry no traffic and the reply says which it is.\n' },
+      { in: 'navigation', at: 50, text: '{"type":"navVoice","mode"?:"off"|"alerts"|"guidance"} = spoken guidance — "guidance" announces every turn at four distances, "alerts" speaks only the final call and re-routes, "off" is silent. {"type":"mute"} / {"type":"unmute"} are shortcuts. Use for 「音声案内を止めて」「ミュート」, "mute", "turn the voice back on". THE TIME AND DISTANCE COME FROM THE NAVIGATION STATE, NEVER FROM YOUR OWN ARITHMETIC: do not estimate an arrival time, and do not say a route is traffic-aware unless navStatus said so — the open routers carry no traffic and the reply says which it is.\n' },
     ],
     schema: () => ({ type: 'object', properties: { mode: one('off', 'alerts', 'guidance'), voice: one('off', 'alerts', 'guidance') } }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, t = K.t, note = K.note, esc = K.esc;
       {
           const N=window.IntMapNavigation;
-          if(!N||N.state()==='idle') return R(false, warn('⚠ '+L('Navigation is not running.','案内は実行されていません。','Navigation läuft nicht.','Навигация не запущена.','La navegación no está activa.')));
+          if(!N||N.state()==='idle') return R(false, warn(L('Navigation is not running.','案内は実行されていません。','Navigation läuft nicht.','Навигация не запущена.','La navegación no está activa.')));
           const _w=t==='mute'?'off':t==='unmute'?'guidance':String(a.mode||a.voice||'guidance').toLowerCase();
           const _ok=N.setVoice(_w==='off'?'off':_w==='alerts'?'alerts':'guidance');
-          return R(!!_ok, _ok?note(esc(_w)):warn('⚠'));
+          return R(!!_ok, _ok?note(esc(_w)):warn(''));
         }
     },
   },

@@ -35,6 +35,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function aircraftDetail(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -269,7 +270,7 @@ export function aircraftDetail(HOST){
       +row(L('Signal source','信号種別','Quelle','Источник','Fuente'), p.src||'')
       +'<button type="button" class="acp-fly" data-acp="fly">'
         +'<span class="acp-fly-h">'+S(L('Fly from these conditions','この初期条件でフライトを開始','Mit diesen Bedingungen fliegen','Взлететь с этими условиями','Volar con estas condiciones'))+'</span>'
-        +'<span class="acp-fly-s">'+S((ic.spec&&ic.spec.icon?ic.spec.icon+' ':'')+simName+' · '+altTxt(ic.alt)+' · '+degTxt(ic.hdg)+' · '+n0(ic.speed/KT)+' kn')+'</span>'
+        +'<span class="acp-fly-s">'+(ic.spec&&ic.spec.icon?icon(ic.spec.icon)+' ':'')+S(simName+' · '+altTxt(ic.alt)+' · '+degTxt(ic.hdg)+' · '+n0(ic.speed/KT)+' kn')+'</span>'
       +'</button>'
       +notes
       /* ⚠ (#R352) THE CARD NAMES THE SOURCE THAT ACTUALLY SUPPLIED THE AIRCRAFT.
@@ -294,7 +295,7 @@ export function aircraftDetail(HOST){
   function render(photo,pending){
     if(!cur) return; const e=ensureEl();
     const h=e.querySelector('#acp-title');
-    if(h) h.innerHTML='✈ '+S(cur.callsign||cur.reg||cur.icao24||'—');
+    if(h) h.innerHTML=icon('plane')+' '+S(cur.callsign||cur.reg||cur.icao24||'—');
     const b=e.querySelector('#acp-body'); if(!b) return;
     /* The live feed re-renders this card every 20 s. The card is taller than its box and scrolls, so
        rebuilding the body would jump a reader back to the top three times a minute — keep where they

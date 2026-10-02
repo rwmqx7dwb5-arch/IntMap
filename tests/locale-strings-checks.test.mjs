@@ -110,7 +110,10 @@ function decoratedKeys() {
         const nextLt = src.indexOf('<', from);
         after = src.slice(from, nextLt < 0 ? from : nextLt);
       }
-      const g = glyphs(before).concat(glyphs(after));
+      /* (icon-system) the decoration is an icon slot now — `<span data-icon="star"></span>` right before the
+         translated element — which js/icons.js draws; it counts as the markup decorating this key */
+      const slot = /<span\b[^>]*\sdata-icon="([^"]+)"[^>]*><\/span>\s*$/.exec(src.slice(Math.max(0, m.index - 160), m.index));
+      const g = (slot ? ['icon:' + slot[1]] : []).concat(glyphs(before), glyphs(after));
       if (!g.length) continue;
       out.set(key, { file: f, line: src.slice(0, m.index).split('\n').length, glyphs: g.join('') });
     }
@@ -150,7 +153,7 @@ test('#R474 ① the decorated-heading universe is read out of the markup, and fa
     + Array.from(deco.keys()).join(', ') + ')');
   const fav = deco.get('favLayers');
   assert.ok(fav, 'favLayers is decorated by the markup; universe: ' + Array.from(deco.keys()).join(', '));
-  assert.equal(fav.glyphs, '⭐', 'and the star beside it is the markup’s ⭐ (U+2B50)');
+  assert.equal(fav.glyphs, 'icon:star', 'and the star beside it is the markup’s own — js/icons.js «star», drawn into the slot');
 });
 
 /* ── ② the ceiling: a decorated key carries no decoration in any language ───────────────────────── */

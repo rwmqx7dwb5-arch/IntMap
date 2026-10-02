@@ -89,6 +89,12 @@ export const TRUSTED = [
     why: 'returns a picker that answers one of the authored strings it is called with (positional for the first five languages, the inline table for the rest), never its caller\'s data; its .arr(tuple) is the same picker applied to an array of them' },
   { callee: 'HOST.t', file: 'js/app-body.js', fn: 't', args: 'none',
     why: 'looks the key up in the authored i18n tables of the current and the English locale and returns that entry or undefined; a key that is not in the tables is never echoed back' },
+  /* (icon-system) the one icon set. Not a translation, but the same kind of claim: a call into another module whose
+     result is markup this repository wrote. */
+  { callee: 'icon', file: 'js/icons.js', fn: 'icon', args: 'none',
+    why: 'returns an <svg> built by the IntMapSafe.markup tag from its own path table; the name selects a row (an unknown name throws) and the size, class and label are placed as escaped attribute values, so nothing the caller passes reaches the output as markup' },
+  { callee: 'withIcons', file: 'js/icons.js', fn: 'withIcons', args: 'from:0',
+    why: 'returns its argument with each {icon:name} token naming a row of the icon table replaced by that icon\'s markup; everything else in the argument is passed through unchanged, so the result is as safe as the text it is given' },
 ];
 
 const FN = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression']);

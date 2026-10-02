@@ -20,6 +20,7 @@ import { str, bool, num, one, lat, lng, noArgs } from './atlas-caps.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { makeAtlasGeoResolve } from './atlas-geo-resolve.js';   /* (#732) `placeRules.selfLocWords` — view.locate's `phrases` */
 import { requestFix, FIX_FAILURE } from './locate-me.js';   /* (installable-app) the ONE reading of the device position — view.locate below */
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export default [
   {
@@ -30,7 +31,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { mode: one('globe', 'flat') }, required: ['mode'] }),
     async run(a, dctx, K) { const kexec = K.kexec, R = K.R, note = K.note, esc = K.esc, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
-      { const flat=(a.mode==='flat'); const ok=kexec(flat?'view.proj.flat':'view.proj.globe', flat?'btn-view-flat':'btn-view-globe'); return R(ok, ok?note('✓ '+esc(flat?L('Flat map','平面地図','Flache Karte','Плоская карта','Mapa plano'):L('Globe','地球儀','Globus','Глобус','Globo')))+_featTogHtml('globe'):warn('⚠')); }   /* (#R151) offer the 3D-globe on/off switch */
+      { const flat=(a.mode==='flat'); const ok=kexec(flat?'view.proj.flat':'view.proj.globe', flat?'btn-view-flat':'btn-view-globe'); return R(ok, ok?note('✓ '+esc(flat?L('Flat map','平面地図','Flache Karte','Плоская карта','Mapa plano'):L('Globe','地球儀','Globus','Глобус','Globo')))+_featTogHtml('globe'):warn('')); }   /* (#R151) offer the 3D-globe on/off switch */
     },
   },
   {
@@ -41,7 +42,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { mode: one('map', 'satellite', 'sat') }, required: ['mode'] }),
     async run(a, dctx, K) { const kexec = K.kexec, R = K.R, note = K.note, esc = K.esc, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
-      { const sat=(a.mode==='satellite'||a.mode==='sat'); const ok=kexec(sat?'view.base.sat':'view.base.map', sat?'btn-view-sat':'btn-view-map'); return R(ok, ok?note('✓ '+esc(sat?L('Satellite','衛星','Satellit','Спутник','Satélite'):L('Map','地図','Karte','Карта','Mapa')))+_featTogHtml('satellite'):warn('⚠')); }   /* (#R147) offer the Satellite on/off button */
+      { const sat=(a.mode==='satellite'||a.mode==='sat'); const ok=kexec(sat?'view.base.sat':'view.base.map', sat?'btn-view-sat':'btn-view-map'); return R(ok, ok?note('✓ '+esc(sat?L('Satellite','衛星','Satellit','Спутник','Satélite'):L('Map','地図','Karte','Карта','Mapa')))+_featTogHtml('satellite'):warn('')); }   /* (#R147) offer the Satellite on/off button */
     },
   },
   {
@@ -81,7 +82,7 @@ export default [
     async run(a, dctx, K) { const WORLD_RE = K.WORLD_RE, GE = K.GE, R = K.R, note = K.note, L = K.L, DEIXIS_RE = K.DEIXIS_RE, placeExtent = K.placeExtent, _setLast = K._setLast, flyToBox = K.flyToBox, esc = K.esc, _ambigNote = K._ambigNote, geocode = K.geocode, _bboxOK = K._bboxOK, warn = K.warn;
       { const exZ=(a.zoom!=null)?+a.zoom:null; const placeStr=String(a.place||'').trim(); let _dst=null; const _D=()=>_dst?{meta:{dest:_dst}}:null;
           /* "the whole world / earth / globe" → zoom OUT to the planet, NEVER geocode (was → "World Bank building"). */
-          if(WORLD_RE.test(placeStr) || /^(world|globe|earth)$/i.test(String(a.scale||''))){ try{ const _c=GE().camera.getCenter(); _dst={lng:+_c.lng,lat:20,zoom:(exZ!=null?exZ:1.4)}; GE().camera.flyTo({center:[_dst.lng,20],zoom:_dst.zoom,duration:1100}); }catch(_){ _dst=null; try{ GE().camera.zoomTo(1.4); }catch(__){} } return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero')), _D()); }
+          if(WORLD_RE.test(placeStr) || /^(world|globe|earth)$/i.test(String(a.scale||''))){ try{ const _c=GE().camera.getCenter(); _dst={lng:+_c.lng,lat:20,zoom:(exZ!=null?exZ:1.4)}; GE().camera.flyTo({center:[_dst.lng,20],zoom:_dst.zoom,duration:1100}); }catch(_){ _dst=null; try{ GE().camera.zoomTo(1.4); }catch(__){} } return R(true, note(icon('world')+' '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero')), _D()); }
           if(a.lng!=null&&a.lat!=null){ _dst={lng:+a.lng,lat:+a.lat,zoom:exZ!=null?exZ:Math.max(GE().camera.getZoom(),6)}; GE().camera.flyTo({center:[_dst.lng,_dst.lat],zoom:_dst.zoom,duration:1100}); return R(true, note((+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2)), _D()); }
           /* (#R51) DERIVE the view from the place's REAL footprint (dynamic — no per-type zoom constants). */
           if(placeStr && exZ==null && !DEIXIS_RE.test(placeStr)){ const ext=await placeExtent(placeStr);
@@ -92,7 +93,7 @@ export default [
             else if(ll.bbox&&_bboxOK(ll.bbox)){ const _fb=flyToBox(ll.bbox); if(!_fb) GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),9),duration:1100}); _dst={lng:ll.lng,lat:ll.lat,box:_fb?ll.bbox:null,name:ll.name||placeStr}; }
             else { GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),9),duration:1100}); _dst={lng:ll.lng,lat:ll.lat,name:ll.name||placeStr}; }
             return R(true, note(L('Moved to','移動先','Verschoben nach','Перемещено в','Movido a')+': '+esc(placeStr))+_ambigNote(placeStr,ll.lng,ll.lat), _D()); }   /* (#R108) name the destination in plain text — no bare ✓, no emoji */
-          return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(placeStr))); }
+          return R(false, warn(L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(placeStr))); }
     },
   },
   {
@@ -103,7 +104,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { on: bool() } }),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, _featTogHtml = K._featTogHtml, warn = K.warn;
-      { const ok=(a.on===false)?clickId('btn-view-globe'):clickId('btn-view-3d'); return R(ok, ok?note('✓ 3D '+(a.on===false?'off':'on'))+_featTogHtml('terrain3d'):warn('⚠')); }
+      { const ok=(a.on===false)?clickId('btn-view-globe'):clickId('btn-view-3d'); return R(ok, ok?note('✓ 3D '+(a.on===false?'off':'on'))+_featTogHtml('terrain3d'):warn('')); }
     },
   },
   {
@@ -114,7 +115,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { on: bool() } }),
     async run(a, dctx, K) { const setGrid = K.setGrid, clickId = K.clickId, R = K.R, note = K.note, L = K.L, _featTogHtml = K._featTogHtml, warn = K.warn;
-      { let ok=false; try{ if(typeof setGrid==='function'){ setGrid(a.on!==false); ok=true; } else ok=clickId('btn-tool-grid'); }catch(_){ ok=clickId('btn-tool-grid'); } return R(ok, ok?note('✓ '+L('Grid','グリッド','Gitter','Сетка','Cuadrícula')+': '+(a.on===false?'off':'on'))+_featTogHtml('grid'):warn('⚠')); }
+      { let ok=false; try{ if(typeof setGrid==='function'){ setGrid(a.on!==false); ok=true; } else ok=clickId('btn-tool-grid'); }catch(_){ ok=clickId('btn-tool-grid'); } return R(ok, ok?note('✓ '+L('Grid','グリッド','Gitter','Сетка','Cuadrícula')+': '+(a.on===false?'off':'on'))+_featTogHtml('grid'):warn('')); }
     },
   },
   {
@@ -125,7 +126,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => (noArgs('resetNorth')),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
-      { const ok=clickId('btn-compass'); return R(ok, ok?note('✓ '+L('Reset north','北を上に','Norden zurücksetzen','Сброс на север','Restablecer norte')):warn('⚠')); }
+      { const ok=clickId('btn-compass'); return R(ok, ok?note('✓ '+L('Reset north','北を上に','Norden zurücksetzen','Сброс на север','Restablecer norte')):warn('')); }
     },
   },
   {
@@ -212,7 +213,7 @@ export default [
           try{ if(want){ if(!document.fullscreenElement&&document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen(); }
             else if(document.fullscreenElement&&document.exitFullscreen) await document.exitFullscreen();
             return R(true, note('✓ '+L('Fullscreen','全画面','Vollbild','Полный экран','Pantalla completa')+': '+(want?'on':'off'))+_featTogHtml('fullscreen')); }   /* (#R152) offer the fullscreen on/off switch */
-          catch(_){ return R(false, warn('⚠ '+L('Fullscreen unavailable here','全画面にできませんでした','Vollbild nicht möglich','Полный экран недоступен','Pantalla completa no disponible'))); } }
+          catch(_){ return R(false, warn(L('Fullscreen unavailable here','全画面にできませんでした','Vollbild nicht möglich','Полный экран недоступен','Pantalla completa no disponible'))); } }
     },
   },
   /* ⚠ (#R801) WHAT LEAVES, TO WHOM: the device's position, read from the sensor and returned to
@@ -235,7 +236,7 @@ export default [
            door keeps only what is Atlas's own: the words it says to the reader and the fact it hands the model. */
         const fix=await requestFix();
         if(!fix.ok){ const why=fix.reason;
-          return R(false, warn('⚠ '+(why===FIX_FAILURE.UNSUPPORTED
+          return R(false, warn((why===FIX_FAILURE.UNSUPPORTED
             ? L('Geolocation unavailable','この環境では位置情報が使えません','Standort nicht verfügbar','Геолокация недоступна','Geolocalización no disponible')
             : why===FIX_FAILURE.BLOCKED
             ? L('Location is blocked for this site. Turn it on in your browser (tap the lock/permissions icon in the address bar), then ask me again.','この端末で位置情報がブロックされています。ブラウザで許可（アドレスバーの鍵アイコン→権限）してから、もう一度お尋ねください。','Der Standort ist für diese Seite blockiert. Erlaube ihn im Browser (Schloss-Symbol in der Adressleiste → Berechtigungen) und frag mich erneut.','Геолокация заблокирована для сайта. Включите её в браузере (значок замка в адресной строке → разрешения) и спросите снова.','La ubicación está bloqueada para este sitio. Actívala en el navegador (icono de candado en la barra → permisos) y vuelve a preguntar.')
@@ -272,7 +273,7 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { include: { type: 'string', enum: ['screen', 'map'] }, reason: str() } }),
     async run(a, dctx, K) { const VFRAMES = K.VFRAMES, R = K.R, warn = K.warn, esc = K.esc;
-      { const _vf=await VFRAMES.captureFrame(a); return _vf.ok?R(true,_vf.html,{exec:_vf.facts}):R(false,warn('⚠ '+esc(_vf.message))); }   /* ⚠⚠⚠ (#R493) THE ONE CASE WHOSE RESULT IS A PICTURE. `facts` is the mechanical record Atlas reads — bbox, zoom, bearing, pitch, layers, all exact; the PIXELS stay in the ledger and ride the vision channel, because js/atlas-agent.js serialises every tool result into the prompt TEXT and a data URL put there is not an image, it is half a megabyte of base64. The capture itself is the screenshot button's, unchanged: js/atlas-view-capture.js. */
+      { const _vf=await VFRAMES.captureFrame(a); return _vf.ok?R(true,_vf.html,{exec:_vf.facts}):R(false,warn(esc(_vf.message))); }   /* ⚠⚠⚠ (#R493) THE ONE CASE WHOSE RESULT IS A PICTURE. `facts` is the mechanical record Atlas reads — bbox, zoom, bearing, pitch, layers, all exact; the PIXELS stay in the ledger and ride the vision channel, because js/atlas-agent.js serialises every tool result into the prompt TEXT and a data URL put there is not an image, it is half a megabyte of base64. The capture itself is the screenshot button's, unchanged: js/atlas-view-capture.js. */
     },
   },
 ];

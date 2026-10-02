@@ -11,6 +11,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { requestFix, FIX_FAILURE } from './locate-me.js';   /* (installable-app) the ONE reading of the device position — IntMapLocate.start below, Atlas's view.locate and 「現在地から…」 */
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 
 export function locate(HOST){
@@ -121,7 +122,7 @@ export function locate(HOST){
        event the compass FAB already updates on, so the two badges now answer at the same moment. */
     try{ const E0=M(); if(E0) E0.events.on('moveend',_syncFab); }catch(_){}
     function start(opts){ opts=opts||{}; const E=M(); if(!E) return;
-      if(!navigator.geolocation){ try{ if(typeof imToast==='function') imToast('⚠ '+(IntMapLang.t(HOST.lang,'Geolocation unavailable','位置情報が使えません','Standort nicht verfügbar','Геолокация недоступна','Geolocalización no disponible'))); }catch(_){} return; }
+      if(!navigator.geolocation){ try{ if(typeof imToast==='function') imToast(''+(IntMapLang.t(HOST.lang,'Geolocation unavailable','位置情報が使えません','Standort nicht verfügbar','Геолокация недоступна','Geolocalización no disponible'))); }catch(_){} return; }
       active=true; _syncFab();
       let firstFly=(opts.fly!==false);
       const onPos=p=>{ const lng=+p.coords.longitude, lat=+p.coords.latitude, ac=+p.coords.accuracy||0; last={lng,lat,acc:ac};
@@ -131,7 +132,7 @@ export function locate(HOST){
          not ask) and `denied` (the reader just refused) are the actionable pair; the sensor having no fix and
          a timeout are the transient pair; `unsupported` never reaches here (checked above). */
       const onErr=why=>{ try{ if(typeof imToast==='function'){ const denied=why===FIX_FAILURE.BLOCKED||why===FIX_FAILURE.DENIED;   /* (#R155) distinguish a hard denial (actionable) from a transient failure */
-        imToast('⚠ '+(denied
+        imToast(''+(denied
           ? (IntMapLang.t(HOST.lang,'Location blocked — enable it in your browser settings.','位置情報がブロックされています。ブラウザ設定で許可してください。','Standort blockiert — im Browser erlauben.','Геолокация заблокирована — разрешите в браузере.','Ubicación bloqueada — actívala en el navegador.'))
           : (IntMapLang.t(HOST.lang,'Couldn\'t get your location','位置情報を取得できませんでした','Standort nicht verfügbar','Не удалось получить геолокацию','No se pudo obtener la ubicación')))); } }catch(_){}
         if(!last){ active=false; } _syncFab(); };
@@ -330,7 +331,7 @@ export function runwaySearch(HOST){
       if(d.n) rws.push((IntMapLang.t(HOST.lang,"Runways","滑走路数","Start-/Landebahnen","ВПП","Pistas"))+': <b>'+d.n+'</b>');
       if(d.rwy) rws.push((IntMapLang.t(HOST.lang,"Runway","滑走路","Start-/Landebahn","ВПП","Pista"))+': <b>'+esc(d.rwy)+'</b>');
       rws.push((IntMapLang.t(HOST.lang,"Coords","座標","Koordinaten","Координаты","Coordenadas"))+': <b>'+(+d.coords[1]).toFixed(4)+', '+(+d.coords[0]).toFixed(4)+'</b>');
-      const html='<div style="min-width:170px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:6px;">'+(d.mil?'🪖':'🛬')+' '+title+'</div><div style="font-size:12px;color:var(--text-main);line-height:1.65;">'+rws.join('<br>')+'</div><a href="'+wikiLink(d.name||d.apt)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;color:var(--primary-color);font-weight:600;font-size:12px;text-decoration:none;">📖 '+(IntMapLang.t(HOST.lang,"Read on Wikipedia ↗","Wikipediaで見る ↗","Auf Wikipedia lesen ↗","Читать в Википедии ↗","Leer en Wikipedia ↗"))+'</a></div>';
+      const html='<div style="min-width:170px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:6px;">'+(d.mil?icon('shield'):icon('plane'))+' '+title+'</div><div style="font-size:12px;color:var(--text-main);line-height:1.65;">'+rws.join('<br>')+'</div><a href="'+wikiLink(d.name||d.apt)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;color:var(--primary-color);font-weight:600;font-size:12px;text-decoration:none;">'+icon('book')+' '+(IntMapLang.t(HOST.lang,"Read on Wikipedia ↗","Wikipediaで見る ↗","Auf Wikipedia lesen ↗","Читать в Википедии ↗","Leer en Wikipedia ↗"))+'</a></div>';
       try{ rwyPopup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,maxWidth:'280px',className:'plc-popup'}).setLngLat(d.coords).setHTML(html)); }catch(_){}
     }
     function ensureLayers(){ if(GE().layers.hasSource(SRC)) return; try{ GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
@@ -348,14 +349,14 @@ export function runwaySearch(HOST){
         const res=search({center:center,radiusKm:radiusKm,use:use,minLenM:minLenM,mode:mode}); renderMarks(res,mode);
         if(!res.length){ list.innerHTML=IntMapLang.t(HOST.lang,"No matches","該当なし","Keine Treffer","Совпадений нет","Sin resultados"); return; }
         const shown=res.slice(0,120);
-        list.innerHTML=shown.map((r,idx)=>{ const dd=distFmtKm(r._d), len=lenFmt(mode==='airport'?r.maxLen:r.lenM), nm=esc(mode==='airport'?r.name:(r.apt+' '+r.rwy)), extra=mode==='airport'?(jp()?(r.n+'本'):(r.n+' rwy')):'', flag=r.mil?'🪖':'🛬';
+        list.innerHTML=shown.map((r,idx)=>{ const dd=distFmtKm(r._d), len=lenFmt(mode==='airport'?r.maxLen:r.lenM), nm=esc(mode==='airport'?r.name:(r.apt+' '+r.rwy)), extra=mode==='airport'?(jp()?(r.n+'本'):(r.n+' rwy')):'', flag=r.mil?icon('shield'):icon('plane');
           return '<div class="rwy-item" role="button" tabindex="0" data-idx="'+idx+'" style="display:flex;justify-content:space-between;gap:8px;padding:5px 4px;border-radius:6px;cursor:pointer;"><span>'+flag+' '+nm+'</span><span style="color:var(--text-muted);white-space:nowrap;">'+len+' · '+dd+' '+extra+'</span></div>'; }).join('');
         list.querySelectorAll('.rwy-item').forEach(it=>{ it.onclick=()=>{ const r=shown[+it.getAttribute('data-idx')]; if(!r) return; GE().camera.flyTo({center:[r.lo,r.la],zoom:Math.max(GE().camera.getZoom(),11)}); showRwyPopup({ name:r.name, apt:r.apt, muni:r.muni, mil:r.mil, len:(mode==='airport'?r.maxLen:r.lenM), n:(mode==='airport'?r.n:0), rwy:(mode==='runway'?r.rwy:''), coords:[r.lo,r.la] }); }; });
       });
     }
     function open(lngLat){ center=[lngLat.lng,lngLat.lat]; if(!panel){ panel=document.createElement('div'); panel.className='tool-panel'; panel.id='rwy-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); } const p=panel; p.style.display='block';
       const im0=isImp();
-      p.innerHTML='<div class="tp-header"><span class="tp-title">🛬 '+(IntMapLang.t(HOST.lang,"Runway search","滑走路検索","Bahnsuche","Поиск ВПП","Búsqueda de pistas"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'+
+      p.innerHTML='<div class="tp-header"><span class="tp-title">'+icon('plane')+' '+(IntMapLang.t(HOST.lang,"Runway search","滑走路検索","Bahnsuche","Поиск ВПП","Búsqueda de pistas"))+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'+
         '<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;">'+
           '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(IntMapLang.t(HOST.lang,"Units","単位","Einheiten","Единицы","Unidades"))+' <select id="rwy-unit"><option value="met"'+(im0?'':' selected')+'>'+(IntMapLang.t(HOST.lang,"Metric (km/m)","メートル法 (km/m)","Metrisch (km/m)","Метрические (км/м)","Métrico (km/m)"))+'</option><option value="imp"'+(im0?' selected':'')+'>'+(IntMapLang.t(HOST.lang,"Imperial (mi/ft)","ヤード・ポンド (mi/ft)","Angloamerikanisch (mi/ft)","Имперские (мили/футы)","Imperial (mi/ft)"))+'</option></select></label>'+
           '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;"><span class="rwy-ulabel-r"></span> <input id="rwy-radius" type="number" value="'+(im0?186:300)+'" min="1" style="width:74px;"></label>'+

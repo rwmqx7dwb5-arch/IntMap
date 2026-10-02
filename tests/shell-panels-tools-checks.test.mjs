@@ -433,7 +433,7 @@ test('#R170 the 3-D volume tool is wired from menu to renderer', () => {
   assert.match(INDEX, /toolMode==='volume'&&window\.IntMapVolume3D\) window\.IntMapVolume3D\.release\(\)/, 'exitTool must drop the box');
   const tp = R('js/tool-panel.js');
   assert.match(tp, /HOST\.toolMode==='area'\|\|HOST\.toolMode==='volume'/, 'the footprint must preview like an area ring');
-  assert.match(tp, /volume:'🧊 '\+HOST\.t\('vol3dTool'\)/, 'the panel needs a localized title');
+  assert.match(tp, /volume:icon\('cube'\)\+' '\+HOST\.t\('vol3dTool'\)/, 'the panel needs a localized title (its glyph is js/icons.js «cube» — icon-system)');
   assert.match(tp, /id="v3d-base"/); assert.match(tp, /id="v3d-top"/);
 });
 

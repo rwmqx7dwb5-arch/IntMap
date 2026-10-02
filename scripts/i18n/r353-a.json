@@ -1,5 +1,5 @@
 {
-  "_": "(#R353) Volcano Intelligence — the strings js/volcano-intel.js, js/volcano-layers.js and the rebuilt volcano block of js/beta-overlays.js brought into the inline universe. de/ru/es are already arguments at those call sites and are copied here verbatim; fr, ko and zh-Hant are the new work. ⚠ Several rows carry a LEADING or TRAILING space on purpose — they are concatenated onto a number ('read from ', ' years', ' Holocene volcanoes'). Columns: de, ru, es, fr, ko, zh-Hant.",
+  "_": "(#R353) Volcano Intelligence — the strings js/volcano-intel.js, js/volcano-layers.js and the rebuilt volcano block of js/beta-overlays.js brought into the inline universe. de/ru/es are already arguments at those call sites and are copied here verbatim; fr, ko and zh-Hant are the new work. Several rows carry a LEADING or TRAILING space on purpose — they are concatenated onto a number ('read from ', ' years', ' Holocene volcanoes'). Columns: de, ru, es, fr, ko, zh-Hant.",
 
   " ash area(s) in force": [" Aschegebiet(e) in Kraft", " зон пепла действует", " zona(s) de ceniza vigente(s)", " zone(s) de cendres en vigueur", "건의 화산재 구역이 유효", " 個火山灰區域生效中"],
   " eruptions": [" Ausbrüche", " извержений", " erupciones", " éruptions", "회 분화", " 次噴發"],

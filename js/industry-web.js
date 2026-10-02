@@ -41,6 +41,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function industryWeb(HOST) {
   const GE = () => IntMapGeoEngine;
@@ -94,9 +95,9 @@ export function industryWeb(HOST) {
     let nodes = [], edges = [], sel = null, ctrl = null;
     const cache = {};
     /* (#R215) one box, and it is the app's own legend — see js/world-packs.js `makePanel`. */
-    const panel = makePanel('iw-panel', () => '🕸 ' + L('Industry web', '業界の相関', 'Branchennetz', 'Отраслевая сеть', 'Red del sector'), 'wp-dl-industry',
+    const panel = makePanel('iw-panel', () => '' + L('Industry web', '業界の相関', 'Branchennetz', 'Отраслевая сеть', 'Red del sector'), 'wp-dl-industry',
       { legendId: 'wpindustry', layers: () => LYR.slice(),
-        names: () => (LA('🕸 Industry web','🕸 業界の相関','🕸 Branchennetz','🕸 Отраслевая сеть','🕸 Red del sector')) });
+        names: () => (LA('Industry web','業界の相関','Branchennetz','Отраслевая сеть','Red del sector')) });
 
     /* ── THE QUERIES ──────────────────────────────────────────────────────────────────────────────
        TWO, run together, because they are two different shapes. WHO is one row per company and can
@@ -598,12 +599,12 @@ LIMIT ${limit}`;
           'Unternehmen, Sitz, Umsatz, Marktkapitalisierung, Beschäftigte und Beteiligungen stammen aus Wikidata (CC0); max. ' + MAX + '.',
           'Компании, координаты штаб-квартир, выручка, капитализация, сотрудники и связи владения — из Wikidata (CC0); не более ' + MAX + '.',
           'Empresas, sedes, ingresos, capitalización, empleados y vínculos de propiedad proceden de Wikidata (CC0); máx. ' + MAX + '.'))
-        + ' ' + esc(L(
-          '⚠ Wikidata is community-maintained, so coverage is uneven: a company nobody has entered is simply absent, and «the largest» means «the largest Wikidata has a revenue for». An ownership graph is not a market-share or influence graph.',
-          '⚠ Wikidata は有志が編集するデータベースなので網羅性は一様ではありません。誰も登録していない企業は単に存在しないものとして扱われ、「最大手」は「Wikidata に売上高が載っている中での最大」という意味です。また資本関係の図はシェアや影響力の図ではありません。',
-          '⚠ Wikidata wird von der Community gepflegt — die Abdeckung ist ungleichmäßig. Ein Beteiligungsgraph ist kein Marktanteilsgraph.',
-          '⚠ Wikidata ведётся сообществом, полнота неравномерна. Граф владения — не граф доли рынка.',
-          '⚠ Wikidata la mantiene la comunidad; la cobertura es desigual. Un grafo de propiedad no es un grafo de cuota de mercado.'))
+        + ' ' + icon('warning') + ' ' + esc(L(
+          'Wikidata is community-maintained, so coverage is uneven: a company nobody has entered is simply absent, and «the largest» means «the largest Wikidata has a revenue for». An ownership graph is not a market-share or influence graph.',
+          'Wikidata は有志が編集するデータベースなので網羅性は一様ではありません。誰も登録していない企業は単に存在しないものとして扱われ、「最大手」は「Wikidata に売上高が載っている中での最大」という意味です。また資本関係の図はシェアや影響力の図ではありません。',
+          'Wikidata wird von der Community gepflegt — die Abdeckung ist ungleichmäßig. Ein Beteiligungsgraph ist kein Marktanteilsgraph.',
+          'Wikidata ведётся сообществом, полнота неравномерна. Граф владения — не граф доли рынка.',
+          'Wikidata la mantiene la comunidad; la cobertura es desigual. Un grafo de propiedad no es un grafo de cuota de mercado.'))
         + ' ' + esc(L(
           'Revenue and market capitalisation are shown in the currency Wikidata states them in. The ranking and the circle sizes convert them at European Central Bank reference rates' + (fx && fx.date ? ' of ' + fx.date : '') + ' — today’s rate applied to an older figure, which is a comparison rather than a historical value.',
           '売上高と時価総額は Wikidata が記載している通貨のまま表示しています。順位と円の大きさは欧州中央銀行の参照レート' + (fx && fx.date ? '（' + fx.date + '）' : '') + 'で換算したもので、過去の数字に現在のレートを当てた「比較のための値」であって当時の実額ではありません。',

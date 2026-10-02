@@ -20,6 +20,7 @@ import { overpassQuery } from './overpass.js';   /* the one Overpass client, wit
 import { RAD } from './radiation-model.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon, withIcons, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 
 export function radiation(HOST){
@@ -448,7 +449,7 @@ export function radiation(HOST){
       const LB='font-size:10.5px;color:var(--text-muted);';
       const where=site?((site.name?site.name+' · ':'')+site.lat.toFixed(3)+', '+site.lng.toFixed(3))
         :LL('No source placed yet','放出源が未設定です','Keine Quelle gesetzt','Источник не задан','Sin fuente colocada');
-      p.innerHTML='<div class="rad-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">☢ '
+      p.innerHTML=('<div class="rad-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">'+icon('radiation')+' ')
           +LL('Radioactive dispersion','放射性物質の拡散','Radioaktive Ausbreitung','Рассеивание радиации','Dispersión radiactiva')+'</span><button aria-label="'+IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="rad-x" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
         +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;">'
         +'<button class="rad-pick" style="height:34px;border:none;border-radius:9px;background:var(--primary-fill);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;">◎ '
@@ -812,17 +813,17 @@ export function sun(HOST){
       const st=sunTimes(when,c.lat,c.lng);
       if(wh) wh.textContent='◎ '+c.lat.toFixed(4)+', '+c.lng.toFixed(4);
       if(rd){ const dir=window.IntMapCompass.point(sp.azCompass,HOST.lang,8);   /* (#R289) one table, nine languages */
-        rd.innerHTML='<b>'+(sp.altDeg>0?'☀️':'🌙')+' '+SN('Altitude','高度','Höhe','Высота','Altura')+' '+sp.altDeg.toFixed(1)+'° · '+SN('Azimuth','方位','Azimut','Азимут','Azimut')+' '+Math.round(sp.azCompass)+'° '+dir+'</b>'
-          +'<div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;">'+(st.polar?SN('polar '+st.polar,st.polar==='day'?'白夜':'極夜','Polar','полярный','polar'):('🌅 '+fmtT(st.rise)+' · ☀️ '+fmtT(st.noon)+' · 🌇 '+fmtT(st.set)))+'</div>'; } }
+        rd.innerHTML='<b>'+(sp.altDeg>0?icon('sun'):icon('moon'))+' '+SN('Altitude','高度','Höhe','Высота','Altura')+' '+sp.altDeg.toFixed(1)+'° · '+SN('Azimuth','方位','Azimut','Азимут','Azimut')+' '+Math.round(sp.azCompass)+'° '+dir+'</b>'
+          +'<div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;">'+(st.polar?SN('polar '+st.polar,st.polar==='day'?'白夜':'極夜','Polar','полярный','polar'):(icon('sunset')+' '+fmtT(st.rise)+' · '+icon('sun')+' '+fmtT(st.noon)+' · '+icon('sunset')+' '+fmtT(st.set)))+'</div>'; } }
     function setTime(d){ when=(d instanceof Date)?d:new Date(d); if(when<0||isNaN(when)) when=new Date(); syncInputs(); drawShadows();
       try{ drawTerrain(); }catch(_){}   /* (#R176) the terrain shadow follows the same clock as the buildings' */ }
     function syncInputs(){ if(!panel) return; const di=panel.querySelector('.sun-date'), ti=panel.querySelector('.sun-time'), tl=panel.querySelector('.sun-slider');
       try{ if(di) di.value=when.toISOString().slice(0,10); }catch(_){} const mins=when.getHours()*60+when.getMinutes(); if(tl) tl.value=mins; if(ti) ti.textContent=fmtT(when); }
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='sun-panel';
       panel.style.cssText='position:fixed;left:16px;top:80px;width:min(320px,92vw);z-index:calc(var(--z-dropdown) + 102);display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
-      panel.innerHTML='<div class="sun-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🌇 '+SN('Sun & shadow','日照・影','Sonne & Schatten','Солнце и тень','Sol y sombra')+'</span><button aria-label="'+IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="sun-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
+      panel.innerHTML='<div class="sun-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">'+icon('sunset')+' '+SN('Sun & shadow','日照・影','Sonne & Schatten','Солнце и тень','Sol y sombra')+'</span><button aria-label="'+IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="sun-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
         +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;">'
-        +'<div style="display:flex;gap:8px;align-items:center;"><input type="date" class="sun-date" style="flex:1;height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;"><button class="sun-now" style="height:30px;padding:0 10px;border:none;border-radius:8px;background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;">'+SN('Now','現在','Jetzt','Сейчас','Ahora')+'</button><button class="sun-play" style="height:30px;width:34px;border:none;border-radius:8px;background:var(--primary-fill);color:#fff;font-size:13px;cursor:pointer;">▶</button></div>'
+        +'<div style="display:flex;gap:8px;align-items:center;"><input type="date" class="sun-date" style="flex:1;height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;"><button class="sun-now" style="height:30px;padding:0 10px;border:none;border-radius:8px;background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;">'+SN('Now','現在','Jetzt','Сейчас','Ahora')+('</button><button class="sun-play" style="height:30px;width:34px;border:none;border-radius:8px;background:var(--primary-fill);color:#fff;font-size:13px;cursor:pointer;">'+icon('play')+'</button></div>')
         +'<div style="display:flex;align-items:center;gap:8px;"><input type="range" class="sun-slider" min="0" max="1439" value="720" style="flex:1;"><span class="sun-time" style="font-size:12px;font-weight:700;color:var(--text-main);min-width:44px;text-align:right;">12:00</span></div>'
         /* (#R298) the coordinate every number below is for — filled by updatePanel() */
         +'<div class="sun-where" style="font-size:11px;color:var(--text-muted);"></div>'
@@ -837,18 +838,18 @@ export function sun(HOST){
            and nothing that said what to DO. Three sentences, in the order a first-time user needs
            them, above the buttons they describe. */
         +'<div style="font-size:11px;color:var(--text-muted);line-height:1.55;background:var(--input-bg);border-radius:8px;padding:7px 9px;">'
-          +SN('Drag the slider to move the time of day, or press ▶ to run it. ⛰ adds the shade the terrain itself casts. ◎ then a click on the map reports that spot’s sunlight hours over a whole year.',
-              'スライダーで時刻を動かし、▶ で再生します。⛰ を押すと地形自身が落とす影が加わります。◎ を押してから地図をクリックすると、その地点の年間日照時間が出ます。',
-              'Mit dem Regler die Tageszeit bewegen, ▶ spielt sie ab. ⛰ ergänzt den Schatten des Geländes. ◎ und dann ein Klick auf die Karte liefert die Sonnenstunden dieses Punktes über ein ganzes Jahr.',
-              'Ползунком двигайте время суток, ▶ — воспроизведение. ⛰ добавляет тень самого рельефа. ◎, затем клик по карте — часы солнца в этой точке за год.',
-              'Arrastra el control para mover la hora del día, ▶ lo reproduce. ⛰ añade la sombra del propio terreno. ◎ y luego un clic en el mapa da las horas de sol de ese punto durante un año.')
+          +withIcons(SN('Drag the slider to move the time of day, or press {icon:play} to run it. {icon:mountain} adds the shade the terrain itself casts. ◎ then a click on the map reports that spot’s sunlight hours over a whole year.',
+              'スライダーで時刻を動かし、{icon:play} で再生します。{icon:mountain} を押すと地形自身が落とす影が加わります。◎ を押してから地図をクリックすると、その地点の年間日照時間が出ます。',
+              'Mit dem Regler die Tageszeit bewegen, {icon:play} spielt sie ab. {icon:mountain} ergänzt den Schatten des Geländes. ◎ und dann ein Klick auf die Karte liefert die Sonnenstunden dieses Punktes über ein ganzes Jahr.',
+              'Ползунком двигайте время суток, {icon:play} — воспроизведение. {icon:mountain} добавляет тень самого рельефа. ◎, затем клик по карте — часы солнца в этой точке за год.',
+              'Arrastra el control para mover la hora del día, {icon:play} lo reproduce. {icon:mountain} añade la sombra del propio terreno. ◎ y luego un clic en el mapa da las horas de sol de ese punto durante un año.'))
         +'</div>'
         /* (#R176) 「影・日照時間エンジン」 — the terrain's own shadow, the whole-day shadow union and the
            annual sunlight budget at a point. The heavy work is js/insolation.js; this panel owns the
            controls so there is ONE sun tool, not two (the user's choice for this round). */
         +'<div style="display:flex;flex-wrap:wrap;gap:5px;">'
-          +'<button class="sun-terr" style="'+SBTN+'">⛰ '+SN('Terrain shadow','地形の影','Geländeschatten','Тень рельефа','Sombra del terreno')+'</button>'
-          +'<button class="sun-solst" style="'+SBTN+'">❄ '+SN('Winter-solstice shade','冬至の影','Wintersonnenwende','Зимнее солнцестояние','Solsticio de invierno')+'</button>'
+          +'<button class="sun-terr" style="'+SBTN+'">'+icon('mountain')+' '+SN('Terrain shadow','地形の影','Geländeschatten','Тень рельефа','Sombra del terreno')+'</button>'
+          +'<button class="sun-solst" style="'+SBTN+'">'+icon('snowflake')+' '+SN('Winter-solstice shade','冬至の影','Wintersonnenwende','Зимнее солнцестояние','Solsticio de invierno')+'</button>'
           +'<button class="sun-point" style="'+SBTN+'">◎ '+SN('Sunlight at a point','地点の日照時間','Sonnenstunden am Punkt','Часы солнца в точке','Horas de sol en un punto')+'</button>'
         +'</div>'
         +'<div class="sun-eng" style="font-size:11.5px;color:var(--text-main);line-height:1.55;"></div>'
@@ -863,7 +864,7 @@ export function sun(HOST){
         op.oninput=e=>{ setShadowOpacity((+e.target.value||30)/100); const l2=panel.querySelector('.sun-op-v'); if(l2) l2.textContent=Math.round(shadowOp*100)+'%'; }; } }   /* (#R210) */
       panel.querySelector('.sun-date').onchange=e=>{ const p=e.target.value.split('-'); const nd=new Date(when); nd.setFullYear(+p[0],+p[1]-1,+p[2]); setTime(nd); };
       panel.querySelector('.sun-slider').oninput=e=>{ const m=+e.target.value; const nd=new Date(when); nd.setHours(Math.floor(m/60),m%60,0,0); when=nd; syncInputs(); clearTimeout(moveT); moveT=setTimeout(()=>{ drawShadows(); drawTerrain(); },120); };
-      const pb=panel.querySelector('.sun-play'); pb.onclick=()=>{ if(playing){ stopTick(playing); playing=0; pb.textContent='▶'; } else { pb.textContent='⏸'; playing=everyTick('sims:sun-play',700,()=>{ const nd=new Date(when.getTime()+15*60000); setTime(nd); }); } };
+      const pb=panel.querySelector('.sun-play'); pb.onclick=()=>{ if(playing){ stopTick(playing); playing=0; pb.replaceChildren(iconNode('play')); } else { pb.replaceChildren(iconNode('pause')); playing=everyTick('sims:sun-play',700,()=>{ const nd=new Date(when.getTime()+15*60000); setTime(nd); }); } };
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.sun-head')); }catch(_){}
       return panel; }
     /* ===== (#R176) the terrain/annual half of the engine — thin controls over js/insolation.js ===== */
@@ -877,7 +878,7 @@ export function sun(HOST){
       const at=siteLL(); if(!at) return;   /* (#R302) the sun's altitude is a property of ONE point — with none there is nothing to shade */
       engBusy=true;
       try{ const r=await ENG().shade(when,{refit:true,at});   /* (#R298) the sun is read at the panel's point */
-        if(r) engSay('⛰ '+SN('Terrain shadow','地形の影','Geländeschatten','Тень рельефа','Sombra del terreno')+': '
+        if(r) engSay(icon('mountain')+' '+SN('Terrain shadow','地形の影','Geländeschatten','Тень рельефа','Sombra del terreno')+': '
           +nf(r.shadedFrac*100,1)+'% '+SN('of the view','が影','der Ansicht','вида','de la vista')
           +' · '+SN('sun','太陽','Sonne','солнце','sol')+' '+nf(r.altDeg,1)+'° / '+nf(r.azDeg)+'°'
           +' · '+nf(r.cellM)+' m '+SN('cells','セル','Zellen','ячейки','celdas')+' · DEM z'+r.z);
@@ -898,7 +899,7 @@ export function sun(HOST){
         const d=new Date(y, lat>=0?11:5, 21, 12, 0, 0);               /* the SHORT day for this hemisphere */
         const r=await ENG().dayShadow(d,{refit:true,at});
         terrainOn=true; syncTerrBtn();
-        if(r) engSay('❄ '+SN('Never sunlit on','日照ゼロ（','Nie besonnt am ','Без солнца ','Sin sol el ')+r.day+SN('','）',': ',': ',': ')+' — <b>'+nf(r.neverSunFrac*100,1)+'%</b> '
+        if(r) engSay(icon('snowflake')+' '+SN('Never sunlit on','日照ゼロ（','Nie besonnt am ','Без солнца ','Sin sol el ')+r.day+SN('','）',': ',': ',': ')+' — <b>'+nf(r.neverSunFrac*100,1)+'%</b> '
           +SN('of the view','の面積','der Ansicht','вида','de la vista')+' · '+r.steps+' '+SN('sun positions','時刻で判定','Sonnenstände','положений','posiciones')
           +' · '+nf(r.cellM)+' m '+SN('cells','セル','Zellen','ячейки','celdas'));
       }catch(_){ } engBusy=false; }
@@ -971,7 +972,7 @@ export function sun(HOST){
        language switch below rebuilds the panel through this same door and must not lose its subject. */
     function open(at){ setSite(at); ensure(); ensurePanel(); panel.style.display='flex'; syncInputs(); syncTerrBtn(); drawShadows(); if(terrainOn) drawTerrain();
       if(!hasSite()) askSite(); }
-    function close(){ if(panel) panel.style.display='none'; if(playing){ stopTick(playing); playing=0; const pb=panel&&panel.querySelector('.sun-play'); if(pb) pb.textContent='▶'; } endPick();
+    function close(){ if(panel) panel.style.display='none'; if(playing){ stopTick(playing); playing=0; const pb=panel&&panel.querySelector('.sun-play'); if(pb) pb.replaceChildren(iconNode('play')); } endPick();
       site=null;   /* (#R298) shutting the panel forgets its subject — the next open states its own */
       try{ ENG()&&ENG().clear(); }catch(_){} try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} try{ GE().scene.setLight&&GE().scene.setLight({anchor:'viewport',position:[1.15,210,30]}); }catch(_){} }
     return { open, close, setTime, _sunPos:sunPos, _sunTimes:sunTimes,

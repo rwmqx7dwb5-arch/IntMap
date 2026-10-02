@@ -36,6 +36,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function los(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -490,11 +491,11 @@ export function los(HOST){
       const p=panel; if(!p) return;
       const MB='flex:1;height:28px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-muted);border-radius:8px;cursor:pointer;font-size:11.5px;';
       const MBON='background:var(--primary-fill);color:#fff;border-color:var(--primary-color);';
-      p.innerHTML='<div class="tp-header"><span class="tp-title">📡 '+L('Radio coverage & line of sight','電波・通信圏／見通し線','Funkabdeckung & Sichtlinie','Радиопокрытие и линия видимости','Cobertura de radio y línea de visión')+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
+      p.innerHTML='<div class="tp-header"><span class="tp-title">'+icon('antenna')+' '+L('Radio coverage & line of sight','電波・通信圏／見通し線','Funkabdeckung & Sichtlinie','Радиопокрытие и линия видимости','Cobertura de radio y línea de visión')+'</span><button class="tp-close" title="'+t('close')+'">×</button></div>'
         /* (#R296) the two analyses, as the one switch the merged tool needs */
         +'<div class="tp-row" style="gap:5px;">'
-          +'<button id="los-m-los" style="'+MB+(losMode==='los'?MBON:'')+'">📐 '+L('Line of sight','見通し線','Sichtlinie','Линия видимости','Línea de visión')+'</button>'
-          +'<button id="los-m-rf" style="'+MB+(losMode==='radio'?MBON:'')+'">📶 '+L('Radio coverage','電波・通信圏','Funkabdeckung','Радиопокрытие','Cobertura de radio')+'</button>'
+          +'<button id="los-m-los" style="'+MB+(losMode==='los'?MBON:'')+'">'+icon('set-square')+' '+L('Line of sight','見通し線','Sichtlinie','Линия видимости','Línea de visión')+'</button>'
+          +'<button id="los-m-rf" style="'+MB+(losMode==='radio'?MBON:'')+'">'+icon('signal')+' '+L('Radio coverage','電波・通信圏','Funkabdeckung','Радиопокрытие','Cobertura de radio')+'</button>'
         +'</div>'
         +'<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;">'
         +'<label style="'+ROW+'">'+L('Antenna height (m)','アンテナ高 (m)','Antennenhöhe (m)','Высота антенны (м)','Altura de antena (m)')+'<input id="los-h" type="number" value="'+losH+'" min="0" step="5" style="'+IN+'"></label>'
@@ -521,8 +522,8 @@ export function los(HOST){
            ⚠ It is armed exactly like 「2点間の見通し…」 above (one click, then it acts), and the two
            disarm each other so a click can never mean both. ⚠ It does NOT call open(): open() rewrites
            the panel's cssText and would throw away a panel the reader has dragged somewhere. */
-        +'<button class="tp-clear" id="los-move" style="width:100%;margin-top:6px;">📍 '+L('Move the site…','地点を変える…','Standort verschieben…','Перенести точку…','Mover el punto…')+'</button>'
-        +'<button class="tp-clear" id="los-link" style="width:100%;margin-top:6px;">📶 '+L('Link to a point…','2点間の見通し…','Verbindung zu einem Punkt…','Связь до точки…','Enlace a un punto…')+'</button>'
+        +'<button class="tp-clear" id="los-move" style="width:100%;margin-top:6px;">'+icon('pin')+' '+L('Move the site…','地点を変える…','Standort verschieben…','Перенести точку…','Mover el punto…')+'</button>'
+        +'<button class="tp-clear" id="los-link" style="width:100%;margin-top:6px;">'+icon('signal')+' '+L('Link to a point…','2点間の見通し…','Verbindung zu einem Punkt…','Связь до точки…','Enlace a un punto…')+'</button>'
         +'<button class="tp-clear" id="los-clr" style="width:100%;margin-top:6px;">'+L('Clear','消去','Löschen','Очистить','Borrar')+'</button>'
         +'<div id="los-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.55;">'
         +L('Set the heights and range, then analyze. Leave the frequency empty for pure geometry; give one to also get first-Fresnel and diffraction.',
@@ -586,7 +587,7 @@ export function los(HOST){
     function moveLabel(){ const b=panel&&panel.querySelector('#los-move'); if(!b) return;
       b.textContent=moveArmed
         ? '× '+L('Cancel — click the new site','キャンセル（新しい地点をクリック）','Abbrechen — neuen Standort klicken','Отмена — щёлкните новую точку','Cancelar — clic en el nuevo punto')
-        : '📍 '+L('Move the site…','地点を変える…','Standort verschieben…','Перенести точку…','Mover el punto…'); }
+        : icon('pin')+' '+L('Move the site…','地点を変える…','Standort verschieben…','Перенести точку…','Mover el punto…'); }
     /* the site itself moves: the overlay from the OLD point is wiped (it describes somewhere else),
        the marker follows, and the analysis re-runs with the panel's current numbers. The panel is NOT
        re-opened — open() would reset its position and undo a drag. */
@@ -612,7 +613,7 @@ export function los(HOST){
       const b=panel&&panel.querySelector('#los-link');
       if(b) b.textContent=linkArmed
         ? '× '+L('Cancel — click the far end','キャンセル（相手側をクリック）','Abbrechen — Gegenstelle klicken','Отмена — щёлкните дальний конец','Cancelar — clic en el otro extremo')
-        : '📶 '+L('Link to a point…','2点間の見通し…','Verbindung zu einem Punkt…','Связь до точки…','Enlace a un punto…');
+        : icon('signal')+' '+L('Link to a point…','2点間の見通し…','Verbindung zu einem Punkt…','Связь до точки…','Enlace a un punto…');
       try{ GE().render.setCursor(linkArmed?'crosshair':''); }catch(_){}
       if(linkArmed&&!_linkClickWired){ _linkClickWired=true;
         try{ GE().events.on('click',(e)=>{ if(!linkArmed) return; const ll=e&&e.lngLat; if(!ll) return;

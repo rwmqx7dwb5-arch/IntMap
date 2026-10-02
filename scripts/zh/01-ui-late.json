@@ -9,10 +9,10 @@
 "ui:mDone":"完成","ui:mTitleMap":"地圖","ui:mTitleTools":"工具","ui:mapColorAuto":"與外觀一致","ui:mapColorDark":"深色（黑）","ui:mapColorLight":"淺色（白）","ui:measureClickClose":"點擊第一個點以閉合",
 "ui:newsCountriesHint":"從你選擇的國家媒體擷取標題（可複選）。","ui:newsCountryMultiSel":"選擇國家…","ui:newsCountryOff":"僅預設資料源","ui:newsLangHint":"所選各語言的標題會一起顯示；若有 AI 金鑰，標題會自動翻譯。","ui:newsLangMultiSel":"多種語言…","ui:newsSourceAll":"所有媒體","ui:newsSourceMultiSel":"選擇媒體…","ui:newsSourcesHint":"只顯示你勾選的媒體的標題。清單依你目前資料源實際包含的媒體建立。",
 "ui:nightSideOff":"關閉 — 整顆地球均勻照亮","ui:nightSideOn":"開啟（預設）— 讓夜側變暗並顯示城市燈光",
-"ui:optDark":"深色","ui:optLight":"淺色","ui:proArchive":"🔒 十年時光回溯檔案","ui:proIntel":"🔒 俄・中在地一手來源情報","ui:reportBugBtn":"🐞 回報錯誤","ui:screenshotBtn":"螢幕擷取（隱藏控制項，保留圖例）","ui:screenshotSaved":"已儲存螢幕擷取 ✓","ui:sendFeedbackBtn":"⭐ 傳送意見回饋","ui:shareView":"分享此畫面（複製連結）",
+"ui:optDark":"深色","ui:optLight":"淺色","ui:proArchive":"十年時光回溯檔案","ui:proIntel":"俄・中在地一手來源情報","ui:reportBugBtn":"回報錯誤","ui:screenshotBtn":"螢幕擷取（隱藏控制項，保留圖例）","ui:screenshotSaved":"已儲存螢幕擷取 ✓","ui:sendFeedbackBtn":"傳送意見回饋","ui:shareView":"分享此畫面（複製連結）",
 "ui:showRankOff":"關閉","ui:showRankOn":"開啟（預設）","ui:sidebarGlass2":"霧面玻璃（更透明）","ui:sidebarOpaque":"實色（預設）","ui:sidebarTranslucent":"霧面玻璃",
 "ui:sortAsc":"遞增","ui:sortDesc":"遞減","ui:sortDir":"切換遞增／遞減","ui:sortLife":"平均壽命","ui:sortTfr":"生育率",
 "ui:srcModalSub":"IntMap 匯整以下第三方資料、影像與 API。所有商標均屬各自所有人。","ui:srcModalTitle":"資料來源與出處","ui:tickerOff":"關閉（預設）","ui:tickerOn":"開啟 — 地圖下方的細長條",
 "ui:tiltHint":"選「不限制」可讓你把視角傾過地平線，直到相機朝正上方。超過 180° 後畫面會重複且方位反轉，因此可在羅盤上按右鍵輸入 0 到 360 的任意角度。","ui:tiltStandard":"標準 — 最高 78°（預設）","ui:tiltUnlimited":"不限制 — 完整 0–180° 範圍",
 "ui:tkItems":"顯示的項目","ui:tkNews":"新聞標題","ui:tkgCom":"商品","ui:tkgCrypto":"加密資產","ui:tkgFx":"外匯","ui:tkgIdx":"指數",
-"ui:viewKbd":"⌨ 檢視鍵盤快速鍵（或按 ?）","ui:viewScience":"每一項模擬如何運作 ↗","ui:viewSourcesPage":"開啟資料來源頁面 ↗","ui:wsHint":"新聞、國家、地圖、圖層與 Atlas 各自成為獨立視窗，可自由移動、調整大小、收合與堆疊。你的版面配置會被儲存。"}
+"ui:viewKbd":"檢視鍵盤快速鍵（或按 ?）","ui:viewScience":"每一項模擬如何運作 ↗","ui:viewSourcesPage":"開啟資料來源頁面 ↗","ui:wsHint":"新聞、國家、地圖、圖層與 Atlas 各自成為獨立視窗，可自由移動、調整大小、收合與堆疊。你的版面配置會被儲存。"}

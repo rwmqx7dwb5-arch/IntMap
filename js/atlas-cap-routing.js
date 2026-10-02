@@ -19,6 +19,7 @@
 import { str, bool, num, one, list, lat, lng, loose } from './atlas-caps.js';
 import { routeFacts } from './atlas-result-facts.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon, withIcons } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export default [
   /* ⚠ (#R740) `isochrone`, NOT `paint` — a reachable area that is on the map is rendered whether
@@ -37,24 +38,24 @@ export default [
       {   /* ⚠ (#R278) lng/lat used to be DROPPED here: every sibling case (rfCoverage, earthquake, tsunami, nightSky, sunHours…) reads explicit coordinates first, this one only ever called geocode(a.place||…), and geocode('') falls back to the last place or the map centre. So {type:'isochrone',lng:136.934,lat:35.133} answered «✓ 60分の到達圏» and drew it at 10°E 20°N — measured, not supposed. A wrong place reported as success is the same lie as a circle reported as a reach. */
           /* ⚠ (#R299) …AND WITH NO PLACE NAMED IT ASKED `geocode('')`, whose documented answer is the last place or THE MAP CENTRE
              (js/atlas-geo-resolve.js): 「到達圏」 alone drew an area around whatever was on screen and reported it. A name, a coordinate or the reader's own pinned point — otherwise the question comes back. */
-          const _org=a.place||a.from||a.origin||a.center; const ll=(a.lng!=null&&a.lat!=null&&isFinite(+a.lng)&&isFinite(+a.lat))?{lng:+a.lng,lat:+a.lat,name:String(a.place||a.from||'')}:(_org?await geocode(_org):((typeof K._herePoint!=='undefined'&&K._herePoint)?K._herePoint:null)); if(!ll) return R(false, warn('⚠ '+whereMiss(L('From where? Give a place.','どこから？地点を指定してください。','Von wo? Ort angeben.','Откуда? Укажите место.','¿Desde dónde? Indica un lugar.')+' '+esc(a.place||a.from||''), a.place||a.from||a.origin||a.center)));
+          const _org=a.place||a.from||a.origin||a.center; const ll=(a.lng!=null&&a.lat!=null&&isFinite(+a.lng)&&isFinite(+a.lat))?{lng:+a.lng,lat:+a.lat,name:String(a.place||a.from||'')}:(_org?await geocode(_org):((typeof K._herePoint!=='undefined'&&K._herePoint)?K._herePoint:null)); if(!ll) return R(false, warn(whereMiss(L('From where? Give a place.','どこから？地点を指定してください。','Von wo? Ort angeben.','Откуда? Укажите место.','¿Desde dónde? Indica un lugar.')+' '+esc(a.place||a.from||''), a.place||a.from||a.origin||a.center)));
           const rawM=String(a.mode||a.profile||a.by||'').toLowerCase();
           if(/transit|train|rail|metro|subway|tram|電車|鉄道|地下鉄|列車|公共/.test(rawM)){   /* (#R91) rail reachability isochrone */
             let tmin=Array.isArray(a.minutes)?Math.max.apply(null,a.minutes.map(Number)):(+a.minutes||+a.time||+a.mins||60);
             try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(8,11-tmin/20)}); }catch(_){}
             let tr=null; try{ tr=await window.IntMapTransitReach.open({lng:ll.lng,lat:ll.lat},tmin); }catch(_){}
-            if(tr&&tr.ok) return R(true, note('🚆 '+esc(ll.name||a.place||'')+' — '+tr.minutes+' '+L('min by rail','分・鉄道到達圏','Min per Bahn','мин по ж/д','min en tren'))+note(tr.stations.length+' '+L('stations reachable within the time budget, riding the REAL OSM rail network (edge time = length ÷ line-class speed) — colored green→orange by minutes. Not a live timetable.','駅に時間内で到達可能。実在のOSM鉄道網を辿り（所要＝距離÷路線種別速度）、緑→橙で所要時間を色分け。実時刻表ではありません。','Bahnhöfe im Zeitbudget erreichbar (echtes OSM-Bahnnetz).','станций достижимо (реальная ж/д сеть OSM).','estaciones alcanzables (red ferroviaria real OSM).')));
-            return R(false, warn('🚆 '+L('No rail reachable here in that time (or the rail-data service is busy). Try a point nearer a station, or 🚗/🚶.','この時間で到達できる鉄道が見つかりません（またはデータ混雑）。駅の近くや車・徒歩をお試しください。','Kein Bahnnetz erreichbar.','Ж/д недоступна.','Sin ferrocarril alcanzable.')));
+            if(tr&&tr.ok) return R(true, note(icon('train')+' '+esc(ll.name||a.place||'')+' — '+tr.minutes+' '+L('min by rail','分・鉄道到達圏','Min per Bahn','мин по ж/д','min en tren'))+note(tr.stations.length+' '+L('stations reachable within the time budget, riding the REAL OSM rail network (edge time = length ÷ line-class speed) — colored green→orange by minutes. Not a live timetable.','駅に時間内で到達可能。実在のOSM鉄道網を辿り（所要＝距離÷路線種別速度）、緑→橙で所要時間を色分け。実時刻表ではありません。','Bahnhöfe im Zeitbudget erreichbar (echtes OSM-Bahnnetz).','станций достижимо (реальная ж/д сеть OSM).','estaciones alcanzables (red ferroviaria real OSM).')));
+            return R(false, warn(withIcons(L('No rail reachable here in that time (or the rail-data service is busy). Try a point nearer a station, or {icon:car}/{icon:walk}.','この時間で到達できる鉄道が見つかりません（またはデータ混雑）。駅の近くや車・徒歩をお試しください。','Kein Bahnnetz erreichbar.','Ж/д недоступна.','Sin ferrocarril alcanzable.'))));
           }
           const mode=/walk|foot|徒歩|pedestr|zu ?fu|пешк|a ?pie/.test(rawM)?'pedestrian':(/bike|bicycle|cycl|自転車|\brad\b|вело|bici/.test(rawM)?'bicycle':'auto');
           let mins=[]; if(Array.isArray(a.minutes)) mins=a.minutes.map(Number); else if(a.minutes!=null) mins=[+a.minutes]; else if(a.time!=null) mins=[+a.time]; else if(a.mins!=null) mins=[+a.mins];
-          const _asked=mins.length; mins=mins.filter(x=>isFinite(x)&&x>0&&x<=120); if(!mins.length&&_asked) return R(false, warn('🎯 '+L('The reachable area is computed for 1 to 120 minutes — ask again inside that range.','到達圏は1〜120分の範囲で計算します。その範囲で指定してください。','Erreichbarkeit wird für 1 bis 120 Minuten berechnet — bitte in diesem Bereich fragen.','Зона доступности считается на 1–120 минут — укажите время в этом диапазоне.','El área alcanzable se calcula de 1 a 120 minutos — pídelo dentro de ese rango.')));   /* ⚠ (#R278) it used to silently fall back to [15,30] here, so 「3時間で行ける範囲」 drew a 30-minute area under a ✓ — the same lie as the circle */ if(!mins.length) mins=[15,30];
+          const _asked=mins.length; mins=mins.filter(x=>isFinite(x)&&x>0&&x<=120); if(!mins.length&&_asked) return R(false, warn(L('The reachable area is computed for 1 to 120 minutes — ask again inside that range.','到達圏は1〜120分の範囲で計算します。その範囲で指定してください。','Erreichbarkeit wird für 1 bis 120 Minuten berechnet — bitte in diesem Bereich fragen.','Зона доступности считается на 1–120 минут — укажите время в этом диапазоне.','El área alcanzable se calcula de 1 a 120 minutos — pídelo dentro de ese rango.')));   /* ⚠ (#R278) it used to silently fall back to [15,30] here, so 「3時間で行ける範囲」 drew a 30-minute area under a ✓ — the same lie as the circle */ if(!mins.length) mins=[15,30];
           try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(9,12-Math.max.apply(null,mins)/15)}); }catch(_){}
           let r=null; try{ r=await window.IntMapIsochrone.run({lng:ll.lng,lat:ll.lat},{mode,minutes:mins}); }catch(_){}
-          const ic=mode==='pedestrian'?'🚶':mode==='bicycle'?'🚲':'🚗';
-          if(r&&r.ok) return R(true, note('🎯 '+ic+' '+esc(ll.name||a.place||'')+' — '+r.minutes.join(' / ')+' '+L('min reachable','分の到達圏','Min erreichbar','мин зона','min alcanzable'))
-            +note(L('Reachable area along the REAL road network (Valhalla / OpenStreetMap) — drive / walk / cycle, not a distance circle. Adjust mode & time in the 🎯 panel.','実際の道路網に沿った到達圏（Valhalla／OpenStreetMap）— 車・徒歩・自転車で、距離の円ではありません。モードと時間は🎯パネルで調整できます。','Erreichbarkeit entlang des echten Straßennetzes (Valhalla/OSM) — Auto/Fuß/Rad, kein Distanzkreis.','Зона доступности по реальной дорожной сети (Valhalla/OSM) — авто/пешком/вело, не круг.','Área alcanzable por la red vial real (Valhalla/OSM) — coche/pie/bici, no un círculo.')));
-          return R(false, warn('🎯 '+((r&&r.reason==='render')?L('The reachable area was computed, but the map layer could not be created (the map style was still loading) — try again in a moment.','到達圏は計算できましたが、地図レイヤーを作成できませんでした（地図の読み込み中）— 少し待って再試行してください。','Die Erreichbarkeit wurde berechnet, aber die Kartenebene konnte nicht angelegt werden (Kartenstil lädt noch) — gleich erneut versuchen.','Зона доступности рассчитана, но слой карты не удалось создать (стиль карты ещё загружается) — повторите через момент.','El área alcanzable se calculó, pero no se pudo crear la capa del mapa (el estilo aún se está cargando) — inténtalo en un momento.'):L('Could not compute the reachable area (routing service busy) — try again.','到達圏を算出できませんでした（サービス混雑）— 再試行してください。','Erreichbarkeit fehlgeschlagen — erneut versuchen.','Не удалось рассчитать — попробуйте снова.','No se pudo calcular — reintenta.')))); }
+          const ic=mode==='pedestrian'?icon('walk'):mode==='bicycle'?icon('bicycle'):icon('car');
+          if(r&&r.ok) return R(true, note(icon('target')+' '+ic+' '+esc(ll.name||a.place||'')+' — '+r.minutes.join(' / ')+' '+L('min reachable','分の到達圏','Min erreichbar','мин зона','min alcanzable'))
+            +note(withIcons(L('Reachable area along the REAL road network (Valhalla / OpenStreetMap) — drive / walk / cycle, not a distance circle. Adjust mode & time in the {icon:target} panel.','実際の道路網に沿った到達圏（Valhalla／OpenStreetMap）— 車・徒歩・自転車で、距離の円ではありません。モードと時間は{icon:target}パネルで調整できます。','Erreichbarkeit entlang des echten Straßennetzes (Valhalla/OSM) — Auto/Fuß/Rad, kein Distanzkreis.','Зона доступности по реальной дорожной сети (Valhalla/OSM) — авто/пешком/вело, не круг.','Área alcanzable por la red vial real (Valhalla/OSM) — coche/pie/bici, no un círculo.'))));
+          return R(false, warn(((r&&r.reason==='render')?L('The reachable area was computed, but the map layer could not be created (the map style was still loading) — try again in a moment.','到達圏は計算できましたが、地図レイヤーを作成できませんでした（地図の読み込み中）— 少し待って再試行してください。','Die Erreichbarkeit wurde berechnet, aber die Kartenebene konnte nicht angelegt werden (Kartenstil lädt noch) — gleich erneut versuchen.','Зона доступности рассчитана, но слой карты не удалось создать (стиль карты ещё загружается) — повторите через момент.','El área alcanzable se calculó, pero no se pudo crear la capa del mapa (el estilo aún se está cargando) — inténtalo en un momento.'):L('Could not compute the reachable area (routing service busy) — try again.','到達圏を算出できませんでした（サービス混雑）— 再試行してください。','Erreichbarkeit fehlgeschlagen — erneut versuchen.','Не удалось рассчитать — попробуйте снова.','No se pudo calcular — reintenta.')))); }
     },
   },
   {
@@ -65,7 +66,7 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { from: str(), to: str() }, required: ['from', 'to'] }), /* `route` = the MARITIME route */
     async run(a, dctx, K) { const geocode = K.geocode, GE = K.GE, R = K.R, note = K.note, L = K.L, esc = K.esc, warn = K.warn;
-      { const A=await geocode(a.from); const B=await geocode(a.to); let any=false; try{ if(window.IntMapRoute&&window.IntMapRoute.open) window.IntMapRoute.open(); }catch(_){} try{ if(A&&window.IntMapRoute&&window.IntMapRoute.setStart){ window.IntMapRoute.setStart({lng:A.lng,lat:A.lat}); any=true; } }catch(_){} try{ if(B&&window.IntMapRoute&&window.IntMapRoute.setEnd){ window.IntMapRoute.setEnd({lng:B.lng,lat:B.lat}); any=true; } }catch(_){} if(A&&B){ try{ GE().camera.fitBounds([[Math.min(A.lng,B.lng),Math.min(A.lat,B.lat)],[Math.max(A.lng,B.lng),Math.max(A.lat,B.lat)]],{padding:80,duration:900}); }catch(_){} } return R(any, any?note('🚢 '+L('Sea route','海路','Seeroute','Морской путь','Ruta marítima')+': '+esc((A&&A.name)||a.from||'')+' → '+esc((B&&B.name)||a.to||'')):warn('⚠ '+L('Need start & destination','始点と終点が必要','Start & Ziel nötig','Нужны старт и финиш','Origen y destino'))); }
+      { const A=await geocode(a.from); const B=await geocode(a.to); let any=false; try{ if(window.IntMapRoute&&window.IntMapRoute.open) window.IntMapRoute.open(); }catch(_){} try{ if(A&&window.IntMapRoute&&window.IntMapRoute.setStart){ window.IntMapRoute.setStart({lng:A.lng,lat:A.lat}); any=true; } }catch(_){} try{ if(B&&window.IntMapRoute&&window.IntMapRoute.setEnd){ window.IntMapRoute.setEnd({lng:B.lng,lat:B.lat}); any=true; } }catch(_){} if(A&&B){ try{ GE().camera.fitBounds([[Math.min(A.lng,B.lng),Math.min(A.lat,B.lat)],[Math.max(A.lng,B.lng),Math.max(A.lat,B.lat)]],{padding:80,duration:900}); }catch(_){} } return R(any, any?note(icon('ship')+' '+L('Sea route','海路','Seeroute','Морской путь','Ruta marítima')+': '+esc((A&&A.name)||a.from||'')+' → '+esc((B&&B.name)||a.to||'')):warn(L('Need start & destination','始点と終点が必要','Start & Ziel nötig','Нужны старт и финиш','Origen y destino'))); }
     },
   },
   {
@@ -82,14 +83,14 @@ export default [
           let pts=[];
           if(names.length){ for(const nm of names){ try{ const g=await geocode(nm); if(g) pts.push({lng:g.lng,lat:g.lat,name:g.name||nm}); }catch(_){} } }
           else if(typeof HOST.userPins!=='undefined' && HOST.userPins && HOST.userPins.length>=2){ pts=HOST.userPins.map((p,i)=>({lng:p.lng,lat:p.lat,name:L('Pin','ピン','Pin','Метка','Pin')+' '+(i+1)})); }
-          if(pts.length<2) return R(false, warn('⚠ '+L('Give me at least 2 places to visit (comma-separated), or drop pins first.','巡回する地点を2つ以上（カンマ区切り）指定するか、先にピンを置いてください。','Mind. 2 Orte (kommagetrennt) angeben oder Pins setzen.','Укажите ≥2 места через запятую или поставьте метки.','Indica ≥2 lugares separados por comas o coloca pines.')));
+          if(pts.length<2) return R(false, warn(L('Give me at least 2 places to visit (comma-separated), or drop pins first.','巡回する地点を2つ以上（カンマ区切り）指定するか、先にピンを置いてください。','Mind. 2 Orte (kommagetrennt) angeben oder Pins setzen.','Укажите ≥2 места через запятую или поставьте метки.','Indica ≥2 lugares separados por comas o coloca pines.')));
           const ord=_tspOrder(pts); const seq=ord.map(i=>pts[i]);
-          const mi=mode2==='walking'?'🚶':mode2==='cycling'?'🚲':'🚗';
+          const mi=mode2==='walking'?icon('walk'):mode2==='cycling'?icon('bicycle'):icon('car');
           let r=null; try{ r=await window.IntMapRouting.route({lng:seq[0].lng,lat:seq[0].lat},{lng:seq[seq.length-1].lng,lat:seq[seq.length-1].lat},{mode:mode2,via:seq.slice(1,-1).map(p=>({lng:p.lng,lat:p.lat}))}); }catch(_){}
           const listHtml=seq.map((p,i)=>'<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;border-top:1px solid rgba(128,128,128,0.1);"><span style="flex:0 0 auto;width:20px;height:20px;border-radius:50%;background:var(--primary-fill);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">'+(i+1)+'</span><span style="flex:1;min-width:0;font-size:12.5px;">'+esc(p.name)+'</span></div>').join('');
           let summ=''; if(r&&r.ok&&r.distance!=null){ const km=r.distance/1000, mn=Math.round(r.duration/60), h=Math.floor(mn/60), rm=mn%60; summ=mi+' <b>'+(h?(h+' h '+rm+' min'):(mn+' min'))+'</b> · '+(km<10?km.toFixed(1):Math.round(km).toLocaleString())+' km'; }
           else { try{ GE().camera.fitBounds([[Math.min.apply(null,seq.map(p=>p.lng)),Math.min.apply(null,seq.map(p=>p.lat))],[Math.max.apply(null,seq.map(p=>p.lng)),Math.max.apply(null,seq.map(p=>p.lat))]],{padding:70,duration:900}); }catch(_){} }
-          return R(true, note('🧭 '+L('Optimized order','最短順路','Optimierte Reihenfolge','Оптимальный порядок','Orden óptimo')+' · '+pts.length+' '+L('stops','地点','Stopps','точек','paradas'))
+          return R(true, note(icon('compass')+' '+L('Optimized order','最短順路','Optimierte Reihenfolge','Оптимальный порядок','Orden óptimo')+' · '+pts.length+' '+L('stops','地点','Stopps','точек','paradas'))
             +(summ?('<div style="font-size:13px;margin:3px 0 4px;">'+summ+'</div>'):'')
             +'<div>'+listHtml+'</div>'
             +note(r&&r.ok? L('Ordered shortest-first (nearest-neighbor + 2-opt), then driven on the OSM road network (OSRM). The first stop is fixed as the start.','最近傍＋2-optで最短順に並べ替え、OSMの道路網（OSRM）で経路化。最初の地点を起点に固定します。','Kürzeste Reihenfolge (Nächster-Nachbar + 2-opt), auf dem OSM-Straßennetz (OSRM).','Кратчайший порядок (ближайший сосед + 2-opt) по дорожной сети OSM (OSRM).','Orden más corto (vecino más cercano + 2-opt) por la red vial OSM (OSRM).')
@@ -115,7 +116,7 @@ export default [
           /* ⚠⚠ (#R299) A BARE 「経路案内」 OPENS THE PANEL — the parser rule that lands here says so in as many words («open the empty
              directions panel»), and this branch only ever printed a sentence: the one ask that is a REQUEST FOR THE TOOL got told to type more. `IntMapRouteUI` is lazy — fetched as js/map-ui.js's row does. */
           if(!a.from&&!a.to&&!a.place){ let ok=false; try{ await window.IntMapLazy.need('routeUi'); ok=!!(window.IntMapRouteUI&&window.IntMapRouteUI.open()); }catch(_){}
-            return R(true, note('🧭 '+L('Tell me a start and destination — e.g. "directions from Tokyo to Osaka" or "電車で新宿から横浜".','出発地と目的地を教えてください（例：「東京から大阪への経路」「電車で新宿から横浜」）。','Nenne Start und Ziel.','Укажите начало и цель.','Dime origen y destino.'))+(ok?note(L('The route planner is open on the map — fill in the two fields there, or say the places here.','経路パネルを地図上に開きました。パネルに入力するか、ここで地点を伝えてください。','Der Routenplaner ist geöffnet — dort ausfüllen oder die Orte hier nennen.','Планировщик маршрута открыт — заполните поля там или назовите места здесь.','El planificador de rutas está abierto — complétalo allí o dime los lugares aquí.')):'')); }
+            return R(true, note(icon('compass')+' '+L('Tell me a start and destination — e.g. "directions from Tokyo to Osaka" or "電車で新宿から横浜".','出発地と目的地を教えてください（例：「東京から大阪への経路」「電車で新宿から横浜」）。','Nenne Start und Ziel.','Укажите начало и цель.','Dime origen y destino.'))+(ok?note(L('The route planner is open on the map — fill in the two fields there, or say the places here.','経路パネルを地図上に開きました。パネルに入力するか、ここで地点を伝えてください。','Der Routenplaner ist geöffnet — dort ausfüllen oder die Orte hier nennen.','Планировщик маршрута открыт — заполните поля там или назовите места здесь.','El planificador de rutas está abierto — complétalo allí o dime los lugares aquí.')):'')); }
           /* (#R125) endpoint resolution hardened for rail asks: an exact Shinkansen-station name resolves to the
              REAL station (geocode fuzzy-matched 仙台駅 to a POI named 仙太鮨…), and a query ending in 駅/station
              whose geocode hit doesn't even CONTAIN the base name retries with the base (city) name instead. */
@@ -139,7 +140,7 @@ export default [
           /* (#R296) still recorded: a follow-up 「徒歩で」 re-routes the last journey through this. */
           K._lastRouteCtx={from:a.from,to:(a.to||a.place||a.destination),via:a.via};
           const _hdr='';
-          if(!A||!B) return R(false, _hdr+warn('⚠ '+L('Could not find one of those places','地点を特定できませんでした','Ort nicht gefunden','Место не найдено','Lugar no encontrado')));
+          if(!A||!B) return R(false, _hdr+warn(L('Could not find one of those places','地点を特定できませんでした','Ort nicht gefunden','Место не найдено','Lugar no encontrado')));
           let via=[]; if(Array.isArray(a.via)){ for(const v of a.via.slice(0,6)){ try{ const g=await geocode(String(v)); if(g) via.push({lng:g.lng,lat:g.lat}); }catch(_){} } }
           /* (#R132) §7.3: parse an avoid list (array or comma/space string) → toll/motorway/ferry for OSRM exclude= */
           let _avoid=null; { let av=a.avoid||a.avoids||a.exclude; if(typeof av==='string') av=av.split(/[,、\s]+/); if(Array.isArray(av)){ _avoid=av.map(x=>{ x=String(x).toLowerCase(); return /toll|有料/.test(x)?'toll':/motorway|highway|freeway|高速/.test(x)?'motorway':/ferry|フェリー/.test(x)?'ferry':''; }).filter(Boolean); if(!_avoid.length) _avoid=null; } }
@@ -166,7 +167,7 @@ export default [
               _mw?{maxWalkM:_mw}:{})); }catch(_){}
           if(r&&r.transit){
             const totMin=Math.round(r.duration/60), hrs=Math.floor(totMin/60), rem=totMin%60, dur=hrs?(hrs+' h '+rem+' min'):(totMin+' min'); const tf=r.transfers||0;
-            const _ic=m=>{ m=String(m||'').toUpperCase(); return /WALK|FOOT/.test(m)?'🚶':/SUBWAY|METRO/.test(m)?'🚇':/TRAM|LIGHT_RAIL|STREETCAR/.test(m)?'🚊':/BUS|COACH/.test(m)?'🚌':/FERRY|BOAT/.test(m)?'⛴':/HIGHSPEED|LONG_DISTANCE/.test(m)?'🚄':/RAIL|TRAIN|REGIONAL|SUBURBAN|NIGHT/.test(m)?'🚆':'🚈'; };
+            const _ic=m=>{ m=String(m||'').toUpperCase(); return /WALK|FOOT/.test(m)?icon('walk'):/SUBWAY|METRO/.test(m)?icon('train'):/TRAM|LIGHT_RAIL|STREETCAR/.test(m)?icon('train'):/BUS|COACH/.test(m)?icon('bus'):/FERRY|BOAT/.test(m)?icon('ship'):/HIGHSPEED|LONG_DISTANCE/.test(m)?icon('train'):/RAIL|TRAIN|REGIONAL|SUBURBAN|NIGHT/.test(m)?icon('train'):icon('train'); };
             const _tm=iso=>{ try{ const d=new Date(iso); return isFinite(d.getTime())?d.toLocaleTimeString(IntMapLang.locale(HOST.lang,"en-GB"),{hour:'2-digit',minute:'2-digit'}):''; }catch(_){ return ''; } };
             const seq=(r.legs||[]).map(l=>_ic(l.mode)+(l.route&&!l.walk?(' '+esc(l.route)):'')).join(' → ');
             /* ⚠ (#R291) NOT WRITTEN HERE ANY MORE (§17): this and js/routing.js's `legRows()` had drifted apart — Atlas badged a live leg, the panel did not. */
@@ -202,10 +203,10 @@ export default [
               const m2=stt==='rate_limited'?L('Too many requests — wait a moment and try again.','リクエストが多すぎます — 少し待って再試行してください。','Zu viele Anfragen — kurz warten und erneut versuchen.','Слишком много запросов — подождите и повторите.','Demasiadas solicitudes — espera y reintenta.')
                 :stt==='provider_timeout'?L('The routing service timed out — try again.','経路サービスがタイムアウトしました — 再試行してください。','Zeitüberschreitung beim Routingdienst — erneut versuchen.','Тайм-аут сервиса маршрутов — повторите.','El servicio de rutas agotó el tiempo — reintenta.')
                 :L('The routing service is unreachable right now (outage or network) — the route was NOT computed. Try again shortly.','経路サービスに接続できません（障害またはネットワーク）— 経路は計算されていません。しばらくして再試行してください。','Routingdienst nicht erreichbar — Route NICHT berechnet. Später erneut versuchen.','Сервис маршрутов недоступен — маршрут НЕ рассчитан. Повторите позже.','Servicio de rutas no disponible — la ruta NO se calculó. Reintenta en breve.');
-              return R(false, _hdr+warn('⚠ '+m2)); }
-            if(isTr) return R(true, _hdr+warn('🚆 '+L('No public-transit route here — the area may have no open transit data yet. Try 🚗 or 🚶 above.','この区間の公共交通経路が見つかりません。上のボタンで車・徒歩をお試しください。','Keine ÖPNV-Verbindung — oben 🚗/🚶 versuchen.','Нет транзита — попробуйте 🚗/🚶 выше.','Sin transporte — prueba 🚗/🚶 arriba.')));
+              return R(false, _hdr+warn(m2)); }
+            if(isTr) return R(true, _hdr+warn(withIcons(L('No public-transit route here — the area may have no open transit data yet. Try {icon:car} or {icon:walk} above.','この区間の公共交通経路が見つかりません。上のボタンで車・徒歩をお試しください。','Keine ÖPNV-Verbindung — oben {icon:car}/{icon:walk} versuchen.','Нет транзита — попробуйте {icon:car}/{icon:walk} выше.','Sin transporte — prueba {icon:car}/{icon:walk} arriba.'))));
             const snapTx=(r&&r.snapKm)?(' '+L('One point is ~'+r.snapKm+' km from the nearest routable road (outside road-data coverage / across water).','一方の地点が最寄りの経路可能な道路から約'+r.snapKm+' km離れています（道路データ対象外／水域越えの可能性）。','Ein Punkt liegt ~'+r.snapKm+' km von der nächsten routbaren Straße (außerhalb der Abdeckung).','Точка в ~'+r.snapKm+' км от ближайшей дороги (вне покрытия).','Un punto está a ~'+r.snapKm+' km de la carretera más cercana (fuera de cobertura).')):'';
-            return R(true, _hdr+warn('⚠ '+L('No route found (no road connection between these points).','経路が見つかりません（この2地点間に陸路の接続がありません）。','Keine Route gefunden (keine Straßenverbindung).','Маршрут не найден (нет дорожного соединения).','Sin ruta (sin conexión por carretera).')+snapTx)); }
+            return R(true, _hdr+warn(L('No route found (no road connection between these points).','経路が見つかりません（この2地点間に陸路の接続がありません）。','Keine Route gefunden (keine Straßenverbindung).','Маршрут не найден (нет дорожного соединения).','Sin ruta (sin conexión por carretera).')+snapTx)); }
           /* (#R132) 経路10-10 §7.1/§10/§12/§16: road reply mirrors transit — selectable alternative cards
              (fastest/shortest/+X min) in the SAME .atl-trips/.atl-trip structure the existing selectAlt handler
              drives (data-rset), plus rich turn-by-turn (IntMapRouting.maneuver) with lane guidance and step→map. */
@@ -227,7 +228,7 @@ export default [
             /* ⚠ (#R296) 「「所要時間は交通状況を含まない標準値です。」だけでいい」 — it drops the provider's name and a phrase the reader knows. */
             ? L('Times are typical (no live traffic).','所要時間は交通状況を含まない標準値です。','Zeiten sind typisch (kein Live-Verkehr).','Время типовое (без пробок).','Los tiempos son típicos (sin tráfico).')
             : L('Times are typical (no live traffic).','所要時間は交通状況を含まない標準値です。','Zeiten sind typisch (kein Live-Verkehr).','Время типовое (без пробок).','Los tiempos son típicos (sin tráfico).'));
-          if(r.avoidDropped) h+=warn('⚠ '+L('Could not apply the avoid options (routing service busy) — showing the normal route.','回避条件を適用できませんでした（経路サービス混雑）— 通常経路を表示。','Meiden-Optionen nicht anwendbar (Dienst ausgelastet) — normale Route.','Не удалось применить исключения — обычный маршрут.','No se pudieron aplicar las exclusiones — ruta normal.'));
+          if(r.avoidDropped) h+=warn(L('Could not apply the avoid options (routing service busy) — showing the normal route.','回避条件を適用できませんでした（経路サービス混雑）— 通常経路を表示。','Meiden-Optionen nicht anwendbar (Dienst ausgelastet) — normale Route.','Не удалось применить исключения — обычный маршрут.','No se pudieron aplicar las exclusiones — ruta normal.'));
           return R(true, h, {meta:{resultKey:_jKey}, exec:{route:routeFacts(r)}}); }
     },
   },
@@ -244,14 +245,14 @@ export default [
          route is flyable when the planner said otherwise. */
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, note = K.note, geocode = K.geocode, esc = K.esc, GE = K.GE;
       { const D=window.IntMapDrone;
-          if(!D) return R(false, warn('⚠ '+L('Drone planner unavailable','ドローン航法を使えません','Drohnenplaner nicht verfügbar','Планировщик дрона недоступен','Planificador de dron no disponible')));
+          if(!D) return R(false, warn(L('Drone planner unavailable','ドローン航法を使えません','Drohnenplaner nicht verfügbar','Планировщик дрона недоступен','Planificador de dron no disponible')));
           const act=String(a.action||(a.from||a.to?'plan':'open')).toLowerCase();
-          if(act==='close'){ D.close(); return R(true, note('🛸 '+L('Closed','閉じました','Geschlossen','Закрыто','Cerrado'))); }
-          if(act==='clear'){ D.clearRoute(); D.open(); return R(true, note('🛸 '+L('Route cleared','経路を消去しました','Route gelöscht','Маршрут очищен','Ruta borrada'))); }
+          if(act==='close'){ D.close(); return R(true, note(icon('drone')+' '+L('Closed','閉じました','Geschlossen','Закрыто','Cerrado'))); }
+          if(act==='clear'){ D.clearRoute(); D.open(); return R(true, note(icon('drone')+' '+L('Route cleared','経路を消去しました','Route gelöscht','Маршрут очищен','Ruta borrada'))); }
           if(act==='plan'){
             const names=[a.from].concat(Array.isArray(a.via)?a.via:(a.via?[a.via]:[])).concat([a.to]).filter(x=>x!=null&&String(x).trim()!=='');
-            if(names.length<2) return R(false, warn('⚠ '+L('Need a start and a destination','出発地と目的地が必要です','Start und Ziel nötig','Нужны старт и цель','Se necesitan origen y destino')));
-            const pts=[]; for(const n of names){ const ll=await geocode(n); if(!ll) return R(false, warn('⚠ '+esc(String(n)))); pts.push(ll); }
+            if(names.length<2) return R(false, warn(L('Need a start and a destination','出発地と目的地が必要です','Start und Ziel nötig','Нужны старт и цель','Se necesitan origen y destino')));
+            const pts=[]; for(const n of names){ const ll=await geocode(n); if(!ll) return R(false, warn(esc(String(n)))); pts.push(ll); }
             D.newRoute();
             if(a.aircraft) D.usePreset(String(a.aircraft).toLowerCase());
             const ref=(String(a.ref||'agl').toLowerCase()==='amsl')?'amsl':'agl';
@@ -264,22 +265,22 @@ export default [
             try{ const lats=pts.map(p=>p.lat), lngs=pts.map(p=>p.lng);
               GE().camera.fitBounds([[Math.min.apply(null,lngs),Math.min.apply(null,lats)],[Math.max.apply(null,lngs),Math.max.apply(null,lats)]],
                 {padding:90,pitch:Math.max(GE().camera.getPitch(),55),duration:900}); }catch(_){}
-            if(!res) return R(false, warn('⚠'));
+            if(!res) return R(false, warn(''));
             const bad=res.violations.filter(v=>v.severity==='critical'||v.severity==='error');
-            const head='🛸 '+esc(D.route().name)+' · '+(res.dist3DM/1000).toFixed(2)+' km · '+Math.round(res.timeS/60)+' min · '+Math.round(res.batteryPct)+'% '+L('battery','バッテリー','Akku','батарея','batería');
-            return R(true, (bad.length?warn('⚠ '+head+'\n'+bad.map(v=>'· '+esc(v.text)).join('\n')):note(head+' · ✓ '+L('all conditions met','全条件を満たします','alle Bedingungen erfüllt','все условия выполнены','todas las condiciones cumplidas')))); }
+            const head=icon('drone')+' '+esc(D.route().name)+' · '+(res.dist3DM/1000).toFixed(2)+' km · '+Math.round(res.timeS/60)+' min · '+Math.round(res.batteryPct)+'% '+L('battery','バッテリー','Akku','батарея','batería');
+            return R(true, (bad.length?warn(head+'\n'+bad.map(v=>'· '+esc(v.text)).join('\n')):note(head+' · ✓ '+L('all conditions met','全条件を満たします','alle Bedingungen erfüllt','все условия выполнены','todas las condiciones cumplidas')))); }
           if(act==='followterrain'||act==='follow'){ D.open(); const res=await D.followTerrain();
-            if(!res) return R(false, warn('⚠ '+L('No route to adjust','調整する経路がありません','Keine Route','Нет маршрута','No hay ruta')));
-            return R(true, note('⛰ '+L('Adjusted to the terrain','地形に沿わせました','An das Gelände angepasst','Подогнано под рельеф','Ajustado al terreno')+' · '+D.route().wp.length+' '+L('waypoints','ウェイポイント','Wegpunkte','точек','puntos'))); }
+            if(!res) return R(false, warn(L('No route to adjust','調整する経路がありません','Keine Route','Нет маршрута','No hay ruta')));
+            return R(true, note(icon('mountain')+' '+L('Adjusted to the terrain','地形に沿わせました','An das Gelände angepasst','Подогнано под рельеф','Ajustado al terreno')+' · '+D.route().wp.length+' '+L('waypoints','ウェイポイント','Wegpunkte','точек','puntos'))); }
           if(act==='compute'||act==='recompute'){ D.open(); const res=await D.compute();
-            if(!res) return R(false, warn('⚠ '+L('No route yet','経路がまだありません','Noch keine Route','Маршрута ещё нет','Aún no hay ruta')));
-            return R(true, note('🛸 '+(res.dist3DM/1000).toFixed(2)+' km · '+Math.round(res.timeS/60)+' min · '+res.violations.length+' '+L('findings','指摘','Hinweise','замечаний','hallazgos'))); }
+            if(!res) return R(false, warn(L('No route yet','経路がまだありません','Noch keine Route','Маршрута ещё нет','Aún no hay ruta')));
+            return R(true, note(icon('drone')+' '+(res.dist3DM/1000).toFixed(2)+' km · '+Math.round(res.timeS/60)+' min · '+res.violations.length+' '+L('findings','指摘','Hinweise','замечаний','hallazgos'))); }
           /* (#R184) the operational checks and the three route actions. Everything below reads its
              answer back out of IntMapDroneOps rather than restating the request, so a reply cannot
              claim a check that did not run. */
           const O=window.IntMapDroneOps;
           const needOps=/^(wind|link|radio|nofly|restricted|reserve|return|sites|landing|prepare|check|compare|variants|rth|returnhome|returntohome|conflicts|conflict|traffic)$/.test(act);
-          if(needOps&&!O) return R(false, warn('⚠ '+L('The drone operations module is unavailable','ドローンの運航条件モジュールを利用できません','Das Betriebsmodul ist nicht verfügbar','Модуль эксплуатации недоступен','El módulo de operaciones no está disponible')));
+          if(needOps&&!O) return R(false, warn(L('The drone operations module is unavailable','ドローンの運航条件モジュールを利用できません','Das Betriebsmodul ist nicht verfügbar','Модуль эксплуатации недоступен','El módulo de operaciones no está disponible')));
           if(needOps) D.open();
           if(act==='prepare'||act==='check'||act==='wind'||act==='link'||act==='radio'||act==='nofly'||act==='restricted'||act==='reserve'||act==='return'||act==='sites'||act==='landing'){
             /* naming ONE check turns that check on; "prepare"/"check" runs whatever is already on */
@@ -296,26 +297,26 @@ export default [
             if(s.enabled.reserve&&s.reserve&&s.reserve.roundTripWh!=null) bits.push(L('round trip','往復','Umlauf','круг','ida y vuelta')+' '+s.reserve.roundTripWh.toFixed(1)+' Wh');
             const res2=D.result();
             const bad2=res2?res2.violations.filter(v=>v.severity==='critical'||v.severity==='error'):[];
-            return R(true, (bad2.length?warn('⚠ '):note('✓ '))+esc(bits.join(' · ')||L('checks run','点検しました','geprüft','проверено','comprobado'))
+            return R(true, (bad2.length?warn(''):note('✓ '))+esc(bits.join(' · ')||L('checks run','点検しました','geprüft','проверено','comprobado'))
               +(bad2.length?('\n'+bad2.map(v=>'· '+esc(v.text)).join('\n')):'')); }
           if(act==='compare'||act==='variants'){
             const c=await O.compareVariants();
-            if(!c) return R(false, warn('⚠ '+L('Need a route with at least two waypoints','ウェイポイントが2点以上の経路が必要です','Route mit mindestens zwei Wegpunkten nötig','Нужен маршрут минимум с двумя точками','Se necesita una ruta con dos puntos')));
-            const line=c.variants.map(v=>v.name+': '+(v.dist3DM/1000).toFixed(2)+' km · '+Math.round(v.timeS/60)+' min · '+v.energyWh.toFixed(1)+' Wh · '+v.violations+' ⚠').join('\n· ');
-            return R(true, note('⇄ '+L('Route comparison','経路の比較','Routenvergleich','Сравнение маршрутов','Comparación de rutas')+'\n· '+esc(line))); }
+            if(!c) return R(false, warn(L('Need a route with at least two waypoints','ウェイポイントが2点以上の経路が必要です','Route mit mindestens zwei Wegpunkten nötig','Нужен маршрут минимум с двумя точками','Se necesita una ruta con dos puntos')));
+            const line=c.variants.map(v=>esc(v.name+': '+(v.dist3DM/1000).toFixed(2)+' km · '+Math.round(v.timeS/60)+' min · '+v.energyWh.toFixed(1)+' Wh · '+v.violations)+' '+icon('warning')).join('\n· ');
+            return R(true, note('⇄ '+L('Route comparison','経路の比較','Routenvergleich','Сравнение маршрутов','Comparación de rutas')+'\n· '+line)); }
           if(act==='rth'||act==='returnhome'||act==='returntohome'){
             const rr=await O.returnToHome();
-            if(!rr) return R(false, warn('⚠ '+L('No route to return from','帰投元の経路がありません','Keine Route','Нет маршрута','No hay ruta')));
+            if(!rr) return R(false, warn(L('No route to return from','帰投元の経路がありません','Keine Route','Нет маршрута','No hay ruta')));
             if(rr.alreadyHome) return R(true, note('✓ '+L('The route already ends at the launch point','経路はすでに離陸地点で終わっています','Die Route endet bereits am Startpunkt','Маршрут уже заканчивается в точке взлёта','La ruta ya termina en el punto de despegue')));
             return R(true, note('⤺ '+L('Return leg added','帰投区間を追加しました','Rückflug ergänzt','Возврат добавлен','Tramo de regreso añadido')+' — '+Math.round(rr.safeAmsl)+' m AMSL · '+(rr.result?((rr.result.dist3DM/1000).toFixed(2)+' km · '+Math.round(rr.result.batteryPct)+'%'):''))); }
           if(act==='conflicts'||act==='conflict'||act==='traffic'){
             const cf=await O.checkConflicts();
-            if(!cf) return R(false, warn('⚠ '+L('No route to check','点検する経路がありません','Keine Route','Нет маршрута','No hay ruta')));
+            if(!cf) return R(false, warn(L('No route to check','点検する経路がありません','Keine Route','Нет маршрута','No hay ruta')));
             if(!cf.checked) return R(true, note('✓ '+L('There is no other saved route to check against','照合できる保存済みの経路がありません','Keine zweite gespeicherte Route','Нет второго сохранённого маршрута','No hay otra ruta guardada')));
             if(!cf.conflicts) return R(true, note('✓ '+L('No conflict with the '+cf.checked+' other saved route(s)','ほかの保存済み経路 '+cf.checked+' 本との干渉はありません','Kein Konflikt mit '+cf.checked+' anderen Routen','Конфликтов с '+cf.checked+' маршрутами нет','Sin conflicto con las otras '+cf.checked+' rutas')));
-            return R(true, warn('⚠ '+cf.conflicts+' '+L('conflict(s)','件の干渉','Konflikte','конфликтов','conflictos')+'\n'
+            return R(true, warn(cf.conflicts+' '+L('conflict(s)','件の干渉','Konflikte','конфликтов','conflictos')+'\n'
               +cf.minima.filter(m=>m.conflict).map(m=>'· '+esc(m.name||m.route)+': '+Math.round(m.horizM)+' m / '+Math.round(m.vertM)+' m / '+Math.round(m.timeS)+' s').join('\n'))); }
-          D.open(); return R(true, note('🛸 '+L('Drone planner open','ドローン航法を開きました','Drohnenplaner geöffnet','Планировщик открыт','Planificador abierto'))); }
+          D.open(); return R(true, note(icon('drone')+' '+L('Drone planner open','ドローン航法を開きました','Drohnenplaner geöffnet','Планировщик открыт','Planificador abierto'))); }
     },
   },
 ];

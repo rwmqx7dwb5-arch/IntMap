@@ -45,6 +45,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = (p) => codeOnly(readLF(join(ROOT, p)));
 
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
+await import('../js/safe-html.js');   /* (icon-system) the app loads the encoder before any module that draws an icon (src/main.js); so does this */
 const { makeAtlasVerify } = await import('../js/atlas-verify.js');
 const { makeAtlasGeoObject } = await import('../js/atlas-geo-object.js');
 const { makeAtlasGeoLedger } = await import('../js/atlas-geo-ledger.js');
@@ -101,7 +102,7 @@ async function run(o) {
   return { html, seen };
 }
 
-const mapped = (html) => { const m = /\u{1F4CD} (\d+) place/u.exec(html); return m ? +m[1] : 0; };
+const mapped = (html) => { const m = /<\/svg> (\d+) place/.exec(html); return m ? +m[1] : 0; };   /* (icon-system) the count follows the pin js/icons.js draws */
 const listAfter = (html, label) => {
   const i = html.indexOf(label);
   if (i < 0) return [];
@@ -323,7 +324,7 @@ test('R545 ②b: the 14-pin cap is reported as OUR limit, not as a fact about th
   assert.ok(budget && budget.length >= 2, 'the places refused by the 14-pin cap are not reported under the cap — the reader is told they could not be located');
   assert.deepEqual(budget, ['Place Number 14', 'Place Number 15']);
   assert.equal(listAfterR545(r.html, LINE.not_found), null, 'the cap was still described as a failure to locate');
-  assert.match(r.html, /📍 14 places/, 'the 14 that fit are not reported as mapped');
+  assert.match(r.html, /<\/svg> 14 places/, 'the 14 that fit are not reported as mapped (after the pin js/icons.js draws)');
 });
 
 test('R545 ②c: a lookup that never answered is reported as the lookup, not as the place', async () => {

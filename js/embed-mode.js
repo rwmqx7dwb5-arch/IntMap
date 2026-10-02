@@ -61,6 +61,7 @@
 import { IntMapTime } from './chronos.js';
 import { IntMapLang } from './lang-registry.js';
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the one encoder iframeCode writes with */
+import { iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 /* ── THE PRESETS the share panel and Atlas offer. They are choices, not thresholds: 16:10 frames at
    three common content-column widths, plus one that fills its column. ⚠ The narrowest is the size
@@ -222,8 +223,8 @@ export function createEmbedTab(ctx) {
     /* the size choices are the presets' own numbers — nothing to translate, nothing to keep in step */
     Object.keys(EMBED_SIZES).forEach((k) => { const z = EMBED_SIZES[k]; sizeEl.appendChild(new Option(z.w + ' × ' + z.h, k, k === size, k === size)); });
     interEl.checked = interactive;
-    const copyLabel = () => '📋 ' + t('embedCopy');
-    ec.textContent = copyLabel();
+    const copyLabel = () => t('embedCopy');   /* the words; copy() draws the clipboard glyph beside them */
+    ec.replaceChildren(iconNode('clipboard'), ' ' + copyLabel());
     pb.textContent = t('embedPreview');
     /* the code is rebuilt from the CURRENT map on every change and on every copy, so it never
        describes a view the reader has since moved away from while the panel was open */

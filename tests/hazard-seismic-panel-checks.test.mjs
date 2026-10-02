@@ -219,7 +219,7 @@ test('R234 seismic panel: one banner shape for all three modes, and the run butt
   /* (#R237) the two states are a CLASS now, not a cssText — same predicate, same two states. */
   assert.match(s, /function _runBtnClass\(\)\{[^}]*_needsRun\(\)\?' sq-btn-accent':''/s,
     'the accent fill is that predicate');
-  assert.match(s, /function _runBtnLabel\(\)\{ return '▶ '\+\(_needsRun\(\)/, 'and so is the wording');
+  assert.match(s, /function _runBtnLabel\(\)\{ return icon\('play'\)\+' '\+\(_needsRun\(\)/, 'and so is the wording (its play glyph is js/icons.js «play» — icon-system)');
   assert.doesNotMatch(s, /"sq-run" style="'\+BTN\+'width:100%;background:var\(--primary-color\);color:#fff;border:none;font-weight:700;">▶ /,
     'the fill is no longer unconditional');
   /* it has to be repainted where staleness changes, or the colour is a lie */
@@ -783,7 +783,7 @@ test('R243 ⑤ the result card no longer restates the source or the solver telem
   const c = code(read('js/seismic.js'));
   assert.ok(!/f<sub>c<\/sub>/.test(c) && !/fld\.stats\.ms\+' ms'/.test(c),
     'the M / depth / M₀ / f_c line and the z-level / cell-count / milliseconds line are both out');
-  assert.ok(/The parameters changed — press ▶ to recompute/.test(c),
+  assert.ok(/The parameters changed — press {icon:play} to recompute/.test(c),   /* (icon-system) the button's glyph, named by a token every language carries */
     'the one INSTRUCTION in that block stays — the reader has to act on it');
 });
 

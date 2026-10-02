@@ -72,6 +72,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export function oceanCurrents(HOST){
   const GE=()=>IntMapGeoEngine;
@@ -128,9 +129,9 @@ export function oceanCurrents(HOST){
     const LA=IntMapLang.pickArgs();
     const FLD=()=>window.IntMapCurrentField;
 
-    const panel=makePanel('oc-panel',()=>'🌊 '+L('Ocean currents','海流','Meeresströmungen','Морские течения','Corrientes marinas'),'wp-dl-currents',
+    const panel=makePanel('oc-panel',()=>''+L('Ocean currents','海流','Meeresströmungen','Морские течения','Corrientes marinas'),'wp-dl-currents',
       { legendId:'wpcurrents', layers:()=>ALL.slice(),
-        names:()=>(LA('🌊 Ocean currents','🌊 海流（暖流・寒流）','🌊 Meeresströmungen','🌊 Морские течения','🌊 Corrientes marinas')) });
+        names:()=>(LA('Ocean currents','海流（暖流・寒流）','Meeresströmungen','Морские течения','Corrientes marinas')) });
 
     /* ── the arrowhead, drawn once and registered as an image ─────────────────────────────────────
        ⚠ IT POINTS RIGHT, NOT UP, and that is load-bearing twice over. With `symbol-placement:'line'`
@@ -431,7 +432,7 @@ export function oceanCurrents(HOST){
       s+='</div>';
       if(monthState==='loading') s+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'
         +esc(L('Loading the twelve monthly fields…','月別の12枚を読み込み中…','Zwölf Monatsfelder werden geladen…','Загрузка двенадцати месячных полей…','Cargando los doce campos mensuales…'))+'</div>';
-      else if(monthState==='error') s+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">⚠ '
+      else if(monthState==='error') s+=('<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+icon('warning')+' ')
         +esc(L('The monthly fields could not be read — the mean is shown.','月別データを読み込めませんでした（年平均を表示）。','Monatsfelder nicht lesbar — Mittel wird gezeigt.','Месячные поля не прочитаны — показано среднее.','No se pudieron leer los campos mensuales — se muestra la media.'))+'</div>';
       return s;
     }
@@ -439,7 +440,7 @@ export function oceanCurrents(HOST){
       if(!on&&!panel.shown()) return;
       let head;
       if(state==='loading') head=L('Loading the current atlas…','海流データを読み込み中…','Strömungsatlas wird geladen…','Загрузка атласа течений…','Cargando el atlas de corrientes…');
-      else if(state==='error') head='⚠ '+L('The bundled current data could not be read.','同梱の海流データを読み込めませんでした。','Mitgelieferte Strömungsdaten nicht lesbar.','Не удалось прочитать данные.','No se pudieron leer los datos incluidos.');
+      else if(state==='error') head=L('The bundled current data could not be read.','同梱の海流データを読み込めませんでした。','Mitgelieferte Strömungsdaten nicht lesbar.','Не удалось прочитать данные.','No se pudieron leer los datos incluidos.');
       else if(!doc) head='';
       else head=(doc.named||[]).length+' '+L('named currents · ','本の海流 · ','benannte Strömungen · ','названных течений · ','corrientes con nombre · ')
         +(fieldState==='loading'?L('field loading…','流向の場を読み込み中…','Feld wird geladen…','поле загружается…','cargando el campo…')
@@ -464,7 +465,7 @@ export function oceanCurrents(HOST){
           +(_reverses(c)?'<span title="'+esc(L('reverses with the season','季節で流向が反転する','kehrt sich saisonal um','меняет направление по сезону','se invierte con la estación'))+'" style="opacity:.8;"> ⇄</span>':'')+'</span>'
           +((c.lengthKm)?('<span style="white-space:nowrap;color:var(--text-muted);font-size:10.5px;">'+Math.round(c.lengthKm).toLocaleString()+' km</span>'):'')
           +'<b style="white-space:nowrap;">'+_speedOf(c).toFixed(2)+' m/s</b></div>').join('');
-      const b=panel.open('<div style="font-size:11.5px;color:var(--text-main);margin-bottom:4px;">'+esc(head)+'</div>'
+      const b=panel.open('<div style="font-size:11.5px;color:var(--text-main);margin-bottom:4px;">'+(state==='error'?icon('warning')+' ':'')+esc(head)+'</div>'
         +_monthBar()
         +'<div style="max-height:34vh;overflow:auto;">'+list+'</div>'
         +'<div style="margin-top:6px;">'

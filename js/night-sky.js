@@ -68,6 +68,7 @@
 import { everyTick, stopTick } from './runtime.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapLang } from './lang-registry.js';
+import { iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 window.IntMapNightSky = (function () {
   'use strict';
   const D2R = Math.PI / 180, R2D = 180 / Math.PI;
@@ -743,7 +744,7 @@ window.IntMapNightSky = (function () {
       ? L('live', '現在', 'live', 'сейчас', 'ahora')
       : L('back to now', '現在に戻す', 'zurück zu jetzt', 'вернуть к сейчас', 'volver a ahora');
     panel.querySelector('.ns-now').style.opacity = live ? '0.55' : '1';
-    panel.querySelector('.ns-play').textContent = playing ? '⏸' : '▶';
+    panel.querySelector('.ns-play').replaceChildren(iconNode(playing ? 'pause' : 'play'));
     const w = panel.querySelector('.ns-when');
     if (document.activeElement !== w) w.value = fmtLocal(nowMs());
     /* (#R214) the mode switch, the look readout and the shortcuts that go with it */
@@ -768,9 +769,9 @@ window.IntMapNightSky = (function () {
         : L('zenith', '天頂', 'Zenit', 'зенит', 'cenit');
     }
     /* (#R299) the same two-state wording js/viewshed.js `#los-move` uses, so the gesture reads the same */
-    panel.querySelector('.ns-site').textContent = site
-      ? '📍 ' + L('Move the site…', '地点を変える…', 'Standort verschieben…', 'Перенести точку…', 'Mover el punto…')
-      : '◎ ' + L('Place the point on the map', '地図で地点を設定', 'Punkt auf der Karte setzen', 'Задать точку на карте', 'Colocar el punto en el mapa');
+    panel.querySelector('.ns-site').replaceChildren(...(site
+      ? [iconNode('pin'), ' ' + L('Move the site…', '地点を変える…', 'Standort verschieben…', 'Перенести точку…', 'Mover el punto…')]
+      : ['◎ ' + L('Place the point on the map', '地図で地点を設定', 'Punkt auf der Karte setzen', 'Задать точку на карте', 'Colocar el punto en el mapa')]));
     panel.querySelector('.ns-title').textContent =
       (mode === 'stand'
         ? L('Standing here', 'ここに立って', 'Hier stehen', 'Стоя здесь', 'De pie aquí')

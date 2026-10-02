@@ -24,6 +24,7 @@ import { defaultLayers, defaultOn, basicRows, basicLayers, hiddenRows, layerGrou
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 /* ══ (fetch-deadline-layer) THE READS A ROW MAKES, FOR THE OTHER READERS OF THE SAME DATA ══════════════
    js/layer-previews.js drew the cable and radar thumbnails from reads of its own: a bare `fetch` with no
    clock, and — for the cables — the host FIRST and our relay second, the order cable-relay-first had just
@@ -293,14 +294,14 @@ export function dataLayers(HOST){
       .data-legend .dl-hint{ color:var(--text-muted); margin-top:5px; font-size:9.5px; }
       /* (#R39) Short "what is this data" explanation for the non-obvious metrics. */
       .data-legend .dl-desc{ color:var(--text-main); opacity:0.82; margin-top:5px; font-size:9.5px; line-height:1.45; border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); padding-top:5px; }
-      /* ⚠⚠⚠ (#R384) THE CLASS IS dl-caveat, AND THE FIRST NAME I GAVE IT WAS ALREADY TAKEN.
+      /*(#R384) THE CLASS IS dl-caveat, AND THE FIRST NAME I GAVE IT WAS ALREADY TAKEN.
          .dl-note[data-dl] is the LAYER ROW's date note (line ~1078), and it is display:none
          until a date is set — so the accuracy caveat below was in the DOM, carried its nine
          translations, and RENDERED NOTHING. It survived the browser test too, because that
          test read textContent, and textContent walks hidden nodes.
          The caveat sits under a layer's description: same column, its own paragraph, muted,
          so it reads as a qualification of the picture rather than more of the description.
-         ⚠⚠ AND NO BACKTICK MAY APPEAR IN THIS COMMENT — it is inside a template literal, and
+        AND NO BACKTICK MAY APPEAR IN THIS COMMENT — it is inside a template literal, and
          one backtick here ends the CSS string and blanks the site. The first draft of this
          very comment quoted the class names in backticks and failed the build. */
       .data-legend .dl-caveat{ display:block; color:var(--text-muted); margin-top:5px; }
@@ -318,8 +319,8 @@ export function dataLayers(HOST){
          Sized from the SAME declarations the rest of the legend uses (10.5px body, 9.5px hints) — a
          panel whose inner controls are twice the size of the legend beside it is #R275's report. */
       .data-legend .ecl-model{ color:var(--text-muted); font-size:9.5px; line-height:1.35; margin:0 0 5px; }
-      /* ══ ⚠⚠⚠ (#R439) THE MODEL PICKER HAD NO CSS AT ALL ═══════════════════════════════════════
-         ⚠⚠ NO BACKTICKS ANYWHERE IN THIS COMMENT — this whole block is inside a JS template
+      /* ══(#R439) THE MODEL PICKER HAD NO CSS AT ALL ═══════════════════════════════════════
+        NO BACKTICKS ANYWHERE IN THIS COMMENT — this whole block is inside a JS template
          literal, and one backtick here ends the string and blanks the site (memory: #R? 「CSSに
          バッククォートを入れるな」). Names below are quoted with «» for that reason.
          「モデルの選択欄が凡例から突き出ている。」 MEASURED: «.ecl-modelpick» appears in exactly one
@@ -330,11 +331,11 @@ export function dataLayers(HOST){
          178 px box (158 px of content) the legend actually is — so it hung out of the panel, over
          the map, on every weather legend. #R356 added the picker and the styling never followed.
          → the label goes ABOVE the control and the control takes the full content width.
-         ⚠ «min-width:0» IS THE LOAD-BEARING LINE. A flex item's automatic minimum size is its
+         «min-width:0» IS THE LOAD-BEARING LINE. A flex item's automatic minimum size is its
          MIN-CONTENT width, and for a «select» that is the widest option again — so «width:100%»
          alone does not stop it, and this is why an obvious-looking one-liner would not have fixed
          it. «box-sizing:border-box» keeps the border and padding inside the 100%.
-         ⚠ THE NATIVE DROPDOWN ARROW IS KEPT (no «appearance:none»): it is the only affordance that
+         THE NATIVE DROPDOWN ARROW IS KEPT (no «appearance:none»): it is the only affordance that
          says this is a control rather than a line of text, and #R290 is about controls a reader
          cannot reach. Sized from «.ecl-b», like every other control in this legend. */
       .data-legend .ecl-modelpick{ margin:5px 0 4px; min-width:0; }
@@ -368,7 +369,7 @@ export function dataLayers(HOST){
          one shared time control rather than carrying a second copy of it. */
       /* (#R290) 「いつの絵か」 is a READING now, not a button — the hour is chosen in this same box
          (window.IntMapWxPlayer.timeUI) rather than in a control somewhere else. */
-      /* ⚠ (#R439) «box-sizing:border-box». MEASURED in the browser while fixing the model picker:
+      /* (#R439) «box-sizing:border-box». MEASURED in the browser while fixing the model picker:
          this line is «width:100%» plus 12 px of padding and 2 px of border with the default
          content-box sizing, so it was 4 px WIDER than the legend and hung out of the right edge on
          every weather legend — the same 「凡例から突き出ている」 the picker was reported for, one
@@ -452,7 +453,7 @@ export function dataLayers(HOST){
            and every "Close" button get the same 32px tap target ("×が小さすぎて押せない" re-report). */
         .satc-close{ width:32px !important; height:32px !important; font-size:20px !important; display:flex !important; align-items:center; justify-content:center; }
         button[aria-label="Close"], .ai-panel-close, .ai-x, .fb-x, #fb-x{ min-width:32px !important; min-height:32px !important; }
-        /* (#R21) the last stragglers — widget board ×/⚙ and the widget-gallery × join the ONE 32px size */
+        /* (#R21) the last stragglers — widget board ×/and the widget-gallery × join the ONE 32px size */
         .wgt-x{ width:32px !important; height:32px !important; border-radius:9px !important; font-size:15px !important; }
         .wgt-cfg{ width:32px !important; height:32px !important; border-radius:16px !important; right:6px !important; }
         #wgt-g-close{ width:32px !important; height:32px !important; border-radius:9px !important; font-size:15px !important; }
@@ -470,12 +471,12 @@ export function dataLayers(HOST){
         .data-legend .dl-drag, .koppen-legend .kl-drag{ top:10px !important; left:8px !important; font-size:13px !important; }
         .koppen-legend h4, .data-legend h4{ padding:0 78px 0 24px !important; min-height:32px !important; }
         /* (#R10) Mobile Köppen legend ≈ square (width ≈ height) and the climate rows slide inside it.
-           ⚠ (#R240) …WHILE IT IS FLOATING OVER THE MAP. This rule is written at run time, so it lands
+           (#R240) …WHILE IT IS FLOATING OVER THE MAP. This rule is written at run time, so it lands
            after css/intmap.css and its !important width beat the dock's width:100% at equal
            specificity — measured on a phone, the docked legend came out 252 px inside a 390 px
            column, which is the 「画面の左右いっぱいをつかえ」 report from the other side. :not(.im-docked)
            is the whole fix: over the map it is still a 66 vw square, in the column it is the column.
-           ⚠⚠ AND NO BACKTICK MAY APPEAR IN THIS COMMENT — it is inside a template literal, and one
+          AND NO BACKTICK MAY APPEAR IN THIS COMMENT — it is inside a template literal, and one
            backtick here ends the CSS string and blanks the site. See [[intmap-template-literal-css-backtick]]. */
         .koppen-legend:not(.im-docked){ width:min(66vw,252px) !important; right:12px !important; height:auto !important; min-height:0 !important; max-height:min(72vw,330px) !important; resize:none !important; }
         .koppen-legend .kl-scroll{ max-height:none !important; }
@@ -766,7 +767,7 @@ export function dataLayers(HOST){
       <div class="dl-bar" style="background:linear-gradient(to right,#9bd2ff,#0080ff,#00c800,#ffe000,#ff7800,#ff0000,#c800c8);"></div>
       <div class="dl-scale"><span>${IntMapLang.t(HOST.lang,'Light','弱い','Leicht','Слабый','Ligero')}</span><span>${IntMapLang.t(HOST.lang,'Heavy','激しい','Stark','Сильный','Fuerte')}</span></div>
       <div class="rv-player">
-        <div class="rv-btns"><button class="rv-b" data-act="first" title="${IntMapLang.t(HOST.lang,'Oldest frame','最も古いフレーム','Ältester Frame','Самый старый кадр','Fotograma más antiguo')}">⏮</button><button class="rv-b" data-act="prev" title="${IntMapLang.t(HOST.lang,'Previous frame','前のフレーム','Vorheriger Frame','Предыдущий кадр','Fotograma anterior')}">◀</button><button class="rv-b" data-act="play" title="${IntMapLang.t(HOST.lang,'Animate','アニメーション','Animieren','Анимация','Animar')}">▶</button><button class="rv-b" data-act="next" title="${IntMapLang.t(HOST.lang,'Next frame','次のフレーム','Nächster Frame','Следующий кадр','Fotograma siguiente')}">▶</button><button class="rv-b" data-act="last" title="${IntMapLang.t(HOST.lang,'Latest frame','最新フレーム','Neuester Frame','Последний кадр','Último fotograma')}">⏭</button></div>
+        <div class="rv-btns"><button class="rv-b" data-act="first" title="${IntMapLang.t(HOST.lang,'Oldest frame','最も古いフレーム','Ältester Frame','Самый старый кадр','Fotograma más antiguo')}">${icon('skip-back')}</button><button class="rv-b" data-act="prev" title="${IntMapLang.t(HOST.lang,'Previous frame','前のフレーム','Vorheriger Frame','Предыдущий кадр','Fotograma anterior')}">${icon('chevronL')}</button><button class="rv-b" data-act="play" title="${IntMapLang.t(HOST.lang,'Animate','アニメーション','Animieren','Анимация','Animar')}">${icon('play')}</button><button class="rv-b" data-act="next" title="${IntMapLang.t(HOST.lang,'Next frame','次のフレーム','Nächster Frame','Следующий кадр','Fotograma siguiente')}">${icon('chevronR')}</button><button class="rv-b" data-act="last" title="${IntMapLang.t(HOST.lang,'Latest frame','最新フレーム','Neuester Frame','Последний кадр','Último fotograma')}">${icon('skip-forward')}</button></div>
         <input type="range" id="rv-time" aria-label="${IntMapLang.t(HOST.lang,'Radar frame time','レーダーの表示時刻')}" min="0" max="0" step="1" value="0" style="width:100%;accent-color:var(--primary-color);">
         <div class="rv-when">—</div>
       </div>
@@ -1320,14 +1321,14 @@ export function dataLayers(HOST){
         if(!w){
           w=document.createElement('div'); w.className='dl-when'; w.style.cssText='font-size:10px;color:var(--text-muted);margin-top:4px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;';
           const inSty='padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;';
-          if(id==='radar'){ w.innerHTML='🕒 <span class="dl-when-t"></span>'; }
-          else if(id==='thermal'){ w.innerHTML='🕒 <label style="display:contents;"><span>'+(IntMapLang.t(HOST.lang,'Time window','期間','Zeitfenster','Окно','Ventana'))+'</span> <select class="dl-win" style="'+inSty+'"><option value="24">24 h</option><option value="48">48 h</option><option value="72">72 h</option></select></label>';
+          if(id==='radar'){ w.innerHTML=(icon('clock')+' <span class="dl-when-t"></span>'); }
+          else if(id==='thermal'){ w.innerHTML=(icon('clock')+' <label style="display:contents;"><span>')+(IntMapLang.t(HOST.lang,'Time window','期間','Zeitfenster','Окно','Ventana'))+'</span> <select class="dl-win" style="'+inSty+'"><option value="24">24 h</option><option value="48">48 h</option><option value="72">72 h</option></select></label>';
             const s=w.querySelector('.dl-win'); s.value=window._thermalWindow||'24'; s.addEventListener('change',()=>{ window._thermalWindow=s.value; try{ window._refreshThermal&&window._refreshThermal(); }catch(_){} _refreshLegendDates(); }); }
           /* (#R550) no <select> of its own any more — the year row above it moves Chronos, and this
              line says what Chronos' year actually PUT ON THE MAP: product, sensor, source, the data
              year, and — when they differ — both years, so 2017 drawing 2016 is never silent. */
-          else if(id==='nightsat'){ w.innerHTML='🕒 <span class="dl-nl-when" style="line-height:1.5;"></span>'; }
-          else if(id==='popgrid'){ w.innerHTML='🕒 <label style="display:contents;"><span>'+(IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año'))+'</span> <select class="dl-epoch" style="'+inSty+'">'
+          else if(id==='nightsat'){ w.innerHTML=(icon('clock')+' <span class="dl-nl-when" style="line-height:1.5;"></span>'); }
+          else if(id==='popgrid'){ w.innerHTML=(icon('clock')+' <label style="display:contents;"><span>')+(IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año'))+'</span> <select class="dl-epoch" style="'+inSty+'">'
               +POPGRID_EPOCHS.map(y=>'<option value="'+y+'">'+y+'</option>').join('')+'</select></label>';
             const e=w.querySelector('.dl-epoch'); e.value=window._popgridYear;
             e.addEventListener('change',()=>{ window._popgridYear=e.value;
@@ -1335,7 +1336,7 @@ export function dataLayers(HOST){
               _refreshLegendDates(); }); }
           /* (#R298) the calendar is bounded by what THIS product publishes and carries a one-frame
              step on either side — `max` used to be one shared 今日−2 and there was no `min` at all. */
-          else { w.innerHTML=html`🕒 ${_dateBoxHTML(id,'lgdt-'+id,{cls:'dl-date',style:inSty})}<span class="dl-note" data-dl="${id}"></span>`;
+          else { w.innerHTML=html`${icon('clock')} ${_dateBoxHTML(id,'lgdt-'+id,{cls:'dl-date',style:inSty})}<span class="dl-note" data-dl="${id}"></span>`;
             _wireDateBox(id,w); }
           lg.appendChild(w);
         }
@@ -4204,7 +4205,7 @@ export function dataLayers(HOST){
       if(id==='ships'){
         const nm=escapeHtml(p.name||'')||('MMSI '+(p.mmsi?escapeHtml(String(p.mmsi)):'—'));
         const spd=p.vel!=null?(Math.round(p.vel*10)/10)+' kn'+(p.vel?` · ${Math.round(p.vel*1.852)} km/h`:''):'';
-        return `<div style="font-weight:700;font-size:13px;">🚢 ${nm}</div>`+
+        return `<div style="font-weight:700;font-size:13px;">${icon('ship')} ${nm}</div>`+
           row(IntMapLang.t(HOST.lang,'Type','種別','Typ','Тип','Tipo'),shipTypeLabel(p.shipType))+
           row('MMSI',p.mmsi!=null?escapeHtml(String(p.mmsi)):'')+
           row(IntMapLang.t(HOST.lang,'Call sign','呼出符号','Rufzeichen','Позывной','Indicativo'),escapeHtml(p.callsign||''))+
@@ -4225,7 +4226,7 @@ export function dataLayers(HOST){
       /* ⚠ every ADS-B string below is the feed's (the aviation-feed relay), exactly like the AIS
          strings of the ship half above — escaped the same way, not trusted because it is usually short */
       const acName=escapeHtml(p.desc||p.acType||'');
-      return `<div style="font-weight:700;font-size:13px;">✈️ ${escapeHtml(p.callsign||p.reg||p.icao24||'—')}</div>`+
+      return `<div style="font-weight:700;font-size:13px;">${icon('plane')} ${escapeHtml(p.callsign||p.reg||p.icao24||'—')}</div>`+
         row(IntMapLang.t(HOST.lang,'Aircraft','機体','Luftfahrzeug','Воздушное судно','Aeronave'),acName)+
         row(IntMapLang.t(HOST.lang,'Reg.','登録記号','Kennzeichen','Рег. номер','Matrícula'),escapeHtml(p.reg||''))+
         row('ICAO24',p.icao24?escapeHtml(String(p.icao24).toUpperCase()):'')+

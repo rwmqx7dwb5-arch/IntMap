@@ -1,6 +1,7 @@
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy; see js/atlas-persona.js */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { icon, withIcons } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 /* ============================================================================
  *  IntMap · News feed, pins & reader  (#R168)
  * ----------------------------------------------------------------------------
@@ -672,8 +673,8 @@ export function newsUi(HOST){
      route to Atlas belong to every reading surface and come from the builder. */
   function readerBar(item,mode){
     const back=IntMapLang.t(HOST.lang,'Back','戻る','Zurück','Назад','Atrás');
-    const other=mode==='reader'?(IntMapLang.t(HOST.lang,'🌐 Web','🌐 ページ表示','🌐 Web','🌐 Веб','🌐 Web')):(IntMapLang.t(HOST.lang,'📖 Reader','📖 リーダー','📖 Leseansicht','📖 Читалка','📖 Lector'));
-    const extra=`<button class="nrp-mode" id="nrp-mode-btn">${other}</button>${mode==='reader'?`<button class="nrp-mode" id="nrp-translate-btn">✨ ${HOST.t('aiTranslate')}</button>`:''}`;
+    const other=mode==='reader'?((icon('world')+' '+IntMapLang.t(HOST.lang,'Web','ページ表示','Web','Веб','Web'))):((icon('book')+' '+IntMapLang.t(HOST.lang,'Reader','リーダー','Leseansicht','Читалка','Lector')));
+    const extra=`<button class="nrp-mode" id="nrp-mode-btn">${other}</button>${mode==='reader'?`<button class="nrp-mode" id="nrp-translate-btn">${icon('sparkle')} ${HOST.t('aiTranslate')}</button>`:''}`;
     return HOST.readerBar({back,extra,publisher:item.publisher});
   }
 
@@ -692,12 +693,12 @@ export function newsUi(HOST){
         <a class="nrp-orig" href="${HOST.escForReader(IntMapSafe.url(item.link)||'about:blank')}" target="_blank" rel="noopener">${IntMapLang.t(HOST.lang,'Open in new tab','新しいタブで開く','In neuem Tab öffnen','Открыть в новой вкладке','Abrir en pestaña nueva')} ↗</a>`;
       const ifr=pane.querySelector('.nrp-iframe'); const note=pane.querySelector('#nrp-webnote');
       if(ifr){ ifr.addEventListener('load',()=>{ if(note) note.style.display='none'; });
-        setTimeout(()=>{ if(note&&note.style.display!=='none') note.innerHTML=IntMapLang.t(HOST.lang,'This site blocks embedding. Try “📖 Reader” or open it in a new tab.','このサイトは埋め込み表示を許可していません。「📖 リーダー」か「新しいタブで開く」をお使いください。','Diese Seite erlaubt kein Einbetten. Nutze „📖 Reader“ oder öffne sie in einem neuen Tab.','Сайт запрещает встраивание. Используйте «📖 Читалка» или откройте в новой вкладке.','Este sitio bloquea la inserción. Prueba «📖 Lector» o ábrelo en una pestaña nueva.'); }, 5000); }
+        setTimeout(()=>{ if(note&&note.style.display!=='none') note.innerHTML=withIcons(IntMapLang.t(HOST.lang,'This site blocks embedding. Try “{icon:book} Reader” or open it in a new tab.','このサイトは埋め込み表示を許可していません。「{icon:book} リーダー」か「新しいタブで開く」をお使いください。','Diese Seite erlaubt kein Einbetten. Nutze „{icon:book} Reader“ oder öffne sie in einem neuen Tab.','Сайт запрещает встраивание. Используйте «{icon:book} Читалка» или откройте в новой вкладке.','Este sitio bloquea la inserción. Prueba «{icon:book} Lector» o ábrelo en una pestaña nueva.')); }, 5000); }
     } else {
       const locName=(item.analysis&&item.analysis.name)?item.analysis.name:'';
       const bodyHtml=(res.blocks&&res.blocks.length)
         ? res.blocks.map(b=> b.t==='h' ? `<h3>${HOST.escForReader(b.v)}</h3>` : `<p>${HOST.escForReader(b.v)}</p>`).join('')
-        : `<p>${IntMapLang.t(HOST.lang,'Could not extract text — use “🌐 Web” above to open the page.','本文を自動取得できませんでした。上の「🌐 ページ表示」で元ページを開けます。','Text konnte nicht extrahiert werden — öffne die Seite über „🌐 Web“ oben.','Не удалось извлечь текст — откройте страницу через «🌐 Веб» выше.','No se pudo extraer el texto — abre la página con «🌐 Web» arriba.')}</p>`;
+        : `<p>${withIcons(IntMapLang.t(HOST.lang,'Could not extract text — use “{icon:world} Web” above to open the page.','本文を自動取得できませんでした。上の「{icon:world} ページ表示」で元ページを開けます。','Text konnte nicht extrahiert werden — öffne die Seite über „{icon:world} Web“ oben.','Не удалось извлечь текст — откройте страницу через «{icon:world} Веб» выше.','No se pudo extraer el texto — abre la página con «{icon:world} Web» arriba.'))}</p>`;
       const heroHtml=res.hero?`<img class="nrp-hero" alt="" src="${HOST.escForReader(IntMapSafe.url(res.hero))}" data-im-error="hideSelf">`:'';
       const locHtml=locName?`<span class="nrp-loc" id="nrp-loc" role="button" tabindex="0">${HOST.escForReader(locName)}</span>`:'';
       pane.innerHTML=`${readerBar(item,'reader')}
@@ -718,7 +719,7 @@ export function newsUi(HOST){
   async function aiTranslateReader(item,res,btn){
     if(!HOST.aiGate()) return;
     const bodyEl=document.querySelector('#news-reader-pane .nrp-body'); if(!bodyEl||!btn) return;
-    const setLbl=on=>{ btn.innerHTML = on ? '↩ '+HOST.aiEsc(HOST.t('aiShowOriginal')) : '✨ '+HOST.aiEsc(HOST.t('aiTranslate')); };
+    const setLbl=on=>{ btn.innerHTML = on ? '↩ '+HOST.aiEsc(HOST.t('aiShowOriginal')) : icon('sparkle')+' '+HOST.aiEsc(HOST.t('aiTranslate')); };
     if(bodyEl.dataset.translated==='1'){ if(res._origHTML!=null) bodyEl.innerHTML=res._origHTML; bodyEl.dataset.translated='0'; setLbl(false); return; }
     if(res._translatedHTML){ if(res._origHTML==null) res._origHTML=bodyEl.innerHTML; bodyEl.innerHTML=res._translatedHTML; bodyEl.dataset.translated='1'; setLbl(true); return; }
     const src=((res.blocks||[]).map(b=>b&&b.v).filter(Boolean).join('\n\n')||'').trim();
