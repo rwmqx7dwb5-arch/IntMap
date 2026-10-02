@@ -20,6 +20,7 @@ import { IntMapLang } from './lang-registry.js';
 import { layerState } from './layer-state.js';
 import { clockFor } from './proxy-fetch.js';
 import { everyTick, stopTick } from './runtime.js';
+import { iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 /** @param {any} K the layer kit js/data-layers.js hands every package (`packageKit` there)
     @returns {{ rows: Record<string, { on: () => any, off: () => void, opacity: (v: number) => void }> }} */
@@ -149,7 +150,7 @@ export function radarPackage(K) {
       const box=live.lgdRadar&&live.lgdRadar.querySelector('.rv-player'); if(!box) return;
       const n=_rvFrames.length, tt=rvFrameTime();
       const sl=box.querySelector('#rv-time'); if(sl){ sl.max=Math.max(0,n-1); sl.value=Math.max(0,_rvIdx); }
-      const pb=box.querySelector('.rv-b[data-act="play"]'); if(pb) pb.textContent=_rvPlay?'⏸':'▶';
+      const pb=box.querySelector('.rv-b[data-act="play"]'); if(pb) pb.replaceChildren(iconNode(_rvPlay?'pause':'play'));
       const cap=box.querySelector('.rv-when');
       if(cap){
         if(!tt) cap.textContent=IntMapLang.t(HOST.lang,'no frames','フレームなし','keine Bilder','нет кадров','sin fotogramas');

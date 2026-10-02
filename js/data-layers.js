@@ -23,8 +23,7 @@ import { readWithin, untilObserved, isUnobserved } from './fetch-deadline.js';  
 import { defaultLayers, defaultOn, basicRows, basicLayers, hiddenRows, layerGroups, betaKeys, layerFor, packageOf, loadPackage } from './layer-manifest.js';   /* (layer-packages) …and which rows a package implements, and the package's literal import */
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
-import { IntMapLang } from './lang-registry.js';
-import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { IntMapLang } from './lang-registry.js'; import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js; on this line because this file's line count only goes down (scripts/layer-packages.mjs), and icons.js is reached from js/app-body.js for the reachability rule */
 /* ══ (fetch-deadline-layer) THE READS A ROW MAKES, FOR THE OTHER READERS OF THE SAME DATA ══════════════
    js/layer-previews.js drew the cable and radar thumbnails from reads of its own: a bare `fetch` with no
    clock, and — for the cables — the host FIRST and our relay second, the order cable-relay-first had just
