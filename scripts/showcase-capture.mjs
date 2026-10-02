@@ -20,8 +20,15 @@
  *  The pictures are screenshots of the real application at that moment, not mock-ups. They are
  *  re-taken whenever this runs; the links change only if the app's encoding or the intent does.
  *
+ *  (classroom-tours) THE STEPS OF THE CLASSROOM TOURS ARE MADE THE SAME WAY. A step of js/tours.js that
+ *  states its own intent (rather than naming an example) is put into that intent by the same function
+ *  and its link is read from the same encoder, into the generated region of js/tours.js. A tour step has
+ *  no picture on the pages, so none is kept; `--shots <dir>` writes one per step into <dir> for a
+ *  person to LOOK AT — the sentences of a historical step are a claim about what the map draws, and
+ *  .agents/rules/historical-verification.md asks for the map to be seen, not only the record read.
+ *
  *    npm run build && node scripts/serve.mjs --port 4237 --root dist      (in another shell)
- *    node scripts/showcase-capture.mjs --base http://127.0.0.1:4237 [--only europe-1914]
+ *    node scripts/showcase-capture.mjs --base http://127.0.0.1:4237 [--only europe-1914] [--shots <dir>]
  *
  *  ⚠ NEEDS A SERVER AND THE NETWORK, so it is not a gate. `node scripts/landing.mjs --check` is the
  *  gate: it holds what this wrote to the intent, offline. tests/landing-showcase.spec.js then opens
@@ -32,12 +39,14 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { SHOWCASE, WITHHELD } from '../js/showcase.js';
+import { TOURS } from '../js/tours.js';
 import { sharedIds } from '../js/layer-manifest.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
 const BASE = arg('--base', null);
 const ONLY = arg('--only', null);
+const SHOTS = arg('--shots', null);   /* (classroom-tours) a directory for the tour steps' pictures, to be looked at */
 if (!BASE) { console.error('usage: node scripts/showcase-capture.mjs --base http://127.0.0.1:<port> [--only <id>]'); process.exit(2); }
 
 /* the picture: a 16:10 desktop frame — the size the landing page shows it at, twice over for a
@@ -61,7 +70,8 @@ function instantOf(at) {
   return { y: +m[1], mo: +m[2] - 1, d: +m[3] };
 }
 
-async function capture(browser, s) {
+/* `pictures`: the example pictures and cards (img/showcase/); `shot`: one picture, to a path of the caller's */
+async function capture(browser, s, { pictures = true, shot = null } = {}) {
   const storage = seededStorageState();
   const ctx = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1, serviceWorkers: 'block',
     storageState: { cookies: [], origins: storage.origins.map((o) => ({ ...o, origin: BASE })) } });
@@ -129,6 +139,12 @@ async function capture(browser, s) {
      (and by `node scripts/landing.mjs --check`) rather than shipped with a forecast hour nobody chose. */
   const extra = [...new URLSearchParams(hash.slice(1)).keys()].filter((k) => !['v', 'l', 'tt', 'sat'].includes(k));
   if (extra.length) { await ctx.close(); throw new Error(s.id + ': the app encoded state the example does not declare (' + extra.join(', ') + '): ' + hash); }
+  if (!pictures) {
+    if (shot) { mkdirSync(dirname(shot), { recursive: true }); await page.screenshot({ path: shot, type: 'jpeg', quality: 82 }); }
+    await ctx.close();
+    if (errors.length) console.warn('  page errors while capturing ' + s.id + ':\n    ' + errors.join('\n    '));
+    return { hash };
+  }
   mkdirSync(join(ROOT, IMG_DIR), { recursive: true });
   const image = IMG_DIR + '/' + s.id + '.jpg';
   await page.screenshot({ path: join(ROOT, image), type: 'jpeg', quality: 82 });
@@ -160,8 +176,28 @@ function writeCaptured(src, captured) {
   return src.slice(0, a + BEGIN.length) + '\nexport const CAPTURED = ' + json + ';\n' + src.slice(b);
 }
 
+/* (classroom-tours) the tour steps' region in js/tours.js — the same shape, the link only */
+const TOUR_FILE = join(ROOT, 'js/tours.js');
+const T_BEGIN = '/* ⚠ GENERATED TOUR STEPS — BEGIN (node scripts/showcase-capture.mjs; DO NOT EDIT) */';
+const T_END = '/* ⚠ GENERATED TOUR STEPS — END */';
+const ownSteps = () => TOURS.flatMap((t) => t.steps.filter((st) => !st.example));
+function readSteps(src) {
+  const a = src.indexOf(T_BEGIN), b = src.indexOf(T_END);
+  if (a < 0 || b < 0) throw new Error('js/tours.js: the generated region markers are gone');
+  const m = /export const CAPTURED_STEPS = (\{[\s\S]*\});/.exec(src.slice(a + T_BEGIN.length, b));
+  return m ? JSON.parse(m[1]) : {};
+}
+function writeSteps(src, captured) {
+  const a = src.indexOf(T_BEGIN), b = src.indexOf(T_END);
+  const ordered = {};
+  for (const st of ownSteps()) if (captured[st.id]) ordered[st.id] = captured[st.id];
+  return src.slice(0, a + T_BEGIN.length) + '\nexport const CAPTURED_STEPS = ' + JSON.stringify(ordered, null, 2) + ';\n' + src.slice(b);
+}
+
 const src = readFileSync(FILE, 'utf8');
 const captured = readCaptured(src);
+const tsrc = readFileSync(TOUR_FILE, 'utf8');
+const steps = readSteps(tsrc);
 const browser = await chromium.launch();
 try {
   for (const s of SHOWCASE) {
@@ -170,8 +206,18 @@ try {
     captured[s.id] = await capture(browser, s);
     console.log(captured[s.id].hash);
   }
+  for (const st of ownSteps()) {
+    if (ONLY && st.id !== ONLY) continue;
+    process.stdout.write('capturing tour step ' + st.id + ' … ');
+    steps[st.id] = await capture(browser, st, { pictures: false, shot: SHOTS ? join(SHOTS, st.id + '.jpg') : null });
+    console.log(steps[st.id].hash);
+  }
 } finally { await browser.close(); }
-/* keep the file's own line endings */
-const eol = src.includes('\r\n') ? '\r\n' : '\n';
-writeFileSync(FILE, writeCaptured(src, captured).replace(/\r?\n/g, eol));
-console.log('wrote ' + Object.keys(captured).length + ' captured example(s) into js/showcase.js');
+/* keep each file's own line endings */
+const eolOf = (t) => (t.includes('\r\n') ? '\r\n' : '\n');
+/* a file none of whose entries was taken this run is not rewritten (`--only <tour step>` leaves js/showcase.js as it is) */
+const tookExample = SHOWCASE.some((s) => !ONLY || s.id === ONLY), tookStep = ownSteps().some((st) => !ONLY || st.id === ONLY);
+if (tookExample) writeFileSync(FILE, writeCaptured(src, captured).replace(/\r?\n/g, eolOf(src)));
+if (tookStep) writeFileSync(TOUR_FILE, writeSteps(tsrc, steps).replace(/\r?\n/g, eolOf(tsrc)));
+console.log('wrote ' + (tookExample ? Object.keys(captured).length + ' captured example(s) into js/showcase.js' : 'no example')
+  + ' and ' + (tookStep ? Object.keys(steps).length + ' tour step(s) into js/tours.js' : 'no tour step'));

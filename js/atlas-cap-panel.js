@@ -318,6 +318,57 @@ export default [
     },
   },
   {
+    row: ['panel.tour',                 'tour',           'classroomTour,lessonTour,guidedTour,startTour,nextStep',      'panel',   'time',    'camera,map.layer,time',  'map,time',            'session', 'none',   '',         ''],
+    /* (classroom-tours) the classroom tours of js/tours.js, played by js/tour-player.js in its full-screen
+       classroom mode. `action`:
+         list            the tours (id, title, steps) — and the one assembled in this tab, if any
+         start           `id` (a declared tour, or "atlas") at `step` (from 1)
+         next / prev / go   move through the tour playing (`go` takes `step`)
+         exit            leave the classroom mode
+         addStep         record the map AS IT IS NOW — the app's own share link, IntMapBookmark.link() — with
+                         `title`, `say` (what the teacher reads out) and `ask` (the question for the class) onto the
+                         tour this tab assembles (id "atlas"; `tourTitle` names it). Set the map up first with the
+                         other capabilities; this never writes a link of its own.
+         clear           forget the assembled tour
+       A step is reported shown only when the map says so: the player reads the clock and the layer boxes back
+       against the step's own link (js/tour-player.js settled — the reading panel.showcase makes). */
+    doc: [
+      { in: 'panel.tour', text: (c) => 'CLASSROOM TOURS — A LESSON AS A SEQUENCE OF MAPS, FULL SCREEN FOR A PROJECTOR (授業ツアー): {"type":"tour","action"?:"list"|"start"|"next"|"prev"|"go"|"exit"|"addStep"|"clear","id"?:ID,"step"?:int,"title"?:str,"say"?:str,"ask"?:str,"tourTitle"?:str}. start opens a tour in the classroom mode (everything but the map, its legends and credits put away; large type; the reader moves with Next / Previous, the arrow keys or Space) at `step` (from 1) and reports it opened only once the clock and the layers say so; next / prev / go move through the tour that is playing; exit leaves. The tours (ID — title): ' + c.tourList() + '. To BUILD A TOUR FROM THIS CONVERSATION: set the map up for one step with the other capabilities (camera, date, layers), then {"type":"tour","action":"addStep","title":…,"say":…,"ask":…} records the map exactly as it is now (its own share link) with the words to read out and a question for the class; repeat for each step, then {"type":"tour","action":"start","id":"atlas"}. Write `say` and `ask` only about what the map shows. For 「授業ツアーを始めて」「明治の日本のツアー」「次へ」「前のステップ」「この流れをツアーにして」, "start a classroom tour", "next step", "make this into a lesson tour".' },
+    ],
+    schema: () => ({ type: 'object', properties: { action: one('list', 'start', 'next', 'prev', 'go', 'exit', 'addStep', 'clear'), id: str(), step: num(1), title: str(), say: str(), ask: str(), tourTitle: str() } }),
+    async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, L = K.L, esc = K.esc;
+      { const P = await import('./tour-player.js');
+          const act = String(a.action || (a.id ? 'start' : 'list')).trim();
+          const shown = (r, head) => {
+            const s = P.status();
+            const body = s ? '<div style="font-weight:600;margin:2px 0;">' + esc(s.title) + ' · ' + esc(L('step ', 'ステップ ')) + s.step + ' / ' + s.of + '</div>'
+              + (s.stepTitle ? '<div style="font-size:12px;margin:2px 0;">' + esc(s.stepTitle) + '</div>' : '')
+              + (s.ask ? '<div style="font-size:12px;margin:4px 0;color:var(--text-muted);">' + esc(L('Question for class', '授業での問い')) + ': ' + esc(s.ask) + '</div>' : '') : '';
+            if (r && r.ok) return R(true, note('✓ ' + esc(head)) + body);
+            const miss = []; if (r && r.timeOk === false) miss.push(L('the date', '日付')); if (r && r.off && r.off.length) miss.push(L('layers not on', 'オンにならないレイヤー') + ' ' + r.off.join(', '));
+            return R(false, warn('⚠ ' + esc(L('The step did not fully apply', 'ステップが一部しか適用されていません')) + (miss.length ? ' — ' + esc(miss.join(' / ')) : (r && r.reason ? ' — ' + esc(r.reason) : ''))) + body);
+          };
+          if (act === 'list') {
+            const rows = P.declaredTours().map((t) => '<li><b>' + esc(t.id) + '</b> — ' + esc(L.arr(t.title)) + ' (' + t.steps.length + ')</li>').join('');
+            const tmp = P.tempTour();
+            return R(true, note(esc(L('Classroom tours', '授業ツアー'))) + '<ul style="margin:4px 0 4px 18px;padding:0;">' + rows
+              + (tmp && tmp.steps.length ? '<li><b>atlas</b> — ' + esc(tmp.title || L('Tour from Atlas', 'Atlas が作ったツアー')) + ' (' + tmp.steps.length + ')</li>' : '') + '</ul>'); }
+          if (act === 'addStep') {
+            const r = P.addStep({ title: a.title, say: a.say, ask: a.ask, tourTitle: a.tourTitle });
+            if (!r.ok) return R(false, warn('⚠ ' + esc(L('Could not record the map', '地図を記録できませんでした')) + ' — ' + esc(r.reason)));
+            return R(true, note('✓ ' + esc(L('Step recorded', 'ステップを記録しました')) + ' (' + r.count + ') — ' + esc(L('start it with id "atlas"', 'id "atlas" で開始できます')))); }
+          if (act === 'clear') { P.clearTemp(); return R(true, note('✓ ' + esc(L('The assembled tour is cleared', '組み立てたツアーを消しました')))); }
+          if (act === 'exit') { const ok = P.exit(); return R(ok, ok ? note('✓ ' + esc(L('Left the tour', 'ツアーを終えました'))) : warn('⚠ ' + esc(L('No tour is playing', '再生中のツアーはありません')))); }
+          if (act === 'next') return shown(await P.next(), L('Next step', '次のステップ'));
+          if (act === 'prev') return shown(await P.prev(), L('Previous step', '前のステップ'));
+          if (act === 'go') return shown(await P.go(a.step), L('Step opened', 'ステップを開きました'));
+          const id = String(a.id || a.name || '').trim();
+          const r = await P.startTour(id, a.step || 1);
+          if (r && r.reason === 'unknown-tour') return R(false, warn('⚠ ' + esc(L('No tour is called', 'この名前のツアーはありません')) + ' «' + esc(id) + '»'));
+          return shown(r, L('Tour started', 'ツアーを始めました')); }
+    },
+  },
+  {
     row: ['panel.operatingCosts',       'operatingCosts', 'runningCosts,supportCosts,whereSupportGoes',                  'panel',   'panel',   'panel.donate',           'panel,explanation',   'session', 'none',   '',         ''],
     /* (supporter-funnel) «運営費を見る» / "what does IntMap cost to run" — opens the support panel at «where
        support goes» AND hands Atlas the same facts the panel shows, so it can answer in words without

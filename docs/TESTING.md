@@ -4526,6 +4526,26 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
   （`location.replace`）・無し（meta refresh）の両方で自分の見本の地図へ移ること、320/390 px で横スクロール無し、
   日本語を選んだ読者だけが ja/ へ移ること。実測 14.4 / 15.5 / 15.4 秒（1 worker）。
 
+### `tests/classroom-tours-checks.test.mjs` (classroom-tours)
+
+授業ツアー（`Architecture.md` §8.6.1）。7 本、ブラウザ無し。
+- ① 全段がアプリの作ったリンクに解決し（見本を名指す段は見本の `CAPTURED`、自前の段は `CAPTURED_STEPS`）、
+  リンクが段の意図と一致して宣言外の状態を運ばない（`scripts/landing.mjs` `tourProblems`——見本と同じ `linkProblems`）。
+  日付・宣言外のパラメータ・カメラ・レイヤーのずれ、捕えていない段、宣言から消えた捕捉、`withheld` の見本を名指す段が
+  **それぞれ**落ちる。
+- ② `?tour=<id>&step=<n>`＋段のリンクが同じツアーと段に読み戻る。
+- ③ **語りの主張を、地図が描く記録に訊く**: 国名（`recordNamesFor`）、第1級区分（`data/hist-admin1.js`・
+  `data/hist-kuni.js`・`data/hist-admin-fill.js` のその日に効力のある行）、「この範囲に区分を描かない」という不在の主張。
+  反対側の日付（廃藩置県のあと・1900 年・1914 年 6 月）では同じ主張が成り立たないことも確かめる。
+- ④ 授業ページ（en・ja）が全ツアーを、その最初の段を開くリンクと段の題つきで載せる。
+- ⑤ 入口: `src/main.js` が `?tour=` と `#btn-tours` でだけプレイヤーを読む、設定の項目の文言が en/jp にある、
+  Atlas の `panel.tour` が行にあり、catalogue が全ツアーと `addStep` を述べる。
+- ⑥ 段が「レイヤーをオンにする」よう求めるとき、その棚とレイヤーの名がアプリ自身の表示名である。
+- ⑦ プレイヤーがリンクから `tt`・`l` を読むこと、授業モードの「残す一覧」が名指す箱（地図・出典表示・凡例・通知）が
+  ページと各モジュールに実在すること。
+- browser は新しい spec を作らず、`tests/landing-showcase.spec.js` の最初の見本を**それを通るツアーのアドレス**から開き、
+  授業モードのパネル・→ キーで次の段（アドレスとカメラ）・Esc での終了を同じ起動で測る（増分は実測の中央値 0.4 秒）。
+
 ### `tests/domain-portable-checks.test.mjs` (domain-portable)
 
 9 本。**サイトのアドレスは 1 つの正本（`supabase/functions/_shared/site-origin.js`）から導かれ、

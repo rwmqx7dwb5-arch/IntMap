@@ -317,6 +317,12 @@ import { LAZY_NAMES, CARRIED_NAMES } from '../js/lazy-modules.js';
    from `?embed=1`; js/embed-mode.js — the stylesheet that keeps only the map, its legends and the credits, the
    read-only gate and the bar — is a chunk of its own, so a normal start-up neither fetches nor parses it. */
 if (window.IntMapDevice.embedded()) import('../js/embed-mode.js');   /* js/ui-device.js — the one answer to «is this an embed» */
+/* (classroom-tours) …and the CLASSROOM MODE, only when it is asked for: a page opened with `?tour=<id>` (the
+   address js/tours.js tourLink writes — its fragment is the step's own share link, which the boot restore
+   applies), or the Settings entry #btn-tours. js/tour-player.js is a chunk of its own, so a normal start-up
+   neither fetches nor parses it. Atlas's panel.tour reaches the same file from inside its own kernel. */
+if (/[?&]tour=/.test(location.search)) import('../js/tour-player.js').then((m) => m.bootFromUrl());
+document.addEventListener('click', (e) => { const b = e.target && e.target.closest ? e.target.closest('#btn-tours') : null; if (b) import('../js/tour-player.js').then((m) => m.openPicker()); });
 
 /* ── (#R162/#R163 → module-graph) THE REQUIRED-MODULE GUARD ─────────────────────────────────────
    It used to hold MODULE_FACTORIES — 107 names, checked AFTER boot against window.IntMapModules,

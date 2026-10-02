@@ -11,6 +11,7 @@
  *  repository keeps paying for:
  *    · the PROSE        → scripts/landing-text.mjs (en + jp, one place)
  *    · the EXAMPLES     → js/showcase.js (the same declaration Atlas and the spec read)
+ *    · the TOURS        → js/tours.js (the classroom tours the app's player and Atlas open)
  *    · the FACTS        → the files that own them: the clock's floor (js/hist-scale.js FLOOR), the
  *                         era snapshots (data/hist-eras.js), the border bands (js/time-borders.js
  *                         HB_MIN/HB_MAX/CS_MIN/CS_MAX), the layer count (js/layer-manifest.js
@@ -32,6 +33,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { TEXT } from './landing-text.mjs';
 import { SHOWCASE, WITHHELD, CAPTURED, CURRICULUM, RECORD_ANSWERED } from '../js/showcase.js';
+import { TOURS, CAPTURED_STEPS, tourSteps, tourCover, tourLink } from '../js/tours.js';   /* (classroom-tours) the tours section of the teacher pages */
 import { LAYERS, sharedIds } from '../js/layer-manifest.js';
 import { SITE_BASE_PATH } from '../supabase/functions/_shared/site-origin.js';
 import { SITE_TOKEN } from './site-url.mjs';
@@ -275,6 +277,38 @@ ${A.faq.items.map((it) => `      <details><summary>${esc(it.q)}</summary><p>${es
 </main>`;
 }
 
+/* (classroom-tours) the tours, each with its picture (the first of its steps that is an example), its steps
+   by title, the course headings it fits, and the address that starts it in the classroom mode — js/tours.js
+   tourLink, whose fragment is the first step's captured link, so the map opens on it from the boot */
+function toursSection(L, P) {
+  const k = L.i, Tt = P.tours;
+  const cards = TOURS.map((tour) => {
+    const href = L.up + tourLink(tour.id, 1).replace(/^\.\//, '');
+    const cover = tourCover(tour);
+    const fits = (tour.curriculum || []).map((c) => CURRICULUM[c]).filter(Boolean);
+    return `<article class="lp-card lp-tour" id="tour-${tour.id}" data-tour="${tour.id}">
+      <a class="lp-card-img" href="${esc(href)}" tabindex="-1" aria-hidden="true"><img src="${L.up}${cover}" alt="" width="1280" height="800" loading="lazy" decoding="async"></a>
+      <div class="lp-card-body">
+        <h3>${esc(tour.title[k])}</h3>
+        <p>${esc(tour.blurb[k])}</p>
+        <ol class="lp-tour-steps">
+${tourSteps(tour).map((st) => `          <li>${esc(st.title[k])}</li>`).join('\n')}
+        </ol>${fits.length ? `
+        <p class="lp-fits"><span class="lp-q-h">${esc(P.examples.fits)}</span>${fits.map((f) => esc(f.subject[k] + ' ' + f.item[k])).join(' / ')}</p>` : ''}
+        <a class="lp-open" href="${esc(href)}" data-tour-link="${tour.id}">${esc(Tt.start)} →</a>
+      </div>
+    </article>`;
+  });
+  return `  <section class="lp-sec" id="tours">
+    <h2>${esc(Tt.h2)}</h2>
+    <p class="lp-sub">${esc(Tt.sub)}</p>
+    <div class="lp-cards">
+    ${cards.join('\n    ')}
+    </div>
+    <p class="lp-note">${esc(Tt.note)}</p>
+  </section>`;
+}
+
 function teachersBody(F, L, T) {
   const P = T.teachers, W = factWords(F, L.key), k = L.i;
   const shown = SHOWCASE.filter((s) => s.audience.includes('teachers'));
@@ -291,6 +325,7 @@ function teachersBody(F, L, T) {
       <p class="lp-lede">${esc(P.hero.sub)}</p>
       <div class="lp-cta">
         <a class="lp-btn" href="#plan">${esc(P.hero.ctaPlan)}</a>
+        <a class="lp-btn lp-btn-2" href="#tours">${esc(P.hero.ctaTours)}</a>
         <a class="lp-btn lp-btn-2" href="#examples">${esc(P.hero.ctaExamples)}</a>
       </div>
     </div>
@@ -304,6 +339,8 @@ ${P.plan.steps.map((st) => `      <li><h3>${esc(st.h)}</h3><p>${esc(st.p)}</p></
     </ol>
     <p class="lp-note">${esc(P.plan.note)}</p>
   </section>
+
+${toursSection(L, P)}
 
   <section class="lp-sec" id="examples">
     <h2>${esc(P.examples.h2)}</h2>
@@ -525,6 +562,61 @@ function writeRecordAnswered(ids) {
 }
 
 /* ── the captured examples, held to their intent ──────────────────────────────────────────────── */
+/* ONE reading of «does this captured link say what its intent says, and nothing more» — the examples and the
+   tour steps are both held to it (an intent is { view, base, at, layers }) */
+export function linkProblems(id, s, hash) {
+  const bad = [];
+  const q = new URLSearchParams(String(hash).replace(/^#/, ''));
+  const extra = [...q.keys()].filter((k) => !['v', 'l', 'tt', 'sat'].includes(k));
+  if (extra.length) bad.push(id + ': the link carries state the intent does not declare: ' + extra.join(', '));
+  const v = String(q.get('v') || '').split(',');
+  const near = (a, b, tol) => Math.abs(+a - +b) <= tol;
+  if (!(near(v[0], s.view.lng, 1e-4) && near(v[1], s.view.lat, 1e-4) && near(v[2], s.view.zoom, 0.005))) bad.push(id + ': the link\'s camera ' + v.slice(0, 3).join(',') + ' is not the declared view');
+  if (v[5] !== s.view.proj) bad.push(id + ': the link\'s projection ' + v[5] + ' is not ' + s.view.proj);
+  if ((q.get('sat') === '1') !== (s.base === 'sat')) bad.push(id + ': the link\'s base map is not ' + s.base);
+  const l = (q.get('l') || '').split(',').filter(Boolean).sort().join(',');
+  if (l !== [...s.layers].sort().join(',')) bad.push(id + ': the link\'s layers «' + l + '» are not the declared «' + s.layers.join(',') + '»');
+  if ((q.get('tt') || null) !== s.at) bad.push(id + ': the link\'s date ' + q.get('tt') + ' is not ' + s.at);
+  return bad;
+}
+
+/* (classroom-tours) the tours, held to their declarations: every step resolves (an `example` step names an
+   example that is SHOWN — a withheld one would open differently from its words), carries its words in both
+   languages, and an own step's captured link says what its intent says (linkProblems, the examples' rule) */
+export function tourProblems(captured = CAPTURED_STEPS) {
+  const bad = [];
+  const shared = new Set(sharedIds());
+  const tourIds = new Set(), stepIds = new Set(SHOWCASE.map((s) => s.id).concat(WITHHELD.map((s) => s.id)));
+  const own = new Set();
+  const tuple = (who, f, v) => [0, 1].forEach((i) => { if (!(Array.isArray(v) && String(v[i] || '').trim())) bad.push(who + ': ' + f + ' has no ' + ['en', 'jp'][i] + ' text'); });
+  for (const tour of TOURS) {
+    if (tourIds.has(tour.id)) bad.push(tour.id + ': duplicate tour id');
+    tourIds.add(tour.id);
+    tuple(tour.id, 'title', tour.title); tuple(tour.id, 'blurb', tour.blurb);
+    for (const c of tour.curriculum || []) if (!CURRICULUM[c]) bad.push(tour.id + ': unknown curriculum key ' + c);
+    if (!(tour.steps && tour.steps.length >= 2)) bad.push(tour.id + ': a tour has at least two steps');
+    if (!tourCover(tour)) bad.push(tour.id + ': no step is an example, so the tour has no picture for the teacher page');
+    (tour.steps || []).forEach((st, i) => {
+      const who = tour.id + ' step ' + (i + 1);
+      tuple(who, 'say', st.say); tuple(who, 'ask', st.ask);
+      if (st.example) {
+        if (!SHOWCASE.some((s) => s.id === st.example)) bad.push(who + ': names «' + st.example + '», which is not a shown example' + (WITHHELD.some((w) => w.id === st.example) ? ' (it is withheld)' : ''));
+        return;
+      }
+      if (!st.id) { bad.push(who + ': an own step needs an id'); return; }
+      if (stepIds.has(st.id)) bad.push(who + ': the id ' + st.id + ' is already an example or another step');
+      stepIds.add(st.id); own.add(st.id);
+      tuple(who, 'title', st.title);
+      for (const id of st.layers || []) if (!shared.has(id)) bad.push(who + ': ' + id + ' is not a layer a link can carry (js/layer-manifest.js share)');
+      const c = captured[st.id];
+      if (!c || !c.hash) { bad.push(who + ' (' + st.id + '): not captured — run node scripts/showcase-capture.mjs --only ' + st.id); return; }
+      bad.push(...linkProblems(st.id, st, c.hash));
+    });
+  }
+  for (const id of Object.keys(captured)) if (!own.has(id)) bad.push(id + ': a captured tour step that is no longer declared');
+  return bad;
+}
+
 export function showcaseProblems(captured = CAPTURED) {
   const bad = [];
   const ids = new Set();
@@ -540,17 +632,7 @@ export function showcaseProblems(captured = CAPTURED) {
     if (!existsSync(join(ROOT, c.image))) bad.push(s.id + ': ' + c.image + ' is missing');
     if (!c.card || !existsSync(join(ROOT, c.card))) bad.push(s.id + ': the share card picture is missing — run node scripts/showcase-capture.mjs');
     else { const z = jpegSize(c.card); if (z.width !== 1200 || z.height !== 630) bad.push(s.id + ': the share card is ' + z.width + '×' + z.height + ', not the 1200×630 Open Graph asks for'); }
-    const q = new URLSearchParams(String(c.hash).replace(/^#/, ''));
-    const extra = [...q.keys()].filter((k) => !['v', 'l', 'tt', 'sat'].includes(k));
-    if (extra.length) bad.push(s.id + ': the link carries state the example does not declare: ' + extra.join(', '));
-    const v = String(q.get('v') || '').split(',');
-    const near = (a, b, tol) => Math.abs(+a - +b) <= tol;
-    if (!(near(v[0], s.view.lng, 1e-4) && near(v[1], s.view.lat, 1e-4) && near(v[2], s.view.zoom, 0.005))) bad.push(s.id + ': the link\'s camera ' + v.slice(0, 3).join(',') + ' is not the declared view');
-    if (v[5] !== s.view.proj) bad.push(s.id + ': the link\'s projection ' + v[5] + ' is not ' + s.view.proj);
-    if ((q.get('sat') === '1') !== (s.base === 'sat')) bad.push(s.id + ': the link\'s base map is not ' + s.base);
-    const l = (q.get('l') || '').split(',').filter(Boolean).sort().join(',');
-    if (l !== [...s.layers].sort().join(',')) bad.push(s.id + ': the link\'s layers «' + l + '» are not the declared «' + s.layers.join(',') + '»');
-    if ((q.get('tt') || null) !== s.at) bad.push(s.id + ': the link\'s date ' + q.get('tt') + ' is not ' + s.at);
+    bad.push(...linkProblems(s.id, s, c.hash));
   }
   for (const w of WITHHELD) if (!String(w.withheld).trim()) bad.push(w.id + ': withheld without a reason');
   const kept = new Set(WITHHELD.map((w) => w.id));
@@ -565,7 +647,7 @@ if (isMain) {
   const mode = process.argv.includes('--write') ? 'write' : process.argv.includes('--facts') ? 'facts' : 'check';
   const F = facts();
   if (mode === 'facts') { console.log(JSON.stringify(F, null, 2)); process.exit(0); }
-  const bad = showcaseProblems();
+  const bad = [...showcaseProblems(), ...tourProblems()];
   const out = outputs(F);
   /* the share directories are the generator's own: a page there that it no longer writes (an example
      withdrawn or withheld) is stale, and a stale share page is a card for a map nobody vouches for */
@@ -587,5 +669,5 @@ if (isMain) {
     if (JSON.stringify(RECORD_ANSWERED) !== JSON.stringify(answered)) bad.push('js/showcase.js RECORD_ANSWERED says ' + JSON.stringify(RECORD_ANSWERED) + ', the record says ' + JSON.stringify(answered) + ' — run --write');
   }
   if (bad.length) { console.error('landing: ' + bad.length + ' problem(s)\n  ' + bad.join('\n  ')); process.exit(1); }
-  if (mode === 'check') console.log('landing: ' + Object.keys(out).length + ' generated files in step · ' + SHOWCASE.length + ' examples held to their intent');
+  if (mode === 'check') console.log('landing: ' + Object.keys(out).length + ' generated files in step · ' + SHOWCASE.length + ' examples and ' + TOURS.length + ' tours held to their intent');
 }

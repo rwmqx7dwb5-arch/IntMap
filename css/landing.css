@@ -157,3 +157,7 @@
 /* ── the share pages (s/<id>.html): a card for the crawler, a one-line stop for a person on the way to the map ── */
 .lp-share-main{ max-width:720px; padding-top:72px; }
 .lp-share-main h1{ font-size:36px; line-height:1.15; margin:0 0 14px; }
+
+/* (classroom-tours) a tour's steps, listed on its card (scripts/landing.mjs toursSection) */
+.lp-tour-steps{ margin:0; padding-left:22px; font-size:14px; color:var(--pg-ink-2); line-height:1.5; }
+.lp-tour-steps li{ margin:1px 0; }

@@ -98,7 +98,8 @@ test('④ every asset a generated page names is copied into dist/, and the sitem
     assert.ok(copied(page), page + ' is not in vite.config.js STATIC_ASSETS');
     const html = rd(page);
     const dir = dirname(page) === '.' ? '' : dirname(page) + '/';
-    for (const m of html.matchAll(/\s(?:href|src)="([^"#]+)(?:#[^"]*)?"/g)) {
+    /* the query is the app's to read (a tour's `?tour=…&step=…` — js/tours.js tourLink); the file is what must exist */
+    for (const m of html.matchAll(/\s(?:href|src)="([^"#?]+)(?:\?[^"#]*)?(?:#[^"]*)?"/g)) {
       const ref = m[1];
       if (/^(https?:)?\/\//.test(ref) || ref.startsWith('mailto:') || ref.startsWith(SITE_TOKEN)) continue;   /* absolute: the build fills the token (⑥) */
       const rel = normalize(dir + ref).replace(/\\/g, '/');
