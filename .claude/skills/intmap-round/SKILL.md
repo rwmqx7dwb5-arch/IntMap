@@ -234,6 +234,12 @@ gh pr merge --squash --auto --delete-branch   # 緑なら勝手に merge され�
 - ⚠ **push の前に番号を取り直す工程はもう無い**——名前が番号を持たないので、並行セッションに
   追い越されても改番するものが無い。`origin/main` が動いたら普通に rebase するだけ。
   `dev-notes/` の記録は別ファイルなので、**記録どうしが衝突することも無い**（索引は `--write` で作り直す）。
+- **PR が DIRTY になったら**（並行 PR の着地）`git fetch && git rebase origin/main`。生成物・台帳・件数
+  （perf-baseline・global-surface・durations・`TOTAL_BUDGET_S`・`plan(N)`・能力の生成行・cassette・文書の件数…）
+  の衝突は **merge driver が解く**——main 側を取って `--write`／`--update` し直す手作業はもう無い（宣言は
+  `.gitattributes`、仕組みは `docs/AGENT-SETUP.md` §12）。終わったら `node scripts/merge-driver.mjs --finish`
+  （保留した生成器を merge 後の木で走らせる。build が要るものは印字だけ）→ 差分を commit →
+  `git push --force-with-lease`。**それでも残った衝突は本物**（人が書いたものを両側が変えた）。
 - CI の deploy ログは `mode:'serial'` だと**最初の 1 件しか見せない**。「赤が 1 件」は
   「壊れているのが 1 件」ではない。
 - **非破壊的な migration・設定変更・deployment・commit・push・PR・merge に承認を求めない**

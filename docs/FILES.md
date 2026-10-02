@@ -58,6 +58,10 @@ data-assets.json                **git の外にあるデータ集合の目録**�
                                 件数とバイト数・それを運ぶ GitHub Release の asset とその sha256。
                                 取得は `npm run data:pull`、公開は `npm run data:publish <集合>`（scripts/data-assets.mjs）
 .nvmrc                          Node のバージョン（CI・ローカル共通）
+.gitattributes                  改行の規則と、**merge のときに生成物・台帳・件数をどう解くかの宣言**（1 か所）。
+                                `merge=intmap-generated` ＋ `intmap-merge=json|regen|tokens`（と `intmap-clash`・
+                                `intmap-regen`）。解くのは scripts/merge-driver.mjs。自分を生成物・台帳と名乗る
+                                ファイルが宣言から漏れると tests/generated-file-merge-driver-checks.test.mjs が落ちる
 vite.config.js                  ビルド設定（Vite 8／Rolldown。優先度つきのチャンク group・`resolve.mainFields`・
                                 CSS 最小化器・静的アセットのコピー・prebuild フック・MapLibre の worker を
                                 同じビルドの entry チャンクにして shared を本体と共有させる `maplibreSharedWorker`）
@@ -1566,6 +1570,15 @@ scripts/
                                   ⚠ **`--sync` は原本の `node_modules` も `package-lock.json` に合わせる**
                                   （早送りの後の**原本自身の** `deps-fresh.mjs --install` を呼ぶ——走っている master-sync は
                                   早送り前の版でありうる）。`--check` は食い違いを警告する。
+  merge-driver.mjs                **生成物・台帳・件数の衝突を解く git の merge driver**。宣言は `.gitattributes`
+                                  （手で書いた一覧を持たない）。`json`＝台帳をキーと要素で 3-way に合わせ、両側が
+                                  動かした数は `intmap-clash` で決める（`sum` 両方の移動を足す・`upstream` main の値）。
+                                  `regen`＝生成領域の中の衝突は main 側を取り、merge 後に `--finish` が生成器を走らせる。
+                                  `tokens`＝手書きの文の衝突をトークン単位で解き直す（両側が動かした整数は両方の移動を
+                                  足し、同じ場所への挿入は両方残す）。それ以外は普通の衝突マーカーで人に返す。
+                                  ⚠ driver の実行中、作業ツリーは merge 後の木ではない（実測）——だから生成器は後で走る。
+                                  `--install`（冪等。config は全 worktree 共通。`worktree.mjs` と `master-sync.mjs --sync`
+                                  が呼ぶ）／`--finish`／`--pending`／`--list`。経緯は docs/AGENT-SETUP.md §12
   deps-fresh.mjs                  **インストール済みの `node_modules` が `package-lock.json` の木か**を版ごとに照合する。
                                   全 worktree は原本の `node_modules` を junction で借りるので、ここが古いと
                                   ローカルの門は全部 CI と違う依存で走る（2026-09-26 実測 14 件）。`--install` は食い違うときだけ
@@ -1607,6 +1620,8 @@ scripts/
                                   同じ答え）と、晩の並びでの分類（`scripts/deep-history.mjs`）。
                                   `gh` が無い・未ログイン・オフラインは**黙って省略**し、
                                   6 秒で打ち切る——`status` は決して非ゼロで終わらない（#R304）。
+                                  `new` と `status` は生成物の merge driver を clone の config に冪等に登録し
+                                  （`merge-driver.mjs --install`）、merge が保留した再生成があればそう言う。
   build-report.mjs                **起動予算の計器**（vite プラグイン＋CLI）。束ね器（Rolldown）の最終グラフから
                                   eager（index.html のエントリ＋静的 import の推移閉包＝modulepreload
                                   される集合）と async を**導出**し、raw / gzip / brotli とモジュール別の

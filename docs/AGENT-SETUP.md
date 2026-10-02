@@ -435,3 +435,33 @@ CI も同じ旗で出す（runner の Docker に依存しない）。
   add/add 衝突の衝突マーカーが commit されて検査ファイルが 1 本丸ごと走らなくなった）。
   今は slug を `git worktree add -b feat/<slug>` で**原子的に**取る——同じマシンの worktree は ref の
   名前空間を共有するので、同じ slug は 2 つ目が git に拒まれる（`tests/process-without-round-numbers-checks.test.mjs` ①）。
+
+---
+
+## 12. 生成物の merge driver——**追跡されない設定が 1 つある**
+
+並行 PR が着地するたびに残りが DIRTY になり、衝突のほぼ全部が**人が書かないもの**（生成物・台帳・件数）
+だった（2026-10-01 実測・15 本）。その解き方は `scripts/merge-driver.mjs` が持ち、どのファイルを
+どう解くかの**宣言は `.gitattributes` の 1 か所**（`merge=intmap-generated` と `intmap-merge=json|regen|tokens`）。
+何を測っているかは [`TESTING.md`](TESTING.md) の `tests/generated-file-merge-driver-checks.test.mjs`。
+
+- ⚠ **`.gitattributes` だけでは効かない。** git は driver の**コマンド**を追跡されたファイルからは読まず
+  （任意コマンドの実行になるため）、clone の config（`merge.intmap-generated.driver`）からだけ読む。
+  未登録なら git は黙って普通の行マージに戻る——壊れはしないが、解けたはずの衝突が人に回る。
+- **登録は冪等で、3 か所が行う**: `node scripts/worktree.mjs status`（**両製品の SessionStart hook**）、
+  `worktree.mjs new`、`master-sync.mjs --sync`。手で行うなら `node scripts/merge-driver.mjs --install`。
+  ⚠ **config は clone の全 worktree が共有する**（実測）ので、1 回の登録がこのマシンの全セッションに効く。
+  Codex で hook が未 trust でも、`new` と `--sync` が同じものを書く——**製品による差は無い**。
+- ⚠ **driver が走る間、作業ツリーは merge 後の木ではない**（git 2.54・merge-ort 実測: main だけが変えた
+  ファイルが、driver の呼び出し時点ではまだ branch 側の中身だった）。だから生成物は driver の中で
+  作り直さず、**記録だけして** merge／rebase の後に `node scripts/merge-driver.mjs --finish` が生成器を
+  走らせる。待っているものは `worktree.mjs status` が言う。build・ブラウザ・ネットワークが要る生成器
+  （`perf-budget.mjs --update` など）は走らせず、コマンドを印字する。
+- ⚠ **どちらが main か**は操作で逆になる（実測）: `git merge origin/main` では %B、`git rebase origin/main`
+  では %A。driver は rebase／cherry-pick の最中かと `main` 上にいるかで判定する。
+- ⚠ **GitHub 側の merge（PR の DIRTY 判定・Update branch ボタン・squash）は driver を使わない。**
+  解くのは手元の `git rebase origin/main`（手順は `.agents/skills/intmap-round/` §5）。CI は merge を
+  しないので、CI に登録は要らない（driver そのものの検査は `npm test` の中で一時リポジトリに対して走る）。
+- 古い branch（この宣言より前に切ったもの）を `git merge` すると、その branch の `.gitattributes` が読まれる
+  ので driver は呼ばれない（実測）。`git rebase origin/main` なら main 側の宣言が効く。script の無い
+  checkout で呼ばれたときは、登録コマンド自身が `git merge-file` に戻り、普通の衝突マーカーを残す。

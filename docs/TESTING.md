@@ -4510,3 +4510,21 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
 名指されること、後の時刻と base 自身のファイルは通ること、同じ時刻も拒むこと、このリポジトリの migration が
 全部 14 桁の版を持ち重複しないこと。base は `IM_DIFF_BASE`、PR では `HEAD^1`、手元では `origin/main` で、
 読めなければ測れなかったと警告する（本番の db push が最後の柵として残る）。
+
+### `tests/generated-file-merge-driver-checks.test.mjs` (generated-file-merge-driver)
+
+9 本。**人が書かないものの衝突は、merge driver（`scripts/merge-driver.mjs`）が解く**こと——どれも一時リポジトリで
+2 本の branch を本当に `git merge`／`git rebase` して、git が残したバイトで確かめる（このリポジトリの config には
+触れない）。① `--install` が冪等で、clone の worktree からも同じ driver が見える。② `tests/perf-baseline.json`・
+`tests/global-surface-baseline.json`・`tests/durations.json`・ratchet の件数を両側から動かして、merge でも rebase
+（main が %A になる側）でも衝突が残らない——両側が動かした測定値は main の値、件数は両方の移動の和、名前の集合は
+和集合で並びを保つ、perf は「build して `--update`」の印が残る。③ `TOTAL_BUDGET_S` と `HISTORY`、`plan(N)` と表の
+一覧、文書の件数が解け、結果が構文として通る。両側が変えた**日付**は衝突のまま人に返る。④ 2 本が能力を 1 つずつ
+足すと `js/atlas-capabilities.js` の生成領域の衝突が解け、`--finish` が**本物の** `scripts/atlas-caps.mjs --write` を
+merge 後の入力で走らせ、`--check` が一致を認める。⑤ script の無い branch でも普通の衝突マーカーが残る（片側だけの
+ファイルを黙って残さない）。⑥ **自分を生成物・台帳と名乗るファイル**（`GENERATED`／`生成物` の見出しが script を
+名指す・`GENERATED … BEGIN` の領域・`"//"`／`"_"` が書き手を名指す JSON）を発見し、全部が `.gitattributes` で
+その script のまま宣言されていること、再生成コマンドの script が在りフラグを知っていること、台帳が driver の書く
+形（`JSON.stringify` とその字下げ）と 1 バイトも違わないこと。⑦ 整数を足すのは件数に読めるときだけ（日付・版・
+`#PR`・百分率・時刻・先頭ゼロ・負になる結果は衝突のまま）。⑧ `worktree.mjs`（`new`・`status`）と
+`master-sync.mjs --sync` が登録を呼ぶ。
