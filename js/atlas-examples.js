@@ -71,13 +71,39 @@
  *
  *  Lifted out of js/atlas-console.js in #R309 because that file is at #R199's 5,300-line ceiling and
  *  the ceiling is never raised — a subject moves out instead.
+ *
+ *  ══ ⚠⚠⚠ (atlas-before-login) THE CLOCK IN THE PAST, AND THE READER WHO HAS NOT LOGGED IN ═══════
+ *  Two things measured on production 2026-10-03, signed out:
+ *    · with Chronos on 1914 the row offered 「Slovakia does not set its own interest rates — it uses
+ *      the euro…」. Every pool below reads TODAY'S world — `countryStats`' currency and ranks, the
+ *      modern polygons the view is sampled against, today's strategic sites — and 「where Chronos is」
+ *      had been one candidate of a hundred. So the clock now decides WHICH WORLD the row is about:
+ *      whether the map is drawing today is asked of the record that draws it
+ *      (js/time-borders.js `modernAt` — the same question js/compare.js asks), never of a year typed
+ *      here, and when it answers 「not today」 the present-day pools step aside for `E`, whose
+ *      questions are gated on the era borders actually on the map. See the box above `eraFacts`.
+ *    · tapping a chip sent it, and a reader with no account got 「Please log in to use AI features.」
+ *      and the login sheet — the first thing Atlas ever told them was that it would not answer. Now
+ *      the row says BEFORE the tap that Atlas needs a free account and how many questions a day it
+ *      gives (read from supabase/functions/_shared/plans.js, never copied), and a tap opens a card
+ *      that shows how Atlas answers that question; logging in from the card leaves the question in
+ *      the composer. ⚠ NOTHING IN THE CARD IS AN ANSWER: the eval cassettes
+ *      (scripts/atlas-eval/cassettes/) are all `kind:"scripted"` — written by hand to hold the loop
+ *      to recorded defects — so not one recorded production answer exists to show, and the card
+ *      describes the mechanism with a figure that says it is an illustration.
  * ==========================================================================*/
 import { makeAtlasViewSubject } from './atlas-view-subject.js';   /* (#R392) what the reader is looking at */
 import { IntMapTime } from './chronos.js';
+import { planOf, DEFAULT_PLAN } from '../supabase/functions/_shared/plans.js';   /* (atlas-before-login) the free allowance, from the one table that grants it */
 
 export function makeAtlasExamples(HOST, CTX) {
   const L=CTX.L, GE=CTX.GE, codeAtPoint=CTX.codeAtPoint, countryStats=CTX.countryStats,
         cName=CTX.cName, loadCountryData=CTX.loadCountryData, panelEl=CTX.panelEl, pick=CTX.pick;
+  /* (atlas-before-login) the clock and the era record, injectable so a check can stand the row in
+     1914 without a browser; the shipped ones otherwise. `stage` puts a question in the composer
+     WITHOUT sending it (pick sends). */
+  const CLOCK=CTX.clock||IntMapTime;
+  const BORDERS=(typeof CTX.eraBorders==='function')?CTX.eraBorders:(()=>{ try{ return (typeof window!=='undefined'&&window.IntMapTimeBorders)||null; }catch(_){ return null; } });
 
   /* ⚠ (#R392) THE FOURTH ROUND OF THE SAME REPORT, AND THE FIRST ONE TO CHANGE THE SUBJECT. Rounds
      one to three varied the PREDICATE over 「the country the centre pixel falls in」; this one asks
@@ -131,6 +157,54 @@ export function makeAtlasExamples(HOST, CTX) {
       return out;
     }
 
+    /* ══ ⚠⚠⚠ (atlas-before-login) THE CLOCK IN THE PAST IS A DIFFERENT MAP ════════════════════════
+       「Slovakia … uses the euro」 under a 1914 clock: a true sentence about a state that did not exist,
+       offered over a map that was drawing Austria-Hungary. The facts every pool below reads are
+       today's, so no rewording of them fixes it — what changes is which facts are asked.
+       ⇒ WHETHER THE MAP IS DRAWING TODAY IS THE RECORD'S ANSWER, NOT A THRESHOLD. `modernAt(when,
+       live)` is the function js/time-borders.js draws by and js/compare.js already asks for its own
+       clock: live, the current year, or past the last year the day-exact record covers. A
+       statistics question stays on offer exactly as long as the map under it is today's map.
+       ⇒ AND THE ERA FACTS ARE MEASURED ON WHAT IS DRAWN. `currentFC()` is the collection on the
+       source; it is sampled with the view's own 36-point grid (js/atlas-view-subject.js
+       `featuresInView`), and each polygon is named the way the label layer names it. Nothing is
+       known about a polity that the map does not draw — before the collection arrives, only the
+       always-true tail of `E` is offered, and `idle` redraws the row when it lands.
+       `since` is the day the drawn borders took this shape (`changeAt`), only for the day-exact
+       records: for a snapshot sheet that date is the sheet's, not an event (`coverage().era`). */
+    let _sinceK='', _sinceV=null;
+    /* the name the era label layer draws — the `text-field` of imtb-lbl2 (`_same`) and imtb-lbl
+       (everything else) in js/time-borders.js, read in the same order */
+    function _eraLabel(p){ p=p||{}; const v=(p._same==1)?(p._modName||p.NAME||p.name):(p._locName||p.NAME||p.name); return String(v||'').trim(); }
+    function _tag(){ try{ return window.IntMapLang.htmlTag(HOST.lang)||'en'; }catch(_){ return 'en'; } }
+    function _yearText(y){ if(y==null||!isFinite(y)) return '';
+      const jp=HOST.lang==='jp'?'年':null;
+      try{ return window.IntMapHistScale.yearText(y,_tag(),jp); }catch(_){ return (y>=1&&jp)?(y+jp):String(y); } }
+    function _dateText(d){ if(!(d instanceof Date)||isNaN(d.getTime())) return '';
+      try{ return window.IntMapHistScale.dateText(d.getFullYear(),d.getMonth()+1,d.getDate(),_tag()); }catch(_){ return ''; } }
+    function eraFacts(t,vw){
+      const TB=BORDERS(); if(!t||!TB||typeof TB.modernAt!=='function') return null;
+      let modern=true; try{ modern=!!TB.modernAt(t.when||t.year,!!t.isLive); }catch(_){ return null; }
+      if(modern) return null;
+      const e={ year:t.year, drawn:false, here:'', names:[], n:0, renamed:0, since:'' };
+      let fc=null, on=false; try{ on=!!(TB.active&&TB.active()); if(on&&TB.currentFC) fc=TB.currentFC(); }catch(_){}
+      if(fc&&Array.isArray(fc.features)&&vw&&vw.box){
+        const m=VIEW.featuresInView(vw.box,fc.features,(f)=>_eraLabel(f.properties));
+        e.drawn=m.samples>0; e.here=m.centre; e.names=m.keys; e.n=m.keys.length;
+        /* `_same:0` is the label pass's own verdict that the drawn name is not today's country's */
+        e.renamed=m.keys.filter((k)=>{ const f=m.first[k]; return !!(f&&f.properties&&f.properties._same===0); }).length;
+        let dayExact=false; try{ const cv=TB.coverage?TB.coverage():null; dayExact=!!(cv&&cv.era===false); }catch(_){}
+        const w=t.when;
+        if(dayExact&&(w instanceof Date)&&typeof TB.changeAt==='function'){
+          const k=String(w.getTime());
+          if(k===_sinceK){ e.since=_sinceV||''; }
+          else { _sinceK=k; _sinceV=null;
+            Promise.resolve(TB.changeAt(w)).then((d)=>{ if(_sinceK!==k) return; _sinceV=_dateText(d); if(_sinceV){ try{ renderExamples(); }catch(_){} } }).catch(()=>{}); }
+        }
+      }
+      return e;
+    }
+
     /* ══ the facts, gathered once per redraw ══════════════════════════════════════════════════ */
     function exFacts(){ try{
       const c=GE().camera.getCenter(); if(!c||!isFinite(c.lng)) return null;
@@ -142,8 +216,8 @@ export function makeAtlasExamples(HOST, CTX) {
       const st=near?((typeof countryStats!=='undefined'&&countryStats)?countryStats[near]:null):null;
       const nm=st?cName(st):null;
       const ly=onLayers(), ids=new Set(ly.map(x=>x.id));
-      let year=null, live=true;
-      try{ const t=IntMapTime.state(); live=!!t.isLive; year=t.year; }catch(_){}
+      let year=null, live=true, tst=null;
+      try{ tst=CLOCK.state(); live=!!tst.isLive; year=tst.year; }catch(_){}
       /* ══ ⚠⚠⚠ (#R337) 「まだほぼ定型文みたいなものしかない。もっとその場所にあったものに。」 ═══════
          #R313's pool asks about EXTREMES — top ten on density, top eight on area — so a country
          that is extreme in nothing had three of its four chips filled from the always-eligible
@@ -225,6 +299,8 @@ export function makeAtlasExamples(HOST, CTX) {
          across it is. A question gated on any of those is a question about THIS view and not about
          the next one, which is the property the previous three rounds could not reach. */
       let vw=null; try{ vw=VIEW.subject(); }catch(_){}
+      /* (atlas-before-login) null while the map draws today; the era the map draws otherwise */
+      let era=null; try{ era=eraFacts(tst,vw); }catch(_){ era=null; }
       /* the countries the VIEW holds, named — `{a}` and `{b}` below. Falls back to the centre
          country's name so a one-country view still reads naturally. */
       const vn=(vw&&vw.countryNames&&vw.countryNames.length)?vw.countryNames:(nm?[nm]:[]);
@@ -246,8 +322,43 @@ export function makeAtlasExamples(HOST, CTX) {
                viewN:(vw&&vw.box&&isFinite(vw.box.n))?vw.box.n:null,
                /* the scale the reader is at, in kilometres rather than zoom levels — see
                   js/atlas-view-subject.js `scaleOf` for why a zoom number cannot answer this */
-               scale:(vw&&vw.scale)||'world' };
+               scale:(vw&&vw.scale)||'world',
+               era:era };
     }catch(_){ return null; } }
+
+    /* ══ (atlas-before-login) THE POOL FOR A MAP THAT IS NOT DRAWING TODAY ═══════════════════════
+       Offered INSTEAD of V/P/W whenever `f.era` is set (see `eraFacts`). Every specific candidate is
+       gated on something measured on the era borders actually drawn; the four tails need only the
+       clock, so a row stands even before the collection arrives. ⚠ en + jp only (CONSTITUTION §7);
+       the names substituted are the label layer's, which carries what the source wrote. */
+    const E=[
+      { k:'e-border', w:16, on:(f)=>!!(f.era&&f.era.n===2),
+        t:()=>L('In {yr}, the border between {pa} and {pb} runs through this view — how was it drawn, and what crossed it?',
+                '{yr}、この視界を{pa}と{pb}の国境が走っている。この線はどう引かれ、何が行き来していた？') },
+      { k:'e-many', w:16, on:(f)=>!!(f.era&&f.era.n>=3),
+        t:()=>L('In {yr}, {ne} states share this view — which of these borders were new, and which lasted?',
+                '{yr}、この視界には{ne}つの国家がある。どの国境が新しく、どれが続いた？') },
+      { k:'e-polity', w:15, on:(f)=>!!(f.era&&f.era.here),
+        t:()=>L('In {yr}, the map draws this place as {polity} — who governed it, and how far did that rule reach?',
+                '{yr}、地図はここを{polity}として描いている。誰が治め、その支配はどこまで及んでいた？') },
+      { k:'e-renamed', w:14, on:(f)=>!!(f.era&&f.era.renamed>=1),
+        t:()=>L('Some of the states drawn here in {yr} are named differently today or no longer exist — what became of them?',
+                '{yr}にここで描かれている国のなかには、今日は名前が違うか、もう存在しないものがある。どうなった？') },
+      { k:'e-since', w:13, on:(f)=>!!(f.era&&f.era.since),
+        t:()=>L('The borders on this map took this shape on {since} — what changed that day?',
+                'この地図の国境は{since}にこの形になった。その日に何が変わった？') },
+      { k:'e-sea', w:12, on:(f)=>!!(f.era&&f.vw&&f.vw.landFrac<0.35),
+        t:()=>L('In {yr}, whose ships used these waters, and who claimed them?',
+                '{yr}、この海域を使っていたのは誰の船で、誰が領有を主張していた？') },
+      { k:'e-here', w:4, on:(f)=>!!f.era, tail:1,
+        t:()=>L('What was happening around here in {yr}?','{yr}、この辺りでは何が起きていた？') },
+      { k:'e-compare', w:3, on:(f)=>!!f.era, tail:1,
+        t:()=>L('Compare this {yr} map with today’s — what has moved?','{yr}の地図を今日の地図と比べると、何が変わった？') },
+      { k:'e-after', w:2, on:(f)=>!!f.era, tail:1,
+        t:()=>L('How did the borders on this map change in the years after {yr}?','{yr}以降、この地図の国境はどう変わっていった？') },
+      { k:'e-world', w:1, on:(f)=>!!f.era, tail:1,
+        t:()=>L('What did the world look like in {yr}?','{yr}の世界はどうなっていた？') }
+    ];
 
     /* ══ ⚠⚠⚠ (#R392) THE POOL THAT IS ABOUT THE VIEW, NOT ABOUT THE COUNTRY ═══════════════════
        Every candidate below is gated on something MEASURED FROM THE VIEW ITSELF — how many
@@ -1025,6 +1136,15 @@ export function makeAtlasExamples(HOST, CTX) {
            nine languages and cannot become #R313 追記's untranslated value in a translated sentence */
         .replace(/\{n\}/g,String((f&&f.langN)||''))
         .replace(/\{year\}/g,String((f&&f.year)||''))
+        /* ── (atlas-before-login) the era the map draws. `{yr}` is the reader's-language year with
+           its era (500 BC, 紀元前500年), from the same formatter the Chronos panel uses; the names are
+           the era label layer's own. */
+        .replace(/\{yr\}/g,_yearText(f&&f.era&&f.era.year))
+        .replace(/\{polity\}/g,(f&&f.era&&f.era.here)||'')
+        .replace(/\{pa\}/g,(f&&f.era&&f.era.names[0])||'')
+        .replace(/\{pb\}/g,(f&&f.era&&f.era.names[1])||'')
+        .replace(/\{ne\}/g,String((f&&f.era&&f.era.n)||''))
+        .replace(/\{since\}/g,(f&&f.era&&f.era.since)||'')
         /* ── (#R392) the view's own nouns. ⚠ `{a}`/`{b}` ARE ORDERED BY HOW MUCH OF THE FRAME EACH
            COUNTRY HOLDS (js/atlas-view-subject.js), not by the polygon list's order, so 「the border
            between A and B」 names the two that are actually on screen. The water name arrives
@@ -1061,10 +1181,12 @@ export function makeAtlasExamples(HOST, CTX) {
          whether or not a country was resolved, and an ocean view now gets a question about that
          ocean. Merging rather than replacing also means `P`'s layer chips and `W`'s world chips are
          untouched: they still win the slots the view has nothing to say about. */
-      const picked=choose(V.concat(usePlace?P:W),f||{ st:null, has:()=>false, live:true, year:null, scale:'world' });
+      /* (atlas-before-login) a map that is not drawing today is asked about the era it draws */
+      const pool=(f&&f.era)?E:V.concat(usePlace?P:W);
+      const picked=choose(pool,f||{ st:null, has:()=>false, live:true, year:null, scale:'world' });
       const out=picked.map(x=>fill(x.t(),f));
       /* a pool that somehow answered nothing still has to put four chips on the row */
-      if(out.length<4){ W.filter(x=>x.w<=4).forEach(x=>{ if(out.length<4) out.push(fill(x.t(),f)); }); }
+      if(out.length<4&&!(f&&f.era)){ W.filter(x=>x.w<=4).forEach(x=>{ if(out.length<4) out.push(fill(x.t(),f)); }); }
       return out.slice(0,4);
     }
     /* ══ ⚠⚠⚠ (#R392) THE OTHER SET OF PRESET SENTENCES ════════════════════════════════════════
@@ -1105,8 +1227,9 @@ export function makeAtlasExamples(HOST, CTX) {
         const code=(typeof codeAtPoint==='function')?codeAtPoint(lng,lat):null;
         const st=(code&&countryStats)?countryStats[code]:null;
         const vn=(vw&&vw.countryNames&&vw.countryNames.length)?vw.countryNames:(st?[cName(st)]:[]);
+        let era=null; try{ era=eraFacts(CLOCK.state(),vw); }catch(_){ era=null; }   /* (atlas-before-login) the era at the CLICKED box */
         f=Object.assign({},base,{ code:st?code:'', name:st?cName(st):'', st:st||null,
-                                  vw:vw, vnames:vn, scale:(vw&&vw.scale)||'region' });
+                                  vw:vw, vnames:vn, scale:(vw&&vw.scale)||'region', era:era });
       }catch(_){ f=null; }
       /* ⚠ ONE SLOT IS ALWAYS #R309's. MEASURED on this round's own check: without the reservation,
          a click in the middle of a country came back 「Alfa is one of the most crowded countries on
@@ -1115,11 +1238,15 @@ export function makeAtlasExamples(HOST, CTX) {
          SPOT」. That is the wrong-subject defect one row down, and it is what this round exists to
          remove. So the specific pool fills all but the last slot and 「Why is this area the way it
          is?」 — the question that actually uses the coordinates the click carries — always survives. */
-      const specific=choose(V.concat(f&&f.st?P:W),f||{ st:null, has:()=>false, live:true, year:null, scale:'region' });
+      /* (atlas-before-login) in the past the reserved slot is the era's own 「what was happening
+         here」, and the rest come from the era pool — HERE's 「recently」 is a question about today */
+      const inEra=!!(f&&f.era);
+      const specific=inEra?choose(E.filter(x=>x.k!=='e-here'),f)
+                          :choose(V.concat(f&&f.st?P:W),f||{ st:null, has:()=>false, live:true, year:null, scale:'region' });
       const out=[]; const seen=Object.create(null);
       const take=(x)=>{ const s=fill(x.t(),f); if(!s||seen[s]) return; seen[s]=1; out.push(s); };
       for(const x of specific){ if(out.length>=Math.max(1,want-1)) break; take(x); }
-      for(const x of HERE){ if(out.length>=want) break; take(x); }
+      for(const x of (inEra?E.filter(x=>x.k==='e-here'):HERE)){ if(out.length>=want) break; take(x); }
       return out.slice(0,want);
     }
 
@@ -1134,7 +1261,10 @@ export function makeAtlasExamples(HOST, CTX) {
          VIEW as well, quantised to a fraction of the view's own span (js/atlas-view-subject.js
          `viewKey`) so that moving somewhere else redraws and nudging the map does not. */
       let vk=''; try{ vk=VIEW.viewKey(f.vw); }catch(_){}
-      return (f.code||'')+'|'+HOST.lang+'|'+(f.live?'live':('y'+f.year))+'|'+f.layers.map(x=>x.id).sort().join(',')+'|'+vk;
+      /* (atlas-before-login) …and the era the map draws (it lands after the clock moves, so the
+         collection's arrival has to redraw), and whether the reader is signed in (the row says so) */
+      const e=f.era, es=e?(e.n+':'+e.here+':'+e.names.slice(0,2).join('/')+':'+e.renamed+':'+e.since):'';
+      return (f.code||'')+'|'+HOST.lang+'|'+(f.live?'live':('y'+f.year))+'|'+f.layers.map(x=>x.id).sort().join(',')+'|'+vk+'|'+es+'|'+(_signedIn()?'u':'a');
     }
 
     /* (#R309) draw the chips. `force` ignores the "did the subject change" guard (a language change
@@ -1148,7 +1278,52 @@ export function makeAtlasExamples(HOST, CTX) {
       const key=exKey(f);
       if(!force&&key===_exKey) return; _exKey=key;
       ew.innerHTML='';
-      examples(f).forEach(ex=>{ const b=document.createElement('button'); b.className='atl-chip'; b.textContent=ex; b.onclick=()=>{ pick(ex); }; ew.appendChild(b); });
+      if(!_signedIn()) ew.appendChild(_gateNote());
+      examples(f).forEach(ex=>{ const b=document.createElement('button'); b.className='atl-chip'; b.textContent=ex;
+        /* (atlas-before-login) signed out, a tap shows how Atlas answers — the login sheet comes from
+           the card's own button, never from the tap. Signed in, a tap asks, as it always has. */
+        b.onclick=()=>{ if(_signedIn()) pick(ex); else _preview(ew,b,ex); }; ew.appendChild(b); });
+    }catch(_){} }
+
+    /* ══ (atlas-before-login) WHAT A READER WITHOUT AN ACCOUNT IS SHOWN ══════════════════════════
+       ⚠ NOT AN ANSWER. No recorded production answer exists in this repository to replay (the eval
+       cassettes are scripted), and a written one would be an answer Atlas never gave. The card says
+       what Atlas will do with THIS question — the three steps the loop really takes (js/atlas-agent.js:
+       read the map state, act through the tools, write the reply last from the results) — beside a
+       figure labelled as an illustration. The allowance is the free plan's row, read at runtime. */
+    function _signedIn(){ try{ return !!HOST.user; }catch(_){ return false; } }
+    const FREE_TURNS=planOf(DEFAULT_PLAN).aiTurnsPerDay;
+    function _t(key){ try{ return String(HOST.t(key)); }catch(_){ return ''; } }
+    function _el(tag,cls,txt){ const d=document.createElement(tag); if(cls) d.className=cls; if(txt!=null) d.textContent=txt; return d; }
+    function _gateNote(){ return _el('div','atl-gate',_t('atlasGateNote').replace('{n}',String(FREE_TURNS))); }
+    function _figure(){
+      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('viewBox','0 0 240 104'); svg.setAttribute('class','atl-pv-fig'); svg.setAttribute('aria-hidden','true');
+      const add=(name,attrs)=>{ const n=document.createElementNS('http://www.w3.org/2000/svg',name); Object.keys(attrs).forEach(k=>n.setAttribute(k,attrs[k])); svg.appendChild(n); return n; };
+      add('rect',{ x:'0', y:'0', width:'240', height:'104', rx:'12', class:'atl-pv-sea' });
+      add('path',{ d:'M112 54 L150 26 L198 34 L218 68 L182 92 L100 86 Z', class:'atl-pv-land' });
+      add('path',{ d:'M22 68 L50 36 L92 32 L112 54 L100 86 L50 92 Z', class:'atl-pv-hl' });
+      add('path',{ d:'M64 62 C 104 36, 150 84, 188 56', class:'atl-pv-route' });
+      add('circle',{ cx:'188', cy:'56', r:'5', class:'atl-pv-pin' });
+      return svg;
+    }
+    function _preview(ew,chip,q){ try{
+      const old=ew.querySelector('.atl-pv'); if(old) old.remove();
+      ew.querySelectorAll('.atl-chip[aria-expanded]').forEach(c=>c.removeAttribute('aria-expanded'));
+      chip.setAttribute('aria-expanded','true');
+      const card=_el('div','atl-pv'); card.setAttribute('role','region'); card.setAttribute('aria-label',_t('atlasPvTitle'));
+      card.appendChild(_el('div','atl-pv-h',_t('atlasPvTitle')));
+      card.appendChild(_el('div','atl-pv-q',q));
+      const ol=_el('ol','atl-pv-steps'); ['atlasPvStep1','atlasPvStep2','atlasPvStep3'].forEach(k=>ol.appendChild(_el('li','',_t(k)))); card.appendChild(ol);
+      const fig=_el('figure','atl-pv-figwrap'); fig.appendChild(_figure()); fig.appendChild(_el('figcaption','',_t('atlasPvFigure'))); card.appendChild(fig);
+      card.appendChild(_el('div','atl-pv-quota',_t('atlasPvQuota').replace('{n}',String(FREE_TURNS))));
+      const row=_el('div','atl-pv-row');
+      const go=_el('button','atl-pv-login',_t('atlasPvLogin')); go.type='button';
+      go.onclick=()=>{ try{ if(typeof CTX.stage==='function') CTX.stage(q); }catch(_){} try{ HOST.openAuthModal(HOST.aiLoginMsg()); }catch(_){} };
+      const no=_el('button','atl-pv-close',_t('atlasPvClose')); no.type='button';
+      no.onclick=()=>{ try{ card.remove(); chip.removeAttribute('aria-expanded'); chip.focus(); }catch(_){} };
+      row.appendChild(no); row.appendChild(go); card.appendChild(row);
+      ew.appendChild(card);
+      try{ card.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(_){}
     }catch(_){} }
     /* ⚠ (#R309) DEBOUNCED, and on the camera's own settle — not on every frame. 600 ms is the same
        quiet the widget scheduler waits for after a pan (js/widget-scheduler.js), so the two agree on
@@ -1177,6 +1352,12 @@ export function makeAtlasExamples(HOST, CTX) {
          which is exactly the moment the answer changes; the `exKey` guard means the common case
          (tiles that add nothing new) still repaints nothing. */
       try{ GE().events.on('idle',bump); }catch(_){}
+      /* (atlas-before-login) signing in happens inside the login sheet, and js/auth-ui.js sets the
+         user before it hides the sheet — so the sheet closing is the moment the row's note and card
+         stop being true. `exKey` carries the signed-in bit, so a close that changed nothing redraws
+         nothing. */
+      try{ const am=document.getElementById('auth-modal');
+        if(am&&typeof MutationObserver!=='undefined') new MutationObserver(()=>{ if(am.style.display==='none') bump(); }).observe(am,{attributes:true,attributeFilter:['style']}); }catch(_){}
     }
   /* ⚠ (#R337) `examples` and `facts` are PUBLISHED so this round's check can run the SHIPPED chooser
      over a synthetic world rather than grepping this file for wording. That is #R313 追記2's lesson

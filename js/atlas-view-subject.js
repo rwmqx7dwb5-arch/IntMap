@@ -226,6 +226,10 @@ export function makeAtlasViewSubject(CTX) {
      in `countryStats`, so the cheap rectangle test runs first and the ray-cast only settles the one
      or two candidates that survive — which is also why the bbox is never allowed to ANSWER: an
      extent is not a location (#R337 追記), it is only a way of not asking. */
+  /* 6×6 across the box, inset half a cell — the one sampling density both measurements below use.
+     ⚠ OBSERVED (#R392): enough to tell a two-country border view from a one-country one at country
+     scale without a long task on every pan. It stops being right if the sampler moves to tiles. */
+  const VIEW_GRID = 6;
   function landInView(box) {
     const out = { codes: [], landFrac: 0, samples: 0 };
     if (!box) return out;
@@ -234,7 +238,7 @@ export function makeAtlasViewSubject(CTX) {
     if (!feats || !feats.length) return out;
     /* 6×6 across the box, inset half a cell so the samples describe the interior rather than the
        edges — a border view must not be decided by a pixel on the frame */
-    const K = 6, hit = Object.create(null);
+    const K = VIEW_GRID, hit = Object.create(null);
     let land = 0, tot = 0;
     for (let i = 0; i < K; i++) {
       for (let j = 0; j < K; j++) {
@@ -267,6 +271,53 @@ export function makeAtlasViewSubject(CTX) {
       .filter((c) => hit[c] >= 2 || Object.keys(hit).length === 1)
       .sort((a, b) => hit[b] - hit[a]);
     out.share = hit;
+    return out;
+  }
+  /* ══ (atlas-before-login) THE SAME 36 SAMPLES, OVER A COLLECTION THE CALLER HOLDS ══════════════
+     The era borders the map draws while Chronos stands in the past (js/time-borders.js
+     `currentFC()`) are not the country table this module was built over, and the chips have to ask
+     them the question #R392 asked of the present: which of these are actually inside the view, and
+     which one is under its centre. Same grid, same inset, same sliver rule and the same ray-cast as
+     `landInView` — so a past view and a present one are measured by one rule, not two.
+     ⚠ THE RECTANGLE TEST IS COMPUTED FROM THE GEOMETRY (no `bboxAll` exists for an era polygon) and
+     remembered per collection; a ring that crosses ±180 gets no box and goes to the ray-cast. */
+  const _fbb = new WeakMap();
+  function _geomBox(gm) {
+    let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+    const walk = (a) => { if (typeof a[0] === 'number') { if (a[0] < w) w = a[0]; if (a[0] > e) e = a[0]; if (a[1] < s) s = a[1]; if (a[1] > n) n = a[1]; } else a.forEach(walk); };
+    try { walk(gm.coordinates); } catch (_) { return null; }
+    return (isFinite(w) && (e - w) < 180) ? [w, s, e, n] : null;
+  }
+  function featuresInView(box, feats, keyOf) {
+    const out = { keys: [], share: Object.create(null), first: Object.create(null), centre: '', samples: 0 };
+    if (!box || !Array.isArray(feats) || !feats.length || typeof keyOf !== 'function') return out;
+    const at = (lng, lat) => {
+      const x = ((lng + 540) % 360) - 180;
+      for (const f of feats) {
+        if (!f || !f.geometry) continue;
+        let bb = _fbb.get(f); if (bb === undefined) { bb = _geomBox(f.geometry); _fbb.set(f, bb); }
+        if (bb && (x < bb[0] || x > bb[2] || lat < bb[1] || lat > bb[3])) continue;
+        if (pipFeat(x, lat, f.geometry)) return f;
+      }
+      return null;
+    };
+    const K = VIEW_GRID, hit = out.share;
+    for (let i = 0; i < K; i++) {
+      for (let j = 0; j < K; j++) {
+        const lng = box.w + (box.e - box.w) * ((i + 0.5) / K);
+        const lat = box.s + (box.n - box.s) * ((j + 0.5) / K);
+        if (!isFinite(lng) || !isFinite(lat) || lat > 85 || lat < -85) continue;
+        out.samples++;
+        const f = at(lng, lat); if (!f) continue;
+        const k = String(keyOf(f) || ''); if (!k) continue;
+        hit[k] = (hit[k] || 0) + 1; if (!out.first[k]) out.first[k] = f;
+      }
+    }
+    const cx = isFinite(box.lng) ? box.lng : (box.w + box.e) / 2, cy = isFinite(box.lat) ? box.lat : (box.s + box.n) / 2;
+    const cf = (isFinite(cx) && isFinite(cy)) ? at(cx, cy) : null;
+    if (cf) { out.centre = String(keyOf(cf) || ''); if (out.centre && !out.first[out.centre]) out.first[out.centre] = cf; }
+    /* `landInView`'s sliver rule, unchanged: one sample of 36 is the frame's edge, not a subject */
+    out.keys = Object.keys(hit).filter((k) => hit[k] >= 2 || Object.keys(hit).length === 1).sort((a, b) => hit[b] - hit[a] || (a < b ? -1 : 1));
     return out;
   }
   function pipRing(x, y, ring) {
@@ -613,7 +664,7 @@ export function makeAtlasViewSubject(CTX) {
 
   return { subject: subject, viewBox: viewBox, boxAt: boxAt, viewKey: viewKey,
            landInView: landInView, waterInView: waterInView, groundInView: groundInView,
-           contentInView: contentInView,
+           contentInView: contentInView, featuresInView: featuresInView,
            /* the pure ones, for the round's checks — see the note above */
            waterKind: waterKind, waterReachKm: waterReachKm, pickWater: pickWater,
            haversineKm: haversineKm, scaleOf: scaleOf };

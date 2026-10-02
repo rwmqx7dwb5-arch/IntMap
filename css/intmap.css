@@ -2254,6 +2254,12 @@
       /* (#R122/#R132) mobile: SELECTED Atlas tab keeps the same shared accent gradient as normal mode (was a fixed blue→purple gradient) */
       .mode-btn.mode-atlas.active{ background:var(--atlas-grad) !important; color:#fff !important; box-shadow:0 2px 9px rgba(94,92,230,0.32) !important; }
       .mode-btn.mode-atlas:not(.active){ color:#5e5ce6 !important; }
+      /* (atlas-before-login) REPORTED on production 2026-10-03 (phone sheet): in this segmented control the selected segment is the
+         raised pill and the others are bare text, so the desktop's unselected Atlas look (a gradient RING, #R114) read as
+         "selected" while it was not. On the phone the unselected Atlas segment is bare like its neighbours and keeps
+         only its indigo letterform; the gradient fill above is the one selected look. */
+      .mode-btn.mode-atlas:not(.active){ background:transparent !important; }
+      .mode-btn.mode-atlas:not(.active)::before{ display:none; }
 
       .news-filter-toggle{ flex:0 0 auto; }
       .ios-segment-btn{ padding:8px 12px; font-size:12px; min-height:32px; }

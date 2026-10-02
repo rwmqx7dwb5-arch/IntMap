@@ -278,6 +278,27 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'#atlas-panel .atl-traj-btn.on{background:var(--primary-fill);color:#fff;border-color:var(--primary-fill);}'
       +'#atlas-panel .atl-chip{font-size:11px;color:var(--text-main);background:rgba(120,120,128,0.10);border:1px solid rgba(128,128,128,0.16);border-radius:12px;padding:6px 10px;cursor:pointer;text-align:left;transition:background .15s ease,border-color .15s ease;}'
       +'#atlas-panel .atl-chip:hover{background:rgba(120,120,128,0.2);border-color:var(--primary-color);}'
+      /* (atlas-before-login) signed out: the note above the chips, the chip whose card is open, and the card
+         (js/atlas-examples.js _preview). The figure is drawn in the accent so it follows the reader's colour. */
+      +'#atlas-panel .atl-gate{flex:1 1 100%;font-size:11.5px;line-height:1.5;color:var(--text-muted);padding:0 2px 2px;}'
+      +'#atlas-panel .atl-chip[aria-expanded="true"]{background:rgba(120,120,128,0.2);border-color:var(--primary-color);}'
+      +'#atlas-panel .atl-pv{flex:1 1 100%;display:flex;flex-direction:column;gap:9px;margin:4px 0 6px;padding:12px 13px;border-radius:14px;background:rgba(120,120,128,0.08);border:1px solid rgba(128,128,128,0.18);}'
+      +'#atlas-panel .atl-pv-h{font-size:12.5px;font-weight:600;color:var(--text-main);}'
+      +'#atlas-panel .atl-pv-q{font-size:12px;line-height:1.5;color:var(--text-main);padding:8px 10px;border-radius:10px;background:rgba(120,120,128,0.12);}'
+      +'#atlas-panel .atl-pv-steps{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px;font-size:11.5px;line-height:1.5;color:var(--text-main);}'
+      +'#atlas-panel .atl-pv-figwrap{margin:0;display:flex;flex-direction:column;gap:4px;}'
+      +'#atlas-panel .atl-pv-fig{display:block;width:100%;max-width:280px;height:auto;}'
+      +'#atlas-panel .atl-pv-figwrap figcaption{font-size:10.5px;color:var(--text-muted);}'
+      +'#atlas-panel .atl-pv-sea{fill:rgba(120,120,128,0.12);}'
+      +'#atlas-panel .atl-pv-land{fill:rgba(120,120,128,0.22);stroke:rgba(128,128,128,0.45);stroke-width:1;}'
+      +'#atlas-panel .atl-pv-hl{fill:var(--primary-color);fill-opacity:0.32;stroke:var(--primary-color);stroke-width:1.5;}'
+      +'#atlas-panel .atl-pv-route{fill:none;stroke:var(--primary-color);stroke-width:2;stroke-dasharray:5 4;stroke-linecap:round;}'
+      +'#atlas-panel .atl-pv-pin{fill:var(--primary-color);}'
+      +'#atlas-panel .atl-pv-quota{font-size:11.5px;color:var(--text-muted);}'
+      +'#atlas-panel .atl-pv-row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}'
+      +'#atlas-panel .atl-pv-row button{font:inherit;font-size:12.5px;border:none;border-radius:10px;padding:8px 14px;min-height:36px;cursor:pointer;}'
+      +'#atlas-panel .atl-pv-close{background:rgba(120,120,128,0.14);color:var(--text-main);}'
+      +'#atlas-panel .atl-pv-login{background:var(--atlas-grad);color:#fff;font-weight:600;}'
       +'#atlas-panel .atl-inbar{display:flex;gap:8px;align-items:center;padding:6px 9px 4px;border-top:1px solid rgba(128,128,128,0.12);}'   /* (#R103) tighter top/bottom margin around the input+send */
       /* (#R149) image attach button + pasted/attached image thumbnails ("入力欄にペーストすれば画像も送れるように") */
       +'#atlas-panel .atl-attach{flex:0 0 auto;width:32px;height:32px;border-radius:50%;border:none;background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:color .15s ease,background .15s ease;}'
@@ -403,6 +424,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-chip{font-size:12.5px;padding:8px 12px;}'
       /* (mobile-shell-flow) (inside the COMPACT block above) the example chips are tap targets like every other control in the sheet: 44 px */
       +'#atlas-panel .atl-chip{min-height:44px;}'
+      +'#atlas-panel .atl-pv-row button{min-height:44px;}'   /* (atlas-before-login) the card's two buttons, same rule */
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar{gap:8px;padding:8px 11px 6px;}'
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-in{height:48px;min-height:48px;border-radius:24px;padding:12px 16px;font-size:16px;}'   /* (#R118) textarea paddings (16px font kills iOS zoom, unchanged) */
       /* (#R309) the frosted-glass material for this input is in css/intmap.css, beside the three
