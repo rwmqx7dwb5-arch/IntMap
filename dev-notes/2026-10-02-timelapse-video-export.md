@@ -114,4 +114,4 @@ Chronos パネルを開いたとき（以前から）、録画器のチャンク
 
 ## 起動費の天井を上げた理由（origin/main への rebase 後）
 
-main が async.gzip の天井を自分の実測へ上げたあとは、この変更で超えたのは **dist.assets** だけだった（18,655.4 → 18,757.6 kB。`node scripts/perf-budget.mjs --update` は超えた行だけを上げる）。うち、この変更が足したのは `map-recorder` の新規チャンク 18,644 B（gzip 7,841 B。書き出し欄を開いたときか Atlas が録画を頼んだときだけ読む）と、`time-lapse`・`atlas-console` の追記。残りは上に書いたこの機械の CRLF による差で、main の CI（LF）が実測で下げる。
+#890（能力の宣言を 1 つに）の後の main へ載せ直してビルドすると、天井を超えた行は **async.raw**（11,389.5 → 11,455.5 kB）だった。`node scripts/perf-budget.mjs --update` は超えた行だけを上げる。この変更が足したのは `map-recorder` の新規チャンク 18,644 B（gzip 7,839 B。書き出し欄を開いたときか Atlas が録画を頼んだときだけ読む）と、`time-lapse` の受け手・書き出し欄のボタン、`time.lapse` の説明の断片。残りは上に書いたこの機械の CRLF による差で、main の CI（LF）が実測で下げる。起動時（eager）の行は超えていない。
