@@ -163,3 +163,76 @@ test('a pragmatic CSP is present (object-src none, base-uri self)', async () => 
 test('no uncaught exceptions while running the security probes', async () => {
   expect(diag.pageErrors, `pageerror(s):\n${diag.pageErrors.join('\n---\n')}`).toHaveLength(0);
 });
+
+/* ── (csp-without-inline) THE POLICY, AS A BROWSER ENFORCES IT ──────────────────────────────────────
+   scripts/csp.mjs proves each page's script-src names the hash of each inline <script>; whether the
+   BROWSER agrees is only known by loading the built page. A `securitypolicyviolation` listener is put
+   in before the first byte of every served page (addInitScript runs before the document's own
+   scripts), the page is loaded and given its boot, and the record must be empty — a hash computed
+   over different text than the browser hashed, a resource the page loads that its policy does not
+   name, anything inline the policy refuses, all show up here and nowhere else. */
+const CSP_PAGES = ['admin.html', 'about.html', 'ja/about.html', 'teachers.html', 'ja/teachers.html',
+  'privacy.html', 'terms.html', 'science.html', 'sources.html'];
+const recordViolations = () => {
+  window.__imCspViolations = [];
+  document.addEventListener('securitypolicyviolation', (e) => {
+    window.__imCspViolations.push(`${e.effectiveDirective} ${e.blockedURI || '(inline)'} ${e.sourceFile || ''}:${e.lineNumber || ''} ${String(e.sample || '').slice(0, 60)}`);
+  });
+};
+
+test('the app boots with no CSP violation, and markup runs code only by a declared action name', async ({ browser }) => {
+  const context = await browser.newContext({ storageState: seededStorageState() });
+  await installHermeticRouting(context);
+  await context.addInitScript(recordViolations);
+  const p = await context.newPage();
+  await p.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await p.waitForFunction(() => !!window.__imInlineActions && !!document.getElementById('map') && typeof window.IntMapSafe === 'object', null, { timeout: 45_000 });
+  await p.waitForTimeout(2500);
+  expect(await p.evaluate(() => window.__imCspViolations), 'violations while booting').toEqual([]);
+  const r = await p.evaluate(async () => {
+    /* an injected event attribute is refused by the policy — the reason the policy has no 'unsafe-inline' */
+    window.__imInjected = 0;
+    const host = document.createElement('div');
+    host.innerHTML = '<img src="data:," onerror="window.__imInjected=1">';
+    document.body.appendChild(host);
+    /* a declared action runs; an undeclared one is refused and recorded, and calls nothing */
+    let called = 0;
+    const keep = window._closePinPopup;
+    window._closePinPopup = () => { called++; };
+    host.insertAdjacentHTML('beforeend', '<button data-im-click="pinPopupClose"><span>x</span></button><button data-im-click="_closePinPopup">y</button>');
+    host.querySelector('[data-im-click="pinPopupClose"] span').click();
+    host.querySelector('[data-im-click="_closePinPopup"]').click();
+    window._closePinPopup = keep;
+    await new Promise((res) => setTimeout(res, 300));
+    const refused = (window.__imErrors || []).some((e) => e.kind === 'inline-action' && /unknown-action click:_closePinPopup/.test(e.msg));
+    host.remove();
+    return { injected: window.__imInjected, called, refused, violations: window.__imCspViolations.slice() };
+  });
+  expect(r.injected, 'an inline onerror ran — script-src admits inline code again').toBe(0);
+  expect(r.violations.length, 'the browser reported the refused attribute').toBeGreaterThan(0);
+  expect(r.called, 'the declared action ran exactly once, for a click on a child of its element').toBe(1);
+  expect(r.refused, 'a name not in js/inline-actions.js ACTIONS is refused and recorded').toBe(true);
+  await context.close();
+});
+
+test('every served page loads with no CSP violation', async ({ browser }) => {
+  const context = await browser.newContext({ storageState: seededStorageState() });
+  await installHermeticRouting(context);
+  await context.addInitScript(recordViolations);
+  const p = await context.newPage();
+  const seen = {};
+  for (const rel of CSP_PAGES) {
+    await p.goto('/' + rel, { waitUntil: 'load', timeout: 45_000 });
+    await p.waitForTimeout(800);
+    seen[rel] = await p.evaluate(() => window.__imCspViolations);
+  }
+  /* a share page leaves at once (its inline script is the redirect, and a meta refresh backs it up, so
+     ARRIVING proves nothing): the browser's own console line for a refused script is what is read */
+  const refusals = [];
+  p.on('console', (m) => { if (/Content Security Policy/i.test(m.text())) refusals.push(m.text()); });
+  await p.goto('/s/europe-1914.html', { waitUntil: 'load', timeout: 45_000 });
+  await p.waitForURL(/index\.html#/, { timeout: 15_000 });
+  seen['s/europe-1914.html'] = refusals;
+  expect(seen).toEqual(Object.fromEntries([...CSP_PAGES, 's/europe-1914.html'].map((r) => [r, []])));
+  await context.close();
+});

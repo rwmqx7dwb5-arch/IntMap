@@ -1508,7 +1508,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     let b=document.getElementById('area-news-banner');
     if(!b){ b=document.createElement('div'); b.id='area-news-banner'; b.style.cssText='display:flex;align-items:center;gap:8px;justify-content:space-between;margin:0 0 8px;padding:7px 11px;border-radius:9px;background:rgba(10,132,255,0.12);border:1px solid var(--primary-color);font-size:12px;color:var(--text-main);';
       const feed=document.getElementById('live-news-feed'); if(feed&&feed.parentNode) feed.parentNode.insertBefore(b,feed); }
-    b.innerHTML='<span>📍 '+(IntMapLang.t(currentLang,'Showing news in the selected area','選択範囲のニュースのみ表示中','Nur News im gewählten Bereich','Показаны новости выбранной области','Mostrando noticias del área seleccionada'))+'</span><button onclick="window._clearNewsArea()" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap;">× '+(IntMapLang.t(currentLang,'Clear','解除','Aufheben','Сбросить','Quitar'))+'</button>';
+    b.innerHTML='<span>📍 '+(IntMapLang.t(currentLang,'Showing news in the selected area','選択範囲のニュースのみ表示中','Nur News im gewählten Bereich','Показаны новости выбранной области','Mostrando noticias del área seleccionada'))+'</span><button data-im-click="newsAreaClear" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap;">× '+(IntMapLang.t(currentLang,'Clear','解除','Aufheben','Сбросить','Quitar'))+'</button>';
   }
 
   /* ===== AI FEATURE 3: spatial news summarization (radius / area) =====
@@ -2494,8 +2494,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const items=[...compareSet].map(c=>countryStats[c]).filter(Boolean);
     const chips=items.map((s)=>`<span class="scb-chip">${window.IntMapSafe.flag(s.flag,'🏳️')} ${cName(s)}<button aria-label="${IntMapLang.t(currentLang,'Remove','削除','Entfernen','Удалить','Quitar')}" data-cmptoggle="${IntMapSafe.html(s.code)}">×</button></span>`).join('');
     let head=`<div class="scf-head"><span class="scf-title">${t('compare')} (${compareSet.size}/10)</span><div style="display:flex;gap:6px;">`+
-      (compareSet.size>=2?`<button class="scf-view" onclick="_showCompare()">${t('compareView')}</button>`:'')+
-      `<button onclick="_clearCompare()">${t('compareClear')}</button></div></div>`;
+      (compareSet.size>=2?`<button class="scf-view" data-im-click="compareShow">${t('compareView')}</button>`:'')+
+      `<button data-im-click="compareClear">${t('compareClear')}</button></div></div>`;
     panel.innerHTML=head+`<div class="scf-chips">${chips}</div>`;
     if(!panel.__imCmpWired){ panel.__imCmpWired=1; panel.addEventListener('click',(ev)=>{ const b=ev.target.closest('[data-cmptoggle]'); if(b&&panel.contains(b)) window._toggleCompare(b.getAttribute('data-cmptoggle')); }); }   /* ⚠ (#R272 SEC) the country code used to be pasted into an onclick string — see the pin popup above. */
   }
@@ -3074,7 +3074,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       distHTML2=`<div class="pin-popup-row"><span>${t('ctxDistFrom')}</span><b>${distTXT(km)}</b></div><div class="pin-popup-row"><span>${t('bearing')}</span><b>${brg.toFixed(1)}° ${compassDir(brg)}</b></div>`;
     }
     const pm=pin.meta||{}, pmT=String(pm.title||'').trim(), pmD=String(pm.description||'').trim(), pmS=[String(pm.when||'').trim(),String(pm.source||'').trim()].filter(Boolean).join(' · '), pmU=pm.url?IntMapSafe.url(String(pm.url)):'';   /* ⚠ (#R489) EVERY VALUE HERE IS AN ATLAS-SUPPLIED STRING, so every one reaches innerHTML through IntMapSafe.html and the link through IntMapSafe.url — http(s)/mailto/tel only (index.html). A pin with no meta renders byte-identically to what it always did. */ const pmH=(pmD?`<div style="font-size:11.5px;line-height:1.55;margin:-2px 0 6px;opacity:.9;">${IntMapSafe.html(pmD)}</div>`:'')+(pmS?`<div style="font-size:10.5px;color:var(--text-muted);margin:-3px 0 6px;">${IntMapSafe.html(pmS)}</div>`:'')+(pmU?`<div style="font-size:10.5px;margin:-3px 0 6px;"><a href="${IntMapSafe.html(pmU)}" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;">${IntMapLang.t(currentLang,'source','出典','Quelle','источник','fuente')} ↗</a></div>`:'');
-    el.innerHTML=`<button aria-label="${IntMapLang.t(currentLang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" class="pin-popup-close" onclick="window._closePinPopup()">×</button>
+    el.innerHTML=`<button aria-label="${IntMapLang.t(currentLang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" class="pin-popup-close" data-im-click="pinPopupClose">×</button>
       <div style="font-weight:600; margin-bottom:6px;">📍 ${pmT?IntMapSafe.html(pmT):`${IntMapLang.t(currentLang,'Pin','ピン','Pin','Метка','Pin')} #${idx+1}`}</div>${pmH}
       <div class="pin-popup-row"><span>${t('coords')}</span><b>${fmtLL(pin.lng,pin.lat)}</b></div>
       <div class="pin-popup-row"><span>${pin.elev!=null&&pin.elev<0?t('depth'):t('elev')}</span>${elevHTML}</div>

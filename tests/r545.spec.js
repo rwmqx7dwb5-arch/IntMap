@@ -20,10 +20,17 @@
 //     country data…» and say what happened
 //
 // ⚠ THE FAULT IS INJECTED AT THE SEAM THE PANEL ITSELF USES, not by patching the panel. This module
-// receives `loadCountryData` as js/app-body.js's hoisted shim over
-// `IntMapModules.countriesUi(HOST).loadCountryData`, so wrapping that ONE method — before any page
-// script runs — is the dependency failing, for every caller that reaches it that way. Nothing
-// test-only is added to the application.
+// receives `loadCountryData` as js/app-body.js's hoisted shim over the object `countriesUi(HOST)` hands
+// back, so wrapping that ONE method of that ONE object is the dependency failing, for every caller that
+// reaches it that way. Nothing test-only is added to the application.
+// ⚠ (module-graph) HOW THAT OBJECT IS REACHED CHANGED, NOT WHAT IS WRAPPED. It used to be trapped on its way
+// through `window.IntMapModules.countriesUi`; #860 dissolved that registry (the factory is imported by name),
+// and the trap went on waiting on an object nobody assigns — so the wrapper never ran, the reload never
+// failed, ② watched a successful paint and called it silence (nightly 2026-10-01). The object now exists
+// only in the served bundle, written as the factory's `return { … }`; the fixture finds that literal there —
+// its keys read from js/countries-ui.js, in order (tests/app-source.mjs returnedKeys) — and wraps the one
+// method as the file is served. It must be found EXACTLY ONCE, and is asserted so: a fixture that matched
+// nothing would be this same silent pass again.
 // ⚠ AND THE FIXTURE IS NOT «BLOCK THE DOWNLOAD». MEASURED: refusing the Natural Earth fetch locks
 // the main thread within about two seconds (js/countries-ui.js caches a promise that RESOLVES while
 // `countryDataLoaded` stays false, so renderStats re-enters itself through it for ever) — a
@@ -33,43 +40,40 @@
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
+import { returnedKeys } from './app-source.mjs';
 
 test.describe.configure({ mode: 'serial' });
 
 let context, page, diag;
+/* the factory's returned object, as the bundler writes it: `renderStats:a,…,loadCountryData:e,…` (or shorthand) */
+const API_KEYS = returnedKeys(new URL('../', import.meta.url), 'js/countries-ui.js', 'countriesUi');
+const API_LITERAL = new RegExp('\\{' + API_KEYS.map((k) => k + '(?::[\\w$]+)?').join(',') + '\\}', 'g');
+let wrapped = 0;
 
 test.beforeAll(async ({ browser }) => {
   context = await browser.newContext({ storageState: seededStorageState(), viewport: { width: 1280, height: 800 } });
   await installHermeticRouting(context);
-  await context.addInitScript(() => {
-    /* while this is true, `loadCountryData()` returns a REJECTED promise to everything that goes
-       through the host — exactly what a loader that threw would give them. It starts false so the
-       session boots with real country data. */
-    window.__imFailCountryData = false;
-    /* js/countries-ui.js runs later and ASSIGNS its factory here; the accessor lets the wrapper sit
-       between that assignment and js/app-body.js's single `IntMapModules.countriesUi(IM_HOST)` call,
-       which is the only way in — the module keeps the factory in a closure const. */
-    const M = (window.IntMapModules = window.IntMapModules || {});
-    let real = null;
-    const wrapped = function (HOST) {
-      const api = real(HOST);
-      const load = api.loadCountryData;
-      api.loadCountryData = function () {
-        if (window.__imFailCountryData) return Promise.reject(new Error('__imFailCountryData'));
-        return load.apply(this, arguments);
-      };
-      return api;
-    };
-    Object.defineProperty(M, 'countriesUi', {
-      configurable: true,
-      enumerable: true,
-      get() { return real ? wrapped : undefined; },
-      set(f) { real = f; },
-    });
+  expect(API_KEYS, 'js/countries-ui.js still hands back loadCountryData').toContain('loadCountryData');
+  /* while this is true, `loadCountryData()` returns a REJECTED promise to everything that goes through the
+     host — exactly what a loader that threw would give them. It starts false so the session boots with real
+     country data. */
+  await context.addInitScript(() => { window.__imFailCountryData = false; });
+  /* the app's own scripts (dist/assets/*.js), served through this before the hermetic catch-all is asked */
+  await context.route('**/assets/*.js', async (route) => {
+    const res = await route.fetch();
+    const src = await res.text();
+    let n = 0;
+    const body = src.replace(API_LITERAL, (lit) => lit.replace(/([{,])loadCountryData(?::([\w$]+))?(?=[,}])/, (m, sep, id) => { n++;
+      const real = id || 'loadCountryData';
+      return sep + 'loadCountryData:function(){return globalThis.__imFailCountryData?Promise.reject(new Error("__imFailCountryData")):' + real + '.apply(this,arguments)}'; }));
+    wrapped += n;
+    await route.fulfill({ response: res, body });
   });
   page = await context.newPage();
   diag = collectPageDiagnostics(page);
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await page.waitForFunction(() => !!window.__imap, null, { timeout: 60_000 });
+  expect(wrapped, "countriesUi(HOST)'s returned object was found, and wrapped, exactly once in the served files").toBe(1);
   /* the Layers row is built at boot by the eager shell (js/analysis-panels.js); the country data
      arrives from Natural Earth, which the hermetic policy lets through with the rest of jsDelivr */
   await page.waitForFunction(() => {

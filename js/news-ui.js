@@ -698,7 +698,7 @@ export function newsUi(HOST){
       const bodyHtml=(res.blocks&&res.blocks.length)
         ? res.blocks.map(b=> b.t==='h' ? `<h3>${HOST.escForReader(b.v)}</h3>` : `<p>${HOST.escForReader(b.v)}</p>`).join('')
         : `<p>${IntMapLang.t(HOST.lang,'Could not extract text — use “🌐 Web” above to open the page.','本文を自動取得できませんでした。上の「🌐 ページ表示」で元ページを開けます。','Text konnte nicht extrahiert werden — öffne die Seite über „🌐 Web“ oben.','Не удалось извлечь текст — откройте страницу через «🌐 Веб» выше.','No se pudo extraer el texto — abre la página con «🌐 Web» arriba.')}</p>`;
-      const heroHtml=res.hero?`<img class="nrp-hero" alt="" src="${HOST.escForReader(IntMapSafe.url(res.hero))}" onerror="this.style.display='none'">`:'';
+      const heroHtml=res.hero?`<img class="nrp-hero" alt="" src="${HOST.escForReader(IntMapSafe.url(res.hero))}" data-im-error="hideSelf">`:'';
       const locHtml=locName?`<span class="nrp-loc" id="nrp-loc" role="button" tabindex="0">${HOST.escForReader(locName)}</span>`:'';
       pane.innerHTML=`${readerBar(item,'reader')}
         ${heroHtml}${locHtml}

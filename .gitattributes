@@ -6,3 +6,65 @@
 *.yml  text eol=lf
 *.yaml text eol=lf
 *.toml text eol=lf
+
+# ── (generated-file-merge-driver) HOW A MERGE RESOLVES WHAT NO PERSON WRITES ────────────────────
+# MEASURED 2026-10-01: fifteen pull requests landing in parallel conflicted almost only in the files
+# below, and each one was resolved by hand with the same mechanical procedure. scripts/merge-driver.mjs
+# is that procedure; this block is the ONE declaration of it (git requires the path list here, so the
+# kind and the regeneration command live on the same line rather than in a second list).
+# The driver itself is configuration — `node scripts/merge-driver.mjs --install` (worktree.mjs and
+# master-sync.mjs run it). tests/generated-file-merge-driver-checks.test.mjs discovers every file that
+# DECLARES ITSELF generated or a ledger (a GENERATED/生成物 header naming its script, a GENERATED … BEGIN
+# region, a ledger whose "//" or "_" names its writer) and fails while one is missing here.
+#   json    a ledger: three-way by key and by member; a number both sides moved → intmap-clash
+#           (sum = add both moves, a count; upstream = take main's value, a measurement). Never regenerated.
+#   regen   a function of tracked inputs: hunks inside the generated region take main's side, and
+#           `node scripts/merge-driver.mjs --finish` runs intmap-regen after the merge (`!` = print, do not run)
+#   tokens  hand-written text that states counts: an integer both sides moved → base + both moves,
+#           an insertion both sides made at one place → both (main's first). Anything else is a conflict.
+# intmap-regen: commands separated by `;`, words by `,` (an attribute value has no spaces).
+
+# ledgers
+tests/perf-baseline.json                 merge=intmap-generated intmap-merge=json intmap-clash=upstream intmap-regen=!npm,run,build,&&,node,scripts/perf-budget.mjs,--update
+tests/durations.json                     merge=intmap-generated intmap-merge=json intmap-clash=upstream
+tests/global-surface-baseline.json       merge=intmap-generated intmap-merge=json intmap-clash=sum
+tests/control-names-baseline.json        merge=intmap-generated intmap-merge=json intmap-clash=sum
+tests/data-effect-baseline.json          merge=intmap-generated intmap-merge=json intmap-clash=sum
+tests/fetch-deadline-baseline.json       merge=intmap-generated intmap-merge=json intmap-clash=sum
+tests/keyboard-reach-baseline.json       merge=intmap-generated intmap-merge=json intmap-clash=sum
+tests/output-taint-baseline.json         merge=intmap-generated intmap-merge=json intmap-clash=sum
+tests/ui-owners-baseline.json            merge=intmap-generated intmap-merge=json intmap-clash=sum
+tests/z-layers-baseline.json             merge=intmap-generated intmap-merge=json intmap-clash=sum
+tests/i18n-coverage-floor.json           merge=intmap-generated intmap-merge=json intmap-clash=sum
+scripts/comment-strippers-ledger.json    merge=intmap-generated intmap-merge=json intmap-clash=sum
+scripts/safe-output-ledger.json          merge=intmap-generated intmap-merge=json intmap-clash=sum
+
+# generated from tracked inputs
+js/atlas-capabilities.js                 merge=intmap-generated intmap-merge=regen intmap-regen=scripts/atlas-caps.mjs,--write
+js/atlas-caps-modules.js                 merge=intmap-generated intmap-merge=regen intmap-regen=scripts/atlas-caps.mjs,--write
+js/layer-manifest.js                     merge=intmap-generated intmap-merge=regen intmap-regen=scripts/layer-descriptors.mjs,--write
+js/locales/_langs.js                     merge=intmap-generated intmap-merge=regen intmap-regen=scripts/i18n-langs.mjs
+js/showcase.js                           merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write;!scripts/showcase-capture.mjs,--base,http://127.0.0.1:<port>
+js/place-labels.js                       merge=intmap-generated intmap-merge=regen intmap-regen=!scripts/build-osm-ja-rejects.mjs
+scripts/atlas-eval/cassettes/*.json      merge=intmap-generated intmap-merge=regen intmap-regen=scripts/atlas-eval/scripted-cassettes.mjs,--write
+/about.html                              merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
+/teachers.html                           merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
+/robots.txt                              merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
+/sitemap.xml                             merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
+s/*.html                                 merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
+ja/about.html                            merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
+ja/teachers.html                         merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
+ja/s/*.html                              merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
+.claude/agents/*.md                      merge=intmap-generated intmap-merge=regen intmap-regen=scripts/agent-sync.mjs,--write
+.claude/skills/**                        merge=intmap-generated intmap-merge=regen intmap-regen=scripts/agent-sync.mjs,--write
+.codex/agents/*.toml                     merge=intmap-generated intmap-merge=regen intmap-regen=scripts/agent-sync.mjs,--write
+.codex/hooks.json                        merge=intmap-generated intmap-merge=regen intmap-regen=scripts/agent-sync.mjs,--write
+
+# hand-written text that states counts
+scripts/test-budget.mjs                  merge=intmap-generated intmap-merge=tokens
+supabase/tests/00_structure_test.sql     merge=intmap-generated intmap-merge=tokens
+docs/**/*.md                             merge=intmap-generated intmap-merge=tokens
+/Architecture.md                         merge=intmap-generated intmap-merge=tokens
+/PRODUCT.md                              merge=intmap-generated intmap-merge=tokens
+/DECISIONS.md                            merge=intmap-generated intmap-merge=tokens
+/README.md                               merge=intmap-generated intmap-merge=tokens

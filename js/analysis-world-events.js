@@ -583,10 +583,10 @@ export function analysisEvents(HOST){
         const feats=list.map((e,i)=>({type:'Feature',id:'ev'+i,geometry:{type:'Point',coordinates:e.loc},properties:{fid:'ev'+i,type:e.tp,color:EV_COLORS[e.tp]||'#007aff',title:LWE.arr(e.nm)+' ('+e.y+')',body:LWE.arr(e.ds),layerRef:''}}));
         if(GE().layers.hasSource('dash-points')) GE().layers.setSourceData('dash-points',{type:'FeatureCollection',features:feats});
       }catch(_){}
-      const seg='<div class="dash-nav"><button class="dash-nav-btn" onclick="_setDashView(\'places\')">'+(IntMapLang.t(HOST.lang,'📍 Places','📍 場所','📍 Orte','📍 Места','📍 Lugares'))+'</button><button class="dash-nav-btn active" onclick="_setDashView(\'events\')">'+(IntMapLang.t(HOST.lang,'🗓 Events','🗓 出来事','🗓 Ereignisse','🗓 События','🗓 Sucesos'))+'</button></div>';
+      const seg='<div class="dash-nav"><button class="dash-nav-btn" data-im-click="dashView" data-im-arg="places">'+(IntMapLang.t(HOST.lang,'📍 Places','📍 場所','📍 Orte','📍 Места','📍 Lugares'))+'</button><button class="dash-nav-btn active" data-im-click="dashView" data-im-arg="events">'+(IntMapLang.t(HOST.lang,'🗓 Events','🗓 出来事','🗓 Ereignisse','🗓 События','🗓 Sucesos'))+'</button></div>';
       const yr='<div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px;font-size:12px;color:var(--text-muted);flex-wrap:wrap;">'+(IntMapLang.t(HOST.lang,'Years','年代','Jahre','Годы','Años'))+
-        ' <input type="number" aria-label="'+(IntMapLang.t(HOST.lang,'From year','開始年'))+'" value="'+yMin+'" min="1400" max="2026" style="width:74px;padding:5px 7px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);" onchange="_evYear(\'min\',this.value)"> –'+
-        ' <input type="number" aria-label="'+(IntMapLang.t(HOST.lang,'To year','終了年'))+'" value="'+yMax+'" min="1400" max="2026" style="width:74px;padding:5px 7px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);" onchange="_evYear(\'max\',this.value)">'+
+        ' <input type="number" aria-label="'+(IntMapLang.t(HOST.lang,'From year','開始年'))+'" value="'+yMin+'" min="1400" max="2026" style="width:74px;padding:5px 7px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);" data-im-change="eventsYear" data-im-arg="min"> –'+
+        ' <input type="number" aria-label="'+(IntMapLang.t(HOST.lang,'To year','終了年'))+'" value="'+yMax+'" min="1400" max="2026" style="width:74px;padding:5px 7px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);" data-im-change="eventsYear" data-im-arg="max">'+
         ' <span>'+list.length+(IntMapLang.t(HOST.lang,' events','件',' Ereignisse',' событий',' sucesos'))+'</span></div>';
       const esc=(s)=>window.IntMapSafe.html(s);
       const cards=list.map(e=>{
@@ -597,11 +597,11 @@ export function analysisEvents(HOST){
           '<span style="font-weight:800;font-size:15px;color:var(--primary-color);">'+e.y+'</span>'+
           '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:'+(EV_COLORS[e.tp]||'#007aff')+'22;color:'+(EV_COLORS[e.tp]||'#007aff')+';">'+esc(tl)+'</span></div>'+
           '<h4 class="wiki-card-title" style="margin:0 0 4px;">'+esc(nm)+'</h4><p class="wiki-card-body" style="margin:0;">'+esc(d)+'</p>'+
-          '<div class="wiki-card-footer"><a href="'+wiki+'" target="_blank" rel="noopener" class="wiki-link" onclick="event.stopPropagation()">Wikipedia ↗</a></div></div></div>';
+          '<div class="wiki-card-footer"><a href="'+wiki+'" target="_blank" rel="noopener" class="wiki-link" data-im-click="stopPropagation">Wikipedia ↗</a></div></div></div>';
       }).join('');
       /* ⚠ SEC: the two coordinates used to be concatenated into an onclick STRING — see the note in
          js/companies-ui.js, which writes into this same `dash` element with its own attribute. The
-         `<a class="wiki-link" onclick="event.stopPropagation()">` inside each card still stops the
+         `<a class="wiki-link" data-im-click="stopPropagation">` inside each card (js/inline-actions.js) still stops the
          click from reaching this listener, so the Wikipedia link still does not fly the map. */
       dash.innerHTML=seg+yr+'<div class="dash-cards-container">'+cards+'</div>';
       if(!dash.__imEvWired){ dash.__imEvWired=1;

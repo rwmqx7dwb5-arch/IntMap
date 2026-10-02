@@ -757,7 +757,9 @@ export function warLayer(HOST) {
         try { HOST.imToast(L('Could not load the war data', '大戦データを読み込めませんでした', 'Kriegsdaten konnten nicht geladen werden', 'Не удалось загрузить данные о войнах', 'No se pudieron cargar los datos de la guerra')); } catch (_) { }
         on = false; return false;
       }
-      if (!ensure()) { whenDrawable(() => { if (on) toggle(true); }); return false; }
+      /* (deep-tier-after-module-graph) the retry is the SAME request, so it carries the same provenance — re-asked as
+         `toggle(true)`, a restored row that met an undrawable style came back as the reader's and moved the clock */
+      if (!ensure()) { whenDrawable(() => { if (on) toggle(true, opts); }); return false; }
       setVis(true);
       try {
         window._registerLayerOpacity && window._registerLayerOpacity(warId, rowName(warId), [P + 'fill'], CB);
@@ -776,8 +778,10 @@ export function warLayer(HOST) {
            replaced the instant the link named (MEASURED: a link at 1985 ended on 1939-08-23). The restore owns
            the clock: the war draws nothing for an instant outside its record and leaves the row to the
            world-at-time hold (js/layer-time-kernel.js), which says why on the row and delivers the row again
-           when the clock reaches the war. */
-        if (opts && opts.restored) {
+           when the clock reaches the war.
+           ⚠ (deep-tier-after-module-graph) …and the map's own re-dispatch (`own`: js/war-fronts.js reads `__syn`) is not
+           the reader's choice either — the heal's pulse on a row that is blank on purpose is the case that was measured. */
+        if (opts && (opts.restored || opts.own)) {
           awaitClock = true;
           setVis(false);
           try { window.IntMapLayerTime && window.IntMapLayerTime.ready(); } catch (_) { }

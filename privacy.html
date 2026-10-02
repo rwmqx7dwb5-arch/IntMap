@@ -2,6 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<!-- (csp-without-inline) This page's script policy: its own files, and its one inline <script> by the sha256 of its
+     text (node scripts/csp.mjs --write writes it; npm run check:static refuses a missing or stale one, and any
+     'unsafe-inline' in script-src). Nothing is fetched, framed or submitted beyond this origin; the CJK faces come
+     from Google Fonts. style-src keeps 'unsafe-inline': the policy text (js/legal-text.js, the one copy the app shows too)
+     sets style attributes on its headings. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-src 'none'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'sha256-wKlAwq8UVD+9IJESeom6R7V83n4oZKW+a+5Eb8u1lcA='">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>IntMap — Privacy Policy</title>
 <meta name="description" content="Privacy Policy — IntMap.">

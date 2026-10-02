@@ -58,6 +58,10 @@ data-assets.json                **git の外にあるデータ集合の目録**�
                                 件数とバイト数・それを運ぶ GitHub Release の asset とその sha256。
                                 取得は `npm run data:pull`、公開は `npm run data:publish <集合>`（scripts/data-assets.mjs）
 .nvmrc                          Node のバージョン（CI・ローカル共通）
+.gitattributes                  改行の規則と、**merge のときに生成物・台帳・件数をどう解くかの宣言**（1 か所）。
+                                `merge=intmap-generated` ＋ `intmap-merge=json|regen|tokens`（と `intmap-clash`・
+                                `intmap-regen`）。解くのは scripts/merge-driver.mjs。自分を生成物・台帳と名乗る
+                                ファイルが宣言から漏れると tests/generated-file-merge-driver-checks.test.mjs が落ちる
 vite.config.js                  ビルド設定（Vite 8／Rolldown。優先度つきのチャンク group・`resolve.mainFields`・
                                 CSS 最小化器・静的アセットのコピー・prebuild フック・MapLibre の worker を
                                 同じビルドの entry チャンクにして shared を本体と共有させる `maplibreSharedWorker`）
@@ -153,9 +157,9 @@ cesium-input.js                   Cesium のカメラを MapLibre のジェス�
 i18n.js                           window.IntMapI18N — キー付き UI 表の組み立て
 i18n-late.js                      後から足す翻訳と、ティッカー自身の設定パネル
 lang-registry.js                  言語の唯一のリスト window.IntMapLang（code / label / html / alias と pick）
-lang-switch.js                    言語変更は「待てるイベント」——文字列が届く前に描き直さない
+lang-switch.js                    言語変更は「待てるイベント」——文字列が届く前に描き直さない。locale の取得失敗を理由つきで読者に言う
 locales/_langs.js                 生成物。読み物2ページ用の言語コード一覧（scripts/i18n-langs.mjs が書く）
-locales/ui.<code>.js              1言語＝1ファイルの UI 文字列表（9言語）
+locales/ui.<code>.js              1言語＝1ファイルの UI 文字列表（9言語）。起動時に読むのは en だけ、他は言語ごとの遅延チャンク
 locales/pages.<code>.js           読み物2ページの文字列表（9言語）
 page-i18n.js                      読み物2ページの言語機械 window.IntMapPageI18N
 sources-list.js                   sources.html の出典レジストリ（生成された一覧）
@@ -474,6 +478,12 @@ chronos.js                        Chronos＝統一時間カーネル window.IntM
                                   100 年未満の瞬間は `atUTC()`（`setUTCFullYear`）で作る
                                   ——`Date.UTC(1,…)` は 1901 年になるから（#R604）。時計は `makeClock()` が作る
                                   **地図ごと**の物で、IntMapTime はメイン地図の 1 個目（比較ウィンドウは 2 個目を持つ）
+map-state.js                      地図の状態の**正本**（MapState）。視野・基図・時刻・共有レイヤー・比較窓・3D 地形・
+                                  シミュレータ入力・セッションのレイヤー集合を `SCHEMA` で 1 回だけ宣言し、URL ハッシュ
+                                  （`encode` / `decode`）・共有リンク・セッション保存（`session()`）・Atlas の camera / time
+                                  節はその写像。値は持ち主（`own`）の `read()` が返し、ストアは複製を持たない。復元は
+                                  世代つきの 1 回の適用（`restore`）で、変化の通知は「復元」か「読者」かを述べる。
+                                  window 公開なし（import で読む）
 historical-basemap.js             Chronos旅行中の自然地理ベクタ背景。現代政治境界を含むCARTO画像を置換し、Nowで復帰
 hist-scale.js                     深い時間の**算術**だけを持つ純関数 window.IntMapHistScale。DOM も地図も時計も
                                   言語も触らないので検査が**評価**できる（#R570 の教訓）。①`decYear()`＝
@@ -1172,6 +1182,10 @@ safe-html.js                      **出力の無害化の唯一の正本** `wind
                                   markup（落ちる場所で escape するタグ）, trusted, isMarkup}。アプリ
                                   （src/main.js）・sources.html・admin.html・ES module（import）・Node の検査が同じ
                                   ファイルを読む。他の場所の独自エスケープは scripts/safe-output.mjs の台帳が数える
+inline-actions.js                 **マークアップがコードを動かす唯一の方法**——`data-im-click="名前"`（change／error も）と
+                                  `data-im-arg`。window の capture で 1 つのリスナが ACTIONS（語彙の唯一の宣言）を引き、
+                                  未知の名前は拒んで記録する。CSP に 'unsafe-inline' が無いので onclick= 等は動かない
+                                  （scripts/csp.mjs が両方向に照合。src/main.js が描画より前に import）
 ```
 
 ### 3.11 `data/`
@@ -1427,6 +1441,10 @@ scripts/
   runtime-scripts.mjs             配信物が他 origin から読む <script> は integrity＋crossorigin を持つか、
                                   理由の文つきで UNPINNABLE に宣言されているか。CSP script-src の各ホストは
                                   使われているか CSP_ONLY に宣言されているか（acorn・両方向の照合。check:static が呼ぶ）
+  csp.mjs                         **ページの script-src**——インライン <script> を本文の sha256 で許す（'unsafe-inline' 無し）。
+                                  `--write` が逐語コピーのページへ書き、`cspHashesPlugin()` がビルド後の本文（スタンプ入り）
+                                  で書き直す。門（check:static の script-policy）: 全ページに CSP・ハッシュの過不足・
+                                  インラインのイベント属性ゼロ・data-im-* の名前が js/inline-actions.js と両方向に一致
   doc-facts.mjs                   **文書間の固定事実の照合**（§15.5）
   architecture-spec.mjs           現状仕様書の**在り処の唯一の実装**——章を docs/architecture/ から発見し、
                                   案内図の表から節番号を共有するファイルを導く（doc-facts の `arch-split`・
@@ -1566,6 +1584,15 @@ scripts/
                                   ⚠ **`--sync` は原本の `node_modules` も `package-lock.json` に合わせる**
                                   （早送りの後の**原本自身の** `deps-fresh.mjs --install` を呼ぶ——走っている master-sync は
                                   早送り前の版でありうる）。`--check` は食い違いを警告する。
+  merge-driver.mjs                **生成物・台帳・件数の衝突を解く git の merge driver**。宣言は `.gitattributes`
+                                  （手で書いた一覧を持たない）。`json`＝台帳をキーと要素で 3-way に合わせ、両側が
+                                  動かした数は `intmap-clash` で決める（`sum` 両方の移動を足す・`upstream` main の値）。
+                                  `regen`＝生成領域の中の衝突は main 側を取り、merge 後に `--finish` が生成器を走らせる。
+                                  `tokens`＝手書きの文の衝突をトークン単位で解き直す（両側が動かした整数は両方の移動を
+                                  足し、同じ場所への挿入は両方残す）。それ以外は普通の衝突マーカーで人に返す。
+                                  ⚠ driver の実行中、作業ツリーは merge 後の木ではない（実測）——だから生成器は後で走る。
+                                  `--install`（冪等。config は全 worktree 共通。`worktree.mjs` と `master-sync.mjs --sync`
+                                  が呼ぶ）／`--finish`／`--pending`／`--list`。経緯は docs/AGENT-SETUP.md §12
   deps-fresh.mjs                  **インストール済みの `node_modules` が `package-lock.json` の木か**を版ごとに照合する。
                                   全 worktree は原本の `node_modules` を junction で借りるので、ここが古いと
                                   ローカルの門は全部 CI と違う依存で走る（2026-09-26 実測 14 件）。`--install` は食い違うときだけ
@@ -1607,6 +1634,8 @@ scripts/
                                   同じ答え）と、晩の並びでの分類（`scripts/deep-history.mjs`）。
                                   `gh` が無い・未ログイン・オフラインは**黙って省略**し、
                                   6 秒で打ち切る——`status` は決して非ゼロで終わらない（#R304）。
+                                  `new` と `status` は生成物の merge driver を clone の config に冪等に登録し
+                                  （`merge-driver.mjs --install`）、merge が保留した再生成があればそう言う。
   build-report.mjs                **起動予算の計器**（vite プラグイン＋CLI）。束ね器（Rolldown）の最終グラフから
                                   eager（index.html のエントリ＋静的 import の推移閉包＝modulepreload
                                   される集合）と async を**導出**し、raw / gzip / brotli とモジュール別の
@@ -1621,6 +1650,7 @@ scripts/
                                   超えた行だけを上げる）。下げるのは main の CI（`--tighten`、
                                   `perf-ceiling.yml`。上げない）。
                                   ⚠ `requests` と `modules` は**バイトではなく個数**なので幅 0。
+                                  起動時の locale は英語（フォールバック）だけ——他が eager に入ったら赤。
                                   基準は `tests/perf-baseline.json`（追跡対象）。
   typecheck.mjs                   **型検査のゲート**（`npm run check:types`）。同梱の typescript で
                                   `tsc --noEmit -p tsconfig.json` を走らせ、その終了コードを返す。typescript が
