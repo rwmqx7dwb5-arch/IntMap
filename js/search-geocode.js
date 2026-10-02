@@ -13,6 +13,31 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 import { MAP_ANSWER_EVENT } from './mobile-sheet.js';
 import * as bus from './bus.js';
 
+/* ══ (showcase-gallery) THE EMPTY FIELD SHOWS THE EXAMPLE MAPS ═══════════════════════════════════════════
+   With the caret in the place search and nothing typed, the result list under it holds the example maps and the
+   classroom tours (js/showcase-gallery.js showInResults) — the app's door to them, which nothing opens unasked:
+   it appears because the reader went to the field, and the first letter replaces it with place candidates.
+   Delegated on the document and not inside the factory below, because the factory runs no app code (its header)
+   and this has to hear the field from the first focus. The module is fetched on that first focus, not at boot.
+   The same import answers any control marked `data-im-gallery` (the whole gallery, js/showcase-gallery.js). */
+function _galleryEmptyState(inp, res){
+  if(!inp||!res) return;
+  import('./showcase-gallery.js').then((G)=>{
+    /* asked again when the module has arrived: the reader may have typed, or left, meanwhile */
+    if(document.activeElement!==inp||inp.value.trim()) return;
+    G.showInResults(res);
+  }).catch(()=>{});
+}
+if(typeof document!=='undefined'){
+  document.addEventListener('focusin',(e)=>{ const inp=/** @type {HTMLInputElement} */ (e.target); if(inp&&inp.id==='ms-input'&&!inp.value.trim()) _galleryEmptyState(inp,document.getElementById('ms-results')); });
+  document.addEventListener('input',(e)=>{ const inp=/** @type {HTMLInputElement} */ (e.target); if(!inp||inp.id!=='ms-input') return;
+    const res=document.getElementById('ms-results'); if(!res) return;
+    if(!inp.value.trim()) _galleryEmptyState(inp,res);
+    else if(res.querySelector('.sg-strip')){ res.style.display='none'; res.innerHTML=''; } });   /* the first letter: the cards make way for the candidates */
+  document.addEventListener('click',(e)=>{ const el=/** @type {Element} */ (e.target); const b=el&&el.closest?el.closest('[data-im-gallery]'):null;
+    if(b) import('./showcase-gallery.js').then((G)=>G.openGallery({ section:b.getAttribute('data-im-gallery')||null })).catch(()=>{}); });
+}
+
 export function searchGeocode(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* ===== Map-side global place search (Nominatim) + abstract / natural-language pre-processing =====
@@ -211,7 +236,7 @@ export function searchGeocode(HOST){
     _wirePicked(inp);
     if(suggest && inp._imPicked!=null && inp._imPicked===q) return;
     const gen=++_gcGen;
-    if(!q){ if(suggest&&res){ res.style.display='none'; res.innerHTML=''; } return; }
+    if(!q){ if(suggest&&res){ res.style.display='none'; res.innerHTML=''; _galleryEmptyState(inp,res); } return; }   /* (showcase-gallery) the empty field's own state */
     /* (a11y-shared-dialog) the results are a listbox driven from the field — ArrowDown/ArrowUp move, Enter picks,
        Escape closes the list; focus stays in the field (the combobox pattern js/routing-ui.js's stop field uses).
        Wired once per field, here, because this is the file that renders the rows. */

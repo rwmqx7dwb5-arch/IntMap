@@ -260,7 +260,7 @@ test('⑤ only js/map-state.js spells the address bar\'s state parameters', () =
                           the hashchange listener — the address the store decodes; 1 write: save()
      js/page-i18n.js      2 reads: an in-page anchor of the static pages (not map state)
      js/usage-counts.js   1 read: the arrival row of the anonymous counts (not map state)
-     js/atlas-cap-panel.js, js/auth-ui.js, js/legal-page.js, js/atlas-attach.js  1 write each: the showcase
+     js/auth-ui.js, js/legal-page.js, js/atlas-attach.js  1 write each (the showcase door no longer writes the bar: it opens through showcase-gallery's openShowcase): the showcase
                           door (then the store's restore), the OAuth return, a static page's query, a lightbox's
                           back-button entry
      js/map-state.js      1 read + 1 write (classroom-tours): `MapState.address` — the page's own query fields
@@ -270,7 +270,6 @@ const ADDRESS_SITES = {
   'js/map-ui.js': { hash: 7, history: 1 },
   'js/page-i18n.js': { hash: 2, history: 0 },
   'js/usage-counts.js': { hash: 1, history: 0 },
-  'js/atlas-cap-panel.js': { hash: 0, history: 1 },
   'js/auth-ui.js': { hash: 0, history: 1 },
   'js/legal-page.js': { hash: 0, history: 1 },
   'js/atlas-attach.js': { hash: 0, history: 1 },

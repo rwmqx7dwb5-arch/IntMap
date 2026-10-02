@@ -18,7 +18,6 @@
  * ==========================================================================*/
 import { str, bool, num, one, lat, lng, noArgs } from './atlas-caps.js';
 import { EMBED_SIZES, EMBED_PX } from './embed-mode.js';   /* (share-embed-distribution) the frame presets `share` offers are the share panel's own */
-import { IntMapTime } from './chronos.js';   /* (landing-showcase) the clock, by import (#860) */
 import { SHOWCASE, showcaseById, showcaseLink } from './showcase.js';   /* (landing-showcase) the example maps — pure data */
 import { openSupport, operatingFacts } from './supporter.js';   /* (supporter-funnel) `operatingCosts` */
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
@@ -276,14 +275,16 @@ export default [
     },
   },
   {
-    row: ['panel.showcase',             'showcase',       'example,exampleMap,showcaseMap,gallery',                      'panel',   'time',    'camera,map.layer,time',  'map,time',            'session', 'none',   '',         ''],
+    row: ['panel.showcase',             'showcase',       'example,exampleMap,showcaseMap',                              'panel',   'time',    'camera,map.layer,time',  'map,time',            'session', 'none',   '',         ''],
     /* (landing-showcase) the example maps of js/showcase.js. With `id`, the map is put into that example
        through the share link's own restore (js/map-ui.js IntMapBookmark.restore — the path a reader who
        clicks the example takes), and the result is READ BACK from the clock and the layer boxes before it
        is reported: completed only when the date and every declared layer are what the example says.
-       Without `id`, it lists them (id, title, link) so the next call can name one. */
+       Without `id`, it lists them (id, title, link) so the next call can name one.
+       (showcase-gallery) The opening and the read-back are js/showcase-gallery.js openShowcase — the same function a
+       card of the in-app gallery runs, so Atlas and a tap cannot open an example two different ways. */
     doc: [
-      { in: 'about-and-showcase', at: 20, text: (c) => '{"type":"showcase","id":ID} = put the map into one of IntMap’s ready-made example maps — the camera, the date and the layers exactly as the example declares them — and report it opened only once the clock and the layers say so; with no id it lists them. The examples (ID — title): ' + c.showcaseList() + ' — for 「見本の地図を見せて」「授業で使える地図の例」, "show me an example map", "a map for my class", or a request that matches one of the titles (「1914年のヨーロッパ」 → europe-1914).' },
+      { in: 'about-and-showcase', at: 20, text: (c) => '{"type":"showcase","id":ID} = put the map into one of IntMap’s ready-made example maps — the camera, the date and the layers exactly as the example declares them — and report it opened only once the clock and the layers say so; with no id it lists them in the chat (to put the examples IN FRONT OF THE READER as pictures, use gallery). The examples (ID — title): ' + c.showcaseList() + ' — for 「見本の地図を開いて」「授業で使える地図の例」, "open an example map", "a map for my class", or a request that matches one of the titles (「1914年のヨーロッパ」 → europe-1914).' },
     ],
     schema: () => ({ type: 'object', properties: { id: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, L = K.L, esc = K.esc;
@@ -293,29 +294,35 @@ export default [
           if(!s){
             const rows=SHOWCASE.map(x=>{ const href=showcaseLink(x.id); return '<li><b>'+esc(x.id)+'</b> — '+(href?'<a href="'+esc(abs(href))+'">'+esc(L.arr(x.title))+'</a>':esc(L.arr(x.title)))+'</li>'; }).join('');
             return R(!want, (want?warn(esc(L('No example is called','この名前の見本はありません'))+' «'+esc(want)+'»'):note(esc(L('Example maps','見本の地図'))))+'<ul style="margin:4px 0 4px 18px;padding:0;">'+rows+'</ul>'); }
-          const href=showcaseLink(s.id);
-          if(!href) return R(false, warn(esc(L('This example has no captured link yet','この見本にはまだリンクがありません'))));
-          const hash=href.slice(href.indexOf('#'));
-          try{ history.replaceState(null,'',location.pathname+location.search+hash); window.IntMapBookmark.restore({shared:true});
-            /* a link with no `tt` leaves the clock where it is (restore() sets it only when the link names one), so a
-               «now» example returns the clock to now itself — the example's intent is the present, whatever the
-               map was showing before */
-            if(s.at==null) IntMapTime.setNow({source:'ui'}); }catch(e){ return R(false, warn(esc(String(e&&e.message||e)))); }
-          /* read the state back. The restore applies the clock at +900 ms and the layer boxes at +700 / +1800 /
-             +3200 ms (js/map-ui.js restore()); 6 s is its last pass plus room for a busy page. It returns the
-             moment both agree — the wait is a bound, not a sleep — and a changed restore schedule is the
-             thing that invalidates the number. */
-          const T=IntMapTime, at=s.at;
-          const met=()=>{ try{ const st=T.state(); const timeOk=at==null?!!st.isLive:(!st.isLive&&st.iso===at);
-              const off=s.layers.filter(id=>{ const cb=document.getElementById(id); return !(cb&&cb.checked); });
-              return { timeOk, off }; }catch(_){ return { timeOk:false, off:s.layers.slice() }; } };
-          let m=met(); const t0=Date.now();
-          while(!(m.timeOk&&!m.off.length)&&Date.now()-t0<6000){ await new Promise(r=>setTimeout(r,250)); m=met(); }
+          if(!showcaseLink(s.id)) return R(false, warn(esc(L('This example has no captured link yet','この見本にはまだリンクがありません'))));
+          /* (showcase-gallery) open it and read it back — js/showcase-gallery.js openShowcase, the gallery card's own path:
+             the share link's restore, «now» returning the clock to now, and the clock and the layer boxes read back
+             against the example within the restore's own schedule */
+          const m=await (await import('./showcase-gallery.js')).openShowcase(s.id);
+          if(m.reason&&m.reason!=='no-link') return R(false, warn(esc(m.reason)));
           const body='<div style="font-weight:600;margin:2px 0;">'+esc(L.arr(s.title))+'</div><div style="font-size:12px;margin:2px 0;">'+esc(L.arr(s.blurb))+'</div>'
             +'<div style="font-size:12px;margin:4px 0;color:var(--text-muted);">'+esc(L('Question for class','授業での問い'))+': '+esc(L.arr(s.question))+'</div>';
           if(m.timeOk&&!m.off.length) return R(true, note('✓ '+esc(L('Example opened','見本を開きました')))+body);
           const miss=[]; if(!m.timeOk) miss.push(L('the date','日付')); if(m.off.length) miss.push(L('layers not on','オンにならないレイヤー')+' '+m.off.join(', '));
           return R(false, warn(esc(L('The example did not fully apply','見本が一部しか適用されていません'))+' — '+esc(miss.join(' / ')))+body); }
+    },
+  },
+  {
+    row: ['panel.gallery',              'gallery',        'exampleGallery,showcaseGallery,examplesGallery,tourGallery',  'panel',   'panel',   'panel.gallery',          'panel',               'session', 'none',   '',         ''],
+    /* (showcase-gallery) the in-app gallery of js/showcase-gallery.js — every example map and classroom tour as a
+       picture, a title and a line, under their subjects' headings — put on screen for the reader, who opens one
+       with a tap. `section:"tours"` scrolls to the tours. It opens nothing on the map by itself: to open one
+       example Atlas uses `showcase` with its id, to start a tour `tour`. */
+    doc: [
+      { in: 'about-and-showcase', at: 15, text: '{"type":"gallery","section"?:"tours"} = put IntMap’s gallery of example maps and classroom tours (作例とツアー) on the reader’s screen — a picture, a title and a line for each (the examples listed under showcase and the tours under tour), grouped by subject; the reader opens one with a tap. With section "tours" it opens at the tours. Use for 「作例を見せて」「見本の地図を一覧で」「どんなツアーがある？」, "show me the example maps", "what tours are there", "browse the gallery". To open ONE example yourself use showcase with its id; to start a tour, tour with its id. ' },
+    ],
+    schema: () => ({ type: 'object', properties: { section: one('examples', 'tours') } }),
+    async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, L = K.L, esc = K.esc;
+      { const G = await import('./showcase-gallery.js');
+          const r = G.openGallery({ section: a.section === 'tours' ? 'tours' : null });
+          if (!r || !r.ok) return R(false, warn(esc(L('The gallery could not be opened', '作例の一覧を開けませんでした'))));
+          return R(true, note('✓ ' + esc(L('The example maps and tours are on screen', '作例とツアーを表示しました'))) + '<div style="font-size:12px;margin:2px 0;">'
+            + esc(L(r.examples + ' example maps · ' + r.tours + ' classroom tours', '作例 ' + r.examples + ' 件 · 授業ツアー ' + r.tours + ' 件')) + '</div>'); }
     },
   },
   {

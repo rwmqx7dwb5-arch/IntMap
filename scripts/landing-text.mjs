@@ -1,7 +1,8 @@
 /* ============================================================================
  *  IntMap · the landing and teacher pages — THE WORDS   (scripts/landing-text.mjs)
  * ----------------------------------------------------------------------------
- *  The only copy of the prose on about.html / teachers.html and their ja/ twins. Those four files
+ *  The only copy of the prose on about.html / teachers.html — and (showcase-gallery) the two pages by use,
+ *  news-map.html and embed-map.html — and their ja/ twins. Those files
  *  are GENERATED from this one by `node scripts/landing.mjs --write` (and held to it by `--check`),
  *  so a sentence is edited here and nowhere else. The example maps' own titles and questions are
  *  not here — they are js/showcase.js, which the app and Atlas read too.
@@ -43,6 +44,12 @@ export const TEXT = {
         h2: 'Who it is for',
         curious: { h: 'For map and history lovers', p: 'Open a year, compare it with another, and share exactly what you see with one link. Every example below opens in one tap, just as pictured.', cta: 'Browse the examples' },
         teachers: { h: 'For teachers', p: 'Nothing to install and no sign-up for students: a link opens the same map on every device in the room. Each example comes with a question for class.', cta: 'Teaching with IntMap' },
+      },
+      /* (showcase-gallery) the two pages by use, linked from here and linking back */
+      uses: {
+        h2: 'Use it for',
+        news: { h: 'Reading the news', p: 'Each news event is a pin where it happened, with what each outlet reported — and the map around it.', cta: 'Read the news on a map' },
+        embed: { h: 'Writing an article', p: 'Put a live map in a blog post or article with one line of HTML: your view, layers and date, with every data credit.', cta: 'Embed a map' },
       },
       examples: { h2: 'Examples', sub: 'Each picture is a screenshot of IntMap. The link opens the same view, date and layers.', open: 'Open this map' },
       support: { h2: 'Support IntMap', p: 'IntMap is free and has no paid plan. Running it is paid for by donations — if it is useful to you, you can help keep it that way.', cta: 'Donate' },
@@ -105,6 +112,67 @@ export const TEXT = {
         ],
       },
     },
+    /* (showcase-gallery) news-map.html — for a general reader of the news. Every sentence is about what the News tab
+       does today (PRODUCT.md §3.1 «出来事単位のニュース» / «ライブニュースマップ»); nothing that is being built. */
+    news: {
+      title: 'Read the news on a map — IntMap',
+      description: 'See where each news event happened and what each outlet reported, with the map around it — borders, people, climate and history — on one free world map.',
+      hero: {
+        h1: 'Read the news on a map.',
+        sub: 'IntMap puts each news event where it happened — one pin per event, not one per article — and lets you lay the world around it: borders, people, climate and history.',
+        ctaOpen: 'Open the map',
+        ctaContext: 'Maps for context',
+        note: 'Headlines and summaries are in English. Free, and no account is needed to read them.',
+      },
+      how: {
+        h2: 'How it works',
+        items: [
+          { h: 'One pin per event', p: 'Articles that report the same event are gathered into one event, and the map shows one pin where it happened — down to a city, a port or a border crossing — for news from the last 72 hours.' },
+          { h: 'What each outlet said', p: 'Open an event to read what happened in the words each outlet published, line by line with its name, with the key figures and where the reports agree and differ. IntMap does not say which outlet is right.' },
+          { h: 'The map around it', p: 'Turn on layers to see what surrounds the place — where people live, borders, climate, cables, railways — and move the clock to see how the borders stood in another year.' },
+          { h: 'Ask Atlas about it', p: 'Signed in, press «Ask Atlas» on an event: Atlas opens on that event, suggests questions about it and answers on the map itself.' },
+        ],
+      },
+      context: { h2: 'Maps for context', sub: 'Ready-made maps of the world behind the headlines. Each picture is a screenshot of IntMap, and each opens as pictured.' },
+      share: { h2: 'Share what you see', p: 'The Share button gives a link that reopens the same view, layers and date — or the code to put the map in your own article.', cta: 'Embed a map in an article' },
+    },
+    /* (showcase-gallery) embed-map.html — for a writer. What an embed shows and does is js/embed-mode.js's header,
+       and the sizes and the code on the page are that file's own (EMBED_SIZES, embedUrl, iframeCode). */
+    embed: {
+      title: 'Embed a live map in your article — IntMap',
+      description: 'Put an IntMap map in a blog post or article with one line of HTML: the view, layers and date you chose, with its legends and every data credit. Free.',
+      hero: {
+        h1: 'Put a live map in your article.',
+        sub: 'Set up a map in IntMap, copy one line of HTML from Share, Embed, and paste it into your page. Your readers get the same view, layers and date — a map, not a screenshot.',
+        ctaOpen: 'Open the map to make one',
+        ctaCode: 'See the code',
+        note: 'Free. No account is needed to make or to show an embedded map.',
+      },
+      steps: {
+        h2: 'Three steps',
+        items: [
+          { h: 'Set up the map', p: 'Go to the place, turn on the layers and set the clock to the date you are writing about.' },
+          { h: 'Share, then Embed', p: 'Press Share and choose the Embed tab. Pick one of its sizes, choose whether readers may pan and zoom, and copy the code.' },
+          { h: 'Paste it into your page', p: 'The code is a standard iframe element. Paste it wherever your editor accepts HTML.' },
+        ],
+      },
+      code: {
+        h2: 'The code',
+        sub: 'This is the code IntMap writes for the map pictured below, at the medium size:',
+        sizes: 'The sizes the Embed tab offers, in pixels (width × height):',
+        still: 'With interactive=0 added to the address, the frame is a still map that cannot be panned or zoomed:',
+        imgAlt: 'The map the code above shows',
+      },
+      shows: {
+        h2: 'What your readers see',
+        items: [
+          { h: 'The map as you set it', p: 'The same view, layers and date, with their legends and the date on the clock. A map set to a date stays at that date; a map set to now shows the data that is current when it is read.' },
+          { h: 'Every data credit', p: 'The credits each data source asks for stay visible in the frame. In a narrow frame they wrap onto more lines rather than being cut off.' },
+          { h: 'A way to the full map', p: 'A link in the frame opens the same view in IntMap, where the reader can explore further.' },
+          { h: 'Nothing else', p: 'The frame is read-only: no panels, no search, no sign-in and no pop-ups — only the map, which readers may pan and zoom unless you turned that off.' },
+        ],
+      },
+    },
     footer: { sources: 'Data sources', science: 'Science & logic', privacy: 'Privacy Policy', terms: 'Terms of Service' },
   },
 
@@ -133,6 +201,11 @@ export const TEXT = {
         h2: 'こんな方に',
         curious: { h: '地図と歴史が好きなあなたへ', p: 'ある年を開き、別の年と比べ、見ているものをそのままリンク1つで共有できます。下の見本は、どれも写真のとおりにワンタップで開きます。', cta: '見本を見る' },
         teachers: { h: '先生へ', p: 'インストール不要、生徒のアカウント登録も不要。リンク1つで、教室のどの端末にも同じ地図が開きます。見本には授業で使える問いを添えています。', cta: '授業での使い方' },
+      },
+      uses: {
+        h2: 'こんな使い方も',
+        news: { h: 'ニュースを読む', p: 'ニュースの出来事が、起きた場所にピンで立ちます。各媒体が何と報じたか、そしてその周りの地図と一緒に読めます。', cta: 'ニュースを地図で読む' },
+        embed: { h: '記事を書く', p: 'HTML 1行で、ブログや記事に動く地図を載せられます。あなたが選んだ視点・レイヤー・日付と、すべてのデータの出典表記がそのまま入ります。', cta: '地図を埋め込む' },
       },
       examples: { h2: '見本', sub: '写真はすべて IntMap の画面です。リンクを開くと、同じ視点・日付・レイヤーで地図が開きます。', open: 'この地図を開く' },
       support: { h2: 'IntMap を支援する', p: 'IntMap は無料で、有料プランはありません。運営費は寄付でまかなっています。役に立ったら、無料のままであり続けるための支援をお願いします。', cta: '寄付する' },
@@ -192,6 +265,63 @@ export const TEXT = {
           { h: '過去の日付は、それを述べる記録だけで描く', p: '時計をある日付に合わせると、出典がその日付を述べていないレイヤーは描かれません。描いていないものは地図が一覧で示すので、古い日付の下に今日のデータが出ることはありません。' },
           { h: '国境の出どころ', p: '{ohmFrom}年より前：historical-basemaps プロジェクトの{snapshots}枚のスナップショット。各スナップショットは1つの年のもので、その間の年の国境は近似です。{ohmFrom}〜{ohmTo}年：OpenHistoricalMap。{csFrom}〜{csTo}年：CShapes 2.0（日単位）。ベースマップの海岸線は現在のものです。' },
           { h: '数字の求め方', p: 'すべての計算とシミュレーションを、前提とともに「科学的根拠とロジック」ページで説明しています。', link: { href: 'science.html', label: '科学的根拠とロジック' } },
+        ],
+      },
+    },
+    news: {
+      title: 'ニュースを地図で読む — IntMap',
+      description: 'ニュースの出来事がどこで起きたか、各媒体が何と報じたかを、国境・人口・気候・歴史といった周りの地図と一緒に読める無料の世界地図。',
+      hero: {
+        h1: 'ニュースを地図で読む。',
+        sub: 'IntMap は、ニュースの出来事を起きた場所に置きます。記事1本ごとではなく出来事1件ごとに1本のピン。その周りに国境・人・気候・歴史を重ねられます。',
+        ctaOpen: '地図を開く',
+        ctaContext: '背景を知る地図',
+        note: '見出しと要約は英語です。無料で、読むのにアカウントは要りません。',
+      },
+      how: {
+        h2: 'しくみ',
+        items: [
+          { h: '1つの出来事に1本のピン', p: '同じ出来事を報じた記事は1つの出来事にまとまり、地図には起きた場所に1本のピンが立ちます。都市・港・国境検問所まで絞り込み、直近72時間のニュースを表示します。' },
+          { h: '各媒体が何と書いたか', p: '出来事を開くと、何が起きたかを各媒体が公表した文のまま、1行ごとに媒体名つきで読めます。主要な数字や、報道が一致している点と食い違っている点も並びます。どの媒体が正しいかを IntMap は言いません。' },
+          { h: '周りの地図', p: 'レイヤーを点けると、その場所の周り——人の住む場所、国境、気候、海底ケーブル、鉄道——が見えます。時計を動かせば、別の年の国境も見られます。' },
+          { h: 'Atlas に訊く', p: 'ログインして出来事の「Atlasに聞く」を押すと、Atlas がその出来事の上に開き、質問を提案し、地図そのもので答えます。' },
+        ],
+      },
+      context: { h2: '背景を知る地図', sub: 'ニュースの背景にある世界を描いた地図です。写真はすべて IntMap の画面で、写真のとおりに開きます。' },
+      share: { h2: '見ているものを共有する', p: '「共有」ボタンで、同じ視点・レイヤー・日付を開くリンクや、自分の記事に地図を載せるコードが作れます。', cta: '記事に地図を埋め込む' },
+    },
+    embed: {
+      title: '記事に動く地図を埋め込む — IntMap',
+      description: 'HTML 1行で、ブログや記事に IntMap の地図を載せられます。選んだ視点・レイヤー・日付が、凡例とすべてのデータの出典表記とともに入ります。無料。',
+      hero: {
+        h1: '記事に、動く地図を。',
+        sub: 'IntMap で地図を整え、「共有」の「埋め込み」から HTML を1行コピーして、ページに貼るだけ。読者には同じ視点・レイヤー・日付の地図が届きます。スクリーンショットではなく地図そのものです。',
+        ctaOpen: '地図を開いて作る',
+        ctaCode: 'コードを見る',
+        note: '無料。埋め込み地図を作るのにも表示するのにも、アカウントは要りません。',
+      },
+      steps: {
+        h2: '3つの手順',
+        items: [
+          { h: '地図を整える', p: '場所へ移動し、レイヤーを点け、書いている内容の日付に時計を合わせます。' },
+          { h: '「共有」から「埋め込み」へ', p: '「共有」を押して「埋め込み」タブを選びます。大きさと、読者がパン・ズームできるかを選んで、コードをコピーします。' },
+          { h: 'ページに貼る', p: 'コードは標準の iframe 要素です。エディタが HTML を受け付けるところに貼ってください。' },
+        ],
+      },
+      code: {
+        h2: 'コード',
+        sub: '下の写真の地図を中くらいの大きさで埋め込むとき、IntMap が書くコードです。',
+        sizes: '「埋め込み」タブで選べる大きさ（ピクセル、幅 × 高さ）:',
+        still: 'アドレスに interactive=0 を加えると、パンもズームもできない静止した地図になります。',
+        imgAlt: '上のコードが表示する地図',
+      },
+      shows: {
+        h2: '読者に見えるもの',
+        items: [
+          { h: '整えたとおりの地図', p: '同じ視点・レイヤー・日付と、その凡例、時計の日時。日付に合わせた地図はその日付のまま、「現在」の地図は読まれたときのデータを表示します。' },
+          { h: 'すべてのデータの出典表記', p: '各データ提供元が求める出典表記は、フレームの中でも見えたままです。狭いフレームでは切らずに折り返します。' },
+          { h: '地図全体への入口', p: 'フレームのリンクから同じ表示を IntMap で開き、さらに調べられます。' },
+          { h: 'それ以外は何もない', p: 'フレームは読み取り専用です。パネルも検索もログインもポップアップもなく、あるのは地図だけ。パン・ズームは、オフにしない限り読者ができます。' },
         ],
       },
     },
