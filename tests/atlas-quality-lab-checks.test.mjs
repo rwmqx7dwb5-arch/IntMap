@@ -12,6 +12,9 @@
  *      the forced answer — was exercised as a WHOLE TURN on a PR.
  *  Each check below is written as the defect it guards against, and EVALUATES the code (#R505).
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
+/* (atlas-core-split) the task registry, evaluated — what a task is, is each tasks/<task>.ts */
+const { TASKS } = await import('../supabase/functions/ai-proxy/tasks/index.ts');
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -114,14 +117,15 @@ test('atlas-quality-lab ③ the grader is a provider other than the one answerin
   assert.equal(SHARED.graderProviderFor('openai', keyed('openai', 'gemini')), 'gemini', 'production today: Atlas answers on OpenAI, Gemini is keyed');
   assert.notEqual(SHARED.graderProviderFor('gemini', keyed('openai', 'gemini')), 'gemini');
   assert.equal(SHARED.graderProviderFor('openai', keyed('openai')), null, 'only the answering provider keyed → refuse, never self-grade');
-  const src = rd('supabase/functions/ai-proxy/index.ts');
+  const src = aiProxySource();
   /* read, because the Edge Function imports Deno globals and cannot be evaluated here: the task exists,
      its provider comes from the shared rule, and a developer's pick does not reach it */
   assert.match(src, /"atlas_grade",/, 'atlas_grade is an accepted task');
   assert.match(src, /import \{[^}]*graderProviderFor[^}]*\} from "\.\.\/_shared\/atlas-grade-schema\.js"/);
   assert.match(src, /const provider = \(graderProvider \|\| devPick\?\.provider/, 'the grader provider wins over a developer pick');
-  assert.match(src, /if \(String\(payload\.task \|\| ""\)\.toLowerCase\(\) === "atlas_grade"\) return null;/, 'a developer\'s pick never reaches the grader — so its model is the grader provider\'s default (envModel is AI_PROVIDER\'s id and the grader is never AI_PROVIDER)');
-  assert.match(src, /task === "atlas_grade" \? ATLAS_GRADE_SCHEMA/, 'the server owns the grade\'s shape');
+  assert.deepEqual([...TASKS.values()].filter((t) => t.grader).map((t) => t.name).sort(), ['atlas_grade']);
+  assert.match(src, /if \(TASKS\.get\(String\(payload\.task \|\| ""\)\.toLowerCase\(\)\)\?\.grader\) return null;/, 'a developer\'s pick never reaches the grader — so its model is the grader provider\'s default (envModel is AI_PROVIDER\'s id and the grader is never AI_PROVIDER)');
+  assert.deepEqual(TASKS.get('atlas_grade').schema, SHARED.ATLAS_GRADE_SCHEMA, 'the server owns the grade\'s shape');
   assert.match(src, /error: "no_independent_grader"/);
 });
 

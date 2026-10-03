@@ -31,6 +31,7 @@
  *  #R413 fixed `view.locate` to return one and its check pinned the SPELLING of the line — so the
  *  block was written, asserted, and dropped. The test below drives the REAL executor.
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
 import test from 'node:test';
 import { after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -177,7 +178,7 @@ test('R493 ②a: the record Atlas reads describes the frame WITHOUT carrying it'
 test('R493 ②b: a turn that looks more than the server accepts drops the OLDEST, and says so', async () => {
   const V = ledger(SNAP);
   for (let i = 0; i < 5; i++) await V.captureFrame({ include: 'map' });
-  const max = +(/const MAX_IMAGES = (\d+);/.exec(read('supabase/functions/ai-proxy/index.ts')) || [])[1];
+  const max = +(/const MAX_IMAGES = (\d+);/.exec(aiProxySource()) || [])[1];
   assert.ok(max > 0, 'the server ceiling must be readable');
   assert.ok(V.SENT <= max, `the ledger attaches ${V.SENT} frames; supabase/functions/ai-proxy accepts ${max}`);
 

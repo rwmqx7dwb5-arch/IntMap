@@ -45,6 +45,9 @@
  *  ⚠ Every source is read through codeOnly, so this file's prose — and the modules' — can never be
  *  what a check matches (#R345).
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
+/* (atlas-core-split) the task registry, evaluated — what a task is, is each tasks/<task>.ts */
+const { TASKS } = await import('../supabase/functions/ai-proxy/tasks/index.ts');
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { join, dirname } from 'node:path';
@@ -58,14 +61,14 @@ import { OPENAI_DEFAULT_MODEL, FALLBACK_CHAIN, PROVIDER_DEFAULT_MODEL } from '..
 import { readSpec } from '../scripts/architecture-spec.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CODE = (p) => codeOnly(readLF(join(ROOT, p)));
-const PROXY = CODE('supabase/functions/ai-proxy/index.ts');
+const PROXY = codeOnly(aiProxySource());
 /* (edge-spend-and-models) the model table ai-proxy imports — one table for every function that calls a model */
 const MODELS = CODE('supabase/functions/_shared/ai-provider.js');
 const CORE = CODE('js/ai-core.js');
 const BODY = CODE('js/app-body.js');
 const RAW = (p) => readLF(join(ROOT, p));   /* the source as written, comments included (#R736 read it so) */
 const html = appSource(new URL('../', import.meta.url));   /* (#R162) index.html + css/intmap.css + js/*.js */
-const aiproxy = RAW('supabase/functions/ai-proxy/index.ts');
+const aiproxy = aiProxySource();
 /* Lift the arrow-function IIFE that decides the pick, by brace matching from its own declaration —
    not by a lazy regex that ends wherever the block happens to end today (#R531). */
 function liftBlock(src, head, tsDecl) {
@@ -258,7 +261,7 @@ test('R722 ⑦ the shipped model is named once, and Architecture.md names the sa
  *  worked; the two are set together and tests/r722 ⑦ holds the constant and Architecture.md to each
  *  other. This file holds the constant to the instruction.
  * ==========================================================================================*/
-const PROXY_RAW = RAW('supabase/functions/ai-proxy/index.ts');
+const PROXY_RAW = aiProxySource();
 const AICORE = RAW('js/ai-core.js');
 test('R736 ③: the model every account gets — the developer account included — is Terra', () => {
   /* (tests-by-topic) the constants are imported, not matched in the source text */
@@ -291,7 +294,8 @@ test('R736 ④: a withdrawn model is not OFFERED, is not BLOCKED, and is named e
 
   /* … and NOWHERE ELSE. A withdrawal that also refused the call would be a capability boundary, which
      is the thing CONSTITUTION.md §0.3 forbids: the proxy still calls whatever id it is handed. */
-  const uses = (bare.match(/WITHDRAWN_MODELS/g) || []).length;
+  /* (atlas-core-split) an import statement carries the name between modules and reads nothing */
+  const uses = (bare.replace(/^\s*import\s[^;]*;/gm, '').match(/WITHDRAWN_MODELS/g) || []).length;
   assert.equal(uses, 2, `WITHDRAWN_MODELS is read ${uses - 1} time(s) — it may only filter what is OFFERED`);
 
   /* and the client lets go of a pick the catalogue stopped offering, so an account that had already
@@ -365,11 +369,11 @@ test('R150 #9 the app shell does not name a model the server stopped using', () 
   assert.ok(!/#R148 reverted from Terra/.test(html), 'the stale R148 revert note is gone');
 });
 test('R156 #7 ai-proxy: vision_read task + input_image detail:high', () => {
-  assert.match(aiproxy, /vision_read: 3000,/, 'vision_read output budget');
-  assert.match(aiproxy, /vision_read: "medium",/, 'vision_read reasoning (effortHint:"high" bumps it)');
+  assert.equal(TASKS.get('vision_read').maxOutput, 3000, 'vision_read output budget');
+  assert.equal(TASKS.get('vision_read').reasoning, 'medium', 'vision_read reasoning (effortHint:"high" bumps it)');
   /* (#R350) analysis_structured joined the set — the AnswerEnvelope is a strict JSON task too. */
   /* (#R491) …and "gloss" at the tail: the term card is a strict JSON task too (GLOSS_SCHEMA). */
-  assert.match(aiproxy, /new Set\(\["atlas_turn", "map_report", "analysis_structured", "json_extract", "geo_verify", "geo_resolve", "research_map", "vision_read", "gloss", "atlas_grade"\]\)/, 'vision_read returns strict JSON (#R406 put atlas_turn at the head of the same set; atlas-quality-lab added the grader at the tail)');
+  assert.deepEqual([...TASKS.values()].filter((t) => t.json).map((t) => t.name).sort(), ["analysis_structured", "atlas_grade", "atlas_turn", "geo_resolve", "geo_verify", "gloss", "json_extract", "map_report", "research_map", "vision_read"], 'vision_read returns strict JSON (#R406 put atlas_turn at the head of the same set; atlas-quality-lab added the grader at the tail)');
   /* (#R722) the neighbouring argument was renamed _isFallback → noFallback when the single fallback
      became a chain, and it changed MEANING with the name: it used to say "this call IS the fallback"
      (a recursion guard), and it now says "the caller forbids substituting another model" — which is
@@ -379,5 +383,6 @@ test('R156 #7 ai-proxy: vision_read task + input_image detail:high', () => {
   assert.match(aiproxy, /imageDetail = "auto", noFallback = false/, 'callOpenAI takes an imageDetail param');
   assert.match(aiproxy, /content\.push\(\{ type: "input_image", image_url: `data:\$\{ip\.mime\};base64,\$\{ip\.b64\}`, detail: _detail \}\);/, 'input_image carries the detail flag');
   assert.match(aiproxy, /const imageDetail = \(payload\.imageDetail === "high" \|\| payload\.imageDetail === "low"\) \? payload\.imageDetail : "auto";/, 'server clamps imageDetail to a safe set');
-  assert.match(aiproxy, /task === "atlas_plan" \|\| task === "analysis" \|\| task === "analysis_structured" \|\| task === "vision_read"\)\) effort = "high"/, 'vision_read may think at "high" via effortHint');
+  assert.deepEqual([...TASKS.values()].filter((t) => t.effortHint).map((t) => t.name).sort(), ["analysis", "analysis_structured", "atlas_plan", "atlas_turn", "vision_read"], 'vision_read may think at "high" via effortHint');
+  assert.match(aiproxy, /if \(effortHint === "high" && spec\.effortHint\) effort = "high";/, 'the hint is read from the task\'s own record');
 });

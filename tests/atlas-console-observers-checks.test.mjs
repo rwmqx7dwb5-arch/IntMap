@@ -13,6 +13,7 @@
  *  Checks that used to READ a file for a spelling and can be RUN were rewritten to run the shipped
  *  code; the ones that still read say, in one line, why running is not possible (「read, not run: …」).
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
@@ -342,7 +343,7 @@ test('R397 ⑦b: the old forced-grounding framing is gone', () => {
 
 /* ══ §8 THE SCHEMA REACHES THE PROVIDER THAT IS ACTUALLY CONFIGURED ════════════════════════════ */
 
-const PROXY = read('supabase/functions/ai-proxy/index.ts');
+const PROXY = aiProxySource();
 
 test('R397 ⑧a: callOpenAI receives the caller schema, and degrades instead of failing', () => {
   /* read, not run: callOpenAI lives in the Deno edge function, which node cannot import (and would need

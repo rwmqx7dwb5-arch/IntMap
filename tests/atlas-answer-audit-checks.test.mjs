@@ -15,6 +15,9 @@
  *  Checks that used to READ a file for a spelling and can be RUN were rewritten to run the shipped
  *  code; the ones that still read say, in one line, why running is not possible (「read, not run: …」).
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
+/* (atlas-core-split) the task registry, evaluated — what a task is, is each tasks/<task>.ts */
+const { TASKS } = await import('../supabase/functions/ai-proxy/tasks/index.ts');
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -154,7 +157,7 @@ function auditGood() { return AU.auditAnswer(goodAnswer(), fixtureRegistry(), CT
 test('R350 ①a: the answer schema on the client and in ai-proxy are the same schema', () => {
   /* read, not run: supabase/functions/ai-proxy/index.ts is a Deno TypeScript module that node cannot
      import, so its schema literal is parsed out of the text and compared as structure. */
-  const proxy = read('supabase/functions/ai-proxy/index.ts');
+  const proxy = aiProxySource();
   const m = proxy.match(/const ANSWER_SCHEMA = (\{[\s\S]*?\n\});/);
   assert.ok(m, 'ai-proxy has no ANSWER_SCHEMA — the server no longer owns the shape it enforces');
   /* ⚠ COMPARED AS STRUCTURE, NOT AS TEXT. #R323 found three capability tables that all described one
@@ -546,11 +549,14 @@ test('R350 ⑨c: the exported envelope carries the identity of the call it came 
 
 test('R350 ⑨d: the proxy knows the task, budgets it, and refuses a shape the client cannot audit', () => {
   /* read, not run: the Deno edge function cannot be imported by node (see ①a). */
-  const proxy = read('supabase/functions/ai-proxy/index.ts');
-  assert.match(proxy, /"analysis_structured"/, 'the task is not in the allow-list — it would 400');
-  assert.match(proxy, /analysis_structured: \d+,/, 'the task has no output budget');
-  assert.match(proxy, /JSON_TASKS = new Set\(\[[^\]]*analysis_structured/, 'the task does not run in JSON mode');
-  assert.match(proxy, /structuredAnswerOk\(out\.text\)/, 'a malformed structured answer is handed to the client as prose');
+  const proxy = aiProxySource();
+  const t = TASKS.get('analysis_structured');
+  assert.ok(t, 'the task is not in the allow-list — it would 400');
+  assert.ok(Number.isInteger(t.maxOutput) && t.maxOutput > 0, 'the task has no output budget');
+  assert.equal(t.json, true, 'the task does not run in JSON mode');
+  assert.equal(t.accept('not json'), false, 'a malformed structured answer is handed to the client as prose');
+  assert.equal(t.accept('{"directAnswer":{"text":"y","claimIds":[]},"claims":[]}'), true);
+  assert.match(proxy, /if \(spec\.accept && !spec\.accept\(out\.text\)\) \{\s*throw new ProviderError\("invalid_structured_output"/, 'the check is not applied to the answer');
 });
 
 /* (#R795, completed in gate-parity-and-shards) R350 ⑨e was this ceiling and nothing else, so the test is retired with it: LINES measured the file's length, not what it costs or reaches. `npm run check:perf` ratchets the eager bundle and `npm run check:surface` ratchets IM_HOST / window.* — see tests/r168 #8. #R795's own detector missed this one on its spelling; tests/helpers/line-ceilings.mjs asks about the fact. */

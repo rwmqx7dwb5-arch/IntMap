@@ -14,12 +14,12 @@
  *      ai-proxy's prompt-cache key, a hash of them — moved with the page.
  *  ①–⑤ are those four, plus ⑥: the budget sentence that said 「= 6」 while the server said 12.
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { transformSync } from 'esbuild';
 import { importModule, swappable } from './helpers/import-module.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -313,18 +313,10 @@ test('atlas-turn-engine ③ find_capability and run_capability are still there',
 
 /* ── ④ A VALUE THE PAGE DECIDES IS NOT IN THE DECLARATION THE PROVIDER CACHES ────────────────── */
 
-const PROXY = rd('supabase/functions/ai-proxy/index.ts');
-function region(from, to) {
-  const a = PROXY.indexOf(from), b = PROXY.indexOf(to, a + 1);
-  assert.ok(a >= 0 && b > a, 'ai-proxy: the region «' + from + '» … «' + to + '» moved');
-  return PROXY.slice(a, b);
-}
-const SERVER = (() => {
-  const src = region('const MAX_SCHEMA_BYTES', '/* ══ (#R397) THE SCHEMA REACHED GEMINI')
-    + region('const MAX_INPUT_ITEMS', '/* ⚠ A TASK IS A KEY INTO FOUR CONFIGURATION TABLES')
-    + '\nreturn { normalizeTurn, cacheBasis, MAX_FN_TOOLS };';
-  return new Function(transformSync(src, { loader: 'ts' }).code)();
-})();
+const PROXY = aiProxySource();
+/* (atlas-core-split) protocol 2 is its own module (supabase/functions/ai-proxy/turn.ts): imported and
+   run as the function runs it, rather than lifted from between two markers in the source */
+const SERVER = await import('../supabase/functions/ai-proxy/turn.ts');
 const wire = (tools, extra = []) => Object.keys(tools).map((k) => tools[k]).concat(extra)
   .map((t) => ({ name: t.name, description: t.description, parameters: t.parameters, promoted: t.promoted ? true : undefined }));
 const basisOf = (wireTools) => {

@@ -129,7 +129,7 @@ export function aiCore(HOST){
   }
   /* ══ (#R491) THE TERM GLOSS COUNTS SEPARATELY, AND THE MIRROR IS SEPARATE TOO ═══════════════
      Looking a word up inside an Atlas answer runs on its own daily counter (public.ai_gloss_usage;
-     the limits are GLOSS_PLAN_LIMITS in supabase/functions/ai-proxy/index.ts, which is authoritative
+     the limits are GLOSS_PLAN_LIMITS in supabase/functions/ai-proxy/config.ts, which is authoritative
      — the number below is what the UI assumes until the first response says otherwise, exactly the
      relationship HOST.AI_FREE_DAILY has with PLAN_LIMITS).
      ⚠ IT IS ITS OWN OBJECT AND NOT A FIELD OF HOST.aiUsage: every asynchronous gate in this file

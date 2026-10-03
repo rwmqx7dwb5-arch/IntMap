@@ -27,6 +27,7 @@ import { readdirSync, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { readLF } from '../../scripts/eol.mjs';
 import { codeOnly } from '../../scripts/code-only.mjs';
+import { functionSource } from '../../scripts/lib/function-graph.mjs';
 
 export const FN_DIR = 'supabase/functions';
 
@@ -99,8 +100,12 @@ export function repoCorsContract(root) {
     //   second ghost is inside the live file: a literal table left behind in a comment used to
     //   outrank the corsFor() call below it, because `literal` is tried first. Both reads go
     //   through codeOnly now, so a table that is commented out is not a table.
+    // ⚠ (atlas-core-split) …and index.ts IS NOT THE WHOLE FUNCTION any more: ai-proxy routes in
+    //   index.ts and declares its table in config.ts. What the entry point REACHES is what is
+    //   deployed (scripts/lib/function-graph.mjs), so that is what is read — still never a file
+    //   the entry point does not import, which is the ghost the paragraph above is about.
     const label = `${name}/index.ts`;
-    const src = readLF(join(root, FN_DIR, name, 'index.ts'));
+    const src = functionSource(join(root, FN_DIR, name));
     const literal = declaredAllowHeaders(src, label);
     if (literal) { out.set(name, { headers: literal, via: 'literal' }); continue; }
     const shared = corsForAllowHeaders(src, base, label);

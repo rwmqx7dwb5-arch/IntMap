@@ -15,6 +15,7 @@
  *       answer (the draft gives way; a note goes to the trace);
  *    ⑤ the two ends speak the same events, and no limit moved (CONSTITUTION.md §5).
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { importModule } from './helpers/import-module.mjs';
@@ -389,7 +390,7 @@ test('atlas-live-stream ⑤ every preview ai-proxy can send is one the page hand
   const live = read('js/atlas-live.js');
   const handled = new Set([...live.matchAll(/name === '([a-z]+)'/g)].map((m) => m[1]));
   assert.deepEqual([...sent].sort(), [...handled].sort());
-  const proxy = read('supabase/functions/ai-proxy/index.ts');
+  const proxy = aiProxySource();
   assert.match(proxy, /send\("open", \{ protocol: 2 \}\)/);
   assert.match(proxy, /send\("done", a\)/);
 });

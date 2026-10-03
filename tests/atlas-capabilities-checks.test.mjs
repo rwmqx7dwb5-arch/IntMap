@@ -15,6 +15,9 @@
  *  Checks that used to READ a file for a spelling and can be RUN were rewritten to run the shipped
  *  code; the ones that still read say, in one line, why running is not possible (「read, not run: …」).
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
+/* (atlas-core-split) the task registry, evaluated — what a task is, is each tasks/<task>.ts */
+const { TASKS } = await import('../supabase/functions/ai-proxy/tasks/index.ts');
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -457,7 +460,7 @@ test('R318 ⑧a: the client stamps a turn key, and it travels in a header', () =
 test('R318 ⑧b: the server does not trust the key it is given', () => {
   /* read, not run: the proxy is a Deno edge function node cannot import, and the ledger is SQL that
      needs a database (supabase test db runs it). */
-  const proxy = read('supabase/functions/ai-proxy/index.ts');
+  const proxy = aiProxySource();
   assert.match(proxy, /const TURN_MAX_CALLS = \d+;/, 'nothing bounds how many calls one key may carry');
   assert.match(proxy, /const TURN_TTL_S = \d+;/, 'a key that never expires is a permanent free pass');
   assert.match(proxy, /consume_ai_turn/, 'the turn-aware RPC is not called');
@@ -1008,7 +1011,7 @@ test('R406 ⑤: the turn loop cannot outspend the server budget it is charged ag
      which node cannot import. */
   if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
   const { LIMITS } = (await import('../js/atlas-agent.js')).makeAtlasAgent();
-  const proxy = read('supabase/functions/ai-proxy/index.ts');
+  const proxy = aiProxySource();
   const m = proxy.match(/TURN_MAX_CALLS\s*=\s*(\d+)/);
   assert.ok(m, 'the server no longer declares a per-turn call cap — this check must be re-aimed');
   const cap = +m[1];
@@ -1019,12 +1022,13 @@ test('R406 ⑤: the turn loop cannot outspend the server budget it is charged ag
 
 test('R406 ⑤b: ai-proxy accepts the turn task, enforces its envelope on every provider, and still accepts the old one', () => {
   /* read, not run: the Deno edge function cannot be imported by node. */
-  const p = read('supabase/functions/ai-proxy/index.ts');
-  assert.match(p, /TASKS = new Set\(\[[\s\S]{0,600}?"atlas_turn"/, 'atlas_turn is not an accepted task');
-  assert.match(p, /JSON_TASKS = new Set\(\["atlas_turn"/, 'atlas_turn is not a JSON task, so its envelope is unenforced');
-  assert.match(p, /atlas_turn:\s*\d+/, 'atlas_turn has no output budget and would fall to the default');
+  const p = aiProxySource();
+  assert.ok(TASKS.has('atlas_turn'), 'atlas_turn is not an accepted task');
+  assert.equal(TASKS.get('atlas_turn').json, true, 'atlas_turn is not a JSON task, so its envelope is unenforced');
+  assert.ok(TASKS.get('atlas_turn').maxOutput > 0, 'atlas_turn has no output budget and would fall to the default');
+  assert.match(p, /const wantJson = spec\.json \|\| /, 'the JSON mode is not read from the task');
   /* a reader still holding the previous bundle keeps working until the cache turns over */
-  assert.match(p, /"atlas_plan"/, 'atlas_plan was removed while cached clients may still send it');
+  assert.ok(TASKS.has('atlas_plan'), 'atlas_plan was removed while cached clients may still send it');
 });
 
 /* ── ⑥ the reader is shown one answer, not a tally of failed steps ────────────────────────── */

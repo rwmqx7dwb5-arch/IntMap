@@ -670,7 +670,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      per-day free-use quota (default 10/day, reset daily, stored in the `ai_usage` table). The model is
      fixed on the server — users never see a key or a model picker. Login is REQUIRED: an un-logged-in
      click opens the auth modal; an over-quota click shows the "本日の無料AI使用回数に達しました" message.
-     See supabase/functions/ai-proxy/index.ts + supabase_ai_usage.sql for the server half. */
+     See supabase/functions/ai-proxy/ask.ts (the request: session, allowance) + supabase/migrations/20260929120000_ai_usage.sql for the server half. */
   const AI_FREE_DAILY = 10;                                  /* free plan daily quota (display + pre-check). #R40: 5→10; #R101: 10→30; #R147: 30→10 per request */
   window.INTMAP_AI_PROXY = window.INTMAP_AI_PROXY || {};
   if(!window.INTMAP_AI_PROXY.url){
