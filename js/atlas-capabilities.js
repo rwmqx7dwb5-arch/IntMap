@@ -278,6 +278,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["panel.showcase","showcase","example,exampleMap,showcaseMap,gallery","panel","time","camera,map.layer,time","map,time","session","none","",""],
       ["panel.tour","tour","classroomTour,lessonTour,guidedTour,startTour,nextStep","panel","time","camera,map.layer,time","map,time","session","none","",""],
       ["panel.tourBuilder","tourBuilder","buildTour,makeTour,tourEditor,addMapToTour,shareTour","panel","time","camera,map.layer,time,tour.draft","map,time","persist","explicit","",""],
+      ["layers.indicator","indicator","countryIndicator,showIndicator,worldBankIndicator","layers","layer","map.layer,map.layerOption","map,explanation","session","none","",""],
+      ["time.yearbook","yearbook","readYear,worldInYear,yearBook","time","none","time","explanation","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
