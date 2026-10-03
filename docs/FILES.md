@@ -842,7 +842,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  188 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  189 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -978,9 +978,9 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 188能力ぶんの型・列挙・範囲と `required`/`anyOf`。
-atlas-schemas.js                  **引数の schema**（#R406）— 188 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
-atlas-schemas.js                  **引数の schema**（#R406）— 188 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
+atlas-schemas.js                  **引数の schema**（#R406）— 189能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 189 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
+atlas-schemas.js                  **引数の schema**（#R406）— 189 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）
@@ -1287,6 +1287,9 @@ tour-player.js                    **授業モード**——ツアーを全画面
 tour-builder.js                   **ツアー作成**——いまの地図（MapState.hash()）を段として足し、題・話すこと・問いを書き、並べ替え・
                                   差し替え・削除・プレビュー。ツアーは `?tour=custom&t=…` のアドレスそのものに入れて共有（codec は tours.js、
                                   上限は実測の 8,192 バイト）。下書きは localStorage。ピッカー・プレイヤーの「編集」・Atlas の panel.tourBuilder が読む
+tour-worksheet.js                 **印刷用ワークシート**——再生中のツアーの各段をプレイヤーの go() で開き、time-lapse.js の mapDrawn で描き終えを
+                                  待ち、map-recorder.js の postcard で撮って、生徒用／教員用の A4 の紙（地図・日付・問い・解答欄・出典）を
+                                  印刷プレビューに出す（window.print）。授業モードのプリンタのボタンと Atlas の panel.tourWorksheet が読む
 premium-plan.js                   プレミアムの節——ただしその全機能が無料である
 supporter.js                      IntMap を支援する——支援パネルの「支援の使い道」（プラン表の 1 日の上限と
                                   public.operating_stats() の今月の AI 要求数・トークン数）と、控えめな提案カード
@@ -1296,6 +1299,8 @@ org-page.js                       組織向けページの唯一のスクリプ�
                                   相談フォームの送信（reader-reports へ kind inquiry。201 のときだけ「送った」）、支援のページの
                                   今月の AI 利用量（operating_stats）と支援者の一覧（supporters）の読み込み。文は持たない（ページの data-msg-*）
 admin-inquiries.js                admin-inquiries.html の動き——管理者の確認、相談の一覧・状態・メモ・削除、支援者の掲載・非表示・削除
+admin-pipeline.js                 相談のコンソールの Pipeline タブ（ES module・admin-inquiries.js がタブを開いたとき import()）——会話の段
+                                  （lead→talking→trial→adopted|declined）・次にやること・期日。語はページの data-*（inquiry-shape.js が正本）
 monitors.js                       Area Monitors IntMapMonitors
 weather.js                        気象（export wind / weatherEC / weatherPanel）
 wx-models.js                      予報モデルのレジストリ window.IntMapWxModels——提供モデル・出典・ライセンス。格子／変数／気圧面／予報期間は live metadata から導出（書き写さない）

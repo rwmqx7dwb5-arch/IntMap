@@ -108,7 +108,10 @@ function put(ms) {
 const frame = () => new Promise((r) => { try { requestAnimationFrame(() => r(true)); } catch (_) { setTimeout(() => r(true), 16); } });
 const sleep = (ms) => new Promise((r) => setTimeout(r, Math.max(0, ms)));
 
-/** has the map drawn the instant on the clock? true / false — or null where nobody can be asked */
+/** has the map drawn the instant on the clock? true / false — or null where nobody can be asked.
+    (sales-next) Exported as `mapDrawn`: the classroom worksheet (js/tour-worksheet.js) pictures each step of a tour only
+    once the map has drawn it, by THIS reading — a second «is it drawn» would drift from the one the lapse holds frames to. */
+export async function mapDrawn() { return drawnNow(); }
 async function drawnNow() {
   const at = IntMapTime.when().getTime(), live = IntMapTime.isLive();
   /* ① the kernel judged this instant (only once its table is loaded — before that it holds nothing) */

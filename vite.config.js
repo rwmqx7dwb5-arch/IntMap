@@ -142,6 +142,7 @@ export const STATIC_ASSETS = [
   'admin-inquiries.html',
   'js/org-page.js',
   'js/admin-inquiries.js',
+  'js/admin-pipeline.js',               // (sales-next) the console's Pipeline tab — admin-inquiries.js import()s it when the tab opens
   'css/org-pages.css',
   'css/admin-inquiries.css',
   'ja',

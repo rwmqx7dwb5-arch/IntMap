@@ -18,6 +18,11 @@
  *  enquiry was sent (the request to be named IS the consent). Unlisting hides the row from the public
  *  page; deleting removes it.
  *
+ *  THE PIPELINE (sales-next): the Pipeline tab loads js/admin-pipeline.js with import() — where each conversation
+ *  stands (lead → talking → trial → adopted | declined), what the operator will do next and by when. The triage
+ *  words below and the stages are read from <main>'s data-* (written by scripts/org-pages.mjs from
+ *  supabase/functions/_shared/inquiry-shape.js INQUIRY_PIPELINE), not spelled here.
+ *
  *  ⚠ Every value from the database goes into the DOM as textContent; links go through IntMapSafe.url
  *  (js/safe-html.js), which admits http(s) and mailto only. English only, like admin.html.
  * ==========================================================================*/
@@ -34,29 +39,35 @@
   function toast(msg) { var t = $('toast'); t.textContent = msg; t.className = 'toast show'; clearTimeout(toastT); toastT = setTimeout(function () { t.className = 'toast'; }, 3200); }
   function when(iso) { try { return new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }); } catch (_) { return String(iso || ''); } }
 
-  var STATUSES = ['new', 'replied', 'closed', 'spam'];
-  var sb = null, filter = 'new';
+  /* the triage words — the table's CHECK, carried by the page (see the header) */
+  var STATUSES = [];
+  var sb = null, filter = null, only = null, pipe = null;
 
   document.addEventListener('DOMContentLoaded', function () {
     if (!window.supabase || !window.supabase.createClient) { $('aq-auth-msg').textContent = 'Supabase SDK failed to load (vendor/supabase-js.js missing from this deploy).'; return; }
+    var main = $('aq-view-admin');
+    STATUSES = String((main && main.getAttribute('data-statuses')) || '').split(',').filter(Boolean);
+    filter = STATUSES[0] || 'all';   /* the console opens on the first triage word: what nobody has answered yet */
     sb = window.supabase.createClient(meta('intmap-backend'), meta('intmap-anon-key'), { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
 
     $('aq-auth-submit').addEventListener('click', signIn);
     $('aq-auth-pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') signIn(); });
     $('aq-signout').addEventListener('click', function () { sb.auth.signOut().then(function () { location.reload(); }); });
     document.querySelectorAll('[data-filter]').forEach(function (b) {
-      b.addEventListener('click', function () { filter = b.getAttribute('data-filter'); markTabs(); loadInquiries(); });
+      b.addEventListener('click', function () { filter = b.getAttribute('data-filter'); only = null; markTabs(); loadInquiries(); });
     });
     $('tab-sup').addEventListener('click', function () { filter = 'supporters'; markTabs(); loadSupporters(); });
+    $('tab-pipe').addEventListener('click', function () { filter = 'pipeline'; markTabs(); loadPipeline(); });
     gate();
   });
 
   function markTabs() {
     Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
-      b.classList.toggle('active', (b.getAttribute('data-filter') || 'supporters') === filter);
+      b.classList.toggle('active', (b.getAttribute('data-filter') || (b.id === 'tab-pipe' ? 'pipeline' : 'supporters')) === filter);
     });
-    $('list-inq').classList.toggle('hide', filter === 'supporters');
+    $('list-inq').classList.toggle('hide', filter === 'supporters' || filter === 'pipeline');
     $('list-sup').classList.toggle('hide', filter !== 'supporters');
+    $('list-pipe').classList.toggle('hide', filter !== 'pipeline');
   }
 
   function signIn() {
@@ -93,7 +104,8 @@
     var box = $('list-inq');
     box.textContent = ''; box.appendChild(el('p', 'empty', 'Loading…'));
     var q = sb.from('org_inquiries').select('*').order('created_at', { ascending: false }).limit(200);
-    if (filter !== 'all') q = q.eq('status', filter);
+    if (only) q = q.eq('id', only);   /* one enquiry, opened from the pipeline */
+    else if (filter !== 'all') q = q.eq('status', filter);
     q.then(function (r) {
       box.textContent = '';
       if (r.error) { box.appendChild(el('p', 'empty', 'Could not read enquiries: ' + r.error.message)); return; }
@@ -108,6 +120,7 @@
     top.appendChild(el('span', 'pill ' + row.status, row.status));
     top.appendChild(el('span', 'pill', row.audience));
     top.appendChild(el('span', 'pill', row.purpose));
+    if (row.stage) top.appendChild(el('span', 'pill stage', 'stage: ' + row.stage));
     top.appendChild(el('span', 'meta', when(row.created_at) + (row.lang ? ' · ' + row.lang : '') + (row.page ? ' · ' + row.page : '')));
     c.appendChild(top);
 
@@ -131,7 +144,7 @@
 
     var acts = el('div', 'row acts');
     STATUSES.filter(function (s) { return s !== row.status; }).forEach(function (s) {
-      acts.appendChild(btn('Mark ' + s, 'sec sm', function () { update(row, { status: s, admin_note: note.value || null, handled_at: s === 'new' ? null : new Date().toISOString() }); }));
+      acts.appendChild(btn('Mark ' + s, 'sec sm', function () { update(row, { status: s, admin_note: note.value || null, handled_at: s === STATUSES[0] ? null : new Date().toISOString() }); }));
     });
     acts.appendChild(btn('Save note', 'sec sm', function () { update(row, { admin_note: note.value || null }); }));
     acts.appendChild(btn('Delete', 'danger sm', function () {
@@ -147,6 +160,17 @@
     sb.from('org_inquiries').update(patch).eq('id', row.id).then(function (r) {
       if (r.error) toast('Update failed: ' + r.error.message); else { toast('Saved'); loadInquiries(); }
     });
+  }
+
+  /* ── the pipeline (js/admin-pipeline.js, fetched the first time the tab opens) ─────────────────────── */
+  function loadPipeline() {
+    var box = $('list-pipe');
+    if (pipe) { pipe.then(function (p) { if (p) p.reload(); }); return; }
+    box.textContent = ''; box.appendChild(el('p', 'empty', 'Loading…'));
+    pipe = import('./admin-pipeline.js').then((M) => {
+      return M.mountPipeline(box, { sb: sb, words: M.wordsFrom($('aq-view-admin')), toast: toast,
+        openEnquiry: function (row) { filter = 'all'; only = row.id; markTabs(); loadInquiries(); } });
+    }, function (e) { pipe = null; box.textContent = ''; box.appendChild(el('p', 'empty', 'Could not load the pipeline: ' + (e && e.message || e))); return null; });
   }
 
   /* «List as supporter» — after the admin has matched the gift in the Stripe dashboard by hand */

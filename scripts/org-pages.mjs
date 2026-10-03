@@ -43,7 +43,7 @@ import { TEXT as LANDING_TEXT } from './landing-text.mjs';
 import { SHOWCASE, CAPTURED } from '../js/showcase.js';
 import { EMBED_SIZES } from '../js/embed-mode.js';
 import { PLANS, DEFAULT_PLAN } from '../supabase/functions/_shared/plans.js';
-import { INQUIRY, INQUIRY_LIMITS } from '../supabase/functions/_shared/inquiry-shape.js';
+import { INQUIRY, INQUIRY_LIMITS, INQUIRY_PIPELINE } from '../supabase/functions/_shared/inquiry-shape.js';
 import { withInlineHashes } from './csp.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -456,7 +456,10 @@ ${footer(L)}
    English only, like admin.html. Generated here for ONE reason: it needs the backend address and the
    publishable key, and this file already reads them from their owner (src/vendor.js) — a hand-written
    page would be a third place that spells them. The behaviour is js/admin-inquiries.js; the look is
-   css/admin-inquiries.css. noindex: it is an operator's page, linked from nowhere public. */
+   css/admin-inquiries.css. noindex: it is an operator's page, linked from nowhere public.
+   (sales-next) The triage words and the pipeline's stages are written into <main> as data-* from their one declaration
+   (inquiry-shape.js INQUIRY_PIPELINE): js/admin-inquiries.js is a plain script that cannot import it, and a list it
+   spelled itself would be the third copy of the table's CHECK. */
 export const ADMIN_PAGE = 'admin-inquiries.html';
 export function renderAdmin(F) {
   return withInlineHashes(`<!DOCTYPE html>
@@ -490,11 +493,13 @@ ${'<meta http-equiv="Content-Security-Policy" content="' + ["default-src 'self'"
   <button class="btn" id="aq-auth-submit" type="button" data-effect="private">Sign in</button>
   <p id="aq-auth-msg"></p>
 </div>
-<main id="aq-view-admin" class="hide">
+<main id="aq-view-admin" class="hide" data-statuses="${esc(INQUIRY_PIPELINE.statuses.join(','))}" data-stages="${esc(INQUIRY_PIPELINE.stages.join(','))}" data-closed-stages="${esc(INQUIRY_PIPELINE.closedStages.join(','))}" data-not-lead-purposes="${esc(INQUIRY_PIPELINE.notLeads.purposes.join(','))}" data-not-lead-statuses="${esc(INQUIRY_PIPELINE.notLeads.statuses.join(','))}" data-next-step-max="${INQUIRY_PIPELINE.nextStepMax}">
   <div class="tabs">
-    ${['new', 'replied', 'closed', 'spam', 'all'].map((f) => '<button class="tab" type="button" data-filter="' + f + '" data-effect="none">' + f[0].toUpperCase() + f.slice(1) + '</button>').join('\n    ')}
+    <button class="tab" type="button" id="tab-pipe" data-effect="none">Pipeline</button>
+    ${[...INQUIRY_PIPELINE.statuses, 'all'].map((f) => '<button class="tab" type="button" data-filter="' + f + '" data-effect="none">' + f[0].toUpperCase() + f.slice(1) + '</button>').join('\n    ')}
     <button class="tab" type="button" id="tab-sup" data-effect="none">Supporters</button>
   </div>
+  <div id="list-pipe" class="hide"></div>
   <div id="list-inq"></div>
   <div id="list-sup" class="hide"></div>
 </main>

@@ -897,6 +897,12 @@ async function postcard(o) {
     card: L.card ? L.card.box : null, legendBoxes: L.legends.map((b) => ({ x: b.x, y: b.y, w: b.w, h: b.h })) });
 }
 
+/* (sales-next) the classroom worksheet (js/tour-worksheet.js) puts one postcard of each step's map on paper — the same
+   picture, legends and burned-in credits the Image tab makes, not a second compositor */
+export { postcard };
+/** the page's own name and address, as the postcard prints them — the worksheet's footer says the same */
+export function siteBrand() { return brand(); }
+
 /* ══ (map-postcard) THE SHARE PANEL'S IMAGE TAB ════════════════════════════════════════════════════════════
    js/map-ui.js `share` owns the panel, the caption fields and the Link tab, and hands this its `link()` (the
    address-bar encoder), `caption()` (the title and note the link carries), its translator and its copy button — so the
