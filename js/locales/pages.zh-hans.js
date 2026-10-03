@@ -624,5 +624,6 @@ window.IntMapPageI18N.define('zh-hans', {
     "RIVM — Nationaal Meetnet Radioactiviteit (CC0 1.0)": "这是 2011 年的年平均值，不是现值。荷兰国家放射性监测网 151 个测点的年平均剂量率由 RIVM 以 nSv/h 公开（RIVM 自己的实时显示正在重建）。IntMap 将其放在与现值分开的集合中，现值的色阶不会为它上色——避免把二十分钟前的量测值与十五年前的年平均当成同一回事。",
     "Hong Kong Observatory — ambient gamma radiation (data.gov.hk)": "实测辐射图层实时读取：香港天文台十一个监测站的周围γ剂量率日平均值，取自前一日的公报（µSv/h，正规化为 nSv/h）。",
     "SaveEcoBot / data.gov.ua — radiation monitoring (CC BY)": "保留在来源列表中，但目前地图上没有任何一个数值来自这里。乌克兰的开放数据由测点坐标与量测值的整批封存档组成，并没有回传现值的公开端点（SaveEcoBot 自有的 API 需要密钥）。只有坐标而没有量测值的列表并不是剂量图，因此乌克兰维持空白而非填补，并把这个来源留在此处，让这个空缺被说出来而不是被掩盖。",
+    "Fukushima Cs-137 deposition survey (MEXT/NRA via IRSN, CC BY 4.0)": "不绘制在实时地图上：收录于数据包 data/radiation-hindcast.json，只显示在放射性扩散面板的「2011 年对照」中。这是日本政府（文部科学省，后为原子力规制委员会）空中辐射监测所得 Cs-137 地表沉降量，按每个 0.05° 网格（1,740 个网格、172 万次测量）取平均，由 IRSN 汇编并公开（Dumont Le Brazidec 与 Saunier，2022，doi:10.5281/zenodo.7016491）。文件未载明基准日；其所依据的 MEXT/NRA 地图已衰变校正至 2012 年 6 月 28 日，采用的就是这个日期。它只与烟羽模型针对同一次释放和 2011 年 ERA5 风场的计算结果并列，绝不用来调整模型。",
   }
 });

@@ -18,6 +18,9 @@ import { everyTick, stopTick } from './runtime.js';
 import { overpassQuery } from './overpass.js';   /* the one Overpass client, with a clock — js/overpass.js */
 /* (#R568) the plume model itself — the same module src/radiation-worker.js runs off the page. */
 import { RAD } from './radiation-model.js';
+/* (radiation-hindcast) the 2011 answer-check: pure drawing + the ratio ladder; the data is data/radiation-hindcast.json */
+import { cellFeatures, RATIO_LADDER } from './radiation-hindcast.js';
+import { jsonWithin } from './fetch-deadline.js';
 import { registerSimOutput } from './sim-datasets.js';   /* (science-instruments) the deposit becomes a dataset the analysis tools and Atlas's query can read */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
@@ -447,6 +450,48 @@ export function radiation(HOST){
        window come from the controls, and the presets are the ones this module already publishes
        (`SOURCES`), named as the scales they are. */
     let panel=null, site=null, picking=false, pickH=null;
+    /* ══ (radiation-hindcast) THE 2011 ANSWER-CHECK ═══════════════════════════════════════════════════
+       The model's own run for the Fukushima release on the 2011 wind, beside the Japanese government's
+       aerial survey of Cs-137 on the ground — three views of the SAME 1,740 cells (measured / model p50 /
+       where they disagree). Both are precomputed into data/radiation-hindcast.json by
+       scripts/build-radiation-hindcast.mjs and re-checked by tests/radiation-hindcast-checks.test.mjs, so what is
+       drawn here is what the model produces and the figures under it are the ones the gate guards. Nothing
+       is computed on the reader's device and nothing is fitted: docs/RADIATION-MODEL.md §10. */
+    let _hcP=null, _hcM=null, uiHc=null;
+    const hindcastBundle=()=>_hcP||(_hcP=jsonWithin('data/radiation-hindcast.json',30000).catch(e=>{ _hcP=null; throw e; }));   /* the shipped bundle, under the app's one read deadline (js/fetch-deadline.js) */
+    async function hindcast(view){ view=(view==='model'||view==='ratio')?view:'obs';
+      const b=await hindcastBundle(); clear(); ++_gen;
+      if(!ensureLayers()) return {ok:false,reason:'style'};
+      const feats=cellFeatures(b,view,RAD.PLAIN_ZONES.bands);
+      try{ GE().layers.setSourceData(DEP,{type:'FeatureCollection',features:feats}); }catch(_){ return {ok:false,reason:'draw'}; }
+      try{ GE().camera.fitBounds([[b.obs.cells.reduce((a,c)=>Math.min(a,c[0]),180)-0.1,b.obs.cells.reduce((a,c)=>Math.min(a,c[1]),90)-0.1],[b.obs.cells.reduce((a,c)=>Math.max(a,c[0]),-180)+0.1,b.obs.cells.reduce((a,c)=>Math.max(a,c[1]),-90)+0.1]],{padding:60,maxZoom:8,duration:900}); }catch(_){}
+      uiHc=view; _hcM=Object.assign({cells:b.obs.cells.length},b.metrics); return {ok:true,view,cells:feats.length,metrics:b.metrics,asOf:b.asOf,survey:b.survey}; }
+    /* the words for the ratio ladder's keys (RATIO_LADDER in js/radiation-hindcast.js owns the keys and the colours) — read at draw time, in the reader's language */
+    const hcRatioLabel=(k)=>({ 'r-lo2':LL('≥100× too low','100倍以上の過小'), 'r-lo1':LL('10–100× too low','10〜100倍の過小'), 'r-lo0':LL('2–10× too low','2〜10倍の過小'),
+      'r-ok':LL('within 2×','2倍以内'), 'r-hi0':LL('2–10× too high','2〜10倍の過大'), 'r-hi1':LL('10–100× too high','10〜100倍の過大'), 'r-hi2':LL('≥100× too high','100倍以上の過大') })[k];
+    function hcChip(c,t){ const w=document.createElement('span'); w.style.cssText='display:inline-flex;align-items:center;gap:4px;margin-right:8px;white-space:nowrap;';
+      const i=document.createElement('i'); i.style.cssText='width:10px;height:10px;border-radius:2px;display:inline-block;background:'+c+';'; w.appendChild(i); w.appendChild(document.createTextNode(t)); return w; }
+    function hcLegend(view){ const d=document.createElement('div'); d.style.cssText='font-size:10.5px;color:var(--text-main);line-height:1.7;';
+      if(view==='ratio') RATIO_LADDER.forEach(b=>d.appendChild(hcChip(b.c,hcRatioLabel(b.k))));
+      else RAD.PLAIN_ZONES.bands.forEach(z=>d.appendChild(hcChip(z.c,'≥ '+z.min+' kBq/m²')));
+      return d; }
+    function hcStat(){ const m=_hcM; if(!m) return '';
+      const x=(1/Math.pow(10,m.biasLog10)).toFixed(0);
+      return LL('Model vs survey, '+m.cells+' cells: r = '+m.pearsonLog.toFixed(2)+' (log) · median cell ~'+x+'× too low · within 2×: '+(m.fac2*100).toFixed(1)+' % · measured inside the p10–p90 band: '+(m.bandCoverage*100).toFixed(1)+' %',
+        'モデルと実測、'+m.cells+' セル：r = '+m.pearsonLog.toFixed(2)+'（対数）・中央のセルで約 '+x+' 分の 1 の過小・2 倍以内 '+(m.fac2*100).toFixed(1)+' %・実測が p10〜p90 の帯内 '+(m.bandCoverage*100).toFixed(1)+' %'); }
+    /* the block is built with the DOM, not markup: it carries the bundle's numbers and the reader's language, and none of it is HTML */
+    function fillHc(el){ const mk=(tag,css,txt)=>{ const n=document.createElement(tag); n.style.cssText=css; if(txt!=null) n.textContent=txt; return n; };
+      el.appendChild(mk('div','font-size:11.5px;font-weight:700;color:var(--text-main);',LL('Checked against 2011','2011 年の答え合わせ')));
+      const row=mk('div','display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;');
+      [['obs',LL('2011 survey','2011 年の実測')],['model',LL('Model','モデル')],['ratio',LL('Ratio','比')]].forEach(v=>{ const on=uiHc===v[0];
+        const b=mk('button','height:30px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));border-radius:8px;font-size:12px;cursor:pointer;background:'+(on?'var(--primary-fill)':'var(--input-bg)')+';color:'+(on?'#fff':'var(--text-main)')+';',v[1]);
+        b.className='rad-hc-b'; b.dataset.v=v[0];
+        b.onclick=async ()=>{ let r=null; try{ r=await hindcast(v[0]); }catch(_){ r=null; }
+          renderPanel(r&&r.ok?'':LL('Could not draw the 2011 comparison.','2011 年の比較を描けませんでした。')); };
+        row.appendChild(b); });
+      el.appendChild(row);
+      if(uiHc){ el.appendChild(hcLegend(uiHc)); el.appendChild(mk('div','font-size:10.5px;color:var(--text-main);line-height:1.5;',hcStat())); }
+      el.appendChild(mk('div','font-size:10px;color:var(--text-muted);line-height:1.5;',LL("Fukushima Daiichi, March 2011: the model's own run (UNSCEAR release, ERA5 wind) against the Japanese government's aerial survey of Cs-137 on the ground, cell by cell. Survey: MEXT/NRA via IRSN, CC BY 4.0. Nothing is fitted.",'福島第一、2011 年 3 月：モデル自身の計算（UNSCEAR の放出量・ERA5 の風）を、日本政府の航空機モニタリングによる地表の Cs-137 とセルごとに比べます。実測は文科省／規制委（IRSN 編纂、CC BY 4.0）。調整はしていません。'))); }
     /* ⚠ (#R568 ⑧) the release HEIGHT is a control now. It is the single largest thing separating a
        vented release from a burning core, the old model hid it as 200–800 m for everything, and it is
        exactly the kind of number this panel exists to let the reader state. It follows the source
@@ -495,6 +540,7 @@ export function radiation(HOST){
         +'<div class="rad-stat" style="font-size:11.5px;color:var(--text-main);min-height:16px;">'+_esc(state||'')+'</div>'
         +'<button class="rad-clr" style="height:30px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));border-radius:9px;background:var(--input-bg);color:var(--text-muted);font-size:12px;cursor:pointer;">'
           +LL('Clear','消去','Löschen','Очистить','Borrar')+'</button>'
+        +'<div class="rad-hc" style="border-top:1px solid var(--glass-border,rgba(128,128,128,0.28));padding-top:8px;display:flex;flex-direction:column;gap:6px;"></div>'
         +'<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">'
           +LL('Lagrangian dispersion over the live wind field, with decay and wet deposition. Educational — in a real emergency follow the official authorities.','実際の風の場でのラグランジュ拡散（減衰・湿性沈着を含む）。教育目的の近似です。実際の災害時は公的機関の指示に従ってください。','Lagrange-Ausbreitung im echten Windfeld. Nur zu Bildungszwecken.','Лагранжева модель в реальном поле ветра. Только для обучения.','Dispersión lagrangiana con viento real. Solo educativo.')+'</div></div>';
       p.querySelector('.rad-x').onclick=()=>closePanel();
@@ -504,7 +550,8 @@ export function radiation(HOST){
       p.querySelector('.rad-emit').onchange=(e)=>{ const v=+e.target.value; if(isFinite(v)) uiEmit=Math.max(0.25,Math.min(80,v)); };
       p.querySelector('.rad-rise').onchange=(e)=>{ const v=+e.target.value; if(isFinite(v)){ uiRise=Math.max(10,Math.min(3000,v)); uiRiseTouched=true; } };
       p.querySelector('.rad-hours').onchange=(e)=>{ const v=+e.target.value; if(isFinite(v)) uiHours=Math.max(6,Math.min(80,v)); };
-      p.querySelector('.rad-clr').onclick=()=>{ clear(); renderPanel(''); };
+      p.querySelector('.rad-clr').onclick=()=>{ clear(); uiHc=null; renderPanel(''); };
+      fillHc(p.querySelector('.rad-hc'));
       p.querySelector('.rad-go').onclick=async ()=>{ if(!site) return;
         renderPanel(LL('Computing…','計算中…','Berechne…','Расчёт…','Calculando…'));
         let r=null; try{ r=await run(site,{source:uiSrc,isotope:uiIso,emitHours:uiEmit,hours:uiHours,releaseHeight:(uiRiseTouched?uiRise:presetRise())}); }catch(_){ r=null; }
@@ -527,7 +574,7 @@ export function radiation(HOST){
        Read off the source this module fills, so it cannot disagree with what is drawn. The tools row
        lights when EITHER is true — a panel the reader opened, or a plume Atlas drew without one. */
     const isOpen=()=>{ if(panelOpen()) return true; try{ const d=GE().layers.sourceData(SRC); return !!(d&&d.features&&d.features.length); }catch(_){ return false; } };
-    return { run, clear, isOpen, openPanel, closePanel,
+    return { run, clear, isOpen, openPanel, closePanel, hindcast,
       close:()=>{ if(!isOpen()) return false; closePanel(); clear(); return true; }, ISOTOPES, SOURCES, resolveSite,
       /* (#R568) the two the console needs to stop guessing with: which ladder this isotope has, and
          what THIS accident released of THIS nuclide. Nothing outside read `ZONES` (checked), and it
