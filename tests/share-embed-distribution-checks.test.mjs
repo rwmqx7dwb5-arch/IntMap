@@ -206,10 +206,19 @@ test('⑧ js/ui-device.js embedded() answers from <html data-embed>, and the boo
     'js/app-body.js': 'the account and data boot, and which sidebars open',
     'js/session-tabs.js': 'the default tab, and reading / writing the saved session',
     'js/widgets.js': 'the widget board',
-    'js/layer-previews.js': 'the automatic opening of the thumbnail queue',
     'js/mobile-ui.js': 'the bottom sheet\'s camera padding',
   };
   for (const [p, what] of Object.entries(READERS)) assert.match(codeOnly(src(p)), /window\.IntMapDevice\.embedded\(\)/, p + ' asks embedded() for ' + what);
+  /* ⚠ (first-impression) js/layer-previews.js left this list because the thing it exempted the embed from is gone:
+     the thumbnail queue no longer opens itself on ANY device — only kick(), called by a surface that is showing a
+     grid, opens it — and an embed shows no Layers panel (js/embed-mode.js). The embed still buys no thumbnail; it
+     is now the general rule that says so rather than an exemption, so the claim is measured as that rule. */
+  { const lp = codeOnly(src('js/layer-previews.js'));
+    const kickAt = lp.indexOf('function kick(');
+    assert.ok(kickAt > 0, 'kick() is there');
+    const refs = [...lp.matchAll(/(?<![\w$])_openQueue(?!\w)/g)].map((m) => m.index)
+      .filter((i) => lp.slice(i - 9, i) !== 'function ' && !(i > kickAt && i < kickAt + 200));
+    assert.deepEqual(refs, [], 'the thumbnail queue opens only from kick() — nothing at boot opens it, in an embed or anywhere'); }
   /* nobody else re-reads the switch: the query is read by index.html's first script and js/embed-mode.js
      (which writes the grammar), the attribute by js/ui-device.js and the embed view's own stylesheet */
   const owners = new Set(['js/ui-device.js', 'js/embed-mode.js']);

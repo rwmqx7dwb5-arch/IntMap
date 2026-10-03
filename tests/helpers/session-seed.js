@@ -20,13 +20,18 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const SESSION_KEY = 'intmap_session2';
-/* WARN (#R210) `right:false` IS NOT COSMETIC. js/map-ui.js opens the right layer panel when the
- *  saved session has NO ANSWER for it — the first-visit behaviour asked for this round. Every
- *  context here carries a saved session WITHOUT that key, so leaving it out would silently make
- *  ~350 tests measure a canvas 300 px narrower than the one they were written against: exactly
- *  the shape #R207 warned about when one default moved and four deep specs fell over.
- *  The suite is not ABOUT first-visit behaviour, so it states the answer it wants; the
- *  unanswered case is covered on purpose by tests/r210.spec.js. */
+/* WARN (#R210) `right:false` IS NOT COSMETIC — AND (first-impression) NEITHER IS `left:true`. Both columns
+ *  boot from the saved session's answer and from nothing else (js/app-body.js `_sessUI`, js/map-ui.js): a session
+ *  with NO answer is a first visit, and a first visit is the map, whole — 「初回も地図が全面。パネルは読者が開いた
+ *  ときだけ。」 (until first-impression a desktop with no answer fell through to index.html's OPEN left column, and
+ *  #R210 had opened the right panel too). Every context here carries a saved session, so leaving either key out
+ *  would silently make the suite measure a layout it was not written against — exactly the shape #R207 warned
+ *  about when one default moved and four deep specs fell over. MEASURED when the left default moved: with
+ *  `sbOpen` absent, tests/r508.spec.js could not reach #btn-open-settings («element is outside of the viewport»)
+ *  and tests/smoke.spec.js #R349 drew 0 front lines; with it, both pass.
+ *  The suite is not ABOUT first-visit behaviour, so it states the answers it wants — the right panel shut,
+ *  the left column open (on a phone the column is the sheet and `collapsed` is inert, css/intmap.css). The
+ *  unanswered case is covered on purpose by tests/first-impression.spec.js, which boots with NO storage. */
 /* ⚠⚠ (#R225) THE BASE TOGGLES HAVE TO BE IN HERE NOW, AND THAT IS THE POINT OF THE CHANGE.
  *  This seed said `"layers":[]` and meant «no THEMATIC layer is on, so the suite does not pay for the
  *  Köppen raster and the cables». Until #R225 the restore only ever turned OFF the ids in
@@ -43,9 +48,9 @@ export const SESSION_KEY = 'intmap_session2';
 export const BASE_LAYERS = ['cb-names', 'cb-geolabels', 'cb-poi', 'cb-borders', 'cb-admin1', 'cb-roads', 'cb-rail2'];
 /** A session snapshot that keeps the base map and adds whatever thematic layers a spec wants on. */
 export function sessionWith(layers, extra) {
-  return JSON.stringify(Object.assign({ v: 2, defv: 191, layers: BASE_LAYERS.concat(layers || []), lsrOpen: false }, extra || {}));
+  return JSON.stringify(Object.assign({ v: 2, defv: 191, layers: BASE_LAYERS.concat(layers || []), lsrOpen: false, sbOpen: true }, extra || {}));
 }
-export const SESSION_VALUE = '{"v":2,"defv":191,"layers":["cb-names","cb-geolabels","cb-poi","cb-borders","cb-admin1","cb-roads","cb-rail2"],"lsrOpen":false}';
+export const SESSION_VALUE = '{"v":2,"defv":191,"layers":["cb-names","cb-geolabels","cb-poi","cb-borders","cb-admin1","cb-roads","cb-rail2"],"lsrOpen":false,"sbOpen":true}';
 /* ── THE PORT IS PER-CHECKOUT, BECAUSE SESSIONS RUN IN PARALLEL  (#R282 追記) ───────────────────
    This was `process.env.PORT || 4173` for every checkout on the machine, and playwright.config.js
    sets `reuseExistingServer: !isCI`. Together that means two Claude Code sessions testing at the

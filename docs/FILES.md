@@ -1260,6 +1260,8 @@ ne-countries/                     Natural Earth admin-0 の 3 縮尺（110m 187 
                                   natural-earth-vector の固定コミットから scripts/build-ne-countries.mjs が作る可逆形式
                                   （上流の CDN から @master で 4.34 MB を読んでいたものの置き換え）。パブリックドメイン
 gazetteer-world.json.gz           世界の地名の長い尾（cities1000 由来・18言語）。必要になった時に取得する
+                                  （ニュースの地名解決が見出しを処理したとき・地名検索欄に手を伸ばしたとき・
+                                  読み手が warm() を待つとき。起動の索引作りは取りに行かず、届くのを待つだけ）
 histcities-homonyms.json.gz       歴史都市名の記録が使う綴りに一致する**世界中の全集落**（cities500 由来・
                                   重複排除なし）。ブラウザには配信されない——`check:histcities` が
                                   「その綴りはこの1都市を指すか」を訊く相手。生成は
@@ -1891,7 +1893,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 127 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 128 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の
