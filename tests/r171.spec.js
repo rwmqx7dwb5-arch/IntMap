@@ -11,14 +11,20 @@
 //   2. "Typing in the 3-D volume fields works." The old panel re-rendered itself from the input
 //      handler, so the field being typed into was destroyed after one keystroke ("2500" → "2", focus
 //      back on BODY). Only a real keyboard through a real DOM shows that.
-import { test, expect } from '@playwright/test';
-import { loadLazyModules } from './helpers/app.js';
-
-const boot = async page => {
-  await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
-  await page.waitForFunction(() => window.__imap.isStyleLoaded(), null, { timeout: 60000 }).catch(() => {});
-};
+//
+// (suite-time-room) ONE BOOT PER WORKER, NOT ONE PER TEST. Every test here used to take the per-test
+// `page` and boot the whole application for itself — fourteen boots to ask fourteen questions, which
+// is the shape tests/helpers/app.js (#R208) was written to end. The tests now share the worker's
+// booted page, put back before each one to the view its boot showed. The THREE whose subject is a page nothing
+// has touched yet take `app.freshPage()` and pay for their own boot: 「silent by default」 (nothing
+// stored until the pilot chooses), 「off by default」 for the viewpoint chip, and the reload test
+// (a shared page cannot be reloaded under the other tests). The fresh-profile tilt ceiling is read
+// on that fresh page too, before anything is set. Not one expectation was removed or loosened; the
+// before/after table is in dev-notes/2026-10-03-suite-time-room.md.
+import { test, expect, loadLazyModules } from './helpers/app.js';
+/* (suite-time-room) the shared page is put back to the view THIS page's boot showed before each test —
+   the view these tests were written against (tests/helpers/app.js, appView) */
+test.use({ appView: 'boot' });
 
 /* Vertical bow of the parallel through the map centre, sampled ±60° of longitude. Mercator maps a
    parallel to a straight horizontal line, so this is exactly 0; any globe bends it by hundreds of
@@ -29,9 +35,9 @@ const bowAt = page => page.evaluate(() => {
   return Math.round(Math.abs(p[2].y - (p[0].y + p[4].y) / 2) * 10) / 10;
 });
 
-test('MapLibre\'s plain globe really does go flat at flight-sim zoom (the reason #R170 did not fix this)', async ({ page }) => {
+test('MapLibre\'s plain globe really does go flat at flight-sim zoom (the reason #R170 did not fix this)', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const rows = await page.evaluate(async () => {
     const m = window.__imap, out = [];
     const bow = () => { const c = m.getCenter(); const p = [-60, -30, 0, 30, 60].map(d => m.project([c.lng + d, c.lat]));
@@ -45,9 +51,9 @@ test('MapLibre\'s plain globe really does go flat at flight-sim zoom (the reason
   expect(rows.find(r => r.z === 15).bow).toBe(0);
 });
 
-test('the flight simulator flies the app Globe, and gives the view back on exit', async ({ page }) => {
+test('the flight simulator flies the app Globe, and gives the view back on exit', async ({ app }) => {
   test.setTimeout(180000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   /* (#R209) js/flight-sim.js left the boot bundle, so `window.IntMapFlightSim` does not exist until
      it is ASKED for — the right-click item that starts the sim awaits `IntMapLazy.need('flightSim')`
      before it calls start(), and a test that drives the same feature makes the same call. Waiting
@@ -85,9 +91,9 @@ test('the flight simulator flies the app Globe, and gives the view back on exit'
   expect(await bowAt(page)).toBe(0);
 });
 
-test('the flight simulator is silent by default and the SOUND key says so', async ({ page }) => {
+test('the flight simulator is silent by default and the SOUND key says so', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = await app.freshPage();   /* this test's subject is an untouched profile — it pays for its own boot */
   // (#R209) IntMapFlightSim is fetched on demand now — ask for it the way the menu item does.
   await loadLazyModules(page);
   await page.evaluate(() => window.IntMapFlightSim.start({ lng: 138.7, lat: 35.3, alt: 3000 }));
@@ -114,9 +120,9 @@ test('the flight simulator is silent by default and the SOUND key says so', asyn
   await page.evaluate(() => window.IntMapFlightSim.stop());
 });
 
-test('Measure ▸ 3-D volume: a whole number can actually be typed, and it reaches the renderer', async ({ page }) => {
+test('Measure ▸ 3-D volume: a whole number can actually be typed, and it reaches the renderer', async ({ app }) => {
   test.setTimeout(150000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await page.evaluate(async () => {
     window.__imap.jumpTo({ center: [138.7274, 35.30], zoom: 9, pitch: 60, bearing: 0 });
     await new Promise(r => setTimeout(r, 1500));
@@ -164,9 +170,9 @@ test('Measure ▸ 3-D volume: a whole number can actually be typed, and it reach
   expect(cleared.base, 'an empty field is a keyboard state, not the number zero').toBe(2500);
 });
 
-test('Measure ▸ 3-D volume: the altitude fields fit inside the panel', async ({ page }) => {
+test('Measure ▸ 3-D volume: the altitude fields fit inside the panel', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await page.click('#btn-measure-menu');
   await page.click('#btn-tool-volume');
   await page.waitForFunction(() => !!window.IntMapVolume3D, null, { timeout: 30000 });   /* (#R311) that click fetches the tool (js/lazy-modules.js) */
@@ -186,9 +192,9 @@ test('Measure ▸ 3-D volume: the altitude fields fit inside the panel', async (
   expect(fit.scrollW, 'the panel itself must not scroll horizontally').toBeLessThanOrEqual(fit.clientW);
 });
 
-test('Measure ▸ 3-D volume: freehand, circle and rectangle footprints', async ({ page }) => {
+test('Measure ▸ 3-D volume: freehand, circle and rectangle footprints', async ({ app }) => {
   test.setTimeout(180000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await page.evaluate(async () => {
     window.__imap.jumpTo({ center: [138.7274, 35.30], zoom: 9.5, pitch: 55, bearing: 0 });
     await new Promise(r => setTimeout(r, 1500));
@@ -235,9 +241,9 @@ test('Measure ▸ 3-D volume: freehand, circle and rectangle footprints', async 
   expect(Number(stray)).toBe(rect.points);
 });
 
-test('Measure ▸ 3-D volume: colour and opacity reach the renderer', async ({ page }) => {
+test('Measure ▸ 3-D volume: colour and opacity reach the renderer', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await page.evaluate(async () => { window.__imap.jumpTo({ center: [138.7274, 35.30], zoom: 9.5, pitch: 55 }); await new Promise(r => setTimeout(r, 1200)); });
   await page.click('#btn-measure-menu');
   await page.click('#btn-tool-volume');
@@ -263,11 +269,11 @@ test('Measure ▸ 3-D volume: colour and opacity reach the renderer', async ({ p
   expect(op).toBeCloseTo(0.85, 5);
 });
 
-test('the tilt limit lifts to the renderer\'s full range and comes back down', async ({ page }) => {
+test('the tilt limit lifts to the renderer\'s full range and comes back down', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const start = await page.evaluate(() => ({ max: window.__imap.getMaxPitch(), unlimited: window.IntMapTilt.isUnlimited() }));
-  expect(start.max, 'the standard ceiling is unchanged for a fresh profile').toBe(78);
+  expect(start.max, 'with the setting off, the standard ceiling is in force (the fresh-profile reading is in the reload test)').toBe(78);
   expect(start.unlimited).toBe(false);
 
   // the ceiling really does stop the camera
@@ -294,9 +300,14 @@ test('the tilt limit lifts to the renderer\'s full range and comes back down', a
   expect(off.pitch, 'a camera left at 150° would be stuck at an angle the user can no longer reach').toBeLessThanOrEqual(78);
 });
 
-test('the tilt setting survives a reload and is reflected in Settings', async ({ page }) => {
+test('the tilt setting survives a reload and is reflected in Settings', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = await app.freshPage();   /* it reloads, which a page shared with other tests cannot do — so it pays for its own boot */
+  /* the fresh profile's ceiling, read before anything is set (moved here from the tilt-limit test,
+     which now runs on the shared page) */
+  const fresh = await page.evaluate(() => ({ max: window.__imap.getMaxPitch(), unlimited: window.IntMapTilt.isUnlimited() }));
+  expect(fresh.max, 'the standard ceiling is unchanged for a fresh profile').toBe(78);
+  expect(fresh.unlimited).toBe(false);
   await page.evaluate(() => window.IntMapTilt.set(true));
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap && !!window.IntMapGeoEngine, null, { timeout: 60000 });
@@ -307,9 +318,9 @@ test('the tilt setting survives a reload and is reflected in Settings', async ({
   expect(await page.inputValue('#setting-tilt-limit')).toBe('unlimited');
 });
 
-test('the viewpoint altitude appears in the always-on readout and tracks the camera', async ({ page }) => {
+test('the viewpoint altitude appears in the always-on readout and tracks the camera', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = await app.freshPage();   /* this test's subject is an untouched profile — it pays for its own boot */
   const off = await page.evaluate(() => window.IntMapEyeAlt.text());
   expect(off, 'off by default').toBe('');
 
@@ -335,9 +346,9 @@ test('the viewpoint altitude appears in the always-on readout and tracks the cam
   expect(tilted / lo).toBeCloseTo(Math.cos(60 * Math.PI / 180), 1);
 });
 
-test('Atlas can drive both new switches', async ({ page }) => {
+test('Atlas can drive both new switches', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   /* ⚠ (#R304) THROUGH `window.IntMapAtlas`, WHICH IS THE DOOR THE APP USES. #R224 moved the Atlas
      kernel behind js/lazy-modules.js — 658 kB parsed by every session, most of which never open it —
      so `window.IntMapConsole` is undefined until something asks. Calling it directly threw
@@ -355,9 +366,9 @@ test('Atlas can drive both new switches', async ({ page }) => {
   expect(r.htmlA).toMatch(/180/);
 });
 
-test('Atlas can draw a circular 3-D volume in a colour', async ({ page }) => {
+test('Atlas can draw a circular 3-D volume in a colour', async ({ app }) => {
   test.setTimeout(150000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   /* ⚠ (#R304) THROUGH `window.IntMapAtlas`, WHICH IS THE DOOR THE APP USES. #R224 moved the Atlas
      kernel behind js/lazy-modules.js — 658 kB parsed by every session, most of which never open it —
      so `window.IntMapConsole` is undefined until something asks. Calling it directly threw
@@ -391,9 +402,9 @@ test('Atlas can draw a circular 3-D volume in a colour', async ({ page }) => {
   expect(st.fill).toBe('#ff3b30');
 });
 
-test('the elevation profile still puts its cursor on the map through the engine', async ({ page }) => {
+test('the elevation profile still puts its cursor on the map through the engine', async ({ app }) => {
   test.setTimeout(180000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   // #R169 deliberately made no browser claim about js/elevation-profile.js (it needs a real DEM).
   // This round moved its addSource/addLayer/setData onto the engine, so that claim is now needed:
   // the layer it creates is the only visible consequence of the migration.
@@ -420,9 +431,9 @@ test('the elevation profile still puts its cursor on the map through the engine'
   expect(r.feats, 'hovering the chart marks the spot on the map').toBe(1);
 });
 
-test('the migrated modules still drive the map through the engine', async ({ page }) => {
+test('the migrated modules still drive the map through the engine', async ({ app }) => {
   test.setTimeout(150000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   // search-geocode: gotoPlace (camera), positionSearchCard (project), the move listener (events)
   await page.evaluate(() => { const i = document.getElementById('ms-input'); i.value = 'Kyoto'; i.dispatchEvent(new Event('input', { bubbles: true })); });
   await page.click('#ms-btn');

@@ -6,13 +6,21 @@
 // taken during the hunt: by asking the live scene, not the source. Three of the six are invisible
 // to a screenshot (a bearing that reads back as rounding, an event that never fires, a fit that
 // clips by 6%), which is exactly why they survived #R180's own browser suite.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/app.js';
 import { bootEngine } from './helpers/engine.js';
 
 const BOOT = { timeout: 90_000 };
 
 /* (#R201) ONE page load — see tests/helpers/engine.js */
 const boot = (page, engine) => bootEngine(page, engine, BOOT);
+
+/* (suite-time-room) SIX OF THESE ASK ABOUT THE SCENE, NOT ABOUT THE BOOT, and now share ONE Cesium
+   page per worker (tests/helpers/app.js, `appEngine: 'cesium'`, booted in one load and only once
+   IntMapGeoEngine.id() IS 'cesium', and put back to the view its boot showed before each test) instead
+   of booting one each: ② ②(pitch 0) ④ ⑥ ③b ⑦(sky). The others keep their own page: ③ is about the
+   subscriptions the app makes AT BOOT, ⑤ and ⑦(default) are claims about a MapLibre session, and ①
+   (the provider's tile orientation) was left where it was. */
+test.use({ appEngine: 'cesium' });
 
 /* ── ① THE REPORTED DEFECT: THE IMAGERY IS THE RIGHT WAY UP ────────────────────────────────
    A flipped tile is flipped about ITS OWN centre, so the giveaway is not a mirrored map but a
@@ -64,12 +72,12 @@ test('R181 ①: a tile handed to Cesium is oriented for the GPU, not for the DOM
    At pitch 0 this read back 67.34° at z9, 123.54° at z6 and −177.63° at boot, for a camera
    pointing due north — the direction of a rounding residue — and the map could not be rotated
    at all, because an orbit offset that is vertical cannot carry a heading. */
-test('R181 ②: bearing round-trips at every zoom and pitch, including straight down', async ({ page }) => {
+test('R181 ②: bearing round-trips at every zoom and pitch, including straight down', async ({ app }) => {
   /* every jumpTo re-covers and rebuilds every vector layer, so this is genuinely a slow test —
      it is the breadth that matters here, not the count. Marked rather than trimmed to nothing,
      because the defect was zoom-dependent (67.34° at z9, 123.54° at z6, −177.63° at boot). */
   test.slow();
-  await boot(page, 'cesium');
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const rows = await page.evaluate(async () => {
     const E = window.IntMapGeoEngine, out = [];
     const norm = (x) => { const v = ((x % 360) + 360) % 360; return v > 180 ? v - 360 : v; };
@@ -92,8 +100,8 @@ test('R181 ②: bearing round-trips at every zoom and pitch, including straight 
   expect(worstP, 'and the pitch must not have been disturbed by the repair').toBeLessThan(0.01);
 });
 
-test('R181 ②: at pitch 0 the map really turns — the heading is not silently dropped', async ({ page }) => {
-  await boot(page, 'cesium');
+test('R181 ②: at pitch 0 the map really turns — the heading is not silently dropped', async ({ app }) => {
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const heads = await page.evaluate(async () => {
     const C = window.__imCesium.Cesium, E = window.IntMapGeoEngine, v = window.__imap, out = [];
     for (const b of [0, 90, 180, 270]) {
@@ -168,8 +176,8 @@ test('R181 ③: every event the app subscribes to fires on the second engine too
    The fit was computed in flat Mercator on a curved surface, so the far parts of the box fell
    off the screen: measured by projecting the box's own boundary afterwards, a Europe-sized box
    left 6% of itself outside the viewport. */
-test('R181 ④: fitBounds actually shows the box it was given', async ({ page }) => {
-  await boot(page, 'cesium');
+test('R181 ④: fitBounds actually shows the box it was given', async ({ app }) => {
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const rows = await page.evaluate(async () => {
     const E = window.IntMapGeoEngine, out = [];
     const BOXES = [[[135, 33], [141, 37]], [[-10, 35], [30, 60]], [[-125, 25], [-66, 49]],
@@ -228,8 +236,8 @@ test('R181 ⑤: switching the base map on the DEFAULT engine raises no errors', 
    Pan in to z12 and back out and the country labels never returned: 768 features reached the
    layer, 714 passed its filter, the layer was visible and in zoom range — and it drew nothing,
    because "a tile arrived, redraw" was gated on a counter that every OTHER layer bumped. */
-test('R181 ⑥: vector-tile layers come back after a round trip through a deep zoom', async ({ page }) => {
-  await boot(page, 'cesium');
+test('R181 ⑥: vector-tile layers come back after a round trip through a deep zoom', async ({ app }) => {
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const count = () => page.evaluate(() => {
     const v = window.__imap, rec = v._layerById.get('ofm-country');
     return rec && rec.ds ? rec.ds.entities.values.length : -1;
@@ -282,8 +290,8 @@ test('R181 ⑦: a default session still transfers no Cesium and no engine errors
 /* the audit read `sourcedata` 12 against MapLibre's 95 and that looked like frequency — but the
    payload carried only {sourceId}, and all three subscribers in the app test `e.isSourceLoaded`.
    An event that fires with the wrong shape is an event that never fired. */
-test('R181 ③b: sourcedata says WHEN a source finished, not only that it changed', async ({ page }) => {
-  await boot(page, 'cesium');
+test('R181 ③b: sourcedata says WHEN a source finished, not only that it changed', async ({ app }) => {
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await page.evaluate(() => {
     window.__sd = [];
     window.IntMapGeoEngine.events.on('sourcedata', (e) => {
@@ -301,8 +309,8 @@ test('R181 ③b: sourcedata says WHEN a source finished, not only that it change
     .toBeGreaterThan(1);
 });
 
-test('R181 ⑦: the sky spec survives a round trip, so a flight can put it back', async ({ page }) => {
-  await boot(page, 'cesium');
+test('R181 ⑦: the sky spec survives a round trip, so a flight can put it back', async ({ app }) => {
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const got = await page.evaluate(() => {
     const E = window.IntMapGeoEngine;
     const spec = { 'sky-color': '#0a3d91', 'horizon-color': '#bcd4ff' };

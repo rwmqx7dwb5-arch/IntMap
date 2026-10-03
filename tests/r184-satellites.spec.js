@@ -16,15 +16,24 @@
 //
 // The layer is then switched on THROUGH ITS CHECKBOX, because that is the path a user takes and it
 // is the path that has to keep the legend, the counts and the renderer in step.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/app.js';
 
 const BOOT = { timeout: 90_000 };
 /* ⚠ (#R209/#R311) THE LAYER IS FETCHED ON DEMAND, so waiting for window.IntMapSatellites as a BOOT
    signal would wait for something that only the row's own switch brings. The tests below reach for
    the global directly (state(), list(), snapshot()) before and after they tick the row, so this asks
    the loader for it exactly as `startSats()` does — the same call, one step earlier. */
-const boot = async (page) => {
-  await page.goto('/?rafshim=1');
+/* (suite-time-room) THE BOOT IS THE WORKER'S, NOT EACH TEST'S. Seven tests booted seven pages to ask
+   seven questions; they now share the worker's page (tests/helpers/app.js), booted on the same
+   `/?rafshim=1` (the `appUrl` option below), and each makes the same on-demand call the boot made
+   before it reads the layer. ② takes a fresh page: it switches the catalogue to `geo`, and the layer keeps
+   ONE group's elements at a time — on a shared page every later test would be asking the ISS questions
+   of the geostationary catalogue. ⑦ takes one too: it asks Atlas to turn the layer ON, which a page
+   where ④/⑤ already turned it on cannot show (measured: red on the shared page). ⑤'s observer is the map centre, which is
+   why this file resets to the BOOT's view (appView 'boot') — the clock-dependent centre ⑤ was written
+   against — rather than to the named Tokyo view. */
+test.use({ appUrl: '/?rafshim=1', appView: 'boot' });   /* reset to the boot's own view, which these were written against */
+const ready = async (page) => {
   await page.waitForFunction(() => !!window.__imap && !!window.IntMapLazy, null, BOOT);
   await page.evaluate(() => window.IntMapLazy.need('satellitesLive'));
   await page.waitForFunction(() => !!window.IntMapSatellites, null, BOOT);
@@ -79,8 +88,9 @@ const needFeedFor = async (page, group) => {
 };
 
 /* ── ① THE PROPAGATOR IS RIGHT, MEASURED AGAINST THE REAL WORLD ───────────────────────────── */
-test('R184 ①: SGP4 reproduces the real ISS orbit, and the Sun/shadow pair actually answers', async ({ page }) => {
-  await boot(page);
+test('R184 ①: SGP4 reproduces the real ISS orbit, and the Sun/shadow pair actually answers', async ({ app }) => {
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
+  await ready(page);
   await needFeed(page);
   const r = await page.evaluate(async () => {
     const A = window.IntMapSatellites;
@@ -120,8 +130,9 @@ test('R184 ①: SGP4 reproduces the real ISS orbit, and the Sun/shadow pair actu
 });
 
 /* ── ② THE DEEP-SPACE BRANCH IS REALLY THERE ──────────────────────────────────────────────── */
-test('R184 ②: geostationary objects come back from SDP4, at the right altitude', async ({ page }) => {
-  await boot(page);
+test('R184 ②: geostationary objects come back from SDP4, at the right altitude', async ({ app }) => {
+  const page = await app.freshPage();   /* it switches the catalogue group, which would follow every later test on a shared page */
+  await ready(page);
   /* `geo`, not the default group — this is the only test here that asks for a second catalogue, and
      guarding the first one told us nothing about this one. It also replaces the setGroup() this test
      used to do itself: switching group DISCARDS the loaded elements, so a needFeed() before it was
@@ -146,8 +157,9 @@ test('R184 ②: geostationary objects come back from SDP4, at the right altitude
 });
 
 /* ── ③ FOOTPRINT AND GROUND TRACK ARE GEOMETRY, NOT DECORATION ────────────────────────────── */
-test('R184 ③: the footprint is acos(Re/(Re+h)) and the ground track is one orbit', async ({ page }) => {
-  await boot(page);
+test('R184 ③: the footprint is acos(Re/(Re+h)) and the ground track is one orbit', async ({ app }) => {
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
+  await ready(page);
   await needFeed(page);
   const r = await page.evaluate(async () => {
     const A = window.IntMapSatellites;
@@ -176,8 +188,9 @@ test('R184 ③: the footprint is acos(Re/(Re+h)) and the ground track is one orb
 });
 
 /* ── ④ THE LAYER, THROUGH ITS CHECKBOX ────────────────────────────────────────────────────── */
-test('R184 ④: the checkbox draws the layer, fills the legend and cleans up again', async ({ page }) => {
-  await boot(page);
+test('R184 ④: the checkbox draws the layer, fills the legend and cleans up again', async ({ app }) => {
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
+  await ready(page);
   await needFeed(page);
   const on = await page.evaluate(async () => {
     const cb = document.getElementById('dl-sats');
@@ -228,8 +241,9 @@ test('R184 ④: the checkbox draws the layer, fills the legend and cleans up aga
 });
 
 /* ── ⑤ SELECTION, THE DETAIL CARD, AND WHAT IT CLAIMS ─────────────────────────────────────── */
-test('R184 ⑤: selecting an object draws its track + footprint and opens a card of real numbers', async ({ page }) => {
-  await boot(page);
+test('R184 ⑤: selecting an object draws its track + footprint and opens a card of real numbers', async ({ app }) => {
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
+  await ready(page);
   await needFeed(page);
   const r = await page.evaluate(async () => {
     const cb = document.getElementById('dl-sats');
@@ -289,8 +303,9 @@ test('R184 ⑤: selecting an object draws its track + footprint and opens a card
    assertion is INVERTED rather than deleted: nothing may narrow the layer behind the count line
    (`drawn` === `computed`), no `setVisibleOnly` may come back, and the per-satellite look angle —
    which the detail card and `nextPass` are built on — must still answer. */
-test('R266 ⑥: everything propagated is drawn, and the look-angle geometry survives', async ({ page }) => {
-  await boot(page);
+test('R266 ⑥: everything propagated is drawn, and the look-angle geometry survives', async ({ app }) => {
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
+  await ready(page);
   await needFeed(page);
   const r = await page.evaluate(async () => {
     const A = window.IntMapSatellites;
@@ -321,8 +336,9 @@ test('R266 ⑥: everything propagated is drawn, and the look-angle geometry surv
 });
 
 /* ── ⑦ ATLAS DRIVES IT, AND SAYS ONLY WHAT THE LAYER ACTUALLY HAS ─────────────────────────── */
-test('R184 ⑦: the Atlas satellites action turns the layer on and reports real numbers', async ({ page }) => {
-  await boot(page);
+test('R184 ⑦: the Atlas satellites action turns the layer on and reports real numbers', async ({ app }) => {
+  const page = await app.freshPage();   /* the Atlas action turns the layer ON, so it needs a page where nothing has turned it on yet */
+  await ready(page);
   await needFeed(page);
   const r = await page.evaluate(async () => {
     const res = await window.IntMapConsole.dispatch({ type: 'satellites', name: 'ISS' });

@@ -63,6 +63,7 @@
  *  loudly; it would have measured the 1× path three times and passed twice.
  * ==========================================================================*/
 import { test as base, expect as baseExpect } from '@playwright/test';
+import { bootEngine } from './engine.js';
 
 /** The standard wait for "the app is up and can draw". */
 export async function bootPage(page, opts = {}) {
@@ -196,12 +197,43 @@ async function closeLeftOverlays(page) {
  * means — the mistake #R136 traced a whole round of mis-painted eras to. Where a door is missing
  * the reset does less rather than something different.
  */
-export async function resetPage(page) {
+/* ══ (suite-time-room) …OR THE VIEW THIS PAGE'S OWN BOOT HAD, READ AT THE FIRST RESET ══════════════
+   The named view above ("flat projection, the camera over Tokyo at z5") is a MapLibre-session view.
+   On the second renderer it is not neutral: `view.proj.flat` MORPHS Cesium into Columbus view, and
+   measured on a shared Cesium page that alone turned seven passing claims red (a bearing round-trip off
+   by 176°, fitBounds leaving 9.5 % of its box off screen, a pan of 0.88° where the contract says > 1°).
+   Every one of those tests was written against the view the Cesium BOOT shows — the 3-D globe at the
+   app's clock-dependent start camera — so a page whose `appView` is 'boot' (the default with
+   `appEngine`) is reset to exactly that:
+   the projection the app's own switch reported and the engine camera, both read straight after the
+   boot (the first reset runs before the first test), and put back through the same two doors a person
+   uses (the registered projection command, the engine's camera). Not hard-coded: the start camera
+   moves with the clock (tests/r180-cesium.spec.js ③), so it can only be recorded, never written down.
+   ⚠ The same is true on MapLibre, and measured: the boot is the GLOBE, the named view is flat, and a
+   spec written against a fresh boot read a 2,849 px sky-projection error and a zoom floor of 1.2
+   instead of 0 on the named view. So a spec moved onto the shared page asks for 'boot'; the
+   sixty-eight specs written for this fixture keep the named view they were written against. */
+const bootViews = new WeakMap();   /* page → { proj, cam } recorded at the first reset */
+
+export async function resetPage(page, opts = {}) {
   if (!page) return;
   /* first, so that the camera jump at the end of the next step is the LAST thing to move the camera:
      closing a panel can move it (see the market card / company atlas note in closeLeftOverlays) */
   await closeLeftOverlays(page);
-  await page.evaluate(() => {
+  let boot = null;
+  if (opts.bootView) {
+    boot = bootViews.get(page);
+    if (!boot) {
+      boot = await page.evaluate(() => {
+        const G = window.IntMapGeoEngine, c = G.camera.get();
+        const globe = document.getElementById('btn-view-globe');
+        return { proj: globe && globe.classList.contains('active') ? 'globe' : 'flat',
+          cam: { center: [c.center.lng, c.center.lat], zoom: c.zoom, bearing: c.bearing, pitch: c.pitch } };
+      }).catch(() => null);
+      if (boot) bootViews.set(page, boot);
+    }
+  }
+  await page.evaluate((boot) => {
     try { window.IntMapFlightSim && window.IntMapFlightSim.stop && window.IntMapFlightSim.stop(); } catch (_) { }
     try { window.IntMapTilt && window.IntMapTilt.set(false); } catch (_) { }
     /* the two registered commands that name the app's start-up view: the flat projection and the
@@ -209,7 +241,7 @@ export async function resetPage(page) {
        measured: the last test of tests/r171.spec.js timed out clicking `#ms-btn` with the sidebar
        parked on Countries, which the failure snapshot showed and no amount of re-reading the test
        would have. */
-    try { window.IntMapOS && window.IntMapOS.exec('view.proj.flat'); } catch (_) { }
+    try { window.IntMapOS && window.IntMapOS.exec(boot ? 'view.proj.' + boot.proj : 'view.proj.flat'); } catch (_) { }
     try { window.IntMapOS && window.IntMapOS.exec('tab.news'); } catch (_) { }
     /* ⚠ EVERY `window._close…()` THE APP PUBLISHES, FOUND BY NAME RATHER THAN LISTED.
        js/app-body.js exposes `_closeMeasureMenu`, `_closeShareMenu`, `_closePinPopup` … as the
@@ -238,8 +270,20 @@ export async function resetPage(page) {
        The button is the affordance a person uses, it already exists, and when no tool is open the
        selector simply finds nothing. ⚠ Atlas still cannot close a tool — see DEV-NOTES §7. */
     try { const x = document.querySelector('#tool-panel .tp-close'); if (x) x.click(); } catch (_) { }
-    try { window.__imap.jumpTo({ center: [139.767, 35.681], zoom: 5, pitch: 0, bearing: 0, elevation: 0 }); } catch (_) { }
-  }).catch(() => { });
+    if (!boot) { try { window.__imap.jumpTo({ center: [139.767, 35.681], zoom: 5, pitch: 0, bearing: 0, elevation: 0 }); } catch (_) { } }
+  }, boot).catch(() => { });
+  if (boot) {
+    /* a projection change on Cesium is an animated morph (0.6 s); the camera is only put back once the
+       scene has arrived in the mode it was asked for, or the morph would carry the camera with it */
+    await page.waitForFunction((want) => { try { const G = window.IntMapGeoEngine;
+      const t = (G.camera.getProjection() || {}).type; const g = G.camera.globeness ? G.camera.globeness() : 1;
+      return (want === 'globe' ? t === 'globe' : t !== 'globe') && (g === 0 || g === 1); } catch (_) { return true; } },
+    boot.proj, { timeout: 10_000 }).catch(() => { });
+    /* on MapLibre through the same door, and with the same `elevation: 0`, as the named view above: a
+       look-at target left in the air by an unlimited-tilt test survives a jumpTo that does not name it */
+    await page.evaluate((cam) => { try { const G = window.IntMapGeoEngine;
+      if (G.id() === 'maplibre') window.__imap.jumpTo({ ...cam, elevation: 0 }); else G.camera.jumpTo(cam); } catch (_) { } }, boot.cam).catch(() => { });
+  }
   /* one settled frame, so a test does not read the camera mid-transition */
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))))
     .catch(() => { });
@@ -251,19 +295,46 @@ export async function resetPage(page) {
  *   app.page       the booted page, shared by every test on this worker
  *   app.reset()    restore the named view (also run automatically before each test)
  *   app.freshPage() an untouched application, for a test whose subject is the boot
+ *
+ * ── (suite-time-room) TWO WORKER-SCOPED OPTIONS, FOR THE FILES THAT BOOT DIFFERENTLY ─────────
+ * Fourteen-odd spec files still booted once per test because the shared page could only be the
+ * default boot of `/index.html` on MapLibre. Two things they ask for are properties of the BOOT,
+ * not of a test, so they are worker options here (`test.use({ appUrl })` / `test.use({ appEngine })`
+ * at the top of a file). ⚠ These are not the per-test context options the header above warns about:
+ * a worker-scoped option is known BEFORE the worker's page is built, so Playwright starts a worker
+ * for each distinct value and the page really is booted with it — nothing is silently dropped.
+ *   appUrl     the URL the worker's page (and `freshPage()`) boots, e.g. '/?rafshim=1' for a spec
+ *              whose subject is driven by animation frames in a hidden page (index.html #R73)
+ *   appEngine  'cesium' boots the second renderer in ONE load (tests/helpers/engine.js), and waits
+ *              until IntMapGeoEngine.id() IS that engine — a failed seed times out, never runs on
+ *              the wrong renderer
+ *   appView    what reset() puts back before each test: 'named' (the flat map over Tokyo — what the
+ *              sixty-eight specs written for this fixture expect) or 'boot' (the projection and camera
+ *              THIS page's boot showed, recorded at the first reset — see resetPage). A spec that was
+ *              written against a fresh boot and is moved onto the shared page asks for 'boot', so its
+ *              tests still start from the view they were written against. Default: 'boot' with
+ *              appEngine, 'named' without.
  */
 export const test = base.extend({
-  app: [async ({ browser }, use) => {
+  appUrl: [null, { scope: 'worker', option: true }],   /* null = each boot's own default: bootPage '/index.html', bootEngine '/?rafshim=1' */
+  appEngine: [null, { scope: 'worker', option: true }],
+  appView: [null, { scope: 'worker', option: true }],   /* 'boot' | 'named'; null = 'boot' on the second renderer, 'named' otherwise */
+  app: [async ({ browser, appUrl, appEngine, appView }, use) => {
+    const bootView = appView ? appView === 'boot' : !!appEngine;
     const page = await browser.newPage();
     const spares = [];
-    await bootPage(page, {});
+    const boot = (p, opts) => (appEngine
+      ? bootEngine(p, appEngine, { url: (opts && opts.url) || appUrl || undefined, timeout: (opts && opts.timeout) || 120_000 })
+      : bootPage(p, { ...(appUrl ? { url: appUrl } : {}), ...(opts || {}) }));
+    await boot(page, {});
     await use({
       page,
-      reset: () => resetPage(page),
+      engine: appEngine || 'maplibre',
+      reset: () => resetPage(page, { bootView }),
       async freshPage(opts) {
         const p = await browser.newPage();
         spares.push(p);
-        await bootPage(p, opts || {});
+        await boot(p, opts || {});
         return p;
       },
     });

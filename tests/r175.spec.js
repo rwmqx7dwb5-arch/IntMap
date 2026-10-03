@@ -6,10 +6,13 @@
 //   3. clicking an aircraft opens the detail card, and its button flies from that aircraft's own
 //      position / altitude / heading / airspeed
 //   4. the Vite bundle boots the same app: every module present, every vendor global republished
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/app.js';
 import { loadLazyModules } from './helpers/app.js';
 import { publishedGlobals, lazyFiles, jsFiles } from './app-source.mjs';
 import { STAMP_RE } from '../scripts/build-stamp.mjs';
+/* (suite-time-room) the shared page is put back to the view THIS page's boot showed before each test —
+   the view these tests were written against (tests/helpers/app.js, appView) */
+test.use({ appView: 'boot' });
 
 /* ══ (#R304) 「THE WHOLE INTMAP SURFACE IS PUBLISHED」, SAID AS THE SURFACE RATHER THAN A COUNT ══
    ④ below asserted `Object.keys(window).filter(/^IntMap/).length > 75`, and the figure went under
@@ -45,9 +48,9 @@ const boot = async (page, query) => {
    pitch 85 → the eye crawled 8,373 → 7,205 m and stopped (target frozen at 6,914 m);
    pitch 110 → the eye CLIMBED 8,373 → 12,955 m, i.e. zooming in moved away from the ground. */
 for (const pitch of [85, 110]) {
-  test(`with unlimited tilt at ${pitch}°, zooming in descends like an untilted map`, async ({ page }) => {
+  test(`with unlimited tilt at ${pitch}°, zooming in descends like an untilted map`, async ({ app }) => {
     test.setTimeout(180000);
-    await boot(page);
+    const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
     const r = await page.evaluate(async (targetPitch) => {
       const wait = ms => new Promise(res => setTimeout(res, ms));
       const m = window.__imap, GE = window.IntMapGeoEngine;
@@ -83,9 +86,9 @@ for (const pitch of [85, 110]) {
 }
 
 /* ── ② 「ホバー時に出るポップアップは、画面外に出ないように」 ───────────────────────────────── */
-test('a tall hover tooltip stays inside the map wherever the pointer is', async ({ page }) => {
+test('a tall hover tooltip stays inside the map wherever the pointer is', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const res = await page.evaluate(() => {
     const el = window.ensureMapTooltip(), mc = document.getElementById('map-container');
     el.innerHTML = '<div style="font-weight:700;font-size:13px;">✈ TEST123</div>' +

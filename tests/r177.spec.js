@@ -8,8 +8,11 @@
 //   4. a journey still arrives where it was sent (#R173 must survive)
 //   5. standard tilt is untouched — the hook is not even installed
 //   6. the anchor never hands the renderer a camera it cannot hold
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/app.js';
 import { installCameraRuler } from './helpers/camera-ruler.js';
+/* (suite-time-room) the shared page is put back to the view THIS page's boot showed before each test —
+   the view these tests were written against (tests/helpers/app.js, appView) */
+test.use({ appView: 'boot' });
 
 const boot = async page => {
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
@@ -44,9 +47,9 @@ const boot = async page => {
    camera.eye() feeds the always-on 「視点」 chip, the 3-D solid shader's camera, and the tilt
    anchor. Checking it against the draw matrix is what makes the anchor's own test independent:
    if this passes, the two can never silently share an error again. */
-test('camera.eye() agrees with the matrix the renderer draws with', async ({ page }) => {
+test('camera.eye() agrees with the matrix the renderer draws with', async ({ app }) => {
   test.setTimeout(180000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await page.evaluate(installCameraRuler);
   const rows = [];
   for (const proj of ['globe', 'mercator'])
@@ -70,9 +73,9 @@ test('camera.eye() agrees with the matrix the renderer draws with', async ({ pag
 });
 
 /* ── ③ #R175 must survive: a zoom is a DOLLY at every tilt ──────────────────────────────────── */
-test('a zoom is still a dolly at every tilt (#R175)', async ({ page }) => {
+test('a zoom is still a dolly at every tilt (#R175)', async ({ app }) => {
   test.setTimeout(180000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await page.evaluate(installCameraRuler);
   const rows = await page.evaluate(async () => {
     const m = window.__imap, el = m.getCanvasContainer();
@@ -102,9 +105,9 @@ test('a zoom is still a dolly at every tilt (#R175)', async ({ page }) => {
 });
 
 /* ── ④ #R173 must survive: a journey still arrives ──────────────────────────────────────────── */
-test('a journey still lands where it was sent (#R173)', async ({ page }) => {
+test('a journey still lands where it was sent (#R173)', async ({ app }) => {
   test.setTimeout(180000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const r = await page.evaluate(async () => {
     const m = window.__imap;
     const wait = ms => new Promise(res => setTimeout(res, ms));
@@ -125,9 +128,9 @@ test('a journey still lands where it was sent (#R173)', async ({ page }) => {
 });
 
 /* ── ⑤ standard tilt is BYTE-IDENTICAL: the hook is not installed at all ────────────────────── */
-test('standard tilt does not go through any of this', async ({ page }) => {
+test('standard tilt does not go through any of this', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await page.evaluate(installCameraRuler);
   const r = await page.evaluate(async () => {
     const m = window.__imap;
@@ -145,9 +148,9 @@ test('standard tilt does not go through any of this', async ({ page }) => {
    that goes with it leaves the map's range. Forcing it answered z −0.167 at 85.0511°N — and the
    next camera change FROZE the page (not threw) inside MapLibre's tile cover. Plain MapLibre at the
    same pitch is fine, so that camera was ours. */
-test('the anchor never emits a camera outside the renderer\'s range', async ({ page }) => {
+test('the anchor never emits a camera outside the renderer\'s range', async ({ app }) => {
   test.setTimeout(180000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await page.evaluate(installCameraRuler);
   const r = await Promise.race([
     page.evaluate(async () => {

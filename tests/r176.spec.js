@@ -8,9 +8,12 @@
 //   4. sculpting the ground and dropping water conserves mass and overtops by exactly the excess
 //   5. seismic arrivals reproduce the 2011 Tohoku record and published IASP91 travel times
 //   6. terrain shade and the annual sunlight budget answer with real terrain
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/app.js';
 import { installCameraRuler } from './helpers/camera-ruler.js';
 import { loadLazyModules } from './helpers/app.js';
+/* (suite-time-room) the shared page is put back to the view THIS page's boot showed before each test —
+   the view these tests were written against (tests/helpers/app.js, appView) */
+test.use({ appView: 'boot' });
 
 const boot = async page => {
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
@@ -31,9 +34,9 @@ const boot = async page => {
 
 
 /* ── ② Line of sight ───────────────────────────────────────────────────────────────────────── */
-test('the viewshed resolves per raster cell, and re-runs at the same site', async ({ page }) => {
+test('the viewshed resolves per raster cell, and re-runs at the same site', async ({ app }) => {
   test.setTimeout(240000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   /* (#R209) THREE OF THIS FILE'S SUBJECTS LEFT THE BOOT BUNDLE — js/viewshed.js (IntMapLOS, here),
      js/terrain-water.js (IntMapTerrainWater, ④/⑤) and js/seismic.js (IntMapSeismic, ⑥, which brings
      js/tsunami.js with it). They are fetched the first time a door reaches for the feature, so after
@@ -66,8 +69,8 @@ test('the viewshed resolves per raster cell, and re-runs at the same site', asyn
 });
 
 /* ── ③ 「DronesはMeasureに置くな。どこにも置くな。」 ──────────────────────────────────────────── */
-test('there is no drone button anywhere, and the planner still opens', async ({ page }) => {
-  await boot(page);
+test('there is no drone button anywhere, and the planner still opens', async ({ app }) => {
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   expect(await page.evaluate(() => !!document.getElementById('btn-tool-drone'))).toBe(false);
   expect(await page.evaluate(() => document.querySelectorAll('[data-proxy="btn-tool-drone"]').length)).toBe(0);
   const r = await page.evaluate(async () => {
@@ -80,9 +83,9 @@ test('there is no drone button anywhere, and the planner still opens', async ({ 
 });
 
 /* ── ④ terrain sculpting + water ───────────────────────────────────────────────────────────── */
-test('a dug basin holds exactly what it can, and spills exactly the rest', async ({ page }) => {
+test('a dug basin holds exactly what it can, and spills exactly the rest', async ({ app }) => {
   test.setTimeout(240000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await loadLazyModules(page);   // (#R209) js/terrain-water.js is fetched on demand — see ② above
   const r = await page.evaluate(async () => {
     const TW = window.IntMapTerrainWater, m = window.__imap;
@@ -176,9 +179,9 @@ test('a levee drawn on flat ground creates a basin that holds water', async ({ p
 });
 
 /* ── ⑤ seismic ─────────────────────────────────────────────────────────────────────────────── */
-test('P and S arrivals reproduce the 2011 Tohoku record and published IASP91 times', async ({ page }) => {
+test('P and S arrivals reproduce the 2011 Tohoku record and published IASP91 times', async ({ app }) => {
   test.setTimeout(180000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await loadLazyModules(page);   // (#R209) js/seismic.js (and js/tsunami.js with it) arrives on demand — see ② above
   const r = await page.evaluate(() => {
     const S = window.IntMapSeismic;
@@ -213,9 +216,9 @@ test('P and S arrivals reproduce the 2011 Tohoku record and published IASP91 tim
 });
 
 /* ── ⑥ terrain shade and the year ──────────────────────────────────────────────────────────── */
-test('terrain shade follows the sun, and a valley’s year is read off its own horizon', async ({ page }) => {
+test('terrain shade follows the sun, and a valley’s year is read off its own horizon', async ({ app }) => {
   test.setTimeout(240000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const r = await page.evaluate(async () => {
     const I = window.IntMapInsolation, m = window.__imap;
     m.jumpTo({ center: [138.73, 35.40], zoom: 12 });                 // Mt Fuji

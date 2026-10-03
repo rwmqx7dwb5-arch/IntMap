@@ -11,7 +11,7 @@
 // Input is driven through Playwright's mouse/keyboard, i.e. the browser's real input pipeline.
 // Synthetic events would not exercise the reason six of these gestures were dead: Cesium calls
 // preventDefault on `pointerdown`, which suppresses the compatibility mouse events (#R181).
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/app.js';
 import { bootEngine } from './helpers/engine.js';
 
 const BOOT = { timeout: 90_000 };
@@ -35,6 +35,38 @@ const boot = async (page, engine) => {
      for 40 ms before it can tell a mouse from a trackpad, and that timer is throttled in a
      hidden document — measured, the FIRST wheel after boot sometimes did nothing at all while
      every later one worked. Waiting for one idle is the precondition, not a retry. */
+  await page.evaluate(async () => {
+    await new Promise((r) => {
+      let done = false;
+      const fin = () => { if (!done) { done = true; r(); } };
+      try { window.IntMapGeoEngine.events.once('idle', fin); } catch (_) {}
+      setTimeout(fin, 8000);
+    });
+  });
+};
+
+/* (suite-time-room) ② ③ ④ ⑤b ASK ABOUT THE CONTROLLER, NOT ABOUT THE BOOT, and now share ONE Cesium page
+   per worker (tests/helpers/app.js, `appEngine: 'cesium'`, booted in one load and only once
+   IntMapGeoEngine.id() IS 'cesium', and put back to the view its boot showed before each test) instead
+   of booting one each — four Cesium boots became one on the Cesium pool's single CI worker. Every one
+   of them parks the camera itself before it measures (park()), which is what made them independent of
+   the test before. `prepare()` is boot()'s second half, run ONCE per page: the hashchange guard is a
+   page property (installing it twice would only stack listeners), and the one idle it waits for is the
+   boot's — on a page that is already up there is no boot left to wait for, and `events.once('idle')`
+   would sit out its 8 s ceiling on a map with nothing to finish.
+   Four keep their own page. ①a / ①b boot BOTH engines in turn, which is their subject. ⑤ and ⑥ were
+   moved and MEASURED red on the shared page — a drag with every gesture suspended still moved the centre
+   3.75°, and a two-finger spread zoomed by −0.0004 where > 0.5 is required — while both are green on a
+   fresh one. The cause was not isolated, so the claims stay where they are known to hold. */
+test.use({ appEngine: 'cesium' });
+const prepare = async (page) => {
+  const fresh = await page.evaluate(() => {
+    if (window.__r182Prepared) return false;
+    window.__r182Prepared = true;
+    window.addEventListener('hashchange', (e) => { e.stopImmediatePropagation(); }, true);
+    return true;
+  });
+  if (!fresh) return;
   await page.evaluate(async () => {
     await new Promise((r) => {
       let done = false;
@@ -300,9 +332,10 @@ test('R182 ①b: the wheel, the box zoom and the keyboard answer the way MapLibr
    second (the preview document is hidden), and a drag that slow has no inertia on MapLibre
    either. The input pipeline itself is what ① exercises; what is left to check here is the
    controller's own bookkeeping, and a burst is exactly the fast flick that exercises it. */
-test('R182 ②: a drag is one movestart…moveend, and the fling glides after release', async ({ page }) => {
+test('R182 ②: a drag is one movestart…moveend, and the fling glides after release', async ({ app }) => {
   test.setTimeout(300000);
-  await boot(page, 'cesium');
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
+  await prepare(page);
   await park(page, { pitch: 0 });
   const got = await page.evaluate(async () => {
     const E = window.IntMapGeoEngine, cv = E.render.canvas();
@@ -346,9 +379,10 @@ test('R182 ②: a drag is one movestart…moveend, and the fling glides after re
    The orbit angles are not Cesium's orientation angles. Handing them to flyTo put the centre
    up to 25° of latitude away and threw the bearing away entirely at pitch 0 — and every
    animated move in the app goes through there. */
-test('R182 ③: easeTo lands on the camera it was asked for, at every pitch', async ({ page }) => {
+test('R182 ③: easeTo lands on the camera it was asked for, at every pitch', async ({ app }) => {
   test.setTimeout(300000);
-  await boot(page, 'cesium');
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
+  await prepare(page);
   const rows = await page.evaluate(async () => {
     const E = window.IntMapGeoEngine, out = [];
     const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -377,9 +411,10 @@ test('R182 ③: easeTo lands on the camera it was asked for, at every pitch', as
 /* ══ ④ `around` — ZOOM TOWARD THE CURSOR ═════════════════════════════════════════════════
    The adapter used to drop the option, and the two call sites that pass it are the app's own
    double-click and pinch zoom, which exist for exactly this (#R20). */
-test('R182 ④: easeTo({around}) holds the anchor under its own pixel', async ({ page }) => {
+test('R182 ④: easeTo({around}) holds the anchor under its own pixel', async ({ app }) => {
   test.setTimeout(360000);
-  await boot(page, 'cesium');
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
+  await prepare(page);
   const rows = await page.evaluate(async () => {
     const E = window.IntMapGeoEngine, out = [];
     const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -454,9 +489,10 @@ test('R182 ⑤: all eight gesture names can be suspended and restored', async ({
    the next ctrl-drag both did nothing. Chromium raises `contextmenu` on mouseDOWN on Linux
    and macOS and on mouseUP on Windows, so this is asserted on the OUTCOME (is the menu over
    the map?) rather than on when the event arrives. */
-test('R182 ⑤b: a right-drag rotate opens no menu, a plain right-click still does', async ({ page }) => {
+test('R182 ⑤b: a right-drag rotate opens no menu, a plain right-click still does', async ({ app }) => {
   test.setTimeout(300000);
-  await boot(page, 'cesium');
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
+  await prepare(page);
   const b = await canvasBox(page);
   const cx = Math.round(b.x + b.w / 2), cy = Math.round(b.y + b.h / 2);
   const overMap = () => page.evaluate(() => {

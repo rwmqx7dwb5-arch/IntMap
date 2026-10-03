@@ -9,13 +9,24 @@
 //
 // The MapLibre half matters just as much and is asserted first: the default session must not
 // be able to tell that a second engine exists.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/app.js';
 import { bootEngine } from './helpers/engine.js';
 
 const BOOT = { timeout: 90_000 };
 /* (#R201) ONE page load, not two — tests/helpers/engine.js seeds the stored choice before the
    first script runs, and only if nothing has written it, so "switch back to MapLibre" still wins. */
 const asCesium = (page) => bootEngine(page, 'cesium', BOOT);
+
+/* (suite-time-room) FOUR OF THESE ASK ABOUT THE SCENE, NOT ABOUT THE BOOT, and now share ONE Cesium
+   page per worker (tests/helpers/app.js, `appEngine: 'cesium'`, booted in one load and only once
+   IntMapGeoEngine.id() IS 'cesium', and put back to the view its boot showed before each test) instead
+   of booting one each: ④ ⑥ ⑥b ⑦. The others keep their own page because their subject is a boot:
+   ⓪ the default session, ① the boot style and its errors, ② the drawing surface at deviceScaleFactor 2
+   (a per-test context option), ③ the startup camera, ⑧ switching back — and ⑤, which was moved and
+   MEASURED red on the shared page (0 entities where a fresh page decodes hundreds); the cause was not
+   isolated, so that claim stays on its own boot. The Cesium pool runs at one worker on CI, so the
+   shared page is also one boot in wall clock. */
+test.use({ appEngine: 'cesium' });
 
 /* ── ⓪ THE DEFAULT IS UNTOUCHED ───────────────────────────────────────────────────────────
    The most important test in the file. MapLibre stays the default, and a default session must
@@ -186,8 +197,8 @@ test('R180 ③: the startup view puts the eye where MapLibre puts it, and the ro
    The Node checks prove the evaluator; this proves the evaluator is WIRED — that a layer added
    through the contract with an expression paint really produces a Cesium primitive carrying
    the value the expression computes. */
-test('R180 ④: a layer added through the contract draws, with its expressions evaluated', async ({ page }) => {
-  await asCesium(page);
+test('R180 ④: a layer added through the contract draws, with its expressions evaluated', async ({ app }) => {
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const got = await page.evaluate(async () => {
     const E = window.IntMapGeoEngine, v = window.__imap;
     E.layers.addSource('r180', { type: 'geojson', data: { type: 'FeatureCollection', features: [
@@ -295,11 +306,12 @@ test('R180 ⑤: an MVT source decodes and its features reach the scene', async (
    numbers rather than errors — the terrarium encoding resampled as RGB (Tokyo −6,592 m) and
    HeightmapTerrainData's default highestEncodedHeight of 255 clamping everything (Fuji
    −57,092 m). So the test is three known summits and a depression. */
-test('R180 ⑥: terrain comes from the app\'s own terrarium DEM and reads true heights', async ({ page }) => {
+test('R180 ⑥: terrain comes from the app\'s own terrarium DEM and reads true heights', async ({ app }) => {
   test.slow();
-  await asCesium(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const got = await page.evaluate(async () => {
     const E = window.IntMapGeoEngine, v = window.__imap;
+    const terrain0 = E.scene.getTerrain(), hadDem = E.layers.hasSource('terrain-dem');
     E.layers.addSource('terrain-dem', { type: 'raster-dem', encoding: 'terrarium', tileSize: 256, maxzoom: 15,
       tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'] });
     const attached = E.scene.setTerrain({ source: 'terrain-dem', exaggeration: 1.0 });
@@ -323,8 +335,14 @@ test('R180 ⑥: terrain comes from the app\'s own terrarium DEM and reads true h
     };
     const fuji = await sample(138.7274, 35.3606, 12);
     const dead = await sample(35.5, 31.5, 11);
-    return { attached, fuji, dead, ion: !!(window.__imCesium && window.__imCesium.Cesium.Ion.defaultAccessToken),
+    const out = { attached, fuji, dead, ion: !!(window.__imCesium && window.__imCesium.Cesium.Ion.defaultAccessToken),
              provider: v._scene.terrainProvider.constructor.name };
+    /* (suite-time-room) read, then taken back off: the page is shared, and terrain left attached changes
+       the camera every later test on it measures (measured: left attached, tests/r181-cesium.spec.js ②'s
+       pitch moved 0.028° against a 0.01° bound on the same page; taken off, it holds) */
+    try { E.scene.setTerrain(terrain0); } catch (_) { }
+    if (!hadDem) { try { E.layers.removeSource('terrain-dem'); } catch (_) { } }
+    return out;
   });
   expect(got.attached).toBe(true);
   expect(got.ion, 'no Ion token — the app is keyless').toBe(false);
@@ -348,8 +366,8 @@ test('R180 ⑥: terrain comes from the app\'s own terrarium DEM and reads true h
    repair, the HiDPI stitch, the imagery-depth memo) would simply not have existed on this engine.
    The fix moved the registry out of the view; the SECOND attempt was needed because the adapter
    method still had an `if(view)` guard in front of it. Hence a test, not a comment. */
-test('R180 ⑥b: tile protocols survive being registered before the view exists', async ({ page }) => {
-  await asCesium(page);
+test('R180 ⑥b: tile protocols survive being registered before the view exists', async ({ app }) => {
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const got = await page.evaluate(async () => {
     const v = window.__imap;
     const out = { protocols: window.__imCesium.protocols() };
@@ -378,8 +396,8 @@ test('R180 ⑥b: tile protocols survive being registered before the view exists'
    #R179 closed `ui.createView` because a second view kept the raw handle under a local name.
    The replacement is `ui.createSubView`, which returns the SAME contract scoped to the new
    view. That shape is only worth anything if the second engine can honour it. */
-test('R180 ⑦: a sub-view is a full contract that answers about ITSELF', async ({ page }) => {
-  await asCesium(page);
+test('R180 ⑦: a sub-view is a full contract that answers about ITSELF', async ({ app }) => {
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const got = await page.evaluate(async () => {
     const E = window.IntMapGeoEngine;
     const host = document.createElement('div');
