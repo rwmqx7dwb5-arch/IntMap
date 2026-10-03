@@ -1003,6 +1003,13 @@ radiation-model.js                放射性物質拡散のモデル本体（風�
                                   ラグランジュ solve・沈着格子・区分・線量積分）。DOM も window も
                                   持たない純粋モジュールで、ページと worker が同じものを import
                                   する。数の出所は docs/RADIATION-MODEL.md（export const RAD）
+ash-model.js                      火山灰の拡散モデル本体（Mastin の噴火源・Suzuki の鉛直分布・
+                                  Ganser の落下速度・変形拡散・気圧面の風の入れ子ネスト・降灰と
+                                  飛行高度帯ごとの濃度）。DOM も window も持たない（export const ASH）
+ash-plume.js                      「いま噴火したら」火山灰のパネル・地図・露出（地名辞典の町・空港）
+                                  window.IntMapAshPlume（遅延・火山カードと Atlas から開く）
+sim-datasets.js                   シミュレーションの出力を分析用データセットとして登録する 1 つの扉
+                                  （出自は sim 名・版・引数・乱数の種）。import して使う
 shakemap.js                       USGS ShakeMap——1つの地震の地震動そのもの（等値線・震度の面・
                                   範囲内の都市と人口・遅延取得）window.IntMapShakeMap
 seismic.js                        地震波シミュレータ（477 KB）
