@@ -95,13 +95,35 @@ date: 2026-10-03
   文字／正方形・縦長／パネルで題を直すとアドレスと帯が変わる／Atlas `postcard`／埋め込み 640×400 で帯が枠内で
   埋め込みの帯・出典に重ならない／携帯 390×844 で出典の小札の上。
 
-## 6. 残したもの
+## 6. 統合のときに直したもの
 
-- ⚠ **ケッペンの層の出典（Beck et al., CC BY 4.0）は `#map-credit` にも絵葉書の帯にも出ない。** 地図のソースが
-  `attribution` を宣言していないので `drawnCredits` が拾えない（タイムラプスの動画も同じ）。直すのは
-  `js/data-layers.js` の Köppen のソース定義で、この作業の範囲の外。
-- `check:testbudget`: 新しい spec は未計測で p75（41 s）を課金され、core と全体の天井を越える。同じ理由で
-  `check:docs` の deep-tier-size（`docs/TESTING.md`・`package.json`・`docs/FILES.md` の「core 6」）も赤。
-- `check:docs` の capability-count: `DECISIONS.md` の 154/153 が 155/154 になっていない（この作業で触れる一覧の外）。
-  `PRODUCT.md`・`docs/FILES.md`・`docs/architecture/02-features.md` は直した。
-- 凡例の中の操作の説明文（「クリックで強調…」）と「不透明度 100%」の見出しは、ページに出ている文字なので絵にも入る。
+- **ケッペンの層の出典が、どこにも出ていなかった（CC BY 4.0 の帰属表示の欠落）。** 原因は 2 つ重なっていた。
+  ① `src-climate` のソースが `attribution` を宣言していなかった。② 宣言しても届かない——maplibre-gl 6.11.2 の
+  `ImageSource` は `options.attribution` を読まず、`serialize()` は type/url/coordinates しか書かず、style spec の
+  image/video には `attribution` の鍵が無いので検証が**ソースごと**拒む。座標で置くソース（image/video/canvas）は
+  すべて同じで、夜の灯り（#R196 の canvas）が宣言していた NASA の出典も同じく消えていた。
+  ⇒ Köppen のソースに出典（Beck et al. 2023, Scientific Data 10:724, CC BY 4.0）を宣言し、`js/geo-engine.js` の
+  `_addSourceCarryingCredit` が「座標で置かれ、出典を宣言したソース」という**事実**に対して、レンダラが受け付ける
+  spec を渡したうえで出典をソースとその直列化に持たせる（ID の一覧は持たない）。帯（絵葉書・動画）と副ビューの出典は
+  どちらもソースに訊くので、両方に出る。
+- **凡例の絵から操作の案内を外した。** 文言ではなく DOM が述べている性質で判別する: ① 札の中の操作部品の
+  `aria-describedby` が指す要素＝その部品の使い方の説明（Köppen の行が `#kl-hint` を指すようにした。支援技術にも
+  同じ説明が届く）② 入力欄を持ち、その欄の名前（`<label>`・`aria-labelledby`）以外に文字も色見本も無い箱＝その欄の行
+  （「不透明度 100%」。「100%」は文字を持たない）。
+- `tests/map-postcard.spec.js` ①に足した: 帯に Beck et al. 2023 / CC BY 4.0 が在る／復号した絵の、案内文と不透明度の行が
+  ページで占めていた場所が無地で、題の場所にはインクが在る。3 つとも直す前のコードへ戻すと赤になることを確かめた。
+- 実測: `tests/map-postcard.spec.js` は 1 worker・既存サーバでテスト本体 12.9 / 12.3 / 9.8 s（上限で 13 を記入）。
+  これで core は 6 本に戻る。全体は天井 87.5 分に対し 87.7 分——**天井は上げていない**（余地は PR #911 が作る）。
+- `check:perf` で上げた天井と、その理由（越えた行だけ `--update`）:
+  eager raw 4628.5→4655.7 kB・gzip 1523.9→1532.9・brotli 1149.9→1157.0——共有リンクの題と一言の codec（`js/map-state.js`）、
+  地図の上の題の帯（`js/map-ui.js`）、Atlas の `postcard`/`share`（`js/atlas-cap-panel.js`）、eager な en の文言。
+  async gzip 3774.0→3794.1・`map-recorder` 18.2→35.8 kB——絵葉書の合成（凡例を絵にする読み手・レイアウト・題のカード）は
+  画像タブを初めて開いたときにだけ取りに行くチャンクに置いた。`ui.jp` 20.7→23.1 kB——同じ文言の日本語。
+
+## 7. 残したもの
+
+- `check:testbudget` の全体（87.7 / 87.5 分）は PR #911 の着地待ち。
+- 画面の主地図の出典（`#map-credit`）は下地の出典だけを述べ、描いているデータ層の出典を述べない（Köppen に限らない）。
+  絵葉書・動画・副ビューには出る。主地図に出すかは UI の判断なので、この作業では変えていない。
+- `js/reference-data.js` の出典ページの行は「Beck et al. Köppen-Geiger (2018)」で、1901〜2020 年の 4 期間は
+  2023 年版のもの。行の名前は 9 言語の訳文の鍵なので、ここでは変えていない。

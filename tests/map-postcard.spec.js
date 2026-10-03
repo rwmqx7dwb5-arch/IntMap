@@ -61,6 +61,25 @@ test('map-postcard ① the caption a link carries, and the map as one picture', 
     expect(px.legend.bright, 'the legend picture has no light card ground').toBeGreaterThan(0.3);
     expect(px.legend.dark, 'the legend picture holds no text').toBeGreaterThan(0.005);
     for (const f of px.lines) { expect(f, 'a credit line holds no text').toBeGreaterThan(0.02); expect(f).toBeLessThan(0.7); }
+    /* the climate raster's own credit (Beck et al., CC BY 4.0) is in the band — the source declares it, the engine keeps it */
+    expect(r.credits.some((c) => /Beck et al\. 2023/.test(c) && /CC BY 4\.0/.test(c)), 'Köppen is not credited in ' + r.credits.join(' | ')).toBe(true);
+    /* the legend picture carries the key, not the handles: the hint the rows point at (aria-describedby) and the opacity
+       row are blank card ground in the picture, while the title above them is ink — measured where the page laid them out */
+    const ink = await page.evaluate(async ({ url, box }) => {
+      const lg = document.getElementById('koppen-legend'), L = lg.getBoundingClientRect(), k = box.w / L.width;
+      const img = new Image(); img.src = url; await img.decode();
+      const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+      const at = (sel) => { const el = lg.querySelector(sel); if (!el) return null; const q = el.getBoundingClientRect(); if (q.height < 1) return null;
+        const b = { x: Math.round(box.x + (q.left - L.left) * k) + 1, y: Math.round(box.y + (q.top - L.top) * k) + 1, w: Math.max(1, Math.round(q.width * k) - 2), h: Math.max(1, Math.round(q.height * k) - 2) };
+        const d = x.getImageData(b.x, b.y, b.w, b.h).data, l = []; for (let i = 0; i < d.length; i += 4) l.push(0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]);
+        const med = l.slice().sort((a, z) => a - z)[l.length >> 1]; return l.filter((v) => Math.abs(v - med) > 40).length / l.length; };
+      return { title: at('h4'), hint: at('.kl-hint'), opacity: at('.dl-op-row') };
+    }, { url: r.url, box: r.legendBoxes[0] });
+    expect(ink.title, 'the measure cannot see text: the legend title has no ink').toBeGreaterThan(0.02);
+    expect(ink.hint, 'the hint was not measured').not.toBeNull();
+    expect(ink.hint, 'the operating hint is drawn into the legend picture').toBeLessThan(0.005);
+    expect(ink.opacity, 'the opacity row was not measured').not.toBeNull();
+    expect(ink.opacity, 'the opacity row is drawn into the legend picture').toBeLessThan(0.005);
     /* what the panel shows is that file, and Save writes it */
     await expect(page.locator('#share-panel .sh-pc-pv img')).toHaveAttribute('src', r.url);
     await expect(page.locator('#share-panel .sh-pc-save')).toHaveAttribute('download', r.name);

@@ -608,15 +608,49 @@ export async function compareImage(o) {
 const LEGEND_SEL = '.data-legend, .koppen-legend';
 const FIELD_SEL = 'input, textarea, [role="slider"]';
 const BUTTON_SEL = 'button, [role="button"], [role="switch"], [role="checkbox"]';
-/** is this element one of the reader's handles on the card (see above) — `cs` is its computed style */
-function isHandle(e, cs) {
+/* ⚠ WORDS ABOUT A HANDLE ARE PART OF THE HANDLE. Measured on the first postcards: the Köppen card carried
+   「Click to highlight • right-click for criteria」 and every card its 「Opacity 100%」 row — instructions to a pointer
+   the picture does not have. They are told apart by what the DOM says they ARE, never by their wording (nine
+   languages, and the next card's sentence would not be in a list):
+   · GUIDANCE — the accessible description (`aria-describedby`) of a control on the card: it tells the reader how to
+     operate that control, so it leaves with it. (js/data-layers.js points the Köppen rows at their hint.)
+   · A CONTROL'S ROW — a box holding a field whose only words are that field's own label: the name of a slider and the
+     readout of its value (「100%」 has no letter) are the slider. A box that also holds a swatch, or words that are not
+     the field's name, is a key with a control in it, and is walked instead. */
+const SAYS = /[\p{L}\p{N}]/u, LETTER = /\p{L}/u;
+const hasFill = (d) => { try { const c = getComputedStyle(d); return alphaOf(c.backgroundColor) > 0 || /gradient/.test(c.backgroundImage); } catch (_) { return false; } };
+/** is `e` the accessible description of a control inside `card` */
+function isGuidance(e, card) {
+  if (!e.id || !card) return false;
+  return Array.from(card.querySelectorAll('[aria-describedby]')).some((c) => c !== e &&
+    (c.getAttribute('aria-describedby') || '').split(/\s+/).includes(e.id) && c.matches(FIELD_SEL + ', ' + BUTTON_SEL + ', select'));
+}
+/** is `e` a box that holds a field and nothing else the reader needs: no swatch, and no letter outside the field's label */
+function isControlRow(e) {
+  const fields = Array.from(e.querySelectorAll(FIELD_SEL)); if (!fields.length) return false;
+  const inField = (n) => fields.some((f) => f === n || f.contains(n));
+  /** the labels that name these fields — `<label>` (HTMLInputElement#labels) and aria-labelledby */
+  const names = [];
+  fields.forEach((f) => {
+    try { Array.from(/** @type {HTMLInputElement} */ (f).labels || []).forEach((l) => names.push(l)); } catch (_) { /* not labelable */ }
+    (f.getAttribute('aria-labelledby') || '').split(/\s+/).filter(Boolean).forEach((id) => { const l = document.getElementById(id); if (l) names.push(l); });
+  });
+  const named = (n) => names.some((l) => l === n || l.contains(n));
+  if (Array.from(e.querySelectorAll('*')).some((d) => !inField(d) && !named(d) && hasFill(d))) return false;
+  /** a letter in a text node outside the fields and their names */
+  const speaks = (node) => Array.from(node.childNodes).some((n) => (n.nodeType === 3 ? (!named(n) && LETTER.test(n.nodeValue || '')) : (n.nodeType === 1 && !inField(n) && speaks(n))));
+  return !speaks(e);
+}
+/** is this element one of the reader's handles on the card (see above) — `cs` is its computed style, `card` the legend */
+function isHandle(e, cs, card) {
   if (e.matches(FIELD_SEL)) return true;
+  if (isGuidance(e, card) || isControlRow(e)) return true;
   /* anything that says something is drawn — a card's title is often its drag grip too (measured: the Köppen header) */
-  if (/[\p{L}\p{N}]/u.test(e.textContent || '')) return false;
+  if (SAYS.test(e.textContent || '')) return false;
   if (/^(grab|grabbing|move|[nsew]{1,2}-resize|col-resize|row-resize)$/.test(cs.cursor)) return true;
   if (!e.matches(BUTTON_SEL)) return false;
   /* a swatch inside it (a box with a fill) is a key, not a glyph */
-  return !Array.from(e.querySelectorAll('*')).some((d) => { try { const c = getComputedStyle(d); return alphaOf(c.backgroundColor) > 0 || /gradient/.test(c.backgroundImage); } catch (_) { return false; } });
+  return !Array.from(e.querySelectorAll('*')).some(hasFill);
 }
 /** the legends on the map now, in the order the page stacks them — a legend whose layer is off has no box
     (display:none). ⚠ On a phone the closed legend tray hides the cards with `visibility` and still lays them out
@@ -758,7 +792,7 @@ export async function rasterLegend(el, k) {
       if (ch.nodeType !== 1) continue;
       const e = /** @type {HTMLElement} */ (ch);
       const cs = getComputedStyle(e);
-      if (isHandle(e, cs)) continue;
+      if (isHandle(e, cs, el)) continue;
       if (cs.display === 'none' || (!rootHidden && cs.visibility === 'hidden')) continue;
       const a = (opacity.get(node) || 1) * (+cs.opacity || 0); opacity.set(e, a);
       if (a <= 0.01) continue;
