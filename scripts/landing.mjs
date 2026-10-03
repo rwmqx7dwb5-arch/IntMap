@@ -37,6 +37,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { TEXT } from './landing-text.mjs';
 import { TEXT as ORG_TEXT, ORG_NAV } from './org-pages-text.mjs';   /* (teachers-and-entrances) the organisation pages' own names and order, read for the footer */
 import { HUB as HISTORY_HUB, SITEMAP_INDEX } from './history-pages.mjs';   /* (teachers-and-entrances) where the history pages live, and the file that lists every sitemap */
+import { OTD_HUB } from './on-this-day-pages.mjs';   /* (marketing-next) where the «on this day» pages live */
 import { SHOWCASE, WITHHELD, CAPTURED, CURRICULUM, RECORD_ANSWERED, TOPICS } from '../js/showcase.js';
 import { embedUrl, iframeCode, EMBED_SIZES } from '../js/embed-mode.js';   /* (showcase-gallery) the embed page's code is the Embed tab's own */
 import { IntMapLang } from '../js/lang-registry.js';
@@ -224,11 +225,12 @@ function card(s, L, E, withQuestion) {
 
 /* (teachers-and-entrances) every page this generator writes, the history pages' hub and every organisation page, in
    the footer of each of them. DERIVED: PAGES here (a page's name is T.nav[TEXT_KEY[page]]), ORG_NAV in
-   scripts/org-pages-text.mjs (its pages and their names), HISTORY_HUB in scripts/history-pages.mjs. A page added to
+   scripts/org-pages-text.mjs (its pages and their names), HISTORY_HUB in scripts/history-pages.mjs, OTD_HUB in scripts/on-this-day-pages.mjs. A page added to
    any of the three appears in every footer — nobody lists it by hand. The page being read is left out. */
 export function pageLinks(L, T, here) {
   const out = PAGES.filter((p) => p !== here).map((p) => ({ href: './' + p + '.html', label: T.nav[TEXT_KEY[p]] }));
   out.push({ href: L.up + L.dir + HISTORY_HUB, label: T.nav.history });
+  out.push({ href: L.up + L.dir + OTD_HUB, label: T.nav.onThisDay });
   return out;
 }
 export function entranceLinks(L, T, here) {

@@ -71,15 +71,24 @@ export async function openShowcase(id) {
   if (!s) return { ok: false, reason: 'unknown-example', timeOk: false, off: [], example: null };
   const href = showcaseLink(s.id);
   if (!href) return { ok: false, reason: 'no-link', timeOk: false, off: s.layers.slice(), example: s };
+  return Object.assign(await openLink(href, { at: s.at, layers: s.layers }), { example: s });
+}
+
+/** (marketing-next) THE OPENER ITSELF, for any link the app wrote: put the map into `href`'s state through the share
+ *  link's own restore and read it back — the clock at `want.at` (null = «now») and every layer of `want.layers` ticked.
+ *  An example and an «on this day» event (js/on-this-day.js) open through this one function, so both are reported
+ *  open by the same reading. → { ok, timeOk, off, reason? } */
+export async function openLink(href, want) {
+  const s = { at: want && want.at != null ? want.at : null, layers: (want && want.layers) || [] };
   const BM = window.IntMapBookmark;
-  if (!BM) return { ok: false, reason: 'no-map', timeOk: false, off: s.layers.slice(), example: s };
+  if (!BM) return { ok: false, reason: 'no-map', timeOk: false, off: s.layers.slice() };
   try {
     MapState.address(null, href.slice(href.indexOf('#')));
     BM.restore({ shared: true });
     /* a link with no `tt` leaves the clock where it is (restore() sets it only when the link names one), so a
        «now» example returns the clock to now itself — the example's intent is the present */
     if (s.at == null) IntMapTime.setNow({ source: 'ui' });
-  } catch (e) { return { ok: false, reason: String((e && e.message) || e), timeOk: false, off: s.layers.slice(), example: s }; }
+  } catch (e) { return { ok: false, reason: String((e && e.message) || e), timeOk: false, off: s.layers.slice() }; }
   /* the restore applies the clock at +900 ms and the layer boxes at +700 / +1800 / +3200 ms (js/map-ui.js
      restore()); 6 s is its last pass plus room for a busy page. It returns the moment both agree — the wait is
      a bound, not a sleep — and a changed restore schedule is what invalidates the number. */
@@ -93,7 +102,7 @@ export async function openShowcase(id) {
   };
   let m = met(); const t0 = Date.now();
   while (!(m.timeOk && !m.off.length) && Date.now() - t0 < 6000) { await new Promise((r) => setTimeout(r, 250)); m = met(); }
-  return { ok: m.timeOk && !m.off.length, timeOk: m.timeOk, off: m.off, example: s };
+  return { ok: m.timeOk && !m.off.length, timeOk: m.timeOk, off: m.off };
 }
 
 /** start a classroom tour at its first step (js/tour-player.js — loaded when it is reached for) */
@@ -137,11 +146,14 @@ export function showInResults(res) {
   const g = galleryItems();
   const items = g.sections.flatMap((sec) => sec.items).concat(g.tours);
   if (!items.length) return false;
-  res.innerHTML = '<div class="sg-strip" role="group" aria-label="' + H(t('Example maps and tours', '作例とツアー')) + '">'
+  /* (marketing-next) above the examples, the day's own map: js/on-this-day.js fills the slot once its index is read and
+     leaves it empty when today has no event — the strip below does not wait for it */
+  res.innerHTML = '<div class="otd-slot"></div><div class="sg-strip" role="group" aria-label="' + H(t('Example maps and tours', '作例とツアー')) + '">'
     + '<div class="sg-strip-h"><span>' + H(t('Example maps', '作例')) + '</span>'
     + '<button type="button" class="sg-all">' + H(t('See all', 'すべて見る')) + '</button></div>'
     + '<div class="sg-row">' + items.map(cardHTML).join('') + '</div></div>';
   wireCards(res);
+  import('./on-this-day.js').then((m) => m.fillSlot(res.querySelector('.otd-slot'))).catch(() => { /* no card: the strip stands alone */ });
   const all = res.querySelector('.sg-all');
   if (all) all.addEventListener('click', () => { res.style.display = 'none'; res.innerHTML = ''; openGallery(); });
   res.style.display = 'block';

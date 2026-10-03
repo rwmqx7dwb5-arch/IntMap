@@ -99,7 +99,7 @@ function layerId(d) {
        its count per page load can never pass the questions' (growth-loop). */
 export const METRICS = Object.freeze({
   view:         { dim: closed(['']),                                          max: 1,   maxDims: 1 },   // the map was opened (one per page load)
-  entry:        { dim: closed(['link', 'embed', 'showcase', 'about', 'teachers', 'news-map', 'embed-map']), max: 1, maxDims: 7 },   // opened from a link that carries a map view (a shared or saved link), embedded in another page (?embed=1), or reached from one of IntMap's own pages a visitor lands on first (an example's share page s/, the about page, the teacher page, the two pages by use news-map and embed-map — SITE_PAGES below)
+  entry:        { dim: closed(['link', 'embed', 'showcase', 'about', 'teachers', 'news-map', 'embed-map', 'history', 'on-this-day']), max: 1, maxDims: 9 },   // opened from a link that carries a map view (a shared or saved link), embedded in another page (?embed=1), or reached from one of IntMap's own pages a visitor lands on first (an example's share page s/, the about page, the teacher page, the two pages by use news-map and embed-map, the historical-map entry pages history/ and the «on this day» pages on-this-day/ — SITE_PAGES below)
   ref:          { dim: referrer,                                              max: 1,   maxDims: 200 },   // the host name of the page the reader came from (direct = none)
   utm_source:   { dim: token,                                                 max: 1,   maxDims: 100 },   // the utm_source tag of the address
   utm_medium:   { dim: token,                                                 max: 1,   maxDims: 100 },   // the utm_medium tag of the address
@@ -203,7 +203,10 @@ export function campaignOf(search) {
    the disk), so the page kinds are declared here as the closed `entry` values they become, and
    tests/growth-loop-checks.test.mjs holds them equal to landing.mjs's PAGES and shareDir. */
 export const SITE_PAGES = Object.freeze({ showcase: /(?:^|\/)s\/[^/]+\.html$/, about: /(?:^|\/)about\.html$/, teachers: /(?:^|\/)teachers\.html$/,
-  'news-map': /(?:^|\/)news-map\.html$/, 'embed-map': /(?:^|\/)embed-map\.html$/ });
+  'news-map': /(?:^|\/)news-map\.html$/, 'embed-map': /(?:^|\/)embed-map\.html$/,
+  /* (marketing-next) the pages the build generates into dist/ — the historical maps by region and year (scripts/history-pages.mjs)
+     and «on this day» (scripts/on-this-day-pages.mjs), each a directory with an index, in English and under ja/ */
+  history: /(?:^|\/)history\/(?:[^/]+\/){0,2}(?:index\.html)?$/, 'on-this-day': /(?:^|\/)on-this-day\/(?:\d{2}-\d{2}\/)?(?:index\.html)?$/ });
 
 /** the kind of IntMap page the visitor came from ('showcase' or a PAGES name of landing.mjs), or null — only for a
     referrer on IntMap's own host (`selfHost`); any other referrer is `referrerOf`'s. */
