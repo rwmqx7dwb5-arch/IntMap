@@ -38,9 +38,13 @@ date: 2026-10-03
 - `tests/first-impression-checks.test.mjs`（段 0）: 左の起動状態の式を**評価**（null/false→閉、true→開）／`_openQueue` を参照する関数は `kick` だけ（AST。前のコードでは `layerPreviews` が 2 回参照していて落ちることを確かめた）／`warm` を呼ぶ関数に `rebuildGeoIndex` が無く `analyzeContext` が有る／レールの印を実際の `IntMapHistScale` で評価（床が先頭・レール順・「現在」より手前）。
 - `tests/first-impression.spec.js`（段 2）: 上の表の前後と、Layers を開けば縮小画像・検索欄で地名辞典・レールの印で年が変わり「現在」で戻る。
 
-## 4. 起動の天井を 1 行上げた
+## 4. 起動の天井を上げた行と、共有窓口の基準
 
 `eager.cssRaw` 365.8 kB → 368.3 kB（`node scripts/perf-budget.mjs --update`、他の行は無変更）。年のレールの規則そのもの（`currentColor` と `--t`/`--pk` で状態ごとの規則を畳んだ後で約 1.4 kB）で、main の木が既に天井より約 1.1 kB 上（幅の中）にいたため幅を越えた。買ったものは「最初の画面に年の軸がある」こと。同じ変更で起動の同一オリジン転送は 9.5 MB 減っている。
+
+`eager.gzip` 1523.9 kB → 1532.2 kB。⚠ **この行を越えたのはこの PR ではなく main の木**: main `9dcfdcad` の CI（run 37091191359、Gates 2/3）が同じ行で既に赤く、そこでの実測は 1531.8 kB（幅 7.6 kB を 0.3 kB 超過）。この PR の分は +0.4 kB（実測 1532.2 kB、ローカルの build と CI が一致）で、`_reach` と年のレールの JS。天井は main と合流した木で `--update` する（越えた行だけが上がる）。
+
+`check:surface`: `window.IntMapGazetteer` の読みが 16 → 18。新しい 2 か所は地名辞典を**必要になったところで取りに行く**読み手（`js/app-body.js` の検索欄の `_reach`・`js/news-context.js` の `analyzeContext`）。`js/gazetteer.js` は `window` に自分を置く古典スクリプトで export を持たないので、所有者から import する道はまだ無い（`node scripts/module-graph.mjs --plan`）。同じ変更で `IntMapDevice` 82 → 80・`IntMapMemBudget` 34 → 33（縮小画像の自動開放を外して `_bootMobile` が消えた）。基準は `node scripts/global-surface.mjs --update` で書き直した。
 
 ## 5. 統合で直したこと
 
