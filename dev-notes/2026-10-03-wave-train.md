@@ -57,3 +57,17 @@ news-intelligence・first-impression・marketing-engine・event-bus）。超え�
 
 - pgTAP（00・18・21〜23）はこのマシンに Docker が無くローカルでは走らせていない。CI の DB job が走らせる。
 - 本番適用: migration 3 本（改番後の名前）を `supabase db push`。
+
+## 統合後の性能予算（origin/main を取り込んだ後の build）
+
+超えた行だけ `--update` で上げた（各行の増えた理由は、その行を増やした branch の dev-notes にある）:
+- eager.raw: 4652.9 kB → 4703.7 kB
+- eager.gzip: 1531.9 kB → 1550.7 kB
+- eager.brotli: 1155.8 kB → 1170.1 kB
+- eager.cssRaw: 372.4 kB → 377.6 kB
+- eager.cssGzip: 60.1 kB → 62.2 kB
+- async.raw: 11606.5 kB → 11866.2 kB
+- async.gzip: 3816.8 kB → 3917.3 kB
+- async chunk "atlas-console": 1169.3 kB → 1258.1 kB
+- dist.total: 834629.4 kB → 839060.6 kB
+- dist.assets: 18794.1 kB → 19119.4 kB
