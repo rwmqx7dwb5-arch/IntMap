@@ -776,6 +776,11 @@ atlas-file-view.js                Atlas — 添付ファイルの**中身**を�
                                   表は中身の列の揃い方で判定して表として、長い本文と大きな表は残りの量を述べる
                                   ボタンで畳む）。全画面の枠そのものは `atlas-attach.js` が 1 本だけ持つ
 atlas-msg-tools.js                Atlas — メッセージごとの操作バー（コピー／再試行／編集）とその場編集
+atlas-notebook.js                 Atlas — **調査ノート**（atlas-os）のページ側。終わったターンを綴じる・パネルの帯とシート・
+                                  再現（runDirect＋restorer で読み返し）・今と比べる・もう一度訊く・書き出し／読み込み・アカウント同期
+atlas-notebook-store.js           Atlas — 調査ノートのデータ（記録の形・行ごとの差分・検索・Markdown／ファイル・IndexedDB・同期の突き合わせ）。DOM なし
+atlas-selfcheck.js                Atlas — 自己診断（system.diagnose）が Atlas 自身について読む 3 つ: 起動した能力の登録と能力モジュールの
+                                  突き合わせ・ai-proxy の疎通（公開鍵だけの POST に 401 auth＝在る、throw＝観測不能）・宣言されたボタンの有無
 atlas-gloss.js                    Atlas — 回答文の語句を選択→右クリック（タッチは長押し→「解説」）で開く
                                   用語カード。意味・**この文での意味**・背景を AI が生成する。文脈は描画済みの
                                   DOM（その吹き出しと直前の質問）から採るのでカーネルの状態に依存しない。
@@ -788,7 +793,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  155 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  158 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -806,6 +811,7 @@ atlas-cap-layers.js               Atlas の能力 — レイヤーの切り替�
 atlas-cap-map.js                  Atlas の能力 — 地図への描画・強調・計測・消去（map.*）
 atlas-cap-navigation.js           Atlas の能力 — ナビゲーション（navigation.*）
 atlas-cap-news.js                 Atlas の能力 — ニュースの分類（news.category）
+atlas-cap-notebook.js             Atlas の能力 — 調査ノート（notebook.list / open / compare。前に調べたことを探す・地図を戻す・今と比べる）
 atlas-cap-panel.js                Atlas の能力 — パネルを開く・閉じる（panel.*）
 atlas-cap-photo.js                Atlas の能力 — 写真の撮影地点探索（photo.locate）
 atlas-cap-reader.js               Atlas の能力 — 回答文の語句の解説（reader.gloss）
@@ -912,7 +918,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 155能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 158能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1443,9 +1449,9 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全22本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（37本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（38本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
-  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない。19本）
+  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ Atlas の調査ノート（本人だけ）。20本）
   functions/<name>/index.ts       Edge Functions（22本。一覧と各本の役割は Architecture.md §6.2。
                                   usage-count/shape.js は関数の中の宣言で、ブラウザも import する）
   functions/_shared/              関数ではないライブラリ（ai-provider.js / atlas-persona.js / aviation-codec.js /

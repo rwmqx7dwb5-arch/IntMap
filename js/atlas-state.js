@@ -1134,7 +1134,18 @@ export function makeAtlasState(HOST) {
       var t = API.turn(turnId); if (!t) return null;
       Object.assign(t, o || {});
       if (!o || !o.status) t.status = 'done';
+      /* (atlas-os) the turn is told to whoever keeps it — js/atlas-notebook.js files it in the reader's
+         investigation notebook. A listener cannot take the turn down: each call is wrapped, and the ledger
+         record is handed over as it stands (the listener copies what it keeps). */
+      turnEndListeners.slice().forEach(function (fn) { try { fn(t); } catch (_) { } });
       return t;
+    };
+    var turnEndListeners = [];
+    /* onTurnEnd(fn) — fn(record) after every endTurn; returns the function that unsubscribes it */
+    API.onTurnEnd = function (fn) {
+      if (typeof fn !== 'function') return function () { };
+      turnEndListeners.push(fn);
+      return function () { var i = turnEndListeners.indexOf(fn); if (i >= 0) turnEndListeners.splice(i, 1); };
     };
 
     /* ══ (atlas-observer-undo) UNDO — ONE MECHANISM FOR EVERY TURN, NOT ONE PER CAPABILITY ══════════
@@ -1175,6 +1186,33 @@ export function makeAtlasState(HOST) {
       if (r && typeof r.same === 'function') { try { return !!r.same(a, b); } catch (_) { return false; } }
       return stable(a) === stable(b);
     }
+    /* ══ (atlas-os) THE SAME RESTORERS, ASKED BY SOMEONE OTHER THAN UNDO ═════════════════════════════
+       The investigation notebook (js/atlas-notebook.js) keeps the view an answer ended in and puts it back
+       later — possibly in another session. That is undo's mechanism pointed at a stored snapshot instead of
+       a turn's opening one, so it is these three functions and not a second set of capture/restore code:
+       `captureSections(names)` reads the named sections (all when omitted), `restoreSections(want)` puts
+       back every section of `want` that differs from now, in undo's order, and `sameSection` is the same
+       comparison undo uses — so «did it come back» is asked exactly as the undo verdict asks it. */
+    API.captureSections = function (names) {
+      var all = captureAll();
+      if (!names) return all;
+      var out = {};
+      [].concat(names).forEach(function (n) { if (n in all) out[n] = all[n]; });
+      return out;
+    };
+    API.restoreSections = async function (want) {
+      var now = captureAll(), restored = [], threw = [], absent = [];
+      var order = restoreOrder();
+      Object.keys(want || {}).forEach(function (n) { if (order.indexOf(n) < 0) absent.push(n); });
+      for (var i = 0; i < order.length; i++) {
+        var n = order[i];
+        if (!want || !(n in want) || !(n in now) || sameSection(n, want[n], now[n])) continue;
+        try { var r = restorers[n].restore(want[n], now[n]); if (r && typeof r.then === 'function') await r; restored.push(n); }
+        catch (_) { threw.push(n); }
+      }
+      return { restored: restored, threw: threw, absent: absent };
+    };
+    API.sameSection = function (n, a, b) { return sameSection(n, a, b); };
     /* the sections of `from` whose current value differs — only sections captured on both sides */
     function differing(from, to) {
       if (!from || !to) return [];

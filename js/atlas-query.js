@@ -1500,9 +1500,36 @@ export function atlasQuery(HOST) {
   }
 
   /* the dispatch face: run the spec, draw the rows, answer with the table and the method */
+  /* ══ (atlas-os) WHAT EACH ANSWERED QUERY RESOLVED, ANNOUNCED TO WHOEVER FILES THE TURN ═══════════
+     The investigation notebook (js/atlas-notebook.js) stores the ROWS a query answered with, so that the
+     same question asked again later can be compared row by row — added, gone, changed — by code, not by a
+     model re-reading two tables. The table HTML is not that record: it is formatted for one reader at one
+     moment. This is the result as data — the spec that produced it, every row's identity and the values of
+     the columns it printed, the counts — stamped with when it was answered, and put on the kernel bus
+     (the same bus every operation's lifecycle goes to). Nothing is kept here: a listener that wants it
+     keeps it, and with no listener it is gone, so this module holds no second copy of any answer. */
+  function compactResult(res) {
+    const cols = (res.columns || []).filter((c) => c.id !== 'name');
+    const num = (v) => (typeof v === 'number' && isFinite(v)) ? v : (v == null ? null : String(v));
+    const rnd = (x) => (x != null && isFinite(x)) ? Math.round(x * 1e5) / 1e5 : null;
+    return {
+      at: Date.now(), key: res.resultKey, spec: JSON.parse(JSON.stringify(res.spec || {}, (k, v) => String(k).slice(0, 2) === '__' ? undefined : v)),
+      table: res.table, tableLabel: tableName(TABLES[res.table]), matched: res.matched, offered: res.offered,
+      columns: cols.map((c) => ({ id: c.id, label: colName(c), unit: c.unit || '' })),
+      rows: res.rows.map((r) => {
+        const v = {}; cols.forEach((c) => { v[c.id] = num(r.v[c.id]); });
+        return { id: String(r.id != null ? r.id : (r.name + '@' + r.lat + ',' + r.lng)), name: r.name || '', iso2: r.iso2 || '', lat: rnd(r.lat), lng: rnd(r.lng), v };
+      }),
+      unapplied: (res.unapplied || []).slice(),
+      sources: (res.sources || []).map((s) => ({ what: (typeof s.what === 'string') ? s.what : L.arr(s.what), src: s.src || '' })),
+    };
+  }
+  function announce(res) { try { window.IntMapOS.emit({ kernel: 'query', phase: 'answered', result: compactResult(res) }); } catch (_) { } }
+
   async function answer(a, ui) {
     const U = ui || {};
     const res = await run(a);
+    if (res.ok) announce(res);
     if (!res.ok) {
       /* ⚠ (#R740) THE REFUSAL HAS TO BE ACTIONABLE. Whoever wrote the query — the planner, usually
          — can only get it right on the second attempt if this says WHICH name failed and WHAT this
@@ -1574,6 +1601,8 @@ export function atlasQuery(HOST) {
   }
 
   const API = { run, answer, catalogue, colName, tableName, distKm, human,
+    /* (atlas-os) the record `announce` puts on the bus, built for a run the caller made itself (js/atlas-cap-notebook.js compare) */
+    compact: (res) => (res && res.ok) ? compactResult(res) : null,
     bind: (deps) => { D = deps || {}; _iso2to3 = null; _nameTo3 = null; return API; },
     tables: () => { syncUserTables(); return Object.keys(TABLES); }, columnFor, syncUserTables };
   window.IntMapQuery = API;
