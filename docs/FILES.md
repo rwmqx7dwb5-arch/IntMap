@@ -1007,7 +1007,7 @@ ash-model.js                      火山灰の拡散モデル本体（Mastin の
                                   Ganser の落下速度・変形拡散・気圧面の風の入れ子ネスト・降灰と
                                   飛行高度帯ごとの濃度）。DOM も window も持たない（export const ASH）
 ash-plume.js                      「いま噴火したら」火山灰のパネル・地図・露出（地名辞典の町・空港）
-                                  window.IntMapAshPlume（遅延・火山カードと Atlas から開く）
+                                  window.IntMapAshPlume（遅延・火山カード・ツール欄・Atlas から開く）
 sim-datasets.js                   シミュレーションの出力を分析用データセットとして登録する 1 つの扉
                                   （出自は sim 名・版・引数・乱数の種）。import して使う
 shakemap.js                       USGS ShakeMap——1つの地震の地震動そのもの（等値線・震度の面・

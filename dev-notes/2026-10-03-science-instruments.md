@@ -80,7 +80,10 @@ sim.* と science.html の照合の門）が追加された。
 - 津波・見通し・地形と水の出力のデータセット化（扉は同じ `registerSimOutput` でよい）。
 - 「プルームに入る市区町村の人口」: 沈着が登録されたので `data.query` の `from` に書けるが、
   **市区町村の人口を持つ同梱の記録が無い**ので、いま答えられるのは地名辞典の町（都市人口）まで。
-- ツール欄（`js/map-ui.js`）への行は足していない（今回の編集禁止範囲）。入口は火山カードと Atlas。
+- ツール欄（`js/map-ui.js` の `SIM_TOOLS`）に `sim.ashPlume` の行を足した。一覧から開くときは火山が
+  カーソルの下に無いので、点を答えとする他の 4 行と同じく**地点を訊き**（`_askPoint`）、タップした地点を
+  火口として開く（Atlas の `lng`+`lat` と同じ扉）。⚠ そのとき火口の標高は 0 m として扱われる
+  （GVP の火山へ寄せる扉はパネルに無い）——火山名で開く火山カードと Atlas は標高と岩石を持つ。
 
 ## 7. 検査
 
@@ -95,5 +98,18 @@ sim.* と science.html の照合の門）が追加された。
 `IntMapWx`（Open-Meteo の唯一の guarded client）・`IntMapGazetteer`（地名辞典・classic script）・
 `IntMapSafe`・`IntMapLangSwitch`・`IntMapVolcano`（気象庁名の結合表。遅延モジュール）。
 `js/sim-datasets.js` は `IntMapData`（遅延の gisCore が公開）と `IntMapLazy`。
-`IntMapAshPlume` は火山カードと Atlas の能力が遅延読み込みの後に読む。Overpass は import に切り替えた。
+`IntMapAshPlume` は火山カード・Atlas の能力・ツール欄の行（`js/map-ui.js`、1 回）が遅延読み込みの後に読む
+（パネルは遅延チャンクなので import にすると起動経路に載る）。Overpass は import に切り替えた。
 `IntMapDrone` の読みは 2 つ減った（特例の撤去）。
+
+### check:perf の天井を上げた理由（`--update`、超えた 5 行だけ）
+
+同じ機械で base（`29f08177` を素のまま build）を測ると、すでに eager brotli 1154.2 kB・cssRaw 367.0 kB・
+async gzip 3785.6 kB（天井は CI の機械の値）。この作業の分は次のとおり。
+
+- `eager.brotli` 1149.9 → 1155.8 kB（base から +1.6 kB）・`eager.modules` 306 → 307: 起動経路にある
+  `js/sims.js` が沈着をデータセットにするため `js/sim-datasets.js` を import する（扉は 1 つ）。
+- `eager.cssRaw` 365.8 → 369.9 kB（base から +2.9 kB）: 火山灰パネルの CSS（`css/intmap.css`）。
+- `async.gzip` 3774.0 → 3805.4 kB（base から +19.8 kB）: 火山灰の遅延チャンク（`js/ash-plume.js`・`js/ash-model.js`）。
+- `atlas-console` 1134.1 → 1142.0 kB: Atlas の `ashPlume`・放射拡散の `runs`/`seed`・パンデミックの `runs`
+  （`js/atlas-cap-sim.js`・`js/atlas-caps.js`・`js/pandemic-atlas.js`）。

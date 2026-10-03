@@ -1590,6 +1590,20 @@ export function layerSidebar(HOST){
         run:()=>{ try{ return !!(window.IntMapRadiation&&window.IntMapRadiation.openPanel()); }catch(_){ return false; } },
         label:()=>T('Radioactive plume simulator','放射性プルーム拡散シミュレーター','Simulator radioaktiver Fahnen','Симулятор радиоактивного шлейфа','Simulador de pluma radiactiva'),
         hint:()=>T('Disperse a release on the live wind field','実際の風の場で放出を拡散させる','Freisetzung im realen Windfeld ausbreiten','Выброс в реальном поле ветра','Dispersa una emisión con el viento real') },
+      /* ══ (science-instruments) IF IT ERUPTED NOW — the volcanic-ash what-if (js/ash-plume.js) ══════
+         The volcano card's 「いま噴火したら、灰はどこへ？」 and Atlas's `sim.ashPlume` open it on a named GVP
+         volcano. From this list there is no volcano under the cursor, and the panel opened on nothing
+         shows 「火山が選ばれていません」 above a disabled Run — so, like the four rows that answer for one
+         coordinate (#R298/#R299), it ASKS: the tapped point becomes the vent, exactly the `lng`+`lat`
+         door Atlas's schema already offers. ⚠ A stated point carries no vent height, so the panel takes
+         the vent at 0 m (js/ash-plume.js `open`); a named volcano brings its GVP elevation and rock.
+         ⚠ The kernel id is the Atlas capability's own (`sim.ashPlume`), so the palette, this row and
+         Atlas press one door. `ic` is read when the list is built — js/icons.js needs IntMapSafe. */
+      { id:'sim.ashPlume', mod:'IntMapAshPlume', get ic(){ return String(icon('volcano',{size:16})); }, en:'Volcanic ash — if it erupted now',
+        keys:'volcano volcanic ash eruption tephra plume ashfall vaac 火山 火山灰 噴火 降灰 噴煙',
+        run:()=>_askPoint(_lazy('ashPlume',(ll)=>{ const A=window.IntMapAshPlume; return A&&A.open({ lng:ll.lng, lat:ll.lat }); }),'sim.ashPlume'),
+        label:()=>T('Volcanic ash — if it erupted now','火山灰 — いま噴火したら'),
+        hint:()=>T('Where the ash of an eruption here would go on the live upper-air wind','ここで噴火したら、実際の上空の風で灰がどこへ行くか') },
       /* ⚠ (#R296) ONE ROW FOR BOTH — 「電波・通信圏と見通し線解析を統合して」. The panel switches between
          「見通し線」 (geometry / radar shadow) and 「電波・通信圏」 (the same viewshed with refraction, a
          frequency and a link-budget range); the `sim.rf` row that stood below is gone with it. */

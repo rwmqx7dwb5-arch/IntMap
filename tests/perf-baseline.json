@@ -4,8 +4,8 @@
     "gzip": 1568634,
     "brotli": 1183561,
     "requests": 9,
-    "modules": 307,
-    "cssRaw": 374532,
+    "modules": 308,
+    "cssRaw": 378756,
     "cssGzip": 61518
   },
   "async": {
