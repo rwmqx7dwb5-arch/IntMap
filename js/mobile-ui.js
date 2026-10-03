@@ -11,7 +11,7 @@
 
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
-import { detentHeights, settleDetent, spring, detentFor, MAP_ANSWER_EVENT, makeScreens, makeLegendTray } from './mobile-sheet.js';
+import { detentHeights, settleDetent, spring, detentFor, MAP_ANSWER_EVENT, makeScreens, makeLegendTray, makeFloatFit } from './mobile-sheet.js';
 import { BootStage } from './boot-stage.js';
 import * as bus from './bus.js';
 
@@ -53,13 +53,16 @@ export function mobileUI(HOST){
        written on the column too, so everything above the sheet follows the same number; #map-container keeps its
        inline copy because js/mobile-map-input.js reads it from there as a CSSOM string. */
     const coverHosts=[mapContainer, mapContainer&&mapContainer.parentElement].filter(Boolean);
-    const setCover=(px)=>{ for(const h of coverHosts) h.style.setProperty('--sheet-cover', px+'px'); };
+    /* (mobile-panels-reach) every panel the map holds is re-fitted to the sheet's NEW top — `floatsAsk` is assigned where
+       the fitter is built, below; the cover is written first and the fit follows in the same frame */
+    let floatsAsk=()=>{};
+    const setCover=(px)=>{ for(const h of coverHosts) h.style.setProperty('--sheet-cover', px+'px'); floatsAsk(); };
     /* (mobile-card-reach) the data credit sits just above the sheet, and its height is not fixed (the attribution grows
        to two lines as layers are switched on). A card the map holds ends above it, so the height is MEASURED, here, and
        written beside --sheet-cover; css/intmap.css `#map-container > .country-popup` reads it. */
     try{ const credit=document.getElementById('map-credit');
       if(credit && window.ResizeObserver) new ResizeObserver(()=>{ const h=credit.checkVisibility&&!credit.checkVisibility()?0:Math.round(credit.getBoundingClientRect().height);
-        for(const host of coverHosts) host.style.setProperty('--m-credit-h',(h>0?h:23)+'px'); }).observe(credit); }catch(_){}
+        for(const host of coverHosts) host.style.setProperty('--m-credit-h',(h>0?h:23)+'px'); floatsAsk(); }).observe(credit); }catch(_){}
 
     /* ══ (mobile-shell) LAYERS / TOOLS / MAP / CHRONOS / SETTINGS ARE SCREENS OF THE ONE SHEET ═══════════════
        They were separate overlays — #mo-sheet and #tools-sheet slid up over a full-viewport scrim, the base-map
@@ -426,6 +429,18 @@ export function mobileUI(HOST){
       const watch=(n)=>{ if(n.nodeType===1 && n.classList.contains('country-popup') && !watched.has(n)){ watched.add(n); cardIo.observe(n,{ attributes:true, attributeFilter:['style'] }); } };
       mapContainer.querySelectorAll(':scope > .country-popup').forEach(watch);
       new MutationObserver((recs)=>{ for(const r of recs) r.addedNodes.forEach(watch); }).observe(mapContainer,{ childList:true }); } }catch(_){}
+    /* ══ (mobile-panels-reach) EVERYTHING THAT FLOATS OVER THE MAP IS HELD ABOVE THE SHEET AND THE CREDIT ═════════
+       ③ above held one family by its class name. The population is found by what it is (js/mobile-sheet.js makeFloatFit:
+       positioned, drawn, holds a control, not the sheet / the credit / a modal), so the ash panel, the tour builder, the
+       simulators and the next panel are held the same way — and what does not fit scrolls inside itself. */
+    try{ const colEl=mapContainer&&mapContainer.parentElement;
+      const num=(name,dflt)=>{ const v=parseFloat(mapContainer&&mapContainer.style.getPropertyValue(name)); return isFinite(v)?v:dflt; };
+      const floats=makeFloatFit({ hosts:[document.body,mapContainer,colEl], sheet:sidebar, credit:document.getElementById('map-credit'),
+        active:()=>mq.matches, cover:()=>num('--sheet-cover',0), creditH:()=>num('--m-credit-h',23), frame,
+        floor:()=>{ try{ return parseFloat(getComputedStyle(sidebar).getPropertyValue('--m-legend-top'))||0; }catch(_){ return 0; } } });
+      floatsAsk=floats.ask;
+      const rescan=()=>floats.scan();
+      window.addEventListener('resize',rescan); try{ mq.addEventListener('change',rescan); }catch(_){} }catch(_){}
     { const fingers=new Set();
       window.addEventListener('pointerdown',(e)=>{ if(!sidebar.contains(e.target)) fingers.add(e.pointerId); },true);
       ['pointerup','pointercancel'].forEach((t)=>window.addEventListener(t,(e)=>{ fingers.delete(e.pointerId); },true));

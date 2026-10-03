@@ -1334,9 +1334,12 @@ export function makeAtlasExamples(HOST, CTX) {
       row.appendChild(no); row.appendChild(go); card.appendChild(row);
       ew.appendChild(card);
       /* a phone's sheet at `half` shows ~170 px of this panel and the card is ~460 — say it is to be read, then bring it in
-         (the sheet writes its new window synchronously, so the scroll below measures the room it was given) */
+         (the sheet writes its new window synchronously, so the scroll below measures the room it was given).
+         ⚠ (mobile-panels-reach) the examples area is a scroll box now (css: `#atlas-panel .atl-ex`), and even at `full` its window
+         (~360 px) is shorter than the card — so it is the card's ACTION ROW that is brought in: the plan and the login button are
+         what the card is for, and the rest is a swipe up. */
       try{ bus.emit(MAP_ANSWER_EVENT,{ kind:'read' }); }catch(_){}
-      try{ card.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(_){}
+      try{ row.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(_){}
     }catch(_){} }
     /* ⚠ (#R309) DEBOUNCED, and on the camera's own settle — not on every frame. 600 ms is the same
        quiet the widget scheduler waits for after a pan (js/widget-scheduler.js), so the two agree on
