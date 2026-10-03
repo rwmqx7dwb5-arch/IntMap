@@ -2,7 +2,9 @@
 
 # IntMap
 
-### Explore the world across place, data, and time.
+<!-- brand:tagline (node scripts/brand.mjs --write) -->
+### Every year of the world, on one map.
+<!-- /brand:tagline -->
 
 A browser-based geospatial platform that brings geography, climate, infrastructure, history, statistics, current events, and interactive tools together on one map.
 

@@ -2,7 +2,7 @@
   "id": "./",
   "name": "IntMap",
   "short_name": "IntMap",
-  "description": "IntMap is an interactive world map for exploring geography, climate, history, population, global events, and more, with natural-language controls powered by Atlas.",
+  "description": "A free world map you can set to any date from 123,000 BC to today — historical borders, climate, population and live data on one map, every source named. No sign-up.",
   "lang": "en",
   "dir": "ltr",
   "start_url": "./",

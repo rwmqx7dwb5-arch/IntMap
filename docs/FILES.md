@@ -52,6 +52,10 @@ about.html / teachers.html     紹介ページと授業での使い方（英語�
                                 文は scripts/landing-text.mjs、見本は js/showcase.js）。Architecture.md §8.6
 img/showcase/<id>.jpg           見本の地図の画面写真（と共有カード用の <id>-card.jpg・1200×630）。scripts/showcase-capture.mjs がビルドしたアプリから撮る
 s/<id>.html / ja/s/<id>.html    見本ごとの共有ページ（og カード＋その見本の地図への転送）。scripts/landing.mjs が生成する
+og-image.jpg                    リンクのカードの絵（本物の JPEG。大きさは scripts/brand.mjs が読んで index.html の head へ書く）
+（dist だけ）history/ ja/history/ sitemap-history.xml sitemap-index.xml
+                                歴史地図の入口ページ（地域 × 日付）とその sitemap。リポジトリには無く、ビルドが
+                                scripts/history-pages.mjs で書く（§8.6.2）
 google….html                    Google Search Console 認証用
 package.json / package-lock     npm スクリプトと依存。dependencies がアプリに入る依存の唯一のリスト
 data-assets.json                **git の外にあるデータ集合の目録**（正本）。集合ごとにパス・中身の sha256・
@@ -112,6 +116,7 @@ css/
                                     z-index はすべてそれを読む（台帳は scripts/z-layers.mjs）
   pages.css                         読み物2ページ（science.html / sources.html）のスタイル
   landing.css                       紹介・授業ページ（about / teachers と ja/）のスタイル。pages.css の配色の上に載る
+  history-pages.css                 歴史地図の入口ページ（ビルドが書く history/・ja/history/）のスタイル。landing.css の上に載る
   fonts.css                         同梱フォントの @font-face
 src/
   main.js                           ページの入口（まだ import の辺を持たない副作用モジュールを並べる。理由は --entry が言う）
@@ -1501,6 +1506,13 @@ scripts/
   landing.mjs                     紹介・授業ページ（en と ja/）・sitemap.xml・robots.txt の**生成器と門**。文は
                                   landing-text.mjs、見本は js/showcase.js、数字はその持ち主のファイルから読む（§8.6）
   landing-text.mjs                紹介・授業ページの文の唯一の写し（en + jp）
+  brand.mjs                       **ブランドの書き出しと門**——index.html の head・docTitle/docDesc・manifest・README の
+                                  タグライン・docs/marketing/ の 2 本を brand-text.mjs から書く。`--print <id>` で投稿の完成形（§8.6.2）
+  brand-text.mjs                  タグライン・説明・ポジショニングの唯一の写し（en + jp）
+  launch-text.mjs                 チャネル別のローンチ投稿の下書き（投稿はしない）
+  history-pages.mjs               歴史地図の入口ページの生成器——js/time-borders.js を Node で動かし、地図が描く名前を
+                                  地域 × 日付で書く。vite.config.js の historyPagesPlugin がビルド時に子プロセスで走らせる（§8.6.2）
+  history-pages-text.mjs          入口ページの文の唯一の写し（en + jp）
   showcase-capture.mjs            見本の地図のリンクと画面写真を、ビルドしたアプリ自身に作らせる（サーバと実ネットワークが要る）。
                                   授業ツアーの段（js/tours.js）のリンクも同じ関数で作る（`--shots <dir>` で確認用の写真）
   static-checks.mjs               構文・JSON・YAML・マージ衝突・秘密検出・HTML 参照の存在

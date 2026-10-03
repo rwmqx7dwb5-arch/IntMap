@@ -40,6 +40,8 @@ import { siteUrlPlugin } from './scripts/site-url.mjs';
 /* (csp-without-inline) the pages' script-src admits each inline <script> by its hash, taken over the text the build
    ships — LAST in the plugin list, after the stamp and the site URL have changed that text */
 import { cspHashesPlugin } from './scripts/csp.mjs';
+/* (marketing-engine) the historical-map entry pages and their sitemaps — written into dist/ after the static copy */
+import { historyPagesPlugin } from './scripts/history-pages.mjs';
 
 const ROOT = resolve(import.meta.dirname);
 
@@ -121,6 +123,7 @@ export const STATIC_ASSETS = [
   'ja',
   's',                                  // (landing-showcase) one share page per example — og card + redirect to the map
   'css/landing.css',
+  'css/history-pages.css',               // (marketing-engine) the historical-map entry pages scripts/history-pages.mjs writes into dist/
   'img',
   'sitemap.xml',
   'robots.txt',
@@ -709,5 +712,5 @@ export default defineConfig({
      than read off filenames. scripts/perf-budget.mjs is the gate that reads it; it runs on
      every build because the report is what stops "the biggest chunk is big" from being
      mistaken for "startup is slow". */
-  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin()],
+  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), historyPagesPlugin(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin()],
 });

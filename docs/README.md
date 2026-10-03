@@ -103,6 +103,14 @@
 |---|---|---|---|
 | [`../.github/pull_request_template.md`](../.github/pull_request_template.md) | PR を出す人／AI | **GitHub が PR 本文に差し込むテンプレート** — 何を書くか（何を・なぜ）と、merge 前に確かめる項目のチェックリスト | 完了工程・ゲート・確認項目が変わったとき |
 
+## マーケティング
+
+| 文書 | 対象読者 | 役割 | いつ更新するか |
+|---|---|---|---|
+| [`marketing/README.md`](marketing/README.md) | 外へ発信する人／AI | **読者を連れてくる仕組みの索引と、ローンチの段取り** — 何がどこにあるか、**所有者の承認が要ること**、測り方、書き方の約束 | 段取り・承認事項・仕組みが変わったとき |
+| [`marketing/press-kit.md`](marketing/press-kit.md) | 記事を書く人 | **生成物**（`node scripts/brand.mjs --write`）——説明文（短・中・長、en/ja）・ポジショニング・数とその持ち主・画像・ロゴ。正本は `scripts/brand-text.mjs` | 手で直さない（正本を直して書き出す） |
+| [`marketing/launch-posts.md`](marketing/launch-posts.md) | 投稿する人 | **生成物**——チャネル別の投稿の下書き。正本は `scripts/launch-text.mjs`。貼れる完成形は `node scripts/brand.mjs --print <id>` | 手で直さない（正本を直して書き出す） |
+
 ## 履歴（現状ではない）
 
 | 文書 | 役割 |

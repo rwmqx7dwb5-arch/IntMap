@@ -2487,6 +2487,10 @@ export function timeBorders(HOST){
                 it reads, and the era names as the label source receives them — scripts/hist-fidelity.mjs asks the
                 page which side of every record boundary a coloniser is named on, and what the name layer is handed */
              csName:(nm,gw,y,m,d,row)=>_csName(nm,gw,y,m,d,row), csEra:()=>_CS_ERA, labelFC:(fc,keyOf,asParts)=>_labelFC(fc,keyOf,asParts),
+             /* (marketing-engine) the name each outline is labelled with for the year drawn — the same pass `apply`
+                runs before the name layers are fed — so scripts/history-pages.mjs states what the map writes,
+                not a second reading of the record. Reads only; draws nothing. */
+             tagSame:(fc,year)=>tagSame(fc,year),
              changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:_stepMin(),max:CS_MAX}) };   /* (#R518) the range the stepper can walk — both day-exact records, and (#R695) the era sheets below them */
   })();
 }
