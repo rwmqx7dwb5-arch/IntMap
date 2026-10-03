@@ -3,15 +3,11 @@
   "measured": "2026-10-02",
   "res": 0.25,
   "unsourcedSpans": 0,
-  "selfOverlaps": {
-    "identical": 60,
-    "nested": 34194,
-    "seam": 11196
-  },
   "years": [
     {
       "year": -500,
       "pct": 0.01,
+      "pctArea": 0.02,
       "zero": 79,
       "partial": 1,
       "full": 0
@@ -19,6 +15,7 @@
     {
       "year": -100,
       "pct": 0.58,
+      "pctArea": 0.62,
       "zero": 79,
       "partial": 6,
       "full": 1
@@ -26,6 +23,7 @@
     {
       "year": 1,
       "pct": 2.78,
+      "pctArea": 3.02,
       "zero": 72,
       "partial": 8,
       "full": 0
@@ -33,6 +31,7 @@
     {
       "year": 500,
       "pct": 0.99,
+      "pctArea": 1.2,
       "zero": 86,
       "partial": 7,
       "full": 0
@@ -40,6 +39,7 @@
     {
       "year": 1000,
       "pct": 1.14,
+      "pctArea": 1.17,
       "zero": 116,
       "partial": 11,
       "full": 4
@@ -47,6 +47,7 @@
     {
       "year": 1300,
       "pct": 1.17,
+      "pctArea": 1.09,
       "zero": 93,
       "partial": 19,
       "full": 4
@@ -54,6 +55,7 @@
     {
       "year": 1500,
       "pct": 4.93,
+      "pctArea": 4.72,
       "zero": 108,
       "partial": 30,
       "full": 3
@@ -61,6 +63,7 @@
     {
       "year": 1689,
       "pct": 16.11,
+      "pctArea": 19.06,
       "zero": 113,
       "partial": 22,
       "full": 5
@@ -68,6 +71,7 @@
     {
       "year": 1800,
       "pct": 25.41,
+      "pctArea": 25.29,
       "zero": 109,
       "partial": 26,
       "full": 5
@@ -75,6 +79,7 @@
     {
       "year": 1850,
       "pct": 39.95,
+      "pctArea": 39.9,
       "zero": 140,
       "partial": 31,
       "full": 18
@@ -82,6 +87,7 @@
     {
       "year": 1886,
       "pct": 50.72,
+      "pctArea": 47.87,
       "zero": 71,
       "partial": 28,
       "full": 29
@@ -89,6 +95,7 @@
     {
       "year": 1900,
       "pct": 47.49,
+      "pctArea": 43.83,
       "zero": 82,
       "partial": 29,
       "full": 39
@@ -96,6 +103,7 @@
     {
       "year": 1914,
       "pct": 53.76,
+      "pctArea": 52.29,
       "zero": 70,
       "partial": 36,
       "full": 43
@@ -103,6 +111,7 @@
     {
       "year": 1938,
       "pct": 67.57,
+      "pctArea": 61.93,
       "zero": 89,
       "partial": 34,
       "full": 49
@@ -110,6 +119,7 @@
     {
       "year": 1950,
       "pct": 68.19,
+      "pctArea": 62.64,
       "zero": 88,
       "partial": 29,
       "full": 54
@@ -117,23 +127,31 @@
     {
       "year": 1975,
       "pct": 64.37,
+      "pctArea": 57.52,
       "zero": 97,
       "partial": 15,
       "full": 47
     },
     {
       "year": 2000,
-      "pct": 60.01,
-      "zero": 93,
+      "pct": 62.34,
+      "pctArea": 57.86,
+      "zero": 91,
       "partial": 19,
-      "full": 63
+      "full": 65
     },
     {
       "year": 2019,
-      "pct": 64.61,
-      "zero": 94,
-      "partial": 19,
-      "full": 66
+      "pct": 66.91,
+      "pctArea": 61.06,
+      "zero": 93,
+      "partial": 18,
+      "full": 68
     }
-  ]
+  ],
+  "claims": {
+    "seam": 1986,
+    "duplicate": 151,
+    "contested": 1710
+  }
 }

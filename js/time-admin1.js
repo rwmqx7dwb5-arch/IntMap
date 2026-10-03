@@ -406,6 +406,10 @@ export function timeAdmin1(HOST) {
 
       /* the rows in force at the instant (`start <= t < end`) are asked of the handle; it answers in
          the record's own order, with each row and its rings already on the mirror */
+      function claimKeyOf(f) {
+        if (f[10] != null && isFinite(f[10])) return 'r' + f[10];
+        return (cfg.gaps && f[12] != null && cfg.gaps[f[12]]) ? cfg.gaps[f[12]].file.replace(/^.*\//, '').replace(/\.js$/, '') + ':' + f[11] : null;
+      }
       async function fcAt(d, y, m, dd) {
         const t = _ymd(y, m, dd), feats = [];
         const ix = await _H.at(t, 'exclusive');
@@ -418,7 +422,10 @@ export function timeAdmin1(HOST) {
           feats.push({ type: 'Feature', geometry: geomOf(d, i), properties: { NAME: NAME, name: NAME, ...(dates ? { dates: dates, dateSemantics: d.dateSemantics } : {}), _lvl: f[1], _ix: i, _tier: cfg.key, _gap: (f[10] == null) ? 1 : 0, _gapIx: (f[11] == null) ? -1 : f[11], _gapSet: (f[12] == null) ? -1 : f[12],
             /* (#R707) the collision order of the NAME — see sortKeyOf above. Stamped here, on the
                feature, because the layer must not have to know which bundle it is drawing. */
-            [SORT_PROP]: sortKeyOf(areaOf(d, i)) } });
+            [SORT_PROP]: sortKeyOf(areaOf(d, i)),
+            /* (hist-coverage) the row's identity in data/hist-claims.json: OHM's relation id, or
+               «<gap file>:<its own row>» for a derived row — scripts/hist-fidelity.mjs claimKey */
+            _ck: claimKeyOf(f) } });
         }
         return { type: 'FeatureCollection', features: feats };
       }
@@ -654,6 +661,7 @@ export function timeAdmin1(HOST) {
 
       function apply(fc) {
         const my = seq; shownFC = fc;
+        if (cfg.onApply) { try { cfg.onApply(fc); } catch (_) {} }
         try {
           if (GE().layers.hasSource(cfg.src) && GE().layers.has(cfg.line)) {
             GE().layers.setSourceData(cfg.src, labelsFor(fc)); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); _setGap(fc); _applyNow(); return;
@@ -772,13 +780,131 @@ export function timeAdmin1(HOST) {
       { file: 'data/hist-admin-fill.js', global: '__HISTADMFILL', set: 'histadmfill' },
     ];
     const T1 = makeTier({ key: 'a1', file: 'data/hist-admin1.js', global: '__HISTADM1', set: 'ha', lo: 3, hi: 4,
-                          gaps: GAPS, gapSrc: 'imta-gap-src', gapLine: 'imta-gap-line',
+                          gaps: GAPS, gapSrc: 'imta-gap-src', gapLine: 'imta-gap-line', onApply: () => _know.schedule(),
                           src: 'imta-src', lnSrc: 'imta-ln-src', line: 'imta-line', vtLine: 'imta-vt-line', lbl: 'imta-lbl', deep: false, minZ: 0 });
     const T2 = makeTier({ key: 'a2', file: 'data/hist-admin2.js', global: '__HISTADM2', set: 'ha2', lo: 5, hi: 6,
                           src: 'imta2-src', lnSrc: 'imta2-ln-src', line: 'imta2-line', vtLine: 'imta2-vt-line', lbl: 'imta2-lbl', deep: true, minZ: DEEP_Z });
     const T3 = makeTier({ key: 'a3', file: 'data/hist-admin3.js', global: '__HISTADM3', set: 'ha3', lo: 7, hi: 7,
                           src: 'imta3-src', lnSrc: 'imta3-ln-src', line: 'imta3-line', vtLine: 'imta3-vt-line', lbl: 'imta3-lbl', deep: true, minZ: DEEP3_Z });
     const TIERS = [T1, T2, T3];
+
+    /* ══ ⚠⚠⚠ (hist-coverage) WHAT THE RECORD DOES NOT KNOW, DRAWN WHERE IT DOES NOT KNOW IT ══════════
+       「未知を空白や平穏に見せない。」 Measured 2026-10-03: in 1900, 82 of the 150 polities on the map carry
+       no first-level unit at all and 29 carry some; in 1500 it is 108 and 30 of 141. A polity with no
+       subdivision line looked exactly like a polity that had none — the empty ground read as calm, and
+       the only place the map admitted otherwise was `note()`, a tooltip on the layer row.
+       ⇒ The ground the record is silent about is HATCHED and NAMED, on the map, at the reader's date:
+       a polity with no record carries the hatch over its own outline and «No subdivision record for this
+       date»; a polity recorded in part carries it over the uncovered ground and says how much is
+       recorded. A polity recorded whole carries nothing.
+       ⚠ THE MEASURE IS NOT WRITTEN HERE. js/hist-knowledge.js is the one function that both draws this
+       and is recorded by npm run check:histfidelity, so the percentage on the map is the gate's.
+       ⚠ IT IS LOADED WHEN THE READER TRAVELS, not at boot (a dynamic import), and it runs off the clock's
+       critical path: the boundaries and names go up first, this follows, and a result for a date the
+       reader has already left is dropped.
+       ⚠ ONE SWITCH: the province-border box, like every other line this file draws — a reader who
+       switched subdivisions off has said they do not want to read about subdivisions.
+       ⚠ (hist-coverage) …AND THE SAME GROUND CLAIMED TWICE IS COUNTED HERE, BY KIND. data/hist-claims.json
+       is the first-level pairs scripts/hist-fidelity.mjs measured to share ground, classified by
+       js/hist-scale.js `claimKind` (seam · duplicate · contested); the rows of both are in force exactly
+       when both are drawn, so the count at the reader's date is the pairs whose two rows are on the map. */
+    const _know = (function () {
+      const SRC = 'imta-know-src', LSRC = 'imta-know-lbl-src', FILL = 'imta-know-fill', LBL = 'imta-know-lbl', IMG = 'imta-know-hatch';
+      let mod = null, seq = 0, timer = 0, sig = null, last = null, ledger = null, ledgerP = null, img = false;
+      const load = () => mod || (mod = import('./hist-knowledge.js').catch(() => { mod = null; return null; }));
+      function claims() {
+        if (ledger) return Promise.resolve(ledger);
+        if (ledgerP) return ledgerP;
+        /* through the one clock every read of the page goes through (js/fetch-deadline.js via
+           window.IntMapFetchWithin, js/app-body.js) — a read with no end would leave the counts pending */
+        const FW = window.IntMapFetchWithin, U = 'data/hist-claims.json';
+        if (!FW || !FW.jsonWithin) return Promise.resolve(null);
+        ledgerP = Promise.resolve().then(() => FW.jsonWithin(U, FW.clockFor ? FW.clockFor(U) : undefined)).then(j => {
+          if (!j || !Array.isArray(j.pairs)) { ledgerP = null; return null; }
+          const by = new Map();
+          for (const p of j.pairs) { const [kind, a, b] = p; if (!by.has(a)) by.set(a, []); by.get(a).push([kind, b]); }
+          return (ledger = by);
+        }).catch(() => { ledgerP = null; return null; });
+        return ledgerP;
+      }
+      /* the hatch: thin diagonal strokes in the subdivision line's own colour — the same family as the
+         lines it stands in for, so it reads as «this layer has nothing here», never as a new layer */
+      function hatch() {
+        if (img) return true;
+        try { if (GE().scene.hasImage(IMG)) return (img = true); } catch (_) {}
+        try {
+          const DPR = 2, S = 10 * DPR, c = document.createElement('canvas'); c.width = S; c.height = S;
+          const g = c.getContext('2d'); if (!g) return false;
+          const BS = (window.IntMapBorderStyle || {});
+          g.strokeStyle = BS.admin1 || '#cba6f7'; g.globalAlpha = 0.5; g.lineWidth = 1.1 * DPR;
+          g.beginPath(); g.moveTo(0, S); g.lineTo(S, 0); g.moveTo(-S / 2, S / 2); g.lineTo(S / 2, -S / 2); g.moveTo(S / 2, S * 1.5); g.lineTo(S * 1.5, S / 2); g.stroke();
+          const im = g.getImageData(0, 0, S, S);
+          return (img = !!GE().scene.addImage(IMG, { width: S, height: S, data: new Uint8Array(im.data.buffer.slice(0)) }, { pixelRatio: DPR }));
+        } catch (_) { return false; }
+      }
+      function ensure() {
+        try {
+          if (!_imCanDraw()) return false;
+          if (!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+          if (!GE().layers.hasSource(LSRC)) GE().layers.addSource(LSRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+          /* under every line — the era country line and the subdivision lines read on top of the hatch */
+          const before = ['imtb-line', 'imta-line', 'imta-vt-line', 'imtb-lbl', 'ofm-admin1'].find(id => { try { return !!GE().layers.has(id); } catch (_) { return false; } });
+          if (!GE().layers.has(FILL) && hatch()) GE().layers.add({ id: FILL, type: 'fill', source: SRC, layout: { visibility: 'none' },
+            paint: { 'fill-pattern': IMG, 'fill-opacity': ['interpolate', ['linear'], ['zoom'], 1, 0.75, 8, 0.45] } }, before);
+          const FONT = (function () { try { return window.IntMapMapTypography.readerFont(); } catch (_) { return ['Noto Sans SC']; } })();
+          if (!GE().layers.has(LBL)) GE().layers.add({ id: LBL, type: 'symbol', source: LSRC, minzoom: 2.5,
+            layout: { visibility: 'none', 'text-field': ['get', 'txt'], 'text-font': FONT,
+              'text-size': ['interpolate', ['linear'], ['zoom'], 3, 9.5, 7, 11], 'text-max-width': 9, 'text-padding': 6,
+              'text-optional': true, 'text-offset': [0, 1.6], 'symbol-sort-key': ['get', 'rank'] },
+            paint: { 'text-color': (window.IntMapBorderStyle || {}).admin1 || '#cba6f7', 'text-opacity': 0.85, 'text-halo-color': 'rgba(0,0,0,0.9)', 'text-halo-width': 1.4 } });
+          return true;
+        } catch (_) { return false; }
+      }
+      function text(p) {
+        return p.kind === 'none'
+          ? _LT.arr(LA('No subdivision record for this date', 'この年代の地方区分の記録なし'))
+          : _LT.arr(LA('Subdivisions recorded for ' + p.pct + '% of this land', '地方区分の記録はこの土地の ' + p.pct + '% だけ'));
+      }
+      async function compute() {
+        const my = ++seq;
+        if (!active) return;
+        const fc = T1.fc(), TB = window.IntMapTimeBorders, pfc = (TB && TB.currentFC) ? TB.currentFC() : null;
+        if (!fc || !pfc || !Array.isArray(pfc.features)) return;
+        if (sig && sig[0] === fc && sig[1] === pfc && sig[2] === HOST.lang) return;
+        const M = await load(); if (!M || my !== seq || !active) return;
+        const pol = pfc.features.map(f => ({ nm: (f.properties && (f.properties.NAME || f.properties.name)) || '', polys: M.polysOf(f.geometry) })).filter(p => p.polys.length);
+        const units = fc.features.map(f => ({ polys: M.polysOf(f.geometry) }));
+        const r = M.unknownGround(pol, units);
+        const by = await claims(); if (my !== seq || !active) return;
+        const k = { seam: 0, duplicate: 0, contested: 0 };
+        if (by) {
+          const live = new Map(); for (const f of fc.features) { const ck = f.properties && f.properties._ck; if (ck) live.set(ck, f); }
+          for (const [ck, f] of live) for (const [kind, other] of (by.get(ck) || [])) {
+            const g = live.get(other); if (!g) continue;
+            k[kind] = (k[kind] || 0) + 1;
+            f.properties._claim = kind; g.properties._claim = kind;   /* for the click and for Atlas */
+          }
+        }
+        for (const lf of r.labels.features) { lf.properties.txt = text(lf.properties); lf.properties.rank = -lf.properties.pct; }
+        last = { pct: r.measure.pct, pctArea: r.measure.pctArea, none: r.measure.zero, partial: r.measure.partial, full: r.measure.full, claims: k };
+        sig = [fc, pfc, HOST.lang];
+        if (ensure()) { try { GE().layers.setSourceData(SRC, r.areas); GE().layers.setSourceData(LSRC, r.labels); } catch (_) {} }
+        _applyNow();
+      }
+      return {
+        schedule() { clearTimeout(timer); timer = setTimeout(() => { compute().catch(() => {}); }, 120); },
+        /* the polities may land after the subdivisions (js/time-borders.js answers on its own schedule):
+           asked again whenever the map settles, and a no-op when neither collection moved */
+        settle() { if (active && (!sig || sig[0] !== T1.fc() || sig[1] !== ((window.IntMapTimeBorders && window.IntMapTimeBorders.currentFC) ? window.IntMapTimeBorders.currentFC() : null))) this.schedule(); },
+        relabel() { sig = null; this.schedule(); },
+        clear() { seq++; clearTimeout(timer); sig = null; last = null;
+          try { if (GE().layers.hasSource(SRC)) GE().layers.setSourceData(SRC, { type: 'FeatureCollection', features: [] }); } catch (_) {}
+          try { if (GE().layers.hasSource(LSRC)) GE().layers.setSourceData(LSRC, { type: 'FeatureCollection', features: [] }); } catch (_) {} },
+        reassert() { img = false; sig = null; if (active) this.schedule(); },
+        visible(on) { try { for (const id of [FILL, LBL]) if (GE().layers.has(id)) GE().layers.setLayout(id, 'visibility', on ? 'visible' : 'none'); } catch (_) {} },
+        state: () => last
+      };
+    })();
     let active = false, lastWhen = null;
 
     /* the marks may land after a bundle has already been drawn whole */
@@ -787,7 +913,7 @@ export function timeAdmin1(HOST) {
     /* (#R604) the tiles answer on their own schedule, so the question "did they?" is asked every
        time the map settles rather than once after a guessed delay. `vtProbe` latches, so this costs
        one queryRenderedFeatures per idle until the first tile paints and nothing afterwards. */
-    try { GE().events.on('idle', () => { if (active) for (const t of TIERS) t.vtProbe(); }); } catch (_) {}
+    try { GE().events.on('idle', () => { if (active) { for (const t of TIERS) t.vtProbe(); _know.settle(); } }); } catch (_) {}
 
     /* ══ (#R564) THE PRESENT-DAY DEEPER TIER — the same kind of thing at the same zoom ═══════════
        `ref-admin1` (js/app-body.js) filters the live tiles to admin_level 3-4. Without this the map
@@ -861,6 +987,8 @@ export function timeAdmin1(HOST) {
            label visibly out of step. `window._applyBorders` has had this exact shape for
            `ofm-country` since #R94g. */
         if (GE().layers.has('ofm-admin1')) GE().layers.setLayout('ofm-admin1', 'visibility', (namesOn && !traveling) ? 'visible' : 'none');
+        /* (hist-coverage) the unknown ground follows the same box as the lines it stands in for */
+        _know.visible(on && traveling);
         /* ⚠ AND SAY WHAT IS NOT THERE. A country drawn with no subdivision line is either a country
            that had none or one nobody has mapped yet, and a map cannot tell those apart by staying
            silent — so the row that switched the layer on carries the count, in the reader's language.
@@ -905,7 +1033,7 @@ export function timeAdmin1(HOST) {
        is Now — everything else is the past and the modern line steps aside. */
     IntMapTime.on(e => {
       clearTimeout(_tick);
-      if (e.isLive || e.year >= new Date().getFullYear()) { active = false; lastWhen = null; for (const t of TIERS) t.clear(); _applyNow(); return; }
+      if (e.isLive || e.year >= new Date().getFullYear()) { active = false; lastWhen = null; for (const t of TIERS) t.clear(); _know.clear(); _applyNow(); return; }
       const w = e.when; lastWhen = w;
       /* ══ ⚠⚠⚠ TODAY'S PROVINCES GO THE MOMENT THE CLOCK LEAVES NOW, NOT WHEN THE ERA DATA ARRIVES ══
          MEASURED as an intermittent failure of tests/r530.spec.js ① — 1 run in 3, and only ever the
@@ -925,7 +1053,7 @@ export function timeAdmin1(HOST) {
     /* re-localize the era names when the language changes WHILE travelling: `nameOf`
        bakes one language into the feature, so the collection has to be rebuilt — but
        only the CURRENT epoch, and only when something actually moved. */
-    window.addEventListener('intmap-lang', () => { for (const t of TIERS) t.relocalize(); });
+    window.addEventListener('intmap-lang', () => { for (const t of TIERS) t.relocalize(); _know.relabel(); });
 
     /* re-assert ONLY when a base-style swap (globe/flat/satellite) WIPED the layers —
        detected by a missing line layer. Re-asserting on every styledata would loop,
@@ -933,7 +1061,7 @@ export function timeAdmin1(HOST) {
     GE().events.on('styledata', () => {
       if (!active) return;
       const gone = TIERS.some(t => t.isActive() && t.key() != null && !GE().layers.has(t.cfg.line));
-      if (gone && _imCanDraw()) setTimeout(() => { for (const t of TIERS) t.reassert(); _applyNow(); }, 160);
+      if (gone && _imCanDraw()) setTimeout(() => { for (const t of TIERS) t.reassert(); _know.reassert(); _applyNow(); }, 160);
     });
 
     /* ── warm the first tier when the reader heads for the past, and NOT on a phone or Data Saver ──
@@ -973,7 +1101,10 @@ export function timeAdmin1(HOST) {
         if (!active || !fc) return { active: false, units: 0, deeper: 0, when: null, source: null };
         const d = T1.data();
         return { active: true, units: fc.features.length, deeper: (T2.fc() ? T2.fc().features.length : 0),
-                 when: T1.when() ? new Date(T1.when().getTime()) : null, source: (d && d.src) || null };
+                 when: T1.when() ? new Date(T1.when().getTime()) : null, source: (d && d.src) || null,
+                 /* (hist-coverage) how much of the land inside a polity is recorded at this date, and the
+                    same ground claimed twice by kind — null until the measure has run for this date */
+                 known: _know.state() };
       } catch (_) { return { active: false, units: 0, deeper: 0, when: null, source: null }; }
     }
     /* the nine-language sentence the layer row shows while travelling (AGENTS.md §3.5). */
@@ -988,7 +1119,20 @@ export function timeAdmin1(HOST) {
       let g = 0;
       try { const fc = T1.fc(); if (fc) for (const f of fc.features) if (f.properties && f.properties._gap) g++; } catch (_) { g = 0; }
       const gs = String(g);
-      return _LT.arr(LA(
+      /* (hist-coverage) the share of the land the record covers, and the double claims by kind — the
+         same numbers the hatch and the gate are drawn from (js/hist-knowledge.js, data/hist-claims.json) */
+      const K = c.known;
+      let kn = '';
+      if (K) {
+        const P = String(Math.round(K.pct * 10) / 10), N = String(K.none), Q = String(K.partial);
+        kn = ' ' + _LT.arr(LA('Subdivisions are recorded for ' + P + '% of the land inside a polity on this date; ' + N + ' polities have no record and ' + Q + ' only a partial one, and that ground is hatched.',
+                               'この日付で、政体の内側の陸地のうち地方区分の記録があるのは ' + P + '%。記録の無い政体が ' + N + '、一部だけの政体が ' + Q + ' あり、その土地には斜線を引いている。'));
+        const C = K.claims || {}, cs = String(C.seam || 0), cd = String(C.duplicate || 0), cc = String(C.contested || 0);
+        if ((C.seam || 0) + (C.duplicate || 0) + (C.contested || 0)) kn += ' ' + _LT.arr(LA(
+          'Some ground is claimed by two units at once: ' + cs + ' seam(s) — a handover both records date only to the year; ' + cd + ' duplicate(s) — upstream holds one unit twice; ' + cc + ' contested — two different units claim the same ground (a dispute, an overlapping jurisdiction, or a change whose end was not recorded; IntMap has not judged which held it).',
+          '同じ土地を二つの単位が同時に主張している箇所がある：継ぎ目 ' + cs + '（両方の記録が年までしか述べない引き継ぎ）・重複 ' + cd + '（上流が一つの単位を二度持つ）・係争 ' + cc + '（別々の単位が同じ土地を主張する。係争・管轄の重なり・終わりが記録されていない変更のいずれかで、IntMap はどちらが治めたかを判定していない）。'));
+      }
+      const base = _LT.arr(LA(
         n + ' subdivisions are in force on this date. The older the year, the more geographically uneven the record is, so an area with no line here is one OpenHistoricalMap is still silent about — not one without subdivisions. Zoom in for the second-level units the record also holds.' + (g ? ' ' + gs + ' of them are outlines OpenHistoricalMap holds no record for, derived by IntMap from open data (Natural Earth, Wikidata, Asukana/Ryoseikoku) and drawn in their own style; the credit under the map names each source.' : ''),
         'この日付で有効な地方区分は ' + n + ' 件。古い年代ほど記録は地理的に偏るため、境界線が無い地域は「区分が無かった」のではなく「記録がまだ無い」。拡大すると、記録が持つ下位の区分も出る。' + (g ? 'うち ' + gs + ' 件は OpenHistoricalMap に記録が無いため、公開データ（Natural Earth・Wikidata・Asukana/Ryoseikoku）から IntMap 自身が導出し、別の線種で描いたもの。出典は地図下の帰属表示に出る。' : ''),
         n + ' Verwaltungseinheiten gelten an diesem Datum. Je weiter das Jahr zurückliegt, desto ungleichmäßiger ist die Überlieferung geografisch verteilt: Ein Gebiet ohne Linie ist eines, zu dem die Quelle noch schweigt — nicht eines ohne Untergliederungen. Hineinzoomen zeigt die Einheiten der zweiten Ebene.' + (g ? ' ' + gs + ' davon sind Umrisse, zu denen OpenHistoricalMap keinen Eintrag hat; IntMap leitet sie aus offenen Daten (Natural Earth, Wikidata, Asukana/Ryoseikoku) ab und zeichnet sie in eigenem Stil. Die Quellenangabe unter der Karte nennt jede Quelle.' : ''),
@@ -999,6 +1143,7 @@ export function timeAdmin1(HOST) {
         n + ' subdivisions sont en vigueur à cette date. Plus l’année est ancienne, plus la couverture du registre est géographiquement inégale : une zone sans tracé est une zone sur laquelle la source se tait encore, non une zone sans subdivisions. En zoomant apparaissent les unités de second niveau.' + (g ? ' ' + gs + ' d’entre elles sont des tracés qu’OpenHistoricalMap ne conserve pas : IntMap les dérive de données ouvertes (Natural Earth, Wikidata, Asukana/Ryoseikoku) et les dessine dans un style distinct. L’attribution sous la carte nomme chaque source.' : ''),
         '이 날짜에 유효한 행정구역은 ' + n + '개입니다. 연대가 오래될수록 기록은 지리적으로 치우치므로, 경계선이 없는 지역은 구역이 없었던 것이 아니라 기록이 아직 없는 것입니다. 확대하면 기록이 가진 하위 행정구역도 나타납니다.' + (g ? ' 그중 ' + gs + '개는 OpenHistoricalMap에 기록이 없어, IntMap이 공개 데이터(Natural Earth, Wikidata, Asukana/Ryoseikoku)에서 직접 도출해 다른 선으로 그린 것입니다. 지도 아래 출처 표시에 각 출처가 나옵니다.' : '')
       ));
+      return base + kn;
     }
 
     /* ══ (#R564) THE ERA UNIT'S OWN OUTLINE, FOR THE POPUP ═════════════════════════════════════════
@@ -1082,7 +1227,7 @@ export function timeAdmin1(HOST) {
        is actually used. They are ten lines whenever a round has a reason for them. */
     return {
       _go: w => { lastWhen = w; active = true; for (const t of TIERS) t.setActive(true); T1.go(w); _deep(); },
-      _clear: () => { active = false; lastWhen = null; for (const t of TIERS) t.clear(); _applyNow(); },
+      _clear: () => { active = false; lastWhen = null; for (const t of TIERS) t.clear(); _know.clear(); _applyNow(); },
       active: () => active, current: () => T1.key(),
       currentFC: () => T1.fc(), deepFC: () => T2.fc(), refresh: _applyNow, coverage, note, geomAt, idAt, geomFullAt,
       /* (#R604) which supply is drawing the era line: 'unknown' (tiles asked, not yet seen),

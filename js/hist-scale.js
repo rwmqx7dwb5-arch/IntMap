@@ -508,6 +508,49 @@ window.IntMapHistScale = (function () {
     return null;
   }
 
-  return { FLOOR, utcAt, ymd, era, fromEra, yearText, dateText, niceTicks, decYear, ohmFilter, inForce, eraSpanOut,
+  /* ══ ⑤ TWO RECORDS OVER ONE PIECE OF GROUND AT ONE INSTANT — WHICH KIND OF CLAIM IS IT ════
+     (hist-coverage) .agents/rules/historical-verification.md §2-5: «the same ground claimed
+     twice is one of three things, and they are not interchangeable». They were counted as one
+     — and counted wrongly: scripts/hist-fidelity.mjs paired rows by NAME and LEVEL and span,
+     never by ground, so 34,194 «nested» pairs were mostly namesakes in different places (two
+     counties called Lincoln are not a double claim). MEASURED 2026-10-03 over the five shipped
+     bundles with a ground test (≥ 25% of the smaller unit's interior points inside the other):
+     3,847 pairs really share ground — classified below as 1,986 seams, 151 duplicates and
+     1,710 contested (gate measure after this round). This decides which of the three a pair is, ONCE,
+     for both readers: the gate (scripts/hist-fidelity.mjs) and the layer's note
+     (js/time-admin1.js) — the ground test is the caller's, because only the caller has rings.
+       seam       — the spans cross, neither holds the other, and the overlap is at most one
+                    year: a handover written at year precision on both sides
+                    ([1938..1949] × [1948..1973]). The ground changed hands; the record
+                    cannot say on which day.
+       duplicate  — one unit, held twice: the same name at the same level over the same ground,
+                    for longer than a seam (Закаспійская область, 1881, twice).
+       contested  — two DIFFERENT units over the same ground for longer than a year. This is
+                    the class a machine cannot finish: it holds real disputes (the Alaska
+                    boundary dispute × British Columbia, 1871–1903 — OHM records the dispute as
+                    its own unit), layered jurisdictions (the Cherokee Nation inside Indian
+                    Territory), and a reorganisation whose end upstream never recorded. What the
+                    map can say truthfully is that two records claim the ground and that
+                    IntMap has not judged which held it — so that is what the note says.
+     ⚠ THE NAME IS NOT AN IDENTITY BY ITSELF. «Duplicate» is only ever asked of a pair that
+     already shares ground and level; a name alone is what made 34,194 pairs out of namesakes.
+     ⚠ THE YEAR IS 366 DAYS because a record written at year precision is drawn from 1 January
+     to 1 January, and a year-precision handover therefore overlaps by up to one calendar year,
+     which is 366 days in a leap year. EXPIRES only if the bundles stop encoding a bare year as
+     its first day. `a`, `b` = { name, s:[y,m,d], e:[y,m,d] } with exclusive ends. */
+  const SEAM_DAYS = 366;
+  function claimKind(a, b) {
+    if (!a || !b) return null;
+    const c = (p, q) => (p[0] !== q[0] ? p[0] - q[0] : p[1] !== q[1] ? p[1] - q[1] : p[2] - q[2]);
+    const os = c(a.s, b.s) >= 0 ? a.s : b.s, oe = c(a.e, b.e) <= 0 ? a.e : b.e;
+    if (c(os, oe) >= 0) return null;
+    const aInB = c(b.s, a.s) <= 0 && c(a.e, b.e) <= 0, bInA = c(a.s, b.s) <= 0 && c(b.e, a.e) <= 0;
+    const days = (utcAt(oe[0], oe[1] - 1, oe[2]).getTime() - utcAt(os[0], os[1] - 1, os[2]).getTime()) / 864e5;
+    if (!aInB && !bInA && days <= SEAM_DAYS) return 'seam';
+    return a.name === b.name ? 'duplicate' : 'contested';
+  }
+  const CLAIM_KINDS = Object.freeze(['seam', 'duplicate', 'contested']);
+
+  return { FLOOR, utcAt, ymd, era, fromEra, yearText, dateText, niceTicks, decYear, ohmFilter, inForce, eraSpanOut, claimKind, CLAIM_KINDS,
            rail: { POS, breaks, toYear, toPos, DEEP_TOP } };
 })();

@@ -17,8 +17,11 @@ import { harvestWikidataCodes, wikidataCodes, codeForTag, registry } from './lan
 const API = 'https://www.wikidata.org/w/api.php';
 const UA = 'IntMap/build-hist-admin1 (+https://github.com/rwmqx7dwb5-arch/IntMap)';
 
+/* (hist-coverage) INTMAP_HISTADMIN_CACHE moves the cache, as INTMAP_HISTFILL_CACHE already does for the
+   fill's queries — a worktree's node_modules is a junction into the master copy, and a build run there
+   would otherwise write its cache into the original. */
 export function cacheDir(root) {
-  const d = path.join(root, 'node_modules', '.cache', 'intmap-histadmin');
+  const d = process.env.INTMAP_HISTADMIN_CACHE || path.join(root, 'node_modules', '.cache', 'intmap-histadmin');
   fs.mkdirSync(d, { recursive: true });
   return d;
 }
