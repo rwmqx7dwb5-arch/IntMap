@@ -1057,7 +1057,8 @@ worker client を含む）が届き、worker 本体は最初の検索が始ま�
 | `js/radiation-model.js` | **モデル本体**——風の場の入れ子ネストの構築、高度別の風の内挿、ラグランジュ solve、沈着格子、ゾーン、線量積分。**DOM も window も言語レジストリも触らない純粋モジュール**で、出すのは `export const RAD` 1 本だけ |
 | `src/radiation-worker.js` | worker 入口。`../js/radiation-model.js` を import するだけで**物理を 1 行も持たない**。結果の 3 本の typed array は transfer で返す |
 | `src/radiation-worker-client.js` | ページ側 `window.IntMapRadiationWorker`。`new Worker(new URL('./radiation-worker.js', import.meta.url), {type:'module'})`——`src/` に置くのは、バンドラに worker を切り出させられる形がこれだけだから。`src/main.js` が sat / tsunami / aviation と同じ並びで eager import する |
-| `js/sims.js` | パネル UI・Open-Meteo の取得（2 枚のネストを 2 リクエストで）・地図レイヤー・プルームのアニメーション・共有状態。`window.IntMapRadiation` |
+| `js/sims.js` | パネル UI・Open-Meteo の取得（2 枚のネストを 2 リクエストで）・地図レイヤー・プルームのアニメーション・共有状態。`window.IntMapRadiation`。パネルの「2011 年の答え合わせ」（`hindcast`）もここ |
+| `js/radiation-hindcast.js` | **答え合わせの純粋関数**——2011 年の福島の実測沈着（`data/radiation-hindcast.json`）とモデルをセルごとに比べる指標・再グリッド・描画用のセルと比の色階。検査・ビルダ・パネルが同じ計算を使う。数と手順は `docs/RADIATION-MODEL.md` §10 |
 
 **縮退し、縮退したことを言う。** worker があれば 20,000 粒子、無ければページ上で 4,000 粒子。
 粒子数は速度の設定ではなく**ピーク沈着のモンテカルロ誤差の設定**なので、どちらで走ったかを

@@ -478,6 +478,9 @@ export const IntMapRefData = (function(){
     {n:'RIVM — Nationaal Meetnet Radioactiviteit (CC0 1.0)',u:'https://www.rivm.nl/nationaal-meetnet-radioactiviteit',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false},
     {n:'Hong Kong Observatory — ambient gamma radiation (data.gov.hk)',u:'https://data.weather.gov.hk/',lic:'data.gov.hk Terms of Use (redistribution permitted with attribution)',licUrl:'https://data.gov.hk/en/terms-and-conditions',credit:true},
     {n:'SaveEcoBot / data.gov.ua — radiation monitoring (CC BY)',u:'https://data.gov.ua/',lic:'CC BY',credit:true},
+    /* (radiation-hindcast) the 2011 answer-check: data/radiation-hindcast.json, built by scripts/build-radiation-hindcast.mjs.
+       The row's name is the bundle's `paidBy`, because the attribution is a condition and the gate reads it as a value. */
+    {n:'Fukushima Cs-137 deposition survey (MEXT/NRA via IRSN, CC BY 4.0)',u:'https://doi.org/10.5281/zenodo.7016491',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     /* (#R650) WHO Disease Outbreak News — the layer's own archive (data/who-don.json.gz, built by
        scripts/build-who-don.mjs) AND the live tail the page reads straight from WHO. ONE ROW: it is
        one publication from one organisation, whichever of the two paths a given item arrived by. */

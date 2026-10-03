@@ -161,3 +161,12 @@ Daten bei einer möglichen Veröffentlichung in sachlicher Art und Weise darzust
 ⚠ **以前は `js/sims.js` に正規表現 12 件が埋め込まれていた**（Fukushima Daiichi ほか）。
 `.agents/rules/no-ad-hoc-hardcoding.md` §1 が禁じる「名前の埋め込み一覧」そのもので、
 13 件目を尋ねられた瞬間に黙って外れた。
+
+---
+
+## 8. 答え合わせ（2011 年の福島）
+
+シミュレータのパネルの「2011 年の答え合わせ」は、モデル自身の福島の計算を、日本政府の航空機モニタリングによる
+Cs-137 の地表沈着（`data/radiation-hindcast.json`・CC BY 4.0）とセルごとに並べて描く（実測・モデル・比）。
+**指標・実測の出典と日付・条件・良くない結果の中身は `docs/RADIATION-MODEL.md` §10 が正本**で、ここには書き写さない。
+Atlas は `radiation` の `hindcast` 引数（場所は要らない）で同じ地図を出す。
