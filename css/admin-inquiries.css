@@ -41,3 +41,16 @@ label.f{ display:flex; flex-direction:column; gap:4px; font-size:12px; color:var
 .toast.show{ opacity:1; }
 .sup-form{ display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; margin-top:10px; }
 .acts{ margin-top:10px; }
+/* (sales-next) the pipeline board (js/admin-pipeline.js): one column per stage, a card per conversation */
+.pill.stage{ background:transparent; border:1px solid var(--line); }
+.pipe-tbl{ border-collapse:collapse; font-size:12.5px; margin-top:4px; }
+.pipe-tbl th,.pipe-tbl td{ padding:4px 10px; text-align:center; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
+.pipe-tbl th:first-child{ text-align:left; color:var(--muted); font-weight:600; }
+.pipe-board{ display:grid; grid-template-columns:repeat(5,minmax(200px,1fr)); gap:12px; overflow-x:auto; padding-bottom:8px; }
+.pipe-col{ background:var(--in); border-radius:14px; padding:10px; min-width:200px; }
+.pipe-col h3{ margin:2px 4px 10px; font-size:13px; text-transform:capitalize; }
+.pipe-item{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px; margin-bottom:8px; display:grid; gap:4px; font-size:13px; }
+.pipe-item.due{ border-color:var(--danger); box-shadow:inset 3px 0 0 var(--danger); }
+.pipe-form{ display:grid; grid-template-columns:1fr; gap:6px; margin-top:4px; }
+.pipe-form input,.pipe-form select{ font-size:12.5px; padding:6px 8px; }
+.pipe-form .btn{ justify-self:start; }

@@ -41,3 +41,10 @@
   同じアカウント・`noindex`）——状態（new / replied / closed / spam）とメモを付け、削除し、支援者を掲載する。
   保存期間は受信から 730 日、spam は 30 日（`purge_org_inquiries`・pg_cron）。ページの文は `scripts/org-pages-text.mjs`
   （en + jp）、生成と門は `scripts/org-pages.mjs`。営業の手引きは `docs/sales/`。
+  - **パイプライン**（コンソールの Pipeline タブ・`js/admin-pipeline.js`、タブを開いたときだけ `import()`）: 状態（返信したか）とは
+    別に、**会話がどこまで進んだか**を持つ——`stage`（lead → talking → trial → adopted | declined）・`next_step`（次にやること 1 文）・
+    `next_step_on`（期日）・`stage_changed_at`。段ごとの列、送り手の区分 × 段の件数、**期日が今日（運営者の暦日）以前の
+    もの**、段が進んだのに期日の無いもの、ページが知らない段を出す。spam と支援者の掲載申し込みは載せない。語は
+    `supabase/functions/_shared/inquiry-shape.js` の `INQUIRY_PIPELINE` が 1 回だけ宣言し、生成器がページの `data-*` に書き、
+    コンソールのスクリプトはそれを読む（綴らない）。表の CHECK は `20261003210000_org_inquiry_pipeline.sql`。書けるのは
+    管理者だけ（既存の RLS）。730 日の保存期間は変わらない——導入事例は相手の書面の同意から書く。

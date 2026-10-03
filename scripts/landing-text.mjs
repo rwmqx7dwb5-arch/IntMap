@@ -93,7 +93,7 @@ export const TEXT = {
         h2: 'Classroom tours',
         sub: 'A tour is a short lesson already laid out: a few maps in order, each with sentences to read out and a question for the class. It opens full screen in the map — large type for a projector, everything else put away — and you move through it with Next and Previous.',
         start: 'Start the tour',
-        note: 'Move with the arrow keys, Space or a presentation clicker (Page Up / Page Down); F switches to full screen, T hides the text, Esc leaves the tour. The address bar always holds a link to the step on screen, so you can hand that one step to the students. No account is needed.',
+        note: 'Move with the arrow keys, Space or a presentation clicker (Page Up / Page Down); F switches to full screen, T hides the text, Esc leaves the tour. The address bar always holds a link to the step on screen, so you can hand that one step to the students. The printer button on the tour’s panel turns the tour into a worksheet: each step’s map with its legend and data credits, the date it shows, the question and lines to answer on, and a teacher’s copy with what to read out. Print it or save it as a PDF. No account is needed.',
       },
       build: {
         h2: 'Make a tour of your own',
@@ -264,7 +264,7 @@ export const TEXT = {
         h2: '授業ツアー',
         sub: 'ツアーは、組み立て済みの短い授業です。いくつかの地図を順に並べ、それぞれに読み上げる文と生徒への問いを添えています。地図の中で全画面に開き——プロジェクターでも読める大きな文字で、ほかの画面要素はしまって——「次へ」「前へ」で進みます。',
         start: 'ツアーを始める',
-        note: '矢印キー、スペース、プレゼンテーション用のリモコン（Page Up / Page Down）で進みます。F で全画面、T で文を隠し、Esc でツアーを終えます。アドレスバーには常にいま映しているステップへのリンクが入っているので、そのステップだけを生徒に渡すこともできます。アカウントは要りません。',
+        note: '矢印キー、スペース、プレゼンテーション用のリモコン（Page Up / Page Down）で進みます。F で全画面、T で文を隠し、Esc でツアーを終えます。アドレスバーには常にいま映しているステップへのリンクが入っているので、そのステップだけを生徒に渡すこともできます。ツアーのパネルのプリンタのボタンを押すと、ツアーがワークシートになります。各ステップの地図（凡例とデータの出典つき）と日付、問い、解答欄を並べた生徒用と、読み上げる文も載せた教員用があり、印刷するか PDF に保存できます。アカウントは要りません。',
       },
       build: {
         h2: '自分のツアーを作る',

@@ -37,6 +37,11 @@
  *  again by the map's codec before it reaches the address bar. The list of tours offers «Make your own
  *  tour», and a written (or Atlas-assembled) tour that is playing offers «Edit this tour».
  *
+ *  ── THE WORKSHEET (sales-next) ───────────────────────────────────────────────────────────────
+ *  The panel's printer button (and Atlas's `panel.tourWorksheet`) hands the tour that is playing to
+ *  js/tour-worksheet.js, which walks its steps through THIS player (`go`, the same read-back) and puts
+ *  each step's map on paper. `playingTour()` is what it reads: the words as the reader's language has them.
+ *
  *  ⚠ IntMap-authored text is en + jp (CONSTITUTION.md §7).
  *  ⚠ No `window` global is published: the readers import this file by name.
  * ==========================================================================*/
@@ -65,7 +70,7 @@ const BM = () => window.IntMapBookmark || null;
    trimmed: the data's licences require them wherever it is drawn (a projector included). Lives here,
    not in css/intmap.css, so a normal start-up never parses it. */
 export const CLASSROOM_CSS = [
-  'html[data-classroom] body > *:not(.operation-room):not(#im-tour):not(#im-tour-picker):not(#ai-toast){display:none !important;}',
+  'html[data-classroom] body > *:not(.operation-room):not(#im-tour):not(#im-tour-picker):not(#im-worksheet):not(#ai-toast){display:none !important;}',
   'html[data-classroom] .operation-room > *:not(.map-column){display:none !important;}',
   'html[data-classroom] .map-column > *:not(.map-container):not(#map-credit){display:none !important;}',
   'html[data-classroom] .map-container > *:not(#map):not(.data-legend):not(.koppen-legend){display:none !important;}',
@@ -218,6 +223,8 @@ function paint(waiting) {
   const tools = '<span class="imt-tools">'
       /* (tour-builder) a tour a reader wrote, or the one Atlas assembled, can be opened in the tour builder */
       + (playing.custom || playing.temp ? '<button type="button" data-imt="edit" title="' + H(t('Edit this tour', 'このツアーを編集')) + '" aria-label="' + H(t('Edit this tour', 'このツアーを編集')) + '">' + icon('pencil', { size: 17 }) + '</button>' : '')
+      /* (sales-next) the tour on paper: each step's map, its question and lines to answer on (js/tour-worksheet.js) */
+      + '<button type="button" data-imt="sheet" title="' + H(t('Printable worksheet', '印刷用ワークシート')) + '" aria-label="' + H(t('Printable worksheet', '印刷用ワークシート')) + '">' + icon('printer', { size: 17 }) + '</button>'
       + '<button type="button" data-imt="fold" title="' + H(t('Hide the text (T)', '文を隠す（T）')) + '" aria-label="' + H(t('Hide the text', '文を隠す')) + '">' + (panel.classList.contains('imt-folded') ? '▴' : '▾') + '</button>'
       + '<button type="button" data-imt="full" title="' + H(t('Full screen (F)', '全画面（F）')) + '" aria-label="' + H(t('Full screen', '全画面')) + '">⛶</button>'
       + '<button type="button" data-imt="exit" title="' + H(t('Leave the tour (Esc)', 'ツアーを終える（Esc）')) + '" aria-label="' + H(t('Leave the tour', 'ツアーを終える')) + '">×</button></span>';
@@ -241,6 +248,7 @@ function onPanelClick(e) {
   if (a === 'next') next(); else if (a === 'prev') prev(); else if (a === 'exit') exit();
   else if (a === 'fold') fold(); else if (a === 'full') fullscreen();
   else if (a === 'edit') editInBuilder();
+  else if (a === 'sheet') import('./tour-worksheet.js').then((m) => m.makeWorksheet()).catch(() => { });
 }
 /* (tour-builder) leave the classroom mode and hand the tour that was playing to the builder, step by step
    (its links and words exactly as they were played) — the builder asks before it replaces a draft */
@@ -261,6 +269,8 @@ function fullscreen() {
    while a tour is playing; a key typed into a field is left alone. */
 function onKey(e) {
   if (!playing) return;
+  /* (sales-next) the worksheet's preview is open over the tour: its keys (Esc closes it) are its own */
+  if (document.documentElement.hasAttribute('data-worksheet')) return;
   const tg = e.target; if (tg && (tg.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName || ''))) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key; let did = true;
@@ -326,6 +336,16 @@ export function status() {
   if (!playing) return null;
   const st = playing.steps[at] || {};
   return { id: playing.id, title: txt(playing.title), step: at + 1, of: playing.steps.length, temp: playing.temp, custom: !!playing.custom, stepTitle: st.title ? txt(st.title) : '', ask: st.ask ? txt(st.ask) : '' };
+}
+
+/** (sales-next) the tour that is playing, its words in the reader's language — what js/tour-worksheet.js puts on paper.
+    `curriculum` is a declared tour's own keys (js/tours.js); a written or assembled tour has none. → object or null */
+export function playingTour() {
+  if (!playing) return null;
+  const d = !playing.temp && !playing.custom ? tourById(playing.id) : null;
+  return { id: playing.id, title: txt(playing.title), custom: !!playing.custom, temp: !!playing.temp, t: playing.t || '',
+    curriculum: (d && d.curriculum) ? d.curriculum.slice() : [], step: at + 1,
+    steps: playing.steps.map((x) => ({ title: x.title ? txt(x.title) : '', say: x.say ? txt(x.say) : '', ask: x.ask ? txt(x.ask) : '', linked: !!x.hash })) };
 }
 
 /* ── the tour Atlas assembles: the map as it is now, with words ── */

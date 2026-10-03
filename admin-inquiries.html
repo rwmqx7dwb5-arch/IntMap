@@ -28,8 +28,9 @@
   <button class="btn" id="aq-auth-submit" type="button" data-effect="private">Sign in</button>
   <p id="aq-auth-msg"></p>
 </div>
-<main id="aq-view-admin" class="hide">
+<main id="aq-view-admin" class="hide" data-statuses="new,replied,closed,spam" data-stages="lead,talking,trial,adopted,declined" data-closed-stages="adopted,declined" data-not-lead-purposes="supporter_listing" data-not-lead-statuses="spam" data-next-step-max="300">
   <div class="tabs">
+    <button class="tab" type="button" id="tab-pipe" data-effect="none">Pipeline</button>
     <button class="tab" type="button" data-filter="new" data-effect="none">New</button>
     <button class="tab" type="button" data-filter="replied" data-effect="none">Replied</button>
     <button class="tab" type="button" data-filter="closed" data-effect="none">Closed</button>
@@ -37,6 +38,7 @@
     <button class="tab" type="button" data-filter="all" data-effect="none">All</button>
     <button class="tab" type="button" id="tab-sup" data-effect="none">Supporters</button>
   </div>
+  <div id="list-pipe" class="hide"></div>
   <div id="list-inq"></div>
   <div id="list-sup" class="hide"></div>
 </main>

@@ -1,4 +1,5 @@
 {
+ "tests/sales-next.spec.js": 45,
  "tests/mobile-card-reach.spec.js": 14,
  "tests/mobile-panels-reach.spec.js": 35,
  "tests/first-impression.spec.js": 22,

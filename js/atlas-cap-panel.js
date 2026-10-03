@@ -506,6 +506,43 @@ export default [
     },
   },
   {
+    row: ['panel.tourWorksheet',        'tourWorksheet',  'worksheet,printWorksheet,lessonWorksheet,handout,printTour',   'panel',   'panel',   'camera,map.layer,time,panel.worksheet', 'panel,file', 'session', 'none', '',        ''],
+    /* (sales-next) THE CLASSROOM WORKSHEET (js/tour-worksheet.js): the tour that is playing — or the tour `id` names,
+       which is started first — put on paper. Every step is opened through the player (its own read-back), pictured once
+       the map has drawn it (js/time-lapse.js mapDrawn) with the map postcard (legends and every data credit burned in),
+       and the map is returned to the step it was on. The print preview opens with the STUDENT sheet (title, curriculum
+       unit, class / number / name, each step's map, date, question and answer lines) or, with `teacher`, the TEACHER
+       sheet (also what to read out and each step's short address). Printing is the reader's press: Atlas cannot press
+       Print. A step whose map could not be pictured is named in the result, and the sheet says so in its place. */
+    doc: [
+      { in: 'panel.tour', at: 20, text: ' CLASSROOM WORKSHEET — THE TOUR ON PAPER (印刷用ワークシート): {"type":"tourWorksheet","id"?:ID,"teacher"?:bool}. Pictures every step of the tour that is playing (or starts the tour `id` names — a declared tour, "atlas" or the one playing) with its legends and data credits, returns the map to the step it was on, and opens a print preview: the student sheet (the tour title, its curriculum unit, a line for class / number / name, and per step the map, the date it shows, the question for the class and lines to answer on) or with "teacher":true the teacher sheet (also what to read out and the short address that opens each step). The reader presses Print (paper or Save as PDF) — Atlas cannot. The result states how many maps were pictured and names any step that could not be. For 「ワークシートを作って」「授業プリントにして」「印刷用にして」「教員用のプリント」, "make a worksheet from this tour", "print this tour for my class", "a teacher handout".' },
+    ],
+    schema: () => ({ type: 'object', properties: { id: str(), teacher: bool() } }),
+    async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, L = K.L, esc = K.esc;
+      { const P = await import('./tour-player.js');
+          const id = String(a.id || '').trim().toLowerCase();
+          const cur = P.status();
+          if (id && (!cur || cur.id !== id)) {
+            const r = await P.startTour(id, 1);
+            if (r && (r.reason === 'unknown-tour' || r.reason === 'unreadable-tour')) return R(false, warn(esc(L('No tour is called', 'この名前のツアーはありません')) + ' «' + esc(id) + '»'));
+          }
+          if (!P.status()) return R(false, warn(esc(L('No tour is playing — start one, or give its id', '再生中のツアーがありません——ツアーを始めるか、id を指定してください'))));
+          const W = await import('./tour-worksheet.js');
+          const r = await W.makeWorksheet({ teacher: !!a.teacher });
+          if (!r || !r.ok) {
+            const why = { 'no-tour': L('no tour is playing', '再生中のツアーがありません'), cancelled: L('the tour was left while it was being pictured', '撮影中にツアーが終了されました'),
+              unavailable: L('the recorder could not be loaded', '撮影の仕組みを読み込めませんでした') }[r && r.reason] || String((r && r.reason) || '');
+            return R(false, warn(esc(L('Could not make the worksheet', 'ワークシートを作れませんでした')) + ' — ' + esc(why)), { worksheet: { ok: false, reason: r && r.reason } }); }
+          const facts = { ok: true, title: r.title, steps: r.steps, pictured: r.pictured, missing: r.missing, unapplied: r.unapplied, credits: r.credits, teacher: !!a.teacher };
+          const miss = r.missing.length ? '<div style="font-size:12px;margin:4px 0;">' + esc(L('Not pictured: step ', '撮れなかったステップ: ')) + esc(r.missing.map((m) => m.step + ' (' + m.error + ')').join(', ')) + '</div>' : '';
+          const head = note((r.missing.length ? '' : '✓ ') + esc(L('Worksheet ready to print', 'ワークシートの印刷プレビューを開きました')) + ' — ' + esc(r.title))
+            + '<div style="font-size:12px;margin:2px 0;">' + esc(L(r.pictured + ' of ' + r.steps + ' maps pictured · ' + (a.teacher ? 'teacher sheet' : 'student sheet') + ' · press Print to print or save as PDF',
+              r.steps + ' 枚中 ' + r.pictured + ' 枚の地図 · ' + (a.teacher ? '教員用' : '生徒用') + ' · 「印刷」で印刷または PDF に保存')) + '</div>' + miss;
+          /* the sheet IS open: a step not pictured is named in the facts and on the paper, not reported as a failed run */
+          return R(true, head, { worksheet: facts }); }
+    },
+  },
+  {
     row: ['panel.operatingCosts',       'operatingCosts', 'runningCosts,supportCosts,whereSupportGoes',                  'panel',   'panel',   'panel.donate',           'panel,explanation',   'session', 'none',   '',         ''],
     /* (supporter-funnel) «運営費を見る» / "what does IntMap cost to run" — opens the support panel at «where
        support goes» AND hands Atlas the same facts the panel shows, so it can answer in words without

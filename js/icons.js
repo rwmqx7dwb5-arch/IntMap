@@ -166,6 +166,8 @@ const PATHS = {
   pickaxe: 'M4 10c4.5-5 10.5-6.5 16-4.5M11.5 6.25 20 18.5',
   wall: 'M3.5 6h17v12h-17ZM3.5 10h17M3.5 14h17M9 6v4M15 6v4M6.5 10v4M12 10v4M17.5 10v4M9 14v4M15 14v4',
   layers: 'm12 3.5 8.5 4.4-8.5 4.4-8.5-4.4zM3.5 12.3 12 16.7l8.5-4.4M3.5 16.4 12 20.8l8.5-4.4',
+  /* (sales-next) the classroom worksheet's Print — a printer with its sheet */
+  printer: 'M7 8.5V3.5h10v5M7 17H5.5A2 2 0 0 1 3.5 15v-4.5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2V15a2 2 0 0 1-2 2H17M7 13.5h10v7H7ZM17 11.25h.01',
 };
 /* the solid glyphs — drawn with fill, not stroke */
 const FILLED = {
