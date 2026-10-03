@@ -55,3 +55,9 @@ date: 2026-10-03
 - **Atlas 夜間評価の Secret は未設定のまま**（`ATLAS_EVAL_REFRESH_TOKEN`・`ATLAS_EVAL_SECRET_WRITER`）。手順は `docs/TESTING.md`「Atlas evaluation」。評価用アカウントのリフレッシュトークンと、このリポジトリの Secrets 読み書きだけを持つ fine-grained PAT が要る。
 - `fetchViaProxy` の `note.failure` を行へ渡しているのは人工衛星だけ。他の呼び手（カメラの州別一覧・企業の株価・統計比較・ニュース）はレイヤー行の失敗として報告していない（補助の取得か、パネルであって行ではない）ので、行には何も足していない。
 - 状態ページの数字は bot PR が着地した時点のもの（最大で約半日遅れ）。ページは測定の時刻を必ず添える。
+
+## 統合時の性能予算（main へ重ね直した後の build）
+
+超えた行だけ `--update` で上げた（増えた理由は上の節）:
+- eager.gzip: 1523.9 kB → 1532.7 kB
+- async.gzip: 3774.0 kB → 3795.9 kB
