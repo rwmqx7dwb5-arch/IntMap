@@ -71,11 +71,13 @@ date: 2026-10-03
   `js/news-timeline.js` +0.5 kB、`js/time-borders.js` +0.2 kB。**CSS は起動経路から外した**（年鑑と国別指標の stylesheet は
   各モジュールが最初に描くときに注入。`.ntl-yb` の 1 行だけが css/intmap.css）。Atlas の答えを組む文は `js/year-book.js` /
   `js/indicator-browser.js` に移し、`atlas-console` チャンクの超過（+8.8 kB）を解消した。
-  ⚠ 天井の更新（`node scripts/perf-budget.mjs --update`）は **origin/main を取り込んだ木でしか書けない**（ツールが拒む）ので、
-  統合のときに行う。理由はこの節。
+  天井は統合時に origin/main を取り込んだ木で `node scripts/perf-budget.mjs --update` により超えた 4 行だけ上げた（理由はこの節）:
+  eager raw 4628.5→4651.7 kB・gzip 1523.9→1532.4 kB・brotli 1149.9→1155.9 kB、async gzip 3774.0→3799.4 kB
+  （新しい遅延チャンク `year-book` 19.1 kB・`indicator-browser` 10.6 kB——どちらも最初に開いたときだけ読まれる）。
 - **新しい spec は未測定のあいだ core に入り p75（41 s）で課金される**（`check:testbudget` が core 0.7 min 超過）。
   `tests/map-layer-system.spec.js` の本体の実測は 2 テストで 12〜13 s（JSON reporter・温まったサーバ・1 worker・
-  11 回）。`tests/durations.json` への記入は統合時の `shard-plan --update` に任せる。
+  11 回）。統合時に 13 s として `tests/durations.json` に記入した（統合時の再測定は 2 テストの本体 10.9 s）。core は天井内に戻るが、
+  全体（87.7 min）が天井 87.5 min を 0.2 min 超える——このラウンドの spec 1 本ぶんで、余地は別の PR が作る。
 - ⚠ **冷えた起動の spec で 8 回中 1〜2 回、国別指標の選択が消えた。** 記録を取って特定した: 行を点けた 2.8 s 後の
   層の状態監査（`js/data-layers.js` の post-toggle look）が、まだ塗り終えていない行を「チェックされているのに空」と読み、
   off→on で「直し」、その off が選択を消していた（`bx-wbind false` の呼び出し元が監査の `toggle-heal`）。
@@ -83,7 +85,10 @@ date: 2026-10-03
   一度もその要求を渡していなかった**。⇒ `choroOn` が「塗り終えた（または諦めた）」で settle する promise を返し、
   国別指標の行はそれを `layerInflight.track` に渡す。もう 1 つ: 国の表の統計を専用の行へ委ねている間は、この行の描画は
   委ね先のレイヤーであると監査が最初に読む表（`_imAuditReg`）へ述べる（`IntMapLayerAudit.owned(委ね先)`）。
-  ⚠ 世界銀行の他の 61 行も同じく要求を渡していない（系列が届く前の 2.8 s の look で脈打ちうる）。今回は触っていない。
+  ⚠ 世界銀行の他の 61 行も同じく要求を渡していなかった（系列が届く前の 2.8 s の look で脈打ちうる）。⇒ 1 行ずつではなく、
+  この module の行を配線する唯一の場所（`buildRows` の change）で `on` の返り値を `layerInflight.track` に渡す——
+  `js/data-layers.js` が自分の行にしているのと同じ形。国の形の読み込みが失敗しても `choroOn` は settle する
+  （`ensureGeo` が拒否で `cb(null)`。settle しない要求は行を永久に「飛行中」にして監査から外す）。
 - **共有窓口（`check:surface`）に増えた辺**: `window.IntMapIndicators`（国別指標の扉——Atlas の能力と spec が読む）、
   `IntMapLayerAudit` / `_imAuditReg`（上の委任の主張）、`_registerLayerOpacity` / `_hideGenericLegend` / `_tileLegends`
   （凡例は `js/data-layers.js` の持ち物で、他の行と同じ入口から使う）、`IntMapShareState`（共有リンク）、`IntMapTimeBorders` /

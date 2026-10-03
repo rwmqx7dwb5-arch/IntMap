@@ -20,7 +20,7 @@ import { IntMapTime } from './chronos.js';
 /* (mobile-performance) when a phone may refresh the World Bank figures */
 import { BootStage } from './boot-stage.js';
 import * as bus from './bus.js';
-import { layerInflight } from './layer-rows.js';   /* (map-layer-system) the indicator row's request, for the layer-state audit */
+import { layerInflight } from './layer-rows.js';   /* (map-layer-system) each row's request, for the layer-state audit */
 
 export function wbLayers(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -29,7 +29,7 @@ export function wbLayers(HOST){
   (function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     const jp=()=>HOST.lang==='jp';
-    function ensureGeo(cb){ try{ if(window.countryGeo&&window.countryGeo.features) return cb(window.countryGeo); if(typeof loadCountryData==='function'){ loadCountryData().then(()=>cb(window.countryGeo)); return; } }catch(_){} cb(null); }
+    function ensureGeo(cb){ try{ if(window.countryGeo&&window.countryGeo.features) return cb(window.countryGeo); if(typeof loadCountryData==='function'){ loadCountryData().then(()=>cb(window.countryGeo),()=>cb(null)); return; } }catch(_){} cb(null); }
     const iso=(p)=>{ p=p||{}; return p.ISO_A3_EH||p.ISO_A3||p.ADM0_A3||p.SOV_A3||p.iso_a3||p.ADM0_A3_US||''; };
     /* ══ (#R266) ONE SERIES PER INDICATOR, NOT ONE NUMBER ══════════════════════════════════════════
        「GDP成長率レイヤーは年を選択できるようにしろ。同一年度で比較しないと意味がない。」 — and that is
@@ -454,7 +454,7 @@ export function wbLayers(HOST){
         const cb=document.getElementById('bx-wbind');
         if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); }
         else if(cb&&cb.checked) indBrowser().then(b=>b.select(IND.want)).catch(()=>{}); } }); }catch(_){}
-    function indOn(){ indBrowser().then(b=>b.open()).catch(()=>{ try{ if(typeof imToast==='function') imToast(IntMapLang.t(HOST.lang,'The indicator browser could not be loaded','指標ブラウザを読み込めませんでした')); }catch(_){} }); }
+    function indOn(){ return indBrowser().then(b=>b.open()).catch(()=>{ try{ if(typeof imToast==='function') imToast(IntMapLang.t(HOST.lang,'The indicator browser could not be loaded','指標ブラウザを読み込めませんでした')); }catch(_){} }); }
     function indOff(){ indClear(); try{ window._hideGenericLegend&&window._hideGenericLegend('wbind'); }catch(_){} if(_indMod) _indMod.then(b=>b.closed()).catch(()=>{}); }
 
     /* ---------- Earthquakes (USGS realtime feed + historical query) ---------- */
@@ -542,7 +542,13 @@ export function wbLayers(HOST){
         const cb=document.createElement('input'); cb.type='checkbox'; cb.id='bx-'+L.id;
         const sp=document.createElement('span'); sp.className='bx-name'; sp.textContent=bxLabel(L);
         lab.appendChild(cb); lab.appendChild(document.createTextNode(' ')); lab.appendChild(sp); w.appendChild(lab); dd.appendChild(w);
-        cb.addEventListener('change',e=>{ w.classList.toggle('on',e.target.checked); if(e.target.checked){ try{ L.on(); }catch(_){} } else { try{ L.off(); }catch(_){} } });
+        /* (map-layer-system) what `on` returns is the request this change started (choroOn settles once the series has been
+           painted or given up) — handed to js/layer-rows.js `layerInflight` here, where every row of this module is wired, as
+           js/data-layers.js does for its own rows, so the layer-state audit does not read a row whose series is still arriving
+           as «ticked and blank» and pulse it off→on. An «off» returns nothing, which clears the box. */
+        cb.addEventListener('change',e=>{ w.classList.toggle('on',e.target.checked); let req;
+          if(e.target.checked){ try{ req=L.on(); }catch(_){} } else { try{ L.off(); }catch(_){} }
+          try{ layerInflight.track(cb.id,req); }catch(_){} });
       });
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
     }

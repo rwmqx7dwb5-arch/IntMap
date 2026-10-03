@@ -178,6 +178,21 @@ test('⑤ the row, its share state, its Atlas door and its time declaration', ()
   assert.match(read('js/atlas-console.js'), /function _sameSeriesRows\(id\)/);
 });
 
+/* the layer-state audit waits on a row's request only if the row hands it over. The rows of js/wb-layers.js are wired in
+   ONE place (`buildRows`), so the request is handed over there — every row at once, not the indicator row alone — and
+   the painter settles even when the country shapes fail to load (a promise that never settles would hold the row
+   «in flight» forever, and the audit would never look at it again). */
+test('⑤ every World Bank row hands its paint to the layer-state audit, from the one place the rows are wired', () => {
+  const wb = codeOnly(read('js/wb-layers.js'));
+  const build = wb.slice(wb.indexOf('function buildRows('), wb.indexOf('function buildRows(') + 1500);
+  assert.match(build, /req=L\.on\(\)/);
+  assert.match(build, /layerInflight\.track\(cb\.id,req\)/);
+  assert.match(wb, /const ALL=WB\.map\(L=>\(\{[^}]*on:\(\)=>choroOn\(L\)/);
+  assert.match(wb, /function choroOn\(L\)\{[^\n]*return done; \}|\}\)\.then\(fin,fin\); \}\); return done; \}/);
+  assert.match(wb, /loadCountryData\(\)\.then\(\(\)=>cb\(window\.countryGeo\),\(\)=>cb\(null\)\)/);
+  assert.match(wb, /function indOn\(\)\{ return indBrowser\(\)/);
+});
+
 /* ══ THE YEAR BOOK (js/year-book.js) — read over the REAL records, with the border record's own rule ═════════════
    The page asks js/time-borders.js `collectionAt`; here the same question is put to data/cshapes.js directly, with
    the rule csFC uses (start ≤ t ≤ end — CShapes' end is INCLUSIVE) and the change days csBounds takes (each start,
