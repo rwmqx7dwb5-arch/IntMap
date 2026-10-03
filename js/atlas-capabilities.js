@@ -278,6 +278,11 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["panel.showcase","showcase","example,exampleMap,showcaseMap,gallery","panel","time","camera,map.layer,time","map,time","session","none","",""],
       ["panel.tour","tour","classroomTour,lessonTour,guidedTour,startTour,nextStep","panel","time","camera,map.layer,time","map,time","session","none","",""],
       ["panel.tourBuilder","tourBuilder","buildTour,makeTour,tourEditor,addMapToTour,shareTour","panel","time","camera,map.layer,time,tour.draft","map,time","persist","explicit","",""],
+      ["news.pulse","newsPulse","countryNews,newsByCountry,newsHeat","data","layer","map.layer","map,explanation","session","none","","newsIntel"],
+      ["news.brief","newsBrief","countryBrief,countryNewsBrief,dailyBrief","data","panel","panel.newsBrief","panel,explanation","session","none","country","newsIntel","external"],
+      ["news.outages","outageNews","internetOutageNews,outagesAndNews","data","none","","explanation","read","none","","newsIntel"],
+      ["news.health","newsHealth","newsFreshness,ingestHealth","data","none","","explanation","read","none","","newsEvents"],
+      ["news.company","companyNews","newsAboutCompany,companyEvents","data","panel","panel.company","panel,explanation","session","none","text","companyPanel","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
