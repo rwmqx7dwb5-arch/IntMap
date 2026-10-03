@@ -112,11 +112,15 @@ export function makeWorksheet(o) {
   running = run(o || {}).finally(() => { running = null; });
   return running;
 }
+/* the postcard and the lapse's drawn reading — fetched when a worksheet is made, never at start-up */
+async function recorder() {
+  try { const R = await import('./map-recorder.js'); const TL = await import('./time-lapse.js'); return { R, TL }; } catch (_) { return null; }
+}
 async function run(o) {
   const tour = playingTour();
   if (!tour) return { ok: false, reason: 'no-tour' };
-  let R, TL;
-  try { [R, TL] = await Promise.all([import('./map-recorder.js'), import('./time-lapse.js')]); } catch (_) { return { ok: false, reason: 'unavailable', title: tour.title }; }
+  const mods = await recorder(); if (!mods) return { ok: false, reason: 'unavailable', title: tour.title };
+  const { R, TL } = mods;
   const back = tour.step, N = tour.steps.length, shots = [];
   progress(0, N);
   for (let i = 0; i < N; i++) {
@@ -206,8 +210,8 @@ const MISS = {
   busy: LA('A time-lapse is being recorded; the map was not pictured.', 'タイムラプスの録画中のため、地図を撮っていません。'),
 };
 
-/** the page, from the model (exported for the spec, which reads the DOM it builds) */
-export function buildPaper(m) {
+/** the page, from the model */
+function buildPaper(m) {
   const t = (en, jp) => IntMapLang.t(m.lang, en, jp);
   const paper = node('article', 'imw-paper'); paper.setAttribute('lang', IntMapLang.htmlTag(m.lang));
   const head = node('header', 'imw-head'); const hl = node('div');
@@ -249,7 +253,7 @@ function close() {
 function afterPrint() { if (docTitle != null) { document.title = docTitle; docTitle = null; } }
 
 /** open (or re-open, as the other sheet) the print preview of the last worksheet made */
-export function open(teacher) {
+function open(teacher) {
   if (!last) return false;
   style(); close();
   let site = { name: '', link: '' };
@@ -295,11 +299,4 @@ export function open(teacher) {
   paint();
   try { pr.focus({ preventScroll: true }); } catch (_) { }
   return true;
-}
-/** is the preview open, and what is on it → { open, teacher, steps, pictured } */
-export function worksheetState() {
-  const el = document.getElementById('im-worksheet');
-  if (!el || !last) return { open: false };
-  const teacher = !!el.querySelector('.imw-seg button:nth-child(2)[aria-pressed="true"]');
-  return { open: true, teacher, steps: last.shots.length, pictured: last.shots.filter((s) => s.ok).length };
 }

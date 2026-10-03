@@ -28,7 +28,7 @@ export function wordsFrom(main) {
 
 const DAY = 86400000;
 /** a calendar day as 'YYYY-MM-DD' in the operator's own time zone (a follow-up is due on THEIR day) */
-export function localDay(d) {
+function localDay(d) {
   const x = d instanceof Date ? d : new Date(d);
   return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
 }

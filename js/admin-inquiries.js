@@ -167,7 +167,7 @@
     var box = $('list-pipe');
     if (pipe) { pipe.then(function (p) { if (p) p.reload(); }); return; }
     box.textContent = ''; box.appendChild(el('p', 'empty', 'Loading…'));
-    pipe = import('./admin-pipeline.js').then(function (M) {
+    pipe = import('./admin-pipeline.js').then((M) => {
       return M.mountPipeline(box, { sb: sb, words: M.wordsFrom($('aq-view-admin')), toast: toast,
         openEnquiry: function (row) { filter = 'all'; only = row.id; markTabs(); loadInquiries(); } });
     }, function (e) { pipe = null; box.textContent = ''; box.appendChild(el('p', 'empty', 'Could not load the pipeline: ' + (e && e.message || e))); return null; });
