@@ -51,6 +51,11 @@ about.html / teachers.html     紹介ページと授業での使い方（英語�
 news-map.html / embed-map.html  用途別の紹介——ニュースを地図で読む／記事に地図を埋め込む（英語）。ja/ に日本語版。
                                 sitemap.xml・robots.txt とともに scripts/landing.mjs が生成する（手で編集しない。
                                 文は scripts/landing-text.mjs、見本は js/showcase.js）。Architecture.md §8.6
+for-newsrooms.html / for-schools.html / for-research.html / contact.html / support.html
+                                組織向けの紹介 3 ページ・相談フォーム・支援のページ（英語。ja/ が日本語版）。
+                                scripts/org-pages.mjs が生成する（手で編集しない。文は scripts/org-pages-text.mjs）。Architecture.md §11
+admin-inquiries.html            相談のコンソール（org_inquiries の閲覧・状態とメモ・削除、supporters の掲載）。英語・noindex。
+                                同じく scripts/org-pages.mjs が生成し、動きは js/admin-inquiries.js
 img/showcase/<id>.jpg           見本の地図の画面写真（と共有カード用の <id>-card.jpg・1200×630、アプリ内ギャラリー用の <id>-thumb.jpg・480×252＝カードの縮小）。scripts/showcase-capture.mjs がビルドしたアプリから撮る
 s/<id>.html / ja/s/<id>.html    見本ごとの共有ページ（og カード＋その見本の地図への転送）。scripts/landing.mjs が生成する
 og-image.jpg                    リンクのカードの絵（本物の JPEG。大きさは scripts/brand.mjs が読んで index.html の head へ書く）
@@ -117,6 +122,8 @@ css/
                                     z-index はすべてそれを読む（台帳は scripts/z-layers.mjs）
   pages.css                         読み物2ページ（science.html / sources.html）のスタイル
   landing.css                       紹介・授業ページ（about / teachers と ja/）のスタイル。pages.css の配色の上に載る
+  org-pages.css                     組織向けページ・相談フォーム・支援のページのスタイル（landing.css の上に載る）
+  admin-inquiries.css               相談のコンソール admin-inquiries.html のスタイル（admin.html と同じトークン）
   history-pages.css                 歴史地図の入口ページ（ビルドが書く history/・ja/history/）のスタイル。landing.css の上に載る
   fonts.css                         同梱フォントの @font-face
 src/
@@ -1249,6 +1256,10 @@ supporter.js                      IntMap を支援する——支援パネルの
                                   public.operating_stats() の今月の AI 要求数・トークン数）と、控えめな提案カード
                                   （Atlas の 1 日の上限に達したとき・7 日目に一度だけ。閉じたら眠る）。Stripe の 2 リンクの宣言。
                                   window に何も出さない（app-body.js が install し、atlas-cap-panel.js の `operatingCosts` が開く）
+org-page.js                       組織向けページの唯一のスクリプト（素の script・window に何も出さない）——テーマ、言語の選択、
+                                  相談フォームの送信（reader-reports へ kind inquiry。201 のときだけ「送った」）、支援のページの
+                                  今月の AI 利用量（operating_stats）と支援者の一覧（supporters）の読み込み。文は持たない（ページの data-msg-*）
+admin-inquiries.js                admin-inquiries.html の動き——管理者の確認、相談の一覧・状態・メモ・削除、支援者の掲載・非表示・削除
 monitors.js                       Area Monitors IntMapMonitors
 weather.js                        気象（export wind / weatherEC / weatherPanel）
 wx-models.js                      予報モデルのレジストリ window.IntMapWxModels——提供モデル・出典・ライセンス。格子／変数／気圧面／予報期間は live metadata から導出（書き写さない）
@@ -1535,9 +1546,9 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全22本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（41本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（42本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
-  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス）。20本）
+  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス）。20本）
   functions/<name>/index.ts       Edge Functions（22本。一覧と各本の役割は Architecture.md §6.2。
                                   usage-count/shape.js は関数の中の宣言で、ブラウザも import する）
   functions/ai-proxy/*.ts         ai-proxy は仕事ごとのモジュール（index.ts＝経路の表・ask.ts＝1 回の要求・
@@ -1550,7 +1561,8 @@ supabase/
                                   rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
                                   bbox.js / read-budget.js / client-error-shape.js /
                                   fetch-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
-                                  atlas-grade-schema.js / site-origin.js / plans.js）
+                                  atlas-grade-schema.js / site-origin.js / plans.js /
+                                  inquiry-shape.js〔組織からの相談の語彙・上限・返信先の規則。org-pages.mjs も読む〕）
                                   ⚠ site-origin.js は**本番のアドレスの唯一の置き場**（`CUSTOM_DOMAIN` が
                                   変える値）。ブラウザ・Edge Function・スクリプト・テストが import し、
                                   workflow は scripts/site-url.mjs 経由で読む（domain-portable）
@@ -1597,6 +1609,9 @@ scripts/
   history-pages.mjs               歴史地図の入口ページの生成器——js/time-borders.js を Node で動かし、地図が描く名前を
                                   地域 × 日付で書く。vite.config.js の historyPagesPlugin がビルド時に子プロセスで走らせる（§8.6.2）
   history-pages-text.mjs          入口ページの文の唯一の写し（en + jp）
+  org-pages.mjs                   組織向けページ・相談フォーム・支援のページ（en と ja/）と admin-inquiries.html の**生成器と門**
+                                  （`--check`）。数字はその持ち主から読む（facts()・plans.js・EMBED_SIZES・purge の既定値）
+  org-pages-text.mjs              そのページの文の唯一の写し（en + jp）。導入事例・料金・応答時間を書かない
   showcase-capture.mjs            見本の地図のリンクと画面写真を、ビルドしたアプリ自身に作らせる（サーバと実ネットワークが要る）。
                                   授業ツアーの段（js/tours.js）のリンクも同じ関数で作る（`--shots <dir>` で確認用の写真）。
                                   `--serve dist` でこの実行の間だけ serve.mjs を立てて止める・`--only a,b`・`--thumbs` でギャラリー用の縮小を作る

@@ -1765,7 +1765,7 @@
       "whatJp": "IntMap 自身の基盤：認証・データベース・ストレージ・全 Edge Function",
       "sends": {
         "code": "content",
-        "detail": "account credentials at sign-in; posts, comments and saved items; the map area for the ship/aircraft snapshots; the text given to the AI features; URLs handed to the relays; the anonymous usage counts (declared metric/dimension/count rows only — supabase/functions/usage-count/shape.js)"
+        "detail": "account credentials at sign-in; posts, comments and saved items; the map area for the ship/aircraft snapshots; the text given to the AI features; URLs handed to the relays; the anonymous usage counts (declared metric/dimension/count rows only — supabase/functions/usage-count/shape.js); an organisation's enquiry typed into contact.html (name, reply address, the optional organisation fields and the message — supabase/functions/_shared/inquiry-shape.js)"
       },
       "disclosure": {
         "en": "Supabase (database/auth/hosting/server-side processing)",

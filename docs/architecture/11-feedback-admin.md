@@ -21,7 +21,12 @@
     出さない（`OFFER`。記録は端末の localStorage だけ）。ダイアログが開いている間は出さない。
   - **Atlas** からは `donate`（パネルを開く）と `operatingCosts`（パネルを「支援の使い道」で開き、同じ数を
     Atlas に返す）で届く。Stripe のページを開くのは読者のクリックだけ。
-  - 支援者の名前の表示は**無い**（設計だけ。`PRODUCT.md` §2.4）。
+  - **支援のページ `support.html`**（`ja/support.html`。`scripts/org-pages.mjs` が生成）は、運営にかかるもの
+    （Atlas の AI 提供元・Supabase・CARTO の基図の無料枠・運営者の時間。**金額は出さない**）、今月の AI の利用量
+    （`operating_stats()` をその場で読む。読めなければそう言う）、寄付の 2 つのリンク、**支援者の一覧**を出す。
+  - **支援者の一覧**は `supporters` 表の `listed` の行（表示名・寄付した月・任意のひとこと）。行は**本人が掲載を
+    申し込み**（相談の purpose `supporter_listing`）、管理者が **Stripe のダッシュボードで寄付を手で照合してから**
+    `admin-inquiries.html` で書く。金額・決済の情報は持たない。Webhook による自動の掲載は無い（`PRODUCT.md` §2.4、未承認）。
   - EN: `https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en`
   - JA: `https://donate.stripe.com/8x29AM9Qa2se7JYetA5gc00?locale=ja`
 - **管理コンソール `admin.html`**：`geo_pins`（ニュース辞書）の追加／編集、`dashboard_cards` 編集、
@@ -30,3 +35,9 @@
   破壊的操作の前に再認証を求める。ログインゲートは利便のためのもので、非 admin が開いても
   **RLS が 0 行しか返さない**。
 - **バグ報告**：`bug_reports`（診断情報 JSON 付き。`reader-reports` 経由で誰でも送れる・表へ直接は書けない・admin が閲覧）。
+- **組織からの相談**：報道機関・学校・研究機関/NGO 向けの紹介ページ（`for-newsrooms.html`・`for-schools.html`・
+  `for-research.html` と `ja/`）から `contact.html` のフォームへ。`reader-reports`（kind `inquiry`）経由で `org_inquiries`
+  に入り、**表へ直接は書けない**。読むのは**相談のコンソール `admin-inquiries.html`**（`admin.html` とは別のページ・
+  同じアカウント・`noindex`）——状態（new / replied / closed / spam）とメモを付け、削除し、支援者を掲載する。
+  保存期間は受信から 730 日、spam は 30 日（`purge_org_inquiries`・pg_cron）。ページの文は `scripts/org-pages-text.mjs`
+  （en + jp）、生成と門は `scripts/org-pages.mjs`。営業の手引きは `docs/sales/`。
