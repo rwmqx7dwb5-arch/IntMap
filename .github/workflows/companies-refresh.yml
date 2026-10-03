@@ -1,0 +1,103 @@
+# (companies-elections-live) THE COMPANY ATLAS IS RE-READ EVERY WEEK, A BATCH AT A TIME.
+#
+# MEASURED 2026-10-03, BEFORE THIS FILE: all 533 profiles in data/companies/profiles/ were built on
+# 2026-08-23, 501 of them `osmPending` (OpenStreetMap never answered for that company), and no
+# workflow ran scripts/companies/build.mjs at all — the atlas was one photograph. This job rebuilds a
+# batch every week, chosen by scripts/companies/refresh-plan.mjs: the pending companies first, then
+# the oldest profiles, so pending clears in a few weeks and afterwards every profile is re-read in
+# rotation. Each profile states the day it was built (`generatedAt`) and the panel prints it.
+#
+# ⚠ WHY A SEPARATE WORKFLOW AND NOT A ROW ON scripts/data-refresh.mjs's ROSTER: that roster is for
+#   builders that are light (a few dozen requests) and keyless; this one is a few hundred Wikidata
+#   and Overpass requests and ~10 minutes, and its batch is chosen by the profiles' own age rather
+#   than by one bundle's cadence. The LANDING is shared, not copied: .github/actions/land-bot-pr.
+# ⚠ THE CACHE IS WHAT MAKES «A BATCH» CUMULATIVE. scripts/companies/osm.mjs harvests every Overpass
+#   answer it has ever stored before asking anything, so .cache/companies is carried between runs
+#   (actions/cache, a new key each run so the newest answers are always saved).
+# ⚠ A RUN THAT CANNOT REACH THE UPSTREAMS WRITES NOTHING WRONG: build.mjs drops what it cannot
+#   source and marks a company osmPending rather than claiming «no sites», and check:companies gates
+#   the bytes before the pull request is opened.
+name: Companies refresh
+
+on:
+  schedule:
+    - cron: '23 5 * * 1'         # Mondays 05:23 UTC — away from the TLE (03:17/15:17) and liveness (04:41) runs
+  workflow_dispatch:
+    inputs:
+      batch:
+        description: How many companies to rebuild (default scripts/companies/refresh-plan.mjs BATCH)
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write                 # approve the runs the bot's pull request parks, dispatch deploy.yml (land-bot-pr)
+
+concurrency:
+  group: companies-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      BRANCH: data/companies-refresh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      # No `npm ci`: scripts/companies/ uses nothing but the runtime (and curl, which the runner has).
+      - name: Restore the upstream answers of earlier runs
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: .cache/companies
+          key: companies-cache-${{ github.run_id }}
+          restore-keys: companies-cache-
+      - name: Choose this week's batch
+        env:
+          BATCH: ${{ github.event.inputs.batch }}   # passed through the environment, never pasted into the script
+        run: |
+          if [ -n "$BATCH" ]; then
+            case "$BATCH" in *[!0-9]*) echo "::error::batch must be a number"; exit 1;; esac
+            node scripts/companies/refresh-plan.mjs --batch "$BATCH" --out batch.txt --summary "$GITHUB_STEP_SUMMARY"
+          else
+            node scripts/companies/refresh-plan.mjs --out batch.txt --summary "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Rebuild the batch from Wikidata, OpenStreetMap, SEC EDGAR and GLEIF
+        run: |
+          # ⚠ an empty --only would mean «everything» to build.mjs; an empty plan means «nothing»
+          if [ ! -s batch.txt ]; then echo "the plan is empty — nothing to rebuild"; exit 0; fi
+          node scripts/companies/build.mjs --only "$(cat batch.txt)"
+      - name: The bytes must pass the company gate before anything is proposed
+        run: |
+          node scripts/companies-audit.mjs --gate
+          node scripts/companies/refresh-plan.mjs --batch 0 --summary "$GITHUB_STEP_SUMMARY"
+      - name: Open a pull request when a profile actually moved
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- data/companies && [ -z "$(git ls-files --others --exclude-standard data/companies)" ]; then
+            echo "nothing under data/companies moved — nothing to propose"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add data/companies
+          printf 'data: re-read a weekly batch of the company atlas\n\nRebuilt by .github/workflows/companies-refresh.yml; the batch was chosen by\nscripts/companies/refresh-plan.mjs (osmPending first, then the oldest profiles).\n' > commit-message.txt
+          git commit -F commit-message.txt
+          git push --force origin "$BRANCH"
+          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
+            gh pr create --base main --head "$BRANCH" \
+              --title "data: re-read a weekly batch of the company atlas" \
+              --body "Rebuilt by the scheduled \`Companies refresh\` workflow. The batch, the pending count before and after, and the age of the atlas are in the run summary. Every profile states the day it was built (\`generatedAt\`); \`npm run check:companies\` passed on these bytes before this pull request was opened."
+          else
+            echo "an open pull request already tracks this branch — it now carries this week's batch"
+          fi
+      - name: Approve the checks this job caused, wait for them, and land the batch
+        uses: ./.github/actions/land-bot-pr
+        with:
+          branch: data/companies-refresh
+          what: the company batch

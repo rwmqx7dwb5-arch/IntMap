@@ -22,6 +22,7 @@ import { settleWithin, lateNote } from './atlas-deadlines.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { placeProfile, profileHtml } from './place-dossier.js';   /* (place-dossier) research.placeProfile's gatherer and renderer */
 
 export default [
   {
@@ -89,6 +90,26 @@ export default [
           const qq=String(a.question||a.query||'').trim();
           if(qq) return await dispatch({type:'analyze',question:qq,place:'there'});
           return R(true, note(esc(ll.name||(ll.lat.toFixed(3)+', '+ll.lng.toFixed(3)))+' — '+L('ask me anything about this spot','この地点について何でも聞いてください','fragen Sie mich alles zu diesem Ort','спросите что угодно об этом месте','pregúntame lo que sea sobre este lugar'))); }
+    },
+  },
+  {
+    /* (place-dossier) EVERYTHING THE MAP KNOWS ABOUT ONE POINT, AS VALUES — js/place-dossier.js gathers it,
+       the card on the map draws the same record, and Atlas receives it whole as `exec.placeProfile`
+       (js/atlas-toolsurface.js → `observed`), so a figure Atlas quotes is one the reader can see. */
+    row: ['research.placeProfile',      'placeProfile',   'placeDossier,pointProfile,whatIsHere',                        'research','none',    '',                       'explanation',         'read',    'none',   'point',    ''],
+    doc: [
+      { in: 'country', at: 55, text: '{"type":"placeProfile","place"?:str,"lng"?:num,"lat"?:num} = PLACE PROFILE / 地点プロファイル — one card of everything IntMap holds about a single point, as values with their units and sources: coordinates, the OpenStreetMap name and administrative chain (市区町村・都道府県・州), the country (Natural Earth) with its statistics, the elevation or sea depth (標高・水深, terrarium DEM), the value of EVERY data layer the reader has switched on at that point (表示中レイヤーの値) — and, by name, each layer that is on but cannot be read at a point, with the reason — the local time and time zone (現地時刻・タイムゾーン), sunrise, sunset and daylight (日の出・日の入り・昼の長さ). Use it for 「この地点について教えて」「ここはどんな場所」「what is at this spot / what does the map know here」. A section that could not be read says why instead of being left out; do not describe an unavailable section as empty. "place":"here" is the point Atlas last touched (e.g. after askHere). ' },
+    ],
+    schema: () => ({ type: 'object', properties: { place: str(), lng: lng(), lat: lat() }, anyOf: [{ required: ['place'] }, { required: ['lat', 'lng'] }] }),
+    async run(a, dctx, K) { const geocode = K.geocode, R = K.R, warn = K.warn, esc = K.esc, L = K.L, HOST = K.HOST;
+      let pt=null;
+      if(a.lng!=null&&a.lat!=null&&isFinite(+a.lng)&&isFinite(+a.lat)) pt={lng:+a.lng,lat:+a.lat,name:String(a.place||'')};
+      else if(a.place){ const ll=await geocode(a.place); if(!ll) return R(false, warn(L('IntMap could not place «'+esc(String(a.place))+'». Give coordinates, or name a place IntMap holds.','「'+esc(String(a.place))+'」を地図上に特定できませんでした。座標を指定するか、IntMap が持つ地名で言い直してください。'))); pt={lng:+ll.lng,lat:+ll.lat,name:ll.name||String(a.place)}; }
+      /* ⚠ (#R302) the target is required (the schema demands a place or a lat/lng pair); a call with neither is answered, not guessed */
+      if(!pt) return R(false, warn(L('Which point? Name a place or give its coordinates.','どの地点ですか？地名か座標を指定してください。')));
+      const prof=await placeProfile(pt, HOST, { ensureCountries: K.ensureData, metrics: Object.assign({}, K.METRICS, K.XMET), label: K.lx, format: K.fmtVal });
+      const ttl=(prof.place&&prof.place.status==='ok'&&prof.place.name)||pt.name||prof.at.text;
+      return R(true, '<div><b>'+icon('pin')+' '+esc(ttl)+'</b>'+profileHtml(prof, HOST)+'</div>', { exec: { placeProfile: prof } });
     },
   },
   {

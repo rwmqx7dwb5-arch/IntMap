@@ -4,4 +4,5 @@ export default {
   shelf: 'lyrGrpHealth',
   order: 20,
   key: 'wbinfmort',
+  measures: ['worldbank:SP.DYN.IMRT.IN'],
 };

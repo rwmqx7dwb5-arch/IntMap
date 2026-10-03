@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { generatedStampProblems } from './helpers/build-stamp.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { standalonePages } from '../scripts/js-reachability.mjs';
 
 /* one reader for the whole file — the CONTENT of a repository file, whatever line endings this
    checkout produced (scripts/eol.mjs, #R283). Sections that need another shape keep their own. */
@@ -166,8 +167,15 @@ test('R202 ③j the build stamps name THIS round', async () => {
 /* ── ⑨ the split gate learned about the standalone pages ────────────────────────────────── */
 test('#R218 ⑨ a module reached only by a page <script src> counts as reachable, and only that way', () => {
   const s = read('scripts/static-checks.mjs');
-  assert.match(s, /for \(const page of \['sources\.html', 'science\.html', 'admin\.html', 'privacy\.html', 'terms\.html'\]\)/,
-    'the reachability scan does not read the standalone pages');
+  /* (sales-channels) the pages are DISCOVERED (scripts/js-reachability.mjs standalonePages — every root .html
+     but index.html), so the scan must iterate that discovery, and the discovery must still find the five pages
+     this check was written for (a page nobody reads is a module that silently counts as dead). */
+  assert.match(codeOnly(s), /for \(const page of standalonePages\(ROOT\)\)/, 'the reachability scan does not read the standalone pages');
+  const pages = standalonePages(ROOT);
+  for (const page of ['sources.html', 'science.html', 'admin.html', 'privacy.html', 'terms.html']) {
+    assert.ok(pages.includes(page), page + ' is not among the standalone pages the scan reads');
+  }
+  assert.equal(pages.includes('index.html'), false, 'index.html is the entry, not a standalone page');
   /* ⚠ read the check WITHOUT its comments: the two file names appear in the note that explains why
      the scan reads the pages, and that note is the thing this test is here to protect (#R216). */
   assert.equal(/page-i18n|sources-list/.test(codeOnly(s)), false,

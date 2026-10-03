@@ -161,3 +161,13 @@
 /* (classroom-tours) a tour's steps, listed on its card (scripts/landing.mjs toursSection) */
 .lp-tour-steps{ margin:0; padding-left:22px; font-size:14px; color:var(--pg-ink-2); line-height:1.5; }
 .lp-tour-steps li{ margin:1px 0; }
+
+/* (showcase-gallery) embed-map.html: the code the Embed tab writes, shown as text — it wraps rather than scrolling
+   sideways, so a phone reads the whole line; and the picture of the map that code shows, below it */
+.lp-code{
+  margin:0 0 18px; padding:14px 16px; border-radius:14px; background:var(--pg-code-bg); border:1px solid var(--pg-line-soft);
+  font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--pg-ink);
+  white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word;
+}
+.lp-code code{ font:inherit; background:none; padding:0; }
+.lp-code-pic{ max-width:720px; margin-top:6px; }

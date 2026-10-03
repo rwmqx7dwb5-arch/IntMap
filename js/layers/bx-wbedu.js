@@ -5,4 +5,5 @@ export default {
   order: 80,
   key: 'wbedu',
   rest: true,
+  measures: ['worldbank:SE.XPD.TOTL.GD.ZS'],
 };

@@ -4,4 +4,5 @@ export default {
   shelf: 'lyrGrpHealth',
   order: 40,
   key: 'wbsmoke',
+  measures: ['worldbank:SH.PRV.SMOK'],
 };

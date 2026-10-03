@@ -243,7 +243,13 @@ export default [
       /* (#R174) DRONE NAVIGATION — the Atlas face of js/drone-nav.js. Every number in the reply comes
          from the same compute() the panel shows; Atlas never re-derives one, and it never claims a
          route is flyable when the planner said otherwise. */
-    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, note = K.note, geocode = K.geocode, esc = K.esc, GE = K.GE;
+    run: droneRun,
+  },
+];
+
+/* (science-instruments) THE DRONE PLANNER'S ONE DOOR, exported so `map.tool` {"name":"drone"} reaches it with
+   arguments instead of toggling the panel through a word match of its own (js/atlas-cap-map.js). */
+export async function droneRun(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, note = K.note, geocode = K.geocode, esc = K.esc, GE = K.GE;
       { const D=window.IntMapDrone;
           if(!D) return R(false, warn(L('Drone planner unavailable','ドローン航法を使えません','Drohnenplaner nicht verfügbar','Планировщик дрона недоступен','Planificador de dron no disponible')));
           const act=String(a.action||(a.from||a.to?'plan':'open')).toLowerCase();
@@ -317,6 +323,4 @@ export default [
             return R(true, warn(cf.conflicts+' '+L('conflict(s)','件の干渉','Konflikte','конфликтов','conflictos')+'\n'
               +cf.minima.filter(m=>m.conflict).map(m=>'· '+esc(m.name||m.route)+': '+Math.round(m.horizM)+' m / '+Math.round(m.vertM)+' m / '+Math.round(m.timeS)+' s').join('\n'))); }
           D.open(); return R(true, note(icon('drone')+' '+L('Drone planner open','ドローン航法を開きました','Drohnenplaner geöffnet','Планировщик открыт','Planificador abierto'))); }
-    },
-  },
-];
+}

@@ -5,4 +5,5 @@ export default {
   order: 90,
   key: 'wbrenelec',
   rest: true,
+  measures: ['worldbank:EG.ELC.RNEW.ZS'],
 };

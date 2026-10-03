@@ -47,6 +47,9 @@ import { DERIVED_FROM_THE_REPOSITORY } from './lib/upstream-cadence.mjs';
 import { readLedger, displayRanges, candidates, judged, LEDGER } from './histeras/spans.mjs';
 import { readEdges, edgeProblems } from './histadmin/edges.mjs';
 import { pathToFileURL } from 'node:url';
+import vm from 'node:vm';
+import zlib from 'node:zlib';
+import { measure, status as knowStatus, KNOW, grid as kGrid, scan as kScan } from '../js/hist-knowledge.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
@@ -60,6 +63,16 @@ const OBSERVED = 'data/hist-fidelity.json';
 export const GOVERNANCE = {
   'data/hist-fidelity.json': {
     /* the observation ledger of npm run check:histfidelity, measured over the hist-* bundles here */
+    ...DERIVED_FROM_THE_REPOSITORY,
+    builtBy: 'scripts/hist-fidelity.mjs',
+  },
+  'data/hist-coverage-holes.json': {
+    /* (hist-coverage) every hole in the first-level record, per measured year, and why — measured over the bundles here */
+    ...DERIVED_FROM_THE_REPOSITORY,
+    builtBy: 'scripts/hist-fidelity.mjs',
+  },
+  'data/hist-claims.json': {
+    /* (hist-coverage) the first-level double claims js/time-admin1.js counts at the reader's date — measured over the bundles here */
     ...DERIVED_FROM_THE_REPOSITORY,
     builtBy: 'scripts/hist-fidelity.mjs',
   },
@@ -113,30 +126,102 @@ function unsourcedSpans(bs) {
   return rows;
 }
 
-/* ══ 2. DOUBLE CLAIM ══════════════════════════════════════════════════════════════════════
+/* ══ 2. DOUBLE CLAIM — SEAM, DUPLICATE, CONTESTED ═══════════════════════════════════════════
    Two units of the SAME admin_level over the same ground at the same instant is one of three
    different things, and they are not interchangeable (historical-verification.md §2-5):
-     a DISPUTE   — both really did claim it (Alaska boundary dispute, Essequibo, Acre)
-     a DUPLICATE — upstream holds the unit twice (Закаспійская область, 1881, twice)
-     a SEAM      — year precision on both sides of a handover ([1938..1949] × [1948..1973])
-   What separates them mechanically is the identity of the unit, so that is what is counted: the
-   same NAME at the same LEVEL over an OVERLAPPING span is a duplicate or a seam, never a
-   dispute, because a polity does not dispute ground with itself. */
-function selfOverlaps(bs) {
+     a SEAM       — year precision on both sides of a handover ([1938..1949] × [1948..1973])
+     a DUPLICATE  — upstream holds one unit twice (Закаспійская область, 1881, twice)
+     CONTESTED    — two different units claim the ground: a dispute, a layered jurisdiction, or a
+                    reorganisation whose end nobody recorded — not judged by the machine
+   The kind is decided by js/hist-scale.js `claimKind`, the one rule the layer's note also reads.
+   ══ ⚠⚠⚠ (hist-coverage) THE PAIRS USED TO BE NAMESAKES, NOT CLAIMS ════════════════════════════
+   This counted «the same NAME at the same LEVEL over an OVERLAPPING span» and never asked about the
+   GROUND. Two counties called Lincoln in two states are not a double claim, and they were most of
+   the count: measured 2026-10-03, the old rule found 60 identical + 34,194 nested + 11,196 seam =
+   45,450 pairs over the five bundles, and a ground test finds 3,847 pairs that really share ground (1,986 seam · 151 duplicate · 1,710 contested).
+   ⇒ the ground is asked first: same level, crossing spans, meeting boxes, and at least a quarter of
+   the SMALLER unit's interior points inside the other — the same OVERLAP_MIN share
+   scripts/build-hist-admin-fill.mjs test 5 uses to say «a record already answers this ground». */
+const GROUND_MIN = 0.25;
+const SAMPLE_K = 14;   /* a 14×14 lattice over the unit's box, interior points kept: ~150 for a compact unit */
+let _HS = null;
+/** js/hist-scale.js, evaluated — the page's own rule, not a copy (it has no DOM by its own invariant) */
+export function histScale() {
+  if (_HS) return _HS;
+  const w = {};
+  vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'js', 'hist-scale.js'), 'utf8'), { window: w, Date, Math });
+  return (_HS = w.IntMapHistScale);
+}
+function ringIn(r, x, y) {
+  let c = false;
+  for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+    const xi = r[i][0], yi = r[i][1], xj = r[j][0], yj = r[j][1];
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) c = !c;
+  }
+  return c;
+}
+const polysIn = (P, x, y) => P.some((p) => ringIn(p[0], x, y) && !p.slice(1).some((h) => ringIn(h, x, y)));
+/** the row's identity in the runtime ledger: OHM's relation id, or «<gap file>:<row>» for a derived row */
+export const claimKey = (file, f, i) => (f[10] != null && Number.isFinite(f[10]) ? 'r' + f[10] : path.basename(file, '.js') + ':' + i);
+export function groundClaims(bs) {
+  const HS = histScale(), U = [];
+  for (const { file, b } of bs) b.feats.forEach((f, i) => {
+    const polys = f[8].map((p) => p.map((ri) => b.rings[ri]));
+    const bb = [180, 90, -180, -90];
+    for (const p of polys) for (const q of p[0]) { if (q[0] < bb[0]) bb[0] = q[0]; if (q[1] < bb[1]) bb[1] = q[1]; if (q[0] > bb[2]) bb[2] = q[0]; if (q[1] > bb[3]) bb[3] = q[1]; }
+    U.push({ file, i, f, name: f[0], lvl: f[1], s: [f[2], f[3], f[4]], e: [f[5], f[6], f[7]], polys, bb, pts: null });
+  });
+  /* ⚠ THE SHARE IS OF THE SMALLER UNIT'S GROUND, so «smaller» is measured: each unit carries a
+     SAMPLE_K × SAMPLE_K lattice over its own box and the cells of it that are interior (the same
+     scanline js/hist-knowledge.js measures with); its ground is those cells' area. The other unit is
+     then scanned ON THAT LATTICE — one pass over its rings — and the cells both hold are counted. */
+  const lat = (u) => {
+    if (u.lat) return u.lat;
+    const [a, b, c, d] = u.bb, res = Math.max(c - a, d - b, 1e-9) / SAMPLE_K;
+    const win = { x0: a, y0: b, res, NX: SAMPLE_K, NY: SAMPLE_K }, mask = new Uint8Array(SAMPLE_K * SAMPLE_K);
+    let n = 0;
+    for (const p of u.polys) kScan(win, p, (j, i0, i1) => { for (let i = i0; i <= i1; i++) if (!mask[j * SAMPLE_K + i]) { mask[j * SAMPLE_K + i] = 1; n++; } });
+    return (u.lat = { win, mask, n, area: n * res * res });
+  };
+  /* …and the smaller unit's interior cell centres are asked of the other unit, stopping as soon as the
+     share is decided either way */
+  const ptsOf = (S) => {
+    if (S.pts) return S.pts;
+    const L = lat(S), out = [];
+    if (!L.n) { for (const p of S.polys) for (const q of p[0]) out.push(q); }   /* thinner than its lattice: its own vertices */
+    else for (let k = 0; k < L.mask.length; k++) if (L.mask[k]) out.push([L.win.x0 + ((k % SAMPLE_K) + 0.5) * L.win.res, L.win.y0 + (Math.floor(k / SAMPLE_K) + 0.5) * L.win.res]);
+    return (S.pts = out);
+  };
+  function decided(S, O) {
+    const P = ptsOf(S), need = Math.ceil(GROUND_MIN * P.length);
+    let h = 0, left = P.length;
+    for (const p of P) {
+      left--;
+      if (p[0] >= O.bb[0] && p[0] <= O.bb[2] && p[1] >= O.bb[1] && p[1] <= O.bb[3] && polysIn(O.polys, p[0], p[1])) h++;
+      if (h >= need) return true;
+      if (h + left < need) return false;
+    }
+    return h >= need && P.length > 0;
+  }
+  /* a 2° bucket index, so a pair is only ever looked at when the two boxes can meet (a sweep over x
+     alone walked tens of thousands of units for every continent-wide one) */
+  const CELL = 2, cells = new Map(), seen = new Int32Array(U.length).fill(-1);
+  const cellsOf = (bb) => { const o = []; for (let x = Math.floor(bb[0] / CELL); x <= Math.floor(bb[2] / CELL); x++) for (let y = Math.floor(bb[1] / CELL); y <= Math.floor(bb[3] / CELL); y++) o.push(x * 1000 + y); return o; };
+  U.forEach((u, i) => { u.cells = cellsOf(u.bb); for (const c of u.cells) { if (!cells.has(c)) cells.set(c, []); cells.get(c).push(i); } });
   const out = [];
-  for (const { file, b } of bs) {
-    const by = new Map();
-    b.feats.forEach((f, i) => { const k = f[0] + '\t' + f[1]; if (!by.has(k)) by.set(k, []); by.get(k).push(i); });
-    for (const [, idx] of by) {
-      if (idx.length < 2) continue;
-      for (let a = 0; a < idx.length; a++) for (let c = a + 1; c < idx.length; c++) {
-        const A = b.feats[idx[a]], B = b.feats[idx[c]];
-        if (!spanOverlap(A, B)) continue;
-        const identical = A[2] === B[2] && A[3] === B[3] && A[4] === B[4] && A[5] === B[5] && A[6] === B[6] && A[7] === B[7];
-        const nested = !identical && (cmp([A[2], A[3], A[4]], [B[2], B[3], B[4]]) <= 0 && cmp([B[5], B[6], B[7]], [A[5], A[6], A[7]]) <= 0
-          || cmp([B[2], B[3], B[4]], [A[2], A[3], A[4]]) <= 0 && cmp([A[5], A[6], A[7]], [B[5], B[6], B[7]]) <= 0);
-        out.push({ file, name: A[0], level: A[1], ids: [A[10], B[10]], kind: identical ? 'identical' : nested ? 'nested' : 'seam' });
-      }
+  for (let a = 0; a < U.length; a++) {
+    const A = U[a];
+    for (const c of A.cells) for (const k of cells.get(c)) {
+      if (k <= a || seen[k] === a) continue;
+      seen[k] = a;
+      const B = U[k];
+      if (A.lvl !== B.lvl || B.bb[0] > A.bb[2] || B.bb[2] < A.bb[0] || B.bb[1] > A.bb[3] || B.bb[3] < A.bb[1]) continue;
+      const kind = HS.claimKind(A, B);
+      if (!kind) continue;
+      const la = lat(A), lb = lat(B);
+      const [S, O] = (la.n ? la.area : 0) <= (lb.n ? lb.area : 0) ? [A, B] : [B, A];
+      if (!decided(S, O)) continue;
+      out.push({ kind, a: A, b: B });
     }
   }
   return out;
@@ -148,34 +233,11 @@ function selfOverlaps(bs) {
    [[intmap-coverage-counted-is-not-coverage-seen]]
    The denominator is the land the map itself puts inside a polity that year — the same three
    records js/time-borders.js dispatches over — so the fraction answers the reader's question
-   («of the world I can see, how much has provinces drawn on it») and not a cartographic one. */
-const RES = Number(arg('--res', '0.25'));
-const NX = Math.round(360 / RES), NY = Math.round(180 / RES);
-const latC = (j) => -90 + (j + 0.5) * RES;
-
-/* even-odd scanline fill: every ring of a polygon is crossed on the row's own latitude, so a
-   hole subtracts itself and no point-in-polygon test is run per cell. */
-function scan(rings, cb) {
-  let minY = 90, maxY = -90;
-  for (const r of rings) for (const p of r) { if (p[1] < minY) minY = p[1]; if (p[1] > maxY) maxY = p[1]; }
-  const j0 = Math.max(0, Math.floor((minY + 90) / RES - 0.5)), j1 = Math.min(NY - 1, Math.ceil((maxY + 90) / RES));
-  const xs = [];
-  for (let j = j0; j <= j1; j++) {
-    const y = latC(j); xs.length = 0;
-    for (const r of rings) for (let k = 0, n = r.length; k < n; k++) {
-      const a = r[k], b = r[(k + 1) % n];
-      if ((a[1] <= y) === (b[1] <= y)) continue;
-      xs.push(a[0] + (y - a[1]) / (b[1] - a[1]) * (b[0] - a[0]));
-    }
-    if (xs.length < 2) continue;
-    xs.sort((p, q) => p - q);
-    for (let k = 0; k + 1 < xs.length; k += 2) {
-      const i0 = Math.ceil((xs[k] + 180) / RES - 0.5), i1 = Math.floor((xs[k + 1] + 180) / RES - 0.5);
-      if (i1 < 0 || i0 > NX - 1) continue;
-      cb(j, Math.max(0, i0), Math.min(NX - 1, i1));
-    }
-  }
-}
+   («of the world I can see, how much has provinces drawn on it») and not a cartographic one.
+   ⚠ (hist-coverage) THE MEASURE IS js/hist-knowledge.js's, NOT THIS FILE'S. It was a scanline
+   written here; it is now the same function the map uses to HATCH the uncovered ground, so the
+   number this gate records and the area the reader sees cannot be two answers. */
+const RES = Number(arg('--res', String(KNOW.res)));
 
 let _rec = null;
 function records() {
@@ -190,59 +252,144 @@ function records() {
   _rec = { cs, hb, er, csLo, csHi, hbLo: hb.window[0], hbHi: hb.window[1] };
   return _rec;
 }
+const resolve = (polys, rings) => polys.map((poly) => poly.map((r) => rings[r]));
 function politiesAt(y) {
   const { cs, hb, er, csLo, csHi, hbLo, hbHi } = records(), out = [];
   if (y >= csLo && y <= csHi) {
-    for (const f of cs.feats) if (inForce(f, y, 7, 1)) out.push({ nm: f[0], polys: f[8], rings: cs.rings });
+    for (const f of cs.feats) if (inForce(f, y, 7, 1)) out.push({ nm: f[0], polys: resolve(f[8], cs.rings) });
     return out;
   }
   if (y >= hbLo && y <= hbHi) {
-    for (const f of hb.feats) if (inForce(f, y, 7, 1)) out.push({ nm: (f[0] && f[0].en) || f[1], polys: f[8], rings: hb.rings });
+    for (const f of hb.feats) if (inForce(f, y, 7, 1)) out.push({ nm: (f[0] && f[0].en) || f[1], polys: resolve(f[8], hb.rings) });
     if (out.length) return out;   /* per instant, not per band: #R690 widened the window and OHM does not fill it evenly */
   }
   let best = null;
   for (const s of er.snaps) if (s.y <= y && (!best || s.y > best.y)) best = s;
-  if (best) for (const f of best.feats) out.push({ nm: (f[0] && f[0].en) || '?', polys: f[2], rings: er.rings });
+  if (best) for (const f of best.feats) out.push({ nm: (f[0] && f[0].en) || '?', polys: resolve(f[2], er.rings) });
   return out;
 }
 /* Which admin_level is «first-level» is the shallowest bundle's own answer, not a number written
    here: that bundle is the one js/time-admin1.js draws at every zoom, and its `levels` say which
    values that is. A gap record joins it when its own `levels` intersect them. */
+export const firstLevelBundles = (bs) => { const lv = new Set(bs[0].b.levels); return bs.filter(({ b }) => (b.levels || []).some((x) => lv.has(x))); };
 function firstLevelAt(bs, y) {
   const lv = new Set(bs[0].b.levels), out = [];
-  for (const { b } of bs) {
-    if (!(b.levels || []).some((x) => lv.has(x))) continue;
-    for (const f of b.feats) if (lv.has(f[1]) && inForce(f, y, 7, 1)) out.push({ polys: f[8], rings: b.rings });
+  for (const { file, b } of firstLevelBundles(bs)) {
+    for (const f of b.feats) if (lv.has(f[1]) && inForce(f, y, 7, 1)) out.push({ file, f, polys: resolve(f[8], b.rings) });
   }
   return out;
 }
 export function coverage(bs, y) {
-  const pol = politiesAt(y), adm = firstLevelAt(bs, y);
-  const cid = new Int32Array(NX * NY).fill(-1), names = [];
-  pol.forEach((c, ix) => {
-    names.push(c.nm);
-    for (const poly of c.polys) scan(poly.map((r) => c.rings[r]), (j, i0, i1) => { const base = j * NX; for (let i = i0; i <= i1; i++) cid[base + i] = ix; });
-  });
-  const cov = new Uint8Array(NX * NY);
-  for (const u of adm) for (const poly of u.polys) scan(poly.map((r) => u.rings[r]), (j, i0, i1) => { const base = j * NX; for (let i = i0; i <= i1; i++) cov[base + i] = 1; });
-  const tot = new Map(), hit = new Map();
-  let T = 0, H = 0;
-  for (let k = 0; k < cid.length; k++) {
-    const c = cid[k];
-    if (c < 0) continue;
-    T++; tot.set(c, (tot.get(c) || 0) + 1);
-    if (cov[k]) { H++; hit.set(c, (hit.get(c) || 0) + 1); }
+  const m = measure(politiesAt(y), firstLevelAt(bs, y), RES);
+  return { year: y, ...m };
+}
+
+/* ══ 3b. THE HOLES, AND WHY EACH ONE IS A HOLE ════════════════════════════════════════════
+   (hist-coverage) «足せない国は穴として、理由と観測日付を記録する». A polity the measure finds
+   less than whole is a hole, and the uncovered part of it lies over present-day countries whose
+   units data/hist-admin-fill.js either draws, or refuses for a reason it now writes into the
+   bundle (`refused`). So each hole is broken down by the present-day country under its uncovered
+   ground — Natural Earth's own outline set, data/admin1-world.json.gz, the same one the fill is
+   built from — and each share states why that ground is empty in that year:
+     undated / no-identifier / no-set-floor / never-whole   the fill's own refusal (with its counts)
+     before-set-floor   the country's present-day units are drawn only from the latest founding
+                        any of them states, and that is after this year
+     withheld           the fill draws this country at this date, but not this ground: the era
+                        record places it in another polity, or it is a unit left to OpenHistoricalMap
+                        that OpenHistoricalMap does not cover at this date
+     no-outline         the ground lies in no present-day unit of the outline set (a coast, a lake)
+   The ledger is a PHOTOGRAPH and the gate re-takes it: data/hist-coverage-holes.json must equal
+   what the shipped bundles measure, so a round that fills a hole has to re-record the ledger and
+   cannot leave a stale reason standing ([[intmap-discovered-list-is-a-photograph]]). */
+export const HOLES = 'data/hist-coverage-holes.json';
+const HOLES_NOTE = 'Observations, not targets. Per measured year: [polity, % of its land carrying a first-level unit, cells (0.25°), [[present-day ISO3 under the uncovered ground, % of that ground, reason, …]]]. Re-recorded by node scripts/hist-fidelity.mjs --update; npm run check:histfidelity fails when it is not what the shipped bundles measure.';
+/* the reasons, as data — so a reader of the ledger does not need this file to know what a code means */
+const HOLE_REASONS = {
+  undated: 'Wikidata states a founding (P571) for fewer than three, or fewer than half, of this country\'s present-day first-level units — [stated, units]',
+  'no-identifier': 'a present-day unit of this country carries no ISO 3166-2 or HASC code, so the country cannot be answered whole — [stated, units]',
+  'no-set-floor': 'dated, but no unit\'s own statement gives the set a floor — [stated, units]',
+  'never-whole': 'on no date can every present-day unit of this country be drawn: the era record places one in another polity — [stated, units]',
+  'before-set-floor': 'the present-day units are drawn only from the latest founding any of them states — [YYYYMMDD]',
+  withheld: 'the country is drawn at this date, but not this ground: the era record places it elsewhere, or OpenHistoricalMap answers for it and does not cover it now',
+  'no-outline': 'the ground lies in no present-day unit of the outline set (coast, lake, or a polity outline wider than the unit set)',
+  '*': 'present-day countries each under less than 5% of the uncovered ground, together',
+};
+const HOLE_SHARE_MIN = 5;   /* a present-day country under less than 5% of a hole's ground is folded into «other» */
+let _ne = null;
+function neGrid() {
+  if (_ne) return _ne;
+  const ne = JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(ROOT, 'data', 'admin1-world.json.gz'))));
+  const G = kGrid(RES), win = { x0: -180, y0: -90, res: RES, NX: G.NX, NY: G.NY };
+  const iso = [], ix = new Map(), cell = new Int16Array(G.NX * G.NY).fill(-1), codeIso = new Map();
+  for (const f of ne.f) {
+    if (!ix.has(f.i)) { ix.set(f.i, iso.length); iso.push(f.i); }
+    const k = ix.get(f.i);
+    const code = String(f.n || '').split('|').find((p) => /^[A-Z]{2}-[A-Z0-9]{1,3}~?$/.test(p));
+    if (code) codeIso.set(code, f.i);
+    const g = f.g, polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
+    for (const p of polys) kScan(win, p, (j, i0, i1) => { const base = j * G.NX; for (let i = i0; i <= i1; i++) cell[base + i] = k; });
   }
-  const per = [...tot].map(([c, t]) => ({ nm: names[c], cells: t, pct: 100 * (hit.get(c) || 0) / t })).sort((a, b) => b.cells - a.cells);
-  /* «一部だけ» is the user's own complaint and needs a line. A polity is WHOLE when the grid finds
-     a unit over essentially all of it; the 5% slack is the resolution difference between a polity
-     outline and a subdivision outline — the same quantity #R719 measured at 20% for a
-     unit-inside-country test, smaller here because this asks about a WHOLE country, where the
-     edge cells are a far smaller share of the total than they are for one province. */
-  return { year: y, units: adm.length, polities: per.length, pct: 100 * H / T,
-    zero: per.filter((p) => p.pct < 1).length,
-    partial: per.filter((p) => p.pct >= 1 && p.pct < 95).length,
-    full: per.filter((p) => p.pct >= 95).length, per };
+  return (_ne = { G, iso, cell, codeIso });
+}
+function fillOf(bs) { const x = bs.find((q) => /admin-fill/.test(q.file)); return x ? x.b : null; }
+export function holes(bs, y, m = null) {
+  if (!m) m = measure(politiesAt(y), firstLevelAt(bs, y), RES);
+  const { G, iso, cell, codeIso } = neGrid(), fill = fillOf(bs) || {};
+  const refused = fill.refused || {}, inc = fill.inception || {};
+  const floor = new Map(), drawn = new Set();
+  for (const [code, s] of Object.entries(inc)) { const c = codeIso.get(code); if (c && (!floor.has(c) || s > floor.get(c))) floor.set(c, s); }
+  for (const f of (fill.feats || [])) drawn.add(f[11]);
+  const t = y * 10000 + 701;
+  const why = (c) => {
+    if (c == null) return ['no-outline'];
+    if (refused[c]) return refused[c];
+    if (floor.has(c) && t < floor.get(c)) return ['before-set-floor', floor.get(c)];
+    return ['withheld'];
+  };
+  const out = [];
+  /* the per-cell arrays measure() just filled: cid (which polity) and cov (covered) */
+  const cid = m.cells.cid, cov = m.cells.cov;
+  const want = new Map();
+  for (const p of m.per) if (knowStatus(p.pct) !== 'full') want.set(p.ix, new Map());
+  for (let k = 0; k < cid.length; k++) {
+    const c = cid[k]; if (c < 0 || cov[k]) continue;
+    const t2 = want.get(c); if (!t2) continue;
+    const ii = cell[k], key = ii < 0 ? null : iso[ii];
+    t2.set(key, (t2.get(key) || 0) + 1);
+  }
+  for (const p of m.per) {
+    const t2 = want.get(p.ix); if (!t2) continue;
+    const un = p.cells - p.hit, parts = [];
+    let other = 0;
+    for (const [c, n] of [...t2].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])))) {
+      const share = Math.round(1000 * n / un) / 10;
+      if (share < HOLE_SHARE_MIN) { other += n; continue; }
+      parts.push([c || '', share, ...why(c)]);
+    }
+    if (other) parts.push(['*', Math.round(1000 * other / un) / 10]);
+    out.push([p.nm, Math.round(p.pct * 10) / 10, p.cells, parts]);
+  }
+  return out;
+}
+
+/* ══ 3c. THE CLAIMS THE LAYER'S NOTE READS ═══════════════════════════════════════════════
+   (hist-coverage) The first-level pairs only — the tier js/time-admin1.js's note speaks for — keyed
+   by the identity the page has for each row (`claimKey`), with the kind and the instant the overlap
+   begins and ends. The page counts, at the reader's date, the pairs whose both rows are drawn. */
+export const CLAIMS = 'data/hist-claims.json';
+const CLAIMS_NOTE = 'First-level pairs of units drawn over the same ground at the same instant: [kind, row A, row B, overlap start [y,m,d], overlap end (exclusive)]. Rows are OpenHistoricalMap relations (r<id>) or derived rows (<file>:<row>). Kinds are js/hist-scale.js claimKind: seam (a year-precision handover), duplicate (one unit held twice), contested (two different units claim the ground; not judged). Re-recorded by node scripts/hist-fidelity.mjs --update.';
+export function claimLedger(bs, claims) {
+  const first = new Set(firstLevelBundles(bs).map((x) => x.file));
+  const ymdOf = (p) => p[0] * 10000 + p[1] * 100 + p[2];
+  const rows = [];
+  for (const { kind, a, b } of claims) {
+    if (!first.has(a.file) || !first.has(b.file)) continue;
+    const os = ymdOf(a.s) >= ymdOf(b.s) ? a.s : b.s, oe = ymdOf(a.e) <= ymdOf(b.e) ? a.e : b.e;
+    const ka = claimKey(a.file, a.f, a.i), kb = claimKey(b.file, b.f, b.i);
+    rows.push(ka < kb ? [kind, ka, kb, os, oe] : [kind, kb, ka, os, oe]);
+  }
+  rows.sort((p, q) => (p[1] + p[2] < q[1] + q[2] ? -1 : 1));
+  return rows;
 }
 
 /* ══ 4. ERA NAMES PAST THEIR POLITY ═════════════════════════════════════════════════════════
@@ -442,10 +589,17 @@ export function fillInceptionProblems(bs) {
     if (!/admin-fill/.test(file)) continue;
     const inc = b.inception;
     if (!inc || typeof inc !== 'object') { out.push(['fill-inception-unstated', file + ' carries no `inception` — the floor its rows are drawn from cannot be re-derived']); continue; }
-    const iso3Of = new Map();
+    /* ⚠ (hist-coverage) THE COUNTRY OF A CODE IS THE OUTLINE SET'S, NOT ITS PREFIX. This read «UA-43 → UA →
+       whichever country a drawn UA-row names», and Natural Earth — the set the build admits countries by —
+       files Crimea (UA-43, Wikidata 1991-02-12) and Sevastopol (UA-40) under RUS. Once the ranked join dated
+       UA-43, the prefix gave Ukraine a 1991 floor the build never applied, and the gate read 16 correct
+       Ukrainian rows as drawn too early. The code's country is asked of data/admin1-world.json.gz itself;
+       the prefix is only the fallback for a code that set does not hold. */
+    const iso3Of = new Map(), { codeIso } = neGrid();
     for (const f of b.feats) iso3Of.set(String(f[10]).split('-')[0], f[11]);
+    const countryOf = (code) => codeIso.get(code) || iso3Of.get(code.split('-')[0]);
     const F = new Map();
-    for (const [code, s] of Object.entries(inc)) { const c = iso3Of.get(code.split('-')[0]); if (c && (!F.has(c) || s > F.get(c))) F.set(c, s); }
+    for (const [code, s] of Object.entries(inc)) { const c = countryOf(code); if (c && (!F.has(c) || s > F.get(c))) F.set(c, s); }
     const bad = [];
     for (const f of b.feats) {
       const s = f[2] * 10000 + f[3] * 100 + f[4];
@@ -480,9 +634,23 @@ async function listEra(y, box) {
   for (const h of [...new Set(hits)].sort()) console.log('    ' + h);
 }
 function listYear(bs, y, box) {
+  /* (hist-coverage) a row claimed twice at this instant says so, and says which kind of claim it is */
+  const live = new Map();
+  for (const { file, b } of bs) b.feats.forEach((f, i) => { if (inForce(f, y, 7, 1)) live.set(claimKey(file, f, i), f[0]); });
+  const claimed = new Map();
+  try {
+    const t = [y, 7, 1], le = (p, q) => (p[0] !== q[0] ? p[0] < q[0] : p[1] !== q[1] ? p[1] < q[1] : p[2] <= q[2]);
+    for (const [kind, ka, kb, os, oe] of JSON.parse(fs.readFileSync(path.join(ROOT, CLAIMS), 'utf8')).pairs) {
+      if (!live.has(ka) || !live.has(kb) || !(le(os, t) && !le(oe, t))) continue;
+      claimed.set(ka, (claimed.get(ka) || []).concat([[kind, live.get(kb)]]));
+      claimed.set(kb, (claimed.get(kb) || []).concat([[kind, live.get(ka)]]));
+    }
+  } catch (_) { /* no ledger yet — the rows are listed without their claims */ }
+  const KIND_JA = { seam: '継ぎ目', duplicate: '重複', contested: '係争' };
   for (const { file, b } of bs) {
     const hits = [];
-    for (const f of b.feats) {
+    for (let i = 0; i < b.feats.length; i++) {
+      const f = b.feats[i];
       if (!inForce(f, y, 7, 1)) continue;
       let sx = 0, sy = 0, n = 0;
       for (const poly of f[8]) for (const ri of poly) for (const p of b.rings[ri]) { sx += p[0]; sy += p[1]; n++; }
@@ -494,7 +662,9 @@ function listYear(bs, y, box) {
         : '   ⚠ 開始日を誰も述べていない';
       /* (hist-fidelity-sweep) a reviewed handover says whose day it is, beside upstream's own */
       const cor = d && ['start', 'end'].filter((k) => d[k] && d[k].corrected).map((k) => `${k === 'start' ? '開始' : '終了'}は上流 ${d[k].raw} → 審査済み ${d[k].corrected.at}（${d[k].corrected.q} ${d[k].corrected.p}）`).join('・');
-      hits.push(`${f[0]} (L${f[1]} ${[f[2], f[3], f[4]].join('-')} → ${[f[5], f[6], f[7]].join('-')})${mark}${cor ? '   · ' + cor : ''}`);
+      const cl = claimed.get(claimKey(file, f, i));
+      const clm = cl ? '   ⇄ ' + cl.map(([k, o]) => KIND_JA[k] + '(' + k + ') × ' + o).join('; ') : '';
+      hits.push(`${f[0]} (L${f[1]} ${[f[2], f[3], f[4]].join('-')} → ${[f[5], f[6], f[7]].join('-')})${mark}${cor ? '   · ' + cor : ''}${clm}`);
     }
     console.log(`${file}: ${hits.length}`);
     for (const h of hits) console.log('    ' + h);
@@ -510,19 +680,26 @@ async function main() {
   }
 
   const spans = unsourcedSpans(bs);
-  const dupes = selfOverlaps(bs);
-  const kinds = { identical: 0, nested: 0, seam: 0 };
-  for (const d of dupes) kinds[d.kind]++;
+  const claims = groundClaims(bs);
+  const kinds = Object.fromEntries(histScale().CLAIM_KINDS.map((k) => [k, 0]));
+  for (const c of claims) kinds[c.kind]++;
+  const pairs = claimLedger(bs, claims);
 
   const observed = JSON.parse(fs.readFileSync(path.join(ROOT, OBSERVED), 'utf8'));
-  const cov = observed.years.map((r) => coverage(bs, r.year));
+  /* each year's measure is read for its holes before the next year's overwrites the cells */
+  const cov = [], holeYears = [];
+  for (const r of observed.years) { const c = coverage(bs, r.year); holeYears.push({ year: r.year, holes: holes(bs, r.year, c) }); cov.push(c); }
 
   if (has('--update')) {
-    const next = { ...observed, measured: new Date().toISOString().slice(0, 10), res: RES,
-      unsourcedSpans: spans.length, selfOverlaps: kinds,
-      years: cov.map((c) => ({ year: c.year, pct: +c.pct.toFixed(2), zero: c.zero, partial: c.partial, full: c.full })) };
+    const today = new Date().toISOString().slice(0, 10);
+    const { selfOverlaps, ...rest } = observed;   /* (hist-coverage) the namesake count is retired — see «2. DOUBLE CLAIM» */
+    const next = { ...rest, measured: today, res: RES,
+      unsourcedSpans: spans.length, claims: kinds,
+      years: cov.map((c) => ({ year: c.year, pct: +c.pct.toFixed(2), pctArea: +c.pctArea.toFixed(2), zero: c.zero, partial: c.partial, full: c.full })) };
     fs.writeFileSync(path.join(ROOT, OBSERVED), JSON.stringify(next, null, 2) + '\n');
-    console.log('wrote ' + OBSERVED + ' — ' + spans.length + ' unsourced span(s), coverage ' + cov.map((c) => c.year + ':' + c.pct.toFixed(1) + '%').join(' '));
+    fs.writeFileSync(path.join(ROOT, HOLES), JSON.stringify({ note: HOLES_NOTE, measured: today, res: RES, reasons: HOLE_REASONS, years: holeYears }) + '\n');
+    fs.writeFileSync(path.join(ROOT, CLAIMS), JSON.stringify({ note: CLAIMS_NOTE, measured: today, kinds: histScale().CLAIM_KINDS, pairs }) + '\n');
+    console.log('wrote ' + OBSERVED + ', ' + HOLES + ', ' + CLAIMS + ' — ' + spans.length + ' unsourced span(s), claims ' + JSON.stringify(kinds) + ', coverage ' + cov.map((c) => c.year + ':' + c.pct.toFixed(1) + '%').join(' '));
     return;
   }
 
@@ -533,10 +710,22 @@ async function main() {
     ? `every one of ${bs.reduce((n, x) => n + x.b.feats.length, 0)} shipped rows is drawn from a date some upstream stated`
     : `${spans.length} row(s) are drawn from a date NO upstream states — ${spans.slice(0, 4).map((r) => `${r.name} (drawn from ${r.from})`).join(', ')}. A start nobody stated is not a start: resolve it from the unit's own record, or do not draw the unit at that date (.agents/rules/historical-verification.md §2-3)`);
 
-  for (const k of ['identical', 'nested', 'seam']) {
-    say(kinds[k] <= observed.selfOverlaps[k], 'double-claim-' + k,
-      `${kinds[k]} pair(s) of one unit drawn twice over one instant (was ${observed.selfOverlaps[k]})`);
+  /* (hist-coverage) the same ground claimed twice, by kind — none of the three may grow */
+  const was = observed.claims || {};
+  for (const k of histScale().CLAIM_KINDS) {
+    say(was[k] != null && kinds[k] <= was[k], 'double-claim-' + k,
+      `${kinds[k]} pair(s) of units at one level drawn over the same ground at one instant (was ${was[k] == null ? 'unrecorded' : was[k]})`);
   }
+  /* …and the two photographs the page and the reader read are re-taken, not trusted */
+  const rec = (rel) => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8')); } catch (_) { return null; } };
+  const hl = rec(HOLES), cl = rec(CLAIMS);
+  const hOk = !!hl && JSON.stringify(hl.years) === JSON.stringify(holeYears), cOk = !!cl && JSON.stringify(cl.pairs) === JSON.stringify(pairs);
+  say(hOk, 'holes-ledger', hOk
+    ? `${holeYears.reduce((n, y) => n + y.holes.length, 0)} hole(s) over ${holeYears.length} years, each broken down by the present-day country under it and why its ground is empty (${HOLES}, observed ${hl.measured})`
+    : HOLES + ' is not what the shipped bundles measure — re-record it: node scripts/hist-fidelity.mjs --update');
+  say(cOk, 'claims-ledger', cOk
+    ? `${pairs.length} first-level pair(s) the layer's note counts at the reader's date (${CLAIMS}, observed ${cl.measured})`
+    : CLAIMS + ' is not what the shipped bundles measure — re-record it: node scripts/hist-fidelity.mjs --update');
 
   const era = await eraContext();
   const eraBad = eraSpanProblems(era);
@@ -579,10 +768,19 @@ async function main() {
     }
     console.log('\n── 国名の切り替えが年の精度のままの規則（記録がその年に変わらない）: ' + csn.yearOnly.length + ' 件');
     for (const t of csn.yearOnly) console.log('   ' + t);
-    console.log('\n── 同じ単位が同じ瞬間に二度描かれる組: identical ' + kinds.identical + ' / nested ' + kinds.nested + ' / seam ' + kinds.seam);
+    console.log('\n── 同じ土地を同じ瞬間に二つの単位が主張する組: 継ぎ目 ' + kinds.seam + ' / 重複 ' + kinds.duplicate + ' / 係争 ' + kinds.contested);
+    for (const k of histScale().CLAIM_KINDS) {
+      for (const c of claims.filter((x) => x.kind === k).slice(0, 5)) console.log(`   ${k.padEnd(9)} ${c.a.name} [${c.a.s.join('-')}..${c.a.e.join('-')}] × ${c.b.name} [${c.b.s.join('-')}..${c.b.e.join('-')}]   ${c.a.file.replace('data/', '')}`);
+    }
+    console.log('\n── 穴（区分の記録が無い・一部だけの政体）と、その下の現代の国と理由');
+    for (const hy of holeYears) {
+      const big = hy.holes.filter((h) => h[2] >= 400).slice(0, 6);
+      if (!big.length) continue;
+      console.log('   ' + String(hy.year).padStart(6) + '  ' + big.map((h) => `${h[0]} ${h[1]}% [${h[3].map((p) => p.slice(0, 2).join(' ') + '% ' + p.slice(2).join(' ')).join(', ')}]`).join(' · '));
+    }
     console.log('\n── 年ごとの被覆（母集合＝その年、地図が政体の中に置いている陸地）');
     for (const c of cov) {
-      console.log(`   ${String(c.year).padStart(6)}  ${c.pct.toFixed(1).padStart(5)}%   単位 ${String(c.units).padStart(4)}  政体 ${String(c.polities).padStart(3)}   0%:${c.zero}  一部だけ:${c.partial}  丸ごと:${c.full}`);
+      console.log(`   ${String(c.year).padStart(6)}  ${c.pct.toFixed(1).padStart(5)}% (面積 ${c.pctArea.toFixed(1)}%)   単位 ${String(c.units).padStart(4)}  政体 ${String(c.polities).padStart(3)}   0%:${c.zero}  一部だけ:${c.partial}  丸ごと:${c.full}`);
       const bad = c.per.filter((p) => p.cells >= 40 && p.pct < 95).slice(0, 12);
       if (bad.length) console.log('           大きく欠けている政体: ' + bad.map((p) => `${p.nm} ${p.pct.toFixed(0)}%`).join(' · '));
     }

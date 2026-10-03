@@ -5,4 +5,5 @@ export default {
   order: 80,
   key: 'wbphys',
   rest: true,
+  measures: ['worldbank:SH.MED.PHYS.ZS'],
 };

@@ -229,8 +229,14 @@ export function newsContext(HOST){
            coordinate still wins. This is the only place the world rows enter the matcher. */
         const w=GZ.worldMatchable&&GZ.worldMatchable();
         if(w===null){ if(!rebuildGeoIndex._worldHooked){ rebuildGeoIndex._worldHooked=true;
-            try{ bus.once('intmap-gazetteer-world',()=>{ try{ rebuildGeoIndex(); }catch(_){} }); }catch(_){} }
-          GZ.warm(); }
+            try{ bus.once('intmap-gazetteer-world',()=>{ try{ rebuildGeoIndex(); }catch(_){} }); }catch(_){} } }
+        /* ⚠ (first-impression) THE INDEX LISTENS FOR THE ROWS; IT NO LONGER SENDS FOR THEM. Building the index is
+           a BOOT step (js/app-body.js runs this synchronously on a desktop), so the warm() that stood here fetched
+           the whole 5,286,074 B world file — MEASURED, cold first visit at 1024×768 — on every first visit, for a
+           locator that has no headline to place: news is not fetched until a reader asks for it (#R372,
+           js/news-feed.js). The fetch now starts where the rows are first NEEDED — analyzeContext() below, i.e. the
+           locator's first pass over real headlines, and the search box (js/app-body.js, js/search-geocode.js) —
+           and the listener above re-enters here when they land, whoever asked. */
         else if(w&&w.length&&window.IntMapNewsGeo&&window.IntMapNewsGeo.register){
           /* ⚠ (#R208) IN SLICES, BECAUSE THERE ARE NOW 148,083 OF THEM. MEASURED at 3.7 ms per
              1,000 rows, one call is ~550 ms of unbroken main thread on a desktop and several times
@@ -285,6 +291,10 @@ export function newsContext(HOST){
        decides how wide that band comes out — the EVENT path could not reach it here, and filled the
        layer's field with '' instead (empty white pills). One rule, two callers. */
     const short=window.IntMapMapTypography.bandText(title);
+    /* (first-impression) the locator's first pass is the first NEED for the world rows (see rebuildGeoIndex):
+       ask for them here. warm() fetches once and never rejects, so every later pass is a property read; this
+       pass places with the curated rows, and the index re-registers the world when they land. */
+    try{ const GZ=window.IntMapGazetteer; if(GZ&&GZ.warm) GZ.warm(); }catch(_){}
     let subjectLoc=null, subjectName=null, subjectType=null, subjectConf=0;
     /* ---- (#R161) PRIMARY: the deterministic NewsGeo engine (js/newsgeo.js).
        It does what a plain gazetteer scan cannot — resolves same-name places from

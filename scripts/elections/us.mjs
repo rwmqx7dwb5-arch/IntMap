@@ -745,6 +745,34 @@ async function senate(ctx, out, seenParty) {
   return geos;
 }
 
+/* ══ (companies-elections-live) WATCH — WHY THE HOUSE STOPS AT 2018, ASKED AGAIN EVERY WEEK ════════════
+   The header says it: MEDSL's «U.S. House 1976–2024» (doi:10.7910/DVN/IG0UN2) is behind Harvard
+   Dataverse guestbook 458 and the file API refuses it (measured 2026-09-09; again 2026-10-03: HTTP
+   400 «You may not download this file without the required Guestbook response», dataset version 15
+   of 2026-03-09). The refusal is asked again here, from the dataset's own file list — the file id is
+   discovered, not written down — so the day the guestbook is lifted the House becomes `importable`
+   instead of staying quietly at 2018. `ctx.fresh(url)` is uncached (scripts/build-elections.mjs). */
+const HOUSE_DATASET = 'https://dataverse.harvard.edu/api/datasets/:persistentId/?persistentId=doi:10.7910/DVN/IG0UN2';
+export async function watch(ctx, { last }) {
+  const body = 'House of Representatives';
+  if (!last[body]) return [];
+  const meta = await ctx.fresh(HOUSE_DATASET, { json: true });
+  const files = (meta.body && meta.body.data && meta.body.data.latestVersion && meta.body.data.latestVersion.files) || [];
+  const f = files.find(x => /house\.(tab|csv)$/i.test((x && x.label) || ''));
+  if (!f) return [];
+  const probe = await ctx.fresh('https://dataverse.harvard.edu/api/access/datafile/' + f.dataFile.id, { status: true });
+  const y = last[body].slice(0, 4);
+  const what = { en: 'House elections after ' + y, jp: y + '年より後の下院選挙' };
+  if (probe.status >= 200 && probe.status < 400) {
+    return [{ body, state: 'importable', what,
+      why: { en: 'The returns can now be downloaded without a guestbook form; rebuild this pack (the district boundaries of the 117th Congress onwards must be added with them).',
+             jp: '結果がゲストブックへの記入なしで取得できるようになりました。このパックを再構築できます（第117議会以降の選挙区境界も同時に必要です）。' } }];
+  }
+  return [{ body, state: 'blocked', what,
+    why: { en: 'The licensed record of House returns after ' + y + ' (MIT Election Data and Science Lab) can only be downloaded after filling in a guestbook form, which an unattended build cannot do, and no other openly licensed district-level record exists.',
+           jp: y + '年より後の下院の結果の、利用許諾のある記録（MIT 選挙データ・科学研究所）は、ゲストブックへの記入をしないと取得できず、無人のビルドにはそれができません。選挙区単位の、利用許諾のある別の記録はありません。' } }];
+}
+
 export async function build(ctx) {
   const out = { polities: [], parties: {}, elections: [], geo: {}, res: {} };
   const seenParty = new Set();

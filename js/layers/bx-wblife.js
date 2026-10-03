@@ -5,4 +5,5 @@ export default {
   order: 110,
   key: 'wblife',
   rest: true,
+  measures: ['worldbank:SP.DYN.LE00.IN'],
 };

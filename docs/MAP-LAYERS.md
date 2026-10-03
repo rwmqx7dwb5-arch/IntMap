@@ -667,7 +667,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 呼ばない。携帯では同じタイル盤が「Map & layers」シートに載る。**「どちらのレイヤー欄を使うか」という
 設定は無い。**
 
-⚠⚠⚠ **レイヤーは 1 つの宣言である——`js/layers/<id>.js`。** `#layer-dropdown` の**全チェックボックス**（174 個＝**レイヤー 163 ＋基本表示 11**）が
+⚠⚠⚠ **レイヤーは 1 つの宣言である——`js/layers/<id>.js`。** `#layer-dropdown` の**全チェックボックス**（175 個＝**レイヤー 164 ＋基本表示 11**）が
 それぞれ 1 本のファイルを持ち、`export default { … }` で自分のことを述べる。何を書けるかの正本は
 `scripts/lib/layer-descriptor.mjs`（欄・検査・導出）で、棚の一覧とその並びだけは 1 つのレイヤーが述べられない事実なので
 `js/layers/_shelves.js` が持つ。**どのレイヤーが在るかは、ディレクトリが答える**——一覧に足す行は無い。
@@ -692,6 +692,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 | `sources` | 描く元の出典（`js/reference-data.js` の `DATA_SOURCES` の `n`） |
 | `time` | データが何時について答えられるか（Chronos の契約）。いまは `{ kind: 'elements', bands }`——地物ごとに元期の周りの有効幅を持つ（衛星。`js/satellites-live.js` がここから読む） |
 | `pkg` | その行を実装する**レイヤー・パッケージ** `js/layer-pkg-<pkg>.js`（下の「レイヤー・パッケージ」）。無い行は今も `js/data-layers.js` が実装する |
+| `measures` | その行が塗る**上流の系列** `<publisher>:<series>`（`worldbank:SP.DYN.LE00.IN`・`countrystats:gdppc`）。下の「同じ系列を塗る行」 |
 
 **レイヤー・パッケージ——宣言の実装の半分。** 宣言の `pkg` が名指すモジュール `js/layer-pkg-<pkg>.js` は、工場関数
 `<pkg>Package(kit)`（名前の導き方は `scripts/lib/layer-descriptor.mjs` の `packageFile` / `packageExport`）が、
@@ -730,6 +731,37 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 そのレイヤーが `IntMapLayers` に登録する id でも同じ宣言になる。import できないモジュール（`js/outbreaks.js` は
 `vm` でスクリプトとしても評価される）は `window.IntMapLayers.declaration(id)` で同じものを訊く。
 ⚠ Atlas の `layerCatalog()`（`js/atlas-console.js`）はまだ DOM を歩いている——作り替えは Atlas 側の回。
+
+**同じ系列を塗る行——`measures` と国別指標。** 世界銀行の指標は 2 つのモジュールが別々の表で持っている
+（`js/wb-layers.js` の `WB` と `js/layer-packs.js` の `WB`）。どの行がどの系列を塗るかを宣言の `measures` が述べ、
+**その主張を拒める読み手**は `scripts/lib/indicator-series.mjs` の `discoverSeries`——世界銀行の API ホストを含む
+ファイルの行表（`{id:'<key>', code:…}`・`modes` の各 `code`・`<key>:{ind:…}`）と、国の表を塗る `applyChoro('<key>',s=>s.<field>`
+から、**コードが実際に塗る系列**を発見する。行の特定は綴りではなく、同じファイルが組み立てる id（`'bx-'+…`・
+`'beta-dl-'+…`）とリテラルの id の中で宣言が 1 つに決まるときだけ（`precip` は世界銀行の行と IMERG の `dl-precip` の
+2 つの別レイヤーで、短い名前は手がかりにならない）。`scripts/layer-descriptors.mjs --check` は**両方向**を見る:
+コードが塗らない系列の主張と、**コードが塗るのに宣言が述べていない系列**（＝新しい重複は名乗らずには入れない）。
+`--report` が同じ系列を塗る行の組を印字する。いまの組は 3 つ——平均寿命 SP.DYN.LE00.IN（`beta-dl-lifeexp`・`bx-wblife`）、
+失業率 SL.UEM.TOTL.ZS（`beta-dl-unemp`・`bx-wbunemp`）、インターネット利用率 IT.NET.USER.ZS（`beta-dl-internet`・`bx-wbnet`）。
+⚠ 年降水量 `beta-dl-precip`（AG.LND.PRCP.MM）と農地率 `bx-wbagri`（AG.LND.AGRI.ZS）は別の系列。
+⚠ **1 つの系列は時間について 1 つのことを述べる**——組の両方が時計の年を塗り（`js/layer-packs.js` の `wbClockYear` は
+`js/wb-layers.js` の `clockYear` と同じ規則）、読んだ年を時間カーネルへ報告し、`js/layer-time-decl.js` で同じ `series`
+宣言を持つ（`tests/map-layer-system-checks.test.mjs` ②）。どちらの行も消していない（共有リンクの `l=` が名指す）。
+Atlas の語（「平均寿命」）は組の**両方の行**に届く: 点けるときはどちらかが点いていれば済み、消すときは両方を消す
+（`js/atlas-console.js` の `_sameSeriesRows`。組は宣言から導き、手で並べない）。
+
+**国別指標（`bx-wbind`）——国の統計を 1 つのレイヤーで。** 人口の棚の先頭の 1 行が、世界銀行の全系列（2 通りの表し方を
+持つ行は表し方ごとに 1 項目）と国の表の統計（1 人当たり GDP・人口密度・HDI・民主主義指数・合計特殊出生率・国防費）、
+それに `js/wb-layers.js` が塗らない世界銀行の 2 行（汚職指標・長期の年降水量）を、**検索と分野で**選ばせる
+（`js/indicator-browser.js`。凡例の中の選択欄）。地図に載る塗り分けは常に 1 つ。
+- **一覧は写さない。** 系列は `js/wb-layers.js` の `indicators()`（行表そのもの）、同じ系列の別の行と国の表の行は宣言の
+  `measures`、**分野はその指標の行が立つ棚**（`js/layers/<id>.js` の `shelf`・名前は棚の見出し）、名前は行自身のラベル。
+  明日 1 行足せば、その行が述べたことで一覧に現れる。
+- **1 つの系列は 1 項目**——もう一方の行は「パネルでは次の行でもあります」と名指す。
+- **塗るのは行と同じ塗り手**——世界銀行の系列は `choroOn` を `wbind` の源へ向けて呼ぶので、年（時計の年）・色の段・
+  凡例・年の選択・hover・地点の値（`_imBxChoroValueAt`）が指標の行とまったく同じになる。国の表の統計は Maddison と
+  世界銀行をまたいで時計に追従する専用の行が描くので、**その行を点け**（別の指標を選ぶと消す）、そう述べる。
+- 選んだ指標は共有リンクの `wbind`（`ShareState`）で運び、端末に覚える。Atlas は `layers.indicator`——語・日本語・
+  系列コードで探し、`year` で時計を動かし、地図に載った年・報告した国の数・上位と下位を**系列そのものから**返す。
 
 **結び目の欄（`registry`〜`sources`）は主張であり、主張にはそれを拒める読み手がある。**
 `scripts/layer-descriptors.mjs --check` が、各欄をそれを持つ登録簿と突き合わせる——`IntMapLayers.register('<id>'` の
@@ -889,7 +921,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 
 **`layerGroups()` の各要素は `[キー, 短い名前の配列, 名指しされた件数]` の3つ組**（旧 `GROUPS` と同じ形）。
 棚の中の並びは**利用者が挙げた順**で、`rest` の無い先頭の行だけがカテゴリを開いたときに並ぶ。
-残りは**カテゴリの中の「その他N件」**の後ろに畳まれる（実測 **名指し 56 行 / 畳み 94 行**——18 の棚に 150 行）。
+残りは**カテゴリの中の「その他N件」**の後ろに畳まれる（実測 **名指し 57 行 / 畳み 94 行**——18 の棚に 151 行）。
 畳む行は棚の**末尾に連続**していなければならない（件数で言えるように。`tests/layer-manifest-checks` ①）。
 
 ⚠ **その印はカテゴリの並び順と同じ場所に置く。** どのレイヤーを最初に見せるかは利用者が決めたことで、
@@ -933,7 +965,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   その事実で、`base` 棚には `kind: 'display'` の行だけが立ち、その行は `base` 棚にしか立てない
   （`scripts/lib/layer-descriptor.mjs` が両方向で拒む。1 つの棚に 2 種類を混ぜることも拒む）。
   「レイヤー」と言う読み手は**全部 `js/layer-manifest.js` の `isDisplay(id)` / `dataLayers()` / `displayItems()` に訊く**:
-  紹介ページの「N のレイヤー」（`scripts/landing.mjs`＝`dataLayers().length`、いま **163**）・共有リンク（レイヤーは
+  紹介ページの「N のレイヤー」（`scripts/landing.mjs`＝`dataLayers().length`、いま **164**）・共有リンク（レイヤーは
   `l=`、基本表示は `d=`。`js/map-state.js` の `display`。⚠ `d=` の無い古いリンクは基本表示を `l=` で運んでいたので、
   `d=` が無ければ `l=` の中の基本表示を読む——同じ地図が開く）・利用統計の `layer`（基本表示は数えない）・
   Atlas の `layersOff`（基本表示は残す。`all:true` で基本表示も消し、返答は 2 つを分けて数える）・
@@ -1397,6 +1429,15 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   | Now（ライブ／今年以降） | `cb-admin1` に従う | 非表示 | 非表示 |
   | 過去の日付 | **常に非表示** | `cb-admin1` に従う | `cb-names` に従う |
 
+  ⚠⚠ **記録が黙っている土地は斜線で描く**（`imta-know-fill`・パターン画像 `imta-know-hatch`・
+  ラベル `imta-know-lbl`。可視性は線と同じ `cb-admin1` ＋旅行中）。区分線の無い政体は「区分が無かった」
+  政体と見分けがつかず、空白は平穏に読まれる——そこで、その日付に第1級区分の記録が 1% 未満の政体は
+  **その政体自身の輪郭**に、一部だけ（1〜95%）の政体は**記録の無い土地だけ**（0.1° の矩形）に斜線を引き、
+  「この年代の地方区分の記録なし」「地方区分の記録はこの土地の N% だけ」と書く。斜線は線の下・区分の線と
+  同じ色。割合は `npm run check:histfidelity` が記録する数と**同じ関数**（`js/hist-knowledge.js`）から出る。
+  レイヤー行の注記（`note()`）は、その日付の割合と、同じ土地を 2 つの単位が同時に主張している組を
+  継ぎ目・重複・係争に分けた件数（`data/hist-claims.json`・`js/hist-scale.js` の `claimKind`）も述べる。
+
   ⚠ **`-admin2` / `imta2-` は第2級（`admin_level` 5〜6）で、`minzoom` は 6。** 過去と現在で
   **同じ縮尺では同じ種類のものが出る**——時間旅行が変えてよいのは境界が<b>どこを走るか</b>だけで、
   地図が<b>何を見せる気があるか</b>ではない（#R212）。
@@ -1801,6 +1842,14 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   軸は頭の base で終わる（`trimEnd` / `line-cap:'butt'` / `icon-anchor:'top'`）。
   ⚠ 切る長さは**画素**なので**レンダラの投影に訊く**（`GE().coords.project`）。メルカトルのメートルは
   画面中心でしか合わない。`moveend` で作り直す。
+
+- **国ごとのニュースの脈**（`dl-newspulse`・政治・統治の棚・既定 OFF）— 行は `js/news-pulse.js`（**eager**）、
+  本体は `js/news-intel.js`（**遅延取得**・`window.__imNewsIntel`）。レイヤーは `nint-fill` / `nint-line`
+  （企業の線は `nint-co-line` / `nint-co-pt`）。国を**直近の窓に新しく報じられた出来事の件数**、または直前の
+  同じ長さの窓からの**件数の差**で塗る（平方根の尺度）。凡例に窓（24 時間／3／7／14 日）・塗り方・カテゴリ・
+  上位 5 か国（押すと国の日報）・被覆の 1 行（地点不明・海上・「色の薄い国は報道が少ないだけのことがある」）・
+  鮮度の 1 行。⚠ **Chronos に従う**——窓の終わりは時計の瞬間。正本は
+  [`NEWS-EVENTS.md`](NEWS-EVENTS.md) §16。
 
 - **インターネットの健康状態** — 行は `js/net-health.js`（**eager**）、測定は
   `js/net-health-live.js`（**遅延取得**・`window.__imNetHealth`）。行は2本、どちらも既定 OFF。

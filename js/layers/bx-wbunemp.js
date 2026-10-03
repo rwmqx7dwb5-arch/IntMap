@@ -5,4 +5,5 @@ export default {
   order: 130,
   key: 'wbunemp',
   rest: true,
+  measures: ['worldbank:SL.UEM.TOTL.ZS'],
 };

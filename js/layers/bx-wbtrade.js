@@ -5,4 +5,5 @@ export default {
   order: 70,
   key: 'wbtrade',
   rest: true,
+  measures: ['worldbank:NE.TRD.GNFS.ZS'],
 };

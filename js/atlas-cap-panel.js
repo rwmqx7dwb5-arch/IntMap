@@ -18,10 +18,12 @@
  * ==========================================================================*/
 import { str, bool, num, one, lat, lng, noArgs } from './atlas-caps.js';
 import { EMBED_SIZES, EMBED_PX } from './embed-mode.js';   /* (share-embed-distribution) the frame presets `share` offers are the share panel's own */
-import { IntMapTime } from './chronos.js';   /* (landing-showcase) the clock, by import (#860) */
 import { SHOWCASE, showcaseById, showcaseLink } from './showcase.js';   /* (landing-showcase) the example maps — pure data */
 import { openSupport, operatingFacts } from './supporter.js';   /* (supporter-funnel) `operatingCosts` */
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+
+/* (map-postcard) the share panel's published face (js/map-ui.js `share`) — `share` and `postcard` both act through it */
+const shareApi = () => window.IntMapShare;
 
 export default [
   {
@@ -123,18 +125,62 @@ export default [
        code for the current map (js/embed-mode.js — the share link with ?embed=1). The panel is opened
        on the matching tab, so what Atlas hands over and what the reader sees are one value. */
     doc: [
-      { in: 'tools-panels', at: 170, text: '{"type":"share","embed"?:bool,"size"?:"small"|"medium"|"large"|"responsive","width"?:num,"height"?:num,"interactive"?:bool} = SHARE THE CURRENT MAP: opens the share panel and the RESULT carries the link itself — one address that reproduces the whole view (position, projection, base map, every active layer, the clock, compare and the simulators\' inputs), so give it to the user verbatim. With "embed":true it returns instead the <iframe> CODE that puts this same view on another website, read-only (the map, its legends, the date on the clock and every data credit, plus a link that opens it in IntMap); "size" picks one of the share panel\'s frame presets (medium is the default; responsive fills the width of the page it is put on) and the result states the size it used, "width"/"height" set pixels instead, and "interactive":false makes it a still picture with no pan or zoom. Use for "共有リンクを作って", "このビューのURLをちょうだい", "share this view", "send me a link to this map", "ブログに埋め込むコードをちょうだい" (embed:true), "embed this map on my website" (embed:true), "動かせない埋め込みにして" (embed:true, interactive:false); ' },
+      { in: 'tools-panels', at: 170, text: '{"type":"share","embed"?:bool,"size"?:"small"|"medium"|"large"|"responsive","width"?:num,"height"?:num,"interactive"?:bool,"title"?:str,"note"?:str} = SHARE THE CURRENT MAP: opens the share panel and the RESULT carries the link itself — one address that reproduces the whole view (position, projection, base map, every active layer, the clock, compare and the simulators\' inputs), so give it to the user verbatim. With "embed":true it returns instead the <iframe> CODE that puts this same view on another website, read-only (the map, its legends, the date on the clock and every data credit, plus a link that opens it in IntMap); "size" picks one of the share panel\'s frame presets (medium is the default; responsive fills the width of the page it is put on) and the result states the size it used, "width"/"height" set pixels instead, and "interactive":false makes it a still picture with no pan or zoom. Use for "共有リンクを作って", "このビューのURLをちょうだい", "share this view", "send me a link to this map", "ブログに埋め込むコードをちょうだい" (embed:true), "embed this map on my website" (embed:true), "動かせない埋め込みにして" (embed:true, interactive:false). "title" and "note" give the link a caption — a title (≤ 100 characters) and a sentence from the sender (≤ 280) that whoever opens the link sees over the map, in the page title, in an embed and on the map postcard; they travel in the link itself. Use for 「題を付けて共有して」「『1914年のヨーロッパ』という題でリンクを作って」「一言添えて共有」, "share this with the title …", "add a note to the link" (title / note; "" removes it); ' },
     ],
-    schema: () => ({ type: 'object', properties: { embed: bool(), size: one.apply(null, Object.keys(EMBED_SIZES)), width: num(EMBED_PX.min, EMBED_PX.max), height: num(EMBED_PX.min, EMBED_PX.max), interactive: bool() } }),
+    schema: () => ({ type: 'object', properties: { embed: bool(), size: one.apply(null, Object.keys(EMBED_SIZES)), width: num(EMBED_PX.min, EMBED_PX.max), height: num(EMBED_PX.min, EMBED_PX.max), interactive: bool(), title: str(), note: str() } }),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn, esc = K.esc;
-      { const S=window.IntMapShare, wantEmbed=(a.embed===true);
+      { const S=shareApi(), wantEmbed=(a.embed===true);
         if(!(S&&S.open)){ const ok=clickId('btn-share'); return R(ok, ok?note('✓ '+L('Share panel','共有パネル','Teilen','Поделиться','Compartir')):warn('')); }
+        /* (map-postcard) a caption asked for is set by the panel before the link is read, so the link carries it */
+        const capArgs=(a.title!=null||a.note!=null)?{ title:a.title, note:a.note }:{};
         let made=null; try{
-          await S.open(wantEmbed?{ tab:'embed', size:a.size, width:a.width, height:a.height, interactive:a.interactive }:{ tab:'link' });
+          await S.open(wantEmbed?Object.assign({ tab:'embed', size:a.size, width:a.width, height:a.height, interactive:a.interactive },capArgs):Object.assign({ tab:'link' },capArgs));
           made=wantEmbed?S.embed():{ url:S.link() }; }catch(_){ made=null; }
         if(!made||!made.url) return R(false, warn(L('Could not build the share link','共有リンクを作れませんでした')));
-        if(wantEmbed) return R(true, note('✓ '+L('Embed code','埋め込みコード')+' ('+esc(String(made.size.w))+' × '+esc(String(made.size.h))+(made.interactive?'':(', '+L('no pan or zoom','パン・ズーム無効')))+'): '+esc(made.code)));
-        return R(true, note('✓ '+L('Share link','共有リンク')+': '+esc(made.url))); }
+        /* ⚠ ONLY THE CAPTION ATLAS GAVE IS SAID BACK. A caption can also come from a link someone else wrote (the reader
+           opened it), and its words would then reach the model as if IntMap had observed them — the row does not declare
+           ingests:'external' (column 11), so it says back only its own words, as the codec cleaned them. */
+        const c=(capArgs.title!=null||capArgs.note!=null)?((S.caption&&S.caption())||{ title:'', note:'' }):{ title:'', note:'' };
+        const capLine=(c.title||c.note)?('<div>'+esc(L('Caption: ','題と一言: '))+(c.title?'<b>'+esc(c.title)+'</b>':'')+(c.title&&c.note?' — ':'')+esc(c.note||'')+'</div>'):'';
+        const extra=capLine?{ caption:c }:null;
+        if(wantEmbed) return R(true, note('✓ '+L('Embed code','埋め込みコード')+' ('+esc(String(made.size.w))+' × '+esc(String(made.size.h))+(made.interactive?'':(', '+L('no pan or zoom','パン・ズーム無効')))+'): '+esc(made.code))+capLine, extra);
+        return R(true, note('✓ '+L('Share link','共有リンク')+': '+esc(made.url))+capLine, extra); }
+    },
+  },
+  {
+    row: ['panel.postcard',             'postcard',       'mapPostcard,shareImage,mapImage',                             'panel',   'panel',   'panel.share',            'panel,file',          'session', 'none',   '',         ''],
+    /* (map-postcard) THE MAP AS ONE PICTURE TO POST. The share panel's Image tab (js/map-recorder.js postcard) composes the
+       main map with the instant it shows, the link's title and note, the legends on the map, every drawn source's credit,
+       the IntMap name and the share link, in one of three shapes. The result carries what was made — the file name, its
+       size, the caption, how many legends it holds and every credit burned into it — and the panel shows the picture with
+       Save and Share (a file can be handed to the share sheet only by the reader's own press, so Atlas makes it and the
+       reader sends it). */
+    doc: [
+      { in: 'tools-panels', at: 172, text: '{"type":"postcard","size"?:"card"|"square"|"portrait","title"?:str,"note"?:str} = MAKE A MAP POSTCARD (地図の絵葉書) — the current map as ONE PNG image to post on social media: the map as it is now, the date it shows, the title and note (the same caption the share link carries — given here, they are set on the link too), the legends on the map, every data credit (always burned in), the IntMap name and the share link. "size": "card" 1200×630 (the link-preview card of X / Facebook — the default), "square" 1080×1080, "portrait" 1080×1350 (Instagram 4:5). It opens the share panel on its Image tab with the picture, where the user presses Save or Share (Atlas cannot press Share for them); the result states the file, its size and what is in it. Frame the map first (camera, date, layers), then make it. Use for 「この地図を画像にして」「SNS用の画像を作って」「絵葉書にして」「インスタ用に正方形で」「縦長の画像で」「『関ヶ原 1600』という題で画像に」, "make an image of this map to post", "save this map as a picture", "a square image for Instagram"; ' },
+    ],
+    schema: () => ({ type: 'object', properties: { size: str(), title: str(), note: str() } }),
+    async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, warn = K.warn, esc = K.esc;
+      { const S=shareApi();
+        if(!(S&&S.postcard)) return R(false, warn(L('The share panel is not available','共有パネルが使えません')));
+        let r=null; try{ r=await S.postcard({ size:a.size, title:a.title, note:a.note }); }catch(_){ r=null; }
+        if(!r) return R(false, warn(L('Could not make the image','画像を作れませんでした')), { postcard:{ ok:false, error:'unavailable' } });
+        if(!r.ok){ const why=r.error==='busy'?L('a time-lapse is being recorded','タイムラプスを録画中です')
+            :r.error==='not-drawn'?L('the map could not be read — the tab must be in front','地図を読み取れませんでした（タブが前面にある必要があります）')
+            :L('the picture could not be encoded','画像を書き出せませんでした');
+          return R(false, warn(L('Could not make the image: ','画像を作れませんでした: ')+esc(why)), { postcard:{ ok:false, error:r.error } }); }
+        /* the caption's words are said back only when Atlas gave them (see `share`): one from a link someone else wrote is
+           stated as present, not quoted */
+        const own=(a.title!=null||a.note!=null);
+        const facts={ ok:true, size:r.size, width:r.w, height:r.h, file:r.name, captioned:!!(r.title||r.note), instant:r.instant,
+          legends:r.legends, legendsOmitted:r.legendsOmitted, credits:r.credits.slice() };
+        if(own){ facts.title=r.title; facts.note=r.note; facts.link=r.link; }
+        let h=note('✓ '+L('Map postcard','地図の絵葉書')+' ('+r.w+' × '+r.h+', PNG): '+esc(r.name));
+        h+='<div>'+esc(L('In the image: ','画像に入っているもの: '))+esc(r.instant)
+          +(own?((r.title?' · <b>'+esc(r.title)+'</b>':'')+(r.note?' · '+esc(r.note):'')):((r.title||r.note)?' · '+esc(L('the link\'s title and note','リンクの題と一言')):''))
+          +' · '+esc(L(r.legends+' legend(s)','凡例 '+r.legends+' 件'))+(r.legendsOmitted?' ('+esc(L(r.legendsOmitted+' did not fit',r.legendsOmitted+' 件は入りきらず'))+')':'')+'</div>';
+        h+='<div>'+esc(L('Credited: ','出典: '))+esc(r.credits.join(' · '))+'</div>';
+        h+='<div>'+esc(L('It is in the share panel — press Save, or Share where the device can.','共有パネルに表示しました。「画像を保存」か、対応する端末では「共有…」を押してください。'))+'</div>';
+        return R(true, h, { postcard:facts }); }
     },
   },
   {
@@ -276,14 +322,16 @@ export default [
     },
   },
   {
-    row: ['panel.showcase',             'showcase',       'example,exampleMap,showcaseMap,gallery',                      'panel',   'time',    'camera,map.layer,time',  'map,time',            'session', 'none',   '',         ''],
+    row: ['panel.showcase',             'showcase',       'example,exampleMap,showcaseMap',                              'panel',   'time',    'camera,map.layer,time',  'map,time',            'session', 'none',   '',         ''],
     /* (landing-showcase) the example maps of js/showcase.js. With `id`, the map is put into that example
        through the share link's own restore (js/map-ui.js IntMapBookmark.restore — the path a reader who
        clicks the example takes), and the result is READ BACK from the clock and the layer boxes before it
        is reported: completed only when the date and every declared layer are what the example says.
-       Without `id`, it lists them (id, title, link) so the next call can name one. */
+       Without `id`, it lists them (id, title, link) so the next call can name one.
+       (showcase-gallery) The opening and the read-back are js/showcase-gallery.js openShowcase — the same function a
+       card of the in-app gallery runs, so Atlas and a tap cannot open an example two different ways. */
     doc: [
-      { in: 'about-and-showcase', at: 20, text: (c) => '{"type":"showcase","id":ID} = put the map into one of IntMap’s ready-made example maps — the camera, the date and the layers exactly as the example declares them — and report it opened only once the clock and the layers say so; with no id it lists them. The examples (ID — title): ' + c.showcaseList() + ' — for 「見本の地図を見せて」「授業で使える地図の例」, "show me an example map", "a map for my class", or a request that matches one of the titles (「1914年のヨーロッパ」 → europe-1914).' },
+      { in: 'about-and-showcase', at: 20, text: (c) => '{"type":"showcase","id":ID} = put the map into one of IntMap’s ready-made example maps — the camera, the date and the layers exactly as the example declares them — and report it opened only once the clock and the layers say so; with no id it lists them in the chat (to put the examples IN FRONT OF THE READER as pictures, use gallery). The examples (ID — title): ' + c.showcaseList() + ' — for 「見本の地図を開いて」「授業で使える地図の例」, "open an example map", "a map for my class", or a request that matches one of the titles (「1914年のヨーロッパ」 → europe-1914).' },
     ],
     schema: () => ({ type: 'object', properties: { id: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, L = K.L, esc = K.esc;
@@ -293,29 +341,35 @@ export default [
           if(!s){
             const rows=SHOWCASE.map(x=>{ const href=showcaseLink(x.id); return '<li><b>'+esc(x.id)+'</b> — '+(href?'<a href="'+esc(abs(href))+'">'+esc(L.arr(x.title))+'</a>':esc(L.arr(x.title)))+'</li>'; }).join('');
             return R(!want, (want?warn(esc(L('No example is called','この名前の見本はありません'))+' «'+esc(want)+'»'):note(esc(L('Example maps','見本の地図'))))+'<ul style="margin:4px 0 4px 18px;padding:0;">'+rows+'</ul>'); }
-          const href=showcaseLink(s.id);
-          if(!href) return R(false, warn(esc(L('This example has no captured link yet','この見本にはまだリンクがありません'))));
-          const hash=href.slice(href.indexOf('#'));
-          try{ history.replaceState(null,'',location.pathname+location.search+hash); window.IntMapBookmark.restore({shared:true});
-            /* a link with no `tt` leaves the clock where it is (restore() sets it only when the link names one), so a
-               «now» example returns the clock to now itself — the example's intent is the present, whatever the
-               map was showing before */
-            if(s.at==null) IntMapTime.setNow({source:'ui'}); }catch(e){ return R(false, warn(esc(String(e&&e.message||e)))); }
-          /* read the state back. The restore applies the clock at +900 ms and the layer boxes at +700 / +1800 /
-             +3200 ms (js/map-ui.js restore()); 6 s is its last pass plus room for a busy page. It returns the
-             moment both agree — the wait is a bound, not a sleep — and a changed restore schedule is the
-             thing that invalidates the number. */
-          const T=IntMapTime, at=s.at;
-          const met=()=>{ try{ const st=T.state(); const timeOk=at==null?!!st.isLive:(!st.isLive&&st.iso===at);
-              const off=s.layers.filter(id=>{ const cb=document.getElementById(id); return !(cb&&cb.checked); });
-              return { timeOk, off }; }catch(_){ return { timeOk:false, off:s.layers.slice() }; } };
-          let m=met(); const t0=Date.now();
-          while(!(m.timeOk&&!m.off.length)&&Date.now()-t0<6000){ await new Promise(r=>setTimeout(r,250)); m=met(); }
+          if(!showcaseLink(s.id)) return R(false, warn(esc(L('This example has no captured link yet','この見本にはまだリンクがありません'))));
+          /* (showcase-gallery) open it and read it back — js/showcase-gallery.js openShowcase, the gallery card's own path:
+             the share link's restore, «now» returning the clock to now, and the clock and the layer boxes read back
+             against the example within the restore's own schedule */
+          const m=await (await import('./showcase-gallery.js')).openShowcase(s.id);
+          if(m.reason&&m.reason!=='no-link') return R(false, warn(esc(m.reason)));
           const body='<div style="font-weight:600;margin:2px 0;">'+esc(L.arr(s.title))+'</div><div style="font-size:12px;margin:2px 0;">'+esc(L.arr(s.blurb))+'</div>'
             +'<div style="font-size:12px;margin:4px 0;color:var(--text-muted);">'+esc(L('Question for class','授業での問い'))+': '+esc(L.arr(s.question))+'</div>';
           if(m.timeOk&&!m.off.length) return R(true, note('✓ '+esc(L('Example opened','見本を開きました')))+body);
           const miss=[]; if(!m.timeOk) miss.push(L('the date','日付')); if(m.off.length) miss.push(L('layers not on','オンにならないレイヤー')+' '+m.off.join(', '));
           return R(false, warn(esc(L('The example did not fully apply','見本が一部しか適用されていません'))+' — '+esc(miss.join(' / ')))+body); }
+    },
+  },
+  {
+    row: ['panel.gallery',              'gallery',        'exampleGallery,showcaseGallery,examplesGallery,tourGallery',  'panel',   'panel',   'panel.gallery',          'panel',               'session', 'none',   '',         ''],
+    /* (showcase-gallery) the in-app gallery of js/showcase-gallery.js — every example map and classroom tour as a
+       picture, a title and a line, under their subjects' headings — put on screen for the reader, who opens one
+       with a tap. `section:"tours"` scrolls to the tours. It opens nothing on the map by itself: to open one
+       example Atlas uses `showcase` with its id, to start a tour `tour`. */
+    doc: [
+      { in: 'about-and-showcase', at: 15, text: '{"type":"gallery","section"?:"tours"} = put IntMap’s gallery of example maps and classroom tours (作例とツアー) on the reader’s screen — a picture, a title and a line for each (the examples listed under showcase and the tours under tour), grouped by subject; the reader opens one with a tap. With section "tours" it opens at the tours. Use for 「作例を見せて」「見本の地図を一覧で」「どんなツアーがある？」, "show me the example maps", "what tours are there", "browse the gallery". To open ONE example yourself use showcase with its id; to start a tour, tour with its id. ' },
+    ],
+    schema: () => ({ type: 'object', properties: { section: one('examples', 'tours') } }),
+    async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, L = K.L, esc = K.esc;
+      { const G = await import('./showcase-gallery.js');
+          const r = G.openGallery({ section: a.section === 'tours' ? 'tours' : null });
+          if (!r || !r.ok) return R(false, warn(esc(L('The gallery could not be opened', '作例の一覧を開けませんでした'))));
+          return R(true, note('✓ ' + esc(L('The example maps and tours are on screen', '作例とツアーを表示しました'))) + '<div style="font-size:12px;margin:2px 0;">'
+            + esc(L(r.examples + ' example maps · ' + r.tours + ' classroom tours', '作例 ' + r.examples + ' 件 · 授業ツアー ' + r.tours + ' 件')) + '</div>'); }
     },
   },
   {

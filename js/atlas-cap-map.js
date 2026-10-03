@@ -18,6 +18,7 @@
  * ==========================================================================*/
 import { str, bool, num, int, one, list, obj, loose, noArgs } from './atlas-caps.js';
 import { volcanoFilterRun, heritageFilterRun, radiationNearRun } from './atlas-cap-data.js';
+import { droneRun } from './atlas-cap-routing.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export default [
@@ -123,7 +124,7 @@ export default [
   {
     row: ['map.tool',                   'tool',           '',                                                            'map',     'panel',   'map.tool',               'panel',               'session', 'none',   '',         ''],
     doc: [
-      { in: 'tools-panels', at: 110, text: '{"type":"tool","name":"measure"|"radius"|"draw"|"volume"|"drone"}; ' },
+      { in: 'tools-panels', at: 110, text: '{"type":"tool","name":"measure"|"radius"|"draw"|"volume"} (the drone planner is its own action with arguments — {"type":"drone",…}); ' },
     ],
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { name: str() }, required: ['name'] }),
@@ -134,7 +135,10 @@ export default [
          button it owns, because that button is where the tool's own state lives. */
     async run(a, dctx, K) { const R = K.R, note = K.note, esc = K.esc, warn = K.warn, clickId = K.clickId, doControl = K.doControl;
       { const n=String(a.name||'').toLowerCase();
-          if(/drone|ドローン|无人机|무인기/.test(n)){ let ok=false; try{ ok=!!(window.IntMapDrone&&window.IntMapDrone.toggle()); }catch(_){} return R(ok, ok?note('✓ '+esc(a.name||'')):warn('')); }
+          /* ⚠ (science-instruments) NO LONGER A SPECIAL CASE THAT TOGGLES THE PANEL. A name that means the drone
+             planner is handed to the planner's own capability (routing.drone), which opens it, plans a route
+             when given one and reports the planner's own numbers — the same answer {"type":"drone"} gives. */
+          if(/drone|ドローン|无人机|무인기/.test(n)) return droneRun({ action:a.action, from:a.from, to:a.to, via:a.via, alt:a.alt, ref:a.ref, aircraft:a.aircraft }, dctx, K);
           const id=/radius/.test(n)?'btn-tool-radius':/draw/.test(n)?'btn-tool-draw':/volume|立体|体積/.test(n)?'btn-tool-volume':/measur|dist|area/.test(n)?'btn-tool-measure':/grid/.test(n)?'btn-tool-grid':null; if(id){ const ok=clickId(id); return R(ok, ok?note('✓ '+esc(a.name||'')):warn('')); } return doControl({target:a.name}); }
     },
   },

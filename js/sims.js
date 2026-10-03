@@ -18,6 +18,7 @@ import { everyTick, stopTick } from './runtime.js';
 import { overpassQuery } from './overpass.js';   /* the one Overpass client, with a clock — js/overpass.js */
 /* (#R568) the plume model itself — the same module src/radiation-worker.js runs off the page. */
 import { RAD } from './radiation-model.js';
+import { registerSimOutput } from './sim-datasets.js';   /* (science-instruments) the deposit becomes a dataset the analysis tools and Atlas's query can read */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon, withIcons, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
@@ -363,14 +364,39 @@ export function radiation(HOST){
          the layers when the style is ready, retrying up to ~14 s + on the next idle. The report never depends on the
          layer being paintable at that instant. */
       const F=await fetchField(src.lng,src.lat,{date:opts.date,hours}); if(!F) return {ok:false,reason:'wind'};
+      /* (science-instruments) THE SEED IS PART OF THE QUESTION: printed with the answer and stored with the
+         dataset, so the same release on the same wind can be repeated exactly. */
+      const seed=(opts.seed!=null&&isFinite(+opts.seed)&&+opts.seed>0)?Math.floor(+opts.seed):(Math.floor(Math.random()*1e9)+1);
       const P={bq,hours,emitHours,halfLifeHours,startHour:F.startHour,depRes:0.03,
-        isotope:isoKey,releaseHeight,dtSec:600,particles:PARTICLES_WORKER};
+        isotope:isoKey,releaseHeight,dtSec:600,particles:PARTICLES_WORKER,seed};
       let res=null, engine='worker';
       const W=window.IntMapRadiationWorker;
-      try{ if(W&&W.available()) res=await W.run(F,{lng:+src.lng,lat:+src.lat},P,opts.onProgress); }catch(_){ res=null; }
-      if(!res){ engine='page';
-        res=RAD.simulate(F,{lng:+src.lng,lat:+src.lat},Object.assign({},P,{particles:PARTICLES_PAGE}),null); }
+      const solveOne=async(p,prog)=>{ let r=null;
+        try{ if(W&&W.available()) r=await W.run(F,{lng:+src.lng,lat:+src.lat},p,prog); }catch(_){ r=null; }
+        if(!r){ engine='page'; r=RAD.simulate(F,{lng:+src.lng,lat:+src.lat},Object.assign({},p,{particles:PARTICLES_PAGE}),null); }
+        return r; };
+      res=await solveOne(P,opts.onProgress);
       const dz=RAD.report(res,isoKey);
+      /* ══ (science-instruments) THE ENSEMBLE — `runs` seeds × the published source-term range ══════════
+         The map stays the first run; the spread is what the same release gives under other turbulence
+         and across the range the assessment reports (RAD.ensemble says why the range is a scaling and
+         the seeds are re-runs). Bounded at 10 seeds: each one is a full solve. */
+      let ensemble=null;
+      const runs=Math.max(1,Math.min(10,Math.round(+opts.runs||1)));
+      if(runs>1&&myGen===_gen){ const all=[res];
+        for(let k=1;k<runs&&myGen===_gen;k++){ all.push(await solveOne(Object.assign({},P,{seed:seed+k}),null)); }
+        const ranged=!!(st&&st.lo>0&&st.hi>0&&opts.bq==null);
+        const scales=ranged?[st.lo/bq,1,st.hi/bq]:[1];
+        const E=RAD.ensemble(all,scales,isoKey);
+        ensemble={members:E.members,seeds:E.seeds,scales:E.scales,ranged,zoneKm2:E.zoneKm2,peakKBqM2:E.peakKBqM2,zones:E.zones.map(z=>Object.assign({},z,{n:ZONE_LABEL[z.k]||ZONE_LABEL['d-1e0']}))}; }
+      /* (science-instruments) …and the deposit, as a dataset: one polygon per cell, with the density in a
+         stated unit — so 「プルームに入る町の人口」 is a query over it rather than a feature of its own. */
+      try{ registerSimOutput({ sim:'radiation', version:'rad-R568', seed,
+        title:LL('Radioactive deposit (model) — ','放射性物質の沈着（モデル） — ')+(src.name||(src.lat.toFixed(2)+', '+src.lng.toFixed(2))),
+        file:'IntMap · radiation model (rad-R568)',
+        params:{ lng:+src.lng, lat:+src.lat, name:src.name||null, isotope:isoKey, bq, emitHours, hours, releaseHeight, start:F.startISO, archive:!!F.archive, runs },
+        features:dz.feats.map(f=>({type:'Feature',geometry:f.geometry,properties:{kbq_m2:+f.properties.d.toPrecision(4),zone:f.properties.z,particles:f.properties.n}})),
+        fieldStatements:{ kbq_m2:{unit:'kBq/m2',unitStated:'source',unitFrom:'radiation model'} } }); }catch(_){}
       /* the legend's WORDS are the page's, the legend's NUMBERS are the model's — so the model file
          stays free of the language registry and the two cannot drift into two ladders. */
       const zones=dz.zones.map(z=>Object.assign({},z,{n:ZONE_LABEL[z.k]||ZONE_LABEL['d-1e0']}));
@@ -402,7 +428,7 @@ export function radiation(HOST){
         /* ⚠ two different questions: `escapedFrac` is how many PARTICLES left, `escapedMassFrac`
            how much ACTIVITY left with them — and only the second one is a statement about the
            deposition map, so it is the one the wording uses. */
-        airborneFrac:res.airborneFrac, escapedFrac:res.escapedFrac, escapedMassFrac:res.escapedMassFrac,
+        airborneFrac:res.airborneFrac, escapedFrac:res.escapedFrac, escapedMassFrac:res.escapedMassFrac, seed, ensemble,
         windLevels:F.levels, windHeight:releaseHeight, pblEstimated:res.pblEstimated,
         domainHalfDeg:F.half, domainComplete:F.outerOK, archive:!!F.archive}; }
 

@@ -6,4 +6,5 @@ export default {
   key: 'hdi',
   label: 'lyrHDI',
   share: true,
+  measures: ['countrystats:hdi'],
 };

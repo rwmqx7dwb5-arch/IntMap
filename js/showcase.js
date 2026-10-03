@@ -2,9 +2,11 @@
  *  IntMap · THE SHOWCASE — the example maps, declared once   (js/showcase.js)
  * ----------------------------------------------------------------------------
  *  「拡散と授業の素材になる見本」 — a small set of maps that open, from a link, exactly as described.
- *  Four readers take them from HERE and from nowhere else:
- *    · the landing and teacher pages (about.html / teachers.html and their ja/ twins), which
+ *  Five readers take them from HERE and from nowhere else:
+ *    · the landing and teacher pages (about.html / teachers.html, news-map.html, and their ja/ twins), which
  *      scripts/landing.mjs generates — gallery, lesson plan, sitemap;
+ *    · (showcase-gallery) the app's own gallery, js/showcase-gallery.js — the search field's empty state and
+ *      the whole list, grouped under TOPICS below, each card the thumbnail the capture derives from the card;
  *    · Atlas, through `panel.showcase` (js/atlas-cap-panel.js), which opens one in the map;
  *    · tests/landing-showcase.spec.js, which opens every one and asks the map whether it drew it;
  *    · tests/landing-showcase-checks.test.mjs, which holds the captured links to the intent below.
@@ -228,7 +230,169 @@ const DECLARED = [
     layers: ['dl-climate'],
     drawn: {},
   },
+  /* ── (showcase-gallery) the second eight: one map each for the subjects the first eight did not reach —
+     climate on a date, the economy, population, light at night, transport, communications, heritage, and a
+     medieval world. Every one is a layer IntMap already draws from a record that states its own date (or a
+     snapshot that is the present), so the link opens what the picture shows; none of them is a live feed
+     whose picture would be out of date the next day. ── */
+  {
+    id: 'world-1279',
+    topic: 'history',
+    audience: ['curious', 'teachers'],
+    curriculum: [],
+    title: LA('The Mongol world in 1279', '1279年のモンゴル世界'),
+    blurb: LA(
+      'The year the last of the Song fell to the Great Khanate. Beside it, the Ilkhanate, the Chagatai Khanate and the Golden Horde: the empire had already split into four. The historical-basemaps snapshot for 1279.',
+      '南宋が大元（大ハーン国）に滅ぼされた年。その隣にイルハン国、チャガタイ・ハン国、ジョチ・ウルス（キプチャク・ハン国）があり、帝国はすでに4つに分かれていました。historical-basemaps の1279年のスナップショットです。'),
+    question: LA(
+      'Find Japan, east of the Great Khanate. Fleets were sent against it in 1274 and 1281 — what did they have to cross?',
+      '大ハーン国の東にある日本を探してみましょう。1274年と1281年に艦隊が送られました。艦隊は何を越えなければならなかったでしょう。'),
+    view: { lng: 82, lat: 42, zoom: 2.4, proj: 'f' },
+    base: 'map',
+    at: '1279-07-01',
+    layers: [],
+    drawn: { labels: ['Great Khanate', 'Ilkhanate', 'Chagatai Khanate', 'Khanate of the Golden Horde', 'Shogun Japan (Kamakura)'] },
+  },
+  {
+    id: 'el-nino-2023',
+    topic: 'earth',
+    audience: ['curious', 'teachers'],
+    curriculum: ['chiri-c1'],
+    title: LA('El Niño, 15 December 2023', 'エルニーニョ　2023年12月15日'),
+    blurb: LA(
+      'How much warmer or cooler than usual the sea surface was that day, at the height of the 2023–24 El Niño: the GHRSST MUR anomaly from NASA JPL, through NASA GIBS.',
+      '2023〜24年のエルニーニョが最も強まったころ、その日の海面水温が平年よりどれだけ高いか低いか。NASA JPL の GHRSST MUR 偏差を NASA GIBS から描きます。'),
+    question: LA(
+      'Where along the equator is the Pacific warmer than usual? How might that change the rain in Peru and in Indonesia?',
+      '赤道ぞいの太平洋で、平年より暖かいのはどこでしょう。それはペルーとインドネシアの雨をどう変えるでしょう。'),
+    view: { lng: -150, lat: 2, zoom: 1.7, proj: 'f' },
+    base: 'map',
+    at: '2023-12-15',
+    layers: ['gx-gxsstanom'],
+    drawn: {},
+  },
+  {
+    id: 'hdi-2022',
+    topic: 'society',
+    audience: ['curious', 'teachers'],
+    curriculum: ['chiri-b1'],
+    title: LA('Human development, 2022', '人間開発指数　2022年'),
+    blurb: LA(
+      'Each country coloured by the Human Development Index of the UN Development Programme for 2022 — one number made from life expectancy, years of schooling and income.',
+      '国連開発計画（UNDP）の人間開発指数（2022年）で国を塗り分けます。平均寿命・教育年数・所得から作る1つの指数です。'),
+    question: LA(
+      'Find two neighbouring countries with very different colours. Which of the three parts — health, schooling or income — might explain the gap?',
+      '色が大きく違う隣どうしの国を探してみましょう。健康・教育・所得のどれがその差を生んでいるのでしょう。'),
+    /* ⚠ NOT dl-gdppc, though GDP was the first choice: MEASURED 2026-10-03, at a date of 2018 the layer paints the
+       Maddison Project's real GDP per person (2011 int$ — the countries panel says so) under a legend that reads
+       «USD, nominal» (js/data-layers.js lgdGdppc), so a sentence naming either basis would contradict the other
+       on the same screen. Reported, not worked around here. The HDI legend names its own year and source. */
+    view: { lng: 15, lat: 20, zoom: 1.4, proj: 'f' },
+    base: 'map',
+    at: '2022-07-01',
+    layers: ['dl-hdi'],
+    drawn: {},
+  },
+  {
+    id: 'population-density',
+    topic: 'society',
+    audience: ['curious', 'teachers'],
+    curriculum: ['chiri-b1'],
+    title: LA('Where people live', '人はどこに住んでいるか'),
+    blurb: LA(
+      'Population density from Gridded Population of the World (NASA SEDAC), for 2020.',
+      'NASA SEDAC の Gridded Population of the World による人口密度（2020年）。'),
+    question: LA(
+      'Which large areas have almost nobody living in them? What do they have in common?',
+      'ほとんど人が住んでいない広い地域はどこでしょう。それらに共通するものは何でしょう。'),
+    view: { lng: 60, lat: 25, zoom: 1.6, proj: 'f' },
+    base: 'map',
+    at: null,
+    layers: ['dl-popgrid'],
+    drawn: {},
+  },
+  {
+    id: 'night-lights',
+    topic: 'society',
+    audience: ['curious', 'teachers'],
+    curriculum: ['chiri-b1'],
+    title: LA('East Asia at night', '夜の東アジア'),
+    blurb: LA(
+      'The lights of cities, roads and ports seen from space: the VIIRS Black Marble composite of 2016 (NASA).',
+      '宇宙から見た都市・道路・港の明かり。NASA の VIIRS Black Marble（2016年の合成画像）です。'),
+    question: LA(
+      'Find the Korean peninsula. Why is one half so much darker than the other?',
+      '朝鮮半島を探してみましょう。なぜ半分だけがこれほど暗いのでしょう。'),
+    view: { lng: 127, lat: 36.5, zoom: 4.3, proj: 'f' },
+    base: 'map',
+    at: null,
+    layers: ['dl-nightsat'],
+    drawn: {},
+  },
+  {
+    id: 'rail-gauges',
+    topic: 'society',
+    audience: ['curious', 'teachers'],
+    curriculum: [],
+    title: LA('Railway gauges of Europe', 'ヨーロッパの鉄道の軌間'),
+    blurb: LA(
+      'Every line coloured by the distance between its rails, as OpenStreetMap records it for that track.',
+      '線路ごとに、OpenStreetMap がその線路について記録しているレールの間隔（軌間）で色分けしています。'),
+    question: LA(
+      'Find a border where the colour changes. What has to happen to a train that crosses it?',
+      '色が変わる国境を探してみましょう。そこを越える列車には何が必要でしょう。'),
+    view: { lng: 18, lat: 50, zoom: 3.4, proj: 'f' },
+    base: 'map',
+    at: null,
+    layers: ['beta-dl-rail'],
+    drawn: {},
+  },
+  {
+    id: 'undersea-cables',
+    topic: 'society',
+    audience: ['curious', 'teachers'],
+    curriculum: ['chiri-b1'],
+    title: LA('The cables under the sea', '海底ケーブル'),
+    blurb: LA(
+      'The submarine cables that carry the internet between continents: the cables TeleGeography’s Submarine Cable Map lists, on routes reconstructed from the sea floor — a line shows where a cable runs approximately, not exactly.',
+      '大陸のあいだでインターネットを運ぶ海底ケーブル。TeleGeography の Submarine Cable Map が載せるケーブルを、海底地形から組み直した経路で描きます。線はおおよその経路で、正確な位置ではありません。'),
+    question: LA(
+      'Where do many cables come ashore together? Why might a country want more than one?',
+      '多くのケーブルが一か所に上陸しているのはどこでしょう。国が複数のケーブルを持ちたがるのはなぜでしょう。'),
+    view: { lng: 40, lat: 20, zoom: 1.5, proj: 'f' },
+    base: 'map',
+    at: null,
+    layers: ['dl-subcables'],
+    drawn: {},
+  },
+  {
+    id: 'world-heritage',
+    topic: 'society',
+    audience: ['curious', 'teachers'],
+    curriculum: [],
+    title: LA('World Heritage sites', '世界遺産'),
+    blurb: LA(
+      'Every site on the UNESCO World Heritage List, coloured by whether it is inscribed as cultural, natural or mixed.',
+      'ユネスコ世界遺産リストのすべての遺産を、文化遺産・自然遺産・複合遺産の別で色分けしています。'),
+    question: LA(
+      'Where are the natural sites, and where are the cultural ones? Why might they be found in different places?',
+      '自然遺産と文化遺産はそれぞれどこに多いでしょう。なぜ場所が分かれるのでしょう。'),
+    view: { lng: 20, lat: 40, zoom: 3, proj: 'f' },
+    base: 'map',
+    at: null,
+    layers: ['beta-dl-whs'],
+    drawn: {},
+  },
 ];
+
+/* (showcase-gallery) the subjects an entry's `topic` may name, with the heading the in-app gallery
+   (js/showcase-gallery.js) puts over them — in this order. A topic not here is refused by
+   scripts/landing.mjs --check, so a new example cannot fall out of the gallery by a spelling. */
+export const TOPICS = {
+  history: LA('History', '歴史'),
+  earth: LA('The Earth', '地球'),
+  society: LA('People and the economy', '人と経済'),
+};
 
 /* ══ AN EXAMPLE THAT DOES NOT OPEN AS ITS PICTURE SAYS IS NOT SHOWN ═════════════════════════════════
    `withheld` is a sentence: the measured reason an example would open differently from its page. A
@@ -272,52 +436,108 @@ export const CAPTURED = {
   "europe-1914": {
     "hash": "#v=22.0000,48.5000,3.30,0,0,f&tt=1914-06-27",
     "image": "img/showcase/europe-1914.jpg",
-    "card": "img/showcase/europe-1914-card.jpg"
+    "card": "img/showcase/europe-1914-card.jpg",
+    "thumb": "img/showcase/europe-1914-thumb.jpg"
   },
   "europe-1920": {
     "hash": "#v=22.0000,48.5000,3.30,0,0,f&tt=1920-07-01",
     "image": "img/showcase/europe-1920.jpg",
-    "card": "img/showcase/europe-1920-card.jpg"
+    "card": "img/showcase/europe-1920-card.jpg",
+    "thumb": "img/showcase/europe-1920-thumb.jpg"
+  },
+  "cold-war-1985": {
+    "hash": "#v=16.0000,52.0000,3.20,0,0,f&tt=1985-07-01",
+    "image": "img/showcase/cold-war-1985.jpg",
+    "card": "img/showcase/cold-war-1985-card.jpg",
+    "thumb": "img/showcase/cold-war-1985-thumb.jpg"
+  },
+  "japan-1900": {
+    "hash": "#v=133.0000,34.0000,4.00,0,0,f&tt=1900-07-01",
+    "image": "img/showcase/japan-1900.jpg",
+    "card": "img/showcase/japan-1900-card.jpg",
+    "thumb": "img/showcase/japan-1900-thumb.jpg"
+  },
+  "world-100": {
+    "hash": "#v=78.0000,36.0000,1.90,0,0,f&tt=0100-07-01",
+    "image": "img/showcase/world-100.jpg",
+    "card": "img/showcase/world-100-card.jpg",
+    "thumb": "img/showcase/world-100-thumb.jpg"
+  },
+  "world-3000bc": {
+    "hash": "#v=47.0000,29.0000,3.00,0,0,f&tt=-002999-07-01",
+    "image": "img/showcase/world-3000bc.jpg",
+    "card": "img/showcase/world-3000bc-card.jpg",
+    "thumb": "img/showcase/world-3000bc-thumb.jpg"
+  },
+  "ring-of-fire": {
+    "hash": "#v=-175.0000,8.0000,1.50,0,0,f&l=eco-dl-plates,beta-dl-volc2",
+    "image": "img/showcase/ring-of-fire.jpg",
+    "card": "img/showcase/ring-of-fire-card.jpg",
+    "thumb": "img/showcase/ring-of-fire-thumb.jpg"
+  },
+  "koppen": {
+    "hash": "#v=15.0000,25.0000,1.40,0,0,f&l=dl-climate",
+    "image": "img/showcase/koppen.jpg",
+    "card": "img/showcase/koppen-card.jpg",
+    "thumb": "img/showcase/koppen-thumb.jpg"
+  },
+  "world-1279": {
+    "hash": "#v=82.0000,42.0000,2.40,0,0,f&tt=1279-07-01",
+    "image": "img/showcase/world-1279.jpg",
+    "card": "img/showcase/world-1279-card.jpg",
+    "thumb": "img/showcase/world-1279-thumb.jpg"
+  },
+  "el-nino-2023": {
+    "hash": "#v=-150.0000,2.0000,1.70,0,0,f&l=gx-gxsstanom&tt=2023-12-15",
+    "image": "img/showcase/el-nino-2023.jpg",
+    "card": "img/showcase/el-nino-2023-card.jpg",
+    "thumb": "img/showcase/el-nino-2023-thumb.jpg"
+  },
+  "hdi-2022": {
+    "hash": "#v=15.0000,20.0000,1.40,0,0,f&l=dl-hdi&tt=2022-07-01",
+    "image": "img/showcase/hdi-2022.jpg",
+    "card": "img/showcase/hdi-2022-card.jpg",
+    "thumb": "img/showcase/hdi-2022-thumb.jpg"
+  },
+  "population-density": {
+    "hash": "#v=60.0000,25.0000,1.60,0,0,f&l=dl-popgrid",
+    "image": "img/showcase/population-density.jpg",
+    "card": "img/showcase/population-density-card.jpg",
+    "thumb": "img/showcase/population-density-thumb.jpg"
+  },
+  "night-lights": {
+    "hash": "#v=127.0000,36.5000,4.30,0,0,f&l=dl-nightsat",
+    "image": "img/showcase/night-lights.jpg",
+    "card": "img/showcase/night-lights-card.jpg",
+    "thumb": "img/showcase/night-lights-thumb.jpg"
+  },
+  "rail-gauges": {
+    "hash": "#v=18.0000,50.0000,3.40,0,0,f&l=beta-dl-rail",
+    "image": "img/showcase/rail-gauges.jpg",
+    "card": "img/showcase/rail-gauges-card.jpg",
+    "thumb": "img/showcase/rail-gauges-thumb.jpg"
+  },
+  "undersea-cables": {
+    "hash": "#v=40.0000,20.0000,1.50,0,0,f&l=dl-subcables",
+    "image": "img/showcase/undersea-cables.jpg",
+    "card": "img/showcase/undersea-cables-card.jpg",
+    "thumb": "img/showcase/undersea-cables-thumb.jpg"
+  },
+  "world-heritage": {
+    "hash": "#v=20.0000,40.0000,3.00,0,0,f&l=beta-dl-whs",
+    "image": "img/showcase/world-heritage.jpg",
+    "card": "img/showcase/world-heritage-card.jpg",
+    "thumb": "img/showcase/world-heritage-thumb.jpg"
   },
   "ww2-1942": {
     "hash": "#v=30.0000,45.0000,2.60,0,0,f&l=dl-ww2&tt=1942-11-01",
     "image": "img/showcase/ww2-1942.jpg",
     "card": "img/showcase/ww2-1942-card.jpg"
   },
-  "cold-war-1985": {
-    "hash": "#v=16.0000,52.0000,3.20,0,0,f&tt=1985-07-01",
-    "image": "img/showcase/cold-war-1985.jpg",
-    "card": "img/showcase/cold-war-1985-card.jpg"
-  },
   "korea-1950": {
     "hash": "#v=127.8000,36.4000,5.40,0,0,f&l=dl-korea&tt=1950-09-10",
     "image": "img/showcase/korea-1950.jpg",
     "card": "img/showcase/korea-1950-card.jpg"
-  },
-  "japan-1900": {
-    "hash": "#v=133.0000,34.0000,4.00,0,0,f&tt=1900-07-01",
-    "image": "img/showcase/japan-1900.jpg",
-    "card": "img/showcase/japan-1900-card.jpg"
-  },
-  "world-100": {
-    "hash": "#v=78.0000,36.0000,1.90,0,0,f&tt=0100-07-01",
-    "image": "img/showcase/world-100.jpg",
-    "card": "img/showcase/world-100-card.jpg"
-  },
-  "world-3000bc": {
-    "hash": "#v=47.0000,29.0000,3.00,0,0,f&tt=-002999-07-01",
-    "image": "img/showcase/world-3000bc.jpg",
-    "card": "img/showcase/world-3000bc-card.jpg"
-  },
-  "ring-of-fire": {
-    "hash": "#v=-175.0000,8.0000,1.50,0,0,f&l=eco-dl-plates,beta-dl-volc2",
-    "image": "img/showcase/ring-of-fire.jpg",
-    "card": "img/showcase/ring-of-fire-card.jpg"
-  },
-  "koppen": {
-    "hash": "#v=15.0000,25.0000,1.40,0,0,f&l=dl-climate",
-    "image": "img/showcase/koppen.jpg",
-    "card": "img/showcase/koppen-card.jpg"
   }
 };
 /* ⚠ GENERATED SHOWCASE — END */
@@ -329,5 +549,5 @@ export const CAPTURED = {
    the browser and never reads data/ itself: a CI browser job is given the built site, not the data store
    (MEASURED on PR #873: ENOENT data/hist-eras.js in «Browser rest 2/2»). */
 /* ⚠ GENERATED RECORD-ANSWERED — BEGIN (node scripts/landing.mjs --write; DO NOT EDIT) */
-export const RECORD_ANSWERED = ["europe-1920","world-100","world-3000bc"];
+export const RECORD_ANSWERED = ["europe-1920","world-100","world-3000bc","world-1279"];
 /* ⚠ GENERATED RECORD-ANSWERED — END */

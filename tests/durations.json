@@ -1,4 +1,8 @@
 {
+ "tests/first-impression.spec.js": 22,
+ "tests/place-dossier.spec.js": 13,
+ "tests/map-postcard.spec.js": 13,
+ "tests/map-layer-system.spec.js": 13,
  "tests/landing-showcase.spec.js": 16,
  "tests/anonymous-usage-counts.spec.js": 9,
  "tests/map-a11y-structure.spec.js": 13,
@@ -7,6 +11,7 @@
  "tests/heal-waits-for-inflight.spec.js": 8,
  "tests/cesium-koppen-and-boot-probe-cesium.spec.js": 57,
  "tests/ui-a11y-polish.spec.js": 15,
+ "tests/search-identity.spec.js": 63,
  "tests/maplibre-6-migration.spec.js": 64,
  "tests/legend-stack-and-held-heal.spec.js": 9,
  "tests/deps-runtime-majors.spec.js": 17,

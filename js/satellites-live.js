@@ -199,6 +199,11 @@ export function satellitesLive(HOST){
   let sats=[];                             /* [{satrec, name, id, intl, epoch}] */
   let fixes=[];                            /* the last computed positions, for picking and the card */
   let tleAt=0, loading=false, lastErr=null;
+  /* (shell-experience) when NOTHING could be drawn, what the live rungs met — { reason, status?, url } in the shape
+     js/layer-state.js classify() reads (the relay rung's js/proxy-fetch.js note.failure, else the direct rung's
+     throw). js/data-layers.js hands it to the row, which then names the supplier (celestrak.org) and what last
+     night's check said about it. null whenever anything was drawn. */
+  let lastFailure=null;
   let selected=null;                       /* NORAD id of the satellite whose track is drawn */
   let on=false;
   let bundled=false, bundledMeta=null;     /* (#R185) true when the elements came from the shipped catalogue */
@@ -322,7 +327,7 @@ export function satellitesLive(HOST){
     if(hit&&want===group){
       if(ingestTLE(hit.a,want)) return Promise.resolve(true);
     }
-    loading=true; lastErr=null; bundled=false; bundledMeta=null; _inflightG=want;
+    loading=true; lastErr=null; lastFailure=null; bundled=false; bundledMeta=null; _inflightG=want;
     /* A REQUEST THAT NEVER SETTLES IS WORSE THAN ONE THAT FAILS. `fetch` has no timeout of its own,
        so a CelesTrak that accepts the connection and then stops talking — which is what a rate-limited
        server does rather than refusing outright — left this promise pending for ever: `loading` stayed
@@ -343,7 +348,7 @@ export function satellitesLive(HOST){
     const grab=(url,ms)=>{
       const FW=window.IntMapFetchWithin;
       return FW.readWithin(url,ms||FETCH_MS,{cache:'no-store'},{idle:true})
-        .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.text; })
+        .then(r=>{ if(!r.ok) throw Object.assign(new Error('HTTP '+r.status),{reason:'http',status:r.status,url:String(url)}); return r.text; })
         .then(t=>{ if(!t||t.length<140) throw new Error('empty catalog'); return t; });
     };
     /* ══ (#R185) FOUR WAYS TO THE SAME ELEMENT SETS, TRIED IN ORDER ═══════════════════════════
@@ -391,11 +396,13 @@ export function satellitesLive(HOST){
       const live=(t)=>{ if(!ingestTLE(t,want)) return false;
         cachePut(want,t); bundled=false; bundledMeta=null; lastErr=null;
         try{ if(_onPrimed) _onPrimed(); }catch(_){} return true; };
-      try{ const t=await grab(GP(want)); if(live(t)) return true; tried.push('celestrak: parsed nothing'); }
-      catch(e){ tried.push('celestrak: '+String(e&&e.message||e)); }
+      let met=null;   /* (shell-experience) what the live rungs met, relay's account preferred — see lastFailure */
+      try{ const t=await grab(GP(want)); if(live(t)) return true; tried.push('celestrak: parsed nothing'); met={reason:'parse',url:GP(want)}; }
+      catch(e){ tried.push('celestrak: '+String(e&&e.message||e)); if(e&&e.reason&&e.reason!=='aborted') met={reason:e.reason,status:e.status,url:e.url||GP(want)}; }
       try{ const note={}; const t=await HOST.fetchViaProxy(GP(want),{as:'text',note});   /* (own-fetch-relay) the app's ONE relay ladder, through IM_HOST */
         if(t&&live(t)){ lastErr='CelesTrak was unreachable from this browser; elements came through the IntMap relay'; return true; }
         tried.push('relay: '+(t?'parsed nothing':(note.reason||'no answer')));
+        if(note.failure) met=note.failure; else if(t) met={reason:'parse',url:GP(want)};
       }catch(e){ tried.push('relay: '+String(e&&e.message||e)); }
       if(primedFromBundle){
         lastErr='live feed unreachable — showing the catalog shipped with the app'
@@ -411,6 +418,7 @@ export function satellitesLive(HOST){
           try{ if(_onPrimed) _onPrimed(); }catch(_){} return true; }
       }catch(_){}
       lastErr=tried.join('; ')||'no catalog source answered';
+      lastFailure=met;
       return false;
     })()
       .then(ok=>{ if(_inflightG===want){ loading=false; _inflight=null; _inflightG=null; } return ok; });
@@ -1121,6 +1129,7 @@ export function satellitesLive(HOST){
       when:clockNow().toISOString(), clockOffsetH:+(((clockNow().getTime()-Date.now())/3600000).toFixed(2)),
       selected, opacity,
       tleAgeH:tleAt?(Date.now()-tleAt)/3600000:null, loading, err:lastErr,
+      failure:(lastFailure&&!sats.length)?Object.assign({},lastFailure):null,
       bundled, bundledSource:(bundledMeta&&bundledMeta.source)||null,
       bundledEpoch:(bundledMeta&&bundledMeta.newestEpoch)||null,
       diverged:_diverged,

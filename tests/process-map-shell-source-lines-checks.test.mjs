@@ -177,16 +177,26 @@ test('R195 ①: both sidebars are recorded, and every route out of them records 
   assert.ok(saves >= 3, `the right layer panel should record open, close and toggle; found ${saves}`);
   assert.match(appBody, /classList\.toggle\('collapsed'\);[\s\S]{0,400}?_imSaveSession/,
     'the left sidebar toggle records itself');
-  /* …and boot restores the right panel from the last session's answer.
-     ⚠ (#R210) The claim CHANGED, by a later instruction: 「初回時は、右サイドバーも開かれた状態に」.
-     What must still hold is that a SAVED answer wins — an explicit `right:false` keeps it closed —
-     and that only the no-saved-answer case opens. Pinning the old expression would have made that
-     instruction unimplementable, so the assertion is on the two behaviours, not on the source line. */
-  assert.match(mapUi, /typeof ui\.right!=='boolean'/, 'boot distinguishes "no saved answer" from a saved one');
-  assert.match(mapUi, /if\(!isMob\(\)&&\(unanswered\|\|ui\.right===true\)\)\{/,
-    'a saved right:false still boots closed; only an unanswered first visit opens');
-  /* (#R210 follow-up) the unanswered case waits for idle so the tile build does not race boot */
-  assert.match(mapUi, /if\(unanswered&&'requestIdleCallback' in window\)/, 'and it opens on idle');
+  /* …and boot restores BOTH columns from the last session's answer — and only from it.
+     ⚠ (#R210) once read 「初回時は、右サイドバーも開かれた状態に」; ⚠ (first-impression) the same reader's later
+     instruction withdrew it: 「初回も地図が全面。パネルは読者が開いたときだけ。」 The claim is still about
+     BEHAVIOUR, not a source line: the boot expressions are EVALUATED over the three states a session can be in
+     (never answered / saved shut / saved open), on desktop and on a phone, and only «saved open» opens. */
+  const leftM = appBody.match(/sidebar\.classList\.toggle\('collapsed',(_sessUI\.left[^)]*)\);/);
+  assert.ok(leftM, "the left column's boot state is ONE expression over the saved answer");
+  const leftCollapsed = new Function('_sessUI', `return (${leftM[1]});`);
+  const rightM = mapUi.match(/const ui=window\._imSessionUI;\s*if\(([^\n]*?)\) open\(\);/);
+  assert.ok(rightM, "the right panel's boot open is ONE condition over the saved answer");
+  const rightOpens = new Function('ui', 'isMob', `return !!(${rightM[1]});`);
+  for (const [saved, want] of [[null, false], [false, false], [true, true]]) {
+    assert.equal(!leftCollapsed({ left: saved }), want, `left column at boot with saved left=${saved}`);
+    assert.equal(rightOpens({ right: saved }, () => false), want, `right panel on desktop with saved right=${saved}`);
+    assert.equal(rightOpens({ right: saved }, () => true), false, `right panel on a phone with saved right=${saved} (the layer button opens it)`);
+  }
+  assert.equal(rightOpens(undefined, () => false), false, 'no published session at all is a first visit, and opens nothing');
+  /* and no other route opens the right panel on a first visit — the idle-callback open #R210 added is gone */
+  assert.doesNotMatch(mapUi, /requestIdleCallback\(\(\)=>\{ try\{ open\(\); \}catch\(_\)\{\} \}/,
+    'no idle-time first-visit open() survives beside the restore');
 });
 
 /* ── ③ one hit test per pointer move ─────────────────────────────────────────────────────────── */

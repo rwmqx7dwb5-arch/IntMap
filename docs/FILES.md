@@ -48,9 +48,15 @@ icons/                          manifest と index.html が名指すアイコン
 science.html / sources.html     読み物2ページ（手法の説明・出典の一覧）。バンドラを通らないので
                                 言語一覧は scripts/i18n-langs.mjs が生成する js/locales/_langs.js から読む
 about.html / teachers.html     紹介ページと授業での使い方（英語）。ja/about.html・ja/teachers.html が日本語版。
+news-map.html / embed-map.html  用途別の紹介——ニュースを地図で読む／記事に地図を埋め込む（英語）。ja/ に日本語版。
                                 sitemap.xml・robots.txt とともに scripts/landing.mjs が生成する（手で編集しない。
                                 文は scripts/landing-text.mjs、見本は js/showcase.js）。Architecture.md §8.6
-img/showcase/<id>.jpg           見本の地図の画面写真（と共有カード用の <id>-card.jpg・1200×630）。scripts/showcase-capture.mjs がビルドしたアプリから撮る
+for-newsrooms.html / for-schools.html / for-research.html / contact.html / support.html
+                                組織向けの紹介 3 ページ・相談フォーム・支援のページ（英語。ja/ が日本語版）。
+                                scripts/org-pages.mjs が生成する（手で編集しない。文は scripts/org-pages-text.mjs）。Architecture.md §11
+admin-inquiries.html            相談のコンソール（org_inquiries の閲覧・状態とメモ・削除、supporters の掲載）。英語・noindex。
+                                同じく scripts/org-pages.mjs が生成し、動きは js/admin-inquiries.js
+img/showcase/<id>.jpg           見本の地図の画面写真（と共有カード用の <id>-card.jpg・1200×630、アプリ内ギャラリー用の <id>-thumb.jpg・480×252＝カードの縮小）。scripts/showcase-capture.mjs がビルドしたアプリから撮る
 s/<id>.html / ja/s/<id>.html    見本ごとの共有ページ（og カード＋その見本の地図への転送）。scripts/landing.mjs が生成する
 og-image.jpg                    リンクのカードの絵（本物の JPEG。大きさは scripts/brand.mjs が読んで index.html の head へ書く）
 （dist だけ）history/ ja/history/ sitemap-history.xml sitemap-index.xml
@@ -116,6 +122,8 @@ css/
                                     z-index はすべてそれを読む（台帳は scripts/z-layers.mjs）
   pages.css                         読み物2ページ（science.html / sources.html）のスタイル
   landing.css                       紹介・授業ページ（about / teachers と ja/）のスタイル。pages.css の配色の上に載る
+  org-pages.css                     組織向けページ・相談フォーム・支援のページのスタイル（landing.css の上に載る）
+  admin-inquiries.css               相談のコンソール admin-inquiries.html のスタイル（admin.html と同じトークン）
   history-pages.css                 歴史地図の入口ページ（ビルドが書く history/・ja/history/）のスタイル。landing.css の上に載る
   fonts.css                         同梱フォントの @font-face
 src/
@@ -186,7 +194,8 @@ embed-mode.js                     **埋め込み表示**（`?embed=1`・`&intera
                                   文法（`embedFlags`）・URL の組み立て（`embedUrl` / `appUrl`）・枠の大きさ（`EMBED_SIZES`・
                                   `EMBED_PX`・`frameSize`）・`<iframe>` コード（`iframeCode`。符号化は IntMapSafe）。埋め込みの
                                   ときだけ `<html data-embed>` を立て、読み取り専用の門（読者の click・change・キーを地図内で止める）
-                                  と上端右の帯（時計の瞬間・「IntMap で開く」）を作る。window グローバルを持たない
+                                  と上端右の帯（時計の瞬間・「IntMap で開く」）を作る。リンクの題と一言の帯 #im-caption は
+                                  残す一覧にある（帯そのものは map-ui.js の share）。window グローバルを持たない
                                   ——共有パネル・Atlas の `share`・`js/atlas-loader.js` が名前で import する
 geo-import.js                     落とされたファイルを FeatureCollection にする（GeoJSON / KML / KMZ / GPX /
                                   CSV・TSV / WKT）。⚠ **拡張子の一覧を持たない**——容器（zip・gzip・文字
@@ -487,12 +496,20 @@ chronos.js                        Chronos＝統一時間カーネル window.IntM
                                   ——`Date.UTC(1,…)` は 1901 年になるから（#R604）。時計は `makeClock()` が作る
                                   **地図ごと**の物で、IntMapTime はメイン地図の 1 個目（比較ウィンドウは 2 個目を持つ）
 map-state.js                      地図の状態の**正本**（MapState）。視野・基図・時刻・共有レイヤー・比較窓・3D 地形・
-                                  シミュレータ入力・セッションのレイヤー集合を `SCHEMA` で 1 回だけ宣言し、URL ハッシュ
+                                  シミュレータ入力・リンクの題と一言（`captionText` が掃除して文字単位で切る）・セッションの
+                                  レイヤー集合を `SCHEMA` で 1 回だけ宣言し、URL ハッシュ
                                   （`encode` / `decode`）・共有リンク・セッション保存（`session()`）・Atlas の camera / time
                                   節はその写像。値は持ち主（`own`）の `read()` が返し、ストアは複製を持たない。復元は
                                   世代つきの 1 回の適用（`restore`）で、変化の通知は「復元」か「読者」かを述べる。
                                   window 公開なし（import で読む）
 historical-basemap.js             Chronos旅行中の自然地理ベクタ背景。現代政治境界を含むCARTO画像を置換し、Nowで復帰
+hist-knowledge.js                 歴史地図が**どこまで分かっていて、どこからが分かっていないか**の測り方
+                                  （ES module・DOM も地図も時計も言語も触らない純関数）。`measure()`＝0.25° 格子で
+                                  「その年に地図が政体の中に置いている陸地のうち、第1級区分が覆う割合」（セル数と
+                                  cos(緯度) 重みの面積の両方）、`unknownGround()`＝記録の無い政体はその**政体自身の
+                                  輪郭**、一部だけの政体は**記録の無い土地**（0.1° の矩形）を GeoJSON で返す。
+                                  ⚠ **読み手は 2 つで規則は 1 つ**——`npm run check:histfidelity`（scripts/hist-fidelity.mjs）
+                                  が記録する数と、js/time-admin1.js が地図に引く斜線は同じ関数から出る
 hist-scale.js                     深い時間の**算術**だけを持つ純関数 window.IntMapHistScale。DOM も地図も時計も
                                   言語も触らないので検査が**評価**できる（#R570 の教訓）。①`decYear()`＝
                                   OpenHistoricalMap が書く10進年（実測 103,093 件に当てて決めた「その日の中点」）
@@ -525,7 +542,7 @@ coastline.js                      **海までの距離**（#R495）— data/coas
                                   ⚠ js/coast-line.js（上）は描画用のレイヤーで、こちらは計測用。別物。
 grid-style.js                     経緯線のスタイル層
 layer-home.js                     カメラを動かしてよいレイヤーの表 window.IntMapLayerHome
-layers/                           **レイヤーと基本表示の宣言** — 1 項目 1 ファイル `<id>.js`（174 本＝レイヤー 163 ＋基本表示 11、`kind: 'display'`）＋棚の一覧 `_shelves.js`
+layers/                           **レイヤーと基本表示の宣言** — 1 項目 1 ファイル `<id>.js`（175 本＝レイヤー 164 ＋基本表示 11、`kind: 'display'`）＋棚の一覧 `_shelves.js`
 layer-manifest.js                 **どのレイヤーが在るか**（layer-manifest）— js/layers/ の宣言から導出する。`#layer-dropdown` の
                                   全チェックボックスの id・種類（レイヤー／基本表示）・棚・並び・「その他N件」・名前の i18n キー・既定 ON・共有リンク・
                                   遅延モジュール、と宣言そのもの（`layerDeclaration`）。⚠ 一覧と宣言の値は GENERATED LAYERS の印の
@@ -546,7 +563,7 @@ layer-state.js                    **レイヤーの状態の唯一の持ち主**
 layer-time.js                     **時刻 T でレイヤーが何を述べられるかの規則（純粋）** — `verdict(decl, at)` が stated（典拠が T を述べる）/
                                   carried（別の時点を述べ、それと言って描く）/ unstated（どの典拠も述べない）を返す。種類の語彙・
                                   `validate`（著者の無い日付を拒む）・en+jp の文。docs/architecture/07-map.md §7.4a
-layer-time-decl.js                **174 行（レイヤー 163 ＋基本表示 11）それぞれの時間の宣言**（純データ・`TIME[id]`。1 層の記述の `time` 欄に入る形）。
+layer-time-decl.js                **175 行（レイヤー 164 ＋基本表示 11）それぞれの時間の宣言**（純データ・`TIME[id]`。1 層の記述の `time` 欄に入る形）。
                                   門は scripts/world-at-time.mjs --check（manifest と一致・全宣言が規則を通る・引用先が実在）
 layer-time-kernel.js              **時刻 T の地図の機構** window.IntMapLayerTime — 述べられない箱を預かり（モジュールには地図自身の
                                   「オフ」、箱はチェックのまま）、述べられる時刻で配り直す。行（`nodata`）・凡例・Atlas
@@ -558,10 +575,15 @@ time-lapse.js                     **タイムラプス**——メイン地図の
                                   prefers-reduced-motion（最遅に固定）。UI は Chronos パネル #ntl-lapse（news-timeline.js が初回に読む）、
                                   Atlas `time.lapse` と状態 `lapseState()`。録画のときはコマの受け手（sink）に描き終えたコマを渡す。
                                   書き出し欄 #ntl-rec を置き、開いたときに map-recorder.js を読む（`openRecorder`）
-map-recorder.js                   **タイムラプスの動画書き出しと、比較の 1 枚画像**——1 つの合成器（地図・その瞬間・出典・語標と
-                                  リンク）。描き終えたコマだけを MediaRecorder に 1/fps ずつ書く（地図を待つ間は録画を止める）。
+year-book.js                      **年鑑（その年の世界）**——時計の瞬間を、地図が描く記録から読んだページにする（政体と描かれた面積・
+                                  その年に国境の記録が変わる日・戦争の記録・Maddison・描けるレイヤー数）。Chronos パネルの「この年を読む」
+                                  （news-timeline.js が押されたときに読む）と Atlas `time.yearbook`。docs/architecture/07-map.md §7.4b
+map-recorder.js                   **タイムラプスの動画書き出しと、比較の 1 枚画像と、地図の絵葉書**——1 つの合成器（地図・その瞬間・
+                                  出典・語標とリンク）。描き終えたコマだけを MediaRecorder に 1/fps ずつ書く（地図を待つ間は録画を止める）。
                                   出典は描いている層の典拠と #map-credit から（`drawnCredits`）、切らずに折り返す（`layoutFrame`）。
-                                  遅延チャンク（Chronos の書き出し欄か Atlas `time.lapse` record:true が読む）
+                                  絵葉書（`postcard`・共有パネルの画像タブ `createPostcardTab`）は題と一言のカードと、地図上の凡例を
+                                  ページの DOM から読んだ絵（`rasterLegend`・`parseGradient`）を足す。形は `POSTCARD_SIZES`。
+                                  遅延チャンク（Chronos の書き出し欄・共有パネルの画像タブ・Atlas `time.lapse` record:true／`postcard` が読む）
 notify.js                         **通知の唯一の実装** `notify`（window.IntMapNotify）。1 つの要素 #ai-toast・1 つの時計・
                                   role=status（polite）と role=alert（assertive）の 2 声を持つ 1 つの live region。同じ文の
                                   表示中の重複は読み上げ直さない。aiToast / satToast / imToast / _toast / toast / majorToast はここへ委譲
@@ -606,7 +628,11 @@ layer-pkg-alliances.js            **レイヤー・パッケージ** NATO dl-nat
                                   凡例が述べる加盟国数（描いている加盟国から）
 layer-packs.js                    追加レイヤーパック（地球と空／土地被覆／ベータ2／宗教・言語／
                                   タイムゾーン／GIBS の科学プロダクト）
-wb-layers.js                      世界銀行指標の塗り分けと最新統計の更新
+wb-layers.js                      世界銀行指標の塗り分けと最新統計の更新。国別指標の行 `bx-wbind` の塗り手（`indicators()`・
+                                  `paintIndicator`）と共有リンクの `wbind`
+indicator-browser.js              **国別指標**——国の統計を 1 つのレイヤーで、検索と分野（その指標の行が立つ棚）で選ぶ（凡例の中）。
+                                  同じ系列を塗る行は宣言の `measures` から 1 項目に。初めて行を点けたときに wb-layers.js が読む。
+                                  Atlas `layers.indicator`。docs/MAP-LAYERS.md §7.2
 world-packs-rows.js               世界データ層の行・共有ツールキット（_ui）・共有リンクの選択——起動時に要る部分だけ
 world-packs.js                    世界データ層の本体——貿易・エネルギー・気象警報・潮汐・作物（初めて行を点けたときに取る）
 precip-annual.js                  年降水量——国別平均ではなく実測グリッド
@@ -662,7 +688,11 @@ time-admin1.js                    時間軸の上の歴史的**地方区分**（
                                   塗りは `imta-line` / `imta-vt-line` と同一（docs/MAP-LAYERS.md §7.7）。
                                   切替盤 `window._applyAdmin1` もここが持つ
                                   （app-shell に行数の余白が無い）。被覆は部分的なので `coverage()` /
-                                  `note()`（9言語）が「線が無い国は記録がまだ無い」と言う
+                                  `note()`（9言語）が「線が無い国は記録がまだ無い」と言う。
+                                  **記録の無い土地は地図の上に斜線で描く**（`imta-know-fill` / `imta-know-lbl`・
+                                  source `imta-know-src` / `imta-know-lbl-src`・js/hist-knowledge.js を旅行時に
+                                  動的 import）。`coverage().known` がその日付の割合と、同じ土地の二重主張の
+                                  種類別の件数（data/hist-claims.json）を返し、Atlas の `time.coverage` が読む
                                   （docs/MAP-LAYERS.md §7.7・記録は data/hist-admin1.js）
 time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列
@@ -706,6 +736,20 @@ news-brief.js                     出来事の「読める中身」を組み立�
 news-events.js                    出来事単位の News（一覧・カテゴリ chips・詳細・媒体間の相違・★）。
                                   遅延取得（IntMapLazy の newsEvents）で、束ね方は決めずにサーバーの
                                   結果を読む。正本は docs/NEWS-EVENTS.md
+                                  一覧の上に取り込みの健全性の 1 行（`news_ingest_health()`）を出し、
+                                  国の日報と企業パネルが読む行を開く口（`openRow`・`columns`）を持つ
+news-pulse.js                     「国ごとのニュースの脈」のレイヤー行と IntMapOS 命令と窓口
+                                  `IntMapNewsIntel`（**eager**——行・名前・命令だけ。本体は news-intel.js）
+news-intel.js                     ニュースの脈（国ごとの出来事の件数と増減・Chronos に従う）・国の日報
+                                  （件数・30 日・カテゴリ・報道の多い出来事・同じ国の IODA の障害と前後のニュース）・
+                                  企業が出てくる出来事と地図上の線。遅延取得（IntMapLazy の newsIntel）。
+                                  正本は docs/NEWS-EVENTS.md §16
+news-intel-core.js                その計算の全部（純粋なモジュール）——地点 → 国（10 m の輪郭と海岸の許容）・
+                                  窓と直前の窓・増減・塗りの値・障害とニュースの結び付け・取り込みの判定。
+                                  node が本番のデータで同じ関数を評価する
+freshness.js                      「いつ時点か・誰が測ったか」の 1 つの部品（新しい／N 時間更新なし／
+                                  確認できなかった／未確認を別の文で言う）。ニュース・ネット障害・企業・
+                                  選挙のどれもが使える
 news-feed.js                      ニュースの取得・キャッシュ・見出しの翻訳
 news-ui.js                        ニュース一覧・ピン・リーダー
 news-context.js                   記事 → 場所／媒体の解決
@@ -781,6 +825,11 @@ atlas-file-view.js                Atlas — 添付ファイルの**中身**を�
                                   表は中身の列の揃い方で判定して表として、長い本文と大きな表は残りの量を述べる
                                   ボタンで畳む）。全画面の枠そのものは `atlas-attach.js` が 1 本だけ持つ
 atlas-msg-tools.js                Atlas — メッセージごとの操作バー（コピー／再試行／編集）とその場編集
+atlas-notebook.js                 Atlas — **調査ノート**（atlas-os）のページ側。終わったターンを綴じる・パネルの帯とシート・
+                                  再現（runDirect＋restorer で読み返し）・今と比べる・もう一度訊く・書き出し／読み込み・アカウント同期
+atlas-notebook-store.js           Atlas — 調査ノートのデータ（記録の形・行ごとの差分・検索・Markdown／ファイル・IndexedDB・同期の突き合わせ）。DOM なし
+atlas-selfcheck.js                Atlas — 自己診断（system.diagnose）が Atlas 自身について読む 3 つ: 起動した能力の登録と能力モジュールの
+                                  突き合わせ・ai-proxy の疎通（公開鍵だけの POST に 401 auth＝在る、throw＝観測不能）・宣言されたボタンの有無
 atlas-gloss.js                    Atlas — 回答文の語句を選択→右クリック（タッチは長押し→「解説」）で開く
                                   用語カード。意味・**この文での意味**・背景を AI が生成する。文脈は描画済みの
                                   DOM（その吹き出しと直前の質問）から採るのでカーネルの状態に依存しない。
@@ -793,7 +842,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  161 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  178 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -812,6 +861,7 @@ atlas-cap-layers.js               Atlas の能力 — レイヤーの切り替�
 atlas-cap-map.js                  Atlas の能力 — 地図への描画・強調・計測・消去（map.*）
 atlas-cap-navigation.js           Atlas の能力 — ナビゲーション（navigation.*）
 atlas-cap-news.js                 Atlas の能力 — ニュースの分類（news.category）
+atlas-cap-notebook.js             Atlas の能力 — 調査ノート（notebook.list / open / compare。前に調べたことを探す・地図を戻す・今と比べる）
 atlas-cap-panel.js                Atlas の能力 — パネルを開く・閉じる（panel.*）
 atlas-cap-photo.js                Atlas の能力 — 写真の撮影地点探索（photo.locate）
 atlas-cap-places.js               Atlas の能力 — マイプレイス（アカウントに保存した場所）の保存・一覧・表示・削除（places.*。my-places）
@@ -903,7 +953,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全161を検索・到達可能 160）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全178を検索・到達可能 177）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -919,8 +969,8 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 161能力ぶんの型・列挙・範囲と `required`/`anyOf`。
-                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
+atlas-schemas.js                  **引数の schema**（#R406）— 178能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 178 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
@@ -1010,6 +1060,13 @@ radiation-model.js                放射性物質拡散のモデル本体（風�
                                   ラグランジュ solve・沈着格子・区分・線量積分）。DOM も window も
                                   持たない純粋モジュールで、ページと worker が同じものを import
                                   する。数の出所は docs/RADIATION-MODEL.md（export const RAD）
+ash-model.js                      火山灰の拡散モデル本体（Mastin の噴火源・Suzuki の鉛直分布・
+                                  Ganser の落下速度・変形拡散・気圧面の風の入れ子ネスト・降灰と
+                                  飛行高度帯ごとの濃度）。DOM も window も持たない（export const ASH）
+ash-plume.js                      「いま噴火したら」火山灰のパネル・地図・露出（地名辞典の町・空港）
+                                  window.IntMapAshPlume（遅延・火山カード・ツール欄・Atlas から開く）
+sim-datasets.js                   シミュレーションの出力を分析用データセットとして登録する 1 つの扉
+                                  （出自は sim 名・版・引数・乱数の種）。import して使う
 shakemap.js                       USGS ShakeMap——1つの地震の地震動そのもの（等値線・震度の面・
                                   範囲内の都市と人口・遅延取得）window.IntMapShakeMap
 seismic.js                        地震波シミュレータ（477 KB）
@@ -1128,6 +1185,9 @@ screenshot.js                     スクリーンショットのボタン（busy
                                   **絵そのものは atlas-view-capture.js**——Atlas と同じ1本を呼ぶ）
 sidebar-style.js                  左サイドバーの材質（不透明／フロスト2種）と、フロスト時にカメラへ渡す左 inset
 search-geocode.js                 検索欄——問い合わせの前処理・ジオコーディング・結果カード
+place-dossier.js                  地点プロファイル——1 地点について地図が持つもの（名前と行政区分・国・標高・表示中レイヤーの
+                                  値・現地時刻と日の出入り）を 1 つの記録にし、カードに描く。Atlas `research.placeProfile` も
+                                  同じ記録を返す。読めない項目は理由つきの行（docs/architecture/07-map.md §7.3f）
 compare.js                        並べて／スワイプで比べる地図 IntMapCompare。**独自の時計**（`makeClock('compare')`）を持ち、
                                   「メイン地図の時刻に従う／独自の時刻」を切り替える。選んだ層はその時計で時間カーネルの規則に
                                   判定され、歴史国境はその瞬間の記録（time-borders.js `collectionAt`）。読み手には
@@ -1175,7 +1235,12 @@ map-narrator.js                   地図のテキスト代替——視覚的に�
                                   地物をレンダラ自身のクリック経路（GE().events.pressAt）で押す（map-a11y-structure）
 legal-page.js                     同じ本文を privacy.html / terms.html として出す（chrome は9言語）
 showcase.js                       見本の地図の宣言（純データ）と、scripts/showcase-capture.mjs が書くリンク・写真の生成領域。
-                                  紹介ページ・Atlas の panel.showcase・spec・landing.mjs --check が読む
+                                  紹介ページ・アプリ内ギャラリー・Atlas の panel.showcase・spec・landing.mjs --check が読む。
+                                  TOPICS はギャラリーの見出し（主題）
+showcase-gallery.js               **アプリ内の作例ギャラリー**——検索欄の空の状態（何も打っていないとき）に作例とツアーの
+                                  カードを並べ、「すべて見る」・data-im-gallery・Atlas の panel.gallery で一覧を開く。
+                                  カードは showcase.js と tours.js から導く。1 タップで見本を開く openShowcase は
+                                  Atlas の panel.showcase も使う（共有リンクの復元＋読み返し）。自動では開かない。必要になったときに読む
 tours.js                          **授業ツアー**の宣言（純データ）——地図の状態を順に並べ、各段に日英の語り（say）と生徒への問い（ask）。
                                   段は見本（showcase.js）を名指すか、見本と同じ形の意図を持ち、そのリンクは
                                   scripts/showcase-capture.mjs が書く生成領域 CAPTURED_STEPS。`?tour=<id>&step=<n>` の読み書き
@@ -1191,6 +1256,10 @@ supporter.js                      IntMap を支援する——支援パネルの
                                   public.operating_stats() の今月の AI 要求数・トークン数）と、控えめな提案カード
                                   （Atlas の 1 日の上限に達したとき・7 日目に一度だけ。閉じたら眠る）。Stripe の 2 リンクの宣言。
                                   window に何も出さない（app-body.js が install し、atlas-cap-panel.js の `operatingCosts` が開く）
+org-page.js                       組織向けページの唯一のスクリプト（素の script・window に何も出さない）——テーマ、言語の選択、
+                                  相談フォームの送信（reader-reports へ kind inquiry。201 のときだけ「送った」）、支援のページの
+                                  今月の AI 利用量（operating_stats）と支援者の一覧（supporters）の読み込み。文は持たない（ページの data-msg-*）
+admin-inquiries.js                admin-inquiries.html の動き——管理者の確認、相談の一覧・状態・メモ・削除、支援者の掲載・非表示・削除
 monitors.js                       Area Monitors IntMapMonitors
 weather.js                        気象（export wind / weatherEC / weatherPanel）
 wx-models.js                      予報モデルのレジストリ window.IntMapWxModels——提供モデル・出典・ライセンス。格子／変数／気圧面／予報期間は live metadata から導出（書き写さない）
@@ -1212,6 +1281,13 @@ proxy-fetch.js                    ACAO を返さない上流を**自前の relay
                                   `opts.as` が受理する文書の形（feed／html／json／text）、`opts.budgetMs` が ladder 全体の上限、
                                   `opts.direct` が相手先を先に試すか、`opts.signal` が停止。⚠ 締切は**本文の読み終わりまで**掛かる。
                                   `clockFor(url, via)` は 1 回の取得の秒数を host ごとに答える（直接／自前 relay 段）
+service-status.js                 **「IntMap のいま」**（状態ページ）——この端末（オンライン・オフラインで開けるか・保存量）／
+                                  描けないレイヤーと理由／毎晩の確認でデータ元が応答しているか（いつから・最後の応答）／Atlas の
+                                  品質評価。`data/service-status.json` を読む。`upstreamRow` は失敗した要求の URL を
+                                  その提供元の夜の記録と結ぶ（`layer-state.js` が使う）、`sourceNote` は出典の一覧に同じ文を出す。
+                                  初めて使われたときに取得（握りは `layer-state.js` の `window.IntMapStatus`）。08-ui.md §8.1.3
+host-match.js                     出口の台帳（`scripts/outbound-hosts.json`）のホスト名・パターン（`*.wikipedia.org`）の照合 1 つ。
+                                  `scripts/upstream-liveness.mjs` と `service-status.js` が同じ関数を読む
 fetch-deadline.js                 締切つきの取得 `jsonWithin()` / `readWithin()`——相手が答えるのをやめても必ず終わる 1 回の取得。
                                   `opts.idle` は本文の塊ごとに時計を掛け直す（大きなファイルの無音を測る）。
                                   `opts.bytes` は本文を `text` でなく `bytes`（ArrayBuffer）で返す（gzip を壊さないため）。
@@ -1265,10 +1341,16 @@ ne-countries/                     Natural Earth admin-0 の 3 縮尺（110m 187 
                                   natural-earth-vector の固定コミットから scripts/build-ne-countries.mjs が作る可逆形式
                                   （上流の CDN から @master で 4.34 MB を読んでいたものの置き換え）。パブリックドメイン
 gazetteer-world.json.gz           世界の地名の長い尾（cities1000 由来・18言語）。必要になった時に取得する
+                                  （ニュースの地名解決が見出しを処理したとき・地名検索欄に手を伸ばしたとき・
+                                  読み手が warm() を待つとき。起動の索引作りは取りに行かず、届くのを待つだけ）
 histcities-homonyms.json.gz       歴史都市名の記録が使う綴りに一致する**世界中の全集落**（cities500 由来・
                                   重複排除なし）。ブラウザには配信されない——`check:histcities` が
                                   「その綴りはこの1都市を指すか」を訊く相手。生成は
                                   scripts/build-histcities-homonyms.mjs
+service-status.json               **昨夜の確認を読者へ**——上流ホストごとの判定・`what`/`whatJp`・最後に応答した時刻・
+                                  応答しなくなった時刻（`upstream-liveness` の結果から）と、Atlas の夜間評価の実行記録。
+                                  先頭に出自（IntMap 自身の測定）を値で持つ。生成は scripts/build-service-status.mjs
+                                  （`.github/workflows/tle-refresh.yml` が 1 日 2 回）
 hist-places.json                  Pleiades の独立地名（6698 地点・12646 件の年代付き名称記録）。CC BY 3.0。
                                   出典の代表点・原綴り・転写・言語コード・期間を保持し、Chronos 旅行時に遅延取得。
                                   名称の期間は創建・廃絶の年代を意味しない。生成は scripts/build-hist-places.mjs
@@ -1382,7 +1464,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは8つ・全 56,141 リング分／
+                                  **発見された**束すべて・いまは8つ・全 56,194 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
@@ -1428,11 +1510,20 @@ data/hist-admin-fill.js           **IntMap 自身が遡らせた**現代の第1�
                                   ⑤OHM の記録が既に答えている区間は**黙る**。
                                   hist-kuni と同じく束（__HISTADM1）に**追記**され、列 10 は null なので
                                   線は `imta-gap-line` が描く。門は `npm run check:histfill`
+data/hist-coverage-holes.json     歴史地図の**穴**の観測（目標値ではない）。測った 18 年それぞれで、第1級区分が
+                                  丸ごと描かれていない政体ごとに、その記録の無い土地の下にある**現代の国**と、
+                                  そこが空いている**理由**（data/hist-admin-fill.js の `refused`・最後の発足より前・
+                                  時代の記録が別の政体に置く…）。`reasons` に各理由の文。
+                                  `node scripts/hist-fidelity.mjs --update` が書き、門は出荷済みの束と一致しなければ落とす
+data/hist-claims.json             第1級の単位どうしが**同じ土地を同じ瞬間に**主張している組（ページが読む）。
+                                  種類は js/hist-scale.js `claimKind`（継ぎ目・重複・係争）。js/time-admin1.js が
+                                  その日付に両方が描かれている組を数え、レイヤー行の注記と Atlas に出す。
+                                  `--update` が書き、門が測り直して一致を確かめる
 data/hist-fidelity.json           歴史地図の**観測値**（目標値ではない）。`scripts/hist-fidelity.mjs` が
                                   出荷済みの束を測り直し、悪くなっていたら落第する門 `npm run check:histfidelity`
                                   の正本。3 つ——①上流が述べていない span の件数（**0 でなければ落第**）
-                                  ②同じ単位が 1 瞬に二度描かれる組（identical / nested / seam）
-                                  ③**0.25° の陸地格子**で測った年ごとの被覆と、0%／一部だけ／丸ごとの政体数
+                                  ②**同じ土地**を同じ瞬間に 2 つの単位が主張する組（継ぎ目 / 重複 / 係争）
+                                  ③**0.25° の陸地格子**で測った年ごとの被覆（セル数と面積重み）と、0%／一部だけ／丸ごとの政体数
                                   （紀元前 500 年から 2019 年までの 18 年）。`--update` で記録し直す
 us-elections.json / us-states.json  米大統領選挙（60回・州別2,342行の得票と選挙人つき）
 elections/                        各国の**国政選挙**（index.json＝polity・選挙・政党／`<版>.geo.json`＝選挙区の境界を**版ごとに**1つ／`<選挙>.res.json`＝結果）。scripts/elections/ の各パックが書き、scripts/build-elections.mjs が統合し、`--check` が形式と結合を毎回検証する。契約は scripts/lib/elections-schema.mjs
@@ -1455,9 +1546,9 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全22本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（39本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（42本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
-  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ アカウントのデータ（目録・書き出し・マイプレイス）。20本）
+  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス）。20本）
   functions/<name>/index.ts       Edge Functions（22本。一覧と各本の役割は Architecture.md §6.2。
                                   usage-count/shape.js は関数の中の宣言で、ブラウザも import する）
   functions/ai-proxy/*.ts         ai-proxy は仕事ごとのモジュール（index.ts＝経路の表・ask.ts＝1 回の要求・
@@ -1465,12 +1556,13 @@ supabase/
                                   schema / media / provider-call / providers/* / models / replay）。
                                   構成の正本は docs/architecture/06-supabase.md §6.2
   functions/_shared/              関数ではないライブラリ（ai-provider.js / atlas-persona.js / aviation-codec.js /
-                                  aviation-model.js / news-cluster.js / news-geo-prompt.js /
+                                  aviation-model.js / news-cluster.js / news-entities.js / news-geo-prompt.js /
                                   news-ingest.js / newsgeo.js / radiation-sources.js /
                                   rate-limit.js / relay-guard.js / volcano-parse.js / who-don-extract.js /
                                   bbox.js / read-budget.js / client-error-shape.js /
                                   fetch-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
-                                  atlas-grade-schema.js / site-origin.js / plans.js）
+                                  atlas-grade-schema.js / site-origin.js / plans.js /
+                                  inquiry-shape.js〔組織からの相談の語彙・上限・返信先の規則。org-pages.mjs も読む〕）
                                   ⚠ site-origin.js は**本番のアドレスの唯一の置き場**（`CUSTOM_DOMAIN` が
                                   変える値）。ブラウザ・Edge Function・スクリプト・テストが import し、
                                   workflow は scripts/site-url.mjs 経由で読む（domain-portable）
@@ -1509,7 +1601,17 @@ scripts/
   serve.mjs                       依存ゼロの静的サーバ（GitHub Pages と同じ配信＝gzip も含む）
   landing.mjs                     紹介・授業ページ（en と ja/）・sitemap.xml・robots.txt の**生成器と門**。文は
                                   landing-text.mjs、見本は js/showcase.js、数字はその持ち主のファイルから読む（§8.6）
-  landing-text.mjs                紹介・授業ページの文の唯一の写し（en + jp）
+  landing-text.mjs                紹介・授業・用途別（news-map / embed-map）ページの文の唯一の写し（en + jp）
+  brand.mjs                       **ブランドの書き出しと門**——index.html の head・docTitle/docDesc・manifest・README の
+                                  タグライン・docs/marketing/ の 2 本を brand-text.mjs から書く。`--print <id>` で投稿の完成形（§8.6.2）
+  brand-text.mjs                  タグライン・説明・ポジショニングの唯一の写し（en + jp）
+  launch-text.mjs                 チャネル別のローンチ投稿の下書き（投稿はしない）
+  history-pages.mjs               歴史地図の入口ページの生成器——js/time-borders.js を Node で動かし、地図が描く名前を
+                                  地域 × 日付で書く。vite.config.js の historyPagesPlugin がビルド時に子プロセスで走らせる（§8.6.2）
+  history-pages-text.mjs          入口ページの文の唯一の写し（en + jp）
+  org-pages.mjs                   組織向けページ・相談フォーム・支援のページ（en と ja/）と admin-inquiries.html の**生成器と門**
+                                  （`--check`）。数字はその持ち主から読む（facts()・plans.js・EMBED_SIZES・purge の既定値）
+  org-pages-text.mjs              そのページの文の唯一の写し（en + jp）。導入事例・料金・応答時間を書かない
   brand.mjs                       **ブランドの書き出しと門**——index.html の head・docTitle/docDesc・manifest・README の
                                   タグライン・docs/marketing/ の 2 本を brand-text.mjs から書く。`--print <id>` で投稿の完成形（§8.6.2）
   brand-text.mjs                  タグライン・説明・ポジショニングの唯一の写し（en + jp）
@@ -1518,7 +1620,8 @@ scripts/
                                   地域 × 日付で書く。vite.config.js の historyPagesPlugin がビルド時に子プロセスで走らせる（§8.6.2）
   history-pages-text.mjs          入口ページの文の唯一の写し（en + jp）
   showcase-capture.mjs            見本の地図のリンクと画面写真を、ビルドしたアプリ自身に作らせる（サーバと実ネットワークが要る）。
-                                  授業ツアーの段（js/tours.js）のリンクも同じ関数で作る（`--shots <dir>` で確認用の写真）
+                                  授業ツアーの段（js/tours.js）のリンクも同じ関数で作る（`--shots <dir>` で確認用の写真）。
+                                  `--serve dist` でこの実行の間だけ serve.mjs を立てて止める・`--only a,b`・`--thumbs` でギャラリー用の縮小を作る
   static-checks.mjs               構文・JSON・YAML・マージ衝突・秘密検出・HTML 参照の存在
   icon-glyphs.mjs                 **絵文字をアイコンに使わない**門（check:static の icon-glyphs）——配信物の文字列（cooked）・
                                   ページの文字・CSS の content にある Extended_Pictographic を拒む。例外は TYPOGRAPHIC（©・文中の矢印）、
@@ -1619,7 +1722,13 @@ scripts/
   build-hist-admin-fill.mjs       同梱の Natural Earth 10m（data/admin1-world.json.gz）と Wikidata の発足日から
                                   `data/hist-admin-fill.js`。**上流が日付を述べ、その国が丸ごと日付を持ち、
                                   その年にその土地が1つの政体の中にあり、OHM が黙っている**区間だけを出す。
-                                  `--check` は出荷バイトだけを見る（「1国は丸ごと答えるか1件も答えないか」を再導出）
+                                  `--check` は出荷バイトだけを見る（「1国は丸ごと答えるか1件も答えないか」を再導出）。
+                                  Wikidata との結合は **ISO 3166-2 の全ランク**（preferred を優先・ISO が改番した
+                                  旧コードも同じ項目に届く）、ISO が黙るときだけ **HASC（P8119）**。描かない国は
+                                  `refused` に理由と件数を書く。⚠ P31/P131/P150 の開始日の修飾子は**発足ではない**
+                                  ので読まない（実測で日本の床が 1946 年に動いた）。キャッシュの置き場は
+                                  `INTMAP_HISTFILL_CACHE` / `INTMAP_HISTADMIN_CACHE`（worktree から原本の
+                                  node_modules へ書かないため）
   build-hist-admin1.mjs           OpenHistoricalMap の `admin_level` 3–6 の境界関係 → `data/hist-admin1.js`
                                   （`--levels 3,4`）と `data/hist-admin2.js`（`--levels 5,6`）。**1 本の build が
                                   両方の層を焼く**ので、門も 1 本（`npm run check:histadmin`）。⚠ 出力の global は
@@ -1777,6 +1886,11 @@ scripts/
   upstream-liveness.mjs           **上流ホストの死活**。上の台帳の `probe` を並列に 1 回ずつ訊き、alive / refused / dead /
                                   unobserved に分類して JSON と Markdown を出す。失敗だけを後でもう一度訊く。`--previous` で
                                   前夜と比べ、`--fail-on-transition` は up→2 回続けて down の回だけ exit 1。`--check` は宣言だけ
+  build-service-status.mjs        `data/service-status.json` を作る。最新の `upstream-liveness` artifact と `atlas-eval.yml`
+                                  の実行記録を gh で読み、言うことが変わったときだけ書く。読めなかった半分は `null` と理由
+  lib/nightly-status.mjs          夜間ジョブの記録を値にする 1 か所——`readerUpstreams`（読者向けの上流の要約）・
+                                  `atlasEvalState` / `atlasEvalLine`（最後の成功・最新の回が何も測っていないか・失敗した段の注記）。
+                                  `build-service-status.mjs` と `worktree.mjs status` が読む
   lib/upstream.mjs                上流の応答の**判定 1 つ**（`classify`）と、builder が使う `fetchChecked`（非 2xx・空・
                                   JSON でない・スキーマ違反を拒む。再試行は dead と 429 だけ）
   lib/upstream-cadence.mjs        上流ごとの**更新周期**と根拠（observed / expires / canon）を 1 回だけ。builder の
@@ -1903,7 +2017,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 127 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 132 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の
@@ -2003,12 +2117,14 @@ tests/
                                   評価（Secret 2本が無ければ**赤**。休眠しない）。報告は run のページにも出る
   tle-refresh.yml                 衛星軌道要素スナップショットの定期更新（PR → 検査 → merge のあと deploy.yml を起動する——GITHUB_TOKEN の push は他の workflow を起こさない）。同じ PR に、期限の来た他の束も載せる（`scripts/data-refresh.mjs`・宣言 `autoRefresh`）
   perf-ceiling.yml                main の CI が完了するたびに、その build の実測で起動予算の天井を下げる（`perf-budget.mjs --tighten`。上げない）。bot の PR を `land-bot-pr` で、測った main の上にまだ乗っているときだけ着地させる
-  upstream-liveness.yml           毎晩、ブラウザが要求する上流ホストの代表 probe を訊く（`scripts/upstream-liveness.mjs`）。赤は up→2 晩続けて down の晩だけ。結果は artifact と job summary
+  upstream-liveness.yml           毎晩、ブラウザが要求する上流ホストと選挙のビルドが読む上流の代表 probe を訊く（`scripts/upstream-liveness.mjs`）。赤は up→2 晩続けて down の晩だけ。結果は artifact と job summary
   aviation-sweep.yml              世界の航空機スナップショット（Supabase Storage）を定期的に進める。リポジトリには書かない
+  companies-refresh.yml           毎週、企業アトラスを 1 バッチ組み直す（osmPending が先・次に古いプロフィール。`scripts/companies/refresh-plan.mjs`）。bot の PR を `land-bot-pr` で着地
+  elections-refresh.yml           毎週、国政選挙の記録が世界に遅れていないか訊き（`build-elections.mjs --watch`）、取り込めるパックだけ組み直す。bot の PR を `land-bot-pr` で着地
   nightly-bisect.yml              連続で赤のテスト 1 本を、範囲の各 commit で単独に走らせて壊した merge を測る（手動 or nightly の `deep-alarm` が起動・`scripts/nightly-bisect.mjs`）。その commit 自身の木・build・データで測る
 .github/actions/
   browser-tier/                   ブラウザ試験の 1 台分（依存・Playwright・計画・build 成果物の受け取り・実行・報告）。ci.yml の browser／browser-deep が使う
-  land-bot-pr/                    github-actions[bot] の PR を着地させる（自分が起こした run の承認・検査の待機・取消と赤の区別・merge・deploy.yml の起動）。tle-refresh.yml と perf-ceiling.yml が使う
+  land-bot-pr/                    github-actions[bot] の PR を着地させる（自分が起こした run の承認・検査の待機・取消と赤の区別・merge・deploy.yml の起動）。tle-refresh.yml・perf-ceiling.yml・companies-refresh.yml・elections-refresh.yml が使う
   data-assets/                    git の外にあるデータ集合を置く（`data-assets.json` の hash を key にしたキャッシュ ＋
                                   `scripts/data-assets.mjs pull`）。データを読むジョブがビルドと検査の前に使う
 ```

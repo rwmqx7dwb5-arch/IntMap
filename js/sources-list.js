@@ -19,6 +19,7 @@
  *  the same language is `ja`, and the map below is the only place that difference exists.
  * ========================================================================== */
 import { IntMapRefData } from './reference-data.js';
+import { IntMapLang } from './lang-registry.js';
 window.IntMapSourcesList = (function () {
   'use strict';
 
@@ -63,6 +64,19 @@ window.IntMapSourcesList = (function () {
   var useIn = useText;
 
   var lang = 'en';
+  /* (shell-experience) last night's check of the suppliers (data/service-status.json, read by js/service-status.js —
+     the same reader the app's status page and its layer rows use). A credit whose host did not answer says so
+     under its description; until the measurement is read, and for every host it does not list, nothing is said. */
+  var status = null, asked = false;
+  function note(s) {
+    if (!status) return '';
+    try { return status.S.sourceNote(status.b, s.u, IntMapLang.normalise(lang)); } catch (e) { return ''; }
+  }
+  function askStatus() {
+    if (asked) return; asked = true;
+    import('./service-status.js').then(function (S) { return S.loadStatus().then(function (b) { if (S.usable(b)) { status = { S: S, b: b }; paint(); } }); })
+      .catch(function () { /* no measurement: the list stands as it was */ });
+  }
 
   function paint() {
     var host = document.getElementById('src-list');
@@ -97,6 +111,7 @@ window.IntMapSourcesList = (function () {
       rows.forEach(function (s) {
         out += '<div class="pg-srcitem"><b>' + esc(s.n) + '</b>'
              + '<div class="pg-use">' + esc(useText(s, lang)) + '</div>'
+             + (note(s) ? '<div class="pg-down">' + esc(note(s)) + '</div>' : '')
              + '<a class="pg-u" href="' + esc(window.IntMapSafe.url(s.u)) + '" target="_blank" rel="noopener">' + esc(s.u) + '</a></div>';
       });
     });
@@ -120,6 +135,7 @@ window.IntMapSourcesList = (function () {
       input.addEventListener('input', function () { kept = input.value; paint(); });
     }
     paint();
+    askStatus();
   }
 
   return { render: render, classify: classify };

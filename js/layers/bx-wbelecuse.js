@@ -5,4 +5,5 @@ export default {
   order: 80,
   key: 'wbelecuse',
   rest: true,
+  measures: ['worldbank:EG.USE.ELEC.KH.PC'],
 };

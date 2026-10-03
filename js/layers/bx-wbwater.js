@@ -4,4 +4,5 @@ export default {
   shelf: 'lyrGrpHealth',
   order: 60,
   key: 'wbwater',
+  measures: ['worldbank:SH.H2O.SMDW.ZS'],
 };

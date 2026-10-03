@@ -5,4 +5,5 @@ export default {
   order: 90,
   key: 'wburb',
   rest: true,
+  measures: ['worldbank:SP.URB.TOTL.IN.ZS'],
 };

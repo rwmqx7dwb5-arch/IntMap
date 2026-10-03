@@ -1,16 +1,16 @@
 {
   "eager": {
-    "raw": 4764805,
-    "gzip": 1568634,
-    "brotli": 1183561,
-    "requests": 9,
-    "modules": 307,
-    "cssRaw": 374532,
-    "cssGzip": 61518
+    "raw": 4816620,
+    "gzip": 1587881,
+    "brotli": 1198158,
+    "requests": 11,
+    "modules": 309,
+    "cssRaw": 386622,
+    "cssGzip": 63660
   },
   "async": {
-    "raw": 11866968,
-    "gzip": 3886293,
+    "raw": 12151033,
+    "gzip": 4011311,
     "chunks": {
       "account-data": 7357,
       "aircraft-detail": 17009,
@@ -23,8 +23,8 @@
       "atlas-answer-view": 2513,
       "atlas-attach": 23189,
       "atlas-chart": 10493,
-      "atlas-console": 1190654,
-      "atlas-executor": 56924,
+      "atlas-console": 1288323,
+      "atlas-executor": 59369,
       "atlas-geo-resolve": 49405,
       "atlas-query": 48520,
       "atlas-view-capture": 8511,
@@ -38,7 +38,7 @@
       "cesium-vector-tiles": 5681,
       "company-data": 9505,
       "company-facilities": 14221,
-      "company-panel": 21448,
+      "company-panel": 24654,
       "datacenters": 40859,
       "dist": 39790,
       "embed-mode": 10145,
@@ -60,7 +60,7 @@
       "layer-time": 8905,
       "layer-time-decl": 19656,
       "lib": 129791,
-      "map-recorder": 18644,
+      "map-recorder": 36644,
       "my-places": 12220,
       "navigation": 60823,
       "net-health-live": 16816,
@@ -89,12 +89,12 @@
       "time-lapse": 8681,
       "tour-builder": 18430,
       "tour-player": 17606,
-      "tours": 23515,
+      "tours": 32339,
       "tsunami": 37469,
       "ui.de": 16300,
       "ui.es": 16576,
       "ui.fr": 446518,
-      "ui.jp": 21208,
+      "ui.jp": 23618,
       "ui.ko": 439948,
       "ui.ru": 23739,
       "ui.zh": 417400,
@@ -109,9 +109,9 @@
     }
   },
   "dist": {
-    "total": 854660538,
+    "total": 859198067,
     "data": 746698762,
-    "assets": 19146714
+    "assets": 19578243
   },
   "phone": {
     "bytes": 342631,

@@ -40,6 +40,7 @@ const PHOTON = {"type":"FeatureCollection","features":[{"type":"Feature","geomet
 class El {
   constructor(tag) { this.tagName = tag; this.children = []; this.className = ''; this._text = ''; this.style = {}; this.onclick = null; this.parent = null; this._html = ''; }
   appendChild(c) { c.parent = this; this.children.push(c); return c; }
+  insertBefore(c, ref) { const i = this.children.indexOf(ref); if (i < 0) return this.appendChild(c); c.parent = this; this.children.splice(i, 0, c); return c; }   /* (search-identity) a row is placed by rank */
   setAttribute(k, v) { (this._attrs = this._attrs || {})[k] = String(v); }   /* (a11y-shared-dialog) a row is role=option */
   getAttribute(k) { return (this._attrs && k in this._attrs) ? this._attrs[k] : null; }
   remove() { if (this.parent) { const i = this.parent.children.indexOf(this); if (i >= 0) this.parent.children.splice(i, 1); this.parent = null; } }

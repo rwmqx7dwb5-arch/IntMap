@@ -5,4 +5,5 @@ export default {
   order: 120,
   key: 'wbsan',
   rest: true,
+  measures: ['worldbank:SH.STA.SMSS.ZS'],
 };

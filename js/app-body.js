@@ -95,6 +95,7 @@ import { mobileMapInput } from './mobile-map-input.js';
 import { layoutReflow, mobileUI } from './mobile-ui.js';
 import { monitors } from './monitors.js';
 import { netHealth } from './net-health.js';
+import { newsPulse } from './news-pulse.js';   /* (news-intelligence) the News pulse row and its doors; the body (js/news-intel.js) is lazy */
 import { newsContext } from './news-context.js';
 import { newsFeed } from './news-feed.js';
 import { newsSources } from './news-sources.js';
@@ -759,8 +760,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
                right:(s&&typeof s.lsrOpen==='boolean')?s.lsrOpen:null }; }
     catch(_){ return { left:null, right:null }; } })();
   window._imSessionUI=_sessUI;   /* (share-embed-distribution) an EMBED (js/ui-device.js embedded()) opens neither sidebar: neither is part of a frame, and an open Layers panel buys its thumbnails */
-  if(_sessUI.left===null){ if(isMobile()) sidebar.classList.add('collapsed'); }   /* first visit: collapsed on phone */
-  else sidebar.classList.toggle('collapsed',!_sessUI.left);
+  /* ══ (first-impression) A FIRST VISIT IS THE MAP, WHOLE — ON EVERY DEVICE ═════════════════════════════════
+     「初回も地図が全面。パネルは読者が開いたときだけ。」 An unanswered session (`left===null`: nobody has ever
+     opened or shut this column) used to fall through to index.html's markup, which ships the column OPEN, so the
+     first desktop screen — MEASURED on production at 1024×768 — gave 400 px to a GDP list and, with the right
+     panel's own first-visit open (js/map-ui.js), left the globe a ~250 px strip. The second visit was the full
+     map, i.e. the first impression was the worst one. The rule is now one sentence for both columns: a panel
+     is open at boot only when the reader's own last session left it open. The Countries tab is still the
+     selected one (js/session-tabs.js `_defaultTab`), so the first press of the toggle lands where it did. */
+  sidebar.classList.toggle('collapsed',_sessUI.left!==true);
   document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
     /* (#R160) DELIBERATELY minimal. The LEFT sidebar keeps its ORIGINAL mechanism (solid = flex sibling with the map
        beside it; frosted = overlay). The toggle itself drives NOTHING: it flips `collapsed` and lets the two things
@@ -1840,8 +1848,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(mob() && !inp.value.trim()){ try{ inp.focus(); }catch(_){} return; }
       doGeocode();
     };
-    /* Enter searches — unless a result is highlighted with the arrow keys, which Enter then picks (js/search-geocode.js listbox) */
-    inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter'&&!e.defaultPrevented&&!inp.getAttribute('aria-activedescendant')) doGeocode(); });
+    /* Enter searches AND GOES to the first candidate (search-identity, js/search-geocode.js `go`) — unless a result is
+       highlighted with the arrow keys, which Enter then picks (js/search-geocode.js listbox), or the Enter is an IME
+       confirming its conversion (`isComposing`; 229 is the keyCode a browser reports for a key the IME consumed) */
+    inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&!e.defaultPrevented&&!inp.getAttribute('aria-activedescendant')) doGeocode({go:true}); });
     /* (mobile-shell) …and on a phone the candidates follow the typing — local rows only, no network (js/search-geocode.js) */
     let _sugT=0; inp.addEventListener('input',()=>{ if(!mob()) return; clearTimeout(_sugT); _sugT=setTimeout(()=>doGeocode({suggest:true}),120); });
     /* (#R106) blue only while the field has text — toggle a class the CSS keys off. */
@@ -1849,8 +1859,14 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     inp.addEventListener('input',_msHas); _msHas();
     /* (#R16) Warm the bundled country data the moment the user reaches for search, so country/capital
        names match LOCALLY (instant, offline) by the time they finish typing — without slowing startup. */
-    inp.addEventListener('focus',()=>{ try{ if(typeof loadCountryData==='function') loadCountryData(); }catch(_){} },{once:true});
-    btn.addEventListener('pointerdown',()=>{ try{ if(typeof loadCountryData==='function') loadCountryData(); }catch(_){} },{once:true});
+    /* (first-impression) …and the WORLD gazetteer, on the same gesture. Its first fetch used to ride the boot (the news
+       index build — js/news-context.js says why it no longer does), so a search typed seconds after load had the long
+       tail already. Asking at the reach keeps that: the field is focused before the first letter, and warm() is the
+       one fetch every reader shares (js/gazetteer.js), so the search's own warm() at submit is then a property read. */
+    const _reach=()=>{ try{ if(typeof loadCountryData==='function') loadCountryData(); }catch(_){}
+      try{ const G=window.IntMapGazetteer; if(G&&G.warm) G.warm(); }catch(_){} };
+    inp.addEventListener('focus',_reach,{once:true});
+    btn.addEventListener('pointerdown',_reach,{once:true});
   })();
   document.addEventListener('click',(e)=>{ const ms=document.getElementById('map-search'); if(ms&&!ms.contains(e.target)) document.getElementById('ms-results').style.display='none'; });
 
@@ -3478,8 +3494,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const m=document.getElementById('sources-modal'); if(!m) return;
     document.getElementById('sources-title').textContent=t('srcModalTitle'); document.getElementById('sources-sub').textContent=t('srcModalSub');
     const use=(s)=>IntMapRefData.useText(s.n,currentLang);
-    const paint=()=>{ document.getElementById('sources-body').innerHTML=DATA_SOURCES.map(s=>`<div class="src-item"><b>${escapeHtml(s.n)}</b> — <span class="src-use">${escapeHtml(use(s))}</span><br><a href="${escapeHtml(window.IntMapSafe.url(s.u))}" target="_blank" rel="noopener">${escapeHtml(s.u)}</a></div>`).join(''); };
-    paint(); m.style.display='flex';
+    let note=()=>''; const paint=()=>{ document.getElementById('sources-body').innerHTML=DATA_SOURCES.map(s=>{ const n=note(s.u); return `<div class="src-item"><b>${escapeHtml(s.n)}</b> — <span class="src-use">${escapeHtml(use(s))}</span>${n?`<br><span class="src-down" style="color:var(--widget-warning);font-size:12px;">${escapeHtml(n)}</span>`:''}<br><a href="${escapeHtml(window.IntMapSafe.url(s.u))}" target="_blank" rel="noopener">${escapeHtml(s.u)}</a></div>`; }).join(''); };
+    paint(); m.style.display='flex'; import('./service-status.js').then(S=>S.loadStatus().then(b=>{ if(S.usable(b)){ note=(u)=>S.sourceNote(b,u,currentLang); paint(); } })).catch(()=>{});   /* (shell-experience) a credit whose supplier did not answer last night's check says so (js/service-status.js sourceNote) */
     IntMapRefData.ensureDocs(currentLang,paint); }
   { window.imOpenSources=openSourcesModal;   /* (#R215) Settings offers the PAGE, not a lesser in-app copy beside it (see index.html) — the dialog is kept reachable by name rather than deleted, so its markup and its ~90-entry renderer are not dead code */
     const x=document.getElementById('sources-close-x'); if(x) x.onclick=()=>{ document.getElementById('sources-modal').style.display='none'; };
@@ -3706,7 +3722,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      elections 1789–2024, states coloured by who took their electoral votes, with the year picker
      and the electoral-vote / popular-vote bar chart in the layer's own legend. See
      js/us-elections.js and scripts/build-us-elections.mjs. ===== */
-  usElections(IM_HOST); warFronts(IM_HOST); netHealth(IM_HOST); elections(IM_HOST);   /* (#R588) …and the national-elections layer (js/elections.js, docs/ELECTIONS.md) — ON THIS LINE for the shell-line budget tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795 measures. (#R349) the two world wars' Layers row is here for the same reason; the layer it fetches (js/war-layer.js) is lazy */
+  usElections(IM_HOST); warFronts(IM_HOST); netHealth(IM_HOST); elections(IM_HOST); newsPulse(IM_HOST);   /* (#R588) …and the national-elections layer (js/elections.js, docs/ELECTIONS.md) — ON THIS LINE for the shell-line budget tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795 measures. (#R349) the two world wars' Layers row is here for the same reason; the layer it fetches (js/war-layer.js) is lazy */
 
   /* ===== (#R22) Religion & language distribution — categorical country choropleths (beta). Each
      country is shaded by its DOMINANT religion / PRIMARY official language (well-established facts;

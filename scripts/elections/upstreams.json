@@ -1,0 +1,145 @@
+{
+ "_": "What each pack in scripts/elections/ reads, and how long its chamber may legally go between two general elections. Read WITHOUT importing the packs (they need npm dependencies; scripts/upstream-liveness.mjs runs with the runtime alone). `name` is stamped on every election row as `up`; `probes` are asked every night by scripts/upstream-liveness.mjs; `terms[].maxGapMonths` is the longest interval the law allows between two general elections of that body, so an index whose newest election is older than that is OVERDUE by a fact about the constitution, not by a guess. Both directions are checked by `node scripts/build-elections.mjs --check`: every pack has an entry here, every entry is a pack, and every body the index carries has a term. docs/ELECTIONS.md §9.",
+ "packs": {
+  "au": {
+   "name": "Australian Electoral Commission · Australian Bureau of Statistics",
+   "probes": [
+    { "url": "https://results.aec.gov.au/", "what": "the results" },
+    { "url": "https://geo.abs.gov.au/arcgis/rest/services?f=json", "what": "the division boundaries" }
+   ],
+   "terms": [
+    { "body": "House of Representatives", "maxGapMonths": 42,
+      "basis": "Constitution s.28 (three years from the first meeting), s.32 and Commonwealth Electoral Act 1918 ss.156-159 (writs within 10 days of expiry, polling 33-58 days after the writ; first meeting within 30 days of the return of the writs): 36 months plus at most about six" }
+   ]
+  },
+  "ca": {
+   "name": "Elections Canada (open.canada.ca, OGL) · Statistics Canada",
+   "probes": [
+    { "url": "https://open.canada.ca/data/api/3/action/package_search?fq=organization:elections&rows=1", "what": "which general elections have an openly licensed return" },
+    { "url": "https://ftp.maps.canada.ca/pub/elections_elections/Electoral-districts_Circonscription-electorale/federal_electoral_districts_boundaries_2023/FED_CA_2023_EN-SHP.zip", "what": "the 2023 representation order" },
+    { "url": "https://www12.statcan.gc.ca/census-recensement/2011/geo/bound-limit/files-fichiers/2016/lfed000b16a_e.zip", "what": "the 2013 representation order (measured 2026-10-03: 403 to every agent tried)" }
+   ],
+   "terms": [
+    { "body": "House of Commons", "maxGapMonths": 63,
+      "basis": "Canadian Charter of Rights and Freedoms s.4(1): no House continues longer than five years from the return of the writs; Canada Elections Act s.57: polling at least 36 and at most 50 days after the writ" }
+   ]
+  },
+  "de": {
+   "name": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "probes": [
+    { "url": "https://www.bundeswahlleiterin.de/dam/jcr/ce2d2b6a-f211-4355-8eea-355c98cd4e47/btw_kerg.zip", "what": "the results" },
+    { "url": "https://dataverse.harvard.edu/api/datasets/:persistentId/?persistentId=doi:10.7910/DVN/LI9BHM", "what": "the 1980-2021 constituency boundaries" }
+   ],
+   "terms": [
+    { "body": "Bundestag", "maxGapMonths": 49,
+      "basis": "Grundgesetz Art. 39(1): the legislative period is four years, the new election is held 46 to 48 months after it began, and the Bundestag first meets within 30 days of the election" }
+   ]
+  },
+  "eu": {
+   "name": "European Parliament results service · Eurostat GISCO",
+   "territory": "member-states",
+   "probes": [
+    { "url": "https://results.elections.europa.eu/data-sheets/csv/2024-2029/election-results/parties.csv", "what": "the results of the current term (the pack walks the terms until one is not served)" },
+    { "url": "https://gisco-services.ec.europa.eu/distribution/v2/countries/geojson/CNTR_RG_10M_2024_4326.geojson", "what": "the country outlines" }
+   ],
+   "terms": [
+    { "body": "European Parliament", "maxGapMonths": 61,
+      "basis": "Act concerning the election of the members of the European Parliament (1976) Art. 5 and 11: a five-year term, elections in a fixed period in the same weeks of the fifth year" }
+   ]
+  },
+  "fr": {
+   "name": "data.gouv.fr (ministère de l'Intérieur)",
+   "probes": [
+    { "url": "https://www.data.gouv.fr/api/1/datasets/?page_size=1", "what": "the dataset API every round is read through" }
+   ],
+   "terms": [
+    { "body": "National Assembly", "maxGapMonths": 61,
+      "basis": "Code électoral L.O. 121: the Assembly's powers expire after five years; L.O. 122: the general election is held within the sixty days before. A dissolution (Constitution Art. 12) only shortens the gap" }
+   ]
+  },
+  "hk": {
+   "name": "Registration and Electoral Office · CSDI Portal",
+   "probes": [
+    { "url": "https://www.elections.gov.hk/legco2025/", "what": "the results" },
+    { "url": "https://portal.csdi.gov.hk/server/rest/services/common/reo_rcd_1698719807005_45829/FeatureServer/0?f=json", "what": "the geographical constituencies" }
+   ],
+   "terms": [
+    { "body": "Legislative Council", "maxGapMonths": 49,
+      "basis": "Basic Law Art. 69: a four-year term. Observed: the 2020 election was postponed by NPCSC decision to 2021, so this is the law's interval, not a promise the record keeps" }
+   ]
+  },
+  "jp": {
+   "name": "総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
+   "probes": [
+    { "url": "https://www.soumu.go.jp/senkyo/senkyo_s/data/", "what": "the results tables" },
+    { "url": "https://gtfs-gis.jp/", "what": "the constituency polygons" }
+   ],
+   "terms": [
+    { "body": "House of Representatives", "maxGapMonths": 49,
+      "basis": "日本国憲法 45条 (任期4年) and 公職選挙法 31条 (任期満了前30日以内に選挙). A dissolution only shortens the gap" },
+    { "body": "House of Councillors", "maxGapMonths": 37,
+      "basis": "日本国憲法 46条 (3年ごとに半数改選) and 公職選挙法 32条 (任期満了前30日以内、国会閉会中に当たれば閉会後24〜30日)" }
+   ]
+  },
+  "kr": {
+   "name": "National Election Commission (data.nec.go.kr) · OhmyNews constituency maps",
+   "probes": [
+    { "url": "http://data.nec.go.kr/open-data/file.do?dataId=9", "what": "the results", "why": "the pack reads this host over http: measured 2026-10-03, https://data.nec.go.kr gave no answer in 21 s while http answered 200 in 0.5 s" },
+    { "url": "https://raw.githubusercontent.com/OhmyNews/2024_22_elec_map/main/2024_22_Elec_simplify.json", "what": "the 2024 constituencies" }
+   ],
+   "terms": [
+    { "body": "National Assembly", "maxGapMonths": 49,
+      "basis": "Constitution of the Republic of Korea Art. 42 (a four-year term) and Public Official Election Act Art. 34 (the election is held on the first Wednesday from the 50th day before the term ends)" }
+   ]
+  },
+  "ru": {
+   "name": "GIS-Lab / NextGIS (districts) · Shpilkin & Kobak (results)",
+   "probes": [
+    { "url": "https://duma2016.nextgis.com/api/resource/?parent=0", "what": "the single-mandate district schemes" },
+    { "url": "https://api.github.com/repos/dkobak/elections/contents/data", "what": "which precinct files exist" },
+    { "url": "https://www.cikrf.ru/", "what": "the Central Election Commission — the only publisher of which precinct belongs to which district (measured 2026-09-09 and 2026-10-03: no TCP connection)" }
+   ],
+   "terms": [
+    { "body": "State Duma — party-list vote", "maxGapMonths": 61,
+      "basis": "Constitution of the Russian Federation Art. 96(1): a five-year term (since 2008); Federal Law 20-FZ Art. 5: the election is called 90-110 days before polling" }
+   ]
+  },
+  "tw": {
+   "name": "Central Election Commission · Ministry of the Interior (data.gov.tw)",
+   "probes": [
+    { "url": "https://data.gov.tw/api/v2/rest/dataset/13119", "what": "the election database" }
+   ],
+   "terms": [
+    { "body": "Legislative Yuan", "maxGapMonths": 49,
+      "basis": "Additional Articles of the Constitution Art. 4: a four-year term; the Civil Servants Election and Recall Act Art. 3 and 6 put the election before the term ends" }
+   ]
+  },
+  "uk": {
+   "name": "House of Commons Library (psephology) · Office for National Statistics",
+   "probes": [
+    { "url": "https://raw.githubusercontent.com/ukparliament/psephology-datasette/main/psephology.db", "what": "the results" },
+    { "url": "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services?f=json", "what": "the constituency boundaries" }
+   ],
+   "terms": [
+    { "body": "House of Commons", "maxGapMonths": 63,
+      "basis": "Dissolution and Calling of Parliament Act 2022 s.4: Parliament dissolves five years after it first met; Representation of the People Act 1983 Sch. 1 r.1: polling 25 working days after" }
+   ]
+  },
+  "us": {
+   "name": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "probes": [
+    { "url": "https://raw.githubusercontent.com/MEDSL/constituency-returns/master/1976-2018-house.csv", "what": "the House returns 1976-2018" },
+    { "url": "https://dataverse.harvard.edu/api/datasets/:persistentId/?persistentId=doi:10.7910/DVN/PEJ5QU", "what": "the Senate returns" },
+    { "url": "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json", "what": "the state outlines" }
+   ],
+   "terms": [
+    { "body": "House of Representatives", "maxGapMonths": 24,
+      "basis": "U.S. Constitution Art. I §2 (chosen every second year) and 2 U.S.C. §7 (the Tuesday after the first Monday in November of every even-numbered year)" },
+    { "body": "Senate", "maxGapMonths": 24,
+      "basis": "U.S. Constitution Art. I §3 and the Seventeenth Amendment: one third of the Senate every second year, on the same day as the House (2 U.S.C. §1)" },
+    { "body": "Senate (special elections)", "maxGapMonths": null,
+      "basis": "a special election is held only when a seat falls vacant (Seventeenth Amendment, cl. 2); no law sets an interval between two of them, so this body is never overdue" }
+   ]
+  }
+ }
+}

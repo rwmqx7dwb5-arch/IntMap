@@ -481,7 +481,7 @@ async function pollingDays(ctx) {
   const html = decodeText(await ctx.get(TURNOUT));
   const days = new Map();
   for (const tr of html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
-    const cells = [...tr[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(c => unentity(c[1].replace(/<[^>]*>/g, '')).trim());
+    const cells = [...tr[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(c => { let t = c[1], p; do { p = t; t = t.replace(/<[^>]*>/g, ''); } while (t !== p); return unentity(t).trim(); });   /* strip until no tag is left (a removed tag can join two halves into a new one) */
     if (!cells.length) continue;
     /* the last date in the cell is polling day: the nineteenth-century rows are a range of weeks */
     const m = [...cells[0].matchAll(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/g)].pop();
@@ -571,6 +571,43 @@ function noteFor(seats, order) {
     'zh-hans': seats + ' 个选区各选出一名议员，没有任何议员由名单产生。依 ' + order +
       ' 年选区划分进行；颜色代表得票最多候选人的政党。',
   };
+}
+
+/* ══ (companies-elections-live) WATCH — A GENERAL ELECTION THE RECORD DOES NOT HAVE, AND WHY ════════════
+   MEASURED 2026-10-03 over the 55 datasets of the `elections` organisation: Elections Canada's own
+   titles name the 45th general election («Report on the 45th General Election of April 28, 2025»),
+   and no «45th General Election: Official Voting Results» dataset exists — its return is on
+   elections.ca alone, under terms that forbid commercial redistribution (see the header). So the
+   election is BLOCKED by its licence. The day an OGL return is published there are more «Official
+   Voting Results» datasets than elections in the record, and the state becomes `importable`.
+   `ctx.fresh(url)` is an uncached request (scripts/build-elections.mjs). */
+const ORD_IN_TITLE = /(\d+)(?:st|nd|rd|th)\s+General Election/i;
+export async function watch(ctx, { last, count }) {
+  const body = 'House of Commons';
+  if (!last[body]) return [];
+  const r = await ctx.fresh(CKAN + 'package_search?fq=organization:' + CKAN_ORG + '&rows=1000', { json: true });
+  const results = (r.body && r.body.result && r.body.result.results) || [];
+  const ordOf = (t) => { const m = ORD_IN_TITLE.exec(String(t || '')); return m ? Number(m[1]) : null; };
+  const ovr = results.filter(p => OVR_TITLE.test(p.title || '') && p.license_id === OGL).map(p => ordOf(p.title)).filter(n => n != null);
+  const named = results.map(p => ({ n: ordOf(p.title), t: String(p.title || '') })).filter(x => x.n != null);
+  if (!ovr.length || !named.length) return [];
+  const newest = named.reduce((a, b) => (a.n >= b.n ? a : b));
+  const top = Math.max(...ovr);
+  if (ovr.length > (count[body] || 0)) {
+    return [{ body, state: 'importable', what: { en: 'General election ' + top, jp: '第' + top + '回総選挙' },
+      why: { en: 'An openly licensed official return has been published for a general election this layer does not have; rebuild this pack.',
+             jp: 'このレイヤーに無い総選挙の公式結果が、オープンライセンスで公開されました。このパックを再構築できます。' } }];
+  }
+  if (newest.n > top) {
+    const m = /([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})/.exec(newest.t.slice(newest.t.search(ORD_IN_TITLE)));
+    const mo = m ? MONTHS.indexOf(m[1].toLowerCase()) : -1;
+    const when = mo >= 0 ? m[3] + '-' + String(mo + 1).padStart(2, '0') + '-' + m[2].padStart(2, '0') : null;
+    return [{ body, state: 'blocked',
+      what: { en: 'The ' + newest.n + 'th general election' + (when ? ' (' + when + ')' : ''), jp: '第' + newest.n + '回総選挙' + (when ? '（' + when + '）' : '') },
+      why: { en: 'Elections Canada publishes the results of this election only on elections.ca, whose terms forbid commercial redistribution; no openly licensed copy exists on open.canada.ca yet.',
+             jp: 'カナダ選挙管理局はこの選挙の結果を elections.ca でのみ公開しており、その利用規約は商用の再配布を禁じています。open.canada.ca にはオープンライセンスの写しがまだありません。' } }];
+  }
+  return [];
 }
 
 /* ══ build ═════════════════════════════════════════════════════════════════════════════════════ */

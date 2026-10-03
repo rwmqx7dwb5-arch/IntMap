@@ -4,13 +4,16 @@
  * ----------------------------------------------------------------------------
  *  「求めるのは改善ではなく商品開発・マーケティング・営業」 (2026-10-01). The pages a visitor who has
  *  never opened the app lands on: what IntMap is (about.html), how to teach with it (teachers.html),
- *  each in English and Japanese (ja/…), and what a search engine reads (sitemap.xml, robots.txt).
+ *  and (showcase-gallery) two pages by use — reading the news on a map (news-map.html) and putting a map
+ *  in an article (embed-map.html) — each in English and Japanese (ja/…), and what a search engine reads
+ *  (sitemap.xml, robots.txt).
  *
  *  ══ WHY THE PAGES ARE GENERATED, NOT HAND-WRITTEN ══════════════════════════════════════════════
  *  Three things on them are owned by other files, and a copy of any of them is the drift this
  *  repository keeps paying for:
  *    · the PROSE        → scripts/landing-text.mjs (en + jp, one place)
- *    · the EXAMPLES     → js/showcase.js (the same declaration Atlas and the spec read)
+ *    · the EXAMPLES     → js/showcase.js (the same declaration Atlas, the in-app gallery and the spec read)
+ *    · the EMBED CODE   → js/embed-mode.js (embedUrl, iframeCode, EMBED_SIZES — what the Share ▸ Embed tab writes)
  *    · the TOURS        → js/tours.js (the classroom tours the app's player and Atlas open)
  *    · the FACTS        → the files that own them: the clock's floor (js/hist-scale.js FLOOR), the
  *                         era snapshots (data/hist-eras.js), the border bands (js/time-borders.js
@@ -32,7 +35,11 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmSync
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { TEXT } from './landing-text.mjs';
-import { SHOWCASE, WITHHELD, CAPTURED, CURRICULUM, RECORD_ANSWERED } from '../js/showcase.js';
+import { SHOWCASE, WITHHELD, CAPTURED, CURRICULUM, RECORD_ANSWERED, TOPICS } from '../js/showcase.js';
+import { embedUrl, iframeCode, EMBED_SIZES } from '../js/embed-mode.js';   /* (showcase-gallery) the embed page's code is the Embed tab's own */
+import { IntMapLang } from '../js/lang-registry.js';
+import '../js/locales/ui.en.js';   /* (showcase-gallery) the frame title the Embed tab writes (embedFrameTitle) — read, not retyped */
+import '../js/locales/ui.jp.js';
 import { TOURS, CAPTURED_STEPS, tourSteps, tourCover, tourLink } from '../js/tours.js';   /* (classroom-tours) the tours section of the teacher pages */
 import { dataLayers, sharedIds } from '../js/layer-manifest.js';
 import { SITE_BASE_PATH } from '../supabase/functions/_shared/site-origin.js';
@@ -98,7 +105,9 @@ const LANGS = [
   { key: 'en', i: 0, tag: 'en', dir: '', up: './', locale: 'en_US' },
   { key: 'jp', i: 1, tag: 'ja', dir: 'ja/', up: '../', locale: 'ja_JP' },
 ];
-export const PAGES = ['about', 'teachers'];
+export const PAGES = ['about', 'teachers', 'news-map', 'embed-map'];
+/* (showcase-gallery) which block of scripts/landing-text.mjs holds a page's words */
+const TEXT_KEY = { about: 'about', teachers: 'teachers', 'news-map': 'news', 'embed-map': 'embed' };
 const HERO_EXAMPLE = 'europe-1914';
 export const pagePath = (page, L) => L.dir + page + '.html';
 
@@ -123,7 +132,7 @@ function cspMeta({ webFonts }) {
 }
 
 function head(F, L, page, T) {
-  const P = T[page];
+  const P = T[TEXT_KEY[page]];
   const W = factWords(F, L.key);
   const title = fill(P.title, W), desc = fill(P.description, W);
   const url = (l) => F.site + pagePath(page, l);
@@ -135,7 +144,7 @@ function head(F, L, page, T) {
       image: img, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } }
     : { '@context': 'https://schema.org', '@type': 'WebPage', name: title, url: url(L), description: desc,
       inLanguage: L.tag, isPartOf: { '@type': 'WebSite', name: 'IntMap', url: F.site },
-      audience: { '@type': 'EducationalAudience', educationalRole: 'teacher' } };
+      ...(page === 'teachers' ? { audience: { '@type': 'EducationalAudience', educationalRole: 'teacher' } } : {}) };
   const cjk = L.tag === 'ja'
     ? `\n<link rel="preconnect" href="${FONT_CSS_ORIGIN}">\n<link rel="preconnect" href="${FONT_FILE_ORIGIN}" crossorigin>\n<link rel="stylesheet" href="${FONT_CSS_ORIGIN}/css2?family=Noto+Sans+JP:wght@400;500;600;700&amp;display=swap">`
     : '';
@@ -256,6 +265,14 @@ ${A.why.items.map((it) => `      <div class="lp-tile"><h3>${esc(it.h)}</h3><p>${
     </div>
   </section>
 
+  <section class="lp-sec" id="uses">
+    <h2>${esc(A.uses.h2)}</h2>
+    <div class="lp-grid2">
+      <div class="lp-tile lp-who"><h3>${esc(A.uses.news.h)}</h3><p>${esc(A.uses.news.p)}</p><a class="lp-open" href="./news-map.html">${esc(A.uses.news.cta)} →</a></div>
+      <div class="lp-tile lp-who"><h3>${esc(A.uses.embed.h)}</h3><p>${esc(A.uses.embed.p)}</p><a class="lp-open" href="./embed-map.html">${esc(A.uses.embed.cta)} →</a></div>
+    </div>
+  </section>
+
   <section class="lp-sec" id="examples">
     <h2>${esc(A.examples.h2)}</h2>
     <p class="lp-sub">${esc(A.examples.sub)}</p>
@@ -371,6 +388,107 @@ ${P.trust.items.map((it) => `      <div class="lp-tile"><h3>${esc(it.h)}</h3><p>
   </section>
 </main>`;
 }
+/* ══ (showcase-gallery) THE PAGES BY USE ═══════════════════════════════════════════════════════════
+   news-map: what the News tab does, then the examples that are the world behind a headline — derived: the ones for
+   a general reader whose subject is the Earth or people and the economy (js/showcase.js TOPICS), never a hand list.
+   embed-map: the three steps, then THE CODE the Embed tab writes for the hero example — js/embed-mode.js embedUrl and
+   iframeCode, run here on the example's captured link, with the frame title from the app's own strings — so the page
+   cannot show code the app would not write. The address is written with SITE_TOKEN (the build fills it in), so it is
+   built on a placeholder origin first: embedUrl needs an absolute URL, and the token is not one. */
+const NEWS_TOPICS = ['earth', 'society'];
+export const newsContext = () => SHOWCASE.filter((s) => s.audience.includes('curious') && NEWS_TOPICS.includes(s.topic));
+const EMBED_ORIGIN = 'https://intmap.invalid/';
+function embedCode(L, interactive) {
+  const title = IntMapLang._ui[L.key] && IntMapLang._ui[L.key].embedFrameTitle;
+  if (!title) throw new Error('landing: js/locales/ui.' + L.key + '.js has no embedFrameTitle');
+  const src = embedUrl(EMBED_ORIGIN + 'index.html' + CAPTURED[HERO_EXAMPLE].hash, { interactive });
+  return iframeCode(src, 'medium', title).split(EMBED_ORIGIN).join(SITE);
+}
+/* the presets as the Embed tab lists them («480 × 320» — js/embed-mode.js createEmbedTab writes them so); printed
+   beside the words, not inside them: a sentence's placeholders are the page's facts (factWords) and nothing else */
+const sizeList = () => Object.values(EMBED_SIZES).map((s) => s.w + ' × ' + s.h);
+
+function newsBody(F, L, T) {
+  const N = T.news, A = T.about;
+  return `<main class="lp-main">
+  <section class="lp-hero">
+    <div class="lp-hero-text">
+      <h1>${esc(N.hero.h1)}</h1>
+      <p class="lp-lede">${esc(N.hero.sub)}</p>
+      <div class="lp-cta">
+        <a class="lp-btn" href="${L.up}index.html">${esc(N.hero.ctaOpen)}</a>
+        <a class="lp-btn lp-btn-2" href="#context">${esc(N.hero.ctaContext)}</a>
+      </div>
+      <p class="lp-note">${esc(N.hero.note)}</p>
+    </div>
+  </section>
+
+  <section class="lp-sec" id="how">
+    <h2>${esc(N.how.h2)}</h2>
+    <div class="lp-grid2">
+${N.how.items.map((it) => `      <div class="lp-tile"><h3>${esc(it.h)}</h3><p>${esc(it.p)}</p></div>`).join('\n')}
+    </div>
+  </section>
+
+  <section class="lp-sec" id="context">
+    <h2>${esc(N.context.h2)}</h2>
+    <p class="lp-sub">${esc(N.context.sub)}</p>
+    <div class="lp-cards">
+    ${newsContext().map((s) => card(s, L, A.examples, false)).join('\n    ')}
+    </div>
+  </section>
+
+  <section class="lp-sec" id="share">
+    <h2>${esc(N.share.h2)}</h2>
+    <p>${esc(N.share.p)}</p>
+    <a class="lp-open" href="./embed-map.html">${esc(N.share.cta)} →</a>
+  </section>
+</main>`;
+}
+
+function embedBody(F, L, T) {
+  const E = T.embed, k = L.i;
+  const hero = SHOWCASE.find((s) => s.id === HERO_EXAMPLE);
+  return `<main class="lp-main">
+  <section class="lp-hero lp-hero-t">
+    <div class="lp-hero-text">
+      <h1>${esc(E.hero.h1)}</h1>
+      <p class="lp-lede">${esc(E.hero.sub)}</p>
+      <div class="lp-cta">
+        <a class="lp-btn" href="${L.up}index.html">${esc(E.hero.ctaOpen)}</a>
+        <a class="lp-btn lp-btn-2" href="#code">${esc(E.hero.ctaCode)}</a>
+      </div>
+      <p class="lp-note">${esc(E.hero.note)}</p>
+    </div>
+  </section>
+
+  <section class="lp-sec" id="steps">
+    <h2>${esc(E.steps.h2)}</h2>
+    <ol class="lp-steps">
+${E.steps.items.map((st) => `      <li><h3>${esc(st.h)}</h3><p>${esc(st.p)}</p></li>`).join('\n')}
+    </ol>
+    <p class="lp-note">${esc(E.code.sizes)} ${sizeList().map(esc).join(' · ')}</p>
+  </section>
+
+  <section class="lp-sec" id="code">
+    <h2>${esc(E.code.h2)}</h2>
+    <p class="lp-sub">${esc(E.code.sub)}</p>
+    <pre class="lp-code"><code>${esc(embedCode(L, true))}</code></pre>
+    <p class="lp-sub">${esc(E.code.still)}</p>
+    <pre class="lp-code"><code>${esc(embedCode(L, false))}</code></pre>
+    <a class="lp-hero-img lp-code-pic" href="${esc(L.up + linkFor(HERO_EXAMPLE))}">${picture(HERO_EXAMPLE, L, E.code.imgAlt, false)}</a>
+    <p class="lp-note">${esc(hero.title[k])}</p>
+  </section>
+
+  <section class="lp-sec" id="shows">
+    <h2>${esc(E.shows.h2)}</h2>
+    <div class="lp-grid2">
+${E.shows.items.map((it) => `      <div class="lp-tile"><h3>${esc(it.h)}</h3><p>${esc(it.p)}</p></div>`).join('\n')}
+    </div>
+  </section>
+</main>`;
+}
+
 /* ══ THE ONE SCRIPT THESE PAGES RUN — inline, so it acts before the first paint ═════════════════
    Every word is in the HTML; the pages read the same with this absent. It does two things a static
    file cannot:
@@ -475,7 +593,8 @@ ${LANGS.map((l) => `<link rel="alternate" hreflang="${l.tag}" href="${esc(url(l)
 
 export function renderPage(F, page, L) {
   const T = TEXT[L.key];
-  const body = page === 'about' ? aboutBody(F, L, T) : teachersBody(F, L, T);
+  const body = page === 'about' ? aboutBody(F, L, T) : page === 'teachers' ? teachersBody(F, L, T)
+    : page === 'news-map' ? newsBody(F, L, T) : embedBody(F, L, T);
   return head(F, L, page, T) + '\n<body class="lp lp-' + page + '">\n' + topbar(L, page, T) + '\n' + body + '\n' + footer(L, T) + '\n</body>\n</html>\n';
 }
 
@@ -628,12 +747,17 @@ export function showcaseProblems(captured = CAPTURED) {
     ids.add(s.id);
     for (const f of ['title', 'blurb', 'question']) [0, 1].forEach((i) => { if (!(Array.isArray(s[f]) && String(s[f][i] || '').trim())) bad.push(s.id + ': ' + f + ' has no ' + ['en', 'jp'][i] + ' text'); });
     for (const c of s.curriculum || []) if (!CURRICULUM[c]) bad.push(s.id + ': unknown curriculum key ' + c);
+    /* (showcase-gallery) the in-app gallery groups by topic under TOPICS' headings — an unknown one would fall out of it */
+    if (!TOPICS[s.topic]) bad.push(s.id + ': topic «' + s.topic + '» has no heading in js/showcase.js TOPICS');
     for (const id of s.layers) if (!shared.has(id)) bad.push(s.id + ': ' + id + ' is not a layer a link can carry (js/layer-manifest.js share)');
     const c = captured[s.id];
     if (!c) { bad.push(s.id + ': not captured — run node scripts/showcase-capture.mjs'); continue; }
     if (!existsSync(join(ROOT, c.image))) bad.push(s.id + ': ' + c.image + ' is missing');
     if (!c.card || !existsSync(join(ROOT, c.card))) bad.push(s.id + ': the share card picture is missing — run node scripts/showcase-capture.mjs');
     else { const z = jpegSize(c.card); if (z.width !== 1200 || z.height !== 630) bad.push(s.id + ': the share card is ' + z.width + '×' + z.height + ', not the 1200×630 Open Graph asks for'); }
+    /* (showcase-gallery) the in-app gallery's picture: the card scaled to 480 × 252 (scripts/showcase-capture.mjs THUMB) */
+    if (!c.thumb || !existsSync(join(ROOT, c.thumb))) bad.push(s.id + ': the gallery thumbnail is missing — run node scripts/showcase-capture.mjs --thumbs');
+    else { const z = jpegSize(c.thumb); if (z.width !== 480 || z.height !== 252) bad.push(s.id + ': the gallery thumbnail is ' + z.width + '×' + z.height + ', not 480×252'); }
     bad.push(...linkProblems(s.id, s, c.hash));
   }
   for (const w of WITHHELD) if (!String(w.withheld).trim()) bad.push(w.id + ': withheld without a reason');

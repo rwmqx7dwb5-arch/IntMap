@@ -580,7 +580,63 @@ export function newsTimeline(HOST){
            whose index.html predates `#ntl-ticks` keeps these five labels rather than nothing. */
         ? '<span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>'
         : '<span>'+L5('−10y','10年前','−10 J','−10 л','−10 a')+'</span><span>'+L5('−5y','5年前','−5 J','−5 л','−5 a')+'</span><span>'+now+'</span>';
-      buildTicks(); }
+      buildPeek(now); buildTicks(); }
+    /* ══ (first-impression) THE YEAR, ON THE FIRST SCREEN ═══════════════════════════════════════════════
+       about.html promises «Every year of the world, on one map», and the first screen said so with a 23 px
+       clock in a corner: nothing on it told a new reader that the map is not only today's. So the COLLAPSED
+       entry carries the axis itself — a short rail beside the button, from the kernel's floor to now, with a
+       few marks on it and a dot where the map is. A mark is a jump: it writes the master clock exactly as the
+       Year slider does (setYear, or setNow for «Now»), so the map, the button's own label and its accent all
+       follow through the one subscriber below (refreshUI), and nothing here keeps a second idea of the year.
+       ⚠ NOTHING IS INVENTED HERE. The ends are the kernel's (`YMIN()`, `curY`), the positions are the rail's
+       own mapping (`y2p`, js/hist-scale.js — the same one the slider uses, so a mark sits where the slider would
+       put that year), and the marks are `niceTicks` — the derivation the ruler above already uses, asked for
+       a handful instead of sixty-four. No list of «interesting years» to maintain (#R349, #R679).
+       ⚠ NOT A POP-UP AND NOT A CARD (#R104 retired the welcome card on the reader's instruction): it opens
+       nothing, it moves nothing until it is pressed, and it is part of the button the reader already had.
+       ⚠ Desktop only, by the stylesheet: on a phone the collapsed entry is the sheet head's clock (mobile-shell). */
+    const peek=document.getElementById('ntl-peek');
+    let _peekHere=null;
+    /* `nowT` is buildScale's own «Now» — the word the ruler under the slider already ends on */
+    function buildPeek(nowT){ if(!peek) return;
+      const lo=YMIN();
+      let marks=[]; try{ marks=HS().niceTicks(lo,curY,6); }catch(_){ marks=[lo]; }
+      marks=marks.filter(y=>y>=lo&&y<curY);
+      if(marks[0]!==lo) marks.unshift(lo);   /* the floor is always the first mark: it is the claim «from here» */
+      const pct=p=>(Math.max(0,Math.min(YPOS,p))/YPOS*100).toFixed(3)+'%';
+      peek.setAttribute('aria-label',L5('Show the map in another year','地図を別の年で見る'));
+      const track=document.createElement('div'); track.className='ntl-peek-track';
+      const mk=(key,label,p,go)=>{ const b=document.createElement('button'); b.type='button'; b.className='ntl-peek-m';
+        b.dataset.year=key; b.style.setProperty('--p',pct(p)); b.textContent=label; b.title=label;
+        b.addEventListener('click',ev=>{ ev.stopPropagation(); go(); }); track.appendChild(b); };
+      marks.forEach(y=>mk(String(y),yLabel(y),y2p(y),()=>IntMapTime.setYear(y,{source:'ui'})));
+      mk('now',nowT,YPOS,()=>IntMapTime.setNow({source:'ui'}));
+      _peekHere=document.createElement('span'); _peekHere.className='ntl-peek-here'; _peekHere.setAttribute('aria-hidden','true');
+      track.appendChild(_peekHere);
+      peek.replaceChildren(track);
+      try{ placePeek(IntMapTime.state()); }catch(_){}
+      thinPeek(); }
+    /* where the map is on the rail — the same position the Year slider would show for this instant */
+    function placePeek(e){ if(!_peekHere||!e) return;
+      const p=e.isLive?YPOS:y2p(e.year);
+      _peekHere.style.setProperty('--p',(Math.max(0,Math.min(YPOS,p))/YPOS*100).toFixed(3)+'%');
+      if(peek) peek.querySelectorAll('.ntl-peek-m').forEach(b=>b.classList.toggle('on',
+        e.isLive?b.dataset.year==='now':(b.dataset.year!=='now'&&+b.dataset.year===e.year))); }
+    /* ⚠ A MARK THAT WOULD SIT ON ITS NEIGHBOUR'S LABEL IS HIDDEN, MEASURED ON THE LABELS AS DRAWN — not by a
+       spacing constant: the label widths are the language's and the font's, and the rail's width is the
+       stylesheet's. The floor and «Now» always stay (they are the claim); a hidden mark is still in the DOM,
+       so the next layout can bring it back. Runs again when the window is resized. */
+    function thinPeek(){ if(!peek) return; requestAnimationFrame(()=>{ try{
+      const ms=Array.from(peek.querySelectorAll('.ntl-peek-m')); if(ms.length<3) return;
+      ms.forEach(b=>b.classList.remove('thin'));
+      const box=b=>b.getBoundingClientRect(); const last=box(ms[ms.length-1]);
+      if(!(last.width>0)) return;   /* not laid out (a phone, or a hidden panel): nothing to measure */
+      let prev=box(ms[0]);
+      for(let i=1;i<ms.length-1;i++){ const r=box(ms[i]);
+        if(r.left<prev.right||r.right>last.left){ ms[i].classList.add('thin'); continue; }
+        prev=r; }
+    }catch(_){} }); }
+    window.addEventListener('resize',()=>thinPeek());
     /* ══ ⚠⚠⚠ (#R337) THE TIME TAB HAD FIVE NUMBERS, NOT A SCALE ═══════════════════════════════
        「ChronosのTimeのタイムスライダーは、目盛りを付けるように。」 What stood under the Time slider
        was `.ntl-scale` — five labels in a flex row spaced by `justify-content:space-between`, with
@@ -698,8 +754,19 @@ export function newsTimeline(HOST){
     function lapseMount(){ if(!lapseEl||_lapse) return _lapse;
       _lapse=import('./time-lapse.js').then(m=>m.mountLapse(lapseEl,{ lang:()=>HOST.lang, mode:()=>mode })).catch(()=>null);
       return _lapse; }
+    /* (map-layer-system) THE YEAR BOOK — the instant on the clock as a page you read: the polities the border record
+       draws, the days it changes, the wars it documents, Maddison's figures, what the layers can draw. One button
+       above the time-lapse, built here so the shell's markup is unchanged; the module (js/year-book.js) is fetched
+       when it is pressed. */
+    let ybBtn=null;
+    function ybMount(){ if(ybBtn||!lapseEl||!lapseEl.parentNode) return;
+      ybBtn=document.createElement('button'); ybBtn.type='button'; ybBtn.id='ntl-yearbook'; ybBtn.className='ntl-yb';
+      const lbl=()=>{ ybBtn.textContent=IntMapLang.t(HOST.lang,'Read this year','この年を読む'); };
+      lbl(); bus.on('intmap-lang',lbl);
+      ybBtn.onclick=()=>{ import('./year-book.js').then(m=>m.openFromPage({ lang:()=>HOST.lang, countryStats:()=>HOST.countryStats, escape:(s)=>IntMapSafe.html(s) })).catch(()=>{}); };
+      lapseEl.parentNode.insertBefore(ybBtn,lapseEl); }
     /* WRITE side: inputs → kernel */
-    tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')){ localizeChrome(); try{ refreshUI(IntMapTime.state()); }catch(_){} lapseMount(); } _tmSyncTerminator(); };
+    tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')){ localizeChrome(); try{ refreshUI(IntMapTime.state()); }catch(_){} lapseMount(); ybMount(); } _tmSyncTerminator(); };
     if(closeX) closeX.onclick=()=>{ tl.classList.add('collapsed'); _tmSyncTerminator(); };
     if(bStepPrev) bStepPrev.onclick=()=>_bsStep(-1);   /* (#R421) */
     if(bStepNext) bStepNext.onclick=()=>_bsStep(1);
@@ -807,6 +874,7 @@ export function newsTimeline(HOST){
             os.textContent=sideWord(e.when); }
         }
       }catch(_){}
+      try{ placePeek(e); }catch(_){}   /* (first-impression) the year rail's dot follows the same instant */
     }catch(_){} _self=false; }
     /* the axis and the tab keep each other honest: a step taken from a weather legend moves this
        slider, and the tab appears as soon as the model's metadata lands */

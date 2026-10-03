@@ -595,7 +595,33 @@ export function netHealthLive(HOST) {
     return out;
   }
 
+  /* ══ (news-intelligence) THE OUTAGE HISTORY, ASKED OF THE SERVICE THAT KEEPS IT ════════════════════
+     IODA groups its own alerts into EVENTS (start, duration, the signal that saw it, its score) and serves
+     them for any past window: `/outages/events`. That is the history the news brief sets beside the news
+     of the same country and the same hours (js/news-intel.js). ⚠ IT IS READ LIVE AND NEVER STORED: the
+     response says «All Rights Reserved» and no data licence was found to grant keeping or re-serving it
+     (checked 2026-10-03 — the API's own envelope, and the IODA UI repository's LICENSE, which covers the
+     software and not the data). So IntMap keeps no archive of it; the reader's browser asks IODA, as it
+     does for the layer (docs/INTERNET-HEALTH.md §2).
+     ⚠ «could not ask» IS NOT «no outages»: an unreachable service returns `{ ok:false }`, never `[]`. */
+  async function outageEvents(params) {
+    const p = params || {};
+    const until = Math.floor((+p.until || Date.now()) / 1000), from = Math.floor((+p.from || (until * 1000 - 7 * 86400000)) / 1000);
+    const cc = String(p.country || '').trim().toUpperCase();
+    let q = '?from=' + from + '&until=' + until + '&entityType=country';
+    if (/^[A-Z]{2}$/.test(cc)) q += '&entityCode=' + encodeURIComponent(cc);
+    let j;
+    try { j = await getJSON(IODA + '/outages/events' + q, 'ioda'); }
+    catch (_) { mark('ioda', false, 'unreachable', 0); return { ok: false, why: 'unreachable', events: [], source: sourceOf('ioda') }; }
+    const rows = Array.isArray(j && j.data) ? j.data : [];
+    mark('ioda', true, '', rows.length);
+    return { ok: true, events: rows, from: from * 1000, until: until * 1000,
+      measuredAt: (j && j.metadata && j.metadata.responseTime) || null, copyright: (j && j.copyright) || '', source: sourceOf('ioda') };
+  }
+  function sourceOf(id) { const x = PROVIDERS.find((v) => v.id === id); return x ? { id: x.id, name: x.name(), licence: x.licence, url: x.url } : null; }
+
   const API = {
+    outageEvents: outageEvents,
     toggle: toggle,
     isOn: (id) => (id === 'netreach' ? S.netreach : S.nethlth),
     state: () => ({ loaded: true, rows: { nethlth: S.nethlth, netreach: S.netreach }, scope: S.scope, signal: S.signal, painted: S.painted, paintError: S.paintError, missed: S.missed, providers: PROVIDERS.map((p) => p.id) }),

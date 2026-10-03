@@ -5,4 +5,5 @@ export default {
   order: 100,
   key: 'wbmanuf',
   rest: true,
+  measures: ['worldbank:NV.IND.MANF.ZS'],
 };

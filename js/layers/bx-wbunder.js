@@ -4,4 +4,5 @@ export default {
   shelf: 'lyrGrpAgri',
   order: 30,
   key: 'wbunder',
+  measures: ['worldbank:SN.ITK.DEFC.ZS'],
 };

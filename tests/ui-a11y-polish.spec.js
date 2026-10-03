@@ -333,3 +333,50 @@ test.describe('③b phone shell — the flow', () => {
     expect(await page.evaluate(HIT, '#mo-sheet'), 'layer screen targets under 44 px').toEqual([]);
   });
 });
+
+/* ══ (shell-experience) 「IntMap のいま」 and the supplier named on a failure ══════
+   Added to this file rather than as a spec of its own: the suite's ceiling (scripts/test-budget.mjs) has no
+   room for a new file, and these are the same kind of claim this file already makes about the desktop shell.
+   One boot of the desktop shell. (The first-visit Layers panel is first-impression's to decide, not this round's.) */
+test.describe('shell-experience: desktop at 1000 px', () => {
+  test.use({ viewport: { width: 1000, height: 760 } });
+
+  test('the status page opens from Settings, a failure names its supplier', async ({ page }) => {
+    const { readFileSync } = await import('node:fs');
+    const bundle = JSON.parse(readFileSync(new URL('../data/service-status.json', import.meta.url), 'utf8'));
+    await page.addInitScript((v) => { try { localStorage.setItem('intmap_session2', v); } catch (_) {} }, sessionWith([]));
+    await boot(page);
+
+    /* ── ② the status page, from its button in Settings ── */
+    const served = await page.evaluate(() => fetch('./data/service-status.json').then(async (r) => ({ status: r.status, type: r.headers.get('content-type'), head: (await r.text()).slice(0, 40) }), (e) => ({ error: String(e) })));
+    expect(served.status, 'the nightly measurement is served beside the app: ' + JSON.stringify(served)).toBe(200);
+    await page.click('#btn-open-settings');
+    await page.click('#btn-status-page');
+    await page.waitForFunction(() => { const r = document.getElementById('im-status'); return !!r && r.style.display !== 'none' && !r.querySelector('[aria-busy]') && r.querySelectorAll('.ims-sec').length === 4; }, null, { timeout: 20_000 });
+    const st = await page.evaluate(() => ({
+      secs: [...document.querySelectorAll('#im-status .ims-sec')].map((x) => x.dataset.sec),
+      upRows: document.querySelectorAll('#im-status .ims-sec[data-sec="upstream"] > .ims-group > .ims-row').length,
+      all: document.querySelectorAll('#im-status .ims-sec[data-sec="upstream"] details .ims-row').length,
+      dialog: window.IntMapDialog.anyOpen(),
+      settingsShut: getComputedStyle(document.getElementById('settings-modal')).display === 'none',
+    }));
+    expect(st.secs).toEqual(['device', 'layers', 'upstream', 'atlas']);
+    const down = bundle.upstream ? bundle.upstream.hosts.filter((h) => h.verdict === 'dead' || h.verdict === 'refused').length : 0;
+    expect(st.upRows, 'one count row and one row per supplier the nightly check found not answering').toBe(bundle.upstream ? 1 + down : 1);
+    expect(st.all, 'every supplier is listed behind the disclosure').toBe(bundle.upstream ? bundle.upstream.hosts.length : 0);
+    expect(st.dialog, 'it is a registered dialog (Escape, focus trap)').toBe(true);
+    expect(st.settingsShut, 'Settings steps aside for it').toBe(true);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.getElementById('im-status').style.display === 'none', null, { timeout: 5_000 });
+
+    /* ── ③ a failed request, through a relay, is joined to last night's check of the host it targeted ── */
+    const row = bundle.upstream && bundle.upstream.hosts.find((h) => !h.host.includes('*'));
+    test.skip(!row, 'the shipped measurement lists no host');
+    const relay = 'https://example.supabase.co/functions/v1/fetch-relay?u=' + encodeURIComponent('https://' + row.host + '/probe');
+    await page.evaluate((u) => window.IntMapLayerState.report('cb-shell-experience-probe', Object.assign(new Error('http 503'), { reason: 'http', status: 503, url: u })), relay);
+    await page.waitForFunction(() => { const r = window.IntMapLayerState.get('cb-shell-experience-probe'); return !!(r && r.upstream); }, null, { timeout: 15_000 });
+    const rec = await page.evaluate(() => window.IntMapLayerState.get('cb-shell-experience-probe'));
+    expect(rec.upstream.host).toBe(row.host);
+    expect(rec.detail, 'the record’s words carry the nightly sentence').toMatch(/nightly check|毎晩の確認/);
+  });
+});

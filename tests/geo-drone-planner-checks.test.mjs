@@ -269,9 +269,11 @@ describe('§ #R174 · the drone planner', () => {
     const atlas = (R('js/atlas-console.js') + '\n' + capsSource()) + '\n' + R('js/atlas-catalog-text.js');
     assert.ok(capabilityEntry('drone'), 'Atlas implements it');
     assert.ok(atlas.includes('{"type":"drone"'), 'and advertises it in the SYS catalogue');
-    assert.match(atlas, /"name":"measure"\|"radius"\|"draw"\|"volume"\|"drone"/, 'the tool switch lists it too');
-    /* (#R176) …and with no button left to click, the `tool` switch calls the planner directly. */
-    assert.match(atlas, /if\(\/drone\|ドローン\|无人机\|무인기\/\.test\(n\)\)\{[^}]*window\.IntMapDrone&&window\.IntMapDrone\.toggle\(\)/, 'with a branch behind the name');
+    /* (#R176) …and with no button left to click, the `tool` switch reaches the planner directly.
+       ⚠ (science-instruments) NO LONGER A TOGGLE OF ITS OWN: a name that means the planner is handed, with its
+       arguments, to the planner's capability (routing.drone's exported droneRun), so {"type":"tool","name":"drone"}
+       and {"type":"drone"} are one door. The dispatch itself is EVALUATED in tests/science-instruments-checks.test.mjs ⑥. */
+    assert.match(atlas, /if\(\/drone\|ドローン\|无人机\|무인기\/\.test\(n\)\) return droneRun\(/, 'with the planner\'s own capability behind the name');
   });
 
   test('#R174 the new UI strings exist in every registered language', () => {

@@ -5,4 +5,5 @@ export default {
   order: 110,
   key: 'wbdensity',
   rest: true,
+  measures: ['worldbank:EN.POP.DNST'],
 };

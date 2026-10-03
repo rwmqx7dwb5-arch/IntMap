@@ -31,6 +31,23 @@
  *      node scripts/build-elections.mjs                # rebuild every pack (network)
  *      node scripts/build-elections.mjs --only jp uk   # rebuild some packs
  *      node scripts/build-elections.mjs --list         # what packs exist and what they claim
+ *
+ *  ══ (companies-elections-live) THE LAYER IS LIVE DATA NOW, NOT A PHOTOGRAPH ══════════════════════
+ *  Written once on 2026-09-10 and never rebuilt; nothing in the bytes said when they were taken.
+ *  Now every election row carries `fetchedAt`/`fetchedFrom` and `up` (scripts/lib/elections-live.mjs),
+ *  every polity its `pack` and a `refresh` record, and .github/workflows/elections-refresh.yml runs:
+ *
+ *      node scripts/build-elections.mjs --watch [--summary s.md] [--importable-out packs.txt]
+ *          ask every pack that can (its own watch()) whether the world has a newer election than
+ *          the record, compute per chamber the day the LAW required the next one by, and write the
+ *          polity's refresh record (current / overdue / blocked / importable). Network, uncached.
+ *      node scripts/build-elections.mjs --annotate     # offline: pack + up + fetchedAt on old rows
+ *      node scripts/build-elections.mjs --enumerate --year 1979 [--in w,s,e,n]
+ *          what the layer draws in that year and box — the inventory historical-verification §2.1
+ *          asks a person to read, with the territory each district stood on by CShapes
+ *
+ *  --check additionally refuses (scripts/lib/elections-claims.mjs) a district whose ground was split
+ *  between two states on polling day, and checks scripts/elections/upstreams.json both ways.
  * ==========================================================================*/
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -38,6 +55,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { validate } from './lib/elections-schema.mjs';
 import { NATIONAL_ELECTIONS } from './lib/upstream-cadence.mjs';
+import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { loadUpstreams, checkDeclarations, stamp, dueOf, refreshOf } from './lib/elections-live.mjs';
+import { territoryClaims, enumerate, territoryOf } from './lib/elections-claims.mjs';
 
 /* ⚠ (upstream-liveness) 出自は値である。読むのは js/data-governance.js の read() と
    npm run check:datagov（scripts/data-governance.mjs）。この宣言は少なくとも「どの bundle を書くか」と
@@ -62,6 +83,11 @@ const UA = 'IntMap/1.0 (https://github.com/rwmqx7dwb5-arch/IntMap) elections-bui
 const argv = process.argv.slice(2);
 const CHECK = argv.includes('--check');
 const LIST = argv.includes('--list');
+const WATCH = argv.includes('--watch');
+const ANNOTATE = argv.includes('--annotate');
+const ENUMERATE = argv.includes('--enumerate');
+const argOf = (k) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : null; };
+const TODAY = new Date().toISOString().slice(0, 10);
 const ONLY = (() => { const i = argv.indexOf('--only'); return i < 0 ? null : new Set(argv.slice(i + 1).filter(a => !a.startsWith('--'))); })();
 
 /* ── the download cache ────────────────────────────────────────────────────────────────────────
@@ -105,7 +131,7 @@ async function loadPacks() {
     const mod = await import(pathToFileURL(join(PACK_DIR, f)).href);
     const id = f.replace(/\.mjs$/, '');
     if (typeof mod.build !== 'function') throw new Error('scripts/elections/' + f + ' does not export build()');
-    packs.push({ id, file: f, build: mod.build, about: mod.about || '' });
+    packs.push({ id, file: f, build: mod.build, watch: typeof mod.watch === 'function' ? mod.watch : null, about: mod.about || '' });
   }
   return packs;
 }
@@ -116,6 +142,130 @@ const readPart = (kind, id) => {
   if (!existsSync(p)) return null;
   try { return JSON.parse(readFileSync(p, 'utf8')); } catch (e) { return { __bad: String(e && e.message) }; }
 };
+
+/* CShapes, the record the territory claim is asked of (scripts/lib/elections-claims.mjs). */
+function cshapes() {
+  const prev = globalThis.window;
+  globalThis.window = {};
+  try { createRequire(import.meta.url)(join(ROOT, 'data', 'cshapes.js')); return globalThis.window.__CSHAPES; }
+  finally { if (prev === undefined) delete globalThis.window; else globalThis.window = prev; }
+}
+const territoryOfPolity = (index, decl) => (pid) => {
+  const pol = (index.polities || []).find(p => p.id === pid);
+  return ((decl.packs[pol && pol.pack] || {}).territory) || 'one-state';
+};
+
+/* The date of the commit that last changed a results file — the honest date for a row written
+   before `fetchedAt` existed, stated as derived (fetchedFrom: 'commit'). */
+function commitDate(e) {
+  try {
+    const out = execFileSync('git', ['log', '-1', '--format=%cs', '--', 'data/elections/' + e.res], { cwd: ROOT }).toString().trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(out) ? out : null;
+  } catch (_) { return null; }
+}
+
+function writeIndex(index) {
+  index.polities.sort((a, b) => a.id.localeCompare(b.id));
+  index.elections.sort((a, b) => a.polity.localeCompare(b.polity) || a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+  writeFileSync(INDEX, JSON.stringify(index, null, 1));
+}
+
+/* (companies-elections-live) THE LAST SHIPPED EDITION of a file in data/elections/, read from the
+   commit (HEAD), not from the working tree a build is overwriting — with the date that commit was
+   made. A pack uses it to carry forward a value its upstream stopped stating, and says so on the row
+   (scripts/elections/eu.mjs, the native country names). null when the file was never committed. */
+function previous(file) {
+  try {
+    const rel = 'data/elections/' + file;
+    const bytes = execFileSync('git', ['show', 'HEAD:' + rel], { cwd: ROOT, maxBuffer: 1 << 28 }).toString('utf8');
+    const at = execFileSync('git', ['log', '-1', '--format=%cs', 'HEAD', '--', rel], { cwd: ROOT }).toString().trim();
+    return { json: JSON.parse(bytes), file, at: /^\d{4}-\d{2}-\d{2}$/.test(at) ? at : null };
+  } catch (_) { return null; }
+}
+
+/* ── --annotate: the offline backfill ─────────────────────────────────────────────────────────── */
+function runAnnotate() {
+  const index = JSON.parse(readFileSync(INDEX, 'utf8'));
+  const packs = new Set(packFiles().map(f => f.replace(/\.mjs$/, '')));
+  /* ⚠ ONE PACK PER POLITY is the layout docs/ELECTIONS.md §3 describes; a polity whose id names no
+     pack is not guessed at — the build that wrote it is the only thing that can say. */
+  for (const p of index.polities) if (!p.pack) { if (packs.has(p.id)) p.pack = p.id; else throw new Error('polity ' + p.id + ' names no pack and no pack has its id — rebuild it'); }
+  stamp(index, loadUpstreams(ROOT), { commitDate });
+  writeIndex(index);
+  console.log('annotated ' + index.elections.length + ' elections (' + index.elections.filter(e => e.fetchedFrom === 'commit').length + ' dated by their commit)');
+}
+
+/* ── --watch: is the record behind the world, and why ─────────────────────────────────────────── */
+async function fresh(url, { json = false, text = false, buffer = false, status = false } = {}) {
+  const r = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(120000) });
+  if (status) { try { await r.body?.cancel(); } catch (_) { } return { status: r.status, body: null }; }
+  if (!r.ok) throw new Error('HTTP ' + r.status + ' for ' + url);
+  let body = null;
+  if (json) body = await r.json();
+  else if (text) body = await r.text();
+  else if (buffer) body = Buffer.from(await r.arrayBuffer());
+  return { status: r.status, body };
+}
+
+async function runWatch() {
+  const index = JSON.parse(readFileSync(INDEX, 'utf8'));
+  const decl = loadUpstreams(ROOT);
+  const packs = await loadPacks();
+  const due = dueOf(index, decl, TODAY);
+  const lines = ['## National elections — is the record behind the world? (' + TODAY + ')', '', '| polity | chamber | newest recorded | due by (law) | state | why |', '|---|---|---|---|---|---|'];
+  const importable = new Set();
+  let failed = 0;
+  for (const pol of index.polities) {
+    const pack = packs.find(p => p.id === pol.pack);
+    const bodies = due.get(pol.id) || [];
+    const last = Object.fromEntries(bodies.map(b => [b.body, b.last]));
+    const count = {};
+    for (const e of index.elections) if (e.polity === pol.id) count[e.body.en] = (count[e.body.en] || 0) + 1;
+    let findings = [];
+    if (pack && typeof pack.watch === 'function') {
+      try { findings = await pack.watch({ fresh, today: TODAY }, { last, count }); }
+      catch (e) {
+        /* ⚠ A WATCH THAT COULD NOT LOOK IS NOT A WATCH THAT FOUND NOTHING. The previous record is
+           kept, its checkedAt is not advanced, and the job says so. */
+        failed++;
+        console.error('::warning::' + pol.id + ': watch() could not complete — ' + (e && e.message) + ' (the previous refresh record is kept)');
+        lines.push('| ' + pol.id + ' | — | — | — | **not observed** | ' + String(e && e.message).replace(/\|/g, '/') + ' |');
+        continue;
+      }
+    }
+    pol.refresh = refreshOf(bodies, findings, TODAY);
+    for (const b of pol.refresh.bodies) {
+      if (b.state === 'importable') importable.add(pol.pack);
+      lines.push('| ' + pol.id + ' | ' + b.body + ' | ' + b.last + ' | ' + (b.dueBy || '—') + ' | ' + b.state + ' | ' + (b.why ? (b.what ? b.what.en + ': ' : '') + b.why.en : '') + ' |');
+    }
+  }
+  writeIndex(index);
+  for (const l of lines) console.log(l);
+  if (argOf('--summary')) writeFileSync(argOf('--summary'), lines.join('\n') + '\n\n<sub>scripts/build-elections.mjs --watch · docs/ELECTIONS.md §9</sub>\n', { flag: 'a' });
+  if (argOf('--importable-out')) writeFileSync(argOf('--importable-out'), [...importable].join(' '));
+  if (failed) console.error(failed + ' watch(es) could not look this run');
+}
+
+/* ── --enumerate: the inventory a person reads ────────────────────────────────────────────────── */
+function runEnumerate() {
+  const index = JSON.parse(readFileSync(INDEX, 'utf8'));
+  const year = Number(argOf('--year'));
+  if (!Number.isInteger(year)) throw new Error('--enumerate needs --year <YYYY>');
+  const box = argOf('--in') ? argOf('--in').split(',').map(Number) : null;
+  const decl = loadUpstreams(ROOT);
+  const cs = cshapes();
+  const terr = territoryOfPolity(index, decl);
+  for (const r of enumerate(index, readPart, year, box)) {
+    const e = index.elections.find(x => x.id === r.election);
+    const t = r.geo ? territoryOf(e, readPart('geo', r.geo), cs, terr(e.polity)) : { asked: false, why: 'no boundaries were published' };
+    console.log('\n' + r.election + ' · ' + r.body + ' · polled ' + r.date + (r.sameYear ? '' : ' (the chamber in force in ' + year + ')') +
+      ' · boundaries ' + (r.geo || 'none') + ' · fetched ' + (r.fetchedAt || '?') + ' from ' + (r.up || '?'));
+    console.log('  territory: ' + (t.asked ? (t.refused.length ? 'REFUSED ' + t.refused.map(x => x.cd + ' ' + x.where.join('/')).join('; ') : 'every district on one state' + (t.own ? ' (' + t.own + ')' : ''))
+      + (t.elsewhere && t.elsewhere.length ? '; wholly in another CShapes unit: ' + t.elsewhere.map(x => x.cd + ' ' + x.in).join(', ') : '') : 'not asked — ' + t.why));
+    for (const d of r.districts.slice(0, 400)) console.log('  ' + String(d.cd).padEnd(12) + ' ' + String(d.name).slice(0, 48).padEnd(48) + ' ' + (d.winner || '— no winner recorded'));
+    if (r.districts.length > 400) console.log('  … ' + (r.districts.length - 400) + ' more');
+  }
+}
 
 function runCheck() {
   if (!existsSync(INDEX)) {
@@ -130,6 +280,12 @@ function runCheck() {
   for (const e of index.elections || []) { if (e.geo) named.add(e.geo); if (e.res) named.add(e.res); }
   for (const f of readdirSync(OUT_DIR)) if (!named.has(f)) errs.push('data/elections/' + f + ' is not referenced by index.json');
 
+  /* (companies-elections-live) the declarations, both ways, and the claim each district makes */
+  const decl = loadUpstreams(ROOT);
+  errs.push(...checkDeclarations(decl, packFiles().map(f => f.replace(/\.mjs$/, '')), index));
+  const claims = territoryClaims(index, readPart, cshapes(), territoryOfPolity(index, decl));
+  errs.push(...claims.problems);
+
   if (errs.length) {
     console.error('elections: ' + errs.length + ' problem(s) in the committed data\n');
     for (const e of errs.slice(0, 40)) console.error('  · ' + e);
@@ -140,6 +296,10 @@ function runCheck() {
   console.log('elections: ok — ' + (index.polities || []).length + ' polities, ' +
     (index.elections || []).length + ' elections, ' + nGeo + ' boundary eras, ' +
     Object.keys(index.parties || {}).length + ' parties');
+  console.log('elections: territory — every district of ' + ((index.elections || []).filter(e => e.geo).length - claims.unasked.length) +
+    ' elections stood on one state on polling day by CShapes; ' + claims.unasked.length + ' after CShapes ends were not asked');
+  const late = (index.polities || []).flatMap(p => ((p.refresh && p.refresh.bodies) || []).filter(b => b.state !== 'current').map(b => p.id + ' · ' + b.body + ' ' + b.state));
+  if (late.length) console.log('elections: refresh (checked ' + [...new Set(index.polities.map(p => p.refresh && p.refresh.checkedAt).filter(Boolean))].join(', ') + ') — ' + late.join('; '));
 }
 
 /* ── build ─────────────────────────────────────────────────────────────────────────────────────
@@ -161,9 +321,22 @@ async function runBuild() {
   for (const pack of use) {
     process.stdout.write('· ' + pack.id + ' … ');
     let out;
-    try { out = await pack.build({ get, ROOT, OUT_DIR }); }
+    try { out = await pack.build({ get, ROOT, OUT_DIR, previous }); }
     catch (e) { console.log('FAILED — ' + (e && e.message)); failed.push(pack.id); continue; }
 
+    /* (companies-elections-live) the receipt: which pack wrote each polity, and on which day each
+       election's results were taken — carried over when the bytes did not change, so a weekly
+       rebuild that finds nothing new does not pretend every election was fetched again */
+    for (const p of out.polities || []) p.pack = pack.id;
+    const before = new Map(index.elections.map(e => [e.id, e]));
+    for (const e of out.elections || []) {
+      const prev = before.get(e.id);
+      const was = readPart('res', e.res);
+      const same = prev && prev.fetchedAt && was && out.res && out.res[e.res] && JSON.stringify(was) === JSON.stringify(out.res[e.res]);
+      if (same) { e.fetchedAt = prev.fetchedAt; e.fetchedFrom = prev.fetchedFrom; }
+      else { e.fetchedAt = TODAY; e.fetchedFrom = 'build'; }
+    }
+    for (const p of out.polities || []) { const prev = index.polities.find(q => q.id === p.id); if (prev && prev.refresh && !p.refresh) p.refresh = prev.refresh; }
     /* replace this pack's contribution wholesale: leftovers from a previous shape are not merged */
     const mine = new Set((out.polities || []).map(p => p.id));
     index.polities = index.polities.filter(p => !mine.has(p.id)).concat(out.polities || []);
@@ -180,6 +353,7 @@ async function runBuild() {
   index.polities.sort((a, b) => a.id.localeCompare(b.id));
   index.elections.sort((a, b) => a.polity.localeCompare(b.polity) || a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
   index.parties = Object.fromEntries(Object.entries(index.parties).sort((a, b) => a[0].localeCompare(b[0])));
+  stamp(index, loadUpstreams(ROOT), { commitDate });
   index._ = 'Built by scripts/build-elections.mjs from the packs in scripts/elections/. Every election ' +
     'carries its own `src` (attribution) and `lic` (licence); see docs/ELECTIONS.md.';
   writeFileSync(INDEX, JSON.stringify(index, null, 1));
@@ -188,7 +362,13 @@ async function runBuild() {
   runCheck();
 }
 
-if (LIST) {
+if (ANNOTATE) {
+  runAnnotate();
+} else if (WATCH) {
+  runWatch().catch(e => { console.error(e); process.exit(1); });
+} else if (ENUMERATE) {
+  runEnumerate();
+} else if (LIST) {
   for (const f of packFiles()) console.log(f.replace(/\.mjs$/, ''));
 } else if (CHECK) {
   runCheck();

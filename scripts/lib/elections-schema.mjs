@@ -148,6 +148,39 @@ export function checkPolity(p, errs) {
   } else if (!(b[0][0] < b[1][0] && b[0][1] < b[1][1])) {
     errs.push(where + ': home box is inverted');
   }
+  /* (companies-elections-live) WHICH PACK WROTE IT AND WHEN IT WAS LAST CHECKED — the receipt of the
+     scheduled refresh (.github/workflows/elections-refresh.yml). `pack` names the file in
+     scripts/elections/ whose declarations (scripts/elections/upstreams.json) speak for this polity. */
+  if (!ID_RE.test(String(p.pack || ''))) errs.push(where + ': pack (the scripts/elections/ file that writes it) is required');
+  if (p.refresh != null) checkRefresh(p.refresh, where, errs);
+}
+
+/* ── the refresh record ─────────────────────────────────────────────────────────────────────────
+   (companies-elections-live) What the last scheduled run established about each chamber of a polity:
+     current    the newest election in the record is within the longest interval the law allows
+     overdue    it is not, and nobody established why (scripts/elections/upstreams.json terms)
+     blocked    a newer election exists and the pack established why it cannot be imported — the
+                legend prints `why` and `checkedAt` («更新不能», with its reason and its date)
+     importable a newer election exists and its blocking condition is gone: rebuild the pack
+   ⚠ `why` IS PROSE THE READER READS (AGENTS.md §3.5), so it is a name table, never a string. */
+export const REFRESH_STATES = ['current', 'overdue', 'blocked', 'importable'];
+export function checkRefresh(r, where, errs) {
+  const w = where + ' refresh';
+  if (!isObj(r)) { errs.push(w + ': not an object'); return; }
+  if (!DATE_RE.test(String(r.checkedAt || ''))) errs.push(w + ': checkedAt must be YYYY-MM-DD');
+  if (!Array.isArray(r.bodies) || !r.bodies.length) { errs.push(w + ': bodies must be a non-empty array'); return; }
+  for (const b of r.bodies) {
+    const wb = w + ' · ' + (b && b.body);
+    if (!isObj(b) || !isStr(b.body)) { errs.push(wb + ': body (the chamber, as elections name it in body.en) is required'); continue; }
+    if (!REFRESH_STATES.includes(b.state)) errs.push(wb + ': state must be one of ' + REFRESH_STATES.join('|'));
+    if (!DATE_RE.test(String(b.last || ''))) errs.push(wb + ': last (the newest election in the record) must be YYYY-MM-DD');
+    if (b.dueBy != null && !DATE_RE.test(String(b.dueBy))) errs.push(wb + ': dueBy must be YYYY-MM-DD or null');
+    if (b.state === 'blocked' || b.state === 'importable' || b.state === 'overdue') {
+      if (!isObj(b.why)) errs.push(wb + ': a ' + b.state + ' chamber must say why, as a name table');
+      else checkName(b.why, wb + ' why', errs);
+    }
+    if (b.what != null) checkName(b.what, wb + ' what', errs);
+  }
 }
 
 /* ── elections ─────────────────────────────────────────────────────────────────────────────────
@@ -185,6 +218,15 @@ export function checkElection(e, errs, { geoIds, resIds, polityIds }) {
   }
   if (!isStr(e.src)) errs.push(where + ': src (the attribution line) is required');
   if (!isStr(e.lic)) errs.push(where + ': lic (the licence of the data) is required');
+  /* (companies-elections-live) WHEN THE BYTES WERE TAKEN, AND FROM WHOM. `fetchedAt` is the day the
+     build last wrote this election's results from the upstream; `fetchedFrom` says how that date is
+     known — `build` (the builder wrote it) or `commit` (the row predates the field, and the date is
+     the commit that last changed its results file: a derived date that says it is derived,
+     historical-verification §2.3). `up` is the upstream's name, from scripts/elections/upstreams.json. */
+  if (!DATE_RE.test(String(e.fetchedAt || ''))) errs.push(where + ': fetchedAt (the day its results were taken from the upstream) must be YYYY-MM-DD');
+  else if (DATE_RE.test(String(e.date || '')) && e.fetchedAt < e.date) errs.push(where + ': fetchedAt ' + e.fetchedAt + ' is before polling day ' + e.date);
+  if (e.fetchedFrom !== 'build' && e.fetchedFrom !== 'commit') errs.push(where + ': fetchedFrom must be build|commit');
+  if (!isStr(e.up)) errs.push(where + ': up (the upstream it was read from) is required');
   /* ⚠ `note` IS PROSE THE READER READS, so it obeys AGENTS.md §3.5 and is a name table, not a
      string. `src` and `lic` are NOT: an attribution line is the publisher's own wording and the
      condition of the licence, and translating it would be misquoting a legal notice.

@@ -110,6 +110,7 @@ const DERIVED = [
     { id: "bx-wbforest", key: "wbforest", rest: true },
   ] },
   { key: "lyrGrpDemo", layers: [
+    { id: "bx-wbind", key: "wbind", share: true },
     { id: "dl-popgrid", key: "popgrid", label: "lyrPopGrid", share: true },
     { id: "dl-nightsat", key: "nightsat", label: "lyrNightSat", share: true },
     { id: "dl-tfr", key: "tfr", label: "lyrTFR", share: true },
@@ -139,6 +140,7 @@ const DERIVED = [
     { id: "dl-eu", key: "eu", label: "lyrEU", share: true },
     { id: "dl-ww2", key: "ww2", share: true, lazy: ["warLayer"] },
     { id: "dl-elect", key: "elect", rest: true, share: true },
+    { id: "dl-newspulse", key: "newspulse", rest: true, share: true, lazy: ["newsIntel"] },
     { id: "dl-ww1", key: "ww1", rest: true, share: true, lazy: ["warLayer"] },
     { id: "dl-korea", key: "korea", rest: true, share: true, lazy: ["warLayer"] },
     { id: "dl-vietnam", key: "vietnam", rest: true, share: true, lazy: ["warLayer"] },
@@ -294,8 +296,8 @@ const DECLARATIONS = [
   { id: "dl-ec-dew", shelf: "lyrGrpClimate", order: 110, key: "ec-dew", rest: true, share: true },   // dl-ec-dew.js
   { id: "dl-aod", shelf: "lyrGrpClimate", order: 120, key: "aod", label: "lyrAOD", rest: true, share: true, registry: ["aod"] },   // dl-aod.js
   { id: "dl-ec-cape", shelf: "lyrGrpClimate", order: 130, key: "ec-cape", rest: true, share: true },   // dl-ec-cape.js
-  { id: "bx-wbpm25", shelf: "lyrGrpClimate", order: 140, key: "wbpm25", rest: true },   // bx-wbpm25.js
-  { id: "bx-wbco2", shelf: "lyrGrpClimate", order: 150, key: "wbco2", rest: true },   // bx-wbco2.js
+  { id: "bx-wbpm25", shelf: "lyrGrpClimate", order: 140, key: "wbpm25", rest: true, measures: ["worldbank:EN.ATM.PM25.MC.M3"] },   // bx-wbpm25.js
+  { id: "bx-wbco2", shelf: "lyrGrpClimate", order: 150, key: "wbco2", rest: true, measures: ["worldbank:EN.GHG.CO2.MT.CE.AR5", "worldbank:EN.GHG.CO2.PC.CE.AR5"] },   // bx-wbco2.js
   { id: "dl-sats", shelf: "lyrGrpOrbit", order: 10, key: "sats", label: "lyrSats", share: true, lazy: ["satellitesLive"], registry: ["satellites"], atlas: ["layers.satellites"], time: { kind: "elements", bands: [[11, 5], [1.5, 60], [-Infinity, 14]] } },   // dl-sats.js
   { id: "l9-dl-aurora", shelf: "lyrGrpOrbit", order: 20, key: "aurora", share: true },   // l9-dl-aurora.js
   { id: "fac-dl-osmspace", shelf: "lyrGrpOrbit", order: 30, key: "osmspace", rest: true },   // fac-dl-osmspace.js
@@ -313,99 +315,101 @@ const DECLARATIONS = [
   { id: "eco-dl-worldcover", shelf: "lyrGrpNature", order: 10, key: "worldcover", share: true },   // eco-dl-worldcover.js
   { id: "eco-dl-ecoregions", shelf: "lyrGrpNature", order: 20, key: "ecoregions", share: true },   // eco-dl-ecoregions.js
   { id: "gx-gxndvi", shelf: "lyrGrpNature", order: 30, key: "gxndvi", share: true },   // gx-gxndvi.js
-  { id: "bx-wbforest", shelf: "lyrGrpNature", order: 40, key: "wbforest", rest: true },   // bx-wbforest.js
+  { id: "bx-wbforest", shelf: "lyrGrpNature", order: 40, key: "wbforest", rest: true, measures: ["worldbank:AG.LND.FRST.ZS"] },   // bx-wbforest.js
+  { id: "bx-wbind", shelf: "lyrGrpDemo", order: 1, key: "wbind", share: true, state: "wbind", atlas: ["layers.indicator"] },   // bx-wbind.js
   { id: "dl-popgrid", shelf: "lyrGrpDemo", order: 10, key: "popgrid", label: "lyrPopGrid", share: true },   // dl-popgrid.js
   { id: "dl-nightsat", shelf: "lyrGrpDemo", order: 20, key: "nightsat", label: "lyrNightSat", share: true },   // dl-nightsat.js
-  { id: "dl-tfr", shelf: "lyrGrpDemo", order: 30, key: "tfr", label: "lyrTFR", share: true },   // dl-tfr.js
-  { id: "dl-pop", shelf: "lyrGrpDemo", order: 40, key: "pop", label: "lyrPop", rest: true, share: true },   // dl-pop.js
-  { id: "bx-wbpopgrow", shelf: "lyrGrpDemo", order: 50, key: "wbpopgrow", rest: true },   // bx-wbpopgrow.js
-  { id: "bx-wbaging", shelf: "lyrGrpDemo", order: 60, key: "wbaging", rest: true },   // bx-wbaging.js
-  { id: "bx-wbfert", shelf: "lyrGrpDemo", order: 70, key: "wbfert", rest: true },   // bx-wbfert.js
-  { id: "bx-wbadofert", shelf: "lyrGrpDemo", order: 80, key: "wbadofert", rest: true },   // bx-wbadofert.js
-  { id: "bx-wburb", shelf: "lyrGrpDemo", order: 90, key: "wburb", rest: true },   // bx-wburb.js
-  { id: "bx-wbrural", shelf: "lyrGrpDemo", order: 100, key: "wbrural", rest: true },   // bx-wbrural.js
-  { id: "bx-wbdensity", shelf: "lyrGrpDemo", order: 110, key: "wbdensity", rest: true },   // bx-wbdensity.js
-  { id: "bx-wbref", shelf: "lyrGrpDemo", order: 120, key: "wbref", rest: true },   // bx-wbref.js
+  { id: "dl-tfr", shelf: "lyrGrpDemo", order: 30, key: "tfr", label: "lyrTFR", share: true, measures: ["countrystats:tfr"] },   // dl-tfr.js
+  { id: "dl-pop", shelf: "lyrGrpDemo", order: 40, key: "pop", label: "lyrPop", rest: true, share: true, measures: ["countrystats:density"] },   // dl-pop.js
+  { id: "bx-wbpopgrow", shelf: "lyrGrpDemo", order: 50, key: "wbpopgrow", rest: true, measures: ["worldbank:SP.POP.GROW"] },   // bx-wbpopgrow.js
+  { id: "bx-wbaging", shelf: "lyrGrpDemo", order: 60, key: "wbaging", rest: true, measures: ["worldbank:SP.POP.65UP.TO.ZS"] },   // bx-wbaging.js
+  { id: "bx-wbfert", shelf: "lyrGrpDemo", order: 70, key: "wbfert", rest: true, measures: ["worldbank:SP.DYN.TFRT.IN"] },   // bx-wbfert.js
+  { id: "bx-wbadofert", shelf: "lyrGrpDemo", order: 80, key: "wbadofert", rest: true, measures: ["worldbank:SP.ADO.TFRT"] },   // bx-wbadofert.js
+  { id: "bx-wburb", shelf: "lyrGrpDemo", order: 90, key: "wburb", rest: true, measures: ["worldbank:SP.URB.TOTL.IN.ZS"] },   // bx-wburb.js
+  { id: "bx-wbrural", shelf: "lyrGrpDemo", order: 100, key: "wbrural", rest: true, measures: ["worldbank:SP.RUR.TOTL.ZS"] },   // bx-wbrural.js
+  { id: "bx-wbdensity", shelf: "lyrGrpDemo", order: 110, key: "wbdensity", rest: true, measures: ["worldbank:EN.POP.DNST"] },   // bx-wbdensity.js
+  { id: "bx-wbref", shelf: "lyrGrpDemo", order: 120, key: "wbref", rest: true, measures: ["worldbank:SM.POP.RHCR.EA+SM.POP.RRWA.EA"] },   // bx-wbref.js
   { id: "wp-dl-alerts", shelf: "lyrGrpHazard", order: 10, key: "alerts", share: true, lazy: ["worldPacksBody"] },   // wp-dl-alerts.js
   { id: "bx-eq", shelf: "lyrGrpHazard", order: 20, key: "eq", registry: ["earthquakes"] },   // bx-eq.js
   { id: "beta-dl-volc2", shelf: "lyrGrpHazard", order: 30, key: "volc2", share: true, registry: ["volcanoes"], commands: ["volcano.open", "volcano.mode", "volcano.filter", "volcano.time"], atlas: ["map.volcanoFilter"], sources: ["Smithsonian GVP"] },   // beta-dl-volc2.js
   { id: "dl-thermal", shelf: "lyrGrpHazard", order: 40, key: "thermal", label: "lyrThermal", rest: true, share: true, registry: ["thermal"], sources: ["NASA FIRMS"], pkg: "thermal" },   // dl-thermal.js
   { id: "fac-dl-osmemg", shelf: "lyrGrpHazard", order: 50, key: "osmemg", rest: true },   // fac-dl-osmemg.js
   { id: "beta-dl-radobs", shelf: "lyrGrpHazard", order: 60, key: "radobs", rest: true, share: true, lazy: ["radiationLayer"], registry: ["radiation"], commands: ["radiation.observed", "radiation.near"], atlas: ["map.radiation"] },   // beta-dl-radobs.js
-  { id: "dl-dem", shelf: "lyrGrpPolitics", order: 10, key: "dem", label: "lyrDem", share: true },   // dl-dem.js
-  { id: "beta-dl-cpi", shelf: "lyrGrpPolitics", order: 20, key: "cpi", share: true },   // beta-dl-cpi.js
+  { id: "dl-dem", shelf: "lyrGrpPolitics", order: 10, key: "dem", label: "lyrDem", share: true, measures: ["countrystats:dem"] },   // dl-dem.js
+  { id: "beta-dl-cpi", shelf: "lyrGrpPolitics", order: 20, key: "cpi", share: true, measures: ["worldbank:GOV_WGI_CC.SC"] },   // beta-dl-cpi.js
   { id: "dl-eez", shelf: "lyrGrpPolitics", order: 30, key: "eez", label: "lyrEEZ", share: true },   // dl-eez.js
   { id: "dl-uselect", shelf: "lyrGrpPolitics", order: 40, key: "uselect", share: true },   // dl-uselect.js
   { id: "dl-eu", shelf: "lyrGrpPolitics", order: 50, key: "eu", label: "lyrEU", share: true, pkg: "alliances" },   // dl-eu.js
   { id: "dl-ww2", shelf: "lyrGrpPolitics", order: 60, key: "ww2", share: true, lazy: ["warLayer"] },   // dl-ww2.js
   { id: "dl-elect", shelf: "lyrGrpPolitics", order: 70, key: "elect", rest: true, share: true },   // dl-elect.js
+  { id: "dl-newspulse", shelf: "lyrGrpPolitics", order: 75, key: "newspulse", rest: true, share: true, lazy: ["newsIntel"], commands: ["newspulse.toggle", "newspulse.rank", "newspulse.brief"] },   // dl-newspulse.js
   { id: "dl-ww1", shelf: "lyrGrpPolitics", order: 80, key: "ww1", rest: true, share: true, lazy: ["warLayer"] },   // dl-ww1.js
   { id: "dl-korea", shelf: "lyrGrpPolitics", order: 90, key: "korea", rest: true, share: true, lazy: ["warLayer"] },   // dl-korea.js
   { id: "dl-vietnam", shelf: "lyrGrpPolitics", order: 100, key: "vietnam", rest: true, share: true, lazy: ["warLayer"] },   // dl-vietnam.js
   { id: "dl-mideast", shelf: "lyrGrpPolitics", order: 110, key: "mideast", rest: true, share: true, lazy: ["warLayer"] },   // dl-mideast.js
   { id: "dl-yugoslavia", shelf: "lyrGrpPolitics", order: 120, key: "yugoslavia", rest: true, share: true, lazy: ["warLayer"] },   // dl-yugoslavia.js
   { id: "dl-tz", shelf: "lyrGrpPolitics", order: 130, key: "tz", rest: true, share: true },   // dl-tz.js
-  { id: "bx-wbwomparl", shelf: "lyrGrpPolitics", order: 140, key: "wbwomparl", rest: true },   // bx-wbwomparl.js
+  { id: "bx-wbwomparl", shelf: "lyrGrpPolitics", order: 140, key: "wbwomparl", rest: true, measures: ["worldbank:SG.GEN.PARL.ZS"] },   // bx-wbwomparl.js
   { id: "fac-dl-osmdiplo", shelf: "lyrGrpPolitics", order: 150, key: "osmdiplo", rest: true },   // fac-dl-osmdiplo.js
-  { id: "dl-milSpend", shelf: "lyrGrpSecurity", order: 10, key: "milSpend", label: "lyrMilSpend", share: true, pkg: "alliances" },   // dl-milSpend.js
+  { id: "dl-milSpend", shelf: "lyrGrpSecurity", order: 10, key: "milSpend", label: "lyrMilSpend", share: true, pkg: "alliances", measures: ["countrystats:milSpend"] },   // dl-milSpend.js
   { id: "dl-nato", shelf: "lyrGrpSecurity", order: 20, key: "nato", label: "lyrNATO", share: true, pkg: "alliances" },   // dl-nato.js
   { id: "beta-dl-ukrfront", shelf: "lyrGrpSecurity", order: 30, key: "ukrfront", share: true },   // beta-dl-ukrfront.js
-  { id: "bx-wbmilgdp", shelf: "lyrGrpSecurity", order: 40, key: "wbmilgdp", rest: true },   // bx-wbmilgdp.js
-  { id: "bx-wbmilppl", shelf: "lyrGrpSecurity", order: 50, key: "wbmilppl", rest: true },   // bx-wbmilppl.js
+  { id: "bx-wbmilgdp", shelf: "lyrGrpSecurity", order: 40, key: "wbmilgdp", rest: true, measures: ["worldbank:MS.MIL.XPND.GD.ZS"] },   // bx-wbmilgdp.js
+  { id: "bx-wbmilppl", shelf: "lyrGrpSecurity", order: 50, key: "wbmilppl", rest: true, measures: ["worldbank:MS.MIL.TOTL.P1"] },   // bx-wbmilppl.js
   { id: "fac-dl-osmmil", shelf: "lyrGrpSecurity", order: 60, key: "osmmil", rest: true },   // fac-dl-osmmil.js
-  { id: "beta-dl-lifeexp", shelf: "lyrGrpHealth", order: 10, key: "lifeexp", share: true },   // beta-dl-lifeexp.js
-  { id: "bx-wbinfmort", shelf: "lyrGrpHealth", order: 20, key: "wbinfmort" },   // bx-wbinfmort.js
-  { id: "bx-wbsuicide", shelf: "lyrGrpHealth", order: 30, key: "wbsuicide" },   // bx-wbsuicide.js
-  { id: "bx-wbsmoke", shelf: "lyrGrpHealth", order: 40, key: "wbsmoke" },   // bx-wbsmoke.js
-  { id: "bx-wbalcohol", shelf: "lyrGrpHealth", order: 50, key: "wbalcohol" },   // bx-wbalcohol.js
-  { id: "bx-wbwater", shelf: "lyrGrpHealth", order: 60, key: "wbwater" },   // bx-wbwater.js
-  { id: "bx-wbhealth", shelf: "lyrGrpHealth", order: 70, key: "wbhealth", rest: true },   // bx-wbhealth.js
-  { id: "bx-wbphys", shelf: "lyrGrpHealth", order: 80, key: "wbphys", rest: true },   // bx-wbphys.js
-  { id: "bx-wbbeds", shelf: "lyrGrpHealth", order: 90, key: "wbbeds", rest: true },   // bx-wbbeds.js
-  { id: "bx-wbu5mort", shelf: "lyrGrpHealth", order: 100, key: "wbu5mort", rest: true },   // bx-wbu5mort.js
-  { id: "bx-wblife", shelf: "lyrGrpHealth", order: 110, key: "wblife", rest: true },   // bx-wblife.js
-  { id: "bx-wbsan", shelf: "lyrGrpHealth", order: 120, key: "wbsan", rest: true },   // bx-wbsan.js
-  { id: "bx-wboverwt", shelf: "lyrGrpHealth", order: 130, key: "wboverwt", rest: true },   // bx-wboverwt.js
+  { id: "beta-dl-lifeexp", shelf: "lyrGrpHealth", order: 10, key: "lifeexp", share: true, measures: ["worldbank:SP.DYN.LE00.IN"] },   // beta-dl-lifeexp.js
+  { id: "bx-wbinfmort", shelf: "lyrGrpHealth", order: 20, key: "wbinfmort", measures: ["worldbank:SP.DYN.IMRT.IN"] },   // bx-wbinfmort.js
+  { id: "bx-wbsuicide", shelf: "lyrGrpHealth", order: 30, key: "wbsuicide", measures: ["worldbank:SH.STA.SUIC.P5"] },   // bx-wbsuicide.js
+  { id: "bx-wbsmoke", shelf: "lyrGrpHealth", order: 40, key: "wbsmoke", measures: ["worldbank:SH.PRV.SMOK"] },   // bx-wbsmoke.js
+  { id: "bx-wbalcohol", shelf: "lyrGrpHealth", order: 50, key: "wbalcohol", measures: ["worldbank:SH.ALC.PCAP.LI"] },   // bx-wbalcohol.js
+  { id: "bx-wbwater", shelf: "lyrGrpHealth", order: 60, key: "wbwater", measures: ["worldbank:SH.H2O.SMDW.ZS"] },   // bx-wbwater.js
+  { id: "bx-wbhealth", shelf: "lyrGrpHealth", order: 70, key: "wbhealth", rest: true, measures: ["worldbank:SH.XPD.CHEX.GD.ZS"] },   // bx-wbhealth.js
+  { id: "bx-wbphys", shelf: "lyrGrpHealth", order: 80, key: "wbphys", rest: true, measures: ["worldbank:SH.MED.PHYS.ZS"] },   // bx-wbphys.js
+  { id: "bx-wbbeds", shelf: "lyrGrpHealth", order: 90, key: "wbbeds", rest: true, measures: ["worldbank:SH.MED.BEDS.ZS"] },   // bx-wbbeds.js
+  { id: "bx-wbu5mort", shelf: "lyrGrpHealth", order: 100, key: "wbu5mort", rest: true, measures: ["worldbank:SH.DYN.MORT"] },   // bx-wbu5mort.js
+  { id: "bx-wblife", shelf: "lyrGrpHealth", order: 110, key: "wblife", rest: true, measures: ["worldbank:SP.DYN.LE00.IN"] },   // bx-wblife.js
+  { id: "bx-wbsan", shelf: "lyrGrpHealth", order: 120, key: "wbsan", rest: true, measures: ["worldbank:SH.STA.SMSS.ZS"] },   // bx-wbsan.js
+  { id: "bx-wboverwt", shelf: "lyrGrpHealth", order: 130, key: "wboverwt", rest: true, measures: ["worldbank:HF.STA.OW18.ZS"] },   // bx-wboverwt.js
   { id: "fac-dl-osmhealth", shelf: "lyrGrpHealth", order: 140, key: "osmhealth", rest: true },   // fac-dl-osmhealth.js
   { id: "fac-dl-osmwater", shelf: "lyrGrpHealth", order: 150, key: "osmwater", rest: true },   // fac-dl-osmwater.js
   { id: "dl-subcables", shelf: "lyrGrpTech", order: 10, key: "subcables", label: "lyrSubcables", share: true, pkg: "subcables" },   // dl-subcables.js
   { id: "beta-dl-dc", shelf: "lyrGrpTech", order: 20, key: "dc", rest: true, share: true, lazy: ["dataCenters"], registry: ["datacenters"] },   // beta-dl-dc.js
   { id: "dl-nethlth", shelf: "lyrGrpTech", order: 30, key: "nethlth", rest: true, share: true, lazy: ["netHealthLive"], commands: ["nethlth.report", "nethlth.signals"] },   // dl-nethlth.js
   { id: "dl-netreach", shelf: "lyrGrpTech", order: 40, key: "netreach", rest: true, share: true, lazy: ["netHealthLive"] },   // dl-netreach.js
-  { id: "bx-wbnet", shelf: "lyrGrpTech", order: 50, key: "wbnet", rest: true },   // bx-wbnet.js
-  { id: "bx-wbmobile", shelf: "lyrGrpTech", order: 60, key: "wbmobile", rest: true },   // bx-wbmobile.js
-  { id: "bx-wbbbnd", shelf: "lyrGrpTech", order: 70, key: "wbbbnd", rest: true },   // bx-wbbbnd.js
-  { id: "bx-wbrnd", shelf: "lyrGrpTech", order: 80, key: "wbrnd", rest: true },   // bx-wbrnd.js
-  { id: "bx-wbresearch", shelf: "lyrGrpTech", order: 90, key: "wbresearch", rest: true },   // bx-wbresearch.js
-  { id: "bx-wbpatent", shelf: "lyrGrpTech", order: 100, key: "wbpatent", rest: true },   // bx-wbpatent.js
+  { id: "bx-wbnet", shelf: "lyrGrpTech", order: 50, key: "wbnet", rest: true, measures: ["worldbank:IT.NET.USER.ZS"] },   // bx-wbnet.js
+  { id: "bx-wbmobile", shelf: "lyrGrpTech", order: 60, key: "wbmobile", rest: true, measures: ["worldbank:IT.CEL.SETS.P2"] },   // bx-wbmobile.js
+  { id: "bx-wbbbnd", shelf: "lyrGrpTech", order: 70, key: "wbbbnd", rest: true, measures: ["worldbank:IT.NET.BBND.P2"] },   // bx-wbbbnd.js
+  { id: "bx-wbrnd", shelf: "lyrGrpTech", order: 80, key: "wbrnd", rest: true, measures: ["worldbank:GB.XPD.RSDV.GD.ZS"] },   // bx-wbrnd.js
+  { id: "bx-wbresearch", shelf: "lyrGrpTech", order: 90, key: "wbresearch", rest: true, measures: ["worldbank:SP.POP.SCIE.RD.P6"] },   // bx-wbresearch.js
+  { id: "bx-wbpatent", shelf: "lyrGrpTech", order: 100, key: "wbpatent", rest: true, measures: ["worldbank:IP.PAT.RESD"] },   // bx-wbpatent.js
   { id: "fac-dl-osmtelecom", shelf: "lyrGrpTech", order: 110, key: "osmtelecom", rest: true },   // fac-dl-osmtelecom.js
-  { id: "dl-gdppc", shelf: "lyrGrpEconomy", order: 10, key: "gdppc", label: "lyrGDPpc", share: true },   // dl-gdppc.js
+  { id: "dl-gdppc", shelf: "lyrGrpEconomy", order: 10, key: "gdppc", label: "lyrGDPpc", share: true, measures: ["countrystats:gdppc"] },   // dl-gdppc.js
   { id: "wp-dl-trade", shelf: "lyrGrpEconomy", order: 20, key: "trade", share: true, lazy: ["worldPacksBody"] },   // wp-dl-trade.js
-  { id: "bx-wbgini", shelf: "lyrGrpEconomy", order: 30, key: "wbgini" },   // bx-wbgini.js
+  { id: "bx-wbgini", shelf: "lyrGrpEconomy", order: 30, key: "wbgini", measures: ["worldbank:SI.POV.GINI"] },   // bx-wbgini.js
   { id: "wp-dl-industry", shelf: "lyrGrpEconomy", order: 40, key: "industry", rest: true, share: true },   // wp-dl-industry.js
-  { id: "bx-wbgdpgrow", shelf: "lyrGrpEconomy", order: 50, key: "wbgdpgrow", rest: true },   // bx-wbgdpgrow.js
-  { id: "bx-wbinfl", shelf: "lyrGrpEconomy", order: 60, key: "wbinfl", rest: true },   // bx-wbinfl.js
-  { id: "bx-wbtrade", shelf: "lyrGrpEconomy", order: 70, key: "wbtrade", rest: true },   // bx-wbtrade.js
-  { id: "bx-wbtax", shelf: "lyrGrpEconomy", order: 80, key: "wbtax", rest: true },   // bx-wbtax.js
-  { id: "bx-wbdebt", shelf: "lyrGrpEconomy", order: 90, key: "wbdebt", rest: true },   // bx-wbdebt.js
-  { id: "bx-wbmanuf", shelf: "lyrGrpEconomy", order: 100, key: "wbmanuf", rest: true },   // bx-wbmanuf.js
-  { id: "bx-wbhitech", shelf: "lyrGrpEconomy", order: 110, key: "wbhitech", rest: true },   // bx-wbhitech.js
-  { id: "bx-wbfdi", shelf: "lyrGrpEconomy", order: 120, key: "wbfdi", rest: true },   // bx-wbfdi.js
-  { id: "bx-wbunemp", shelf: "lyrGrpEconomy", order: 130, key: "wbunemp", rest: true },   // bx-wbunemp.js
-  { id: "bx-wbgni", shelf: "lyrGrpEconomy", order: 140, key: "wbgni", rest: true },   // bx-wbgni.js
-  { id: "bx-wbpov", shelf: "lyrGrpEconomy", order: 150, key: "wbpov", rest: true },   // bx-wbpov.js
-  { id: "bx-wbflfp", shelf: "lyrGrpEconomy", order: 160, key: "wbflfp", rest: true },   // bx-wbflfp.js
-  { id: "bx-wbremit", shelf: "lyrGrpEconomy", order: 170, key: "wbremit", rest: true },   // bx-wbremit.js
-  { id: "bx-wbtour", shelf: "lyrGrpEconomy", order: 180, key: "wbtour", rest: true },   // bx-wbtour.js
+  { id: "bx-wbgdpgrow", shelf: "lyrGrpEconomy", order: 50, key: "wbgdpgrow", rest: true, measures: ["worldbank:NY.GDP.MKTP.KD.ZG"] },   // bx-wbgdpgrow.js
+  { id: "bx-wbinfl", shelf: "lyrGrpEconomy", order: 60, key: "wbinfl", rest: true, measures: ["worldbank:FP.CPI.TOTL.ZG"] },   // bx-wbinfl.js
+  { id: "bx-wbtrade", shelf: "lyrGrpEconomy", order: 70, key: "wbtrade", rest: true, measures: ["worldbank:NE.TRD.GNFS.ZS"] },   // bx-wbtrade.js
+  { id: "bx-wbtax", shelf: "lyrGrpEconomy", order: 80, key: "wbtax", rest: true, measures: ["worldbank:GC.TAX.TOTL.GD.ZS"] },   // bx-wbtax.js
+  { id: "bx-wbdebt", shelf: "lyrGrpEconomy", order: 90, key: "wbdebt", rest: true, measures: ["worldbank:GC.DOD.TOTL.GD.ZS"] },   // bx-wbdebt.js
+  { id: "bx-wbmanuf", shelf: "lyrGrpEconomy", order: 100, key: "wbmanuf", rest: true, measures: ["worldbank:NV.IND.MANF.ZS"] },   // bx-wbmanuf.js
+  { id: "bx-wbhitech", shelf: "lyrGrpEconomy", order: 110, key: "wbhitech", rest: true, measures: ["worldbank:TX.VAL.TECH.MF.ZS"] },   // bx-wbhitech.js
+  { id: "bx-wbfdi", shelf: "lyrGrpEconomy", order: 120, key: "wbfdi", rest: true, measures: ["worldbank:BX.KLT.DINV.WD.GD.ZS"] },   // bx-wbfdi.js
+  { id: "bx-wbunemp", shelf: "lyrGrpEconomy", order: 130, key: "wbunemp", rest: true, measures: ["worldbank:SL.UEM.TOTL.ZS"] },   // bx-wbunemp.js
+  { id: "bx-wbgni", shelf: "lyrGrpEconomy", order: 140, key: "wbgni", rest: true, measures: ["worldbank:NY.GNP.PCAP.CD"] },   // bx-wbgni.js
+  { id: "bx-wbpov", shelf: "lyrGrpEconomy", order: 150, key: "wbpov", rest: true, measures: ["worldbank:SI.POV.DDAY"] },   // bx-wbpov.js
+  { id: "bx-wbflfp", shelf: "lyrGrpEconomy", order: 160, key: "wbflfp", rest: true, measures: ["worldbank:SL.TLF.CACT.FE.ZS"] },   // bx-wbflfp.js
+  { id: "bx-wbremit", shelf: "lyrGrpEconomy", order: 170, key: "wbremit", rest: true, measures: ["worldbank:BX.TRF.PWKR.DT.GD.ZS"] },   // bx-wbremit.js
+  { id: "bx-wbtour", shelf: "lyrGrpEconomy", order: 180, key: "wbtour", rest: true, measures: ["worldbank:ST.INT.ARVL"] },   // bx-wbtour.js
   { id: "beta-dl-pharma", shelf: "lyrGrpEconomy", order: 190, key: "pharma", rest: true, share: true, registry: ["pharma"] },   // beta-dl-pharma.js
-  { id: "dl-hdi", shelf: "lyrGrpSociety", order: 10, key: "hdi", label: "lyrHDI", share: true },   // dl-hdi.js
-  { id: "bx-wbhomicide", shelf: "lyrGrpSociety", order: 20, key: "wbhomicide" },   // bx-wbhomicide.js
+  { id: "dl-hdi", shelf: "lyrGrpSociety", order: 10, key: "hdi", label: "lyrHDI", share: true, measures: ["countrystats:hdi"] },   // dl-hdi.js
+  { id: "bx-wbhomicide", shelf: "lyrGrpSociety", order: 20, key: "wbhomicide", measures: ["worldbank:VC.IHR.PSRC.P5"] },   // bx-wbhomicide.js
   { id: "beta-dl-cat-language", shelf: "lyrGrpSociety", order: 30, key: "cat-language", share: true },   // beta-dl-cat-language.js
   { id: "beta-dl-whs", shelf: "lyrGrpSociety", order: 40, key: "whs", rest: true, share: true, registry: ["heritage"], commands: ["heritage.open", "heritage.filter"], atlas: ["map.heritageFilter"], sources: ["UNESCO World Heritage Centre"] },   // beta-dl-whs.js
-  { id: "bx-wblit", shelf: "lyrGrpSociety", order: 50, key: "wblit", rest: true },   // bx-wblit.js
-  { id: "bx-wbschool", shelf: "lyrGrpSociety", order: 60, key: "wbschool", rest: true },   // bx-wbschool.js
-  { id: "bx-wbtert", shelf: "lyrGrpSociety", order: 70, key: "wbtert", rest: true },   // bx-wbtert.js
-  { id: "bx-wbedu", shelf: "lyrGrpSociety", order: 80, key: "wbedu", rest: true },   // bx-wbedu.js
+  { id: "bx-wblit", shelf: "lyrGrpSociety", order: 50, key: "wblit", rest: true, measures: ["worldbank:SE.ADT.LITR.ZS"] },   // bx-wblit.js
+  { id: "bx-wbschool", shelf: "lyrGrpSociety", order: 60, key: "wbschool", rest: true, measures: ["worldbank:SE.SEC.ENRR"] },   // bx-wbschool.js
+  { id: "bx-wbtert", shelf: "lyrGrpSociety", order: 70, key: "wbtert", rest: true, measures: ["worldbank:SE.TER.ENRR"] },   // bx-wbtert.js
+  { id: "bx-wbedu", shelf: "lyrGrpSociety", order: 80, key: "wbedu", rest: true, measures: ["worldbank:SE.XPD.TOTL.GD.ZS"] },   // bx-wbedu.js
   { id: "fac-dl-osmedu", shelf: "lyrGrpSociety", order: 90, key: "osmedu", rest: true },   // fac-dl-osmedu.js
   { id: "beta-dl-cat-religion", shelf: "lyrGrpSociety", order: 100, key: "cat-religion", rest: true, share: true },   // beta-dl-cat-religion.js
   { id: "dl-planes", shelf: "lyrGrpTransport", order: 10, key: "planes", label: "lyrPlanes", share: true, lazy: ["aviationLive"], registry: ["aircraft"], atlas: ["layers.planeAltitude", "layers.aircraftTrack"] },   // dl-planes.js
@@ -417,28 +421,28 @@ const DECLARATIONS = [
   { id: "fac-dl-osmport", shelf: "lyrGrpTransport", order: 70, key: "osmport", rest: true },   // fac-dl-osmport.js
   { id: "dl-webcams", shelf: "lyrGrpTransport", order: 80, key: "webcams", rest: true, share: true, registry: ["webcams"] },   // dl-webcams.js
   { id: "wp-dl-crops", shelf: "lyrGrpAgri", order: 10, key: "crops", share: true, lazy: ["worldPacksBody"] },   // wp-dl-crops.js
-  { id: "bx-wbagremp", shelf: "lyrGrpAgri", order: 20, key: "wbagremp" },   // bx-wbagremp.js
-  { id: "bx-wbunder", shelf: "lyrGrpAgri", order: 30, key: "wbunder" },   // bx-wbunder.js
-  { id: "bx-wbagri", shelf: "lyrGrpAgri", order: 40, key: "wbagri", rest: true },   // bx-wbagri.js
+  { id: "bx-wbagremp", shelf: "lyrGrpAgri", order: 20, key: "wbagremp", measures: ["worldbank:SL.AGR.EMPL.ZS"] },   // bx-wbagremp.js
+  { id: "bx-wbunder", shelf: "lyrGrpAgri", order: 30, key: "wbunder", measures: ["worldbank:SN.ITK.DEFC.ZS"] },   // bx-wbunder.js
+  { id: "bx-wbagri", shelf: "lyrGrpAgri", order: 40, key: "wbagri", rest: true, measures: ["worldbank:AG.LND.AGRI.ZS"] },   // bx-wbagri.js
   { id: "gx-gxsoil", shelf: "lyrGrpAgri", order: 50, key: "gxsoil", rest: true, share: true },   // gx-gxsoil.js
   { id: "wp-dl-energy", shelf: "lyrGrpEnergy", order: 10, key: "energy", share: true, lazy: ["worldPacksBody"] },   // wp-dl-energy.js
-  { id: "bx-wbrenew", shelf: "lyrGrpEnergy", order: 20, key: "wbrenew" },   // bx-wbrenew.js
-  { id: "bx-wbelec", shelf: "lyrGrpEnergy", order: 30, key: "wbelec" },   // bx-wbelec.js
+  { id: "bx-wbrenew", shelf: "lyrGrpEnergy", order: 20, key: "wbrenew", measures: ["worldbank:EG.FEC.RNEW.ZS"] },   // bx-wbrenew.js
+  { id: "bx-wbelec", shelf: "lyrGrpEnergy", order: 30, key: "wbelec", measures: ["worldbank:EG.ELC.ACCS.ZS"] },   // bx-wbelec.js
   { id: "fac-dl-osmpower", shelf: "lyrGrpEnergy", order: 40, key: "osmpower", rest: true },   // fac-dl-osmpower.js
   { id: "fac-dl-osmextract", shelf: "lyrGrpEnergy", order: 50, key: "osmextract", rest: true },   // fac-dl-osmextract.js
   { id: "l9-dl-dams", shelf: "lyrGrpEnergy", order: 60, key: "dams", rest: true, share: true },   // l9-dl-dams.js
-  { id: "bx-wbcook", shelf: "lyrGrpEnergy", order: 70, key: "wbcook", rest: true },   // bx-wbcook.js
-  { id: "bx-wbelecuse", shelf: "lyrGrpEnergy", order: 80, key: "wbelecuse", rest: true },   // bx-wbelecuse.js
-  { id: "bx-wbrenelec", shelf: "lyrGrpEnergy", order: 90, key: "wbrenelec", rest: true },   // bx-wbrenelec.js
-  { id: "bx-wbenergy", shelf: "lyrGrpEnergy", order: 100, key: "wbenergy", rest: true },   // bx-wbenergy.js
+  { id: "bx-wbcook", shelf: "lyrGrpEnergy", order: 70, key: "wbcook", rest: true, measures: ["worldbank:EG.CFT.ACCS.ZS"] },   // bx-wbcook.js
+  { id: "bx-wbelecuse", shelf: "lyrGrpEnergy", order: 80, key: "wbelecuse", rest: true, measures: ["worldbank:EG.USE.ELEC.KH.PC"] },   // bx-wbelecuse.js
+  { id: "bx-wbrenelec", shelf: "lyrGrpEnergy", order: 90, key: "wbrenelec", rest: true, measures: ["worldbank:EG.ELC.RNEW.ZS"] },   // bx-wbrenelec.js
+  { id: "bx-wbenergy", shelf: "lyrGrpEnergy", order: 100, key: "wbenergy", rest: true, measures: ["worldbank:EG.USE.PCAP.KG.OE"] },   // bx-wbenergy.js
   { id: "dl-precip", shelf: "lyrGrpOthers", order: 10, key: "precip", label: "lyrPrecip", share: true, registry: ["precip"], sources: ["Open-Meteo"] },   // dl-precip.js
   { id: "dl-ec-wind", shelf: "lyrGrpOthers", order: 20, key: "ec-wind", share: true },   // dl-ec-wind.js
   { id: "beta-dl-volcash", shelf: "lyrGrpOthers", order: 30, share: true, lazy: ["volcanoLayers"] },   // beta-dl-volcash.js
   { id: "beta-dl-volchaz", shelf: "lyrGrpOthers", order: 40, share: true, lazy: ["volcanoLayers"] },   // beta-dl-volchaz.js
   { id: "beta-dl-volcso2", shelf: "lyrGrpOthers", order: 50, share: true, lazy: ["volcanoLayers"] },   // beta-dl-volcso2.js
-  { id: "beta-dl-unemp", shelf: "lyrGrpOthers", order: 60, share: true },   // beta-dl-unemp.js
-  { id: "beta-dl-internet", shelf: "lyrGrpOthers", order: 70, share: true },   // beta-dl-internet.js
-  { id: "beta-dl-precip", shelf: "lyrGrpOthers", order: 80, share: true },   // beta-dl-precip.js
+  { id: "beta-dl-unemp", shelf: "lyrGrpOthers", order: 60, share: true, measures: ["worldbank:SL.UEM.TOTL.ZS"] },   // beta-dl-unemp.js
+  { id: "beta-dl-internet", shelf: "lyrGrpOthers", order: 70, share: true, measures: ["worldbank:IT.NET.USER.ZS"] },   // beta-dl-internet.js
+  { id: "beta-dl-precip", shelf: "lyrGrpOthers", order: 80, share: true, measures: ["worldbank:AG.LND.PRCP.MM"] },   // beta-dl-precip.js
   { id: "beta-dl-spin", shelf: "lyrGrpOthers", order: 90, share: true },   // beta-dl-spin.js
   { id: "wp-dl-outbreaks", shelf: "lyrGrpOthers", order: 100, share: true, registry: ["outbreaks"], state: "outbreaks", commands: ["outbreaks.open", "outbreaks.close"], atlas: ["map.outbreaks"], sources: ["WHO Disease Outbreak News"] },   // wp-dl-outbreaks.js
   { id: "bx-heat", shelf: "lyrGrpOthers", order: 110 },   // bx-heat.js

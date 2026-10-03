@@ -150,3 +150,21 @@ API で返すのは Cloudflare だけで、それは §3 のとおり届かな�
 | RIPEstat（国をクリックしたときだけ） | 約 8 kB／国 |
 | 更新間隔 | **5 分**（上流の鮮度が実測 18 分なので、それより速く訊いても同じ答えが返る） |
 | 起動時の費用 | **レイヤー行 2 本ぶんだけ**（`js/net-health.js`）。測定側 `js/net-health-live.js` は行が最初に ON になるまで 1 バイトも降りてこない |
+
+---
+
+## 8. 障害の履歴 — IODA の `/outages/events` を読むだけ（保存しない）
+
+ニュースの国の日報（[`NEWS-EVENTS.md`](NEWS-EVENTS.md) §16.2）と Atlas の `news.outages` は、
+過去の期間の障害を **IODA 自身がまとめた出来事**（開始・継続時間・検知した信号・スコア）として読む:
+`/v2/outages/events?from=…&until=…&entityType=country[&entityCode=XX]`（`js/net-health-live.js` `outageEvents`）。
+実測 2026-10-03: 直近 7 日の国の出来事 149 件・応答は §2 と同じ「Copyright … All Rights Reserved」。
+
+- ⚠ **蓄積しない。** データの保存や再配布を許す条項は見つからなかった（API の封筒と、IODA UI の
+  リポジトリの LICENSE——後者はソフトウェアの許諾であってデータの許諾ではない）。だから履歴の表も
+  Edge Function も作らず、読者のブラウザが期間を指定して訊く。RIPE（§2）も同じく蓄積しない。
+  `tests/news-intelligence-checks.test.mjs` ⑪ が migration と Edge Function に IODA が現れないことを測る。
+- ⚠ **国は応答の `location`（`country/PY`）から読む**。名前からは読まない。地方の出来事は国の日報に混ぜない。
+- ⚠ **訊けなかったことは `ok:false`** で返し、空の一覧（「障害なし」）と区別する。
+- ニュースとの結び付けは **同じ国・障害の 12 時間前から 24 時間後に報じられた出来事**で、
+  画面も Atlas も「同時に報じられた。関係は示されていない」と言う。原因は §6 のとおりこのレイヤーは答えない。

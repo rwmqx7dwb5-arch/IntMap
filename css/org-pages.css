@@ -1,0 +1,71 @@
+/* ============================================================================
+ *  IntMap · the organisation pages, the contact form and the support page   (sales-channels)
+ * ----------------------------------------------------------------------------
+ *  Loaded after css/pages.css and css/landing.css (scripts/org-pages.mjs writes the order) and built
+ *  on their palette (--pg-*), so these pages are the same family as the landing pages in light and dark.
+ *  iOS-style: grouped fields on a rounded surface, 44-px targets, hairlines, no emoji.
+ * ========================================================================== */
+
+.og-form{
+  background:var(--pg-surface); border:1px solid var(--pg-line-soft); border-radius:var(--pg-radius);
+  box-shadow:var(--pg-shadow); padding:24px; max-width:820px; display:grid; gap:16px;
+}
+.og-row{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.og-field{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+.og-field label{ font-size:14px; font-weight:600; color:var(--pg-ink); }
+.og-form input:not([type="checkbox"]),.og-form select,.og-form textarea{
+  font:inherit; font-size:16px; color:var(--pg-ink); background:var(--pg-surface-2);
+  border:1px solid var(--pg-line); border-radius:12px; padding:10px 12px; min-height:44px; width:100%;
+  box-sizing:border-box; -webkit-appearance:none; appearance:none;
+}
+.og-form select{
+  background-image:linear-gradient(45deg,transparent 50%,var(--pg-mut) 50%),linear-gradient(135deg,var(--pg-mut) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%; background-size:5px 5px; background-repeat:no-repeat; padding-right:34px;
+}
+.og-form textarea{ resize:vertical; min-height:150px; line-height:1.5; }
+.og-form input:focus,.og-form select:focus,.og-form textarea:focus{ outline:none; border-color:var(--pg-accent); box-shadow:0 0 0 3px var(--pg-accent-soft); }
+.og-form [aria-invalid="true"]{ border-color:#d70015; }
+.og-hint{ margin:0; font-size:13px; color:var(--pg-mut); }
+.og-consent{ display:flex; gap:10px; align-items:flex-start; font-size:15px; color:var(--pg-ink-2); }
+.og-consent input{ width:20px; height:20px; margin-top:2px; flex:0 0 auto; accent-color:var(--pg-accent); }
+.og-actions{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.og-send{ border:none; font-family:inherit; cursor:pointer; }
+.og-send[disabled]{ opacity:.55; pointer-events:none; }
+.og-status{ margin:0; font-size:15px; color:var(--pg-ink-2); }
+.og-status.is-ok{ color:#248a3d; }
+.og-status.is-bad{ color:#d70015; }
+
+/* the field no person sees (supabase/functions/_shared/inquiry-shape.js HONEYPOT): off-screen rather
+   than display:none, because some form-filling bots skip fields that are not rendered */
+.og-trap{ position:absolute !important; left:-10000px !important; width:1px; height:1px; overflow:hidden; }
+
+.og-list{ max-width:820px; padding-left:20px; color:var(--pg-ink-2); }
+.og-list li{ margin:6px 0; }
+
+.og-stats{ margin-top:16px; }
+.og-supporters{ list-style:none; padding:0; margin:0; display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr)); gap:10px; }
+.og-supporters li{ background:var(--pg-surface); border:1px solid var(--pg-line-soft); border-radius:14px; padding:12px 14px; }
+.og-supporters li.og-muted{ grid-column:1 / -1; color:var(--pg-mut); background:transparent; border:none; padding:0; }
+.og-sup-name{ display:block; font-weight:600; color:var(--pg-ink); }
+.og-sup-when{ display:block; font-size:13px; color:var(--pg-mut); }
+.og-sup-note{ display:block; font-size:14px; color:var(--pg-ink-2); margin-top:4px; }
+
+@media (max-width:640px){
+  .og-row{ grid-template-columns:minmax(0,1fr); }
+  .og-form{ padding:18px; }
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .og-status.is-ok{ color:#30d158; }
+  :root:not([data-theme="light"]) .og-status.is-bad,:root:not([data-theme="light"]) .og-form [aria-invalid="true"]{ color:#ff453a; border-color:#ff453a; }
+}
+[data-theme="dark"] .og-status.is-ok{ color:#30d158; }
+[data-theme="dark"] .og-status.is-bad{ color:#ff453a; }
+[data-theme="dark"] .og-form [aria-invalid="true"]{ border-color:#ff453a; }
+
+/* the bar: five destinations, the language and the map. On a desktop the links sit right of the brand;
+   on a phone they scroll sideways inside their own strip instead of widening the page (landing.css's
+   rule: nothing may make the page wider than the screen). */
+.og-nav{ display:flex; align-items:center; gap:2px; flex:1 1 auto; min-width:0; justify-content:flex-end;
+  overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.og-nav::-webkit-scrollbar{ display:none; }
+@media (max-width:900px){ .og-nav{ justify-content:flex-start; } }

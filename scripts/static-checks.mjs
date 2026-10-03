@@ -13,7 +13,7 @@ import { execFile } from 'node:child_process';
 import { cpus } from 'node:os';
 import { join, extname, relative, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { jsReachability } from './js-reachability.mjs';
+import { jsReachability, standalonePages } from './js-reachability.mjs';
 import { codeOnly } from './code-only.mjs';
 import { SITE_TOKEN } from './site-url.mjs';
 import { outOfOrder } from './migration-order.mjs';
@@ -454,7 +454,7 @@ try {
        asks («is this module dead code whose feature silently never exists?») is answered by the page
        that loads them. Reading the pages rather than exempting the two filenames keeps the check
        honest: delete the <script> tag and the module goes back to failing. */
-    for (const page of ['sources.html', 'science.html', 'admin.html', 'privacy.html', 'terms.html']) {
+    for (const page of standalonePages(ROOT)) {   /* (sales-channels) discovered — scripts/js-reachability.mjs */
       const p = join(ROOT, page);
       if (!existsSync(p)) continue;
       for (const m of readFileSync(p, 'utf8').matchAll(/<script[^>]*\ssrc=["']\.\/(js\/[A-Za-z0-9_.-]+\.js)["']/g)) sib.add(m[1]);

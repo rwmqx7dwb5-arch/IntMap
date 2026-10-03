@@ -60,6 +60,10 @@
  *              those rows is switched (packageFile / packageExport below are the names, written once); a row
  *              without `pkg` is still implemented inside js/data-layers.js. Several rows may name one package
  *              (a family that shares its implementation). scripts/layer-packages.mjs holds the rest of the rule.
+ *    measures  (map-layer-system) the upstream SERIES the row paints, as `<publisher>:<series>` — `worldbank:SP.DYN.LE00.IN`,
+ *              `countrystats:gdppc`. Two rows measuring one series are ONE indicator to the reader (js/indicator-browser.js
+ *              offers it once and names both rows); the claim is held against the code that paints the row
+ *              (scripts/lib/indicator-series.mjs), and a series the code paints that no declaration claims is a problem too
  *
  *  ⚠ A LINK IS A CLAIM, AND EVERY CLAIM HAS A READER THAT CAN REFUSE IT. scripts/layer-descriptors.mjs
  *  checks each link against the registry that holds it (the literal registration in js/, the capability
@@ -75,7 +79,7 @@ export const KINDS = Object.freeze(['display']);
 /** the shelf whose rows are the map display, and nothing else (js/layers/_shelves.js) */
 const DISPLAY_SHELF = 'base';
 /** the facts that join the layer to the other registries */
-const LINK_FIELDS = Object.freeze(['registry', 'state', 'commands', 'atlas', 'sources', 'time', 'pkg']);
+const LINK_FIELDS = Object.freeze(['registry', 'state', 'commands', 'atlas', 'sources', 'time', 'pkg', 'measures']);
 const FIELDS = Object.freeze(['id', 'shelf', 'order'].concat(ROW_FIELDS.slice(1), LINK_FIELDS));
 
 const isStr = (v) => typeof v === 'string' && v.length > 0;
@@ -106,7 +110,7 @@ export function descriptorProblems(d, file, shelves) {
   for (const k of ['key', 'label', 'state']) if (k in d && !isStr(d[k])) at('`' + k + '` must be a non-empty string');
   if ('pkg' in d && !PKG_NAME.test(String(d.pkg))) at('`pkg` must be a lower-case kebab name (it names js/layer-pkg-<pkg>.js)');
   for (const k of ['rest', 'on', 'share', 'html']) if (k in d && d[k] !== true) at('`' + k + '` is written only when it is true (absent means false)');
-  for (const k of ['lazy', 'registry', 'commands', 'atlas', 'sources']) if (k in d && !isStrList(d[k])) at('`' + k + '` must be a list of distinct names');
+  for (const k of ['lazy', 'registry', 'commands', 'atlas', 'sources', 'measures']) if (k in d && !isStrList(d[k])) at('`' + k + '` must be a list of distinct names');
   if ('kind' in d && !KINDS.includes(d.kind)) at('`kind` is one of ' + KINDS.join(', ') + ' (absent means a layer)');
   if ((d.kind === 'display') !== (d.shelf === DISPLAY_SHELF)) at(d.kind === 'display'
     ? "is a display item (`kind: 'display'`) on the shelf `" + d.shelf + '` — the map display is the shelf `' + DISPLAY_SHELF + '`'

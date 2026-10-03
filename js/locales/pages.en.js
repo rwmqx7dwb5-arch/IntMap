@@ -440,6 +440,84 @@ window.IntMapPageI18N.define('en', {
             'The AI cannot report an action it did not perform; a partial run is marked as partial in the result.'
           ]]
         ]
+      },
+      {
+        id: 'ash', nav: 'Volcanic ash (if it erupted now)', h: 'Volcanic ash — if it erupted now',
+        blocks: [
+          ['tagline', 'A what-if over a hypothetical eruption on the live upper-air wind. Not a forecast: real ash advisories come from the Volcanic Ash Advisory Centres, and the SIGMET layer shows what is actually in force.'],
+          ['h3', 'The source'],
+          ['p', 'The eruption is described by the <b>eruption source parameters of Mastin et al. (2009)</b> — column height above the vent, duration and the mass fraction finer than 63 µm (m63) — for five of their eruption types (M1, M0, S1, S0, S3). The default type comes from the volcano\'s own dominant rock in the Smithsonian catalogue: basaltic families are mafic (M0), everything more evolved is silicic (S0), which is the paper\'s own default rule. Every value can be changed.'],
+          ['p', 'The mass eruption rate is <b>not chosen</b>: it follows from the column height through the same paper\'s fit, which is what Volcanic Ash Advisory Centres use to turn an observed height into a source strength.'],
+          ['tex', 'H \\;=\\; 2.00\\,V^{0.241}, \\qquad \\dot M \\;=\\; \\rho_{\\mathrm{DRE}}\\,V, \\quad \\rho_{\\mathrm{DRE}} = 2500\\ \\mathrm{kg\\,m^{-3}}'],
+          ['lim', 'The eruptions this fit is built from scatter around it by a factor of several. The mass eruption rate is the least certain number in the run, and the panel says so beside it.'],
+          ['h3', 'Transport'],
+          ['p', 'Particles are released over the eruption\'s duration with the <b>Suzuki (1983)</b> vertical profile (A = 4, λ = 1: most mass in the upper quarter of the column) and carried by the wind at their own height, from Open-Meteo\'s hourly forecast on eleven pressure levels from 850 to 50 hPa, in two nested grids. They fall at the terminal velocity of <b>Ganser (1993)</b> drag for non-spherical grains in the ICAO standard atmosphere, and spread by the deformation (Smagorinsky) diffusivity HYSPLIT uses (c = 0.14), computed from the wind field\'s own shear.'],
+          ['tex', 'K_h \\;=\\; \\tfrac{1}{\\sqrt 2}\\,(c\\,\\Delta)^2 \\sqrt{\\left(\\partial_x v + \\partial_y u\\right)^2 + \\left(\\partial_x u - \\partial_y v\\right)^2}'],
+          ['p', 'Two populations are followed, as operational practice separates them: <b>coarse grains (≥ 63 µm)</b> across the grain-size distribution make the ground deposit, and <b>distal fine ash</b> — 5 % of the erupted mass, the fraction the UK Met Office\'s NAME model used for Eyjafjallajökull (Webster et al. 2012) — makes the airborne cloud. Random numbers are seeded; the seed is printed, and the same seed on the same wind repeats a run exactly.'],
+          ['h3', 'What is reported'],
+          ['ul', [
+            'Ground deposit in mm (deposit density 1000 kg/m³ assumed, so 1 kg/m² = 1 mm), the area under ≥ 0.1 / 1 / 10 / 100 mm, and the thickest well-sampled cell with its Monte-Carlo error (±1/√n).',
+            'The named towns of the GeoNames gazetteer standing under ≥ 1 mm, and their population — the population of those places, not of everyone under the deposit (the same join the ShakeMap exposure uses).',
+            'The cloud hour by hour in the London VAAC flight-level bands (SFC–FL200, FL200–350, FL350–550) and concentration thresholds (0.2 / 2 / 4 mg/m³).',
+            'IATA-coded aerodromes (OpenStreetMap) under the low-level cloud or the ≥ 0.1 mm deposit, with the first hour the cloud reaches them.',
+            'The deposit and the cloud as two datasets in the analysis registry, with the run\'s arguments and seed as their provenance.'
+          ]],
+          ['lim', 'Assumed, not measured: the grain-size spread (Gaussian in φ, σφ = 2, median set from m63), grain density (1000 kg/m³ for coarse pumice rising to 2500 kg/m³ for fine glass), sphericity 0.7, and the ICAO heights of the pressure levels. Not modelled: aggregation (the non-distal fine ash is reported as mass the run does not place), rain-out, a wind-bent plume and the spreading umbrella cloud. Mass that leaves the domain or rises above 50 hPa is reported, not dropped.']
+        ]
+      },
+      {
+        id: 'volcano', nav: 'Volcano status', h: 'Volcano status and history',
+        blocks: [
+          ['p', 'The catalogue is the Smithsonian <b>Global Volcanism Program</b> (Holocene volcanoes plus the Pleistocene centres observatories actively report on). The card\'s history — the VEI distribution, the largest recorded VEI, repose intervals since 1500 — is computed from <b>that volcano\'s own eruption record</b>, not from a world average. Repose intervals use only the observational era, because older dates are radiocarbon and tephra ages with century-scale resolution.'],
+          ['p', 'The current status is a <b>ladder of agencies</b>, each in its own vocabulary: USGS (aviation colour code and alert level), JMA (噴火警戒レベル, joined to the GVP volcano that contains JMA\'s warning unit), and the GVP weekly report (an activity statement, not a level). They are never merged into one number; a volcano no agency reports on is said to have no published status, never drawn as calm.'],
+          ['p', 'The airspace is what aviation has <b>in force</b>: volcanic-ash SIGMETs with the height band and motion they were issued with, read every 60 seconds and expired by the clock. Satellite SO₂ is the OMPS upper-troposphere/stratosphere product from NASA GIBS.'],
+          ['lim', 'Hazard zones are drawn only where they exist as machine-readable GIS (USGS, seven Californian volcanic regions). For every other volcano the card says none is published — no modelled circle is drawn. Details: <a href="https://github.com/rwmqx7dwb5-arch/IntMap/blob/main/docs/VOLCANO-INTELLIGENCE.md">docs/VOLCANO-INTELLIGENCE.md</a>.']
+        ]
+      },
+      {
+        id: 'radiation', nav: 'Radioactive plume', h: 'Radioactive plume',
+        blocks: [
+          ['p', 'A Lagrangian particle model: a release is carried by the wind at the particles\' own height (Open-Meteo 10 / 80 / 180 m forecast, or the ERA5 archive for a past date, interpolated in log z) on two nested grids, with boundary-layer turbulence scaled from the friction velocity and the mixing depth (Hanna 1982), dry deposition by velocity, wet scavenging Λ = A·I<sup>B</sup> from the hourly rain, and radioactive decay.'],
+          ['p', 'The <b>source term is a table of accident × nuclide</b> (Chernobyl and Fukushima Daiichi from their published assessments, with the reported range), because one accident has no single activity — Chernobyl\'s I-131 is twenty times its Cs-137. The release height is a control, because it is the largest single control on where material lands.'],
+          ['p', 'Ground shine uses the Federal Guidance Report 15 (2025) adult coefficients with the parent\'s short-lived progeny added and the skin term removed; the first-year dose is a time integral over decay and environmental weathering. Statutory zones (37 / 185 / 555 / 1480 kBq/m²) are shown only for nuclides they are written for (Cs-137, Sr-90).'],
+          ['lim', 'A peak cell fed by too few particles prints no number, and every peak carries its Monte-Carlo error. Material still airborne or outside the domain at the end is reported as such, never put on the ground. Not HYSPLIT or FLEXPART: no chemistry, no humidity-dependent growth, no terrain effects, no inhalation or thyroid dose. Sources and every coefficient: <a href="https://github.com/rwmqx7dwb5-arch/IntMap/blob/main/docs/RADIATION-MODEL.md">docs/RADIATION-MODEL.md</a>.']
+        ]
+      },
+      {
+        id: 'pandemic', nav: 'Pandemic', h: 'Pandemic simulator',
+        blocks: [
+          ['p', 'A country-level <b>stochastic SEIR metapopulation</b>: one well-mixed set of compartments per country, with Erlang-staged latent and infectious periods (the latent period — infection to infectious — not the incubation period), Poisson draws for small transitions so an outbreak can die out by chance, and deterministic arithmetic above 30 expected transitions. Population is conserved exactly; the model never creates or loses people.'],
+          ['p', 'Where an outbreak goes next is a <b>distribution</b>: each ordered pair of countries carries a weight from scheduled-airline infrastructure (OurAirports) decaying with distance (e-folding 3,200 km), real land borders weighted by population, and the OpenFlights route counts between countries.'],
+          ['tex', 'w_{ij} \\;=\\; a_j\\,e^{-d_{ij}/3200\\,\\mathrm{km}} \\;+\\; 2.5\\;\\mathbb{1}[\\text{border}_{ij}]\\,\\left(\\tfrac{P_j}{\\bar P}\\right)^{0.7}'],
+          ['p', 'Five pathogen presets (influenza, COVID-19, SARS, Ebola, measles) name the source of each parameter. A run is <b>one draw</b>: the panel\'s ensemble, and Atlas with <code>runs</code>, repeat the same question with consecutive seeds and report the median, the 10th–90th percentile band and how often each ending happened.'],
+          ['lim', 'Educational, not a forecast. The airline term is infrastructure and a 2014 route snapshot — not seats, flights or passengers — and the model never calls it a traffic network.']
+        ]
+      },
+      {
+        id: 'weather', nav: 'Weather models', h: 'Weather models (ECMWF and others)',
+        blocks: [
+          ['p', 'The weather rasters and the animated wind are drawn from <b>the same decoded field</b>: the ECMWF IFS HRES model at 0.08° (≈ 9 km) served as native tiles by Open-Meteo (CC BY 4.0). The colour, the particles and the value under the cursor therefore come from one variable at one valid time. The model run is resolved from its reference time and the valid time the slider asks for, so every forecast hour the feed publishes is reachable.'],
+          ['p', 'Other forecast models are offered through the same registry and say which model and which run a picture is. A layer a model does not publish is not offered for that model rather than drawn empty.'],
+          ['lim', 'A forecast is the model\'s statement, not an observation; the legend names the model and the valid time. Point forecasts elsewhere in the app (the plume and ash models\' winds) come from Open-Meteo\'s point API, which is a different product from these tiles.']
+        ]
+      },
+      {
+        id: 'aviation', nav: 'Aircraft, ships & drones', h: 'Aircraft, ships and drones',
+        blocks: [
+          ['p', '<b>Aircraft</b> are ADS-B positions read once by the server (adsb.lol, OpenSky) and handed to every reader as one snapshot, decoded off the page thread and drawn on the GPU. Between snapshots a position is extrapolated along its reported track for at most 3 seconds — never further, so a turn is not drawn as a straight line.'],
+          ['p', '<b>Ships</b> are AIS position reports collected by the server from aisstream.io and shared the same way; a reader with their own key can still connect live from the browser. An empty answer distinguishes «no ship reported here» from «the feed did not answer».'],
+          ['p', '<b>Drone flight planning</b> samples the real elevation model along every leg and answers distance, time, the ground-clearance profile, the highest altitude the route demands, energy, and each point where the plan breaks a limit. Altitudes are stored with the reference they were typed in (AGL or AMSL), because drone rules are written in AGL and terrain is in AMSL. A <b>flight-path animation</b> between two places follows the great circle.'],
+          ['lim', 'ADS-B and AIS are what transponders broadcast and receivers happened to hear: coverage gaps are gaps in the network, not empty sky or sea. Routes, schedules and passenger numbers are not in any of these sources. Details: <a href="https://github.com/rwmqx7dwb5-arch/IntMap/blob/main/docs/AVIATION-ARCHITECTURE.md">docs/AVIATION-ARCHITECTURE.md</a>, <a href="https://github.com/rwmqx7dwb5-arch/IntMap/blob/main/docs/SHIPS-ARCHITECTURE.md">docs/SHIPS-ARCHITECTURE.md</a>.']
+        ]
+      },
+      {
+        id: 'ballistic', nav: 'Ballistic trajectory', h: 'Ballistic trajectory',
+        blocks: [
+          ['p', 'A ballistic arc between two points is a <b>Kepler ellipse</b> through the launch and impact radii. The minimum-energy trajectory has the eccentricity that makes the launch speed smallest for the ground range; lofted and depressed trajectories move the eccentricity above and below it. Speed comes from the vis-viva equation and the flight time from Kepler\'s equation, symmetric about apogee; the ground track adds the Earth\'s rotation.'],
+          ['tex', 'v^2 \\;=\\; \\mu\\left(\\tfrac{2}{r} - \\tfrac{1}{a}\\right), \\qquad v_{\\mathrm{impact}} \\;=\\; v_{\\mathrm{entry}}\\,\\exp\\!\\left(-\\frac{\\rho_0 H}{2\\beta \\sin\\gamma}\\right)'],
+          ['p', 'Re-entry drag uses the <b>Allen–Eggers</b> closed form with a ballistic coefficient β = 8000 kg/m², ρ₀ = 1.225 kg/m³ and a scale height of 7.16 km.'],
+          ['lim', 'Burn-out is taken at the surface and the boost phase is not modelled; β is one value for every vehicle. Effect rings, when drawn, are scaling laws for an idealised burst, not a damage assessment.']
+        ]
       }
     ]
   }

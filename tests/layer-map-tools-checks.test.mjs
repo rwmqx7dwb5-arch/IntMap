@@ -382,7 +382,9 @@ test('R307 ⑨ a tool row asks for its own point every time', () => {
     'no remembered point and no pin fallback is left in this file for it to come back through');
   /* …and the half of #R299 that must survive: the rows that need no point are still not asked */
   const rows = (s.match(/run:\(\)=>_askPoint\(/g) || []).length;
-  assert.equal(rows, 4, 'exactly the four rows that cannot answer without a coordinate');
+  /* (science-instruments) five: los · reach · sun · nightSky, and sim.ashPlume — from this list there is no
+     volcano under the cursor, so the tapped point becomes the vent (the row's own comment in js/map-ui.js) */
+  assert.equal(rows, 5, 'exactly the five rows that cannot answer without a coordinate');
   assert.ok(/id:'sim\.terrainWater'/.test(s) && !/sim\.terrainWater'[\s\S]{0,400}?_askPoint/.test(s),
     'the terrain/water simulator opens on the view rectangle and is not asked');
   /* #R305: one gesture, one voice — the shared bar stays silent for a caller that speaks */

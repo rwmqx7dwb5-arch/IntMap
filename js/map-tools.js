@@ -1068,6 +1068,14 @@ export function isochrone(HOST){
       let drew=false; try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); drew=!!(layersOK&&GE().layers.hasSource(SRC)); }catch(_){ drew=false; }
       if(!drew){ renderPanel('err'); return {ok:false,reason:'render'}; }
       try{ if(polys.length&&typeof turf!=='undefined'){ const bb=turf.bbox({type:'FeatureCollection',features:polys}); if(bb.every(isFinite)&&bb[2]>bb[0]) GE().camera.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:56,duration:900,maxZoom:14}); } }catch(_){}
+      /* (science-instruments) the contours as a dataset — the same door every simulator's output takes
+         (js/sim-datasets.js), so 「30 分圏にある病院」 is a query over the reached area. Imported on use:
+         this file is on the boot path and the registry is not. */
+      try{ const _c={lng:center.lng,lat:center.lat}, _m=minutes.slice(), _cost=cost;
+        import('./sim-datasets.js').then(m=>m.registerSimOutput({ sim:'isochrone', version:'valhalla',
+          title:LL('Reachable area — ','到達圏 — ')+_m.join('/')+' min · '+_cost, file:'IntMap · Valhalla isochrone (valhalla1.openstreetmap.de)',
+          params:{ lng:_c.lng, lat:_c.lat, minutes:_m, costing:_cost, denoise:0.5, generalize:60 },
+          features:polys.map(f=>({type:'Feature',geometry:f.geometry,properties:{minutes:+f.properties.contour,costing:_cost}})) })).catch(()=>{}); }catch(_){}
       lastMinutes=minutes.slice(); renderPanel(); return {ok:true,minutes,mode:cost}; }
     function ensurePanel(){ if(panel) return panel;
       panel=document.createElement('div'); panel.id='iso-panel';

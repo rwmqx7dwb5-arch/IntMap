@@ -47,8 +47,8 @@
 /** @typedef {{ key:string, cause:string, gen:number, restoring:boolean }} ChangeEvent */
 
 /* ══ THE SCHEMA ══════════════════════════════════════════════════════════════════════════════════
-   ⚠ ORDER IS THE ADDRESS BAR'S ORDER: `#v=…&l=…&d=…&tt=…&cmp=…&ct=…&sat=1&t3=1&s=…`, the order js/map-ui.js
-   concatenated since #R211. It is also the restore order — every field but the view is staged on a
+   ⚠ ORDER IS THE ADDRESS BAR'S ORDER: `#v=…&l=…&d=…&tt=…&cmp=…&ct=…&sat=1&t3=1&s=…&title=…&note=…`, the order js/map-ui.js
+   concatenated since #R211 (the caption appended after it, map-postcard). It is also the restore order — every field but the view is staged on a
    timer, and two steps at the same instant (the isobars' switch and the clock, both at 900 ms) fire in
    the order they were scheduled, which is this order, as before.
    `restore` — 'always': applied on every open, a plain reload included (the view; #R42b);
@@ -86,6 +86,18 @@ export const SCHEMA = Object.freeze([
     doc: '3-D terrain on or off' },
   { key: 'sims',    params: ['s'],         restore: 'full',   at: [1500, 4000],       session: null,     owner: 'js/map-ui.js',
     doc: 'every simulator\'s own inputs (IntMapShareState), one opaque base64url parameter' },
+  /* (map-postcard) THE LINK'S MEANING, NOT ONLY ITS STATE. A link carried where the map is and what it draws, and
+     nothing of why it was sent — the sentence the sender would have typed beside it in a chat stayed in the chat and
+     was lost the moment the link was forwarded. Two plain-text fields, written by the share panel (or Atlas) and shown
+     to whoever opens the link as a quiet caption over the map, in the document's title, in an embed, and on the map
+     postcard (js/map-recorder.js). Last in the address bar, so every link written before them is byte-identical.
+     ⚠ 'always', not 'full': a caption is text, it cannot be the layer that brought the app down (the reason a
+     crashed reload falls back to the view alone), so a reload never loses what the link says. Applied at the first staged
+     instant (the base map's, 300 ms): it depends on nothing, and the synchronous step stays the camera's alone. */
+  { key: 'title',   params: ['title'],     restore: 'always', at: [300],              session: null,     owner: 'js/map-ui.js',
+    doc: 'the link\'s title — plain text, at most TITLE_MAX characters; absent is «no title»' },
+  { key: 'note',    params: ['note'],      restore: 'always', at: [300],              session: null,     owner: 'js/map-ui.js',
+    doc: 'the sender\'s note — plain text, at most NOTE_MAX characters; absent is «no note»' },
   { key: 'toggles', params: [],            restore: null,     at: [],                 session: 'layers', owner: 'js/session-tabs.js',
     doc: 'every ticked row of the layer panel, base toggles included — the session\'s set, a superset of `layers` (see the note at `toggles` in js/session-tabs.js)' },
 ]);
@@ -96,6 +108,23 @@ export const PARAMS = Object.freeze(SCHEMA.reduce((a, f) => a.concat(f.params), 
 /* (share-embed-distribution) the restore's closing step: 3.5 s, after the last layer pass (3.2 s) and before the
    simulators' late pass (4 s) — a link that arrives inside it is queued, not dropped (js/map-ui.js). */
 export const SETTLE_MS = 3500;
+/* (map-postcard) how long a caption may be. ESTIMATES, chosen for the places the text is read, not measured
+   thresholds: a title is a headline — 100 characters is two lines of the postcard's title at its smallest size in
+   the 1200 × 630 frame (js/map-recorder.js layoutFrame) — and a note is the length of a post, 280 characters (the
+   unit X / Twitter set), which is what a sender writes beside a link. They bound a HAND-MADE link too: the codec
+   cuts there on the way in, so an address cannot push a page of text into the caption, the title bar or a picture.
+   Expire if the postcard's type sizes change. */
+export const TITLE_MAX = 100;
+export const NOTE_MAX = 280;
+/** a caption's text as the codec keeps it: control characters (and the bidirectional overrides that would let a
+    link reorder the words around it) become spaces, runs of white space become one, trimmed, and cut at `max`
+    characters — characters, not UTF-16 units, so a cut never splits an emoji or a surrogate pair.
+    @param {any} s @param {number} max @returns {string} */
+export function captionText(s, max) {
+  const t = String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f-\u009f\u200e\u200f\u202a-\u202e\u2066-\u2069\u2028\u2029]/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+  const a = Array.from(t); return a.length > max ? a.slice(0, max).join('').trim() : t;
+}
 
 /* ══ THE CODEC — pure, no DOM, no clock ═══════════════════════════════════════════════════════════ */
 
@@ -118,7 +147,7 @@ export function carries(hash) { return /[#&]v=/.test(String(hash || '')); }
 /** the address-bar form → the state tree. Fields the link does not name are given the value their
     ABSENCE states (no `tt` is «now», no `l` is «no data layers», no `cmp` is «no window»; no `d` is null, «what `l` names», see `display`) — a full
     restore applies the whole state a link describes (share-embed-distribution).
-    @param {string} hash @returns {{ view: ViewValue|null, layers: string[], display: (string[]|null), time: TimeValue, compare: CompareValue, base: ('map'|'sat'), terrain: boolean, sims: any }} */
+    @param {string} hash @returns {{ view: ViewValue|null, layers: string[], display: (string[]|null), time: TimeValue, compare: CompareValue, base: ('map'|'sat'), terrain: boolean, sims: any, title: string, note: string }} */
 export function decode(hash) {
   const H = String(hash || '');
   let view = null;
@@ -143,14 +172,19 @@ export function decode(hash) {
     try { at = ct != null ? decodeURIComponent(ct) : ''; } catch (_) { at = ''; }
     compare = { xray: cmp === 'x', at }; }
   const s = param(H, 's');
+  /* (map-postcard) a caption is text the link's author typed: decoded, then cleaned and cut by the same rule the writer
+     applies (captionText) — a malformed escape is «no caption», never an exception */
+  const text = (/** @type {string} */ name, /** @type {number} */ max) => { const r = param(H, name); if (r == null) return '';
+    try { return captionText(decodeURIComponent(r), max); } catch (_) { return ''; } };
   return { view, layers, display, time, compare,
     base: /[#&]sat=1/.test(H) ? 'sat' : 'map',
     terrain: /[#&]t3=1/.test(H),
-    sims: s ? unpackObject(s) : null };
+    sims: s ? unpackObject(s) : null,
+    title: text('title', TITLE_MAX), note: text('note', NOTE_MAX) };
 }
 
 /** the state tree → the address-bar form. '' when there is no view (nothing to link to).
-    @param {{ view?: ViewValue|null, layers?: string[], display?: (string[]|null), time?: TimeValue, compare?: CompareValue, base?: string, terrain?: boolean, sims?: any }} st
+    @param {{ view?: ViewValue|null, layers?: string[], display?: (string[]|null), time?: TimeValue, compare?: CompareValue, base?: string, terrain?: boolean, sims?: any, title?: string, note?: string }} st
     @returns {string} */
 export function encode(st) {
   try {
@@ -167,6 +201,8 @@ export function encode(st) {
     if (st.base === 'sat') h += '&sat=1';
     if (st.terrain) h += '&t3=1';
     const s = st.sims ? packObject(st.sims) : ''; if (s) h += '&s=' + s;
+    const ti = captionText(st.title, TITLE_MAX); if (ti) h += '&title=' + encodeURIComponent(ti);
+    const no = captionText(st.note, NOTE_MAX); if (no) h += '&note=' + encodeURIComponent(no);
     return h;
   } catch (_) { return ''; }
 }
@@ -226,7 +262,7 @@ function stage(f, o, value, ctx) {
 }
 
 export const MapState = {
-  SCHEMA, PARAMS, SETTLE_MS, encode, decode, carries,
+  SCHEMA, PARAMS, SETTLE_MS, encode, decode, carries, TITLE_MAX, NOTE_MAX, captionText,
 
   /** own(key, { read, apply, prepare }) — the module that decides a field. Re-registering replaces.
       A restore that reached this field before its owner existed hands its value over now (if that

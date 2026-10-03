@@ -1439,6 +1439,17 @@
     .acp-badge.sunlit{ color:#8a6d00; background:rgba(255,210,63,0.22); }
     .acp-badge.ecl{ color:var(--text-muted); background:rgba(128,128,128,0.16); }
     @media (max-width:768px){ .sat-popup{ width:calc(100vw - 24px); } }
+    /* (place-dossier) PLACE PROFILE card (js/place-dossier.js): a .country-popup drawn with the aircraft card's .acp-*
+       rows, like the satellite card. A row that cannot be read keeps its place and says why (.pd-why). */
+    .pd-popup{ width:360px; }
+    .pd-sub, .pd-meta, .pd-why{ color:var(--text-muted); font-weight:400; }
+    .pd-sub{ font-size:12px; margin:-4px 0 4px; }
+    .pd-meta{ display:block; font-size:10.5px; }
+    .pd-actions{ display:flex; gap:8px; margin-top:14px; }
+    .pd-actions button{ flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:9px 8px; border:none; border-radius:10px; background:var(--input-bg); color:var(--text-main); font-weight:600; font-size:12px; cursor:pointer; }
+    .pd-actions .primary{ background:var(--primary-fill); color:#fff; }
+    .pd-actions button:disabled{ opacity:.45; }
+    @media (max-width:768px){ .pd-popup{ width:calc(100vw - 24px); } .pd-actions button{ min-height:44px; font-size:14px; } }
     /* (#R353) VOLCANO INTELLIGENCE card (js/volcano-intel.js). Same .country-popup shell and the same
        .acp-* row vocabulary as the aircraft and satellite cards — it reuses that vocabulary rather
        than inventing a third one — so only the shapes neither of those cards has are described here:
@@ -1484,6 +1495,33 @@
     .volc-er-v.big{ color:#e0332f; font-weight:700; }
     .volc-er-e{ flex:0 0 116px; text-align:right; font-size:10px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     @media (max-width:768px){ .volc-popup{ width:calc(100vw - 24px); } .volc-er-e{ display:none; } }
+    /* (science-instruments) 「いま噴火したら」 — the volcanic-ash what-if panel (js/ash-plume.js). Opaque card like
+       #rad-panel; on a phone it is a bottom sheet so the map above it stays the answer. */
+    .ash-panel{ position:fixed; right:16px; top:80px; width:min(348px,92vw); max-height:min(80vh,780px); display:none; flex-direction:column; z-index:calc(var(--z-popup) + 212); background:var(--card-bg,#1c1c1e); color:var(--text-main); border:1px solid var(--glass-border,rgba(128,128,128,0.3)); border-radius:16px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,0.45); }
+    .ash-panel .ash-head{ display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--input-bg); cursor:move; font-size:13px; font-weight:700; }
+    .ash-panel .ash-title{ flex:1; }
+    .ash-panel .ash-x{ border:none; background:transparent; color:var(--text-muted); cursor:pointer; padding:2px; display:flex; }
+    .ash-panel .ash-body{ padding:10px 12px 12px; overflow-y:auto; display:flex; flex-direction:column; gap:7px; font-size:12px; }
+    .ash-panel .ash-where{ font-size:12.5px; font-weight:600; }
+    .ash-panel .ash-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .ash-panel .ash-lb{ display:flex; flex-direction:column; gap:3px; font-size:10.5px; color:var(--text-muted); }
+    .ash-panel .ash-in{ width:100%; box-sizing:border-box; height:30px; padding:0 8px; border-radius:8px; border:1px solid var(--glass-border,rgba(128,128,128,0.28)); background:var(--input-bg); color:var(--text-main); font-size:12px; }
+    .ash-panel .ash-hint{ font-size:10.5px; color:var(--text-muted); line-height:1.45; }
+    .ash-panel .ash-go{ height:36px; border:none; border-radius:10px; background:var(--primary-fill); color:#fff; font-size:12.5px; font-weight:700; cursor:pointer; }
+    .ash-panel .ash-go[disabled]{ background:var(--input-bg); color:var(--text-muted); cursor:default; }
+    .ash-panel .ash-bar{ height:4px; border-radius:2px; background:var(--input-bg); overflow:hidden; }
+    .ash-panel .ash-bar > i{ display:block; height:100%; background:var(--primary-fill); transition:width .2s; }
+    .ash-panel .ash-sw{ display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+    .ash-panel .ash-seg{ display:flex; background:var(--input-bg); border-radius:9px; padding:2px; gap:2px; }
+    .ash-panel .ash-segb{ flex:1; border:none; background:transparent; color:var(--text-muted); font-size:11px; font-weight:600; padding:5px 0; border-radius:7px; cursor:pointer; }
+    .ash-panel .ash-segb.on{ background:var(--card-bg,#1c1c1e); color:var(--text-main); box-shadow:0 1px 3px rgba(0,0,0,0.25); }
+    .ash-panel .ash-time{ display:flex; align-items:center; gap:8px; }
+    .ash-panel .ash-play{ width:30px; height:30px; flex:0 0 auto; border-radius:15px; border:none; background:var(--primary-fill); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+    .ash-panel .ash-slider{ flex:1; accent-color:var(--primary-fill); }
+    .ash-panel .ash-tl{ font-size:11px; font-variant-numeric:tabular-nums; min-width:48px; text-align:right; }
+    .ash-panel .ash-legend{ display:flex; flex-wrap:wrap; gap:10px; font-size:10.5px; color:var(--text-muted); }
+    .ash-panel .ash-foot{ font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:4px; }
+    @media (max-width:768px){ .ash-panel{ left:0; right:0; top:auto; bottom:0; width:100%; max-height:62vh; border-radius:16px 16px 0 0; } }
     /* the layer legend: the colour-mode switch, and the key for whichever mode is on */
     .volc-key{ display:flex; flex-direction:column; gap:4px; margin-top:6px; font-size:11px; color:var(--text-main); }
     .volc-modes{ display:flex; gap:3px; margin-bottom:3px; }
@@ -3056,6 +3094,28 @@
     .news-timeline.collapsed.active .ntl-open-txt b,
     .news-timeline.collapsed.active .ntl-open-txt small,
     .news-timeline.collapsed.active .ntl-open-ico{ color:#fff !important; }
+    /* ══ (first-impression) THE YEAR RAIL BESIDE THE CHRONOS BUTTON — the axis on the first screen ══════════════
+       Built by js/news-timeline.js buildPeek(). A mark's position is the rail's own (`--p`, the slider's mapping);
+       its tick is drawn from the mark itself so the two cannot part. Shown only while the panel is shut (the open
+       panel has the full slider) and only on a desktop: on a phone the collapsed form is hidden outright and the
+       clock in the sheet head is the entry (the (mobile-shell) rule `.news-timeline.collapsed{display:none}`). */
+    .ntl-peek{ display:none; }
+    @media(min-width:769px){
+      /* one colour for the words, the ticks and the line (currentColor), one for the dot (--pk) — the accent state swaps two values */
+      .news-timeline.collapsed .ntl-peek{ display:block; flex:0 0 auto; width:clamp(220px,30vw,360px); padding:0 16px 0 10px; border-left:1px solid rgba(128,128,128,.2); color:var(--text-muted); --pk:var(--primary-color); }
+      .ntl-peek-track{ position:relative; height:100%; min-height:38px; }
+      .ntl-peek-track::before{ content:""; position:absolute; inset:11px 0 auto; height:3px; border-radius:2px; background:currentColor; opacity:.3; }
+      /* --t: where the words hang from the tick — centred, and inward at the two ends (the floor's label spilled over the button) */
+      .ntl-peek-m{ position:absolute; left:var(--p); top:0; bottom:0; transform:translateX(var(--t,-50%)); display:flex; align-items:flex-end; padding:0 3px 3px; border:none; background:none; color:inherit; font-size:10.5px; line-height:1; white-space:nowrap; cursor:pointer; }
+      .ntl-peek-m::before{ content:""; position:absolute; left:calc(var(--t,-50%) * -1); top:8px; width:1.5px; height:9px; margin-left:-.75px; background:currentColor; }
+      .ntl-peek-m:first-child{ --t:0%; } .ntl-peek-m[data-year="now"]{ --t:-100%; }
+      .ntl-peek-m:hover, .ntl-peek-m.on{ color:var(--pk); }
+      /* a mark whose label would sit on its neighbour's keeps its tick and its target, and drops only the words */
+      .ntl-peek-m.thin{ font-size:0; padding:0 5px; }
+      .ntl-peek-here{ position:absolute; left:var(--p); top:8px; width:9px; height:9px; margin-left:-4.5px; border-radius:50%; background:var(--pk); pointer-events:none; transition:left .25s; }
+      .news-timeline.collapsed.active .ntl-peek{ color:#fffd; --pk:#fff; border-color:#fff6; }
+      .news-timeline.collapsed .ntl-open{ width:auto; flex:0 0 auto; }
+    }
     .news-timeline:not(.collapsed){ border-radius:18px; padding:8px 12px; }
     .ntl-toggle{ width:38px; height:38px; border-radius:999px; font-size:16px; }
     .ntl-body{ padding:2px 6px; gap:7px; }
@@ -5785,3 +5845,70 @@ body.sidebar-translucent .pg-panel, body.sidebar-glass2 .pg-panel{
    letter does, and never be squeezed by a flex row. A static `[data-icon]` slot is filled by hydrateIcons(). */
 .im-icon{ display:inline-block; flex:none; vertical-align:-0.22em; overflow:visible; }
 [data-icon]{ display:inline-flex; align-items:center; justify-content:center; line-height:1; vertical-align:middle; }
+
+/* (map-layer-system) the Chronos panel's «Read this year» button. The year book and the indicator browser carry their own
+   stylesheets (js/year-book.js, js/indicator-browser.js), injected the first time they draw — off the start-up path */
+.ntl-yb{ margin-top:8px; width:100%; padding:8px 10px; border-radius:10px; border:1px solid var(--glass-border,rgba(128,128,128,0.25)); background:var(--input-bg); color:var(--text-main); font-size:12.5px; font-weight:650; cursor:pointer; min-height:44px; }   /* a finger target (the phone shell's 44 px rule, tests/ui-a11y-polish.spec.js ③) */
+/* ══ (news-intelligence) freshness · the news pulse legend · the country brief · companies in the news ══════════
+   js/freshness.js, js/news-intel.js, js/news-events.js (the ingest badge), js/company-panel.js (the News tab). */
+.im-fresh{ display:inline-flex; align-items:center; gap:6px; font-size:12px; line-height:1.4; color:var(--text-muted); }
+.im-fresh-dot{ width:7px; height:7px; border-radius:50%; flex:0 0 auto; background:#34c759; }
+.im-fresh-stale .im-fresh-dot{ background:#ff9500; }
+.im-fresh-stale{ color:var(--text-main); font-weight:600; }
+.im-fresh-unverified .im-fresh-dot, .im-fresh-unknown .im-fresh-dot{ background:transparent; border:1.5px solid var(--text-muted); width:5px; height:5px; }
+.news-ingest-health{ margin-top:8px; display:flex; flex-wrap:wrap; gap:4px 10px; align-items:center; }
+.news-ingest-note{ font-size:12px; color:var(--text-muted); }
+.nint-box{ margin-top:6px; font-size:12px; display:flex; flex-direction:column; gap:6px; }
+.nint-seg{ display:flex; width:100%; }
+.nint-seg .ios-segment-btn{ flex:1 1 0; min-height:30px; font-size:12px; }
+.nint-cat{ width:100%; font-size:12px; padding:5px 6px; border-radius:8px; border:1px solid var(--glass-border,rgba(128,128,128,0.28)); background:var(--input-bg); color:var(--text-main); min-height:32px; }
+.nint-ramp{ height:8px; border-radius:4px; background:linear-gradient(90deg,#e7e3f7,#a99ae0,#6a4fc9,#35208a); }
+.nint-ramp-rising{ background:linear-gradient(90deg,#fde8c8,#f6b26b,#e06c2c,#a32a12); }
+.nint-ramp-lbl{ display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-muted); margin-top:2px; }
+.nint-top{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; }
+.nint-top button{ width:100%; display:flex; align-items:center; gap:8px; padding:6px 8px; min-height:34px; border:0; border-radius:8px; background:var(--input-bg); color:var(--text-main); font-size:12px; cursor:pointer; text-align:left; }
+.nint-top-name{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.nint-top-n{ font-weight:650; font-variant-numeric:tabular-nums; }
+.nint-top-d{ min-width:42px; text-align:right; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+.nint-cov{ font-size:12px; color:var(--text-muted); line-height:1.45; }
+.nint-popup{ width:min(380px, calc(100vw - 24px)); max-height:min(78vh, 720px); overflow-y:auto; }
+.nint-popup .country-popup-header{ flex-direction:column; align-items:flex-start; gap:2px; }
+.nint-h-title{ font-size:16.5px; font-weight:650; line-height:1.25; }
+.nint-h-sub{ font-size:12px; color:var(--text-muted); }
+.nint-popup .nint-seg{ margin:6px 0 10px; }
+.nint-stats{ display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 8px; margin-bottom:8px; }
+.nint-big{ font-size:30px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums; }
+.nint-big-lbl{ font-size:12px; color:var(--text-muted); }
+.nint-delta{ font-size:12px; font-weight:650; padding:2px 7px; border-radius:999px; background:var(--input-bg); }
+.nint-delta-up, .nint-delta-new{ color:#c2410c; }
+.nint-delta-down{ color:var(--primary-color); }
+.nint-sub{ flex-basis:100%; font-size:12px; color:var(--text-muted); }
+.nint-spark{ width:100%; height:46px; display:block; }
+.nint-bar{ fill:color-mix(in srgb, #6a4fc9 35%, transparent); }
+.nint-bar-w{ fill:#6a4fc9; }
+.nint-spark-lbl{ display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); margin:2px 0 10px; }
+.nint-cats{ display:flex; flex-direction:column; gap:3px; margin-bottom:10px; }
+.nint-cat-row{ display:grid; grid-template-columns:minmax(0,9em) 1fr 2.6em; gap:8px; align-items:center; font-size:12px; }
+.nint-cat-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.nint-cat-bar{ height:6px; border-radius:3px; background:var(--input-bg); overflow:hidden; }
+.nint-cat-bar i{ display:block; height:100%; background:#a99ae0; border-radius:3px; }
+.nint-cat-n{ text-align:right; font-variant-numeric:tabular-nums; color:var(--text-muted); }
+.nint-sec{ font-size:12px; font-weight:650; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-muted); margin:12px 0 6px; }
+.nint-evs, .nint-outs{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; }
+.nint-ev{ width:100%; text-align:left; display:flex; flex-direction:column; gap:2px; padding:8px 10px; min-height:44px; border:0; border-radius:10px; background:var(--input-bg); color:var(--text-main); cursor:pointer; }
+.nint-ev-t{ font-size:12.5px; font-weight:600; line-height:1.35; }
+.nint-ev-m{ font-size:12px; color:var(--text-muted); }
+.nint-out{ padding:8px 10px; border-radius:10px; border:1px solid var(--glass-border,rgba(128,128,128,0.22)); }
+.nint-out-h{ font-size:12px; font-weight:600; }
+.nint-out-n{ font-size:12px; color:var(--text-muted); margin:4px 0; line-height:1.45; }
+.nint-empty{ font-size:12px; color:var(--text-muted); padding:10px 2px; line-height:1.55; }
+.nint-foot{ margin-top:8px; }
+.cop-news-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-muted); margin:4px 0 8px; }
+.cop-news-map{ flex:0 0 auto; min-height:32px; padding:5px 10px; border-radius:8px; border:1px solid var(--glass-border,rgba(128,128,128,0.28)); background:var(--input-bg); color:var(--text-main); font-size:12px; cursor:pointer; }
+.cop-news-map.on{ background:var(--primary-tint); color:var(--primary-on-tint); }
+.cop-news{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; }
+.cop-news-ev{ width:100%; text-align:left; display:flex; flex-direction:column; gap:2px; padding:8px 10px; min-height:44px; border:0; border-radius:10px; background:var(--input-bg); color:var(--text-main); cursor:pointer; }
+.cop-news-t{ font-size:12.5px; font-weight:600; line-height:1.35; }
+.cop-news-m{ font-size:12px; color:var(--text-muted); }
+.cop-news-why{ font-size:12px; color:var(--text-muted); font-style:italic; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.cop-news-src{ font-size:12px; color:var(--text-muted); margin-top:8px; line-height:1.45; }

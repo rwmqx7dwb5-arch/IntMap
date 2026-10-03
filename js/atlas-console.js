@@ -58,11 +58,13 @@ import { makeAtlasAdmin1 } from './atlas-admin1.js';   /* (#R489) first-level bo
 import { makeAtlasAnomalyScore } from './atlas-anomaly-score.js';   /* (#R397) one scale for an earthquake, a typhoon and a flood — see that file for why the old bias was a SAMPLING artefact */   /* (#R397) source precedence, map restraint, coordinate provenance — prompt prose, out of the shell's line ceiling (tests/atlas-console-kernel-checks.test.mjs #R199 ⑤) */   import { everyTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */   /* ⚠ (#R495) ON THIS LINE because js/atlas-console.js is AT its shrink-only ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ) and this round adds a dispatch case. js/runtime.js is imported at line-start by 31 other modules, so scripts/js-reachability.mjs still sees it — the exact test #R489 applied before sharing a line. */
 import { makeAtlasProgress } from './atlas-progress.js';
 import { makeAtlasPlan } from './atlas-plan.js';   /* (atlas-plan-on-map) the conversation's plan ledger — Atlas declares the steps, the executor's verdicts are their states */
+import { makeAtlasNotebook } from './atlas-notebook.js';   /* (atlas-os) the investigation notebook — kept, replayable, comparable, shareable Atlas answers */
 import { makeAtlasLive } from './atlas-live.js';   /* (atlas-live-stream) the turn as it streams — the draft answer, the notes on the way, the reasoning headline, the map HUD and the measured wait */   /* (#R723) the work trace — what Atlas is doing, as a list that keeps what already happened. ⚠ ITS OWN LINE, and the room for it came from DELETING the fifteen lines the one-word indicator occupied here: this file is at a shrink-only ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ) and the subject that leaves is the one being replaced. */
 import { CAPABILITY_MODULES } from './atlas-caps-modules.js';   /* (atlas-capability-modules) every capability: its row, its schema and what the dispatch runs for it */
 import { capabilityRunners, unknownAction, capabilityEntries } from './atlas-caps.js';
 import { makeAtlasMapCompose } from './atlas-map-compose.js';   /* (#R511) one map explanation in ONE call — numbered places with roles, arcs, fills, a frame and a legend the prose is linked to. ⚠ ON A LINE THAT WAS BLANK: this file is AT its shrink-only ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ), and scripts/js-reachability.mjs anchors its import scan at line start, so a new module cannot share a line. */
 import { IntMapGeoEngine } from './geo-engine.js';
+import { dataLayers, layerDeclaration } from './layer-manifest.js';   /* (map-layer-system) which rows measure one series (`measures`) */
 import { IntMapLang } from './lang-registry.js';
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
@@ -76,6 +78,7 @@ export function atlasConsole(HOST){
   const CAPS=window.IntMapCapabilities||makeAtlasCapabilities(HOST);
   const _KERNEL=(function(){ try{ return installAtlasKernel(window.IntMapOS, HOST, { capabilities:CAPS, GE:()=>IntMapGeoEngine, record:window.IntMapOS.emit }); }catch(e){ try{ console.warn('atlas kernel not installed',e); }catch(_){} return null; } })();
   const RESULTS=_KERNEL&&_KERNEL.results, EXEC=_KERNEL&&_KERNEL.exec, ASTATE=_KERNEL&&_KERNEL.state;
+  const NOTEBOOK=makeAtlasNotebook();   /* (atlas-os) mounted with the panel (ensure) — files every finished turn */
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const _aiLangName=HOST._aiLangName, addEdgeResize=HOST.addEdgeResize, addPin=HOST.addPin, aiGate=HOST.aiGate, aiLimitMsg=HOST.aiLimitMsg, aiLoginMsg=HOST.aiLoginMsg, aiParseJSON=HOST.aiParseJSON, aiQuotaBlocked=HOST.aiQuotaBlocked, aiToast=HOST.aiToast, aiToday=HOST.aiToday, aiUsage=HOST.aiUsage, aiUsesLeft=HOST.aiUsesLeft, applyAccent=HOST.applyAccent, applyTheme=HOST.applyTheme, askAI=HOST.askAI, askAIJSON=HOST.askAIJSON, askAIJSONEnvelope=HOST.askAIJSONEnvelope, bringToFront=HOST.bringToFront, cName=HOST.cName, clearAllPins=HOST.clearAllPins, compressImage=HOST.compressImage, countryStats=HOST.countryStats, diskFillPolys=HOST.diskFillPolys, exitTool=HOST.exitTool, fetchData=HOST.fetchData, fmtPc=HOST.fmtPc, loadCountryData=HOST.loadCountryData, localFuzzyPlaces=HOST.localFuzzyPlaces, makeDraggable=HOST.makeDraggable, parseDate=HOST.parseDate, refreshTool=HOST.refreshTool, saveSettings=HOST.saveSettings, setGrid=HOST.setGrid, setLang=HOST.setLang, setMode=HOST.setMode, setTool=HOST.setTool, showCountryDetail=HOST.showCountryDetail, t=HOST.t, updateToolPanel=HOST.updateToolPanel, ymdISO=HOST.ymdISO;
@@ -1128,7 +1131,9 @@ export function atlasConsole(HOST){
       'webcams':'dl-webcams','webcam':'dl-webcams','ライブカメラ':'dl-webcams','ウェブカメラ':'dl-webcams',
       'pipelines':'pipelines','nuclear':'nuclear','nuclear sites':'nuclear','chokepoints':'chokepoints',
       'data centers':'beta-dl-dc','datacenters':'beta-dl-dc','ai infrastructure':'beta-dl-dc',
-      'religion':'beta-dl-cat-religion','language':'beta-dl-cat-language','languages':'beta-dl-cat-language'
+      'religion':'beta-dl-cat-religion','language':'beta-dl-cat-language','languages':'beta-dl-cat-language',
+      /* (map-layer-system) the indicator browser — one row for every country indicator */
+      'country indicators':'bx-wbind','country indicator':'bx-wbind','indicator browser':'bx-wbind','国別指標':'bx-wbind','指標ブラウザ':'bx-wbind'
     };
     function _cbByKey(key){ if(!key) return null; let cb=document.getElementById(key); if(cb&&cb.matches&&cb.matches('input[type=checkbox]')) return cb; cb=null;   /* (#R225) the `data-layer` convention retired with the geopolitics rows */ return cb||null; }
     function _labelOf(cb){ try{ const lab=cb.closest('label')||cb.closest('.lyr-row'); let disp=''; if(lab){ const sp=lab.querySelector('span[data-i18n], span.ec-lbl, span[id$="-lbl"], .geo-label'); disp=(sp?sp.textContent:(lab.textContent||'')); } return disp.replace(/\s+/g,' ').trim(); }catch(_){ return ''; } }
@@ -1153,7 +1158,18 @@ export function atlasConsole(HOST){
       const aliasKeys=[q0, q0.replace(/\s+(layer|overlay|data|map|cover)$/,'')]; if(q0.length>3&&q0.endsWith('s')) aliasKeys.push(q0.slice(0,-1));
       for(const k of aliasKeys){ const id=LAYER_ALIASES[k]; if(id){ const cb=_cbByKey(id); if(cb) return {cb,label:_labelOf(cb)||name,score:100}; } }
       /* 2) WORD-aware scoring (variants: as-typed + singular), subscript-folded so co2↔CO₂. */   const r=_bestRow(layerCatalog(),q0); return r?{cb:r.row.cb,label:r.row.label,score:r.score}:null; }   function layerDoor(name){ const LY=window.IntMapLayers, q0=_lnorm(name); if(!q0||!LY) return null; const RC=(function(){ try{ return (LY.list()||[]).map(id=>{ const lb=String((LY.state(id)||{}).label||id); return {read:id,id:String(id).toLowerCase(),label:lb,txt:_lnorm(lb),dl:''}; }); }catch(_){ return []; } })(); const d=resolveLayer(name); let r=_bestRow(RC,q0); if(!r&&d){ const cid=String(d.cb.id||'').toLowerCase(); r=_bestRow(RC,_lnorm(d.label)); if(!r){ const m=RC.filter(x=>x.id===cid||('dl-'+x.id)===cid)[0]; if(m) r={row:m,score:100}; } } if(!r&&!d) return null; return { read:r?r.row.read:null, label:d?d.label:r.row.label, on:r?!!(LY.state(r.row.read)||{}).on:!!d.cb.checked }; }   /* ⚠ 「on」 is asked of whichever register can answer for what was found: a registration states its own `on()` (js/map-ui.js — `aircraft` reads the rendered layer, `elevation` is always on), and a panel row with no registration has only its checkbox. */   /* ⚠⚠⚠ (#R802) THE ONE PLACE THE TWO REGISTERS ARE HELD AGAINST EACH OTHER, and nothing in it is a hand-written table of spellings (.agents/rules/no-ad-hoc-hardcoding.md §1): the reading register is enumerated by `list()` and labelled by `state(id).label`, the panel by `layerCatalog()`, and the last bridge is the registry's OWN convention — js/map-ui.js `isOn(id)` looks for the checkbox `dl-`+id or id, so that rule read backwards turns a checkbox back into a registration. A layer added tomorrow is reachable by existing. ⚠ `read:null` WITH a label is a real answer — 「that layer exists and is drawn, but nothing samples it」 — which is a different sentence from 「there is no such layer」, and the case below says both. */
-    function toggleLayer(name,on){ const r=resolveLayer(name); if(!r) return {ok:false}; const want=on!==false; const already=(r.cb.checked===want);
+    /* ══ (map-layer-system) A WORD NAMES AN INDICATOR, AND AN INDICATOR MAY STAND ON TWO ROWS ══════════════════
+       'life expectancy' resolves to `beta-dl-lifeexp`, and `bx-wblife` paints the same World Bank series; so do the
+       unemployment and internet pairs (js/layers/<id>.js `measures`, discovered — no pair is written here). The alias
+       reaches BOTH: switching on is already done when either row is on, and switching off takes off every row that
+       paints it — otherwise 「平均寿命を消して」 left the other half of the pair on the map and reported success. */
+    function _sameSeriesRows(id){ try{ const d=layerDeclaration(id), ms=(d&&d.measures)||[]; if(!ms.length) return [];
+      return dataLayers().filter(l=>l.id!==id&&(((layerDeclaration(l.id)||{}).measures)||[]).some(c=>ms.indexOf(c)>=0)).map(l=>document.getElementById(l.id)).filter(cb=>cb&&cb.matches&&cb.matches('input[type=checkbox]')); }catch(_){ return []; } }
+    function toggleLayer(name,on){ const r=resolveLayer(name); if(!r) return {ok:false}; const want=on!==false;
+      const twins=_sameSeriesRows(r.cb.id||'');
+      if(want&&!r.cb.checked){ const lit=twins.find(cb=>cb.checked); if(lit) return {ok:true, label:_labelOf(lit)||r.label, already:true, want, cb:lit}; }
+      if(!want) twins.forEach(cb=>{ if(cb.checked){ try{ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } });
+      const already=(r.cb.checked===want);
       if(!already){ try{ r.cb.checked=want; r.cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} }
       return {ok:(r.cb.checked===want), label:r.label, already, want, cb:r.cb}; }   /* (#R142) expose the exact checkbox so reply toggles read THIS one's live state, not a fuzzy re-resolve (#17) */
     function layerOpacityControl(cb){ try{ const row=cb.closest('.lyr-row')||cb.closest('label'); if(!row) return null;
@@ -1798,6 +1814,7 @@ export function atlasConsole(HOST){
       get drawChoro(){ return drawChoro; },
       get setSel(){ return setSel; },
       get HOST(){ return HOST; },
+      get CAPS(){ return CAPS; },   /* (atlas-os) the registry this page booted with — system.diagnose holds it against the capability modules */
       get applyTheme(){ return applyTheme; },
       get applyAccent(){ return applyAccent; },
       get saveSettings(){ return saveSettings; },
@@ -2114,7 +2131,8 @@ export function atlasConsole(HOST){
         +'<div class="atl-ainote">'+L('Atlas can be inaccurate — verify important facts.','Atlasの回答は不正確な場合があります。重要な情報は確認してください。','Atlas kann ungenau sein — wichtige Fakten prüfen.','Atlas может ошибаться — проверяйте важные факты.','Atlas puede equivocarse — verifica los datos importantes.')+'</div>'
         +'<button class="atl-jump" title="'+L('Jump to latest','最新へ移動','Zum Neuesten','К последнему','Ir al final')+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m5.5 12.5 6.5 6.5 6.5-6.5"/></svg></button>';
       (document.getElementById('map-container')||document.body).appendChild(panel);
-      chatEl=panel.querySelector('.atl-chat'); inEl=panel.querySelector('.atl-in'); try{ GLOSS.wire(panel); }catch(_){}   /* (#R491) one delegated listener per gesture, for every message the panel will ever hold */
+      chatEl=panel.querySelector('.atl-chat'); inEl=panel.querySelector('.atl-in'); try{ GLOSS.wire(panel); }catch(_){}
+      try{ NOTEBOOK.mount(panel,{ ASTATE, lang:()=>HOST.lang, host:()=>HOST, mdMini, waitIdle:HOST.aiWaitMapIdle, resolve:(id)=>CAPS.resolve(id), runDirect:(label,acts)=>runDirect(label,acts), ask:(q)=>run(q) }); }catch(_){}   /* (atlas-os) the investigation notebook — every finished turn is filed there; js/atlas-notebook.js */   /* (#R491) one delegated listener per gesture, for every message the panel will ever hold */
       try{ const _cl=()=>L('Close','閉じる','Schließen','Закрыть','Cerrar'), _fs=()=>attachViewStrings(L); attachLightbox(chatEl,_cl,_fs); attachLightbox(panel.querySelector('.atl-imgrow'),_cl,_fs); }catch(_){}   /* (#R232) 送信後の吹き出しと、(#R773) 送る前のコンポーザ——同じ委譲を 2 つの入れ物に貼るだけで、開き方は 1 つ */
       /* (#R79g) auto-scroll so a reply that REPLACES the "thinking" dots stays visible ("返答が短いものであれば返答に合わせて自動的に最下部までスクロール"). A MutationObserver covers every
          reply-setting path; it only moves when the reader is already near the bottom, so a SHORT reply drops fully into view while a LONG one keeps its TOP where the dots were and is read from the start.
@@ -2854,7 +2872,7 @@ export function atlasConsole(HOST){
         ai.__atlSay=out.text||((String(out.stopped||'')!=='awaiting_user'&&out.results&&out.results.length)?L('Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.','Atlas は道具を動かしましたが、今回は回答文を書けませんでした——道具が返したものは上に示しています。もう一度訊くか、問いを絞ってください。','Atlas hat seine Werkzeuge ausgeführt, aber diesmal keine Antwort geschrieben — was sie zurückgaben, steht oben; frag noch einmal oder enger.','Atlas запустил инструменты, но не написал ответ — их результаты выше; спросите снова или уже.','Atlas ejecutó sus herramientas pero esta vez no escribió una respuesta: lo que devolvieron está arriba; pregunta de nuevo o acota la pregunta.'):'');   /* (#R731) a turn that ran tools and wrote nothing says so — the forced final can come back machine-shaped (refused as prose in js/atlas-agent.js readReply) and the reader was left with result rows and no sentence; the sentence is IntMap's and says what happened, not what the answer would have been */
         try{ LIVE.end(ai,'answered'); }catch(_){}   /* (atlas-live-stream) the draft gives way to the answer — compose renders `__atlSay` in its place */
         _atlCompose(ai); try{ LIVE.answered(ai); }catch(_){}
-        recordTurn(q,out.text||'',_ranActions,[]); try{ ASTATE.endTurn(turn,{ reply:String(out.text||''), status:String(out.stopped||'answered'), aiCalls:((out.trace&&out.trace.steps)||[]).length }); }catch(_){}   /* ⚠ (#R760) `endTurn` had ZERO callers, so every turn IntMap ever ran stayed `status:'running'` with an empty `reply` forever — a record with no reader inside the product, and a false one to every reader outside it */
+        recordTurn(q,out.text||'',_ranActions,[]); try{ ASTATE.endTurn(turn,{ reply:String(out.text||''), status:String(out.stopped||'answered'), aiCalls:((out.trace&&out.trace.steps)||[]).length, cites:(_curPlanCites||[]).map(c=>({url:c.url,title:c.title||''})) }); }catch(_){}   /* ⚠ (#R760) `endTurn` had ZERO callers, so every turn IntMap ever ran stayed `status:'running'` with an empty `reply` forever — a record with no reader inside the product, and a false one to every reader outside it */
         try{ PROG.done(ai); }catch(_){} msgTools(ai,q);
       }catch(e){
         if(gen!==_runGen){ try{ ASTATE.endTurn(turn,{status:'cancelled'}); }catch(_){} _markCancelled(ai); return; }

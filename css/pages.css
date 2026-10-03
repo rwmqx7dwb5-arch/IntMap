@@ -250,6 +250,7 @@ code{
 .pg-srcitem:last-child{border-bottom:none}
 .pg-srcitem b{font-size:16px;font-weight:640;letter-spacing:-0.008em}
 .pg-srcitem .pg-use{font-size:15px;color:var(--pg-ink-2);margin:3px 0 5px;line-height:1.55}
+.pg-srcitem .pg-down{font-size:13px;color:var(--pg-warn);background:var(--pg-warn-bg);border-left:3px solid var(--pg-warn-line);border-radius:8px;padding:6px 10px;margin:0 0 6px;line-height:1.5}
 .pg-srcitem .pg-u{
   display:inline-block;font-size:13px;color:var(--pg-accent);text-decoration:none;word-break:break-all;
 }

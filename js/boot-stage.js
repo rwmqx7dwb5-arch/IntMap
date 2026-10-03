@@ -80,6 +80,7 @@
     { id: 'hist-era-spans', path: 'data/hist-era-spans.json', phone: 'need', who: 'js/time-borders.js', why: 'the time machine' },
     { id: 'histnames', path: 'data/histnames.json', phone: 'need', who: 'js/time-borders.js', why: 'the time machine' },
     { id: 'hist-admin', path: 'data/hist-admin', phone: 'need', who: 'js/time-admin1.js', why: 'historical subdivisions (hist-admin1/2/3, hist-admin-fill)' },
+    { id: 'hist-claims', path: 'data/hist-claims.json', phone: 'need', who: 'js/time-admin1.js (_know)', why: 'the same ground claimed twice, counted at the reader\'s date while subdivisions are drawn in the time machine' },
     { id: 'hist-kuni', path: 'data/hist-kuni.js', phone: 'need', who: 'js/time-admin1.js', why: 'the provinces of Japan, in the time machine' },
     { id: 'hist-cities', path: 'data/hist-cities.json', phone: 'need', who: 'js/hist-cities.js', why: 'historical city names, in the time machine' },
     { id: 'hist-places', path: 'data/hist-places.json', phone: 'need', who: 'js/hist-places.js', why: 'Pleiades places, in the time machine' },

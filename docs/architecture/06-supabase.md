@@ -12,7 +12,7 @@
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **41 表**（`ai_turn_answers` / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
+実証手順も同じファイル）。現在 **45 表**（`news_event_entities` / `ai_turn_answers` / `atlas_notebook_entries`（Atlas の調査ノート・同期をオンにした読者のみ） / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
 `user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` /
 `atlas_capability_vectors` / `usage_counts`（匿名の利用統計） /
 `community_*` 5 表 / `feedback` /
@@ -21,7 +21,8 @@
 `news_event_articles` / `news_cluster_decisions` / `news_event_i18n` / `saved_news_events`
 ＋取り込みの計測 `news_ingest_runs` ＋運用者の監査証跡 `news_event_admin_actions`
 ＋ WHO Disease Outbreak News の症例数・死亡数 `who_don_extracts`
-＋ 利用者のブラウザで起きたエラーの記録 `client_errors`）。
+＋ 利用者のブラウザで起きたエラーの記録 `client_errors`
+＋ 組織からの相談 `org_inquiries` と、掲載を希望した支援者 `supporters`）。
 
 **アカウントのデータは利用者自身が開ける（account-data-center）。** 「何を持っているか」
 （`account_data_inventory()`）・「全部ください」（`export_account_data()`）・「消してください」
@@ -322,7 +323,10 @@
   SECURITY INVOKER なので admin の SELECT policy がそのまま効く）。詳細は [`docs/MONITORING.md`](../MONITORING.md) §2b。
 
 - **`reader-reports`** … **フィードバックとバグ報告の書き込み先**（`--no-verify-jwt`・秘密なし）。`js/feedback.js` の
-  2 つのフォームがここへ POST し、関数が service_role で `feedback` / `bug_reports` に 1 行書く。**表へ直接は書けない**
+  2 つのフォームと、組織からの相談フォーム（`contact.html`・`js/org-page.js`、kind `inquiry`）がここへ POST し、
+  関数が service_role で `feedback` / `bug_reports` / `org_inquiries` に 1 行書く（相談の語彙・上限・返信先の扱いは
+  `_shared/inquiry-shape.js`。相談の返信先は**本人が書いたアドレス**で、`user_id` だけが検証済みのセッションから来る。
+  人には見えない欄 `website_confirm` が埋まっていれば 400）。**表へ直接は書けない**
   （`anon`・`authenticated` の INSERT policy と grant は `20260930090000_anon_write_guard.sql` が閉じた——
   以前は公開キーで PostgREST から行数の制限なく書けた）。守りは `client-errors` と同じ形: POST 限定・本文上限
   64 KiB・Origin（本番と 127.0.0.1 / localhost）・共有 token bucket 2 つ（呼び手ごと＝**検証済みのアカウント**、

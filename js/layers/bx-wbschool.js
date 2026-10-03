@@ -5,4 +5,5 @@ export default {
   order: 60,
   key: 'wbschool',
   rest: true,
+  measures: ['worldbank:SE.SEC.ENRR'],
 };

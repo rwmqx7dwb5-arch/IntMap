@@ -7,4 +7,5 @@ export default {
   label: 'lyrMilSpend',
   share: true,
   pkg: 'alliances',   // (layer-packages) implemented by js/layer-pkg-alliances.js
+  measures: ['countrystats:milSpend'],
 };

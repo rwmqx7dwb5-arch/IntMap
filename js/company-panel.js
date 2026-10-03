@@ -218,11 +218,16 @@ export function companyPanel(HOST) {
   let curRow = null;        /* its index row, when we have one (header before the profile lands) */
   let curProf = null;       /* the profile, once fetched */
   let errMsg = '';
-  let tab = 'ov';           /* ov | biz | loc */
+  let tab = 'ov';           /* ov | biz | loc | news */
   let grp = '';             /* '' = every group; otherwise exactly one map group */
   let ccFilter = '';        /* '' = every country; otherwise one ISO-3 */
   let ctryOpen = false;     /* the country disclosure's state, kept across re-renders */
   let seq = 0;              /* a reply that lands after the reader has moved on is dropped */
+  /* (news-intelligence) the News tab — which news EVENTS name this company (public.news_event_entities, written
+     by news-ingest's entities stage) — and whether their lines are on the map. Read through the facade
+     window.IntMapNewsIntel (js/news-pulse.js); this panel decides nothing about which event names whom. */
+  let news = null;          /* { id, status: 'loading'|'ok'|'error', items } for curId */
+  let newsOnMap = false;
 
   const facsAll = () => ((curProf && curProf.facilities) || []);
   const groupOf = (f) => {
@@ -282,6 +287,14 @@ export function companyPanel(HOST) {
       const k = a.getAttribute('data-cop');
       if (k === 'close') { close(); return; }
       if (k === 'clearcc') { ccFilter = ''; draw(false); return; }
+      if (k === 'newsmap') { newsOnMap = !newsOnMap; if (newsOnMap) showNewsOnMap(); else hideNewsOnMap(); draw(true); return; }
+    }
+    const nev = t.closest('[data-cop-ev]');
+    if (nev) {
+      const pid = nev.getAttribute('data-cop-ev');
+      const it = news && news.items.find((x) => x.row && x.row.public_id === pid);
+      if (it) { Promise.resolve(window.IntMapLazy && window.IntMapLazy.need('newsEvents')).then(() => { try { window.IntMapNewsEvents.openRow(it.row); } catch (_) { } }); }
+      return;
     }
     const tb = t.closest('[data-cop-tab]');
     if (tb) { tab = tb.getAttribute('data-cop-tab') || 'ov'; draw(false); return; }
@@ -328,6 +341,13 @@ export function companyPanel(HOST) {
       + '<h3 class="cop-name" title="' + S(title) + '">' + S(title) + '</h3>'
       + (others.length ? '<div class="cop-alt">' + S(others.join(' · ')) + '</div>' : '')
       + (meta ? '<div class="cop-meta">' + S(meta) + '</div>' : '')
+      /* (companies-elections-live) the day this profile was built from its sources, and whether
+         OpenStreetMap was ever asked — .github/workflows/companies-refresh.yml re-reads the atlas a
+         batch a week, so the date is a fact about THIS company, not about the atlas */
+      + (curProf && /^\d{4}-\d{2}-\d{2}$/.test(String(curProf.generatedAt || ''))
+        ? '<div class="cop-meta cop-fetched">' + S(L('Fetched', '取得日') + ' ' + curProf.generatedAt
+          + (curProf.osmPending ? ' · ' + L('OpenStreetMap sites not fetched yet', 'OpenStreetMap の拠点は未取得') : '')) + '</div>'
+        : '')
       + mkt
       + '</div></div>';
   }
@@ -348,6 +368,7 @@ export function companyPanel(HOST) {
     ['ov', L('Overview', '概要', 'Überblick', 'Обзор', 'Resumen')],
     ['biz', L('Business', '事業', 'Geschäft', 'Бизнес', 'Negocio')],
     ['loc', L('Locations', '拠点', 'Standorte', 'Объекты', 'Ubicaciones')],
+    ['news', L('News', 'ニュース')],
   ];
   function tabsHTML() {
     if (!curProf) return '';
@@ -538,11 +559,55 @@ export function companyPanel(HOST) {
 
   const emptyMsg = (m) => '<div class="cop-empty">' + S(m) + '</div>';
 
+  /* ── News (news-intelligence) ─────────────────────────────────────────────────────────────────── */
+  function loadNews() {
+    const id = curId; if (!id) return;
+    if (news && news.id === id && news.status !== 'error') return;
+    news = { id, status: 'loading', items: [] };
+    const N = window.IntMapNewsIntel;
+    if (!N) { news = { id, status: 'error', items: [] }; return; }
+    N.companyEvents(id).then((r) => {
+      if (curId !== id) return;
+      news = { id, status: r && r.ok ? 'ok' : 'error', items: (r && r.items) || [] };
+      if (newsOnMap) showNewsOnMap();
+      if (tab === 'news') draw(true);
+    });
+  }
+  /* the facilities with a position — the line goes from the NEAREST of them to each event */
+  function showNewsOnMap() {
+    const N = window.IntMapNewsIntel; if (!N || !news || news.status !== 'ok') return;
+    const sites = facsAll().filter(hasXY).map((f) => ({ lon: f.lon, lat: f.lat, name: f.name }));
+    if (!sites.length) { const at = anchor(); if (at) sites.push({ lon: at[0], lat: at[1], name: '' }); }
+    N.showCompanyLinks(sites, news.items);
+  }
+  function hideNewsOnMap() { try { const N = window.IntMapNewsIntel; if (N) N.hideCompanyLinks(); } catch (_) { } }
+  function newsHTML() {
+    loadNews();
+    if (!news || news.status === 'loading') return '<div class="cop-load">' + S(L('Loading…', '読み込み中…')) + '</div>';
+    if (news.status === 'error') return emptyMsg(L('The news for this company could not be loaded.', 'この企業のニュースを読み込めませんでした。'));
+    const n = news.items.length;
+    let h = '<div class="cop-news-head"><span>' + S(L('{n} news events name this company (the last 30 days)', 'この企業が出てくるニュースの出来事 {n} 件（直近30日）').replace('{n}', String(n))) + '</span>'
+      + (n ? '<button type="button" class="cop-news-map' + (newsOnMap ? ' on' : '') + '" data-cop="newsmap">' + S(newsOnMap ? L('Hide from map', '地図から消す') : L('Show on map', '地図に表示')) + '</button>' : '') + '</div>';
+    if (!n) return h + emptyMsg(L('No event IntMap keeps names this company.', 'IntMap が保持している出来事に、この企業が出てくるものはありません。'));
+    const KIND = { legal_name: L('registered name', '正式名'), ticker: L('ticker', 'ティッカー'), name: L('name', '企業名') };
+    const fmt = (iso) => { try { return new Date(iso).toLocaleDateString(NLOC(), { month: 'short', day: 'numeric' }); } catch (_) { return String(iso || '').slice(0, 10); } };
+    h += '<ul class="cop-news">' + news.items.slice(0, 40).map((x) => {
+      const r = x.row;
+      const meta = [r.rep_place_name_en || '', r.first_published_at ? fmt(r.first_published_at) : '', L('{n} outlets', '{n} 媒体').replace('{n}', String(r.independent_source_count || 1))].filter(Boolean).join(' · ');
+      return '<li><button type="button" class="cop-news-ev" data-cop-ev="' + S(r.public_id) + '"><span class="cop-news-t">' + S(r.representative_title || '') + '</span>'
+        + '<span class="cop-news-m">' + S(meta) + '</span>'
+        + '<span class="cop-news-why" title="' + S(x.evidence || '') + '">' + S(L('Matched by {k}: “{e}”', '{k}で一致: 「{e}」').replace('{k}', KIND[x.matchedBy] || x.matchedBy).replace('{e}', String(x.evidence || '').slice(0, 140))) + '</span></button></li>';
+    }).join('') + '</ul>';
+    h += '<div class="cop-news-src">' + S(L('Events: IntMap news collection. A match means the text names the company — not that the event is about it.', '出来事: IntMap のニュース収集。一致は文中に企業名が出てくることを示し、その出来事が企業についてのものだとは限りません。')) + '</div>';
+    return h;
+  }
+
   /* ── draw ──────────────────────────────────────────────────────────────────────────────────── */
   function bodyHTML() {
     if (errMsg) return emptyMsg(errMsg);
     if (!curProf) return '<div class="cop-load">' + S(L('Loading…', '読み込み中…', 'Wird geladen…', 'Загрузка…', 'Cargando…')) + '</div>';
     if (tab === 'loc') return locHTML();
+    if (tab === 'news') return newsHTML();
     if (tab === 'biz') return bizHTML();
     return ovHTML();
   }
@@ -602,7 +667,7 @@ export function companyPanel(HOST) {
   /* ── the public doors ──────────────────────────────────────────────────────────────────────── */
   /**
    * @param idOrRow  a company id, a ticker, a name, or an index row from IntMapCompanyData
-   * @param opts     {focus:'locations'|'business'|'overview'} — which tab the caller wants first
+   * @param opts     {focus:'locations'|'business'|'overview'|'news'} — which tab the caller wants first
    */
   function open(idOrRow, opts) {
     opts = opts || {};
@@ -615,11 +680,11 @@ export function companyPanel(HOST) {
     /* ⚠ a DIFFERENT company means the previous one leaves the map first. `show()` would replace the
        source anyway, but the profile arrives asynchronously — without this the old company's points
        stay on the map for as long as the fetch takes, under the new company's name. */
-    if (curId && curId !== id) mapHide();
+    if (curId && curId !== id) { mapHide(); hideNewsOnMap(); news = null; newsOnMap = false; }
     curId = id; curRow = rowIn; curProf = null; errMsg = '';
     grp = ''; ccFilter = ''; ctryOpen = false;
     const f = String(opts.focus || '');
-    tab = (f === 'locations' || f === 'loc') ? 'loc' : ((f === 'business' || f === 'biz') ? 'biz' : 'ov');
+    tab = (f === 'locations' || f === 'loc') ? 'loc' : ((f === 'business' || f === 'biz') ? 'biz' : ((f === 'news') ? 'news' : 'ov'));
 
     const e = ensureEl();
     e.style.display = 'block';
@@ -659,7 +724,7 @@ export function companyPanel(HOST) {
     seq++;
     curId = null; curRow = null; curProf = null; errMsg = '';
     if (el) el.style.display = 'none';
-    mapHide();
+    mapHide(); hideNewsOnMap(); news = null; newsOnMap = false;
   }
   const isOpen = () => !!(el && el.style.display !== 'none' && curId);
   const current = () => (curId || null);

@@ -59,6 +59,14 @@ const WB = Object.freeze({
   says: LA('World Bank WDI (the years this layer reads)', '世界銀行 WDI（このレイヤーが読む年）'),
 });
 
+/* (map-layer-system) the World Bank rows of js/layer-packs.js read the SAME series through the same reader
+   (window.IntMapWB.series — js/wb-layers.js WB_FROM is where it begins) and, like the rows above, paint the
+   clock's year. Three of them measure a series a row above also measures (js/layers/<id>.js `measures`), and
+   one series is one statement about time: tests/map-layer-system-checks.test.mjs holds the pairs to that. */
+const WBP = Object.freeze(Object.assign({}, WB, {
+  follows: 'js/layer-packs.js wbClockYear', reports: 'js/layer-packs.js IntMapLayerTime',
+}));
+
 /* ECMWF IFS open data: one run's valid times answer for every ECMWF row (js/wx-ecmwf.js reports them) */
 const ECMWF = Object.freeze({
   kind: 'forecast', from: 'runtime', to: 'runtime', group: 'ecmwf-ifs',
@@ -213,8 +221,10 @@ export const TIME = Object.freeze({
   'fac-dl-osmmil': OSM,
 
   /* ── health ── */
-  'beta-dl-lifeexp': asOf(2022, 'js/layer-packs.js lifeexp (World Bank 2022)', LA('Life expectancy (World Bank 2022)', '平均寿命（世界銀行 2022）')),
-  'bx-wbinfmort': WB, 'bx-wbsuicide': WB, 'bx-wbsmoke': WB, 'bx-wbalcohol': WB, 'bx-wbwater': WB, 'bx-wbhealth': WB, 'bx-wbphys': WB,
+  'beta-dl-lifeexp': WBP,
+  'bx-wbinfmort': WB,
+  /* (map-layer-system) the indicator browser paints whichever of those series the reader picks, through the same reader */
+  'bx-wbind': WB, 'bx-wbsuicide': WB, 'bx-wbsmoke': WB, 'bx-wbalcohol': WB, 'bx-wbwater': WB, 'bx-wbhealth': WB, 'bx-wbphys': WB,
   'bx-wbbeds': WB, 'bx-wbu5mort': WB, 'bx-wblife': WB, 'bx-wbsan': WB, 'bx-wboverwt': WB,
   'fac-dl-osmhealth': OSM, 'fac-dl-osmwater': OSM,
 
@@ -223,6 +233,11 @@ export const TIME = Object.freeze({
     says: LA('Submarine cables (TeleGeography, today’s map incl. planned)', '海底ケーブル（TeleGeography、計画中を含む現在の地図）') },
   'beta-dl-dc': { kind: 'snapshot', asOf: 'fetch', period: 'P1M', by: 'js/datacenters.js',
     says: LA('Data centres (today’s list)', 'データセンター（現在の一覧）') },
+  /* (news-intelligence) news events counted on the day each was first reported — the window ends at the clock's
+     instant (js/news-intel.js `clockUntil`), and the record's first and last day are the ones public.news_pulse reports */
+  'dl-newspulse': { kind: 'record', from: 'runtime', to: 'runtime', follows: 'js/news-intel.js clockUntil', self: 'js/news-intel.js clockUntil',
+    reports: 'js/news-intel.js IntMapLayerTime',
+    says: LA('News events per country (IntMap news collection, the days it has kept)', '国ごとのニュースの出来事（IntMap のニュース収集が保持している日々）') },
   'dl-nethlth': live(LA('Internet health (Cloudflare Radar / IODA, now)', 'インターネットの健康状態（Cloudflare Radar / IODA、現在）')),
   'dl-netreach': live(LA('Internet reachability (now)', 'インターネット到達性（現在）')),
   'bx-wbnet': WB, 'bx-wbmobile': WB, 'bx-wbbbnd': WB, 'bx-wbrnd': WB, 'bx-wbresearch': WB, 'bx-wbpatent': WB,
@@ -289,9 +304,9 @@ export const TIME = Object.freeze({
   'beta-dl-volcso2': { kind: 'record', follows: 'js/volcano-layers.js IntMapTime',
     rangeUnstated: LA('Volcanic SO₂ (NASA GIBS): the first day of the product is not declared to the clock', '火山 SO₂（NASA GIBS）：製品の初日が時計に宣言されていません'),
     says: LA('Volcanic SO₂ (NASA GIBS)', '火山 SO₂（NASA GIBS）') },
-  'beta-dl-unemp': asOf('fetch', 'js/layer-packs.js unemp (World Bank, latest value per country)', LA('Unemployment (World Bank, latest per country)', '失業率（世界銀行、国ごとの最新値）')),
-  'beta-dl-internet': asOf('fetch', 'js/layer-packs.js internet (World Bank, latest value per country)', LA('Internet users (World Bank, latest per country)', 'インターネット利用率（世界銀行、国ごとの最新値）')),
-  'beta-dl-precip': asOf('fetch', 'js/layer-packs.js precip (World Bank, latest value per country)', LA('Precipitation (World Bank, latest per country)', '降水量（世界銀行、国ごとの最新値）')),
+  'beta-dl-unemp': WBP,
+  'beta-dl-internet': WBP,
+  'beta-dl-precip': WBP,
   'beta-dl-spin': { kind: 'convention', says: LA('Globe rotation (a view, not data)', '地球の自転表示（データではなく表示）') },
   'wp-dl-outbreaks': { kind: 'record', follows: 'js/outbreaks.js clockDay',
     rangeUnstated: LA('WHO Disease Outbreak News: the first item’s date is not declared to the clock', 'WHO 疾病発生ニュース：最初の記事の日付が時計に宣言されていません'),

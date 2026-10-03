@@ -5,4 +5,5 @@ export default {
   order: 70,
   key: 'wbbbnd',
   rest: true,
+  measures: ['worldbank:IT.NET.BBND.P2'],
 };

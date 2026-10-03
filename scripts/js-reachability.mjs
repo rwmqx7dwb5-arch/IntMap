@@ -14,7 +14,7 @@
  *    1. src/main.js imports it                        `import '../js/x.js';`
  *    2. a reachable js/ module import()s it           `import('./x.js')`   (lazy-modules.js)
  *    3. a js/ module statically imports it            `import … from './x.js';`
- *    4. a standalone HTML page <script src>es it      sources.html, science.html, admin.html, …
+ *    4. a standalone HTML page <script src>es it      every root .html but index.html (sources, admin, contact …)
  *    5. a WORKER in src/ imports it                   `import '../js/x.js';` in src/*-worker.js
  *
  *  Form 5 is not in src/main.js's graph — a worker is reached by
@@ -26,8 +26,15 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 /* The standalone documents this repo ships besides index.html. Read rather than allow-listed by
-   module name: delete the <script> tag and the module correctly goes back to failing. */
-export const STANDALONE_PAGES = ['sources.html', 'science.html', 'admin.html', 'privacy.html', 'terms.html'];
+   module name: delete the <script> tag and the module correctly goes back to failing.
+   (sales-channels) DISCOVERED, not listed: every .html at the root except index.html. The list used to be
+   five names written here, and the pages scripts/org-pages.mjs generates (contact, support, the console …)
+   load js/org-page.js and js/admin-inquiries.js exactly the way terms.html loads js/legal-page.js — a sixth
+   page would have needed a sixth name, and the next one after it a seventh. Japanese pages (ja/) load the
+   same files as their English twins, so the root is enough. */
+export function standalonePages(root) {
+  return readdirSync(root).filter((n) => n.endsWith('.html') && n !== 'index.html').sort();
+}
 
 /**
  * @param {string} root  repository root
@@ -57,7 +64,7 @@ export function jsReachability(root, jsFiles) {
   }
 
   /* 4 — the standalone pages */
-  for (const page of STANDALONE_PAGES) {
+  for (const page of standalonePages(root)) {
     const p = join(root, page);
     if (!existsSync(p)) continue;
     for (const m of readFileSync(p, 'utf8').matchAll(/<script[^>]*\ssrc=["']\.\/(js\/[A-Za-z0-9_.-]+\.js)["']/g)) {

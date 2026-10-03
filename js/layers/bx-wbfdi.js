@@ -5,4 +5,5 @@ export default {
   order: 120,
   key: 'wbfdi',
   rest: true,
+  measures: ['worldbank:BX.KLT.DINV.WD.GD.ZS'],
 };

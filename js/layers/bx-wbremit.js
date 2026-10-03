@@ -5,4 +5,5 @@ export default {
   order: 170,
   key: 'wbremit',
   rest: true,
+  measures: ['worldbank:BX.TRF.PWKR.DT.GD.ZS'],
 };

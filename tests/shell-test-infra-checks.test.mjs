@@ -150,18 +150,28 @@ test('R207 ⑫ the deep tier no longer stands between a merge and the next one',
 const rd = read;
 
 /* spelling kept: browser script (js/map-ui.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
-test('R210 ⑥: the test seat opts out of the first-visit panel on purpose', () => {
-  /* If this ever reverts, ~350 tests silently start measuring a narrower canvas — and they will
-     not fail loudly, they will fail as a scatter of pixel and camera assertions (#R207's shape). */
+test('R210 ⑥: the test seat answers BOTH sidebar questions on purpose, and the app boots from those answers alone', () => {
+  /* If this ever reverts, ~350 tests silently start measuring a different canvas — and they will
+     not fail loudly, they will fail as a scatter of pixel and camera assertions (#R207's shape).
+     ⚠ (first-impression) The question changed side. #R210 opened the RIGHT panel on an unanswered visit,
+     so the seat had to answer it shut; first-impression made an unanswered visit open NEITHER column
+     («初回も地図が全面»), so the seat now also has to answer the LEFT one open — the layout the suite was
+     written against. MEASURED when that answer was missing: tests/r508.spec.js could not reach
+     #btn-open-settings and tests/smoke.spec.js #R349 drew 0 front lines. */
   const seed = rd('tests/helpers/session-seed.js');
-  assert.match(seed, /"lsrOpen":false/, 'the seeded session answers the layer-panel question');
-  const ui = rd('js/map-ui.js');
-  assert.match(ui, /typeof ui\.right!=='boolean'/, 'and the app is what distinguishes "no answer" from an answer');
-  /* WARN (#R210 follow-up) …and the first-visit open must not race the boot: open() builds the
-     whole tile grid synchronously the first time, so on an unanswered session it waits for idle.
-     A RESTORED session still opens immediately (its grid was pre-built by the idle callback). */
-  assert.match(ui, /if\(unanswered&&'requestIdleCallback' in window\) requestIdleCallback/,
-    'a first visit opens the panel on idle, with a timeout so it always appears');
+  const SESSION_VALUE = JSON.parse(seed.match(/export const SESSION_VALUE = '([^']*)';/)[1]);
+  assert.equal(SESSION_VALUE.lsrOpen, false, 'the seeded session answers the layer-panel question: shut');
+  assert.equal(SESSION_VALUE.sbOpen, true, 'the seeded session answers the left-column question: open');
+  assert.match(seed, /lsrOpen: false, sbOpen: true \}/, 'sessionWith() states the same two answers');
+  /* …and the app is what reads them: an answer is a boolean, and nothing else is one */
+  const app = rd('js/app-body.js');
+  assert.match(app, /left:\(s&&typeof s\.sbOpen==='boolean'\)\?s\.sbOpen:null/, 'the left answer is read as a boolean, absent = unanswered');
+  assert.match(app, /right:\(s&&typeof s\.lsrOpen==='boolean'\)\?s\.lsrOpen:null/, 'the right answer is read as a boolean, absent = unanswered');
+  /* the first visit itself is NOT this seat's subject: the spec that asks it must boot with no storage at all
+     (playwright.config.js hands every context the seed, browser.newContext() included) */
+  const fi = rd('tests/first-impression.spec.js');
+  assert.match(fi, /storageState: \{ cookies: \[\], origins: \[\] \}/, 'tests/first-impression.spec.js opts out of the seed explicitly');
+  assert.match(fi, /bootSession[\s\S]{0,200}toBeNull\(\)/, '…and asserts the page found no saved session');
 });
 }
 
@@ -178,7 +188,7 @@ const read = (p) => readFileSync(new URL(p, root), 'utf8');
    value drifts (#R220): they import it. */
 test('R225 ⑦ the seeded session lives in exactly one place, and it states the base toggles', () => {
   const seed = read('tests/helpers/session-seed.js');
-  assert.match(seed, /export const SESSION_VALUE = '\{"v":2,"defv":191,"layers":\["cb-names","cb-geolabels","cb-poi","cb-borders","cb-admin1","cb-roads","cb-rail2"\],"lsrOpen":false\}';/);
+  assert.match(seed, /export const SESSION_VALUE = '\{"v":2,"defv":191,"layers":\["cb-names","cb-geolabels","cb-poi","cb-borders","cb-admin1","cb-roads","cb-rail2"\],"lsrOpen":false,"sbOpen":true\}';/);
   const files = readdirSync(new URL('tests/', root)).filter((f) => f.endsWith('.spec.js'));
   for (const f of files) {
     const src = read('tests/' + f);

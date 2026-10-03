@@ -213,11 +213,12 @@ test('#R588 ④ the elections module is in every ledger an eager layer needs', (
 const wellFormed = () => ({
   index: {
     parties: { 'xx:a': { n: { en: 'A' }, col: '#112233' }, 'xx:b': { n: { en: 'B' }, col: '#445566' } },
-    polities: [{ id: 'xx', n: { en: 'X', native: 'X' }, home: [[0, 0], [1, 1]] }],
+    polities: [{ id: 'xx', n: { en: 'X', native: 'X' }, home: [[0, 0], [1, 1]], pack: 'xx' }],   /* (companies-elections-live) the pack that writes it */
     elections: [{
       id: 'xx-l-2020', polity: 'xx', body: { en: 'Lower house', native: 'Lower house' },
       date: '2020-01-01', y: 2020, geo: 'g.geo.json', res: 'r.res.json',
-      seatsTotal: 3, districtSeats: 2, listSeats: 1, src: 'S', lic: 'L'
+      seatsTotal: 3, districtSeats: 2, listSeats: 1, src: 'S', lic: 'L',
+      fetchedAt: '2020-02-01', fetchedFrom: 'build', up: 'U'   /* (companies-elections-live) when and from whom */
     }]
   },
   files: {

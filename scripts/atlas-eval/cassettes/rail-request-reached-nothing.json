@@ -162,17 +162,13 @@
           "basis": "lexical",
           "matches": [
             {
-              "id": "navigation.start",
-              "tool": "navigation_start",
-              "needsConfirmation": "explicit"
-            },
-            {
               "id": "routing.route",
               "tool": "routing_route"
             },
             {
-              "id": "navigation.voice",
-              "tool": "navigation_voice"
+              "id": "navigation.start",
+              "tool": "navigation_start",
+              "needsConfirmation": "explicit"
             }
           ]
         }
@@ -234,6 +230,10 @@
             {
               "id": "time.lapse",
               "tool": "time_lapse"
+            },
+            {
+              "id": "time.yearbook",
+              "tool": "time_yearbook"
             }
           ]
         }
@@ -281,10 +281,6 @@
               "tool": "routing_route"
             },
             {
-              "id": "map.compose",
-              "tool": "compose_map"
-            },
-            {
               "id": "navigation.start",
               "tool": "navigation_start",
               "needsConfirmation": "explicit"
@@ -306,12 +302,8 @@
               "tool": "navigation_voice"
             },
             {
-              "id": "routing.isochrone",
-              "tool": "routing_isochrone"
-            },
-            {
-              "id": "layers.railAxis",
-              "tool": "layers_railAxis"
+              "id": "map.compose",
+              "tool": "compose_map"
             }
           ]
         }

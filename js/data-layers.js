@@ -2749,7 +2749,7 @@ export function dataLayers(HOST){
     function _koppenBuild(){
       if(_kRetryT){ clearTimeout(_kRetryT); _kRetryT=null; }
       try{
-        if(!GE().layers.hasSource('src-climate')) GE().layers.addSource('src-climate',{type:'image',url:KURL,coordinates:KCOORDS});
+        if(!GE().layers.hasSource('src-climate')) GE().layers.addSource('src-climate',{type:'image',url:KURL,coordinates:KCOORDS,attribution:'Köppen–Geiger © <a href="https://doi.org/10.1038/s41597-023-02549-6">Beck et al. 2023</a> (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>)'});   /* the 1901–2020 periods are Beck et al. (2023) Sci Data 10:724, CC BY 4.0: the credit is a licence term, so the source declares it (js/geo-engine.js keeps it on a coordinate-placed source) */
         if(!GE().layers.has('lyr-climate')){
           /* (#R24) insert the raster BELOW the place-name / border label stack so Köppen never hides the
              country labels ("ケッペンを重ねると国名ラベルが後ろに隠れる"); raise() still self-heals as a backstop. */
@@ -2801,7 +2801,7 @@ export function dataLayers(HOST){
       const periodSel=html`<div class="kl-period"><label for="kl-period">${perLabel}</label><select id="kl-period">${window.KOPPEN_PERIODS.map(([p])=>html`<option value="${p}"${p===window._koppenPeriod?' selected':''}>${p}</option>`)}</select></div>`;
       /* (#R23) Click a class = highlight just that climate on the map (RESTORED). Selected rows get the
          .sel outline + a Clear button; long-press (mobile) / right-click (desktop) shows the criteria. */
-      lg.innerHTML=html`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">×</button><h4>${t('lgdTitle')}</h4>${periodSel}<div class="kl-scroll">${KCOL.map(([code,c])=>{ const _kn=window.kName(code), _knm=(_kn===code?'':_kn); return html`<div class="kl-item${kSelected.has(code)?' sel':''}" role="button" tabindex="0" aria-pressed="${kSelected.has(code)?'true':'false'}" data-c="${code}" title="${code}${_knm?' · '+_knm:''}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span><span class="kl-code">${code}</span>${_knm?html`<span class="kl-nm"> · ${_knm}</span>`:''}</div>`; })}</div>${clearBtn}<div class="kl-hint">${_imTouchPrimary()?(IntMapLang.t(HOST.lang,'Tap to highlight • long-press for criteria','タップでその気候だけ強調 / 長押しで定義','Tippen: Klima hervorheben • lange drücken: Kriterien','Касание — выделить климат • долгое нажатие — критерии','Toca para resaltar el clima • mantén pulsado para criterios')):(IntMapLang.t(HOST.lang,'Click to highlight • right-click for criteria','クリックでその気候だけ強調 / 右クリックで定義','Klick: Klima hervorheben • Rechtsklick: Kriterien','Клик — выделить климат • правый клик — критерии','Clic: resaltar clima • clic derecho: criterios'))}</div>`;
+      lg.innerHTML=html`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">×</button><h4>${t('lgdTitle')}</h4>${periodSel}<div class="kl-scroll">${KCOL.map(([code,c])=>{ const _kn=window.kName(code), _knm=(_kn===code?'':_kn); return html`<div class="kl-item${kSelected.has(code)?' sel':''}" role="button" tabindex="0" aria-pressed="${kSelected.has(code)?'true':'false'}" aria-describedby="kl-hint" data-c="${code}" title="${code}${_knm?' · '+_knm:''}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span><span class="kl-code">${code}</span>${_knm?html`<span class="kl-nm"> · ${_knm}</span>`:''}</div>`; })}</div>${clearBtn}<div class="kl-hint" id="kl-hint">${_imTouchPrimary()?(IntMapLang.t(HOST.lang,'Tap to highlight • long-press for criteria','タップでその気候だけ強調 / 長押しで定義','Tippen: Klima hervorheben • lange drücken: Kriterien','Касание — выделить климат • долгое нажатие — критерии','Toca para resaltar el clima • mantén pulsado para criterios')):(IntMapLang.t(HOST.lang,'Click to highlight • right-click for criteria','クリックでその気候だけ強調 / 右クリックで定義','Klick: Klima hervorheben • Rechtsklick: Kriterien','Клик — выделить климат • правый клик — критерии','Clic: resaltar clima • clic derecho: criterios'))}</div>`;
       const psel=lg.querySelector('#kl-period'); if(psel) psel.onchange=(e)=>{ window.setKoppenPeriod(e.target.value); };
       const clr=lg.querySelector('#kl-clear'); if(clr) clr.onclick=()=>{ kSelected.clear(); buildLegend(); if(window._refreshKoppenImage) window._refreshKoppenImage(); };
       lg.querySelectorAll('.kl-item').forEach(it=>{
@@ -4361,7 +4361,7 @@ export function dataLayers(HOST){
          and this line said «Loading the catalog…» over all of them. A count that exists is shown, with the
          fetch still in progress said beside it. */
       if(s.loading&&!s.catalogue){ box.textContent=jp?'カタログを取得中…':IntMapLang.t(HOST.lang,'Loading the catalog…',undefined,'Katalog wird geladen…','Загрузка каталога…','Cargando el catálogo…'); return; }
-      if(s.err&&!s.catalogue){ box.textContent=(IntMapLang.t(HOST.lang,'Could not load: ','取得できませんでした: ','Konnte nicht geladen werden: ','Не удалось загрузить: ','No se pudo cargar: '))+s.err; return; }
+      if(s.err&&!s.catalogue){ /* (shell-experience) the row is handed what the live rungs met, so it names the supplier asked (js/layer-state.js) — on entering only: a fresh record every tick would drop the sentence the first went to fetch */ try{ const cur=layerState.get('dl-sats'), f=s.failure; if(f&&(!cur||cur.url!==f.url||cur.reason!==f.reason)) layerState.report('dl-sats',f); }catch(_){} box.textContent=(IntMapLang.t(HOST.lang,'Could not load: ','取得できませんでした: ','Konnte nicht geladen werden: ','Не удалось загрузить: ','No se pudo cargar: '))+s.err; return; }
       /* Two numbers, because they answer two different questions and conflating them would hide the
          filter: how many objects are being propagated, and how many are being drawn right now. */
       const drawn=s.drawn, total=s.catalogue;
@@ -4377,7 +4377,7 @@ export function dataLayers(HOST){
         'この日時の軌道要素はありません（手元の要素が述べるのは '+day(s.elementsCover.from)+'〜'+day(s.elementsCover.to)+'）'):null;
       try{ const cur=layerState.get('dl-sats');
         if(none){ if(!cur||cur.state!=='nodata'||cur.message!==note) layerState.report('dl-sats','nodata',{reason:'out-of-epoch',message:note}); }
-        else if(cur&&cur.state==='nodata') layerState.set('dl-sats',null); }catch(_){}
+        else if(cur&&(cur.state==='nodata'||cur.url)) layerState.set('dl-sats',null); }catch(_){}   /* (shell-experience) a failure handed to the row above (it has a url) goes too, once there is a count */
       if(none){ box.textContent=note; return; }
       const away=(s.outsideSpan>0)?IntMapLang.t(HOST.lang,' · '+s.outsideSpan.toLocaleString()+' with no elements for this date','・'+s.outsideSpan.toLocaleString('ja-JP')+' 機はこの日時の軌道要素なし'):'';
       box.textContent = (jp ? (drawn.toLocaleString('ja-JP')+' / '+total.toLocaleString('ja-JP')+' 機を表示中'+(s.sunlit?('・'+s.sunlit+' 機が太陽光下'):''))

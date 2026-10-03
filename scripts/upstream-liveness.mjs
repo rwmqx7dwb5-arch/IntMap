@@ -55,6 +55,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { classify, VERDICTS } from './lib/upstream.mjs';
+import { hostMatches } from '../js/host-match.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const LEDGER = 'scripts/outbound-hosts.json';
@@ -85,27 +86,10 @@ export const CONCURRENCY = 16;
 
 /* A ledger host may be a pattern: `*.wikipedia.org` or `mts*.google.com`. The probe's host must be
    one the pattern names — a probe that asks a different host measures a different fact.
-   Matched as text, not by building a RegExp from the pattern: the literal parts are compared
-   exactly (a `.` is a dot, never "any character"), and what a `*` stands for must be host
-   characters — letters, digits and hyphens, with a dot only before a non-empty label — so a `*`
-   can widen a label (`mts0`) or add labels (`de.`) but never swallow a foreign suffix. */
-const WILD_LABEL = /^[a-z0-9-]*$/;
-const wildcardSpan = (s) => s.split('.').every((label, i) => (i === 0 || label !== '') && WILD_LABEL.test(label));
-export function hostMatches(pattern, host) {
-  const parts = String(pattern).toLowerCase().split('*');
-  const h = String(host).toLowerCase();
-  if (!h.startsWith(parts[0])) return false;
-  /* parts[0..k] are matched and end at pos; next come a wildcard and parts[k + 1] */
-  const rest = (k, pos) => {
-    if (k === parts.length - 1) return pos === h.length;
-    const lit = parts[k + 1];
-    for (let end = pos; end + lit.length <= h.length; end++) {
-      if (h.startsWith(lit, end) && wildcardSpan(h.slice(pos, end)) && rest(k + 1, end + lit.length)) return true;
-    }
-    return false;
-  };
-  return rest(0, parts[0].length);
-}
+   (shell-experience) The rule lives in js/host-match.js since the browser became its second reader
+   (js/service-status.js joins a failed request to last night's row); re-exported here for the
+   callers that have always imported it from this script. */
+export { hostMatches };
 
 /** Which rows are probed, with what, and what is wrong with the declarations. Pure. */
 export function declared(ledger) {
@@ -139,6 +123,29 @@ export function declared(ledger) {
     probes.push({ host: r.host, url: p.url, expect: Array.isArray(p.expect) ? p.expect : null, why: p.why || null });
   }
   return { probes, notRequested, problems };
+}
+
+/* ── (companies-elections-live) THE UPSTREAMS A BUILD READS, NOT ONLY THE ONES A BROWSER READS ──────
+   scripts/outbound-hosts.json is the ledger of what the READER's browser requests. The national
+   elections layer is built from a dozen public services the browser never touches, and its weekly
+   refresh (.github/workflows/elections-refresh.yml) depends on them answering — so their probes are
+   declared beside the packs, in scripts/elections/upstreams.json (read as JSON: this job installs
+   nothing), and measured here with the same judgement and the same two-night rule.
+   ⚠ THE IDENTITY OF A BUILD PROBE IS «elections/<pack>: <host>», not the host alone: raw.githubusercontent
+   .com is asked by three packs for three repositories, and a streak is a fact about one of them. */
+export const BUILD_UPSTREAMS = 'scripts/elections/upstreams.json';
+export function buildProbes(decl) {
+  const probes = [], problems = [];
+  for (const [pack, d] of Object.entries((decl && decl.packs) || {})) {
+    for (const p of (d && d.probes) || []) {
+      let u;
+      try { u = new URL(p.url); } catch { problems.push(`${BUILD_UPSTREAMS}: ${pack} probe.url is not a URL: ${p.url}`); continue; }
+      if (u.protocol === 'http:' && !(typeof p.why === 'string' && p.why.trim().length >= 12)) problems.push(`${BUILD_UPSTREAMS}: ${pack} probes over http without saying why: ${p.url}`);
+      probes.push({ host: `elections/${pack}: ${u.hostname}${probes.some((q) => q.host === `elections/${pack}: ${u.hostname}`) ? u.pathname : ''}`,
+        url: p.url, expect: Array.isArray(p.expect) ? p.expect : null, why: p.what || p.why || null, group: 'build' });
+    }
+  }
+  return { probes, problems };
 }
 
 /* ── measurement ───────────────────────────────────────────────────────────────────────────── */
@@ -225,12 +232,23 @@ export function transitions(prev, cur) {
     const pState = p ? (p.state || stateOf(p.verdict)) : null;
     const pStreak = p && Number.isInteger(p.streak) ? p.streak : (pState ? 1 : 0);
     if (!p) appeared.push({ host: h.host, now: h.verdict });
+    /* (shell-experience) WHEN IT LAST ANSWERED, AND SINCE WHEN IT HAS NOT — carried night to night, so a
+       reader can be told 「最後に応答したのは いつ」 rather than only 「いま応答しない」 (js/service-status.js).
+       ⚠ Only what was OBSERVED is written: `lastAlive` is the measuredAt of a run that classified the host
+       alive — this run, or carried from the previous result. A down host with no recorded alive run says
+       so (`lastAlive: null`), and the previous run's own time stands in only where the previous result
+       observed it up (`pState === 'up'`) — never a date nobody measured. */
+    const at = (cur && cur.measuredAt) || null, pAt = (prev && prev.measuredAt) || null;
+    const pLast = p ? (p.lastAlive || (pState === 'up' ? pAt : null)) : null;
+    h.lastAlive = now === 'up' ? at : pLast;
     if (now == null) {                     /* unobserved: carry the previous state untouched */
-      if (p) { h.state = pState; h.streak = pStreak; h.from = p.from || null; }
+      if (p) { h.state = pState; h.streak = pStreak; h.from = p.from || null; h.downSince = p.downSince || null; }
       continue;
     }
     if (pState === now) { h.state = now; h.streak = pStreak + 1; h.from = p.from || null; }
     else { h.state = now; h.streak = 1; h.from = pState; }
+    /* the first run of the current down streak — this run when the streak starts here */
+    h.downSince = now === 'down' ? ((pState === 'down' && p && p.downSince) || (h.streak === 1 ? at : null)) : null;
     if (now === 'down') {
       const row = { host: h.host, now: h.verdict, runs: h.streak, from: h.from, why: h.why };
       if (h.from === 'up' && h.streak === CONFIRM_RUNS) down.push(row);
@@ -269,7 +287,7 @@ export function summary(result, change, decl) {
   }
   const rec = result.hosts.filter((h) => h.recovered);
   if (rec.length) L.push('', '### Answered only the second attempt', '', rec.map((h) => `\`${h.host}\``).join(', '));
-  L.push('', '<sub>scripts/upstream-liveness.mjs · probes declared in scripts/outbound-hosts.json · docs/MONITORING.md</sub>');
+  L.push('', '<sub>scripts/upstream-liveness.mjs · probes declared in scripts/outbound-hosts.json (the browser) and scripts/elections/upstreams.json (the election builds) · docs/MONITORING.md</sub>');
   return L.join('\n') + '\n';
 }
 
@@ -281,6 +299,9 @@ const has = (k) => process.argv.includes(k);
 async function main() {
   const ledger = JSON.parse(fs.readFileSync(path.join(ROOT, LEDGER), 'utf8'));
   const decl = declared(ledger);
+  const bp = fs.existsSync(path.join(ROOT, BUILD_UPSTREAMS)) ? buildProbes(JSON.parse(fs.readFileSync(path.join(ROOT, BUILD_UPSTREAMS), 'utf8'))) : { probes: [], problems: [] };
+  decl.probes.push(...bp.probes);
+  decl.problems.push(...bp.problems);
   for (const p of decl.problems) console.error('✖  ' + p);
   if (has('--check')) {
     console.log(`upstream-liveness --check: ${decl.probes.length} probe(s) declared, ${decl.notRequested.length} row(s) not requested or not probed, ${decl.problems.length} problem(s)`);

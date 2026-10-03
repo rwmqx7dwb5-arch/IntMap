@@ -10,6 +10,7 @@ import caps_layers from './atlas-cap-layers.js';
 import caps_map from './atlas-cap-map.js';
 import caps_navigation from './atlas-cap-navigation.js';
 import caps_news from './atlas-cap-news.js';
+import caps_notebook from './atlas-cap-notebook.js';
 import caps_panel from './atlas-cap-panel.js';
 import caps_photo from './atlas-cap-photo.js';
 import caps_places from './atlas-cap-places.js';
@@ -33,6 +34,7 @@ export const CAPABILITY_MODULES = {
   "map": caps_map,
   "navigation": caps_navigation,
   "news": caps_news,
+  "notebook": caps_notebook,
   "panel": caps_panel,
   "photo": caps_photo,
   "places": caps_places,

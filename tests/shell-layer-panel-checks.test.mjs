@@ -754,19 +754,27 @@ test('R408 ①b: 入力が来たら次のスライスを止め、静かになっ
 });
 
 /* spelling kept: browser script (js/layer-previews.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
-test('R408 ①c: 携帯では起動経路が門を開かない。ただしパネルを開けば全部出る', () => {
-  const s = rd('js/layer-previews.js');
-  assert.match(s, /const _bootMobile=\(\)=>\{[\s\S]{0,200}window\.IntMapDevice\.compact\(\)/,
-    '携帯判定はアプリ自身の答え（js/ui-device.js の 768px 境界）と同じ');
-  assert.match(s, /if\(_bootMobile\(\)\) return;[\s\S]{0,400}setTimeout\(go,6000\)/,
-    '起動 IIFE は携帯で早期 return し、idle+400ms も 6 秒天井も張らない');
+/* ⚠ (first-impression) この検査の主張は「携帯では」から「どの端末でも」に広がった。#R408 が携帯から、#R668 が
+   横向きの携帯から外した起動時の自動開放（地図の最初の idle + 400 ms・6 秒天井）は、デスクトップにだけ残って
+   開いていないパネルの 33 枚を初回訪問に払わせていた（tests/first-impression.spec.js が実測）。門の鍵は kick()
+   だけになったので、端末判定（_bootMobile）も埋め込みの例外もそれと一緒に消えた——同じ強さで、より広い事実を測る。 */
+test('R408 ①c: どの端末でも起動経路が門を開かない。ただしパネルを開けば全部出る', () => {
+  const s = codeOnly(rd('js/layer-previews.js'));
+  /* 門を開く呼び出しは、定義を除いて kick() の中の 1 か所だけ（idle・タイマー・端末判定の経路が残っていない） */
+  const calls = [...s.matchAll(/(?<![\w$])_openQueue(?!\w)/g)].map((m) => m.index);
+  const def = s.indexOf('function _openQueue(');
+  const kickAt = s.indexOf('function kick(');
+  assert.ok(def > 0 && kickAt > 0, '_openQueue と kick が居る');
+  const outside = calls.filter((i) => i !== def + 'function '.length && !(i > kickAt && i < kickAt + 200));
+  assert.deepEqual(outside, [], '_openQueue を参照するのは kick() だけ（自動開放の経路が無い）');
+  assert.doesNotMatch(s, /_bootMobile/, '携帯だけを免除する判定は、免除すべき自動開放と一緒に消えている');
+  assert.doesNotMatch(s, /events\.once\('idle'/, '地図の最初の idle で門を開く経路が無い');
   /* ⚠⚠⚠ CONSTITUTION §0.3 — 機能を減らしていないこと。パネル経由の入口 kick() は無傷で、
-     `_openQueue` は同じキューを同じ順で全部出す。ここが壊れたら「携帯だけプレビューが出ない」
-     という退行になり、それは今回いちばんやってはいけない失敗である。 */
-  assert.match(s, /function kick\(/, 'パネルから開く入口が残っている');
-  const kick = s.slice(s.indexOf('function kick('), s.indexOf('function kick(') + 400);
-  assert.match(kick, /_openQueue\(\)/, 'kick() は今までどおり門を開く');
-  assert.ok(!/_bootMobile\(\)/.test(kick), 'kick() の側に携帯の抑止は入っていない');
+     `_openQueue` は同じキューを同じ順で全部出す。ここが壊れたら「プレビューが出ない」
+     という退行になり、それはいちばんやってはいけない失敗である。 */
+  const kick = s.slice(kickAt, kickAt + 400);
+  assert.match(kick, /^function kick\(container\)\{ _openQueue\(\);/, 'kick() は最初の一手で門を開く');
+  assert.match(s, /return \{ into, kick,/, 'kick はパネルを出す側（js/map-ui.js）へ渡されている');
 });
 
 /* spelling kept: browser script (js/layer-previews.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */

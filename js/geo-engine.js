@@ -252,6 +252,30 @@ function _redrawLocalGlyphs(m,cover){
       else el.appendChild(doc.createTextNode(p.text));
     }
   }
+  /* ══ A SOURCE'S DECLARED CREDIT IS CARRIED BY THE ENGINE, NOT BY WHICHEVER SOURCE CLASS KEEPS IT ══
+     Both readers of a credit ask the SOURCE: `_drawnAttributions` reads `getSource(id).attribution`
+     and js/map-recorder.js `drawnCredits` reads `getStyle().sources[id].attribution` (the postcard,
+     the video). MapLibre keeps that key for tiled and GeoJSON sources, but a source PLACED BY
+     `coordinates` (image / video / canvas) drops it — measured in maplibre-gl 6.11.2: ImageSource's
+     constructor never reads `options.attribution`, its serialize() writes only type/url/coordinates,
+     CanvasSource adds nothing, and the style spec for image and video has no `attribution` key, so
+     validation REJECTS the whole source (`unknown property "attribution"`) and it is never added.
+     So the Köppen raster (Beck et al., CC BY 4.0) and the night lights (#R196) declared a credit no
+     reader could see. The rule is on the fact (the source is placed by coordinates and declared a
+     credit), not on a list of ids: hand the renderer the spec it accepts, then give the created source
+     the credit and make its serialisation say it.
+     Lifts when: the pinned renderer keeps `attribution` on coordinate-placed sources — then the
+     `s.attribution===a` branch below does nothing and this is a no-op. */
+  function _addSourceCarryingCredit(m,id,d){
+    const a=(d&&typeof d.attribution==='string'&&d.attribution)?d.attribution:null;
+    if(!a||!Array.isArray(d.coordinates)){ m.addSource(id,d); return; }
+    const spec=Object.assign({},d); delete spec.attribution;
+    m.addSource(id,spec);
+    const s=m.getSource(id); if(!s||s.attribution===a) return;
+    s.attribution=a;
+    const ser=s.serialize;
+    if(typeof ser==='function') s.serialize=function(){ const o=ser.apply(this,arguments); return (o&&typeof o==='object')?Object.assign(o,{attribution:a}):o; };
+  }
   /* what the renderer's control would have listed: sources read by a layer that is drawn at this zoom */
   function _drawnAttributions(mm,extra){
     let list=[].concat(extra==null?[]:extra).filter(x=>typeof x==='string');
@@ -1336,7 +1360,7 @@ function _redrawLocalGlyphs(m,cover){
     queryRenderedFeatures(g,o){ const m=_m(); return (m&&m.queryRenderedFeatures)?m.queryRenderedFeatures(g,o):[]; }, /* (map-a11y-structure) a primary press at a screen point, as the renderer's own click event — so every click owner, claim and popup runs exactly as for a pointer (js/map-narrator.js walks features with it) */ pressAt(pt){ const m=_m(); if(!m||!pt) return false; try{ const r=m.getCanvas().getBoundingClientRect(); m.fire(new maplibregl.MapMouseEvent('click',m,new MouseEvent('click',{clientX:r.left+pt.x,clientY:r.top+pt.y,bubbles:true,cancelable:true}))); return true; }catch(_){ return false; } },
     /* ⚠ (#R730) A PREDICATE ANSWERS, IT DOES NOT THROW: `m.getSource`/`getLayer` read `this.style`, null
        until the first style loads, so these threw instead of saying «no» (tests/monitors.spec.js). */
-    hasSource(id){ try{ const m=_m(); return !!(m&&m.getSource(id)); }catch(_){ return false; } }, addSource(id,d){ const m=_m(); if(m&&!m.getSource(id)){ _sd.forget(id); m.addSource(id,d); } },
+    hasSource(id){ try{ const m=_m(); return !!(m&&m.getSource(id)); }catch(_){ return false; } }, addSource(id,d){ const m=_m(); if(m&&!m.getSource(id)){ _sd.forget(id); _addSourceCarryingCredit(m,id,d); } },
     /* (#R322) the one operation MapLibre does NOT deduplicate: setData posts the whole collection
        to the worker for a full reparse, with no comparison anywhere. The decision is skipData in
        js/geo-command-log.js; `opts.revision` is how a caller says it reuses one object. */
@@ -1417,7 +1441,7 @@ function _redrawLocalGlyphs(m,cover){
         /* (#R196) …and a dynamic image may carry an ATTRIBUTION. The tsunami's pixels are the app's
            own arithmetic and need none; the night-lights image is NASA's VIIRS Black Marble and does,
            so the renderer's attribution control has to be told. */
-        if(!m.getSource(id)) m.addSource(id,Object.assign({type:'canvas',canvas:cv,coordinates:o.coordinates,animate:false},
+        if(!m.getSource(id)) _addSourceCarryingCredit(m,id,Object.assign({type:'canvas',canvas:cv,coordinates:o.coordinates,animate:false},
           o.attribution?{attribution:o.attribution}:{}));
         const lid=id+'-lyr';
         if(!m.getLayer(lid)) m.addLayer({ id:lid, type:'raster', source:id,

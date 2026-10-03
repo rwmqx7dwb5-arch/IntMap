@@ -24,7 +24,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 import { rpcIsRead } from '../scripts/data-effects.mjs';   /* (supporter-funnel) a GET/HEAD rpc is a read — one predicate, not a second spelling */
@@ -199,7 +199,7 @@ test('C①: a personal-information field is never named by its placeholder in th
    not the button that opened the dialog), so the walk does not descend into them.
    The ELEMENT it is registered on is resolved from getElementById / querySelector / a
    querySelectorAll(…).forEach parameter / a variable bound to one of those, and must carry
-   `data-effect` in its markup (index.html or any js/*.js), or have it set on that same variable. */
+   `data-effect` in its markup (index.html, a standalone page, or any js/*.js), or have it set on that same variable. */
 const AUTH_WRITES = new Set(['updateUser', 'signOut', 'resetPasswordForEmail', 'signUp', 'registerPasskey', 'delete', 'unenroll', 'linkIdentity', 'unlinkIdentity']);
 const TABLE_WRITES = new Set(['insert', 'upsert', 'update', 'delete']);
 /* what a control press can fire: js/atlas-controls.js doControl clicks, sets a value and dispatches
@@ -275,6 +275,21 @@ function eachNode(root, fn) {
   })(root);
 }
 
+/* the names a function binds as its parameters (destructured and defaulted ones included) */
+function paramsOf(fn) {
+  const out = new Set();
+  const add = (p) => {
+    if (!p) return;
+    if (p.type === 'Identifier') out.add(p.name);
+    else if (p.type === 'AssignmentPattern') add(p.left);
+    else if (p.type === 'RestElement') add(p.argument);
+    else if (p.type === 'ArrayPattern') p.elements.forEach(add);
+    else if (p.type === 'ObjectPattern') p.properties.forEach((q) => add(q.type === 'RestElement' ? q.argument : q.value));
+  };
+  (fn.params || []).forEach(add);
+  return out;
+}
+
 export function scanHandlers(files, markup) {
   const parsed = files.map(({ path, src }) => ({ path, src, ast: parse(src) })).filter((f) => f.ast);
   /* names exported across files (a factory's return destructured elsewhere keeps the name) */
@@ -291,6 +306,12 @@ export function scanHandlers(files, markup) {
       const s = sinkOf(n); if (s) { hit = s; return; }
       if (n.type === 'CallExpression' && n.callee.type === 'Identifier') {
         const nm = n.callee.name;
+        /* ⚠ A PARAMETER IS WHATEVER THE CALLER PASSED, NOT THE FUNCTION THAT HAPPENS TO SHARE ITS NAME.
+           MEASURED (news-intelligence): js/ocean-currents.js `_mkIcon(name, S, paint)` calls its
+           `paint` argument, and the walk resolved it to js/news-intel.js's `paint` — so twelve
+           buttons in four files «reached» an rpc none of them can reach. The value of a parameter is
+           not known here, so it is not followed (its caller's argument is walked where it is written). */
+        if (paramsOf(fn).has(nm)) return;
         const cands = file.named.has(nm) ? [{ f: file, fn: file.named.get(nm) }] : (global.get(nm) || []);
         for (const c of cands) { const r = writes(c.fn, c.f, stack); if (r) { hit = nm + '→' + r; return; } }
       }
@@ -387,7 +408,10 @@ function corpus(entries) {
 }
 
 const JS_FILES = readdirSync(join(ROOT, 'js')).filter((f) => f.endsWith('.js')).map((f) => ({ path: 'js/' + f, src: read('js/' + f) }));
-const MARKUP = corpus(JS_FILES.concat([{ path: 'index.html', src: read('index.html') }]));
+/* (sales-channels) index.html AND every standalone page — discovered (scripts/js-reachability.mjs), the same
+   markup scripts/data-effects.mjs reads: contact.html's form and the enquiries console declare their controls there */
+const { standalonePages } = await import(pathToFileURL(join(ROOT, 'scripts', 'js-reachability.mjs')).href);
+const MARKUP = corpus(JS_FILES.concat(['index.html', ...standalonePages(ROOT)].map((n) => ({ path: n, src: read(n) }))));
 
 test('D①: every click/Enter handler that reaches a write is on an element that declares data-effect', () => {
   const found = scanHandlers(JS_FILES, MARKUP);
@@ -428,4 +452,11 @@ test('D④: a new send button with no declaration turns the gate red — and dec
   const c = { path: 'c.js', src: `document.getElementById('open').onclick=()=>{ document.getElementById('save').onclick=()=>HOST.DB.from('q').update({}); };` };
   const r3 = scanHandlers([c], corpus([{ path: 'c', src: '<button id="open">Open</button><button id="save" data-effect="private">Save</button>' }]));
   assert.deepEqual(r3.map((x) => x.selector), ['#save']);
+  /* a call to a PARAMETER is not a call to another file's function of the same name — and the same
+     call written to the name itself still is (the rule narrows to parameters, nothing else) */
+  const d = { path: 'd.js', src: `function paint(){ return HOST.DB.rpc('w', {}); }` };
+  const e = { path: 'e.js', src: `function draw(paint){ paint(1); } document.getElementById('z').onclick=()=>{ draw(() => 0); };` };
+  assert.deepEqual(scanHandlers([d, e], corpus([{ path: 'z', src: '<button id="z">Z</button>' }])), [], 'a parameter named paint is not d.js paint');
+  const e2 = { path: 'e2.js', src: `function draw(){ paint(1); } document.getElementById('z').onclick=()=>{ draw(); };` };
+  assert.equal(scanHandlers([d, e2], corpus([{ path: 'z', src: '<button id="z">Z</button>' }])).length, 1, 'a free call to paint still reaches d.js');
 });

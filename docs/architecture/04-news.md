@@ -298,3 +298,27 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 「同じ名前で整理されている」だけなので、共有モジュールはそこで見出しの閾値を**下げるのではなく
 上げる**（`countrySame` / `countryNear` > `near` > `tight`）。閾値の表と、それを決めた実測は
 共有モジュールの中にある。
+
+---
+
+### 4.6 出来事を地理・時間・企業・健全性から読む — `js/news-intel.js`
+
+同じ `news_events` を、一覧（新しい順 200 件）とは別の 4 つの角度から読む口。正本は
+[`docs/NEWS-EVENTS.md` §16](../NEWS-EVENTS.md)。
+
+- **起動時に在るのは行と窓口だけ**: `js/news-pulse.js` がレイヤー行「国ごとのニュースの脈」（`dl-newspulse`）と
+  IntMapOS 命令（`newspulse.toggle` / `.rank` / `.brief`）と `window.IntMapNewsIntel` を置く。本体
+  `js/news-intel.js` は `IntMapLazy` の `newsIntel` で、最初に誰かが訊いたときに降りてくる。
+- **計算は `js/news-intel-core.js` の 1 本**（純粋）: 地点 → 国（Natural Earth 10 m・海岸の許容 `COAST_KM`）、
+  窓と直前の窓、増減、塗りの値、障害とニュースの結び付け、取り込みの判定。node のテストが本番のデータで
+  同じ関数を評価する。
+- **サーバーの読み口**（migration `20261003160000_news_intelligence.sql`）: `news_pulse(since, until)`
+  （地点 × UTC 日 × カテゴリの集計を 1 つの jsonb）・`news_events_at(points, since, until)`（地点に載った
+  出来事の行）・`news_ingest_health()`（取り込みの要約。本文を含まない）・表 `news_event_entities`。
+- **Chronos に従う**: 窓の終わりは時計の瞬間（`clockUntil`）。`js/layer-time-decl.js` は `record`。
+- **国の日報**は `.country-popup` の殻（`#nint-popup`）。出来事を押すと `IntMapNewsEvents.openRow` が
+  一覧と同じ詳細を開く。障害は `IntMapNetHealth.outageEvents`（IODA をブラウザが読む・保存しない）。
+- **企業パネルの「ニュース」タブ**（`js/company-panel.js`）は `IntMapNewsIntel.companyEvents` を読み、
+  地図の線（`nint-co-*`）は `showCompanyLinks` が引く。
+- **鮮度の部品** `js/freshness.js` は「新しい／N 時間更新なし／確認できなかった／未確認」を別の文で言う。
+  News 一覧の上の取り込みの 1 行（`#news-ingest-health`、`js/news-events.js`）と日報と凡例が使う。

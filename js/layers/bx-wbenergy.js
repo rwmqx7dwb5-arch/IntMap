@@ -5,4 +5,5 @@ export default {
   order: 100,
   key: 'wbenergy',
   rest: true,
+  measures: ['worldbank:EG.USE.PCAP.KG.OE'],
 };

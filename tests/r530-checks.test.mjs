@@ -312,7 +312,13 @@ test('⑫ the first-tier bundle is not on the boot path, and not fetched on a ph
 test('⑬ nine languages, in the order IntMapLang actually uses', () => {
   /* ⚠ fr and ko are positions 7 and 8; the two Chinese scripts are 5 and 6. A tuple written
      in the natural en/ja/de/ru/es/fr/ko/zh/zh order hands French to a zh-Hant reader (#R502). */
-  const call = /_LT\.arr\(LA\(([\s\S]*?)\n      \)\);/.exec(TA);
+  /* (hist-coverage) asked of note()'s OWN body — the file now has other two-language LA(…) calls (the
+     hatch's legend, the coverage clause) above it, and a lazy match from the first `_LT.arr(LA(` in the
+     file ran from one of those to note()'s closing line and counted four «slots». The nine-string tuple
+     is the one note() returns the subdivision count with (`const base =`). */
+  const noteAt = TA.indexOf('function note()');
+  assert.ok(noteAt >= 0, 'js/time-admin1.js still has note()');
+  const call = /const base = _LT\.arr\(LA\(([\s\S]*?)\n      \)\);/.exec(TA.slice(noteAt));
   assert.ok(call, 'note() builds its tuple with LA(…) so the i18n instruments can see it');
   const args = call[1];
   /* ⚠ (#R669) THIS PINNED THE WORDING, AND THE WORDING IS NOT THE FACT. The nine regular expressions

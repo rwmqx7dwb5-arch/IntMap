@@ -195,7 +195,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="IntMap">
   <meta property="og:title" content="IntMap — Every year of the world, on one map">
-  <meta property="og:description" content="Set the clock anywhere from 123,000 BC to today and the borders, figures and layers follow. 163 layers, every source named, free and with no sign-up — and, signed in, Atlas drives the map from plain words.">
+  <meta property="og:description" content="Set the clock anywhere from 123,000 BC to today and the borders, figures and layers follow. 165 layers, every source named, free and with no sign-up — and, signed in, Atlas drives the map from plain words.">
   <meta property="og:url" content="__INTMAP_SITE_URL__">
   <meta property="og:image" content="__INTMAP_SITE_URL__og-image.jpg">
   <meta property="og:image:type" content="image/jpeg">
@@ -205,7 +205,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
   <meta property="og:locale" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="IntMap — Every year of the world, on one map">
-  <meta name="twitter:description" content="Set the clock anywhere from 123,000 BC to today and the borders, figures and layers follow. 163 layers, every source named, free and with no sign-up — and, signed in, Atlas drives the map from plain words.">
+  <meta name="twitter:description" content="Set the clock anywhere from 123,000 BC to today and the borders, figures and layers follow. 165 layers, every source named, free and with no sign-up — and, signed in, Atlas drives the map from plain words.">
   <meta name="twitter:image" content="__INTMAP_SITE_URL__og-image.jpg">
   <meta name="twitter:image:alt" content="IntMap showing Europe with sea-surface temperature, submarine cables and rain radar, beside the Countries, Layers and Atlas panels">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"IntMap","url":"__INTMAP_SITE_URL__","description":"A free world map you can set to any date from 123,000 BC to today — historical borders, climate, population and live data on one map, every source named. No sign-up.","applicationCategory":"EducationalApplication","operatingSystem":"Any (web browser)","browserRequirements":"Requires a modern web browser with WebGL","inLanguage":["en","ja","de","ru","es","zh-Hant","zh-Hans","fr","ko"],"isAccessibleForFree":true,"image":"__INTMAP_SITE_URL__og-image.jpg","screenshot":"__INTMAP_SITE_URL__og-image.jpg","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
@@ -542,6 +542,8 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
           <span class="ntl-open-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M12 3.6v1.6M20.4 12h-1.6M12 20.4v-1.6M3.6 12h1.6" stroke-opacity="0.55"/><path d="M12 6.9V12l3.7 2.2"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg></span>
         <span class="ntl-open-txt"><b id="ntl-open-t">Chronos</b><small id="ntl-open-s">Control the map’s time</small></span>
       </button>
+      <!-- (first-impression) the year rail on the first screen: marks from the kernel's floor to now, each one a jump. Built by js/news-timeline.js buildPeek(); desktop only (a phone enters Chronos from the sheet head). -->
+      <div class="ntl-peek" id="ntl-peek" role="group"></div>
       <div class="ntl-body" id="ntl-body">
         <div class="ntl-title-row">
           <!-- (#R289) 「Chronos／IntMapの統一時間を操作」 — the name is not translated; the line under it is. -->
@@ -763,6 +765,11 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <div class="setting-group"><label data-i18n="lblDataSources">Data &amp; attribution</label>
       <a id="link-sources" href="./sources.html" target="_blank" rel="opener" class="ai-test-btn" style="width:100%;display:block;box-sizing:border-box;text-align:center;text-decoration:none;" data-i18n="viewSourcesPage">Open the data-sources page ↗</a>
     </div>
+    <!-- (shell-experience) 「IntMap のいま」— the status page (js/service-status.js, fetched on first use; its handle is
+         window.IntMapStatus in js/layer-state.js, which also owns this button's one click listener). -->
+    <div class="setting-group" id="status-page-group"><label data-i18n="lblStatusPage">IntMap, now</label>
+      <button type="button" id="btn-status-page" class="ai-test-btn" style="width:100%;"><span data-icon="gauge"></span> <span data-i18n="viewStatusPage">What is working — this device, the layers, the data sources</span></button>
+    </div>
     <!-- (#R211) 「科学的根拠・ロジックの説明ページ」 — the data-source list answers WHERE a number came
          from; this answers HOW it was computed, which is a different question and needed its own page.
          A plain link to a static page, so it costs the app nothing at boot. -->
@@ -774,6 +781,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
          The page itself takes a reader whose app language is Japanese to ja/about.html. -->
     <div class="setting-group"><label data-i18n="lblAboutIntMap">About IntMap</label>
       <a id="link-about" href="./about.html" target="_blank" rel="noopener" class="ai-test-btn" style="width:100%;display:block;box-sizing:border-box;text-align:center;text-decoration:none;" data-i18n="viewAboutPage">What IntMap is, examples and classroom use ↗</a>
+      <button type="button" data-im-gallery class="ai-test-btn" style="width:100%;margin-top:8px;" data-i18n="openGalleryBtn">Browse example maps and tours</button>
       <button type="button" id="btn-tours" class="ai-test-btn" style="width:100%;margin-top:8px;" data-i18n="viewTours">Classroom tours — a lesson as a sequence of maps</button>
     </div>
     <!-- (#R72) keyboard-shortcut help was undiscoverable ("ショートカットキーの説明がどこにもない") — the ?-key

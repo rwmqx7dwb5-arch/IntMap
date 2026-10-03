@@ -5,4 +5,5 @@ export default {
   order: 50,
   key: 'wbgdpgrow',
   rest: true,
+  measures: ['worldbank:NY.GDP.MKTP.KD.ZG'],
 };

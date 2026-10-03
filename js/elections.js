@@ -48,6 +48,16 @@ export function elections(HOST) {
   const CB = 'dl-elect';
 
   let index = null, polity = null, election = null, geo = null, res = null;
+  /* (companies-elections-live) THE SWING: the previous election of the same chamber, when it was
+     fought on the SAME boundary era — only then is «this district changed hands» a statement about
+     one piece of ground. Across a redistricting the districts are different ground and nothing is
+     compared (the legend says so). */
+  let prevSame = null, prevRes = null, flips = 0;
+  let playTimer = null;
+  /* How long the time-lapse holds each election. A choice about reading, not a measurement: one
+     step loads at most two small files (the era is usually cached) and the reader needs the time to
+     read the count of districts that changed hands. CANON: this constant. */
+  const PLAY_MS = 2600;
   let on = false, loading = null, popup = null, busy = 0;
 
   const geoCache = new Map(), resCache = new Map();
@@ -119,6 +129,43 @@ export function elections(HOST) {
   }
 
   const electionsOf = (pid) => (index ? index.elections.filter(e => e.polity === pid) : []);
+  /* the same chamber, in date order — a time-lapse of the Senate must not interleave the House */
+  const sameBody = (e) => electionsOf(e.polity).filter(x => x.body && e.body && x.body.en === e.body.en);
+  function previousOf(e) {
+    const list = sameBody(e);
+    const k = list.findIndex(x => x.id === e.id);
+    return k > 0 ? list[k - 1] : null;
+  }
+
+  /* ── (companies-elections-live) THE TIME-LAPSE ─────────────────────────────────────────────────
+     Plays the selected chamber's elections in order, each on its own boundary era, outlining the
+     districts that changed hands. It is the stepper pressed on a timer — the same select() — so it
+     cannot show anything the stepper could not. Any hand on a control stops it. */
+  let isPlaying = false;
+  function stopPlay() {
+    isPlaying = false;
+    if (playTimer) { clearTimeout(playTimer); playTimer = null; }
+  }
+  const playing = () => isPlaying;
+  function startPlay() {
+    if (!election) return;
+    stopPlay();
+    const list = sameBody(election);
+    let k = list.findIndex(x => x.id === election.id);
+    /* from the end, a press means «play it from the start» */
+    if (k >= list.length - 1) k = -1;
+    isPlaying = true;
+    const step = async () => {
+      playTimer = null;
+      k++;
+      if (!isPlaying || !on || k >= list.length) { stopPlay(); renderPanel(); return; }
+      const ok = await select(list[k].id);
+      if (!isPlaying) return;                          /* a hand on a control stopped it while loading */
+      if (!ok || k >= list.length - 1) { stopPlay(); renderPanel(); return; }
+      playTimer = setTimeout(step, PLAY_MS);
+    };
+    step();
+  }
   const polityOf = (pid) => (index ? index.polities.find(p => p.id === pid) : null);
 
   /* ── select an election and paint it ────────────────────────────────────────────────────────
@@ -132,15 +179,18 @@ export function elections(HOST) {
     const e = index.elections.find(x => x.id === eid);
     if (!e) return false;
     const token = ++busy;
-    let g = null, r = null;
+    let g = null, r = null, pr = null;
+    const ps = previousOf(e);
     try {
-      [g, r] = await Promise.all([e.geo ? part(e.geo) : Promise.resolve(null), part(e.res)]);
+      [g, r, pr] = await Promise.all([e.geo ? part(e.geo) : Promise.resolve(null), part(e.res),
+        ps && ps.geo === e.geo && e.geo ? part(ps.res) : Promise.resolve(null)]);
     } catch (_) {
       if (token === busy) { try { HOST.imToast(L('Could not load the election data', '選挙データを読み込めませんでした', 'Wahldaten konnten nicht geladen werden', 'Не удалось загрузить данные о выборах', 'No se pudieron cargar los datos electorales')); } catch (__) {} }
       return false;
     }
     if (token !== busy) return false;                 /* a later selection already won */
     election = e; polity = e.polity; geo = g; res = r;
+    prevSame = ps; prevRes = pr;
     paint();
     renderPanel();
     if (fly) { try { window.IntMapLayerHome && window.IntMapLayerHome.goTo(CB); } catch (_) {} }
@@ -159,13 +209,20 @@ export function elections(HOST) {
     if (!res) return;
     if (!geo) { try { GE().layers.setSourceData(SRC, EMPTY); } catch (_) {} return; }
     const d = res.d || {};
+    const before = (prevRes && prevRes.d) || null;
+    flips = 0;
     geo.features.forEach(f => {
       const p = f.properties || (f.properties = {});
       const row = d[p.cd];
       const col = row && row.w ? colourOf(row.w) : null;
+      delete p.flip;
       if (!col) { delete p.col; delete p.win; return; }
       p.col = col;
       p.win = partyName(row.w);
+      /* changed hands: both elections RECORD a winner here and they differ. A district with no
+         recorded winner in either is not a change — it is a gap, and gaps are not drawn as events. */
+      const was = before && before[p.cd] && before[p.cd].w;
+      if (was && was !== row.w) { p.flip = 1; flips++; }
     });
     try { GE().layers.setSourceData(SRC, geo); } catch (_) {}
   }
@@ -185,7 +242,10 @@ export function elections(HOST) {
       }, before);
       GE().layers.add({
         id: 'elec-line', type: 'line', source: SRC, layout: { visibility: 'none' },
-        paint: { 'line-color': ['case', ['has', 'col'], 'rgba(255,255,255,0.5)', 'rgba(0,0,0,0)'], 'line-width': 0.6 }
+        /* (companies-elections-live) a district that changed hands since the previous election on
+           the same map is outlined — the swing is drawn on the ground it happened on */
+        paint: { 'line-color': ['case', ['has', 'flip'], '#ffd60a', ['has', 'col'], 'rgba(255,255,255,0.5)', 'rgba(0,0,0,0)'],
+          'line-width': ['case', ['has', 'flip'], 2.2, 0.6] }
       }, before);
       try { GE().events.onLayer('click', 'elec-fill', onClick); } catch (_) {}
       return true;
@@ -271,6 +331,11 @@ export function elections(HOST) {
       '.elec-step:hover:not(:disabled){background:var(--primary-fill);color:#fff;border-color:transparent;}',
       '@media'+window.IntMapDevice.COMPACT+'{.elec-step{width:44px;height:44px;font-size:24px;}}',
       '.elec-step:disabled{opacity:.35;cursor:default;}',
+      '.elec-play{font-size:15px;}',
+      '.elec-play[aria-pressed="true"]{background:var(--primary-fill);color:#fff;border-color:transparent;}',
+      '.elec-swing{font-size:11px;color:var(--text-main);margin:-4px 0 8px;display:flex;align-items:center;gap:6px;}',
+      '.elec-swing i{flex:0 0 auto;width:14px;height:0;border-top:2.2px solid #ffd60a;}',
+      '.elec-live{font-size:10.5px;line-height:1.5;margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(255,159,10,0.12);color:var(--text-main);}',
       '.elec-row{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:baseline;margin-bottom:7px;}',
       '.elec-nm{font-size:11.5px;color:var(--text-main);display:flex;align-items:center;gap:5px;min-width:0;}',
       '.elec-nm i{flex:0 0 auto;width:9px;height:9px;border-radius:2px;font-style:normal;}',
@@ -289,6 +354,37 @@ export function elections(HOST) {
       '.elec-pop .elec-ev{white-space:nowrap;}'
     ].join('');
     document.head.appendChild(s);
+  }
+
+  /* the swing line: how many districts changed hands since the previous election of this chamber —
+     said only when the two were fought on the same map, and said NOT to be compared otherwise */
+  /* the one encoder (js/safe-html.js), named here so output-taint can see these two return only escaped text */
+  const escH = (v) => window.IntMapSafe.html(v == null ? '' : String(v));
+  function swingHtml() {
+    const esc = escH;
+    if (!election || !geo) return '';
+    const ps = prevSame;
+    if (!ps) return '';
+    if (ps.geo !== election.geo || !prevRes) {
+      return '<div class="elec-head">' + esc(L('Boundaries differ from the previous election (' + ps.y + '), so seats changing hands are not compared.',
+        '前回（' + ps.y + '年）とは区割りが異なるため、勝者の入れ替わりは比較しません。')) + '</div>';
+    }
+    return '<div class="elec-swing"><i></i>' + esc(L(flips + ' district(s) changed hands since ' + ps.y + ' (outlined)',
+      ps.y + '年から勝者が変わった選挙区: ' + flips + '（枠線）')) + '</div>';
+  }
+  /* «更新不能»: the last scheduled check found a newer election than the record and established why
+     it is not here — printed with its reason and the day it was checked (scripts/lib/elections-live.mjs) */
+  function refreshHtml() {
+    const esc = escH;
+    const p = polityOf(polity);
+    const r = p && p.refresh;
+    if (!r || !Array.isArray(r.bodies)) return '';
+    const rows = r.bodies.filter(b => b.state === 'blocked' || b.state === 'overdue' || b.state === 'importable');
+    if (!rows.length) return '';
+    return rows.map(b => '<div class="elec-live"><b>'
+      + esc(b.state === 'importable' ? L('Newer data available', '新しいデータあり') : L('Cannot be updated', '更新不能'))
+      + '</b> · ' + esc(b.what ? nm(b.what) : b.body) + '<br>' + esc(nm(b.why))
+      + '<br>' + esc(L('Last checked', '最終確認') + ' ' + r.checkedAt) + '</div>').join('');
   }
 
   function renderPanel() {
@@ -373,12 +469,17 @@ export function elections(HOST) {
           + '<button class="elec-step elec-prev" aria-label="' + esc(L('Earlier election', '前の選挙', 'Frühere Wahl', 'Предыдущие выборы', 'Elección anterior')) + '"' + (i <= 0 ? ' disabled' : '') + '>&lsaquo;</button>'
           + '<select class="elec-sel" aria-label="' + esc(L('Election', '選挙')) + '">' + eOpts + '</select>'
           + '<button class="elec-step elec-next" aria-label="' + esc(L('Later election', '次の選挙', 'Spätere Wahl', 'Следующие выборы', 'Elección siguiente')) + '"' + (i >= mine.length - 1 ? ' disabled' : '') + '>&rsaquo;</button>'
+          + '<button class="elec-step elec-play" aria-pressed="' + (playing() ? 'true' : 'false') + '" aria-label="' + esc(playing()
+            ? L('Stop the time-lapse', '再生を止める')
+            : L('Play this chamber’s elections in order', 'この議会の選挙を順に再生')) + '"' + (sameBody(election).length < 2 ? ' disabled' : '') + '>'
+            + (playing() ? '&#10073;&#10073;' : '&#9654;') + '</button>'
         + '</div>'
       + '</div>'
       + '<div class="elec-head">' + esc(election.date) + ' · '
         + (byPct ? L('Share of the vote', '得票率', 'Stimmenanteil', 'Доля голосов', 'Porcentaje de votos')
                  : L('Seats', '議席', 'Sitze', 'Места', 'Escaños'))
         + (need ? (' · ' + L('majority', '過半数', 'Mehrheit', 'большинство', 'mayoría') + ' ' + need + '/' + total) : '') + '</div>'
+      + swingHtml()
       + rows
       /* ⚠ THE LEGEND SAYS WHAT THE COLOUR MEANS, because in most of these systems the party that
          won the most districts is not necessarily the party that holds the most seats. */
@@ -406,18 +507,27 @@ export function elections(HOST) {
             'Границы округов для этих выборов не опубликованы, поэтому карта остаётся пустой. Места ниже — зафиксированный результат.',
             'No se han publicado los límites de las circunscripciones de esta elección, por lo que el mapa queda vacío. Los escaños de abajo son el resultado registrado.')
         + '</div>')
-      + '<div class="elec-note">' + esc(election.src) + (election.lic ? ' · ' + esc(election.lic) : '') + '</div>';
+      + '<div class="elec-note">' + esc(election.src) + (election.lic ? ' · ' + esc(election.lic) : '') + '</div>'
+      /* (companies-elections-live) WHEN THESE BYTES WERE TAKEN, AND FROM WHOM — and whether the record
+         is known to be behind the world. A date derived from the commit says it is derived. */
+      + (election.fetchedAt ? '<div class="elec-note">'
+        + esc((election.fetchedFrom === 'commit' ? L('Recorded', '記録日') : L('Fetched', '取得日')) + ' ' + election.fetchedAt)
+        + (election.up ? ' · ' + esc(election.up) : '') + '</div>' : '')
+      + refreshHtml();
 
     const pol = box.querySelector('.elec-pol');
     pol.onchange = () => {
+      stopPlay();
       const list = electionsOf(pol.value);
       /* the most recent election that polity has — the one a reader asking about a country means */
       if (list.length) select(list[list.length - 1].id, { fly: true });
     };
     const sel = box.querySelector('.elec-sel');
-    sel.onchange = () => select(sel.value);
-    box.querySelector('.elec-prev').onclick = () => { if (i > 0) select(mine[i - 1].id); };
-    box.querySelector('.elec-next').onclick = () => { if (i < mine.length - 1) select(mine[i + 1].id); };
+    /* any hand on a control stops the time-lapse: the reader has taken over */
+    sel.onchange = () => { stopPlay(); select(sel.value); };
+    box.querySelector('.elec-prev').onclick = () => { stopPlay(); if (i > 0) select(mine[i - 1].id); };
+    box.querySelector('.elec-next').onclick = () => { stopPlay(); if (i < mine.length - 1) select(mine[i + 1].id); };
+    box.querySelector('.elec-play').onclick = () => { if (playing()) { stopPlay(); renderPanel(); } else startPlay(); };
     try { window._tileLegends && window._tileLegends(); } catch (_) {}
   }
 
@@ -425,6 +535,7 @@ export function elections(HOST) {
   async function toggle(want) {
     on = !!want;
     if (!on) {
+      stopPlay();
       setVis(false);
       if (popup) { try { popup.remove(); } catch (_) {} popup = null; }
       try { window._hideGenericLegend && window._hideGenericLegend('elect'); } catch (_) {}
@@ -490,8 +601,17 @@ export function elections(HOST) {
     homeBox: () => { const p = polityOf(polity); return (p && p.home) || null; },
     polities: () => (index ? index.polities.map(p => p.id) : []),
     elections: () => (index ? index.elections.map(e => e.id) : []),
+    /* the newest election a polity has — the one a caller naming only the country means */
+    latest: (pid) => { const l = electionsOf(pid); return l.length ? l[l.length - 1].id : null; },
     current: () => (election ? election.id : null),
-    select: (id) => select(id)
+    select: (id) => { stopPlay(); return select(id); },
+    /* (companies-elections-live) the time-lapse and the receipts, for any caller that drives the layer */
+    play: () => { startPlay(); return playing(); },
+    stop: () => { stopPlay(); if (on) renderPanel(); return true; },
+    isPlaying: () => playing(),
+    swing: () => (election && prevSame ? { since: prevSame.id, comparable: !!(prevRes && prevSame.geo === election.geo), changedHands: flips } : null),
+    freshness: () => (election ? { fetchedAt: election.fetchedAt || null, fetchedFrom: election.fetchedFrom || null, upstream: election.up || null,
+      refresh: (polityOf(polity) || {}).refresh || null } : null)
   };
   return window.IntMapElections;
 }

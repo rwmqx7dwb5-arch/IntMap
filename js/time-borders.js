@@ -2532,6 +2532,10 @@ export function timeBorders(HOST){
                 runs before the name layers are fed — so scripts/history-pages.mjs states what the map writes,
                 not a second reading of the record. Reads only; draws nothing. */
              tagSame:(fc,year)=>tagSame(fc,year),
-             changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:_stepMin(),max:CS_MAX}) };   /* (#R518) the range the stepper can walk — both day-exact records, and (#R695) the era sheets below them */
+             changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:_stepMin(),max:CS_MAX}),
+             /* (map-layer-system) which record answered — `collectionAt` names its tier, and the record names itself:
+                the bundle's own `src` and `built` (the mirror keeps every scalar the bundle states at its top), so the
+                year book (js/year-book.js) cites the record in the record's words rather than in a copy of them */
+             recordOf:(tier)=>{ try{ const d=tier==='cshapes'?_csD:tier==='ohm'?_hbD:tier==='snapshot'?(_erD||window.__HISTERAS||null):null; return d?{ tier, src:d.src||null, built:d.built||null }:null; }catch(_){ return null; } } };   /* (#R518) the range the stepper can walk — both day-exact records, and (#R695) the era sheets below them */
   })();
 }

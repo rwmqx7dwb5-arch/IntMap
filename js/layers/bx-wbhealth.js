@@ -5,4 +5,5 @@ export default {
   order: 70,
   key: 'wbhealth',
   rest: true,
+  measures: ['worldbank:SH.XPD.CHEX.GD.ZS'],
 };

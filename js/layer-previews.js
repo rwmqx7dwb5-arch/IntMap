@@ -10,7 +10,6 @@
 import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) how long one read of a host may take. (fetch-deadline-layer) The relay URL it also gave the cable preview is the layer's business now — see layerReads below */
 import { readWithin, jsonWithin } from './fetch-deadline.js';
 import { layerReads } from './data-layers.js';   /* (fetch-deadline-layer) the cable and radar rows' OWN reads — a preview draws what its layer would, fetched the way its layer fetches it */
-import { IntMapGeoEngine } from './geo-engine.js';
 
 export function layerPreviews(countryStats,loadCountryData){
     /* (#R71) quality pass ("画像の縦横比が引き延ばされ…クオリティも低い"): canvases are now WEB-MERCATOR
@@ -765,18 +764,18 @@ export function layerPreviews(countryStats,loadCountryData){
        registered while the panel was off-screen never got a second look and sat on their gradient
        placeholder forever (「一切変化なし」). The queue stays exactly as #R73 built it — same order,
        same bound of four, same immediate application — and only its START moves: it opens when the
-       panel is actually shown (kick()), or at the browser's first idle, whichever comes first. So a
-       user who opens the panel in the first second sees the same thing they saw before, and a user
-       who never opens it never pays for it during boot. */
+       panel is actually shown (kick()) — and, since first-impression, ONLY then (the note above
+       _queueImg). So a user who opens the panel in the first second sees the same thing they saw
+       before, and a user who never opens it never pays for it at all. */
     const _imgQ=[]; let _imgBusy=0, _imgOpen=false;
     /* == (#R311) ...AND NEITHER MAY THE CANVAS PAINTERS =========================================
        #R193 gated IMG[id] only. STAT / MEMBERS / REAL / PAINT in into() kept drawing as their rows
        were built, which costs main-thread CPU rather than bandwidth: a boot profile measured
        904.7 ms of self time in this file (statChoro 85.1 ms, the dl-ec-* painters 52-75 ms each),
        spent drawing thumbnails for a panel that had not been opened.
-       (!) Still NOT an IntersectionObserver - the warning above is exactly why. This gate ALWAYS
-       opens (kick(), the map's first idle, or the 6 s ceiling), so a queued painter is a DELAYED
-       painter and never a lost one; no new path can leave a tile on its gradient forever.
+       (!) Still NOT an IntersectionObserver - the warning above is exactly why. This gate opens
+       whenever a grid is SHOWN (kick() — first-impression made that its only key), so a queued painter
+       is a DELAYED painter and never a lost one: a tile nobody can see is the only tile still waiting.
        (!) And a job re-reads the cache when it finally runs: into()'s own cache[id] short-circuit
        can only spare a second row for the same layer once the first row has painted, which a queued
        job has not - without this, a sidebar and a phone sheet built behind a closed gate would each
@@ -837,48 +836,29 @@ export function layerPreviews(countryStats,loadCountryData){
       if(!on){ if(_quietH){ clearTimeout(_quietH); _quietH=0; } _drainHold=false; } }
     function _openQueue(){ if(_imgOpen) return; _imgOpen=true; _imgPump();
       /* (#R311) the painters are held back by the same flag, so they are released by the same call -
-         all three ways in (kick(), the map's idle, the 6 s ceiling) reach the gate through here.
+         the one way in (kick(), since first-impression) reaches the gate through here.
          _imgOpen is already true above, so a job queued from inside a painter runs straight away
          and this drain runs exactly once.  ⚠ (#R408) «exactly once» is the LATCH on the first line
          now, not the drain: _paintQ is emptied by _paintSlice over as many idle slices as it takes,
          and that early return is what stops a later kick() starting a second drain over it. */
       if(_paintQ.length){ _wireInput(true); _scheduleDrain(); } }
-    /* ⚠ (#R408) THE MOBILE TEST IS THE APP'S OWN 768 px MEDIA QUERY, WRITTEN OUT RATHER THAN CALLED.
-       js/app-body.js owns it (`MOBILE_MQ` / `isMobile()`) and IM_HOST publishes it — but IM_HOST is a
-       module-local `const` in that file and `window.IM_HOST` does not exist (#R253 measured that; the
-       header of js/map-typography.js records it), and this factory is handed (countryStats,
-       loadCountryData) and no host at all, so `IM_HOST.isMobile()` is not reachable from here. What
-       IS reachable is the query itself, and it is the SAME query string as MOBILE_MQ — which is what
-       keeps the two from disagreeing by a scrollbar width — and it is the idiom every other
-       host-less js/ module in this repository already uses for the same question. */
-    /* ⚠⚠ (#R668) …AND «THE SAME QUERY STRING AS MOBILE_MQ» IS THE PROBLEM, NOT THE SAFEGUARD. What
-       the paragraph above got right is that this file cannot reach IM_HOST; what it got wrong is
-       which question is being asked. This gate is not about how wide the panel renders — it decides
-       whether a device that has opened NO panel pays 4,051,978 B of PNG, 16 upstream tile requests
-       and 33 canvas painters. That is a cost question about the DEVICE, and 768 px says "not a
-       phone" about an iPhone held sideways (844 px), so the very device #R408 wrote this gate for
-       stopped being protected by it as soon as the reader rotated. js/mem-budget.js is published on
-       `window` — reachable from a host-less module, which is what the old paragraph needed and did
-       not have — and it answers with js/app-body.js's own `_imPhoneClass`. The width test stays as
-       the fallback for the boot window before the shell publishes it.
-       (ui-layer-owner) …and that width test is no longer written out here: js/ui-device.js publishes
-       the layout answer on `window` before any module runs (`IntMapDevice.compact()`, the same
-       768 px `MOBILE_MQ` held), which is the host-less owner the first paragraph did not have. */
-    const _bootMobile=()=>{ const own=()=>{ try{ return window.IntMapDevice.compact(); }catch(_){ return false; } };
-      try{ return !!window.IntMapMemBudget.deviceIsPhone(own); }catch(_){ return own(); } };
-    (function(){ const go=()=>{ if(typeof requestIdleCallback==='function') requestIdleCallback(_openQueue,{timeout:9000}); else setTimeout(_openQueue,5000); };
-      /* ⚠ (#R408) …AND ON A PHONE THE BOOT PATH DOES NOT OPEN THE GATE AT ALL. The two automatic
-         openings below are for a panel nobody has asked for; on a phone they buy 4,051,978 B of PNG,
-         16 upstream tile requests and 33 canvas painters on the device least able to afford any of
-         them, and the layer list is behind a sheet the reader has to pull up in any case.
-         ⚠ NOTHING IS TAKEN AWAY (CONSTITUTION §0.3): kick() still calls _openQueue() when that sheet
-         is mounted and when the sidebar opens (js/map-ui.js), so a phone that opens the panel gets
-         every tile it ever got, from the same queue, in the same order. Only the opening that
-         nobody asked for is gone, and the desktop default is untouched. */
-      if(_bootMobile()) return;
-      if(window.IntMapDevice.embedded()) return;   /* (share-embed-distribution) …nor in an EMBED: it has no Layers panel to open (js/embed-mode.js). kick() is unchanged. */
-      try{ const E=IntMapGeoEngine; if(E&&E.events&&E.events.once){ E.events.once('idle',()=>setTimeout(go,400)); } }catch(_){}
-      setTimeout(go,6000); })();
+    /* ══ ⚠⚠⚠ (first-impression) THE GATE HAS ONE KEY NOW: THE PANEL BEING SHOWN ═══════════════════════════════
+       「縮小画像はパネル/行が画面に出たときに。起動に必要なものだけを先に取る。」 Until this round a DESKTOP boot
+       opened this gate by itself — at the map's first idle + 400 ms, or a 6 s ceiling — so a panel nobody had
+       opened still bought every picture in it. MEASURED on a cold first visit at 1024×768 (no storage, Service
+       Worker blocked, tests/first-impression.spec.js), the first 16 s from the first draw: 33 `preview_*.png`,
+       4,251,201 B of the 13,429,179 B the boot fetched from its own origin. #R408 had already taken that opening
+       away from phones and #R668 from a phone held sideways; the desktop was the device it was left on, and
+       the reason it was left there («a user who opens the panel in the first second sees the same thing») is
+       still met: opening the panel calls kick(), which opens this gate in the same task, and the queue is the
+       one #R73 built — same order, four in flight, each picture applied as it lands.
+       ⚠ NOTHING IS TAKEN AWAY (CONSTITUTION §0.3). Every surface that shows a grid kicks when it is shown —
+       js/map-ui.js open() (desktop sidebar and the workspace window, which opens it), its phone-sheet mount
+       when the sheet is up, and its favourites row when that grid is on screen — so a tile the reader can see
+       always gets its picture. What is gone is only the opening nobody asked for, on the one device class it
+       was still made for; an EMBED (no Layers panel at all) needed its own exemption only because of it.
+       ⚠ STILL NOT AN IntersectionObserver for the queue — #R72→#R73 (see above). The gate is opened by the
+       caller that KNOWS the grid is shown, which is the rule #R408 wrote into js/map-ui.js mountInto(). */
     function _queueImg(el,id,url){ _imgQ.push({el,id,url}); _imgPump(); }
     function _imgPump(){ if(!_imgOpen) return;
       while(_imgBusy<4&&_imgQ.length){ const j=_imgQ.shift(); _imgBusy++;
