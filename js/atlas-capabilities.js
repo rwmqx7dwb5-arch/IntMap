@@ -193,7 +193,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["navigation.camera","navCamera","recenter,overview,followMe,northUp","routing","camera","camera,camera.follow","map,camera","session","none","",""],
       ["navigation.voice","navVoice","mute,unmute,voiceGuidance","routing","setting","navigation","setting","session","none","",""],
       ["map.measure","measure","","map","panel","map.tool","panel","session","none","",""],
-      ["panel.correlate","correlate","","panel","panel","panel.correlate","panel","session","none","",""],
+      ["panel.correlate","correlate","","panel","panel","panel.correlate","panel,explanation","session","none","",""],
       ["panel.settings","settings","","panel","panel","panel.settings","panel","session","none","",""],
       ["panel.workspace","workspace","windows,windowMode,windowWorkspace","panel","panel","panel.workspace","panel","session","none","",""],
       ["panel.shortcuts","shortcuts","keyboard,hotkeys","panel","panel","panel.shortcuts","panel","session","none","",""],
@@ -303,6 +303,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.yearbook","yearbook","readYear,worldInYear,yearBook","time","none","time","explanation","session","none","",""],
       ["research.object","worldObject","realWorldObject,whatIsThis","research","none","","explanation","read","none","",""],
       ["research.related","worldRelated","related,relatedObjects,whatIsAround","research","none","","explanation","read","none","","","external"],
+      ["research.scenario","scenario","whatIf,runScenario,scenarioRun","research","none","","explanation","session","none","","","external"],
+      ["time.changes","changes","periodChanges,whatChanged,timeDiff","time","none","","explanation","session","none","place?","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 

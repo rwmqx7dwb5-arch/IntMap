@@ -234,6 +234,10 @@
             {
               "id": "time.yearbook",
               "tool": "time_yearbook"
+            },
+            {
+              "id": "time.changes",
+              "tool": "time_changes"
             }
           ]
         }

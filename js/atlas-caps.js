@@ -57,12 +57,16 @@
  * ==========================================================================*/
 
 /** what an entry may hold — a field outside this list is a typo nothing would ever read */
-const ENTRY_KEYS = ['row', 'doc', 'phrases', 'policy', 'goal', 'chips', 'catalogueSilent', 'schema', 'run', 'science'];
+const ENTRY_KEYS = ['row', 'doc', 'phrases', 'policy', 'goal', 'chips', 'catalogueSilent', 'schema', 'run', 'science', 'scenario'];
 /* (science-instruments) `science` — the id of the section of science.html (js/locales/pages.en.js `science.sections`)
    that states what this capability computes, from which data, under which assumptions. A string, the
    anchor itself. Every `sim.*` capability must carry one that resolves (tests/science-instruments-checks.test.mjs):
    the pairing is read from the entry and the page, so a new simulator with no method page fails the build
    rather than being missed by a hand-kept table. */
+/* (atlas-reasoning) `scenario` — what a what-if over this model stands on, in the four fields research.scenario reports:
+   { subject: the argument the place goes in, baselineParam: the argument an instant goes in (null = the model takes none),
+     data[], excluded[], uncertainty[] } — each list a non-empty array of sentences [en, jp]. js/atlas-reasoning.js `scenarioModels`
+   reads it from the entries; the model's argument vocabulary is not restated (it is `schema`). */
 /* What `policy` may say, and what each becomes in the eager registry (js/atlas-capabilities.js):
      withdrawn       { why, proofCode } — DELIBERATELY not offered to the planner; the audit holds the run to
                      answering `proofCode`, and it is the only way for a capability to be absent from the catalogue
@@ -103,13 +107,19 @@ export function capabilityEntries(modules) {
       }
       if (e.catalogueSilent != null && !/^\d{4}-\d{2}-\d{2}$/.test(String(e.catalogueSilent))) problems.push(where + ': ' + id + ' `catalogueSilent` is not the YYYY-MM-DD day the silence was measured');
       if (e.phrases != null && typeof e.phrases !== 'function') problems.push(where + ': ' + id + ' `phrases` is not a function');
+      if (e.scenario != null) {
+        const S = e.scenario, props = (typeof e.schema === 'function' && e.schema() && e.schema().properties) || {};
+        if (!S || typeof S !== 'object' || typeof S.subject !== 'string' || !(S.subject in props)) problems.push(where + ': ' + id + ' `scenario.subject` is not one of its schema\'s arguments');
+        else if (S.baselineParam != null && !(S.baselineParam in props)) problems.push(where + ': ' + id + ' `scenario.baselineParam` is not one of its schema\'s arguments');
+        ['data', 'excluded', 'uncertainty'].forEach(function (f) { if (!Array.isArray(S && S[f]) || !S[f].length || !S[f].every(function (t) { return Array.isArray(t) && t.length === 2 && t[0] && t[1]; })) problems.push(where + ': ' + id + ' `scenario.' + f + '` is not a non-empty list of [en, jp] sentences'); });
+      }
       if (e.science != null && !(typeof e.science === 'string' && /^[a-z][a-z0-9-]*$/.test(e.science))) problems.push(where + ': ' + id + ' `science` is not a section id of science.html');
       if (e.goal != null && typeof e.goal !== 'function') problems.push(where + ': ' + id + ' `goal` is not a function');
       if (e.chips != null && !(typeof e.chips === 'string' || (Array.isArray(e.chips) && e.chips.every(function (k) { return typeof k === 'string'; })))) problems.push(where + ': ' + id + ' `chips` is neither a kind nor a list of kinds');
       if (e.policy != null) Object.keys(e.policy).forEach(function (k) { if (POLICY_KEYS.indexOf(k) < 0) problems.push(where + ': ' + id + ' policy has an unknown field «' + k + '» (' + POLICY_KEYS.join(', ') + ')'); });
       seenId.add(id); if (spelling) seenSpelling.add(spelling);
       out.push({ ns: ns, id: id, row: e.row, schema: e.schema, run: e.run, doc: Array.isArray(e.doc) ? e.doc : [], phrases: e.phrases || null,
-        policy: e.policy || null, goal: e.goal || null, chips: e.chips || null, catalogueSilent: e.catalogueSilent || null, science: e.science || null });
+        policy: e.policy || null, goal: e.goal || null, chips: e.chips || null, catalogueSilent: e.catalogueSilent || null, science: e.science || null, scenario: e.scenario || null });
     });
   });
   if (problems.length) { const err = new Error('js/atlas-caps: ' + problems.join('; ')); err.problems = problems; throw err; }

@@ -13,6 +13,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { correlationReport } from './atlas-reasoning.js';   /* (atlas-reasoning) what the words may say is decided by the sample, in one place — Atlas's panel.correlate reads the same report */
 
 export function analysisCorrelate(HOST){
  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -100,7 +101,7 @@ export function analysisCorrelate(HOST){
     function ensureWB(){ try{ const need=[xId,yId].map(id=>METRICS.find(m=>m.id===id)).filter(m=>m&&m.wb&&!WBV[m.wb]);
       if(!need.length||!window.IntMapWB||!window.IntMapWB.fetch) return Promise.resolve();
       return Promise.all(need.map(m=>window.IntMapWB.fetch(m.wb).then(d=>{ WBV[m.wb]=d||{}; }).catch(()=>{ WBV[m.wb]={}; }))); }catch(_){ return Promise.resolve(); } }
-    function reRender(){ if(!ov) return; try{ const need=[xId,yId].map(id=>METRICS.find(m=>m.id===id)).some(m=>m&&m.wb&&!WBV[m.wb]); if(need){ const w=ov.querySelector('.corr-svg-wrap'); if(w) w.innerHTML='<div style="padding:46px;text-align:center;color:var(--text-muted);">'+t('loadingData')+'</div>'; } }catch(_){} ensureWB().then(render); }
+    function reRender(){ if(!ov) return; try{ const need=[xId,yId].map(id=>METRICS.find(m=>m.id===id)).some(m=>m&&m.wb&&!WBV[m.wb]); if(need){ const w=ov.querySelector('.corr-svg-wrap'); if(w) w.innerHTML='<div style="padding:46px;text-align:center;color:var(--text-muted);">'+t('loadingData')+'</div>'; } }catch(_){} return ensureWB().then(render); }
     const ml=m=>tr.arr(m.lbl);   /* (#R248) see the note by `LA` above — this was the fourteenth shape */
     function esc(s){ return window.IntMapSafe.html(s); }
     function pear(xs,ys){ const n=xs.length; if(n<3)return null; let sx=0,sy=0,sxx=0,syy=0,sxy=0; for(let i=0;i<n;i++){const x=xs[i],y=ys[i]; sx+=x;sy+=y;sxx+=x*x;syy+=y*y;sxy+=x*y;} const dx=n*sxx-sx*sx,dy=n*syy-sy*sy; if(dx<=0||dy<=0)return null; return (n*sxy-sx*sy)/Math.sqrt(dx*dy); }
@@ -122,12 +123,12 @@ export function analysisCorrelate(HOST){
         +'.corr-r .lab{font-size:11px;color:var(--text-muted);}'
         +'.corr-r b{font-size:22px;display:block;}'
         +'.corr-dot{fill:var(--primary-color);fill-opacity:0.62;}'
-        +'.corr-note{font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.5;}';
+        +'.corr-note{font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.5;}.corr-report{font-size:11.5px;line-height:1.5;margin-top:8px;border-top:1px solid rgba(128,128,128,0.18);padding-top:6px;}.corr-report .corr-rh{font-weight:600;margin-top:5px;}.corr-report ul{margin:2px 0 0 16px;padding:0;}';
       document.head.appendChild(st); }
     function ensure(){ if(ov)return ov; inject(); ov=document.createElement('div'); ov.id='corr-overlay';
       ov.innerHTML='<div class="corr-card" role="dialog" aria-modal="true" aria-labelledby="corr-h"><div class="corr-head"><h3 id="corr-h"></h3><button class="corr-x" aria-label="'+tr('Close','閉じる','Schließen','Закрыть','Cerrar')+'">×</button></div>'
         +'<div class="corr-pick"><label class="lx"><span></span><select class="corr-sel-x"></select></label><label class="ly"><span></span><select class="corr-sel-y"></select></label></div>'
-        +'<div class="corr-svg-wrap"></div><div class="corr-r"></div><div class="corr-note"></div></div>';
+        +'<div class="corr-svg-wrap"></div><div class="corr-r"></div><div class="corr-note"></div><div class="corr-report"></div></div>';
       document.body.appendChild(ov);
       ov.addEventListener('click',e=>{ if(e.target===ov) hide(); });
       ov.querySelector('.corr-x').onclick=hide;
@@ -149,11 +150,25 @@ export function analysisCorrelate(HOST){
       return ov; }
     function hide(){ if(ov) ov.classList.remove('show'); }
     function pairs(mx,my){ const out=[]; for(const c in countryStats){ const s=countryStats[c]; if(!s)continue; let x=mx.get(s,c),y=my.get(s,c); if(x==null||y==null||!isFinite(x)||!isFinite(y))continue; if(mx.log&&x<=0)continue; if(my.log&&y<=0)continue; out.push({c,nm:(L()==='jp'?(s.nameJp||s.nameEn):s.nameEn)||c,x:+x,y:+y}); } return out; }
+    /* (atlas-reasoning) EVERY country the source could supply, with a null where it has no value — so the missing ones are COUNTED
+       (pairs() above drops them before anyone can). Values are on the scale the scatter uses (log10 where the metric is logged). */
+    function rowsFor(mx,my){ const rows=[]; let universe=0, nonPositiveLog=0; for(const c in countryStats){ const s=countryStats[c]; if(!s)continue; universe++;
+        let x=mx.get(s,c),y=my.get(s,c); const nm=(L()==='jp'?(s.nameJp||s.nameEn):s.nameEn)||c;
+        x=(x==null||!isFinite(x))?null:+x; y=(y==null||!isFinite(y))?null:+y;
+        if(x!=null&&mx.log&&x<=0){ x=null; nonPositiveLog++; } if(y!=null&&my.log&&y<=0){ y=null; nonPositiveLog++; }
+        rows.push({id:c,name:nm,x:(x!=null&&mx.log)?Math.log10(x):x,y:(y!=null&&my.log)?Math.log10(y):y}); }
+      return {rows,universe,nonPositiveLog}; }
+    let _lastReport=null;
+    function reportFor(mx,my){ const rf=rowsFor(mx,my); return correlationReport(rf.rows,{universe:rf.universe,nonPositiveLog:rf.nonPositiveLog,xLabel:ml(mx),yLabel:ml(my)}); }
+    function paintReport(rep){ const el=ov&&ov.querySelector('.corr-report'); if(!el) return; const pt=x=>L()==='jp'?x[1]:x[0];
+      const sec=(h,a)=>a.length?'<div class="corr-rh">'+esc(h)+'</div><ul>'+a.map(x=>'<li>'+esc(pt(x))+'</li>').join('')+'</ul>':'';
+      el.innerHTML=sec(tr('Confirmed','確認できたこと'),rep.confirmed)+sec(tr('Possible explanations (untested)','考えられる説明（未検証）'),rep.explanations)+sec(tr('Against it','反証'),rep.counter)+sec(tr('Limits','限界'),rep.limits); }
     function render(){ if(!ov)return; const mx=METRICS.find(m=>m.id===xId), my=METRICS.find(m=>m.id===yId);
       ov.querySelector('.corr-head h3').textContent=tr('Correlation','相関分析','Korrelation','Корреляция','Correlación');
       ov.querySelector('.lx span').textContent=tr('X axis','横軸 (X)','X-Achse','Ось X','Eje X');
       ov.querySelector('.ly span').textContent=tr('Y axis','縦軸 (Y)','Y-Achse','Ось Y','Eje Y');
       const ps=pairs(mx,my), wrap=ov.querySelector('.corr-svg-wrap'), rEl=ov.querySelector('.corr-r'), nEl=ov.querySelector('.corr-note');
+      const rep=reportFor(mx,my); _lastReport=rep; paintReport(rep);   /* (atlas-reasoning) n, missing, interval, outliers and the four fields — and the sentence below may only use the words the sample supports */
       if(ps.length<3){ wrap.innerHTML=''; rEl.innerHTML=''; nEl.textContent=tr('Not enough countries have both values.','両方の値を持つ国が不足しています。','Zu wenige Länder haben beide Werte.','Недостаточно стран с обоими значениями.','No hay suficientes países con ambos valores.'); return; }
       const tx=ps.map(p=>mx.log?Math.log10(p.x):p.x), ty=ps.map(p=>my.log?Math.log10(p.y):p.y);
       const r=pear(tx,ty), rho=pear(ranks(ps.map(p=>p.x)),ranks(ps.map(p=>p.y)));
@@ -179,7 +194,7 @@ export function analysisCorrelate(HOST){
         +'<div><span class="lab">'+tr('Countries','国数','Länder','Стран','Países')+'</span><b>'+ps.length+'</b></div>'
         +(mb?'<div style="flex:1 1 100%;margin-top:2px;"><button id="corr-resid-btn" class="ai-test-btn" style="width:100%;">'+icon('map')+' '+tr('Color map by residual (blue = above, red = below)','残差で地図を塗る（青=上振れ / 赤=下振れ）','Karte nach Residuen färben (blau = über, rot = unter)','Закрасить карту по остаткам (синий = выше, красный = ниже)','Colorear el mapa por residuo (azul = por encima, rojo = por debajo)')+'</button></div>':'');
       try{ const rb=ov.querySelector('#corr-resid-btn'); if(rb) rb.onclick=()=>{ try{ residualMap(); }catch(_){} }; }catch(_){}
-      nEl.textContent=d+' '+sg+' '+tr('correlation','相関','Korrelation','корреляция','correlación')+' · '+tr('Correlation is not causation; outliers and confounders matter.','相関は因果ではありません。外れ値や交絡因子に注意。','Korrelation ist keine Kausalität; Ausreißer & Störfaktoren beachten.','Корреляция — не причинность; учитывайте выбросы и факторы.','Correlación no es causalidad; atención a valores atípicos y factores de confusión.');
+      nEl.textContent=(rep.assertion==='none'?tr('Not distinguishable from no relationship at this sample size','この標本数では関係なしと区別できません'):(rep.assertion==='tentative'?tr('Suggests a','示唆される')+' ':'')+d+' '+sg+' '+tr('correlation','相関','Korrelation','корреляция','correlación'))+' · '+tr('Correlation is not causation; outliers and confounders matter.','相関は因果ではありません。外れ値や交絡因子に注意。','Korrelation ist keine Kausalität; Ausreißer & Störfaktoren beachten.','Корреляция — не причинность; учитывайте выбросы и факторы.','Correlación no es causalidad; atención a valores atípicos y factores de confusión.');
     }
     /* (#R40) Residual map: paint each country by how far it sits ABOVE (blue) or BELOW (red) the regression
        line — deeper = larger residual. Uses the `countries` source via a per-code match expression. */
@@ -247,21 +262,28 @@ export function analysisCorrelate(HOST){
         +'<div style="font-size:10px;color:var(--text-muted);line-height:1.4;">'+tr('Each country is shaded by its regression residual — how far its '+ml(my)+' sits above/below what its '+ml(mx)+' predicts.','各国を回帰残差で塗り分け：その国の'+ml(my)+'が'+ml(mx)+'からの予測値より上振れ/下振れしている度合い。','Jedes Land ist nach dem Regressionsresiduum gefärbt — wie weit sein Wert über/unter der Erwartung liegt.','Каждая страна окрашена по остатку регрессии — насколько значение выше/ниже ожидаемого.','Cada país se sombrea por el residuo de la regresión: cuánto se sitúa por encima/debajo de lo previsto.')+'</div>';
       pill.querySelector('button').onclick=()=>{ try{ if(GE().layers.has('corr-resid-fill')) GE().layers.setLayout('corr-resid-fill','visibility','none'); }catch(_){} pill.style.display='none'; };
       pill.style.display='flex'; }
-    function open(){ ensure(); ov.classList.add('show');
+    /* (atlas-reasoning) a metric named by its id or by its label in ANY language — the one resolver, so Atlas's `x` / `y` and the picker agree */
+    function metricOf(name){ const q=String(name==null?'':name).trim().toLowerCase(); if(!q) return null;
+      return METRICS.find(m=>m.id.toLowerCase()===q||m.id.toLowerCase()==='wb:'+q||(Array.isArray(m.lbl)&&m.lbl.some(l=>String(l).trim().toLowerCase()===q)))||null; }
+    function setPick(o){ if(!o) return {}; const mx=o.x?metricOf(o.x):null, my=o.y?metricOf(o.y):null; if(mx) xId=mx.id; if(my) yId=my.id;
+      if(ov){ const sx=ov.querySelector('.corr-sel-x'), sy=ov.querySelector('.corr-sel-y'); if(sx) sx.value=xId; if(sy) sy.value=yId; }
+      return {x:o.x?!!mx:true,y:o.y?!!my:true}; }
+    /* resolves with the report the panel itself draws (null when the data never arrived) */
+    function open(o){ ensure(); ov.classList.add('show'); const picked=setPick(o); const done=()=>({report:_lastReport,picked,x:xId,y:yId,xLabel:ml(METRICS.find(m=>m.id===xId)),yLabel:ml(METRICS.find(m=>m.id===yId)),metrics:METRICS.map(m=>m.id)});
       const say=m=>{ const w=ov.querySelector('.corr-svg-wrap'); if(w) w.innerHTML='<div style="padding:46px;text-align:center;color:var(--text-muted);">'+m+'</div>'; };
-      if(haveCountryData()){ reRender(); return; }
+      if(haveCountryData()){ return reRender().then(done); }
       say(t('loadingData'));
       /* ⚠ (#R545) the second half of the shape described above requestCountryData(). This was
          `loadCountryData().then(go)` with no rejection arm, so a load that failed left the card
          reading «Loading country data…» for ever — the panel never gave up and never said so. And
          the condition is the DATA, not the promise: a load that resolves with nothing is answered
          as honestly as one that rejects, with the notice the residual map already carries. */
-      requestCountryData().then(()=>{ if(haveCountryData()) reRender(); else say(loadFailMsg()); }); }
+      return requestCountryData().then(()=>{ if(haveCountryData()) return reRender().then(done); say(loadFailMsg()); return {report:null,picked,x:xId,y:yId}; }); }
     /* (#R322) the half of the boot-time `intmap-lang` handler that needs the overlay. The listener
        itself stays in the shell — it has to relabel #btn-correlate whether or not this file was ever
        fetched — and this is the branch it guarded with `if(ov)`, which could only ever do anything
        once this file had run. The shell calls it only when the loader says this module is ready. */
     function onLang(){ if(ov){ const sx=ov.querySelector('.corr-sel-x'),sy=ov.querySelector('.corr-sel-y'); if(sx&&sy){ [sx,sy].forEach(sel=>{ [].forEach.call(sel.options,(o,i)=>{ if(METRICS[i]) o.textContent=ml(METRICS[i]); }); }); if(ov.classList.contains('show')) render(); } } }
-    window.__imAnalysisCorrelate={open,onLang};
+    window.__imAnalysisCorrelate={open,onLang,metricOf};
   })();
 }
