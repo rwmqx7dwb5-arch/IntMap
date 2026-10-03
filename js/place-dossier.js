@@ -355,6 +355,34 @@ export function profileHtml(p, HOST, opts) {
 }
 
 /* ── the card ──────────────────────────────────────────────────────────────────────────────────── */
+/** (keyboard-and-offline) the SAME record as plain sentences, for a screen reader — js/map-reader.js speaks it.
+    Nothing is gathered here and nothing is decided: every clause is a field of the record `placeProfile` built,
+    and a section the source could not answer says so in the words the card uses (a hole is said, not hidden).
+    ⚠ The card (profileHtml) and this read ONE object, so what is heard and what is seen cannot drift apart. */
+export function profileSpeech(p, HOST) {
+  const { L, why } = words(HOST);
+  let lang = 'en'; try { lang = HOST.lang || 'en'; } catch (_) { lang = 'en'; }
+  const out = [];
+  const pl = p.place, c = p.country, el = p.elevation, t = p.time, ly = p.layers;
+  if (pl && pl.status === 'ok' && pl.chain && pl.chain.length) out.push(pl.chain.map((x) => x.name).join(', ') + '.');
+  else if (pl) out.push(L('Place name unavailable: ', '地名を取得できません: ') + why(pl.reason) + '.');
+  if (c && c.status === 'ok') out.push(L('Country: ', '国: ') + c.name + (c.capital ? L(', capital ', '、首都 ') + c.capital : '') + '.');
+  else if (c) out.push(L('Country: ', '国: ') + why(c.reason) + '.');
+  if (el && el.status === 'ok' && finite(el.value)) {
+    let txt = el.text; try { txt = HOST.fmtElevVal(Math.abs(el.value)); } catch (_) { /* the registration's own text */ }
+    out.push((el.value < 0 ? L('Sea depth ', '水深 ') : L('Elevation ', '標高 ')) + txt + '.');
+  } else if (el) out.push(L('Elevation: ', '標高: ') + why(el.reason) + '.');
+  if (t && t.timeZone) out.push(L('Local time ', '現地時刻 ') + (clock(new Date().toISOString(), t.timeZone, lang) || '') + ' (' + t.timeZone + ').');
+  if (t && t.sun && !t.sun.polar && t.sun.sunrise) out.push(L('Sunrise ', '日の出 ') + (clock(t.sun.sunrise, t.timeZone, lang) || '') + L(', sunset ', '、日の入り ') + (clock(t.sun.sunset, t.timeZone, lang) || '') + '.');
+  if (ly && ly.status === 'ok') {
+    const ok = ly.rows.filter((r) => r.status === 'ok'), rest = ly.rows.filter((r) => r.status !== 'ok');
+    ok.forEach((r) => out.push(r.label + ': ' + r.text + '.'));
+    if (rest.length) out.push(L(rest.length + ' layer(s) on have no value at this point: ', 'オンのレイヤーのうち ' + rest.length + ' 件はこの地点に値がありません: ') + rest.map((r) => r.label).join(L(', ', '、')) + '.');
+    if (!ly.rows.length) out.push(L('No data layer is on.', 'データレイヤーはオンになっていません。'));
+  } else if (ly) out.push(L('Layer values: ', 'レイヤーの値: ') + why(ly.reason) + '.');
+  return out.join(' ');
+}
+
 let card = null, seq = 0, current = null;
 function ensureCard(HOST) {
   if (card && document.body.contains(card)) return card;

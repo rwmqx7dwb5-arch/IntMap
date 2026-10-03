@@ -41,6 +41,7 @@ export function makeKeyboardShortcuts(HOST, CTX) {
         ['0',KL('Reset north','北を上に','Norden ausrichten','Сброс на север','Restablecer norte')],
         ['+ / −',KL('Zoom in / out','ズームイン / アウト','Zoom rein / raus','Приблизить / отдалить','Acercar / alejar')],
         ['Alt+N / Alt+Shift+N',KL('Next / previous feature near the map centre (map focused)','地図の中心付近の次 / 前の地物（地図にフォーカス時）')],
+        ['Alt+R / Alt+Shift+R',KL('Say what is at the map centre / turn the reading mode on or off (map focused)','地図の中心にあるものを読み上げ / 読み上げモードのオン・オフ（地図にフォーカス時）')],
         ['?',KL('This help','このヘルプ','Diese Hilfe','Эта справка','Esta ayuda')]
       ];
       m.innerHTML='<div style="background:var(--card-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:16px;box-shadow:var(--shadow);width:min(430px,calc(100vw - 32px));max-height:80vh;overflow-y:auto;padding:18px 20px;">'
@@ -73,6 +74,22 @@ export function makeKeyboardShortcuts(HOST, CTX) {
       words(); window.addEventListener('intmap-lang',words);
       if(sel){ sel.value=singleOn()?'on':'off';
         sel.addEventListener('change',()=>{ try{ localStorage.setItem(SINGLE,sel.value==='off'?'off':'on'); }catch(_){} }); } }
+    /* ══ (keyboard-and-offline) TWO ROWS OF SETTINGS THAT THIS FILE WRITES THE WORDS OF ══════════════════════
+       The reading mode (js/map-reader.js, fetched when it is used) and the offline maps (js/offline-maps.js, the same). Their
+       rows are in index.html with no text, like the single-key row above, and the words are written here in the reader's
+       language — en + jp, next to the other keyboard rows — so the lazy modules stay lazy and the row is never nameless. */
+    { const R=document.getElementById('setting-map-reading'), RL=document.getElementById('lbl-map-reading'),
+        O=document.getElementById('btn-offline-maps'), OL=document.getElementById('lbl-offline-maps');
+      const w2=()=>{ try{ const L2=IntMapLang.pick(()=>HOST.lang);
+        if(RL) RL.textContent=L2('Reading mode (screen reader)','読み上げモード（スクリーンリーダー）');
+        if(R&&R.options.length>1){ R.options[0].textContent=L2('Off (default)','オフ（既定）'); R.options[1].textContent=L2('On — describe every move of the map (Alt+Shift+R)','オン — 地図を動かすたびに説明する（Alt+Shift+R）'); }
+        if(OL) OL.textContent=L2('Offline maps','持ち歩ける地図（オフライン）');
+        if(O){ O.lastElementChild.textContent=L2('Save this area for use with no connection…','この地域を回線なしで使えるよう保存…'); } }catch(_){} };
+      w2(); window.addEventListener('intmap-lang',w2);
+      if(R){ try{ R.value=localStorage.getItem('intmap_map_reading')==='on'?'on':'off'; }catch(_){}
+        R.addEventListener('change',()=>{ const on=R.value==='on'; import('./map-reader.js').then(m=>m.setReading(on)).catch(()=>{ try{ localStorage.setItem('intmap_map_reading',on?'on':'off'); }catch(_){} }); }); }
+      if(O) O.addEventListener('click',()=>{ try{ const m0=document.getElementById('settings-modal'); if(m0) m0.style.display='none'; }catch(_){}
+        import('./offline-maps.js').then(m=>m.openOfflineMaps(HOST)).catch(()=>{ try{ imToast(KL('Offline maps could not be opened','オフライン地図を開けませんでした')); }catch(_){} }); }); }
     document.addEventListener('keydown',(e)=>{
       if(e.ctrlKey||e.metaKey||e.altKey) return;
       if(typeof isMobile==='function'&&isMobile()) return;

@@ -301,6 +301,30 @@ builder を走らせた日のまま（spacecraft・small-bodies 08-10、osm-dipl
 
 ---
 
+### 4.7 保存 — 「回線なしで使えるよう端末に写してよいか」（規則 `offline-declared`）
+
+持ち歩ける地図（`js/offline-maps.js`）は地域のファイルを読者の端末に**先に**保存する。供給元の規約がそれを許すかは**規約の事実**で、
+1 つのホストに 1 行あるこの台帳（`scripts/outbound-hosts.json`）に**述べる**:
+
+```json
+"offline": { "allowed": true, "kind": "terrain-dem", "pathPrefix": "/terrarium/",
+             "basis": "https://registry.opendata.aws/terrain-tiles/", "why": "…", "whyJp": "…" }
+```
+
+- ⚠ **述べていないホストは保存しない。沈黙は許可ではない。** ページは `data/offline-sources.json`（行から**導出**。
+  `scripts/offline-sources.mjs --write`）だけを読み、手書きの許可一覧を持たない。
+- ⚠ **許可はホスト全体ではなく、その行が名指す path 接頭辞に対してだけ。** path 形式の S3 の窓口は世界中のバケットを配る。
+- **「いいえ」も述べる**（`allowed:false`・規約の URL と理由）。読者は「保存しないもの」を**その理由つきで**ダイアログで読む。
+  実測（作業時）: OpenFreeMap の利用規約 User Conduct は「許可なく自動的な方法でサービスからデータを収集しようとしない」ことを求める
+  ＝地域の事前保存は自動収集なので `allowed:false`。AWS Terrain Tiles は AWS Open Data の公開バケットで、登録ページが一括取得の道具を挙げ、
+  ライセンス（tilezen/joerd attribution.md）は帰属表示を求めるのみ ＝ `allowed:true`。Esri・CARTO などは**誰も書いていない**ので保存しない。
+- IntMap 自身が配るファイル（`data/`・`assets/`）は行を要らない——サイトの持ち物で、配った相手本人が持つだけで何も広げない。
+- 門: `outbound-hosts.mjs` の `check`（④）が、basis（https の規約 URL）・理由（en と jp）・kind が無い／許可に pathPrefix が無い／
+  リクエストされないホストに書いてある、を拒み、`checkRepository` が `data/offline-sources.json` が台帳の導出と一致することを測る。
+  ⚠ 規約は変わる——`basis` を開き直した日が分かるよう、変えるときは開発記録に日付を残す。
+
+---
+
 ## 5. 欠損・異常値・重複 — 測るが、拒まない
 
 `measureQuality(rows, {fields, key})` が返すのは**件数**であって判定ではない。
