@@ -4762,8 +4762,20 @@ migration そのものから**——`auth.users` を指す列か uuid の `user_
 効果を宣言する。
 
 
-### `tests/security-next-checks.test.mjs` と `tests/security-next.spec.js` (security-next)
+### `tests/news-next-checks.test.mjs` と `tests/news-next.spec.js` (news-story)
 
+node 10 本・データベース無し（DB の半分は `supabase/tests/24_news_story_test.sql`）。出荷している
+`js/news-story-core.js` を、**本番の `news_events` 18,786 行を出荷する migration に PGlite で通した答え**
+（`tests/fixtures/news-story-prod.json`・7 見出し）で評価する: ① 名前は文の書き方の見出しの大文字の割合で決まる
+（AfD・German は名前、state・election・文頭の Far は名前でない）② 提案される流れ（nino 単独・ceuta 単独・ferry +
+indonesia・haze + indonesia・AfD は 2 語に絞る・提案が無い見出しは null で語は出す）③ 返った行は全部の語を見出しに
+持つ ④ 年表は UTC の毎日で 0 の日を持ち、広がりは累積 ⑤ 広がりの線は本当に最寄りの先行地点へ ⑥ 再生位置 i が
+見せるのは i 日目までの全部 ⑦ 地点の無いもの・海上・切れた取得は数えて言う ⑧ `?story=` の読み書き（サーバーが
+書けない綴りは捨てる）⑨ 語を切る規則は SQL の 1 か所で、`news_story` はその式の索引の述語の下で引き、
+`MAX_SHARE` は送られる ⑩ 入口 4 つが 1 つの遅延本体に届く。
+spec 4 本は共有ページで、DB の 2 つの口を同じ fixture で答える: カードが提案の語で開き地図に点が描かれる（レンダラから
+数える）・再生が 1 日ずつ進み、その日までの点だけが描かれる・チップで問い直しリンクが語を名指す・閉じると地図から消える。
+### `tests/security-next-checks.test.mjs` と `tests/security-next.spec.js` (security-next)
 「このページの通信」とセキュリティのページ。node 9 本: ① `data/connection-ledger.json` は台帳の導出と同一で全行を持ち、
 各行は 4 つの形のどれか 1 つ ② 「送るもの」の符号すべてに読者の文が en と jp で在る（台帳の `SENDS` と両向き）
 ③ 記録の鍵はスキーム＋ホストだけ（自分のオリジン・data:・blob: は記録しない） ④ 集計・証人の区別・CSP の拒否は

@@ -752,13 +752,21 @@ news-events.js                    出来事単位の News（一覧・カテゴ�
                                   一覧の上に取り込みの健全性の 1 行（`news_ingest_health()`）を出し、
                                   国の日報と企業パネルが読む行を開く口（`openRow`・`columns`）を持つ
 news-pulse.js                     「国ごとのニュースの脈」のレイヤー行と IntMapOS 命令と窓口
-                                  `IntMapNewsIntel`（**eager**——行・名前・命令だけ。本体は news-intel.js）
+                                  `IntMapNewsIntel`（**eager**——行・名前・命令だけ。本体は news-intel.js）。
+                                  ストーリーの扉（`IntMapNewsIntel.story`・命令 `newsstory.open`・`?story=`）もここ
+news-story.js                     ストーリー（見出しが同じ語を含む出来事を日をまたいで束ねたもの）のカード——
+                                  語のチップ・再生できる年表・地図（初報の時刻の色・広がりの線）・広がりの数。
+                                  遅延取得（IntMapLazy の newsStory）。正本は docs/NEWS-EVENTS.md §17
+news-story-core.js                その計算の全部（純粋なモジュール）——どの語を提案するか（名前の判定・PMI）・
+                                  日ごとの年表・地点と国・広がり（最寄りの先行地点への線）・再生位置・`?story=`。
+                                  node が本番のデータで同じ関数を評価する
 news-intel.js                     ニュースの脈（国ごとの出来事の件数と増減・Chronos に従う）・国の日報
                                   （件数・30 日・カテゴリ・報道の多い出来事・同じ国の IODA の障害と前後のニュース）・
                                   企業が出てくる出来事と地図上の線。遅延取得（IntMapLazy の newsIntel）。
                                   正本は docs/NEWS-EVENTS.md §16
 news-intel-core.js                その計算の全部（純粋なモジュール）——地点 → 国（10 m の輪郭と海岸の許容）・
-                                  窓と直前の窓・増減・塗りの値・障害とニュースの結び付け・取り込みの判定。
+                                  窓と直前の窓・増減・塗りの値・障害とニュースの結び付け・取り込みの判定・
+                                  大円の線と距離（`arc`・`km`。ストーリーの広がりも同じ 2 つを使う）。
                                   node が本番のデータで同じ関数を評価する
 freshness.js                      「いつ時点か・誰が測ったか」の 1 つの部品（新しい／N 時間更新なし／
                                   確認できなかった／未確認を別の文で言う）。ニュース・ネット障害・企業・
@@ -855,7 +863,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  200 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  201 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -991,9 +999,9 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 200能力ぶんの型・列挙・範囲と `required`/`anyOf`。
-atlas-schemas.js                  **引数の schema**（#R406）— 200 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
-atlas-schemas.js                  **引数の schema**（#R406）— 200 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
+atlas-schemas.js                  **引数の schema**（#R406）— 201能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 201 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
+atlas-schemas.js                  **引数の schema**（#R406）— 201 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）

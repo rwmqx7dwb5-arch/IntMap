@@ -11,6 +11,8 @@
  *  ⚠ THE FACADE ANSWERS BEFORE THE BODY ARRIVES: `isOn()` is false and `state()` says `loaded:false`
  *  for a layer nobody asked for — the truth, and what lets a caller ask without the download.
  *  ⚠ THE ROW NAME LIVES HERE AND NOWHERE ELSE; the body reads it back through `label()` (#R519).
+ *  (news-story) The doors of the STORY (js/news-story.js, lazy `newsStory`) are here for the same reason: the event
+ *  reader's «Follow this story», a `?story=` link, the command `newsstory.open` and Atlas news.story exist at boot.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
 import * as bus from './bus.js';
@@ -78,8 +80,40 @@ export function newsPulse(HOST) {
       { label: 'News pulse · the news brief of one country (events, change, internet outages)', group: 'data' });
   } catch (_) { }
 
+  /* ══ (news-story) THE STORY'S DOORS — the body is js/news-story.js (lazy `newsStory`); the event reader's
+     «Follow this story», a link `?story=a,b`, the command and Atlas news.story all come through here ══════ */
+  let storyBody = null, storyPending = null;
+  function needStory() {
+    if (storyBody) return Promise.resolve(storyBody);
+    if (!storyPending) {
+      storyPending = window.IntMapLazy.need('newsStory')
+        .then(() => { storyBody = window.__imNewsStory || null; return storyBody; })
+        .catch(() => { storyPending = null; return null; });
+    }
+    return storyPending;
+  }
+  async function story(o) {
+    const b = await needStory();
+    if (!b) { try { HOST.imToast(L('Could not load the story', 'ストーリーを読み込めませんでした')); } catch (_) { } return { ok: false, error: 'module' }; }
+    return b.open(o || {});
+  }
+  try {
+    window.IntMapOS.register('newsstory.open', (ctx) => story((ctx && ctx.params) || {}),
+      { label: 'News story · follow the events whose headlines name the same words, on a timeline and the map', group: 'data' });
+  } catch (_) { }
+  /* `?story=afd,victory` — the address js/news-story-core.js storyQuery writes. Only the parameter's presence is
+     tested here; the words are read (and checked) by the body's storyFromSearch, so this boot file carries no parser. */
+  if (/[?&]story=/.test(location.search)) {
+    const go = () => { story({ search: location.search }); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go, { once: true }); else setTimeout(go, 0);
+  }
+
   window.IntMapNewsIntel = {
     id: ID, label, toggle, setOn, ready: need,
+    story, storyReady: needStory,
+    storyState: () => (storyBody ? Object.assign({ loaded: true }, storyBody.state()) : { loaded: false, open: false }),
+    storySummary: () => (storyBody ? storyBody.summary() : null),
+    closeStory: () => { if (storyBody) storyBody.close(); },
     /* the Natural Earth outlines through the one data door — the body reads them here, so it does not import them */
     outlines: (scale) => loadNECountries(scale),
     isOn: () => !!(body && body.isOn()),

@@ -5,6 +5,7 @@
  "tests/community-next.spec.js": 8,
  "tests/map-next.spec.js": 31,
  "tests/ux-next.spec.js": 44,
+ "tests/news-next.spec.js": 10,
  "tests/mobile-card-reach.spec.js": 14,
  "tests/mobile-next.spec.js": 20,
  "tests/mobile-panels-reach.spec.js": 43,
