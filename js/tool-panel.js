@@ -542,6 +542,9 @@ export function toolPanel(HOST){
       {label:`${icon('ruler')} ${HOST.t('ctxMeasureFrom')}`, action:()=>{ if(HOST.toolMode!=='measure') HOST.setTool('measure'); HOST.measurePoints=[[lngLat.lng,lngLat.lat]]; HOST.refreshTool(); updateToolPanel(); }},
       {label:`${icon('radius')} ${L('Draw a radius','半径を描く','Radius zeichnen','Начертить радиус','Dibujar un radio')}`, action:()=>{ try{ window._radiusFromPoint(lngLat.lng,lngLat.lat); }catch(_){} }},
       {h:L('Live info','現地の情報','Aktuelle Infos','Данные на месте','Datos en vivo'),head:true},
+      /* (place-dossier) everything the map knows about this point on one card — js/place-dossier.js, fetched by this
+         click (its doors are this entry, the search card and Atlas's research.placeProfile) */
+      {label:`${icon('note')} ${L('Place profile','地点プロファイル')}`, action:()=>{ import('./place-dossier.js').then(m=>m.openPlaceDossier(HOST,{lng:lngLat.lng,lat:lngLat.lat})).catch(()=>{ try{ HOST.imToast(L('The place profile could not be loaded','地点プロファイルを読み込めませんでした')); }catch(_){} }); }},
       {label:`${icon('cloud-sun')} ${L('Weather (live)','天気（最新）','Wetter (aktuell)','Погода (сейчас)','El tiempo (ahora)')}`, action:()=>{ try{ window.IntMapWeather&&window.IntMapWeather.open(lngLat); }catch(_){} }},
       {label:`${icon('plane')} ${L('Find runways','滑走路を検索','Landebahnen suchen','Найти ВПП','Buscar pistas')}`, action:()=>{ try{ window.RunwaySearch&&window.RunwaySearch.open(lngLat); }catch(_){} }},
       {h:L('Analysis & simulation','解析・シミュレーション','Analyse & Simulation','Анализ и моделирование','Análisis y simulación'),head:true},

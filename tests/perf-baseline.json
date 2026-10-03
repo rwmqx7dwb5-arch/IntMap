@@ -3,9 +3,9 @@
     "raw": 4763425,
     "gzip": 1568634,
     "brotli": 1183561,
-    "requests": 10,
+    "requests": 11,
     "modules": 307,
-    "cssRaw": 377146,
+    "cssRaw": 376601,
     "cssGzip": 61518
   },
   "async": {
@@ -22,7 +22,7 @@
       "atlas-answer-view": 2513,
       "atlas-attach": 23189,
       "atlas-chart": 10493,
-      "atlas-console": 1178625,
+      "atlas-console": 1179833,
       "atlas-executor": 56924,
       "atlas-geo-resolve": 49405,
       "atlas-query": 48520,

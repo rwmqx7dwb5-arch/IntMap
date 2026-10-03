@@ -789,7 +789,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  162 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  163 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -915,7 +915,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 162能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 163能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1124,6 +1124,9 @@ screenshot.js                     スクリーンショットのボタン（busy
                                   **絵そのものは atlas-view-capture.js**——Atlas と同じ1本を呼ぶ）
 sidebar-style.js                  左サイドバーの材質（不透明／フロスト2種）と、フロスト時にカメラへ渡す左 inset
 search-geocode.js                 検索欄——問い合わせの前処理・ジオコーディング・結果カード
+place-dossier.js                  地点プロファイル——1 地点について地図が持つもの（名前と行政区分・国・標高・表示中レイヤーの
+                                  値・現地時刻と日の出入り）を 1 つの記録にし、カードに描く。Atlas `research.placeProfile` も
+                                  同じ記録を返す。読めない項目は理由つきの行（docs/architecture/07-map.md §7.3f）
 compare.js                        並べて／スワイプで比べる地図 IntMapCompare。**独自の時計**（`makeClock('compare')`）を持ち、
                                   「メイン地図の時刻に従う／独自の時刻」を切り替える。選んだ層はその時計で時間カーネルの規則に
                                   判定され、歴史国境はその瞬間の記録（time-borders.js `collectionAt`）。読み手には

@@ -1439,6 +1439,17 @@
     .acp-badge.sunlit{ color:#8a6d00; background:rgba(255,210,63,0.22); }
     .acp-badge.ecl{ color:var(--text-muted); background:rgba(128,128,128,0.16); }
     @media (max-width:768px){ .sat-popup{ width:calc(100vw - 24px); } }
+    /* (place-dossier) PLACE PROFILE card (js/place-dossier.js): a .country-popup drawn with the aircraft card's .acp-*
+       rows, like the satellite card. A row that cannot be read keeps its place and says why (.pd-why). */
+    .pd-popup{ width:360px; }
+    .pd-sub, .pd-meta, .pd-why{ color:var(--text-muted); font-weight:400; }
+    .pd-sub{ font-size:12px; margin:-4px 0 4px; }
+    .pd-meta{ display:block; font-size:10.5px; }
+    .pd-actions{ display:flex; gap:8px; margin-top:14px; }
+    .pd-actions button{ flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:9px 8px; border:none; border-radius:10px; background:var(--input-bg); color:var(--text-main); font-weight:600; font-size:12px; cursor:pointer; }
+    .pd-actions .primary{ background:var(--primary-fill); color:#fff; }
+    .pd-actions button:disabled{ opacity:.45; }
+    @media (max-width:768px){ .pd-popup{ width:calc(100vw - 24px); } .pd-actions button{ min-height:44px; font-size:14px; } }
     /* (#R353) VOLCANO INTELLIGENCE card (js/volcano-intel.js). Same .country-popup shell and the same
        .acp-* row vocabulary as the aircraft and satellite cards — it reuses that vocabulary rather
        than inventing a third one — so only the shapes neither of those cards has are described here:

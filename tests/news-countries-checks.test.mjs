@@ -682,7 +682,10 @@ test('R423 ④ every reader of the sovereignty flag is found by sweeping js/, an
      production, Antarctica came back as the country with the highest GDP per capita. The number here is
      a WATCHMAN, not a policy: it exists so a reader cannot appear unnoticed, and it moves when one does.
      What must not move is the line below it — the flag is still written in exactly one place. */
-  assert.equal(total, 8, 'readers of the sovereignty flag across js/ — found: ' + readers.join(', '));
+  /* (place-dossier) NINE. `js/place-dossier.js` reports `recognised` for the country a place lies in,
+     and it reads the same flag rather than deciding sovereignty a second way — a reader that appeared,
+     and this watchman noticed it, which is what it is for. */
+  assert.equal(total, 9, 'readers of the sovereignty flag across js/ — found: ' + readers.join(', '));
   assert.ok(readers.indexOf('js/atlas-metrics.js:1') >= 0, 'including the one predicate every Atlas ranking asks');
   assert.ok(readers.indexOf('js/atlas-query.js:1') >= 0, 'including the one the frozen list could not see');
 
