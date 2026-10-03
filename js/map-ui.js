@@ -23,6 +23,7 @@ import { ownRelayUrl, clockFor } from './proxy-fetch.js';   /* (own-fetch-relay)
 import { readWithin } from './fetch-deadline.js';   /* (fetch-deadline-layer) the ticker's reads, under that clock — see fjson */
 import { IntMapTime } from './chronos.js';
 import { MapState, viewOf, timeOf } from './map-state.js';   /* (map-state-store) the map's one named state — the share link and its restore are its projections */
+import './briefing-link.js';   /* (atlas-briefing) the owner of the store's `brief` field — a link may carry an Atlas briefing; js/briefing-link.js */
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */

@@ -307,7 +307,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.changes","changes","periodChanges,whatChanged,timeDiff","time","none","","explanation","session","none","place?","","external"],
       ["settings.mapReading","mapReading","readingMode,screenReaderMode,readAloud,describeMap,describeHere","settings","none","","explanation","persist","none","",""],
       ["settings.offlineMaps","offlineMaps","offlineMap,saveMapOffline,downloadMap,offlineRegion,portableMap,mapWithoutInternet","settings","none","","explanation","persist","explicit","",""],
-      ["time.onThisDay","onThisDay","thisDayInHistory,todayInHistory,onThisDate","time","time","camera,map.layer,time","map,time,explanation","session","none","",""],
+      ["briefing.share","briefingShare","shareInvestigation,investigationLink,makeBriefing,shareBriefing","research","none","","panel,explanation","read","none","","","external"],
+      ["briefing.open","briefingOpen","openBriefing,readBriefing,briefingSection","research","time","camera,map.layer,time","map,time","session","none","","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
@@ -1654,7 +1655,20 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     function termsOf(nq) {
       var latin = (nq.match(/[a-z0-9]{3,}/g) || []).filter(function (t, i, a) { return a.indexOf(t) === i; });
       var runs = (nq.match(/[぀-ヿ㐀-鿿]+/g) || []).filter(function (t, i, a) { return a.indexOf(t) === i; });
-      return { latin: latin, runs: runs, words: runWords(runs) };
+      /* (atlas-reach) THE REQUEST'S PHRASES — two and three adjacent words, the way a catalogue entry writes its example
+         («what is the population of X», «great-circle distance», «fly to»). A phrase is matched at word boundaries and
+         is worth what its own df says, so a phrase every block writes («of the», «on the map») is worth nothing by the
+         same rule that silences a common word; one the request shares with ONE entry is the most specific evidence a
+         spelling search has. The CJK half needs no phrases: a run is already matched as a contiguous stretch.
+         MEASURED 2026-10-03 with the nightly reach instrument's method (scripts/atlas-eval/reach.mjs, the answer key's own
+         questions): 34 → 37 of the 157 capabilities the answers use, 2 → 4 of 74 questions whole; the median ranking 7 → 8
+         rows (tests/atlas-reach-checks.test.mjs holds the floor). */
+      var ws = nq.match(/[a-z0-9]+/g) || [], phrases = [];
+      for (var i = 0; i < ws.length; i++) for (var n = 2; n <= 3 && i + n <= ws.length; n++) {
+        var ph = ws.slice(i, i + n);
+        if (ph.some(function (w) { return w.length >= 3; }) && phrases.indexOf(ph.join(' ')) < 0) phrases.push(ph.join(' '));
+      }
+      return { latin: latin.concat(phrases), runs: runs, words: runWords(runs) };
     }
     /* ⚠⚠⚠ (atlas-find-semantic) A RUN IS NOT A WORD, AND THE LANGUAGE CAN SAY WHERE ITS WORDS ARE.
        A run is cut by SCRIPT, and a Japanese particle is written in the same script as the words it joins,
@@ -1688,7 +1702,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     /* a Latin term is a WORD («iss» is not inside «missile» or «emission»); a CJK window is a substring */
     var _termRe = {};
     function hasTerm(d, t) {
-      if (!/^[a-z0-9]+$/.test(t)) return d.indexOf(t) >= 0;
+      if (!/^[a-z0-9]+( [a-z0-9]+)*$/.test(t)) return d.indexOf(t) >= 0;   /* a Latin word or phrase is matched at word boundaries */
       var re = _termRe[t] || (_termRe[t] = new RegExp('(^|[^a-z0-9])' + t + '(?=$|[^a-z0-9])'));
       return re.test(d);
     }
@@ -1803,7 +1817,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     var _termReG = {};
     function docAt(d, t) {
       var out = [], i;
-      if (/^[a-z0-9]+$/.test(t)) {
+      if (/^[a-z0-9]+( [a-z0-9]+)*$/.test(t)) {
         var re = _termReG[t] || (_termReG[t] = new RegExp('(^|[^a-z0-9])' + t + '(?=$|[^a-z0-9])', 'g')), m;
         re.lastIndex = 0;
         while ((m = re.exec(d)) && out.length < 32) out.push(m.index + m[1].length);

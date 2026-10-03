@@ -8,6 +8,7 @@
  "tests/news-next.spec.js": 10,
  "tests/science-next.spec.js": 14,
  "tests/marketing-next.spec.js": 22,
+ "tests/atlas-briefing.spec.js": 20,
  "tests/mobile-card-reach.spec.js": 14,
  "tests/mobile-next.spec.js": 20,
  "tests/mobile-panels-reach.spec.js": 43,

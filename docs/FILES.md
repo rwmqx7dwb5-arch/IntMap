@@ -511,13 +511,15 @@ chronos.js                        Chronos＝統一時間カーネル window.IntM
                                   ——`Date.UTC(1,…)` は 1901 年になるから（#R604）。時計は `makeClock()` が作る
                                   **地図ごと**の物で、IntMapTime はメイン地図の 1 個目（比較ウィンドウは 2 個目を持つ）
 map-state.js                      地図の状態の**正本**（MapState）。視野・基図・時刻・共有レイヤー・比較窓・3D 地形・
-                                  シミュレータ入力・リンクの題と一言（`captionText` が掃除して文字単位で切る）・読者の地図
+                                  シミュレータ入力・リンクの題と一言（`captionText` が掃除して文字単位で切る）・Atlas のブリーフィング（`brief`）・読者の地図
                                   （`mymap`・持ち主は遅延 module で、値のあるリンクだけがそれを取りに行く `lazy`）・セッションの
                                   レイヤー集合を `SCHEMA` で 1 回だけ宣言し、URL ハッシュ
                                   （`encode` / `decode`）・共有リンク・セッション保存（`session()`）・Atlas の camera / time
                                   節はその写像。値は持ち主（`own`）の `read()` が返し、ストアは複製を持たない。復元は
                                   世代つきの 1 回の適用（`restore`）で、変化の通知は「復元」か「読者」かを述べる。
                                   window 公開なし（import で読む）
+briefing-link.js                  MapState の `brief` 欄（リンクの `&b=`）の持ち主。起動時から欄を持つのでアドレスの書き直しで
+                                  ブリーフィングが落ちない。値を受けたら Atlas のカーネルを取りに行き、中身は見ない
 historical-basemap.js             Chronos旅行中の自然地理ベクタ背景。現代政治境界を含むCARTO画像を置換し、Nowで復帰
 hist-knowledge.js                 歴史地図が**どこまで分かっていて、どこからが分かっていないか**の測り方
                                   （ES module・DOM も地図も時計も言語も触らない純関数）。`measure()`＝0.25° 格子で
@@ -852,6 +854,12 @@ atlas-msg-tools.js                Atlas — メッセージごとの操作バー
 atlas-notebook.js                 Atlas — **調査ノート**（atlas-os）のページ側。終わったターンを綴じる・パネルの帯とシート・
                                   再現（runDirect＋restorer で読み返し）・今と比べる・もう一度訊く・書き出し／読み込み・アカウント同期
 atlas-notebook-store.js           Atlas — 調査ノートのデータ（記録の形・行ごとの差分・検索・Markdown／ファイル・IndexedDB・同期の突き合わせ）。DOM なし
+atlas-briefing.js                 Atlas — **ブリーフィング**（調査をリンクで手渡す）のページ側。作成画面（ノートの回答を選ぶ・並べる・
+                                  メモを含めるか・リンクの長さ・コピー／共有／プレビュー／ノートのファイル）と、リンクから開いた人の
+                                  読む画面（回答・根拠と時刻・記録時の行を地図に描く・地図を再現・今と比べる・ノートに保存）。
+                                  Atlas が `thisTurn` で頼んだ回答は、ターンが綴じられた時点でブリーフィングになる
+atlas-briefing-codec.js           Atlas — ブリーフィングのデータ（ノートの記録→ブリーフィング、deflate-raw＋base64url の詰め込みと
+                                  展開の上限、検証はノートの normalize、リンクは map-state の encode が書く）。DOM なし
 atlas-selfcheck.js                Atlas — 自己診断（system.diagnose）が Atlas 自身について読む 3 つ: 起動した能力の登録と能力モジュールの
                                   突き合わせ・ai-proxy の疎通（公開鍵だけの POST に 401 auth＝在る、throw＝観測不能）・宣言されたボタンの有無
 atlas-gloss.js                    Atlas — 回答文の語句を選択→右クリック（タッチは長押し→「解説」）で開く
@@ -866,7 +874,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  202 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  204 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -886,6 +894,8 @@ atlas-cap-map.js                  Atlas の能力 — 地図への描画・強�
 atlas-cap-navigation.js           Atlas の能力 — ナビゲーション（navigation.*）
 atlas-cap-news.js                 Atlas の能力 — ニュースの分類（news.category）
 atlas-cap-notebook.js             Atlas の能力 — 調査ノート（notebook.list / open / compare。前に調べたことを探す・地図を戻す・今と比べる）
+atlas-cap-briefing.js             Atlas の能力 — ブリーフィング（briefing.share：ノートの回答や「この回答」をリンクにする／
+                                  briefing.open：リンクから開いたブリーフィングの回答を読み、その表示に戻す）
 atlas-cap-panel.js                Atlas の能力 — パネルを開く・閉じる（panel.*）
 atlas-cap-photo.js                Atlas の能力 — 写真の撮影地点探索（photo.locate）
 atlas-cap-places.js               Atlas の能力 — マイプレイス（アカウントに保存した場所）の保存・一覧・表示・削除と、見守る場所の
@@ -1002,9 +1012,9 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 202能力ぶんの型・列挙・範囲と `required`/`anyOf`。
-atlas-schemas.js                  **引数の schema**（#R406）— 202 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
-atlas-schemas.js                  **引数の schema**（#R406）— 202 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
+atlas-schemas.js                  **引数の schema**（#R406）— 204能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 204 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
+atlas-schemas.js                  **引数の schema**（#R406）— 204 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）

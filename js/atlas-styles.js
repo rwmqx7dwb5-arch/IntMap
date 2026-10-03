@@ -28,6 +28,7 @@ import { GLOSS_CSS, GLOSS_CSS_MOBILE } from './atlas-gloss.js';   /* (#R491) the
 import { ATLAS_ANNOTATE_CSS } from './atlas-annotate.js';
 import { ATLAS_PROGRESS_CSS } from './atlas-progress.js';   /* (#R723) the work trace, beside the module that emits its classes */
 import { ATLAS_LIVE_CSS, ATLAS_LIVE_CSS_MOBILE } from './atlas-live.js';
+import { BRIEFING_CSS } from './atlas-briefing.js';   /* (atlas-briefing) the composer, the recipient's reader and its strip */
 import { NOTEBOOK_CSS } from './atlas-notebook.js';   /* (atlas-os) the investigation notebook's strip and sheet */   /* (atlas-live-stream) the streamed draft, the notes on the way and the map HUD */
 import { HIGHLIGHT_CSS } from './atlas-highlight.js';   /* (#R494) the code-block token palette, beside the grammars that emit the classes */
 
@@ -162,6 +163,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       +ATLAS_PROGRESS_CSS
       +ATLAS_LIVE_CSS
       +NOTEBOOK_CSS
+      +BRIEFING_CSS
       +HIGHLIGHT_CSS
       +'.atl-codebtns{display:flex;align-items:center;gap:5px;}'
       +'.atl-codewrapbtn{font-size:11px;font-weight:600;color:var(--text-muted);background:transparent;border:1px solid var(--glass-border,rgba(128,128,128,.28));border-radius:7px;padding:2px 9px;cursor:pointer;transition:color .15s,border-color .15s,background .15s;}'
