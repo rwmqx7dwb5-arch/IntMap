@@ -113,3 +113,13 @@ async gzip 3785.6 kB（天井は CI の機械の値）。この作業の分は�
 - `async.gzip` 3774.0 → 3805.4 kB（base から +19.8 kB）: 火山灰の遅延チャンク（`js/ash-plume.js`・`js/ash-model.js`）。
 - `atlas-console` 1134.1 → 1142.0 kB: Atlas の `ashPlume`・放射拡散の `runs`/`seed`・パンデミックの `runs`
   （`js/atlas-cap-sim.js`・`js/atlas-caps.js`・`js/pandemic-atlas.js`）。
+
+## 統合時の性能予算（830f271b へ重ね直した後の build）
+
+超えた行だけ `--update` で上げた（増えた理由は上の節）:
+- eager.raw: 4628.5 kB → 4653.7 kB
+- eager.gzip: 1523.9 kB → 1533.8 kB
+- async.raw: 11518.0 kB → 11602.0 kB
+- async.gzip: 3795.2 kB → 3818.7 kB
+- async chunk "atlas-console": 1144.2 kB → 1157.5 kB
+- dist.assets: 18698.0 kB → 18796.7 kB
