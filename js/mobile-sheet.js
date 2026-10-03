@@ -283,7 +283,7 @@ export function makeLegendTray(o) {
    instead of floating above it. A panel the reader dragged (`data-dragged`) is where the reader put it. */
 const FLOAT_GAP = 20;     /* the gap above the data credit — the same 20 px css/intmap.css `#map-container > .country-popup` keeps (#936) */
 const FLOAT_FLOOR = 6;    /* the top a panel too tall for the room is held to when the page states no chrome row (o.floor) — else the row's bottom */
-const FLOAT_ATTR = 'data-m-fit';   /* tokens: `cap` (max-height) · `dy` (translate) · `scroll` (overflow-y) — css/intmap.css reads them */
+const FLOAT_ATTR = 'data-m-fit';   /* tokens: `cap` (max-height) · `dy` (translate) · `scroll` (overflow-y) · `out` (a lone control with no room: not drawn, not hit) — css/intmap.css reads them */
 const FLOAT_CONTROL = 'button, a[href], input, select, textarea, [role="button"]';
 
 /** the lowest y a floating panel may reach: above the sheet's current top, above the data credit, and the gap */
@@ -330,10 +330,18 @@ export function makeFloatFit(o) {
     if (el.querySelector(':scope > [class*="grip"]')) return false;
     let cs; try { cs = getComputedStyle(el); } catch (_) { return false; }
     if (cs.position !== 'fixed' && cs.position !== 'absolute') return false;
-    if (cs.pointerEvents === 'none' || !drawn(el, cs)) return false;
+    /* a control this function stepped back (`out`) is hidden by this function's own token, not by its owner: it is still a
+       floater, so the next fit can bring it back when the sheet comes down (its owner hiding it is `display:none`) */
+    const heldOut = (el.getAttribute(FLOAT_ATTR) || '').split(' ').includes('out');
+    if (heldOut ? cs.display === 'none' : (cs.pointerEvents === 'none' || !drawn(el, cs))) return false;
     const r = el.getBoundingClientRect();
     if (r.width * r.height >= 0.9 * innerWidth * innerHeight) return false;
-    return !!el.querySelector(FLOAT_CONTROL);
+    /* ⚠ (mobile-next) A LONE CONTROL IS A FLOATER TOO. The rule asked only for a control INSIDE the element, so a button that
+       floats by itself — the object-list pill #iol-fab (js/map-tools.js, `bottom:104px` written inline) — was never found:
+       measured on production f01c607 at 375 × 812, with the sheet at half it sat at y 670 across the layer screen's search
+       field (input.lsr-q), and the overlap's taps went to the pill. What it is (positioned, drawn, takes a finger, IS a
+       control) is what a panel is; it is held by the same bound. */
+    return el.matches(FLOAT_CONTROL) || !!el.querySelector(FLOAT_CONTROL);
   }
 
   function unfit(el) { el.removeAttribute(FLOAT_ATTR); el.style.removeProperty('--m-fit-h'); el.style.removeProperty('--m-fit-dy'); fitted.delete(el); }
@@ -349,7 +357,13 @@ export function makeFloatFit(o) {
     if (r.bottom <= bound + 0.5 && r.top >= -0.5) { fitted.delete(el); return; }
     if (overlaysSheet(el, r)) { fitted.delete(el); return; }
     const tok = [], room = bound - floor;
-    if (room < 80) { fitted.delete(el); return; }        /* no map above the sheet to hold it in (the sheet is at full): nothing to fit to */
+    if (room < 80) {                                      /* no map above the sheet to hold it in (the sheet is at full) */
+      /* a panel is left as it draws itself (it is read, and the sheet at full is the reader's choice); a LONE control has
+         nothing to read, and over a full sheet it can only take the finger meant for the sheet — it steps back the way the
+         control group does at full (`out`), and comes back on the next fit when the sheet comes down */
+      if (el.matches(FLOAT_CONTROL)) { el.setAttribute(FLOAT_ATTR, 'out'); fitted.add(el); return; }
+      fitted.delete(el); return;
+    }
     if (r.height > room) { el.style.setProperty('--m-fit-h', room + 'px'); tok.push('cap'); el.setAttribute(FLOAT_ATTR, 'cap'); r = el.getBoundingClientRect(); }
     const dy = floatShift(r.top, r.bottom, floor, bound);
     if (dy) { el.style.setProperty('--m-fit-dy', dy + 'px'); tok.push('dy'); }

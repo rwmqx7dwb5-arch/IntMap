@@ -42,6 +42,16 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE_ICON = 'IntMap.Icon.png';
 export const MANIFEST_FILE = 'manifest.webmanifest';
 export const ICON_DIR = 'icons';
+/* (mobile-next) «Share ▸ IntMap». Files need POST + multipart (the Web Share Target spec); the static host cannot
+   take a POST, so sw.js answers `share-target` and hands the parts to the page (js/share-inbox.js). */
+export const SHARE_TARGET = Object.freeze({
+  action: './share-target', method: 'POST', enctype: 'multipart/form-data',
+  params: { title: 'title', text: 'text', url: 'url', files: [{ name: 'photos', accept: ['image/*', '.jpg', '.jpeg', '.heic', '.heif', '.webp'] }] },
+});
+/* the long-press menu of the installed icon: the one thing a phone at hand is for — what is happening here, now */
+export const SHORTCUTS = Object.freeze([
+  { name: 'Here, now — いま、ここ', short_name: 'Here, now', description: 'Weather, earthquakes, news and the history of where you are — your position stays on the device.', url: './?here=1' },
+]);
 
 /* The icons and why each exists. `purpose` is the manifest's own vocabulary; `maskable` is the one an
    Android launcher crops to its own shape, so its mark is fitted into the W3C safe zone below. */
@@ -245,6 +255,11 @@ export function derive() {
     background_color: tokens.dark,
     theme_color: tokens.dark,
     icons: icons.filter((ic) => ic.purposes.length).map((ic) => ({ src: ICON_DIR + '/' + ic.file, sizes: ic.size + 'x' + ic.size, type: 'image/png', purpose: ic.purposes.join(' ') })),
+    /* (mobile-next) the share sheet and the home-screen icon's long-press. Both are read from the two places that
+       answer them — SHARE_TARGET by sw.js `isShareTarget`/`takeShare` (the field names and the path), SHORTCUTS by
+       src/main.js (the query) — and tests/mobile-next-checks.test.mjs evaluates the worker against this declaration. */
+    share_target: SHARE_TARGET,
+    shortcuts: SHORTCUTS,
   };
   return { doc, tokens, manifest, icons, text: JSON.stringify(manifest, null, 2) + '\n' };
 }

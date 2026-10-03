@@ -22,6 +22,15 @@
  *     produced, which is exactly how docs/PHOTO-GEOLOCATION.md evaluates the method.
  *
  *  Only the tags above are read. This is not a general EXIF library and should not become one.
+ *
+ *  (mobile-next) TWO ADDITIONS, for the one reader that IS asking «where and when was this taken» — a photo sent to
+ *  IntMap from the phone's share sheet or picked from the library (js/share-inbox.js). There the camera's own record is
+ *  the answer, and it is presented as exactly that («recorded by the camera»), never as something IntMap inferred:
+ *   · `takenAt` — DateTimeOriginal (0x9003) and, when the camera wrote it, OffsetTimeOriginal (0x9011). The local
+ *     wall-clock time is returned as written; an offset is returned only if the file states one (no zone is guessed).
+ *   · THE EXIF BLOCK OUTSIDE A JPEG. A phone shares HEIC/AVIF (an ISO-BMFF `Exif` item, which carries the same
+ *     `Exif\0\0` + TIFF bytes) and WebP (an `EXIF` chunk, TIFF directly). Those are found by their own markers in
+ *     the head of the file; nothing else about the container is parsed.
  * ==========================================================================*/
 (function () {
   'use strict';
@@ -31,6 +40,26 @@
   var T_PIXEL_X = 0xA002, T_PIXEL_Y = 0xA003, T_MODEL = 0x0110, T_MAKE = 0x010F;
   var T_GPS_LATREF = 1, T_GPS_LAT = 2, T_GPS_LONREF = 3, T_GPS_LON = 4, T_GPS_ALTREF = 5, T_GPS_ALT = 6;
   var T_GPS_IMGDIR_REF = 16, T_GPS_IMGDIR = 17;
+  var T_DATETIME_ORIGINAL = 0x9003, T_OFFSET_ORIGINAL = 0x9011;
+  /* how far into a non-JPEG file the EXIF block is looked for. OBSERVED: an iPhone HEIC puts its Exif item in the
+     `mdat` box after the `meta` box, within the first ~64 kB on the files measured; a WebP's EXIF chunk follows VP8X
+     and the image data, so it can be anywhere — 4 MB covers the photographs a phone shares. EXPIRES if a container
+     places metadata at the end of a larger file; the caller then reads «no EXIF», never a wrong value. */
+  var CONTAINER_SCAN_BYTES = 4 * 1024 * 1024;
+
+  /* the TIFF header of a non-JPEG container: `Exif\0\0` then II*\0 / MM\0* (HEIC, AVIF, some WebP), or a WebP
+     `EXIF` chunk whose payload is the TIFF header itself. -1 when neither is there. */
+  function containerTiff(dv) {
+    var n = Math.min(dv.byteLength - 8, CONTAINER_SCAN_BYTES);
+    var isTiff = function (p) { var b = dv.getUint16(p); return (b === 0x4949 && dv.getUint16(p + 2, true) === 42) || (b === 0x4D4D && dv.getUint16(p + 2, false) === 42); };
+    var webp = dv.byteLength > 12 && dv.getUint32(0) === 0x52494646 && dv.getUint32(8) === 0x57454250;   /* RIFF....WEBP */
+    for (var i = 0; i < n; i++) {
+      var c = dv.getUint8(i);
+      if (c === 0x45 && dv.getUint32(i) === 0x45786966 && dv.getUint16(i + 4) === 0 && i + 10 <= dv.byteLength && isTiff(i + 6)) return i + 6;   /* "Exif\0\0" */
+      if (webp && c === 0x45 && dv.getUint32(i) === 0x45584946 && i + 12 <= dv.byteLength && isTiff(i + 8)) return i + 8;                       /* WebP "EXIF" chunk */
+    }
+    return -1;
+  }
   /* bytes per component, indexed by EXIF type code (1 BYTE … 12 DOUBLE) */
   var TYPE_SIZE = [0, 1, 1, 2, 4, 8, 1, 1, 2, 4, 8, 4, 8];
 
@@ -39,9 +68,9 @@
     try {
       var dv = new DataView(buf);
       if (dv.byteLength < 4) return out;
-      if (dv.getUint16(0) !== 0xFFD8) return out;              /* not a JPEG: no EXIF to find */
-      var off = 2, tiff = -1;
-      while (off + 4 <= dv.byteLength) {
+      var jpeg = dv.getUint16(0) === 0xFFD8;
+      var off = 2, tiff = jpeg ? -1 : containerTiff(dv);       /* (mobile-next) not a JPEG: HEIC/AVIF/WebP carry the same block */
+      while (jpeg && off + 4 <= dv.byteLength) {
         if (dv.getUint8(off) !== 0xFF) break;
         var marker = dv.getUint8(off + 1);
         if (marker === 0xD8 || marker === 0x01 || (marker >= 0xD0 && marker <= 0xD7)) { off += 2; continue; }
@@ -76,6 +105,13 @@
         if (ex[T_FPX_RES] != null) out.focalPlaneXRes = num(ex[T_FPX_RES]);
         if (ex[T_FPY_RES] != null) out.focalPlaneYRes = num(ex[T_FPY_RES]);
         if (ex[T_FP_UNIT] != null) out.focalPlaneUnit = num(ex[T_FP_UNIT]);
+        /* (mobile-next) when the shutter was pressed, as the camera wrote it: "YYYY:MM:DD HH:MM:SS" (local wall clock) */
+        var dto = /^(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/.exec(String(ex[T_DATETIME_ORIGINAL] || ''));
+        if (dto && dto[1] !== '0000') {
+          out.takenAt = { local: dto[1] + '-' + dto[2] + '-' + dto[3] + 'T' + dto[4] + ':' + dto[5] + ':' + dto[6], offset: null };
+          var oo = /^([+-])(\d{2}):(\d{2})$/.exec(String(ex[T_OFFSET_ORIGINAL] || '').trim());
+          if (oo) out.takenAt.offset = oo[1] + oo[2] + ':' + oo[3];
+        }
       }
       if (main[T_GPS_IFD] != null) {
         var gp = readIFD(dv, tiff, tiff + (main[T_GPS_IFD] | 0), le);

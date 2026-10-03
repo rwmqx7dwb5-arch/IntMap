@@ -43,7 +43,8 @@ const CENSUS = () => {
     if (!el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) continue;
     const r = el.getBoundingClientRect();
     if (r.width * r.height >= 0.9 * innerWidth * innerHeight) continue;                 /* a modal / the map itself */
-    if (!el.querySelector('button, a[href], input, select, textarea, [role="button"]')) continue;
+    /* (mobile-next) a lone control that floats by itself (#iol-fab) is a floater too */
+    if (!el.matches('button, a[href], input, select, textarea, [role="button"]') && !el.querySelector('button, a[href], input, select, textarea, [role="button"]')) continue;
     out.push({ el, label: (el.id ? '#' + el.id : el.tagName.toLowerCase() + '.' + String(el.className).split(' ')[0]) });
   }
   return out.map((o) => { o.el.setAttribute('data-census', o.label); return o.label; });
@@ -57,7 +58,8 @@ const REACH = (labels) => {
   for (const lab of labels) {
     const root = document.querySelector('[data-census="' + CSS.escape(lab).replace(/\\#/g, '#') + '"]') || [...document.querySelectorAll('[data-census]')].find((e) => e.getAttribute('data-census') === lab);
     if (!root) { out.push(lab + ' vanished'); continue; }
-    for (const el of root.querySelectorAll('button, a[href], input, select, textarea, [role="button"]')) {
+    const SEL = 'button, a[href], input, select, textarea, [role="button"]';
+    for (const el of [root.matches(SEL) ? root : null, ...root.querySelectorAll(SEL)].filter(Boolean)) {
       if (!el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) continue;
       el.scrollIntoView({ block: 'nearest' });
       const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
@@ -141,6 +143,52 @@ test.describe('mobile-panels-reach: 375 × 812, touch', () => {
     await page.waitForFunction(() => document.querySelectorAll('#pd-popup [data-pending]').length === 0, null, { timeout: 30_000 });
     await page.waitForTimeout(600);
     await expectReachable(page, cdp, '#pd-popup');
+  });
+
+  /* (mobile-next) production f01c607, 375 × 812: with a pin on the map the object-list pill #iol-fab (a lone button, `bottom:104px`)
+     appeared at y 670 and, with the sheet at half, lay across the layer screen's search field (input.lsr-q) — the overlap's taps
+     went to the pill. The census missed it because it looked only for a control INSIDE a floater. */
+  test('a lone floating button (#iol-fab) is held above the sheet, and never takes a finger meant for the sheet', async ({ page }) => {
+    test.setTimeout(150_000);
+    await boot(page);
+    const cdp = await page.context().newCDPSession(page);
+    const pt = await page.evaluate(() => { const mc = document.getElementById('map-container').getBoundingClientRect(); return { x: Math.round(mc.x + mc.width * 0.5), y: Math.round(mc.y + mc.height * 0.3) }; });
+    await page.mouse.click(pt.x, pt.y, { button: 'right' });
+    await page.evaluate(() => {
+      const b = [...document.querySelectorAll('#ctx-menu button[data-act]')].find((x) => /Drop a pin/.test(x.textContent));
+      const sec = b && b.closest('.ctx-sec');
+      if (sec && sec.hidden) { const g = sec.previousElementSibling; if (g && g.classList.contains('ctx-grp')) g.click(); }
+    });
+    await page.evaluate(() => [...document.querySelectorAll('#ctx-menu button[data-act]')].find((x) => /Drop a pin/.test(x.textContent)).click());
+    await page.waitForFunction(() => { const f = document.getElementById('iol-fab'); return !!f && getComputedStyle(f).display !== 'none'; }, null, { timeout: 20_000 });
+    /* the layer screen at half — the state production showed */
+    await page.click('#m-fab-map');
+    await page.evaluate(() => window.__setDetent('half', false));
+    await page.waitForTimeout(900);
+    await expectReachable(page, cdp, '#iol-fab');
+    /* the sheet's own field is the sheet's: nothing that floats takes its taps */
+    const q = await page.evaluate(() => {
+      const f = document.getElementById('iol-fab').getBoundingClientRect();
+      const inp = [...document.querySelectorAll('#sidebar input.lsr-q, #sidebar #lsr-q, .m-sheet input.lsr-q')].find((e) => e.checkVisibility());
+      const out = { fabBottom: f.bottom, sheetTop: document.getElementById('sidebar').getBoundingClientRect().top, field: null };
+      if (inp) { const r = inp.getBoundingClientRect(); const x = r.left + 12, y = r.top + r.height / 2; const hit = document.elementFromPoint(x, y); out.field = { y: Math.round(y), own: hit === inp || inp.contains(hit), hit: hit ? (hit.id || hit.className) : null }; }
+      return out;
+    });
+    expect(q.fabBottom, 'the pill is above the sheet').toBeLessThanOrEqual(q.sheetTop);
+    if (q.field && q.field.y > 0 && q.field.y < 812) expect(q.field.own, 'the layer search field takes its own taps (got ' + q.field.hit + ')').toBe(true);
+    /* full: no map above the sheet — the lone pill steps back and the sheet keeps every tap */
+    await page.evaluate(() => window.__setDetent('full', false));
+    await page.waitForTimeout(900);
+    const full = await page.evaluate(() => {
+      const f = document.getElementById('iol-fab'), r = f.getBoundingClientRect();
+      const hit = r.width ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null;
+      return { took: !!hit && (hit === f || f.contains(hit)), fit: f.getAttribute('data-m-fit') };
+    });
+    expect(full.took, 'over a full sheet the pill takes no finger (data-m-fit=' + full.fit + ')').toBe(false);
+    /* and it comes back when the sheet comes down */
+    await page.evaluate(() => window.__setDetent('half', false));
+    await page.waitForTimeout(900);
+    await expectReachable(page, cdp, '#iol-fab');
   });
 
   test('an Atlas sample card, the sheet put back to half: every control still answers a finger', async ({ page }) => {

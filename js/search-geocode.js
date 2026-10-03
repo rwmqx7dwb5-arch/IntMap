@@ -22,10 +22,12 @@ import * as bus from './bus.js';
    The same import answers any control marked `data-im-gallery` (the whole gallery, js/showcase-gallery.js). */
 function _galleryEmptyState(inp, res){
   if(!inp||!res) return;
+  /* (mobile-next) …and above them the two doors a phone makes natural: «Here, now» and «Photo's place» (js/here-entry.js) */
   import('./showcase-gallery.js').then((G)=>{
     /* asked again when the module has arrived: the reader may have typed, or left, meanwhile */
     if(document.activeElement!==inp||inp.value.trim()) return;
     G.showInResults(res);
+    return import('./here-entry.js').then((m)=>{ if(document.activeElement===inp&&!inp.value.trim()) m.showEntry(res); });
   }).catch(()=>{});
 }
 if(typeof document!=='undefined'){
@@ -33,7 +35,7 @@ if(typeof document!=='undefined'){
   document.addEventListener('input',(e)=>{ const inp=/** @type {HTMLInputElement} */ (e.target); if(!inp||inp.id!=='ms-input') return;
     const res=document.getElementById('ms-results'); if(!res) return;
     if(!inp.value.trim()) _galleryEmptyState(inp,res);
-    else if(res.querySelector('.sg-strip')){ res.style.display='none'; res.innerHTML=''; } });   /* the first letter: the cards make way for the candidates */
+    else if(res.querySelector('.sg-strip, .hn-entry')){ res.style.display='none'; res.innerHTML=''; } });   /* the first letter: the cards make way for the candidates */
   document.addEventListener('click',(e)=>{ const el=/** @type {Element} */ (e.target); const b=el&&el.closest?el.closest('[data-im-gallery]'):null;
     if(b) import('./showcase-gallery.js').then((G)=>G.openGallery({ section:b.getAttribute('data-im-gallery')||null })).catch(()=>{}); });
 }
