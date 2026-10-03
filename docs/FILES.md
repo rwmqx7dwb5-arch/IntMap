@@ -69,6 +69,9 @@ og-image.jpg                    リンクのカードの絵（本物の JPEG。�
 （dist だけ）history/ ja/history/ sitemap-history.xml sitemap-index.xml
                                 歴史地図の入口ページ（地域 × 日付）とその sitemap。リポジトリには無く、ビルドが
                                 scripts/history-pages.mjs で書く（§8.6.2）
+（dist だけ）on-this-day/ ja/on-this-day/ sitemap-on-this-day.xml
+                                この日の歴史地図（暦の日ごとのページ・暦・日ごとのカードの絵 card.png）とその sitemap。
+                                ビルドが scripts/on-this-day-pages.mjs で書く（§8.6.3）
 google….html                    Google Search Console 認証用
 package.json / package-lock     npm スクリプトと依存。dependencies がアプリに入る依存の唯一のリスト
 data-assets.json                **git の外にあるデータ集合の目録**（正本）。集合ごとにパス・中身の sha256・
@@ -863,7 +866,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  201 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  202 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -999,9 +1002,9 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 201能力ぶんの型・列挙・範囲と `required`/`anyOf`。
-atlas-schemas.js                  **引数の schema**（#R406）— 201 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
-atlas-schemas.js                  **引数の schema**（#R406）— 201 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
+atlas-schemas.js                  **引数の schema**（#R406）— 202能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 202 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
+atlas-schemas.js                  **引数の schema**（#R406）— 202 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）
@@ -1338,6 +1341,9 @@ showcase-gallery.js               **アプリ内の作例ギャラリー**——
                                   カードを並べ、「すべて見る」・data-im-gallery・Atlas の panel.gallery で一覧を開く。
                                   カードは showcase.js と tours.js から導く。1 タップで見本を開く openShowcase は
                                   Atlas の panel.showcase も使う（共有リンクの復元＋読み返し）。自動では開かない。必要になったときに読む
+on-this-day.js                    **この日の歴史地図**——data/on-this-day.json の唯一の読み手。暦の日の出来事・見出しの規則・
+                                  文（en + jp）・地図のリンク（日付・場所・戦争のレイヤー・題）と、検索欄の空の状態のカード・
+                                  日ごとのシート。Atlas の time.onThisDay、静的ページと下書き（Node）も同じ関数を読む。必要になったときに読む（§8.6.3）
 tours.js                          **授業ツアー**の宣言（純データ）——地図の状態を順に並べ、各段に日英の語り（say）と生徒への問い（ask）。
                                   段は見本（showcase.js）を名指すか、見本と同じ形の意図を持ち、そのリンクは
                                   scripts/showcase-capture.mjs が書く生成領域 CAPTURED_STEPS。`?tour=<id>&step=<n>` の読み書き
@@ -1647,6 +1653,7 @@ data/hist-fidelity.json           歴史地図の**観測値**（目標値では
                                   （紀元前 500 年から 2019 年までの 18 年）。`--update` で記録し直す
 us-elections.json / us-states.json  米大統領選挙（60回・州別2,342行の得票と選挙人つき）
 elections/                        各国の**国政選挙**（index.json＝polity・選挙・政党／`<版>.geo.json`＝選挙区の境界を**版ごとに**1つ／`<選挙>.res.json`＝結果）。scripts/elections/ の各パックが書き、scripts/build-elections.mjs が統合し、`--check` が形式と結合を毎回検証する。契約は scripts/lib/elections-schema.mjs
+on-this-day.json                  暦の日（MM-DD）ごとの、記録が日付をつけた出来事（CShapes の変化日・戦争の記録）。scripts/build-on-this-day.mjs が書き、--check が照合する（§8.6.3）
 wars.json                         6つの戦争の記録（支配・戦線・作戦・種別・兵力と死傷／`scripts/build-wars.mjs` が書き、検証する）
 religion.json / language.json     宗教の分布／言語の分布（国ごとの記録＋言語名・ISO 639-3・訳）
 language-tree.json                Glottolog の分類全体（族・言語・国が指す標準／親・カテゴリ・存続状態）
@@ -1734,6 +1741,12 @@ scripts/
   history-pages.mjs               歴史地図の入口ページの生成器——js/time-borders.js を Node で動かし、地図が描く名前を
                                   地域 × 日付で書く。vite.config.js の historyPagesPlugin がビルド時に子プロセスで走らせる（§8.6.2）
   history-pages-text.mjs          入口ページの文の唯一の写し（en + jp）
+  build-on-this-day.mjs           data/on-this-day.json を書く——地図のコード（history-pages.mjs mapReader）で CShapes の変化日と
+                                  その前日を比べ、戦争の記録の出来事と合わせて暦の日ごとに。`--check` で記録と照合（§8.6.3）
+  on-this-day-pages.mjs           この日の歴史地図の静的ページ・カードの絵・sitemap の生成器（onThisDayPagesPlugin）と、
+                                  `--queue` の投稿の下書き（承認待ち。投稿・送信はしない）
+  on-this-day-text.mjs            そのページと下書きの文の唯一の写し（en + jp）
+  lib/map-card.mjs                リンクのカード（1200×630 PNG）を国境の記録から描く——走査線の塗り・Inter の数字・node:zlib の PNG
   org-pages.mjs                   組織向けページ・相談フォーム・支援のページ（en と ja/）と admin-inquiries.html の**生成器と門**
                                   （`--check`）。数字はその持ち主から読む（facts()・plans.js・EMBED_SIZES・purge の既定値）
   org-pages-text.mjs              そのページの文の唯一の写し（en + jp）。導入事例・料金・応答時間を書かない
@@ -1744,6 +1757,12 @@ scripts/
   history-pages.mjs               歴史地図の入口ページの生成器——js/time-borders.js を Node で動かし、地図が描く名前を
                                   地域 × 日付で書く。vite.config.js の historyPagesPlugin がビルド時に子プロセスで走らせる（§8.6.2）
   history-pages-text.mjs          入口ページの文の唯一の写し（en + jp）
+  build-on-this-day.mjs           data/on-this-day.json を書く——地図のコード（history-pages.mjs mapReader）で CShapes の変化日と
+                                  その前日を比べ、戦争の記録の出来事と合わせて暦の日ごとに。`--check` で記録と照合（§8.6.3）
+  on-this-day-pages.mjs           この日の歴史地図の静的ページ・カードの絵・sitemap の生成器（onThisDayPagesPlugin）と、
+                                  `--queue` の投稿の下書き（承認待ち。投稿・送信はしない）
+  on-this-day-text.mjs            そのページと下書きの文の唯一の写し（en + jp）
+  lib/map-card.mjs                リンクのカード（1200×630 PNG）を国境の記録から描く——走査線の塗り・Inter の数字・node:zlib の PNG
   showcase-capture.mjs            見本の地図のリンクと画面写真を、ビルドしたアプリ自身に作らせる（サーバと実ネットワークが要る）。
                                   授業ツアーの段（js/tours.js）のリンクも同じ関数で作る（`--shots <dir>` で確認用の写真）。
                                   `--serve dist` でこの実行の間だけ serve.mjs を立てて止める・`--only a,b`・`--thumbs` でギャラリー用の縮小を作る

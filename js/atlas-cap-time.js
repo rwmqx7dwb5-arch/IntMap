@@ -59,6 +59,18 @@ export default [
     async run(a, dctx, K) { return yearbook(a, K); },
   },
   {
+    row: ['time.onThisDay',             'onThisDay',      'thisDayInHistory,todayInHistory,onThisDate',                  'time',    'time',    'camera,map.layer,time',  'map,time,explanation', 'session', 'none',   '',         ''],
+    /* (marketing-next) ON THIS DAY — the dated events of one CALENDAR day in every year the records cover (js/on-this-day.js over
+       data/on-this-day.json): the days the border record (CShapes 2.0) begins drawing, stops drawing or redraws a polity, under
+       the names the map writes, and the war record's dated events. Read-only, unless `open` (the n-th event: the map on its
+       date, its place and, for a war, its layer — the share link's restore, read back) or `show` (the sheet, for the reader). */
+    doc: [
+      { in: 'time.coverage', at: 25, text: '{"type":"onThisDay","date"?:"MM-DD"|"YYYY-MM-DD" (only the month and day are used; default: the reader\'s today),"open"?:int (1-based, an event of the list),"show"?:bool} = ON THIS DAY / この日の歴史 — every event IntMap\'s records date to that calendar day, in every year they cover: the days the border record (CShapes 2.0, 1886–2019) begins drawing, stops drawing or redraws a polity (under the names the map writes on that day) and the dated events of IntMap\'s war record; a 1 January border day is marked as possibly year-only. The OpenHistoricalMap record (1689–1885) is not included — its dates carry no day precision. open:n opens the n-th event on the map (its date, its place and, for a war, its war layer) and reports it open only once the clock and the layer say so; show:true puts the list in front of the reader as a sheet they can step day by day. Answer from the events it returns, as the record states them ("the map begins drawing …"), not as a history you add. Use for 「今日は何の日？」「10月3日に何があった」「この日の歴史地図」「on this day in history」「what happened on 15 August」. ' },
+    ],
+    schema: () => ({ type: 'object', properties: { date: str(), open: int(1, 99), show: bool() } }),
+    async run(a, dctx, K) { return onThisDay(a, K); },
+  },
+  {
     row: ['time.compare',               'timeCompare',    'compareTime,compareYear',                                     'time',    'timeView', 'panel.compare,time.compare', 'panel,time',         'session', 'none',   '',         ''],
     /* (time-compare-lapse) THE COMPARISON WINDOW AT AN INSTANT OF ITS OWN — 「1914 年 | 今日」. Opens the window if it is
        closed, and sets ITS clock (js/compare.js `setTime`) without moving the main map's: a year, a date, «now», or
@@ -268,6 +280,37 @@ async function yearbook(a, K) {
   if (a.show) { if (when.getFullYear() >= new Date().getFullYear()) T.setNow({ source: 'atlas' }); else T.set(when, { source: 'atlas' }); YB.openFromPage(h); }
   const r = await YB.readYear(when, YB.pageDeps(h));
   return R(true, YB.atlasHtml(r, when, !!a.show, h.lang(), note), { yearbook: r });
+}
+
+/* ══ (marketing-next) ON THIS DAY, FOR ATLAS ═════════════════════════════════════════════════════════════════
+   The same reader the search card and the sheet use (js/on-this-day.js), so what Atlas says about 3 October is what the
+   reader would read in the sheet, worded the same way, and an event Atlas opens is opened by the card's own opener. */
+async function onThisDay(a, K) {
+  const R = K.R, L = K.L, warn = K.warn, esc = K.esc, note = K.note, HOST = K.HOST;
+  const OTD = await import('./on-this-day.js');
+  const lang = (HOST && HOST.lang) || 'en';
+  const md = a.date != null && String(a.date).trim() !== '' ? OTD.mdOf(a.date) : OTD.mdOf(new Date());
+  if (!md) return R(false, warn(esc(L('Give a calendar day: MM-DD or YYYY-MM-DD', '日付を MM-DD か YYYY-MM-DD で指定してください')) + ': ' + esc(a.date)), { meta: { code: 'BAD_DATE', category: 'input', retryable: false, produced: [], userGoalSatisfied: false } });
+  let idx;
+  try { idx = await OTD.loadIndex(); } catch (e) { return R(false, warn(esc(L('The on-this-day index could not be read', 'この日の歴史の索引を読めませんでした'))), { meta: { code: 'UNAVAILABLE', category: 'transient', retryable: true, produced: [], userGoalSatisfied: false } }); }
+  const list = OTD.eventsOn(idx, md);
+  const day = OTD.dayWords(md, lang);
+  const facts = list.map((ev, i) => { const D = OTD.describe(ev, idx, lang); return { n: i + 1, date: ev.d, text: D.text, record: D.record, war: D.war || null, maybeYearOnly: !!ev.maybeYearOnly }; });
+  const rows = facts.map((f) => '<li>' + esc(f.date) + ' — ' + esc(f.text) + ' <span style="color:var(--text-muted);font-size:12px;">(' + esc(f.war ? f.war + ' · ' + f.record : f.record) + (f.maybeYearOnly ? esc(L(' · dated 1 January: may be the year only', ' · 1月1日付け: 年だけの可能性')) : '') + ')</span></li>').join('');
+  const listHtml = list.length ? '<ol style="margin:4px 0 4px 18px;padding:0;">' + rows + '</ol>' : '<div>' + esc(L('The records the map draws state no event on this day.', '地図が描く記録には、この日の出来事がありません。')) + '</div>';
+  const src = '<div style="font-size:12px;color:var(--text-muted);">' + esc(L('Sources: ', '出典: ')) + esc(idx.src.cshapes) + ' · ' + esc(idx.src.wars) + '</div>';
+  const meta = { onThisDay: { md, day, events: facts } };
+  if (a.show) { try { await OTD.openOnThisDay({ md }); } catch (_) { /* the list is still the answer */ } }
+  if (a.open != null) {
+    const ev = list[(+a.open) - 1];
+    if (!ev) return R(false, warn(esc(L('There is no event ' + a.open + ' on ' + day, day + ' に ' + a.open + ' 番目の出来事はありません'))) + listHtml, { meta: Object.assign({ code: 'NO_SUCH_EVENT', category: 'input', retryable: false, produced: ['explanation'], userGoalSatisfied: false }, meta) });
+    const m = await OTD.openEvent(ev, idx, lang);
+    const D = OTD.describe(ev, idx, lang);
+    if (m.timeOk && !m.off.length) return R(true, note('✓ ' + esc(L('Opened on the map: ', '地図で開きました: ')) + esc(ev.d)) + '<div>' + esc(D.text) + '</div>' + src, { meta });
+    const miss = []; if (!m.timeOk) miss.push(L('the date', '日付')); if (m.off.length) miss.push(L('layers not on', 'オンにならないレイヤー') + ' ' + m.off.join(', '));
+    return R(false, warn(esc(L('The event did not fully open', '出来事が一部しか開いていません')) + ' — ' + esc(m.reason || miss.join(' / '))) + '<div>' + esc(D.text) + '</div>', { meta });
+  }
+  return R(true, note('✓ ' + esc(L('On this day — ', 'この日の歴史 — ')) + esc(day)) + (a.show ? ' — ' + esc(L('opened as a sheet', 'シートで表示しました')) : '') + listHtml + src, { meta });
 }
 
 /* ══ (atlas-reasoning) WHAT CHANGED BETWEEN TWO INSTANTS ═════════════════════════════════════════════════════

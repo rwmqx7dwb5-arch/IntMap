@@ -51,6 +51,8 @@ import { TEXT } from './history-pages-text.mjs';
 import { SITE_TOKEN } from './site-url.mjs';
 import { encode } from '../js/map-state.js';
 import { SITEMAP as UPDATES_SITEMAP } from './whats-new.mjs';   /* (ops-next) the updates pages' sitemap, joined here */
+import { fitView } from '../js/on-this-day.js';   /* (marketing-next) the one camera fit */
+import { OTD_SITEMAP } from './on-this-day-pages.mjs';   /* (marketing-next) the third generator's sitemap, joined by the index (a cycle: read only when the index is written) */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -79,11 +81,8 @@ export const REGIONS = [
   { id: 'oceania', boxes: [[110, -50, 180, -10], [129, -10, 180, 25], [-180, -50, -125, 25]] },
 ];
 
-/* the window the map is framed for: the size the example screenshots are taken at
-   (scripts/showcase-capture.mjs VIEWPORT) — the desktop frame the site's pictures already assume */
-const FRAME = { width: 1280, height: 800 };
-/* MapLibre's tile size: at zoom z the world is 512·2^z pixels wide */
-const TILE = 512;
+/* the window the map is framed for (the size the example screenshots are taken at) and MapLibre's tile are
+   js/on-this-day.js's FRAME and TILE — its fitView is the one camera fit both generators use */
 
 /* ── languages ──────────────────────────────────────────────────────────────────────────────── */
 export const LANGS = [
@@ -187,9 +186,7 @@ export function partKm2In(part, box) {
   return info.by.get(k);
 }
 
-/* ── the camera for a region: the boxes' union, unwrapped across 180°, fitted into FRAME ──────── */
-const mercY = (lat) => Math.log(Math.tan(Math.PI / 4 + Math.max(-85, Math.min(85, lat)) * RAD / 2));
-const invMercY = (y) => (2 * Math.atan(Math.exp(y)) - Math.PI / 2) / RAD;
+/* ── the camera for a region: the boxes' union, unwrapped across 180°, fitted into the frame (js/on-this-day.js fitView) ── */
 export function regionView(region) {
   /* choose, for each box, the copy (−360, 0, +360) that keeps the union narrowest */
   let best = null;
@@ -200,14 +197,7 @@ export function regionView(region) {
     if (!best || e - w < best.e - best.w) best = { w, e };
   }
   const s = Math.min(...boxes.map((b) => b[1])), n = Math.max(...boxes.map((b) => b[3]));
-  const lonSpan = Math.max(1e-6, best.e - best.w);
-  const ySpan = Math.max(1e-6, mercY(n) - mercY(s));
-  const zx = Math.log2(FRAME.width * 360 / (TILE * lonSpan));
-  const zy = Math.log2(FRAME.height * 2 * Math.PI / (TILE * ySpan));
-  let lng = (best.w + best.e) / 2; lng = ((lng + 540) % 360) - 180;
-  const lat = invMercY((mercY(n) + mercY(s)) / 2);
-  const zoom = Math.max(0, Math.floor(Math.min(zx, zy) * 100) / 100);
-  return { lng: +lng.toFixed(4) + 0, lat: +lat.toFixed(4) + 0, zoom, bearing: 0, pitch: 0, proj: 'flat' };   /* `+ 0`: never −0 («-0.0000» in a link) */
+  return fitView(best.w, s, best.e, n);   /* (marketing-next) the one fit, js/on-this-day.js — the same frame the «on this day» links open in */
 }
 
 /* ── dates ──────────────────────────────────────────────────────────────────────────────────── */
@@ -227,12 +217,12 @@ export function yearWords(y, lang) {
 const dayWords = (y, lang) => (lang === 'jp' ? yearWords(y, lang) + '7月1日' : '1 July ' + yearWords(y, lang));
 export const slugOf = (y) => (y <= 0 ? (1 - y) + '-bc' : String(y));
 
-/* ══ COLLECT — ask the map what it draws, at every instant a page could stand for ════════════════════ */
-/**
- * @param {{ years?: number[], regions?: string[] }} [opt]  a subset, for the checks; default everything
- * @returns {Promise<object>} the model the pages are rendered from
- */
-export async function collect(opt = {}) {
+/* ══ THE MAP, INSTANTIATED, WITH THE LABELS IT WRITES ══════════════════════════════════════════════════
+   (marketing-next) One reader for every generator that states what the map draws on a date — these pages and the
+   «on this day» record (scripts/build-on-this-day.mjs) — so the two cannot name the same outline differently.
+   `labelsAt(date)` answers what js/time-borders.js `collectionAt` answers (the record chosen for the instant, its
+   features) and the name the map writes on each feature in each language (the `tagSame` pass, as below). */
+export async function mapReader() {
   const B = bands();
   const { timeBorders } = await import('./histeras/time-borders.mjs');
   /* `countryStats` — the app's country table, which the label pass reads for two things: the present-day name
@@ -277,20 +267,14 @@ export async function collect(opt = {}) {
     if (y < w.IntMapMaddison.minYear) return;   /* below the Countries list's floor the app applies no former state */
     for (const S of HS.activeAt(y + '-07-01T00:00:00Z')) stats[S.code] = { _hist: true, name: S.name, nameEn: w.IntMapHistName(S.name, 0), nameJp: w.IntMapHistName(S.name, 1), sov: true };
   };
-  const sheetYears = readBundle('data/hist-eras.js').snaps.map((s) => s.y).filter((y) => y < B.ohmFrom).sort((a, b) => a - b);
-  const all = [...sheetYears];
-  for (let y = B.ohmFrom; y <= B.csTo; y++) all.push(y);
-  const years = opt.years ? all.filter((y) => opt.years.includes(y)) : all;
-  const regions = REGIONS.filter((r) => !opt.regions || opt.regions.includes(r.id));
-  const src = {
-    snapshot: readBundle('data/hist-eras.js').src, ohm: readBundle('data/hist-borders.js').src, cshapes: readBundle('data/cshapes.js').src,
-  };
-  const samples = [];   /* per instant: { y, sheet, tier, per: { regionId → { names: Map(en → row), unnamed } } } */
-  for (const y of years) {
+
+  /** what the map draws on `when` (a Date), and the name it writes on each feature in each language */
+  async function labelsAt(when) {
+    const y = when.getFullYear();
     clock.year = y;
     formerFor(y);
-    const r = await api.collectionAt(july1(y));
-    if (!r || r.modern || !r.fc) throw new Error('history-pages: the map answered nothing for ' + isoDay(y) + ' — a record did not load');
+    const r = await api.collectionAt(when);
+    if (!r || r.modern || !r.fc) return r ? { modern: !!r.modern, tier: r.tier || null, fc: null, labels: null } : null;
     /* what the map writes on each outline, in each language: the pass `apply` runs before the name layers
        are fed (js/time-borders.js tagSame) — `_same` names take `_modName`, the rest `_locName` or NAME,
        exactly the two layers' text-field. A `_corrected` outline is drawn as part of its NAME and carries
@@ -305,6 +289,31 @@ export async function collect(opt = {}) {
         return String(v || '').trim();
       });
     }
+    return { modern: false, tier: r.tier, fc: r.fc, labels };
+  }
+  return { bands: B, api, labelsAt };
+}
+
+/* ══ COLLECT — ask the map what it draws, at every instant a page could stand for ════════════════════ */
+/**
+ * @param {{ years?: number[], regions?: string[] }} [opt]  a subset, for the checks; default everything
+ * @returns {Promise<object>} the model the pages are rendered from
+ */
+export async function collect(opt = {}) {
+  const { bands: B, labelsAt } = await mapReader();
+  const sheetYears = readBundle('data/hist-eras.js').snaps.map((s) => s.y).filter((y) => y < B.ohmFrom).sort((a, b) => a - b);
+  const all = [...sheetYears];
+  for (let y = B.ohmFrom; y <= B.csTo; y++) all.push(y);
+  const years = opt.years ? all.filter((y) => opt.years.includes(y)) : all;
+  const regions = REGIONS.filter((r) => !opt.regions || opt.regions.includes(r.id));
+  const src = {
+    snapshot: readBundle('data/hist-eras.js').src, ohm: readBundle('data/hist-borders.js').src, cshapes: readBundle('data/cshapes.js').src,
+  };
+  const samples = [];   /* per instant: { y, sheet, tier, per: { regionId → { names: Map(en → row), unnamed } } } */
+  for (const y of years) {
+    const r = await labelsAt(july1(y));
+    if (!r || r.modern || !r.fc) throw new Error('history-pages: the map answered nothing for ' + isoDay(y) + ' — a record did not load');
+    const labels = r.labels;
     const per = {};
     for (const reg of regions) per[reg.id] = { names: new Map(), unnamed: 0 };
     r.fc.features.forEach((f, i) => {
@@ -358,8 +367,8 @@ export async function collect(opt = {}) {
 }
 
 /* ══ RENDER ══════════════════════════════════════════════════════════════════════════════════════ */
-const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-function fill(s, W) {
+export const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+export function fill(s, W) {
   return String(s).replace(/\{(\w+)\}/g, (m, k) => {
     if (!(k in W)) throw new Error('history-pages: unknown placeholder ' + m + ' in «' + s + '»');
     return W[k];
@@ -369,7 +378,7 @@ export const pagePath = (p, L) => L.dir + HUB + p.region + '/' + slugOf(p.first)
 export const regionPath = (regionId, L) => L.dir + HUB + regionId + '/';
 export const hubPath = (L) => L.dir + HUB;
 /* the relative way back to the site's root from a directory path */
-const upFrom = (dirPath) => '../'.repeat(dirPath.split('/').filter(Boolean).length);
+export const upFrom = (dirPath) => '../'.repeat(dirPath.split('/').filter(Boolean).length);
 
 function whenWords(p, lang) {
   if (p.sheet || p.first === p.last) return yearWords(p.first, lang);
@@ -403,7 +412,8 @@ function cspMeta(webFonts) {
 }
 const ldJson = (o) => '<script type="application/ld+json">' + JSON.stringify(o).replace(/</g, '\\u003c') + '</script>';
 
-function shell(M, L, o) {
+/* (marketing-next) exported: the «on this day» pages (scripts/on-this-day-pages.mjs) are the same family — one head, one nav, one footer */
+export function shell(M, L, o) {
   const T = TEXT[L.key];
   const up = upFrom(o.path);
   const other = LANGS.find((l) => l !== L);
@@ -470,7 +480,7 @@ ${o.body(up)}
 `;
 }
 
-function breadcrumbLd(crumbs) {
+export function breadcrumbLd(crumbs) {
   return { '@context': 'https://schema.org', '@type': 'BreadcrumbList',
     itemListElement: crumbs.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c.name, item: SITE_TOKEN + c.path })) };
 }
@@ -621,11 +631,11 @@ function sitemap(paths) {
 function sitemapIndex() {
   return '<?xml version="1.0" encoding="UTF-8"?>\n<!-- GENERATED by scripts/history-pages.mjs: the site\'s sitemaps, one per generator. -->\n'
     + '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-    + [LANDING_SITEMAP, SITEMAP, UPDATES_SITEMAP].map((s) => `  <sitemap><loc>${esc(SITE_TOKEN + s)}</loc></sitemap>`).join('\n') + '\n</sitemapindex>\n';
+    + [LANDING_SITEMAP, SITEMAP, UPDATES_SITEMAP, OTD_SITEMAP].map((s) => `  <sitemap><loc>${esc(SITE_TOKEN + s)}</loc></sitemap>`).join('\n') + '\n</sitemapindex>\n';
 }
 
 /* the social picture every generated page names: the site's own, its size read from the file */
-function siteImage() {
+export function siteImage() {
   const path = 'og-image.jpg';
   const b = readFileSync(join(ROOT, path));
   if (!(b[0] === 0xff && b[1] === 0xd8)) throw new Error('history-pages: ' + path + ' is not a JPEG');
