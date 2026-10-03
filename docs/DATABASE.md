@@ -43,6 +43,8 @@ is the human explanation.
 | `relay_rate_buckets` | Token buckets shared by every isolate of a relay — `(scope, key)`, `tokens`, `at`. `routing-relay` keeps one per caller address and two project-wide ones (per minute, per day), so the spend ceiling on the paid Mapbox upstream survives restarts and is the same across isolates. | Nobody (no policy; RLS on). | **RPCs only** (`relay_take` / `sweep_relay_rate_buckets`, service_role). |
 | `user_prefs` | Per-user synced settings blob (`data` jsonb). | Owner. | Owner. |
 | `saved_places` *(my-places)* | An account's **saved places** — `name` (1-120), `note` (≤2000), `collection` (≤60), `lng`/`lat` (CHECK on the globe), `zoom`, `source` (`reader`/`pin`/`search`/`atlas`), `created_at`/`updated_at` (the database's: no client grant on `created_at`, a trigger stamps `updated_at`). **One row per position per account**: `lng5`/`lat5` are generated `round(…, 5)` (~1 m — the session pins' identity) under `unique (user_id, lng5, lat5)`. | Owner. | **INSERT only through `save_place()`** (no INSERT grant); the owner UPDATEs `name`/`note`/`collection`/`lng`/`lat`/`zoom` (column grant — not `user_id`, not `created_at`) and DELETEs own rows. |
+| `saved_views` *(collection-workspace)* | An account's **saved maps** — `name` (1-120), `note` (≤2000), `collection` (≤60), `state` (the share link's fragment without `#`, as `js/map-state.js` writes it; CHECK it begins with `v=` and is ≤32,768 characters), `created_at`/`updated_at` (the database's). **One row per map per account**: `state_md5` is generated `md5(state)` with UNIQUE `(user_id, state_md5)`. | Owner (RLS `user_id = auth.uid()`). | **No INSERT grant** — `save_view()` only. Owner: UPDATE of `name`/`note`/`collection` (column grant; the map itself is not rewritten in place), DELETE. |
+| `collection_shares` *(collection-workspace)* | The collections an account chose to **publish read-only** — `collection` (NULL = everything, `''` = unfiled), `title` (1-120), `token` (32 hex of `gen_random_uuid()`, UNIQUE — the link's whole access control), `created_at`/`updated_at`. UNIQUE NULLS NOT DISTINCT `(user_id, collection)`: one share per collection. | Owner. **The public reads a share only through `shared_collection(token)`** — anon holds no privilege on the table (tokens are not listable). | **No INSERT grant** — `publish_collection()` only. Owner: UPDATE of `title` (column grant), DELETE (= unpublish: the link answers `not_found` at once). |
 | `favorites` | Saved (★) article links. | Owner. | Owner. |
 
 ### Community
@@ -154,6 +156,8 @@ itself; `grant execute` means "may call", never "may do".
   finds it — the purge reads the FK graph, not a list.
 - `saved_places.user_id` → **`auth.users(id)`** (cascade) — so account deletion, the account inventory
   and the account export all reach it with no list naming it (they walk the same `_owned_by_user_cols()`).
+- `saved_views.user_id` and `collection_shares.user_id` → **`auth.users(id)`** (cascade) — the same: deleting the
+  account removes the maps and every link it published, and the export carries both.
 
 ## Functions & triggers
 
@@ -184,6 +188,11 @@ itself; `grant execute` means "may call", never "may do".
 | `public.save_place(text, double precision, double precision, text, text, real, text)` *(my-places)* | SECURITY DEFINER, `search_path=''` | **The only way into `saved_places`.** The account is `auth.uid()`; the same position (~1 m) is the same place — a second save updates the fields it was given and returns `created = false`; a NULL argument keeps what the place has. A new place past `saved_places_limit()` raises 54000. `ON CONFLICT` makes two simultaneous saves of one place one row. Returns `(place_id, created, place_count)`. EXECUTE = authenticated, service_role. |
 | `public.saved_places_limit()` *(my-places)* | SQL, IMMUTABLE | 10,000 — a fence against a runaway loop, not a quota (the migration states the estimate and when it expires). The one copy of the number. EXECUTE = authenticated, service_role. |
 | `public.tg_saved_places_touch()` + `saved_places_touch` *(my-places)* | INVOKER, `search_path=''` | BEFORE UPDATE on `saved_places`: `updated_at := now()`. |
+| `public.save_view(text, text, text, text)` *(collection-workspace)* | SECURITY DEFINER, `search_path=''` | **The only way into `saved_views`.** The account is `auth.uid()`; the same fragment (a leading `#` is dropped) is the same map — a second save updates the fields it was given and returns `created = false`; a fragment with no camera (`v=`) is refused (22023); `saved_views_limit()` refuses a new map with 54000. EXECUTE = authenticated, service_role. |
+| `public.saved_views_limit()` *(collection-workspace)* | SQL, IMMUTABLE | 2,000 — a fence against a runaway loop, not a quota (the migration states the estimate and when it expires). EXECUTE = authenticated, service_role. |
+| `public.publish_collection(text, text)` *(collection-workspace)* | SECURITY DEFINER, `search_path=''` | **The only way into `collection_shares`.** Publishes one collection of the caller (NULL = everything) and returns its token with the place / map counts; publishing a published collection returns the **same** token (`created = false`); an empty collection is refused (22023). EXECUTE = authenticated, service_role. |
+| `public.shared_collection(text)` *(collection-workspace)* | SECURITY DEFINER, `search_path=''`, STABLE | **The public read** — anon may call it (its comment carries `ANON MAY CALL:` — `11_definer_execute_test.sql`). For a published token: `{ok, format:'intmap-collection', version, title, collection, published_at, updated_at, places:[{name,note,collection,lng,lat,zoom}], …}` and the saved maps as `{name,note,collection,state}` entries — what the collection holds **now**, built from named keys (no row id, no account, no e-mail). Anything else: `{ok:false, error:'not_found'}`. |
+| `public.copy_shared_collection(text, text)` *(collection-workspace)* | SECURITY DEFINER, `search_path=''` | A signed-in reader keeps a published collection in **their own** account, filed under the second argument (default: its title): new positions / maps are inserted (`source = 'shared'`), ones already held are left and counted (`places_had` / `views_had`) — copying twice equals copying once. Enforces both fences on what is new (54000). EXECUTE = authenticated, service_role. |
 | `public.sweep_ai_turns()` | SECURITY DEFINER, `search_path=''` | Deletes turn rows older than a day. The ledger is a scratch pad, not a history. EXECUTE = service_role only. |
 | `public.claim_ai_answer(uuid, text, text, integer, integer)` | SECURITY DEFINER, `search_path=''` | *(atlas-stream-replay)* Decides whether the request with this replay key runs: `claimed` (run it — `attempts` is this run's number, `after_state` is `failed` / `abandoned` when it runs again after an observed failure or a dead run), `done` (the stored answer — do not run), `running` (another request holds it and is beating — wait). One row lock decides, so two retries cannot both run it. Deletes the account's expired rows first. EXECUTE = service_role only. |
 | `public.peek_ai_answer(uuid, text, text)` | SECURITY DEFINER, `search_path=''` | *(atlas-stream-replay)* What a retry finds, without claiming: `done` (with the body) / `failed` / `running` / `abandoned`; no row when nothing was registered or it expired. ai-proxy asks it **before** `consume_ai_turn`, so a stored answer is returned without spending a call. EXECUTE = service_role only. |
@@ -289,6 +298,7 @@ update public.profiles set is_admin = true where email = 'you@example.com';
 ## Data classification (drives backup + retention)
 
 - **A — critical, irreplaceable:** `profiles`, `ai_usage`, `ai_gloss_usage`, `user_prefs`, `favorites`, `saved_places`,
+  `saved_views`, `collection_shares`,
   `donations`, `feedback`, `bug_reports`, all `community_*`. User-generated / account data.
   ⚠ **`news_events`, `news_event_articles`, `news_cluster_decisions` and `saved_news_events`
   belong here too.** Re-fetching the feeds returns the articles; it does not return which articles
@@ -332,7 +342,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **45**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **47**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin` (and is not a view).
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't
@@ -408,6 +418,19 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
   what it was not given, a name and a position on the globe are required, the owner edits and deletes and cannot
   hand a place to another account or restamp `created_at`, another account sees and changes nothing, a full
   account is refused a new place (54000) and may still update one it holds.
+- **`24_collection_workspace_test.sql`** *(collection-workspace)* — ① `save_view()` is the only way into `saved_views`;
+  the same map with or without its `#` is one row (`created=false`); a fragment with no view and an empty name are
+  refused; the owner edits a note but cannot rewrite the map, hand it to another account or touch another's; the fence
+  refuses a new map (54000) and still lets a full account rename one; ② `publish_collection()` is the only way into
+  `collection_shares`, publishing again returns the **same** token, «everything» is its own share, an empty collection is
+  refused; the owner may retitle (only) and unpublish, another account sees and deletes nothing; ③ anon reads a
+  published collection through `shared_collection()` — only that collection's places and maps, with no account id, row
+  id or e-mail — and nothing for a malformed, never-published or unpublished token; anon has no privilege on either
+  table and cannot save, publish or copy; ④ `copy_shared_collection()` adds what the reader does not hold, counts what
+  they do, files it under the title with `source='shared'`, adds nothing the second time and leaves the owner's rows
+  unchanged; ⑤ unpublishing kills the link and publishing again mints a new one; ⑥ the export and account deletion
+  reach both tables (and with deletion every published link goes).
+
 - **`17_ai_counters_never_negative_test.sql`** *(ai-usage-ledger-sign)* — ① over the catalogue: every base
   table in `public` with a `count` column carries a `CHECK (count >= n)`; ② the table owner (the role Studio
   runs as) cannot write a negative `count` into `ai_usage` or `ai_gloss_usage` — by UPDATE, by INSERT, or

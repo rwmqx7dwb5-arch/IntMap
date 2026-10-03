@@ -12,7 +12,7 @@
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **45 表**（`news_event_entities` / `ai_turn_answers` / `atlas_notebook_entries`（Atlas の調査ノート・同期をオンにした読者のみ） / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
+実証手順も同じファイル）。現在 **47 表**（`saved_views` / `collection_shares` / `news_event_entities` / `ai_turn_answers` / `atlas_notebook_entries`（Atlas の調査ノート・同期をオンにした読者のみ） / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
 `user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` /
 `atlas_capability_vectors` / `usage_counts`（匿名の利用統計） /
 `community_*` 5 表 / `feedback` /
@@ -37,6 +37,18 @@
 同じ 1 行（2 度目は `created=false`）、上限は `saved_places_limit()`（1 アカウント 10,000・暴走の柵）。
 読む・名前やメモを変える・消すは所有者の RLS。どちらも Edge Function は無い（RPC と RLS だけ）。
 画面と Atlas の入口は §8（`js/account-data.js`・`js/my-places.js`・`account.*` / `places.*`）。
+**コレクションはワークスペースである（collection-workspace）。** `saved_views` は**保存した地図**——共有リンクの
+フラグメント（`js/map-state.js` の codec が書くもの）を名前・メモ・コレクションつきで持つ。入口は `save_view()` だけで、
+同じフラグメントは同じ 1 行（`created=false`）、上限は `saved_views_limit()`（1 アカウント 2,000・暴走の柵）。
+`collection_shares` は持ち主が**明示的に**公開したコレクション（`collection` NULL＝全部）で、入口は
+`publish_collection()` だけ・1 コレクション 1 本（2 度目は同じトークン）。トークンは `gen_random_uuid()` の 32 桁
+（122 ビット）で、**リンクそのものが閲覧の鍵**。公開の読み取りは `shared_collection(token)` **1 つだけ**——
+SECURITY DEFINER で `anon` が呼べ（コメントに `ANON MAY CALL:` の理由）、そのコレクションの**今の**場所と地図を、
+id・アカウント・メールを含まずに返す。`anon` は 2 表のどちらにも権限を持たない（トークンは列挙できない）。
+`copy_shared_collection(token)` はログインした読者が公開コレクションを**自分の**アカウントへ写す（同じ位置・同じ地図は
+写さず「保存済み」として数える＝2 度写しても 1 度と同じ。写した場所の `source` は `shared`）。公開をやめるのは
+所有者の DELETE で、その瞬間にリンクは `not_found` を返す。2 表とも `user_id → auth.users` なので、書き出しと
+アカウント削除には一覧を書かずに入る（pgTAP `24_collection_workspace_test.sql`）。
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](../MIGRATIONS.md)。

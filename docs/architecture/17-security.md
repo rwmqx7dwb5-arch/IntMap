@@ -94,6 +94,9 @@
   あるのと逆の設計）。EXECUTE は `authenticated` だけ（anon は不可）。書き出しは共有バケツ
   `relay_take('account-export')` でアカウントごとに柵を持つ。`saved_places` へ入る口は `save_place()` だけ
   （INSERT の grant が無い）で、所有者は列単位 grant で `user_id` / `created_at` を書き換えられない。
+  保存した地図（`save_view`）と公開（`publish_collection`）も同じ形（collection-workspace）。**`anon` が呼べるのは
+  公開の読み取り `shared_collection(token)` だけ**で、トークン（122 ビット）がリンクの鍵・表は `anon` から読めない
+  （列挙できない）・返すのは名前つきの欄だけ（id・アカウント・メールを含まない）。正本は `docs/SECURITY-ARCHITECTURE.md`。
 - **無認証中継**は `_shared/relay-guard.js` を共有する（本数と一覧は §6.2。ここには書き写さない）。
 
 ### 17.3 ブラウザ側の設定

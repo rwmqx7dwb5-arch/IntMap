@@ -10,7 +10,7 @@
   },
   "async": {
     "raw": 12224190,
-    "gzip": 4039409,
+    "gzip": 4060907,
     "chunks": {
       "account-data": 7357,
       "aircraft-detail": 17009,
@@ -25,7 +25,7 @@
       "atlas-attach": 23189,
       "atlas-caps-modules": 80,
       "atlas-chart": 10493,
-      "atlas-console": 1332872,
+      "atlas-console": 1343890,
       "atlas-executor": 59369,
       "atlas-geo-resolve": 49361,
       "atlas-query": 48520,
@@ -67,7 +67,7 @@
       "lib": 129791,
       "map-reader": 2251,
       "map-recorder": 36548,
-      "my-places": 12220,
+      "my-places": 22028,
       "navigation": 60823,
       "net-health-live": 16816,
       "news-events": 34162,

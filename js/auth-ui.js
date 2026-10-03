@@ -803,6 +803,13 @@ export function authUi(HOST){
       },0);
     });
     await refreshCurrentUser();
+    /* (collection-workspace) A PUBLISHED COLLECTION'S LINK — `?collection=<token>`. Only such a page loads js/shared-collection.js
+       (on demand, never on the boot path): it reads the collection through the public read shared_collection(token), which a
+       signed-out visitor may call, and shows its places and maps read-only. A visitor who pressed «Add to My places» before
+       signing in comes back from the sign-in without the query (redirectTo is the bare page); the token waits in this tab's
+       sessionStorage (shared-collection.js PENDING_KEY) and the same file finishes what was asked. */
+    let _colPending=false; try{ _colPending=!!sessionStorage.getItem('intmap-collection-pending'); }catch(_){}
+    if(_colPending || /[?&]collection=/.test(location.search)) import('./shared-collection.js').then(M=>M.bootFromUrl(HOST)).catch(()=>{});
     /* OAuth implicit-flow tokens land in the URL hash and are parsed asynchronously; if the very
        first getSession ran a hair too early, re-check a couple of times so the session is picked up
        without needing a manual reload (#33). */

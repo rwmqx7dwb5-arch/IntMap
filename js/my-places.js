@@ -19,8 +19,10 @@
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
 import { IntMapGeoEngine } from './geo-engine.js';   /* the renderer, through the contract */
+import { MapState } from './map-state.js';           /* (collection-workspace) a saved map IS a share link's fragment */
 
 const COLS = 'id,name,note,collection,lng,lat,zoom,source,created_at,updated_at';
+const VIEW_COLS = 'id,name,note,collection,state,created_at,updated_at';
 
 /* ── pure helpers (tests/platform-backend-checks.test.mjs runs them in Node) ───────────────────── */
 
@@ -44,6 +46,18 @@ export function groupPlaces(places) {
     collection: k,
     places: by.get(k).slice().sort((x, y) => String(y.created_at || '').localeCompare(String(x.created_at || ''))),
   }));
+}
+
+/** (collection-workspace) A collection holds places AND maps: both grouped by collection, the unfiled group
+ *  last, each list newest first. A collection that holds only maps is a group too. */
+export function groupCollection(places, views) {
+  const by = new Map();
+  const put = (k, kind, x) => { if (!by.has(k)) by.set(k, { collection: k, places: [], views: [] }); by.get(k)[kind].push(x); };
+  (Array.isArray(places) ? places : []).forEach((p) => put(String((p && p.collection) || ''), 'places', p));
+  (Array.isArray(views) ? views : []).forEach((v) => put(String((v && v.collection) || ''), 'views', v));
+  const newest = (x, y) => String(y.created_at || '').localeCompare(String(x.created_at || ''));
+  return Array.from(by.keys()).sort((a, b) => (a === '' ? 1 : b === '' ? -1 : a.localeCompare(b)))
+    .map((k) => { const g = by.get(k); return { collection: k, places: g.places.slice().sort(newest), views: g.views.slice().sort(newest) }; });
 }
 
 /** Which saved places a request names: by id, by name (case- and width-insensitive, whole or part),
@@ -131,6 +145,97 @@ async function updatePlace(DB, id, patch) {
   } catch (_) { return { ok: false, error: 'failed' }; }
 }
 
+/* ── (collection-workspace) SAVED MAPS — the map itself, kept in the account ─────────────────────── */
+
+/** The map as it is now, as the share link writes it (js/map-state.js) — '' when the map names no view yet. */
+function viewStateNow() {
+  try { const h = MapState.hash(); return MapState.carries(h) ? h.replace(/^#/, '') : ''; } catch (_) { return ''; }
+}
+
+/** A fragment read back and WRITTEN AGAIN by the codec: nothing the codec does not write is kept or opened
+ *  (a map from someone else's collection is text from outside — the tour player's rule, js/tour-player.js canon). */
+export function canonicalState(state) {
+  const h = '#' + String(state || '').replace(/^#/, '');
+  if (!MapState.carries(h)) return '';
+  try { return MapState.encode(MapState.decode(h)).replace(/^#/, ''); } catch (_) { return ''; }
+}
+
+/** A name for a map that has none: its caption, else the day it is saved. */
+export function viewLabel(state, lang, now) {
+  try { const st = MapState.decode('#' + String(state || '').replace(/^#/, '')); if (st && st.title) return st.title; } catch (_) { }
+  const d = (now instanceof Date ? now : new Date()).toISOString().slice(0, 10);
+  return IntMapLang.t(lang, 'Map · ' + d, '地図 · ' + d);
+}
+
+/** Save a map. @returns {Promise<{ok, id?, created?, count?, name?, error?}>} */
+export async function saveView(DB, v) {
+  if (!DB) return { ok: false, error: 'unavailable' };
+  v = v || {};
+  const state = canonicalState(v.state);
+  if (!state) return { ok: false, error: 'no_map' };
+  const name = String(v.name || '').trim() || viewLabel(state, v.lang);
+  try {
+    const { data, error } = await DB.rpc('save_view', {
+      p_name: name.slice(0, 120), p_state: state,
+      p_note: v.note == null ? null : String(v.note).slice(0, 2000),
+      p_collection: v.collection == null ? null : String(v.collection).trim().slice(0, 60),
+    });
+    if (error) { const e = errOf(error); return { ok: false, error: e === 'full' ? 'full_maps' : e }; }
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row || !row.view_id) return { ok: false, error: 'failed' };
+    return { ok: true, id: row.view_id, created: !!row.created, count: Number(row.view_count) || 0, name };
+  } catch (_) { return { ok: false, error: 'failed' }; }
+}
+
+/* the sheet's own button is called `saveView` (the map-centre save, older than saved maps); it reaches this door by this name */
+const saveMapDoor = (DB, v) => saveView(DB, v);
+
+/** The account's saved maps. @returns {Promise<{ok, views?, error?}>} */
+export async function listViews(DB) {
+  if (!DB) return { ok: false, error: 'unavailable' };
+  try {
+    const { data, error } = await DB.from('saved_views').select(VIEW_COLS).order('created_at', { ascending: false });
+    if (error) return { ok: false, error: errOf(error) };
+    return { ok: true, views: Array.isArray(data) ? data : [] };
+  } catch (_) { return { ok: false, error: 'failed' }; }
+}
+
+/** Delete saved maps by id. @returns {Promise<{ok, removed?, error?}>} */
+async function removeViews(DB, ids) {
+  if (!DB) return { ok: false, error: 'unavailable' };
+  const list = (Array.isArray(ids) ? ids : [ids]).map(String).filter(Boolean);
+  if (!list.length) return { ok: true, removed: 0 };
+  try {
+    const { data, error } = await DB.from('saved_views').delete().in('id', list).select('id');
+    if (error) return { ok: false, error: errOf(error) };
+    return { ok: true, removed: Array.isArray(data) ? data.length : 0 };
+  } catch (_) { return { ok: false, error: 'failed' }; }
+}
+
+/** Rename a saved map. @returns {Promise<{ok, error?}>} */
+async function updateView(DB, id, patch) {
+  if (!DB) return { ok: false, error: 'unavailable' };
+  const row = {};
+  if (patch && patch.name != null) row.name = String(patch.name).trim().slice(0, 120);
+  if (!Object.keys(row).length) return { ok: true };
+  try {
+    const { error } = await DB.from('saved_views').update(row).eq('id', String(id));
+    return error ? { ok: false, error: errOf(error) } : { ok: true };
+  } catch (_) { return { ok: false, error: 'failed' }; }
+}
+
+/** Open a saved map: the address takes its fragment and the share link's own restore applies it — the path a
+ *  pasted link takes (js/map-ui.js IntMapBookmark.restore), so a saved map opens exactly as its link would. */
+export function openView(view) {
+  const state = canonicalState(view && view.state);
+  if (!state) return { ok: false, reason: 'no-link' };
+  const B = typeof window !== 'undefined' ? window.IntMapBookmark : null;
+  if (!B || typeof B.restore !== 'function') return { ok: false, reason: 'no-map' };
+  MapState.address(null, '#' + state);
+  try { B.restore({ shared: true }); } catch (e) { return { ok: false, reason: String((e && e.message) || e) }; }
+  return { ok: true, state };
+}
+
 /** Put places on the map as pins (the session pin system — popup, Objects list, measure, remove).
  *  Fits the camera to them. @returns {string[]} the pin ids (an already-pinned place returns its pin). */
 export function showPlaces(HOST, places, opts) {
@@ -140,10 +245,12 @@ export function showPlaces(HOST, places, opts) {
   const src = IntMapLang.t(HOST.lang, 'My places', 'マイプレイス');
   list.forEach((p) => {
     try {
-      const id = HOST.addPin(+p.lng, +p.lat, {
-        title: String(p.name || ''), description: String(p.note || ''),
-        source: src + (p.collection ? ' · ' + p.collection : ''), savedPlaceId: String(p.id),
-      });
+      /* (collection-workspace) a place from someone else's published collection has no id here and is labelled by
+         that collection (opts.source) — it is not one of the reader's saved places until they save it */
+      const meta = { title: String(p.name || ''), description: String(p.note || ''),
+        source: (opts && opts.source) || (src + (p.collection ? ' · ' + p.collection : '')) };
+      if (p.id != null) meta.savedPlaceId = String(p.id);
+      const id = HOST.addPin(+p.lng, +p.lat, meta);
       if (id != null) ids.push(String(id));
     } catch (_) { }
   });
@@ -171,6 +278,8 @@ export function placeFailureText(error, lang) {
   if (error === 'sign_in') return T('Sign in to keep places in your account.', '場所をアカウントに保存するにはログインしてください。');
   if (error === 'full') return T('This account already holds the most places it can. Delete some to save more.', 'このアカウントに保存できる場所の上限に達しています。いくつか削除してから保存してください。');
   if (error === 'invalid') return T('That place needs a name and a position on the globe.', '場所には名前と地球上の位置が必要です。');
+  if (error === 'full_maps') return T('This account already holds the most maps it can. Delete some to save more.', 'このアカウントに保存できる地図の上限に達しています。いくつか削除してから保存してください。');
+  if (error === 'no_map') return T('The map has no view to save yet.', '保存できる地図の表示がまだありません。');
   if (error === 'unavailable') return T('The account service is not reachable right now.', 'アカウントのサービスに接続できません。');
   return T('Could not reach your places. Please try again.', '場所を取得できませんでした。もう一度お試しください。');
 }
@@ -217,10 +326,20 @@ function ensureStyle() {
     + '.mpl-txt{flex:1;min-width:0;cursor:pointer;border:none;background:transparent;padding:0;text-align:left;font:inherit;color:inherit;}'
     + '.mpl-txt b{display:block;font-size:13.5px;font-weight:600;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
     + '.mpl-txt span{display:block;font-size:11.5px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
+    + '.mpl-kind{flex:0 0 auto;font-size:10.5px;font-weight:600;color:var(--text-muted);border:1px solid rgba(128,128,128,0.3);border-radius:6px;padding:1px 5px;}'
     + '.mpl-edit{flex:1;min-width:0;box-sizing:border-box;padding:7px 10px;border-radius:9px;border:1px solid rgba(128,128,128,0.22);background:var(--card-bg);color:var(--text-main);font-size:13px;}'
     + '.mpl-ic{flex:0 0 auto;border:none;background:transparent;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;padding:6px 8px;border-radius:8px;}'
     + '.mpl-ic:hover{background:rgba(128,128,128,0.12);color:var(--text-main);}'
-    + '.mpl-ic.mpl-del:hover{background:#ff3b30;color:#fff;}';
+    + '.mpl-ic.mpl-del:hover{background:#ff3b30;color:#fff;}'
+    /* (collection-workspace) the group header carries the collection's publishing */
+    + '.mpl-gh{display:flex;align-items:center;gap:8px;}'
+    + '.mpl-gh .acct-grp-t{flex:1;min-width:0;}'
+    + '.mpl-pub{flex:0 0 auto;border:none;background:transparent;color:var(--accent, #0a84ff);font-size:12px;font-weight:600;cursor:pointer;padding:4px 6px;border-radius:7px;}'
+    + '.mpl-pub[aria-pressed="true"]{color:#34c759;}'
+    + '.mpl-share{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:rgba(128,128,128,0.08);font-size:12.5px;line-height:1.5;}'
+    + '.mpl-share p{margin:0 0 8px;color:var(--text-muted);}'
+    + '.mpl-share input{width:100%;box-sizing:border-box;padding:7px 10px;border-radius:9px;border:1px solid rgba(128,128,128,0.22);background:var(--card-bg);color:var(--text-main);font-size:12px;margin:0 0 8px;}'
+    + '.mpl-share .mpl-btns{margin:0;}';
   document.head.appendChild(st);
 }
 
@@ -234,18 +353,21 @@ export async function openMyPlaces(HOST) {
 
   const msg = el('p', { cls: 'acct-msg', role: 'status', 'aria-live': 'polite' });
   const list = el('div', { id: 'mpl-list' });
-  const name = el('input', { cls: 'mpl-name', id: 'mpl-name', type: 'text', maxlength: '120', 'aria-label': T('Name of the place', '場所の名前'), placeholder: T('Name — e.g. Meeting point', '名前（例: 集合場所）') });
+  const name = el('input', { cls: 'mpl-name', id: 'mpl-name', type: 'text', maxlength: '120', 'aria-label': T('Name', '名前'), placeholder: T('Name — e.g. Meeting point', '名前（例: 集合場所）') });
   const coll = el('input', { id: 'mpl-coll', type: 'text', maxlength: '60', 'aria-label': T('Collection', 'コレクション'), placeholder: T('Collection (optional)', 'コレクション（任意）') });
   const note = el('input', { id: 'mpl-note', type: 'text', maxlength: '2000', 'aria-label': T('Note', 'メモ'), placeholder: T('Note (optional)', 'メモ（任意）') });
   const saveView = el('button', { cls: 'acct-btn', id: 'mpl-save-view', text: T('Save the map centre', '地図の中心を保存') });
   saveView.dataset.effect = 'private';   /* writes the reader's own row (save_place) — what Atlas's control press reads (scripts/data-effects.mjs) */
-  const showAll = el('button', { cls: 'acct-btn acct-btn-quiet', id: 'mpl-show-all', text: T('Show all on the map', 'すべて地図に表示') });
+  /* (collection-workspace) the map itself — layers, clock, base map, view, caption — into the same collection */
+  const saveMap = el('button', { cls: 'acct-btn', id: 'mpl-save-map', text: T('Save this map', 'この地図を保存') });
+  saveMap.dataset.effect = 'private';    /* writes the reader's own row (save_view) */
+  const showAll = el('button', { cls: 'acct-btn acct-btn-quiet', id: 'mpl-show-all', text: T('Show all places on the map', 'すべての場所を地図に表示') });
   const close = el('button', { cls: 'acct-close', id: 'mpl-close', text: T('Close', '閉じる') });
   const sheet = el('div', { cls: 'acct-sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'mpl-h', tabindex: '-1' }, [
     el('h2', { cls: 'acct-h', id: 'mpl-h', text: T('My places', 'マイプレイス') }),
-    el('p', { cls: 'mpl-lead', text: T('Places saved to your account — on the map on every device you sign in on. Save one here, from a pin’s popup, or by asking Atlas.', 'アカウントに保存した場所です。ログインしたどの端末でも地図に出せます。ここ・ピンのポップアップ・Atlas への依頼から保存できます。') }),
-    el('div', { cls: 'acct-grp-t', text: T('Save a place', '場所を保存') }),
-    el('div', { cls: 'acct-card' }, [el('div', { cls: 'mpl-add' }, [name, coll, note]), el('div', { cls: 'mpl-btns' }, [saveView])]),
+    el('p', { cls: 'mpl-lead', text: T('Places and maps saved to your account — on every device you sign in on. File them into collections; a collection can be published as a read-only link.', 'アカウントに保存した場所と地図です。ログインしたどの端末でも開けます。コレクションにまとめ、閲覧専用のリンクとして公開することもできます。') }),
+    el('div', { cls: 'acct-grp-t', text: T('Save', '保存') }),
+    el('div', { cls: 'acct-card' }, [el('div', { cls: 'mpl-add' }, [name, coll, note]), el('div', { cls: 'mpl-btns' }, [saveView, saveMap])]),
     msg,
     el('div', { cls: 'mpl-btns' }, [showAll]),
     list, close,
@@ -255,17 +377,84 @@ export async function openMyPlaces(HOST) {
   const shut = () => { try { m.remove(); } catch (_) { } };
   close.onclick = shut;
 
-  let places = [];
+  let places = [], views = [], shares = [];
+  /* the publishing doors live in js/shared-collection.js, read when the sheet first needs them */
+  const SC = () => import('./shared-collection.js');
+
+  /* One collection's publishing: the sentence that says what publishing shows, then the link once it exists.
+     `collection` null = everything the account holds. */
+  const sharePanel = (collection, label, host) => {
+    const S = shares.find((s) => (s.collection == null ? null : String(s.collection)) === (collection == null ? null : String(collection)));
+    const box = el('div', { cls: 'mpl-share' });
+    if (!S) {
+      const go = el('button', { cls: 'acct-btn', type: 'button', text: T('Create a read-only link', '閲覧専用リンクを作成') });
+      go.dataset.effect = 'outward';   /* makes the collection readable by anyone with the link */
+      box.append(el('p', { text: T('Anyone with the link will see ' + label + ' as it is now — the names, notes and positions of its places, and its maps. They will not see your account or e-mail. You can stop publishing at any time.',
+        'リンクを知っている人は誰でも、' + label + 'を今の内容で見られます（場所の名前・メモ・位置と、地図）。アカウントやメールアドレスは見えません。公開はいつでもやめられます。') }), el('div', { cls: 'mpl-btns' }, [go]));
+      go.onclick = async () => {
+        go.disabled = true;
+        const M = await SC();
+        /* the title the visitor reads: the collection's name; the unfiled group and «everything» have none of their own */
+        const title = collection ? collection : (collection === '' ? T('Places', '場所') : T('Places and maps', '場所と地図'));
+        const r = await M.publishCollection(HOST.DB, collection, title);
+        go.disabled = false;
+        if (!r.ok) { msg.textContent = M.shareFailureText(r.error, lang); return; }
+        await reload();
+        msg.textContent = T('Published: ' + label + ' — copy the link below.', '公開しました: ' + label + '。下のリンクをコピーしてください。');
+      };
+    } else {
+      const link = el('input', { type: 'text', readonly: 'readonly', 'aria-label': T('Link', 'リンク') });
+      link.value = S.url;
+      const copy = el('button', { cls: 'acct-btn', type: 'button', text: T('Copy link', 'リンクをコピー') });
+      const stop = el('button', { cls: 'acct-btn acct-btn-quiet', type: 'button', text: T('Stop publishing', '公開をやめる') });
+      stop.dataset.effect = 'private';   /* deletes the reader's own share row: the link stops answering */
+      box.append(el('p', { text: T('Published as a read-only link. Whoever opens it sees this collection as it is now.', '閲覧専用のリンクで公開中です。開いた人には、このコレクションの今の内容が見えます。') }), link, el('div', { cls: 'mpl-btns' }, [copy, stop]));
+      copy.onclick = async () => {
+        try { await navigator.clipboard.writeText(S.url); msg.textContent = T('Link copied.', 'リンクをコピーしました。'); }
+        catch (_) { try { link.select(); } catch (__) { } msg.textContent = T('Select the link and copy it.', 'リンクを選択してコピーしてください。'); }
+      };
+      let armed = 0;
+      stop.onclick = async () => {
+        if (Date.now() - armed > 4000) { armed = Date.now(); stop.textContent = T('Stop? The link stops working', 'やめる？ リンクは開けなくなります'); return; }
+        const M = await SC();
+        const r = await M.unpublish(HOST.DB, [S.id]);
+        if (!r.ok) { msg.textContent = M.shareFailureText(r.error, lang); return; }
+        await reload();
+        msg.textContent = T('No longer published: ' + label, '公開をやめました: ' + label);
+      };
+    }
+    host.appendChild(box);
+  };
+
+  /* the header of a group, with its publishing toggle */
+  const groupHead = (collection, title, label) => {
+    const S = shares.find((s) => (s.collection == null ? null : String(s.collection)) === (collection == null ? null : String(collection)));
+    const pub = el('button', { cls: 'mpl-pub', type: 'button', 'aria-expanded': 'false', 'aria-pressed': S ? 'true' : 'false', text: S ? T('Published', '公開中') : T('Share', '共有') });
+    const head = el('div', { cls: 'mpl-gh' }, [el('div', { cls: 'acct-grp-t', text: title }), pub]);
+    const slot = el('div');
+    pub.onclick = () => {
+      const open = pub.getAttribute('aria-expanded') === 'true';
+      slot.textContent = '';
+      pub.setAttribute('aria-expanded', open ? 'false' : 'true');
+      if (!open) sharePanel(collection, label, slot);
+    };
+    return [head, slot];
+  };
+
   const render = () => {
     list.textContent = '';
-    if (!places.length) {
-      list.appendChild(el('div', { cls: 'acct-card' }, [el('div', { cls: 'mpl-lead', text: T('No places yet. Save the map centre above, or open a pin and press Save.', 'まだ場所がありません。上で地図の中心を保存するか、ピンを開いて「保存」を押してください。') })]));
+    if (!places.length && !views.length) {
+      list.appendChild(el('div', { cls: 'acct-card' }, [el('div', { cls: 'mpl-lead', text: T('Nothing saved yet. Save the map centre or this map above, or open a pin and press Save.', 'まだ何も保存していません。上で地図の中心やこの地図を保存するか、ピンを開いて「保存」を押してください。') })]));
       showAll.disabled = true; return;
     }
-    showAll.disabled = false;
-    groupPlaces(places).forEach((g) => {
-      list.appendChild(el('div', { cls: 'acct-grp-t', text: (g.collection || T('Unfiled', '未分類')) + ' · ' + g.places.length }));
-      list.appendChild(el('div', { cls: 'acct-card' }, g.places.map((p) => {
+    showAll.disabled = !places.length;
+    /* everything at once — one link for every place and map in the account */
+    groupHead(null, T('Everything', 'すべて') + ' · ' + (places.length + views.length), T('all your places and maps', 'すべての場所と地図')).forEach((n) => list.appendChild(n));
+    groupCollection(places, views).forEach((g) => {
+      const gname = g.collection || T('Unfiled', '未分類');
+      groupHead(g.collection, gname + ' · ' + (g.places.length + g.views.length), T('the collection «' + gname + '»', 'コレクション「' + gname + '」')).forEach((n) => list.appendChild(n));
+      const rows = [];
+      g.places.forEach((p) => {
         const txt = el('button', { cls: 'mpl-txt', type: 'button', title: T('Show on the map', '地図に表示') }, [
           el('b', { text: p.name }), el('span', { text: p.note || placeLabel(p.lng, p.lat) }),
         ]);
@@ -302,14 +491,52 @@ export async function openMyPlaces(HOST) {
           places = places.filter((x) => x.id !== p.id); render();
           msg.textContent = T('Deleted: ' + p.name, '削除しました: ' + p.name);
         };
-        return el('div', { cls: 'mpl-row' }, [txt, ren, del]);
-      })));
+        rows.push(el('div', { cls: 'mpl-row' }, [txt, ren, del]));
+      });
+      /* (collection-workspace) a saved map: open it (the share link's own restore), rename it, delete it */
+      g.views.forEach((v) => {
+        const txt = el('button', { cls: 'mpl-txt', type: 'button', title: T('Open this map', 'この地図を開く') }, [
+          el('b', { text: v.name }), el('span', { text: v.note || T('Saved map', '保存した地図') }),
+        ]);
+        txt.onclick = () => { const r = openView(v); if (!r.ok) { msg.textContent = placeFailureText('no_map', lang); return; } shut(); };
+        const ren = el('button', { cls: 'mpl-ic', text: T('Rename', '名前変更') });
+        ren.dataset.effect = 'private';
+        let editing = null;
+        ren.onclick = async () => {
+          if (!editing) {
+            editing = el('input', { cls: 'mpl-edit', type: 'text', maxlength: '120', 'aria-label': T('New name', '新しい名前') });
+            editing.value = v.name;
+            editing.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); ren.click(); } else if (e.key === 'Escape') { e.stopPropagation(); render(); } };
+            txt.replaceWith(editing); ren.textContent = T('Save', '保存');
+            try { editing.focus(); editing.select(); } catch (_) { }
+            return;
+          }
+          const nv = editing.value.trim();
+          if (!nv || nv === v.name) { render(); return; }
+          const r = await updateView(HOST.DB, v.id, { name: nv });
+          if (!r.ok) { msg.textContent = placeFailureText(r.error, lang); return; }
+          v.name = nv.slice(0, 120); render();
+        };
+        const del = el('button', { cls: 'mpl-ic mpl-del', text: T('Delete', '削除') });
+        del.dataset.effect = 'destructive';
+        let armed = 0;
+        del.onclick = async () => {
+          if (Date.now() - armed > 4000) { armed = Date.now(); del.textContent = T('Delete?', '削除する？'); setTimeout(() => { if (del.isConnected && Date.now() - armed >= 4000) del.textContent = T('Delete', '削除'); }, 4100); return; }
+          const r = await removeViews(HOST.DB, [v.id]);
+          if (!r.ok) { msg.textContent = placeFailureText(r.error, lang); return; }
+          views = views.filter((x) => x.id !== v.id); render();
+          msg.textContent = T('Deleted: ' + v.name, '削除しました: ' + v.name);
+        };
+        rows.push(el('div', { cls: 'mpl-row' }, [el('span', { cls: 'mpl-kind', text: T('Map', '地図') }), txt, ren, del]));
+      });
+      list.appendChild(el('div', { cls: 'acct-card' }, rows));
     });
   };
   const reload = async () => {
-    const r = await listPlaces(HOST.DB);
-    if (!r.ok) { msg.textContent = placeFailureText(r.error, lang); return; }
-    places = r.places; render();
+    const [rp, rv, rs] = await Promise.all([listPlaces(HOST.DB), listViews(HOST.DB), SC().then((M) => M.listShares(HOST.DB)).catch(() => ({ ok: false }))]);
+    if (!rp.ok) { msg.textContent = placeFailureText(rp.error, lang); return; }
+    places = rp.places; views = rv.ok ? rv.views : []; shares = rs.ok ? rs.shares : [];
+    render();
   };
   showAll.onclick = () => { showPlaces(HOST, places); shut(); };
   saveView.onclick = async () => {
@@ -322,6 +549,15 @@ export async function openMyPlaces(HOST) {
     saveView.disabled = false;
     if (!r.ok) { msg.textContent = placeFailureText(r.error, lang); return; }
     msg.textContent = r.created ? T('Saved: ' + r.name, '保存しました: ' + r.name) : T('Already saved — updated: ' + r.name, '保存済みの場所を更新しました: ' + r.name);
+    name.value = ''; note.value = '';
+    await reload();
+  };
+  saveMap.onclick = async () => {
+    saveMap.disabled = true;
+    const r = await saveMapDoor(HOST.DB, { name: name.value, collection: coll.value, note: note.value, state: viewStateNow(), lang });
+    saveMap.disabled = false;
+    if (!r.ok) { msg.textContent = placeFailureText(r.error, lang); return; }
+    msg.textContent = r.created ? T('Map saved: ' + r.name, '地図を保存しました: ' + r.name) : T('This map was already saved — updated: ' + r.name, '保存済みの地図を更新しました: ' + r.name);
     name.value = ''; note.value = '';
     await reload();
   };

@@ -87,7 +87,7 @@ candidates ending in «Ask Atlas»).
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**141 measured spec files / 81.4 min** of serial browser time against a ceiling of 87.5 min (the 9 min between
+**142 measured spec files / 82.2 min** of serial browser time against a ceiling of 87.5 min (the 5.3 min between
 them is the room `suite-time-room` made for the specs arriving after it — see below); and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
@@ -109,7 +109,7 @@ them is the room `suite-time-room` made for the specs arriving after it — see 
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **135 spec files** — is the whole suite minus core
+**deep** tier — **136 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -973,7 +973,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **135 spec files** against core's 6 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **136 spec files** against core's 6 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
@@ -4743,3 +4743,25 @@ migration そのものから**——`auth.users` を指す列か uuid の `user_
 何も消さない、表示は作ったピンを返す。⑤ 3 つの入口は動的 import（起動経路に載らない）、書き込む操作要素は
 効果を宣言する。
 
+### `tests/collection-workspace-checks.test.mjs` (collection-workspace)
+
+4 本・データベース無し（DB の半分は `supabase/tests/24_collection_workspace_test.sql`）。① migration の扉——`save_view` /
+`publish_collection` / `copy_shared_collection` は uuid を取らず `auth.uid()` で口座を決め anon から剥がされ、2 表とも
+`authenticated` に INSERT が無く `anon` には何も無い。`anon` が呼べるのは `shared_collection` だけで、コメントに理由を持ち、
+答えを**名前つきの欄**から組む（`user_id`・`id`・`email`・`token` の欄が無く、行ごとの `to_jsonb` も無い）。② 出荷される
+純関数を**評価**——トークンでない値は読まない・リンクはページ自身のアドレス・閉じるとクエリから `collection` だけを外す・
+地図だけのコレクションも 1 群・外から来た地図は codec が書き直す（codec が書かない欄は消える）・地図の名前は題か日付。
+③ Atlas の能力 4 本を**代役の DB で実行**——公開はコレクションの指定が無ければ訊き何も呼ばない・存在しない名前は
+一覧を返す・結果がリンクを運ぶ・2 度目は同じリンクで「公開済み」・公開していないものをやめるのは「もう済んでいる」・
+複数一致の地図は開かない・地図は共有リンクの復元で 1 度だけ開く・表示の無い地図は保存しない。④ 入口は動的 import
+（起動経路に載らない）・ログイン待ちのトークンの鍵を auth-ui とカードが共有する・書き込む操作要素は効果を宣言する
+（公開は `outward`）。
+
+### `tests/collection-workspace.spec.js` (collection-workspace)
+
+1 本・自分で起動する（クエリは起動時に 1 度だけ読まれるので、起動そのものが主題）。公開の読み取り
+`shared_collection` を PostgREST の形で答え（migration の適用の有無に依らない）、`?collection=<token>` で開いたページを
+測る——① 閲覧専用のカードが題と場所・地図の一覧を出し、アドレスのトークンだけを問い合わせる、② 2 つの場所が
+セッションのピン（`user-pins`）としてその位置に入りカメラが枠に収める、③ 一覧の地図を押すとアドレスがその地図の
+`v=` / `tt=` になりカメラが移る（共有リンクの復元）、④ 未ログインの「マイプレイスに追加」はログインを開きトークンを
+このタブの `sessionStorage` に残す、⑤ 閉じるとアドレスから `collection` が消え待ちトークンも消える。
