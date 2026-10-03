@@ -334,8 +334,13 @@ export function makeFloatFit(o) {
 
   function unfit(el) { el.removeAttribute(FLOAT_ATTR); el.style.removeProperty('--m-fit-h'); el.style.removeProperty('--m-fit-dy'); fitted.delete(el); }
   function fitOne(el, floor) {
+    /* measuring un-holds the panel for a moment, and a panel with no cap is tall enough to need no scroll — the browser clamps
+       its scrollTop to 0 as it is laid out. A finger that had scrolled it was put back at the top by the next fit; so the reader's
+       place is kept across the measurement and put back once the hold is re-applied. */
+    const kept = [el, ...el.querySelectorAll('*')].filter((n) => n.scrollTop > 0).map((n) => [n, n.scrollTop]);   /* the panel itself, or the inner box that takes the cap */
     el.removeAttribute(FLOAT_ATTR);                      /* measure the panel as it draws itself, not as it was last held */
     let r = el.getBoundingClientRect();
+    const restore = () => { for (const [n, y] of kept) if (n.scrollTop !== y) n.scrollTop = y; };
     const bound = floatBound(innerHeight, o.cover(), o.creditH());
     if (r.bottom <= bound + 0.5 && r.top >= -0.5) { fitted.delete(el); return; }
     if (overlaysSheet(el, r)) { fitted.delete(el); return; }
@@ -347,6 +352,7 @@ export function makeFloatFit(o) {
     el.setAttribute(FLOAT_ATTR, tok.join(' '));
     /* a panel with no scroll box of its own (its inner body does not absorb the cap): what was cut off must still be reachable */
     try { if (tok.includes('cap') && el.scrollHeight > el.clientHeight + 1 && !/auto|scroll/.test(getComputedStyle(el).overflowY)) { tok.push('scroll'); el.setAttribute(FLOAT_ATTR, tok.join(' ')); } } catch (_) { }
+    restore();
     fitted.add(el);
   }
   function fit() {
