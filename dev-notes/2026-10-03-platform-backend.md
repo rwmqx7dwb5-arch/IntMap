@@ -95,3 +95,11 @@ date: 2026-10-03
   pgTAP は `23_account_data_center_test.sql` に改名した。
 - `docs/architecture/02-features.md` と `PRODUCT.md` の「440 綴り」は、今の行から再計算できる式が見つからなかった（ID＋別名の重複を
   除いた数は追加前 413・追加後 440、ID＋dispatch 名＋別名は 563→596）。数を変えずに残した。
+
+## 統合時の性能予算（830f271b へ重ね直した後の build）
+
+超えた行だけ `--update` で上げた（増えた理由は上の節）:
+- eager.raw: 4628.5 kB → 4653.1 kB
+- eager.gzip: 1523.9 kB → 1533.2 kB
+- async.raw: 11518.0 kB → 11588.8 kB
+- async chunk "atlas-console": 1144.2 kB → 1162.7 kB
