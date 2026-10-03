@@ -32,7 +32,7 @@ import { IntMapLang } from './lang-registry.js';
 /** a sentence in the two languages IntMap writes in (CONSTITUTION.md §7): the array [en, jp] — `pickArgs()` hands back the very
     array it is given, so a sentence is ordinary data AND a call the translation audits read (scripts/i18n-pair-audit.mjs) */
 const T = IntMapLang.pickArgs();
-export const text = T;
+const text = T;
 
 /* ══ 1 · research.scenario ═════════════════════════════════════════════════════════════════════════ */
 
@@ -269,11 +269,11 @@ const ranksOf = (a) => {
   while (i < idx.length) { let j = i; while (j + 1 < idx.length && idx[j + 1][0] === idx[i][0]) j++; const avg = (i + j) / 2 + 1; for (let k = i; k <= j; k++) r[idx[k][1]] = avg; i = j + 1; }
   return r;
 };
-export const _stats = { pearson, ranksOf };
+const _stats = { pearson, ranksOf };
 
 /** the strength bands the Correlation panel has always used (0.2 wide) — the one scale, shared */
-export const BAND = 0.2;
-export function strengthBand(r) {
+const BAND = 0.2;
+function strengthBand(r) {
   const a = Math.abs(r);
   return a < BAND ? 0 : a < 2 * BAND ? 1 : a < 3 * BAND ? 2 : a < 4 * BAND ? 3 : 4;
 }
@@ -281,7 +281,7 @@ const BAND_WORDS = [T('very weak', 'ごく弱い'), T('weak', '弱い'), T('mode
 
 /** 95% interval for a correlation by the Fisher z transform; Pearson's standard error is 1/sqrt(n-3), Spearman's is
     Bonett & Wright's sqrt((1+rho²/2)/(n-3)). Null for n < 4 (the transform needs n-3 > 0). */
-export function interval(r, n, kind) {
+function interval(r, n, kind) {
   if (r == null || n < 4) return null;
   if (Math.abs(r) >= 1) return [r, r];   /* a perfect line has no spread to put an interval on */
   const se = (kind === 'spearman' ? Math.sqrt((1 + r * r / 2) / (n - 3)) : 1 / Math.sqrt(n - 3));
