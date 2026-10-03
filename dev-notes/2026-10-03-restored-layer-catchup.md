@@ -51,6 +51,14 @@ date: 2026-10-03
 `window.IntMapLayerHold` に `inflight()`（`layerInflight.pending()`）を足した。`pending()` と合わせて「全部の変更に
 答えたか」の 2 つの半分を読める。
 
+### 1.2b 同じ形の残り 2 か所（`js/lazy-modules.js`・`js/beta-overlays.js`）
+
+`lazyRowFailed`（world-packs の全行が使う）と放射線の実測行 `radobsToggle` も、本体が届かないと箱を外すだけで
+記録を残していなかった。どちらも**外す前に** `layerState.report(id, 'failed', { reason: 'module', told: true })`
+を置く。`need` が false を返した＝観測された失敗なので `failed`（`unobserved` ではない）。toast は既に出るので `told`。
+読者が先に外していた箱には何も書かない（タイムゾーンの行と同じ）。検査は `tests/restored-layer-catchup-checks.test.mjs` ⑦⑧
+（`lazyRowFailed` は実物、`radobsToggle` は acorn で切り出して評価。記録が外す**前**にあることを測る）。
+
 ### 1.3 spec（`tests/restored-layer-before-style.spec.js`）
 
 - 解放後の 60 秒 poll をやめ、**通常側が描いた各層に、保留側の製品が答えたか**を待つ: 地図に在る／時間で保留
@@ -65,7 +73,7 @@ date: 2026-10-03
 
 ## 2. 検査
 
-- `tests/restored-layer-catchup-checks.test.mjs`（新規・node、6 本）: TZ の closure を `js/layer-packs.js` から
+- `tests/restored-layer-catchup-checks.test.mjs`（新規・node、8 本。⑦⑧ は §1.2b）: TZ の closure を `js/layer-packs.js` から
   持ち上げて実行。① 共有の読み手・idle・`layerInflight` に渡る・2 回目の要求で 2 本目を始めない ② 失敗は記録
   （`told`）してから外し、追跡中の要求は終わる ③ 先に外された箱には何もしない ④ 描けないスタイルの間に届いた
   境界は、**発火しない setTimeout** の下でも `whenCanDraw` で描かれる ⑤ 本物の `inFlight`＋`makeLayerState` で
@@ -73,8 +81,9 @@ date: 2026-10-03
   直す前の `js/layer-packs.js` で ①〜⑤ が赤。
 - 関連 node 14 ファイル 207/207。Playwright: 当 spec 単独 `--repeat-each=3` 6/6 緑（4.7 分）、
   `heal-waits-for-inflight`・`legend-stack-and-held-heal`・`landing-showcase`・`r204` 9/9、`smoke` の時間帯アクセサ 1/1。
-- `check:engine` `check:types` `check:testbudget` 緑。`check:static` は `fetch-deadline` の台帳だけ赤
-  （`js/layer-packs.js` の期限なし fetch 9 → 7。台帳を下げる: `node scripts/fetch-deadlines.mjs --update`）。
+- `check:static` `check:engine` `check:types` `check:docs` `check:testbudget` 緑。`fetch-deadline` の台帳は
+  `js/layer-packs.js` の期限なし fetch 9 → 7 を `node scripts/fetch-deadlines.mjs --update` で下げた（正しい減少）。
+- 当検査 8/8（⑦⑧ を足した）。
 
 ## 3. 残るもの
 
@@ -83,5 +92,4 @@ date: 2026-10-03
   **ページが `page.evaluate` に 12〜36 秒応答しなかった**（読み取り 1 回分も返らない）。全レイヤーのページの主スレッドが
   その間ずっと塞がっている。原因は未特定（前回 §4 の描画の飽和と同じものか、CPU プロファイルで見る）。上限は伸ばしていない。
 - 残る期限なし・回数打ち切りの待ち: `js/beta-overlays.js`（放射線の行も失敗で箱を外す）・`js/volcano-layers.js` の
-  壁時計 `setTimeout(abort)`、`js/lazy-modules.js` `lazyRowFailed`（本体が届かなかった行を記録なしに外す）。
-  同じ形なので同じ直し方が効くが、今回の再現では来る途中で、欠けたままにはならなかった。
+  壁時計 `setTimeout(abort)`。（失敗で箱を記録なしに外す形——放射線の行と `lazyRowFailed`——は §1.2b で直した。）

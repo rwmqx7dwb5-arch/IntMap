@@ -14,6 +14,7 @@
 import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 import { jsonWithin } from './fetch-deadline.js';   /* (fetch-deadline-layer) the neighbouring-year prefetch, under a clock — see hbPrefetch */
 import { clockFor } from './proxy-fetch.js';
+import { layerState } from './layer-state.js';   /* (restored-layer-catchup) a row given up on keeps why — see radobsToggle */
 import { loadData } from './data-door.js';   /* (data-one-door) the shipped data/ files, one read each — see js/data-door.js */
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
@@ -1064,8 +1065,11 @@ export function betaOverlays(HOST){
       return window.IntMapLazy.need('radiationLayer').then(ok=>{
         if(!ok||!window.IntMapRadiationObs){
           /* a feature that silently stops existing is this project's most expensive recurring
-             defect — so the row un-checks itself rather than sitting on with nothing under it. */
-          try{ const cb=document.getElementById('beta-dl-radobs'); if(cb&&cb.checked){ cb.checked=false; cb.closest('.lyr-row').classList.remove('on'); } }catch(_){}
+             defect — so the row un-checks itself rather than sitting on with nothing under it.
+             (restored-layer-catchup) …and KEEPS why on js/layer-state.js before it does, so the unticked box is not
+             the same as one the reader switched off (the row's status and Atlas both read it there). The module did
+             not arrive — an observed failure, not «no reply» (one-pass-or-a-reason.md §5). */
+          try{ const cb=document.getElementById('beta-dl-radobs'); if(cb&&cb.checked){ try{ layerState.report('beta-dl-radobs','failed',{reason:'module',told:true}); }catch(_){} cb.checked=false; cb.closest('.lyr-row').classList.remove('on'); } }catch(_){}
           try{ imToast(L('Radiation measurements are unavailable right now.','放射線の実測値をいま取得できません。','Strahlungsmesswerte sind derzeit nicht verfügbar.','Измерения радиации сейчас недоступны.','Las mediciones de radiación no están disponibles ahora.')); }catch(_){}
           return false;
         }

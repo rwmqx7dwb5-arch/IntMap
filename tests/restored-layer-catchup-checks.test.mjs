@@ -167,3 +167,53 @@ test('⑥ the page door says both halves of «answered»: held changes and chang
   /* evaluated where it can be (⑤ drives inFlight); this asserts only that the door publishes it */
   assert.match(src, /window\.IntMapLayerHold\s*=\s*\{\s*pending:\s*l\.pending,\s*inflight:\s*layerInflight\.pending\s*\}/);
 });
+
+/* ── the same shape in the other rows that give up: a lazily-loaded body that did not arrive ──────────────────
+   js/lazy-modules.js `lazyRowFailed` (every world-packs row) and js/beta-overlays.js `radobsToggle` (measured
+   radiation) unticked their box with a toast and no record — the same «indistinguishable from switched off» as
+   the Time-zones row. Both are EVALUATED: lazyRowFailed is the real export, radobsToggle is lifted out. */
+test('⑦ lazyRowFailed keeps the failure on js/layer-state.js before it unticks the box', async () => {
+  const { lazyRowFailed } = await import('../js/lazy-modules.js');
+  const { layerState } = await import('../js/layer-state.js');
+  const toasts = []; const order = [];
+  const box = { id: 'dl-catchup-lazy', closest: () => ({ classList: { remove() {} } }) };
+  let checked = true;
+  Object.defineProperty(box, 'checked', { get: () => checked, set: (v) => { order.push(['untick', layerState.get(box.id)]); checked = v; } });
+  lazyRowFailed({ lang: 'en', imToast: (m) => toasts.push(m) }, box);
+  assert.equal(checked, false, 'the box is unticked');
+  assert.equal(toasts.length, 1, 'the reader is told once');
+  const rec = layerState.get(box.id);
+  assert.equal(rec && rec.state, 'failed', 'the row keeps «failed», not nothing');
+  assert.ok(order[0][1] && order[0][1].state === 'failed', 'the record exists BEFORE the untick');
+  /* a box the reader already switched off is not touched and gets no record */
+  const off = { id: 'dl-catchup-lazy-off', checked: false, closest: () => null };
+  lazyRowFailed({ lang: 'en', imToast() {} }, off);
+  assert.equal(layerState.get(off.id), null);
+});
+
+test('⑧ measured radiation: a module that did not arrive is kept on the row before the box is unticked', async () => {
+  const BSRC = fs.readFileSync(path.join(ROOT, 'js/beta-overlays.js'), 'utf8');
+  let fn = null;
+  walk.full(acorn.parse(BSRC, { ecmaVersion: 'latest', sourceType: 'module' }), (n) => {
+    if (!fn && n.type === 'FunctionDeclaration' && n.id && n.id.name === 'radobsToggle') fn = n;
+  });
+  assert.ok(fn, 'js/beta-overlays.js declares radobsToggle');
+  const reports = []; const order = [];
+  const box = { closest: () => ({ classList: { remove() {} } }) };
+  let checked = true;
+  Object.defineProperty(box, 'checked', { get: () => checked, set: (v) => { order.push(reports.length); checked = v; } });
+  const env = {
+    state: {}, imToast() {}, L: (en) => en,
+    document: { getElementById: (id) => (id === 'beta-dl-radobs' ? box : null) },
+    layerState: { report: (id, what, info) => reports.push({ id, what, info }) },
+    window: { IntMapLazy: { need: () => Promise.resolve(false) } },
+  };
+  const K = Object.keys(env);
+  const radobsToggle = new Function(...K, BSRC.slice(fn.start, fn.end) + '\nreturn radobsToggle;')(...K.map((k) => env[k]));
+  assert.equal(await radobsToggle(true), false);
+  assert.equal(checked, false, 'the box is unticked');
+  assert.equal(reports.length, 1);
+  assert.equal(reports[0].id, 'beta-dl-radobs');
+  assert.equal(reports[0].what, 'failed', 'an observed failure, not «no reply»');
+  assert.equal(order[0], 1, 'the record is made BEFORE the untick');
+});
