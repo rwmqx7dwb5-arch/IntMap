@@ -322,7 +322,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get showCountryDetail(){ return showCountryDetail; }, get renderStats(){ return renderStats; },
     get renderCompareFixed(){ return renderCompareFixed; }, get applyTheme(){ return applyTheme; },
     get makeDraggable(){ return makeDraggable; },   get bringToFront(){ return bringToFront; },
-    get distHTML(){ return distHTML; },             get imToast(){ return imToast; },
+    get distHTML(){ return distHTML; },             get distTXT(){ return distTXT; },   /* (map-next) the same measurement as plain text — js/my-map.js writes it through the encoder */             get imToast(){ return imToast; },
     get aiToast(){ return aiToast; },               get satToast(){ return satToast; },
     get requireLogin(){ return requireLogin; },     get openAuthModal(){ return openAuthModal; },
     /* ── (#R164) members added for the third split (data-layers / workspace / widgets / wb-layers,
@@ -387,7 +387,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get namesOn(){ return namesOn; },               get bordersOn(){ return bordersOn; },
     get geoDB(){ return geoDB; },
     /* stable helpers (never rebound — getters anyway, see LAZY above) */
-    get areaHTML(){ return areaHTML; },             get ringArea(){ return ringArea; },
+    get areaHTML(){ return areaHTML; },             get areaTXT(){ return areaTXT; },             get ringArea(){ return ringArea; },
     get fmtLL(){ return fmtLL; },                   get hasTurf(){ return hasTurf; },
     get demElevAt(){ return demElevAt; },           get demElevBilinear(){ return demElevBilinear; },
     get _demZoomForSpan(){ return _demZoomForSpan; }, get warmDEMTiles(){ return warmDEMTiles; }, get demSnapshot(){ return demSnapshot; }, get demTilePoints(){ return demTilePoints; }, get releaseDEMHold(){ return releaseDEMHold; }, get demVoidStats(){ return demVoidStats; },

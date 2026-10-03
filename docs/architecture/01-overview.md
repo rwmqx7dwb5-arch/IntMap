@@ -390,6 +390,11 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   カスタム層——は `js/lifted-projection.js` の `projectLifted` を共有する: 球の半分には m、平面の半分には
   Mercator 単位を渡す（6 系はカスタム層にも globe のクロスフェードを実値で渡すので、1 つの高度では両方を
   満たせない）。拾う位置と描く位置が同じ式であることは同じ spec がキャンバス上で測る。
+  **画面の点が地球の上にあるか**（`coords.onSurface(pt)`→ true / false / 訊けなければ null）は `_tr` の
+  `isPointOnMapSurface`（球: 視点からの光線が球に当たるか／平面: 地平線より下か・地形があれば地形メッシュ）——
+  MapLibre 自身が点を中心にズームする前に訊く問いと同じ。Cesium は pick の光線が地球（楕円体）に当たるか。
+  ⚠ `unproject` は地球の外の点にも答える（球の脇の黒い空間は奥の縁、空は地平線の点）ので、押した点を頂点にする
+  道具（マイマップ、7.3g）はこちらに訊く。
   これらが**黙って効かなくなっていないこと**は、`tests/maplibre-6-migration-checks.test.mjs`
   （アダプタが Map に対して呼ぶ全メソッドが入っている版に実在する・内部には 2 つの口からしか触れない）と
   `tests/maplibre-6-migration.spec.js`（動いているレンダラに訊く）が測る。

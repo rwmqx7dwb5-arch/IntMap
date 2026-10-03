@@ -724,6 +724,8 @@ r 以内の点の集合」＝「その形と半径 r の円盤の Minkowski 和�
 ```
 {kind:'import', file, format, readAt}        取り込み — 再実行するものが無い。バイトが起源
 {kind:'op', op, inputs:[id…], params:{…}}    処理   — これだけで、もう一度走らせられる
+{kind:'sketch', author, map, title, at, edges} 描いたもの — マイマップ（js/my-map.js）のその時点の写し。
+                                             author は 'reader'（このブラウザの読者）か 'shared-link'（リンクで届いた地図）
 {…, edits:{count, lastAt}}                   読者が値を編集した記録（§5.2）。種類は変わらない
 ```
 

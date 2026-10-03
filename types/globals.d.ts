@@ -74,6 +74,7 @@ interface IntMapPublished {
   IntMapWaves: any;
   IntMapNewsEvents: any;
   IntMapPhotoGeo: any;
+  IntMapMyMap: any;
   IntMapShakeMap: any;
   IntMapRadiationObs: any;
   IntMapVolume3D: any;

@@ -1544,6 +1544,15 @@ export function layerSidebar(HOST){
         dot:()=>{ try{ return !!(window.IntMapPhotoGeo&&window.IntMapPhotoGeo.hasPhoto()); }catch(_){ return false; } },
         label:()=>T('Photo location','写真の撮影地点','Aufnahmeort eines Fotos','Место съёмки фото','Lugar de la foto'),
         hint:()=>T('Match a mountain skyline in a photo against the terrain','写真の山並みを地形と照合して撮影地点を探す','Kammlinie eines Fotos mit dem Gelände abgleichen','Сопоставить линию гор на фото с рельефом','Comparar la línea de cumbres de una foto con el terreno') },
+      /* (map-next) MY MAP — the reader's own pins, lines and areas with names and notes, kept in this browser, carried by
+         the share link (js/map-state.js `mymap`), measured, analysed and exported (js/my-map.js). A lazy chunk: this row
+         costs the shell a label. `mod` lights the row while the panel is open and makes a second press close it. */
+      { id:'tool.myMap', mod:'IntMapMyMap', ic:_svg('<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>'), en:'My map', group:'tool',
+        keys:'my map mymap custom map draw pin line area note annotate sketch share story マイマップ 自分の地図 地図を作る 作図 描く ピン 線 範囲 メモ 注記 共有 書き出し',
+        run:_lazy('myMap',()=>{ const M=window.IntMapMyMap; return !!(M&&M.open()); }),
+        dot:()=>{ try{ const M=window.IntMapMyMap, s=M&&M.state(); return !!(s&&s.showing&&s.showing.count); }catch(_){ return false; } },
+        label:()=>T('My map','マイマップ'),
+        hint:()=>T('Draw pins, lines and areas with notes; keep, share and analyse them','ピン・線・範囲とメモを描き、保存・共有・分析する') },
       { id:'sim.seismic', mod:'IntMapSeismic', ic:SVG_QUAKE, run:null,   /* registered in js/app-body.js beside the OS kernel */
         label:()=>T('Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos'),
         hint:()=>T('Place a source and watch the shaking spread','震源を置いて揺れの広がりを見る','Herd setzen und die Erschütterung verfolgen','Задайте очаг и смотрите, как расходятся колебания','Coloque una fuente y vea propagarse el temblor') },

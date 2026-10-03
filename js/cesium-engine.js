@@ -2396,6 +2396,11 @@ window.IntMapCesiumEngine=(function(){
         return w?{x:w.x,y:w.y}:null;
       }catch(_){ return null; }
     }
+    /* (map-next) the same question as js/geo-engine.js onSurface: does the pick ray from this pixel meet the globe
+       (or the ellipsoid under it)? `_pickLngLat` answers null exactly when it does not. */
+    onSurface(pt){
+      try{ const p=Array.isArray(pt)?{x:+pt[0],y:+pt[1]}:{x:+pt.x,y:+pt.y}; return !!this._pickLngLat(p); }catch(_){ return null; }
+    }
     unproject(pt){
       const p=Array.isArray(pt)?{x:pt[0],y:pt[1]}:pt;
       const ll=this._pickLngLat(p);
@@ -2852,6 +2857,7 @@ window.IntMapCesiumEngine=(function(){
       /* coords */
       project(ll){ const v=V(); return v?v.project(ll):null; },
       unproject(p){ const v=V(); return v?v.unproject(p):null; },
+      onSurface(p){ const v=V(); return v?v.onSurface(p):null; },
       projectAltitude(ll,a){ const v=V(); return v?v.projectAltitude(ll,a):null; },
       terrainElevation(ll){ const v=V(); return v?v.terrainElevation(ll):null; },
       queryRenderedFeatures(g,o){ const v=V(); return v?v.queryRenderedFeatures(g,o):[]; },

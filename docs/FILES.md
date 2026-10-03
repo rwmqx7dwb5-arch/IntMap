@@ -508,7 +508,8 @@ chronos.js                        Chronos＝統一時間カーネル window.IntM
                                   ——`Date.UTC(1,…)` は 1901 年になるから（#R604）。時計は `makeClock()` が作る
                                   **地図ごと**の物で、IntMapTime はメイン地図の 1 個目（比較ウィンドウは 2 個目を持つ）
 map-state.js                      地図の状態の**正本**（MapState）。視野・基図・時刻・共有レイヤー・比較窓・3D 地形・
-                                  シミュレータ入力・リンクの題と一言（`captionText` が掃除して文字単位で切る）・セッションの
+                                  シミュレータ入力・リンクの題と一言（`captionText` が掃除して文字単位で切る）・読者の地図
+                                  （`mymap`・持ち主は遅延 module で、値のあるリンクだけがそれを取りに行く `lazy`）・セッションの
                                   レイヤー集合を `SCHEMA` で 1 回だけ宣言し、URL ハッシュ
                                   （`encode` / `decode`）・共有リンク・セッション保存（`session()`）・Atlas の camera / time
                                   節はその写像。値は持ち主（`own`）の `read()` が返し、ストアは複製を持たない。復元は
@@ -854,7 +855,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  194 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  195 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -990,9 +991,9 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 194能力ぶんの型・列挙・範囲と `required`/`anyOf`。
-atlas-schemas.js                  **引数の schema**（#R406）— 194 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
-atlas-schemas.js                  **引数の schema**（#R406）— 194 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
+atlas-schemas.js                  **引数の schema**（#R406）— 195能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 195 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
+atlas-schemas.js                  **引数の schema**（#R406）— 195 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）
@@ -1265,6 +1266,15 @@ place-watch.js                    見守る場所——保存した場所の周�
                                   読み、新しいものをトースト 1 回とアカウントボタンの印で知らせ、ダイジェストのシートに出す。判定は
                                   supabase/functions/_shared/place-watch.js（AI なし・サーバー実行なし）。ログイン後に auth-ui.js が
                                   動的 import で起動する。オンデマンド（watch-places）
+my-map.js                         **マイマップ**（window.IntMapMyMap・遅延 `myMap`）——読者が描くピン・線・範囲と名前・メモ・色。
+                                  このブラウザの文庫（localStorage `intmap_mymaps`・複数の地図）、地図の状態の `mymap` 欄の持ち主
+                                  （共有リンクの `&mm=`・自分の地図は手元の写しが勝ち、他人の地図は読み取り専用で表示し保存できる）、
+                                  計測は計測ツールの関数（HOST.ringArea・distTXT/areaTXT）、分析はデータセット（provenance kind
+                                  `sketch`）、書き出しは js/gis-export.js（GeoJSON / GeoPackage）、地図上のピン・図形・半径円を移す。
+                                  Layers ▸ Tools・Atlas `map.myMap`・オブジェクト一覧から
+my-map-doc.js                     マイマップの**文書（純関数）**——地物の形と検証（頂点は入るときに 1e-6° へ丸める）、リンク形
+                                  （Encoded Polyline・信用せず読み直し、読めない地物は数える）、描く形（大円を 0.1° 以下の断片に・
+                                  日付変更線で切る・極を囲む範囲は描かない）、GeoJSON の FeatureCollection
 legal-text.js                     利用規約とプライバシーポリシーの**本文**（唯一の写し。JA/EN）
 legal.js                          その本文をアプリ内モーダルに表示する
 dialog.js                         ダイアログの唯一の契約 window.IntMapDialog —— 登録簿（open/adopt・anyOpen）、Esc・Tab トラップ・

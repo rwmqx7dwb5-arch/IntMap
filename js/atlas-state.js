@@ -277,6 +277,15 @@ export function makeAtlasState(HOST) {
         return PG.state();
       });
 
+      /* (map-next) the reader's own map — js/my-map.js. What it holds (names, notes, lengths, areas, ids — the ids are
+         what `map.myMap` edit/remove name) and whether it is on show or a map a link brought. A lazy module: never
+         opened is {loaded:false}, an answer and not an error, as with the photograph search above. */
+      reg('myMap', function () {
+        var MM = GLOBAL('IntMapMyMap');
+        if (!MM || typeof MM.state !== 'function') return { loaded: false };
+        return MM.state();
+      });
+
       /* The one master clock (js/chronos.js). `travelDate` is null while live, so "the map is showing a
          past date" is a fact with exactly one representation instead of a truthiness test on a Date. */
       /* (map-state-store) the clock's value is the map state's `time` field — the one the share link writes as

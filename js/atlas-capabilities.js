@@ -307,9 +307,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.changes","changes","periodChanges,whatChanged,timeDiff","time","none","","explanation","session","none","place?","","external"],
       ["settings.mapReading","mapReading","readingMode,screenReaderMode,readAloud,describeMap,describeHere","settings","none","","explanation","persist","none","",""],
       ["settings.offlineMaps","offlineMaps","offlineMap,saveMapOffline,downloadMap,offlineRegion,portableMap,mapWithoutInternet","settings","none","","explanation","persist","explicit","",""],
-      ["corrections.report","reportMapError","mapCorrection,reportMapMistake,correctTheMap,flagMapError","corrections","panel","panel.corrections","panel","session","none","place?",""],
-      ["corrections.mine","myMapReports","myCorrections,mapReportStatus,correctionStatus","corrections","none","","explanation","read","none","",""],
-      ["corrections.log","mapCorrectionsLog","publishedCorrections,correctionsLog,whatWasFixed","corrections","none","","explanation","read","none","",""],
+      ["map.myMap","myMap","myMaps,customMap,ownMap,storyMap,mapNotes,annotateMap","map","myMap","map.myMap,mymap.doc","map,object","persist","explicit","","myMap"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
@@ -1167,6 +1165,51 @@ export function makeAtlasCapabilities(HOST, OPTS) {
           if (!nowHolds) return { status: 'partial', produced: [], code: 'no_change', observed: { timeView: after, want: want }, html: html };
           if (holds(before) === true) return { status: 'completed', code: 'already_there', observed: { timeView: after }, html: html };
           return { status: 'completed', code: 'ok', observed: { timeView: after }, html: html };
+        }
+      },
+      /* ══ (map-next) THE READER'S OWN MAP, READ OFF THE MAP ITSELF ══════════════════════════════════════
+         `observe` asks js/my-map.js (`IntMapMyMap.state()`) what it holds and shows NOW, and the renderer how many
+         features are drawn in the surfaces it claimed under 'map.myMap'. The capability says, in `raw.want`, the state
+         it set out to reach: `shown`, `has` (feature ids that must be there), `lacks` (ids that must be gone), `title`,
+         `mapId`, `features` ({id: {name?, note?, color?}}) and `atLeast` (a count). Done is «after holds want»; already
+         true before the call is `already_there`. A map shown with features and NOTHING drawn is `not_rendered`; a
+         renderer that cannot be asked is not evidence either way (.agents/rules/one-pass-or-a-reason.md §5). The module
+         not loaded is `unobserved`. A read (list, link, export, analyse) states no want and completes on its answer. */
+      myMap: {
+        observe: function () {
+          var out = { mm: null, drawn: ownedFeatures('map.myMap') };
+          try {
+            var M = window.IntMapMyMap; if (!M || typeof M.state !== 'function') return out;
+            var s = M.state(), feats = {};
+            (s.features || []).forEach(function (f) { feats[f.id] = { name: f.name, note: f.note, color: f.color }; });
+            out.mm = { shown: s.shown || null, mapId: (s.map && s.map.id) || null, title: (s.map && s.map.title) || '', count: s.showing ? s.showing.count : 0,
+              ids: Object.keys(feats), features: feats };
+          } catch (_) { }
+          return out;
+        },
+        verify: function (ctx, args, before, after, raw) {
+          var html = (raw && raw.html) || '';
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: html };
+          var want = raw && raw.want;
+          if (!want) return { status: 'completed', code: 'ok', observed: { myMap: after && after.mm }, html: html };
+          var holds = function (o) {
+            var m = o && o.mm; if (!m) return null;
+            if ('shown' in want && m.shown !== want.shown) return false;
+            if (want.mapId != null && m.mapId !== want.mapId) return false;
+            if (want.title != null && m.title !== want.title) return false;
+            if (want.atLeast != null && !(m.count >= want.atLeast)) return false;
+            if (want.has && !want.has.every(function (id) { return m.ids.indexOf(id) >= 0; })) return false;
+            if (want.lacks && want.lacks.some(function (id) { return m.ids.indexOf(id) >= 0; })) return false;
+            if (want.features) { var ok = true; Object.keys(want.features).forEach(function (id) { var w = want.features[id], g = m.features[id];
+              if (!g) { ok = false; return; } Object.keys(w).forEach(function (k) { if (g[k] !== w[k]) ok = false; }); }); if (!ok) return false; }
+            return true;
+          };
+          var now = holds(after);
+          if (now === null) return { status: 'unobserved', produced: [], code: 'not_observable', observed: { myMap: null }, html: html };
+          if (!now) return { status: 'partial', produced: [], code: 'no_change', observed: { myMap: after.mm, want: want }, html: html };
+          if (after.mm.shown && after.mm.count > 0 && after.drawn === 0) return { status: 'partial', produced: [], code: 'not_rendered', observed: { myMap: after.mm, drawn: 0 }, html: html };
+          if (holds(before) === true) return { status: 'completed', code: 'already_there', observed: { myMap: after.mm }, html: html };
+          return { status: 'completed', code: 'ok', observed: { myMap: after.mm, drawn: after.drawn }, html: html };
         }
       },
       /* ══ ⚠⚠⚠ (#R754) THIS ONE ASKS THE PAINTER, AND IT ASKS AFTER ═════════════════════════════
