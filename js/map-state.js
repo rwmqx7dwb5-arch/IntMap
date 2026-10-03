@@ -152,7 +152,7 @@ export function unpackObject(s) { try { const b = s.replace(/-/g, '+').replace(/
 
 /** (atlas-briefing) the one test of a packed briefing's spelling — base64url, nothing that could end the parameter
     @param {any} s @returns {string} the value, or '' */
-export function briefText(s) { const t = String(s == null ? '' : s); return /^[A-Za-z0-9_-]+$/.test(t) ? t : ''; }
+function briefText(s) { const t = String(s == null ? '' : s); return /^[A-Za-z0-9_-]+$/.test(t) ? t : ''; }
 
 /** does this address name a map state at all? (a `v=` — a link without one is not a map link)
     @param {string} hash */

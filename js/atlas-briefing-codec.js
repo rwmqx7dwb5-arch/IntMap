@@ -27,7 +27,7 @@ import { normalize } from './atlas-notebook-store.js';
 import { encode, captionText } from './map-state.js';
 
 export const BRIEFING_FORMAT = 'intmap-briefing';
-export const BRIEFING_VERSION = 1;
+const BRIEFING_VERSION = 1;
 /* the first character of a packed value names how the rest is packed: 'z' = deflate-raw, base64url. A later
    packing gets a new letter, so a link written today is never misread by a build that packs differently. */
 const PACKING = 'z';
@@ -140,7 +140,7 @@ export async function unpackBriefing(packed) {
    The rest of that view (the clock and the layers) is put back by the briefing itself, through the same
    restorers the notebook and undo use: absent from the link, the map-state restore first states «now, no
    data layers», and the briefing then applies its own once that restore has settled. */
-export function viewOfSection(s) {
+function viewOfSection(s) {
   const c = s && s.view && s.view.camera;
   if (!c || !isFinite(+c.lng) || !isFinite(+c.lat) || !isFinite(+c.zoom)) return null;
   return {
