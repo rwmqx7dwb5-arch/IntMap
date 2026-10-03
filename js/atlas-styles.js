@@ -427,6 +427,13 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:calc(var(--
       /* (mobile-shell-flow) (inside the COMPACT block above) the example chips are tap targets like every other control in the sheet: 44 px */
       +'#atlas-panel .atl-chip{min-height:44px;}'
       +'#atlas-panel .atl-pv-row button{min-height:44px;}'   /* (atlas-before-login) the card's two buttons, same rule */
+      /* (mobile-panels-reach) THE EXAMPLES AREA IS A SCROLL BOX. It was not: at `half` the Atlas window is 170 px (the sheet's head takes
+         the rest) and the area's content is 735 px, so a sample card opened there — and then the sheet put back to half — left its
+         login button 600 px below the screen with nothing a finger could scroll (production, 375 x 812: y 1088). `min-height:0` lets
+         it shrink below its content, `overflow-y:auto` makes what it cut off reachable, and the intro line steps aside while a
+         card is open so the card gets the room. */
+      +'#atlas-panel .atl-ex{min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}'
+      +'#atlas-panel:has(.atl-ex .atl-pv) .atl-sub{display:none;}'
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar{gap:8px;padding:8px 11px 6px;}'
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-in{height:48px;min-height:48px;border-radius:24px;padding:12px 16px;font-size:16px;}'   /* (#R118) textarea paddings (16px font kills iOS zoom, unchanged) */
       /* (#R309) the frosted-glass material for this input is in css/intmap.css, beside the three
