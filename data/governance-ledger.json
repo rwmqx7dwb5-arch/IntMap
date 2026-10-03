@@ -1,7 +1,7 @@
 {
   "gov": {
     "note": "これは「まだ果たしていない義務」の台帳であって、免責ではない。 Every entry is a bundle or a builder that does not yet state its own provenance as a value. The gate fails on anything NOT in here, and fails again when the counts are larger than reality — so a repair always shrinks this file, and nothing may be added to it except by a round that says in DEV-NOTES.md why the structure could not state it instead (.agents/rules/no-ad-hoc-hardcoding.md §6).",
-    "generatedAt": "2026-10-03T04:49:13.055Z",
+    "generatedAt": "2026-10-03T08:56:08.470Z",
     "declaredBy": "scripts/data-governance.mjs",
     "cadence": "static"
   },
@@ -1118,6 +1118,17 @@
         "freshness.generatedAt",
         "freshness.asOf",
         "freshness.cadence",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "data/radiation-hindcast",
+      "facets": [
         "integrity.schema",
         "integrity.rows",
         "integrity.missing",
@@ -2422,6 +2433,20 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "scripts/build-radiation-hindcast.mjs → data/radiation-hindcast.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/build-service-status.mjs → data/service-status.json",
       "facets": [
         "origin.retrievedAt",
@@ -3210,8 +3235,8 @@
   ],
   "unreadableDeclaration": [],
   "counts": {
-    "undeclared": 163,
-    "undeclaredFacets": 2197,
+    "undeclared": 165,
+    "undeclaredFacets": 2210,
     "updateFailureExposed": 0,
     "shardsWithoutIndex": 1,
     "unreadableDeclaration": 0
