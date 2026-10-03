@@ -83,3 +83,12 @@ origin/main へ rebase した木で `npm run build` → `node scripts/perf-budge
   （3 命令）・`IntMapSafe`・`_registerLayerOpacity` / `_hideGenericLegend` / `reorganizeLayerPanel`（凡例と行——
   `js/net-health.js` と同じ扉）。どれも遅延モジュールか、他の層と同じ登録の扉で、import に置き換えられる所有者の
   export はまだ無い。鮮度の部品は window に出さず import で配る。
+
+## 統合時の性能予算（830f271b へ重ね直した後の build）
+
+超えた行だけ `--update` で上げた（増えた理由は上の節）:
+- eager.raw: 4628.5 kB → 4652.9 kB
+- eager.gzip: 1523.9 kB → 1532.9 kB
+- async.gzip: 3795.2 kB → 3819.5 kB
+- async chunk "atlas-console": 1144.2 kB → 1167.7 kB
+- dist.assets: 18698.0 kB → 18809.6 kB
