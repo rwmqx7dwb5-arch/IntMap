@@ -2,10 +2,20 @@
 //
 // Each one pins a behaviour that was found by MEASURING the running app, and each is written as the
 // measurement rather than as the code — so it keeps holding if the implementation moves.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/app.js';
 import { sessionWith } from './helpers/session-seed.js';
 import { bootEngine } from './helpers/engine.js';
 import { loadLazyModules } from './helpers/app.js';
+/* (suite-time-room) the shared page is put back to the view THIS page's boot showed before each test —
+   the view these tests were written against (tests/helpers/app.js, appView) */
+test.use({ appView: 'boot' });
+/* (suite-time-room) Five tests here ask about a feature, not about the boot, and now share the worker's
+   booted page (tests/helpers/app.js) instead of booting one each: the sky camera, POI, sea level and
+   the two water tests. The page is put back to the view its boot showed (appView 'boot', below) — the
+   sky-camera test measures the camera of the BOOT's projection, the globe, and on the fixture's named
+   flat view it read 2,849 px of error. The launch screen, the default layers, the dark-mode sky
+   (emulateMedia belongs to its page), the satellite atmosphere (it leaves the satellite basemap up)
+   and the Cesium test keep their own boot. */
 
 const BOOT = { timeout: 120_000 };
 const ready = (page) => page.waitForFunction(() => !!window.IntMapGeoEngine && window.IntMapGeoEngine.canDraw(), null, BOOT);
@@ -104,9 +114,9 @@ test.describe('R186 default layers', () => {
   });
 });
 
-test('R186 sky: the star field is projected with the renderer\'s own camera', async ({ page }) => {
+test('R186 sky: the star field is projected with the renderer\'s own camera', async ({ app }) => {
   test.setTimeout(180_000);
-  await page.goto('/');
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await ready(page);
   /* The catalogue is only fetched when the sky is going to be drawn — a light-mode visitor never
      downloads it — so ask for it explicitly here, where only the CAMERA is under test. */
@@ -209,9 +219,9 @@ test('R186 atmosphere: switched on for satellite, and aimed at the real Sun', as
   expect(r.wb.tilesMade, 'the floor must be generated locally, not fetched').toBeGreaterThan(0);
 });
 
-test('R186 POI: shop and facility names are their own layer and their own toggle', async ({ page }) => {
+test('R186 POI: shop and facility names are their own layer and their own toggle', async ({ app }) => {
   test.setTimeout(180_000);
-  await page.goto('/');
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await booted(page);
   const r = await page.evaluate(async () => {
     const wait = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -238,9 +248,9 @@ test('R186 POI: shop and facility names are their own layer and their own toggle
   expect(r.minzoom, 'and they start no later than #R186 put them').toBeLessThanOrEqual(14);
 });
 
-test('R186 sea level: the number applies as it is typed, and 100 % is opaque', async ({ page }) => {
+test('R186 sea level: the number applies as it is typed, and 100 % is opaque', async ({ app }) => {
   test.setTimeout(180_000);
-  await page.goto('/');
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await booted(page);
   const r = await page.evaluate(async () => {
     const wait = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -270,9 +280,9 @@ test('R186 sea level: the number applies as it is typed, and 100 % is opaque', a
    tests/r352.spec.js, what the page does when the feed fails by
    tests/remove-synthetic-planes-checks.test.mjs, and live aircraft by tests/r341-live.spec.js. */
 
-test('R186 water: a source outside the working rectangle is not silently dropped', async ({ page }) => {
+test('R186 water: a source outside the working rectangle is not silently dropped', async ({ app }) => {
   test.setTimeout(240_000);
-  await page.goto('/');
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await booted(page);
   /* (#R209) `IntMapTerrainWater` is no longer in the boot bundle: js/lazy-modules.js fetches
      js/terrain-water.js when the right-click item is used, and that item awaits
@@ -316,9 +326,9 @@ test('R186 water: a source outside the working rectangle is not silently dropped
   expect(r.solveMs).toBeLessThan(4000);
 });
 
-test('R186 water: the trace tells the sea from a closed basin below sea level', async ({ page }) => {
+test('R186 water: the trace tells the sea from a closed basin below sea level', async ({ app }) => {
   test.setTimeout(240_000);
-  await page.goto('/');
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await booted(page);
   await loadLazyModules(page);   /* (#R209) as above — the terrain-water module is fetched on demand */
   const r = await page.evaluate(async () => {

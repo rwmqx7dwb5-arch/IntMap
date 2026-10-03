@@ -7,13 +7,18 @@
 // sky, and opens a second view as a moving map. Each of those is a place where an adapter can
 // implement the method name and do nothing — so nothing here asserts "it did not throw". Every check
 // is that the CAMERA ACTUALLY WENT WHERE THE AEROPLANE IS.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/app.js';
 import { bootEngine } from './helpers/engine.js';
 import { loadLazyModules } from './helpers/app.js';
 
 const BOOT = { timeout: 120_000 };
 /* (#R201) ONE page load — see tests/helpers/engine.js */
 const asCesium = (page) => bootEngine(page, 'cesium', BOOT);
+/* (suite-time-room) ① and ② are the same question in two halves — what the simulator needs from the
+   adapter, and whether a flight then moves the camera — and now ask it of ONE Cesium page per worker
+   (tests/helpers/app.js, `appEngine: 'cesium'`) instead of booting one each. ③ is a claim about a
+   MapLibre session and keeps its own page. */
+test.use({ appEngine: 'cesium' });
 // (#R209) THE SIMULATOR IS NOT IN THE BOOT BUNDLE ANY MORE. js/lazy-modules.js fetches
 // js/flight-sim.js — and with it `window.IntMapFlightSim` — the first time something asks for it,
 // which is what the right-click item that starts a flight now does (`IntMapLazy.need('flightSim')`).
@@ -21,10 +26,11 @@ const asCesium = (page) => bootEngine(page, 'cesium', BOOT);
 // global instead would be waiting for something that is never coming on its own.
 
 /* ── ① THE CAPABILITIES THE SIMULATOR NEEDS ARE REALLY THERE ──────────────────────────────── */
-test('R184 Cesium FS ①: every camera capability the simulator drives is implemented, not stubbed', async ({ page }) => {
+test('R184 Cesium FS ①: every camera capability the simulator drives is implemented, not stubbed', async ({ app }) => {
   test.setTimeout(180_000);
-  await asCesium(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await loadLazyModules(page);   // (#R209) ask for the on-demand modules the way the app asks
+  const maxPitch0 = await page.evaluate(() => window.IntMapGeoEngine.camera.getMaxPitch());
   const r = await page.evaluate(() => {
     const E = window.IntMapGeoEngine;
     const gest = E.input.names();
@@ -42,11 +48,18 @@ test('R184 Cesium FS ①: every camera capability the simulator drives is implem
         .map((h) => [h, E.input.set(h, false)]),
       sky: (() => { try { const was = E.scene.getSky(); E.scene.setSky({ 'sky-color': '#3f78c2' }); const now = E.scene.getSky(); E.scene.setSky(was); return { ok: true, now: !!now }; } catch (e) { return { ok: false, err: String(e) }; } })(),
       subView: (() => { try { const el = document.createElement('div'); el.style.cssText = 'width:120px;height:120px;position:absolute;left:-999px;'; document.body.appendChild(el);
-        const v = E.ui.createSubView({ container: el, interactive: false }); const ok = !!(v && v.camera && v.camera.jumpTo); return { ok }; } catch (e) { return { ok: false, err: String(e) }; } })(),
+        const v = E.ui.createSubView({ container: el, interactive: false }); const ok = !!(v && v.camera && v.camera.jumpTo);
+        /* (suite-time-room) read, then taken down: the page is shared, and a second viewer left behind is a second scene for every later test */
+        try { if (v && v.destroy) v.destroy(); } catch (_) {} el.remove(); return { ok }; } catch (e) { return { ok: false, err: String(e) }; } })(),
       terrain: E.coords.terrainElevation([8.0, 46.5]),
       eye: E.camera.eye(),
     };
   });
+  /* (suite-time-room) put back what the probe changed — every gesture it suspended, and the tilt
+     ceiling it lifted — because this page is shared with the worker's next test. The readings above
+     were taken first; this changes nothing they say. */
+  await page.evaluate((mp) => { const E = window.IntMapGeoEngine;
+    E.input.names().forEach((g) => E.input.set(g, true)); E.camera.setMaxPitch(mp); }, maxPitch0);
   expect(r.engine).toBe('cesium');
   expect(r.hasFS, 'the simulator module must exist on this engine, not be replaced by a no-op stub').toBe(true);
   expect(r.fromTo, 'the eye-to-target camera solve is what the cockpit view is made of').toBe(true);
@@ -61,7 +74,7 @@ test('R184 Cesium FS ①: every camera capability the simulator drives is implem
 });
 
 /* ── ② A REAL FLIGHT MOVES THE REAL CAMERA ────────────────────────────────────────────────── */
-test('R184 Cesium FS ②: the aircraft flies and the camera is at the aircraft', async ({ page }) => {
+test('R184 Cesium FS ②: the aircraft flies and the camera is at the aircraft', async ({ app }) => {
   /* ⚠ (#R400) 180 s → 300 s, AND THE NUMBERS ARE HERE BECAUSE RAISING A TIMEOUT TO MAKE A TEST PASS
      is the move this repository distrusts. Measured, not guessed. Locally the three tests in this
      file cost 9 s / 87 s / 38 s = 134 s; tests/durations.json records 234 s for the same file in
@@ -75,7 +88,7 @@ test('R184 Cesium FS ②: the aircraft flies and the camera is at the aircraft',
      turns a green fact into a red night — which matters because an alarm that cries wolf is an alarm
      that gets ignored, and #R304 measured what that costs (fourteen unread red nights). */
   test.setTimeout(300_000);
-  await asCesium(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await loadLazyModules(page);   // (#R209) ask for the on-demand modules the way the app asks
   const r = await page.evaluate(async () => {
     const FS = window.IntMapFlightSim, E = window.IntMapGeoEngine;

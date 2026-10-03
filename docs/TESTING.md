@@ -83,11 +83,12 @@ share of the map, every tap target ≥ 44 px, legends invisible until the chip, 
 candidates ending in «Ask Atlas»).
 
 
-**The tiers, measured** (`node scripts/test-budget.mjs`, 2026-09-25): the **core** tier that
+**The tiers, measured** (`node scripts/test-budget.mjs`, 2026-10-03): the **core** tier that
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**133 measured spec files / 87.5 min** of serial browser time against a ceiling of 87.5 min; and
+**133 measured spec files / 78.5 min** of serial browser time against a ceiling of 87.5 min (the 9 min between
+them is the room `suite-time-room` made for the specs arriving after it — see below); and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
 
@@ -170,9 +171,11 @@ measured waiting 66 s and 95 s for a feed and then skipping — passing in CI, p
 thing a spec is about has two implementations, the spec must NAME the one it means (`?aviation=v1` was the example until that path was removed)
 rather than depend on which is currently the default.
 
-> ⚠ **The whole-suite ceiling has zero headroom** (77.2 min measured against 77.2 min). A new
-> `.spec.js` cannot be added until the same time or more is taken out of an existing one — the
-> ceiling only moves down. Node checks (`*.test.mjs`) are **not** governed by this budget, so
+> ⚠ **The whole-suite ceiling only moves down, and a new `.spec.js` is paid for out of an existing
+> one.** It is not a headroom to spend lightly: `suite-time-room` (2026-10-03) took 538 s out of
+> the suite *without deleting or loosening one assertion* and left the ceiling where it was so that
+> the product specs arriving in parallel had room — the next spec after those pays for itself again.
+> Node checks (`*.test.mjs`) are **not** governed by this budget, so
 > logic that can be checked without a browser belongs there. ⚠ Every **count** in the paragraph above
 > is now compared against the repository — the three tier
 > sizes by `deep-tier-size` (#R500), which also reads `package.json` and `scripts/worktree.mjs`
@@ -190,6 +193,40 @@ rather than depend on which is currently the default.
 | Everything (the CI gate) | `npm test` | Chromium | no (hermetic) |
 | Production smoke | `PROD_URL=… npx playwright test --config playwright.prod.config.js` | Chromium | **yes** (live site) |
 | News-locator accuracy report | `node scripts/newsgeo-eval.mjs [--miss]` | no | no |
+
+### One boot per worker, and the three things a boot can be asked to be (suite-time-room)
+
+`tests/helpers/app.js` (#R208) gives every test in a worker the SAME booted page and resets it before each
+test. A spec that still takes the per-test `page` and boots for itself pays a whole application start per
+test — **measured on 2026-10-03, 8–12 s of a loaded machine per boot, and in tests/r171.spec.js half the
+file's time**. Twelve deep specs were moved onto the shared page that day (−538 s of the suite) with three
+**worker-scoped options**, set once at the top of a file with `test.use({ … })`:
+
+| option | what it changes | who uses it |
+|---|---|---|
+| `appUrl` | the URL the worker's page (and `freshPage()`) boots | `r184-satellites` (`/?rafshim=1`) |
+| `appEngine` | `'cesium'` boots the second renderer in one load (`tests/helpers/engine.js`) | `r180/r181/r182-cesium`, `r184-cesium-fs` |
+| `appView` | what the reset puts back: `'named'` (flat map over Tokyo — the 68 specs written for the fixture) or `'boot'` (the projection and camera **this page's boot** showed, recorded at the first reset) | every spec moved from per-test boots; the default with `appEngine` |
+
+⚠ **A worker-scoped option is not the per-test context option the fixture's header warns about.** It is known
+before the worker's page is built, so Playwright starts a worker per distinct value and the page really boots
+with it. `viewport`, `deviceScaleFactor`, `colorScheme`, `storageState` set by `test.use` still configure only
+the per-test `page` — a test that needs one keeps its own page.
+
+⚠ **Why `'boot'` exists — measured, not assumed.** The named view is flat; the app boots on the globe, and on
+Cesium `view.proj.flat` *morphs* the scene into Columbus view. Moved onto the shared page with the named view,
+specs written against a fresh boot went red for the view alone: a 2,849 px sky-projection error, a zoom floor
+of 1.2 where the boot gives 0, a Cesium bearing round-trip off by 176°, fitBounds leaving 9.5 % of its box off
+screen. With `'boot'` each test starts from the view it was written against.
+
+⚠ **What stays on its own page.** A test whose subject is a boot (launch screen, start-up camera, default
+layers, errors raised while booting), a fresh profile (`app.freshPage()` — "silent by default", "off by
+default"), a reload, a per-test context option, or a state it would leave for the next test (a basemap switch,
+a catalogue group). And a test that was moved and **measured red** on the shared page goes back, even when the
+cause was not isolated: `r180-cesium` ⑤, `r182-cesium` ⑤ ⑥, `r184-satellites` ② ⑦ and all of `r174`.
+Where a moved test changes the page (terrain attached, gestures suspended, a second viewer built), it puts it
+back after its readings — the readings are unchanged. The before/after table of every moved test is in
+`dev-notes/2026-10-03-suite-time-room.md`.
 
 ## Requirements
 

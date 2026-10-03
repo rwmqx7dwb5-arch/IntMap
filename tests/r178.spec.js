@@ -20,8 +20,13 @@
 // Asked which of "hold the viewpoint" and "tilt to 180°" wins where they cannot both hold, the
 // answer was 「視点を優先し、そこで傾きを止める」. So these tests assert BOTH halves: the viewpoint
 // never moves anywhere, and the tilt comes to rest instead of the eye sliding.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/app.js';
 import { installCameraRuler } from './helpers/camera-ruler.js';
+/* (suite-time-room) ② and ③ share the worker's booted page (tests/helpers/app.js), put back before each to
+   the view its boot showed (appView 'boot') — ② reads the zoom floor the boot's projection sets, and on the
+   fixture's named flat view it read 1.2 where the boot gives 0. ① keeps its own boot: its subject is the
+   STARTUP view. */
+test.use({ appView: 'boot' });
 
 const boot = async page => {
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
@@ -91,9 +96,9 @@ test('the STARTUP view holds the viewpoint through a real tilt drag (#R178)', as
    startup view being held past 60°. The adapter widens it to MapLibre's real floor while the eye
    pivot is installed and restores the app's own value when the setting goes off — including after a
    projection switch, which is the other writer of the same property. */
-test('unlimited tilt owns the zoom floor and gives it back (#R178)', async ({ page }) => {
+test('unlimited tilt owns the zoom floor and gives it back (#R178)', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const r = await page.evaluate(async () => {
     const m = window.__imap, wait = ms => new Promise(res => setTimeout(res, ms));
     const out = {};
@@ -121,9 +126,9 @@ test('unlimited tilt owns the zoom floor and gives it back (#R178)', async ({ pa
    latitude, which no such rule contains. transform.applyConstrain IS the renderer's answer, it is
    pure, and both transforms implement it; this pins that it stays reachable and non-mutating, since
    silently losing it would take the guard back to "always feasible" without any test failing. */
-test('the renderer can still be asked whether it would move a camera (#R178)', async ({ page }) => {
+test('the renderer can still be asked whether it would move a camera (#R178)', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await page.evaluate(installCameraRuler);
   const r = await page.evaluate(async () => {
     const m = window.__imap, wait = ms => new Promise(res => setTimeout(res, ms));

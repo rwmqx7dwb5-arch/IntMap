@@ -32,7 +32,7 @@
 // first, and — only when it wants to move the camera — hand it the elevation this engine is about
 // to apply and ask again. Measured after: the check fires ZERO times, the eye holds to 0 m, and
 // the tilt reaches 180°.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/app.js';
 import { installCameraRuler } from './helpers/camera-ruler.js';
 
 const boot = async page => {
@@ -142,14 +142,21 @@ for (const c of [{ proj: 'mercator', z: 1.7, tag: 'flat z1.7 (STARTUP)', sphere:
   });
 }
 
+/* (suite-time-room) ① AND THE ② SWEEP KEEP A FRESH PAGE PER CASE — tiltDrag()'s own note says why: a
+   wrecked camera left by the case before kept MapLibre's underground check quiet and turned 1,394 km of
+   drift into 0. Everything from ③ on asks a different question and puts its own state in place first
+   (⑥①/⑥② even turn the setting OFF to get a "CLEAN reset" before each measurement), so those eleven
+   share the worker's booted page (tests/helpers/app.js) instead of booting one each, put back before
+   each to the view its boot showed (appView 'boot') — the view they were written against. */
+test.use({ appView: 'boot' });
 /* ── ③ the repair is installed with the setting, and leaves NOTHING behind ────────────────────
    It leans on a renderer internal, and #R162's lesson is that a `typeof` guard around one deletes
    the feature in SILENCE if it is ever renamed — which here would take the whole seventh-round fix
    with it. So the engine reports both halves and this pins the report. It also pins that turning
    the setting off restores MapLibre's own method exactly, rather than leaving a patched map. */
-test('the eye pivot installs both halves and restores the renderer afterwards (#R179)', async ({ page }) => {
+test('the eye pivot installs both halves and restores the renderer afterwards (#R179)', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await page.evaluate(installCameraRuler);
   const r = await page.evaluate(async () => {
     /* ⚠ (MapLibre 6) the correction is a CAMERA method now — the modifier chain calls it with `this`
@@ -191,9 +198,9 @@ test('the eye pivot installs both halves and restores the renderer afterwards (#
      · And with the flight simulator driving the camera itself (__fsCamActive, the one case the
        tilt hook stands down for), the repair stands down too and the answer is MapLibre's own
        again — which is only possible if it delegates rather than returning nothing. */
-test('the underground check is repaired, not suppressed (#R179)', async ({ page }) => {
+test('the underground check is repaired, not suppressed (#R179)', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   await page.evaluate(installCameraRuler);
   const r = await page.evaluate(async () => {
     const m = window.__imap, cam = window.__mlCam(), wait = ms => new Promise(res => setTimeout(res, ms));
@@ -246,9 +253,9 @@ test('the underground check is repaired, not suppressed (#R179)', async ({ page 
 for (const c of [{ tilt: 120, z: 6, tag: 'globe z6, tilt 120° (the reported case)' },
                  { tilt: 180, z: 4, tag: 'globe z4, tilt 180°' },
                  { tilt: 180, z: 11, tag: 'globe z11, tilt 180°' }]) {
-  test(`zooming while looking up keeps the eye above the surface — ${c.tag} (#R179)`, async ({ page }) => {
+  test(`zooming while looking up keeps the eye above the surface — ${c.tag} (#R179)`, async ({ app }) => {
     test.setTimeout(180000);
-    await boot(page);
+    const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
     await page.evaluate(installCameraRuler);
     const r = await page.evaluate(async (cc) => {
       const m = window.__imap, C = () => window.IntMapGeoEngine.camera;
@@ -307,9 +314,9 @@ for (const s of [{ tag: 'flyTo elsewhere, zooming out', proj: 'mercator',
                    start: { center: [139.767, 35.681], zoom: 14 }, dest: { center: [2.35, 48.86], zoom: 12, pitch: 55, bearing: 20 } },
                  { tag: 'globe, flyTo elsewhere', proj: 'globe',
                    start: { center: [139.767, 35.681], zoom: 14 }, dest: { center: [2.35, 48.86], zoom: 4, pitch: 0, bearing: 0 } }]) {
-  test(`going somewhere after a look-up lands where the zoom says — ${s.tag} (#R179)`, async ({ page }) => {
+  test(`going somewhere after a look-up lands where the zoom says — ${s.tag} (#R179)`, async ({ app }) => {
     test.setTimeout(180000);
-    await boot(page);
+    const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
     await page.evaluate(installCameraRuler);
     const r = await page.evaluate(async (ss) => {
       const m = window.__imap, C = () => window.IntMapGeoEngine.camera;
@@ -345,9 +352,9 @@ for (const s of [{ tag: 'flyTo elsewhere, zooming out', proj: 'mercator',
    hook would silently go back to guessing from history and both defects would return with no test
    failing on the mechanism. So this checks the record directly, including that it is CLEARED — a
    declaration that outlived its animation would make the next gesture look programmatic. */
-test('the adapter records what the caller declared, and clears it (#R179)', async ({ page }) => {
+test('the adapter records what the caller declared, and clears it (#R179)', async ({ app }) => {
   test.setTimeout(120000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const r = await page.evaluate(async () => {
     const m = window.__imap, C = () => window.IntMapGeoEngine.camera;
     const wait = ms => new Promise(res => setTimeout(res, ms));
@@ -408,9 +415,9 @@ test('the adapter records what the caller declared, and clears it (#R179)', asyn
    This round touches the same hook and the same modifier chain, so the two gestures that are not
    a tilt are pinned here: measured wheel Δz 2.26-2.53, the zoom button exactly +1, and a pan that
    really travels — with the setting both off and on, at pitch 0 and leaning at 60°. */
-test('unlimited tilt still lets you zoom and pan (#R175 regression guard) (#R179)', async ({ page }) => {
+test('unlimited tilt still lets you zoom and pan (#R175 regression guard) (#R179)', async ({ app }) => {
   test.setTimeout(180000);
-  await boot(page);
+  const page = app.page;   /* the worker's booted page (tests/helpers/app.js) — reset to the view its boot showed before this test */
   const rows = await page.evaluate(async () => {
     const m = window.__imap, wait = ms => new Promise(res => setTimeout(res, ms));
     const frame = () => new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
