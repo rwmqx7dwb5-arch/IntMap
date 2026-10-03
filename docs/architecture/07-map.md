@@ -624,6 +624,38 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
 表に出る 1 つの座標は外接矩形の中心だが、**空間判定はすべて形そのものの上で測る**（結果の注記が
 そう述べる）。
 
+### 7.3f 地点プロファイル (Place dossier) — `js/place-dossier.js`
+
+**1 地点について、地図が既に持っているものを 1 つの記録にまとめ、1 枚のカードに出す。** 入口は 3 つ:
+地図のコンテキストメニュー（右クリック・長押し）の「現地の情報 ▸ 地点プロファイル」、検索で選んだ場所の
+結果カードの「地点プロファイル」、Atlas の `research.placeProfile`（`{"type":"placeProfile","place"|"lng","lat"}`）。
+モジュールは**そのクリックで取りに行く**（起動経路に載らない）。地図のクリックの所有権には触れない——
+既存のメニューとカードに行動を 1 つ足しただけで、クリックの読み手は増えていない。
+
+| 項目 | どこから | 欠けたとき |
+|---|---|---|
+| 座標 | `HOST.fmtLL`（読み出しと同じ書式） | — |
+| 名前と行政区分の連なり | Nominatim reverse（zoom 14）。`address` を**上流の並び順のまま**連ねる（どの欄がどの階層かの表は持たない）。ISO 3166-2・国コードは識別子として欄に置き、連なりには入れない。`licence` は上流の文をそのまま運ぶ。アプリ共通の Nominatim の列（`js/nominatim-gate.js`）とホストの期限（`clockFor`）を通る | 区域が無い＝`none`／届かない＝`unavailable`（期限層の理由） |
+| 国 | Natural Earth の国境（`HOST.countryGeo`）をアプリ共通の点内判定 `window._imPipGeo`（穴を含む）で引く | 公海・帰属未定＝`none` |
+| 標高・水深 | `IntMapLayers` の `elevation` 登録（terrarium DEM）。その登録と**同じズーム**のタイルを先に待つ | 値が無い／タイル未着＝理由つきの行 |
+| 表示中レイヤーの値 | `IntMapLayers.sampleAt`——`data.layerValues` と GIS カーネルが読むのと同じ窓口。数（`value`/`unit`）・分類（`code`）・表示文（`text`）を分けて持つ | 下の 4 種の理由 |
+| 現地時刻 | Open-Meteo が地点について述べるタイムゾーン（`IntMapWx.point`、`timezone=auto`） | 応答した上流がゾーンを述べない（MET Norway）ときは**その名を挙げて**述べる |
+| 日の出・日の入り・昼の長さ | IntMap 自身の計算（`IntMapWx.sunTimes`。白夜・極夜を含む） | — |
+| 国の統計 | **呼び手が渡す指標の集合と書式**（Atlas は `js/atlas-metrics.js` の集合と `fmtVal`）。カードは統計を書き写さず、既存の国カードを開くボタンを置く | 国に無い指標は 0 ではなく**行が無い** |
+
+**⚠ 読めないレイヤーは行が消えず、理由を持った行になる。** 4 種: `no-value-here`（訊いたが値が無い）・
+`sampler-failed`（読み手が投げた）・`features-not-a-value`（点いているが地物の集合で、地点の値ではない）・
+`no-point-reader-declared`（パネルで点いているが、宣言が `IntMapLayers` の読み手を名指していない）。
+最後の 1 つは**宣言から発見する**——`dataLayers()` の各行について、宣言の `registry`、無ければ登録簿自身の規約
+（`js/map-ui.js` の `isOn(id)` が読むチェックボックス `dl-`+id / id）で結ぶ。手で持つレイヤーの一覧は無い。
+⚠ この行が述べるのは「宣言が読み手を名指していない」ことだけである。国別の塗り分け（`bx-*`）は国別コロプレスの
+行が合算して読むが、宣言がそれを述べていないので、この行に並ぶ。
+
+**⚠ カードと Atlas は同じ記録を読む。** `placeProfile()` が JSON にできる 1 つの記録を作り、`profileHtml()` が
+カードの本文と Atlas の吹き出しの両方を描く。Atlas にはその記録がそのまま `exec.placeProfile` として届く
+（`js/atlas-toolsurface.js` の `observed`）——読者が見ている数と Atlas が引用できる数は同じものである。
+カードは `.country-popup`（ドラッグ・携帯のシート）で、開くと `MAP_ANSWER_EVENT`（`card`）を出す。
+
 ### 7.4 Chronos（統一時間）と「年」
 
 - **歴史データは起動時に読まない。読むのは「過去へ行こうとしている」ときだけ。** 国境の束

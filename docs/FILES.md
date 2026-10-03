@@ -1121,6 +1121,9 @@ screenshot.js                     スクリーンショットのボタン（busy
                                   **絵そのものは atlas-view-capture.js**——Atlas と同じ1本を呼ぶ）
 sidebar-style.js                  左サイドバーの材質（不透明／フロスト2種）と、フロスト時にカメラへ渡す左 inset
 search-geocode.js                 検索欄——問い合わせの前処理・ジオコーディング・結果カード
+place-dossier.js                  地点プロファイル——1 地点について地図が持つもの（名前と行政区分・国・標高・表示中レイヤーの
+                                  値・現地時刻と日の出入り）を 1 つの記録にし、カードに描く。Atlas `research.placeProfile` も
+                                  同じ記録を返す。読めない項目は理由つきの行（docs/architecture/07-map.md §7.3f）
 compare.js                        並べて／スワイプで比べる地図 IntMapCompare。**独自の時計**（`makeClock('compare')`）を持ち、
                                   「メイン地図の時刻に従う／独自の時刻」を切り替える。選んだ層はその時計で時間カーネルの規則に
                                   判定され、歴史国境はその瞬間の記録（time-borders.js `collectionAt`）。読み手には

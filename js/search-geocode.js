@@ -441,6 +441,7 @@ export function searchGeocode(HOST){
           <button class="primary" id="src-copy">${icon('clipboard')} ${HOST.t('ctxCopy')}</button>
           <button id="src-pin">${icon('pin')} ${HOST.t('ctxDropPin')}</button>
         </div>
+        <div class="src-actions"><button id="src-profile">${icon('note')} ${IntMapLang.t(HOST.lang,'Place profile','地点プロファイル')}</button></div>
       </div>`;
     searchCardEl.querySelector('.src-card-close').onclick=closeSearchCard;
     searchCardEl.querySelector('#src-copy').onclick=()=>{ try{ navigator.clipboard.writeText(`${lat.toFixed(5)}, ${lng.toFixed(5)}`); }catch(_){} };
@@ -452,6 +453,9 @@ export function searchGeocode(HOST){
        un-removable pin under the first. Pin first, then close: HOST.openPinPopup(id) must not open into a card that
        is still being torn down. */
     searchCardEl.querySelector('#src-pin').onclick=()=>{ const id=HOST.addPin(lng,lat); HOST.openPinPopup(id); closeSearchCard(); };
+    /* (place-dossier) everything the map knows about the place that was picked, on one card (js/place-dossier.js,
+       fetched by this click). The search card stays: it is still the pin and the outline of the pick. */
+    searchCardEl.querySelector('#src-profile').onclick=()=>{ import('./place-dossier.js').then(m=>m.openPlaceDossier(HOST,{lng,lat,name:primary})).catch(()=>{ try{ HOST.imToast(IntMapLang.t(HOST.lang,'The place profile could not be loaded','地点プロファイルを読み込めませんでした')); }catch(_){} }); };
     /* (#R36) rAF-coalesce the per-move reposition (mobile pan/zoom smoothness #13): `move` can fire several
        times per frame during inertia, and positionSearchCard does layout (getBoundingClientRect + style writes);
        collapse it to at most once per frame so it never piles up work mid-gesture. */
