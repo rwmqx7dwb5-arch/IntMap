@@ -96,3 +96,8 @@ EU のパックを組み直したら、25 か国の `native` が全部英語に�
 - eager.raw: 4628.5 kB → 4652.5 kB
 - eager.gzip: 1523.9 kB → 1533.1 kB
 - async chunk "atlas-console": 1144.2 kB → 1156.3 kB
+
+## 統合時の性能予算（8f3e8746 へ重ね直した後の build）
+
+超えた行だけ `--update` で上げた（増えた理由は上の節）:
+- async chunk "atlas-console": 1162.7 kB → 1169.3 kB
