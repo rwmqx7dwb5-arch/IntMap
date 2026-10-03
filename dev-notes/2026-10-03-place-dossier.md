@@ -31,3 +31,9 @@ date: 2026-10-03
 - `tests/place-dossier.spec.js`（新規・ブラウザ）: 右クリック →「地点プロファイル」でカードが開き、全節が値か理由に落ち着き、空の行が無く、× で閉じる。1 ページ 1 起動。**実測 12.8 / 8.4 s（ローカル・1 worker）、上限側の 13 を `tests/durations.json` に入れた**——`CORE_MAX_S` を超えるので deep 側に並ぶ（core は 6 本のまま、deep は 128 本）。
 - 段 1（統合後）: 上の各門に加え `check:datagov`・`check:perf`（下の追記）・`check:testbudget`。`DECISIONS.md` の能力数（155／到達 154／`find_capability` の先だけ 139）と、tier の本数（`docs/FILES.md`・`docs/TESTING.md`・`package.json`・`scripts/worktree.mjs`）を実数へ。⚠ **`check:testbudget` は全体が天井 87.5 分を 0.2 分超える（87.7 分）**——この spec の 13 s を払う余地は PR #911（直列 9.0 分の削減）が作る。天井は上げていない。
 - **起動費用（CI 実測で訂正）。** 統合前に書いた「天井内・`--update` 不要」は誤りだった——PR の CI が `eager.cssRaw` 367.8 kB（天井 365.8 kB・幅 2.0 kB）と `async.gzip` 3796.2 kB（天井 3774.0 kB・幅 18.9 kB）で落ちた（ローカルの build も同じバイト数）。`eager.cssRaw` は**このカードの CSS 11 行**（`.pd-*`。`css/intmap.css` は main の 3 commit が触っていないので合流後も同じ数）で、天井を実測の 376,601 B に上げた。`async.gzip` は新しい chunk `place-dossier`（15.3 kB）と、それを呼ぶ側の増分で、天井は**上げていない**——main が同じ行を #909 で 3,886,293 B に上げており、合流後の木の数はこの branch では測れない（`--update` は「CI が測る木ではない」と拒む）。rebase 後に build して `--update` が要るかを測る。
+
+## 統合時の性能予算（重ね直した後の build）
+
+超えた行だけ `--update`:
+- eager.requests: 9 → 10
+- async chunk "atlas-console": 1144.2 kB → 1152.2 kB
