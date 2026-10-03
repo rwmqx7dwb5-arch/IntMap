@@ -60,3 +60,9 @@ date: 2026-10-03
 ## 統合時の性能予算
 
 main へ重ね直したあとの build で、超えた 3 行だけを `--update` で上げた。eager.gzip 1523.9 → 1532.8 kB と eager.requests 9 → 10 は、検索欄の空の状態にギャラリーの入口が加わったぶん。async.gzip 3774.0 → 3795.8 kB は、作例 8 本の文と js/showcase-gallery.js のぶん。
+
+## 統合時の性能予算（830f271b へ重ね直した後の build）
+
+超えた行だけ `--update` で上げた（増えた理由は上の節）:
+- async.raw: 11518.0 kB → 11576.1 kB
+- async chunk "atlas-console": 1144.2 kB → 1151.0 kB
