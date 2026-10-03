@@ -55,3 +55,8 @@ date: 2026-10-03
 - 湿性沈着の寄与を降水の有無で割る診断（0.25° の降水が山地の沈着を決めるため）。
 - 他の事故（チェルノブイリ）の答え合わせ。実測のセル値が出典付きで取れる形で見つかっていない。
 - 検査: `check:datagov`・`check:static`・`check:i18n`・`check:docs`・`check:catalog`・`check:capabilities`・`check:archfiles`・`check:surface`・`check:perf`（build 後）・`check:assets` と新しい検査 9 件。`npm test` 全体は統合後に 1 回。
+
+## 統合時の性能予算（ba7e4778 へ重ね直した後の build）
+
+超えた行だけ `--update` で上げた（増えた理由は上の節）:
+- eager.modules: 309 → 310
