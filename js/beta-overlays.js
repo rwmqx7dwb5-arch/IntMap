@@ -19,6 +19,7 @@ import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import * as bus from './bus.js';
 
 export function betaOverlays(HOST){
   /* (#R251) the language helper and its ARRAY form — see `pickArgs` in js/lang-registry.js. The tuples below were bare array literals, which no instrument can see, so every language past the two they listed read English. */
@@ -1134,12 +1135,12 @@ export function betaOverlays(HOST){
        the row was right until the first language event and wrong from then on.
        WARNING a two-branch ternary cannot serve nine languages whichever way round it is. */
     function relabel(){ Object.keys(BLBL).forEach(k=>{ const e=document.getElementById('beta-dl-'+k+'-lbl'); if(e) e.textContent=L.arr(BLBL[k]); }); }
-    window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));
+    bus.on('intmap-lang',()=>setTimeout(relabel,20));
     /* ⚠ THE HERITAGE NAMES ARE IN THE DATA, NOT IN THE UI TABLES, so a language event has to
        recompose the FeatureCollection — the label layer reads `n` off the feature and nothing else
        can change it. Nothing is re-downloaded: every language's name is already in the file. The
        description file IS per language, so the cached one is dropped and refetched on the next card. */
-    window.addEventListener('intmap-lang',()=>setTimeout(()=>{ try{
+    bus.on('intmap-lang',()=>setTimeout(()=>{ try{
       if(!whsDoc) return;
       whsDetail=null; whsDetailTag=''; whsDetailPending=null;
       whsBuild(); whsPush();
@@ -1161,7 +1162,7 @@ export function betaOverlays(HOST){
       if(state.whs&&whsEnsure()){ setVis(WHS_IDS,true); whsPush(); whsApplyFilter(); whsLoad(); }
     },80); } });
     /* (#R21) under memory pressure, keep only the displayed year's borders */
-    window.addEventListener('intmap-mem-pressure',()=>{ try{ const keep=hbCache.get(hbYear); hbCache.clear(); if(keep&&state.hist) hbCache.set(hbYear,keep); }catch(_){} });
+    bus.on('intmap-mem-pressure',()=>{ try{ const keep=hbCache.get(hbYear); hbCache.clear(); if(keep&&state.hist) hbCache.set(hbYear,keep); }catch(_){} });
     /* ══ ⚠⚠⚠ (#R763) 描かずに渡す扉 ═════════════════════════════════════════════════════════════
        Both of these rows hold a bundled document: volcLoad() and whsLoad() FETCH it and then write it
        into a renderer source, and until this round the fetch was only reachable through the drawing.

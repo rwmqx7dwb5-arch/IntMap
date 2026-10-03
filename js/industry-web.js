@@ -42,6 +42,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import * as bus from './bus.js';
 
 export function industryWeb(HOST) {
   const GE = () => IntMapGeoEngine;
@@ -682,7 +683,7 @@ LIMIT ${limit}`;
       });
     }
     if (document.readyState !== 'loading') setTimeout(buildUI, 0); else document.addEventListener('DOMContentLoaded', buildUI);
-    window.addEventListener('intmap-lang', () => setTimeout(() => {
+    bus.on('intmap-lang', () => setTimeout(() => {
       const e = document.getElementById('wp-dl-industry-lbl');
       if (e) e.textContent = L('Industry web', '業界の相関', 'Branchennetz', 'Отраслевая сеть', 'Red del sector');
       if (on) paint();

@@ -19,6 +19,7 @@
 import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) the World Bank's clock, stated once — it was a hand-written 12 s here */
 import { readWithin } from './fetch-deadline.js';
 import { IntMapTime } from './chronos.js';
+import * as bus from './bus.js';
 export function makeTimeCountries(HOST, CTX) {
   const countryStats=CTX.countryStats, loadCountryData=CTX.loadCountryData, renderStats=CTX.renderStats, searchVal=CTX.searchVal;
   /* ============================================================================
@@ -160,7 +161,7 @@ export function makeTimeCountries(HOST, CTX) {
          «Germany» beside a list already saying «German Empire» when the country file was late). This says the
          moment the identities in the table changed — which includes `restore()`, i.e. the return to Now and
          the years below the Maddison floor, where the modern names come back. */
-      try{ window.dispatchEvent(new CustomEvent('intmap-hist-identity',{detail:{year:curYear}})); }catch(_){}
+      try{ bus.emit('intmap-hist-identity', {year:curYear}); }catch(_){}
     }
     IntMapTime.on(e=>{ clearTimeout(deb); const my=++seq;
       deb=setTimeout(async()=>{

@@ -52,6 +52,7 @@
 import { isUnobserved } from './fetch-deadline.js';
 import { notify } from './notify.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 /* how many repairs `heals()` keeps — the same bound IntMapLayerAudit.log() uses (js/data-layers.js, 60) */
 const HEAL_MAX = 60;
@@ -270,7 +271,7 @@ try {
   if (typeof document !== 'undefined') {
     layerState.listen(document);
     if (typeof window !== 'undefined') {
-      window.addEventListener('intmap-lang', () => layerState.repaint());
+      bus.on('intmap-lang', () => layerState.repaint());
       window.IntMapLayerState = {
         get: layerState.get, snapshot: layerState.snapshot, heals: layerState.heals,
         report: layerState.report, on: layerState.on,

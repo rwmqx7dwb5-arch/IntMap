@@ -17,6 +17,7 @@
  *  DEV-NOTES R169 for a decision: re-wire the Read button to it, or delete the feature.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 export function articleReader(HOST){
   const READER_NOISE=new Set(['edit','[edit]','skip to content','watch live','sign in','log in','menu','advertisement','home','news','sport','business','technology','more','share','save','reuters','associated press','follow us','related topics','watch','listen']);
@@ -183,7 +184,7 @@ export function articleReader(HOST){
   function enterReaderPane(){
     /* (#R160) reveal the sidebar to show the reader. The sidebar overlays a fixed full-width map, so this
        can't move the map — just drop `collapsed` and let the search-pill layout recompute; no anchor, no resize. */
-    try{ const _sb=document.getElementById('sidebar'); if(_sb&&_sb.classList.contains('collapsed')){ _sb.classList.remove('collapsed'); window.dispatchEvent(new Event('intmap-sidebar-resize')); } }catch(_){}
+    try{ const _sb=document.getElementById('sidebar'); if(_sb&&_sb.classList.contains('collapsed')){ _sb.classList.remove('collapsed'); bus.emit('intmap-sidebar-resize'); } }catch(_){}
     try{ if(window.IntMapDevice.compact() && window.__setDetent) window.__setDetent('full'); }catch(_){}
     const cp=document.querySelector('.control-panel'); if(cp) cp.style.display='none';
     /* ⚠ `sidebar-search-bar` by ID, not `.search-bar` (see the renderUI note) — #countries-search-bar shares the class. */

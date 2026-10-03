@@ -55,6 +55,7 @@ import { BootStage } from './boot-stage.js';
 import { loadStarCatalogue } from './star-catalogue.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
+import * as bus from './bus.js';
 window.IntMapSky=(function(){
   'use strict';
   const GE=()=>IntMapGeoEngine;
@@ -453,7 +454,7 @@ window.IntMapSky=(function(){
     try{ ['move','moveend','zoom','rotate','pitch','resize','projectiontransition','styledata','load'].forEach(ev=>{
       try{ GE().events.on(ev,schedule); }catch(_){} }); }catch(_){}
     window.addEventListener('resize',schedule);
-    window.addEventListener('intmap-theme',schedule);
+    bus.on('intmap-theme',schedule);
     try{ if(IntMapTime&&IntMapTime.on) IntMapTime.on(schedule); }catch(_){}
     /* The sky turns 15° an hour; a repaint every 30 s keeps it within a quarter of a degree of the
        truth without asking for a frame the camera did not ask for. */

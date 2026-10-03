@@ -11,6 +11,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import { MAP_ANSWER_EVENT } from './mobile-sheet.js';
+import * as bus from './bus.js';
 
 export function searchGeocode(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -463,7 +464,7 @@ export function searchGeocode(HOST){
     positionSearchCard();
     /* (mobile-shell-flow) the card IS the answer, and it is on the map: say so — js/mobile-ui.js brings a phone's
        sheet down to show it (js/mobile-sheet.js detentFor 'card'); this file chooses no detent */
-    try{ window.dispatchEvent(new CustomEvent(MAP_ANSWER_EVENT,{detail:{kind:'card'}})); }catch(_){}
+    try{ bus.emit(MAP_ANSWER_EVENT, {kind:'card'}); }catch(_){}
     /* ══ ⚠⚠ (#R244) A POSTCODE SEARCH OUTLINES ITS AREA ═══════════════════════════════════════════
        「郵便番号で地点検索したら、その範囲が、地名ラベルをクリックした時みたいにハイライトされるように。」
        A place label already does this — js/map-ui.js's popup calls `IntMapOutline.show`, which draws

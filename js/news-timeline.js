@@ -12,6 +12,7 @@ import { everyTick, stopTick } from './runtime.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 
 
@@ -834,7 +835,7 @@ export function newsTimeline(HOST){
       function wireMap(){ try{ const E=GE(); if(E&&E.hasRenderer()){ E.events.on('dragstart',closeIf); E.events.on('zoomstart',ev=>{ if(ev&&ev.originalEvent) closeIf(); }); E.events.on('click',closeIf); E.events.on('styledata',()=>{ try{ _tmSyncTerminator(); }catch(_){} }); return true; } }catch(_){} return false; }
       if(!wireMap()) setTimeout(wireMap,1500);
       document.addEventListener('pointerdown',ev=>{ try{ if(tl.classList.contains('collapsed')) return; if(ev.target&&ev.target.closest&&ev.target.closest('#news-timeline')) return; closeIf(); }catch(_){} },true); })();
-    window.addEventListener('intmap-lang',()=>{ try{ localizeChrome(); refreshUI(IntMapTime.state()); }catch(_){} });
+    bus.on('intmap-lang',()=>{ try{ localizeChrome(); refreshUI(IntMapTime.state()); }catch(_){} });
     /* init */
     /* (#R293) the date picker reaches as far as the MODEL does — 「時刻」 can now name a future
        instant, and a picker that stopped at today would be the one control that could not follow */

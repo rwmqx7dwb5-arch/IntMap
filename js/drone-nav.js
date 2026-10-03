@@ -57,6 +57,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import * as bus from './bus.js';
 
 export function droneNav(HOST){
   const GE=()=>IntMapGeoEngine;
@@ -869,7 +870,7 @@ export function droneNav(HOST){
   /* ---- boot ---------------------------------------------------------------------------------- */
   loadStore();
   try{ GE().events.on('click',onMapClick); GE().events.on('zoomend',onZoom); GE().events.on('terrain',onZoom); }catch(_){}
-  window.addEventListener('intmap-lang',()=>{ if(panelOpen()) render(); });
+  bus.on('intmap-lang',()=>{ if(panelOpen()) render(); });
   /* (#R176) No toolbar button any more — 「DronesはMeasureに置くな。どこにも置くな。」. The three
      setTimeout(wireButton) probes that used to hunt for #btn-tool-drone are gone with it; the planner is
      opened by IntMapDroneNav.open()/toggle() below, which is what the Atlas `drone` and `tool` actions call. */

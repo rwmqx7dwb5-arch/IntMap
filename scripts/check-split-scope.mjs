@@ -190,6 +190,9 @@ function freeIdentifiers(src) {
         if (n.id) declare(n.id.name); walk(n.superClass); walk(n.body); return;
       case 'LabeledStatement': walk(n.body); return;
       case 'BreakStatement': case 'ContinueStatement': return;
+      /* (event-bus) `import.meta` is a MetaProperty whose two halves are Identifier nodes — walked as
+         references, `import` and `meta` were reported as lost closure variables. Neither is a name. */
+      case 'MetaProperty': return;
     }
     for (const k of Object.keys(n)) { if (k === 'loc' || k === 'start' || k === 'end' || k === 'type') continue; walk(n[k]); }
   }

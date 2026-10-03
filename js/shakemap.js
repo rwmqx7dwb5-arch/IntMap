@@ -73,6 +73,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 export function shakeMap(HOST) {
   const GE = () => IntMapGeoEngine;
@@ -386,7 +387,7 @@ export function shakeMap(HOST) {
     return opacity;
   }
 
-  function fire() { try { window.dispatchEvent(new CustomEvent('intmap:shakemap', { detail: state() })); } catch (_) { } }
+  function fire() { try { bus.emit('intmap-shakemap', state()); } catch (_) { } }
 
   /* ── what Atlas and the panel read ───────────────────────────────────────
      ⚠ (#R534) `painted` ASKS THE MAP, it does not report that a key exists. An

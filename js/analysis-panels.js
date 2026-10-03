@@ -35,6 +35,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import * as bus from './bus.js';
 
 
 export function timeSeries(HOST){
@@ -101,7 +102,7 @@ export function correlate(HOST){
        that downloads a panel nobody opened; before the module has run there is no overlay to relabel,
        which is exactly what the `if(ov)` it replaces answered. */
     function _onLang(){ try{ if(window.IntMapLazy&&window.IntMapLazy.ready('analysisCorrelate')){ const I=window.__imAnalysisCorrelate; if(I&&I.onLang) I.onLang(); } }catch(_){} }
-    window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-correlate'); if(b){ const sp=b.querySelector('span'); if(sp) sp.textContent=btnLbl(); } _onLang(); });
+    bus.on('intmap-lang',()=>{ const b=document.getElementById('btn-correlate'); if(b){ const sp=b.querySelector('span'); if(sp) sp.textContent=btnLbl(); } _onLang(); });
   })();
 }
 
@@ -159,7 +160,7 @@ export function edu(HOST){
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     if(GE().hasRenderer()) GE().events.on('click',onMapClick);
     if(document.readyState!=='loading') setTimeout(mount,500); else document.addEventListener('DOMContentLoaded',()=>setTimeout(mount,500));
-    window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-edu'); if(b) b.innerHTML=(icon('gamepad')+' <span>')+(IntMapLang.t(HOST.lang,"Playground","プレイグラウンド","Spielwiese","Песочница","Zona de pruebas"))+'</span>'; });
+    bus.on('intmap-lang',()=>{ const b=document.getElementById('btn-edu'); if(b) b.innerHTML=(icon('gamepad')+' <span>')+(IntMapLang.t(HOST.lang,"Playground","プレイグラウンド","Spielwiese","Песочница","Zona de pruebas"))+'</span>'; });
     return { open, close };
   })();
 }

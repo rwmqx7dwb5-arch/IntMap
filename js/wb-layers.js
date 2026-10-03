@@ -19,6 +19,7 @@ import { IntMapLang } from './lang-registry.js';
 import { IntMapTime } from './chronos.js';
 /* (mobile-performance) when a phone may refresh the World Bank figures */
 import { BootStage } from './boot-stage.js';
+import * as bus from './bus.js';
 
 export function wbLayers(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -480,7 +481,7 @@ export function wbLayers(HOST){
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
     }
     /* keep labels in sync with UI language */
-    window.addEventListener('intmap-lang',()=>{ ALL.forEach(L=>{ const r=document.getElementById('lyrrow-'+L.id); const sp=r&&r.querySelector('.bx-name'); if(sp) sp.textContent=bxLabel(L); }); });
+    bus.on('intmap-lang',()=>{ ALL.forEach(L=>{ const r=document.getElementById('lyrrow-'+L.id); const sp=r&&r.querySelector('.bx-name'); if(sp) sp.textContent=bxLabel(L); }); });
     if(document.readyState!=='loading') setTimeout(buildRows,700); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildRows,700));
 
     /* (#R31) Refresh Stats to the LATEST available figures ("Statsの数値はできる限り最新に") — pull the most

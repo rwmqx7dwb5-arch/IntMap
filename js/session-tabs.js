@@ -20,6 +20,7 @@
 import { whenBoxes } from './layer-rows.js';   /* (layer-manifest) «as soon as its row exists», from the manifest — not a poll */
 import { IntMapTime } from './chronos.js';
 import { MapState } from './map-state.js';   /* (map-state-store) the map's fields of the session are the store's projection */
+import * as bus from './bus.js';
 export function makeSessionTabs(HOST, CTX) {
   const GE=CTX.GE, isMobile=CTX.isMobile, setMode=CTX.setMode;
   /* ===== (#R122) SESSION STATE PERSISTENCE — a browser reload used to reset everything except the map coordinates
@@ -247,7 +248,7 @@ export function makeSessionTabs(HOST, CTX) {
     if(document.fonts&&document.fonts.ready&&document.fonts.ready.then){ document.fonts.ready.then(()=>requestAnimationFrame(_fitStable)); }   /* definitive: fonts loaded → measurement is final → fit ONCE */
     else { requestAnimationFrame(()=>requestAnimationFrame(_fitStable)); }   /* no fonts API → single deferred fit */
     window.addEventListener('resize',()=>{ clearTimeout(_fitTabFont._t); _fitTabFont._t=setTimeout(_fitTabFont,120); });
-    window.addEventListener('intmap-lang',()=>setTimeout(_fitTabFont,30)); }catch(_){}
+    bus.on('intmap-lang',()=>setTimeout(_fitTabFont,30)); }catch(_){}
   /* (#R94) TIME is a first-class kernel dimension — the master spacetime clock is registered as OS commands
      so both shells (UI + Atlas) operate it through the one kernel, and it appears in the OS catalog/log. */
   try{

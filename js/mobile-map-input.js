@@ -33,6 +33,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { crosshairWanted } from './mobile-sheet.js';
+import * as bus from './bus.js';
 
 export function mobileMapInput(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -118,7 +119,7 @@ export function mobileMapInput(HOST){
   const cross=document.createElement('div'); cross.id='m-crosshair'; cross.innerHTML=''; mc.appendChild(cross);
   const btn=document.createElement('button'); btn.id='m-addpoint'; btn.type='button'; mc.appendChild(btn);
   function setLabel(){ btn.textContent=(IntMapLang.t(HOST.lang,'＋ Add point','＋ 地点を追加','＋ Punkt hinzufügen','＋ Добавить точку','＋ Añadir punto')); }
-  setLabel(); window.addEventListener('intmap-lang',setLabel);
+  setLabel(); bus.on('intmap-lang',setLabel);
   /* (#R12) The crosshair sits at the GEOMETRIC center of the map (50%/50%). map.getCenter() returns the
      PADDED center (the bottom-sheet/sidebar shift the map padding), so it was offset from the crosshair
      — adding measure points in the wrong place. Unproject the visual center pixel instead so the
@@ -214,7 +215,7 @@ export function mobileMapInput(HOST){
   RT().onCamera('shell.crosshair',()=>{ update();
     const s=_crossSample; if(s){ try{ HOST.renderCoordReadout(s.lng,s.lat); }catch(_){} } });
   window.addEventListener('resize',update);
-  window.addEventListener('intmap-m-xhair',(e)=>{ _xhWant=!!(e&&e.detail&&e.detail.on); update(); });
+  bus.on('intmap-m-xhair',(e)=>{ _xhWant=!!(e&&e.detail&&e.detail.on); update(); });
   btn.onclick=()=>{ try{ const c=centerLL(); if(HOST.toolMode){ HOST.handleMapClick(c.lng,c.lat,c.px,true); } else { HOST.showContextMenu({x:c.px.x,y:c.px.y},{lng:c.lng,lat:c.lat}); } }catch(_){} };
   setTimeout(()=>{ update(); readout(); },400);
   window._mAddPoint=btn; window._mAddPointUpdate=update;

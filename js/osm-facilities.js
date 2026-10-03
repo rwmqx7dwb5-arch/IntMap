@@ -35,6 +35,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 export function facilities(HOST){
   const GE=()=>IntMapGeoEngine;
@@ -662,7 +663,7 @@ export function facilities(HOST){
       GE().events.onLayer('mouseenter',PT,()=>{ try{ GE().render.canvas().style.cursor='pointer'; }catch(_){} });
       GE().events.onLayer('mouseleave',PT,()=>{ try{ GE().render.canvas().style.cursor=''; }catch(_){} });
       try{ GE().events.on('moveend',()=>{ if(on) setTimeout(()=>refresh(),250); }); }catch(_){}
-      window.addEventListener('intmap-lang',()=>{ if(on) legend(); });
+      bus.on('intmap-lang',()=>{ if(on) legend(); });
     }
     function toggle(v){ on=!!v;
       if(!on){ setVis(false); closeCard(); legend(); return; }
@@ -703,7 +704,7 @@ export function facilities(HOST){
     try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
   }
   if(document.readyState!=='loading') setTimeout(buildRows,0); else document.addEventListener('DOMContentLoaded',buildRows);
-  window.addEventListener('intmap-lang',()=>setTimeout(buildRows,20));
+  bus.on('intmap-lang',()=>setTimeout(buildRows,20));
 
   window.IntMapFacilities=API;
   return API;

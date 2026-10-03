@@ -22,7 +22,7 @@ import { readWithin, untilObserved, isUnobserved } from './fetch-deadline.js';  
    below and reorganizeLayerPanel's taxonomy used to be written out here by hand; they are derived now. */
 import { defaultLayers, defaultOn, basicRows, basicLayers, hiddenRows, layerGroups, betaKeys, layerFor, packageOf, loadPackage } from './layer-manifest.js';   /* (layer-packages) …and which rows a package implements, and the package's literal import */
 import { IntMapTime } from './chronos.js';
-import { IntMapGeoEngine } from './geo-engine.js';
+import { IntMapGeoEngine } from './geo-engine.js'; import * as bus from './bus.js';
 import { IntMapLang } from './lang-registry.js'; import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js; on this line because this file's line count only goes down (scripts/layer-packages.mjs), and icons.js is reached from js/app-body.js for the reachability rule */
 /* ══ (fetch-deadline-layer) THE READS A ROW MAKES, FOR THE OTHER READERS OF THE SAME DATA ══════════════
    js/layer-previews.js drew the cable and radar thumbnails from reads of its own: a bare `fetch` with no
@@ -145,7 +145,7 @@ window.IntMapBaseDisplay=(function(){
                    : (window.IntMapDefaultOn||[]).indexOf(id)>=0;
   const get=()=>{ try{ const v=localStorage.getItem(KEY); return MODES.indexOf(v)>=0?v:'default'; }catch(_){ return 'default'; } };
   const put=(m)=>{ try{ localStorage.setItem(KEY,m); }catch(_){} };
-  const announce=()=>{ try{ window.dispatchEvent(new CustomEvent('intmap-basemode',{detail:{mode:get()}})); }catch(_){} };
+  const announce=()=>{ try{ bus.emit('intmap-basemode', {mode:get()}); }catch(_){} };
   /* Does the live state still support the stored claim? 'custom' claims nothing, so it always does. */
   function matches(m){ if(m==='custom') return true;
     return rows().every(id=>{ const cb=document.getElementById(id); if(!cb) return true;
@@ -951,7 +951,7 @@ export function dataLayers(HOST){
          the mode rather than leaving a row that can no longer be switched. */
       try{ _pkgEach('onLegendsRebuilt'); }catch(_){}   /* (layer-packages) the defence row's own re-assert (js/layer-pkg-alliances.js), once it has arrived */
     }
-    window.addEventListener('intmap-lang', _rebuildCoreLegends);
+    bus.on('intmap-lang', _rebuildCoreLegends);
     /* The Köppen legend's drag handle is (re)injected inside buildLegend() so it survives the
        innerHTML rebuild that previously wiped it — that rebuild was why it "couldn't be moved" (#22). */
 
@@ -1506,7 +1506,7 @@ export function dataLayers(HOST){
       });
       /* the reader is in the panel the layer is in — start the download, wait on nothing */
       w.addEventListener('pointerenter',()=>{ try{ window.IntMapLazy.hint('waves'); }catch(_){} });
-      window.addEventListener('intmap-lang',()=>{ try{ const s=w.querySelector('.wv-lbl'); if(s) s.textContent=nm(); }catch(_){} });
+      bus.on('intmap-lang',()=>{ try{ const s=w.querySelector('.wv-lbl'); if(s) s.textContent=nm(); }catch(_){} });
     })();
 
     /* (#R13) Re-classify the WHOLE layer panel into one coherent taxonomy. The static "Strategic
@@ -1652,7 +1652,7 @@ export function dataLayers(HOST){
     /* (#R106) re-localize the "Active layers" heading (+ empty/chip text) on a language change. _refreshActiveLayers
        early-returns when the layer SET is unchanged (a signature guard), so the heading stayed in the old language
        ("言語設定を変えてもすぐ変わらない" in the Layers window). Clear the sig so it truly re-renders. */
-    window.addEventListener('intmap-lang',()=>{ try{ const sec=document.getElementById('layer-active-section'); if(sec) sec.dataset.sig='relang'; /* a sentinel that never equals a real layer-name signature (incl. the empty "0 layers" case) → truly forces a re-render */ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){} });
+    bus.on('intmap-lang',()=>{ try{ const sec=document.getElementById('layer-active-section'); if(sec) sec.dataset.sig='relang'; /* a sentinel that never equals a real layer-name signature (incl. the empty "0 layers" case) → truly forces a re-render */ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){} });
     /* (#R28) SCROLL-CANCEL guard — only cancel a layer toggle when the gesture was a REAL scroll/drag,
        NOT a tap that jittered a little. The R27 version cancelled ANY click after a >10px pointer move,
        which silently DROPPED legitimate taps (a finger tap easily moves >10px on a phone) → that was the
@@ -4981,7 +4981,7 @@ export function dataLayers(HOST){
        Now: generic legends re-render via ensureGenericLegend (title + description from GENERIC_LEG); dedicated legends
        get their <h4> title refreshed from the layer's CURRENT localized checkbox-label name (which updateI18n/the
        modules already re-localize). */
-    window.addEventListener('intmap-lang',()=>{ setTimeout(()=>{ try{
+    bus.on('intmap-lang',()=>{ setTimeout(()=>{ try{
       const _cleanName=(cb)=>{ try{ const lab=cb&&(cb.closest('label')||cb.closest('.lyr-row')); if(!lab) return ''; const sp=lab.querySelector('span[data-i18n], span.ec-lbl, span[id$="-lbl"], .geo-label')||lab.querySelector('span:not(.lyr-sw):not(.lfc-sw):not(.lsr-thumb):not(.dl-drag)'); let s=(sp?sp.textContent:lab.textContent)||''; return s.replace(/\s+/g,' ').trim(); }catch(_){ return ''; } };
       document.querySelectorAll('.data-legend').forEach(el=>{ try{ if(!el||getComputedStyle(el).display==='none') return;
         const id=(el.id||'').replace(/^data-legend-/,''); if(!id) return;

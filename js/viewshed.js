@@ -37,6 +37,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import * as bus from './bus.js';
 
 export function los(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -740,7 +741,7 @@ export function los(HOST){
        one way to leave rather than two that can drift apart. */
     function close(){ if(!(panel&&panel.style.display!=='none')) return false;
       runSeq++; site=null; clearLink(); setSite(); wipe(); panel.style.display='none'; return true; }
-    window.addEventListener('intmap-lang',()=>{ if(panel&&panel.style.display!=='none'){ render(); if(last) report(last); } });
+    bus.on('intmap-lang',()=>{ if(panel&&panel.style.display!=='none'){ render(); if(last) report(last); } });
 
     return { open, close, isOpen:()=>!!(panel&&panel.style.display!=='none'), clear, run, analyze,
       /* (#R183) the point-to-point link — see the note above _gcPoint */

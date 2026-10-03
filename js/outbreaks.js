@@ -60,6 +60,7 @@
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 export const IntMapWhoDonName = (function () {
   const NORM = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/^the\s+/, '').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -686,7 +687,7 @@ export function outbreaks(HOST) {
       });
     }
     if (document.readyState !== 'loading') setTimeout(buildUI, 0); else document.addEventListener('DOMContentLoaded', buildUI);
-    window.addEventListener('intmap-lang', () => setTimeout(() => {
+    bus.on('intmap-lang', () => setTimeout(() => {
       const e = document.getElementById(CB_ID + '-lbl');
       if (e) e.textContent = L.arr(LA('Disease outbreaks (WHO)', '感染症アウトブレイク（WHO）', 'Krankheitsausbrüche (WHO)', 'Вспышки болезней (ВОЗ)', 'Brotes de enfermedades (OMS)'));
       if (on) open();

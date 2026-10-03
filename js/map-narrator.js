@@ -45,6 +45,7 @@
 import { everyTick, stopTick } from './runtime.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 /* ── the pure parts ───────────────────────────────────────────────────────────────────────────── */
 const tr = (lang, en, jp) => IntMapLang.t(lang, en, jp);
@@ -215,7 +216,7 @@ export function makeMapNarrator(HOST, CTX) {
   /* the bar is built by the layer panel when it first mounts; until then, look once a second (js/runtime.js — hidden tabs rest) */
   if (!watchLayers()) { const stop = everyTick('map-narrator:active-bar', 1000, () => { if (watchLayers()) { stopTick(stop); schedule(); } }); }
   try { if (IntMapTime && IntMapTime.on) IntMapTime.on(schedule); } catch (_) {}
-  window.addEventListener('intmap-lang', () => { nameRegion(); last = ''; schedule(); });
+  bus.on('intmap-lang', () => { nameRegion(); last = ''; schedule(); });
   schedule();
 
   /* ── walking the features ── */

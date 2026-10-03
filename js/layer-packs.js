@@ -36,6 +36,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTime } from './chronos.js';
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import * as bus from './bus.js';
 
 
 /* ══ ⚠ (railways-handover-idempotent) THE BASEMAP-SWAP SELF-HEAL — ONE RULE FOR EVERY PACK IN THIS FILE ══
@@ -185,7 +186,7 @@ export function earthSky(HOST){
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     function relabel(){ const h=document.querySelector('[data-l9head]'); if(h) h.textContent=IntMapLang.t(HOST.lang,'Earth, sky & airspace','地球・大気・空域','Erde, Himmel & Luftraum','Земля, небо и воздушное пространство','Tierra, cielo y espacio aéreo'); Object.keys(L9LBL).forEach(k=>{ const e=document.getElementById('l9-dl-'+k+'-lbl'); if(e) e.textContent=l9Lbl(k); }); }
     ['lang-jp','lang-en','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
-    window.addEventListener('intmap-lang',()=>{ setTimeout(relabel,20); setTimeout(_auroraSyncNote,25); });   /* (#R11) relabel on Settings language change; (#R122) re-localize the aurora forecast-time note */
+    bus.on('intmap-lang',()=>{ setTimeout(relabel,20); setTimeout(_auroraSyncNote,25); });   /* (#R11) relabel on Settings language change; (#R122) re-localize the aurora forecast-time note */
     window.IntMapLayers9={ toggle };
   })();
 }
@@ -514,7 +515,7 @@ export function landCover(HOST){
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     function relabel(){ const h=document.querySelector('[data-ecohead]'); if(h) h.textContent=IntMapLang.t(HOST.lang,'Land cover & earth science','土地被覆・地球科学','Bodenbedeckung & Geowissenschaft','Земной покров и науки о Земле','Cobertura del suelo y ciencias de la Tierra'); Object.keys(ECLBL).forEach(k=>{ const e=document.getElementById('eco-dl-'+k+'-lbl'); if(e) e.textContent=ecoLbl(k); }); }
     ['lang-jp','lang-en','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
-    window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));   /* (#R11) header lang toggle is hidden → relabel on Settings change */
+    bus.on('intmap-lang',()=>setTimeout(relabel,20));   /* (#R11) header lang toggle is hidden → relabel on Settings change */
     window.IntMapEco={ toggle };
   })();
 }
@@ -811,7 +812,7 @@ export function betaPack2(HOST){
       };
       draw();
       /* the key follows the language the way every other one does */
-      if(!box._langWired){ box._langWired=true; window.addEventListener('intmap-lang',()=>setTimeout(draw,20)); }
+      if(!box._langWired){ box._langWired=true; bus.on('intmap-lang',()=>setTimeout(draw,20)); }
     }
     /* ---------- World-Bank-backed country choropleths (live, keyless, CORS*) ---------- */
     /* cpi: WGI "Control of Corruption" GOVERNANCE SCORE (0–100, higher = cleaner) — the WGI database
@@ -1009,7 +1010,7 @@ export function betaPack2(HOST){
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     function relabel(){ Object.keys(B2LBL).forEach(k=>{ const e=document.getElementById('beta-dl-'+k+'-lbl'); if(e) e.textContent=b2Lbl(k); }); }
-    window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));
+    bus.on('intmap-lang',()=>setTimeout(relabel,20));
     /* self-heal across basemap swaps — only for a row whose layers the style lost (healWhenLost, top of file) */
     healWhenLost(GE,90,()=>Object.keys(ROW_LAYERS).concat(Object.keys(WB)).map(k=>({key:k,on:!!state[k],ids:ROW_LAYERS[k]||WB[k].ids})),(gone)=>{
       /* (#R254) the data-center layer rebuilds itself — its module owns the source, the OSM half and the card */
@@ -1019,7 +1020,7 @@ export function betaPack2(HOST){
       if(gone.includes('rail')){ try{ window.IntMapRailways&&window.IntMapRailways.toggle(true); }catch(_){} }
       Object.keys(WB).forEach(k=>{ if(gone.includes(k)) wbToggle(k,true); });   /* (#R22) new WB choropleths self-heal too */
     });
-    window.addEventListener('intmap-mem-pressure',()=>{ if(!state.rail){ cache.rail=null; try{ window.IntMapRailways&&window.IntMapRailways.drop(); }catch(_){} } });
+    bus.on('intmap-mem-pressure',()=>{ if(!state.rail){ cache.rail=null; try{ window.IntMapRailways&&window.IntMapRailways.drop(); }catch(_){} } });
     /* ⚠ (#R783) THE ACQUISITION DOORS ARE OPENED HERE, and they cost no request: a registration is a
        statement, and the first byte moves when somebody acquires. Doing it at pack construction is
        what makes a bundle readable while its row has never been ticked — and retrying on
@@ -1457,7 +1458,7 @@ export function religionLang(HOST){
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
-    window.addEventListener('intmap-lang',()=>setTimeout(()=>{ Object.keys(CLBL).forEach(k=>{ const e=document.getElementById('beta-dl-cat-'+k+'-lbl'); if(e) e.textContent=LPK.arr(CLBL[k]); if(state[k]) legend(k); }); },20));
+    bus.on('intmap-lang',()=>setTimeout(()=>{ Object.keys(CLBL).forEach(k=>{ const e=document.getElementById('beta-dl-cat-'+k+'-lbl'); if(e) e.textContent=LPK.arr(CLBL[k]); if(state[k]) legend(k); }); },20));
     healWhenLost(GE,90,()=>Object.keys(CFG).map(k=>({key:k,on:!!state[k],ids:CFG[k].ids})),(lost)=>{ lost.forEach(k=>{ if(GE().layers.hasSource(CFG[k].src)) setVis(k,true); else build(k); }); });
     /* the facts the layer publishes — Atlas and the tests read these instead of the paint expression */
     window.IntMapCulture={ toggle, isOn:(k)=>!!state[k], data:(k)=>DATA[k],
@@ -1613,7 +1614,7 @@ export function timeZones(HOST){
       w.appendChild(lab); dd.appendChild(w);
       cb.addEventListener('change',e=>{ w.classList.toggle('on',e.target.checked); toggle(e.target.checked); });
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
-    window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-tz-lbl'); if(s) s.replaceChildren(iconNode('clock'),' '+lbl()); });
+    bus.on('intmap-lang',()=>{ const s=document.getElementById('dl-tz-lbl'); if(s) s.replaceChildren(iconNode('clock'),' '+lbl()); });
     /* (#R204) the highlight as a fact the app publishes — Atlas and the E2E tests both ask it here
        rather than reading a filter expression back off the renderer. */
     /* ⚠ (#R290) EXTENDS — it used to REPLACE, and that is the whole of the defect above. */
@@ -1896,7 +1897,7 @@ export function gibsScience(HOST){
         w.appendChild(lab); dd.appendChild(w);
         cb.addEventListener('change',e=>{ w.classList.toggle('on',e.target.checked); toggle(L,e.target.checked); }); });
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
-    window.addEventListener('intmap-lang',()=>{ LIST.forEach(L=>{ const s=document.getElementById('gx-'+L.id+'-lbl'); if(s) s.textContent=gxLbl(L); }); });
+    bus.on('intmap-lang',()=>{ LIST.forEach(L=>{ const s=document.getElementById('gx-'+L.id+'-lbl'); if(s) s.textContent=gxLbl(L); }); });
     if(document.readyState!=='loading') setTimeout(buildUI,800); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,800));
   })();
 }

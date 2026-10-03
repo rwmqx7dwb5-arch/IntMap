@@ -11,6 +11,7 @@
  *  extraction was done by script and reversed byte-for-byte against the original text.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 export function authUi(HOST){
   /* ---------- DATA: geo_pins -> geoRaw -> rebuildGeoIndex ---------- */
@@ -183,7 +184,7 @@ export function authUi(HOST){
       const _wsL=()=>(IntMapLang.t(HOST.lang,'Workspace','ワークスペース','Arbeitsbereich','Рабочая область','Espacio'));
       wsB.title=_wsL(); wsB.setAttribute('aria-label',_wsL());
       wsB.innerHTML='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg>';
-      window.addEventListener('intmap-lang',()=>{ wsB.title=_wsL(); wsB.setAttribute('aria-label',_wsL()); });
+      bus.on('intmap-lang',()=>{ wsB.title=_wsL(); wsB.setAttribute('aria-label',_wsL()); });
       wsB.onclick=()=>{ try{ if(window.IntMapWorkspace){ const act=window.IntMapWorkspace.active&&window.IntMapWorkspace.active(); if(act) window.IntMapWorkspace.close(); else window.IntMapWorkspace.open(); } }catch(_){} };
       if(settingsBtn&&settingsBtn.parentNode) settingsBtn.parentNode.insertBefore(wsB,acct); else document.body.appendChild(wsB); }catch(_){}
     /* (#R21) Header Support button RETIRED per request — support stays reachable from Settings
@@ -192,7 +193,7 @@ export function authUi(HOST){
     const fb=document.createElement('button');
     fb.id='btn-feedback-hdr'; fb.className='btn-settings'; fb.style.marginRight='8px';
     fb.textContent=(IntMapLang.t(HOST.lang,'Feedback','フィードバック','Feedback','Обратная связь','Comentarios'));
-    window.addEventListener('intmap-lang',()=>{ fb.textContent=(IntMapLang.t(HOST.lang,'Feedback','フィードバック','Feedback','Обратная связь','Comentarios')); });
+    bus.on('intmap-lang',()=>{ fb.textContent=(IntMapLang.t(HOST.lang,'Feedback','フィードバック','Feedback','Обратная связь','Comentarios')); });
     fb.onclick=()=>{ try{ window._openFeedback&&window._openFeedback(); }catch(_){} };
     if(settingsBtn&&settingsBtn.parentNode) settingsBtn.parentNode.insertBefore(fb,settingsBtn);
     else document.body.appendChild(fb);
