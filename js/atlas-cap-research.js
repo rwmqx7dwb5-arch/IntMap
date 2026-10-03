@@ -22,7 +22,67 @@ import { settleWithin, lateNote } from './atlas-deadlines.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { worldObjects } from './atlas-world-objects.js';   /* (world-objects) the one shape a result names the thing it is about by */
+const W = worldObjects;   /* the one session index (js/atlas-world-objects.js) */
 import { placeProfile, profileHtml } from './place-dossier.js';   /* (place-dossier) research.placeProfile's gatherer and renderer */
+
+/* ══ (world-objects) RESOLVING «THAT EARTHQUAKE / THIS VOLCANO / THAT COMPANY» TO ONE REAL-WORLD OBJECT ═══════════════
+   The index (js/atlas-world-objects.js) holds what this session already surfaced; a miss falls through to the readers
+   the product already has — the loaded news, the volcano catalogue, the company atlas, the USGS feed — each of which
+   writes its record down through the SAME adapters. Nothing here guesses: a name nothing holds is answered as not found. */
+const USGS_WEEK = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson';
+async function resolveWorldObject(a, K) {
+  const HOST = K.HOST, q = String(a.ref || a.name || a.place || '').trim(), type = String(a.objectType || '').trim() || undefined;
+  if (!q) return { obj: null, code: 'NEEDS_INPUT' };
+  const hit0 = W.find(q, { type });
+  if (hit0) return { obj: hit0, via: 'session' };
+  const want = (t) => !type || type === t;
+  if (want('news_event') || want('article')) {
+    const news = W.register(W.fromLoadedNews((typeof HOST.globalData !== 'undefined' && HOST.globalData) || []).filter((o) => !type || o.type === type));
+    const hit = W.find(q, { type }); if (hit && news.indexOf(hit) >= 0) return { obj: hit, via: 'news' };
+  }
+  if (want('volcano')) {
+    try {
+      const ok = await window.IntMapLazy.need('volcanoIntel'), V = ok && window.IntMapVolcano; const h = V && V.byName(q)[0];
+      if (h) { const o = W.fromVolcano(await V.record(h.v)); if (o) return { obj: W.register(o)[0], via: 'volcano' }; }
+    } catch (_) { /* the catalogue is optional here */ }
+  }
+  if (want('company')) {
+    try {
+      const ok = await window.IntMapLazy.need('companyPanel'), D = ok && window.IntMapCompanyData;
+      if (D) {
+        await D.index(); const row = D.get(q) || D.resolve(q);
+        if (row && row.id) {
+          let hq = null; try { const prof = await D.profile(row.id); hq = prof && prof._hq; } catch (_) { /* no profile → no position, and the object says so */ }
+          const o = W.fromCompany(row, hq); if (o) return { obj: W.register(o)[0], via: 'company' };
+        }
+      }
+    } catch (_) { /* the company atlas is optional here */ }
+  }
+  if (want('earthquake')) {
+    try {
+      const j = await K._fetchJSON(USGS_WEEK);
+      const qs = W.register(((j && j.features) || []).map((f) => W.fromUsgs(f)).filter(Boolean));
+      const hit = W.find(q, { type: 'earthquake' }); if (hit && qs.indexOf(hit) >= 0) return { obj: hit, via: 'usgs' };
+    } catch (_) { /* the feed is optional here */ }
+  }
+  return { obj: null, code: 'NOT_FOUND' };
+}
+
+/** the one-line facts an object states, in the reader's language — values only, from `facts` and `time` */
+function worldObjectLine(o, L) {
+  const f = o.facts || {}, bits = [], iso = (ms) => new Date(ms).toISOString().slice(0, 16).replace('T', ' ') + 'Z';
+  if (f.magnitude != null) bits.push('M' + (+f.magnitude).toFixed(1));
+  if (f.depthKm != null) bits.push(L('depth ', '深さ') + Math.round(f.depthKm) + ' km');
+  if (f.alertLevel) bits.push(String(f.alertLevel));
+  if (f.maxVei != null) bits.push('VEI ' + f.maxVei);
+  if (f.lastEruptionYear != null) bits.push(L('last eruption ', '最終噴火 ') + f.lastEruptionYear);
+  if (f.population != null) bits.push(L('pop ', '人口') + (+f.population).toLocaleString());
+  if (f.articles != null) bits.push(f.articles + L(' articles', ' 記事'));
+  if (f.outlets != null) bits.push(f.outlets + L(' outlets', ' 媒体'));
+  if (o.time) bits.push(iso(o.time.atMs) + (o.time.endMs !== o.time.atMs ? (' → ' + iso(o.time.endMs)) : ''));
+  return bits.join(' · ');
+}
 
 export default [
   {
@@ -102,15 +162,75 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { place: str(), lng: lng(), lat: lat() }, anyOf: [{ required: ['place'] }, { required: ['lat', 'lng'] }] }),
     async run(a, dctx, K) { const geocode = K.geocode, R = K.R, warn = K.warn, esc = K.esc, L = K.L, HOST = K.HOST;
-      let pt=null;
+      let pt=null, ptProv;   /* (world-objects) how the point was known — only a gazetteer hit is declared; a bare number's origin is not ours to name */
       if(a.lng!=null&&a.lat!=null&&isFinite(+a.lng)&&isFinite(+a.lat)) pt={lng:+a.lng,lat:+a.lat,name:String(a.place||'')};
-      else if(a.place){ const ll=await geocode(a.place); if(!ll) return R(false, warn(L('IntMap could not place «'+esc(String(a.place))+'». Give coordinates, or name a place IntMap holds.','「'+esc(String(a.place))+'」を地図上に特定できませんでした。座標を指定するか、IntMap が持つ地名で言い直してください。'))); pt={lng:+ll.lng,lat:+ll.lat,name:ll.name||String(a.place)}; }
+      else if(a.place){ const ll=await geocode(a.place); if(!ll) return R(false, warn(L('IntMap could not place «'+esc(String(a.place))+'». Give coordinates, or name a place IntMap holds.','「'+esc(String(a.place))+'」を地図上に特定できませんでした。座標を指定するか、IntMap が持つ地名で言い直してください。'))); pt={lng:+ll.lng,lat:+ll.lat,name:ll.name||String(a.place)}; ptProv='geocoded_point'; }
       /* ⚠ (#R302) the target is required (the schema demands a place or a lat/lng pair); a call with neither is answered, not guessed */
       if(!pt) return R(false, warn(L('Which point? Name a place or give its coordinates.','どの地点ですか？地名か座標を指定してください。')));
       const prof=await placeProfile(pt, HOST, { ensureCountries: K.ensureData, metrics: Object.assign({}, K.METRICS, K.XMET), label: K.lx, format: K.fmtVal });
       const ttl=(prof.place&&prof.place.status==='ok'&&prof.place.name)||pt.name||prof.at.text;
-      return R(true, '<div><b>'+icon('pin')+' '+esc(ttl)+'</b>'+profileHtml(prof, HOST)+'</div>', { exec: { placeProfile: prof } });
+      const wp=W.register(W.fromPlaceProfile(Object.assign({asked:pt.name},prof), ptProv))[0];   /* (world-objects) the profile's point, named by a ref the follow-ups can open */
+      const out=R(true, '<div><b>'+icon('pin')+' '+esc(ttl)+'</b>'+profileHtml(prof, HOST)+'</div>', { exec: { placeProfile: prof } });
+      if(wp) out.exec.worldObjects={ subject: wp.ref, objects: [W.brief(wp)] };
+      return out;
     },
+  },
+  {
+    /* (world-objects) THE REAL-WORLD OBJECT BEHIND A NAME — `research.impact`, `research.events`, `data.volcano`, `news.company`
+       and `research.placeProfile` each name the thing they are about by the same `ref` (type:id), and the next two
+       capabilities follow it. They draw nothing: the answer is the object and what is tied to it. */
+    row: ['research.object',            'worldObject',    'realWorldObject,whatIsThis',                                     'research','none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    doc: [
+      { in: 'country', at: 62, text: '{"type":"worldObject","ref"?:str,"name"?:str,"objectType"?:TYPE} = 実世界オブジェクト — THE REAL-WORLD OBJECT behind a name or a ref — one record with its type, id (ref = type:id), position and how that position is known (provenance), time, extent, the article ids and evidence ids that vouch for it, its sources and its typed ties to other objects. Use it for 「この地震は何？」「その火山の記録を」「2番の出来事の詳細」, "what is that earthquake", when the question is about ONE thing a previous answer surfaced (impact, events, volcano, company news and place profile name their objects by ref in `observed.worldObjects`) — pass that ref. TYPE is one of earthquake, news_event, article, facility, company, volcano, city, place_profile, place. A name IntMap holds is resolved from the loaded news, the volcano catalogue, the company atlas or the USGS week; a name nothing holds is answered as not found, never guessed. Use research.related for «what else belongs with it».\n' },
+    ],
+    schema: () => ({ type: 'object', properties: { ref: str(), name: str(), place: str(), objectType: str() }, anyOf: [{ required: ['ref'] }, { required: ['name'] }, { required: ['place'] }] }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc;
+      const r = await resolveWorldObject(a, K);
+      if (!r.obj) {
+        const q = String(a.ref || a.name || a.place || '');
+        const msg = r.code === 'NEEDS_INPUT'
+          ? L('Which object? Give its ref (from an earlier answer) or its name.', 'どの対象ですか？先の回答に出た ref か名前を指定してください。')
+          : L('IntMap holds no object called «' + esc(q) + '» — name one a previous answer surfaced, or a volcano, company, loaded news event or recent earthquake.', '「' + esc(q) + '」という対象を IntMap は持っていません。先の回答に出たもの、火山・企業・読み込み済みの出来事・直近の地震の名前で指定してください。');
+        return R(false, warn(msg), { meta: { code: r.code, category: 'input', retryable: false, semanticTarget: q, produced: [], userGoalSatisfied: false } });
+      }
+      const o = r.obj, placed = isFinite(+o.lng) && o.lng != null && o.lat != null;
+      let h = '<div><b>' + icon('pin') + ' ' + esc(o.name || o.ref) + '</b> <span style="font-size:10.5px;color:var(--text-muted);">' + esc(o.type + (o.kind && o.kind !== o.type ? ' · ' + o.kind : '')) + ' · ' + esc(o.ref) + '</span></div>';
+      const line = worldObjectLine(o, L); if (line) h += '<div style="font-size:12px;margin-top:2px;">' + esc(line) + '</div>';
+      h += '<div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">' + (placed ? esc(o.lat.toFixed(3) + ', ' + o.lng.toFixed(3) + ' — ' + o.provenance) : esc(L('no position known', '位置は不明'))) + (o.bounds ? ' · ' + esc(L('has an extent', '範囲あり')) : '') + '</div>';
+      if (o.articleIds.length || o.evidenceIds.length || o.links.length) h += '<div style="font-size:11px;color:var(--text-muted);">' + esc(o.articleIds.length + L(' articles', ' 記事') + ' · ' + o.evidenceIds.length + L(' evidence records', ' 証拠記録') + ' · ' + o.links.length + L(' ties', ' 結び付き')) + '</div>';
+      if (o.sources.length) h += '<div class="acp-src" style="font-size:10px;color:var(--text-muted);margin-top:4px;">' + esc(L('Sources: ', '出典: ') + o.sources.map((s) => s.name + (s.licence ? ' (' + s.licence + ')' : '')).filter(Boolean).join(' · ')) + '</div>';
+      return R(true, h, { exec: { worldObjects: { subject: o.ref, objects: [W.brief(o)], via: r.via } }, meta: { code: 'OK', category: 'ok', retryable: false, semanticTarget: o.ref, produced: ['explanation'], userGoalSatisfied: true } }); },
+  },
+  {
+    row: ['research.related',           'worldRelated',   'related,relatedObjects,whatIsAround',                                 'research','none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
+    doc: [
+      { in: 'country', at: 63, text: '{"type":"worldRelated","ref"?:str,"name"?:str,"objectType"?:str,"km"?:num,"hours"?:num,"types"?:[TYPE,…]} = 関連オブジェクト・周辺の対象 — WHAT BELONGS WITH ONE REAL-WORLD OBJECT: the earthquakes, news events, articles, facilities, cities, volcanoes and companies tied to it, each with WHY: `linked` (an edge, or an article / evidence id they share), `near` (within km — default 300 — or inside its extent) and `concurrent` (within hours — default 72). Two things are related when linked, or near and concurrent (a facility has no time, so it is judged by place alone); time alone is never a relation. Use it for 「この地震について、近くの施設と関連記事も」「この出来事の周辺」, "what is around that quake", "news about this volcano"; pass the `ref` an earlier answer returned (observed.worldObjects) or the name. It reads the objects this session surfaced plus the loaded news and the USGS week; it reports what it found and how many, and says so when nothing is tied to the object.\n' },
+    ],
+    schema: () => ({ type: 'object', properties: { ref: str(), name: str(), place: str(), objectType: str(), km: num(0), hours: num(0), types: list(str()) }, anyOf: [{ required: ['ref'] }, { required: ['name'] }, { required: ['place'] }] }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc, HOST = K.HOST;
+      const r = await resolveWorldObject(a, K);
+      if (!r.obj) {
+        const q = String(a.ref || a.name || a.place || '');
+        const msg = r.code === 'NEEDS_INPUT' ? L('Related to what? Give a ref from an earlier answer or a name.', '何の関連ですか？先の回答に出た ref か名前を指定してください。') : L('IntMap holds no object called «' + esc(q) + '».', '「' + esc(q) + '」という対象を IntMap は持っていません。');
+        return R(false, warn(msg), { meta: { code: r.code, category: 'input', retryable: false, semanticTarget: q, produced: [], userGoalSatisfied: false } });
+      }
+      const types = Array.isArray(a.types) ? a.types.map(String) : [];
+      const extra = W.fromLoadedNews((typeof HOST.globalData !== 'undefined' && HOST.globalData) || []);
+      let quakeFeedFailed = false;
+      if (!types.length || types.indexOf('earthquake') >= 0) {
+        try { const j = await K._fetchJSON(USGS_WEEK); ((j && j.features) || []).forEach((f) => { const o = W.fromUsgs(f); if (o) extra.push(o); }); } catch (_) { quakeFeedFailed = true; }
+      }
+      const res = W.related(r.obj, { km: a.km, hours: a.hours, types, extra });
+      W.register(res.items.map((x) => x.object));   /* what was found can be followed next */
+      const rows = W.relatedHtml(res, { L, esc }), byType = rows.byType;
+      const km = (a.km != null && isFinite(+a.km)) ? +a.km : W.RELATED_DEFAULTS.km, hrs = (a.hours != null && isFinite(+a.hours)) ? +a.hours : W.RELATED_DEFAULTS.hours;
+      let h = '<div style="font-weight:600;margin:2px 0 4px;">' + icon('target') + ' ' + esc(r.obj.name || r.obj.ref) + ' — ' + esc(L('related objects', '関連する対象') + ' (' + res.total + ')') + '</div>';
+      h += '<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">' + esc(L('within ' + km + ' km and ' + hrs + ' h, or linked directly', km + ' km・' + hrs + ' 時間以内、または直接の結び付き')) + '</div>' + rows.html;
+      if (!res.total) h += '<div style="font-size:12px;">' + esc(L('Nothing IntMap holds is tied to this object within that reach.', 'その範囲で、このオブジェクトに結び付く対象は IntMap にありません。')) + '</div>';
+      if (quakeFeedFailed) h += warn(L('The USGS feed could not be read — earthquakes are not part of this answer.', 'USGS のフィードを読めなかったため、地震はこの答えに含まれていません。'));
+      const shown = res.items.slice(0, 40).map((x) => Object.assign(W.brief(x.object), { why: x.why, distanceKm: x.distanceKm == null ? undefined : x.distanceKm, gapHours: x.gapHours == null ? undefined : x.gapHours }));
+      const totals = {}; Object.keys(byType).forEach((t) => { totals[t] = byType[t].count; });
+      return R(true, h, { exec: { worldObjects: { subject: r.obj.ref, objects: [W.brief(r.obj)], related: shown, totals, total: res.total, partial: quakeFeedFailed || undefined } }, meta: { code: res.total ? 'OK' : 'NO_RESULTS', category: res.total ? 'ok' : 'evidence', retryable: false, semanticTarget: r.obj.ref, produced: ['explanation'], userGoalSatisfied: true } }); },
   },
   {
     row: ['research.mapReport',         'mapReport',      'newsMap,reportMap',                                           'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   '',         ''],
@@ -503,7 +623,7 @@ export default [
           spreads: real critical facilities + population context + nearby quakes/news around a point, on the map. */
           await ensureData();
           const kmR=Math.max(20,Math.min(1500,(+a.km||300)));
-          let ctr=null,label='',evLine='';
+          let ctr=null,label='',evLine='',quakeF=null;
           const wantQuake=(String(a.event||'').toLowerCase()==='quake')||/地震|earthquake|quake/i.test(String(a.place||a.event||''));
           if(a.lng!=null&&a.lat!=null&&isFinite(+a.lng)){ ctr={lng:+a.lng,lat:+a.lat}; label=String(a.place||'').trim()||((+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2)); }
           else if(wantQuake){
@@ -515,7 +635,7 @@ export default [
             const c=f.geometry.coordinates; ctr={lng:+c[0],lat:+c[1]}; label=(f.properties&&f.properties.place)||'earthquake';
             const hAgo=f.properties&&f.properties.time?Math.round((Date.now()-f.properties.time)/3600000):null;
             evLine='M'+(f.properties&&f.properties.mag!=null?(+f.properties.mag).toFixed(1):'?')+(c[2]!=null?(' · '+L('depth ','深さ','Tiefe ','глубина ','prof. ')+Math.round(c[2])+' km'):'')+(hAgo!=null?(' · '+hAgo+L('h ago','時間前','h zuvor','ч назад','h atrás')):'')+' · USGS';
-            _setLast({lng:ctr.lng,lat:ctr.lat,name:label});
+            _setLast({lng:ctr.lng,lat:ctr.lat,name:label}); quakeF=f;
           } else {
             const p=String(a.place||'').trim(); let g=null;
             if(p&&!DEIXIS_RE.test(p)){ try{ g=await placeExtent(p); }catch(_){} if(!g){ try{ g=await geocode(p); }catch(_){} } }
@@ -573,7 +693,18 @@ export default [
           if(news) html+='<div style="font-size:11px;color:var(--text-muted);margin-top:3px;">'+icon('news')+' '+L('Loaded news near here','周辺の読み込み済みニュース','Geladene News','Новости рядом','Noticias cercanas')+':<br>'+esc(String(news).split('\n').slice(0,3).join(' · ').slice(0,220))+'</div>';
           html+='<div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">'+L('Sources: OpenStreetMap (facilities, city population tags — coverage varies by region), USGS (earthquakes), IntMap country statistics. Pins are clickable; the circle marks the analysis radius.','出典: OpenStreetMap（施設・都市人口タグ — 地域によって登録密度が異なります）、USGS（地震）、IntMap国別統計。ピンはクリック可能、円は分析半径です。','Quellen: OpenStreetMap, USGS, IntMap-Statistiken.','Источники: OpenStreetMap, USGS, статистика IntMap.','Fuentes: OpenStreetMap, USGS, estadísticas de IntMap.')+'</div>';
           if(!okP&&K._pois.length) html+=warn(L('Could not draw the markers (map still loading)','マーカーを描画できませんでした（地図読込中）','Marker nicht gezeichnet','Маркеры не отрисованы','Marcadores no dibujados'));
-          return R(true, html, _PINNED(null,okP)); }   /* (#R802) the facilities and cities this analysis pinned, declared by the painter — `okP` is the same witness the sentence above prints */
+          /* (world-objects) WHAT THIS ANALYSIS IS ABOUT, AND WHAT IT FOUND, AS REAL-WORLD OBJECTS. The centre is the quake the
+             feed named (its own id, time and depth) or the place that was asked for; each facility, city and quake in the radius
+             is tied to it by `within_impact_of`, so «that earthquake» can be followed to what stands near it (research.related). */
+          const subj=quakeF?W.fromUsgs(quakeF):W.fromPlace({lng:ctr.lng,lat:ctr.lat,name:label});
+          const toCentre=subj?[{rel:'within_impact_of',ref:subj.ref}]:[];
+          const wFac=fac.map(p2=>W.fromFacility(p2,{links:toCentre})).filter(Boolean);
+          const wCity=(cities||[]).map(c2=>W.fromCity(c2,{links:toCentre})).filter(Boolean);
+          const wQk=qkN.filter(f2=>!quakeF||f2.id!==quakeF.id).map(f2=>W.fromUsgs(f2,{links:toCentre})).filter(Boolean);
+          W.register([subj].concat(wFac,wCity,wQk).filter(Boolean));
+          const wShown=[subj].concat(wFac.slice(0,50),wCity.slice(0,8),wQk.slice().sort((x,y)=>((y.facts.magnitude||0)-(x.facts.magnitude||0))).slice(0,10)).filter(Boolean);
+          const exec={ worldObjects:{ subject:subj&&subj.ref, objects:wShown.map(W.brief), totals:{ facility:wFac.length, city:wCity.length, earthquake:wQk.length } } };
+          return R(true, html, Object.assign({}, _PINNED(null,okP), { exec })); }   /* (#R802) the facilities and cities this analysis pinned, declared by the painter — `okP` is the same witness the sentence above prints */
     },
   },
   {
@@ -612,7 +743,7 @@ export default [
             ? items.map(it=>{ const e=it._event; const mem=(e.members||[]).slice().sort((x,y)=>Date.parse(y.publishedAt||0)-Date.parse(x.publishedAt||0));
                 const g=mem.length?mem.map(m=>({it:{title:m.title,link:m.url,pubDate:m.publishedAt}})):[{it:{title:e.titleShown||e.title,link:it.link,pubDate:e.lastAt}}];
                 return { g, outlets:e.outlets||[], cx:it.analysis.loc[0], cy:it.analysis.loc[1], pname:e.place||'',
-                         oldest:_agoH(e.firstAt), newest:_agoH(e.lastAt), _srcCount:e.sourceCount }; })
+                         oldest:_agoH(e.firstAt), newest:_agoH(e.lastAt), _srcCount:e.sourceCount, _it:it }; })
                 .sort((a2,b2)=>(b2.g.length-a2.g.length)||((b2._srcCount||0)-(a2._srcCount||0)))
             : groupNewsEvents(items,{agoH:_agoH,fallbackH:hrs});   /* (#R340) ↳ js/news-cluster.js — the rules, the constants and the measurements that set them */
           const N=Math.max(3,Math.min(12,(+a.n||8)));
@@ -652,7 +783,11 @@ export default [
           /* (#R340) …and the structured half of the same honesty: research.events declares produces='map,explanation',
              so the result says which of the two actually happened rather than letting the executor assume both. */
           const _evMapped=!!(okE&&K._pois.length);
-          return R(true, html, _PINNED({meta:{code:'OK',category:'ok',retryable:false,produced:(_evMapped?['map','explanation']:['explanation']),userGoalSatisfied:true,partial:!_evMapped}},_evMapped)); }   /* (#R802) …and WHICH events are pinned, so re-grouping the same top events reads as `already_there` rather than `not_rendered` */
+          /* (world-objects) each event as a real-world object — the server's Event when that is what was read, else the group the
+             grouper built — so «event 2» is a ref the follow-up (research.related) can open, not a position in a list that is gone. */
+          const wEv=W.register(top.map(e=>e._it?W.fromNewsEvent(e._it):W.fromNewsGroup(e)).filter(Boolean));
+          const exec={ worldObjects:{ objects:wEv.map(W.brief), totals:{ news_event:evs.length } } };
+          return R(true, html, Object.assign({}, _PINNED({meta:{code:'OK',category:'ok',retryable:false,produced:(_evMapped?['map','explanation']:['explanation']),userGoalSatisfied:true,partial:!_evMapped}},_evMapped), { exec })); }   /* (#R802) …and WHICH events are pinned, so re-grouping the same top events reads as `already_there` rather than `not_rendered` */
     },
   },
 ];

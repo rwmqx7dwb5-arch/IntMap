@@ -16,6 +16,8 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
+import { worldObjects } from './atlas-world-objects.js';   /* (world-objects) the company and its news events, as real-world objects */
+const WO = worldObjects;   /* the one session index (js/atlas-world-objects.js) */
 import { str, int, bool, one, noArgs } from './atlas-caps.js';
 
 /* (news-intelligence) the windows the news pulse counts over — the facade's own (js/news-intel.js WINDOWS); a
@@ -212,7 +214,12 @@ export default [
       let html = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(row.n || row.id) + ' — ' + esc(L('{n} news events name it', 'この企業が出てくる出来事 {n} 件').replace('{n}', String(n))) + '</div>';
       if (n) html += '<ul style="margin:4px 0 6px 18px;padding:0;font-size:12px;line-height:1.5;">' + r.items.slice(0, 8).map((x) => '<li>' + esc(x.row.representative_title || '') + ' <span style="color:var(--text-muted)">(' + esc([x.row.rep_place_name_en, (x.row.first_published_at || '').slice(0, 10)].filter(Boolean).join(' · ')) + ')</span></li>').join('') + '</ul>';
       else html += '<div style="font-size:12px;">' + esc(L('No event kept by IntMap (the last 30 days) names this company.', 'IntMap が保持している出来事（直近30日）に、この企業が出てくるものはありません。')) + '</div>';
-      return R(true, html, { meta: { code: n ? 'OK' : 'NO_RESULTS', category: n ? 'ok' : 'evidence', retryable: false, semanticTarget: row.id, produced: n ? ['panel', 'map', 'explanation'] : ['panel', 'explanation'], userGoalSatisfied: true,
+      /* (world-objects) the company (positioned at its headquarters when the profile is loaded) and each news event that names it, each event `mentions` the company (the edge is written on the event, which is the side that carries the sentence it rests on) */
+      let hq = null; try { const prof = await D.profile(row.id); hq = prof && prof._hq; } catch (_) { /* no profile → the company object has no position, and says so */ }
+      const wCo = WO.fromCompany(row, hq);
+      const wEv = r.items.slice(0, 20).map((x) => WO.fromEventRow(x.row, { links: wCo ? [{ rel: 'mentions', ref: wCo.ref }] : [], facts: { matchedBy: x.matchedBy } })).filter(Boolean);
+      WO.register([wCo].concat(wEv).filter(Boolean));
+      return R(true, html, { exec: wCo ? { worldObjects: { subject: wCo.ref, objects: [WO.brief(wCo)], totals: { news_event: n } } } : undefined, meta: { code: n ? 'OK' : 'NO_RESULTS', category: n ? 'ok' : 'evidence', retryable: false, semanticTarget: row.id, produced: n ? ['panel', 'map', 'explanation'] : ['panel', 'explanation'], userGoalSatisfied: true,
         events: r.items.slice(0, 20).map((x) => ({ title: x.row.representative_title, place: x.row.rep_place_name_en, firstReported: x.row.first_published_at, matchedBy: x.matchedBy, evidence: x.evidence, publicId: x.row.public_id })) } }); },
   },
 ];
