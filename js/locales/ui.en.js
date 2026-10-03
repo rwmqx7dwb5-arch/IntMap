@@ -313,6 +313,7 @@ IntMapLang.define('en', { ui: {
       embedCopy:"Copy code",
       embedPreview:"Preview",
       embedPreviewHide:"Hide preview",
+      embedDev:"Steer the map from your page, and the open data — for developers",
       embedInc:"The embedded map shows the map, its legends, the date on the clock and every data credit, with a link that opens the same view in IntMap. It is read-only: panels, search and Atlas are not part of it.",
       embedFrameTitle:"IntMap map",
       embedLive:"Live",

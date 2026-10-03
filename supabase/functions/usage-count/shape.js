@@ -99,7 +99,7 @@ function layerId(d) {
        its count per page load can never pass the questions' (growth-loop). */
 export const METRICS = Object.freeze({
   view:         { dim: closed(['']),                                          max: 1,   maxDims: 1 },   // the map was opened (one per page load)
-  entry:        { dim: closed(['link', 'embed', 'showcase', 'about', 'teachers', 'news-map', 'embed-map']), max: 1, maxDims: 7 },   // opened from a link that carries a map view (a shared or saved link), embedded in another page (?embed=1), or reached from one of IntMap's own pages a visitor lands on first (an example's share page s/, the about page, the teacher page, the two pages by use news-map and embed-map — SITE_PAGES below)
+  entry:        { dim: closed(['link', 'embed', 'showcase', 'about', 'teachers', 'news-map', 'embed-map', 'developers']), max: 1, maxDims: 8 },   // opened from a link that carries a map view (a shared or saved link), embedded in another page (?embed=1), or reached from one of IntMap's own pages a visitor lands on first (an example's share page s/, the about page, the teacher page, the two pages by use news-map and embed-map, the developer page — SITE_PAGES below)
   ref:          { dim: referrer,                                              max: 1,   maxDims: 200 },   // the host name of the page the reader came from (direct = none)
   utm_source:   { dim: token,                                                 max: 1,   maxDims: 100 },   // the utm_source tag of the address
   utm_medium:   { dim: token,                                                 max: 1,   maxDims: 100 },   // the utm_medium tag of the address
@@ -193,7 +193,7 @@ export function campaignOf(search) {
 }
 
 /* ══ IntMap's OWN PAGES A VISITOR LANDS ON FIRST (growth-loop) ═════════════════════════════════════
-   scripts/landing.mjs generates them — about.html, teachers.html, news-map.html and embed-map.html (its PAGES), and one share page per
+   scripts/landing.mjs generates them — about.html, teachers.html, news-map.html, embed-map.html and developers.html (its PAGES), and one share page per
    example under s/ (its shareDir), each also under ja/ — and every one of them sends the visitor on to the
    map by a plain link or, for a share page, at once (meta refresh + location.replace). They are static
    pages that do not run this counter, so the ARRIVAL they produce is the only place they can be seen:
@@ -203,7 +203,8 @@ export function campaignOf(search) {
    the disk), so the page kinds are declared here as the closed `entry` values they become, and
    tests/growth-loop-checks.test.mjs holds them equal to landing.mjs's PAGES and shareDir. */
 export const SITE_PAGES = Object.freeze({ showcase: /(?:^|\/)s\/[^/]+\.html$/, about: /(?:^|\/)about\.html$/, teachers: /(?:^|\/)teachers\.html$/,
-  'news-map': /(?:^|\/)news-map\.html$/, 'embed-map': /(?:^|\/)embed-map\.html$/ });
+  'news-map': /(?:^|\/)news-map\.html$/, 'embed-map': /(?:^|\/)embed-map\.html$/,
+  /* (developer-embed) */ developers: /(?:^|\/)developers\.html$/ });
 
 /** the kind of IntMap page the visitor came from ('showcase' or a PAGES name of landing.mjs), or null — only for a
     referrer on IntMap's own host (`selfHost`); any other referrer is `referrerOf`'s. */

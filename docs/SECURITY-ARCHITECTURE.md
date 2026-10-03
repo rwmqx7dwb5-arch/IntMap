@@ -742,6 +742,17 @@ and sources, in both languages, had none). The chosen posture:
   its `src` and attributes are encoded by `IntMapSafe.url` / `IntMapSafe.html`.
   ⚠ A framed page that is NOT `?embed=1` is the full app, exactly as before this change — the
   residual limitation in the item above is unchanged, and a header-capable host is where it closes.
+- **(developer-embed) The page that framed an embed may steer it — and gains nothing its `src` did
+  not already give it.** `js/embed-client.js` defines the protocol; `js/embed-mode.js` answers it only
+  for messages whose `source` is `window.parent`. Every command (`state` / `view` / `time`) is turned
+  into ONE share-link fragment by the share link's own codec and applied by the path a pasted link
+  takes, so a host can make the frame show exactly what a link could — which it could already do by
+  setting the iframe's `src`. There is no command that signs in, writes, spends or opens anything,
+  because an embed has none of those. The frame posts back the map's public state (the fragment its
+  own 「Open in IntMap」 link carries) to `window.parent` only, with no information about the reader
+  beyond where the reader has panned the map the host put on its own page. The fragment is written
+  with `replaceState` (a frame's history is the host's, so a command must not add Back entries).
+  The host side verifies `event.origin` against the site it mounted and `event.source` against its frame.
 
 ---
 

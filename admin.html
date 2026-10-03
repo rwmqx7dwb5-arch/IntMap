@@ -17,7 +17,7 @@
          operator picked off disk. It calls js/admin-literal.js's PARSER now, which cannot invoke anything, so the whole
          page no longer needs the capability. A CSP that grants eval to a page with no eval in it is
          a grant nobody is watching. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bi5UzGl+THpcxTbS3pEddnFrkN/EJ54B9qeYLMiklJ0=' 'sha256-3OHKZ+ViBKyiUEP3Z8TsVNvIaOif1akJt0G8TYhecw0=' 'sha256-pEz8sISz3LjqqBnrX1jzxdDzphR8uBWOwh5X0uLgo4U='; connect-src 'self' https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bi5UzGl+THpcxTbS3pEddnFrkN/EJ54B9qeYLMiklJ0=' 'sha256-3OHKZ+ViBKyiUEP3Z8TsVNvIaOif1akJt0G8TYhecw0=' 'sha256-CLUolGu8pX3dFMPwruN7hsiwR7vibCZD6yigYKyM7Gk='; connect-src 'self' https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- (growth-loop) the site's address, for the «Growth» tab's campaign links. NOT written here: the build fills the
      token in every copied page (scripts/site-url.mjs fillSiteToken — the address has one owner,
@@ -518,7 +518,7 @@
      Every value is a string a browser sent (validated, still untrusted), so each goes through H(). */
   const G_ENTRY={ direct:'Direct (no referring page)', link:'Shared or saved map link', embed:'Embedded in another page',
     showcase:'Example page (s/)', about:'About page', teachers:'For teachers page',
-    'news-map':'News on a map page (news-map)', 'embed-map':'Embed a map page (embed-map)' };
+    'news-map':'News on a map page (news-map)', 'embed-map':'Embed a map page (embed-map)', developers:'Developers page (developers)' };
   const G_MODE={ text:'Text only', map:'Map', chart:'Chart', mixed:'Mixed (words with a map or chart)' };
   /* the counter's tag rule — shape.js TOKEN, which this page cannot import (admin.html is copied verbatim and
      shape.js is not among the files copied beside it); the test holds the two equal */

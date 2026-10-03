@@ -329,6 +329,33 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   ドロップダウン・シートのぼかしが Chrome / Edge / Firefox で消える。esbuild で最小化した CSS は
   以前の配信物とバイト同一。esbuild は `devDependencies` に明示してある（Vite 8 はもう連れてこない。
   node 検査の 2 本も TypeScript の型除去と IIFE 化に使う）。
+- **オープンデータと埋め込み API — 静的配信の範囲で、他所のページが IntMap を使う経路。**
+  サーバを持たない（GitHub Pages）ので、API は**ビルドが書くファイル**と**ブラウザの postMessage** でできている。
+  - **`api/v1/`（ビルドが書く・コミットしない）。** `vite.config.js` の `publicApiPlugin` が静的コピーの後に
+    `scripts/public-api.mjs` を走らせ、`catalog.json`（再利用できるデータセット——ファイルの絶対 URL と大きさ・
+    出典が述べるとおりのライセンス・条件〔出典表示／継承／非営利〕・表示する出典の行——と、出さないものとその理由）、
+    `countries.json` と `countries/<CODE>.json`（Natural Earth の国コード。各国のファイルは、出すデータセットの
+    「鍵の過半が国コードの表」を**発見して**その国の行を集め、節ごとにそのデータセットの条件を持つ）、
+    `embed.json`（埋め込みの URL 文法と約束事）を `dist/api/v1/` に書く。並べるファイルは**dist にあるもの**
+    （`STATIC_EXCLUDE` で写さないものは載せない）。
+  - ⚠ **出すか出さないかは台帳が述べる値で決まる。** ライセンスは `scripts/data-governance.mjs` の
+    `rightsTable()`（`check:datagov` と同じ読み方——ビルダーの `GOVERNANCE` 宣言、無ければ束の中の記録）から読み、
+    `public-api.mjs` の `LICENCES`（ライセンス識別子ごとに再配布・出典表示・継承・営利利用を述べる語彙）に照らす。
+    上流の**すべて**が語彙の知るライセンスを述べているときだけ出し、条件は最も厳しいものが全体にかかる。
+    出さない理由は 4 つ: ライセンスを値で述べていない／述べた条件が再配布を許すと確認できない（例「© UNESCO」）／
+    出典表示が条件なのに表示する出典を述べていない／ビルドに写されない。**data/ のファイルがサイトから取れること
+    （地図が描くための IntMap の利用）と、再利用のために出すことは別の主張**で、後者はライセンスが言うときだけ。
+  - **埋め込み API。** `js/embed-client.js` が約束事 `PROTOCOL`（ホスト→枠の命令 get / state / view / time、
+    枠→ホストの ready / state / reply）と、ホストのページが URL で import する `mount()` を持つ（何も import しない
+    ——他オリジンから単独で読まれるので。vite が `dist/js/` にそのまま写す）。枠の側は `js/embed-mode.js` の
+    `commandHash` が命令を**共有リンクの断片 1 つ**（`js/map-state.js` の encode）にし、貼ったリンクと同じ
+    `hashchange` の経路（`js/map-ui.js`。適用中に来たリンクは捨てずに次に回す）で適用する。断片は
+    `replaceState` で書き、合成の `hashchange` を送る——枠の履歴はホストの履歴なので、命令でホストの「戻る」を
+    増やさない。枠が伝えるのは地図の公開状態（「IntMap で開く」と同じリンク）だけで、送り先は `window.parent`。
+  - **開発者向けページ** `developers.html`（と `ja/`）は `scripts/landing.mjs` が生成し、命令とイベントの表は
+    `PROTOCOL` から、データセットの表は**ビルドが** `CATALOG_MARK` の位置に埋める（コミットされるページは台帳の写しを
+    持たない）。共有パネルの「埋め込み」タブと埋め込みの紹介ページから結び、Atlas は `data.openData`（`openData`）で
+    同じ `catalog.json` を読んで答える。
 
 ### 1.2 地図エンジン
 

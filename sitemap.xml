@@ -42,6 +42,16 @@
     <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/embed-map.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__embed-map.html"/>
   </url>
+  <url><loc>__INTMAP_SITE_URL__developers.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__developers.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/developers.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__developers.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__ja/developers.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__developers.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/developers.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__developers.html"/>
+  </url>
   <url><loc>__INTMAP_SITE_URL__s/europe-1914.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__s/europe-1914.html"/>
     <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/s/europe-1914.html"/>

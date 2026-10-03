@@ -4,6 +4,7 @@
  "tests/first-impression.spec.js": 22,
  "tests/place-dossier.spec.js": 13,
  "tests/map-postcard.spec.js": 13,
+ "tests/developer-embed.spec.js": 19,
  "tests/map-layer-system.spec.js": 13,
  "tests/landing-showcase.spec.js": 16,
  "tests/anonymous-usage-counts.spec.js": 9,

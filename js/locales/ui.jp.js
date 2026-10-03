@@ -313,6 +313,7 @@ IntMapLang.define('jp', { ui: {
       embedCopy:"コードをコピー",
       embedPreview:"プレビュー",
       embedPreviewHide:"プレビューを閉じる",
+      embedDev:"ページから地図を動かす API とオープンデータ — 開発者向け",
       embedInc:"埋め込んだ地図には、地図・凡例・時刻・すべてのデータの出典表記と、同じ表示を IntMap で開くリンクが表示されます。読み取り専用で、パネル・検索・Atlas は含まれません。",
       embedFrameTitle:"IntMap の地図",
       embedLive:"ライブ",
