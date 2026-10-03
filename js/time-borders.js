@@ -238,13 +238,21 @@ export function timeBorders(HOST){
        ⚠ The reason for a rule is the curated fact's, not this function's: Hawaii's republic ended with the
        1898 annexation, which is where the record's first row begins (1898-07-06) — the old «1899» drew a
        republic over ground the record itself had already annexed. */
+    /* ══ ⚠⚠ (marketing-engine) A STATE'S NAME IS NOT WRITTEN BEFORE THE STATE ══════════════════════════════
+       260, 265, 731 and 732 were named «West Germany», «East Germany», «North Korea», «South Korea» from the
+       first day the record draws them — 1945-05-08 and 1945-08-15 — while the record ITSELF starts a new row
+       on the day each state began: 1949-09-21, 1949-10-05, 1948-09-09, 1948-08-15. Before that the ground was
+       under occupation (the western zones, the Soviet zone, the US and Soviet zones of Korea) and is named
+       that way, in the «Land (Occupier)» form the 1945 sheet already uses for the zones («Germany (USA)»).
+       ⚠ The record's day governs (the gate holds every dated rule to it): the Federal Republic's Basic Law
+       is of 1949-05-23 and the GDR of 1949-10-07; CShapes dates them 09-21 and 10-05, and no day is invented. */
     const _CS_ERA={
       2:[[9999,'United States']], 3:[[9999,'Alaska (USA)']], 4:[[1894,'Kingdom of Hawaii'],[1898,'Republic of Hawaii'],[9999,'Hawaii (USA)']],
       6:[[1899,'Puerto Rico (Spain)'],[9999,'Puerto Rico (USA)']], 31:[[1973,'Bahamas (UK)']], 51:[[1962,'Jamaica (UK)']],
       52:[[1962,'Trinidad and Tobago (UK)']], 53:[[1966,'Barbados (UK)']], 65:[[9999,'Guadeloupe (France)']], 66:[[9999,'Martinique (France)']],
       80:[[1981,'British Honduras (UK)']], 110:[[1966,'British Guiana (UK)']], 115:[[1975,'Dutch Guiana (Netherlands)'],[9999,'Suriname']],
       120:[[9999,'French Guiana (France)']], 205:[[1937,'Irish Free State'],[9999,'Ireland']],
-      255:[[9999,'Germany']], 260:[[1990,'West Germany'],[9999,'Germany']], 265:[[9999,'East Germany']],
+      255:[[9999,'Germany']], 260:[[1949,'Germany (Western Allies)'],[1990,'West Germany'],[9999,'Germany']], 265:[[1949,'Germany (USSR)'],[9999,'East Germany']],
       325:[[9999,'Italy']], 343:[[9999,'North Macedonia']], 360:[[9999,'Romania']],
       365:[[1923,'Russia'],[1992,'Soviet Union'],[9999,'Russia']], 370:[[9999,'Belarus']],
       395:[[1918,'Iceland (Denmark)'],[1944,'Iceland (Denmark)'],[9999,'Iceland']],
@@ -282,7 +290,7 @@ export function timeBorders(HOST){
       698:[[1970,'Muscat and Oman'],[9999,'Oman']], 703:[[9999,'Kyrgyzstan']],
       710:[[9999,'China']], 713:[[1945,'Taiwan (Japan)'],[1950,'Taiwan (China)'],[9999,'Taiwan']],
       730:[[1897,'Korea (Joseon)'],[1910,'Korean Empire'],[9999,'Korea (Japan)']],
-      731:[[9999,'North Korea']], 732:[[9999,'South Korea']],
+      731:[[1948,'Korea (USSR)'],[9999,'North Korea']], 732:[[1948,'Korea (USA)'],[9999,'South Korea']],
       750:[[1947,'India (UK)'],[9999,'India']],
       775:[[1948,'Burma (UK)'],[1989,'Burma'],[9999,'Myanmar']],
       780:[[1948,'Ceylon (UK)'],[1972,'Ceylon'],[9999,'Sri Lanka']], 781:[[1965,'Maldives (UK)']],
@@ -1561,22 +1569,51 @@ export function timeBorders(HOST){
     ];
     /* (#R110) coloniser / possessor names for the "(France)/(UK)/(Portugal)…" suffix the aourednik data appends to
        many interwar colonies, plus the 1945 occupation zones (Germany (USA)…). */
-    const _COLONIZER={france:LA('France','フランス','Frankreich','Франция','Francia'),uk:LA('United Kingdom','イギリス','Vereinigtes Königreich','Великобритания','Reino Unido'),gb:LA('United Kingdom','イギリス','Vereinigtes Königreich','Великобритания','Reino Unido'),usa:LA('United States','アメリカ','USA','США','EE. UU.'),us:LA('United States','アメリカ','USA','США','EE. UU.'),portugal:LA('Portugal','ポルトガル','Portugal','Португалия','Portugal'),italy:LA('Italy','イタリア','Italien','Италия','Italia'),it:LA('Italy','イタリア','Italien','Италия','Italia'),belgium:LA('Belgium','ベルギー','Belgien','Бельгия','Bélgica'),spain:LA('Spain','スペイン','Spanien','Испания','España'),netherlands:LA('Netherlands','オランダ','Niederlande','Нидерланды','Países Bajos'),germany:LA('Germany','ドイツ','Deutschland','Германия','Alemania'),japan:LA('Japan','日本','Japan','Япония','Japón'),ru:LA('Russia','ロシア','Russland','Россия','Rusia'),russia:LA('Russia','ロシア','Russland','Россия','Rusia'),ussr:LA('Soviet Union','ソ連','UdSSR','СССР','URSS'),egypt:LA('Egypt','エジプト','Ägypten','Египет','Egipto'),'south africa':LA('South Africa','南アフリカ','Südafrika','ЮАР','Sudáfrica'),ethiopia:LA('Ethiopia','エチオピア','Äthiopien','Эфиопия','Etiopía'),jordan:LA('Jordan','ヨルダン','Jordanien','Иордания','Jordania'),indonesia:LA('Indonesia','インドネシア','Indonesien','Индонезия','Indonesia'),denmark:LA('Denmark','デンマーク','Dänemark','Дания','Dinamarca'),'austria-hungary':LA('Austria-Hungary','オーストリア＝ハンガリー','Österreich-Ungarn','Австро-Венгрия','Austria-Hungría'),australia:LA('Australia','オーストラリア','Australien','Австралия','Australia'),china:LA('China','中国','China','Китай','China'),joseon:LA('Joseon','李氏朝鮮','Joseon','Чосон','Joseon')};   /* (#R117) owners used by the CShapes era names */
+    const _COLONIZER={france:LA('France','フランス','Frankreich','Франция','Francia'),uk:LA('United Kingdom','イギリス','Vereinigtes Königreich','Великобритания','Reino Unido'),gb:LA('United Kingdom','イギリス','Vereinigtes Königreich','Великобритания','Reino Unido'),usa:LA('United States','アメリカ','USA','США','EE. UU.'),us:LA('United States','アメリカ','USA','США','EE. UU.'),portugal:LA('Portugal','ポルトガル','Portugal','Португалия','Portugal'),italy:LA('Italy','イタリア','Italien','Италия','Italia'),it:LA('Italy','イタリア','Italien','Италия','Italia'),belgium:LA('Belgium','ベルギー','Belgien','Бельгия','Bélgica'),spain:LA('Spain','スペイン','Spanien','Испания','España'),netherlands:LA('Netherlands','オランダ','Niederlande','Нидерланды','Países Bajos'),germany:LA('Germany','ドイツ','Deutschland','Германия','Alemania'),japan:LA('Japan','日本','Japan','Япония','Japón'),ru:LA('Russia','ロシア','Russland','Россия','Rusia'),russia:LA('Russia','ロシア','Russland','Россия','Rusia'),ussr:LA('Soviet Union','ソ連','UdSSR','СССР','URSS'),egypt:LA('Egypt','エジプト','Ägypten','Египет','Egipto'),'south africa':LA('South Africa','南アフリカ','Südafrika','ЮАР','Sudáfrica'),ethiopia:LA('Ethiopia','エチオピア','Äthiopien','Эфиопия','Etiopía'),jordan:LA('Jordan','ヨルダン','Jordanien','Иордания','Jordania'),indonesia:LA('Indonesia','インドネシア','Indonesien','Индонезия','Indonesia'),denmark:LA('Denmark','デンマーク','Dänemark','Дания','Dinamarca'),'austria-hungary':LA('Austria-Hungary','オーストリア＝ハンガリー','Österreich-Ungarn','Австро-Венгрия','Austria-Hungría'),australia:LA('Australia','オーストラリア','Australien','Австралия','Australia'),china:LA('China','中国','China','Китай','China'),joseon:LA('Joseon','李氏朝鮮','Joseon','Чосон','Joseon'),'western allies':LA('Western Allies','西側連合国')};   /* (#R117) owners used by the CShapes era names */
+    /* ══ ⚠⚠ (marketing-engine) A PLACE NAME IS TRANSLATED AS A PLACE NAME, NOT AS TODAY'S STATE ══════════════════
+       The present-day table (Natural Earth admin-0) pairs NAME_EN with NAME_JA, and for some rows NAME_JA is the
+       STATE's formal name while NAME_EN is the place's: «Taiwan» → 中華民国, «South Korea» → 大韓民国, «Mali» →
+       マリ共和国, «Mongolia» → モンゴル国, «Thailand» → タイ王国 (34 of 245 rows differ from CLDR's region name).
+       Used as the translation of an era outline's name, that wrote the Republic of China on the island in 1492 and
+       on Japanese Taiwan in 1900 (中華民国（日本）) — a state before it existed, and over ground it did not hold.
+       ⇒ the reader's-language name of a PLACE is CLDR's region name (Intl.DisplayNames, short — 台湾, 香港, not the
+       long form 中華人民共和国香港特別行政区), and only when CLDR's English name for that region IS the name being
+       translated: then both lexicons name the same thing and one translates the other. Otherwise null, and the
+       caller keeps the table's own name (e.g. «United States» — CLDR's short English is «US», so アメリカ合衆国 stays).
+       Read for an outline from an UNDATED record (the era sheets and OpenHistoricalMap: a name, not a claim about
+       which state stood there) and for the land half of «Land (Possessor)»; an outline the dated record names
+       (`_gw`, _CS_ERA above) is that state on that day and keeps today's name for it. */
+    /* (marketing-engine) «Land (Possessor)» where the gloss is a holder the possessor table knows: the outline is the
+       LAND, held. A former state's polygon-name pattern (js/history.js HB_MATCH — SUN is /soviet|u.s.s.r/, unanchored)
+       must not read the holder as the outline's own polity: «Germany (USSR)» and «Korea (USSR)» became «Soviet Union»
+       on the map and in Japanese. Returns the land half, or null when the name is not of that form (a gloss that is
+       not a holder — «Yugoslavia (SFRY)» — is a disambiguation and is left to the whole-name rules). */
+    function _heldLand(nm){ try{ const m=IntMapEraName.split(nm); return (m&&_COLONIZER[_normNm(m.gloss)])?m.base:null; }catch(_){ return null; } }
+    function _placeLoc(row,nm,lg){ try{
+      if(!row||!row.a2||String(row.a2).length!==2||!lg||lg==='en') return null;
+      const tag=IntMapLang.htmlTag(lg); if(!tag||tag==='en') return null;
+      const c=_placeLoc._c||(_placeLoc._c={});
+      const dn=(k)=>{ if(c[k]===undefined){ try{ c[k]=new Intl.DisplayNames([k],{type:'region',style:'short',fallback:'none'}); }catch(_){ c[k]=null; } } return c[k]; };
+      const en=dn('en'), loc=dn(tag); if(!en||!loc) return null;
+      const a2=String(row.a2).toUpperCase();
+      if(_normNm(en.of(a2)||'')!==_normNm(nm)) return null;
+      return loc.of(a2)||null; }catch(_){ return null; } }
     function _eraLocName(nm){ try{ const lg=(typeof HOST.lang!=='undefined')?HOST.lang:'en'; if(lg==='en') return null; const low0=String(nm||'').trim(); if(!low0) return null;
       const _loc1=(low)=>{
         /* (#R129) prefer the lifespan-CORRECT former state when several share a name (interwar "Kingdom of Yugoslavia"
            vs post-war "Yugoslavia (SFRY)" both match /yugoslav/i) — otherwise a 1925 label localized to the SFRY name. */
-        const HS=window.IntMapHistStates; if(HS&&HS.STATES){ let pick=null, matched=false, y=null;
+        const HS=_heldLand(low)?null:window.IntMapHistStates; if(HS&&HS.STATES){ let pick=null, matched=false, y=null;   /* (marketing-engine) not for a «Land (Possessor)» string — see _heldLand */
           try{ if(IntMapTime&&IntMapTime.year&&(!IntMapTime.isLive||!IntMapTime.isLive())) y=IntMapTime.year(); }catch(_){}
           for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(!(re&&re.test(low))) continue; matched=true;
             const n=S.name&&_LTB.arr(S.name); if(!(n&&n!==low)) continue;
-            if(y!=null&&S.from&&S.to){ const a=+new Date(S.from+'T00:00:00Z'),b=+new Date(S.to+'T23:59:59Z'),t=+new Date(y+'-07-01T00:00:00Z'); if(isFinite(t)&&t>=a&&t<=b) return n; }   /* era-correct wins outright */
+            if(y!=null&&S.from&&S.to){ const a=+new Date(S.from+'T00:00:00Z'),b=+new Date(S.to+'T23:59:59Z'),t=+new Date(y+'-07-01T00:00:00Z'); if(isFinite(t)&&t>=a&&t<=b) return n;   /* era-correct wins outright */
+              if(isFinite(t)&&_normNm((Array.isArray(S.name)&&S.name[0])||'')!==_normNm(low)) continue; }   /* (marketing-engine) …and OUTSIDE its span a state answers only a name that IS its own (then it translates the words drawn — «Austrian Empire» on the 1715 sheet), never one its pattern merely matches: «Korea (Japan)» in 1913 read 朝鮮（李氏朝鮮）（日本）, Joseon having ended in 1897; «India» in 2000 read as the British Raj */
             if(!pick) pick=n; }
-          if(pick) return pick;   /* else first regex match (legacy behaviour) */ }
+          if(pick) return pick;   /* no year (the live map), or a state that states no span: first regex match (legacy behaviour) */ }
         for(const V of _VANISHED){ if(V.re.test(low)){ const n=V.nm&&_LTB.arr(V.nm); if(n&&n!==low) return n; } }
         for(const E of _ERA_LOC){ if(E[0].test(low)){ const n=_LTB.arr(E[1]); if(n&&n!==low) return n; } }
         const cm=_COLONIZER[_normNm(low)]; if(cm){ const n=_LTB.arr(cm); if(n) return n; }   /* the major powers double as country-name localizations (Germany/Japan… occupation-zone bases) */
-        try{ if(typeof countryStats!=='undefined'&&countryStats){ const key=_normNm(low); for(const c in countryStats){ const s=countryStats[c]; if(s&&s.nameEn&&_normNm(s.nameEn)===key){ const d=(s.name&&_LTB.arr(s.name))||((lg==='jp'&&s.nameJp)?s.nameJp:s.nameEn); if(d&&d!==low) return d; } } } }catch(_){}   /* modern base (Algeria, Syria…) → its localized present-day name (JP via nameJp, matching tagSame; DE/RU/ES keep the English base as elsewhere on the era map) */
+        try{ if(typeof countryStats!=='undefined'&&countryStats){ const key=_normNm(low); for(const c in countryStats){ const s=countryStats[c]; if(s&&s.nameEn&&_normNm(s.nameEn)===key){ const d=(!s._hist&&_placeLoc(s,low,lg))||(s.name&&_LTB.arr(s.name))||((lg==='jp'&&s.nameJp)?s.nameJp:s.nameEn); if(d&&d!==low) return d; } } } }catch(_){}   /* (marketing-engine) a present-day row is read as a PLACE first (_placeLoc) — this is the land half of «Taiwan (Japan)», a territory, not today's state */   /* modern base (Algeria, Syria…) → its localized present-day name (JP via nameJp, matching tagSame; DE/RU/ES keep the English base as elsewhere on the era map) */
         return null; };
       const direct=_loc1(low0); if(direct) return direct;
       /* "(Coloniser)" / occupation suffix → localize the BASE + append the localized possessor (e.g. アルジェリア（フランス）).
@@ -1613,15 +1650,16 @@ export function timeBorders(HOST){
       /* normalized present-day name -> the country's CURRENT localized display name (so an unchanged country shows its
          EXISTING label, e.g. "フランス" for a JP user — "国名が変わってない国は既存の国名ラベルのまま"). */
       const cur=new Map();
+      const curRow=new Map();   /* (marketing-engine) name → the PRESENT-DAY row it came from, for _placeLoc; an era identity set below takes its name back out */
       try{ if(typeof countryStats!=='undefined'&&countryStats){ Object.values(countryStats).forEach(s=>{ if(s&&s.sov!==false){
         const disp=_disp(s);
-        if(s.nameEn) cur.set(_normNm(s.nameEn),disp); if(s.nameJp) cur.set(_normNm(s.nameJp),disp); } }); } }catch(_){}
+        if(s.nameEn){ cur.set(_normNm(s.nameEn),disp); curRow.set(_normNm(s.nameEn),s); }   /* any row: _placeLoc answers only where CLDR's English for its region IS this name, which an era rename never is */ if(s.nameJp) cur.set(_normNm(s.nameJp),disp); } }); } }catch(_){}
       /* (#R410) …and the PRESENT-DAY name of every country an era rename is currently standing over, so the
          polygon called "Germany" still resolves in a year Germany has no era entry of its own (1946–1948)
          while `countryStats.DEU` is still called something else. */
       try{ const sav=(HID&&HID._applied&&HID._applied())||null;
         if(sav) for(const code in sav){ const o=sav[code]||{}; const disp=_disp(o);
-          if(o.nameEn) cur.set(_normNm(o.nameEn),disp); if(o.nameJp) cur.set(_normNm(o.nameJp),disp); } }catch(_){}
+          if(o.nameEn){ cur.set(_normNm(o.nameEn),disp); curRow.delete(_normNm(o.nameEn)); } if(o.nameJp) cur.set(_normNm(o.nameJp),disp); } }catch(_){}
       const _y=(year!=null&&isFinite(year))?+year:null;
       const _mfloor=(window.IntMapMaddison&&window.IntMapMaddison.minYear)||1900;   /* js/time-countries.js's own floor, verbatim */
       const _d=(_y!=null&&_y>=_mfloor)?(_y+'-07-01T00:00:00Z'):null;
@@ -1641,7 +1679,7 @@ export function timeBorders(HOST){
       try{ const MODNM={CHN:['China'],DEU:['Germany'],ITA:['Italy'],IRN:['Iran','Persia'],THA:['Thailand','Siam'],IDN:['Indonesia','Dutch East Indies'],JPN:['Japan'],RUS:['Russia'],GBR:['United Kingdom'],ESP:['Spain'],PRT:['Portugal'],BRA:['Brazil'],EGY:['Egypt'],FRA:['France'],HUN:['Hungary'],KOR:['Korea','South Korea'],ETH:['Ethiopia','Abyssinia']};   /* (#R117/#R118) expanded identities */
         if(_d&&HID&&HID.at) for(const code in MODNM){ if(_cov.has(code)) continue;
           const e=HID.at(code,_y); if(!e||!e.name) continue; const disp=_LTB.arr(e.name); if(!disp) continue;
-          MODNM[code].forEach(mn=>cur.set(_normNm(mn),disp)); } }catch(_){}
+          MODNM[code].forEach(mn=>{ cur.set(_normNm(mn),disp); curRow.delete(_normNm(mn)); }); } }catch(_){}
       /* ⚠ (#R410) …AND THE FORMER STATES, WHOSE POLYGON USUALLY CARRIES A SUCCESSOR'S MODERN NAME. At 1916 the
          CShapes polygons are «Russia» and «Japan» while the Countries rows are «Russian Empire» and «Empire of
          Japan» — the same disagreement, one table over. `hbRe` is the polygon-name pattern js/history.js has
@@ -1658,8 +1696,11 @@ export function timeBorders(HOST){
         const nm=(f.properties.NAME||f.properties.name)||'';
         /* the former state is asked FIRST: at 1916 `countryStats.RUS` is still in `cur` (hidden, not removed),
            so a name lookup would answer «Russia» for the polygon the list is calling the Russian Empire. */
-        let hit=null; for(const p of _former){ if(p[0].test(nm)){ hit=p[1]; break; } }
-        if(!hit) hit=cur.get(_normNm(nm));
+        let hit=null; const land=_heldLand(nm)||nm;   /* (marketing-engine) a held land is not its holder */
+        for(const p of _former){ if(p[0].test(land)){ hit=p[1]; break; } }
+        if(!hit){ const k=_normNm(nm); hit=cur.get(k);
+          /* (marketing-engine) an UNDATED outline's name is a place, translated as one (_placeLoc) — not today's state */
+          if(hit&&f.properties._gw==null&&curRow.has(k)){ const pl=_placeLoc(curRow.get(k),nm,lg); if(pl) hit=pl; } }
         if(hit){ f.properties._same=1; f.properties._modName=hit; }   /* unchanged → its present-day localized name */
         else { f.properties._same=0; f.properties._modName=null;      /* renamed / vanished → era name (imtb-lbl) */
           /* ⚠ (#R518) THE SOURCE'S OWN NAME FIRST. `_eraLocName` localizes by RECOGNISING an English

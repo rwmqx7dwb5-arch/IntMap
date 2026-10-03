@@ -114,7 +114,7 @@ test('⑤ a post\'s link carries utm tags only into the app, and the counter kee
 
 /* ══ the entry pages ═══════════════════════════════════════════════════════════════════════════════ */
 const H = await import('../scripts/history-pages.mjs');
-const YEARS = [-2999, 1500, 1900, 1913, 1914, 1918, 1919, 1920];
+const YEARS = [-2999, 1500, 1900, 1913, 1914, 1918, 1919, 1920, 1946, 1950];
 const REGIONS = ['world', 'europe', 'east-asia'];
 const M = await H.collect({ years: YEARS, regions: REGIONS });
 const at = (region, y) => M.pages.find((p) => p.region === region && y >= p.first && y <= p.last);
@@ -147,6 +147,30 @@ test('⑥ named years and places say what history says (the map\'s own labels, i
   for (const p of M.pages) {
     for (const n of p.names) assert.ok(n.km > 0, p.region + ' ' + p.first + ': ' + n.en + ' is listed with no area inside the region');
     for (let i = 1; i < p.names.length; i++) assert.ok(p.names[i - 1].km >= p.names[i].km, p.region + ' ' + p.first + ' is not ordered by area');
+  }
+});
+
+/* ⑥b the names the first pass found wrong on the map (and so on these pages), read back from the map's own labels.
+   ⚠ stated as the DEFECT (a state named before it existed, a place named as today's state), not as the words chosen */
+test('⑥b no state is named before it existed, and a place is not named as the state of today', () => {
+  const jpOf = (p) => new Map(p.names.map((n) => [n.en, n.jp]));
+  /* 1500 (a sheet) and 1900 (Japanese Taiwan): the island, not the Republic of China (1912) */
+  const a15 = jpOf(at('east-asia', 1500)), a00 = jpOf(at('east-asia', 1900));
+  assert.ok(a15.has('Taiwan'), 'the 1500 sheet no longer draws Taiwan — re-read what it draws');
+  for (const [y, m] of [[1500, a15], [1900, a00]]) for (const [en, jp] of m) assert.ok(!/中華民国/.test(jp || ''), y + ': «' + en + '» is written ' + jp + ' — the Republic of China was founded in 1912');
+  /* 1946: occupied Germany and Korea — the Federal Republic (1949), the GDR (1949) and the two Korean states (1948) are not yet */
+  const e46 = names(at('europe', 1946)), k46 = names(at('east-asia', 1946));
+  for (const n of ['West Germany', 'East Germany']) assert.ok(!e46.has(n), 'Europe 1946 draws ' + n);
+  for (const n of ['North Korea', 'South Korea']) assert.ok(!k46.has(n), 'East Asia 1946 draws ' + n);
+  /* …and in 1950 they are */
+  const e50 = names(at('europe', 1950)), k50 = names(at('east-asia', 1950));
+  for (const n of ['West Germany', 'East Germany']) assert.ok(e50.has(n), 'Europe 1950 lacks ' + n);
+  for (const n of ['North Korea', 'South Korea']) assert.ok(k50.has(n), 'East Asia 1950 lacks ' + n);
+  /* a held land is not its holder: the Soviet zones are not labelled the Soviet Union */
+  for (const p of [at('europe', 1946), at('east-asia', 1946)]) {
+    const zone = p.names.filter((n) => /\((USSR|USA|Western Allies)\)$/.test(n.en));
+    assert.ok(zone.length >= 2, p.region + ' 1946 draws no occupation zone by name');
+    for (const n of zone) assert.ok(n.jp && !/ソビエト連邦/.test(n.jp), n.en + ' reads ' + n.jp);
   }
 });
 
@@ -220,7 +244,7 @@ test('⑧ the build writes the pages, and the country fields read are js/countri
   const vite = read('vite.config.js');
   assert.match(vite, /copyStatic\(\), historyPagesPlugin\(\)/, 'the pages are written after the static copy (and before the site URL is filled, which runs post)');
   const ui = read('js/countries-ui.js');
-  for (const expr of ['nameEn:p.NAME_EN||p.ADMIN||p.NAME||code', 'nameJp:p.NAME_JA||p.NAME_EN||p.ADMIN||code', "(_neType==='Indeterminate')"]) {
+  for (const expr of ['nameEn:p.NAME_EN||p.ADMIN||p.NAME||code', 'nameJp:p.NAME_JA||p.NAME_EN||p.ADMIN||code', "(_neType==='Indeterminate')", "const a2=(p.ISO_A2_EH&&p.ISO_A2_EH!=='-99')?p.ISO_A2_EH:p.ISO_A2;", "a2:a2||''"]) {
     assert.ok(ui.includes(expr), 'js/countries-ui.js no longer reads «' + expr + '» — scripts/history-pages.mjs builds the country table the label pass reads the same way; change both');
   }
 });

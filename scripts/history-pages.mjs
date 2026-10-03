@@ -238,8 +238,8 @@ export async function collect(opt = {}) {
      of a country whose outline has not changed (so 1913's Spain is labelled as today's Spain is, スペイン in
      Japanese), and the former states the Countries list is standing over (Russian Empire, Austria-Hungary …).
      ① THE MODERN ROWS are built from the file the app builds them from (Natural Earth admin-0, the 10 m scale
-        js/countries-ui.js ends on), with the three fields the label pass reads, read the way js/countries-ui.js
-        `_mkStat` reads them — tests/marketing-engine-checks.test.mjs holds those three expressions to that file.
+        js/countries-ui.js ends on), with the four fields the label pass reads, read the way js/countries-ui.js
+        `_mkStat` reads them (the region code `a2` too) — tests/marketing-engine-checks.test.mjs holds those expressions to that file.
      ② THE FORMER-STATE ROWS are what js/history.js histStates.apply puts there for the date: a state active on
         it, under its own era name. The app adds a row only when the state's successors have data; every state
         in STATES has present-day successors in the country table, so every active one is added. */
@@ -254,7 +254,8 @@ export async function collect(opt = {}) {
     const type = String(q.TYPE || '');
     const isCountry = /^(sovereign country|country)$/i.test(type);
     const nonSov = (type === 'Indeterminate') || (!isCountry && /indetermin|unrecogn/i.test(String(q.FCLASS_TLC || q.featurecla || q.FEATURECLA || '')));
-    modern[code] = { nameEn: q.NAME_EN || q.ADMIN || q.NAME || code, nameJp: q.NAME_JA || q.NAME_EN || q.ADMIN || code, sov: !nonSov };
+    const a2 = (q.ISO_A2_EH && q.ISO_A2_EH !== '-99') ? q.ISO_A2_EH : q.ISO_A2;   /* the region code the label pass reads a PLACE's name by (js/time-borders.js _placeLoc) */
+    modern[code] = { nameEn: q.NAME_EN || q.ADMIN || q.NAME || code, nameJp: q.NAME_JA || q.NAME_EN || q.ADMIN || code, a2: a2 || '', sov: !nonSov };
   }
   const stats = Object.assign({}, modern);
   /* the clock the module reads (IntMapTime.year — js/time-borders.js asks it which of two states sharing a name
