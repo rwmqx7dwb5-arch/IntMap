@@ -56,6 +56,12 @@ URL 長の上限を超えそうなら事前に警告、リンクのコピーと 
   天井（`check:testbudget`）があり、未計測の spec は p75 で課金される。常設の browser 検査が要るなら
   `tests/landing-showcase.spec.js` のツアー区間へ足すのが筋（今回の担当範囲の外）。
 
+- 起動費用（`check:perf`）: async chunk `tour-player` の天井を 15.1 → 17.2 kB、`async.gzip` を 3774.0 → 3795.2 kB へ上げた
+  （`perf-budget.mjs --update`、CI と同じ数）。増えたのは再生に要る分——`?tour=custom` を読んで再生する経路・「自分のツアーを作る」入口・
+  「このツアーを編集」・作成器が大域へ 2 本目の辺を開かずに済む 4 つの export。codec の書き側（`encodeCustomTour`・`customTourLink`・
+  `TOUR_REQUEST_LIMIT`）は `tours.js` で別 chunk（`tours`、天井内）にあり `tour-player` には入っていないので、作成器側へ移しても
+  この行は下がらない（総量 `async.gzip` も、どの chunk に置いても同じ）。総量には新しい chunk `tour-builder`（18.0 kB・gzip 6.7 kB）が載る。
+
 ## 5. 残したもの
 
 - `teachers.html`・`ja/teachers.html` は `scripts/landing.mjs` の生成物（文面は `scripts/landing-text.mjs`）。

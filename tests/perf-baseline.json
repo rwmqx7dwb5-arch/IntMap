@@ -10,7 +10,7 @@
   },
   "async": {
     "raw": 11794437,
-    "gzip": 3864555,
+    "gzip": 3886293,
     "chunks": {
       "aircraft-detail": 17009,
       "analysis-correlate": 24199,
@@ -85,7 +85,7 @@
       "subcable-info": 9100,
       "terrain-water": 83098,
       "time-lapse": 8681,
-      "tour-player": 15504,
+      "tour-player": 17606,
       "tours": 23515,
       "tsunami": 37469,
       "ui.de": 16300,
