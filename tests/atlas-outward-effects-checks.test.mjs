@@ -24,7 +24,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 import { rpcIsRead } from '../scripts/data-effects.mjs';   /* (supporter-funnel) a GET/HEAD rpc is a read — one predicate, not a second spelling */
@@ -199,7 +199,7 @@ test('C①: a personal-information field is never named by its placeholder in th
    not the button that opened the dialog), so the walk does not descend into them.
    The ELEMENT it is registered on is resolved from getElementById / querySelector / a
    querySelectorAll(…).forEach parameter / a variable bound to one of those, and must carry
-   `data-effect` in its markup (index.html or any js/*.js), or have it set on that same variable. */
+   `data-effect` in its markup (index.html, a standalone page, or any js/*.js), or have it set on that same variable. */
 const AUTH_WRITES = new Set(['updateUser', 'signOut', 'resetPasswordForEmail', 'signUp', 'registerPasskey', 'delete', 'unenroll', 'linkIdentity', 'unlinkIdentity']);
 const TABLE_WRITES = new Set(['insert', 'upsert', 'update', 'delete']);
 /* what a control press can fire: js/atlas-controls.js doControl clicks, sets a value and dispatches
@@ -387,7 +387,10 @@ function corpus(entries) {
 }
 
 const JS_FILES = readdirSync(join(ROOT, 'js')).filter((f) => f.endsWith('.js')).map((f) => ({ path: 'js/' + f, src: read('js/' + f) }));
-const MARKUP = corpus(JS_FILES.concat([{ path: 'index.html', src: read('index.html') }]));
+/* (sales-channels) index.html AND every standalone page — discovered (scripts/js-reachability.mjs), the same
+   markup scripts/data-effects.mjs reads: contact.html's form and the enquiries console declare their controls there */
+const { standalonePages } = await import(pathToFileURL(join(ROOT, 'scripts', 'js-reachability.mjs')).href);
+const MARKUP = corpus(JS_FILES.concat(['index.html', ...standalonePages(ROOT)].map((n) => ({ path: n, src: read(n) }))));
 
 test('D①: every click/Enter handler that reaches a write is on an element that declares data-effect', () => {
   const found = scanHandlers(JS_FILES, MARKUP);

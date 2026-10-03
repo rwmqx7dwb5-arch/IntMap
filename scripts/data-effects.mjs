@@ -23,7 +23,7 @@
  *              factory's host parameter (`HOST.cmAddPost(…)`), which is the repository's shared surface.
  *              A handler registered INSIDE a handler's body is a separate handler and is not followed.
  *    ELEMENT   resolved from getElementById / querySelector / a querySelectorAll(…).forEach parameter /
- *              a variable bound to one of those; declared when its markup (index.html or any string in
+ *              a variable bound to one of those; declared when its markup (index.html, a standalone page, or any string in
  *              js/) carries `data-effect`, or the same variable is given one in code.
  *              An element that cannot be resolved counts as undeclared — nothing can read a declaration
  *              that the analysis cannot find either.
@@ -43,6 +43,7 @@ import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseSource, walk } from '../tests/helpers/ast.mjs';
+import { standalonePages } from './js-reachability.mjs';
 
 const ROOT = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'));
 export const LEDGER = join(ROOT, 'tests', 'data-effect-baseline.json');
@@ -374,7 +375,11 @@ export function scanHandlers(files, markup) {
 export function readTree(root = ROOT) {
   const files = readdirSync(join(root, 'js')).filter((f) => f.endsWith('.js')).sort()
     .map((f) => ({ path: 'js/' + f, src: readFileSync(join(root, 'js', f), 'utf8') }));
-  const markup = corpus(files.concat([{ path: 'index.html', src: readFileSync(join(root, 'index.html'), 'utf8') }]));
+  /* (sales-channels) the markup is index.html AND every standalone page (discovered, scripts/js-reachability.mjs):
+     contact.html's form is wired by js/org-page.js exactly as index.html's controls are wired by js/, and a
+     declaration in the page that carries the control must be readable here or it cannot count. */
+  const pages = ['index.html', ...standalonePages(root)].map((n) => ({ path: n, src: readFileSync(join(root, n), 'utf8') }));
+  const markup = corpus(files.concat(pages));
   return { files, markup };
 }
 export function measure(tree = readTree()) {

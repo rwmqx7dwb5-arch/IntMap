@@ -16,7 +16,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（37本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（38本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
 - `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継の共有レート制限 ＋ 監査の是正＝答えた turn は返金されない・全表の TRUNCATE 不可・search_path・報告の帰属・著者が編集できる列 ＋ エラー記録＝匿名は読めも書けもしない・admin は読むだけ・同じ fingerprint は回数を足す・30 日の保持 ＋ 能力ベクトル ＋ SECURITY DEFINER 関数を `anon` が呼べるのは `anon` に効く RLS が呼ぶものだけ ＋ 出自の固定＝SECURITY DEFINER の search_path に呼び手が CREATE できる schema が無い・公開バケットに一覧用の SELECT ポリシーが無い・コミュニティ投稿の著者名と投稿時刻は DB が書く・INSERT は列単位 grant ＋ 匿名の直接書き込みの全数＝`public` のどの表も `anon` の INSERT を受けない・報告の 2 表は service_role だけが書く ＋ AI の日次カウンタの符号＝`count` 列を持つ全表に下限の CHECK・所有者ロール（Studio）でも負の値を書けない・1 つのターンの返金は課金した 1 回ぶんだけ、課金した日へ）。
@@ -28,8 +28,13 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
    `profiles_public_sync` トリガが同期する——view は `security_invoker` を持たない限り所有者の権限で
    `profiles` を読んで RLS を迂回し、**後から足した列がその迂回を継承する**（Supabase advisor の
    `0010_security_definer_view`。詳細は `docs/SECURITY-ARCHITECTURE.md` §8 の 7）。
-   feedback / bug_reports / donations /
+   feedback / bug_reports / donations / org_inquiries /
    community_reports / ai_usage は他人・anon から読めない。
+   **組織からの相談 `org_inquiries`**（氏名・返信先・本文）は admin だけが読み、admin も**本人が書いた本文と
+   アドレスは書き換えられない**（更新できる列は `status`・`admin_note`・`handled_at` だけ）。書くのは
+   `reader-reports` だけで、受信から 730 日（spam は 30 日）で `purge_org_inquiries` が消す。
+   **`supporters`** は本人が掲載を申し込んだ行だけで、anon が読めるのは掲載中の行の表示名・月・ひとことの 3 列
+   （同意の時刻は読めない）。金額・決済情報・メールアドレスの列は無い（`supabase/tests/18_org_inquiries_test.sql`）。
 2. **昇格不可**: 本人は display_name / bio / avatar_url / login_count のみ更新可（列単位 grant）。
    ⚠ grant は本番の既定権限で無効化されうるので、**grant 非依存の BEFORE UPDATE トリガ**
    （`tg_profiles_guard_privcols`）が実防御になっている。
