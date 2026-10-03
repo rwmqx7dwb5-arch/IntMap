@@ -16,7 +16,7 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, bool, one } from './atlas-caps.js';
+import { str, bool, one, int } from './atlas-caps.js';
 import { usage } from './usage-counts.js';   /* (anonymous-usage-counts) the Settings switch settings.usageCounts flips */
 
 export default [
@@ -170,6 +170,62 @@ export default [
             :st.reason==='off'?L('nothing is sent','何も送りません')
             :L('anonymous counts are sent when the page is hidden or closed','ページを閉じる・隠すときに匿名の件数を送ります');
           return R(want===null||st.on===want, note('✓ '+L('Anonymous usage statistics','匿名の利用統計')+': '+(st.on?L('on','オン'):L('off','オフ'))+' — '+why)); }
+    },
+  },
+  {
+    row: ['settings.mapReading',        'mapReading',     'readingMode,screenReaderMode,readAloud,describeMap,describeHere', 'settings','none',    '',                       'explanation',         'persist', 'none',   '',        ''],
+    /* (keyboard-and-offline) the map read in words — js/map-reader.js owns it (Alt+R says what is at the centre, Alt+Shift+R
+       turns the reading mode on and off; Settings ▸ Keyboard shortcuts has the same switch). No `on` and no `describe` =
+       REPORT the state. `describe` returns the very paragraph the screen reader is given. */
+    doc: [
+      { in: 'tools-panels', at: 292, text: '{"type":"mapReading","on"?:bool,"describe"?:bool} = the map READ IN WORDS for a person who cannot see the screen or does not use a mouse (スクリーンリーダー・キーボード操作・読み上げモード): on:true turns the reading mode on — after every move of the map IntMap says how far and which way the centre moved, then the place and its administrative chain, the country, the elevation, the local time and the value of every layer that is on; on:false turns it off; describe:true says what is at the centre of the view right now and returns that text (use for "読み上げモードをオンに", "地図を音声で説明して", "turn on screen reader mode", "describe where the map is centred"). The keys are Alt+R (describe) and Alt+Shift+R (mode) with focus on the map; the arrow keys move and +/- zoom; Alt+N walks the features near the centre; ' },
+    ],
+    schema: () => ({ type: 'object', properties: { on: bool(), mode: str(), describe: bool() } }),
+    async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, warn = K.warn, esc = K.esc;
+      { let m; try { m = await import('./map-reader.js'); } catch (_) { return R(false, warn(L('The reading mode is not available on this page','このページでは読み上げモードを使えません'))); }
+          const md=String(a.mode||'').toLowerCase();
+          const want=(a.on===true||/^(on|enable|enabled|true)$/.test(md))?true:(a.on===false||/^(off|disable|disabled|false)$/.test(md))?false:null;
+          let text='', ok=true;
+          try{ if(want!==null) m.setReading(want, a.describe===true); if(a.describe===true) text=await m.describeHere(); }catch(_){ ok=false; }
+          if(!ok) return R(false, warn(L('The map is not ready to be read yet','地図の読み上げの準備がまだできていません')));
+          const on=m.readingOn();
+          return R(true, note('✓ '+L('Reading mode','読み上げモード')+': '+(on?L('on','オン'):L('off','オフ'))+(text?' — '+esc(text):'')), { exec: { mapReading: { on, text: text||null } } }); }
+    },
+  },
+  {
+    row: ['settings.offlineMaps',       'offlineMaps',    'offlineMap,saveMapOffline,downloadMap,offlineRegion,portableMap,mapWithoutInternet', 'settings','none',    '',                       'explanation',         'persist', 'explicit','',        ''],
+    /* (keyboard-and-offline) the offline maps — js/offline-maps.js owns them; the Settings button opens the same dialog. `plan` is what the
+       dialog shows BEFORE a save (the size, and what is refused with the terms it rests on); `save` keeps the region the view holds. */
+    doc: [
+      { in: 'tools-panels', at: 293, text: '{"type":"offlineMaps","action"?:"open"|"plan"|"save"|"list"|"remove","detail"?:int,"name"?:str,"id"?:str} = OFFLINE MAPS / 持ち歩ける地図・オフライン保存: keep the region the view holds on this device so IntMap opens with no connection — the terrain elevation tiles of that region (only a source whose terms were read and recorded as allowing it; the base map\'s vector tiles are NOT saved because OpenFreeMap\'s terms forbid automated collection) and IntMap\'s own data and code for the layers that are open. "plan" says the size and what is not saved and why, BEFORE anything is downloaded; "save" saves at "detail" (the terrain zoom; default = the dialog\'s choice) under "name"; "list" lists what is saved with sizes; "remove" deletes one by "id" or "name"; "open" (default) opens the dialog (use for "オフラインで使えるように保存", "この地域を保存して", "save this map for offline", "download the map for offline use", "what is saved offline", "delete the offline map"); ' },
+    ],
+    schema: () => ({ type: 'object', properties: { action: one('open', 'plan', 'save', 'list', 'remove'), detail: int(0, 22), name: str(), id: str() } }),
+    async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, warn = K.warn, esc = K.esc, HOST = K.HOST;
+      { let M, P; try { M = await import('./offline-maps.js'); P = await import('./offline-plan.js'); } catch (_) { return R(false, warn(L('Offline maps are not available on this page','このページではオフライン地図を使えません'))); }
+          const act=String(a.action||'open').toLowerCase();
+          const row=(k)=>esc((k.name||L('Saved area','保存した地域'))+' — '+P.mb(k.bytes)+' MB, '+k.tiles+' '+L('tiles','タイル')+', '+k.files.length+' '+L('files','ファイル')+(k.missing?', '+k.missing+' '+L('tile(s) missing','タイルが欠けています'):'')+' ['+k.id+']');
+          if(act==='list'){ const ps=M.listPacks();
+            return R(true, note(ps.length?'<ul>'+ps.map((k)=>'<li>'+row(k)+'</li>').join('')+'</ul>':L('Nothing is saved for offline use.','オフライン用に保存したものはありません。')), { exec: { offlineMaps: { packs: ps.map((k)=>({ id:k.id, name:k.name, bytes:k.bytes, tiles:k.tiles, files:k.files.length, missing:k.missing })) } } }); }
+          if(act==='remove'){ const ps=M.listPacks(); const k=ps.find((x)=>x.id===a.id)||ps.find((x)=>a.name&&x.name===a.name);
+            if(!k) return R(false, warn(L('No saved area matches. Say which one: ','該当する保存済みの地域がありません。どれか指定してください: ')+esc(ps.map((x)=>x.name||x.id).join(', '))));
+            await M.remove(k.id); return R(true, note('✓ '+L('Deleted ','削除しました: ')+esc(k.name||k.id)), { exec: { offlineMaps: { removed: k.id } } }); }
+          if(act==='open'){ await M.openOfflineMaps(HOST); return R(true, note('✓ '+L('Offline maps opened','オフライン地図を開きました'))); }
+          const pl=await M.plan(HOST);
+          if(!pl.box) return R(false, warn(L('The map is not ready yet','地図の準備がまだできていません')));
+          const t=pl.terrain||{ options:[] };
+          const summary=(t.options.length?t.options.map((o)=>L('detail ','細かさ ')+o.zMax+': '+o.tiles+' '+L('tiles','タイル')+', ≈'+P.mb(o.bytes)+' MB').join('; '):L('terrain not available ('+t.why+')','地形は保存できません（'+t.why+'）'))+'. '
+            +L('IntMap\'s own files: ','IntMap 自身のファイル: ')+pl.own.files.length+' ≈'+P.mb(pl.own.bytes)+' MB. '
+            +L('Not saved: ','保存しないもの: ')+(pl.refused.map((r)=>r.host+' — '+L(r.why,r.whyJp)).join(' | ')||L('nothing is refused','なし'));
+          const exec={ offlineMaps: { box: pl.box, zoom: pl.zoom, layers: pl.layers, terrain: { why: t.why, options: t.options }, own: { files: pl.own.files.length, bytes: pl.own.bytes }, refused: pl.refused.map((r)=>({ host:r.host, basis:r.basis, why:r.why })), online: pl.online } };
+          if(act==='plan') return R(true, note(esc(summary)), { exec });
+          /* save */
+          if(!pl.online) return R(false, warn(L('You are offline, so nothing can be saved now','オフラインのため、いまは保存できません')));
+          const pick=a.detail!=null?t.options.find((o)=>o.zMax===+a.detail):P.defaultDetail(t.options, pl.zoom);
+          if(a.detail!=null&&!pick) return R(false, warn(L('That detail does not fit. Available: ','その細かさは保存できません。選べるもの: ')+esc(t.options.map((o)=>o.zMax).join(', '))));
+          if(!pick&&!pl.own.files.length) return R(false, warn(esc(summary)));
+          const pack=await M.save({ box: pl.box, zMax: pick?pick.zMax:-1, template: t.template, name: String(a.name||''), layers: pl.layers, files: pl.own.files });
+          exec.offlineMaps.saved={ id:pack.id, bytes:pack.bytes, tiles:pack.tiles, files:pack.files.length, missing:pack.missing };
+          return R(pack.missing===0, note('✓ '+L('Saved: ','保存しました: ')+row(pack)), { exec }); }
     },
   },
 ];

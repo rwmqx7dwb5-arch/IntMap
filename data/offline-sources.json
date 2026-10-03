@@ -1,0 +1,40 @@
+{
+  "src": "derived from scripts/outbound-hosts.json (the `offline` statement of each host row) by scripts/offline-sources.mjs",
+  "hosts": [
+    {
+      "host": "elevation-tiles-prod.s3.amazonaws.com",
+      "kind": "terrain-dem",
+      "allowed": true,
+      "pathPrefix": "/terrarium/",
+      "basis": "https://registry.opendata.aws/terrain-tiles/",
+      "why": "A public AWS Open Data bucket (Mapzen Terrain Tiles). The registry page lists tools whose purpose is to download tiles in bulk, and the licence it points to (tilezen/joerd attribution.md) asks for attribution, not for a limit on copying.",
+      "whyJp": "AWS Open Data の公開バケット（Mapzen Terrain Tiles）。登録ページはタイルを一括で取得する道具を挙げており、ライセンス（tilezen/joerd の attribution.md）が求めるのは帰属表示で、複製の制限ではありません。"
+    },
+    {
+      "host": "elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com",
+      "kind": "terrain-dem",
+      "allowed": true,
+      "pathPrefix": "/terrarium/",
+      "basis": "https://registry.opendata.aws/terrain-tiles/",
+      "why": "A public AWS Open Data bucket (Mapzen Terrain Tiles). The registry page lists tools whose purpose is to download tiles in bulk, and the licence it points to (tilezen/joerd attribution.md) asks for attribution, not for a limit on copying.",
+      "whyJp": "AWS Open Data の公開バケット（Mapzen Terrain Tiles）。登録ページはタイルを一括で取得する道具を挙げており、ライセンス（tilezen/joerd の attribution.md）が求めるのは帰属表示で、複製の制限ではありません。"
+    },
+    {
+      "host": "elevation-tiles-prod.s3.us-east-1.amazonaws.com",
+      "kind": "terrain-dem",
+      "allowed": true,
+      "pathPrefix": "/terrarium/",
+      "basis": "https://registry.opendata.aws/terrain-tiles/",
+      "why": "A public AWS Open Data bucket (Mapzen Terrain Tiles). The registry page lists tools whose purpose is to download tiles in bulk, and the licence it points to (tilezen/joerd attribution.md) asks for attribution, not for a limit on copying.",
+      "whyJp": "AWS Open Data の公開バケット（Mapzen Terrain Tiles）。登録ページはタイルを一括で取得する道具を挙げており、ライセンス（tilezen/joerd の attribution.md）が求めるのは帰属表示で、複製の制限ではありません。"
+    },
+    {
+      "host": "tiles.openfreemap.org",
+      "kind": "vector-tiles",
+      "allowed": false,
+      "basis": "https://openfreemap.org/tos/",
+      "why": "Terms of Service, User Conduct: you will not \"attempt to collect data from the service in automated ways without permission\". Saving a region ahead of time is automated collection, so only tiles the reader has already looked at are kept, by the browser cache.",
+      "whyJp": "利用規約（User Conduct）は「許可なく自動的な方法でサービスからデータを収集しようとしない」ことを求めています。地域を先に保存するのは自動収集にあたるため、読者がすでに見たタイルだけをブラウザのキャッシュが保持します。"
+    }
+  ]
+}

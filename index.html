@@ -800,6 +800,13 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
       <button type="button" id="btn-kbd-help" class="ai-test-btn" style="width:100%;"><span data-icon="keyboard"></span> <span data-i18n="viewKbd">View keyboard shortcuts (or press ?)</span></button>
       <label for="setting-kbd-single" id="lbl-kbd-single" style="margin-top:12px;"></label><select id="setting-kbd-single"><option value="on"></option><option value="off"></option></select><!-- (map-a11y-structure) its words are written by js/keyboard-shortcuts.js in the reader's language (en + jp — CONSTITUTION §7) -->
     </div>
+    <!-- (keyboard-and-offline) the map read in words (Alt+R), and the map saved for use with no connection. Neither row carries
+         text here: js/keyboard-shortcuts.js writes the words, in the reader's language, beside the other keyboard rows. -->
+    <div class="setting-group" id="reading-offline-group">
+      <label for="setting-map-reading" id="lbl-map-reading"></label><select id="setting-map-reading"><option value="off"></option><option value="on"></option></select>
+      <label id="lbl-offline-maps" style="margin-top:12px;display:block;"></label>
+      <button type="button" id="btn-offline-maps" class="ai-test-btn" style="width:100%;" aria-labelledby="lbl-offline-maps btn-offline-label"><span data-icon="save"></span> <span id="btn-offline-label"></span></button>
+    </div>
     <!-- (#R30) Playground moved OUT of Settings → Layers ▸ Tools (the old Quiz-mode spot). Quiz mode now
          lives INSIDE the Playground hub. -->
     <!-- (#R29.1) Feedback & bug report — open the existing feedback flow or the new bug reporter anytime. -->

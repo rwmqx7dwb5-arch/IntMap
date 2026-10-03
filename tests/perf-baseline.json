@@ -4,7 +4,7 @@
     "gzip": 1587881,
     "brotli": 1198028,
     "requests": 9,
-    "modules": 310,
+    "modules": 311,
     "cssRaw": 386622,
     "cssGzip": 63660
   },
@@ -25,7 +25,7 @@
       "atlas-attach": 23189,
       "atlas-caps-modules": 80,
       "atlas-chart": 10493,
-      "atlas-console": 1323819,
+      "atlas-console": 1332872,
       "atlas-executor": 59369,
       "atlas-geo-resolve": 49361,
       "atlas-query": 48520,
@@ -122,7 +122,7 @@
   "dist": {
     "total": 857096364,
     "data": 745102527,
-    "assets": 19578243
+    "assets": 19695805
   },
   "phone": {
     "bytes": 342631,

@@ -154,6 +154,46 @@ const TILE_PATH_RULES = [
   { host: DEM_BUCKET + '.s3.dualstack.us-east-1.amazonaws.com',   prefix: '/terrarium/' },
   { host: DEM_BUCKET + '.s3.us-east-1.amazonaws.com',             prefix: '/terrarium/' },
 ];
+/* ══ (keyboard-and-offline) THE REGION THE READER SAVED, AND WHEN IT IS ANSWERED ═══════════════════════════════
+   js/offline-maps.js keeps a region's files in a cache the PAGE owns — `intmap-page-offline-v1`, so activate
+   (keepOnActivate: the `intmap-page-` prefix) never deletes it. This worker only READS it, and only when the
+   browser says it is offline (the shell's rule, above): online, nothing here changes — the network answers exactly
+   as before, and a saved file is never preferred over a fresh one. Offline, a request is answered from the saved
+   region when it holds the file, and goes on as it would have when it does not (the browser's own error).
+   ⚠ THE KEY OF A TERRAIN TILE IS ONE SPELLING. The same tile is requested under five host aliases (#R7 round-robins them,
+   MapLibre picks one by (x+y) % 5), and the page saved it once, under the virtual-hosted spelling; offlineKey() maps
+   every alias to it with the SAME rules isTileRequest() admits (TILE_PATH_RULES). js/offline-plan.js savableTemplate()
+   chooses that spelling from the policy; tests/keyboard-and-offline-checks.test.mjs holds the two equal for all five. */
+const OFFLINE_CACHE = 'intmap-page-offline-v1';
+/* the spelling every alias is saved under: the FIRST virtual-hosted rule above (its prefix is the bare dataset path) */
+const OFFLINE_DEM_HOME = TILE_PATH_RULES.find((r) => r.prefix === '/terrarium/');
+function offlineKey(url) {
+  try {
+    const u = new URL(url);
+    for (const r of TILE_PATH_RULES) {
+      if (r.host === u.hostname && u.pathname.startsWith(r.prefix)) return 'https://' + OFFLINE_DEM_HOME.host + OFFLINE_DEM_HOME.prefix + u.pathname.slice(r.prefix.length);
+    }
+    return u.href.split('#')[0];
+  } catch (_) { return url; }
+}
+const isOffline = () => !!(self.navigator && self.navigator.onLine === false);
+async function offlineHit(url) {
+  try { return await caches.match(offlineKey(url), { cacheName: OFFLINE_CACHE }); } catch (_) { return undefined; }
+}
+/* a same-origin file of the app (a layer's data or code) while offline: the saved region, else the network as before.
+   A navigation is the shell's (answerFromShell), and another origin's request is never answered from here.
+   ⚠ ONLY A BUILT WORKER (SHELL_CACHE): a same-origin file is worth answering only where the app itself can open with no network,
+   and that is the shell's doing. A worker that was never built (the dev server) answers nothing but tiles — the contract
+   tests/installable-app-checks.test.mjs ⑧ holds — and the tile path above still answers a saved terrain tile there. */
+function answerFromOffline(event) {
+  if (!SHELL_CACHE || !isOffline()) return false;
+  const req = event.request;
+  if (req.mode === 'navigate') return false;
+  let u; try { u = new URL(req.url); } catch (_) { return false; }
+  if (u.origin !== self.location.origin) return false;
+  event.respondWith((async () => (await offlineHit(req.url)) || fetch(req))());
+  return true;
+}
 function isTileRequest(url) {
   let u;
   try { u = new URL(url); } catch { return false; }
@@ -397,7 +437,7 @@ async function trim(cache, force) {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
-  if (!isTileRequest(req.url)) { answerFromShell(event); return; }   // (installable-app) the shell, else the network as always
+  if (!isTileRequest(req.url)) { if (!answerFromShell(event)) answerFromOffline(event); return; }   // (installable-app) the shell; (keyboard-and-offline) else the saved region while offline; else the network as always
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
@@ -413,6 +453,7 @@ self.addEventListener('fetch', (event) => {
       }
       return hit;                                                 // ZERO network on revisit
     }
+    if (isOffline()) { const saved = await offlineHit(req.url); if (saved) return saved; }   // (keyboard-and-offline) the region the reader saved
     try {
       const res = await fetch(req);
       // Store only CORS-clean, OK responses (so MapLibre can render them to WebGL).
@@ -421,6 +462,8 @@ self.addEventListener('fetch', (event) => {
     } catch (err) {
       const stale = await cache.match(req, { ignoreVary: true });
       if (stale) return stale;
+      const saved = await offlineHit(req.url);              // (keyboard-and-offline) online by the browser's word, but the network did not answer
+      if (saved) return saved;
       throw err;
     }
   })());

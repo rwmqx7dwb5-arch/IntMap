@@ -1521,7 +1521,8 @@
     .ash-panel .ash-tl{ font-size:11px; font-variant-numeric:tabular-nums; min-width:48px; text-align:right; }
     .ash-panel .ash-legend{ display:flex; flex-wrap:wrap; gap:10px; font-size:10.5px; color:var(--text-muted); }
     .ash-panel .ash-foot{ font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:4px; }
-    @media (max-width:768px){ .ash-panel{ left:0; right:0; top:auto; bottom:0; width:100%; max-height:62vh; border-radius:16px 16px 0 0; } }
+    /* (mobile-panels-reach) on a phone the panel is a card ABOVE the sheet: makeFloatFit lifts it clear of the sheet and the credit, and it stops short of the control group (`--m-legend-right`, as the place card does) — edge to edge, its × sat under the group's buttons */
+    @media (max-width:768px){ .ash-panel{ left:var(--m-edge,8px); right:var(--m-legend-right,8px); top:auto; bottom:0; width:auto; max-height:62vh; border-radius:16px; } }
     /* the layer legend: the colour-mode switch, and the key for whichever mode is on */
     .volc-key{ display:flex; flex-direction:column; gap:4px; margin-top:6px; font-size:11px; color:var(--text-main); }
     .volc-modes{ display:flex; gap:3px; margin-bottom:3px; }
@@ -2800,6 +2801,15 @@
         max-height:max(160px, calc(100dvh - var(--sheet-cover, var(--peek-h)) - var(--m-credit-h, 23px) - 20px - var(--m-legend-top))) !important;
         border-radius:18px !important; overflow-y:auto; overscroll-behavior:contain; touch-action:pan-y; padding-top:18px; z-index:var(--z-m-card); animation:none; }
       #map-container > .country-popup::before{ display:none; }
+      /* (mobile-panels-reach) THE REST OF WHAT FLOATS OVER THE MAP. The rule above names one family; every other panel the
+         map holds (the ash panel, the tour builder, the simulators…) is found by what it is — positioned, drawn, holds a
+         control, not the sheet or a modal — by js/mobile-sheet.js makeFloatFit, which measures it against the sheet's current
+         top and the data credit and writes ONLY these tokens: `cap` keeps it as tall as the room above the sheet, `dy` moves
+         it up out from under the sheet (a panel the map holds is painted below the sheet whatever its z-index), `scroll` is for a
+         panel with no scroll box of its own. The attribute is absent on a panel that already fits, so nothing else changes. */
+      [data-m-fit~="cap"]{ max-height:var(--m-fit-h) !important; }
+      [data-m-fit~="dy"]{ translate:0 var(--m-fit-dy); }
+      [data-m-fit~="scroll"]{ overflow-y:auto !important; overscroll-behavior:contain; }
 
       /* roomier tap targets across content */
       .news-item{ padding:11px 15px; } .stat-row{ padding:8px 14px; }   /* (#R137) tighter top/bottom padding inside country cards on mobile ("国カード内部の上下方向の余白を詰めて") */

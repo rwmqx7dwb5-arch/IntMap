@@ -753,6 +753,14 @@
       },
       "probe": {
         "url": "https://elevation-tiles-prod.s3.amazonaws.com/terrarium/4/8/5.png"
+      },
+      "offline": {
+        "allowed": true,
+        "kind": "terrain-dem",
+        "pathPrefix": "/terrarium/",
+        "basis": "https://registry.opendata.aws/terrain-tiles/",
+        "why": "A public AWS Open Data bucket (Mapzen Terrain Tiles). The registry page lists tools whose purpose is to download tiles in bulk, and the licence it points to (tilezen/joerd attribution.md) asks for attribution, not for a limit on copying.",
+        "whyJp": "AWS Open Data の公開バケット（Mapzen Terrain Tiles）。登録ページはタイルを一括で取得する道具を挙げており、ライセンス（tilezen/joerd の attribution.md）が求めるのは帰属表示で、複製の制限ではありません。"
       }
     },
     {
@@ -769,6 +777,14 @@
       },
       "probe": {
         "url": "https://elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com/terrarium/4/8/5.png"
+      },
+      "offline": {
+        "allowed": true,
+        "kind": "terrain-dem",
+        "pathPrefix": "/terrarium/",
+        "basis": "https://registry.opendata.aws/terrain-tiles/",
+        "why": "A public AWS Open Data bucket (Mapzen Terrain Tiles). The registry page lists tools whose purpose is to download tiles in bulk, and the licence it points to (tilezen/joerd attribution.md) asks for attribution, not for a limit on copying.",
+        "whyJp": "AWS Open Data の公開バケット（Mapzen Terrain Tiles）。登録ページはタイルを一括で取得する道具を挙げており、ライセンス（tilezen/joerd の attribution.md）が求めるのは帰属表示で、複製の制限ではありません。"
       }
     },
     {
@@ -785,6 +801,14 @@
       },
       "probe": {
         "url": "https://elevation-tiles-prod.s3.us-east-1.amazonaws.com/terrarium/4/8/5.png"
+      },
+      "offline": {
+        "allowed": true,
+        "kind": "terrain-dem",
+        "pathPrefix": "/terrarium/",
+        "basis": "https://registry.opendata.aws/terrain-tiles/",
+        "why": "A public AWS Open Data bucket (Mapzen Terrain Tiles). The registry page lists tools whose purpose is to download tiles in bulk, and the licence it points to (tilezen/joerd attribution.md) asks for attribution, not for a limit on copying.",
+        "whyJp": "AWS Open Data の公開バケット（Mapzen Terrain Tiles）。登録ページはタイルを一括で取得する道具を挙げており、ライセンス（tilezen/joerd の attribution.md）が求めるのは帰属表示で、複製の制限ではありません。"
       }
     },
     {
@@ -1656,6 +1680,13 @@
       },
       "probe": {
         "url": "https://tiles.openfreemap.org/fonts/Noto%20Sans%20Regular/0-255.pbf"
+      },
+      "offline": {
+        "allowed": false,
+        "kind": "vector-tiles",
+        "basis": "https://openfreemap.org/tos/",
+        "why": "Terms of Service, User Conduct: you will not \"attempt to collect data from the service in automated ways without permission\". Saving a region ahead of time is automated collection, so only tiles the reader has already looked at are kept, by the browser cache.",
+        "whyJp": "利用規約（User Conduct）は「許可なく自動的な方法でサービスからデータを収集しようとしない」ことを求めています。地域を先に保存するのは自動収集にあたるため、読者がすでに見たタイルだけをブラウザのキャッシュが保持します。"
       }
     },
     {
@@ -2164,5 +2195,6 @@
       "what": "data-centre source citation",
       "link": "the source citation of a data-centre record, shown as a hyperlink (<a href>) in the data-centre popup (js/datacenters.js p.src); never fetched"
     }
-  ]
+  ],
+  "offlineNote": "`offline` (optional, per host row): may IntMap save this host's files for a reader to use with no network, and on whose word. allowed:true needs kind, pathPrefix (the only part of the host that is covered) and basis (the terms page); allowed:false needs basis and why. A row with no `offline` states nothing, and silence is not permission: the offline maps never save from it. data/offline-sources.json is derived from these rows by scripts/offline-sources.mjs; check:datagov (rule offline-declared) fails when they disagree."
 }

@@ -842,7 +842,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  182 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  184 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -960,7 +960,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全182を検索・到達可能 181）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全184を検索・到達可能 183）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -976,9 +976,9 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 182能力ぶんの型・列挙・範囲と `required`/`anyOf`。
-atlas-schemas.js                  **引数の schema**（#R406）— 182 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
-                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
+atlas-schemas.js                  **引数の schema**（#R406）— 184能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 184 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
+atlas-schemas.js                  **引数の schema**（#R406）— 184 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）
@@ -1242,7 +1242,21 @@ dialog.js                         ダイアログの唯一の契約 window.IntMa
 map-narrator.js                   地図のテキスト代替——視覚的に隠した role=status に、中心の場所（過去の年は
                                   その年の記録から）・表示中の日付・Active layers・表示範囲の件数・選択中の地物を
                                   落ち着いてから 1 文で。#map を名前つき region にし、Alt+N / Alt+Shift+N で中心付近の
-                                  地物をレンダラ自身のクリック経路（GE().events.pressAt）で押す（map-a11y-structure）
+                                  地物をレンダラ自身のクリック経路（GE().events.pressAt）で押す（map-a11y-structure）。
+                                  Alt+R / Alt+Shift+R は js/map-reader.js を必要になったときだけ取りに行く（keyboard-and-offline）
+narrator-api.js                   narrator が lazy な読み手（map-reader.js・offline-maps.js）へ渡す戸口（say・summarise・enrich・host・engine）。
+                                  **import を持たない葉**——lazy が map-narrator.js を import すると narrator が lazy と共有され、
+                                  共有モジュール同士の辺を entry へ折り込めず eager の request が 1 本増える（vite.config.js の codeSplitting の註）
+map-reader.js                     **地図を言葉で読む**——Alt+R で中心にあるもの（場所と行政区分・国・標高・現地時刻・表示中レイヤーの値）を
+                                  読み上げ、Alt+Shift+R で読み上げモード（地図を動かすたびに、動いた向きと距離のあとに同じ段落）。
+                                  地点プロファイル（place-dossier.js の `placeProfile` / `profileSpeech`）を話すだけで、
+                                  ライブ領域に書くのは narrator だけ。Settings ▸ キーボード のスイッチと Atlas の settings.mapReading が同じ関数を呼ぶ
+offline-plan.js                   **持ち歩ける地図の純粋な部分**——タイル範囲・日付変更線・粗い順・収まる細かさ、
+                                  そして「保存してよいか」の判定（`verdict`）。許可は `data/offline-sources.json` が述べたものだけで、
+                                  述べられていないホストは `not-stated`＝拒否（沈黙は許可ではない）
+offline-maps.js                   **持ち歩ける地図（オフライン）**——表示範囲の地形タイルと、開いたレイヤーの IntMap 自身のデータ・コードを
+                                  `intmap-page-offline-v1` に保存し、sw.js が回線なしのときだけ返す。保存前に大きさ（タイルの重さは実測）と、
+                                  保存しないもの＋理由（規約）を見せる。保存済みの一覧と削除。Settings と Atlas の settings.offlineMaps が同じ関数を呼ぶ
 legal-page.js                     同じ本文を privacy.html / terms.html として出す（chrome は9言語）
 showcase.js                       見本の地図の宣言（純データ）と、scripts/showcase-capture.mjs が書くリンク・写真の生成領域。
                                   紹介ページ・アプリ内ギャラリー・Atlas の panel.showcase・spec・landing.mjs --check が読む。
@@ -1361,6 +1375,9 @@ service-status.json               **昨夜の確認を読者へ**——上流ホ
                                   応答しなくなった時刻（`upstream-liveness` の結果から）と、Atlas の夜間評価の実行記録。
                                   先頭に出自（IntMap 自身の測定）を値で持つ。生成は scripts/build-service-status.mjs
                                   （`.github/workflows/tle-refresh.yml` が 1 日 2 回）
+offline-sources.json              **どの供給元のファイルを回線なしで使えるよう保存してよいか**——`scripts/outbound-hosts.json` の各ホスト行の
+                                  `offline`（allowed・kind・pathPrefix・規約の URL・理由）から導出。述べられていないホストは入らない。
+                                  生成は scripts/offline-sources.mjs（`--write` / `--check`）。`check:datagov`（規則 offline-declared）が突き合わせる
 hist-places.json                  Pleiades の独立地名（6698 地点・12646 件の年代付き名称記録）。CC BY 3.0。
                                   出典の代表点・原綴り・転写・言語コード・期間を保持し、Chronos 旅行時に遅延取得。
                                   名称の期間は創建・廃絶の年代を意味しない。生成は scripts/build-hist-places.mjs
@@ -1898,6 +1915,7 @@ scripts/
                                   前夜と比べ、`--fail-on-transition` は up→2 回続けて down の回だけ exit 1。`--check` は宣言だけ
   build-service-status.mjs        `data/service-status.json` を作る。最新の `upstream-liveness` artifact と `atlas-eval.yml`
                                   の実行記録を gh で読み、言うことが変わったときだけ書く。読めなかった半分は `null` と理由
+  offline-sources.mjs             `data/offline-sources.json` を、ホスト台帳（outbound-hosts.json）の `offline` から導出して書く／照合する
   lib/nightly-status.mjs          夜間ジョブの記録を値にする 1 か所——`readerUpstreams`（読者向けの上流の要約）・
                                   `atlasEvalState` / `atlasEvalLine`（最後の成功・最新の回が何も測っていないか・失敗した段の注記）。
                                   `build-service-status.mjs` と `worktree.mjs status` が読む
@@ -2027,7 +2045,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 133 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 135 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

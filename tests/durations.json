@@ -1,5 +1,6 @@
 {
  "tests/mobile-card-reach.spec.js": 14,
+ "tests/mobile-panels-reach.spec.js": 35,
  "tests/first-impression.spec.js": 22,
  "tests/place-dossier.spec.js": 13,
  "tests/map-postcard.spec.js": 13,
@@ -140,5 +141,6 @@
   "-cesium.*.spec.js$"
  ],
  "tests/atlas-live-stream.spec.js": 36,
- "tests/supporter-funnel.spec.js": 28
+ "tests/supporter-funnel.spec.js": 28,
+ "tests/keyboard-and-offline.spec.js": 23
 }

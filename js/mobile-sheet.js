@@ -269,3 +269,122 @@ export function makeLegendTray(o) {
   recount();
   return { recount, open: () => setOpen(true), close: () => setOpen(false), count: () => Math.max(0, n), isOpen: () => document.body.classList.contains('m-leg-open') };
 }
+
+/* ── everything else that floats over the map ────────────────────────────────────────────────── */
+
+/* ⚠ (mobile-panels-reach) A FLOATING PANEL IS FOUND BY WHAT IT IS, NOT BY WHAT IT IS CALLED. #936 held one family
+   (`#map-container > .country-popup`) above the sheet and the data credit by naming it in the stylesheet; production then
+   showed the same defect in the ash panel — a panel the map holds, drawn UNDER the sheet because #map-container is a
+   stacking context below it, whose «Run on the live upper-air wind» sat at y 740 under the sheet's grip. Naming the next
+   panel would be the same fix again. A floater is any direct child of <body>, the map or its column that is positioned
+   (fixed / absolute), drawn, takes a finger, holds a control, and is neither the sheet's own screens, the credit (the
+   bound itself), a box that covers the screen (the map, a modal) nor a MODAL BOTTOM SHEET — a box shaped like the sheet
+   (edge to edge, on the bottom edge) that is painted OVER the sheet, as the country card is, which replaces the sheet
+   instead of floating above it. A panel the reader dragged (`data-dragged`) is where the reader put it. */
+const FLOAT_GAP = 20;     /* the gap above the data credit — the same 20 px css/intmap.css `#map-container > .country-popup` keeps (#936) */
+const FLOAT_FLOOR = 6;    /* the top a panel too tall for the room is held to when the page states no chrome row (o.floor) — else the row's bottom */
+const FLOAT_ATTR = 'data-m-fit';   /* tokens: `cap` (max-height) · `dy` (translate) · `scroll` (overflow-y) — css/intmap.css reads them */
+const FLOAT_CONTROL = 'button, a[href], input, select, textarea, [role="button"]';
+
+/** the lowest y a floating panel may reach: above the sheet's current top, above the data credit, and the gap */
+function floatBound(vh, cover, creditH) { return vh - cover - creditH - FLOAT_GAP; }
+
+/** the vertical shift (px, + down) that puts a box of this top/bottom inside [floor, bound]; 0 when it already is.
+    Called on a box already held to `bound - floor` tall, so the two moves cannot ask for opposite things. */
+function floatShift(top, bottom, floor, bound) {
+  if (bottom > bound) return bound - bottom;
+  if (top < 0) return Math.min(floor - top, bound - bottom);
+  return 0;
+}
+
+/**
+ * @param {{hosts:HTMLElement[], sheet:HTMLElement, credit?:HTMLElement|null, active:()=>boolean,
+
+ *   cover:()=>number, creditH:()=>number, floor?:()=>number, frame:(key:string, fn:Function)=>void}} o
+ *   hosts — the elements whose DIRECT children are searched · cover/creditH/floor — the numbers js/mobile-ui.js already keeps
+ *   (floor: where the top chrome ends, `--m-legend-top`; a panel held at the screen's top edge would sit under the map switcher)
+ */
+export function makeFloatFit(o) {
+  const hosts = o.hosts.filter(Boolean), sheet = o.sheet;
+  const live = new Set(), fitted = new Set(), watched = new WeakSet();
+  let mo = null, ro = null, scanQ = false, fitQ = false;
+
+  const drawn = (el, cs) => (el.checkVisibility ? el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) : cs.display !== 'none');
+  /* a modal bottom sheet: sheet-shaped and painted over the sheet where they meet (the country card). Read from the
+     paint order at a point they share, never from a z-index number — #map-container's children can carry 2212 and still
+     be under the sheet. */
+  function overlaysSheet(el, r) {
+    if (r.left > 1 || r.right < innerWidth - 1 || r.bottom < innerHeight - 1) return false;
+    const sr = sheet.getBoundingClientRect(), y = Math.max(r.top, sr.top) + 3;
+    if (y >= Math.min(r.bottom, sr.bottom)) return false;
+    for (const n of document.elementsFromPoint(r.left + r.width / 2, y)) { if (el.contains(n)) return true; if (sheet.contains(n)) return false; }
+    return false;
+  }
+  function isFloater(el) {
+    if (!el || el.nodeType !== 1 || !el.isConnected) return false;
+    if (el === sheet || el.contains(sheet) || el === o.credit || el.contains(o.credit) || el.matches('.m-sheet, .m-scrim')) return false;
+    if (el.hasAttribute('data-dragged')) return false;
+    /* a sheet of its own — it carries its own drag handle and its own resting heights (the route planner's .rtp-grip,
+       tests/smoke.spec.js R291 ⑧): capping it to the room above the app's sheet collapsed its mid and full detents into one
+       height. It places itself; holding it is its job, not this one's. */
+    if (el.querySelector(':scope > [class*="grip"]')) return false;
+    let cs; try { cs = getComputedStyle(el); } catch (_) { return false; }
+    if (cs.position !== 'fixed' && cs.position !== 'absolute') return false;
+    if (cs.pointerEvents === 'none' || !drawn(el, cs)) return false;
+    const r = el.getBoundingClientRect();
+    if (r.width * r.height >= 0.9 * innerWidth * innerHeight) return false;
+    return !!el.querySelector(FLOAT_CONTROL);
+  }
+
+  function unfit(el) { el.removeAttribute(FLOAT_ATTR); el.style.removeProperty('--m-fit-h'); el.style.removeProperty('--m-fit-dy'); fitted.delete(el); }
+  function fitOne(el, floor) {
+    /* measuring un-holds the panel for a moment, and a panel with no cap is tall enough to need no scroll — the browser clamps
+       its scrollTop to 0 as it is laid out. A finger that had scrolled it was put back at the top by the next fit; so the reader's
+       place is kept across the measurement and put back once the hold is re-applied. */
+    const kept = [el, ...el.querySelectorAll('*')].filter((n) => n.scrollTop > 0).map((n) => [n, n.scrollTop]);   /* the panel itself, or the inner box that takes the cap */
+    el.removeAttribute(FLOAT_ATTR);                      /* measure the panel as it draws itself, not as it was last held */
+    let r = el.getBoundingClientRect();
+    const restore = () => { for (const [n, y] of kept) if (n.scrollTop !== y) n.scrollTop = y; };
+    const bound = floatBound(innerHeight, o.cover(), o.creditH());
+    if (r.bottom <= bound + 0.5 && r.top >= -0.5) { fitted.delete(el); return; }
+    if (overlaysSheet(el, r)) { fitted.delete(el); return; }
+    const tok = [], room = bound - floor;
+    if (room < 80) { fitted.delete(el); return; }        /* no map above the sheet to hold it in (the sheet is at full): nothing to fit to */
+    if (r.height > room) { el.style.setProperty('--m-fit-h', room + 'px'); tok.push('cap'); el.setAttribute(FLOAT_ATTR, 'cap'); r = el.getBoundingClientRect(); }
+    const dy = floatShift(r.top, r.bottom, floor, bound);
+    if (dy) { el.style.setProperty('--m-fit-dy', dy + 'px'); tok.push('dy'); }
+    el.setAttribute(FLOAT_ATTR, tok.join(' '));
+    /* a panel with no scroll box of its own (its inner body does not absorb the cap): what was cut off must still be reachable */
+    try { if (tok.includes('cap') && el.scrollHeight > el.clientHeight + 1 && !/auto|scroll/.test(getComputedStyle(el).overflowY)) { tok.push('scroll'); el.setAttribute(FLOAT_ATTR, tok.join(' ')); } } catch (_) { }
+    restore();
+    fitted.add(el);
+  }
+  function fit() {
+    fitQ = false;
+    if (!o.active()) { fitted.forEach(unfit); return; }
+    const floor = Math.max(FLOAT_FLOOR, (o.floor && o.floor()) || 0);
+    live.forEach((el) => fitOne(el, floor));
+    if (mo) mo.takeRecords();                            /* those writes are this function's own, not a change to answer */
+  }
+  function scan() {
+    scanQ = false;
+    live.clear();
+    if (o.active()) for (const h of hosts) for (const el of h.children) { watch(el); if (isFloater(el)) live.add(el); }
+    for (const el of Array.from(fitted)) if (!live.has(el)) unfit(el);
+    fit();
+  }
+  function watch(el) {
+    if (watched.has(el)) return; watched.add(el);
+    if (mo) mo.observe(el, { attributes: true, attributeFilter: ['style', 'class', 'hidden', 'data-dragged'] });
+    if (ro) ro.observe(el);
+  }
+  const askScan = () => { if (scanQ) return; scanQ = true; o.frame('mobile.float-scan', scan); };
+  const askFit = () => { if (fitQ || scanQ || !live.size && !fitted.size) return; fitQ = true; o.frame('mobile.float-fit', fit); };
+
+  /* what this function writes is dropped by takeRecords() in fit(); every other record is news */
+  if (typeof MutationObserver === 'function') { mo = new MutationObserver(askScan); hosts.forEach((h) => mo.observe(h, { childList: true })); }
+  if (typeof ResizeObserver === 'function') ro = new ResizeObserver(askFit);
+  hosts.forEach((h) => Array.prototype.forEach.call(h.children, watch));
+  askScan();
+  return { ask: askFit, scan: askScan, fitted: () => Array.from(fitted) };
+}
