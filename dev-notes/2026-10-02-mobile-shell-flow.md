@@ -2,6 +2,8 @@
 title: 作り変えたスマホの画面の流れ——シートの段を「読者がいま何をしているか」の 1 つの表で決める。場所を選ぶとシートは検索欄の段へ下がりカードが見える、アプリが地図を動かせば full から half へ、カードは操作グループに届かない、Chronos は指で動かすものが先
 date: 2026-10-02
 pr: 904
+newsen: On phones, the sheet moves out of the way when you pick a place or the map moves, so the place card stays in view.
+newsjp: スマホで場所を選んだときや地図が動いたとき、シートが下がって場所のカードが見えるようになりました。
 ---
 
 〈依頼〉本番（0cb41ee・390×844）で、作り変えたスマホの画面（シート 1 枚と操作グループ）の**流れ**に欠陥が 5 つ見つかった。構造で直す: ① 候補を選んだ後もシートが全体の段のまま ② 地点カードの × が操作グループの下 ③ Chronos を半分で開くと年スライダーが画面外 ④ 半分の段に残る 44 px 未満 ⑤ ピンチで `Unable to preventDefault inside passive event listener invocation.`。

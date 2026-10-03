@@ -1,0 +1,12 @@
+/* (ops-next) the updates page — updates.html / ja/updates.html, written by scripts/whats-new.mjs.
+   Built on css/pages.css's palette and css/landing.css's frame; only the list is its own. */
+.wn-main{ max-width:820px; }
+.wn-feed{ margin:0; font-size:15px; }
+.wn-day{ margin-top:36px; }
+.wn-day h2{ font-size:13px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--pg-mut); margin:0 0 10px 4px; }
+.wn-list{ list-style:none; margin:0; padding:0; background:var(--pg-surface); border:1px solid var(--pg-line-soft); border-radius:var(--pg-radius); box-shadow:var(--pg-shadow); overflow:hidden; }
+.wn-list li{ padding:14px 18px; }
+.wn-list li + li{ border-top:1px solid var(--pg-line-soft); }
+.wn-list li:target{ background:var(--pg-accent-soft); }
+.wn-list p{ margin:0; font-size:16px; line-height:1.55; color:var(--pg-ink); }
+.wn-pr{ display:inline-block; margin-top:4px; font-size:13px; color:var(--pg-mut) !important; }

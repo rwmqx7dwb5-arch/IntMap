@@ -148,6 +148,15 @@ Issue 1 本に書き直される。セッションは Secret のリフレッシ�
   それが正しいかは観測器自身の検査の仕事。
 - **時系列。** 報告は前夜の `history` を引き継いで 1 行足す（半年分）。種類別・言語別・能力別の正答率を
   夜ごとに並べ、最新が悪いものを上に置く。報告は Issue・成果物に加えて run のページ（Job summary）に出る。
+- **セッションの要らない半分は毎晩測る。** 同じ workflow の `offline` job が Secret と無関係に
+  `node scripts/atlas-eval.mjs --offline` を走らせ、① 全カセットの再生と ② **到達**
+  （`scripts/atlas-eval/reach.mjs`——解答つきの問いのうち `capabilities` を持つものについて、
+  **問いの言葉そのもの**を find_capability と同じ語彙検索に渡し、答えに要る能力がそれぞれ何位に出るか、
+  出ないか）を `atlas-eval-offline` として上げる。意味検索（ネットワーク）は呼ばず、モデルは自分で
+  問い合わせを書くので、**答えの評価ではなく IntMap 自身のコードの確認**であり、どこに出してもそう述べる。
+  ライブの報告（`atlas-eval-report`）とは**名前で区別**する（`scripts/lib/nightly-status.mjs`
+  `LIVE_REPORT`）——「成果物がある」を「測った」と読まない。`data/service-status.json` の
+  `atlasEval.offline` が件数だけを状態ページへ運ぶ。
 
 ### 15.7 上流の死活と、同梱データの鮮度
 
@@ -168,8 +177,34 @@ Issue 1 本に書き直される。セッションは Secret のリフレッシ�
 - **期限の来た束の一部は無人で取り直す。** `autoRefresh` を宣言した builder（軽い・鍵なし・全応答を
   確かめる——`check:datagov` の `refresh-safe` が確かめる）を、`tle-refresh.yml` の 1 段として
   `scripts/data-refresh.mjs` が期限（宣言された周期）の来たときだけ走らせ、衛星カタログと同じ PR に載せる。
+- **読者に見える記録（公開台帳）。** `scripts/build-service-status.mjs` が毎晩の結果を `data/service-status.json`
+  の `history` に 1 晩ずつ畳み込む（`advanceHistory`）——ホストごとに 1 晩 1 文字
+  （`a` 応答・`r` 拒否・`d` 無応答・`u` 確かめられず・`.` その晩は訊いていない）、最大 `HISTORY_KEEP`（90）晩。
+  **測った晩だけが晩**で、同じ晩は二度足さず、古い晩は過去を書き換えない。初回は `--backfill` で GitHub が
+  まだ持つ結果から埋める。読み手は状態ページ（晩ごとの応答率の棒・各データ元の帯）、出典ページとアプリ内の
+  出典一覧（「直近 N 晩の確認のうち M 晩で応答」）、Atlas の `diagnose`。割合は**測れた確認だけ**を分母にし、
+  `u` と `.` は停止とも応答とも数えない。
+- **2 つの宇宙。** 毎晩の確認はブラウザが話すホスト（`scripts/outbound-hosts.json`）と、国政選挙レイヤーを
+  作り直すときに読む上流（`scripts/elections/upstreams.json`、識別子は `elections/<pack>: <host>`）の両方を
+  測る。後者の読者向けの言葉は宣言そのもの（パックの発行元と、そこで読むもの）から `readerLedger()` が作る。
 - 正本: [`docs/DATA-GOVERNANCE.md`](../DATA-GOVERNANCE.md) §4.4〜§4.6（何を・なぜ）、
   [`docs/MONITORING.md`](../MONITORING.md) §1e（読み方）。
+
+### 15.9 更新情報（What's new）——merge の記録から読者へ
+
+- **正本は各 merge が書く記録。** `dev-notes/<日付>-<slug>.md` のうち、読者に見える変化を起こしたものは
+  front matter に `newsen:`／`newsjp:`（各 1 行・平文・絵文字なし・280 字以内・両方か無しか）を持つ。
+  規則は `scripts/dev-notes.mjs` の `newsProblems`、門は `node scripts/dev-notes.mjs --check`。
+  2 行の無い記録は内部の記録で、告知されない（技術者向けの題から文を作らない）。
+- **build が書く。** `scripts/whats-new.mjs`（vite の `whatsNewPlugin`）が `dist/` に
+  `whats-new.json`・`updates.html`／`ja/updates.html`・Atom フィード `updates.xml`／`ja/updates.xml`・
+  `sitemap-updates.xml`（`sitemap-index.xml` に連結）を書く。**追跡しない**——毎 PR が同じ生成物を書き換えて
+  並行 PR が衝突するのを避け、公開物が常に main の記録と一致するため。日付は記録の日付、変更（PR）への
+  リンクは記録が番号を持ち、リポジトリが読めるときだけ。
+- **読み手。** 設定 ▸ 新着（`js/whats-new.js`。初めて使われたときに取得）、そのボタンの未読の印（ボタンが
+  初めて画面に入ったときに数える＝起動では何も取らない。**未読＝この端末でまだ見せていない**。初めて見る
+  端末は基準を記録するだけで印を出さない）、Atlas の `system.whatsNew`、更新情報のページとフィード
+  （購読する側が取りに来る配信——どこへも投稿しない）。
 
 ### 15.8 nightly の赤を、それを起こした変更へ渡す
 

@@ -269,6 +269,7 @@ IntMapLang.define('jp', { ui: {
       viewConnections:"このページの通信 — どこと通信し、それぞれに何を送ったか",
       viewSecurityPage:"セキュリティと信頼 — IntMap の守り方と問題の報告方法 ↗",
       viewStatusPage:"いま動いているもの — この端末・レイヤー・データ元",
+      viewWhatsNew:"新着 — IntMap に加わった変更（新しい順）",
       newsCountryOff:"標準のニュースのみ",
       newsCountryMultiSel:"国を選択…",
       lblNewsSources:"ニュースの提供元",

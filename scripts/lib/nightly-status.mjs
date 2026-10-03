@@ -44,6 +44,7 @@ export function readerUpstreams(result, ledger) {
     const out = { host: h.host, verdict: h.verdict, why: h.why || null, status: h.status == null ? null : h.status };
     if (r.what) out.what = r.what;
     if (r.whatJp) out.whatJp = r.whatJp;
+    if (r.group) out.group = r.group;   /* (ops-next) «build»: a service a layer is rebuilt from, not one the browser asks */
     /* a host that answered tonight last answered tonight — the result's own clock, nothing invented */
     out.lastAlive = h.verdict === 'alive' ? result.measuredAt : (h.lastAlive || null);
     if (h.verdict === 'dead' || h.verdict === 'refused') {
@@ -72,6 +73,10 @@ export function readerUpstreams(result, ledger) {
 
 /* ── pure: the Atlas evaluation ───────────────────────────────────────────────────────────────── */
 
+/* (ops-next) the two reports atlas-eval.yml uploads: the live evaluation's, and the half that needs no session */
+export const LIVE_REPORT = 'atlas-eval-report';
+export const OFFLINE_REPORT = 'atlas-eval-offline';
+
 /* The platform's own line every failed step adds; it says a step failed, not why. */
 const GENERIC = /^Process completed with exit code \d+\.?$/;
 
@@ -86,6 +91,7 @@ export function atlasEvalState(list, details) {
   const d = details || {};
   const success = done.find((r) => r.conclusion === 'success') || null;
   const withReport = done.find((r) => d[r.id] && d[r.id].report === true) || null;
+  const withOffline = done.find((r) => d[r.id] && d[r.id].offline === true) || null;
   const latest = done[0] || null;
   let streak = 0;
   for (const r of done) { if (r.conclusion === 'success') break; streak++; }
@@ -96,6 +102,8 @@ export function atlasEvalState(list, details) {
     windowFrom: done.length ? done[done.length - 1].createdAt : null,
     lastSuccessAt: success ? success.createdAt : null,
     lastReportAt: withReport ? withReport.createdAt : null,
+    /* (ops-next) the newest run that uploaded the half needing no session — scripts/build-service-status.mjs reads it */
+    offlineRun: withOffline ? { id: withOffline.id, at: withOffline.createdAt } : null,
     failingRuns: streak,
     latest: latest ? {
       at: latest.createdAt, conclusion: latest.conclusion, url: latest.url || null, event: latest.event || null,
@@ -160,14 +168,22 @@ export function fetchAtlasEval(repo, { cwd, timeoutMs = 6000, perPage = 30, deta
 function runDetail(repo, id, o) {
   const out = { report: null, why: [], step: null };
   const arts = ghJSON(['api', `repos/${repo}/actions/runs/${id}/artifacts`], o);
-  if (arts && Number.isInteger(arts.total_count)) out.report = arts.total_count > 0;
+  /* ⚠ (ops-next) «a report» is THE LIVE REPORT, by name. Since the run also uploads `atlas-eval-offline` (the
+     half that needs no session, measured every night), «any artifact» would call a run that measured nothing
+     live «measured». The offline report is named apart, for scripts/build-service-status.mjs to read. */
+  if (arts && Array.isArray(arts.artifacts)) {
+    out.report = arts.artifacts.some((x) => x.name === LIVE_REPORT && !x.expired);
+    const off = arts.artifacts.find((x) => x.name === OFFLINE_REPORT && !x.expired);
+    out.offline = off ? true : false;
+  }
   const jobs = ghJSON(['api', `repos/${repo}/actions/runs/${id}/jobs`], o);
-  const job = jobs && Array.isArray(jobs.jobs) ? jobs.jobs.find((j) => j.conclusion && j.conclusion !== 'success') : null;
-  if (job) {
+  /* every job that did not succeed speaks — the offline job and the live one fail for different reasons */
+  const failed = jobs && Array.isArray(jobs.jobs) ? jobs.jobs.filter((j) => j.conclusion && j.conclusion !== 'success') : [];
+  for (const job of failed) {
     const st = (job.steps || []).find((s) => s.conclusion === 'failure');
-    out.step = st ? st.name : null;
+    if (!out.step) out.step = st ? st.name : null;
     const ann = ghJSON(['api', `repos/${repo}/check-runs/${job.id}/annotations`], o);
-    if (Array.isArray(ann)) out.why = ann.filter((a) => a.annotation_level === 'failure' && !GENERIC.test(String(a.message || '').trim())).map((a) => String(a.message).trim());
+    if (Array.isArray(ann)) out.why = out.why.concat(ann.filter((a) => a.annotation_level === 'failure' && !GENERIC.test(String(a.message || '').trim())).map((a) => String(a.message).trim()));
   }
   return out;
 }

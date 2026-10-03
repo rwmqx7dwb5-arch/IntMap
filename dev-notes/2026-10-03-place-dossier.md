@@ -1,6 +1,8 @@
 ---
 title: 地点プロファイル——1 地点について地図が知っていることを 1 枚に。名前と行政区分・国・標高・表示中レイヤーの値・現地時刻と日の出入りを 1 つの記録にし、カードと Atlas（research.placeProfile）が同じものを読む。読めない項目は行が消えず理由を述べる
 date: 2026-10-03
+newsen: Place profile: everything the map knows about one point on one card — name, area, elevation, layer values, local time, sunrise and sunset.
+newsjp: 地点プロファイル：1 地点について地図が知っていること（名前・行政区分・標高・表示中レイヤーの値・現地時刻・日の出入り）を 1 枚にしました。
 ---
 
 〈依頼〉新しい商品機能「地点プロファイル（Place dossier）」。地図上の任意地点（クリック/長押し、または検索で選んだ場所カード）から、その場所について地図が知っていることを全部 1 枚で返す口を作る。母集合はハードコードの一覧ではなく宣言/登録から発見し、値を取れない層は理由を出す。Atlas から到達でき、構造化した値（数値・単位・出典）を返す。

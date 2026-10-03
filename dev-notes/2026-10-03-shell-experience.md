@@ -1,6 +1,8 @@
 ---
 title: 「IntMap のいま」——夜の確認を読者へ。状態ページ・失敗が名指すデータ元・出典の一覧、Atlas 夜間評価が一度も走っていないことを worktree status が言う、中継の梯子も失敗の上流を述べる
 date: 2026-10-03
+newsen: New status page, IntMap now: this device, the layers that could not be drawn and why, and last night’s check of every data source.
+newsjp: 状態ページ「IntMap のいま」を追加。この端末・描けなかったレイヤーとその理由・毎晩の全データ元の確認を 1 枚にしました。
 ---
 
 〈依頼〉画面全体の体験の再開発（全権委任）。追補 2 件: ① upstream-liveness の夜間結果を読者に見える形にし、死んだ上流のレイヤーを空の地図ではなく理由付きで出す ② Atlas の夜間評価が Secret 不在で一度も走っていないことを `worktree.mjs status` と状態ページに言わせる。

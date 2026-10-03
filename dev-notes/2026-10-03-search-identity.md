@@ -1,6 +1,8 @@
 ---
 title: 地名検索の 1 行は 1 つの記録——「Japan · Tokyo」が日本の中心へ飛んでいた（首都の行が国の点を借りていた）。似ているものは他の入口と同じ尺度で測り、並びは名前・種別・人口、Enter は先頭の候補へ飛ぶ
 date: 2026-10-03
+newsen: Place search: each result is one place (choosing a capital no longer jumps to the country), and Enter goes to the first result.
+newsjp: 地名検索の 1 行が 1 つの場所になりました（首都を選ぶと国の中心へ飛んでいた誤りを修正）。Enter で先頭の候補へ飛びます。
 ---
 
 〈依頼〉本番（b797887）で観測: 地名検索で「Tokyo」と打つと候補に「Japan · Tokyo」があり、モバイルで 1 行目を 2 回タップして 2 回とも 36.143°N 138.442°E（長野の山中・標高 932 m）に着き、欄は「Japan」になった。候補に Togo・Takeo・Mokpo・Soyo が混ざる。Enter では動かない（5 秒無反応）。根本原因で直す（「Tokyo」の特例は足さない）。

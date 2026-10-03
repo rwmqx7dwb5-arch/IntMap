@@ -1,6 +1,8 @@
 ---
 title: 火山の週報が 502 だった——URL も解析も無事で、発行元が人による確認を前に置いていた。拒否を「読めなかった」と述べる
 date: 2026-10-03
+newsen: The weekly volcano report now says plainly when its publisher blocks automated reading, instead of failing without a word.
+newsjp: 火山の週報が、発行元が自動取得を止めているときにその旨を表示するようになりました。
 ---
 
 〈依頼〉 本番の `volcano-feed?feed=weekly` が 502 `upstream_error` を返し続け、火山カードを開くたびにコンソールエラーになる。

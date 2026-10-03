@@ -172,8 +172,15 @@ test('⑦ the shipped bundle states its own provenance in-band and lists only ho
   const b = JSON.parse(rd('data/service-status.json'));
   const head = Object.keys(b).slice(0, 13);
   for (const k of ['publisher', 'licence', 'licenceUrl', 'cadence', 'builtBy', 'schema', 'generatedAt', 'retrievedAt', 'asOf', 'quality']) assert.ok(head.includes(k), `in-band ${k} is at the head`);
-  const L = new Set(JSON.parse(rd('scripts/outbound-hosts.json')).hosts.map((h) => h.host));
-  if (b.upstream) for (const h of b.upstream.hosts) assert.ok(L.has(h.host), `${h.host} is a ledger row`);
+  /* (ops-next) the ledger is both universes the nightly check measures — the browser's hosts and the
+     services the elections layer is rebuilt from — read through the builder's own readerLedger() */
+  const { readerLedger } = await import('../scripts/build-service-status.mjs');
+  const LR = readerLedger(join(dirname(fileURLToPath(import.meta.url)), '..'));
+  const L = new Set(LR.hosts.map((h) => h.host));
+  if (b.upstream) for (const h of b.upstream.hosts) {
+    assert.ok(L.has(h.host), `${h.host} is a ledger row`);
+    assert.ok(h.what && h.whatJp, `${h.host} carries words in en and jp`);
+  }
   assert.equal(b.quality.rows, b.upstream ? b.upstream.hosts.length : 0);
   /* ⚠ the bundle carries its own `unread` list (empty when both halves were read) — the reader's test of
      「was it read」 must accept it. Measured: the first draft tested `!b.unread`, and an empty array is truthy,

@@ -143,6 +143,51 @@ export function upstreamSentence(row, lang, measuredAt) {
   return t(lang, en, en);
 }
 
+/* ── (ops-next) the record over time ─────────────────────────────────────────────────────────────
+   The bundle's `history` (scripts/build-service-status.mjs advanceHistory) is one character per host per
+   measured night: a alive · r refused · d dead · u unobserved · . not probed that night. These readers
+   count only what a night MEASURED: `u` and `.` are neither answered nor failed — they are left out of
+   both sides of the ratio, and the sentence says how many nights were measured. */
+const MEASURED = /[ard]/g;
+
+/** the series of one host (by the bundle row's own host, the key the builder wrote), or '' */
+function seriesOf(bundle, host) {
+  const H = bundle && bundle.history;
+  return H && H.hosts && typeof H.hosts[host] === 'string' ? H.hosts[host] : '';
+}
+
+/** { answered, measured, nights } for one series — nights is the span held, measured those that said something */
+export function recordOf(series) {
+  const s = String(series || '');
+  return { answered: (s.match(/a/g) || []).length, measured: (s.match(MEASURED) || []).length, nights: s.length };
+}
+
+/** every night's share of the measured sources that answered: [{ at, answered, measured }] oldest first */
+export function nightsOf(bundle) {
+  const H = bundle && bundle.history;
+  if (!H || !Array.isArray(H.nights) || !H.hosts) return [];
+  const series = Object.values(H.hosts);
+  return H.nights.map((at, i) => {
+    let answered = 0, measured = 0;
+    for (const s of series) { const c = s[i]; if (c === 'a') answered++; if (c === 'a' || c === 'r' || c === 'd') measured++; }
+    return { at, answered, measured };
+  });
+}
+
+/** one sentence about one host's record: 「直近 30 晩のうち 28 晩応答」 — or '' when no night measured it */
+export function recordSentence(series, lang) {
+  const r = recordOf(series);
+  if (!r.measured) return '';
+  if (r.answered === r.measured) {
+    return r.measured === 1 ? t(lang, 'Answered the one nightly check so far.', 'これまでの毎晩の確認（1 晩）で応答。')
+      : t(lang, 'Answered all of the last ' + r.measured + ' nightly checks.', '直近 ' + r.measured + ' 晩の確認すべてで応答。');
+  }
+  return t(lang, 'Answered ' + r.answered + ' of the last ' + r.measured + ' nightly checks.', '直近 ' + r.measured + ' 晩の確認のうち ' + r.answered + ' 晩で応答。');
+}
+
+/** the cells a strip draws for a series: [{ c, tone }] — the tone vocabulary of the rows */
+const CELL_TONE = Object.freeze({ a: 'ok', r: 'warn', d: 'bad', u: 'muted', '.': 'none' });
+
 /** what the reader is told a host is for, in their language — the ledger's words, else the host itself */
 const whatOf = (r, lang) => (lang === 'jp' ? (r.whatJp || r.what) : r.what) || r.host;
 
@@ -195,13 +240,33 @@ export function composeStatus(m, lang) {
     if (!bad.length) sup.push({ tone: 'ok', icon: 'check-circle', title: t(lang, 'Every source answered', 'すべてのデータ元が応答しました'), detail: head });
     else {
       sup.push({ tone: 'warn', icon: 'warning', title: t(lang, bad.length + ' source(s) did not answer', bad.length + ' 件のデータ元が応答しませんでした'), detail: head });
-      for (const r of bad) sup.push({ tone: 'bad', icon: 'dot', title: whatOf(r, lang), detail: r.host + ' — ' + upstreamSentence(r, lang, U.measuredAt) });
+      for (const r of bad) {
+        const rec = recordSentence(seriesOf(b, r.host), lang);
+        sup.push({ tone: 'bad', icon: 'dot', title: whatOf(r, lang), detail: r.host + ' — ' + upstreamSentence(r, lang, U.measuredAt) + (rec ? ' ' + rec : ''), series: seriesOf(b, r.host) });
+      }
       notes.push('upstream');
     }
-    all = U.hosts.map((r) => ({ tone: down(r) ? 'bad' : r.verdict === 'alive' ? 'ok' : 'muted', title: whatOf(r, lang), host: r.host,
-      detail: r.verdict === 'alive' ? t(lang, 'answering', '応答あり') : down(r) ? upstreamSentence(r, lang, U.measuredAt) : t(lang, 'not measured', '確認できず') }));
+    all = U.hosts.map((r) => {
+      const rec = recordSentence(seriesOf(b, r.host), lang);
+      return { tone: down(r) ? 'bad' : r.verdict === 'alive' ? 'ok' : 'muted', title: whatOf(r, lang), host: r.host, series: seriesOf(b, r.host),
+        detail: (r.verdict === 'alive' ? t(lang, 'answering', '応答あり') : down(r) ? upstreamSentence(r, lang, U.measuredAt) : t(lang, 'not measured', '確認できず')) + (rec ? ' · ' + rec : '') };
+    });
   }
-  out.sections.push({ id: 'upstream', title: t(lang, 'Data sources (checked every night)', 'データ元（毎晩の確認）'), rows: sup, all });
+  /* (ops-next) the record over time: every measured night, the share of the measured sources that answered.
+     A night is drawn only if the bundle holds it; the span is the bundle's, never assumed. */
+  const nights = nightsOf(b);
+  let record = null;
+  if (nights.length) {
+    const tot = nights.reduce((s, n) => ({ a: s.a + n.answered, m: s.m + n.measured }), { a: 0, m: 0 });
+    const pct = tot.m ? Math.round((tot.a / tot.m) * 1000) / 10 : null;
+    const from = when(nights[0].at, lang), to = when(nights[nights.length - 1].at, lang);
+    record = { nights, pct,
+      title: t(lang, 'The record: ' + nights.length + ' nightly check(s)', '記録: 毎晩の確認 ' + nights.length + ' 回分'),
+      detail: pct == null ? t(lang, 'No night measured any source.', 'どの晩もデータ元を測れていません。')
+        : t(lang, pct + '% of source checks answered, ' + from + ' – ' + to + '. Each bar is one night; a source the check could not reach is left out, not counted as down.',
+          from + ' 〜 ' + to + ' の確認のうち ' + pct + '% で応答。棒は 1 晩ずつ。確かめられなかったデータ元は数に入れず、停止とも数えません。') };
+  }
+  out.sections.push({ id: 'upstream', title: t(lang, 'Data sources (checked every night)', 'データ元（毎晩の確認）'), rows: sup, all, record });
 
   /* ── Atlas, evaluated ── */
   const A = b.atlasEval || null;
@@ -215,6 +280,15 @@ export function composeStatus(m, lang) {
     if (L && L.conclusion !== 'success') {
       atl.push({ tone: 'muted', icon: 'note', title: L.measured === false ? t(lang, 'The latest run (' + when(L.at, lang) + ') stopped before evaluating', '最新の回（' + when(L.at, lang) + '）は評価の前に止まりました') : t(lang, 'The latest run (' + when(L.at, lang) + ') did not pass', '最新の回（' + when(L.at, lang) + '）は通りませんでした'),
         detail: L.why && L.why.length ? t(lang, 'The run says: ', '実行の記録: ') + L.why[0] : '' });
+    }
+    /* (ops-next) the half that needs no session — measured every night even while the live half cannot be.
+       It is IntMap's own code between the model and the map, not Atlas's answers, and the row says so. */
+    const O = A.offline;
+    if (O && O.replay && O.reach) {
+      atl.push({ tone: O.replay.clean === O.replay.cassettes ? 'ok' : 'warn', icon: 'gauge',
+        title: t(lang, 'Measured without signing in' + (O.at ? ' (' + when(O.at, lang) + ')' : ''), 'ログイン不要の部分の計測' + (O.at ? '（' + when(O.at, lang) + '）' : '')),
+        detail: t(lang, O.replay.clean + ' of ' + O.replay.cassettes + ' recorded Atlas turns still run as recorded. The words of the answer-key questions alone (word search, not meaning) reach ' + O.reach.reached + ' of the ' + O.reach.pairs + ' capabilities their answers use. This checks IntMap’s own code, not the answers.',
+          '記録した Atlas の手順 ' + O.replay.cassettes + ' 本のうち ' + O.replay.clean + ' 本が記録どおりに動きます。解答つきの質問の言葉だけで（語の検索のみ・意味の検索なし）、答えに要る能力 ' + O.reach.pairs + ' 件のうち ' + O.reach.reached + ' 件に届きます。これは IntMap 自身のコードの確認で、答えの評価ではありません。') });
     }
   }
   out.sections.push({ id: 'atlas', title: t(lang, 'Atlas quality check', 'Atlas の品質評価'), rows: atl });
@@ -277,6 +351,22 @@ export function sourceNote(bundle, url, lang) {
   return rows.map((r) => upstreamSentence(r, lang, bundle.upstream && bundle.upstream.measuredAt) + (rows.length > 1 ? ' (' + r.host + ')' : '')).join(' ');
 }
 
+/**
+ * (ops-next) for the data-sources lists: the RECORD of the hosts behind a credit, over every night the bundle
+ * holds — said for every credit the nightly check measures, not only the failing ones, because «this source
+ * has answered all of the last 30 checks» is what a reader weighing the data wants to know. '' when no host
+ * behind the link is measured. Several hosts: the one sentence when all of them answered every check, else
+ * one sentence per host that did not.
+ */
+export function sourceRecord(bundle, url, lang) {
+  const rows = upstreamsForSource(bundle, url);
+  const recs = rows.map((r) => ({ r, s: seriesOf(bundle, r.host), k: recordOf(seriesOf(bundle, r.host)) })).filter((x) => x.k.measured);
+  if (!recs.length) return '';
+  const short = recs.filter((x) => x.k.answered < x.k.measured);
+  if (!short.length) return recordSentence(recs.reduce((m, x) => (x.k.measured > m.k.measured ? x : m)).s, lang);
+  return short.map((x) => recordSentence(x.s, lang) + (recs.length > 1 ? ' (' + x.r.host + ')' : '')).join(' ');
+}
+
 /** for Atlas (`diagnose`): the page as plain lines — the same model, no DOM */
 export async function describe(ctx) {
   const { lang, model } = await gather(ctx);
@@ -285,6 +375,7 @@ export async function describe(ctx) {
   for (const sec of s.sections) {
     lines.push('', sec.title);
     for (const r of sec.rows) lines.push('- ' + r.title + (r.detail ? ' — ' + r.detail : ''));
+    if (sec.record) lines.push('- ' + sec.record.title + ' — ' + sec.record.detail);
   }
   return { text: lines.join('\n'), status: s };
 }
@@ -314,7 +405,14 @@ const CSS = `
 #im-status summary{ cursor:pointer; font-size:13px; color:var(--primary-color); padding:10px 4px; min-height:44px; box-sizing:border-box; }
 #im-status .ims-foot{ display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
 #im-status .ims-foot .ai-test-btn{ flex:1 1 160px; min-height:44px; }
-@media (forced-colors: active){ #im-status .ims-badge{ border:1px solid CanvasText; } }
+#im-status .ims-record{ margin-top:8px; border-radius:14px; background:rgba(128,128,128,0.09); overflow:hidden; }
+#im-status .ims-bars{ display:flex; align-items:flex-end; gap:2px; height:40px; padding:12px 14px 4px; }
+#im-status .ims-bar{ flex:1 1 0; max-width:14px; min-width:3px; border-radius:2px; background:var(--ims-tone); }
+#im-status .ims-strip{ display:flex; gap:2px; margin-top:6px; }
+#im-status .ims-cell{ width:8px; height:12px; border-radius:2px; background:var(--ims-tone); flex:0 0 auto; }
+#im-status .ims-cell[data-tone="none"]{ background:transparent; box-shadow:inset 0 0 0 1px rgba(128,128,128,0.3); }
+#im-status [data-tone="none"]{ --ims-tone:transparent; }
+@media (forced-colors: active){ #im-status .ims-badge{ border:1px solid CanvasText; } #im-status .ims-bar, #im-status .ims-cell{ border:1px solid CanvasText; } }
 `;
 function ensureCSS() {
   if (document.getElementById('im-status-css')) return;
@@ -328,8 +426,29 @@ function rowNode(r) {
   const body = el('div', '');
   body.appendChild(el('div', 'ims-t', r.title));
   if (r.detail) body.appendChild(el('div', 'ims-d', r.detail));
+  if (r.series) body.appendChild(stripNode(r.series));
   row.append(ic, body);
   return row;
+}
+/* (ops-next) one cell per measured night of one source — the words are in the row's detail (recordSentence),
+   so the picture is hidden from assistive technology rather than read out cell by cell */
+function stripNode(series) {
+  const s = el('div', 'ims-strip'); s.setAttribute('aria-hidden', 'true');
+  for (const c of String(series)) { const k = el('span', 'ims-cell'); k.dataset.tone = CELL_TONE[c] || 'muted'; s.appendChild(k); }
+  return s;
+}
+/* (ops-next) one bar per night: its height the share of the measured sources that answered; green when every
+   measured source answered, amber when any did not. No threshold decides a colour — only «all» or «not all». */
+function barsNode(rec) {
+  const g = el('div', 'ims-bars'); g.setAttribute('aria-hidden', 'true');
+  for (const n of rec.nights) {
+    const b = el('span', 'ims-bar');
+    const share = n.measured ? n.answered / n.measured : 0;
+    b.dataset.tone = !n.measured ? 'muted' : n.answered === n.measured ? 'ok' : 'warn';
+    b.style.height = Math.max(8, Math.round(share * 100)) + '%';
+    g.appendChild(b);
+  }
+  return g;
 }
 const HEAD_ICON = { ok: 'check-circle', warn: 'warning', bad: 'warning' };
 
@@ -353,11 +472,18 @@ function render(root, s, lang) {
     const g = el('div', 'ims-group'); g.setAttribute('role', 'list');
     for (const r of sec.rows) { const n = rowNode(r); n.setAttribute('role', 'listitem'); g.appendChild(n); }
     box.append(h4, g);
+    if (sec.record) {
+      /* not an .ims-group: the section's rows are «one count row and one per supplier down» (tests/ui-a11y-polish.spec.js) */
+      const rg = el('div', 'ims-record');
+      rg.appendChild(rowNode({ tone: sec.record.pct === 100 ? 'ok' : 'muted', icon: 'chart', title: sec.record.title, detail: sec.record.detail }));
+      rg.appendChild(barsNode(sec.record));
+      box.appendChild(rg);
+    }
     if (sec.all && sec.all.length) {
       const d = el('details', '');
       d.appendChild(el('summary', '', t(lang, 'All ' + sec.all.length + ' sources and their last answer', '全 ' + sec.all.length + ' 件のデータ元と最後の応答')));
       const ga = el('div', 'ims-group'); ga.setAttribute('role', 'list');
-      for (const r of sec.all) { const n = rowNode({ tone: r.tone, icon: 'dot', title: r.title, detail: r.host + ' — ' + r.detail }); n.setAttribute('role', 'listitem'); ga.appendChild(n); }
+      for (const r of sec.all) { const n = rowNode({ tone: r.tone, icon: 'dot', title: r.title, detail: r.host + ' — ' + r.detail, series: r.series }); n.setAttribute('role', 'listitem'); ga.appendChild(n); }
       d.appendChild(ga); box.appendChild(d);
     }
     panel.appendChild(box);
@@ -368,7 +494,11 @@ function render(root, s, lang) {
   const src = el('a', 'ai-test-btn', t(lang, 'Data sources page', 'データ出典ページ'));
   src.href = './sources.html'; src.target = '_blank'; src.rel = 'opener';
   src.style.cssText = 'display:flex;align-items:center;justify-content:center;text-decoration:none;box-sizing:border-box;';
-  foot.append(again, src);
+  /* (ops-next) what changed, beside what is working — the updates page scripts/whats-new.mjs builds */
+  const upd = el('a', 'ai-test-btn', t(lang, 'What’s new', '新着'));
+  upd.href = lang === 'jp' ? './ja/updates.html' : './updates.html'; upd.target = '_blank'; upd.rel = 'noopener';
+  upd.style.cssText = src.style.cssText;
+  foot.append(again, src, upd);
   panel.appendChild(foot);
 }
 

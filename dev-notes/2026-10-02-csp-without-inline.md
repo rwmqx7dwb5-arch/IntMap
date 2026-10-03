@@ -1,6 +1,8 @@
 ---
 title: 全ページの script-src から 'unsafe-inline' を外す——インラインの script は本文の sha256 で 1 本ずつ許し、39 個のインラインのイベント属性を宣言済みの名前付き操作に置き換え、CSP の無かった 20 ページに CSP を足す
 date: 2026-10-02
+newsen: Stricter security on every page: no inline script may run unless it is the exact one IntMap ships.
+newsjp: 全ページのセキュリティを強化し、IntMap が配ったものと一致しないインラインのスクリプトは実行されないようにしました。
 ---
 
 〈依頼〉構造改革（2026-10-02）の一部。監査: `index.html` の CSP の `script-src` に `'unsafe-inline'` と

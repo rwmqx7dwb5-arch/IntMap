@@ -44,6 +44,8 @@ import { cspHashesPlugin } from './scripts/csp.mjs';
 import { historyPagesPlugin } from './scripts/history-pages.mjs';
 /* (developer-embed) the open-data API (api/v1/) and the developer pages' catalogue table, written into dist/ after the copy */
 import { publicApiPlugin } from './scripts/public-api.mjs';
+/* (ops-next) 「更新情報」: whats-new.json, updates.html / ja/updates.html and their Atom feeds, from dev-notes/ */
+import { whatsNewPlugin } from './scripts/whats-new.mjs';
 
 const ROOT = resolve(import.meta.dirname);
 
@@ -750,5 +752,5 @@ export default defineConfig({
      than read off filenames. scripts/perf-budget.mjs is the gate that reads it; it runs on
      every build because the report is what stops "the biggest chunk is big" from being
      mistaken for "startup is slow". */
-  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), historyPagesPlugin(), publicApiPlugin(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin()],
+  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), historyPagesPlugin(), publicApiPlugin(), whatsNewPlugin(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin()],
 });

@@ -1,6 +1,8 @@
 ---
 title: 画面を見られない人・マウスを使わない人・回線が無い人へ——地図を言葉で読む（Alt+R・読み上げモード）と、持ち歩ける地図（オフライン保存。保存してよいかは供給元の規約を台帳に書いたものだけが答える）
 date: 2026-10-03
+newsen: Read the map in words (Alt+R, with screen-reader support), and save maps for offline use where the supplier’s terms allow it.
+newsjp: 地図を言葉で読む機能（Alt+R・読み上げ）と、供給元の規約が許す範囲で地図をオフライン保存する機能を追加しました。
 ---
 
 〈依頼〉「足し算。商品開発。新しい読者へ。全権を委任する。」新しい読者層は 3 つ——画面を見られない・マウスを使わない・回線が無い。

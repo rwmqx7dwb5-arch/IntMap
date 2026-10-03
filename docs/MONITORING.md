@@ -212,6 +212,13 @@ and the one-time secret setup are in [`docs/TESTING.md`](TESTING.md) 「Atlas ev
   session while it is not green (the last success, the newest run, and the failing step's own annotation —
   e.g. the missing secrets), and the reader's status page (Settings ▸ IntMap, now) says when Atlas's answers
   were last evaluated. A run that uploaded no report is said to have **measured nothing**, apart from its colour.
+- **The half that needs no session is measured every night anyway** — the `offline` job of the same workflow
+  (`node scripts/atlas-eval.mjs --offline`) replays every recorded turn and measures the **reach**: whether the
+  words of each answer-key question, given to the same word search find_capability runs, reach the capabilities
+  its answer uses (`scripts/atlas-eval/reach.mjs`). Artifact **`atlas-eval-offline`** (30 days) and the run page.
+  It checks IntMap's own code, not Atlas's answers, and never makes the run green. The live report is found by its
+  name (`atlas-eval-report`), so this artifact cannot make a run that measured nothing live look «measured».
+  The status page shows its counts (`atlasEval.offline` in `data/service-status.json`).
 
 ## 1e. The upstreams the reader's browser talks to, probed nightly
 
@@ -248,6 +255,15 @@ draws nothing, found by accident.
   written). The app reads it in three places (`js/service-status.js`): the status page, the pill of a layer
   whose request failed (joined by the URL the request asked — a relay's `?u=` target included), and the
   data-sources lists. `docs/architecture/08-ui.md` §8.1.3.
+- **The record, not only last night.** The same bundle carries `history`: every measured night (up to 90), one
+  character per host — `a` answered, `r` refused, `d` did not answer, `u` could not tell, `.` not probed that night.
+  The status page draws a bar per night (the share of measured checks that answered) and a strip per source; the
+  data-sources lists say «answered M of the last N nightly checks» for every source they can match. Only measured
+  checks count: `u` and `.` are neither up nor down. The first nights were folded in with
+  `node scripts/build-service-status.mjs --backfill` from the results GitHub still kept.
+- **Two universes.** The probes are the browser's hosts and, since the elections layer is rebuilt weekly, the
+  services it is rebuilt from (`scripts/elections/upstreams.json`, identity `elections/<pack>: <host>`). Their
+  words for readers come from their own declaration (`readerLedger()` in `scripts/build-service-status.mjs`).
 - **By hand**: `node scripts/upstream-liveness.mjs` (table), `--out r.json`, `--previous p.json`,
   `--summary s.md`, `--fail-on-transition`, and `--check` (declarations only, no network).
 

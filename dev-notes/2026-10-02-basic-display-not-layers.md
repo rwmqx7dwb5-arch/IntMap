@@ -1,6 +1,8 @@
 ---
 title: 基本表示はレイヤーではない——宣言の `kind: 'display'` が種類を述べ、紹介ページの数・共有リンク・利用統計・Atlas の「全レイヤーをオフ」がそこに訊く。既定で点いているレイヤーを無くす（ケッペン・海底ケーブル）。紹介ページは「174 のレイヤー」→「163 のレイヤー」
 date: 2026-10-02
+newsen: The map no longer switches on data layers by default, and the basic display (borders, labels, terrain) is no longer counted as a layer.
+newsjp: 既定で点いているデータレイヤーを無くしました。国境・地名・地形などの基本表示はレイヤーとして数えなくなりました。
 ---
 
 〈依頼〉 既定で点いている層について訊いたところ、利用者:「**どちらも規定レイヤーは削除。基本表示をレイヤーって言うな。**」

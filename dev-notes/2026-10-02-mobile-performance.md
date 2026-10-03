@@ -1,6 +1,8 @@
 ---
 title: 携帯の起動を「段」で読む——いつ読むかを資源ごとに宣言し、宣言の完全さと boot の重さを門に／国の輪郭を自サイトの固定コミットから／同じグリフ範囲を二度頼まない
 date: 2026-10-02
+newsen: Phones load the map in stages, fetching each resource only when it is needed.
+newsjp: スマホでは地図を段階的に読み込み、各資源を必要になったときだけ取得します。
 ---
 
 〈依頼〉「スマホのパフォーマンスと UI を改善して。任せる。」→「修正じゃなくて作り変え。意図を理解しろ」。

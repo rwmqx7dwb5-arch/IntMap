@@ -1,6 +1,8 @@
 ---
 title: Atlas の推論 3 項目を、文章ではなく欄を持つ結果にする——シナリオ（項目 12）・期間の変化（項目 8・9）・相関（項目 10）
 date: 2026-10-03
+newsen: Atlas can now work through what-if scenarios, change over a period, and whether a correlation between two things holds.
+newsjp: Atlas が「もし〜なら」のシナリオ、期間の変化、2 つの関係が確かかを、欄を持つ結果として答えられるようになりました。
 ---
 
 〈依頼〉 PRODUCT.md §4 の 20 項目のうち未達だった 3 つを、能力として実装する。修正ではなく足し算。Atlas に制限は足さない

@@ -1,6 +1,8 @@
 ---
 title: 地図の絵葉書（いまの地図を投稿用の PNG 1 枚に）と、共有リンクの題と一言——凡例はページの DOM をそのまま読み、出典は必ず焼き込む
 date: 2026-10-03
+newsen: Map postcard: save the current map as one PNG for posting, legend and sources included; shared links now carry a title and a summary.
+newsjp: 地図の絵葉書：いまの地図を凡例と出典つきの PNG 1 枚にします。共有リンクに題と一言が付きます。
 ---
 
 〈依頼〉 新しい流通経路。SNS で流通する単位は静止画なのに、いまの地図を 1 枚の画像として保存・共有する手段が

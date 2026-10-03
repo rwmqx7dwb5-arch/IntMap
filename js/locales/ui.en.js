@@ -269,6 +269,7 @@ IntMapLang.define('en', { ui: {
       viewConnections:"This page's connections — who it has contacted, and what each is sent",
       viewSecurityPage:"Security & trust — how IntMap protects you, and how to report a problem ↗",
       viewStatusPage:"What is working — this device, the layers, the data sources",
+      viewWhatsNew:"What’s new — changes to IntMap, newest first",
       newsCountryOff:"Default feeds only",
       newsCountryMultiSel:"Choose countries…",
       lblNewsSources:"News outlets",

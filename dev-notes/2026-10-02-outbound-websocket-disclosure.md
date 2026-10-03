@@ -1,6 +1,8 @@
 ---
 title: 送信先の発見器が http(s) しか読まず、読者自身の AIS キーを送る wss://stream.aisstream.io が台帳にもプライバシー本文の照合にも入っていなかった——scheme を URL 標準のネットワーク scheme 全部に、母集合を build が配る全ページに広げた
 date: 2026-10-02
+newsen: The privacy notice now lists the live ship-tracking connection that uses your own AIS key.
+newsjp: プライバシーの説明に、読者自身の AIS キーで接続する船舶の実況通信を載せました。
 ---
 
 〈依頼〉別作業 #887 が、`check:datagov` の外部ホストの発見器（`scripts/outbound-hosts.mjs`、規則

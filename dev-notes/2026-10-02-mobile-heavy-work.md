@@ -1,6 +1,8 @@
 ---
 title: 携帯の起動で「要らない処理」をやめる——地名照合器は届いた項目だけ・グリフは 1 字 1 回・格子は開くとき・起動画面のマークは箱の大きさで
 date: 2026-10-02
+newsen: Faster start on phones: work the first screen does not need is no longer done at start-up.
+newsjp: スマホの起動を軽くしました。最初の画面に要らない処理を起動時にしなくなりました。
 ---
 
 〈依頼〉「スマホのパフォーマンスと UI を改善して」→「修正じゃなくて作り変え。意図を理解しろ」。

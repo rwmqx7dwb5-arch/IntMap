@@ -307,7 +307,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.changes","changes","periodChanges,whatChanged,timeDiff","time","none","","explanation","session","none","place?","","external"],
       ["settings.mapReading","mapReading","readingMode,screenReaderMode,readAloud,describeMap,describeHere","settings","none","","explanation","persist","none","",""],
       ["settings.offlineMaps","offlineMaps","offlineMap,saveMapOffline,downloadMap,offlineRegion,portableMap,mapWithoutInternet","settings","none","","explanation","persist","explicit","",""],
-      ["map.myMap","myMap","myMaps,customMap,ownMap,storyMap,mapNotes,annotateMap","map","myMap","map.myMap,mymap.doc","map,object","persist","explicit","","myMap"],
+      ["system.whatsNew","whatsNew","whatsnew,changelog,releaseNotes,updates,newFeatures","system","none","","explanation","read","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 

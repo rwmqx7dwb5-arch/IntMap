@@ -1,6 +1,8 @@
 ---
 title: 地震・出来事・施設・企業・火山・地点が 1 つの「実世界オブジェクト」の型で返り、辿れる——Atlas に research.object / research.related を足す
 date: 2026-10-03
+newsen: Earthquakes, events, facilities, companies, volcanoes and places now link to one another, and Atlas can follow those links.
+newsjp: 地震・出来事・施設・企業・火山・地点が互いに辿れるようになり、Atlas もそれを辿れます。
 ---
 
 〈依頼〉 `PRODUCT.md` §4 の Atlas 項目 5「世界を共通の対象として理解」。地震・ニュースの事象・施設・企業・火山・

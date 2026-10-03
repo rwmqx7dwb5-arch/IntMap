@@ -16,10 +16,10 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, bool, one, loose, noArgs } from './atlas-caps.js';
+import { str, bool, one, int, loose, noArgs } from './atlas-caps.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
-import { statusPage } from './layer-state.js';   /* (shell-experience) the status page, read as text by `diagnose` */
+import { statusPage, whatsNew } from './layer-state.js';   /* (shell-experience) the status page, read as text by `diagnose`; (ops-next) the what's-new list, read by `whatsNew` */
 import { registryConsistency, missingUiEntries, probeAiProxy } from './atlas-selfcheck.js';   /* (atlas-os) what the diagnosis can see of Atlas itself */
 import { capabilityEntries } from './atlas-caps.js';
 
@@ -121,6 +121,29 @@ export default [
       if (a && a.show) { try { await M.open(); shown = true; } catch (_) { shown = false; } }
       if (shown) h += note(esc(T('The live list is open.', 'ライブの一覧を開きました。')));
       return R(true, h, { meta: { connections: D.facts } });
+    },
+  },
+  {
+    /* (ops-next) 「新着」— what changed in IntMap, from whats-new.json (scripts/whats-new.mjs writes it at build from the
+       reader's lines every merge's record carries). Read only: the list is IntMap's own words about itself. */
+    row: ['system.whatsNew',            'whatsNew',       'whatsnew,changelog,releaseNotes,updates,newFeatures',          'system',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    doc: [
+      { in: 'more-features', at: 92, text: '{"type":"whatsNew","since"?:"YYYY-MM-DD","limit"?:int} = 新着・更新情報 — WHAT\'S NEW IN INTMAP: the changes a reader can see, newest first, each with its date and the change (pull request) it came from — the same list as Settings ▸ 「新着」, the updates page and its Atom feed. Use for "what\'s new", "what changed recently", "any new features?", 「最近何が変わった？」「新機能は？」「更新情報」. Entries this device has not shown yet are marked unread. To SHOW the list to the reader: {"type":"module","name":"IntMapWhatsNew","method":"open"}.\n' },
+    ],
+    schema: () => ({ type: 'object', properties: { since: str(), limit: int(1, 200) } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc, HOST = K.HOST;
+      const since = /^\d{4}-\d{2}-\d{2}$/.test(String(a.since || '')) ? String(a.since) : undefined;
+      const limit = Number.isInteger(a.limit) ? a.limit : undefined;
+      let D = null;
+      try { D = await whatsNew.describe({ since, limit, lang: HOST.lang }); } catch (_) { D = null; }
+      if (!D || !D.ok) {
+        return R(false, warn(L('The list of changes could not be read.', '更新情報を読めませんでした。')), { meta: { code: 'SOURCE_UNREADABLE', category: 'upstream', retryable: true, produced: [], userGoalSatisfied: false } });
+      }
+      let h = '<div style="font-weight:600;margin:2px 0 6px;">' + icon('sparkle') + ' ' + esc(L('What’s new in IntMap', 'IntMap の新着')) + ' <span style="font-size:11px;color:var(--text-muted);font-weight:400;">' + esc(D.entries.length + ' / ' + D.total) + '</span></div>';
+      if (!D.entries.length) h += '<div style="font-size:12px;">' + esc(since ? L('Nothing announced since ' + since + '.', since + ' 以降のお知らせはありません。') : L('Nothing has been announced yet.', 'まだお知らせはありません。')) + '</div>';
+      h += D.entries.map((e) => '<div style="font-size:12.5px;line-height:1.5;margin:4px 0;"><span style="color:var(--text-muted);font-size:11px;">' + esc(e.date) + (e.unread ? ' · ' + esc(L('not yet seen here', 'この端末では未読')) : '') + '</span><br>' + esc(e.text) + (e.url ? ' <a href="' + esc(window.IntMapSafe.url(e.url)) + '" target="_blank" rel="noopener" style="font-size:11px;">#' + esc(e.pr) + '</a>' : '') + '</div>').join('');
+      return R(true, h, { exec: { whatsNew: { entries: D.entries.map((e) => ({ id: e.id, date: e.date, text: e.text, pr: e.pr, unread: e.unread })), total: D.total } },
+        meta: { code: 'OK', category: 'ok', retryable: false, produced: ['explanation'], userGoalSatisfied: true } });
     },
   },
   {

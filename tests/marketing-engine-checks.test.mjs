@@ -228,7 +228,8 @@ test('⑦ runs partition the years; neighbours differ; pages, links, map links, 
   assert.equal(new Set(locs).size, locs.length, 'a URL is in the sitemap twice');
   assert.deepEqual(locs.map((l) => l + 'index.html').sort(), pagesIn.slice().sort(), 'the sitemap and the pages disagree');
   const idx = [...out[H.SITEMAP_INDEX].matchAll(/<loc>__INTMAP_SITE_URL__([^<]*)<\/loc>/g)].map((m) => m[1]);
-  assert.deepEqual(idx, ['sitemap.xml', H.SITEMAP], 'the sitemap index joins the landing sitemap and this one');
+  /* (ops-next) …and the updates pages' sitemap (scripts/whats-new.mjs SITEMAP) */
+  assert.deepEqual(idx, ['sitemap.xml', H.SITEMAP, 'sitemap-updates.xml'], 'the sitemap index joins the landing sitemap, this one and the one of the updates pages');
 });
 
 test('⑦b the words of the entry pages exist in both languages, key for key', async () => {

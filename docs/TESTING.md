@@ -1297,6 +1297,24 @@ run) · 3 regressed.
 Without both secrets the workflow **fails** and says which one is missing. A token that was refused
 (spent, or revoked by a logout) makes the night `unmeasured` and red; repeat step 3.
 
+### The half that needs no session (`--offline`, every night)
+
+The workflow's `offline` job runs `node scripts/atlas-eval.mjs --offline --out _offline` whether or not the
+secrets exist, and uploads `atlas-eval-offline` (JSON + Markdown; the Markdown is also the job summary):
+
+* **replay** — every cassette, as on every PR (`lab.mjs` `evaluateCassettes`); a cassette that no longer
+  replays as recorded makes this job exit 1.
+* **reach** (`scripts/atlas-eval/reach.mjs`) — for each answer-key question that names `capabilities`, the
+  question's own words are given to the registry's search with the options `find_capability` uses
+  (`FIND_OPTS`, held equal to `js/atlas-toolsurface.js` by `tests/ops-next-checks.test.mjs`), and each needed
+  capability's rank is recorded, or «not reached». ⚠ Lexical only (the meaning search is a network call) and
+  the model writes its own queries — so this is **not** a measure of the answers, and every place it is shown
+  says so. Measured when it was added (2026-10-03): 34 of 157 needed capabilities, 2 of 74 questions whole.
+
+`scripts/build-service-status.mjs` reads the newest `atlas-eval-offline` into `atlasEval.offline` (counts only);
+the live report is found by its own name (`atlas-eval-report`), so the offline artifact cannot make a run that
+measured nothing live look measured. Run it by hand: `node scripts/atlas-eval.mjs --offline`.
+
 ### What it does not measure yet
 
 * **The recorded questions are still only the recorded ones.** The manual rounds asked 46 and 50+; 11

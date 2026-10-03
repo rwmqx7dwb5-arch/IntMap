@@ -1,6 +1,8 @@
 ---
 title: アプリ内の作例ギャラリー（検索欄の空の状態・すべて見る・Atlas の gallery）、作例を 8→16 本に、用途別ページ 2 本（ニュースを地図で読む／記事に地図を埋め込む）
 date: 2026-10-03
+newsen: An example gallery in the app (now 16 example maps), and pages on reading the news on a map and embedding maps in articles.
+newsjp: アプリ内の作例ギャラリー（16 本に拡充）と、ニュースを地図で読む・記事に地図を埋め込む用途別ページを追加しました。
 ---
 
 〈依頼〉新しい入口と集客。作例（`s/` の 8 本）と授業ツアー（3 本）は about.html と teachers.html からしか辿れず、

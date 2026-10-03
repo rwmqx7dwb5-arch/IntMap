@@ -1,6 +1,8 @@
 ---
 title: 前日の作業が見つけて直さなかった歴史地図の誤り 8 件を、それを生んだ規則の側で直す——国名の宗主国の括弧は記録が変わる日に外れ、再置された県は最後の再置から描き、上流が 2 つの年で書いた引き継ぎは審査した日へ動かし、名前は単位ごとに 1 つ・大きい順に置き、史実が述べる成立年をカードが言えるようにする
 date: 2026-10-02
+newsen: Historical maps: eight errors in names and dates were fixed at the rule that caused them, including colonial-era country names and re-established prefectures.
+newsjp: 歴史地図の名前と日付の誤り 8 件を、それを生んだ規則の側で直しました（宗主国つきの国名、再置された県など）。
 ---
 
 〈依頼〉「構造改革とイノベーション。全権を委任する。固執ではなく保全」（2026-10-02）。2026-10-01 の記録
