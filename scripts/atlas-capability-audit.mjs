@@ -196,6 +196,9 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
   const OBSERVABLE = { camera: ['camera', 'map'], layer: ['map'], paint: ['map', 'object'], panel: ['panel', 'file'],
       route: ['route', 'map', 'panel'], object: ['object', 'map'], setting: ['setting'], time: ['map', 'time'],
       panelPaint: ['panel', 'map', 'object'],
+      /* (ux-next) the "companySites" observer counts the features of the source js/company-footprint.js claims as
+         'map.companySites' — an observation OF the map, asked of the renderer */
+      companySites: ['map', 'panel', 'explanation'],
       /* (#R376) the "wxModel" observer reads which forecast model each weather MAP LAYER is
          displaying — an observation OF the map, just not one made by counting features. A raster
          source swap draws exactly as many features as it drew before, which is why "paint" could

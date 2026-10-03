@@ -314,6 +314,10 @@ export function searchGeocode(HOST){
       try{ const Z=window.IntMapLazy; (Z?Z.need('atlasConsole'):Promise.resolve()).then(()=>{ const C=window.IntMapConsole; if(C&&C.run) C.run(q); }); }catch(_){} };
     res.appendChild(d);
   }
+  const _localRaw=(l)=>(l&&l.bbox)?{ boundingbox:[l.bbox[1],l.bbox[3],l.bbox[0],l.bbox[2]], lat:l.lat, lon:l.lng, homeExtent:true }:null;
+  /* (ux-next) go to ONE row of localFuzzyPlaces — the same flight a click on that row in the result list makes; the
+     command palette (js/command-palette.js) offers the same rows and must not fly a second way */
+  function goToLocal(l){ if(!l||isNaN(+l.lng)||isNaN(+l.lat)) return false; gotoPlace(+l.lng,+l.lat,l.name,_localRaw(l),l.kind||null); return true; }
   async function doGeocode(opt){
     const suggest=!!(opt&&opt.suggest);
     /* (search-identity) Enter: the same search, and then the first candidate is taken — see the end of this function */
@@ -413,7 +417,6 @@ export function searchGeocode(HOST){
        the OUTLIER test — a guess about a provider box of unknown provenance, and the wrong question
        to ask of one js/country-extent.js has already trimmed. Without it twenty countries held their
        own measured footprint and were still flown to the flat `country` zoom of 4.4. */
-    const _localRaw=(l)=>(l&&l.bbox)?{ boundingbox:[l.bbox[1],l.bbox[3],l.bbox[0],l.bbox[2]], lat:l.lat, lon:l.lng, homeExtent:true }:null;
     if(suggest){ local.forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind,l)); _askAtlasRow(res,q); if(!res.children.length) res.style.display='none'; return; }
     local.filter(l=>l.score>=72).forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind,l));
     /* (search-identity) Enter with a row on the device whose WHOLE name is the query: that row is the answer and it
@@ -637,5 +640,5 @@ export function searchGeocode(HOST){
   /* (#R183) The framing decision itself lives in js/place-framing.js — it is pure (no map, no HOST,
      no renderer), this factory's body may contain only declarations (tests/engine-app-shell-split-checks.test.mjs (#R169) #4), and the
      app-body shim contract pins exactly this return list. */
-  return { doGeocode, localFuzzyPlaces };
+  return { doGeocode, localFuzzyPlaces, goToLocal };
 }

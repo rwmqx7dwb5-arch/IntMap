@@ -370,6 +370,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get clearAllPins(){ return clearAllPins; },     get compressImage(){ return compressImage; },
     get diskFillPolys(){ return diskFillPolys; },   get exitTool(){ return exitTool; },
     get localFuzzyPlaces(){ return localFuzzyPlaces; }, get parseDate(){ return parseDate; },
+    get goToLocalPlace(){ return IM_SEARCH.goToLocal; },   /* (ux-next) one row of localFuzzyPlaces, flown the way the result list flies it — js/command-palette.js */
     get refreshTool(){ return refreshTool; },       get saveSettings(){ return saveSettings; },
     get setGrid(){ return setGrid; },               get setLang(){ return setLang; },
     get setTool(){ return setTool; },               get updateToolPanel(){ return updateToolPanel; },

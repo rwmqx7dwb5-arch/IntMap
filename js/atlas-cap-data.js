@@ -481,6 +481,37 @@ export default [
     /* the same case as `radiationNear` — shared with a spelling that fell through to it */
     run: radiationNearRun,
   },
+  {
+    row: ['data.companySites',          'companySites',   'companyFootprint,whoIsHere,companiesHere,industryMap',       'data',    'companySites', 'map.companySites',  'map,panel,explanation','session', 'none',   '',         'companyFootprint'],
+    /* (ux-next) the company atlas read from the land: every published site of every company IntMap carries
+       (data/companies/footprint.json, js/company-footprint.js). `query` counts without drawing; `show` (the default)
+       also draws them and opens the card; `hide` takes them down. Never moves the camera. */
+    doc: [
+      { in: 'tools-panels', at: 345, text: 'COMPANY SITES (企業の拠点・企業の地図): {"type":"companySites","action"?:"show"|"query"|"hide","country"?:str,"groups"?:["hq"|"office"|"factory"|"rnd"|"logistics"|"other"],"sectors"?:[str],"inView"?:bool,"limit"?:int} = which of the companies in IntMap’s company atlas have published sites in a country (or in the part of the world on screen, inView:true), counted by company, by kind of site and by type (factory, refinery, power plant, data centre, mine…). action "show" (default) also draws every company’s sites on the map with a card listing the companies in view; "query" only counts; "hide" removes them. Use for 「日本に工場を持つ企業は？」「この地域にどの企業の拠点がある？」「半導体企業の拠点を地図に」, "which companies have factories in Mexico", "who operates here", "map every company’s refineries". Sectors are the company atlas keys (tech, semi, auto, energy, pharma…). Only the companies IntMap carries and only the sites their sources publish — say so; absence here is not absence on the ground. For ONE company’s profile and sites, open it by its name instead.\n' },
+    ],
+    schema: () => ({ type: 'object', properties: { action: one('show', 'query', 'hide'), country: str(), groups: list(one('hq', 'office', 'factory', 'rnd', 'logistics', 'other')), sectors: list(str()), inView: { type: 'boolean' }, limit: int(1, 50) } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, L = K.L, esc = K.esc, GE = K.GE, ensureData = K.ensureData, resolveCountry = K.resolveCountry;
+      const act = a.action || 'show', lim = a.limit || 12;
+      const ok = await window.IntMapLazy.need('companyFootprint'); const F = ok && window.IntMapCompanyFootprint;
+      if (!F) return R(false, warn(L('The company atlas is not available', '企業アトラスを利用できません')), { meta: { code: 'MODULE_UNAVAILABLE', category: 'capability', retryable: false, produced: [], userGoalSatisfied: false } });
+      if (act === 'hide') { F.close(); return R(true, note('✓ ' + esc(L('Company sites removed from the map', '企業の拠点を地図から外しました')))); }
+      let cc = null, cname = '';
+      if (a.country) { try { await ensureData(); } catch (_) { } const c = await resolveCountry(a.country);
+        if (!c || !c.code) return R(false, warn(L('Country not found', '国が見つかりません') + ': ' + esc(a.country)), { meta: { code: 'NOT_FOUND', category: 'input', retryable: false, semanticTarget: a.country, produced: [], userGoalSatisfied: false } });
+        cc = String(c.code).toUpperCase(); cname = c.name || cc; }
+      let box = null; if (a.inView) { try { const b = GE().camera.getBounds(); box = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]; } catch (_) { } }
+      const groups = Array.isArray(a.groups) && a.groups.length ? a.groups : null, sectors = Array.isArray(a.sectors) && a.sectors.length ? a.sectors : null;
+      let q = null; try { q = await F.query({ cc, groups, sectors, box, limit: lim }); } catch (_) { q = null; }
+      if (!q) return R(false, warn(L('The company sites could not be loaded', '企業の拠点を読み込めませんでした')), { meta: { code: 'UPSTREAM_UNAVAILABLE', category: 'evidence', retryable: true, produced: [], userGoalSatisfied: false } });
+      if (act === 'show') { try { await F.open({ groups, sectors }); } catch (_) { } }
+      const where = cname || (box ? L('the current view', '現在の表示範囲') : L('the world', '世界'));
+      const nCo = q.totalCompanies, more = q.companies.length < nCo;
+      let html = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(where) + ' — ' + esc(L(q.sites + ' published sites of ' + nCo + ' companies', nCo + ' 社・公表された拠点 ' + q.sites + ' か所')) + '</div>';
+      if (q.companies.length) html += '<ol style="margin:4px 0 6px 18px;padding:0;font-size:12px;line-height:1.5;">' + q.companies.map((c) => '<li>' + esc(c.name) + ' <span style="color:var(--text-muted)">' + esc(String(c.sites)) + '</span></li>').join('') + '</ol>' + (more ? '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('…the ' + lim + ' with the most sites', '…拠点の多い上位 ' + lim + ' 社')) + '</div>' : '');
+      html += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('Only the ' + q.of.companies + ' companies in IntMap’s company atlas, and only the sites their sources publish (profiles of ' + q.generatedAt + ').', 'IntMap の企業アトラスにある ' + q.of.companies + ' 社について、出典が公表している拠点だけです（プロフィール ' + q.generatedAt + ' 時点）。')) + '</div>';
+      return R(true, html, { meta: { code: q.sites ? 'OK' : 'NO_RESULTS', category: q.sites ? 'ok' : 'evidence', retryable: false, semanticTarget: cc || (box ? 'view' : 'world'), produced: act === 'show' ? ['map', 'panel', 'explanation'] : ['explanation'], userGoalSatisfied: true,
+        companySites: { country: cc, sites: q.sites, totalCompanies: nCo, groups: q.groups, types: q.types, countries: q.countries, companies: q.companies, of: q.of, asOf: q.generatedAt } } }); },
+  },
 ];
 
 /* ══ (developer-embed) THE OPEN DATA — what IntMap offers for reuse, under which terms ═══════════════════

@@ -397,6 +397,24 @@ export default [
     },
   },
   {
+    row: ['panel.palette',              'palette',        'commandPalette,openPalette,findAnything',                     'panel',   'panel',   'panel.palette',          'panel',               'session', 'none',   '',         ''],
+    /* (ux-next) the command palette of js/command-palette.js (Ctrl/⌘+K) — one field over every action, layer, place,
+       company and example map — put on the reader's screen, optionally already holding `query`. It opens nothing by
+       itself: the reader chooses. The result names what the palette is showing for that query, so Atlas can say so. */
+    doc: [
+      { in: 'about-and-showcase', at: 16, text: '{"type":"palette","query"?:str} = open IntMap’s command palette (コマンドパレット, Ctrl/⌘+K) on the reader’s screen — one search field over every action, layer, place, company, example map and classroom tour — with "query" already typed, so the reader sees and picks from everything that matches. Use for 「何ができるか一覧で」「〇〇に関係する機能を全部見せて」「コマンドパレットを開いて」, "show me everything about rail", "what can I do here", "open the command palette". To switch a layer or open one thing yourself, use that capability directly. ' },
+    ],
+    schema: () => ({ type: 'object', properties: { query: str() } }),
+    async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, L = K.L, esc = K.esc;
+      { const OS = window.IntMapOS;
+          const r = (OS && OS.has && OS.has('ui.palette')) ? await OS.exec('ui.palette', { source: 'atlas', params: { query: String(a.query || '') } }) : null;
+          if (!r || !r.ok) return R(false, warn(esc(L('The command palette could not be opened', 'コマンドパレットを開けませんでした'))));
+          const shown = (r.rows || []).filter((x) => x.kind !== 'atlas' && x.kind !== 'search').slice(0, 8);
+          return R(true, note('✓ ' + esc(L('The command palette is open', 'コマンドパレットを開きました'))) + '<div style="font-size:12px;margin:2px 0;">'
+            + esc(shown.length ? L('Showing: ', '表示中: ') + shown.map((x) => x.title).join(' · ') : L('Nothing matches that yet — the reader can type more', 'まだ一致するものはありません')) + '</div>'); }
+    },
+  },
+  {
     row: ['panel.tour',                 'tour',           'classroomTour,lessonTour,guidedTour,startTour,nextStep',      'panel',   'time',    'camera,map.layer,time',  'map,time',            'session', 'none',   '',         ''],
     /* (classroom-tours) the classroom tours of js/tours.js, played by js/tour-player.js in its full-screen
        classroom mode. `action`:
