@@ -72,7 +72,8 @@ function withoutAdded(text, photo) {
   const added = M.LAYERS.filter((l) => !had.has(l.id));
   for (const l of added) assert.ok(existsSync(join(ROOT, 'js/layers', l.id + '.js')), l.id + ' is not in the photograph and has no declaration file');
   const gone = new Set(added.flatMap((l) => [l.id, l.key].filter(Boolean)));
-  const names = (e) => gone.has(e) || (Array.isArray(e) && (gone.has(e[0]) || gone.has(e[1])))
+  /* a PAIR [id, …] / [key, id] names the row; a longer array (a shelf's key list that merely starts with an added key) is a list, stripped element by element (combining map-layer-system and news-intelligence, 2026-10-03) */
+  const names = (e) => gone.has(e) || (Array.isArray(e) && e.length === 2 && (gone.has(e[0]) || gone.has(e[1])))
     || (e && typeof e === 'object' && !Array.isArray(e) && gone.has(e.id))
     || (typeof e === 'string' && added.some((l) => e.indexOf('id="' + l.id + '"') >= 0));
   const strip = (v) => (Array.isArray(v) ? v.filter((e) => !names(e)).map(strip)
