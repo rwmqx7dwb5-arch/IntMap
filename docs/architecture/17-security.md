@@ -88,6 +88,12 @@
   ＋ AI の段では `ai-proxy` と同じ AI 枠の消費（`_shared/ai-ledger.js`）。
 - **delete-account** ＝ `verify_jwt` ＋ 関数内検証 ＋ `confirm:"DELETE"`。**1トランザクション**で
   所有行を削除し、**削除後に数え直して**残っていれば raise（fail-closed）。Auth ユーザーの削除はその後だけ。
+- **アカウントの目録・書き出し・場所の保存**（`account_data_inventory` / `export_account_data` / `save_place`）
+  ＝ Edge Function を持たない SECURITY DEFINER RPC。**口座を名指す引数を持たない**——`auth.uid()`（検証済みの JWT）
+  だけが口座を決めるので、他人の uuid を渡す扉が存在しない（`delete_account_data(uuid)` が service_role 専用で
+  あるのと逆の設計）。EXECUTE は `authenticated` だけ（anon は不可）。書き出しは共有バケツ
+  `relay_take('account-export')` でアカウントごとに柵を持つ。`saved_places` へ入る口は `save_place()` だけ
+  （INSERT の grant が無い）で、所有者は列単位 grant で `user_id` / `created_at` を書き換えられない。
 - **無認証中継**は `_shared/relay-guard.js` を共有する（本数と一覧は §6.2。ここには書き写さない）。
 
 ### 17.3 ブラウザ側の設定

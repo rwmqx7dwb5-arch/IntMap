@@ -4,7 +4,8 @@
 --  Executed by `supabase test db` (see docs/DATABASE.md).
 -- ============================================================================
 begin;
-select plan(100);  -- (anonymous-usage-counts) +2: usage_counts joins both lists   -- (atlas-stream-replay) +2: ai_turn_answers joins both lists
+select plan(104);  -- (account-data-center / my-places) +4: account_data_catalog and saved_places join both lists
+                   -- (anonymous-usage-counts) +2: usage_counts joins both lists   -- (atlas-stream-replay) +2: ai_turn_answers joins both lists
                    -- (atlas-semantic-search) +2: atlas_capability_vectors joins both lists   -- (client-error-log) +2: client_errors joins both lists
                    -- (#R801) +2 tables in both lists, +2 has_function   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
                    -- (#R351) +2: news_ingest_runs joins both lists too. A table missing from the
@@ -66,8 +67,14 @@ from unnest(array[
   'ai_turn_answers',
   -- (anonymous-usage-counts) the anonymous usage counters, (day, metric, dimension) -> count. Admin reads it, the
   -- usage-count Edge Function writes it through a SECURITY DEFINER RPC.
-  'usage_counts'
-]) as t;                                                    -- 39 assertions
+  'usage_counts',
+  -- (account-data-center) one sentence per account-owned table — what it is, why, how long, who wrote it.
+  -- Readable by everyone, written only by migrations (supabase/tests/23_…).
+  'account_data_catalog',
+  -- (my-places) an account's saved places, on every device. Inserted only through save_place();
+  -- the owner reads, edits and deletes their own rows (supabase/tests/23_…).
+  'saved_places'
+]) as t;                                                    -- 41 assertions
 
 -- 2) RLS is ENABLED on every one of them (fail-closed: a table with RLS off fails).
 select ok(
@@ -90,8 +97,10 @@ from unnest(array[
   'client_errors',                                           -- (client-error-log) see the note above
   'atlas_capability_vectors',                               -- (atlas-semantic-search) see the note above
   'ai_turn_answers',                                         -- (atlas-stream-replay) see the note above
-  'usage_counts'                                            -- (anonymous-usage-counts) see the note above
-]) as t;                                                    -- 39 assertions
+  'usage_counts',                                           -- (anonymous-usage-counts) see the note above
+  'account_data_catalog',                                   -- (account-data-center) see the note above
+  'saved_places'                                            -- (my-places) see the note above
+]) as t;                                                    -- 41 assertions
 
 -- (#R386) 2b) The operator RPCs exist. The admin console has buttons wired to these four names;
 --   a button that calls a function which is not there fails at the moment an operator needs it.

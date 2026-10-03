@@ -3084,9 +3084,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       <div class="pin-popup-row"><span>${t('coords')}</span><b>${fmtLL(pin.lng,pin.lat)}</b></div>
       <div class="pin-popup-row"><span>${pin.elev!=null&&pin.elev<0?t('depth'):t('elev')}</span>${elevHTML}</div>
       ${distHTML2}
-      <div class="pin-popup-actions"><button data-pinact="measure" data-pinid="${IntMapSafe.html(pin.id)}">${t('measure')}</button><button data-pinact="radius" data-pinid="${IntMapSafe.html(pin.id)}">${icon('radius')} ${t('radius')}</button><button style="background:var(--info-mil); color:#fff;" data-pinact="remove" data-pinid="${IntMapSafe.html(pin.id)}">${t('deletePin')}</button></div>`;
+      <div class="pin-popup-actions"><button data-pinact="save" data-effect="private" data-pinid="${IntMapSafe.html(pin.id)}"${pm.savedPlaceId?' aria-pressed="true"':''}>${pm.savedPlaceId?IntMapLang.t(currentLang,'In My places','マイプレイスに保存済み'):IntMapLang.t(currentLang,'Save','保存')}</button><button data-pinact="measure" data-pinid="${IntMapSafe.html(pin.id)}">${t('measure')}</button><button data-pinact="radius" data-pinid="${IntMapSafe.html(pin.id)}">${icon('radius')} ${t('radius')}</button><button style="background:var(--info-mil); color:#fff;" data-pinact="remove" data-pinid="${IntMapSafe.html(pin.id)}">${t('deletePin')}</button></div>`;
     /* ⚠ (#R272 SEC) a value interpolated into an event attribute IS JavaScript source — data-attribute + one delegated listener instead (same call; delegation survives the re-render). Full note in js/companies-ui.js. */
-    if(!el.__imPinWired){ el.__imPinWired=1; const PIN={measure:'_measureFromPin',radius:'_radiusFromPin',remove:'_removePin'}; el.addEventListener('click',(ev)=>{ const b=ev.target.closest('[data-pinact]'), f=b&&el.contains(b)&&PIN[b.getAttribute('data-pinact')]; if(f) window[f](b.getAttribute('data-pinid')); }); }
+    if(!el.__imPinWired){ el.__imPinWired=1; const PIN={measure:'_measureFromPin',radius:'_radiusFromPin',remove:'_removePin'}; el.addEventListener('click',(ev)=>{ const b=ev.target.closest('[data-pinact]'); if(!b||!el.contains(b)) return;
+      /* (my-places) «Save» keeps this pin in the ACCOUNT (js/my-places.js — on demand, never on the boot path): its title and
+         description become the place's name and note, and the database answers «already saved» for a pin saved before. */
+      if(b.getAttribute('data-pinact')==='save'){ const p=userPins.find(x=>x.id===b.getAttribute('data-pinid')); if(p) import('./my-places.js').then(M=>M.savePinAsPlace(IM_HOST,p)).then(()=>{ if(activePinId===p.id) renderPinPopup(); }).catch(()=>{}); return; }
+      const f=PIN[b.getAttribute('data-pinact')]; if(f) window[f](b.getAttribute('data-pinid')); }); }
   }
   function positionPinPopup(){
     const pin=userPins.find(p=>p.id===activePinId); if(!pin) return;

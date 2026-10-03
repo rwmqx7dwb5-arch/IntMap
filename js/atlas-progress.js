@@ -114,7 +114,9 @@ export function makeAtlasProgress(HOST, deps) {
     system: () => L('Checking the app', 'アプリを確認', 'App prüfen', 'Проверяю приложение', 'Comprobando la app'),
     ui: () => L('Adjusting the interface', '画面を調整', 'Oberfläche anpassen', 'Настраиваю интерфейс', 'Ajustando la interfaz'),
     dialog: () => L('Asking you', 'あなたに質問', 'Frage dich', 'Спрашиваю вас', 'Preguntándote'),
-    photo: () => L('Matching the photo', '写真を照合', 'Foto abgleichen', 'Сверяю фото', 'Comparando la foto')
+    photo: () => L('Matching the photo', '写真を照合', 'Foto abgleichen', 'Сверяю фото', 'Comparando la foto'),
+    account: () => L('Reading your account data', 'アカウントのデータを確認'),
+    places: () => L('Working with My places', 'マイプレイスを操作')
   };
 
   /* wordFor(capabilityId) — the reader's word for one operation, via the registry's category.

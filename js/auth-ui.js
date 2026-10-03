@@ -474,6 +474,13 @@ export function authUi(HOST){
           <button class="acct-row" id="acct-logout-all" data-effect="outward">${_authL('Log out on all devices','すべての端末からログアウト','Auf allen Geräten abmelden','Выйти на всех устройствах','Cerrar sesión en todos')}</button>
         </div>
 
+        <div class="acct-grp-t">${_authL('Your data','あなたのデータ')}</div>
+        <div class="acct-card acct-rows">
+          <button class="acct-row" id="acct-my-places">${_authL('My places','マイプレイス')}</button>
+          <button class="acct-row" id="acct-your-data">${_authL('What IntMap holds about you','IntMap が保持しているあなたのデータ')}</button>
+          <button class="acct-row" id="acct-export" data-effect="private">${_authL('Download a copy of your data (JSON)','データのコピーをダウンロード（JSON）')}</button>
+        </div>
+
         <p id="acct-msg" class="acct-msg" role="status" aria-live="polite"></p>
 
         <div class="acct-card acct-rows acct-danger">
@@ -566,6 +573,18 @@ export function authUi(HOST){
         try{ window.refreshProUI&&window.refreshProUI(); }catch(_){}
         try{ await HOST.DB.auth.signOut({scope:'global'}); }catch(_){ try{ await HOST.DB.auth.signOut(); }catch(__){} }
         try{ HOST.imToast(_authL('Logged out on all devices','すべての端末からログアウトしました','Auf allen Geräten abgemeldet','Выход выполнен на всех устройствах','Sesión cerrada en todos los dispositivos')); }catch(_){}
+      };
+      /* (account-data-center / my-places) THE ACCOUNT'S OWN DATA, IN THE READER'S HANDS. The three rows are
+         doors into two on-demand modules (js/my-places.js, js/account-data.js) — neither is on the boot path.
+         What «your data» is, is answered by the database (supabase/migrations/20261003130000_…): the same
+         set account deletion removes, so the copy can never be smaller than what «Delete account» erases. */
+      document.getElementById('acct-my-places').onclick=()=>{ _acctClose(); import('./my-places.js').then(M=>M.openMyPlaces(HOST)).catch(()=>{}); };
+      document.getElementById('acct-your-data').onclick=()=>{ _acctClose(); import('./account-data.js').then(M=>M.openYourData(HOST)).catch(()=>{}); };
+      document.getElementById('acct-export').onclick=async()=>{ const msg=document.getElementById('acct-msg');
+        msg.textContent=_authL('Preparing your copy…','コピーを用意しています…');
+        try{ const M=await import('./account-data.js'); const r=await M.downloadAccountData(HOST.DB);
+          msg.textContent=r.ok?_authL('Downloaded '+r.filename+' — '+r.total+' records from '+r.tables+' kinds of data.',r.filename+' をダウンロードしました（'+r.tables+' 種類・'+r.total+' 件）。'):M.failureText(r.error,HOST.lang);
+        }catch(_){ msg.textContent=_authL('Could not reach your data. Please try again.','データを取得できませんでした。もう一度お試しください。'); }
       };
       document.getElementById('acct-delete').onclick=async()=>{ const msg=document.getElementById('acct-msg');
         const typed=await _acctAsk({ title:_authL('Delete account','アカウントを削除','Konto löschen','Удалить аккаунт','Eliminar cuenta'),
