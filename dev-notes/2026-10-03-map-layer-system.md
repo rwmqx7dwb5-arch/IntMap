@@ -116,3 +116,9 @@ date: 2026-10-03
   （`tests/fixtures/layer-descriptor-before.json`）に限った。`bx-wbind` は意図して共有リンクに載る新しい行で、旧 selector は何も述べない。
 - **CodeQL js/incomplete-url-substring-sanitization**（`scripts/lib/indicator-series.mjs`）: 「World Bank から取得するファイルか」を
   ホスト名の部分文字列ではなく `https://api.worldbank.org/` の URL として訊く。発見される系列は同じ（`layer-descriptors --check` 164 層）。
+
+## 統合時の性能予算（重ね直した後の build）
+
+超えた行だけ `--update`:
+- async.raw: 11518.0 kB → 11591.2 kB
+- async chunk "atlas-console": 1144.2 kB → 1155.2 kB
