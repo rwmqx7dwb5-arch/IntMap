@@ -45,3 +45,13 @@ date: 2026-10-03
 - 首都の名前は国の表の英語名だけで照合する（「東京」は手書きの行の語に Tokyo があるので首都と分かる）。
 - `check:i18n` の対象になる新しい文字列は無い。
 - ⚠ 新しい spec（63 s）で全体の時間が天井 87.5 min を 1.1 min 超える（`check:testbudget` 赤）。天井は上げず、他から時間を取る判断が要る。
+
+## 統合時: 大域を通る新しい読み（check:surface）
+
+首都の行を地名辞書の都市の記録で引くため、`window.IntMapGazetteer`（3 か所）を読む。名前の一致度と種別の大きさは、検索欄と Atlas が同じ答えを返すように既存の判定を借りる。そのため `window.IntMapPlaceRules`（2 か所）と `window.IntMapPlaceFraming`（2 か所）も読む。3 つとも持ち主（js/gazetteer.js は classic script、ほかの 2 つは app-body が作る実体）が export していないので、import にはできない（`module-graph.mjs --plan` で確認）。そこで `node scripts/global-surface.mjs --update` で受け入れた。
+
+## 統合時の性能予算
+
+超えた行だけ `--update`（main から引き継いだ eager.gzip を含む）:
+- eager.raw: 4628.5 kB → 4651.8 kB
+- eager.gzip: 1523.9 kB → 1533.0 kB
