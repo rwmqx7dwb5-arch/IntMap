@@ -29,6 +29,7 @@
  *    ⑤ the 429 body is kept, so the next unattributable 429 IS attributable
  *    ⑥ the server half: both 429s carry `used`, and nothing else in ai-proxy answers 429
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -213,7 +214,7 @@ test('R447 ⑤: the 429 that could not be attributed leaves something to attribu
 
 test('R447 ⑥: ai-proxy answers 429 in exactly two places, and both carry `used`', () => {
   /* spelling kept — the server half is Deno TypeScript and SQL migrations; their 429 bodies and the quota function are read, not run */
-  const proxy = read('supabase/functions/ai-proxy/index.ts');
+  const proxy = aiProxySource();
   const src = codeOnly(proxy);
   const four29 = [...src.matchAll(/return json\(\s*(\{[^}]*\})\s*,\s*429\s*\)/g)].map((m) => m[1]);
   assert.equal(four29.length, 3, `ai-proxy returns ${four29.length} 429s — the client tells its own quota from a platform rate limit by the body, so a fourth shape must be declared here`);

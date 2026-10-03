@@ -13,6 +13,7 @@
  *  Checks that used to READ a file for a spelling and can be RUN were rewritten to run the shipped
  *  code; the ones that still read say, in one line, why running is not possible (「read, not run: …」).
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -51,7 +52,7 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url));
  * ==========================================================================*/
 
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
-const PROXY = read('supabase/functions/ai-proxy/index.ts');
+const PROXY = aiProxySource();
 const CONSOLE_SRC = read('js/atlas-console.js');
 
 /* ⚠ (#R576) THE ZIP BUILDER MOVED TO tests/helpers/zip.mjs so there is one of it — the map's

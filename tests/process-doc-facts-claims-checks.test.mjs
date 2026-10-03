@@ -15,6 +15,7 @@
  *
  *  Was: tests/r500, r699
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -220,7 +221,7 @@ test('R500 ①〜④ the three new rules go red when the fact drifts, and when i
 
 /* ── ⑤ ai-proxy の散文が、20 行下の定数と一致する ─────────────────────────────────── */
 test('R500 ⑤ ai-proxy says the free quota its own PLAN_LIMITS grants', () => {
-  const src = rd('supabase/functions/ai-proxy/index.ts');
+  const src = aiProxySource();
   /* (ai-one-ledger) PLAN_LIMITS moved to _shared/ai-ledger.js when monitor-run began charging the same
      allowance; the prose in ai-proxy's header is still held to it */
   /* (supporter-funnel) …and PLAN_LIMITS is now the `aiTurnsPerDay` column of the plan table in

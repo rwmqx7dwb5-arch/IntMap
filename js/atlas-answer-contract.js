@@ -123,7 +123,7 @@ export function makeAtlasAnswerContract() {
 
   /* ══ THE PROVIDER SCHEMA ═════════════════════════════════════════════════════════════════════════
      Same dialect as the other structured tasks in this app (upper-case type names, `properties`,
-     `required`) — MAP_REPORT_SCHEMA in supabase/functions/ai-proxy/index.ts and RESEARCH_MAP_SCHEMA
+     `required`) — MAP_REPORT_SCHEMA in supabase/functions/ai-proxy/tasks/map_report.ts and RESEARCH_MAP_SCHEMA
      in js/atlas-console.js. ⚠ It contains no url field anywhere, on purpose: the model has no place
      to put a URL, so it cannot supply one. */
   const ANSWER_SCHEMA = {

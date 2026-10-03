@@ -19,6 +19,7 @@
  *  結び目である。片側の改名は**無言で**「押しても何も起きない」になるので、2 つのソースから
  *  その綴りを読み出して突き合わせる。
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -206,7 +207,7 @@ test('#R773 ⑪ 取り寄せは実装されている — 宣言だけして繋�
 import { appSource } from './app-source.mjs';
 import { capsSource, capabilityEntry, catalogue } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 const html = appSource(new URL('../', import.meta.url));   /* (#R162) index.html + css/intmap.css + js/*.js */
-const aiproxy = read('supabase/functions/ai-proxy/index.ts');
+const aiproxy = aiProxySource();
 test('R149 #9 image paste/vision wired on the client (transport + proxy already support images)', () => {
   assert.match(html, /let _atlImgs=\[\]/, 'pending image buffer');
   assert.match(html, /inEl\.addEventListener\('paste'/, 'paste handler on the input');

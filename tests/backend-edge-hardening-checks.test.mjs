@@ -15,6 +15,7 @@
 //       `(0,eval)("this")` at load — measured 2026-09-18: without it the 3-D engine never starts).
 //       The day Cesium stops needing it this test fails, which is the signal to remove it.
 // ============================================================================
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -114,7 +115,7 @@ test('R801 ② followRedirects: each hop is inspected, bounded, and not followed
    client, the provider door and a charged ledger row together — the ORDER of two awaits in one
    function is what is asserted, and the pgTAP suite runs the SQL half against a real database. */
 test('R801 ③ ai-proxy settles the turn before answering and refunds only the call that charged', () => {
-  const proxy = codeOnly(read('supabase/functions/ai-proxy/index.ts'));
+  const proxy = codeOnly(aiProxySource());
   const settleDef = proxy.indexOf('const settle = async');
   assert.ok(settleDef > 0, 'no settle() in ai-proxy');
   /* (ai-one-ledger) the ledger's doors are _shared/ai-ledger.js's, shared with monitor-run's «Run now» */
@@ -136,7 +137,7 @@ test('R801 ③ ai-proxy settles the turn before answering and refunds only the c
 /* ⚠ READ, NOT RUN: "no unbounded body read anywhere in the function" is a claim about every path of
    two Deno handlers, which a harness can only sample; the source is the universe here. */
 test('R801 ④ request bodies: ai-proxy reads through the capped reader, monitor-run only after auth', () => {
-  const proxy = codeOnly(read('supabase/functions/ai-proxy/index.ts'));
+  const proxy = codeOnly(aiProxySource());
   assert.match(proxy, /readCapped\(req, MAX_BODY_BYTES\)/);
   assert.doesNotMatch(proxy, /req\.(arrayBuffer|json|text)\(\)/, 'an unbounded body read survives in ai-proxy');
   const mon = codeOnly(read('supabase/functions/monitor-run/index.ts'));

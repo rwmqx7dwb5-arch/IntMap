@@ -38,6 +38,7 @@
  *  ⚠ このファイルが検査するのは「今は直っている」ではなく **「戻したら赤くなる」** である。
  *  ⑤〜⑨ は実装を壊して赤を実測する（#R392: 変異させて赤を見るまで検査は完成していない）。
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -306,7 +307,7 @@ test('R413 ⑨: the caps this round removed have not come back', async () => {
   const agent = code(rd('js/atlas-agent.js'));
   const steps = /maxSteps:\s*(\d+)/.exec(agent);
   assert.ok(steps && +steps[1] >= 8, `a turn may take at least 8 steps (it is ${steps && steps[1]})`);
-  const proxy = code(rd('supabase/functions/ai-proxy/index.ts'));
+  const proxy = code(aiProxySource());
   /* the caps that were relaxed with maxSteps, so the room is real rather than nominal */
   assert.ok(+(/maxToolCalls:\s*(\d+)/.exec(agent) || [])[1] >= 4 * +steps[1],
     'a turn may run at least four tool calls per step — maxPerStep alone allows eight');
