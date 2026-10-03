@@ -167,7 +167,7 @@ test('⑦ a command becomes one share-link fragment, and only what the clock and
   /* the bridge refuses a protocol version it does not speak, and writes the address without a history entry */
   const body = src('js/embed-mode.js');
   assert.match(body, /m\.v !== PROTOCOL\.v/);
-  assert.match(body, /history\.replaceState\(null, '', location\.pathname \+ location\.search \+ r\.hash\)/);
+  assert.match(body, /MapState\.address\(null, r\.hash\)/, 'the address is written by the store (replaceState), never by a history call of this file');
   assert.doesNotMatch(codeOnly(body), /location\.hash\s*=/, 'a command must not add to the host page\'s history');
 });
 

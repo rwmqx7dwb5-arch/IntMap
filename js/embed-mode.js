@@ -62,6 +62,7 @@ import { IntMapTime } from './chronos.js';
 import { IntMapLang } from './lang-registry.js';
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the one encoder iframeCode writes with */
 import { iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { everyTick, stopTick } from './runtime.js';   /* (developer-embed) the one timer wheel — paused with the tab, owned by a key */
 import { MapState } from './map-state.js';   /* (developer-embed) the share link's grammar — what the host's commands become */
 import { PROTOCOL, isMessage, message } from './embed-client.js';   /* (developer-embed) the protocol both halves speak */
 
@@ -434,10 +435,10 @@ function bootBridge() {
   });
   /* a frame opened without a map in its address has no restore to wait for; one whose boot restore settled before
      this ran has nothing left to wait for either — the store says which */
-  const tick = setInterval(() => {
-    if (ready) { clearInterval(tick); return; }
+  const tick = everyTick('embed-mode:host-ready', 250, () => {
+    if (ready) { stopTick(tick); return; }
     if (!MapState.owns('view')) return;   /* the share link's restorer (js/map-ui.js) has registered: the app has booted */
-    if (!MapState.carriesState() || (MapState.generation() > 0 && !MapState.restoring())) { clearInterval(tick); sayReady(); }
+    if (!MapState.carriesState() || (MapState.generation() > 0 && !MapState.restoring())) { stopTick(tick); sayReady(); }
   }, 250);
   /* the reader's own moves (a pan, a zoom): one report per settled change — the address bar's own debounce */
   let tm = 0;
@@ -458,7 +459,8 @@ function bootBridge() {
     if (r.hash === MapState.hash()) { reply(true); return; }   /* already showing it: nothing to apply, nothing to wait for */
     settledWaiters.push(() => reply(true));
     try {
-      history.replaceState(null, '', location.pathname + location.search + r.hash);
+      /* the store's own address writer (replaceState — no history entry); null keeps the query (?embed=1) */
+      if (!MapState.address(null, r.hash)) throw new Error('the address could not be written');
       window.dispatchEvent(new Event('hashchange'));   /* the listener reads location.hash, not the event's fields */
     } catch (err) { settledWaiters.pop(); reply(false, 'the frame could not apply it: ' + String(err && err.message || err)); }
   });

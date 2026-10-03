@@ -73,6 +73,7 @@ scripts/atlas-eval/cassettes/*.json      merge=intmap-generated intmap-merge=reg
 /teachers.html                           merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
 /news-map.html                           merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
 /embed-map.html                          merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
+/developers.html                         merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
 /robots.txt                              merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
 /sitemap.xml                             merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
 s/*.html                                 merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
@@ -80,6 +81,7 @@ ja/about.html                            merge=intmap-generated intmap-merge=reg
 ja/teachers.html                         merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
 ja/news-map.html                         merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
 ja/embed-map.html                        merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
+ja/developers.html                       merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
 ja/s/*.html                              merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
 /contact.html                            merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
 /for-newsrooms.html                      merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
