@@ -298,7 +298,7 @@ function fitBlock(text, weight, big, small, maxLines, maxW, fam, measure) {
  * layoutCard({ instant, title, note, x, y, maxW, maxH, u, fam }, measure) → the caption card at the map's top-left: the
  * instant the map shows (small), the title (large, ≤ 3 lines) and the note (≤ 4 lines), each as large as fits.
  */
-export function layoutCard(c, measure) {
+function layoutCard(c, measure) {
   const u = c.u, bx = Math.round(28 * u), by = Math.round(20 * u), gap = Math.round(8 * u);
   const inner = Math.max(40, c.maxW - 2 * bx);
   const ins = fitBlock(String(c.instant || ''), '600', Math.round(30 * u), Math.round(22 * u), 1, inner, c.fam, measure);
@@ -655,7 +655,7 @@ function isHandle(e, cs, card) {
 /** the legends on the map now, in the order the page stacks them — a legend whose layer is off has no box
     (display:none). ⚠ On a phone the closed legend tray hides the cards with `visibility` and still lays them out
     (css/intmap.css, the legend tray): they are on the map, the tray only folds them away, so they are taken. */
-export function shownLegends() {
+function shownLegends() {
   /** @type {HTMLElement[]} */ const out = [];
   try {
     document.querySelectorAll(LEGEND_SEL).forEach((el) => {
@@ -757,7 +757,7 @@ function svgImage(svg) {
  * pixel. Coordinates are the page's own (getBoundingClientRect, Range#getClientRects), so wrapping, alignment and the
  * card's own layout are the browser's, not re-derived here.
  */
-export async function rasterLegend(el, k) {
+async function rasterLegend(el, k) {
   const R0 = el.getBoundingClientRect();
   const cv = document.createElement('canvas');
   cv.width = Math.max(1, Math.round(R0.width * k)); cv.height = Math.max(1, Math.round(R0.height * k));
@@ -867,7 +867,7 @@ export async function rasterLegend(el, k) {
  * legendsOmitted, title, note, link, linkFull, instant }>. `error`: 'busy' (a lapse is being recorded — the map is
  * moving under it), 'not-drawn' (the renderer gave no frame: a hidden tab), 'encoder'.
  */
-export async function postcard(o) {
+async function postcard(o) {
   o = o || {};
   const key = postcardSizeKey(o.size), S = POSTCARD_SIZES[key];
   const title = String(o.title || ''), note = String(o.note || ''), link = String(o.link || '');

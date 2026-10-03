@@ -261,7 +261,7 @@ test('⑤ the caption reaches the page only as text, the title bar and the pictu
   assert.doesNotMatch(share.split('panel.innerHTML=')[1].split(';')[0], /cap\.(title|note)/, 'the caption is spliced into the panel markup');
   /* the picture paints text with fillText only */
   const rec = codeOnly(src('js/map-recorder.js'));
-  assert.doesNotMatch(rec.split('export async function postcard(')[1].split('\nexport ')[0], /innerHTML/);
+  assert.doesNotMatch(rec.split('async function postcard(')[1].split('\nexport ')[0], /innerHTML/);
 });
 
 test('⑤ an embed keeps the caption, and both fields of the store have their owner', async () => {
