@@ -274,9 +274,9 @@ export async function openOfflineMaps(HOST) {
       }
       kids.push(p(L('Live services — weather, flights, news, the satellite picture — need a connection and are not kept.', '天気・航空機・ニュース・衛星画像などの生きたデータは回線が必要で、保存しません。'), 'color:var(--text-muted);'));
       const nameIn = el('input', { type: 'text', id: 'offline-name', maxLength: 60, placeholder: L('Name (optional)', '名前（任意）'), 'aria-label': L('Name', '名前'), style: 'width:100%;min-height:44px;border-radius:12px;box-sizing:border-box;margin:8px 0;padding:0 12px;' });
-      const prog = el('div', { id: 'offline-progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '0', style: 'height:8px;border-radius:4px;background:rgba(128,128,128,0.2);overflow:hidden;display:none;margin:8px 0;' }, el('div', { style: 'height:100%;width:0;background:var(--primary-color);' }));
+      const prog = el('div', { id: 'offline-progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '0', style: 'height:8px;border-radius:4px;background:rgba(128,128,128,0.2);overflow:hidden;display:none;margin:8px 0;' }, el('div', { style: 'height:100%;width:0;background:var(--primary-fill);' }));
       const msg = el('div', { id: 'offline-msg', style: 'font-size:13px;margin:6px 0;min-height:18px;' });
-      const go = el('button', { type: 'button', id: 'offline-save', style: BTN + 'background:var(--primary-color);color:#fff;border:none;width:100%;font-weight:600;' }, L('Save', '保存'));
+      const go = el('button', { type: 'button', id: 'offline-save', style: BTN + 'background:var(--primary-fill);color:#fff;border:none;width:100%;font-weight:600;' }, L('Save', '保存'));
       go.disabled = !(sel && pl.online) && !(pl.own.files.length && pl.online);
       go.onclick = async () => {
         go.disabled = true; ctl = new AbortController(); prog.style.display = 'block';

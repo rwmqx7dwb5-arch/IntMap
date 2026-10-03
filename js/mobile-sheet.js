@@ -281,17 +281,17 @@ export function makeLegendTray(o) {
    bound itself), a box that covers the screen (the map, a modal) nor a MODAL BOTTOM SHEET — a box shaped like the sheet
    (edge to edge, on the bottom edge) that is painted OVER the sheet, as the country card is, which replaces the sheet
    instead of floating above it. A panel the reader dragged (`data-dragged`) is where the reader put it. */
-export const FLOAT_GAP = 20;     /* the gap above the data credit — the same 20 px css/intmap.css `#map-container > .country-popup` keeps (#936) */
-export const FLOAT_FLOOR = 6;    /* the top a panel too tall for the room is held to when the page states no chrome row (o.floor) — else the row's bottom */
-export const FLOAT_ATTR = 'data-m-fit';   /* tokens: `cap` (max-height) · `dy` (translate) · `scroll` (overflow-y) — css/intmap.css reads them */
+const FLOAT_GAP = 20;     /* the gap above the data credit — the same 20 px css/intmap.css `#map-container > .country-popup` keeps (#936) */
+const FLOAT_FLOOR = 6;    /* the top a panel too tall for the room is held to when the page states no chrome row (o.floor) — else the row's bottom */
+const FLOAT_ATTR = 'data-m-fit';   /* tokens: `cap` (max-height) · `dy` (translate) · `scroll` (overflow-y) — css/intmap.css reads them */
 const FLOAT_CONTROL = 'button, a[href], input, select, textarea, [role="button"]';
 
 /** the lowest y a floating panel may reach: above the sheet's current top, above the data credit, and the gap */
-export function floatBound(vh, cover, creditH) { return vh - cover - creditH - FLOAT_GAP; }
+function floatBound(vh, cover, creditH) { return vh - cover - creditH - FLOAT_GAP; }
 
 /** the vertical shift (px, + down) that puts a box of this top/bottom inside [floor, bound]; 0 when it already is.
     Called on a box already held to `bound - floor` tall, so the two moves cannot ask for opposite things. */
-export function floatShift(top, bottom, floor, bound) {
+function floatShift(top, bottom, floor, bound) {
   if (bottom > bound) return bound - bottom;
   if (top < 0) return Math.min(floor - top, bound - bottom);
   return 0;
