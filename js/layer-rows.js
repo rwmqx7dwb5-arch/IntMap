@@ -215,4 +215,7 @@ export function inFlight(watch) {
 export const layerInflight = inFlight(layerState);
 
 try { if (typeof document !== 'undefined') mountManifestRows(document); } catch (e) { try { console.warn('[IntMap] layer rows', e); } catch (_) {} }
-try { if (typeof document !== 'undefined') { const l = holdUntilDrawable(document, () => IntMapGeoEngine); window.IntMapLayerHold = { pending: l.pending }; } } catch (e) { try { console.warn('[IntMap] layer hold', e); } catch (_) {} }
+/* (restored-layer-catchup) the page's door for both halves of «has every change been answered»: `pending()` the
+   changes still held for the style (③), `inflight()` the boxes whose delivered change is still being answered (④).
+   A reader that waits for a restored link to catch up waits on these and on js/layer-state.js, not on a duration. */
+try { if (typeof document !== 'undefined') { const l = holdUntilDrawable(document, () => IntMapGeoEngine); window.IntMapLayerHold = { pending: l.pending, inflight: layerInflight.pending }; } } catch (e) { try { console.warn('[IntMap] layer hold', e); } catch (_) {} }

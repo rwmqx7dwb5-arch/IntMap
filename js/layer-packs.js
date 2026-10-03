@@ -31,7 +31,9 @@ import './osm-facilities.js';
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
 import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) how long one read of a host may take */
-import { readWithin, isUnobserved } from './fetch-deadline.js';
+import { readWithin, jsonWithin, isUnobserved } from './fetch-deadline.js';
+import { layerInflight } from './layer-rows.js';   /* (restored-layer-catchup) a row's read is in flight there, and its outcome is kept by js/layer-state.js */
+import { layerState } from './layer-state.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTime } from './chronos.js';
@@ -1495,7 +1497,24 @@ export function timeZones(HOST){
   (function(){
     if(!GE().hasRenderer()) return;
     const TZURL='https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_10m_time_zones.geojson';
-    let on=false, geo=null, loading=false, timer=null;
+    let on=false, geo=null, timer=null;
+    /* ══ (restored-layer-catchup) ONE READ OF THE BOUNDARIES, WITH AN END, WHOSE OUTCOME IS KEPT ══════════════
+       MEASURED (tests/restored-layer-before-style.spec.js, the share link with every layer, four cores and a second
+       spec beside it): this row's read was a bare `fetch(TZURL).then(r=>r.json())` — no clock, not handed to
+       js/layer-rows.js `layerInflight` — so for the 126 s it took Chromium to give up on it (started at 32 s,
+       «Failed to fetch» at 158 s) nothing on the page knew the row was still being answered, and when it failed the
+       catch unticked the box with no record: `checked:false`, no js/layer-state.js entry, a toast that had gone in
+       4 s. Afterwards the box could not be told apart from one the reader had switched off, and the share link's
+       Time zones were simply gone (3 runs of 3 under that load). The read is now the shared reader under the host's
+       clock (idle: it bounds a silence, not the 5 MB file's length), shared by the row and `IntMapTimeZones.ensure`,
+       handed to `layerInflight` while it runs, and a failure is KEPT on the row (failed / unobserved and why). */
+    let tzRead=null;
+    const readTZ=()=>{
+      if(geo) return Promise.resolve(geo);
+      if(!tzRead) tzRead=jsonWithin(TZURL,clockFor(TZURL),undefined,{idle:true}).then(j=>{
+        if(!(j&&Array.isArray(j.features))) throw Object.assign(new Error('time zones: the answer is not a FeatureCollection'),{reason:'parse'});
+        geo=j; return j; }).finally(()=>{ tzRead=null; });
+      return tzRead; };
     const lbl=()=>IntMapLang.t(HOST.lang,'Time zones (live clock)','タイムゾーン（現在時刻）','Zeitzonen (Uhr)','Часовые пояса (время)','Husos horarios (hora)');
     const T=IntMapLang.pick(()=>HOST.lang);
     function zoneTime(off){ const n=new Date(); const z=new Date(n.getTime()+n.getTimezoneOffset()*60000+off*3600000); const h=z.getHours(),m=z.getMinutes(); return (h<10?'0':'')+h+':'+(m<10?'0':'')+m; }
@@ -1564,13 +1583,23 @@ export function timeZones(HOST){
       ['tzl-hl','tzl-hl-line'].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',(v&&hlZone!=null)?'visible':'none'); }catch(_){} }); }
     function toggle(v){ on=v;
       if(v){
-        const go=()=>{ let tries=0; const apply=()=>{ if(!_imCanDraw()){ if(tries++<60) setTimeout(apply,150); else GE().events.once('idle',apply); return; } addLayers(); setVis(true);
+        /* (restored-layer-catchup) the wait is for the event, not 60 tries and then MapLibre's `idle` — which a page busy
+           with every layer of a link does not reach (js/world-packs-rows.js `whenDrawable` has the measurement) */
+        const go=()=>{ const apply=()=>{ if(!on) return; if(!_imCanDraw()){ try{ GE().whenCanDraw().then(apply); }catch(_){} return; } addLayers(); setVis(true);
           try{ window._registerLayerOpacity&&window._registerLayerOpacity('tz',[lbl(),lbl(),lbl(),lbl()],['tzl-fill'],'dl-tz'); }catch(_){}
           try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} if(!timer) timer=everyTick('layer-packs:tz-times',60000,refreshTimes); refreshTimes(); }; apply(); [400,1500].forEach(ms=>setTimeout(apply,ms)); };
         if(geo) go();
-        else if(!loading){ loading=true; try{ satToast(T('Loading time-zone boundaries…','タイムゾーン境界を読み込み中…','Zeitzonengrenzen werden geladen…','Загрузка часовых поясов…','Cargando husos horarios…')); }catch(_){}
-          fetch(TZURL).then(r=>r.json()).then(j=>{ geo=j; loading=false; if(on) go(); }).catch(()=>{ loading=false; try{ satToast(T('Time-zone data unavailable','タイムゾーンデータを取得できません','Zeitzonendaten nicht verfügbar','Данные часовых поясов недоступны','Datos de husos no disponibles')); }catch(_){} const cb=document.getElementById('dl-tz'); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } }); }
-        else go();
+        else {
+          if(!tzRead){ try{ satToast(T('Loading time-zone boundaries…','タイムゾーン境界を読み込み中…','Zeitzonengrenzen werden geladen…','Загрузка часовых поясов…','Cargando husos horarios…')); }catch(_){} }
+          const req=readTZ().then(()=>{ if(on) go(); },e=>{
+            const cb=document.getElementById('dl-tz');
+            if(!on||!(cb&&cb.checked)) return;   /* switched off meanwhile — the reader's untick owns the row */
+            try{ satToast(T('Time-zone data unavailable','タイムゾーンデータを取得できません','Zeitzonendaten nicht verfügbar','Данные часовых поясов недоступны','Datos de husos no disponibles')); }catch(_){}
+            /* kept, not only toasted: «could not load» (or «no reply», when the host's clock ran out) on the row, for Atlas too */
+            try{ layerState.report('dl-tz',e,{told:true}); }catch(_){}
+            cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); });
+          try{ layerInflight.track('dl-tz',req); }catch(_){}
+        }
       } else { setVis(false); if(timer){ stopTick(timer); timer=null; } try{ window._hideGenericLegend&&window._hideGenericLegend('tz'); }catch(_){} } }
     /* ══ (#R289) THE SAME BOUNDARIES, ASKED A DIFFERENT QUESTION — window.IntMapTimeZones ═════════
        Chronos's clock selector offers 「the standard time where the map is centred」, and the answer
@@ -1595,8 +1624,8 @@ export function timeZones(HOST){
        cannot quietly win again. */
     try{ window.IntMapTimeZones=Object.assign(window.IntMapTimeZones||{},{
       ensure:function(){ if(geo) return Promise.resolve(true);
-        if(!this._p) this._p=fetch(TZURL).then(r=>r.json()).then(j=>{ geo=j; return true; }).catch(()=>{ this._p=null; return false; });
-        return this._p; },
+        /* (restored-layer-catchup) the row's own read — one download for both, under the same clock */
+        return readTZ().then(()=>true,()=>false); },
       ready:function(){ return !!geo; },
       offsetAt:function(lng,lat){ if(!geo||!geo.features||!window._imPipGeo) return null;
         for(const f of geo.features){ const z=f.properties&&f.properties.zone;

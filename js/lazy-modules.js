@@ -73,6 +73,7 @@
  *                  module directly; the satellite layer calls its detail card)
  *  ⚠ Order is the order the boot guard reports in; it carries no other meaning. */
 import { IntMapLang } from './lang-registry.js';
+import { layerState } from './layer-state.js';   /* (restored-layer-catchup) a row given up on keeps why — see lazyRowFailed */
 
 export const LAZY_REGISTRY = Object.freeze({
   flightSim: { publishes: 'IntMapFlightSim', load: () => import('./flight-sim.js'), mount: (IM_HOST, m) => { window.IntMapFlightSim=m.flightSim(IM_HOST); } },
@@ -143,7 +144,10 @@ export const CARRIED_NAMES = Object.freeze(['aircraftPoints']);
  *     call site rather than being assembled here.
  *   · `lazyRowFailed(HOST, cb)` — a body that did not arrive unticks its row and says so in words.
  *     js/lazy-modules.js has already recorded why (window.__imLazyCheck); a lit, empty row is the
- *     silent death #R209 exists to prevent. */
+ *     silent death #R209 exists to prevent. (restored-layer-catchup) The row also KEEPS it: the failure
+ *     is put on js/layer-state.js before the box is unticked, so the unticked box can be told apart from
+ *     one the reader switched off — by the row's own status and by Atlas (one-pass-or-a-reason.md §5:
+ *     the module's `need` answered false, which is an observed failure, not «no reply»). */
 /** @type {(ask: () => Promise<boolean>) => { need: () => Promise<boolean>, asked: () => boolean, arrived: () => boolean, run: (fn: (ok: boolean) => void) => void }} */
 export const lazyBody = (ask) => {
   /** @type {Promise<boolean>|null} */ let asked = null;
@@ -170,7 +174,10 @@ export const lazyRowFailed = (HOST, cb) => {
     HOST.imToast(IntMapLang.t(HOST.lang, 'This layer could not be loaded — check your connection and try again.',
       'このレイヤーを読み込めませんでした。接続を確認して、もう一度お試しください。'));
   } catch (_) { }
-  if (cb && cb.checked) { cb.checked = false; const r = cb.closest('.lyr-row'); if (r) r.classList.remove('on'); }
+  if (cb && cb.checked) {
+    try { if (cb.id) layerState.report(cb.id, 'failed', { reason: 'module', told: true }); } catch (_) { }
+    cb.checked = false; const r = cb.closest('.lyr-row'); if (r) r.classList.remove('on');
+  }
 };
 
 /* ══ A CHUNK THAT WOULD NOT DOWNLOAD — WAS IT A NEW DEPLOY, OR JUST THE NETWORK? ═══════════════
