@@ -67,6 +67,7 @@ js/locales/_langs.js                     merge=intmap-generated intmap-merge=reg
 js/showcase.js                           merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write;!scripts/showcase-capture.mjs,--base,http://127.0.0.1:<port>
 js/tours.js                              merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write;!scripts/showcase-capture.mjs,--base,http://127.0.0.1:<port>
 js/place-labels.js                       merge=intmap-generated intmap-merge=regen intmap-regen=!scripts/build-osm-ja-rejects.mjs
+/index.html                              merge=intmap-generated intmap-merge=regen intmap-regen=scripts/brand.mjs,--write
 scripts/atlas-eval/cassettes/*.json      merge=intmap-generated intmap-merge=regen intmap-regen=scripts/atlas-eval/scripted-cassettes.mjs,--write
 /about.html                              merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
 /teachers.html                           merge=intmap-generated intmap-merge=regen intmap-regen=scripts/landing.mjs,--write
@@ -89,3 +90,7 @@ docs/**/*.md                             merge=intmap-generated intmap-merge=tok
 /PRODUCT.md                              merge=intmap-generated intmap-merge=tokens
 /DECISIONS.md                            merge=intmap-generated intmap-merge=tokens
 /README.md                               merge=intmap-generated intmap-merge=tokens
+
+# generated files under a hand-written pattern above — after it, because the last matching line wins
+docs/marketing/launch-posts.md           merge=intmap-generated intmap-merge=regen intmap-regen=scripts/brand.mjs,--write
+docs/marketing/press-kit.md              merge=intmap-generated intmap-merge=regen intmap-regen=scripts/brand.mjs,--write

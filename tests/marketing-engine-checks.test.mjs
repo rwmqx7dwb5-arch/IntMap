@@ -192,8 +192,8 @@ test('⑦ runs partition the years; neighbours differ; pages, links, map links, 
     const html = out[rel];
     const dir = posix.dirname(rel) + '/';
     assert.ok(!/\{\w/.test(html.replace(/<script type="application\/ld\+json">[^<]*<\/script>/g, '')), rel + ' carries an unfilled placeholder');
-    /* nothing executes: the only <script> is data */
-    for (const m of html.matchAll(/<script\b([^>]*)>/g)) assert.match(m[1], /type="application\/ld\+json"/, rel + ' runs a script');
+    /* nothing executes: the only <script> is data (in any case — HTML tag names are case-insensitive) */
+    for (const m of html.matchAll(/<script\b([^>]*)>/gi)) assert.match(m[1], /type="application\/ld\+json"/, rel + ' runs a script');
     for (const m of html.matchAll(/<script type="application\/ld\+json">([^<]*)<\/script>/g)) JSON.parse(m[1]);
     /* canonical is itself; hreflang names both languages and each names the other back */
     const canon = /<link rel="canonical" href="__INTMAP_SITE_URL__([^"]*)">/.exec(html)[1];
