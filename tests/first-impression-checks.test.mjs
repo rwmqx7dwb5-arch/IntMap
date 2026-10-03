@@ -98,7 +98,7 @@ test('④ the world gazetteer is fetched by its readers, not by the boot\'s inde
   assert.ok(!warmers.includes('rebuildGeoIndex'), 'the index build (a boot step) does not send for the world rows');
   assert.ok(warmers.includes('analyzeContext'), 'the locator\'s first pass over a headline does');
   /* the index still LISTENS, so whoever asks, the rows reach the locator */
-  assert.match(nc, /addEventListener\('intmap-gazetteer-world',\(\)=>\{ try\{ rebuildGeoIndex\(\); \}catch\(_\)\{\} \},\{once:true\}\)/);
+  assert.match(nc, /bus\.once\('intmap-gazetteer-world',\(\)=>\{ try\{ rebuildGeoIndex\(\); \}catch\(_\)\{\} \}\)/); // (event-bus) through js/bus.js
   /* the search box asks at the reach (focus / press), the same gesture that warms the country data */
   const ab = read('js/app-body.js');
   const reach = /const _reach=\(\)=>\{([\s\S]*?)\};\n\s*inp\.addEventListener\('focus',_reach,\{once:true\}\);\n\s*btn\.addEventListener\('pointerdown',_reach,\{once:true\}\);/.exec(ab);
