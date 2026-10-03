@@ -202,5 +202,5 @@ test('growth-loop ④ the privacy policy states both new counts, in English and 
   assert.match(legal, /the <b>kind<\/b> of each Atlas answer \(text only, map, chart, or a mix/);
   assert.match(legal, /Atlas の回答の<b>種類<\/b>（文章のみ・地図・グラフ・その組み合わせ/);
   assert.match(legal, /one of the Service's own introduction pages \(an example, About, For teachers\)/);
-  assert.match(legal, /本サービスの紹介ページ（作例・概要・教員向け）から開いたか/);
+  assert.match(legal, /本サービスの紹介ページ（作例・概要・教員向け・ニュースを地図で読む・記事に地図を埋め込む）から開いたか/);
 });
