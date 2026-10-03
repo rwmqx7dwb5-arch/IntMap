@@ -92,7 +92,7 @@ jobs:
             "${GITHUB_SHA}" "${GITHUB_REF_NAME}" "${GITHUB_RUN_ID}" "$(date -u +%FT%TZ)" \
             > _site/build-info.json
           echo "Published build-info.json:" && cat _site/build-info.json
-          echo "Site contents:" && ls -la _site | head -30
+          echo "Site contents:" && ls -la _site | sed -n "1,30p"   # sed reads to the end: under pipefail, head closing the pipe early killed the step (SIGPIPE) once the site grew past a few thousand files
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
         with:
           path: _site

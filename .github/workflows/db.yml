@@ -169,7 +169,7 @@ jobs:
           export OUT_DIR="$RUNNER_TEMP/backups"
           export DUMP_SCHEMAS="public auth storage"
           bash scripts/backup-db.sh
-          ENC="$(ls -1 "$OUT_DIR"/*.dump.gpg | head -1)"
+          ENC="$(ls -1 "$OUT_DIR"/*.dump.gpg | sed -n '1p')"
           psql "$DB_URL" -v ON_ERROR_STOP=1 -c 'drop database if exists intmap_restore_test;'
           psql "$DB_URL" -v ON_ERROR_STOP=1 -c 'create database intmap_restore_test;'
           bash scripts/restore-test.sh "$ENC" "postgresql://postgres:postgres@127.0.0.1:54322/intmap_restore_test"
