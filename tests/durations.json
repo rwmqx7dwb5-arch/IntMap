@@ -140,5 +140,6 @@
   "-cesium.*.spec.js$"
  ],
  "tests/atlas-live-stream.spec.js": 36,
- "tests/supporter-funnel.spec.js": 28
+ "tests/supporter-funnel.spec.js": 28,
+ "tests/keyboard-and-offline.spec.js": 23
 }

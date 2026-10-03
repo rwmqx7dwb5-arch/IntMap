@@ -420,6 +420,20 @@ export function check({ files, ledger, legalSource }) {
       ? `${LEDGER}: ${r.host} is now only ever a link by its context (${where(linked.get(r.host))}) — the row is no longer needed; remove it`
       : `${LEDGER}: ${r.host} is no longer named by any browser file — remove the row (a ledger that outlives its code excuses the next host that shares the name)`);
   }
+  /* ④ (offline-declared) what a host's row says about saving its files for use with no network. The row is the only
+     place that says it, so a statement is held to the same standard as every other fact here: a basis a reader can
+     open, and the words that give the reason. SILENCE IS NOT PERMISSION — a row with no `offline` is never saved
+     from (js/offline-maps.js reads data/offline-sources.json, which holds only what was stated). */
+  for (const r of rows) {
+    if (r.offline == null) continue;
+    const o = r.offline, at = `${LEDGER}: ${r.host} \`offline\``;
+    if (typeof o.allowed !== 'boolean') { problems.push(`${at} must say \`allowed\` as true or false`); continue; }
+    if (!/^https:\/\/[^\s/]+\/\S*$/.test(String(o.basis || ''))) problems.push(`${at} has no \`basis\` — the https address of the terms it rests on`);
+    if (!String(o.why || '').trim() || !String(o.whyJp || '').trim()) problems.push(`${at} must give its reason in both languages (\`why\`, \`whyJp\`)`);
+    if (!String(o.kind || '').trim()) problems.push(`${at} must name the \`kind\` of file it covers`);
+    if (o.allowed && !/^\/\S+\/$/.test(String(o.pathPrefix || ''))) problems.push(`${at} allows saving but names no \`pathPrefix\` — a host is not one dataset (a path-style S3 endpoint serves every bucket), so permission must say which part it covers`);
+    if (r.removedBy != null || r.link != null || r.dormant != null) problems.push(`${at} is stated on a row the browser does not request — there is nothing to save from it`);
+  }
   if (dynamic.length) notes.push(dynamic.length + ' URL(s) have a host assembled at run time and are not guessed at: ' + where(dynamic));
 
   const kinds = { disclosure: 0, link: 0, dormant: 0, removedBy: 0 };
@@ -431,9 +445,32 @@ export function readLedger(root = ROOT) {
   return JSON.parse(fs.readFileSync(path.join(root, LEDGER), 'utf8'));
 }
 
+export const OFFLINE_SOURCES = 'data/offline-sources.json';
+/** data/offline-sources.json, derived: exactly the rows that state something about saving, in ledger order. ⚠ Both
+    answers are kept — the page shows a reader why a source is NOT saved, from the same row that lets another be. */
+export function deriveOfflineSources(ledger) {
+  const rows = (ledger && Array.isArray(ledger.hosts)) ? ledger.hosts : [];
+  return {
+    src: 'derived from ' + LEDGER + ' (the `offline` statement of each host row) by scripts/offline-sources.mjs',
+    hosts: rows.filter((r) => r.offline != null).map((r) => {
+      const o = r.offline, out = { host: r.host, kind: o.kind, allowed: o.allowed };
+      if (o.pathPrefix) out.pathPrefix = o.pathPrefix;
+      out.basis = o.basis; out.why = o.why; out.whyJp = o.whyJp;
+      return out;
+    }),
+  };
+}
+
 /** The rule against the working tree, as check:datagov runs it. */
 export function checkRepository(root = ROOT) {
-  return check({ files: browserFiles(root), ledger: readLedger(root), legalSource: fs.readFileSync(path.join(root, LEGAL), 'utf8') });
+  const ledger = readLedger(root);
+  const r = check({ files: browserFiles(root), ledger, legalSource: fs.readFileSync(path.join(root, LEGAL), 'utf8') });
+  /* ④ (offline-declared) the file the page reads is the ledger's statement, not a second one */
+  try {
+    const have = JSON.parse(fs.readFileSync(path.join(root, OFFLINE_SOURCES), 'utf8'));
+    if (JSON.stringify(have) !== JSON.stringify(deriveOfflineSources(ledger))) r.problems.push(`${OFFLINE_SOURCES} does not match the \`offline\` rows of ${LEDGER} — run \`node scripts/offline-sources.mjs --write\``);
+  } catch (_) { r.problems.push(`${OFFLINE_SOURCES} is missing or unreadable — run \`node scripts/offline-sources.mjs --write\``); }
+  return r;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

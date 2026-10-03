@@ -46,6 +46,7 @@ import { everyTick, stopTick } from './runtime.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapLang } from './lang-registry.js';
 import * as bus from './bus.js';
+import { narratorApi } from './narrator-api.js';
 
 /* ── the pure parts ───────────────────────────────────────────────────────────────────────────── */
 const tr = (lang, en, jp) => IntMapLang.t(lang, en, jp);
@@ -100,6 +101,7 @@ export function rankCandidates(hits, cx, cy) {
   return Array.from(by.values()).sort((a, b) => a.d - b.d || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 }
 
+/* (keyboard-and-offline) the narrator's doors for js/map-reader.js and js/offline-maps.js — a leaf, js/narrator-api.js (read why there) */
 /* ── the surface ──────────────────────────────────────────────────────────────────────────────── */
 export function makeMapNarrator(HOST, CTX) {
   const GE = CTX.GE;
@@ -114,7 +116,7 @@ export function makeMapNarrator(HOST, CTX) {
   document.body.appendChild(live);
   mapEl.setAttribute('role', 'region');
   mapEl.setAttribute('aria-describedby', 'map-narration');
-  mapEl.setAttribute('aria-keyshortcuts', 'Alt+N Alt+Shift+N');
+  mapEl.setAttribute('aria-keyshortcuts', 'Alt+N Alt+Shift+N Alt+R Alt+Shift+R');
   const nameRegion = () => { try { mapEl.setAttribute('aria-label', tr(lang(), 'Map', '地図')); } catch (_) {} };
   nameRegion();
   const FOCUSABLE = 'a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])';
@@ -181,8 +183,16 @@ export function makeMapNarrator(HOST, CTX) {
     } catch (_) { return ''; }
   };
   /* one announcement per settled change — a pan, a burst of layer toggles, a scrubbed clock */
-  let timer = 0;
-  const schedule = () => { clearTimeout(timer); timer = setTimeout(() => { ensureFocusable(); speak(summarise()); }, 1200); };
+  let timer = 0, enrichSeq = 0;
+  const schedule = () => { clearTimeout(timer); timer = setTimeout(() => {
+    ensureFocusable();
+    const s = summarise(), en = narratorApi.enrich;
+    if (!en) { speak(s); return; }
+    /* (keyboard-and-offline) reading mode: the paragraph is said ONCE, when it is whole — a status region rewritten
+       half-way restarts a screen reader's speech. A later change or a feature walk supersedes it (enrichSeq). */
+    const my = ++enrichSeq;
+    Promise.resolve().then(() => en(s)).then((t) => { if (my === enrichSeq) speak(t || s); }, () => { if (my === enrichSeq) speak(s); });
+  }, 1200); };
 
   let moved = 0;
   let pressing = false;   /* true only while step() is inside its own pressAt */
@@ -251,6 +261,7 @@ export function makeMapNarrator(HOST, CTX) {
   }
   let list = [], at = -1, listMoved = -1, listLayers = '';
   function step(dir) {
+    enrichSeq++;   /* a walk announcement is never replaced by a paragraph that was still being gathered */
     const sig = walkable().join('|');
     if (listMoved !== moved || listLayers !== sig || !list.length) {
       const prev = at >= 0 && list[at] ? list[at].key : null;
@@ -275,6 +286,21 @@ export function makeMapNarrator(HOST, CTX) {
     e.preventDefault();
     step(e.shiftKey ? -1 : 1);
   });
+
+  narratorApi.say = (text) => { enrichSeq++; last = ''; speak(text); };
+  narratorApi.summarise = summarise; narratorApi.host = HOST; narratorApi.engine = GE;
+  narratorApi.resettle = schedule;
+  /* (keyboard-and-offline) Alt+R says what is here; Alt+Shift+R turns the fuller reading on and off (js/map-reader.js).
+     Like Alt+N: with focus on the map, and Alt is not read by the single-key shortcuts or the renderer. */
+  document.addEventListener('keydown', (e) => {
+    if (!e.altKey || e.ctrlKey || e.metaKey || e.code !== 'KeyR') return;
+    const ae = document.activeElement;
+    if (!ae || !(ae === mapEl || mapEl.contains(ae))) return;
+    e.preventDefault();
+    import('./map-reader.js').then((m) => (e.shiftKey ? m.toggleReading() : m.describeHere())).catch(() => {});
+  });
+  /* a reader who turned the mode on keeps it: the module is fetched at start only when the stored switch says so */
+  try { if (localStorage.getItem('intmap_map_reading') === 'on') import('./map-reader.js').then((m) => m.restore()).catch(() => {}); } catch (_) {}
 
   return { summarise, step };
 }
