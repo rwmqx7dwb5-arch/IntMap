@@ -16,7 +16,9 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, num, int, one, list, lat, lng } from './atlas-caps.js';
+import { str, num, int, one, list, lat, lng, obj } from './atlas-caps.js';
+import { scenarioModels, scenarioFrame, scenarioCall, scenarioReport } from './atlas-reasoning.js';   /* (atlas-reasoning) research.scenario: what is decided is in that module, as values */
+import SIM_ENTRIES from './atlas-cap-sim.js';   /* the entries that declare a `scenario` ARE the models — discovered, not listed (same lazy chunk as this file) */
 import { personaPrompt } from './atlas-persona.js';
 import { settleWithin, lateNote } from './atlas-deadlines.js';
 import { IntMapTime } from './chronos.js';
@@ -788,6 +790,64 @@ export default [
           const wEv=W.register(top.map(e=>e._it?W.fromNewsEvent(e._it):W.fromNewsGroup(e)).filter(Boolean));
           const exec={ worldObjects:{ objects:wEv.map(W.brief), totals:{ news_event:evs.length } } };
           return R(true, html, Object.assign({}, _PINNED({meta:{code:'OK',category:'ok',retryable:false,produced:(_evMapped?['map','explanation']:['explanation']),userGoalSatisfied:true,partial:!_evMapped}},_evMapped), { exec })); }   /* (#R802) …and WHICH events are pinned, so re-grouping the same top events reads as `already_there` rather than `not_rendered` */
+    },
+  },
+  {
+    row: ['research.scenario',          'scenario',       'whatIf,runScenario,scenarioRun',                              'research','none',    '',                       'explanation',         'session', 'none',   '',         '', 'external'],
+    /* (atlas-reasoning) PRODUCT.md §4 item 12 — «IF X HAPPENED, WHAT FOLLOWS?», answered as a structure. It runs one of the
+       simulators through its OWN capability (K.dispatch — the executor of record, so nothing here re-implements a model) and
+       optionally research.impact around the same point, then reports FOUR FIELDS that are never empty: the assumptions (and
+       which of them the model could represent), the data the number stood on, what the model does not consider, and how
+       uncertain it is. js/atlas-reasoning.js decides what each says; this draws it. A call with an empty field is refused,
+       naming every empty field at once. */
+    doc: [
+      { in: 'research.impact', at: 10, text: 'WHAT-IF SCENARIO シナリオ・もしもの想定 (assumptions → result, in four fixed fields): {"type":"scenario","model":"ashPlume"|"radiation"|"tsunami"|"pandemicRun","place"?:str or "lng"+"lat","baseline":ISO date/time|"now","assumptions":[{"name":the model\'s own argument (e.g. "hKm","bq","magnitude","days"),"value":…,"basis"?:why}],"impact"?:true|{"km"?:num,"focus"?:[…]}} = run that simulator on exactly the stated assumptions (and, with impact, research.impact around the same point) and answer with FOUR FIELDS that are always present — 前提 (the assumptions, each marked applied or not), 使用データ, 考慮外 (what the model does not represent: an assumption it has no input for, a baseline it cannot take, a failed exposure analysis), 不確実性 (the model\'s own stated limits and, for the pandemic, whether a band or a single draw). It REFUSES, naming every field at once, when the model, the assumptions, the subject or the baseline is empty. A bare year is never turned into a day: give an ISO date for ash and radiation, or it is reported as not applied. Use for 「もし桜島が噴火したら」「もし福島で放出があったら」「M9の地震なら津波はどうなる」「ここで感染が始まったら」 — NOT for a plain simulator run with no stated assumptions (use the simulator itself). ' },
+    ],
+    chips: 'map.poi',
+    schema: () => ({ type: 'object', properties: { model: str(), place: str(), lng: lng(), lat: lat(), baseline: str(), assumptions: list(obj()), impact: obj() } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, L = K.L, esc = K.esc, dispatch = K.dispatch, CAPS = K.CAPS;
+      const MODELS = scenarioModels(SIM_ENTRIES);
+      const frame = scenarioFrame(a, (s) => CAPS.ofSpelling(s), MODELS);
+      const pick = (t) => L(t[0], t[1]);
+      if (!frame.ok) {
+        const names = Object.keys(MODELS).map((k) => MODELS[k].dispatch);
+        const why = { model: L('a model (' + names.join(', ') + ')', 'モデル（' + names.join('・') + '）'),
+          assumptions: L('assumptions — each a name and a value (an empty list is not a scenario)', '前提 — それぞれ名前と値を持つこと（空の一覧はシナリオではない）'),
+          subject: L('a place, or lng and lat', '場所、または経度と緯度'), baseline: L('a baseline instant (an ISO date/time, or "now")', '基準時点（ISO の日付・時刻、または "now"）') };
+        return R(false, warn(L('A scenario needs every field before it runs. Missing: ', 'シナリオは全ての欄が揃うまで実行しません。不足: ') + frame.missing.map((m) => esc(why[m])).join(L('; ', '；'))),
+          { meta: { code: 'scenario-incomplete', category: 'input', retryable: false, missing: frame.missing, models: Object.keys(MODELS), produced: [], userGoalSatisfied: false } });
+      }
+      const call = scenarioCall(frame, MODELS);
+      const run = await dispatch(call.args);
+      let exposure = null, exHtml = '';
+      if (run && run.ok && a.impact) {
+        const io = (a.impact && typeof a.impact === 'object') ? a.impact : {};
+        const at = (run.meta && run.meta.ash && isFinite(+run.meta.ash.lng)) ? { lng: +run.meta.ash.lng, lat: +run.meta.ash.lat } : frame.point;
+        const ia = { type: 'impact' };
+        if (at) { ia.lng = at.lng; ia.lat = at.lat; if (frame.place) ia.place = frame.place; } else ia.place = frame.place;
+        if (io.km != null) ia.km = io.km;
+        if (io.focus) ia.focus = io.focus;
+        let ir = null;
+        try { ir = await dispatch(ia); } catch (e) { ir = { ok: false, html: String((e && e.message) || e) }; }
+        exposure = { asked: true, ok: !!(ir && ir.ok), why: ir && !ir.ok ? String(ir.html || '').split(/[<>]/).filter((_, i) => i % 2 === 0).join('').slice(0, 160) /* the text between tags; no '<' or '>' survives, so nothing can re-form an element */ : '' };
+        if (ir && ir.ok) exHtml = ir.html;
+      }
+      const rep = scenarioReport(frame, call, run, exposure, MODELS);
+      if (!rep.complete) return R(false, warn(L('The scenario report has an empty field, so it is not reported.', 'シナリオの報告に空の欄があるため、報告しません。')), { meta: { code: 'scenario-incomplete', category: 'internal', retryable: false, produced: [], userGoalSatisfied: false } });
+      const li = (rows) => '<ul style="margin:2px 0 4px 16px;padding:0;">' + rows.map((x) => '<li>' + x + '</li>').join('') + '</ul>';
+      const head = (t) => '<div style="font-weight:600;margin-top:6px;">' + esc(t) + '</div>';
+      const val = (v) => esc(typeof v === 'object' ? JSON.stringify(v) : String(v));
+      const fields = head(L('Assumptions', '前提')) + li(rep.assumptions.map((x) => '<b>' + esc(x.name) + '</b> = ' + val(x.value) + (x.basis ? ' (' + esc(x.basis) + ')' : '') + ' — ' + esc(x.applied ? L('applied', '反映') : L('not applied', '未反映'))))
+        + '<div style="font-size:11.5px;">' + esc(L('Baseline', '基準時点')) + ': <b>' + esc(rep.baseline.given) + '</b> — ' + esc(rep.baseline.applied ? L('applied', '反映') : L('not applied', '未反映')) + '</div>'
+        + head(L('Data used', '使用データ')) + li(rep.dataUsed.map((t) => esc(pick(t))))
+        + head(L('Not considered', '考慮外')) + li(rep.excluded.map((t) => esc(pick(t))))
+        + head(L('Uncertainty', '不確実性')) + li(rep.uncertainty.map((t) => esc(pick(t))));
+      const title = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(L('Scenario', 'シナリオ')) + ' — ' + esc(frame.modelId) + '</div>';
+      if (!run || !run.ok) {
+        return R(false, title + (run && run.html ? run.html : warn(L('The model did not run.', 'モデルが実行されませんでした。'))) + fields, { meta: Object.assign({}, run && run.meta, { code: (run && run.meta && run.meta.code) || 'scenario-model-failed', scenario: rep, userGoalSatisfied: false, produced: [] }) });
+      }
+      return R(true, title + run.html + (exHtml ? '<div style="margin-top:6px;">' + exHtml + '</div>' : '') + fields,
+        { meta: Object.assign({}, run.meta, { scenario: rep, produced: ['explanation'], userGoalSatisfied: true }) });
     },
   },
 ];
