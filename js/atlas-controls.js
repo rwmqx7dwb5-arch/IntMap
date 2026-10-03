@@ -15,6 +15,8 @@
  * ==========================================================================*/
 import { everyTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 import { IntMapLang } from './lang-registry.js';
+import { worldObjects } from './atlas-world-objects.js';   /* (world-objects) a volcano's record, named by the same ref as every other real-world object */
+const WO = worldObjects;   /* the one session index (js/atlas-world-objects.js) */
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 export function makeAtlasControls(HOST, CTX) {
   const L=CTX.L, R=CTX.R, _ctlTogHtml=CTX._ctlTogHtml, esc=CTX.esc, note=CTX.note, warn=CTX.warn;
@@ -281,7 +283,8 @@ export function makeAtlasControls(HOST, CTX) {
       if(rec.lastEruption!=null) ln.push(esc(L('Last eruption: {y}','最終噴火: {y}','Letzter Ausbruch: {y}','Последнее извержение: {y}','Última erupción: {y}').split('{y}').join(rec.lastEruption)));
       if(rec.maxVei!=null) ln.push(esc(L('Largest recorded VEI: {v}, from {n} eruptions on record','記録された最大VEI: {v}（噴火の記録 {n} 回）','Größter erfasster VEI: {v}, aus {n} erfassten Ausbrüchen','Наибольший зафиксированный VEI: {v}, из {n} извержений в записи','Mayor VEI registrado: {v}, de {n} erupciones registradas')
         .split('{v}').join(rec.maxVei).split('{n}').join(rec.eruptions||0)));
-      return R(true, note(ln.join('<br>')));
+      const wo=WO.register(WO.fromVolcano(rec))[0];   /* (world-objects) the ref a follow-up (research.object / research.related) names this volcano by */
+      return R(true, note(ln.join('<br>')), wo?{exec:{worldObjects:{subject:wo.ref,objects:[WO.brief(wo)]}}}:null);
     }
     if(!OSk||!OSk.has('volcano.filter')) return R(false, warn(''));
     const did=[]; let shown=null;

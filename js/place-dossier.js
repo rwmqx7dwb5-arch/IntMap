@@ -47,6 +47,8 @@ import { jsonWithin } from './fetch-deadline.js';
 import { clockFor } from './proxy-fetch.js';
 import { dataLayers } from './layer-manifest.js';
 import { MAP_ANSWER_EVENT } from './mobile-sheet.js';
+import { worldObjects, RELATED_DEFAULTS } from './atlas-world-objects.js';   /* (world-objects) the card's «Related» section reads the same index Atlas does */
+const WO = worldObjects;   /* the one session index (js/atlas-world-objects.js) */
 import * as bus from './bus.js';   /* the declared events (js/bus.js) — MAP_ANSWER_EVENT is raised through it */
 
 const esc = (s) => { try { return window.IntMapSafe.html(s == null ? '' : String(s)); } catch (_) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => '&#' + c.charCodeAt(0) + ';'); } };
@@ -362,7 +364,7 @@ function ensureCard(HOST) {
   card.setAttribute('role', 'dialog');
   card.innerHTML = '<button class="country-popup-close" id="pd-close" type="button"></button>'
     + '<div class="country-popup-header"><h3 id="pd-title"></h3></div><div id="pd-body"></div>'
-    + '<div class="pd-actions"><button type="button" class="primary" data-pd="country"></button><button type="button" data-pd="atlas"></button></div>';
+    + '<div class="pd-actions"><button type="button" class="primary" data-pd="country"></button><button type="button" data-pd="related"></button><button type="button" data-pd="atlas"></button></div><div id="pd-related" class="pd-related" hidden></div>';
   (document.getElementById('map-container') || document.body).appendChild(card);
   const x = card.querySelector('#pd-close'); x.textContent = '×'; x.title = L('Close', '閉じる'); x.setAttribute('aria-label', L('Close', '閉じる'));
   x.addEventListener('click', () => closePlaceDossier());
@@ -371,12 +373,27 @@ function ensureCard(HOST) {
   card.addEventListener('click', (ev) => {
     const b = ev.target && ev.target.closest ? ev.target.closest('[data-pd]') : null; if (!b || !current) return;
     if (b.dataset.pd === 'country') { const c = current.country; if (c && c.status === 'ok') { try { HOST.showCountryDetail(c.code, c.name); } catch (_) { /* the country card is the app's */ } } }
+    else if (b.dataset.pd === 'related') showRelated(HOST);
     else if (b.dataset.pd === 'atlas') {
       const at = { lng: current.at.lng, lat: current.at.lat };
       try { if (window.IntMapAtlas) window.IntMapAtlas.ensure().then((C) => { try { if (C && C.askHere) C.askHere(at); else if (C && C.open) C.open(); } catch (_) { /* Atlas states its own failure */ } }); } catch (_) { /* no Atlas in this build */ }
     }
   });
   return card;
+}
+/* (world-objects) «Related» — the point this card is about, as a real-world object, and what the session holds that belongs
+   with it: the facilities and quakes an Atlas impact analysis surfaced, plus the articles and events in the news now loaded.
+   The rule and the rendering are js/atlas-world-objects.js's — the same ones research.related answers with. */
+function showRelated(HOST) {
+  const box = card && card.querySelector('#pd-related'); if (!box || !current) return;
+  const { L } = words(HOST);
+  const me = WO.register(WO.fromPlaceProfile(current))[0];
+  let news = []; try { news = WO.fromLoadedNews((typeof HOST.globalData !== 'undefined' && HOST.globalData) || []); } catch (_) { /* no news loaded → the index alone */ }
+  const res = me ? WO.related(me, { extra: news }) : { items: [], total: 0 };
+  const groups = WO.relatedGroups(res, { L, perType: 4 });
+  const html = window.IntMapSafe.markup;   /* (safe-dom-template) every value below is escaped for where it lands */
+  box.hidden = false; box.dataset.at = current.at.text;
+  box.innerHTML = html`<div class="acp-src" style="margin-top:10px;">${L('Related to this point', 'この地点に関連') + ' — ' + L('within ' + RELATED_DEFAULTS.km + ' km', RELATED_DEFAULTS.km + ' km 以内')}</div>${res.total ? groups.map((g) => html`<div style="font-size:12px;margin:5px 0 1px;"><b>${g.type}</b>: ${g.count}</div>${g.items.map((x) => html`<div style="font-size:11.5px;line-height:1.5;padding-left:8px;">${x.name} <span style="color:var(--text-muted);">${x.why + (x.distanceKm != null ? ' · ' + x.distanceKm + ' km' : '') + (x.gapHours != null ? ' · ' + x.gapHours + ' h' : '')}</span></div>`)}${g.more ? html`<div style="font-size:10.5px;color:var(--text-muted);padding-left:8px;">… +${g.more}</div>` : ''}`) : html`<div style="font-size:11.5px;color:var(--text-muted);">${L('Nothing IntMap holds is tied to this point within that reach.', 'この地点に結び付く対象は、その範囲に IntMap にありません。')}</div>`}`;
 }
 function paintCard(HOST) {
   if (!card || !current) return;
@@ -385,7 +402,8 @@ function paintCard(HOST) {
   const title = (pl && pl.status === 'ok' && pl.name) ? pl.name : (p.asked || p.at.text);
   card.querySelector('#pd-title').innerHTML = icon('pin') + ' ' + esc(title);
   card.querySelector('#pd-body').innerHTML = profileHtml(p, HOST);
-  const cb = card.querySelector('[data-pd="country"]'), ab = card.querySelector('[data-pd="atlas"]');
+  const cb = card.querySelector('[data-pd="country"]'), ab = card.querySelector('[data-pd="atlas"]'), rb = card.querySelector('[data-pd="related"]');
+  rb.innerHTML = icon('target') + ' ' + esc(L('Related to this point', 'この地点に関連')); const rbox = card.querySelector('#pd-related'); if (rbox && rbox.dataset.at !== p.at.text) { rbox.hidden = true; rbox.innerHTML = ''; }   /* a new point clears the section; a section filling in does not */
   cb.innerHTML = icon('flag') + ' ' + esc(L('Country statistics', '国の統計'));
   cb.disabled = !(p.country && p.country.status === 'ok');
   ab.innerHTML = icon('chat') + ' ' + esc(L('Ask Atlas', 'Atlasに聞く'));

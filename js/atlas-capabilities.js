@@ -301,6 +301,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["research.placeProfile","placeProfile","placeDossier,pointProfile,whatIsHere","research","none","","explanation","read","none","point",""],
       ["sim.ashPlume","ashPlume","volcanicAsh,ashFall,ashCloud,eruptionSim,tephraFall","sim","sim","map.ashPlume","map,explanation","session","none","","ashPlume"],
       ["time.yearbook","yearbook","readYear,worldInYear,yearBook","time","none","time","explanation","session","none","",""],
+      ["research.object","worldObject","realWorldObject,whatIsThis","research","none","","explanation","read","none","",""],
+      ["research.related","worldRelated","related,relatedObjects,whatIsAround","research","none","","explanation","read","none","","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
