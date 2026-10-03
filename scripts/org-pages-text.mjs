@@ -19,6 +19,11 @@
 
 const P = (en, jp) => [en, jp];
 
+/* the organisation pages, in the order their navigation shows them, each with the key of its name in TEXT.nav —
+   the one list: scripts/org-pages.mjs writes exactly these pages and its navigation is built from it, and
+   scripts/landing.mjs reads it to link to them from every page it writes. */
+export const ORG_NAV = [['for-newsrooms', 'newsrooms'], ['for-schools', 'schools'], ['for-research', 'research'], ['support', 'support'], ['contact', 'contact']];
+
 export const TEXT = {
   nav: {
     newsrooms: P('Newsrooms', '報道機関'),
@@ -36,7 +41,6 @@ export const TEXT = {
     science: P('How it is computed', '計算の方法'),
     privacy: P('Privacy', 'プライバシー'),
     terms: P('Terms', '利用規約'),
-    teachers: P('For teachers', '先生向け'),
   },
   common: {
     exampleNote: P('These are example maps anyone can open — not customer stories. IntMap has no published case studies yet.',
@@ -144,8 +148,8 @@ export const TEXT = {
         '言葉で質問に答える Atlas はアカウントが必要で、1 アカウントにつき 1 日 {aiTurns} 回までです。地図そのものには必要ありません。'),
     ],
     lessonsH: P('Lessons', '授業での使い方'),
-    lessons: P('A 50-minute lesson plan, classroom tours and example maps with questions for class are on the page for teachers.',
-      '50 分の授業案、授業用ツアー、問いのついた見本の地図は先生向けのページにあります。'),
+    lessons: P('A 50-minute lesson plan, classroom tours, how to make a tour of your own and example maps with questions for class are on the page for teachers.',
+      '50 分の授業案、授業用ツアー、自分のツアーの作り方、問いのついた見本の地図は先生向けのページにあります。'),
     lessonsLink: P('Open the page for teachers', '先生向けのページを開く'),
     examplesH: P('Example maps for class', '授業向けの見本の地図'),
     faqH: P('Questions schools ask', 'よくある質問'),

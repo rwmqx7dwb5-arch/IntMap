@@ -4670,6 +4670,16 @@ API の区切り文字（`|` `#`）を含む名前を**別のページへの問�
 - browser の常設 spec は足していない（テスト時間の天井）。作成時に一時 spec で、ピッカー→作成→2 段→並べ替え→コピー→
   再読み込み→読者として開く（授業モード・→ で段 2・アドレス・カメラ）→編集→プレビュー→390 px に収まる、を通した（dev-notes）。
 
+### `tests/teachers-and-entrances-checks.test.mjs` (teachers-and-entrances)
+
+4 本、ブラウザ無し。
+- ① 教員ページに「自分のツアーを作る」の節があり、引用するラベルがツアー作成器・プレイヤー自身の文言（en・jp）である。
+- ② 紹介系ページと組織向けページの全部が、互いと歴史ページの入口（`history/`）へリンクする。期待する集合は
+  `PAGES`・`ORG_NAV`・`HUB` から計算する（手で並べない）。
+- ③ 紹介ページ本体から歴史ページの入口へ行ける。`robots.txt` が両サイトマップの目次（`sitemap-index.xml`）を指し、
+  サブパス配信で読まれない旨の註が残る。
+- ④ アプリの設定が組織向け 3 ページと支援ページを開き、文言が en・jp にある。
+
 ### `tests/domain-portable-checks.test.mjs` (domain-portable)
 
 9 本。**サイトのアドレスは 1 つの正本（`supabase/functions/_shared/site-origin.js`）から導かれ、

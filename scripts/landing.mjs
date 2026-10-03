@@ -35,6 +35,8 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmSync
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { TEXT } from './landing-text.mjs';
+import { TEXT as ORG_TEXT, ORG_NAV } from './org-pages-text.mjs';   /* (teachers-and-entrances) the organisation pages' own names and order, read for the footer */
+import { HUB as HISTORY_HUB, SITEMAP_INDEX } from './history-pages.mjs';   /* (teachers-and-entrances) where the history pages live, and the file that lists every sitemap */
 import { SHOWCASE, WITHHELD, CAPTURED, CURRICULUM, RECORD_ANSWERED, TOPICS } from '../js/showcase.js';
 import { embedUrl, iframeCode, EMBED_SIZES } from '../js/embed-mode.js';   /* (showcase-gallery) the embed page's code is the Embed tab's own */
 import { IntMapLang } from '../js/lang-registry.js';
@@ -107,7 +109,7 @@ const LANGS = [
 ];
 export const PAGES = ['about', 'teachers', 'news-map', 'embed-map'];
 /* (showcase-gallery) which block of scripts/landing-text.mjs holds a page's words */
-const TEXT_KEY = { about: 'about', teachers: 'teachers', 'news-map': 'news', 'embed-map': 'embed' };
+export const TEXT_KEY = { about: 'about', teachers: 'teachers', 'news-map': 'news', 'embed-map': 'embed' };
 const HERO_EXAMPLE = 'europe-1914';
 export const pagePath = (page, L) => L.dir + page + '.html';
 
@@ -220,10 +222,25 @@ function card(s, L, E, withQuestion) {
     </article>`;
 }
 
-function footer(L, T) {
+/* (teachers-and-entrances) every page this generator writes, the history pages' hub and every organisation page, in
+   the footer of each of them. DERIVED: PAGES here (a page's name is T.nav[TEXT_KEY[page]]), ORG_NAV in
+   scripts/org-pages-text.mjs (its pages and their names), HISTORY_HUB in scripts/history-pages.mjs. A page added to
+   any of the three appears in every footer — nobody lists it by hand. The page being read is left out. */
+export function pageLinks(L, T, here) {
+  const out = PAGES.filter((p) => p !== here).map((p) => ({ href: './' + p + '.html', label: T.nav[TEXT_KEY[p]] }));
+  out.push({ href: L.up + L.dir + HISTORY_HUB, label: T.nav.history });
+  return out;
+}
+export function entranceLinks(L, T, here) {
+  const out = pageLinks(L, T, here);
+  for (const [page, key] of ORG_NAV) out.push({ href: './' + page + '.html', label: ORG_TEXT.nav[key][L.i] });
+  return out;
+}
+function footer(L, T, page) {
   const Fo = T.footer;
   return `<footer class="lp-foot">
   <nav class="lp-foot-in">
+${entranceLinks(L, T, page).map((e) => `    <a href="${esc(e.href)}">${esc(e.label)}</a>`).join('\n')}
     <a href="${L.up}sources.html">${esc(Fo.sources)}</a>
     <a href="${L.up}science.html">${esc(Fo.science)}</a>
     <a href="${L.up}privacy.html">${esc(Fo.privacy)}</a>
@@ -267,9 +284,10 @@ ${A.why.items.map((it) => `      <div class="lp-tile"><h3>${esc(it.h)}</h3><p>${
 
   <section class="lp-sec" id="uses">
     <h2>${esc(A.uses.h2)}</h2>
-    <div class="lp-grid2">
+    <div class="lp-grid3">
       <div class="lp-tile lp-who"><h3>${esc(A.uses.news.h)}</h3><p>${esc(A.uses.news.p)}</p><a class="lp-open" href="./news-map.html">${esc(A.uses.news.cta)} →</a></div>
       <div class="lp-tile lp-who"><h3>${esc(A.uses.embed.h)}</h3><p>${esc(A.uses.embed.p)}</p><a class="lp-open" href="./embed-map.html">${esc(A.uses.embed.cta)} →</a></div>
+      <div class="lp-tile lp-who"><h3>${esc(A.uses.history.h)}</h3><p>${esc(A.uses.history.p)}</p><a class="lp-open" href="${L.up}${L.dir}${HISTORY_HUB}">${esc(A.uses.history.cta)} →</a></div>
     </div>
   </section>
 
@@ -299,6 +317,23 @@ ${A.faq.items.map((it) => `      <details><summary>${esc(it.q)}</summary><p>${es
 /* (classroom-tours) the tours, each with its picture (the first of its steps that is an example), its steps
    by title, the course headings it fits, and the address that starts it in the classroom mode — js/tours.js
    tourLink, whose fragment is the first step's captured link, so the map opens on it from the boot */
+/* (teachers-and-entrances) how a teacher writes a tour of their own — js/tour-builder.js. The words are in
+   scripts/landing-text.mjs and describe what that file does; no number is typed (the link's length limit is
+   js/tours.js TOUR_REQUEST_LIMIT, and the page says only that there is one). */
+function buildSection(P) {
+  const B = P.build;
+  return `  <section class="lp-sec" id="build">
+    <h2>${esc(B.h2)}</h2>
+    <p class="lp-sub">${esc(B.sub)}</p>
+    <ol class="lp-steps">
+${B.steps.map((st) => `      <li><h3>${esc(st.h)}</h3><p>${esc(st.p)}</p></li>`).join('\n')}
+    </ol>
+    <div class="lp-grid3">
+${['link', 'draft', 'use'].map((k) => `      <div class="lp-tile"><h3>${esc(B[k].h)}</h3><p>${esc(B[k].p)}</p></div>`).join('\n')}
+    </div>
+  </section>`;
+}
+
 function toursSection(L, P) {
   const k = L.i, Tt = P.tours;
   const cards = TOURS.map((tour) => {
@@ -345,6 +380,7 @@ function teachersBody(F, L, T) {
       <div class="lp-cta">
         <a class="lp-btn" href="#plan">${esc(P.hero.ctaPlan)}</a>
         <a class="lp-btn lp-btn-2" href="#tours">${esc(P.hero.ctaTours)}</a>
+        <a class="lp-btn lp-btn-2" href="#build">${esc(P.hero.ctaBuild)}</a>
         <a class="lp-btn lp-btn-2" href="#examples">${esc(P.hero.ctaExamples)}</a>
       </div>
     </div>
@@ -360,6 +396,8 @@ ${P.plan.steps.map((st) => `      <li><h3>${esc(st.h)}</h3><p>${esc(st.p)}</p></
   </section>
 
 ${toursSection(L, P)}
+
+${buildSection(P)}
 
   <section class="lp-sec" id="examples">
     <h2>${esc(P.examples.h2)}</h2>
@@ -595,7 +633,7 @@ export function renderPage(F, page, L) {
   const T = TEXT[L.key];
   const body = page === 'about' ? aboutBody(F, L, T) : page === 'teachers' ? teachersBody(F, L, T)
     : page === 'news-map' ? newsBody(F, L, T) : embedBody(F, L, T);
-  return head(F, L, page, T) + '\n<body class="lp lp-' + page + '">\n' + topbar(L, page, T) + '\n' + body + '\n' + footer(L, T) + '\n</body>\n</html>\n';
+  return head(F, L, page, T) + '\n<body class="lp lp-' + page + '">\n' + topbar(L, page, T) + '\n' + body + '\n' + footer(L, T, page) + '\n</body>\n</html>\n';
 }
 
 /* ── sitemap.xml and robots.txt ───────────────────────────────────────────────────────────────── */
@@ -616,11 +654,11 @@ function robots(F) {
   const path = SITE_BASE_PATH;   /* '/IntMap/' on GitHub Pages; '/' on a domain of its own (site-origin.js) */
   return '# GENERATED by scripts/landing.mjs — edit the generator, not this file.\n'
     + '# ⚠ Crawlers read robots.txt only at the root of a host. While the site is served from a\n'
-    + '#   sub-path (' + path + '), this file is not read there; submit the sitemap in Search Console.\n'
+    + '#   sub-path (' + path + '), this file is not read there; submit ' + SITEMAP_INDEX + ' (it lists every sitemap) in Search Console.\n'
     + 'User-agent: *\n'
     + 'Disallow: ' + path + 'admin.html\n'
     + 'Allow: ' + path + '\n'
-    + '\nSitemap: ' + F.site + 'sitemap.xml\n';
+    + '\nSitemap: ' + F.site + SITEMAP_INDEX + '\n';
 }
 
 export function outputs(F = facts()) {
