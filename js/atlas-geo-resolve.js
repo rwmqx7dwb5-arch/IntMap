@@ -356,21 +356,24 @@ export function makeAtlasGeoResolve(HOST, CTX) {
       /* (#R93d) A 'capital' fuzzy match carries the COUNTRY's centroid, NOT the city — up to ~80 km off (searching
          "Riga" gave Latvia's centroid 83 km from the city, "Paris" gives France's centroid, …), which put the point
          out in the countryside where transit/road routers find no stop → a false "no route". So DON'T short-circuit on
-         a capital match: prefer precise Nominatim coords for it, and keep the coarse fuzzy result only as a fallback. */
-      let _fz=null;
+         a capital match: prefer precise Nominatim coords for it, and keep the coarse fuzzy result only as a fallback.
+         ⚠ (search-identity) THE PREMISE IS GONE, SO THE EXCEPTION IS. The search box showed the same row to readers
+         (「Japan · Tokyo」 → a mountainside in Nagano, observed 2026-10-03), and the fix was made where the row is made:
+         js/search-geocode.js `localFuzzyPlaces` now draws a capital from the gazetteer's record OF that city — its own
+         name and point — and offers no capital row when it holds none. An exact capital row is now as precise as any
+         other exact city row, so it confirms here exactly as they do, and this door and the search box give one answer. */
       /* ⚠⚠⚠ (#732) A FUZZY ROW IS A SUGGESTION, AND THIS DOOR CONFIRMS. `localFuzzyPlaces` is the search box's
-         typo-tolerant matcher — prefix, substring, Levenshtein — and this line took its FIRST row and returned it
+         typo-tolerant matcher — prefix, substring, resemblance — and this line took its FIRST row and returned it
          before the rules below were ever asked. So a partial match became the answer: 「Pacific」 → Pacifica,
          California (the word-prefix tier), 「大西洋」 → Atlantic City, New Jersey (whose Chinese name 大西洋城
          contains the query) — an ocean asked for, a town answered, while Nominatim names the ocean itself and
          says what KIND it is (`place`/`ocean`). #R802's `_namesakeOk` states the rule for a confirming door: a
          row answers only to its own whole name. The matcher says which of its rows are that (`exact`); only
          those confirm here, and everything else goes on to the gazetteers that can be held to the rules. */
-      try{ if(typeof localFuzzyPlaces==='function'){ const h=localFuzzyPlaces(place); const h0=h&&h.find(x=>x&&x.exact); if(h0){ _fz={lng:+h0.lng,lat:+h0.lat,name:h0.name,kind:h0.kind||''}; if(_fz.kind!=='capital') return _setLast(_fz); } } }catch(_){}
+      try{ if(typeof localFuzzyPlaces==='function'){ const h=localFuzzyPlaces(place); const h0=h&&h.find(x=>x&&x.exact); if(h0) return _setLast({lng:+h0.lng,lat:+h0.lat,name:h0.name,kind:h0.kind||''}); } }catch(_){}
       /* (#R46) Nominatim returns a boundingbox [S,N,W,E] + class/type — use them to FIT the view to the place's
          real extent so a continent zooms out and a city zooms in (was: everything pinned at country-zoom ~6). */
       try{ await NominatimGate.nominatimSlot(); const j=await jsonWithin('https://nominatim.openstreetmap.org/search?format=json&namedetails=1&limit=8&q='+encodeURIComponent(place),NOMINATIM_TIMEOUT_MS,{headers:{Accept:'application/json'}}); const hit=_pickNominatim(place,j); if(hit){ const b=hit.boundingbox; let bbox=null; if(Array.isArray(b)&&b.length===4){ const s=+b[0],n=+b[1],w=+b[2],e=+b[3]; if([s,n,w,e].every(v=>typeof v==='number'&&isFinite(v))) bbox=[[w,s],[e,n]]; } return _setLast({lng:+hit.lon,lat:+hit.lat,name:(hit.display_name||'').split(',')[0],bbox,kind:(hit.addresstype||hit.type||hit.class||'')}); } }catch(_){}   /* (#R515) candidates, not the first hit — and NOTHING rather than a stranger */
-      if(_fz) return _setLast(_fz);   /* capital match + Nominatim unreachable → fall back to the coarse centroid */
       return null; }
     function _bboxOK(b){ try{ const w=b[0][0],s=b[0][1],e=b[1][0],n=b[1][1]; if(![w,s,e,n].every(v=>typeof v==='number'&&isFinite(v))) return false; if(e<=w||n<=s) return false; if((e-w)>355||(n-s)>175) return false; return true; }catch(_){ return false; } }
     /* (#R51) DYNAMIC navigation. The user: "固定値でいいはずがない／静的なコーディングだと所変われば不具合". Correct — a

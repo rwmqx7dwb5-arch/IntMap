@@ -53,45 +53,134 @@ export function searchGeocode(HOST){
     }
     return q;
   }
-  /* (#R15) Tiny Levenshtein for tolerant (fuzzy) matching of short queries. */
-  function _lev(a,b){ a=a||'';b=b||''; const m=a.length,n=b.length; if(!m)return n; if(!n)return m;
-    let prev=Array.from({length:n+1},(_,j)=>j), cur=new Array(n+1);
-    for(let i=1;i<=m;i++){ cur[0]=i; for(let j=1;j<=n;j++){ const c=a[i-1]===b[j-1]?0:1; cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+c); } [prev,cur]=[cur,prev]; }
-    return prev[n]; }
-  /* (#R15 / #34) Local fuzzy place lookup — resolves vague / partial / slightly-misspelled queries
-     against bundled country names, capitals and the built-in gazetteer, so search still works when the
-     external geocoder is slow / rate-limited / too strict for a loose query. Returns scored {name,lng,lat}. */
+  /* ══ ⚠⚠⚠ (search-identity) A ROW'S NAME AND ITS POINT COME FROM ONE RECORD ═══════════════════════════════
+     Observed on production (2026-10-03, b797887): 「Tokyo」 offered 「Japan · Tokyo」, and the row flew to
+     36.143°N 138.442°E — Japan's label point, a mountainside in Nagano, 932 m up — and wrote 「Japan」 into the
+     field. The row was a CAPITAL match drawn with the COUNTRY's coordinate: the country table knows a capital's
+     NAME (`s.capital`) and nothing about where it is, so the row borrowed `s.latlng`. A label from one record
+     over a point from another. #R93d had measured the same thing from the other side (「Riga」 → Latvia's
+     centroid, 83 km out) and worked around it in ONE caller, js/atlas-geo-resolve.js `geocode`, which declined
+     to trust a `capital` row; the search box, which shows the row to a reader, never was.
+     ⇒ The country table only says WHICH place is the capital. The row is the gazetteer's record OF that place —
+       its own name, its own point, its own population — found by name AND country (GeoNames' iso2 against the
+       country's alpha-2), or, for a curated row that carries no country, by lying inside the country's own
+       extent. A capital the device holds no record of yields no row here; the three geocoders still answer it.
+       A capital is therefore a city row whose kind says what the country table knows about it — the same row
+       a name match on the gazetteer finds, so the two fold into one rather than standing side by side.
+     ⚠ AND A RESEMBLANCE IS MEASURED BY THE ONE MEASURE THE OTHER DOORS USE. #R15/#R19 tolerated typos with an
+       edit distance of 2 — half of a five-letter word: 「Tokyo」 offered Togo, Takeo, Mokpo and Soyo. The Dice
+       agreement js/atlas-geo-resolve.js states (`placeRules.agreement` ≥ NAME_AGREE_MIN) keeps 「osakaa」 → Osaka
+       (0.89) and 「Tokio」 → Tokyo (0.50) and refuses all four (0.29, 0, 0.25, 0.29). It is BORROWED, not
+       restated: `doGeocode` awaits the rules before it asks; a synchronous caller that reaches this before the
+       rules module has loaded gets the exact / prefix / containment tiers and no resemblance at all — never a
+       guess measured some other way.
+     ⚠ ORDER: how much of the name agrees (whole name > prefix > contained > resembles), then what KIND of place
+       (the class's own scale in js/place-framing.js's zoom table — a country before a city before a station),
+       then how many people live there (the population the record publishes; none ranks after some). */
+  function _rulesNow(){ try{ return window.IntMapPlaceRules||null; }catch(_){ return null; } }
+  /* folded once per spelling: a keystroke walks ~15,000 rows of several names each, and the fold (NFKC, NFD, a regex)
+     is most of the cost of a walk — measured 160–550 ms a query unmemoised, against the 120 ms suggestion timer */
+  const _foldMemo={rules:new Map(), plain:new Map()};
+  function _fold(R,s){ const key=String(s==null?'':s), m=(R&&R.nkey)?_foldMemo.rules:_foldMemo.plain; let v=m.get(key);
+    if(v===undefined){ v=key.toLowerCase().trim(); try{ if(R&&R.nkey) v=R.nkey(key); }catch(_){} m.set(key,v); } return v; }
+  /** 3 = one of `names` IS the query, 2 = begins with it, 1 = contains it, 0 < x < 1 = resembles it (the
+      rules' agreement, only at or above NAME_AGREE_MIN), 0 = none of these */
+  function _nameLevel(R,q,names,fuzzy){
+    const k=_fold(R,q); if(!k) return 0; let best=0;
+    for(const n of (names||[])){ const f=_fold(R,n); if(!f) continue;
+      if(f===k) return 3;
+      if(f.startsWith(k)) best=Math.max(best,2);
+      else if(k.length>=3&&f.includes(k)) best=Math.max(best,1);   /* the #R19 guard: two letters are inside everything */
+      else if(fuzzy&&R&&R.agreement&&best<1&&_shareBigram(k,f)){ try{ const a=R.agreement(q,{name:n}); if(a>=R.NAME_AGREE_MIN&&a>best){
+        /* the rules answer 1 for containment in EITHER direction; the name-inside-the-query direction (「osakaa」 ⊃
+           Osaka, 「Tokyo Tower」 ⊃ Tokyo) is ranked by how much of the query the name covers, under the tiers above */
+        const v=a<1?a:(f.length>=3&&k.includes(f)?f.length/k.length:0); if(v>=R.NAME_AGREE_MIN&&v<1&&v>best) best=v; } }catch(_){} } }
+    return best; }
+  /* a name that shares no two-letter run with the query has agreement 0 by the rules' own Dice — skip asking */
+  function _shareBigram(k,f){ for(let i=0;i<f.length-1;i++) if(k.indexOf(f.slice(i,i+2))>=0) return true; return false; }
+  function _classScale(kind){ try{ const PF=window.IntMapPlaceFraming; const z=PF.zoomTable()[PF.placeClass(null,kind)]; return isFinite(z)?z:PF.defaultZoom(); }catch(_){ return Infinity; } }
+  /* the ordering above, over {level, scale, pop} */
+  function _rankCmp(a,b){ return (b.level-a.level)||(a.scale-b.scale)||((+b.pop||0)-(+a.pop||0)); }
+  /* inside a [w, s, e, n] box (js/country-extent.js's shape — `e` may lie past 180 across the antimeridian) */
+  function _inBox(b,lng,lat){ if(!Array.isArray(b)||b.length!==4) return false; const w=+b[0],s=+b[1],e=+b[2],n=+b[3];
+    if(!(lat>=s&&lat<=n)) return false; const span=((e-w)%360+360)%360||360; return (((lng-w)%360+360)%360)<=span; }
+  /* the record the country table's capital NAME refers to: a place of that name IN that country — GeoNames' iso2
+     against the country's alpha-2 (the index carries it, js/gazetteer.js), the most populous if several; a curated
+     row with no country of its own counts when it stands inside the country's own extent; and a capital too small
+     for the index is looked for in the whole list, once per list and country (a linear pass — no 148,000-row index
+     is built for the few names that need it). */
+  const _capMemo=new WeakMap();
+  function _capitalRecord(R,s,gz){
+    const k=_fold(R,s.capital); if(!k) return null;
+    const a2=String(s.a2||'').toUpperCase(), box=s.bboxAll||s.bbox;
+    let best=null;
+    if(gz) for(const type in gz) for(const e of gz[type]){ if(!e.loc) continue;
+      const terms=Array.isArray(e.terms)?e.terms:String(e.terms||'').split('|');
+      if(!terms.some(t=>_fold(R,t)===k)) continue;
+      if(e.iso2?(!a2||String(e.iso2).toUpperCase()!==a2):!_inBox(box,+e.loc[0],+e.loc[1])) continue;
+      if(!best||(+e.pop||0)>best.pop) best={ name:(e.name&&(e.name[HOST.lang]||e.name.en))||s.capital, names:terms, lng:+e.loc[0], lat:+e.loc[1], pop:+e.pop||0 };
+    }
+    if(best||!a2) return best;
+    let W=null; try{ W=window.IntMapGazetteer&&window.IntMapGazetteer.world&&window.IntMapGazetteer.world(); }catch(_){}
+    if(!W||!W.length) return null;
+    let m=_capMemo.get(W); if(!m){ m=new Map(); _capMemo.set(W,m); }
+    const key=a2+'|'+k; if(m.has(key)) return m.get(key);
+    let r0=null; for(const r of W) if(r[7]===a2&&(!r0||(+r[6]||0)>(+r0[6]||0))&&_fold(R,r[4])===k) r0=r;
+    const rec=r0?{ name:(HOST.lang==='jp'&&r0[5])?r0[5]:r0[4], names:r0[1], lng:+r0[2], lat:+r0[3], pop:+r0[6]||0 }:null;
+    m.set(key,rec); return rec; }
+  /* (#R15 / #34) Local place lookup — resolves vague / partial / slightly-misspelled queries against the
+     bundled countries, their capitals and the built-in gazetteer, so search still works when the external
+     geocoders are slow / rate-limited / too strict for a loose query. Returns ranked rows.
+     `score` keeps the scale its callers read (≥ 88 exact — js/routing-ui.js; ≥ 72 strong — doGeocode below);
+     `level`, `scale` and `pop` are what the rows are ordered by. */
   function localFuzzyPlaces(q){
     const ql=(q||'').toLowerCase().trim(); if(!ql) return [];
-    const out=[];
-    const push=(name,lng,lat,score,kind,bbox,exact)=>{ lng=+lng;lat=+lat; if(isNaN(lng)||isNaN(lat))return; out.push({name,lng,lat,score,kind:kind||'',bbox:bbox||null,exact:!!exact}); };   /* (#732) `exact` = this row's own name IS the query — the only kind of row a CONFIRMING door (js/atlas-geo-resolve.js `geocode`) may take; the rest are suggestions */   /* (#R46) kind = scale hint (country/capital/city/…) for Atlas zoom */
+    const R=_rulesNow(), out=[];
+    const push=(name,lng,lat,score,kind,bbox,exact,level,pop,names)=>{ lng=+lng;lat=+lat; if(isNaN(lng)||isNaN(lat))return; out.push({name,lng,lat,score,kind:kind||'',bbox:bbox||null,exact:!!exact,level,scale:_classScale(kind),pop:+pop||0,names:names||[name]}); };   /* (#732) `exact` = this row's own name IS the query — the only kind of row a CONFIRMING door (js/atlas-geo-resolve.js `geocode`) may take; the rest are suggestions */   /* (#R46) kind = scale hint (country/capital/city/…) for Atlas zoom */
+    let gz=null; try{ gz=(typeof HOST.BUILTIN_GAZETTEER!=='undefined')?HOST.BUILTIN_GAZETTEER:null; }catch(_){}
+    /* the tier numbers are the ones these sources have always carried (#R15/#R19); a resemblance stays under all of them */
+    const TIER={country:[0,72,86,100], gazetteer:[0,64,68,88]};
+    const scoreOf=(src,lv)=>lv>=1?TIER[src][Math.floor(lv)]:Math.round(lv*60);
+    const caps=[];
+    /* ⚠ A RESEMBLANCE IS A GUESS AT A TYPO, AND A QUERY THAT A NAME ALREADY CONTAINS IS NOT ONE. Over the 15,000-row
+       index the agreement floor admits Kyoto (0.75), Toyooka and Toki for 「Tokyo」 — a floor calibrated for judging a
+       geocoder's handful of answers, not for enumerating a gazetteer. So the walk asks for the name itself first, and
+       only when nothing on the device carries the query does it walk again for resemblances: 「osakaa」 and 「Tokio」
+       still find theirs; 「Tokyo」 offers Tokyo. */
+    const walk=(fuzzy)=>{
     try{ Object.values(HOST.countryStats||{}).forEach(s=>{
-      if(!s.latlng) return; const en=(s.nameEn||'').toLowerCase(), jp=(s.nameJp||''), cap=(s.capital||'').toLowerCase();
-      let sc=0, suffix='';
-      if(en===ql||(jp&&jp===q)) sc=100;
-      else if(en.startsWith(ql)) sc=86;
-      else if(cap===ql){ sc=82; suffix=' · '+s.capital; }
-      else if(en.includes(ql)||(jp&&jp.includes(q))) sc=72;
-      else if(en.split(/\s+/).some(w=>w.startsWith(ql))&&ql.length>=3) sc=66;   /* (#R19) word-prefix: "zeal"→New Zealand */
-      else if(cap.includes(ql)&&ql.length>=3){ sc=58; suffix=' · '+s.capital; }
-      else if(ql.length>=4 && _lev(en,ql)<=2) sc=62;
-      else if(ql.length>=5 && cap && _lev(cap,ql)<=2){ sc=56; suffix=' · '+s.capital; }   /* (#R19) misspelled capital */
-      /* (#R185) a country match carries the country's REAL extent (see js/countries-ui.js), so the
-         search frames Monaco like Monaco and Russia like Russia instead of giving both the one
-         `country` zoom. A CAPITAL match is a point inside the country and must not be framed by the
-         country's box — it keeps the class zoom, as before. */
-      if(sc>0) push(s.nameEn+suffix, s.latlng[1], s.latlng[0], sc, suffix?'capital':'country', suffix?null:s.bbox, en===ql||(jp&&jp===q)||(suffix&&cap===ql));
+      if(!s.latlng) return;
+      const names=[s.nameEn,s.nameJp].filter(Boolean), lv=_nameLevel(R,q,names,fuzzy);
+      /* (#R185) a country match carries the country's REAL extent (see js/countries-ui.js), so the search frames
+         Monaco like Monaco and Russia like Russia. */
+      if(lv>0) push(s.nameEn, s.latlng[1], s.latlng[0], scoreOf('country',lv), 'country', s.bbox, lv===3, lv, s.pop, names);
+      if(s.capital) caps.push({s,cl:_nameLevel(R,q,[s.capital],fuzzy)});
     }); }catch(_){}
-    try{ const gz=(typeof HOST.BUILTIN_GAZETTEER!=='undefined')?HOST.BUILTIN_GAZETTEER:null;
-      if(gz) for(const type in gz){ gz[type].forEach(e=>{ const terms=Array.isArray(e.terms)?e.terms.join(' '):String(e.terms||''); const tl=terms.toLowerCase(); const nm=(e.name&&(e.name[HOST.lang]||e.name.en))||terms;
-        const words=tl.split(/[|,\s]+/);
-        let sc=0; if(words.includes(ql)) sc=88; else if(words.some(w=>w.startsWith(ql))&&ql.length>=3) sc=68;   /* (#R19) prefix */
-        else if(tl.includes(ql)&&ql.length>=3) sc=64;
-        else if(ql.length>=4 && words.some(w=>w.length>=4&&_lev(w,ql)<=2)) sc=58;   /* (#R19) per-word typo tolerance */
-        if(sc>0 && e.loc) push(nm, e.loc[0], e.loc[1], sc, type, null, (Array.isArray(e.terms)?e.terms:String(e.terms||'').split('|')).some(t=>String(t).toLowerCase().trim()===ql)); }); }
-    }catch(_){}
+    try{ if(gz) for(const type in gz){ gz[type].forEach(e=>{ if(!e.loc) return;
+        const terms=Array.isArray(e.terms)?e.terms:String(e.terms||'').split('|');
+        const lv=_nameLevel(R,q,terms,fuzzy); if(!(lv>0)) return;
+        const nm=(e.name&&(e.name[HOST.lang]||e.name.en))||terms[0];
+        push(nm, e.loc[0], e.loc[1], scoreOf('gazetteer',lv), type, null, lv===3, lv, +e.pop||0, terms); }); }
+    }catch(_){} };
+    walk(false);
+    if(!out.length&&!caps.some(c=>c.cl>0)&&R){ caps.length=0; walk(true); }
+    /* the capitals: the record OF the capital, folded into the gazetteer row that already is that record */
+    /* — whether the query named the capital (「Tokyo」) or a row it found carries the capital's name among its own
+       (「東京」 finds the curated row whose terms include Tokyo) */
+    const folded=new Map(out.map(o=>[o,new Set((o.names||[]).map(t=>_fold(R,t)))]));
+    for(const {s,cl} of caps){ try{
+      const k=_fold(R,s.capital), z=_classScale('capital');
+      const named=out.filter(o=>o.kind!=='country'&&folded.get(o)&&folded.get(o).has(k));
+      if(!(cl>0)&&!named.length) continue;
+      const rec=_capitalRecord(R,s,gz); if(!rec) continue;
+      const twin=named.find(o=>_pxApart(o,rec,z)<=FRAME_PAD_PX);
+      if(twin){ twin.kind='capital'; twin.scale=z; twin.pop=Math.max(twin.pop,rec.pop); continue; }
+      if(!(cl>0)) continue;
+      const lv=Math.max(cl,_nameLevel(R,q,rec.names,cl<1));
+      push(rec.name, rec.lng, rec.lat, scoreOf('gazetteer',lv), 'capital', null, lv===3, lv, rec.pop, rec.names);
+    }catch(_){} }
     const seen=new Set();
-    return out.sort((a,b)=>b.score-a.score).filter(x=>{ const k=x.name+'|'+x.lng.toFixed(1)+'|'+x.lat.toFixed(1); if(seen.has(k))return false; seen.add(k); return true; }).slice(0,7);
+    return out.sort((a,b)=>_rankCmp(a,b)||(b.score-a.score)).filter(x=>{ const k=_fold(R,x.name)+'|'+x.lng.toFixed(1)+'|'+x.lat.toFixed(1); if(seen.has(k))return false; seen.add(k); return true; }).slice(0,7);
   }
 
   /* ══ ⚠⚠⚠ (#R802) THE SEARCH CARD LISTED ROWS THAT WERE NOT WHAT WAS TYPED ═══════════════════════
@@ -202,6 +291,8 @@ export function searchGeocode(HOST){
   }
   async function doGeocode(opt){
     const suggest=!!(opt&&opt.suggest);
+    /* (search-identity) Enter: the same search, and then the first candidate is taken — see the end of this function */
+    const go=!!(opt&&opt.go)&&!suggest;
     const inp=document.getElementById('ms-input'), q=inp.value.trim(), res=document.getElementById('ms-results');
     /* ⚠ (mobile-shell-flow) A PICK ENDS THE SEARCH. The suggestion timer (js/app-body.js, 120 ms after a keystroke)
        can fire AFTER the reader has already picked a row — MEASURED on production: 「Paris」 typed and its first row
@@ -229,6 +320,9 @@ export function searchGeocode(HOST){
     try{ if(window.IntMapGazetteer&&window.IntMapGazetteer.warm) window.IntMapGazetteer.warm(); }catch(_){}
     const pq=preprocessNLQuery(q);
     const rulesP=_placeRules();   /* (#R802) started here, awaited beside the three geocoders below */
+    /* (search-identity) the local rows are measured by the rules' agreement — the first search waits for the module
+       (it is already being fetched for the three geocoders below), every later one has it in hand */
+    if(!window.IntMapPlaceRules){ try{ await rulesP; }catch(_){} if(gen!==_gcGen) return; }
     const local=localFuzzyPlaces(q);
     /* (search-result-dedupe) the rows on the card, each with what is known about its feature — see
        `_sameFeature` above. The name fold is read when two rows are COMPARED, not when they arrive:
@@ -263,13 +357,25 @@ export function searchGeocode(HOST){
         r.el.textContent=r.f.label;
         if(sub){ const s=document.createElement('span'); s.className='ms-kind'; s.textContent=sub; r.el.appendChild(s); }
       }); };
-    const addItem=(label,lng,lat,raw,kind)=>{ if(gen!==_gcGen||isNaN(lng)||isNaN(lat))return;
-      const f=_rowFacts(label,lng,lat,raw,kind);
+    /* (search-identity) WHERE a row goes on the card: the order localFuzzyPlaces states (`_rankCmp` — how much of the
+       name agrees, then the kind's scale, then population), asked of every source alike. A local row arrives with its
+       three already measured (its label may be the Japanese name of an English query); a geocoder's row is measured
+       here against its own names (`featureNames`, the rules' reading), its class's scale and the population it
+       publishes (Open-Meteo does; Nominatim and Photon do not). A row is placed before the first one it outranks,
+       so rows already on the card keep their order among themselves. */
+    const _rankFor=(f,given)=>{ if(given&&given.level!=null) return {level:given.level,scale:given.scale,pop:given.pop};
+      let names=[f.name]; try{ if(_rules&&_rules.featureNames){ const n=_rules.featureNames(f.raw); if(n.length) names=n; } }catch(_){}
+      let scale=Infinity; try{ const PF=window.IntMapPlaceFraming, z=PF.zoomTable()[f.cls]; scale=isFinite(z)?z:PF.defaultZoom(); }catch(_){}
+      return {level:_nameLevel(_rules,q,names), scale, pop:+(f.raw&&f.raw.population)||0}; };
+    const addItem=(label,lng,lat,raw,kind,given)=>{ if(gen!==_gcGen||isNaN(lng)||isNaN(lat))return;
+      const f=_rowFacts(label,lng,lat,raw,kind); f.rank=_rankFor(f,given);
       const same=rows.find((r)=>_sameFeature(r.f,f,_nameKey));
       if(same){ if(f.rich>same.f.rich){ same.f=f; _paint(); } return; }   /* the row that knows more stays, rewritten in place */
       const d=document.createElement('div'); d.className='ms-item'; d.setAttribute('role','option'); const row={f,el:d};
       d.onclick=()=>{ const g=row.f; res.style.display='none'; _picked(inp,String(g.label).split(',')[0].split(' · ')[0]); gotoPlace(g.lng,g.lat,g.label,g.raw||null,g.kind||null); };
-      rows.push(row); res.appendChild(d); _paint(); };
+      const at=rows.findIndex((r)=>_rankCmp(f.rank,r.f.rank)<0);
+      if(at<0){ rows.push(row); res.appendChild(d); } else { res.insertBefore(d,rows[at].el); rows.splice(at,0,row); }
+      _paint(); };
     /* (#R15e) Show strong LOCAL matches IMMEDIATELY — was awaiting Nominatim with no timeout, so a slow /
        unreachable geocoder left the box frozen on "Loading…" forever ("結果が出てこない"). Now local
        (countries/capitals/gazetteer) appear instantly; the external geocoder is merged in with a hard
@@ -283,8 +389,11 @@ export function searchGeocode(HOST){
        to ask of one js/country-extent.js has already trimmed. Without it twenty countries held their
        own measured footprint and were still flown to the flat `country` zoom of 4.4. */
     const _localRaw=(l)=>(l&&l.bbox)?{ boundingbox:[l.bbox[1],l.bbox[3],l.bbox[0],l.bbox[2]], lat:l.lat, lon:l.lng, homeExtent:true }:null;
-    if(suggest){ local.forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind)); _askAtlasRow(res,q); if(!res.children.length) res.style.display='none'; return; }
-    local.filter(l=>l.score>=72).forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind));
+    if(suggest){ local.forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind,l)); _askAtlasRow(res,q); if(!res.children.length) res.style.display='none'; return; }
+    local.filter(l=>l.score>=72).forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind,l));
+    /* (search-identity) Enter with a row on the device whose WHOLE name is the query: that row is the answer and it
+       is already in hand — go now, ask no network. Anything less waits for the three geocoders (below). */
+    if(go&&rows[0]&&rows[0].f.rank.level===3){ rows[0].el.click(); return; }
     if(!res.children.length) res.innerHTML=`<div class="ms-loading">${HOST.t('loading')}</div>`;
     /* (#R16) The mobile "no results" bug: under file:// / on mobile networks Nominatim is often rate-limited,
        blocked (null Origin) or just slow, and on a fresh load countryStats isn't loaded yet, so there was
@@ -324,8 +433,15 @@ export function searchGeocode(HOST){
     await Promise.allSettled([omP,nomP,phP]); clearTimeout(to);
     if(gen!==_gcGen) return;   /* (mobile-shell) the reader typed on — this card is no longer theirs */
     const lo=res.querySelector('.ms-loading'); if(lo) lo.remove();
-    if(!res.querySelector('.ms-item')){ res.innerHTML=''; rows.length=0; local.forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind)); }   /* weak local fallback */
+    if(!res.querySelector('.ms-item')){ res.innerHTML=''; rows.length=0; local.forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind,l)); }   /* weak local fallback */
     if(!res.querySelector('.ms-item')){ res.innerHTML=`<div class="ms-loading">${HOST.t('noMatch')}</div>`; }
+    /* ══ (search-identity) ENTER GOES ══════════════════════════════════════════════════════════════════════════
+       Observed on production: Enter on 「Tokyo」 did nothing visible for five seconds — it re-ran this search and stopped
+       at the card. Enter is the reader saying 「that one」 without pointing, so it takes the first candidate, the row
+       the card ranks first, through the row's own click — the same pick, the same flight, the same card. A query
+       with no candidate at all leaves the 「no match」 line, and nothing moves. (An IME's confirming Enter never gets
+       here: js/app-body.js drops a keydown that is still composing.) */
+    if(go&&rows[0]){ rows[0].el.click(); return; }
     _askAtlasRow(res,q);
   }
   let searchCardEl=null, searchCardData=null, searchCardOnMove=null;
