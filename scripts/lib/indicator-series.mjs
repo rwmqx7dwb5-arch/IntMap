@@ -27,11 +27,12 @@
  *  ⚠ PURE: reads text it is handed, no fs. The callers (scripts/layer-descriptors.mjs, the tests) read files.
  * ==========================================================================*/
 
-/** the World Bank's API host: a file containing it fetches World Bank series */
-export const WORLD_BANK_HOST = 'api.worldbank.org';
-/* a file FETCHES from it when it holds the URL — scheme, host and the path's slash — not when the host's name merely
-   appears (a comment, a list of hosts). Asked as a URL, not as a substring (CodeQL js/incomplete-url-substring-sanitization). */
-const WORLD_BANK_URL = new RegExp('https://' + WORLD_BANK_HOST.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/');
+/* the World Bank's API: a file FETCHES World Bank series when it holds the URL — scheme, host and the path's slash —
+   not when the host's name merely appears (a comment, a list of hosts). Asked as a URL, not as a substring (CodeQL
+   js/incomplete-url-substring-sanitization), and written as a LITERAL with its dots escaped: a pattern built from the
+   host string at run time is escaped correctly, but CodeQL cannot see the escaping and reports the string's
+   unescaped '.' as js/incomplete-hostname-regexp. One literal, so there is no second spelling of the host to drift. */
+const WORLD_BANK_URL = /https:\/\/api\.worldbank\.org\//;
 /** the publishers a `measures` claim may name, and what each means */
 export const PUBLISHERS = Object.freeze({
   worldbank: 'a World Bank WDI series code (a summed series is `A+B`)',
