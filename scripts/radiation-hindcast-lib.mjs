@@ -9,6 +9,8 @@ import { HINDCAST } from './radiation-hindcast-config.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const { RAD } = await import(pathToFileURL(join(ROOT, 'js', 'radiation-model.js')).href);
 export const H = await import(pathToFileURL(join(ROOT, 'js', 'radiation-hindcast.js')).href);
+/* the two exports the checks and the builder read by name (so js/radiation-hindcast.js exports nothing no file reaches) */
+export const { FLOOR_BQ_M2, ratioBand } = await import(pathToFileURL(join(ROOT, 'js', 'radiation-hindcast.js')).href);
 export const C = HINDCAST;
 
 export function loadFixture() { return JSON.parse(gunzipSync(readFileSync(join(ROOT, 'tests', 'fixtures', 'radiation-hindcast-era5.json.gz'))).toString()); }

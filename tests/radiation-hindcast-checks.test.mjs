@@ -19,7 +19,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { RAD, H, C, loadFixture, loadBundle, buildField, ensembleOnCells, areaKm2, decayToObs } from '../scripts/radiation-hindcast-lib.mjs';
+import { RAD, H, C, FLOOR_BQ_M2, ratioBand, loadFixture, loadBundle, buildField, ensembleOnCells, areaKm2, decayToObs } from '../scripts/radiation-hindcast-lib.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -52,7 +52,7 @@ test('the measured side is a whole, governed record, not a number that was typed
   assert.ok(Math.abs(tot - B.survey.totalTBq) < 0.1, `the stated total (${B.survey.totalTBq} TBq) is the sum over the cells (${tot.toFixed(1)})`);
   assert.equal(B.asOf, C.obsAsOf, 'the date the deposit is stated for is the date the model is decayed to');
   assert.ok(B.asOfNote && /does not state/.test(B.asOfNote), 'a date that was INFERRED says so');
-  assert.ok(H.FLOOR_BQ_M2 <= B.survey.minBqM2 * 2.5, 'the log floor is of the survey\'s own order, not a number that hides the low cells');
+  assert.ok(FLOOR_BQ_M2 <= B.survey.minBqM2 * 2.5, 'the log floor is of the survey\'s own order, not a number that hides the low cells');
   for (const [lng, lat, bq] of obsCells) { assert.ok(bq > 0 && lng > 137 && lng < 143 && lat > 34 && lat < 41, 'every cell is a positive deposit near Fukushima'); }
 });
 
@@ -124,7 +124,7 @@ test('the map readers are shown is what the model produces now', () => {
   let worst = 0;
   for (let i = 0; i < obsCells.length; i++) {
     const s = B.model.cells[i][1], r = E.p50[i];
-    if (s < H.FLOOR_BQ_M2 && r < H.FLOOR_BQ_M2) continue;
+    if (s < FLOOR_BQ_M2 && r < FLOOR_BQ_M2) continue;
     worst = Math.max(worst, Math.abs(Math.log10(Math.max(s, 1)) - Math.log10(Math.max(r, 1))));
   }
   assert.ok(worst < 0.02, `the shipped p50 differs from a re-run by up to ${worst.toFixed(3)} dex — rebuild it: node scripts/build-radiation-hindcast.mjs --offline`);
@@ -166,7 +166,7 @@ test('the three maps the panel draws are the same cells, on the ladder the simul
   const hits = ratF.filter((f) => f.properties.k === 'r-ok').length / ratF.length;
   assert.ok(hits > 0.05 && hits < 0.5, 'the neutral colour is the FAC2 criterion, so its share is of the order of the recorded FAC2 (' + hits.toFixed(3) + ' vs ' + B.metrics.fac2 + ')');
   assert.ok(Math.min(...lr) < -1, 'the largest under-predictions are over a decade');
-  const edge = (x) => H.ratioBand(x).k;
+  const edge = (x) => ratioBand(x).k;
   assert.equal(edge(0), 'r-ok'); assert.equal(edge(0.31), 'r-hi0'); assert.equal(edge(-0.31), 'r-lo0'); assert.equal(edge(-2.5), 'r-lo2'); assert.equal(edge(5), 'r-hi2');
 });
 

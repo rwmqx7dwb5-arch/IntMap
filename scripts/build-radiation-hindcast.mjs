@@ -21,7 +21,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { RAD, H, C, loadFixture, buildField, ensembleOnCells, areaKm2, decayToObs } from './radiation-hindcast-lib.mjs';
+import { RAD, H, C, FLOOR_BQ_M2, loadFixture, buildField, ensembleOnCells, areaKm2, decayToObs } from './radiation-hindcast-lib.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'radiation-hindcast.json');
@@ -34,14 +34,21 @@ export const GOVERNANCE = {
     url: 'https://doi.org/10.5281/zenodo.7016491',
     licence: 'CC-BY-4.0',
     licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
-    attribution: 'Dumont Le Brazidec & Saunier (2022), IRSN — Zenodo doi:10.5281/zenodo.7016491, CC BY 4.0; underlying measurements: MEXT / Nuclear Regulation Authority, Japan. Wind: ERA5 (Hersbach et al. 2020, Copernicus Climate Change Service) via Open-Meteo, CC BY 4.0.',
+    /* true: CC BY makes the credit a CONDITION of redistribution (the gate reads a boolean here); the sentence that pays it is `credit` in the bundle (CREDIT below) */
+    attribution: true,
     /* the DATA_SOURCES row (js/reference-data.js) that pays the attribution — matched by exact name */
     paidBy: 'Fukushima Cs-137 deposition survey (MEXT/NRA via IRSN, CC BY 4.0)',
     /* a historical event: the survey is not republished on a schedule */
     cadence: 'static',
+    cadenceBasis: {
+      observed: 'a closed historical event: the 2011 Fukushima Daiichi deposition survey, compiled once by IRSN (Zenodo record 7016491, published 2022), is not republished on a schedule',
+      expires: 'if IRSN publishes a new version of the Zenodo record, or the plume model (js/radiation-model.js) changes so the model half of the bundle no longer reproduces',
+      canon: 'this record (the only builder that reads the IRSN deposition survey)',
+    },
     builtBy: 'scripts/build-radiation-hindcast.mjs',
   },
 };
+const CREDIT = 'Dumont Le Brazidec & Saunier (2022), IRSN — Zenodo doi:10.5281/zenodo.7016491, CC BY 4.0; underlying measurements: MEXT / Nuclear Regulation Authority, Japan. Wind: ERA5 (Hersbach et al. 2020, Copernicus Climate Change Service) via Open-Meteo, CC BY 4.0.';
 const G = GOVERNANCE['data/radiation-hindcast.json'];
 const ZENODO = 'https://zenodo.org/api/records/7016491';
 /* Zenodo refuses a request that does not identify itself (403 observed 2026-10-03 for the default fetch agent) */
@@ -52,9 +59,13 @@ let obs, survey;
 if (offline) {
   const b = JSON.parse(readFileSync(OUT, 'utf8')); obs = b.obs.cells; survey = b.survey;
 } else {
-  const rec = await (await fetch(ZENODO, HDR)).json();
+  const recRes = await fetch(ZENODO, HDR);
+  if (!recRes.ok) throw new Error('Zenodo record: HTTP ' + recRes.status);
+  const rec = await recRes.json();
   const f = rec.files.find((x) => x.key === '137Cs_deposit_per_cell_dataset.txt');
-  const buf = Buffer.from(await (await fetch(f.links.self, HDR)).arrayBuffer());
+  const fileRes = await fetch(f.links.self, HDR);
+  if (!fileRes.ok) throw new Error('Zenodo file: HTTP ' + fileRes.status);
+  const buf = Buffer.from(await fileRes.arrayBuffer());
   const md5 = createHash('md5').update(buf).digest('hex');
   if ('md5:' + md5 !== f.checksum) throw new Error('md5 mismatch: ' + md5 + ' vs ' + f.checksum);
   const rows = buf.toString('utf8').trim().split(/\r?\n/).slice(1).map((l) => l.trim().split(/\s+/));
@@ -88,10 +99,11 @@ const out = {
   /* governance facets, in the vocabulary js/data-governance.js reads (check:datagov) */
   publisher: G.publisher,
   url: G.url,
-  src: 'Dumont Le Brazidec J., Saunier O. (2022) Statistics on caesium 137 deposition around the Fukushima-Daiichi plant after the 2011 accident. Zenodo. doi:10.5281/zenodo.7016491 — aerial monitoring results of MEXT/NRA, cell means compiled by IRSN',
+  src: 'Dumont Le Brazidec J., Saunier O. (2022) Statistics on caesium 137 deposition around the Fukushima-Daiichi plant after the 2011 accident. Zenodo. doi:10.5281/zenodo.7016491 — aerial monitoring results of MEXT/NRA, cell means compiled by IRSN — CC BY 4.0',
   licence: G.licence,
   licenceUrl: G.licenceUrl,
-  attribution: G.attribution,
+  attribution: true,
+  credit: CREDIT,
   paidBy: G.paidBy,
   retrievedAt: new Date().toISOString().slice(0, 10),
   generatedAt: new Date().toISOString(),
@@ -110,7 +122,7 @@ const out = {
     decayToObsDate: r3(decayToObs()),
   },
   metrics,
-  floorBqM2: H.FLOOR_BQ_M2,
+  floorBqM2: FLOOR_BQ_M2,
   /* cells: [lng, lat, measured Bq/m2, number of aerial measurements] */
   obs: { fields: ['lng', 'lat', 'bq_m2', 'n'], cells: obs },
   /* cells in the same order: [p10, p50, p90] of the model, Bq/m2, three significant figures */

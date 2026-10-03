@@ -25,7 +25,7 @@ const DEG_M = 111320;
 export const FLOOR_BQ_M2 = 100;
 const L10 = (x) => Math.log10(Math.max(FLOOR_BQ_M2, x));
 
-export function quantile(sorted, p) {
+function quantile(sorted, p) {
   const h = (sorted.length - 1) * p, lo = Math.floor(h), hi = Math.ceil(h);
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (h - lo);
 }

@@ -60,3 +60,7 @@ date: 2026-10-03
 
 超えた行だけ `--update` で上げた（増えた理由は上の節）:
 - eager.modules: 309 → 310
+
+## 出自の台帳（data/governance-ledger.json）
+
+`data/radiation-hindcast` と、その builder の 2 行が台帳に入った（undeclared 163 → 165）。出自・権利・周期（`cadenceBasis` つき）は値で述べた。述べていないのは `integrity.*` の 5 つ（全 163 件が同じく持たない、この束だけでは直せない横断の欠け）と、builder 側の `retrievedAt` / `generatedAt` / `asOf`（束が実行時に決める値で、builder の定数ではない）。`attribution` は CC BY が再配布の条件なので真偽値 `true`、払う文は束の `credit`。取得は `res.ok` を確かめてから読む。
