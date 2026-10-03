@@ -38,10 +38,10 @@
 - **入口**: アカウント ▸ 見守る場所（ダイジェスト・設定・既読・一時停止と再開・停止・未見守りの保存場所を 1 押しで追加）／
   マイプレイスの「見守る場所…」／Atlas の `places.watch`・`places.unwatch`・
   `places.watchDigest`（構造化したダイジェストを `exec.watchDigest` で渡す）・`places.watchSeen`。
-- **データ**: `public.place_watches`（`supabase/migrations/20261003190500_place_watches.sql`）——保存場所 1 件に 1 行、
+- **データ**: `public.place_watches`（`supabase/migrations/20261003211700_place_watches.sql`）——保存場所 1 件に 1 行、
   半径・種類ごとの基準（NULL＝見守らない）・オン/オフ・既読。本人だけ（RLS）・場所は呼び手のものでなければならない・
   `user_id` はデータベースが決める。保存場所を消すと見守りも消え、アカウント削除と書き出しには一覧なしで入る
-  （`account_data_catalog` に 1 行）。pgTAP は `supabase/tests/24_place_watches_test.sql`。
+  （`account_data_catalog` に 1 行）。pgTAP は `supabase/tests/26_place_watches_test.sql`。
 - **IntMap を閉じている間の通知（Web Push）は無い。** 設計と承認待ちの事項は [`docs/AREA-MONITORS.md`](../AREA-MONITORS.md)
   の「Watched places」節。
 

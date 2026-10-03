@@ -323,7 +323,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get showCountryDetail(){ return showCountryDetail; }, get renderStats(){ return renderStats; },
     get renderCompareFixed(){ return renderCompareFixed; }, get applyTheme(){ return applyTheme; },
     get makeDraggable(){ return makeDraggable; },   get bringToFront(){ return bringToFront; },
-    get distHTML(){ return distHTML; },             get distTXT(){ return distTXT; },   /* (map-next) the same measurement as plain text — js/my-map.js writes it through the encoder */             get imToast(){ return imToast; },
+    /* (map-next) distTXT: the same measurement as plain text — js/my-map.js writes it through the encoder */
+    get distHTML(){ return distHTML; },             get distTXT(){ return distTXT; },             get imToast(){ return imToast; },
     get aiToast(){ return aiToast; },               get satToast(){ return satToast; },
     get requireLogin(){ return requireLogin; },     get openAuthModal(){ return openAuthModal; },
     /* ── (#R164) members added for the third split (data-layers / workspace / widgets / wb-layers,
@@ -371,7 +372,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get clearAllPins(){ return clearAllPins; },     get compressImage(){ return compressImage; },
     get diskFillPolys(){ return diskFillPolys; },   get exitTool(){ return exitTool; },
     get localFuzzyPlaces(){ return localFuzzyPlaces; }, get parseDate(){ return parseDate; },
-    get goToLocalPlace(){ return IM_SEARCH.goToLocal; },   /* (ux-next) one row of localFuzzyPlaces, flown the way the result list flies it — js/command-palette.js */
+    /* (ux-next) goToLocalPlace: one row of localFuzzyPlaces, flown the way the result list flies it — js/command-palette.js */
+    get goToLocalPlace(){ return goToLocalPlace; },
     get refreshTool(){ return refreshTool; },       get saveSettings(){ return saveSettings; },
     get setGrid(){ return setGrid; },               get setLang(){ return setLang; },
     get setTool(){ return setTool; },               get updateToolPanel(){ return updateToolPanel; },
@@ -1156,6 +1158,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   const IM_SEARCH=searchGeocode(IM_HOST);
   function doGeocode(){ return IM_SEARCH.doGeocode.apply(this,arguments); }
   function localFuzzyPlaces(){ return IM_SEARCH.localFuzzyPlaces.apply(this,arguments); }
+  function goToLocalPlace(){ return IM_SEARCH.goToLocal.apply(this,arguments); }   /* (ux-next) the host's name for IM_SEARCH.goToLocal (a direct export, so not the shim tests/engine-app-shell-split names) */
   const IM_NEWSCTX=newsContext(IM_HOST);
   function analyzeContext(){ return IM_NEWSCTX.analyzeContext.apply(this,arguments); }
   function rebuildGeoIndex(){ return IM_NEWSCTX.rebuildGeoIndex.apply(this,arguments); }

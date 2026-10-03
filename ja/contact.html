@@ -42,6 +42,7 @@
       <a class="lp-top-link" href="./for-research.html">研究・NGO</a>
       <a class="lp-top-link" href="./support.html">支援</a>
       <a class="lp-top-link" href="./corrections.html">地図の訂正</a>
+      <a class="lp-top-link" href="./security.html">セキュリティ</a>
       <a class="lp-top-link is-here" href="./contact.html" aria-current="page">お問い合わせ</a>
     </div>
     <a class="lp-lang" href="../contact.html" hreflang="en" lang="en" data-lp-lang="en" aria-label="このページを英語で読む">English</a>
@@ -62,7 +63,7 @@
       data-msg-limited="この接続からの送信が多すぎます。しばらくしてからお試しください。" data-msg-invalid="必須の欄と、メールアドレス・ウェブサイトの書き方をご確認ください。">
       <div class="og-row">
         <div class="og-field"><label for="og-audience">ご所属の種類</label><select id="og-audience" name="audience" required><option value="newsroom">報道機関・記者</option><option value="education">学校・先生・教育委員会</option><option value="research">研究機関・大学・NGO</option><option value="supporter">支援者（寄付をされた方）</option><option value="other">その他</option></select></div>
-        <div class="og-field"><label for="og-purpose">ご用件</label><select id="og-purpose" name="purpose" required><option value="embed">地図の埋め込み</option><option value="classroom">授業での利用</option><option value="data">データの追加・引用</option><option value="licence">商用利用のライセンス</option><option value="partnership">協力・連携</option><option value="supporter_listing">支援者としての掲載</option><option value="other">その他</option></select></div>
+        <div class="og-field"><label for="og-purpose">ご用件</label><select id="og-purpose" name="purpose" required><option value="embed">地図の埋め込み</option><option value="classroom">授業での利用</option><option value="data">データの追加・引用</option><option value="licence">商用利用のライセンス</option><option value="partnership">協力・連携</option><option value="supporter_listing">支援者としての掲載</option><option value="security">セキュリティ上の問題（非公開の報告）</option><option value="other">その他</option></select></div>
       </div>
       <div class="og-row">
         <div class="og-field"><label for="og-name">お名前</label><input id="og-name" name="name" required maxlength="120" autocomplete="name"></div>
@@ -78,9 +79,10 @@
       </div>
       <div class="og-field">
         <label for="og-message">ご相談の内容</label>
-        <textarea id="og-message" name="message" required maxlength="5000" rows="7" aria-describedby="og-hint og-hint-sup"></textarea>
+        <textarea id="og-message" name="message" required maxlength="5000" rows="7" aria-describedby="og-hint og-hint-sup og-hint-sec"></textarea>
         <p class="og-hint" id="og-hint">何をしたいか、いつまでに、どこに掲載・利用するか。</p>
-        <p class="og-hint" id="og-hint-sup" hidden>掲載をご希望の場合: 表示するお名前、寄付された月、任意で 140 字以内のひとこと。掲載の前に寄付を手作業で確認します。</p>
+        <p class="og-hint" id="og-hint-sup" data-hint-for="supporter_listing" hidden>掲載をご希望の場合: 表示するお名前、寄付された月、任意で 140 字以内のひとこと。掲載の前に寄付を手作業で確認します。</p>
+        <p class="og-hint" id="og-hint-sec" data-hint-for="security" hidden>問題の場所（ページやファイル）、再現の手順、それによって何ができてしまうか。他の人の個人データは含めず、本番サイトに対して破壊的な試験や大量の試験を行わないでください。この内容は IntMap の管理者だけが読みます。</p>
       </div>
       <div class="og-trap" aria-hidden="true">
         <label for="og-wc">この欄は空のままにしてください</label>
@@ -110,6 +112,7 @@
     <a href="./teachers.html">先生へ</a>
     <a href="./news-map.html">ニュースを地図で</a>
     <a href="./embed-map.html">地図を埋め込む</a>
+    <a href="./developers.html">開発者向け</a>
     <a href="../ja/history/">年代から探す</a>
     <a href="../ja/on-this-day/">この日の歴史地図</a>
     <a href="../sources.html">出典</a>

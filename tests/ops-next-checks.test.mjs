@@ -134,7 +134,10 @@ test('② the generator writes into a directory, and the build and the sitemap i
     for (const f of files) assert.ok(existsSync(join(dir, f)), f);
   } finally { rmSync(dir, { recursive: true, force: true }); }
   assert.match(rd('vite.config.js'), /whatsNewPlugin\(\)/);
-  assert.match(rd('scripts/history-pages.mjs'), /\[LANDING_SITEMAP, SITEMAP, UPDATES_SITEMAP\]/);
+  /* the index's array CARRIES the updates sitemap — not «is exactly these three»: other generators join the same
+     array (wave2-train: marketing's on-this-day). What the index really holds is evaluated in
+     tests/marketing-engine-checks.test.mjs ⑦ (the generated sitemap index's <loc>s, sitemap-updates.xml among them). */
+  assert.match(rd('scripts/history-pages.mjs'), /\[(?:\w+, )*UPDATES_SITEMAP(?:, \w+)*\]\.map\(/);
 });
 
 test('② in the app: entries in the reader\'s language, and «unread» is «not yet shown on this device»', () => {

@@ -1,5 +1,5 @@
 -- ============================================================================
---  pgTAP · 24 — news-story: the two reading doors of 20261003184700_news_story.sql.
+--  pgTAP · 25 — news-story: the two reading doors of 20261003211600_news_story.sql.
 --
 --  WHAT THIS PROVES (the half that needs a Postgres):
 --    · news_title_terms cuts a headline into lower-case words of 3+ letters and digits, once each — the

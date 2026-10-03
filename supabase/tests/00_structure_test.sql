@@ -83,14 +83,14 @@ from unnest(array[
   -- the owner reads, edits and deletes their own rows (supabase/tests/23_…).
   'saved_places',
   -- (community-next) a reader's map correction. Admin reads and answers; the reader-reports Edge Function writes it;
-  -- the sender reads the answer through SECURITY DEFINER functions (supabase/tests/24_…).
-  'map_corrections'
+  -- the sender reads the answer through SECURITY DEFINER functions (supabase/tests/28_map_corrections_test.sql).
+  'map_corrections',
   -- (watch-places) which saved places the reader watches, the thresholds and what they have seen.
-  -- Owner-only through RLS; the place must be the caller's (supabase/tests/24_…).
-  'place_watches'
+  -- Owner-only through RLS; the place must be the caller's (supabase/tests/26_place_watches_test.sql).
+  'place_watches',
   -- (collection-workspace) an account's saved maps (inserted only through save_view()) and the collections it chose
   -- to publish read-only (inserted only through publish_collection(); read by the public only through
-  -- shared_collection(token)) (supabase/tests/24_…).
+  -- shared_collection(token)) (supabase/tests/24_collection_workspace_test.sql).
   'saved_views',
   'collection_shares'
 ]) as t;                                                    -- 49 assertions
@@ -122,8 +122,8 @@ from unnest(array[
   'news_event_entities',                                     -- (news-intelligence) see the note above
   'account_data_catalog',                                   -- (account-data-center) see the note above
   'saved_places',                                           -- (my-places) see the note above
-  'map_corrections'                                         -- (community-next) see the note above
-  'place_watches'                                           -- (watch-places) see the note above
+  'map_corrections',                                         -- (community-next) see the note above
+  'place_watches',                                           -- (watch-places) see the note above
   'saved_views','collection_shares'                         -- (collection-workspace) see the note above
 ]) as t;                                                    -- 49 assertions
 

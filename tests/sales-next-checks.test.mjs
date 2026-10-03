@@ -14,7 +14,7 @@
  *    ⑤ the pipeline board's model (js/admin-pipeline.js pipelineModel), EVALUATED: what is a lead, what is
  *      due on the operator's own day, what is open without a date, a stage the page does not know;
  *    ⑥ the board is shipped and only an admin's grant names the new columns.
- *  The database half (CHECKs, RLS) is supabase/tests/24_org_inquiry_pipeline_test.sql.
+ *  The database half (CHECKs, RLS) is supabase/tests/27_org_inquiry_pipeline_test.sql.
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -98,7 +98,7 @@ test('③ Atlas reaches the worksheet: a registry row, and the catalogue describ
 
 const SHAPE = await import(modUrl('supabase/functions/_shared/inquiry-shape.js'));
 const PIPE = SHAPE.INQUIRY_PIPELINE;
-const MIG = rd('supabase/migrations/20261003210000_org_inquiry_pipeline.sql');
+const MIG = rd('supabase/migrations/20261003211800_org_inquiry_pipeline.sql');
 const MIG0 = rd('supabase/migrations/20261003150000_org_inquiries.sql');
 const words = (s) => [...s.matchAll(/'([a-z_]+)'/g)].map((x) => x[1]);
 

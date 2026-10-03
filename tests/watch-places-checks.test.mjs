@@ -1,7 +1,7 @@
 /* ============================================================================
  *  watch-places — a saved place that tells you when something happens near it
  * ----------------------------------------------------------------------------
- *  The database half is supabase/tests/24_place_watches_test.sql (pgTAP, CI's DB job). This file is
+ *  The database half is supabase/tests/26_place_watches_test.sql (pgTAP, CI's DB job). This file is
  *  the offline half, run by `node --test` with no database and no network — the code is EVALUATED:
  *    ① the rules (supabase/functions/_shared/place-watch.js): near / strong enough / new, per kind,
  *      with the key that makes a CHANGE new and a re-publication not; a first look announces nothing;
@@ -98,7 +98,7 @@ test('① a first look announces nothing; an unread feed is «not read» and kee
 });
 
 test('② the numbers the rules name are the numbers the migration enforces', () => {
-  const sql = codeOnly(read('supabase/migrations/20261003190500_place_watches.sql'), { lang: 'sql' });
+  const sql = codeOnly(read('supabase/migrations/20261003211700_place_watches.sql'), { lang: 'sql' });
   const col = (name) => { const m = new RegExp('\\b' + name + '\\b[^,\\n]*', 'i').exec(sql); assert.ok(m, name + ' column'); return m[0]; };
   assert.match(col('radius_km'), new RegExp('default ' + C.WATCH_DEFAULTS.radiusKm + '\\b'));
   assert.match(col('radius_km'), new RegExp('radius_km <= ' + C.RADIUS_MAX_KM + '\\b'));

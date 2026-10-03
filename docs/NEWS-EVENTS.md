@@ -1225,7 +1225,7 @@ Event は「同じ 48 時間に同じことを報じた記事の塊」で、日�
 28 日の 21 の Event に分かれていた。ストーリーはそれを 1 本の流れとして、**年表と地図で再生できる形**で読む口。
 コードは `js/news-story-core.js`（計算の全部・純粋）・`js/news-story.js`（遅延の本体 `newsStory`）・
 `js/news-pulse.js`（起動時の窓口 `IntMapNewsIntel.story`・命令 `newsstory.open`・`?story=`）、
-サーバーは migration `20261003184700_news_story.sql`。
+サーバーは migration `20261003211600_news_story.sql`。
 
 ### 17.1 ストーリーとは何か — 述べた問いであって判定ではない
 

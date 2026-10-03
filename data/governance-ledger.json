@@ -1,7 +1,7 @@
 {
   "gov": {
     "note": "これは「まだ果たしていない義務」の台帳であって、免責ではない。 Every entry is a bundle or a builder that does not yet state its own provenance as a value. The gate fails on anything NOT in here, and fails again when the counts are larger than reality — so a repair always shrinks this file, and nothing may be added to it except by a round that says in DEV-NOTES.md why the structure could not state it instead (.agents/rules/no-ad-hoc-hardcoding.md §6).",
-    "generatedAt": "2026-10-03T14:44:53.685Z",
+    "generatedAt": "2026-10-03T15:17:13.238Z",
     "declaredBy": "scripts/data-governance.mjs",
     "cadence": "static"
   },
@@ -1011,6 +1011,27 @@
       "detail": "provenance is written as a sentence in `src`"
     },
     {
+      "subject": "data/on-this-day",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "origin.builtBy",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.asOf",
+        "freshness.cadence",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "data/osm-diplo",
       "facets": [
         "origin.publisher",
@@ -1907,6 +1928,20 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "scripts/build-fukushima-release.mjs → data/fukushima-release.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/build-gazetteer-phone.mjs → data/gazetteer-phone.json.gz",
       "facets": [
         "origin.url",
@@ -2380,6 +2415,21 @@
         "integrity.duplicates",
         "precedence.rank",
         "precedence.over"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
+      "subject": "scripts/build-on-this-day.mjs → data/on-this-day.json",
+      "facets": [
+        "origin.retrievedAt",
+        "rights.licenceUrl",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
       ],
       "why": "facet-undeclared"
     },
@@ -3293,8 +3343,8 @@
   ],
   "unreadableDeclaration": [],
   "counts": {
-    "undeclared": 169,
-    "undeclaredFacets": 2243,
+    "undeclared": 172,
+    "undeclaredFacets": 2275,
     "updateFailureExposed": 0,
     "shardsWithoutIndex": 1,
     "unreadableDeclaration": 0

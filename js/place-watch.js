@@ -1,7 +1,7 @@
 /* ============================================================================
  *  IntMap · WATCHED PLACES — a saved place that tells you when something happens near it   (watch-places)
  * ----------------------------------------------------------------------------
- *  The reader-facing half of supabase/migrations/20261003190500_place_watches.sql. A place in My places
+ *  The reader-facing half of supabase/migrations/20261003211700_place_watches.sql. A place in My places
  *  (js/my-places.js) can be WATCHED: earthquakes (USGS), official weather warnings (the warnings layer's
  *  own normalised records), volcano alert levels (USGS / JMA / the Smithsonian weekly report, through
  *  js/volcano-intel.js) and news events corroborated by independent outlets (news_events) near it are
@@ -22,7 +22,7 @@
  *  account sheet, Atlas) and adds no tab; it reads FOUR kinds from feeds the map
  *  already draws; it runs in the page while IntMap is open — no cron, no secret, no AI, nothing
  *  billed; and every door is the reader's own row under RLS, tested as the reader
- *  (supabase/tests/24_place_watches_test.sql). What the page cannot do — tell a reader whose IntMap
+ *  (supabase/tests/26_place_watches_test.sql). What the page cannot do — tell a reader whose IntMap
  *  is CLOSED — is designed and awaiting approval (Web Push: docs/AREA-MONITORS.md §«Watched places»).
  *
  *  THE RULES («near», «strong enough», «new») ARE NOT HERE. They are supabase/functions/_shared/place-watch.js,

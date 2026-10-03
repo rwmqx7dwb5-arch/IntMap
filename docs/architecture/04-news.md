@@ -336,7 +336,7 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 - **計算は `js/news-story-core.js` の 1 本**（純粋）: どの語を提案するか（`suggest`——名前は「文の書き方の見出しで
   文中でも大文字」の割合、対は PMI）・年表（UTC の毎日、0 の日も）・地点と国（§4.6 と同じ `makeCountryIndex`）・
   広がり（新しい地点 → 最も近い先行地点・大円は `news-intel-core.js` の `arc`）・再生位置（`frameAt`）・アドレス。
-- **サーバーの読み口**（migration `20261003184700_news_story.sql`）: `news_title_terms(text)`（語を切る唯一の規則・
+- **サーバーの読み口**（migration `20261003211600_news_story.sql`）: `news_title_terms(text)`（語を切る唯一の規則・
   GIN 索引の式）・`news_story(terms, since, until)`（`setof news_events`）・`news_story_terms(text, since, until, max_share)`
   （数だけの jsonb）。⚠ ブラウザは見出しを語に切らない。
 - **入口**: 出来事の詳細（`js/news-events.js`）の「この出来事の流れを追う」・リンク・命令・Atlas `news.story`。

@@ -116,7 +116,9 @@ const out = {
   v: 1,
   title: 'Fukushima Daiichi 2011 — atmospheric release of Cs-137 over time (JAEA reconstruction)',
   publisher: G.publisher, url: G.url,
-  src: 'Supplement of Katata et al. (2015), ' + ZIP + ' → ' + MEMBER,
+  /* the terms travel with the bytes (tests/chronos-claims-checks.test.mjs ③): a reader holding only this file
+     sees what they may do with it — the same sentence radiation-hindcast's `src` ends with */
+  src: 'Supplement of Katata et al. (2015), ' + ZIP + ' → ' + MEMBER + ' — CC BY 3.0',
   licence: G.licence, licenceUrl: G.licenceUrl, attribution: true, credit: CREDIT, paidBy: G.paidBy,
   retrievedAt: now.slice(0, 10), generatedAt: now, builtBy: G.builtBy,
   /* what the table is ABOUT: the release, which ended (as far as this table goes) on this date */

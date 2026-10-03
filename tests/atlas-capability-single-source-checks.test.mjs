@@ -207,9 +207,16 @@ test('atlas-capability-single-source ⑥: a scripted cassette does not depend on
   const SC = await imp('scripts/atlas-eval/scripted-cassettes.mjs');
   const LAB = await imp('scripts/atlas-eval/lab.mjs');
   const P = await R.productModules(imp);
-  /* every description changed — the PR that touches one capability's words, made total */
+  /* every description changed — the PR that touches one capability's words, made total.
+     ⚠ THE WORDS, NOT THE LINES: the search reads the catalogue one LINE at a time (js/atlas-capabilities.js
+     docNorms/docBlocks) and a term is worth something only while few lines carry it (DOC_TERM_MAX_DF). A
+     fragment ends with its newline, so a suffix written AFTER it lands at the head of the next fragment's
+     line, splits identical lines apart and changes how many lines there are — measured (wave2-train):
+     83 → 94 lines, and 「時間」 went from 4 lines (worth 3) to 5 (worth 0), which is a change of STRUCTURE the
+     rewording PR this fixture stands for does not make. So the suffix goes before the fragment's own newline. */
+  const reword = (s) => String(s).replace(/(\n*)$/, ' (reworded)$1');
   const edited = Object.fromEntries(Object.entries(CAPABILITY_MODULES).map(([ns, list]) => [ns, list.map((e) => Object.assign({}, e, {
-    doc: (e.doc || []).map((d) => (d.text == null ? d : Object.assign({}, d, { text: (c) => (typeof d.text === 'function' ? d.text(c) : d.text) + ' (reworded)' }))) }))]));
+    doc: (e.doc || []).map((d) => (d.text == null ? d : Object.assign({}, d, { text: (c) => reword(typeof d.text === 'function' ? d.text(c) : d.text) }))) }))]));
   const PE = Object.assign({}, P, { makeAtlasCatalogText: (H, C) => P.makeAtlasCatalogText(H, Object.assign({}, C, { modules: edited })) });
   assert.notEqual(PE.makeAtlasCatalogText({}, {}).text(null), P.makeAtlasCatalogText({}, {}).text(null), 'the fixture really rewords the catalogue');
   const committed = LAB.loadCassettes(ROOT);

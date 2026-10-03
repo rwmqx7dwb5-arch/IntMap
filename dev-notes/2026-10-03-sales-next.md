@@ -37,7 +37,7 @@ date: 2026-10-03
   プレビューが開いている間、プレイヤーはキーを譲る（そうしないと Esc でツアーごと終わり、矢印で裏の地図が動く）。
 - 授業ページ（`teachers.html`・`ja/teachers.html`）の「授業ツアー」の節に 1 文（`scripts/landing-text.mjs`）。
 
-## 2. パイプライン（`js/admin-pipeline.js`・migration `20261003210000_org_inquiry_pipeline.sql`）
+## 2. パイプライン（`js/admin-pipeline.js`・migration `20261003211800_org_inquiry_pipeline.sql`）
 
 - `org_inquiries` に `stage`（lead → talking → trial → adopted | declined、既定 lead）・`next_step`（≤300）・`next_step_on`・
   `stage_changed_at`。**状態とは別の軸**（返信したか ≠ 使ってくれるか。採用した報道機関が新しい質問を書けば状態は new）。
@@ -73,10 +73,10 @@ date: 2026-10-03
 - `check:perf` は緑。新しい async chunk `tour-worksheet`（13.8 kB）。手元の eager raw が天井より +13.8 kB と出たが、eager に入った
   この作業の差は能力の行 1 本（数百バイト）だけで、残りは手元の node_modules が junction（OneDrive の長いパス）であることによる
   モジュール名の差と見ている（判定は「増えて幅を超えたときだけ赤」で、緑）。
-- ⚠ pgTAP（`supabase/tests/24_org_inquiry_pipeline_test.sql`）はこのマシンに Docker が無く**手元では走らせていない**。CI の DB ゲートが初回。
+- ⚠ pgTAP（`supabase/tests/27_org_inquiry_pipeline_test.sql`）はこのマシンに Docker が無く**手元では走らせていない**。CI の DB ゲートが初回。
 
 ## 5. 残したこと
 
-- deploy: migration `20261003210000_org_inquiry_pipeline.sql`。それまでコンソールの Pipeline タブは「表を読めません——migration は適用済みか」と言う
+- deploy: migration `20261003211800_org_inquiry_pipeline.sql`。それまでコンソールの Pipeline タブは「表を読めません——migration は適用済みか」と言う
   （相談の受け付けは影響を受けない——`stage` は既定値で埋まり、Edge Function は列を名指さない）。
 - 組織向けの有料案（共有ワークスペース等）は `PRODUCT.md` §2.4 に手を入れていない（未承認の設計案で、business-account の作業場があるため）。

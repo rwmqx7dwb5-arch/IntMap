@@ -48,10 +48,10 @@ memory にも無い）。理由を推測で作らず、**記録に残ってい�
   （隠れている間は休む）。新着はトースト 1 回（端末ごとに一度だけ）＋アカウントボタンの赤い点＋アカウントのシートの件数。
   ダイジェストのシート: 場所ごとに新着と現在のもの（種類・強さ・距離・時刻・出典・リンク）、情報源の状態、既読・一時停止と再開・設定・停止、
   見守っていない保存場所を 1 押しで追加。
-- **DB**: `supabase/migrations/20261003190500_place_watches.sql`——保存場所 1 件に 1 行（`place_id` が主キー＝2 度目の見守りは同じ行の更新）。
+- **DB**: `supabase/migrations/20261003211700_place_watches.sql`——保存場所 1 件に 1 行（`place_id` が主キー＝2 度目の見守りは同じ行の更新）。
   半径・種類ごとの基準（NULL＝見守らない）・オン/オフ・既読（`seen_at`・`seen_keys`）。RLS は本人だけ、挿入は場所が呼び手のもののときだけ、
   `user_id` はトリガーが場所の持ち主に固定。`account_data_catalog` に 1 行（書き出しと削除には一覧なしで入る）。
-  pgTAP `supabase/tests/24_place_watches_test.sql`、`00_structure_test.sql` の 2 つの一覧に足して `plan(114)`。
+  pgTAP `supabase/tests/26_place_watches_test.sql`、`00_structure_test.sql` の 2 つの一覧に足して `plan(114)`。
 - **Atlas**: `places.watch`（未保存の地名なら `places.save` を通して保存してから見守る。2 度目は `ALREADY_WATCHED`）・
   `places.unwatch`（見守っていなければ `ALREADY_DONE`）・`places.watchDigest`（もう一度確認して `exec.watchDigest` で構造ごと渡す・既読にしない）・
   `places.watchSeen`。`node scripts/atlas-caps.mjs --write` で 188 行。
@@ -94,7 +94,7 @@ memory にも無い）。理由を推測で作らず、**記録に残ってい�
   2 度目は同じ行の更新（`created_at` 不変）、NULL で種類を止める、`user_id` の書き換え・他人の場所の見守り・`user_id` を
   名指した挿入はすべて 42501、半径 1,001 km と既読 2,001 件は 23514、他人の行は 0 件・更新 0 行、anon は 42501、
   場所の削除で見守りも消える、カタログに 1 行。⚠ これは pgTAP の代わりではない（Supabase の本物の auth・既定権限・
-  `_owned_by_user_cols()` での書き出しと削除は通していない）。正本は CI の DB job の `24_place_watches_test.sql`。
+  `_owned_by_user_cols()` での書き出しと削除は通していない）。正本は CI の DB job の `26_place_watches_test.sql`。
 - ⚠ 説明文の語が `find_capability` の順位を動かした（実測）: 最初の説明文は「見守っている場所」「measure, distance」を含み、
   「今いる場所の天気」で `data.weather` が 5 位に落ち（`atlas-find-semantic` ①）、「measure distance between two places」の
   記録済みカセットが 1 件 → 6 件に変わった（`atlas-capability-single-source` ⑥）。説明文から「いる場所」「場所の」「measure」

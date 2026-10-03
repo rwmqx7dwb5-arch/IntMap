@@ -4,7 +4,7 @@
  *  admin-inquiries.html answered one question per enquiry: was it ANSWERED (status). It could not answer
  *  the operator's next one — which organisations are we talking to, who is trying the map, what did I
  *  promise to do and by when — so that lived in the operator's head. This is that board, over the four
- *  columns 20261003210000_org_inquiry_pipeline.sql added (stage, next_step, next_step_on, stage_changed_at).
+ *  columns 20261003211800_org_inquiry_pipeline.sql added (stage, next_step, next_step_on, stage_changed_at).
  *
  *  WHO LOADS IT: js/admin-inquiries.js, with `import()` the first time the Pipeline tab is opened (a classic
  *  script may import a module dynamically; nothing is published on window). It is copied into dist/ verbatim
@@ -86,7 +86,7 @@ export function mountPipeline(box, ctx) {
     if (words.notLeadPurposes.length) q = q.not('purpose', 'in', '(' + words.notLeadPurposes.join(',') + ')');
     const r = await q;
     box.textContent = '';
-    if (r.error) { box.appendChild(el('p', 'empty', 'Could not read the pipeline: ' + r.error.message + (/stage/.test(r.error.message) ? ' — has 20261003210000_org_inquiry_pipeline.sql been applied?' : ''))); return; }
+    if (r.error) { box.appendChild(el('p', 'empty', 'Could not read the pipeline: ' + r.error.message + (/stage/.test(r.error.message) ? ' — has 20261003211800_org_inquiry_pipeline.sql been applied?' : ''))); return; }
     draw(pipelineModel(r.data || [], words, new Date()));
   }
   function draw(m) {

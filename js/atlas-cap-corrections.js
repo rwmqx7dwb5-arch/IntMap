@@ -44,7 +44,7 @@ export default [
   {
     row: ['corrections.report',         'reportMapError', 'mapCorrection,reportMapMistake,correctTheMap,flagMapError', 'corrections', 'panel', 'panel.corrections', 'panel', 'session', 'none', 'place?', ''],
     doc: [
-      { in: 'more-features', at: 220, text: '{"type":"reportMapError","place"?:str,"country"?:str,"lng"?:num,"lat"?:num,"what"?:"' + CORRECTION.kinds.join('"|"') + '","layer"?:str,"message"?:str} = REPORT A MAP ERROR / 地図の誤りを報告 — opens the correction card ON THE POINT, pre-filled with your draft: what is wrong ("name" 名前, "boundary" 境界・形, "date" the years something is drawn for — 存在した年, "value" a layer\'s value, "position" 位置, "missing" 欠落), the layer id it is on (from the layers that are on), and a draft of what it should be. The card attaches the point, the map view and, on a historical map, the year. THE READER reviews and presses Send — you do not send it. Use when the reader says something on the map is wrong: 「この地名が違う」「この国境はおかしい」「この年にはまだこの県は無い」「地図の誤りを報告したい」, "this border is wrong", "report a mistake on the map". Needs a place or coordinates; ' },
+      { in: 'more-features', at: 300, text: '{"type":"reportMapError","place"?:str,"country"?:str,"lng"?:num,"lat"?:num,"what"?:"' + CORRECTION.kinds.join('"|"') + '","layer"?:str,"message"?:str} = REPORT A MAP ERROR / 地図の誤りを報告 — opens the correction card ON THE POINT, pre-filled with your draft: what is wrong ("name" 名前, "boundary" 境界・形, "date" the years something is drawn for — 存在した年, "value" a layer\'s value, "position" 位置, "missing" 欠落), the layer id it is on (from the layers that are on), and a draft of what it should be. The card attaches the point, the map view and, on a historical map, the year. THE READER reviews and presses Send — you do not send it. Use when the reader says something on the map is wrong: 「この地名が違う」「この国境はおかしい」「この年にはまだこの県は無い」「地図の誤りを報告したい」, "this border is wrong", "report a mistake on the map". Needs a place or coordinates; ' },
     ],
     schema: () => ({ type: 'object', properties: { place: str(), country: str(), lng: lng(), lat: lat(), what: one.apply(null, CORRECTION.kinds), layer: str(), message: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST, geocode = K.geocode;
@@ -69,7 +69,7 @@ export default [
   {
     row: ['corrections.mine',           'myMapReports',   'myCorrections,mapReportStatus,correctionStatus', 'corrections', 'none', '', 'explanation', 'read', 'none', '', ''],
     doc: [
-      { in: 'more-features', at: 230, text: '{"type":"myMapReports"} = THE READER\'S MAP ERROR REPORTS AND THE OPERATOR\'S ANSWERS / 地図の誤り報告の状況 — every correction this device sent (by its receipt, no account needed) and, when signed in, every one the account sent: what, where, which year and layer, the status (received, confirmed, fixed, checked-and-correct, already reported, cannot be fixed yet, closed), the operator\'s reply and what was changed. Use for 「私の報告はどうなった？」「地図の誤り報告の返事は？」, "what happened to my report?", "was my correction fixed?"; ' },
+      { in: 'more-features', at: 310, text: '{"type":"myMapReports"} = THE READER\'S MAP ERROR REPORTS AND THE OPERATOR\'S ANSWERS / 地図の誤り報告の状況 — every correction this device sent (by its receipt, no account needed) and, when signed in, every one the account sent: what, where, which year and layer, the status (received, confirmed, fixed, checked-and-correct, already reported, cannot be fixed yet, closed), the operator\'s reply and what was changed. Use for 「私の報告はどうなった？」「地図の誤り報告の返事は？」, "what happened to my report?", "was my correction fixed?"; ' },
     ],
     schema: () => (noArgs('myMapReports')),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
@@ -86,7 +86,7 @@ export default [
   {
     row: ['corrections.log',            'mapCorrectionsLog', 'publishedCorrections,correctionsLog,whatWasFixed', 'corrections', 'none', '', 'explanation', 'read', 'none', '', ''],
     doc: [
-      { in: 'more-features', at: 240, text: '{"type":"mapCorrectionsLog","limit"?:num} = THE PUBLIC LOG OF MAP CORRECTIONS / 公開された訂正の記録 — what readers reported that the operator checked and published (newest answer first: what was wrong, where, which layer and year, the operator\'s answer and the change), plus the counts (received, open, fixed, checked-and-correct, about a historical year, median days to an answer). Use for 「最近直された地図の誤りは？」「訂正の記録」「報告はどのくらい直っている？」, "what has been corrected on the map?", "how many reports were fixed?"; quote only what it returns; ' },
+      { in: 'more-features', at: 320, text: '{"type":"mapCorrectionsLog","limit"?:num} = THE PUBLIC LOG OF MAP CORRECTIONS / 公開された訂正の記録 — what readers reported that the operator checked and published (newest answer first: what was wrong, where, which layer and year, the operator\'s answer and the change), plus the counts (received, open, fixed, checked-and-correct, about a historical year, median days to an answer). Use for 「最近直された地図の誤りは？」「訂正の記録」「報告はどのくらい直っている？」, "what has been corrected on the map?", "how many reports were fixed?"; quote only what it returns; ' },
     ],
     schema: () => ({ type: 'object', properties: { limit: num(1, 500) } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;

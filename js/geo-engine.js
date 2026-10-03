@@ -1343,7 +1343,7 @@ function _redrawLocalGlyphs(m,cover){
        A tool that turns a press into a vertex has to know the difference. The renderer's own answer — the ray from the
        eye through the pixel meets the sphere (globe) / the point is below the horizon or on the terrain mesh (flat) —
        is the one MapLibre itself asks before zooming around a point. true / false, or null when it cannot be asked. */
-    onSurface(pt){ const m=_m(); const t=_tr(m)||(m&&m.transform)||null; if(!t||typeof t.isPointOnMapSurface!=='function') return null;
+    onSurface(pt){ const m=_m(); const t=_tr(m); if(!t||typeof t.isPointOnMapSurface!=='function') return null;
       try{ const p=Array.isArray(pt)?{x:+pt[0],y:+pt[1]}:{x:+pt.x,y:+pt.y}; return !!t.isPointOnMapSurface(p,(m&&m.terrain)||undefined); }catch(_){ return null; } },
     /* (#R173) WHERE ON SCREEN IS A POINT THAT IS UP IN THE AIR? project() answers only for the ground,
        and MapLibre's own hit-testing has the same blind spot: queryRenderedFeatures on a fill-extrusion

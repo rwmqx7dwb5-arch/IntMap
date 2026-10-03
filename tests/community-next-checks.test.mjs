@@ -16,7 +16,7 @@
  *  ⑥ THE PAGES: corrections.html (en/ja) and the operator's console are what the generator writes, every word
  *     of the vocabulary has a label, and the public log never asks for the reader's words.
  *  ⑦ THE PRIVACY TEXT says what is stored and for how long, in both languages.
- *  The database half (RLS, the receipt read, the publish rule, the purge) is supabase/tests/24_map_corrections_test.sql.
+ *  The database half (RLS, the receipt read, the publish rule, the purge) is supabase/tests/28_map_corrections_test.sql.
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -236,7 +236,7 @@ test('community-next ⑥ the pages are what the generator writes, and the public
   /* the public log reads the published rows' columns only (the function returns no message) */
   const fn = /create or replace function public\.public_map_corrections[\s\S]*?\$\$;/.exec(MIG)[0];
   assert.ok(!/message|user_id|receipt_hash|admin_note/.test(fn.replace(/comment on[\s\S]*/, '')), 'public_map_corrections names no private column');
-  assert.ok(existsSync(join(ROOT, 'supabase/tests/24_map_corrections_test.sql')));
+  assert.ok(existsSync(join(ROOT, 'supabase/tests/28_map_corrections_test.sql')));
 });
 
 /* ── ⑦ ─────────────────────────────────────────────────────────────────────────────────── */

@@ -156,7 +156,9 @@ export function createWatch(deps) {
 
 /* ── the page's one instance, wired to the browser ─────────────────────────────────────────────── */
 const W = (typeof window !== 'undefined') ? window : null;
-export const connections = createWatch({ origin: W ? W.location.origin : '' });
+/* a global named window is not always a page: a worker, or Node with a window shim (tests that read the generators), has no
+   location — origin '' is the same «nothing to compare against» the absent window already gets */
+export const connections = createWatch({ origin: (W && W.location) ? W.location.origin : '' });
 
 /** What this page can and cannot witness right now — read by the panel so it states its own coverage. */
 export function coverage() {

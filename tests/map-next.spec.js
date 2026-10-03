@@ -7,6 +7,7 @@
  *  says who drew it. And on a phone the panel's controls are where a finger can reach them.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
+import { seededStorageState } from './helpers/session-seed.js';   /* a context this file opens boots the way the suite does (tests/r201-checks ④b) */
 
 async function boot(page, url) {
   await page.goto(url || '/index.html', { waitUntil: 'domcontentloaded' });
@@ -81,7 +82,7 @@ test('my map: draw, name, link, receive, keep, reload, export, analyse', async (
   expect(link.ok).toBe(true);
 
   /* a second reader opens the link */
-  const ctx2 = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const ctx2 = await browser.newContext({ storageState: seededStorageState(), viewport: { width: 1280, height: 800 } });
   const page2 = await ctx2.newPage();
   await boot(page2, link.url.replace(/^https?:\/\/[^/]+/, ''));
   const panel2 = page2.locator('#im-mymap');
@@ -121,7 +122,7 @@ test('my map: draw, name, link, receive, keep, reload, export, analyse', async (
 
 test('my map on a phone: every control in the panel is reachable by a finger', async ({ browser }) => {
   test.setTimeout(120_000);
-  const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+  const ctx = await browser.newContext({ storageState: seededStorageState(), viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
   const page = await ctx.newPage();
   await boot(page);
   await page.evaluate(() => window.IntMapLazy.need('myMap').then(() => window.IntMapMyMap.open()));

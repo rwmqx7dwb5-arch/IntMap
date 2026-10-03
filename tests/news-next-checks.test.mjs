@@ -5,8 +5,8 @@
  *  Every function asserted here is the SHIPPED one (js/news-story-core.js), evaluated on production data:
  *  tests/fixtures/news-story-prod.json holds what public.news_story_terms and public.news_story return for seven
  *  real headlines — production's 18,786 active news_events (anon read, 2026-10-03) run through the shipped migration
- *  supabase/migrations/20261003184700_news_story.sql in PGlite (the method is in dev-notes/2026-10-03-news-next.md).
- *  The countries are the Natural Earth 10 m outline the page loads. The database half is supabase/tests/24_….
+ *  supabase/migrations/20261003211600_news_story.sql in PGlite (the method is in dev-notes/2026-10-03-news-next.md).
+ *  The countries are the Natural Earth 10 m outline the page loads. The database half is supabase/tests/25_news_story_test.sql.
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -128,7 +128,7 @@ test('news-story ⑧ the address names the same thread, and nothing the server c
 });
 
 /* ── the wiring: one rule in SQL, one number sent, every door reaches the same body ───────────────── */
-const SQL = read('supabase/migrations/20261003184700_news_story.sql');
+const SQL = read('supabase/migrations/20261003211600_news_story.sql');
 test('news-story ⑨ the server: one word-cutting rule, the index on that same expression, invoker rights, read grants', () => {
   assert.match(SQL, /create index if not exists idx_news_events_title_terms\s+on public\.news_events using gin \(public\.news_title_terms\(representative_title\)\)\s+where status = 'active' and merged_into is null/);
   assert.match(SQL, /public\.news_title_terms\(e\.representative_title\) @> p_terms/, 'news_story matches on the indexed expression');

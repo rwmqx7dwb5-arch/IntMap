@@ -405,7 +405,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
   a repeated row **adds to `count`**; at the per-metric daily ceiling a new dimension is refused and a known one
   still counts; a dimension the CHECK refuses rolls the whole request back; the purge removes exactly the day
   older than 400 days.
-- **`24_map_corrections_test.sql`** *(community-next)* — map corrections: RLS on, no INSERT policy, no INSERT/SELECT
+- **`28_map_corrections_test.sql`** *(community-next)* — map corrections: RLS on, no INSERT policy, no INSERT/SELECT
   for anon, nobody may rewrite the reader's message, the receipt hash or `resolved_at`; service_role inserts and the CHECKs
   refuse an unknown kind, a hash that is not 64 hex, a map link that is not the share fragment, a non-http(s) source, a
   latitude out of range and publishing an unanswered report; a non-admin reads, changes and deletes nothing but reads
@@ -419,7 +419,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
   an address without `@` or a non-http(s) website; an admin triages (status / note / handled_at) but cannot rewrite
   the message; everyone reads only the **listed** supporters (anon not `consented_at`), only an admin writes one,
   and `since_month` must be the first of a month; the purge removes spam past 30 days and rows past 730 and keeps the rest.
-- **`24_org_inquiry_pipeline_test.sql`** *(sales-next)* — the pipeline columns of `org_inquiries`: they exist; a new
+- **`27_org_inquiry_pipeline_test.sql`** *(sales-next)* — the pipeline columns of `org_inquiries`: they exist; a new
   enquiry starts as a `lead` with nothing due; the CHECKs refuse a stage that is not a declared word and a next step over
   300 characters; a non-admin moves no stage, an admin moves one and sets the next step; the grant names the pipeline's
   columns and still not the sender's message.
@@ -439,7 +439,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
   what it was not given, a name and a position on the globe are required, the owner edits and deletes and cannot
   hand a place to another account or restamp `created_at`, another account sees and changes nothing, a full
   account is refused a new place (54000) and may still update one it holds.
-- **`24_news_story_test.sql`** *(news-story)* — the headline's words are cut once (lower case, 3+ letters and digits,
+- **`25_news_story_test.sql`** *(news-story)* — the headline's words are cut once (lower case, 3+ letters and digits,
   the possessive «s» is not a word, «Tromsø» is one); `news_story` returns the active events holding EVERY word inside the
   span and nothing for no words, more than six or a span over 62 days; `news_story_terms` counts df, the mid-sentence
   capitals of sentence-case headlines only and the pair counts, and returns no headline; both are SECURITY INVOKER.

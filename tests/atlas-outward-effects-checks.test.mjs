@@ -289,6 +289,27 @@ function paramsOf(fn) {
   (fn.params || []).forEach(add);
   return out;
 }
+/* the names a function binds LOCALLY to something that is not a function it declares — `const load =
+   window.IntMapNewsIntel.outlines` — in its own scope (a nested function's own bindings are its own).
+   ⚠ THE SAME FACT AS paramsOf: a name bound here is whatever was bound, not the function elsewhere that
+   happens to share its name. MEASURED (wave2-train): js/news-intel.js `geo()` binds `load` to the facade's
+   outline loader, and the walk resolved it to js/news-story.js's `load → fetchRows → rpc` — so the Atlas
+   examples «reached» a database call they cannot reach. A local bound to a function expression is still
+   followed (namedFunctions has it). */
+function localsOf(fn) {
+  const out = new Set();
+  (function visit(n) {
+    if (!n || typeof n.type !== 'string') return;
+    if (n !== fn && /Function/.test(n.type)) return;
+    if (n.type === 'VariableDeclarator' && n.id.type === 'Identifier' && !(n.init && /Function/.test(n.init.type))) out.add(n.id.name);
+    for (const k of Object.keys(n)) {
+      if (k === 'type' || k === 'start' || k === 'end') continue;
+      const v = n[k];
+      if (Array.isArray(v)) v.forEach(visit); else if (v && typeof v.type === 'string') visit(v);
+    }
+  })(fn);
+  return out;
+}
 
 export function scanHandlers(files, markup) {
   const parsed = files.map(({ path, src }) => ({ path, src, ast: parse(src) })).filter((f) => f.ast);
@@ -311,7 +332,7 @@ export function scanHandlers(files, markup) {
            `paint` argument, and the walk resolved it to js/news-intel.js's `paint` — so twelve
            buttons in four files «reached» an rpc none of them can reach. The value of a parameter is
            not known here, so it is not followed (its caller's argument is walked where it is written). */
-        if (paramsOf(fn).has(nm)) return;
+        if (paramsOf(fn).has(nm) || localsOf(fn).has(nm)) return;
         const cands = file.named.has(nm) ? [{ f: file, fn: file.named.get(nm) }] : (global.get(nm) || []);
         for (const c of cands) { const r = writes(c.fn, c.f, stack); if (r) { hit = nm + '→' + r; return; } }
       }
@@ -459,4 +480,13 @@ test('D④: a new send button with no declaration turns the gate red — and dec
   assert.deepEqual(scanHandlers([d, e], corpus([{ path: 'z', src: '<button id="z">Z</button>' }])), [], 'a parameter named paint is not d.js paint');
   const e2 = { path: 'e2.js', src: `function draw(){ paint(1); } document.getElementById('z').onclick=()=>{ draw(); };` };
   assert.equal(scanHandlers([d, e2], corpus([{ path: 'z', src: '<button id="z">Z</button>' }])).length, 1, 'a free call to paint still reaches d.js');
+  /* …and the same for a LOCAL binding (js/news-intel.js `const load = window.IntMapNewsIntel.outlines`):
+     a name bound in the function's own scope is not another file's function of that name; one bound in a
+     nested function's scope does not shadow the outer call; a local bound to a function is still walked */
+  const e3 = { path: 'e3.js', src: `function draw(){ const paint = window.X.y; paint(1); } document.getElementById('z').onclick=()=>{ draw(); };` };
+  assert.deepEqual(scanHandlers([d, e3], corpus([{ path: 'z', src: '<button id="z">Z</button>' }])), [], 'a local named paint is not d.js paint');
+  const e4 = { path: 'e4.js', src: `function draw(){ const f = () => { const paint = 0; }; paint(1); } document.getElementById('z').onclick=()=>{ draw(); };` };
+  assert.equal(scanHandlers([d, e4], corpus([{ path: 'z', src: '<button id="z">Z</button>' }])).length, 1, 'a nested function\'s binding does not hide the outer free call');
+  const e5 = { path: 'e5.js', src: `function draw(){ const paint = () => HOST.DB.rpc('w', {}); paint(1); } document.getElementById('z').onclick=()=>{ draw(); };` };
+  assert.equal(scanHandlers([e5], corpus([{ path: 'z', src: '<button id="z">Z</button>' }])).length, 1, 'a local bound to a function that writes still reaches the write');
 });

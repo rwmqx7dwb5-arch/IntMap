@@ -34,6 +34,7 @@ import { MapState } from './map-state.js';
 import { icon } from './icons.js';
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the one encoder every string below is written with */
 import * as D from './my-map-doc.js';
+import * as bus from './bus.js';   /* the declared events (js/bus.js): the language change is heard through it, not a bare window listener */
 
 /* where the library is kept. One key: {v:1, current, maps:[doc…]} */
 const STORE = 'intmap_mymaps';
@@ -665,7 +666,7 @@ export function myMap(HOST) {
     return true;
   }
   function close() { stopDraw(false); if (panel) { panel.remove(); panel = null; } said = { text: '', url: '' }; return true; }
-  try { window.addEventListener('intmap-lang', () => { if (panel) render(); paint(); }); } catch (_) { }
+  try { bus.on('intmap-lang', () => { if (panel) render(); paint(); }); } catch (_) { }
 
   /** everything Atlas and the observer may know (no vertices — the counts and the words) */
   function state() {

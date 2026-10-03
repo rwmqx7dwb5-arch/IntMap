@@ -1,5 +1,5 @@
 -- ============================================================================
---  pgTAP · 24 — community-next: map corrections — the report, the answer by receipt, the public log.
+--  pgTAP · 28 — community-next: map corrections — the report, the answer by receipt, the public log.
 --
 --  WHAT THIS PROVES (the half that needs a Postgres):
 --    · map_corrections — RLS on, no INSERT policy; anon and a signed-in non-admin can neither read, insert,

@@ -1,5 +1,5 @@
 -- ============================================================================
---  pgTAP · 24 — watch-places: a saved place that tells you when something happens near it.
+--  pgTAP · 26 — watch-places: a saved place that tells you when something happens near it.
 --    ① the table exists, RLS is on, the catalogue has its sentence (the completeness check itself is
 --      23_account_data_center_test.sql ①, which this table would fail without the row).
 --    ② a reader watches their OWN place: watching it again is the same row (upsert on place_id);
@@ -10,7 +10,7 @@
 --      M ≥ 2.5, levels 1–4, ≤ 2,000 seen keys).
 --    ⑤ deleting the saved place deletes its watch; account deletion and the export reach the table
 --      with no list naming it.
---  supabase/migrations/20261003190500_place_watches.sql.
+--  supabase/migrations/20261003211700_place_watches.sql.
 -- ============================================================================
 begin;
 select no_plan();

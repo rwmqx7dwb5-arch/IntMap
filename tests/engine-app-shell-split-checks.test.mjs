@@ -66,7 +66,7 @@ const MODULES = {
      exactly four shims. That is the contract this table encodes: what the module returns, and
      separately what the shell forwards. */
   windowManager:    { file: 'js/window-manager.js', k: 'IM_WINMGR', exports: ['addEdgeResize', 'bringToFront', 'makeDraggable', 'registerWindow'], direct: ['setDocked', 'isDocked', 'dockedCount', 'dockRefresh', 'wireDock'] },
-  searchGeocode:    { file: 'js/search-geocode.js', k: 'IM_SEARCH', exports: ['doGeocode', 'localFuzzyPlaces'] },
+  searchGeocode:    { file: 'js/search-geocode.js', k: 'IM_SEARCH', exports: ['doGeocode', 'localFuzzyPlaces'], direct: ['goToLocal'] },   // (ux-next) goToLocal: read through IM_SEARCH by app-body's goToLocalPlace getter (js/command-palette.js), never shimmed
   newsContext:      { file: 'js/news-context.js', k: 'IM_NEWSCTX', exports: ['analyzeContext', 'rebuildGeoIndex'] },
   newsFeed:         { file: 'js/news-feed.js', k: 'IM_NEWSFEED', exports: ['aiTranslateTitles', 'fetchData', 'loadNewsFromSupabase', 'startNews', 'newsFeatureOf'] },   /* (#R416) newsFeatureOf — the ONE news-pin builder; js/news-ui.js reaches it through HOST */
   articleReader:    { file: 'js/article-reader.js', k: 'IM_READER', exports: ['enterReaderPane', 'openArticleInSidebar', 'readerBar'] },   /* (#R435) enterReaderPane — the ONE way into the reading surface; js/news-events.js reaches it through HOST. (#R451) readerBar — the ONE builder of that surface's bar, for the same reason: js/news-ui.js and js/news-events.js call it through HOST rather than each writing the markup out again */

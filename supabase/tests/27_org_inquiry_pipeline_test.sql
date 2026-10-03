@@ -1,5 +1,5 @@
 -- ============================================================================
---  pgTAP · 24 — sales-next: where an organisation's enquiry stands (the pipeline columns).
+--  pgTAP · 27 — sales-next: where an organisation's enquiry stands (the pipeline columns).
 --
 --  WHAT THIS PROVES (the half that needs a Postgres):
 --    · the four columns exist; a new enquiry starts as a 'lead' with nothing due;

@@ -256,6 +256,13 @@ const MEMBER = {
   /* (news-intelligence) the news pulse. Its member is `toggle` — the door js/news-pulse.js calls when the
      layer row is switched; ranking/brief are reached the same way, but a body without toggle draws nothing. */
   newsIntel: ['__imNewsIntel', 'toggle'],
+  /* (ux-next) the company footprint. Both of its doors read `query` — Atlas's `company.footprint`
+     (js/atlas-cap-data.js) and the session tabs' `company.footprint` (js/session-tabs.js). */
+  companyFootprint: ['IntMapCompanyFootprint', 'query'],
+  /* (map-next) the reader's own map. Atlas's `map.myMap` (js/atlas-cap-map.js) refuses a body without `state`. */
+  myMap: ['IntMapMyMap', 'state'],
+  /* (news-next) the story view. js/news-pulse.js's needStory() takes the body and calls `open`. */
+  newsStory: ['__imNewsStory', 'open'],
 };
 
 test('R209 ③: every deferred module actually arrives, registers and publishes', async ({ app }) => {
