@@ -58,6 +58,8 @@ for-newsrooms.html / for-schools.html / for-research.html / contact.html / suppo
                                 組織向けの紹介 3 ページ・相談フォーム・支援のページ（英語。ja/ が日本語版）。
                                 scripts/org-pages.mjs が生成する（手で編集しない。文は scripts/org-pages-text.mjs）。Architecture.md §11
 admin-inquiries.html            相談のコンソール（org_inquiries の閲覧・状態とメモ・削除、supporters の掲載）。英語・noindex。
+admin-corrections.html          地図の誤り報告のコンソール（map_corrections を世界地図の上に並べ、回答・公開する）。英語・noindex。
+                                scripts/org-pages.mjs が生成し、動きは js/admin-corrections.js。公開の記録は corrections.html（と ja/）
                                 同じく scripts/org-pages.mjs が生成し、動きは js/admin-inquiries.js
 img/showcase/<id>.jpg           見本の地図の画面写真（と共有カード用の <id>-card.jpg・1200×630、アプリ内ギャラリー用の <id>-thumb.jpg・480×252＝カードの縮小）。scripts/showcase-capture.mjs がビルドしたアプリから撮る
 s/<id>.html / ja/s/<id>.html    見本ごとの共有ページ（og カード＋その見本の地図への転送）。scripts/landing.mjs が生成する
@@ -129,6 +131,7 @@ css/
   landing.css                       紹介・授業ページ（about / teachers と ja/）のスタイル。pages.css の配色の上に載る
   org-pages.css                     組織向けページ・相談フォーム・支援のページのスタイル（landing.css の上に載る）
   admin-inquiries.css               相談のコンソール admin-inquiries.html のスタイル（admin.html と同じトークン）
+  admin-corrections.css             誤り報告のコンソールが admin-inquiries.css の上に足すもの（地図・点の色・歴史の確認欄）
   history-pages.css                 歴史地図の入口ページ（ビルドが書く history/・ja/history/）のスタイル。landing.css の上に載る
   fonts.css                         同梱フォントの @font-face
 src/
@@ -851,7 +854,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  191 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  194 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -987,9 +990,9 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 191能力ぶんの型・列挙・範囲と `required`/`anyOf`。
-atlas-schemas.js                  **引数の schema**（#R406）— 191 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
-atlas-schemas.js                  **引数の schema**（#R406）— 191 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
+atlas-schemas.js                  **引数の schema**（#R406）— 194能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 194 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
+atlas-schemas.js                  **引数の schema**（#R406）— 194 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）
@@ -1314,6 +1317,11 @@ supporter.js                      IntMap を支援する——支援パネルの
 org-page.js                       組織向けページの唯一のスクリプト（素の script・window に何も出さない）——テーマ、言語の選択、
                                   相談フォームの送信（reader-reports へ kind inquiry。201 のときだけ「送った」）、支援のページの
                                   今月の AI 利用量（operating_stats）と支援者の一覧（supporters）の読み込み。文は持たない（ページの data-msg-*）
+admin-corrections.js              admin-corrections.html の動き——管理者の確認、報告を地図の点と一覧で、読者の表示を開く、近くの報告（重複候補）、
+                                  歴史の年の確認手順（hist-fidelity の列挙）、状態・回答・変更内容・公開の保存（素の script）
+map-corrections.js                地図の誤り報告の読者側——カード（地点・表示・年を添付）、送信（reader-reports kind correction）、受付番号の保管、
+                                  回答の読み取り（受付番号とアカウント）、回答の通知、公開記録。クリックで取得（起動経路に載らない）
+atlas-cap-corrections.js          Atlas の corrections.* —— report（下書きしてカードを開く・送るのは読者）／mine／log
 admin-inquiries.js                admin-inquiries.html の動き——管理者の確認、相談の一覧・状態・メモ・削除、支援者の掲載・非表示・削除
 admin-pipeline.js                 相談のコンソールの Pipeline タブ（ES module・admin-inquiries.js がタブを開いたとき import()）——会話の段
                                   （lead→talking→trial→adopted|declined）・次にやること・期日。語はページの data-*（inquiry-shape.js が正本）
@@ -1625,7 +1633,8 @@ supabase/
                                   bbox.js / read-budget.js / client-error-shape.js /
                                   fetch-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
                                   atlas-grade-schema.js / site-origin.js / plans.js /
-                                  inquiry-shape.js〔組織からの相談の語彙・上限・返信先の規則。org-pages.mjs も読む〕 /
+                                  inquiry-shape.js〔組織からの相談の語彙・上限・返信先の規則。org-pages.mjs も読む〕・
+                                  correction-shape.js〔地図の誤り報告の語彙・上限・検証規則・受付番号とそのハッシュ。カードと関数と生成器が読む〕 /
                                   place-watch.js〔見守る場所の判定——近さ・強さ・新しさ。今はページだけが読む。将来のサーバー評価が同じ規則を使うためここに置く〕）
                                   ⚠ site-origin.js は**本番のアドレスの唯一の置き場**（`CUSTOM_DOMAIN` が
                                   変える値）。ブラウザ・Edge Function・スクリプト・テストが import し、

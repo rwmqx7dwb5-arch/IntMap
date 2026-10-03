@@ -1450,6 +1450,10 @@
     .pd-actions .primary{ background:var(--primary-fill); color:#fff; }
     .pd-actions button:disabled{ opacity:.45; }
     @media (max-width:768px){ .pd-popup{ width:calc(100vw - 24px); } .pd-actions button{ min-height:44px; font-size:14px; } }
+    /* (community-next) the place profile's door to a map correction. The correction card's own rules are not here: they are
+       not needed at start-up, so js/map-corrections.js adds them the first time it opens (the account sheet's way). */
+    .pd-correct{ display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:8px; padding:7px 8px; border:none; border-radius:10px; background:transparent; color:var(--text-muted); font-size:12px; cursor:pointer; }
+    .pd-correct:hover{ color:var(--text-main); background:var(--input-bg); }
     /* (#R353) VOLCANO INTELLIGENCE card (js/volcano-intel.js). Same .country-popup shell and the same
        .acp-* row vocabulary as the aircraft and satellite cards — it reuses that vocabulary rather
        than inventing a third one — so only the shapes neither of those cards has are described here:

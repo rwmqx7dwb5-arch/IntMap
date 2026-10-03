@@ -147,7 +147,7 @@ test('sales-channels ② what is refused never reaches the database or the bucke
 /* ── ③ ─────────────────────────────────────────────────────────────────────────────────── */
 test('sales-channels ③ every generated page is on disk exactly as the generator writes it', () => {
   const out = GEN.outputs();
-  assert.equal(Object.keys(out).length, GEN.PAGES.length * 2 + 1, 'five pages in two languages and the console');
+  assert.equal(Object.keys(out).length, GEN.PAGES.length * 2 + GEN.ADMIN_PAGES.length, 'every page in two languages and the consoles');
   for (const [rel, text] of Object.entries(out)) {
     assert.ok(existsSync(join(ROOT, rel)), rel + ' exists — run node scripts/org-pages.mjs --write');
     assert.equal(norm(src(rel)), text, rel + ' is what the generator writes');
@@ -177,13 +177,13 @@ test('sales-channels ③ every page and every file a page loads is shipped (vite
 test('sales-channels ④ the pages name no price, call examples examples, and only the two talking pages may reach the backend', () => {
   const F = GEN.orgFacts();
   for (const [rel, html] of Object.entries(GEN.outputs(F))) {
-    if (rel === 'admin-inquiries.html') continue;
+    if (GEN.ADMIN_PAGES.includes(rel)) continue;
     const text = html.replace(/<[^>]+>/g, ' ');
     assert.ok(!/[¥$€£]\s?\d|\d\s?(円|yen|USD|JPY)\b/i.test(text), rel + ': no price is stated (PRODUCT.md §2.4 — none is approved)');
     if (/data-showcase=/.test(html)) assert.ok(text.includes(src('scripts/org-pages-text.mjs').includes('not customer stories') && rel.startsWith('ja/') ? '導入事例ではありません' : 'not customer stories'),
       rel + ': the example maps are labelled as examples, not case studies');
     const csp = (/http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(html) || [])[1] || '';
-    const talks = /\/(contact|support)\.html$|^(contact|support)\.html$/.test(rel);
+    const talks = GEN.TALKS.has(rel.replace(/^ja\//, '').replace(/\.html$/, ''));   /* (community-next) the generator's one list of the pages that talk to the backend */
     assert.equal(csp.includes(F.backend), talks, rel + ': connect-src names the backend only where the page talks to it');
     assert.match(csp, /script-src 'self'(;|$)/, rel + ': script-src is this origin alone (no inline script)');
   }

@@ -392,7 +392,8 @@ function ensureCard(HOST) {
   card.setAttribute('role', 'dialog');
   card.innerHTML = '<button class="country-popup-close" id="pd-close" type="button"></button>'
     + '<div class="country-popup-header"><h3 id="pd-title"></h3></div><div id="pd-body"></div>'
-    + '<div class="pd-actions"><button type="button" class="primary" data-pd="country"></button><button type="button" data-pd="related"></button><button type="button" data-pd="atlas"></button></div><div id="pd-related" class="pd-related" hidden></div>';
+    + '<div class="pd-actions"><button type="button" class="primary" data-pd="country"></button><button type="button" data-pd="related"></button><button type="button" data-pd="atlas"></button></div><div id="pd-related" class="pd-related" hidden></div>'
+    + '<button type="button" class="pd-correct" data-pd="correct"></button>';
   (document.getElementById('map-container') || document.body).appendChild(card);
   const x = card.querySelector('#pd-close'); x.textContent = '×'; x.title = L('Close', '閉じる'); x.setAttribute('aria-label', L('Close', '閉じる'));
   x.addEventListener('click', () => closePlaceDossier());
@@ -402,6 +403,14 @@ function ensureCard(HOST) {
     const b = ev.target && ev.target.closest ? ev.target.closest('[data-pd]') : null; if (!b || !current) return;
     if (b.dataset.pd === 'country') { const c = current.country; if (c && c.status === 'ok') { try { HOST.showCountryDetail(c.code, c.name); } catch (_) { /* the country card is the app's */ } } }
     else if (b.dataset.pd === 'related') showRelated(HOST);
+    /* (community-next) «something here is wrong» — js/map-corrections.js, fetched by this click. The card hands over what it
+       already read: the place name, the country code and the layer rows (they become the layers the reader may name). */
+    else if (b.dataset.pd === 'correct') {
+      const p = current, pl = p.place, c = p.country;
+      const placeLabel = (pl && pl.status === 'ok' && pl.chain && pl.chain.length) ? pl.chain.slice(0, 3).map((x) => x.name).join(', ') : null;
+      import('./map-corrections.js').then((m) => m.openCorrection(HOST, { lng: p.at.lng, lat: p.at.lat, placeLabel, country: (c && c.status === 'ok') ? c.code : null, profile: p }))
+        .catch(() => { try { HOST.imToast(words(HOST).L('The report form could not be loaded', '報告フォームを読み込めませんでした')); } catch (_) { /* nothing to say it with */ } });
+    }
     else if (b.dataset.pd === 'atlas') {
       const at = { lng: current.at.lng, lat: current.at.lat };
       try { if (window.IntMapAtlas) window.IntMapAtlas.ensure().then((C) => { try { if (C && C.askHere) C.askHere(at); else if (C && C.open) C.open(); } catch (_) { /* Atlas states its own failure */ } }); } catch (_) { /* no Atlas in this build */ }
@@ -435,6 +444,7 @@ function paintCard(HOST) {
   cb.innerHTML = icon('flag') + ' ' + esc(L('Country statistics', '国の統計'));
   cb.disabled = !(p.country && p.country.status === 'ok');
   ab.innerHTML = icon('chat') + ' ' + esc(L('Ask Atlas', 'Atlasに聞く'));
+  const xb = card.querySelector('[data-pd="correct"]'); if (xb) xb.innerHTML = icon('flag') + ' ' + esc(L('Something here is wrong? Report it', 'ここの地図に誤りがありますか？ 報告する'));
   ab.style.display = window.IntMapAtlas ? '' : 'none';   /* no Atlas in this build → no door to it */
 }
 function placeCard() {

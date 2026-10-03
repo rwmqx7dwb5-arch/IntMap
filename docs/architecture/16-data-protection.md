@@ -35,6 +35,10 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
    `reader-reports` だけで、受信から 730 日（spam は 30 日）で `purge_org_inquiries` が消す。
    **`supporters`** は本人が掲載を申し込んだ行だけで、anon が読めるのは掲載中の行の表示名・月・ひとことの 3 列
    （同意の時刻は読めない）。金額・決済情報・メールアドレスの列は無い（`supabase/tests/18_org_inquiries_test.sql`）。
+   **地図の誤り報告 `map_corrections`** は表そのものを admin だけが読み、**メールアドレスの列は無い**。報告者が回答を
+   読む鍵は端末だけが持つ受付番号で、表には `sha256` しか無い（`map_correction_status` は受付番号を持つ者に自分の行だけを
+   返す）。公開記録 `public_map_corrections` は運営者が公開した行の運営者の文だけを返し、報告者・本文・受付番号を返さない。
+   admin も読者の本文は書き換えられない（`supabase/tests/24_map_corrections_test.sql`）。
 2. **昇格不可**: 本人は display_name / bio / avatar_url / login_count のみ更新可（列単位 grant）。
    ⚠ grant は本番の既定権限で無効化されうるので、**grant 非依存の BEFORE UPDATE トリガ**
    （`tg_profiles_guard_privcols`）が実防御になっている。

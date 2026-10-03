@@ -124,6 +124,7 @@ IntMapLang.define('jp', { ui: {
       lblFeedback:"フィードバック・バグ報告",
       sendFeedbackBtn:"フィードバックを送る",
       reportBugBtn:"バグを報告",
+      myMapReportsBtn:"地図の誤り報告",
       lblUsageCounts:"匿名の利用統計",
       usageCountsOn:"オン（既定）— 匿名の件数を送る",
       usageCountsOff:"オフ — 何も送らない",

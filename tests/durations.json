@@ -2,6 +2,7 @@
  "tests/collection-workspace.spec.js": 22,
  "tests/sales-next.spec.js": 45,
  "tests/security-next.spec.js": 19,
+ "tests/community-next.spec.js": 8,
  "tests/mobile-card-reach.spec.js": 14,
  "tests/mobile-panels-reach.spec.js": 35,
  "tests/first-impression.spec.js": 22,
