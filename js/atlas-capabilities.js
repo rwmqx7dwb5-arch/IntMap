@@ -303,6 +303,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.yearbook","yearbook","readYear,worldInYear,yearBook","time","none","time","explanation","session","none","",""],
       ["research.object","worldObject","realWorldObject,whatIsThis","research","none","","explanation","read","none","",""],
       ["research.related","worldRelated","related,relatedObjects,whatIsAround","research","none","","explanation","read","none","","","external"],
+      ["settings.mapReading","mapReading","readingMode,screenReaderMode,readAloud,describeMap,describeHere","settings","none","","explanation","persist","none","",""],
+      ["settings.offlineMaps","offlineMaps","offlineMap,saveMapOffline,downloadMap,offlineRegion,portableMap,mapWithoutInternet","settings","none","","explanation","persist","explicit","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
