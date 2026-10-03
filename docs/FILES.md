@@ -855,7 +855,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  198 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  200 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -991,9 +991,9 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 198能力ぶんの型・列挙・範囲と `required`/`anyOf`。
-atlas-schemas.js                  **引数の schema**（#R406）— 198 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
-atlas-schemas.js                  **引数の schema**（#R406）— 198 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
+atlas-schemas.js                  **引数の schema**（#R406）— 200能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 200 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
+atlas-schemas.js                  **引数の schema**（#R406）— 200 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）
@@ -1222,6 +1222,19 @@ wiki-lookup.js                    地物の Wikipedia 記事を**照会用の欄
 place-dossier.js                  地点プロファイル——1 地点について地図が持つもの（名前と行政区分・国・標高・表示中レイヤーの
                                   値・現地時刻と日の出入り）を 1 つの記録にし、カードに描く。Atlas `research.placeProfile` も
                                   同じ記録を返す。読めない項目は理由つきの行（docs/architecture/07-map.md §7.3f）
+here-now.js                       **いま、ここ**——端末の現在地（または任意の地点）について、いまの天気・現地時刻と日の出入り・
+                                  300 km 以内の地震（USGS 7 日）と出来事（72 時間）・その場所のかつての名前（hist-cities.js `near`）
+                                  を 1 つの記録にし、カードと地図の点に描く。外へ出るのは 0.1° に丸めた地点だけ（地名と天気）、
+                                  地震とニュースは位置を送らずに読んで端末で絞る。Atlas `research.hereNow` も同じ記録。
+                                  入口: 検索欄の空の状態・長押しメニュー・ホーム画面アイコンのショートカット（`?here=1`）
+here-entry.js                     検索欄の空の状態の先頭に「いま、ここ」「写真の場所」の 2 行を出す（search-geocode.js が
+                                  作例ギャラリーと一緒に読む）。写真は押した瞬間にファイル選択を開く
+share-inbox.js                    **共有で開く**——共有シート（manifest の share_target → sw.js が受けて `?share=<id>`）・写真の
+                                  場所・Atlas `view.openShared` が渡したものを地図で開く。写真はカメラの記録（EXIF の位置と撮影時刻、
+                                  photo-geo-exif.js）からピン・いま、ここ・撮影日の地図。位置の無い写真は稜線照合（photo-geo.js）へ。
+                                  地図のリンク（Google／Apple／OSM／geo:／座標）は地点、名前だけのリンクと文は検索、短縮リンクはそう言う
+host-door.js                      app-body.js の IM_HOST を、URL や委譲されたタップで開く遅延モジュール（share-inbox.js・here-now.js・
+                                  here-entry.js）へ渡す葉（import なし）
 compare.js                        並べて／スワイプで比べる地図 IntMapCompare。**独自の時計**（`makeClock('compare')`）を持ち、
                                   「メイン地図の時刻に従う／独自の時刻」を切り替える。選んだ層はその時計で時間カーネルの規則に
                                   判定され、歴史国境はその瞬間の記録（time-borders.js `collectionAt`）。読み手には

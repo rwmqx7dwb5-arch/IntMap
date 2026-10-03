@@ -487,9 +487,53 @@ async function flushConnections() {
   } catch (_) {}
 }
 
+/* ══ (mobile-next) THE SHARE SHEET — «Share ▸ IntMap» ════════════════════════════════════════════
+   manifest.webmanifest declares a share target (scripts/build-app-manifest.mjs): an INSTALLED IntMap appears in
+   the phone's share sheet, and what the reader shares — a photo, a link, a bit of text — arrives here as a
+   multipart POST to `<scope>share-target`. A static host cannot take a POST (GitHub Pages answers 405), so the
+   worker is the only thing that can: it puts the parts in a page-owned cache and redirects the window to
+   `<scope>?share=<id>`, where js/share-inbox.js reads them, empties the entry, and opens them on the map.
+   ⚠ NOTHING LEAVES THE DEVICE: the parts go from the share sheet to Cache Storage to the page.
+   ⚠ What is kept is bounded (SHARE_LIMITS) and the page drops every entry older than SHARE_TTL_MS when it reads
+   one, so a share that was never opened does not stay. The name starts with PAGE_CACHE_PREFIX: activate keeps it
+   (the page owns its lifetime), the same rule as every other page cache. */
+const SHARE_INBOX = PAGE_CACHE_PREFIX + 'share-inbox';
+/* OBSERVED: a phone photograph is 2–12 MB (a 48 MP HEIC/JPEG at the top); 40 MB keeps any of them whole, which the
+   photo-geolocation panel needs (it analyses the pixels when the camera recorded no position). Text fields are cut
+   at 4,000 characters — a shared article sends its title, its URL and at most a paragraph. One photo: the card is
+   about one place. EXPIRE IF the share sheet starts sending larger single files, or the card learns to show several. */
+const SHARE_LIMITS = { fileBytes: 40 * 1024 * 1024, files: 1, textChars: 4000 };
+function isShareTarget(req) {
+  const scope = shellScope(); if (!scope || req.method !== 'POST') return false;
+  try { const u = new URL(req.url); return u.origin + u.pathname === scope + 'share-target'; } catch (_) { return false; }
+}
+async function takeShare(req) {
+  const scope = shellScope();
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  try {
+    const fd = await req.formData();
+    const txt = (k) => { const v = fd.get(k); return typeof v === 'string' ? v.slice(0, SHARE_LIMITS.textChars) : ''; };
+    const meta = { id, at: Date.now(), title: txt('title'), text: txt('text'), url: txt('url'), files: [], dropped: 0 };
+    const cache = await caches.open(SHARE_INBOX);
+    const files = fd.getAll('photos').filter((f) => f && typeof f === 'object' && typeof f.size === 'number' && f.size > 0);
+    for (const f of files) {
+      if (meta.files.length >= SHARE_LIMITS.files || f.size > SHARE_LIMITS.fileBytes) { meta.dropped++; continue; }
+      const key = scope + '__share/' + id + '/' + meta.files.length;
+      await cache.put(key, new Response(f, { headers: { 'content-type': f.type || 'application/octet-stream' } }));
+      meta.files.push({ key, name: String(f.name || ''), type: String(f.type || ''), size: f.size });
+    }
+    await cache.put(scope + '__share/' + id + '/meta', new Response(JSON.stringify(meta), { headers: { 'content-type': 'application/json' } }));
+    return Response.redirect(scope + '?share=' + id, 303);
+  } catch (_) {
+    /* the parts could not be read: the page still opens, and says so (js/share-inbox.js reads `failed`) */
+    return Response.redirect(scope + '?share=failed', 303);
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   noteConnection(event);   // (security-next) witnessed before anything below; never changes the request
+  if (isShareTarget(req)) { event.respondWith(takeShare(req)); return; }   /* (mobile-next) the share sheet */
   if (req.method !== 'GET') return;
   if (!isTileRequest(req.url)) { if (!answerFromShell(event)) answerFromOffline(event); return; }   // (installable-app) the shell; (keyboard-and-offline) else the saved region while offline; else the network as always
 

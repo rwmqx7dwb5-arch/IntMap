@@ -2814,6 +2814,7 @@
       [data-m-fit~="cap"]{ max-height:var(--m-fit-h) !important; }
       [data-m-fit~="dy"]{ translate:0 var(--m-fit-dy); }
       [data-m-fit~="scroll"]{ overflow-y:auto !important; overscroll-behavior:contain; }
+      [data-m-fit~="out"]{ visibility:hidden !important; pointer-events:none !important; }   /* (mobile-next) a lone floating control with no map above a full sheet */
 
       /* roomier tap targets across content */
       .news-item{ padding:11px 15px; } .stat-row{ padding:8px 14px; }   /* (#R137) tighter top/bottom padding inside country cards on mobile ("国カード内部の上下方向の余白を詰めて") */

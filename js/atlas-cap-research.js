@@ -178,6 +178,36 @@ export default [
     },
   },
   {
+    /* (mobile-next) WHAT IS HAPPENING HERE, NOW — js/here-now.js gathers it (weather now, earthquakes and news within the
+       reach, the place's former names), the card on the map draws the same record, and Atlas receives it whole as
+       `exec.hereNow`. With no place it reads the DEVICE position (js/locate-me.js, the one reading view.locate uses),
+       which is why the confirm cell is `explicit`: Atlas proposing it unasked must not read the sensor silently. */
+    row: ['research.hereNow',           'hereNow',        'hereAndNow,whatIsHappeningHere,aroundMeNow,nearMeNow',          'research','none',    '',                       'explanation',         'read',    'explicit','place?',   '',  'external'],
+    doc: [
+      { in: 'country', at: 56, text: '{"type":"hereNow","place"?:str,"lng"?:num,"lat"?:num} = HERE, NOW / いま、ここ — what is happening at one point right now, as values with their sources: the weather now and today (Open-Meteo, MET Norway as fallback) with the local time, sunrise and sunset, the earthquakes of M2.5+ within 300 km in the last 7 days (USGS), the news events placed within 300 km in the last 72 hours (IntMap news events), and what the place used to be called with each span (IntMap\'s renamed-city record — e.g. Edo for Tokyo). With NO place it uses the reader\'s device position (asks browser permission; the exact position stays on the device — only a point rounded to 0.1° is sent, for the place name and the weather). Use it for 「いまここで何が起きてる」「近くで地震あった？」「この辺のニュース」「ここは昔なんて呼ばれてた」, "what is happening around me", "anything near me right now". A section that could not be read says why; an empty section (no quake within the reach) is an answer, not a failure. ' },
+    ],
+    schema: () => ({ type: 'object', properties: { place: str(), lng: lng(), lat: lat() } }),
+    async run(a, dctx, K) { const geocode = K.geocode, R = K.R, warn = K.warn, esc = K.esc, L = K.L, HOST = K.HOST;
+      const HN = await import('./here-now.js');
+      let pt=null;
+      if(a.lng!=null&&a.lat!=null&&isFinite(+a.lng)&&isFinite(+a.lat)) pt={lng:+a.lng,lat:+a.lat,name:String(a.place||'')};
+      else if(a.place&&String(a.place).toLowerCase()==='here'&&K._herePoint) pt={lng:+K._herePoint.lng,lat:+K._herePoint.lat,name:K._herePoint.name||''};
+      else if(a.place&&String(a.place).toLowerCase()!=='here'){ const ll=await geocode(a.place); if(!ll) return R(false, warn(L('IntMap could not place «'+esc(String(a.place))+'». Give coordinates, or name a place IntMap holds.','「'+esc(String(a.place))+'」を地図上に特定できませんでした。座標を指定するか、IntMap が持つ地名で言い直してください。'))); pt={lng:+ll.lng,lat:+ll.lat,name:ll.name||String(a.place)}; }
+      else {
+        /* no place: the device — the same reading view.locate makes, and the dot drawn from it */
+        const { requestFix } = await import('./locate-me.js');
+        const fix=await requestFix();
+        if(!fix.ok) return R(false, warn(L('Your position could not be read ('+fix.reason+'). Name a place, or allow location for this site.','現在地を読み取れませんでした（'+fix.reason+'）。地名を指定するか、このサイトの位置情報を許可してください。')), { meta: { code: 'LOCATION_'+String(fix.reason).toUpperCase(), category: 'input', retryable: false, produced: [], userGoalSatisfied: false } });
+        try{ if(window.IntMapLocate&&window.IntMapLocate.start) window.IntMapLocate.start({ fly: false, fix }); }catch(_){}
+        pt={lng:fix.lng,lat:fix.lat,from:'device',accuracyM:fix.acc};
+      }
+      const rec=await HN.hereNow(pt, HOST);
+      HN.style();
+      const ttl=(rec.place&&rec.place.status==='ok'&&rec.place.name)||pt.name||rec.at.text;
+      return R(true, '<div><b>'+icon('target')+' '+esc((pt.from==='device'?L('Here, now','いま、ここ')+' — ':'')+ttl)+'</b>'+HN.hereNowHtml(rec, HOST, { inert: true })+'</div>', { exec: { hereNow: rec } });
+    },
+  },
+  {
     /* (world-objects) THE REAL-WORLD OBJECT BEHIND A NAME — `research.impact`, `research.events`, `data.volcano`, `news.company`
        and `research.placeProfile` each name the thing they are about by the same `ref` (type:id), and the next two
        capabilities follow it. They draw nothing: the answer is the object and what is tied to it. */

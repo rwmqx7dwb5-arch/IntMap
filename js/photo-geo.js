@@ -905,6 +905,9 @@ export function photoGeo(HOST) {
     ensurePanel();
     if (opts && opts.area) { state.area = opts.area; drawArea(); doPlan(); }
     render();
+    /* (mobile-next) a photo handed over by its door (js/share-inbox.js — the share sheet or the library, when the
+       camera recorded no position): loaded exactly as a dropped or chosen file is */
+    if (opts && opts.file) await loadFile(opts.file);
     return true;
   }
   function close() {

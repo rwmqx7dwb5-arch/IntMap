@@ -132,6 +132,7 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 /* (mobile-performance) when a phone may warm the country table — js/boot-stage.js */
 import { BootStage } from './boot-stage.js';
 import * as bus from './bus.js';
+import { setHost } from './host-door.js';   /* (mobile-next) the doors opened by a URL or a delegated tap read the host there */
 
 /* (fetch-deadline-layer) the classic scripts' handle on the fetch clock (js/countries-ui.js, js/routing-ops.js —
    see the end of js/fetch-deadline.js). Assembled HERE because this file is in main alone and imports both
@@ -542,6 +543,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get satKeys(){ return satKeys; }, get showComposeImgPreview(){ return showComposeImgPreview; },
     get wireCommList(){ return wireCommList; }
   };
+  setHost(IM_HOST);
 
   /* ===== i18n ===== */
   /* (#R162) moved to js/i18n.js — see Architecture.md "File layout". */

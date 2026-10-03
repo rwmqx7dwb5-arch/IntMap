@@ -326,6 +326,27 @@ window.IntMapHistCities = (function () {
      caught there instead. */
   function built(expr) { return !!(expr && cache.built && expr === cache.expr); }
 
-  return { textField: textField, built: built, at: at, forFeature: forFeature, ensure: ensure, ready: function () { return !!data; },
+  /* ── (mobile-next) THE PLACES WHOSE NAME THE RECORD SAYS CHANGED, AROUND ONE POINT ─────────────────
+     For «いま、ここ» (js/here-now.js): which recorded settlement is THIS point, and what was it called. The identity
+     test is the record's own — the guard `g` the label expression uses (#R521) — so a point is «in» Edo/Tokyo exactly
+     when the label layer would rename Tokyo's tile label there. Every span is returned as written (`f`/`t`/`p`/`s`),
+     names in the reader's language by the one fallback rule above (`say`); nothing is merged or dated here.
+     Nearest first. [] before the record has loaded (`ensure()` loads it). */
+  function near(lon, lat, lang) {
+    if (!data || !Number.isFinite(lon) || !Number.isFinite(lat)) return [];
+    var out = [];
+    for (var i = 0; i < data.cities.length; i++) {
+      var c = data.cities[i], m = metres(lon, lat, c.lon, c.lat);
+      if (m > (c.g || 0)) continue;
+      out.push({ id: c.id, lon: c.lon, lat: c.lat, cc: c.cc || null, metres: Math.round(m), guard: c.g || 0, today: (c.k && c.k[0]) || null,
+        spans: c.e.map(function (e) { return { name: say(e.n, lang), f: e.f || 0, t: e.t || 0, p: e.p || '', src: e.s || c.s || null }; }) });
+    }
+    out.sort(function (a, b) { return a.metres - b.metres; });
+    return out;
+  }
+  /** what the record says about itself: its sources and their licences (the credit a reader of near() must carry) */
+  function rights() { return data && Array.isArray(data.rights) ? data.rights.slice() : []; }
+
+  return { textField: textField, built: built, at: at, forFeature: forFeature, ensure: ensure, near: near, rights: rights, ready: function () { return !!data; },
     count: function () { return data ? data.cities.length : 0; } };
 })();

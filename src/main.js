@@ -331,6 +331,11 @@ if (window.IntMapDevice.embedded()) import('../js/embed-mode.js');   /* js/ui-de
    neither fetches nor parses it. Atlas's panel.tour reaches the same file from inside its own kernel. */
 if (/[?&]tour=/.test(location.search)) import('../js/tour-player.js').then((m) => m.bootFromUrl());
 document.addEventListener('click', (e) => { const b = e.target && e.target.closest ? e.target.closest('#btn-tours') : null; if (b) import('../js/tour-player.js').then((m) => m.openPicker()); });
+/* (mobile-next) …and the two doors a phone opens IntMap through: the share sheet (`?share=<id>` — sw.js redirected the
+   shared photo / link here; js/share-inbox.js) and the installed icon's long-press shortcut «Here, now» (`?here=1` —
+   manifest.webmanifest `shortcuts`; js/here-now.js). Each is a chunk of its own, fetched only on its query. */
+if (/[?&]share=/.test(location.search)) import('../js/share-inbox.js').then((m) => m.bootFromUrl());
+if (/[?&]here=1\b/.test(location.search)) import('../js/here-now.js').then((m) => m.bootFromUrl());
 
 /* ── (#R162/#R163 → module-graph) THE REQUIRED-MODULE GUARD ─────────────────────────────────────
    It used to hold MODULE_FACTORIES — 107 names, checked AFTER boot against window.IntMapModules,
