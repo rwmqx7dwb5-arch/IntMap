@@ -1238,7 +1238,7 @@ my-places.js                      マイプレイス——アカウントに保�
 my-map.js                         **マイマップ**（window.IntMapMyMap・遅延 `myMap`）——読者が描くピン・線・範囲と名前・メモ・色。
                                   このブラウザの文庫（localStorage `intmap_mymaps`・複数の地図）、地図の状態の `mymap` 欄の持ち主
                                   （共有リンクの `&mm=`・自分の地図は手元の写しが勝ち、他人の地図は読み取り専用で表示し保存できる）、
-                                  計測は計測ツールの関数（HOST.ringArea・distHTML/areaHTML）、分析はデータセット（provenance kind
+                                  計測は計測ツールの関数（HOST.ringArea・distTXT/areaTXT）、分析はデータセット（provenance kind
                                   `sketch`）、書き出しは js/gis-export.js（GeoJSON / GeoPackage）、地図上のピン・図形・半径円を移す。
                                   Layers ▸ Tools・Atlas `map.myMap`・オブジェクト一覧から
 my-map-doc.js                     マイマップの**文書（純関数）**——地物の形と検証（頂点は入るときに 1e-6° へ丸める）、リンク形

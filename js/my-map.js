@@ -93,15 +93,15 @@ export function myMap(HOST) {
     } catch (_) { }
     return out;
   }
-  /* the measure tool's own formatting in the reader's units (HOST.distHTML / areaHTML), as TEXT: its markup is one
-     styling span around the second unit, and this is written into the panel and the popup through the encoder */
-  const plain = (h) => String(h == null ? '' : h).replace(/<[^>]*>/g, '');
+  /* the measure tool's own formatting in the reader's units, in its TEXT form (HOST.distTXT / areaTXT — the same
+     numbers and units as the panel's distHTML / areaHTML, without the styling span). It is written into the panel and
+     the popup as text, through the encoder; nothing here turns markup into text by removing tags. */
   function measureText(f) {
     if (f.kind === 'pin') return f.coords[0][1].toFixed(5) + ', ' + f.coords[0][0].toFixed(5);
     const m = measure(f);
-    if (f.kind === 'line') return m.lengthKm != null ? plain(HOST.distHTML(m.lengthKm)) : '';
+    if (f.kind === 'line') return m.lengthKm != null ? String(HOST.distTXT(m.lengthKm)) : '';
     if (D.polar(f, G())) return L('Encloses a pole — not drawn', '極を囲む範囲のため描画できません');
-    return (m.areaKm2 != null ? plain(HOST.areaHTML(m.areaKm2)) : '') + (m.perimeterKm != null ? ' · ' + L('perimeter ', '周囲 ') + plain(HOST.distHTML(m.perimeterKm)) : '');
+    return (m.areaKm2 != null ? String(HOST.areaTXT(m.areaKm2)) : '') + (m.perimeterKm != null ? ' · ' + L('perimeter ', '周囲 ') + String(HOST.distTXT(m.perimeterKm)) : '');
   }
 
   /* ══ THE MAP LAYERS ════════════════════════════════════════════════════════════════════════════ */

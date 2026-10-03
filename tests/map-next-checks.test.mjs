@@ -120,7 +120,7 @@ test('④ drawn geometry: great-circle pieces, cut at the antimeridian; a polar 
 const pins = [{ id: 'p1', lng: 139.7, lat: 35.6, meta: { name: 'old pin' } }], annots = [{ id: 'an1', geom: { type: 'LineString', coordinates: [[0, 0], [1, 1]] }, name: 'measured', color: '#0a84ff' }], radii = [{ id: 'r1', center: [10, 10], radiusKm: 5, color: '#34c759' }];
 window.IntMapAnnotations = { _items: annots, remove: (id) => { const i = annots.findIndex((x) => x.id === id); if (i >= 0) annots.splice(i, 1); } };
 window.removeRadiusItem = (id) => { const i = radii.findIndex((x) => x.id === id); if (i >= 0) radii.splice(i, 1); };
-const HOST = { lang: 'en', canDraw: () => true, imToast: () => { }, ringArea: () => 12.5, distHTML: (k) => k + ' km', areaHTML: (k) => k + ' km²',
+const HOST = { lang: 'en', canDraw: () => true, imToast: () => { }, ringArea: () => 12.5, distHTML: (k) => k + ' km', areaHTML: (k) => k + ' km²', distTXT: (k) => k + ' km', areaTXT: (k) => k + ' km²',
   userPins: pins, radiusItems: radii, removePin: (id) => { const i = pins.findIndex((x) => x.id === id); if (i >= 0) pins.splice(i, 1); }, toolMode: null };
 /* the renderer, as its contract: what the map is handed is recorded, so «it is on the map» is measured here too */
 const drawn = new Map(), layers = new Set();
