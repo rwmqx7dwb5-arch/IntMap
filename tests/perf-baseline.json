@@ -10,7 +10,7 @@
   },
   "async": {
     "raw": 12295826,
-    "gzip": 4064513,
+    "gzip": 4060867,
     "chunks": {
       "account-data": 7357,
       "aircraft-detail": 17009,
@@ -67,7 +67,7 @@
       "lib": 129791,
       "map-reader": 2251,
       "map-recorder": 36548,
-      "my-places": 22028,
+      "my-places": 21993,
       "navigation": 60823,
       "net-health-live": 16816,
       "news-events": 36511,
@@ -93,6 +93,7 @@
       "seismic": 159207,
       "service-status": 21987,
       "shakemap": 19432,
+      "shared-collection": 9366,
       "showcase-gallery": 9583,
       "space": 98790,
       "stats-compare": 62624,
