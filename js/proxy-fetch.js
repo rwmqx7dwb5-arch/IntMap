@@ -180,7 +180,7 @@ export const { fetchViaProxy, ownRelayUrl, peekOwnRelay, clockFor } = (() => {
         let nd = false;
         try { nd = !!(r.headers && typeof r.headers.get === 'function' && r.headers.get(NO_DATA_HEADER)); } catch (_) { nd = false; }
         if (nd) throw noDataError();
-        if (!r.ok) throw tag(new Error('bad status ' + r.status), 'http', { status: r.status });
+        if (!r.ok) throw tag(new Error('bad status ' + r.status), 'http', { status: r.status, url: u });
         return r.text();
       })
       .catch((e) => {

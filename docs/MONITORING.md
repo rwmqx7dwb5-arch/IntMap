@@ -207,6 +207,11 @@ and the one-time secret setup are in [`docs/TESTING.md`](TESTING.md) 「Atlas ev
   reference). A question Atlas has never answered right is a quality gap the report shows, not an alarm.
 - ⚠ It costs real model calls every night, on the evaluation account's allowance — about 90 turns and up
   to one independent grade per answer-key question (`docs/TESTING.md` says what allowance that needs).
+- **When it last succeeded, and why it did not run, are said in two more places** (read by
+  `scripts/lib/nightly-status.mjs`): `node scripts/worktree.mjs status` prints one line at the top of every
+  session while it is not green (the last success, the newest run, and the failing step's own annotation —
+  e.g. the missing secrets), and the reader's status page (Settings ▸ IntMap, now) says when Atlas's answers
+  were last evaluated. A run that uploaded no report is said to have **measured nothing**, apart from its colour.
 
 ## 1e. The upstreams the reader's browser talks to, probed nightly
 
@@ -236,6 +241,13 @@ draws nothing, found by accident.
   good, the layer that uses it needs another source or a removal proposal (never a silent swap —
   AGENTS.md §3-1), and the ledger row changes with it. If the probe itself is stale (the host moved
   its API), fix the `probe` — with a `why` if the healthy answer is no longer a 2xx.
+- **The reader sees it too.** `.github/workflows/tle-refresh.yml` (the one unattended path onto main) runs
+  `scripts/build-service-status.mjs` twice a day: the newest result becomes `data/service-status.json` — each
+  host's verdict, the ledger's words for it (`what` / `whatJp`), **when it last answered** and **since when it has
+  not** (`lastAlive` / `downSince`, carried night to night by `transitions()`; only what a run observed is
+  written). The app reads it in three places (`js/service-status.js`): the status page, the pill of a layer
+  whose request failed (joined by the URL the request asked — a relay's `?u=` target included), and the
+  data-sources lists. `docs/architecture/08-ui.md` §8.1.3.
 - **By hand**: `node scripts/upstream-liveness.mjs` (table), `--out r.json`, `--previous p.json`,
   `--summary s.md`, `--fail-on-transition`, and `--check` (declarations only, no network).
 

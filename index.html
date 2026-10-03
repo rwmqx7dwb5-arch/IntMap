@@ -765,6 +765,11 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <div class="setting-group"><label data-i18n="lblDataSources">Data &amp; attribution</label>
       <a id="link-sources" href="./sources.html" target="_blank" rel="opener" class="ai-test-btn" style="width:100%;display:block;box-sizing:border-box;text-align:center;text-decoration:none;" data-i18n="viewSourcesPage">Open the data-sources page ↗</a>
     </div>
+    <!-- (shell-experience) 「IntMap のいま」— the status page (js/service-status.js, fetched on first use; its handle is
+         window.IntMapStatus in js/layer-state.js, which also owns this button's one click listener). -->
+    <div class="setting-group" id="status-page-group"><label data-i18n="lblStatusPage">IntMap, now</label>
+      <button type="button" id="btn-status-page" class="ai-test-btn" style="width:100%;"><span data-icon="gauge"></span> <span data-i18n="viewStatusPage">What is working — this device, the layers, the data sources</span></button>
+    </div>
     <!-- (#R211) 「科学的根拠・ロジックの説明ページ」 — the data-source list answers WHERE a number came
          from; this answers HOW it was computed, which is a different question and needed its own page.
          A plain link to a static page, so it costs the app nothing at boot. -->

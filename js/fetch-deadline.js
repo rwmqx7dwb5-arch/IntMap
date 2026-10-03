@@ -158,8 +158,11 @@ export const { jsonWithin, readWithin } = (() => {
       return { ok: !!r.ok, status: r.status, type, text };
     } catch (e) {
       done = true;
-      if (timedOut) throw failed(new Error('deadline ' + ms + 'ms'), 'timeout');
-      throw failed(e, ((outer && outer.aborted) || (e && e.name === 'AbortError')) ? 'aborted' : 'network');
+      /* (shell-experience) …AND WHICH URL IT WAS. js/layer-state.js keeps it on the row's record so the
+         reader can be told what last night's check said about that supplier (js/service-status.js
+         upstreamNote) — the request names its host; no table maps a layer to one. It stays in the page. */
+      if (timedOut) throw failed(new Error('deadline ' + ms + 'ms'), 'timeout', { url: String(url) });
+      throw failed(e, ((outer && outer.aborted) || (e && e.name === 'AbortError')) ? 'aborted' : 'network', { url: String(url) });
     } finally {
       if (t) clearTimeout(t);
       if (outer && c) { try { outer.removeEventListener('abort', relay); } catch (_) { /* nothing to remove */ } }
@@ -174,8 +177,8 @@ export const { jsonWithin, readWithin } = (() => {
    * and a timeout reaching the same branch as a refusal is correct: in both cases nothing arrived. */
   async function jsonWithin(url, ms, init, opts) {
     const r = await readWithin(url, ms, init, opts);
-    if (!r.ok) throw failed(new Error('http ' + r.status), 'http', { status: r.status });
-    try { return JSON.parse(r.text); } catch (e) { throw failed(e, 'parse', { status: r.status }); }
+    if (!r.ok) throw failed(new Error('http ' + r.status), 'http', { status: r.status, url: String(url) });
+    try { return JSON.parse(r.text); } catch (e) { throw failed(e, 'parse', { status: r.status, url: String(url) }); }
   }
 
   return { jsonWithin, readWithin };

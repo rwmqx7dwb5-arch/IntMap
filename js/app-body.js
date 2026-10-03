@@ -3474,8 +3474,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const m=document.getElementById('sources-modal'); if(!m) return;
     document.getElementById('sources-title').textContent=t('srcModalTitle'); document.getElementById('sources-sub').textContent=t('srcModalSub');
     const use=(s)=>IntMapRefData.useText(s.n,currentLang);
-    const paint=()=>{ document.getElementById('sources-body').innerHTML=DATA_SOURCES.map(s=>`<div class="src-item"><b>${escapeHtml(s.n)}</b> — <span class="src-use">${escapeHtml(use(s))}</span><br><a href="${escapeHtml(window.IntMapSafe.url(s.u))}" target="_blank" rel="noopener">${escapeHtml(s.u)}</a></div>`).join(''); };
-    paint(); m.style.display='flex';
+    let note=()=>''; const paint=()=>{ document.getElementById('sources-body').innerHTML=DATA_SOURCES.map(s=>{ const n=note(s.u); return `<div class="src-item"><b>${escapeHtml(s.n)}</b> — <span class="src-use">${escapeHtml(use(s))}</span>${n?`<br><span class="src-down" style="color:var(--widget-warning);font-size:12px;">${escapeHtml(n)}</span>`:''}<br><a href="${escapeHtml(window.IntMapSafe.url(s.u))}" target="_blank" rel="noopener">${escapeHtml(s.u)}</a></div>`; }).join(''); };
+    paint(); m.style.display='flex'; import('./service-status.js').then(S=>S.loadStatus().then(b=>{ if(S.usable(b)){ note=(u)=>S.sourceNote(b,u,currentLang); paint(); } })).catch(()=>{});   /* (shell-experience) a credit whose supplier did not answer last night's check says so (js/service-status.js sourceNote) */
     IntMapRefData.ensureDocs(currentLang,paint); }
   { window.imOpenSources=openSourcesModal;   /* (#R215) Settings offers the PAGE, not a lesser in-app copy beside it (see index.html) — the dialog is kept reachable by name rather than deleted, so its markup and its ~90-entry renderer are not dead code */
     const x=document.getElementById('sources-close-x'); if(x) x.onclick=()=>{ document.getElementById('sources-modal').style.display='none'; };

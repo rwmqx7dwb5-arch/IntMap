@@ -62,9 +62,10 @@ export function classify(err) {
   if (err == null) return { state: 'failed', reason: 'unknown' };
   if (typeof err === 'string') return { state: 'failed', reason: err };
   if (err.reason === 'aborted' || (!err.reason && err.name === 'AbortError')) return null;
-  if (isUnobserved(err)) return { state: 'unobserved', reason: 'timeout', retries: err.retries };
+  if (isUnobserved(err)) return Object.assign({ state: 'unobserved', reason: 'timeout', retries: err.retries }, (typeof err.url === 'string' && err.url) ? { url: err.url } : {});
   const out = { state: 'failed', reason: String(err.reason || 'error') };
   if (err.status != null) out.status = err.status;
+  if (typeof err.url === 'string' && err.url) out.url = err.url;
   return out;
 }
 
@@ -139,8 +140,10 @@ export function makeLayerState(opts) {
     const W = words(lang());
     m.dataset.state = st;
     m.textContent = W.badge(st);
-    m.title = W.detail(rec);
-    m.setAttribute('aria-label', W.badge(st) + ' — ' + W.detail(rec));
+    /* (shell-experience) …and what last night's check said about the supplier this request went to */
+    const said = W.detail(rec) + (rec.upstreamWords ? ' ' + rec.upstreamWords(lang()) : '');
+    m.title = said;
+    m.setAttribute('aria-label', W.badge(st) + ' — ' + said);
   }
   function paint(id) {
     const cb = box(id);
@@ -184,11 +187,13 @@ export function makeLayerState(opts) {
     if (!state) { if (!was) return null; recs.delete(id); paint(id); emit(id); return null; }
     const rec = { id, state, reason: i.reason || null, status: i.status != null ? i.status : null,
       message: i.message || null, retries: i.retries != null ? i.retries : null,
+      url: i.url || null, upstream: null, upstreamWords: null,
       since: (was && was.state === state) ? was.since : Date.now(), req: was ? was.req : null,
       healed: was ? was.healed : null };
     recs.set(id, rec);
     paint(id);
     const entered = !was || was.state !== state || was.reason !== rec.reason;
+    if (entered && rec.url && (state === 'failed' || state === 'unobserved')) lookUpstream(id, rec);
     if (entered) {
       emit(id);
       if ((state === 'failed' || state === 'unobserved') && !i.told && say) {
@@ -196,6 +201,24 @@ export function makeLayerState(opts) {
       }
     }
     return rec;
+  }
+
+  /* ══ (shell-experience) A FAILED REQUEST IS JOINED TO LAST NIGHT'S CHECK OF ITS SUPPLIER ══════════════
+     Measured 2026-10-02: six suppliers were down for a day and the rows behind them said only
+     「読み込めません」. The request's own URL names the host it asked (js/fetch-deadline.js puts it on
+     the error); js/service-status.js — fetched only now, on the first failure, so a session where
+     nothing fails never loads it — reads the nightly measurement and answers with a sentence and a row.
+     The sentence joins the pill; the row joins the record Atlas reads. Nothing is said when the
+     measurement does not list the host. The record may have moved on by the time the answer comes:
+     it is written only if this same record is still the one held for the box. */
+  function lookUpstream(id, rec) {
+    import('./service-status.js').then((m) => Promise.all([m.upstreamRow(rec.url), m]))
+      .then(([row, m]) => {
+        if (!row || recs.get(id) !== rec) return;
+        rec.upstream = row;
+        rec.upstreamWords = (lg) => { try { return m.upstreamSentence(Object.assign({}, row), lg, row.measuredAt); } catch (_) { return ''; } };
+        paint(id); emit(id);
+      }).catch(() => { /* no measurement: the pill keeps its own words */ });
   }
 
   /** report(id, what, info) — `what` is a state name, or an error to classify (shared-reader errors carry `reason`) */
@@ -238,7 +261,10 @@ export function makeLayerState(opts) {
   }
 
   const pub = (r) => ({ id: r.id, state: r.state, reason: r.reason, status: r.status, message: r.message,
-    retries: r.retries, since: r.since, label: labelOf(r.id), healed: r.healed ? Object.assign({}, r.healed) : null });
+    retries: r.retries, since: r.since, label: labelOf(r.id), healed: r.healed ? Object.assign({}, r.healed) : null,
+    /* (shell-experience) the words the row shows, and last night's check of the supplier asked (or null) */
+    detail: words(lang()).detail(r) + (r.upstreamWords ? ' ' + r.upstreamWords(lang()) : ''),
+    url: r.url || null, upstream: r.upstream ? Object.assign({}, r.upstream) : null });
 
   return {
     set, report, request, healed, classify,
@@ -267,6 +293,24 @@ export function makeLayerState(opts) {
 
 /* the app's one instance */
 export const layerState = makeLayerState({ doc: typeof document !== 'undefined' ? document : null, notify });
+
+/* ══ (shell-experience) 「IntMap のいま」— THE STATUS PAGE'S HANDLE, KEPT HERE SO IT COSTS NOTHING ═════════
+   The page (js/service-status.js) reads this file's records, last night's measurement and the browser's
+   own state, and is fetched the first time anyone opens it. This module is already on the boot path and
+   already the owner of 「what went wrong with a layer」, so the handle lives here rather than adding a
+   module to every start-up (npm run check:perf). The records are HANDED to the page (`layers`), not read
+   back through window.IntMapLayerState — js/service-status.js is also loaded raw by sources.html, which
+   has no layers and must not import this file's dependencies.
+   Readers: Settings ▸ IntMap, now (index.html #btn-status-page — one document listener below), Atlas
+   (js/atlas-cap-system.js imports this for `diagnose`; system.module discovers window.IntMapStatus). */
+const statusPageModule = () => import('./service-status.js');
+const statusCtx = () => ({ layers: layerState.snapshot });
+export const statusPage = {
+  open: () => statusPageModule().then((m) => m.open(statusCtx())),
+  close: () => statusPageModule().then((m) => m.close()),
+  toggle: () => statusPageModule().then((m) => (m.shown() ? m.close() : m.open(statusCtx()))),
+  describe: () => statusPageModule().then((m) => m.describe(statusCtx())),
+};
 try {
   if (typeof document !== 'undefined') {
     layerState.listen(document);
@@ -276,6 +320,13 @@ try {
         get: layerState.get, snapshot: layerState.snapshot, heals: layerState.heals,
         report: layerState.report, on: layerState.on,
       };
+      window.IntMapStatus = statusPage;   /* the name system.module discovers (window.IntMap*) */
+      document.addEventListener('click', (e) => {
+        const b = e.target && e.target.closest ? e.target.closest('#btn-status-page') : null;
+        if (!b) return;
+        try { const sm = document.getElementById('settings-modal'); if (sm) sm.style.display = 'none'; } catch (_) { /* no settings */ }
+        statusPage.open();
+      });
     }
   }
 } catch (_) { /* headless */ }

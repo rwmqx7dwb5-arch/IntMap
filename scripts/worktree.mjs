@@ -54,6 +54,7 @@ import { artefactNames, slugProblem } from './round-names.mjs';
 import { latestEntry, NOTES_DIR } from './dev-notes.mjs';
 import { liveDeployment } from './pages-publish-guard.mjs';
 import { install as installMergeDriver, pending as mergePending } from './merge-driver.mjs';
+import { fetchAtlasEval, atlasEvalLine } from './lib/nightly-status.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
@@ -198,6 +199,19 @@ function deepHistory() {
     { cwd: REPO, encoding: 'utf8', timeout: 9000, windowsHide: true });
   if (r.status !== 0 || !r.stdout) return null;
   try { const h = JSON.parse(r.stdout.trim().split('\n').pop()); return h && h.known ? h : null; } catch { return null; }
+}
+/* ══ (shell-experience) THE ATLAS EVALUATION — WHEN IT LAST SUCCEEDED, AND WHY IT DID NOT RUN ═══════════════
+   MEASURED 2026-10-03: atlas-eval.yml had run eight times (its whole history) and every run stopped at its
+   first step for want of two repository secrets — 「Nothing was measured」. Nothing in this command said so,
+   and a red cross among dozens of runs a day is the line nobody reads (the deep tier's lesson, above).
+   scripts/lib/nightly-status.mjs reads the runs, whether the newest uploaded a report (no report = nothing was
+   measured) and its failing step's own annotation; this prints it. Same rules as nightly(): a few seconds per
+   call at most, never fails, and «不明» when gh cannot answer. The repository is read from origin's URL so no
+   call is spent asking gh which repository this is. */
+function atlasEval() {
+  const m = /github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?$/.exec(q(['remote', 'get-url', 'origin']).trim());
+  if (!m) return null;
+  return atlasEvalLine(fetchAtlasEval(m[1], { cwd: REPO, timeoutMs: 6000, perPage: 30 }));
 }
 const specTitle = (id, w = 90) => { const s = String(id); return s.length > w ? s.slice(0, w - 1) + '…' : s; };
 
@@ -459,6 +473,9 @@ function status(brief) {
           + dh.regressions.map((x) => `${x.id.split(' › ')[0]}（${x.streak} 晩）`).join(' / ') + '  → node scripts/deep-history.mjs');
       }
     }
+    /* (shell-experience) the Atlas evaluation, ONLY when it is not green — the same rule as the deep tier above */
+    const ae = atlasEval();
+    if (ae && !ae.ok) console.log(`⚠ ${ae.text}${ae.url ? `  → ${ae.url}` : ''}`);
     /* (#R771) one line, and ONLY when something is actually outstanding. This prints at the top of
        every session, so a line that is always there is a line nobody reads. */
     const pw = pendingWork(master);
@@ -492,6 +509,8 @@ function status(brief) {
     + (md.waiting.length ? ` · 保留 ${md.waiting.length} 件 → node scripts/merge-driver.mjs --finish` : ''));
   const nf = nightly();
   console.log(`  deep tier (nightly) ${nf ? `${nf.what}${nf.ok ? '' : `   → gh run view ${nf.id} --log-failed`}   (${nf.day}${nf.age})` : '不明（gh が無い・未ログイン・オフラインのいずれか）'}`);
+  const aev = atlasEval();
+  console.log(`  Atlas 夜間評価       ${aev ? aev.text.replace(/^Atlas 夜間評価: /, '') + (aev.ok ? '' : `   → ${aev.url || 'gh run list --workflow=atlas-eval.yml'}`) : '不明（gh が無い・未ログイン・オフラインのいずれか）'}`);
   const dh = deepHistory();
   if (!dh) {
     console.log('    直近の晩の分類   不明（gh が無い・未ログイン・オフライン・時間切れ のいずれか）→ node scripts/deep-history.mjs');

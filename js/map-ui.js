@@ -1967,7 +1967,20 @@ export function layerSidebar(HOST){
              three times out of three locally. A RESTORED session is different: the grid was
              pre-built by the idle callback above, so open() is cheap and immediate is right.
              The 3 s timeout means the panel always appears, idle or not. */
-          if(unanswered&&'requestIdleCallback' in window) requestIdleCallback(()=>{ try{ open(); }catch(_){} },{timeout:3000});
+          /* ══ (shell-experience) …BUT A PANEL THAT OPENS BY ITSELF LEAVES THE MAP AT LEAST HALF THE WINDOW ══════
+             OBSERVED on production (2026-10-02, a desktop first visit): the left sidebar (--sidebar-w 400 px) and
+             this panel (--lsr-w 300 px) both opened, and on a ~950 px window the map was left about 250 px — the
+             one thing IntMap is for, squeezed to a strip. The rule is about the map, not about a breakpoint: the
+             automatic first-visit open happens only when, after it, the panels together cover at most half of
+             the window (each panel measured as it is, so the frosted sidebar and a reader-resized panel count at
+             their real width). A RESTORED `right:true` is the reader's own choice and is not second-guessed, and
+             the edge toggle and the Layers button open the panel at any width, as before. */
+          const roomy=()=>{ try{ const W=window.innerWidth||0; const lsb=document.getElementById('sidebar');
+            const left=(lsb&&!lsb.classList.contains('collapsed'))?lsb.getBoundingClientRect().width:0;
+            const right=sb?sb.getBoundingClientRect().width:0;
+            return W>0&&(left+right)<=W/2; }catch(_){ return true; } };
+          if(unanswered&&!roomy()) { /* the first visit leaves it closed; the reader opens it from the edge or the Layers button */ }
+          else if(unanswered&&'requestIdleCallback' in window) requestIdleCallback(()=>{ try{ if(roomy()) open(); }catch(_){} },{timeout:3000});
           else open();
         } }
     } }catch(_){} },1500);   /* edge toggle available on boot in right mode (without auto-opening) */

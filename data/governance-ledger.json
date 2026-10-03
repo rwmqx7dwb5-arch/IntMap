@@ -1,7 +1,7 @@
 {
   "gov": {
     "note": "これは「まだ果たしていない義務」の台帳であって、免責ではない。 Every entry is a bundle or a builder that does not yet state its own provenance as a value. The gate fails on anything NOT in here, and fails again when the counts are larger than reality — so a repair always shrinks this file, and nothing may be added to it except by a round that says in DEV-NOTES.md why the structure could not state it instead (.agents/rules/no-ad-hoc-hardcoding.md §6).",
-    "generatedAt": "2026-10-02T02:29:40.110Z",
+    "generatedAt": "2026-10-02T19:06:32.810Z",
     "declaredBy": "scripts/data-governance.mjs",
     "cadence": "static"
   },
@@ -2376,6 +2376,19 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "scripts/build-service-status.mjs → data/service-status.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/build-slab2.mjs → data/slab2.bin.gz",
       "facets": [
         "origin.publisher",
@@ -3111,8 +3124,8 @@
   ],
   "unreadableDeclaration": [],
   "counts": {
-    "undeclared": 158,
-    "undeclaredFacets": 2130,
+    "undeclared": 159,
+    "undeclaredFacets": 2137,
     "updateFailureExposed": 0,
     "shardsWithoutIndex": 1,
     "unreadableDeclaration": 0

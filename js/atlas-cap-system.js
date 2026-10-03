@@ -18,14 +18,15 @@
  * ==========================================================================*/
 import { str, bool, one, loose, noArgs } from './atlas-caps.js';
 import { IntMapLang } from './lang-registry.js';
-import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { icon } from './icons.js';
+import { statusPage } from './layer-state.js';   /* (shell-experience) the status page, read as text by `diagnose` */   /* (icon-system) the one icon set — js/icons.js */
 
 export default [
   {
     row: ['system.diagnose',            'diagnose',       'health,selfCheck,systemStatus,status',                        'system',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
     /* ── clearing, outlining, the first-class panels ────────────────────────────────────────── */
     doc: [
-      { in: 'more-features', at: 90, text: '{"type":"diagnose"} (IntMap SELF-DIAGNOSIS — checks news-feed freshness, whether enabled layers are actually painting, and whether the live data APIs are reachable; use for "diagnose", "any issues?", "システムの状態", "データは最新？", "何か問題ある？").\n' + 'REACHABLE AREA / ISOCHRONE — the ONLY correct answer to a travel-TIME question: ' },
+      { in: 'more-features', at: 90, text: '{"type":"diagnose"} (IntMap SELF-DIAGNOSIS — checks news-feed freshness, whether enabled layers are actually painting, and whether the live data APIs are reachable; use for "diagnose", "any issues?", "システムの状態", "データは最新？", "何か問題ある？"). Its result also carries the page 「IntMap のいま」 (IntMap, now): this device (online; stored for offline use), every layer that could not be drawn and why, LAST NIGHT\'S CHECK of every data source (which are not answering, since when, when each last answered) and when Atlas\'s own answers were last evaluated. To SHOW that page to the reader: {"type":"module","name":"IntMapStatus","method":"open"}.\n' + 'REACHABLE AREA / ISOCHRONE — the ONLY correct answer to a travel-TIME question: ' },
     ],
     schema: () => (noArgs('diagnose')),
       /* ⚠⚠ (#R296) TWO CASES STOOD HERE. `disaster`/`flood`/`ashfall` — 「4つのうち、放射性物質拡散シミュ
@@ -41,6 +42,9 @@ export default [
           if(H.endpoints){ Object.keys(H.endpoints).forEach(k=>{ const e=H.endpoints[k]; if(e.ok==null){ h+='<span style="color:var(--text-muted)">'+icon('dot')+'</span> '+esc(k)+': '+L('not observed yet','未観測')+'<br>'; return; } h+=dot(e.ok)+' '+esc(k)+': '+(e.ok?(L('reachable','到達可能','erreichbar','доступно','accesible')+' · '+e.ms+'ms'):(e.status===429?(L('rate-limited','レート制限','ratenbegrenzt','лимит запросов','límite de tasa')+' (429)'):e.status?(L('error','エラー','Fehler','ошибка','error')+' '+e.status):(L('unreachable','到達不可','nicht erreichbar','недоступно','inaccesible'))))+'<br>'; }); }
           else h+='<span style="color:var(--text-muted)">'+icon('dot')+'</span> '+L('Live APIs: not probed','ライブAPI: 未確認','Live-APIs: nicht geprüft','Живые API: не проверены','APIs: sin comprobar')+'<br>';
           h+='</div>';
+          /* (shell-experience) …and the status page's own reading, as text: the same model js/service-status.js draws for the
+             reader — last night's check of every supplier, Atlas's own evaluation, offline readiness, the layers that failed and why */
+          try{ const P=await statusPage.describe(); if(P&&P.text) h+='<div style="font-size:12px;line-height:1.6;margin-top:8px;white-space:pre-wrap;">'+esc(P.text)+'</div>'; }catch(_){}
           h+=note(H.ok?('✓ '+L('All systems normal.','すべて正常です。','Alle Systeme normal.','Все системы в норме.','Todo normal.')):(icon('warning')+' '+L('Some data sources need attention (red). Atlas uses fallbacks where it can.','一部のデータ源に問題があります（赤）。可能な範囲でAtlasは代替に切り替えます。','Einige Datenquellen brauchen Aufmerksamkeit (rot). Atlas nutzt Ausweichquellen.','Некоторые источники требуют внимания (красное). Atlas использует запасные варианты.','Algunas fuentes requieren atención (rojo). Atlas usa alternativas.')));
           return R(true, h); }
     },
