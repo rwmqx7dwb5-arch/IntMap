@@ -491,6 +491,13 @@ map-state.js                      地図の状態の**正本**（MapState）。�
                                   世代つきの 1 回の適用（`restore`）で、変化の通知は「復元」か「読者」かを述べる。
                                   window 公開なし（import で読む）
 historical-basemap.js             Chronos旅行中の自然地理ベクタ背景。現代政治境界を含むCARTO画像を置換し、Nowで復帰
+hist-knowledge.js                 歴史地図が**どこまで分かっていて、どこからが分かっていないか**の測り方
+                                  （ES module・DOM も地図も時計も言語も触らない純関数）。`measure()`＝0.25° 格子で
+                                  「その年に地図が政体の中に置いている陸地のうち、第1級区分が覆う割合」（セル数と
+                                  cos(緯度) 重みの面積の両方）、`unknownGround()`＝記録の無い政体はその**政体自身の
+                                  輪郭**、一部だけの政体は**記録の無い土地**（0.1° の矩形）を GeoJSON で返す。
+                                  ⚠ **読み手は 2 つで規則は 1 つ**——`npm run check:histfidelity`（scripts/hist-fidelity.mjs）
+                                  が記録する数と、js/time-admin1.js が地図に引く斜線は同じ関数から出る
 hist-scale.js                     深い時間の**算術**だけを持つ純関数 window.IntMapHistScale。DOM も地図も時計も
                                   言語も触らないので検査が**評価**できる（#R570 の教訓）。①`decYear()`＝
                                   OpenHistoricalMap が書く10進年（実測 103,093 件に当てて決めた「その日の中点」）
@@ -669,7 +676,11 @@ time-admin1.js                    時間軸の上の歴史的**地方区分**（
                                   塗りは `imta-line` / `imta-vt-line` と同一（docs/MAP-LAYERS.md §7.7）。
                                   切替盤 `window._applyAdmin1` もここが持つ
                                   （app-shell に行数の余白が無い）。被覆は部分的なので `coverage()` /
-                                  `note()`（9言語）が「線が無い国は記録がまだ無い」と言う
+                                  `note()`（9言語）が「線が無い国は記録がまだ無い」と言う。
+                                  **記録の無い土地は地図の上に斜線で描く**（`imta-know-fill` / `imta-know-lbl`・
+                                  source `imta-know-src` / `imta-know-lbl-src`・js/hist-knowledge.js を旅行時に
+                                  動的 import）。`coverage().known` がその日付の割合と、同じ土地の二重主張の
+                                  種類別の件数（data/hist-claims.json）を返し、Atlas の `time.coverage` が読む
                                   （docs/MAP-LAYERS.md §7.7・記録は data/hist-admin1.js）
 time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列
@@ -1399,7 +1410,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは8つ・全 56,141 リング分／
+                                  **発見された**束すべて・いまは8つ・全 56,194 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
@@ -1445,11 +1456,20 @@ data/hist-admin-fill.js           **IntMap 自身が遡らせた**現代の第1�
                                   ⑤OHM の記録が既に答えている区間は**黙る**。
                                   hist-kuni と同じく束（__HISTADM1）に**追記**され、列 10 は null なので
                                   線は `imta-gap-line` が描く。門は `npm run check:histfill`
+data/hist-coverage-holes.json     歴史地図の**穴**の観測（目標値ではない）。測った 18 年それぞれで、第1級区分が
+                                  丸ごと描かれていない政体ごとに、その記録の無い土地の下にある**現代の国**と、
+                                  そこが空いている**理由**（data/hist-admin-fill.js の `refused`・最後の発足より前・
+                                  時代の記録が別の政体に置く…）。`reasons` に各理由の文。
+                                  `node scripts/hist-fidelity.mjs --update` が書き、門は出荷済みの束と一致しなければ落とす
+data/hist-claims.json             第1級の単位どうしが**同じ土地を同じ瞬間に**主張している組（ページが読む）。
+                                  種類は js/hist-scale.js `claimKind`（継ぎ目・重複・係争）。js/time-admin1.js が
+                                  その日付に両方が描かれている組を数え、レイヤー行の注記と Atlas に出す。
+                                  `--update` が書き、門が測り直して一致を確かめる
 data/hist-fidelity.json           歴史地図の**観測値**（目標値ではない）。`scripts/hist-fidelity.mjs` が
                                   出荷済みの束を測り直し、悪くなっていたら落第する門 `npm run check:histfidelity`
                                   の正本。3 つ——①上流が述べていない span の件数（**0 でなければ落第**）
-                                  ②同じ単位が 1 瞬に二度描かれる組（identical / nested / seam）
-                                  ③**0.25° の陸地格子**で測った年ごとの被覆と、0%／一部だけ／丸ごとの政体数
+                                  ②**同じ土地**を同じ瞬間に 2 つの単位が主張する組（継ぎ目 / 重複 / 係争）
+                                  ③**0.25° の陸地格子**で測った年ごとの被覆（セル数と面積重み）と、0%／一部だけ／丸ごとの政体数
                                   （紀元前 500 年から 2019 年までの 18 年）。`--update` で記録し直す
 us-elections.json / us-states.json  米大統領選挙（60回・州別2,342行の得票と選挙人つき）
 elections/                        各国の**国政選挙**（index.json＝polity・選挙・政党／`<版>.geo.json`＝選挙区の境界を**版ごとに**1つ／`<選挙>.res.json`＝結果）。scripts/elections/ の各パックが書き、scripts/build-elections.mjs が統合し、`--check` が形式と結合を毎回検証する。契約は scripts/lib/elections-schema.mjs
@@ -1630,7 +1650,13 @@ scripts/
   build-hist-admin-fill.mjs       同梱の Natural Earth 10m（data/admin1-world.json.gz）と Wikidata の発足日から
                                   `data/hist-admin-fill.js`。**上流が日付を述べ、その国が丸ごと日付を持ち、
                                   その年にその土地が1つの政体の中にあり、OHM が黙っている**区間だけを出す。
-                                  `--check` は出荷バイトだけを見る（「1国は丸ごと答えるか1件も答えないか」を再導出）
+                                  `--check` は出荷バイトだけを見る（「1国は丸ごと答えるか1件も答えないか」を再導出）。
+                                  Wikidata との結合は **ISO 3166-2 の全ランク**（preferred を優先・ISO が改番した
+                                  旧コードも同じ項目に届く）、ISO が黙るときだけ **HASC（P8119）**。描かない国は
+                                  `refused` に理由と件数を書く。⚠ P31/P131/P150 の開始日の修飾子は**発足ではない**
+                                  ので読まない（実測で日本の床が 1946 年に動いた）。キャッシュの置き場は
+                                  `INTMAP_HISTFILL_CACHE` / `INTMAP_HISTADMIN_CACHE`（worktree から原本の
+                                  node_modules へ書かないため）
   build-hist-admin1.mjs           OpenHistoricalMap の `admin_level` 3–6 の境界関係 → `data/hist-admin1.js`
                                   （`--levels 3,4`）と `data/hist-admin2.js`（`--levels 5,6`）。**1 本の build が
                                   両方の層を焼く**ので、門も 1 本（`npm run check:histadmin`）。⚠ 出力の global は

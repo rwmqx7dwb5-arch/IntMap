@@ -39,7 +39,7 @@ export default [
        (js/layer-time-decl.js through js/layer-time-kernel.js), without switching anything on or moving
        the clock. `on` limits it to the ticked layers. No instant → the clock's. */
     doc: [
-      { in: 'time.coverage', text: 'WHAT A MAP AT ONE INSTANT CAN DRAW: {"type":"timeCoverage","year"?:int (astronomical: 0 is 1 BC),"date"?:"YYYY-MM-DD","on"?:bool} = for EVERY layer (or only the ticked ones with on:true), whether its source states that instant — DRAWN (the source states it), DRAWN FROM ANOTHER DATE (a series past its last year, a dated snapshot on a later day — the layer names the date it shows), or NOT DRAWN (nothing states it: a live feed in the past, a modern snapshot before its date, a record outside its years) — with the reason in words. Nothing is switched on and the clock does not move. No year/date = the instant on the clock. Use for 「1914年の地図に何が描ける？」 / 「which layers work in 1600」 / before turning layers on for a past date. When the clock is in the past, a layer that states nothing about it is NOT drawn even with its box ticked, and its row says why — {"type":"timeTravel"} reports those ticked layers in its own result.' },
+      { in: 'time.coverage', text: 'WHAT A MAP AT ONE INSTANT CAN DRAW: {"type":"timeCoverage","year"?:int (astronomical: 0 is 1 BC),"date"?:"YYYY-MM-DD","on"?:bool} = for EVERY layer (or only the ticked ones with on:true), whether its source states that instant — DRAWN (the source states it), DRAWN FROM ANOTHER DATE (a series past its last year, a dated snapshot on a later day — the layer names the date it shows), or NOT DRAWN (nothing states it: a live feed in the past, a modern snapshot before its date, a record outside its years) — with the reason in words. Nothing is switched on and the clock does not move. No year/date = the instant on the clock. Use for 「1914年の地図に何が描ける？」 / 「which layers work in 1600」 / before turning layers on for a past date. When the clock is in the past, a layer that states nothing about it is NOT drawn even with its box ticked, and its row says why — {"type":"timeTravel"} reports those ticked layers in its own result. For the instant ON THE CLOCK it also reports how much of the land inside a polity carries a recorded first-level subdivision (the rest is hatched on the map as «no record», not drawn as if it had none) and the ground two subdivisions claim at once, by kind: seam (a year-precision handover), duplicate (one unit held twice upstream), contested (two different units claim it; not judged).' },
     ],
     schema: () => ({ type: 'object', properties: { year: int(), date: str(), on: bool() } }),
     async run(a, dctx, K) { return coverage(a, K); },
@@ -184,6 +184,27 @@ async function travel(a, dctx, K) { const L = K.L, R = K.R, note = K.note, warn 
    instant and any layer; `time.travel` appends, for the instant it just moved to, the TICKED layers that
    are not drawn and the ones showing another date — so Atlas learns it in the same result that moved the
    clock, not by asking again (.agents/rules/one-pass-or-a-reason.md §2 ②). */
+/* (hist-coverage) the subdivision record's own answer for the instant the map is on: how much of the land
+   inside a polity it covers, how many polities it is silent or partial about (the hatched ground), and the
+   double claims by kind — js/time-admin1.js `coverage().known`, the same numbers the map is drawn from.
+   Only for the instant on the clock: the measure runs on the collection the map is showing. */
+function subdivisionsAt(c) {
+  try {
+    const A = window.IntMapTimeAdmin1, s = A && A.coverage ? A.coverage() : null;
+    if (!s || !s.active || !s.known || !s.when || !c || !c.at || c.at.live) return null;
+    /* the same instant, compared as instants: `at.date` is an ISO string (expanded before year 0), `when` a Date */
+    const t = Date.parse(String(c.at.date));
+    if (!isFinite(t) || Math.abs(t - s.when.getTime()) >= 864e5) return null;
+    const k = s.known;
+    return { pct: Math.round(k.pct * 10) / 10, pctArea: Math.round(k.pctArea * 10) / 10, unrecorded: k.none, partial: k.partial, whole: k.full, claims: k.claims || {} };
+  } catch (_) { return null; }
+}
+function subdivisionsHtml(sd, K) {
+  if (!sd) return '';
+  const L = K.L, esc = K.esc, C = sd.claims;
+  return '<div>' + esc(L('Subdivisions recorded for ' + sd.pct + '% of the land inside a polity (' + sd.unrecorded + ' polities with no record and ' + sd.partial + ' with a partial one — hatched on the map); ground claimed twice: ' + (C.seam || 0) + ' seam, ' + (C.duplicate || 0) + ' duplicate, ' + (C.contested || 0) + ' contested',
+    '地方区分の記録があるのは政体の内側の陸地の ' + sd.pct + '%（記録の無い政体 ' + sd.unrecorded + '・一部だけ ' + sd.partial + '——地図では斜線）。同じ土地の二重主張: 継ぎ目 ' + (C.seam || 0) + '・重複 ' + (C.duplicate || 0) + '・係争 ' + (C.contested || 0))) + '</div>';
+}
 function coverageHtml(c, K, all) {
   const L = K.L, esc = K.esc;   /* the kernel's escaper, as every capability uses it */
   const line = (r) => '<li><b>' + esc(r.name) + '</b>' + (r.why ? ' — ' + esc(r.why) : '') + '</li>';
@@ -205,7 +226,8 @@ async function coverage(a, K) {
   const c = await LT.coverage(when, { on: !!a.on });
   if (!c) return R(false, warn('' + L('Give a year or an ISO date', '年か ISO 形式の日付を指定してください')));
   const day = c.at.live ? L('now', '現在') : c.at.date.slice(0, 10);
-  return R(true, '<div>' + esc(L('What the map at ' + day + ' can draw', day + ' の地図に描けるもの')) + '</div>' + coverageHtml(c, K, true), { coverage: c });
+  const sd = subdivisionsAt(c);
+  return R(true, '<div>' + esc(L('What the map at ' + day + ' can draw', day + ' の地図に描けるもの')) + '</div>' + coverageHtml(c, K, true) + subdivisionsHtml(sd, K), sd ? { coverage: c, subdivisions: sd } : { coverage: c });
 }
 async function withCoverage(res, K) {
   try {

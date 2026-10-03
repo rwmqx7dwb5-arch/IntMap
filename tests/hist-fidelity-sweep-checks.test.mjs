@@ -96,9 +96,11 @@ test('③ 1950: one name candidate per prefecture, not one per island', () => {
   const fc = { type: 'FeatureCollection', features: feats };
   const rings = feats.reduce((n, f) => n + (f.geometry.type === 'Polygon' ? 1 : f.geometry.coordinates.length), 0);
   assert.ok(rings > feats.length * 2, 'the defect needs islands to show: ' + rings + ' rings for ' + feats.length + ' units');
-  /* js/time-admin1.js `labelsFor`, lifted and run against the era module the page builds first */
+  /* js/time-admin1.js `labelsFor`, lifted and run against the era module the page builds first — with
+     `eraBorders`, the one place the file reads that module through the global */
   const box = vm.createContext({ window: { IntMapTimeBorders: api } });
-  vm.runInContext(liftFunction(codeOnly(rd('js/time-admin1.js')), 'labelsFor'), box);
+  const TAsrc = codeOnly(rd('js/time-admin1.js'));
+  vm.runInContext(liftFunction(TAsrc, 'eraBorders') + ';' + liftFunction(TAsrc, 'labelsFor'), box);
   const out = box.labelsFor(fc);
   const outer = out.features.reduce((n, f) => n + (f.geometry.type === 'Polygon' ? 1 : f.geometry.coordinates.length), 0);
   assert.equal(outer, feats.length, 'one outer ring — one renderer candidate — per prefecture');
@@ -133,7 +135,9 @@ test('④ the builder keeps every stated inception and draws from the last; an e
   const v = (d) => ({ type: 'literal', value: d });
   const row = (code, q, inc, dis) => ({ code: v(code), item: v('http://www.wikidata.org/entity/' + q), ...(inc ? { inc: v(inc) } : {}), ...(dis ? { dis: v(dis) } : {}) });
   /* 香川県 as Wikidata states it: three foundings, and the 1876 merger into 愛媛県 */
-  fs.writeFileSync(path.join(dir, 'p300-spans.json'), JSON.stringify([
+  /* (hist-coverage) the query reads every non-deprecated rank now, and HASC after it; a row with no rank is a best-ranked one */
+  fs.writeFileSync(path.join(dir, 'p8119-spans-ranked.json'), '[]');
+  fs.writeFileSync(path.join(dir, 'p300-spans-ranked.json'), JSON.stringify([
     row('JP-37', 'Q161454', '1871-12-26T00:00:00Z', '1876-08-21T00:00:00Z'),
     row('JP-37', 'Q161454', '1875-09-05T00:00:00Z'),
     row('JP-37', 'Q161454', '1888-12-03T00:00:00Z'),

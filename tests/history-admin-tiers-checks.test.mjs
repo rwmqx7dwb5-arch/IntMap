@@ -496,7 +496,7 @@ function runtime() {
      is made of are LIFTED from the shipped module, not stubbed (#R621). `geomOf` stays null because
      the SUBJECT here is the clock, and `areaKm2` answers 0 for a geometry that is not there. */
   vm.runInContext('const _ymd=(y,m,d)=>y*10000+m*100+d; let _bnd=null, _D=null, _P=null, _H=null; const _area=new Map(); const SORT_PROP=' + constOf('SORT_PROP') + '; '
-    + ['areaKm2', 'sortKeyOf', 'areaOf', 'bounds', 'epoch', 'load'].map(n => fn(n)).join('\n') + '\nasync ' + fn('fcAt'), ctx);
+    + ['areaKm2', 'sortKeyOf', 'areaOf', 'bounds', 'epoch', 'load', 'claimKeyOf'].map(n => fn(n)).join('\n') + '\nasync ' + fn('fcAt'), ctx);
   /* publish the record and open it — what `go()` does before it asks anything */
   ctx.use = async (data) => { ctx.window.__TESTADM = data; ctx.data = await vm.runInContext('load()', ctx); };
   return ctx;

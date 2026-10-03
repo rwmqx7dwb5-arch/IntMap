@@ -114,6 +114,7 @@ import { fileURLToPath } from 'node:url';
 import { registry, shipTags, harvestTags } from './histadmin/langs.mjs';
 import { labelsFor, labelsByTag } from './histadmin/wikidata.mjs';
 import { WIKIDATA } from './lib/upstream-cadence.mjs';
+import { scan as latticeScan } from '../js/hist-knowledge.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -247,8 +248,13 @@ function samplePoints(polys) {
   let [mnx, mny, mxx, mxy] = [Infinity, Infinity, -Infinity, -Infinity];
   for (const r of rings) { const b = bbox(r); mnx = Math.min(mnx, b[0]); mny = Math.min(mny, b[1]); mxx = Math.max(mxx, b[2]); mxy = Math.max(mxy, b[3]); }
   let out = [];
-  for (let x = mnx + GRID / 2; x <= mxx; x += GRID) for (let y = mny + GRID / 2; y <= mxy; y += GRID) if (inPolys(polys, x, y)) out.push([x, y]);
-  if (!out.length) for (const r of rings) for (const p of r) out.push(p);
+  /* (hist-coverage) each lattice point carries its cell (i, j) on the unit's own lattice, so a polygon can
+     be asked about ALL of them in one scanline pass (`hitMask`) instead of one ray cast per point */
+  let i = 0;
+  for (let x = mnx + GRID / 2; x <= mxx; x += GRID, i++) { let j = 0; for (let y = mny + GRID / 2; y <= mxy; y += GRID, j++) if (inPolys(polys, x, y)) out.push([x, y, i, j]); }
+  let ny = 0; for (let y = mny + GRID / 2; y <= mxy; y += GRID) ny++;
+  const win = { x0: mnx, y0: mny, res: GRID, NX: Math.max(1, i), NY: Math.max(1, ny) };
+  if (!out.length) for (const r of rings) for (const p of r) out.push([p[0], p[1], -1, -1]);
   /* ⚠ (#R719) AND THE SAMPLE IS CAPPED, BECAUSE THE TESTS ARE SHARES AND NOT AREAS. Russia's
      units put tens of thousands of cells on a 0.1° grid, and every one of them is then asked of
      every era polygon that meets the box; the first build of this file did not come back. What
@@ -260,6 +266,35 @@ function samplePoints(polys) {
     for (let i = 0; i < MAX_SAMPLE; i++) cut.push(out[Math.floor(i * step)]);
     out = cut;
   }
+  out.win = win;
+  return out;
+}
+/* ══ (hist-coverage) WHICH SAMPLE POINTS A POLYGON HOLDS — ONE SCANLINE PASS, NOT A RAY PER POINT ═════
+   Tests 3 and 4 ask every era polity and every record unit that meets a fill unit's box «which of my
+   points do you hold». Asked one ray cast per point, a full build took longer than two hours (measured
+   2026-10-03: 15 of 71 countries in 30 minutes; one 11-unit country, Armenia, spent 31 s inside
+   `inRing`), because the deep-time era sheets are world-spanning rings. The points sit on the unit's own
+   lattice, so the polygon is scanned ONCE on that lattice (js/hist-knowledge.js `scan`, the rule the
+   coverage gate measures with) and each point reads its cell. A vertex-fallback point (a unit thinner
+   than the lattice) has no cell and is still asked by ray cast. The crossing rule is the same even-odd
+   rule `inRing` applies, evaluated at the same cell centres. */
+/* the sample points of one lattice, by row: only the rows a polygon crosses are looked at, and only the
+   points on them — never the whole window (Nunavut's is 180,000 cells, asked of thousands of records) */
+function rowsOf(pts) {
+  if (pts.rows) return pts.rows;
+  const m = new Map();
+  for (let k = 0; k < pts.length; k++) { const q = pts[k]; if (q[2] < 0) continue; if (!m.has(q[3])) m.set(q[3], []); m.get(q[3]).push(k); }
+  return (pts.rows = m);
+}
+function hitMask(polys, pts) {
+  const out = new Uint8Array(pts.length), W = pts.win;
+  if (!W) { for (let k = 0; k < pts.length; k++) if (inPolys(polys, pts[k][0], pts[k][1])) out[k] = 1; return out; }
+  const rows = rowsOf(pts);
+  for (const p of polys) latticeScan(W, p, (j, i0, i1) => {
+    const ks = rows.get(j); if (!ks) return;
+    for (const k of ks) { const i = pts[k][2]; if (i >= i0 && i <= i1) out[k] = 1; }
+  });
+  for (let k = 0; k < pts.length; k++) if (pts[k][2] < 0 && inPolys(polys, pts[k][0], pts[k][1])) out[k] = 1;
   return out;
 }
 
@@ -388,38 +423,89 @@ function stampOf(iso, floorTo) {
    latest of its eleven provinces, not from Yerevan's 782 BC, and Ukraine from the latest of its
    twenty-five oblasts. A country whose units state nothing is admitted by neither rule. */
 export async function wikidataSpans() {
-  const rows = await sparql(`SELECT ?code ?item ?inc ?dis WHERE {
-  ?item wdt:P300 ?code .
+  /* ══ ⚠⚠⚠ (hist-coverage) AN ISO 3166-2 CODE IS ITSELF DATED, AND `wdt:` READS ONLY THE CURRENT ONE ════
+     The query read `?item wdt:P300 ?code`, and `wdt:` is the BEST-RANKED statement only. ISO revised the
+     codes of whole countries after Natural Earth's survey — Poland's voivodeships went from `PL-DS` to
+     `PL-02`, Czechia's kraje from `CZ-PR` to `CZ-10`, Kazakhstan's oblasts from `KZ-AKM` to `KZ-11` —
+     and Wikidata keeps the code Natural Earth carries on the SAME item at normal rank, beside the new one
+     at preferred rank. So the join missed the item, and three whole countries read as «no unit states a
+     founding» while every one of their units does (Q54150, Lower Silesian Voivodeship: `PL-DS` normal,
+     `PL-02` preferred, P571 1999-01-01). MEASURED 2026-10-03 against WDQS: POL 0 → 16 of 16 dated,
+     CZE 0 → 14 of 14, KAZ 0 → 14 of 16; 66 → 70 countries pass the set-floor guard.
+     ⚠ AND RANK IS WHAT KEEPS THE WIDER JOIN AN IDENTITY. Codes are REUSED: `IR-28` is preferred on
+     Q180075 (North Khorasan, 2004) and normal on Q1105893 (the Khorasan dissolved into it). Taking every
+     holder would date one province by another. So a code is held by its PREFERRED-rank items where it
+     has any, and by its normal-rank items only where it has none; deprecated statements are never read.
+     ══ ⚠ AND HASC (P8119) IS THE SECOND IDENTIFIER, NOT A SECOND OPINION ══════════════════════════════
+     Natural Earth publishes the HASC code beside the ISO one (`PL.DS`). Where the ISO join finds no dated
+     item, the HASC join is asked under the same rank rule; it never overrides a date the ISO join found.
+     MEASURED the same day: it dates all 14 of Nepal's zones, which ISO dates none of, and moves no admitted
+     country. The span records which identifier answered (`via`), and the bundle carries it.
+     ══ ⚠⚠⚠ REFUSED, MEASURED: THE START-TIME QUALIFIERS ARE NOT FOUNDINGS ════════════════════════════
+     P580 on a unit's P31 / P131 statement, or on its country's P150, dates 15 more countries past the
+     guard — and moves countries already admitted to dates that are NOT when the unit began: JPN's set
+     floor 1888-12-03 → 1946-01-01 («prefecture of Japan» since the post-war class), FIN 2010 → 2026
+     (a reassignment of P131), HUN 1950 → 2013, SRB 1992 → 2006. A qualifier says since when the unit was
+     of a KIND or IN a parent, not since when it governed the ground. Not read. */
+  const rows = await sparql(`SELECT ?code ?item ?rank ?inc ?dis WHERE {
+  ?item p:P300 ?st . ?st ps:P300 ?code ; wikibase:rank ?rank .
+  FILTER(?rank != wikibase:DeprecatedRank)
   OPTIONAL { ?item wdt:P571 ?inc }
   OPTIONAL { ?item wdt:P576 ?dis }
-}`, 'p300-spans');
+}`, 'p300-spans-ranked');
+  const hrows = await sparql(`SELECT ?code ?item ?rank ?inc ?dis WHERE {
+  ?item p:P8119 ?st . ?st ps:P8119 ?code ; wikibase:rank ?rank .
+  FILTER(?rank != wikibase:DeprecatedRank)
+  OPTIONAL { ?item wdt:P571 ?inc }
+  OPTIONAL { ?item wdt:P576 ?dis }
+}`, 'p8119-spans-ranked');
   const out = new Map();
-  for (const r of rows) {
-    const code = r.code.value;
-    const s = stampOf(r.inc && r.inc.value, 'start');
-    if (s == null) continue;
-    const e = stampOf(r.dis && r.dis.value, 'end');
-    const prev = out.get(code);
-    /* ══ ⚠⚠⚠ (hist-fidelity-sweep) SEVERAL STATED INCEPTIONS: THE UNIT IS DRAWN FROM THE LAST ONE ═════
-       This took the EARLIEST, on the reasoning that «one code, several items happens where a unit was
-       re-founded». A re-founded unit is exactly the case where the earliest date is FALSE for the outline
-       drawn: 香川県 (Q161454) states 1871-12-26, 1875-09-05 and 1888-12-03 — founded, merged into 名東県,
-       refounded, merged into 愛媛県, refounded — and today's Kagawa exists continuously only from the last.
-       Taking the first made Japan's set floor 1881-02-07 (福井県's single date) instead of the 1888-12-03
-       the note on the set floor below itself expects, so 1881-1888 drew Kagawa over what was 愛媛県, Nara
-       (refounded 1887-11-04) over 大阪府, and Toyama / Saga / Miyazaki (1883) over 石川 / 長崎 / 鹿児島 —
-       units whose today's outline did not exist. MEASURED 2026-10-02 on the shipped bundle: all 45
-       Japanese rows began 1881-02-07.
-       ⇒ every stated inception is kept (`ss`) and the unit is drawn from the LATEST of them: the one date
-       every statement about its beginning has passed. That can only make a span shorter, never invent a
-       year, and where the dates are several opinions about ONE founding it is the cautious one. */
-    const qid = r.item.value.split('/').pop();
-    const cur = prev || { qid, s, ss: [], es: [], e: null };
-    if (!prev) out.set(code, cur);
-    if (!cur.ss.includes(s)) cur.ss.push(s);
-    if (s > cur.s) { cur.s = s; cur.qid = qid; }
-    if (e != null && !cur.es.includes(e)) cur.es.push(e);
+  /* the holders a code is read from: its preferred-rank items, or (only where it has none) its
+     normal-rank ones. A row with no `rank` is a best-ranked statement as `wdt:` returns it. */
+  const holders = (rs) => {
+    const pref = new Set(), any = new Set();
+    for (const r of rs) {
+      const q = r.item.value.split('/').pop();
+      any.add(q);
+      if (!r.rank || /PreferredRank$/.test(r.rank.value)) pref.add(q);
+    }
+    return pref.size ? pref : any;
+  };
+  const byCode = (rs) => { const m = new Map(); for (const r of rs) { const k = r.code.value; if (!m.has(k)) m.set(k, []); m.get(k).push(r); } return m; };
+  function fold(rs, via) {
+    for (const [code, list] of byCode(rs)) {
+      if (out.has(code)) continue;
+      const keep = holders(list);
+      let cur = null;
+      for (const r of list) {
+        const qid = r.item.value.split('/').pop();
+        if (!keep.has(qid)) continue;
+        const s = stampOf(r.inc && r.inc.value, 'start');
+        if (s == null) continue;
+        const e = stampOf(r.dis && r.dis.value, 'end');
+        /* ══ ⚠⚠⚠ (hist-fidelity-sweep) SEVERAL STATED INCEPTIONS: THE UNIT IS DRAWN FROM THE LAST ONE ═════
+           This took the EARLIEST, on the reasoning that «one code, several items happens where a unit was
+           re-founded». A re-founded unit is exactly the case where the earliest date is FALSE for the outline
+           drawn: 香川県 (Q161454) states 1871-12-26, 1875-09-05 and 1888-12-03 — founded, merged into 名東県,
+           refounded, merged into 愛媛県, refounded — and today's Kagawa exists continuously only from the last.
+           Taking the first made Japan's set floor 1881-02-07 (福井県's single date) instead of the 1888-12-03
+           the note on the set floor below itself expects, so 1881-1888 drew Kagawa over what was 愛媛県, Nara
+           (refounded 1887-11-04) over 大阪府, and Toyama / Saga / Miyazaki (1883) over 石川 / 長崎 / 鹿児島 —
+           units whose today's outline did not exist. MEASURED 2026-10-02 on the shipped bundle: all 45
+           Japanese rows began 1881-02-07.
+           ⇒ every stated inception is kept (`ss`) and the unit is drawn from the LATEST of them: the one date
+           every statement about its beginning has passed. That can only make a span shorter, never invent a
+           year, and where the dates are several opinions about ONE founding it is the cautious one. */
+        if (!cur) cur = { qid, s, ss: [], es: [], e: null, via };
+        if (!cur.ss.includes(s)) cur.ss.push(s);
+        if (s > cur.s) { cur.s = s; cur.qid = qid; }
+        if (e != null && !cur.es.includes(e)) cur.es.push(e);
+      }
+      if (cur) out.set(code, cur);
+    }
   }
+  fold(rows, 'P300');
+  fold(hrows, 'P8119');
   /* …and a dissolution the unit was refounded AFTER is the end of an earlier incarnation, not of this
      one (香川県's 1876 merger into 愛媛県): the end that bounds the outline is the first stated one after
      the latest inception, or none. */
@@ -428,6 +514,19 @@ export async function wikidataSpans() {
     v.e = after.length ? Math.min(...after) : null;
   }
   return out;
+}
+
+/* ══ (hist-coverage) ONE NATURAL EARTH UNIT → ITS IDENTIFIERS → ITS DATED SPAN ═══════════════════════
+   The ISO 3166-2 code is the unit's key everywhere in this file and in the bundle (column 10); the HASC
+   code is asked only where the ISO one is not dated. Whatever answered, the span is filed under the ISO
+   key, so `inception` and the whole-country rule keep one key per unit. */
+const HASC = /^[A-Z]{2}\.[A-Z0-9]{2,3}$/;
+export function unitIds(nameField) {
+  const parts = String(nameField || '').split('|');
+  return { code: parts.find((p) => ISO2.test(p)) || null, hasc: parts.find((p) => HASC.test(p)) || null };
+}
+export function spanOf(spans, ids) {
+  return (ids.code && ISO2_STRICT.test(ids.code) && spans.get(ids.code)) || (ids.hasc && spans.get(ids.hasc)) || null;
 }
 
 /* ══ (hist-fidelity-sweep) THE STATED INCEPTIONS TRAVEL WITH THE BUNDLE ═══════════════════════════
@@ -439,8 +538,19 @@ export async function wikidataSpans() {
 function inceptionOf(countries, byCountry, spans) {
   const out = {};
   for (const iso3 of countries) for (const u of byCountry.get(iso3).all) {
-    const w = u.code && spans.get(u.code);
+    const w = u.code && spanOf(spans, u.ids || { code: u.code, hasc: null });
     if (w && Number.isFinite(w.s)) out[u.code] = w.s;
+  }
+  return Object.fromEntries(Object.entries(out).sort((a, b) => (a[0] < b[0] ? -1 : 1)));
+}
+/* (hist-coverage) …and WHICH IDENTIFIER answered, for the units the ISO 3166-2 code did not date: the
+   HASC join is the second identifier, and a reader of the bundle (and the gate) can see which units
+   rest on it. Units the ISO code dated are the default and are not listed. */
+function inceptionViaOf(countries, byCountry, spans) {
+  const out = {};
+  for (const iso3 of countries) for (const u of byCountry.get(iso3).all) {
+    const w = u.code && spanOf(spans, u.ids || { code: u.code, hasc: null });
+    if (w && w.via && w.via !== 'P300') out[u.code] = w.via;
   }
   return Object.fromEntries(Object.entries(out).sort((a, b) => (a[0] < b[0] ? -1 : 1)));
 }
@@ -460,16 +570,16 @@ async function redate() {
   const spans = await wikidataSpans();
   const byCountry = new Map();
   for (const f of ne.f) {
-    const code = f.n.split('|').find((p) => ISO2.test(p)) || null;
+    const ids = unitIds(f.n), code = ids.code;
     const c = byCountry.get(f.i) || { all: [] };
-    c.all.push({ code });
+    c.all.push({ code, ids });
     byCountry.set(f.i, c);
   }
   const countries = [...new Set(d.feats.map((f) => f[11]))].sort();
   const floor = new Map(), before = new Map();
   for (const iso3 of countries) {
     let F = null;
-    for (const u of byCountry.get(iso3).all) { const w = u.code && ISO2_STRICT.test(u.code) && spans.get(u.code); if (w && (F == null || w.s > F)) F = w.s; }
+    for (const u of byCountry.get(iso3).all) { const w = u.code && spanOf(spans, u.ids); if (w && (F == null || w.s > F)) F = w.s; }
     if (F != null) floor.set(iso3, F);
   }
   const keep = [], moved = new Map(), dropped = [];
@@ -558,10 +668,10 @@ async function main() {
   /* test 1 + test 2 — dated, and dated for the WHOLE country. */
   const byCountry = new Map();
   for (const f of ne.f) {
-    const code = f.n.split('|').find((p) => ISO2.test(p)) || null;
-    const wd = code && ISO2_STRICT.test(code) ? spans.get(code) : null;
+    const ids = unitIds(f.n), code = ids.code;
+    const wd = code ? spanOf(spans, ids) : null;
     const c = byCountry.get(f.i) || { all: [], dated: 0 };
-    c.all.push({ f, code, wd });
+    c.all.push({ f, code, ids, wd });
     if (wd) c.dated++;
     byCountry.set(f.i, c);
   }
@@ -598,8 +708,23 @@ async function main() {
   console.error('· set floor: ' + setFloor.size + ' country(ies) date their own undated units from their latest stated inception (' + floored + ' unit(s))');
 
   const admitted = [], refusedPartial = [], refusedNoFloor = [], refusedNoId = [];
+  /* ══ (hist-coverage) A COUNTRY THIS RECORD DOES NOT ANSWER IS A HOLE, AND A HOLE STATES ITS REASON ══
+     The four refusals below were printed to the console of whoever ran the build and then lost, so the
+     next round could not tell «Wikidata dates 3 of Algeria's 48 wilayas» from «Algeria was never asked».
+     They travel with the bundle now — `refused[ISO3] = [why, units that state a founding, units]` —
+     and scripts/hist-fidelity.mjs reads them to say, per year and per polity, WHY the ground it measures
+     as uncovered is uncovered (data/hist-coverage-holes.json). `why` is one of:
+       no-identifier  a unit carries neither an ISO 3166-2 nor a placeholder code, so «answered whole»
+                      cannot be re-derived for its country
+       undated        fewer than SET_FLOOR_MIN, or fewer than half, of its units state a founding
+       no-set-floor   dated, but no unit's own statement gives the set a floor
+       never-whole    admitted, but on no date can EVERY unit be drawn (tests 3-4 below)  */
+  const stated = (c) => c.all.filter((u) => u.wd && !u.wd.derived).length;
+  const refused = {};
   for (const [iso3, c] of byCountry) {
-    if (c.all.some((u) => !u.code)) { refusedNoId.push(iso3); continue; }
+    if (c.all.some((u) => !u.code)) { refusedNoId.push(iso3); refused[iso3] = ['no-identifier', stated(c), c.all.length]; continue; }
+    if (!(c.dated === c.all.length && c.all.length >= 1)) refused[iso3] = ['undated', stated(c), c.all.length];
+    else if (!setFloor.has(iso3)) refused[iso3] = ['no-set-floor', stated(c), c.all.length];
     if (c.dated === c.all.length && c.all.length >= 1) {
       if (setFloor.has(iso3)) admitted.push(iso3); else refusedNoFloor.push(iso3);
     } else if (c.dated) refusedPartial.push(iso3 + ' ' + c.dated + '/' + c.all.length);
@@ -654,11 +779,8 @@ async function main() {
          precomputed column. The first build of this file did it the other way and did not finish. */
       const near = era.meeting(box);
       const hitsOf = near.map((eu) => {
-        let n = 0; const mask = new Uint8Array(pts.length);
-        for (let i = 0; i < pts.length; i++) {
-          const p = pts[i];
-          if (p[0] >= eu.bb[0] && p[0] <= eu.bb[2] && p[1] >= eu.bb[1] && p[1] <= eu.bb[3] && inPolys(eu.polys, p[0], p[1])) { mask[i] = 1; n++; }
-        }
+        const mask = hitMask(eu.polys, pts);
+        let n = 0; for (let i = 0; i < mask.length; i++) n += mask[i];
         return { n, mask };
       });
       const bps = new Set();
@@ -721,14 +843,9 @@ async function main() {
       for (const r of rec) {
         if (!meets(r.bb, box)) continue;
         const need = Math.ceil(OVERLAP_MIN * pts.length);
-        let hit = 0, seen = 0, enough = true;
-        for (const p of pts) {
-          seen++;
-          if (p[0] >= r.bb[0] && p[0] <= r.bb[2] && p[1] >= r.bb[1] && p[1] <= r.bb[3] && inPolys(r.polys, p[0], p[1])) hit++;
-          /* a county cannot take a state's ground: stop as soon as the threshold is out of reach */
-          if (hit + (pts.length - seen) < need) { enough = false; break; }
-        }
-        if (!enough || hit < need) continue;
+        const m = hitMask(r.polys, pts);
+        let hit = 0; for (let i = 0; i < m.length; i++) hit += m[i];
+        if (hit < need) continue;
         answeredIv.push([r.s, r.e]);
         const before = alive.length;
         alive = subtract(alive, [r.s, r.e]);
@@ -752,7 +869,7 @@ async function main() {
        others. A country whose intersection is empty ships nothing at all. */
     let whole = live.length === byCountry.get(iso3).all.length ? [[ymd(-122999, 1, 1), ymd(9999, 1, 1)]] : [];
     for (const L of live) whole = intersect(whole, L.shown);   /* (#R730) what the reader sees, both records together */
-    if (!whole.length) { stats.droppedWhole += live.length; continue; }
+    if (!whole.length) { stats.droppedWhole += live.length; refused[iso3] = ['never-whole', stated(byCountry.get(iso3)), byCountry.get(iso3).all.length]; continue; }
 
     for (const L of live) {
       const spans = intersect(whole, L.alive);
@@ -794,6 +911,10 @@ async function main() {
        record's half of it. */
     deferred: [...deferred].sort(),
     inception: inceptionOf(admitted, byCountry, spans),
+    /* (hist-coverage) the units dated through their HASC code rather than their ISO 3166-2 one */
+    inceptionVia: inceptionViaOf(admitted, byCountry, spans),
+    /* (hist-coverage) every country of the outline set this record does not draw, and why */
+    refused: Object.fromEntries(Object.entries(refused).sort((a, b) => (a[0] < b[0] ? -1 : 1))),
     rings,
     feats,
   };
