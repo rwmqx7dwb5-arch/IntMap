@@ -1,7 +1,7 @@
 /* ============================================================================
  *  platform-backend — «Your data» (account-data-center) and «My places» (my-places)
  * ----------------------------------------------------------------------------
- *  The database half is proved by supabase/tests/18_account_data_center_test.sql (pgTAP, CI's DB job).
+ *  The database half is proved by supabase/tests/23_account_data_center_test.sql (pgTAP, CI's DB job).
  *  This file is the offline half, run by `node --test` with no database:
  *    ① the catalogue is complete — every table the migrations make owned by an account (a column that
  *      references auth.users, or a uuid user_id) has its sentence in account_data_catalog, in en AND jp,
@@ -92,7 +92,7 @@ test('② the account doors take no account argument and are not anon\'s', () =>
     const body = ALL_SQL.slice(ALL_SQL.search(new RegExp('function\\s+public\\.' + name + '\\s*\\(')));
     assert.match(body.slice(0, 4000), /public\._owned_by_user_cols\(\)/, name + ' walks public._owned_by_user_cols()');
   }
-  assert.doesNotMatch(read('supabase/migrations/20261003100000_saved_places.sql'), /grant\s+[^;]*insert[^;]*on\s+table\s+public\.saved_places\s+to\s+authenticated/i, 'authenticated gets no INSERT on saved_places — save_place() is the door');
+  assert.doesNotMatch(read('supabase/migrations/20261003140000_saved_places.sql'), /grant\s+[^;]*insert[^;]*on\s+table\s+public\.saved_places\s+to\s+authenticated/i, 'authenticated gets no INSERT on saved_places — save_place() is the door');
 });
 
 test('③ the shipped helpers, evaluated', async () => {

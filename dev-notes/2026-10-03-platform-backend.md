@@ -22,7 +22,7 @@ date: 2026-10-03
 
 ### 「あなたのデータ」（account-data-center）
 
-- `supabase/migrations/20261003090000_account_data_center.sql`
+- `supabase/migrations/20261003130000_account_data_center.sql`
   - `account_data_catalog`——所有される表 1 つにつき 1 行（何か・なぜ・いつまで・誰が書いたか〈`you` / `intmap`〉、en+jp）。
     誰でも読める（誰のデータも持たない＝プライバシーの目録）。書けるのは migration だけ。
     ⚠ **説明であって絞り込みではない**——説明の無い表も数えられ書き出され（`described=false`）、検査だけが赤くなる。
@@ -40,7 +40,7 @@ date: 2026-10-03
 
 ### マイプレイス（my-places）
 
-- `supabase/migrations/20261003100000_saved_places.sql`
+- `supabase/migrations/20261003140000_saved_places.sql`
   - `saved_places`（名前・メモ・コレクション・位置・ズーム・出所）。**同じ口座の同じ位置（約 1 m）は 1 行**——生成列 `lng5`/`lat5`
     （`round(…,5)`＝セッションのピンの同一性）に一意制約。
   - 入口は `save_place()` だけ（`authenticated` に INSERT の grant が無い）。口座は `auth.uid()`。2 度目は `created=false` で、与えられた
@@ -67,28 +67,26 @@ date: 2026-10-03
 
 - **PGlite（Postgres 17・WASM）に Supabase の薄い代役**（`anon`/`authenticated`/`service_role`、`auth.users`/`auth.identities`/`auth.uid()`、
   `storage.*`、Supabase の既定権限）を足し、**全 39 migration ＋ `seed.sql` が通る**ことを確かめた上で、pgTAP の最小の代役
-  （`ok`/`is`/`has_table`/`finish`）で `supabase/tests/18_account_data_center_test.sql` を流した: **55/55 ok**。
+  （`ok`/`is`/`has_table`/`finish`）で `supabase/tests/23_account_data_center_test.sql` を流した: **55/55 ok**。
   変異: カタログから `favorites` の 1 行を消すと ①完全性・目録の `described`・書き出しの説明の 3 本が赤くなる。
   既存の 09/11/12 も同じ代役で流し、赤は代役自身の表（`_tap` に `grant all to public`）だけ——新しい 2 表は TRUNCATE/REFERENCES/TRIGGER
   を誰にも渡していない・anon の INSERT を受けない。
   ⚠ これは CI の `supabase test db` の代わりではない（pgTAP 本体ではなく、Supabase の本物の auth スキーマでもない）。CI の DB job が正本。
 - `tests/platform-backend-checks.test.mjs` 5 本（`docs/TESTING.md`）。
 - `00_structure_test.sql` は 2 表を両方のリストに足して `plan(104)`（+4）。
+- `check:perf`: 起動費用は動かない（boot 経路 0 kB）。上がったのは非同期の 2 行だけで、天井を上げた——
+  `atlas-console` 1134.1→1147.1 kB（+13.0 kB。Atlas の能力 `account.*`・`places.*` の 2 モジュールは
+  `js/atlas-caps-modules.js` から import され Atlas の束に入る）と非同期 gzip 合計 3774.0→3798.1 kB（その分と、
+  新しいオンデマンドのチャンク `account-data` 7.2 kB・`my-places` 11.9 kB。開いたときにだけ読む）。
 
 ## 3. 残っていること
 
 - **本番への migration 適用は未実施**（この作業の範囲外。`docs/MIGRATIONS.md` §5 の 1 ファイルずつの手順で 2 本）。Edge Function は
   足していないので配備は無い。
-- **プライバシーポリシー（`js/legal-text.js` の PRIVACY_*）は変えていない**——同じ時間帯に別の作業が privacy を持っているため。
-  利用規約 §4 には自己書き出しと削除の 1 文を足し、`LEGAL_DATE` を 2026-10-03 にした（同じファイルなので**合流時に衝突しうる**）。
-  privacy に要る変更の文案:
-  - §1（取得する情報）: 「保存した場所（マイプレイス: 名前・メモ・コレクション・位置）」/ "places you save (My places: name, note,
-    collection, position)" を保存物の列挙に足す。
-  - §6（保持期間）: 「保存した場所は、場所かアカウントを削除するまで保持します。」/ "Saved places are kept until you delete the place
-    or your account."
-  - §7（あなたの権利）: 「アカウントが保持するデータは『アカウント ▸ あなたのデータ』でいつでも一覧で確認し、完全なコピー（JSON）を
-    ダウンロードできます。削除はアカウントの削除から行えます。その他はお問い合わせください。」/ "You can see what your account holds and
-    download a complete copy (JSON) at any time from Account ▸ Your data, and delete it by deleting your account; contact us for anything
-    else."
+- **プライバシーポリシー（`js/legal-text.js` の PRIVACY_*）**: 利用者の承認（2026-10-03）を得て、合流時に §1（保存物の列挙に
+  マイプレイス）・§6（保存した場所の保持期間）・§7（「お問い合わせください」→『アカウント ▸ あなたのデータ』での一覧と
+  完全な書き出し・アカウント削除による削除・その他は問い合わせ）を en+jp で入れた。利用規約 §4 にも自己書き出しと削除の 1 文。
+- migration は他 branch と時刻が重ならないよう `20261003130000_account_data_center.sql`・`20261003140000_saved_places.sql`、
+  pgTAP は `23_account_data_center_test.sql` に改名した。
 - `docs/architecture/02-features.md` と `PRODUCT.md` の「440 綴り」は、今の行から再計算できる式が見つからなかった（ID＋別名の重複を
   除いた数は追加前 413・追加後 440、ID＋dispatch 名＋別名は 563→596）。数を変えずに残した。

@@ -576,7 +576,7 @@ export function authUi(HOST){
       };
       /* (account-data-center / my-places) THE ACCOUNT'S OWN DATA, IN THE READER'S HANDS. The three rows are
          doors into two on-demand modules (js/my-places.js, js/account-data.js) — neither is on the boot path.
-         What «your data» is, is answered by the database (supabase/migrations/20261003090000_…): the same
+         What «your data» is, is answered by the database (supabase/migrations/20261003130000_…): the same
          set account deletion removes, so the copy can never be smaller than what «Delete account» erases. */
       document.getElementById('acct-my-places').onclick=()=>{ _acctClose(); import('./my-places.js').then(M=>M.openMyPlaces(HOST)).catch(()=>{}); };
       document.getElementById('acct-your-data').onclick=()=>{ _acctClose(); import('./account-data.js').then(M=>M.openYourData(HOST)).catch(()=>{}); };

@@ -68,7 +68,7 @@ is the human explanation.
 | `geo_pins` | News-geolocation gazetteer. | Everyone. | Admin (+ service_role). |
 | `dashboard_cards` | Curated strategic-location cards. | Everyone. | Admin (+ service_role). |
 | `current_news` | Server-refreshed, pre-geolocated news. | Everyone. | **service_role only** (`refresh-news`). |
-| `account_data_catalog` *(account-data-center)* | **One sentence per account-owned table**: `tbl`, `written_by` (`you` = the reader typed or chose it / `intmap` = recorded about the reader's use), `label_*`, `purpose_*`, `retention_*` in `en` and `jp`. It explains; it never filters — an owned table with no row is still counted and exported, and `18_account_data_center_test.sql` fails until the row is written. | Everyone (it holds no one's data — it is the privacy inventory). | **Migrations only** (no role holds a write grant). |
+| `account_data_catalog` *(account-data-center)* | **One sentence per account-owned table**: `tbl`, `written_by` (`you` = the reader typed or chose it / `intmap` = recorded about the reader's use), `label_*`, `purpose_*`, `retention_*` in `en` and `jp`. It explains; it never filters — an owned table with no row is still counted and exported, and `23_account_data_center_test.sql` fails until the row is written. | Everyone (it holds no one's data — it is the privacy inventory). | **Migrations only** (no role holds a write grant). |
 | `who_don_extracts` *(#R650)* | The case and death counts read out of each WHO Disease Outbreak News item — the one field WHO does not publish as data. `cases`/`deaths` are **nullable on purpose**: NULL means «WHO states no cumulative total», which is not zero. `source_hash` is the hash of the prose the model was actually given, so a rewritten item re-extracts and an unchanged one is never paid for twice. | Everyone. | **service_role only** (`who-don`). |
 
 ### Area monitors (#R141 / #R144)
@@ -378,7 +378,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
   no INSERT privilege for `anon` or `authenticated`, and a direct insert by either — even a signed-in reader
   naming itself — is DENIED; admin read/delete are unchanged; ③ service_role (the `reader-reports` path)
   still writes both, and the #R155 length ceiling still stands in front of it.
-- **`18_account_data_center_test.sql`** *(account-data-center / my-places)* — ① the catalogue is complete in
+- **`23_account_data_center_test.sql`** *(account-data-center / my-places)* — ① the catalogue is complete in
   both directions over `_owned_by_user_cols()` (an owned table with no sentence turns it red); ② anon can read the
   catalogue and nothing else (no inventory, no export, no places, no save); the inventory and the export are the
   caller's alone, carry the admin-read rows that are the reader's own (`feedback`), and contain nothing of another

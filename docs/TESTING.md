@@ -4713,7 +4713,7 @@ SCHEMA から導く）、`location.hash` と `history.*State(` の直接の使�
 
 ### `tests/platform-backend-checks.test.mjs` (account-data-center / my-places)
 
-5 本・データベース無し（DB の半分は `supabase/tests/18_account_data_center_test.sql`）。① **カタログの完全性を
+5 本・データベース無し（DB の半分は `supabase/tests/23_account_data_center_test.sql`）。① **カタログの完全性を
 migration そのものから**——`auth.users` を指す列か uuid の `user_id` を持つ表を全 migration から発見し、その全部が
 `account_data_catalog` に en と jp の説明を持ち、説明の行はどれも所有される表を名指す（一覧を書かない）。
 ② 目録・書き出し・`save_place` は口座を名指す引数を持たず `auth.uid()` で決め、anon から EXECUTE を剥がされ、

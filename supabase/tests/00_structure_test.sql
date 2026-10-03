@@ -69,10 +69,10 @@ from unnest(array[
   -- usage-count Edge Function writes it through a SECURITY DEFINER RPC.
   'usage_counts',
   -- (account-data-center) one sentence per account-owned table — what it is, why, how long, who wrote it.
-  -- Readable by everyone, written only by migrations (supabase/tests/18_…).
+  -- Readable by everyone, written only by migrations (supabase/tests/23_…).
   'account_data_catalog',
   -- (my-places) an account's saved places, on every device. Inserted only through save_place();
-  -- the owner reads, edits and deletes their own rows (supabase/tests/18_…).
+  -- the owner reads, edits and deletes their own rows (supabase/tests/23_…).
   'saved_places'
 ]) as t;                                                    -- 41 assertions
 

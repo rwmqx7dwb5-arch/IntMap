@@ -16,7 +16,7 @@
 --      the same call twice is «already done», not a second object).
 --    · Reading, renaming, re-noting, re-filing and deleting are plain RLS on the owner's own rows.
 --  The table is owned through user_id → auth.users, so account deletion removes it and the account
---  export (20261003090000_account_data_center.sql) includes it with no edit anywhere — the catalogue
+--  export (20261003130000_account_data_center.sql) includes it with no edit anywhere — the catalogue
 --  row below is the only thing that had to be written by hand, and its test says so.
 -- ============================================================================
 
@@ -189,7 +189,7 @@ revoke execute on function public.save_place(text, double precision, double prec
 grant  execute on function public.save_place(text, double precision, double precision, text, text, real, text) to authenticated, service_role;
 
 -- ─────────────────────────────────────────────────────────────────────────────
---  5. ITS SENTENCE IN THE ACCOUNT'S DATA CATALOGUE (20261003090000_account_data_center.sql).
+--  5. ITS SENTENCE IN THE ACCOUNT'S DATA CATALOGUE (20261003130000_account_data_center.sql).
 -- ─────────────────────────────────────────────────────────────────────────────
 insert into public.account_data_catalog (tbl, written_by, label_en, label_jp, purpose_en, purpose_jp, retention_en, retention_jp) values
   ('saved_places', 'you',

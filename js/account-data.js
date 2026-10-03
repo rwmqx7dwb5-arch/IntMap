@@ -1,7 +1,7 @@
 /* ============================================================================
  *  IntMap · YOUR DATA — what the account holds, why, for how long, and a full copy   (account-data-center)
  * ----------------------------------------------------------------------------
- *  The reader-facing half of supabase/migrations/20261003090000_account_data_center.sql.
+ *  The reader-facing half of supabase/migrations/20261003130000_account_data_center.sql.
  *  Two questions, both answered by the DATABASE, never by a list in this file:
  *    · «what do you hold about me?» — public.account_data_inventory(): one row per table the account
  *      owns rows in (discovered from the FK catalogue — the same walk account deletion uses), with the

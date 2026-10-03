@@ -14,7 +14,7 @@
 --  All three walk public._owned_by_user_cols() — every column in `public` that references auth.users,
 --  plus any uuid `user_id` whose FK has drifted away. So a table added next year is exported, counted
 --  and deleted the moment its foreign key exists, and «what you can download» can never be smaller
---  than «what we delete» (supabase/tests/18_account_data_center_test.sql compares the two, row for
+--  than «what we delete» (supabase/tests/23_account_data_center_test.sql compares the two, row for
 --  row, for the same account in the same transaction).
 --
 --  ⚠ A DISCOVERED SET STILL OWES THE READER A SENTENCE. A table name is not an explanation, so every
@@ -40,7 +40,7 @@ create table if not exists public.account_data_catalog (
   retention_jp text not null check (char_length(retention_jp) between 1 and 300)
 );
 comment on table public.account_data_catalog is
-  '(account-data-center) One row per table in public that holds rows owned by an account (public._owned_by_user_cols): what it is, why it is kept, how long, and who wrote it (you = the reader typed or chose it; intmap = recorded about the reader''s use). Readable by everyone; written only by migrations. supabase/tests/18_account_data_center_test.sql fails while an owned table has no row here.';
+  '(account-data-center) One row per table in public that holds rows owned by an account (public._owned_by_user_cols): what it is, why it is kept, how long, and who wrote it (you = the reader typed or chose it; intmap = recorded about the reader''s use). Readable by everyone; written only by migrations. supabase/tests/23_account_data_center_test.sql fails while an owned table has no row here.';
 
 alter table public.account_data_catalog enable row level security;
 revoke all on table public.account_data_catalog from public, anon, authenticated, service_role;

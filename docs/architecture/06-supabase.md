@@ -27,7 +27,7 @@
 （`account_data_inventory()`）・「全部ください」（`export_account_data()`）・「消してください」
 （`delete_account_data()`）の 3 つが**同じ 1 つの発見**——`_owned_by_user_cols()`（`auth.users` を指す列）——を歩く。
 だから後で足された表も、外部キーができた瞬間に数えられ・書き出され・消される。書き出しは削除より小さくなれない
-（pgTAP `18_account_data_center_test.sql` が同じアカウント・同じトランザクションで表ごとに突き合わせる）。
+（pgTAP `23_account_data_center_test.sql` が同じアカウント・同じトランザクションで表ごとに突き合わせる）。
 各表の「何か・なぜ・いつまで・誰が書いたか」は `account_data_catalog` の 1 行（en+jp）で、**説明であって
 絞り込みではない**——説明の無い表も数えられ書き出され、検査だけが赤くなる。目録と書き出しは引数を取らず
 アカウントを `auth.uid()` で決める（他人の uuid を渡す扉が無い）。書き出しは共有バケツ `relay_take('account-export')`

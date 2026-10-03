@@ -1,7 +1,7 @@
 /* ============================================================================
  *  IntMap · MY PLACES — places that belong to the account, on every device   (my-places)
  * ----------------------------------------------------------------------------
- *  The reader-facing half of supabase/migrations/20261003100000_saved_places.sql. A pin, a search
+ *  The reader-facing half of supabase/migrations/20261003140000_saved_places.sql. A pin, a search
  *  result or the view in front of the reader becomes a named place with a note and an optional
  *  collection, saved to the ACCOUNT — so it is back on the map after a reload and on any other device.
  *

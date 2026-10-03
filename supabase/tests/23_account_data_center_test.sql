@@ -15,7 +15,7 @@
 --      no duplicate); the owner reads/edits/deletes their own rows and nobody else's; no direct
 --      INSERT, no user_id rewrite; the fence (saved_places_limit) refuses with 54000; account
 --      deletion and the export both reach it with no list naming it.
---  supabase/migrations/20261003090000_account_data_center.sql, 20261003100000_saved_places.sql.
+--  supabase/migrations/20261003130000_account_data_center.sql, 20261003140000_saved_places.sql.
 -- ============================================================================
 begin;
 select no_plan();
