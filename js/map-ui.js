@@ -1268,7 +1268,9 @@ export function layerSidebar(HOST){
       _liveHosts().forEach(h=>{ const g=h.querySelector('.lst-favgrid'); if(!g) return;
         fillFavGrid(g,rows);
         const hd=g.previousElementSibling; if(hd&&hd.classList.contains('lst-sech')){ const c=hd.querySelector('.lst-cnt'); if(c) c.textContent=g.querySelectorAll('.lst-tile').length; }
-        try{ window.IntMapLayerPreviews&&window.IntMapLayerPreviews.kick&&window.IntMapLayerPreviews.kick(h); }catch(_){}
+        /* (first-impression) kick() means «this grid is on screen» (js/layer-previews.js) — a ★ changed while
+           the panel is shut (a synced favourite arriving at boot) is not the reader opening it */
+        try{ if(h===sb?sb.classList.contains('open'):_hostShown(h)) window.IntMapLayerPreviews&&window.IntMapLayerPreviews.kick&&window.IntMapLayerPreviews.kick(h); }catch(_){}
         try{ filterTiles(h); }catch(_){} });
       syncStars(); }catch(_){} }
     /* the classic panel's ★ (js/layer-favs.js) fires this too, so starring from either surface lands here */
@@ -1956,20 +1958,15 @@ export function layerSidebar(HOST){
          that ask. Only the FIRST visit changes: a returning user who closed the panel saved
          `right:false`, and that still wins — the new case is the one where there is no saved answer
          at all. Mobile is unchanged (the panel is an overlay there, opened by the layer button). */
-      { const ui=window._imSessionUI; const unanswered=!ui||typeof ui.right!=='boolean';
-        if(!isMob()&&(unanswered||ui.right===true)){
-          /* WARN (#R210) A FIRST VISIT OPENS IT WHEN THE APP IS IDLE, NOT WHILE IT IS STILL
-             BOOTING. open() runs reorganizeLayerPanel()+buildTiles() synchronously when the grid
-             has not been built yet, and on a first visit it never has — so opening here put a
-             full tile build in front of whatever boot was still doing. That is #R208's own
-             finding («譲り方が同優先度だと背景処理がアプリ起動と競走して勝つ»), and it showed up
-             as tests/shell-panels-tools-checks.test.mjs (#R170)'s fresh-profile test failing on a GPU-less CI runner while passing
-             three times out of three locally. A RESTORED session is different: the grid was
-             pre-built by the idle callback above, so open() is cheap and immediate is right.
-             The 3 s timeout means the panel always appears, idle or not. */
-          if(unanswered&&'requestIdleCallback' in window) requestIdleCallback(()=>{ try{ open(); }catch(_){} },{timeout:3000});
-          else open();
-        } }
+      /* ══ (first-impression) …AND IT IS WITHDRAWN. 「初回も地図が全面。パネルは読者が開いたときだけ。」 — the
+         same reader's later instruction. Opening the panel on a first visit put 300 px of layer tiles over
+         the map (MEASURED on production at 1024×768: the globe was left a ~250 px strip between this and
+         the left column, js/app-body.js) for a reader who had not asked for either. The restored case below is
+         unchanged: a reader whose last session ended with the panel open gets it back, at once — the grid
+         was pre-built by the idle callback above, so open() is cheap (#R210's WARN: only the never-built
+         first-visit grid had to wait for idle, and that case no longer opens anything). */
+      { const ui=window._imSessionUI;
+        if(!isMob()&&ui&&ui.right===true) open(); }
     } }catch(_){} },1500);   /* edge toggle available on boot in right mode (without auto-opening) */
     /* (#R104) rebuild the tile grid on a language change so the layer NAMES follow the new language immediately
        (the tiles are a copy of the classic dropdown, which updateI18n localizes — rebuild AFTER that). This was

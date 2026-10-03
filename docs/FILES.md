@@ -1253,6 +1253,8 @@ ne-countries/                     Natural Earth admin-0 の 3 縮尺（110m 187 
                                   natural-earth-vector の固定コミットから scripts/build-ne-countries.mjs が作る可逆形式
                                   （上流の CDN から @master で 4.34 MB を読んでいたものの置き換え）。パブリックドメイン
 gazetteer-world.json.gz           世界の地名の長い尾（cities1000 由来・18言語）。必要になった時に取得する
+                                  （ニュースの地名解決が見出しを処理したとき・地名検索欄に手を伸ばしたとき・
+                                  読み手が warm() を待つとき。起動の索引作りは取りに行かず、届くのを待つだけ）
 histcities-homonyms.json.gz       歴史都市名の記録が使う綴りに一致する**世界中の全集落**（cities500 由来・
                                   重複排除なし）。ブラウザには配信されない——`check:histcities` が
                                   「その綴りはこの1都市を指すか」を訊く相手。生成は

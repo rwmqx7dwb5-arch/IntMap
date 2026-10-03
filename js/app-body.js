@@ -759,8 +759,15 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
                right:(s&&typeof s.lsrOpen==='boolean')?s.lsrOpen:null }; }
     catch(_){ return { left:null, right:null }; } })();
   window._imSessionUI=_sessUI;   /* (share-embed-distribution) an EMBED (js/ui-device.js embedded()) opens neither sidebar: neither is part of a frame, and an open Layers panel buys its thumbnails */
-  if(_sessUI.left===null){ if(isMobile()) sidebar.classList.add('collapsed'); }   /* first visit: collapsed on phone */
-  else sidebar.classList.toggle('collapsed',!_sessUI.left);
+  /* ══ (first-impression) A FIRST VISIT IS THE MAP, WHOLE — ON EVERY DEVICE ═════════════════════════════════
+     「初回も地図が全面。パネルは読者が開いたときだけ。」 An unanswered session (`left===null`: nobody has ever
+     opened or shut this column) used to fall through to index.html's markup, which ships the column OPEN, so the
+     first desktop screen — MEASURED on production at 1024×768 — gave 400 px to a GDP list and, with the right
+     panel's own first-visit open (js/map-ui.js), left the globe a ~250 px strip. The second visit was the full
+     map, i.e. the first impression was the worst one. The rule is now one sentence for both columns: a panel
+     is open at boot only when the reader's own last session left it open. The Countries tab is still the
+     selected one (js/session-tabs.js `_defaultTab`), so the first press of the toggle lands where it did. */
+  sidebar.classList.toggle('collapsed',_sessUI.left!==true);
   document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
     /* (#R160) DELIBERATELY minimal. The LEFT sidebar keeps its ORIGINAL mechanism (solid = flex sibling with the map
        beside it; frosted = overlay). The toggle itself drives NOTHING: it flips `collapsed` and lets the two things
@@ -1849,8 +1856,14 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     inp.addEventListener('input',_msHas); _msHas();
     /* (#R16) Warm the bundled country data the moment the user reaches for search, so country/capital
        names match LOCALLY (instant, offline) by the time they finish typing — without slowing startup. */
-    inp.addEventListener('focus',()=>{ try{ if(typeof loadCountryData==='function') loadCountryData(); }catch(_){} },{once:true});
-    btn.addEventListener('pointerdown',()=>{ try{ if(typeof loadCountryData==='function') loadCountryData(); }catch(_){} },{once:true});
+    /* (first-impression) …and the WORLD gazetteer, on the same gesture. Its first fetch used to ride the boot (the news
+       index build — js/news-context.js says why it no longer does), so a search typed seconds after load had the long
+       tail already. Asking at the reach keeps that: the field is focused before the first letter, and warm() is the
+       one fetch every reader shares (js/gazetteer.js), so the search's own warm() at submit is then a property read. */
+    const _reach=()=>{ try{ if(typeof loadCountryData==='function') loadCountryData(); }catch(_){}
+      try{ const G=window.IntMapGazetteer; if(G&&G.warm) G.warm(); }catch(_){} };
+    inp.addEventListener('focus',_reach,{once:true});
+    btn.addEventListener('pointerdown',_reach,{once:true});
   })();
   document.addEventListener('click',(e)=>{ const ms=document.getElementById('map-search'); if(ms&&!ms.contains(e.target)) document.getElementById('ms-results').style.display='none'; });
 
