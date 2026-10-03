@@ -573,6 +573,43 @@ function noteFor(seats, order) {
   };
 }
 
+/* ══ (companies-elections-live) WATCH — A GENERAL ELECTION THE RECORD DOES NOT HAVE, AND WHY ════════════
+   MEASURED 2026-10-03 over the 55 datasets of the `elections` organisation: Elections Canada's own
+   titles name the 45th general election («Report on the 45th General Election of April 28, 2025»),
+   and no «45th General Election: Official Voting Results» dataset exists — its return is on
+   elections.ca alone, under terms that forbid commercial redistribution (see the header). So the
+   election is BLOCKED by its licence. The day an OGL return is published there are more «Official
+   Voting Results» datasets than elections in the record, and the state becomes `importable`.
+   `ctx.fresh(url)` is an uncached request (scripts/build-elections.mjs). */
+const ORD_IN_TITLE = /(\d+)(?:st|nd|rd|th)\s+General Election/i;
+export async function watch(ctx, { last, count }) {
+  const body = 'House of Commons';
+  if (!last[body]) return [];
+  const r = await ctx.fresh(CKAN + 'package_search?fq=organization:' + CKAN_ORG + '&rows=1000', { json: true });
+  const results = (r.body && r.body.result && r.body.result.results) || [];
+  const ordOf = (t) => { const m = ORD_IN_TITLE.exec(String(t || '')); return m ? Number(m[1]) : null; };
+  const ovr = results.filter(p => OVR_TITLE.test(p.title || '') && p.license_id === OGL).map(p => ordOf(p.title)).filter(n => n != null);
+  const named = results.map(p => ({ n: ordOf(p.title), t: String(p.title || '') })).filter(x => x.n != null);
+  if (!ovr.length || !named.length) return [];
+  const newest = named.reduce((a, b) => (a.n >= b.n ? a : b));
+  const top = Math.max(...ovr);
+  if (ovr.length > (count[body] || 0)) {
+    return [{ body, state: 'importable', what: { en: 'General election ' + top, jp: '第' + top + '回総選挙' },
+      why: { en: 'An openly licensed official return has been published for a general election this layer does not have; rebuild this pack.',
+             jp: 'このレイヤーに無い総選挙の公式結果が、オープンライセンスで公開されました。このパックを再構築できます。' } }];
+  }
+  if (newest.n > top) {
+    const m = /([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})/.exec(newest.t.slice(newest.t.search(ORD_IN_TITLE)));
+    const mo = m ? MONTHS.indexOf(m[1].toLowerCase()) : -1;
+    const when = mo >= 0 ? m[3] + '-' + String(mo + 1).padStart(2, '0') + '-' + m[2].padStart(2, '0') : null;
+    return [{ body, state: 'blocked',
+      what: { en: 'The ' + newest.n + 'th general election' + (when ? ' (' + when + ')' : ''), jp: '第' + newest.n + '回総選挙' + (when ? '（' + when + '）' : '') },
+      why: { en: 'Elections Canada publishes the results of this election only on elections.ca, whose terms forbid commercial redistribution; no openly licensed copy exists on open.canada.ca yet.',
+             jp: 'カナダ選挙管理局はこの選挙の結果を elections.ca でのみ公開しており、その利用規約は商用の再配布を禁じています。open.canada.ca にはオープンライセンスの写しがまだありません。' } }];
+  }
+  return [];
+}
+
 /* ══ build ═════════════════════════════════════════════════════════════════════════════════════ */
 
 export async function build(ctx) {

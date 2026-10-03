@@ -35,16 +35,21 @@
  *  summed. If the Parliament ever publishes regional results, `districts` is where they will
  *  appear and this file will need a second look.
  *
- *  ⚠ THE POLYGONS ARE TODAY'S BOUNDARIES. GISCO publishes one current world coastline, not a
- *  historical series, so the 1979 map draws reunified Germany although the eighty-one German
- *  members elected that year were elected in the Federal Republic alone. That is an acknowledged
- *  anachronism in the geometry, not in the results; the seats, parties and groups for 1979 are the
- *  1979 record exactly as the Parliament holds it.
+ *  ⚠ THE POLYGONS ARE TODAY'S BOUNDARIES — EXCEPT WHERE THAT WOULD SAY GROUND VOTED THAT DID NOT.
+ *  GISCO publishes one current world coastline, not a historical series. Until 2026-10-03 this file
+ *  drew reunified Germany for 1979, 1984 and 1989 and called it «an acknowledged anachronism»; the
+ *  map was telling every reader that the German Democratic Republic voted in three European
+ *  elections it had no part in. scripts/lib/elections-claims.mjs now asks CShapes what ground each
+ *  district stood on and refuses exactly that (historical-verification.md §1), so before German
+ *  unification Germany is drawn as the Länder that were the Federal Republic — FRG_BEFORE_UNITY
+ *  below, dissolved from GISCO's own NUTS-1 regions (same publisher, same licence). Every other
+ *  member state's outline has been its outline throughout its membership.
  *
  *      node scripts/elections/_selftest.mjs eu
  * ==========================================================================*/
 import { simplifyGeoJSON } from '../lib/elections-geo.mjs';
 import { createHash } from 'node:crypto';
+import { merge as topoMerge } from 'topojson-client';
 
 export const about = 'European Union · European Parliament, all 10 elections 1979–2024 (European Parliament results service; boundaries © EuroGeographics / GISCO)';
 
@@ -54,6 +59,19 @@ const TERM_PAGE = 'https://results.elections.europa.eu/en/european-results/';
    comedy and 1:3M is 14 MB before anything is selected from it; measured 2026-09-09, the 10M set
    is 371 KB for the twenty-eight countries that have ever been in it. */
 const GISCO = 'https://gisco-services.ec.europa.eu/distribution/v2/countries/geojson/CNTR_RG_10M_2024_4326.geojson';
+
+/* ⚠ GERMANY BEFORE 3 OCTOBER 1990, AS THE LÄNDER IT WAS. A fact about institutions, with its basis:
+   the Unification Treaty (Einigungsvertrag) Art. 1(1) made Brandenburg, Mecklenburg-Vorpommern,
+   Sachsen, Sachsen-Anhalt and Thüringen Länder of the Federal Republic on 1990-10-03, so before that
+   day the Federal Republic's Länder were the ten below (NUTS-1 codes, matched by IDENTIFIER, never by
+   name). ⚠ BERLIN IS NOT DRAWN AT ALL: East Berlin was the GDR's, and West Berlin's three members of
+   the European Parliament were not directly elected before 1994 — the Abgeordnetenhaus chose them,
+   because of the city's Allied status — so no part of Berlin voted in those three elections. */
+const FRG_BEFORE_UNITY = {
+  until: '1990-10-03',
+  nuts: ['DE1', 'DE2', 'DE5', 'DE6', 'DE7', 'DE9', 'DEA', 'DEB', 'DEC', 'DEF'],
+};
+const NUTS1 = 'https://gisco-services.ec.europa.eu/distribution/v2/nuts/topojson/NUTS_RG_10M_2024_4326_LEVL_1.json';
 
 const SRC = 'European Parliament, results.elections.europa.eu · boundaries © EuroGeographics for the administrative boundaries (Eurostat/GISCO)';
 const LIC = 'European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics';
@@ -236,6 +254,29 @@ export async function build(ctx) {
   const res = {};
   const elections = [];
   const seenGeo = new Map();   /* content hash → geo file name */
+  let nuts = null;             /* GISCO NUTS-1, fetched only if a term predates German unification */
+  /* country code → the native name the last shipped edition carried, and where that name came from
+     (see the note at `n:` below). Read from the COMMITTED files through ctx.previous, newest term
+     first, so the name is the one readers were last shown. A name that was itself carried keeps its
+     original provenance: a chain of carries never pretends a later edition stated it. */
+  const shippedNative = new Map();
+  {
+    const prevIndex = ctx.previous ? ctx.previous('index.json') : null;
+    const files = prevIndex ? [...new Set(prevIndex.json.elections.filter(e => e.polity === 'eu' && e.geo).sort((a, b) => b.date.localeCompare(a.date)).map(e => e.geo))] : [];
+    for (const file of files) {
+      const prev = ctx.previous(file);
+      if (!prev) continue;
+      for (const f of prev.json.features || []) {
+        const q = f.properties || {};
+        const native = q.n && q.n.native;
+        if (!q.cd || !native || shippedNative.has(q.cd) || native === (q.n && q.n.en)) continue;
+        shippedNative.set(q.cd, { native, from: q.nativeFrom || {
+          file: prev.file, committed: prev.at,
+          stated: 'GISCO CNTR_RG_10M_2024 CNTR_NAME, before GISCO re-published the file on 2026-09-25',
+        } });
+      }
+    }
+  }
 
   /* The nine languages IntMap ships, mapped onto the language codes the Parliament publishes its
      group names in. ⚠ The Parliament translates into the EU's twenty-four official languages, so
@@ -386,11 +427,38 @@ export async function build(ctx) {
           cd: id,
           /* ⚠ `native` IS GISCO's CNTR_NAME, which is the country's name in its own language(s) —
              «Éire/Ireland», «Ελλάδα». `en` is NAME_ENGL. Both are the publisher's, not a guess. */
-          n: { en: String(p.NAME_ENGL || p.CNTR_NAME || id), native: String(p.CNTR_NAME || p.NAME_ENGL || id) },
+          /* ⚠ (companies-elections-live) MEASURED 2026-10-03: GISCO re-published this file on
+             2026-09-25 and CNTR_NAME is now the ENGLISH name for every country («Austria», not
+             «Österreich»). Dropping the native forms this layer shipped would be a reduction nobody
+             asked for, and printing them as today's GISCO statement would be a claim the publisher
+             no longer makes. So: CNTR_NAME is `native` when it still differs from NAME_ENGL; when it
+             does not, the native form the LAST SHIPPED EDITION of this layer carried for the same
+             country CODE is carried forward, and `nativeFrom` on the row says where it came from
+             (the file, the day that edition was committed, and what that edition read it from).
+             The German and French names the publisher does state (NAME_GERM, NAME_FREN) are carried
+             as what they are. */
+          n: Object.assign({ en: String(p.NAME_ENGL || p.CNTR_NAME || id) },
+            p.CNTR_NAME && p.CNTR_NAME !== p.NAME_ENGL ? { native: String(p.CNTR_NAME) }
+              : (shippedNative.get(id) ? { native: shippedNative.get(id).native } : {}),
+            p.NAME_GERM ? { de: String(p.NAME_GERM) } : {},
+            p.NAME_FREN ? { fr: String(p.NAME_FREN) } : {}),
+          ...(!(p.CNTR_NAME && p.CNTR_NAME !== p.NAME_ENGL) && shippedNative.get(id) ? { nativeFrom: shippedNative.get(id).from } : {}),
         },
         geometry: JSON.parse(JSON.stringify(f.geometry)),
       };
     }).sort((a, b) => a.properties.cd.localeCompare(b.properties.cd));
+    if (date < FRG_BEFORE_UNITY.until) {
+      const de = features.find(f => f.properties.cd === 'DE');
+      if (de) {
+        if (!nuts) nuts = await get(NUTS1, { json: true });
+        const obj = Object.values(nuts.objects)[0];
+        const parts = obj.geometries.filter(g => FRG_BEFORE_UNITY.nuts.includes(g.properties && g.properties.NUTS_ID));
+        if (parts.length !== FRG_BEFORE_UNITY.nuts.length) throw new Error(term + ': GISCO NUTS-1 has ' + parts.length + ' of the ' + FRG_BEFORE_UNITY.nuts.length + ' Länder of the Federal Republic');
+        de.geometry = topoMerge(nuts, parts);
+        delete de.properties.nativeFrom;   /* the name below is this file's own statement, not a carried one */
+        de.properties.n = { en: 'Germany (Federal Republic, before 3 October 1990)', jp: 'ドイツ連邦共和国（1990年10月3日の統一より前）', de: 'Bundesrepublik Deutschland', native: 'Bundesrepublik Deutschland' };
+      }
+    }
     const fc = { type: 'FeatureCollection', features };
     simplifyGeoJSON(fc, { tolerance: TOL, decimals: DECIMALS });
     const hash = createHash('sha1').update(JSON.stringify(fc.features.map(f => [f.properties.cd, f.geometry]))).digest('hex');

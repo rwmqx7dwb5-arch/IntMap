@@ -158,6 +158,50 @@ function homeBox(fc) {
   return [[west, s], [east, n]];
 }
 
+/* ══ (companies-elections-live) WATCH — IS THERE A NEWER DUMA THAN THE RECORD, AND WHY IS IT NOT HERE ═══
+   MEASURED 2026-10-03: the aggregator this pack reads published data/2026.csv.zip on 2026-10-02 —
+   the State Duma election of September 2026. Its header is
+   「,region,tik,uik,uik_num,guid,registered,turnout,…」: precinct (УИК) and territorial commission
+   (ТИК), and NO `oik` column. 2016 and 2021 carried the single-mandate district in that column,
+   and it is the only thing that places a precinct on the district map; without it the 2026 ballot
+   cannot be drawn on any district at all. The one publisher of the precinct-to-district assignment
+   is the Central Election Commission, and cikrf.ru accepts no TCP connection (measured 2026-09-09
+   and again 2026-10-03). So the election is BLOCKED, for a reason a reader can be told.
+   ⚠ WHICH YEARS ARE DUMA YEARS is the law, not a list: a five-year term (Constitution Art. 96), so
+   the candidates are the last recorded year plus five, ten … up to this year. The aggregator also
+   holds presidential and referendum years, which this never asks about.
+   `ctx.fresh(url)` is an UNCACHED request — a watch that read yesterday's cache would be a photograph. */
+const DUMA = 'State Duma — party-list vote';
+export async function watch(ctx, { last }) {
+  if (!last[DUMA]) return [];
+  const thisYear = Number(ctx.today.slice(0, 4));
+  const listing = await ctx.fresh('https://api.github.com/repos/dkobak/elections/contents/data', { json: true });
+  const files = new Set((Array.isArray(listing.body) ? listing.body : []).map((f) => f && f.name));
+  const out = [];
+  for (let y = Number(last[DUMA].slice(0, 4)) + 5; y <= thisYear; y += 5) {
+    const what = { en: 'The State Duma election of ' + y, jp: y + '年の国家院（下院）選挙' };
+    if (!files.has(y + '.csv.zip')) {
+      out.push({ body: DUMA, state: 'blocked', what,
+        why: { en: 'No precinct-level return for ' + y + ' has been published by the aggregator this layer reads, and the Central Election Commission (cikrf.ru) cannot be reached.',
+               jp: y + '年の投票所別の結果は、このレイヤーが読む集計者からまだ公開されておらず、中央選挙管理委員会（cikrf.ru）には接続できません。' } });
+      continue;
+    }
+    const zip = await ctx.fresh(RESULTS_URL(y), { buffer: true });
+    const csv = [...zipEntries(zip.body).values()].find(b => b.length > 1024);
+    const head = csv ? csv.subarray(0, 8192).toString('utf8').split(/\r?\n/)[0] : '';
+    if (head.split(',').map(h => h.replace(/"/g, '').trim()).includes('oik')) {
+      out.push({ body: DUMA, state: 'importable', what,
+        why: { en: 'The ' + y + ' precinct return now carries the district column; rebuild this pack.',
+               jp: y + '年の投票所別の結果に選挙区の列が入りました。このパックを再構築できます。' } });
+    } else {
+      out.push({ body: DUMA, state: 'blocked', what,
+        why: { en: 'The ' + y + ' precinct return is published, but it does not say which single-mandate district each precinct belongs to, and the only publisher of that assignment, the Central Election Commission (cikrf.ru), cannot be reached. Drawing it on the district map would be a guess.',
+               jp: y + '年の投票所別の結果は公開されていますが、各投票所がどの小選挙区に属するかが書かれておらず、それを公開している唯一の機関である中央選挙管理委員会（cikrf.ru）には接続できません。選挙区の地図に描けば推測になります。' } });
+    }
+  }
+  return out;
+}
+
 export async function build(ctx) {
   /* ── the districts ─────────────────────────────────────────────────────────────────────────
      ⚠ EPSG:3857 METRES. The file declares the CRS and the first coordinate is 4400332.73,

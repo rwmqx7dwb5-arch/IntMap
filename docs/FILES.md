@@ -147,9 +147,6 @@ geo-command-log.js                ↳ レンダラ命令の集計と比較。att
 click-ownership.js                ↳ クリック登録と排他的所有権の台帳。adapter/handlerを弱参照し、
                                   背景fallbackと地物のownerを区別する。レンダラや地名IDには依存しない
 runtime.js                        1つのフレームループ・1つのタイマー・1つのライフサイクル
-bus.js                            IntMap 自身の window イベントの**宣言表**（名前・意味・payload・発行元・
-                                  未移行のファイルと理由）と `emit` / `on` / `once`。配信は
-                                  `window.dispatchEvent` のままで、宣言に無い名前は開発時に例外・本番は警告
 lazy-modules.js                   押されてから取りに行くモジュール window.IntMapLazy。⚠ 指定子はすべてリテラル
 engine-select.js                  このセッションがどのエンジンで走るかを DOMContentLoaded 前に決める
 cesium-engine.js                  第2エンジン——同じ契約の裏で動く CesiumJS
@@ -788,7 +785,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  161 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  163 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -914,7 +911,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 161能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 163能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1178,9 +1175,6 @@ tour-player.js                    **授業モード**——ツアーを全画面
                                   パネルで「次へ／前へ」、矢印・スペース・Page Up/Down・Esc）。段は共有リンクの復元
                                   （IntMapBookmark.restore）で開き、時計とレイヤーを読み返す。Atlas が今の地図を段として記録する
                                   一時ツアー。src/main.js が `?tour=` と設定の #btn-tours で、Atlas の panel.tour が要求時に読む
-tour-builder.js                   **ツアー作成**——いまの地図（MapState.hash()）を段として足し、題・話すこと・問いを書き、並べ替え・
-                                  差し替え・削除・プレビュー。ツアーは `?tour=custom&t=…` のアドレスそのものに入れて共有（codec は tours.js、
-                                  上限は実測の 8,192 バイト）。下書きは localStorage。ピッカー・プレイヤーの「編集」・Atlas の panel.tourBuilder が読む
 premium-plan.js                   プレミアムの節——ただしその全機能が無料である
 supporter.js                      IntMap を支援する——支援パネルの「支援の使い道」（プラン表の 1 日の上限と
                                   public.operating_stats() の今月の AI 要求数・トークン数）と、控えめな提案カード
@@ -1972,11 +1966,13 @@ tests/
                                   評価（Secret 2本が無ければ**赤**。休眠しない）。報告は run のページにも出る
   tle-refresh.yml                 衛星軌道要素スナップショットの定期更新（PR → 検査 → merge のあと deploy.yml を起動する——GITHUB_TOKEN の push は他の workflow を起こさない）。同じ PR に、期限の来た他の束も載せる（`scripts/data-refresh.mjs`・宣言 `autoRefresh`）
   perf-ceiling.yml                main の CI が完了するたびに、その build の実測で起動予算の天井を下げる（`perf-budget.mjs --tighten`。上げない）。bot の PR を `land-bot-pr` で、測った main の上にまだ乗っているときだけ着地させる
-  upstream-liveness.yml           毎晩、ブラウザが要求する上流ホストの代表 probe を訊く（`scripts/upstream-liveness.mjs`）。赤は up→2 晩続けて down の晩だけ。結果は artifact と job summary
+  upstream-liveness.yml           毎晩、ブラウザが要求する上流ホストと選挙のビルドが読む上流の代表 probe を訊く（`scripts/upstream-liveness.mjs`）。赤は up→2 晩続けて down の晩だけ。結果は artifact と job summary
   aviation-sweep.yml              世界の航空機スナップショット（Supabase Storage）を定期的に進める。リポジトリには書かない
+  companies-refresh.yml           毎週、企業アトラスを 1 バッチ組み直す（osmPending が先・次に古いプロフィール。`scripts/companies/refresh-plan.mjs`）。bot の PR を `land-bot-pr` で着地
+  elections-refresh.yml           毎週、国政選挙の記録が世界に遅れていないか訊き（`build-elections.mjs --watch`）、取り込めるパックだけ組み直す。bot の PR を `land-bot-pr` で着地
 .github/actions/
   browser-tier/                   ブラウザ試験の 1 台分（依存・Playwright・計画・build 成果物の受け取り・実行・報告）。ci.yml の browser／browser-deep が使う
-  land-bot-pr/                    github-actions[bot] の PR を着地させる（自分が起こした run の承認・検査の待機・取消と赤の区別・merge・deploy.yml の起動）。tle-refresh.yml と perf-ceiling.yml が使う
+  land-bot-pr/                    github-actions[bot] の PR を着地させる（自分が起こした run の承認・検査の待機・取消と赤の区別・merge・deploy.yml の起動）。tle-refresh.yml・perf-ceiling.yml・companies-refresh.yml・elections-refresh.yml が使う
   data-assets/                    git の外にあるデータ集合を置く（`data-assets.json` の hash を key にしたキャッシュ ＋
                                   `scripts/data-assets.mjs pull`）。データを読むジョブがビルドと検査の前に使う
 ```

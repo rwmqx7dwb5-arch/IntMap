@@ -141,6 +141,29 @@ export function declared(ledger) {
   return { probes, notRequested, problems };
 }
 
+/* ── (companies-elections-live) THE UPSTREAMS A BUILD READS, NOT ONLY THE ONES A BROWSER READS ──────
+   scripts/outbound-hosts.json is the ledger of what the READER's browser requests. The national
+   elections layer is built from a dozen public services the browser never touches, and its weekly
+   refresh (.github/workflows/elections-refresh.yml) depends on them answering — so their probes are
+   declared beside the packs, in scripts/elections/upstreams.json (read as JSON: this job installs
+   nothing), and measured here with the same judgement and the same two-night rule.
+   ⚠ THE IDENTITY OF A BUILD PROBE IS «elections/<pack>: <host>», not the host alone: raw.githubusercontent
+   .com is asked by three packs for three repositories, and a streak is a fact about one of them. */
+export const BUILD_UPSTREAMS = 'scripts/elections/upstreams.json';
+export function buildProbes(decl) {
+  const probes = [], problems = [];
+  for (const [pack, d] of Object.entries((decl && decl.packs) || {})) {
+    for (const p of (d && d.probes) || []) {
+      let u;
+      try { u = new URL(p.url); } catch { problems.push(`${BUILD_UPSTREAMS}: ${pack} probe.url is not a URL: ${p.url}`); continue; }
+      if (u.protocol === 'http:' && !(typeof p.why === 'string' && p.why.trim().length >= 12)) problems.push(`${BUILD_UPSTREAMS}: ${pack} probes over http without saying why: ${p.url}`);
+      probes.push({ host: `elections/${pack}: ${u.hostname}${probes.some((q) => q.host === `elections/${pack}: ${u.hostname}`) ? u.pathname : ''}`,
+        url: p.url, expect: Array.isArray(p.expect) ? p.expect : null, why: p.what || p.why || null, group: 'build' });
+    }
+  }
+  return { probes, problems };
+}
+
 /* ── measurement ───────────────────────────────────────────────────────────────────────────── */
 
 async function ask(probe, { fetchImpl, timeoutMs }) {
@@ -269,7 +292,7 @@ export function summary(result, change, decl) {
   }
   const rec = result.hosts.filter((h) => h.recovered);
   if (rec.length) L.push('', '### Answered only the second attempt', '', rec.map((h) => `\`${h.host}\``).join(', '));
-  L.push('', '<sub>scripts/upstream-liveness.mjs · probes declared in scripts/outbound-hosts.json · docs/MONITORING.md</sub>');
+  L.push('', '<sub>scripts/upstream-liveness.mjs · probes declared in scripts/outbound-hosts.json (the browser) and scripts/elections/upstreams.json (the election builds) · docs/MONITORING.md</sub>');
   return L.join('\n') + '\n';
 }
 
@@ -281,6 +304,9 @@ const has = (k) => process.argv.includes(k);
 async function main() {
   const ledger = JSON.parse(fs.readFileSync(path.join(ROOT, LEDGER), 'utf8'));
   const decl = declared(ledger);
+  const bp = fs.existsSync(path.join(ROOT, BUILD_UPSTREAMS)) ? buildProbes(JSON.parse(fs.readFileSync(path.join(ROOT, BUILD_UPSTREAMS), 'utf8'))) : { probes: [], problems: [] };
+  decl.probes.push(...bp.probes);
+  decl.problems.push(...bp.problems);
   for (const p of decl.problems) console.error('✖  ' + p);
   if (has('--check')) {
     console.log(`upstream-liveness --check: ${decl.probes.length} probe(s) declared, ${decl.notRequested.length} row(s) not requested or not probed, ${decl.problems.length} problem(s)`);
