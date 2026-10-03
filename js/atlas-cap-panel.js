@@ -23,6 +23,9 @@ import { SHOWCASE, showcaseById, showcaseLink } from './showcase.js';   /* (land
 import { openSupport, operatingFacts } from './supporter.js';   /* (supporter-funnel) `operatingCosts` */
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
+/* (map-postcard) the share panel's published face (js/map-ui.js `share`) — `share` and `postcard` both act through it */
+const shareApi = () => window.IntMapShare;
+
 export default [
   {
     row: ['panel.compare',              'compare',        '',                                                            'panel',   'panel',   'panel.compare',          'panel',               'session', 'none',   '',         ''],
@@ -123,18 +126,62 @@ export default [
        code for the current map (js/embed-mode.js — the share link with ?embed=1). The panel is opened
        on the matching tab, so what Atlas hands over and what the reader sees are one value. */
     doc: [
-      { in: 'tools-panels', at: 170, text: '{"type":"share","embed"?:bool,"size"?:"small"|"medium"|"large"|"responsive","width"?:num,"height"?:num,"interactive"?:bool} = SHARE THE CURRENT MAP: opens the share panel and the RESULT carries the link itself — one address that reproduces the whole view (position, projection, base map, every active layer, the clock, compare and the simulators\' inputs), so give it to the user verbatim. With "embed":true it returns instead the <iframe> CODE that puts this same view on another website, read-only (the map, its legends, the date on the clock and every data credit, plus a link that opens it in IntMap); "size" picks one of the share panel\'s frame presets (medium is the default; responsive fills the width of the page it is put on) and the result states the size it used, "width"/"height" set pixels instead, and "interactive":false makes it a still picture with no pan or zoom. Use for "共有リンクを作って", "このビューのURLをちょうだい", "share this view", "send me a link to this map", "ブログに埋め込むコードをちょうだい" (embed:true), "embed this map on my website" (embed:true), "動かせない埋め込みにして" (embed:true, interactive:false); ' },
+      { in: 'tools-panels', at: 170, text: '{"type":"share","embed"?:bool,"size"?:"small"|"medium"|"large"|"responsive","width"?:num,"height"?:num,"interactive"?:bool,"title"?:str,"note"?:str} = SHARE THE CURRENT MAP: opens the share panel and the RESULT carries the link itself — one address that reproduces the whole view (position, projection, base map, every active layer, the clock, compare and the simulators\' inputs), so give it to the user verbatim. With "embed":true it returns instead the <iframe> CODE that puts this same view on another website, read-only (the map, its legends, the date on the clock and every data credit, plus a link that opens it in IntMap); "size" picks one of the share panel\'s frame presets (medium is the default; responsive fills the width of the page it is put on) and the result states the size it used, "width"/"height" set pixels instead, and "interactive":false makes it a still picture with no pan or zoom. Use for "共有リンクを作って", "このビューのURLをちょうだい", "share this view", "send me a link to this map", "ブログに埋め込むコードをちょうだい" (embed:true), "embed this map on my website" (embed:true), "動かせない埋め込みにして" (embed:true, interactive:false). "title" and "note" give the link a caption — a title (≤ 100 characters) and a sentence from the sender (≤ 280) that whoever opens the link sees over the map, in the page title, in an embed and on the map postcard; they travel in the link itself. Use for 「題を付けて共有して」「『1914年のヨーロッパ』という題でリンクを作って」「一言添えて共有」, "share this with the title …", "add a note to the link" (title / note; "" removes it); ' },
     ],
-    schema: () => ({ type: 'object', properties: { embed: bool(), size: one.apply(null, Object.keys(EMBED_SIZES)), width: num(EMBED_PX.min, EMBED_PX.max), height: num(EMBED_PX.min, EMBED_PX.max), interactive: bool() } }),
+    schema: () => ({ type: 'object', properties: { embed: bool(), size: one.apply(null, Object.keys(EMBED_SIZES)), width: num(EMBED_PX.min, EMBED_PX.max), height: num(EMBED_PX.min, EMBED_PX.max), interactive: bool(), title: str(), note: str() } }),
     async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn, esc = K.esc;
-      { const S=window.IntMapShare, wantEmbed=(a.embed===true);
+      { const S=shareApi(), wantEmbed=(a.embed===true);
         if(!(S&&S.open)){ const ok=clickId('btn-share'); return R(ok, ok?note('✓ '+L('Share panel','共有パネル','Teilen','Поделиться','Compartir')):warn('')); }
+        /* (map-postcard) a caption asked for is set by the panel before the link is read, so the link carries it */
+        const capArgs=(a.title!=null||a.note!=null)?{ title:a.title, note:a.note }:{};
         let made=null; try{
-          await S.open(wantEmbed?{ tab:'embed', size:a.size, width:a.width, height:a.height, interactive:a.interactive }:{ tab:'link' });
+          await S.open(wantEmbed?Object.assign({ tab:'embed', size:a.size, width:a.width, height:a.height, interactive:a.interactive },capArgs):Object.assign({ tab:'link' },capArgs));
           made=wantEmbed?S.embed():{ url:S.link() }; }catch(_){ made=null; }
         if(!made||!made.url) return R(false, warn(L('Could not build the share link','共有リンクを作れませんでした')));
-        if(wantEmbed) return R(true, note('✓ '+L('Embed code','埋め込みコード')+' ('+esc(String(made.size.w))+' × '+esc(String(made.size.h))+(made.interactive?'':(', '+L('no pan or zoom','パン・ズーム無効')))+'): '+esc(made.code)));
-        return R(true, note('✓ '+L('Share link','共有リンク')+': '+esc(made.url))); }
+        /* ⚠ ONLY THE CAPTION ATLAS GAVE IS SAID BACK. A caption can also come from a link someone else wrote (the reader
+           opened it), and its words would then reach the model as if IntMap had observed them — the row does not declare
+           ingests:'external' (column 11), so it says back only its own words, as the codec cleaned them. */
+        const c=(capArgs.title!=null||capArgs.note!=null)?((S.caption&&S.caption())||{ title:'', note:'' }):{ title:'', note:'' };
+        const capLine=(c.title||c.note)?('<div>'+esc(L('Caption: ','題と一言: '))+(c.title?'<b>'+esc(c.title)+'</b>':'')+(c.title&&c.note?' — ':'')+esc(c.note||'')+'</div>'):'';
+        const extra=capLine?{ caption:c }:null;
+        if(wantEmbed) return R(true, note('✓ '+L('Embed code','埋め込みコード')+' ('+esc(String(made.size.w))+' × '+esc(String(made.size.h))+(made.interactive?'':(', '+L('no pan or zoom','パン・ズーム無効')))+'): '+esc(made.code))+capLine, extra);
+        return R(true, note('✓ '+L('Share link','共有リンク')+': '+esc(made.url))+capLine, extra); }
+    },
+  },
+  {
+    row: ['panel.postcard',             'postcard',       'mapPostcard,shareImage,mapImage',                             'panel',   'panel',   'panel.share',            'panel,file',          'session', 'none',   '',         ''],
+    /* (map-postcard) THE MAP AS ONE PICTURE TO POST. The share panel's Image tab (js/map-recorder.js postcard) composes the
+       main map with the instant it shows, the link's title and note, the legends on the map, every drawn source's credit,
+       the IntMap name and the share link, in one of three shapes. The result carries what was made — the file name, its
+       size, the caption, how many legends it holds and every credit burned into it — and the panel shows the picture with
+       Save and Share (a file can be handed to the share sheet only by the reader's own press, so Atlas makes it and the
+       reader sends it). */
+    doc: [
+      { in: 'tools-panels', at: 172, text: '{"type":"postcard","size"?:"card"|"square"|"portrait","title"?:str,"note"?:str} = MAKE A MAP POSTCARD (地図の絵葉書) — the current map as ONE PNG image to post on social media: the map as it is now, the date it shows, the title and note (the same caption the share link carries — given here, they are set on the link too), the legends on the map, every data credit (always burned in), the IntMap name and the share link. "size": "card" 1200×630 (the link-preview card of X / Facebook — the default), "square" 1080×1080, "portrait" 1080×1350 (Instagram 4:5). It opens the share panel on its Image tab with the picture, where the user presses Save or Share (Atlas cannot press Share for them); the result states the file, its size and what is in it. Frame the map first (camera, date, layers), then make it. Use for 「この地図を画像にして」「SNS用の画像を作って」「絵葉書にして」「インスタ用に正方形で」「縦長の画像で」「『関ヶ原 1600』という題で画像に」, "make an image of this map to post", "save this map as a picture", "a square image for Instagram"; ' },
+    ],
+    schema: () => ({ type: 'object', properties: { size: str(), title: str(), note: str() } }),
+    async run(a, dctx, K) { const R = K.R, note = K.note, L = K.L, warn = K.warn, esc = K.esc;
+      { const S=shareApi();
+        if(!(S&&S.postcard)) return R(false, warn(L('The share panel is not available','共有パネルが使えません')));
+        let r=null; try{ r=await S.postcard({ size:a.size, title:a.title, note:a.note }); }catch(_){ r=null; }
+        if(!r) return R(false, warn(L('Could not make the image','画像を作れませんでした')), { postcard:{ ok:false, error:'unavailable' } });
+        if(!r.ok){ const why=r.error==='busy'?L('a time-lapse is being recorded','タイムラプスを録画中です')
+            :r.error==='not-drawn'?L('the map could not be read — the tab must be in front','地図を読み取れませんでした（タブが前面にある必要があります）')
+            :L('the picture could not be encoded','画像を書き出せませんでした');
+          return R(false, warn(L('Could not make the image: ','画像を作れませんでした: ')+esc(why)), { postcard:{ ok:false, error:r.error } }); }
+        /* the caption's words are said back only when Atlas gave them (see `share`): one from a link someone else wrote is
+           stated as present, not quoted */
+        const own=(a.title!=null||a.note!=null);
+        const facts={ ok:true, size:r.size, width:r.w, height:r.h, file:r.name, captioned:!!(r.title||r.note), instant:r.instant,
+          legends:r.legends, legendsOmitted:r.legendsOmitted, credits:r.credits.slice() };
+        if(own){ facts.title=r.title; facts.note=r.note; facts.link=r.link; }
+        let h=note('✓ '+L('Map postcard','地図の絵葉書')+' ('+r.w+' × '+r.h+', PNG): '+esc(r.name));
+        h+='<div>'+esc(L('In the image: ','画像に入っているもの: '))+esc(r.instant)
+          +(own?((r.title?' · <b>'+esc(r.title)+'</b>':'')+(r.note?' · '+esc(r.note):'')):((r.title||r.note)?' · '+esc(L('the link\'s title and note','リンクの題と一言')):''))
+          +' · '+esc(L(r.legends+' legend(s)','凡例 '+r.legends+' 件'))+(r.legendsOmitted?' ('+esc(L(r.legendsOmitted+' did not fit',r.legendsOmitted+' 件は入りきらず'))+')':'')+'</div>';
+        h+='<div>'+esc(L('Credited: ','出典: '))+esc(r.credits.join(' · '))+'</div>';
+        h+='<div>'+esc(L('It is in the share panel — press Save, or Share where the device can.','共有パネルに表示しました。「画像を保存」か、対応する端末では「共有…」を押してください。'))+'</div>';
+        return R(true, h, { postcard:facts }); }
     },
   },
   {

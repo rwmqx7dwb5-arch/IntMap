@@ -181,7 +181,8 @@ embed-mode.js                     **埋め込み表示**（`?embed=1`・`&intera
                                   文法（`embedFlags`）・URL の組み立て（`embedUrl` / `appUrl`）・枠の大きさ（`EMBED_SIZES`・
                                   `EMBED_PX`・`frameSize`）・`<iframe>` コード（`iframeCode`。符号化は IntMapSafe）。埋め込みの
                                   ときだけ `<html data-embed>` を立て、読み取り専用の門（読者の click・change・キーを地図内で止める）
-                                  と上端右の帯（時計の瞬間・「IntMap で開く」）を作る。window グローバルを持たない
+                                  と上端右の帯（時計の瞬間・「IntMap で開く」）を作る。リンクの題と一言の帯 #im-caption は
+                                  残す一覧にある（帯そのものは map-ui.js の share）。window グローバルを持たない
                                   ——共有パネル・Atlas の `share`・`js/atlas-loader.js` が名前で import する
 geo-import.js                     落とされたファイルを FeatureCollection にする（GeoJSON / KML / KMZ / GPX /
                                   CSV・TSV / WKT）。⚠ **拡張子の一覧を持たない**——容器（zip・gzip・文字
@@ -482,7 +483,8 @@ chronos.js                        Chronos＝統一時間カーネル window.IntM
                                   ——`Date.UTC(1,…)` は 1901 年になるから（#R604）。時計は `makeClock()` が作る
                                   **地図ごと**の物で、IntMapTime はメイン地図の 1 個目（比較ウィンドウは 2 個目を持つ）
 map-state.js                      地図の状態の**正本**（MapState）。視野・基図・時刻・共有レイヤー・比較窓・3D 地形・
-                                  シミュレータ入力・セッションのレイヤー集合を `SCHEMA` で 1 回だけ宣言し、URL ハッシュ
+                                  シミュレータ入力・リンクの題と一言（`captionText` が掃除して文字単位で切る）・セッションの
+                                  レイヤー集合を `SCHEMA` で 1 回だけ宣言し、URL ハッシュ
                                   （`encode` / `decode`）・共有リンク・セッション保存（`session()`）・Atlas の camera / time
                                   節はその写像。値は持ち主（`own`）の `read()` が返し、ストアは複製を持たない。復元は
                                   世代つきの 1 回の適用（`restore`）で、変化の通知は「復元」か「読者」かを述べる。
@@ -553,10 +555,12 @@ time-lapse.js                     **タイムラプス**——メイン地図の
                                   prefers-reduced-motion（最遅に固定）。UI は Chronos パネル #ntl-lapse（news-timeline.js が初回に読む）、
                                   Atlas `time.lapse` と状態 `lapseState()`。録画のときはコマの受け手（sink）に描き終えたコマを渡す。
                                   書き出し欄 #ntl-rec を置き、開いたときに map-recorder.js を読む（`openRecorder`）
-map-recorder.js                   **タイムラプスの動画書き出しと、比較の 1 枚画像**——1 つの合成器（地図・その瞬間・出典・語標と
-                                  リンク）。描き終えたコマだけを MediaRecorder に 1/fps ずつ書く（地図を待つ間は録画を止める）。
+map-recorder.js                   **タイムラプスの動画書き出しと、比較の 1 枚画像と、地図の絵葉書**——1 つの合成器（地図・その瞬間・
+                                  出典・語標とリンク）。描き終えたコマだけを MediaRecorder に 1/fps ずつ書く（地図を待つ間は録画を止める）。
                                   出典は描いている層の典拠と #map-credit から（`drawnCredits`）、切らずに折り返す（`layoutFrame`）。
-                                  遅延チャンク（Chronos の書き出し欄か Atlas `time.lapse` record:true が読む）
+                                  絵葉書（`postcard`・共有パネルの画像タブ `createPostcardTab`）は題と一言のカードと、地図上の凡例を
+                                  ページの DOM から読んだ絵（`rasterLegend`・`parseGradient`）を足す。形は `POSTCARD_SIZES`。
+                                  遅延チャンク（Chronos の書き出し欄・共有パネルの画像タブ・Atlas `time.lapse` record:true／`postcard` が読む）
 notify.js                         **通知の唯一の実装** `notify`（window.IntMapNotify）。1 つの要素 #ai-toast・1 つの時計・
                                   role=status（polite）と role=alert（assertive）の 2 声を持つ 1 つの live region。同じ文の
                                   表示中の重複は読み上げ直さない。aiToast / satToast / imToast / _toast / toast / majorToast はここへ委譲

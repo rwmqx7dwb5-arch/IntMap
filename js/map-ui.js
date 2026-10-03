@@ -3833,6 +3833,108 @@ export function viewHash(HOST){
 export function share(HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const t=HOST.t;
+  /* ══ (map-postcard) THE LINK'S CAPTION — a title and a note the link carries (js/map-state.js `title` / `note`) ══════
+     「共有リンクは状態を運ぶが意味を運ばない。」 The sender writes them in the share panel (or Atlas does); whoever opens the
+     link sees them as a quiet caption over the map, in the document's title, in an embed and on the map postcard. This
+     closure OWNS the two fields: its `cap` is their truth, the store reads it and hands a restore's value to it.
+     ⚠ TEXT ONLY, EVERYWHERE: textContent and fillText — never markup (a link is written by anyone). */
+  const cap={ title:'', note:'', hidden:false };
+  const dev=()=>window.IntMapDevice;   /* the screen's three questions (js/ui-device.js — classic, no exports): one edge for this closure */
+  let capEl=null, capStyled=false, appliedTitle=null, baseTitle=null, titleWatch=null, placeT=0;
+  /* the caption's widest (a headline's measure at 14 px — ESTIMATE) and the boxes at the top of the map it keeps clear of:
+     the map controls, the embed bar, the legends (the classes js/data-layers.js discoverLegends() treats as «a legend»),
+     the search field */
+  const CAP_MAX=520, CAP_AVOID='.map-controls-top, #im-embed-bar, .data-legend, .koppen-legend, #map-search';
+  function capStyle(){ if(capStyled) return; capStyled=true; const s=document.createElement('style');
+    s.textContent='#im-caption{position:absolute;z-index:var(--z-controls);top:10px;left:50%;transform:translateX(-50%);max-width:min('+CAP_MAX+'px,calc(100% - 24px));box-sizing:border-box;padding:9px 38px 10px 14px;border-radius:14px;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);font-size:13px;line-height:1.38;}'
+      +'#im-caption[hidden]{display:none;}'
+      +'#im-caption .imc-t{font-weight:700;font-size:14px;overflow-wrap:anywhere;}'
+      +'#im-caption .imc-n{color:var(--text-muted);font-size:12.5px;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;}'
+      +'#im-caption .imc-t + .imc-n{margin-top:2px;}'
+      +'#im-caption .imc-n[aria-expanded="true"]{-webkit-line-clamp:unset;display:block;}'
+      +'#im-caption :is(.imc-t,.imc-n):empty{display:none;}'
+      +'#im-caption .imc-x{position:absolute;top:5px;right:5px;width:28px;height:28px;padding:0;border:none;border-radius:8px;background:none;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;}'
+      +'#im-caption .imc-x:hover{background:var(--input-bg);color:var(--text-main);}'
+      +'#im-caption .imc-x:focus-visible{outline:2px solid var(--primary-color);outline-offset:1px;}'
+      /* an embed keeps the caption and is read-only: no close, and the note is shown whole (js/embed-mode.js) */
+      +'html[data-embed] #im-caption{padding-right:14px;}html[data-embed] #im-caption .imc-x{display:none;}html[data-embed] #im-caption .imc-n{-webkit-line-clamp:4;cursor:default;}'
+      /* a phone: the top is the legend chip and the control group, so the caption sits above the credit pill, which sits
+         above the sheet (css/intmap.css); --imc-credit is the pill's MEASURED height (placeCaption) */
+      +dev().media('#im-caption{position:fixed;top:auto;transform:none;left:calc(12px + var(--safe-left));right:calc(12px + var(--safe-right));max-width:none;bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px + var(--imc-credit,23px) + 8px);z-index:var(--z-map-overlay);}#im-caption .imc-x{width:36px;height:36px;top:2px;right:2px;}body.sheet-full #im-caption{visibility:hidden;}');
+    document.head.appendChild(s); }
+  /* ⚠ WHERE IT GOES ON A DESKTOP IS MEASURED, NOT GUESSED. The top of the map holds the search field (centred), the
+     map controls (right), the legend stack (left, from the top — js/data-layers.js) and, in an embed, the embed bar. The
+     caption goes under the search field, centred in the widest stretch of that row no other box occupies. On a phone the
+     stylesheet places it; only the credit pill's height is measured, because the pill wraps. */
+  function placeCaption(){ if(!capEl||capEl.hidden) return;
+    try{
+      if(dev().compact()){ const cr=document.getElementById('map-credit'); const h=cr?cr.getBoundingClientRect().height:0; capEl.style.setProperty('--imc-credit',(h>0?Math.round(h):23)+'px');
+        capEl.style.left=''; capEl.style.top=''; capEl.style.maxWidth=''; return; }
+      const mc=capEl.offsetParent||capEl.parentElement; if(!mc) return; const M=mc.getBoundingClientRect();
+      const vis=(el)=>{ if(!el||el===capEl) return null; const r=el.getBoundingClientRect(); if(r.width<1||r.height<1) return null; const cs=getComputedStyle(el); return (cs.display==='none'||cs.visibility==='hidden')?null:r; };
+      const search=vis(document.getElementById('map-search'));
+      const top=(search&&search.bottom>M.top&&search.top<M.top+M.height/3)?Math.round(search.bottom-M.top+8):10;   /* under the search field when it is at the top of the map */
+      /* the right Layers sidebar lies OVER the map container (#R160); the visible map ends at its edge (--lsr-w, the
+         width the share panel centres by) */
+      let lsr=0; try{ if(document.body.classList.contains('lsr-open')&&!document.body.classList.contains('ws-mode')) lsr=parseFloat(getComputedStyle(document.body).getPropertyValue('--lsr-w'))||0; }catch(_){ lsr=0; }
+      const boxes=[]; document.querySelectorAll(CAP_AVOID).forEach(el=>{ const r=vis(el); if(r) boxes.push(r); });
+      /* twice: narrowing the caption makes it taller, and the taller row may meet a box the first row did not */
+      for(let pass=0;pass<2;pass++){
+        const h=capEl.getBoundingClientRect().height||48;
+        let lo=M.left+12, hi=M.right-lsr-12; const centre=(lo+hi)/2;
+        boxes.forEach(r=>{ if(r.bottom<=M.top+top||r.top>=M.top+top+h) return;   /* not in the caption's row */
+          if(r.right<=centre) lo=Math.max(lo,r.right+10); else if(r.left>=centre) hi=Math.min(hi,r.left-10); else lo=Math.max(lo,r.right+10); });
+        /* ESTIMATE: under ~200 px a 14 px title wraps every two or three words; then the whole row is taken (the caption
+           may cover a box rather than become unreadable — the reader can close it) */
+        if(hi-lo<200){ lo=M.left+12; hi=M.right-lsr-12; }
+        capEl.style.top=top+'px'; capEl.style.left=Math.round((lo+hi)/2-M.left)+'px'; capEl.style.maxWidth=Math.round(Math.min(CAP_MAX,hi-lo))+'px';
+      }
+    }catch(_){} }
+  function placeSoon(ms){ clearTimeout(placeT); placeT=setTimeout(placeCaption,ms==null?120:ms); }
+  /* the document's title: «<title> — <the app's title>» while the map has a title. The app's own title is written by
+     js/lang-registry.js on every language change, so the base is whatever it wrote last and the caption is put back in
+     front of it (a <title> watcher, only once a caption exists). */
+  function syncDocTitle(){ try{
+    const now=document.title; if(baseTitle==null||now!==appliedTitle) baseTitle=now;
+    const want=cap.title?cap.title+' — '+baseTitle:baseTitle;
+    appliedTitle=want; if(now!==want) document.title=want;
+    if(cap.title&&!titleWatch&&typeof MutationObserver==='function'){ const te=document.querySelector('title');
+      if(te){ titleWatch=new MutationObserver(()=>{ if(document.title!==appliedTitle) syncDocTitle(); }); titleWatch.observe(te,{childList:true,characterData:true,subtree:true}); } }
+  }catch(_){} }
+  function paintCaption(){
+    const has=!!(cap.title||cap.note);
+    if(!capEl&&!has){ syncDocTitle(); return; }
+    capStyle();
+    if(!capEl){ capEl=document.createElement('div'); capEl.id='im-caption'; capEl.setAttribute('role','group');
+      const tt=document.createElement('div'); tt.className='imc-t'; const nn=document.createElement('div'); nn.className='imc-n';
+      nn.setAttribute('role','button'); nn.tabIndex=0; nn.setAttribute('aria-expanded','false');
+      const x=document.createElement('button'); x.type='button'; x.className='imc-x'; x.appendChild(iconNode('close'));
+      x.onclick=()=>{ cap.hidden=true; paintCaption(); };
+      nn.onclick=()=>{ nn.setAttribute('aria-expanded',String(nn.getAttribute('aria-expanded')!=='true')); };
+      capEl.append(tt,nn,x); (document.getElementById('map-container')||document.body).appendChild(capEl);
+      window.addEventListener('resize',()=>placeSoon());
+      /* a box it keeps clear of appears (a legend's size goes from 0 when its layer comes on), grows or folds, and the
+         phone's credit pill wraps: each is watched for its size — a legend made later is picked up when the layers move */
+      const ro=typeof ResizeObserver==='function'?new ResizeObserver(()=>placeSoon(60)):null, seen=new WeakSet();
+      const watch=()=>{ if(!ro) return; try{ document.querySelectorAll(CAP_AVOID+', #map-credit').forEach(el=>{ if(!seen.has(el)){ seen.add(el); ro.observe(el); } }); }catch(_){} };
+      watch(); MapState.on(e=>{ if(e.key==='layers'||e.key==='display'){ watch(); placeSoon(900); } }); }
+    capEl.setAttribute('aria-label',t('captionLabel'));
+    capEl.querySelector('.imc-x').setAttribute('aria-label',t('captionHide')); capEl.querySelector('.imc-x').title=t('captionHide');
+    capEl.querySelector('.imc-t').textContent=cap.title; capEl.querySelector('.imc-n').textContent=cap.note;
+    capEl.hidden=!has||cap.hidden;
+    syncDocTitle(); placeSoon(0);
+  }
+  /* set the caption (the share panel's fields, Atlas). Text is cleaned and cut by the codec's own rule, so what the panel
+     shows, what the link carries and what the picture prints are the same characters. → the caption now */
+  function setCaption(o){ o=o||{};
+    const ti=o.title!=null?MapState.captionText(o.title,MapState.TITLE_MAX):cap.title, no=o.note!=null?MapState.captionText(o.note,MapState.NOTE_MAX):cap.note;
+    const moved=[]; if(ti!==cap.title){ cap.title=ti; moved.push('title'); } if(no!==cap.note){ cap.note=no; moved.push('note'); }
+    if(moved.length){ cap.hidden=false; paintCaption(); moved.forEach(k=>MapState.changed(k)); }
+    return { title:cap.title, note:cap.note }; }
+  /* the store's two fields. A restore hands the link's value (absent = '', «no caption») — and a new link shows its
+     caption again even if the reader hid the previous one */
+  MapState.own('title',{ read:()=>cap.title, apply:(v)=>{ const s=MapState.captionText(v,MapState.TITLE_MAX); if(s!==cap.title||cap.hidden){ cap.title=s; cap.hidden=false; paintCaption(); MapState.changed('title'); } } });
+  MapState.own('note',{ read:()=>cap.note, apply:(v)=>{ const s=MapState.captionText(v,MapState.NOTE_MAX); if(s!==cap.note||cap.hidden){ cap.note=s; cap.hidden=false; paintCaption(); MapState.changed('note'); } } });
   window.IntMapShare=(function(){
     const L=IntMapLang.pick(()=>HOST.lang);
     let panel=null, styled=false;
@@ -3856,11 +3958,19 @@ export function share(HOST){
         +'#share-panel .sh-tab:focus-visible{outline:2px solid var(--primary-color);outline-offset:1px;}'
         +'#share-panel .sh-pane[hidden]{display:none;}'
         +'#share-panel{max-height:calc(100vh - 96px);overflow-y:auto;}'
+        /* (map-postcard) the caption fields above the tabs */
+        +'#share-panel .sh-cap{display:flex;flex-direction:column;gap:6px;margin-top:10px;}'
+        +'#share-panel .sh-cap-t,#share-panel .sh-cap-n{width:100%;box-sizing:border-box;padding:9px 12px;border-radius:11px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-family:inherit;font-size:13px;}'
+        +'#share-panel .sh-cap-t{height:40px;font-weight:600;}'
+        +'#share-panel .sh-cap-n{resize:vertical;min-height:46px;line-height:1.4;}'
+        +'#share-panel :is(.sh-cap-t,.sh-cap-n):focus-visible{outline:2px solid var(--primary-color);outline-offset:0;}'
+        +'#share-panel .sh-cap-hint{font-size:11px;color:var(--text-muted);line-height:1.4;}'
+        +dev().media('#share-panel .sh-cap-t,#share-panel .sh-cap-n{font-size:16px;}')   /* 16 px stops iOS focus-zoom */
         /* (share-embed-distribution) the right Layers sidebar overlays the map container (#R160), and the panel was centred
            on the whole container — at 1280 px with both sidebars open its right third (the Copy and Preview buttons) sat
            under the Layers list and could not be pressed. Centre it on the map that is VISIBLE, the way the other
            overlays read --lsr-w (css/intmap.css body.lsr-open rules). */
-        +window.IntMapDevice.media('body.lsr-open:not(.ws-mode) #share-panel{left:calc((100% - var(--lsr-w)) / 2);width:min(440px,calc(100% - var(--lsr-w) - 24px));}',true)
+        +dev().media('body.lsr-open:not(.ws-mode) #share-panel{left:calc((100% - var(--lsr-w)) / 2);width:min(440px,calc(100% - var(--lsr-w) - 24px));}',true)
         +'@media'+window.IntMapDevice.COMPACT+'{#share-panel{left:8px;right:8px;width:auto;transform:none;top:auto;bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px);}}';
       document.head.appendChild(s); }
     /* ══ (share-embed-distribution) TWO TABS: THE LINK, AND THE SAME LINK AS AN <iframe> ═══════════════
@@ -3869,7 +3979,11 @@ export function share(HOST){
        and cannot describe two different maps. The Embed tab itself is js/embed-mode.js
        (`createEmbedTab`), fetched the first time this panel opens: a session that never shares
        does not download it, and a normal start-up does not parse it. */
-    let tab='link', embedTab=null, embedLoad=null;
+    /* (map-postcard) …AND A THIRD: THE SAME MAP AS ONE PICTURE (js/map-recorder.js `createPostcardTab`, fetched the first
+       time the Image tab is shown). Above the tabs, the caption — the title and note the link carries — so the link, the
+       embed code and the picture all say it. */
+    let tab='link', embedTab=null, embedLoad=null, pcTab=null, pcLoad=null, pcHost=null, capT=0, pcT=0;
+    const TABS=['link','embed','image'];
     function link(){ return (window.IntMapBookmark&&window.IntMapBookmark.link)?window.IntMapBookmark.link():location.href; }
     function copyText(btn,text,field,label){ return async()=>{ let ok=false;
       try{ await navigator.clipboard.writeText(text()); ok=true; }catch(_){ try{ field.select(); ok=document.execCommand('copy'); }catch(__){} }
@@ -3879,20 +3993,31 @@ export function share(HOST){
       if(!embedLoad) embedLoad=import('./embed-mode.js').then(m=>(embedTab=m.createEmbedTab({ link, t, copy:copyText })))
         .catch(e=>{ embedLoad=null; throw e; });   /* a failed fetch is tried again on the next open, not remembered */
       return embedLoad; }
+    function loadPostcardTab(){
+      if(!pcLoad) pcLoad=import('./map-recorder.js').then(m=>(pcTab=m.createPostcardTab({ link, t, caption:()=>({ title:cap.title, note:cap.note }), lang:()=>HOST.lang })))
+        .catch(e=>{ pcLoad=null; throw e; });
+      return pcLoad; }
+    /* → the picture tab built into the panel's Image pane and a fresh picture made (with `o.size`); the result of make() */
+    function showPostcard(o){ const pane=panel&&panel.querySelector('.sh-pane[data-pane="image"]'); if(!pane) return Promise.resolve(null);
+      return loadPostcardTab().then(c=>{ if(pcHost!==pane){ pcHost=pane; c.render(pane); } return c.make(o||{}); })
+        .catch(()=>{ pane.replaceChildren(iconNode('warning'),' '+t('postcardUnavailable')); return null; }); }
     /* → { url, size, interactive, code } for the current map, or null while the tab's module has not arrived */
     function embed(o){ return embedTab?embedTab.embed(o):null; }
     function close(){ try{ embedTab&&embedTab.stopPreview(); }catch(_){} if(panel) panel.style.display='none'; }
-    /* open({ tab:'link'|'embed', size, width, height, interactive }) — every field optional; the
+    /* open({ tab:'link'|'embed'|'image', size, width, height, interactive, title, note }) — every field optional; the
        callers that pass nothing (the Share menu, the tool sheet, the routing card) get the link tab
        exactly as before. A DOM event handed in by an `onclick=open` is not an options object.
-       → a Promise that settles once the Embed tab is built (Atlas waits for it; the menu does not). */
+       `title` / `note` (map-postcard) set the caption first, so the link the panel shows already carries them.
+       → a Promise that settles once the Embed tab is built — or, on the Image tab, with the picture once it is made
+       (Atlas waits for it; the menu does not). */
     function open(o){
       ensureStyle(); o=(o&&typeof o==='object'&&!(typeof Event!=='undefined'&&o instanceof Event))?o:{};
-      tab=(o.tab==='embed')?'embed':'link';
+      tab=TABS.indexOf(o.tab)>=0?o.tab:'link';
+      if(o.title!=null||o.note!=null) setCaption({ title:o.title, note:o.note });
       const lk=link();
       if(!panel){ panel=document.createElement('div'); panel.id='share-panel'; panel.setAttribute('data-panel','share'); (document.getElementById('map-container')||document.body).appendChild(panel); }
       try{ embedTab&&embedTab.stopPreview(); }catch(_){}
-      panel.style.display='block';
+      panel.style.display='block'; pcHost=null;
       const inc=L('Includes: position, zoom, projection, base map, every active layer, time-travel & compare state.',
         '含まれる情報: 位置・ズーム・投影・ベースマップ・選択中の全レイヤー・時刻（タイムトラベル）・比較状態。',
         'Enthalten: Position, Zoom, Projektion, Basiskarte, alle aktiven Ebenen, Zeitreise & Vergleich.',
@@ -3900,16 +4025,27 @@ export function share(HOST){
         'Incluye: posición, zoom, proyección, mapa base, todas las capas activas, viaje en el tiempo y comparación.');
       panel.innerHTML='<button class="sh-x" title="'+t('close')+'">×</button>'
         +'<h4>'+icon('link')+' '+L('Share this view','このビューを共有','Diese Ansicht teilen','Поделиться видом','Compartir esta vista')+'</h4>'
+        /* (map-postcard) the caption's fields are built below, and their values set as properties — never written into this markup */
+        +'<div class="sh-cap"></div>'
         +'<div class="sh-tabs" role="tablist">'
           +'<button class="sh-tab" type="button" role="tab" data-tab="link">'+t('shareTabLink')+'</button>'
-          +'<button class="sh-tab" type="button" role="tab" data-tab="embed">'+t('shareTabEmbed')+'</button></div>'
+          +'<button class="sh-tab" type="button" role="tab" data-tab="embed">'+t('shareTabEmbed')+'</button>'
+          +'<button class="sh-tab" type="button" role="tab" data-tab="image">'+t('shareTabImage')+'</button></div>'
         +'<div class="sh-pane" data-pane="link" role="tabpanel">'
           +'<div style="font-size:11.5px;color:var(--text-muted);">'+L('Anyone who opens this link sees the map exactly as you do now.','このリンクを開くと、今あなたが見ている状態がそのまま再現されます。','Wer den Link öffnet, sieht die Karte genau wie Sie jetzt.','Открывший ссылку увидит карту точно как вы сейчас.','Quien abra el enlace verá el mapa tal como lo ves ahora.')+'</div>'
           +'<div class="sh-row"><input class="sh-url" type="text" readonly value="'+String(lk).replace(/"/g,'&quot;')+'"><button class="sh-btn sh-copy">'+icon('clipboard')+' '+L('Copy','コピー','Kopieren','Копировать','Copiar')+'</button></div>'
           +(navigator.share?('<div class="sh-row"><button class="sh-btn sec sh-native" style="flex:1;">'+icon('share')+' '+L('Share…','共有…','Teilen…','Поделиться…','Compartir…')+'</button></div>'):'')
           +'<div class="sh-inc">'+inc+'</div></div>'
-        +'<div class="sh-pane" data-pane="embed" role="tabpanel"></div>';
+        +'<div class="sh-pane" data-pane="embed" role="tabpanel"></div>'
+        +'<div class="sh-pane" data-pane="image" role="tabpanel"></div>';
       const urlEl=panel.querySelector('.sh-url'), embedPane=panel.querySelector('.sh-pane[data-pane="embed"]');
+      const capTi=document.createElement('input'); capTi.type='text'; capTi.className='sh-cap-t'; capTi.maxLength=MapState.TITLE_MAX; capTi.enterKeyHint='done';
+      capTi.setAttribute('aria-label',t('captionTitle')); capTi.placeholder=t('captionTitlePh'); capTi.value=cap.title;
+      const capNo=document.createElement('textarea'); capNo.className='sh-cap-n'; capNo.rows=2; capNo.maxLength=MapState.NOTE_MAX;
+      capNo.setAttribute('aria-label',t('captionNote')); capNo.placeholder=t('captionNotePh'); capNo.value=cap.note;
+      const capHint=document.createElement('div'); capHint.className='sh-cap-hint'; capHint.textContent=t('captionHint');
+      panel.querySelector('.sh-cap').append(capTi,capNo,capHint);
+      let built=null;
       const show=(name)=>{ tab=name;
         panel.querySelectorAll('.sh-tab').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.tab===name)));
         panel.querySelectorAll('.sh-pane').forEach(p=>{ p.hidden=(p.dataset.pane!==name); }); };
@@ -3917,14 +4053,26 @@ export function share(HOST){
       if(tab==='link'){ try{ urlEl.focus(); urlEl.select(); }catch(_){} }
       panel.querySelector('.sh-x').onclick=close;
       const copyBtn=panel.querySelector('.sh-copy');
-      copyBtn.onclick=copyText(copyBtn,()=>lk,urlEl,()=>L('Copy','コピー','Kopieren','Копировать','Copiar'));
-      const nb=panel.querySelector('.sh-native'); if(nb) nb.onclick=()=>{ try{ navigator.share({title:'IntMap',url:lk}); }catch(_){} };
-      let built=null;
+      copyBtn.onclick=copyText(copyBtn,()=>link(),urlEl,()=>L('Copy','コピー','Kopieren','Копировать','Copiar'));
+      const nb=panel.querySelector('.sh-native'); if(nb) nb.onclick=()=>{ try{ navigator.share({ title:cap.title||'IntMap', text:cap.note||undefined, url:link() }); }catch(_){} };
+      /* (map-postcard) a caption edit re-makes everything that says it: the address, the embed code, the picture */
+      const onCap=()=>{ clearTimeout(capT); capT=setTimeout(()=>{ setCaption({ title:capTi.value, note:capNo.value });
+        try{ urlEl.value=link(); }catch(_){} try{ built&&built.refresh(); }catch(_){}
+        if(tab==='image'){ clearTimeout(pcT); pcT=setTimeout(()=>{ showPostcard(); },400); } },250); };
+      capTi.addEventListener('input',onCap); capNo.addEventListener('input',onCap);
+      capTi.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); onCap(); } });
       panel.querySelectorAll('.sh-tab').forEach(b=>{ b.onclick=()=>{ try{ embedTab&&embedTab.stopPreview(); }catch(_){}
-        show(b.dataset.tab); if(b.dataset.tab==='embed'&&built) built.refresh(); }; });   /* the map may have moved since the panel opened */
-      return loadEmbedTab().then(c=>{ if(o.tab==='embed') c.embed(o); built=c.render(embedPane); return true; })
+        show(b.dataset.tab); if(b.dataset.tab==='embed'&&built) built.refresh();   /* the map may have moved since the panel opened */
+        if(b.dataset.tab==='link'){ try{ urlEl.value=link(); }catch(_){} }
+        if(b.dataset.tab==='image') showPostcard(); }; });
+      const embedReady=loadEmbedTab().then(c=>{ if(o.tab==='embed') c.embed(o); built=c.render(embedPane); return true; })
         .catch(()=>{ embedPane.replaceChildren(iconNode('warning'),' '+t('embedUnavailable')); return false; });
+      if(tab==='image') return showPostcard({ size:o.size });
+      return embedReady;
     }
-    return { open, close, link, embed };
+    /* (map-postcard) the picture's face for Atlas: open the Image tab (caption and shape as asked) and hand back what was
+       made — the file name, its size, what it credits, how many legends it carries — or null when it could not be made */
+    function postcard(o){ o=o||{}; return Promise.resolve(open({ tab:'image', size:o.size, title:o.title, note:o.note })).then(r=>r||null); }
+    return { open, close, link, embed, caption:(o)=>(o?setCaption(o):{ title:cap.title, note:cap.note }), postcard };
   })();
 }
