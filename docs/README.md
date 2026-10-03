@@ -59,7 +59,7 @@
 | [`architecture/15-ops-quality.md`](architecture/15-ops-quality.md) | 同上 | 現状仕様 **§15 運用品質基盤 (CI・テスト・リリース・監視)** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
 | [`architecture/16-data-protection.md`](architecture/16-data-protection.md) | 同上 | 現状仕様 **§16 データ保護基盤 (migrations・RLS/権限テスト・バックアップ・復元)** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
 | [`architecture/17-security.md`](architecture/17-security.md) | 同上 | 現状仕様 **§17 セキュリティ基盤** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
-| [`architecture/18-area-monitors.md`](architecture/18-area-monitors.md) | 同上 | 現状仕様 **§18 地域監視基盤 (Area Monitors)** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/18-area-monitors.md`](architecture/18-area-monitors.md) | 同上 | 現状仕様 **§18 見守る場所と地域監視基盤 (Watched places · Area Monitors)** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
 | [`FILES.md`](FILES.md) | 同上 | **ファイル台帳**（Architecture §3。節番号は同じ） | `js/` 等にファイルを足す・消す・改名したとき |
 | [`MAP-LAYERS.md`](MAP-LAYERS.md) | レイヤーを触る人 | **レイヤー実装の詳細**（Architecture §7.1・§7.2・§7.5–§7.10。節番号は同じ）——気象警報フィード・ラベル・地形と水・物理・ECMWF | 該当のレイヤーの挙動を変えたとき |
 | [`GIS-CORE.md`](GIS-CORE.md) | データを持ち込んで分析する人／その層を触る人 | **データセットと処理の基盤の正本** — データセットの契約（`id`・`fields[]` の型づけ規則・`crs`／`sourceCrs`・`provenance`）、処理の宣言と**出力が次の入力になる**規約、各処理が**何を拒み、なぜ拒むか**（コードの全一覧）、プロジェクト保存が**何を保存して何を保存しないか**、横断クエリ（`js/atlas-query.js`）がこの層を引く向き。⚠ 幾何計算の適用範囲と誤差（球面／平面のどちらで測るか）もここが正本 | データセットの契約・処理・拒否コード・保存の形を変えたとき |

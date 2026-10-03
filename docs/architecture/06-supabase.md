@@ -12,7 +12,7 @@
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **47 表**（`saved_views` / `collection_shares` / `news_event_entities` / `ai_turn_answers` / `atlas_notebook_entries`（Atlas の調査ノート・同期をオンにした読者のみ） / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
+実証手順も同じファイル）。現在 **48 表**（`place_watches`（見守る場所） / `saved_views` / `collection_shares` / `news_event_entities` / `ai_turn_answers` / `atlas_notebook_entries`（Atlas の調査ノート・同期をオンにした読者のみ） / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
 `user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` /
 `atlas_capability_vectors` / `usage_counts`（匿名の利用統計） /
 `community_*` 5 表 / `feedback` /
@@ -49,6 +49,11 @@ id・アカウント・メールを含まずに返す。`anon` は 2 表のど�
 写さず「保存済み」として数える＝2 度写しても 1 度と同じ。写した場所の `source` は `shared`）。公開をやめるのは
 所有者の DELETE で、その瞬間にリンクは `not_found` を返す。2 表とも `user_id → auth.users` なので、書き出しと
 アカウント削除には一覧を書かずに入る（pgTAP `24_collection_workspace_test.sql`）。
+
+**見守る場所（`place_watches`）** は保存場所 1 件に 1 行（`place_id` が主キー・場所を消すと消える）。半径・種類ごとの基準
+（NULL＝見守らない）・オン/オフ・既読（`seen_at`・`seen_keys` ≤ 2,000）。読む・書く・消すは所有者の RLS で、挿入は場所が
+呼び手のものであるときだけ、`user_id` はトリガー `tg_place_watches_own` が場所の持ち主に固定する。Edge Function も cron も無い
+（判定はページ・§18.1）。
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](../MIGRATIONS.md)。

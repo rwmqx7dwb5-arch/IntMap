@@ -4743,8 +4743,19 @@ migration そのものから**——`auth.users` を指す列か uuid の `user_
 何も消さない、表示は作ったピンを返す。⑤ 3 つの入口は動的 import（起動経路に載らない）、書き込む操作要素は
 効果を宣言する。
 
-### `tests/collection-workspace-checks.test.mjs` (collection-workspace)
+### `tests/watch-places-checks.test.mjs` (watch-places)
 
+7 本・データベース無し・ネットワーク無し（DB の半分は `supabase/tests/24_place_watches_test.sql`）。① 判定
+（`supabase/functions/_shared/place-watch.js`）を**評価**する——種類ごとに自分の尺度で近さと強さ、変化なら新しい鍵・
+再発表なら同じ鍵（警報の鍵に発表時刻を入れない）、初回は何も新着にしない、読めなかった種類は理由つきの「未確認」で
+その種類の既読を保つ、`SEEN_MAX` では新しい方を残す。② 判定が名指す数（既定値・半径の上限・M の床・既読の上限）と
+migration の既定値・CHECK を照合する。③ ページの読み手と実行器を代役のフィードで——USGS 1 要求・ニュース 1 問い合わせが
+全ての見守りに答える、警報はレイヤー自身の点判定で区域内のものだけ、レイヤーがオフなら「未確認」。④ 見守りを端から端まで
+（初回の基準をアカウントに保存 → 新着 → トースト 1 回 → 同じものを再び知らせない → 既読がアカウントへ）。⑤ Atlas の能力（places.watch・unwatch・watchDigest・watchSeen）を
+代役の DB で実行（未ログイン・入力なし・2 度目・見守っていない場所の停止）。⑥ 入口は動的 import、書き込む操作要素は効果を
+宣言し、撤去済みの `tab.monitors` を呼ばず、AI を呼ばない。
+
+### `tests/collection-workspace-checks.test.mjs` (collection-workspace)
 4 本・データベース無し（DB の半分は `supabase/tests/24_collection_workspace_test.sql`）。① migration の扉——`save_view` /
 `publish_collection` / `copy_shared_collection` は uuid を取らず `auth.uid()` で口座を決め anon から剥がされ、2 表とも
 `authenticated` に INSERT が無く `anon` には何も無い。`anon` が呼べるのは `shared_collection` だけで、コメントに理由を持ち、
@@ -4756,9 +4767,7 @@ migration そのものから**——`auth.users` を指す列か uuid の `user_
 複数一致の地図は開かない・地図は共有リンクの復元で 1 度だけ開く・表示の無い地図は保存しない。④ 入口は動的 import
 （起動経路に載らない）・ログイン待ちのトークンの鍵を auth-ui とカードが共有する・書き込む操作要素は効果を宣言する
 （公開は `outward`）。
-
 ### `tests/collection-workspace.spec.js` (collection-workspace)
-
 1 本・自分で起動する（クエリは起動時に 1 度だけ読まれるので、起動そのものが主題）。公開の読み取り
 `shared_collection` を PostgREST の形で答え（migration の適用の有無に依らない）、`?collection=<token>` で開いたページを
 測る——① 閲覧専用のカードが題と場所・地図の一覧を出し、アドレスのトークンだけを問い合わせる、② 2 つの場所が

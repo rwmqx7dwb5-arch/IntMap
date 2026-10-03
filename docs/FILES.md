@@ -864,7 +864,8 @@ atlas-cap-news.js                 Atlas の能力 — ニュースの分類（ne
 atlas-cap-notebook.js             Atlas の能力 — 調査ノート（notebook.list / open / compare。前に調べたことを探す・地図を戻す・今と比べる）
 atlas-cap-panel.js                Atlas の能力 — パネルを開く・閉じる（panel.*）
 atlas-cap-photo.js                Atlas の能力 — 写真の撮影地点探索（photo.locate）
-atlas-cap-places.js               Atlas の能力 — マイプレイス（アカウントに保存した場所）の保存・一覧・表示・削除（places.*。my-places）と、
+atlas-cap-places.js               Atlas の能力 — マイプレイス（アカウントに保存した場所）の保存・一覧・表示・削除と、見守る場所の
+                                  開始・停止・ダイジェスト・既読（places.*。my-places / watch-places）と、
                                   地図の保存・保存した地図を開く・コレクションの公開と公開の停止（places.saveView / openView / publish / unpublish。collection-workspace）
 atlas-cap-reader.js               Atlas の能力 — 回答文の語句の解説（reader.gloss）
 atlas-cap-research.js             Atlas の能力 — 調べて答える（research.*。brief・地図報告・歴史地図・出来事）
@@ -1240,6 +1241,11 @@ my-places.js                      マイプレイス——アカウントに保�
 shared-collection.js              公開コレクション——publish_collection / 公開の停止（所有者の DELETE）/ 公開の読み取り shared_collection(token) /
                                   自分のアカウントへの写し copy_shared_collection と、`?collection=<token>` で開いたページのカード（場所をピンで、
                                   地図を一覧で）。auth-ui.js がそのページでだけ読み込む。オンデマンド（collection-workspace）
+place-watch.js                    見守る場所——保存した場所の周辺の地震（USGS）・気象警報（警報レイヤー自身の記録）・火山の警戒レベル
+                                  （volcano-intel）・独立した複数媒体が報じた出来事（news_events）を、IntMap を開いている間 10 分ごとに
+                                  読み、新しいものをトースト 1 回とアカウントボタンの印で知らせ、ダイジェストのシートに出す。判定は
+                                  supabase/functions/_shared/place-watch.js（AI なし・サーバー実行なし）。ログイン後に auth-ui.js が
+                                  動的 import で起動する。オンデマンド（watch-places）
 legal-text.js                     利用規約とプライバシーポリシーの**本文**（唯一の写し。JA/EN）
 legal.js                          その本文をアプリ内モーダルに表示する
 dialog.js                         ダイアログの唯一の契約 window.IntMapDialog —— 登録簿（open/adopt・anyOpen）、Esc・Tab トラップ・
@@ -1581,7 +1587,7 @@ supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全22本をここに宣言する
   migrations/*.sql                DB の唯一の設計図（43本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
-  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 保存した地図と公開コレクション。24本）
+  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション。24本）
   functions/<name>/index.ts       Edge Functions（22本。一覧と各本の役割は Architecture.md §6.2。
                                   usage-count/shape.js は関数の中の宣言で、ブラウザも import する）
   functions/ai-proxy/*.ts         ai-proxy は仕事ごとのモジュール（index.ts＝経路の表・ask.ts＝1 回の要求・
@@ -1595,7 +1601,8 @@ supabase/
                                   bbox.js / read-budget.js / client-error-shape.js /
                                   fetch-relay-policy.js / ai-ledger.js / ai-usage.js / ai-stream.js /
                                   atlas-grade-schema.js / site-origin.js / plans.js /
-                                  inquiry-shape.js〔組織からの相談の語彙・上限・返信先の規則。org-pages.mjs も読む〕）
+                                  inquiry-shape.js〔組織からの相談の語彙・上限・返信先の規則。org-pages.mjs も読む〕 /
+                                  place-watch.js〔見守る場所の判定——近さ・強さ・新しさ。今はページだけが読む。将来のサーバー評価が同じ規則を使うためここに置く〕）
                                   ⚠ site-origin.js は**本番のアドレスの唯一の置き場**（`CUSTOM_DOMAIN` が
                                   変える値）。ブラウザ・Edge Function・スクリプト・テストが import し、
                                   workflow は scripts/site-url.mjs 経由で読む（domain-portable）
