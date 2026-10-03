@@ -94,6 +94,7 @@ exists. `current_news` above is untouched and still serves article mode.
 | `news_event_i18n` | Server-generated translation of an event (`ja` today). Persisted, so it is readable logged out and costs no user AI quota. *(#R351)* `source_title_fp` is the hash of the headline that was translated, so a cached translation is reused until the headline itself changes — `updated_at` would move on every added article and re-bill the same sentence. | Everyone. | **service_role only.** |
 | `saved_news_events` | ★ on an **Event** (`favorites` keeps holding ★ on an article link). | Owner. | Owner. |
 | `news_ingest_runs` *(#R351)* | One row per `news-ingest` run: feeds reached, items fetched, articles new/seen, the **reject breakdown**, events created/updated, evictions, translations, **articles the AI placed (`located_ai`) and considered (`located_considered`) (#R404)**, tokens, an indicative cost, and per-stage timings. ⚠ the three LLM columns are the run's **total** (translation + geolocation); the per-stage split is in `notes`. Per-feed freshness is not copied here — `news_source_feeds` holds it. | **Admin only.** | **service_role only.** |
+| `news_event_entities` *(news-intelligence)* | Which company (an id of `data/companies/index.json`) a news event names, one row per (event, company): `matched_by` (`legal_name` / `ticker` / `name`), `evidence` (the sentence the match rests on), the article it came from (nulled when the article is pruned). Written by `news-ingest`'s `entities` stage. `news_articles.companies_scanned_at` marks the articles already compared. | **Everyone (anon + authenticated).** | **service_role only.** |
 | `news_event_admin_actions` *(#R386)* | One row per operator (or machine) Merge / Split / Reassign / metadata override, with the **material needed to reverse it** in `before`. ⚠ `before` holds only what the action changed — restoring a whole-table snapshot would roll back every article ingested since. ⚠ No FK from `actor` / `reverted_by` to `auth.users`: this is an audit record, not an owned row (same reason as `news_events.reviewed_by`). | **Admin only.** | **service_role only** — operators write it through the RPCs below. |
 
 ## Operator RPCs — News Events *(#R386)*
@@ -151,6 +152,9 @@ itself; `grant execute` means "may call", never "may do".
 
 | Object | Kind | Notes |
 |---|---|---|
+| `public.news_pulse(timestamptz, timestamptz)` *(news-intelligence)* | SECURITY INVOKER, `search_path=public`, STABLE | News events counted by (representative point, first-reported UTC day, category) as ONE jsonb `{pts, rows, oldest, newest}`; span ≤ 62 days. EXECUTE = anon, authenticated, service_role (the `news_events` RLS decides). Called as GET. |
+| `public.news_events_at(jsonb, timestamptz, timestamptz)` *(news-intelligence)* | SECURITY INVOKER, STABLE, `setof news_events` | The active events on up to 2,000 given representative points, first reported in the span — rows of `news_events`, so PostgREST embeds their articles as usual. |
+| `public.news_ingest_health()` *(news-intelligence)* | SECURITY DEFINER, `search_path=public` | Per-stage last run / success / failure / skip of `news-ingest`, the median gap between runs and the tick schedule — **no run text, model or cost**. Its comment states why anon may call it (pgTAP 11, 18). |
 | `public.is_admin()` | SECURITY DEFINER, `search_path=''` | Returns whether the JWT user is an admin. Used by admin-only policies without recursing into `profiles` RLS. |
 | `public.handle_new_user()` + `on_auth_user_created` trigger on `auth.users` | SECURITY DEFINER | Creates the `profiles` row on signup (copies id/email/display_name). |
 | `public.increment_ai_usage(uuid, integer)` | SECURITY DEFINER, `search_path=''` | Atomically consumes one AI use if under the limit. Returns `(used, allowed)`. EXECUTE = service_role only. |
@@ -313,7 +317,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **39**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **40**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin` (and is not a view).
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't

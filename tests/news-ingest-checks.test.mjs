@@ -479,13 +479,15 @@ test('#R351 ⑱ the stages exist and are individually runnable', () => {
      twice. (It would not be left stale either way — the evidence fingerprint covers the member
      list, so absorbing articles changes it and the next run pays again. The ordering buys the
      cheaper of two correct outcomes, not correctness itself.) */
-  for (const s of ['fetch', 'locate', 'embed', 'assign', 'link', 'summarise', 'translate', 'prune']) {
+  /* (news-intelligence) NINE: `entities` (which company each article names → news_event_entities) comes AFTER
+     `link`, so an event about to be absorbed is not given companies that would then sit on a merged row. */
+  for (const s of ['fetch', 'locate', 'embed', 'assign', 'link', 'entities', 'summarise', 'translate', 'prune']) {
     assert.ok(fn.includes('stage' + s[0].toUpperCase() + s.slice(1)), 'stage ' + s + ' is missing');
   }
   /* ⚠⚠⚠ **`\\[` と書くと、これは「バックスラッシュ + 文字クラス」になって別の理由で通る。**
      `fn` には `\s` や `\d` がいくらでもあるので、順序が何であっても緑になる（#R405 で実際に
      1 度書いてしまい、変異させて気づいた）。⇒ `\[` は 1 本。 */
-  assert.match(fn, /\["fetch", "locate", "embed", "assign", "link", "summarise", "translate", "prune"\]/);
+  assert.match(fn, /\["fetch", "locate", "embed", "assign", "link", "entities", "summarise", "translate", "prune"\]/);
 
   /* 計測は docs/NEWS-EVENTS.md §13 の置き場へ入る。 */
   assert.match(fn, /news_ingest_runs/);
@@ -1288,7 +1290,7 @@ test('#R386 ⑭ current_news と refresh-news には触れていない', () => {
      変わっていない——**この検査が見張っているのは段の本数ではなく、この関数が
      `current_news` と `refresh-news` に触れていないこと**である。順序の正本は
      `tests/news-ingest-checks.test.mjs #R351 ⑱`。 */
-  assert.match(fn, /\["fetch", "locate", "embed", "assign", "link", "summarise", "translate", "prune"\]/);
+  assert.match(fn, /\["fetch", "locate", "embed", "assign", "link", "entities", "summarise", "translate", "prune"\]/);
 });
 
 /* 綴りのまま: 対象は Deno の Edge Function（Deno.serve・npm: import）で、Node からは読み込めない */

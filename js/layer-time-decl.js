@@ -223,6 +223,11 @@ export const TIME = Object.freeze({
     says: LA('Submarine cables (TeleGeography, today’s map incl. planned)', '海底ケーブル（TeleGeography、計画中を含む現在の地図）') },
   'beta-dl-dc': { kind: 'snapshot', asOf: 'fetch', period: 'P1M', by: 'js/datacenters.js',
     says: LA('Data centres (today’s list)', 'データセンター（現在の一覧）') },
+  /* (news-intelligence) news events counted on the day each was first reported — the window ends at the clock's
+     instant (js/news-intel.js `clockUntil`), and the record's first and last day are the ones public.news_pulse reports */
+  'dl-newspulse': { kind: 'record', from: 'runtime', to: 'runtime', follows: 'js/news-intel.js clockUntil', self: 'js/news-intel.js clockUntil',
+    reports: 'js/news-intel.js IntMapLayerTime',
+    says: LA('News events per country (IntMap news collection, the days it has kept)', '国ごとのニュースの出来事（IntMap のニュース収集が保持している日々）') },
   'dl-nethlth': live(LA('Internet health (Cloudflare Radar / IODA, now)', 'インターネットの健康状態（Cloudflare Radar / IODA、現在）')),
   'dl-netreach': live(LA('Internet reachability (now)', 'インターネット到達性（現在）')),
   'bx-wbnet': WB, 'bx-wbmobile': WB, 'bx-wbbbnd': WB, 'bx-wbrnd': WB, 'bx-wbresearch': WB, 'bx-wbpatent': WB,

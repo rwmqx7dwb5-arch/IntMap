@@ -117,6 +117,7 @@ export const LAZY_REGISTRY = Object.freeze({
   photoGeo: { publishes: 'IntMapPhotoGeo', load: () => import('./photo-geo.js'), mount: (IM_HOST, m) => { window.IntMapPhotoGeo=m.photoGeo(IM_HOST); } },
   shakeMap: { publishes: 'IntMapShakeMap', load: () => import('./shakemap.js'), mount: (IM_HOST, m) => { window.IntMapShakeMap=m.shakeMap(IM_HOST); } },
   radiationLayer: { publishes: 'IntMapRadiationObs', load: () => import('./radiation-layer.js'), mount: (IM_HOST, m) => { window.IntMapRadiationObs=m.radiationLayer(IM_HOST); } },
+  newsIntel: { publishes: '__imNewsIntel', load: () => import('./news-intel.js'), mount: (IM_HOST, m) => { m.newsIntel(IM_HOST); }, also: ['newsEvents'] },
   netHealthLive: { publishes: '__imNetHealth', load: () => import('./net-health-live.js'), mount: (IM_HOST, m) => { m.netHealthLive(IM_HOST); } },
   spaceBody: { publishes: '__imSpaceBody', load: () => import('./space.js'), mount: (IM_HOST, m) => { window.__imSpaceBody=m.spaceBody(IM_HOST); } },
   worldPacksBody: { publishes: '__wpTrade', load: () => import('./world-packs.js'), mount: (IM_HOST, m) => { m.worldPacksBody(IM_HOST); } },

@@ -27,6 +27,8 @@ import { makeNewsBrief } from './news-brief.js';     /* (#R405) 出来事の「�
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { ingestVerdict } from './news-intel-core.js';   /* (news-intelligence) 取り込みの健全性の判定 — node が同じ関数を評価する */
+import { freshChip } from './freshness.js';     /* (news-intelligence) 「いつ時点か・誰が測ったか」の 1 つの部品 */
 
 export function newsEvents(HOST) {
   const L = IntMapLang.pick(() => HOST.lang);
@@ -391,6 +393,7 @@ export function newsEvents(HOST) {
     }
     row.innerHTML = html;
     row.style.display = '';
+    renderHealth();
     Array.prototype.forEach.call(row.querySelectorAll('.news-cat-chip'), (b) => {
       b.onclick = () => {
         category = b.dataset.cat || 'all';
@@ -399,7 +402,60 @@ export function newsEvents(HOST) {
       };
     });
   }
-  function hideChips() { const row = document.getElementById('news-cat-chips'); if (row) { row.style.display = 'none'; row.innerHTML = ''; } }
+  function hideChips() {
+    const row = document.getElementById('news-cat-chips'); if (row) { row.style.display = 'none'; row.innerHTML = ''; }
+    const h = document.getElementById('news-ingest-health'); if (h) h.style.display = 'none';
+  }
+
+  /* ══ (news-intelligence) 取り込みが今も回っているか — 一覧の上の 1 行 ════════════════════════════
+     ⚠ 一覧が出ていることは、取り込みが生きていることの証拠にならない。出来事は 30 日残るので、
+       cron が止まっても一覧は何日も同じものを見せ続ける。だから一覧の上に**取り込みそのものの**
+       最終成功時刻を出す（public.news_ingest_health()。運用者専用の表から、本文を含まない要約だけ）。
+     ⚠ 3 つを別の言葉で言う（js/freshness.js）:
+         fresh       最後の成功が取り込みの周期の 3 回ぶん以内
+         stale       「N 時間更新なし」——訊けて、止まっていると分かった
+         unverified  訊けなかった——「止まっている」とは言わない。代わりに一覧の中で最も新しい
+                     出来事の時刻を、一覧自身が言えることとして出す
+     ⚠ 周期はここに書かない。cron の予定（読めるとき）か、run の間隔の中央値（直近 48 時間）。 */
+  const HEALTH_TTL_MS = 5 * 60 * 1000;   /* 読み直しの間隔。取り込みの周期（20 分）より短く、一覧の再描画（背景の再取得・言語切替）のたびに訊かない長さ */
+  let health = null, healthAt = 0, healthErr = null, healthP = null;
+  function askHealth() {
+    if (healthP) return healthP;
+    if (health && Date.now() - healthAt < HEALTH_TTL_MS) return Promise.resolve(health);
+    if (!HOST.DB || typeof HOST.DB.rpc !== 'function') { healthErr = 'no database client'; return Promise.resolve(null); }
+    /* a read: sent as GET (PostgREST runs it read-only, and it can be cached) */
+    healthP = Promise.resolve(HOST.DB.rpc('news_ingest_health', {}, { get: true })).then(({ data, error }) => {
+      if (error) throw error;
+      health = data || null; healthAt = Date.now(); healthErr = null; return health;
+    }).catch((e) => { healthErr = (e && e.message) || String(e); healthAt = Date.now(); return null; })
+      .finally(() => { healthP = null; });
+    return healthP;
+  }
+  function healthVerdict() { return ingestVerdict(healthErr ? null : health, { error: healthErr, now: nowMs() }); }
+  function renderHealth() {
+    const host = document.getElementById('news-filter-toggle');
+    if (!host) return;
+    let el = document.getElementById('news-ingest-health');
+    if (!el) { el = document.createElement('div'); el.id = 'news-ingest-health'; el.className = 'news-ingest-health'; host.appendChild(el); }
+    const draw = () => {
+      const v = healthVerdict();
+      const fmt = (ms) => { try { return new Date(ms).toLocaleString(IntMapLang.locale(HOST.lang), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (_) { return new Date(ms).toISOString(); } };
+      const by = L('IntMap news collection', 'IntMap のニュース収集');
+      let html = freshChip({ at: v.lastOkAt, rhythmMs: v.rhythmMs, now: nowMs(), unverified: v.state === 'unverified',
+        verb: 'updated', by, lang: HOST.lang, fmt });
+      if (v.state === 'unverified') {
+        /* 訊けなかったときに一覧自身が言えること：いま載っている中で最も新しい出来事の時刻 */
+        const newest = events().reduce((a, e) => (e && e.lastAt && e.lastAt > a ? e.lastAt : a), '');
+        if (newest) html += '<span class="news-ingest-note">' + S(L('Newest event in this list: {t}', 'この一覧で最も新しい出来事: {t}').replace('{t}', fmt(Date.parse(newest)))) + '</span>';
+      }
+      el.innerHTML = html;
+      /* 失敗している段の名前は利用者の文ではないので title に置く（Atlas は news.health で全部読む） */
+      el.title = v.failing.length ? L('Processing steps currently failing: {s}', '現在失敗している処理段: {s}').replace('{s}', v.failing.join(', ')) : '';
+      el.style.display = '';
+    };
+    draw();
+    askHealth().then(draw, draw);
+  }
 
   /* 一覧と地図の両方が通す述語。⚠ 1 か所しかない。 */
   function passes(item) {
@@ -787,6 +843,19 @@ export function newsEvents(HOST) {
      here — rather than handing js/news-ui.js the item list — keeps `items` private and means the
      map never has to know how an event is shaped. Returns false when the id is not in the loaded
      window, so the caller can fall back instead of doing nothing. */
+  /* ══ (news-intelligence) AN EVENT THAT IS NOT IN THE LOADED 200 ════════════════════════════════════
+     The country brief and the company panel read events by place and by company (js/news-intel.js), so
+     what they hold are ROWS of news_events — often older than the 200 the list loaded. They are opened
+     through the same `toItem` → `openDetail` the list uses, after the Source Registry is made to know
+     every outlet of the row (ensureSourcesFor), so the detail cannot differ by the door it was reached
+     from. `columns()` is the select those readers must ask for, so their rows have the shape toItem reads. */
+  async function openRow(row) {
+    if (!row || !row.public_id) return false;
+    try { await loadSources(); await ensureSourcesFor([row]); } catch (_) { /* 古い表のままで描く */ }
+    openDetail(toItem(row));
+    return true;
+  }
+
   function openByPublicId(pid) {
     if (!pid) return false;
     const it = items.find((x) => x && x._event && x._event.publicId === pid);
@@ -822,7 +891,10 @@ export function newsEvents(HOST) {
   try { window.addEventListener('intmap-lang', relabelChips); } catch (_) { }
 
   const API = {
-    load, loaded, state, events, passes, renderChips, hideChips, decorate, openDetail, openByPublicId,
+    load, loaded, state, events, passes, renderChips, hideChips, decorate, openDetail, openByPublicId, openRow,
+    columns: () => EVENT_COLS + ',' + MEMBER_COLS,
+    /* (news-intelligence) the ingest summary and its verdict — Atlas's news.health reads these */
+    health: () => askHealth().then(() => Object.assign({ summary: healthErr ? null : health, error: healthErr }, healthVerdict())),
     toggleStar, isSaved, differences, quantities,
     categories: () => CATS.map(([k, v]) => ({ key: k, label: L.arr(v) })),
     category: () => category,

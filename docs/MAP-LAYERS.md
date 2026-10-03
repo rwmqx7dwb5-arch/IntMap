@@ -1802,6 +1802,14 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   ⚠ 切る長さは**画素**なので**レンダラの投影に訊く**（`GE().coords.project`）。メルカトルのメートルは
   画面中心でしか合わない。`moveend` で作り直す。
 
+- **国ごとのニュースの脈**（`dl-newspulse`・政治・統治の棚・既定 OFF）— 行は `js/news-pulse.js`（**eager**）、
+  本体は `js/news-intel.js`（**遅延取得**・`window.__imNewsIntel`）。レイヤーは `nint-fill` / `nint-line`
+  （企業の線は `nint-co-line` / `nint-co-pt`）。国を**直近の窓に新しく報じられた出来事の件数**、または直前の
+  同じ長さの窓からの**件数の差**で塗る（平方根の尺度）。凡例に窓（24 時間／3／7／14 日）・塗り方・カテゴリ・
+  上位 5 か国（押すと国の日報）・被覆の 1 行（地点不明・海上・「色の薄い国は報道が少ないだけのことがある」）・
+  鮮度の 1 行。⚠ **Chronos に従う**——窓の終わりは時計の瞬間。正本は
+  [`NEWS-EVENTS.md`](NEWS-EVENTS.md) §16。
+
 - **インターネットの健康状態** — 行は `js/net-health.js`（**eager**）、測定は
   `js/net-health-live.js`（**遅延取得**・`window.__imNetHealth`）。行は2本、どちらも既定 OFF。
   - `dl-nethlth`（インターネット障害）— レイヤーは `nh-fill` / `nh-line`。国または地方を

@@ -4,7 +4,7 @@
 --  Executed by `supabase test db` (see docs/DATABASE.md).
 -- ============================================================================
 begin;
-select plan(100);  -- (anonymous-usage-counts) +2: usage_counts joins both lists   -- (atlas-stream-replay) +2: ai_turn_answers joins both lists
+select plan(102);  -- (news-intelligence) +2: news_event_entities joins both lists   -- (anonymous-usage-counts) +2: usage_counts joins both lists   -- (atlas-stream-replay) +2: ai_turn_answers joins both lists
                    -- (atlas-semantic-search) +2: atlas_capability_vectors joins both lists   -- (client-error-log) +2: client_errors joins both lists
                    -- (#R801) +2 tables in both lists, +2 has_function   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
                    -- (#R351) +2: news_ingest_runs joins both lists too. A table missing from the
@@ -66,7 +66,9 @@ from unnest(array[
   'ai_turn_answers',
   -- (anonymous-usage-counts) the anonymous usage counters, (day, metric, dimension) -> count. Admin reads it, the
   -- usage-count Edge Function writes it through a SECURITY DEFINER RPC.
-  'usage_counts'
+  'usage_counts',
+  -- (news-intelligence) which company an event names — written by news-ingest's entities stage, read by everybody.
+  'news_event_entities'
 ]) as t;                                                    -- 39 assertions
 
 -- 2) RLS is ENABLED on every one of them (fail-closed: a table with RLS off fails).
@@ -90,7 +92,8 @@ from unnest(array[
   'client_errors',                                           -- (client-error-log) see the note above
   'atlas_capability_vectors',                               -- (atlas-semantic-search) see the note above
   'ai_turn_answers',                                         -- (atlas-stream-replay) see the note above
-  'usage_counts'                                            -- (anonymous-usage-counts) see the note above
+  'usage_counts',                                           -- (anonymous-usage-counts) see the note above
+  'news_event_entities'                                     -- (news-intelligence) see the note above
 ]) as t;                                                    -- 39 assertions
 
 -- (#R386) 2b) The operator RPCs exist. The admin console has buttons wired to these four names;
