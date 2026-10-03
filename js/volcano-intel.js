@@ -839,6 +839,7 @@ export function volcanoIntel(HOST){
       else if(a==='so2'){ try{ window.IntMapLazy.need('volcanoLayers').then(()=>window.IntMapVolcanoLayers&&window.IntMapVolcanoLayers.so2(true)); }catch(_){} }
       else if(a==='hazard'){ try{ window.IntMapLazy.need('volcanoLayers').then(()=>window.IntMapVolcanoLayers&&window.IntMapVolcanoLayers.hazard(true,curVn)); }catch(_){} }
       else if(a==='thermal'){ openThermal(); }
+      else if(a==='ashsim'){ const vn=curVn; try{ window.IntMapLazy.need('ashPlume').then(()=>window.IntMapAshPlume&&window.IntMapAshPlume.open(vn)); }catch(_){} }
       else if(b.dataset.tab){ tab=b.dataset.tab; render(); }
     });
     return el;
@@ -972,6 +973,9 @@ export function volcanoIntel(HOST){
     h+=sec(L('Ash, gas and heat','火山灰・ガス・熱','Asche, Gas und Hitze','Пепел, газ и тепло','Ceniza, gas y calor'))
       +'<button type="button" class="acp-mini" data-volcp="ash">'+S(L('Show volcanic-ash areas now in force (SIGMET)','現在有効な火山灰域を表示（SIGMET）','Aktuelle Vulkanasche-Gebiete zeigen (SIGMET)','Показать действующие зоны пепла (SIGMET)','Mostrar zonas de ceniza vigentes (SIGMET)'))+'</button>'
       +'<button type="button" class="acp-mini" data-volcp="so2">'+S(L('Show satellite SO₂ (OMPS, today)','衛星 SO₂ を表示（OMPS・当日）','Satelliten-SO₂ zeigen (OMPS, heute)','Показать SO₂ со спутника (OMPS, сегодня)','Mostrar SO₂ satelital (OMPS, hoy)'))+'</button>'
+      /* (science-instruments) the fourth question — where an eruption starting NOW would put its ash. A
+         what-if over the live upper-air wind, not a forecast; the panel is js/ash-plume.js. */
+      +'<button type="button" class="acp-mini" data-volcp="ashsim">'+S(L('If it erupted now: where would the ash go?','いま噴火したら、灰はどこへ？'))+'</button>'
       +'<button type="button" class="acp-mini" data-volcp="thermal">'+S(L('Show satellite thermal anomalies here','この付近の衛星熱異常を表示','Thermische Anomalien hier zeigen','Показать тепловые аномалии здесь','Mostrar anomalías térmicas aquí'))+'</button>';
     return h;
   }

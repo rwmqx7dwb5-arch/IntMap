@@ -811,7 +811,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  166 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  167 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -937,7 +937,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 166能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 167能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1028,6 +1028,13 @@ radiation-model.js                放射性物質拡散のモデル本体（風�
                                   ラグランジュ solve・沈着格子・区分・線量積分）。DOM も window も
                                   持たない純粋モジュールで、ページと worker が同じものを import
                                   する。数の出所は docs/RADIATION-MODEL.md（export const RAD）
+ash-model.js                      火山灰の拡散モデル本体（Mastin の噴火源・Suzuki の鉛直分布・
+                                  Ganser の落下速度・変形拡散・気圧面の風の入れ子ネスト・降灰と
+                                  飛行高度帯ごとの濃度）。DOM も window も持たない（export const ASH）
+ash-plume.js                      「いま噴火したら」火山灰のパネル・地図・露出（地名辞典の町・空港）
+                                  window.IntMapAshPlume（遅延・火山カード・ツール欄・Atlas から開く）
+sim-datasets.js                   シミュレーションの出力を分析用データセットとして登録する 1 つの扉
+                                  （出自は sim 名・版・引数・乱数の種）。import して使う
 shakemap.js                       USGS ShakeMap——1つの地震の地震動そのもの（等値線・震度の面・
                                   範囲内の都市と人口・遅延取得）window.IntMapShakeMap
 seismic.js                        地震波シミュレータ（477 KB）

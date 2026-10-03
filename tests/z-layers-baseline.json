@@ -42,6 +42,7 @@
   ".ac-popup → 2210",
   ".sat-popup → 2210",
   ".volc-popup → 2210",
+  ".ash-panel → 2212",
   ".pin-popup → 1300",
   ".map-tooltip → 1500",
   ".m-news-pop-back → 1190",

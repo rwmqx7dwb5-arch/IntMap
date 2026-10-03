@@ -371,16 +371,23 @@ export const RAD = (function () {
     return best;
   }
 
-  const gauss = (function () {
-    let spare = null;
-    return function () {
-      if (spare !== null) { const s = spare; spare = null; return s; }
-      let u, v, s;
-      do { u = Math.random() * 2 - 1; v = Math.random() * 2 - 1; s = u * u + v * v; } while (s >= 1 || s === 0);
-      const m = Math.sqrt(-2 * Math.log(s) / s);
-      spare = v * m; return u * m;
-    };
-  })();
+  /* ⚠ (science-instruments) THE RANDOM NUMBERS HAVE A SEED NOW. A run was a function of its arguments
+     AND of Math.random, so two runs of the same release could not be told apart from two different
+     releases, and an ensemble could not say which member was which. `simulate` installs a seeded
+     generator for its own duration when `opts.seed` is given (mulberry32, the generator
+     js/ash-model.js uses), and Math.random otherwise — so a caller that passes no seed gets exactly
+     the behaviour it always had. */
+  let rnd = Math.random;
+  function seeded(seed) { let s = (seed >>> 0) || 1;
+    return function () { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  let spare = null;
+  const gauss = function () {
+    if (spare !== null) { const s = spare; spare = null; return s; }
+    let u, v, s;
+    do { u = rnd() * 2 - 1; v = rnd() * 2 - 1; s = u * u + v * v; } while (s >= 1 || s === 0);
+    const m = Math.sqrt(-2 * Math.log(s) / s);
+    spare = v * m; return u * m;
+  };
 
   /* ── the Lagrangian solve ───────────────────────────────────────────────────────────────────
      Particles carry MASS, not life and death. Each step every particle loses a fraction of its mass
@@ -391,6 +398,11 @@ export const RAD = (function () {
      ⚠ THERE IS NO SETTLING OF THE REMAINDER AT THE END. What is airborne when the window closes is
      reported as airborne. */
   function simulate(F, src, opts, onProgress) {
+    const seed = (opts.seed != null && isFinite(+opts.seed) && +opts.seed > 0) ? (+opts.seed >>> 0) : null;
+    rnd = seed ? seeded(seed) : Math.random; spare = null;
+    try { return simulateWith(F, src, opts, onProgress, seed); } finally { rnd = Math.random; spare = null; }
+  }
+  function simulateWith(F, src, opts, onProgress, seed) {
     const iso = ISOTOPES[String(opts.isotope || 'cs137').toLowerCase()] || ISOTOPES.cs137;
     const hours = Math.max(1, opts.hours), emitHours = Math.max(0.05, Math.min(hours, opts.emitHours));
     const N = Math.max(200, opts.particles | 0);
@@ -426,9 +438,9 @@ export const RAD = (function () {
         const want = Math.min(N - emitted, perStep);
         for (let k = 0; k < want; k++) {
           const i = emitted++;
-          lng[i] = src.lng + (Math.random() - 0.5) * 0.01;
-          lat[i] = src.lat + (Math.random() - 0.5) * 0.01;
-          z[i] = riseBot + Math.random() * (riseTop - riseBot);
+          lng[i] = src.lng + (rnd() - 0.5) * 0.01;
+          lat[i] = src.lat + (rnd() - 0.5) * 0.01;
+          z[i] = riseBot + rnd() * (riseTop - riseBot);
           mass[i] = 1; live[i] = 1;
         }
       }
@@ -511,7 +523,7 @@ export const RAD = (function () {
       airborneFrac: emitted ? airborne / emitted : 0,
       escapedFrac: emitted ? escaped / emitted : 0,
       escapedMassFrac: emitted ? escapedMass / emitted : 0,
-      maxDistKm, isotope: opts.isotope, dtSec: dt, steps,
+      maxDistKm, isotope: opts.isotope, dtSec: dt, steps, seed,
       pblEstimated: !F.inner.pblSeen,
     };
   }
@@ -632,7 +644,49 @@ export const RAD = (function () {
     };
   }
 
+  /* ══ (science-instruments) THE ENSEMBLE — how much of the answer is the release and how much is chance ══
+     One run is one draw of the turbulence AND one choice of source term. The source term of every
+     accident here is published as a RANGE (docs/RADIATION-MODEL.md §1), and the deposit is linear in
+     it — every particle carries bq/N — so the range does not need re-running: each seeded solve is
+     SCALED by lo/bq and hi/bq. The seeds DO need re-running, because the turbulence is not linear in
+     anything. Members = seeds × scales.
+     Per cell, the deposition density of every member (0 where a member put nothing) gives the
+     10th / 50th / 90th percentile; the zone areas and the peak are read off those three maps, so
+     «the p90 area above 37 kBq/m²» is the area of the p90 map above 37, not the 90th percentile of
+     areas — the map a reader would draw for the pessimistic case.
+     `results` are simulate() outputs of one release with different seeds; `scales` multiply bq. */
+  function ensemble(results, scales, isoKey) {
+    const zs = zonesFor(isoKey), zones = zs.bands;
+    scales = (scales && scales.length) ? scales : [1];
+    const members = results.length * scales.length;
+    const depRes = results[0].depRes;
+    const per = new Map();   /* key → Float64Array(members) of kBq/m² */
+    results.forEach((r, ri) => {
+      for (let k = 0; k < r.keys.length; k++) {
+        const kk = r.keys[k];
+        let a = per.get(kk); if (!a) { a = new Float64Array(members); per.set(kk, a); }
+        const gx = Math.round(kk / 100000), gy = kk - gx * 100000, lat = gy * depRes;
+        const areaM2 = Math.max(1, depRes * DEG_M * Math.cos(lat * Math.PI / 180) * depRes * DEG_M);
+        const kBq = r.bq[k] / areaM2 / 1000;
+        scales.forEach((s, si) => { a[ri * scales.length + si] = kBq * s; });
+      }
+    });
+    const q = (sorted, p) => { const h = (sorted.length - 1) * p, lo = Math.floor(h), hi = Math.ceil(h); return sorted[lo] + (sorted[hi] - sorted[lo]) * (h - lo); };
+    const P = [0.1, 0.5, 0.9], zoneKm2 = P.map(() => zones.map(() => 0)), peak = [0, 0, 0], cells = [];
+    per.forEach((a, kk) => {
+      const v = Array.from(a).sort((x, y) => x - y);
+      const gx = Math.round(kk / 100000), gy = kk - gx * 100000, lat = gy * depRes;
+      const km2 = depRes * DEG_M * Math.cos(lat * Math.PI / 180) * depRes * DEG_M / 1e6;
+      const qs = P.map((p) => q(v, p));
+      qs.forEach((d, pi) => { if (d > peak[pi]) peak[pi] = d; for (let i = 0; i < zones.length; i++) if (d >= zones[i].min) { zoneKm2[pi][i] += km2; break; } });
+      cells.push({ lng: gx * depRes, lat, p10: qs[0], p50: qs[1], p90: qs[2] });
+    });
+    return { members, seeds: results.map((r) => r.seed), scales: scales.slice(), zones, depRes,
+      zoneKm2: { p10: zoneKm2[0], p50: zoneKm2[1], p90: zoneKm2[2] }, peakKBqM2: { p10: peak[0], p50: peak[1], p90: peak[2] }, cells };
+  }
+
   return {
+    ensemble,
     ISOTOPES, SOURCE_TERMS, sourceTerm, zonesFor,
     innerPlan, outerPlan, planPoints, buildNest,
     windAt, envAt, frictionVelocity, neutralPBL, resolveStart,

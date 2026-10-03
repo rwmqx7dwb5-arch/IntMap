@@ -88,7 +88,11 @@ test('R176 ③: the drone launcher is gone from every menu, the planner is not',
   assert.ok(EAGER.has('js/drone-nav.js'), 'the planner is still loaded');
   assert.ok(instantiated('js/drone-nav.js', 'droneNav'), 'and still instantiated');
   assert.match(body, /\bdroneNav\((IM_HOST)\)/, '…with the host');
-  assert.match(atlas, /window\.IntMapDrone&&window\.IntMapDrone\.toggle\(\)/, 'and Atlas opens it directly now');
+  /* (science-instruments) Atlas still opens it directly — through the planner's own capability: a `tool` name
+     meaning the drone is handed to routing.drone's droneRun, which opens window.IntMapDrone. The dispatch is
+     EVALUATED in tests/science-instruments-checks.test.mjs ⑥; here both halves of the door are read. */
+  assert.match(atlas, /if\(\/drone\|ドローン\|无人机\|무인기\/\.test\(n\)\) return droneRun\(/, 'and Atlas opens it directly now');
+  assert.match(atlas, /export async function droneRun\([\s\S]{0,400}?const D=window\.IntMapDrone;/, '…through the planner itself');
   assert.ok(capabilityEntry('drone'), 'the full drone action still exists');
 });
 

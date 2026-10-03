@@ -29,7 +29,7 @@
  *  and the observer calls it. A surface declared beside the code that paints it cannot be the
  *  surface somebody forgot to list.
  * ==========================================================================*/
-import { PANDEMIC_PRESETS, createPandemicModel, defaultPandemicParams, describePandemicParams, checkPandemicParams, paramBounds, PANDEMIC_PARAMS } from './pandemic-model.js';
+import { PANDEMIC_PRESETS, createPandemicModel, defaultPandemicParams, describePandemicParams, checkPandemicParams, paramBounds, PANDEMIC_PARAMS, summariseEnsemble } from './pandemic-model.js';
 import { buildPandemicWorld, resolveOrigin } from './pandemic-world.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
@@ -70,6 +70,14 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
      `styledata` on style completion. */
   const STYLE_WAIT_MS = 4000;
 
+  /* ══ (science-instruments) AN ENSEMBLE IS SEVERAL SEEDS OF THE SAME QUESTION ══════════════════
+     「257 か国」 is a fact about seed 812734 (#R675). The panel's ensemble (js/playground.js) already
+     answers with a spread; Atlas could only ever print one draw. `runs` replays the SAME world, preset,
+     parameters and day with seeds seed, seed+1, … and summarises them with the engine's own
+     summariseEnsemble — median, p10–p90 and how often each ending happened.
+     ⚠ THE BOUNDS ARE THE PANEL'S CHOICES (10 / 25 / 50 there), read as a range: below 2 there is no
+     spread to report, and 50 is the most the panel offers a reader to wait through. */
+  const RUNS_MIN = 2, RUNS_MAX = 50;
   let deps = null;
   let last = null;   /* the run `draw()` paints. One at a time: a second run replaces it. */
   let _metric = null, _top = null;   /* which scale the live layer was built for — see the rebuild note in draw() */
@@ -107,18 +115,34 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
     const params = Object.assign(defaultPandemicParams(presetKey, scenario), given, { scenario: scenario });
     const described = describePandemicParams(presetKey, scenario, given);
 
-    const model = createPandemicModel({ countries: W.world, routes: W.routes, preset: PANDEMIC_PRESETS[presetKey], params: params, seed: seed });
-    model.seed(origin.i, params.initialCases);
-
-    /* ⚠ SLICED BY TIME, AND THE LOOP CANNOT OUTLIVE ITS OWN CEILING. `ended` is the engine's, and
-       `model.day` is the only authority on how far it actually got — a caller that asked for 600
-       days of an epidemic that burned out on day 210 is told 210, not 600. */
-    let guard = 0;
-    while (model.day < days && !model.ended) {
-      const t0 = Date.now();
-      while (model.day < days && !model.ended && Date.now() - t0 < SLICE_MS) model.step();
-      if (++guard > 100000) break;
-      if (model.day < days && !model.ended) await new Promise(r => setTimeout(r, 0));
+    let runs = null;
+    if (A.runs != null) {
+      runs = Math.round(+A.runs);
+      if (!(runs >= RUNS_MIN && runs <= RUNS_MAX)) return fail(L('runs must be between {a} and {b}.', 'runs は {a}〜{b} の範囲で指定してください。').replace('{a}', String(RUNS_MIN)).replace('{b}', String(RUNS_MAX)), 'runs-out-of-range');
+    }
+    const stepTo = async (seedN) => {
+      const m = createPandemicModel({ countries: W.world, routes: W.routes, preset: PANDEMIC_PRESETS[presetKey], params: params, seed: seedN });
+      m.seed(origin.i, params.initialCases);
+      /* ⚠ SLICED BY TIME, AND THE LOOP CANNOT OUTLIVE ITS OWN CEILING. `ended` is the engine's, and
+         `model.day` is the only authority on how far it actually got — a caller that asked for 600
+         days of an epidemic that burned out on day 210 is told 210, not 600. */
+      let guard = 0;
+      while (m.day < days && !m.ended) {
+        const t0 = Date.now();
+        while (m.day < days && !m.ended && Date.now() - t0 < SLICE_MS) m.step();
+        if (++guard > 100000) break;
+        if (m.day < days && !m.ended) await new Promise(r => setTimeout(r, 0));
+      }
+      return m;
+    };
+    const model = await stepTo(seed);
+    let ensemble = null;
+    if (runs) {
+      const reps = [];
+      const one = (m) => { const t = m.totals(); return { cumInf: t.cumInf, D: t.D, I: t.I, reached: t.reached, affected: t.affected, day: m.day, kind: m.ended ? (m.ended.kind || 'ended') : 'running' }; };
+      reps.push(one(model));
+      for (let k = 1; k < runs; k++) reps.push(one(await stepTo(((seed + k) >>> 0) || 1)));
+      ensemble = Object.assign(summariseEnsemble(reps), { seeds: [seed, ((seed + runs - 1) >>> 0) || 1] });
     }
 
     const totals = model.totals();
@@ -132,7 +156,7 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
     rows.sort((x, y) => y.cumInf - x.cumInf);
 
     last = { W: W, model: model, rows: rows, totals: totals, day: model.day, presetKey: presetKey, scenario: scenario,
-      seed: seed, origin: origin, described: described, asked: days, ended: model.ended || null };
+      seed: seed, origin: origin, described: described, asked: days, ended: model.ended || null, ensemble: ensemble };
     return { ok: true, html: runHtml(last), meta: runMeta(last) };
   }
 
@@ -301,6 +325,8 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
       origin: { index: r.origin.i, code: r.W.world[r.origin.i].code, name: r.W.names[r.origin.i], how: r.origin.how, matched: r.origin.matched || null, via: r.origin.via || null, disputed: r.origin.disputed || null },
       totals: { cumInf: r.totals.cumInf, D: r.totals.D, I: r.totals.I, affected: r.totals.affected, reached: r.totals.reached, worldPop: r.totals.worldPop },
       ended: r.ended ? (r.ended.kind || String(r.ended)) : null,
+      ensemble: r.ensemble ? { runs: r.ensemble.n, seeds: r.ensemble.seeds, outcomes: r.ensemble.outcomes,
+        metrics: Object.fromEntries(Object.keys(r.ensemble.metrics).map((k) => { const m = r.ensemble.metrics[k]; return [k, { p10: m.p10, p50: m.p50, p90: m.p90, min: m.min, max: m.max }]; })) } : null,
       dataState: r.W.dataState,
       assumed: r.described.filter(d => d.origin !== 'caller').map(d => ({ key: d.key, value: d.display, engineValue: d.value, unit: d.unit, from: d.origin })),
       countries: r.rows.slice(0, 20).map(x => ({ code: x.code, name: x.name, cumInf: x.cumInf, D: x.D, I: x.I, border: x.border, arrivalDay: x.arrivalDay })) };
@@ -324,7 +350,20 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
     const short = r.day < r.asked ? '<p style="opacity:.75">' + esc(L('Asked for {a} days; the run reached day {d}.', '{a} 日を要求されましたが、{d} 日目まで進みました。', '{a} Tage angefordert; der Lauf erreichte Tag {d}.', 'Запрошено {a} дней; прогон дошёл до дня {d}.', 'Se pidieron {a} días; la simulación llegó al día {d}.').replace('{a}', String(r.asked)).replace('{d}', String(r.day))) + '</p>' : '';
     const seedNote = '<p style="opacity:.7;font-size:.9em">' + esc(L('Seed {s} — the same seed reproduces this run exactly.', '乱数種 {s} — 同じ種なら同じ結果が再現されます。', 'Startwert {s} — derselbe Startwert reproduziert diesen Lauf exakt.', 'Зерно {s} — то же зерно точно воспроизводит прогон.', 'Semilla {s}: la misma semilla reproduce esta simulación exactamente.').replace('{s}', String(r.seed))) + '</p>';
     return '<p><b>' + head + '</b></p><p>' + from + ' · ' + esc(String(r.presetKey)) + ' · ' + esc(String(r.scenario)) + '</p>'
-      + ended + short + (top ? '<ul>' + top + '</ul>' : '') + asmp + seedNote;
+      + ended + short + (top ? '<ul>' + top + '</ul>' : '') + ensHtml(r) + asmp + seedNote;
+  }
+
+  /* the spread, said as a spread: median and the 80 % band of the replicates, and how each ended */
+  function ensHtml(r) {
+    const e = r.ensemble; if (!e) return '';
+    const m = e.metrics, band = (k) => m[k] ? grp(m[k].p50) + ' (' + grp(m[k].p10) + '–' + grp(m[k].p90) + ')' : '—';
+    const end = Object.keys(e.outcomes).map((k) => esc(k) + ' ' + Math.round(e.outcomes[k] * 100) + '%').join(' · ');
+    return '<p><b>' + esc(L('Across {n} runs (seeds {a}–{b}): median (10th–90th percentile)', '{n} 回の実行（種 {a}–{b}）: 中央値（10〜90 パーセンタイル）').replace('{n}', String(e.n)).replace('{a}', String(e.seeds[0])).replace('{b}', String(e.seeds[1]))) + '</b></p><ul>'
+      + '<li>' + esc(L('infected to date', '累計感染')) + ': ' + band('cumInf') + '</li>'
+      + '<li>' + esc(L('dead', '死亡')) + ': ' + band('D') + '</li>'
+      + '<li>' + esc(L('countries reached', '到達した国')) + ': ' + band('reached') + '</li></ul>'
+      + '<p>' + esc(L('How the runs ended:', '結末の内訳:')) + ' ' + end + '</p>'
+      + '<p style="opacity:.7;font-size:.9em">' + esc(L('The map and the list above are the first run (seed {s}); the spread is what the same question gives under different chance.', '地図と上の一覧は最初の実行（種 {s}）です。幅は、同じ問いが偶然の違いでどれだけ変わるかを示します。').replace('{s}', String(r.seed))) + '</p>';
   }
 
   function drawHtml(r, n, metric, top) {

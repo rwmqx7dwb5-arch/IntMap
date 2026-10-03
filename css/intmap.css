@@ -1495,6 +1495,33 @@
     .volc-er-v.big{ color:#e0332f; font-weight:700; }
     .volc-er-e{ flex:0 0 116px; text-align:right; font-size:10px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     @media (max-width:768px){ .volc-popup{ width:calc(100vw - 24px); } .volc-er-e{ display:none; } }
+    /* (science-instruments) 「いま噴火したら」 — the volcanic-ash what-if panel (js/ash-plume.js). Opaque card like
+       #rad-panel; on a phone it is a bottom sheet so the map above it stays the answer. */
+    .ash-panel{ position:fixed; right:16px; top:80px; width:min(348px,92vw); max-height:min(80vh,780px); display:none; flex-direction:column; z-index:calc(var(--z-popup) + 212); background:var(--card-bg,#1c1c1e); color:var(--text-main); border:1px solid var(--glass-border,rgba(128,128,128,0.3)); border-radius:16px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,0.45); }
+    .ash-panel .ash-head{ display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--input-bg); cursor:move; font-size:13px; font-weight:700; }
+    .ash-panel .ash-title{ flex:1; }
+    .ash-panel .ash-x{ border:none; background:transparent; color:var(--text-muted); cursor:pointer; padding:2px; display:flex; }
+    .ash-panel .ash-body{ padding:10px 12px 12px; overflow-y:auto; display:flex; flex-direction:column; gap:7px; font-size:12px; }
+    .ash-panel .ash-where{ font-size:12.5px; font-weight:600; }
+    .ash-panel .ash-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .ash-panel .ash-lb{ display:flex; flex-direction:column; gap:3px; font-size:10.5px; color:var(--text-muted); }
+    .ash-panel .ash-in{ width:100%; box-sizing:border-box; height:30px; padding:0 8px; border-radius:8px; border:1px solid var(--glass-border,rgba(128,128,128,0.28)); background:var(--input-bg); color:var(--text-main); font-size:12px; }
+    .ash-panel .ash-hint{ font-size:10.5px; color:var(--text-muted); line-height:1.45; }
+    .ash-panel .ash-go{ height:36px; border:none; border-radius:10px; background:var(--primary-fill); color:#fff; font-size:12.5px; font-weight:700; cursor:pointer; }
+    .ash-panel .ash-go[disabled]{ background:var(--input-bg); color:var(--text-muted); cursor:default; }
+    .ash-panel .ash-bar{ height:4px; border-radius:2px; background:var(--input-bg); overflow:hidden; }
+    .ash-panel .ash-bar > i{ display:block; height:100%; background:var(--primary-fill); transition:width .2s; }
+    .ash-panel .ash-sw{ display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+    .ash-panel .ash-seg{ display:flex; background:var(--input-bg); border-radius:9px; padding:2px; gap:2px; }
+    .ash-panel .ash-segb{ flex:1; border:none; background:transparent; color:var(--text-muted); font-size:11px; font-weight:600; padding:5px 0; border-radius:7px; cursor:pointer; }
+    .ash-panel .ash-segb.on{ background:var(--card-bg,#1c1c1e); color:var(--text-main); box-shadow:0 1px 3px rgba(0,0,0,0.25); }
+    .ash-panel .ash-time{ display:flex; align-items:center; gap:8px; }
+    .ash-panel .ash-play{ width:30px; height:30px; flex:0 0 auto; border-radius:15px; border:none; background:var(--primary-fill); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+    .ash-panel .ash-slider{ flex:1; accent-color:var(--primary-fill); }
+    .ash-panel .ash-tl{ font-size:11px; font-variant-numeric:tabular-nums; min-width:48px; text-align:right; }
+    .ash-panel .ash-legend{ display:flex; flex-wrap:wrap; gap:10px; font-size:10.5px; color:var(--text-muted); }
+    .ash-panel .ash-foot{ font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:4px; }
+    @media (max-width:768px){ .ash-panel{ left:0; right:0; top:auto; bottom:0; width:100%; max-height:62vh; border-radius:16px 16px 0 0; } }
     /* the layer legend: the colour-mode switch, and the key for whichever mode is on */
     .volc-key{ display:flex; flex-direction:column; gap:4px; margin-top:6px; font-size:11px; color:var(--text-main); }
     .volc-modes{ display:flex; gap:3px; margin-bottom:3px; }

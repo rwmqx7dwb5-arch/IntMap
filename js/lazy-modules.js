@@ -100,6 +100,7 @@ export const LAZY_REGISTRY = Object.freeze({
   satellitesLive: { publishes: 'IntMapSatellites', load: () => import('./satellites-live.js'), mount: (IM_HOST, m) => { m.satellitesLive(IM_HOST); }, also: ['satelliteDetail'] },
   satelliteDetail: { publishes: 'IntMapSatPanel', load: () => import('./satellite-detail.js'), mount: (IM_HOST, m) => { m.satelliteDetail(IM_HOST); } },
   volcanoIntel: { publishes: 'IntMapVolcano', load: () => import('./volcano-intel.js'), mount: (IM_HOST, m) => { m.volcanoIntel(IM_HOST); } },
+  ashPlume: { publishes: 'IntMapAshPlume', load: () => import('./ash-plume.js'), mount: (IM_HOST, m) => { m.ashPlume(IM_HOST); } },
   volcanoLayers: { publishes: 'IntMapVolcanoLayers', load: () => import('./volcano-layers.js'), mount: (IM_HOST, m) => { m.volcanoLayers(IM_HOST); } },
   companyData: { publishes: 'IntMapCompanyData', load: () => import('./company-data.js'), mount: (IM_HOST, m) => { window.IntMapCompanyData=m.companyData(IM_HOST); } },
   companyPanel: { publishes: 'IntMapCompanyPanel', load: () => import('./company-panel.js'), mount: (IM_HOST, m) => { window.IntMapCompanyPanel=m.companyPanel(IM_HOST); }, also: ['companyData', 'companyFacilities'] },
