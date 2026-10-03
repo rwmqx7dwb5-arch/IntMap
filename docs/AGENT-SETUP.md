@@ -199,9 +199,13 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
 **どちらの役に何をさせるかという判断は [`.agents/skills/intmap-round/`](../.agents/skills/intmap-round/SKILL.md) §2 にあり、
 両方が読む。** 届かないのは、その判断を機械に伝える**手段**のほうだけである。
 
-⇒ **実務上の帰結: Codex で走る scout / i18n / verifier は、Claude Code 側より高いモデルで
-走ることがある。** これは欠陥ではなく、この表が明記している差。**昇格条件**（verifier に
-「環境要因か本物の退行か」を訊くときは上げる）は Codex では自動的に満たされている。
+⇒ **実務上の帰結: Codex で走る scout / i18n / verifier / implementer は、Claude Code 側より
+高いモデルで走ることがある。** これは欠陥ではなく、この表が明記している差。**昇格条件**（verifier に
+「環境要因か本物の退行か」を訊く 2 問目は上げる）は Codex では自動的に満たされている。
+
+**宣言が守られているかは、宣言からは見えない**——呼び出し側の `model` 上書きで既定は外れる
+（実測 2026-10-03: 既定を下げた後も 92% が Opus）。実際に答えたモデルを役ごとに数えるのは
+`node scripts/agent-models.mjs`（Claude Code の transcript を読む。Codex は対象外）。
 
 ⚠ 綴りの誤りは `npm run check:agents` が止める。Claude Code は知らないモデル名を
 **黙って無視して継承に戻る**ので、宣言だけが残って誰も気づかない（`scripts/agent-sync.mjs`

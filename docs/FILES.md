@@ -1612,6 +1612,13 @@ scripts/
   org-pages.mjs                   組織向けページ・相談フォーム・支援のページ（en と ja/）と admin-inquiries.html の**生成器と門**
                                   （`--check`）。数字はその持ち主から読む（facts()・plans.js・EMBED_SIZES・purge の既定値）
   org-pages-text.mjs              そのページの文の唯一の写し（en + jp）。導入事例・料金・応答時間を書かない
+  brand.mjs                       **ブランドの書き出しと門**——index.html の head・docTitle/docDesc・manifest・README の
+                                  タグライン・docs/marketing/ の 2 本を brand-text.mjs から書く。`--print <id>` で投稿の完成形（§8.6.2）
+  brand-text.mjs                  タグライン・説明・ポジショニングの唯一の写し（en + jp）
+  launch-text.mjs                 チャネル別のローンチ投稿の下書き（投稿はしない）
+  history-pages.mjs               歴史地図の入口ページの生成器——js/time-borders.js を Node で動かし、地図が描く名前を
+                                  地域 × 日付で書く。vite.config.js の historyPagesPlugin がビルド時に子プロセスで走らせる（§8.6.2）
+  history-pages-text.mjs          入口ページの文の唯一の写し（en + jp）
   showcase-capture.mjs            見本の地図のリンクと画面写真を、ビルドしたアプリ自身に作らせる（サーバと実ネットワークが要る）。
                                   授業ツアーの段（js/tours.js）のリンクも同じ関数で作る（`--shots <dir>` で確認用の写真）。
                                   `--serve dist` でこの実行の間だけ serve.mjs を立てて止める・`--only a,b`・`--thumbs` でギャラリー用の縮小を作る
