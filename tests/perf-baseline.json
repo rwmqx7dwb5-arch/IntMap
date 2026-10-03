@@ -29,6 +29,7 @@
       "atlas-executor": 59369,
       "atlas-geo-resolve": 49361,
       "atlas-query": 48520,
+      "atlas-reasoning": 15328,
       "atlas-view-capture": 8511,
       "atlas-view-ground": 3786,
       "aviation-live": 33249,
@@ -119,8 +120,8 @@
     }
   },
   "dist": {
-    "total": 859198067,
-    "data": 746698762,
+    "total": 857096364,
+    "data": 745102527,
     "assets": 19578243
   },
   "phone": {
