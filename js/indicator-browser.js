@@ -30,6 +30,7 @@
 import { LAYERS, layerDeclaration } from './layer-manifest.js';
 import { IntMapLang } from './lang-registry.js';
 import * as bus from './bus.js';
+import './safe-html.js';   /* publishes globalThis.IntMapSafe — the escaper esc() below reads, in Node as in the app */
 
 const STORE = 'intmap.indicator';   /* the reader's last choice on this device */
 

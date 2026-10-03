@@ -29,6 +29,9 @@
 
 /** the World Bank's API host: a file containing it fetches World Bank series */
 export const WORLD_BANK_HOST = 'api.worldbank.org';
+/* a file FETCHES from it when it holds the URL — scheme, host and the path's slash — not when the host's name merely
+   appears (a comment, a list of hosts). Asked as a URL, not as a substring (CodeQL js/incomplete-url-substring-sanitization). */
+const WORLD_BANK_URL = new RegExp('https://' + WORLD_BANK_HOST.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/');
 /** the publishers a `measures` claim may name, and what each means */
 export const PUBLISHERS = Object.freeze({
   worldbank: 'a World Bank WDI series code (a summed series is `A+B`)',
@@ -57,7 +60,7 @@ const add = (m, key, v, src) => {
 export function discoverSeries(files) {
   const out = new Map();
   for (const [, src] of files) {
-    if (src.includes(WORLD_BANK_HOST)) {
+    if (WORLD_BANK_URL.test(src)) {
       /* `{id:'wbX', code:'C'}` and `{id:'wbX', code:['A','B']}` */
       for (const m of src.matchAll(/\{\s*id\s*:\s*'([A-Za-z0-9_]+)'\s*,\s*code\s*:\s*(\[[^\]]*\]|'[^']+')/g)) {
         const codes = [...m[2].matchAll(/'([^']+)'/g)].map((x) => x[1]);

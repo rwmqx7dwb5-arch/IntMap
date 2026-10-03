@@ -234,6 +234,10 @@
             {
               "id": "time.lapse",
               "tool": "time_lapse"
+            },
+            {
+              "id": "time.yearbook",
+              "tool": "time_yearbook"
             }
           ]
         }

@@ -36,6 +36,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { TIME } from './layer-time-decl.js';
 import { jsonWithin } from './fetch-deadline.js';   /* the app's one clock on a read */
 import { clockFor } from './proxy-fetch.js';   /* the war rows' spans, as the time table states them (cited to data/wars.json) */
+import './safe-html.js';   /* publishes globalThis.IntMapSafe — the escaper esc() below reads, in Node as in the app */
 
 const R_EARTH = 6378137;   /* WGS84 equatorial radius (m) — the sphere the ring area below is computed on */
 const D2R = Math.PI / 180;
@@ -211,7 +212,7 @@ let sheet = null, seq = 0, unsub = null, hostRef = null, timer = 0;
 
 /** open the year book for the clock's instant; it follows the clock until it is closed
     @param {any} host { lang, time (the master clock), deps () => readYear's deps, escape, flyTo(bbox|[lng,lat]) } */
-export function openYearBook(host) {
+function openYearBook(host) {
   hostRef = host;
   ensureStyle();
   if (!sheet) {
@@ -225,11 +226,10 @@ export function openYearBook(host) {
   paint();
   return { close: closeYearBook };
 }
-export function closeYearBook() {
+function closeYearBook() {
   if (sheet) sheet.hidden = true;
   if (unsub) { try { unsub(); } catch (_) { /* already gone */ } unsub = null; }
 }
-export const yearBookOpen = () => !!(sheet && !sheet.hidden);
 
 async function paint() {
   if (!sheet || sheet.hidden || !hostRef) return;

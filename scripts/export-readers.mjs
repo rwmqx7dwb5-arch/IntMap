@@ -93,7 +93,7 @@ export function reachedNames(src) {
   for (const m of src.matchAll(/\(\s*await\s+import\s*\([^)]*\)\s*\)\s*\.\s*([A-Za-z_$][\w$]*)/g)) names.add(m[1]);
   for (const m of src.matchAll(/\bimport\s*\([^)]*\)\s*\.\s*([A-Za-z_$][\w$]*)/g)) names.add(m[1]);
   /* destructured module objects: `const { a, b } = await import(…)` and `.then(({ a }) =>` */
-  for (const m of src.matchAll(/\{([^}]*)\}\s*=\s*await\s+import\s*\(/g)) for (const p of m[1].split(',')) { const nm = p.trim().split(/\s*:\s*/)[0].trim(); if (nm) names.add(nm); }
+  for (const m of src.matchAll(/\{([^{}]*)\}\s*=\s*await\s+import\s*\(/g)) for (const p of m[1].split(',')) { const nm = p.trim().split(/\s*:\s*/)[0].trim(); if (nm) names.add(nm); }
   for (const m of src.matchAll(/\.then\s*\(\s*\(\s*\{([^}]*)\}\s*\)\s*=>/g)) for (const p of m[1].split(',')) { const nm = p.trim().split(/\s*:\s*/)[0].trim(); if (nm) names.add(nm); }
   /* (module-graph) …and the module object the loader HANDS ON: js/lazy-modules.js's registry pairs
      `load: () => import('./x.js')` with `mount: (IM_HOST, m) => { … m.x(IM_HOST) … }`, and the loader

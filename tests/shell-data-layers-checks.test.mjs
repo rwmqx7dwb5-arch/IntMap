@@ -811,8 +811,8 @@ test('R289 ④ CO₂ and defence spending are one row each, with both views stil
   assert.match(wb, /const ALL=WB\.map\(L=>\(\{id:L\.id,n:L\.n,modes:L\.modes,/,
     'the row list must carry `modes`, or a modal row has no name at all');
   /* the thumbnail's pre-load copy and the layer cannot disagree about which series is on */
-  assert.match(wb, /codeOf:\(id\)=>\{ const L=WB\.find\(x=>x\.id===id\); return L\?V\(L\)\.code:null; \}/,
-    'the active indicator is published for the thumbnail to read');
+  assert.match(wb, /codeOf:\(id\)=>\{ const L=WB\.find\(x=>x\.id===id\)(?:\|\|wbById\[id\])?; return L\?V\(L\)\.code:null; \}/,
+    'the active indicator is published for the thumbnail to read');   /* (map-layer-system) `||wbById[id]`: a series the indicator browser paints is looked up too */
   assert.match(read('js/layer-previews.js'), /function wbCode\(id,spec\)\{/, 'and the thumbnail reads it');
   /* defence spending: one row, two fills, and the switch lives in BOTH legends because the reader
      is looking at the one for the mode that is on */

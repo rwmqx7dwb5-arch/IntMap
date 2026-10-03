@@ -100,3 +100,19 @@ date: 2026-10-03
 - 汚職指標を系列として読む（`source=3` を系列の読み手に渡す）と、組の規則に揃えられる
 - 国の表の合計特殊出生率（時計を動かすと SP.DYN.TFRT.IN）と `bx-wbfert` は同じ系列だが、国の表の現在値の出典が
   コードから辿れないので `countrystats:tfr` のままにした（主張を拒める読み手が無い主張は書かない）
+
+## PR の CI で落ちたもの（統合前）
+
+- **死んだ export 4 件（`js/year-book.js`）**: `openYearBook`・`closeYearBook` はファイルの中でしか呼ばれないので export を外し、
+  どこからも呼ばれない `yearBookOpen` を消した。`areaKm2` は `tests/map-layer-system-checks.test.mjs` が
+  `const { areaKm2 } = await import(…)` で読んでいたのに、`scripts/export-readers.mjs` の分割代入の正規表現 `\{([^}]*)\}` が
+  test 本体の `{` から始まって「const { areaKm2」を名前として拾っていた。`{` を含まない形にし、回帰を置いた。
+- **`globalThis.IntMapSafe` を import せずに読む 2 ファイル**（`js/indicator-browser.js`・`js/year-book.js`）に `import './safe-html.js'`。
+- **台本カセット `rail-request-reached-nothing`**: `find_capability «所要時間 距離»` の答えに新しい `time.yearbook` が 8 件目として
+  入る。`scripted-cassettes.mjs --write` で記録し直した（⚠ main の #909 も能力を 1 つ足すので、rebase 後にもう一度確かめる）。
+- **`about.html`・`ja/about.html`**: レイヤー数 163 → 164 を `scripts/landing.mjs --write` で再生成。
+- **`tests/shell-data-layers-checks.test.mjs` R289 ④**: `codeOf` が `||wbById[id]`（指標ブラウザが塗る系列）も引くようになった形を受ける。
+- **`tests/layer-manifest-checks.test.mjs` ①**: 「`share` は置き換えた旧 selector と同じ」を、置き換えた日の行
+  （`tests/fixtures/layer-descriptor-before.json`）に限った。`bx-wbind` は意図して共有リンクに載る新しい行で、旧 selector は何も述べない。
+- **CodeQL js/incomplete-url-substring-sanitization**（`scripts/lib/indicator-series.mjs`）: 「World Bank から取得するファイルか」を
+  ホスト名の部分文字列ではなく `https://api.worldbank.org/` の URL として訊く。発見される系列は同じ（`layer-descriptors --check` 164 層）。

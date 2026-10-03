@@ -293,3 +293,12 @@ test('⑦ Atlas\'s answers are built beside the readers, from the same facts', a
   assert.match(a, /Year on the map: 2022 · 5 countries reporting/);
   assert.match(a, /Highest: Japan .*Switzerland/);
 });
+
+test('the year book\'s test-only reader is seen: a destructured dynamic import INSIDE a block is a read (scripts/export-readers.mjs)', async () => {
+  /* `test(…, async () => { const { areaKm2 } = await import('../js/year-book.js'); …` — the block's own `{` sat in front of
+     the destructure, and `\{([^}]*)\}` started there, so the name it captured was «const { areaKm2» and CI called areaKm2 dead */
+  const { reachedNames, deadExports } = await import('../scripts/export-readers.mjs');
+  const got = reachedNames("test('x', async () => {\n  const { a, b: bb } = await import('../js/x.js');\n  a(); bb();\n});\n");
+  assert.ok(got.has('a') && got.has('b'), 'both destructured names are reads');
+  assert.deepEqual(deadExports(ROOT).dead.filter((d) => d.startsWith('js/year-book.js') || d.startsWith('js/indicator-browser.js')), []);
+});
