@@ -115,9 +115,9 @@ export const EVENTS = Object.freeze({
     pending: { 'js/mobile-sheet.js': 'cycle' },
   },
   [MAP_ANSWER_EVENT]: {
-    means: 'a module put an answer on the map; on a phone the sheet settles to show it',
+    means: 'a module put an answer on the map (kind card), or a card in the sheet that must be read through (kind read); on a phone the sheet settles to show it',
     detail: '{ kind }',
-    from: ['js/place-dossier.js', 'js/search-geocode.js', 'js/showcase-gallery.js'],
+    from: ['js/atlas-examples.js', 'js/place-dossier.js', 'js/search-geocode.js', 'js/showcase-gallery.js'],
   },
   'intmap-hist-identity': {
     means: 'the historical-country identity table arrived for the shown year; borders drawn before it re-label',

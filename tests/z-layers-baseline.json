@@ -66,6 +66,7 @@
   ".tool-panel.tp-radius .tp-header → 2",
   "#iso-exit-btn → 1750 !important",
   ".m-news-pop-back → 2000",
+  "#map-container > .country-popup → 1100",
   ".m-screens → 20",
   "#m-screens > #settings-modal → auto !important",
   "#map-container > [class*=\"legend\"], #map-container > [id*=\"legend\"] → 1040 !important",

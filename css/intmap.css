@@ -2785,6 +2785,21 @@
       /* (#R13c) box-sizing:border-box so width:100% INCLUDES the 18px L/R padding — without it the sheet
          was 100vw + 36px and overflowed the device width, cutting off the country stats. */
       .country-popup{ position:fixed !important; left:0 !important; right:0 !important; bottom:0 !important; top:auto !important; width:100% !important; max-width:100% !important; box-sizing:border-box !important; max-height:84dvh; border-radius:18px 18px 0 0; transform:none !important; padding:26px 18px max(20px,var(--safe-bottom)); animation:mSheetUp 0.42s var(--sheet-ease); }
+      /* (mobile-card-reach) A CARD THE MAP HOLDS IS A FLOATING CARD, NOT A SECOND SHEET. The rule above makes every
+         `.country-popup` a bottom sheet at y 0…100%: right for one mounted on <body> (z 2200, over everything), wrong for
+         the ones mounted in #map-container (volcano, aircraft, satellite, company, news-intel, place profile), which draw
+         UNDER the real sheet — MEASURED on production at 375 × 812: card bottom 812, sheet top 734, the card's lower
+         buttons covered by #sidebar and a «© Esri» pill over the next. So a card the map holds follows the same three
+         numbers every other floating thing on the map follows: its bottom is the sheet's CURRENT top (--sheet-cover) plus
+         the data credit (--m-credit-h, measured by js/mobile-ui.js) and a gap; its top is where the legend chip's row
+         ends (--m-legend-top); its right edge stops short of the control group (--m-legend-right, as the place card
+         does). What does not fit scrolls inside the card (`overflow-y:auto` is already the family's). The selector is
+         a FACT (where the card is mounted), so a card added tomorrow is held the same way. */
+      #map-container > .country-popup{ left:calc(var(--m-edge) + var(--safe-left)) !important; right:var(--m-legend-right) !important; width:auto !important; max-width:none !important;
+        bottom:calc(var(--sheet-cover, var(--peek-h)) + var(--m-credit-h, 23px) + 20px) !important;
+        max-height:max(160px, calc(100dvh - var(--sheet-cover, var(--peek-h)) - var(--m-credit-h, 23px) - 20px - var(--m-legend-top))) !important;
+        border-radius:18px !important; overflow-y:auto; overscroll-behavior:contain; touch-action:pan-y; padding-top:18px; z-index:var(--z-m-card); animation:none; }
+      #map-container > .country-popup::before{ display:none; }
 
       /* roomier tap targets across content */
       .news-item{ padding:11px 15px; } .stat-row{ padding:8px 14px; }   /* (#R137) tighter top/bottom padding inside country cards on mobile ("国カード内部の上下方向の余白を詰めて") */

@@ -96,6 +96,8 @@ import { makeAtlasViewSubject } from './atlas-view-subject.js';   /* (#R392) wha
 import { IntMapTime } from './chronos.js';
 import { planOf, DEFAULT_PLAN } from '../supabase/functions/_shared/plans.js';   /* (atlas-before-login) the free allowance, from the one table that grants it */
 import { IntMapLang } from './lang-registry.js';
+import { MAP_ANSWER_EVENT } from './mobile-sheet.js';   /* (mobile-card-reach) «a card in the sheet needs the room» */
+import * as bus from './bus.js';   /* the declared events (js/bus.js) */
 
 export function makeAtlasExamples(HOST, CTX) {
   const L=CTX.L, GE=CTX.GE, codeAtPoint=CTX.codeAtPoint, countryStats=CTX.countryStats,
@@ -1277,7 +1279,14 @@ export function makeAtlasExamples(HOST, CTX) {
       if(ew.style.display==='none') return;
       const f=exFacts();
       const key=exKey(f);
-      if(!force&&key===_exKey) return; _exKey=key;
+      if(!force&&key===_exKey) return;
+      /* (mobile-card-reach) A CARD THE READER IS READING IS NOT A CHIP. The redraw replaces the whole row, and the sample
+         card is in the row — MEASURED at 375 × 812: raising the sheet to read it moved the camera's padding, the view key
+         changed, and the card was gone before its login button could be reached. While a signed-out reader has the card
+         open the redraw WAITS (`_exKey` is not advanced, so it still happens): the card's own close asks for it. Signing
+         in is the one change that ends the card, and it does not wait. */
+      if(!force && !_signedIn() && ew.querySelector('.atl-pv')) return;
+      _exKey=key;
       ew.innerHTML='';
       if(!_signedIn()) ew.appendChild(_gateNote());
       examples(f).forEach(ex=>{ const b=document.createElement('button'); b.className='atl-chip'; b.textContent=ex;
@@ -1321,9 +1330,12 @@ export function makeAtlasExamples(HOST, CTX) {
       const go=_el('button','atl-pv-login',_t('atlasPvLogin')); go.type='button';
       go.onclick=()=>{ try{ if(typeof CTX.stage==='function') CTX.stage(q); }catch(_){} try{ HOST.openAuthModal(HOST.aiLoginMsg()); }catch(_){} };
       const no=_el('button','atl-pv-close',_t('atlasPvClose')); no.type='button';
-      no.onclick=()=>{ try{ card.remove(); chip.removeAttribute('aria-expanded'); chip.focus(); }catch(_){} };
+      no.onclick=()=>{ try{ card.remove(); chip.removeAttribute('aria-expanded'); chip.focus(); }catch(_){} try{ renderExamples(); }catch(_){} };
       row.appendChild(no); row.appendChild(go); card.appendChild(row);
       ew.appendChild(card);
+      /* a phone's sheet at `half` shows ~170 px of this panel and the card is ~460 — say it is to be read, then bring it in
+         (the sheet writes its new window synchronously, so the scroll below measures the room it was given) */
+      try{ bus.emit(MAP_ANSWER_EVENT,{ kind:'read' }); }catch(_){}
       try{ card.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(_){}
     }catch(_){} }
     /* ⚠ (#R309) DEBOUNCED, and on the camera's own settle — not on every frame. 600 ms is the same
