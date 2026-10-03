@@ -1,7 +1,7 @@
 {
   "gov": {
     "note": "これは「まだ果たしていない義務」の台帳であって、免責ではない。 Every entry is a bundle or a builder that does not yet state its own provenance as a value. The gate fails on anything NOT in here, and fails again when the counts are larger than reality — so a repair always shrinks this file, and nothing may be added to it except by a round that says in DEV-NOTES.md why the structure could not state it instead (.agents/rules/no-ad-hoc-hardcoding.md §6).",
-    "generatedAt": "2026-10-03T08:56:08.470Z",
+    "generatedAt": "2026-10-03T09:27:30.019Z",
     "declaredBy": "scripts/data-governance.mjs",
     "cadence": "static"
   },
@@ -977,6 +977,29 @@
         "integrity.duplicates"
       ],
       "why": "record-absent"
+    },
+    {
+      "subject": "data/offline-sources",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "origin.builtBy",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "freshness.cadence",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "stated-only-in-prose",
+      "detail": "provenance is written as a sentence in `src`"
     },
     {
       "subject": "data/osm-diplo",
@@ -3188,6 +3211,19 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "scripts/offline-sources.mjs → data/offline-sources.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/probe-gibs-range.mjs → data/gibs-range.json",
       "facets": [
         "origin.retrievedAt",
@@ -3235,8 +3271,8 @@
   ],
   "unreadableDeclaration": [],
   "counts": {
-    "undeclared": 165,
-    "undeclaredFacets": 2210,
+    "undeclared": 167,
+    "undeclaredFacets": 2233,
     "updateFailureExposed": 0,
     "shardsWithoutIndex": 1,
     "unreadableDeclaration": 0

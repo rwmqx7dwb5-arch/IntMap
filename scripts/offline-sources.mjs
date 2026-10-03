@@ -32,7 +32,7 @@ export const OUT = OFFLINE_SOURCES;
 /* (#729) the governance record — check:datagov reads it. The bundle states a fact about third parties'
    terms, written by this repository; no supplier's data travels in it. */
 export const GOVERNANCE = {
-  [OUT]: {
+  'data/offline-sources.json': {   /* a literal key: the governance gate reads this declaration statically (scripts/data-governance.mjs), it cannot evaluate [OUT] — same path as OFFLINE_SOURCES */
     publisher: 'IntMap (scripts/outbound-hosts.json)',
     url: 'https://github.com/rwmqx7dwb5-arch/IntMap/blob/main/scripts/outbound-hosts.json',
     licence: 'IntMap — Personal & Research Use License (LICENSE)',
