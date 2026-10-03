@@ -117,3 +117,9 @@ base（`29f08177` を素のまま build）がすでに gzip 1529.4・brotli 1154
   形を知らなかった。導出に足し、`tests/hist-coverage-checks.test.mjs` に回帰を置いた。
 - **`tests/r530-checks.test.mjs` ⑬**: note() の 9 言語の組を探す正規表現が、ファイルで最初の `_LT.arr(LA(`
   （この作業で足した 2 言語の文）から始まり、4 個と数えた。探す範囲を note() の本体に、組を `const base =` に絞った。
+
+## 統合時の性能予算（重ね直した後の build）
+
+超えた行だけ `--update`:
+- eager.raw: 4628.5 kB → 4655.4 kB
+- async chunk "atlas-console": 1144.2 kB → 1151.3 kB

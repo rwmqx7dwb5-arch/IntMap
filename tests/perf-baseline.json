@@ -1,6 +1,6 @@
 {
   "eager": {
-    "raw": 4739600,
+    "raw": 4767127,
     "gzip": 1568634,
     "brotli": 1183561,
     "requests": 9,
@@ -22,7 +22,7 @@
       "atlas-answer-view": 2513,
       "atlas-attach": 23189,
       "atlas-chart": 10493,
-      "atlas-console": 1171624,
+      "atlas-console": 1178907,
       "atlas-executor": 56924,
       "atlas-geo-resolve": 49405,
       "atlas-query": 48520,
