@@ -5,4 +5,5 @@ export default {
   order: 100,
   key: 'wbrural',
   rest: true,
+  measures: ['worldbank:SP.RUR.TOTL.ZS'],
 };

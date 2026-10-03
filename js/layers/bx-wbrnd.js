@@ -5,4 +5,5 @@ export default {
   order: 80,
   key: 'wbrnd',
   rest: true,
+  measures: ['worldbank:GB.XPD.RSDV.GD.ZS'],
 };

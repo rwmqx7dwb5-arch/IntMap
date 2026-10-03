@@ -5818,3 +5818,7 @@ body.sidebar-translucent .pg-panel, body.sidebar-glass2 .pg-panel{
    letter does, and never be squeezed by a flex row. A static `[data-icon]` slot is filled by hydrateIcons(). */
 .im-icon{ display:inline-block; flex:none; vertical-align:-0.22em; overflow:visible; }
 [data-icon]{ display:inline-flex; align-items:center; justify-content:center; line-height:1; vertical-align:middle; }
+
+/* (map-layer-system) the Chronos panel's «Read this year» button. The year book and the indicator browser carry their own
+   stylesheets (js/year-book.js, js/indicator-browser.js), injected the first time they draw — off the start-up path */
+.ntl-yb{ margin-top:8px; width:100%; padding:8px 10px; border-radius:10px; border:1px solid var(--glass-border,rgba(128,128,128,0.25)); background:var(--input-bg); color:var(--text-main); font-size:12.5px; font-weight:650; cursor:pointer; }

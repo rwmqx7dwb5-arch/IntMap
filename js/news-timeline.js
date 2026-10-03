@@ -754,8 +754,19 @@ export function newsTimeline(HOST){
     function lapseMount(){ if(!lapseEl||_lapse) return _lapse;
       _lapse=import('./time-lapse.js').then(m=>m.mountLapse(lapseEl,{ lang:()=>HOST.lang, mode:()=>mode })).catch(()=>null);
       return _lapse; }
+    /* (map-layer-system) THE YEAR BOOK — the instant on the clock as a page you read: the polities the border record
+       draws, the days it changes, the wars it documents, Maddison's figures, what the layers can draw. One button
+       above the time-lapse, built here so the shell's markup is unchanged; the module (js/year-book.js) is fetched
+       when it is pressed. */
+    let ybBtn=null;
+    function ybMount(){ if(ybBtn||!lapseEl||!lapseEl.parentNode) return;
+      ybBtn=document.createElement('button'); ybBtn.type='button'; ybBtn.id='ntl-yearbook'; ybBtn.className='ntl-yb';
+      const lbl=()=>{ ybBtn.textContent=IntMapLang.t(HOST.lang,'Read this year','この年を読む'); };
+      lbl(); bus.on('intmap-lang',lbl);
+      ybBtn.onclick=()=>{ import('./year-book.js').then(m=>m.openFromPage({ lang:()=>HOST.lang, countryStats:()=>HOST.countryStats, escape:(s)=>IntMapSafe.html(s) })).catch(()=>{}); };
+      lapseEl.parentNode.insertBefore(ybBtn,lapseEl); }
     /* WRITE side: inputs → kernel */
-    tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')){ localizeChrome(); try{ refreshUI(IntMapTime.state()); }catch(_){} lapseMount(); } _tmSyncTerminator(); };
+    tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')){ localizeChrome(); try{ refreshUI(IntMapTime.state()); }catch(_){} lapseMount(); ybMount(); } _tmSyncTerminator(); };
     if(closeX) closeX.onclick=()=>{ tl.classList.add('collapsed'); _tmSyncTerminator(); };
     if(bStepPrev) bStepPrev.onclick=()=>_bsStep(-1);   /* (#R421) */
     if(bStepNext) bStepNext.onclick=()=>_bsStep(1);

@@ -7,4 +7,5 @@ export default {
   label: 'lyrPop',
   rest: true,
   share: true,
+  measures: ['countrystats:density'],
 };

@@ -5,4 +5,5 @@ export default {
   order: 40,
   key: 'wbforest',
   rest: true,
+  measures: ['worldbank:AG.LND.FRST.ZS'],
 };

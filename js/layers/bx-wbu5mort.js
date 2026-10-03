@@ -5,4 +5,5 @@ export default {
   order: 100,
   key: 'wbu5mort',
   rest: true,
+  measures: ['worldbank:SH.DYN.MORT'],
 };

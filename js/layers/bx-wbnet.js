@@ -5,4 +5,5 @@ export default {
   order: 50,
   key: 'wbnet',
   rest: true,
+  measures: ['worldbank:IT.NET.USER.ZS'],
 };

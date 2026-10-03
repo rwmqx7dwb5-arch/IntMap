@@ -45,6 +45,19 @@ export default [
     async run(a, dctx, K) { return coverage(a, K); },
   },
   {
+    row: ['time.yearbook',              'yearbook',       'readYear,worldInYear,yearBook',                               'time',    'none',    'time',                   'explanation',         'session', 'none',   '',         ''],
+    /* (map-layer-system) THE YEAR BOOK — the instant read off the records the map draws (js/year-book.js): the polities
+       the border record draws (largest by the area of the drawn shape), the days inside the year on which it changes and
+       who appears / is gone / gets new borders on each, the wars data/wars.json documents with their dated events, the
+       Maddison Project's population and GDP per head where it states the year, and how many layers state the instant.
+       Read-only unless `show:true`, which moves the clock there and opens the page in the Chronos panel. */
+    doc: [
+      { in: 'time.coverage', at: 20, text: '{"type":"yearbook","year"?:int (astronomical: 0 is 1 BC),"date"?:"YYYY-MM-DD","show"?:bool} = READ ONE INSTANT off the records the map itself draws, as a page: how many polities the border record draws and the largest by drawn area (with the record’s own citation — CShapes 2.0 from 1886, OpenHistoricalMap from 1689, before that the historical-basemaps period maps), EVERY DAY INSIDE THAT YEAR ON WHICH THE BORDER RECORD CHANGES with who appears, who is gone and whose borders change, the wars IntMap’s war record documents in force and their dated events, the Maddison Project population and GDP per head where it states the year (by country code, not by polity), and how many layers can draw the instant. No year/date = the clock’s instant. show:true moves the clock there and opens the YEAR BOOK / 年鑑・その年の世界 page in the Chronos panel. Answer from the facts it returns; it states only what a record states. Use for 「1920年の世界はどうだった？」「1914年に国境が変わった日は？」「what did the map look like in 1500」「1945年の主な出来事」. ' },
+    ],
+    schema: () => ({ type: 'object', properties: { year: int(), date: str(), show: bool() } }),
+    async run(a, dctx, K) { return yearbook(a, K); },
+  },
+  {
     row: ['time.compare',               'timeCompare',    'compareTime,compareYear',                                     'time',    'timeView', 'panel.compare,time.compare', 'panel,time',         'session', 'none',   '',         ''],
     /* (time-compare-lapse) THE COMPARISON WINDOW AT AN INSTANT OF ITS OWN — 「1914 年 | 今日」. Opens the window if it is
        closed, and sets ITS clock (js/compare.js `setTime`) without moving the main map's: a year, a date, «now», or
@@ -202,4 +215,21 @@ async function withCoverage(res, K) {
     if (!c || (!c.unstated.length && !c.carried.length)) return res;
     return Object.assign({}, res, { html: (res.html || '') + coverageHtml(c, K, false), coverage: c });
   } catch (_) { return res; }
+}
+
+/* ══ (map-layer-system) THE YEAR BOOK, FOR ATLAS ═════════════════════════════════════════════════════════════
+   The same reader the page uses (js/year-book.js `readYear` over `pageDeps`), so what Atlas says about 1920 is what the
+   reader would read on the page — and the answer names the record each fact comes from. */
+async function yearbook(a, K) {
+  const R = K.R, L = K.L, warn = K.warn, esc = K.esc, note = K.note, HOST = K.HOST;
+  const T = IntMapTime;
+  let when = null;
+  if (a.date) { const d = new Date(String(a.date)); if (!isNaN(d.getTime())) when = d; }
+  else if (a.year != null) { const y = Math.round(+a.year); if (y < T.min) return R(false, warn(L('Chronos reaches back to ' + T.min, 'Chronos は ' + T.min + ' 年まで遡れます'))); const d = new Date(0); d.setFullYear(y, 5, 15); d.setHours(12, 0, 0, 0); when = d; }
+  if (!when) when = T.when();
+  const YB = await import('./year-book.js');
+  const h = { lang: () => (HOST && HOST.lang) || 'en', countryStats: () => (HOST && HOST.countryStats) || {}, escape: esc };
+  if (a.show) { if (when.getFullYear() >= new Date().getFullYear()) T.setNow({ source: 'atlas' }); else T.set(when, { source: 'atlas' }); YB.openFromPage(h); }
+  const r = await YB.readYear(when, YB.pageDeps(h));
+  return R(true, YB.atlasHtml(r, when, !!a.show, h.lang(), note), { yearbook: r });
 }

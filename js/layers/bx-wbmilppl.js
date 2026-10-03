@@ -5,4 +5,5 @@ export default {
   order: 50,
   key: 'wbmilppl',
   rest: true,
+  measures: ['worldbank:MS.MIL.TOTL.P1'],
 };

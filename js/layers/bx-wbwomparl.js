@@ -5,4 +5,5 @@ export default {
   order: 140,
   key: 'wbwomparl',
   rest: true,
+  measures: ['worldbank:SG.GEN.PARL.ZS'],
 };

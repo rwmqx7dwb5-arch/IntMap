@@ -5,4 +5,5 @@ export default {
   order: 70,
   key: 'wbfert',
   rest: true,
+  measures: ['worldbank:SP.DYN.TFRT.IN'],
 };

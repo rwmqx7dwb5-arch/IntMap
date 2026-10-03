@@ -80,7 +80,13 @@ test('layer-manifest ① the non-Atlas readers take the list from the manifest, 
   /* ⚠ AND THE PREFIX RULE THE MANIFEST REPLACED IS REPRODUCED EXACTLY — `share` is what the old selector
      matched on the day it was replaced, not a new policy (a row it did not carry is still not carried) */
   const OLD = /^(dl-|gx-|eco-dl-|l9-dl-|beta-dl-|wp-dl-)|^r7-dl-(disputes|airdef|langs)$/;
-  for (const l of M.LAYERS) assert.equal(!!l.share, OLD.test(l.id), l.id + ': `share` is the selector it replaced');
+  /* (map-layer-system) …for the rows that EXISTED on that day — the snapshot the descriptor migration took
+     (tests/fixtures/layer-descriptor-before.json). A row added later states `share` in its own declaration, and the old
+     selector has nothing to say about it: `bx-wbind` is carried by the share link on purpose (with `state: 'wbind'`,
+     the indicator it paints), which the prefix rule — no `bx-` row — would have refused. */
+  const THEN = new Set(JSON.parse(read('tests/fixtures/layer-descriptor-before.json')).LAYERS.map((l) => l.id));
+  assert.ok(THEN.size > 100, 'the snapshot of the rows the selector was replaced on is read (' + THEN.size + ')');
+  for (const l of M.LAYERS) if (THEN.has(l.id)) assert.equal(!!l.share, OLD.test(l.id), l.id + ': `share` is the selector it replaced');
 });
 
 /* ── ② the rows the manifest writes are the rows index.html shipped ───────────────────────── */

@@ -2832,7 +2832,7 @@ IntMapLang.define('fr', { ui: {
   "Could not load railway data": "Impossible de charger les données ferroviaires",
   "Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.": "Sièges et pôles de production des grands laboratoires pharmaceutiques (sites représentatifs). À combiner avec la couche Espérance de vie.",
   "World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.": "Indicateur WGI de la Banque mondiale « Contrôle de la corruption » (0–100, plus haut = plus intègre) — l’équivalent en API ouverte de l’IPC de TI.",
-  "Life expectancy at birth (World Bank, 2022).": "Espérance de vie à la naissance (Banque mondiale, 2022).",
+  "Life expectancy at birth (World Bank).": "Espérance de vie à la naissance (Banque mondiale).",
   "Unemployment, total (% of labor force; modeled ILO / World Bank, latest year).": "Chômage total (% de la population active ; estimation modélisée OIT / Banque mondiale, dernière année).",
   "Individuals using the Internet (% of population; World Bank, latest year).": "Personnes utilisant Internet (% de la population ; Banque mondiale, dernière année).",
   "Average annual precipitation (depth in mm, long-term; World Bank).": "Précipitations annuelles moyennes (hauteur en mm, sur le long terme ; Banque mondiale).",

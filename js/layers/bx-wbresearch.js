@@ -5,4 +5,5 @@ export default {
   order: 90,
   key: 'wbresearch',
   rest: true,
+  measures: ['worldbank:SP.POP.SCIE.RD.P6'],
 };

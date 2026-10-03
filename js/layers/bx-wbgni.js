@@ -5,4 +5,5 @@ export default {
   order: 140,
   key: 'wbgni',
   rest: true,
+  measures: ['worldbank:NY.GNP.PCAP.CD'],
 };

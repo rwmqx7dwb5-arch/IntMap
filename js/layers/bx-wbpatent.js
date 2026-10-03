@@ -5,4 +5,5 @@ export default {
   order: 100,
   key: 'wbpatent',
   rest: true,
+  measures: ['worldbank:IP.PAT.RESD'],
 };

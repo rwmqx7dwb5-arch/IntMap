@@ -4,4 +4,5 @@ export default {
   shelf: 'lyrGrpHealth',
   order: 50,
   key: 'wbalcohol',
+  measures: ['worldbank:SH.ALC.PCAP.LI'],
 };

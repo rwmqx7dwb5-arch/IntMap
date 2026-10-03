@@ -5,4 +5,5 @@ export default {
   order: 130,
   key: 'wboverwt',
   rest: true,
+  measures: ['worldbank:HF.STA.OW18.ZS'],
 };

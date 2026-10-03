@@ -5,4 +5,5 @@ export default {
   order: 120,
   key: 'wbref',
   rest: true,
+  measures: ['worldbank:SM.POP.RHCR.EA+SM.POP.RRWA.EA'],
 };

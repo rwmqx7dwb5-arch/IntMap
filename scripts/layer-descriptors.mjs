@@ -38,6 +38,10 @@
  *    sources   a row `n:'<name>'` of js/reference-data.js
  *    lazy      a key of js/lazy-modules.js LAZY_REGISTRY
  *    label     a key of the en AND jp ui tables (js/locales/ui.<code>.js)
+ *    measures  (map-layer-system) the series the code that paints the row fetches or reads for it
+ *              (scripts/lib/indicator-series.mjs discoverSeries) — and the reverse: a series the code paints
+ *              for a row that the row's declaration does not claim is a problem, so a second row painting
+ *              one series cannot arrive without saying so (`--report` lists the rows that share a series)
  *    pkg       (layer-packages) js/layer-pkg-<pkg>.js exists and exports `function <camel(pkg)>Package(` — what the
  *              factory returns for each of its rows is evaluated by tests/layer-packages-checks.test.mjs (a file
  *              cannot be read for that); the region carries one literal loader per package
@@ -52,6 +56,7 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { requireModule, langRegistry } from './lib/import-module.mjs';
 import { codeOnly } from './code-only.mjs';
+import { discoverSeries, seriesProblems, sameSeries } from './lib/indicator-series.mjs';
 
 const argv = process.argv.slice(2);
 const opt = (k) => { const i = argv.indexOf(k); return i < 0 ? null : argv[i + 1]; };
@@ -188,6 +193,8 @@ export async function problems() {
       else if (!new RegExp('^export function ' + fn + '\\(', 'm').test(codeOnly(read(file)))) miss(d, 'layer package', d.pkg, file + ' does not export function ' + fn + '(kit)');
     }
   }
+  /* (map-layer-system) what each row measures, against the code that paints it — both directions */
+  out.push(...seriesProblems(ds, discoverSeries(jsCode())));
   for (const s of shelves) if (/^lyrGrp/.test(s.key) && !(en[s.key] && jp[s.key])) out.push('js/layers/_shelves.js: the heading `' + s.key + '` is not in both the en and the jp ui tables');
   return { out, list: ds, R };
 }
@@ -216,6 +223,9 @@ if (isMain) {
       const n = (k) => list.filter((d) => k in d).length;
       console.log('layer-descriptors: ' + tally(list) + ' · registry ' + n('registry') + ' · state ' + n('state') + ' · commands ' + n('commands')
         + ' · atlas ' + n('atlas') + ' · sources ' + n('sources') + ' · time ' + n('time'));
+      /* (map-layer-system) the rows that paint one series — one indicator, offered once by js/indicator-browser.js */
+      const same = sameSeries(list);
+      console.log('  rows that measure the same series: ' + (same.length ? same.map((g) => g.series + ' = ' + g.ids.join(' + ')).join(' · ') : 'none'));
       console.log('  literal IntMapLayers registrations no layer claims: ' + ([...R.reg].filter((r) => !claimed.has(r)).sort().join(', ') || 'none'));
     }
     if (out.length) { for (const p of out) console.error('✗ ' + p); console.error('layer-descriptors: ' + out.length + ' problem(s)'); process.exit(1); }

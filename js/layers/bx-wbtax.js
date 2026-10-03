@@ -5,4 +5,5 @@ export default {
   order: 80,
   key: 'wbtax',
   rest: true,
+  measures: ['worldbank:GC.TAX.TOTL.GD.ZS'],
 };

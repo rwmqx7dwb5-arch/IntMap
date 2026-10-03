@@ -5,4 +5,5 @@ export default {
   order: 80,
   key: 'wbadofert',
   rest: true,
+  measures: ['worldbank:SP.ADO.TFRT'],
 };

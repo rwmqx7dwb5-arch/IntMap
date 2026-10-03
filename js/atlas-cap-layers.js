@@ -16,7 +16,8 @@
  *  `policy`, `goal`, `chips` and `catalogueSilent`. js/atlas-caps.js says what each one is; nothing outside the
  *  entry names them.
  * ==========================================================================*/
-import { str, bool, num, loose } from './atlas-caps.js';
+import { str, bool, num, int, loose } from './atlas-caps.js';
+import { IntMapTime } from './chronos.js';   /* (map-layer-system) an indicator asked for in a year moves the one clock */
 import { resolveObserver, satelliteFacts } from './atlas-result-facts.js';
 import { isDisplay } from './layer-manifest.js';   /* (basic-display-not-layers) which rows are the map display, not layers */
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
@@ -95,6 +96,39 @@ export default [
     schema: () => ({ type: 'object', properties: { axis: str(), name: str(), by: str() }, anyOf: [{ required: ['axis'] }, { required: ['name'] }, { required: ['by'] }] }),
     async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, note = K.note;
       { const RM=window.IntMapRailways; if(!RM||!RM.setAxis) return R(false,warn('')); const want=String(a.axis||a.name||a.by||'').trim().toLowerCase(); const SYN={gauge:'gauge','track gauge':'gauge','軌間':'gauge',electrification:'electrification',electrified:'electrification',electric:'electrification',power:'electrification','電化':'electrification',speed:'speed',maxspeed:'speed','line speed':'speed','最高速度':'speed',tracks:'tracks','track count':'tracks','single track':'tracks','double track':'tracks','複線':'tracks',traffic:'traffic',passenger:'traffic',freight:'traffic','旅客':'traffic','貨物':'traffic',status:'status',construction:'status','運行状態':'status','建設中':'status',kind:'kind',type:'kind','line type':'kind','線種':'kind'}; const known=RM.axes().map(x=>x[0]); const ax=(known.indexOf(want)>=0)?want:(SYN[want]||''); if(!ax) return R(false,warn(L('no such railway view','その鉄道の塗り分けはありません','keine solche Bahn-Ansicht','нет такого вида для железных дорог','no existe esa vista ferroviaria'))); RM.setAxis(ax); const lbl=(RM.axes().find(x=>x[0]===ax)||[ax,ax])[1]; return R(true,note(icon('train')+' '+lbl)); }   /* (#R388) one layer, one option, named in words — same shape as wxModel; the axis is resolved through the module's OWN list so this table cannot drift from the legend */
+    },
+  },
+  /* (map-layer-system) THE INDICATOR BROWSER — every World Bank country indicator and every country-table statistic,
+     one layer, one at a time (js/indicator-browser.js). Searched by the reader's words, the series code or the
+     subject; painted through the row each indicator stands on (same years, ramp and legend). The reply carries what
+     the map now shows, read off the series itself: the year, how many countries reported it, the top and the bottom. */
+  {
+    row: ['layers.indicator',           'indicator',      'countryIndicator,showIndicator,worldBankIndicator',            'layers',  'layer',   'map.layer,map.layerOption',              'map,explanation',     'session', 'none',   '',         ''],
+    doc: [
+      { in: 'layers', at: 15, text: '{"type":"indicator","q":str (the quantity in words — "life expectancy", "医師の数", "CO2 per capita" — or a World Bank code like "SP.DYN.LE00.IN"),"year"?:int,"top"?:int,"list"?:bool} = paint ONE country indicator on the map through the indicator browser (the layer 「国別指標 / Country indicators」): 61 World Bank WDI series and the country-table statistics (GDP per capita, population density, HDI, democracy, fertility, defence spending), ONE AT A TIME, so choosing a new one replaces the last. "year" moves the clock (the map shows that year of the series; every row of the series follows the clock). The result states the indicator, its code, the year painted, how many countries reported that year and the highest and lowest countries with their values — answer from those numbers. Rows that paint the same series (e.g. two life-expectancy rows) are ONE indicator here. {"type":"indicator","list":true,"q"?:str} lists the indicators that match without painting. This is the COUNTRY INDICATORS / 国別指標 browser (country statistics / 国の統計). Use for 「失業率を地図に」「1人当たりGNIで塗って」「2005年の乳児死亡率」「どの国が一番インターネット普及率が高い？」. ' },
+    ],
+    schema: () => ({ type: 'object', properties: { q: str(), name: str(), code: str(), year: int(), top: int(1, 10), list: bool() } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, L = K.L, esc = K.esc;
+      const WB = window.IntMapWB;
+      if (!WB || typeof WB.indicatorBrowser !== 'function') return R(false, warn(L('The indicator browser is not available', '指標ブラウザが使えません')));
+      const B = await WB.indicatorBrowser();
+      const q = String(a.q || a.name || a.code || '').trim();
+      if (a.list || !q) {
+        const hits = B.search(q).slice(0, 40);
+        return R(true, '<div>' + esc(L('Country indicators', '国別指標')) + (q ? ' — «' + esc(q) + '»' : '') + ' (' + hits.length + ')</div><ul>'
+          + hits.map((h) => '<li><b>' + esc(h.name) + '</b> · ' + esc(h.code) + ' · ' + esc(h.subject) + '</li>').join('') + '</ul>', { indicators: hits });
+      }
+      const hit = B.search(q)[0];
+      if (!hit) return R(false, warn(L('No country indicator matches ', '一致する国別指標がありません: ') + '«' + esc(q) + '»'), { indicators: [] });
+      if (a.year != null) {
+        const y = Math.round(+a.year);
+        if (y < IntMapTime.min) return R(false, warn(L('Chronos reaches back to ' + IntMapTime.min, 'Chronos は ' + IntMapTime.min + ' 年まで遡れます')));
+        if (y >= new Date().getFullYear()) IntMapTime.setNow({ source: 'atlas' }); else IntMapTime.setYear(y, { source: 'atlas' });
+      }
+      const e = B.select(hit.id);
+      if (!e) return R(false, warn(L('Could not choose ', '選べませんでした: ') + esc(hit.name)));
+      const f = await B.facts(hit.id, a.top);
+      return R(true, B.atlasHtml(f, note), { indicator: f });
     },
   },
   {

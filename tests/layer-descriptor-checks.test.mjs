@@ -61,8 +61,26 @@ function amendPhotograph(text) {
     o[k] = (k === 'on' && NO_LONGER_ON.has(c.id)) ? false : v; if (k === 'id') o.kind = display.has(c.id) ? 'display' : 'layer'; } return o; });
   return JSON.stringify(P, null, 1) + '\n';
 }
+/* (map-layer-system, 2026-10-03) the rows ADDED since the photograph — a layer added is not a layer moved. ① takes them
+   back out of what the manifest hands its readers (every element that is the row, names it, or is keyed by it) and
+   then requires every OTHER byte to be the photograph's, so it still proves that adding them moved nothing else. ③
+   is the proof that adding one is one file. */
+const ADDED_SINCE = new Set(['bx-wbind']);
+const ADDED_KEYS = new Set([...ADDED_SINCE].map((id) => (M.layerDeclaration(id) || {}).key).filter(Boolean));
+function withoutAdded(v) {
+  const named = (x) => (typeof x === 'string' && (ADDED_SINCE.has(x) || ADDED_KEYS.has(x)))
+    || (x && typeof x === 'object' && !Array.isArray(x) && ADDED_SINCE.has(x.id))
+    || (Array.isArray(x) && x.length === 2 && named(x[0]));
+  if (Array.isArray(v)) return v.filter((x) => !named(x)).map(withoutAdded);
+  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, withoutAdded(x)]));
+  return v;
+}
 test('layer-descriptor ① the derived Layers list is byte-for-byte the list the hand-kept manifest handed its readers', () => {
-  const now = layerDerivedText(M);
+  for (const id of ADDED_SINCE) assert.ok(M.isLayer(id), id + ' is a row of the list (and is taken out below only because it was added)');
+  const derived = JSON.parse(layerDerivedText(M));
+  /* `layerGroups` counts the rows a reader named on each shelf ([key, names, count]) — an added named row is one more */
+  derived.layerGroups = derived.layerGroups.map(([k, names, n]) => [k, names, n - [...ADDED_SINCE].filter((id) => { const l = M.LAYERS.find((x) => x.id === id); return l && l.shelf === k && !l.rest; }).length]);
+  const now = JSON.stringify(withoutAdded(derived), null, 1) + '\n';
   const photo = read('tests/fixtures/layer-descriptor-before.json');
   assert.ok(photo.length > 50000, 'the photograph is there');
   assert.equal(JSON.stringify(JSON.parse(photo), null, 1) + '\n', photo, 'the photograph re-serialises to itself (so the amendment below changes only what it says)');
