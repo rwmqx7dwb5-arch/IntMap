@@ -34,6 +34,9 @@
  *  ⚠ ISOLATION: the modules publish onto `window`, which is this process's globalThis (set once,
  *  below, before anything is imported). No test replaces a global.
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
+/* (atlas-core-split) the task registry, evaluated — what a task is, is each tasks/<task>.ts */
+const { TASKS } = await import('../supabase/functions/ai-proxy/tasks/index.ts');
 import test from 'node:test';
 import { LAZY_REGISTRY, LAZY_NAMES } from '../js/lazy-modules.js';
 import assert from 'node:assert/strict';
@@ -679,7 +682,7 @@ test('#R547 ⑦ the photograph is not sent without recorded consent, and the cla
    The numbers are READ OUT OF ai-proxy, not copied here: a limit that moved would otherwise leave
    this test green while the schema was silently dropped and the reply stopped being checked. */
 test('#R547 ⑧ the request ai-proxy is asked for is one ai-proxy allows', () => {
-  const px = rd('supabase/functions/ai-proxy/index.ts');
+  const px = aiProxySource();
   /* ⚠ the limits are written as `16 * 1024`, so reading the first integer would have called the
      ceiling 16 bytes and passed anything. Take the whole right-hand side and multiply it out. */
   const num = (name) => {
@@ -698,7 +701,7 @@ test('#R547 ⑧ the request ai-proxy is asked for is one ai-proxy allows', () =>
 
   const opts = V.callOptions();
   assert.equal(opts.task, 'vision_read');
-  assert.ok(new RegExp('JSON_TASKS[\\s\\S]{0,400}[\'"]' + opts.task + '[\'"]').test(px),
+  assert.ok(TASKS.get(opts.task)?.json === true,
     'the task must be one ai-proxy puts in JSON mode, or the schema is never attached');
   assert.equal(opts.webMode, 'off', 'tracing a ridge is not a web search');
   /* the picture is sent as a JPEG data URL (js/photo-geo.js state.orig.url) */

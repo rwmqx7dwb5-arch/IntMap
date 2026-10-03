@@ -24,6 +24,7 @@
  *  planner prompt was cut from 80,495 characters to 24,000 — 29.8 % delivered — and the catalogue
  *  gate stayed green throughout, because the source it reads was complete.
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -332,7 +333,7 @@ function plannerPromptSize() {
 }
 
 test('R285 (8) ai-proxy admits the whole planner prompt, with room to grow', () => {
-  const proxy = read('supabase/functions/ai-proxy/index.ts');
+  const proxy = aiProxySource();
   const sysCap = Number((proxy.match(/const MAX_SYSTEM = ([\d_]+)/) || [])[1]?.replace(/_/g, ''));
   const promptCap = Number((proxy.match(/const MAX_PROMPT = ([\d_]+)/) || [])[1]?.replace(/_/g, ''));
   assert.ok(Number.isFinite(sysCap), 'ai-proxy no longer declares MAX_SYSTEM');

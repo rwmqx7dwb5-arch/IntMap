@@ -600,7 +600,7 @@ strict json_schema はプロパティ順に生成されるので、この並び�
 | 部品 | ファイル | 何の正本か |
 |---|---|---|
 | カードと操作 | `js/atlas-gloss.js` | 選択の判定・文脈の切り出し・カードの描画と配置・キャッシュ |
-| カードの schema | `supabase/functions/ai-proxy/index.ts` の `GLOSS_SCHEMA` | サーバ所有（`map_report` / `analysis_structured` と同じ理由） |
+| カードの schema | `supabase/functions/ai-proxy/tasks/gloss.ts` の `GLOSS_SCHEMA` | サーバ所有（`map_report` / `analysis_structured` と同じ理由） |
 | 通信と枠 | `js/ai-core.js` の `askAIGloss` | 専用レーン（§5）。質問の枠は消費しない |
 
 - **文脈は描画済みの DOM から採る。** 吹き出しがその回答を、その直前の吹き出しがその質問を持って

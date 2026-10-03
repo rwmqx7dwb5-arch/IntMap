@@ -26,6 +26,7 @@
  *  supabase/tests/15_ai_turn_answers_test.sql (`supabase test db`). A model written beside the code it
  *  checks can agree with it about the wrong thing; the pgTAP file is the second reader.
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -248,7 +249,7 @@ test('atlas-stream-replay ③ a run whose isolate stopped beating is run again, 
 });
 
 test('atlas-stream-replay ③ a running request renews its lease, so a slow answer is not mistaken for a dead one', () => {
-  const fn = read('supabase/functions/ai-proxy/index.ts');
+  const fn = aiProxySource();
   assert.match(fn, /const ANSWER_LEASE_S = Math\.ceil\(\(2 \* HEARTBEAT_MS\) \/ 1000\);/, 'the lease is two heartbeats');
   assert.match(fn, /setInterval\(\(\) => \{ beatAnswer\(db, user\.id, turnId, replayKey, c\.attempts\); \}, HEARTBEAT_MS\)/);
   assert.match(fn, /try \{ a = await answer\(sink\); \} finally \{ clearInterval\(beat\); \}/);
@@ -352,7 +353,7 @@ test('atlas-stream-replay ⑥ the held answers: RLS on, the owner reads, only se
 });
 
 test('atlas-stream-replay ⑥ CONSTITUTION §5: no limit moved, and the retry header passes the preflight', () => {
-  const fn = read('supabase/functions/ai-proxy/index.ts');
+  const fn = aiProxySource();
   assert.match(fn, /const TURN_MAX_CALLS = 12;/);
   assert.match(fn, /const TURN_TTL_S = 900;/);
   assert.match(fn, /"Access-Control-Allow-Headers": "[^"]*\bx-intmap-replay\b[^"]*"/, 'the browser would refuse the retry before it is sent');

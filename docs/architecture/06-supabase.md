@@ -33,7 +33,13 @@
 > ライブラリ用ディレクトリで、import した関数の中に CLI がバンドルする。
 > `[functions._shared]` は書かない。
 
-- **`ai-proxy`** … アカウント制AI（§5）。`verify_jwt` あり。
+- **`ai-proxy`** … アカウント制AI（§5）。`verify_jwt` あり。**仕事ごとのモジュールに分かれている**:
+  `index.ts` は**経路の表（`ROUTES`）だけ**を持ち（足すときは 1 項目を追記。各項目の `match` は互いに排他）、
+  1 回の POST は `ask.ts`（JWT → 枠の消費 → 本文 → 提供元 → 台帳）、**タスクごとの違いは
+  `tasks/<task>.ts`**（`tasks/all.ts` に 1 行で登録）、上限と天井は `config.ts`、プロトコル 2 は `turn.ts`、
+  呼び出し側の schema は `schema.ts`、添付は `media.ts`、提供元への唯一の扉と失敗の分類は
+  `provider-call.ts`、提供元ごとの形は `providers/{openai,anthropic,gemini}.ts`、開発者のモデル一覧は
+  `models.ts`、再受信の答えは `replay.ts`。どれも `index.ts` から辿れるものだけが配備される。
 - **`atlas-embed`** … Atlas の能力検索の**意味の半分**（§2.1 の `searchFused`）。`verify_jwt` あり＋関数内でも
   呼び出し元を解決する。`op:"search"` は問い合わせを OpenAI の埋め込みにして `atlas_capability_similarity` で
   全能力との余弦類似度を返し、`op:"seed"` は能力の説明文を埋めて `atlas_capability_seed` で 1 文で保存する

@@ -23,6 +23,7 @@
  *      node scripts/doc-facts.mjs           # report
  *      node scripts/doc-facts.mjs --check   # exit 1 if a fact has drifted (CI)
  * ==========================================================================*/
+import { functionSource } from './lib/function-graph.mjs';
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { join, dirname } from 'node:path';
@@ -1520,10 +1521,10 @@ if (RULE && RULE !== 'i18n-open-gap') {
 {
   const dirs = readdirSync(join(ROOT, 'supabase/functions'), { withFileTypes: true })
     .filter((d) => d.isDirectory() && d.name !== '_shared').map((d) => d.name);
-  const users = dirs.filter((n) => {
-    const p = ['index.ts', 'index.js'].map((x) => 'supabase/functions/' + n + '/' + x).find((x) => has(x));
-    return p ? rd(p).includes('relay-guard') : false;
-  }).sort();
+  /* (atlas-core-split) the function's OWN modules, not its index.ts alone — ai-proxy imports the
+     guard from ask.ts (scripts/lib/function-graph.mjs) */
+  const users = dirs.filter((n) => ['index.ts', 'index.js'].some((x) =>
+    functionSource(join(ROOT, 'supabase/functions', n), x).includes('relay-guard'))).sort();
   if (!users.length) fail('relay-guard', 'nothing imports _shared/relay-guard.js any more — this rule needs rewriting');
   else {
     eachDoc((f, body) => {

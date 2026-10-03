@@ -25,12 +25,12 @@
  *    ⑥ the reply is read from the provider's items, and the written shape carries no calls;
  *    ⑦ the header states the model the code runs.
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { transformSync } from 'esbuild';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8').replace(/\r\n/g, '\n');
@@ -42,21 +42,12 @@ const AGENT = makeAtlasAgent();
 const FENCE = makeAtlasPolicy().turnMechanics.fence;
 const B = AGENT.INPUT_BUDGET;
 
-/* ── the proxy's normalizer, evaluated. The region between the two markers is lifted, stripped of
-      its types by esbuild, and run — together with schemaOk, which it calls. ─────────────────── */
-const PROXY = rd('supabase/functions/ai-proxy/index.ts');
-function region(from, to) {
-  const a = PROXY.indexOf(from), b = PROXY.indexOf(to, a + 1);
-  assert.ok(a >= 0 && b > a, 'ai-proxy: the region «' + from + '» … «' + to + '» moved');
-  return PROXY.slice(a, b);
-}
-const SERVER = (() => {
-  const src = region('const MAX_SCHEMA_BYTES', '/* ══ (#R397) THE SCHEMA REACHED GEMINI')
-    + region('const MAX_INPUT_ITEMS', '/* ⚠ A TASK IS A KEY INTO FOUR CONFIGURATION TABLES')
-    + '\nreturn { normalizeTurn, fnParameters, placeAttachments, MAX_INPUT_CHARS, MAX_ITEM_CHARS, MAX_INPUT_ITEMS };';
-  const js = transformSync(src, { loader: 'ts' }).code;
-  return new Function(js)();
-})();
+/* ── the proxy's normalizer, evaluated. (atlas-core-split) It is its own module now
+      (supabase/functions/ai-proxy/turn.ts, with schemaOk from schema.ts), so it is imported and run
+      as the function runs it — node strips the types — instead of being lifted from between two
+      markers in the source. ─────────────────────────────────────────────────────────────────── */
+const PROXY = aiProxySource();
+const SERVER = await import('../supabase/functions/ai-proxy/turn.ts');
 
 /* ── a turn driven through the REAL loop, with an adapter that composes the input the way
       js/atlas-console.js _model does, and a scripted model that answers in the protocol-2 shape

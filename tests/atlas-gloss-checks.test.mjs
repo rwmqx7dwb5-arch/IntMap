@@ -30,6 +30,9 @@
  *  ⚠ THE WIRING CHECKS READ THE SOURCES THROUGH `codeOnly`, so this file's own prose — and the
  *  modules' — can never be what a check matches (#R345).
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
+/* (atlas-core-split) the task registry, evaluated — what a task is, is each tasks/<task>.ts */
+const { TASKS } = await import('../supabase/functions/ai-proxy/tasks/index.ts');
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { join, dirname } from 'node:path';
@@ -93,13 +96,15 @@ test('R491 ③ a long answer is clipped around the phrase, never from the front'
 /* ── ④ the lane header is a claim about a body nobody has read — so it is verified after ───── */
 test('R491 ④ ai-proxy verifies the declared lane against the parsed task, and refunds a mismatch', () => {
   /* kept as a spelling: ai-proxy is Deno TypeScript, js/ai-core.js needs the signed-in page, the migration needs Postgres; the gesture and the dispatch live in DOM closures */
-  const fn = CODE('supabase/functions/ai-proxy/index.ts');
+  const fn = codeOnly(aiProxySource());
 
   assert.match(fn, /x-intmap-lane/, 'the lane travels in a header, like the turn key (#R318)');
-  assert.match(fn, /isGloss\s*!==\s*\(task\s*===\s*"gloss"\)/,
+  assert.deepEqual([...TASKS.values()].filter((t) => t.lane).map((t) => t.name).sort(), ['gloss'], 'a task other than the gloss is charged from the gloss lane');
+  assert.equal(TASKS.get('gloss').lane, 'gloss');
+  assert.match(fn, /isGloss\s*!==\s*\(spec\.lane\s*===\s*GLOSS_LANE\)/,
     'the header is checked against the task BOTH ways — "lane: gloss" carrying atlas_turn would buy the expensive task out of the cheap counter');
   /* the mismatch must give the charge back before it 400s, or a probe would cost the reader lookups */
-  const at = fn.indexOf('isGloss !== (task === "gloss")');
+  const at = fn.indexOf('isGloss !== (spec.lane === GLOSS_LANE)');
   assert.ok(at > 0);
   const after = fn.slice(at, at + 260);
   assert.match(after, /await refund\(\)/, 'a rejected lane refunds what it charged');
@@ -119,7 +124,7 @@ test('R491 ④ ai-proxy verifies the declared lane against the parsed task, and 
 /* ── ⑤ …and the answer must not name its numbers `used`/`limit` ───────────────────────────── */
 test('R491 ⑤ a gloss reply carries its own two numbers, never the question counter\'s', () => {
   /* kept as a spelling: ai-proxy is Deno TypeScript, js/ai-core.js needs the signed-in page, the migration needs Postgres; the gesture and the dispatch live in DOM closures */
-  const fn = CODE('supabase/functions/ai-proxy/index.ts');
+  const fn = codeOnly(aiProxySource());
   /* js/ai-core.js writes ANY `used` it sees into HOST.aiUsage — the reader's QUESTION mirror — so a
      gloss that answered with `used`/`limit` would show the gloss budget as the question budget. */
   assert.match(fn, /lane:\s*GLOSS_LANE,\s*glossUsed,\s*glossLimit/);

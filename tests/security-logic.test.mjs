@@ -16,6 +16,9 @@
 //  pinned an expression instead of the property; that lesson applies here first.
 //  Run: node --test tests/security-logic.test.mjs   (also part of `npm test`).
 // ============================================================================
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
+/* (atlas-core-split) the task registry, evaluated — what a task is, is each tasks/<task>.ts */
+const { TASKS } = await import('../supabase/functions/ai-proxy/tasks/index.ts');
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
@@ -37,7 +40,7 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
    reading, which never opens a comment inside a quoted attribute or string in the first place. */
 const codeOnly = (s) => codeOnlyOf(codeOnlyOf(s, { lang: 'html' }));
 const refreshNews = read('supabase/functions/refresh-news/index.ts');
-const aiProxy = read('supabase/functions/ai-proxy/index.ts');
+const aiProxy = aiProxySource();
 const relayGuard = read('supabase/functions/_shared/relay-guard.js');
 const sw = read('sw.js');
 const adminHtml = read('admin.html');
@@ -154,7 +157,8 @@ test('ai-proxy validates images: MIME allow-list, base64 alphabet, decoded size'
 });
 
 test('ai-proxy accepts only known tasks and bounded schemas', () => {
-  assert.match(aiProxy, /const TASKS = new Set\(\[/, 'task is still an arbitrary string');
+  assert.ok(TASKS instanceof Map && TASKS.size > 0, 'task is still an arbitrary string');
+  for (const k of ['__proto__', 'constructor', 'toString']) assert.equal(TASKS.get(k), undefined, k + ' reads an inherited value');
   assert.match(aiProxy, /!TASKS\.has\(task\)/, 'an unknown task is not refused');
   assert.match(aiProxy, /MAX_SCHEMA_BYTES|MAX_SCHEMA_DEPTH|MAX_SCHEMA_KEYS/, 'a caller schema has no bounds');
   assert.match(aiProxy, /schemaOk\(payload\.schema\)/, 'the schema bounds are declared but not applied');

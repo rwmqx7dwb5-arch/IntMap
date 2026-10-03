@@ -1448,6 +1448,10 @@ supabase/
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない。19本）
   functions/<name>/index.ts       Edge Functions（22本。一覧と各本の役割は Architecture.md §6.2。
                                   usage-count/shape.js は関数の中の宣言で、ブラウザも import する）
+  functions/ai-proxy/*.ts         ai-proxy は仕事ごとのモジュール（index.ts＝経路の表・ask.ts＝1 回の要求・
+                                  tasks/<task>.ts＝タスク 1 つ・tasks/all.ts＝登録の 1 行ずつ・config / turn /
+                                  schema / media / provider-call / providers/* / models / replay）。
+                                  構成の正本は docs/architecture/06-supabase.md §6.2
   functions/_shared/              関数ではないライブラリ（ai-provider.js / atlas-persona.js / aviation-codec.js /
                                   aviation-model.js / news-cluster.js / news-geo-prompt.js /
                                   news-ingest.js / newsgeo.js / radiation-sources.js /

@@ -13,6 +13,7 @@
  *  ⑥ js/ai-core.js raises the limit signal where the reader is told, and not for turn_calls or glosses;
  *  ⑦ Atlas reaches it: `operatingCosts` is a registry row, has a run, and the planner is told about it.
  * ==========================================================================*/
+import { aiProxySource } from './helpers/ai-proxy-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -42,7 +43,7 @@ test('① PLAN_LIMITS is the plan table\'s aiTurnsPerDay column, not a second ta
 test('① ai-proxy\'s gloss allowance is the plan table\'s aiGlossPerDay column, imported', () => {
   /* ai-proxy is Deno TypeScript node does not evaluate here; what is asserted is that it holds no numbers of
      its own — the column it reads is evaluated through planColumn() above and below */
-  const src = rd('supabase/functions/ai-proxy/index.ts');
+  const src = aiProxySource();
   assert.match(src, /import \{[^}]*\bplanColumn\b[^}]*\} from "\.\.\/_shared\/plans\.js";/, 'ai-proxy does not import the plan table');
   assert.match(src, /const GLOSS_PLAN_LIMITS[^=]*=\s*planColumn\("aiGlossPerDay"\);/, 'GLOSS_PLAN_LIMITS is not read from the plan table');
   assert.doesNotMatch(src, /GLOSS_PLAN_LIMITS[^=\n]*=\s*\{/, 'ai-proxy spells a gloss table of its own again');
