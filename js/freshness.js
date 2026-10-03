@@ -54,7 +54,7 @@ function toMs(v) {
 }
 
 /** a duration in the reader's words — «3 h», «2 d», «40 min» — the unit the eye can compare */
-export function ageText(ms, lang) {
+function ageText(ms, lang) {
   const L = IntMapLang.pick(() => lang);
   if (!(ms >= 0)) return '';
   if (ms < HOUR) return L('{n} min', '{n} 分').replace('{n}', String(Math.max(1, Math.round(ms / MIN))));
@@ -86,5 +86,5 @@ export function freshChip(o) {
     + '<span class="im-fresh-txt">' + esc(text + by) + '</span></span>';
 }
 
-export const IntMapFreshness = { judge, chip: freshChip, ageText };
-/* imported, never published on window — a module that wants the component names it in an import (check:surface) */
+/* imported by name, never published on window — a module that wants the component names `freshChip` /
+   `judge` in an import (check:surface) */

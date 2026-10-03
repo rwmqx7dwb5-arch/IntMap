@@ -122,7 +122,10 @@ test('news-intelligence ⑥ «could not check», «no update for N h» and «fre
 
 test('news-intelligence ⑦ the freshness component says the four states in four different sentences, in en and jp', () => {
   const now = Date.parse('2026-10-02T20:00:00Z');
-  const txt = (o, lang) => fresh.freshChip(Object.assign({ now, lang }, o)).replace(/<[^>]+>/g, '');
+  /* the sentence the reader sees: tags removed until none are left (one pass can leave a tag that two
+     overlapping ones formed), and any `<` that survives is not markup — it is dropped too */
+  const plain = (html) => { let s = String(html), prev; do { prev = s; s = s.replace(/<[^<>]*>/g, ''); } while (s !== prev); return s.replace(/</g, ''); };
+  const txt = (o, lang) => plain(fresh.freshChip(Object.assign({ now, lang }, o)));
   for (const lang of ['en', 'jp']) {
     const f = txt({ at: now - 30 * 60000, rhythmMs: 20 * 60000, by: 'X' }, lang);
     const s = txt({ at: now - 5 * 3600e3, rhythmMs: 20 * 60000, by: 'X' }, lang);

@@ -65,6 +65,7 @@ date: 2026-10-03
 | `eager.modules` | 306 → 307 | `js/news-pulse.js`（レイヤー行・名前・IntMapOS 命令・窓口だけ。命令は層が点く前から届かなければならない——`js/net-health.js` と同じ分け方） |
 | `eager.cssRaw` | +6.6 kB | 鮮度の部品・凡例・国の日報・企業パネルの「ニュース」タブの規則（`css/intmap.css` 末尾） |
 | `async.raw` / `async.gzip` | +58 kB / +32 kB | 遅延の本体 `news-intel`・`news-intel-core`・`freshness` |
+| `eager.raw` / `eager.gzip` | +4.0 kB / +1.0 kB | 起動経路のモジュールのうちこの PR が触ったもの——`js/news-pulse.js`（新規）・`js/atlas-capabilities.js`（能力表の行）・`js/layer-manifest.js`・`js/net-health.js`・`js/lazy-modules.js`・`js/app-body.js`（build report の eager モジュールで確認）。比較は `origin/main` 9dcfdcad の CI 実測（raw 4648.8・gzip 1531.8 kB）——⚠ eager の天井 4628.5 kB は main 自身が既に +20.3 kB 超えていて（gzip は帯の外で main の CI も赤）、この PR の分は左の差だけ |
 | `atlas-console` | +18 kB | Atlas の 5 能力（項目は能力の正本で、カーネルのチャンクに入る） |
 | `company-panel` | +3.2 kB | 「ニュース」タブ |
 

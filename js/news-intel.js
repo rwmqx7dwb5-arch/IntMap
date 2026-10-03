@@ -26,6 +26,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 import { IntMapTime } from './chronos.js';
 import { everyTick, stopTick } from './runtime.js';
 import { makeCountryIndex, decodePulse, aggregate, rank, shade, change, linkOutages, outageOf, isIso2, countryKeyOf } from './news-intel-core.js';
@@ -607,7 +608,7 @@ export function newsIntel(HOST) {
   try { GE().events.on('styledata', () => { if (st.on && !GE().layers.hasSource(SRC)) { wired = false; whenDrawable(() => { paint(); legend(); }); } }); } catch (_) { }
   /* Chronos moves the window — the fetch follows the clock's day */
   try { IntMapTime.on(() => { if (st.on) refresh(false); }); } catch (_) { }
-  try { window.addEventListener('intmap-lang', () => setTimeout(() => { if (st.on) legend(); if (st.briefKey) drawBrief(); }, 30)); } catch (_) { }
+  try { bus.on('intmap-lang', () => setTimeout(() => { if (st.on) legend(); if (st.briefKey) drawBrief(); }, 30)); } catch (_) { }
 
   const API = {
     toggle, isOn: () => st.on, setOptions, ranking, brief: briefFor, openBrief, closeBrief, outageNews,

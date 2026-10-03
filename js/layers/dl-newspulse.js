@@ -6,6 +6,7 @@ export default {
   shelf: 'lyrGrpPolitics',
   order: 75,
   key: 'newspulse',
+  rest: true,
   share: true,
   lazy: ['newsIntel'],
   commands: ['newspulse.toggle', 'newspulse.rank', 'newspulse.brief'],

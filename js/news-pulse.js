@@ -13,6 +13,7 @@
  *  ⚠ THE ROW NAME LIVES HERE AND NOWHERE ELSE; the body reads it back through `label()` (#R519).
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 import { loadNECountries } from './ne-countries.js';   /* handed to the lazy body (see js/news-intel.js `geo`) */
 
 export function newsPulse(HOST) {
@@ -58,7 +59,7 @@ export function newsPulse(HOST) {
   }
   function relabel() { const e = document.getElementById(ID + '-lbl'); if (e) e.textContent = label(); }
   if (document.readyState !== 'loading') setTimeout(buildRow, 0); else document.addEventListener('DOMContentLoaded', buildRow);
-  window.addEventListener('intmap-lang', () => setTimeout(relabel, 20));
+  bus.on('intmap-lang', () => setTimeout(relabel, 20));
 
   /* ⚠ ATLAS DRIVES THE ROW THROUGH ITS CHECKBOX, so the box cannot disagree with the map (js/net-health.js) */
   function setOn(want) {

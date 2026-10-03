@@ -127,9 +127,9 @@ export function decodePulse(j) {
   return { since: o.since || null, until: o.until || null, oldest: o.oldest || null, newest: o.newest || null, pts, rows };
 }
 
-export const utcDay = (ms) => new Date(ms).toISOString().slice(0, 10);
+const utcDay = (ms) => new Date(ms).toISOString().slice(0, 10);
 /** the W UTC dates ending with the date of `untilMs` (newest last) */
-export function windowDays(untilMs, w) {
+function windowDays(untilMs, w) {
   const out = [], d0 = Date.parse(utcDay(untilMs) + 'T00:00:00Z');
   for (let k = w - 1; k >= 0; k--) out.push(utcDay(d0 - k * DAY));
   return out;
