@@ -27,6 +27,8 @@ import * as C from '../supabase/functions/_shared/place-watch.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
+/* every regex metacharacter, so a number or a name is matched as itself */
+const reEsc = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const TOKYO = { id: 'pA', name: 'Home', lng: 139.69, lat: 35.69 };
 const quakeFeed = (rows) => ({ type: 'FeatureCollection', features: rows.map(([id, mag, lng, lat, t]) => ({ id, properties: { mag, place: 'near ' + id, time: t, url: 'https://earthquake.usgs.gov/earthquakes/eventpage/' + id }, geometry: { coordinates: [lng, lat, 10] } })) });
@@ -100,14 +102,14 @@ test('② the numbers the rules name are the numbers the migration enforces', ()
   const col = (name) => { const m = new RegExp('\\b' + name + '\\b[^,\\n]*', 'i').exec(sql); assert.ok(m, name + ' column'); return m[0]; };
   assert.match(col('radius_km'), new RegExp('default ' + C.WATCH_DEFAULTS.radiusKm + '\\b'));
   assert.match(col('radius_km'), new RegExp('radius_km <= ' + C.RADIUS_MAX_KM + '\\b'));
-  assert.match(col('quake_min_mag'), new RegExp('default ' + C.WATCH_DEFAULTS.quakeMinMag.toString().replace('.', '\\.') + '\\b'));
-  assert.match(col('quake_min_mag'), new RegExp('between ' + C.QUAKE_FLOOR_MAG.toString().replace('.', '\\.') + ' and'));
+  assert.match(col('quake_min_mag'), new RegExp('default ' + reEsc(C.WATCH_DEFAULTS.quakeMinMag) + '\\b'));
+  assert.match(col('quake_min_mag'), new RegExp('between ' + reEsc(C.QUAKE_FLOOR_MAG) + ' and'));
   assert.match(col('alert_min_level'), new RegExp('default ' + C.WATCH_DEFAULTS.alertMinLevel + '\\b'));
   assert.match(col('volcano_min_rank'), new RegExp('default ' + C.WATCH_DEFAULTS.volcanoMinRank + '\\b'));
   assert.match(col('news_min_sources'), new RegExp('default ' + C.WATCH_DEFAULTS.newsMinSources + '\\b'));
   assert.match(sql, new RegExp('cardinality\\(seen_keys\\) <= ' + C.SEEN_MAX + '\\b'));
   /* the USGS feed is the one the rest of the app reads */
-  assert.match(read('js/atlas-cap-research.js'), new RegExp("USGS_WEEK = '" + C.USGS_WEEK_FEED.replace(/[.?]/g, '\\$&') + "'"));
+  assert.ok(read('js/atlas-cap-research.js').includes("USGS_WEEK = '" + C.USGS_WEEK_FEED + "'"), 'js/atlas-cap-research.js reads the same USGS feed');   /* a substring, not a regex built from a URL */
 });
 
 /* ── a stand-in account: place_watches, saved_places, news_events ───────────────────────────── */

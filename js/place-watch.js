@@ -39,6 +39,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { loadData } from './data-door.js';
 import { jsonWithin } from './fetch-deadline.js';   /* a read that is guaranteed to end */
 import { clockFor } from './proxy-fetch.js';        /* …and how long a given host may take — decided there, per host */
+import { everyTick, stopTick } from './runtime.js';  /* the one timer wheel (it already skips a hidden page) */
 import { listPlaces, placeFailureText } from './my-places.js';
 import {
   WATCH_DEFAULTS, QUAKE_FLOOR_MAG, RADIUS_MAX_KM, KINDS, USGS_WEEK_FEED, NEWS_WINDOW_MS,
@@ -259,11 +260,11 @@ export async function runWatches(HOST, watches, readers) {
 
 /* ── the watcher: while IntMap is open and the reader is signed in ─────────────────────────────── */
 
-let host = null, timer = 0, running = null, last = null, lastErr = null, visBound = false, watchingFor = '';
+let host = null, timer = null, running = null, last = null, lastErr = null, visBound = false, watchingFor = '';
 const subs = new Set();
 function publish() { badge(); subs.forEach((fn) => { try { fn(last); } catch (_) { } }); }
-/** Subscribe to each completed run. @returns unsubscribe */
-export function onWatchRun(fn) { subs.add(fn); return () => subs.delete(fn); }
+/** Subscribe to each completed run (the open digest sheet). @returns unsubscribe */
+function onWatchRun(fn) { subs.add(fn); return () => subs.delete(fn); }
 /** The last run (or null). */
 export function lastRun() { return last; }
 /** How many records are new across every watched place, as of the last run. */
@@ -321,7 +322,7 @@ export function startWatching(HOST) {
   watchingFor = String(host.user.id);
   const first = () => { checkNow().catch(() => { }); };
   try { if (typeof requestIdleCallback === 'function') requestIdleCallback(first, { timeout: 20000 }); else setTimeout(first, 8000); } catch (_) { setTimeout(first, 8000); }
-  timer = setInterval(() => { if (typeof document === 'undefined' || !document.hidden) checkNow().catch(() => { }); }, TICK_MS);
+  timer = everyTick('place-watch:check', TICK_MS, () => { checkNow().catch(() => { }); });
   if (!visBound && typeof document !== 'undefined') {
     visBound = true;
     document.addEventListener('visibilitychange', () => {
@@ -332,7 +333,7 @@ export function startWatching(HOST) {
 
 /** Signed out: stop, and forget what this page showed. */
 export function stopWatching() {
-  if (timer) { clearInterval(timer); timer = 0; }
+  if (timer) { stopTick(timer); timer = null; }
   watchingFor = '';
   last = null; lastErr = null;
   publish();

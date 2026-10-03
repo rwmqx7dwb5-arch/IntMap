@@ -113,3 +113,17 @@ memory にも無い）。理由を推測で作らず、**記録に残ってい�
   読む——アカウントのマイプレイス／見守る場所とは別の一覧である。1 本にするのは今回の範囲外（ウィジェットの持ち主の判断が要る）。
 - 旧・地域監視基盤（`js/monitors.js`・`monitor-run`・5 表・cron）は**触っていない**。見守る場所が置き換えたので、撤去
   （cron の停止・関数の削除・表の削除）を提案できる状態になった——削除は承認事項なので提案に留める。
+
+## 7. CI で直したこと（PR の初回が赤）
+
+- `onWatchRun` を export していたが読み手がモジュールの外に無かった（`tests/layer-boot-graph-checks` R175 ③・`ownership-instruments` ①）→ 内部関数にした（読み手はダイジェストのシートだけ）。
+- 10 分ごとの確認が生の `setInterval` だった（`shell-runtime-checks` R408 ②a）→ `js/runtime.js` の `everyTick('place-watch:check', …)`。
+  隠れているページで休むのは車輪が既に持つ規則なので、自前の `document.hidden` 判定は消した。止めるのは `stopTick`。
+- CodeQL（high 2 件）: 検査が USGS の URL から正規表現を組み、`.` と `?` だけを逃がしていた → 部分文字列の一致にした。
+  数の照合も `.replace('.', '\.')`（最初の 1 文字だけ）をやめ、全メタ文字を逃がす `reEsc` にした。
+- **起動費用の天井を上げた（`node scripts/perf-budget.mjs --update`、この作業場の build で実測）**:
+  `async.raw` 11,937.7 → 12,007.6 kB・`async.gzip` 3,944.7 → 3,971.1 kB・チャンク `atlas-console` 1,301.6 → 1,313.5 kB。
+  理由: ① 新しいオンデマンドのチャンク `place-watch`（29.1 kB）——見守る場所の本体で、ログインした読者のログイン後にだけ読まれる
+  ② `atlas-console` +11.9 kB——Atlas の能力 4 つ（`places.watch`・`unwatch`・`watchDigest`・`watchSeen`）の run と説明文が
+  `js/atlas-caps-modules.js` から Atlas の束に入る ③ 判定の純関数 `supabase/functions/_shared/place-watch.js` は両方から import される。
+  eager（起動経路）の行は天井内で、上げていない。
