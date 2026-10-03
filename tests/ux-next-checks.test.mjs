@@ -54,8 +54,8 @@ test('① findArticle walks the targets and answers the first real article (a st
   assert.equal(dis, null);
   /* a QID resolves through its sitelinks to the reader's wiki first */
   const viaQ = await findArticle([{ qid: 'Q1016', sites: ['ja', 'en'], via: 'wikidata' }], async (u) => {
-    if (u.includes('wikidata.org')) return { entities: { Q1016: { sitelinks: { jawiki: { title: 'リビア' }, enwiki: { title: 'Libya' } } } } };
-    if (u.includes('ja.wikipedia.org')) return { type: 'standard', title: 'リビア', content_urls: { desktop: { page: 'https://ja.wikipedia.org/wiki/x' } } };
+    if (new URL(u).hostname === 'www.wikidata.org') return { entities: { Q1016: { sitelinks: { jawiki: { title: 'リビア' }, enwiki: { title: 'Libya' } } } } };
+    if (new URL(u).hostname === 'ja.wikipedia.org') return { type: 'standard', title: 'リビア', content_urls: { desktop: { page: 'https://ja.wikipedia.org/wiki/x' } } };
     return null;
   });
   assert.equal(viaQ.site, 'ja');

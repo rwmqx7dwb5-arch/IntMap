@@ -134,7 +134,7 @@ test('news-story ⑨ the server: one word-cutting rule, the index on that same e
   assert.match(SQL, /public\.news_title_terms\(e\.representative_title\) @> p_terms/, 'news_story matches on the indexed expression');
   assert.match(SQL, /e\.status = 'active' and e\.merged_into is null/, '…under the index\'s own predicate');
   for (const f of ['news_story(text[], timestamptz, timestamptz)', 'news_story_terms(text, timestamptz, timestamptz, real)']) {
-    assert.match(SQL, new RegExp('grant execute on function public\\.' + f.replace(/[()[\]]/g, '\\$&') + ' to anon, authenticated, service_role'));
+    assert.match(SQL, new RegExp('grant execute on function public\\.' + f.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&') + ' to anon, authenticated, service_role'));
   }
   assert.equal((SQL.match(/security definer/gi) || []).length, 0, 'nothing here runs with the owner\'s rights');
   assert.equal((SQL.match(/regexp_split_to_table\(lower\(/g) || []).length, 1, 'the word-cutting rule is written once');
