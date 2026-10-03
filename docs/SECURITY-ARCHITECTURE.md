@@ -1091,6 +1091,17 @@ one thing vanilla CI could not otherwise reproduce.
 - **Saved places (my-places):** `saved_places` has **no INSERT grant**; `save_place()` (definer, account from
   `auth.uid()`, one row per position, a 10,000-row fence) is the only way in. The owner updates the words and
   position through a column grant that excludes `user_id` and `created_at`, and deletes own rows under RLS.
+- **Saved maps and published collections (collection-workspace):** `saved_views` and `collection_shares` have **no
+  INSERT grant** (`save_view()` / `publish_collection()`, definer, account from `auth.uid()`, no uuid parameter) and
+  **no privilege for anon**. Publishing is the owner's explicit act; the link's **token is the access control**:
+  32 hex characters of `gen_random_uuid()` (122 random bits), never listable (anon cannot SELECT the table), never
+  reused (unpublishing deletes the row; publishing again mints a new token). The ONE anon-callable function is
+  `shared_collection(token)` — SECURITY DEFINER because the rows it reads are owner-only under RLS; its comment states
+  `ANON MAY CALL:` (the rule `11_definer_execute_test.sql` holds every definer to), it refuses anything that is not a
+  token before reading, and it builds its answer from **named keys** (name, note, collection, position, zoom, the map
+  fragment) — no row id, account id or e-mail, and no whole-row `to_jsonb`, so a column added later is not published by
+  accident (`tests/collection-workspace-checks.test.mjs` ①). A map from another account is untrusted text: the client
+  re-encodes it through the share-link codec (`js/my-places.js canonicalState`) before keeping or opening it.
 - **Passkeys (WebAuthn):** supabase-js's passkey API (`signInWithPasskey`, `registerPasskey`,
   `auth.passkey.list/delete`; on by default since the SDK stopped reading `experimental.passkey`) —
   sign-in on the login modal, enroll/list/remove in the account Security section. Feature-detected
