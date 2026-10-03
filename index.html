@@ -770,6 +770,12 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <div class="setting-group" id="status-page-group"><label data-i18n="lblStatusPage">IntMap, now</label>
       <button type="button" id="btn-status-page" class="ai-test-btn" style="width:100%;"><span data-icon="gauge"></span> <span data-i18n="viewStatusPage">What is working — this device, the layers, the data sources</span></button>
     </div>
+    <!-- (security-next) what this page has actually contacted, held against Privacy §4 (js/connections-panel.js, fetched on first use;
+         js/connection-watch.js records from boot and owns this button's one click listener) — and the public security page. -->
+    <div class="setting-group" id="connections-group"><label data-i18n="lblConnections">Privacy</label>
+      <button type="button" id="btn-connections" class="ai-test-btn" style="width:100%;"><span data-icon="network"></span> <span data-i18n="viewConnections">This page's connections — who it has contacted, and what each is sent</span></button>
+      <a id="link-security" href="./security.html" target="_blank" rel="noopener" class="ai-test-btn" style="width:100%;display:block;box-sizing:border-box;text-align:center;text-decoration:none;margin-top:8px;" data-i18n="viewSecurityPage">Security &amp; trust — how IntMap protects you, and how to report a problem ↗</a>
+    </div>
     <!-- (#R211) 「科学的根拠・ロジックの説明ページ」 — the data-source list answers WHERE a number came
          from; this answers HOW it was computed, which is a different question and needed its own page.
          A plain link to a static page, so it costs the app nothing at boot. -->

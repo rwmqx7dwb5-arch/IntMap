@@ -143,6 +143,20 @@
   **Pwned Passwords（`api.pwnedpasswords.com`）には SHA-1 の先頭 5 文字だけ**（照合はブラウザ内）。
   ⚠ ホスト全体が実行時の式で決まる URL（OSRM の `'https://'+prof[0]` 等）は発見できず、
   門が件数と場所を note として印字する。正本 [`docs/DATA-GOVERNANCE.md`](../DATA-GOVERNANCE.md) §4.3。
+- **このページが実際に通信した相手を、読者が見られる**（設定 ▸ プライバシー ▸ このページの通信・Atlas
+  `system.connections`）。台帳はコードの**文字列**から発見するので、実行時に組み立てる・データが決めるホスト
+  （ウェブカメラの画像サーバー・記事の発行元・利用者が足したタイルサーバー）は門に見えない。
+  `js/connection-watch.js`（起動経路）がブラウザ自身の報告——Resource Timing（`buffered`）・WebSocket
+  （コンストラクタを 1 回だけサブクラスで包む）・`securitypolicyviolation`（拒否は別扱い。何も出ていない）・
+  `sw.js` が見た**バックグラウンド処理**の要求（ページの timeline に載らない。window 以外のクライアントの分だけを
+  1 秒ごとにまとめ、開いている window の数を添える）——を、**スキームとホストだけ**で記録する（URL は鍵を運びうる）。
+  `js/connections-panel.js` が各ホストを `data/connection-ledger.json`（台帳から `scripts/connection-ledger.mjs` が
+  導出・`check:datagov` が照合）と突き合わせ、送るもの別・**名前の無いもの**・**食い違うもの**（`link`／`dormant` の
+  行に通信した）・拒否したものに分け、**見えないもの**（枠の中・`sw.js` が制御していないときのバックグラウンド処理）
+  を毎回述べる。台帳を読めないときは「照合できなかった」と言い、何も「名前が無い」と言わない。
+  公開のページ `security.html`（`ja/`）は、送るものと接続先の数・アクセス解析の有無・`script-src` の中身を台帳と
+  `index.html` から読んで書き、**非公開の報告窓口**（相談フォームの用件 `security`）へ渡す。GitHub の非公開の
+  脆弱性報告は有効になっていない（`docs/SECURITY-ARCHITECTURE.md` §9）。
 - ⚠ **`index.html` の `script-src` には現在 `'unsafe-eval'` と 7 つの CDN の source が入っている**
   （インラインの `<script>` のハッシュはこの数に入らない）
   （`unpkg.com` / `maps.googleapis.com` / `www.googletagmanager.com` / `www.google-analytics.com` /

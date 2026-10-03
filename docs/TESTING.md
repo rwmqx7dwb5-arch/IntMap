@@ -87,7 +87,7 @@ candidates ending in «Ask Atlas»).
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**141 measured spec files / 81.4 min** of serial browser time against a ceiling of 87.5 min (the 9 min between
+**142 measured spec files / 82.1 min** of serial browser time against a ceiling of 87.5 min (the 9 min between
 them is the room `suite-time-room` made for the specs arriving after it — see below); and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
@@ -109,7 +109,7 @@ them is the room `suite-time-room` made for the specs arriving after it — see 
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **135 spec files** — is the whole suite minus core
+**deep** tier — **136 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -973,7 +973,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **135 spec files** against core's 6 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **136 spec files** against core's 6 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
@@ -4743,3 +4743,16 @@ migration そのものから**——`auth.users` を指す列か uuid の `user_
 何も消さない、表示は作ったピンを返す。⑤ 3 つの入口は動的 import（起動経路に載らない）、書き込む操作要素は
 効果を宣言する。
 
+
+### `tests/security-next-checks.test.mjs` と `tests/security-next.spec.js` (security-next)
+
+「このページの通信」とセキュリティのページ。node 9 本: ① `data/connection-ledger.json` は台帳の導出と同一で全行を持ち、
+各行は 4 つの形のどれか 1 つ ② 「送るもの」の符号すべてに読者の文が en と jp で在る（台帳の `SENDS` と両向き）
+③ 記録の鍵はスキーム＋ホストだけ（自分のオリジン・data:・blob: は記録しない） ④ 集計・証人の区別・CSP の拒否は
+別・上限を超えた分は `overflow` に数える ⑤ 本物の台帳で判定する——パターン行・完全一致が優先・ポートは問わない・
+外のドメインを呑まない・`link`／`dormant` の行に通信したら食い違い・個人に近い分類が先 ⑥ 台帳を読めないときは
+誰も「名前が無い」と言わない ⑦ `sw.js` を sandbox で動かし、worker の要求だけが window へ届き、要求そのものは
+変えない ⑧ 設定のボタン・起動経路の import・en/jp の文・Atlas の行 ⑨ `security.html` の数と文は台帳と
+`index.html` から、報告ボタンは用件 `security` の相談フォームへ、関数・最後の migration・フォームが同じ語を持つ。
+spec 1 本（実ブラウザ）: 経路で満たした要求・WebSocket・CSP が拒否したスクリプトが一覧のそれぞれの節に出る、
+Playwright 自身の記録した main frame の完了した要求が一覧に全部ある、開いている間に増えた接続先が出る、Escape で閉じる。

@@ -41,3 +41,7 @@
   同じアカウント・`noindex`）——状態（new / replied / closed / spam）とメモを付け、削除し、支援者を掲載する。
   保存期間は受信から 730 日、spam は 30 日（`purge_org_inquiries`・pg_cron）。ページの文は `scripts/org-pages-text.mjs`
   （en + jp）、生成と門は `scripts/org-pages.mjs`。営業の手引きは `docs/sales/`。
+  **セキュリティ上の問題の非公開の報告**も同じ道を通る——`security.html`（`ja/`）の報告ボタンが用件 `security` を
+  選んだ相談フォームを開き、フォームはその用件のときだけ「何を書き、何を書かないか」を示す（`data-hint-for`）。
+  語は `_shared/inquiry-shape.js`、表の CHECK は最後にそれを述べた migration（`tests/sales-channels-checks.test.mjs`
+  が全 migration を順に読んで照合する）。ページの中身は §17.3。
