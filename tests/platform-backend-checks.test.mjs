@@ -75,13 +75,16 @@ test('① every account-owned table has its sentence in the catalogue, in en and
   }
 });
 
+/* every regex metacharacter, backslash included — a name is matched as text, never as a pattern */
+const reEsc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 test('② the account doors take no account argument and are not anon\'s', () => {
   const sig = (name) => { const m = ALL_SQL.match(new RegExp('create\\s+or\\s+replace\\s+function\\s+public\\.' + name + '\\s*\\(([^)]*)\\)', 'i')); return m && m[1]; };
   assert.equal(sig('account_data_inventory').trim(), '', 'account_data_inventory() has no parameter');
   assert.equal(sig('export_account_data').trim(), '', 'export_account_data() has no parameter');
   assert.doesNotMatch(sig('save_place'), /uuid/i, 'save_place() takes no uuid');
   for (const fn of ['account_data_inventory()', 'export_account_data()']) {
-    assert.match(ALL_SQL, new RegExp('revoke\\s+execute\\s+on\\s+function\\s+public\\.' + fn.replace(/[()]/g, '\\$&') + '\\s+from\\s+public,\\s*anon'), fn + ' is revoked from anon');
+    assert.match(ALL_SQL, new RegExp('revoke\\s+execute\\s+on\\s+function\\s+public\\.' + reEsc(fn) + '\\s+from\\s+public,\\s*anon'), fn + ' is revoked from anon');
   }
   for (const name of ['account_data_inventory', 'export_account_data', 'save_place']) {
     const body = ALL_SQL.slice(ALL_SQL.search(new RegExp('function\\s+public\\.' + name + '\\s*\\(')));

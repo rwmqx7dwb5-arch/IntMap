@@ -74,10 +74,15 @@ date: 2026-10-03
   ⚠ これは CI の `supabase test db` の代わりではない（pgTAP 本体ではなく、Supabase の本物の auth スキーマでもない）。CI の DB job が正本。
 - `tests/platform-backend-checks.test.mjs` 5 本（`docs/TESTING.md`）。
 - `00_structure_test.sql` は 2 表を両方のリストに足して `plan(104)`（+4）。
-- `check:perf`: 起動費用は動かない（boot 経路 0 kB）。上がったのは非同期の 2 行だけで、天井を上げた——
-  `atlas-console` 1134.1→1147.1 kB（+13.0 kB。Atlas の能力 `account.*`・`places.*` の 2 モジュールは
-  `js/atlas-caps-modules.js` から import され Atlas の束に入る）と非同期 gzip 合計 3774.0→3798.1 kB（その分と、
-  新しいオンデマンドのチャンク `account-data` 7.2 kB・`my-places` 11.9 kB。開いたときにだけ読む）。
+- `check:perf`（`origin/main` 9dcfdcad の CI 実測との差。天井は `node scripts/perf-budget.mjs --update` で上げる）:
+  - **起動費用（eager）も動く**——raw 4648.8→4653.0 kB（+4.2 kB）・gzip 1531.8→1533.1 kB（+1.3 kB）。モジュール数は
+    307 のまま（新しいファイルは起動経路に入らない）で、増えたのは既に起動経路にある 4 本: `js/auth-ui.js`（アカウント
+    シートの「あなたのデータ」「マイプレイス」の入口）・`js/legal-text.js`（保持と書き出しの説明）・`js/app-body.js`・
+    `js/atlas-capabilities.js`（能力表の 6 行）。⚠ eager の天井 4628.5 kB を main 自身が既に +20.3 kB 超えている
+    （gzip は帯の外で main の CI も赤）。この PR の分は上の +4.2 kB だけ。
+  - `atlas-console` +13.4 kB（Atlas の能力 `account.*`・`places.*` の 2 モジュールは `js/atlas-caps-modules.js` から
+    import され Atlas の束に入る）。新しいオンデマンドのチャンク `account-data` 7.2 kB・`my-places` 11.9 kB
+    （開いたときにだけ読む。天井は merge 後に main の CI が記録する）。
 
 ## 3. 残っていること
 
