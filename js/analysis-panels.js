@@ -89,7 +89,8 @@ export function correlate(HOST){
         return window.IntMapLazy.need('analysisCorrelate').then(ok=>{ const I=window.__imAnalysisCorrelate; if(!ok||!I){ _lazyFail(); return null; } return I; },()=>{ _lazyFail(); return null; });
       }catch(_){ _lazyFail(); return Promise.resolve(null); } }
     /* the overlay, the 62 metrics, the regression and the residual map are in js/analysis-correlate.js */
-    function open(){ _impl().then(I=>{ if(I) I.open(); }); }
+    /* (atlas-reasoning) resolves with { report, picked, x, y } — the report the panel draws; `o` = { x, y } preselects the two metrics (an id or a label) */
+    function open(o){ return _impl().then(I=>(I?I.open(o):null)); }
     window.IntMapCorrelate={open};
     const btnLbl=()=>tr('Correlation / scatter','相関・散布図','Korrelation / Streudiagramm','Корреляция / диаграмма','Correlación / dispersión');
     /* ⚠ THE BUTTON IS BUILT AT BOOT and it always was: #btn-correlate is a row of the Layers panel,

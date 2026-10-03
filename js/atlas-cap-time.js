@@ -18,6 +18,7 @@
  * ==========================================================================*/
 import { str, bool, num, int } from './atlas-caps.js';
 import { IntMapTime } from './chronos.js';
+import { changesPeriod, diffPolities, diffEconomy, diffLayers, rankChanges, boxesMeet, bboxOfGeometry } from './atlas-reasoning.js';   /* (atlas-reasoning) time.changes: what is decided is in that module, as values */
 
 export default [
   {
@@ -83,6 +84,19 @@ export default [
     ],
     schema: () => ({ type: 'object', properties: { play: bool(), from: str(), to: str(), year: int(), toYear: int(), unit: str(), step: int(), fps: num(), loop: bool(), record: bool(), size: str(), format: str() } }),
     async run(a, dctx, K) { return lapse(a, K); },
+  },
+  {
+    row: ['time.changes',               'changes',        'periodChanges,whatChanged,timeDiff',                          'time',    'none',    '',                       'explanation',         'session', 'none',   'place?',   '', 'external'],
+    /* (atlas-reasoning) PRODUCT.md §4 items 8 and 9 — WHAT CHANGED BETWEEN t0 AND t1, over a region. The same records the map
+       draws, asked the same question at two ends: the border record (who appears, who ends, whose area changes), the layers whose
+       source states each end, the Maddison statistics where BOTH ends state them, and what happened INSIDE the period — the
+       border-change days and the war record's dated events — in order of how many records each affects. A day or a value no
+       record states is never filled in (.agents/rules/historical-verification.md §2 ③). */
+    doc: [
+      { in: 'time.coverage', at: 30, text: '{"type":"changes","from":YEAR|"YYYY-MM-DD","to":YEAR|"YYYY-MM-DD","place"?:str,"n"?:int,"maxDays"?:int,"news"?:bool} = WHAT CHANGED BETWEEN TWO INSTANTS (期間の変化), optionally inside one region: the polities that appear / end / change area between the two (the border record the map draws), the layers a source states at one end and not the other, the population and GDP-per-head changes where the record states BOTH ends (a value stated at one end only is counted, never treated as a change from zero), and the EVENTS inside the period ranked by importance — border-change days (polities appearing or ending that day count 1, changing borders ½) and wars (their dated events in the period) — each with the date only where a record states it (a 1 January border day is flagged as possibly year-only). Within the last 7 days it adds the grouped live news events (research.events); older periods say that the news feed does not reach them. The examined border days are capped at "maxDays" (default 40) and the answer says how many were not examined. Nothing is drawn and the clock does not move. Use for 「1910年から1930年でヨーロッパはどう変わった？」「what changed in the Balkans 1990–2001」「この10年で何が変わった」. ' },
+    ],
+    schema: () => ({ type: 'object', properties: { from: str(), to: str(), t0: str(), t1: str(), place: str(), n: int(1, 40), maxDays: int(1, 366), news: bool() }, anyOf: [{ required: ['from', 'to'] }, { required: ['t0', 't1'] }] }),
+    async run(a, dctx, K) { return changes(a, K); },
   },
 ];
 
@@ -255,3 +269,142 @@ async function yearbook(a, K) {
   const r = await YB.readYear(when, YB.pageDeps(h));
   return R(true, YB.atlasHtml(r, when, !!a.show, h.lang(), note), { yearbook: r });
 }
+
+/* ══ (atlas-reasoning) WHAT CHANGED BETWEEN TWO INSTANTS ═════════════════════════════════════════════════════
+   The same reader the year book and the map use (js/year-book.js `readYear` over `pageDeps`), asked at BOTH ends, plus the
+   days inside the period. What is decided — the period, the diff of the polities, the statistics and the layers, the order
+   of the events — is in js/atlas-reasoning.js as pure functions of values; this gathers them and writes the answer. */
+async function changes(a, K) {
+  const R = K.R, L = K.L, warn = K.warn, esc = K.esc, note = K.note, HOST = K.HOST;
+  const T = IntMapTime;
+  const P = changesPeriod(a, T.min, Date.now());
+  if (!P.ok) {
+    const why = P.code === 'needs-period' ? L('Give both ends of the period: from and to (a year or an ISO date)', '期間の両端 from と to（年か ISO の日付）を指定してください')
+      : P.code === 'before-clock' ? L('Chronos reaches back to ' + P.min, 'Chronos は ' + P.min + ' 年まで遡れます')
+        : P.code === 'in-future' ? L('The period ends after ' + P.year + ' — nothing has been recorded there', '期間が ' + P.year + ' 年より先にあります — まだ記録がありません')
+          : L('The period ends before it starts', '期間の終わりが始まりより前です');
+    return R(false, warn(esc(why)), { meta: { code: P.code, category: 'input', retryable: false, produced: [], userGoalSatisfied: false } });
+  }
+  const whenOf = (p) => { if (p.iso) return new Date(p.ms); const d = new Date(0); d.setFullYear(p.year, 5, 15); d.setHours(12, 0, 0, 0); return d; };
+  const w0 = whenOf(P.t0), w1 = whenOf(P.t1);
+  const label = (p) => (p.iso ? p.iso : (p.year <= 0 ? (1 - p.year) + ' BC' : String(p.year)));
+  /* the region: an extent when the place has one, else the point itself (a degenerate box — a polity is in when its box holds it) */
+  let region = null, regionName = '';
+  const place = String(a.place == null ? '' : a.place).trim();
+  if (place && !K.WORLD_RE.test(place)) {
+    let g = null;
+    try { g = await K.placeExtent(place); } catch (_) { g = null; }
+    if (!g) { try { g = await K.geocode(place); } catch (_) { g = null; } }
+    if (!g) return R(false, warn(L('Place not found', '地名が見つかりません') + ': ' + esc(place)), { meta: { code: 'PLACE_NOT_FOUND', category: 'input', retryable: false, semanticTarget: place, produced: [], userGoalSatisfied: false } });
+    if (g.box && K._bboxOK(g.box)) region = [g.box[0][0], g.box[0][1], g.box[1][0], g.box[1][1]];
+    else if (isFinite(+g.lng)) region = [+g.lng, +g.lat, +g.lng, +g.lat];
+    regionName = g.name || place;
+  }
+  const YB = await import('./year-book.js');
+  const h = { lang: () => (HOST && HOST.lang) || 'en', countryStats: () => (HOST && HOST.countryStats) || {}, escape: esc };
+  const deps = YB.pageDeps(h);
+  /* the two ends — whole border list (`top` unbounded), one change day each (readYear's own per-year section is not used here) */
+  const [r0, r1] = await Promise.all([YB.readYear(w0, deps, { top: Infinity, maxDays: 1 }), YB.readYear(w1, deps, { top: Infinity, maxDays: 1 })]);
+  const polities = (r0.borders && r0.borders.largest && r1.borders && r1.borders.largest && !r0.borders.modern && !r1.borders.modern) ? diffPolities(r0.borders.largest, r1.borders.largest, region) : null;
+  /* the layers a source states at each end */
+  let layers = null;
+  try { const LT = window.IntMapLayerTime; if (LT && LT.coverage) layers = diffLayers(await LT.coverage(isoOf(w0)), await LT.coverage(isoOf(w1))); } catch (_) { layers = null; }
+  /* the days inside the period on which the border record changes (the record states each day; before 1689 it states none) */
+  const TB = deps.borders;   /* year-book.js pageDeps — the reader the page already holds, not a new read of the global */
+  const maxDays = Math.max(1, Math.min(366, Math.round(+a.maxDays) || 40));
+  const days = []; let dayTotal = 0, dayCap = 0, daysUnstated = false;
+  if (TB && TB.changeDates && TB.collectionAt) {
+    const sheets = (r0.borders && r0.borders.tier === 'snapshot') || (r1.borders && r1.borders.tier === 'snapshot');
+    if (sheets) daysUnstated = true;
+    else {
+      try {
+        const all = (await TB.changeDates()).filter((d) => d instanceof Date && d.getTime() > w0.getTime() && d.getTime() <= w1.getTime()).sort((x, y) => x - y);
+        dayTotal = all.length;
+        const nameOf = (p) => String((p && ((p._i18n && (p._i18n[h.lang()] || p._i18n.en)) || p.NAME || p.name)) || '').trim();
+        const setOf = (fc) => { const m = new Map(); for (const f of (fc && fc.features) || []) { const n = nameOf(f.properties); if (n && !m.has(n)) m.set(n, f.geometry); } return m; };
+        const hit = (g) => !region || boxesMeet(bboxOfGeometry(g), region);
+        for (const d of all.slice(0, maxDays)) {
+          const before = await TB.collectionAt(new Date(d.getTime() - 86400000)), after = await TB.collectionAt(d);
+          if (!before || !after || !before.fc || !after.fc) continue;
+          const A = setOf(before.fc), B = setOf(after.fc);
+          const appeared = [...B.keys()].filter((k) => !A.has(k) && hit(B.get(k)));
+          const ended = [...A.keys()].filter((k) => !B.has(k) && hit(A.get(k)));
+          const reshaped = [...B.keys()].filter((k) => A.has(k) && A.get(k) !== B.get(k) && (hit(B.get(k)) || hit(A.get(k))));
+          days.push({ date: isoOf(d), appeared, ended, reshaped });
+        }
+        dayCap = Math.max(0, dayTotal - maxDays);
+      } catch (_) { daysUnstated = true; }
+    }
+  }
+  /* the war record's dated events inside the period (null when the record does not span any year of it) */
+  let wars = null;
+  try {
+    let W = null;
+    for (let y = P.t0.year; y <= P.t1.year && !W; y++) W = await deps.wars(y);
+    if (W && Array.isArray(W.wars)) {
+      const lo = isoOf(w0), hi = isoOf(w1), pickName = (n) => (n && (n[h.lang()] || n.en)) || '';
+      const inBox = (p) => !region || !Array.isArray(p) || (p[0] >= region[0] && p[0] <= region[2] && p[1] >= region[1] && p[1] <= region[3]);
+      wars = [];
+      for (const w of W.wars) {
+        const evs = (w.events || []).filter((e) => e.d > lo && e.d <= hi && (!region || (Array.isArray(e.at) && inBox(e.at)))).map((e) => ({ date: e.d, name: pickName(e.name), kind: e.kind || '' }));
+        if (evs.length) wars.push({ name: pickName(w.name) || w.id, from: w.from, to: w.to, events: evs });
+      }
+    }
+  } catch (_) { wars = null; }
+  const items = rankChanges(days, wars || [], region);
+  /* the statistics: Maddison at both ends, compared only where both state them */
+  let econ = null;
+  try { const M = deps.maddison; if (M && M.load) { const data = await M.load(); const rows = (y) => Object.keys(data || {}).map((c) => ({ code: c, name: deps.countryName ? deps.countryName(c) : c, pop: M.popN(c, y), gdppc: M.gdppc(c, y) })).filter((r) => r.pop != null || r.gdppc != null); econ = diffEconomy(rows(w0.getFullYear()), rows(w1.getFullYear())); } } catch (_) { econ = null; }
+  /* the live news, only where the period reaches the feed (research.events holds the last 168 h) */
+  let news = null;
+  const hoursBack = (Date.now() - w0.getTime()) / 3600000;
+  if (a.news !== false && Date.now() - w1.getTime() < 168 * 3600000 && hoursBack > 0) {
+    try { const er = await K.dispatch({ type: 'events', place: place || undefined, hours: Math.min(168, Math.max(6, Math.ceil(hoursBack))), n: Math.max(3, Math.min(12, Math.round(+a.n) || 8)) }); news = { ok: !!(er && er.ok), html: er && er.html }; } catch (_) { news = { ok: false, html: '' }; }
+  }
+  /* write it */
+  const N = Math.max(1, Math.min(40, Math.round(+a.n) || 10));
+  const sec = (t) => '<div style="font-weight:600;margin-top:8px;">' + esc(t) + '</div>';
+  const pick = (t) => L(t[0], t[1]);
+  const nameList = (rows, f) => rows.slice(0, 8).map(f).join(L(', ', '、')) + (rows.length > 8 ? L(' … +' + (rows.length - 8), ' … 他 ' + (rows.length - 8)) : '');
+  const km = (v) => Math.round(v).toLocaleString('en-US') + ' km²';
+  const pct = (v) => (v > 0 ? '+' : '') + (v * 100).toFixed(0) + '%';
+  let out = note('✓ ' + L('What changed: ' + label(P.t0) + ' → ' + label(P.t1) + (regionName ? ' · ' + regionName : ''), '変化: ' + label(P.t0) + ' → ' + label(P.t1) + (regionName ? ' · ' + regionName : '')));
+  out += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('A bare year is read as the middle of that year (the same instant the year book reads); the map and the clock are not moved.', '年だけの指定はその年の半ばとして読みます（年鑑と同じ時点）。地図も時計も動かしません。')) + '</div>';
+  if (polities) {
+    out += sec(L('Polities on the map', '地図に描かれる政体')) + '<div>' + esc(L(polities.countA + ' at the start, ' + polities.countB + ' at the end' + (regionName ? ' (those touching ' + regionName + ')' : ''), '開始時 ' + polities.countA + '・終了時 ' + polities.countB + (regionName ? '（' + regionName + ' にかかるもの）' : ''))) + '</div>';
+    if (polities.appeared.length) out += '<div>' + esc(L('Appear', '出現')) + ' (' + polities.appeared.length + '): ' + esc(nameList(polities.appeared, (p) => p.name + ' ' + km(p.km2))) + '</div>';
+    if (polities.gone.length) out += '<div>' + esc(L('No longer drawn', '描かれなくなる')) + ' (' + polities.gone.length + '): ' + esc(nameList(polities.gone, (p) => p.name + ' ' + km(p.km2))) + '</div>';
+    if (polities.reshaped.length) out += '<div>' + esc(L('Drawn area changes', '描かれる面積が変わる')) + ' (' + polities.reshaped.length + '): ' + esc(nameList(polities.reshaped, (p) => p.name + ' ' + pct(p.rel))) + '</div>';
+    if (!polities.appeared.length && !polities.gone.length && !polities.reshaped.length) out += '<div>' + esc(L('The border record draws the same polities with the same areas at both ends.', '国境の記録は両端で同じ政体を同じ面積で描いています。')) + '</div>';
+  } else out += sec(L('Polities on the map', '地図に描かれる政体')) + '<div>' + esc(L('Not compared: at least one end is drawn with today\'s borders or the record could not be read.', '比較していません: 少なくとも片方の端が現在の国境で描かれる、または記録を読めませんでした。')) + '</div>';
+  if (econ && (econ.population.length || econ.gdppc.length)) {
+    out += sec(L('Statistics that moved (Maddison Project, by country code)', '動いた統計（Maddison Project・国コード別）'));
+    if (econ.population.length) out += '<div>' + esc(L('Population', '人口')) + ' (' + econ.comparedPop + ' ' + L('countries state both ends', 'か国が両端を述べている') + '): ' + esc(econ.population.slice(0, 6).map((r) => r.name + ' ' + pct(r.rel)).join(L(', ', '、'))) + '</div>';
+    if (econ.gdppc.length) out += '<div>' + esc(L('GDP per head', '一人当たり GDP')) + ' (' + econ.comparedGdppc + '): ' + esc(econ.gdppc.slice(0, 6).map((r) => r.name + ' ' + pct(r.rel)).join(L(', ', '、'))) + '</div>';
+    if (econ.onlyOne) out += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L(econ.onlyOne + ' values are stated at one end only and are not compared (not read as growth from zero).', econ.onlyOne + ' 件は片方の端だけが述べる値で、比較していません（ゼロからの増加とは読みません）。')) + '</div>';
+  } else out += sec(L('Statistics that moved', '動いた統計')) + '<div>' + esc(L('No country has a Maddison value stated at both ends.', '両端で Maddison の値を述べる国がありません。')) + '</div>';
+  if (layers && (layers.gained.length || layers.lost.length)) {
+    out += sec(L('Layers a source can draw', '典拠が述べるレイヤー'));
+    if (layers.gained.length) out += '<div>' + esc(L('Stated at the end only', '終了時にだけ述べられる')) + ' (' + layers.gained.length + '): ' + esc(nameList(layers.gained, (x) => x)) + '</div>';
+    if (layers.lost.length) out += '<div>' + esc(L('Stated at the start only', '開始時にだけ述べられる')) + ' (' + layers.lost.length + '): ' + esc(nameList(layers.lost, (x) => x)) + '</div>';
+  }
+  out += sec(L('Inside the period, by how many records each affects', '期間内の出来事（影響する記録の数の順）'));
+  if (items.length) {
+    out += '<ol style="margin:2px 0 4px 18px;padding:0;">' + items.slice(0, N).map((it) => {
+      if (it.kind === 'border') return '<li><b>' + esc(it.date || L('undated', '日付なし')) + '</b>' + (it.maybeYearOnly ? ' <i>(' + esc(L('1 January: the record may state only the year', '1 月 1 日: 記録は年だけを述べている可能性')) + ')</i>' : '') + ' — ' + esc(L('border record changes', '国境の記録の変化')) + ': '
+        + esc([it.appeared.length ? '+' + it.appeared.join(', ') : '', it.ended.length ? '−' + it.ended.join(', ') : '', it.reshaped.length ? '~' + it.reshaped.slice(0, 4).join(', ') : ''].filter(Boolean).join(' · ')) + ' <span style="color:var(--text-muted);font-size:11px;">(' + esc(pick(it.basis)) + ')</span></li>';
+      return '<li><b>' + esc(it.name) + '</b> (' + esc(it.date || '') + ' – ' + esc(it.to || '') + ') — ' + it.events.map((e) => esc(e.date + ' ' + e.name)).join(' · ') + ' <span style="color:var(--text-muted);font-size:11px;">(' + esc(pick(it.basis)) + ')</span></li>';
+    }).join('') + '</ol>';
+    if (items.length > N) out += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L((items.length - N) + ' more not shown (raise n)', '他 ' + (items.length - N) + ' 件は表示していません（n を増やす）')) + '</div>';
+  } else out += '<div>' + esc(L('No dated event is stated inside this period' + (regionName ? ' for ' + regionName : '') + ' by the border record or the war record.', '国境の記録にも戦争の記録にも、この期間' + (regionName ? '・' + regionName : '') + 'の日付つきの出来事はありません。')) + '</div>';
+  const notes = [];
+  if (daysUnstated) notes.push(L('Before 1689 the border record is one sheet per period and states no change days, so no border day is listed.', '1689 年より前の国境の記録は時期ごとの 1 枚で変化の日を述べないため、国境の変化日は載せていません。'));
+  if (dayCap) notes.push(L(dayCap + ' of ' + dayTotal + ' border-change days were not examined (the earliest ' + maxDays + ' were; raise maxDays).', '国境の変化日 ' + dayTotal + ' 日のうち ' + dayCap + ' 日は調べていません（最初の ' + maxDays + ' 日を調べた。maxDays を増やす）。'));
+  if (wars === null) notes.push(L('The war record does not span this period.', '戦争の記録はこの期間に及んでいません。'));
+  else notes.push(L('Wars: only the ' + (wars.length) + ' in IntMap\'s war record with a dated event here — other conflicts are not in it.', '戦争: IntMap の戦争記録にある、この期間に日付つきの出来事を持つ ' + wars.length + ' 件のみ。他の紛争は記録にありません。'));
+  if (news) out += sec(L('News events (the live feed, last 7 days)', 'ニュースの出来事（ライブのフィード・直近 7 日）')) + (news.ok ? news.html : '<div>' + esc(L('The news events could not be read.', 'ニュースの出来事を読めませんでした。')) + '</div>');
+  else if (a.news !== false) notes.push(L('The news feed holds the last 7 days only, so it says nothing about this period.', 'ニュースのフィードは直近 7 日のみで、この期間については何も述べません。'));
+  out += '<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;line-height:1.5;">' + notes.map(esc).join(' ') + '</div>';
+  return R(true, out, { meta: { code: 'OK', category: 'ok', retryable: false, produced: ['explanation'], userGoalSatisfied: true, changes: { from: label(P.t0), to: label(P.t1), region: regionName || null, polities, economy: econ, layers, items: items.slice(0, N), borderDaysExamined: days.length, borderDaysNotExamined: dayCap, warsSpanned: wars !== null, news: !!news } } });
+}
+const isoOf = (d) => { const y = d.getFullYear(); return (y < 0 ? '-' + String(-y).padStart(6, '0') : String(y).padStart(4, '0')) + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };

@@ -195,14 +195,38 @@ export default [
     },
   },
   {
-    row: ['panel.correlate',            'correlate',      '',                                                            'panel',   'panel',   'panel.correlate',        'panel',               'session', 'none',   '',         ''],
+    row: ['panel.correlate',            'correlate',      '',                                                            'panel',   'panel',   'panel.correlate',        'panel,explanation',   'session', 'none',   '',         ''],
+    /* (atlas-reasoning) PRODUCT.md §4 item 10. The row used to open the scatter panel and say «Correlation tool»: the panel's r,
+       rho and n were visible to the reader and to nobody else. It now opens the panel — optionally on the two metrics Atlas names —
+       and returns THE REPORT THE PANEL ITSELF DRAWS (js/atlas-reasoning.js `correlationReport`): n against the countries that could
+       have supplied it, the missing counts, Pearson and Spearman with 95% intervals, the outliers, and four fields — what is
+       confirmed, possible explanations, what argues against, the limits. Strength and direction words are only used where the
+       sample supports them; below that the report says nothing was confirmed. */
     doc: [
-      { in: 'tools-panels', at: 140, text: '{"type":"correlate"} (scatter tool); ' },
+      { in: 'tools-panels', at: 140, text: '{"type":"correlate","x"?:METRIC_ID_OR_NAME,"y"?:METRIC_ID_OR_NAME} (the CORRELATION / SCATTER tool 相関・散布図: opens it, on two metrics when named, and answers with the report the panel draws — n of the countries that could supply it, how many values are missing, Pearson r and Spearman ρ with 95% intervals, the outliers, and four fields 確認できたこと / 考えられる説明 / 反証 / 限界. A strength or direction word is only given where the sample supports it: at small n it says nothing was confirmed, and the explanations are labelled untested. Use for 「GDPと寿命に関係はある？」「is there a link between X and Y」; to FIND what relates to one indicator use explore); ' },
     ],
-    catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
-    schema: () => (noArgs('correlate')),
-    async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn;
-      { let ok=false; try{ if(window.IntMapCorrelate&&window.IntMapCorrelate.open){ window.IntMapCorrelate.open(); ok=true; } else ok=clickId('btn-correlate'); }catch(_){} return R(ok, ok?note(L('Correlation tool','相関ツール','Korrelationswerkzeug','Корреляция','Correlación')):warn('')); }
+    schema: () => ({ type: 'object', properties: { x: str(), y: str() } }),
+    async run(a, dctx, K) { const clickId = K.clickId, R = K.R, note = K.note, L = K.L, warn = K.warn, esc = K.esc;
+      const C = window.IntMapCorrelate;
+      if (!C || !C.open) { const ok = !!clickId('btn-correlate'); return R(ok, ok ? note(L('Correlation tool', '相関ツール', 'Korrelationswerkzeug', 'Корреляция', 'Correlación')) : warn('')); }
+      const asked = (a.x || a.y) ? { x: a.x, y: a.y } : undefined;
+      let res = null;
+      try { res = await C.open(asked); } catch (_) { res = null; }
+      if (!res) return R(false, warn(L('The correlation tool could not be loaded.', '相関ツールを読み込めませんでした。')));
+      if (asked && res.picked && (res.picked.x === false || res.picked.y === false)) {
+        const bad = [res.picked.x === false ? a.x : null, res.picked.y === false ? a.y : null].filter(Boolean).map(esc).join(', ');
+        return R(false, warn(L('Not a metric of the correlation tool: ', '相関ツールの指標ではありません: ') + bad + L('. Metrics: ', '。指標: ') + esc((res.metrics || []).join(', '))), { meta: { code: 'unknown-metric', category: 'input', retryable: false, metrics: res.metrics || [], produced: ['panel'], userGoalSatisfied: false } });
+      }
+      const rep = res.report;
+      if (!rep) return R(true, note(L('Correlation tool', '相関ツール')) + warn(L('The country data did not load, so no report was computed.', '国のデータを読み込めず、報告を計算していません。')), { meta: { code: 'no-data', produced: ['panel'], userGoalSatisfied: false, partial: true } });
+      const pick = (t) => L(t[0], t[1]);
+      const f2 = (v) => (v == null ? '—' : (Math.round(v * 100) / 100).toFixed(2));
+      const ci = (c) => (c ? ' [' + f2(c[0]) + ', ' + f2(c[1]) + ']' : '');
+      const sec = (t, rows) => (rows.length ? '<div style="font-weight:600;margin-top:6px;">' + esc(t) + '</div><ul style="margin:2px 0 4px 16px;padding:0;">' + rows.map((x) => '<li>' + esc(pick(x)) + '</li>').join('') + '</ul>' : '');
+      const html = note(icon('chart') + ' ' + esc(res.xLabel) + ' × ' + esc(res.yLabel))
+        + '<div style="font-size:12px;">n = <b>' + rep.n + '</b> / ' + rep.missing.universe + ' · r = <b>' + f2(rep.pearson) + '</b>' + esc(ci(rep.ci.pearson)) + ' · ρ = <b>' + f2(rep.spearman) + '</b>' + esc(ci(rep.ci.spearman)) + '</div>'
+        + sec(L('Confirmed', '確認できたこと'), rep.confirmed) + sec(L('Possible explanations (untested)', '考えられる説明（未検証）'), rep.explanations) + sec(L('Against it', '反証'), rep.counter) + sec(L('Limits', '限界'), rep.limits);
+      return R(true, html, { meta: { code: 'OK', category: 'ok', retryable: false, produced: ['panel', 'explanation'], userGoalSatisfied: true, correlation: { x: res.x, y: res.y, n: rep.n, universe: rep.missing.universe, missing: rep.missing, pearson: rep.pearson, spearman: rep.spearman, ci: rep.ci, assertion: rep.assertion, outliers: rep.outliers.map((o) => ({ id: o.id, name: o.name, z: o.z })) } } });
     },
   },
   {

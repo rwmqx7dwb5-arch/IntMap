@@ -18,6 +18,7 @@
  * ==========================================================================*/
 import { str, bool, num, one, obj, lat, lng } from './atlas-caps.js';
 import { IntMapLang } from './lang-registry.js';
+const T = IntMapLang.pickArgs();   /* (atlas-reasoning) a sentence of a `scenario` declaration: the array [en, jp] */
 import { icon, withIcons } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 
 export default [
@@ -38,6 +39,26 @@ export default [
   {
     row: ['sim.radiation',              'radiation',      'fallout,dispersion,plume,radiationSim',                       'sim',     'sim',     'map.radiation',          'map',                 'session', 'none',   'place',    ''],
     science: 'radiation',
+    /* (atlas-reasoning) WHAT A WHAT-IF OVER THIS MODEL STANDS ON AND DOES NOT REPRESENT — read by research.scenario (js/atlas-cap-research.js)
+       through js/atlas-reasoning.js `scenarioModels`. `subject` is the argument the place goes in, `baselineParam` the one an instant goes in
+       (null: the model takes no instant, and the scenario says so under «not considered»). The model's own argument vocabulary is not
+       restated: it is this entry's `schema`. The sentences are the ones this model already prints (its note) and its method section states. */
+    scenario: {
+      subject: 'place', baselineParam: 'date',
+      data: [
+        T('Open-Meteo wind, temperature and precipitation (live, or the ERA5 archive for a past date)', 'Open-Meteo の風・気温・降水（ライブ、過去の日付は ERA5 の記録）'),
+        T('IntMap nuclear-site registry (data/npp.json) and the place resolver for the release point', 'IntMap の原子力施設台帳 (data/npp.json) と地名解決による放出点'),
+        T('The real Chernobyl Cs-137 deposition thresholds for the dose zones', '線量帯の区分に使う実際のチェルノブイリ Cs-137 沈着量の閾値'),
+      ],
+      excluded: [
+        T('The source term, release duration and isotope are the ones stated; the model does not estimate what a real accident would release', '放出量・放出時間・核種は述べた値で、実際の事故がどれだけ放出するかは見積もらない'),
+        T('Dose figures assume a Cs-137 ground-shine conversion; inhalation, ingestion and shielding are not modelled', '線量は Cs-137 の地表沈着からの外部被ばくの換算を仮定する。吸入・摂取・遮蔽は扱わない'),
+      ],
+      uncertainty: [
+        T('An educational approximation, not an operational forecast — in an emergency follow SPEEDI / IAEA / local authorities', '教育用の近似で、運用予測ではない — 実際の緊急時は SPEEDI・IAEA・自治体に従う'),
+        T('Turbulent diffusion is stochastic: several runs (the `runs` argument) show the spread between seeds', '乱流拡散は確率的で、複数回実行（`runs`）すると乱数による幅が見える'),
+      ],
+    },
     /* `source` is BOTH a preset key and a place name (the preset carries its own coordinates), so
        it can stand alone as the release point and cannot be an enum */
     doc: [
@@ -119,6 +140,26 @@ export default [
   {
     row: ['sim.ashPlume',               'ashPlume',       'volcanicAsh,ashFall,ashCloud,eruptionSim,tephraFall',         'sim',     'sim',     'map.ashPlume',           'map,explanation',     'session', 'none',   '',         'ashPlume'],
     science: 'ash',
+    /* (atlas-reasoning) WHAT A WHAT-IF OVER THIS MODEL STANDS ON AND DOES NOT REPRESENT — read by research.scenario (js/atlas-cap-research.js)
+       through js/atlas-reasoning.js `scenarioModels`. `subject` is the argument the place goes in, `baselineParam` the one an instant goes in
+       (null: the model takes no instant, and the scenario says so under «not considered»). The model's own argument vocabulary is not
+       restated: it is this entry's `schema`. The sentences are the ones this model already prints (its note) and its method section states. */
+    scenario: {
+      subject: 'name', baselineParam: 'start',
+      data: [
+        T('Smithsonian Global Volcanism Program catalogue — vent position and dominant rock', 'スミソニアン世界火山計画のカタログ — 火口の位置と主要岩石'),
+        T('Open-Meteo upper-air wind, 850–50 hPa (live, or the archive for a past start)', 'Open-Meteo の上空風（850–50 hPa。ライブ、過去の開始時刻は再解析の記録）'),
+        T('Mastin et al. (2009) eruption source parameters — eruption type and rate from column height', 'Mastin ほか (2009) の噴火源パラメータ — 噴煙高度から噴火の型と噴出率'),
+      ],
+      excluded: [
+        T('Whether, when or how large the eruption would be — this is a what-if over a stated eruption, not a forecast', '噴火が起きるか・いつか・どの規模かは扱わない — 述べた噴火を仮定した「もしも」であり予報ではない'),
+        T('Ash aggregation and rain-out are not modelled; the airborne cloud is distal fine ash only', '火山灰の凝集と降雨による除去は扱わない。空中の雲は遠方の細粒灰のみ'),
+      ],
+      uncertainty: [
+        T('The mass eruption rate follows from the column height and is uncertain by a factor of several (Mastin et al. 2009)', '噴出率は噴煙高度から導かれ、数倍の不確かさがある (Mastin ほか 2009)'),
+        T('One wind field drives the whole run; a different day\'s wind moves the deposit', '1 つの風の場で全体を動かす。別の日の風なら降灰域は動く'),
+      ],
+    },
     doc: [
       { in: 'volcanoes', at: 30, text: '{"type":"ashPlume","name":VOLCANO_NAME_OR_GVP_NUMBER (or "lng"+"lat"),"style"?:"M1"|"M0"|"S1"|"S0"|"S3","hKm"?:num (column height above the vent),"hours"?:num (eruption duration),"window"?:6-72,"m63"?:0-1,"start"?:ISO-8601 UTC,"seed"?:int} = IF THIS VOLCANO ERUPTED NOW (いま噴火したら火山灰はどこへ): a Lagrangian ash model over the LIVE upper-air wind (Open-Meteo 850–50 hPa). The eruption type defaults from the volcano\'s own dominant rock (Mastin et al. 2009 eruption source parameters) and the mass eruption rate follows from the column height. Returns the ground deposit (mm, areas ≥0.1/1/10/100 mm, the named towns under ≥1 mm with their population), the airborne cloud by London-VAAC flight-level bands (SFC–FL200, FL200–350, FL350–550) and concentration thresholds (0.2/2/4 mg/m³) hour by hour, and what the run leaves out. It also registers the deposit and the cloud as two datasets (meta.ash.datasets) that {"type":"query","from":<that id>} and the GIS steps can read — e.g. which cities sit under ≥1 mm. A WHAT-IF, NOT A FORECAST: real ash advisories come from the VAACs, and the SIGMET layer shows what is in force. Use for 「桜島が今噴火したら灰はどこに降る？」「富士山が噴火したら羽田は？」, "where would ash from Etna go today", "which airports would an eruption of Hekla close". ' },
     ],
@@ -375,6 +416,26 @@ export default [
   {
     row: ['sim.tsunami',                'tsunami',        'tsunamiSim,tsunamiPropagation',                               'sim',     'sim',     'map.tsunami',            'map',                 'session', 'none',   'point',    'tsunami'],
     science: 'tsunami',
+    /* (atlas-reasoning) WHAT A WHAT-IF OVER THIS MODEL STANDS ON AND DOES NOT REPRESENT — read by research.scenario (js/atlas-cap-research.js)
+       through js/atlas-reasoning.js `scenarioModels`. `subject` is the argument the place goes in, `baselineParam` the one an instant goes in
+       (null: the model takes no instant, and the scenario says so under «not considered»). The model's own argument vocabulary is not
+       restated: it is this entry's `schema`. The sentences are the ones this model already prints (its note) and its method section states. */
+    scenario: {
+      subject: 'place', baselineParam: null,
+      data: [
+        T('Measured ocean bathymetry on a 0.25° global grid', '実測の海底地形（0.25° 全球格子）'),
+        T('The epicentre, magnitude and focal depth stated in the scenario (Okada 1985 sea-surface displacement)', 'シナリオで述べた震源・規模・震源の深さ（Okada 1985 の海面変位）'),
+      ],
+      excluded: [
+        T('Coastal inundation on land is not computed — the grid is 0.25°, far coarser than a harbour', '陸上の浸水は計算しない — 格子は 0.25° で港湾よりはるかに粗い'),
+        T('The baseline instant is not an input: the model has no clock, so the time of day and tide are not represented', '基準時点は入力にならない — モデルに時計はなく、時刻や潮位は反映されない'),
+        T('Whether an earthquake of that size happens, and its slip distribution, are not modelled beyond the stated magnitude', '述べた規模の地震が起きるか、およびすべり分布は規模以上には扱わない'),
+      ],
+      uncertainty: [
+        T('Long-wave propagation over the measured seafloor; amplitude near a coast is not resolved at this grid', '実測の海底上の長波の伝播。この格子では沿岸の振幅は解像できない'),
+        T('The result is one solve of one stated rupture; a different focal depth or magnitude changes it', '述べた 1 つの破壊を 1 回解いた結果で、震源の深さや規模が変われば変わる'),
+      ],
+    },
     doc: [
       { in: 'terrain-water', at: 20, text: '{"type":"tsunami"}.\n' },
       { in: 'sim.tsunami', text: 'TSUNAMI PROPAGATION (its own model — NOT a hazard of the disaster simulator): {"type":"tsunami","place"?:str,"lng"?:num,"lat"?:num,"magnitude"?:Mw,"depth"?:km,"scope"?:"global"|"near","hours"?:1-30,"amplitude"?:m,"maximum"?:bool,"contours"?:bool,"play"?:bool} = solve the tsunami a given earthquake would radiate and watch it cross the ocean. Shallow-water long waves (total-depth pressure, Manning bottom friction, Coriolis) on a spherical Arakawa C-grid over the WHOLE PLANET at 0.25° — longitude wraps, so the wave keeps going round rather than reflecting off the edge of a box, and a Chilean event really does arrive in Japan about twenty-two hours later. "scope":"near" solves the SAME physics on a latitude band around the epicentre at FOUR TIMES the resolution (about 9 km a cell instead of 28) — use it when the question is about the source region rather than about a trans-ocean arrival; it is capped at 3 hours, because past that the wave reaches the band edge. The sea floor is the same bundled 0.25° bathymetry in both scopes, so "near" refines the source, the numerics and the arrival field, NOT the coastline. The sea floor is the bundled global bathymetry (every cell has a measured depth; nothing falls back to a constant). The source is the Okada (1985) co-seismic sea-floor displacement over a tapered sub-fault grid, with the Tanioka & Satake (1996) horizontal-motion term added over sloping floor. It is solved in a background thread and the frames STREAM in, so the animation is watchable within a second or two. Reports travel-time contours, a maximum-crest field ("maximum":true), a Green\'s-law coastal height, and a click anywhere on the sea reads the arrival time and wave height there. Defaults: Mw 8.5, focal depth 20 km, 6 hours. Use for "チリでM9が起きたら日本にいつ津波が来る", "simulate the 2011 Tōhoku tsunami", "津波シミュレーター", "show me a tsunami from the Aleutians". Its cells are tens of kilometers and it does not claim run-up, so it cannot say which street floods.\n' },
@@ -426,6 +487,25 @@ export default [
   {
     row: ['sim.pandemicRun',            'pandemicRun',    'simulatePandemic,runPandemic,pandemicSimulate,outbreakSim',   'sim',     'none',    '',                       'explanation',         'read',    'none',   'place',    'pandemicSim'],
     science: 'pandemic',
+    /* (atlas-reasoning) WHAT A WHAT-IF OVER THIS MODEL STANDS ON AND DOES NOT REPRESENT — read by research.scenario (js/atlas-cap-research.js)
+       through js/atlas-reasoning.js `scenarioModels`. `subject` is the argument the place goes in, `baselineParam` the one an instant goes in
+       (null: the model takes no instant, and the scenario says so under «not considered»). The model's own argument vocabulary is not
+       restated: it is this entry's `schema`. The sentences are the ones this model already prints (its note) and its method section states. */
+    scenario: {
+      subject: 'place', baselineParam: null,
+      data: [
+        T('World Bank country populations and OurAirports / OpenFlights route structure for the spread between countries', '国別人口（世界銀行）と、国間の広がりの OurAirports・OpenFlights の路線構造'),
+        T('The pathogen preset\'s published parameters (each parameter names its source)', '病原体プリセットの公表済みパラメータ（各パラメータが出典を名指す）'),
+      ],
+      excluded: [
+        T('Within-country structure (cities, age groups) and behaviour change are not represented — one well-mixed set of compartments per country', '国内の構造（都市・年齢層）と行動変容は扱わない — 国ごとに 1 つの混合区画'),
+        T('The baseline instant is not an input: the run starts at day 0 from the stated origin, not at a calendar date', '基準時点は入力にならない — 暦の日付ではなく、述べた起点の 0 日目から始まる'),
+      ],
+      uncertainty: [
+        T('A stochastic SEIR run is ONE DRAW: an outbreak can die out by chance. `runs` answers with the median and the 10th–90th percentile band', '確率的 SEIR の 1 回は「1 つの標本」で、偶然に収束することがある。`runs` を使うと中央値と 10〜90 パーセンタイルの幅が返る'),
+        T('Parameters are the preset\'s; changing them (`params`) moves the answer more than the seed does', 'パラメータはプリセットの値で、`params` を変えると乱数より大きく答えが動く'),
+      ],
+    },
     /* (#R754) ⚠ `params` IS DELIBERATELY UNENUMERATED, for the reason `data.gis` states above: the
        vocabulary is js/pandemic-model.js's PANDEMIC_PARAMS, which this file cannot read at planning
        time, and a copy of it here would be a second list to keep in step. The REFUSALS carry the

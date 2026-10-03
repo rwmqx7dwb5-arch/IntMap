@@ -193,7 +193,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["navigation.camera","navCamera","recenter,overview,followMe,northUp","routing","camera","camera,camera.follow","map,camera","session","none","",""],
       ["navigation.voice","navVoice","mute,unmute,voiceGuidance","routing","setting","navigation","setting","session","none","",""],
       ["map.measure","measure","","map","panel","map.tool","panel","session","none","",""],
-      ["panel.correlate","correlate","","panel","panel","panel.correlate","panel","session","none","",""],
+      ["panel.correlate","correlate","","panel","panel","panel.correlate","panel,explanation","session","none","",""],
       ["panel.settings","settings","","panel","panel","panel.settings","panel","session","none","",""],
       ["panel.workspace","workspace","windows,windowMode,windowWorkspace","panel","panel","panel.workspace","panel","session","none","",""],
       ["panel.shortcuts","shortcuts","keyboard,hotkeys","panel","panel","panel.shortcuts","panel","session","none","",""],

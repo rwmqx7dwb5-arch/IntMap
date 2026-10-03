@@ -872,6 +872,7 @@ atlas-cap-settings.js             Atlas の能力 — 設定（settings.*）
 atlas-cap-sim.js                  Atlas の能力 — シミュレーター（sim.*）
 atlas-cap-system.js               Atlas の能力 — 汎用の逃げ道とモジュール操作（system.*）
 atlas-cap-time.js                 Atlas の能力 — 時刻（time.*）
+atlas-reasoning.js                Atlas の 3 つの答えを**構造**にする純関数（シナリオ research.scenario の 4 欄・期間の変化 time.changes の差分と順位・相関 panel.correlate の報告）。DOM も window も持たず、tests/atlas-reasoning-checks.test.mjs が評価する。相関パネルも同じ報告を描く
 atlas-cap-ui.js                   Atlas の能力 — インラインの操作（ui.*）
 atlas-cap-view.js                 Atlas の能力 — カメラと表示（view.*）
 atlas-query.js                    **データ横断クエリエンジン** window.IntMapQuery（#R495）— FROM 表 /
