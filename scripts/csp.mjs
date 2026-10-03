@@ -82,7 +82,10 @@ export function inlineScripts(html) {
   return out;
 }
 
-/** The CSP source that admits exactly this script text. */
+/** The CSP source that admits exactly this script text.
+    ⚠ This SHA-256 is what CSP Level 2 «hash-source» is defined as (the browser computes the same digest over the inline
+    script and compares). It is an identity of PUBLIC page text, not a stored credential, so a slow password hash would
+    be wrong here — the browser would never match it. */
 export function scriptHash(text) {
   const normalised = String(text).replace(/\r\n?/g, '\n');
   return "'sha256-" + createHash('sha256').update(normalised, 'utf8').digest('base64') + "'";

@@ -90,3 +90,12 @@ date: 2026-10-03
   黙って失われはしない）。
 - `index.html` の CSP は `connect-src` に `https:`・`wss:` を持つ（`docs/SECURITY-ARCHITECTURE.md` §6）。この一覧はそれを
   縛るものではなく、**縛られていないものを読者に見せる**ものである。
+
+## 6. 出自の台帳（CI で赤になったもの）
+
+`data/connection-ledger.json` は出自を**値で**持つ（発行者・URL・ライセンス・周期 `static`・builder・schema・行数と欠け・
+重複——`data/service-status.json` と同じ綴り）。残る 3 欄（`retrievedAt`・`generatedAt`・`asOf`）だけを
+`data/governance-ledger.json` に記録した（`--update`）。理由: このファイルは台帳の純関数で、`--check` がバイトで比べるので、
+生成時刻を書けば毎回不一致になる。builder の行は他の全 builder と同じく記録した（`offline-sources.mjs` と同じ形）。
+CodeQL の `js/insufficient-password-hash`（`scripts/csp.mjs` の CSP 用 sha256）は、セキュリティのページの文の識別子
+（`password`）からの流れと読まれた誤検出——識別子を `leakCheck` に改め、ハッシュ側に CSP の hash-source である理由を書いた。

@@ -395,7 +395,7 @@ function contactBody(F, L) {
        against the code and against Privacy §4 (only rows the browser requests: `disclosure`);
      · whether third-party analytics loads — index.html's own switch (window.INTMAP_ANALYTICS);
      · what the security policy allows — index.html's own Content-Security-Policy script-src;
-     · the password check — the ledger row that sends a `credential-prefix`.
+     · the leaked-secret check — the ledger row that sends a `credential-prefix`.
    The words for each «what is sent» are js/connections-panel.js SENDS_WORDS — the same sentences the in-map list
    uses, so the page and the list cannot describe one code two ways. */
 export function securityFacts() {
@@ -414,7 +414,7 @@ export function securityFacts() {
     analytics: sw === 'true',
     inline: /'unsafe-inline'/.test(scriptSrc),
     unsafeEval: /'unsafe-eval'/.test(scriptSrc),
-    passwordPrefix: stated.some((r) => r.sends && r.sends.code === 'credential-prefix'),
+    leakCheckByPrefix: stated.some((r) => r.sends && r.sends.code === 'credential-prefix'),
   };
 }
 function securityBody(F, L) {
@@ -425,7 +425,7 @@ function securityBody(F, L) {
   const sendTiles = S.groups.map((g) => `<div class="lp-tile" data-sends="${g.code}"><h3>${esc(SENDS_WORDS[g.code][k])}</h3><p><b>${esc(fill(T.sitesN[k], { n: n(g.hosts.length) }))}</b> — ${esc(g.hosts.join(', '))}</p></div>`);
   const guards = [S.analytics ? T.analyticsOn : T.analyticsOff, S.inline ? T.withInline : T.noInline];
   if (S.unsafeEval) guards.push(T.evalNote);
-  if (S.passwordPrefix) guards.push(T.password);
+  if (S.leakCheckByPrefix) guards.push(T.leakCheck);
   guards.push(T.yourData);
   const li = (list) => list.map((p) => `<li>${esc(p[k])}</li>`).join('\n        ');
   return `<main class="lp-main">

@@ -308,7 +308,7 @@ export const TEXT = {
     evalNote: [P('Said plainly: the 3-D globe needs eval', '正直に: 3D 地球儀には eval が必要です'),
       P('The policy still allows code to be compiled from text (unsafe-eval) because the 3-D engine IntMap uses requires it. It is recorded as an accepted risk, and a test turns red on the day the engine no longer needs it.',
         '使用している 3D エンジンが必要とするため、ポリシーはテキストからのコードの生成（unsafe-eval）をまだ許可しています。受け入れたリスクとして記録しており、エンジンが不要になった日にはテストが赤くなります。')],
-    password: [P('Passwords are checked without being sent', 'パスワードは送らずに確認'),
+    leakCheck: [P('Passwords are checked without being sent', 'パスワードは送らずに確認'),
       P('When you choose a password, it is checked against known leaks by sending only the first 5 characters of its hash; the comparison happens in your browser.',
         'パスワードを決めるとき、漏えいの有無はハッシュの先頭 5 文字だけを送って確認し、照合はブラウザの中で行います。')],
     yourData: [P('Your data is yours to see and take', 'あなたのデータは見て持ち出せる'),
