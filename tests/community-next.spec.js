@@ -40,10 +40,10 @@ test('map correction: right-click → report → the receipt is kept → the ans
   });
   expect(pt, 'a point on the map canvas').not.toBeNull();
   await page.mouse.click(pt.x, pt.y, { button: 'right' });
-  const entry = page.locator('#ctx-menu button[data-act]', { hasText: 'Report a map error here' });
+  const entry = page.locator('#ctx-menu button[data-act]', { hasText: 'Report a map error' });
   await expect(entry).toHaveCount(1);
   await page.evaluate(() => {
-    const b = [...document.querySelectorAll('#ctx-menu button[data-act]')].find((x) => /Report a map error here/.test(x.textContent));
+    const b = [...document.querySelectorAll('#ctx-menu button[data-act]')].find((x) => /Report a map error/.test(x.textContent));
     const sec = b && b.closest('.ctx-sec');
     if (sec && sec.hidden) { const grp = sec.previousElementSibling && sec.previousElementSibling.classList.contains('ctx-grp') ? sec.previousElementSibling : document.querySelector('#ctx-menu .ctx-grp[data-grp="' + sec.getAttribute('data-sec') + '"]'); if (grp) grp.click(); }
   });

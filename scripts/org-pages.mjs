@@ -492,7 +492,7 @@ function correctionsBody(F, L) {
     <h2>${esc(T.mineH[k])}</h2>
     <p class="lp-sub">${esc(T.mineNote[k])}</p>
     <ul class="og-corr" id="og-corr-mine" ${common} data-msg-none="${esc(T.mineNone[k])}" data-msg-failed="${esc(T.mineFail[k])}" data-msg-gone="${esc(T.mineGone[k])}"
-      data-msg-open="${esc(T.logOpen[k])}" data-msg-change="${esc(T.logChange[k])}" data-app="${L.up}index.html">
+      data-msg-open="${esc(T.logOpen[k])}" data-msg-change="${esc(T.logChange[k])}">
       <li class="og-muted">${esc(T.logLoading[k])}</li>
     </ul>
   </section>
@@ -501,7 +501,7 @@ function correctionsBody(F, L) {
     <h2>${esc(T.logH[k])}</h2>
     <p class="lp-sub">${esc(T.logNote[k])}</p>
     <ul class="og-corr" id="og-corr-log" ${common} data-msg-empty="${esc(T.logEmpty[k])}" data-msg-failed="${esc(T.logFail[k])}"
-      data-msg-open="${esc(T.logOpen[k])}" data-msg-change="${esc(T.logChange[k])}" data-app="${L.up}index.html">
+      data-msg-open="${esc(T.logOpen[k])}" data-msg-change="${esc(T.logChange[k])}">
       <li class="og-muted">${esc(T.logLoading[k])}</li>
     </ul>
   </section>
@@ -625,7 +625,7 @@ ${'<meta http-equiv="Content-Security-Policy" content="' + ["default-src 'self'"
   <p class="mc-summary" id="mc-summary"></p>
   <div class="mc-grid">
     <div class="mc-mapwrap">
-      <svg id="mc-map" role="img" aria-label="Reports on a world map" xmlns="http://www.w3.org/2000/svg" viewBox="-180 -90 360 180"></svg>
+      <svg id="mc-map" role="img" aria-label="Reports on a world map" viewBox="-180 -90 360 180"></svg>
       <div class="mc-legend"><span><i class="k-new"></i>new</span><span><i class="k-confirmed"></i>confirmed / cannot fix</span><span><i class="k-fixed"></i>fixed</span><span><i class="k-closed"></i>not an error / duplicate</span><span><i class="k-spam"></i>spam</span>
         <button class="btn sec sm" id="mc-world" type="button" data-effect="none">Whole world</button><span>Land: Natural Earth (public domain)</span></div>
     </div>

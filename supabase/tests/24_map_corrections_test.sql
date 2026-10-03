@@ -82,15 +82,16 @@ select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 set local role service_role;
 select _dml('svc_anon', format($q$insert into public.map_corrections (kind, lng, lat, zoom, year, map_link, layer_id, layer_label, place_label, message, receipt_hash, lang)
   values ('date', 135.5, 34.7, 8, 1900, '#v=135.5000,34.7000,8.00,0,0,f&tt=1900-01-01', 'hist-admin', 'Historical provinces', 'Osaka', 'This province did not exist in 1900.', %L, 'en')$q$, (select h from _rc where name = 'anon')));
-select _dml('svc_user', format($q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash, user_id)
-  values ('name', 2.35, 48.85, 'Wrong name', %L, '11111111-1111-1111-1111-111111111111')$q$, (select h from _rc where name = 'user')));
-select _dml('svc_spam', format($q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash) values ('other', 0, 0, 'buy now', %L)$q$, (select h from _rc where name = 'spam')));
-select _dml('svc_badkind', $q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash) values ('opinion', 0, 0, 'x', repeat('a', 64))$q$);
-select _dml('svc_badhash', $q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash) values ('name', 0, 0, 'x', 'not-a-hash')$q$);
+select _dml('svc_user', format($q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash, user_id, map_link)
+  values ('name', 2.35, 48.85, 'Wrong name', %L, '11111111-1111-1111-1111-111111111111', '#v=2.3500,48.8500,9.00,0,0,f')$q$, (select h from _rc where name = 'user')));
+select _dml('svc_spam', format($q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash, map_link) values ('other', 0, 0, 'buy now', %L, '#v=0.0000,0.0000,9.00,0,0,f')$q$, (select h from _rc where name = 'spam')));
+select _dml('svc_badkind', $q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash, map_link) values ('opinion', 0, 0, 'x', repeat('a', 64), '#v=0.0000,0.0000,9.00,0,0,f')$q$);
+select _dml('svc_nolink',  $q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash) values ('name', 0, 0, 'x', repeat('9', 64))$q$);
+select _dml('svc_badhash', $q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash, map_link) values ('name', 0, 0, 'x', 'not-a-hash', '#v=0.0000,0.0000,9.00,0,0,f')$q$);
 select _dml('svc_badlink', $q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash, map_link) values ('name', 0, 0, 'x', repeat('b', 64), 'https://evil.example/')$q$);
-select _dml('svc_badsrc',  $q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash, evidence_url) values ('name', 0, 0, 'x', repeat('c', 64), 'javascript:alert(1)')$q$);
-select _dml('svc_badlat',  $q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash) values ('name', 0, 91, 'x', repeat('d', 64))$q$);
-select _dml('svc_pubopen', $q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash, published, reply) values ('name', 0, 0, 'x', repeat('e', 64), true, 'r')$q$);
+select _dml('svc_badsrc',  $q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash, evidence_url, map_link) values ('name', 0, 0, 'x', repeat('c', 64), 'javascript:alert(1)', '#v=0.0000,0.0000,9.00,0,0,f')$q$);
+select _dml('svc_badlat',  $q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash, map_link) values ('name', 0, 91, 'x', repeat('d', 64), '#v=0.0000,0.0000,9.00,0,0,f')$q$);
+select _dml('svc_pubopen', $q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash, published, reply, map_link) values ('name', 0, 0, 'x', repeat('e', 64), true, 'r', '#v=0.0000,0.0000,9.00,0,0,f')$q$);
 reset role;
 select is((select v from _cap where k = 'svc_anon'), 'ROWS:1', 'community-next: the service role stores a correction');
 select is((select v from _cap where k = 'svc_user'), 'ROWS:1', 'community-next: …and a signed-in one');
@@ -98,6 +99,7 @@ select is((select status from public.map_corrections where place_label = 'Osaka'
 select ok((select resolved_at from public.map_corrections where place_label = 'Osaka') is null, 'community-next: …with no resolved_at');
 select ok((select v from _cap where k = 'svc_badkind') like 'ERR:%', 'community-next: an unknown kind is refused');
 select ok((select v from _cap where k = 'svc_badhash') like 'ERR:%', 'community-next: a receipt hash that is not 64 hex is refused');
+select ok((select v from _cap where k = 'svc_nolink')  like 'ERR:%', 'community-next: a correction without the map state it was seen in is refused');
 select ok((select v from _cap where k = 'svc_badlink') like 'ERR:%', 'community-next: a map link that is not the share fragment is refused');
 select ok((select v from _cap where k = 'svc_badsrc')  like 'ERR:%', 'community-next: a source that is not http(s) is refused');
 select ok((select v from _cap where k = 'svc_badlat')  like 'ERR:%', 'community-next: a latitude outside ±90 is refused');
@@ -109,7 +111,7 @@ select ok((select v from _cap where k = 'svc_pubopen') like 'ERR:%', 'community-
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
 set local role anon;
 select _sel('anon_sel', 'select count(*)::text from public.map_corrections');
-select _dml('anon_ins', $q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash) values ('name', 0, 0, 'x', repeat('f', 64))$q$);
+select _dml('anon_ins', $q$insert into public.map_corrections (kind, lng, lat, message, receipt_hash, map_link) values ('name', 0, 0, 'x', repeat('f', 64), '#v=0.0000,0.0000,9.00,0,0,f')$q$);
 reset role;
 
 select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
@@ -175,13 +177,13 @@ select ok((select resolved_at from public.map_corrections where kind = 'name' an
 -- ─────────────────────────────────────────────────────────────────────────────
 --  5. RETENTION
 -- ─────────────────────────────────────────────────────────────────────────────
-insert into public.map_corrections (kind, lng, lat, message, receipt_hash, status, created_at) values
-  ('other', 1, 1, 'old spam', repeat('1', 64), 'spam', now() - interval '31 days'),
-  ('other', 1, 1, 'new spam', repeat('2', 64), 'spam', now() - interval '29 days'),
-  ('name',  1, 1, 'old open', repeat('3', 64), 'new',  now() - interval '900 days');
-insert into public.map_corrections (kind, lng, lat, message, receipt_hash, status) values
-  ('name',  1, 1, 'old answer', repeat('4', 64), 'not_an_error'),
-  ('name',  1, 1, 'recent answer', repeat('5', 64), 'not_an_error');
+insert into public.map_corrections (kind, lng, lat, message, receipt_hash, status, created_at, map_link) values
+  ('other', 1, 1, 'old spam', repeat('1', 64), 'spam', now() - interval '31 days', '#v=0.0000,0.0000,9.00,0,0,f'),
+  ('other', 1, 1, 'new spam', repeat('2', 64), 'spam', now() - interval '29 days', '#v=0.0000,0.0000,9.00,0,0,f'),
+  ('name',  1, 1, 'old open', repeat('3', 64), 'new',  now() - interval '900 days', '#v=0.0000,0.0000,9.00,0,0,f');
+insert into public.map_corrections (kind, lng, lat, message, receipt_hash, status, map_link) values
+  ('name',  1, 1, 'old answer', repeat('4', 64), 'not_an_error', '#v=0.0000,0.0000,9.00,0,0,f'),
+  ('name',  1, 1, 'recent answer', repeat('5', 64), 'not_an_error', '#v=0.0000,0.0000,9.00,0,0,f');
 update public.map_corrections set resolved_at = now() - interval '731 days' where message = 'old answer';
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 set local role service_role;

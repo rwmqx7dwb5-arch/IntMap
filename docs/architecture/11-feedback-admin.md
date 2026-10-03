@@ -43,11 +43,11 @@
   （en + jp）、生成と門は `scripts/org-pages.mjs`。営業の手引きは `docs/sales/`。
 - **地図の誤り報告（map corrections）**：読者が「地図のここが違う」を**地点つきで**報告し、運営者が地図の上で裁き、回答が
   報告者に返り、直したものを公開する往復。
-  - **入口**：地図の右クリック（長押し）▸「ここの地図の誤りを報告」（`js/tool-panel.js`）、地点プロファイルのカードの下の
+  - **入口**：地図の右クリック（長押し）▸「地図の誤りを報告」（`js/tool-panel.js`）、地点プロファイルのカードの下の
     ボタン（`js/place-dossier.js`。地名・国・表示中レイヤーの行をそのまま渡す）、Atlas の `corrections.report`
     （下書きを入れてカードを開く。**送るのは読者**）。カードは `js/map-corrections.js`（クリックで取得・起動経路に載らない）。
   - **添付されるもの**：地点、ズーム、**そのときの地図の状態**（`MapState.hash()`＝共有リンクの断片。レイヤー・年・比較も含む。
-    上限を超えたら切らずに省く）、時計が過去なら**その年**。読者が選ぶのは誤りの種類（name / boundary / date / value /
+    上限を超えたとき・視点がまだ無いときは、報告した地点そのものの表示を同じ符号器で書く。表はこの断片を必須にしているので、読む側が断片を組み立てることは無い）、時計が過去なら**その年**。読者が選ぶのは誤りの種類（name / boundary / date / value /
     position / missing / other）・レイヤー（表示中のレイヤーと基図）・本文・任意の出典 URL。
   - **書き込み経路**：`reader-reports` の 4 つ目の kind `correction`。語彙・上限・検証規則は
     `supabase/functions/_shared/correction-shape.js` の `checkCorrection` に 1 回だけ書き、カードは送信前に同じ関数を通す。

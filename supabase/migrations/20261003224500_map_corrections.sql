@@ -50,7 +50,7 @@ create table if not exists public.map_corrections (
   zoom          real                 check (zoom is null or zoom between 0 and 24),
   year          integer              check (year is null or year between -10000 and 3000),
   map_time      text                 check (map_time is null or char_length(map_time) <= 40),
-  map_link      text                 check (map_link is null or (char_length(map_link) <= 2000 and map_link ~ '^#v=-?[0-9]')),
+  map_link      text        not null check (char_length(map_link) <= 2000 and map_link ~ '^#v=-?[0-9]'),
   layer_id      text                 check (layer_id is null or (char_length(layer_id) <= 80 and layer_id ~ '^[A-Za-z0-9_.:-]+$')),
   layer_label   text                 check (layer_label is null or char_length(layer_label) <= 120),
   place_label   text                 check (place_label is null or char_length(place_label) <= 200),

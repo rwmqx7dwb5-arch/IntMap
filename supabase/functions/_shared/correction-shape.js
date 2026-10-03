@@ -20,7 +20,7 @@
 //    · js/map-corrections.js — the in-app card builds its choices from CORRECTION and checks a draft with
 //      the SAME `checkCorrection` before sending (so «would be refused» is said before the network);
 //    · scripts/org-pages.mjs + js/admin-corrections.js — the public log and the operator's console;
-//    · supabase/migrations/20261003184500_map_corrections.sql — the table's CHECKs are the database's
+//    · supabase/migrations/20261003224500_map_corrections.sql — the table's CHECKs are the database's
 //      outer bound on the same words and lengths. tests/community-next-checks.test.mjs holds them equal.
 //
 //  ⚠ THE RECEIPT IS A BEARER SECRET, AND THE DATABASE NEVER STORES IT. reader-reports draws 32 random
@@ -110,8 +110,10 @@ export function checkCorrection(body) {
   };
   for (const k in f) if (!f[k].ok) return { ok: false, field: k };
   if (!f.message.value) return { ok: false, field: 'message' };
-  /* the map state is the share fragment and nothing else — the operator opens it on the site's own map */
-  if (f.mapLink.value && !/^#v=-?\d/.test(f.mapLink.value)) return { ok: false, field: 'mapLink' };
+  /* the map state is the share fragment and nothing else — the operator opens it on the site's own map. It is REQUIRED:
+     the card always has one (MapState's codec — js/map-corrections.js mapContext), so no reader of a report ever has to
+     assemble a fragment itself (only js/map-state.js spells the address bar — tests/map-state-store-checks.test.mjs ⑤). */
+  if (!f.mapLink.value || !/^#v=-?\d/.test(f.mapLink.value)) return { ok: false, field: 'mapLink' };
   if (f.evidence.value && !/^https?:\/\/[^\s]+$/i.test(f.evidence.value)) return { ok: false, field: 'evidence' };
   if (f.layerId.value && !LAYER_ID.test(f.layerId.value)) return { ok: false, field: 'layerId' };
   if (f.country.value && !COUNTRY.test(f.country.value)) return { ok: false, field: 'country' };

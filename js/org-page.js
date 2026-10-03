@@ -202,9 +202,13 @@
     if (mine && r.message) li.appendChild(div('og-corr-text', r.message));
     if (r.reply) li.appendChild(div('og-corr-text', r.reply));
     var links = document.createElement('div'); links.className = 'og-corr-links';
-    if (r.lng != null && r.lat != null) {
+    /* the report's own view (the share fragment the card attached — the table requires one), on the app beside this page:
+       the address is a URL object built from this page's location, never a string read back from the DOM */
+    var frag = String(r.map_link || r.mapLink || '');
+    if (/^#v=-?\d[\w.,&=%:+-]*$/.test(frag)) {
       var a = document.createElement('a'); a.textContent = list.getAttribute('data-msg-open');
-      a.href = list.getAttribute('data-app') + (/^#v=-?\d/.test(String(r.map_link || '')) ? r.map_link : '#v=' + (+r.lng).toFixed(4) + ',' + (+r.lat).toFixed(4) + ',9.00,0,0,f');
+      var app = new URL((document.documentElement.getAttribute('lang') === 'ja' ? '../' : './') + 'index.html', location.href);
+      app.hash = frag.slice(1); a.href = app.href;
       links.appendChild(a);
     }
     if (/^https?:\/\/[^\s]+$/i.test(String(r.fixed_ref || ''))) {
@@ -243,7 +247,7 @@
       list.textContent = '';
       var seen = {};
       rows.forEach(function (r) { seen[r.receipt_hash] = true; corrItem(list, r, true); });
-      items.forEach(function (i) { if (i.hash && !seen[i.hash]) corrItem(list, { status: 'gone', kind: i.what, place_label: i.place, lng: i.lng, lat: i.lat, year: i.year, created_at: i.at }, true); });
+      items.forEach(function (i) { if (i.hash && !seen[i.hash]) corrItem(list, { status: 'gone', kind: i.what, place_label: i.place, lng: i.lng, lat: i.lat, year: i.year, created_at: i.at, map_link: i.mapLink }, true); });
       if (!list.children.length) muted(list, list.getAttribute('data-msg-none'));
     }).catch(function () { muted(list, list.getAttribute('data-msg-failed')); });
   }

@@ -21,9 +21,9 @@ admin の Growth（growth-loop）が着地していたので、その上に**利
 
 1. **報告のカード**（`js/map-corrections.js`、クリックで取得）。入口は地図の右クリック、地点プロファイルのカード、
    Atlas の `corrections.report`（下書きして開く・**送るのは読者**）。添付は地点・ズーム・`MapState.hash()`（共有リンクの
-   断片＝レイヤー・年・比較まで）・過去の時計の年。読者が選ぶのは種類・レイヤー・本文・出典。
+   断片＝レイヤー・年・比較まで。長すぎるときは地点自身の表示を同じ符号器で書き、表は断片を必須にする）・過去の時計の年。読者が選ぶのは種類・レイヤー・本文・出典。
 2. **書き込み**は `reader-reports` の kind `correction`。規則は `_shared/correction-shape.js` の `checkCorrection` 1 つで、
-   カードは送る前に同じ関数を通す。表 `map_corrections`（`20261003184500_map_corrections.sql`）に INSERT policy は無い。
+   カードは送る前に同じ関数を通す。表 `map_corrections`（`20261003224500_map_corrections.sql`）に INSERT policy は無い。
 3. **受付番号による返事**。関数が 32 バイトの受付番号を作り、表には sha256 だけを書き、201 で一度だけ返す。端末は
    `localStorage` に保持し、`map_correction_status(receipts[])` で回答を読む（anon 可・自分の行だけ・spam は「終了」）。
    ログイン中は `my_map_corrections()` で全端末から。設定 ▸「地図の誤り報告」、Atlas `corrections.mine`、未回答の
@@ -50,7 +50,7 @@ admin の Growth（growth-loop）が着地していたので、その上に**利
 
 ## 3. 残したこと
 
-- **deploy の順序**：migration `20261003184500_map_corrections.sql` を先に、次に `reader-reports`（`_shared/correction-shape.js`
+- **deploy の順序**：migration `20261003224500_map_corrections.sql` を先に、次に `reader-reports`（`_shared/correction-shape.js`
   を import）。逆順だと報告は 503 になり、カードは「送れなかった」と言う（失われない）。
 - `sitemap.xml` は組織向けページ（corrections を含む）をまだ載せていない（sales-channels から続く穴。`scripts/landing.mjs` の範囲）。
 - 公開の訂正記録の最初の 1 件は、運営者が実際に報告を裁いてから現れる。それまでページは「まだありません」と言う。
@@ -62,4 +62,19 @@ admin の Growth（growth-loop）が着地していたので、その上に**利
   `window.SUPABASE_URL` を 1 回（`reader-reports` の住所。`js/feedback.js` と同じ読み方）読む。
 - `js/admin-corrections.js` は `admin-inquiries.js` と同じ**素の script** で、`vendor/supabase-js.js`（UMD）が出す
   `window.supabase` を 3 回、`js/safe-html.js` の `window.IntMapSafe` を 1 回読む（import できない。admin.html と同じ形）。
+- `js/map-corrections.js` の「地図で見る」が `window.IntMapBookmark.restore` を 1 回読む（貼られたリンクと同じ復元。`js/showcase-gallery.js` openShowcase と同じ経路で、`location.hash` を直接書かない）。
+- `js/map-corrections.js` がカードの規則の携帯の境界を `globalThis.IntMapDevice.media()` で 1 回読む（`js/ui-device.js` は何も export せず global に置くだけ。`js/atlas-attach.js` と同じ読み方）。
 - `node scripts/global-surface.mjs --update` で台帳に記録した。module 化するなら 3 つの管理画面を一緒に。
+
+## 5. 起動費用（`check:perf`）で上げた天井と、その理由
+
+- **eager の CSS は上げなかった。** 最初の版は報告カードの規則（約 3 KB）を `css/intmap.css` に置き、起動時の CSS が天井を
+  超えた。起動時に要るのは地点プロファイルのボタン 2 行だけなので、カードの規則は `js/map-corrections.js` が初めて開くときに
+  `<style id="mc-css">` として足す形（`js/account-data.js` と同じ）へ移した。
+- **`atlas-console` +7.3 kB**：Atlas の能力 3 つ（`corrections.report / mine / log`）の項目と、その計画者向けの説明文。
+  能力は `js/atlas-cap-*.js` に置く決まりで、Atlas の塊に入る。
+- **`place-dossier` +2.3 kB**：カードの下の「誤りを報告」ボタンと、それが `map-corrections.js` を取りに行く遅延 import
+  （ビルドが付ける先読みの依存一覧を含む）。
+- **async の合計**：上の 2 つと、新しい遅延の塊 `map-corrections`（19.4 kB）・`correction-shape`（2.7 kB）。どれも
+  クリックされたときにだけ取得され、起動時には読まれない（PHONE の起動時の読み込みは 0 kB 増）。
+- `node scripts/perf-budget.mjs --update` で超えた行だけを上げた。

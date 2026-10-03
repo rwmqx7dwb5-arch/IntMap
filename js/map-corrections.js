@@ -37,6 +37,7 @@ import { MapState } from './map-state.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { MAP_ANSWER_EVENT } from './mobile-sheet.js';
 import * as bus from './bus.js';
+import './ui-device.js';   /* the phone/desktop boundary (IntMapDevice.media) for the card's injected rules */
 import { CORRECTION, READER_STATUS, CORRECTION_LIMITS, checkCorrection, receiptHash, RECEIPT_RE, MAX_RECEIPTS_PER_READ, YEAR_RANGE } from '../supabase/functions/_shared/correction-shape.js';
 
 /* ── the device's receipts ─────────────────────────────────────────────────────────────────────── */
@@ -44,7 +45,7 @@ export const STORE_KEY = 'intmap_corrections';
 /* How often a device that holds an OPEN receipt asks whether it was answered. ESTIMATE: the operator answers
    in days, not minutes (map_corrections_summary reports the median once there is one); twice a day says an
    answer the same day it is given without a read on every visit. Expires when that median is under a day. */
-export const CHECK_EVERY_MS = 12 * 3600 * 1000;
+const CHECK_EVERY_MS = 12 * 3600 * 1000;
 /* How long a send may take before it counts as not sent — the same derivation js/feedback.js states for the
    same function (its own bounds: Auth 5 s, two limiter takes, the insert 5 s, plus the round trip). */
 const SEND_DEADLINE_MS = 20000;
@@ -62,7 +63,7 @@ export function saveStore(store, storage) {
   try { (storage || globalThis.localStorage).setItem(STORE_KEY, JSON.stringify(store)); return true; } catch (_) { return false; }
 }
 /** the store with one more receipt (the newest first) */
-export function rememberReceipt(store, entry) {
+function rememberReceipt(store, entry) {
   const items = [entry].concat((store.items || []).filter((i) => i.receipt !== entry.receipt));
   return { v: 1, items, checkedAt: store.checkedAt || 0 };
 }
@@ -126,7 +127,7 @@ export function words(lang) {
 
 /* ── ① the draft: what the card attaches by itself ────────────────────────────────────────────── */
 /** the map's own state at this moment — the point the reader picked plus the view it was seen in */
-export function mapContext() {
+function mapContext(pt) {
   let view = null, time = null, hash = '';
   try { view = MapState.read('view') || null; } catch (_) { view = null; }
   try { time = MapState.read('time') || null; } catch (_) { time = null; }
@@ -134,12 +135,13 @@ export function mapContext() {
   const year = (time && Number.isInteger(time.year) && time.year >= YEAR_RANGE.min && time.year <= YEAR_RANGE.max) ? time.year : null;
   /* a fragment longer than the table takes is left out rather than cut (a cut fragment restores a different map); the point
      and the year still travel, and the operator opens the point */
-  const link = (hash && hash.length <= CORRECTION_LIMITS.mapLink) ? hash : null;
+  const own = MapState.encode({ view: { lng: +pt.lng, lat: +pt.lat, zoom: view && isFinite(+view.zoom) ? +view.zoom : 9, bearing: 0, pitch: 0, proj: view ? view.proj : null } });
+  const link = (hash && hash.length <= CORRECTION_LIMITS.mapLink) ? hash : own;
   const at = (time && time.at) ? String(time.at).slice(0, CORRECTION_LIMITS.mapTime) : null;
   return { zoom: view && isFinite(+view.zoom) ? Math.min(24, Math.max(0, +view.zoom)) : null, mapLink: link, year, mapTime: at };
 }
 /** the layers the reader may name: what is on (the reading register's own ids and labels), the base map, and «not sure» */
-export function layerChoices(lang, profile) {
+function layerChoices(lang, profile) {
   const { L } = words(lang);
   const out = [], seen = new Set();
   const add = (id, label) => { if (!id || seen.has(id)) return; seen.add(id); out.push({ id: String(id), label: String(label || id) }); };
@@ -167,7 +169,7 @@ export function buildBody(draft, ctx) {
 
 /* ── ② the send ────────────────────────────────────────────────────────────────────────────────── */
 /** → { ok:true, receipt } | { ok:false, error:'invalid'|'rate_limit'|'unavailable'|'network', field? } */
-export async function sendCorrection(HOST, body) {
+async function sendCorrection(HOST, body) {
   const chk = checkCorrection(body);
   if (!chk.ok) return { ok: false, error: 'invalid', field: chk.field };
   const base = String((typeof window !== 'undefined' && window.SUPABASE_URL) || '').replace(/\/$/, '');
@@ -257,7 +259,42 @@ function yearText(y, L) { if (y == null) return ''; return y < 0 ? L(-y + ' BC',
 function dateText(iso, lang) { try { return new Date(iso).toLocaleDateString(IntMapLang.locale(lang, 'en'), { year: 'numeric', month: 'short', day: 'numeric' }); } catch (_) { return String(iso || '').slice(0, 10); } }
 function httpUrl(u) { return /^https?:\/\/[^\s]+$/i.test(String(u || '')) ? String(u) : null; }
 
+/* the card's rules — added on first open, not shipped in the start-up stylesheet (css/intmap.css holds only the place
+   profile's door). The look is the detail card's (.country-popup) plus these. */
+function ensureStyle() {
+  if (document.getElementById('mc-css')) return;
+  const st = document.createElement('style'); st.id = 'mc-css';
+  st.textContent = ".mc-popup{ width:360px; max-height:calc(100% - 120px); overflow:auto; }"
+    + ".mc-place{ font-weight:600; font-size:13px; }"
+    + ".mc-meta, .mc-note, .mc-count{ color:var(--text-muted); font-size:11.5px; font-weight:400; }"
+    + ".mc-where{ margin:-4px 0 10px; }"
+    + ".mc-form{ display:flex; flex-direction:column; gap:10px; }"
+    + ".mc-field{ display:flex; flex-direction:column; gap:4px; }"
+    + ".mc-label{ font-size:12px; font-weight:600; }"
+    + ".mc-field select, .mc-field textarea, .mc-field input{ width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--widget-border); border-radius:10px; background:var(--input-bg); color:var(--text-main); font:inherit; font-size:13px; }"
+    + ".mc-field textarea{ resize:vertical; min-height:84px; }"
+    + ".mc-field [aria-invalid=\"true\"]{ border-color:#ff3b30; }"
+    + ".mc-count{ align-self:flex-end; }"
+    + ".mc-note{ margin:0; line-height:1.5; }"
+    + ".mc-status{ margin:0; font-size:12px; min-height:1em; }"
+    + ".mc-status.is-ok{ color:#34c759; } .mc-status.is-bad{ color:#ff3b30; }"
+    + ".mc-list{ list-style:none; margin:8px 0; padding:0; display:flex; flex-direction:column; gap:10px; }"
+    + ".mc-item{ padding:10px 12px; border-radius:12px; background:var(--input-bg); display:flex; flex-direction:column; gap:4px; }"
+    + ".mc-item-top{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }"
+    + ".mc-chip{ font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:var(--widget-border); color:var(--text-main); }"
+    + ".mc-chip.is-fixed{ background:#34c759; color:#fff; } .mc-chip.is-confirmed, .mc-chip.is-cannot_fix{ background:#ff9f0a; color:#fff; } .mc-chip.is-not_an_error{ background:#5e5ce6; color:#fff; }"
+    + ".mc-msg{ font-size:12px; white-space:pre-wrap; }"
+    + ".mc-reply{ font-size:12px; padding:6px 8px; border-left:3px solid var(--primary-fill); white-space:pre-wrap; }"
+    + ".mc-item-acts{ display:flex; gap:8px; margin-top:4px; }"
+    + ".mc-item-acts button{ flex:1; padding:6px 8px; border:none; border-radius:9px; background:var(--panel-bg, rgba(127,127,127,.12)); color:var(--text-main); font-size:11.5px; cursor:pointer; }"
+    + ".mc-link{ font-size:12px; color:var(--primary-color); }"
+    /* the phone boundary is the device owner's (js/ui-device.js), not a number written here */
+    + globalThis.IntMapDevice.media(' .mc-popup{ width:calc(100vw - 24px); } .mc-item-acts button{ min-height:44px; font-size:13px; } ');
+  document.head.appendChild(st);
+}
+
 function card(HOST, id, titleText) {
+  ensureStyle();
   let c = document.getElementById(id);
   if (!c) {
     c = el('div', 'country-popup mc-popup'); c.id = id; c.setAttribute('role', 'dialog');
@@ -299,7 +336,7 @@ export function openCorrection(HOST, at) {
      never allowed to make the whole report refused — the operator reads the country from the point */
   const cc = String(at.country || '').toUpperCase();
   const ctx = Object.assign({ lng, lat, placeLabel: (at.placeLabel ? String(at.placeLabel).slice(0, CORRECTION_LIMITS.placeLabel) : null),
-    country: /^[A-Z0-9-]{2,8}$/.test(cc) ? cc : null, lang: lang === 'jp' ? 'jp' : 'en' }, mapContext());
+    country: /^[A-Z0-9-]{2,8}$/.test(cc) ? cc : null, lang: lang === 'jp' ? 'jp' : 'en' }, mapContext({ lng, lat }));
   const body = card(HOST, 'mc-popup', L('Report a map error', '地図の誤りを報告'));
 
   /* where and when — attached, shown, not typed */
@@ -361,7 +398,7 @@ export function openCorrection(HOST, at) {
     const r = await sendCorrection(HOST, b);
     send.disabled = false;
     if (r.ok) {
-      saveStore(rememberReceipt(loadStore(), { receipt: r.receipt, hash: await receiptHash(r.receipt), at: new Date().toISOString(), what: b.what, place: b.placeLabel || fmtLL(HOST, lng, lat), lng, lat, year: b.year, seen: 'new' }));
+      saveStore(rememberReceipt(loadStore(), { receipt: r.receipt, hash: await receiptHash(r.receipt), at: new Date().toISOString(), what: b.what, place: b.placeLabel || fmtLL(HOST, lng, lat), lng, lat, year: b.year, mapLink: b.mapLink, seen: 'new' }));
       form.querySelectorAll('select,textarea,input').forEach((x) => { x.disabled = true; }); send.disabled = true;
       status.className = 'mc-status is-ok';
       status.textContent = L('Sent — thank you. The answer will appear in Settings ▸ My map reports (the receipt is kept on this device).', '送信しました。ありがとうございます。回答は「設定 ▸ 地図の誤り報告」に表示されます（受付番号はこの端末に保存しました）。');
@@ -386,7 +423,7 @@ export async function openMine(HOST) {
   if (!got.ok) { info.textContent = L('The answers could not be read just now (', '回答を読み込めませんでした（') + got.error + L('). Your receipts are still on this device.', '）。受付番号はこの端末に残っています。'); return { ok: false, error: got.error }; }
   const reps = got.reports;
   if (!reps.length) {
-    info.textContent = L('You have not reported anything from this device or account yet. To report: right-click (long-press) the map ▸ Report a map error here, or the Place profile card.', 'この端末・アカウントからの報告はまだありません。報告するには、地図を右クリック（長押し）▸「ここの誤りを報告」、または地点プロファイルのカードから。');
+    info.textContent = L('You have not reported anything from this device or account yet. To report: right-click (long-press) the map ▸ Report a map error, or the Place profile card.', 'この端末・アカウントからの報告はまだありません。報告するには、地図を右クリック（長押し）▸「地図の誤りを報告」、または地点プロファイルのカードから。');
     return { ok: true, reports: [] };
   }
   info.textContent = L(reps.length + ' report(s). The operator\'s answer appears under each.', reps.length + ' 件。運営者の回答が各報告の下に表示されます。');
@@ -408,7 +445,10 @@ export async function openMine(HOST) {
     const show = el('button', null, L('Show on the map', '地図で見る')); show.type = 'button';
     show.addEventListener('click', () => {
       /* the view it was reported in — a hash navigation is a full restore of that state (js/map-ui.js hashchange) */
-      if (r.map_link && /^#v=/.test(r.map_link)) { try { location.hash = r.map_link; } catch (_) { /* below */ } return; }
+      /* the view it was reported in, restored the way a pasted link is (the store's address + the share link's restore —
+         the path js/showcase-gallery.js openShowcase takes) */
+      const BM = window.IntMapBookmark;
+      if (r.map_link && /^#v=/.test(r.map_link) && BM) { try { MapState.address(null, r.map_link); BM.restore({ shared: true }); return; } catch (_) { /* below */ } }
       try { IntMapGeoEngine.camera.flyTo({ center: [r.lng, r.lat], zoom: 9, speed: 1.2 }); } catch (_) { /* no renderer yet */ }
     });
     acts.appendChild(show);

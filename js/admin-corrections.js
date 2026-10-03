@@ -6,7 +6,7 @@
  *  what was fixed. A page of its own beside admin.html and admin-inquiries.html (the same reasons as the
  *  enquiries console: admin.html is one inline console, and this one has no reason to load with it).
  *
- *  WHO MAY DO WHAT is decided by the database (20261003184500_map_corrections.sql): only an admin reads a
+ *  WHO MAY DO WHAT is decided by the database (20261003224500_map_corrections.sql): only an admin reads a
  *  report and changes its status / reply / note / fix reference / duplicate / published flag / public place
  *  name; nobody can change what the reader wrote. resolved_at follows the status by trigger. The publish
  *  rule (a reply is required, only an answer is publishable) is a CHECK — this page says it before saving.
@@ -30,7 +30,6 @@
   var d = document.documentElement;
   try { d.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (_) { /* light */ }
 
-  var SVGNS = 'http://www.w3.org/2000/svg';
   function meta(n) { var m = document.querySelector('meta[name="' + n + '"]'); return m ? m.getAttribute('content') || '' : ''; }
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = String(text); return e; }
@@ -54,48 +53,48 @@
     STATUSES = String(main.getAttribute('data-statuses') || '').split(',').filter(Boolean);
     PUBLISHABLE = String(main.getAttribute('data-publishable') || '').split(',').filter(Boolean);
     OPEN = String(main.getAttribute('data-open') || '').split(',').filter(Boolean);
-    if (!window.supabase || !window.supabase.createClient) { $('mc-auth-msg').textContent = 'Supabase SDK failed to load (vendor/supabase-js.js missing from this deploy).'; return; }
+    if (!window.supabase || !window.supabase.createClient) { $('mc-auth-msg').textContent = 'Supabase SDK failed to loadCorrections (vendor/supabase-js.js missing from this deploy).'; return; }
     sb = window.supabase.createClient(meta('intmap-backend'), meta('intmap-anon-key'), { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
-    $('mc-auth-submit').addEventListener('click', signIn);
-    $('mc-auth-pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') signIn(); });
+    $('mc-auth-submit').addEventListener('click', adminSignIn);
+    $('mc-auth-pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') adminSignIn(); });
     $('mc-signout').addEventListener('click', function () { sb.auth.signOut().then(function () { location.reload(); }); });
     document.querySelectorAll('[data-filter]').forEach(function (b) {
-      b.addEventListener('click', function () { filter = b.getAttribute('data-filter'); markTabs(); load(); });
+      b.addEventListener('click', function () { filter = b.getAttribute('data-filter'); markFilterTabs(); loadCorrections(); });
     });
-    $('mc-world').addEventListener('click', function () { view = [-180, -90, 360, 180]; drawMap(); });
-    gate();
+    $('mc-world').addEventListener('click', function () { view = [-180, -90, 360, 180]; drawReportMap(); });
+    adminGate();
   });
 
-  function markTabs() {
+  function markFilterTabs() {
     Array.prototype.forEach.call(document.querySelectorAll('.tab[data-filter]'), function (b) { b.classList.toggle('active', b.getAttribute('data-filter') === filter); });
   }
-  function signIn() {
+  function adminSignIn() {
     var email = $('mc-auth-email').value.trim(), password = $('mc-auth-pass').value;
     if (!email || !password) { $('mc-auth-msg').textContent = 'Enter email and password.'; return; }
     $('mc-auth-submit').disabled = true; $('mc-auth-msg').textContent = 'Working…';
     sb.auth.signInWithPassword({ email: email, password: password }).then(function (r) {
       if (r.error) { $('mc-auth-msg').textContent = 'Invalid email or password.'; return; }
-      return gate();
+      return adminGate();
     }, function () { $('mc-auth-msg').textContent = 'Invalid email or password.'; })
       .then(function () { $('mc-auth-submit').disabled = false; });
   }
-  function show(v) { $('mc-view-auth').classList.toggle('hide', v !== 'auth'); $('mc-view-admin').classList.toggle('hide', v !== 'admin'); }
-  function gate() {
+  function showView(v) { $('mc-view-auth').classList.toggle('hide', v !== 'auth'); $('mc-view-admin').classList.toggle('hide', v !== 'admin'); }
+  function adminGate() {
     return sb.auth.getSession().then(function (r) {
       var session = r && r.data && r.data.session;
-      if (!session) { show('auth'); return; }
+      if (!session) { showView('auth'); return; }
       return sb.from('profiles').select('is_admin').eq('id', session.user.id).maybeSingle().then(function (p) {
         if (p.error || !p.data || !p.data.is_admin) {
-          show('auth'); $('mc-auth-msg').textContent = 'This account is not an admin.';
+          showView('auth'); $('mc-auth-msg').textContent = 'This account is not an admin.';
           return sb.auth.signOut();
         }
         $('who').textContent = session.user.email || '';
-        show('admin'); markTabs(); load(); loadSummary();
+        showView('admin'); markFilterTabs(); loadCorrections(); loadCorrectionSummary();
       });
     });
   }
 
-  function loadSummary() {
+  function loadCorrectionSummary() {
     sb.rpc('map_corrections_summary').then(function (r) {
       var s = r && r.data;
       $('mc-summary').textContent = (r.error || !s) ? 'Summary unavailable.'
@@ -105,7 +104,7 @@
     });
   }
 
-  function load() {
+  function loadCorrections() {
     var box = $('mc-list');
     box.textContent = ''; box.appendChild(el('p', 'empty', 'Loading…'));
     var q = sb.from('map_corrections').select('*').order('created_at', { ascending: false }).limit(500);
@@ -116,43 +115,43 @@
     else if (filter !== 'all') q = q.eq('status', filter);
     q.then(function (r) {
       box.textContent = '';
-      if (r.error) { rows = []; drawMap(); box.appendChild(el('p', 'empty', 'Could not read corrections: ' + r.error.message)); return; }
+      if (r.error) { rows = []; drawReportMap(); box.appendChild(el('p', 'empty', 'Could not read corrections: ' + r.error.message)); return; }
       rows = r.data || [];
       if (selected && !rows.some(function (x) { return x.id === selected; })) selected = null;
-      drawMap();
+      drawReportMap();
       if (!rows.length) { box.appendChild(el('p', 'empty', 'No corrections here.')); return; }
-      rows.forEach(function (row) { box.appendChild(card(row)); });
+      rows.forEach(function (row) { box.appendChild(correctionCard(row)); });
     });
   }
 
   /* ── the map ───────────────────────────────────────────────────────────────────────────────── */
-  function drawMap() {
+  function drawReportMap() {
     var svg = $('mc-map');
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     svg.setAttribute('viewBox', view.join(' '));
-    var img = document.createElementNS(SVGNS, 'image');
+    var img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
     img.setAttribute('href', './data/land-mask.png'); img.setAttribute('x', '-180'); img.setAttribute('y', '-90');
     img.setAttribute('width', '360'); img.setAttribute('height', '180'); img.setAttribute('preserveAspectRatio', 'none'); img.setAttribute('class', 'land');
     svg.appendChild(img);
     var r = Math.max(0.35, view[2] / 140);
     rows.forEach(function (row) {
-      var c = document.createElementNS(SVGNS, 'circle');
+      var c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       c.setAttribute('cx', String(row.lng)); c.setAttribute('cy', String(-row.lat)); c.setAttribute('r', String(row.id === selected ? r * 1.6 : r));
       c.setAttribute('class', 'dot s-' + row.status + (row.id === selected ? ' sel' : ''));
-      var t = document.createElementNS(SVGNS, 'title'); t.textContent = row.status + ' · ' + row.kind + ' · ' + (row.place_label || (row.lat.toFixed(3) + ', ' + row.lng.toFixed(3))) + (row.year != null ? ' · ' + yearText(row.year) : '');
+      var t = document.createElementNS('http://www.w3.org/2000/svg', 'title'); t.textContent = row.status + ' · ' + row.kind + ' · ' + (row.place_label || (row.lat.toFixed(3) + ', ' + row.lng.toFixed(3))) + (row.year != null ? ' · ' + yearText(row.year) : '');
       c.appendChild(t);
       /* a dot is a control: focusable and pressed with Enter or Space, like the list's buttons */
       c.setAttribute('tabindex', '0'); c.setAttribute('role', 'button'); c.setAttribute('aria-label', t.textContent);
-      c.addEventListener('click', function () { select(row.id, true); });
-      c.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(row.id, true); } });
+      c.addEventListener('click', function () { selectReport(row.id, true); });
+      c.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectReport(row.id, true); } });
       svg.appendChild(c);
     });
   }
-  function select(id, scroll) {
+  function selectReport(id, scroll) {
     selected = id;
     var row = rows.filter(function (x) { return x.id === id; })[0];
     if (row) { var w = 24; view = [Math.max(-180, Math.min(180 - w, row.lng - w / 2)), Math.max(-90, Math.min(90 - w / 2, -row.lat - w / 4)), w, w / 2]; }
-    drawMap();
+    drawReportMap();
     Array.prototype.forEach.call(document.querySelectorAll('.card[data-id]'), function (c) { c.classList.toggle('sel', c.getAttribute('data-id') === id); });
     if (scroll) { var c = document.querySelector('.card[data-id="' + id + '"]'); if (c && c.scrollIntoView) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   }
@@ -163,7 +162,7 @@
   }
 
   /* ── one report ────────────────────────────────────────────────────────────────────────────── */
-  function card(row) {
+  function correctionCard(row) {
     var c = el('div', 'card'); c.setAttribute('data-id', row.id);
     if (row.id === selected) c.classList.add('sel');
     var top = el('div', 'row');
@@ -184,21 +183,23 @@
     c.appendChild(el('div', 'msg', row.message));
     var links = el('div', 'row');
     if (row.evidence_url) { var u = window.IntMapSafe.url(row.evidence_url); if (u) { var a = el('a', null, 'Source the reader gave'); a.href = u; a.rel = 'noopener noreferrer'; a.target = '_blank'; links.appendChild(a); } }
-    var open = el('a', null, row.map_link ? 'Open the reader\'s view in IntMap' : 'Open this point in IntMap');
-    open.href = './index.html' + (row.map_link || ('#v=' + row.lng.toFixed(4) + ',' + row.lat.toFixed(4) + ',9.00,0,0,f')); open.target = '_blank'; open.rel = 'noopener';
+    /* the reader's own view, as the share fragment the card attached (the table requires one); built as a URL object so
+       nothing read from the database is re-read as markup */
+    var open = el('a', null, 'Open the reader\'s view in IntMap');
+    var u = new URL('./index.html', location.href); u.hash = String(row.map_link || '').replace(/^#/, ''); open.href = u.href; open.target = '_blank'; open.rel = 'noopener';
     links.appendChild(open);
-    links.appendChild(btn('Show on the map above', 'sec sm', function () { select(row.id, false); }));
+    links.appendChild(btn('Show on the map above', 'sec sm', function () { selectReport(row.id, false); }));
     c.appendChild(links);
 
-    if (row.year != null) c.appendChild(historyBox(row));
+    if (row.year != null) c.appendChild(historyCheck(row));
     var near = rows.filter(function (o) { return o.id !== row.id && km(o, row) <= NEAR_KM; });
-    if (near.length) c.appendChild(nearBox(row, near));
-    c.appendChild(answerForm(row));
+    if (near.length) c.appendChild(nearReports(row, near));
+    c.appendChild(answerFields(row));
     return c;
   }
 
   /* .agents/rules/historical-verification.md §2 — the five things, and the command that enumerates the year and place */
-  function historyBox(row) {
+  function historyCheck(row) {
     var b = el('div', 'hist');
     b.appendChild(el('strong', null, 'Historical claim — check it as history, not as a gate'));
     var w = (row.lng - 1).toFixed(2), s = (row.lat - 1).toFixed(2), e = (row.lng + 1).toFixed(2), n = (row.lat + 1).toFixed(2);
@@ -214,20 +215,20 @@
     b.appendChild(ol);
     return b;
   }
-  function nearBox(row, near) {
+  function nearReports(row, near) {
     var b = el('div', 'near');
     b.appendChild(el('strong', null, near.length + ' other report(s) within ' + NEAR_KM + ' km'));
     near.slice(0, 6).forEach(function (o) {
       var r = el('div', 'row');
       var a = el('a', null, o.status + ' · ' + o.kind + ' · ' + (o.place_label || '') + ' · ' + String(o.created_at).slice(0, 10) + (o.year != null ? ' · ' + yearText(o.year) : ''));
-      a.href = '#'; a.addEventListener('click', function (e) { e.preventDefault(); select(o.id, true); });
+      a.href = '#'; a.addEventListener('click', function (e) { e.preventDefault(); selectReport(o.id, true); });
       r.appendChild(a);
-      if (OPEN.indexOf(row.status) >= 0 && o.id !== row.duplicate_of) r.appendChild(btn('This one is a duplicate of it', 'sec sm', function () { save(row, { status: 'duplicate', duplicate_of: o.id }); }));
+      if (OPEN.indexOf(row.status) >= 0 && o.id !== row.duplicate_of) r.appendChild(btn('This one is a duplicate of it', 'sec sm', function () { saveCorrection(row, { status: 'duplicate', duplicate_of: o.id }); }));
       b.appendChild(r);
     });
     return b;
   }
-  function answerForm(row) {
+  function answerFields(row) {
     var f = el('div', 'answer');
     var st = el('select');
     STATUSES.forEach(function (s) { var o = el('option', null, s); o.value = s; st.appendChild(o); });
@@ -244,19 +245,19 @@
     var acts = el('div', 'row acts');
     acts.appendChild(btn('Save', 'sm', function () {
       if (pub.checked && (PUBLISHABLE.indexOf(st.value) < 0 || !reply.value.trim())) { toast('Only an answer (' + PUBLISHABLE.join(', ') + ') with a reply can be published.'); return; }
-      save(row, { status: st.value, place_label: place.value.trim() || null, reply: reply.value.trim() || null, fixed_ref: ref.value.trim() || null,
+      saveCorrection(row, { status: st.value, place_label: place.value.trim() || null, reply: reply.value.trim() || null, fixed_ref: ref.value.trim() || null,
         admin_note: note.value.trim() || null, published: pub.checked, duplicate_of: st.value === 'duplicate' ? row.duplicate_of : null });
     }));
     acts.appendChild(btn('Delete', 'danger sm', function () {
       if (!confirm('Delete this correction permanently? The reader\'s receipt will then read «no longer on record».')) return;
-      sb.from('map_corrections').delete().eq('id', row.id).then(function (r) { if (r.error) toast('Delete failed: ' + r.error.message); else { toast('Deleted'); load(); loadSummary(); } });
+      sb.from('map_corrections').delete().eq('id', row.id).then(function (r) { if (r.error) toast('Delete failed: ' + r.error.message); else { toast('Deleted'); loadCorrections(); loadCorrectionSummary(); } });
     }));
     f.appendChild(acts);
     return f;
   }
-  function save(row, patch) {
+  function saveCorrection(row, patch) {
     sb.from('map_corrections').update(patch).eq('id', row.id).then(function (r) {
-      if (r.error) toast('Save failed: ' + r.error.message); else { toast('Saved — the reader sees it on their next check'); load(); loadSummary(); }
+      if (r.error) toast('Save failed: ' + r.error.message); else { toast('Saved — the reader sees it on their next check'); loadCorrections(); loadCorrectionSummary(); }
     });
   }
 })();

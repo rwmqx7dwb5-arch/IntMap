@@ -42,7 +42,7 @@
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PAGES as ORG_PAGES, ADMIN_PAGE as ORG_ADMIN_PAGE } from './org-pages.mjs';
+import { PAGES as ORG_PAGES, ADMIN_PAGES as ORG_ADMIN_PAGES } from './org-pages.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => { try { return readFileSync(join(ROOT, p), 'utf8'); } catch (_) { return ''; } };
@@ -80,7 +80,7 @@ export const EXCLUDED = {
      from that generator's own PAGES, so a page it starts writing is covered by the same sentence the day it appears */
   ...Object.fromEntries(ORG_PAGES.map((p) => [p + '.html',
     `a static English page with a static Japanese twin at ja/${p}.html (scripts/org-pages.mjs), chosen by URL and hreflang — its title and description are written per file, not switched at runtime`])),
-  [ORG_ADMIN_PAGE]: 'the operator\'s enquiry console (scripts/org-pages.mjs), not a reader-facing page — the same decision as admin.html (#R249)',
+  ...Object.fromEntries(ORG_ADMIN_PAGES.map((p) => [p, 'an operator console (scripts/org-pages.mjs ADMIN_PAGES — enquiries, map corrections), not a reader-facing page — the same decision as admin.html (#R249)'])),
 };
 
 /* does the wiring file actually assign document.title AND the description meta? */

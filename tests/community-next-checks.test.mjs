@@ -3,7 +3,7 @@
  * ----------------------------------------------------------------------------
  *  ① ONE VOCABULARY: the kinds, statuses, publishable answers, ceilings and the year's range are declared once
  *     (supabase/functions/_shared/correction-shape.js); the table's CHECKs and the status functions
- *     (20261003184500_map_corrections.sql) must say the same, spam→closed included.
+ *     (20261003224500_map_corrections.sql) must say the same, spam→closed included.
  *  ② THE RECEIPT: the Edge Function's hash is the database's (sha256 over UTF-8, lowercase hex).
  *  ③ THE WRITE PATH, EVALUATED: reader-reports takes kind 'correction' to map_corrections behind the same
  *     buckets, stores only the receipt's hash, answers the receipt once in the 201, asks no e-mail, takes
@@ -37,7 +37,7 @@ const FN = await import(modUrl('supabase/functions/reader-reports/index.ts'));
 const { PRODUCTION_ORIGIN: PROD } = await import(modUrl('supabase/functions/_shared/client-error-shape.js'));
 const MC = await import(modUrl('js/map-corrections.js'));
 const GEN = await import(modUrl('scripts/org-pages.mjs'));
-const MIG = src('supabase/migrations/20261003184500_map_corrections.sql');
+const MIG = src('supabase/migrations/20261003224500_map_corrections.sql');
 
 /* ── ① ─────────────────────────────────────────────────────────────────────────────────── */
 const listIn = (re) => { const m = re.exec(MIG); assert.ok(m, 'the migration states ' + re); return [...m[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]); };
@@ -132,7 +132,7 @@ test('community-next ③ what is refused never reaches the database or the bucke
     { ...GOOD, what: 'opinion' }, { ...GOOD, lat: 91 }, { ...GOOD, lng: 'x' }, { ...GOOD, message: '   ' },
     { ...GOOD, message: 'x'.repeat(SHAPE.CORRECTION_LIMITS.message + 1) }, { ...GOOD, mapLink: 'https://evil.example/#v=1' },
     { ...GOOD, evidence: 'javascript:alert(1)' }, { ...GOOD, layerId: 'a b' }, { ...GOOD, year: 1900.5 }, { ...GOOD, year: 99999 },
-    { ...GOOD, country: 'jp<script>' }, { ...GOOD, zoom: 40 },
+    { ...GOOD, country: 'jp<script>' }, { ...GOOD, zoom: 40 }, { ...GOOD, mapLink: null },
   ];
   for (const b of bad) {
     const calls = stub();
@@ -145,11 +145,13 @@ test('community-next ③ what is refused never reaches the database or the bucke
 /* ── ④ ─────────────────────────────────────────────────────────────────────────────────── */
 function memStorage(init) { const m = new Map(Object.entries(init || {})); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), _m: m }; }
 
-test('community-next ④ the draft the card builds passes the one rule; an over-long map state is left out, not cut', () => {
+test('community-next ④ the draft the card builds passes the one rule; the map state is always the codec\'s, never cut and never hand-built', () => {
   const b = MC.buildBody({ what: 'name', layerId: 'basemap', layerLabel: 'Base map', message: 'The town is Kyōto', evidence: null }, { lng: 135.76, lat: 35.01, zoom: 11, mapLink: '#v=135.7600,35.0100,11.00,0,0,f', year: null, lang: 'jp' });
   assert.equal(SHAPE.checkCorrection(b).ok, true);
   assert.equal(b.kind, 'correction');
-  assert.match(src('js/map-corrections.js'), /const link = \(hash && hash\.length <= CORRECTION_LIMITS\.mapLink\) \? hash : null;/);
+  assert.match(src('js/map-corrections.js'), /const link = \(hash && hash\.length <= CORRECTION_LIMITS\.mapLink\) \? hash : own;/);
+  assert.match(src('js/map-corrections.js'), /const own = MapState\.encode\(\{ view:/, 'the fallback is the codec, from the reported point');
+  assert.equal(SHAPE.checkCorrection({ ...b, mapLink: null }).field, 'mapLink', 'a report without its map state is refused — no reader ever builds one');
 });
 test('community-next ④ the device\'s receipts and the database\'s rows are one list; a vanished receipt is said', async () => {
   const r1 = SHAPE.newReceipt(), r2 = SHAPE.newReceipt();
@@ -198,7 +200,7 @@ test('community-next ④ a signed-in reader also reads the account\'s rows (ever
 test('community-next ⑤ the doors: place profile, context menu, Settings, boot notice and Atlas', async () => {
   assert.match(src('js/place-dossier.js'), /data-pd="correct"/);
   assert.match(src('js/place-dossier.js'), /import\('\.\/map-corrections\.js'\)\.then\(\(m\) => m\.openCorrection\(HOST/);
-  assert.match(src('js/tool-panel.js'), /Report a map error here','ここの地図の誤りを報告'/);
+  assert.match(src('js/tool-panel.js'), /Report a map error','地図の誤りを報告'/);
   assert.match(src('index.html'), /id="btn-map-reports"[^>]*data-effect="none"/);
   const body = src('js/app-body.js');
   assert.match(body, /getElementById\('btn-map-reports'\)/);

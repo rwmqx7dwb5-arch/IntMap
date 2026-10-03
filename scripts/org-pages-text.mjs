@@ -316,8 +316,8 @@ export const TEXT = {
     howH: P('How to report an error', '誤りの報告のしかた'),
     how: [
       P('Point at it', '場所を指す'),
-      P('In the map, right-click (or long-press) the place and choose «Report a map error here», or use the button at the bottom of a place profile card. You can also ask Atlas.',
-        '地図でその場所を右クリック（長押し）して「ここの地図の誤りを報告」を選ぶか、地点プロファイルのカードの下のボタンから。Atlas に頼むこともできます。'),
+      P('In the map, right-click (or long-press) the place and choose «Report a map error», or use the button at the bottom of a place profile card. You can also ask Atlas.',
+        '地図でその場所を右クリック（長押し）して「地図の誤りを報告」を選ぶか、地点プロファイルのカードの下のボタンから。Atlas に頼むこともできます。'),
       P('Say what is wrong', '何が違うかを書く'),
       P('Choose the kind of error and the layer, write what it should be, and give a source if you have one. The point, the map view and, on a historical map, the year are attached for you.',
         '誤りの種類とレイヤーを選び、正しくはどうかを書き、あれば出典を添えます。地点・地図の表示・（歴史地図なら）年は自動で添付されます。'),
