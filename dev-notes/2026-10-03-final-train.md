@@ -22,3 +22,7 @@ date: 2026-10-03
 
 - i18n の床: zh/zh-hans の pages を 465→464（言語ファイルは main と同一。465 は片方の branch の木で測った値で、実在しない行を要求していた）。
 - js/mobile-sheet.js: 測り直しで固定を外すと指のスクロール位置が 0 に戻っていた（放射線パネルの溢れ 16px で表面化）。固定の前にパネルと内側の箱のスクロール位置を控え、かけ直した後に戻す。
+
+- eager.modules: 310 → 311
+- async chunk "atlas-console": 1292.8 kB → 1301.6 kB
+- dist.assets: 19119.4 kB → 19234.2 kB
