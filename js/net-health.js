@@ -124,6 +124,8 @@ export function netHealth(HOST) {
     signals: () => (body ? body.signals() : []),
     providers: () => (body ? body.providers() : []),
     report: (p) => need().then((b) => (b ? b.report(p || {}) : null)),
+    /* (news-intelligence) IODA's own outage events for a window — the history the news brief links to the news */
+    outageEvents: (p) => need().then((b) => (b ? b.outageEvents(p || {}) : { ok: false, why: 'module', events: [] })),
   };
   return window.IntMapNetHealth;
 }

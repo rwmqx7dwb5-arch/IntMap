@@ -140,6 +140,7 @@ const DERIVED = [
     { id: "dl-eu", key: "eu", label: "lyrEU", share: true },
     { id: "dl-ww2", key: "ww2", share: true, lazy: ["warLayer"] },
     { id: "dl-elect", key: "elect", rest: true, share: true },
+    { id: "dl-newspulse", key: "newspulse", rest: true, share: true, lazy: ["newsIntel"] },
     { id: "dl-ww1", key: "ww1", rest: true, share: true, lazy: ["warLayer"] },
     { id: "dl-korea", key: "korea", rest: true, share: true, lazy: ["warLayer"] },
     { id: "dl-vietnam", key: "vietnam", rest: true, share: true, lazy: ["warLayer"] },
@@ -341,6 +342,7 @@ const DECLARATIONS = [
   { id: "dl-eu", shelf: "lyrGrpPolitics", order: 50, key: "eu", label: "lyrEU", share: true, pkg: "alliances" },   // dl-eu.js
   { id: "dl-ww2", shelf: "lyrGrpPolitics", order: 60, key: "ww2", share: true, lazy: ["warLayer"] },   // dl-ww2.js
   { id: "dl-elect", shelf: "lyrGrpPolitics", order: 70, key: "elect", rest: true, share: true },   // dl-elect.js
+  { id: "dl-newspulse", shelf: "lyrGrpPolitics", order: 75, key: "newspulse", rest: true, share: true, lazy: ["newsIntel"], commands: ["newspulse.toggle", "newspulse.rank", "newspulse.brief"] },   // dl-newspulse.js
   { id: "dl-ww1", shelf: "lyrGrpPolitics", order: 80, key: "ww1", rest: true, share: true, lazy: ["warLayer"] },   // dl-ww1.js
   { id: "dl-korea", shelf: "lyrGrpPolitics", order: 90, key: "korea", rest: true, share: true, lazy: ["warLayer"] },   // dl-korea.js
   { id: "dl-vietnam", shelf: "lyrGrpPolitics", order: 100, key: "vietnam", rest: true, share: true, lazy: ["warLayer"] },   // dl-vietnam.js

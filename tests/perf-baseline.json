@@ -1,16 +1,16 @@
 {
   "eager": {
-    "raw": 4765412,
+    "raw": 4764620,
     "gzip": 1568634,
     "brotli": 1183561,
     "requests": 11,
-    "modules": 308,
-    "cssRaw": 378756,
+    "modules": 309,
+    "cssRaw": 381339,
     "cssGzip": 61518
   },
   "async": {
-    "raw": 11880461,
-    "gzip": 3910335,
+    "raw": 11854240,
+    "gzip": 3911148,
     "chunks": {
       "aircraft-detail": 17009,
       "analysis-correlate": 24199,
@@ -22,7 +22,7 @@
       "atlas-answer-view": 2513,
       "atlas-attach": 23189,
       "atlas-chart": 10493,
-      "atlas-console": 1185266,
+      "atlas-console": 1195707,
       "atlas-executor": 56924,
       "atlas-geo-resolve": 49405,
       "atlas-query": 48520,
@@ -37,7 +37,7 @@
       "cesium-vector-tiles": 5681,
       "company-data": 9505,
       "company-facilities": 14221,
-      "company-panel": 21448,
+      "company-panel": 24654,
       "datacenters": 40859,
       "dist": 39790,
       "embed-mode": 10145,
@@ -108,7 +108,7 @@
   "dist": {
     "total": 807305831,
     "data": 746698762,
-    "assets": 19247823
+    "assets": 19261032
   },
   "phone": {
     "bytes": 342631,

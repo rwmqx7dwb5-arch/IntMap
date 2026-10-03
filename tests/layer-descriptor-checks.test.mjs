@@ -22,7 +22,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -61,26 +61,29 @@ function amendPhotograph(text) {
     o[k] = (k === 'on' && NO_LONGER_ON.has(c.id)) ? false : v; if (k === 'id') o.kind = display.has(c.id) ? 'display' : 'layer'; } return o; });
   return JSON.stringify(P, null, 1) + '\n';
 }
-/* (map-layer-system, 2026-10-03) the rows ADDED since the photograph — a layer added is not a layer moved. ① takes them
-   back out of what the manifest hands its readers (every element that is the row, names it, or is keyed by it) and
-   then requires every OTHER byte to be the photograph's, so it still proves that adding them moved nothing else. ③
-   is the proof that adding one is one file. */
-const ADDED_SINCE = new Set(['bx-wbind']);
-const ADDED_KEYS = new Set([...ADDED_SINCE].map((id) => (M.layerDeclaration(id) || {}).key).filter(Boolean));
-function withoutAdded(v) {
-  const named = (x) => (typeof x === 'string' && (ADDED_SINCE.has(x) || ADDED_KEYS.has(x)))
-    || (x && typeof x === 'object' && !Array.isArray(x) && ADDED_SINCE.has(x.id))
-    || (Array.isArray(x) && x.length === 2 && named(x[0]));
-  if (Array.isArray(v)) return v.filter((x) => !named(x)).map(withoutAdded);
-  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, withoutAdded(x)]));
-  return v;
+/* (news-intelligence) A LAYER ADDED SINCE THE PHOTOGRAPH IS A NEW FILE, NOT A CHANGE TO WHAT WAS PHOTOGRAPHED. Every
+   declaration whose id the photograph does not hold is taken out of what the readers receive — its id, its `key`
+   and every row that names either — and ① compares the rest: the rows that WERE photographed must still be
+   byte-for-byte what they were. The ids taken out are not a list here; they are discovered from js/layers/, and each
+   must be a declaration file (a row with no file is a change, and fails). ② and ③ hold the new rows themselves. */
+function withoutAdded(text, photo) {
+  const P = JSON.parse(photo), N = JSON.parse(text);
+  const had = new Set(P.LAYERS.map((l) => l.id));
+  const added = M.LAYERS.filter((l) => !had.has(l.id));
+  for (const l of added) assert.ok(existsSync(join(ROOT, 'js/layers', l.id + '.js')), l.id + ' is not in the photograph and has no declaration file');
+  const gone = new Set(added.flatMap((l) => [l.id, l.key].filter(Boolean)));
+  const names = (e) => gone.has(e) || (Array.isArray(e) && (gone.has(e[0]) || gone.has(e[1])))
+    || (e && typeof e === 'object' && !Array.isArray(e) && gone.has(e.id))
+    || (typeof e === 'string' && added.some((l) => e.indexOf('id="' + l.id + '"') >= 0));
+  const strip = (v) => (Array.isArray(v) ? v.filter((e) => !names(e)).map(strip)
+    : (v && typeof v === 'object') ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, strip(x)])) : v);
+  const out = strip(N);
+  /* layerGroups carries a COUNT per shelf (its rows not folded behind «その他»), which the added rows raised */
+  out.layerGroups = out.layerGroups.map(([k, keys, n]) => [k, keys, n - added.filter((l) => l.shelf === k && !l.rest).length]);
+  return JSON.stringify(out, null, 1) + '\n';
 }
 test('layer-descriptor ① the derived Layers list is byte-for-byte the list the hand-kept manifest handed its readers', () => {
-  for (const id of ADDED_SINCE) assert.ok(M.isLayer(id), id + ' is a row of the list (and is taken out below only because it was added)');
-  const derived = JSON.parse(layerDerivedText(M));
-  /* `layerGroups` counts the rows a reader named on each shelf ([key, names, count]) — an added named row is one more */
-  derived.layerGroups = derived.layerGroups.map(([k, names, n]) => [k, names, n - [...ADDED_SINCE].filter((id) => { const l = M.LAYERS.find((x) => x.id === id); return l && l.shelf === k && !l.rest; }).length]);
-  const now = JSON.stringify(withoutAdded(derived), null, 1) + '\n';
+  const now = withoutAdded(layerDerivedText(M), read('tests/fixtures/layer-descriptor-before.json'));
   const photo = read('tests/fixtures/layer-descriptor-before.json');
   assert.ok(photo.length > 50000, 'the photograph is there');
   assert.equal(JSON.stringify(JSON.parse(photo), null, 1) + '\n', photo, 'the photograph re-serialises to itself (so the amendment below changes only what it says)');

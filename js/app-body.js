@@ -95,6 +95,7 @@ import { mobileMapInput } from './mobile-map-input.js';
 import { layoutReflow, mobileUI } from './mobile-ui.js';
 import { monitors } from './monitors.js';
 import { netHealth } from './net-health.js';
+import { newsPulse } from './news-pulse.js';   /* (news-intelligence) the News pulse row and its doors; the body (js/news-intel.js) is lazy */
 import { newsContext } from './news-context.js';
 import { newsFeed } from './news-feed.js';
 import { newsSources } from './news-sources.js';
@@ -3721,7 +3722,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      elections 1789–2024, states coloured by who took their electoral votes, with the year picker
      and the electoral-vote / popular-vote bar chart in the layer's own legend. See
      js/us-elections.js and scripts/build-us-elections.mjs. ===== */
-  usElections(IM_HOST); warFronts(IM_HOST); netHealth(IM_HOST); elections(IM_HOST);   /* (#R588) …and the national-elections layer (js/elections.js, docs/ELECTIONS.md) — ON THIS LINE for the shell-line budget tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795 measures. (#R349) the two world wars' Layers row is here for the same reason; the layer it fetches (js/war-layer.js) is lazy */
+  usElections(IM_HOST); warFronts(IM_HOST); netHealth(IM_HOST); elections(IM_HOST); newsPulse(IM_HOST);   /* (#R588) …and the national-elections layer (js/elections.js, docs/ELECTIONS.md) — ON THIS LINE for the shell-line budget tests/news-module-split-checks.test.mjs (#R168) #8 — a line ceiling retired in #R795 measures. (#R349) the two world wars' Layers row is here for the same reason; the layer it fetches (js/war-layer.js) is lazy */
 
   /* ===== (#R22) Religion & language distribution — categorical country choropleths (beta). Each
      country is shaded by its DOMINANT religion / PRIMARY official language (well-established facts;

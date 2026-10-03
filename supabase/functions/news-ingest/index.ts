@@ -16,6 +16,8 @@
 //               UI が実際に読む経路のほうへ戻したもの）。
 //    embed      まだ埋め込みの無い記事を text-embedding-3-small で埋める（Phase C）
 //    assign     未割り当ての記事を候補 Event へ増分で載せる（総当たりしない）
+//    entities   (news-intelligence) 出来事に載った記事の見出しと説明文を企業アトラスの名簿と照合し、
+//               news_event_entities へ書く（_shared/news-entities.js・決定論・有料の要求なし）
 //    link       意味が近いのに別々になっている Event どうしを結ぶ（Phase C・recall）
 //    translate  Event の代表見出しを日本語へ（news_event_i18n に永続キャッシュ）
 //    prune      記事 72 時間 / Event 30 日 / ★保存 Event は無期限
@@ -60,6 +62,10 @@ import {
   eventsAgree, eventPairCandidates, INDEX, parseAiPlaces, GEO_AGREE_KM,
 } from "../_shared/news-ingest.js";
 import { DEFAULTS, buildIdf } from "../_shared/news-cluster.js";
+/* (news-intelligence) 出来事 × 企業。規則は 1 本（node のテストが同じファイルを評価する）、名簿は公開サイトが
+   配っている企業アトラスの索引そのもの——写しを作らない（docs/COMPANIES.md §4.1）。 */
+import { makeEntityMatcher } from "../_shared/news-entities.js";
+import { siteUrl } from "../_shared/site-origin.js";
 
 const NEWSGEO = globalThis.IntMapNewsGeo || null;
 
@@ -531,6 +537,84 @@ async function stageEmbed(db, budget) {
     rejected_wrong_dim: badDim, tokens,
     estimated_cost_usd: Math.round((tokens * EMBED_PRICE_PER_MTOK / 1e6) * 1e6) / 1e6,
     error: lastError,
+  };
+}
+
+/* ── 段 (news-intelligence): 出来事 × 企業 ─────────────────────────────────────
+   まだ名簿と照合していない記事（companies_scanned_at が null）のうち、**すでに出来事に載っている
+   もの**を読み、見出しと説明文に出てくる企業を news_event_entities へ書く。
+   ⚠ 名簿が取れなかった run は 1 行も書かず、記事に照合済みの印も付けない——「照合できなかった」を
+     「どの企業も出てこなかった」として残すと、その記事は二度と照合されない（#R404 と同じ形）。
+   ⚠ 出来事にまだ載っていない記事は飛ばす（印も付けない）。次の run の assign の後で読まれる。
+   ⚠ 有料の要求は 1 本も送らない（決定論）。SCHEDULE の天井には何も足さない。 */
+const ENTITIES_CAP = 1500;   /* 1 run で照合する記事の上限。実測 1 日 約 600〜800 本の記事（2026-09）なので、72 時間ぶんの
+                                冷えた backlog（約 3,100 本、2026-10-02）も 3 run で追いつく。 */
+let _roster = null, _rosterAt = 0;
+async function companyRoster() {
+  /* 1 isolate のあいだは使い回す。索引は scripts の生成物で日に 1 度も変わらないので 1 時間で十分。 */
+  if (_roster && Date.now() - _rosterAt < 3600000) return _roster;
+  const r = await fetchGuarded(siteUrl("data/companies/index.json"), {
+    timeoutMs: FEED_TIMEOUT_MS, maxBytes: FEED_MAX_BYTES, contentTypeRe: /json/i,
+  });
+  if (!r.ok) throw new Error("company index " + r.status);
+  const j = JSON.parse(r.text());
+  if (!j || !Array.isArray(j.companies) || !j.companies.length) throw new Error("company index has no companies");
+  _roster = { matcher: makeEntityMatcher(j.companies), size: j.companies.length, generatedAt: j.generatedAt || null };
+  _rosterAt = Date.now();
+  return _roster;
+}
+
+async function stageEntities(db, budget) {
+  const t0 = Date.now();
+  let roster;
+  try { roster = await companyRoster(); }
+  catch (e) { return { ms: Date.now() - t0, scanned: 0, linked: 0, error: "company index unreachable: " + String((e && e.message) || e).slice(0, 160) }; }
+
+  const { data, error } = await db.from("news_articles")
+    .select("id,title,description,news_event_articles(event_id,news_events(primary_category))")
+    .eq("status", "active").is("companies_scanned_at", null)
+    .order("published_at", { ascending: false }).limit(ENTITIES_CAP);
+  if (error) return { ms: Date.now() - t0, scanned: 0, linked: 0, error: "read: " + error.message };
+
+  const rows = [], done = [];
+  let waiting = 0;
+  for (const a of data || []) {
+    if (budget.left() < 15000) break;
+    const link = (a.news_event_articles || [])[0];
+    if (!link || !link.event_id) { waiting++; continue; }
+    const cat = (link.news_events && link.news_events.primary_category) || null;
+    for (const m of roster.matcher.match(a, { category: cat })) {
+      rows.push({ event_id: link.event_id, entity_kind: "company", entity_id: m.id, article_id: a.id, matched_by: m.kind, evidence: m.evidence });
+    }
+    done.push(a.id);
+  }
+  /* 出来事 × 企業は 1 行。同じ run で同じ組が 2 回出たら、強い根拠の方を残す。 */
+  const rank = { legal_name: 0, ticker: 1, name: 2 };
+  const one = new Map();
+  for (const r of rows) {
+    const k = r.event_id + "|" + r.entity_id, was = one.get(k);
+    if (!was || rank[r.matched_by] < rank[was.matched_by]) one.set(k, r);
+  }
+  const uniq = Array.from(one.values());
+  try {
+    /* ⚠ 既にある組は上書きしない（最初に根拠になった文が残る）——ignoreDuplicates */
+    for (let i = 0; i < uniq.length; i += WRITE_CHUNK) {
+      const { error: e1 } = await db.from("news_event_entities")
+        .upsert(uniq.slice(i, i + WRITE_CHUNK), { onConflict: "event_id,entity_kind,entity_id", ignoreDuplicates: true });
+      if (e1) throw new Error("news_event_entities: " + e1.message);
+    }
+    const now = new Date().toISOString();
+    for (let i = 0; i < done.length; i += WRITE_CHUNK) {
+      const { error: e2 } = await db.from("news_articles").update({ companies_scanned_at: now }).in("id", done.slice(i, i + WRITE_CHUNK));
+      if (e2) throw new Error("news_articles: " + e2.message);
+    }
+  } catch (e) {
+    return { ms: Date.now() - t0, scanned: 0, linked: 0, error: String((e && e.message) || e).slice(0, 200) };
+  }
+  return {
+    ms: Date.now() - t0, scanned: done.length, linked: uniq.length, waiting_for_event: waiting,
+    roster_size: roster.size, roster_generated_at: roster.generatedAt,
+    by_kind: uniq.reduce((o, r) => { o[r.matched_by] = (o[r.matched_by] || 0) + 1; return o; }, {}),
   };
 }
 
@@ -1447,12 +1531,13 @@ async function stagePrune(db) {
        LOCATE_BATCH・TRANSLATE_CAP / TRANSLATE_BATCH・SUMMARY_CAP・EMBED_CAP / EMBED_BATCH）から
        導き、写さない。chat の段は 1 要求ごとに代替モデルへの 1 段（×2）を含み、embed は batch に
        加えて一覧 1・乗り換え 1・次元の再要求 1（どれも 1 run に 1 回）を含む。
-   ⇒ 予定表だけで 72 × (12×2) + 24 × (30×2) = 3,168 要求/日。scheduleCeiling がそれを 2 倍にする
+   ⇒ 予定表だけで 72 × (12×2 + 7+3) + 24 × (30×2) = 3,888 要求/日（news-intelligence が tick に embed を
+     足した。entities は決定論で 0 要求）。scheduleCeiling がそれを 2 倍にする
      （手で走らせる embed・translate・再処理のぶん。SCHEDULE_HEADROOM の見積りと失効はそちら）。
    実測 2026-09-29: 直近 9 日で最も多い日は 1,188 件を AI が地点づけ（news_ingest_runs.located_ai、
    2026-09-23）＝ 約 60 要求＋要約。暴走（ループ・秘密の漏洩・毎分の cron）だけがこれに当たる。 */
 const SCHEDULE = [
-  { job: "news-ingest-tick", runsPerDay: 72, stages: ["fetch", "locate", "assign", "link", "prune"] },
+  { job: "news-ingest-tick", runsPerDay: 72, stages: ["fetch", "locate", "embed", "assign", "link", "entities", "prune"] },
   { job: "news-ingest-summarise", runsPerDay: 24, stages: ["summarise"] },
 ];
 const STAGE_REQUESTS = {
@@ -1492,8 +1577,9 @@ Deno.serve(async (req) => {
      掛ける）で `assign` の**前**（Event は AI の座標で組まれ、代表地点もそれで決まる）、
      `embed` は `assign` より**前**（埋め込みが無ければ第 2 段は何も足せない）、
      `link` は `assign` より**後**（新しくできた Event も対象にする）、
-     `summarise` は `link` より**後**（結ばれる直前の Event を半分の記事で要約しない）。 */
-  const ORDER = ["fetch", "locate", "embed", "assign", "link", "summarise", "translate", "prune"];
+     `summarise` は `link` より**後**（結ばれる直前の Event を半分の記事で要約しない）、
+     (news-intelligence) `entities` は `link` より**後**（結ばれて消える Event に企業を付けない）。 */
+  const ORDER = ["fetch", "locate", "embed", "assign", "link", "entities", "summarise", "translate", "prune"];
   const want = Array.isArray(body.stages) && body.stages.length
     ? ORDER.filter((s) => body.stages.includes(s))
     : ORDER.slice();
@@ -1518,6 +1604,7 @@ Deno.serve(async (req) => {
     if (want.includes("embed")) result.embed = await stageEmbed(db, budget);
     if (want.includes("assign")) result.assign = await stageAssign(db, budget, relocated);
     if (want.includes("link")) result.link = await stageLink(db, budget);
+    if (want.includes("entities")) result.entities = await stageEntities(db, budget);
     if (want.includes("summarise")) result.summarise = await stageSummarise(db, budget);
     if (want.includes("translate")) result.translate = await stageTranslate(db, budget);
     if (want.includes("prune")) result.prune = await stagePrune(db);
@@ -1531,6 +1618,7 @@ Deno.serve(async (req) => {
   const f = result.fetch || {}, g = result.assign || {}, t = result.translate || {}, p = result.prune || {};
   const L = result.locate || {};
   const sm = result.summarise || {};
+  const E = result.embed || {}, N = result.entities || {};
   try {
     await db.from("news_ingest_runs").insert({
       started_at: startedAt, finished_at: new Date().toISOString(), stages: want, ok,
@@ -1547,12 +1635,12 @@ Deno.serve(async (req) => {
          段ごとの内訳は notes。片方だけを入れると「今日いくら使ったか」の計器が半分を見落とす。 */
       llm_tokens_in: (t.llm_tokens_in || 0) + (L.llm_tokens_in || 0) + (sm.llm_tokens_in || 0),
       llm_tokens_out: (t.llm_tokens_out || 0) + (L.llm_tokens_out || 0) + (sm.llm_tokens_out || 0),
-      estimated_cost_usd: Math.round(((t.estimated_cost_usd || 0) + (L.estimated_cost_usd || 0) + (sm.estimated_cost_usd || 0)) * 1e6) / 1e6,
+      estimated_cost_usd: Math.round(((t.estimated_cost_usd || 0) + (L.estimated_cost_usd || 0) + (sm.estimated_cost_usd || 0) + (E.estimated_cost_usd || 0)) * 1e6) / 1e6,
       pruned_articles: p.pruned_articles || 0, pruned_events: p.pruned_events || 0,
       pruned_decisions: p.pruned_decisions || 0,
       timings: {
         total_ms: Date.now() - start, fetch_ms: f.ms || 0, locate_ms: L.ms || 0, assign_ms: g.ms || 0,
-        translate_ms: t.ms || 0, prune_ms: p.ms || 0,
+        translate_ms: t.ms || 0, prune_ms: p.ms || 0, embed_ms: E.ms || 0, entities_ms: N.ms || 0,
         assign_p50_ms: g.per_article_p50 || 0, assign_p95_ms: g.per_article_p95 || 0,
       },
       notes: {
@@ -1579,6 +1667,14 @@ Deno.serve(async (req) => {
         summarise_ms: sm.ms || 0, summarise_model: sm.model || null,
         /* ⚙ 単価は推定であって請求ではない。使った単価を一緒に残すと、
            あとから「どの数字を信じていいか」を言える。 */
+        /* (news-intelligence) 埋め込みと企業の段。⚠ 埋め込みは鍵がモデルに届かないあいだ 0 件で、その理由は
+           ここにしか残らない（応答は cron が捨てる）——`embed_error` は news_ingest_health() が段の失敗として読む。 */
+        embedded: E.embedded || 0, embed_considered: E.considered || 0, embed_pending: E.pending || 0,
+        embed_skipped: E.skipped || null, embed_error: E.error || null,
+        embed_model: E.model || null, embed_configured_model: E.configured_model || null,
+        embed_available_models: E.available_embedding_models || null, embed_cost_usd: E.estimated_cost_usd || 0,
+        entities_scanned: N.scanned || 0, entities_linked: N.linked || 0, entities_waiting: N.waiting_for_event || 0,
+        entities_by_kind: N.by_kind || null, entities_error: N.error || null,
         cost_rate_usd_per_mtok: PRICE,
         provider: t.provider || null, model: t.model || null,
         budget_ms: budgetMs, budget_left_ms: budget.left(), error: result.error || null,
