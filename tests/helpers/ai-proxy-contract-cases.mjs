@@ -158,12 +158,19 @@ export const CASES = {
 };
 
 /* ── running one build ───────────────────────────────────────────────────────────────────────── */
+/* The configuration travels in a file, not in an environment variable: a case that sends an oversized
+   body (the 413 answer) makes the JSON larger than Linux lets one environment string be (MAX_ARG_STRLEN,
+   128 KiB), and the spawn itself fails with E2BIG — on the CI runner, not on Windows. */
 function runCase(entryUrl, c) {
+  const dir = mkdtempSync(join(tmpdir(), 'aipc-cfg-'));
+  const file = join(dir, 'cfg.json');
+  writeFileSync(file, JSON.stringify({ entry: entryUrl, env: c.env, requests: c.requests }));
   return new Promise((resolve, reject) => {
     execFile(process.execPath, ['--no-warnings', RUNNER], {
-      env: { ...process.env, AIPC_CFG: JSON.stringify({ entry: entryUrl, env: c.env, requests: c.requests }) },
+      env: { ...process.env, AIPC_CFG_FILE: file },
       maxBuffer: 64 * 1024 * 1024, timeout: 120_000,
     }, (err, stdout, stderr) => {
+      rmSync(dir, { recursive: true, force: true });
       if (err) return reject(new Error('ai-proxy contract run failed: ' + (stderr || err.message).slice(0, 2000)));
       try { resolve(JSON.parse(stdout)); } catch (e) { reject(new Error('unreadable run output: ' + stdout.slice(0, 500))); }
     });

@@ -4,7 +4,8 @@
  *  once per case (module state such as the isolate's ceilings is per isolate, as it is deployed).
  *
  *  Deno.serve is captured and fetch is stubbed; nothing of the function under test is replaced.
- *  Configuration arrives as JSON in AIPC_CFG:
+ *  Configuration arrives as JSON in the file AIPC_CFG_FILE names (a file, because one case's body is
+ *  larger than Linux allows a single environment string to be):
  *    entry      file URL of the build's entry point (the function's index.ts, or a photograph of it)
  *    env        the function's environment
  *    requests   [{ method, headers, body, user, ageDays, rpc: { name: answer | [answers…] }, provider: [answers…] }]
@@ -18,8 +19,9 @@
  *  the function made for that request, in order, with method, url, headers and body.
  * ==========================================================================*/
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 
-const cfg = JSON.parse(process.env.AIPC_CFG || '{}');
+const cfg = JSON.parse(readFileSync(process.env.AIPC_CFG_FILE, 'utf8'));
 const HOSTS = ['api.openai.com', 'api.anthropic.com', 'generativelanguage.googleapis.com'];
 globalThis.Deno = { env: { get: (k) => (cfg.env || {})[k] ?? undefined }, serve: (h) => { globalThis.__h = h; } };
 
