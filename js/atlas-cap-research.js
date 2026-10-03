@@ -829,7 +829,7 @@ export default [
         if (io.focus) ia.focus = io.focus;
         let ir = null;
         try { ir = await dispatch(ia); } catch (e) { ir = { ok: false, html: String((e && e.message) || e) }; }
-        exposure = { asked: true, ok: !!(ir && ir.ok), why: ir && !ir.ok ? String(ir.html || '').replace(/<[^>]*>/g, '').replace(/[<>]/g, '').slice(0, 160) : '' };
+        exposure = { asked: true, ok: !!(ir && ir.ok), why: ir && !ir.ok ? String(ir.html || '').split(/[<>]/).filter((_, i) => i % 2 === 0).join('').slice(0, 160) /* the text between tags; no '<' or '>' survives, so nothing can re-form an element */ : '' };
         if (ir && ir.ok) exHtml = ir.html;
       }
       const rep = scenarioReport(frame, call, run, exposure, MODELS);
