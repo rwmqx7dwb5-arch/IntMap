@@ -74,3 +74,16 @@ Atlas を開いたときだけ読まれる遅延チャンクで、起動時に�
 携帯の段で輪が外れている。変異で確かめた: 時代の分岐を切ると 5 件、押下の分岐を切ると 1 件が赤。
 既存: `tests/atlas-examples-checks.test.mjs` の「`P` の重みの上限は `V` の下限より低い」が `const P=[` から**ファイル末尾まで**を
 `P` と読むので、`E` を `V` の前に置いた（`E` は `V` と競わない——入れ替わる）。
+
+## 6. 大域を通る新しい読み（`check:surface` の `--update`）
+
+`js/atlas-examples.js` は時代の例文のために大域を 3 か所読む。`window.IntMapLang` は持ち主
+`js/lang-registry.js` が export しているので import にした（`module-graph.mjs --migrate IntMapLang`）。
+残る 2 つは持ち主が export していないので、名前と理由をここに書いて基準を更新した:
+
+- `window.IntMapHistScale`（16 → 18 読み）— `yearText` / `dateText`。`js/hist-scale.js` は値を
+  `window.IntMapHistScale = (function(){…})()` で出すだけで export が無い。時代の境界ラベルと同じ
+  年・日付の書式を使うためで、写しを作らない。
+- `window.IntMapTimeBorders`（27 → 28 読み）— 時代の記録（`modernAt`・`currentFC`・`changeAt`）。
+  これはモジュールではなく `js/app-body.js` が `timeBorders(IM_HOST)` で作る実体で、import できる
+  値が無い。検査は `CTX.eraBorders` で差し替える。

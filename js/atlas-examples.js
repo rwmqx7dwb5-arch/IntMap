@@ -95,6 +95,7 @@
 import { makeAtlasViewSubject } from './atlas-view-subject.js';   /* (#R392) what the reader is looking at */
 import { IntMapTime } from './chronos.js';
 import { planOf, DEFAULT_PLAN } from '../supabase/functions/_shared/plans.js';   /* (atlas-before-login) the free allowance, from the one table that grants it */
+import { IntMapLang } from './lang-registry.js';
 
 export function makeAtlasExamples(HOST, CTX) {
   const L=CTX.L, GE=CTX.GE, codeAtPoint=CTX.codeAtPoint, countryStats=CTX.countryStats,
@@ -176,7 +177,7 @@ export function makeAtlasExamples(HOST, CTX) {
     /* the name the era label layer draws — the `text-field` of imtb-lbl2 (`_same`) and imtb-lbl
        (everything else) in js/time-borders.js, read in the same order */
     function _eraLabel(p){ p=p||{}; const v=(p._same==1)?(p._modName||p.NAME||p.name):(p._locName||p.NAME||p.name); return String(v||'').trim(); }
-    function _tag(){ try{ return window.IntMapLang.htmlTag(HOST.lang)||'en'; }catch(_){ return 'en'; } }
+    function _tag(){ try{ return IntMapLang.htmlTag(HOST.lang)||'en'; }catch(_){ return 'en'; } }
     function _yearText(y){ if(y==null||!isFinite(y)) return '';
       const jp=HOST.lang==='jp'?'年':null;
       try{ return window.IntMapHistScale.yearText(y,_tag(),jp); }catch(_){ return (y>=1&&jp)?(y+jp):String(y); } }

@@ -82,7 +82,7 @@ function row(o) {
   const pd = globalThis.document, pw = globalThis.window;
   globalThis.document = { getElementById: () => null, addEventListener: () => {},
     createElement: (t) => new El(t), createElementNS: (ns, t) => new El(t) };
-  globalThis.window = { IntMapHistScale: HS, IntMapLang: { htmlTag: (l) => (l === 'jp' ? 'ja' : 'en') } };
+  globalThis.window = { IntMapHistScale: HS };   /* IntMapLang is imported from js/lang-registry.js — a stub here would be bypassed */
   const ew = new El('div'); ew.className = 'atl-ex';
   const panel = new El('div'); panel.appendChild(ew);
   const HOST = { lang: o.lang || 'en', user: o.user || null, t: (k) => (o.lang === 'jp' ? JP : EN)[k],
