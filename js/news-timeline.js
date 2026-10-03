@@ -122,9 +122,13 @@ export function newsTimeline(HOST){
     if(mapCredit){
       if(window.ResizeObserver){ creditResize=new ResizeObserver(queueCreditSpace);
         for(const el of [mapCredit,tl,document.getElementById('map-container')]) if(el) creditResize.observe(el); }
-      if(window.MutationObserver){ creditMutation=new MutationObserver(queueCreditSpace);
+      /* (map-motion) a record whose attribute ends where it started is not a layout change: a write of
+         the SAME value still produces one (DOM "update steps"), and a per-frame writer of an unchanged
+         class turned this into three rect reads and a computed style on every camera frame. */
+      if(window.MutationObserver){ creditMutation=new MutationObserver((recs)=>{
+          for(const r of recs){ if(r.oldValue!==r.target.getAttribute(r.attributeName)){ queueCreditSpace(); return; } } });
         for(const el of [document.documentElement,document.body,mapCredit,document.getElementById('map-container')])
-          if(el) creditMutation.observe(el,{attributes:true,attributeFilter:['style','class']}); }
+          if(el) creditMutation.observe(el,{attributes:true,attributeOldValue:true,attributeFilter:['style','class']}); }
       window.addEventListener('resize',queueCreditSpace);
       window.addEventListener('pagehide',(event)=>{ if(event.persisted) return;
         if(creditResize) creditResize.disconnect();

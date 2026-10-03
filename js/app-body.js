@@ -881,6 +881,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      boot took — and tests/r180-cesium pinned the literal 10 and went red the moment this stopped
      being a literal. What a test can do is read what the app decided, which is a fact rather than a
      re-derivation (the rule #R202 wrote down after r185's altitude floor). */
+  /* (map-motion) how long a label takes to cross-fade in or out. ⚠ It is #R191's number — the 180 ms
+     the satellite layers' `raster-fade-duration` declares in the style below (and js/world-base.js
+     beneath them), which is its 正本; tests/map-motion-checks.test.mjs ③ holds the two equal. */
+  const ARRIVAL_FADE_MS=180;
   const _openingCentre=OpeningView.openingCentre(OpeningView.openingClockMs(),[10,20]);
   try{ window.__imOpeningCentre=_openingCentre.slice(); }catch(_){}
   try{
@@ -896,7 +900,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       antialias:!_imPhoneClass(),   /* (#R232) the DEVICE, not the viewport width — see _imPhoneClass */
       /* preserveDrawingBuffer is intentionally OFF (it can cause a visible flash/flicker on resize
          and costs perf). The Screenshot feature reads the canvas inside a render tick instead, which
-         works without it. fadeDuration:0 makes raster tiles appear instantly; a large in-memory tile
+         works without it. (fadeDuration is the LABELS' cross-fade, not the tiles' — see below.) A large in-memory tile
          cache keeps recently-seen tiles hot when panning back. */
       /* (#R8) Retain far more recently-seen tiles in RAM so panning/tilting back is instant and never
          refetches — the user measured spare bandwidth (<20 Mbps) and headroom, so trade memory for speed.
@@ -908,7 +912,19 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          「ブラウザが落ちることがないように」. 2048 double-density tiles hold the same bytes 8192 single-
          density ones did, which is the cap #R21 actually decided on. Phones do not take @2x at all
          (see _hiDPITiles), so their numbers are untouched. */
-      fadeDuration:0, maxTileCacheSize:_tileCacheMax(), refreshExpiredTiles:false,   /* (#R21) genuinely low-RAM phones get a smaller resident-tile budget */   /* (#R20) mobile 1536→1024 (~1/3 less resident tile memory vs the OOM tab-kills); (#R21) desktop 6144→8192 — desktop RAM is cheap, 3D pan/tilt-back stays fully cache-hot */
+      /* ══ (map-motion) LABELS ARRIVE AND LEAVE; THEY DO NOT BLINK ══════════════════════════════
+         `fadeDuration` was 0 on the belief that it is what makes raster
+         tiles appear at once. MEASURED in maplibre-gl 6.11.2, it is not: a raster's fade is the layer's
+         own `raster-fade-duration` (style.ts setRasterFadeDuration), which #R191 already sets per layer.
+         The map-level number is the SYMBOL placement's — and at 0 the renderer forces a FULL collision
+         placement on EVERY frame (style.ts `forceFullPlacement ||= … fadeDuration === 0`) and swaps
+         each label on or off instantly. scripts/map-motion.mjs counted it on an eight-notch wheel zoom:
+         122 placements in 122 frames, 234 labels changed state and 85 of them were shown and hidden
+         again within 600 ms — the label 点滅. With a fade, placement runs when the last one is no
+         longer recent and a label crosses over instead of popping. ⚠ The number is #R191's 180 ms (the
+         satellite layers below use the same one, for the same reason: under ~200 ms a transition does
+         not read as a delay), not the renderer's 300. */
+      fadeDuration:ARRIVAL_FADE_MS, maxTileCacheSize:_tileCacheMax(), refreshExpiredTiles:false,   /* (#R21) genuinely low-RAM phones get a smaller resident-tile budget */   /* (#R20) mobile 1536→1024 (~1/3 less resident tile memory vs the OOM tab-kills); (#R21) desktop 6144→8192 — desktop RAM is cheap, 3D pan/tilt-back stays fully cache-hot */
       /* Cap the render resolution on phones (#3): a DPR-3 screen otherwise shades 9× the fragments of
          DPR-1, which is the main cause of pan/zoom stutter on mobile GPUs. 2× stays crisp (retina) while
          roughly halving fragment work, so gestures stay smooth. Desktop keeps full device resolution. */

@@ -284,13 +284,21 @@ window.IntMapSky=(function(){
     cv.style.width=F.width+'px'; cv.style.height=F.height+'px';
     return dpr;
   }
+  /* ⚠ (map-motion) WRITE THE STATE WHEN IT CHANGES, NOT ON EVERY FRAME. draw() runs on every camera
+     frame, and `classList.remove` of an absent class still rewrites <body>'s class attribute (DOM
+     "update steps") — measured: 44–47 <body> class mutation records per eight-notch wheel zoom, each
+     waking every observer of <body> (js/news-timeline.js measures three rects and a computed style in
+     answer: up to 6 ms a frame, on the gesture's own frames). */
+  let _shown=null;
+  function shown(on){ if(_shown===on) return; _shown=on;
+    cv.style.display=on?'block':'none'; document.body.classList.toggle('space-sky-on',on); }
   function draw(){
     raf=0;
     const _t0=performance.now();
     if(!canvas()) return;
-    if(!shouldDraw()){ cv.style.display='none'; document.body.classList.remove('space-sky-on'); return; }
+    if(!shouldDraw()){ shown(false); return; }
     const F=GE().camera.viewFrame(); if(!F) return;
-    cv.style.display='block'; document.body.classList.add('space-sky-on');
+    shown(true);
     if(!stars){ loadStars(); }
     const dpr=resize(F);
     ctx.setTransform(dpr,0,0,dpr,0,0);

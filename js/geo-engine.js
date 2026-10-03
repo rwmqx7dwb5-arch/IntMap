@@ -169,7 +169,10 @@ function _redrawLocalGlyphs(m,cover){
      must fail a test, not quietly turn a feature off (#R162). The transform is re-read on every
      call, never cached: a projection change REPLACES it (Camera.migrateProjection). */
   function _cam(m){ try{ const c=m&&m._camera; return (c&&typeof c==='object')?c:null; }catch(_){ return null; } }
-  function _tr(m){ const c=_cam(m); try{ return (c&&c.transform)||null; }catch(_){ return null; } }
+  /* `proposed`: the transform a gesture handler reads — the running proposal while one exists
+     (`_requestedCameraState`, kept by MapLibre while a camera-update hook is installed), else the
+     applied one. That is the renderer's own TransformProvider.transform (map-motion). */
+  function _tr(m,proposed){ const c=_cam(m); try{ return (c&&((proposed&&c._requestedCameraState)||c.transform))||null; }catch(_){ return null; } }
   /* (#R207) every layer id with a registered `click` handler through the contract — see
      `events.onLayer` below. Module scope, not per-view: the answer is about the APP's wiring, and a
      style reload or an engine swap does not change which layers the app makes clickable. */
@@ -308,6 +311,103 @@ function _redrawLocalGlyphs(m,cover){
     soon();
     return { el, update, remove(){ mm=null; try{ el.remove(); }catch(_){} } };
   }
+  /* ══ A WHEEL NOTCH MOVES THE ZOOM'S TARGET, NOT THE ZOOM'S CLOCK (map-motion) ═══════════════════
+     「地図の挙動を Google Earth 並に滑らかにしたい」 — measured with scripts/map-motion.mjs on eight
+     notches 45 ms apart: the zoom speed frame by frame went 3.9 3.8 0.9 3.9 4.5 4.5 1.6 0.7 3.0 …, a
+     sawtooth with one near-stop per notch (frame-to-frame change of speed 0.55–0.71 of the mean speed).
+     The renderer's ScrollZoomHandler (maplibre-gl 6.11.2) restarts a 200 ms bezier from the CURRENT
+     zoom at every notch, with its clock started at the notch's timestamp — so the frame that consumes a
+     notch begins a new curve at its slow end, and the curve's own "continuity" (`_smoothOutEasing`)
+     matches a slope, not the distance that curve now has to cover.
+     ⚠ WHAT STAYS THE RENDERER'S: how far a notch zooms (`_targetZoom`: the wheel rate, the sigmoid,
+     the constraints, the zoom snap), the point under the cursor (`around`), the trackpad path, the
+     start/end events and every interaction with other handlers. What is replaced is ONLY how the
+     displayed zoom travels to that target on a mouse wheel: a critically damped spring, integrated
+     per frame from the real frame time, whose velocity carries across notches. A notch from rest
+     starts at the spring's full speed (x(t) = D·e^(−ωt), i.e. the same immediate answer the bezier
+     gave); a notch mid-flight changes the ACCELERATION, never the speed, so there is no stop.
+     ω = 0.02 /ms: a single notch is 95 % there in 150 ms (the stock curve took 200), eight notches
+     settle 150 ms after the last one. Simulated against the measured cadence: evenness 0.10 vs 0.6.
+     ⚠ The handler finishes on its own clock (200 ms after the last notch); while the spring has
+     not arrived, the end is postponed — the same five fields its own finish writes, restored below.
+     Lifts when: the pinned renderer's wheel path is velocity-continuous by itself (then `renderFrame`
+     or `_targetZoom` will have changed shape and the guard below declines to install). */
+  const WHEEL_SPRING_W=0.02;
+  function _springStep(z,v,target,w,dt){   /* exact critically-damped step, x = z − target */
+    const x0=z-target, c=v+w*x0, e=Math.exp(-w*dt), x=(x0+c*dt)*e;
+    return [target+x, (c-w*(x0+c*dt))*e];
+  }
+  function _smoothWheel(mm){
+    const sz=mm&&mm.scrollZoom;
+    if(!sz||sz.__imSpring||typeof sz.renderFrame!=='function'||!('_targetZoom' in sz||'_delta' in sz)) return false;
+    sz.__imSpring=true;
+    const stock=sz.renderFrame, stockReset=sz.reset;
+    let z=null, v=0, lastOut=null, lastT=0;
+    /* the RENDERER'S clock, the one its own wheel and ease read — so a frozen clock (maplibregl.setNow,
+       which tests/map-motion.spec.js steps frame by frame) freezes the spring with them */
+    const clock=()=>{ try{ return maplibregl.now(); }catch(_){} try{ return performance.now(); }catch(_){ return Date.now(); } };
+    sz.renderFrame=function(){
+      const res=stock.apply(this,arguments);
+      if(!res||this._type!=='wheel'){ if(!this._active) z=null; return res; }
+      const tr=_tr(mm,true);   /* the transform the handler itself just measured its zoomDelta against */
+      if(!tr||typeof this._targetZoom!=='number'||!isFinite(tr.zoom)) return res;
+      const target=this._targetZoom, t=clock();
+      if(z==null){ z=tr.zoom; v=WHEEL_SPRING_W*(target-z); lastT=t; }
+      else if(lastOut!=null) z+=tr.zoom-lastOut;      /* someone else moved the zoom (globe latitude, a clamp) */
+      const dt=Math.min(250,Math.max(0,t-lastT)); lastT=t;   /* the step is exact for any dt; the cap only bounds a stall's catch-up */
+      [z,v]=_springStep(z,v,target,WHEEL_SPRING_W,dt);
+      const arrived=Math.abs(target-z)<1e-3&&Math.abs(v)<1e-5;
+      if(arrived){ z=target; v=0; }
+      res.zoomDelta=z-tr.zoom; lastOut=z; this._lastExpectedZoom=z;
+      if(!arrived){
+        /* the stock handler may have just declared the gesture over: keep it open one frame more */
+        if(this._finishTimeout){ clearTimeout(this._finishTimeout); delete this._finishTimeout; }
+        this._active=true; this._needsRerender=true; res.needsRenderFrame=true;
+      } else if(!res.needsRenderFrame){ z=null; lastOut=null; }
+      return res;
+    };
+    if(typeof stockReset==='function') sz.reset=function(){ z=null; lastOut=null; v=0; return stockReset.apply(this,arguments); };
+    return true;
+  }
+  /* ══ THE GLIDE AFTER A DRAG STARTS AT THE SPEED THE DRAG WAS RELEASED AT (map-motion) ═══════════
+     Measured (scripts/map-motion.mjs, a 60 Hz drag at ~1 px/ms, desktop mouse and phone finger alike):
+     the camera's speed the frame after release was 0.07–0.24 of its speed the frame before — the map
+     BRAKES as the finger lifts and then glides. That is the renderer's inertia arithmetic
+     (handler_inertia.ts, maplibre-gl 6.11.2), not a choice anyone made here: the glide's speed is
+     `release speed × linearity` (0.3), and the ease that carries it starts at `amount·f′(0)/duration`
+     with `amount = speed·duration/2`, so its first speed is `release × linearity × f′(0)/2`. With the
+     stock easing (bezier(0,0,0.3,1), f′(0) = 1/0.3) that is half the release speed, before any
+     sampling loss. Velocity continuity is the one condition `linearity × f′(0) = 2`.
+     ⚠ SO NOTHING HERE IS A TASTE NUMBER. The easing is a decaying exponential — momentum as it decays
+     on a phone or in Google Earth — normalised to land exactly at t = 1, with k = 4 (the speed at the end
+     is e⁻⁴ ≈ 2 % of the start, below a pixel per frame for any glide); `linearity` is then DERIVED as
+     2/f′(0). The duration law is the renderer's own (`deceleration` 2500 px/s², unchanged), so a glide
+     lasts exactly as long as it always did; it now starts at the speed it was released at instead of
+     half of it, and so travels ~1.6× as far. `maxSpeed` keeps the same largest RELEASE speed carried
+     at full speed (1400/0.3 ≈ 4,667 px/s), restated for the new linearity.
+     The reader's two Settings sliders («Pan» and «Inertia», js/wheel-zoom.js) scale this: Pan
+     multiplies the carried speed, Inertia the glide's length (0 = stop on release). ⚠ They had been
+     saved and restored but applied to NOTHING since the gesture calls moved behind this file —
+     `input.set('dragPan',true)` takes no options, and MapLibre's `enable()` without options RESETS
+     the inertia to its defaults. That second fact is why the options live HERE, on the view: every
+     `dragPan` enable in this file passes them, so a tool that suspends and restores the pan cannot
+     drop the glide (js/wheel-zoom.js used to re-assert on the first `idle` for exactly that reason). */
+  const GLIDE_K=4, GLIDE_DECEL=2500, GLIDE_STOCK_LIN=0.3, GLIDE_STOCK_MAX=1400;
+  const _glideEase=(t)=>(1-Math.exp(-GLIDE_K*t))/(1-Math.exp(-GLIDE_K));
+  const GLIDE_SLOPE0=GLIDE_K/(1-Math.exp(-GLIDE_K));   /* f′(0) of the easing above */
+  function _glideOptions(o){
+    const speed=Math.max(0.25,Math.min(3,(o&&isFinite(+o.speed))?+o.speed:1));
+    const length=Math.max(0,Math.min(1.5,(o&&o.length!=null&&isFinite(+o.length))?+o.length:1));
+    const lin=speed*2/GLIDE_SLOPE0;
+    if(length<=0.02) return { linearity:lin, easing:_glideEase, deceleration:GLIDE_DECEL, maxSpeed:0 };   /* stop on release */
+    return { linearity:lin, easing:_glideEase, deceleration:GLIDE_DECEL/length, maxSpeed:GLIDE_STOCK_MAX*lin/GLIDE_STOCK_LIN };
+  }
+  function _applyGlide(mm,o){
+    if(!mm||!mm.dragPan) return false;
+    mm.__imGlide=_glideOptions(o);
+    try{ if(mm.dragPan.isEnabled&&mm.dragPan.isEnabled()) mm.dragPan.enable(mm.__imGlide); }catch(_){ return false; }
+    return true;
+  }
   /* THE ONE `new maplibregl.Map` in the project (tests/maplibre-attribution-xss-checks.test.mjs) */
   function _newMap(o){
     const opts=Object.assign({},o||{});
@@ -316,6 +416,8 @@ function _redrawLocalGlyphs(m,cover){
     let mm=null; try{ mm=new maplibregl.Map(opts); }catch(_){ return null; }
     if(!mm) return null;
     if(!_dedupeGlyphDraws(mm)){ try{ mm.once('styledata',()=>_dedupeGlyphDraws(mm)); }catch(_){} }
+    try{ _smoothWheel(mm); }catch(_){}   /* (map-motion) the wheel's zoom travels on a spring — see above */
+    try{ _applyGlide(mm,null); }catch(_){}   /* (map-motion) …and a drag's glide starts at its release speed */
     let credit=null; if(wantCredit){ try{ credit=_mountCredit(mm,extra); }catch(_){} }
     return { mm, credit };
   }
@@ -1789,7 +1891,10 @@ function _redrawLocalGlyphs(m,cover){
        shape has to stop the renderer panning underneath it; #R170's DrawTool reached straight for
        map.dragPan for this, which is precisely the kind of call a renderer-independent tool cannot make.
        Named for the intent ("the tool owns the drag now"), not for MapLibre's handler objects. */
-    setDragPan(on){ const m=_m(); try{ if(m&&m.dragPan){ on?m.dragPan.enable():m.dragPan.disable(); return true; } }catch(_){} return false; },
+    setDragPan(on){ const m=_m(); try{ if(m&&m.dragPan){ on?m.dragPan.enable(m.__imGlide):m.dragPan.disable(); return true; } }catch(_){} return false; },   /* (map-motion) the view's glide rides every enable */
+    /* (map-motion) the glide after a pan — `speed` scales the carried speed, `length` the glide's
+       length (0 = stop on release). See _glideOptions for what the numbers are and why. */
+    setGlide(o){ return _applyGlide(_m(),o); },
     getContainer(){ const m=_m(); return (m&&m.getContainer)?m.getContainer():null; },
     getSize(){ const m=_m(); if(!m) return {width:0,height:0}; try{ const c=m.getContainer(); const cv=m.getCanvas&&m.getCanvas();
       return { width:(c&&c.clientWidth)||(cv&&cv.width)||0, height:(c&&c.clientHeight)||(cv&&cv.height)||0 }; }catch(_){ return {width:0,height:0}; } },
@@ -2020,7 +2125,7 @@ function _redrawLocalGlyphs(m,cover){
        flight simulator suspends all of them for the length of a flight and restores them after;
        it did that by indexing map[handlerName], which is the shape of call an engine swap
        cannot survive. */
-    setGesture(name,on){ const m=_m(); try{ const h=m&&m[name]; if(h&&h.enable&&h.disable){ on?h.enable():h.disable(); return true; } }catch(_){} return false; },
+    setGesture(name,on){ const m=_m(); try{ const h=m&&m[name]; if(h&&h.enable&&h.disable){ on?h.enable(name==='dragPan'?m.__imGlide:undefined):h.disable(); return true; } }catch(_){} return false; },
     gestures(){ return ['dragPan','dragRotate','scrollZoom','touchZoomRotate','keyboard','doubleClickZoom','boxZoom','touchPitch']; },
     setZoomRate(r,wheel){ const m=_m(); try{ const s=m&&m.scrollZoom; if(!s) return false;
       if(wheel){ if(s.setWheelZoomRate) s.setWheelZoomRate(r); } else if(s.setZoomRate) s.setZoomRate(r); return true; }catch(_){ return false; } },
@@ -2396,6 +2501,7 @@ function _redrawLocalGlyphs(m,cover){
        of them for a flight and was indexing map[handlerName] to do it. */
     input:{ setDragPan:on=>A().setDragPan(on),
       set:(name,on)=>A().setGesture(name,on), names:()=>A().gestures(),
+      setGlide:o=>(A().setGlide?A().setGlide(o):false),
       setAll:on=>{ let n=0; A().gestures().forEach(g=>{ if(A().setGesture(g,on)) n++; }); return n; },
       setZoomRate:(r,wheel)=>A().setZoomRate(r,wheel) },
     events:{ on:(e,c)=>A().on(e,c), off:(e,c)=>A().off(e,c), once:(e,c)=>A().once(e,c),
