@@ -19,6 +19,9 @@
 import { str, num, int, one, list, obj, lat, lng, loose } from './atlas-caps.js';
 import { weatherFacts } from './atlas-result-facts.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { jsonWithin } from './fetch-deadline.js';   /* (developer-embed) the open-data catalogue, read under the host's clock */
+import { clockFor } from './proxy-fetch.js';
+import './safe-html.js';   /* (developer-embed) globalThis.IntMapSafe — every href below goes through its url() */
 
 /* ══ (atlas-os) THE QUERY ENGINE, BOUND TO THE KERNEL — ONE BINDING FOR EVERY CALLER ═══════════════
    `data.query` was the only thing that ran js/atlas-query.js, so the dependency list it binds was written
@@ -456,8 +459,21 @@ export default [
      false refusal would move one level down instead of going away. With the column empty the
      gate is `required:['lat','lon']`, and the case still names its own refusal 「中心となる
      座標を指定してください」 rather than quietly taking the map centre (#R302). */
+  /* (developer-embed) `openData`. `read` and `none`: it reads one file the build wrote beside the page and changes
+     nothing on the map. Both arguments are optional — with neither it answers the whole offer. */
   {
-    row: ['data.radiationNear',         'radiationNear',  'measuringStations,doseNear',                                  'data',    'none',    '',                       'explanation',         'read',    'none',   '',         'radiationLayer'],
+    row: ['data.openData',              'openData',       'dataCatalog,openDataCatalog,downloadData,dataLicence',       'data',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    doc: [
+      { in: 'tools-panels', at: 174, text: '{"type":"openData","dataset"?:str,"country"?:str} = THE OPEN DATA IntMap OFFERS FOR REUSE: the datasets the map is built from that a person may download and reuse, each with its download address, its licence AS ITS SOURCE STATES IT, what that licence requires (credit, share-alike, non-commercial) and the credit line to show — and the datasets IntMap does NOT offer, with the reason (no licence stated, or terms not known to permit redistribution). "dataset" narrows to the datasets whose name, credit or publisher contain the words; "country" (a name or ISO code) answers that country\'s file instead: which datasets say something about it and the terms of each. The answer also gives the developer page (the embed API and these files). Use for 「このデータをダウンロードできる？」「国境データのライセンスは？」「日本のデータを JSON で欲しい」「オープンデータはある？」, "can I download this data", "what licence is the country data under", "is there an API"; ' },
+    ],
+    schema: () => ({ type: 'object', properties: { dataset: str(), country: str() } }),
+    async run(a, dctx, K) { const L = K.L, esc = K.esc, note = K.note, R = K.R, resolveCountrySync = K.resolveCountrySync;
+      const ans = await openDataAnswer(a, { L, esc, note, resolveCountrySync });
+      return R(ans.ok, ans.html, { meta: ans.meta });
+    },
+  },
+  {
+    row: ['data.radiationNear',        'radiationNear',  'measuringStations,doseNear',                                  'data',    'none',    '',                       'explanation',         'read',    'none',   '',         'radiationLayer'],
     doc: [
       { in: 'measured-radiation', at: 20, text: '{"type":"radiationNear","lat":num,"lon":num,"km"?:num} = the monitoring stations around a point and what each of them is reading right now, nearest first — this is the join that makes 「原発 → 実測線量 → 風 → 拡散シミュレーション」 one chain: ask it for the readings around a plant before or after modelling a plume from it. It needs a REAL coordinate; resolve the place name first (highlight/compose already do that) rather than guessing one. THIS IS NOT THE PLUME SIMULATION. {"type":"sim","kind":"radiation",…} MODELS where material would travel under the wind; these two report what was MEASURED. Never answer a question about a real reading with the model, and never present the model’s output as a measurement. 50–200 nSv/h IS ORDINARY NATURAL BACKGROUND almost everywhere on earth — soil composition alone moves it by a factor of two — so do not describe a station in that band as elevated. The steps above it are the levels at which the networks THEMSELVES raise an alert. MOST NETWORKS PUBLISH NON-VALIDATED DATA, AND WEATHER MOVES THESE NUMBERS: BfS states that rain washing radon daughters out of the air and onto the ground raises a station by up to a FACTOR OF THREE for a few hours, and a failing instrument or ongoing calibration does the same. So a single elevated station — or even several nearby, since they share the weather — is not by itself evidence of a release. Say that when you report one, and check whether it is raining there before you call it anything else. VALUES ARE NOT COMPARABLE ACROSS A CALIBRATION CHANGE: BfS recomputed its whole network on 2025-07-01 and its readings rose 14–25% with no change in the radiation, so a German series that straddles that date has a step in it that is an artefact. A COUNTRY WITH NO DOTS IS A GAP IN OPEN-LICENSED COVERAGE, NOT A COUNTRY WITH NO RADIATION AND NOT A COUNTRY WITH NO MONITORING — the layer legend lists which networks answered, and 「no station within N km」 is a fact about the roster, never about safety. Europe in particular is thin here: the EU’s own EURDEP aggregate cannot be carried, because its data stays under each provider’s copyright and its only value-returning public endpoint is down.\n' },
     ],
@@ -466,6 +482,50 @@ export default [
     run: radiationNearRun,
   },
 ];
+
+/* ══ (developer-embed) THE OPEN DATA — what IntMap offers for reuse, under which terms ═══════════════════
+   Reads the catalogue the build writes (scripts/public-api.mjs → api/v1/catalog.json, beside the page) — the SAME
+   file the developer page's table and a developer's fetch read, so Atlas cannot describe a different offer. With
+   `dataset`, the datasets whose id, credit or publisher contain the words (and the withheld ones, with why); with
+   `country`, that country's file (api/v1/countries/<CODE>.json): which datasets say something about it and the
+   terms of each. A catalogue that cannot be read is said to be unreadable — never «there is no open data». */
+export async function openDataAnswer(a, H) {
+  const L = H.L, esc = H.esc, note = H.note;
+  const base = (() => { try { return new URL('api/v1/', document.baseURI).href; } catch (_) { return 'api/v1/'; } })();
+  const get = (rel) => jsonWithin(base + rel, clockFor(base + rel), { cache: 'no-cache' });
+  const href = (u) => esc(IntMapSafe.url(u));   /* the same encoder the comparison card above uses */
+  let cat;
+  try { cat = await get('catalog.json'); }
+  catch (e) { return { ok: false, html: note(L('The open-data catalogue could not be read', 'オープンデータのカタログを読めませんでした') + ' (' + esc(base + 'catalog.json') + ': ' + esc(e.message) + ').'), meta: { openData: { readable: false, url: base + 'catalog.json' } } }; }
+  const terms = (t) => [t.credit ? L('credit required', '出典表示が必要') : null, t.shareAlike ? L('share-alike', '継承') : null, !t.commercial ? L('non-commercial', '非営利') : null].filter(Boolean).join(', ') || L('no conditions', '条件なし');
+  const row = (d) => '<li><b>' + esc(d.id) + '</b> — ' + esc(d.licences.join(', ')) + ' (' + esc(terms(d.terms)) + ')' + (d.credit.length ? '; ' + L('credit', '出典') + ': ' + esc(d.credit.join(' · ')) : '') + '; <a href="' + href(d.files[0].url) + '" target="_blank" rel="noopener">' + esc(d.files[0].url) + '</a></li>';
+  const facts = { readable: true, catalog: base + 'catalog.json', developers: new URL('../../developers.html', base).href, offered: cat.datasets.length, withheld: cat.withheld.length };
+  let h = '<div style="font-weight:600;margin:2px 0 6px;">' + L('Open data IntMap offers for reuse', 'IntMap が再利用のために出しているオープンデータ') + '</div><div style="font-size:12px;line-height:1.6;">';
+  if (a.country) {
+    const c = H.resolveCountrySync ? H.resolveCountrySync(String(a.country)) : null;
+    const code = (c && c.code) || (/^[A-Za-z]{3}$/.test(String(a.country)) ? String(a.country).toUpperCase() : null);
+    if (!code) return { ok: false, html: note(L('No country by that name: ', 'その名前の国が見つかりません: ') + esc(a.country)), meta: { openData: facts } };
+    let f;
+    try { f = await get('countries/' + code + '.json'); }
+    catch (e) { return { ok: false, html: note(L('No open-data file for ', 'オープンデータのファイルがありません: ') + esc(code) + ' (' + esc(e.message) + ')'), meta: { openData: Object.assign(facts, { country: code }) } }; }
+    const ids = Object.keys(f.terms);
+    h += esc(f.name.en) + (f.name.jp ? ' / ' + esc(f.name.jp) : '') + ' — <a href="' + href(base + 'countries/' + code + '.json') + '" target="_blank" rel="noopener">' + esc(base + 'countries/' + code + '.json') + '</a><ul>'
+      + ids.map((id) => { const t = f.terms[id]; return '<li><b>' + esc(id) + '</b> — ' + esc(t.licences.join(', ')) + ' (' + esc(terms(t)) + ')' + (t.creditLine && t.creditLine.length ? '; ' + L('credit', '出典') + ': ' + esc(t.creditLine.join(' · ')) : '') + '</li>'; }).join('') + '</ul>';
+    facts.country = { code, file: base + 'countries/' + code + '.json', datasets: ids, sections: f.sections.length };
+  } else {
+    const q = String(a.dataset || '').trim().toLowerCase();
+    const hit = (d) => !q || [d.id, ...d.credit, ...d.upstreams.map((u) => u.publisher || '')].some((s) => String(s).toLowerCase().includes(q));
+    const shown = cat.datasets.filter(hit), held = cat.withheld.filter((w) => !q || w.id.toLowerCase().includes(q));
+    h += esc(L(cat.datasets.length + ' datasets are offered for reuse and ' + cat.withheld.length + ' are not.', '再利用できるデータセット ' + cat.datasets.length + ' 件、出していないもの ' + cat.withheld.length + ' 件。'))
+      + (shown.length ? '<ul>' + shown.map(row).join('') + '</ul>' : '')
+      + (held.length ? '<div>' + L('Not offered', '出していないもの') + ':</div><ul>' + held.map((w) => '<li><b>' + esc(w.id) + '</b> — ' + esc(w.reason) + (w.detail ? ': ' + esc(w.detail) : '') + '</li>').join('') + '</ul>' : '');
+    if (q && !shown.length && !held.length) h += '<div>' + esc(L('No dataset matches «' + a.dataset + '».', '«' + a.dataset + '» に当たるデータセットはありません。')) + '</div>';
+    facts.matched = shown.map((d) => ({ id: d.id, licences: d.licences, terms: d.terms, credit: d.credit, url: d.files[0].url }));
+    facts.withheldMatched = held;
+  }
+  h += '<div style="margin-top:6px;">' + L('For developers: ', '開発者向け: ') + '<a href="' + href(facts.developers) + '" target="_blank" rel="noopener">' + esc(facts.developers) + '</a></div></div>';
+  return { ok: true, html: h, meta: { openData: facts } };
+}
 
 export async function volcanoFilterRun(a, dctx, K) { const doVolcano = K.doVolcano;
       return doVolcano(a);

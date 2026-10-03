@@ -778,6 +778,38 @@ export function freshnessTable(now) {
   return { rows: m.fr.rows, tally: m.fr.tally, builders: m.bd.map((b) => ({ subject: b.subject, paths: b.paths, declaration: b.declaration.value })) };
 }
 
+/** (developer-embed) The terms each shipped bundle is published under, as VALUES — the one reading
+    scripts/public-api.mjs decides «may this be offered for reuse» from. Per bundle: the record it states
+    in-band and the record(s) the builders that write it declare for its paths, each read by the same
+    js/data-governance.js read() this gate uses. ⚠ It returns what was STATED and where; it decides
+    nothing — a bundle that states no licence anywhere comes back with `licence: null` and its reason,
+    never with a default. The DATA_SOURCES rows are returned beside it so a credit owed can be paid by
+    the row a bundle names (`paidBy`), compared as a value, never by a sentence. */
+export function rightsTable() {
+  const m = measure();
+  const byBundle = new Map();
+  for (const s of m.subjects) {
+    if (s.kind === 'builder') {
+      const p = s.declaredFor || null;
+      const targets = p ? [subjectOfPath(p)] : (s.builder ? s.builder.paths.map(subjectOfPath) : []);
+      for (const t of new Set(targets)) {
+        if (!byBundle.has(t)) byBundle.set(t, { declared: [] });
+        if (s.record) byBundle.get(t).declared.push({ by: s.builder ? s.builder.subject : s.subject, record: read(s.record) });
+      }
+    }
+  }
+  const out = [];
+  for (const s of m.subjects) {
+    if (s.kind === 'builder') continue;
+    const inBand = s.record ? read(s.record) : null;
+    const declared = (byBundle.get(s.subject) || { declared: [] }).declared;
+    out.push({ subject: s.subject, kind: s.kind, members: s.bundle.members.slice(),
+      shards: s.bundle.kind === 'shard' ? s.bundle.shards : null, index: s.bundle.index || null,
+      inBand, inBandFrom: s.from || null, inBandReason: s.reason || null, declared });
+  }
+  return { bundles: out, dataSources: m.rows.slice() };
+}
+
 /** Every script that writes into data/ or declares GOVERNANCE, with its declaration read statically
     — without touching data/ (scripts/data-refresh.mjs runs in a job that has not pulled the sets
     that live outside git). */

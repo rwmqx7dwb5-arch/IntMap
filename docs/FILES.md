@@ -49,6 +49,9 @@ science.html / sources.html     読み物2ページ（手法の説明・出典�
                                 言語一覧は scripts/i18n-langs.mjs が生成する js/locales/_langs.js から読む
 about.html / teachers.html     紹介ページと授業での使い方（英語）。ja/about.html・ja/teachers.html が日本語版。
 news-map.html / embed-map.html  用途別の紹介——ニュースを地図で読む／記事に地図を埋め込む（英語）。ja/ に日本語版。
+developers.html                 開発者向け——埋め込みをページから動かす API（js/embed-client.js）とオープンデータ（api/v1/）。
+                                ja/ に日本語版。データセットの表は印（CATALOG_MARK）だけがリポジトリにあり、ビルドが
+                                scripts/public-api.mjs で埋める
                                 sitemap.xml・robots.txt とともに scripts/landing.mjs が生成する（手で編集しない。
                                 文は scripts/landing-text.mjs、見本は js/showcase.js）。Architecture.md §8.6
 for-newsrooms.html / for-schools.html / for-research.html / contact.html / support.html
@@ -59,6 +62,8 @@ admin-inquiries.html            相談のコンソール（org_inquiries の閲�
 img/showcase/<id>.jpg           見本の地図の画面写真（と共有カード用の <id>-card.jpg・1200×630、アプリ内ギャラリー用の <id>-thumb.jpg・480×252＝カードの縮小）。scripts/showcase-capture.mjs がビルドしたアプリから撮る
 s/<id>.html / ja/s/<id>.html    見本ごとの共有ページ（og カード＋その見本の地図への転送）。scripts/landing.mjs が生成する
 og-image.jpg                    リンクのカードの絵（本物の JPEG。大きさは scripts/brand.mjs が読んで index.html の head へ書く）
+（dist だけ）api/v1/          オープンデータ（catalog.json・countries.json・countries/<CODE>.json・embed.json）。リポジトリには無く、
+                                ビルドが scripts/public-api.mjs で書く（Architecture §1.1「オープンデータと埋め込み API」）
 （dist だけ）history/ ja/history/ sitemap-history.xml sitemap-index.xml
                                 歴史地図の入口ページ（地域 × 日付）とその sitemap。リポジトリには無く、ビルドが
                                 scripts/history-pages.mjs で書く（§8.6.2）
@@ -196,7 +201,11 @@ embed-mode.js                     **埋め込み表示**（`?embed=1`・`&intera
                                   ときだけ `<html data-embed>` を立て、読み取り専用の門（読者の click・change・キーを地図内で止める）
                                   と上端右の帯（時計の瞬間・「IntMap で開く」）を作る。リンクの題と一言の帯 #im-caption は
                                   残す一覧にある（帯そのものは map-ui.js の share）。window グローバルを持たない
-                                  ——共有パネル・Atlas の `share`・`js/atlas-loader.js` が名前で import する
+                                  ——共有パネル・Atlas の `share`・`js/atlas-loader.js` が名前で import する。
+                                  埋め込みが枠に入っているときは**ホスト API の枠の側**（`commandHash`——命令を共有リンクの断片 1 つに
+                                  して、貼ったリンクと同じ hashchange の経路で適用する。履歴は増やさない）
+embed-client.js                   **埋め込み API のホストの側**と約束事（`PROTOCOL`・`mount`）。他サイトが URL で import するので
+                                  何も import せず、vite が dist/ にそのまま写す。embed-mode.js が PROTOCOL を import する
 geo-import.js                     落とされたファイルを FeatureCollection にする（GeoJSON / KML / KMZ / GPX /
                                   CSV・TSV / WKT）。⚠ **拡張子の一覧を持たない**——容器（zip・gzip・文字
                                   コード）は `js/atlas-attach.js` の `ATL_FILE` に訊き（写さず共有）、文法は
@@ -842,7 +851,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  190 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  191 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -978,9 +987,9 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 190能力ぶんの型・列挙・範囲と `required`/`anyOf`。
-atlas-schemas.js                  **引数の schema**（#R406）— 190 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
-atlas-schemas.js                  **引数の schema**（#R406）— 190 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
+atlas-schemas.js                  **引数の schema**（#R406）— 191能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 191 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
+atlas-schemas.js                  **引数の schema**（#R406）— 191 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）
@@ -1656,7 +1665,10 @@ scripts/
   serve.mjs                       依存ゼロの静的サーバ（GitHub Pages と同じ配信＝gzip も含む）
   landing.mjs                     紹介・授業ページ（en と ja/）・sitemap.xml・robots.txt の**生成器と門**。文は
                                   landing-text.mjs、見本は js/showcase.js、数字はその持ち主のファイルから読む（§8.6）
-  landing-text.mjs                紹介・授業・用途別（news-map / embed-map）ページの文の唯一の写し（en + jp）
+  landing-text.mjs                紹介・授業・用途別（news-map / embed-map）・開発者向け（developers）ページの文の唯一の写し（en + jp）
+  public-api.mjs                  **オープンデータの静的 API**（api/v1/）の生成器——台帳（data-governance.mjs rightsTable）が述べる
+                                  ライセンスを LICENCES の語彙で読み、再配布を許すものだけを出す。vite.config.js の publicApiPlugin が
+                                  ビルド時に走らせ、developers.html の表も埋める。`--stats` で出す／出さないを印字
   brand.mjs                       **ブランドの書き出しと門**——index.html の head・docTitle/docDesc・manifest・README の
                                   タグライン・docs/marketing/ の 2 本を brand-text.mjs から書く。`--print <id>` で投稿の完成形（§8.6.2）
   brand-text.mjs                  タグライン・説明・ポジショニングの唯一の写し（en + jp）

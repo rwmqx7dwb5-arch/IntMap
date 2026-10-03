@@ -39,6 +39,8 @@ import { TEXT as ORG_TEXT, ORG_NAV } from './org-pages-text.mjs';   /* (teachers
 import { HUB as HISTORY_HUB, SITEMAP_INDEX } from './history-pages.mjs';   /* (teachers-and-entrances) where the history pages live, and the file that lists every sitemap */
 import { SHOWCASE, WITHHELD, CAPTURED, CURRICULUM, RECORD_ANSWERED, TOPICS } from '../js/showcase.js';
 import { embedUrl, iframeCode, EMBED_SIZES } from '../js/embed-mode.js';   /* (showcase-gallery) the embed page's code is the Embed tab's own */
+import { PROTOCOL } from '../js/embed-client.js';   /* (developer-embed) the developer page's message tables are the protocol's own */
+import { API_DIR, CATALOG_MARK } from './public-api.mjs';   /* (developer-embed) where the open data lives, and where its table goes */
 import { IntMapLang } from '../js/lang-registry.js';
 import '../js/locales/ui.en.js';   /* (showcase-gallery) the frame title the Embed tab writes (embedFrameTitle) — read, not retyped */
 import '../js/locales/ui.jp.js';
@@ -107,9 +109,9 @@ const LANGS = [
   { key: 'en', i: 0, tag: 'en', dir: '', up: './', locale: 'en_US' },
   { key: 'jp', i: 1, tag: 'ja', dir: 'ja/', up: '../', locale: 'ja_JP' },
 ];
-export const PAGES = ['about', 'teachers', 'news-map', 'embed-map'];
+export const PAGES = ['about', 'teachers', 'news-map', 'embed-map', 'developers'];
 /* (showcase-gallery) which block of scripts/landing-text.mjs holds a page's words */
-export const TEXT_KEY = { about: 'about', teachers: 'teachers', 'news-map': 'news', 'embed-map': 'embed' };
+export const TEXT_KEY = { about: 'about', teachers: 'teachers', 'news-map': 'news', 'embed-map': 'embed', developers: 'developers' };
 const HERO_EXAMPLE = 'europe-1914';
 export const pagePath = (page, L) => L.dir + page + '.html';
 
@@ -516,12 +518,111 @@ ${E.steps.items.map((st) => `      <li><h3>${esc(st.h)}</h3><p>${esc(st.p)}</p><
     <pre class="lp-code"><code>${esc(embedCode(L, false))}</code></pre>
     <a class="lp-hero-img lp-code-pic" href="${esc(L.up + linkFor(HERO_EXAMPLE))}">${picture(HERO_EXAMPLE, L, E.code.imgAlt, false)}</a>
     <p class="lp-note">${esc(hero.title[k])}</p>
+    <a class="lp-open" href="./developers.html">${esc(T.nav.developers)} →</a>
   </section>
 
   <section class="lp-sec" id="shows">
     <h2>${esc(E.shows.h2)}</h2>
     <div class="lp-grid2">
 ${E.shows.items.map((it) => `      <div class="lp-tile"><h3>${esc(it.h)}</h3><p>${esc(it.p)}</p></div>`).join('\n')}
+    </div>
+  </section>
+</main>`;
+}
+
+
+/* ══ (developer-embed) THE DEVELOPER PAGE ═══════════════════════════════════════════════════════════════
+   Three things on it are owned elsewhere and read, never retyped: the message tables (js/embed-client.js PROTOCOL — the
+   frame's handlers are held to the same table), the code (built here on the hero example's captured link, with the
+   site's address as SITE_TOKEN like every other address on these pages), and the dataset table — CATALOG_MARK, which
+   scripts/public-api.mjs replaces in the BUILT page with the catalogue it has just written, so the committed page
+   carries no copy of the governance ledger to fall behind. */
+function clientCode() {
+  const hash = CAPTURED[HERO_EXAMPLE].hash;
+  return [
+    '<div id="map"></div>',
+    '<button id="to-1939" type="button">1 September 1939</button>',
+    '<script type="module">',
+    "  import { mount } from '" + SITE + "js/embed-client.js';",
+    "  const map = mount('#map', { hash: '" + hash + "', height: 450 });",
+    '  await map.ready;',
+    "  document.querySelector('#to-1939').onclick = () => map.setTime('1939-09-01');",
+    "  map.on('state', (s) => console.log(s.state.view, s.state.time, s.link));",
+    '</script>',
+  ].join('\n');
+}
+function rawCode() {
+  return [
+    "const frame = document.querySelector('iframe');",
+    'frame.contentWindow.postMessage(',
+    "  { protocol: '" + PROTOCOL.name + "', v: " + PROTOCOL.v + ", type: 'view', id: '1', lng: 139.69, lat: 35.69, zoom: 9 },",
+    '  new URL(frame.src).origin);',
+    "window.addEventListener('message', (e) => {",
+    "  if (e.data && e.data.protocol === '" + PROTOCOL.name + "' && e.data.type === 'reply') console.log(e.data.ok, e.data.hash);",
+    '});',
+  ].join('\n');
+}
+function dataCode() {
+  return [
+    "const catalog = await fetch('" + SITE + API_DIR + "catalog.json').then((r) => r.json());",
+    "const japan = await fetch('" + SITE + API_DIR + "countries/JPN.json').then((r) => r.json());",
+    'for (const d of catalog.datasets) if (d.terms.credit) console.log(d.id, d.credit.join(\' · \'));',
+  ].join('\n');
+}
+function protocolTable(rows, kind, D) {
+  for (const name of Object.keys(rows)) if (!(D.api.does[kind] && D.api.does[kind][name])) throw new Error('landing: scripts/landing-text.mjs developers.api.does.' + kind + ' has no words for «' + name + '» (js/embed-client.js PROTOCOL)');
+  return `<div class="lp-tablewrap"><table data-protocol="${kind}">
+      <thead><tr><th>${esc(D.api.col.name)}</th><th>${esc(D.api.col.args)}</th><th>${esc(D.api.col.does)}</th></tr></thead>
+      <tbody>
+${Object.entries(rows).map(([name, fields]) => `        <tr><td><code>${esc(name)}</code></td><td><code>${esc(fields)}</code></td><td>${esc(D.api.does[kind][name])}</td></tr>`).join('\n')}
+      </tbody>
+    </table></div>`;
+}
+function developersBody(F, L, T) {
+  const D = T.developers;
+  return `<main class="lp-main">
+  <section class="lp-hero lp-hero-t">
+    <div class="lp-hero-text">
+      <h1>${esc(D.hero.h1)}</h1>
+      <p class="lp-lede">${esc(D.hero.sub)}</p>
+      <div class="lp-cta">
+        <a class="lp-btn" href="#embed-api">${esc(D.hero.ctaEmbed)}</a>
+        <a class="lp-btn lp-btn-2" href="#open-data">${esc(D.hero.ctaData)}</a>
+      </div>
+      <p class="lp-note">${esc(D.hero.note)}</p>
+    </div>
+  </section>
+
+  <section class="lp-sec" id="embed-api">
+    <h2>${esc(D.api.h2)}</h2>
+    <p class="lp-sub">${esc(D.api.sub)}</p>
+    <pre class="lp-code"><code>${esc(clientCode())}</code></pre>
+    <h3>${esc(D.api.commands)}</h3>
+    ${protocolTable(PROTOCOL.commands, 'commands', D)}
+    <h3>${esc(D.api.events)}</h3>
+    ${protocolTable(PROTOCOL.events, 'events', D)}
+    <p class="lp-sub">${esc(D.api.raw)}</p>
+    <pre class="lp-code"><code>${esc(rawCode())}</code></pre>
+    <p class="lp-note">${esc(D.api.safe)}</p>
+    <a class="lp-open" href="./embed-map.html">${esc(T.nav.embed)} →</a>
+  </section>
+
+  <section class="lp-sec" id="open-data">
+    <h2>${esc(D.data.h2)}</h2>
+    <p class="lp-sub">${esc(D.data.sub)}</p>
+    <ul class="lp-steps lp-endpoints">
+${D.data.endpoints.map((e) => `      <li><h3><a href="${esc(SITE + API_DIR + e.path)}"><code>${esc(API_DIR + e.path)}</code></a></h3><p>${esc(e.p)}</p></li>`).join('\n')}
+    </ul>
+    <pre class="lp-code"><code>${esc(dataCode())}</code></pre>
+    <p class="lp-sub">${esc(D.data.rule)}</p>
+    <h3>${esc(D.data.table)}</h3>
+    ${CATALOG_MARK}
+  </section>
+
+  <section class="lp-sec" id="reuse">
+    <h2>${esc(D.terms.h2)}</h2>
+    <div class="lp-grid2">
+${D.terms.items.map((it) => `      <div class="lp-tile"><h3>${esc(it.h)}</h3><p>${esc(it.p)}</p></div>`).join('\n')}
     </div>
   </section>
 </main>`;
@@ -632,7 +733,7 @@ ${LANGS.map((l) => `<link rel="alternate" hreflang="${l.tag}" href="${esc(url(l)
 export function renderPage(F, page, L) {
   const T = TEXT[L.key];
   const body = page === 'about' ? aboutBody(F, L, T) : page === 'teachers' ? teachersBody(F, L, T)
-    : page === 'news-map' ? newsBody(F, L, T) : embedBody(F, L, T);
+    : page === 'news-map' ? newsBody(F, L, T) : page === 'developers' ? developersBody(F, L, T) : embedBody(F, L, T);
   return head(F, L, page, T) + '\n<body class="lp lp-' + page + '">\n' + topbar(L, page, T) + '\n' + body + '\n' + footer(L, T, page) + '\n</body>\n</html>\n';
 }
 
