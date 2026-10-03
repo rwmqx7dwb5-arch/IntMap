@@ -42,7 +42,18 @@ date: 2026-10-03
 
 `eager.cssRaw` 365.8 kB → 368.3 kB（`node scripts/perf-budget.mjs --update`、他の行は無変更）。年のレールの規則そのもの（`currentColor` と `--t`/`--pk` で状態ごとの規則を畳んだ後で約 1.4 kB）で、main の木が既に天井より約 1.1 kB 上（幅の中）にいたため幅を越えた。買ったものは「最初の画面に年の軸がある」こと。同じ変更で起動の同一オリジン転送は 9.5 MB 減っている。
 
-## 5. 残したこと
+## 5. 統合で直したこと
 
-- 既存の検査 4 本がこの撤回前の挙動を綴りで固定している（#R210 の初回オープン 2 本・#R408 の自動開放 1 本・埋め込みの読み手一覧 1 本）。更新は統合側で行う。
+- **撤回前の挙動を固定していた既存の検査 4 本を、新しい事実に対して同じ強さで書き直した**（弱めていない）。
+  `tests/process-map-shell-source-lines-checks.test.mjs` R195 ① は両方の側柱の起動式を**評価**する（保存なし／閉／開 × デスクトップ／携帯で、開くのは「開」だけ）。
+  `tests/shell-test-infra-checks.test.mjs` R210 ⑥ は「試験の席が両方の問いに答えていること」と「この spec だけは席を使わないこと」。
+  `tests/shell-layer-panel-checks.test.mjs` R408 ①c は「携帯では」から「どの端末でも」へ——`_openQueue` を参照するのは `kick()` だけ（main の木では 2 件余計に参照して落ちることを確かめた）。
+  `tests/share-embed-distribution-checks.test.mjs` ⑧ は `js/layer-previews.js` を読み手一覧から外し、埋め込みが縮小画像を買わないことを同じ一般則として測る。
+- ⚠ **試験の席（`tests/helpers/session-seed.js`）が左の問いに答えていなかった。** 席は `lsrOpen:false` だけを持ち、左は「答え無し」＝前はマークアップの開、今回からは閉。全 spec が書かれた時と違う画面を測ることになる。**実測**: `tests/r508.spec.js` は `#btn-open-settings` に届かず（element is outside of the viewport）、core の `tests/smoke.spec.js` #R349 は前線を 0 本と数えた。席に `sbOpen:true` を足して両方緑（#R210 が右に `lsrOpen:false` を足したのと同じ理由）。携帯では `collapsed` は無効（`css/intmap.css` のシート）。
+- ⚠ **`tests/first-impression.spec.js` は「ストレージ空」と書きながら席を受け取っていた。** `playwright.config.js` の `storageState` は `browser.newContext()` にも効く。① は右 `false`・左「答え無し」の席で緑だった＝右の未回答経路を測っていなかった。`storageState` を空で明示し、起動時にページが保存を見なかったことを assert する。
+- `tests/durations.json` に 22 秒（3 件の testcase 時間の和、実測 21.7 s）。core から deep へ移り、件数の写し（docs/FILES.md・docs/TESTING.md・package.json・scripts/worktree.mjs）を 128 / 134 に合わせた。
+- ⚠ **並行の shell-experience は「初回の右パネルは地図が窓の半分以上残るときだけ開く」を入れている。統合で衝突したら、この branch の方針（初回はどちらの側柱も開かない＝地図全面、開くのは前回の保存が開だったときだけ）を正とする。** 依頼の文「初回も地図が全面。パネルは読者が開いたときだけ」は幅を条件にしていない。
+
+## 6. 残したこと
+
 - 起動の残り 3.89 MB の内訳（国データ・基図など）は今回の範囲外。測定は spec が毎回印字する。

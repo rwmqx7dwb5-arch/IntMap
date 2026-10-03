@@ -31,8 +31,13 @@ const isPreview = (p) => /\/preview_[^/]*\.png$/.test(p);
 const isWorldGaz = (p) => /\/data\/gazetteer-world\.json\.gz$/.test(p);
 
 test.beforeAll(async ({ browser }) => {
+  /* ⚠ storageState IS WRITTEN OUT, EMPTY. playwright.config.js gives every context — browser.newContext() included —
+     the suite's seeded session (tests/helpers/session-seed.js), so leaving it out booted this «first visit» with a
+     saved answer for both columns: ① passed while asking nothing about the unanswered case (MEASURED: when the
+     seed gained `sbOpen:true`, ① went red on the left column). The init script records what the page found. */
   context = await browser.newContext({ viewport: { width: 1024, height: 768 }, serviceWorkers: 'block',
-    timezoneId: 'UTC', locale: 'en-US', colorScheme: 'light' });
+    timezoneId: 'UTC', locale: 'en-US', colorScheme: 'light', storageState: { cookies: [], origins: [] } });
+  await context.addInitScript(() => { try { window.__fiBootSession = localStorage.getItem('intmap_session2'); } catch (_) { window.__fiBootSession = 'unreadable'; } });
   await installHermeticRouting(context);
   /* the CONTEXT's event, not the page's: js/data-door.js fetches the shipped data/ files from a Worker */
   context.on('requestfinished', async (req) => {
@@ -62,6 +67,7 @@ test('① a first visit at desktop width boots with the map full-width and both 
       return Math.max(0, Math.min(r.right, innerWidth) - Math.max(r.left, 0)); };
     return {
       stored: localStorage.getItem('intmap_session2'),
+      bootSession: window.__fiBootSession,
       leftCollapsed: !!sb && sb.classList.contains('collapsed'),
       rightOpen: !!lsr && lsr.classList.contains('open'),
       lsrBody: document.body.classList.contains('lsr-open'),
@@ -73,6 +79,7 @@ test('① a first visit at desktop width boots with the map full-width and both 
   console.log('[first-impression] panels', JSON.stringify(st));
   /* the first screen, kept beside the result for a reader of the run */
   await page.screenshot({ path: test.info().outputPath('first-screen.png') });
+  expect(st.bootSession, 'the page booted with NO saved session — this is the unanswered first visit').toBeNull();
   expect(st.leftCollapsed, 'the left sidebar is shut on a first visit').toBe(true);
   expect(st.rightOpen, 'the right layer panel is shut on a first visit').toBe(false);
   expect(st.lsrBody).toBe(false);
