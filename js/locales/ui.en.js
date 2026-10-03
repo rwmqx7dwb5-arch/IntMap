@@ -21,8 +21,8 @@ IntMapLang.define('en', { ui: {
          (js/page-i18n.js), which is what made the gap invisible: the mechanism existed and the
          application page simply never used it. scripts/i18n-doc-audit.mjs is the gate that stops a
          sixteenth one being forgotten. */
-      docTitle:"IntMap — Explore the world. Ask the map.",
-      docDesc:"IntMap is an interactive world map for exploring geography, climate, history, population, global events, and more, with natural-language controls powered by Atlas.",
+      docTitle:"IntMap — Every year of the world, on one map",
+      docDesc:"A free world map you can set to any date from 123,000 BC to today — historical borders, climate, population and live data on one map, every source named. No sign-up.",
 
       /* ══ (#R240) THE SIXTH SURFACE — title / aria-label / placeholder, which had no key at all
          and were therefore English in every language however complete this table looked. See

@@ -32,7 +32,10 @@ const el = () => ({
  * (module-graph) ASYNCHRONOUS since the module is IMPORTED: js/time-borders.js says what it needs with
  * `import`, so the renderer and the clock are supplied as those imports (mocks) and the browser as the
  * globals — instead of a vm context the harness had to fill with the module's dependency list by hand.
- * @param {{lang?:string, year?:number, fetch?:Function}} opts
+ * @param {{lang?:string, year?:number, fetch?:Function, countryStats?:object}} opts
+ *   `countryStats` (marketing-engine): the app's country table, which js/time-borders.js captures from its host
+ *   when it is instantiated — a caller that wants the labels the page writes hands the table here; absent, the
+ *   module runs as before (no table).
  * @returns {Promise<{api:object, window:object, host:object}>}
  */
 export async function timeBorders(opts = {}) {
@@ -86,7 +89,7 @@ export async function timeBorders(opts = {}) {
     'js/chronos.js': { IntMapTime },
   } });
   w.IntMapHistStates = history.histStates({});
-  const host = { lang: opts.lang || 'jp', canDraw: () => false };
+  const host = { lang: opts.lang || 'jp', canDraw: () => false, countryStats: opts.countryStats };
   const api = TB.timeBorders(host);
   if (!api || typeof api.eraLocName !== 'function') {
     throw new Error('js/time-borders.js published no eraLocName — the era-name tables are unmeasurable again');
