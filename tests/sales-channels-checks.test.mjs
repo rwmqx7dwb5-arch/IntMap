@@ -16,7 +16,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -34,10 +34,24 @@ const GEN = await import(modUrl('scripts/org-pages.mjs'));
 const MIG = src('supabase/migrations/20261003150000_org_inquiries.sql');
 
 /* ── ① ─────────────────────────────────────────────────────────────────────────────────── */
+/* (security-next) THE TABLE'S WORDS ARE WHAT THE LAST MIGRATION TO STATE THEM SAYS. The CHECK was first written in
+   the create table and a later migration may widen it (`add constraint org_inquiries_<column>_check check (…)`,
+   20261003213000_inquiry_security_purpose.sql). Reading only the first file would hold the declaration to a list the
+   database no longer enforces, so every migration is read in the order the database applies them. */
+const MIGRATIONS = readdirSync(join(ROOT, 'supabase/migrations')).filter((n) => n.endsWith('.sql')).sort();
 function checkList(column) {
-  const m = new RegExp(column + '\\s+text\\s+not null check \\(' + column + '\\s+in \\(([^)]*)\\)\\)').exec(MIG);
-  assert.ok(m, 'the migration still states the ' + column + ' CHECK as a list');
-  return [...m[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]);
+  const forms = [
+    new RegExp(column + '\\s+text\\s+not null check \\(' + column + '\\s+in \\(([^)]*)\\)\\)'),
+    new RegExp('add constraint org_inquiries_' + column + '_check\\s+check \\(' + column + '\\s+in \\(([^)]*)\\)\\)'),
+  ];
+  let last = null;
+  for (const n of MIGRATIONS) {
+    const sql = src('supabase/migrations/' + n);
+    if (!sql.includes('org_inquiries')) continue;
+    for (const re of forms) { const m = re.exec(sql); if (m) last = m; }
+  }
+  assert.ok(last, 'a migration states the ' + column + ' CHECK as a list');
+  return [...last[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]);
 }
 test('sales-channels ① the audience and purpose words are the same in the function, the table and the form', () => {
   assert.deepEqual(checkList('audience'), [...SHAPE.INQUIRY.audiences]);

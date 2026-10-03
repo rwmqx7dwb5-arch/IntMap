@@ -19,10 +19,19 @@ people most often get wrong about this project.
 
 **Please report privately — do not open a public issue for a security bug.**
 
-1. Preferred: **GitHub → Security → "Report a vulnerability"** (Private Vulnerability
-   Reporting). This keeps the report private until a fix ships.
-2. If that is unavailable, open a **minimal** public issue that says only *"security report —
-   please enable private reporting / provide a contact"* with **no exploit details**.
+1. **The security page's form**: [`security.html`][site:security.html]
+   (日本語: `ja/security.html`) → *Report a security problem*, which opens the contact form with
+   **«A security problem (private report)»** chosen. The report is stored in `public.org_inquiries`, which
+   only IntMap's administrators can read (RLS), and is answered by e-mail.
+2. ⚠ **GitHub's Private Vulnerability Reporting is not enabled on this repository** (measured
+   2026-10-03: `GET /repos/rwmqx7dwb5-arch/IntMap/private-vulnerability-reporting` → `{"enabled":false}`).
+   Turning it on is a repository-setting change awaiting the owner's approval; until then the form above
+   is the private channel. If neither works for you, open a **minimal** public issue that says only
+   *"security report — please provide a contact"* with **no exploit details**.
+
+You can also see, in the running app, every site your page has contacted and what IntMap says each is
+sent: **Settings ▸ Privacy ▸ This page's connections** (`js/connections-panel.js`). A host there that the
+statement does not name is worth reporting.
 
 Please include: affected URL/file, a description, reproduction steps, and impact. Do **not**
 include third-party personal data or run destructive/mass tests against production.
@@ -78,3 +87,5 @@ Every PR runs, in CI:
 
 Run locally: `npm test` (adds the browser suite). See
 [`docs/TESTING.md`](docs/TESTING.md).
+
+[site:security.html]: https://rwmqx7dwb5-arch.github.io/IntMap/security.html

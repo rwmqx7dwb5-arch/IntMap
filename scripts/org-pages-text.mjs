@@ -22,7 +22,7 @@ const P = (en, jp) => [en, jp];
 /* the organisation pages, in the order their navigation shows them, each with the key of its name in TEXT.nav —
    the one list: scripts/org-pages.mjs writes exactly these pages and its navigation is built from it, and
    scripts/landing.mjs reads it to link to them from every page it writes. */
-export const ORG_NAV = [['for-newsrooms', 'newsrooms'], ['for-schools', 'schools'], ['for-research', 'research'], ['support', 'support'], ['contact', 'contact']];
+export const ORG_NAV = [['for-newsrooms', 'newsrooms'], ['for-schools', 'schools'], ['for-research', 'research'], ['support', 'support'], ['security', 'security'], ['contact', 'contact']];
 
 export const TEXT = {
   nav: {
@@ -30,6 +30,7 @@ export const TEXT = {
     schools: P('Schools', '学校'),
     research: P('Research & NGOs', '研究・NGO'),
     support: P('Support', '支援'),
+    security: P('Security', 'セキュリティ'),
     contact: P('Contact', 'お問い合わせ'),
     open: P('Open the map', '地図を開く'),
     lang: P('日本語', 'English'),
@@ -228,6 +229,7 @@ export const TEXT = {
       licence: P('A licence for commercial use', '商用利用のライセンス'),
       partnership: P('Working together', '協力・連携'),
       supporter_listing: P('Being named as a supporter', '支援者としての掲載'),
+      security: P('A security problem (private report)', 'セキュリティ上の問題（非公開の報告）'),
       other: P('Something else', 'その他'),
     },
     nameL: P('Your name', 'お名前'),
@@ -240,6 +242,8 @@ export const TEXT = {
     messageHint: P('What you want to do, by when, and where it would appear.', '何をしたいか、いつまでに、どこに掲載・利用するか。'),
     supporterHint: P('To be named: the name to show, the month you gave, and an optional line of up to 140 characters. We check the gift by hand before listing it.',
       '掲載をご希望の場合: 表示するお名前、寄付された月、任意で 140 字以内のひとこと。掲載の前に寄付を手作業で確認します。'),
+    securityHint: P('Where the problem is (the page or file), how to reproduce it, and what it lets someone do. Please do not include anyone else\'s personal data, and do not run destructive or mass tests against the live site. Only IntMap\'s administrators read this.',
+      '問題の場所（ページやファイル）、再現の手順、それによって何ができてしまうか。他の人の個人データは含めず、本番サイトに対して破壊的な試験や大量の試験を行わないでください。この内容は IntMap の管理者だけが読みます。'),
     trapL: P('Leave this field empty', 'この欄は空のままにしてください'),
     consent: P('I agree that IntMap stores this enquiry to answer it, as described below and in the privacy policy.',
       'このお問い合わせへの回答のために、下記とプライバシーポリシーのとおり内容が保存されることに同意します。'),
@@ -257,6 +261,83 @@ export const TEXT = {
         'お問い合わせは受信から {keepDays} 日後に削除します（迷惑メールと判断したものは {spamDays} 日後）。ご希望があればそれより早く削除します。'),
       P('Your network address is not stored. To limit abuse, the number of messages per connection is counted under a one-way code.',
         'ネットワークアドレスは保存しません。濫用を防ぐため、接続ごとの送信数を元に戻せない符号で数えています。'),
+    ],
+  },
+
+  /* ── security (security-next) ──────────────────────────────────────────────────────────────
+     Every count and every on/off on this page is read by scripts/org-pages.mjs securityFacts() from its owner —
+     the host ledger, index.html's policy and switch. The sentences that depend on a fact come in pairs, and the
+     generator picks the one the fact makes true. */
+  security: {
+    title: P('Security & trust — what IntMap sends, to whom, and how to report a problem', 'セキュリティと信頼 — IntMap が何をどこへ送るか、問題の報告方法'),
+    description: P('Every site the IntMap page can contact and what each is sent, a live list of what your page has actually contacted, and a private way to report a security problem.',
+      'IntMap のページが通信しうるすべての接続先とそれぞれに送るもの、あなたのページが実際に通信した相手のライブの一覧、そしてセキュリティ上の問題を非公開で報告する方法。'),
+    h1: P('A map you can check.', '確かめられる地図。'),
+    lede: P('IntMap publishes every site its page can contact and what it sends to each — {stated} sites, checked against the code on every change. In the map you can watch which of them your page has actually contacted, as it happens.',
+      'IntMap は、ページが通信しうるすべての接続先と、それぞれに送るものを公開しています（{stated} 件。変更のたびにコードと照合しています）。地図の中では、あなたのページが実際にどこと通信したかを、その場で確かめられます。'),
+    reportBtn: P('Report a security problem', 'セキュリティ上の問題を報告する'),
+    sendsH: P('What the page sends, and to how many sites', 'ページが送るものと、その接続先の数'),
+    sendsNote: P('Grouped by what is sent, most personal first. The full list, site by site, is section 4 of the privacy policy.',
+      '送るもの別に、個人に近いものから並べています。接続先ごとの全一覧はプライバシーポリシーの第 4 項にあります。'),
+    sitesN: P('{n} sites', '{n} 件の接続先'),
+    seeH: P('See it for yourself', '自分の目で確かめる'),
+    see: [
+      P('Open the list', '一覧を開く'),
+      P('In the map, open Settings, then Privacy, then This page\'s connections. Every site your page has contacted since it opened is there, as your own browser reports it.',
+        '地図の「設定」から「プライバシー」の「このページの通信」を開きます。ページを開いてから通信したすべての接続先が、あなたのブラウザ自身の報告に基づいて並びます。'),
+      P('Compare it with what IntMap says', 'IntMap の記載と比べる'),
+      P('Each site is shown beside what IntMap says it is sent. A site IntMap does not name, or one it says it never contacts, is shown first and marked.',
+        '各接続先は、IntMap がそこに送ると記載しているものと並べて表示されます。IntMap が名前を挙げていない接続先や、通信しないと記載している接続先は、先頭に印を付けて表示します。'),
+      P('Keep the record', '記録を残す'),
+      P('Download the list as a file. It is made in your browser and is not sent to us. You can also ask Atlas: «Who is this page talking to?»',
+        '一覧をファイルとして保存できます。ファイルはブラウザの中で作られ、当方には送られません。Atlas に「このページはどこと通信している？」と尋ねることもできます。'),
+    ],
+    guardsH: P('How the page protects you', 'ページがあなたを守る仕組み'),
+    analyticsOff: [P('No third-party analytics', '第三者のアクセス解析なし'),
+      P('No analytics or session-recording service is loaded. IntMap counts anonymous usage itself, and you can turn that off in Settings.',
+        'アクセス解析やセッション記録のサービスは読み込んでいません。利用状況は IntMap 自身が匿名で数えており、設定でオフにできます。')],
+    analyticsOn: [P('Third-party analytics', '第三者のアクセス解析'),
+      P('An analytics service is loaded on the map page; the privacy policy names it and what it receives.',
+        '地図のページではアクセス解析のサービスを読み込んでいます。名称と受け取る内容はプライバシーポリシーに記載しています。')],
+    noInline: [P('No script runs unless it is listed', '記載のないスクリプトは動かない'),
+      P('The page\'s security policy runs only scripts from IntMap\'s own site, a short list of named sources, and inline code whose exact bytes are listed. A script injected into the page is refused by your browser.',
+        'ページのセキュリティポリシーは、IntMap 自身のサイト・名前を挙げた少数の配信元・バイト列を登録したインラインのコードだけを実行します。ページに注入されたスクリプトは、ブラウザが拒否します。')],
+    withInline: [P('Scripts', 'スクリプト'),
+      P('The page\'s security policy allows inline scripts; this is a known weakness and is listed as such.',
+        'ページのセキュリティポリシーはインラインのスクリプトを許可しています。既知の弱点として記録しています。')],
+    evalNote: [P('Said plainly: the 3-D globe needs eval', '正直に: 3D 地球儀には eval が必要です'),
+      P('The policy still allows code to be compiled from text (unsafe-eval) because the 3-D engine IntMap uses requires it. It is recorded as an accepted risk, and a test turns red on the day the engine no longer needs it.',
+        '使用している 3D エンジンが必要とするため、ポリシーはテキストからのコードの生成（unsafe-eval）をまだ許可しています。受け入れたリスクとして記録しており、エンジンが不要になった日にはテストが赤くなります。')],
+    leakCheck: [P('Passwords are checked without being sent', 'パスワードは送らずに確認'),
+      P('When you choose a password, it is checked against known leaks by sending only the first 5 characters of its hash; the comparison happens in your browser.',
+        'パスワードを決めるとき、漏えいの有無はハッシュの先頭 5 文字だけを送って確認し、照合はブラウザの中で行います。')],
+    yourData: [P('Your data is yours to see and take', 'あなたのデータは見て持ち出せる'),
+      P('Signed in, Account then Your data lists everything the account holds and downloads a complete copy. Deleting the account deletes all of it.',
+        'ログイン中は「アカウント」の「あなたのデータ」で、アカウントが保持するすべてを一覧し、完全なコピーをダウンロードできます。アカウントを削除すると、すべて削除されます。')],
+    reportH: P('Report a security problem', 'セキュリティ上の問題を報告する'),
+    report: P('Please report privately, through the form — not in a public issue. Choose «A security problem». Only IntMap\'s administrators read it, and we answer by e-mail. There is no bug bounty, and we do not promise a response time: nothing measures one yet.',
+      '公開の issue ではなく、フォームから非公開で報告してください。「セキュリティ上の問題」を選んでください。内容は IntMap の管理者だけが読み、メールでお返事します。報奨金制度はなく、回答までの時間もお約束していません（それを測る仕組みがまだありません）。'),
+    inScopeH: P('Worth reporting', '報告していただきたいもの'),
+    inScope: [
+      P('Script injection (XSS) in the map, its pages or the admin console', '地図・各ページ・管理画面でのスクリプト注入（XSS）'),
+      P('Reading or changing another person\'s data, or getting around sign-in or the AI allowance', '他の人のデータの閲覧・変更、ログインや AI の利用枠の回避'),
+      P('A real secret exposed in the code or the site', 'コードやサイトに露出した本物の秘密情報'),
+      P('A site the page contacts that IntMap does not name', 'IntMap が名前を挙げていない接続先への通信'),
+    ],
+    notH: P('Not a vulnerability', '脆弱性ではないもの'),
+    not: [
+      P('The publishable database key in the page — it is public by design; access is enforced by the database\'s row-level rules', 'ページの中の公開用データベースキー — 公開される前提のもので、アクセスはデータベースの行単位の規則で制御しています'),
+      P('Response headers the static host cannot set (for example X-Frame-Options); the in-page policy stands in for them', '静的ホスティングが設定できないレスポンスヘッダ（X-Frame-Options など）— ページ内のポリシーで代替しています'),
+      P('The rate limits or costs of the public data services IntMap reads', 'IntMap が読む公開データサービスの回数制限や費用'),
+    ],
+    faqH: P('Questions', 'よくある質問'),
+    faq: [
+      P('Why does the page contact so many sites?', 'なぜこれほど多くの接続先と通信するのですか？'),
+      P('Most are the public data services a layer draws from — weather, earthquakes, flights — and are contacted only when that layer is on. Each one\'s group above says what it is sent; for many, that is only the map area or nothing at all.',
+        'ほとんどはレイヤーが読む公開データのサービス（気象、地震、航空など）で、そのレイヤーをオンにしたときだけ通信します。それぞれに何を送るかは上の分類のとおりで、多くは地図の範囲だけか、何も送りません。'),
+      P('Where is the full technical description?', '技術的な詳細はどこにありますか？'),
+      P('The threat model, the data flows and the risks IntMap has accepted are published with the source code (docs/SECURITY-ARCHITECTURE.md and SECURITY.md).',
+        '脅威モデル、データの流れ、IntMap が受け入れているリスクは、ソースコードとともに公開しています（docs/SECURITY-ARCHITECTURE.md と SECURITY.md）。'),
     ],
   },
 

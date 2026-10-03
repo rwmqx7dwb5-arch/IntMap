@@ -434,8 +434,62 @@ async function trim(cache, force) {
   } catch (_) {} finally { _trimming = false; }
 }
 
+/* ══ (security-next) WHAT BACKGROUND WORKERS CONTACT, TOLD TO THE PAGE THAT OWNS THE LIST ════════════════════
+   js/connection-watch.js records what the page contacts from the browser's own Resource Timing — but a request a
+   WORKER makes (the map engine loads vector tiles and GeoJSON in its own workers) never reaches the page's
+   timeline. Every such request passes through this handler, so this is the one place that can witness it.
+   Only the scheme and host are kept (a URL can carry a key), only for requests from a client that is NOT a
+   window (a window's own requests are already in its own timeline — counting them here would count them twice),
+   and they are posted to every IntMap window in a batch at most every CONN_FLUSH_MS, with the number of windows
+   open so the page can say when a worker may belong to another tab (a worker client does not name its window).
+   ⚠ NOTHING HERE DECIDES ANYTHING ABOUT A REQUEST — it is noted before the handler below runs and never alters
+   it. Bounded: per flush at most CONN_MAX_HOSTS distinct hosts per client and CONN_MAX_CLIENTS clients.
+   CONN_FLUSH_MS — OBSERVED by intent, not measured: a pan issues tile requests in bursts; one second turns a burst
+   into one message without making the page's live list visibly late. The bounds are an order of magnitude above
+   what one session reaches (the ledger names 177 hosts) and exist only so a runaway client cannot grow the map. */
+const CONN_FLUSH_MS = 1000, CONN_MAX_HOSTS = 512, CONN_MAX_CLIENTS = 64;
+let _connPending = new Map();          /* clientId → Map('scheme//host' → count), since the last flush */
+const _connClientType = new Map();     /* clientId → 'window' | 'worker' | 'sharedworker' | '' (gone) */
+let _connFlush = null;
+function noteConnection(event) {
+  try {
+    const id = event.clientId;
+    if (!id) return;                                         /* a navigation: the new window's own timeline has it */
+    const u = new URL(event.request.url);
+    if (u.origin === self.location.origin || !/^https?:$/.test(u.protocol)) return;
+    if (_connClientType.get(id) === 'window') return;       /* already known to be a window */
+    let m = _connPending.get(id);
+    if (!m) { if (_connPending.size >= CONN_MAX_CLIENTS) return; m = new Map(); _connPending.set(id, m); }
+    const k = u.protocol + '//' + u.host;
+    if (!m.has(k) && m.size >= CONN_MAX_HOSTS) return;
+    m.set(k, (m.get(k) || 0) + 1);
+    if (!_connFlush) _connFlush = new Promise((resolve) => setTimeout(() => { flushConnections().finally(resolve); }, CONN_FLUSH_MS));
+    event.waitUntil(_connFlush);                             /* the worker stays alive long enough to deliver */
+  } catch (_) { /* a note that cannot be made changes nothing about the request */ }
+}
+async function flushConnections() {
+  const batch = _connPending; _connPending = new Map(); _connFlush = null;
+  const hosts = {};
+  for (const [id, m] of batch) {
+    let type = _connClientType.get(id);
+    if (type === undefined) {
+      try { const c = await self.clients.get(id); type = c ? (c.type || '') : ''; } catch (_) { type = ''; }
+      if (_connClientType.size > CONN_MAX_CLIENTS * 4) _connClientType.clear();
+      _connClientType.set(id, type);
+    }
+    if (type === 'window' || type === '') continue;          /* a window's own timeline has it; a gone client has no page */
+    for (const [k, n] of m) hosts[k] = (hosts[k] || 0) + n;
+  }
+  if (!Object.keys(hosts).length) return;
+  try {
+    const wins = await self.clients.matchAll({ type: 'window' });
+    for (const w of wins) { try { w.postMessage({ type: 'connections-seen', hosts, windows: wins.length }); } catch (_) {} }
+  } catch (_) {}
+}
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
+  noteConnection(event);   // (security-next) witnessed before anything below; never changes the request
   if (req.method !== 'GET') return;
   if (!isTileRequest(req.url)) { if (!answerFromShell(event)) answerFromOffline(event); return; }   // (installable-app) the shell; (keyboard-and-offline) else the saved region while offline; else the network as always
 

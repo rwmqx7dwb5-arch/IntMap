@@ -70,12 +70,14 @@
     var status = document.getElementById('og-status');
     var send = form.querySelector('button[type="submit"]');
     var purpose = form.elements.purpose, audience = form.elements.audience;
-    var supHint = document.getElementById('og-hint-sup');
+    /* (security-next) a hint belongs to the purpose it names (data-hint-for) — the supporter's listing and the security
+       report each say what to write; the generator writes the attribute, so no purpose is named here */
+    var hints = form.querySelectorAll('[data-hint-for]');
     function say(key, kind) {
       status.textContent = form.getAttribute('data-msg-' + key) || '';
       status.className = 'og-status' + (kind ? ' is-' + kind : '');
     }
-    function syncHint() { if (supHint) supHint.hidden = purpose.value !== 'supporter_listing'; }
+    function syncHint() { Array.prototype.forEach.call(hints, function (h) { h.hidden = purpose.value !== h.getAttribute('data-hint-for'); }); }
 
     /* ?for=<audience>&about=<purpose> — the introduction pages link here with their reader preselected.
        Only a value the select already offers is taken; anything else leaves the default. */

@@ -203,6 +203,12 @@ IntMap は 69 束ぶんの「この欄の正常範囲」を持っていないの
 ⚠ **台帳は免責ではない。** `disclosure` は「§4 のこの語句がこれを述べている」という主張で、
 門がその語句の実在を両言語で確かめる。
 
+⚠ **門が見るのはコードの文字列で、読者が見るのは動いているページである。** 実行時に組み立てる・データが決める
+ホストは門に見えないので、同じ台帳を**読者の手元で**実際の通信と突き合わせる: `data/connection-ledger.json`
+（全行の読者向けの部分。`scripts/connection-ledger.mjs` が導出し、`checkRepository` が台帳の導出と一致することを
+測る）を `js/connections-panel.js`（設定 ▸ プライバシー ▸ このページの通信）が読む。記録の仕組みは
+`docs/architecture/17-security.md` §17.3。
+
 ### 4.4 鮮度 — 「最後に書かれた日 × 宣言された周期」（規則 `freshness-stated`）
 
 ⚠ **実測（2026-09-30、この節の前）: fresh 1 / aging 0 / stale 0 / unknown 129。** 語彙の

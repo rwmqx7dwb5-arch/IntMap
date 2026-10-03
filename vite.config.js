@@ -139,6 +139,7 @@ export const STATIC_ASSETS = [
   'for-research.html',
   'contact.html',
   'support.html',
+  'security.html',                      // (security-next) what the page sends and to whom, and the private way to report a problem
   'admin-inquiries.html',
   'js/org-page.js',
   'js/admin-inquiries.js',

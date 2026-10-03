@@ -95,7 +95,36 @@ export default [
     },
   },
   {
-    row: ['system.module',              'module',         '',                                                            'system',  'panel',   'panel.any',              'panel',               'session', 'none',   '',         ''],
+    row: ['system.connections',         'connections',    'pageConnections,networkActivity,thirdParties,whoIsThisPageTalkingTo', 'system', 'none', '',                   'explanation',         'read',    'none',   '',         ''],
+    doc: [
+      { in: 'more-features', at: 91, text: '{"type":"connections","show"?:true} = WHICH SITES THIS PAGE HAS ACTUALLY CONTACTED SINCE IT OPENED, as the browser itself reports them (every request of the page, every WebSocket, background workers\' requests while the offline helper is active, and attempts the security policy refused), each held against IntMap\'s published statement of where its code connects and what each place is sent (Privacy Policy §4): grouped by what is sent (nothing / the map area / a chosen point / search words / an article URL / what you write), and naming any host the statement does not name or contradicts. Also says what the list cannot see. This is the connection TRANSPARENCY list of IntMap — 「このページの通信」 (outbound connections, third parties). Use for 「このページはどこと通信している？」「外部に何を送っている？」「第三者に位置情報を送っている？」「通信の透明性」, "who is this page talking to?", "what does IntMap send to third parties?", "network activity". show:true also opens the live list (Settings ▸ Privacy ▸ This page\'s connections) for the reader; ' },
+    ],
+    /* the reader's own words for it (scored as spellings by the search — js/atlas-capabilities.js scoreParts) */
+    phrases: () => ['このページの通信', '通信の透明性', '外部への送信'].concat(['transparency', 'outbound']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { type: { type: 'string', enum: ['connections'] }, show: bool() } }),
+    async run(a, dctx, K) { const R = K.R, note = K.note, esc = K.esc, HOST = K.HOST;
+      const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
+      const M = await import('./connections-panel.js');
+      const D = await M.describe(lang);
+      const m = D.model;
+      const tone = { ok: '#34c759', warn: 'var(--widget-warning,#ff9f0a)', bad: 'var(--widget-danger,#ff3b30)' };
+      let h = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(m.headline) + '</div><div style="font-size:11.5px;opacity:.75;margin:0 0 6px;">' + esc(m.sub) + '</div>';
+      for (const s of m.sections) {
+        if (s.id === 'coverage') continue;
+        h += '<div style="font-size:11px;font-weight:600;opacity:.75;margin:8px 0 2px;">' + esc(s.title) + ' · ' + s.rows.length + '</div><div style="font-size:12px;line-height:1.6;">'
+          + s.rows.slice(0, 12).map((r) => '<span style="color:' + (tone[r.tone] || 'var(--text-muted)') + '">' + icon('dot') + '</span> ' + esc(r.title) + (r.detail ? ' <span style="opacity:.7;">— ' + esc(r.detail) + '</span>' : '')).join('<br>')
+          + (s.rows.length > 12 ? '<br><span style="opacity:.7;">' + esc(T('… and ' + (s.rows.length - 12) + ' more in the full list', '…ほか ' + (s.rows.length - 12) + ' 件（一覧に全件）')) + '</span>' : '') + '</div>';
+      }
+      const cov = m.sections.find((s) => s.id === 'coverage');
+      if (cov) h += note(esc(cov.rows.filter((r) => r.tone !== 'ok').map((r) => r.title + ': ' + r.detail).join(' / ')));
+      let shown = false;
+      if (a && a.show) { try { await M.open(); shown = true; } catch (_) { shown = false; } }
+      if (shown) h += note(esc(T('The live list is open.', 'ライブの一覧を開きました。')));
+      return R(true, h, { meta: { connections: D.facts } });
+    },
+  },
+  {
+    row: ['system.module',              'module',         '',                                                          'system',  'panel',   'panel.any',              'panel',               'session', 'none',   '',         ''],
     doc: [
       { in: 'system.module', text: (c) => 'MODULE fallback (advanced — open/close any IntMap subsystem panel by name, incl. ones with no toolbar button): {"type":"module","name":"IntMapX","method":"open"|"toggle"|"close"|"clear"}. Use only when no specific action or "control" fits. Available modules: ' + c.moduleCatalog() + '\n' },
     ],

@@ -56,6 +56,10 @@ import '../js/client-error-report.js';
 /* (anonymous-usage-counts) …and the anonymous usage counter, early enough to read the arrival (referrer,
    utm tags, a link's map view) before js/map-ui.js rewrites the address with this session's own view. */
 import '../js/usage-counts.js';
+/* (security-next) …and the witness of what this page contacts (Settings ▸ Privacy ▸ This page's connections): Resource Timing
+   is read `buffered`, so what came before this line is not lost, but the WebSocket constructor is wrapped here and every
+   later module's sockets go through it — js/connection-watch.js. */
+import '../js/connection-watch.js';
 /* (ui-layer-owner) …and the two owners of the screen's shape, before any module that builds a style
    string: which LAYOUT this viewport gets and which DEVICE it is (window.IntMapDevice — the 768 px
    boundary written once, and the classes on <body>), and who is IN FRONT (window.IntMapStack — the

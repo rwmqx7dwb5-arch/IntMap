@@ -45,6 +45,8 @@ import { EMBED_SIZES } from '../js/embed-mode.js';
 import { PLANS, DEFAULT_PLAN } from '../supabase/functions/_shared/plans.js';
 import { INQUIRY, INQUIRY_LIMITS, INQUIRY_PIPELINE } from '../supabase/functions/_shared/inquiry-shape.js';
 import { withInlineHashes } from './csp.mjs';
+import { readLedger } from './outbound-hosts.mjs';
+import { SENDS_WORDS } from '../js/connections-panel.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -71,6 +73,7 @@ const ASK = {
   'for-schools': { for: 'education', about: 'classroom' },
   'for-research': { for: 'research', about: 'data' },
   support: { for: 'supporter', about: 'supporter_listing' },
+  security: { for: 'other', about: 'security' },
 };
 
 /* ── the facts, from their owners ─────────────────────────────────────────────────────────── */
@@ -85,7 +88,7 @@ export function orgFacts() {
   const plan = PLANS[DEFAULT_PLAN];
   if (!plan || !Number.isFinite(plan.aiTurnsPerDay)) throw new Error('org-pages: cannot read the default plan\'s aiTurnsPerDay');
   return {
-    ...F, backend, anonKey, spamDays: +spamDays, keepDays: +keepDays,
+    ...F, backend, anonKey, spamDays: +spamDays, keepDays: +keepDays, security: securityFacts(),
     cartoFree: Number(carto[1].replace(/,/g, '')), aiTurns: plan.aiTurnsPerDay,
     sizes: Object.values(EMBED_SIZES).filter((s) => typeof s.w === 'number').map((s) => [s.w, s.h]),
   };
@@ -360,9 +363,10 @@ function contactBody(F, L) {
       </div>
       <div class="og-field">
         <label for="og-message">${esc(T.messageL[k])}</label>
-        <textarea id="og-message" name="message" required maxlength="${M.message}" rows="7" aria-describedby="og-hint og-hint-sup"></textarea>
+        <textarea id="og-message" name="message" required maxlength="${M.message}" rows="7" aria-describedby="og-hint og-hint-sup og-hint-sec"></textarea>
         <p class="og-hint" id="og-hint">${esc(T.messageHint[k])}</p>
-        <p class="og-hint" id="og-hint-sup" hidden>${esc(T.supporterHint[k])}</p>
+        <p class="og-hint" id="og-hint-sup" data-hint-for="supporter_listing" hidden>${esc(T.supporterHint[k])}</p>
+        <p class="og-hint" id="og-hint-sec" data-hint-for="security" hidden>${esc(T.securityHint[k])}</p>
       </div>
       <div class="og-trap" aria-hidden="true">
         <label for="og-wc">${esc(T.trapL[k])}</label>
@@ -381,6 +385,104 @@ function contactBody(F, L) {
     <ul class="og-list">
       ${T.store.map((s) => `<li>${esc(fill(s[k], W))}</li>`).join('\n      ')}
     </ul>
+  </section>
+</main>`;
+}
+
+/* ── security (security-next) ─────────────────────────────────────────────────────────────────
+   Every fact on the page is read from its owner here, and the generator stops if one cannot be read:
+     · what the page sends, and to how many sites — scripts/outbound-hosts.json, the ledger check:datagov holds
+       against the code and against Privacy §4 (only rows the browser requests: `disclosure`);
+     · whether third-party analytics loads — index.html's own switch (window.INTMAP_ANALYTICS);
+     · what the security policy allows — index.html's own Content-Security-Policy script-src;
+     · the leaked-secret check — the ledger row that sends a `credential-prefix`.
+   The words for each «what is sent» are js/connections-panel.js SENDS_WORDS — the same sentences the in-map list
+   uses, so the page and the list cannot describe one code two ways. */
+export function securityFacts() {
+  const ledger = readLedger();
+  const stated = ledger.hosts.filter((r) => r.disclosure != null);
+  if (!stated.length) throw new Error('org-pages: the host ledger states no requested host');
+  const groups = Object.keys(SENDS_WORDS).map((code) => ({ code, hosts: stated.filter((r) => r.sends && r.sends.code === code).map((r) => r.host) })).filter((g) => g.hosts.length);
+  const unworded = stated.filter((r) => !SENDS_WORDS[r.sends && r.sends.code]).map((r) => r.host);
+  if (unworded.length) throw new Error('org-pages: no words for what these hosts are sent: ' + unworded.join(', '));
+  const index = rd('index.html');
+  const sw = need(/window\.INTMAP_ANALYTICS\s*=\s*(true|false)\s*;/, index, 'index.html window.INTMAP_ANALYTICS')[1];
+  const csp = need(/<meta http-equiv="Content-Security-Policy" content="([^"]+)"/, index, 'index.html Content-Security-Policy')[1];
+  const scriptSrc = need(/(?:^|;\s*)script-src ([^;]+)/, csp, 'index.html script-src')[1];
+  return {
+    stated: stated.length, groups,
+    analytics: sw === 'true',
+    inline: /'unsafe-inline'/.test(scriptSrc),
+    unsafeEval: /'unsafe-eval'/.test(scriptSrc),
+    leakCheckByPrefix: stated.some((r) => r.sends && r.sends.code === 'credential-prefix'),
+  };
+}
+function securityBody(F, L) {
+  const T = TEXT.security, k = L.i, S = F.security;
+  const n = (v) => v.toLocaleString(L.num);
+  const W = { ...words(F, L), stated: n(S.stated) };
+  const pair = (p) => `<div class="lp-tile"><h3>${esc(p[0][k])}</h3><p>${esc(fill(p[1][k], W))}</p></div>`;
+  const sendTiles = S.groups.map((g) => `<div class="lp-tile" data-sends="${g.code}"><h3>${esc(SENDS_WORDS[g.code][k])}</h3><p><b>${esc(fill(T.sitesN[k], { n: n(g.hosts.length) }))}</b> — ${esc(g.hosts.join(', '))}</p></div>`);
+  const guards = [S.analytics ? T.analyticsOn : T.analyticsOff, S.inline ? T.withInline : T.noInline];
+  if (S.unsafeEval) guards.push(T.evalNote);
+  if (S.leakCheckByPrefix) guards.push(T.leakCheck);
+  guards.push(T.yourData);
+  const li = (list) => list.map((p) => `<li>${esc(p[k])}</li>`).join('\n        ');
+  return `<main class="lp-main">
+  <section class="lp-hero lp-hero-t">
+    <div class="lp-hero-text">
+      <h1>${esc(T.h1[k])}</h1>
+      <p class="lp-lede">${esc(fill(T.lede[k], W))}</p>
+      <div class="lp-cta">
+        <a class="lp-btn" href="${L.up}index.html">${esc(TEXT.nav.open[k])}</a>
+        <a class="lp-btn lp-btn-2" href="#report">${esc(T.reportBtn[k])}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-sec" id="sends">
+    <h2>${esc(T.sendsH[k])}</h2>
+    <p class="lp-sub">${esc(T.sendsNote[k])} <a href="${L.up}privacy.html">${esc(TEXT.footer.privacy[k])} →</a></p>
+    <div class="lp-grid3">
+      ${sendTiles.join('\n      ')}
+    </div>
+  </section>
+
+  <section class="lp-sec" id="see">
+    <h2>${esc(T.seeH[k])}</h2>
+    <ol class="lp-steps">
+      ${steps(T.see, L, W)}
+    </ol>
+  </section>
+
+  <section class="lp-sec" id="guards">
+    <h2>${esc(T.guardsH[k])}</h2>
+    <div class="lp-grid2">
+      ${guards.map(pair).join('\n      ')}
+    </div>
+  </section>
+
+  <section class="lp-sec" id="report">
+    <div class="lp-support">
+      <h2>${esc(T.reportH[k])}</h2>
+      <p>${esc(T.report[k])}</p>
+      <a class="lp-btn" href="${contactHref('security')}">${esc(T.reportBtn[k])}</a>
+    </div>
+    <div class="lp-grid2">
+      <div class="lp-tile"><h3>${esc(T.inScopeH[k])}</h3><ul class="og-list">
+        ${li(T.inScope)}
+      </ul></div>
+      <div class="lp-tile"><h3>${esc(T.notH[k])}</h3><ul class="og-list">
+        ${li(T.not)}
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="lp-sec" id="faq">
+    <h2>${esc(T.faqH[k])}</h2>
+    <div class="lp-faq">
+      ${faq(T.faq, L, W)}
+    </div>
   </section>
 </main>`;
 }
@@ -441,7 +543,7 @@ function supportBody(F, L) {
 }
 
 export function renderPage(F, page, L) {
-  const body = page === 'contact' ? contactBody(F, L) : page === 'support' ? supportBody(F, L) : introBody(F, L, page);
+  const body = page === 'contact' ? contactBody(F, L) : page === 'support' ? supportBody(F, L) : page === 'security' ? securityBody(F, L) : introBody(F, L, page);
   return withInlineHashes(`${head(F, L, page)}
 <body class="lp og-page" data-org-page="${page}">
 ${topbar(L, page)}

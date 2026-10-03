@@ -4743,8 +4743,20 @@ migration そのものから**——`auth.users` を指す列か uuid の `user_
 何も消さない、表示は作ったピンを返す。⑤ 3 つの入口は動的 import（起動経路に載らない）、書き込む操作要素は
 効果を宣言する。
 
-### `tests/watch-places-checks.test.mjs` (watch-places)
 
+### `tests/security-next-checks.test.mjs` と `tests/security-next.spec.js` (security-next)
+
+「このページの通信」とセキュリティのページ。node 9 本: ① `data/connection-ledger.json` は台帳の導出と同一で全行を持ち、
+各行は 4 つの形のどれか 1 つ ② 「送るもの」の符号すべてに読者の文が en と jp で在る（台帳の `SENDS` と両向き）
+③ 記録の鍵はスキーム＋ホストだけ（自分のオリジン・data:・blob: は記録しない） ④ 集計・証人の区別・CSP の拒否は
+別・上限を超えた分は `overflow` に数える ⑤ 本物の台帳で判定する——パターン行・完全一致が優先・ポートは問わない・
+外のドメインを呑まない・`link`／`dormant` の行に通信したら食い違い・個人に近い分類が先 ⑥ 台帳を読めないときは
+誰も「名前が無い」と言わない ⑦ `sw.js` を sandbox で動かし、worker の要求だけが window へ届き、要求そのものは
+変えない ⑧ 設定のボタン・起動経路の import・en/jp の文・Atlas の行 ⑨ `security.html` の数と文は台帳と
+`index.html` から、報告ボタンは用件 `security` の相談フォームへ、関数・最後の migration・フォームが同じ語を持つ。
+spec 1 本（実ブラウザ）: 経路で満たした要求・WebSocket・CSP が拒否したスクリプトが一覧のそれぞれの節に出る、
+Playwright 自身の記録した main frame の完了した要求が一覧に全部ある、開いている間に増えた接続先が出る、Escape で閉じる。
+### `tests/watch-places-checks.test.mjs` (watch-places)
 7 本・データベース無し・ネットワーク無し（DB の半分は `supabase/tests/24_place_watches_test.sql`）。① 判定
 （`supabase/functions/_shared/place-watch.js`）を**評価**する——種類ごとに自分の尺度で近さと強さ、変化なら新しい鍵・
 再発表なら同じ鍵（警報の鍵に発表時刻を入れない）、初回は何も新着にしない、読めなかった種類は理由つきの「未確認」で
@@ -4754,7 +4766,6 @@ migration の既定値・CHECK を照合する。③ ページの読み手と実
 （初回の基準をアカウントに保存 → 新着 → トースト 1 回 → 同じものを再び知らせない → 既読がアカウントへ）。⑤ Atlas の能力（places.watch・unwatch・watchDigest・watchSeen）を
 代役の DB で実行（未ログイン・入力なし・2 度目・見守っていない場所の停止）。⑥ 入口は動的 import、書き込む操作要素は効果を
 宣言し、撤去済みの `tab.monitors` を呼ばず、AI を呼ばない。
-
 ### `tests/collection-workspace-checks.test.mjs` (collection-workspace)
 4 本・データベース無し（DB の半分は `supabase/tests/24_collection_workspace_test.sql`）。① migration の扉——`save_view` /
 `publish_collection` / `copy_shared_collection` は uuid を取らず `auth.uid()` で口座を決め anon から剥がされ、2 表とも

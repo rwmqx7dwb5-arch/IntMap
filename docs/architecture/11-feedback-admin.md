@@ -41,6 +41,10 @@
   同じアカウント・`noindex`）——状態（new / replied / closed / spam）とメモを付け、削除し、支援者を掲載する。
   保存期間は受信から 730 日、spam は 30 日（`purge_org_inquiries`・pg_cron）。ページの文は `scripts/org-pages-text.mjs`
   （en + jp）、生成と門は `scripts/org-pages.mjs`。営業の手引きは `docs/sales/`。
+  **セキュリティ上の問題の非公開の報告**も同じ道を通る——`security.html`（`ja/`）の報告ボタンが用件 `security` を
+  選んだ相談フォームを開き、フォームはその用件のときだけ「何を書き、何を書かないか」を示す（`data-hint-for`）。
+  語は `_shared/inquiry-shape.js`、表の CHECK は最後にそれを述べた migration（`tests/sales-channels-checks.test.mjs`
+  が全 migration を順に読んで照合する）。ページの中身は §17.3。
   - **パイプライン**（コンソールの Pipeline タブ・`js/admin-pipeline.js`、タブを開いたときだけ `import()`）: 状態（返信したか）とは
     別に、**会話がどこまで進んだか**を持つ——`stage`（lead → talking → trial → adopted | declined）・`next_step`（次にやること 1 文）・
     `next_step_on`（期日）・`stage_changed_at`。段ごとの列、送り手の区分 × 段の件数、**期日が今日（運営者の暦日）以前の

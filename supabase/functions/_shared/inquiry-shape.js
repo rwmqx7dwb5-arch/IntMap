@@ -25,8 +25,10 @@ export const INQUIRY = Object.freeze({
   /* who is writing — one introduction page each, except `supporter` (support.html) and `other` */
   audiences: Object.freeze(['newsroom', 'education', 'research', 'supporter', 'other']),
   /* what they want — `licence` is LICENSE §6 «to obtain a commercial license, contact the copyright
-     holder»; `supporter_listing` is a supporter asking to be named on support.html */
-  purposes: Object.freeze(['embed', 'classroom', 'data', 'licence', 'partnership', 'supporter_listing', 'other']),
+     holder»; `supporter_listing` is a supporter asking to be named on support.html; `security` is a
+     vulnerability report from security.html (security-next) — the private channel SECURITY.md names, stored
+     where only administrators read it (the table's RLS), never in a public issue */
+  purposes: Object.freeze(['embed', 'classroom', 'data', 'licence', 'partnership', 'supporter_listing', 'security', 'other']),
   honeypot: 'website_confirm',
 });
 

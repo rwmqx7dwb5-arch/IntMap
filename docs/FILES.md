@@ -842,7 +842,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  189 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  190 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -978,9 +978,9 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 189能力ぶんの型・列挙・範囲と `required`/`anyOf`。
-atlas-schemas.js                  **引数の schema**（#R406）— 189 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
-atlas-schemas.js                  **引数の schema**（#R406）— 189 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
+atlas-schemas.js                  **引数の schema**（#R406）— 190能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 190 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
+atlas-schemas.js                  **引数の schema**（#R406）— 190 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）
@@ -1230,6 +1230,13 @@ usage-counts.js                   匿名の利用統計——ページ読み込�
                                   sendBeacon で usage-count へ送る。DNT / GPC / 設定オフ / ローカルでは送らない。
                                   何を数えてよいかは `supabase/functions/usage-count/shape.js` と共有
                                   （anonymous-usage-counts）
+connection-watch.js               **このページが実際に通信した相手**をブラウザ自身の報告から記録する（起動経路）——Resource Timing
+                                  （`buffered`）・WebSocket（コンストラクタを 1 回だけ包む）・CSP が拒否したもの（`securitypolicyviolation`）・
+                                  バックグラウンド処理の要求（`sw.js` が `connections-seen` で届ける）。URL は持たずスキームとホストだけ。
+                                  設定 ▸ プライバシーのボタンの 1 つのリスナもここ（security-next）
+connections-panel.js              **「このページの通信」**——記録した各ホストを `data/connection-ledger.json`（出口の台帳から導出）と突き合わせ、
+                                  送るもの別にまとめ、台帳に名前の無いもの・台帳と食い違うもの・CSP が拒否したものと、この一覧に見えないものを
+                                  述べる。ライブ更新・JSON の書き出し。Atlas `system.connections` も同じ `describe` を読む。オンデマンド
 auth-ui.js                        アカウント・認証・Supabase のブート
 account-data.js                  「あなたのデータ」——アカウントが保持するものの目録（account_data_inventory）と完全な書き出し
                                   （export_account_data・JSON 1 ファイル）。どの表かは DB が発見する（削除と同じ走査）——このファイルは
@@ -1392,6 +1399,9 @@ service-status.json               **昨夜の確認を読者へ**——上流ホ
                                   応答しなくなった時刻（`upstream-liveness` の結果から）と、Atlas の夜間評価の実行記録。
                                   先頭に出自（IntMap 自身の測定）を値で持つ。生成は scripts/build-service-status.mjs
                                   （`.github/workflows/tle-refresh.yml` が 1 日 2 回）
+connection-ledger.json            **このページの通信を何と突き合わせるか**——`scripts/outbound-hosts.json` の全行のうち読者に見せる部分
+                                  （host・形〈disclosure／link／dormant／removedBy〉・what・送るもの・Privacy §4 の語句）。生成は
+                                  scripts/connection-ledger.mjs（`--write` / `--check`）。`check:datagov`（規則 outbound-disclosed）が突き合わせる
 offline-sources.json              **どの供給元のファイルを回線なしで使えるよう保存してよいか**——`scripts/outbound-hosts.json` の各ホスト行の
                                   `offline`（allowed・kind・pathPrefix・規約の URL・理由）から導出。述べられていないホストは入らない。
                                   生成は scripts/offline-sources.mjs（`--write` / `--check`）。`check:datagov`（規則 offline-declared）が突き合わせる
@@ -1933,6 +1943,7 @@ scripts/
                                   前夜と比べ、`--fail-on-transition` は up→2 回続けて down の回だけ exit 1。`--check` は宣言だけ
   build-service-status.mjs        `data/service-status.json` を作る。最新の `upstream-liveness` artifact と `atlas-eval.yml`
                                   の実行記録を gh で読み、言うことが変わったときだけ書く。読めなかった半分は `null` と理由
+  connection-ledger.mjs           `data/connection-ledger.json` を、ホスト台帳（outbound-hosts.json）から導出して書く／照合する（security-next）
   offline-sources.mjs             `data/offline-sources.json` を、ホスト台帳（outbound-hosts.json）の `offline` から導出して書く／照合する
   lib/nightly-status.mjs          夜間ジョブの記録を値にする 1 か所——`readerUpstreams`（読者向けの上流の要約）・
                                   `atlasEvalState` / `atlasEvalLine`（最後の成功・最新の回が何も測っていないか・失敗した段の注記）。
