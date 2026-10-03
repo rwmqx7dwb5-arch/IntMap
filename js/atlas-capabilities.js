@@ -284,6 +284,9 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["places.list","myPlaces","savedPlaces,listPlaces,placeList","places","none","","explanation","read","none","",""],
       ["places.show","showPlaces","showMyPlaces,mapMyPlaces,openSavedPlaces","places","object","map.object","object,map","session","none","",""],
       ["places.remove","removePlace","deletePlace,forgetPlace,unsavePlace","places","none","account.places","explanation","persist","explicit","",""],
+      ["layers.electionPlay","electionPlay","electionTimelapse,playElections","data","layer","map.layer,map.layerOption","map,explanation","session","none","",""],
+      ["layers.electionSwing","electionSwing","seatsChangedHands","data","none","map.layerOption","explanation","session","none","",""],
+      ["layers.electionFreshness","electionFreshness","electionDataAge","data","none","","explanation","read","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
