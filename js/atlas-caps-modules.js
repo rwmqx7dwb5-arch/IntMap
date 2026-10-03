@@ -3,6 +3,7 @@
    (js/atlas-console.js, js/atlas-schemas.js) — the on-demand chunk, never the boot path. */
 import caps_account from './atlas-cap-account.js';
 import caps_attach from './atlas-cap-attach.js';
+import caps_briefing from './atlas-cap-briefing.js';
 import caps_chart from './atlas-cap-chart.js';
 import caps_data from './atlas-cap-data.js';
 import caps_dialog from './atlas-cap-dialog.js';
@@ -27,6 +28,7 @@ import caps_view from './atlas-cap-view.js';
 export const CAPABILITY_MODULES = {
   "account": caps_account,
   "attach": caps_attach,
+  "briefing": caps_briefing,
   "chart": caps_chart,
   "data": caps_data,
   "dialog": caps_dialog,

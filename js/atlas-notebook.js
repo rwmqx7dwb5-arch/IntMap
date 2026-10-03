@@ -100,12 +100,21 @@ export function makeAtlasNotebook() {
   const L = IntMapLang.pick(() => (D && D.lang ? D.lang() : 'en'));   /* the UI's language — the panel is chrome, not a reply */
 
   /* ── filing a turn ────────────────────────────────────────────────────────────────────────── */
+  /* (atlas-briefing) a turn somebody is WAITING for — js/atlas-briefing.js, when Atlas asked inside a turn for that
+     turn to become a briefing. Such a turn is built into an entry even when the reader keeps nothing (the entry is
+     then handed over, not stored), and every claimant is told how its turn ended, filed or not and why. */
+  const claims = new Set(), filedSubs = [];
+  function claim(turnId) { if (turnId != null) claims.add(turnId); }
+  function onFiled(fn) { if (typeof fn === 'function') filedSubs.push(fn); return () => { const i = filedSubs.indexOf(fn); if (i >= 0) filedSubs.splice(i, 1); }; }
+  const told = (e, t, why) => { filedSubs.slice().forEach((f) => { try { f(e, t, why); } catch (_) { } }); return e; };
   async function fileTurn(t) {
     const prefs = readPrefs();
-    if (!prefs.keep || !t) return null;
+    if (!t) return null;
+    const claimed = claims.delete(t.turnId);
+    if (!prefs.keep && !claimed) return null;
     const status = String(t.status || '');
-    if (status === 'cancelled' || status === 'error' || status === 'running') return null;
-    if (!String(t.question || '').trim() || (!String(t.reply || '').trim() && !(t.operations || []).length)) return null;
+    if (status === 'cancelled' || status === 'error' || status === 'running') return told(null, t, 'not-finished');
+    if (!String(t.question || '').trim() || (!String(t.reply || '').trim() && !(t.operations || []).length)) return told(null, t, 'empty');
     /* this turn's query answers are the ones announced between its start and now — taken BEFORE the wait
        below, so a question the reader sends meanwhile cannot lend this turn its rows */
     const endAt = Date.now();
@@ -119,10 +128,11 @@ export function makeAtlasNotebook() {
     reask = null;
     const e = entryFromTurn(t, { view: v, results, sources: (t.cites || []).map((c) => ({ url: c.url, title: c.title || c.url })),
       lang: D.lang ? D.lang() : '', resolve: D.resolve, now: Date.now(), followOf });
-    if (!e) return null;
-    try { await store.put(e); } catch (err) { syncState = { at: Date.now(), ok: false, msg: L('Could not keep this answer on the device', 'この回答を端末に残せませんでした') + ': ' + String((err && err.message) || err) }; refresh(); return null; }
+    if (!e) return told(null, t, 'empty');
+    if (!prefs.keep) return told(e, t, 'not-kept');
+    try { await store.put(e); } catch (err) { syncState = { at: Date.now(), ok: false, msg: L('Could not keep this answer on the device', 'この回答を端末に残せませんでした') + ': ' + String((err && err.message) || err) }; refresh(); return told(e, t, 'not-kept'); }
     if (prefs.sync) syncNow().catch(() => { });
-    return e;
+    return told(e, t, 'filed');
   }
 
   /* ── the account copy ─────────────────────────────────────────────────────────────────────── */
@@ -249,12 +259,13 @@ export function makeAtlasNotebook() {
        — each opening is a whole literal, so the declaration is readable where the markup is written */
     const OPEN = { none: '<button type="button" class="atl-nb-act" data-effect="none"', private: '<button type="button" class="atl-nb-act" data-effect="private"',
       outward: '<button type="button" class="atl-nb-act" data-effect="outward"', destructive: '<button type="button" class="atl-nb-act" data-effect="destructive"' };
-    const EFFECT = { replay: 'none', compare: 'private', ask: 'outward', md: 'none', pin: 'private', del: 'destructive' };
+    const EFFECT = { replay: 'none', compare: 'private', ask: 'outward', md: 'none', brief: 'none', pin: 'private', del: 'destructive' };   /* brief: opens the composer — the link is made there, and handed on only by the reader's own copy or share */
     const btn = (act, ic, label, dis) => OPEN[EFFECT[act]] + ' data-act="' + act + '"' + (dis ? ' disabled' : '') + '>' + icon(ic, { size: 16 }) + '<span>' + esc(label) + '</span></button>';
     let h = '<div class="atl-nb-dq">' + esc(e.question) + '</div><div class="atl-nb-meta">' + esc(fmtWhen(e.at)) + '</div>';
     h += '<div class="atl-nb-acts">' + btn('replay', 'map', L('Rebuild map', '地図を再現'), !nRep && !e.view)
       + btn('compare', 'reset', L('Compare with now', '今と比べる'), !(e.results || []).length)
       + btn('ask', 'chat', L('Ask again', 'もう一度訊く')) + btn('md', 'share', L('Export', '書き出し'))
+      + (D.share ? btn('brief', 'link', L('Share as briefing', 'ブリーフィングで共有')) : '')
       + btn('pin', 'star', e.pinned ? L('Unpin', 'ピンを外す') : L('Pin to top', 'ピン留め')) + btn('del', 'trash', L('Delete', '削除')) + '</div>';
     if (chain.length > 1) {
       h += '<div class="atl-nb-chain"><span>' + esc(L('This question in the notebook', 'この問いの記録')) + '</span>'
@@ -285,6 +296,7 @@ export function makeAtlasNotebook() {
       else if (act === 'compare') compare(e);
       else if (act === 'ask') askAgain(e);
       else if (act === 'md') exportMd([e.id]);
+      else if (act === 'brief') { if (D.share) D.share([e.id]); }
       else if (act === 'pin') { await store.update(e.id, { pinned: !e.pinned }); renderDetail(body, e.id); }
       else if (act === 'del') { if (!confirm(L('Delete this entry from the notebook?', 'この記録をノートから削除しますか？'))) return; await removeEntry(e.id); view = 'list'; render(); }
     }));
@@ -368,7 +380,7 @@ export function makeAtlasNotebook() {
     return API;
   }
 
-  const API = { mount, show, hide, store, fileTurn, syncNow, exportMd, exportFile, importText, deleteAccountCopy, replay, compare, askAgain,
+  const API = { mount, show, hide, store, fileTurn, claim, onFiled, syncNow, exportMd, exportFile, importText, deleteAccountCopy, replay, compare, askAgain,
     captureView: () => captureView(D.ASTATE), restoreView: (v, only) => restoreView(v, D.ASTATE, only), diffResults };
   return API;
 }
@@ -378,7 +390,7 @@ export const NOTEBOOK_CSS = ''
   + '#atlas-panel .atl-nb-strip{display:flex;align-items:center;gap:7px;margin:6px 12px 0;padding:7px 11px;border:1px solid var(--glass-border,rgba(128,128,128,0.22));border-radius:12px;background:var(--input-bg);color:var(--text-main);font-size:12.5px;font-weight:600;cursor:pointer;text-align:left;flex:0 0 auto;}'
   + '#atlas-panel .atl-nb-strip .atl-nb-strip-t{flex:1;min-width:0;}'
   + '#atlas-panel .atl-nb-n{font-size:11px;font-weight:600;color:var(--text-muted);background:rgba(128,128,128,0.14);border-radius:9px;padding:1px 7px;}'
-  + '#atlas-panel .atl-nb{position:absolute;inset:0;z-index:calc(var(--z-inset) + 30);display:none;flex-direction:column;background:var(--popup-bg);color:var(--text-main);border-radius:inherit;}'
+  + '#atlas-panel .atl-nb{position:absolute;inset:0;z-index:calc(var(--z-inset) + 30);display:none;flex-direction:column;background:var(--card-bg);color:var(--text-main);border-radius:inherit;}'
   + '#atlas-panel .atl-nb-top{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid rgba(128,128,128,0.14);flex:0 0 auto;}'
   + '#atlas-panel .atl-nb-back{display:flex;align-items:center;gap:2px;border:0;background:none;color:var(--accent,#0a84ff);font-size:13px;cursor:pointer;padding:4px 2px;min-height:32px;}'
   + '#atlas-panel .atl-nb-title{flex:1;text-align:center;font-weight:650;font-size:13.5px;}'
@@ -392,7 +404,7 @@ export const NOTEBOOK_CSS = ''
   + '#atlas-panel .atl-nb-pin{color:#ff9f0a;vertical-align:-1px;}'
   + '#atlas-panel .atl-nb-empty,#atlas-panel .atl-nb-off{font-size:12.5px;line-height:1.6;color:var(--text-muted);padding:18px 6px;}'
   + '#atlas-panel .atl-nb-dq{font-size:15px;font-weight:650;line-height:1.4;margin:2px 0 3px;white-space:pre-wrap;}'
-  + '#atlas-panel .atl-nb-acts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0;}'
+  + '#atlas-panel .atl-nb-acts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0;}'
   + '#atlas-panel .atl-nb-act{display:flex;flex-direction:column;align-items:center;gap:3px;border:0;border-radius:12px;background:var(--input-bg);color:var(--text-main);font-size:11px;padding:9px 4px;cursor:pointer;min-height:44px;}'
   + '#atlas-panel .atl-nb-act[disabled]{opacity:0.38;cursor:default;}'
   + '#atlas-panel .atl-nb-chain{display:flex;flex-wrap:wrap;align-items:center;gap:5px;font-size:11px;color:var(--text-muted);margin:4px 0 8px;}'
