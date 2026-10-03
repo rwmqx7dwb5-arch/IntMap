@@ -41,6 +41,7 @@ is the human explanation.
 | `ai_turn_answers` *(atlas-stream-replay)* | The answer of **one keyed Atlas request**, held so that a page whose stream broke before `done` **receives it again instead of computing it again** — `(user_id, turn_key, replay_key)`, `state` (`running` → `done` / `failed`), `attempts`, `status`, `body` (the `{status, body}` ai-proxy returned; only for `done` — a failure is held as a fact and never replayed), `lease_until` (the running request's heartbeat: renewed every SSE heartbeat, two heartbeats long, so a run whose isolate died is `abandoned`), `expires_at` (the turn key's lifetime, `TURN_TTL_S`). Expired rows are never returned, are deleted by the account's next claim and are swept every 15 minutes (pg_cron `ai-turn-answers-sweep` → `sweep_ai_turn_answers`). | Owner reads own rows. | **RPCs only** (`claim_ai_answer` / `peek_ai_answer` / `beat_ai_answer` / `finish_ai_answer` / `sweep_ai_turn_answers`, service_role). |
 | `relay_rate_buckets` | Token buckets shared by every isolate of a relay — `(scope, key)`, `tokens`, `at`. `routing-relay` keeps one per caller address and two project-wide ones (per minute, per day), so the spend ceiling on the paid Mapbox upstream survives restarts and is the same across isolates. | Nobody (no policy; RLS on). | **RPCs only** (`relay_take` / `sweep_relay_rate_buckets`, service_role). |
 | `user_prefs` | Per-user synced settings blob (`data` jsonb). | Owner. | Owner. |
+| `saved_places` *(my-places)* | An account's **saved places** — `name` (1-120), `note` (≤2000), `collection` (≤60), `lng`/`lat` (CHECK on the globe), `zoom`, `source` (`reader`/`pin`/`search`/`atlas`), `created_at`/`updated_at` (the database's: no client grant on `created_at`, a trigger stamps `updated_at`). **One row per position per account**: `lng5`/`lat5` are generated `round(…, 5)` (~1 m — the session pins' identity) under `unique (user_id, lng5, lat5)`. | Owner. | **INSERT only through `save_place()`** (no INSERT grant); the owner UPDATEs `name`/`note`/`collection`/`lng`/`lat`/`zoom` (column grant — not `user_id`, not `created_at`) and DELETEs own rows. |
 | `favorites` | Saved (★) article links. | Owner. | Owner. |
 
 ### Community
@@ -67,6 +68,7 @@ is the human explanation.
 | `geo_pins` | News-geolocation gazetteer. | Everyone. | Admin (+ service_role). |
 | `dashboard_cards` | Curated strategic-location cards. | Everyone. | Admin (+ service_role). |
 | `current_news` | Server-refreshed, pre-geolocated news. | Everyone. | **service_role only** (`refresh-news`). |
+| `account_data_catalog` *(account-data-center)* | **One sentence per account-owned table**: `tbl`, `written_by` (`you` = the reader typed or chose it / `intmap` = recorded about the reader's use), `label_*`, `purpose_*`, `retention_*` in `en` and `jp`. It explains; it never filters — an owned table with no row is still counted and exported, and `18_account_data_center_test.sql` fails until the row is written. | Everyone (it holds no one's data — it is the privacy inventory). | **Migrations only** (no role holds a write grant). |
 | `who_don_extracts` *(#R650)* | The case and death counts read out of each WHO Disease Outbreak News item — the one field WHO does not publish as data. `cases`/`deaths` are **nullable on purpose**: NULL means «WHO states no cumulative total», which is not zero. `source_hash` is the hash of the prose the model was actually given, so a rewritten item re-extracts and an unchanged one is never paid for twice. | Everyone. | **service_role only** (`who-don`). |
 
 ### Area monitors (#R141 / #R144)
@@ -146,6 +148,8 @@ itself; `grant execute` means "may call", never "may do".
   `news_events(id)`; `news_events.merged_into` self-references (the merge redirect).
   `saved_news_events.user_id` → **`auth.users(id)`** (cascade), which is how `delete_account_data`
   finds it — the purge reads the FK graph, not a list.
+- `saved_places.user_id` → **`auth.users(id)`** (cascade) — so account deletion, the account inventory
+  and the account export all reach it with no list naming it (they walk the same `_owned_by_user_cols()`).
 
 ## Functions & triggers
 
@@ -167,6 +171,11 @@ itself; `grant execute` means "may call", never "may do".
 | `public.record_usage_counts(jsonb)` | SECURITY DEFINER, `search_path=''` | *(anonymous-usage-counts)* Adds one request's rows — `[{m, d, n, cap}]`, already validated by the `usage-count` function against `shape.js` — to **today's (server UTC)** counters, one `insert … on conflict do update` per row inside one transaction. A NEW dimension is refused once its metric already holds `cap` dimensions that day (a known one still counts). Returns how many rows were counted. EXECUTE = service_role only. |
 | `public.purge_usage_counts(integer)` | SECURITY DEFINER, `search_path=''` | *(anonymous-usage-counts)* Deletes days older than the argument (default 400 — the retention the privacy policy states). Scheduled daily as pg_cron job `usage-counts-purge`. EXECUTE = service_role only. |
 | `public.usage_counts_summary(integer)` | **SECURITY INVOKER**, `search_path=''` | *(anonymous-usage-counts)* Each (metric, dimension)'s total over the last N days (1-400), for the admin console's **Usage** and **Growth** tabs (Growth also asks it for twice the period, to show the period before). Invoker on purpose: the admin-only SELECT policy is what decides who sees a row, so a non-admin gets none. EXECUTE = authenticated (not anon). |
+| `public.account_data_inventory()` *(account-data-center)* | SECURITY DEFINER, `search_path=''`, STABLE | For the **signed-in caller** (`auth.uid()` — there is no argument, so no other account can be named): one row per table `_owned_by_user_cols()` discovers — the walk `delete_account_data` uses — with the account's row count there and the catalogue's sentence (`described = false` when there is none; the table is still listed). Definer because several owned tables are admin-read under RLS (`feedback`, `bug_reports`, `donations`, `community_reports`) and those rows are the reader's own. Raises 42501 signed out. EXECUTE = authenticated, service_role (not anon). |
+| `public.export_account_data()` *(account-data-center)* | SECURITY DEFINER, `search_path=''` | Every row the caller's account owns, every column (`to_jsonb`), across the same discovered tables, plus `account` (what `auth.users` / `auth.identities` hold: email, created / confirmed / last sign-in, providers, the sign-in provider's profile) and each table's catalogue sentence — one JSON document (`format: intmap-account-export`, `version: 1`). Fenced per account by `relay_take('account-export', uid, 6, 6/3600)`: a refusal returns `{ok:false, error:'rate_limited'}` and reads nothing. EXECUTE = authenticated, service_role (not anon). |
+| `public.save_place(text, double precision, double precision, text, text, real, text)` *(my-places)* | SECURITY DEFINER, `search_path=''` | **The only way into `saved_places`.** The account is `auth.uid()`; the same position (~1 m) is the same place — a second save updates the fields it was given and returns `created = false`; a NULL argument keeps what the place has. A new place past `saved_places_limit()` raises 54000. `ON CONFLICT` makes two simultaneous saves of one place one row. Returns `(place_id, created, place_count)`. EXECUTE = authenticated, service_role. |
+| `public.saved_places_limit()` *(my-places)* | SQL, IMMUTABLE | 10,000 — a fence against a runaway loop, not a quota (the migration states the estimate and when it expires). The one copy of the number. EXECUTE = authenticated, service_role. |
+| `public.tg_saved_places_touch()` + `saved_places_touch` *(my-places)* | INVOKER, `search_path=''` | BEFORE UPDATE on `saved_places`: `updated_at := now()`. |
 | `public.sweep_ai_turns()` | SECURITY DEFINER, `search_path=''` | Deletes turn rows older than a day. The ledger is a scratch pad, not a history. EXECUTE = service_role only. |
 | `public.claim_ai_answer(uuid, text, text, integer, integer)` | SECURITY DEFINER, `search_path=''` | *(atlas-stream-replay)* Decides whether the request with this replay key runs: `claimed` (run it — `attempts` is this run's number, `after_state` is `failed` / `abandoned` when it runs again after an observed failure or a dead run), `done` (the stored answer — do not run), `running` (another request holds it and is beating — wait). One row lock decides, so two retries cannot both run it. Deletes the account's expired rows first. EXECUTE = service_role only. |
 | `public.peek_ai_answer(uuid, text, text)` | SECURITY DEFINER, `search_path=''` | *(atlas-stream-replay)* What a retry finds, without claiming: `done` (with the body) / `failed` / `running` / `abandoned`; no row when nothing was registered or it expired. ai-proxy asks it **before** `consume_ai_turn`, so a stored answer is returned without spending a call. EXECUTE = service_role only. |
@@ -270,7 +279,7 @@ update public.profiles set is_admin = true where email = 'you@example.com';
 
 ## Data classification (drives backup + retention)
 
-- **A — critical, irreplaceable:** `profiles`, `ai_usage`, `ai_gloss_usage`, `user_prefs`, `favorites`,
+- **A — critical, irreplaceable:** `profiles`, `ai_usage`, `ai_gloss_usage`, `user_prefs`, `favorites`, `saved_places`,
   `donations`, `feedback`, `bug_reports`, all `community_*`. User-generated / account data.
   ⚠ **`news_events`, `news_event_articles`, `news_cluster_decisions` and `saved_news_events`
   belong here too.** Re-fetching the feeds returns the articles; it does not return which articles
@@ -278,7 +287,8 @@ update public.profiles set is_admin = true where email = 'you@example.com';
 - **B — regenerable:** `client_errors` (a 30-day operational record; losing it loses a history, and
   the next occurrence of a live defect recreates its row), `current_news` and `news_articles` (both re-fetched from the feeds),
   `news_event_i18n` (re-translatable, at the cost of translating again), `news_sources` /
-  `news_source_feeds` (curated, but reproduced by the Source Registry seed migration), and
+  `news_source_feeds` (curated, but reproduced by the Source Registry seed migration), `account_data_catalog`
+  (written by its migrations and nothing else), and
   largely `geo_pins` / `dashboard_cards` (curated, but reproducible from `admin.html` seeds).
 - **C — must NOT be stored here:** service_role key, DB password, access tokens, raw JWTs,
   or any plaintext production dump. See [`BACKUP-RESTORE.md`](BACKUP-RESTORE.md).
@@ -313,7 +323,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **39**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **41**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin` (and is not a view).
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't
@@ -368,6 +378,16 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
   no INSERT privilege for `anon` or `authenticated`, and a direct insert by either — even a signed-in reader
   naming itself — is DENIED; admin read/delete are unchanged; ③ service_role (the `reader-reports` path)
   still writes both, and the #R155 length ceiling still stands in front of it.
+- **`18_account_data_center_test.sql`** *(account-data-center / my-places)* — ① the catalogue is complete in
+  both directions over `_owned_by_user_cols()` (an owned table with no sentence turns it red); ② anon can read the
+  catalogue and nothing else (no inventory, no export, no places, no save); the inventory and the export are the
+  caller's alone, carry the admin-read rows that are the reader's own (`feedback`), and contain nothing of another
+  account; ③ **what B can download is exactly what deletion removes** — the same tables, and the same per-table
+  counts as `delete_account_data`'s report, in one transaction; ④ the seventh export in a row is refused by the
+  fence; ⑤ `save_place()` is the only door in, the same position is one place (`created=false`), a re-save keeps
+  what it was not given, a name and a position on the globe are required, the owner edits and deletes and cannot
+  hand a place to another account or restamp `created_at`, another account sees and changes nothing, a full
+  account is refused a new place (54000) and may still update one it holds.
 - **`17_ai_counters_never_negative_test.sql`** *(ai-usage-ledger-sign)* — ① over the catalogue: every base
   table in `public` with a `count` column carries a `CHECK (count >= n)`; ② the table owner (the role Studio
   runs as) cannot write a negative `count` into `ai_usage` or `ai_gloss_usage` — by UPDATE, by INSERT, or

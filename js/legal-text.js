@@ -112,6 +112,13 @@ window.IntMapLegalText = (function () {
      shape.js `entry`), in which case the utm values of THAT page's address are read, because those pages do
      not run the counter and drop their query on the way to the map. Same counters, same consent, same
      recipient. */
+  /* (account-data-center) Terms §4: A READER CAN NOW SEE AND TAKE A COPY OF WHAT THE ACCOUNT HOLDS, SELF-SERVICE.
+     «Account ▸ Your data» lists every kind of data the account has rows in (with what, why and how long) and
+     downloads all of it as one JSON file; the set is the one account deletion removes (the database walks the
+     same foreign keys for both). Nothing new is collected by the export itself. The account's saved places
+     (my-places) are a new kind of account data — named in the same sentence. The privacy policy's §1/§6/§7
+     still describe access as «contact us»; that text is not changed in this edit (another change owns
+     privacy.html in the same window) and is recorded as open in dev-notes/2026-10-03-platform-backend.md. */
   var LEGAL_DATE = '2026-10-03';
 
   var TERMS_JA = `
@@ -119,7 +126,7 @@ window.IntMapLegalText = (function () {
     <p><b>1. 同意</b> — IntMap（以下「本サービス」）を利用することで、本規約に同意したものとみなされます。同意されない場合は利用しないでください。</p>
     <p><b>2. サービス内容</b> — 本サービスは第三者のニュース・地図タイル・公開データを集約して表示する地政学情報マップです。情報提供のみを目的とし、現状有姿で提供されます。専門的・法的・金融的・航行上の助言ではありません。</p>
     <p><b>3. アカウント</b> — 正確な情報を登録し、パスワードとアカウントの管理責任を負うものとします。13歳以上である必要があります。</p>
-    <p><b>4. ユーザー投稿</b> — コミュニティ投稿・コメント・画像の権利は投稿者に帰属しますが、本サービス上での表示に必要な範囲のライセンスを当方に許諾するものとします。違法・権利侵害・差別的・有害な内容を投稿してはなりません。当方は投稿の削除やアカウント停止を行う場合があります。</p>
+    <p><b>4. ユーザー投稿</b> — コミュニティ投稿・コメント・画像の権利は投稿者に帰属しますが、本サービス上での表示に必要な範囲のライセンスを当方に許諾するものとします。違法・権利侵害・差別的・有害な内容を投稿してはなりません。当方は投稿の削除やアカウント停止を行う場合があります。アカウントが保持するデータ（投稿・保存した記事や場所・設定など）は、いつでも一覧で確認し、完全なコピーを1つのファイルとしてダウンロードできます（アカウント ▸ あなたのデータ）。アカウントを削除すると、それらもすべて削除されます。</p>
     <p><b>5. 禁止事項</b> — スクレイピング、不正利用、リバースエンジニアリング、サービス妨害、第三者APIの濫用を禁じます。</p>
     <p><b>6. 第三者サービス・AI</b> — ニュース、地図・衛星タイル、AI機能は各第三者の規約に従います。AI機能はサーバー側（Supabase Edge Function）が当方の管理するキーで実行し、無料利用枠（1日あたりの上限）が適用されます。ブラウザにAIキーを入力・保存することはありません。時事的な質問に答えるため、AI機能はWeb検索を実行し、必要なクエリのみをAIプロバイダーに送信する場合があります。Atlas の回答が通信の切断で届かなかったときに作り直さず同じ回答を届け直せるよう、回答 1 回分の本文をお使いのアカウントに紐づけて当方のデータベース（Supabase）に<b>最長約30分</b>（ターンの有効期限15分＋削除の周期15分）保持し、その後自動で削除します。衛星タイルのキー等を任意で入力した場合は、お使いのブラウザ内にのみ保存されます。</p>
     <p><b>7. 知的財産</b> — 本サービスのコード・デザインは保護されています。第三者データの権利は各権利者に帰属します。</p>
@@ -133,7 +140,7 @@ window.IntMapLegalText = (function () {
     <p><b>1. Acceptance.</b> By using IntMap (the "Service") you agree to these Terms. If you do not agree, do not use the Service.</p>
     <p><b>2. The Service.</b> IntMap is an informational geopolitical map that aggregates third-party news, map tiles and open data. It is provided for general information on an "as is" and "as available" basis and is not professional, legal, financial or navigational advice.</p>
     <p><b>3. Accounts.</b> You must provide accurate information, keep your password secure, are responsible for activity on your account, and must be at least 13 years old.</p>
-    <p><b>4. User content.</b> You retain rights to community posts, comments and images you submit, and grant IntMap a license to display them within the Service. You must not post unlawful, infringing, hateful or harmful content. We may remove content and suspend accounts.</p>
+    <p><b>4. User content.</b> You retain rights to community posts, comments and images you submit, and grant IntMap a license to display them within the Service. You must not post unlawful, infringing, hateful or harmful content. We may remove content and suspend accounts. You can see what your account holds (posts, saved articles and places, settings and the rest) and download a complete copy of it as one file at any time (Account ▸ Your data); deleting your account deletes all of it.</p>
     <p><b>5. Acceptable use.</b> No scraping, abuse, reverse engineering, disrupting the Service, or misusing third-party APIs.</p>
     <p><b>6. Third-party services & AI.</b> News, map/satellite tiles and AI features rely on third parties under their own terms. AI features run server-side (a Supabase Edge Function) using our own key, subject to a free daily usage limit — you never enter or store an AI key in your browser. To answer questions about current events, AI features may perform web searches, sharing only the necessary query text with the AI provider. So that an Atlas answer cut off by a dropped connection can be delivered again instead of being regenerated, the text of each answer is kept in our database (Supabase), tied to your account, for <b>at most about 30 minutes</b> (the 15-minute turn lifetime plus the 15-minute cleanup cycle) and is then deleted automatically. Any satellite-tile key you optionally enter is stored only in your browser.</p>
     <p><b>7. Intellectual property.</b> IntMap's code and design are protected. Third-party data belongs to its respective owners.</p>

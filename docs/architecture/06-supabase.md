@@ -12,7 +12,7 @@
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **39 表**（`ai_turn_answers` / `usage_counts` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
+実証手順も同じファイル）。現在 **41 表**（`ai_turn_answers` / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
 `user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` /
 `atlas_capability_vectors` / `usage_counts`（匿名の利用統計） /
 `community_*` 5 表 / `feedback` /
@@ -22,6 +22,20 @@
 ＋取り込みの計測 `news_ingest_runs` ＋運用者の監査証跡 `news_event_admin_actions`
 ＋ WHO Disease Outbreak News の症例数・死亡数 `who_don_extracts`
 ＋ 利用者のブラウザで起きたエラーの記録 `client_errors`）。
+
+**アカウントのデータは利用者自身が開ける（account-data-center）。** 「何を持っているか」
+（`account_data_inventory()`）・「全部ください」（`export_account_data()`）・「消してください」
+（`delete_account_data()`）の 3 つが**同じ 1 つの発見**——`_owned_by_user_cols()`（`auth.users` を指す列）——を歩く。
+だから後で足された表も、外部キーができた瞬間に数えられ・書き出され・消される。書き出しは削除より小さくなれない
+（pgTAP `18_account_data_center_test.sql` が同じアカウント・同じトランザクションで表ごとに突き合わせる）。
+各表の「何か・なぜ・いつまで・誰が書いたか」は `account_data_catalog` の 1 行（en+jp）で、**説明であって
+絞り込みではない**——説明の無い表も数えられ書き出され、検査だけが赤くなる。目録と書き出しは引数を取らず
+アカウントを `auth.uid()` で決める（他人の uuid を渡す扉が無い）。書き出しは共有バケツ `relay_take('account-export')`
+でアカウントごとに 1 時間 6 回（拒否は `{ok:false,error:'rate_limited'}`）。
+**マイプレイス（`saved_places`）** はアカウントに保存した場所。入口は `save_place()` だけで、位置（約 1 m）が同じなら
+同じ 1 行（2 度目は `created=false`）、上限は `saved_places_limit()`（1 アカウント 10,000・暴走の柵）。
+読む・名前やメモを変える・消すは所有者の RLS。どちらも Edge Function は無い（RPC と RLS だけ）。
+画面と Atlas の入口は §8（`js/account-data.js`・`js/my-places.js`・`account.*` / `places.*`）。
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](../MIGRATIONS.md)。

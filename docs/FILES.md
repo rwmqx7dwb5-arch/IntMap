@@ -788,7 +788,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  155 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  161 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -798,6 +798,7 @@ atlas-caps.js                     **能力ひとつ＝項目ひとつ**の仕組
                                   方針の表・カタログのブロック（catalogueBlocks）を導く関数、旧 switch の default
                                   （unknownAction）、schema の組み立て関数
 atlas-caps-modules.js             ⚠ 生成物（`node scripts/atlas-caps.mjs --write`）— 能力の名前空間ファイルの一覧（js/ から発見・遅延チャンクだけが読む）
+atlas-cap-account.js              Atlas の能力 — 自分のアカウントのデータの目録と書き出し（account.*。account-data-center）
 atlas-cap-attach.js               Atlas の能力 — 添付の取り寄せ（attach.recall）
 atlas-cap-chart.js                Atlas の能力 — グラフの合成（chart.compose）
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
@@ -808,6 +809,7 @@ atlas-cap-navigation.js           Atlas の能力 — ナビゲーション（na
 atlas-cap-news.js                 Atlas の能力 — ニュースの分類（news.category）
 atlas-cap-panel.js                Atlas の能力 — パネルを開く・閉じる（panel.*）
 atlas-cap-photo.js                Atlas の能力 — 写真の撮影地点探索（photo.locate）
+atlas-cap-places.js               Atlas の能力 — マイプレイス（アカウントに保存した場所）の保存・一覧・表示・削除（places.*。my-places）
 atlas-cap-reader.js               Atlas の能力 — 回答文の語句の解説（reader.gloss）
 atlas-cap-research.js             Atlas の能力 — 調べて答える（research.*。brief・地図報告・歴史地図・出来事）
 atlas-cap-routing.js              Atlas の能力 — 経路・到達圏・ドローン（routing.*）
@@ -912,7 +914,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 155能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 161能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1152,6 +1154,11 @@ usage-counts.js                   匿名の利用統計——ページ読み込�
                                   何を数えてよいかは `supabase/functions/usage-count/shape.js` と共有
                                   （anonymous-usage-counts）
 auth-ui.js                        アカウント・認証・Supabase のブート
+account-data.js                  「あなたのデータ」——アカウントが保持するものの目録（account_data_inventory）と完全な書き出し
+                                  （export_account_data・JSON 1 ファイル）。どの表かは DB が発見する（削除と同じ走査）——このファイルは
+                                  表の名前を 1 つも持たない。オンデマンド（account-data-center）
+my-places.js                      マイプレイス——アカウントに保存した場所（save_place が唯一の入口・同じ位置は 1 件）。表示はセッションの
+                                  ピン（HOST.addPin）を使う。アカウントのシート・ピンのポップアップ・Atlas から。オンデマンド（my-places）
 legal-text.js                     利用規約とプライバシーポリシーの**本文**（唯一の写し。JA/EN）
 legal.js                          その本文をアプリ内モーダルに表示する
 dialog.js                         ダイアログの唯一の契約 window.IntMapDialog —— 登録簿（open/adopt・anyOpen）、Esc・Tab トラップ・
@@ -1443,9 +1450,9 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全22本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（37本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（39本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
-  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない。19本）
+  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ アカウントのデータ（目録・書き出し・マイプレイス）。20本）
   functions/<name>/index.ts       Edge Functions（22本。一覧と各本の役割は Architecture.md §6.2。
                                   usage-count/shape.js は関数の中の宣言で、ブラウザも import する）
   functions/_shared/              関数ではないライブラリ（ai-provider.js / atlas-persona.js / aviation-codec.js /

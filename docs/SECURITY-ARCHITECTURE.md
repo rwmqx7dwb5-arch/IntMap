@@ -1079,6 +1079,18 @@ one thing vanilla CI could not otherwise reproduce.
 - **Account deletion (real, not logout):** `delete-account` Edge Function — JWT-gated,
   `confirm:"DELETE"` required, explicit owned-row purge across every user-owned table, then
   `auth.admin.deleteUser`. The account menu has a type-your-email confirmation.
+- **Access and portability, self-service (account-data-center):** `account_data_inventory()` (what the
+  account holds, per kind, with what / why / how long) and `export_account_data()` (every owned row, every
+  column, plus what `auth.users` / `auth.identities` hold, as one JSON file). Both are SECURITY DEFINER RPCs
+  with **no argument** — the account is `auth.uid()` from the verified JWT, so there is no parameter through
+  which another account could be named — EXECUTE for `authenticated` only, and both walk
+  `_owned_by_user_cols()`, the same discovery `delete_account_data` uses, so the copy cannot omit a table the
+  deletion would remove. The export is fenced per account by `relay_take('account-export')` (6, refilling
+  6/hour). Definer is required, not convenient: `feedback`, `bug_reports`, `donations` and
+  `community_reports` are admin-read under RLS, and their rows are the reader's own.
+- **Saved places (my-places):** `saved_places` has **no INSERT grant**; `save_place()` (definer, account from
+  `auth.uid()`, one row per position, a 10,000-row fence) is the only way in. The owner updates the words and
+  position through a column grant that excludes `user_id` and `created_at`, and deletes own rows under RLS.
 - **Passkeys (WebAuthn):** supabase-js's passkey API (`signInWithPasskey`, `registerPasskey`,
   `auth.passkey.list/delete`; on by default since the SDK stopped reading `experimental.passkey`) —
   sign-in on the login modal, enroll/list/remove in the account Security section. Feature-detected
