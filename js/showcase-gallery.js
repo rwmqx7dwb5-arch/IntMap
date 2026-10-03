@@ -104,7 +104,7 @@ export async function startTour(id) {
 /* a card was chosen: the search is over (its list closes, the phone's keyboard goes, the sheet comes down —
    the map is the answer, MAP_ANSWER_EVENT 'card'), the gallery closes, and the one thing is opened */
 function choose(kind, id) {
-  try { const res = document.getElementById('ms-results'); if (res && res.querySelector('.sg-strip')) { res.style.display = 'none'; res.innerHTML = ''; } } catch (_) { }
+  try { const res = document.getElementById('ms-results'); if (showingIn(res)) { res.style.display = 'none'; res.innerHTML = ''; } } catch (_) { }
   try { const inp = document.getElementById('ms-input'); if (inp && document.activeElement === inp) inp.blur(); } catch (_) { }
   closeGallery();
   if (kind === 'tour') return startTour(id);
@@ -147,7 +147,7 @@ export function showInResults(res) {
   return true;
 }
 /** the empty state is showing in this list */
-export const showingIn = (res) => !!(res && res.querySelector('.sg-strip'));
+const showingIn = (res) => !!(res && res.querySelector('.sg-strip'));
 
 /* ══ THE WHOLE GALLERY ═══════════════════════════════════════════════════════════════════════════
    A dialog of the app's one contract (js/dialog.js IntMapDialog.open — a name, Esc, the Tab trap, focus
@@ -193,7 +193,7 @@ function style() {
   if (styled) return; styled = true;
   const st = document.createElement('style'); st.id = 'im-gallery-css'; st.textContent = GALLERY_CSS; document.head.appendChild(st);
 }
-export const GALLERY_CSS = [
+const GALLERY_CSS = [
   /* the card, shared by the strip and the gallery */
   '.sg-card{display:flex;flex-direction:column;gap:3px;min-width:0;padding:0 0 10px;border:1px solid rgba(128,128,128,0.18);border-radius:14px;overflow:hidden;background:var(--input-bg);color:var(--text-main);font:inherit;text-align:left;cursor:pointer;transition:transform .12s ease,border-color .12s ease;}',
   '.sg-card:hover{border-color:var(--primary-color);}',

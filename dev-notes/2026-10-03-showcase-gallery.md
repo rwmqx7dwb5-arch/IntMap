@@ -42,3 +42,17 @@ date: 2026-10-03
 - ギャラリーのブラウザ検査（卓上で空の欄→カード→すべて見る→カードで地図、携帯でツアーのカード→授業モード）は 2/2 緑で
   走らせたが、新しい spec は p75 で課金されて core の天井を 0.7 分超えるので残していない。既存の起動（`landing-showcase.spec.js`）の中へ。
 - `dl-gdppc` の凡例「USD, nominal」は、過去の年では Maddison の実質値を塗っている。
+
+## 3. 上げた天井と、記録し直したもの
+
+- `check:perf`: async chunk `tours`（`showcase.js` と `tours.js`）を 23.0 → 31.6 kB。増えたのは作例 8 本の文（en+jp の題・説明・問い）と
+  捕えたリンク・画像の欄で、Atlas・ツアー・用途別ページ・ギャラリーが**同じ 1 つの宣言**を読む。ギャラリーの chunk へ寄せると
+  正本が 2 つになるので寄せなかった（ギャラリーだけが読む `TOPICS` は約 0.1 kB で、`landing.mjs --check` も読む）。
+- `check:surface`: `showcase-gallery.js` の大域の読み 4 つを記録（`--update`）。`IntMapSafe`（2）は持ち主 `safe-html.js` が静的ページ 2 枚から
+  bundler 無しで読まれるため `export` できない（1 つの関数を経由させると `check:static` の safe-output / output-taint が符号器と認めない）。`IntMapDialog`（`dialog.js`）と `IntMapI18N`（`i18n.js`）は
+  持ち主がまだ export していない（`module-graph.mjs --plan`）——持ち主を書き換えるのはこの作業の外。`tour-player.js` と同じ読み方。
+- cassette `rail-request-reached-nothing` を `--write` で記録し直した。「rail directions」の順位から `routing.isochrone`・`layers.railAxis`
+  が落ちたのは別名の変更ではなく、作例 `rail-gauges` の題で「about-and-showcase」の節が語 rail を持ち、rail を持つ節が 4 → 5 に
+  なって `DOC_TERM_MAX_DF`（4）を超え、rail が文書の証拠として 0 点になったため（main では 3 点）。判定（fail・reach/operations）は不変。
+- 入口の数え上げ（`usage-count/shape.js` の `SITE_PAGES` と `entry`）に `news-map`・`embed-map` を足し、`entry` の `maxDims` を 5 → 7
+  （閉じた次元の `maxDims` はその大きさ）。admin の成長タブにその 2 つの札。⚠ Edge Function `usage-count` の再配備が要る。
