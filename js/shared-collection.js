@@ -18,6 +18,7 @@
 import { IntMapLang } from './lang-registry.js';
 import { IntMapGeoEngine } from './geo-engine.js';   /* the renderer, through the contract */
 import { showPlaces, openView } from './my-places.js';
+import { MapState } from './map-state.js';   /* the address bar is written through the store's one door */
 
 /* the token the database mints: 32 hex characters (gen_random_uuid() without its dashes) */
 const TOKEN_RE = /^[0-9a-f]{32}$/;
@@ -25,7 +26,7 @@ const TOKEN_RE = /^[0-9a-f]{32}$/;
    (js/auth-ui.js redirectTo = origin + pathname — the query is gone). The token waits here, in THIS TAB only
    (sessionStorage), and the copy the visitor asked for is made once they are signed in — not asked for a second time
    (.agents/rules/one-pass-or-a-reason.md). js/auth-ui.js reads the same key to load this file. */
-export const PENDING_KEY = 'intmap-collection-pending';
+const PENDING_KEY = 'intmap-collection-pending';
 const pending = {
   get() { try { const t = String(sessionStorage.getItem(PENDING_KEY) || ''); return TOKEN_RE.test(t) ? t : ''; } catch (_) { return ''; } },
   set(t) { try { sessionStorage.setItem(PENDING_KEY, t); } catch (_) { } },
@@ -57,8 +58,6 @@ export function searchWithout(search) {
   return s ? '?' + s : '';
 }
 
-/** Which collection a share is: NULL = everything, '' = the unfiled ones, else its name. */
-export function shareKey(collection) { return collection == null ? '\u0000all' : String(collection); }
 
 function errOf(error) {
   const c = error && error.code;
@@ -119,7 +118,7 @@ export async function unpublish(DB, ids) {
 }
 
 /** The public read. @returns {Promise<{ok, title?, collection?, places?, views?, published_at?, updated_at?, error?}>} */
-export async function readShared(DB, token) {
+async function readShared(DB, token) {
   if (!DB) return { ok: false, error: 'unavailable' };
   if (!TOKEN_RE.test(String(token || ''))) return { ok: false, error: 'not_found' };
   try {
@@ -132,7 +131,7 @@ export async function readShared(DB, token) {
 }
 
 /** Keep a published collection in one's own account. @returns {Promise<{ok, collection?, placesAdded?, placesHad?, viewsAdded?, viewsHad?, error?}>} */
-export async function copyShared(DB, token, into) {
+async function copyShared(DB, token, into) {
   if (!DB) return { ok: false, error: 'unavailable' };
   try {
     const { data, error } = await DB.rpc('copy_shared_collection', { p_token: token, p_into: into == null ? null : String(into).trim().slice(0, 60) });
@@ -184,7 +183,7 @@ function ensureStyle() {
 
 /** Show a read collection: its places as pins (framed) and a card listing them and its maps.
  *  @returns {{pins: string[]}} */
-export function showShared(HOST, token, col) {
+function showShared(HOST, token, col) {
   const lang = HOST && HOST.lang;
   const T = (en, jp) => IntMapLang.t(lang, en, jp);
   ensureStyle();
@@ -236,7 +235,7 @@ export function showShared(HOST, token, col) {
     pending.clear();
     try { card.remove(); } catch (_) { }
     /* the address stops naming the collection, so a reload is the reader's own map again */
-    try { history.replaceState(history.state, '', location.pathname + searchWithout(location.search) + location.hash); } catch (_) { }
+    MapState.address(searchWithout(location.search), null);
   };
   document.body.appendChild(card);
   return { pins, copy: doCopy };

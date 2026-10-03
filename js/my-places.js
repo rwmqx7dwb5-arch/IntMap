@@ -148,7 +148,7 @@ async function updatePlace(DB, id, patch) {
 /* ── (collection-workspace) SAVED MAPS — the map itself, kept in the account ─────────────────────── */
 
 /** The map as it is now, as the share link writes it (js/map-state.js) — '' when the map names no view yet. */
-export function viewStateNow() {
+function viewStateNow() {
   try { const h = MapState.hash(); return MapState.carries(h) ? h.replace(/^#/, '') : ''; } catch (_) { return ''; }
 }
 
@@ -201,7 +201,7 @@ export async function listViews(DB) {
 }
 
 /** Delete saved maps by id. @returns {Promise<{ok, removed?, error?}>} */
-export async function removeViews(DB, ids) {
+async function removeViews(DB, ids) {
   if (!DB) return { ok: false, error: 'unavailable' };
   const list = (Array.isArray(ids) ? ids : [ids]).map(String).filter(Boolean);
   if (!list.length) return { ok: true, removed: 0 };

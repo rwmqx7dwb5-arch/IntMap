@@ -85,7 +85,8 @@ from unnest(array[
   -- (collection-workspace) an account's saved maps (inserted only through save_view()) and the collections it chose
   -- to publish read-only (inserted only through publish_collection(); read by the public only through
   -- shared_collection(token)) (supabase/tests/24_…).
-  'saved_views','collection_shares'
+  'saved_views',
+  'collection_shares'
 ]) as t;                                                    -- 46 assertions
 
 -- 2) RLS is ENABLED on every one of them (fail-closed: a table with RLS off fails).
