@@ -68,6 +68,7 @@ import { dataLayers, layerDeclaration } from './layer-manifest.js';   /* (map-la
 import { IntMapLang } from './lang-registry.js';
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
+import { layerRowLabel, registryBoxes } from './layer-row-label.js';   /* (ux-next) the row's name — one reading, shared with the command palette */
 
 const CAP_RUN = capabilityRunners(CAPABILITY_MODULES);   /* dispatch spelling → run, derived once from the entries (js/atlas-caps.js) */
 export function atlasConsole(HOST){
@@ -1063,7 +1064,7 @@ export function atlasConsole(HOST){
        whole-word / token-coverage with a threshold; (c) toggleLayer VERIFIES the checkbox reached the wanted state
        and returns the EXACT label it toggled so the note shows precisely what happened (no more silent confusion). */
     const _lnorm=s=>{ try{ return String(s==null?'':s).replace(/^[^\p{L}\p{N}]+/u,'').toLowerCase().replace(/\s+/g,' ').trim(); }catch(_){ return String(s==null?'':s).toLowerCase().replace(/\s+/g,' ').trim(); } }; const TRES = makeAtlasTurnResults({norm:_lnorm, capabilities:CAPS});   /* (#R441) which of this turn's results the reply is built from — js/atlas-turn-results.js. ⚠ HERE and not beside POLICY/TCONT above: `_lnorm` is a `const` on this line, so building it earlier reads it inside its own temporal dead zone. */ const GLEDGER = makeAtlasGeoLedger({norm:_lnorm, geoObject:GEOBJ.geoObject}); const ADM1 = makeAtlasAdmin1({});   /* (#R489) the conversation's resolved places, and the shipped first-level boundary index. ⚠ `geoObject` is handed IN so the ledger stores #R397's shape and #R397's provenance classes rather than inventing a second opinion about what a place record is. */
-    function layerCatalog(){ const out=[]; document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ const lab=cb.closest('label')||cb.closest('.lyr-row'); let disp=''; if(lab){ const sp=lab.querySelector('span[data-i18n], span.ec-lbl, span[id$="-lbl"], .geo-label'); disp=(sp?sp.textContent:(lab.textContent||'')); } disp=disp.replace(/\s+/g,' ').trim(); const txt=_lnorm(disp); if(!txt) return; out.push({cb, label:disp, txt, id:(cb.id||'').toLowerCase(), dl:(cb.getAttribute('data-layer')||'').toLowerCase()}); }); return out; }
+    function layerCatalog(){ const out=[]; registryBoxes().forEach(cb=>{ const disp=layerRowLabel(cb); const txt=_lnorm(disp); if(!txt) return; out.push({cb, label:disp, txt, id:(cb.id||'').toLowerCase(), dl:(cb.getAttribute('data-layer')||'').toLowerCase()}); }); return out; }
     function layerCatalogText(){ try{ const seen=new Set(),out=[]; layerCatalog().forEach(c=>{ const n=c.label; if(!n||n.length<2) return; const k=c.txt; if(seen.has(k)) return; seen.add(k); out.push(n); }); return out.slice(0,170).join('; '); }catch(_){ return ''; } }
     /* (#R52) The user re-reported "レイヤーによっては混同している" (layer confusion). Verified real failures with the
        LIVE catalogue: "rain" resolved to "Water & terrain labels" (it matched the letters "rain" INSIDE "ter-rain"),
@@ -1136,7 +1137,7 @@ export function atlasConsole(HOST){
       'country indicators':'bx-wbind','country indicator':'bx-wbind','indicator browser':'bx-wbind','国別指標':'bx-wbind','指標ブラウザ':'bx-wbind'
     };
     function _cbByKey(key){ if(!key) return null; let cb=document.getElementById(key); if(cb&&cb.matches&&cb.matches('input[type=checkbox]')) return cb; cb=null;   /* (#R225) the `data-layer` convention retired with the geopolitics rows */ return cb||null; }
-    function _labelOf(cb){ try{ const lab=cb.closest('label')||cb.closest('.lyr-row'); let disp=''; if(lab){ const sp=lab.querySelector('span[data-i18n], span.ec-lbl, span[id$="-lbl"], .geo-label'); disp=(sp?sp.textContent:(lab.textContent||'')); } return disp.replace(/\s+/g,' ').trim(); }catch(_){ return ''; } }
+    function _labelOf(cb){ return layerRowLabel(cb); }
     function _bestRow(cat,q0){ const variants=[q0]; if(q0.length>3&&q0.endsWith('s')) variants.push(q0.slice(0,-1));   /* ⚠⚠⚠ (#R802) THE MATCHER IS HANDED THE REGISTER TO SEARCH, BECAUSE THERE ARE TWO OF THEM. The layer panel's checkboxes and `window.IntMapLayers` are separate registers that name the SAME layers differently — measured on production 2026-09-17: `layers.toggle` answered to 「Live aircraft traffic」, the reading register calls that row `aircraft`, and its checkbox is `dl-planes`. One scorer, two registers: this body is #R52's word-aware scoring unchanged, with `cat` a parameter instead of a capture, so the read door below cannot drift from the toggle door. */
       let best=null,bs=0;
       cat.forEach(c=>{ const t=_subnorm(c.txt), id=c.id, dl=c.dl; let words; try{ words=t.split(/[^\p{L}\p{N}]+/u).filter(Boolean); }catch(_){ words=t.split(/[^a-z0-9]+/).filter(Boolean); } /* Unicode split keeps CJK/Cyrillic/accented words so layer matching works in every UI language */

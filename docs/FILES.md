@@ -842,7 +842,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  184 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  186 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -960,7 +960,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全184を検索・到達可能 183）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全186を検索・到達可能 185）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -976,9 +976,9 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 184能力ぶんの型・列挙・範囲と `required`/`anyOf`。
-atlas-schemas.js                  **引数の schema**（#R406）— 184 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
-atlas-schemas.js                  **引数の schema**（#R406）— 184 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
+atlas-schemas.js                  **引数の schema**（#R406）— 186能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 186 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
+atlas-schemas.js                  **引数の schema**（#R406）— 186 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）
@@ -1032,6 +1032,9 @@ countries-ui.js                   Countries タブと国の詳細
 companies-ui.js                   Companies タブ・比較ビュー・ダッシュボード
 company-panel.js                  企業プロフィールのパネル（概要・財務・事業・拠点・進出国・組織・出典） IntMapCompanyPanel
 company-facilities.js             選択中の企業の拠点を地図に描く（クラスタリング・6グループ・施設カード） IntMapCompanyFacilities
+company-footprint.js              **企業の拠点の地図**——全企業の公表拠点を 1 枚に（data/companies/footprint.json）。グループ・業種の
+                                  切り替え、表示範囲の企業と国の集計、`query()`（Atlas `data.companySites`）。カメラは動かさない。
+                                  遅延（IntMapLazy `companyFootprint`） IntMapCompanyFootprint
 dash-extended.js                  ダッシュボードのキャッシュと拡張情報カード
 widgets.js                        ウィジェット板の入口（export widgets）——
                                   HOST との接続と window.IntMapWidgets2 の公開契約だけを持つ
@@ -1189,12 +1192,18 @@ ui-device.js                      **画面配置と端末の持ち主** window.I
                                   `im-dev-*`・`im-portrait`/`im-landscape` を保つ。
 workspace.js                      浮遊ウィンドウのワークスペースモード（デスクトップ）
 session-tabs.js                   タブバーと、その裏の OS 登録と、両方を復元するセッション
-keyboard-shortcuts.js             キーボードと、それを一覧するカード
+keyboard-shortcuts.js             キーボードと、それを一覧するカード。Ctrl/⌘+K（コマンドパレット）と OS コマンド `ui.palette`
+command-palette.js                **コマンドパレット**（Ctrl/⌘+K）——操作（コントロールに結ばれた OS コマンド・題を宣言した OS コマンド・
+                                  ツールバー）・レイヤーの登録簿・端末上の地名・企業・作例とツアーを 1 つの欄で探し、各持ち主の
+                                  経路で実行する。最後の行は Atlas。Atlas `panel.palette`。必要になったときに読む
+layer-row-label.js                レイヤー登録簿の 1 行が読者に見せる名前（Atlas とコマンドパレットが同じ読み方をする）
 onboarding.js                     ウェルカムカード・案内デモ・進捗コントロール
 screenshot.js                     スクリーンショットのボタン（busy 状態・`capture-mode`・フラッシュ・保存。
                                   **絵そのものは atlas-view-capture.js**——Atlas と同じ1本を呼ぶ）
 sidebar-style.js                  左サイドバーの材質（不透明／フロスト2種）と、フロスト時にカメラへ渡す左 inset
-search-geocode.js                 検索欄——問い合わせの前処理・ジオコーディング・結果カード
+search-geocode.js                 検索欄——問い合わせの前処理・ジオコーディング・結果カード。`goToLocal`（端末上の 1 行へ同じ飛び方で）
+wiki-lookup.js                    地物の Wikipedia 記事を**照会用の欄**（wikidata・name:<言語>・name:en…）から引く。表示用の `name`
+                                  （多言語を並べた表記）は最後に、1 つの名前のときだけ。地名ポップアップの Wikipedia ボタンが使う
 place-dossier.js                  地点プロファイル——1 地点について地図が持つもの（名前と行政区分・国・標高・表示中レイヤーの
                                   値・現地時刻と日の出入り）を 1 つの記録にし、カードに描く。Atlas `research.placeProfile` も
                                   同じ記録を返す。読めない項目は理由つきの行（docs/architecture/07-map.md §7.3f）
@@ -2045,7 +2054,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 135 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 136 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

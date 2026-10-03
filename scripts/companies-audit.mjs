@@ -6,7 +6,7 @@
  *  drop a value it cannot source. This is the gate that proves it did — because "the builder is
  *  careful" is a claim about code, and the shipped bytes are the thing users read.
  *
- *  The twenty-one checks are listed in docs/COMPANIES.md §7 and numbered the same way there, so a red
+ *  The twenty-two checks are listed in docs/COMPANIES.md §7 and numbered the same way there, so a red
  *  line here names a paragraph you can go and read. Two of them are worth saying out loud:
  *
  *    ⑦  a facility at 0,0 — "no coordinate" written as a point in the Gulf of Guinea. Every dataset
@@ -25,6 +25,7 @@ import { readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { codeOnly } from './code-only.mjs';
+import { footprintDrift } from './companies/footprint.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIR = join(ROOT, 'data', 'companies');
@@ -244,6 +245,10 @@ function main() {
   }
 
   /* ── output ─────────────────────────────────────────────────────────────── */
+  /* ㉒ (ux-next) data/companies/footprint.json — every facility of every company, the reader of «who is here?» — is
+     exactly what the profiles say today (scripts/companies/footprint.mjs derives it; build.mjs writes both) */
+  { const d = footprintDrift(DIR); if (d) fail('㉒', d, 'footprint.json'); }
+
   const fails = findings.filter((f) => f.level === 'fail');
   const warns = findings.filter((f) => f.level === 'warn');
   const tiers = cov.reduce((a, c) => { a[c.coverage] = (a[c.coverage] || 0) + 1; return a; }, {});
@@ -285,7 +290,7 @@ function main() {
       if (list.length > 4) console.log('        … and ' + (list.length - 4) + ' more');
     }
   } else {
-    console.log('\n  all twenty-one checks pass · ' + pendingCount + ' of ' + profCount + ' profiles still osmPending (cleared a batch a week by .github/workflows/companies-refresh.yml)');
+    console.log('\n  all twenty-two checks pass · ' + pendingCount + ' of ' + profCount + ' profiles still osmPending (cleared a batch a week by .github/workflows/companies-refresh.yml)');
   }
 
   const out = arg('--json', '');

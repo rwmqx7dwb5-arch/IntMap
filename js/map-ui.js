@@ -2468,7 +2468,17 @@ export function labelPopup(HOST){
           /* (#R20) Wikipedia button — shown only when an article actually EXISTS for this name
              (REST summary probe, CORS*). Opens the article in a new tab. */
           const w=document.querySelector('.plc-wiki');
-          if(w){ const wl=({jp:'ja',de:'de',ru:'ru',es:'es'})[HOST.lang]||'en';   /* (#R108) all languages, not just ja/en */
+          if(w){ /* ⚠⚠ (ux-next) THE READER'S WIKI AND EVERY TITLE COME FROM THE NAME FIELDS THE LABEL READS. Measured on
+               production: the Libya label asked en.wikipedia for «ⵍⵉⴱⵢⴰ ليبيا Libya» — OSM's side-by-side DISPLAY name —
+               and 404'd, while the same feature carried name:en «Libya» and name:ja «リビア». js/wiki-lookup.js turns the
+               feature's own query fields into (wiki, title) targets; the display `name` is asked last and only when it
+               is one name. The reader's wiki is the language of the first label key (js/place-labels.js), which also
+               gives fr/ko/zh readers their own wiki — the old five-entry table sent them to English. */
+            const _keys=(()=>{ try{ return (window.IntMapOsmNameKeys&&window.IntMapOsmNameKeys(HOST.lang))||[]; }catch(_){ return []; } })();
+            /* the module that knows how a feature names its article is fetched by the popup that needs it (not at boot); the
+               reader's wiki is the language of the first `name:*` key (`siteOfKey`), so fr/ko/zh readers get their own wiki */
+            import('./wiki-lookup.js').then(W=>{
+            const wl=_keys.map(W.siteOfKey).find(Boolean)||'en';
             /* (#R94n) a historical entity passes an explicit Wikipedia title (opts.wiki: "German Empire",
                "Kingdom of Italy", "Qajar Iran"…) so the button opens the ERA article, not the modern namesake. */
             const wtitle=(opts&&opts.wiki)||name;
@@ -2479,10 +2489,18 @@ export function labelPopup(HOST){
                CURRENT-language article title via the EN langlinks API first, then open that; only fall back to the
                English article when no langlink exists (fallback is acceptable per request). */
             const _langlink=(title)=>fetch('https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&prop=langlinks&lllang='+wl+'&lllimit=1&titles='+encodeURIComponent(String(title).replace(/ /g,'_'))).then(r=>r.ok?r.json():null).then(j=>{ try{ const pg=j&&j.query&&j.query.pages; for(const k in pg){ const ll=pg[k].langlinks; if(ll&&ll[0]&&ll[0]['*']) return ll[0]['*']; } }catch(_){} return null; }).catch(()=>null);
-            if(wl==='en'){ _probe('en',wtitle).then(_showW); }
+            /* ⚠ (ux-next) THE ENGLISH READER'S BRANCH USED TO COME FIRST and probed `wtitle` — the display name — before the
+               modern/historical split, so the Libya label 404'd for exactly the readers it was reported by. The split is now the
+               first question: a historical entity's explicit English title, else the feature's query fields. */
+            if(opts&&opts.wiki&&wl==='en'){ _probe('en',wtitle).then(_showW); }
             else if(opts&&opts.wiki){   /* historical: English title → localized via langlinks, else EN fallback */
               _langlink(wtitle).then(loc=>{ const t2=loc||wtitle; _probe(wl,t2).then(j=>{ if(!_showW(j)) _probe('en',wtitle).then(_showW); }); }); }
-            else { /* modern place: name is already in the current language */ _probe(wl,wtitle).then(j=>{ if(_showW(j)) return; _probe('en',wtitle).then(_showW); }); } }
+            else { /* a modern place: the feature's query fields, in order (js/wiki-lookup.js) */
+              const P=opts&&opts.props, props=P||{name};
+              const refused=(k)=>{ try{ return !!(P&&window.IntMapOsmName&&P[k]&&window.IntMapOsmName(P,[k])!==String(P[k])); }catch(_){ return false; } };
+              const _json=(u)=>readWithin(u,clockFor(u,'direct')).then(r=>r.ok?JSON.parse(r.text):null).catch(()=>null);   /* (fetch-deadline-layer) each probe ends — a hung article lookup must not hold the walk */
+              W.findArticle(W.wikiTargets(props,_keys,{refused}),_json).then(hit=>{ if(hit) _showW({content_urls:{desktop:{page:hit.url}}}); }).catch(()=>{}); }
+            }).catch(()=>{}); }
           /* (#R20) AI Research Assistant entry point */
           const ai=document.querySelector('.plc-ai');
           /* (#R224) Atlas is on demand — fetch it, and only fall back to the older research panel if
@@ -2640,7 +2658,7 @@ export function labelPopup(HOST){
       /* (#R9/#12) The red area/dot highlight was unwanted — only the copyable popup remains. */
       const f=e.features[0];
       const eg=_eraGeom(f);
-      _deferLabel(e,()=>{ if(readPlace(f,e)) return; showPopup(labelAnchor(f,e),name,isCountry,eg?{title:_bothNames(p,name,f),geojson:eg.geo,refine:eg.refine,sub:eg.sub}:{title:_bothNames(p,name,f)}); }); }; }
+      _deferLabel(e,()=>{ if(readPlace(f,e)) return; showPopup(labelAnchor(f,e),name,isCountry,eg?{title:_bothNames(p,name,f),geojson:eg.geo,refine:eg.refine,sub:eg.sub,props:p}:{title:_bothNames(p,name,f),props:p}); }); }; }
     /* (#R62) water / terrain labels are now clickable too (popup with Copy/Wikipedia/AI brief; NO highlight). */
     function onGeoLabel(){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const f=e.features[0]; const p=f.properties||{};
       const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
@@ -2648,7 +2666,7 @@ export function labelPopup(HOST){
       /* (#R252) the curated sea gazetteer has no endonym column, so only the tile-sourced water /
          river / peak labels can carry both names — those are `name` + the same `name:*` fields. */
       const both=(f.layer&&f.layer.id==='geo-sea')?name:_bothNames(p,name);
-      _deferLabel(e,()=>{ showPopup(labelAnchor(f,e),name,false,{noOutline:true,noAreaTools:true,title:both});
+      _deferLabel(e,()=>{ showPopup(labelAnchor(f,e),name,false,{noOutline:true,noAreaTools:true,title:both,props:(f.layer&&f.layer.id==='geo-sea')?null:p});
         /* (#R217) the whole property bag, not the one name the popup shows — see js/river-course.js */
         if(f.layer&&f.layer.id==='ofm-river') highlightRiver(p,e.lngLat); }); }; }   /* (#R123) water/terrain = no area → no Isolate/Move */
     /* ══ (#R201) THE ADMIN-1 LABEL IS A PLACE LABEL, SO IT IS ONE HERE TOO ═══════════════════════════
@@ -2723,7 +2741,7 @@ export function labelPopup(HOST){
             /* (#R252) the padded tap is the same click, so it gets the same two-name heading */
             const ttl=(lid==='geo-sea')?nm:_bothNames(p,nm,near[0]);
             const peg=_eraGeom(near[0]);   /* (#R564) the padded tap is the same click, so it gets the same era polygon */
-            if(nm){ showPopup(labelAnchor(near[0],e),nm,lid==='ofm-country',geoLbl?{noOutline:true,noAreaTools:true,title:ttl}:(peg?{title:ttl,geojson:peg.geo,refine:peg.refine,sub:peg.sub}:{title:ttl}));
+            if(nm){ showPopup(labelAnchor(near[0],e),nm,lid==='ofm-country',geoLbl?{noOutline:true,noAreaTools:true,title:ttl,props:(lid==='geo-sea')?null:p}:(peg?{title:ttl,geojson:peg.geo,refine:peg.refine,sub:peg.sub,props:p}:{title:ttl,props:p}));
               if(lid==='ofm-river') highlightRiver(p,e.lngLat);   /* (#R210) the padded tap is the same click */
               return; } }
         }

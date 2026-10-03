@@ -307,6 +307,8 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.changes","changes","periodChanges,whatChanged,timeDiff","time","none","","explanation","session","none","place?","","external"],
       ["settings.mapReading","mapReading","readingMode,screenReaderMode,readAloud,describeMap,describeHere","settings","none","","explanation","persist","none","",""],
       ["settings.offlineMaps","offlineMaps","offlineMap,saveMapOffline,downloadMap,offlineRegion,portableMap,mapWithoutInternet","settings","none","","explanation","persist","explicit","",""],
+      ["panel.palette","palette","commandPalette,openPalette,findAnything","panel","panel","panel.palette","panel","session","none","",""],
+      ["data.companySites","companySites","companyFootprint,whoIsHere,companiesHere,industryMap","data","companySites","map.companySites","map,panel,explanation","session","none","","companyFootprint"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
@@ -961,6 +963,24 @@ export function makeAtlasCapabilities(HOST, OPTS) {
          js/map-tools.js declares itself there, this verifier names the one source the reach writes,
          and reads it AFTER the call: features there = the area is up, redraw or not; none =
          `not_rendered`. The refusal is not removed — an empty source is still a failure to render. */
+      /* ══ (ux-next) EVERY COMPANY'S SITES — ASKED OF THE RENDERER UNDER THE EFFECT KEY THE MODULE CLAIMS ══════
+         js/company-footprint.js claims its source as 'map.companySites' when it draws, so the verdict counts the
+         features on the map now — not a diff (a second «show» of the same sites moves no count and is still drawn).
+         `query` draws nothing and `hide` takes it down: both are complete when the call says so. A renderer that
+         cannot be asked (-1) is unobserved, never «not rendered» (.agents/rules/one-pass-or-a-reason.md §5). */
+      companySites: {
+        observe: function () { return { sites: ownedFeatures('map.companySites') }; },
+        verify: function (ctx, args, before, after, raw) {
+          var html = (raw && raw.html) || '';
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: html };
+          var act = (args && args.action) || 'show';
+          if (act === 'query' || act === 'hide') return { status: 'completed', code: legacyCode(raw) || 'ok', html: html };
+          var n = after ? +after.sites : -1;
+          if (n > 0) return { status: 'completed', code: 'ok', observed: { companySites: { features: n } }, html: html };
+          if (n < 0) return { status: 'unobserved', produced: [], code: 'not_observable', observed: { companySites: null }, html: html };
+          return { status: 'partial', produced: [], code: 'not_rendered', observed: { companySites: { features: 0 } }, html: html };
+        }
+      },
       isochrone: {
         /* (atlas-observer-undo) the reach is asked of the renderer by its effect key — js/map-tools.js
            claims `im-iso-src` under 'map.isochrone' where it creates it — so no source id lives here */

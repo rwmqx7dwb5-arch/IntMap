@@ -25,6 +25,7 @@
  *    node scripts/companies/build.mjs --no-gleif      skip GLEIF
  * ==========================================================================*/
 import { writeFileSync, mkdirSync, rmSync, existsSync, readdirSync, readFileSync } from 'node:fs';
+import { writeFootprint } from './footprint.mjs';   /* (ux-next) the all-companies footprint is derived from what this writes */
 import { join } from 'node:path';
 import {
   ROOT, sparql, entities, httpJSON, claims, best, dvItem, dvStr, dvCoord, dvQuantity,
@@ -870,6 +871,9 @@ async function main() {
   writeFileSync(indexPath, JSON.stringify({ schema: 1, generatedAt: TODAY, companies: indexRows }));
 
   log('  wrote ' + indexRows.length + ' index rows and ' + n + ' profiles');
+  /* (ux-next) …and the footprint, from the profiles just written — the two are never shipped out of step
+     (scripts/companies-audit.mjs ㉒ fails if they are) */
+  { const fp = writeFootprint(OUT_DIR); log('  footprint: ' + fp.f.length + ' facilities of ' + fp.companies.length + ' companies'); }
   log('  coverage: full ' + report.full + ' / core ' + report.core + ' / basic ' + report.basic + ' / stub ' + report.stub);
   log('  facilities published: ' + report.facilities);
   if (report.noIdentity) log('  ⚠ ' + report.noIdentity + ' manifest rows had no confirmable identity and did NOT ship');

@@ -85,6 +85,7 @@ export const ACTIONS = Object.freeze({
   coSort: { on: 'change', run: (el) => call('setCoSort', el.value) },
   coSortDir: { on: 'click', run: () => call('toggleCoSortDir') },
   coFilterToggle: { on: 'click', run: () => call('_coSfToggle') },
+  coFootprint: { on: 'click', run: () => { try { window.IntMapOS.exec('company.footprint', { source: 'ui' }); } catch (_) { } } },   /* (ux-next) every company's sites on one map */
   coFilterAdd: { on: 'click', run: () => call('_coSfAdd') },
   coFilterClear: { on: 'click', run: () => call('_coSfClear') },
   coFilterRemove: { on: 'click', run: (el) => ifIndex(el, (i) => call('_coSfRemove', i)) },
