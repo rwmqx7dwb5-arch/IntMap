@@ -83,7 +83,19 @@ claimKind・同名異地の除外・台帳の整合・ランク付き結合と H
 `data/hist-fidelity.json` の `selfOverlaps` を廃し `claims` に置換（同名異地を数えていたため）。被覆 2000・2019 は
 上がった（上の 1）。`data/border-coast.js` は fill の環番号が動いたので再生成。
 `data/governance-ledger.json` に新しい 2 件（`hist-coverage-holes.json`・`hist-claims.json`）を「未宣言」として
-記録した（160 件・2,158 facet）。理由: どちらも兄弟の `data/hist-fidelity.json` と同じ**門の観測台帳**で、中身は
+記録した（162 件・2,190 facet）。⚠ 1 件ずつ 2 か所に載る——書き手の側（`scripts/hist-fidelity.mjs → data/…`）と、
+束の側（`data/hist-claims`・`data/hist-coverage-holes`、兄弟の `data/hist-fidelity` と同じ「note の文でしか述べていない」）。
+門の母集合は `git ls-files` なので、束の側は**ファイルが追跡されてから**現れる（最初の `--update` は 160・2,158 だった）。理由: どちらも兄弟の `data/hist-fidelity.json` と同じ**門の観測台帳**で、中身は
 出荷済みの束（CC0・public domain・GPL-3.0・CShapes が混在）から測ったもの——**1 つのライセンス値はこのファイルに
 ついて真ではない**ので、値を作らず未宣言として数える（`intmap-data-must-not-claim-an-author-it-lacks`）。出自
 （builtBy・cadence）は `GOVERNANCE` に値として書いた。
+
+### check:perf の天井を上げた理由（`--update`、超えた 2 行だけ）
+
+`eager.gzip` 1523.9 → 1531.9 kB・`eager.brotli` 1149.9 → 1156.1 kB。同じ機械で測った内訳:
+base（`29f08177` を素のまま build）がすでに gzip 1529.4・brotli 1154.2 kB（天井は CI の機械の値）で、
+この作業の分は **gzip +2.5 kB・brotli +1.9 kB**。中身は起動経路にある `js/time-admin1.js`（記録の無い土地を
+描く `_know`・注記・`coverage()`）と `js/hist-scale.js`（`claimKind`）の増分。斜線を作る `js/hist-knowledge.js` は
+使うときの動的 import なので起動費用には入らない（新しい遅延チャンク 4.4 kB）。
+同じ門は `data/hist-claims.json` が起動経路（`js/time-admin1.js`）から到達できるのに `js/boot-stage.js` が
+いつ読むかを述べていないことも落とした。行を 1 つ足した（`need`——時間の機械で区分を描いているときだけ読む）。
