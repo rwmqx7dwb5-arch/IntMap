@@ -87,14 +87,18 @@ export function settleDetent(vis, v, heights) {
      tab      a tab of the sheet was chosen — its content is the answer (Atlas writes in
               it and draws on the map at once) — half, unless the reader had it higher
               themselves; a raise the FIELD made is not the reader's                     → half
+     read     the answer is a card IN THE SHEET that the reader must read to the end (Atlas's
+              sample card before login: its last lines are the plan and the login button) —
+              MEASURED at half: the card is 459 px, the Atlas panel's window 170 px, and the
+              button sat 234 px below the screen                                          → full
    ⚠ «never higher»: an answer lowers the sheet; it never lifts a sheet the reader put lower. */
 /* The one way a module says «I have put an answer on the map»: `detail.kind` is a row above ('card'). The
    module states what it did; it does not choose a detent (that is this table's job, and only on a phone). */
-export const MAP_ANSWER_EVENT = 'intmap-map-answer';
+export const MAP_ANSWER_EVENT = 'intmap-map-answer';   /* detail.kind: 'card' (on the map) · 'read' (a card in the sheet that needs the room) */
 const RANK_OF = Object.freeze({ hidden: 0, min: 1, half: 2, full: 3 });
 const lower = (a, b) => (RANK_OF[a] <= RANK_OF[b] ? a : b);
 /**
- * @param {'type'|'leave'|'card'|'move'|'tab'} activity
+ * @param {'type'|'leave'|'card'|'move'|'tab'|'read'} activity
  * @param {{current:string, before?:string|null}} s  current — the detent now · before — where the sheet was
  *   when the search field raised it (null when the field has not raised it)
  * @returns {string} the detent to rest at
@@ -107,6 +111,7 @@ export function detentFor(activity, s) {
     case 'leave': return before ? lower(cur, before) : cur;
     case 'card': return lower(cur, 'min');
     case 'move': return lower(cur, 'half');
+    case 'read': return 'full';
     case 'tab': return (before || RANK_OF[cur] < RANK_OF.half) ? 'half' : cur;
     default: return cur;
   }

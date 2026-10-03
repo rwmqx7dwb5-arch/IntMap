@@ -54,6 +54,12 @@ export function mobileUI(HOST){
        inline copy because js/mobile-map-input.js reads it from there as a CSSOM string. */
     const coverHosts=[mapContainer, mapContainer&&mapContainer.parentElement].filter(Boolean);
     const setCover=(px)=>{ for(const h of coverHosts) h.style.setProperty('--sheet-cover', px+'px'); };
+    /* (mobile-card-reach) the data credit sits just above the sheet, and its height is not fixed (the attribution grows
+       to two lines as layers are switched on). A card the map holds ends above it, so the height is MEASURED, here, and
+       written beside --sheet-cover; css/intmap.css `#map-container > .country-popup` reads it. */
+    try{ const credit=document.getElementById('map-credit');
+      if(credit && window.ResizeObserver) new ResizeObserver(()=>{ const h=credit.checkVisibility&&!credit.checkVisibility()?0:Math.round(credit.getBoundingClientRect().height);
+        for(const host of coverHosts) host.style.setProperty('--m-credit-h',(h>0?h:23)+'px'); }).observe(credit); }catch(_){}
 
     /* ══ (mobile-shell) LAYERS / TOOLS / MAP / CHRONOS / SETTINGS ARE SCREENS OF THE ONE SHEET ═══════════════
        They were separate overlays — #mo-sheet and #tools-sheet slid up over a full-viewport scrim, the base-map
@@ -407,6 +413,19 @@ export function mobileUI(HOST){
        3-D engine does not, so the fingers down OFF the sheet are counted too. The sheet's own padding moves are
        marked by camPad and are not answers. */
     bus.on(MAP_ANSWER_EVENT,(e)=>{ if(!mq.matches) return; const k=e&&e.detail&&e.detail.kind; if(k) go(k); });
+    /* (mobile-card-reach) ③ a card the map HOLDS (a `.country-popup` mounted in #map-container: volcano, aircraft, satellite,
+       company, news-intel…) is an answer on the map by being there — nine modules open one, and none of them says so.
+       The fact is read once, here: a direct child of the map that is a card and has just become visible. (Direct children only:
+       the map's subtree is every marker, and its style writes are not this question.) */
+    try{ if(mapContainer){ const watched=new WeakSet(), shown=new WeakSet();
+      const cardOpened=(recs)=>{ if(!mq.matches) return; let opened=false;
+        for(const r of recs){ const t=r.target; const vis=t.style.display!=='none' && t.isConnected && getComputedStyle(t).display!=='none';
+          if(vis&&!shown.has(t)) opened=true; if(vis) shown.add(t); else shown.delete(t); }
+        if(opened) go('card'); };
+      const cardIo=new MutationObserver(cardOpened);
+      const watch=(n)=>{ if(n.nodeType===1 && n.classList.contains('country-popup') && !watched.has(n)){ watched.add(n); cardIo.observe(n,{ attributes:true, attributeFilter:['style'] }); } };
+      mapContainer.querySelectorAll(':scope > .country-popup').forEach(watch);
+      new MutationObserver((recs)=>{ for(const r of recs) r.addedNodes.forEach(watch); }).observe(mapContainer,{ childList:true }); } }catch(_){}
     { const fingers=new Set();
       window.addEventListener('pointerdown',(e)=>{ if(!sidebar.contains(e.target)) fingers.add(e.pointerId); },true);
       ['pointerup','pointercancel'].forEach((t)=>window.addEventListener(t,(e)=>{ fingers.delete(e.pointerId); },true));
