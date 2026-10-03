@@ -240,6 +240,8 @@ export async function openMyPlaces(HOST) {
   const saveView = el('button', { cls: 'acct-btn', id: 'mpl-save-view', text: T('Save the map centre', '地図の中心を保存') });
   saveView.dataset.effect = 'private';   /* writes the reader's own row (save_place) — what Atlas's control press reads (scripts/data-effects.mjs) */
   const showAll = el('button', { cls: 'acct-btn acct-btn-quiet', id: 'mpl-show-all', text: T('Show all on the map', 'すべて地図に表示') });
+  /* (watch-places) a saved place can be watched — earthquakes, warnings, volcanoes and news near it (js/place-watch.js) */
+  const watchBtn = el('button', { cls: 'acct-btn acct-btn-quiet', id: 'mpl-watch', text: T('Watch places…', '見守る場所…') });
   const close = el('button', { cls: 'acct-close', id: 'mpl-close', text: T('Close', '閉じる') });
   const sheet = el('div', { cls: 'acct-sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'mpl-h', tabindex: '-1' }, [
     el('h2', { cls: 'acct-h', id: 'mpl-h', text: T('My places', 'マイプレイス') }),
@@ -247,7 +249,7 @@ export async function openMyPlaces(HOST) {
     el('div', { cls: 'acct-grp-t', text: T('Save a place', '場所を保存') }),
     el('div', { cls: 'acct-card' }, [el('div', { cls: 'mpl-add' }, [name, coll, note]), el('div', { cls: 'mpl-btns' }, [saveView])]),
     msg,
-    el('div', { cls: 'mpl-btns' }, [showAll]),
+    el('div', { cls: 'mpl-btns' }, [showAll, watchBtn]),
     list, close,
   ]);
   const m = el('div', { id: 'mpl-modal' }, [sheet]);
@@ -312,6 +314,7 @@ export async function openMyPlaces(HOST) {
     places = r.places; render();
   };
   showAll.onclick = () => { showPlaces(HOST, places); shut(); };
+  watchBtn.onclick = () => { shut(); import('./place-watch.js').then((M) => M.openWatchDigest(HOST)).catch(() => { }); };
   saveView.onclick = async () => {
     let c = null, z = null;
     try { const GE = IntMapGeoEngine; if (GE && GE.hasRenderer && GE.hasRenderer()) { c = GE.camera.getCenter(); z = GE.camera.getZoom(); } } catch (_) { }

@@ -12,7 +12,7 @@
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](../DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **45 表**（`news_event_entities` / `ai_turn_answers` / `atlas_notebook_entries`（Atlas の調査ノート・同期をオンにした読者のみ） / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
+実証手順も同じファイル）。現在 **46 表**（`place_watches`（見守る場所） / `news_event_entities` / `ai_turn_answers` / `atlas_notebook_entries`（Atlas の調査ノート・同期をオンにした読者のみ） / `usage_counts` / `saved_places` / `account_data_catalog` / `profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
 `user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` / `relay_rate_buckets` /
 `atlas_capability_vectors` / `usage_counts`（匿名の利用統計） /
 `community_*` 5 表 / `feedback` /
@@ -37,6 +37,11 @@
 同じ 1 行（2 度目は `created=false`）、上限は `saved_places_limit()`（1 アカウント 10,000・暴走の柵）。
 読む・名前やメモを変える・消すは所有者の RLS。どちらも Edge Function は無い（RPC と RLS だけ）。
 画面と Atlas の入口は §8（`js/account-data.js`・`js/my-places.js`・`account.*` / `places.*`）。
+
+**見守る場所（`place_watches`）** は保存場所 1 件に 1 行（`place_id` が主キー・場所を消すと消える）。半径・種類ごとの基準
+（NULL＝見守らない）・オン/オフ・既読（`seen_at`・`seen_keys` ≤ 2,000）。読む・書く・消すは所有者の RLS で、挿入は場所が
+呼び手のものであるときだけ、`user_id` はトリガー `tg_place_watches_own` が場所の持ち主に固定する。Edge Function も cron も無い
+（判定はページ・§18.1）。
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](../MIGRATIONS.md)。

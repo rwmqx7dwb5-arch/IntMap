@@ -43,6 +43,7 @@ is the human explanation.
 | `relay_rate_buckets` | Token buckets shared by every isolate of a relay — `(scope, key)`, `tokens`, `at`. `routing-relay` keeps one per caller address and two project-wide ones (per minute, per day), so the spend ceiling on the paid Mapbox upstream survives restarts and is the same across isolates. | Nobody (no policy; RLS on). | **RPCs only** (`relay_take` / `sweep_relay_rate_buckets`, service_role). |
 | `user_prefs` | Per-user synced settings blob (`data` jsonb). | Owner. | Owner. |
 | `saved_places` *(my-places)* | An account's **saved places** — `name` (1-120), `note` (≤2000), `collection` (≤60), `lng`/`lat` (CHECK on the globe), `zoom`, `source` (`reader`/`pin`/`search`/`atlas`), `created_at`/`updated_at` (the database's: no client grant on `created_at`, a trigger stamps `updated_at`). **One row per position per account**: `lng5`/`lat5` are generated `round(…, 5)` (~1 m — the session pins' identity) under `unique (user_id, lng5, lat5)`. | Owner. | **INSERT only through `save_place()`** (no INSERT grant); the owner UPDATEs `name`/`note`/`collection`/`lng`/`lat`/`zoom` (column grant — not `user_id`, not `created_at`) and DELETEs own rows. |
+| `place_watches` *(watch-places)* | **Watched places** — one row per saved place (`place_id` PK → `saved_places`, cascade): `radius_km` (≤1000, default 300), a threshold per kind — `quake_min_mag` (≥2.5, default 4.5), `alert_min_level` (1–4, default 2), `volcano_min_rank` (1–4, default 2), `news_min_sources` (1–50, default 2); **NULL = that kind is not watched** — `enabled`, and what the reader has seen (`seen_at`, `seen_keys` ≤ 2,000). The numbers are `supabase/functions/_shared/place-watch.js`'s (held together by `tests/watch-places-checks.test.mjs`). | Owner. | The owner INSERTs (only for a place they own — RLS) and UPDATEs the settings and seen columns (column grants — not `user_id`, not `created_at`, not `place_id`) and DELETEs own rows. `tg_place_watches_own` (SECURITY DEFINER) sets `user_id` to the place's owner and refuses a caller who is not it (42501). |
 | `favorites` | Saved (★) article links. | Owner. | Owner. |
 
 ### Community
@@ -154,6 +155,8 @@ itself; `grant execute` means "may call", never "may do".
   finds it — the purge reads the FK graph, not a list.
 - `saved_places.user_id` → **`auth.users(id)`** (cascade) — so account deletion, the account inventory
   and the account export all reach it with no list naming it (they walk the same `_owned_by_user_cols()`).
+- `place_watches.place_id` → **`saved_places(id)`** (cascade: deleting a place deletes its watch) and
+  `place_watches.user_id` → **`auth.users(id)`** (cascade) — discovered by `_owned_by_user_cols()` like the rest.
 
 ## Functions & triggers
 
@@ -288,7 +291,7 @@ update public.profiles set is_admin = true where email = 'you@example.com';
 
 ## Data classification (drives backup + retention)
 
-- **A — critical, irreplaceable:** `profiles`, `ai_usage`, `ai_gloss_usage`, `user_prefs`, `favorites`, `saved_places`,
+- **A — critical, irreplaceable:** `profiles`, `ai_usage`, `ai_gloss_usage`, `user_prefs`, `favorites`, `saved_places`, `place_watches`,
   `donations`, `feedback`, `bug_reports`, all `community_*`. User-generated / account data.
   ⚠ **`news_events`, `news_event_articles`, `news_cluster_decisions` and `saved_news_events`
   belong here too.** Re-fetching the feeds returns the articles; it does not return which articles
@@ -332,7 +335,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **45**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **46**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin` (and is not a view).
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't

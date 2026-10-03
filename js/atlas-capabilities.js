@@ -307,6 +307,10 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.changes","changes","periodChanges,whatChanged,timeDiff","time","none","","explanation","session","none","place?","","external"],
       ["settings.mapReading","mapReading","readingMode,screenReaderMode,readAloud,describeMap,describeHere","settings","none","","explanation","persist","none","",""],
       ["settings.offlineMaps","offlineMaps","offlineMap,saveMapOffline,downloadMap,offlineRegion,portableMap,mapWithoutInternet","settings","none","","explanation","persist","explicit","",""],
+      ["places.watch","watchPlace","monitorPlace,watchArea,alertMeNear,keepAnEyeOn","places","none","account.watches","explanation","persist","explicit","place?",""],
+      ["places.unwatch","unwatchPlace","stopWatchingPlace,stopMonitoringPlace","places","none","account.watches","explanation","persist","explicit","",""],
+      ["places.watchDigest","watchDigest","watchedPlaces,placeAlerts,whatHappenedNear,watchReport","places","none","","explanation","read","none","",""],
+      ["places.watchSeen","markWatchSeen","watchMarkRead,clearWatchAlerts","places","none","account.watches","explanation","persist","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 

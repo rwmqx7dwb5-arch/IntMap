@@ -4,7 +4,7 @@
 --  Executed by `supabase test db` (see docs/DATABASE.md).
 -- ============================================================================
 begin;
-select plan(112);  -- (sales-channels) +4: org_inquiries and supporters join both lists   -- (atlas-os) +2: atlas_notebook_entries joins both lists   -- (news-intelligence) +2: news_event_entities joins both lists   -- (account-data-center / my-places) +4: account_data_catalog and saved_places join both lists
+select plan(114);  -- (watch-places) +2: place_watches joins both lists   -- (sales-channels) +4: org_inquiries and supporters join both lists   -- (atlas-os) +2: atlas_notebook_entries joins both lists   -- (news-intelligence) +2: news_event_entities joins both lists   -- (account-data-center / my-places) +4: account_data_catalog and saved_places join both lists
                    -- (anonymous-usage-counts) +2: usage_counts joins both lists   -- (atlas-stream-replay) +2: ai_turn_answers joins both lists
                    -- (atlas-semantic-search) +2: atlas_capability_vectors joins both lists   -- (client-error-log) +2: client_errors joins both lists
                    -- (#R801) +2 tables in both lists, +2 has_function   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
@@ -81,8 +81,11 @@ from unnest(array[
   'account_data_catalog',
   -- (my-places) an account's saved places, on every device. Inserted only through save_place();
   -- the owner reads, edits and deletes their own rows (supabase/tests/23_…).
-  'saved_places'
-]) as t;                                                    -- 44 assertions
+  'saved_places',
+  -- (watch-places) which saved places the reader watches, the thresholds and what they have seen.
+  -- Owner-only through RLS; the place must be the caller's (supabase/tests/24_…).
+  'place_watches'
+]) as t;                                                    -- 45 assertions
 
 -- 2) RLS is ENABLED on every one of them (fail-closed: a table with RLS off fails).
 select ok(
@@ -110,8 +113,9 @@ from unnest(array[
   'atlas_notebook_entries',                                  -- (atlas-os) see the note above
   'news_event_entities',                                     -- (news-intelligence) see the note above
   'account_data_catalog',                                   -- (account-data-center) see the note above
-  'saved_places'                                            -- (my-places) see the note above
-]) as t;                                                    -- 44 assertions
+  'saved_places',                                           -- (my-places) see the note above
+  'place_watches'                                           -- (watch-places) see the note above
+]) as t;                                                    -- 45 assertions
 
 -- (#R386) 2b) The operator RPCs exist. The admin console has buttons wired to these four names;
 --   a button that calls a function which is not there fails at the moment an operator needs it.
