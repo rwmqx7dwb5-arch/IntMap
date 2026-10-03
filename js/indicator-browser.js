@@ -29,6 +29,7 @@
  * ==========================================================================*/
 import { LAYERS, layerDeclaration } from './layer-manifest.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 const STORE = 'intmap.indicator';   /* the reader's last choice on this device */
 
@@ -220,7 +221,7 @@ export function makeIndicatorBrowser(host) {
     render();
     try { const q = el.querySelector('.ind-q'); q.focus(); q.setSelectionRange(pos, pos); } catch (_) { /* restored on the next keystroke */ }
   }
-  try { window.addEventListener('intmap-lang', () => { try { render(); } catch (_) { /* next open */ } }); } catch (_) { /* no window: headless */ }
+  try { bus.on('intmap-lang', () => { try { render(); } catch (_) { /* next open */ } }); } catch (_) { /* no window: headless */ }
 
   /**
    * What the map shows for an indicator, from the series itself — the year painted, how many countries reported

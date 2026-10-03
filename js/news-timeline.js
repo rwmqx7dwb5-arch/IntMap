@@ -706,7 +706,7 @@ export function newsTimeline(HOST){
     function ybMount(){ if(ybBtn||!lapseEl||!lapseEl.parentNode) return;
       ybBtn=document.createElement('button'); ybBtn.type='button'; ybBtn.id='ntl-yearbook'; ybBtn.className='ntl-yb';
       const lbl=()=>{ ybBtn.textContent=IntMapLang.t(HOST.lang,'Read this year','この年を読む'); };
-      lbl(); window.addEventListener('intmap-lang',lbl);
+      lbl(); bus.on('intmap-lang',lbl);
       ybBtn.onclick=()=>{ import('./year-book.js').then(m=>m.openFromPage({ lang:()=>HOST.lang, countryStats:()=>HOST.countryStats, escape:(s)=>IntMapSafe.html(s) })).catch(()=>{}); };
       lapseEl.parentNode.insertBefore(ybBtn,lapseEl); }
     /* WRITE side: inputs → kernel */
