@@ -130,6 +130,7 @@ import { IntMapTables } from './tables.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 /* (mobile-performance) when a phone may warm the country table — js/boot-stage.js */
 import { BootStage } from './boot-stage.js';
+import * as bus from './bus.js';
 
 /* (fetch-deadline-layer) the classic scripts' handle on the fetch clock (js/countries-ui.js, js/routing-ops.js —
    see the end of js/fetch-deadline.js). Assembled HERE because this file is in main alone and imports both
@@ -2933,7 +2934,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        DELETED in R33, so every surviving theme (auto/light/dark) mapped to 'opaque' → ANY theme change
        silently wiped the user's Solid/Frosted/More-transparent choice. The sidebar appearance is an
        INDEPENDENT user setting now; theme changes must NOT touch it. (Block removed — no auto-pick.) */
-    { const tu=document.getElementById('setting-temp-unit'); if(tu){ window.imUnitTemp=tu.value; try{ localStorage.setItem('intmap_temp_unit',window.imUnitTemp); }catch(_){} try{ window.dispatchEvent(new Event('intmap-units')); }catch(_){} } }   /* (#R276) every legend that prints a temperature redraws from one event */
+    { const tu=document.getElementById('setting-temp-unit'); if(tu){ window.imUnitTemp=tu.value; try{ localStorage.setItem('intmap_temp_unit',window.imUnitTemp); }catch(_){} try{ bus.emit('intmap-units'); }catch(_){} } }   /* (#R276) every legend that prints a temperature redraws from one event */
     { const al=document.getElementById('setting-ailocate'); if(al){ aiLocateMode=al.value; localStorage.setItem('intmap_ai_locate',aiLocateMode); } }
     const prevNewsLang=newsLangMode; newsLangMode=document.getElementById('setting-newslang').value; localStorage.setItem('intmap_news_lang',newsLangMode);
     /* Read the individually-selected news languages (when in "multiple languages" mode). */

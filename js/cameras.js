@@ -17,6 +17,7 @@ import { fetchViaProxy } from './proxy-fetch.js';   /* (own-fetch-relay) the app
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon, iconNode, iconImageData } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import * as bus from './bus.js';
 
 export function cameras(HOST){
  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -225,7 +226,7 @@ export function cameras(HOST){
       w.appendChild(lab); dd.appendChild(w);
       cb.addEventListener('change',e=>{ w.classList.toggle('on',e.target.checked); toggle(e.target.checked); });
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
-    window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-webcams-lbl'); if(s) s.replaceChildren(iconNode('camera'),' '+lbl()); try{ if(on) updateLegend(); }catch(_){} });
+    bus.on('intmap-lang',()=>{ const s=document.getElementById('dl-webcams-lbl'); if(s) s.replaceChildren(iconNode('camera'),' '+lbl()); try{ if(on) updateLegend(); }catch(_){} });
     if(document.readyState!=='loading') setTimeout(buildUI,900); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,900));
   })();
 }

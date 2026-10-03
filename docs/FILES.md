@@ -147,6 +147,9 @@ geo-command-log.js                ↳ レンダラ命令の集計と比較。att
 click-ownership.js                ↳ クリック登録と排他的所有権の台帳。adapter/handlerを弱参照し、
                                   背景fallbackと地物のownerを区別する。レンダラや地名IDには依存しない
 runtime.js                        1つのフレームループ・1つのタイマー・1つのライフサイクル
+bus.js                            IntMap 自身の window イベントの**宣言表**（名前・意味・payload・発行元・
+                                  未移行のファイルと理由）と `emit` / `on` / `once`。配信は
+                                  `window.dispatchEvent` のままで、宣言に無い名前は開発時に例外・本番は警告
 lazy-modules.js                   押されてから取りに行くモジュール window.IntMapLazy。⚠ 指定子はすべてリテラル
 engine-select.js                  このセッションがどのエンジンで走るかを DOMContentLoaded 前に決める
 cesium-engine.js                  第2エンジン——同じ契約の裏で動く CesiumJS

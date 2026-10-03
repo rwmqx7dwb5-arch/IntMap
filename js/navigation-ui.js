@@ -68,6 +68,7 @@
  *  ⚠ NO RENDERER HANDLE. Everything on the map is js/navigation.js's; this file is DOM only.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 window.IntMapNavUI = (function () {
   'use strict';
 
@@ -165,7 +166,7 @@ window.IntMapNavUI = (function () {
     document.body.appendChild(el);
     el.addEventListener('click', onClick);
     el.addEventListener('keydown', onKey);
-    try { window.addEventListener('intmap-lang', onLang); } catch (_) { }
+    try { bus.on('intmap-lang', onLang); } catch (_) { }
     return el;
   }
   function onLang() {

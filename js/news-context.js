@@ -11,6 +11,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTables } from './tables.js';
 import { makePlaceTerms, bestSubject, bestPublisherPlace } from './place-terms.js';
+import * as bus from './bus.js';
 
 export function newsContext(HOST){
   /* ══ (#R212) THE OUTLET IS OFTEN NAMED BY ITS DOMAIN, AND THE TABLE IS KEYED BY ITS NAME ═════════
@@ -138,7 +139,7 @@ export function newsContext(HOST){
       } while(at<rows.length && !moving && left());
       if(at<rows.length){ schedule(); return; }
       _sliceRunning=false; _sliceDone=true;
-      try{ window.dispatchEvent(new CustomEvent('intmap-newsgeo-world-ready',{detail:{rows:rows.length}})); }catch(_){}
+      try{ bus.emit('intmap-newsgeo-world-ready', {rows:rows.length}); }catch(_){}
     }
     function schedule(){
       if(rIC){ rIC(pump,{timeout:20000}); return; }
@@ -228,7 +229,7 @@ export function newsContext(HOST){
            coordinate still wins. This is the only place the world rows enter the matcher. */
         const w=GZ.worldMatchable&&GZ.worldMatchable();
         if(w===null){ if(!rebuildGeoIndex._worldHooked){ rebuildGeoIndex._worldHooked=true;
-            try{ window.addEventListener('intmap-gazetteer-world',()=>{ try{ rebuildGeoIndex(); }catch(_){} },{once:true}); }catch(_){} }
+            try{ bus.once('intmap-gazetteer-world',()=>{ try{ rebuildGeoIndex(); }catch(_){} }); }catch(_){} }
           GZ.warm(); }
         else if(w&&w.length&&window.IntMapNewsGeo&&window.IntMapNewsGeo.register){
           /* ⚠ (#R208) IN SLICES, BECAUSE THERE ARE NOW 148,083 OF THEM. MEASURED at 3.7 ms per

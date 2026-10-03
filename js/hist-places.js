@@ -6,6 +6,7 @@
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 export function histPlaces(HOST) {
   const GE = () => IntMapGeoEngine;
@@ -170,7 +171,7 @@ export function histPlaces(HOST) {
     open: (feature, event) => open(feature && feature.properties && feature.properties.id, event && event.lngLat),
     close,
   });
-  window.addEventListener('intmap-lang', refresh);
+  const stopLang = bus.on('intmap-lang', refresh);
   function dispose() {
     if (disposed) return;
     disposed = true;
@@ -178,7 +179,7 @@ export function histPlaces(HOST) {
     if (controller) controller.abort();
     GE().events.off('styledata', apply); GE().events.off('load', apply);
     stopReader();
-    window.removeEventListener('intmap-lang', refresh);
+    stopLang();
     close(); GE().layers.remove(LABEL); GE().layers.removeSource(SOURCE);
   }
   function state() {

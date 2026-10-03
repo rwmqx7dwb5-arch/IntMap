@@ -34,6 +34,7 @@
 import { everyTick, stopTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
+import * as bus from './bus.js';
 
 window.IntMapWidgetScheduler = (function () {
   'use strict';
@@ -369,7 +370,7 @@ window.IntMapWidgetScheduler = (function () {
       /* ⚠ A LANGUAGE CHANGE IS A RE-RENDER, NOT A RE-FETCH (§12.16). Every renderer formats from the
          context it is handed, so the same bytes render in the new language. A theme change is not
          even that — the CSS carries it (§12.17). */
-      window.addEventListener('intmap-lang', function () { WC.invalidateContext(); WC.emit('lang'); });
+      bus.on('intmap-lang', function () { WC.invalidateContext(); WC.emit('lang'); });
     } catch (e) {}
   };
 

@@ -19,6 +19,7 @@ import { IntMapLang } from './lang-registry.js';
 import { IntMapBorderCoast } from './border-coast.js';
 import { jsonWithin, isUnobserved } from './fetch-deadline.js';   /* (hist-era-span-fidelity) the reviewed spans, read under a clock */
 import { clockFor } from './proxy-fetch.js';
+import * as bus from './bus.js';
 
 /* ══ (#R700) `Base (Gloss)` — ONE DECOMPOSITION, READ BY THE PAGE AND BY THE BUILD ═════════════
    ⚠⚠⚠ THE BRACKET IS NOT DROPPED HERE, AND THAT IS THE WHOLE POINT. Two records write a trailing
@@ -1781,7 +1782,7 @@ export function timeBorders(HOST){
     /* (#R107) re-localize the era LABELS (renamed states via _locName, unchanged countries via _modName) when the
        language changes WHILE travelling — tagSame bakes those at the current language, so re-apply the shown snapshot
        (no re-fetch; _eraShow recomputes the display-year state from the reader's year). */
-    window.addEventListener('intmap-lang',()=>{ try{ if(!active||shownY==null) return; const fc=cache.get(shownY); if(fc) apply(typeof shownY==='number'?_eraShow(fc,shownYear):fc); }catch(_){} });   /* (hist-era-span-fidelity) the reader's year, through the one function go() uses — the day-exact tiers (string keys) never had a display-year step */
+    bus.on('intmap-lang',()=>{ try{ if(!active||shownY==null) return; const fc=cache.get(shownY); if(fc) apply(typeof shownY==='number'?_eraShow(fc,shownYear):fc); }catch(_){} });   /* (hist-era-span-fidelity) the reader's year, through the one function go() uses — the day-exact tiers (string keys) never had a display-year step */
     /* ⚠ (#R410) …AND THE SAME RE-READ WHEN THE IDENTITIES THEMSELVES ARRIVE. The present-day names live in
        `countryStats`, which comes off the network (Natural Earth attributes) long after the first era snapshot
        is drawn: measured at 1916 with that file 8 s late, `tagSame` found an EMPTY table, returned untagged,

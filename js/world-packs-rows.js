@@ -20,6 +20,7 @@ import { lazyBody, lazyRowFailed } from './lazy-modules.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 export function worldPacks(HOST){
   const GE=()=>IntMapGeoEngine;
@@ -490,7 +491,7 @@ export function worldPacks(HOST){
     function relabel(){ const h=document.getElementById('wp-head');
       if(h) h.textContent=L('World data','世界のデータ','Weltdaten','Мировые данные','Datos mundiales');
       Object.keys(LBL).forEach(k=>{ const e=document.getElementById('wp-dl-'+k+'-lbl'); if(e) e.textContent=lbl(k); }); }
-    window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));
+    bus.on('intmap-lang',()=>setTimeout(relabel,20));
 
     /* (#R211) these five layers carry CHOICES (direction, commodity, crop, country), and a share
        link that reproduced the layer but not the choice would open on a different answer. The layer

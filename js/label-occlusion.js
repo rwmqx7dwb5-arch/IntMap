@@ -17,6 +17,7 @@
  * ==========================================================================*/
 import { everyTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
 import { tileWarm } from './tile-warm.js';
+import * as bus from './bus.js';
 
 export function makeLabelOcclusion(HOST, CTX) {
   const GE=CTX.GE, isMobile=CTX.isMobile;
@@ -136,7 +137,7 @@ export function makeLabelOcclusion(HOST, CTX) {
            stores that hold the BYTES enrol with the budget instead, so a store added later is told
            by construction rather than by somebody remembering to add a listener. */
         try{ window.IntMapMemBudget&&window.IntMapMemBudget.relieve(); }catch(_){}
-        try{ window.dispatchEvent(new Event('intmap-mem-pressure')); }catch(_){}
+        try{ bus.emit('intmap-mem-pressure'); }catch(_){}
       } else hot=0;
     },{whenHidden:true});
   })();

@@ -28,6 +28,7 @@
  *  favourite on screen labelled 「wars」 in every language. One class fixes it for both rows.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 export function warFronts(HOST) {
   const L = IntMapLang.pick(() => HOST.lang);
@@ -117,7 +118,7 @@ export function warFronts(HOST) {
   }
   function relabel() { for (const R of ROWS) { const e = document.getElementById('dl-' + R.id + '-lbl'); if (e) e.textContent = R.label(); } }
   if (document.readyState !== 'loading') setTimeout(buildRows, 0); else document.addEventListener('DOMContentLoaded', buildRows);
-  window.addEventListener('intmap-lang', () => setTimeout(relabel, 20));
+  bus.on('intmap-lang', () => setTimeout(relabel, 20));
 
   /* ⚠ ATLAS DRIVES THEM LIKE EVERYTHING ELSE. `<war>.show` also SETS THE DAY, because a layer that
      can only be switched on is useless to a planner that was asked about a date. The switch goes

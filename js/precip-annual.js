@@ -32,6 +32,7 @@ import { afterTick, tickKey } from './runtime.js';
 import { clockFor } from './proxy-fetch.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 export function precipAnnual(HOST) {
   const GE = () => IntMapGeoEngine;
@@ -263,7 +264,7 @@ export function precipAnnual(HOST) {
     try { window.reorganizeLayerPanel && window.reorganizeLayerPanel(); } catch (_) { }
   }
   if (document.readyState !== 'loading') setTimeout(buildRow, 300); else document.addEventListener('DOMContentLoaded', () => setTimeout(buildRow, 300));
-  window.addEventListener('intmap-lang', () => { setTimeout(buildRow, 20); if (on) legend(); });
+  bus.on('intmap-lang', () => { setTimeout(buildRow, 20); if (on) legend(); });
   GE().events.on('styledata', () => { if (on) setTimeout(() => { lastPainted = null; paint(); }, 90); });
 
   try {

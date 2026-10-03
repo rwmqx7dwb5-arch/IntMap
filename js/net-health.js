@@ -23,6 +23,7 @@
  *  #R519 gives: two lists of names that can disagree, disagree.
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 export function netHealth(HOST) {
   const L = IntMapLang.pick(() => HOST.lang);
@@ -89,7 +90,7 @@ export function netHealth(HOST) {
   }
   function relabel() { for (const R of ROWS) { const e = document.getElementById('dl-' + R.id + '-lbl'); if (e) e.textContent = R.label(); } }
   if (document.readyState !== 'loading') setTimeout(buildRows, 0); else document.addEventListener('DOMContentLoaded', buildRows);
-  window.addEventListener('intmap-lang', () => setTimeout(relabel, 20));
+  bus.on('intmap-lang', () => setTimeout(relabel, 20));
 
   /* ⚠ ATLAS DRIVES THEM THROUGH THE CHECKBOX, not through `toggle`, so the row's own state cannot
      disagree with the map's (the rule js/war-fronts.js states for the same reason). */

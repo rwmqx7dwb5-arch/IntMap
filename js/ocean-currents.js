@@ -73,6 +73,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import * as bus from './bus.js';
 
 export function oceanCurrents(HOST){
   const GE=()=>IntMapGeoEngine;
@@ -537,7 +538,7 @@ export function oceanCurrents(HOST){
       if(!f||!f.properties) return;
       const nm=f.properties.name; const c=(doc&&doc.named||[]).find(x=>nameOf(x)===nm);
       if(c){ picked=c.en; render(); } }); }catch(_){}
-    window.addEventListener('intmap-lang',()=>setTimeout(()=>{ if(on&&doc){ draw(); render(); }
+    bus.on('intmap-lang',()=>setTimeout(()=>{ if(on&&doc){ draw(); render(); }
       const e=document.getElementById('wp-dl-currents-lbl');
       if(e) e.textContent=L('Ocean currents','海流','Meeresströmungen','Морские течения','Corrientes marinas'); },20));
 

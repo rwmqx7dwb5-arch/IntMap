@@ -52,6 +52,7 @@ import './waves-gl.js';
 import './safe-html.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 
 export function waves(HOST) {
@@ -558,8 +559,8 @@ export function waves(HOST) {
   }
 
   /* the reader changed language or units: the legend is words and numbers, so it is rebuilt */
-  window.addEventListener('intmap-lang', () => { if (st.on) render(); });
-  window.addEventListener('intmap-units', () => { if (st.on) render(); });
+  bus.on('intmap-lang', () => { if (st.on) render(); });
+  bus.on('intmap-units', () => { if (st.on) render(); });
 
   return {
     open: () => toggle(true), close: () => toggle(false), toggle,

@@ -35,6 +35,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 export function elections(HOST) {
   /* (#R251) the array form of the language helper — a bare array literal is invisible to the i18n
@@ -476,7 +477,7 @@ export function elections(HOST) {
     if (e) e.textContent = L('National elections', '国政選挙', 'Parlamentswahlen', 'Национальные выборы', 'Elecciones nacionales');
   }
   if (document.readyState !== 'loading') setTimeout(buildRow, 0); else document.addEventListener('DOMContentLoaded', buildRow);
-  window.addEventListener('intmap-lang', () => setTimeout(() => { relabel(); if (on) renderPanel(); }, 20));
+  bus.on('intmap-lang', () => setTimeout(() => { relabel(); if (on) renderPanel(); }, 20));
   /* self-heal across basemap swaps, exactly like the other vector overlays */
   try { GE().events.on('styledata', () => { if (on) setTimeout(() => { if (on && ensure()) {   /* (world-at-time) `on` again at the timer — an «off» inside these 80 ms was undone here (js/cameras.js has the measurement) */ setVis(true); paint(); } }, 80); }); } catch (_) {}
 

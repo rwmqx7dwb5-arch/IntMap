@@ -20,6 +20,7 @@ import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import * as bus from './bus.js';
 
 
   /* ══ ⚠⚠ (#R284) THE PLAYER'S ICONS ARE DRAWN, AND NO TWO OF THEM ARE THE SAME ═══════════════
@@ -949,13 +950,13 @@ export function wind(HOST){
       if(psw) psw.onchange=()=>{ setParts(psw.checked); };   /* (#R313) the switch reports; the module decides */
       const sel=body.querySelector('#wind-unit-sel');
       if(sel) sel.onchange=()=>{ window.windUnit=sel.value; try{ localStorage.setItem('intmap_wind_unit',window.windUnit); }catch(_){}
-        try{ window.dispatchEvent(new Event('intmap-units')); }catch(_){}
+        try{ bus.emit('intmap-units'); }catch(_){}
         window._updateWindLegend(); try{ window.renderCoordReadout&&window.renderCoordReadout(); }catch(_){} };
       window.IntMapWxPlayer.wireTimeUI(body,'wind-time',E);
       try{ window._tileLegends&&window._tileLegends(); }catch(_){}
     };
-    window.addEventListener('intmap-units',()=>{ try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} });
-    window.addEventListener('intmap-lang',()=>{ try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} });
+    bus.on('intmap-units',()=>{ try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} });
+    bus.on('intmap-lang',()=>{ try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} });
 
     /* ══ ⚠⚠⚠ (#R322) THE ONE THING `stop()` DELIBERATELY KEEPS, AND NOBODY EVER GAVE BACK ═══════
        `stop()` leaves `renderer` alive on purpose — it holds two textures, two framebuffers, two
@@ -2005,8 +2006,8 @@ export function weatherEC(HOST){
     wireModel(EC());
 
     mountRows(); setTimeout(mountRows,1500);
-    window.addEventListener('intmap-lang',relabelRows);
-    window.addEventListener('intmap-units',()=>{ if(anyOn()) renderLegend(); });
+    bus.on('intmap-lang',relabelRows);
+    bus.on('intmap-units',()=>{ if(anyOn()) renderLegend(); });
 
     /* ── the share link ──────────────────────────────────────────────────────────────────────
        「共有URLに、選択中の気象レイヤー、ECMWF有効時刻、透明度を保存し、同じ表示を復元できるように」

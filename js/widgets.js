@@ -41,6 +41,7 @@ import './widget-defs-map.js';
 import './widget-layout.js';
 import './widget-gallery.js';
 import { IntMapGeoEngine } from './geo-engine.js';
+import * as bus from './bus.js';
 
 
 export function widgets(HOST){
@@ -95,7 +96,7 @@ export function widgets(HOST){
   LAY.attachKeys();
 
   /* a language change re-renders; it does NOT re-fetch (§12.16) */
-  window.addEventListener('intmap-lang', function () { WC.invalidateContext(); if (built) LAY.render(); });
+  bus.on('intmap-lang', function () { WC.invalidateContext(); if (built) LAY.render(); });
   /* a theme change does neither — the CSS carries it (§12.17) */
   WC.on('geo', function () { if (built) LAY.repaintAll(); });
   WC.on('map', function () { if (built) LAY.repaintAll(); });

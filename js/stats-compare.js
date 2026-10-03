@@ -19,6 +19,7 @@ import { readWithin } from './fetch-deadline.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 export function statsCompare(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -997,7 +998,7 @@ export function statsCompare(HOST){
     /* (#R105) re-localize the OPEN comparison immediately on a language change (was stuck until reload in ws mode).
        ensureView() returns the EXISTING host without rebuilding its header (title/back/modes), so we drop the host
        first → render() rebuilds it fresh in the new language (state — codes/sel/mode — is preserved in module vars). */
-    try{ window.addEventListener('intmap-lang',()=>{ try{ if(host&&document.getElementById('scp-view')){ try{ host.remove(); }catch(_){} host=null; render(); } }catch(_){} }); }catch(_){}
+    try{ bus.on('intmap-lang',()=>{ try{ if(host&&document.getElementById('scp-view')){ try{ host.remove(); }catch(_){} host=null; render(); } }catch(_){} }); }catch(_){}
     function open(initCodes,initMetrics,initSource,initMode){
       if(!sel){ sel=new Set(IND.filter(i=>i.def).map(i=>i.k)); }
       if(Array.isArray(initMetrics)&&initMetrics.length){ const ok=initMetrics.filter(k=>IND.some(i=>i.k===k)); if(ok.length){ sel=new Set(ok); indOrder=ok.slice(); } }

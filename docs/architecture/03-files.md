@@ -79,3 +79,29 @@
 `scripts/lib/import-module.mjs`）の `importModule(path, { globals, mocks })` が対象ファイルを毎回新しく評価し、
 その import の辺だけを差し替える（`mocks`）。ブラウザ（`window`・`document`）は `globals` で渡す。
 規約の詳細は [`docs/TESTING.md`](../TESTING.md)。
+
+### イベントの結び方 — 宣言表 `js/bus.js`
+
+**IntMap 自身が window に投げるイベントは、`js/bus.js` の `EVENTS` に 1 行ずつ宣言する。** 1 行が持つのは
+名前・意味（`means`）・payload の形（`detail`。`{ a, b }` はその鍵だけを持つ object、`null` は無し）・
+発行元のファイル（`from`）、それに必要なら旧綴り（`aliases`）・まだ素の DOM 呼び出しを使うファイルと
+その理由（`pending`、理由は同じファイルの `WHY`）・聞かれているのに誰も投げないこと（`orphan`）。
+
+- **投げる・聞くは `bus.emit(name, detail)` / `bus.on(name, fn) → off` / `bus.once(name, fn)`**
+  （`import * as bus from './bus.js'`）。**配信は `window.dispatchEvent` のまま**なので、
+  `window.addEventListener('intmap-…')` で聞く既存の読み手（未移行のファイル・ブラウザの spec・
+  Atlas のページ側の観測器）は前と同じものを聞き、手で投げたイベントも bus の読み手に届く。
+  payload が無ければ `Event`、あれば `CustomEvent`（`detail`）——素の呼び出しが投げていた型と同じ。
+- **綴りは `intmap-…` が正規名。** `intmap:…` だった 2 つ（`intmap:shakemap`・`intmap:ai-limit`）は
+  別名として残る。`emit` は正規名と全別名を 1 回ずつ投げ（どちらの綴りの読み手も 1 回聞く）、`on` は
+  全綴りを聞いて自分の `emit` が作った別名の写しを捨てる（bus の読み手も 1 回）。
+- **宣言に無い名前は、node と開発サーバでは例外、本番の build（`import.meta.env.PROD`）では 1 名前に
+  1 回の警告で通す**——綴りの誤りで読者の機能を落とさない。
+- **門は `tests/event-bus-checks.test.mjs`。** 一覧を持たず、`js/`・`src/`・ページのインライン script を
+  acorn で読んでイベントの場所を**発見**し（`addEventListener` / `removeEventListener` / `new Event` /
+  `new CustomEvent` の第 1 引数、bus の呼び出し、runtime の scope の `.on(target, name)`。名前は
+  文字列・穴の無い template・それを束ねた const、import した const まで解決する）、表と両向きに
+  突き合わせる: 宣言に無い名前・どこでも使われない宣言・`from` と `pending` の食い違い・宣言と違う
+  payload の鍵は赤。bus 自体は評価して、配信・解除・once・別名の両向きを測る。
+  ⚠ 接頭辞 `intmap` の無い名前を `new Event` で投げる新しいイベントは見えない（`new CustomEvent` と
+  bus の呼び出しは名前を問わず見る）。接頭辞が、この門の見える名前空間である。

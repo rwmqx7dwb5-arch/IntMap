@@ -62,6 +62,7 @@ import { everyTick, stopTick } from './runtime.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 
 export function warLayer(HOST) {
@@ -797,7 +798,7 @@ export function warLayer(HOST) {
 
     /* a language change needs a NEW frame, not a re-render of the old one: the names inside a frame
        are localized when it is built. The row's own label is the shell's business. */
-    window.addEventListener('intmap-lang', () => setTimeout(() => { if (on) { shownKey = null; paint(curDate || spanOf(war() || {})[0]); } }, 20));
+    bus.on('intmap-lang', () => setTimeout(() => { if (on) { shownKey = null; paint(curDate || spanOf(war() || {})[0]); } }, 20));
 
     /* ⚠ THE CLOCK IS SUBSCRIBED TO ONCE, AT MOUNT, AND THE HANDLER RETURNS IMMEDIATELY WHEN THE ROW
        IS OFF. Subscribing on toggle-on and unsubscribing on toggle-off was measured first and is a

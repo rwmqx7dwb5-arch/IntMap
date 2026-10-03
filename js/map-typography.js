@@ -40,6 +40,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 window.IntMapMapTypography = (function () {
   /* the ranges scripts/build-glyphs.mjs emits. ⚠ tests/hazard-seismic-panel-checks.test.mjs (#R242) asserts this list is identical to
      that script's RANGES — one list, two readers ([[intmap-recurring-lessons]] G). */
@@ -163,7 +164,7 @@ window.IntMapMapTypography = (function () {
       return !!GE.scene.setCjkFontFamily(cjkFamily());
     } catch (_) { return false; }
   }
-  try { window.addEventListener('intmap-lang', syncCjkFamily); } catch (_) { }
+  try { bus.on('intmap-lang', syncCjkFamily); } catch (_) { }
 
   /* ══ A CJK FACE THAT ARRIVES AFTER THE MAP DREW WITH THE FALLBACK ═══════════════════════════════
      The renderer rasterises CJK itself from `cjkFamily()` and keeps every glyph it drew. The Noto faces
@@ -266,7 +267,7 @@ window.IntMapMapTypography = (function () {
   try {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureWebFonts);
     else if (document.readyState) ensureWebFonts();
-    window.addEventListener('intmap-lang', ensureWebFonts);
+    bus.on('intmap-lang', ensureWebFonts);
   } catch (_) { }
 
   /* ⚠ (#R253) …AND THE SERVER HAS NEVER HEARD OF THOSE STACK NAMES. `text-font` doubles as the glyph

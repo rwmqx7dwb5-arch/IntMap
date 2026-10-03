@@ -24,6 +24,7 @@
  *  ceiling moves up」. It is a REAL ES module: nothing registers it on window.IntMapModules, nothing
  *  in src/main.js orders it, and js/app-body.js reaches it only through a static `import`.
  * ==========================================================================*/
+import * as bus from './bus.js';
 export function makeSidebarStyle(CTX) {
   const GE = CTX.GE, isMobile = CTX.isMobile;
 function applySidebarStyle(animate){ const s=window.imSidebarStyle;
@@ -77,7 +78,7 @@ function _glassInset(){ try{
 (function(){ try{
   let was=document.body.className.indexOf('ws-mode')>=0;
   const sync=()=>{ try{ applySidebarStyle(false); }catch(_){} };
-  window.addEventListener('intmap-sidebar-resize',sync);
+  bus.on('intmap-sidebar-resize',sync);
   try{ GE().events.on('load',sync); }catch(_){}
   new MutationObserver(()=>{ const now=document.body.className.indexOf('ws-mode')>=0;
     if(now===was) return; was=now; sync(); if(!now) setTimeout(sync,450); })

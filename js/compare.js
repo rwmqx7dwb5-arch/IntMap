@@ -30,6 +30,7 @@ import { IntMapLang } from './lang-registry.js';
 import { IntMapTime, makeClock } from './chronos.js';
 import { MapState } from './map-state.js';   /* (map-state-store) this file owns the map state's `compare` field — see below */
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import * as bus from './bus.js';
 
 /* ══ (time-compare-lapse) THE WINDOW'S TIME, BY IMPORT ═════════════════════════════════════════════════════
    The comparison window holds a clock of its own (below). The readers of that fact — the share link (through
@@ -936,7 +937,7 @@ export function compare(HOST){
        0.4s sidebar slide so the final geometry is clamped, not the mid-transition one. */
     try{
       const _reclampSoon=()=>{ try{ window._cmpReclamp&&window._cmpReclamp(); }catch(_){} setTimeout(()=>{ try{ window._cmpReclamp&&window._cmpReclamp(); }catch(_){} },450); };
-      window.addEventListener('intmap-sidebar-resize',_reclampSoon);
+      bus.on('intmap-sidebar-resize',_reclampSoon);
       document.addEventListener('click',(e)=>{ try{ if(e.target.closest&&e.target.closest('.btn-toggle-sidebar')) _reclampSoon(); }catch(_){} });
       const _sbEl=document.getElementById('sidebar'); if(_sbEl) _sbEl.addEventListener('transitionend',(e)=>{ if(e.propertyName==='margin-left'||e.propertyName==='width') _reclampSoon(); });
     }catch(_){}

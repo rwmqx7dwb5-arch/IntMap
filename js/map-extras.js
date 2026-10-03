@@ -12,6 +12,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { requestFix, FIX_FAILURE } from './locate-me.js';   /* (installable-app) the ONE reading of the device position — IntMapLocate.start below, Atlas's view.locate and 「現在地から…」 */
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import * as bus from './bus.js';
 
 
 export function locate(HOST){
@@ -460,7 +461,7 @@ export function railSeaOverlays(HOST){
         w.appendChild(lab); dd.appendChild(w);
         cb.addEventListener('change',e=>{ w.classList.toggle('on',e.target.checked); toggle(L,e.target.checked); }); });
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
-    window.addEventListener('intmap-lang',()=>{ LIST.forEach(L=>{ const s=document.getElementById('ox-'+L.id+'-lbl'); if(s) s.textContent=lbl(L); }); });
+    bus.on('intmap-lang',()=>{ LIST.forEach(L=>{ const s=document.getElementById('ox-'+L.id+'-lbl'); if(s) s.textContent=lbl(L); }); });
     if(document.readyState!=='loading') setTimeout(buildUI,950); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,950));
   })();
 }

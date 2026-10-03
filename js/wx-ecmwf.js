@@ -48,6 +48,7 @@ import './wx-models.js';
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 (function () {
   'use strict';
@@ -470,7 +471,7 @@ import { IntMapLang } from './lang-registry.js';
   function emit(type, extra) {
     var ev = Object.assign({ type: type }, extra || {});
     listeners.slice().forEach(function (f) { try { f(ev); } catch (_) {} });
-    try { window.dispatchEvent(new CustomEvent('intmap-ecmwf', { detail: ev })); } catch (_) {}
+    try { bus.emit('intmap-ecmwf', ev); } catch (_) {}
   }
 
   function tms(t) { try { return Date.parse(/[zZ]$/.test(t) ? t : t + 'Z'); } catch (_) { return NaN; } }

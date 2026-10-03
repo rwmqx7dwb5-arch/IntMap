@@ -25,6 +25,7 @@ import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 /* (mobile-performance) the projection viewer's land: this site's pinned Natural Earth 110 m */
 import { loadNECountries } from './ne-countries.js';
+import * as bus from './bus.js';
 
 
 
@@ -1308,7 +1309,7 @@ export function objectList(HOST){
          handlers, so relabelling text nodes alone would drop them) and the list re-rendered.
          Found by tests/r251.spec.js ②, which switches language with the panel open and reads back. */
       if(!ensurePanel._langWired){ ensurePanel._langWired=1;
-        window.addEventListener('intmap-lang',()=>{ try{
+        bus.on('intmap-lang',()=>{ try{
           if(!panel||!panel.parentNode) return;
           const wasOpen=panel.style.display!=='none';
           panel.remove(); panel=null;

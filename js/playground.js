@@ -30,6 +30,7 @@ import { buildPandemicWorld, ensureCountryGeo, resolveStatsRow, pig, bboxOf, cNa
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import * as bus from './bus.js';
 
 
 
@@ -153,7 +154,7 @@ export function playground(HOST){
            sidebar ("起動時には自動的にサイドバーが収納され、その他のタブやレイヤーが選択解除された状態に"). */
         try{ document.querySelectorAll('#layer-dropdown input[type=checkbox]:checked').forEach(cb=>{ if(cb.id==='cb-grid') return; if(cb.id==='cb-names'||cb.id==='cb-borders'||cb.id!=='cb-countries'){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } }); }catch(_){}
         try{ if(typeof HOST.mode!=='undefined' && HOST.mode){ HOST.mode=null; document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.classList.remove('active')); try{ HOST.renderUI(); }catch(_){} } }catch(_){}
-        try{ if(sbEl && !sbEl.classList.contains('collapsed')){ sbEl.classList.add('collapsed'); window.dispatchEvent(new Event('intmap-sidebar-resize')); } }catch(_){}
+        try{ if(sbEl && !sbEl.classList.contains('collapsed')){ sbEl.classList.add('collapsed'); bus.emit('intmap-sidebar-resize'); } }catch(_){}
         try{ document.body.classList.add('pg-we'); }catch(_){}
         try{ const sat=document.getElementById('btn-view-sat'); if(sat&&typeof HOST.mapType!=='undefined'&&HOST.mapType!=='sat') sat.click(); }catch(_){}
         /* (#R31) Don't pop the satellite controller panel each round ("毎回satelliteのポップアップが出るのを辞めて"). */
@@ -181,7 +182,7 @@ export function playground(HOST){
           try{ document.body.classList.remove('pg-we'); }catch(_){}
           try{ const cb=document.getElementById('cb-names'); if(cb&&!!saved.names!==cb.checked){ cb.checked=!!saved.names; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){}
           try{ const mt=document.getElementById(saved.mt==='sat'?'btn-view-sat':'btn-view-map'); if(mt&&typeof HOST.mapType!=='undefined'&&HOST.mapType!==saved.mt) mt.click(); }catch(_){}
-          try{ if(sbEl && !saved.sbCol && sbEl.classList.contains('collapsed')){ sbEl.classList.remove('collapsed'); window.dispatchEvent(new Event('intmap-sidebar-resize')); } }catch(_){}
+          try{ if(sbEl && !saved.sbCol && sbEl.classList.contains('collapsed')){ sbEl.classList.remove('collapsed'); bus.emit('intmap-sidebar-resize'); } }catch(_){}
           try{ GE().camera.flyTo({center:saved.c,zoom:saved.z,duration:900}); }catch(_){}
         }
         exitB.onclick=restore;

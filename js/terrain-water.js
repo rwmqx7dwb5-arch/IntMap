@@ -53,6 +53,7 @@ import { everyTick, stopTick } from './runtime.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon, withIcons, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import * as bus from './bus.js';
 
 export function terrainWater(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -2464,7 +2465,7 @@ export function terrainWater(HOST){
       try{ syncTerrain(); }catch(_){}
       try{ GE().input.set('dragPan',true); GE().render.canvas().style.cursor=''; }catch(_){}
       if(panel) panel.style.display='none'; wipe(); return true; }
-    window.addEventListener('intmap-lang',()=>{ if(opened) render(); });
+    bus.on('intmap-lang',()=>{ if(opened) render(); });
 
     /* ══ (#R211) THE NUMBERS THE USER TYPED TRAVEL WITH THE LINK ═══════════════════════════════════
        「シミュレーションに入力された数値まで共有して同じ状態で開ける。」

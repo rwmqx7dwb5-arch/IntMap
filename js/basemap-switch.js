@@ -35,6 +35,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { crosshairWanted, setCrosshairWanted } from './mobile-sheet.js';
+import * as bus from './bus.js';
 
 
 window.IntMapBasemapSwitch = (function () {
@@ -266,7 +267,7 @@ window.IntMapBasemapSwitch = (function () {
       /* The theme decides the map face's tones. There is no theme EVENT in this app — js/theme-sky.js writes
          `data-theme` on <html> — so the attribute itself is watched (one attribute, no polling). */
       try { new MutationObserver(function () { redraw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] }); } catch (_) { }
-      window.addEventListener('intmap-lang', function () { setTimeout(function () { relabel(); if (isOpen()) syncRows(); }, 40); });
+      bus.on('intmap-lang', function () { setTimeout(function () { relabel(); if (isOpen()) syncRows(); }, 40); });
     }
     relabel(); syncRows();
   }

@@ -13,6 +13,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { detentHeights, settleDetent, spring, detentFor, MAP_ANSWER_EVENT, makeScreens, makeLegendTray } from './mobile-sheet.js';
 import { BootStage } from './boot-stage.js';
+import * as bus from './bus.js';
 
 
 export function mobileUI(HOST){
@@ -405,7 +406,7 @@ export function mobileUI(HOST){
        ⚠ «no finger started it» is read twice: MapLibre hands a gesture's movestart its originalEvent, and the
        3-D engine does not, so the fingers down OFF the sheet are counted too. The sheet's own padding moves are
        marked by camPad and are not answers. */
-    window.addEventListener(MAP_ANSWER_EVENT,(e)=>{ if(!mq.matches) return; const k=e&&e.detail&&e.detail.kind; if(k) go(k); });
+    bus.on(MAP_ANSWER_EVENT,(e)=>{ if(!mq.matches) return; const k=e&&e.detail&&e.detail.kind; if(k) go(k); });
     { const fingers=new Set();
       window.addEventListener('pointerdown',(e)=>{ if(!sidebar.contains(e.target)) fingers.add(e.pointerId); },true);
       ['pointerup','pointercancel'].forEach((t)=>window.addEventListener(t,(e)=>{ fingers.delete(e.pointerId); },true));
@@ -630,7 +631,7 @@ export function layoutReflow(HOST){
          Found by tests/r251.spec.js, which reads `title` as well as text. */
       const h=document.createElement('div'); h.id='sb-resizer';
       const _ht=()=>{ h.title=IntMapLang.t(HOST.lang,'Drag to resize','高さを調節','Zum Ändern der Höhe ziehen','Потяните, чтобы изменить размер','Arrastra para redimensionar'); };
-      _ht(); window.addEventListener('intmap-lang',()=>setTimeout(_ht,30));
+      _ht(); bus.on('intmap-lang',()=>setTimeout(_ht,30));
       h.style.cssText='position:absolute;top:0;right:-3px;width:8px;height:100%;cursor:col-resize;z-index:calc(var(--z-dropdown) - 100);touch-action:none;';
       sb.appendChild(h);
       let drag=false,sx=0,sw=0;

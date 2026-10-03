@@ -24,6 +24,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import * as bus from './bus.js';
 
 export function usElections(HOST){
   /* (#R251) the language helper and its ARRAY form — see `pickArgs` in js/lang-registry.js. The tuples below were bare array literals, which no instrument can see, so every language past the two they listed read English. */
@@ -285,7 +286,7 @@ export function usElections(HOST){
   }
   function relabel(){ const e=document.getElementById('dl-uselect-lbl'); if(e) e.textContent=L('U.S. presidential elections','アメリカ大統領選挙','US-Präsidentschaftswahlen','Президентские выборы в США','Elecciones presidenciales de EE. UU.'); }
   if(document.readyState!=='loading') setTimeout(buildRow,0); else document.addEventListener('DOMContentLoaded',buildRow);
-  window.addEventListener('intmap-lang',()=>setTimeout(()=>{ relabel(); if(on) renderPanel(); },20));
+  bus.on('intmap-lang',()=>setTimeout(()=>{ relabel(); if(on) renderPanel(); },20));
   /* self-heal across basemap swaps, exactly like the other vector overlays */
   try{ GE().events.on('styledata',()=>{ if(on) setTimeout(()=>{ if(on&&ensure()){   /* (world-at-time) `on` again at the timer — an «off» inside these 80 ms was undone here (js/cameras.js has the measurement) */ setVis(true); apply(); } },80); }); }catch(_){}
 
