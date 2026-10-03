@@ -1065,9 +1065,11 @@ sims.js                           物理シミュレーションと太陽幾何�
                                   アニメーション／範囲人口／日照／鉄道の到達圏）
 radiation-hindcast.js             放射性プルームの答え合わせ（2011 年の福島の実測沈着とモデルをセルごとに比べる指標・
                                   再グリッド・描画用のセルと比の色階。純粋関数で、検査・ビルダ・パネルが同じ計算を使う。
-                                  docs/RADIATION-MODEL.md §10）
+                                  外れの内訳の段（rungIds / rungOf：束の variants を段として読む）も。
+                                  docs/RADIATION-MODEL.md §10・§10b）
 radiation-model.js                放射性物質拡散のモデル本体（風の場の入れ子ネスト・高度別の風・
-                                  ラグランジュ solve・沈着格子・区分・線量積分）。DOM も window も
+                                  ラグランジュ solve・沈着格子・区分・線量積分。任意の地域の入れ子
+                                  midPlan と、時間変化する放出 release／releasePlan）。DOM も window も
                                   持たない純粋モジュールで、ページと worker が同じものを import
                                   する。数の出所は docs/RADIATION-MODEL.md（export const RAD）
 ash-model.js                      火山灰の拡散モデル本体（Mastin の噴火源・Suzuki の鉛直分布・
@@ -2045,7 +2047,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 135 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 136 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

@@ -1054,11 +1054,12 @@ worker client を含む）が届き、worker 本体は最初の検索が始ま�
 
 | ファイル | 役割 |
 |---|---|
-| `js/radiation-model.js` | **モデル本体**——風の場の入れ子ネストの構築、高度別の風の内挿、ラグランジュ solve、沈着格子、ゾーン、線量積分。**DOM も window も言語レジストリも触らない純粋モジュール**で、出すのは `export const RAD` 1 本だけ |
+| `js/radiation-model.js` | **モデル本体**——風の場の入れ子ネストの構築（任意の地域の入れ子 `midPlan` を含む）、高度別の風の内挿、ラグランジュ solve（一定の放出か、区間の表 `release`）、沈着格子、ゾーン、線量積分。**DOM も window も言語レジストリも触らない純粋モジュール**で、出すのは `export const RAD` 1 本だけ |
 | `src/radiation-worker.js` | worker 入口。`../js/radiation-model.js` を import するだけで**物理を 1 行も持たない**。結果の 3 本の typed array は transfer で返す |
 | `src/radiation-worker-client.js` | ページ側 `window.IntMapRadiationWorker`。`new Worker(new URL('./radiation-worker.js', import.meta.url), {type:'module'})`——`src/` に置くのは、バンドラに worker を切り出させられる形がこれだけだから。`src/main.js` が sat / tsunami / aviation と同じ並びで eager import する |
 | `js/sims.js` | パネル UI・Open-Meteo の取得（2 枚のネストを 2 リクエストで）・地図レイヤー・プルームのアニメーション・共有状態。`window.IntMapRadiation`。パネルの「2011 年の答え合わせ」（`hindcast`）もここ |
 | `js/radiation-hindcast.js` | **答え合わせの純粋関数**——2011 年の福島の実測沈着（`data/radiation-hindcast.json`）とモデルをセルごとに比べる指標・再グリッド・描画用のセルと比の色階。検査・ビルダ・パネルが同じ計算を使う。数と手順は `docs/RADIATION-MODEL.md` §10 |
+| （外れの内訳の段） | 束の `variants` が段（事故の放出の時間変化 → 地域の風 → セシウム全量）で、`rungIds` / `rungOf` が段の id を**束から**読む（パネルにも Atlas にも段の一覧の写しは無い）。放出の表は `data/fukushima-release.json`（`scripts/build-fukushima-release.mjs`・JAEA の付属 CSV・CC BY 3.0）、条件は `scripts/radiation-hindcast-config.mjs` の `variants`、門は `tests/science-next-checks.test.mjs`。`IntMapRadiation.hindcast(view, rung)`・Atlas は `radiation` の `rung`。数は `docs/RADIATION-MODEL.md` §10b |
 
 **縮退し、縮退したことを言う。** worker があれば 20,000 粒子、無ければページ上で 4,000 粒子。
 粒子数は速度の設定ではなく**ピーク沈着のモンテカルロ誤差の設定**なので、どちらで走ったかを
