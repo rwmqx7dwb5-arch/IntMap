@@ -1,16 +1,16 @@
 {
   "eager": {
-    "raw": 4816620,
-    "gzip": 1587881,
-    "brotli": 1198028,
+    "raw": 4867450,
+    "gzip": 1606284,
+    "brotli": 1210710,
     "requests": 9,
-    "modules": 311,
-    "cssRaw": 386622,
+    "modules": 314,
+    "cssRaw": 390457,
     "cssGzip": 63660
   },
   "async": {
-    "raw": 12224190,
-    "gzip": 4060867,
+    "raw": 12647164,
+    "gzip": 4197178,
     "chunks": {
       "account-data": 7357,
       "aircraft-detail": 17009,
@@ -25,7 +25,7 @@
       "atlas-attach": 23189,
       "atlas-caps-modules": 80,
       "atlas-chart": 10493,
-      "atlas-console": 1343890,
+      "atlas-console": 1451464,
       "atlas-executor": 59369,
       "atlas-geo-resolve": 49361,
       "atlas-query": 48520,
@@ -44,7 +44,7 @@
       "company-panel": 24654,
       "datacenters": 40859,
       "dist": 39790,
-      "embed-mode": 10145,
+      "embed-mode": 13684,
       "esm": 286281,
       "flight-sim": 115313,
       "geo-import": 17728,
@@ -70,7 +70,7 @@
       "my-places": 21993,
       "navigation": 60823,
       "net-health-live": 16816,
-      "news-events": 34162,
+      "news-events": 36511,
       "news-intel": 26986,
       "news-intel-core": 7380,
       "night-sky": 25429,
@@ -91,7 +91,7 @@
       "satellite-wasm-stub": 194,
       "satellites-live": 23092,
       "seismic": 159207,
-      "service-status": 17021,
+      "service-status": 21987,
       "shakemap": 19432,
       "shared-collection": 9366,
       "showcase-gallery": 9583,
@@ -124,9 +124,9 @@
     }
   },
   "dist": {
-    "total": 857096364,
+    "total": 874804005,
     "data": 745102527,
-    "assets": 19695805
+    "assets": 20136536
   },
   "phone": {
     "bytes": 342631,

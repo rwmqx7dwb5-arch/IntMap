@@ -17,7 +17,7 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 export function makeKeyboardShortcuts(HOST, CTX) {
   const GE=CTX.GE, applyTheme=CTX.applyTheme, imToast=CTX.imToast, isMobile=CTX.isMobile;
   /* ===== (#R62) Keyboard shortcuts ("その他のキーボードショートカットも大幅に追加") — desktop, no modifier,
-     ignored while typing. `?` opens a 5-language cheat-sheet. Esc(sidebar) + Ctrl/⌘+K(Atlas) live elsewhere. ===== */
+     ignored while typing. `?` opens a 5-language cheat-sheet. Esc(sidebar) lives elsewhere; Ctrl/⌘+K (the command palette) is below. ===== */
   (function(){
     const KL=IntMapLang.pick(()=>HOST.lang);
     function helpModal(){
@@ -27,7 +27,8 @@ export function makeKeyboardShortcuts(HOST, CTX) {
       m.style.cssText='position:fixed;inset:0;z-index:calc(var(--z-toast) + 3000);display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);';
       const rows=[
         ['Esc',KL('Toggle sidebar','サイドバーの開閉','Seitenleiste ein/aus','Показать/скрыть панель','Mostrar/ocultar panel')],
-        ['Ctrl/⌘+K '+KL('or','または','oder','или','o')+' A',KL('Atlas console','Atlas コンソール','Atlas-Konsole','Консоль Atlas','Consola Atlas')],
+        ['Ctrl/⌘+K',KL('Command palette — every action, layer, place, company and example, and Atlas','コマンドパレット — すべての操作・レイヤー・地名・企業・作例、そして Atlas')],
+        ['A '+KL('or','または','oder','или','o')+' Ctrl/⌘+K ×2',KL('Atlas console','Atlas コンソール','Atlas-Konsole','Консоль Atlas','Consola Atlas')],   /* the second Ctrl/⌘+K, inside the palette, hands its field to Atlas */
         ['/',KL('Focus place search','場所検索へフォーカス','Ortssuche fokussieren','Фокус на поиск','Enfocar búsqueda')],
         ['L',KL('Layers panel','レイヤー選択','Ebenen','Слои','Capas')],
         ['N / I / S / C',KL('News / Info / Countries / Community tab','ニュース / 情報 / 国 / コミュニティ','News / Info / Länder / Community','Новости / Инфо / Страны / Сообщество','Noticias / Info / Países / Comunidad')],
@@ -90,6 +91,21 @@ export function makeKeyboardShortcuts(HOST, CTX) {
         R.addEventListener('change',()=>{ const on=R.value==='on'; import('./map-reader.js').then(m=>m.setReading(on)).catch(()=>{ try{ localStorage.setItem('intmap_map_reading',on?'on':'off'); }catch(_){} }); }); }
       if(O) O.addEventListener('click',()=>{ try{ const m0=document.getElementById('settings-modal'); if(m0) m0.style.display='none'; }catch(_){}
         import('./offline-maps.js').then(m=>m.openOfflineMaps(HOST)).catch(()=>{ try{ imToast(KL('Offline maps could not be opened','オフライン地図を開けませんでした')); }catch(_){} }); }); }
+    /* ══ (ux-next) Ctrl/⌘+K — THE COMMAND PALETTE ═════════════════════════════════════════════════════════
+       One field for everything the app can be asked: the actions (the controls the kernel's commands are bound to and
+       the Layers panel's tools), every row of the Layers registry, the places on the device, the company atlas, the
+       example maps and tours — and Atlas, which takes whatever was typed. js/command-palette.js, fetched on first use.
+       It answers in a text field too (a palette is reached for from wherever the caret is); inside the palette the same
+       keys hand the text to Atlas (the palette handles that itself and stops the event). Desktop and phone alike — a
+       phone with a keyboard has the keys, and the OS command `ui.palette` and Atlas reach it without any. */
+    const openPalette=(q)=>import('./command-palette.js').then(m=>m.openPalette(HOST,{query:q||''})).catch(()=>null);
+    window.addEventListener('keydown',(e)=>{
+      if(!((e.ctrlKey||e.metaKey)&&!e.altKey&&!e.shiftKey&&(e.key==='k'||e.key==='K'))) return;
+      e.preventDefault(); openPalette('');
+    });
+    /* the kernel command — IntMapOS is built later in the boot than this factory runs, so it is registered on the next turn */
+    setTimeout(()=>{ try{ const OS=window.IntMapOS; if(OS&&OS.register&&!OS.has('ui.palette'))
+      OS.register('ui.palette',(ctx)=>openPalette(String(((ctx&&ctx.params)||{}).query||'')),{label:'Command palette · open (params.query)',group:'ui'}); }catch(_){} },0);
     document.addEventListener('keydown',(e)=>{
       if(e.ctrlKey||e.metaKey||e.altKey) return;
       if(typeof isMobile==='function'&&isMobile()) return;

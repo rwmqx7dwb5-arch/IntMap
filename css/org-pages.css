@@ -69,3 +69,14 @@
   overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
 .og-nav::-webkit-scrollbar{ display:none; }
 @media (max-width:900px){ .og-nav{ justify-content:flex-start; } }
+/* (community-next) corrections.html — the published log and the reader's own reports (js/org-page.js ⑤) */
+.og-corr{ list-style:none; padding:0; margin:0; display:grid; gap:10px; }
+.og-corr li{ background:var(--pg-surface); border:1px solid var(--pg-line-soft); border-radius:14px; padding:12px 14px; display:grid; gap:4px; }
+.og-corr li.og-muted{ color:var(--pg-mut); background:transparent; border:none; padding:0; }
+.og-corr-top{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:13px; color:var(--pg-mut); }
+.og-corr-status{ font-size:12px; font-weight:600; padding:2px 9px; border-radius:980px; background:var(--pg-line-soft); color:var(--pg-ink); }
+.og-corr-status.is-fixed{ background:#34c759; color:#fff; }
+.og-corr-status.is-confirmed, .og-corr-status.is-cannot_fix{ background:#ff9f0a; color:#fff; }
+.og-corr-place{ font-weight:600; color:var(--pg-ink); }
+.og-corr-text{ font-size:14px; color:var(--pg-ink-2); white-space:pre-wrap; overflow-wrap:anywhere; }
+.og-corr-links{ display:flex; gap:14px; font-size:14px; }

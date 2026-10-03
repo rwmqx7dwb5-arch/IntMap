@@ -159,11 +159,23 @@ test('#R218 ⑤ …and every registry entry has a description in all nine langua
   const CODES = ['en', 'ja', 'de', 'ru', 'es', 'fr', 'ko', 'zh-hant', 'zh-hans'];
   const { IntMapRefData } = await importModule('js/reference-data.js');
   for (const c of CODES) vm.runInContext(read(`js/locales/pages.${c}.js`), ctx, { filename: c });
+  const { authoredLangs } = await import('../scripts/lang-policy.mjs');
+  const { pageCodes } = await import('../scripts/i18n-pages-audit.mjs');
+  const tagOf = new Map(pageCodes().map((r) => [r.code, r.html]));
+  const AUTHORED = authoredLangs().map((c) => tagOf.get(c) || c);
+  assert.ok(AUTHORED.every((c) => CODES.includes(c)), 'an authored language has no pages document: ' + AUTHORED);
   const list = IntMapRefData.dataSources;
   assert.ok(list.length > 80, 'the registry shrank');
   for (const s of list) {
     assert.equal(s.use, undefined, `${s.n} still carries prose in the eager registry`);
-    for (const c of CODES) {
+    /* ⚠ (wave2-train) WHICH LANGUAGES MUST DESCRIBE A NEW ENTRY IS THE AUTHORING POLICY'S ANSWER, NOT
+       A LITERAL. CONSTITUTION §7 (2026-09-11) narrowed what IntMap writes next to en+jp
+       (scripts/lang-policy.mjs `authoredLangs`); the other seven keep every row they already have,
+       and that is held by the floor of scripts/i18n-pages-audit.mjs (check:i18n), not here. This
+       test required all nine, so the first source registered after the amendment (the JAEA
+       release series) could not be described without authoring seven translations the policy
+       forbids. One edit to lang-policy restores nine here too. */
+    for (const c of AUTHORED) {
       const doc = ctx.window.IntMapPageI18N._d[c];
       assert.ok(doc.sourceUse && doc.sourceUse[s.n], `${s.n} has no ${c} description`);
     }

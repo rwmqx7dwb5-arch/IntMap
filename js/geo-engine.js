@@ -1337,6 +1337,14 @@ function _redrawLocalGlyphs(m,cover){
                decl:_decl?{ zoom:!!_decl.zoom, center:!!_decl.center, pitch:!!_decl.pitch }:null,
                lastBranch:_lastBranch }; },
     project(ll){ const m=_m(); return m?m.project(ll):null; }, unproject(pt){ const m=_m(); return m?m.unproject(pt):null; },
+    /* (map-next) IS THIS SCREEN POINT ON THE EARTH AT ALL? unproject() answers for every pixel — on the globe a press in
+       the black space beside the disc comes back as a point on the far limb (measured: a press 10 px left of the disc at
+       zoom 1.7 → 10.42°N 70.63°W, a place behind the globe), and with pitch the sky comes back as a point on the horizon.
+       A tool that turns a press into a vertex has to know the difference. The renderer's own answer — the ray from the
+       eye through the pixel meets the sphere (globe) / the point is below the horizon or on the terrain mesh (flat) —
+       is the one MapLibre itself asks before zooming around a point. true / false, or null when it cannot be asked. */
+    onSurface(pt){ const m=_m(); const t=_tr(m); if(!t||typeof t.isPointOnMapSurface!=='function') return null;
+      try{ const p=Array.isArray(pt)?{x:+pt[0],y:+pt[1]}:{x:+pt.x,y:+pt.y}; return !!t.isPointOnMapSurface(p,(m&&m.terrain)||undefined); }catch(_){ return null; } },
     /* (#R173) WHERE ON SCREEN IS A POINT THAT IS UP IN THE AIR? project() answers only for the ground,
        and MapLibre's own hit-testing has the same blind spot: queryRenderedFeatures on a fill-extrusion
        answers at the FOOTPRINT, not at the body — measured on an aircraft at 11,003 m with the glyph
@@ -2214,7 +2222,7 @@ function _redrawLocalGlyphs(m,cover){
       setMaxBounds:b=>A().setMaxBounds(b), setRenderWorldCopies:v=>A().setRenderWorldCopies(v),
       getRenderWorldCopies:()=>A().getRenderWorldCopies(),
       fromTo:(f,fa,t,ta)=>A().cameraFromTo?A().cameraFromTo(f,fa,t,ta):null },
-    coords:{ project:ll=>A().project(ll), unproject:pt=>A().unproject(pt), terrainElevation:(ll,o)=>A().terrainElevation(ll,o), queryRenderedFeatures:(g,o)=>A().queryRenderedFeatures(g,o),
+    coords:{ project:ll=>A().project(ll), unproject:pt=>A().unproject(pt), onSurface:pt=>(A().onSurface?A().onSurface(pt):null), terrainElevation:(ll,o)=>A().terrainElevation(ll,o), queryRenderedFeatures:(g,o)=>A().queryRenderedFeatures(g,o),
       /* (#R173) the screen position of a point AT ALTITUDE — what picking anything lifted needs */
       projectAltitude:(ll,a)=>A().projectAltitude?A().projectAltitude(ll,a):null,
       /* (#R178) features already in a source's tiles (not necessarily drawn), the world's pixel

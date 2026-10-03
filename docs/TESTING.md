@@ -87,7 +87,7 @@ candidates ending in «Ask Atlas»).
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**142 measured spec files / 82.2 min** of serial browser time against a ceiling of 87.5 min (the 5.3 min between
+**153 measured spec files / 86.5 min** of serial browser time against a ceiling of 87.5 min (the 1.0 min between
 them is the room `suite-time-room` made for the specs arriving after it — see below); and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
@@ -109,7 +109,7 @@ them is the room `suite-time-room` made for the specs arriving after it — see 
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **136 spec files** — is the whole suite minus core
+**deep** tier — **147 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -973,7 +973,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **136 spec files** against core's 6 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **147 spec files** against core's 6 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
@@ -1296,6 +1296,24 @@ run) · 3 regressed.
 
 Without both secrets the workflow **fails** and says which one is missing. A token that was refused
 (spent, or revoked by a logout) makes the night `unmeasured` and red; repeat step 3.
+
+### The half that needs no session (`--offline`, every night)
+
+The workflow's `offline` job runs `node scripts/atlas-eval.mjs --offline --out _offline` whether or not the
+secrets exist, and uploads `atlas-eval-offline` (JSON + Markdown; the Markdown is also the job summary):
+
+* **replay** — every cassette, as on every PR (`lab.mjs` `evaluateCassettes`); a cassette that no longer
+  replays as recorded makes this job exit 1.
+* **reach** (`scripts/atlas-eval/reach.mjs`) — for each answer-key question that names `capabilities`, the
+  question's own words are given to the registry's search with the options `find_capability` uses
+  (`FIND_OPTS`, held equal to `js/atlas-toolsurface.js` by `tests/ops-next-checks.test.mjs`), and each needed
+  capability's rank is recorded, or «not reached». ⚠ Lexical only (the meaning search is a network call) and
+  the model writes its own queries — so this is **not** a measure of the answers, and every place it is shown
+  says so. Measured when it was added (2026-10-03): 34 of 157 needed capabilities, 2 of 74 questions whole.
+
+`scripts/build-service-status.mjs` reads the newest `atlas-eval-offline` into `atlasEval.offline` (counts only);
+the live report is found by its own name (`atlas-eval-report`), so the offline artifact cannot make a run that
+measured nothing live look measured. Run it by hand: `node scripts/atlas-eval.mjs --offline`.
 
 ### What it does not measure yet
 
@@ -4743,8 +4761,42 @@ migration そのものから**——`auth.users` を指す列か uuid の `user_
 何も消さない、表示は作ったピンを返す。⑤ 3 つの入口は動的 import（起動経路に載らない）、書き込む操作要素は
 効果を宣言する。
 
-### `tests/collection-workspace-checks.test.mjs` (collection-workspace)
 
+### `tests/news-next-checks.test.mjs` と `tests/news-next.spec.js` (news-story)
+
+node 10 本・データベース無し（DB の半分は `supabase/tests/25_news_story_test.sql`）。出荷している
+`js/news-story-core.js` を、**本番の `news_events` 18,786 行を出荷する migration に PGlite で通した答え**
+（`tests/fixtures/news-story-prod.json`・7 見出し）で評価する: ① 名前は文の書き方の見出しの大文字の割合で決まる
+（AfD・German は名前、state・election・文頭の Far は名前でない）② 提案される流れ（nino 単独・ceuta 単独・ferry +
+indonesia・haze + indonesia・AfD は 2 語に絞る・提案が無い見出しは null で語は出す）③ 返った行は全部の語を見出しに
+持つ ④ 年表は UTC の毎日で 0 の日を持ち、広がりは累積 ⑤ 広がりの線は本当に最寄りの先行地点へ ⑥ 再生位置 i が
+見せるのは i 日目までの全部 ⑦ 地点の無いもの・海上・切れた取得は数えて言う ⑧ `?story=` の読み書き（サーバーが
+書けない綴りは捨てる）⑨ 語を切る規則は SQL の 1 か所で、`news_story` はその式の索引の述語の下で引き、
+`MAX_SHARE` は送られる ⑩ 入口 4 つが 1 つの遅延本体に届く。
+spec 4 本は共有ページで、DB の 2 つの口を同じ fixture で答える: カードが提案の語で開き地図に点が描かれる（レンダラから
+数える）・再生が 1 日ずつ進み、その日までの点だけが描かれる・チップで問い直しリンクが語を名指す・閉じると地図から消える。
+### `tests/security-next-checks.test.mjs` と `tests/security-next.spec.js` (security-next)
+「このページの通信」とセキュリティのページ。node 9 本: ① `data/connection-ledger.json` は台帳の導出と同一で全行を持ち、
+各行は 4 つの形のどれか 1 つ ② 「送るもの」の符号すべてに読者の文が en と jp で在る（台帳の `SENDS` と両向き）
+③ 記録の鍵はスキーム＋ホストだけ（自分のオリジン・data:・blob: は記録しない） ④ 集計・証人の区別・CSP の拒否は
+別・上限を超えた分は `overflow` に数える ⑤ 本物の台帳で判定する——パターン行・完全一致が優先・ポートは問わない・
+外のドメインを呑まない・`link`／`dormant` の行に通信したら食い違い・個人に近い分類が先 ⑥ 台帳を読めないときは
+誰も「名前が無い」と言わない ⑦ `sw.js` を sandbox で動かし、worker の要求だけが window へ届き、要求そのものは
+変えない ⑧ 設定のボタン・起動経路の import・en/jp の文・Atlas の行 ⑨ `security.html` の数と文は台帳と
+`index.html` から、報告ボタンは用件 `security` の相談フォームへ、関数・最後の migration・フォームが同じ語を持つ。
+spec 1 本（実ブラウザ）: 経路で満たした要求・WebSocket・CSP が拒否したスクリプトが一覧のそれぞれの節に出る、
+Playwright 自身の記録した main frame の完了した要求が一覧に全部ある、開いている間に増えた接続先が出る、Escape で閉じる。
+### `tests/watch-places-checks.test.mjs` (watch-places)
+7 本・データベース無し・ネットワーク無し（DB の半分は `supabase/tests/26_place_watches_test.sql`）。① 判定
+（`supabase/functions/_shared/place-watch.js`）を**評価**する——種類ごとに自分の尺度で近さと強さ、変化なら新しい鍵・
+再発表なら同じ鍵（警報の鍵に発表時刻を入れない）、初回は何も新着にしない、読めなかった種類は理由つきの「未確認」で
+その種類の既読を保つ、`SEEN_MAX` では新しい方を残す。② 判定が名指す数（既定値・半径の上限・M の床・既読の上限）と
+migration の既定値・CHECK を照合する。③ ページの読み手と実行器を代役のフィードで——USGS 1 要求・ニュース 1 問い合わせが
+全ての見守りに答える、警報はレイヤー自身の点判定で区域内のものだけ、レイヤーがオフなら「未確認」。④ 見守りを端から端まで
+（初回の基準をアカウントに保存 → 新着 → トースト 1 回 → 同じものを再び知らせない → 既読がアカウントへ）。⑤ Atlas の能力（places.watch・unwatch・watchDigest・watchSeen）を
+代役の DB で実行（未ログイン・入力なし・2 度目・見守っていない場所の停止）。⑥ 入口は動的 import、書き込む操作要素は効果を
+宣言し、撤去済みの `tab.monitors` を呼ばず、AI を呼ばない。
+### `tests/collection-workspace-checks.test.mjs` (collection-workspace)
 4 本・データベース無し（DB の半分は `supabase/tests/24_collection_workspace_test.sql`）。① migration の扉——`save_view` /
 `publish_collection` / `copy_shared_collection` は uuid を取らず `auth.uid()` で口座を決め anon から剥がされ、2 表とも
 `authenticated` に INSERT が無く `anon` には何も無い。`anon` が呼べるのは `shared_collection` だけで、コメントに理由を持ち、
@@ -4756,9 +4808,7 @@ migration そのものから**——`auth.users` を指す列か uuid の `user_
 複数一致の地図は開かない・地図は共有リンクの復元で 1 度だけ開く・表示の無い地図は保存しない。④ 入口は動的 import
 （起動経路に載らない）・ログイン待ちのトークンの鍵を auth-ui とカードが共有する・書き込む操作要素は効果を宣言する
 （公開は `outward`）。
-
 ### `tests/collection-workspace.spec.js` (collection-workspace)
-
 1 本・自分で起動する（クエリは起動時に 1 度だけ読まれるので、起動そのものが主題）。公開の読み取り
 `shared_collection` を PostgREST の形で答え（migration の適用の有無に依らない）、`?collection=<token>` で開いたページを
 測る——① 閲覧専用のカードが題と場所・地図の一覧を出し、アドレスのトークンだけを問い合わせる、② 2 つの場所が

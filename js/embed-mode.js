@@ -62,6 +62,9 @@ import { IntMapTime } from './chronos.js';
 import { IntMapLang } from './lang-registry.js';
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the one encoder iframeCode writes with */
 import { iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { everyTick, stopTick } from './runtime.js';   /* (developer-embed) the one timer wheel — paused with the tab, owned by a key */
+import { MapState } from './map-state.js';   /* (developer-embed) the share link's grammar — what the host's commands become */
+import { PROTOCOL, isMessage, message } from './embed-client.js';   /* (developer-embed) the protocol both halves speak */
 
 /* ── THE PRESETS the share panel and Atlas offer. They are choices, not thresholds: 16:10 frames at
    three common content-column widths, plus one that fills its column. ⚠ The narrowest is the size
@@ -218,7 +221,9 @@ export function createEmbedTab(ctx) {
       + '<div class="sh-row"><textarea class="sh-code" readonly rows="3" spellcheck="false" aria-label="' + H(t('embedCodeLabel')) + '"></textarea></div>'
       + '<div class="sh-row"><button class="sh-btn sh-ecopy" type="button" style="flex:1;"></button><button class="sh-btn sec sh-pvbtn" type="button"></button></div>'
       + '<div class="sh-pv" hidden></div>'
-      + '<div class="sh-inc">' + H(t('embedInc')) + '</div>';
+      + '<div class="sh-inc">' + H(t('embedInc')) + '</div>'
+      /* (developer-embed) the page that documents the API a host page can steer this frame with, and the open data */
+      + '<div class="sh-inc"><a class="sh-dev" href="developers.html" target="_blank" rel="noopener">' + H(t('embedDev')) + ' ↗</a></div>';
     const sizeEl = host.querySelector('.sh-size'), interEl = host.querySelector('.sh-inter');
     const codeEl = host.querySelector('.sh-code'), ec = host.querySelector('.sh-ecopy');
     const pb = host.querySelector('.sh-pvbtn'), pv = host.querySelector('.sh-pv');
@@ -350,6 +355,117 @@ function bootEmbed() {
   [1500, 5000].forEach((ms) => setTimeout(paint, ms));
 }
 
+/* ══ (developer-embed) THE HOST API — the frame's half of js/embed-client.js ═══════════════════
+   The page that framed this one may send the commands PROTOCOL names, and is told when the map is ready
+   and when it changes. Every command is turned into ONE share-link fragment by the share link's own codec
+   (js/map-state.js) and applied by the path a pasted link takes — js/map-ui.js's `hashchange` listener,
+   which restores it in full and queues a link that arrives while another is still being applied. So the
+   host can make the frame show exactly what a link could, and nothing a link could not.
+   ⚠ NO HISTORY ENTRY. A frame's history is the host page's history: `location.hash = …` would make the
+   reader's Back button step the map instead of leaving the page. The fragment is written with
+   replaceState and the listener is told with a synthetic `hashchange` — the event it already handles.
+
+   `commandHash(type, args, nowHash)` is the pure half (node evaluates it): → { hash } or { error }. */
+/* a year alone is the instant the app's own year links open on (1 July — scripts/history-pages.mjs WHEN), in the
+   extended ISO form a year outside 0000–9999 needs; anything else is handed to the clock's own reading, new Date() */
+function yearIso(y) {
+  const a = Math.abs(y), s = y < 0 || y > 9999 ? (y < 0 ? '-' : '+') + String(a).padStart(6, '0') : String(a).padStart(4, '0');
+  return s + '-07-01';
+}
+export function commandHash(type, args, nowHash) {
+  const a = args || {};
+  if (type === 'state') {
+    const raw = String(a.hash == null ? '' : a.hash);
+    const st = MapState.decode(raw.charAt(0) === '#' ? raw : '#' + raw);
+    if (!st.view) return { error: 'the hash names no map view (it needs v=lng,lat,zoom…)' };
+    return { hash: MapState.encode(st) };
+  }
+  const st = MapState.decode(nowHash);
+  if (!st.view) return { error: 'the frame has no map view yet' };
+  if (type === 'view') {
+    const n = (v) => (v == null || v === '' ? NaN : +v);
+    const lng = n(a.lng), lat = n(a.lat), zoom = n(a.zoom);
+    if (!Number.isFinite(lng) || !Number.isFinite(lat) || !Number.isFinite(zoom)) return { error: 'view needs finite lng, lat and zoom' };
+    if (lat < -90 || lat > 90) return { error: 'lat must be between -90 and 90' };
+    /* a longitude past the antimeridian is the same meridian: wrapped into [-180, 180] (180 itself kept) */
+    const w = ((lng + 180) % 360 + 360) % 360 - 180;
+    const v = Object.assign({}, st.view, { lng: w === -180 && lng > 0 ? 180 : w, lat, zoom: Math.min(24, Math.max(0, zoom)) });
+    if (a.bearing != null && Number.isFinite(+a.bearing)) v.bearing = +a.bearing;
+    if (a.pitch != null && Number.isFinite(+a.pitch)) v.pitch = Math.min(85, Math.max(0, +a.pitch));
+    st.view = v;
+    return { hash: MapState.encode(st) };
+  }
+  if (type === 'time') {
+    const at = a.at == null ? 'live' : String(a.at).trim();
+    if (at === 'live' || at === '') { st.time = null; return { hash: MapState.encode(st) }; }
+    const iso = /^[+-]?\d{1,6}$/.test(at) ? yearIso(parseInt(at, 10)) : at;
+    /* the clock's owner reads `tt` with new Date() and ignores what it cannot read (js/map-ui.js MapState.own('time')),
+       so a date it would ignore is refused here, by the same reading, rather than accepted and silently dropped */
+    if (isNaN(new Date(iso).getTime())) return { error: 'not a date the clock can read: ' + at };
+    st.time = { at: iso };
+    return { hash: MapState.encode(st) };
+  }
+  return { error: 'unknown command ' + type };
+}
+
+/* the fields a link carries (the session-only `toggles` is not the map's public state) */
+const LINKED_KEYS = MapState.SCHEMA.filter((f) => f.params.length).map((f) => f.key);
+function stateNow() {
+  const hash = MapState.hash();
+  let link = '';
+  try { link = appUrl(location.origin + location.pathname + location.search + hash); } catch (_) { link = ''; }
+  return { state: MapState.snapshot(LINKED_KEYS), hash, link };
+}
+
+function bootBridge() {
+  let parent = null;
+  try { parent = window.parent && window.parent !== window ? window.parent : null; } catch (_) { parent = null; }
+  if (!parent) return;
+  /* posted to '*': what is posted is the map's public state — the fragment the frame's own 「Open in IntMap」 link
+     carries — and the only window it is posted to is the one that framed this page */
+  const post = (type, fields) => { try { parent.postMessage(message(type, Object.assign(stateNow(), fields || {})), '*'); } catch (_) { } };
+  let ready = false;
+  const settledWaiters = [];
+  const sayReady = () => { if (ready) return; ready = true; post('ready'); };
+  MapState.onRestore((e) => {
+    if (e.phase !== 'settled') return;
+    if (!ready) { sayReady(); return; }
+    post('state', { cause: 'restore' });
+    settledWaiters.splice(0).forEach((f) => { try { f(); } catch (_) { } });
+  });
+  /* a frame opened without a map in its address has no restore to wait for; one whose boot restore settled before
+     this ran has nothing left to wait for either — the store says which */
+  const tick = everyTick('embed-mode:host-ready', 250, () => {
+    if (ready) { stopTick(tick); return; }
+    if (!MapState.owns('view')) return;   /* the share link's restorer (js/map-ui.js) has registered: the app has booted */
+    if (!MapState.carriesState() || (MapState.generation() > 0 && !MapState.restoring())) { stopTick(tick); sayReady(); }
+  }, 250);
+  /* the reader's own moves (a pan, a zoom): one report per settled change — the address bar's own debounce */
+  let tm = 0;
+  MapState.on((e) => {
+    if (!ready || MapState.restoring() || LINKED_KEYS.indexOf(e.key) < 0) return;
+    clearTimeout(tm); tm = setTimeout(() => post('state', { cause: e.cause || 'reader' }), 400);
+  });
+  window.addEventListener('message', (e) => {
+    if (e.source !== parent) return;
+    const m = e.data;
+    if (!isMessage(m)) return;
+    const reply = (ok, error) => { if (m.id == null) return; post('reply', Object.assign({ id: m.id, ok }, error ? { error } : {})); };
+    if (m.v !== PROTOCOL.v) { reply(false, 'this frame speaks ' + PROTOCOL.name + ' v' + PROTOCOL.v); return; }
+    if (!Object.prototype.hasOwnProperty.call(PROTOCOL.commands, m.type)) { reply(false, 'unknown command ' + m.type); return; }
+    if (m.type === 'get') { reply(true); return; }
+    const r = commandHash(m.type, m, MapState.hash());
+    if (r.error) { reply(false, r.error); return; }
+    if (r.hash === MapState.hash()) { reply(true); return; }   /* already showing it: nothing to apply, nothing to wait for */
+    settledWaiters.push(() => reply(true));
+    try {
+      /* the store's own address writer (replaceState — no history entry); null keeps the query (?embed=1) */
+      if (!MapState.address(null, r.hash)) throw new Error('the address could not be written');
+      window.dispatchEvent(new Event('hashchange'));   /* the listener reads location.hash, not the event's fields */
+    } catch (err) { settledWaiters.pop(); reply(false, 'the frame could not apply it: ' + String(err && err.message || err)); }
+  });
+}
+
 if (EMBED.on && typeof document !== 'undefined') {
   /* the attribute is index.html's (set before the first frame); restating it here is harmless and
      keeps the view correct if this file is ever reached by another route */
@@ -360,4 +476,5 @@ if (EMBED.on && typeof document !== 'undefined') {
   } catch (_) { }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootEmbed, { once: true });
   else bootEmbed();
+  bootBridge();   /* (developer-embed) the host API — only when a page framed this one */
 }

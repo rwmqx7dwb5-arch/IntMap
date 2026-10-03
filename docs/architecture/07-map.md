@@ -656,6 +656,29 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
 （`js/atlas-toolsurface.js` の `observed`）——読者が見ている数と Atlas が引用できる数は同じものである。
 カードは `.country-popup`（ドラッグ・携帯のシート）で、開くと `MAP_ANSWER_EVENT`（`card`）を出す。
 
+### 7.3g マイマップ (My map) — `js/my-map.js` / `js/my-map-doc.js`
+
+**読者が自分で描くピン・線・範囲と、その名前・メモ・色。保存し、共有リンクで運び、測り、分析し、書き出す。**
+入口: **Layers ▸ Tools ▸ マイマップ**（`tool.myMap`）・Atlas `map.myMap`（`{"type":"myMap","action":…}`）・
+オブジェクト一覧（種類 `mymap`）・`mm=` を持つ共有リンク。モジュールは遅延（`IntMapLazy` の `myMap`、公開名
+`window.IntMapMyMap`）で、起動経路に載らない。
+
+| 何 | どこで・どう |
+|---|---|
+| 文書の形 | `{v:1, id, title, updated, features:[{id, kind:'pin'|'line'|'area', name, note, color, coords}]}`。`coords` は読者の頂点（[lng, lat]・経度は [-180, 180]）。名前とメモは共有リンクの題と一言と**同じ規則**（`MapState.captionText`・`TITLE_MAX` / `NOTE_MAX`）。色は 6 色の表の 1 つ |
+| 精度 | 頂点は**文書に入るときに** 1e-6° へ丸める（`COORD_SCALE`。由来は定数の隣）。保存とリンクが同じ値なので、作者と受け手は同じ地図を見る |
+| 辺 | 2 頂点を結ぶ**大円**（計測ツールと同じ「地球上の直線」）。描く形・分析するデータセット・書き出すファイルは**同じ 1 つの形**——大円を 0.1° 以下の断片にし（`DENSIFY_DEG`）、日付変更線で切る（`js/geodesy.js` の `_splitLineToWindows` / `_splitPolyToWindows`）。⚠ 極を囲む範囲は描かず（`polar`）、パネルとファイル（`geometry:null`・`polar:true`）がそう述べる |
+| 計測 | 線の長さ・範囲の面積と周囲は**計測ツールの関数**（`HOST.ringArea`・turf の大円距離）で、表示は読者の単位設定（`HOST.distTXT` / `areaTXT`——計測パネルの `distHTML` / `areaHTML` と同じ数と単位の文字版） |
+| 保存 | このブラウザの `localStorage` `intmap_mymaps`（`{v:1, current, maps:[…]}`。地図はいくつでも）。読み込むときに全地物を今の規則で読み直し、読めない地物は数えてパネルが述べる。保存を拒まれたら（容量・プライベート）パネルがそう述べ、リンクか書き出しを勧める |
+| 地図の状態 | `js/map-state.js` の `mymap` 欄（`&mm=`・アドレスバーの最後）。値は `toLinkValue`（頂点は Encoded Polyline、1e-6°）を `s=` と同じく base64url の JSON に包んだもの。`read` は表示中の地図（空なら無し）。**`apply` は信用しない**——`fromLinkValue` が全欄を手で描いた頂点と同じ規則で読み直し、読めない地物は数える。**同じ id の地図がこのブラウザにあれば手元の写しを出す**（リンクより新しい）。他人の地図は読み取り専用で出し、「自分の地図として保存」で**新しい id の写し**を作る。行の `lazy: 'myMap'` は、値を持つ復元だけがこの module を取りに行くことを述べる（値の無い復元では取りに行かない）。`restore:'full'`——落ちた再読み込みは図形なしで開く。⚠ 地図の状態を持たない起動（ハッシュの無い URL）では module を取りに行かず、何も描かない——パネルを開くと現在の地図が出る（「最初の 1 枚」は地図が全面） |
+| 共有 | 共有リンク・埋め込み・絵葉書・授業ツアーの段（`MapState.hash()`）は図形を運ぶ。パネルの「リンクをコピー」は今の地図（場所・レイヤー・日付）にこの図形を載せたリンクと、その長さ |
+| 分析 | 「分析に使う」は表示中の地図を `IntMapData.add` で**データセット**にする（`provenance: {kind:'sketch', author:'reader'|'shared-link', map, title, at, edges}`）。**その時点の写し**であって、地図を描き足しても変わらない（由来が時刻と地図の id を述べる）。`kind` が `op` でないので属性は編集でき、プロジェクト保存は本体ごと保存する（`docs/GIS-CORE.md` §4） |
+| 書き出し | GeoJSON / GeoPackage を `js/gis-export.js` の `write`（データセットと同じ記録の形）で。ライセンスは誰も述べていないので書かない |
+| 取り込み | 「この地図へ移す」はセッションだけの物——ピン（`HOST.userPins`）・計測と描画で残した図形（`IntMapAnnotations`）・半径円——を地物にして**元を消す**（移動）。半径円は 64 角形になり、名前が「64 角形」と述べる（面積は円より 0.16 % 小さい） |
+| 描く | 地図のクリックで頂点を置く。ピンは 1 回、線はダブルクリック・Enter・最後の点・「完了」、範囲は最初の点・ダブルクリック・Enter・「完了」で確定。Backspace で 1 点戻し、Esc でやめる。⚠ **地球の外を押しても頂点にしない**——球の脇の黒い空間や空を押すと `unproject` は奥の縁や地平線の点を返す（実測: 球の 10 px 左で 10.42°N 70.63°W＝球の裏側）。レンダラの `coords.onSurface` に訊き、外ならパネルがそう述べる（§7 の 01 章）。描いている間はダブルクリックのズームを止め、クリックは `claimClick` で自分のものにする（地名ラベルが開かない）。計測ツールや自由描画が始まれば退く。近さの判定は計測ツールの `SNAP_PX` |
+| 地図の層 | `mymap-src`（形）・`mymap-lbl-src`（名前のある地物の名前）・`mymap-draft-src`（描きかけ）。前の 2 つは `render.claim(…, 'map.myMap', {clear})` で、地図の消去は**隠す**（削除しない） |
+| Atlas | `map.myMap`（open / add / edit / remove / title / show / hide / list / link / export / analyze / new / collect / keep / draw）。観測器 `myMap` は module 自身の状態（表示・地図 id・地物 id と名前・メモ・色）と描かれた地物数を**呼んだ後に**読み、結果の `want` と一致したときだけ完了とする。状態の `myMap` 節に一覧が載る |
+
 ### 7.4 Chronos（統一時間）と「年」
 
 - **歴史データは起動時に読まない。読むのは「過去へ行こうとしている」ときだけ。** 国境の束
@@ -881,6 +904,10 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   暦年は 134 しかない。到達できる世界は **68 → 132** に増えた。
 - **キャッシュの鍵は日付ではなく「エポック」**——その日以前で最も新しい変化日（`csEpoch`）。
   同じエポックに入る2つの日は同じ鍵になるので、**変化の無い年代をスクラブしても再描画は起きない**。
+  ⚠ 鍵はもう 1 つの軸——**名前の表の年**（`_csNameKey`。`_CS_ERA` の年単位の規則が切り替わりうる各年の 1 月 1 日、
+  表から導く）——も持つ。集合は作られた日の名前で書かれるので、年単位の改名がエポックの途中に落ちると、名前が
+  「そのエポックで最初に訊かれた日」に従っていた（1970 年の日を先に見ると 1971 年の 490 が「Zaire」でなく
+  「Democratic Republic of the Congo」）。`[y,m,d]` の規則は記録の境に縛られているので軸は要らない。
 - **変化日の索引は多角形と同じレコードから導出する**（`csBounds`：各レコードの開始日と、終了日の翌日）。
   ⚠ **日付の一覧を別に持たない**——持てば多角形と食い違う。`IntMapTimeBorders` が
   `changeAfter` / `changeBefore` / `changeAt` / `changeDates` で公開し、Chronos の

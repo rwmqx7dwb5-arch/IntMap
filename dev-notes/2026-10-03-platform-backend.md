@@ -1,6 +1,8 @@
 ---
 title: 「あなたのデータ」とマイプレイス——アカウントが持つものを利用者自身が見て持ち出し、場所をアカウントに保存する（削除と同じ発見で数え・書き出す）
 date: 2026-10-03
+newsen: Your data: see and download everything your account holds, and save places to your account.
+newsjp: 「あなたのデータ」：アカウントが持つものを見て書き出せます。場所をアカウントに保存できます。
 ---
 
 〈依頼〉「修正・穴埋めではなく構造改革とイノベーション。整形ではなく造形。足し算。全権を委任する」の 1 本。

@@ -25,6 +25,7 @@ import { facts, outputs, showcaseProblems, PAGES, pagePath, recordNamesFor } fro
 import { SHOWCASE, CAPTURED, RECORD_ANSWERED } from '../js/showcase.js';
 import { STATIC_ASSETS, STATIC_EXCLUDE } from '../vite.config.js';
 import { HUB as HISTORY_HUB, SITEMAP_INDEX } from '../scripts/history-pages.mjs';
+import { OTD_HUB } from '../scripts/on-this-day-pages.mjs';   /* (marketing-next) the «on this day» calendar, written into dist/ by the build like the history hub */
 import { SITE_TOKEN, fillSiteToken, guardedHosts } from '../scripts/site-url.mjs';
 import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 
@@ -106,6 +107,7 @@ test('④ every asset a generated page names is copied into dist/, and the sitem
       const rel = normalize(dir + ref).replace(/\\/g, '/');
       /* the historical-map entry pages are written into dist/ by the build (historyPagesPlugin), not into the tree: the hub is the one door */
       if (rel === HISTORY_HUB || rel === 'ja/' + HISTORY_HUB) continue;
+      if (rel === OTD_HUB || rel === 'ja/' + OTD_HUB) continue;
       assert.ok(existsSync(join(ROOT, rel)), page + ' names ' + ref + ', which does not exist');
       if (rel !== 'index.html') assert.ok(copied(rel), page + ' names ' + rel + ', which the build does not copy');
     }

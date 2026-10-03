@@ -477,6 +477,7 @@ export function authUi(HOST){
         <div class="acct-grp-t">${_authL('Your data','あなたのデータ')}</div>
         <div class="acct-card acct-rows">
           <button class="acct-row" id="acct-my-places">${_authL('My places','マイプレイス')}</button>
+          <button class="acct-row" id="acct-watch">${_authL('Watched places','見守る場所')}</button>
           <button class="acct-row" id="acct-your-data">${_authL('What IntMap holds about you','IntMap が保持しているあなたのデータ')}</button>
           <button class="acct-row" id="acct-export" data-effect="private">${_authL('Download a copy of your data (JSON)','データのコピーをダウンロード（JSON）')}</button>
         </div>
@@ -579,6 +580,10 @@ export function authUi(HOST){
          What «your data» is, is answered by the database (supabase/migrations/20261003130000_…): the same
          set account deletion removes, so the copy can never be smaller than what «Delete account» erases. */
       document.getElementById('acct-my-places').onclick=()=>{ _acctClose(); import('./my-places.js').then(M=>M.openMyPlaces(HOST)).catch(()=>{}); };
+      /* (watch-places) the digest of the watched places — and, when the watcher has found something, how much is new */
+      document.getElementById('acct-watch').onclick=()=>{ _acctClose(); import('./place-watch.js').then(M=>M.openWatchDigest(HOST)).catch(()=>{}); };
+      try{ const n=+(document.getElementById('btn-account')||{getAttribute:()=>0}).getAttribute('data-watch-new')||0;
+        if(n>0) document.getElementById('acct-watch').textContent=_authL('Watched places','見守る場所')+' · '+_authL(n+' new','新着 '+n); }catch(_){}
       document.getElementById('acct-your-data').onclick=()=>{ _acctClose(); import('./account-data.js').then(M=>M.openYourData(HOST)).catch(()=>{}); };
       document.getElementById('acct-export').onclick=async()=>{ const msg=document.getElementById('acct-msg');
         msg.textContent=_authL('Preparing your copy…','コピーを用意しています…');
@@ -800,6 +805,10 @@ export function authUi(HOST){
         /* Pro entitlement may have changed → re-check satellite provider access */
         try{ if(HOST.mapType==='sat'){ const cur=HOST.satProviderById(HOST.satState.providerId); if(cur&&cur.tier==='pro'&&!HOST.satHasKey(cur)) HOST.satRevertToFallback(); else HOST.satRenderController(); } }catch(_){}
         try{ if(HOST.user) HOST.aiFetchUsage(); }catch(_){}   /* (#R27) refresh today's AI-quota for the signed-in user */
+        /* (watch-places) the watched places are checked while IntMap is open, for the signed-in reader only:
+           the module is fetched here, after sign-in, never on a signed-out reader's boot (js/place-watch.js) */
+        try{ if(HOST.user) import('./place-watch.js').then(M=>M.startWatching(HOST)).catch(()=>{});
+             else if(event==='SIGNED_OUT') import('./place-watch.js').then(M=>M.stopWatching()).catch(()=>{}); }catch(_){}
       },0);
     });
     await refreshCurrentUser();

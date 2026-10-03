@@ -70,10 +70,12 @@ interface IntMapPublished {
   IntMapAviation: any;
   IntMapCompanyData: any;
   IntMapCompanyPanel: any;
+  IntMapCompanyFootprint: any;
   IntMapCompanyFacilities: any;
   IntMapWaves: any;
   IntMapNewsEvents: any;
   IntMapPhotoGeo: any;
+  IntMapMyMap: any;
   IntMapShakeMap: any;
   IntMapRadiationObs: any;
   IntMapVolume3D: any;

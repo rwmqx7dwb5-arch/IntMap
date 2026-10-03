@@ -1,6 +1,8 @@
 ---
 title: 19,000 件の出来事を一覧の 200 件以外の角度から読む——国ごとのニュースの脈と国の日報・IODA の障害を同じ国のニュースの隣に・企業が出てくる出来事・取り込みの鮮度・embed を cron に
 date: 2026-10-03
+newsen: News by country: the pulse of each country’s news, a daily report, and internet outages beside the headlines.
+newsjp: 国ごとのニュースの脈と日報、インターネットの障害を、同じ国のニュースの隣に表示します。
 ---
 
 〈依頼〉「修正・穴埋めではなく構造改革とイノベーション…全権を委任する」の 1 本（分野: ニュース・世界の事象・

@@ -307,10 +307,30 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["time.changes","changes","periodChanges,whatChanged,timeDiff","time","none","","explanation","session","none","place?","","external"],
       ["settings.mapReading","mapReading","readingMode,screenReaderMode,readAloud,describeMap,describeHere","settings","none","","explanation","persist","none","",""],
       ["settings.offlineMaps","offlineMaps","offlineMap,saveMapOffline,downloadMap,offlineRegion,portableMap,mapWithoutInternet","settings","none","","explanation","persist","explicit","",""],
+      ["briefing.share","briefingShare","shareInvestigation,investigationLink,makeBriefing,shareBriefing","research","none","","panel,explanation","read","none","","","external"],
+      ["briefing.open","briefingOpen","openBriefing,readBriefing,briefingSection","research","time","camera,map.layer,time","map,time","session","none","","","external"],
+      ["corrections.report","reportMapError","mapCorrection,reportMapMistake,correctTheMap,flagMapError","corrections","panel","panel.corrections","panel","session","none","place?",""],
+      ["corrections.mine","myMapReports","myCorrections,mapReportStatus,correctionStatus","corrections","none","","explanation","read","none","",""],
+      ["corrections.log","mapCorrectionsLog","publishedCorrections,correctionsLog,whatWasFixed","corrections","none","","explanation","read","none","",""],
+      ["data.openData","openData","dataCatalog,openDataCatalog,downloadData,dataLicence","data","none","","explanation","read","none","",""],
+      ["data.companySites","companySites","companyFootprint,whoIsHere,companiesHere,industryMap","data","companySites","map.companySites","map,panel,explanation","session","none","","companyFootprint"],
+      ["map.myMap","myMap","myMaps,customMap,ownMap,storyMap,mapNotes,annotateMap","map","myMap","map.myMap,mymap.doc","map,object","persist","explicit","","myMap"],
+      ["news.story","newsStory","followStory,storyline,storyTimeline,eventThread,newsThread","data","panel","panel.newsStory,camera","panel,explanation","session","none","text?","newsStory","external"],
+      ["panel.palette","palette","commandPalette,openPalette,findAnything","panel","panel","panel.palette","panel","session","none","",""],
+      ["panel.tourWorksheet","tourWorksheet","worksheet,printWorksheet,lessonWorksheet,handout,printTour","panel","panel","camera,map.layer,time,panel.worksheet","panel,file","session","none","",""],
       ["places.saveView","saveMap","saveView,saveThisMap,keepThisMap,bookmarkMap","places","none","account.places","explanation","persist","explicit","",""],
       ["places.openView","openSavedMap","openMap,openSavedView,restoreSavedMap,loadSavedMap","places","time","camera,map.layer,time","map,time","session","none","",""],
       ["places.publish","publishCollection","sharePlaces,shareCollection,publishPlaces,publishMaps","places","none","account.places","explanation","external","explicit","",""],
       ["places.unpublish","unpublishCollection","stopSharingCollection,unsharePlaces,stopPublishing","places","none","account.places","explanation","persist","none","",""],
+      ["places.watch","watchPlace","monitorPlace,watchArea,alertMeNear,keepAnEyeOn","places","none","account.watches","explanation","persist","explicit","place?",""],
+      ["places.unwatch","unwatchPlace","stopWatchingPlace,stopMonitoringPlace","places","none","account.watches","explanation","persist","explicit","",""],
+      ["places.watchDigest","watchDigest","watchedPlaces,placeAlerts,whatHappenedNear,watchReport","places","none","","explanation","read","none","",""],
+      ["places.watchSeen","markWatchSeen","watchMarkRead,clearWatchAlerts","places","none","account.watches","explanation","persist","none","",""],
+      ["research.hereNow","hereNow","hereAndNow,whatIsHappeningHere,aroundMeNow,nearMeNow","research","none","","explanation","read","explicit","place?","","external"],
+      ["system.connections","connections","pageConnections,networkActivity,thirdParties,whoIsThisPageTalkingTo","system","none","","explanation","read","none","",""],
+      ["system.whatsNew","whatsNew","whatsnew,changelog,releaseNotes,updates,newFeatures","system","none","","explanation","read","none","",""],
+      ["time.onThisDay","onThisDay","thisDayInHistory,todayInHistory,onThisDate","time","time","camera,map.layer,time","map,time,explanation","session","none","",""],
+      ["view.openShared","openShared","openLink,openMapLink,openLocationLink,geoLink,openSharedLink","view","none","camera,map.object","explanation","session","none","text",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 
@@ -965,6 +985,24 @@ export function makeAtlasCapabilities(HOST, OPTS) {
          js/map-tools.js declares itself there, this verifier names the one source the reach writes,
          and reads it AFTER the call: features there = the area is up, redraw or not; none =
          `not_rendered`. The refusal is not removed — an empty source is still a failure to render. */
+      /* ══ (ux-next) EVERY COMPANY'S SITES — ASKED OF THE RENDERER UNDER THE EFFECT KEY THE MODULE CLAIMS ══════
+         js/company-footprint.js claims its source as 'map.companySites' when it draws, so the verdict counts the
+         features on the map now — not a diff (a second «show» of the same sites moves no count and is still drawn).
+         `query` draws nothing and `hide` takes it down: both are complete when the call says so. A renderer that
+         cannot be asked (-1) is unobserved, never «not rendered» (.agents/rules/one-pass-or-a-reason.md §5). */
+      companySites: {
+        observe: function () { return { sites: ownedFeatures('map.companySites') }; },
+        verify: function (ctx, args, before, after, raw) {
+          var html = (raw && raw.html) || '';
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: html };
+          var act = (args && args.action) || 'show';
+          if (act === 'query' || act === 'hide') return { status: 'completed', code: legacyCode(raw) || 'ok', html: html };
+          var n = after ? +after.sites : -1;
+          if (n > 0) return { status: 'completed', code: 'ok', observed: { companySites: { features: n } }, html: html };
+          if (n < 0) return { status: 'unobserved', produced: [], code: 'not_observable', observed: { companySites: null }, html: html };
+          return { status: 'partial', produced: [], code: 'not_rendered', observed: { companySites: { features: 0 } }, html: html };
+        }
+      },
       isochrone: {
         /* (atlas-observer-undo) the reach is asked of the renderer by its effect key — js/map-tools.js
            claims `im-iso-src` under 'map.isochrone' where it creates it — so no source id lives here */
@@ -1168,6 +1206,51 @@ export function makeAtlasCapabilities(HOST, OPTS) {
           if (!nowHolds) return { status: 'partial', produced: [], code: 'no_change', observed: { timeView: after, want: want }, html: html };
           if (holds(before) === true) return { status: 'completed', code: 'already_there', observed: { timeView: after }, html: html };
           return { status: 'completed', code: 'ok', observed: { timeView: after }, html: html };
+        }
+      },
+      /* ══ (map-next) THE READER'S OWN MAP, READ OFF THE MAP ITSELF ══════════════════════════════════════
+         `observe` asks js/my-map.js (`IntMapMyMap.state()`) what it holds and shows NOW, and the renderer how many
+         features are drawn in the surfaces it claimed under 'map.myMap'. The capability says, in `raw.want`, the state
+         it set out to reach: `shown`, `has` (feature ids that must be there), `lacks` (ids that must be gone), `title`,
+         `mapId`, `features` ({id: {name?, note?, color?}}) and `atLeast` (a count). Done is «after holds want»; already
+         true before the call is `already_there`. A map shown with features and NOTHING drawn is `not_rendered`; a
+         renderer that cannot be asked is not evidence either way (.agents/rules/one-pass-or-a-reason.md §5). The module
+         not loaded is `unobserved`. A read (list, link, export, analyse) states no want and completes on its answer. */
+      myMap: {
+        observe: function () {
+          var out = { mm: null, drawn: ownedFeatures('map.myMap') };
+          try {
+            var M = window.IntMapMyMap; if (!M || typeof M.state !== 'function') return out;
+            var s = M.state(), feats = {};
+            (s.features || []).forEach(function (f) { feats[f.id] = { name: f.name, note: f.note, color: f.color }; });
+            out.mm = { shown: s.shown || null, mapId: (s.map && s.map.id) || null, title: (s.map && s.map.title) || '', count: s.showing ? s.showing.count : 0,
+              ids: Object.keys(feats), features: feats };
+          } catch (_) { }
+          return out;
+        },
+        verify: function (ctx, args, before, after, raw) {
+          var html = (raw && raw.html) || '';
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: html };
+          var want = raw && raw.want;
+          if (!want) return { status: 'completed', code: 'ok', observed: { myMap: after && after.mm }, html: html };
+          var holds = function (o) {
+            var m = o && o.mm; if (!m) return null;
+            if ('shown' in want && m.shown !== want.shown) return false;
+            if (want.mapId != null && m.mapId !== want.mapId) return false;
+            if (want.title != null && m.title !== want.title) return false;
+            if (want.atLeast != null && !(m.count >= want.atLeast)) return false;
+            if (want.has && !want.has.every(function (id) { return m.ids.indexOf(id) >= 0; })) return false;
+            if (want.lacks && want.lacks.some(function (id) { return m.ids.indexOf(id) >= 0; })) return false;
+            if (want.features) { var ok = true; Object.keys(want.features).forEach(function (id) { var w = want.features[id], g = m.features[id];
+              if (!g) { ok = false; return; } Object.keys(w).forEach(function (k) { if (g[k] !== w[k]) ok = false; }); }); if (!ok) return false; }
+            return true;
+          };
+          var now = holds(after);
+          if (now === null) return { status: 'unobserved', produced: [], code: 'not_observable', observed: { myMap: null }, html: html };
+          if (!now) return { status: 'partial', produced: [], code: 'no_change', observed: { myMap: after.mm, want: want }, html: html };
+          if (after.mm.shown && after.mm.count > 0 && after.drawn === 0) return { status: 'partial', produced: [], code: 'not_rendered', observed: { myMap: after.mm, drawn: 0 }, html: html };
+          if (holds(before) === true) return { status: 'completed', code: 'already_there', observed: { myMap: after.mm }, html: html };
+          return { status: 'completed', code: 'ok', observed: { myMap: after.mm, drawn: after.drawn }, html: html };
         }
       },
       /* ══ ⚠⚠⚠ (#R754) THIS ONE ASKS THE PAINTER, AND IT ASKS AFTER ═════════════════════════════
@@ -1594,7 +1677,20 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     function termsOf(nq) {
       var latin = (nq.match(/[a-z0-9]{3,}/g) || []).filter(function (t, i, a) { return a.indexOf(t) === i; });
       var runs = (nq.match(/[぀-ヿ㐀-鿿]+/g) || []).filter(function (t, i, a) { return a.indexOf(t) === i; });
-      return { latin: latin, runs: runs, words: runWords(runs) };
+      /* (atlas-reach) THE REQUEST'S PHRASES — two and three adjacent words, the way a catalogue entry writes its example
+         («what is the population of X», «great-circle distance», «fly to»). A phrase is matched at word boundaries and
+         is worth what its own df says, so a phrase every block writes («of the», «on the map») is worth nothing by the
+         same rule that silences a common word; one the request shares with ONE entry is the most specific evidence a
+         spelling search has. The CJK half needs no phrases: a run is already matched as a contiguous stretch.
+         MEASURED 2026-10-03 with the nightly reach instrument's method (scripts/atlas-eval/reach.mjs, the answer key's own
+         questions): 34 → 37 of the 157 capabilities the answers use, 2 → 4 of 74 questions whole; the median ranking 7 → 8
+         rows (tests/atlas-reach-checks.test.mjs holds the floor). */
+      var ws = nq.match(/[a-z0-9]+/g) || [], phrases = [];
+      for (var i = 0; i < ws.length; i++) for (var n = 2; n <= 3 && i + n <= ws.length; n++) {
+        var ph = ws.slice(i, i + n);
+        if (ph.some(function (w) { return w.length >= 3; }) && phrases.indexOf(ph.join(' ')) < 0) phrases.push(ph.join(' '));
+      }
+      return { latin: latin.concat(phrases), runs: runs, words: runWords(runs) };
     }
     /* ⚠⚠⚠ (atlas-find-semantic) A RUN IS NOT A WORD, AND THE LANGUAGE CAN SAY WHERE ITS WORDS ARE.
        A run is cut by SCRIPT, and a Japanese particle is written in the same script as the words it joins,
@@ -1628,7 +1724,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     /* a Latin term is a WORD («iss» is not inside «missile» or «emission»); a CJK window is a substring */
     var _termRe = {};
     function hasTerm(d, t) {
-      if (!/^[a-z0-9]+$/.test(t)) return d.indexOf(t) >= 0;
+      if (!/^[a-z0-9]+( [a-z0-9]+)*$/.test(t)) return d.indexOf(t) >= 0;   /* a Latin word or phrase is matched at word boundaries */
       var re = _termRe[t] || (_termRe[t] = new RegExp('(^|[^a-z0-9])' + t + '(?=$|[^a-z0-9])'));
       return re.test(d);
     }
@@ -1743,7 +1839,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
     var _termReG = {};
     function docAt(d, t) {
       var out = [], i;
-      if (/^[a-z0-9]+$/.test(t)) {
+      if (/^[a-z0-9]+( [a-z0-9]+)*$/.test(t)) {
         var re = _termReG[t] || (_termReG[t] = new RegExp('(^|[^a-z0-9])' + t + '(?=$|[^a-z0-9])', 'g')), m;
         re.lastIndex = 0;
         while ((m = re.exec(d)) && out.length < 32) out.push(m.index + m[1].length);

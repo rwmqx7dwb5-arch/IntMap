@@ -1,6 +1,8 @@
 ---
 title: 放射拡散モデルの「答え合わせ」——2011 年の福島第一の実測沈着とセルごとに比べ、悪化したら落ちる門と、読者が見られる入口を足した（結果は良くない）
 date: 2026-10-03
+newsen: The radiation dispersion model is now checked against the measured Fukushima 2011 fallout, and the result is published.
+newsjp: 放射拡散モデルを 2011 年福島第一の実測沈着と照らした答え合わせを公開しました。
 ---
 
 〈依頼〉「足し算。商品開発。全権を委任する。」放射拡散シミュレータは実測との突き合わせを持っていなかった

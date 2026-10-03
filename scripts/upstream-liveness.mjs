@@ -142,7 +142,9 @@ export function buildProbes(decl) {
       try { u = new URL(p.url); } catch { problems.push(`${BUILD_UPSTREAMS}: ${pack} probe.url is not a URL: ${p.url}`); continue; }
       if (u.protocol === 'http:' && !(typeof p.why === 'string' && p.why.trim().length >= 12)) problems.push(`${BUILD_UPSTREAMS}: ${pack} probes over http without saying why: ${p.url}`);
       probes.push({ host: `elections/${pack}: ${u.hostname}${probes.some((q) => q.host === `elections/${pack}: ${u.hostname}`) ? u.pathname : ''}`,
-        url: p.url, expect: Array.isArray(p.expect) ? p.expect : null, why: p.what || p.why || null, group: 'build' });
+        url: p.url, expect: Array.isArray(p.expect) ? p.expect : null, why: p.what || p.why || null, group: 'build',
+        /* (ops-next) who a reader is told this is: the pack's publisher and what the pack reads there */
+        pack, publisher: (d && d.name) || null, reads: p.what || null });
     }
   }
   return { probes, problems };

@@ -288,6 +288,11 @@ export function makeSessionTabs(HOST, CTX) {
       const P=window.IntMapCompanyPanel; if(!P||!P.open) return {ok:false,err:'no module'};
       const ok=await P.open(key); return {ok:ok!==false}; }, 'Company atlas · open a company profile and its facilities (params.company)','company'],
     ['company.close', ()=>{ try{ window.IntMapCompanyPanel&&window.IntMapCompanyPanel.close(); }catch(_){} }, 'Company atlas · close','company'],
+    /* (ux-next) every company's sites at once, read from the land (js/company-footprint.js). The fifth cell is the
+       command's reader-facing TITLE (en, jp): a command with one is offered by name in the command palette even
+       when no control bound to it is on screen (js/command-palette.js) */
+    ['company.footprint', async(p)=>{ await window.IntMapLazy.need('companyFootprint'); const F=window.IntMapCompanyFootprint; if(!F) return {ok:false,err:'no module'};
+      if(p&&p.close){ F.close(); return {ok:true,shown:false}; } const st=await F.open({groups:p&&p.groups,sectors:p&&p.sectors}); return Object.assign({ok:!!st.shown},st); }, 'Company atlas · every company’s sites on one map (params.groups/sectors, params.close)','company',['Company sites map','企業の拠点の地図']],
     /* ⚠ (#R774) 「訊いたが、そこには値が無かった」 IS REPORTED AS ITSELF, NOT AS A READING. js/map-ui.js
        sampleAt now returns a row for every registration it ASKED, so the rows it hands back are two
        kinds of fact; putting both under `values` would offer Atlas a reading with no value in it.
@@ -297,5 +302,5 @@ export function makeSessionTabs(HOST, CTX) {
       const got=v.filter(x=>x&&(x.value!=null||x.number!=null||x.code!=null||x.failed===true));
       return {ok:true,values:got,asked:v.filter(x=>x&&got.indexOf(x)<0).map(x=>x.id)}; }, 'Layer data · sample active layers at a point','layer']
   ];
-  REGL.forEach(r=>{ try{ IntMapOS.register(r[0], (ctx)=>r[1]((ctx&&ctx.params)||{}), {label:r[2], group:r[3]}); }catch(_){} }); })();
+  REGL.forEach(r=>{ try{ IntMapOS.register(r[0], (ctx)=>r[1]((ctx&&ctx.params)||{}), r[4]?{label:r[2], group:r[3], title:r[4]}:{label:r[2], group:r[3]}); }catch(_){} }); })();
 }

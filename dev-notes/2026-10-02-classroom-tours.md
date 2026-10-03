@@ -1,6 +1,8 @@
 ---
 title: 授業ツアーを作った——地図の状態を順に並べ、各段に読み上げる文と生徒への問いを付けて、全画面の授業モードで「次へ／前へ」と進む。段のリンクは見本と同じくアプリ自身に作らせ、語りの主張（国名・区分・区分が無いこと）はその日付の記録に訊き、歴史の段は年ごとに列挙して史実と照らし、地図を撮って見た
 date: 2026-10-02
+newsen: Classroom tours: a lesson as a sequence of maps, each step with narration and a question for students, played full-screen with Next and Back.
+newsjp: 授業ツアーを追加。地図を順に並べ、各段に語りと生徒への問いを付けて、全画面の授業モードで「次へ／前へ」と進めます。
 ---
 
 〈依頼〉「商品開発・マーケティング・営業。足し算。全権を委任する」（2026-10-02）。推奨顧客層の 2 つ目（歴史・地理の教員、

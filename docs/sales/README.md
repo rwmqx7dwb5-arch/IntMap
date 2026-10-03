@@ -41,6 +41,11 @@
 3. 回答の文は [`faq.md`](faq.md) と [`pricing.md`](pricing.md) を使う。無い問いは**推測で答えず**、
    運営者に確認してから答え、答えを `faq.md` に 1 行足す。
 4. 相談は受信から 730 日で自動削除（`purge_org_inquiries`）。相手が求めれば先に消す（画面の Delete）。
+4b. **会話の進み具合は Pipeline タブで持つ**（状態＝返信したか、とは別）。段は lead（まだ話していない）→ talking（やりとり中）
+   → trial（試している：下書きの記事に埋め込んだ・1 コマで使った）→ adopted（使っている）| declined（断られた・途絶えて閉じた）。
+   段を動かしたら**次にやること 1 文と期日**を書く。タブの先頭に「期日が今日以前のもの」と「段が進んだのに期日の無いもの」が
+   出るので、毎回そこから片付ける。語の正本は `supabase/functions/_shared/inquiry-shape.js` の `INQUIRY_PIPELINE`。
+   ⚠ adopted も 730 日で消える——事例として残すのは、相手の書面の同意を取って下の 5 で書いたものだけ。
 5. 導入が実際に決まり、**相手が書面で公開に同意した**ときだけ、[`case-study-template.md`](case-study-template.md)
    の型で事例を書く。
 

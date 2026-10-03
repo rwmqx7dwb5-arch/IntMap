@@ -20,7 +20,7 @@
 
 export const TEXT = {
   en: {
-    nav: { examples: 'Examples', teachers: 'For teachers', about: 'About', news: 'News on a map', embed: 'Embed a map', history: 'Browse by year', open: 'Open the map', lang: '日本語', langLabel: 'Read this page in Japanese' },
+    nav: { examples: 'Examples', teachers: 'For teachers', about: 'About', news: 'News on a map', embed: 'Embed a map', developers: 'Developers', history: 'Browse by year', onThisDay: 'On this day', open: 'Open the map', lang: '日本語', langLabel: 'Read this page in Japanese' },
     about: {
       title: 'IntMap — every year of the world, on one map',
       description: 'A free world map you can set to any date from {floorBC} to today, with historical borders, climate, population and live data on one map. No sign-up needed.',
@@ -93,7 +93,7 @@ export const TEXT = {
         h2: 'Classroom tours',
         sub: 'A tour is a short lesson already laid out: a few maps in order, each with sentences to read out and a question for the class. It opens full screen in the map — large type for a projector, everything else put away — and you move through it with Next and Previous.',
         start: 'Start the tour',
-        note: 'Move with the arrow keys, Space or a presentation clicker (Page Up / Page Down); F switches to full screen, T hides the text, Esc leaves the tour. The address bar always holds a link to the step on screen, so you can hand that one step to the students. No account is needed.',
+        note: 'Move with the arrow keys, Space or a presentation clicker (Page Up / Page Down); F switches to full screen, T hides the text, Esc leaves the tour. The address bar always holds a link to the step on screen, so you can hand that one step to the students. The printer button on the tour’s panel turns the tour into a worksheet: each step’s map with its legend and data credits, the date it shows, the question and lines to answer on, and a teacher’s copy with what to read out. Print it or save it as a PDF. No account is needed.',
       },
       build: {
         h2: 'Make a tour of your own',
@@ -188,11 +188,70 @@ export const TEXT = {
         ],
       },
     },
+    /* (developer-embed) developers.html — for a developer, a teacher building course material, a newsroom's interactive
+       desk. The protocol tables, the code and the catalogue are not written here: js/embed-client.js PROTOCOL,
+       scripts/landing.mjs (the code, from the hero example's captured link) and scripts/public-api.mjs (the catalogue,
+       filled into the built page from the governance ledger). */
+    developers: {
+      title: 'Build on IntMap — embed API and open data',
+      description: 'Steer an embedded IntMap map from your own page — set the date, move the camera, follow the reader — and take the open data it is built from, each dataset with the licence its source states.',
+      hero: {
+        h1: 'Build on the map.',
+        sub: 'Put a map in your page that your page can steer, and take the data IntMap is built from — each dataset with the licence its source states and what that licence asks of you.',
+        ctaEmbed: 'Steer an embed',
+        ctaData: 'Open data',
+        note: 'Free. No account and no key: the API is plain files on the same site as the map.',
+      },
+      api: {
+        h2: 'Steer an embedded map',
+        sub: 'Import the client and mount a map. Your page can then move it to a date or a place, show any share link, and hear where the reader has taken it.',
+        commands: 'What your page can send',
+        events: 'What the map tells your page',
+        col: { name: 'Message', args: 'Fields', does: 'What it does' },
+        /* what each message of js/embed-client.js PROTOCOL does — keyed by its name (commands, then events) */
+        does: {
+          commands: {
+            get: 'Reply with the state the frame is in now.',
+            state: 'Show the map a share-link fragment (#v=…) describes — layers, clock, comparison, caption and all.',
+            view: 'Move the camera; everything else stays.',
+            time: 'Set the clock to a date, or to 1 July of a year (astronomical numbering: 0 is 1 BC, -499 is 500 BC), or back to now.',
+          },
+          events: {
+            ready: 'The frame has applied the link it was opened with. Sent once.',
+            state: 'The map changed. cause says whether the reader moved it (reader) or a link or command did (restore).',
+            reply: 'The answer to a command that carried an id.',
+          },
+        },
+        raw: 'The client is a convenience. The protocol is plain postMessage, so a page can also speak it directly:',
+        safe: 'A command can only change what the frame shows, exactly as a share link can. The frame reports the map’s state — the same link its own “Open in IntMap” button carries — and nothing about the reader, and only to the page that framed it.',
+      },
+      data: {
+        h2: 'Open data',
+        sub: 'The datasets the map draws, as files you can download, with no key and no rate limit beyond the web host’s. Every address below is a JSON file.',
+        endpoints: [
+          { path: 'catalog.json', p: 'Every dataset offered for reuse: its files, its size, its licence as its source states it, what that licence requires, the credit to show — and every dataset not offered, with the reason.' },
+          { path: 'countries.json', p: 'The countries (Natural Earth codes, with English and Japanese names), and which datasets say something about each.' },
+          { path: 'countries/JPN.json', p: 'One country: the row every per-country dataset has for it, each with its own dataset’s terms.' },
+          { path: 'embed.json', p: 'The embed address and the message protocol above, as data.' },
+        ],
+        rule: 'A dataset is offered only when every source it comes from states a licence that permits redistribution. One that states none, or states terms that are not known to, is listed as not offered rather than offered quietly. Where a dataset combines sources, the strictest condition applies to the whole file.',
+        table: 'The datasets, as this build of the site offers them',
+      },
+      terms: {
+        h2: 'What you agree to when you reuse',
+        items: [
+          { h: 'Show the credit', p: 'When a dataset’s terms require credit, show the credit line the catalogue gives for it wherever you show the data.' },
+          { h: 'Share-alike', p: 'A dataset under ODbL or a share-alike Creative Commons licence must stay under that licence when you publish it or something built from it.' },
+          { h: 'Non-commercial', p: 'Datasets marked non-commercial may not be reused for commercial purposes. IntMap’s own files are under IntMap’s licence (personal, research and educational use).' },
+          { h: 'IntMap’s code', p: 'The embed client is part of IntMap and under IntMap’s licence. The message protocol is documented on this page, so you can also speak it with your own code.' },
+        ],
+      },
+    },
     footer: { sources: 'Data sources', science: 'Science & logic', privacy: 'Privacy Policy', terms: 'Terms of Service' },
   },
 
   jp: {
-    nav: { examples: '見本', teachers: '先生へ', about: 'IntMap について', news: 'ニュースを地図で', embed: '地図を埋め込む', history: '年代から探す', open: '地図を開く', lang: 'English', langLabel: 'このページを英語で読む' },
+    nav: { examples: '見本', teachers: '先生へ', about: 'IntMap について', news: 'ニュースを地図で', embed: '地図を埋め込む', developers: '開発者向け', history: '年代から探す', onThisDay: 'この日の歴史地図', open: '地図を開く', lang: 'English', langLabel: 'このページを英語で読む' },
     about: {
       title: 'IntMap — 世界のどの年も、一枚の地図で',
       description: '{floorBC}から今日まで、どの日付にも合わせられる無料の世界地図。歴史上の国境・気候・人口・リアルタイムのデータを一枚に重ねます。登録不要。',
@@ -264,7 +323,7 @@ export const TEXT = {
         h2: '授業ツアー',
         sub: 'ツアーは、組み立て済みの短い授業です。いくつかの地図を順に並べ、それぞれに読み上げる文と生徒への問いを添えています。地図の中で全画面に開き——プロジェクターでも読める大きな文字で、ほかの画面要素はしまって——「次へ」「前へ」で進みます。',
         start: 'ツアーを始める',
-        note: '矢印キー、スペース、プレゼンテーション用のリモコン（Page Up / Page Down）で進みます。F で全画面、T で文を隠し、Esc でツアーを終えます。アドレスバーには常にいま映しているステップへのリンクが入っているので、そのステップだけを生徒に渡すこともできます。アカウントは要りません。',
+        note: '矢印キー、スペース、プレゼンテーション用のリモコン（Page Up / Page Down）で進みます。F で全画面、T で文を隠し、Esc でツアーを終えます。アドレスバーには常にいま映しているステップへのリンクが入っているので、そのステップだけを生徒に渡すこともできます。ツアーのパネルのプリンタのボタンを押すと、ツアーがワークシートになります。各ステップの地図（凡例とデータの出典つき）と日付、問い、解答欄を並べた生徒用と、読み上げる文も載せた教員用があり、印刷するか PDF に保存できます。アカウントは要りません。',
       },
       build: {
         h2: '自分のツアーを作る',
@@ -352,6 +411,60 @@ export const TEXT = {
           { h: 'すべてのデータの出典表記', p: '各データ提供元が求める出典表記は、フレームの中でも見えたままです。狭いフレームでは切らずに折り返します。' },
           { h: '地図全体への入口', p: 'フレームのリンクから同じ表示を IntMap で開き、さらに調べられます。' },
           { h: 'それ以外は何もない', p: 'フレームは読み取り専用です。パネルも検索もログインもポップアップもなく、あるのは地図だけ。パン・ズームは、オフにしない限り読者ができます。' },
+        ],
+      },
+    },
+    developers: {
+      title: 'IntMap で作る — 埋め込み API とオープンデータ',
+      description: '自分のページから埋め込んだ IntMap の地図を動かし（日付を合わせ、カメラを動かし、読者の操作を受け取る）、地図の元になっているオープンデータを、出典が述べるライセンスつきで取得できます。',
+      hero: {
+        h1: '地図の上に作る。',
+        sub: 'あなたのページから動かせる地図を載せ、IntMap の元になっているデータを持ち出せます。データセットごとに、出典が述べるライセンスと、そのライセンスがあなたに求めることを添えています。',
+        ctaEmbed: '埋め込みを動かす',
+        ctaData: 'オープンデータ',
+        note: '無料。アカウントもキーも不要です。API は地図と同じサイトに置かれたただのファイルです。',
+      },
+      api: {
+        h2: '埋め込んだ地図を動かす',
+        sub: 'クライアントを読み込んで地図を置くと、あなたのページから日付や場所へ動かし、任意の共有リンクを表示させ、読者が地図をどこへ動かしたかを受け取れます。',
+        commands: 'あなたのページが送れるもの',
+        events: '地図があなたのページに伝えるもの',
+        col: { name: 'メッセージ', args: '項目', does: 'すること' },
+        does: {
+          commands: {
+            get: 'いまの状態を返す。',
+            state: '共有リンクの断片（#v=…）が述べる地図に切り替える——レイヤー・時刻・比較・題を含む全部。',
+            view: 'カメラだけを動かす（他はそのまま）。',
+            time: '時計をある日付へ、または年の 7 月 1 日へ（天文学的紀年: 0 は紀元前 1 年、-499 は紀元前 500 年）、または「いま」へ戻す。',
+          },
+          events: {
+            ready: '開かれたリンクを適用し終えた。1 回だけ。',
+            state: '地図が変わった。cause は読者が動かした（reader）か、リンクや命令が変えた（restore）か。',
+            reply: 'id を付けた命令への返事。',
+          },
+        },
+        raw: 'クライアントは便利のためのものです。中身は素の postMessage なので、ページから直接話すこともできます。',
+        safe: '命令が変えられるのは枠の中に何を映すかだけで、共有リンクにできることと同じです。枠が伝えるのは地図の状態（枠自身の「IntMap で開く」と同じリンク）だけで、読者についての情報は含まず、送り先は枠を置いたページだけです。',
+      },
+      data: {
+        h2: 'オープンデータ',
+        sub: '地図が描いているデータセットを、ダウンロードできるファイルとして。キーは不要で、ウェブのホストの制限のほかに回数制限はありません。下のアドレスはどれも JSON ファイルです。',
+        endpoints: [
+          { path: 'catalog.json', p: '再利用できるデータセットの全部——ファイル・大きさ・出典が述べるとおりのライセンス・そのライセンスが求めること・表示する出典——と、出していないデータセットとその理由。' },
+          { path: 'countries.json', p: '国の一覧（Natural Earth のコード、英語と日本語の名前）と、それぞれの国について何かを述べているデータセット。' },
+          { path: 'countries/JPN.json', p: '1 か国ぶん。国ごとのデータセットがその国について持つ行を全部、それぞれのデータセットの条件つきで。' },
+          { path: 'embed.json', p: '埋め込みのアドレスと、上のメッセージの約束事を、データとして。' },
+        ],
+        rule: 'データセットを出すのは、元になっている出典のすべてが再配布を許すライセンスを述べているときだけです。何も述べていないもの、再配布を許すと確認できない条件を述べているものは、黙って出さずに「出していないもの」として理由とともに載せます。複数の出典を合わせたデータセットには、いちばん厳しい条件がファイル全体にかかります。',
+        table: 'このビルドのサイトが出しているデータセット',
+      },
+      terms: {
+        h2: '再利用するときに守ること',
+        items: [
+          { h: '出典を表示する', p: '出典の表示を条件とするデータセットは、データを見せる場所に、カタログが示す出典の行を表示してください。' },
+          { h: '継承', p: 'ODbL や継承条件つきのクリエイティブ・コモンズのデータセットは、それ（またはそれから作ったもの）を公開するときも同じライセンスのままにしてください。' },
+          { h: '非営利', p: '非営利と記したデータセットは営利目的に再利用できません。IntMap 自身のファイルは IntMap のライセンス（個人・研究・教育での利用）に従います。' },
+          { h: 'IntMap のコード', p: '埋め込みクライアントは IntMap の一部で、IntMap のライセンスに従います。メッセージの約束事はこのページに書いてあるので、自分のコードで話すこともできます。' },
         ],
       },
     },

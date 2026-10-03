@@ -20,4 +20,20 @@ export const HINDCAST = Object.freeze({
   obsRes: 0.05, obsAsOf: '2012-06-28',
   /* figure-of-merit thresholds, Bq/m2: 100 kBq/m2 (the evacuation-scale band) and 1 MBq/m2 (the hottest contour) */
   fmsBq: [100000, 1000000],
+  /* ── (science-next) THE ATTRIBUTION LADDER ────────────────────────────────────────────────────────
+     The rung above ("preset") is the simulator as a reader runs it. Each rung below changes ONE thing, in an
+     order where every change is a statement of fact about 2011 or about the model, never a fitted number:
+       jaea                       the accident's own release, hour by hour (data/fukushima-release.json —
+                                  71 intervals with their heights) instead of one rate for 120 h
+       jaea-regional              + the regional wind nest (RAD.midPlan), which the live simulator does not fetch
+       jaea-regional-particulate  + caesium counted as wholly depositable (the model's default removes 45 %)
+     The release's central amount is the table's; its spread is UNSCEAR's reported range for the TOTAL Cs-137
+     release (6–20 PBq, RAD.SOURCE_TERMS.fukushima), applied as a scale on the table's shape — the table itself
+     states no range. Seeds and particles are the preset's. */
+  releaseFile: 'data/fukushima-release.json',
+  variants: Object.freeze([
+    Object.freeze({ id: 'jaea', release: 'jaea', regional: false, depositableFraction: null }),
+    Object.freeze({ id: 'jaea-regional', release: 'jaea', regional: true, depositableFraction: null }),
+    Object.freeze({ id: 'jaea-regional-particulate', release: 'jaea', regional: true, depositableFraction: 1 }),
+  ]),
 });

@@ -357,6 +357,9 @@ test.describe('shell-experience: desktop at 1000 px', () => {
       secs: [...document.querySelectorAll('#im-status .ims-sec')].map((x) => x.dataset.sec),
       upRows: document.querySelectorAll('#im-status .ims-sec[data-sec="upstream"] > .ims-group > .ims-row').length,
       all: document.querySelectorAll('#im-status .ims-sec[data-sec="upstream"] details .ims-row').length,
+      /* (ops-next) the record: one bar per measured night, one strip cell per night per supplier */
+      bars: document.querySelectorAll('#im-status .ims-sec[data-sec="upstream"] .ims-record .ims-bar').length,
+      strip: (document.querySelector('#im-status .ims-sec[data-sec="upstream"] details .ims-strip') || { children: [] }).children.length,
       dialog: window.IntMapDialog.anyOpen(),
       settingsShut: getComputedStyle(document.getElementById('settings-modal')).display === 'none',
     }));
@@ -364,10 +367,27 @@ test.describe('shell-experience: desktop at 1000 px', () => {
     const down = bundle.upstream ? bundle.upstream.hosts.filter((h) => h.verdict === 'dead' || h.verdict === 'refused').length : 0;
     expect(st.upRows, 'one count row and one row per supplier the nightly check found not answering').toBe(bundle.upstream ? 1 + down : 1);
     expect(st.all, 'every supplier is listed behind the disclosure').toBe(bundle.upstream ? bundle.upstream.hosts.length : 0);
+    const nights = bundle.history ? bundle.history.nights.length : 0;
+    expect(st.bars, 'one bar per night the shipped record holds').toBe(nights);
+    expect(st.strip, 'every supplier strip has one cell per night').toBe(nights);
     expect(st.dialog, 'it is a registered dialog (Escape, focus trap)').toBe(true);
     expect(st.settingsShut, 'Settings steps aside for it').toBe(true);
     await page.keyboard.press('Escape');
     await page.waitForFunction(() => document.getElementById('im-status').style.display === 'none', null, { timeout: 5_000 });
+
+    /* ── (ops-next) 「新着」, from its button beside it: the list the build wrote, one row per announced change ── */
+    const wn = await page.evaluate(() => fetch('./whats-new.json').then((r) => r.json()).then((j) => j.entries.length, () => -1));
+    expect(wn, 'the build serves the what\'s-new list beside the app').toBeGreaterThan(0);
+    await page.click('#btn-open-settings');
+    await page.click('#btn-whats-new');
+    await page.waitForFunction(() => { const r = document.getElementById('im-whats-new'); return !!r && r.style.display !== 'none' && !r.querySelector('[aria-busy]'); }, null, { timeout: 20_000 });
+    const wr = await page.evaluate(() => ({ rows: document.querySelectorAll('#im-whats-new .wn-row').length, dialog: window.IntMapDialog.anyOpen(),
+      seen: (JSON.parse(localStorage.getItem('intmap-whats-new-seen') || '[]') || []).length }));
+    expect(wr.rows, 'one row per announced change').toBe(wn);
+    expect(wr.dialog).toBe(true);
+    expect(wr.seen, 'opening the list records every entry as seen on this device').toBe(wn);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.getElementById('im-whats-new').style.display === 'none', null, { timeout: 5_000 });
 
     /* ── ③ a failed request, through a relay, is joined to last night's check of the host it targeted ── */
     const row = bundle.upstream && bundle.upstream.hosts.find((h) => !h.host.includes('*'));

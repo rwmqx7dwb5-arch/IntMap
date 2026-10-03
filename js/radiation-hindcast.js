@@ -155,3 +155,17 @@ export function cellFeatures(bundle, view, bands) {
   }
   return out;
 }
+
+/* ══ (science-next) THE ATTRIBUTION LADDER ═══════════════════════════════════════════════════════
+   The bundle carries the preset's comparison at the top level (what a reader's run of the simulator gets)
+   and, under `variants`, the same comparison with one stated change per rung (scripts/radiation-hindcast-config.mjs
+   says which). The rung ids are the bundle's own — this file lists none, so a rung added by the builder is
+   drawable without touching the panel or Atlas. `rungOf` hands back a bundle-shaped view of one rung, which is
+   what cellFeatures() draws; an unknown id is null, never the preset in disguise. */
+export function rungIds(bundle) { return ['preset'].concat(((bundle && bundle.variants) || []).map((v) => v.id)); }
+export function rungOf(bundle, id) {
+  if (!bundle) return null;
+  if (id == null || id === 'preset') return { ...bundle, rung: 'preset' };
+  const v = (bundle.variants || []).find((x) => x.id === id);
+  return v ? { ...bundle, rung: v.id, model: v.model, metrics: v.metrics, rungConditions: v.conditions } : null;
+}

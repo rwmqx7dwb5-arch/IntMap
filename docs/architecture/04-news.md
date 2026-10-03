@@ -322,3 +322,22 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   地図の線（`nint-co-*`）は `showCompanyLinks` が引く。
 - **鮮度の部品** `js/freshness.js` は「新しい／N 時間更新なし／確認できなかった／未確認」を別の文で言う。
   News 一覧の上の取り込みの 1 行（`#news-ingest-health`、`js/news-events.js`）と日報と凡例が使う。
+
+---
+
+### 4.7 ストーリー — 日をまたいだ続報を年表と地図で — `js/news-story.js`
+
+出来事は 48 時間の塊なので、続報は別の出来事になる。ストーリーは**見出しが同じ語をすべて含む出来事**
+（直近 60 日・Chronos の瞬間まで）を 1 本の流れとして読む口で、正本は
+[`docs/NEWS-EVENTS.md` §17](../NEWS-EVENTS.md)。
+
+- **起動時に在るのは扉だけ**: `js/news-pulse.js` の `IntMapNewsIntel.story`・IntMapOS 命令 `newsstory.open`・
+  `?story=a,b` の検出。本体 `js/news-story.js` は `IntMapLazy` の `newsStory`。
+- **計算は `js/news-story-core.js` の 1 本**（純粋）: どの語を提案するか（`suggest`——名前は「文の書き方の見出しで
+  文中でも大文字」の割合、対は PMI）・年表（UTC の毎日、0 の日も）・地点と国（§4.6 と同じ `makeCountryIndex`）・
+  広がり（新しい地点 → 最も近い先行地点・大円は `news-intel-core.js` の `arc`）・再生位置（`frameAt`）・アドレス。
+- **サーバーの読み口**（migration `20261003211600_news_story.sql`）: `news_title_terms(text)`（語を切る唯一の規則・
+  GIN 索引の式）・`news_story(terms, since, until)`（`setof news_events`）・`news_story_terms(text, since, until, max_share)`
+  （数だけの jsonb）。⚠ ブラウザは見出しを語に切らない。
+- **入口**: 出来事の詳細（`js/news-events.js`）の「この出来事の流れを追う」・リンク・命令・Atlas `news.story`。
+- ⚠ **ストーリーは述べた問いであって判定ではない**——カードは常に「見出しに … を含む出来事」と言い、線は報道の順序。

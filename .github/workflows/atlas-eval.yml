@@ -32,6 +32,37 @@ concurrency:
   cancel-in-progress: false   # a second run would spend the same refresh token
 
 jobs:
+  # (ops-next) THE HALF THAT NEEDS NO SESSION. The live evaluation below needs the two secrets and, until they
+  # exist, measures nothing (nine runs, 2026-09-25 → 10-03). The replay of every recorded turn and the reach of
+  # every answer-key question (scripts/atlas-eval/reach.mjs) are IntMap's own deterministic code and are
+  # measured every night regardless — uploaded as `atlas-eval-offline`, which scripts/build-service-status.mjs
+  # carries to the status page. It is a separate job so a missing secret cannot stop it, and it never
+  # turns the run green: the `eval` job still fails, and says why, while nothing live was measured.
+  offline:
+    name: Replay the recorded turns and measure the reach (no session)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - run: npm ci
+      - name: Replay and reach
+        run: node scripts/atlas-eval.mjs --offline --out _offline
+      - name: Upload the report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: atlas-eval-offline
+          path: _offline/
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Put the report on the run page
+        if: ${{ always() }}
+        run: |
+          if [ -f _offline/atlas-eval-offline.md ]; then head -c 900000 _offline/atlas-eval-offline.md >> "$GITHUB_STEP_SUMMARY"; else echo "no offline report was written" >> "$GITHUB_STEP_SUMMARY"; fi
+
   eval:
     name: Ask the recorded questions and the answer key
     runs-on: ubuntu-latest

@@ -1,6 +1,8 @@
 ---
 title: 火山灰の「いま噴火したら」を新しく作り、シミュレーションの出力を分析用データセットにし、放射拡散とパンデミックに幅（アンサンブル）を出させ、全シミュレータを手法のページに対応させる
 date: 2026-10-03
+newsen: New volcanic-ash simulation (what if it erupted now), and the dispersion and pandemic models now show a range of outcomes.
+newsjp: 火山灰の「いま噴火したら」シミュレーションを追加。放射拡散とパンデミックは結果の幅を示します。
 ---
 
 〈依頼〉「修正・穴埋めではなく構造改革とイノベーション。整形ではなく造形。足し算。全権を委任する。」

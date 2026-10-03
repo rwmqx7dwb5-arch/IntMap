@@ -188,6 +188,15 @@ It needs one repository secret, `SUPABASE_ACCESS_TOKEN` — registered once, see
 and say so. **Manual** `supabase functions deploy` stays available for emergencies
 ([`AGENT-SETUP.md`](AGENT-SETUP.md) §9).
 
+## What readers are told — 「更新情報」 (`scripts/whats-new.mjs`)
+
+Every deploy also publishes what changed **for readers**: the build writes `whats-new.json`, `updates.html` /
+`ja/updates.html` and the Atom feeds `updates.xml` / `ja/updates.xml` from the `newsen` / `newsjp` lines of the
+records in `dev-notes/` (the in-app Settings ▸ 新着 and Atlas's `system.whatsNew` read the same JSON). Nothing is
+posted anywhere; readers and feed readers come to it. A change a reader can see gets its two lines in the same
+pull request as its record (`.agents/skills/intmap-round/` §3); `node scripts/dev-notes.mjs --check` holds them
+to the rules. `docs/architecture/15-ops-quality.md` §15.9.
+
 ## Post-deploy verification
 
 `ci.yml`’s `post-smoke` job (after `pages`, on `main` only; `deploy.yml` has the same job for a

@@ -565,7 +565,8 @@ test('#R705 province label click carries source-date supplement; exact hit deleg
   assert.match(ui, /if\(hit.length\) return;/, 'exact hits use the same per-layer handler');
   const call = ui.slice(ui.indexOf('if(nm){ showPopup(labelAnchor(near[0],e)'));
   const invocation = call.slice(call.indexOf('showPopup('), call.indexOf(';') + 1);
-  Object.assign(c, { near: c.e.features, nm: 'Province', lid: 'imta-lbl', geoLbl: false, ttl: 'Province' });
+  /* the closure's own bindings around that call, as map-ui binds them: p = near[0].properties (ux-next: the popup carries them) */
+  Object.assign(c, { near: c.e.features, p: c.e.features[0].properties, nm: 'Province', lid: 'imta-lbl', geoLbl: false, ttl: 'Province' });
   vm.runInContext('const peg=_eraGeom(near[0]);' + invocation, c);
   assert.equal(shown.sub, 'Source dates: 1800 – ?');
 });

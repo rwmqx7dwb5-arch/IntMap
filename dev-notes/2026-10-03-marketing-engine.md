@@ -1,6 +1,8 @@
 ---
 title: マーケティングの仕組み——ブランドの正本 1 つから head・docTitle・manifest・README・プレスキット・投稿の下書きを書き出し、歴史地図の検索の入口ページ（地域 × 日付、en/ja）を地図自身のコードでビルド時に生成する。og-image を本物の JPEG に
 date: 2026-10-03
+newsen: Entry pages for historical maps by region and date, in English and Japanese, so a search can find the map of a place on a day.
+newsjp: 地域と日付ごとの歴史地図の入口ページ（英語・日本語）を公開し、検索からその日その場所の地図に辿り着けるようにしました。
 ---
 
 〈依頼〉「求めるのは改善ではなく商品開発、マーケティング、営業。整形ではなく造形。引き算ではなく足し算。全権を委任する。」

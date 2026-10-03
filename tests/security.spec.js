@@ -171,7 +171,7 @@ test('no uncaught exceptions while running the security probes', async () => {
    scripts), the page is loaded and given its boot, and the record must be empty — a hash computed
    over different text than the browser hashed, a resource the page loads that its policy does not
    name, anything inline the policy refuses, all show up here and nowhere else. */
-const CSP_PAGES = ['admin.html', 'about.html', 'ja/about.html', 'teachers.html', 'ja/teachers.html',
+const CSP_PAGES = ['admin.html', 'about.html', 'ja/about.html', 'teachers.html', 'ja/teachers.html', 'security.html', 'ja/security.html',
   'privacy.html', 'terms.html', 'science.html', 'sources.html'];
 const recordViolations = () => {
   window.__imCspViolations = [];

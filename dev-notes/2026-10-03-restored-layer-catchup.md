@@ -1,6 +1,8 @@
 ---
 title: 全レイヤーの共有リンクをスタイル保留のまま開く deep の spec が 4 晩赤——遅いだけの層と、記録なしに消えるタイムゾーンの行が混ざっていた。行は取得を期限つきの共有の読み手にして失敗を行の状態に残し、spec は 60 秒の待ちをやめて「各層に製品が答えたか」を待つ
 date: 2026-10-03
+newsen: Shared links that carry many layers open more reliably, and a time-zone layer that fails now says why.
+newsjp: 多くのレイヤーを含む共有リンクの復元を安定させ、時刻帯の読み込みに失敗したときは理由を表示します。
 ---
 
 〈依頼〉`tests/restored-layer-before-style.spec.js:134`「every layer a link can carry」が nightly（deep tier）で 4 晩連続赤

@@ -461,6 +461,47 @@ export function deriveOfflineSources(ledger) {
   };
 }
 
+export const CONNECTION_LEDGER = 'data/connection-ledger.json';
+/** (security-next) data/connection-ledger.json, derived: the part of every row a READER is shown when the page's
+    observed connections are checked against this ledger (js/connections-panel.js — Settings ▸ This page's connections,
+    and Atlas's system.connections). Every row is kept, in ledger order, with the one form it carries (disclosure /
+    link / dormant / removedBy), because the reader is told which of the four an observed host is: a `link` row the
+    page actually REQUESTED, or a `dormant` one, contradicts this ledger and is shown as such. The probe, the offline
+    statement and the notes stay here — the page needs none of them. */
+export function deriveConnectionLedger(ledger) {
+  const rows = (ledger && Array.isArray(ledger.hosts)) ? ledger.hosts : [];
+  const hosts = rows.map((r) => {
+    const form = ['disclosure', 'link', 'dormant', 'removedBy'].find((k) => r[k] != null) || null;
+    const out = { host: r.host, form, what: r.what };
+    if (r.whatJp) out.whatJp = r.whatJp;
+    if (r.sends) out.sends = { code: r.sends.code, detail: r.sends.detail };
+    if (form === 'disclosure') out.disclosure = { en: r.disclosure.en, jp: r.disclosure.jp };
+    if (form === 'dormant') out.switch = r.dormant.switch;
+    return out;
+  });
+  const seen = new Set();
+  return {
+    /* its provenance, as VALUES the governance gate reads (check:datagov — the same spellings data/service-status.json
+       carries). No time is written: the file is a pure function of the ledger, and --check compares bytes. */
+    publisher: 'IntMap (scripts/outbound-hosts.json)',
+    url: 'https://github.com/rwmqx7dwb5-arch/IntMap/blob/main/scripts/outbound-hosts.json',
+    licence: 'IntMap — Personal & Research Use License (LICENSE)',
+    licenceUrl: 'https://github.com/rwmqx7dwb5-arch/IntMap/blob/main/LICENSE',
+    attribution: false,
+    cadence: 'static',
+    builtBy: 'scripts/connection-ledger.mjs',
+    schema: 'intmap-connection-ledger/1',
+    quality: {
+      rows: hosts.length,
+      missing: { what: hosts.filter((h) => !h.what).length, form: hosts.filter((h) => !h.form).length },
+      outOfRange: { sends: hosts.filter((h) => h.sends && !SENDS.includes(h.sends.code)).length },
+      duplicates: hosts.filter((h) => (seen.has(h.host) ? true : (seen.add(h.host), false))).length,
+    },
+    src: 'derived from ' + LEDGER + ' by scripts/connection-ledger.mjs — the hosts IntMap says its browser code can contact, what each is sent, and the words of Privacy §4 that say so',
+    sendsCodes: SENDS.slice(),
+    hosts,
+  };
+}
 /** The rule against the working tree, as check:datagov runs it. */
 export function checkRepository(root = ROOT) {
   const ledger = readLedger(root);
@@ -470,6 +511,11 @@ export function checkRepository(root = ROOT) {
     const have = JSON.parse(fs.readFileSync(path.join(root, OFFLINE_SOURCES), 'utf8'));
     if (JSON.stringify(have) !== JSON.stringify(deriveOfflineSources(ledger))) r.problems.push(`${OFFLINE_SOURCES} does not match the \`offline\` rows of ${LEDGER} — run \`node scripts/offline-sources.mjs --write\``);
   } catch (_) { r.problems.push(`${OFFLINE_SOURCES} is missing or unreadable — run \`node scripts/offline-sources.mjs --write\``); }
+  /* (security-next) …and so is the file the page holds its OBSERVED connections against */
+  try {
+    const have = JSON.parse(fs.readFileSync(path.join(root, CONNECTION_LEDGER), 'utf8'));
+    if (JSON.stringify(have) !== JSON.stringify(deriveConnectionLedger(ledger))) r.problems.push(`${CONNECTION_LEDGER} does not match ${LEDGER} — run \`node scripts/connection-ledger.mjs --write\``);
+  } catch (_) { r.problems.push(`${CONNECTION_LEDGER} is missing or unreadable — run \`node scripts/connection-ledger.mjs --write\``); }
   return r;
 }
 

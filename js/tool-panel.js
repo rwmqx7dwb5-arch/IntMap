@@ -545,6 +545,12 @@ export function toolPanel(HOST){
       /* (place-dossier) everything the map knows about this point on one card — js/place-dossier.js, fetched by this
          click (its doors are this entry, the search card and Atlas's research.placeProfile) */
       {label:`${icon('note')} ${L('Place profile','地点プロファイル')}`, action:()=>{ import('./place-dossier.js').then(m=>m.openPlaceDossier(HOST,{lng:lngLat.lng,lat:lngLat.lat})).catch(()=>{ try{ HOST.imToast(L('The place profile could not be loaded','地点プロファイルを読み込めませんでした')); }catch(_){} }); }},
+      /* (community-next) «something on the map is wrong here» — js/map-corrections.js, fetched by this click (its doors are this
+         entry, the place profile card and Atlas's corrections.report); the card attaches the point, the view and the year */
+      {label:`${icon('flag')} ${L('Report a map error','地図の誤りを報告')}`, action:()=>{ import('./map-corrections.js').then(m=>m.openCorrection(HOST,{lng:lngLat.lng,lat:lngLat.lat})).catch(()=>{ try{ HOST.imToast(L('The report form could not be loaded','報告フォームを読み込めませんでした')); }catch(_){} }); }},
+      /* (mobile-next) what is happening at this point now — weather, quakes and news nearby, its former names (js/here-now.js;
+         its other doors are the empty search field's «Here, now», the installed icon's shortcut and Atlas's research.hereNow) */
+      {label:`${icon('target')} ${L('Right now','いまの様子')}`, action:()=>{ import('./here-now.js').then(m=>m.openHereNow(HOST,{point:{lng:lngLat.lng,lat:lngLat.lat}})).catch(()=>{ try{ HOST.imToast(L('«Here, now» could not be loaded','「いま、ここ」を読み込めませんでした')); }catch(_){} }); }},
       {label:`${icon('cloud-sun')} ${L('Weather (live)','天気（最新）','Wetter (aktuell)','Погода (сейчас)','El tiempo (ahora)')}`, action:()=>{ try{ window.IntMapWeather&&window.IntMapWeather.open(lngLat); }catch(_){} }},
       {label:`${icon('plane')} ${L('Find runways','滑走路を検索','Landebahnen suchen','Найти ВПП','Buscar pistas')}`, action:()=>{ try{ window.RunwaySearch&&window.RunwaySearch.open(lngLat); }catch(_){} }},
       {h:L('Analysis & simulation','解析・シミュレーション','Analyse & Simulation','Анализ и моделирование','Análisis y simulación'),head:true},

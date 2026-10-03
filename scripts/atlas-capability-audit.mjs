@@ -196,6 +196,9 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
   const OBSERVABLE = { camera: ['camera', 'map'], layer: ['map'], paint: ['map', 'object'], panel: ['panel', 'file'],
       route: ['route', 'map', 'panel'], object: ['object', 'map'], setting: ['setting'], time: ['map', 'time'],
       panelPaint: ['panel', 'map', 'object'],
+      /* (ux-next) the "companySites" observer counts the features of the source js/company-footprint.js claims as
+         'map.companySites' — an observation OF the map, asked of the renderer */
+      companySites: ['map', 'panel', 'explanation'],
       /* (#R376) the "wxModel" observer reads which forecast model each weather MAP LAYER is
          displaying — an observation OF the map, just not one made by counting features. A raster
          source swap draws exactly as many features as it drew before, which is why "paint" could
@@ -242,6 +245,9 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
          at which instant, and js/time-lapse.js whether the clock is being played — a panel and a clock, not the
          map's pixels, so it observes those two and no more. */
       timeView: ['panel', 'time'],
+      /* (map-next) the "myMap" observer asks js/my-map.js what the reader's own map holds and shows, and the renderer
+         how many features are drawn in the surfaces it claimed under 'map.myMap' — the map, and the map's objects. */
+      myMap: ['map', 'object'],
       sim: ['map', 'camera'], control: ['panel'], none: ['explanation', 'panel', 'view', 'camera', 'map'] };
 
   /* ⑦ what a capability says it PRODUCES is something its verifier can observe */

@@ -1450,6 +1450,10 @@
     .pd-actions .primary{ background:var(--primary-fill); color:#fff; }
     .pd-actions button:disabled{ opacity:.45; }
     @media (max-width:768px){ .pd-popup{ width:calc(100vw - 24px); } .pd-actions button{ min-height:44px; font-size:14px; } }
+    /* (community-next) the place profile's door to a map correction. The correction card's own rules are not here: they are
+       not needed at start-up, so js/map-corrections.js adds them the first time it opens (the account sheet's way). */
+    .pd-correct{ display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:8px; padding:7px 8px; border:none; border-radius:10px; background:transparent; color:var(--text-muted); font-size:12px; cursor:pointer; }
+    .pd-correct:hover{ color:var(--text-main); background:var(--input-bg); }
     /* (#R353) VOLCANO INTELLIGENCE card (js/volcano-intel.js). Same .country-popup shell and the same
        .acp-* row vocabulary as the aircraft and satellite cards — it reuses that vocabulary rather
        than inventing a third one — so only the shapes neither of those cards has are described here:
@@ -2810,6 +2814,7 @@
       [data-m-fit~="cap"]{ max-height:var(--m-fit-h) !important; }
       [data-m-fit~="dy"]{ translate:0 var(--m-fit-dy); }
       [data-m-fit~="scroll"]{ overflow-y:auto !important; overscroll-behavior:contain; }
+      [data-m-fit~="out"]{ visibility:hidden !important; pointer-events:none !important; }   /* (mobile-next) a lone floating control with no map above a full sheet */
 
       /* roomier tap targets across content */
       .news-item{ padding:11px 15px; } .stat-row{ padding:8px 14px; }   /* (#R137) tighter top/bottom padding inside country cards on mobile ("国カード内部の上下方向の余白を詰めて") */
@@ -5928,6 +5933,44 @@ body.sidebar-translucent .pg-panel, body.sidebar-glass2 .pg-panel{
 .nint-out-n{ font-size:12px; color:var(--text-muted); margin:4px 0; line-height:1.45; }
 .nint-empty{ font-size:12px; color:var(--text-muted); padding:10px 2px; line-height:1.55; }
 .nint-foot{ margin-top:8px; }
+/* (news-story) the STORY card (js/news-story.js) — the .country-popup shell and the brief's .nint-* rows, plus the word
+   chips, the playable timeline and the spread. The playhead's colour is the map's ring (#ff9f0a); the bars use the
+   map's early → late ramp. */
+.ev-story{ display:block; width:100%; margin:-6px 0 16px; padding:10px 12px; min-height:44px; border:0; border-radius:12px; background:var(--primary-tint,rgba(10,132,255,0.12)); color:var(--primary-on-tint,#0a63c9); font-size:13px; font-weight:600; text-align:left; cursor:pointer; }
+.ev-story:hover{ filter:brightness(0.97); }
+.nst-terms{ margin:0 0 6px; }
+.nst-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+.nst-chip{ display:inline-flex; align-items:center; gap:5px; min-height:32px; padding:4px 10px; border-radius:999px; border:1px solid var(--glass-border,rgba(128,128,128,0.28)); background:var(--input-bg); color:var(--text-main); font-size:12.5px; cursor:pointer; }
+.nst-chip.on{ background:#0a84ff; border-color:#0a84ff; color:#fff; }
+.nst-chip.common:not(.on){ color:var(--text-muted); }
+.nst-chip-n{ font-size:11px; opacity:0.75; font-variant-numeric:tabular-nums; }
+.nst-alts{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:8px; font-size:12px; color:var(--text-muted); }
+.nst-alt{ min-height:30px; padding:3px 9px; border-radius:8px; border:0; background:var(--input-bg); color:var(--text-main); font-size:12px; cursor:pointer; }
+.nst-time{ width:100%; height:54px; display:block; cursor:pointer; }
+.nst-bar-past{ fill:#7cc4ff; }
+.nst-bar-now{ fill:#ff9f0a; }
+.nst-bar-next{ fill:color-mix(in srgb, #0a84ff 22%, transparent); }
+.nst-hit{ fill:transparent; }
+.nst-head{ stroke:#ff9f0a; stroke-width:1.5; }
+.nst-ctl{ display:flex; align-items:center; gap:6px; margin:0 0 8px; }
+.nst-btn{ flex:0 0 auto; width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; border:0; border-radius:50%; background:var(--input-bg); color:var(--text-main); cursor:pointer; }
+.nst-btn svg{ width:14px; height:14px; }
+.nst-play{ width:44px; height:44px; background:#0a84ff; color:#fff; }
+.nst-scrub{ flex:1 1 auto; min-width:0; accent-color:#ff9f0a; }
+.nst-all{ flex:0 0 auto; min-height:32px; padding:4px 10px; border-radius:8px; border:0; background:var(--input-bg); color:var(--text-main); font-size:12px; cursor:pointer; }
+.nst-all.on{ background:var(--primary-tint,rgba(10,132,255,0.12)); color:var(--primary-on-tint,#0a63c9); }
+.nst-day{ font-size:13px; font-weight:650; margin:4px 0 6px; }
+.nst-spread{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-bottom:8px; }
+.nst-spread > div{ display:flex; flex-direction:column; gap:1px; padding:8px; border-radius:10px; background:var(--input-bg); }
+.nst-spread b{ font-size:18px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.1; }
+.nst-spread span{ font-size:11px; color:var(--text-muted); line-height:1.3; }
+.nst-origin{ font-size:12px; color:var(--text-muted); margin-bottom:6px; }
+.nst-reached{ font-size:12px; color:var(--text-muted); line-height:1.9; }
+.nst-cc{ display:inline-block; margin:0 4px 0 0; padding:1px 7px; border-radius:999px; background:var(--input-bg); color:var(--text-main); }
+.nst-cc.now{ background:#ff9f0a; color:#fff; }
+.nst-seed{ box-shadow:inset 3px 0 0 #ff9f0a; }
+.nst-share{ margin-top:10px; }
+.nst-link{ width:100%; min-height:40px; border:0; border-radius:10px; background:var(--input-bg); color:var(--primary-color,#0a84ff); font-size:13px; font-weight:600; cursor:pointer; }
 .cop-news-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-muted); margin:4px 0 8px; }
 .cop-news-map{ flex:0 0 auto; min-height:32px; padding:5px 10px; border-radius:8px; border:1px solid var(--glass-border,rgba(128,128,128,0.28)); background:var(--input-bg); color:var(--text-main); font-size:12px; cursor:pointer; }
 .cop-news-map.on{ background:var(--primary-tint); color:var(--primary-on-tint); }

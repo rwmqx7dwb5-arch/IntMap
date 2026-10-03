@@ -19,6 +19,9 @@
 import { str, num, int, one, list, obj, lat, lng, loose } from './atlas-caps.js';
 import { weatherFacts } from './atlas-result-facts.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { jsonWithin } from './fetch-deadline.js';   /* (developer-embed) the open-data catalogue, read under the host's clock */
+import { clockFor } from './proxy-fetch.js';
+import './safe-html.js';   /* (developer-embed) globalThis.IntMapSafe — every href below goes through its url() */
 
 /* ══ (atlas-os) THE QUERY ENGINE, BOUND TO THE KERNEL — ONE BINDING FOR EVERY CALLER ═══════════════
    `data.query` was the only thing that ran js/atlas-query.js, so the dependency list it binds was written
@@ -456,8 +459,21 @@ export default [
      false refusal would move one level down instead of going away. With the column empty the
      gate is `required:['lat','lon']`, and the case still names its own refusal 「中心となる
      座標を指定してください」 rather than quietly taking the map centre (#R302). */
+  /* (developer-embed) `openData`. `read` and `none`: it reads one file the build wrote beside the page and changes
+     nothing on the map. Both arguments are optional — with neither it answers the whole offer. */
   {
-    row: ['data.radiationNear',         'radiationNear',  'measuringStations,doseNear',                                  'data',    'none',    '',                       'explanation',         'read',    'none',   '',         'radiationLayer'],
+    row: ['data.openData',              'openData',       'dataCatalog,openDataCatalog,downloadData,dataLicence',       'data',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    doc: [
+      { in: 'tools-panels', at: 174, text: '{"type":"openData","dataset"?:str,"country"?:str} = THE OPEN DATA IntMap OFFERS FOR REUSE: the datasets the map is built from that a person may download and reuse, each with its download address, its licence AS ITS SOURCE STATES IT, what that licence requires (credit, share-alike, non-commercial) and the credit line to show — and the datasets IntMap does NOT offer, with the reason (no licence stated, or terms not known to permit redistribution). "dataset" narrows to the datasets whose name, credit or publisher contain the words; "country" (a name or ISO code) answers that country\'s file instead: which datasets say something about it and the terms of each. The answer also gives the developer page (the embed API and these files). Use for 「このデータをダウンロードできる？」「国境データのライセンスは？」「日本のデータを JSON で欲しい」「オープンデータはある？」, "can I download this data", "what licence is the country data under", "is there an API"; ' },
+    ],
+    schema: () => ({ type: 'object', properties: { dataset: str(), country: str() } }),
+    async run(a, dctx, K) { const L = K.L, esc = K.esc, note = K.note, R = K.R, resolveCountrySync = K.resolveCountrySync;
+      const ans = await openDataAnswer(a, { L, esc, note, resolveCountrySync });
+      return R(ans.ok, ans.html, { meta: ans.meta });
+    },
+  },
+  {
+    row: ['data.radiationNear',        'radiationNear',  'measuringStations,doseNear',                                  'data',    'none',    '',                       'explanation',         'read',    'none',   '',         'radiationLayer'],
     doc: [
       { in: 'measured-radiation', at: 20, text: '{"type":"radiationNear","lat":num,"lon":num,"km"?:num} = the monitoring stations around a point and what each of them is reading right now, nearest first — this is the join that makes 「原発 → 実測線量 → 風 → 拡散シミュレーション」 one chain: ask it for the readings around a plant before or after modelling a plume from it. It needs a REAL coordinate; resolve the place name first (highlight/compose already do that) rather than guessing one. THIS IS NOT THE PLUME SIMULATION. {"type":"sim","kind":"radiation",…} MODELS where material would travel under the wind; these two report what was MEASURED. Never answer a question about a real reading with the model, and never present the model’s output as a measurement. 50–200 nSv/h IS ORDINARY NATURAL BACKGROUND almost everywhere on earth — soil composition alone moves it by a factor of two — so do not describe a station in that band as elevated. The steps above it are the levels at which the networks THEMSELVES raise an alert. MOST NETWORKS PUBLISH NON-VALIDATED DATA, AND WEATHER MOVES THESE NUMBERS: BfS states that rain washing radon daughters out of the air and onto the ground raises a station by up to a FACTOR OF THREE for a few hours, and a failing instrument or ongoing calibration does the same. So a single elevated station — or even several nearby, since they share the weather — is not by itself evidence of a release. Say that when you report one, and check whether it is raining there before you call it anything else. VALUES ARE NOT COMPARABLE ACROSS A CALIBRATION CHANGE: BfS recomputed its whole network on 2025-07-01 and its readings rose 14–25% with no change in the radiation, so a German series that straddles that date has a step in it that is an artefact. A COUNTRY WITH NO DOTS IS A GAP IN OPEN-LICENSED COVERAGE, NOT A COUNTRY WITH NO RADIATION AND NOT A COUNTRY WITH NO MONITORING — the layer legend lists which networks answered, and 「no station within N km」 is a fact about the roster, never about safety. Europe in particular is thin here: the EU’s own EURDEP aggregate cannot be carried, because its data stays under each provider’s copyright and its only value-returning public endpoint is down.\n' },
     ],
@@ -465,7 +481,82 @@ export default [
     /* the same case as `radiationNear` — shared with a spelling that fell through to it */
     run: radiationNearRun,
   },
+  {
+    row: ['data.companySites',          'companySites',   'companyFootprint,whoIsHere,companiesHere,industryMap',       'data',    'companySites', 'map.companySites',  'map,panel,explanation','session', 'none',   '',         'companyFootprint'],
+    /* (ux-next) the company atlas read from the land: every published site of every company IntMap carries
+       (data/companies/footprint.json, js/company-footprint.js). `query` counts without drawing; `show` (the default)
+       also draws them and opens the card; `hide` takes them down. Never moves the camera. */
+    doc: [
+      { in: 'tools-panels', at: 345, text: 'COMPANY SITES (企業の拠点・企業の地図): {"type":"companySites","action"?:"show"|"query"|"hide","country"?:str,"groups"?:["hq"|"office"|"factory"|"rnd"|"logistics"|"other"],"sectors"?:[str],"inView"?:bool,"limit"?:int} = which of the companies in IntMap’s company atlas have published sites in a country (or in the part of the world on screen, inView:true), counted by company, by kind of site and by type (factory, refinery, power plant, data centre, mine…). action "show" (default) also draws every company’s sites on the map with a card listing the companies in view; "query" only counts; "hide" removes them. Use for 「日本に工場を持つ企業は？」「この地域にどの企業の拠点がある？」「半導体企業の拠点を地図に」, "which companies have factories in Mexico", "who operates here", "map every company’s refineries". Sectors are the company atlas keys (tech, semi, auto, energy, pharma…). Only the companies IntMap carries and only the sites their sources publish — say so; absence here is not absence on the ground. For ONE company’s profile and sites, open it by its name instead.\n' },
+    ],
+    schema: () => ({ type: 'object', properties: { action: one('show', 'query', 'hide'), country: str(), groups: list(one('hq', 'office', 'factory', 'rnd', 'logistics', 'other')), sectors: list(str()), inView: { type: 'boolean' }, limit: int(1, 50) } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, note = K.note, L = K.L, esc = K.esc, GE = K.GE, ensureData = K.ensureData, resolveCountry = K.resolveCountry;
+      const act = a.action || 'show', lim = a.limit || 12;
+      const ok = await window.IntMapLazy.need('companyFootprint'); const F = ok && window.IntMapCompanyFootprint;
+      if (!F) return R(false, warn(L('The company atlas is not available', '企業アトラスを利用できません')), { meta: { code: 'MODULE_UNAVAILABLE', category: 'capability', retryable: false, produced: [], userGoalSatisfied: false } });
+      if (act === 'hide') { F.close(); return R(true, note('✓ ' + esc(L('Company sites removed from the map', '企業の拠点を地図から外しました')))); }
+      let cc = null, cname = '';
+      if (a.country) { try { await ensureData(); } catch (_) { } const c = await resolveCountry(a.country);
+        if (!c || !c.code) return R(false, warn(L('Country not found', '国が見つかりません') + ': ' + esc(a.country)), { meta: { code: 'NOT_FOUND', category: 'input', retryable: false, semanticTarget: a.country, produced: [], userGoalSatisfied: false } });
+        cc = String(c.code).toUpperCase(); cname = c.name || cc; }
+      let box = null; if (a.inView) { try { const b = GE().camera.getBounds(); box = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]; } catch (_) { } }
+      const groups = Array.isArray(a.groups) && a.groups.length ? a.groups : null, sectors = Array.isArray(a.sectors) && a.sectors.length ? a.sectors : null;
+      let q = null; try { q = await F.query({ cc, groups, sectors, box, limit: lim }); } catch (_) { q = null; }
+      if (!q) return R(false, warn(L('The company sites could not be loaded', '企業の拠点を読み込めませんでした')), { meta: { code: 'UPSTREAM_UNAVAILABLE', category: 'evidence', retryable: true, produced: [], userGoalSatisfied: false } });
+      if (act === 'show') { try { await F.open({ groups, sectors }); } catch (_) { } }
+      const where = cname || (box ? L('the current view', '現在の表示範囲') : L('the world', '世界'));
+      const nCo = q.totalCompanies, more = q.companies.length < nCo;
+      let html = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(where) + ' — ' + esc(L(q.sites + ' published sites of ' + nCo + ' companies', nCo + ' 社・公表された拠点 ' + q.sites + ' か所')) + '</div>';
+      if (q.companies.length) html += '<ol style="margin:4px 0 6px 18px;padding:0;font-size:12px;line-height:1.5;">' + q.companies.map((c) => '<li>' + esc(c.name) + ' <span style="color:var(--text-muted)">' + esc(String(c.sites)) + '</span></li>').join('') + '</ol>' + (more ? '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('…the ' + lim + ' with the most sites', '…拠点の多い上位 ' + lim + ' 社')) + '</div>' : '');
+      html += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('Only the ' + q.of.companies + ' companies in IntMap’s company atlas, and only the sites their sources publish (profiles of ' + q.generatedAt + ').', 'IntMap の企業アトラスにある ' + q.of.companies + ' 社について、出典が公表している拠点だけです（プロフィール ' + q.generatedAt + ' 時点）。')) + '</div>';
+      return R(true, html, { meta: { code: q.sites ? 'OK' : 'NO_RESULTS', category: q.sites ? 'ok' : 'evidence', retryable: false, semanticTarget: cc || (box ? 'view' : 'world'), produced: act === 'show' ? ['map', 'panel', 'explanation'] : ['explanation'], userGoalSatisfied: true,
+        companySites: { country: cc, sites: q.sites, totalCompanies: nCo, groups: q.groups, types: q.types, countries: q.countries, companies: q.companies, of: q.of, asOf: q.generatedAt } } }); },
+  },
 ];
+
+/* ══ (developer-embed) THE OPEN DATA — what IntMap offers for reuse, under which terms ═══════════════════
+   Reads the catalogue the build writes (scripts/public-api.mjs → api/v1/catalog.json, beside the page) — the SAME
+   file the developer page's table and a developer's fetch read, so Atlas cannot describe a different offer. With
+   `dataset`, the datasets whose id, credit or publisher contain the words (and the withheld ones, with why); with
+   `country`, that country's file (api/v1/countries/<CODE>.json): which datasets say something about it and the
+   terms of each. A catalogue that cannot be read is said to be unreadable — never «there is no open data». */
+export async function openDataAnswer(a, H) {
+  const L = H.L, esc = H.esc, note = H.note;
+  const base = (() => { try { return new URL('api/v1/', document.baseURI).href; } catch (_) { return 'api/v1/'; } })();
+  const get = (rel) => jsonWithin(base + rel, clockFor(base + rel), { cache: 'no-cache' });
+  const href = (u) => esc(IntMapSafe.url(u));   /* the same encoder the comparison card above uses */
+  let cat;
+  try { cat = await get('catalog.json'); }
+  catch (e) { return { ok: false, html: note(L('The open-data catalogue could not be read', 'オープンデータのカタログを読めませんでした') + ' (' + esc(base + 'catalog.json') + ': ' + esc(e.message) + ').'), meta: { openData: { readable: false, url: base + 'catalog.json' } } }; }
+  const terms = (t) => [t.credit ? L('credit required', '出典表示が必要') : null, t.shareAlike ? L('share-alike', '継承') : null, !t.commercial ? L('non-commercial', '非営利') : null].filter(Boolean).join(', ') || L('no conditions', '条件なし');
+  const row = (d) => '<li><b>' + esc(d.id) + '</b> — ' + esc(d.licences.join(', ')) + ' (' + esc(terms(d.terms)) + ')' + (d.credit.length ? '; ' + L('credit', '出典') + ': ' + esc(d.credit.join(' · ')) : '') + '; <a href="' + href(d.files[0].url) + '" target="_blank" rel="noopener">' + esc(d.files[0].url) + '</a></li>';
+  const facts = { readable: true, catalog: base + 'catalog.json', developers: new URL('../../developers.html', base).href, offered: cat.datasets.length, withheld: cat.withheld.length };
+  let h = '<div style="font-weight:600;margin:2px 0 6px;">' + L('Open data IntMap offers for reuse', 'IntMap が再利用のために出しているオープンデータ') + '</div><div style="font-size:12px;line-height:1.6;">';
+  if (a.country) {
+    const c = H.resolveCountrySync ? H.resolveCountrySync(String(a.country)) : null;
+    const code = (c && c.code) || (/^[A-Za-z]{3}$/.test(String(a.country)) ? String(a.country).toUpperCase() : null);
+    if (!code) return { ok: false, html: note(L('No country by that name: ', 'その名前の国が見つかりません: ') + esc(a.country)), meta: { openData: facts } };
+    let f;
+    try { f = await get('countries/' + code + '.json'); }
+    catch (e) { return { ok: false, html: note(L('No open-data file for ', 'オープンデータのファイルがありません: ') + esc(code) + ' (' + esc(e.message) + ')'), meta: { openData: Object.assign(facts, { country: code }) } }; }
+    const ids = Object.keys(f.terms);
+    h += esc(f.name.en) + (f.name.jp ? ' / ' + esc(f.name.jp) : '') + ' — <a href="' + href(base + 'countries/' + code + '.json') + '" target="_blank" rel="noopener">' + esc(base + 'countries/' + code + '.json') + '</a><ul>'
+      + ids.map((id) => { const t = f.terms[id]; return '<li><b>' + esc(id) + '</b> — ' + esc(t.licences.join(', ')) + ' (' + esc(terms(t)) + ')' + (t.creditLine && t.creditLine.length ? '; ' + L('credit', '出典') + ': ' + esc(t.creditLine.join(' · ')) : '') + '</li>'; }).join('') + '</ul>';
+    facts.country = { code, file: base + 'countries/' + code + '.json', datasets: ids, sections: f.sections.length };
+  } else {
+    const q = String(a.dataset || '').trim().toLowerCase();
+    const hit = (d) => !q || [d.id, ...d.credit, ...d.upstreams.map((u) => u.publisher || '')].some((s) => String(s).toLowerCase().includes(q));
+    const shown = cat.datasets.filter(hit), held = cat.withheld.filter((w) => !q || w.id.toLowerCase().includes(q));
+    h += esc(L(cat.datasets.length + ' datasets are offered for reuse and ' + cat.withheld.length + ' are not.', '再利用できるデータセット ' + cat.datasets.length + ' 件、出していないもの ' + cat.withheld.length + ' 件。'))
+      + (shown.length ? '<ul>' + shown.map(row).join('') + '</ul>' : '')
+      + (held.length ? '<div>' + L('Not offered', '出していないもの') + ':</div><ul>' + held.map((w) => '<li><b>' + esc(w.id) + '</b> — ' + esc(w.reason) + (w.detail ? ': ' + esc(w.detail) : '') + '</li>').join('') + '</ul>' : '');
+    if (q && !shown.length && !held.length) h += '<div>' + esc(L('No dataset matches «' + a.dataset + '».', '«' + a.dataset + '» に当たるデータセットはありません。')) + '</div>';
+    facts.matched = shown.map((d) => ({ id: d.id, licences: d.licences, terms: d.terms, credit: d.credit, url: d.files[0].url }));
+    facts.withheldMatched = held;
+  }
+  h += '<div style="margin-top:6px;">' + L('For developers: ', '開発者向け: ') + '<a href="' + href(facts.developers) + '" target="_blank" rel="noopener">' + esc(facts.developers) + '</a></div></div>';
+  return { ok: true, html: h, meta: { openData: facts } };
+}
 
 export async function volcanoFilterRun(a, dctx, K) { const doVolcano = K.doVolcano;
       return doVolcano(a);

@@ -132,6 +132,7 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 /* (mobile-performance) when a phone may warm the country table — js/boot-stage.js */
 import { BootStage } from './boot-stage.js';
 import * as bus from './bus.js';
+import { setHost } from './host-door.js';   /* (mobile-next) the doors opened by a URL or a delegated tap read the host there */
 
 /* (fetch-deadline-layer) the classic scripts' handle on the fetch clock (js/countries-ui.js, js/routing-ops.js —
    see the end of js/fetch-deadline.js). Assembled HERE because this file is in main alone and imports both
@@ -322,7 +323,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get showCountryDetail(){ return showCountryDetail; }, get renderStats(){ return renderStats; },
     get renderCompareFixed(){ return renderCompareFixed; }, get applyTheme(){ return applyTheme; },
     get makeDraggable(){ return makeDraggable; },   get bringToFront(){ return bringToFront; },
-    get distHTML(){ return distHTML; },             get imToast(){ return imToast; },
+    /* (map-next) distTXT: the same measurement as plain text — js/my-map.js writes it through the encoder */
+    get distHTML(){ return distHTML; },             get distTXT(){ return distTXT; },             get imToast(){ return imToast; },
     get aiToast(){ return aiToast; },               get satToast(){ return satToast; },
     get requireLogin(){ return requireLogin; },     get openAuthModal(){ return openAuthModal; },
     /* ── (#R164) members added for the third split (data-layers / workspace / widgets / wb-layers,
@@ -370,6 +372,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get clearAllPins(){ return clearAllPins; },     get compressImage(){ return compressImage; },
     get diskFillPolys(){ return diskFillPolys; },   get exitTool(){ return exitTool; },
     get localFuzzyPlaces(){ return localFuzzyPlaces; }, get parseDate(){ return parseDate; },
+    /* (ux-next) goToLocalPlace: one row of localFuzzyPlaces, flown the way the result list flies it — js/command-palette.js */
+    get goToLocalPlace(){ return goToLocalPlace; },
     get refreshTool(){ return refreshTool; },       get saveSettings(){ return saveSettings; },
     get setGrid(){ return setGrid; },               get setLang(){ return setLang; },
     get setTool(){ return setTool; },               get updateToolPanel(){ return updateToolPanel; },
@@ -387,7 +391,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get namesOn(){ return namesOn; },               get bordersOn(){ return bordersOn; },
     get geoDB(){ return geoDB; },
     /* stable helpers (never rebound — getters anyway, see LAZY above) */
-    get areaHTML(){ return areaHTML; },             get ringArea(){ return ringArea; },
+    get areaHTML(){ return areaHTML; },             get areaTXT(){ return areaTXT; },             get ringArea(){ return ringArea; },
     get fmtLL(){ return fmtLL; },                   get hasTurf(){ return hasTurf; },
     get demElevAt(){ return demElevAt; },           get demElevBilinear(){ return demElevBilinear; },
     get _demZoomForSpan(){ return _demZoomForSpan; }, get warmDEMTiles(){ return warmDEMTiles; }, get demSnapshot(){ return demSnapshot; }, get demTilePoints(){ return demTilePoints; }, get releaseDEMHold(){ return releaseDEMHold; }, get demVoidStats(){ return demVoidStats; },
@@ -541,6 +545,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get satKeys(){ return satKeys; }, get showComposeImgPreview(){ return showComposeImgPreview; },
     get wireCommList(){ return wireCommList; }
   };
+  setHost(IM_HOST);
 
   /* ===== i18n ===== */
   /* (#R162) moved to js/i18n.js — see Architecture.md "File layout". */
@@ -1153,6 +1158,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   const IM_SEARCH=searchGeocode(IM_HOST);
   function doGeocode(){ return IM_SEARCH.doGeocode.apply(this,arguments); }
   function localFuzzyPlaces(){ return IM_SEARCH.localFuzzyPlaces.apply(this,arguments); }
+  function goToLocalPlace(){ return IM_SEARCH.goToLocal.apply(this,arguments); }   /* (ux-next) the host's name for IM_SEARCH.goToLocal (a direct export, so not the shim tests/engine-app-shell-split names) */
   const IM_NEWSCTX=newsContext(IM_HOST);
   function analyzeContext(){ return IM_NEWSCTX.analyzeContext.apply(this,arguments); }
   function rebuildGeoIndex(){ return IM_NEWSCTX.rebuildGeoIndex.apply(this,arguments); }
@@ -3014,6 +3020,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* (#R29.1) Settings → Feedback & bug report entry points. */
     { const fb=document.getElementById('btn-send-feedback'); if(fb) fb.onclick=()=>{ try{ window._openFeedback&&window._openFeedback(); }catch(_){} }; }
     { const bg=document.getElementById('btn-report-bug'); if(bg) bg.onclick=()=>{ try{ window._openBugReport&&window._openBugReport(); }catch(_){} }; }
+    /* (community-next) the reader's map corrections and their answers — js/map-corrections.js, fetched by this click */
+    { const mr=document.getElementById('btn-map-reports'); if(mr) mr.onclick=()=>{ import('./map-corrections.js').then(m=>m.openMine(IM_HOST)).catch(()=>{ try{ imToast(IntMapLang.t(currentLang,'My map reports could not be loaded','地図の誤り報告を読み込めませんでした')); }catch(_){} }); }; }
     bm.addEventListener('click',(e)=>{ if(e.target===bm) close(); });
     window.IntMapDialog.adopt(bm,{ panel:bm.querySelector('.modal-content'), labelledby:'blueberry-title', close });
     /* Record a donation INTENT for a logged-in user (so a future paid plan can recognise supporters).
@@ -3026,6 +3034,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R167) moved to js/feedback.js — see Architecture.md §3.1. */
   feedback(IM_HOST);
+  /* (community-next) a reader who sent a map correction from this device is told, once, when it is answered. A reader who
+     never sent one pays this one localStorage read: the module is fetched only when the device holds an open receipt, and
+     then only after the page is idle (js/map-corrections.js checkForNews decides how often it asks). */
+  try{ const _mc=localStorage.getItem('intmap_corrections'); if(_mc&&_mc.indexOf('"receipt"')>=0){ const _go=()=>import('./map-corrections.js').then(m=>m.checkForNews(IM_HOST)).catch(()=>{}); if(window.requestIdleCallback) requestIdleCallback(_go,{timeout:15000}); else setTimeout(_go,6000); } }catch(_){}
 
   /* ============================================================================
      (#R29.1) PLAYGROUND (beta) — experimental interactive modes, all in one hub:
@@ -3494,8 +3506,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     const m=document.getElementById('sources-modal'); if(!m) return;
     document.getElementById('sources-title').textContent=t('srcModalTitle'); document.getElementById('sources-sub').textContent=t('srcModalSub');
     const use=(s)=>IntMapRefData.useText(s.n,currentLang);
-    let note=()=>''; const paint=()=>{ document.getElementById('sources-body').innerHTML=DATA_SOURCES.map(s=>{ const n=note(s.u); return `<div class="src-item"><b>${escapeHtml(s.n)}</b> — <span class="src-use">${escapeHtml(use(s))}</span>${n?`<br><span class="src-down" style="color:var(--widget-warning);font-size:12px;">${escapeHtml(n)}</span>`:''}<br><a href="${escapeHtml(window.IntMapSafe.url(s.u))}" target="_blank" rel="noopener">${escapeHtml(s.u)}</a></div>`; }).join(''); };
-    paint(); m.style.display='flex'; import('./service-status.js').then(S=>S.loadStatus().then(b=>{ if(S.usable(b)){ note=(u)=>S.sourceNote(b,u,currentLang); paint(); } })).catch(()=>{});   /* (shell-experience) a credit whose supplier did not answer last night's check says so (js/service-status.js sourceNote) */
+    let note=()=>'', rec=()=>''; const paint=()=>{ document.getElementById('sources-body').innerHTML=DATA_SOURCES.map(s=>{ const n=note(s.u), r=rec(s.u); return `<div class="src-item"><b>${escapeHtml(s.n)}</b> — <span class="src-use">${escapeHtml(use(s))}</span>${n?`<br><span class="src-down" style="color:var(--widget-warning);font-size:12px;">${escapeHtml(n)}</span>`:''}${r?`<br><span class="src-rec" style="color:var(--text-muted);font-size:12px;">${escapeHtml(r)}</span>`:''}<br><a href="${escapeHtml(window.IntMapSafe.url(s.u))}" target="_blank" rel="noopener">${escapeHtml(s.u)}</a></div>`; }).join(''); };
+    paint(); m.style.display='flex'; import('./service-status.js').then(S=>S.loadStatus().then(b=>{ if(S.usable(b)){ note=(u)=>S.sourceNote(b,u,currentLang); rec=(u)=>S.sourceRecord(b,u,currentLang); paint(); } })).catch(()=>{});   /* (shell-experience) a credit whose supplier did not answer last night's check says so (js/service-status.js sourceNote) */
     IntMapRefData.ensureDocs(currentLang,paint); }
   { window.imOpenSources=openSourcesModal;   /* (#R215) Settings offers the PAGE, not a lesser in-app copy beside it (see index.html) — the dialog is kept reachable by name rather than deleted, so its markup and its ~90-entry renderer are not dead code */
     const x=document.getElementById('sources-close-x'); if(x) x.onclick=()=>{ document.getElementById('sources-modal').style.display='none'; };

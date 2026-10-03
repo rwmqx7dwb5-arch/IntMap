@@ -793,6 +793,27 @@ export default [
     },
   },
   {
+    row: ['map.myMap',                  'myMap',          'myMaps,customMap,ownMap,storyMap,mapNotes,annotateMap',       'map',     'myMap',   'map.myMap,mymap.doc',    'map,object',          'persist', 'explicit', '',     'myMap'],
+    /* (map-next) THE READER'S OWN MAP (js/my-map.js) — pins, lines and areas with names and notes, kept in this browser,
+       carried by every share link (js/map-state.js `mymap`), measured with the app's own measure functions, registered
+       in the GIS layer for analysis and exported as GeoJSON / GeoPackage. `action`:
+         open        show the panel                 add      a pin / line / area (`kind`, `points` or `place` / `places`)
+         edit        a feature's name / note / colour (`id`)                         remove   a feature (`id`)
+         title       name the map                   show / hide  put it on the map or take it off (nothing is deleted)
+         list        what it holds, with lengths and areas                           link     the share link
+         export      a file (`format` geojson | geopackage)                          analyze  a dataset in Data and analysis
+         new         start another map              collect  move the session's pins, kept shapes and radius circles in
+         keep        keep a map a link brought as the reader's own                    draw     hand the reader the pen (`kind`)
+       Column 7 'persist' — the map is written to localStorage; column 8 'explicit' — `remove` and `new` change what the
+       reader made. Column 5 names `mymap.doc`, which no restorer puts back, so the turn's undo does not claim it. */
+    doc: [
+      { in: 'free-drawing', at: 30, text: ' MY MAP — THE READER\'S OWN MAP THEY KEEP AND SHARE (マイマップ・自分の地図): {"type":"myMap","action"?:"open"|"add"|"edit"|"remove"|"title"|"show"|"hide"|"list"|"link"|"export"|"analyze"|"new"|"collect"|"keep"|"draw","kind"?:"pin"|"line"|"area","points"?:[[lng,lat],...],"place"?:str,"places"?:[str,...],"name"?:str,"note"?:str,"color"?:"red"|"orange"|"yellow"|"green"|"blue"|"purple","id"?:str,"title"?:str,"format"?:"geojson"|"geopackage"}. Unlike drawPolygon / pin (this turn\'s highlights, gone on reload), a My map feature is the READER\'S: it has a name and a note (メモ・注記), is kept in this browser, rides in every share link together with the place, layers and date (地図を共有), and can be measured (length of a line, area of an area), analysed (analyze → a dataset for gis ops: buffer, clip, zonal statistics) or exported (export → GeoJSON / GeoPackage file). Use it for 「この場所をマイマップに保存」「集合場所にピンを立ててメモを書いて」「この 3 都市を結ぶ線を自分の地図に」「調査範囲を描いて共有リンクを」「自分の地図を書き出して」, "add a pin with a note to my map", "make a shareable map of these places", "draw my study area and analyse it". add needs real coordinates ([lng,lat]) or place names you are sure of; list returns every feature with its id, length and area; draw lets the reader click the vertices themselves. ' },
+    ],
+    schema: () => ({ type: 'object', properties: { action: one('open', 'add', 'edit', 'remove', 'title', 'show', 'hide', 'list', 'link', 'export', 'analyze', 'new', 'collect', 'keep', 'draw'),
+      kind: one('pin', 'line', 'area'), points: list(list()), place: str(), places: list(str()), name: str(), note: str(), color: str(), id: str(), title: str(), format: one('geojson', 'geopackage') } }),
+    async run(a, dctx, K) { return myMapRun(a, K); },
+  },
+  {
     row: ['map.scoreMap',               'scoreMap',       'customLayer,evaluate',                                        'map',     'paint',   'map.choropleth',         'map',                 'session', 'none',   '',         ''],
     /* a composed score is its components; fewer than two is refused by the case */
     doc: [
@@ -905,3 +926,89 @@ export default [
     },
   },
 ];
+
+/* ══ (map-next) map.myMap — js/my-map.js through its published controller ═══════════════════════════════
+   Every result that changes the map carries `meta.want` (js/atlas-capabilities.js `myMap`): the state it set out to
+   reach, so a feature that did not land is not called done. */
+const MM_COLORS = { red: 0, orange: 1, yellow: 2, green: 3, blue: 4, purple: 5, '赤': 0, 'オレンジ': 1, '橙': 1, '黄': 2, '緑': 3, '青': 4, '紫': 5 };
+async function myMapRun(a, K) {
+  const R = K.R, L = K.L, warn = K.warn, note = K.note, esc = K.esc;
+  let M = null; try { await window.IntMapLazy.need('myMap'); M = window.IntMapMyMap; } catch (_) { M = null; }
+  if (!M || typeof M.state !== 'function') return R(false, warn(esc(L('My map could not be loaded', 'マイマップを読み込めませんでした'))));
+  const act = String(a.action || (a.kind || a.points || a.place || a.places ? 'add' : 'open')).trim();
+  const why = (r) => ({ 'received': L('a shared map is read-only — keep it first', '共有された地図は読み取り専用です（先に保存してください）'), 'no-feature': L('there is no such item', 'その項目はありません'),
+    'empty': L('the map has nothing on it yet', '地図にまだ何もありません'), 'too-few-vertices': L('not enough points', '点が足りません'), 'kind-unknown': L('kind must be pin, line or area', 'kind は pin・line・area のいずれかです'),
+    'nothing-to-collect': L('there are no pins or shapes on the map to move', '移せるピンや図形が地図上にありません'), 'nothing-received': L('no shared map is on show', '共有された地図は表示されていません'),
+    'gis-unavailable': L('the analysis module did not load', '分析モジュールを読み込めませんでした'), 'no-map': L('there is no such map', 'その地図はありません') }[r && r.reason] || String((r && r.reason) || ''));
+  const fail = (head, r) => R(false, warn(esc(head) + ' — ' + esc(why(r))));
+  const colorOf = (c) => (c == null ? null : (String(c).toLowerCase() in MM_COLORS ? MM_COLORS[String(c).toLowerCase()] : c));
+  const listHtml = () => {
+    const s = M.state(); const m = s.shown === 'received' ? s.received : s.map;
+    if (!m) return '<div>' + esc(L('No map yet', 'まだ地図がありません')) + '</div>';
+    const unit = (f) => (f.lengthKm != null ? ' · ' + f.lengthKm.toFixed(2) + ' km' : f.areaKm2 != null ? ' · ' + f.areaKm2.toFixed(3) + ' km²' : f.at ? ' · ' + f.at[1].toFixed(5) + ', ' + f.at[0].toFixed(5) : '');
+    return '<div style="font-weight:600;margin:2px 0;">' + esc(m.title || L('Untitled map', '無題の地図')) + ' (' + s.features.length + ')</div><ol style="margin:4px 0 4px 18px;padding:0;">'
+      + s.features.map((f) => '<li>' + esc(f.name || f.kind) + esc(unit(f)) + (f.note ? ' — ' + esc(f.note) : '') + ' <span style="opacity:.6">[' + esc(f.id) + ']</span></li>').join('') + '</ol>';
+  };
+  if (act === 'open') { M.open(); return R(true, note('✓ ' + esc(L('My map opened', 'マイマップを開きました'))) + listHtml()); }
+  if (act === 'list') return R(true, listHtml(), { myMap: M.state() });
+  if (act === 'add') {
+    const kind = String(a.kind || (a.places || (a.points && a.points.length > 1) ? 'line' : 'pin'));
+    const pts = Array.isArray(a.points) ? a.points.filter((p) => Array.isArray(p) && isFinite(+p[0]) && isFinite(+p[1])).map((p) => [+p[0], +p[1]]) : [];
+    const unresolved = [];
+    if (!pts.length) {
+      const names = a.places ? a.places : (a.place ? [a.place] : []);
+      for (const pn of names) { const g = await K.geocode(String(pn)); if (g) pts.push([g.lng, g.lat]); else unresolved.push(String(pn)); }
+    }
+    /* a name that did not resolve is not dropped from a line in silence — the line would join the wrong places */
+    if (unresolved.length) return R(false, warn(esc(L('Could not find', '見つかりませんでした')) + ': ' + esc(unresolved.join(', '))));
+    const r = M.add({ kind, coords: pts, name: a.name != null ? a.name : (a.place || ''), note: a.note, color: colorOf(a.color) });
+    if (!r.ok) return fail(L('Could not add to my map', 'マイマップに追加できませんでした'), r);
+    try { M.zoomTo(r.id); } catch (_) { }
+    return R(true, note('✓ ' + esc(L('Added to my map', 'マイマップに追加しました'))) + listHtml(), { want: { shown: 'own', has: [r.id] }, objectIds: ['mm_' + r.id] });
+  }
+  if (act === 'edit') {
+    const o = {}; if (a.name != null) o.name = a.name; if (a.note != null) o.note = a.note; if (a.color != null) o.color = colorOf(a.color);
+    const r = M.edit(String(a.id || ''), o); if (!r.ok) return fail(L('Could not edit', '編集できませんでした'), r);
+    const f = M.state().features.find((x) => x.id === r.id) || {}; const w = {}; Object.keys(o).forEach((k) => { w[k] = f[k]; });
+    return R(true, note('✓ ' + esc(L('My map item updated', 'マイマップの項目を更新しました'))) + listHtml(), { want: { features: { [r.id]: w } } });
+  }
+  if (act === 'remove') {
+    const id = String(a.id || ''); const r = M.remove(id); if (!r.ok) return fail(L('Could not delete', '削除できませんでした'), r);
+    return R(true, note('✓ ' + esc(L('Deleted from my map', 'マイマップから削除しました'))) + listHtml(), { want: { lacks: [id] } });
+  }
+  if (act === 'title') {
+    M.setTitle(a.title != null ? a.title : a.name); const s = M.state();
+    return R(true, note('✓ ' + esc(L('Map named', '地図の題を付けました'))), { want: { title: s.map ? s.map.title : '' } });
+  }
+  if (act === 'show') {
+    if (!M.state().map) return fail(L('Nothing to show', '表示するものがありません'), { reason: 'empty' });
+    M.show(); return R(true, note('✓ ' + esc(L('My map is on the map', 'マイマップを表示しました'))), { want: { shown: 'own' } });
+  }
+  if (act === 'hide') { M.hide(); return R(true, note('✓ ' + esc(L('My map hidden (nothing deleted)', 'マイマップを隠しました（削除はしていません）'))), { want: { shown: null } }); }
+  if (act === 'new') { const r = M.newMap(a.title || ''); return R(true, note('✓ ' + esc(L('New map started', '新しい地図を始めました'))), { want: { mapId: r.id, shown: 'own' } }); }
+  if (act === 'collect') {
+    const r = M.collect(); if (!r.ok) return fail(L('Nothing moved', '移せませんでした'), r);
+    return R(true, note('✓ ' + esc(L('Moved into my map: ', 'マイマップへ移しました: ')) + r.moved) + listHtml(), { want: { shown: 'own', atLeast: r.moved } });
+  }
+  if (act === 'keep') {
+    const r = M.keepReceived(); if (!r.ok) return fail(L('Nothing to keep', '保存するものがありません'), r);
+    return R(true, note('✓ ' + esc(L('Kept as your map', '自分の地図として保存しました'))), { want: { shown: 'own', mapId: r.id } });
+  }
+  if (act === 'draw') {
+    M.open(); const r = M.startDraw(String(a.kind || 'pin')); if (!r.ok) return fail(L('Could not start drawing', '描き始められませんでした'), r);
+    return R(true, note('✓ ' + esc(L('The reader can now click the map to draw: ', '地図をクリックして描けます: ')) + esc(r.kind)));
+  }
+  if (act === 'link') {
+    const r = M.link(); if (!r.ok) return fail(L('No link', 'リンクを作れません'), r);
+    return R(true, note('✓ ' + esc(L('Link to this map', 'この地図のリンク'))) + ' · ' + r.count + ' · ' + (r.bytes / 1024).toFixed(1) + ' KB<div style="font-size:12px;word-break:break-all;margin:4px 0;"><a href="' + esc(IntMapSafe.url(r.url)) + '">' + esc(r.url) + '</a></div>');
+  }
+  if (act === 'export') {
+    const r = await M.exportFile(a.format || 'geojson'); if (!r.ok) return fail(L('Could not export', '書き出せませんでした'), r);
+    return R(true, note('✓ ' + esc(L('Saved ', '保存しました: ')) + esc(r.filename)) + ' · ' + r.features);
+  }
+  if (act === 'analyze') {
+    const r = await M.analyze(); if (!r.ok) return fail(L('Could not hand it to analysis', '分析に渡せませんでした'), r);
+    return R(true, note('✓ ' + esc(L('Added to Data and analysis as dataset ', 'データと分析に追加しました: ')) + esc(r.datasetId)) + ' (' + r.features + ') — ' + esc(L('run the gis capability on this id', 'この id で gis を実行できます')), { datasetId: r.datasetId });
+  }
+  return R(false, warn(esc(L('Unknown action', '不明な操作')) + ' «' + esc(act) + '»'));
+}

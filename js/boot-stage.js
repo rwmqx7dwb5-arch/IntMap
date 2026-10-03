@@ -91,7 +91,7 @@
     { id: 'religion', path: 'data/religion.json', phone: 'need', who: 'js/layer-packs.js', why: 'a layer' },
     { id: 'maddison', path: 'data/maddison.json', phone: 'need', who: 'js/history.js', why: 'the time machine\'s historical GDP' },
     { id: 'npp', path: 'data/npp.json', phone: 'need', who: 'js/sims.js', why: 'a simulator' },
-    { id: 'radiation-hindcast', path: 'data/radiation-hindcast.json', phone: 'need', who: 'js/sims.js hindcast(), js/atlas-cap-sim.js', why: 'the 2011 answer-check of the radioactive-dispersion panel — read only when the reader presses it (69 kB)' },
+    { id: 'radiation-hindcast', path: 'data/radiation-hindcast.json', phone: 'need', who: 'js/sims.js hindcast(), js/atlas-cap-sim.js', why: 'the 2011 answer-check of the radioactive-dispersion panel — read only when the reader presses it (161 kB, 51 kB gzipped: the preset and the three rungs of the attribution ladder, docs/RADIATION-MODEL.md §10b)' },
     { id: 'ocean-currents', path: 'data/ocean-currents', phone: 'need', who: 'js/ocean-currents.js, js/data-layers.js', why: 'a layer' },
     { id: 'osm-facilities', path: 'data/osm-', phone: 'need', who: 'js/osm-facilities.js', why: 'a layer (osm-diplo.json, osm-space.json)' },
     { id: 'precip', path: 'data/precip-', phone: 'need', who: 'js/precip-annual.js', why: 'a layer' },

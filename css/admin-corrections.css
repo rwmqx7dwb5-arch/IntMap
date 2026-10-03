@@ -1,0 +1,39 @@
+/* ============================================================================
+ *  IntMap · the map-corrections console (admin-corrections.html)   (community-next)
+ * ----------------------------------------------------------------------------
+ *  Loaded AFTER css/admin-inquiries.css — the consoles share its tokens, cards, pills and tabs; this adds
+ *  only what the corrections console has and the enquiries console does not: the map beside the list,
+ *  the status colours of its dots, the historical-check box and the answer form.
+ *  ⚠ An external sheet, not a <style> block: the page's style-src is 'self' alone.
+ * ========================================================================== */
+main.mc{ max-width:1400px; }
+.mc-summary{ font-size:13px; color:var(--muted); margin:-6px 0 14px; }
+.mc-grid{ display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); gap:18px; align-items:start; }
+@media (max-width:900px){ .mc-grid{ grid-template-columns:1fr; } }
+.mc-mapwrap{ position:sticky; top:72px; background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); padding:10px; }
+#mc-map{ display:block; width:100%; aspect-ratio:2/1; border-radius:10px; background:#cfe3f3; }
+[data-theme="dark"] #mc-map{ background:#0d1b2a; }
+#mc-map .land{ opacity:.55; }
+[data-theme="dark"] #mc-map .land{ opacity:.22; }
+#mc-map .dot{ cursor:pointer; stroke:#fff; stroke-width:.12; vector-effect:non-scaling-stroke; fill:#007aff; }
+#mc-map .dot.s-confirmed, #mc-map .dot.s-cannot_fix{ fill:#ff9f0a; }
+#mc-map .dot.s-fixed{ fill:#34c759; }
+#mc-map .dot.s-not_an_error, #mc-map .dot.s-duplicate{ fill:#8e8e93; }
+#mc-map .dot.s-spam{ fill:#ff3b30; }
+#mc-map .dot.sel{ stroke:#000; stroke-width:2; }
+.mc-legend{ display:flex; flex-wrap:wrap; gap:10px; font-size:11px; color:var(--muted); margin-top:8px; align-items:center; }
+.mc-legend i{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:4px; vertical-align:-1px; }
+.mc-legend .k-new{ background:#007aff; } .mc-legend .k-confirmed{ background:#ff9f0a; } .mc-legend .k-fixed{ background:#34c759; } .mc-legend .k-closed{ background:#8e8e93; } .mc-legend .k-spam{ background:#ff3b30; }
+.card.sel{ outline:2px solid var(--pri); }
+.card h2{ font-size:16px; }
+.pill.fixed{ background:var(--ok); color:#fff; }
+.pill.confirmed, .pill.cannot_fix{ background:#ff9f0a; color:#fff; }
+.pill.hist{ background:#5e5ce6; color:#fff; }
+.pill.pub{ background:var(--ok); color:#fff; }
+.hist, .near{ margin:10px 0; padding:10px 12px; border-radius:12px; background:var(--in); font-size:13px; display:grid; gap:6px; }
+.hist code{ font-size:12px; overflow-wrap:anywhere; background:var(--card); padding:6px 8px; border-radius:8px; }
+.hist ol{ margin:0; padding-left:18px; color:var(--muted); }
+.answer{ display:grid; gap:8px; margin-top:10px; }
+.answer input[type="text"], .answer input:not([type]), .answer select{ width:100%; }
+label.chk{ font-size:12px; color:var(--muted); display:flex; gap:6px; align-items:center; }
+#mc-auth-msg{ font-size:13px; color:var(--muted); min-height:18px; }

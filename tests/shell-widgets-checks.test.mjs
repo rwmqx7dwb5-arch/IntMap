@@ -638,7 +638,11 @@ test('R292 ⑯: the icon set is drawn here, on one grid, and adds no external de
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
 test('R292 ⑰: nothing on the board is set below 12px', () => {
   const css = read('css/intmap.css');
-  const wgt = css.slice(css.indexOf('#R292 · THE WIDGET BOARD'));
+  /* the board's section: from its banner to the next module banner (a line opening with `/* =====`), not to the end of the
+     file — measured (wave2-train): news-next appended the story view's CSS (.nst-*) after the navigation UI, and an
+     open-ended slice counted its 11 px captions as the board's. Everything the board owns is still inside. */
+  const at = css.indexOf('#R292 · THE WIDGET BOARD'), next = css.indexOf('/* =====', at);
+  const wgt = css.slice(at, next < 0 ? undefined : next);
   const sizes = [...wgt.matchAll(/font-size:\s*([0-9.]+)px/g)].map((m) => parseFloat(m[1]));
   assert.ok(sizes.length > 30, 'the sweep found the font sizes (' + sizes.length + ')');
   const tooSmall = sizes.filter((v) => v < 12);

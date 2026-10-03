@@ -1,6 +1,8 @@
 ---
 title: Atlas をログイン前から見えるものに——押す前に無料枠を言い、押したら答え方を見せる／時計が過去なら例文もその時代から／携帯の Atlas タブの見た目を状態に合わせる
 date: 2026-10-03
+newsen: Atlas before you sign in: see the free allowance and how Atlas answers before asking, and example questions follow the date on the map.
+newsjp: ログイン前の Atlas：押す前に無料枠と答え方が見え、例文は地図の時代に合わせて変わります。
 ---
 
 〈依頼〉Atlas を「押すまで正体が分からない機能」から「ログイン前から価値が見える商品の中核」へ。

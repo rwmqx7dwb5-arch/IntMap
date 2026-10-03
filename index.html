@@ -769,6 +769,15 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
          window.IntMapStatus in js/layer-state.js, which also owns this button's one click listener). -->
     <div class="setting-group" id="status-page-group"><label data-i18n="lblStatusPage">IntMap, now</label>
       <button type="button" id="btn-status-page" class="ai-test-btn" style="width:100%;"><span data-icon="gauge"></span> <span data-i18n="viewStatusPage">What is working — this device, the layers, the data sources</span></button>
+      <!-- (ops-next) 「新着」— what changed in IntMap (js/whats-new.js, fetched on first use; the same listener in
+           js/layer-state.js opens it, and the unread mark is counted the first time this button is on screen). -->
+      <button type="button" id="btn-whats-new" class="ai-test-btn" style="width:100%;margin-top:8px;"><span data-icon="sparkle"></span> <span data-i18n="viewWhatsNew">What’s new — changes to IntMap, newest first</span></button>
+    </div>
+    <!-- (security-next) what this page has actually contacted, held against Privacy §4 (js/connections-panel.js, fetched on first use;
+         js/connection-watch.js records from boot and owns this button's one click listener) — and the public security page. -->
+    <div class="setting-group" id="connections-group"><label data-i18n="lblConnections">Privacy</label>
+      <button type="button" id="btn-connections" class="ai-test-btn" style="width:100%;"><span data-icon="network"></span> <span data-i18n="viewConnections">This page's connections — who it has contacted, and what each is sent</span></button>
+      <a id="link-security" href="./security.html" target="_blank" rel="noopener" class="ai-test-btn" style="width:100%;display:block;box-sizing:border-box;text-align:center;text-decoration:none;margin-top:8px;" data-i18n="viewSecurityPage">Security &amp; trust — how IntMap protects you, and how to report a problem ↗</a>
     </div>
     <!-- (#R211) 「科学的根拠・ロジックの説明ページ」 — the data-source list answers WHERE a number came
          from; this answers HOW it was computed, which is a different question and needed its own page.
@@ -813,7 +822,9 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     
     <div class="setting-group" id="feedback-group"><label data-i18n="lblFeedback">Feedback &amp; bug report</label>
       <button type="button" id="btn-send-feedback" class="ai-test-btn" style="width:100%;margin-bottom:8px;"><span data-icon="star"></span> <span data-i18n="sendFeedbackBtn">Send feedback</span></button>
-      <button type="button" id="btn-report-bug" class="ai-test-btn" style="width:100%;"><span data-icon="bug"></span> <span data-i18n="reportBugBtn">Report a bug</span></button>
+      <button type="button" id="btn-report-bug" class="ai-test-btn" style="width:100%;margin-bottom:8px;"><span data-icon="bug"></span> <span data-i18n="reportBugBtn">Report a bug</span></button>
+      <!-- (community-next) the reader's map corrections and the operator's answers — js/map-corrections.js (it reads; sending is the card's) -->
+      <button type="button" id="btn-map-reports" class="ai-test-btn" style="width:100%;" data-effect="none"><span data-icon="flag"></span> <span data-i18n="myMapReportsBtn">My map reports</span></button>
     </div>
     <!-- (anonymous-usage-counts) IntMap's own anonymous counters — on by default, off stops them at once.
          Wired by js/usage-counts.js (the same switch Atlas's settings.usageCounts flips). -->

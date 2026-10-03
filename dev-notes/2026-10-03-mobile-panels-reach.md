@@ -1,6 +1,8 @@
 ---
 title: スマホで地図の上に浮かぶものを、名前ではなく性質で全部シートと出典の帯の上に収める——火山灰パネルとツアー作成、half に戻した Atlas の見本カード
 date: 2026-10-03
+newsen: On phones every panel that floats over the map can now be reached with a finger, above the sheet and the credits.
+newsjp: スマホで地図の上に浮かぶパネルすべてに、シートと出典の帯の上で指が届くようになりました。
 ---
 
 〈依頼〉#936 の本番検証（ba7e477・375×812・タッチ）で同じ形の欠陥が 2 件残っていた。1: 火山灰パネル（#ash-panel）は `.country-popup` ではないので規則が効かず、下端が y 812 まで伸び「Run on the live upper-air wind」がシートのつまみ（#sheet-grip, y 740）の下に隠れて押せない。2: Atlas の見本カードを開いたあとシートを half に戻すと、ログインのボタンが y 1088 と画面外に出る。カード 1 種ずつの特例は禁止。

@@ -255,6 +255,29 @@ export default [
         return R(true, note(L('Current location','現在地','Aktueller Standort','Текущее местоположение','Ubicación actual')+' ('+lat.toFixed(3)+', '+lng.toFixed(3)+')'),{exec:{lat,lng,accuracyM:Math.round(fix.acc),provenance:'device_location'}}); }
     },
   },
+  {
+    /* (mobile-next) A LINK OR A BIT OF TEXT, OPENED ON THE MAP — the share sheet's reader (js/share-inbox.js
+       readLocationText / openShared), handed to Atlas: a Google / Apple / OpenStreetMap link, a geo: URI or bare
+       coordinates become the point (a pin and «Here, now» for it); a link that carries only a name, or plain text,
+       goes to the place search; a short link whose target the browser cannot read is SAID to be one. */
+    row: ['view.openShared',            'openShared',     'openLink,openMapLink,openLocationLink,geoLink,openSharedLink',  'view',    'none',    'camera,map.object',       'explanation',         'session', 'none',    'text',     ''],
+    doc: [
+      { in: 'navigation-view', at: 121, text: '{"type":"openShared","text":str} opens a MAP LINK or shared text on the map / 共有されたリンクを地図で開く — a Google Maps, Apple Maps or OpenStreetMap URL, a geo: URI, or coordinates like "35.68, 139.76" become that exact point (a pin is dropped and «Here, now» opens for it); an IntMap share link opens as itself; a link that carries only a place name, or plain text, is searched; a short link (maps.app.goo.gl) cannot be expanded by a web page and is reported as such. Use it when the reader pastes a link: 「このリンクの場所を開いて」「このGoogleマップのURLを地図に」, "open this maps link". ' },
+    ],
+    schema: () => ({ type: 'object', properties: { text: str() }, required: ['text'] }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc, HOST = K.HOST;
+      const text = String(a.text || '').trim();
+      if (!text) return R(false, warn(L('Which link? Paste the link or the text to open.', 'どのリンクですか？開くリンクか文を貼り付けてください。')));
+      const SI = await import('./share-inbox.js');
+      const r = await SI.openShared(HOST, { text });
+      const what = r.kind === 'point' ? L('Opened the point the link names', 'リンクが示す地点を開きました') + ' (' + r.lat.toFixed(4) + ', ' + r.lng.toFixed(4) + ')'
+        : r.kind === 'query' ? L('The link names no coordinates — searching for', 'リンクに座標が無いため検索しました:') + ' «' + esc(r.query) + '»'
+        : r.kind === 'intmap' ? L('Opening the IntMap link', 'IntMap のリンクを開きます')
+        : r.kind === 'unexpandable' ? L('This is a short link; a web page cannot read where it leads.', '短縮リンクのため、行き先をウェブページから読めません。') + (r.query ? ' ' + L('Searching for', '検索:') + ' «' + esc(r.query) + '»' : '')
+        : L('Nothing in that text names a place.', 'その文には場所が含まれていません。');
+      return R(!!r.ok, r.ok ? K.note(what) : warn(what), { exec: { openShared: r } });
+    },
+  },
   /* ⚠ (#R493) THE ONLY CAPABILITY WHOSE RESULT IS A PICTURE. Every other row hands Atlas facts
      it can already read off the state ledger; this one hands it the PIXELS — the frame the
      reader is looking at, attached to the next model call as a real image. It writes nothing

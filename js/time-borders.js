@@ -333,6 +333,19 @@ export function timeBorders(HOST){
       const t=_ymd(y,(m>=1&&m<=12)?m:7,(d>=1&&d<=31)?d:1);   /* no month = the July-1 sample csFC has always meant */
       if(rules){ for(const r of rules){ if(_csBefore(r[0],t,row)) return r[1]; } }
       return String(nm||'').replace(/\s*\([^)]*\)\s*$/,''); }   /* default: drop the "(…)" gloss (e.g. "Madagascar (Malagasy)") */
+    /* ══ ⚠⚠ (marketing-next) A NAME CAN CHANGE INSIDE AN EPOCH, SO THE CACHE KEY CARRIES THE NAME'S INSTANT TOO ═══════
+       A collection is cached by the record's EPOCH (`csEpoch` — the last day the record changes), and `csFC` writes each
+       NAME for the instant it was BUILT at. A bare-year rule above whose year holds no boundary of that record reads the
+       year as 1 January (`_csBefore`) — a day that is not an epoch edge. So the name followed whichever day of the epoch
+       was asked FIRST. MEASURED 2026-10-03 on the instantiated module: 490's rule turns «Democratic Republic of the
+       Congo» into «Zaire» on 1971-01-01, the epoch runs to 1971-08-14 (Bahrain begins the next one), and with an earlier
+       day of the epoch asked first, 1971-08-14 was labelled «Democratic Republic of the Congo»; asked fresh, «Zaire» —
+       the map's name depended on the reader's path, and «Zaire» appeared on the day Bahrain did. ⇒ every 1 January a
+       bare-year rule can turn on is a second axis of the key (`_csNameKey`): two instants share a collection only when
+       they share both the record's epoch and the rules' year. The list is DERIVED from _CS_ERA (a rule added there is
+       in it), and an [y,m,d] rule needs nothing — the gate holds it to a record edge. */
+    const _csNameCuts=(()=>{ const s=new Set(); for(const g in _CS_ERA) for(const r of _CS_ERA[g]) if(typeof r[0]==='number'&&r[0]<9999) s.add(_ymd(r[0],1,1)); return [...s].sort((a,b)=>a-b); })();
+    function _csNameKey(t){ let ans=0; for(const k of _csNameCuts){ if(k<=t) ans=k; else break; } return ans; }
     /* ══ (#R531) WHICH EDGES OF AN OUTLINE ARE BORDER ═════════════════════════════════════════════
        data/border-coast.js marks, for every pooled ring of BOTH bundles, the runs that are a
        boundary between polities rather than the record's own copy of the coastline. The measurement,
@@ -1765,7 +1778,7 @@ export function timeBorders(HOST){
       /* (#R117/#R421) 1886–2019 → DAY-EXACT CShapes borders. Falls back to the snapshot path below if the
          CShapes bundle can't be loaded. */
       if(year>=CS_MIN&&year<=CS_MAX){ const d=(await Promise.all([csLoad(),bcLoad(),hnLoad()]))[0];   /* (#R531) the marks settle before the first collection is built, so nothing is cached unmarked */
-        if(d){ let key; try{ key='cs'+csEpoch(d,year,mon,day); }catch(_){ key='cs'+year; }   /* the EPOCH, not the date: a quiet decade keeps one cache entry and re-renders nothing */
+        if(d){ let key; try{ key='cs'+csEpoch(d,year,mon,day)+String(_csNameKey(_ymd(year,mon,day))).padStart(8,'0'); }catch(_){ key='cs'+year; }   /* the EPOCH, not the date: a quiet decade keeps one cache entry and re-renders nothing — (marketing-next) and the year of the name rules, which can turn inside an epoch: eight more digits, so the key stays «record + digits» (the tier is what is left when the digits are taken off) */
           let fc=cache.get(key); if(!fc){ try{ fc=await csFC(d,year,mon,day); cache.set(key,fc); }catch(_){ fc=null; } }
           if(fc) return { key, fc, corr:false, tier:'cshapes' }; } }
       /* (#R518, widened #R690) HB_MIN–1885 → the same day-exact treatment, off data/hist-borders.js.

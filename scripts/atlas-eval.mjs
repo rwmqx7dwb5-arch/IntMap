@@ -12,6 +12,7 @@
  *      node scripts/atlas-eval.mjs --dry-run [--url <site>]       no question is sent; no session is made
  *      node scripts/atlas-eval.mjs --alarm <report.json> [--run-url <url>] [--print]
  *      node scripts/atlas-eval.mjs --replay                     (atlas-quality-lab) every cassette, no model, no browser
+ *      node scripts/atlas-eval.mjs --offline [--out dir]        (ops-next) the half needing no session: replay + reach (scripts/atlas-eval/reach.mjs)
  *
  *  (atlas-quality-lab) ALSO, on a live run:
  *      --set records|answers|all   which problem set to ask (default all): the questions the manual rounds
@@ -463,9 +464,47 @@ async function replayAll() {
   return res.some((r) => r.problems.length) ? 1 : 0;
 }
 
+/* (ops-next) --offline: THE HALF OF THE EVALUATION THAT NEEDS NO SESSION — the replay of every cassette and the
+   reach of every answer-key question (scripts/atlas-eval/reach.mjs), written as one report the nightly uploads
+   as `atlas-eval-offline` whether or not the secrets exist, and that data/service-status.json carries to the
+   status page. It measures IntMap's own code between the model and the map; it says nothing about answers. */
+export function offlineReport({ replay, reach, at, commit }) {
+  const pairs = reach.byQuestion.reduce((n, b) => n + b.expected.length, 0);
+  const reached = reach.byQuestion.reduce((n, b) => n + b.expected.filter((e) => e.rank != null).length, 0);
+  return {
+    schema: 'intmap-atlas-eval-offline/1', at, commit: commit || null,
+    replay: { cassettes: replay.length, clean: replay.filter((r) => !r.problems.length).length,
+      problems: replay.filter((r) => r.problems.length).map((r) => ({ id: r.id, problems: r.problems.slice(0, 3) })) },
+    reach: { basis: reach.basis, questions: reach.measured, allFound: reach.allFound, pairs, reached, missedCaps: reach.missedCaps,
+      byQuestion: reach.byQuestion },
+  };
+}
+async function offlineAll() {
+  const { productModules } = await import('./atlas-eval/replay.mjs');
+  const { evaluateCassettes, loadCassettes, loadSets, renderReplay } = await import('./atlas-eval/lab.mjs');
+  const { reachOf, boundRegistry, renderReach } = await import('./atlas-eval/reach.mjs');
+  const { pathToFileURL } = await import('node:url');
+  const P = await productModules((p) => import(pathToFileURL(join(ROOT, p)).href));
+  const sets = loadSets(ROOT);
+  const replay = await evaluateCassettes(loadCassettes(ROOT), { P, sets, root: ROOT });
+  const reach = reachOf(sets.answers.questions, boundRegistry(P));
+  const rep = offlineReport({ replay, reach, at: new Date().toISOString(), commit: process.env.GITHUB_SHA || null });
+  const outDir = resolve(arg('--out', join(ROOT, 'test-results', 'atlas-eval')));
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, 'atlas-eval-offline.json'), JSON.stringify(rep, null, 1) + '\n');
+  const md = ['# Atlas evaluation — the half that needs no session', '',
+    `Replay: ${rep.replay.clean} of ${rep.replay.cassettes} recorded turns replay as recorded. Reach: ${rep.reach.reached} of ${rep.reach.pairs} capabilities (${rep.reach.allFound} of ${rep.reach.questions} questions whole) are reached by the question's own words.`, '',
+    renderReplay(replay), '', renderReach(reach)].join('\n');
+  writeFileSync(join(outDir, 'atlas-eval-offline.md'), md + '\n');
+  console.log(md.split('\n').slice(0, 3).join('\n'));
+  /* a replay that no longer does what it recorded is a regression of IntMap's own code: the run says so */
+  return rep.replay.clean === rep.replay.cassettes ? 0 : 1;
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (has('--alarm')) alarm();
   else if (has('--replay')) process.exit(await replayAll());
+  else if (has('--offline')) process.exit(await offlineAll());
   else if (has('--validate')) {
     const bad = await validate();
     if (bad.length) { for (const b of bad) console.log('  FAIL  ' + b); process.exit(1); }

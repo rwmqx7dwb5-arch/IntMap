@@ -208,6 +208,10 @@
               "tool": "routing_isochrone"
             },
             {
+              "id": "sim.radiation",
+              "tool": "sim_radiation"
+            },
+            {
               "id": "map.radius",
               "tool": "map_radius"
             },
@@ -238,6 +242,10 @@
             {
               "id": "time.changes",
               "tool": "time_changes"
+            },
+            {
+              "id": "time.onThisDay",
+              "tool": "time_onThisDay"
             }
           ]
         }

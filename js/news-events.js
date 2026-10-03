@@ -578,6 +578,12 @@ export function newsEvents(HOST) {
       '<span>' + S(L('Latest article', '最新', 'Neueste', 'Последнее', 'Más reciente')) + ': ' + S(fmt(ev.lastAt)) + ' · ' + S(ago(ev.lastAt)) + '</span>' +
       '<span>' + S(String(L('{a} articles · {b} independent outlets', '記事{a}本・独立{b}媒体', '{a} Artikel · {b} unabhängige Quellen', '{a} статей · {b} независимых источников', '{a} artículos · {b} medios independientes')).replace('{a}', ev.articleCount).replace('{b}', ev.sourceCount)) + '</span>' +
       '</div>';
+    /* (news-story) the events before and after this one whose headlines name the same words — on a timeline and the
+       map (js/news-story.js through the boot door window.IntMapNewsIntel.story). The words are suggested from THIS
+       headline (`representative_title`, the outlets' own) and the reader can change them there. */
+    if (window.IntMapNewsIntel && typeof window.IntMapNewsIntel.story === 'function' && ev.title) {
+      html += '<button type="button" class="ev-story" id="ev-story">' + S(L('Follow this story — earlier and later reports on a timeline and the map', 'この出来事の流れを追う — 前後の報道を年表と地図で')) + '</button>';
+    }
 
     /* ══ 何が起きたか（#R405）════════════════════════════════════════════════
        依頼: 「外部記事を開かないと内容が分からないなら、IntMap 内で世界を把握すると
@@ -782,6 +788,8 @@ export function newsEvents(HOST) {
        ⚠ `window._imReader` を消すのもその 1 本の仕事である（#R430 が置いたこの手当ては、
          タブの切り替えや背景の再描画で閉じたときには走らなかった）。 */
     if (b) b.onclick = () => { selected = null; try { HOST.closeReaderPane(); } catch (_) { } };
+    const sb = document.getElementById('ev-story');
+    if (sb) sb.onclick = () => { try { window.IntMapNewsIntel.story({ text: ev.title, from: ev.publicId }); } catch (_) { } };
     /* 詳細を開いたら、その出来事の場所へ寄る（カードのクリックと同じ約束）。 */
     try { if (item.analysis && item.analysis.loc) IntMapGeoEngine.camera.flyTo({ center: item.analysis.loc, zoom: 4, speed: 1.0 }); } catch (_) { }
   }

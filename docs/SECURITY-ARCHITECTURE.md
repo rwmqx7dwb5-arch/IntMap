@@ -317,7 +317,7 @@ flag that lives in a comment is not configuration. All twenty-two are declared t
 `fetch-relay` own-fetch-relay, `reader-reports` anon-write-guard, `usage-count` anonymous-usage-counts).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`ai-provider.js`, `newsgeo.js`,
 `relay-guard.js`, `rate-limit.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
-`news-entities.js`, `news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`, `site-origin.js`, `fetch-relay-policy.js`, `ai-ledger.js`, `ai-usage.js`, `atlas-grade-schema.js`, `ai-stream.js`, `plans.js`, `inquiry-shape.js`) that the CLI bundles into the functions that import it.
+`news-entities.js`, `news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`, `site-origin.js`, `fetch-relay-policy.js`, `ai-ledger.js`, `ai-usage.js`, `atlas-grade-schema.js`, `ai-stream.js`, `plans.js`, `inquiry-shape.js`, `correction-shape.js`, `place-watch.js` — imported today only by the page, kept here so a future server evaluator runs the same rules) that the CLI bundles into the functions that import it.
 
 | Function | `verify_jwt` | Auth | Uses `service_role` for | Provider key |
 |---|---|---|---|---|
@@ -341,7 +341,7 @@ flag that lives in a comment is not configuration. All twenty-two are declared t
 | `aviation-feed` | false | none for readers — keyless; serves live ADS-B to signed-out readers. **`?refresh=1` (the sweep) draws from one project-wide allowance** (`relay_take`, key `'*'`: one sweep run per cron interval); beyond it, or with the database silent, the cached answer and no upstream read | — | provider key (when a provider needs one) + `AVIATION_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** |
 | `ais-feed` | false | none for readers — keyless; serves live ships to signed-out readers. The caller may pass a viewport box, never a URL. **`?refresh=1` draws from one project-wide allowance** (one per `WORLD_TTL_MS`); beyond it, the cached answer and no upstream read | — | `AISSTREAM_API_KEY` (optional; Digitraffic needs none) + `AIS_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** — the diagnostic trace reports the key's LENGTH and whether it is alphanumeric, never the key |
 | `client-errors` | false | none — a reader who is not signed in hits errors too. POST only, a body ceiling, an **Origin allow-list** (production + local preview), two shared token buckets and a row ceiling on the table | `record_client_error` RPC + the two `relay_take` buckets | — |
-| `reader-reports` | false | optional — a signed-out reader may send feedback. A bearer token is **verified with the Auth server** (`/auth/v1/user`) and a refused one is 401; POST only, a body ceiling, the same **Origin allow-list**, two shared token buckets | the `feedback` / `bug_reports` INSERT (the only writer since `20260930090000_anon_write_guard.sql`) and *(sales-channels)* the `org_inquiries` INSERT (kind `inquiry`, from `contact.html`; the vocabulary, ceilings and a honeypot field are `_shared/inquiry-shape.js`; the reply address is the typed one, `user_id` the verified session's) + the two `relay_take` buckets | — |
+| `reader-reports` | false | optional — a signed-out reader may send feedback. A bearer token is **verified with the Auth server** (`/auth/v1/user`) and a refused one is 401; POST only, a body ceiling, the same **Origin allow-list**, two shared token buckets | the `feedback` / `bug_reports` INSERT (the only writer since `20260930090000_anon_write_guard.sql`) and *(sales-channels)* the `org_inquiries` INSERT (kind `inquiry`, from `contact.html`; the vocabulary, ceilings and a honeypot field are `_shared/inquiry-shape.js`; the reply address is the typed one, `user_id` the verified session's) and *(community-next)* the `map_corrections` INSERT (kind `correction`; the rule is `_shared/correction-shape.js` checkCorrection; no e-mail is taken — the function draws a receipt, stores only its sha256 and returns the receipt once in the 201) + the two `relay_take` buckets | — |
 | `usage-count` | false | none — a signed-out reader is counted too, and a signed-in one is counted the same way (no Authorization is read). POST only, a body ceiling, the **Origin allow-list** `client-errors` uses, two shared token buckets, the declaration's allow-list of metrics and dimension rules (`usage-count/shape.js`) and a per-metric daily ceiling on distinct dimensions | `record_usage_counts` RPC + the two `relay_take` buckets | — |
 
 **`aviation-feed` is keyless but is NOT one of the relays**, and the distinction is a security
@@ -742,6 +742,17 @@ and sources, in both languages, had none). The chosen posture:
   its `src` and attributes are encoded by `IntMapSafe.url` / `IntMapSafe.html`.
   ⚠ A framed page that is NOT `?embed=1` is the full app, exactly as before this change — the
   residual limitation in the item above is unchanged, and a header-capable host is where it closes.
+- **(developer-embed) The page that framed an embed may steer it — and gains nothing its `src` did
+  not already give it.** `js/embed-client.js` defines the protocol; `js/embed-mode.js` answers it only
+  for messages whose `source` is `window.parent`. Every command (`state` / `view` / `time`) is turned
+  into ONE share-link fragment by the share link's own codec and applied by the path a pasted link
+  takes, so a host can make the frame show exactly what a link could — which it could already do by
+  setting the iframe's `src`. There is no command that signs in, writes, spends or opens anything,
+  because an embed has none of those. The frame posts back the map's public state (the fragment its
+  own 「Open in IntMap」 link carries) to `window.parent` only, with no information about the reader
+  beyond where the reader has panned the map the host put on its own page. The fragment is written
+  with `replaceState` (a frame's history is the host's, so a command must not add Back entries).
+  The host side verifies `event.origin` against the site it mounted and `event.source` against its frame.
 
 ---
 
@@ -751,6 +762,23 @@ IntMap calls **60+ public, read-only** third-party APIs (map/satellite tiles, el
 weather, routing, statistics, news, geocoding, market data, live cameras, AI providers). The
 **full, user-facing list with exactly what is sent** is in the in-app Privacy Policy
 (`index.html`, "第三者 / Third parties"). Security-relevant notes:
+
+- **(security-next) The statement is held against the CODE by a gate and against the RUNNING PAGE by the
+  reader.** `check:datagov` (rule `outbound-disclosed`) discovers hosts from source literals, so it cannot
+  see a host assembled at run time or chosen by data (a webcam's image server, an article's publisher, a
+  custom XYZ provider). `js/connection-watch.js` (boot path) records what the page actually contacts from
+  the browser's own accounts — Resource Timing (`buffered`), every WebSocket (the constructor is wrapped
+  once by a subclass), `securitypolicyviolation` (kept apart: nothing left the browser) and, through
+  `sw.js`, the requests made by **background workers**, which never reach the page's timeline (only
+  non-window clients are reported, batched once a second, with the number of open windows so a worker
+  that may belong to another tab is said to). Only scheme and host are kept — a tile URL can carry a key.
+  `js/connections-panel.js` (Settings ▸ Privacy ▸ This page's connections, and Atlas `system.connections`)
+  judges each host against `data/connection-ledger.json` (derived from `scripts/outbound-hosts.json`,
+  checked equal by the same gate): stated (grouped by what is sent), **unlisted**, **contradicting** (a
+  `link` or `dormant` row the page contacted) and refused. It always states what it cannot see (inside
+  frames; workers while `sw.js` does not control the page) and says «could not compare», never
+  «unlisted», when the statement itself cannot be read. `tests/security-next.spec.js` holds Playwright's
+  own record of the main frame's finished requests against the list.
 
 - **(own-fetch-relay) No public CORS relay is used.** Upstreams that send no `Access-Control-Allow-Origin`
   (Google News RSS, GDELT, Yahoo share prices, the TeleGeography cable files, Street-View coverage
@@ -975,7 +1003,8 @@ put a real secret value in the repo, a PR, or a log.**
 
 ### GitHub (repo → Settings)
 - **Code security**: enable **Secret scanning** + **Push protection**; enable **Private
-  vulnerability reporting**; confirm **Dependabot alerts** (config already in
+  vulnerability reporting** (⚠ MEASURED 2026-10-03: `GET /repos/…/private-vulnerability-reporting` →
+  `{"enabled":false}` — not done; until it is, the private channel is the security page's form, §10); confirm **Dependabot alerts** (config already in
   `.github/dependabot.yml`); **CodeQL** runs from `security.yml` (free for this public repo).
 - **Branch protection / ruleset on `main`** — applied (ruleset «Protect main», re-read 2026-09-18):
   PRs required, force-push and deletion blocked, no bypass actors, and the required checks are the
@@ -1137,4 +1166,10 @@ XSS tests for `esc()`/`safeUrl()` live in `tests/auth-security-checks.test.mjs` 
 ---
 
 ## 10. Reporting
-See [`SECURITY.md`](../SECURITY.md).
+See [`SECURITY.md`](../SECURITY.md). The private channel that exists today is the public security page
+(`security.html` / `ja/security.html`, generated by `scripts/org-pages.mjs`): its button opens the contact
+form with the purpose `security` (`supabase/functions/_shared/inquiry-shape.js`; the table's CHECK is widened
+by `20261003213000_inquiry_security_purpose.sql`), so a report travels `reader-reports` → `public.org_inquiries`,
+which only administrators read (RLS) — never a public issue. Every fact that page states (what is sent and to
+how many hosts, whether third-party analytics loads, whether `script-src` allows inline code or eval) is read
+by the generator from `scripts/outbound-hosts.json` and `index.html`.

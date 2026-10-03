@@ -47,7 +47,7 @@
 /** @typedef {{ key:string, cause:string, gen:number, restoring:boolean }} ChangeEvent */
 
 /* ══ THE SCHEMA ══════════════════════════════════════════════════════════════════════════════════
-   ⚠ ORDER IS THE ADDRESS BAR'S ORDER: `#v=…&l=…&d=…&tt=…&cmp=…&ct=…&sat=1&t3=1&s=…&title=…&note=…`, the order js/map-ui.js
+   ⚠ ORDER IS THE ADDRESS BAR'S ORDER: `#v=…&l=…&d=…&tt=…&cmp=…&ct=…&sat=1&t3=1&s=…&title=…&note=…&b=…&mm=…`, the order js/map-ui.js
    concatenated since #R211 (the caption appended after it, map-postcard). It is also the restore order — every field but the view is staged on a
    timer, and two steps at the same instant (the isobars' switch and the clock, both at 900 ms) fire in
    the order they were scheduled, which is this order, as before.
@@ -98,6 +98,26 @@ export const SCHEMA = Object.freeze([
     doc: 'the link\'s title — plain text, at most TITLE_MAX characters; absent is «no title»' },
   { key: 'note',    params: ['note'],      restore: 'always', at: [300],              session: null,     owner: 'js/map-ui.js',
     doc: 'the sender\'s note — plain text, at most NOTE_MAX characters; absent is «no note»' },
+  /* (atlas-briefing) AN ATLAS INVESTIGATION, CARRIED BY THE LINK. The caption above says why a link was sent; this
+     field carries what was FOUND — one or more of the reader's notebook entries (question, answer, the view, the
+     calls that drew it, the query rows, the cited sources), packed by js/atlas-briefing-codec.js into one opaque
+     base64url value. In the fragment, so the host never receives it (RFC 3986 §3.5). Last in the address bar but for
+     `mm=` (below), so every link written before it is byte-identical. 'full', not 'always': opening a briefing rebuilds a map, and
+     a reload whose previous attempt at this very address did not survive must not run it again (the crash rule
+     the layers obey). Applied at the first staged instant: the owner only fetches the reader, which waits for
+     this restore to settle before it puts the briefing's own view back. */
+  { key: 'brief',   params: ['b'],         restore: 'full',   at: [300],              session: null,     owner: 'js/briefing-link.js',
+    doc: 'an Atlas briefing — packed notebook entries (js/atlas-briefing-codec.js); absent is «no briefing»' },
+  /* (map-next) THE READER'S OWN MAP — pins, lines and areas they drew, with their names and notes (js/my-map.js). On
+     the map, so it is part of what a link shows: the recipient opens the same drawing over the same place, layers and
+     date, and a classroom tour's step (js/tour-builder.js) carries it with no code of its own. Last in the address bar,
+     so every link written before it is byte-identical. The value is js/my-map-doc.js `toLinkValue` packed like `s=`;
+     the reader there does not trust it. 'full', as the layers are: a link that crashed a reload is reopened without it.
+     ⚠ `lazy` — its owner is a module fetched on demand (js/lazy-modules.js `myMap`). A restore that carries a value
+     asks for it (`restore` below); one that carries none leaves it unfetched — an owner that has not loaded has
+     nothing on the map, so «no drawing» needs no applying. */
+  { key: 'mymap',   params: ['mm'],        restore: 'full',   at: [300],              session: null,     owner: 'js/my-map.js', lazy: 'myMap',
+    doc: 'the reader\'s own map on show — pins, lines and areas with their names and notes (js/my-map-doc.js); absent is «none shown»' },
   { key: 'toggles', params: [],            restore: null,     at: [],                 session: 'layers', owner: 'js/session-tabs.js',
     doc: 'every ticked row of the layer panel, base toggles included — the session\'s set, a superset of `layers` (see the note at `toggles` in js/session-tabs.js)' },
 ]);
@@ -140,6 +160,10 @@ export function packObject(o) { try { if (!o) return '';
 export function unpackObject(s) { try { const b = s.replace(/-/g, '+').replace(/_/g, '/');
   return JSON.parse(decodeURIComponent(escape(atob(b)))); } catch (_) { return null; } }
 
+/** (atlas-briefing) the one test of a packed briefing's spelling — base64url, nothing that could end the parameter
+    @param {any} s @returns {string} the value, or '' */
+function briefText(s) { const t = String(s == null ? '' : s); return /^[A-Za-z0-9_-]+$/.test(t) ? t : ''; }
+
 /** does this address name a map state at all? (a `v=` — a link without one is not a map link)
     @param {string} hash */
 export function carries(hash) { return /[#&]v=/.test(String(hash || '')); }
@@ -147,7 +171,7 @@ export function carries(hash) { return /[#&]v=/.test(String(hash || '')); }
 /** the address-bar form → the state tree. Fields the link does not name are given the value their
     ABSENCE states (no `tt` is «now», no `l` is «no data layers», no `cmp` is «no window»; no `d` is null, «what `l` names», see `display`) — a full
     restore applies the whole state a link describes (share-embed-distribution).
-    @param {string} hash @returns {{ view: ViewValue|null, layers: string[], display: (string[]|null), time: TimeValue, compare: CompareValue, base: ('map'|'sat'), terrain: boolean, sims: any, title: string, note: string }} */
+    @param {string} hash @returns {{ view: ViewValue|null, layers: string[], display: (string[]|null), time: TimeValue, compare: CompareValue, base: ('map'|'sat'), terrain: boolean, sims: any, title: string, note: string, brief: string, mymap: any }} */
 export function decode(hash) {
   const H = String(hash || '');
   let view = null;
@@ -180,11 +204,14 @@ export function decode(hash) {
     base: /[#&]sat=1/.test(H) ? 'sat' : 'map',
     terrain: /[#&]t3=1/.test(H),
     sims: s ? unpackObject(s) : null,
-    title: text('title', TITLE_MAX), note: text('note', NOTE_MAX) };
+    title: text('title', TITLE_MAX), note: text('note', NOTE_MAX),
+    brief: briefText(param(H, 'b')),
+    /* (map-next) opaque here, like `s`: js/my-map-doc.js `fromLinkValue` is the one reader of what is inside */
+    mymap: (() => { const m = param(H, 'mm'); return m ? unpackObject(m) : null; })() };
 }
 
 /** the state tree → the address-bar form. '' when there is no view (nothing to link to).
-    @param {{ view?: ViewValue|null, layers?: string[], display?: (string[]|null), time?: TimeValue, compare?: CompareValue, base?: string, terrain?: boolean, sims?: any, title?: string, note?: string }} st
+    @param {{ view?: ViewValue|null, layers?: string[], display?: (string[]|null), time?: TimeValue, compare?: CompareValue, base?: string, terrain?: boolean, sims?: any, title?: string, note?: string, brief?: string, mymap?: any }} st
     @returns {string} */
 export function encode(st) {
   try {
@@ -203,6 +230,8 @@ export function encode(st) {
     const s = st.sims ? packObject(st.sims) : ''; if (s) h += '&s=' + s;
     const ti = captionText(st.title, TITLE_MAX); if (ti) h += '&title=' + encodeURIComponent(ti);
     const no = captionText(st.note, NOTE_MAX); if (no) h += '&note=' + encodeURIComponent(no);
+    const bf = briefText(st.brief); if (bf) h += '&b=' + bf;
+    const mm = st.mymap ? packObject(st.mymap) : ''; if (mm) h += '&mm=' + mm;
     return h;
   } catch (_) { return ''; }
 }
@@ -262,7 +291,7 @@ function stage(f, o, value, ctx) {
 }
 
 export const MapState = {
-  SCHEMA, PARAMS, SETTLE_MS, encode, decode, carries, TITLE_MAX, NOTE_MAX, captionText,
+  SCHEMA, PARAMS, SETTLE_MS, encode, decode, carries, TITLE_MAX, NOTE_MAX, captionText, briefText,
 
   /** own(key, { read, apply, prepare }) — the module that decides a field. Re-registering replaces.
       A restore that reached this field before its owner existed hands its value over now (if that
@@ -347,7 +376,15 @@ export const MapState = {
     SCHEMA.forEach((f) => {
       if (!f.restore || (f.restore === 'full' && !ctx.full)) return;
       const o = owners[f.key], value = /** @type {any} */ (st)[f.key];
-      if (!o) { pending[f.key] = { value, ctx }; return; }
+      if (!o) {
+        /* (map-next) an owner fetched on demand: a value for it is a reason to fetch it, and no value is nothing to do
+           (it has drawn nothing yet). The loader is read off the page at call time — this module imports nothing. */
+        const lazy = /** @type {any} */ (f).lazy;
+        if (lazy && value == null) return;
+        pending[f.key] = { value, ctx };
+        if (lazy) { try { const Z = /** @type {any} */ (globalThis).IntMapLazy; if (Z && typeof Z.need === 'function') Z.need(lazy).catch(() => { }); } catch (_) { } }
+        return;
+      }
       stage(f, o, value, ctx);
     });
     ctx.later(() => { restoring = false;

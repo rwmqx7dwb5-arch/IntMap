@@ -311,6 +311,30 @@ export const statusPage = {
   toggle: () => statusPageModule().then((m) => (m.shown() ? m.close() : m.open(statusCtx()))),
   describe: () => statusPageModule().then((m) => m.describe(statusCtx())),
 };
+/* ══ (ops-next) 「新着」— THE WHAT'S-NEW PAGE'S HANDLE, BESIDE THE STATUS PAGE'S AND FOR THE SAME REASON ══════
+   js/whats-new.js is fetched the first time the page is opened or its button is first on screen; this file is
+   already on the boot path and already holds the one listener for the status page's button, so the second
+   page of the same kind (what IntMap says about itself) costs no module at start-up either.
+   Readers: Settings ▸ 「新着」 (index.html #btn-whats-new), Atlas (`system.whatsNew` in js/atlas-cap-system.js,
+   and system.module discovers window.IntMapWhatsNew). */
+const whatsNewModule = () => import('./whats-new.js');
+export const whatsNew = {
+  open: () => whatsNewModule().then((m) => m.open()),
+  close: () => whatsNewModule().then((m) => m.close()),
+  toggle: () => whatsNewModule().then((m) => (m.shown() ? m.close() : m.open())),
+  describe: (o) => whatsNewModule().then((m) => m.describe(o)),
+};
+/* the unread mark: counted the first time the button is on screen — never at start-up */
+function watchWhatsNewButton(doc) {
+  const btn = doc.getElementById('btn-whats-new');
+  if (!btn || typeof IntersectionObserver !== 'function') return;
+  const io = new IntersectionObserver((seen) => {
+    if (!seen.some((e) => e.isIntersecting)) return;
+    io.disconnect();
+    whatsNewModule().then((m) => m.paintMark(btn)).catch(() => { /* no list: no mark */ });
+  });
+  io.observe(btn);
+}
 try {
   if (typeof document !== 'undefined') {
     layerState.listen(document);
@@ -321,12 +345,15 @@ try {
         report: layerState.report, on: layerState.on,
       };
       window.IntMapStatus = statusPage;   /* the name system.module discovers (window.IntMap*) */
+      window.IntMapWhatsNew = whatsNew;   /* (ops-next) likewise */
       document.addEventListener('click', (e) => {
-        const b = e.target && e.target.closest ? e.target.closest('#btn-status-page') : null;
+        const b = e.target && e.target.closest ? e.target.closest('#btn-status-page, #btn-whats-new') : null;
         if (!b) return;
         try { const sm = document.getElementById('settings-modal'); if (sm) sm.style.display = 'none'; } catch (_) { /* no settings */ }
-        statusPage.open();
+        if (b.id === 'btn-whats-new') whatsNew.open(); else statusPage.open();
       });
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => watchWhatsNewButton(document), { once: true });
+      else watchWhatsNewButton(document);
     }
   }
 } catch (_) { /* headless */ }

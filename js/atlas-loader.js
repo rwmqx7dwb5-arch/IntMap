@@ -72,13 +72,9 @@ window.IntMapAtlas = (function () {
         if (ab) { ab.onclick = function () { A.call('toggle'); };
           ab.addEventListener('pointerenter', A.hint, { passive: true }); }
       } catch (_) { }
-      /* (#R42) Ctrl/⌘+K opens Atlas (skip when typing in a field). */
-      window.addEventListener('keydown', function (e) {
-        if (!((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K'))) return;
-        const ae = document.activeElement;
-        if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
-        e.preventDefault(); A.call('toggle');
-      });
+      /* (ux-next) Ctrl/⌘+K is the command palette now (js/keyboard-shortcuts.js → js/command-palette.js): ONE entrance to
+         every action, layer, place, company, example map — and Atlas, which is its last row and what Ctrl/⌘+K does again
+         inside it. The single key «A» still opens Atlas directly. It was #R42's «Ctrl/⌘+K opens Atlas» here. */
       try {
         const cb = document.getElementById('btn-community');
         if (cb) { cb.addEventListener('pointerdown', A.hint, { passive: true });

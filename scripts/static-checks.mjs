@@ -17,6 +17,7 @@ import { jsReachability, standalonePages } from './js-reachability.mjs';
 import { codeOnly } from './code-only.mjs';
 import { SITE_TOKEN } from './site-url.mjs';
 import { HUB as HISTORY_HUB } from './history-pages.mjs';
+import { OTD_HUB } from './on-this-day-pages.mjs';
 import { outOfOrder } from './migration-order.mjs';
 
 const ROOT = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'));
@@ -360,6 +361,7 @@ for (const htmlName of ALL.filter((x) => !x.rel.includes('/') && x.rel.endsWith(
        them is tracked), so a link into their hub cannot name a tracked file. Where they live is that
        generator's HUB, read here, not retyped. */
     if (clean === HISTORY_HUB || clean.startsWith(HISTORY_HUB)) continue;
+    if (clean === OTD_HUB || clean.startsWith(OTD_HUB)) continue;   /* (marketing-next) the «on this day» pages: the same, from scripts/on-this-day-pages.mjs */
     if (!existsSync(join(ROOT, clean))) err('assets', `${htmlName}: references missing local file "${clean}"`);
   }
 }

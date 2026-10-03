@@ -29,7 +29,7 @@ import { IntMapLang } from './lang-registry.js';
 import * as bus from './bus.js';
 import { IntMapTime } from './chronos.js';
 import { everyTick, stopTick } from './runtime.js';
-import { makeCountryIndex, decodePulse, aggregate, rank, shade, change, linkOutages, outageOf, isIso2, countryKeyOf } from './news-intel-core.js';
+import { makeCountryIndex, decodePulse, aggregate, rank, shade, change, linkOutages, outageOf, isIso2, countryKeyOf, arc, km } from './news-intel-core.js';
 import { freshChip } from './freshness.js';
 
 export function newsIntel(HOST) {
@@ -482,23 +482,7 @@ export function newsIntel(HOST) {
       return { ok: true, items };
     } catch (e) { return { ok: false, items: [], error: (e && e.message) || String(e) }; }
   }
-  /* a great circle that does not wrap round the back of the world (the js/world-packs-rows.js rule) */
-  function arc(a, b, n) {
-    const D = Math.PI / 180, p1 = [a[1] * D, a[0] * D], p2 = [b[1] * D, b[0] * D];
-    const dd = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin((p2[0] - p1[0]) / 2), 2) + Math.cos(p1[0]) * Math.cos(p2[0]) * Math.pow(Math.sin((p2[1] - p1[1]) / 2), 2)));
-    if (!(dd > 1e-9)) return [a.slice(), b.slice()];
-    const out = [];
-    for (let i = 0; i <= n; i++) {
-      const f = i / n, A = Math.sin((1 - f) * dd) / Math.sin(dd), B = Math.sin(f * dd) / Math.sin(dd);
-      const x = A * Math.cos(p1[0]) * Math.cos(p1[1]) + B * Math.cos(p2[0]) * Math.cos(p2[1]);
-      const y = A * Math.cos(p1[0]) * Math.sin(p1[1]) + B * Math.cos(p2[0]) * Math.sin(p2[1]);
-      const z = A * Math.sin(p1[0]) + B * Math.sin(p2[0]);
-      out.push([Math.atan2(y, x) / D, Math.atan2(z, Math.hypot(x, y)) / D]);
-    }
-    for (let i = 1; i < out.length; i++) { while (out[i][0] - out[i - 1][0] > 180) out[i][0] -= 360; while (out[i][0] - out[i - 1][0] < -180) out[i][0] += 360; }
-    return out;
-  }
-  const km = (a, b) => { const D = Math.PI / 180, dl = (b[1] - a[1]) * D, dg = (b[0] - a[0]) * D; const h = Math.sin(dl / 2) ** 2 + Math.cos(a[1] * D) * Math.cos(b[1] * D) * Math.sin(dg / 2) ** 2; return 12742 * Math.asin(Math.sqrt(h)); };
+  /* the great circle and the distance are js/news-intel-core.js `arc` / `km` (the story draws its spread with the same two) */
   /** showCompanyLinks(sites:[{lon,lat,name}], items) — each event joined to the company's NEAREST published
       site (a line says «this company, this event», not «this factory caused it»; the panel says which site) */
   function showCompanyLinks(sites, items) {

@@ -103,6 +103,8 @@ export interface GeoEngineAdapterCore {
   eyePivotDiag(): any;
   project(ll?: any): any;
   unproject(pt?: any): any;
+  /** is this screen point on the Earth (true / false), or could the renderer not be asked (null) */
+  onSurface(pt?: any): boolean | null;
   projectAltitude(ll?: any, altM?: any): any;
   terrainElevation(ll?: any, o?: any): any;
   queryRenderedFeatures(g?: any, o?: any): any;
@@ -325,6 +327,8 @@ export interface GeoEngineCamera {
 export interface GeoEngineCoords {
   project(ll?: any): any;
   unproject(pt?: any): any;
+  /** is this screen point on the Earth (true / false), or could the renderer not be asked (null) */
+  onSurface(pt?: any): boolean | null;
   terrainElevation(ll?: any, o?: any): any;
   queryRenderedFeatures(g?: any, o?: any): any;
   projectAltitude(ll?: any, a?: any): any;

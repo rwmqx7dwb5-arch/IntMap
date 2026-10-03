@@ -29,6 +29,10 @@ const U = await import(modUrl('js/usage-counts.js'));
 const CE = await import(modUrl('supabase/functions/_shared/client-error-shape.js'));
 const { PAGES, shareDir } = await import(modUrl('scripts/landing.mjs'));
 const { SITE_TOKEN } = await import(modUrl('scripts/site-url.mjs'));
+/* (marketing-next) the two doors the build generates (a directory of pages each, en and ja/), by the hub each generator owns */
+const { HUB: HISTORY_HUB } = await import(modUrl('scripts/history-pages.mjs'));
+const { OTD_HUB, dayPath } = await import(modUrl('scripts/on-this-day-pages.mjs'));
+const GENERATED_DOORS = { history: HISTORY_HUB, 'on-this-day': OTD_HUB };
 const { makeAtlasAgent } = await import(modUrl('js/atlas-agent.js'));
 const AGENT = makeAtlasAgent();
 
@@ -36,7 +40,14 @@ const AGENT = makeAtlasAgent();
 
 test('growth-loop ① the landing-page doors are the pages scripts/landing.mjs makes, and nothing else', () => {
   /* the page kinds: landing.mjs's PAGES plus its share directory */
-  assert.deepEqual(Object.keys(S.SITE_PAGES).filter((k) => k !== 'showcase').sort(), PAGES.slice().sort());
+  assert.deepEqual(Object.keys(S.SITE_PAGES).filter((k) => k !== 'showcase').sort(), [...PAGES, ...Object.keys(GENERATED_DOORS)].sort());
+  /* (marketing-next) a generated door is its hub and every page under it, in both languages — never a file beside them (a card's picture) */
+  for (const [kind, hub] of Object.entries(GENERATED_DOORS)) {
+    for (const dir of ['', 'ja/']) assert.equal(S.sitePageOf(SITE_URL + dir + hub, SITE_HOST), kind, dir + hub);
+  }
+  assert.equal(S.sitePageOf(SITE_URL + 'history/europe/1914/', SITE_HOST), 'history');
+  assert.equal(S.sitePageOf(SITE_URL + dayPath('10-03', { dir: 'ja/' }), SITE_HOST), 'on-this-day');
+  assert.equal(S.sitePageOf(SITE_URL + OTD_HUB + '10-03/card.png', SITE_HOST), null, 'a picture is not a door');
   assert.equal(shareDir({ dir: '' }), 's/', 'the share pages live under s/ (SITE_PAGES.showcase)');
   /* every door is a declared entry value, and every entry value is a door or one of the two map-link kinds */
   assert.deepEqual(S.METRICS.entry.dim.values.slice().sort(), ['embed', 'link', ...Object.keys(S.SITE_PAGES)].sort());
@@ -201,6 +212,6 @@ test('growth-loop ④ the privacy policy states both new counts, in English and 
   const legal = src('js/legal-text.js');
   assert.match(legal, /the <b>kind<\/b> of each Atlas answer \(text only, map, chart, or a mix/);
   assert.match(legal, /Atlas の回答の<b>種類<\/b>（文章のみ・地図・グラフ・その組み合わせ/);
-  assert.match(legal, /one of the Service's own introduction pages \(an example, About, For teachers, Reading the news on a map, Embedding a map\)/);
-  assert.match(legal, /本サービスの紹介ページ（作例・概要・教員向け・ニュースを地図で読む・記事に地図を埋め込む）から開いたか/);
+  assert.match(legal, /one of the Service's own introduction pages \(an example, About, For teachers, Reading the news on a map, Embedding a map, the historical maps by year, On this day\)/);
+  assert.match(legal, /本サービスの紹介ページ（作例・概要・教員向け・ニュースを地図で読む・記事に地図を埋め込む・年代から探す歴史地図・この日の歴史地図）から開いたか/);
 });
