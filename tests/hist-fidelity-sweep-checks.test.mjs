@@ -96,9 +96,11 @@ test('③ 1950: one name candidate per prefecture, not one per island', () => {
   const fc = { type: 'FeatureCollection', features: feats };
   const rings = feats.reduce((n, f) => n + (f.geometry.type === 'Polygon' ? 1 : f.geometry.coordinates.length), 0);
   assert.ok(rings > feats.length * 2, 'the defect needs islands to show: ' + rings + ' rings for ' + feats.length + ' units');
-  /* js/time-admin1.js `labelsFor`, lifted and run against the era module the page builds first */
+  /* js/time-admin1.js `labelsFor`, lifted and run against the era module the page builds first — with
+     `eraBorders`, the one place the file reads that module through the global */
   const box = vm.createContext({ window: { IntMapTimeBorders: api } });
-  vm.runInContext(liftFunction(codeOnly(rd('js/time-admin1.js')), 'labelsFor'), box);
+  const TAsrc = codeOnly(rd('js/time-admin1.js'));
+  vm.runInContext(liftFunction(TAsrc, 'eraBorders') + ';' + liftFunction(TAsrc, 'labelsFor'), box);
   const out = box.labelsFor(fc);
   const outer = out.features.reduce((n, f) => n + (f.geometry.type === 'Polygon' ? 1 : f.geometry.coordinates.length), 0);
   assert.equal(outer, feats.length, 'one outer ring — one renderer candidate — per prefecture');

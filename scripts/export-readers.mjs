@@ -99,6 +99,13 @@ export function reachedNames(src) {
      `load: () => import('./x.js')` with `mount: (IM_HOST, m) => { … m.x(IM_HOST) … }`, and the loader
      passes the namespace its import() resolved to as the mount's second argument */
   for (const m of src.matchAll(/\bmount\s*:\s*\(\s*[A-Za-z_$][\w$]*\s*,\s*([A-Za-z_$][\w$]*)\s*\)\s*=>/g)) ns.add(m[1]);
+  /* (hist-coverage) …and a memoising LOADER: `const load = () => mod || (mod = import('./x.js')…)`, then
+     `const M = await load(); M.x`. The module object is still awaited from an import() — one call
+     away — and measured on js/time-admin1.js the old forms called its `M.polysOf` dead. The loader's
+     arrow body must reach `import(` on the same line it is declared. */
+  const loaders = new Set();
+  for (const m of src.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?\(\s*\)\s*=>[^\n;]*\bimport\s*\(/g)) loaders.add(m[1]);
+  for (const l of loaders) for (const m of src.matchAll(new RegExp('(?:const|let|var)\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*await\\s+' + l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\(\\s*\\)', 'g'))) ns.add(m[1]);
   /* every regex metacharacter, not only `$` — an identifier cannot carry most of them, but a partial
      escape is right until the day it is not (CodeQL js/incomplete-sanitization) */
   const rx = (t) => String(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

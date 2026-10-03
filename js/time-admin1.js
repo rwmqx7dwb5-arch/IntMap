@@ -112,6 +112,11 @@ import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapBorderCoast } from './border-coast.js';
+/* (hist-coverage) the subdivision line's colour from its owner (the hatch and the coverage label are drawn in it),
+   and the one clock on a read with the host's own budget for it */
+import { ADMIN1_COLOR } from './border-style.js';
+import { jsonWithin } from './fetch-deadline.js';
+import { clockFor } from './proxy-fetch.js';
 
 export function timeAdmin1(HOST) {
   const GE = () => IntMapGeoEngine;   /* the renderer, through the contract — never the raw handle */
@@ -238,6 +243,11 @@ export function timeAdmin1(HOST) {
        six wrong invariants in one round, none of them reachable by a test. One owner, two readers
        (js/news-timeline.js reads the rail half). */
     const HS = () => window.IntMapHistScale;
+    /* (hist-coverage) the era module and the reader's label face, each read through the global in ONE place — the
+       subdivision names and the coverage label both ask for the face, the tier's labels and the coverage measure both
+       ask for the era module (js/app-body.js builds it from js/time-borders.js; js/map-typography.js publishes the face — neither is an export) */
+    function eraBorders() { return window.IntMapTimeBorders; }
+    const readerFont = () => { try { return window.IntMapMapTypography.readerFont(); } catch (_) { return ['Noto Sans SC']; } };
     const _dec = (y, m, d) => HS().decYear(y, m, d);
     const _vtFilter = (lo, hi, t) => HS().ohmFilter(lo, hi, t);
     function ensureVTSource() {
@@ -497,7 +507,7 @@ export function timeAdmin1(HOST) {
          as before — the defect, not a silence; in the app js/time-borders.js is built first (js/app-body.js). */
       function labelsFor(fc) {
         try {
-          const TB = window.IntMapTimeBorders;
+          const TB = eraBorders();
           if (TB && typeof TB.labelFC === 'function') return TB.labelFC(fc, f => (f.properties && f.properties._ix != null) ? 'ix' + f.properties._ix : '', true);
         } catch (_) {}
         return fc;
@@ -629,7 +639,7 @@ export function timeAdmin1(HOST) {
              for `name:ja` ON THE FEATURE, and an era feature carries none — the localized
              name is already baked into `NAME` above, which is exactly the case readerFont()
              exists for (js/time-borders.js `_ERAFONT`, #R309). */
-          const FONT = (function () { try { return window.IntMapMapTypography.readerFont(); } catch (_) { return ['Noto Sans SC']; } })();
+          const FONT = readerFont();
           const SIZE = (function () { try { return window.IntMapLabelScale.place('admin1'); } catch (_) { return ['interpolate', ['linear'], ['zoom'], 4, 9.5, 7, 11.5]; } })();
           if (!GE().layers.has(cfg.lbl)) GE().layers.add({
             id: cfg.lbl, type: 'symbol', source: cfg.src, minzoom: cfg.minZ ? cfg.minZ + 1 : 4,
@@ -811,15 +821,16 @@ export function timeAdmin1(HOST) {
     const _know = (function () {
       const SRC = 'imta-know-src', LSRC = 'imta-know-lbl-src', FILL = 'imta-know-fill', LBL = 'imta-know-lbl', IMG = 'imta-know-hatch';
       let mod = null, seq = 0, timer = 0, sig = null, last = null, ledger = null, ledgerP = null, img = false;
+      /* the polities drawn on this date — the era module's own collection (js/time-borders.js, built first in js/app-body.js) */
+      const polityFC = () => { const TB = eraBorders(); return (TB && TB.currentFC) ? TB.currentFC() : null; };
       const load = () => mod || (mod = import('./hist-knowledge.js').catch(() => { mod = null; return null; }));
       function claims() {
         if (ledger) return Promise.resolve(ledger);
         if (ledgerP) return ledgerP;
-        /* through the one clock every read of the page goes through (js/fetch-deadline.js via
-           window.IntMapFetchWithin, js/app-body.js) — a read with no end would leave the counts pending */
-        const FW = window.IntMapFetchWithin, U = 'data/hist-claims.json';
-        if (!FW || !FW.jsonWithin) return Promise.resolve(null);
-        ledgerP = Promise.resolve().then(() => FW.jsonWithin(U, FW.clockFor ? FW.clockFor(U) : undefined)).then(j => {
+        /* through the one clock every read of the page goes through (js/fetch-deadline.js, imported from its
+           owner) — a read with no end would leave the counts pending */
+        const U = 'data/hist-claims.json';
+        ledgerP = Promise.resolve().then(() => jsonWithin(U, clockFor(U))).then(j => {
           if (!j || !Array.isArray(j.pairs)) { ledgerP = null; return null; }
           const by = new Map();
           for (const p of j.pairs) { const [kind, a, b] = p; if (!by.has(a)) by.set(a, []); by.get(a).push([kind, b]); }
@@ -835,8 +846,7 @@ export function timeAdmin1(HOST) {
         try {
           const DPR = 2, S = 10 * DPR, c = document.createElement('canvas'); c.width = S; c.height = S;
           const g = c.getContext('2d'); if (!g) return false;
-          const BS = (window.IntMapBorderStyle || {});
-          g.strokeStyle = BS.admin1 || '#cba6f7'; g.globalAlpha = 0.5; g.lineWidth = 1.1 * DPR;
+          g.strokeStyle = ADMIN1_COLOR; g.globalAlpha = 0.5; g.lineWidth = 1.1 * DPR;
           g.beginPath(); g.moveTo(0, S); g.lineTo(S, 0); g.moveTo(-S / 2, S / 2); g.lineTo(S / 2, -S / 2); g.moveTo(S / 2, S * 1.5); g.lineTo(S * 1.5, S / 2); g.stroke();
           const im = g.getImageData(0, 0, S, S);
           return (img = !!GE().scene.addImage(IMG, { width: S, height: S, data: new Uint8Array(im.data.buffer.slice(0)) }, { pixelRatio: DPR }));
@@ -851,12 +861,12 @@ export function timeAdmin1(HOST) {
           const before = ['imtb-line', 'imta-line', 'imta-vt-line', 'imtb-lbl', 'ofm-admin1'].find(id => { try { return !!GE().layers.has(id); } catch (_) { return false; } });
           if (!GE().layers.has(FILL) && hatch()) GE().layers.add({ id: FILL, type: 'fill', source: SRC, layout: { visibility: 'none' },
             paint: { 'fill-pattern': IMG, 'fill-opacity': ['interpolate', ['linear'], ['zoom'], 1, 0.75, 8, 0.45] } }, before);
-          const FONT = (function () { try { return window.IntMapMapTypography.readerFont(); } catch (_) { return ['Noto Sans SC']; } })();
+          const FONT = readerFont();
           if (!GE().layers.has(LBL)) GE().layers.add({ id: LBL, type: 'symbol', source: LSRC, minzoom: 2.5,
             layout: { visibility: 'none', 'text-field': ['get', 'txt'], 'text-font': FONT,
               'text-size': ['interpolate', ['linear'], ['zoom'], 3, 9.5, 7, 11], 'text-max-width': 9, 'text-padding': 6,
               'text-optional': true, 'text-offset': [0, 1.6], 'symbol-sort-key': ['get', 'rank'] },
-            paint: { 'text-color': (window.IntMapBorderStyle || {}).admin1 || '#cba6f7', 'text-opacity': 0.85, 'text-halo-color': 'rgba(0,0,0,0.9)', 'text-halo-width': 1.4 } });
+            paint: { 'text-color': ADMIN1_COLOR, 'text-opacity': 0.85, 'text-halo-color': 'rgba(0,0,0,0.9)', 'text-halo-width': 1.4 } });
           return true;
         } catch (_) { return false; }
       }
@@ -868,7 +878,7 @@ export function timeAdmin1(HOST) {
       async function compute() {
         const my = ++seq;
         if (!active) return;
-        const fc = T1.fc(), TB = window.IntMapTimeBorders, pfc = (TB && TB.currentFC) ? TB.currentFC() : null;
+        const fc = T1.fc(), pfc = polityFC();
         if (!fc || !pfc || !Array.isArray(pfc.features)) return;
         if (sig && sig[0] === fc && sig[1] === pfc && sig[2] === HOST.lang) return;
         const M = await load(); if (!M || my !== seq || !active) return;
@@ -895,7 +905,7 @@ export function timeAdmin1(HOST) {
         schedule() { clearTimeout(timer); timer = setTimeout(() => { compute().catch(() => {}); }, 120); },
         /* the polities may land after the subdivisions (js/time-borders.js answers on its own schedule):
            asked again whenever the map settles, and a no-op when neither collection moved */
-        settle() { if (active && (!sig || sig[0] !== T1.fc() || sig[1] !== ((window.IntMapTimeBorders && window.IntMapTimeBorders.currentFC) ? window.IntMapTimeBorders.currentFC() : null))) this.schedule(); },
+        settle() { if (active && (!sig || sig[0] !== T1.fc() || sig[1] !== polityFC())) this.schedule(); },
         relabel() { sig = null; this.schedule(); },
         clear() { seq++; clearTimeout(timer); sig = null; last = null;
           try { if (GE().layers.hasSource(SRC)) GE().layers.setSourceData(SRC, { type: 'FeatureCollection', features: [] }); } catch (_) {}

@@ -99,3 +99,21 @@ base（`29f08177` を素のまま build）がすでに gzip 1529.4・brotli 1154
 使うときの動的 import なので起動費用には入らない（新しい遅延チャンク 4.4 kB）。
 同じ門は `data/hist-claims.json` が起動経路（`js/time-admin1.js`）から到達できるのに `js/boot-stage.js` が
 いつ読むかを述べていないことも落とした。行を 1 つ足した（`need`——時間の機械で区分を描いているときだけ読む）。
+
+### PR の CI で落ちたもの（統合前）
+
+- **`eager.raw`**: CI 実測 4655.6 kB（天井 4628.5 kB・幅 23.1 kB）。この branch だけの build は 4655.2 kB（下の
+  import 置換の後）で、増分は上と同じ `js/time-admin1.js`・`js/hist-scale.js`。天井は**ここでは上げていない**——
+  main がこの branch に無い 1 commit（#909、起動経路に 1 モジュールを足した）を持ち、`--update` は「CI が測る木では
+  ない」と拒む。rebase 後に build して、超えていれば `--update`（raw の 1 行）。
+- **`check:surface`**: 新しいコードが `window.*` を 9 回読んでいた。持ち主が export しているものは import に替えた
+  （`ADMIN1_COLOR` ← `js/border-style.js`、`jsonWithin` ← `js/fetch-deadline.js`、`clockFor` ← `js/proxy-fetch.js`）。
+  `IntMapTimeBorders`・`IntMapMapTypography` は持ち主が export していないので、`js/time-admin1.js` の中で読む場所を
+  1 か所ずつ（`eraBorders()`・`readerFont()`）にまとめ、既存の読みと合わせて増分 0。残る 1 つ——
+  `js/atlas-cap-time.js` の `window.IntMapTimeAdmin1`（区分の記録が今の時刻について述べる被覆を Atlas に渡す）——は
+  `js/app-body.js` が組み立てる実体で export できないので、`--update`（4 → 5）。
+- **死んだ export と判定された `polysOf`**: ページは `const load = () => mod || (mod = import('./hist-knowledge.js')…)`
+  の後に `const M = await load(); M.polysOf(…)` で読む。`scripts/export-readers.mjs` がこの「import() を返す loader」の
+  形を知らなかった。導出に足し、`tests/hist-coverage-checks.test.mjs` に回帰を置いた。
+- **`tests/r530-checks.test.mjs` ⑬**: note() の 9 言語の組を探す正規表現が、ファイルで最初の `_LT.arr(LA(`
+  （この作業で足した 2 言語の文）から始まり、4 個と数えた。探す範囲を note() の本体に、組を `const base =` に絞った。

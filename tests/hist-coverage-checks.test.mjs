@@ -251,9 +251,8 @@ test('⑤ travelled to 1900, the page hatches the ground the record is silent ab
     { type: 'Feature', properties: { NAME: 'Half' }, geometry: { type: 'Polygon', coordinates: [ring(0, 0, 10)] } },
     { type: 'Feature', properties: { NAME: 'Silent' }, geometry: { type: 'Polygon', coordinates: [ring(20, 20, 6)] } }] };
   win.IntMapTimeBorders = { currentFC: () => polities };
-  /* the page reads the ledger through its one clock (js/fetch-deadline.js, published by js/app-body.js) */
+  /* the page reads the ledger through its one clock — imported from its owners, js/fetch-deadline.js and js/proxy-fetch.js */
   let read = null;
-  win.IntMapFetchWithin = { jsonWithin: async (u) => { read = u; return ledgerFor(); }, clockFor: () => 9000 };
   const ctx = { window: win, console, Promise, Math, JSON, Number, Array, Date, Set, Map, isFinite, URL };
   vm.createContext(ctx);
   vm.runInContext(rd('js/hist-scale.js'), ctx);
@@ -277,6 +276,8 @@ test('⑤ travelled to 1900, the page hatches the ground the record is silent ab
       'js/lang-registry.js': { IntMapLang: { pickArgs: () => ((...a) => a), pick: () => ({ arr: (a) => a[0] }), htmlTag: () => 'en' } },
       'js/border-coast.js': { IntMapBorderCoast: { marks: () => null, lineGeom: () => null, load: () => Promise.resolve(null),
                                                    onArrive: () => {}, wholeLines: () => ({ type: 'FeatureCollection', features: [] }) } },
+      'js/fetch-deadline.js': { jsonWithin: async (u) => { read = u; return ledgerFor(); } },
+      'js/proxy-fetch.js': { clockFor: () => 9000 },
     },
   });
   const mod = timeAdmin1({ canDraw: () => true, lang: 'en', isMobile: () => true });
@@ -332,4 +333,14 @@ test('⑥ Atlas time.coverage carries the subdivision record\'s own answer for t
   const r2 = await cap.run({ year: 1500 }, {}, K);
   assert.equal(r2.subdivisions, undefined);
   assert.doesNotMatch(r2.html, /Subdivisions recorded/);
+});
+
+test('① the page reaches the shared measure through a memoising loader, and the dead-export gate sees that reader', async () => {
+  /* the page's `const load = () => mod || (mod = import('./hist-knowledge.js')…)` then `const M = await load();
+     M.polysOf(…)` was invisible to scripts/export-readers.mjs, which called polysOf dead (CI, PR #919) */
+  const { reachedNames, deadExports } = await import('../scripts/export-readers.mjs');
+  const got = reachedNames("const load = () => mod || (mod = import('./x.js').catch(() => null));\nasync function f() { const M = await load(); M.a(); M.b; }\n");
+  assert.ok(got.has('a') && got.has('b'), 'a member of the module object a loader resolved to is a read');
+  assert.ok(!reachedNames("const load = () => fetch('./x');\nconst M = await load(); M.c;\n").has('c'), 'a loader that is not an import() is not a module');
+  assert.deepEqual(deadExports(ROOT).dead.filter((d) => d.startsWith('js/hist-knowledge.js')), []);
 });
