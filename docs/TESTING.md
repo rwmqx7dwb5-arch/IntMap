@@ -717,7 +717,13 @@ phone 375×812 touch: pan + flick, pinch, double tap): frame interval p50/p95/ma
 (the first moving frame after release over the drag's speed); long tasks and long-animation-frame
 scripts (mapped to source files); JS time in renderer-event, DOM-input and animation-frame callbacks
 **by the file that registered them**; symbol placements, label flips and blinks (hidden and shown
-again within 600 ms); tile waits; `<html>`/`<body>` class/style writes. Every line carries the
+again within 600 ms); tile waits; `<html>`/`<body>` class/style writes; and **what the reader sees of the
+tiles** — every frame, each IDEAL tile of every drawn tiled source (what `TileManager._updateRetainedTiles`
+was handed) is sharp (has data), blurry (a loaded ancestor stands in) or blank, reported as shares while
+moving, the time from the camera stopping to no blank / all sharp, the blank·ms and unsharp·ms areas, and
+which sources they came from. Each rep goes `REP_SHIFT_DEG` (9°) of longitude further, so no rep is
+answered by the previous one's tile cache. `--setup "<js>|||<js>"` runs one expression per arm after boot,
+for the A/B of a switch inside one build (e.g. `IntMapSatProto.setZoomGate(false)`). Every line carries the
 machine's CPU busy share over the span, because frame times from a saturated machine are not
 comparable with a quiet one.
 

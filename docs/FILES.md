@@ -133,7 +133,8 @@ src/
                                     URL（`virtual:maplibre-gl-worker-url`・vite.config.js）を最初の Map より前に
                                     `setWorkerUrl` で渡す
   locale-boot.js                    import.meta.glob('../js/locales/ui.*.js') で言語をディレクトリから読む（lazy）
-  sat-worker.js / sat-worker-client.js      衛星の軌道計算（SGP4/SDP4）をワーカーで回す
+  sat-worker.js / sat-worker-client.js      衛星画像（Esri World Imagery）のタイルの取得・プレースホルダの祖先切り抜き・@2x 合成・
+                                    デコードをワーカーで回す。`warm` はカメラの行き先のタイルのバイトを先に取る（map-motion）
   tsunami-worker.js / tsunami-worker-client.js  津波の伝播計算をワーカーで回す
   aviation-worker.js / aviation-worker-client.js  ライブ航空機の在庫（デコード・格納・時効・フィルタ・GPU バッファの pack）をワーカーで回す
   radiation-worker.js / radiation-worker-client.js  放射性プルームのラグランジュ solve をワーカーで回す（物理は js/radiation-model.js・worker が無ければページ側が少ない粒子で解き、run がそう名乗る）
@@ -2012,7 +2013,8 @@ scripts/
                                   時計を止め 1/60 秒ずつ進める——GPU の無い runner でも 60 Hz の軌跡になる）。
   map-motion-probe.js             上の**ページ側の計器**（`addInitScript`）。rAF・DOM 入力・レンダラのイベントの
                                   listener を登録時のスタックつきで包んで時間を数え、symbol placement と描画を
-                                  分け、ラベルの表示状態の反転と 600 ms 以内の戻り（点滅）を数える。⚠ アプリではない。
+                                  分け、ラベルの表示状態の反転と 600 ms 以内の戻り（点滅）を数え、毎フレーム各ソースの
+                                  理想タイルを くっきり／ぼやけ（祖先で代用）／空白 に分けて数える。⚠ アプリではない。
   engine-coupling.mjs             レンダラ脱依存のゲート
   i18n-*.mjs                      翻訳の被覆と形の監査（§10）
   eol.mjs                         ソース検査は**バイト列ではなく内容**を読む（改行はチェックアウトの性質）。

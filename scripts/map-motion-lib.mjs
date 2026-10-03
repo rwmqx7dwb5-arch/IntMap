@@ -49,7 +49,7 @@ export function analyse(raw, kind, opts = {}) {
      over the median speed of the drag's last 120 ms. The release frame itself (no input) is skipped,
      because what a reader sees as a brake is the speed the glide comes back at. */
   let glideStart = NaN;
-  if (kind === 'pan' && tOut != null) {
+  if (tOut != null) {   /* a pinch's glide too: the zoom speed after the fingers lift over the speed before */
     const before = []; for (let i = 1; i < mov.length; i++) if (mov[i].t > tOut - 120 && mov[i].t <= tOut && sp[i - 1] > 0) before.push(sp[i - 1]);
     let g = NaN; for (let i = 1; i < mov.length; i++) if (mov[i].t > tOut && sp[i - 1] > 0) { g = sp[i - 1]; break; }
     glideStart = before.length ? g / q(before, 0.5) : NaN;
@@ -62,6 +62,15 @@ export function analyse(raw, kind, opts = {}) {
   /* a STALL is a frame on which a camera that was moving the frame before did not move */
   let stalls = 0; for (let i = 1; i < sp.length - 1; i++) if (sp[i] === 0 && sp[i - 1] > 0 && sp[i + 1] > 0) stalls++;
   const camStop = mov.length ? mov[mov.length - 1].t : tOut;
+  /* tiles as seen: share of ideal-tile·frames blank / blurry while moving, and from the camera stopping
+     until no ideal tile is blank, and until every one is sharp */
+  const cov = (fs) => { const a = { sharp: 0, blurry: 0, blank: 0 }; for (const f of fs) if (f.cover) { a.sharp += f.cover.sharp; a.blurry += f.cover.blurry; a.blank += f.cover.blank; } const n = a.sharp + a.blurry + a.blank; return n ? { blank: a.blank / n, blurry: a.blurry / n } : { blank: NaN, blurry: NaN }; };
+  const movCov = cov(mov);
+  const postStop = F.filter((f) => f.t >= camStop && f.cover);
+  const firstNoBlank = postStop.find((f) => f.cover.blank === 0), firstSharp = postStop.find((f) => f.cover.blank === 0 && f.cover.blurry === 0);
+  /* the area under the curve: ms × share of ideal tiles not sharp, from the first input to all-sharp */
+  let unsharpMs = 0, blankMs = 0;
+  for (let i = 1; i < F.length; i++) { const c = F[i].cover; if (!c || F[i].t < (tIn ?? 0)) continue; const n = c.sharp + c.blurry + c.blank; if (!n) continue; const dt = F[i].t - F[i - 1].t; unsharpMs += dt * (c.blurry + c.blank) / n; blankMs += dt * c.blank / n; }
   const unloaded = mov.filter((f) => f.loaded === false).length;
   const after = F.filter((f) => f.t >= camStop);
   const firstLoaded = after.find((f) => f.loaded === true);
@@ -75,7 +84,7 @@ export function analyse(raw, kind, opts = {}) {
   const js = [...by].map(([k, e]) => ({ who: k, ms: r1(e.ms), n: e.n, max: r1(e.max) })).sort((a, b) => b.ms - a.ms);
   const appJs = js.filter((x) => !/maplibre-gl\(|^renderer:/.test(x.who));
   const rc = (k) => r1((js.find((x) => x.who === k) || { ms: 0 }).ms);
-  const inWin = (e) => e.t >= (tIn ?? 0) && e.t <= (tIdle ?? raw.t1);
+  const inWin = (e) => e.t >= (tIn ?? 0) && e.t <= raw.t1;
   return {
     movingFrames: mov.length,
     movingMs: r1(mov.length ? mov[mov.length - 1].t - mov[0].t : 0),
@@ -83,6 +92,10 @@ export function analyse(raw, kind, opts = {}) {
     path: { handoff: r3(handoff), glideStart: r3(glideStart), glidePx: r1(glidePx), evenness: r3(mean > 0 ? (jerk.reduce((s, x) => s + x, 0) / Math.max(1, jerk.length)) / mean : NaN), stalls },
     long: { tasks: raw.long.filter(inWin).length, taskMs: r1(raw.long.filter(inWin).reduce((s, e) => s + e.d, 0)),
       loaf: raw.loaf.filter(inWin).length, blockingMs: r1(raw.loaf.filter(inWin).reduce((s, e) => s + e.block, 0)) },
+    seen: { blankWhileMoving: r3(movCov.blank), blurryWhileMoving: r3(movCov.blurry),
+      noBlankAfterStopMs: r1(firstNoBlank ? firstNoBlank.t - camStop : NaN), sharpAfterStopMs: r1(firstSharp ? firstSharp.t - camStop : NaN),
+      blankMs: r1(blankMs), unsharpMs: r1(unsharpMs),
+      by: Object.entries(raw.coverBy || {}).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, n]) => k + '×' + n).join(' ') },
     tiles: { waitingShare: r3(mov.length ? unloaded / mov.length : NaN), settleMs: r1(firstLoaded ? firstLoaded.t - camStop : NaN), idleAfterInputMs: r1(tIdle != null && tOut != null ? tIdle - tOut : NaN) },
     labels: { placementShare: r3(mov.length ? raw.placements / mov.length : NaN), placements: raw.placements, flips: raw.flips, blinks: raw.blinks, placementMs: rc('renderer:placement'), paintMs: rc('renderer:paint') },
     loafScripts: (() => { const m = new Map();
@@ -137,14 +150,26 @@ export const GESTURES = {
     drag: { kind: 'pan', view: { center: [2.35, 48.85], zoom: 6, pitch: 0, bearing: 0 }, async run(page, b, cdp) {
       const x0 = b.x + b.w * 0.7, y0 = b.y + b.h * 0.5;
       await mouse(cdp, 'mouseMoved', x0, y0, { buttons: 0 }); await mouse(cdp, 'mousePressed', x0, y0);
-      await paced(24, FRAME, (i) => mouse(cdp, 'mouseMoved', x0 - 16 * (i + 1), y0 - 4 * (i + 1)));
-      spinUntil(performance.now() + FRAME);
-      await mouse(cdp, 'mouseReleased', x0 - 16 * 24, y0 - 4 * 24);
+      /* the release is the next beat of the same clock — a hand lets go within a frame of its last move */
+      await paced(25, FRAME, (i) => (i < 24 ? mouse(cdp, 'mouseMoved', x0 - 16 * (i + 1), y0 - 4 * (i + 1)) : mouse(cdp, 'mouseReleased', x0 - 16 * 24, y0 - 4 * 24)));
     } },
     dblclick: { kind: 'zoom', view: { center: [-74.0, 40.7], zoom: 8, pitch: 0, bearing: 0 }, async run(page, b) {
       await page.mouse.dblclick(b.x + b.w * 0.55, b.y + b.h * 0.5);
     } },
     /* the globe: a world-scale wheel in */
+    /* a wheel zoom OUT across z5.4, where the satellite basemap's night side is built (js/night-side.js),
+       and 2.5 s after it for the idle work that build leaves */
+    wheelOut: { kind: 'zoom', view: { center: [100, 20], zoom: 6.6, pitch: 0, bearing: 0 }, after: 2500, async run(page, b, cdp) {
+      const x = b.x + b.w * 0.5, y = b.y + b.h * 0.5;
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
+      await paced(8, 45, () => wheelAt(cdp, x, y, 100));
+    } },
+    /* a long drag at city zoom into ground the camera has not seen, released at speed */
+    longDrag: { kind: 'pan', view: { center: [139.7, 35.68], zoom: 12, pitch: 0, bearing: 0 }, async run(page, b, cdp) {
+      const x0 = b.x + b.w * 0.85, y0 = b.y + b.h * 0.5;
+      await mouse(cdp, 'mouseMoved', x0, y0, { buttons: 0 }); await mouse(cdp, 'mousePressed', x0, y0);
+      await paced(37, FRAME, (i) => (i < 36 ? mouse(cdp, 'mouseMoved', x0 - 22 * (i + 1), y0 - 3 * (i + 1)) : mouse(cdp, 'mouseReleased', x0 - 22 * 36, y0 - 3 * 36)));
+    } },
     globeWheel: { kind: 'zoom', view: { center: [20, 25], zoom: 1.6, pitch: 0, bearing: 0 }, async run(page, b, cdp) {
       const x = b.x + b.w * 0.5, y = b.y + b.h * 0.5;
       await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
@@ -155,17 +180,13 @@ export const GESTURES = {
     pan: { kind: 'pan', view: { center: [139.7, 35.68], zoom: 11, pitch: 0, bearing: 0 }, async run(page, b, cdp) {
       const x0 = b.x + b.w * 0.75, y0 = b.y + b.h * 0.45;
       await touch(cdp, 'touchStart', [{ x: x0, y: y0, id: 0 }]);
-      await paced(18, FRAME, (i) => touch(cdp, 'touchMove', [{ x: x0 - 13 * (i + 1), y: y0 + 3 * (i + 1), id: 0 }]));
-      spinUntil(performance.now() + FRAME);
-      await touch(cdp, 'touchEnd', []);
+      await paced(19, FRAME, (i) => (i < 18 ? touch(cdp, 'touchMove', [{ x: x0 - 13 * (i + 1), y: y0 + 3 * (i + 1), id: 0 }]) : touch(cdp, 'touchEnd', [])));
     } },
     pinch: { kind: 'zoom', view: { center: [139.7, 35.68], zoom: 6, pitch: 0, bearing: 0 }, async run(page, b, cdp) {
       const cx = b.x + b.w / 2, cy = b.y + b.h * 0.42;
       const pts = (r) => [{ x: cx - r, y: cy, id: 0 }, { x: cx + r, y: cy, id: 1 }];
       await touch(cdp, 'touchStart', pts(40));
-      await paced(30, FRAME, (i) => touch(cdp, 'touchMove', pts(40 + 4.5 * (i + 1))));
-      spinUntil(performance.now() + FRAME);
-      await touch(cdp, 'touchEnd', []);
+      await paced(31, FRAME, (i) => (i < 30 ? touch(cdp, 'touchMove', pts(40 + 4.5 * (i + 1))) : touch(cdp, 'touchEnd', [])));
     } },
     /* over open ocean: a tap on a place label opens its card (the label owns the tap) and the zoom is
        then not what is being measured — measured at New York z8, 0 moving frames in both builds */
@@ -178,8 +199,12 @@ export const GESTURES = {
   },
 };
 
-export async function measure(page, cdp, g) {
-  await jump(page, g.view);
+/* `rep` moves the gesture somewhere the renderer has not been (REP_SHIFT_DEG of longitude per rep):
+   a repeat in the same place is drawn from the tile cache and says nothing about arriving tiles */
+export const REP_SHIFT_DEG = 9;
+export async function measure(page, cdp, g, rep = 0) {
+  const c = g.view.center;
+  await jump(page, Object.assign({}, g.view, { center: [((c[0] + rep * REP_SHIFT_DEG + 540) % 360) - 180, c[1]] }));
   const b = await canvasBox(page);
   await page.evaluate(() => { window.__mm.start(); window.__mm.mark('in'); });
   await g.run(page, b, cdp);
@@ -190,7 +215,7 @@ export async function measure(page, cdp, g) {
     const wait = () => { if (m.isMoving()) return setTimeout(wait, 30); m.once('idle', fin); if (m.loaded() && m.areTilesLoaded() && !m.isMoving()) setTimeout(() => { if (!m.isMoving() && m.areTilesLoaded()) fin(); }, 60); };
     wait(); setTimeout(fin, 12000);
   }));
-  await sleep(250);
+  await sleep(g.after || 250);   /* work a gesture leaves behind (an idle callback) is part of its cost */
   return page.evaluate(() => window.__mm.stop());
 }
 
@@ -247,6 +272,15 @@ export const PLANS = {
     if (k === 0) return [(c) => mouse(c, 'mouseMoved', x0, y0, { buttons: 0 }), (c) => mouse(c, 'mousePressed', x0, y0)];
     if (k <= 20) return [(c) => mouse(c, 'mouseMoved', x0 - 16 * k, y0 - 4 * k)];
     if (k === 21) return [(c) => mouse(c, 'mouseReleased', x0 - 16 * 20, y0 - 4 * 20)];
+    return [];
+  } }),
+  /* two fingers spreading at 60 Hz (radius 40 → 175 px), both lifted on the next step, then the glide */
+  pinch: () => ({ steps: 56, out: 31, events: (k, b) => {
+    const cx = b.x + b.w / 2, cy = b.y + b.h * 0.42;
+    const pts = (r) => [{ x: cx - r, y: cy, id: 0 }, { x: cx + r, y: cy, id: 1 }];
+    if (k === 0) return [(c) => touch(c, 'touchStart', pts(40))];
+    if (k <= 30) return [(c) => touch(c, 'touchMove', pts(40 + 4.5 * k))];
+    if (k === 31) return [(c) => touch(c, 'touchEnd', [])];
     return [];
   } }),
   /* a finger: down, eighteen moves of 13 px, lift on the next step, then the glide */

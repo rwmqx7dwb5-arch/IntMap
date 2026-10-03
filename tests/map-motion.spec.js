@@ -116,6 +116,46 @@ test.describe('desktop · wheel and drag', () => {
       await s.page.evaluate(() => { window.imNavInertia = 1; window._applyNavSens(); });
     }
   });
+
+  test('the level the wheel is going to is fetched now; the levels it passes are still held', async () => {
+    /* js/sat-proto.js _satWantedThere / _satWarmDestination. Hermetic: the bytes never arrive, but the
+       DECISIONS are made before any fetch and are counted (IntMapSatProto.zoomGate) */
+    const on = await s.page.evaluate(() => { const P = window.IntMapSatProto; if (!P || !P.zoomGate) return null;
+      P.resetZoomStats(); return window.IntMapGeoEngine.layers.getLayout('layer-sat', 'visibility'); });
+    test.skip(on !== 'visible', 'the satellite basemap is not the one drawn in this session');
+    const g = Object.assign({}, GESTURES.desktop.wheel, { view: { center: [139.7, 35.68], zoom: 8, pitch: 0, bearing: 0 } });
+    await virtualRun(s.page, s.cdp, g, PLANS.wheel());
+    const st = await s.page.evaluate(() => window.IntMapSatProto.zoomGate());
+    expect(st.ahead, `requests released because the destination draws them: ${JSON.stringify(st)}`).toBeGreaterThan(0);
+    expect(st.warmed, 'destination tiles handed to the worker before the renderer asked').toBeGreaterThan(0);
+    expect(st.held, 'and the passing levels are still held (#R205)').toBeGreaterThan(0);
+  });
+
+  test('the night side is repainted in idle slices: the canvas only ever receives a finished picture', async () => {
+    /* js/night-side.js paint(). The whole-Earth night image (1024² pixels) was one 35–58 ms task on the
+       first idle after a zoom-out crossed z5.4 — the frame the motion ended on. The assertion is about
+       ORDER, not milliseconds: the call that asks for a repaint returns with the canvas unchanged, and
+       the new picture arrives afterwards, whole. */
+    const sat = await s.page.evaluate(() => { const b = document.getElementById('btn-view-sat'); if (b && !b.classList.contains('active')) b.click();
+      return true; });
+    expect(sat).toBe(true);
+    await s.page.evaluate(() => window.IntMapGeoEngine.camera.jumpTo({ center: [0, 10], zoom: 1.2, pitch: 0, bearing: 0 }));
+    await s.page.waitForFunction(() => window.IntMapNightSide && window.IntMapNightSide.state().built, null, { timeout: 60_000 });
+    const r = await s.page.evaluate(async () => {
+      const cv = (window.__imap.getSource('im-night-lights') || {}).canvas;
+      const row = () => { const d = cv.getContext('2d').getImageData(0, Math.round(cv.height / 2), cv.width, 1).data; let h = 0; for (let c = 3; c < d.length; c += 4) h = (h * 31 + d[c]) | 0; return h; };
+      const h0 = row();
+      window.IntMapTime.set(new Date(Date.now() - 12 * 3600e3), { source: 'map-motion' });   /* the other half of the Earth is night */
+      window.IntMapNightSide.refresh();
+      const h1 = row();
+      let h2 = h1;
+      for (let i = 0; i < 60 && h2 === h0; i++) { await new Promise((res) => setTimeout(res, 100)); h2 = row(); }
+      window.IntMapTime.set(null, { source: 'map-motion' });
+      return { h0, h1, h2 };
+    });
+    expect(r.h1, 'the repaint did not run inside the call that asked for it').toBe(r.h0);
+    expect(r.h2, 'and the new picture arrived afterwards').not.toBe(r.h0);
+  });
 });
 
 test.describe('phone · finger', () => {
@@ -123,9 +163,22 @@ test.describe('phone · finger', () => {
   test.beforeAll(async ({ browser }) => { s = await open(browser, true); });
   test.afterAll(async () => { if (s) await s.ctx.close(); });
 
-  test('a flicked finger glides on instead of braking at lift-off', async () => {
+  test('a flicked finger glides on instead of braking at lift-off — and no frame stands still between', async () => {
     const r = await inRendererTime(s, GESTURES.mobile.pan, PLANS.pan());
     expect(r.movingFrames, 'the finger moved the camera').toBeGreaterThan(5);
     expect(r.path.glideStart, 'first glide frame speed / finger speed').toBeGreaterThan(0.4);
+    /* js/geo-engine.js _glideRelease ③: the glide is anchored at the last frame the finger moved, so
+       the frame drawn at the release already carries on (it stood still: 0.80 0.00 0.46) */
+    expect(r.path.stalls, 'frames on which the camera stood still between two that moved').toBe(0);
   });
+
+  test('released fingers carry the zoom on: a pinch glides out at the speed it was released at', async () => {
+    const r = await inRendererTime(s, GESTURES.mobile.pinch, PLANS.pinch());
+    expect(r.movingFrames, 'the fingers zoomed the camera').toBeGreaterThan(10);
+    /* the renderer's zoom inertia started at 0.22 of the release speed after a standing frame, and was
+       over in 76 ms (module constants nobody could pass); _glideRelease gives pan and zoom one law */
+    expect(r.path.glideStart, 'first glide frame zoom speed / pinch zoom speed').toBeGreaterThan(0.55);
+    expect(r.path.stalls, 'no standing frame at the release').toBe(0);
+  });
+
 });
