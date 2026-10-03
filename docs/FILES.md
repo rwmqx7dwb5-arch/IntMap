@@ -1269,6 +1269,13 @@ proxy-fetch.js                    ACAO を返さない上流を**自前の relay
                                   `opts.as` が受理する文書の形（feed／html／json／text）、`opts.budgetMs` が ladder 全体の上限、
                                   `opts.direct` が相手先を先に試すか、`opts.signal` が停止。⚠ 締切は**本文の読み終わりまで**掛かる。
                                   `clockFor(url, via)` は 1 回の取得の秒数を host ごとに答える（直接／自前 relay 段）
+service-status.js                 **「IntMap のいま」**（状態ページ）——この端末（オンライン・オフラインで開けるか・保存量）／
+                                  描けないレイヤーと理由／毎晩の確認でデータ元が応答しているか（いつから・最後の応答）／Atlas の
+                                  品質評価。`data/service-status.json` を読む。`upstreamRow` は失敗した要求の URL を
+                                  その提供元の夜の記録と結ぶ（`layer-state.js` が使う）、`sourceNote` は出典の一覧に同じ文を出す。
+                                  初めて使われたときに取得（握りは `layer-state.js` の `window.IntMapStatus`）。08-ui.md §8.1.3
+host-match.js                     出口の台帳（`scripts/outbound-hosts.json`）のホスト名・パターン（`*.wikipedia.org`）の照合 1 つ。
+                                  `scripts/upstream-liveness.mjs` と `service-status.js` が同じ関数を読む
 fetch-deadline.js                 締切つきの取得 `jsonWithin()` / `readWithin()`——相手が答えるのをやめても必ず終わる 1 回の取得。
                                   `opts.idle` は本文の塊ごとに時計を掛け直す（大きなファイルの無音を測る）。
                                   `opts.bytes` は本文を `text` でなく `bytes`（ArrayBuffer）で返す（gzip を壊さないため）。
@@ -1328,6 +1335,10 @@ histcities-homonyms.json.gz       歴史都市名の記録が使う綴りに一�
                                   重複排除なし）。ブラウザには配信されない——`check:histcities` が
                                   「その綴りはこの1都市を指すか」を訊く相手。生成は
                                   scripts/build-histcities-homonyms.mjs
+service-status.json               **昨夜の確認を読者へ**——上流ホストごとの判定・`what`/`whatJp`・最後に応答した時刻・
+                                  応答しなくなった時刻（`upstream-liveness` の結果から）と、Atlas の夜間評価の実行記録。
+                                  先頭に出自（IntMap 自身の測定）を値で持つ。生成は scripts/build-service-status.mjs
+                                  （`.github/workflows/tle-refresh.yml` が 1 日 2 回）
 hist-places.json                  Pleiades の独立地名（6698 地点・12646 件の年代付き名称記録）。CC BY 3.0。
                                   出典の代表点・原綴り・転写・言語コード・期間を保持し、Chronos 旅行時に遅延取得。
                                   名称の期間は創建・廃絶の年代を意味しない。生成は scripts/build-hist-places.mjs
@@ -1845,6 +1856,11 @@ scripts/
   upstream-liveness.mjs           **上流ホストの死活**。上の台帳の `probe` を並列に 1 回ずつ訊き、alive / refused / dead /
                                   unobserved に分類して JSON と Markdown を出す。失敗だけを後でもう一度訊く。`--previous` で
                                   前夜と比べ、`--fail-on-transition` は up→2 回続けて down の回だけ exit 1。`--check` は宣言だけ
+  build-service-status.mjs        `data/service-status.json` を作る。最新の `upstream-liveness` artifact と `atlas-eval.yml`
+                                  の実行記録を gh で読み、言うことが変わったときだけ書く。読めなかった半分は `null` と理由
+  lib/nightly-status.mjs          夜間ジョブの記録を値にする 1 か所——`readerUpstreams`（読者向けの上流の要約）・
+                                  `atlasEvalState` / `atlasEvalLine`（最後の成功・最新の回が何も測っていないか・失敗した段の注記）。
+                                  `build-service-status.mjs` と `worktree.mjs status` が読む
   lib/upstream.mjs                上流の応答の**判定 1 つ**（`classify`）と、builder が使う `fetchChecked`（非 2xx・空・
                                   JSON でない・スキーマ違反を拒む。再試行は dead と 429 だけ）
   lib/upstream-cadence.mjs        上流ごとの**更新周期**と根拠（observed / expires / canon）を 1 回だけ。builder の

@@ -4361,7 +4361,7 @@ export function dataLayers(HOST){
          and this line said «Loading the catalog…» over all of them. A count that exists is shown, with the
          fetch still in progress said beside it. */
       if(s.loading&&!s.catalogue){ box.textContent=jp?'カタログを取得中…':IntMapLang.t(HOST.lang,'Loading the catalog…',undefined,'Katalog wird geladen…','Загрузка каталога…','Cargando el catálogo…'); return; }
-      if(s.err&&!s.catalogue){ box.textContent=(IntMapLang.t(HOST.lang,'Could not load: ','取得できませんでした: ','Konnte nicht geladen werden: ','Не удалось загрузить: ','No se pudo cargar: '))+s.err; return; }
+      if(s.err&&!s.catalogue){ /* (shell-experience) the row is handed what the live rungs met, so it names the supplier asked (js/layer-state.js) — on entering only: a fresh record every tick would drop the sentence the first went to fetch */ try{ const cur=layerState.get('dl-sats'), f=s.failure; if(f&&(!cur||cur.url!==f.url||cur.reason!==f.reason)) layerState.report('dl-sats',f); }catch(_){} box.textContent=(IntMapLang.t(HOST.lang,'Could not load: ','取得できませんでした: ','Konnte nicht geladen werden: ','Не удалось загрузить: ','No se pudo cargar: '))+s.err; return; }
       /* Two numbers, because they answer two different questions and conflating them would hide the
          filter: how many objects are being propagated, and how many are being drawn right now. */
       const drawn=s.drawn, total=s.catalogue;
@@ -4377,7 +4377,7 @@ export function dataLayers(HOST){
         'この日時の軌道要素はありません（手元の要素が述べるのは '+day(s.elementsCover.from)+'〜'+day(s.elementsCover.to)+'）'):null;
       try{ const cur=layerState.get('dl-sats');
         if(none){ if(!cur||cur.state!=='nodata'||cur.message!==note) layerState.report('dl-sats','nodata',{reason:'out-of-epoch',message:note}); }
-        else if(cur&&cur.state==='nodata') layerState.set('dl-sats',null); }catch(_){}
+        else if(cur&&(cur.state==='nodata'||cur.url)) layerState.set('dl-sats',null); }catch(_){}   /* (shell-experience) a failure handed to the row above (it has a url) goes too, once there is a count */
       if(none){ box.textContent=note; return; }
       const away=(s.outsideSpan>0)?IntMapLang.t(HOST.lang,' · '+s.outsideSpan.toLocaleString()+' with no elements for this date','・'+s.outsideSpan.toLocaleString('ja-JP')+' 機はこの日時の軌道要素なし'):'';
       box.textContent = (jp ? (drawn.toLocaleString('ja-JP')+' / '+total.toLocaleString('ja-JP')+' 機を表示中'+(s.sunlit?('・'+s.sunlit+' 機が太陽光下'):''))

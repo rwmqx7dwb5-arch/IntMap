@@ -49,6 +49,7 @@ permissions:
   contents: write
   pull-requests: write
   actions: write                 # (#R372) .../actions/runs/<id>/approve on this one branch, and dispatching deploy.yml after the merge
+  checks: read                   # (shell-experience) the annotations of the Atlas evaluation's failed step — why it did not run
 
 concurrency:
   group: tle-snapshot
@@ -82,6 +83,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}      # a shallow clone dates its bytes by asking GitHub
         run: node scripts/data-refresh.mjs --run --summary refresh-summary.md --paths-out refresh-paths.txt
+      # ── (shell-experience) WHAT LAST NIGHT'S CHECKS SAID, WHERE THE READER CAN READ IT ─────────────────────
+      # upstream-liveness.yml and atlas-eval.yml measure things the reader is affected by (which suppliers are not
+      # answering; when Atlas was last evaluated) into artifacts and run pages nobody outside CI reads. This step
+      # writes their digest to data/service-status.json — read by the app's status page (Settings ▸ IntMap, now),
+      # by a layer row whose request failed, and by the data-sources lists (js/service-status.js). It rides THIS
+      # pull request because this is the one unattended path onto main (see the header). The script rewrites the
+      # file only when what it says changed, and a half it cannot read keeps last time's answer with its own date.
+      # ⚠ A failure here is a warning: it must not stop the catalogue, which is what this job exists for.
+      - name: Rebuild the reader's status bundle from last night's checks
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/build-service-status.mjs || echo "::warning::data/service-status.json could not be rebuilt — it stays as it was"
       - name: Open a pull request when the catalogue or a due bundle actually moved
         if: ${{ !cancelled() }}
         env:
@@ -96,7 +110,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -B "$BRANCH"
           # only what the two rebuild steps wrote: the catalogue, and the paths data-refresh reported
-          git add data/tle $(cat refresh-paths.txt 2>/dev/null)
+          git add data/tle data/service-status.json $(cat refresh-paths.txt 2>/dev/null)
           {
             echo "data: refresh the bundled satellite catalogue and the bundles that were due"
             echo

@@ -258,6 +258,8 @@ IntMapLang.define('jp', { ui: {
       shareView:"この表示を共有（リンクをコピー）",
       lblKbd:"キーボードショートカット",
       viewKbd:"ショートカット一覧を表示（? キーでも開けます）",
+      lblStatusPage:"IntMap のいま",
+      viewStatusPage:"いま動いているもの — この端末・レイヤー・データ元",
       newsCountryOff:"標準のニュースのみ",
       newsCountryMultiSel:"国を選択…",
       lblNewsSources:"ニュースの提供元",

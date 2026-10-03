@@ -97,6 +97,13 @@ export const STATIC_ASSETS = [
      a limitation's mark): a module they import must be beside them, like js/lang-registry.js above. */
   'js/icons.js',
   'js/sources-list.js',
+  /* (shell-experience) …and what js/sources-list.js imports when the page draws (a credit whose supplier did not
+     answer last night's check says so): the status reader and the two modules it imports that are not already
+     above. Served raw beside the page AND bundled into the app, for js/reference-data.js's reason — ONE reader of
+     data/service-status.json, not a page-only copy that drifts from the app's. */
+  'js/service-status.js',
+  'js/host-match.js',
+  'js/fetch-deadline.js',
   /* (#R280) the Terms and the Privacy Policy as ORDINARY PAGES with their own URL — a policy that
      can only be reached by opening the app and clicking a footer link cannot be linked to, cited
      or read by someone deciding whether to sign in at all. Same shape as the two pages above:
