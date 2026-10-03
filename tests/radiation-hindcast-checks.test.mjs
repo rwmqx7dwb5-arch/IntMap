@@ -31,7 +31,7 @@ const ar = areaKm2(obsCells, C.obsRes);
 let _rerun = null;
 function rerun() {
   if (_rerun) return _rerun;
-  const F = buildField(loadFixture());
+  const F = buildField(loadFixture(), false);
   const E = ensembleOnCells(F, obsCells, C.obsRes, C.seeds);
   const m = H.compare(obsBq, E, ar, C.fmsBq);
   const modelTBq = E.p50.reduce((a, v, i) => a + v * ar[i] * 1e6, 0) / 1e12;
@@ -172,9 +172,9 @@ test('the three maps the panel draws are the same cells, on the ladder the simul
 
 test('the reader\'s door and Atlas\'s door both reach it', () => {
   const sims = read('js/sims.js'), cap = read('js/atlas-cap-sim.js');
-  assert.ok(/import \{ cellFeatures, RATIO_LADDER \} from '\.\/radiation-hindcast\.js'/.test(sims), 'the panel draws with the shared module');
+  assert.ok(/import \{ cellFeatures, RATIO_LADDER[^}]*\} from '\.\/radiation-hindcast\.js'/.test(sims), 'the panel draws with the shared module');
   assert.ok(/return \{ run, clear, isOpen, openPanel, closePanel, hindcast,/.test(sims), 'IntMapRadiation.hindcast is a published door');
   assert.ok(/jsonWithin\('data\/radiation-hindcast\.json'/.test(sims), 'and the data it draws is the bundle, fetched on demand');
   assert.ok(/hindcast: one\('obs', 'model', 'ratio'\)/.test(cap) && /required: \['hindcast'\]/.test(cap), 'Atlas\'s radiation capability takes hindcast without a place');
-  assert.ok(/IntMapRadiation\.hindcast\(view\)/.test(cap), 'and runs the same door the panel does');
+  assert.ok(/IntMapRadiation\.hindcast\(view[,)]/.test(cap), 'and runs the same door the panel does');
 });

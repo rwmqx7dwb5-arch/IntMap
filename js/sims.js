@@ -19,7 +19,7 @@ import { overpassQuery } from './overpass.js';   /* the one Overpass client, wit
 /* (#R568) the plume model itself — the same module src/radiation-worker.js runs off the page. */
 import { RAD } from './radiation-model.js';
 /* (radiation-hindcast) the 2011 answer-check: pure drawing + the ratio ladder; the data is data/radiation-hindcast.json */
-import { cellFeatures, RATIO_LADDER } from './radiation-hindcast.js';
+import { cellFeatures, RATIO_LADDER, rungIds, rungOf } from './radiation-hindcast.js';
 import { jsonWithin } from './fetch-deadline.js';
 import { registerSimOutput } from './sim-datasets.js';   /* (science-instruments) the deposit becomes a dataset the analysis tools and Atlas's query can read */
 import { IntMapGeoEngine } from './geo-engine.js';
@@ -457,15 +457,45 @@ export function radiation(HOST){
        scripts/build-radiation-hindcast.mjs and re-checked by tests/radiation-hindcast-checks.test.mjs, so what is
        drawn here is what the model produces and the figures under it are the ones the gate guards. Nothing
        is computed on the reader's device and nothing is fitted: docs/RADIATION-MODEL.md §10. */
-    let _hcP=null, _hcM=null, uiHc=null;
+    let _hcP=null, _hcM=null, uiHc=null, uiRung='preset', _hcB=null;
     const hindcastBundle=()=>_hcP||(_hcP=jsonWithin('data/radiation-hindcast.json',30000).catch(e=>{ _hcP=null; throw e; }));   /* the shipped bundle, under the app's one read deadline (js/fetch-deadline.js) */
-    async function hindcast(view){ view=(view==='model'||view==='ratio')?view:'obs';
-      const b=await hindcastBundle(); clear(); ++_gen;
+    /* (science-next) `rung` = which rung of the attribution ladder the model and ratio maps show: 'preset' (the
+       simulator as a reader runs it) or one of the bundle's own `variants` (the accident's release over time, then
+       the regional wind, then caesium counted as wholly depositable). The ids come from the bundle; an unknown one
+       is refused with the list, never drawn as the preset. */
+    async function hindcast(view,rung){ view=(view==='model'||view==='ratio')?view:'obs';
+      const b=await hindcastBundle(); const ids=rungIds(b);
+      rung=rung==null?uiRung:String(rung);
+      const rb=rungOf(b,rung);
+      if(!rb) return {ok:false,reason:'rung',rungs:ids};
+      clear(); ++_gen;
       if(!ensureLayers()) return {ok:false,reason:'style'};
-      const feats=cellFeatures(b,view,RAD.PLAIN_ZONES.bands);
+      const feats=cellFeatures(rb,view,RAD.PLAIN_ZONES.bands);
       try{ GE().layers.setSourceData(DEP,{type:'FeatureCollection',features:feats}); }catch(_){ return {ok:false,reason:'draw'}; }
       try{ GE().camera.fitBounds([[b.obs.cells.reduce((a,c)=>Math.min(a,c[0]),180)-0.1,b.obs.cells.reduce((a,c)=>Math.min(a,c[1]),90)-0.1],[b.obs.cells.reduce((a,c)=>Math.max(a,c[0]),-180)+0.1,b.obs.cells.reduce((a,c)=>Math.max(a,c[1]),-90)+0.1]],{padding:60,maxZoom:8,duration:900}); }catch(_){}
-      uiHc=view; _hcM=Object.assign({cells:b.obs.cells.length},b.metrics); return {ok:true,view,cells:feats.length,metrics:b.metrics,asOf:b.asOf,survey:b.survey}; }
+      uiHc=view; uiRung=rung; _hcB=b; _hcM=Object.assign({cells:b.obs.cells.length},rb.metrics);
+      return {ok:true,view,rung,rungs:ids,cells:feats.length,metrics:rb.metrics,asOf:b.asOf,survey:b.survey,
+        ladder:ids.map(id=>({id,metrics:rungOf(b,id).metrics})),
+        release:rung==='preset'?null:{totalPBq:b.release&&b.release.totalPBq,inferred:b.release&&b.release.inferred,credit:b.release&&b.release.credit,conditions:rb.rungConditions}}; }
+    /* the words for the rungs, in the reader's language; an id the builder adds later reads as itself until it has words */
+    const hcRungLabel=(id)=>({ 'preset':LL('Preset: one rate for 120 h','プリセット：120 時間一定'), 'jaea':LL('2011 release, hour by hour','2011 年の放出の時間変化'),
+      'jaea-regional':LL('+ regional wind','＋地域の風'), 'jaea-regional-particulate':LL('+ all caesium depositable','＋セシウムを全量沈着可能に') })[id]||id;
+    /* the release over the model's 14 days, drawn from the bundle (log scale), with the preset's one rate over it */
+    function hcTimeline(b){ const r=b.release&&b.release.hourlyBqPerH; if(!r||!r.length) return null;
+      const svgEl=(n)=>document.createElementNS('http://www.w3.org/2000/svg',n), W=280, Hh=54, lo=11, hi=Math.ceil(Math.log10(Math.max.apply(null,r)));
+      const y=(v)=>Hh-Math.max(0,Math.min(1,(Math.log10(Math.max(v,Math.pow(10,lo)))-lo)/(hi-lo)))*Hh;
+      const svg=svgEl('svg'); svg.setAttribute('viewBox','0 0 '+W+' '+(Hh+12)); svg.setAttribute('width','100%'); svg.setAttribute('role','img');
+      svg.setAttribute('aria-label',LL('Cs-137 release rate over the first 14 days, log scale','最初の 14 日間の Cs-137 放出率（対数）'));
+      const bw=W/r.length;
+      r.forEach((v,i)=>{ if(!(v>0)) return; const rc=svgEl('rect'); rc.setAttribute('x',(i*bw).toFixed(2)); rc.setAttribute('width',Math.max(0.6,bw).toFixed(2));
+        rc.setAttribute('y',y(v).toFixed(1)); rc.setAttribute('height',(Hh-y(v)).toFixed(1)); rc.setAttribute('fill','#ff9f0a'); svg.appendChild(rc); });
+      const st=RAD.sourceTerm('fukushima','cs137');
+      if(st){ const ln=svgEl('line'), rate=st.bq/st.emitHours, x2=Math.min(r.length,st.emitHours)*bw;
+        ln.setAttribute('x1','0'); ln.setAttribute('x2',x2.toFixed(1)); ln.setAttribute('y1',y(rate).toFixed(1)); ln.setAttribute('y2',y(rate).toFixed(1));
+        ln.setAttribute('stroke','var(--text-main)'); ln.setAttribute('stroke-width','1.2'); ln.setAttribute('stroke-dasharray','3 2'); svg.appendChild(ln); }
+      for(let d=0;d<=14;d+=2){ const t=svgEl('text'); t.setAttribute('x',Math.min(W-8,d*24*bw).toFixed(1)); t.setAttribute('y',String(Hh+10));
+        t.setAttribute('font-size','8'); t.setAttribute('fill','var(--text-muted)'); t.textContent=(11+d)+'/3'; svg.appendChild(t); }
+      return svg; }
     /* the words for the ratio ladder's keys (RATIO_LADDER in js/radiation-hindcast.js owns the keys and the colours) — read at draw time, in the reader's language */
     const hcRatioLabel=(k)=>({ 'r-lo2':LL('≥100× too low','100倍以上の過小'), 'r-lo1':LL('10–100× too low','10〜100倍の過小'), 'r-lo0':LL('2–10× too low','2〜10倍の過小'),
       'r-ok':LL('within 2×','2倍以内'), 'r-hi0':LL('2–10× too high','2〜10倍の過大'), 'r-hi1':LL('10–100× too high','10〜100倍の過大'), 'r-hi2':LL('≥100× too high','100倍以上の過大') })[k];
@@ -491,6 +521,28 @@ export function radiation(HOST){
         row.appendChild(b); });
       el.appendChild(row);
       if(uiHc){ el.appendChild(hcLegend(uiHc)); el.appendChild(mk('div','font-size:10.5px;color:var(--text-main);line-height:1.5;',hcStat())); }
+      /* (science-next) what the model was given — the rungs, the release that differs, and what each rung did to the score */
+      if(uiHc&&_hcB){ const b=_hcB, ids=rungIds(b);
+        el.appendChild(mk('div','font-size:11px;font-weight:600;color:var(--text-main);margin-top:2px;',LL('What the model was given','モデルに与えたもの')));
+        const rr=mk('div','display:grid;grid-template-columns:1fr 1fr;gap:4px;');
+        ids.forEach(id=>{ const on=uiRung===id;
+          const c=mk('button','min-height:28px;padding:3px 6px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));border-radius:8px;font-size:11px;line-height:1.25;cursor:pointer;text-align:left;background:'+(on?'var(--primary-fill)':'var(--input-bg)')+';color:'+(on?'#fff':'var(--text-main)')+';',hcRungLabel(id));
+          c.className='rad-hc-r'; c.dataset.r=id; c.setAttribute('aria-pressed',on?'true':'false');
+          c.onclick=async ()=>{ let r=null; try{ r=await hindcast(uiHc==='obs'?'model':uiHc,id); }catch(_){ r=null; }
+            renderPanel(r&&r.ok?'':LL('Could not draw the 2011 comparison.','2011 年の比較を描けませんでした。')); };
+          rr.appendChild(c); });
+        el.appendChild(rr);
+        const tl=hcTimeline(b);
+        if(tl){ el.appendChild(tl); el.appendChild(mk('div','font-size:10px;color:var(--text-muted);line-height:1.45;',LL('Bars: the Cs-137 release rate the accident had (JAEA reconstruction, '+b.release.totalPBq+' PBq). Dashed: the preset, one rate for 120 h.','棒：事故の Cs-137 放出率（JAEA の再構成、'+b.release.totalPBq+' PBq）。破線：プリセットの 120 時間一定の放出率。'))); }
+        const tb=document.createElement('table'); tb.style.cssText='width:100%;border-collapse:collapse;font-size:10.5px;color:var(--text-main);';
+        const tr0=document.createElement('tr'); [LL('Rung','段'),'r',LL('Median cell','中央のセル'),LL('Within 2×','2 倍以内')].forEach((h,i)=>{ const th=mk('th','text-align:'+(i?'right':'left')+';font-weight:600;padding:2px 3px;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.28));',h); tr0.appendChild(th); }); tb.appendChild(tr0);
+        ids.forEach(id=>{ const m=rungOf(b,id).metrics, tr=document.createElement('tr'), k=Math.pow(10,-m.biasLog10);
+          if(id===uiRung) tr.style.fontWeight='700';
+          [hcRungLabel(id), m.pearsonLog.toFixed(2), k>=1?LL('1/'+k.toFixed(k<10?1:0),k.toFixed(k<10?1:0)+' 分の 1'):LL((1/k).toFixed(1)+'×',(1/k).toFixed(1)+' 倍'), (m.fac2*100).toFixed(1)+' %']
+            .forEach((t,i)=>tr.appendChild(mk('td','padding:2px 3px;text-align:'+(i?'right':'left')+';',t)));
+          tb.appendChild(tr); });
+        el.appendChild(tb);
+        if(uiRung!=='preset') el.appendChild(mk('div','font-size:10px;color:var(--text-muted);line-height:1.5;',LL('The 2011 release was itself estimated by fitting a model to measurements (Katata et al. 2015, JAEA, CC BY 3.0), so a better score with it is not an independent test. The live simulator does not fetch the regional wind, and still counts 55 % of caesium as depositable.','2011 年の放出はモデルを実測に合わせて推定されたもの（Katata ほか 2015、JAEA、CC BY 3.0）なので、これで点が上がっても独立の検証ではありません。ライブのシミュレータは地域の風を取得せず、セシウムの 55 % だけを沈着可能として数えています。'))); }
       el.appendChild(mk('div','font-size:10px;color:var(--text-muted);line-height:1.5;',LL("Fukushima Daiichi, March 2011: the model's own run (UNSCEAR release, ERA5 wind) against the Japanese government's aerial survey of Cs-137 on the ground, cell by cell. Survey: MEXT/NRA via IRSN, CC BY 4.0. Nothing is fitted.",'福島第一、2011 年 3 月：モデル自身の計算（UNSCEAR の放出量・ERA5 の風）を、日本政府の航空機モニタリングによる地表の Cs-137 とセルごとに比べます。実測は文科省／規制委（IRSN 編纂、CC BY 4.0）。調整はしていません。'))); }
     /* ⚠ (#R568 ⑧) the release HEIGHT is a control now. It is the single largest thing separating a
        vented release from a burning core, the old model hid it as 200–800 m for everything, and it is
@@ -511,8 +563,14 @@ export function radiation(HOST){
       try{ GE().render.canvas().style.cursor='crosshair'; }catch(_){}
       pickH=e=>{ site={lng:e.lngLat.lng,lat:e.lngLat.lat,name:''}; _endPick(); renderPanel(); };
       try{ GE().events.once('click',pickH); }catch(_){} }
+    /* (science-next) THE PANEL IS PLACED ON THE MAP, NOT ON THE WINDOW. It was position:fixed at left:16px of the VIEWPORT while
+       living inside #map-container — on a desktop with the sidebar open (the default: #map-container starts at x 400, the sidebar
+       paints at z 2600 over the panel's 2201) the whole panel sat under the news list, and a click on any of its buttons landed
+       on the sidebar (measured 2026-10-03, 1280 x 720: elementFromPoint at the 2011 buttons = #live-news-feed). Absolute in the
+       map's own box keeps it on the map whatever the sidebar does, at the same 16px it always meant (32px was tried and put the
+       close button under the phone's #m-fab-base — tests/mobile-panels-reach.spec.js). The body scrolls, so a panel taller than the map (the 2011 block grew) is never cut off. */
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='rad-panel';
-      panel.style.cssText='position:fixed;left:16px;top:80px;width:min(316px,92vw);z-index:calc(var(--z-dropdown) + 102);display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+      panel.style.cssText='position:absolute;left:16px;top:80px;max-height:calc(100% - 96px);width:min(316px,92vw);z-index:calc(var(--z-dropdown) + 102);display:none;flex-direction:column;background:var(--card-bg,#1c1c1e);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
       (document.getElementById('map-container')||document.body).appendChild(panel);
       return panel; }
     function renderPanel(state){ const p=ensurePanel();
@@ -522,7 +580,7 @@ export function radiation(HOST){
         :LL('No source placed yet','放出源が未設定です','Keine Quelle gesetzt','Источник не задан','Sin fuente colocada');
       p.innerHTML=('<div class="rad-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">'+icon('radiation')+' ')
           +LL('Radioactive dispersion','放射性物質の拡散','Radioaktive Ausbreitung','Рассеивание радиации','Dispersión radiactiva')+'</span><button aria-label="'+IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')+'" class="rad-x" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">×</button></div>'
-        +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;">'
+        +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;min-height:0;">'
         +'<button class="rad-pick" style="height:34px;border:none;border-radius:9px;background:var(--primary-fill);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;">◎ '
           +LL('Place the source on the map','地図で放出源を設定','Quelle auf der Karte setzen','Задать источник на карте','Colocar la fuente en el mapa')+'</button>'
         +'<div style="font-size:11.5px;color:var(--text-main);">'+_esc(where)+'</div>'

@@ -1091,9 +1091,11 @@ sims.js                           物理シミュレーションと太陽幾何�
                                   アニメーション／範囲人口／日照／鉄道の到達圏）
 radiation-hindcast.js             放射性プルームの答え合わせ（2011 年の福島の実測沈着とモデルをセルごとに比べる指標・
                                   再グリッド・描画用のセルと比の色階。純粋関数で、検査・ビルダ・パネルが同じ計算を使う。
-                                  docs/RADIATION-MODEL.md §10）
+                                  外れの内訳の段（rungIds / rungOf：束の variants を段として読む）も。
+                                  docs/RADIATION-MODEL.md §10・§10b）
 radiation-model.js                放射性物質拡散のモデル本体（風の場の入れ子ネスト・高度別の風・
-                                  ラグランジュ solve・沈着格子・区分・線量積分）。DOM も window も
+                                  ラグランジュ solve・沈着格子・区分・線量積分。任意の地域の入れ子
+                                  midPlan と、時間変化する放出 release／releasePlan）。DOM も window も
                                   持たない純粋モジュールで、ページと worker が同じものを import
                                   する。数の出所は docs/RADIATION-MODEL.md（export const RAD）
 ash-model.js                      火山灰の拡散モデル本体（Mastin の噴火源・Suzuki の鉛直分布・

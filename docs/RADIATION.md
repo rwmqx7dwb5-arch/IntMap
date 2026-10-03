@@ -170,3 +170,6 @@ Daten bei einer möglichen Veröffentlichung in sachlicher Art und Weise darzust
 Cs-137 の地表沈着（`data/radiation-hindcast.json`・CC BY 4.0）とセルごとに並べて描く（実測・モデル・比）。
 **指標・実測の出典と日付・条件・良くない結果の中身は `docs/RADIATION-MODEL.md` §10 が正本**で、ここには書き写さない。
 Atlas は `radiation` の `hindcast` 引数（場所は要らない）で同じ地図を出す。
+パネルの「モデルに与えたもの」は**外れの内訳の段**（`preset` → 事故の放出の時間変化 → 地域の風 → セシウム全量）を切り替え、
+JAEA の放出率の時間変化（棒）とプリセットの一定の放出率（破線）を並べ、段ごとの指標を表にする。Atlas は `rung` 引数で同じ段を選ぶ。
+放出の表は `data/fukushima-release.json`（JAEA・Katata ほか 2015・CC BY 3.0）。段の中身と数は `docs/RADIATION-MODEL.md` §10b。

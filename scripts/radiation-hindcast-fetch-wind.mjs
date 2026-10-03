@@ -5,16 +5,20 @@
  *  the gate must run it the same way every time — so the ERA5 reanalysis is fetched ONCE, here, and
  *  kept next to the tests. It is not shipped to readers: they get the results (data/radiation-hindcast.json).
  *
- *    node scripts/radiation-hindcast-fetch-wind.mjs
+ *    node scripts/radiation-hindcast-fetch-wind.mjs            fetch the nests the fixture does not have yet
+ *    node scripts/radiation-hindcast-fetch-wind.mjs --refetch  fetch every nest again
  *
- *  The nests are the ones the live simulator would ask for — RAD.innerPlan and RAD.outerPlan, with the
+ *  A nest already in the fixture is KEPT (the regional nest, RAD.midPlan, was added after the first two
+ *  were fixed; re-fetching those would make the recorded answer-check a function of the day it was redone).
+ *
+ *  The nests are RAD.innerPlan and RAD.outerPlan (the two the live simulator asks for) plus RAD.midPlan (the regional nest only the ladder rungs use), with the
  *  same levels (AR_LEVELS = 10 and 100 m, the two ERA5 heights Open-Meteo serves) and the same
  *  variables as js/sims.js `hourlyVars(levels, false)` — so the hindcast tests the model as shipped,
  *  not a model fitted to 2011. The window is 14 days from the reactors' shutdown hour.
  *  Open-Meteo's archive is ERA5 (Hersbach et al. 2020, Copernicus Climate Change Service), CC BY 4.0.
  * ==========================================================================*/
-import { writeFileSync, mkdirSync } from 'node:fs';
-import { gzipSync } from 'node:zlib';
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
+import { gzipSync, gunzipSync } from 'node:zlib';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { HINDCAST } from './radiation-hindcast-config.mjs';
@@ -51,16 +55,31 @@ async function nest(plan) {
   }
   return out;
 }
-const inPlan = RAD.innerPlan(C.source.lng, C.source.lat);
-const outPlan = RAD.outerPlan(C.source.lng, C.source.lat, C.meanSpeedForNest, C.hours);
-const inner = await nest(inPlan), outer = await nest(outPlan);
+const dir = join(ROOT, 'tests', 'fixtures'), FILE = join(dir, 'radiation-hindcast-era5.json.gz');
+const prev = !process.argv.includes('--refetch') && existsSync(FILE) ? JSON.parse(gunzipSync(readFileSync(FILE)).toString()) : null;
+const same = (a, b) => a && b && JSON.stringify(a) === JSON.stringify(b);
+const plans = {
+  in: RAD.innerPlan(C.source.lng, C.source.lat),
+  mid: RAD.midPlan(C.source.lng, C.source.lat),
+  out: RAD.outerPlan(C.source.lng, C.source.lat, C.meanSpeedForNest, C.hours),
+};
+const data = { in: 'inner', mid: 'mid', out: 'outer' };
 const fixture = {
   about: 'ERA5 via Open-Meteo archive (CC BY 4.0), fetched by scripts/radiation-hindcast-fetch-wind.mjs',
-  fetchedAt: new Date().toISOString(), levels, vars, startDate: C.startDate, endDate: C.endDate,
-  inPlan, outPlan, inner, outer,
+  fetchedAt: (prev && prev.fetchedAt) || new Date().toISOString(), fetchedAtByNest: (prev && prev.fetchedAtByNest) || {},
+  levels, vars, startDate: C.startDate, endDate: C.endDate,
 };
-const dir = join(ROOT, 'tests', 'fixtures');
+for (const k of Object.keys(plans)) {
+  const key = data[k], planKey = k + 'Plan';
+  /* keep a nest only when it was fetched for the SAME plan and the same window */
+  const keep = prev && prev[key] && same(prev[planKey], plans[k]) && prev.startDate === C.startDate && prev.endDate === C.endDate;
+  fixture[planKey] = plans[k];
+  fixture[key] = keep ? prev[key] : await nest(plans[k]);
+  if (!keep) fixture.fetchedAtByNest[key] = new Date().toISOString();
+  else if (!fixture.fetchedAtByNest[key]) fixture.fetchedAtByNest[key] = fixture.fetchedAt;
+  console.log(key, keep ? 'kept' : 'fetched', fixture[key].length, 'points');
+}
 mkdirSync(dir, { recursive: true });
 const buf = gzipSync(Buffer.from(JSON.stringify(fixture)), { level: 9 });
-writeFileSync(join(dir, 'radiation-hindcast-era5.json.gz'), buf);
-console.log('inner', inner.length, 'outer', outer.length, 'bytes', buf.length);
+writeFileSync(FILE, buf);
+console.log('bytes', buf.length);

@@ -206,6 +206,21 @@ export const RAD = (function () {
 
   function innerPlan(cx, cy) { return { n: INNER.n, half: INNER.half, cx, cy }; }
 
+  /* ⚠ (science-next) THE REGIONAL NEST — WHERE THE 2011 DEPOSIT ACTUALLY IS. The two nests left a hole
+     exactly where it matters: the inner one ends 0.75° (~80 km) from the source, and past it the wind and
+     the RAIN were interpolated between points 2.5° (~280 km) apart. Measured on the Fukushima answer-check
+     (docs/RADIATION-MODEL.md §10): 1,335 of the survey's 1,740 cells (77 %) lie outside the inner nest — the survey reaches
+     138.1–141.8° E and 35.2–39.6° N — so the plume that rained out over most of the surveyed land was steered
+     and washed out by a field that cannot contain a valley, a front or a shower. ±2.5° leaves 21 cells outside.
+     The middle nest is 13 × 13 over ±2.5° (0.42° ≈ 46 km): the same point count the outer nest is capped at
+     (169 — the largest a reader waits through, measured 2026-09-09) and six times finer than the outer
+     spacing, over the distance a day of transport reaches. Like the outer nest it is OPTIONAL: a field
+     without one (`F.mid` absent) is blended exactly as before, so a failed fetch costs resolution, not the run.
+     Expires with the latency measurement above (the 169 cap) or when the answer-check is redone at a
+     different spacing. */
+  const MID = { n: 13, half: 2.5 };
+  function midPlan(cx, cy) { return { n: MID.n, half: MID.half, cx, cy }; }
+
   function outerPlan(cx, cy, meanSpeedMs, hours) {
     /* Reach = mean transport speed × window, with 1.6× headroom for a wind that strengthens and for
        the cross-wind spread; floored so the outer nest always contains the inner one with room. */
@@ -314,11 +329,17 @@ export const RAD = (function () {
 
     const inn = pick(F.inner, F.inner.u, F.inner.v);
     const out = pick(F.outer, F.outer.u, F.outer.v);
-    if (!inn && !out) return null;
-    if (!inn) return { u: out.u, v: out.v };
-    if (!out) return { u: inn.u, v: inn.v };
-    const b = inn.blend;
-    return { u: inn.u * b + out.u * (1 - b), v: inn.v * b + out.v * (1 - b) };
+    /* finest first: each nest is trusted by its own blend and hands the rest to the coarser ones below it */
+    const coarse = F.mid ? windMix(pick(F.mid, F.mid.u, F.mid.v), out) : out;
+    const w2 = windMix(inn, coarse);
+    return w2 ? { u: w2.u, v: w2.v } : null;
+  }
+  function windMix(fine, coarse) {
+    if (!fine && !coarse) return null;
+    if (!fine) return { u: coarse.u, v: coarse.v };
+    if (!coarse) return { u: fine.u, v: fine.v, blend: fine.blend };
+    const b = fine.blend;
+    return { u: fine.u * b + coarse.u * (1 - b), v: fine.v * b + coarse.v * (1 - b), blend: b };
   }
 
   /* Precipitation, temperature and the boundary-layer depth at a point. `pblEstimated` says whether
@@ -333,10 +354,12 @@ export const RAD = (function () {
       const hh = Math.max(0, Math.min(g.H - 1, hi));
       return { pr: bil(g, g.pr[hh], p), tp: bil(g, g.tp[hh], p), pbl: bil(g, g.pbl[hh], p), blend: nestBlend(g, p) };
     };
+    const mix = (a, c) => {
+      if (a && c) { const b = a.blend; return { pr: a.pr * b + c.pr * (1 - b), tp: a.tp * b + c.tp * (1 - b), pbl: a.pbl * b + c.pbl * (1 - b), blend: b }; }
+      return a || c;
+    };
     const inn = pick(F.inner), out = pick(F.outer);
-    let e;
-    if (inn && out) { const b = inn.blend; e = { pr: inn.pr * b + out.pr * (1 - b), tp: inn.tp * b + out.tp * (1 - b), pbl: inn.pbl * b + out.pbl * (1 - b) }; }
-    else e = inn || out;
+    const e = mix(inn, F.mid ? mix(pick(F.mid), out) : out);
     if (!e) return null;
     return e;
   }
@@ -397,6 +420,45 @@ export const RAD = (function () {
      peak: a particle contributes to every cell it crosses instead of to exactly one.
      ⚠ THERE IS NO SETTLING OF THE REMAINDER AT THE END. What is airborne when the window closes is
      reported as airborne. */
+  /* ── a release that varies in time (science-next) ────────────────────────────────────────────
+     A preset releases at ONE rate for `emitHours` from ONE height band. A real accident does not: the
+     published reconstructions of Fukushima Daiichi are a TABLE of intervals, each with its own rate and
+     its own height (a vent at 20 m, a hydrogen explosion mixed through 0–300 m). docs/RADIATION-MODEL.md
+     §10 recorded that `simulate` had no way to accept one, so the 2011 answer-check could not ask the
+     model what the accident's own release would have done.
+     `segments` = [{ t0, t1 (hours since the run's start), bq (activity released in [t0, t1]),
+     zBot, zTop (m above ground) }]. Segments are clipped to [0, hours]; what falls outside the window is
+     not released and is reported (`releaseOutsideBq`), never quietly folded into the inside.
+     Every particle carries the SAME activity (total / N), so a burst that released half the material gets
+     half the particles — the Monte-Carlo noise follows the mass, which is what the ⑦ error bar assumes.
+     Each particle's release instant and height come from inverting the cumulative release at (i + ½)/N:
+     deterministic, so the seeded random sequence is spent on transport exactly as before. */
+  function releasePlan(segments, hours, N) {
+    const segs = [], ok = (x) => typeof x === 'number' && isFinite(x);
+    let outside = 0;
+    for (const g of segments || []) {
+      if (!g || !ok(g.t0) || !ok(g.t1) || !ok(g.bq) || g.t1 <= g.t0 || g.bq <= 0) continue;
+      const a = Math.max(0, g.t0), b = Math.min(hours, g.t1), span = g.t1 - g.t0;
+      const inside = b > a ? g.bq * (b - a) / span : 0;
+      outside += g.bq - inside;
+      if (inside <= 0) continue;
+      const zt = Math.max(1, ok(g.zTop) ? g.zTop : 20), zb = Math.max(0, Math.min(zt, ok(g.zBot) ? g.zBot : zt));
+      segs.push({ t0: a, t1: b, bq: inside, zb, zt });
+    }
+    segs.sort((x, y) => x.t0 - y.t0);
+    const total = segs.reduce((a, g) => a + g.bq, 0);
+    if (!(total > 0)) return null;
+    const tEmit = new Float64Array(N), zb = new Float32Array(N), zt = new Float32Array(N);
+    let k = 0, cum = 0;
+    for (let i = 0; i < N; i++) {
+      const target = (i + 0.5) / N * total;
+      while (k < segs.length - 1 && cum + segs[k].bq < target) { cum += segs[k].bq; k++; }
+      const g = segs[k], f = Math.min(1, Math.max(0, (target - cum) / g.bq));
+      tEmit[i] = g.t0 + f * (g.t1 - g.t0); zb[i] = g.zb; zt[i] = g.zt;
+    }
+    return { total, outside, tEmit, zb, zt, segments: segs.length, firstH: segs[0].t0, lastH: segs[segs.length - 1].t1 };
+  }
+
   function simulate(F, src, opts, onProgress) {
     const seed = (opts.seed != null && isFinite(+opts.seed) && +opts.seed > 0) ? (+opts.seed >>> 0) : null;
     rnd = seed ? seeded(seed) : Math.random; spare = null;
@@ -414,8 +476,20 @@ export const RAD = (function () {
     const decayPerStep = Math.pow(0.5, (dt / HOUR) / halfLifeH);
     /* Only a fraction of a reactor release is ground-depositable particulate; the noble gases are
        not and never land. It is a property of the material, so it lives with the isotope's form. */
-    const depFrac = iso.form === 'iodine' ? 0.75 : 0.55;
-    const q0 = opts.bq * depFrac / N;
+    /* ⚠ (science-next) MEASURED AGAINST THE 2011 SURVEY, AND NOT CHANGED HERE: a source term in this file is the
+       activity OF ONE NUCLIDE (§1 of docs/RADIATION-MODEL.md), so the noble gases are already not in it, and
+       caesium and strontium travel wholly as particles (the JAEA table, data/fukushima-release.json, lists
+       Cs-137 as «particle» only). The 0.55 therefore removes 45 % of a release that is all depositable. The
+       answer-check measures what correcting it does (§10, the `jaea-regional-particulate` rung); the default
+       is left as it is because the preset's recorded answer-check moves in both directions under it and the
+       decision to re-record is not this file's. `depositableFraction` states the fraction for one run. */
+    const depFrac = (typeof opts.depositableFraction === 'number' && opts.depositableFraction > 0 && opts.depositableFraction <= 1)
+      ? opts.depositableFraction : (iso.form === 'iodine' ? 0.75 : 0.55);
+    /* a time-varying release (`opts.release`) replaces bq / emitHours / releaseHeight; without one the
+       constant-rate path below runs unchanged — the same random draws, the same deposit, seed for seed */
+    const plan = Array.isArray(opts.release) && opts.release.length ? releasePlan(opts.release, hours, N) : null;
+    if (Array.isArray(opts.release) && opts.release.length && !plan) throw new Error('release: no segment inside the window');
+    const q0 = (plan ? plan.total : opts.bq) * depFrac / N;
     const riseTop = Math.max(20, opts.releaseHeight || 300), riseBot = riseTop * 0.25;
 
     const lng = new Float64Array(N), lat = new Float64Array(N), z = new Float32Array(N), mass = new Float64Array(N);
@@ -434,7 +508,17 @@ export const RAD = (function () {
 
     for (let st = 0; st <= steps; st++) {
       const simH = st * dt / HOUR;
-      if (simH <= emitHours && emitted < N) {
+      if (plan) {
+        /* every particle whose release instant falls in this step leaves now, at its own segment's height */
+        const until = simH + dt / HOUR;
+        while (emitted < N && plan.tEmit[emitted] < until) {
+          const i = emitted++;
+          lng[i] = src.lng + (rnd() - 0.5) * 0.01;
+          lat[i] = src.lat + (rnd() - 0.5) * 0.01;
+          z[i] = plan.zb[i] + rnd() * (plan.zt[i] - plan.zb[i]);
+          mass[i] = 1; live[i] = 1;
+        }
+      } else if (simH <= emitHours && emitted < N) {
         const want = Math.min(N - emitted, perStep);
         for (let k = 0; k < want; k++) {
           const i = emitted++;
@@ -524,6 +608,8 @@ export const RAD = (function () {
       escapedFrac: emitted ? escaped / emitted : 0,
       escapedMassFrac: emitted ? escapedMass / emitted : 0,
       maxDistKm, isotope: opts.isotope, dtSec: dt, steps, seed,
+      /* the activity this run actually released (a schedule clipped to the window says how much it left out) */
+      releaseBq: plan ? plan.total : opts.bq, releaseOutsideBq: plan ? plan.outside : 0, releaseSegments: plan ? plan.segments : 0,
       pblEstimated: !F.inner.pblSeen,
     };
   }
@@ -688,9 +774,9 @@ export const RAD = (function () {
   return {
     ensemble,
     ISOTOPES, SOURCE_TERMS, sourceTerm, zonesFor,
-    innerPlan, outerPlan, planPoints, buildNest,
+    innerPlan, midPlan, outerPlan, planPoints, buildNest,
     windAt, envAt, frictionVelocity, neutralPBL, resolveStart,
-    simulate, report, doseRate, doseIntegralHours,
+    simulate, releasePlan, report, doseRate, doseIntegralHours,
     CS_ZONES, SR_ZONES, PLAIN_ZONES,
   };
 })();

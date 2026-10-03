@@ -14,14 +14,17 @@
  *          release height and duration), fixed 2011 ERA5 wind (scripts/radiation-hindcast-fetch-wind.mjs),
  *          3 seeds x the source term's published range (6 / 10 / 20 PBq) = 9 members.
  *   Nothing is fitted to the survey. The conditions are in scripts/radiation-hindcast-config.mjs and
- *   are the preset's; the one thing the model cannot do that the accident did is vary its release rate
- *   in time, which docs/RADIATION-MODEL.md §10 says out loud.
+ *   are the preset's.
+ *   variants  (science-next) the ATTRIBUTION LADDER: the same comparison with one stated change per rung —
+ *          the accident's own release over time (data/fukushima-release.json, JAEA / Katata et al. 2015),
+ *          then the regional wind nest, then caesium counted as wholly depositable. Each rung is recorded and
+ *          guarded like the preset (tests/radiation-ladder-checks.test.mjs). docs/RADIATION-MODEL.md §10b.
  * ==========================================================================*/
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { RAD, H, C, FLOOR_BQ_M2, loadFixture, buildField, ensembleOnCells, areaKm2, decayToObs } from './radiation-hindcast-lib.mjs';
+import { RAD, H, C, FLOOR_BQ_M2, loadFixture, buildField, ensembleOnCells, ensembleVariant, loadRelease, areaKm2, decayToObs } from './radiation-hindcast-lib.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'radiation-hindcast.json');
@@ -55,6 +58,21 @@ const ZENODO = 'https://zenodo.org/api/records/7016491';
 const HDR = { headers: { accept: 'application/json', 'user-agent': 'IntMap-build/1.0 (https://github.com/rwmqx7dwb5-arch/IntMap)' } };
 const offline = process.argv.includes('--offline');
 
+/* the table's rate in each hour of the model window (hour 0 = the shutdown), 2 significant figures —
+   what the panel draws as the release timeline; the model itself reads the table's intervals */
+function hourly(rel) {
+  const t0 = Date.parse(C.startISO), out = new Array(C.hours).fill(0), at = rel.fields;
+  const iS = at.indexOf('startUTC'), iE = at.indexOf('endUTC'), iR = at.indexOf('bqPerHour');
+  for (const g of rel.segments) {
+    const a = (Date.parse(g[iS]) - t0) / 3600e3, b = (Date.parse(g[iE]) - t0) / 3600e3;
+    for (let h = Math.max(0, Math.floor(a)); h < Math.min(C.hours, Math.ceil(b)); h++) {
+      const ov = Math.min(b, h + 1) - Math.max(a, h);
+      if (ov > 0) out[h] += g[iR] * ov;
+    }
+  }
+  return out.map((x) => (x > 0 ? +x.toPrecision(2) : 0));
+}
+
 let obs, survey;
 if (offline) {
   const b = JSON.parse(readFileSync(OUT, 'utf8')); obs = b.obs.cells; survey = b.survey;
@@ -82,15 +100,41 @@ const obsBq = obs.map((o) => o[2]);
 survey.totalTBq = +(obs.reduce((a, o, i) => a + o[2] * ar[i] * 1e6, 0) / 1e12).toFixed(1);
 survey.minBqM2 = Math.min(...obsBq); survey.maxBqM2 = Math.max(...obsBq);
 
-const F = buildField(loadFixture());
+const fx = loadFixture();
+const F = buildField(fx, false);
 const t0 = Date.now();
-const E = ensembleOnCells(F, obs, obsRes, C.seeds);
-const metrics = H.compare(obsBq, E, ar, C.fmsBq);
-const modelTBq = E.p50.reduce((a, v, i) => a + v * ar[i] * 1e6, 0) / 1e12;
-metrics.massRatioP50 = modelTBq / survey.totalTBq;
 const r3 = (x) => +(+x).toPrecision(4);
-for (const k of Object.keys(metrics)) if (typeof metrics[k] === 'number') metrics[k] = r3(metrics[k]);
-for (const k of Object.keys(metrics.fms)) metrics.fms[k] = r3(metrics.fms[k]);
+/* the measures of one ensemble, rounded the way the record keeps them */
+function measure(E) {
+  const m = H.compare(obsBq, E, ar, C.fmsBq);
+  const modelTBq = E.p50.reduce((a, v, i) => a + v * ar[i] * 1e6, 0) / 1e12;
+  m.massRatioP50 = modelTBq / survey.totalTBq;
+  for (const k of Object.keys(m)) if (typeof m[k] === 'number') m[k] = r3(m[k]);
+  for (const k of Object.keys(m.fms)) m.fms[k] = r3(m.fms[k]);
+  return { m, modelTBq };
+}
+const cellsOf = (E) => Array.from(E.p50.keys()).map((i) => [E.p10[i], E.p50[i], E.p90[i]].map((x) => +x.toPrecision(3)));
+const E = ensembleOnCells(F, obs, obsRes, C.seeds);
+const { m: metrics, modelTBq } = measure(E);
+
+const rel = loadRelease();
+const variants = C.variants.map((v) => {
+  const EV = ensembleVariant(fx, v, obs, obsRes, C.seeds);
+  const { m } = measure(EV);
+  console.log(v.id, JSON.stringify(m));
+  return {
+    id: v.id,
+    conditions: {
+      release: C.releaseFile, releaseTablePBq: r3(EV.tableBq / 1e15),
+      releasedInWindowPBq: r3(EV.released.inWindowBq / 1e15), releasedAfterWindowPBq: r3(EV.released.outsideBq / 1e15),
+      intervals: EV.released.segments, releaseBqRange: [RAD.sourceTerm(C.source_term, C.isotope).lo, RAD.sourceTerm(C.source_term, C.isotope).hi],
+      scales: EV.scales.map(r3), regionalNest: v.regional, ...(v.regional ? { regionalPlan: fx.midPlan } : {}),
+      depositableFraction: v.depositableFraction || 'model default', members: EV.members,
+    },
+    metrics: m,
+    model: { fields: ['p10', 'p50', 'p90'], cells: cellsOf(EV) },
+  };
+});
 
 const st = RAD.sourceTerm(C.source_term, C.isotope);
 const out = {
@@ -126,7 +170,13 @@ const out = {
   /* cells: [lng, lat, measured Bq/m2, number of aerial measurements] */
   obs: { fields: ['lng', 'lat', 'bq_m2', 'n'], cells: obs },
   /* cells in the same order: [p10, p50, p90] of the model, Bq/m2, three significant figures */
-  model: { fields: ['p10', 'p50', 'p90'], cells: Array.from(E.p50.keys()).map((i) => [E.p10[i], E.p50[i], E.p90[i]].map((x) => +x.toPrecision(3))) },
+  model: { fields: ['p10', 'p50', 'p90'], cells: cellsOf(E) },
+  /* (science-next) the attribution ladder — one stated change per rung; the release is not an independent
+     measurement (it was itself inferred against measurements), which `releaseNote` says to every reader */
+  release: { file: C.releaseFile, credit: rel.credit, paidBy: rel.paidBy, totalPBq: rel.totalPBq, inferred: rel.inferred,
+    /* the release over the model window, hour by hour, for the panel's timeline (Bq/h, from the table) */
+    hourlyBqPerH: hourly(rel) },
+  variants,
 };
 writeFileSync(OUT, JSON.stringify(out));
 console.log('wrote', OUT, (Date.now() - t0) / 1000 + ' s');
