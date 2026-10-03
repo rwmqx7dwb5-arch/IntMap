@@ -147,6 +147,9 @@ geo-command-log.js                ↳ レンダラ命令の集計と比較。att
 click-ownership.js                ↳ クリック登録と排他的所有権の台帳。adapter/handlerを弱参照し、
                                   背景fallbackと地物のownerを区別する。レンダラや地名IDには依存しない
 runtime.js                        1つのフレームループ・1つのタイマー・1つのライフサイクル
+bus.js                            IntMap 自身の window イベントの**宣言表**（名前・意味・payload・発行元・
+                                  未移行のファイルと理由）と `emit` / `on` / `once`。配信は
+                                  `window.dispatchEvent` のままで、宣言に無い名前は開発時に例外・本番は警告
 lazy-modules.js                   押されてから取りに行くモジュール window.IntMapLazy。⚠ 指定子はすべてリテラル
 engine-select.js                  このセッションがどのエンジンで走るかを DOMContentLoaded 前に決める
 cesium-engine.js                  第2エンジン——同じ契約の裏で動く CesiumJS
@@ -1175,6 +1178,9 @@ tour-player.js                    **授業モード**——ツアーを全画面
                                   パネルで「次へ／前へ」、矢印・スペース・Page Up/Down・Esc）。段は共有リンクの復元
                                   （IntMapBookmark.restore）で開き、時計とレイヤーを読み返す。Atlas が今の地図を段として記録する
                                   一時ツアー。src/main.js が `?tour=` と設定の #btn-tours で、Atlas の panel.tour が要求時に読む
+tour-builder.js                   **ツアー作成**——いまの地図（MapState.hash()）を段として足し、題・話すこと・問いを書き、並べ替え・
+                                  差し替え・削除・プレビュー。ツアーは `?tour=custom&t=…` のアドレスそのものに入れて共有（codec は tours.js、
+                                  上限は実測の 8,192 バイト）。下書きは localStorage。ピッカー・プレイヤーの「編集」・Atlas の panel.tourBuilder が読む
 premium-plan.js                   プレミアムの節——ただしその全機能が無料である
 supporter.js                      IntMap を支援する——支援パネルの「支援の使い道」（プラン表の 1 日の上限と
                                   public.operating_stats() の今月の AI 要求数・トークン数）と、控えめな提案カード
