@@ -550,8 +550,10 @@ export function volcanoIntel(HOST){
       if(!r.ok) throw new Error('HTTP '+r.status); return await r.json(); }
     finally{ clearTimeout(to); }
   }
-  function mark(k,rows,err){ const f=FEEDS[k];
-    if(err){ f.state='failed'; f.err=String(err&&err.message||err||'').slice(0,120); }
+  function mark(k,rows,err,unavailable){ const f=FEEDS[k];
+    if(unavailable){ /* the relay READ the upstream and was refused: not a failure of ours, not "no data" */
+      f.state='unavailable'; f.rows=[]; f.err=''; f.unavailable=unavailable; }
+    else if(err){ f.state='failed'; f.err=String(err&&err.message||err||'').slice(0,120); }
     else { f.state='ok'; f.rows=rows; f.err=''; }
     f.at=Date.now(); notify(); }
 
@@ -576,7 +578,8 @@ export function volcanoIntel(HOST){
       } else if(k==='weekly'){
         const u=RELAY('feed=weekly'); if(!u) throw new Error('no relay');
         const j=await getJSON(u,20000);
-        mark(k, (j&&Array.isArray(j.rows))?j.rows:[]);
+        if(j&&j.unavailable) mark(k,null,null,j.unavailable);
+        else mark(k, (j&&Array.isArray(j.rows))?j.rows:[]);
       }
     }catch(e){ mark(k,null,e); }
     return FEEDS[k].rows;
@@ -942,6 +945,16 @@ export function volcanoIntel(HOST){
         'Für diesen Vulkan betreibt die JMA keine nummerierte Warnstufe; die Wortmeldung oben ist das Veröffentlichte.',
         'Для этого вулкана JMA не ведёт нумерованный уровень; публикуется именно приведённая формулировка.',
         'La JMA no opera un nivel numerado para este volcán; lo publicado es el aviso en palabras.'));
+    }
+    if(!w&&FEEDS.weekly.state==='unavailable'){
+      const u=FEEDS.weekly.unavailable||{}, since=String(u.checkedAt||'').slice(0,10);
+      h+=sec(L('This week — Smithsonian / USGS Weekly Volcanic Activity Report','今週 — スミソニアン／USGS 週間火山活動報告',
+        'Diese Woche — Wöchentlicher Vulkanaktivitätsbericht','На этой неделе — еженедельный отчёт','Esta semana — informe semanal de actividad volcánica'))
+        +hint(L('The weekly report could not be read: its publisher (Smithsonian) is refusing automated requests'+(u.status?' (HTTP '+u.status+')':'')+(since?', last checked '+since:'')+'. This says nothing about whether this volcano is active.',
+          '週間報告を読めませんでした。発行元（スミソニアン）が自動アクセスを拒否しています'+(u.status?'（HTTP '+u.status+'）':'')+(since?'・最終確認 '+since:'')+'。この火山が活動中かどうかについては何も述べていません。',
+          'Der Wochenbericht konnte nicht gelesen werden: Der Herausgeber (Smithsonian) weist automatische Abfragen ab'+(u.status?' (HTTP '+u.status+')':'')+(since?', zuletzt geprüft '+since:'')+'. Das sagt nichts darüber, ob dieser Vulkan aktiv ist.',
+          'Еженедельный отчёт прочитать не удалось: издатель (Smithsonian) отклоняет автоматические запросы'+(u.status?' (HTTP '+u.status+')':'')+(since?', проверено '+since:'')+'. Это ничего не говорит об активности вулкана.',
+          'No se pudo leer el informe semanal: su editor (Smithsonian) rechaza las solicitudes automáticas'+(u.status?' (HTTP '+u.status+')':'')+(since?', última comprobación '+since:'')+'. Esto no dice nada sobre si el volcán está activo.'));
     }
     if(w){
       h+=sec(L('This week — Smithsonian / USGS Weekly Volcanic Activity Report','今週 — スミソニアン／USGS 週間火山活動報告',

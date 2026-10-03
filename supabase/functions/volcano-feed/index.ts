@@ -60,6 +60,9 @@ const TIMEOUT_MS = 20000;
    valid for six hours and are amended inside that, so it gets the same 15 s floor alerts-relay uses.
    `stale-while-revalidate` is what keeps the edge answering instantly while it refreshes. */
 const CACHE_WEEKLY = "public, max-age=900, s-maxage=3600, stale-while-revalidate=86400";
+/* An unreadable weekly report is re-asked after ten minutes, not an hour: when the publisher lifts the
+   check, readers should not wait out a cached "unavailable". Estimate, not measured. */
+const CACHE_UNAVAILABLE = "public, max-age=300, s-maxage=600";
 const CACHE_ASH = "public, max-age=15, s-maxage=15, stale-while-revalidate=300";
 
 /* (own-fetch-relay) THE CALLER'S SHARE of the shared bucket (_shared/rate-limit.js multiplies it by the
@@ -91,6 +94,21 @@ Deno.serve(async (req) => {
         accept: feed === "weekly" ? "application/rss+xml, application/xml, text/xml" : "application/json",
       },
     });
+    if (!r.ok && feed === "weekly") {
+      /* ⚠ A REFUSAL IS NOT A FAILURE OF THIS FUNCTION, AND IT IS NOT A CRASH. Measured 2026-10-03:
+         volcano.si.edu answers EVERY non-browser client 403 with `cf-mitigated: challenge`
+         (Cloudflare's "Smithsonian request verification" page, 46 kB of HTML) — the RSS URL, the site
+         root and www.si.edu alike, with or without a browser User-Agent. The URL did not move and the
+         parse did not break; the publisher put a human check in front of the feed. Defeating that check
+         is not ours to do, so the honest answer is a 200 that SAYS the report could not be read, with
+         the status the upstream actually gave and when it was asked. A 502 here made every volcano card
+         print a console error for a condition that is the publisher's, and told the reader nothing.
+         It expires when the upstream answers 200 again (this branch is then simply not taken).
+         A network failure or timeout is still relayFail's 502 below: that one is ours to report. */
+      return new Response(JSON.stringify({ feed: "weekly", rows: [], unavailable: { reason: "upstream_http_" + r.status, status: r.status, checkedAt: new Date().toISOString() } }), {
+        headers: { ...CORS, "content-type": "application/json", "cache-control": CACHE_UNAVAILABLE, "x-intmap-rows": "0" },
+      });
+    }
     if (!r.ok) {
       return new Response(JSON.stringify({ error: "upstream_error" }),
         { status: 502, headers: { ...CORS, "content-type": "application/json" } });
