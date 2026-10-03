@@ -124,7 +124,9 @@ export function allSpecs() {
    `r204.spec.js` counts the context menu's headings). A cheap gate does not remove that work, it
    MOVES it to the author. So: **before pushing a change to a surface the gate no longer covers, run
    `npm run test:deep`** — and find which specs those are the way #R186 says, by grepping tests/ for
-   the file names, layer ids and API names the change touched. */
+   the file names, layer ids and API names the change touched.
+   (delivery-quality) That grep is now `node scripts/spec-reach.mjs --changed` — the deep specs whose
+   reach this branch's diff touches, with the command that runs them. It informs; it changes no tier. */
 /* ══ (#R207) LOWERED TO ONE — THE GATE IS NOW THE ALWAYS-ON SUITES AND THIS ROUND ═══════════════
    「毎回毎回、テストに時間がかかりすぎ。…実装部分以外の、テスト時間全体が長い。どこを削ってほしいなど
     のこだわりはない。テスト時間が短くなりさえすればなんでもいい。」

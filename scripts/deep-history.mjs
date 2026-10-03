@@ -55,6 +55,7 @@
  *      node scripts/deep-history.mjs                 the ledger, in full
  *      node scripts/deep-history.mjs --json          the same, as JSON (worktree.mjs status reads it)
  *      node scripts/deep-history.mjs --budget <ms>   stop fetching after <ms>; what was not read is said
+ *      node scripts/deep-history.mjs --include-run <id>  read this (still running) run as the newest night
  * ==========================================================================*/
 import { execFile } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -142,7 +143,14 @@ export function classify(nights) {
     const row = { id, failedNights: failedDays.length, flakyNights: flakyDays.length,
       days: [...new Set([...failedDays, ...flakyDays])].sort().reverse(),
       last: [...failedDays, ...flakyDays].sort().reverse()[0] };
-    if (streak >= STREAK) regressions.push({ ...row, streak, since: read[streak - 1].day });
+    /* (delivery-quality) …and WHERE it broke, as two nights: the oldest red night of the streak and
+       the read night just before it, on which this test did not fail. Those two commits bound every
+       change that can have caused it — scripts/nightly-blame.mjs lists the PRs between them and
+       scripts/nightly-bisect.mjs runs the test at each one. A streak that reaches the end of the
+       window has no `good`: nothing read says when it last passed, and no range is invented. */
+    const at = (n) => (n ? { day: n.day, sha: n.sha || null, runId: n.runId } : null);
+    if (streak >= STREAK) regressions.push({ ...row, streak, since: read[streak - 1].day,
+      bad: at(read[streak - 1]), good: at(read[streak] || null), goodWasFlaky: !!(read[streak] && read[streak].flaky.includes(id)) });
     /* it WAS red night after night and the newest read night passed it: a regression that looks
        mended. Kept apart from the sporadic list — nine red nights in a row are not a wobble — and
        apart from the live regressions, because the next move is to confirm the mend, not to hunt. */
@@ -220,7 +228,7 @@ async function readNight(run, deadline) {
 }
 
 /** The last `n` finished scheduled nights, newest first, reading only what the cache lacks. */
-export async function history({ nights: want, budgetMs = 60000 } = {}) {
+export async function history({ nights: want, budgetMs = 60000, includeRun = null } = {}) {
   const deadline = Date.now() + budgetMs;
   let n = want;
   if (!n) { try { n = windowNights(readFileSync(join(REPO, '.github/actions/browser-tier/action.yml'), 'utf8')); } catch { n = null; } }
@@ -254,6 +262,14 @@ export async function history({ nights: want, budgetMs = 60000 } = {}) {
   const byId = new Map();
   for (const v of Object.values(cache)) byId.set(+v.runId, { cached: v });
   for (const r of list) if (!byId.has(+r.databaseId)) byId.set(+r.databaseId, { run: r });
+  /* (delivery-quality) THE RUN THAT IS ASKING. The nightly's own alarm job runs while its workflow is
+     still in progress, so `--status=completed` leaves TONIGHT out — and a test that went red for the
+     second night running would be named a regression only tomorrow. Its deep shards are finished by
+     then (the alarm job needs them), so tonight is read like any other night. */
+  if (includeRun && !byId.has(+includeRun)) {
+    const one = await gh(['run', 'view', String(includeRun), '--json', 'databaseId,createdAt,headSha'], Math.max(1000, deadline - Date.now()));
+    if (one.ok) { try { const r = JSON.parse(one.out); byId.set(+r.databaseId, { run: { ...r, conclusion: 'in_progress' } }); } catch { /* unread: said below as the window's own gap */ } }
+  }
   list = [...byId.entries()].sort((a, b) => b[0] - a[0]).slice(0, n).map(([, v]) => v);
   const fresh = new Array(list.length);
   const IN_FLIGHT = 3;
@@ -263,7 +279,8 @@ export async function history({ nights: want, budgetMs = 60000 } = {}) {
     got.forEach((g, k) => { fresh[i + k] = g; });
   }
   let wrote = false;
-  for (const f of fresh) if (f.final && !f.cached) { cache[f.night.runId] = f.night; wrote = true; }
+  /* a night read while its run was still in progress is not cached — its conclusion is not final */
+  for (const f of fresh) if (f.final && !f.cached && f.night.conclusion !== 'in_progress') { cache[f.night.runId] = f.night; wrote = true; }
   if (wrote) {
     /* bounded, by run id (see above) — never by what one list happened to say */
     const ids = Object.keys(cache).map(Number).sort((a, b) => b - a);
@@ -305,7 +322,7 @@ export function render(h) {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const arg = (k) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : null; };
-  const h = await history({ nights: +arg('--nights') || undefined, budgetMs: +arg('--budget') || 120000 });
+  const h = await history({ nights: +arg('--nights') || undefined, budgetMs: +arg('--budget') || 120000, includeRun: arg('--include-run') });
   if (process.argv.includes('--json')) process.stdout.write(JSON.stringify(h) + '\n');
   else console.log(render(h));
 }

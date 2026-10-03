@@ -1896,6 +1896,21 @@ scripts/
                                   終わった run は `<原本>/.intmap/deep-history.json` に保存。`worktree.mjs status`
                                   が子プロセスとして期限つきで呼ぶ（取得 6 秒・子は 9 秒で打ち切り。読み切れ
                                   なかった晩は「未読」と述べ、次のセッションはキャッシュから続ける）。
+                                  退行には**範囲**（最後に通った晩と赤の初日の commit）を持たせる。`--include-run`
+                                  で実行中の nightly（その晩自身）も最新の晩として読む。
+  spec-reach.mjs                  **各ブラウザ spec が何を守っているか（reach）を発見する**。spec が綴るパス・import・
+                                  `window.IntMapX`（を**代入する**ファイル）・設計上の識別子（`lyr-radar` など、
+                                  `TOKEN_DF`＝3 ファイル以下にしか現れないもの）から求める。静的な答えなので
+                                  **順位づけだけに使い、tier には一切効かない**。`--changed` は手元の差分から
+                                  push 前に走らせる deep spec を出す
+  nightly-blame.mjs               **nightly の赤を、それを起こした変更へ渡す**。退行ごとに main の commit の範囲と、
+                                  spec の reach に触れた変更（＝容疑）を証拠つきで並べる。`--markdown` は
+                                  `deep-alarm.mjs --append` が Issue に足す節、`--dispatch` は退行と範囲ごとに 1 回
+                                  だけ `nightly-bisect.yml` を起動する（run 名が鍵）。`worktree.mjs status` が 1 行で出す
+  nightly-bisect.mjs              **どの merge が壊したかを測って決める**。範囲の各 commit（と通った晩＝対照）で
+                                  その 1 テストを単独で 3 回走らせ、境目を判定する（culprit / narrowed /
+                                  passes-alone / control-not-clean / flaky-at-bad / unmeasured）。判定は nightly の
+                                  Issue と、名指した PR にコメントする
   atlas-eval.mjs                  **本番の Atlas を毎晩評価する**（`.github/workflows/atlas-eval.yml`）。Playwright で
                                   問題集の各問を `IntMapConsole.run()` に送り、既存の観測口（`lastTurn()`・
                                   `lastPlan()`・`snapshot()`・包んだ `makeExecute`）から記録を集めて照合する。
@@ -1967,6 +1982,7 @@ tests/
   perf-ceiling.yml                main の CI が完了するたびに、その build の実測で起動予算の天井を下げる（`perf-budget.mjs --tighten`。上げない）。bot の PR を `land-bot-pr` で、測った main の上にまだ乗っているときだけ着地させる
   upstream-liveness.yml           毎晩、ブラウザが要求する上流ホストの代表 probe を訊く（`scripts/upstream-liveness.mjs`）。赤は up→2 晩続けて down の晩だけ。結果は artifact と job summary
   aviation-sweep.yml              世界の航空機スナップショット（Supabase Storage）を定期的に進める。リポジトリには書かない
+  nightly-bisect.yml              連続で赤のテスト 1 本を、範囲の各 commit で単独に走らせて壊した merge を測る（手動 or nightly の `deep-alarm` が起動・`scripts/nightly-bisect.mjs`）。その commit 自身の木・build・データで測る
 .github/actions/
   browser-tier/                   ブラウザ試験の 1 台分（依存・Playwright・計画・build 成果物の受け取り・実行・報告）。ci.yml の browser／browser-deep が使う
   land-bot-pr/                    github-actions[bot] の PR を着地させる（自分が起こした run の承認・検査の待機・取消と赤の区別・merge・deploy.yml の起動）。tle-refresh.yml と perf-ceiling.yml が使う

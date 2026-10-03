@@ -1,0 +1,165 @@
+# (delivery-quality) A test red on two nights in a row — WHICH MERGE broke it, measured.
+#
+# The nightly deep tier has not been green since 2026-08-08, and the reason a regression stays red
+# for nights is that nobody owns it: issue #275 names the failing test, never the change. The nightly
+# now ranks the merges of the range by static evidence (scripts/nightly-blame.mjs) and starts THIS
+# workflow for each new regression, which runs that one test ALONE, three times, at every merge of the
+# range and at the night it last passed — in parallel, one machine per commit — and posts where it
+# turns: on the nightly issue, and on the PR it names. The logic and the six possible verdicts are in
+# scripts/nightly-bisect.mjs; this file only arranges the machines.
+#
+# ⚠ EACH COMMIT IS TESTED WITH ITS OWN TREE — its own spec, its own build, its own datasets (the same
+#   rule as rollback.yml). The bisect TOOL is checked out separately (`_tool`, this workflow's commit),
+#   because the commit under test may predate it.
+# ⚠ It never publishes and never writes to the repository; the only write scopes are the two comments.
+name: Nightly bisect
+run-name: "bisect: ${{ inputs.test }} @ ${{ inputs.good }}..${{ inputs.bad }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      test:
+        description: The failing test, as the nightly names it — `tests/<file>.spec.js › <title>`
+        required: true
+      good:
+        description: A commit it passed on (the read night before the red streak)
+        required: true
+      bad:
+        description: A commit it failed on (the first night of the red streak)
+        required: true
+
+permissions:
+  contents: read
+
+# one bisect per test and range; a second dispatch of the same one waits rather than duplicating
+concurrency:
+  group: nightly-bisect-${{ inputs.good }}-${{ inputs.bad }}-${{ inputs.test }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Plan the commits to probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      sampled: ${{ steps.plan.outputs.sampled }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0          # the range is history; trees and blobs of old commits are not needed here
+          filter: blob:none
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - id: plan
+        env:                      # inputs reach the shell only through env (never interpolated into run:)
+          BISECT_GOOD: ${{ inputs.good }}
+          BISECT_BAD: ${{ inputs.bad }}
+        run: node scripts/nightly-bisect.mjs plan
+
+  probe:
+    name: "Probe ${{ matrix.order }} (${{ matrix.pr && format('#{0}', matrix.pr) || matrix.sha }})"
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - name: The commit under test
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: ${{ matrix.sha }}
+      - name: The bisect tool (this workflow's commit — the commit under test may predate it)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          path: _tool
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      # The commit's OWN datasets, by its own manifest and its own scripts/data-assets.mjs (rollback.yml's rule).
+      - name: Restore the data store (this commit's manifest)
+        if: ${{ hashFiles('data-assets.json') != '' }}
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ${{ runner.temp }}/intmap-data
+          key: intmap-data-${{ hashFiles('data-assets.json') }}
+      - name: Build the site at this commit
+        id: build
+        continue-on-error: true   # a commit that does not build is «unmeasured», recorded — not a red bisect
+        env:
+          INTMAP_DATA_STORE: ${{ runner.temp }}/intmap-data
+        run: |
+          set -euo pipefail
+          npm ci
+          if [ -f data-assets.json ]; then node scripts/data-assets.mjs pull; fi
+          npm run build
+          test -f dist/index.html
+      - name: Cache Playwright browsers
+        if: ${{ steps.build.outcome == 'success' }}
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - name: Install Playwright Chromium (+ OS deps)
+        if: ${{ steps.build.outcome == 'success' }}
+        continue-on-error: true
+        # the same apt source the browser tier drops, for the same reason (.github/actions/browser-tier)
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/google-chrome*.list /etc/apt/sources.list.d/google-chrome*.sources || true
+          npx playwright install --with-deps chromium
+      - name: Run the test alone, three times
+        env:
+          BISECT_TEST: ${{ inputs.test }}
+          BISECT_BUILT: ${{ steps.build.outcome }}
+          BISECT_ORDER: ${{ matrix.order }}
+          BISECT_SHA: ${{ matrix.sha }}
+          BISECT_PR: ${{ matrix.pr }}
+          BISECT_CONTROL: ${{ matrix.control }}
+          BISECT_SUBJECT: ${{ matrix.subject }}
+        run: |
+          mkdir -p _result
+          node _tool/scripts/nightly-bisect.mjs run --out _result/bisect-result.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        if: ${{ !cancelled() }}
+        with:
+          name: bisect-${{ matrix.order }}
+          path: _result/bisect-result.json
+          retention-days: 30
+
+  verdict:
+    name: Verdict — and tell the nightly issue and the PR
+    needs: [plan, probe]
+    if: ${{ always() && needs.plan.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write            # the comment on the nightly issue
+      pull-requests: write     # the comment on the PR the verdict names
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          pattern: bisect-*
+          path: _bisect
+      - name: Judge and post
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BISECT_TEST: ${{ inputs.test }}
+          BISECT_GOOD: ${{ inputs.good }}
+          BISECT_BAD: ${{ inputs.bad }}
+          BISECT_SAMPLED: ${{ needs.plan.outputs.sampled }}
+          BISECT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/nightly-bisect.mjs post --results _bisect
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        if: ${{ !cancelled() }}
+        with:
+          name: bisect-verdict
+          path: _bisect/verdict.json
+          retention-days: 90

@@ -31,7 +31,12 @@
  *  The other half of the answer is `node scripts/worktree.mjs status`, which AGENTS.md §1 puts in
  *  front of every session — it prints this same verdict before any work starts.
  *
- *      node scripts/deep-alarm.mjs --result <conclusion> [--reports <dir>] [--run-url <url>] [--dry-run]
+ *      node scripts/deep-alarm.mjs --result <conclusion> [--reports <dir>] [--run-url <url>] [--append <file>] [--dry-run]
+ *
+ *  (delivery-quality) `--append` takes the section scripts/nightly-blame.mjs writes — the regressions
+ *  of the last nights, the range of merges each one broke in, and the suspects with their evidence —
+ *  so the issue names WHOSE a red test is, not only WHICH. A section that could not be had is left
+ *  out, never allowed to silence the alarm.
  * ==========================================================================*/
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
@@ -126,7 +131,7 @@ function deepCount() {
   try { return tierSpecs('deep').length; } catch { return null; }
 }
 
-export function body({ failures, runUrl, day, sawReports }) {
+export function body({ failures, runUrl, day, sawReports, appendix = '' }) {
   const L = [];
   const n = deepCount();
   L.push('`npm run test:deep` — ' + (n ? `the ${n} spec files that do not stand` : 'the spec files that do not stand')
@@ -152,6 +157,7 @@ export function body({ failures, runUrl, day, sawReports }) {
     L.push('');
     L.push('Nothing to list — read the run log.');
   }
+  if (String(appendix).trim()) { L.push(''); L.push(String(appendix).trim()); }
   L.push('');
   L.push('---');
   L.push('');
@@ -175,7 +181,7 @@ function openIssue() {
 if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('deep-alarm.mjs')) {
   const result = arg('--result');
   if (!result) {
-    console.error('usage: deep-alarm.mjs --result <conclusion> [--reports <dir>] [--run-url <url>] [--dry-run]');
+    console.error('usage: deep-alarm.mjs --result <conclusion> [--reports <dir>] [--run-url <url>] [--append <file>] [--dry-run]');
     process.exit(2);
   }
   const dir = arg('--reports');
@@ -184,7 +190,9 @@ if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith
   const green = result === 'success';
   const day = new Date().toISOString().slice(0, 10);
   const runUrl = arg('--run-url');
-  const text = body({ failures, runUrl, day, sawReports: reports.length > 0 });
+  let appendix = '';
+  if (arg('--append')) { try { appendix = readFileSync(arg('--append'), 'utf8'); } catch { /* no section: the alarm still says what failed */ } }
+  const text = body({ failures, runUrl, day, sawReports: reports.length > 0, appendix });
 
   console.log(`deep-alarm: browser-deep = ${result}; ${reports.length} report(s), ${failures.length} failing test(s)`);
   if (has('--dry-run')) { console.log('--- issue body ---\n' + text); process.exit(0); }
