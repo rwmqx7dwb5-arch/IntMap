@@ -170,3 +170,22 @@ Issue 1 本に書き直される。セッションは Secret のリフレッシ�
   `scripts/data-refresh.mjs` が期限（宣言された周期）の来たときだけ走らせ、衛星カタログと同じ PR に載せる。
 - 正本: [`docs/DATA-GOVERNANCE.md`](../DATA-GOVERNANCE.md) §4.4〜§4.6（何を・なぜ）、
   [`docs/MONITORING.md`](../MONITORING.md) §1e（読み方）。
+
+### 15.8 nightly の赤を、それを起こした変更へ渡す
+
+deep tier は push でも PR でも走らない（§15.2・`scripts/tiers.mjs`）ので、nightly が唯一の読者である。
+その赤を**誰の赤か**まで運ぶ仕組みが 3 段ある。
+
+- **reach**（`scripts/spec-reach.mjs`）——各ブラウザ spec が守っているソースを、spec が綴るもの
+  （パス・import・`window.IntMapX` を代入するファイル・3 ファイル以下にしか現れない設計上の識別子）から
+  発見する。静的な答えなので**順位づけだけ**に使い、どの tier にも効かない。`--changed` は手元の差分から
+  push 前に走らせる deep spec を出す（門ではない）。
+- **容疑**（`scripts/nightly-blame.mjs`）——2 晩続けて赤のテストごとに、最後に通った晩と赤の初日の
+  commit で範囲を作り（`scripts/deep-history.mjs` の分類が持つ）、範囲内の main の merge を reach との
+  重なりを証拠に並べる。ci.yml の `deep-alarm` job がその晩自身を含めて計算し、nightly の Issue に節として
+  足す。`worktree.mjs status` も 1 行で出す。
+- **判定**（`.github/workflows/nightly-bisect.yml` ＋ `scripts/nightly-bisect.mjs`）——`deep-alarm` が退行と
+  範囲ごとに 1 回だけ起動する（run 名が鍵）。範囲の各 commit と通った晩（対照）で、**その commit 自身の
+  木・build・データ**でそのテストを単独で 3 回走らせ、境目を `culprit` / `narrowed` / `passes-alone` /
+  `control-not-clean` / `flaky-at-bad` / `unmeasured` のどれかに決める。判定は Issue に、`culprit` は
+  名指した PR にもコメントする。読み方は [`docs/MONITORING.md`](../MONITORING.md) §1f。

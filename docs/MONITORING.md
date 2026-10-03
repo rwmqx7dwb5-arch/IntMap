@@ -239,6 +239,31 @@ draws nothing, found by accident.
 - **By hand**: `node scripts/upstream-liveness.mjs` (table), `--out r.json`, `--previous p.json`,
   `--summary s.md`, `--fail-on-transition`, and `--check` (declarations only, no network).
 
+## 1f. A red nightly, handed to the change that caused it
+
+The nightly deep tier's reader is ONE issue titled **「deep tier (nightly) is red」**
+(`scripts/deep-alarm.mjs`, rewritten each night). It names the failing tests; on its own it never
+named the change. Measured 2026-10-03: the scheduled CI run had not been green since 2026-08-08, and
+`tests/restored-layer-before-style.spec.js` had been red four nights running with the ten merges
+around its first red night nowhere on the page. A red test with no owner is walked past.
+
+- **The section under the failures** — «Regressions and their suspects» — is written by
+  `scripts/nightly-blame.mjs` in the same job, tonight included: every test red on two consecutive
+  read nights, the **range** it broke in (the commit of the last night it passed .. the commit of the
+  first red night), and the merges of that range that touch the spec or its **reach** (what the spec
+  names, by file — `scripts/spec-reach.mjs`), each with the evidence. `#123` in that body puts a
+  cross-reference on PR #123's timeline. A suspect is evidence; a merge with none is still listed.
+- **The verdict arrives as a comment** on the same issue, from `.github/workflows/nightly-bisect.yml`,
+  which the nightly starts once per regression and range: the test is run alone, three times, at every
+  merge of the range and at the night it passed. `culprit` also comments on the PR it names.
+  `passes-alone` means no merge broke it — the test fails only inside the nightly shard (its load, or a
+  test before it on the same worker), so the fix is the test's isolation, not a revert.
+- **At the start of every session** `node scripts/worktree.mjs status` prints the same range and the
+  suspects in one line under the regression; `node scripts/nightly-blame.mjs` prints the whole of it.
+- **What to do.** Read the verdict; for `culprit` / `narrowed`, fix forward on that change's surface
+  (never by loosening the assertion that caught it); for `passes-alone`, find what the shard does to
+  the test; for `control-not-clean` / `flaky-at-bad`, the test is unstable alone and is the work.
+
 ## 2. Error monitoring
 
 ### Why it is our own record, not Sentry (client-error-log)

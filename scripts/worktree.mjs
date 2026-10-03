@@ -54,6 +54,7 @@ import { artefactNames, slugProblem } from './round-names.mjs';
 import { latestEntry, NOTES_DIR } from './dev-notes.mjs';
 import { liveDeployment } from './pages-publish-guard.mjs';
 import { install as installMergeDriver, pending as mergePending } from './merge-driver.mjs';
+import { blame as blameNights } from './nightly-blame.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
@@ -199,6 +200,17 @@ function deepHistory() {
   if (r.status !== 0 || !r.stdout) return null;
   try { const h = JSON.parse(r.stdout.trim().split('\n').pop()); return h && h.known ? h : null; } catch { return null; }
 }
+/* (delivery-quality) …AND WHOSE IT IS. A regression printed without the merges it broke in is a
+   regression the next session also walks past (#275 named restored-layer-before-style four nights
+   running and never the ten merges around it). scripts/nightly-blame.mjs turns each one into its
+   range and the suspects with evidence; this prints one line of it. Local git and the spec's reach
+   only — no network beyond what deepHistory() already did — and like everything here it cannot throw. */
+function suspectsOf(dh) {
+  try { const b = blameNights(dh, { cwd: REPO }); return b.known ? b.regressions : []; } catch { return []; }
+}
+const suspectWords = (r) => (!r.range ? `範囲なし（${r.why}）`
+  : `範囲 ${r.good.sha}..${r.bad.sha}（main の ${r.range.commits} 本）・手がかりのある変更 ${r.withEvidence.length
+    ? r.withEvidence.slice(0, 4).map((c) => (c.pr ? '#' + c.pr : c.sha.slice(0, 8))).join(' ') + (r.withEvidence.length > 4 ? ' …' : '') : 'なし（bisect が測る）'}`);
 const specTitle = (id, w = 90) => { const s = String(id); return s.length > w ? s.slice(0, w - 1) + '…' : s; };
 
 /* ══ (#R771) THE STEPS THE ROUND NO LONGER WAITS FOR ════════════════════════════════════════════
@@ -457,6 +469,7 @@ function status(brief) {
       if (dh && dh.regressions.length) {
         console.log(`⚠ deep tier で ${dh.regressions.length} 件が連続で落ちている（退行の疑い）: `
           + dh.regressions.map((x) => `${x.id.split(' › ')[0]}（${x.streak} 晩）`).join(' / ') + '  → node scripts/deep-history.mjs');
+        for (const r of suspectsOf(dh)) console.log(`    ${r.spec}: ${suspectWords(r)}  → node scripts/nightly-blame.mjs`);
       }
     }
     /* (#R771) one line, and ONLY when something is actually outstanding. This prints at the top of
@@ -500,6 +513,7 @@ function status(brief) {
       + (dh.unread.length ? ` / 未読 ${dh.unread.length} 晩（緑とは数えない）` : ''));
     if (dh.stale) console.log(`      ⚠ ${dh.stale}`);
     for (const x of dh.regressions) console.log(`      ⚠ ${specTitle(x.id)}  ${x.streak} 晩連続（${x.since} から）`);
+    for (const r of suspectsOf(dh)) console.log(`        ${r.spec}: ${suspectWords(r)}  → node scripts/nightly-blame.mjs`);
     console.log('      台帳（散発の名前と回数・直ったかを確かめるもの）→ node scripts/deep-history.mjs');
   }
 

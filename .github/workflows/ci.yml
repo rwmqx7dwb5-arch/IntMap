@@ -707,11 +707,27 @@ jobs:
     permissions:
       contents: read
       issues: write          # ⚠ the ONLY job in this workflow with a write scope, and only for this
+      actions: write         # (delivery-quality) read the nights' job logs, and start nightly-bisect.yml
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          # (delivery-quality) the range a regression broke in is HISTORY: the merges between two nights.
+          # Commits and trees only — no file contents of old commits are read.
+          fetch-depth: 0
+          filter: blob:none
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version-file: .nvmrc
+      # (delivery-quality) WHOSE red is it. The last nights read together (deep-history.mjs, tonight
+      # included), each regression turned into the range of merges it broke in and the suspects with
+      # their evidence (nightly-blame.mjs → the issue section below), and the bisect that MEASURES the
+      # culprit started once per regression and range (nightly-bisect.yml). A failure here never
+      # silences the alarm: the section is optional to deep-alarm.mjs.
+      - name: Regressions, their ranges, their suspects — and start the bisect
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/nightly-blame.mjs --include-run "${{ github.run_id }}" --markdown _blame.md --dispatch
       # The shards upload their Playwright report — junit.xml included — whenever they are not
       # cancelled, so the failing tests can be NAMED rather than linked to. A miss is survivable:
       # deep-alarm.mjs says "the shards uploaded no report" instead of printing an empty list.
@@ -727,6 +743,7 @@ jobs:
           node scripts/deep-alarm.mjs
           --result "${{ needs.build.result != 'success' && needs.build.result || needs.browser-deep.result }}"
           --reports _deep
+          --append _blame.md
           --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
   # ══ (ci-build-once) PRODUCTION IS PUBLISHED FROM HERE, AFTER main's RUN IS GREEN ════════════════
