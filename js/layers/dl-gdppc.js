@@ -6,4 +6,5 @@ export default {
   key: 'gdppc',
   label: 'lyrGDPpc',
   share: true,
+  measures: ['countrystats:gdppc'],
 };

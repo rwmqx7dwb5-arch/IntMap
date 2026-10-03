@@ -828,7 +828,7 @@ export function betaPack2(HOST){
         ramp:['interpolate',['linear'],['get','s'],52,'#a50026',62,'#f46d43',70,'#fee08b',78,'#74add1',85,'#313695'],
         score:v=>v,
         nm:LA('Life expectancy (years)','平均寿命（年）','Lebenserwartung (Jahre)','Ожидаемая продолжительность жизни (лет)','Esperanza de vida (años)'),
-        note:()=>IntMapLang.t(HOST.lang,"Life expectancy at birth (World Bank, 2022).","出生時平均余命（世界銀行 2022）。","Lebenserwartung bei Geburt (Weltbank, 2022).","Ожидаемая продолжительность жизни при рождении (Всемирный банк, 2022).","Esperanza de vida al nacer (Banco Mundial, 2022).")},
+        note:()=>IntMapLang.t(HOST.lang,"Life expectancy at birth (World Bank).","出生時平均余命（世界銀行）。","Lebenserwartung bei Geburt (Weltbank).","Ожидаемая продолжительность жизни при рождении (Всемирный банк).","Esperanza de vida al nacer (Banco Mundial).")},
       /* (#R22) New beta choropleths — all live World Bank, keyless + CORS, latest value per country. */
       unemp:{ind:'SL.UEM.TOTL.ZS',date:'',q:'&mrnev=1',ids:['wb-unemp-f','wb-unemp-l'],src:'wb-unemp',
         ramp:['interpolate',['linear'],['get','s'],2,'#1a9850',5,'#a6d96a',9,'#fee08b',15,'#f46d43',25,'#a50026'],
@@ -857,6 +857,19 @@ export function betaPack2(HOST){
        source existed, which is correct for «turn it back on» and wrong for «show me 2010»: the year
        change has to reach `setSourceData`, or the picker moves and the map does not. */
     const wbYr={};
+    /* ══ (map-layer-system) THE YEAR IS THE CLOCK'S HERE TOO ══════════════════════════════════════════════
+       MEASURED 2026-10-03: three of these rows paint the SAME World Bank series as a row of js/wb-layers.js
+       (life expectancy SP.DYN.LE00.IN = `wblife`, unemployment = `wbunemp`, internet users = `wbnet`), and
+       the two halves disagreed about time. The js/wb-layers.js row painted the clock's year (world-at-time);
+       this one kept a year of its own (`wbYr`) and painted 2023 values on a 1995 map, while js/layer-time-decl.js
+       called `lifeexp` a 2022 snapshot — a statement the row had stopped making when it began reading the whole
+       series. One series, one rule about which year of it is on the map: off the live clock, the clock's year,
+       and after the last year the series holds, that last year (the legend names it). On the live clock nothing
+       changed — the reader's year, else the series' own default. The years the series holds are reported to
+       the time kernel exactly as js/wb-layers.js reports them, so a year before them holds the row back. */
+    function wbClockYear(S){ try{ const T=IntMapTime; if(!T||T.isLive()) return null; const cy=String(T.year());
+      if(!S||!S.years||!S.years.length) return cy; const last=S.years[S.years.length-1]; return (+cy>+last)?last:cy; }catch(_){ return null; } }
+    try{ IntMapTime.on(()=>{ Object.keys(WB).forEach(k=>{ if(state[k]) wbToggle(k,true); }); }); }catch(_){}
     function wbToggle(key,on){ state[key]=on; const W=WB[key];
       const show=()=>setVis(W.ids,on);
       if(!on){ show(); try{ window._hideGenericLegend&&window._hideGenericLegend('wb-'+key); }catch(_){} return; }
@@ -865,7 +878,9 @@ export function betaPack2(HOST){
         /* (unobserved-is-not-refused) `late` = a read ran out of time (the series, or the fallback below) — kept apart from «refused» */
         let late=null;
         const S=await (async()=>{ try{ if(window.IntMapWB&&window.IntMapWB.series) return await window.IntMapWB.series(W.ind); }catch(e){ if(isUnobserved(e)) late=e; } return null; })();
-        const year=(wbYr[key]!==undefined)?wbYr[key]:((S&&S.best)||'');
+        const cy=wbClockYear(S);
+        const year=(cy!=null)?cy:((wbYr[key]!==undefined)?wbYr[key]:((S&&S.best)||''));
+        try{ const LT=window.IntMapLayerTime; if(LT&&S&&S.years&&S.years.length) LT.range('beta-dl-'+key,{ from:S.years[0], to:S.years[S.years.length-1], by:'World Bank API '+W.ind }); }catch(_){}
         let vals=null;
         if(S&&year&&S.by[year]){ vals={}; const row=S.by[year]; Object.keys(row).forEach(k2=>{ if(k2&&k2.length===3) vals[k2]=row[k2]; }); }
         else if(S){ vals={}; const m=(window.IntMapWB&&window.IntMapWB.get(W.ind))||{}; Object.keys(m).forEach(k2=>{ if(k2&&k2.length===3) vals[k2]=m[k2].v; }); }
@@ -884,7 +899,7 @@ export function betaPack2(HOST){
             cache['wb_'+key]=vals;
           }
         }
-        wbYr[key]=year;
+        if(cy==null) wbYr[key]=year;   /* (map-layer-system) a year the clock chose is the clock's, not this row's */
         if(GE().layers.hasSource(W.src)){
           try{ const g=HOST.countryGeo; if(g&&g.features) GE().layers.setSourceData(W.src,{type:'FeatureCollection',
             features:g.features.filter(f=>f.id!=null&&vals[f.id]!=null).map(f=>({type:'Feature',geometry:f.geometry,properties:{s:W.score(vals[f.id]),raw:vals[f.id],iso:f.id}}))}); }catch(_){}
@@ -967,7 +982,10 @@ export function betaPack2(HOST){
           if(!yr){ yr=document.createElement('div'); yr.className='wb-yearrow'; yr.style.cssText='display:flex;align-items:center;gap:6px;margin-top:6px;font-size:10.5px;color:var(--text-muted);';
             yr.innerHTML='<label style="display:contents;"><span class="wb-yearlbl"></span><select class="wb-year" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"></select></label>';
             el.appendChild(yr);
-            yr.querySelector('.wb-year').addEventListener('change',(e)=>{ wbYr[key]=e.target.value; wbToggle(key,true); }); }
+            yr.querySelector('.wb-year').addEventListener('change',(e)=>{ const v=e.target.value;
+              /* (map-layer-system) a year chosen here is the MAP's year, as on the js/wb-layers.js rows: it moves the one clock */
+              if(v===''){ wbYr[key]=''; try{ IntMapTime.setNow({source:'ui'}); }catch(_){} wbToggle(key,true); }
+              else { delete wbYr[key]; try{ IntMapTime.setYear(+v,{source:'ui'}); }catch(_){ wbYr[key]=v; wbToggle(key,true); } } }); }
           yr.querySelector('.wb-yearlbl').textContent=IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año');
           const sel=yr.querySelector('.wb-year');
           const latestTxt=IntMapLang.t(HOST.lang,'Latest per country','最新（国ごと）','Neuester je Land','Последний по стране','Más reciente por país');

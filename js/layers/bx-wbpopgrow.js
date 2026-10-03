@@ -5,4 +5,5 @@ export default {
   order: 50,
   key: 'wbpopgrow',
   rest: true,
+  measures: ['worldbank:SP.POP.GROW'],
 };

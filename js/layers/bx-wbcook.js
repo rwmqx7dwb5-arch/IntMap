@@ -5,4 +5,5 @@ export default {
   order: 70,
   key: 'wbcook',
   rest: true,
+  measures: ['worldbank:EG.CFT.ACCS.ZS'],
 };

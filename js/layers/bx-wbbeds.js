@@ -5,4 +5,5 @@ export default {
   order: 90,
   key: 'wbbeds',
   rest: true,
+  measures: ['worldbank:SH.MED.BEDS.ZS'],
 };

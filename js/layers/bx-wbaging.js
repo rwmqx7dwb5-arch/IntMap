@@ -5,4 +5,5 @@ export default {
   order: 60,
   key: 'wbaging',
   rest: true,
+  measures: ['worldbank:SP.POP.65UP.TO.ZS'],
 };

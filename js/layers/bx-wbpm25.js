@@ -5,4 +5,5 @@ export default {
   order: 140,
   key: 'wbpm25',
   rest: true,
+  measures: ['worldbank:EN.ATM.PM25.MC.M3'],
 };

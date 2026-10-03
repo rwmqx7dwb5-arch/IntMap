@@ -5,4 +5,5 @@ export default {
   order: 10,
   key: 'lifeexp',
   share: true,
+  measures: ['worldbank:SP.DYN.LE00.IN'],
 };

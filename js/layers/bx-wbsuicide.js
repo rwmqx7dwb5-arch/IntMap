@@ -4,4 +4,5 @@ export default {
   shelf: 'lyrGrpHealth',
   order: 30,
   key: 'wbsuicide',
+  measures: ['worldbank:SH.STA.SUIC.P5'],
 };

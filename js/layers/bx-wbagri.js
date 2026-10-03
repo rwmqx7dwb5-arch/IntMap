@@ -5,4 +5,5 @@ export default {
   order: 40,
   key: 'wbagri',
   rest: true,
+  measures: ['worldbank:AG.LND.AGRI.ZS'],
 };

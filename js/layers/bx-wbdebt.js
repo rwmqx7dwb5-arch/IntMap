@@ -5,4 +5,5 @@ export default {
   order: 90,
   key: 'wbdebt',
   rest: true,
+  measures: ['worldbank:GC.DOD.TOTL.GD.ZS'],
 };

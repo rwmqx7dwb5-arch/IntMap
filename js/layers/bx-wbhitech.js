@@ -5,4 +5,5 @@ export default {
   order: 110,
   key: 'wbhitech',
   rest: true,
+  measures: ['worldbank:TX.VAL.TECH.MF.ZS'],
 };

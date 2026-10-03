@@ -63,6 +63,7 @@ import { CAPABILITY_MODULES } from './atlas-caps-modules.js';   /* (atlas-capabi
 import { capabilityRunners, unknownAction, capabilityEntries } from './atlas-caps.js';
 import { makeAtlasMapCompose } from './atlas-map-compose.js';   /* (#R511) one map explanation in ONE call — numbered places with roles, arcs, fills, a frame and a legend the prose is linked to. ⚠ ON A LINE THAT WAS BLANK: this file is AT its shrink-only ceiling (tests/atlas-capabilities-checks.test.mjs (#R318) ⓑ), and scripts/js-reachability.mjs anchors its import scan at line start, so a new module cannot share a line. */
 import { IntMapGeoEngine } from './geo-engine.js';
+import { dataLayers, layerDeclaration } from './layer-manifest.js';   /* (map-layer-system) which rows measure one series (`measures`) */
 import { IntMapLang } from './lang-registry.js';
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
@@ -1128,7 +1129,9 @@ export function atlasConsole(HOST){
       'webcams':'dl-webcams','webcam':'dl-webcams','ライブカメラ':'dl-webcams','ウェブカメラ':'dl-webcams',
       'pipelines':'pipelines','nuclear':'nuclear','nuclear sites':'nuclear','chokepoints':'chokepoints',
       'data centers':'beta-dl-dc','datacenters':'beta-dl-dc','ai infrastructure':'beta-dl-dc',
-      'religion':'beta-dl-cat-religion','language':'beta-dl-cat-language','languages':'beta-dl-cat-language'
+      'religion':'beta-dl-cat-religion','language':'beta-dl-cat-language','languages':'beta-dl-cat-language',
+      /* (map-layer-system) the indicator browser — one row for every country indicator */
+      'country indicators':'bx-wbind','country indicator':'bx-wbind','indicator browser':'bx-wbind','国別指標':'bx-wbind','指標ブラウザ':'bx-wbind'
     };
     function _cbByKey(key){ if(!key) return null; let cb=document.getElementById(key); if(cb&&cb.matches&&cb.matches('input[type=checkbox]')) return cb; cb=null;   /* (#R225) the `data-layer` convention retired with the geopolitics rows */ return cb||null; }
     function _labelOf(cb){ try{ const lab=cb.closest('label')||cb.closest('.lyr-row'); let disp=''; if(lab){ const sp=lab.querySelector('span[data-i18n], span.ec-lbl, span[id$="-lbl"], .geo-label'); disp=(sp?sp.textContent:(lab.textContent||'')); } return disp.replace(/\s+/g,' ').trim(); }catch(_){ return ''; } }
@@ -1153,7 +1156,18 @@ export function atlasConsole(HOST){
       const aliasKeys=[q0, q0.replace(/\s+(layer|overlay|data|map|cover)$/,'')]; if(q0.length>3&&q0.endsWith('s')) aliasKeys.push(q0.slice(0,-1));
       for(const k of aliasKeys){ const id=LAYER_ALIASES[k]; if(id){ const cb=_cbByKey(id); if(cb) return {cb,label:_labelOf(cb)||name,score:100}; } }
       /* 2) WORD-aware scoring (variants: as-typed + singular), subscript-folded so co2↔CO₂. */   const r=_bestRow(layerCatalog(),q0); return r?{cb:r.row.cb,label:r.row.label,score:r.score}:null; }   function layerDoor(name){ const LY=window.IntMapLayers, q0=_lnorm(name); if(!q0||!LY) return null; const RC=(function(){ try{ return (LY.list()||[]).map(id=>{ const lb=String((LY.state(id)||{}).label||id); return {read:id,id:String(id).toLowerCase(),label:lb,txt:_lnorm(lb),dl:''}; }); }catch(_){ return []; } })(); const d=resolveLayer(name); let r=_bestRow(RC,q0); if(!r&&d){ const cid=String(d.cb.id||'').toLowerCase(); r=_bestRow(RC,_lnorm(d.label)); if(!r){ const m=RC.filter(x=>x.id===cid||('dl-'+x.id)===cid)[0]; if(m) r={row:m,score:100}; } } if(!r&&!d) return null; return { read:r?r.row.read:null, label:d?d.label:r.row.label, on:r?!!(LY.state(r.row.read)||{}).on:!!d.cb.checked }; }   /* ⚠ 「on」 is asked of whichever register can answer for what was found: a registration states its own `on()` (js/map-ui.js — `aircraft` reads the rendered layer, `elevation` is always on), and a panel row with no registration has only its checkbox. */   /* ⚠⚠⚠ (#R802) THE ONE PLACE THE TWO REGISTERS ARE HELD AGAINST EACH OTHER, and nothing in it is a hand-written table of spellings (.agents/rules/no-ad-hoc-hardcoding.md §1): the reading register is enumerated by `list()` and labelled by `state(id).label`, the panel by `layerCatalog()`, and the last bridge is the registry's OWN convention — js/map-ui.js `isOn(id)` looks for the checkbox `dl-`+id or id, so that rule read backwards turns a checkbox back into a registration. A layer added tomorrow is reachable by existing. ⚠ `read:null` WITH a label is a real answer — 「that layer exists and is drawn, but nothing samples it」 — which is a different sentence from 「there is no such layer」, and the case below says both. */
-    function toggleLayer(name,on){ const r=resolveLayer(name); if(!r) return {ok:false}; const want=on!==false; const already=(r.cb.checked===want);
+    /* ══ (map-layer-system) A WORD NAMES AN INDICATOR, AND AN INDICATOR MAY STAND ON TWO ROWS ══════════════════
+       'life expectancy' resolves to `beta-dl-lifeexp`, and `bx-wblife` paints the same World Bank series; so do the
+       unemployment and internet pairs (js/layers/<id>.js `measures`, discovered — no pair is written here). The alias
+       reaches BOTH: switching on is already done when either row is on, and switching off takes off every row that
+       paints it — otherwise 「平均寿命を消して」 left the other half of the pair on the map and reported success. */
+    function _sameSeriesRows(id){ try{ const d=layerDeclaration(id), ms=(d&&d.measures)||[]; if(!ms.length) return [];
+      return dataLayers().filter(l=>l.id!==id&&(((layerDeclaration(l.id)||{}).measures)||[]).some(c=>ms.indexOf(c)>=0)).map(l=>document.getElementById(l.id)).filter(cb=>cb&&cb.matches&&cb.matches('input[type=checkbox]')); }catch(_){ return []; } }
+    function toggleLayer(name,on){ const r=resolveLayer(name); if(!r) return {ok:false}; const want=on!==false;
+      const twins=_sameSeriesRows(r.cb.id||'');
+      if(want&&!r.cb.checked){ const lit=twins.find(cb=>cb.checked); if(lit) return {ok:true, label:_labelOf(lit)||r.label, already:true, want, cb:lit}; }
+      if(!want) twins.forEach(cb=>{ if(cb.checked){ try{ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } });
+      const already=(r.cb.checked===want);
       if(!already){ try{ r.cb.checked=want; r.cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} }
       return {ok:(r.cb.checked===want), label:r.label, already, want, cb:r.cb}; }   /* (#R142) expose the exact checkbox so reply toggles read THIS one's live state, not a fuzzy re-resolve (#17) */
     function layerOpacityControl(cb){ try{ const row=cb.closest('.lyr-row')||cb.closest('label'); if(!row) return null;

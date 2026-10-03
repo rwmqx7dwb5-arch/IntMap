@@ -87,13 +87,13 @@
     "세계은행 WGI「부패 통제」 점수(0–100, 높을수록 청렴) — TI의 CPI에 해당하는 공개 API 지표.",
     "世界銀行 WGI「貪腐控制」分數（0–100，愈高愈清廉）——相當於 TI 貪腐印象指數的開放 API 指標。"
   ],
-  "Life expectancy at birth (World Bank, 2022).": [
-    "Lebenserwartung bei Geburt (Weltbank, 2022).",
-    "Ожидаемая продолжительность жизни при рождении (Всемирный банк, 2022).",
-    "Esperanza de vida al nacer (Banco Mundial, 2022).",
-    "Espérance de vie à la naissance (Banque mondiale, 2022).",
-    "출생 시 기대수명 (세계은행, 2022).",
-    "出生時平均餘命（世界銀行，2022）。"
+  "Life expectancy at birth (World Bank).": [
+    "Lebenserwartung bei Geburt (Weltbank).",
+    "Ожидаемая продолжительность жизни при рождении (Всемирный банк).",
+    "Esperanza de vida al nacer (Banco Mundial).",
+    "Espérance de vie à la naissance (Banque mondiale).",
+    "출생 시 기대수명 (세계은행).",
+    "出生時平均餘命（世界銀行）。"
   ],
   "Unemployment, total (% of labor force; modeled ILO / World Bank, latest year).": [
     "Arbeitslosenquote insgesamt (% der Erwerbsbevölkerung; ILO-Modellrechnung / Weltbank, letztes Jahr).",

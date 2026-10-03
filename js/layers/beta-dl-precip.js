@@ -4,4 +4,5 @@ export default {
   shelf: 'lyrGrpOthers',
   order: 80,
   share: true,
+  measures: ['worldbank:AG.LND.PRCP.MM'],
 };

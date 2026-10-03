@@ -5,4 +5,5 @@ export default {
   order: 60,
   key: 'wbinfl',
   rest: true,
+  measures: ['worldbank:FP.CPI.TOTL.ZG'],
 };

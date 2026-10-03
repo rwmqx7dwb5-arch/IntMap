@@ -5,4 +5,5 @@ export default {
   order: 180,
   key: 'wbtour',
   rest: true,
+  measures: ['worldbank:ST.INT.ARVL'],
 };

@@ -3048,7 +3048,7 @@ IntMapLang.define('zh', {
   "Could not load railway data": "無法載入鐵路資料",
   "Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.": "主要製藥企業總部與製造聚落（代表地點）。可與平均壽命圖層搭配。",
   "World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.": "世界銀行 WGI「貪腐控制」分數（0–100，愈高愈清廉）——相當於 TI 貪腐印象指數的開放 API 指標。",
-  "Life expectancy at birth (World Bank, 2022).": "出生時平均餘命（世界銀行，2022）。",
+  "Life expectancy at birth (World Bank).": "出生時平均餘命（世界銀行）。",
   "Unemployment, total (% of labor force; modeled ILO / World Bank, latest year).": "失業率（占勞動力 %；ILO 推估／世界銀行，最新年度）。",
   "Individuals using the Internet (% of population; World Bank, latest year).": "使用網際網路人口比例（占人口 %；世界銀行，最新年度）。",
   "Average annual precipitation (depth in mm, long-term; World Bank).": "年平均降水量（深度 mm，長期平均；世界銀行）。",

@@ -6,4 +6,5 @@ export default {
   key: 'dem',
   label: 'lyrDem',
   share: true,
+  measures: ['countrystats:dem'],
 };

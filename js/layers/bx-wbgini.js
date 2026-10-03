@@ -4,4 +4,5 @@ export default {
   shelf: 'lyrGrpEconomy',
   order: 30,
   key: 'wbgini',
+  measures: ['worldbank:SI.POV.GINI'],
 };

@@ -5,4 +5,5 @@ export default {
   order: 40,
   key: 'wbmilgdp',
   rest: true,
+  measures: ['worldbank:MS.MIL.XPND.GD.ZS'],
 };

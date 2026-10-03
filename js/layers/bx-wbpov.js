@@ -5,4 +5,5 @@ export default {
   order: 150,
   key: 'wbpov',
   rest: true,
+  measures: ['worldbank:SI.POV.DDAY'],
 };

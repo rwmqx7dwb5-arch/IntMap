@@ -4,4 +4,5 @@ export default {
   shelf: 'lyrGrpSociety',
   order: 20,
   key: 'wbhomicide',
+  measures: ['worldbank:VC.IHR.PSRC.P5'],
 };

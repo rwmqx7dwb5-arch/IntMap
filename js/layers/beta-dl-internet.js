@@ -4,4 +4,5 @@ export default {
   shelf: 'lyrGrpOthers',
   order: 70,
   share: true,
+  measures: ['worldbank:IT.NET.USER.ZS'],
 };

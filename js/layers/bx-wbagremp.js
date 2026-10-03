@@ -4,4 +4,5 @@ export default {
   shelf: 'lyrGrpAgri',
   order: 20,
   key: 'wbagremp',
+  measures: ['worldbank:SL.AGR.EMPL.ZS'],
 };

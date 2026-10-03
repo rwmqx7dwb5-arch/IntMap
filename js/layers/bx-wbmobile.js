@@ -5,4 +5,5 @@ export default {
   order: 60,
   key: 'wbmobile',
   rest: true,
+  measures: ['worldbank:IT.CEL.SETS.P2'],
 };

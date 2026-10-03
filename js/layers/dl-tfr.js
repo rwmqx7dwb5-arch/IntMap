@@ -6,4 +6,5 @@ export default {
   key: 'tfr',
   label: 'lyrTFR',
   share: true,
+  measures: ['countrystats:tfr'],
 };

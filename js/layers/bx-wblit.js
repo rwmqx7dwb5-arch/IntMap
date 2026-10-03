@@ -5,4 +5,5 @@ export default {
   order: 50,
   key: 'wblit',
   rest: true,
+  measures: ['worldbank:SE.ADT.LITR.ZS'],
 };

@@ -2822,7 +2822,7 @@ IntMapLang.define('ko', { ui: {
   "Could not load railway data": "철도 데이터를 불러오지 못했습니다",
   "Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.": "주요 제약사 본사·생산 클러스터(대표 지점). 기대수명 레이어와 함께 보세요.",
   "World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.": "세계은행 WGI「부패 통제」 점수(0–100, 높을수록 청렴) — TI의 CPI에 해당하는 공개 API 지표.",
-  "Life expectancy at birth (World Bank, 2022).": "출생 시 기대수명 (세계은행, 2022).",
+  "Life expectancy at birth (World Bank).": "출생 시 기대수명 (세계은행).",
   "Unemployment, total (% of labor force; modeled ILO / World Bank, latest year).": "실업률 (경제활동인구 대비 %; ILO 추정·세계은행, 최신 연도).",
   "Individuals using the Internet (% of population; World Bank, latest year).": "인터넷 이용자 비율 (인구 대비 %; 세계은행, 최신 연도).",
   "Average annual precipitation (depth in mm, long-term; World Bank).": "연평균 강수량 (mm, 장기 평균; 세계은행).",

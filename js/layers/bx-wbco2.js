@@ -5,4 +5,5 @@ export default {
   order: 150,
   key: 'wbco2',
   rest: true,
+  measures: ['worldbank:EN.GHG.CO2.MT.CE.AR5', 'worldbank:EN.GHG.CO2.PC.CE.AR5'],
 };

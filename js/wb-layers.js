@@ -20,6 +20,7 @@ import { IntMapTime } from './chronos.js';
 /* (mobile-performance) when a phone may refresh the World Bank figures */
 import { BootStage } from './boot-stage.js';
 import * as bus from './bus.js';
+import { layerInflight } from './layer-rows.js';   /* (map-layer-system) the indicator row's request, for the layer-state audit */
 
 export function wbLayers(HOST){
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -106,11 +107,15 @@ export function wbLayers(HOST){
        so the tile and the map disagreed about the layer's colours. One owner, read at draw time. */
     try{ window.IntMapWB={ fetch:wbFetch, get:(code)=>wbCache[_wbKey(code)]||null,
       series:wbSeries, seriesOf:(code)=>wbSeriesCache[_wbKey(code)]||null,
-      rampOf:(id)=>{ const L=WB.find(x=>x.id===id); return L?V(L).ramp.slice():null; },
+      rampOf:(id)=>{ const L=WB.find(x=>x.id===id)||wbById[id]; return L?V(L).ramp.slice():null; },
       /* (#R289) …and the INDICATOR, for the same reason #R270 published the ramp: a modal layer's
          code changes with its mode, and js/layer-previews.js's copy would then draw the other
          series through this one's colours. One owner, read at draw time. */
-      codeOf:(id)=>{ const L=WB.find(x=>x.id===id); return L?V(L).code:null; } }; }catch(_){}
+      codeOf:(id)=>{ const L=WB.find(x=>x.id===id)||wbById[id]; return L?V(L).code:null; },
+      /* (map-layer-system) the indicator browser — one row (`bx-wbind`) that paints any of the series below, chosen by
+         search and by subject. The module that draws the picker is fetched the first time the row is switched on. */
+      indicators:()=>indicatorEntries(), paintIndicator:(id)=>indPaint(id), clearIndicator:()=>indClear(), currentIndicator:()=>IND.cur,
+      indicatorBrowser:()=>indBrowser() }; }catch(_){}
     const LA=IntMapLang.pickArgs(), LWB=IntMapLang.pick(()=>HOST.lang);
     const WB=[
       /* ══ ⚠ (#R289) ONE LAYER, TWO WAYS OF DIVIDING THE SAME QUANTITY ═══════════════════════════
@@ -310,7 +315,8 @@ export function wbLayers(HOST){
       return (+cy>+last)?last:cy; }
     const wbOn=new Set();
     try{ IntMapTime.on(()=>{ wbOn.forEach(id=>{ const B=wbById[id]; if(B) choroOn(B); }); }); }catch(_){}
-    function choroOn(L){ wbOn.add(L.id); L=V(L); ensureGeo(geo=>{ if(!geo) return;
+    /* (map-layer-system) returns a promise that settles when the paint has been done (or given up) — the row's request */
+    function choroOn(L){ let fin; const done=new Promise((r)=>{ fin=r; }); wbOn.add(L.id); L=V(L); ensureGeo(geo=>{ if(!geo){ fin(); return; }
       /* (unobserved-is-not-refused) a host silent through every retry is LATE, not empty: say so and paint nothing,
          rather than a map of grey «no data» countries; nothing was cached, so switching it on again reads again */
       const LATE={};
@@ -328,7 +334,7 @@ export function wbLayers(HOST){
       /* ⚠ (#R266) the IMF gap-fill is a 2024 FIGURE. Painting it onto a 2005 map would be a made-up
          number in a year it was never reported, so it applies only to the latest-per-country mode and
          to 2024 itself — every other year shows the World Bank's own coverage, gaps included. */
-      if(L.id==='wbdebt'&&(!year||year==='2024')){ try{ Object.keys(DEBT_IMF_GG).forEach(k=>{ if(!(m[k]&&m[k].v!=null)) m[k]={v:DEBT_IMF_GG[k],y:'2024',imf:true}; }); }catch(_){} }
+      if((L.base||L.id)==='wbdebt'&&(!year||year==='2024')){ try{ Object.keys(DEBT_IMF_GG).forEach(k=>{ if(!(m[k]&&m[k].v!=null)) m[k]={v:DEBT_IMF_GG[k],y:'2024',imf:true}; }); }catch(_){} }
       const feats=[]; let withData=0; geo.features.forEach(f=>{ const d=m[iso(f.properties||{})]; const props={nm:_nmOf(f.properties)}; if(d&&d.v!=null){ props.v=d.v; withData++; } feats.push({type:'Feature',geometry:f.geometry,properties:props}); });
       if(!withData&&!S){ try{ if(typeof imToast==='function') imToast(IntMapLang.t(HOST.lang,"No data right now — please try again in a moment.","データを取得できませんでした。少し待って再試行してください。","Derzeit keine Daten — bitte gleich erneut versuchen.","Сейчас данных нет — попробуйте через мгновение.","Ahora mismo no hay datos; inténtelo en un momento.")); }catch(_){} }
       const fc={type:'FeatureCollection',features:feats}, src='src-'+L.id, fill=L.id+'-fill', line=L.id+'-line';
@@ -389,9 +395,67 @@ export function wbLayers(HOST){
         else { let yrs=[]; try{ yrs=Object.values(m).map(d=>+d.y).filter(isFinite); }catch(_){} if(yrs.length){ const a=Math.min.apply(null,yrs),b=Math.max.apply(null,yrs); ysp=(a===b)?(''+a):(a+'–'+b); }
           mode=IntMapLang.t(HOST.lang," · most recent value per country","（国ごとに最新値）"," · jeweils neuester Wert je Land"," · последнее значение по каждой стране"," · valor más reciente por país"); }
         let nn=el.querySelector('.bx-note'); if(!nn){ nn=document.createElement('div'); nn.className='bx-note'; nn.style.cssText='font-size:9.5px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(nn); }
-        nn.textContent=(IntMapLang.t(HOST.lang,"Source: World Bank · ","出典: 世界銀行 · ","Quelle: Weltbank · ","Источник: Всемирный банк · ","Fuente: Banco Mundial · "))+(Array.isArray(L.code)?L.code.join(' + '):L.code)+(ysp?(' · '+ysp):'')+mode+((L.id==='wbdebt'&&(!year||year==='2024'))?(IntMapLang.t(HOST.lang," + IMF WEO general govt gross debt (gap-fill)"," ＋ IMF WEO（一般政府総債務）で補完"," + IWF WEO Bruttoschuldenstand des Staates (Lückenfüllung)"," + МВФ WEO, валовой долг сектора госуправления (заполнение пробелов)"," + FMI WEO deuda bruta del gobierno general (relleno de huecos)")):''); } } }catch(_){}
-    }); }); }
+        nn.textContent=(IntMapLang.t(HOST.lang,"Source: World Bank · ","出典: 世界銀行 · ","Quelle: Weltbank · ","Источник: Всемирный банк · ","Fuente: Banco Mundial · "))+(Array.isArray(L.code)?L.code.join(' + '):L.code)+(ysp?(' · '+ysp):'')+mode+(((L.base||L.id)==='wbdebt'&&(!year||year==='2024'))?(IntMapLang.t(HOST.lang," + IMF WEO general govt gross debt (gap-fill)"," ＋ IMF WEO（一般政府総債務）で補完"," + IWF WEO Bruttoschuldenstand des Staates (Lückenfüllung)"," + МВФ WEO, валовой долг сектора госуправления (заполнение пробелов)"," + FMI WEO deuda bruta del gobierno general (relleno de huecos)")):''); } } }catch(_){}
+    }).then(fin,fin); }); return done; }
     function choroOff(L){ wbOn.delete(L.id); [L.id+'-fill',L.id+'-line'].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }catch(_){} }); try{ window._hideGenericLegend&&window._hideGenericLegend(L.id); }catch(_){} }
+
+    /* ══ (map-layer-system) THE INDICATOR BROWSER — ONE ROW, EVERY COUNTRY INDICATOR ══════════════════════════════
+       The sixty-odd rows above are one family read by one reader (wbSeries), filed across eleven shelves, and four of
+       them paint a series another row also paints. A reader looking for «how many doctors per head» had to know which
+       shelf a World Bank series had been filed on. This row is that family as ONE layer: the indicator is chosen inside
+       it (search, subject — the subject is the shelf the indicator's own row stands on, read from js/layer-manifest.js,
+       never a second taxonomy), and it paints through `choroOn` exactly as the row it stands for does — the same series,
+       the same year rule (the clock's), the same ramp, legend, year picker, hover and point value. So the browser cannot
+       disagree with the row: it IS that row's painter, pointed at another source id.
+       ⚠ THE ENTRIES ARE THE TABLE, NOT A COPY. `indicatorEntries()` reads WB (a two-way row gives one entry per mode);
+       the rows that measure the same series elsewhere (js/layers/<id>.js `measures`) and the country-statistics rows
+       that this reader does not paint are joined by js/indicator-browser.js from the manifest. */
+    const IND={ cur:null, view:null };
+    const IND_NAME=LA('Country indicators','国別指標');
+    function indicatorEntries(){ const out=[];
+      WB.forEach(L=>{ if(L.modes) L.modes.forEach(m=>out.push({ id:L.id+':'+m.key, row:'bx-'+L.id, base:L.id, mode:m.key, code:m.code, key:_wbKey(m.code), n:m.n, unit:m.unit, ramp:m.ramp.slice() }));
+        else out.push({ id:L.id, row:'bx-'+L.id, base:L.id, mode:null, code:L.code, key:_wbKey(L.code), n:L.n, unit:L.unit, ramp:L.ramp.slice() }); });
+      return out; }
+    function indPaint(id){ const e=indicatorEntries().find(x=>x.id===id); if(!e) return false;
+      wbById.wbind={ id:'wbind', base:e.base, code:e.code, n:e.n, ramp:e.ramp, unit:e.unit };
+      IND.cur=e.id; delete wbYear.wbind;
+      /* the year list is the SERIES' — a new indicator has other years and other counts, so the picker is rebuilt */
+      try{ const s=document.querySelector('#data-legend-wbind .bx-year'); if(s) s.removeAttribute('data-built'); }catch(_){}
+      const req=choroOn(wbById.wbind);
+      /* the paint (the series read and the country shapes it waits for) is this row's request: handed to js/layer-rows.js `layerInflight`, so the layer-state audit waits for it
+         instead of reading «ticked and blank» while it is in flight (measured: the look 2.8 s after the tick pulsed the row
+         off→on while the series was still arriving, and the pulse dropped the reader's choice). */
+      try{ layerInflight.track('bx-wbind',req); }catch(_){}
+      return true; }
+    /* ⚠ the layer-state audit (js/data-layers.js `_imAuditReg`) re-fires a ticked row whose style layers are not
+       visible; while the browser hands a country-table statistic to its own row, this row paints nothing on purpose,
+       so its claim on wbind-fill/-line is withdrawn until it paints again (choroOn registers it anew) */
+    function indClear(){ IND.cur=null; delete wbById.wbind; wbOn.delete('wbind'); try{ if(window._imAuditReg) delete window._imAuditReg['bx-wbind']; }catch(_){}
+      ['wbind-fill','wbind-line'].forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }catch(_){} }); }
+    let _indMod=null;
+    function indBrowser(){ if(!_indMod) _indMod=import('./indicator-browser.js').then(m=>m.makeIndicatorBrowser({
+        lang:()=>HOST.lang, entries:indicatorEntries, paint:indPaint, clear:indClear, current:()=>IND.cur,
+        series:(code)=>wbSeries(code), seriesOf:(code)=>wbSeriesCache[_wbKey(code)]||null, yearOf:(code)=>{ const S=wbSeriesCache[_wbKey(code)]||null; return yearFor({id:'wbind'},S); },
+        name:(n)=>LWB.arr(n), countryName:(iso)=>{ try{ const s=countryStats&&countryStats[iso]; if(s) return (HOST.lang==='jp'?(s.nameJp||s.nameEn):s.nameEn)||iso; }catch(_){} return iso; },
+        wanted:()=>{ const w=IND.want; IND.want=null; return w||null; },
+        /* while a country-table statistic is drawn by its own row, THIS row's drawing is that row's layers — said to the
+           layer-state audit (js/data-layers.js `_imAuditReg`, the table it reads first), so a row that is meant to paint
+           nothing of its own is not read as «ticked and blank» and pulsed off→on (measured: 1 run in 11 lost its choice) */
+        delegated:(rowId)=>{ try{ const A=window.IntMapLayerAudit, reg=(window._imAuditReg=window._imAuditReg||{});
+          const ids=(rowId&&A&&A.owned)?A.owned(rowId):[]; if(ids.length) reg['bx-wbind']=ids; else delete reg['bx-wbind']; }catch(_){} },
+        legend:()=>{ try{ return window._registerLayerOpacity?window._registerLayerOpacity('wbind',IND_NAME,IND.cur?['wbind-fill','wbind-line']:[],'bx-wbind'):null; }catch(_){ return null; } },
+        hideLegend:()=>{ try{ window._hideGenericLegend&&window._hideGenericLegend('wbind'); }catch(_){} },
+        escape:(s)=>HOST.escapeHtml(s) })).then(b=>{ try{ window.IntMapIndicators=b; }catch(_){} return b; });
+      return _indMod; }
+    /* the chosen indicator travels in a share link (`wbind`), beside the row's own tick in `l=` */
+    try{ window.IntMapShareState&&window.IntMapShareState.register('wbind',{
+      get(){ return IND.cur?{ i:IND.cur }:null; },
+      set(v){ if(!v||!v.i) return; IND.want=String(v.i);
+        const cb=document.getElementById('bx-wbind');
+        if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); }
+        else if(cb&&cb.checked) indBrowser().then(b=>b.select(IND.want)).catch(()=>{}); } }); }catch(_){}
+    function indOn(){ indBrowser().then(b=>b.open()).catch(()=>{ try{ if(typeof imToast==='function') imToast(IntMapLang.t(HOST.lang,'The indicator browser could not be loaded','指標ブラウザを読み込めませんでした')); }catch(_){} }); }
+    function indOff(){ indClear(); try{ window._hideGenericLegend&&window._hideGenericLegend('wbind'); }catch(_){} if(_indMod) _indMod.then(b=>b.closed()).catch(()=>{}); }
 
     /* ---------- Earthquakes (USGS realtime feed + historical query) ---------- */
     let eqWin='week', eqClickWired=false;
@@ -447,6 +511,7 @@ export function wbLayers(HOST){
        and nothing else was wrong, which is exactly the kind of silence this project keeps paying
        for. tests/shell-data-layers-checks.test.mjs #R289 ④ now measures the label rather than the mechanism. */
     const ALL=WB.map(L=>({id:L.id,n:L.n,modes:L.modes,on:()=>choroOn(L),off:()=>choroOff(L)}))
+      .concat([{id:'wbind',n:IND_NAME,on:indOn,off:indOff}])
       .concat([{id:'eq',n:LA('Earthquakes (live + history)','地震（ライブ＋過去）','Erdbeben (live + Verlauf)','Землетрясения (онлайн + история)','Terremotos (en vivo + histórico)'),on:eqOn,off:eqOff},
                {id:'heat',n:LA('Heat of Attention','注目度ヒートマップ','Aufmerksamkeits-Heatmap','Карта внимания','Mapa de calor de atención'),on:heatOn,off:heatOff}]);
     /* ⚠ (#R246) ONE NAME, ONE PLACE. (#R38) gave every beta row a German and Russian label. Every indicator's name was an `{en,jp}` object with a SECOND
@@ -460,10 +525,11 @@ export function wbLayers(HOST){
        VISIBLE bx World-Bank choropleth at (lng,lat), read from the layer's OWN painted source data by
        point-in-polygon — works on- and off-screen. Registered here because this module owns these layers. */
     const _bxVis=L=>{ try{ const f=L.id+'-fill'; return !!(GE().layers.has(f)&&GE().layers.getLayout(f,'visibility')==='visible'); }catch(_){ return false; } };
-    window._imBxChoroOn=function(){ try{ return WB.some(_bxVis); }catch(_){ return false; } };
+    const _bxAll=()=>(IND.cur&&wbById.wbind)?WB.concat([wbById.wbind]):WB;   /* (map-layer-system) …and the indicator browser's row while it paints */
+    window._imBxChoroOn=function(){ try{ return _bxAll().some(_bxVis); }catch(_){ return false; } };
     window._imBxChoroValueAt=function(lng,lat){ const out=[];
       try{ if(!window._imPipGeo) return out;
-        WB.forEach(L=>{ if(!_bxVis(L)) return;
+        _bxAll().forEach(L=>{ if(!_bxVis(L)) return;
           const d=GE().layers.sourceData('src-'+L.id); if(!d||!d.features) return;
           for(const f of d.features){ if(f&&f.geometry&&window._imPipGeo(lng,lat,f.geometry)){ const p=f.properties||{};
             if(p.v!=null){ const a=Math.abs(+p.v); const rv=(a>=100?Math.round(+p.v):Math.round(+p.v*10)/10); out.push(bxLabel(L)+': '+rv+(V(L).unit||'')+(p.nm?(' ('+p.nm+')'):'')); }

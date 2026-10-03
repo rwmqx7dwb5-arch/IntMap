@@ -5,4 +5,5 @@ export default {
   order: 160,
   key: 'wbflfp',
   rest: true,
+  measures: ['worldbank:SL.TLF.CACT.FE.ZS'],
 };

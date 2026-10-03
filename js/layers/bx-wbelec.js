@@ -4,4 +4,5 @@ export default {
   shelf: 'lyrGrpEnergy',
   order: 30,
   key: 'wbelec',
+  measures: ['worldbank:EG.ELC.ACCS.ZS'],
 };

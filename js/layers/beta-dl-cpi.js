@@ -5,4 +5,5 @@ export default {
   order: 20,
   key: 'cpi',
   share: true,
+  measures: ['worldbank:GOV_WGI_CC.SC'],
 };

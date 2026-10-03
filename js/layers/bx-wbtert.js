@@ -5,4 +5,5 @@ export default {
   order: 70,
   key: 'wbtert',
   rest: true,
+  measures: ['worldbank:SE.TER.ENRR'],
 };

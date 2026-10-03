@@ -520,7 +520,7 @@ coastline.js                      **海までの距離**（#R495）— data/coas
                                   ⚠ js/coast-line.js（上）は描画用のレイヤーで、こちらは計測用。別物。
 grid-style.js                     経緯線のスタイル層
 layer-home.js                     カメラを動かしてよいレイヤーの表 window.IntMapLayerHome
-layers/                           **レイヤーと基本表示の宣言** — 1 項目 1 ファイル `<id>.js`（174 本＝レイヤー 163 ＋基本表示 11、`kind: 'display'`）＋棚の一覧 `_shelves.js`
+layers/                           **レイヤーと基本表示の宣言** — 1 項目 1 ファイル `<id>.js`（175 本＝レイヤー 164 ＋基本表示 11、`kind: 'display'`）＋棚の一覧 `_shelves.js`
 layer-manifest.js                 **どのレイヤーが在るか**（layer-manifest）— js/layers/ の宣言から導出する。`#layer-dropdown` の
                                   全チェックボックスの id・種類（レイヤー／基本表示）・棚・並び・「その他N件」・名前の i18n キー・既定 ON・共有リンク・
                                   遅延モジュール、と宣言そのもの（`layerDeclaration`）。⚠ 一覧と宣言の値は GENERATED LAYERS の印の
@@ -541,7 +541,7 @@ layer-state.js                    **レイヤーの状態の唯一の持ち主**
 layer-time.js                     **時刻 T でレイヤーが何を述べられるかの規則（純粋）** — `verdict(decl, at)` が stated（典拠が T を述べる）/
                                   carried（別の時点を述べ、それと言って描く）/ unstated（どの典拠も述べない）を返す。種類の語彙・
                                   `validate`（著者の無い日付を拒む）・en+jp の文。docs/architecture/07-map.md §7.4a
-layer-time-decl.js                **174 行（レイヤー 163 ＋基本表示 11）それぞれの時間の宣言**（純データ・`TIME[id]`。1 層の記述の `time` 欄に入る形）。
+layer-time-decl.js                **175 行（レイヤー 164 ＋基本表示 11）それぞれの時間の宣言**（純データ・`TIME[id]`。1 層の記述の `time` 欄に入る形）。
                                   門は scripts/world-at-time.mjs --check（manifest と一致・全宣言が規則を通る・引用先が実在）
 layer-time-kernel.js              **時刻 T の地図の機構** window.IntMapLayerTime — 述べられない箱を預かり（モジュールには地図自身の
                                   「オフ」、箱はチェックのまま）、述べられる時刻で配り直す。行（`nodata`）・凡例・Atlas
@@ -553,6 +553,9 @@ time-lapse.js                     **タイムラプス**——メイン地図の
                                   prefers-reduced-motion（最遅に固定）。UI は Chronos パネル #ntl-lapse（news-timeline.js が初回に読む）、
                                   Atlas `time.lapse` と状態 `lapseState()`。録画のときはコマの受け手（sink）に描き終えたコマを渡す。
                                   書き出し欄 #ntl-rec を置き、開いたときに map-recorder.js を読む（`openRecorder`）
+year-book.js                      **年鑑（その年の世界）**——時計の瞬間を、地図が描く記録から読んだページにする（政体と描かれた面積・
+                                  その年に国境の記録が変わる日・戦争の記録・Maddison・描けるレイヤー数）。Chronos パネルの「この年を読む」
+                                  （news-timeline.js が押されたときに読む）と Atlas `time.yearbook`。docs/architecture/07-map.md §7.4b
 map-recorder.js                   **タイムラプスの動画書き出しと、比較の 1 枚画像**——1 つの合成器（地図・その瞬間・出典・語標と
                                   リンク）。描き終えたコマだけを MediaRecorder に 1/fps ずつ書く（地図を待つ間は録画を止める）。
                                   出典は描いている層の典拠と #map-credit から（`drawnCredits`）、切らずに折り返す（`layoutFrame`）。
@@ -601,7 +604,11 @@ layer-pkg-alliances.js            **レイヤー・パッケージ** NATO dl-nat
                                   凡例が述べる加盟国数（描いている加盟国から）
 layer-packs.js                    追加レイヤーパック（地球と空／土地被覆／ベータ2／宗教・言語／
                                   タイムゾーン／GIBS の科学プロダクト）
-wb-layers.js                      世界銀行指標の塗り分けと最新統計の更新
+wb-layers.js                      世界銀行指標の塗り分けと最新統計の更新。国別指標の行 `bx-wbind` の塗り手（`indicators()`・
+                                  `paintIndicator`）と共有リンクの `wbind`
+indicator-browser.js              **国別指標**——国の統計を 1 つのレイヤーで、検索と分野（その指標の行が立つ棚）で選ぶ（凡例の中）。
+                                  同じ系列を塗る行は宣言の `measures` から 1 項目に。初めて行を点けたときに wb-layers.js が読む。
+                                  Atlas `layers.indicator`。docs/MAP-LAYERS.md §7.2
 world-packs-rows.js               世界データ層の行・共有ツールキット（_ui）・共有リンクの選択——起動時に要る部分だけ
 world-packs.js                    世界データ層の本体——貿易・エネルギー・気象警報・潮汐・作物（初めて行を点けたときに取る）
 precip-annual.js                  年降水量——国別平均ではなく実測グリッド
@@ -788,7 +795,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  155 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  157 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -912,7 +919,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 155能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 157能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1880,7 +1887,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 127 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 7 本 / deep 127 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の
