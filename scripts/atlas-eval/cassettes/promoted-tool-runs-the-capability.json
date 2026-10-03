@@ -80,6 +80,14 @@
               "tool": "data_gis"
             },
             {
+              "id": "map.compose",
+              "tool": "compose_map"
+            },
+            {
+              "id": "time.changes",
+              "tool": "time_changes"
+            },
+            {
               "id": "map.tool",
               "tool": "map_tool"
             },
