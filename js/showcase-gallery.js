@@ -37,6 +37,7 @@ import { SHOWCASE, CAPTURED, TOPICS, showcaseById, showcaseLink } from './showca
 import { TOURS, tourSteps } from './tours.js';
 import { MapState } from './map-state.js';   /* the address bar's one door (js/map-state.js) */
 import { MAP_ANSWER_EVENT } from './mobile-sheet.js';   /* «an answer is on the map» — the phone's sheet comes down */
+import * as bus from './bus.js';   /* the declared events (js/bus.js) — MAP_ANSWER_EVENT is raised through it */
 import { icon } from './icons.js';
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the encoder every string below is written with */
 
@@ -108,7 +109,7 @@ function choose(kind, id) {
   try { const inp = document.getElementById('ms-input'); if (inp && document.activeElement === inp) inp.blur(); } catch (_) { }
   closeGallery();
   if (kind === 'tour') return startTour(id);
-  try { window.dispatchEvent(new CustomEvent(MAP_ANSWER_EVENT, { detail: { kind: 'card' } })); } catch (_) { }
+  try { bus.emit(MAP_ANSWER_EVENT, { kind: 'card' }); } catch (_) { }
   return openShowcase(id);
 }
 

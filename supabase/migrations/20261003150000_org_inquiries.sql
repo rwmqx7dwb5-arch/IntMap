@@ -164,3 +164,22 @@ begin
   end if;
   perform cron.schedule('org-inquiries-purge', '37 3 * * *', 'select public.purge_org_inquiries(30, 730)');
 end $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  4. ITS SENTENCE IN THE ACCOUNT'S DATA CATALOGUE (20261003130000_account_data_center.sql).
+--     org_inquiries.user_id references auth.users, so public._owned_by_user_cols() discovers it: an
+--     enquiry sent while signed in is the account's row, exported and deleted with it. The catalogue
+--     explains that row (supporters has no account column — a listed name is the admin's row).
+-- ─────────────────────────────────────────────────────────────────────────────
+insert into public.account_data_catalog (tbl, written_by, label_en, label_jp, purpose_en, purpose_jp, retention_en, retention_jp) values
+  ('org_inquiries', 'you',
+   'Enquiries you sent', '送ったお問い合わせ',
+   'An enquiry you sent from the contact page while signed in: your name, email address, organisation and message — kept so that an administrator can answer it.',
+   'ログイン中にお問い合わせページから送った内容（名前・メールアドレス・所属・本文）。管理者が返信するために保存します。',
+   'Deleted 730 days after it arrives (30 days if marked as spam), or when you delete your account.',
+   '受信から730日（迷惑なものと判定されたものは30日）で、またはアカウントを削除したときに削除します。')
+on conflict (tbl) do update set
+  written_by = excluded.written_by,
+  label_en = excluded.label_en, label_jp = excluded.label_jp,
+  purpose_en = excluded.purpose_en, purpose_jp = excluded.purpose_jp,
+  retention_en = excluded.retention_en, retention_jp = excluded.retention_jp;

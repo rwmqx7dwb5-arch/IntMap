@@ -162,17 +162,13 @@
           "basis": "lexical",
           "matches": [
             {
-              "id": "navigation.start",
-              "tool": "navigation_start",
-              "needsConfirmation": "explicit"
-            },
-            {
               "id": "routing.route",
               "tool": "routing_route"
             },
             {
-              "id": "navigation.voice",
-              "tool": "navigation_voice"
+              "id": "navigation.start",
+              "tool": "navigation_start",
+              "needsConfirmation": "explicit"
             }
           ]
         }

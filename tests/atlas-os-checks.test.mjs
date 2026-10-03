@@ -4,7 +4,7 @@
  *  js/atlas-notebook-store.js (the data), js/atlas-notebook.js (the page), js/atlas-cap-notebook.js
  *  (what Atlas can do with it), js/atlas-state.js (onTurnEnd / captureSections / restoreSections) and
  *  js/atlas-query.js (the answered query, announced as data). The account copy is
- *  supabase/migrations/20261003120000_atlas_notebook.sql, proved by supabase/tests/22_atlas_notebook_test.sql.
+ *  supabase/migrations/20261003170000_atlas_notebook.sql, proved by supabase/tests/22_atlas_notebook_test.sql.
  *
  *  Every check here runs the shipped code: the real registry decides what a replay may re-run, the real
  *  state ledger restores and reads back, and the real query engine answers the same question at two
@@ -271,7 +271,7 @@ test('atlas-os ⑪: the console mounts the notebook, hands it the citations, and
     assert.ok(c && c.legacy, id + ' is registered with a dispatch spelling');
   });
   assert.equal(CAPS.resolve('notebookCompare').id, 'notebook.compare');
-  assert.match(read('supabase/migrations/20261003120000_atlas_notebook.sql'), /with check \(user_id = \(select auth\.uid\(\)\)\)/);
+  assert.match(read('supabase/migrations/20261003170000_atlas_notebook.sql'), /with check \(user_id = \(select auth\.uid\(\)\)\)/);
   assert.ok(!/`/.test(read('js/atlas-notebook.js').split('export const NOTEBOOK_CSS')[1]), 'no back-tick in the notebook stylesheet (CONSTITUTION §2)');
 });
 
@@ -298,8 +298,15 @@ test('atlas-os ⑬: a command whose declared button is gone is named; the AI rel
   assert.equal((await probeAiProxy(res(503, { error: 'x' }), 'https://x.supabase.co', 'k')).state, 'error');
   assert.equal((await probeAiProxy(async () => { throw new TypeError('Failed to fetch'); }, 'https://x.supabase.co', 'k')).state, 'unobservable', 'a fetch that throws is not «down»');
   assert.equal((await probeAiProxy(res(401, { error: 'auth' }), '', 'k')).state, 'unobservable');
-  /* the probe asks what the function refuses BEFORE it reads a body or the quota */
-  const src = read('supabase/functions/ai-proxy/index.ts');
-  const serve = src.indexOf('Deno.serve('), auth = src.indexOf('json({ error: "auth"', serve), quota = src.indexOf('consume', serve);
-  assert.ok(serve > 0 && auth > serve && (quota < 0 || auth < quota), 'ai-proxy still answers 401 {error:"auth"} before anything is consumed');
+  /* the probe asks what the function refuses BEFORE it reads a body or the quota. The probe POSTs, so the
+     body that answers it is whatever index.ts routes a POST to (atlas-core-split moved Deno.serve's body
+     into ask.ts behind a route table) — followed through the route and its import, never named here. */
+  const index = read('supabase/functions/ai-proxy/index.ts');
+  const route = /match:\s*\(req\)\s*=>\s*req\.method\s*===\s*"POST"\s*,\s*handle:\s*([A-Za-z_$][\w$]*)/.exec(index);
+  assert.ok(route, 'index.ts routes a POST to a named handler');
+  const from = new RegExp('import\\s*\\{[^}]*\\b' + route[1] + '\\b[^}]*\\}\\s*from\\s*"\\./([^"]+)"').exec(index);
+  const src = from ? read('supabase/functions/ai-proxy/' + from[1]) : index;
+  const serve = src.search(new RegExp('(?:export\\s+)?(?:async\\s+)?function\\s+' + route[1] + '\\s*\\('));
+  const auth = src.indexOf('json({ error: "auth"', serve), quota = src.indexOf('consume', serve);
+  assert.ok(serve >= 0 && auth > serve && (quota < 0 || auth < quota), 'ai-proxy still answers 401 {error:"auth"} before anything is consumed');
 });

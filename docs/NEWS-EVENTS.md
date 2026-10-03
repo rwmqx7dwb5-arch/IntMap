@@ -1116,7 +1116,7 @@ LLM がそれらを 1 つの説明にまとめたもので、後者は**1 文ご
 「更新の新しい順に 200 件」の一覧だけだった。ここは同じ表を別の角度から読む 4 つの口の正本である。
 コードは `js/news-intel-core.js`（計算の全部・純粋）・`js/news-intel.js`（遅延の本体）・
 `js/news-pulse.js`（起動時の行と窓口 `IntMapNewsIntel`）・`js/freshness.js`（鮮度の部品）、
-サーバーは migration `20261003110000_news_intelligence.sql` と `_shared/news-entities.js`。
+サーバーは migration `20261003160000_news_intelligence.sql` と `_shared/news-entities.js`。
 
 ### 16.1 ニュースの脈（レイヤー「国ごとのニュースの脈」・`dl-newspulse`）
 
@@ -1200,7 +1200,7 @@ LLM がそれらを 1 つの説明にまとめたもので、後者は**1 文ご
 ### 16.6 `embed` 段を cron に入れた
 
 `news-ingest-tick` の段は `fetch, locate, embed, assign, link, entities, prune`（migration
-`20261003110000_news_intelligence.sql`、`SCHEDULE` も同じ）。⚠ **鍵は変えていない。** 2026-08-24 の実測では
+`20261003160000_news_intelligence.sql`、`SCHEDULE` も同じ）。⚠ **鍵は変えていない。** 2026-08-24 の実測では
 `OPENAI_API_KEY` が埋め込みモデルに届かず（403 `model_not_found`）、届く鍵が入るまで `embed` は 0 件で
 終わり、その理由（`embed_configured_model`・`embed_available_models`・`embed_error`）が毎 run 記録に残り、
 `news_ingest_health()` がその段を「失敗している」と返す。**埋め込みモデルに届く `OPENAI_API_KEY` を入れるか、

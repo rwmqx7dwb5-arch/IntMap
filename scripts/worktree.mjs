@@ -56,6 +56,7 @@ import { liveDeployment } from './pages-publish-guard.mjs';
 import { install as installMergeDriver, pending as mergePending } from './merge-driver.mjs';
 import { blame as blameNights } from './nightly-blame.mjs';
 import { fetchAtlasEval, atlasEvalLine } from './lib/nightly-status.mjs';
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
 
@@ -140,7 +141,7 @@ const labelOf = (sha, subject) => {
 };
 
 /* ══ (#R304) THE NIGHTLY'S ANSWER, IN FRONT OF EVERY SESSION ════════════════════════════════════
-   The deep tier (128 spec files, 77 minutes — measured #R500; it was 27 files when this was written,
+   The deep tier (132 spec files, 77 minutes — measured #R500; it was 27 files when this was written,
    the number went stale three times before anybody re-measured it, and it moved 81 → 82 DURING that
    round. `node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`
    is the answer; scripts/deep-alarm.mjs derives it rather than restating it) has run every night since
@@ -222,7 +223,9 @@ const suspectWords = (r) => (!r.range ? `範囲なし（${r.why}）`
 function atlasEval() {
   const m = /github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?$/.exec(q(['remote', 'get-url', 'origin']).trim());
   if (!m) return null;
-  return atlasEvalLine(fetchAtlasEval(m[1], { cwd: REPO, timeoutMs: 6000, perPage: 30 }));const specTitle = (id, w = 90) => { const s = String(id); return s.length > w ? s.slice(0, w - 1) + '…' : s; };
+  return atlasEvalLine(fetchAtlasEval(m[1], { cwd: REPO, timeoutMs: 6000, perPage: 30 }));
+}
+const specTitle = (id, w = 90) => { const s = String(id); return s.length > w ? s.slice(0, w - 1) + '…' : s; };
 
 /* ══ (#R771) THE STEPS THE ROUND NO LONGER WAITS FOR ════════════════════════════════════════════
    AGENTS.md §5.1 ends a round with production verification, the master fast-forward and the USB

@@ -287,6 +287,20 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["layers.electionPlay","electionPlay","electionTimelapse,playElections","data","layer","map.layer,map.layerOption","map,explanation","session","none","",""],
       ["layers.electionSwing","electionSwing","seatsChangedHands","data","none","map.layerOption","explanation","session","none","",""],
       ["layers.electionFreshness","electionFreshness","electionDataAge","data","none","","explanation","read","none","",""],
+      ["layers.indicator","indicator","countryIndicator,showIndicator,worldBankIndicator","layers","layer","map.layer,map.layerOption","map,explanation","session","none","",""],
+      ["news.pulse","newsPulse","countryNews,newsByCountry,newsHeat","data","layer","map.layer","map,explanation","session","none","","newsIntel"],
+      ["news.brief","newsBrief","countryBrief,countryNewsBrief,dailyBrief","data","panel","panel.newsBrief","panel,explanation","session","none","country","newsIntel","external"],
+      ["news.outages","outageNews","internetOutageNews,outagesAndNews","data","none","","explanation","read","none","","newsIntel"],
+      ["news.health","newsHealth","newsFreshness,ingestHealth","data","none","","explanation","read","none","","newsEvents"],
+      ["news.company","companyNews","newsAboutCompany,companyEvents","data","panel","panel.company","panel,explanation","session","none","text","companyPanel","external"],
+      ["notebook.list","notebook","notebookList,investigations,pastQuestions,myInvestigations","research","none","","explanation","read","none","","","external"],
+      ["notebook.open","notebookOpen","openInvestigation,reopenInvestigation,replayInvestigation","research","time","camera,map.layer,time","map,time","session","none","","","external"],
+      ["notebook.compare","notebookCompare","compareInvestigation,whatChangedSince,recheckInvestigation","research","none","","explanation","read","none","","atlasQuery","external"],
+      ["panel.postcard","postcard","mapPostcard,shareImage,mapImage","panel","panel","panel.share","panel,file","session","none","",""],
+      ["panel.gallery","gallery","exampleGallery,showcaseGallery,examplesGallery,tourGallery","panel","panel","panel.gallery","panel","session","none","",""],
+      ["research.placeProfile","placeProfile","placeDossier,pointProfile,whatIsHere","research","none","","explanation","read","none","point",""],
+      ["sim.ashPlume","ashPlume","volcanicAsh,ashFall,ashCloud,eruptionSim,tephraFall","sim","sim","map.ashPlume","map,explanation","session","none","","ashPlume"],
+      ["time.yearbook","yearbook","readYear,worldInYear,yearBook","time","none","time","explanation","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 

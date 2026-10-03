@@ -78,7 +78,7 @@ export function orgFacts() {
   const vendor = rd('src/vendor.js');
   const backend = need(/window\.SUPABASE_URL = '(https:\/\/[a-z0-9]+\.supabase\.co)';/, vendor, 'src/vendor.js SUPABASE_URL')[1];
   const anonKey = need(/window\.SUPABASE_ANON_KEY = '([A-Za-z0-9_.-]+)';/, vendor, 'src/vendor.js SUPABASE_ANON_KEY')[1];
-  const mig = rd('supabase/migrations/20261003100000_org_inquiries.sql');
+  const mig = rd('supabase/migrations/20261003150000_org_inquiries.sql');
   const [, spamDays, keepDays] = need(/p_spam_days integer default (\d+), p_keep_days integer default (\d+)/, mig, 'the org_inquiries purge defaults');
   const carto = need(/Free to ([\d,]+) tile requests/, rd('js/carto-basemap.js'), 'js/carto-basemap.js free allowance');
   const plan = PLANS[DEFAULT_PLAN];

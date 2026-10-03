@@ -14,7 +14,7 @@
  *    · ASK IT AGAIN — the same question goes to Atlas, and the new answer is filed beside the old one;
  *    · HAND IT ON — as Markdown for a person, or as a notebook file another IntMap can import and replay;
  *    · keep it on every device, when the reader turns account sync on (supabase/migrations/
- *      20261003120000_atlas_notebook.sql — off until they do).
+ *      20261003170000_atlas_notebook.sql — off until they do).
  *  Atlas itself reaches the same notebook (`notebook.list` / `notebook.open` / `notebook.compare`), so
  *  「先週調べた台湾の件をもう一度」 is a request it can carry out rather than a conversation it has lost.
  *

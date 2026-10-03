@@ -62,7 +62,7 @@
 | 時計の床（紀元前の年） | `js/hist-scale.js` の `FLOOR` |
 | Atlas の 1 日の回数 | `supabase/functions/_shared/plans.js` の既定プラン |
 | 埋め込みの大きさ | `js/embed-mode.js` の `EMBED_SIZES` |
-| 相談の保存期間 | `supabase/migrations/20261003100000_org_inquiries.sql` の `purge_org_inquiries` の既定値 |
+| 相談の保存期間 | `supabase/migrations/20261003150000_org_inquiries.sql` の `purge_org_inquiries` の既定値 |
 | 今月の AI の利用量 | `public.operating_stats()`（`support.html` がその場で読む） |
 | 基図の無料枠 | `js/carto-basemap.js` の冒頭の記述 |
 

@@ -47,6 +47,7 @@ import { jsonWithin } from './fetch-deadline.js';
 import { clockFor } from './proxy-fetch.js';
 import { dataLayers } from './layer-manifest.js';
 import { MAP_ANSWER_EVENT } from './mobile-sheet.js';
+import * as bus from './bus.js';   /* the declared events (js/bus.js) — MAP_ANSWER_EVENT is raised through it */
 
 const esc = (s) => { try { return window.IntMapSafe.html(s == null ? '' : String(s)); } catch (_) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => '&#' + c.charCodeAt(0) + ';'); } };
 const finite = (v) => typeof v === 'number' && isFinite(v);
@@ -410,7 +411,7 @@ export async function openPlaceDossier(HOST, pt) {
   paintCard(HOST); placeCard();
   try { HOST.bringToFront(card); } catch (_) { /* order is cosmetic */ }
   /* (mobile-shell-flow) the card IS the answer and it is on the map — the phone's sheet comes down to show it */
-  try { window.dispatchEvent(new CustomEvent(MAP_ANSWER_EVENT, { detail: { kind: 'card' } })); } catch (_) { /* no sheet */ }
+  try { bus.emit(MAP_ANSWER_EVENT, { kind: 'card' }); } catch (_) { /* no sheet */ }
   const done = await placeProfile({ lng, lat, name: pt.name }, HOST, {
     onSection: (k, v) => {
       if (my !== seq || !current) return;

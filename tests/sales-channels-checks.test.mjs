@@ -3,7 +3,7 @@
  * ----------------------------------------------------------------------------
  *  ① ONE VOCABULARY: the words and ceilings of an enquiry are declared once
  *     (supabase/functions/_shared/inquiry-shape.js); the table's CHECK constraints
- *     (20261003100000_org_inquiries.sql) and the contact form's choices (generated) must say the same.
+ *     (20261003150000_org_inquiries.sql) and the contact form's choices (generated) must say the same.
  *  ② THE WRITE PATH, EVALUATED: reader-reports takes kind 'inquiry' to org_inquiries, through the same
  *     buckets as feedback, and refuses what it must refuse BEFORE touching the database (the honeypot,
  *     no consent, an unknown word, an address that is not one, a website that is not http(s)).
@@ -31,7 +31,7 @@ const SHAPE = await import(modUrl('supabase/functions/_shared/inquiry-shape.js')
 const FN = await import(modUrl('supabase/functions/reader-reports/index.ts'));
 const { PRODUCTION_ORIGIN: PROD } = await import(modUrl('supabase/functions/_shared/client-error-shape.js'));
 const GEN = await import(modUrl('scripts/org-pages.mjs'));
-const MIG = src('supabase/migrations/20261003100000_org_inquiries.sql');
+const MIG = src('supabase/migrations/20261003150000_org_inquiries.sql');
 
 /* ── ① ─────────────────────────────────────────────────────────────────────────────────── */
 function checkList(column) {

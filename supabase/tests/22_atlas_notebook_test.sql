@@ -7,7 +7,7 @@
 --    ④ the row bound (payload ≤ 1 MiB, id shape, question present) and the account bound
 --       (`notebook-account-full`) refuse by name;
 --    ⑤ the rows go with the account (ON DELETE CASCADE — delete_account_data finds the table itself).
---  supabase/migrations/20261003120000_atlas_notebook.sql. The client side (merge, rows, normalisation) is
+--  supabase/migrations/20261003170000_atlas_notebook.sql. The client side (merge, rows, normalisation) is
 --  tests/atlas-os-checks.test.mjs.
 -- ============================================================================
 begin;

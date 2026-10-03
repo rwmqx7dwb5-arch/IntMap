@@ -46,7 +46,7 @@ date: 2026-10-03
 
 ## 3. 本番へ要るもの（このラウンドではデプロイしない）
 
-- migration `20261003110000_news_intelligence.sql` の適用（関数 3・表 1・列 1・索引・cron の段の置き換え）。
+- migration `20261003160000_news_intelligence.sql` の適用（関数 3・表 1・列 1・索引・cron の段の置き換え）。
 - Edge Function `news-ingest` の配備（`entities` 段・記録の列）。
 - ⚠ **embed は鍵が埋め込みモデルに届くまで 0 件**（2026-08-24 実測の 403 のまま）。`OPENAI_API_KEY` を届く鍵にするか
   `NEWS_EMBED_MODEL` を届くモデルに——コードは変えずに動き出す。それまで `news_ingest_health()` は embed を「失敗」と返す。

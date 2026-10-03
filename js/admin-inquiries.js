@@ -7,7 +7,7 @@
  *  with it. It signs in with the same Supabase project, so a session started in admin.html is the
  *  session here (supabase-js keeps it under one key per project, in this origin's storage).
  *
- *  WHO MAY DO WHAT is decided by the database, not by this file (20261003100000_org_inquiries.sql):
+ *  WHO MAY DO WHAT is decided by the database, not by this file (20261003150000_org_inquiries.sql):
  *  RLS lets only an admin read an enquiry, change its status / note / handled_at (the message and the
  *  address cannot be changed by anyone), delete it, and write a supporter row. The gate below only
  *  saves a non-admin from an empty page — a non-admin who skipped it would read nothing.
@@ -126,8 +126,8 @@
     c.appendChild(facts);
     c.appendChild(el('div', 'msg', row.message));
 
-    var note = el('textarea'); note.value = row.admin_note || ''; note.maxLength = 2000; note.placeholder = 'Internal note (only admins see it)';
-    var lab = el('label', 'f', 'Note'); lab.appendChild(note); c.appendChild(lab);
+    var note = el('textarea'); note.value = row.admin_note || ''; note.maxLength = 2000;
+    var lab = el('label', 'f', 'Internal note (only admins see it)'); lab.appendChild(note); c.appendChild(lab);
 
     var acts = el('div', 'row acts');
     STATUSES.filter(function (s) { return s !== row.status; }).forEach(function (s) {
@@ -154,8 +154,8 @@
     var f = el('div', 'sup-form');
     var name = el('input'); name.value = row.name.slice(0, 60); name.maxLength = 60;
     var month = el('input'); month.type = 'month'; month.value = String(row.created_at || '').slice(0, 7);
-    var noteIn = el('input'); noteIn.maxLength = 140; noteIn.placeholder = 'Optional line (140)';
-    [['Display name', name], ['Month of the gift', month], ['Line', noteIn]].forEach(function (p) { var l = el('label', 'f', p[0]); l.appendChild(p[1]); f.appendChild(l); });
+    var noteIn = el('input'); noteIn.maxLength = 140;
+    [['Display name', name], ['Month of the gift', month], ['Optional line (up to 140 characters)', noteIn]].forEach(function (p) { var l = el('label', 'f', p[0]); l.appendChild(p[1]); f.appendChild(l); });
     f.appendChild(btn('List as supporter (gift checked in Stripe)', 'sm', function () {
       if (!name.value.trim() || !/^\d{4}-\d{2}$/.test(month.value)) { toast('A display name and a month are required.'); return; }
       sb.from('supporters').insert({ display_name: name.value.trim(), since_month: month.value + '-01', note: noteIn.value.trim() || null, consented_at: row.created_at })

@@ -253,6 +253,9 @@ const MEMBER = {
      js/map-ui.js, the volcano card's ash button in js/volcano-intel.js, and Atlas's `sim.ashPlume`
      in js/atlas-cap-sim.js. */
   ashPlume: ['IntMapAshPlume', 'open'],
+  /* (news-intelligence) the news pulse. Its member is `toggle` — the door js/news-pulse.js calls when the
+     layer row is switched; ranking/brief are reached the same way, but a body without toggle draws nothing. */
+  newsIntel: ['__imNewsIntel', 'toggle'],
 };
 
 test('R209 ③: every deferred module actually arrives, registers and publishes', async ({ app }) => {

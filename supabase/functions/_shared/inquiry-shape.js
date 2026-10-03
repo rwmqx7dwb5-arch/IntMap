@@ -6,7 +6,7 @@
 //      before writing public.org_inquiries as the service role;
 //    · scripts/org-pages.mjs — generates the contact form's choices from it (en + jp labels live in
 //      scripts/org-pages-text.mjs, keyed by these words);
-//    · supabase/migrations/20261003100000_org_inquiries.sql — the table's CHECK constraints are the
+//    · supabase/migrations/20261003150000_org_inquiries.sql — the table's CHECK constraints are the
 //      database's outer bound on the same words and lengths.
 //  tests/sales-channels-checks.test.mjs reads the migration and holds all three equal, so a word added
 //  here and not there (or the reverse) is a red test, not an enquiry the database refuses in production.

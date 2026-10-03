@@ -17,7 +17,7 @@
  *    · toMarkdown / toFile / fromFile — the notebook as something a reader can hand to someone else;
  *    · makeNotebookStore — the device copy (IndexedDB in the app, memory in a test);
  *    · mergeCloud / rowFromEntry / entryFromRow — the account copy (supabase/migrations/
- *                       20261003120000_atlas_notebook.sql), synchronised only when the reader turns it on.
+ *                       20261003170000_atlas_notebook.sql), synchronised only when the reader turns it on.
  *  js/atlas-notebook.js is the page side (capture, the panel, replay); js/atlas-cap-notebook.js is what
  *  Atlas itself can do with it.
  * ==========================================================================*/

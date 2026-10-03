@@ -98,3 +98,21 @@ create policy atlas_notebook_entries_own on public.atlas_notebook_entries
 revoke all on public.atlas_notebook_entries from public, anon, authenticated;
 grant select, insert, update, delete on public.atlas_notebook_entries to authenticated;
 grant select, insert, update, delete on public.atlas_notebook_entries to service_role;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  ITS SENTENCE IN THE ACCOUNT'S DATA CATALOGUE (20261003130000_account_data_center.sql).
+--  user_id references auth.users, so public._owned_by_user_cols() discovers the table: the export and
+--  the account purge reach it with no list naming it. The catalogue says what the rows are.
+-- ─────────────────────────────────────────────────────────────────────────────
+insert into public.account_data_catalog (tbl, written_by, label_en, label_jp, purpose_en, purpose_jp, retention_en, retention_jp) values
+  ('atlas_notebook_entries', 'you',
+   'Atlas notebook', 'Atlas のノート',
+   'The questions you asked Atlas and what it answered and did (the map view, the steps, the results, the sources, your note) — copied here only after you turn notebook sync on, so the notebook is on every device you sign in on.',
+   'Atlas に尋ねた質問と、その回答・行った操作（地図の表示・手順・結果・出典・メモ）。ノートの同期をオンにしたときだけここへ写し、ログインしたどの端末でも開けるようにします。',
+   'Kept until you delete the entry or your account.',
+   '項目かアカウントを削除するまで保持します。')
+on conflict (tbl) do update set
+  written_by = excluded.written_by,
+  label_en = excluded.label_en, label_jp = excluded.label_jp,
+  purpose_en = excluded.purpose_en, purpose_jp = excluded.purpose_jp,
+  retention_en = excluded.retention_en, retention_jp = excluded.retention_jp;

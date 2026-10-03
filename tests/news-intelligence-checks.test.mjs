@@ -159,7 +159,7 @@ test('news-intelligence ⑨ the registered name and an exchange ticker are stron
   assert.ok(e.evidence.includes('Boeing'), 'the row carries the sentence it rests on');
   assert.deepEqual(ent.MATCH_KINDS, ['legal_name', 'ticker', 'name']);
   /* the table's CHECK holds the same three words */
-  assert.match(read('supabase/migrations/20261003110000_news_intelligence.sql'), /matched_by in \('legal_name', 'ticker', 'name'\)/);
+  assert.match(read('supabase/migrations/20261003160000_news_intelligence.sql'), /matched_by in \('legal_name', 'ticker', 'name'\)/);
 });
 
 /* ── the wiring ──────────────────────────────────────────────────────────────────────────────────── */
@@ -169,7 +169,7 @@ test('news-intelligence ⑩ the ingest stage, its order, its record and its sche
   const order = JSON.parse(/const ORDER = (\[[^\]]+\])/.exec(src)[1]);
   assert.ok(order.indexOf('entities') > order.indexOf('link'), 'entities runs after link (no company on an event about to be merged)');
   for (const k of ['embed_error', 'embed_skipped', 'entities_error']) assert.ok(src.includes(k + ':'), 'the run record keeps ' + k + ' — news_ingest_health() reads <stage>_error');
-  const mig = read('supabase/migrations/20261003110000_news_intelligence.sql');
+  const mig = read('supabase/migrations/20261003160000_news_intelligence.sql');
   const body = /"stages":\[([^\]]+)\]/.exec(mig)[1];
   for (const s of ['embed', 'entities', 'locate']) assert.ok(body.includes('"' + s + '"'), 'news-ingest-tick runs ' + s);
   assert.match(mig, /ANON MAY CALL: \S/);

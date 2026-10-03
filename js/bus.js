@@ -117,7 +117,7 @@ export const EVENTS = Object.freeze({
   [MAP_ANSWER_EVENT]: {
     means: 'a module put an answer on the map; on a phone the sheet settles to show it',
     detail: '{ kind }',
-    from: ['js/search-geocode.js'],
+    from: ['js/place-dossier.js', 'js/search-geocode.js', 'js/showcase-gallery.js'],
   },
   'intmap-hist-identity': {
     means: 'the historical-country identity table arrived for the shown year; borders drawn before it re-label',

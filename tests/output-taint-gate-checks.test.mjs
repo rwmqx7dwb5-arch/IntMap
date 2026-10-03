@@ -34,6 +34,7 @@ import { parseSource, walk } from './helpers/ast.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { measure, check, scan, trustedProblems, TRUSTED, LEDGER } from '../scripts/output-taint.mjs';
 import * as DE from '../scripts/data-effects.mjs';
+import { standalonePages } from '../scripts/js-reachability.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -244,7 +245,10 @@ test('⑦ writing controls: the ledger agrees; an undeclared new one is red, dec
     'the language buttons reach the preferences upsert through window._syncPrefsUp, and are found — and declared private');
   assert.ok(now.found.some((x) => x.file === 'js/map-ui.js' && x.selector === '[data-del]' && x.declared),
     'a selector is answered from its own file first: [data-del] in js/map-ui.js is the preset delete, not the waypoint in js/drone-nav.js');
-  const add = (markup, js) => ({ files: tree.files.concat([{ path: 'js/__probe.js', src: js }]), markup: DE.corpus(tree.files.concat([{ path: 'x', src: markup }, { path: 'index.html', src: read('index.html') }])) });
+  /* the probe's markup is the tree's own pages (index.html and every standalone page — DE.readTree reads the same
+     discovery) plus the probe: a control declared in contact.html must still count while the probe is added */
+  const pages = ['index.html', ...standalonePages(ROOT)].map((n) => ({ path: n, src: read(n) }));
+  const add = (markup, js) => ({ files: tree.files.concat([{ path: 'js/__probe.js', src: js }]), markup: DE.corpus(tree.files.concat([{ path: 'x', src: markup }], pages)) });
   const js = `(function(){ document.getElementById('probe-send').onclick = async () => { await HOST.DB.from('t').insert({ a: 1 }); }; })();`;
   const bare = DE.check(add('<button id="probe-send">Send</button>', js));
   assert.ok(bare.lines.some((l) => l.startsWith('js/__probe.js:') && /#probe-send/.test(l)), bare.lines.join('\n'));

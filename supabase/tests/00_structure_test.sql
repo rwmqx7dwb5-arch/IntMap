@@ -70,12 +70,12 @@ from unnest(array[
   'usage_counts',
   -- (sales-channels) organisations' enquiries (admin reads, the reader-reports Edge Function writes) and the
   -- supporters who asked to be named (everyone reads the listed rows, admins write).
-  'org_inquiries','supporters'
+  'org_inquiries','supporters',
   -- (atlas-os) the reader's Atlas investigation notebook on their account, written only when they turn sync
   -- on. Owner-only through RLS (supabase/tests/22_…).
-  'atlas_notebook_entries'
+  'atlas_notebook_entries',
   -- (news-intelligence) which company an event names — written by news-ingest's entities stage, read by everybody.
-  'news_event_entities'
+  'news_event_entities',
   -- (account-data-center) one sentence per account-owned table — what it is, why, how long, who wrote it.
   -- Readable by everyone, written only by migrations (supabase/tests/23_…).
   'account_data_catalog',
@@ -106,9 +106,9 @@ from unnest(array[
   'atlas_capability_vectors',                               -- (atlas-semantic-search) see the note above
   'ai_turn_answers',                                         -- (atlas-stream-replay) see the note above
   'usage_counts',                                           -- (anonymous-usage-counts) see the note above
-  'org_inquiries','supporters'                              -- (sales-channels) see the note above
-  'atlas_notebook_entries'                                  -- (atlas-os) see the note above
-  'news_event_entities'                                     -- (news-intelligence) see the note above
+  'org_inquiries','supporters',                              -- (sales-channels) see the note above
+  'atlas_notebook_entries',                                  -- (atlas-os) see the note above
+  'news_event_entities',                                     -- (news-intelligence) see the note above
   'account_data_catalog',                                   -- (account-data-center) see the note above
   'saved_places'                                            -- (my-places) see the note above
 ]) as t;                                                    -- 44 assertions

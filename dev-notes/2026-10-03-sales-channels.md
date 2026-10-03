@@ -66,7 +66,7 @@ Atlas の 1 日の回数（`plans.js`）、埋め込みの大きさ（`EMBED_SIZ
 - 利用規約 第12・13条の文言（法的な文書の変更）。
 - プライバシーポリシーの追記（相談フォームで集める項目・目的・保存期間・削除の申し出）。
 - `sitemap.xml` と紹介ページ（about/teachers）からのリンク——どちらも `scripts/landing.mjs` の生成物で別の作業の範囲。
-- deploy: migration `20261003100000_org_inquiries.sql` を先に、次に `reader-reports`（`_shared/inquiry-shape.js` を import）。
+- deploy: migration `20261003150000_org_inquiries.sql` を先に、次に `reader-reports`（`_shared/inquiry-shape.js` を import）。
 
 ### プライバシーポリシー追記の文案（`js/legal-text.js` の PRIVACY_JA / PRIVACY_EN に入れる。未適用）
 

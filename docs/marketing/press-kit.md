@@ -20,21 +20,21 @@
 - JA: 紀元前123,000年から今日まで、どの年にも合わせられる無料の世界地図。
 
 ### 短い段落 (medium)
-- EN: IntMap is a free world map with one clock for everything on it. Set it to any date from 123,000 BC to today and the borders, figures and 163 layers follow, each with its source named. It runs in a browser with no sign-up, and one link reopens exactly what you see.
-- JA: IntMap は、地図の上のすべてに一つの時計を持つ無料の世界地図です。紀元前123,000年から今日までのどの日付に合わせても、国境・数字・163のレイヤーがついてきて、それぞれの出典が明記されています。ブラウザで登録なしに使え、リンク一つで見ているものをそのまま開き直せます。
+- EN: IntMap is a free world map with one clock for everything on it. Set it to any date from 123,000 BC to today and the borders, figures and 165 layers follow, each with its source named. It runs in a browser with no sign-up, and one link reopens exactly what you see.
+- JA: IntMap は、地図の上のすべてに一つの時計を持つ無料の世界地図です。紀元前123,000年から今日までのどの日付に合わせても、国境・数字・165のレイヤーがついてきて、それぞれの出典が明記されています。ブラウザで登録なしに使え、リンク一つで見ているものをそのまま開き直せます。
 
 ### 長い段落 (long)
-EN: IntMap is a free world map with one clock for everything on it. Move the clock anywhere from 123,000 BC to today and the map moves with it: country borders from 54 historical snapshots before 1689, from OpenHistoricalMap from 1689 to 1885, and day by day from CShapes 2.0 from 1886 to 2019. On the same map sit 163 layers — climate, hazards, population, economy, infrastructure and live feeds — and every one names its source; a layer whose source does not describe the chosen date is simply not drawn. A link reopens the same place, date and layers on any device, and the page for teachers shows how to build a lesson on that. Signed in, Atlas, IntMap’s AI assistant, operates the map from plain language. IntMap has no ads and no paid plan and is kept running by donations.
+EN: IntMap is a free world map with one clock for everything on it. Move the clock anywhere from 123,000 BC to today and the map moves with it: country borders from 54 historical snapshots before 1689, from OpenHistoricalMap from 1689 to 1885, and day by day from CShapes 2.0 from 1886 to 2019. On the same map sit 165 layers — climate, hazards, population, economy, infrastructure and live feeds — and every one names its source; a layer whose source does not describe the chosen date is simply not drawn. A link reopens the same place, date and layers on any device, and the page for teachers shows how to build a lesson on that. Signed in, Atlas, IntMap’s AI assistant, operates the map from plain language. IntMap has no ads and no paid plan and is kept running by donations.
 
-JA: IntMap は、地図の上のすべてに一つの時計を持つ無料の世界地図です。時計を紀元前123,000年から今日までのどこへ動かしても、地図がついてきます。国境は、1689年より前が54枚の歴史スナップショット、1689〜1885年が OpenHistoricalMap、1886〜2019年が CShapes 2.0 による日単位のものです。同じ地図に気候・災害・人口・経済・インフラ・リアルタイムの163のレイヤーが重なり、すべてが出典を明記しています。選んだ日付を出典が述べていないレイヤーは、そもそも描きません。リンク一つで同じ場所・日付・レイヤーをどの端末でも開け、それを使った授業の組み立て方を「先生へ」のページにまとめています。ログインすれば、AI アシスタントの Atlas が言葉どおりに地図を操作します。広告も有料プランもなく、寄付で運営しています。
+JA: IntMap は、地図の上のすべてに一つの時計を持つ無料の世界地図です。時計を紀元前123,000年から今日までのどこへ動かしても、地図がついてきます。国境は、1689年より前が54枚の歴史スナップショット、1689〜1885年が OpenHistoricalMap、1886〜2019年が CShapes 2.0 による日単位のものです。同じ地図に気候・災害・人口・経済・インフラ・リアルタイムの165のレイヤーが重なり、すべてが出典を明記しています。選んだ日付を出典が述べていないレイヤーは、そもそも描きません。リンク一つで同じ場所・日付・レイヤーをどの端末でも開け、それを使った授業の組み立て方を「先生へ」のページにまとめています。ログインすれば、AI アシスタントの Atlas が言葉どおりに地図を操作します。広告も有料プランもなく、寄付で運営しています。
 
 ### 検索結果の一行 (meta description)
 - EN: A free world map you can set to any date from 123,000 BC to today — historical borders, climate, population and live data on one map, every source named. No sign-up.
 - JA: 紀元前123,000年から今日まで、どの日付にも合わせられる無料の世界地図。歴史上の国境・気候・人口・リアルタイムのデータを一枚に重ね、すべての出典を明記。登録不要。
 
 ### リンクのカード (Open Graph / X)
-- EN: Set the clock anywhere from 123,000 BC to today and the borders, figures and layers follow. 163 layers, every source named, free and with no sign-up — and, signed in, Atlas drives the map from plain words.
-- JA: 時計を紀元前123,000年から今日までのどこに合わせても、国境も数字もレイヤーもついてきます。163のレイヤーすべてに出典を明記。無料・登録不要。ログインすれば、Atlas が言葉どおりに地図を動かします。
+- EN: Set the clock anywhere from 123,000 BC to today and the borders, figures and layers follow. 165 layers, every source named, free and with no sign-up — and, signed in, Atlas drives the map from plain words.
+- JA: 時計を紀元前123,000年から今日までのどこに合わせても、国境も数字もレイヤーもついてきます。165のレイヤーすべてに出典を明記。無料・登録不要。ログインすれば、Atlas が言葉どおりに地図を動かします。
 
 ## 3. ポジショニング
 
@@ -48,8 +48,8 @@ JA: IntMap は、地図の上のすべてに一つの時計を持つ無料の世
 ### 裏付け (proof points)
 - EN: Borders for every year: 54 historical snapshots before 1689, OpenHistoricalMap from 1689 to 1885, and CShapes 2.0 day by day from 1886 to 2019.
   JA: すべての年の国境：1689年より前は54枚の歴史スナップショット、1689〜1885年は OpenHistoricalMap、1886〜2019年は CShapes 2.0 を日単位で。
-- EN: 163 layers — climate, hazards, population, economy, infrastructure, live feeds — each with its source and licence on the Data sources page. A layer whose source does not describe the chosen date is not drawn.
-  JA: 気候・災害・人口・経済・インフラ・リアルタイムの163のレイヤー。すべての出典とライセンスを「データの出典」ページに載せています。選んだ日付を出典が述べていないレイヤーは描きません。
+- EN: 165 layers — climate, hazards, population, economy, infrastructure, live feeds — each with its source and licence on the Data sources page. A layer whose source does not describe the chosen date is not drawn.
+  JA: 気候・災害・人口・経済・インフラ・リアルタイムの165のレイヤー。すべての出典とライセンスを「データの出典」ページに載せています。選んだ日付を出典が述べていないレイヤーは描きません。
 - EN: One link reopens the same place, date and layers on any device; the same map can be embedded on another site.
   JA: リンク一つで、同じ場所・日付・レイヤーをどの端末でも開き直せます。同じ地図を他のサイトに埋め込むこともできます。
 - EN: Atlas, IntMap’s AI assistant, operates the map from plain language for signed-in users, within a daily limit per account.
@@ -65,7 +65,7 @@ JA: IntMap は、地図の上のすべてに一つの時計を持つ無料の世
 | 歴史スナップショット | 54 | `data/hist-eras.js` |
 | OpenHistoricalMap の範囲 | 1689–1885 | `js/time-borders.js` `HB_MIN`/`HB_MAX` |
 | CShapes 2.0 の範囲（日単位） | 1886–2019 | `js/time-borders.js` `CS_MIN`/`CS_MAX` |
-| レイヤーの数（基本表示を除く） | 163 | `js/layer-manifest.js` `dataLayers()` |
+| レイヤーの数（基本表示を除く） | 165 | `js/layer-manifest.js` `dataLayers()` |
 | 画面の言語 | 9 | `js/locales/_langs.js` |
 
 ⚠ 文中の数はすべてこの表から入る。数が変わったら `node scripts/brand.mjs --write` で全部が追従する。
@@ -91,6 +91,14 @@ JA: IntMap は、地図の上のすべてに一つの時計を持つ無料の世
 | `img/showcase/world-3000bc.jpg` | `img/showcase/world-3000bc-card.jpg` | The world in 3000 BC | 紀元前3000年の世界 |
 | `img/showcase/ring-of-fire.jpg` | `img/showcase/ring-of-fire-card.jpg` | Volcanoes and plate boundaries | 火山とプレート境界 |
 | `img/showcase/koppen.jpg` | `img/showcase/koppen-card.jpg` | Climates of the world (Köppen–Geiger) | 世界の気候区分（ケッペン） |
+| `img/showcase/world-1279.jpg` | `img/showcase/world-1279-card.jpg` | The Mongol world in 1279 | 1279年のモンゴル世界 |
+| `img/showcase/el-nino-2023.jpg` | `img/showcase/el-nino-2023-card.jpg` | El Niño, 15 December 2023 | エルニーニョ　2023年12月15日 |
+| `img/showcase/hdi-2022.jpg` | `img/showcase/hdi-2022-card.jpg` | Human development, 2022 | 人間開発指数　2022年 |
+| `img/showcase/population-density.jpg` | `img/showcase/population-density-card.jpg` | Where people live | 人はどこに住んでいるか |
+| `img/showcase/night-lights.jpg` | `img/showcase/night-lights-card.jpg` | East Asia at night | 夜の東アジア |
+| `img/showcase/rail-gauges.jpg` | `img/showcase/rail-gauges-card.jpg` | Railway gauges of Europe | ヨーロッパの鉄道の軌間 |
+| `img/showcase/undersea-cables.jpg` | `img/showcase/undersea-cables-card.jpg` | The cables under the sea | 海底ケーブル |
+| `img/showcase/world-heritage.jpg` | `img/showcase/world-heritage-card.jpg` | World Heritage sites | 世界遺産 |
 
 - リンクのカードの絵（`og-image.jpg`, 1200×679）は `index.html` の head が名指す。
 - **新しく撮るとき**: 見本を `js/showcase.js` に宣言し、ローカルのサーバ（`npm run serve` など）を立てて

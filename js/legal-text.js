@@ -123,7 +123,7 @@ window.IntMapLegalText = (function () {
      the map state at the answer, the operations Atlas ran, query results and sources — is saved in the reader's
      browser (IndexedDB, js/atlas-notebook-store.js), with a switch to turn it off and a delete-all. Only if the
      reader signs in and turns on account sync is the same content written to their own rows in Supabase
-     (supabase/migrations/20261003120000_atlas_notebook.sql — owner-only RLS, deleted with the account). The
+     (supabase/migrations/20261003170000_atlas_notebook.sql — owner-only RLS, deleted with the account). The
      recipient is the Supabase project §4 already names, so no new third party; what is new is what is stored
      and where, so it is stated in both languages. */
   /* (sales-channels) Terms §12 and §13: EMBEDDING, ORGANISATIONS' ENQUIRIES AND DONATIONS. IntMap now has pages for
