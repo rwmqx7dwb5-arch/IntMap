@@ -48,9 +48,10 @@ icons/                          manifest と index.html が名指すアイコン
 science.html / sources.html     読み物2ページ（手法の説明・出典の一覧）。バンドラを通らないので
                                 言語一覧は scripts/i18n-langs.mjs が生成する js/locales/_langs.js から読む
 about.html / teachers.html     紹介ページと授業での使い方（英語）。ja/about.html・ja/teachers.html が日本語版。
+news-map.html / embed-map.html  用途別の紹介——ニュースを地図で読む／記事に地図を埋め込む（英語）。ja/ に日本語版。
                                 sitemap.xml・robots.txt とともに scripts/landing.mjs が生成する（手で編集しない。
                                 文は scripts/landing-text.mjs、見本は js/showcase.js）。Architecture.md §8.6
-img/showcase/<id>.jpg           見本の地図の画面写真（と共有カード用の <id>-card.jpg・1200×630）。scripts/showcase-capture.mjs がビルドしたアプリから撮る
+img/showcase/<id>.jpg           見本の地図の画面写真（と共有カード用の <id>-card.jpg・1200×630、アプリ内ギャラリー用の <id>-thumb.jpg・480×252＝カードの縮小）。scripts/showcase-capture.mjs がビルドしたアプリから撮る
 s/<id>.html / ja/s/<id>.html    見本ごとの共有ページ（og カード＋その見本の地図への転送）。scripts/landing.mjs が生成する
 google….html                    Google Search Console 認証用
 package.json / package-lock     npm スクリプトと依存。dependencies がアプリに入る依存の唯一のリスト
@@ -788,7 +789,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  161 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  162 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -914,7 +915,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 161能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 162能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1170,7 +1171,12 @@ map-narrator.js                   地図のテキスト代替——視覚的に�
                                   地物をレンダラ自身のクリック経路（GE().events.pressAt）で押す（map-a11y-structure）
 legal-page.js                     同じ本文を privacy.html / terms.html として出す（chrome は9言語）
 showcase.js                       見本の地図の宣言（純データ）と、scripts/showcase-capture.mjs が書くリンク・写真の生成領域。
-                                  紹介ページ・Atlas の panel.showcase・spec・landing.mjs --check が読む
+                                  紹介ページ・アプリ内ギャラリー・Atlas の panel.showcase・spec・landing.mjs --check が読む。
+                                  TOPICS はギャラリーの見出し（主題）
+showcase-gallery.js               **アプリ内の作例ギャラリー**——検索欄の空の状態（何も打っていないとき）に作例とツアーの
+                                  カードを並べ、「すべて見る」・data-im-gallery・Atlas の panel.gallery で一覧を開く。
+                                  カードは showcase.js と tours.js から導く。1 タップで見本を開く openShowcase は
+                                  Atlas の panel.showcase も使う（共有リンクの復元＋読み返し）。自動では開かない。必要になったときに読む
 tours.js                          **授業ツアー**の宣言（純データ）——地図の状態を順に並べ、各段に日英の語り（say）と生徒への問い（ask）。
                                   段は見本（showcase.js）を名指すか、見本と同じ形の意図を持ち、そのリンクは
                                   scripts/showcase-capture.mjs が書く生成領域 CAPTURED_STEPS。`?tour=<id>&step=<n>` の読み書き
@@ -1506,9 +1512,10 @@ scripts/
   serve.mjs                       依存ゼロの静的サーバ（GitHub Pages と同じ配信＝gzip も含む）
   landing.mjs                     紹介・授業ページ（en と ja/）・sitemap.xml・robots.txt の**生成器と門**。文は
                                   landing-text.mjs、見本は js/showcase.js、数字はその持ち主のファイルから読む（§8.6）
-  landing-text.mjs                紹介・授業ページの文の唯一の写し（en + jp）
+  landing-text.mjs                紹介・授業・用途別（news-map / embed-map）ページの文の唯一の写し（en + jp）
   showcase-capture.mjs            見本の地図のリンクと画面写真を、ビルドしたアプリ自身に作らせる（サーバと実ネットワークが要る）。
-                                  授業ツアーの段（js/tours.js）のリンクも同じ関数で作る（`--shots <dir>` で確認用の写真）
+                                  授業ツアーの段（js/tours.js）のリンクも同じ関数で作る（`--shots <dir>` で確認用の写真）。
+                                  `--serve dist` でこの実行の間だけ serve.mjs を立てて止める・`--only a,b`・`--thumbs` でギャラリー用の縮小を作る
   static-checks.mjs               構文・JSON・YAML・マージ衝突・秘密検出・HTML 参照の存在
   icon-glyphs.mjs                 **絵文字をアイコンに使わない**門（check:static の icon-glyphs）——配信物の文字列（cooked）・
                                   ページの文字・CSS の content にある Extended_Pictographic を拒む。例外は TYPOGRAPHIC（©・文中の矢印）、

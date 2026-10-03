@@ -200,6 +200,7 @@ IntMapLang.define('en', { ui: {
       viewScience:"How every simulation works ↗",
       lblAboutIntMap:"About IntMap",
       viewAboutPage:"What IntMap is, examples and classroom use ↗",
+      openGalleryBtn:"Browse example maps and tours",
       viewTours:"Classroom tours — a lesson as a sequence of maps",
       viewSourcesPage:"Open the data-sources page ↗",
       srcModalTitle:"Data sources & attribution",

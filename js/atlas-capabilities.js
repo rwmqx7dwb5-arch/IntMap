@@ -275,15 +275,10 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["settings.usageCounts","usageCounts","usageStats,anonymousStats,telemetry","settings","setting","settings.usageCounts","setting","persist","explicit","",""],
       ["panel.operatingCosts","operatingCosts","runningCosts,supportCosts,whereSupportGoes","panel","panel","panel.donate","panel,explanation","session","none","",""],
       ["panel.about","about","aboutIntMap,forTeachers,teachingGuide,landingPage","panel","none","","explanation","read","none","",""],
-      ["panel.showcase","showcase","example,exampleMap,showcaseMap,gallery","panel","time","camera,map.layer,time","map,time","session","none","",""],
+      ["panel.showcase","showcase","example,exampleMap,showcaseMap","panel","time","camera,map.layer,time","map,time","session","none","",""],
       ["panel.tour","tour","classroomTour,lessonTour,guidedTour,startTour,nextStep","panel","time","camera,map.layer,time","map,time","session","none","",""],
       ["panel.tourBuilder","tourBuilder","buildTour,makeTour,tourEditor,addMapToTour,shareTour","panel","time","camera,map.layer,time,tour.draft","map,time","persist","explicit","",""],
-      ["account.data","myData","accountData,dataInventory,whatDoYouKnowAboutMe,privacyInventory","account","none","","explanation","read","none","",""],
-      ["account.export","myDataExport","exportMyData,downloadMyData,dataExport,dataPortability","account","none","","explanation","read","none","",""],
-      ["places.save","savePlace","saveToMyPlaces,bookmarkPlace,rememberPlace,keepPlace","places","none","account.places","explanation","persist","explicit","place?",""],
-      ["places.list","myPlaces","savedPlaces,listPlaces,placeList","places","none","","explanation","read","none","",""],
-      ["places.show","showPlaces","showMyPlaces,mapMyPlaces,openSavedPlaces","places","object","map.object","object,map","session","none","",""],
-      ["places.remove","removePlace","deletePlace,forgetPlace,unsavePlace","places","none","account.places","explanation","persist","explicit","",""],
+      ["panel.gallery","gallery","exampleGallery,showcaseGallery,examplesGallery,tourGallery","panel","panel","panel.gallery","panel","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 

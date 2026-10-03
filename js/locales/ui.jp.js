@@ -200,6 +200,7 @@ IntMapLang.define('jp', { ui: {
       viewScience:"各機能の計算方法を見る ↗",
       lblAboutIntMap:"IntMap について",
       viewAboutPage:"IntMap の紹介・見本の地図・授業での使い方 ↗",
+      openGalleryBtn:"作例の地図とツアーを見る",
       viewTours:"授業ツアー — 地図を順にたどる授業",
       viewSourcesPage:"データ出典ページを開く ↗",
       srcModalTitle:"データ出典・帰属表示",

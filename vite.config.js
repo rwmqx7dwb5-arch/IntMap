@@ -118,6 +118,8 @@ export const STATIC_ASSETS = [
      this list, so a page cannot reach production with an asset that was never copied. */
   'about.html',
   'teachers.html',
+  'news-map.html',
+  'embed-map.html',
   'ja',
   's',                                  // (landing-showcase) one share page per example — og card + redirect to the map
   'css/landing.css',

@@ -72,6 +72,9 @@ export const EXCLUDED = {
      written into each file, and `node scripts/landing.mjs --check` holds every generated page to its source */
   'about.html': 'a static English page with a static Japanese twin at ja/about.html, chosen by URL and hreflang — its title and description are written per file, not switched at runtime',
   'teachers.html': 'a static English page with a static Japanese twin at ja/teachers.html, chosen by URL and hreflang — its title and description are written per file, not switched at runtime',
+  /* (showcase-gallery) the pages by use — also scripts/landing.mjs PAGES, generated and held the same way */
+  'news-map.html': 'a static English page with a static Japanese twin at ja/news-map.html, chosen by URL and hreflang — its title and description are written per file, not switched at runtime',
+  'embed-map.html': 'a static English page with a static Japanese twin at ja/embed-map.html, chosen by URL and hreflang — its title and description are written per file, not switched at runtime',
 };
 
 /* does the wiring file actually assign document.title AND the description meta? */

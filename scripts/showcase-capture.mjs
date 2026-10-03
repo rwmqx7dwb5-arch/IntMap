@@ -28,7 +28,13 @@
  *  .agents/rules/historical-verification.md asks for the map to be seen, not only the record read.
  *
  *    npm run build && node scripts/serve.mjs --port 4237 --root dist      (in another shell)
- *    node scripts/showcase-capture.mjs --base http://127.0.0.1:4237 [--only europe-1914] [--shots <dir>]
+ *    node scripts/showcase-capture.mjs --base http://127.0.0.1:4237 [--only europe-1914[,koppen…]] [--shots <dir>]
+ *  or, with no second shell (showcase-gallery):
+ *    npm run build && node scripts/showcase-capture.mjs --serve dist [--only …]
+ *  `--serve <dir>` starts scripts/serve.mjs on a port the operating system picks (`--port 0`, read back off
+ *  its ready line) for the length of this run and stops it, by its own PID, when the run ends — the way
+ *  Playwright's webServer serves the suite (playwright.config.js). It is the same static server, not a
+ *  second one, and it is not left running.
  *
  *  ⚠ NEEDS A SERVER AND THE NETWORK, so it is not a gate. `node scripts/landing.mjs --check` is the
  *  gate: it holds what this wrote to the intent, offline. tests/landing-showcase.spec.js then opens
@@ -40,19 +46,29 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { SHOWCASE, WITHHELD } from '../js/showcase.js';
 import { TOURS } from '../js/tours.js';
-import { sharedIds } from '../js/layer-manifest.js';
+import { sharedIds, sharedDisplayIds } from '../js/layer-manifest.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
-const BASE = arg('--base', null);
-const ONLY = arg('--only', null);
+const THUMBS_ONLY = process.argv.includes('--thumbs');   /* derive every shown example's thumbnail from its card; no server, no capture */
+const SERVE = arg('--serve', null);   /* (showcase-gallery) a directory to serve for this run only — see the header */
+let BASE = arg('--base', null);
+/* (showcase-gallery) `--only a,b,c` — the ids to take this run; absent, every one */
+const ONLY_SET = (() => { const v = arg('--only', null); return v ? new Set(v.split(',').map((s) => s.trim()).filter(Boolean)) : null; })();
+const wanted = (id) => !ONLY_SET || ONLY_SET.has(id);
 const SHOTS = arg('--shots', null);   /* (classroom-tours) a directory for the tour steps' pictures, to be looked at */
-if (!BASE) { console.error('usage: node scripts/showcase-capture.mjs --base http://127.0.0.1:<port> [--only <id>]'); process.exit(2); }
+if (!BASE && !SERVE && !THUMBS_ONLY) { console.error('usage: node scripts/showcase-capture.mjs (--base http://127.0.0.1:<port> | --serve <dir>) [--only <id>[,<id>…]]'); process.exit(2); }
 
 /* the picture: a 16:10 desktop frame — the size the landing page shows it at, twice over for a
    high-density screen, and the size social cards crop from. JPEG at 82 keeps each under ~250 kB. */
 const VIEWPORT = { width: 1280, height: 800 };
 const CARD = { width: 1200, height: 630 };   /* Open Graph's recommended 1.91:1 */
+/* (showcase-gallery) the picture the in-app gallery shows (js/showcase-gallery.js): the CARD, scaled down — not a
+   second screenshot, so it is the same frame the share page shows. 480 × 252 keeps the card's 1.91:1 and is
+   twice the 240 css px a gallery card is drawn at, for a high-density screen. MEASURED 2026-10-03: the eighteen
+   cards are 109–241 kB each (3.2 MB together), which the gallery would otherwise download on a phone for
+   pictures drawn a fifth of that wide. */
+const THUMB = { width: 480, height: 252 };
 const IMG_DIR = 'img/showcase';
 const FILE = join(ROOT, 'js/showcase.js');
 const BEGIN = '/* ⚠ GENERATED SHOWCASE — BEGIN (node scripts/showcase-capture.mjs; DO NOT EDIT) */';
@@ -88,7 +104,12 @@ async function capture(browser, s, { pictures = true, shot = null } = {}) {
     click(base === 'sat' ? 'btn-view-sat' : 'btn-view-map');
   }, { proj: s.view.proj, base: s.base });
 
-  /* every layer a link can carry: exactly the declared ones on, everything else off */
+  /* every layer a link can carry: exactly the declared ones on, everything else off.
+     (showcase-gallery) …and the map display items a link carries (`d=` — day & night, 3-D buildings: the
+     manifest's share rows of kind 'display') OFF, through their own boxes. An example declares none, and a link
+     with no `d` has always meant «none on» (tests/landing-showcase.spec.js reads the display back as null).
+     MEASURED 2026-10-03: since day & night became a display item that is on by default, a capture that left it
+     alone wrote `&d=dl-nightside` into world-1279's link and was refused below. */
   await page.evaluate(({ ids, want }) => {
     const W = new Set(want);
     for (const id of ids) {
@@ -97,7 +118,7 @@ async function capture(browser, s, { pictures = true, shot = null } = {}) {
       const on = W.has(id);
       if (cb.checked !== on) { cb.checked = on; cb.dispatchEvent(new Event('change', { bubbles: true })); }
     }
-  }, { ids: sharedIds(), want: s.layers });
+  }, { ids: sharedIds().concat(sharedDisplayIds()), want: s.layers });
   const missing = await page.evaluate((want) => want.filter((id) => { const cb = document.getElementById(id); return !(cb && cb.checked); }), s.layers);
   if (missing.length) throw new Error(s.id + ': layer(s) could not be switched on: ' + missing.join(', '));
 
@@ -157,7 +178,20 @@ async function capture(browser, s, { pictures = true, shot = null } = {}) {
   await page.screenshot({ path: join(ROOT, card), type: 'jpeg', quality: 82, clip: { x: (VIEWPORT.width - CARD.width) / 2, y: 85, width: CARD.width, height: CARD.height } });
   await ctx.close();
   if (errors.length) console.warn('  page errors while capturing ' + s.id + ':\n    ' + errors.join('\n    '));
-  return { hash, image, card };
+  return { hash, image, card, thumb: await thumbOf(browser, s.id, card) };
+}
+
+/** (showcase-gallery) img/showcase/<id>-thumb.jpg, drawn from the card file by the browser's own scaler */
+async function thumbOf(browser, id, card) {
+  const thumb = IMG_DIR + '/' + id + '-thumb.jpg';
+  const ctx = await browser.newContext({ viewport: THUMB, deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  const b64 = readFileSync(join(ROOT, card)).toString('base64');
+  await page.setContent('<html><body style="margin:0;background:#000"><img id="i" style="display:block;width:' + THUMB.width + 'px;height:' + THUMB.height + 'px" src="data:image/jpeg;base64,' + b64 + '"></body></html>');
+  await page.waitForFunction(() => { const i = document.getElementById('i'); return i && i.complete && i.naturalWidth > 0; });
+  await page.screenshot({ path: join(ROOT, thumb), type: 'jpeg', quality: 80 });
+  await ctx.close();
+  return thumb;
 }
 
 /* ── the generated region ─────────────────────────────────────────────────────────────────────── */
@@ -198,25 +232,54 @@ const src = readFileSync(FILE, 'utf8');
 const captured = readCaptured(src);
 const tsrc = readFileSync(TOUR_FILE, 'utf8');
 const steps = readSteps(tsrc);
+/* (showcase-gallery) `--thumbs`: every shown example's thumbnail from its card, and nothing else */
+if (THUMBS_ONLY) {
+  const b = await chromium.launch();
+  try {
+    for (const s of SHOWCASE) {
+      const c = captured[s.id];
+      if (!wanted(s.id) || !c || !c.card) continue;
+      c.thumb = await thumbOf(b, s.id, c.card);
+      console.log('thumbnail ' + c.thumb);
+    }
+  } finally { await b.close(); }
+  writeFileSync(FILE, writeCaptured(src, captured).replace(/\r?\n/g, src.includes('\r\n') ? '\r\n' : '\n'));
+  process.exit(0);
+}
+/* (showcase-gallery) the run's own server: scripts/serve.mjs, on the port it reports, stopped when the run ends */
+let served = null;
+if (SERVE) {
+  const { spawn } = await import('node:child_process');
+  served = spawn(process.execPath, [join(ROOT, 'scripts/serve.mjs'), '--port', '0', '--root', join(ROOT, SERVE)], { stdio: ['ignore', 'pipe', 'inherit'] });
+  BASE = await new Promise((res, rej) => {
+    let buf = '';
+    const t = setTimeout(() => rej(new Error('scripts/serve.mjs did not report its port within 20 s')), 20000);
+    served.stdout.on('data', (d) => { buf += d; const m = /on (http:\/\/[^/\s]+)\//.exec(buf); if (m) { clearTimeout(t); res(m[1]); } });
+    served.on('exit', (c) => { clearTimeout(t); rej(new Error('scripts/serve.mjs exited (' + c + ') before it was ready')); });
+  });
+  console.log('serving ' + SERVE + ' at ' + BASE + ' (pid ' + served.pid + ') for this run');
+}
+const stopServed = () => { if (served && served.exitCode == null) { try { served.kill(); } catch (_) { } } };
+process.on('exit', stopServed);
 const browser = await chromium.launch();
 try {
   for (const s of SHOWCASE) {
-    if (ONLY && s.id !== ONLY) continue;
+    if (!wanted(s.id)) continue;
     process.stdout.write('capturing ' + s.id + ' … ');
     captured[s.id] = await capture(browser, s);
     console.log(captured[s.id].hash);
   }
   for (const st of ownSteps()) {
-    if (ONLY && st.id !== ONLY) continue;
+    if (!wanted(st.id)) continue;
     process.stdout.write('capturing tour step ' + st.id + ' … ');
     steps[st.id] = await capture(browser, st, { pictures: false, shot: SHOTS ? join(SHOTS, st.id + '.jpg') : null });
     console.log(steps[st.id].hash);
   }
-} finally { await browser.close(); }
+} finally { await browser.close(); stopServed(); }
 /* keep each file's own line endings */
 const eolOf = (t) => (t.includes('\r\n') ? '\r\n' : '\n');
 /* a file none of whose entries was taken this run is not rewritten (`--only <tour step>` leaves js/showcase.js as it is) */
-const tookExample = SHOWCASE.some((s) => !ONLY || s.id === ONLY), tookStep = ownSteps().some((st) => !ONLY || st.id === ONLY);
+const tookExample = SHOWCASE.some((s) => wanted(s.id)), tookStep = ownSteps().some((st) => wanted(st.id));
 if (tookExample) writeFileSync(FILE, writeCaptured(src, captured).replace(/\r?\n/g, eolOf(src)));
 if (tookStep) writeFileSync(TOUR_FILE, writeSteps(tsrc, steps).replace(/\r?\n/g, eolOf(tsrc)));
 console.log('wrote ' + (tookExample ? Object.keys(captured).length + ' captured example(s) into js/showcase.js' : 'no example')

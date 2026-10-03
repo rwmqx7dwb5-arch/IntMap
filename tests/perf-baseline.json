@@ -3,13 +3,13 @@
     "raw": 4763425,
     "gzip": 1568634,
     "brotli": 1183561,
-    "requests": 9,
+    "requests": 10,
     "modules": 307,
     "cssRaw": 377146,
     "cssGzip": 61518
   },
   "async": {
-    "raw": 11866968,
+    "raw": 11853896,
     "gzip": 3886293,
     "chunks": {
       "aircraft-detail": 17009,
@@ -22,7 +22,7 @@
       "atlas-answer-view": 2513,
       "atlas-attach": 23189,
       "atlas-chart": 10493,
-      "atlas-console": 1190654,
+      "atlas-console": 1178625,
       "atlas-executor": 56924,
       "atlas-geo-resolve": 49405,
       "atlas-query": 48520,
@@ -86,7 +86,7 @@
       "terrain-water": 83098,
       "time-lapse": 8681,
       "tour-player": 17606,
-      "tours": 23515,
+      "tours": 32339,
       "tsunami": 37469,
       "ui.de": 16300,
       "ui.es": 16576,
