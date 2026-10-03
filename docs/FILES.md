@@ -2131,6 +2131,20 @@ scripts/
                                   **MessageChannel の ping ループ**で `longtask` 観測器を持たない
                                   WebKit でも主スレッドの詰まりを測る。
                                   ⚠ **付かなかったフックは 0 ではなく「不在」**として報告する。
+  map-motion.mjs                  **地図の動きの質**の計器（ゲートではない・map-motion）。ホイール・ドラッグ＋慣性・
+                                  ダブルクリック・指のパン／ピンチ／ダブルタップを 60 Hz の実入力（CDP）で与え、
+                                  フレーム間隔・**軌跡の滑らかさ**（速度の段差・離した瞬間の速度比）・long task／LoAF・
+                                  動作中に走る listener を**登録元のファイル名**で（ビルドの source map 経由）・
+                                  ラベルの配置回数と点滅・タイルの待ち・`<html>/<body>` への書き込みを出す。
+                                  `--dist before,after` で 2 つのビルドを**同じ分の中で交互に**（ABBA）測り、
+                                  機械の負荷（CPU busy %）を毎回添える。手順は `docs/TESTING.md`。
+  map-motion-lib.mjs              上の計器と `tests/map-motion.spec.js` が共有する手順と算術: 一定の拍の入力
+                                  （`paced`）・身振りの表（`GESTURES`）・解析（`analyse`）・
+                                  **レンダラの時刻で走らせる**身振り（`virtualRun`／`PLANS`。`maplibregl.setNow` で
+                                  時計を止め 1/60 秒ずつ進める——GPU の無い runner でも 60 Hz の軌跡になる）。
+  map-motion-probe.js             上の**ページ側の計器**（`addInitScript`）。rAF・DOM 入力・レンダラのイベントの
+                                  listener を登録時のスタックつきで包んで時間を数え、symbol placement と描画を
+                                  分け、ラベルの表示状態の反転と 600 ms 以内の戻り（点滅）を数える。⚠ アプリではない。
   engine-coupling.mjs             レンダラ脱依存のゲート
   i18n-*.mjs                      翻訳の被覆と形の監査（§10）
   eol.mjs                         ソース検査は**バイト列ではなく内容**を読む（改行はチェックアウトの性質）。
@@ -2177,7 +2191,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 147 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 148 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

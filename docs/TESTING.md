@@ -109,7 +109,7 @@ them is the room `suite-time-room` made for the specs arriving after it — see 
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **147 spec files** — is the whole suite minus core
+**deep** tier — **148 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -698,6 +698,37 @@ at 20.8, which is larger than most of the effects being looked for.
   a timing one: dev is unbundled and unminified, so the RANKING transfers and the milliseconds do
   not, and must not be quoted as production numbers.
 
+### How the map MOVES — wheel, drag, finger: `scripts/map-motion.mjs`
+
+The frame rate says how often the map is drawn; it does not say whether each frame moved the camera
+by the right amount. This instrument measures both, from inside the page
+(`scripts/map-motion-probe.js`), under real input at a steady 60 Hz (CDP, issued on a spun clock and
+not awaited one by one — awaiting each round trip paces the input by the machine's load):
+
+```bash
+IM_SOURCEMAP=1 npx vite build                 # a build whose stacks can be named (then copy dist/ aside)
+node scripts/map-motion.mjs --dist <before>,<after> --reps 3 --json out.json   # ABBA, same minutes
+node scripts/map-motion.mjs --dist dist --profile mobile --only pan,pinch --trace
+```
+
+Per gesture (desktop: 8+8 wheel notches, a released drag, a double click, a globe-scale wheel;
+phone 375×812 touch: pan + flick, pinch, double tap): frame interval p50/p95/max and hitches;
+**evenness** (mean frame-to-frame change of camera speed over the mean speed) and **glide start**
+(the first moving frame after release over the drag's speed); long tasks and long-animation-frame
+scripts (mapped to source files); JS time in renderer-event, DOM-input and animation-frame callbacks
+**by the file that registered them**; symbol placements, label flips and blinks (hidden and shown
+again within 600 ms); tile waits; `<html>`/`<body>` class/style writes. Every line carries the
+machine's CPU busy share over the span, because frame times from a saturated machine are not
+comparable with a quiet one.
+
+⚠ **Real time needs a GPU** (`--use-angle=d3d11`, as the other instruments here). On SwiftShader a
+frame takes 50–100 ms and the trajectory describes the frame clock. So the gate,
+`tests/map-motion.spec.js`, runs the trajectory assertions in the **renderer's time**
+(`virtualRun`: `maplibregl.setNow` frozen and advanced 1000/60 ms per step, input delivered at its
+own time, one real frame per step) and keeps only COUNTS (page writes, placements per moving frame)
+in real time. `tests/map-motion-checks.test.mjs` re-reads the renderer internals the motion work
+relies on from `node_modules/maplibre-gl/src`, so an upgrade that changes them fails by name.
+
 ### Measuring the ENGINE, not the phone: `scripts/mobile-trace.mjs` (#R387)
 
 Everything above is Chromium. `frame-profile.mjs` sets an iPhone 13 user-agent, a 390×844 viewport
@@ -973,7 +1004,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **147 spec files** against core's 6 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **148 spec files** against core's 6 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is

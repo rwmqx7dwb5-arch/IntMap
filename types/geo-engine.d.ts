@@ -165,6 +165,8 @@ export interface GeoEngineAdapterCore {
   hasAircraftCloud(id?: any): any;
   projectMercAlt(xy?: any): any;
   setDragPan(on?: any): any;
+  /** (map-motion) the glide after a pan; MapLibre only — Cesium has its own camera inertia */
+  setGlide?(o?: any): any;
   getContainer(): any;
   getSize(): any;
   setCursor(c?: any): any;
@@ -455,6 +457,7 @@ export interface GeoEngineRender {
 export interface GeoEngineInput {
   setDragPan(on?: any): any;
   set(name?: any, on?: any): any;
+  setGlide(o?: any): any;
   names(): any;
   setAll(on?: any): any;
   setZoomRate(r?: any, wheel?: any): any;
