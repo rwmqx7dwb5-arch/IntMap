@@ -640,12 +640,15 @@ const DRAWN = (() => {
   const ER = load('data/hist-eras.js', '__HISTERAS');
   /* ⚠ THE DRAWN NAME IS NOT THE STORED ONE: `_csName` strips a trailing 「(gloss)」 — the rule is
      IMPORTED from its owner, never restated here */
-  const cs = CSb.feats.map((f) => csName(f[0])).filter((x) => typeof x === 'string' && x);
+  /* (marketing-engine) each name WITH the year the map draws it — the resolver is year-aware (a former state is a
+     name only inside its span), so a name is asked at a year it is on the map: a CShapes row at its first year,
+     an era feature at its sheet's year */
+  const cs = CSb.feats.map((f) => [csName(f[0]), f[2]]).filter(([x]) => typeof x === 'string' && x);
   const er = [];
   for (const s of ER.snaps) for (const ft of s.feats) {
     const a = ft && ft[0];
     const n = (a && typeof a === 'object') ? (a.en || a.name) : null;
-    if (n) er.push(n);
+    if (n) er.push([n, s.y]);
   }
   return { cs, er };
 })();
@@ -654,15 +657,25 @@ const DRAWN = (() => {
    · expires — whenever either bundle or data/histnames.json is rebuilt; RE-MEASURE, and a language may
      only rise (a floor that stopped touching the metal is the #R700 ORPHAN_POINTS mistake).
    · canon — this table; no document restates these counts. */
+/* · re-measured 2026-10-03 (marketing-engine). The count used to ask every drawn name at ONE clock year (1950),
+     and the resolver fell back to the first former state whose pattern matched EVEN OUTSIDE ITS SPAN — so at
+     1950 «India» answered as the British Raj and «Sudan» as Sudan-with-South-Sudan (1956–2011), and those were
+     counted as reaching the reader. A state is now not a name outside its own span (js/time-borders.js
+     _eraLocName: «Korea (Japan)» in 1913 read 朝鮮（李氏朝鮮）（日本）), so each name is asked at a year the map
+     draws it (DRAWN above) and the floors are what that measures. What left the count, all answers by a state
+     whose own name is NOT the one drawn: «India» as the Company / the Raj and «Pakistan» as Pakistan-with-
+     Bangladesh after their spans, «Sudan» as Sudan-with-South-Sudan before 1956, «Ottoman Sultanate» (1930)
+     as the Empire. A state still translates its OWN name outside its span («Austrian Empire», 1715 sheet). */
 const REACH_FLOOR = {
-  de: [462, 2531], es: [475, 2627], fr: [477, 2659], jp: [660, 4531],
-  ko: [619, 3173], ru: [660, 3724], zh: [622, 3546],
+  de: [454, 2516], es: [467, 2614], fr: [469, 2636], jp: [652, 4518],
+  ko: [611, 3150], ru: [652, 3711], zh: [614, 3523],
 };
 async function received(lang) {
   const T = doc();
-  const { api } = await timeBorders({ lang, year: 1950 });
+  const clock = { lang, year: 1950 };
+  const { api } = await timeBorders(clock);
   const hn = (rec, en) => Object.assign({}, T.byName?.[rec]?.[en]?.n || null, T.prose?.[en]?.n || null);
-  const count = (names, rec) => names.reduce((n, x) => n + ((hn(rec, x)[lang] || api.eraLocName(x)) ? 1 : 0), 0);
+  const count = (names, rec) => names.reduce((n, [x, y]) => { clock.year = y; return n + ((hn(rec, x)[lang] || api.eraLocName(x)) ? 1 : 0); }, 0);
   return [count(DRAWN.cs, 'cshapes'), count(DRAWN.er, 'eras')];
 }
 for (const [lang, floor] of Object.entries(REACH_FLOOR)) {
