@@ -27,8 +27,8 @@
  *  EMBED_CSS keeps, and only keeps: the map (#map, with the renderer's own credit line
  *  `.map-credit-view` inside it), the legends (`.data-legend` / `.koppen-legend` — the classes
  *  js/data-layers.js discoverLegends() treats as «a legend»), the app's credit bar (#map-credit), the
- *  launch screen while the map loads, and the bar this file adds (the clock's instant and 「IntMap
- *  で開く」). Everything else is hidden by being NOT on that list, so a panel added next year is
+ *  launch screen while the map loads, the bar this file adds (the clock's instant and 「IntMap
+ *  で開く」), and the caption the link carries (`#im-caption`: its title and note — map-postcard). Everything else is hidden by being NOT on that list, so a panel added next year is
  *  hidden in an embed without anyone remembering to say so.
  *  ⚠ THE CREDITS ARE ON THE KEEP LIST ON PURPOSE AND MAY NOT BE TRIMMED. CARTO's terms, OSM's
  *  ODbL, CC BY sources and the rest require their credit to stay visible wherever the data is
@@ -142,7 +142,9 @@ export const EMBED_CSS = [
   'html[data-embed] body > *:not(.operation-room):not(#boot-splash):not(#im-embed-bar){display:none !important;}',
   'html[data-embed] .operation-room > *:not(.map-column){display:none !important;}',
   'html[data-embed] .map-column > *:not(.map-container):not(#map-credit){display:none !important;}',
-  'html[data-embed] .map-container > *:not(#map):not(.data-legend):not(.koppen-legend){display:none !important;}',
+  /* (map-postcard) #im-caption — the title and note the link carries (js/map-ui.js share): an embed of a captioned map
+     says what the map is about, as the app does */
+  'html[data-embed] .map-container > *:not(#map):not(.data-legend):not(.koppen-legend):not(#im-caption){display:none !important;}',
   'html[data-embed]{--peek-h:0px;--sheet-cover:0px;}',
   /* the phone layout pins the map to the whole screen (position:fixed) because its bottom sheet floats
      over it; an embed has no sheet, so the map and the credit bar stack the way they do on a desktop —

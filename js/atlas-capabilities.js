@@ -278,7 +278,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["panel.showcase","showcase","example,exampleMap,showcaseMap","panel","time","camera,map.layer,time","map,time","session","none","",""],
       ["panel.tour","tour","classroomTour,lessonTour,guidedTour,startTour,nextStep","panel","time","camera,map.layer,time","map,time","session","none","",""],
       ["panel.tourBuilder","tourBuilder","buildTour,makeTour,tourEditor,addMapToTour,shareTour","panel","time","camera,map.layer,time,tour.draft","map,time","persist","explicit","",""],
-      ["research.placeProfile","placeProfile","placeDossier,pointProfile,whatIsHere","research","none","","explanation","read","none","point",""],
+      ["panel.postcard","postcard","mapPostcard,shareImage,mapImage","panel","panel","panel.share","panel,file","session","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 

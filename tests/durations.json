@@ -1,6 +1,7 @@
 {
  "tests/first-impression.spec.js": 22,
  "tests/place-dossier.spec.js": 13,
+ "tests/map-postcard.spec.js": 13,
  "tests/landing-showcase.spec.js": 16,
  "tests/anonymous-usage-counts.spec.js": 9,
  "tests/map-a11y-structure.spec.js": 13,

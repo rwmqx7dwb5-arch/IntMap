@@ -28,14 +28,19 @@
  *  ⚠ The comparison picture is the window (js/compare.js, read through its published controller) beside the main
  *    map — each with its own instant — and one band that credits both.
  *
- *  Loaded only when the reader opens the export row of the time-lapse (js/time-lapse.js `openRecorder`) or Atlas asks
- *  for a recording (js/atlas-cap-time.js): nothing here is in the start-up bundle.
+ *  (map-postcard) …and THE MAP AS ONE PICTURE TO POST (`postcard`, the share panel's Image tab `createPostcardTab`): the
+ *  same compositor with the link's title and note and the legends on the map read off the page (`rasterLegend`).
+ *
+ *  Loaded only when the reader opens the export row of the time-lapse (js/time-lapse.js `openRecorder`), the share
+ *  panel's Image tab (js/map-ui.js `share`), or Atlas asks for a recording (js/atlas-cap-time.js) or a postcard
+ *  (js/atlas-cap-panel.js, through the panel): nothing here is in the start-up bundle.
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTime } from './chronos.js';
 import { makeViewCapture } from './atlas-view-capture.js';
 import { startLapse, stopLapse, lapseState } from './time-lapse.js';
+import { iconNode } from './icons.js';   /* (map-postcard) the one icon set — js/icons.js */
 
 /* The three frames offered: square, landscape, portrait. 1080 is the short edge all three share, so the overlay's
    sizes are written once against it (`u` below) and are the same physical size in each. */
@@ -51,6 +56,25 @@ export function sizeKey(v) {
   if (/^(16:9|1920x1080|wide|horizontal|landscape|横)/.test(s) || s === '横長') return 'landscape';
   if (/^(9:16|1080x1920|vertical|tall|story|stories|reel|reels|縦)/.test(s) || s === '縦長') return 'portrait';
   return 'square';
+}
+
+/* (map-postcard) THE POSTCARD'S THREE SHAPES — the frames a still picture is posted in, which are not the video's:
+     card      1200 × 630  — the link-preview image size Facebook / Open Graph and X's large card specify (1.91:1)
+     square    1080 × 1080 — Instagram's square post, and what most feeds show uncropped
+     portrait  1080 × 1350 — Instagram's tallest feed post (4:5)
+   They are the platforms' published sizes, not thresholds of ours; they expire when the platforms change them. */
+export const POSTCARD_SIZES = Object.freeze({
+  card: Object.freeze({ w: 1200, h: 630 }),
+  square: Object.freeze({ w: 1080, h: 1080 }),
+  portrait: Object.freeze({ w: 1080, h: 1350 }),
+});
+/** a postcard shape named any way a reader or Atlas might name it → a key of POSTCARD_SIZES (the link card when it says nothing we know) */
+export function postcardSizeKey(v) {
+  const s = String(v == null ? '' : v).trim().toLowerCase().replace(/\s+/g, '');
+  if (POSTCARD_SIZES[s]) return s;
+  if (/^(1:1|1080x1080|square|instagram|正方形|正方)/.test(s)) return 'square';
+  if (/^(4:5|1080x1350|portrait|vertical|tall|縦)/.test(s)) return 'portrait';
+  return 'card';
 }
 
 /* The containers, best first, and the codecs inside them. MP4 first because it is what the places a reader posts
@@ -170,6 +194,9 @@ function wrap(text, font, max, measure) {
  * layoutFrame({ w, h, panes:[{label}], credits:[...], brand:{name, link}, family? }, measure) → where everything goes.
  * measure(text, font) → width in px. One pane fills the frame; two sit side by side (top and bottom in a portrait frame).
  * Each pane's instant is at its top-left; the band at the bottom carries the wordmark and link, then the credit.
+ * (map-postcard) Optional, one pane only: `caption:{title, note}` turns the instant label into a card that also carries
+ * the title and the note (`card`); `legends:[{w,h}]` (CSS px) places the legend pictures down the right edge
+ * (`legends`, `legendsOmitted`, `legendScale` frame px per CSS px); `brand.full` is the share link, used when it fits.
  */
 export function layoutFrame(o, measure) {
   const W = o.w, H = o.h, fam = o.family || 'sans-serif';
@@ -193,8 +220,13 @@ export function layoutFrame(o, measure) {
   const bandH = vpad + blh + (lines.length ? gap + lines.length * clh : 0) + vpad;
   const band = { x: 0, y: H - bandH, w: W, h: bandH };
   const nameW = measure(o.brand.name, bfont);
+  /* (map-postcard) the link beside the wordmark: the share link ITSELF (scheme dropped) when the whole of it fits on the
+     line, otherwise the site's address. Never a cut link — a link with its end cut off opens a different map. */
+  const linkX = pad + nameW + Math.round(16 * u), linkRoom = W - pad - linkX;
+  const full = o.brand.full ? String(o.brand.full).replace(/^https?:\/\//, '') : '';
+  const linkText = full && measure(full, lfont) <= linkRoom ? full : o.brand.link;
   const brand = { name: { text: o.brand.name, font: bfont, x: pad, y: band.y + vpad, w: nameW, h: bpx },
-    link: { text: o.brand.link, font: lfont, x: pad + nameW + Math.round(16 * u), y: band.y + vpad + Math.round((bpx - lpx) * 0.7), w: measure(o.brand.link, lfont), h: lpx } };
+    link: { text: linkText, font: lfont, x: linkX, y: band.y + vpad + Math.round((bpx - lpx) * 0.7), w: measure(linkText, lfont), h: lpx, full: linkText === full && !!full } };
   const credit = { font: cfont(cpx), px: cpx, lines: lines.map((t, i) => ({ text: t, x: pad, y: band.y + vpad + blh + gap + i * clh, w: measure(t, cfont(cpx)), h: cpx })) };
   /* each pane's instant, as large as fits its pane */
   const panes = rects.map((r, i) => {
@@ -207,7 +239,81 @@ export function layoutFrame(o, measure) {
     return { rect: r, label: { text: t, font: font(px), px, x: r.x + pad + bx, y: r.y + pad + by, w: tw, h: px,
       box: { x: r.x + pad, y: r.y + pad, w: tw + 2 * bx, h: Math.round(px * 1.12) + 2 * by, r: Math.round(22 * u) } } };
   });
-  return { w: W, h: H, u, pad, panes, band, brand, credit, divider: n === 2 ? Math.max(2, Math.round(4 * u)) : 0, tall };
+  /* (map-postcard) the legends and the caption — a single pane only (the postcard is the main map) */
+  const legends = n === 1 ? layoutLegends(o.legends || [], { W, top: pad, bottom: band.y - pad, right: W - pad, u }) : { boxes: [], omitted: (o.legends || []).length, k: 0 };
+  let card = null;
+  const cap = o.caption || {};
+  if (n === 1 && (cap.title || cap.note)) {
+    const colX = legends.boxes.length ? Math.min.apply(null, legends.boxes.map((b) => b.x)) : W - pad;
+    card = layoutCard({ instant: panes[0].label.text, title: cap.title || '', note: cap.note || '', x: pad, y: pad,
+      maxW: Math.min(colX - 2 * pad + (legends.boxes.length ? 0 : pad), Math.round(W * 0.72)), maxH: band.y - 2 * pad, u, fam }, measure);
+    panes[0].label = Object.assign({}, panes[0].label, { text: '' });   /* the instant is the card's first line now */
+  }
+  return { w: W, h: H, u, pad, panes, band, brand, credit, divider: n === 2 ? Math.max(2, Math.round(4 * u)) : 0, tall,
+    legends: legends.boxes, legendsOmitted: legends.omitted, legendScale: legends.k, card };
+}
+
+/* ══ (map-postcard) THE LEGEND COLUMN AND THE CAPTION CARD — pure, like the rest of the layout ═══════════════════════
+   The legends are pictures of the cards the reader sees (`rasterLegend` below), placed down the right edge of the map
+   at one scale: as large as 1.5 frame pixels per CSS pixel (at the 1080 short edge — the size the card is read at on a
+   phone, ESTIMATE), smaller when the column would be wider than 36 % of the frame or taller than the room above the
+   band, and never below 0.9 — at which a 9.5 px legend label is still ~9 px in the frame. ⚠ A LEGEND THAT DOES NOT FIT
+   AT THAT FLOOR IS LEFT OUT AND COUNTED (`omitted`), never shrunk into an unreadable stamp; the panel says how many.
+   (The first one is always kept, scaled to the room, so a map with one tall legend still carries it.) */
+export function layoutLegends(sizes, room) {
+  const u = room.u, gap = Math.round(12 * u);
+  const list = (sizes || []).filter((s) => s && s.w > 0 && s.h > 0);
+  if (!list.length) return { boxes: [], omitted: 0, k: 0 };
+  const availH = Math.max(0, room.bottom - room.top), colMax = Math.round(room.W * 0.36);
+  const kMax = 1.5 * u, kMin = 0.9 * u;
+  const widest = Math.max.apply(null, list.map((s) => s.w));
+  const sumH = (arr) => arr.reduce((a, s) => a + s.h, 0);
+  let take = list.length, k = Math.min(kMax, colMax / widest, (availH - gap * (take - 1)) / sumH(list));
+  while (k < kMin && take > 1) { take--; const sub = list.slice(0, take); k = Math.min(kMax, colMax / Math.max.apply(null, sub.map((s) => s.w)), (availH - gap * (take - 1)) / sumH(sub)); }
+  if (k <= 0) return { boxes: [], omitted: list.length, k: 0 };
+  const boxes = []; let y = room.top;
+  for (let i = 0; i < take; i++) {
+    const w = Math.round(list[i].w * k), h = Math.round(list[i].h * k);
+    boxes.push({ i, x: room.right - w, y, w, h }); y += h + gap;
+  }
+  return { boxes, omitted: list.length - take, k };
+}
+/** cut a line that is too wide to `max` and end it with an ellipsis (only the LAST line of a clamped block) */
+function ellipsize(text, font, max, measure) {
+  if (measure(text, font) <= max) return text;
+  const a = Array.from(text); let k = a.length;
+  while (k > 1 && measure(a.slice(0, k).join('').trimEnd() + '…', font) > max) k--;
+  return a.slice(0, k).join('').trimEnd() + '…';
+}
+/** wrap to at most `maxLines` at the largest size between `big` and `small` that fits; the last line is ellipsized only
+    when even the smallest size needs more lines (the whole text is always in the link the picture carries) */
+function fitBlock(text, weight, big, small, maxLines, maxW, fam, measure) {
+  if (!text) return { lines: [], font: '', px: 0 };
+  let px = big, font = weight + ' ' + px + 'px ' + fam, lines = wrap(text, font, maxW, measure);
+  while (lines.length > maxLines && px > small) { px--; font = weight + ' ' + px + 'px ' + fam; lines = wrap(text, font, maxW, measure); }
+  if (lines.length > maxLines) { lines = lines.slice(0, maxLines); lines[maxLines - 1] = ellipsize(lines[maxLines - 1] + ' ' + '…', font, maxW, measure); }
+  return { lines, font, px };
+}
+/**
+ * layoutCard({ instant, title, note, x, y, maxW, maxH, u, fam }, measure) → the caption card at the map's top-left: the
+ * instant the map shows (small), the title (large, ≤ 3 lines) and the note (≤ 4 lines), each as large as fits.
+ */
+function layoutCard(c, measure) {
+  const u = c.u, bx = Math.round(28 * u), by = Math.round(20 * u), gap = Math.round(8 * u);
+  const inner = Math.max(40, c.maxW - 2 * bx);
+  const ins = fitBlock(String(c.instant || ''), '600', Math.round(30 * u), Math.round(22 * u), 1, inner, c.fam, measure);
+  const ttl = fitBlock(String(c.title || ''), '700', Math.round(56 * u), Math.round(34 * u), 3, inner, c.fam, measure);
+  const nte = fitBlock(String(c.note || ''), '500', Math.round(30 * u), Math.round(22 * u), 4, inner, c.fam, measure);
+  const lines = []; let y = c.y + by, widest = 0;
+  const put = (blk, kind, lh) => {
+    if (!blk.lines.length) return;
+    if (lines.length) y += gap;
+    blk.lines.forEach((t) => { const w = measure(t, blk.font); widest = Math.max(widest, w);
+      lines.push({ kind, text: t, font: blk.font, x: c.x + bx, y, w, h: blk.px }); y += Math.round(blk.px * lh); });
+  };
+  put(ins, 'instant', 1.3); put(ttl, 'title', 1.16); put(nte, 'note', 1.36);
+  const h = Math.min(c.maxH, y - c.y + by);
+  return { box: { x: c.x, y: c.y, w: Math.round(widest + 2 * bx), h, r: Math.round(22 * u) }, lines };
 }
 
 /* ══ PAINTING ═════════════════════════════════════════════════════════════════════════════════════════════ */
@@ -226,8 +332,9 @@ function cover(ctx, img, r) {
   const s = Math.max(r.w / img.width, r.h / img.height), sw = r.w / s, sh = r.h / s;
   ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, r.x, r.y, r.w, r.h);
 }
-/** paint one frame into `ctx` (a canvas of o.w × o.h): images[i] fills pane i. Returns the layout used. */
-function paint(ctx, o, images) {
+/** paint one frame into `ctx` (a canvas of o.w × o.h): images[i] fills pane i, legendImages[i] (map-postcard) the i-th
+    legend box. Returns the layout used. */
+function paint(ctx, o, images, legendImages) {
   const L = layoutFrame(Object.assign({ family: fontFamily() }, o), measurer(ctx));
   ctx.save();
   ctx.fillStyle = '#0b0d12'; ctx.fillRect(0, 0, L.w, L.h);
@@ -243,6 +350,14 @@ function paint(ctx, o, images) {
     ctx.fillStyle = 'rgba(0,0,0,0.58)'; box(ctx, p.label.box);
     ctx.fillStyle = '#ffffff'; ctx.font = p.label.font; ctx.fillText(p.label.text, p.label.x, p.label.y);
   });
+  /* (map-postcard) the legends, as the reader sees them, and the caption card */
+  (L.legends || []).forEach((b) => { const im = legendImages && legendImages[b.i]; if (im && im.width && im.height) ctx.drawImage(im, b.x, b.y, b.w, b.h); });
+  if (L.card) {
+    ctx.fillStyle = 'rgba(0,0,0,0.62)'; box(ctx, L.card.box);
+    ctx.save(); ctx.beginPath(); ctx.rect(L.card.box.x, L.card.box.y, L.card.box.w, L.card.box.h); ctx.clip();
+    L.card.lines.forEach((l) => { ctx.fillStyle = l.kind === 'title' ? '#ffffff' : 'rgba(255,255,255,0.86)'; ctx.font = l.font; ctx.fillText(l.text, l.x, l.y); });
+    ctx.restore();
+  }
   ctx.fillStyle = 'rgba(10,12,16,0.82)'; ctx.fillRect(L.band.x, L.band.y, L.band.w, L.band.h);
   ctx.fillStyle = '#ffffff'; ctx.font = L.brand.name.font; ctx.fillText(L.brand.name.text, L.brand.name.x, L.brand.name.y);
   ctx.fillStyle = 'rgba(255,255,255,0.82)'; ctx.font = L.brand.link.font; ctx.fillText(L.brand.link.text, L.brand.link.x, L.brand.link.y);
@@ -306,6 +421,12 @@ function instantLabel(unit, lang) {
   const d = IntMapTime.isLive() ? new Date() : IntMapTime.when();
   const y = d.getUTCFullYear(), mo = d.getUTCMonth() + 1, day = d.getUTCDate();
   try {
+    /* (map-postcard) 'auto' — the picture's instant at the precision the clock was SET to: a year set as a year is the
+       clock's mid-June noon (js/chronos.js setYear — the reading js/compare.js `clockLabel` makes of the same instant),
+       and is labelled as the year; anything else as its day. A live map is labelled with today's date, not «now»: a
+       picture is read long after it was made. */
+    if (unit === 'auto') { let byYear = false; try { byYear = !IntMapTime.isLive() && H.utcAt(y, 5, 15, 12, 0, 0).getTime() === d.getTime(); } catch (_) { byYear = false; }
+      unit = byYear ? 'year' : 'day'; }
     if (unit === 'year') return H.yearText(y, tag, lang === 'jp' ? '年' : undefined);
     const ds = H.dateText(y, mo, day, tag);
     if (unit === 'day') return ds;
@@ -469,6 +590,414 @@ export async function compareImage(o) {
   rs.name = 'intmap-compare-' + slug(st.iso || st.label) + '-' + slug(st.main.iso || st.main.label) + '-' + S.w + 'x' + S.h + '.png';
   rs.phase = 'done'; emit();
   return recorderState();
+}
+
+/* ══ (map-postcard) THE LEGENDS AS PICTURES ════════════════════════════════════════════════════════════════
+   A legend is a DOM card (js/data-layers.js builds ~30 kinds: gradient bars, swatch grids, scales, notes), and a
+   picture that leaves the page must carry it — a coloured map without its key says nothing. Rather than a second
+   description of each kind (which the next legend would not be in), the card is READ AS THE PAGE LAID IT OUT: every
+   box's background colour, gradient and borders, every run of text where the browser put it, every image it may
+   draw — at its own place, clipped the way the page clips it. The reader's HANDLES on the card are left out: a field or
+   a slider, a grip (what the page gives a grab / move / resize cursor), and a button that says nothing but a glyph (×,
+   –, play). ⚠ A BUTTON IS NOT A HANDLE BY BEING A BUTTON: the Köppen card's rows are role="button" (click one to
+   highlight that climate) and they ARE the key — measured, leaving every button out drew the card with its title and
+   period and none of its thirty classes. So a button that carries words or a swatch is drawn. A <select> is drawn as
+   the choice it shows.
+   The population is the one the embed keeps (js/embed-mode.js EMBED_CSS): `.data-legend` / `.koppen-legend`, the
+   classes js/data-layers.js discoverLegends() treats as «a legend». */
+const LEGEND_SEL = '.data-legend, .koppen-legend';
+const FIELD_SEL = 'input, textarea, [role="slider"]';
+const BUTTON_SEL = 'button, [role="button"], [role="switch"], [role="checkbox"]';
+/* ⚠ WORDS ABOUT A HANDLE ARE PART OF THE HANDLE. Measured on the first postcards: the Köppen card carried
+   「Click to highlight • right-click for criteria」 and every card its 「Opacity 100%」 row — instructions to a pointer
+   the picture does not have. They are told apart by what the DOM says they ARE, never by their wording (nine
+   languages, and the next card's sentence would not be in a list):
+   · GUIDANCE — the accessible description (`aria-describedby`) of a control on the card: it tells the reader how to
+     operate that control, so it leaves with it. (js/data-layers.js points the Köppen rows at their hint.)
+   · A CONTROL'S ROW — a box holding a field whose only words are that field's own label: the name of a slider and the
+     readout of its value (「100%」 has no letter) are the slider. A box that also holds a swatch, or words that are not
+     the field's name, is a key with a control in it, and is walked instead. */
+const SAYS = /[\p{L}\p{N}]/u, LETTER = /\p{L}/u;
+const hasFill = (d) => { try { const c = getComputedStyle(d); return alphaOf(c.backgroundColor) > 0 || /gradient/.test(c.backgroundImage); } catch (_) { return false; } };
+/** is `e` the accessible description of a control inside `card` */
+function isGuidance(e, card) {
+  if (!e.id || !card) return false;
+  return Array.from(card.querySelectorAll('[aria-describedby]')).some((c) => c !== e &&
+    (c.getAttribute('aria-describedby') || '').split(/\s+/).includes(e.id) && c.matches(FIELD_SEL + ', ' + BUTTON_SEL + ', select'));
+}
+/** is `e` a box that holds a field and nothing else the reader needs: no swatch, and no letter outside the field's label */
+function isControlRow(e) {
+  const fields = Array.from(e.querySelectorAll(FIELD_SEL)); if (!fields.length) return false;
+  const inField = (n) => fields.some((f) => f === n || f.contains(n));
+  /** the labels that name these fields — `<label>` (HTMLInputElement#labels) and aria-labelledby */
+  const names = [];
+  fields.forEach((f) => {
+    try { Array.from(/** @type {HTMLInputElement} */ (f).labels || []).forEach((l) => names.push(l)); } catch (_) { /* not labelable */ }
+    (f.getAttribute('aria-labelledby') || '').split(/\s+/).filter(Boolean).forEach((id) => { const l = document.getElementById(id); if (l) names.push(l); });
+  });
+  const named = (n) => names.some((l) => l === n || l.contains(n));
+  if (Array.from(e.querySelectorAll('*')).some((d) => !inField(d) && !named(d) && hasFill(d))) return false;
+  /** a letter in a text node outside the fields and their names */
+  const speaks = (node) => Array.from(node.childNodes).some((n) => (n.nodeType === 3 ? (!named(n) && LETTER.test(n.nodeValue || '')) : (n.nodeType === 1 && !inField(n) && speaks(n))));
+  return !speaks(e);
+}
+/** is this element one of the reader's handles on the card (see above) — `cs` is its computed style, `card` the legend */
+function isHandle(e, cs, card) {
+  if (e.matches(FIELD_SEL)) return true;
+  if (isGuidance(e, card) || isControlRow(e)) return true;
+  /* anything that says something is drawn — a card's title is often its drag grip too (measured: the Köppen header) */
+  if (SAYS.test(e.textContent || '')) return false;
+  if (/^(grab|grabbing|move|[nsew]{1,2}-resize|col-resize|row-resize)$/.test(cs.cursor)) return true;
+  if (!e.matches(BUTTON_SEL)) return false;
+  /* a swatch inside it (a box with a fill) is a key, not a glyph */
+  return !Array.from(e.querySelectorAll('*')).some(hasFill);
+}
+/** the legends on the map now, in the order the page stacks them — a legend whose layer is off has no box
+    (display:none). ⚠ On a phone the closed legend tray hides the cards with `visibility` and still lays them out
+    (css/intmap.css, the legend tray): they are on the map, the tray only folds them away, so they are taken. */
+function shownLegends() {
+  /** @type {HTMLElement[]} */ const out = [];
+  try {
+    document.querySelectorAll(LEGEND_SEL).forEach((el) => {
+      const e = /** @type {HTMLElement} */ (el);
+      if (out.some((o) => o.contains(e))) return;
+      const cs = getComputedStyle(e); if (cs.display === 'none') return;
+      const r = e.getBoundingClientRect(); if (r.width < 2 || r.height < 2) return;
+      out.push(e);
+    });
+  } catch (_) { /* no document */ }
+  return out.sort((a, b) => { const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(); return (ra.left - rb.left) || (ra.top - rb.top); });
+}
+/** split a CSS value on the commas that are not inside parentheses */
+function splitTop(s) { const out = []; let d = 0, cur = ''; for (const c of String(s)) { if (c === '(') d++; else if (c === ')') d--; if (c === ',' && d === 0) { out.push(cur.trim()); cur = ''; } else cur += c; } if (cur.trim()) out.push(cur.trim()); return out; }
+/**
+ * parseGradient(css) → { angle (deg, CSS: 0 = to top, 90 = to right), stops:[{color, at|null}] } | null — the first
+ * `linear-gradient(…)` of a computed background-image. Pure; a `repeating-` or a radial gradient is null.
+ */
+export function parseGradient(css) {
+  const s = String(css || ''); const i = s.indexOf('linear-gradient(');
+  if (i < 0 || (i > 0 && /repeating-$/.test(s.slice(0, i)))) return null;
+  let d = 0, j = i + 'linear-gradient('.length, start = j;
+  for (; j < s.length; j++) { const c = s[j]; if (c === '(') d++; else if (c === ')') { if (d === 0) break; d--; } }
+  const parts = splitTop(s.slice(start, j)); if (!parts.length) return null;
+  let angle = 180;
+  const SIDES = { top: 0, right: 90, bottom: 180, left: 270 };
+  const first = parts[0].toLowerCase();
+  const deg = /^(-?[\d.]+)(deg|turn|rad|grad)$/.exec(first);
+  if (deg) { const n = +deg[1]; angle = deg[2] === 'deg' ? n : deg[2] === 'turn' ? n * 360 : deg[2] === 'rad' ? n * 180 / Math.PI : n * 0.9; parts.shift(); }
+  else if (/^to\s/.test(first)) {
+    const w = first.slice(3).trim().split(/\s+/);
+    if (w.length === 1 && w[0] in SIDES) angle = SIDES[w[0]];
+    else if (w.length === 2) { const v = w.includes('top') ? 0 : 180, h = w.includes('right') ? 90 : 270; angle = v === 0 ? (h === 90 ? 45 : 315) : (h === 90 ? 135 : 225); }
+    parts.shift();
+  }
+  const stops = [];
+  for (const p of parts) {
+    /* a colour, then up to two positions; a bare position is a colour hint (interpolation midpoint), dropped */
+    const m = /^(.*?\))\s*(.*)$/.exec(p) || /^(\S+)\s*(.*)$/.exec(p); if (!m) continue;
+    const pos = m[2].trim().split(/\s+/).filter(Boolean);
+    if (!/^(#|rgb|hsl|hwb|lab|lch|oklab|oklch|color|[a-z]+$)/i.test(m[1])) continue;
+    const pct = (v) => (/%$/.test(v) ? +v.slice(0, -1) / 100 : null);
+    if (!pos.length) stops.push({ color: m[1], at: null });
+    else pos.slice(0, 2).forEach((v) => stops.push({ color: m[1], at: pct(v) }));
+  }
+  if (stops.length < 2) return null;
+  /* positions left out are spread evenly between their neighbours, as CSS does */
+  if (stops[0].at == null) stops[0].at = 0;
+  if (stops[stops.length - 1].at == null) stops[stops.length - 1].at = 1;
+  for (let a = 0; a < stops.length; a++) {
+    if (stops[a].at != null) continue;
+    let b = a; while (stops[b].at == null) b++;
+    const from = stops[a - 1].at, to = stops[b].at;
+    for (let k = a; k < b; k++) stops[k].at = from + (to - from) * (k - a + 1) / (b - a + 1);
+    a = b;
+  }
+  for (let a = 1; a < stops.length; a++) if (stops[a].at < stops[a - 1].at) stops[a].at = stops[a - 1].at;
+  return { angle, stops };
+}
+/** the CSS gradient line of a w × h box at `angle` → the canvas gradient's two ends (CSS Images 3 §3.1) */
+function gradientLine(angle, x, y, w, h) {
+  const r = (angle - 90) * Math.PI / 180, dx = Math.cos(r), dy = Math.sin(r);
+  const len = Math.abs(w * Math.sin(angle * Math.PI / 180)) + Math.abs(h * Math.cos(angle * Math.PI / 180));
+  const cx = x + w / 2, cy = y + h / 2;
+  return [cx - dx * len / 2, cy - dy * len / 2, cx + dx * len / 2, cy + dy * len / 2];
+}
+const alphaOf = (c) => { const m = /rgba?\(([^)]+)\)/.exec(String(c)); if (!m) return String(c) === 'transparent' ? 0 : 1; const p = m[1].split(/[\s,\/]+/).filter(Boolean); return p.length > 3 ? (/%$/.test(p[3]) ? +p[3].slice(0, -1) / 100 : +p[3]) : 1; };
+/** a translucent card background made nearly opaque: on the page it is frosted glass over the map, which a flat picture
+    cannot be, so the colour the glass tints with is kept and the map under it is not let through */
+const solidish = (c) => { const m = /rgba?\(([^)]+)\)/.exec(String(c)); if (!m) return c; const p = m[1].split(/[\s,\/]+/).filter(Boolean);
+  return alphaOf(c) >= 0.92 ? c : 'rgba(' + p[0] + ',' + p[1] + ',' + p[2] + ',0.94)'; };
+const px = (v) => parseFloat(v) || 0;
+/** an <img> / <canvas> the picture may take without being tainted (a tainted canvas cannot be saved at all) */
+function drawable(el) {
+  try {
+    if (el.tagName === 'CANVAS') { const c = /** @type {HTMLCanvasElement} */ (el); const g = c.getContext('2d'); if (!g) return false; g.getImageData(0, 0, 1, 1); return true; }
+    if (el.tagName === 'IMG') { const im = /** @type {HTMLImageElement} */ (el); if (!im.complete || !im.naturalWidth) return false;
+      const u = new URL(im.currentSrc || im.src, location.href);
+      return u.origin === location.origin || u.protocol === 'data:' || u.protocol === 'blob:' || im.crossOrigin != null; }
+  } catch (_) { return false; }
+  return false;
+}
+/** an inline <svg> as an image, its `currentColor` resolved to the colour the page gives it */
+function svgImage(svg) {
+  return new Promise((res) => {
+    try {
+      const r = svg.getBoundingClientRect(), c = svg.cloneNode(true);
+      /* the serializer writes the element's own namespace declaration (an inline <svg> is in the SVG namespace) */
+      c.setAttribute('width', String(r.width)); c.setAttribute('height', String(r.height));
+      const color = getComputedStyle(svg).color;
+      const src = new XMLSerializer().serializeToString(c).replace(/currentColor/g, color);
+      const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null);
+      im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(src);
+    } catch (_) { res(null); }
+  });
+}
+/**
+ * rasterLegend(el, k) → Promise<HTMLCanvasElement> — the legend card `el` as the page shows it, k canvas pixels per CSS
+ * pixel. Coordinates are the page's own (getBoundingClientRect, Range#getClientRects), so wrapping, alignment and the
+ * card's own layout are the browser's, not re-derived here.
+ */
+async function rasterLegend(el, k) {
+  const R0 = el.getBoundingClientRect();
+  const cv = document.createElement('canvas');
+  cv.width = Math.max(1, Math.round(R0.width * k)); cv.height = Math.max(1, Math.round(R0.height * k));
+  const ctx = /** @type {CanvasRenderingContext2D} */ (cv.getContext('2d'));
+  ctx.scale(k, k);
+  const X = (r) => r.left - R0.left, Y = (r) => r.top - R0.top;
+  const rootCs = getComputedStyle(el);
+  const rootHidden = rootCs.visibility === 'hidden';   /* the phone's folded tray — see shownLegends */
+  /* the card itself: its (made solid) fill, rounded as the page rounds it, and every later draw clipped to it */
+  const rad = px(rootCs.borderTopLeftRadius);
+  ctx.beginPath(); if (typeof ctx.roundRect === 'function') ctx.roundRect(0, 0, R0.width, R0.height, rad); else ctx.rect(0, 0, R0.width, R0.height);
+  ctx.fillStyle = alphaOf(rootCs.backgroundColor) > 0 ? solidish(rootCs.backgroundColor) : 'rgba(255,255,255,0.94)';
+  ctx.fill(); ctx.clip();
+  /** the clip a node is drawn inside: the intersection of its ancestors' boxes that clip overflow, up to the card */
+  const clips = new Map();
+  const clipOf = (node) => {
+    if (!node || node === el) return null;
+    if (clips.has(node)) return clips.get(node);
+    const up = clipOf(node.parentElement);
+    let c = up;
+    try { const cs = getComputedStyle(node); if (cs.overflowX !== 'visible' || cs.overflowY !== 'visible') { const r = node.getBoundingClientRect();
+      const me = { x0: X(r), y0: Y(r), x1: X(r) + r.width, y1: Y(r) + r.height };
+      c = up ? { x0: Math.max(up.x0, me.x0), y0: Math.max(up.y0, me.y0), x1: Math.min(up.x1, me.x1), y1: Math.min(up.y1, me.y1) } : me; } } catch (_) { /* keep up */ }
+    clips.set(node, c); return c;
+  };
+  const withClip = (node, fn) => { const c = clipOf(node); ctx.save(); if (c) { ctx.beginPath(); ctx.rect(c.x0, c.y0, Math.max(0, c.x1 - c.x0), Math.max(0, c.y1 - c.y0)); ctx.clip(); } try { fn(); } catch (_) { /* one box */ } ctx.restore(); };
+  const opacity = new Map([[el, 1]]);
+  const later = [];
+  const walk = (node) => {
+    for (const ch of Array.from(node.childNodes)) {
+      if (ch.nodeType === 3) { text(/** @type {Text} */ (ch), /** @type {HTMLElement} */ (node)); continue; }
+      if (ch.nodeType !== 1) continue;
+      const e = /** @type {HTMLElement} */ (ch);
+      const cs = getComputedStyle(e);
+      if (isHandle(e, cs, el)) continue;
+      if (cs.display === 'none' || (!rootHidden && cs.visibility === 'hidden')) continue;
+      const a = (opacity.get(node) || 1) * (+cs.opacity || 0); opacity.set(e, a);
+      if (a <= 0.01) continue;
+      const r = e.getBoundingClientRect();
+      if (e.tagName === 'SELECT') {   /* the choice it shows, as text */
+        const o = /** @type {HTMLSelectElement} */ (e).selectedOptions[0];
+        if (o) withClip(e, () => { ctx.globalAlpha = a; ctx.fillStyle = cs.color; ctx.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily; ctx.textBaseline = 'middle';
+          ctx.fillText(o.textContent || '', X(r) + px(cs.paddingLeft) + px(cs.borderLeftWidth), Y(r) + r.height / 2, Math.max(1, r.width)); });
+        continue;
+      }
+      if (r.width > 0 && r.height > 0) withClip(e, () => {
+        ctx.globalAlpha = a;
+        const bx = X(r), by = Y(r), rr = px(cs.borderTopLeftRadius);
+        const shape = () => { ctx.beginPath(); if (rr && typeof ctx.roundRect === 'function') ctx.roundRect(bx, by, r.width, r.height, Math.min(rr, r.width / 2, r.height / 2)); else ctx.rect(bx, by, r.width, r.height); };
+        if (alphaOf(cs.backgroundColor) > 0) { ctx.fillStyle = cs.backgroundColor; shape(); ctx.fill(); }
+        const g = /linear-gradient\(/.test(cs.backgroundImage) ? parseGradient(cs.backgroundImage) : null;
+        if (g) { const L = gradientLine(g.angle, bx, by, r.width, r.height); const gr = ctx.createLinearGradient(L[0], L[1], L[2], L[3]);
+          g.stops.forEach((s) => { try { gr.addColorStop(Math.max(0, Math.min(1, s.at)), s.color); } catch (_) { /* a colour the canvas cannot read */ } });
+          ctx.fillStyle = gr; shape(); ctx.fill(); }
+        /* the four borders, each as the page draws it (a divider is one side only) */
+        [['Top', bx, by, r.width, px(cs.borderTopWidth)], ['Bottom', bx, by + r.height - px(cs.borderBottomWidth), r.width, px(cs.borderBottomWidth)],
+          ['Left', bx, by, px(cs.borderLeftWidth), r.height], ['Right', bx + r.width - px(cs.borderRightWidth), by, px(cs.borderRightWidth), r.height]].forEach((b) => {
+          const st = /** @type {any} */ (cs)['border' + b[0] + 'Style'], col = /** @type {any} */ (cs)['border' + b[0] + 'Color'];
+          if (!(+b[3] > 0 && +b[4] > 0) || st === 'none' || st === 'hidden' || alphaOf(col) === 0) return;
+          ctx.fillStyle = col; ctx.fillRect(+b[1], +b[2], +b[3], +b[4]);
+        });
+        if ((e.tagName === 'CANVAS' || e.tagName === 'IMG') && drawable(e)) ctx.drawImage(/** @type {any} */ (e), bx, by, r.width, r.height);
+      });
+      if (e.tagName === 'svg' || e.tagName === 'SVG') { const a2 = a; later.push(svgImage(e).then((im) => { if (im) withClip(e, () => { ctx.globalAlpha = a2; ctx.drawImage(im, X(r), Y(r), r.width, r.height); }); })); continue; }
+      walk(e);
+    }
+  };
+  /* text: the browser's own line boxes — one run per line of a text node, measured character by character */
+  const text = (node, parent) => {
+    const s = node.data; if (!s || !/\S/.test(s)) return;
+    const cs = getComputedStyle(parent);
+    if (cs.visibility === 'hidden' && !rootHidden) return;
+    const a = opacity.get(parent) || 1;
+    const tr = cs.textTransform === 'uppercase' ? (t) => t.toUpperCase() : cs.textTransform === 'lowercase' ? (t) => t.toLowerCase() : (t) => t;
+    const range = document.createRange();
+    /** @type {{t:string,l:number,r:number,top:number,b:number}|null} */ let run = null; const runs = [];
+    for (let i = 0; i < s.length;) {
+      const cp = s.codePointAt(i) || 0, n = cp > 0xffff ? 2 : 1, ch = s.slice(i, i + n);
+      range.setStart(node, i); range.setEnd(node, i + n); i += n;
+      const rs = range.getClientRects(); const q = rs.length ? rs[0] : null;
+      if (!q || q.width <= 0) continue;
+      const c = /\s/.test(ch) ? ' ' : ch;
+      if (run && Math.abs(q.top - run.top) < 1 && q.left >= run.r - 1) { run.t += c; run.r = q.right; }
+      else { if (run) runs.push(run); run = { t: c, l: q.left, r: q.right, top: q.top, b: q.bottom }; }
+    }
+    if (run) runs.push(run);
+    try { range.detach(); } catch (_) { /* old engines */ }
+    withClip(parent, () => {
+      ctx.globalAlpha = a; ctx.fillStyle = cs.color; ctx.textBaseline = 'middle';
+      ctx.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+      runs.forEach((u2) => { const t = tr(u2.t).trimEnd(); if (t) ctx.fillText(t, u2.l - R0.left, (u2.top + u2.b) / 2 - R0.top, Math.max(1, u2.r - u2.l + 1)); });
+    });
+  };
+  walk(el);
+  await Promise.all(later);
+  return cv;
+}
+
+/* ══ (map-postcard) THE MAP AS ONE PICTURE TO POST ═════════════════════════════════════════════════════════
+   「SNS で流通する単位は静止画」. The main map, read inside a render tick like every frame of a lapse, with the instant
+   it shows, the link's title and note (the caption the share link carries — js/map-state.js `title` / `note`), the
+   legends on the map, the credit of every drawn source, the wordmark and the link. Not a recording: it does not take the
+   recorder's state (a lapse being recorded keeps its own), and only the last picture's object URL is held. */
+/** @type {string|null} */ let lastCardUrl = null;
+/**
+ * postcard({ size?, title?, note?, link? }) → Promise<{ ok, error?, size, w, h, blob, url, name, credits, legends,
+ * legendsOmitted, title, note, link, linkFull, instant }>. `error`: 'busy' (a lapse is being recorded — the map is
+ * moving under it), 'not-drawn' (the renderer gave no frame: a hidden tab), 'encoder'.
+ */
+async function postcard(o) {
+  o = o || {};
+  const key = postcardSizeKey(o.size), S = POSTCARD_SIZES[key];
+  const title = String(o.title || ''), note = String(o.note || ''), link = String(o.link || '');
+  const base = { ok: false, size: key, w: S.w, h: S.h, title, note, link };
+  if (busy()) return Object.assign(base, { error: 'busy' });
+  const g = await grabMain();
+  if (!g.live || !g.canvas) return Object.assign(base, { error: 'not-drawn' });
+  const credits = mainCredits(), instant = instantLabel('auto', o.lang || lang), els = shownLegends();
+  const out = document.createElement('canvas'); out.width = S.w; out.height = S.h;
+  const ctx = /** @type {CanvasRenderingContext2D} */ (out.getContext('2d'));
+  const frameOpts = { w: S.w, h: S.h, panes: [{ label: instant }], credits, brand: Object.assign(brand(), { full: link }),
+    caption: { title, note }, legends: els.map((e) => { const r = e.getBoundingClientRect(); return { w: r.width, h: r.height }; }) };
+  /* the layout decides the legends' scale; each card is then drawn once, at exactly that scale */
+  const plan = layoutFrame(Object.assign({ family: fontFamily() }, frameOpts), measurer(ctx));
+  const pics = [];
+  for (const b of plan.legends) { try { pics[b.i] = await rasterLegend(els[b.i], plan.legendScale); } catch (_) { pics[b.i] = null; } }
+  const L = paint(ctx, frameOpts, [g.canvas], pics);
+  /** @type {Blob|null} */ let blob = null;
+  try { blob = await new Promise((r) => out.toBlob(r, 'image/png')); } catch (_) { blob = null; }   /* a tainted canvas throws */
+  if (!blob) return Object.assign(base, { error: 'encoder' });
+  if (lastCardUrl) { try { URL.revokeObjectURL(lastCardUrl); } catch (_) { /* gone */ } }
+  const url = lastCardUrl = URL.createObjectURL(blob);
+  const name = 'intmap-' + (slug(title) !== 'now' ? slug(title) : slug(instant)) + '-' + S.w + 'x' + S.h + '.png';
+  return Object.assign(base, { ok: true, blob, url, name, credits, instant,
+    legends: L.legends.length, legendsOmitted: L.legendsOmitted, linkFull: !!L.brand.link.full, linkShown: L.brand.link.text,
+    band: { y: L.band.y, h: L.band.h, lines: L.credit.lines.map((l) => ({ x: l.x, y: l.y, w: Math.round(l.w), h: l.h })) },
+    card: L.card ? L.card.box : null, legendBoxes: L.legends.map((b) => ({ x: b.x, y: b.y, w: b.w, h: b.h })) });
+}
+
+/* ══ (map-postcard) THE SHARE PANEL'S IMAGE TAB ════════════════════════════════════════════════════════════
+   js/map-ui.js `share` owns the panel, the caption fields and the Link tab, and hands this its `link()` (the
+   address-bar encoder), `caption()` (the title and note the link carries), its translator and its copy button — so the
+   picture, the link it prints and the link it is shared with are one value. The tab's module is this lazy chunk: a
+   session that never opens the tab does not download it. What the tab shows IS the file: the preview is the PNG that
+   Save writes and Share hands over, remade when the shape, the caption or the map changes. */
+const PC_CSS = [
+  '#share-panel .sh-seg{display:flex;gap:2px;padding:2px;border-radius:10px;background:var(--input-bg);margin-top:12px;}',
+  '#share-panel .sh-seg button{flex:1;min-height:34px;border:none;border-radius:8px;background:none;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;line-height:1.2;padding:3px 4px;}',
+  '#share-panel .sh-seg button small{display:block;font-weight:500;font-size:10.5px;opacity:0.8;font-variant-numeric:tabular-nums;}',
+  '#share-panel .sh-seg button[aria-pressed="true"]{background:var(--popup-bg);color:var(--text-main);box-shadow:0 1px 3px rgba(0,0,0,0.12);}',
+  '#share-panel .sh-seg button:focus-visible{outline:2px solid var(--primary-color);outline-offset:1px;}',
+  '#share-panel .sh-pc-pv{margin-top:12px;border-radius:12px;overflow:hidden;background:var(--input-bg);border:1px solid rgba(128,128,128,0.22);display:flex;align-items:center;justify-content:center;}',
+  '#share-panel .sh-pc-pv img{display:block;width:100%;height:auto;max-height:46vh;object-fit:contain;}',
+  '#share-panel .sh-pc-pv[data-busy="1"] img{opacity:0.55;transition:opacity .2s ease;}',
+  '#share-panel a.sh-btn{text-decoration:none;}',
+  '#share-panel .sh-btn[aria-disabled="true"]{opacity:0.5;pointer-events:none;}',
+  '#share-panel .sh-pc-status{margin-top:8px;font-size:11.5px;color:var(--text-muted);min-height:1.2em;}',
+].join('\n');
+let pcStyled = false;
+/**
+ * createPostcardTab({ t, link, caption, lang }) → { render(host), refresh(), make(o), state() }
+ *   t(key)     the panel's translator · link() the share link now · caption() → {title, note} · lang() the reader's language
+ */
+export function createPostcardTab(ctx) {
+  const t = ctx.t;
+  let size = 'card', host = null, gen = 0, last = /** @type {any} */ (null), file = /** @type {File|null} */ (null);
+  const node = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  const nav = /** @type {any} */ (navigator);
+  const canShareFile = (f) => { try { return !!(f && nav.canShare && nav.share && nav.canShare({ files: [f] })); } catch (_) { return false; } };
+  const LABEL = { card: 'postcardSizeCard', square: 'postcardSizeSquare', portrait: 'postcardSizePortrait' };
+  /** make the picture of the map as it is now; a newer call wins (an older one's result is dropped) */
+  async function make(o) {
+    o = o || {};
+    if (o.size) size = postcardSizeKey(o.size);
+    const my = ++gen; const c = ctx.caption() || {};
+    paintBusy(true);
+    const r = await postcard({ size, title: c.title, note: c.note, link: ctx.link(), lang: ctx.lang() });
+    if (my !== gen) return r;
+    last = r; file = r.ok && typeof File === 'function' ? new File([r.blob], r.name, { type: 'image/png' }) : null;
+    paint(); paintBusy(false);
+    return r;
+  }
+  function paintBusy(b) { const pv = host && host.querySelector('.sh-pc-pv'); if (pv) pv.dataset.busy = b ? '1' : ''; if (b && host && !last) status(t('postcardMaking')); }
+  function status(s) { const n = host && host.querySelector('.sh-pc-status'); if (n) n.textContent = s; }
+  function paint() {
+    if (!host || !last) return;
+    const img = /** @type {HTMLImageElement} */ (host.querySelector('.sh-pc-pv img'));
+    const save = /** @type {HTMLAnchorElement} */ (host.querySelector('.sh-pc-save')), go = /** @type {HTMLButtonElement} */ (host.querySelector('.sh-pc-go'));
+    const cr = host.querySelector('.sh-pc-credits');
+    if (!last.ok) {
+      status(last.error === 'busy' ? t('postcardBusy') : last.error === 'not-drawn' ? t('postcardNotDrawn') : t('postcardFailed'));
+      save.setAttribute('aria-disabled', 'true'); save.removeAttribute('href'); go.disabled = true; return;
+    }
+    img.src = last.url; img.width = last.w; img.height = last.h;
+    save.href = last.url; save.download = last.name; save.removeAttribute('aria-disabled'); go.disabled = false;
+    const share = canShareFile(file);
+    go.dataset.mode = share ? 'share' : 'save-copy';
+    go.replaceChildren(iconNode(share ? 'share' : 'clipboard'), ' ' + (share ? t('postcardShare') : t('postcardSaveCopy')));
+    status(last.w + ' × ' + last.h + ' · PNG' + (last.legendsOmitted ? ' · ' + t('postcardLegendsOmitted').replace('{n}', String(last.legendsOmitted)) : ''));
+    if (cr) cr.textContent = t('postcardCredits') + last.credits.join(' · ');
+  }
+  function render(h) {
+    if (!pcStyled) { pcStyled = true; const st = document.createElement('style'); st.textContent = PC_CSS; document.head.appendChild(st); }
+    host = h; h.replaceChildren();
+    const desc = node('div', null, t('postcardDesc')); desc.style.cssText = 'font-size:11.5px;color:var(--text-muted);';
+    const seg = node('div', 'sh-seg'); seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', t('postcardSize'));
+    Object.keys(POSTCARD_SIZES).forEach((k) => {
+      const b = /** @type {HTMLButtonElement} */ (node('button')); b.type = 'button'; b.dataset.size = k;
+      b.append(t(LABEL[k]), node('small', null, POSTCARD_SIZES[k].w + ' × ' + POSTCARD_SIZES[k].h));
+      b.setAttribute('aria-pressed', String(k === size));
+      b.onclick = () => { size = k; seg.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); make(); };
+      seg.appendChild(b);
+    });
+    const pv = node('div', 'sh-pc-pv'); const img = /** @type {HTMLImageElement} */ (node('img')); img.alt = t('postcardPreview'); pv.appendChild(img);
+    const row = node('div', 'sh-row');
+    const go = /** @type {HTMLButtonElement} */ (node('button', 'sh-btn sh-pc-go')); go.type = 'button'; go.style.flex = '1'; go.disabled = true;
+    const save = /** @type {HTMLAnchorElement} */ (node('a', 'sh-btn sec sh-pc-save')); save.setAttribute('aria-disabled', 'true'); save.setAttribute('role', 'button');
+    save.append(iconNode('save'), ' ' + t('postcardSave'));
+    row.append(go, save);
+    const st = node('div', 'sh-pc-status'); st.setAttribute('aria-live', 'polite');
+    const inc = node('div', 'sh-inc sh-pc-credits');
+    h.append(desc, seg, pv, row, st, inc);
+    go.onclick = async () => {
+      if (!last || !last.ok) return;
+      if (go.dataset.mode === 'share' && file) {
+        /* the picture, the link that opens the same map, and the caption — the phone's share sheet, where a post starts */
+        const c = ctx.caption() || {};
+        try { await nav.share({ files: [file], title: c.title || 'IntMap', text: c.note || undefined, url: last.link }); }
+        catch (e) { if (!e || e.name !== 'AbortError') status(t('postcardFailed')); }
+        return;
+      }
+      /* no file sharing here: the file is saved and the link copied, in one press */
+      try { save.click(); } catch (_) { /* the Save button is still there */ }
+      let ok = false; try { await navigator.clipboard.writeText(last.link); ok = true; } catch (_) { ok = false; }
+      status(ok ? t('postcardSavedCopied') : t('postcardSavedNoCopy'));
+    };
+    if (last && last.ok) paint();
+    return { refresh: () => make() };
+  }
+  return { render, make, refresh: () => make(), state: () => (last ? Object.assign({}, last, { blob: undefined }) : null), size: () => size };
 }
 
 /* ══ THE EXPORT ROW — mounted into index.html #ntl-rec, beside the time-lapse (js/time-lapse.js `openRecorder`) ═══ */

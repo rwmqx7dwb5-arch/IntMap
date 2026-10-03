@@ -158,10 +158,16 @@ test('R671 ② the source memory is bounded by deletion instead, and the adapter
 });
 
 /* the methods of the adapter object literal whose `id` is `idValue`, evaluated with `_m` (the
-   renderer) and `_sd` (the source memory) as their only free names */
+   renderer) and `_sd` (the source memory) as their only free names — plus the file's OWN function
+   declarations those methods call (map-postcard: addSource hands the spec to
+   `_addSourceCarryingCredit`). The helpers are discovered from the lifted text, not listed here, so
+   the next door that delegates to a helper of the same file is lifted with it instead of throwing a
+   ReferenceError that says nothing about the property under test. */
 function liftAdapterMethods(src, idValue, names) {
   let obj = null;
+  const decls = new Map();
   walk.full(acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module' }), (n) => {
+    if (n.type === 'FunctionDeclaration' && n.id && !decls.has(n.id.name)) decls.set(n.id.name, n);
     if (n.type !== 'ObjectExpression' || obj) return;
     if (n.properties.some((p) => p.type === 'Property' && p.key && p.key.name === 'id' && p.value.type === 'Literal' && p.value.value === idValue)) obj = n;
   });
@@ -171,7 +177,19 @@ function liftAdapterMethods(src, idValue, names) {
     assert.ok(p, `the '${idValue}' adapter no longer has ${name}`);
     return src.slice(p.start, p.end);
   }).join(',\n');
-  return (_m, _sd) => new Function('_m', '_sd', `return {${text}};`)(_m, _sd);
+  /* `_m` and `_sd` are the stand-ins this lifter injects; the file's own `_m` is the one being replaced */
+  const PARAMS = new Set(['_m', '_sd']);
+  const helpers = new Map();
+  const reach = (t) => {
+    for (const [name, d] of decls) {
+      if (PARAMS.has(name) || helpers.has(name) || !new RegExp(`(^|[^\\w$.])${name.replace(/\$/g, '\\$')}\\s*\\(`).test(t)) continue;
+      helpers.set(name, src.slice(d.start, d.end));
+      reach(helpers.get(name));
+    }
+  };
+  reach(text);
+  const body = [...helpers.values()].join('\n');
+  return (_m, _sd) => new Function('_m', '_sd', `${body}\nreturn {${text}};`)(_m, _sd);
 }
 
 /* ── ③ THE A/B RESTORES WHAT IT FOUND ─────────────────────────────────────────────────────────── */
