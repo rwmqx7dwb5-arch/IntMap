@@ -283,6 +283,14 @@ export const { fetchViaProxy, ownRelayUrl, peekOwnRelay, clockFor } = (() => {
    *                  (relay-no-data-one-pass) 'no-data' is a relay of ours reporting that its upstream
    *                  said there is nothing for this question — a fact about the world, not a fault;
    *                  a caller must not retry it or warn about it.
+   *                  (shell-experience) `failure` — on 'refused' and 'no-budget', WHAT the rungs met, in
+   *                  the shape js/fetch-deadline.js throws and js/layer-state.js classify() reads:
+   *                  { reason: 'http' (with `status`) | 'timeout' | 'parse' | 'network' | 'unrelayable', url }. `url` is the
+   *                  URL the caller asked for (the upstream, never our relay), so a layer can hand the
+   *                  note's failure to layerState.report and the row is joined to last night's check of
+   *                  that supplier — before this, a layer behind this ladder could only say 「null」.
+   *                  'parse' is a rung that answered with something other than the document asked for;
+   *                  'unrelayable' is a URL no rung could be asked about at all. null on every other exit.
    *
    * ⚠⚠ (#R452) `opts.signal` IS NOT DECORATION. Atlas builds an AbortController for every turn and
    * hands it to the model call and to the executor, but the EVIDENCE fetches never saw it — so
@@ -317,9 +325,12 @@ export const { fetchViaProxy, ownRelayUrl, peekOwnRelay, clockFor } = (() => {
        temporal dead zone would not have fired today — and that is exactly the shape #R545 recorded
        (a hoisting question answered by 「when does anyone call it」 rather than by the source). */
     let attempts = 0;                 /* (relay-no-data-one-pass) every request this call made, recorded */
+    /* (shell-experience) every rung's failure, as it was thrown — read only when the ladder has nothing */
+    const fails = [];
     const say = (reason, via) => {
       const r = (reason !== 'ok' && reason !== 'no-data' && outerAborted()) ? 'aborted' : reason;
-      try { if (o.note && typeof o.note === 'object') { o.note.reason = r; o.note.via = via || ''; o.note.attempts = attempts; } } catch (_) { /* the caller's object is theirs */ }
+      try { if (o.note && typeof o.note === 'object') { o.note.reason = r; o.note.via = via || ''; o.note.attempts = attempts;
+        o.note.failure = (r === 'refused' || r === 'no-budget') ? failureOf(fails, url, r) : null; } } catch (_) { /* the caller's object is theirs */ }
       return null;
     };
 
@@ -339,10 +350,12 @@ export const { fetchViaProxy, ownRelayUrl, peekOwnRelay, clockFor } = (() => {
         try {
           const txt = await fetchDeadline(own, Math.min(OWN_RELAY_TIMEOUT_MS, left()), mk());
           if (okDoc(txt)) { say('ok', 'own-relay'); return txt; }
+          fails.push({ reason: 'parse' });
         } catch (e) {
           /* the upstream said there is nothing: an answer, and nobody else is asked the question again */
           if (e && e.noData) return say('no-data', 'own-relay');
           /* ours is cold, refused or down — the reader's own IP is the next chance */
+          fails.push(e);
         }
       }
       /* (#R452) the host itself, when the caller says a browser is allowed to read it */
@@ -350,15 +363,35 @@ export const { fetchViaProxy, ownRelayUrl, peekOwnRelay, clockFor } = (() => {
         try {
           const txt = await fetchDeadline(url, Math.min(directMsFor(url), left()), mk());
           if (okDoc(txt)) { say('ok', 'direct'); return txt; }
-        } catch (_) { /* CORS, a status, or the clock — the relays are next either way */ }
+          fails.push({ reason: 'parse' });
+        } catch (e) { fails.push(e); /* CORS, a status, or the clock — the relays are next either way */ }
       }
       if (left() <= 0) return say('no-budget');
-      const won = await race(relays, url, okDoc, left, mk);
+      const won = await race(relays, url, okDoc, left, mk, fails);
       if (won === NO_DATA) return say('no-data', 'proxy');
       return (won === null) ? say('refused') : (say('ok', 'proxy'), won);
     } finally {
       if (outer) { try { outer.removeEventListener('abort', relayAbort); } catch (_) { /* nothing to remove */ } }
     }
+  }
+
+  /* failureOf(fails, url, verdict) -> { reason, status?, url } — what the ladder met, for note.failure
+     (shell-experience). A status is a supplier's (or a relay's) explicit answer and is the most specific
+     thing there is to say, so the first one wins; otherwise «every rung ran out of time» is 'timeout'
+     (js/fetch-deadline.js isUnobserved — the host never answered, which is not a refusal); otherwise a
+     rung that answered with the wrong document is 'parse' (the word js/layer-state.js already has for
+     「the source sent data that could not be read」); otherwise 'network'. A ladder that had no time to ask
+     anyone ('no-budget') says 'timeout' for the same reason as above; one that had NO rung to ask (no relay
+     of ours admits the URL and the caller did not allow the host itself) says 'unrelayable' — nothing was
+     met, and saying 'network' would blame a supplier nobody asked. */
+  function failureOf(fails, url, verdict) {
+    const out = { reason: 'network', url: String(url || '') };
+    const http = fails.find((e) => e && e.reason === 'http' && e.status != null);
+    if (http) return Object.assign(out, { reason: 'http', status: http.status });
+    if (!fails.length) return Object.assign(out, { reason: verdict === 'no-budget' ? 'timeout' : 'unrelayable' });
+    if (fails.every((e) => e && e.reason === 'timeout')) return Object.assign(out, { reason: 'timeout' });
+    if (fails.some((e) => e && e.reason === 'parse')) return Object.assign(out, { reason: 'parse' });
+    return out;
   }
 
   /* ownRelayUrl(url) -> the URL of OUR relay that admits `url`, or '' (own-fetch-relay)
@@ -436,7 +469,7 @@ export const { fetchViaProxy, ownRelayUrl, peekOwnRelay, clockFor } = (() => {
   return { fetchViaProxy, ownRelayUrl, peekOwnRelay, clockFor };
 
   /* the race — each rung asked once */
-  async function race(PROXIES, url, okDoc, left, mk) {
+  async function race(PROXIES, url, okDoc, left, mk, fails) {
     /* (own-fetch-relay) nothing of ours admits this URL, and there is no one else to ask */
     if (!PROXIES.length) return null;
     const ctls = PROXIES.map(() => mk());
@@ -445,7 +478,7 @@ export const { fetchViaProxy, ownRelayUrl, peekOwnRelay, clockFor } = (() => {
          clock cannot outlast the budget the CALLER named, or a 3 s budget would still sit through an
          8 s attempt. (own-fetch-relay) A relay whose upstream is slow carries its own clock (make.ms). */
       const txt = await fetchDeadline(make(url), Math.min(make.ms || PROXY_TIMEOUT_MS, left()), ctls[i]);
-      if (!okDoc(txt)) throw new Error('not the document that was asked for');
+      if (!okDoc(txt)) throw Object.assign(new Error('not the document that was asked for'), { reason: 'parse' });
       return txt;
     })());
     try {
@@ -463,6 +496,7 @@ export const { fetchViaProxy, ownRelayUrl, peekOwnRelay, clockFor } = (() => {
          itself (`direct`), and each relay of ours in this race — have all been asked once already. */
       const errs = (agg && Array.isArray(agg.errors)) ? agg.errors : [];
       if (errs.some((e) => e && e.noData)) return NO_DATA;
+      if (fails) fails.push(...errs);
       return null;
     }
   }

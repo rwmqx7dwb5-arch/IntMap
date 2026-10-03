@@ -334,30 +334,18 @@ test.describe('③b phone shell — the flow', () => {
   });
 });
 
-/* ══ (shell-experience) 「IntMap のいま」, the supplier named on a failure, and the map's half of the window ══════
+/* ══ (shell-experience) 「IntMap のいま」 and the supplier named on a failure ══════
    Added to this file rather than as a spec of its own: the suite's ceiling (scripts/test-budget.mjs) has no
    room for a new file, and these are the same kind of claim this file already makes about the desktop shell.
-   One boot, at the width where production measured the defect (a first visit left the map ~250 px). */
-test.describe('shell-experience: desktop first visit at 1000 px', () => {
+   One boot of the desktop shell. (The first-visit Layers panel is first-impression's to decide, not this round's.) */
+test.describe('shell-experience: desktop at 1000 px', () => {
   test.use({ viewport: { width: 1000, height: 760 } });
 
-  test('the map keeps half the window, the status page opens from Settings, a failure names its supplier', async ({ page }) => {
+  test('the status page opens from Settings, a failure names its supplier', async ({ page }) => {
     const { readFileSync } = await import('node:fs');
     const bundle = JSON.parse(readFileSync(new URL('../data/service-status.json', import.meta.url), 'utf8'));
-    /* an UNANSWERED first visit: the seeded session with the layer-panel question left open */
-    const s = JSON.parse(sessionWith([])); delete s.lsrOpen;
-    await page.addInitScript((v) => { try { localStorage.setItem('intmap_session2', v); } catch (_) {} }, JSON.stringify(s));
+    await page.addInitScript((v) => { try { localStorage.setItem('intmap_session2', v); } catch (_) {} }, sessionWith([]));
     await boot(page);
-
-    /* ── ① the first-visit panel: built at 1.5 s, opened on idle within 3 s — wait past both, then look ── */
-    await page.waitForFunction(() => document.body.classList.contains('lsr-avail'), null, { timeout: 30_000 });
-    await page.waitForTimeout(3500);
-    const room = await page.evaluate(() => ({ open: document.body.classList.contains('lsr-open'), w: document.getElementById('map').getBoundingClientRect().width, W: innerWidth }));
-    expect(room.open, 'at 1000 px the two panels would take 700 px — the first visit leaves the Layers panel shut').toBe(false);
-    expect(room.w, `the map keeps at least half the window (${room.w} of ${room.W})`).toBeGreaterThanOrEqual(room.W / 2);
-    await page.click('#lsr-toggle');
-    await page.waitForFunction(() => document.body.classList.contains('lsr-open'), null, { timeout: 15_000 });
-    await page.evaluate(() => window.IntMapLayerSidebar.close());
 
     /* ── ② the status page, from its button in Settings ── */
     const served = await page.evaluate(() => fetch('./data/service-status.json').then(async (r) => ({ status: r.status, type: r.headers.get('content-type'), head: (await r.text()).slice(0, 40) }), (e) => ({ error: String(e) })));

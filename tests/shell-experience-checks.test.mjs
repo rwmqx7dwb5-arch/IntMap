@@ -1,11 +1,12 @@
 /* ============================================================================
- *  shell-experience — 「IntMap のいま」, the supplier named on a failure, and the map's half of the window
+ *  shell-experience — 「IntMap のいま」 and the supplier named on a failure
  * ----------------------------------------------------------------------------
  *  What this round built (dev-notes/2026-10-03-shell-experience.md):
  *    · last night's checks (upstream-liveness.yml, atlas-eval.yml) shipped as data/service-status.json and read
  *      by the reader — the status page, a failed layer's pill, the data-sources lists, Atlas `diagnose`;
  *    · scripts/worktree.mjs status saying when the Atlas evaluation last succeeded and why it did not run;
- *    · the first-visit Layers panel opening only when the map keeps at least half the window.
+ *    · the relay ladder (js/proxy-fetch.js) saying what it met and which URL it asked, so a layer behind it names its supplier.
+ *  (The first-visit Layers panel rule this round once carried was withdrawn: first-impression owns it.)
  *  Every check below EVALUATES the code it is about (the pure halves are exported for that), and reads source
  *  only where the claim is about wiring between files.
  * ==========================================================================*/
@@ -208,15 +209,43 @@ test('⑧ the shared readers put the URL on what they throw, and the layer recor
 });
 
 /* ── ⑨ ─────────────────────────────────────────────────────────────────────── */
-test('⑨ the first-visit Layers panel leaves the map at least half the window; a restored choice is the reader’s', () => {
-  const ui = rd('js/map-ui.js');
-  const at = ui.indexOf('const roomy=()=>');
-  assert.ok(at > 0, 'the rule exists');
-  const block = ui.slice(at, at + 900);
-  assert.match(block, /\(left\+right\)<=W\/2/, 'the panels together cover at most half the window');
-  assert.match(block, /if\(unanswered&&!roomy\(\)\)/, 'only the unanswered first visit is held back');
-  assert.match(block, /requestIdleCallback\(\(\)=>\{ try\{ if\(roomy\(\)\) open\(\); \}/, 'and it is asked again at the moment it would open');
-  assert.match(block, /else open\(\);/, 'a restored right:true still opens');
+/* The residue the first pass recorded: js/proxy-fetch.js answered a failure with `null` and a reason word, so a
+   layer behind that ladder could not name the supplier it asked. Evaluated with fetch stubbed. */
+test('⑨ the relay ladder says what it met and which URL it asked, and the satellite row is handed that', async () => {
+  window.SUPABASE_URL = window.SUPABASE_URL || 'https://sb.test';
+  const { fetchViaProxy } = await import('../js/proxy-fetch.js');
+  const GP = 'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle';   /* js/satellites-live.js GP() */
+  const real = globalThis.fetch;
+  const run = async (answer, url, opts) => {
+    globalThis.fetch = async (u) => answer(String(u));
+    try { const note = {}; const got = await fetchViaProxy(url, Object.assign({ as: 'text', budgetMs: 5000, note }, opts || {})); return { got, note }; }
+    finally { globalThis.fetch = real; }
+  };
+  /* a status: the most specific thing there is to say, with the URL asked — the upstream, never our relay */
+  let r = await run(() => new Response('', { status: 503 }), GP);
+  assert.equal(r.got, null);
+  assert.equal(r.note.reason, 'refused');
+  assert.deepEqual(r.note.failure, { reason: 'http', status: 503, url: GP });
+  assert.deepEqual(classify(r.note.failure), { state: 'failed', reason: 'http', status: 503, url: GP }, 'the row reads it as it reads a throw from a shared reader');
+  /* nothing answered at all */
+  r = await run(() => Promise.reject(new TypeError('Failed to fetch')), GP);
+  assert.deepEqual(r.note.failure, { reason: 'network', url: GP });
+  /* a rung that answered with something that is not the document */
+  r = await run(() => new Response('', { status: 200 }), GP);
+  assert.equal(r.note.failure.reason, 'parse');
+  /* no rung could be asked: nobody was met, so no supplier is blamed */
+  r = await run(() => { throw new Error('must not be asked'); }, 'https://example.invalid/x');
+  assert.deepEqual(r.note.failure, { reason: 'unrelayable', url: 'https://example.invalid/x' });
+  /* an answer leaves no failure behind */
+  r = await run(() => new Response('1 25544U', { status: 200 }), GP);
+  assert.equal(r.got, '1 25544U');
+  assert.equal(r.note.failure, null);
+
+  const sat = codeOnly(rd('js/satellites-live.js'));
+  assert.ok(sat.includes('if(note.failure) met=note.failure;'), 'the satellite layer keeps the account of the relay');
+  assert.ok(sat.includes('failure:(lastFailure&&!sats.length)'), 'and offers it only while nothing is drawn');
+  const dl = codeOnly(rd('js/data-layers.js'));
+  assert.ok(dl.includes("layerState.report('dl-sats',f)"), 'the row is handed it');
 });
 
 /* ── ⑩ ─────────────────────────────────────────────────────────────────────── */
