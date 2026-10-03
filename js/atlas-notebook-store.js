@@ -24,8 +24,8 @@
 
 import { IntMapLang } from './lang-registry.js';
 
-export const FORMAT = 'intmap-atlas-notebook';
-export const VERSION = 1;
+const FORMAT = 'intmap-atlas-notebook';
+const VERSION = 1;
 
 /* ⚠ A STEP IS REPLAYABLE WHEN THE REGISTRY SAYS IT IS A REVERSIBLE MAP CHANGE — not when a list here
    says so. js/atlas-capabilities.js column 7 ('session' → risk 'reversible-session') is the table's own
@@ -158,7 +158,9 @@ export function search(entries, q) {
    question, the answer, the sources, the rows and where the map was. The .json is for IntMap: the same
    entries in full, which another device or another reader can import and replay. */
 const iso = (ms) => { try { return new Date(+ms).toISOString().replace('T', ' ').slice(0, 16) + ' UTC'; } catch (_) { return ''; } };
-const mdCell = (v) => String(v == null ? '—' : v).replace(/\|/g, '\\|').replace(/\n/g, ' ');
+/* A backslash is escaped before the pipe: a value that already ends in "\" would otherwise turn the
+   escaped "\|" into "\\|" — a literal backslash followed by a cell break, splitting the row. */
+const mdCell = (v) => String(v == null ? '—' : v).replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
 export function toMarkdown(entries, lang) {
   const t = IntMapLang.pick(() => String(lang || 'en'));
   const out = ['# ' + t('IntMap · Atlas investigation notebook', 'IntMap · Atlas 調査ノート'), ''];

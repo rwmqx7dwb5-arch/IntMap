@@ -152,6 +152,9 @@ test('atlas-os ⑥: search finds by every term, newest first, pinned on top; a f
   const md = toMarkdown([E('nb-aaaa-9', Date.UTC(2026, 9, 3), 'Q?', { results: [{ table: 'cities', tableLabel: 'Cities', matched: 2, columns: [{ id: 'pop', label: 'Population' }], rows: [{ id: '1', name: 'A|B', v: { pop: 5 } }] }],
     sources: [{ url: 'https://example.org', title: 'Ex' }], view: { camera: { lat: 35, lng: 139, zoom: 5 }, time: { live: true }, layersOn: ['cb-quakes'] } })], 'en');
   assert.match(md, /## Q\?/); assert.match(md, /\| A\\\|B \| 5 \|/); assert.match(md, /\[Ex\]\(https:\/\/example\.org\)/); assert.match(md, /cb-quakes/);
+  /* a cell that ends in a backslash cannot undo the escape of the pipe that follows it */
+  const md2 = toMarkdown([E('nb-aaaa-8', 1, 'Q', { results: [{ table: 't', tableLabel: 'T', matched: 1, columns: [], rows: [{ id: '1', name: 'C:\\|x' }] }] })], 'en');
+  assert.ok(md2.includes('| C:\\\\\\|x |'), 'the backslash is escaped before the pipe: ' + md2.split('\n').find((l) => l.startsWith('| C')));
 });
 
 /* ── ⑦ the device store and the account merge ─────────────────────────────────────────────────── */
