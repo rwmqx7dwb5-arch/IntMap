@@ -18,7 +18,7 @@
  * ==========================================================================*/
 import { worldObjects } from './atlas-world-objects.js';   /* (world-objects) the company and its news events, as real-world objects */
 const WO = worldObjects;   /* the one session index (js/atlas-world-objects.js) */
-import { str, int, bool, one, noArgs } from './atlas-caps.js';
+import { str, int, bool, one, noArgs, list } from './atlas-caps.js';
 
 /* (news-intelligence) the windows the news pulse counts over — the facade's own (js/news-intel.js WINDOWS); a
    request between two of them takes the next one up and SAYS so, rather than quietly answering another question */
@@ -221,5 +221,53 @@ export default [
       WO.register([wCo].concat(wEv).filter(Boolean));
       return R(true, html, { exec: wCo ? { worldObjects: { subject: wCo.ref, objects: [WO.brief(wCo)], totals: { news_event: n } } } : undefined, meta: { code: n ? 'OK' : 'NO_RESULTS', category: n ? 'ok' : 'evidence', retryable: false, semanticTarget: row.id, produced: n ? ['panel', 'map', 'explanation'] : ['panel', 'explanation'], userGoalSatisfied: true,
         events: r.items.slice(0, 20).map((x) => ({ title: x.row.representative_title, place: x.row.rep_place_name_en, firstReported: x.row.first_published_at, matchedBy: x.matchedBy, evidence: x.evidence, publicId: x.row.public_id })) } }); },
+  },
+  /* ══ (news-story) A STORY — THE EVENTS WHOSE HEADLINES NAME THE SAME WORDS, PLAYED ON A TIMELINE AND THE MAP ════════
+     docs/NEWS-EVENTS.md §17. The words are chosen by js/news-story-core.js suggest() from the headline (or given), the
+     events are public.news_story's, the days / places / countries / spread are the core's; js/news-story.js draws the
+     card and the map behind the boot door window.IntMapNewsIntel.story. This run picks the arguments and words the
+     answer. ⚠ A STORY IS A STATED QUERY: the reply says «headlines naming …», never that the events are one story. */
+  {
+    row: ['news.story',                 'newsStory',      'followStory,storyline,storyTimeline,eventThread,newsThread',  'data',    'panel',   'panel.newsStory,camera', 'panel,explanation',   'session', 'none',   'text?',    'newsStory', 'external'],
+    doc: [
+      { in: 'events', at: 45, text: 'FOLLOW A NEWS STORY: {"type":"newsStory","event"?:publicId,"text"?:str,"terms"?:[str],"play"?:bool} — every news EVENT of the last 60 days whose HEADLINE NAMES THE SAME WORDS, in time order, opened as a card with a playable timeline (new events per day) and drawn on the map: each report at its place, coloured by when it was first reported, and each newly reached place joined to the nearest place reported before it (the order of the reports — never a cause). Give "event" (a public id — the event the reader has open is used when none is given), or "text" (a headline, or the words of a topic such as "Sudan ceasefire"), or "terms" (the words themselves, lower case). From a headline the words are SUGGESTED (names in it that other headlines also use); the reply says which words were used and offers the other threads. Replies with the number of events, first and latest report, the busiest day, how many places and countries it reached and in what order, the farthest report from the first, and the events. Use for 「この出来事の続報を追って」, 「スーダン停戦の流れを時系列で」, "follow this story", "how did the AfD story spread", "play the Iran war story on the map", "show the timeline of the Vanuatu ferry sinking". It follows the Chronos clock (the story ends at the clock\'s instant). Say that the story is the events whose headlines name the words — not a judgement that they are one story.\n' },
+    ],
+    schema: () => ({ type: 'object', properties: { event: str(), text: str(), terms: list(str(), 1, 6), play: bool() } }),
+    async run(a, dctx, K) { const R = K.R, warn = K.warn, L = K.L, esc = K.esc, HOST = K.HOST;
+      const N = window.IntMapNewsIntel;
+      if (!N || typeof N.story !== 'function') return R(false, warn(L('The news story is not available', 'ニュースのストーリーを利用できません')), { meta: { code: 'MODULE_UNAVAILABLE', category: 'capability', retryable: false, produced: [], userGoalSatisfied: false } });
+      const terms = Array.isArray(a.terms) ? a.terms : (typeof a.terms === 'string' ? a.terms.split(/[,\s]+/) : []);
+      let text = String(a.text || '').trim(), from = String(a.event || '').trim();
+      /* no words and no event named: the event the reader has open (js/news-events.js state — observed on the page) */
+      if (!text && !terms.length && !from) { try { await window.IntMapLazy.need('newsEvents'); const s = window.IntMapNewsEvents && window.IntMapNewsEvents.state(); from = (s && s.selectedEventId) || ''; } catch (_) { } }
+      if (from && !text) {
+        try {
+          const { data } = await HOST.DB.from('news_events').select('public_id,representative_title').eq('public_id', from).limit(1);
+          if (data && data[0]) text = String(data[0].representative_title || '');
+        } catch (_) { }
+        if (!text) return R(false, warn(L('No such news event', 'その出来事が見つかりません') + ': ' + esc(from)), { meta: { code: 'NOT_FOUND', category: 'input', retryable: false, semanticTarget: from, produced: [], userGoalSatisfied: false } });
+      }
+      if (!text && !terms.length) return R(false, warn(L('Name an event, a headline or the words of the story', '出来事・見出し・ストーリーの語のどれかを指定してください')), { meta: { code: 'NEEDS_INPUT', category: 'input', retryable: true, produced: [], userGoalSatisfied: false } });
+      const r = await N.story({ text, terms, from: from || null });
+      if (!r || r.ok === false) return R(false, warn(L('The news collection could not be reached — this does not mean there is no story', 'ニュースの収集に到達できませんでした（ストーリーが無いという意味ではありません）')), { meta: { code: 'UPSTREAM_UNAVAILABLE', category: 'evidence', retryable: true, produced: [], userGoalSatisfied: false } });
+      if (a.play && r.events > 1) { try { const b = await N.storyReady(); if (b) b.play(); } catch (_) { } }
+      const fmtD = (iso) => (iso ? String(iso).slice(0, 10) : '');
+      let html = '<div style="font-weight:600;margin:2px 0 4px;">' + esc(r.naming) + '</div>';
+      if (!r.terms.length) {
+        html += '<div style="font-size:12px;line-height:1.55;">' + esc(L('No name in this headline is shared by enough other events to make a thread on its own. The card shows its words; choose some to follow them.', 'この見出しには、それだけで流れになるほど他の出来事と共有されている名前がありません。カードに語を並べたので、選ぶとその語で追えます。')) + '</div>';
+      } else if (!r.events) {
+        html += '<div style="font-size:12px;line-height:1.55;">' + esc(L('No event of the last 60 days has all of these words in its headline.', '直近60日に、これらの語をすべて見出しに含む出来事はありません。')) + '</div>';
+      } else {
+        html += '<div style="font-size:12px;line-height:1.55;">' + esc(L('{n} events from {a} to {b} · busiest day {p} ({k}) · reached {c} countries and {q} places · farthest report {f} km from the first', '{n} 件・{a}〜{b}・最も多い日 {p}（{k} 件）・{c} か国 {q} 地点に広がり・初報から最も遠い報道は {f} km')
+          .replace('{n}', String(r.events) + (r.cut ? '+' : '')).replace('{a}', fmtD(r.firstReported)).replace('{b}', fmtD(r.latest)).replace('{p}', r.peakDay ? r.peakDay.day : '').replace('{k}', String(r.peakDay ? r.peakDay.n : 0))
+          .replace('{c}', String(r.countries.length)).replace('{q}', String(r.places)).replace('{f}', String(r.farthestKm))) + '</div>';
+        if (r.countries.length) html += '<div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">' + esc(L('Countries in the order first reported: ', '最初に報じられた順の国: ')) + esc(r.countries.slice(0, 10).map((c) => c.country).join(' → ')) + '</div>';
+        html += '<ul style="margin:4px 0 6px 18px;padding:0;font-size:12px;line-height:1.5;">' + r.timeline.slice(-8).map((e) => '<li>' + esc(fmtD(e.firstReported)) + ' — ' + esc(e.title) + (e.place ? ' <span style="color:var(--text-muted)">(' + esc(e.place) + ')</span>' : '') + '</li>').join('') + '</ul>';
+      }
+      if (r.choices && r.choices.length > 1) html += '<div style="font-size:11px;color:var(--text-muted);">' + esc(L('Other threads: ', '他の流れ: ')) + esc(r.choices.filter((c) => c.terms.join(',') !== r.terms.join(',')).slice(0, 3).map((c) => c.terms.join(' + ') + ' (' + c.events + ')').join(' · ')) + '</div>';
+      html += '<div style="font-size:11px;color:var(--text-muted);line-height:1.5;">' + esc(L('A story here is every event whose headline names these words; IntMap does not judge that they are one story.', 'ここでのストーリーは、見出しにこれらの語を含む出来事のすべてで、IntMap が 1 つの話だと判定したものではありません。')) + '</div>';
+      const n = r.events || 0;
+      return R(true, html, { meta: { code: n ? 'OK' : 'NO_RESULTS', category: n ? 'ok' : 'evidence', retryable: false, semanticTarget: (r.terms || []).join(','),
+        produced: ['panel', 'explanation'], userGoalSatisfied: !!r.terms.length, story: r } }); },
   },
 ];

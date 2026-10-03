@@ -275,3 +275,24 @@ export function ingestVerdict(h, opts) {
   const j = judge({ at: lastOk, now, rhythmMs });
   return { state: j.state, ageMs: j.ageMs, rhythmMs, rhythmFrom, lastOkAt: lastOk, failing, skipped };
 }
+
+/* ── distance and the line between two points (the country brief's company lines and the story's spread) ── */
+/** km(a, b) — great-circle distance in km between two [lng, lat] (mean Earth radius 6,371 km) */
+export const km = (a, b) => { const D = Math.PI / 180, dl = (b[1] - a[1]) * D, dg = (b[0] - a[0]) * D; const h = Math.sin(dl / 2) ** 2 + Math.cos(a[1] * D) * Math.cos(b[1] * D) * Math.sin(dg / 2) ** 2; return 12742 * Math.asin(Math.sqrt(Math.min(1, h))); };
+/** arc(a, b, n) — n + 1 points along the great circle a → b that do not wrap round the back of the world
+    (the js/world-packs-rows.js rule: each longitude is kept within 180° of the one before) */
+export function arc(a, b, n) {
+  const D = Math.PI / 180, p1 = [a[1] * D, a[0] * D], p2 = [b[1] * D, b[0] * D];
+  const dd = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin((p2[0] - p1[0]) / 2), 2) + Math.cos(p1[0]) * Math.cos(p2[0]) * Math.pow(Math.sin((p2[1] - p1[1]) / 2), 2)));
+  if (!(dd > 1e-9)) return [a.slice(), b.slice()];
+  const out = [];
+  for (let i = 0; i <= n; i++) {
+    const f = i / n, A = Math.sin((1 - f) * dd) / Math.sin(dd), B = Math.sin(f * dd) / Math.sin(dd);
+    const x = A * Math.cos(p1[0]) * Math.cos(p1[1]) + B * Math.cos(p2[0]) * Math.cos(p2[1]);
+    const y = A * Math.cos(p1[0]) * Math.sin(p1[1]) + B * Math.cos(p2[0]) * Math.sin(p2[1]);
+    const z = A * Math.sin(p1[0]) + B * Math.sin(p2[0]);
+    out.push([Math.atan2(y, x) / D, Math.atan2(z, Math.hypot(x, y)) / D]);
+  }
+  for (let i = 1; i < out.length; i++) { while (out[i][0] - out[i - 1][0] > 180) out[i][0] -= 360; while (out[i][0] - out[i - 1][0] < -180) out[i][0] += 360; }
+  return out;
+}

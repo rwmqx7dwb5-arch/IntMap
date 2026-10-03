@@ -87,7 +87,7 @@ candidates ending in «Ask Atlas»).
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**141 measured spec files / 81.4 min** of serial browser time against a ceiling of 87.5 min (the 9 min between
+**142 measured spec files / 81.4 min** of serial browser time against a ceiling of 87.5 min (the 9 min between
 them is the room `suite-time-room` made for the specs arriving after it — see below); and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
@@ -109,7 +109,7 @@ them is the room `suite-time-room` made for the specs arriving after it — see 
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **135 spec files** — is the whole suite minus core
+**deep** tier — **136 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -973,7 +973,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **135 spec files** against core's 6 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **136 spec files** against core's 6 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
@@ -4743,3 +4743,17 @@ migration そのものから**——`auth.users` を指す列か uuid の `user_
 何も消さない、表示は作ったピンを返す。⑤ 3 つの入口は動的 import（起動経路に載らない）、書き込む操作要素は
 効果を宣言する。
 
+
+### `tests/news-next-checks.test.mjs` と `tests/news-next.spec.js` (news-story)
+
+node 10 本・データベース無し（DB の半分は `supabase/tests/24_news_story_test.sql`）。出荷している
+`js/news-story-core.js` を、**本番の `news_events` 18,786 行を出荷する migration に PGlite で通した答え**
+（`tests/fixtures/news-story-prod.json`・7 見出し）で評価する: ① 名前は文の書き方の見出しの大文字の割合で決まる
+（AfD・German は名前、state・election・文頭の Far は名前でない）② 提案される流れ（nino 単独・ceuta 単独・ferry +
+indonesia・haze + indonesia・AfD は 2 語に絞る・提案が無い見出しは null で語は出す）③ 返った行は全部の語を見出しに
+持つ ④ 年表は UTC の毎日で 0 の日を持ち、広がりは累積 ⑤ 広がりの線は本当に最寄りの先行地点へ ⑥ 再生位置 i が
+見せるのは i 日目までの全部 ⑦ 地点の無いもの・海上・切れた取得は数えて言う ⑧ `?story=` の読み書き（サーバーが
+書けない綴りは捨てる）⑨ 語を切る規則は SQL の 1 か所で、`news_story` はその式の索引の述語の下で引き、
+`MAX_SHARE` は送られる ⑩ 入口 4 つが 1 つの遅延本体に届く。
+spec 4 本は共有ページで、DB の 2 つの口を同じ fixture で答える: カードが提案の語で開き地図に点が描かれる（レンダラから
+数える）・再生が 1 日ずつ進み、その日までの点だけが描かれる・チップで問い直しリンクが語を名指す・閉じると地図から消える。

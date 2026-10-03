@@ -161,6 +161,9 @@ itself; `grant execute` means "may call", never "may do".
 |---|---|---|
 | `public.news_pulse(timestamptz, timestamptz)` *(news-intelligence)* | SECURITY INVOKER, `search_path=public`, STABLE | News events counted by (representative point, first-reported UTC day, category) as ONE jsonb `{pts, rows, oldest, newest}`; span ≤ 62 days. EXECUTE = anon, authenticated, service_role (the `news_events` RLS decides). Called as GET. |
 | `public.news_events_at(jsonb, timestamptz, timestamptz)` *(news-intelligence)* | SECURITY INVOKER, STABLE, `setof news_events` | The active events on up to 2,000 given representative points, first reported in the span — rows of `news_events`, so PostgREST embeds their articles as usual. |
+| `public.news_title_terms(text)` *(news-story)* | IMMUTABLE, STRICT, `search_path=''` | A headline's words: lower case, runs of letters and digits, 3–40 characters, once each, sorted — the ONE word-cutting rule of a news story. Indexed: `idx_news_events_title_terms` (GIN on this expression, active and unmerged events). |
+| `public.news_story(text[], timestamptz, timestamptz)` *(news-story)* | SECURITY INVOKER, STABLE, `setof news_events` | The active events whose headline holds EVERY one of 1–6 words, first reported in the span (≤ 62 days) — rows of `news_events`. No words / more than six / a longer span → no rows. |
+| `public.news_story_terms(text, timestamptz, timestamptz, real)` *(news-story)* | SECURITY INVOKER, STABLE | For each word of a text: how many events of the span name it, and how often sentence-case headlines capitalise it mid-sentence (`news_title_is_sentence_case`); the co-occurrence of each pair under the share cap — ONE jsonb of counts, no headline. Called as GET. pgTAP 24. |
 | `public.news_ingest_health()` *(news-intelligence)* | SECURITY DEFINER, `search_path=''` | Per-stage last run / success / failure / skip of `news-ingest`, the median gap between runs and the tick schedule — **no run text, model or cost**. Its comment states why anon may call it (pgTAP 11, 18). |
 | `public.is_admin()` | SECURITY DEFINER, `search_path=''` | Returns whether the JWT user is an admin. Used by admin-only policies without recursing into `profiles` RLS. |
 | `public.handle_new_user()` + `on_auth_user_created` trigger on `auth.users` | SECURITY DEFINER | Creates the `profiles` row on signup (copies id/email/display_name). |
@@ -408,6 +411,10 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
   what it was not given, a name and a position on the globe are required, the owner edits and deletes and cannot
   hand a place to another account or restamp `created_at`, another account sees and changes nothing, a full
   account is refused a new place (54000) and may still update one it holds.
+- **`24_news_story_test.sql`** *(news-story)* — the headline's words are cut once (lower case, 3+ letters and digits,
+  the possessive «s» is not a word, «Tromsø» is one); `news_story` returns the active events holding EVERY word inside the
+  span and nothing for no words, more than six or a span over 62 days; `news_story_terms` counts df, the mid-sentence
+  capitals of sentence-case headlines only and the pair counts, and returns no headline; both are SECURITY INVOKER.
 - **`17_ai_counters_never_negative_test.sql`** *(ai-usage-ledger-sign)* — ① over the catalogue: every base
   table in `public` with a `count` column carries a `CHECK (count >= n)`; ② the table owner (the role Studio
   runs as) cannot write a negative `count` into `ai_usage` or `ai_gloss_usage` — by UPDATE, by INSERT, or
