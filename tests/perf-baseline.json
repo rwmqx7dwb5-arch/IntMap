@@ -10,7 +10,7 @@
   },
   "async": {
     "raw": 12224190,
-    "gzip": 4032652,
+    "gzip": 4039409,
     "chunks": {
       "account-data": 7357,
       "aircraft-detail": 17009,
@@ -25,7 +25,7 @@
       "atlas-attach": 23189,
       "atlas-caps-modules": 80,
       "atlas-chart": 10493,
-      "atlas-console": 1303339,
+      "atlas-console": 1323819,
       "atlas-executor": 59369,
       "atlas-geo-resolve": 49361,
       "atlas-query": 48520,
