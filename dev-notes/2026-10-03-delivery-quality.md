@@ -52,3 +52,8 @@ plan の 256 件標本（両端を残す）、Playwright JSON の数え方、jud
   古い commit の playwright.config.js が `IM_PREBUILT_DIST` を知らない場合は自前でもう一度 build する（遅いが正しい）。
 - restored-layer-before-style の赤そのものは直していない。単独で緑なので、bisect の判定を待つ。
 - 本番の状態ページ（上流の死活・鮮度・起動時間を読者に見せる）は今回の範囲外。
+
+## 統合時の性能予算（main へ重ね直した後の build）
+
+超えた行だけ `--update` で上げた（増えた理由は上の節）:
+- eager.gzip: 1523.9 kB → 1531.8 kB
