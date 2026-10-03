@@ -57,7 +57,7 @@ test('③ about reaches the history hub; robots names the sitemap index; the ind
   for (const lang of LANGS) assert.ok(hrefs(L[lang.dir + 'about.html']).includes(lang.hub), lang.dir + 'about.html has no history entrance in its body');
   const about = L['about.html'];
   assert.match(about, /id="uses"[\s\S]*?history\//, 'the about page\'s "uses" section has no history tile');
-  assert.match(L['robots.txt'], new RegExp('\nSitemap: .*' + SITEMAP_INDEX.replace('.', '\.') + '\n'));
+  assert.match(L['robots.txt'], new RegExp('\nSitemap: .*' + SITEMAP_INDEX.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\n'));
   const idx = src('scripts/history-pages.mjs');
   assert.ok(idx.includes("'sitemap.xml'") && idx.includes(SITEMAP), 'the index no longer lists both sitemaps');
   assert.match(L['robots.txt'], /not read there/, 'the note that robots.txt is not read on a sub-path is gone — re-check the fact before removing it');
@@ -67,7 +67,7 @@ test('④ the app\'s settings open the organisation pages and support, with en +
   const idx = src('index.html');
   for (const [page, key] of [['for-newsrooms', 'viewForNewsrooms'], ['for-schools', 'viewForSchools'], ['for-research', 'viewForResearch'], ['support', 'viewSupportPage']]) {
     assert.ok(ORG_PAGES.includes(page), page + ' is not an organisation page');
-    assert.match(idx, new RegExp('href="\./' + page + '\.html"[^>]*data-i18n="' + key + '"'), 'settings has no link to ' + page);
+    assert.match(idx, new RegExp('href="\\./' + page + '\\.html"[^>]*data-i18n="' + key + '"'), 'settings has no link to ' + page);
     for (const lang of ['en', 'jp']) assert.match(src('js/locales/ui.' + lang + '.js'), new RegExp('[ ,{]' + key + ':"'), 'ui.' + lang + '.js has no ' + key);
   }
   assert.match(idx, /data-i18n="lblOrgPages"/);

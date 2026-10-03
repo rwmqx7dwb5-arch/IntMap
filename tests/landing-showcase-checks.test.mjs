@@ -24,6 +24,7 @@ import { TEXT } from '../scripts/landing-text.mjs';
 import { facts, outputs, showcaseProblems, PAGES, pagePath, recordNamesFor } from '../scripts/landing.mjs';
 import { SHOWCASE, CAPTURED, RECORD_ANSWERED } from '../js/showcase.js';
 import { STATIC_ASSETS, STATIC_EXCLUDE } from '../vite.config.js';
+import { HUB as HISTORY_HUB, SITEMAP_INDEX } from '../scripts/history-pages.mjs';
 import { SITE_TOKEN, fillSiteToken, guardedHosts } from '../scripts/site-url.mjs';
 import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 
@@ -103,6 +104,8 @@ test('④ every asset a generated page names is copied into dist/, and the sitem
       const ref = m[1];
       if (/^(https?:)?\/\//.test(ref) || ref.startsWith('mailto:') || ref.startsWith(SITE_TOKEN)) continue;   /* absolute: the build fills the token (⑥) */
       const rel = normalize(dir + ref).replace(/\\/g, '/');
+      /* the historical-map entry pages are written into dist/ by the build (historyPagesPlugin), not into the tree: the hub is the one door */
+      if (rel === HISTORY_HUB || rel === 'ja/' + HISTORY_HUB) continue;
       assert.ok(existsSync(join(ROOT, rel)), page + ' names ' + ref + ', which does not exist');
       if (rel !== 'index.html') assert.ok(copied(rel), page + ' names ' + rel + ', which the build does not copy');
     }
@@ -123,7 +126,7 @@ test('④ every asset a generated page names is copied into dist/, and the sitem
     const hash = CAPTURED[s.id].hash.replace(/&/g, '&amp;');
     assert.ok(h.includes('<meta http-equiv="refresh" content="0; url=') && h.includes('index.html' + hash + '"'), rel + ' refreshes to its map');
   }
-  assert.ok(rd('robots.txt').includes('Sitemap: ' + site + 'sitemap.xml'));
+  assert.ok(rd('robots.txt').includes('Sitemap: ' + site + SITEMAP_INDEX));   /* the index, which lists sitemap.xml and the history sitemap */
   assert.ok(existsSync(join(ROOT, 'google0266d9db8efbc48c.html')) && STATIC_ASSETS.includes('google0266d9db8efbc48c.html'), 'the Search Console verification file stays');
   for (const s of SHOWCASE) assert.ok(statSync(join(ROOT, CAPTURED[s.id].image)).size > 20000, s.id + ': the picture is a real screenshot');
   void pagePath;
@@ -170,7 +173,7 @@ test('⑥ the address: the generated files carry only the token, and the build f
     assert.ok(about.includes('<link rel="canonical" href="' + SITE_URL + 'about.html">'));
     assert.ok(about.includes('<meta property="og:image" content="' + SITE_URL + CAPTURED['europe-1914'].image + '">'));
     assert.ok(readFileSync(join(dir, 'sitemap.xml'), 'utf8').includes('<loc>' + SITE_URL + 'ja/s/koppen.html</loc>'));
-    assert.ok(readFileSync(join(dir, 'robots.txt'), 'utf8').includes('Sitemap: ' + SITE_URL + 'sitemap.xml'));
+    assert.ok(readFileSync(join(dir, 'robots.txt'), 'utf8').includes('Sitemap: ' + SITE_URL + SITEMAP_INDEX));
     assert.equal(readFileSync(join(dir, 'data', 'x.txt'), 'utf8'), SITE_TOKEN);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

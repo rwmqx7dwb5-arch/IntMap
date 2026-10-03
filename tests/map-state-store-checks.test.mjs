@@ -263,6 +263,8 @@ test('⑤ only js/map-state.js spells the address bar\'s state parameters', () =
      js/auth-ui.js, js/legal-page.js, js/atlas-attach.js  1 write each (the showcase door no longer writes the bar: it opens through showcase-gallery's openShowcase): the showcase
                           door (then the store's restore), the OAuth return, a static page's query, a lightbox's
                           back-button entry
+     js/org-page.js       1 read: the language switch of an organisation page carries the page's own fragment
+                          over to its twin (`location.replace(… + location.hash)`) — an in-page anchor, not map state
      js/map-state.js      1 read + 1 write (classroom-tours): `MapState.address` — the page's own query fields
                           (`?tour=&step=`, not map state) beside a fragment the codec wrote; js/tour-player.js
                           writes the bar only through it */
@@ -270,6 +272,7 @@ const ADDRESS_SITES = {
   'js/map-ui.js': { hash: 7, history: 1 },
   'js/page-i18n.js': { hash: 2, history: 0 },
   'js/usage-counts.js': { hash: 1, history: 0 },
+  'js/org-page.js': { hash: 1, history: 0 },
   'js/auth-ui.js': { hash: 0, history: 1 },
   'js/legal-page.js': { hash: 0, history: 1 },
   'js/atlas-attach.js': { hash: 0, history: 1 },
