@@ -19,13 +19,56 @@
 import { str, bool, one, loose, noArgs } from './atlas-caps.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { registryConsistency, missingUiEntries, probeAiProxy } from './atlas-selfcheck.js';   /* (atlas-os) what the diagnosis can see of Atlas itself */
+import { capabilityEntries } from './atlas-caps.js';
+
+/* ══ (atlas-os) ATLAS ITSELF — the registry it booted with, the AI relay, the buttons its commands name ═══
+   js/atlas-selfcheck.js holds the three readings; this renders them. Each line is green, red, or GREY for
+   «could not observe» — a reading that did not happen is never shown as either of the other two. */
+async function atlasSelf(K) {
+  const L = K.L, esc = K.esc;
+  const facts = {}; let ok = true;
+  const dot = (b) => '<span style="color:' + (b == null ? 'var(--text-muted)' : (b ? '#34c759' : '#ff3b30')) + '">' + icon('dot') + '</span>';
+  let h = '<div style="font-weight:600;margin:10px 0 6px;">' + L('Atlas itself', 'Atlas 自身') + '</div><div style="font-size:12px;line-height:1.75;">';
+  /* ① the registry against the modules */
+  let rc = null;
+  try { const M = await import('./atlas-caps-modules.js'); rc = registryConsistency(capabilityEntries(M.CAPABILITY_MODULES), K.CAPS); } catch (_) { rc = null; }
+  facts.registry = rc;
+  if (!rc) h += dot(null) + ' ' + L('Capability registry: could not be read', '能力の登録: 読めませんでした') + '<br>';
+  else {
+    const bad = rc.implementedUnregistered.length + rc.registeredWithoutEntry.length + rc.spellingDrift.length;
+    if (bad) ok = false;
+    h += dot(!bad) + ' ' + L('Capability registry', '能力の登録') + ': ' + rc.registered + ' ' + L('registered', '件が登録') + ' · ' + rc.entries + ' ' + L('implemented', '件が実装');
+    if (rc.implementedUnregistered.length) h += '<br>' + icon('warning') + ' ' + L('implemented but not in the registry Atlas searches (the page carries stale generated rows)', '実装されているが、Atlas が検索する登録に無い（生成された行が古い）') + ': ' + rc.implementedUnregistered.map(esc).join(', ');
+    if (rc.registeredWithoutEntry.length) h += '<br>' + icon('warning') + ' ' + L('registered but with nothing to run', '登録されているが実行するものが無い') + ': ' + rc.registeredWithoutEntry.map(esc).join(', ');
+    if (rc.spellingDrift.length) h += '<br>' + icon('warning') + ' ' + L('dispatch spelling differs', '呼び名が食い違う') + ': ' + rc.spellingDrift.map((d) => esc(d.id + ' (' + d.entry + ' / ' + d.registry + ')')).join(', ');
+    h += '<br>';
+  }
+  /* ② the AI relay */
+  let ai = null; try { const W = (typeof window !== 'undefined') ? window : globalThis; ai = await probeAiProxy((typeof fetch === 'function') ? fetch : null, W.SUPABASE_URL, W.SUPABASE_ANON_KEY, 8000); } catch (_) { ai = { state: 'unobservable' }; }
+  facts.aiProxy = ai;
+  if (ai.state === 'reachable') h += dot(true) + ' ' + L('AI relay (ai-proxy)', 'AI 中継（ai-proxy）') + ': ' + L('reachable', '到達可能') + ' · ' + ai.ms + 'ms<br>';
+  else if (ai.state === 'unobservable') h += dot(null) + ' ' + L('AI relay (ai-proxy)', 'AI 中継（ai-proxy）') + ': ' + L('could not be observed from this page (not the same as down)', 'このページからは観測できませんでした（停止とは限りません）') + '<br>';
+  else { ok = false; h += dot(false) + ' ' + L('AI relay (ai-proxy)', 'AI 中継（ai-proxy）') + ': ' + L('answered with an error', 'エラーを返しました') + ' ' + esc(String(ai.status)) + (ai.error ? ' (' + esc(ai.error) + ')' : '') + '<br>'; }
+  /* ③ the buttons the kernel's commands declare */
+  let ui = null; try { ui = missingUiEntries((typeof window !== 'undefined') ? window.IntMapOS : null, (typeof document !== 'undefined') ? document : null); } catch (_) { ui = null; }
+  facts.uiEntries = ui;
+  if (!ui) h += dot(null) + ' ' + L('UI entries: could not be read', 'UI の入口: 読めませんでした') + '<br>';
+  else {
+    if (ui.missing.length) ok = false;
+    h += dot(!ui.missing.length) + ' ' + L('UI entries', 'UI の入口') + ': ' + ui.declared + ' ' + L('commands declare a button', '件のコマンドがボタンを宣言')
+      + (ui.missing.length ? ' · ' + icon('warning') + ' ' + L('button not on the page', 'ボタンがページに無い') + ': ' + ui.missing.map((m) => esc(m.cmd + ' (#' + m.btn + ')')).join(', ') : ' · ' + L('all present', 'すべて在る')) + '<br>';
+  }
+  h += '</div>';
+  return { ok, html: h, facts };
+}
 
 export default [
   {
     row: ['system.diagnose',            'diagnose',       'health,selfCheck,systemStatus,status',                        'system',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
     /* ── clearing, outlining, the first-class panels ────────────────────────────────────────── */
     doc: [
-      { in: 'more-features', at: 90, text: '{"type":"diagnose"} (IntMap SELF-DIAGNOSIS — checks news-feed freshness, whether enabled layers are actually painting, and whether the live data APIs are reachable; use for "diagnose", "any issues?", "システムの状態", "データは最新？", "何か問題ある？").\n' + 'REACHABLE AREA / ISOCHRONE — the ONLY correct answer to a travel-TIME question: ' },
+      { in: 'more-features', at: 90, text: '{"type":"diagnose"} (IntMap SELF-DIAGNOSIS — checks news-feed freshness, whether enabled layers are actually painting, whether the live data APIs are reachable, and ATLAS ITSELF — whether the capability registry this page booted with matches the capability modules (a capability implemented but missing from what you can search is named), whether the AI relay answers, and whether every command that declares a toolbar button still has it on the page; a reading that could not be made is reported as unobservable, never as down; use for "diagnose", "any issues?", "システムの状態", "データは最新？", "何か問題ある？").\n' + 'REACHABLE AREA / ISOCHRONE — the ONLY correct answer to a travel-TIME question: ' },
     ],
     schema: () => (noArgs('diagnose')),
       /* ⚠⚠ (#R296) TWO CASES STOOD HERE. `disaster`/`flood`/`ashfall` — 「4つのうち、放射性物質拡散シミュ
@@ -41,8 +84,10 @@ export default [
           if(H.endpoints){ Object.keys(H.endpoints).forEach(k=>{ const e=H.endpoints[k]; if(e.ok==null){ h+='<span style="color:var(--text-muted)">'+icon('dot')+'</span> '+esc(k)+': '+L('not observed yet','未観測')+'<br>'; return; } h+=dot(e.ok)+' '+esc(k)+': '+(e.ok?(L('reachable','到達可能','erreichbar','доступно','accesible')+' · '+e.ms+'ms'):(e.status===429?(L('rate-limited','レート制限','ratenbegrenzt','лимит запросов','límite de tasa')+' (429)'):e.status?(L('error','エラー','Fehler','ошибка','error')+' '+e.status):(L('unreachable','到達不可','nicht erreichbar','недоступно','inaccesible'))))+'<br>'; }); }
           else h+='<span style="color:var(--text-muted)">'+icon('dot')+'</span> '+L('Live APIs: not probed','ライブAPI: 未確認','Live-APIs: nicht geprüft','Живые API: не проверены','APIs: sin comprobar')+'<br>';
           h+='</div>';
-          h+=note(H.ok?('✓ '+L('All systems normal.','すべて正常です。','Alle Systeme normal.','Все системы в норме.','Todo normal.')):(icon('warning')+' '+L('Some data sources need attention (red). Atlas uses fallbacks where it can.','一部のデータ源に問題があります（赤）。可能な範囲でAtlasは代替に切り替えます。','Einige Datenquellen brauchen Aufmerksamkeit (rot). Atlas nutzt Ausweichquellen.','Некоторые источники требуют внимания (красное). Atlas использует запасные варианты.','Algunas fuentes requieren atención (rojo). Atlas usa alternativas.')));
-          return R(true, h); }
+          const A=await atlasSelf(K); h+=A.html;
+          const allOk=H.ok&&A.ok;
+          h+=note(allOk?('✓ '+L('All systems normal.','すべて正常です。','Alle Systeme normal.','Все системы в норме.','Todo normal.')):(icon('warning')+' '+L('Some data sources need attention (red). Atlas uses fallbacks where it can.','一部のデータ源に問題があります（赤）。可能な範囲でAtlasは代替に切り替えます。','Einige Datenquellen brauchen Aufmerksamkeit (rot). Atlas nutzt Ausweichquellen.','Некоторые источники требуют внимания (красное). Atlas использует запасные варианты.','Algunas fuentes requieren atención (rojo). Atlas usa alternativas.')));
+          return R(true, h, { meta: { diagnose: { data: !!H.ok, atlas: A.facts } } }); }
     },
   },
   {
