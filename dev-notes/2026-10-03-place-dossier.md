@@ -28,3 +28,5 @@ date: 2026-10-03
 
 - `tests/place-dossier-checks.test.mjs`（新規・node）: 収集器を**評価する**——偽の HOST・偽の登録簿・偽の網で。登録簿の行が数と単位を表示文と分けて持つ／標高は先頭へ／4 種の穴が理由つきの行になる／宣言から発見した読み手の無い行と `dl-` で結ばれる行／公海・届かない・述べられないゾーンが 3 つの別の答え／統計は呼び手の集合と書式から（国に無い指標は 0 にしない）／記録が JSON で往復する／描いた行の数がレイヤー行の数と等しい／入口 3 つ。
 - 段 1: `check:static`・`check:capabilities`（23 項目）・`check:catalog`・`check:i18n`・`check:archfiles`・`check:surface`・`check:docs`（`DECISIONS.md` の能力数 8 か所を除く）。
+- `tests/place-dossier.spec.js`（新規・ブラウザ）: 右クリック →「地点プロファイル」でカードが開き、全節が値か理由に落ち着き、空の行が無く、× で閉じる。1 ページ 1 起動。**実測 12.8 / 8.4 s（ローカル・1 worker）、上限側の 13 を `tests/durations.json` に入れた**——`CORE_MAX_S` を超えるので deep 側に並ぶ（core は 6 本のまま、deep は 128 本）。
+- 段 1（統合後）: 上の各門に加え `check:datagov`・`check:perf`（天井内・`--update` 不要）・`check:testbudget`。`DECISIONS.md` の能力数（155／到達 154／`find_capability` の先だけ 139）と、tier の本数（`docs/FILES.md`・`docs/TESTING.md`・`package.json`・`scripts/worktree.mjs`）を実数へ。⚠ **`check:testbudget` は全体が天井 87.5 分を 0.2 分超える（87.7 分）**——この spec の 13 s を払う余地は PR #911（直列 9.0 分の削減）が作る。天井は上げていない。
