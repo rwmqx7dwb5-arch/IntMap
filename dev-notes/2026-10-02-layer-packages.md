@@ -1,6 +1,8 @@
 ---
 title: レイヤーの実装を「宣言が名指すモジュール」（レイヤー・パッケージ）に置き、js/data-layers.js は 1 本の経路で委ねる——海底ケーブル・RainViewer レーダー・火災・NATO／EU／国防費の 6 行を移し、data-layers.js は 6,108 → 5,246 行・window への代入 119 → 114・名前で切り替える行 29 → 23。移す前の木で撮ったブラウザの評価と同じ評価で、描くものが変わっていないことを示す。data-layers.js は小さくなるだけ（check:static）。あわせて NATO の凡例の加盟国数を描いている加盟国から書き（1985 年に「32」と述べていた）、プレート境界ほかの凡例の題の言語の取り違えを直す
 date: 2026-10-02
+newsen: The NATO legend now counts the members drawn for the date shown (it said 32 for 1985), and several legend titles show in the right language.
+newsjp: NATO の凡例が、表示中の日付に描いている加盟国から数を書くようになりました（1985 年に「32」と出ていた誤り）。凡例の題の言語の取り違えも直しました。
 ---
 
 〈依頼〉 利用者（2026-10-02）:「構造改革とイノベーション。保守ではなく改革。景観放置ではなく再開発。全権を委任する。

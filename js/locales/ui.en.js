@@ -265,6 +265,7 @@ IntMapLang.define('en', { ui: {
       viewKbd:"View keyboard shortcuts (or press ?)",
       lblStatusPage:"IntMap, now",
       viewStatusPage:"What is working — this device, the layers, the data sources",
+      viewWhatsNew:"What’s new — changes to IntMap, newest first",
       newsCountryOff:"Default feeds only",
       newsCountryMultiSel:"Choose countries…",
       lblNewsSources:"News outlets",

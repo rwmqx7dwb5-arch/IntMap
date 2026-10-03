@@ -769,6 +769,9 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
          window.IntMapStatus in js/layer-state.js, which also owns this button's one click listener). -->
     <div class="setting-group" id="status-page-group"><label data-i18n="lblStatusPage">IntMap, now</label>
       <button type="button" id="btn-status-page" class="ai-test-btn" style="width:100%;"><span data-icon="gauge"></span> <span data-i18n="viewStatusPage">What is working — this device, the layers, the data sources</span></button>
+      <!-- (ops-next) 「新着」— what changed in IntMap (js/whats-new.js, fetched on first use; the same listener in
+           js/layer-state.js opens it, and the unread mark is counted the first time this button is on screen). -->
+      <button type="button" id="btn-whats-new" class="ai-test-btn" style="width:100%;margin-top:8px;"><span data-icon="sparkle"></span> <span data-i18n="viewWhatsNew">What’s new — changes to IntMap, newest first</span></button>
     </div>
     <!-- (#R211) 「科学的根拠・ロジックの説明ページ」 — the data-source list answers WHERE a number came
          from; this answers HOW it was computed, which is a different question and needed its own page.

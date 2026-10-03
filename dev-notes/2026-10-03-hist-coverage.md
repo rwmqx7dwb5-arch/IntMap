@@ -1,6 +1,8 @@
 ---
 title: 歴史地図が「どこまで分かっていて、どこからが分かっていないか」を地図そのものに描く——記録の無い土地は斜線、二重主張は土地で測って継ぎ目・重複・係争に分け、埋められない国は穴として理由ごと記録する
 date: 2026-10-03
+newsen: Historical maps now show where the record is missing (hatched) and tell disputed, overlapping and seam areas apart.
+newsjp: 歴史地図が、記録の無い土地を斜線で示し、二重主張を係争・重複・継ぎ目に分けて描くようになりました。
 ---
 
 〈依頼〉「Every year of the world, on one map」を商品として成立させる。欠落を上流 3 経路で照合して埋め、

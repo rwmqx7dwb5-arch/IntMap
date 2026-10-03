@@ -1,6 +1,8 @@
 ---
 title: 企業アトラスと国政選挙を「一度撮った写真」から生きたデータへ——週次の再取得、受領証、法定期限で遅れを測る、更新不能の理由、選挙区が述べる領域を CShapes に訊く、時間で流す
 date: 2026-10-03
+newsen: The company atlas and national elections now refresh every week and say how up to date they are.
+newsjp: 企業アトラスと国政選挙を毎週更新し、どこまで新しいかを示すようにしました。
 ---
 
 〈依頼〉「求めるのは修正・穴埋めではなく構造改革とイノベーション。足し算。保全。改革。商品開発。再開発。全権を委任する。」

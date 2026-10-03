@@ -1,6 +1,8 @@
 ---
 title: 国別指標（国の統計を 1 つのレイヤーで）と年鑑（その年の世界）——同じ系列を塗る行を宣言から発見し、時間の扱いを 1 つに
 date: 2026-10-03
+newsen: New country-indicators layer (national statistics on one layer) and a yearbook of the world for any year.
+newsjp: 国別指標レイヤー（国の統計を 1 つのレイヤーで）と、その年の世界をまとめた年鑑を追加しました。
 ---
 
 〈依頼〉「修正・穴埋めではなく構造改革とイノベーション。整形ではなく造形。足し算。全権を委任する」の地図・レイヤー分野。

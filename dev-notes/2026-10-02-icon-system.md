@@ -1,6 +1,8 @@
 ---
 title: アイコンを絵文字から線画（SVG）へ——1 つのモジュール・文字と絵の分離・絵文字を拒む門
 date: 2026-10-02
+newsen: Icons are now crisp line drawings instead of emoji, and look the same on every device.
+newsjp: アイコンを絵文字から線画に替え、どの端末でも同じ見た目になりました。
 ---
 
 〈依頼〉 利用者の決定（2026-10-02）: 絵文字のアイコン（Tools の地球・定規・鉛筆・氷・丸・カメラ等）を iOS 風の

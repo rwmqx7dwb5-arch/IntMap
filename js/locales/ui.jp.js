@@ -265,6 +265,7 @@ IntMapLang.define('jp', { ui: {
       viewKbd:"ショートカット一覧を表示（? キーでも開けます）",
       lblStatusPage:"IntMap のいま",
       viewStatusPage:"いま動いているもの — この端末・レイヤー・データ元",
+      viewWhatsNew:"新着 — IntMap に加わった変更（新しい順）",
       newsCountryOff:"標準のニュースのみ",
       newsCountryMultiSel:"国を選択…",
       lblNewsSources:"ニュースの提供元",

@@ -1,6 +1,8 @@
 ---
 title: 言語の束は読者の 1 言語ぶんしか起動時に読まれていなかった——それを守る者が居なかったので check:perf が名指すようにし、locale の取得失敗を理由つきで読者に言い、失敗をキャッシュしないようにした
 date: 2026-10-02
+newsen: Only your own language is downloaded at start-up, and a language that fails to load now says so.
+newsjp: 起動時に読むのは読者の言語だけになり、言語の読み込みに失敗したときはその旨を表示します。
 ---
 
 〈依頼〉「構造改革とイノベーション。保守ではなく改革。……引き算ではなく足し算。固執ではなく保全」——

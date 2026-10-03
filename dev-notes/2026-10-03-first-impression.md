@@ -1,6 +1,8 @@
 ---
 title: 最初の 1 枚——初回訪問は地図が全面、パネルは読者が開いたときだけ。起動は開いていないパネルの縮小画像と世界の地名辞典を取らない（同一オリジン 13.43 MB → 3.89 MB）。閉じた Chronos が年の軸を持つ
 date: 2026-10-03
+newsen: A first visit opens on a full-screen map, and start-up downloads fell from 13.4 MB to 3.9 MB.
+newsjp: 初回の訪問は地図が全面に出ます。起動時のダウンロードは 13.4 MB から 3.9 MB に減りました。
 ---
 
 〈依頼〉本番（2026-10-03、初訪問＝ストレージ・SW・キャッシュ消去、未ログイン、1024×768）で、**初回だけ**左（Countries の GDP 一覧）と右（Layers）の両パネルが開き、地球儀が中央 ~250 px に押し込まれる。2 回目以降は全画面＝初回のほうが悪い。初回転送 ~12 MB のうち、Layers の縮小画像 33 枚と `gazetteer-world.json.gz` 5.29 MB。一番の売り（about.html「Every year of the world, on one map」）の入口は右下の小さな Chronos ボタンだけ。「最初の 1 枚」という状態を 1 つ定義し、初回体験をそこから作る。

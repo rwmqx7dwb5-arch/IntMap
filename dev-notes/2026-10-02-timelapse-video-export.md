@@ -1,6 +1,8 @@
 ---
 title: タイムラプスを動画（MP4／WebM）に、比較を 1 枚の PNG に書き出す——描き終えたコマだけを 1 コマずつ録り、年・出典・語標とリンクを焼き込む
 date: 2026-10-02
+newsen: Export a time-lapse as a video (MP4 or WebM) and a comparison as one PNG, with the year, the sources and a link burned in.
+newsjp: タイムラプスを動画（MP4／WebM）に、比較を PNG 1 枚に書き出せます。年・出典・リンクを焼き込みます。
 ---
 
 〈依頼〉「商品開発・マーケティング・営業。足し算。全権を委任する」の 1 本。PRODUCT.md §2.4 が最優先とする

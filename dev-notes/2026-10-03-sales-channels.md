@@ -1,6 +1,8 @@
 ---
 title: 組織向けの窓口・相談フォーム・支援のページ——報道/学校/研究の紹介、匿名 INSERT を開けずに相談を受け、寄付者を手作業の照合で名前つきで感謝する
 date: 2026-10-03
+newsen: New pages for newsrooms, schools and research groups, an enquiry form, and a page on supporting IntMap.
+newsjp: 報道・学校・研究向けのページ、相談フォーム、IntMap を支援するページを公開しました。
 ---
 
 〈依頼〉「求めるのは改善ではなく商品開発、マーケティング、営業。引き算ではなく足し算。全権を委任する。」の 1 本。

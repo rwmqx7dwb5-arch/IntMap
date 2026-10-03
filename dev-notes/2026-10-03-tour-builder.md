@@ -1,6 +1,8 @@
 ---
 title: ツアー作成を足した——いまの地図を段として足し、語りと問いを書き、ツアーをリンクそのもの（?tour=custom&t=…）に入れて配る。既存のプレイヤーがそのまま再生し、リンクの長さは本番サイトの上限を実測して先に警告する
 date: 2026-10-03
+newsen: Tour builder: add the current map as a step, write narration and a question, and share the whole tour as one link.
+newsjp: ツアー作成：いまの地図を段として足し、語りと問いを書いて、ツアー全体をリンク 1 本で配れます。
 ---
 
 〈依頼〉授業ツアーは手書きの 3 本だけで、教員が自分の授業用のツアーを作る道が無い。共有リンクは地図の状態を全部

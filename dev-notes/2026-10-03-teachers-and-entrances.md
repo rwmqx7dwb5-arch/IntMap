@@ -1,6 +1,8 @@
 ---
 title: 後回しだった入口をつなぐ——教員ページに「自分のツアーを作る」、歴史ページ・組織向けページを全ページの足元とアプリの設定から辿れるように、robots.txt を両サイトマップの目次へ
 date: 2026-10-03
+newsen: Teachers can build their own tours from the teachers page, and the history and organisation pages are linked from every page and from Settings.
+newsjp: 教員ページから自分のツアーを作れるようにし、歴史ページと組織向けページを全ページと設定から辿れるようにしました。
 ---
 
 〈依頼〉「商品開発、マーケティング、営業。足し算。全権を委任する。」の続き。作ったのに、読者がそこへ着く道が無かったものをつなぐ。

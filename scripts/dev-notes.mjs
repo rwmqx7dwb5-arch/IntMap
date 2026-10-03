@@ -238,6 +238,34 @@ export function slugOf(title) {
   return cps.slice(0, 28).join('').replace(/-+$/, '') || 'entry';
 }
 
+/* ══ (ops-next) THE READER'S LINE ══════════════════════════════════════════════════════════════════
+   A record is written for the next engineer; «what's new» (scripts/whats-new.mjs → the in-app 「新着」, the
+   updates pages and their Atom feeds) is written for the person using the map. So a record that changed
+   something a reader can see may carry ONE line for them, in the two languages IntMap writes in
+   (CONSTITUTION.md §7): `newsen:` and `newsjp:` in its front matter. A record without them is internal
+   and is not announced — nothing is generated from a title written for engineers.
+   The rules are the ones a line shown to a reader must keep: both languages or neither, plain text (no
+   markdown, no link — the page links the pull request itself), no emoji (AGENTS.md §3-6), the Japanese line
+   in Japanese, and short enough to read in a list. */
+/* NEWS_MAX — observed: the longest reader's line written on 2026-10-03 is about 170 characters; 280 keeps a
+   list readable and leaves room. Expires: never — a longer story belongs in the record itself. Canon: here. */
+export const NEWS_MAX = 280;
+const EMOJI = /\p{Extended_Pictographic}/u;
+export function newsProblems(fm) {
+  const out = [];
+  const en = (fm && fm.newsen) || '', jp = (fm && fm.newsjp) || '';
+  if (!en && !jp) return out;
+  if (!en || !jp) return [`has ${en ? 'newsen' : 'newsjp'} without ${en ? 'newsjp' : 'newsen'} — a reader's line is written in both en and jp, or not at all`];
+  for (const [k, v] of [['newsen', en], ['newsjp', jp]]) {
+    if (v.length > NEWS_MAX) out.push(`${k} is ${v.length} characters (at most ${NEWS_MAX})`);
+    if (EMOJI.test(v)) out.push(`${k} carries an emoji (AGENTS.md §3-6)`);
+    if (/\[[^\]]*\]\(|\*\*|`|<[a-z]/i.test(v)) out.push(`${k} carries markup — a reader's line is plain text`);
+  }
+  if (!/[぀-ヿ一-鿿]/.test(jp)) out.push('newsjp is not written in Japanese');
+  if (/[぀-ヿ]/.test(en)) out.push('newsen carries Japanese kana');
+  return out;
+}
+
 /* ══ READING dev-notes/ ═════════════════════════════════════════════════════════════════════ */
 function frontMatter(text) {
   const m = /^---\n([\s\S]*?)\n---\n/.exec(text);
@@ -263,7 +291,9 @@ export function entries(root = ROOT) {
     if ((m = DATED.exec(name))) {
       const body = rd(root, rel);
       const fm = frontMatter(body) || {};
-      out.push({ file: rel, kind: 'dated', date: m[1], slug: m[2], title: fm.title || '', fmDate: fm.date || '', pr: fm.pr ? String(fm.pr).replace(/^#/, '') : null, round: null });
+      out.push({ file: rel, kind: 'dated', date: m[1], slug: m[2], title: fm.title || '', fmDate: fm.date || '', pr: fm.pr ? String(fm.pr).replace(/^#/, '') : null, round: null,
+        /* (ops-next) the READER's line — what changed for someone using the map, in en and jp (scripts/whats-new.mjs) */
+        news: fm.newsen || fm.newsjp ? { en: fm.newsen || '', jp: fm.newsjp || '' } : null });
     } else if ((m = LEGACY.exec(name))) {
       const body = rd(root, rel);
       const first = body.split('\n', 1)[0];
@@ -375,6 +405,7 @@ export function checkNotes(root = ROOT) {
       if (!fm.title) problems.push(`${NOTES_DIR}/${name} has no title in its front matter`);
       if (fm.date !== d[1]) problems.push(`${NOTES_DIR}/${name}: front-matter date «${fm.date || ''}» is not the date in its name (${d[1]})`);
       if (fm.pr && !/^#?\d+$/.test(fm.pr)) problems.push(`${NOTES_DIR}/${name}: pr «${fm.pr}» is not a pull-request number`);
+      for (const p of newsProblems(fm)) problems.push(`${NOTES_DIR}/${name}: ${p}`);
     } else {
       const h = ROUND_HEAD.exec(body.split('\n', 1)[0]);
       if (!h || +h[1] !== +l[1]) problems.push(`${NOTES_DIR}/${name} does not begin with its own «## R${l[1]}» heading`);

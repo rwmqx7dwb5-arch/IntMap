@@ -72,6 +72,12 @@ window.IntMapSourcesList = (function () {
     if (!status) return '';
     try { return status.S.sourceNote(status.b, s.u, IntMapLang.normalise(lang)); } catch (e) { return ''; }
   }
+  /* (ops-next) …and the record over every night the measurement holds, for every credit it measures — not only
+     the failing ones (js/service-status.js sourceRecord). Said only when the night's note is not already saying it. */
+  function record(s) {
+    if (!status) return '';
+    try { return status.S.sourceRecord(status.b, s.u, IntMapLang.normalise(lang)); } catch (e) { return ''; }
+  }
   function askStatus() {
     if (asked) return; asked = true;
     import('./service-status.js').then(function (S) { return S.loadStatus().then(function (b) { if (S.usable(b)) { status = { S: S, b: b }; paint(); } }); })
@@ -112,6 +118,7 @@ window.IntMapSourcesList = (function () {
         out += '<div class="pg-srcitem"><b>' + esc(s.n) + '</b>'
              + '<div class="pg-use">' + esc(useText(s, lang)) + '</div>'
              + (note(s) ? '<div class="pg-down">' + esc(note(s)) + '</div>' : '')
+             + (record(s) ? '<div class="pg-rec">' + esc(record(s)) + '</div>' : '')
              + '<a class="pg-u" href="' + esc(window.IntMapSafe.url(s.u)) + '" target="_blank" rel="noopener">' + esc(s.u) + '</a></div>';
       });
     });

@@ -842,7 +842,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  184 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  185 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -960,7 +960,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全184を検索・到達可能 183）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全185を検索・到達可能 184）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -976,9 +976,9 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 184能力ぶんの型・列挙・範囲と `required`/`anyOf`。
-atlas-schemas.js                  **引数の schema**（#R406）— 184 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
-atlas-schemas.js                  **引数の schema**（#R406）— 184 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
+atlas-schemas.js                  **引数の schema**（#R406）— 185能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 185 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
+atlas-schemas.js                  **引数の schema**（#R406）— 185 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）
@@ -1310,6 +1310,12 @@ service-status.js                 **「IntMap のいま」**（状態ページ�
                                   品質評価。`data/service-status.json` を読む。`upstreamRow` は失敗した要求の URL を
                                   その提供元の夜の記録と結ぶ（`layer-state.js` が使う）、`sourceNote` は出典の一覧に同じ文を出す。
                                   初めて使われたときに取得（握りは `layer-state.js` の `window.IntMapStatus`）。08-ui.md §8.1.3
+                                  毎晩の確認の**記録**（`history`）も読む——晩ごとの応答率の棒・データ元ごとの帯・`sourceRecord`
+                                  （「直近 N 晩の確認のうち M 晩で応答」）と、Atlas 評価のセッション不要の半分（`atlasEval.offline`）
+whats-new.js                      **「新着」**——IntMap に加わった読者に見える変更（`whats-new.json`、build が dev-notes/ の
+                                  `newsen`/`newsjp` から書く）。設定 ▸ 新着・未読の印（ボタンが初めて画面に入ったときに数える）・
+                                  Atlas の `system.whatsNew` が読む。初めて使われたときに取得（握りは `layer-state.js` の
+                                  `window.IntMapWhatsNew`）。15-ops-quality.md §15.9
 host-match.js                     出口の台帳（`scripts/outbound-hosts.json`）のホスト名・パターン（`*.wikipedia.org`）の照合 1 つ。
                                   `scripts/upstream-liveness.mjs` と `service-status.js` が同じ関数を読む
 fetch-deadline.js                 締切つきの取得 `jsonWithin()` / `readWithin()`——相手が答えるのをやめても必ず終わる 1 回の取得。
@@ -1374,7 +1380,8 @@ histcities-homonyms.json.gz       歴史都市名の記録が使う綴りに一�
 service-status.json               **昨夜の確認を読者へ**——上流ホストごとの判定・`what`/`whatJp`・最後に応答した時刻・
                                   応答しなくなった時刻（`upstream-liveness` の結果から）と、Atlas の夜間評価の実行記録。
                                   先頭に出自（IntMap 自身の測定）を値で持つ。生成は scripts/build-service-status.mjs
-                                  （`.github/workflows/tle-refresh.yml` が 1 日 2 回）
+                                  （`.github/workflows/tle-refresh.yml` が 1 日 2 回）。`history` に毎晩の判定を 1 晩 1 文字で最大 90 晩
+                                  （公開台帳）、`atlasEval.offline` にセッション不要の評価の件数
 offline-sources.json              **どの供給元のファイルを回線なしで使えるよう保存してよいか**——`scripts/outbound-hosts.json` の各ホスト行の
                                   `offline`（allowed・kind・pathPrefix・規約の URL・理由）から導出。述べられていないホストは入らない。
                                   生成は scripts/offline-sources.mjs（`--write` / `--check`）。`check:datagov`（規則 offline-declared）が突き合わせる
@@ -1915,6 +1922,10 @@ scripts/
                                   前夜と比べ、`--fail-on-transition` は up→2 回続けて down の回だけ exit 1。`--check` は宣言だけ
   build-service-status.mjs        `data/service-status.json` を作る。最新の `upstream-liveness` artifact と `atlas-eval.yml`
                                   の実行記録を gh で読み、言うことが変わったときだけ書く。読めなかった半分は `null` と理由
+                                  毎晩の結果を `history` に畳み込む（`advanceHistory`・`--backfill` で残っている結果から埋める）、
+                                  選挙の上流の言葉は宣言から（`readerLedger`）、`atlas-eval-offline` を件数に（`offlineSummary`）
+  whats-new.mjs                   **更新情報**——dev-notes/ の `newsen`/`newsjp` から `whats-new.json`・`updates.html`／`ja/updates.html`・
+                                  Atom（`updates.xml`／`ja/updates.xml`）・`sitemap-updates.xml` を build 時に dist/ へ（`whatsNewPlugin`）
   offline-sources.mjs             `data/offline-sources.json` を、ホスト台帳（outbound-hosts.json）の `offline` から導出して書く／照合する
   lib/nightly-status.mjs          夜間ジョブの記録を値にする 1 か所——`readerUpstreams`（読者向けの上流の要約）・
                                   `atlasEvalState` / `atlasEvalLine`（最後の成功・最新の回が何も測っていないか・失敗した段の注記）。
@@ -2100,6 +2111,8 @@ scripts/
                                   find_capability の答えは**順位だけ**を録る（compactFind）——説明文は宣言から再導出し、
                                   意味検索の答えは各能力の宣言の版（declVersion）で変化を `notes` に述べる
   atlas-eval/lab.mjs              全カセットの再生と判定（毎 PR・`--replay`）、夜ごとの報告の時系列（`history`）
+  atlas-eval/reach.mjs            **到達**——解答つきの問いの言葉そのものを find_capability と同じ語彙検索に渡し、答えに要る能力の
+                                  順位（出ないか）を測る。`--offline`（セッション不要の半分＝再生＋到達）が毎晩使う
   atlas-eval/scripted-cassettes.mjs  手で書いたカセットの台本（記録された欠陥の再構成と代表ターン）。`--write` で再録
   atlas-eval/cassettes/*.json     カセット。手書き（scripted）と本番の録画（recorded・`--record`）
   backup-db.sh / restore-test.sh  DB のバックアップと隔離復元
