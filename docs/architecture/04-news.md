@@ -312,7 +312,7 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 - **計算は `js/news-intel-core.js` の 1 本**（純粋）: 地点 → 国（Natural Earth 10 m・海岸の許容 `COAST_KM`）、
   窓と直前の窓、増減、塗りの値、障害とニュースの結び付け、取り込みの判定。node のテストが本番のデータで
   同じ関数を評価する。
-- **サーバーの読み口**（migration `20261003090000_news_intelligence.sql`）: `news_pulse(since, until)`
+- **サーバーの読み口**（migration `20261003110000_news_intelligence.sql`）: `news_pulse(since, until)`
   （地点 × UTC 日 × カテゴリの集計を 1 つの jsonb）・`news_events_at(points, since, until)`（地点に載った
   出来事の行）・`news_ingest_health()`（取り込みの要約。本文を含まない）・表 `news_event_entities`。
 - **Chronos に従う**: 窓の終わりは時計の瞬間（`clockUntil`）。`js/layer-time-decl.js` は `record`。

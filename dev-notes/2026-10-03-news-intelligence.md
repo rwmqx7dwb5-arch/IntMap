@@ -46,7 +46,7 @@ date: 2026-10-03
 
 ## 3. 本番へ要るもの（このラウンドではデプロイしない）
 
-- migration `20261003090000_news_intelligence.sql` の適用（関数 3・表 1・列 1・索引・cron の段の置き換え）。
+- migration `20261003110000_news_intelligence.sql` の適用（関数 3・表 1・列 1・索引・cron の段の置き換え）。
 - Edge Function `news-ingest` の配備（`entities` 段・記録の列）。
 - ⚠ **embed は鍵が埋め込みモデルに届くまで 0 件**（2026-08-24 実測の 403 のまま）。`OPENAI_API_KEY` を届く鍵にするか
   `NEWS_EMBED_MODEL` を届くモデルに——コードは変えずに動き出す。それまで `news_ingest_health()` は embed を「失敗」と返す。
@@ -54,7 +54,7 @@ date: 2026-10-03
 ## 4. 検査
 
 `tests/news-intelligence-checks.test.mjs`（12 件——出荷している関数を本番の点・本番の見出し・同梱の輪郭と名簿で評価）・
-`supabase/tests/18_news_intelligence_test.sql`（pgTAP）・`00_structure_test.sql` に表を追加・
+`supabase/tests/21_news_intelligence_test.sql`（pgTAP）・`00_structure_test.sql` に表を追加・
 `tests/news-ingest-checks.test.mjs` の段の順序・`tests/layer-descriptor-checks.test.mjs` ①（写真の後に足された層は
 「新しいファイル」として除いて比べる——写真に写った行は 1 バイトも動いていないことを引き続き測る）。
 
@@ -71,8 +71,7 @@ date: 2026-10-03
 ⚠ **測ってから直した 1 件**: 本体が `js/ne-countries.js` を静的に import すると、そのモジュールが main と遅延チャンクの
 共有になり、Rolldown が `fetch-deadline` / `proxy-fetch` を main へ畳まなくなって **eager requests 9 → 11**
 （`vite.config.js` が記録している循環の規則）。輪郭の読み込みは起動側の窓口 `IntMapNewsIntel.outlines` が渡す形に変え、9 に戻した。
-⚠ `node scripts/perf-budget.mjs --update` はこの worktree では拒否された（origin/main が 1 commit 先にある——rebase 後の木で測る）。
-統合の後に同じコマンドで上の行だけを上げる。
+origin/main へ rebase した木で `npm run build` → `node scripts/perf-budget.mjs --update`。上げたのは上の 6 行だけ（`atlas-console` 1134.1→1152.2 kB・`company-panel` 20.9→24.1 kB・`cssRaw` 365.8→372.4 kB・`async.gzip` 3774.0→3806.2 kB）。
 
 ## 6. 共有窓口（`check:surface`）——足した結合
 

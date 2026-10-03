@@ -4,12 +4,12 @@
     "gzip": 1568634,
     "brotli": 1183561,
     "requests": 9,
-    "modules": 307,
-    "cssRaw": 374532,
+    "modules": 308,
+    "cssRaw": 381339,
     "cssGzip": 61518
   },
   "async": {
-    "raw": 11794437,
+    "raw": 11854240,
     "gzip": 3886293,
     "chunks": {
       "aircraft-detail": 17009,
@@ -37,7 +37,7 @@
       "cesium-vector-tiles": 5681,
       "company-data": 9505,
       "company-facilities": 14221,
-      "company-panel": 21448,
+      "company-panel": 24654,
       "datacenters": 40859,
       "dist": 39790,
       "embed-mode": 10145,

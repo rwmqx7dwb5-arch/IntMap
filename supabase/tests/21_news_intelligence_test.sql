@@ -1,5 +1,5 @@
 -- ============================================================================
---  pgTAP · 18 — news-intelligence: the four reading doors of 20261003090000_news_intelligence.sql.
+--  pgTAP · 21 — news-intelligence: the four reading doors of 20261003110000_news_intelligence.sql.
 --
 --  WHAT THIS PROVES (the half that needs a Postgres):
 --    · news_pulse counts events by (representative point, first-reported UTC day, category), keeps the

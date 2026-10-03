@@ -47,7 +47,7 @@ export function newsIntel(HOST) {
   const WINDOWS = [1, 3, 7, 14];
   /* one fetch answers every window and its comparison (2 × 14 = 28 days) and the brief's 30-day series */
   const SPAN_DAYS = 30;
-  /* the news collection runs every 20 minutes (supabase/migrations/20261003090000_news_intelligence.sql);
+  /* the news collection runs every 20 minutes (supabase/migrations/20261003110000_news_intelligence.sql);
      asking twice per run is the most that can show anything new. Expires with that schedule. */
   const REFRESH_MS = 10 * 60 * 1000;
   const RAMP_VOL = [0, '#e7e3f7', 0.35, '#a99ae0', 0.7, '#6a4fc9', 1, '#35208a'];
