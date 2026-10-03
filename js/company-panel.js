@@ -341,6 +341,13 @@ export function companyPanel(HOST) {
       + '<h3 class="cop-name" title="' + S(title) + '">' + S(title) + '</h3>'
       + (others.length ? '<div class="cop-alt">' + S(others.join(' · ')) + '</div>' : '')
       + (meta ? '<div class="cop-meta">' + S(meta) + '</div>' : '')
+      /* (companies-elections-live) the day this profile was built from its sources, and whether
+         OpenStreetMap was ever asked — .github/workflows/companies-refresh.yml re-reads the atlas a
+         batch a week, so the date is a fact about THIS company, not about the atlas */
+      + (curProf && /^\d{4}-\d{2}-\d{2}$/.test(String(curProf.generatedAt || ''))
+        ? '<div class="cop-meta cop-fetched">' + S(L('Fetched', '取得日') + ' ' + curProf.generatedAt
+          + (curProf.osmPending ? ' · ' + L('OpenStreetMap sites not fetched yet', 'OpenStreetMap の拠点は未取得') : '')) + '</div>'
+        : '')
       + mkt
       + '</div></div>';
   }

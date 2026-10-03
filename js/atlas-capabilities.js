@@ -278,9 +278,15 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["panel.showcase","showcase","example,exampleMap,showcaseMap","panel","time","camera,map.layer,time","map,time","session","none","",""],
       ["panel.tour","tour","classroomTour,lessonTour,guidedTour,startTour,nextStep","panel","time","camera,map.layer,time","map,time","session","none","",""],
       ["panel.tourBuilder","tourBuilder","buildTour,makeTour,tourEditor,addMapToTour,shareTour","panel","time","camera,map.layer,time,tour.draft","map,time","persist","explicit","",""],
-      ["notebook.list","notebook","notebookList,investigations,pastQuestions,myInvestigations","research","none","","explanation","read","none","","","external"],
-      ["notebook.open","notebookOpen","openInvestigation,reopenInvestigation,replayInvestigation","research","time","camera,map.layer,time","map,time","session","none","","","external"],
-      ["notebook.compare","notebookCompare","compareInvestigation,whatChangedSince,recheckInvestigation","research","none","","explanation","read","none","","atlasQuery","external"],
+      ["account.data","myData","accountData,dataInventory,whatDoYouKnowAboutMe,privacyInventory","account","none","","explanation","read","none","",""],
+      ["account.export","myDataExport","exportMyData,downloadMyData,dataExport,dataPortability","account","none","","explanation","read","none","",""],
+      ["places.save","savePlace","saveToMyPlaces,bookmarkPlace,rememberPlace,keepPlace","places","none","account.places","explanation","persist","explicit","place?",""],
+      ["places.list","myPlaces","savedPlaces,listPlaces,placeList","places","none","","explanation","read","none","",""],
+      ["places.show","showPlaces","showMyPlaces,mapMyPlaces,openSavedPlaces","places","object","map.object","object,map","session","none","",""],
+      ["places.remove","removePlace","deletePlace,forgetPlace,unsavePlace","places","none","account.places","explanation","persist","explicit","",""],
+      ["layers.electionPlay","electionPlay","electionTimelapse,playElections","data","layer","map.layer,map.layerOption","map,explanation","session","none","",""],
+      ["layers.electionSwing","electionSwing","seatsChangedHands","data","none","map.layerOption","explanation","session","none","",""],
+      ["layers.electionFreshness","electionFreshness","electionDataAge","data","none","","explanation","read","none","",""],
     ];
     /* ⚠ GENERATED ROWS — END */
 

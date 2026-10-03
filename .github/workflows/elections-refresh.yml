@@ -1,0 +1,89 @@
+# (companies-elections-live) THE NATIONAL ELECTIONS LAYER ASKS THE WORLD EVERY WEEK WHETHER IT IS BEHIND.
+#
+# MEASURED 2026-10-03, BEFORE THIS FILE: data/elections/ was written once (2026-09-10) and nothing
+# ever ran scripts/build-elections.mjs again. The record was behind the world in three places nobody
+# could see — the US House stops at 2018, Canada's 45th general election (2025-04-28) is missing,
+# Russia's 2026 Duma election is missing — each explained only in a comment in its pack.
+#
+# Every week this job:
+#   1. `--watch`: asks every pack that can (its own watch(), uncached) whether a newer election
+#      exists and why it is not here, and computes per chamber the day the LAW required the next
+#      election by (scripts/elections/upstreams.json `terms`). The answer is written into each
+#      polity's `refresh` record, which the legend prints («更新不能», its reason, the day checked).
+#   2. rebuilds ONLY the packs whose watch said `importable` — a newer election whose blocking
+#      condition is gone — so a quiet week costs a few requests, not a dozen national rebuilds;
+#   3. gates the bytes with `npm run check:elections` (including the territory claim) and lands the
+#      result through the same bot lander as every other unattended refresh.
+# ⚠ «A WATCH THAT COULD NOT LOOK» IS NOT «NOTHING NEW»: build-elections.mjs keeps the previous
+#   refresh record for that polity and prints a ::warning:: (one-pass-or-a-reason §5).
+# ⚠ WHETHER THE UPSTREAMS ARE UP is not this job's question: scripts/upstream-liveness.mjs probes
+#   every election upstream nightly (declared in scripts/elections/upstreams.json) and turns red when
+#   one that was up has been down two nights in a row.
+name: Elections refresh
+
+on:
+  schedule:
+    - cron: '53 5 * * 3'         # Wednesdays 05:53 UTC — away from the companies (Mon 05:23), TLE and liveness runs
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write                 # approve the runs the bot's pull request parks, dispatch deploy.yml (land-bot-pr)
+
+concurrency:
+  group: elections-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      BRANCH: data/elections-refresh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      # the packs read spreadsheets (xlsx), PDFs (pdfjs-dist) and TopoJSON (topojson-client) —
+      # devDependencies, so the whole lockfile is installed
+      - name: Install the build's dependencies
+        run: npm ci
+      - name: Is the record behind the world?
+        run: node scripts/build-elections.mjs --watch --summary "$GITHUB_STEP_SUMMARY" --importable-out importable.txt
+      - name: Rebuild the packs whose newer election can now be imported
+        run: |
+          PACKS="$(cat importable.txt 2>/dev/null || true)"
+          if [ -z "$PACKS" ]; then echo "no pack has an importable newer election this week"; exit 0; fi
+          echo "rebuilding: $PACKS"
+          node scripts/build-elections.mjs --only $PACKS
+      - name: The bytes must pass the elections gate before anything is proposed
+        run: node scripts/build-elections.mjs --check
+      - name: Open a pull request when the record or its refresh state moved
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- data/elections && [ -z "$(git ls-files --others --exclude-standard data/elections)" ]; then
+            echo "nothing under data/elections moved — nothing to propose"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add data/elections
+          printf 'data: the weekly elections refresh\n\nWritten by .github/workflows/elections-refresh.yml: the refresh record of every\npolity (scripts/build-elections.mjs --watch) and any pack whose newer election became importable.\n' > commit-message.txt
+          git commit -F commit-message.txt
+          git push --force origin "$BRANCH"
+          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
+            gh pr create --base main --head "$BRANCH" \
+              --title "data: the weekly elections refresh" \
+              --body "Written by the scheduled \`Elections refresh\` workflow. The table of every chamber — newest recorded election, the day the law required the next by, and whether a newer one is blocked or importable — is in the run summary. \`npm run check:elections\` passed on these bytes before this pull request was opened."
+          else
+            echo "an open pull request already tracks this branch — it now carries this week's record"
+          fi
+      - name: Approve the checks this job caused, wait for them, and land the record
+        uses: ./.github/actions/land-bot-pr
+        with:
+          branch: data/elections-refresh
+          what: the elections record

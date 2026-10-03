@@ -7596,7 +7596,19 @@
      155.94783421052634,
      -9.938913636363639
     ]
-   ]
+   ],
+   "pack": "au",
+   "refresh": {
+    "checkedAt": "2026-10-02",
+    "bodies": [
+     {
+      "body": "House of Representatives",
+      "last": "2025-05-03",
+      "dueBy": "2028-11-03",
+      "state": "current"
+     }
+    ]
+   }
   },
   {
    "id": "ca",
@@ -7621,7 +7633,27 @@
      -52.62,
      83.14
     ]
-   ]
+   ],
+   "pack": "ca",
+   "refresh": {
+    "checkedAt": "2026-10-02",
+    "bodies": [
+     {
+      "body": "House of Commons",
+      "last": "2021-09-20",
+      "dueBy": "2026-12-20",
+      "state": "blocked",
+      "why": {
+       "en": "Elections Canada publishes the results of this election only on elections.ca, whose terms forbid commercial redistribution; no openly licensed copy exists on open.canada.ca yet.",
+       "jp": "カナダ選挙管理局はこの選挙の結果を elections.ca でのみ公開しており、その利用規約は商用の再配布を禁じています。open.canada.ca にはオープンライセンスの写しがまだありません。"
+      },
+      "what": {
+       "en": "The 45th general election (2025-04-28)",
+       "jp": "第45回総選挙（2025-04-28）"
+      }
+     }
+    ]
+   }
   },
   {
    "id": "de",
@@ -7646,7 +7678,19 @@
      15.0404,
      55.058
     ]
-   ]
+   ],
+   "pack": "de",
+   "refresh": {
+    "checkedAt": "2026-10-02",
+    "bodies": [
+     {
+      "body": "Bundestag",
+      "last": "2025-02-23",
+      "dueBy": "2029-03-23",
+      "state": "current"
+     }
+    ]
+   }
   },
   {
    "id": "eu",
@@ -7671,7 +7715,19 @@
      34.2768,
      70.0868
     ]
-   ]
+   ],
+   "pack": "eu",
+   "refresh": {
+    "checkedAt": "2026-10-02",
+    "bodies": [
+     {
+      "body": "European Parliament",
+      "last": "2024-06-09",
+      "dueBy": "2029-07-09",
+      "state": "current"
+     }
+    ]
+   }
   },
   {
    "id": "fr",
@@ -7689,7 +7745,19 @@
      9.7,
      51.2
     ]
-   ]
+   ],
+   "pack": "fr",
+   "refresh": {
+    "checkedAt": "2026-10-02",
+    "bodies": [
+     {
+      "body": "National Assembly",
+      "last": "2024-07-07",
+      "dueBy": "2029-08-07",
+      "state": "current"
+     }
+    ]
+   }
   },
   {
    "id": "hk",
@@ -7714,7 +7782,19 @@
      114.50247,
      22.56833
     ]
-   ]
+   ],
+   "pack": "hk",
+   "refresh": {
+    "checkedAt": "2026-10-02",
+    "bodies": [
+     {
+      "body": "Legislative Council",
+      "last": "2025-12-07",
+      "dueBy": "2030-01-07",
+      "state": "current"
+     }
+    ]
+   }
   },
   {
    "id": "jp",
@@ -7739,7 +7819,25 @@
      153.99,
      45.6
     ]
-   ]
+   ],
+   "pack": "jp",
+   "refresh": {
+    "checkedAt": "2026-10-02",
+    "bodies": [
+     {
+      "body": "House of Councillors",
+      "last": "2025-07-20",
+      "dueBy": "2028-08-20",
+      "state": "current"
+     },
+     {
+      "body": "House of Representatives",
+      "last": "2026-02-08",
+      "dueBy": "2030-03-08",
+      "state": "current"
+     }
+    ]
+   }
   },
   {
    "id": "kr",
@@ -7764,7 +7862,19 @@
      130.03862518796993,
      38.72755253776436
     ]
-   ]
+   ],
+   "pack": "kr",
+   "refresh": {
+    "checkedAt": "2026-10-02",
+    "bodies": [
+     {
+      "body": "National Assembly",
+      "last": "2024-04-10",
+      "dueBy": "2028-05-10",
+      "state": "current"
+     }
+    ]
+   }
   },
   {
    "id": "ru",
@@ -7789,7 +7899,27 @@
      180,
      81.27314
     ]
-   ]
+   ],
+   "pack": "ru",
+   "refresh": {
+    "checkedAt": "2026-10-02",
+    "bodies": [
+     {
+      "body": "State Duma — party-list vote",
+      "last": "2021-09-19",
+      "dueBy": "2026-10-19",
+      "state": "blocked",
+      "why": {
+       "en": "The 2026 precinct return is published, but it does not say which single-mandate district each precinct belongs to, and the only publisher of that assignment, the Central Election Commission (cikrf.ru), cannot be reached. Drawing it on the district map would be a guess.",
+       "jp": "2026年の投票所別の結果は公開されていますが、各投票所がどの小選挙区に属するかが書かれておらず、それを公開している唯一の機関である中央選挙管理委員会（cikrf.ru）には接続できません。選挙区の地図に描けば推測になります。"
+      },
+      "what": {
+       "en": "The State Duma election of 2026",
+       "jp": "2026年の国家院（下院）選挙"
+      }
+     }
+    ]
+   }
   },
   {
    "id": "tw",
@@ -7814,7 +7944,19 @@
      122.0075,
      26.17519
     ]
-   ]
+   ],
+   "pack": "tw",
+   "refresh": {
+    "checkedAt": "2026-10-02",
+    "bodies": [
+     {
+      "body": "Legislative Yuan",
+      "last": "2024-01-13",
+      "dueBy": "2028-02-13",
+      "state": "current"
+     }
+    ]
+   }
   },
   {
    "id": "uk",
@@ -7832,7 +7974,19 @@
      1.9,
      60.9
     ]
-   ]
+   ],
+   "pack": "uk",
+   "refresh": {
+    "checkedAt": "2026-10-02",
+    "bodies": [
+     {
+      "body": "House of Commons",
+      "last": "2024-07-04",
+      "dueBy": "2029-10-04",
+      "state": "current"
+     }
+    ]
+   }
   },
   {
    "id": "us",
@@ -7857,7 +8011,39 @@
      -66.95,
      71.39
     ]
-   ]
+   ],
+   "pack": "us",
+   "refresh": {
+    "checkedAt": "2026-10-02",
+    "bodies": [
+     {
+      "body": "House of Representatives",
+      "last": "2018-11-06",
+      "dueBy": "2020-11-06",
+      "state": "blocked",
+      "why": {
+       "en": "The licensed record of House returns after 2018 (MIT Election Data and Science Lab) can only be downloaded after filling in a guestbook form, which an unattended build cannot do, and no other openly licensed district-level record exists.",
+       "jp": "2018年より後の下院の結果の、利用許諾のある記録（MIT 選挙データ・科学研究所）は、ゲストブックへの記入をしないと取得できず、無人のビルドにはそれができません。選挙区単位の、利用許諾のある別の記録はありません。"
+      },
+      "what": {
+       "en": "House elections after 2018",
+       "jp": "2018年より後の下院選挙"
+      }
+     },
+     {
+      "body": "Senate",
+      "last": "2024-11-05",
+      "dueBy": "2026-11-05",
+      "state": "current"
+     },
+     {
+      "body": "Senate (special elections)",
+      "last": "2024-11-05",
+      "dueBy": null,
+      "state": "current"
+     }
+    ]
+   }
   }
  ],
  "elections": [
@@ -7888,7 +8074,10 @@
     "zh-hans": "150 个选区各选出一名议员，没有任何议员由名单产生。颜色代表澳大利亚选举委员会宣布当选的议员，在完全偏好投票制下未必是第一偏好票最多的候选人；选区显示的票数是第一偏好票。"
    },
    "src": "Results: Australian Electoral Commission tally room (event 12246). Boundaries: ABS Commonwealth Electoral Divisions (ASGC2004), which approximate the AEC divisions to whole ABS mesh blocks",
-   "lic": "CC BY 4.0 (AEC results and ABS boundaries)"
+   "lic": "CC BY 4.0 (AEC results and ABS boundaries)",
+   "up": "Australian Electoral Commission · Australian Bureau of Statistics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "au-hr-2007",
@@ -7917,7 +8106,10 @@
     "zh-hans": "150 个选区各选出一名议员，没有任何议员由名单产生。颜色代表澳大利亚选举委员会宣布当选的议员，在完全偏好投票制下未必是第一偏好票最多的候选人；选区显示的票数是第一偏好票。"
    },
    "src": "Results: Australian Electoral Commission tally room (event 13745). Boundaries: ABS Commonwealth Electoral Divisions (ASGC2007), which approximate the AEC divisions to whole ABS mesh blocks",
-   "lic": "CC BY 4.0 (AEC results and ABS boundaries)"
+   "lic": "CC BY 4.0 (AEC results and ABS boundaries)",
+   "up": "Australian Electoral Commission · Australian Bureau of Statistics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "au-hr-2010",
@@ -7946,7 +8138,10 @@
     "zh-hans": "150 个选区各选出一名议员，没有任何议员由名单产生。颜色代表澳大利亚选举委员会宣布当选的议员，在完全偏好投票制下未必是第一偏好票最多的候选人；选区显示的票数是第一偏好票。"
    },
    "src": "Results: Australian Electoral Commission tally room (event 15508). Boundaries: ABS Commonwealth Electoral Divisions (ASGS2011), which approximate the AEC divisions to whole ABS mesh blocks",
-   "lic": "CC BY 4.0 (AEC results and ABS boundaries)"
+   "lic": "CC BY 4.0 (AEC results and ABS boundaries)",
+   "up": "Australian Electoral Commission · Australian Bureau of Statistics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "au-hr-2013",
@@ -7975,7 +8170,10 @@
     "zh-hans": "150 个选区各选出一名议员，没有任何议员由名单产生。颜色代表澳大利亚选举委员会宣布当选的议员，在完全偏好投票制下未必是第一偏好票最多的候选人；选区显示的票数是第一偏好票。"
    },
    "src": "Results: Australian Electoral Commission tally room (event 17496). Boundaries: ABS Commonwealth Electoral Divisions (ASGS2012), which approximate the AEC divisions to whole ABS mesh blocks",
-   "lic": "CC BY 4.0 (AEC results and ABS boundaries)"
+   "lic": "CC BY 4.0 (AEC results and ABS boundaries)",
+   "up": "Australian Electoral Commission · Australian Bureau of Statistics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "au-hr-2016",
@@ -8004,7 +8202,10 @@
     "zh-hans": "150 个选区各选出一名议员，没有任何议员由名单产生。颜色代表澳大利亚选举委员会宣布当选的议员，在完全偏好投票制下未必是第一偏好票最多的候选人；选区显示的票数是第一偏好票。"
    },
    "src": "Results: Australian Electoral Commission tally room (event 20499). Boundaries: ABS Commonwealth Electoral Divisions (ASGS2016), which approximate the AEC divisions to whole ABS mesh blocks",
-   "lic": "CC BY 4.0 (AEC results and ABS boundaries)"
+   "lic": "CC BY 4.0 (AEC results and ABS boundaries)",
+   "up": "Australian Electoral Commission · Australian Bureau of Statistics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "au-hr-2019",
@@ -8033,7 +8234,10 @@
     "zh-hans": "151 个选区各选出一名议员，没有任何议员由名单产生。颜色代表澳大利亚选举委员会宣布当选的议员，在完全偏好投票制下未必是第一偏好票最多的候选人；选区显示的票数是第一偏好票。"
    },
    "src": "Results: Australian Electoral Commission tally room (event 24310). Boundaries: ABS Commonwealth Electoral Divisions (ASGS2018), which approximate the AEC divisions to whole ABS mesh blocks",
-   "lic": "CC BY 4.0 (AEC results and ABS boundaries)"
+   "lic": "CC BY 4.0 (AEC results and ABS boundaries)",
+   "up": "Australian Electoral Commission · Australian Bureau of Statistics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "au-hr-2022",
@@ -8062,7 +8266,10 @@
     "zh-hans": "151 个选区各选出一名议员，没有任何议员由名单产生。颜色代表澳大利亚选举委员会宣布当选的议员，在完全偏好投票制下未必是第一偏好票最多的候选人；选区显示的票数是第一偏好票。"
    },
    "src": "Results: Australian Electoral Commission tally room (event 27966). Boundaries: Digital Atlas of Australia (Geoscience Australia), «Federal Electoral Boundaries (2022)» — © Commonwealth of Australia (Australian Electoral Commission)",
-   "lic": "CC BY 4.0 (AEC results and Digital Atlas boundaries)"
+   "lic": "CC BY 4.0 (AEC results and Digital Atlas boundaries)",
+   "up": "Australian Electoral Commission · Australian Bureau of Statistics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "au-hr-2025",
@@ -8091,7 +8298,10 @@
     "zh-hans": "150 个选区各选出一名议员，没有任何议员由名单产生。颜色代表澳大利亚选举委员会宣布当选的议员，在完全偏好投票制下未必是第一偏好票最多的候选人；选区显示的票数是第一偏好票。"
    },
    "src": "Results: Australian Electoral Commission tally room (event 31496). Boundaries: Digital Atlas of Australia (Geoscience Australia), «Federal Electoral Divisions (March 2025)» — © Commonwealth of Australia (Australian Electoral Commission)",
-   "lic": "CC BY 4.0 (AEC results and Digital Atlas boundaries)"
+   "lic": "CC BY 4.0 (AEC results and Digital Atlas boundaries)",
+   "up": "Australian Electoral Commission · Australian Bureau of Statistics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "ca-commons-2015",
@@ -8128,7 +8338,10 @@
     "ko": "338개 선거구가 각각 1명을 선출하며 명부로 선출되는 의원은 없습니다. 2013년 선거구 획정에 따라 치러졌고, 색은 최다 득표 후보의 정당입니다.",
     "zh": "338 個選區各選出一名議員，沒有任何議員由名單產生。依 2013 年選區劃分進行；顏色代表得票最多候選人的政黨。",
     "zh-hans": "338 个选区各选出一名议员，没有任何议员由名单产生。依 2013 年选区划分进行；颜色代表得票最多候选人的政党。"
-   }
+   },
+   "up": "Elections Canada (open.canada.ca, OGL) · Statistics Canada",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "ca-commons-2019",
@@ -8165,7 +8378,10 @@
     "ko": "338개 선거구가 각각 1명을 선출하며 명부로 선출되는 의원은 없습니다. 2013년 선거구 획정에 따라 치러졌고, 색은 최다 득표 후보의 정당입니다.",
     "zh": "338 個選區各選出一名議員，沒有任何議員由名單產生。依 2013 年選區劃分進行；顏色代表得票最多候選人的政黨。",
     "zh-hans": "338 个选区各选出一名议员，没有任何议员由名单产生。依 2013 年选区划分进行；颜色代表得票最多候选人的政党。"
-   }
+   },
+   "up": "Elections Canada (open.canada.ca, OGL) · Statistics Canada",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "ca-commons-2021",
@@ -8202,7 +8418,10 @@
     "ko": "338개 선거구가 각각 1명을 선출하며 명부로 선출되는 의원은 없습니다. 2013년 선거구 획정에 따라 치러졌고, 색은 최다 득표 후보의 정당입니다.",
     "zh": "338 個選區各選出一名議員，沒有任何議員由名單產生。依 2013 年選區劃分進行；顏色代表得票最多候選人的政黨。",
     "zh-hans": "338 个选区各选出一名议员，没有任何议员由名单产生。依 2013 年选区划分进行；颜色代表得票最多候选人的政党。"
-   }
+   },
+   "up": "Elections Canada (open.canada.ca, OGL) · Statistics Canada",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-1949",
@@ -8238,7 +8457,10 @@
     "zh-hans": "议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 402 席，在 242 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-1953",
@@ -8274,7 +8496,10 @@
     "zh-hans": "议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 487 席，在 242 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-1957",
@@ -8310,7 +8535,10 @@
     "zh-hans": "议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 497 席，在 247 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-1961",
@@ -8346,7 +8574,10 @@
     "zh-hans": "议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 499 席，在 247 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-1965",
@@ -8382,7 +8613,10 @@
     "zh-hans": "议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 496 席，在 248 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-1969",
@@ -8418,7 +8652,10 @@
     "zh-hans": "议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 496 席，在 248 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-1972",
@@ -8454,7 +8691,10 @@
     "zh-hans": "议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 496 席，在 248 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-1976",
@@ -8490,7 +8730,10 @@
     "zh-hans": "议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 496 席，在 248 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-1980",
@@ -8527,7 +8770,10 @@
     "zh-hans": "颜色代表以第一票赢得该选区的政党。议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 497 席，在 248 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen · Boundaries: Harvard Dataverse, German Federal Electoral District Boundaries 1980–2025 (doi:10.7910/DVN/LI9BHM)",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-1983",
@@ -8564,7 +8810,10 @@
     "zh-hans": "颜色代表以第一票赢得该选区的政党。议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 498 席，在 248 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen · Boundaries: Harvard Dataverse, German Federal Electoral District Boundaries 1980–2025 (doi:10.7910/DVN/LI9BHM)",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-1987",
@@ -8601,7 +8850,10 @@
     "zh-hans": "颜色代表以第一票赢得该选区的政党。议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 497 席，在 248 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen · Boundaries: Harvard Dataverse, German Federal Electoral District Boundaries 1980–2025 (doi:10.7910/DVN/LI9BHM)",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-1990",
@@ -8638,7 +8890,10 @@
     "zh-hans": "颜色代表以第一票赢得该选区的政党。议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 662 席，在 328 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen · Boundaries: Harvard Dataverse, German Federal Electoral District Boundaries 1980–2025 (doi:10.7910/DVN/LI9BHM)",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-1994",
@@ -8675,7 +8930,10 @@
     "zh-hans": "颜色代表以第一票赢得该选区的政党。议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 672 席，在 328 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen · Boundaries: Harvard Dataverse, German Federal Electoral District Boundaries 1980–2025 (doi:10.7910/DVN/LI9BHM)",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-1998",
@@ -8712,7 +8970,10 @@
     "zh-hans": "颜色代表以第一票赢得该选区的政党。议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 669 席，在 328 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen · Boundaries: Harvard Dataverse, German Federal Electoral District Boundaries 1980–2025 (doi:10.7910/DVN/LI9BHM)",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-2002",
@@ -8749,7 +9010,10 @@
     "zh-hans": "颜色代表以第一票赢得该选区的政党。议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 603 席，在 299 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen · Boundaries: Harvard Dataverse, German Federal Electoral District Boundaries 1980–2025 (doi:10.7910/DVN/LI9BHM)",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-2005",
@@ -8786,7 +9050,10 @@
     "zh-hans": "颜色代表以第一票赢得该选区的政党。议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 614 席，在 299 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen · Boundaries: Harvard Dataverse, German Federal Electoral District Boundaries 1980–2025 (doi:10.7910/DVN/LI9BHM)",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-2009",
@@ -8823,7 +9090,10 @@
     "zh-hans": "颜色代表以第一票赢得该选区的政党。议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 622 席，在 299 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen · Boundaries: Harvard Dataverse, German Federal Electoral District Boundaries 1980–2025 (doi:10.7910/DVN/LI9BHM)",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-2013",
@@ -8860,7 +9130,10 @@
     "zh-hans": "颜色代表以第一票赢得该选区的政党。议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 631 席，在 299 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen · Boundaries: Harvard Dataverse, German Federal Electoral District Boundaries 1980–2025 (doi:10.7910/DVN/LI9BHM)",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-2017",
@@ -8897,7 +9170,10 @@
     "zh-hans": "颜色代表以第一票赢得该选区的政党。议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 709 席，在 299 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen · Boundaries: Harvard Dataverse, German Federal Electoral District Boundaries 1980–2025 (doi:10.7910/DVN/LI9BHM)",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-2021",
@@ -8934,7 +9210,10 @@
     "zh-hans": "颜色代表以第一票赢得该选区的政党。议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 736 席，在 299 个选区进行选举。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen · Boundaries: Harvard Dataverse, German Federal Electoral District Boundaries 1980–2025 (doi:10.7910/DVN/LI9BHM)",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0) · CC0 1.0",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "de-btw-2025",
@@ -8971,7 +9250,10 @@
     "zh-hans": "颜色代表以第一票赢得该选区的政党。议席依各政党的得票比例分配，而不是依赢得的选区数，因此赢得选区不多的政党仍可能拥有很多议席。本届联邦议院共 630 席，在 299 个选区进行选举。其中实际成为议席的只有 276 席：2023 年改革后，选区胜出者只有在该邦所属政党第二票足以支持的范围内才能取得议席。"
    },
    "src": "Die Bundeswahlleiterin, Wiesbaden — Ergebnisse der Bundestagswahlen",
-   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)"
+   "lic": "Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2.0)",
+   "up": "Die Bundeswahlleiterin · Harvard Dataverse (doi:10.7910/DVN/LI9BHM)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "eu-ep-1979",
@@ -9008,7 +9290,10 @@
     "zh-hans": "图上 9 块区域都是完整的成员国，而不是选区：其中一国可能选出 410 席中的数十席，选举方式由各国自己的法律决定。颜色代表在该国取得最多席次的政治党团；若有两个党团并列第一，则不上色。"
    },
    "src": "European Parliament, results.elections.europa.eu · boundaries © EuroGeographics for the administrative boundaries (Eurostat/GISCO)",
-   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics"
+   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit",
+   "up": "European Parliament results service · Eurostat GISCO"
   },
   {
    "id": "eu-ep-1984",
@@ -9045,7 +9330,10 @@
     "zh-hans": "图上 10 块区域都是完整的成员国，而不是选区：其中一国可能选出 434 席中的数十席，选举方式由各国自己的法律决定。颜色代表在该国取得最多席次的政治党团；若有两个党团并列第一，则不上色。"
    },
    "src": "European Parliament, results.elections.europa.eu · boundaries © EuroGeographics for the administrative boundaries (Eurostat/GISCO)",
-   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics"
+   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit",
+   "up": "European Parliament results service · Eurostat GISCO"
   },
   {
    "id": "eu-ep-1989",
@@ -9082,7 +9370,10 @@
     "zh-hans": "图上 12 块区域都是完整的成员国，而不是选区：其中一国可能选出 518 席中的数十席，选举方式由各国自己的法律决定。颜色代表在该国取得最多席次的政治党团；若有两个党团并列第一，则不上色。"
    },
    "src": "European Parliament, results.elections.europa.eu · boundaries © EuroGeographics for the administrative boundaries (Eurostat/GISCO)",
-   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics"
+   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit",
+   "up": "European Parliament results service · Eurostat GISCO"
   },
   {
    "id": "eu-ep-1994",
@@ -9101,7 +9392,7 @@
    },
    "date": "1994-06-12",
    "y": 1994,
-   "geo": "eu-ms-1989.geo.json",
+   "geo": "eu-ms-1994.geo.json",
    "res": "eu-1994.res.json",
    "seatsTotal": 567,
    "districtSeats": 12,
@@ -9119,7 +9410,10 @@
     "zh-hans": "图上 12 块区域都是完整的成员国，而不是选区：其中一国可能选出 567 席中的数十席，选举方式由各国自己的法律决定。颜色代表在该国取得最多席次的政治党团；若有两个党团并列第一，则不上色。"
    },
    "src": "European Parliament, results.elections.europa.eu · boundaries © EuroGeographics for the administrative boundaries (Eurostat/GISCO)",
-   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics"
+   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit",
+   "up": "European Parliament results service · Eurostat GISCO"
   },
   {
    "id": "eu-ep-1999",
@@ -9156,7 +9450,10 @@
     "zh-hans": "图上 15 块区域都是完整的成员国，而不是选区：其中一国可能选出 626 席中的数十席，选举方式由各国自己的法律决定。颜色代表在该国取得最多席次的政治党团；若有两个党团并列第一，则不上色。"
    },
    "src": "European Parliament, results.elections.europa.eu · boundaries © EuroGeographics for the administrative boundaries (Eurostat/GISCO)",
-   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics"
+   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit",
+   "up": "European Parliament results service · Eurostat GISCO"
   },
   {
    "id": "eu-ep-2004",
@@ -9193,7 +9490,10 @@
     "zh-hans": "图上 25 块区域都是完整的成员国，而不是选区：其中一国可能选出 732 席中的数十席，选举方式由各国自己的法律决定。颜色代表在该国取得最多席次的政治党团；若有两个党团并列第一，则不上色。"
    },
    "src": "European Parliament, results.elections.europa.eu · boundaries © EuroGeographics for the administrative boundaries (Eurostat/GISCO)",
-   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics"
+   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit",
+   "up": "European Parliament results service · Eurostat GISCO"
   },
   {
    "id": "eu-ep-2009",
@@ -9230,7 +9530,10 @@
     "zh-hans": "图上 27 块区域都是完整的成员国，而不是选区：其中一国可能选出 736 席中的数十席，选举方式由各国自己的法律决定。颜色代表在该国取得最多席次的政治党团；若有两个党团并列第一，则不上色。"
    },
    "src": "European Parliament, results.elections.europa.eu · boundaries © EuroGeographics for the administrative boundaries (Eurostat/GISCO)",
-   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics"
+   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit",
+   "up": "European Parliament results service · Eurostat GISCO"
   },
   {
    "id": "eu-ep-2014",
@@ -9267,7 +9570,10 @@
     "zh-hans": "图上 28 块区域都是完整的成员国，而不是选区：其中一国可能选出 751 席中的数十席，选举方式由各国自己的法律决定。颜色代表在该国取得最多席次的政治党团；若有两个党团并列第一，则不上色。"
    },
    "src": "European Parliament, results.elections.europa.eu · boundaries © EuroGeographics for the administrative boundaries (Eurostat/GISCO)",
-   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics"
+   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit",
+   "up": "European Parliament results service · Eurostat GISCO"
   },
   {
    "id": "eu-ep-2019",
@@ -9304,7 +9610,10 @@
     "zh-hans": "图上 28 块区域都是完整的成员国，而不是选区：其中一国可能选出 751 席中的数十席，选举方式由各国自己的法律决定。颜色代表在该国取得最多席次的政治党团；若有两个党团并列第一，则不上色。"
    },
    "src": "European Parliament, results.elections.europa.eu · boundaries © EuroGeographics for the administrative boundaries (Eurostat/GISCO)",
-   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics"
+   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit",
+   "up": "European Parliament results service · Eurostat GISCO"
   },
   {
    "id": "eu-ep-2024",
@@ -9341,7 +9650,10 @@
     "zh-hans": "图上 27 块区域都是完整的成员国，而不是选区：其中一国可能选出 720 席中的数十席，选举方式由各国自己的法律决定。颜色代表在该国取得最多席次的政治党团；若有两个党团并列第一，则不上色。"
    },
    "src": "European Parliament, results.elections.europa.eu · boundaries © EuroGeographics for the administrative boundaries (Eurostat/GISCO)",
-   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics"
+   "lic": "European Parliament legal notice: reuse for commercial or non-commercial purposes is authorised provided the source is acknowledged · GISCO boundaries free to use with attribution to © EuroGeographics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit",
+   "up": "European Parliament results service · Eurostat GISCO"
   },
   {
    "id": "fr-an-2012",
@@ -9371,7 +9683,10 @@
     "zh-hans": "全部 577 名议员均由单一选区两轮投票选出。地图只绘出其中 559 个选区；其余 18 个是在法国本土没有地域的海外法国公民选区，以及已公布的轮廓文件未涵盖的海外行政区。它们计入议席总数，但无法在地图上上色。"
    },
    "src": "Results: Ministère de l'Intérieur — Elections législatives 2012 – Résultats; Elections législatives 2012 – Résultats (data.gouv.fr). Boundaries: « Contours géographiques des circonscriptions législatives » (data.gouv.fr), dissolved from polling-district outlines.",
-   "lic": "Licence Ouverte / Open Licence 2.0 / Licence Ouverte / Open Licence 1.0"
+   "lic": "Licence Ouverte / Open Licence 2.0 / Licence Ouverte / Open Licence 1.0",
+   "up": "data.gouv.fr (ministère de l'Intérieur)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "fr-an-2017",
@@ -9401,7 +9716,10 @@
     "zh-hans": "全部 577 名议员均由单一选区两轮投票选出。地图只绘出其中 559 个选区；其余 18 个是在法国本土没有地域的海外法国公民选区，以及已公布的轮廓文件未涵盖的海外行政区。它们计入议席总数，但无法在地图上上色。"
    },
    "src": "Results: Ministère de l'Intérieur — Elections législatives des 11 et 18 juin 2017 - Résultats du 1er tour; Elections législatives des 11 et 18 juin 2017 - Résultats du 2nd tour (data.gouv.fr). Boundaries: « Contours géographiques des circonscriptions législatives » (data.gouv.fr), dissolved from polling-district outlines.",
-   "lic": "Licence Ouverte / Open Licence 2.0 / Licence Ouverte / Open Licence 1.0"
+   "lic": "Licence Ouverte / Open Licence 2.0 / Licence Ouverte / Open Licence 1.0",
+   "up": "data.gouv.fr (ministère de l'Intérieur)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "fr-an-2022",
@@ -9431,7 +9749,10 @@
     "zh-hans": "全部 577 名议员均由单一选区两轮投票选出。地图只绘出其中 559 个选区；其余 18 个是在法国本土没有地域的海外法国公民选区，以及已公布的轮廓文件未涵盖的海外行政区。它们计入议席总数，但无法在地图上上色。"
    },
    "src": "Results: Ministère de l'Intérieur — Élections législatives des 12 et 19 juin 2022 - Résultats définitifs du premier tour; Élections législatives des 12 et 19 juin 2022 - Résultats définitifs du second tour (data.gouv.fr). Boundaries: « Contours géographiques des circonscriptions législatives » (data.gouv.fr), dissolved from polling-district outlines.",
-   "lic": "Licence Ouverte / Open Licence 2.0 / no licence declared on data.gouv.fr for this dataset (the Ministère de l'Intérieur publishes its election results under the Licence Ouverte)"
+   "lic": "Licence Ouverte / Open Licence 2.0 / no licence declared on data.gouv.fr for this dataset (the Ministère de l'Intérieur publishes its election results under the Licence Ouverte)",
+   "up": "data.gouv.fr (ministère de l'Intérieur)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "fr-an-2024",
@@ -9461,7 +9782,10 @@
     "zh-hans": "全部 577 名议员均由单一选区两轮投票选出。地图只绘出其中 559 个选区；其余 18 个是在法国本土没有地域的海外法国公民选区，以及已公布的轮廓文件未涵盖的海外行政区。它们计入议席总数，但无法在地图上上色。"
    },
    "src": "Results: Ministère de l'Intérieur — Élections législatives des 30 juin et 7 juillet 2024 - Résultats définitifs du 1er tour ; Elections législatives des 30 juin et 7 juillet 2024 - Résultats définitifs du 2nd tour (data.gouv.fr). Boundaries: « Contours géographiques des circonscriptions législatives » (data.gouv.fr), dissolved from polling-district outlines.",
-   "lic": "Licence Ouverte / Open Licence 2.0"
+   "lic": "Licence Ouverte / Open Licence 2.0",
+   "up": "data.gouv.fr (ministère de l'Intérieur)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "hk-legco-2025",
@@ -9498,7 +9822,10 @@
     "zh-hans": "十个地方选区各选出两名议员，因此地图上着色的十个区域代表九十席中的二十席，颜色是该区得票最高的当选议员。其余七十席（二十八个功能界别选出三十席、选举委员会选出四十席）由各自的选民选出，不属于任何地域；它们计入条形图，但不会出现在地图上。议员申报多于一个所属时，该席次计入最先申报的一个。"
    },
    "src": "Boundaries: Registration and Electoral Office via the Common Spatial Data Infrastructure portal (portal.csdi.gov.hk). Results, candidates and declared political affiliations: Electoral Affairs Commission / Registration and Electoral Office (elections.gov.hk).",
-   "lic": "Terms of Use of data.gov.hk / the Government of the Hong Kong Special Administrative Region: free to reproduce and redistribute with acknowledgement of the source."
+   "lic": "Terms of Use of data.gov.hk / the Government of the Hong Kong Special Administrative Region: free to reproduce and redistribute with acknowledgement of the source.",
+   "up": "Registration and Electoral Office · CSDI Portal",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "jp-hc-2007",
@@ -9546,7 +9873,10 @@
     "zh-hans": "第 21 届参议院议员通常选举。参议院每三年改选半数。地图着色 47 个选举区，本次在此选出的 121 席中有 73 席由这些选举区产生；一个选举区的名额为一至六人，颜色代表该区得票最多的当选人。其余 48 席以全境为一个单位的比例代表选出，不属于任何一块土地，仅计入席位长条图。"
    },
    "src": "総務省 選挙関連資料（衆議院議員総選挙結果調／参議院議員通常選挙結果調） / 都道府県境界 (smartnews-smri/japan-topography) ／ 国土交通省 国土数値情報 行政区域データ",
-   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / 無償利用可（国土数値情報のクレジット表記が条件）"
+   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / 無償利用可（国土数値情報のクレジット表記が条件）",
+   "up": "総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "jp-hr-2009",
@@ -9594,7 +9924,10 @@
     "zh-hans": "第 45 届众议院议员总选举。地图着色 300 个小选举区；其余 180 席（定数 480 席）由十一个比例代表区块选出，不属于任何一个选举区，仅计入席位长条图。得票数为总务省的候选人别得票数原始数字；两名候选人同姓而选票只写姓氏时该票由两人分摊，因此含有小数（按分票）。"
    },
    "src": "総務省 選挙関連資料（衆議院議員総選挙結果調／参議院議員通常選挙結果調） / 小選挙区ポリゴン（西澤明・東京大学空間情報科学研究センター, gtfs-gis.jp/senkyoku）",
-   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / パブリックドメイン（CC0 相当）"
+   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / パブリックドメイン（CC0 相当）",
+   "up": "総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "jp-hc-2010",
@@ -9642,7 +9975,10 @@
     "zh-hans": "第 22 届参议院议员通常选举。参议院每三年改选半数。地图着色 47 个选举区，本次在此选出的 121 席中有 73 席由这些选举区产生；一个选举区的名额为一至六人，颜色代表该区得票最多的当选人。其余 48 席以全境为一个单位的比例代表选出，不属于任何一块土地，仅计入席位长条图。"
    },
    "src": "総務省 選挙関連資料（衆議院議員総選挙結果調／参議院議員通常選挙結果調） / 都道府県境界 (smartnews-smri/japan-topography) ／ 国土交通省 国土数値情報 行政区域データ",
-   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / 無償利用可（国土数値情報のクレジット表記が条件）"
+   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / 無償利用可（国土数値情報のクレジット表記が条件）",
+   "up": "総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "jp-hr-2012",
@@ -9690,7 +10026,10 @@
     "zh-hans": "第 46 届众议院议员总选举。地图着色 300 个小选举区；其余 180 席（定数 480 席）由十一个比例代表区块选出，不属于任何一个选举区，仅计入席位长条图。得票数为总务省的候选人别得票数原始数字；两名候选人同姓而选票只写姓氏时该票由两人分摊，因此含有小数（按分票）。"
    },
    "src": "総務省 選挙関連資料（衆議院議員総選挙結果調／参議院議員通常選挙結果調） / 小選挙区ポリゴン（西澤明・東京大学空間情報科学研究センター, gtfs-gis.jp/senkyoku）",
-   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / パブリックドメイン（CC0 相当）"
+   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / パブリックドメイン（CC0 相当）",
+   "up": "総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "jp-hc-2013",
@@ -9738,7 +10077,10 @@
     "zh-hans": "第 23 届参议院议员通常选举。参议院每三年改选半数。地图着色 47 个选举区，本次在此选出的 121 席中有 73 席由这些选举区产生；一个选举区的名额为一至六人，颜色代表该区得票最多的当选人。其余 48 席以全境为一个单位的比例代表选出，不属于任何一块土地，仅计入席位长条图。"
    },
    "src": "総務省 選挙関連資料（衆議院議員総選挙結果調／参議院議員通常選挙結果調） / 都道府県境界 (smartnews-smri/japan-topography) ／ 国土交通省 国土数値情報 行政区域データ",
-   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / 無償利用可（国土数値情報のクレジット表記が条件）"
+   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / 無償利用可（国土数値情報のクレジット表記が条件）",
+   "up": "総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "jp-hr-2014",
@@ -9786,7 +10128,10 @@
     "zh-hans": "第 47 届众议院议员总选举。地图着色 295 个小选举区；其余 180 席（定数 475 席）由十一个比例代表区块选出，不属于任何一个选举区，仅计入席位长条图。得票数为总务省的候选人别得票数原始数字；两名候选人同姓而选票只写姓氏时该票由两人分摊，因此含有小数（按分票）。"
    },
    "src": "総務省 選挙関連資料（衆議院議員総選挙結果調／参議院議員通常選挙結果調） / 小選挙区ポリゴン（西澤明・東京大学空間情報科学研究センター, gtfs-gis.jp/senkyoku）",
-   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / パブリックドメイン（CC0 相当）"
+   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / パブリックドメイン（CC0 相当）",
+   "up": "総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "jp-hc-2016",
@@ -9834,7 +10179,10 @@
     "zh-hans": "第 24 届参议院议员通常选举。参议院每三年改选半数。地图着色 45 个选举区，本次在此选出的 121 席中有 73 席由这些选举区产生；一个选举区的名额为一至六人，颜色代表该区得票最多的当选人。其余 48 席以全境为一个单位的比例代表选出，不属于任何一块土地，仅计入席位长条图。本届的候选人别得票数仅以扫描影像的PDF公布，因此不显示候选人名单。"
    },
    "src": "総務省 選挙関連資料（衆議院議員総選挙結果調／参議院議員通常選挙結果調） / 都道府県境界 (smartnews-smri/japan-topography) ／ 国土交通省 国土数値情報 行政区域データ",
-   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / 無償利用可（国土数値情報のクレジット表記が条件）"
+   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / 無償利用可（国土数値情報のクレジット表記が条件）",
+   "up": "総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "jp-hr-2017",
@@ -9882,7 +10230,10 @@
     "zh-hans": "第 48 届众议院议员总选举。地图着色 289 个小选举区；其余 176 席（定数 465 席）由十一个比例代表区块选出，不属于任何一个选举区，仅计入席位长条图。得票数为总务省的候选人别得票数原始数字；两名候选人同姓而选票只写姓氏时该票由两人分摊，因此含有小数（按分票）。"
    },
    "src": "総務省 選挙関連資料（衆議院議員総選挙結果調／参議院議員通常選挙結果調） / 小選挙区ポリゴン（西澤明・東京大学空間情報科学研究センター, gtfs-gis.jp/senkyoku）",
-   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / パブリックドメイン（CC0 相当）"
+   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / パブリックドメイン（CC0 相当）",
+   "up": "総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "jp-hc-2019",
@@ -9930,7 +10281,10 @@
     "zh-hans": "第 25 届参议院议员通常选举。参议院每三年改选半数。地图着色 45 个选举区，本次在此选出的 124 席中有 74 席由这些选举区产生；一个选举区的名额为一至六人，颜色代表该区得票最多的当选人。其余 50 席以全境为一个单位的比例代表选出，不属于任何一块土地，仅计入席位长条图。本届的候选人别得票数仅以扫描影像的PDF公布，因此不显示候选人名单。"
    },
    "src": "総務省 選挙関連資料（衆議院議員総選挙結果調／参議院議員通常選挙結果調） / 都道府県境界 (smartnews-smri/japan-topography) ／ 国土交通省 国土数値情報 行政区域データ",
-   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / 無償利用可（国土数値情報のクレジット表記が条件）"
+   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / 無償利用可（国土数値情報のクレジット表記が条件）",
+   "up": "総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "jp-hr-2021",
@@ -9978,7 +10332,10 @@
     "zh-hans": "第 49 届众议院议员总选举。地图着色 289 个小选举区；其余 176 席（定数 465 席）由十一个比例代表区块选出，不属于任何一个选举区，仅计入席位长条图。得票数为总务省的候选人别得票数原始数字；两名候选人同姓而选票只写姓氏时该票由两人分摊，因此含有小数（按分票）。"
    },
    "src": "総務省 選挙関連資料（衆議院議員総選挙結果調／参議院議員通常選挙結果調） / 小選挙区ポリゴン（西澤明・東京大学空間情報科学研究センター, gtfs-gis.jp/senkyoku）",
-   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / パブリックドメイン（CC0 相当）"
+   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / パブリックドメイン（CC0 相当）",
+   "up": "総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "jp-hc-2022",
@@ -10026,7 +10383,10 @@
     "zh-hans": "第 26 届参议院议员通常选举。参议院每三年改选半数。地图着色 45 个选举区，本次在此选出的 125 席中有 75 席由这些选举区产生；一个选举区的名额为一至六人，颜色代表该区得票最多的当选人。其余 50 席以全境为一个单位的比例代表选出，不属于任何一块土地，仅计入席位长条图。"
    },
    "src": "総務省 選挙関連資料（衆議院議員総選挙結果調／参議院議員通常選挙結果調） / 都道府県境界 (smartnews-smri/japan-topography) ／ 国土交通省 国土数値情報 行政区域データ",
-   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / 無償利用可（国土数値情報のクレジット表記が条件）"
+   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / 無償利用可（国土数値情報のクレジット表記が条件）",
+   "up": "総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "jp-hr-2024",
@@ -10074,7 +10434,10 @@
     "zh-hans": "第 50 届众议院议员总选举。地图着色 289 个小选举区；其余 176 席（定数 465 席）由十一个比例代表区块选出，不属于任何一个选举区，仅计入席位长条图。得票数为总务省的候选人别得票数原始数字；两名候选人同姓而选票只写姓氏时该票由两人分摊，因此含有小数（按分票）。"
    },
    "src": "総務省 選挙関連資料（衆議院議員総選挙結果調／参議院議員通常選挙結果調） / 小選挙区ポリゴン（西澤明・東京大学空間情報科学研究センター, gtfs-gis.jp/senkyoku）",
-   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / パブリックドメイン（CC0 相当）"
+   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / パブリックドメイン（CC0 相当）",
+   "up": "総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "jp-hc-2025",
@@ -10122,7 +10485,10 @@
     "zh-hans": "第 27 届参议院议员通常选举。参议院每三年改选半数。地图着色 45 个选举区，本次在此选出的 125 席中有 75 席由这些选举区产生；一个选举区的名额为一至六人，颜色代表该区得票最多的当选人。其余 50 席以全境为一个单位的比例代表选出，不属于任何一块土地，仅计入席位长条图。"
    },
    "src": "総務省 選挙関連資料（衆議院議員総選挙結果調／参議院議員通常選挙結果調） / 都道府県境界 (smartnews-smri/japan-topography) ／ 国土交通省 国土数値情報 行政区域データ",
-   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / 無償利用可（国土数値情報のクレジット表記が条件）"
+   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / 無償利用可（国土数値情報のクレジット表記が条件）",
+   "up": "総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "jp-hr-2026",
@@ -10170,7 +10536,10 @@
     "zh-hans": "第 51 届众议院议员总选举。地图着色 289 个小选举区；其余 176 席（定数 465 席）由十一个比例代表区块选出，不属于任何一个选举区，仅计入席位长条图。得票数为总务省的候选人别得票数原始数字；两名候选人同姓而选票只写姓氏时该票由两人分摊，因此含有小数（按分票）。"
    },
    "src": "総務省 選挙関連資料（衆議院議員総選挙結果調／参議院議員通常選挙結果調） / 小選挙区ポリゴン（西澤明・東京大学空間情報科学研究センター, gtfs-gis.jp/senkyoku）",
-   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / パブリックドメイン（CC0 相当）"
+   "lic": "総務省ホームページ利用規約（出典明示のうえ自由に利用可・CC BY 4.0 互換） / パブリックドメイン（CC0 相当）",
+   "up": "総務省 (Ministry of Internal Affairs and Communications) · gtfs-gis.jp",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "kr-na-2020",
@@ -10189,7 +10558,10 @@
    "districtSeats": 253,
    "listSeats": 47,
    "src": "Results: 중앙선거관리위원회 국가선거정보 개방포털 «국회의원선거 개표결과» (제21대). District seats are counted; the 47 proportional seats are not in the published file and are not attributed to any party here. 2020. 4. 15. 21대 국회의원 총선거 선거구 지도 — Copyright (c) 2020 OhmyNews 오마이뉴스 (MIT), dissolved from Statistics Korea 행정동 boundaries",
-   "lic": "Results: KOGL Type 1 (공공저작물 출처표시). Boundaries: MIT"
+   "lic": "Results: KOGL Type 1 (공공저작물 출처표시). Boundaries: MIT",
+   "up": "National Election Commission (data.nec.go.kr) · OhmyNews constituency maps",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "kr-na-2024",
@@ -10208,7 +10580,10 @@
    "districtSeats": 254,
    "listSeats": 46,
    "src": "Results: 중앙선거관리위원회 국가선거정보 개방포털 «국회의원선거 개표결과» (제22대). District seats are counted; the 46 proportional seats are not in the published file and are not attributed to any party here. 2024. 4. 10. 22대 국회의원 총선거 선거구 지도 — Copyright (c) 2024 오마이뉴스 (MIT), dissolved from Statistics Korea 행정동 boundaries",
-   "lic": "Results: KOGL Type 1 (공공저작물 출처표시). Boundaries: MIT"
+   "lic": "Results: KOGL Type 1 (공공저작물 출처표시). Boundaries: MIT",
+   "up": "National Election Commission (data.nec.go.kr) · OhmyNews constituency maps",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "ru-duma-2016",
@@ -10245,7 +10620,10 @@
     "zh-hans": "颜色代表在这个选区内联邦政党名单票得票最高的政党，而不是赢得该选区议席的议员：中央选举委员会只以各选区的网页公布单一席次候选人的结果，没有任何机器可读的记录。条形图是各政党在全国有效名单票中所占的比例，而不是议席比例，也不是所有投出选票的比例——委员会自己公布的百分比是以票箱中的全部选票（含无效票）为分母。450 席的国家杜马一半为名单议席，一半为单一席次议席。"
    },
    "src": "Districts: GIS-Lab / NextGIS, from OpenStreetMap administrative boundaries and Federal Law 300-ФЗ. Results: Sergey Shpilkin / Dmitry Kobak, scraped from the Central Election Commission of the Russian Federation.",
-   "lic": "Districts: no licence is stated; derived from OpenStreetMap, so treated as ODbL 1.0 (© OpenStreetMap contributors). Results: no licence is stated; a third-party aggregation of figures published by the Central Election Commission."
+   "lic": "Districts: no licence is stated; derived from OpenStreetMap, so treated as ODbL 1.0 (© OpenStreetMap contributors). Results: no licence is stated; a third-party aggregation of figures published by the Central Election Commission.",
+   "up": "GIS-Lab / NextGIS (districts) · Shpilkin & Kobak (results)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "ru-duma-2021",
@@ -10282,7 +10660,10 @@
     "zh-hans": "颜色代表在这个选区内联邦政党名单票得票最高的政党，而不是赢得该选区议席的议员：中央选举委员会只以各选区的网页公布单一席次候选人的结果，没有任何机器可读的记录。条形图是各政党在全国有效名单票中所占的比例，而不是议席比例，也不是所有投出选票的比例——委员会自己公布的百分比是以票箱中的全部选票（含无效票）为分母。450 席的国家杜马一半为名单议席，一半为单一席次议席。"
    },
    "src": "Districts: GIS-Lab / NextGIS, from OpenStreetMap administrative boundaries and Federal Law 300-ФЗ. Results: Sergey Shpilkin / Dmitry Kobak, scraped from the Central Election Commission of the Russian Federation.",
-   "lic": "Districts: no licence is stated; derived from OpenStreetMap, so treated as ODbL 1.0 (© OpenStreetMap contributors). Results: no licence is stated; a third-party aggregation of figures published by the Central Election Commission."
+   "lic": "Districts: no licence is stated; derived from OpenStreetMap, so treated as ODbL 1.0 (© OpenStreetMap contributors). Results: no licence is stated; a third-party aggregation of figures published by the Central Election Commission.",
+   "up": "GIS-Lab / NextGIS (districts) · Shpilkin & Kobak (results)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "tw-ly-2020",
@@ -10331,7 +10712,10 @@
     "ko": "지도는 73개 지역구만 칠한다. 나머지 40석(전체 113석 가운데 정당 명부 34석, 두 개의 원주민 선거구 6석)은 선거구가 지역이 아니어서 어느 땅에도 속하지 않으며 의석 막대에만 들어간다. 선거구의 경계는 공표되지 않으므로, 중앙선거위원회가 기록한 촌리를 내정부 2019-11-21 판 촌리 경계도에 겹쳐 조립했다."
    },
    "src": "Constituency membership, candidates, parties and votes: Central Election Commission (中央選舉委員會) 選舉資料庫, data.gov.tw dataset 13119. Village (村里) boundaries: Ministry of the Interior (內政部) 村里界歷史圖資 (TWD97 geographic), data.gov.tw dataset 130549.",
-   "lic": "Open Government Data License, Taiwan, version 1.0 (政府資料開放授權條款－第1版): free to use, redistribute and adapt, including commercially, with acknowledgement of the source."
+   "lic": "Open Government Data License, Taiwan, version 1.0 (政府資料開放授權條款－第1版): free to use, redistribute and adapt, including commercially, with acknowledgement of the source.",
+   "up": "Central Election Commission · Ministry of the Interior (data.gov.tw)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "tw-ly-2024",
@@ -10380,7 +10764,10 @@
     "ko": "지도는 73개 지역구만 칠한다. 나머지 40석(전체 113석 가운데 정당 명부 34석, 두 개의 원주민 선거구 6석)은 선거구가 지역이 아니어서 어느 땅에도 속하지 않으며 의석 막대에만 들어간다. 선거구의 경계는 공표되지 않으므로, 중앙선거위원회가 기록한 촌리를 내정부 2023-09-28 판 촌리 경계도에 겹쳐 조립했다."
    },
    "src": "Constituency membership, candidates, parties and votes: Central Election Commission (中央選舉委員會) 選舉資料庫, data.gov.tw dataset 13119. Village (村里) boundaries: Ministry of the Interior (內政部) 村里界歷史圖資 (TWD97 geographic), data.gov.tw dataset 130549.",
-   "lic": "Open Government Data License, Taiwan, version 1.0 (政府資料開放授權條款－第1版): free to use, redistribute and adapt, including commercially, with acknowledgement of the source."
+   "lic": "Open Government Data License, Taiwan, version 1.0 (政府資料開放授權條款－第1版): free to use, redistribute and adapt, including commercially, with acknowledgement of the source.",
+   "up": "Central Election Commission · Ministry of the Interior (data.gov.tw)",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "uk-commons-2010",
@@ -10410,7 +10797,10 @@
     "zh-hans": "全部 650 席都由本地图上的选区选出，没有任何议员由名单产生。颜色代表在单一轮相对多数投票中赢得该席次的政党，得票可能远低于该选区投票数的一半。"
    },
    "src": "Results: UK Parliament, Election Results (electionresults.parliament.uk), with the House of Commons Library briefing at https://commonslibrary.parliament.uk/research-briefings/rp10-36/. Boundaries: Office for National Statistics, Open Geography Portal — the 650 constituencies in force from 2010 to 2019. Contains OS data © Crown copyright and database right; contains National Statistics data © Crown copyright and database right.",
-   "lic": "Results: Open Parliament Licence v3.0. Boundaries: Open Government Licence v3.0."
+   "lic": "Results: Open Parliament Licence v3.0. Boundaries: Open Government Licence v3.0.",
+   "up": "House of Commons Library (psephology) · Office for National Statistics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "uk-commons-2015",
@@ -10440,7 +10830,10 @@
     "zh-hans": "全部 650 席都由本地图上的选区选出，没有任何议员由名单产生。颜色代表在单一轮相对多数投票中赢得该席次的政党，得票可能远低于该选区投票数的一半。"
    },
    "src": "Results: UK Parliament, Election Results (electionresults.parliament.uk), with the House of Commons Library briefing at https://commonslibrary.parliament.uk/research-briefings/cbp-7186/. Boundaries: Office for National Statistics, Open Geography Portal — the 650 constituencies in force from 2010 to 2019. Contains OS data © Crown copyright and database right; contains National Statistics data © Crown copyright and database right.",
-   "lic": "Results: Open Parliament Licence v3.0. Boundaries: Open Government Licence v3.0."
+   "lic": "Results: Open Parliament Licence v3.0. Boundaries: Open Government Licence v3.0.",
+   "up": "House of Commons Library (psephology) · Office for National Statistics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "uk-commons-2017",
@@ -10470,7 +10863,10 @@
     "zh-hans": "全部 650 席都由本地图上的选区选出，没有任何议员由名单产生。颜色代表在单一轮相对多数投票中赢得该席次的政党，得票可能远低于该选区投票数的一半。"
    },
    "src": "Results: UK Parliament, Election Results (electionresults.parliament.uk), with the House of Commons Library briefing at https://commonslibrary.parliament.uk/research-briefings/cbp-7979/. Boundaries: Office for National Statistics, Open Geography Portal — the 650 constituencies in force from 2010 to 2019. Contains OS data © Crown copyright and database right; contains National Statistics data © Crown copyright and database right.",
-   "lic": "Results: Open Parliament Licence v3.0. Boundaries: Open Government Licence v3.0."
+   "lic": "Results: Open Parliament Licence v3.0. Boundaries: Open Government Licence v3.0.",
+   "up": "House of Commons Library (psephology) · Office for National Statistics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "uk-commons-2019",
@@ -10500,7 +10896,10 @@
     "zh-hans": "全部 650 席都由本地图上的选区选出，没有任何议员由名单产生。颜色代表在单一轮相对多数投票中赢得该席次的政党，得票可能远低于该选区投票数的一半。"
    },
    "src": "Results: UK Parliament, Election Results (electionresults.parliament.uk), with the House of Commons Library briefing at https://commonslibrary.parliament.uk/research-briefings/cbp-8749/. Boundaries: Office for National Statistics, Open Geography Portal — the 650 constituencies in force from 2010 to 2019. Contains OS data © Crown copyright and database right; contains National Statistics data © Crown copyright and database right.",
-   "lic": "Results: Open Parliament Licence v3.0. Boundaries: Open Government Licence v3.0."
+   "lic": "Results: Open Parliament Licence v3.0. Boundaries: Open Government Licence v3.0.",
+   "up": "House of Commons Library (psephology) · Office for National Statistics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "uk-commons-2024",
@@ -10530,7 +10929,10 @@
     "zh-hans": "全部 650 席都由本地图上的选区选出，没有任何议员由名单产生。颜色代表在单一轮相对多数投票中赢得该席次的政党，得票可能远低于该选区投票数的一半。"
    },
    "src": "Results: UK Parliament, Election Results (electionresults.parliament.uk), with the House of Commons Library briefing at https://commonslibrary.parliament.uk/research-briefings/cbp-10009/. Boundaries: Office for National Statistics, Open Geography Portal — the 650 constituencies of the 2023 Review, in force from 2024. Contains OS data © Crown copyright and database right; contains National Statistics data © Crown copyright and database right.",
-   "lic": "Results: Open Parliament Licence v3.0. Boundaries: Open Government Licence v3.0."
+   "lic": "Results: Open Parliament Licence v3.0. Boundaries: Open Government Licence v3.0.",
+   "up": "House of Commons Library (psephology) · Office for National Statistics",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-1976",
@@ -10567,7 +10969,10 @@
     "ko": "제95대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 95 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 95 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1976",
@@ -10604,7 +11009,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-1978",
@@ -10641,7 +11049,10 @@
     "ko": "제96대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 96 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 96 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1978",
@@ -10678,7 +11089,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1978-special",
@@ -10715,7 +11129,10 @@
     "ko": "보궐선거만 해당합니다. 임기 중에 공석이 된 의석을 정기 선거와 같은 날 채웁니다. 100석 가운데 2석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "僅為補選：任期中出缺的議席，與大選同日補選。100 席中有 2 席改選；未繪出的州沒有投票。",
     "zh-hans": "仅为补选：任期中出缺的议席，与大选同日补选。100 席中有 2 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-1980",
@@ -10752,7 +11169,10 @@
     "ko": "제97대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 97 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 97 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1980",
@@ -10789,7 +11209,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-1982",
@@ -10826,7 +11249,10 @@
     "ko": "제98대 연방의회. 모든 의석이 지역구 의석입니다. ⚠ NY-33은(는) 그려지지 않았습니다. 이 의회 시기의 경계 자료에 해당 구역의 도형이 없기 때문이며, 이 화면이 설명하는 것은 435석 가운데 434석입니다.",
     "zh": "第 98 屆國會。所有議席都是選區議席。 ⚠ NY-33 未繪出：邊界資料中沒有本屆國會的該選區輪廓，因此這個畫面說明的是議會 435 席中的 434 席。",
     "zh-hans": "第 98 届国会。所有议席都是选区议席。 ⚠ NY-33 未绘出：边界数据中没有本届国会的该选区轮廓，因此这个画面说明的是议会 435 席中的 434 席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1982",
@@ -10863,7 +11289,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-1984",
@@ -10900,7 +11329,10 @@
     "ko": "제99대 연방의회. 모든 의석이 지역구 의석입니다. ⚠ NY-33은(는) 그려지지 않았습니다. 이 의회 시기의 경계 자료에 해당 구역의 도형이 없기 때문이며, 이 화면이 설명하는 것은 435석 가운데 434석입니다.",
     "zh": "第 99 屆國會。所有議席都是選區議席。 ⚠ NY-33 未繪出：邊界資料中沒有本屆國會的該選區輪廓，因此這個畫面說明的是議會 435 席中的 434 席。",
     "zh-hans": "第 99 届国会。所有议席都是选区议席。 ⚠ NY-33 未绘出：边界数据中没有本届国会的该选区轮廓，因此这个画面说明的是议会 435 席中的 434 席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1984",
@@ -10937,7 +11369,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-1986",
@@ -10974,7 +11409,10 @@
     "ko": "제100대 연방의회. 모든 의석이 지역구 의석입니다. ⚠ NY-33은(는) 그려지지 않았습니다. 이 의회 시기의 경계 자료에 해당 구역의 도형이 없기 때문이며, 이 화면이 설명하는 것은 435석 가운데 434석입니다.",
     "zh": "第 100 屆國會。所有議席都是選區議席。 ⚠ NY-33 未繪出：邊界資料中沒有本屆國會的該選區輪廓，因此這個畫面說明的是議會 435 席中的 434 席。",
     "zh-hans": "第 100 届国会。所有议席都是选区议席。 ⚠ NY-33 未绘出：边界数据中没有本届国会的该选区轮廓，因此这个画面说明的是议会 435 席中的 434 席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1986",
@@ -11011,7 +11449,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1986-special",
@@ -11048,7 +11489,10 @@
     "ko": "보궐선거만 해당합니다. 임기 중에 공석이 된 의석을 정기 선거와 같은 날 채웁니다. 100석 가운데 1석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "僅為補選：任期中出缺的議席，與大選同日補選。100 席中有 1 席改選；未繪出的州沒有投票。",
     "zh-hans": "仅为补选：任期中出缺的议席，与大选同日补选。100 席中有 1 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-1988",
@@ -11085,7 +11529,10 @@
     "ko": "제101대 연방의회. 모든 의석이 지역구 의석입니다. ⚠ NY-33은(는) 그려지지 않았습니다. 이 의회 시기의 경계 자료에 해당 구역의 도형이 없기 때문이며, 이 화면이 설명하는 것은 435석 가운데 434석입니다.",
     "zh": "第 101 屆國會。所有議席都是選區議席。 ⚠ NY-33 未繪出：邊界資料中沒有本屆國會的該選區輪廓，因此這個畫面說明的是議會 435 席中的 434 席。",
     "zh-hans": "第 101 届国会。所有议席都是选区议席。 ⚠ NY-33 未绘出：边界数据中没有本届国会的该选区轮廓，因此这个画面说明的是议会 435 席中的 434 席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1988",
@@ -11122,7 +11569,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-1990",
@@ -11159,7 +11609,10 @@
     "ko": "제102대 연방의회. 모든 의석이 지역구 의석입니다. ⚠ NY-33은(는) 그려지지 않았습니다. 이 의회 시기의 경계 자료에 해당 구역의 도형이 없기 때문이며, 이 화면이 설명하는 것은 435석 가운데 434석입니다.",
     "zh": "第 102 屆國會。所有議席都是選區議席。 ⚠ NY-33 未繪出：邊界資料中沒有本屆國會的該選區輪廓，因此這個畫面說明的是議會 435 席中的 434 席。",
     "zh-hans": "第 102 届国会。所有议席都是选区议席。 ⚠ NY-33 未绘出：边界数据中没有本届国会的该选区轮廓，因此这个画面说明的是议会 435 席中的 434 席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1990",
@@ -11196,7 +11649,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1990-special",
@@ -11233,7 +11689,10 @@
     "ko": "보궐선거만 해당합니다. 임기 중에 공석이 된 의석을 정기 선거와 같은 날 채웁니다. 100석 가운데 2석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "僅為補選：任期中出缺的議席，與大選同日補選。100 席中有 2 席改選；未繪出的州沒有投票。",
     "zh-hans": "仅为补选：任期中出缺的议席，与大选同日补选。100 席中有 2 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-1992",
@@ -11270,7 +11729,10 @@
     "ko": "제103대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 103 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 103 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1992",
@@ -11307,7 +11769,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 34석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 34 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 34 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1992-special",
@@ -11344,7 +11809,10 @@
     "ko": "보궐선거만 해당합니다. 임기 중에 공석이 된 의석을 정기 선거와 같은 날 채웁니다. 100석 가운데 1석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "僅為補選：任期中出缺的議席，與大選同日補選。100 席中有 1 席改選；未繪出的州沒有投票。",
     "zh-hans": "仅为补选：任期中出缺的议席，与大选同日补选。100 席中有 1 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-1994",
@@ -11381,7 +11849,10 @@
     "ko": "제104대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 104 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 104 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1994",
@@ -11418,7 +11889,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1994-special",
@@ -11455,7 +11929,10 @@
     "ko": "보궐선거만 해당합니다. 임기 중에 공석이 된 의석을 정기 선거와 같은 날 채웁니다. 100석 가운데 2석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "僅為補選：任期中出缺的議席，與大選同日補選。100 席中有 2 席改選；未繪出的州沒有投票。",
     "zh-hans": "仅为补选：任期中出缺的议席，与大选同日补选。100 席中有 2 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-1996",
@@ -11492,7 +11969,10 @@
     "ko": "제105대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 105 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 105 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1996",
@@ -11529,7 +12009,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1996-special",
@@ -11566,7 +12049,10 @@
     "ko": "보궐선거만 해당합니다. 임기 중에 공석이 된 의석을 정기 선거와 같은 날 채웁니다. 100석 가운데 1석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "僅為補選：任期中出缺的議席，與大選同日補選。100 席中有 1 席改選；未繪出的州沒有投票。",
     "zh-hans": "仅为补选：任期中出缺的议席，与大选同日补选。100 席中有 1 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-1998",
@@ -11603,7 +12089,10 @@
     "ko": "제106대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 106 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 106 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-1998",
@@ -11640,7 +12129,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 34석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 34 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 34 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-2000",
@@ -11677,7 +12169,10 @@
     "ko": "제107대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 107 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 107 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2000",
@@ -11714,7 +12209,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2000-special",
@@ -11751,7 +12249,10 @@
     "ko": "보궐선거만 해당합니다. 임기 중에 공석이 된 의석을 정기 선거와 같은 날 채웁니다. 100석 가운데 1석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "僅為補選：任期中出缺的議席，與大選同日補選。100 席中有 1 席改選；未繪出的州沒有投票。",
     "zh-hans": "仅为补选：任期中出缺的议席，与大选同日补选。100 席中有 1 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-2002",
@@ -11788,7 +12289,10 @@
     "ko": "제108대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 108 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 108 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2002",
@@ -11825,7 +12329,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2002-special",
@@ -11862,7 +12369,10 @@
     "ko": "보궐선거만 해당합니다. 임기 중에 공석이 된 의석을 정기 선거와 같은 날 채웁니다. 100석 가운데 1석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "僅為補選：任期中出缺的議席，與大選同日補選。100 席中有 1 席改選；未繪出的州沒有投票。",
     "zh-hans": "仅为补选：任期中出缺的议席，与大选同日补选。100 席中有 1 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-2004",
@@ -11899,7 +12409,10 @@
     "ko": "제109대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 109 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 109 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2004",
@@ -11936,7 +12449,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 34석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 34 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 34 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-2006",
@@ -11973,7 +12489,10 @@
     "ko": "제110대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 110 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 110 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2006",
@@ -12010,7 +12529,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-2008",
@@ -12047,7 +12569,10 @@
     "ko": "제111대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 111 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 111 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2008",
@@ -12084,7 +12609,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2008-special",
@@ -12121,7 +12649,10 @@
     "ko": "보궐선거만 해당합니다. 임기 중에 공석이 된 의석을 정기 선거와 같은 날 채웁니다. 100석 가운데 2석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "僅為補選：任期中出缺的議席，與大選同日補選。100 席中有 2 席改選；未繪出的州沒有投票。",
     "zh-hans": "仅为补选：任期中出缺的议席，与大选同日补选。100 席中有 2 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-2010",
@@ -12158,7 +12689,10 @@
     "ko": "제112대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 112 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 112 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2010",
@@ -12195,7 +12729,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2010-special",
@@ -12232,7 +12769,10 @@
     "ko": "보궐선거만 해당합니다. 임기 중에 공석이 된 의석을 정기 선거와 같은 날 채웁니다. 100석 가운데 4석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "僅為補選：任期中出缺的議席，與大選同日補選。100 席中有 4 席改選；未繪出的州沒有投票。",
     "zh-hans": "仅为补选：任期中出缺的议席，与大选同日补选。100 席中有 4 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-2012",
@@ -12269,7 +12809,10 @@
     "ko": "제113대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 113 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 113 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2012",
@@ -12306,7 +12849,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-2014",
@@ -12343,7 +12889,10 @@
     "ko": "제114대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 114 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 114 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2014",
@@ -12380,7 +12929,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2014-special",
@@ -12417,7 +12969,10 @@
     "ko": "보궐선거만 해당합니다. 임기 중에 공석이 된 의석을 정기 선거와 같은 날 채웁니다. 100석 가운데 3석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "僅為補選：任期中出缺的議席，與大選同日補選。100 席中有 3 席改選；未繪出的州沒有投票。",
     "zh-hans": "仅为补选：任期中出缺的议席，与大选同日补选。100 席中有 3 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-2016",
@@ -12454,7 +13009,10 @@
     "ko": "제115대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 115 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 115 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2016",
@@ -12491,7 +13049,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 34석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 34 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 34 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-house-2018",
@@ -12528,7 +13089,10 @@
     "ko": "제116대 연방의회. 모든 의석이 지역구 의석입니다.",
     "zh": "第 116 屆國會。所有議席都是選區議席。",
     "zh-hans": "第 116 届国会。所有议席都是选区议席。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2018",
@@ -12565,7 +13129,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2018-special",
@@ -12602,7 +13169,10 @@
     "ko": "보궐선거만 해당합니다. 임기 중에 공석이 된 의석을 정기 선거와 같은 날 채웁니다. 100석 가운데 2석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "僅為補選：任期中出缺的議席，與大選同日補選。100 席中有 2 席改選；未繪出的州沒有投票。",
     "zh-hans": "仅为补选：任期中出缺的议席，与大选同日补选。100 席中有 2 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2020",
@@ -12639,7 +13209,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2020-special",
@@ -12676,7 +13249,10 @@
     "ko": "보궐선거만 해당합니다. 임기 중에 공석이 된 의석을 정기 선거와 같은 날 채웁니다. 100석 가운데 2석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "僅為補選：任期中出缺的議席，與大選同日補選。100 席中有 2 席改選；未繪出的州沒有投票。",
     "zh-hans": "仅为补选：任期中出缺的议席，与大选同日补选。100 席中有 2 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2022",
@@ -12713,7 +13289,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2022-special",
@@ -12750,7 +13329,10 @@
     "ko": "보궐선거만 해당합니다. 임기 중에 공석이 된 의석을 정기 선거와 같은 날 채웁니다. 100석 가운데 2석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "僅為補選：任期中出缺的議席，與大選同日補選。100 席中有 2 席改選；未繪出的州沒有投票。",
     "zh-hans": "仅为补选：任期中出缺的议席，与大选同日补选。100 席中有 2 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2024",
@@ -12787,7 +13369,10 @@
     "ko": "6년 임기가 끝난 상원의원 그룹의 선거입니다. 100석 가운데 33석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "六年任期屆滿的參議員改選組別。100 席中有 33 席改選；未繪出的州沒有投票。",
     "zh-hans": "六年任期届满的参议员改选组别。100 席中有 33 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   },
   {
    "id": "us-senate-2024-special",
@@ -12824,7 +13409,10 @@
     "ko": "보궐선거만 해당합니다. 임기 중에 공석이 된 의석을 정기 선거와 같은 날 채웁니다. 100석 가운데 2석이 선거 대상이었으며, 그려지지 않은 주는 투표하지 않았습니다.",
     "zh": "僅為補選：任期中出缺的議席，與大選同日補選。100 席中有 2 席改選；未繪出的州沒有投票。",
     "zh-hans": "仅为补选：任期中出缺的议席，与大选同日补选。100 席中有 2 席改选；未绘出的州没有投票。"
-   }
+   },
+   "up": "MIT Election Data and Science Lab · Jeffrey B. Lewis et al. · us-atlas",
+   "fetchedAt": "2026-09-09",
+   "fetchedFrom": "commit"
   }
  ]
 }

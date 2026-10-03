@@ -6,7 +6,7 @@
  *  drop a value it cannot source. This is the gate that proves it did — because "the builder is
  *  careful" is a claim about code, and the shipped bytes are the thing users read.
  *
- *  The twenty checks are listed in docs/COMPANIES.md §7 and numbered the same way there, so a red
+ *  The twenty-one checks are listed in docs/COMPANIES.md §7 and numbered the same way there, so a red
  *  line here names a paragraph you can go and read. Two of them are worth saying out loud:
  *
  *    ⑦  a facility at 0,0 — "no coordinate" written as a point in the Gulf of Guinea. Every dataset
@@ -98,6 +98,7 @@ function main() {
   const cov = [];
   let facTotal = 0;
   let profCount = 0;
+  let pendingCount = 0;
   const files = existsSync(PROFILES) ? readdirSync(PROFILES).filter((f) => f.endsWith('.json')) : [];
   const fileIds = new Set(files.map((f) => f.slice(0, -5)));
 
@@ -123,6 +124,18 @@ function main() {
     if (!String((p.identity && p.identity.name) || '').trim()) fail('⑧', 'empty company name', who);
     if (p.identity && p.identity.website && !isUrl(p.identity.website)) fail('⑨', 'invalid website URL: ' + p.identity.website, who);
     for (const s of (p.sources || [])) if (!isUrl(s.url)) fail('⑨', 'invalid source URL: ' + s.url, who);
+
+    /* ㉑ (companies-elections-live) every profile states the day it was built, and no source was
+       retrieved after it — the panel prints that date, and the weekly refresh
+       (scripts/companies/refresh-plan.mjs) orders its batch by it. A missing or future date would
+       make a profile look fresher than any source it was built from. */
+    const built = String(p.generatedAt || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(built)) fail('㉑', 'profile has no generatedAt date: ' + built, who);
+    else {
+      if (built > new Date().toISOString().slice(0, 10)) fail('㉑', 'generatedAt is in the future: ' + built, who);
+      for (const s of (p.sources || [])) if (s.retrievedAt && s.retrievedAt > built) fail('㉑', 'source ' + s.name + ' retrieved ' + s.retrievedAt + ', after the profile was built ' + built, who);
+    }
+    if (p.osmPending) pendingCount++;
 
     /* ⑪⑫ money values must carry a currency and a period */
     for (const [k, v] of Object.entries(p.scale || {})) {
@@ -272,7 +285,7 @@ function main() {
       if (list.length > 4) console.log('        … and ' + (list.length - 4) + ' more');
     }
   } else {
-    console.log('\n  all twenty checks pass');
+    console.log('\n  all twenty-one checks pass · ' + pendingCount + ' of ' + profCount + ' profiles still osmPending (cleared a batch a week by .github/workflows/companies-refresh.yml)');
   }
 
   const out = arg('--json', '');

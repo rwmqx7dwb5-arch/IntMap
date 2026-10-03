@@ -830,7 +830,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  175 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  178 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -941,7 +941,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全161を検索・到達可能 160）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全164を検索・到達可能 163）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -957,7 +957,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 175能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 178能力ぶんの型・列挙・範囲と `required`/`anyOf`。
 atlas-schemas.js                  **引数の schema**（#R406）— 160 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -2083,12 +2083,14 @@ tests/
                                   評価（Secret 2本が無ければ**赤**。休眠しない）。報告は run のページにも出る
   tle-refresh.yml                 衛星軌道要素スナップショットの定期更新（PR → 検査 → merge のあと deploy.yml を起動する——GITHUB_TOKEN の push は他の workflow を起こさない）。同じ PR に、期限の来た他の束も載せる（`scripts/data-refresh.mjs`・宣言 `autoRefresh`）
   perf-ceiling.yml                main の CI が完了するたびに、その build の実測で起動予算の天井を下げる（`perf-budget.mjs --tighten`。上げない）。bot の PR を `land-bot-pr` で、測った main の上にまだ乗っているときだけ着地させる
-  upstream-liveness.yml           毎晩、ブラウザが要求する上流ホストの代表 probe を訊く（`scripts/upstream-liveness.mjs`）。赤は up→2 晩続けて down の晩だけ。結果は artifact と job summary
+  upstream-liveness.yml           毎晩、ブラウザが要求する上流ホストと選挙のビルドが読む上流の代表 probe を訊く（`scripts/upstream-liveness.mjs`）。赤は up→2 晩続けて down の晩だけ。結果は artifact と job summary
   aviation-sweep.yml              世界の航空機スナップショット（Supabase Storage）を定期的に進める。リポジトリには書かない
+  companies-refresh.yml           毎週、企業アトラスを 1 バッチ組み直す（osmPending が先・次に古いプロフィール。`scripts/companies/refresh-plan.mjs`）。bot の PR を `land-bot-pr` で着地
+  elections-refresh.yml           毎週、国政選挙の記録が世界に遅れていないか訊き（`build-elections.mjs --watch`）、取り込めるパックだけ組み直す。bot の PR を `land-bot-pr` で着地
   nightly-bisect.yml              連続で赤のテスト 1 本を、範囲の各 commit で単独に走らせて壊した merge を測る（手動 or nightly の `deep-alarm` が起動・`scripts/nightly-bisect.mjs`）。その commit 自身の木・build・データで測る
 .github/actions/
   browser-tier/                   ブラウザ試験の 1 台分（依存・Playwright・計画・build 成果物の受け取り・実行・報告）。ci.yml の browser／browser-deep が使う
-  land-bot-pr/                    github-actions[bot] の PR を着地させる（自分が起こした run の承認・検査の待機・取消と赤の区別・merge・deploy.yml の起動）。tle-refresh.yml と perf-ceiling.yml が使う
+  land-bot-pr/                    github-actions[bot] の PR を着地させる（自分が起こした run の承認・検査の待機・取消と赤の区別・merge・deploy.yml の起動）。tle-refresh.yml・perf-ceiling.yml・companies-refresh.yml・elections-refresh.yml が使う
   data-assets/                    git の外にあるデータ集合を置く（`data-assets.json` の hash を key にしたキャッシュ ＋
                                   `scripts/data-assets.mjs pull`）。データを読むジョブがビルドと検査の前に使う
 ```
