@@ -38,6 +38,7 @@ import { jsonWithin } from './fetch-deadline.js';
 import { hostMatches } from './host-match.js';
 import { IntMapLang } from './lang-registry.js';
 import { iconNode } from './icons.js';
+import * as bus from './bus.js';
 
 /* where the nightly measurement is shipped (scripts/build-service-status.mjs OUT) */
 const BUNDLE_URL = './data/service-status.json';
@@ -394,4 +395,4 @@ export async function open(ctx) {
 export function close() { const r = document.getElementById('im-status'); if (r) r.style.display = 'none'; }
 export function shown() { const r = document.getElementById('im-status'); return !!r && r.style.display !== 'none'; }
 /* the language changes the words, not the facts: an open page is drawn again in the new language */
-try { window.addEventListener('intmap-lang', () => { if (shown()) open(); }); } catch (_) { /* headless */ }
+try { bus.on('intmap-lang', () => { if (shown()) open(); }); } catch (_) { /* headless */ }
