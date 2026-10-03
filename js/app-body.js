@@ -1840,8 +1840,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       if(mob() && !inp.value.trim()){ try{ inp.focus(); }catch(_){} return; }
       doGeocode();
     };
-    /* Enter searches — unless a result is highlighted with the arrow keys, which Enter then picks (js/search-geocode.js listbox) */
-    inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter'&&!e.defaultPrevented&&!inp.getAttribute('aria-activedescendant')) doGeocode(); });
+    /* Enter searches AND GOES to the first candidate (search-identity, js/search-geocode.js `go`) — unless a result is
+       highlighted with the arrow keys, which Enter then picks (js/search-geocode.js listbox), or the Enter is an IME
+       confirming its conversion (`isComposing`; 229 is the keyCode a browser reports for a key the IME consumed) */
+    inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229&&!e.defaultPrevented&&!inp.getAttribute('aria-activedescendant')) doGeocode({go:true}); });
     /* (mobile-shell) …and on a phone the candidates follow the typing — local rows only, no network (js/search-geocode.js) */
     let _sugT=0; inp.addEventListener('input',()=>{ if(!mob()) return; clearTimeout(_sugT); _sugT=setTimeout(()=>doGeocode({suggest:true}),120); });
     /* (#R106) blue only while the field has text — toggle a class the CSS keys off. */

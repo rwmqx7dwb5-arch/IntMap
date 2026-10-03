@@ -561,8 +561,14 @@ window.IntMapGazetteer=(function(){
   function index(){
     if(_index) return _index;
     const acc={};
+    /* (search-identity) …and each entry says how many people live there and in which country, because the search box
+       ranks by population and must find a capital by name AND country (js/search-geocode.js `localFuzzyPlaces`).
+       A world row carries both (#R232 / #R495). A curated row carries neither, and its GeoNames record is the one
+       flagged `cur=1` under the same English name (#R620) — joined here, once per build of this index. */
+    const curOf=new Map(); if(_worldRows) for(const r of _worldRows) if(r[11]===1) curOf.set(r[4],r);
     const feed=(rows,cap)=>{ const n=cap==null?rows.length:Math.min(cap,rows.length);
-      for(let i=0;i<n;i++){ const [type,terms,lng,lat,en,jp]=rows[i]; (acc[type]=acc[type]||[]).push({terms,loc:[lng,lat],name:{en,jp}}); } };
+      for(let i=0;i<n;i++){ const row=rows[i], [type,terms,lng,lat,en,jp]=row, src=row.length>6?row:curOf.get(en);
+        (acc[type]=acc[type]||[]).push({terms,loc:[lng,lat],name:{en,jp},pop:src?(+src[6]||0):0,iso2:src?(src[7]||''):''}); } };
     /* (#R620) …the MATCHABLE view: this index is a bag-of-words matcher, so a row a curated entry
        already names must not be in it. */
     const w=worldMatchable();
