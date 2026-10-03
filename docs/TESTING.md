@@ -1013,6 +1013,18 @@ main thread, and on a 22-core desktop it did not reproduce `tests/restored-layer
 failing shard ran beside it (`tests/r170.spec.js`) in a second process. Then **profile the page**
 (CDP `Profiler`): the dominant task was the product's, not the renderer's
 (`dev-notes/2026-10-01-restored-layers-under-load.md`).
+
+**What that spec waits for after release is the app's own answer for each layer, not a duration.** A
+layer the normal boot drew is answered in the held boot when it is on the map, when its box is held for
+the instant (`window.IntMapLayerTime.held`), or when its row's record (`window.IntMapLayerState.get`)
+says the upstream did not serve it (`unobserved`, or `failed` with `network` / `http` / `parse` /
+`timeout` — listed as an annotation; a reason the page caused is not set aside). A box unticked without
+such a record is the silent loss the spec exists for and fails at once. The bound is what is left of the
+test's own `setTimeout`, not a number of seconds of its own. `window.IntMapLayerHold` publishes both
+halves of «answered»: `pending()` (changes held for the style) and `inflight()` (delivered changes whose
+request is still running). The layer list is read with `getLayersOrder()`, never `getStyle()` — that
+serialises every GeoJSON source and, on a page carrying every layer, kept the main thread long enough for
+a 12 s wait on the answer to run out. The record is `dev-notes/2026-10-03-restored-layer-catchup.md`.
 ## The map at instant T — `tests/world-at-time-checks.test.mjs` / `tests/history-prefetch-on-demand.spec.js`
 
 The gate is `scripts/world-at-time.mjs --check`: every layer of `js/layer-manifest.js` has a time

@@ -768,7 +768,10 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
   共有リンク復元（`js/map-ui.js`）・セッション復元（`js/session-tabs.js`）の入口も `whenCanDraw()`**。
   4 倍の CPU 絞りでは、多数のレイヤーを載せたリンクで `load` が 311 秒来なかった。起動処理の待ちは箱が
   生まれる前に登録されるので、預かったレイヤーより先に答えられる（待ちは登録順に解ける）。
-- 預かり中の一覧は `window.IntMapLayerHold.pending()`（空＝全部配り終えた）。
+- 預かり中の一覧は `window.IntMapLayerHold.pending()`（空＝全部配り終えた）。配ったあとまだ答えを
+  取りに行っている箱は `window.IntMapLayerHold.inflight()`（`layerInflight` に要求を渡した行だけ）。
+  行が取得に失敗して箱を外すときは、外す前に `js/layer-state.js` へ理由を残す（記録の無いまま外れた箱は、
+  利用者が外した箱と見分けがつかない）。
 - レンダラが無ければ待つものが無いので、従来どおり素通りする。
 - **配る `change` は「誰がその状態にしたか」も運ぶ。** `js/data-layers.js` は整合器自身の再発火を
   箱の印 `cb.__syn`（発火のあいだだけ立つ）で見分け、それ以外の `change` を利用者の操作として記録する

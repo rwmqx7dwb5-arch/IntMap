@@ -36,8 +36,23 @@
  *  ── WHAT IS WAITED FOR, AND WHAT IS NOT ─────────────────────────────────────
  *  After release the spec waits for the STATE «nothing is held any more»
  *  (window.IntMapLayerHold.pending() empty — js/layer-rows.js), not for a
- *  duration; only the layers whose handlers fetch data before adding them are
- *  then polled for. ⚠ It does NOT read the launch screen's progress: that number
+ *  duration. Then each layer the normal boot drew is waited on until the app
+ *  itself has ANSWERED for it in the held boot (restored-layer-catchup):
+ *    · it is on the map; or
+ *    · its box is held for the instant on the clock (js/layer-time-kernel.js); or
+ *    · its row's record (js/layer-state.js) says the UPSTREAM did not give it —
+ *      failed with an answer from the host (network / http / parse) or
+ *      unobserved (the host's clock ran out). That is a fact about the source,
+ *      not a cost of holding the style back, and it is listed in the report;
+ *      a failure the page caused ('not-drawn', 'error' …) is not set aside.
+ *  A box UNTICKED with no record is not an answer — it is the silent loss this
+ *  file exists to catch, and it fails at once. Nothing but the test's own time
+ *  ends the wait. MEASURED (nightly 2026-09-28 → 10-01, then locally on four
+ *  cores beside a second spec): a 60 s poll after release failed with 3, then
+ *  41 layers still arriving (locally at t+36 s 50 were missing, at t+75 s 6),
+ *  while the one row that never came was Time zones, whose bare fetch failed
+ *  after 126 s and unticked its box with no record (js/layer-packs.js).
+ *  ⚠ It does NOT read the launch screen's progress: that number
  *  stops moving when the screen's own 20 s escape fires, so a boot that finished
  *  a moment after the escape read as a boot that never ran (measured locally
  *  under 6x CPU throttling: `load` at 20.6 s, progress frozen at 58).
@@ -84,7 +99,11 @@ const HOLD_FRAMES = () => {
 const RV_INDEX = () => ({ version: '2.0', generated: Math.floor(Date.now() / 1000), host: 'https://tilecache.rainviewer.com',
   radar: { past: [{ time: Math.floor(Date.now() / 1000) - 600, path: '/v2/radar/fixture' }], nowcast: [] }, satellite: { infrared: [] } });
 
-async function openLink(browser, ids, { hold }) {
+/* what is left of the test's own time — every state wait below is bounded by it and by nothing shorter: a number
+   of seconds chosen here would be one more guess at how slow a runner is (restored-layer-catchup) */
+const timeLeft = (t0, margin) => Math.max(5000, test.info().timeout - (Date.now() - t0) - margin);
+
+async function openLink(browser, ids, { hold, t0 }) {
   const ctx = await browser.newContext({ storageState: seededStorageState() });
   await installHermeticRouting(ctx);
   await ctx.route('https://api.rainviewer.com/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(RV_INDEX()) }));
@@ -94,7 +113,7 @@ async function openLink(browser, ids, { hold }) {
   page.on('pageerror', (e) => errors.push(String((e && e.message) || e)));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto('/index.html#v=139.7000,35.7000,4.00,0,0,f&l=' + ids.join(','), { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => !!window.__imap, null, { timeout: 60000 });
+  await page.waitForFunction(() => !!window.__imap, null, { timeout: timeLeft(t0, 30000) });
   let drawableWhileHeld = null, heldAtRelease = null;
   if (hold) {
     await page.waitForTimeout(HOLD_MS);
@@ -109,12 +128,42 @@ async function openLink(browser, ids, { hold }) {
   /* the state, not a duration: the style can take layers AND the gate has delivered everything */
   await page.waitForFunction(() => {
     try { return window.IntMapGeoEngine.canDraw() && window.IntMapLayerHold.pending().length === 0; } catch (_) { return false; }
-  }, null, { timeout: 60000 });
+  }, null, { timeout: timeLeft(t0, 30000) });
   return { ctx, page, errors, drawableWhileHeld, heldAtRelease };
 }
 
-const mapLayers = (page) => page.evaluate(() => { try { return (window.__imap.getStyle().layers || []).map((l) => l.id); } catch (_) { return []; } });
+/* the style's layer ids, as getStyle() lists them (custom layers are not in that list) — read from the layer order,
+   NOT by serialising the style: getStyle() copies every GeoJSON source's data, and on this page (every layer of a
+   link, the 10 m countries among them) one call kept a busy page's main thread long enough that a 12 s wait for the
+   answer ran out (restored-layer-catchup, measured locally). */
+const mapLayers = (page) => page.evaluate(() => { try { return window.__imap.getLayersOrder().filter((id) => { const l = window.__imap.getLayer(id); return !!l && l.type !== 'custom'; }); } catch (_) { return []; } });
 const styleErrors = (errs) => errs.filter((e) => /Style is not done loading/i.test(e));
+
+/* the reasons that describe the SOURCE (js/layer-state.js / js/fetch-deadline.js vocabulary) — a row the upstream did
+   not serve has answered for itself; any other reason is a failure of the page and is not set aside */
+const UPSTREAM_REASONS = ['network', 'http', 'parse', 'timeout'];
+
+/* the held boot's answer for every layer the normal boot drew — «WHAT IS WAITED FOR» in the header */
+const answers = (page, reference, owned) => page.evaluate(({ reference, owned, upstream }) => {
+  const have = new Set(window.__imap.getLayersOrder().filter((id) => { const l = window.__imap.getLayer(id); return !!l && l.type !== 'custom'; }));   /* as mapLayers */
+  const owner = {};
+  for (const [box, ls] of Object.entries(owned)) for (const l of ls || []) owner[l] = box;
+  const out = { waiting: [], silent: [], source: [], hold: [], inflight: [] };
+  try { out.hold = window.IntMapLayerHold.pending(); out.inflight = window.IntMapLayerHold.inflight(); } catch (_) { /* reported empty */ }
+  for (const id of reference) {
+    if (have.has(id)) continue;
+    const box = owner[id];
+    if (!box) { out.waiting.push(id); continue; }   /* a layer no box owns (the base map's) is answered only by being drawn */
+    if (window.IntMapLayerTime.held(box)) continue;
+    const rec = window.IntMapLayerState.get(box);
+    if (rec && (rec.state === 'unobserved' || (rec.state === 'failed' && upstream.includes(rec.reason)))) { out.source.push(box + ' ' + rec.state + ' ' + rec.reason); continue; }
+    const cb = document.getElementById(box);
+    if (cb && !cb.checked) { out.silent.push(id + ' — ' + box + ' unticked' + (rec ? ' (' + rec.state + ' ' + rec.reason + ')' : ' with no record')); continue; }
+    out.waiting.push(id + ' — ' + box + (rec ? ' ' + rec.state + (rec.reason ? ' ' + rec.reason : '') : ''));
+  }
+  out.source = Array.from(new Set(out.source));
+  return out;
+}, { reference, owned, upstream: UPSTREAM_REASONS });
 
 test.describe.configure({ mode: 'parallel' });
 
@@ -133,31 +182,40 @@ const REPORTED = [['dl-planes', 'lyr-plane-track'], ['dl-radar', 'lyr-radar']];
 
 test('every layer a link can carry: holding the style back costs no layer', async ({ browser }) => {
   test.setTimeout(240000);
+  const t0 = Date.now();
   const ids = sharedIds();
   expect(ids.length).toBeGreaterThan(0);
   for (const [box] of REPORTED) expect(ids, 'the reported layers are among those a link carries').toContain(box);
   /* both boots at once: the reference is whatever the NORMAL boot has drawn after SETTLE_MS, and the
      held boot must end up with at least that. A busier machine only makes the reference smaller
      (fewer slow layers in it), never wrong. */
-  const heldP = openLink(browser, ids, { hold: true });
-  const plain = await openLink(browser, ids, { hold: false });
+  const heldP = openLink(browser, ids, { hold: true, t0 });
+  const plain = await openLink(browser, ids, { hold: false, t0 });
   let reference, plainOwned = {};
   try { await plain.page.waitForTimeout(SETTLE_MS); reference = await mapLayers(plain.page);
     /* which layers each box owns, read where they DREW (the held boot may never draw a box the time hold met first) */
-    plainOwned = await plain.page.evaluate(() => { const o = {}; document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach((c) => { try { o[c.id] = window.IntMapLayerAudit.owned(c.id); } catch (_) { } }); return o; }); }
+    /* only boxes that were ON there: a layer a ticked box shares with an unticked one (`country-fill` comes with the
+       `countries` source every choropleth adds, and is owned by the hidden Countries box the link does not carry) is
+       answered for by the ticked one — measured: «cb-countries unticked», read as a loss, was a box off in both boots */
+    plainOwned = await plain.page.evaluate(() => { const o = {}; document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach((c) => { if (!c.checked) return; try { o[c.id] = window.IntMapLayerAudit.owned(c.id); } catch (_) { } }); return o; }); }
   finally { await plain.ctx.close(); }
   const held = await heldP;
   try {
     expect(held.drawableWhileHeld, 'the style must still be unparsed while the restore runs').toBe(false);
     expect((held.heldAtRelease || []).length, "the restore's changes were held by the gate").toBeGreaterThan(0);
-    /* everything has been delivered (openLink waited for that state); what is left is the layers whose
-       handlers fetch their data first — the same wait the normal boot's reference already had */
-    /* (world-at-time) a layer whose box the TIME hold keeps back (the link's war rows move the clock into the past) may
-       exist in one boot and not the other — whether it drew before the hold is a race between the clock and the
-       style, not a cost of the style hold. Its layers are set aside — the reconciler's own ownership, read in the boot that drew them. */
-    const timeHeldLayers = async () => (await held.page.evaluate(() => window.IntMapLayerTime.heldIds())).flatMap((id) => plainOwned[id] || []);
-    await expect.poll(async () => { const have = new Set(await mapLayers(held.page)); const aside = new Set(await timeHeldLayers()); return reference.filter((id) => !have.has(id) && !aside.has(id)); },
-      { timeout: 60000, intervals: [2000], message: 'layers the normal boot drew and the held boot did not' }).toEqual([]);
+    /* everything has been delivered (openLink waited for that state); now each layer the normal boot drew is waited on
+       until the held boot has answered for it (`answers`). (world-at-time) a layer whose box the TIME hold keeps back (the
+       link's war rows move the clock into the past) may exist in one boot and not the other — whether it drew before the
+       hold is a race between the clock and the style, not a cost of the style hold; ownership is the reconciler's own,
+       read in the boot that drew them. */
+    let last = null;
+    try {
+      await expect.poll(async () => { last = await answers(held.page, reference, plainOwned); return last.silent.length > 0 || last.waiting.length === 0; },
+        { timeout: timeLeft(t0, 20000), intervals: [2000], message: 'the held boot answers for every layer the normal boot drew' }).toBe(true);
+    } catch (e) { throw new Error(String(e && e.message) + '\nlast answer: ' + JSON.stringify(last)); }
+    if (last.source.length) test.info().annotations.push({ type: 'not served by its upstream', description: last.source.join('; ') });
+    expect(last.silent, 'a box unticked without the upstream having refused it is a layer lost').toEqual([]);
+    expect(last.waiting, 'layers the normal boot drew and the held boot did not').toEqual([]);
     /* the reported pair, by name: held by the gate, then on the map with their boxes still ticked */
     expect(held.heldAtRelease, 'both reported changes were held by the gate').toEqual(expect.arrayContaining(REPORTED.map(([box]) => box)));
     /* (world-at-time) the map at an instant is measured in tests/history-prefetch-on-demand.spec.js (the same journey to
@@ -167,12 +225,12 @@ test('every layer a link can carry: holding the style back costs no layer', asyn
        row saying why, in both boots alike (the comparison above holds either way). So each reported box is on the map
        or held for the instant; returning to the present to watch ~90 layers re-draw is what took this test past 240 s
        in CI (4.1 min), and the delivery back is not this test's claim. */
-    const have = new Set(await mapLayers(held.page));
-    const pair = await held.page.evaluate((r) => r.map(([box]) => ({ box, held: window.IntMapLayerTime.held(box),
-      mark: (window.IntMapLayerState.get(box) || {}).state })), REPORTED);
-    REPORTED.forEach(([box, layer], i) => {
-      expect(have.has(layer) || (pair[i].held && pair[i].mark === 'nodata'), box + ': on the map, or held for the instant with its reason').toBe(true);
-    });
+    /* (restored-layer-catchup) waited on like the rest — the radar row reads its index before it adds its layer, and on a
+       busy page the normal boot's reference may not have it yet either (measured locally: absent from both at release) */
+    const pairNow = () => held.page.evaluate((r) => { const have = new Set(window.__imap.getLayersOrder().filter((id) => { const l = window.__imap.getLayer(id); return !!l && l.type !== 'custom'; }));
+      return r.map(([box, layer]) => ({ box, on: have.has(layer), held: window.IntMapLayerTime.held(box), mark: (window.IntMapLayerState.get(box) || {}).state || null })); }, REPORTED);
+    await expect.poll(async () => (await pairNow()).filter((p) => !(p.on || (p.held && p.mark === 'nodata'))),
+      { timeout: timeLeft(t0, 8000), intervals: [2000], message: 'each reported box: on the map, or held for the instant with its reason' }).toEqual([]);
     expect(await held.page.evaluate((w) => w.map((id) => document.getElementById(id).checked), REPORTED.map(([box]) => box))).toEqual([true, true]);
     expect(styleErrors(held.errors), 'no add may reach a style that cannot take it').toEqual([]);
   } finally { await held.ctx.close(); }
