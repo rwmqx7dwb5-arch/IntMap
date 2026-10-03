@@ -19,7 +19,7 @@ const yaml = { load: yamlLoad };
 
 import { isDesignToken, tokensOf, buildIndex, specReach, specsGuarding, reachMap } from '../scripts/spec-reach.mjs';
 import { classify } from '../scripts/deep-history.mjs';
-import { parseLog, suspects, blame, markdown, bisectKey, existingKeys, toDispatch, titleOf } from '../scripts/nightly-blame.mjs';
+import { parseLog, suspects, blame, markdown, bisectKey, existingKeys, toDispatch, titleOf, subjectCell } from '../scripts/nightly-blame.mjs';
 import { plan, countResults, stateOf, judge, words, MATRIX_MAX } from '../scripts/nightly-bisect.mjs';
 import { body } from '../scripts/deep-alarm.mjs';
 import { allSpecs } from '../scripts/tiers.mjs';
@@ -194,6 +194,17 @@ test('④ the words name the PR for a culprit, and blame no one when the test pa
   assert.match(words(judge(rs), { test: 'tests/x.spec.js › t', good: 'aaa', bad: 'bbb', results: rs }), /#8 broke it/);
   const alone = [P(0, 'pass', null, true), P(1, 'pass', 7)];
   assert.match(words(judge(alone), { test: 'tests/x.spec.js › t', good: 'aaa', bad: 'bbb', results: alone }), /no merge in this range broke it/);
+});
+
+test('④ a commit subject stays one table cell: the backslash is escaped before the pipe, and the cut comes first', () => {
+  assert.equal(subjectCell('a | b \\ c (#12)', 90), 'a \\| b \\\\ c');
+  assert.equal(subjectCell('ends in \\', 90), 'ends in \\\\', 'a trailing backslash would otherwise escape the cell\'s closing pipe');
+  assert.equal(subjectCell('xx|', 3), 'xx\\|', 'cut, then escaped — an escape is never split');
+  /* the whole row, as the bisect writes it: the columns are counted on pipes no backslash escapes */
+  const rs = [P(0, 'pass', null, true), { ...P(1, 'fail', 8), subject: 'odd \\ | subject' }];
+  const row = words(judge(rs), { test: 'tests/x.spec.js › t', good: 'aaa', bad: 'bbb', results: rs }).split('\n').find((l) => l.startsWith('| 1 '));
+  const cols = row.replace(/\\\\/g, '').replace(/\\\|/g, '').split('|').length - 2;
+  assert.equal(cols, 3, row);
 });
 
 /* ── ⑤ ─────────────────────────────────────────────────────────────────────── */

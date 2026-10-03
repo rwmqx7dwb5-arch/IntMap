@@ -47,6 +47,11 @@ export const BISECT_WORKFLOW = 'nightly-bisect.yml';
 /** The test's title as Playwright's `-g` wants it: the id minus its file. */
 export const titleOf = (id) => String(id).split(' › ').slice(1).join(' › ');
 
+/** A commit subject as one cell of a Markdown table: the PR suffix dropped, cut to `max`, THEN
+ *  escaped — the backslash first (a subject ending in `\` would otherwise escape the cell's own
+ *  `|` and run into the next column), then the pipe. Cutting after escaping could split a `\|`. */
+export const subjectCell = (s, max) => String(s || '').replace(/\s*\(#\d+\)\s*$/, '').slice(0, max).replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
+
 /** The key that makes a bisect run unique: the test and its range. It is the run's NAME
     (nightly-bisect.yml `run-name`), so «has this been bisected» is a question to the run list,
     not to a file anybody has to keep. */
@@ -162,7 +167,7 @@ export function markdown(b) {
       L.push('| change | evidence |', '|---|---|');
       for (const c of r.withEvidence) {
         const ev = [c.touchesSpec ? 'edited the spec itself' : null, ...c.hits.slice(0, 4).map((x) => `\`${x.file}\` (${x.why.slice(0, 2).join(', ')})`)].filter(Boolean).join('; ');
-        L.push(`| ${c.pr ? '#' + c.pr : '`' + c.sha.slice(0, 8) + '`'} ${c.subject.replace(/\|/g, '\\|').replace(/\s*\(#\d+\)\s*$/, '').slice(0, 90)} | ${ev} |`);
+        L.push(`| ${c.pr ? '#' + c.pr : '`' + c.sha.slice(0, 8) + '`'} ${subjectCell(c.subject, 90)} | ${ev} |`);
       }
       L.push('');
     } else {

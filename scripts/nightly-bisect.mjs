@@ -40,7 +40,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseLog, titleOf } from './nightly-blame.mjs';
+import { parseLog, subjectCell, titleOf } from './nightly-blame.mjs';
 import { specOf } from './deep-history.mjs';
 import { TITLE as ALARM_TITLE } from './deep-alarm.mjs';
 
@@ -137,7 +137,7 @@ export function words(v, { test, good, bad, results, runUrl, sampled }) {
   if (v.nonMonotonic) L.push('(It also failed earlier in the range and passed again; the boundary named is the newest one.)', '');
   if (sampled) L.push(`⚠ The range had more commits than one run can probe (${MATRIX_MAX}); it was sampled evenly — dispatch again on the narrowed range.`, '');
   L.push('| # | commit | result |', '|---|---|---|');
-  for (const r of [...results].sort((a, b) => a.order - b.order)) L.push(`| ${r.order}${r.control ? ' (control)' : ''} | ${ref(r)} ${String(r.subject || '').replace(/\|/g, '\\|').replace(/\s*\(#\d+\)\s*$/, '').slice(0, 80)} | ${cell(r)} |`);
+  for (const r of [...results].sort((a, b) => a.order - b.order)) L.push(`| ${r.order}${r.control ? ' (control)' : ''} | ${ref(r)} ${subjectCell(r.subject, 80)} | ${cell(r)} |`);
   L.push('', '<sub>Written by `scripts/nightly-bisect.mjs` (`.github/workflows/nightly-bisect.yml`), started by the nightly for a test red on two nights in a row.</sub>');
   return L.join('\n');
 }
