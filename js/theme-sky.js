@@ -24,6 +24,7 @@ import { skyColour, limbViewElev, sunOpticalDepth, skyModelTables } from './sky-
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
 import { IntMapTime } from './chronos.js';
+import * as bus from './bus.js';   /* (event-bus) the theme's one publisher raises `intmap-theme` — see _applyThemeBody */
 /* ⚠ (#R227) THE MODEL IS PUBLISHED, NOT COPIED. js/limb-layer.js is a `window.IntMapModules` factory
    (a MapLibre adapter implementation detail, like js/solid3d.js) and cannot `import` an ES module,
    but the whole point of that layer is that it marches THIS model — same coefficients, same ozone
@@ -64,7 +65,12 @@ export function makeThemeSky(HOST, CTX) {
     const _SKINS=['cyber','classic','psychedelic','military','medical','baroque','taisho','tactical'];
     if(_SKINS.includes(HOST.userTheme)){ HOST.userTheme='auto'; }
     const isLight = (HOST.userTheme==='light')||(HOST.userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches);
-    document.documentElement.setAttribute('data-theme', isLight?'light':'dark');
+    /* (event-bus) THIS is where the colour theme changes, so this is where `intmap-theme` is raised — once per
+       real change (applyTheme re-runs on idle, on every basemap flip and on settings save; a re-run that leaves
+       the attribute as it was is not a change). js/bus.js declared it heard by js/space-sky.js and raised by nobody. */
+    const _themeWas=document.documentElement.getAttribute('data-theme'), _themeNow=isLight?'light':'dark';
+    document.documentElement.setAttribute('data-theme', _themeNow);
+    if(_themeWas!==_themeNow){ try{ bus.emit('intmap-theme'); }catch(_){} }
     _SKINS.forEach(k=>document.body.classList.remove('theme-'+k));
     /* (#R12) If the style isn't fully loaded the basemap layer-visibility set below is skipped — and
        NOTHING re-ran it, so the wrong base (black/white) occasionally stuck. Retry once on idle so the

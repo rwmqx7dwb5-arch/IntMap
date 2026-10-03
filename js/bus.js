@@ -4,7 +4,8 @@
  *  MEASURED before this file (2026-10-03): fifteen event names raised with `new Event` /
  *  `new CustomEvent` from sixteen files and heard by `addEventListener` in sixty-five, spelled
  *  two ways (`intmap-lang`, `intmap:shakemap`), with nowhere that said what any of them meant, what
- *  it carried or who raised it — and one (`intmap-theme`) heard by a listener that nothing raises.
+ *  it carried or who raised it — and one (`intmap-theme`) heard by a listener that nothing raised
+ *  (js/theme-sky.js, which writes the theme, now raises it).
  *
  *  WHAT THIS IS. `EVENTS` below is that list, written once: the name, what it means, the payload
  *  and the files that raise it. `emit` / `on` / `once` are the calls a module uses instead of the bare
@@ -143,10 +144,9 @@ export const EVENTS = Object.freeze({
     pending: { 'js/ai-core.js': 'pinned', 'js/supporter.js': 'pinned' },
   },
   'intmap-theme': {
-    means: 'the colour theme changed; the sky re-renders',
+    means: 'the colour theme (data-theme on <html>) changed between light and dark; the sky re-renders',
     detail: null,
-    from: [],
-    orphan: 'js/space-sky.js listens and nothing in js/, src/ or the pages raises it (measured 2026-10-03): the listener never runs',
+    from: ['js/theme-sky.js'],
   },
 });
 

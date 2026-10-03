@@ -1031,7 +1031,7 @@ idle は起動の**中**にある。決めたこと:
 
 イベントは 15 種が 16 ファイルから `new Event` / `new CustomEvent` で投げられ、65 ファイルが
 `addEventListener` で聞いていた。綴りは `intmap-…` と `intmap:…` の 2 系統、意味・payload・発行元を
-書いた場所はどこにも無く、`intmap-theme` は聞かれているのに誰も投げていなかった。決めたこと:
+書いた場所はどこにも無く、`intmap-theme` は聞かれているのに誰も投げていなかった（テーマを書く `js/theme-sky.js` が投げるようにした）。決めたこと:
 
 - **宣言表を 1 か所に置く**（`js/bus.js` の `EVENTS`）。名前・意味・payload・発行元を 1 行に持ち、
   門（`tests/event-bus-checks.test.mjs`）がソースから**発見した**場所と両向きに照合する。手で並べた
