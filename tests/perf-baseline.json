@@ -3,7 +3,7 @@
     "raw": 4739600,
     "gzip": 1568634,
     "brotli": 1183561,
-    "requests": 9,
+    "requests": 10,
     "modules": 307,
     "cssRaw": 374532,
     "cssGzip": 61518

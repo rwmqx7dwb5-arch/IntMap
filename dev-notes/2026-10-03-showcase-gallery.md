@@ -56,3 +56,7 @@ date: 2026-10-03
   なって `DOC_TERM_MAX_DF`（4）を超え、rail が文書の証拠として 0 点になったため（main では 3 点）。判定（fail・reach/operations）は不変。
 - 入口の数え上げ（`usage-count/shape.js` の `SITE_PAGES` と `entry`）に `news-map`・`embed-map` を足し、`entry` の `maxDims` を 5 → 7
   （閉じた次元の `maxDims` はその大きさ）。admin の成長タブにその 2 つの札。⚠ Edge Function `usage-count` の再配備が要る。
+
+## 統合時の性能予算
+
+main へ重ね直したあとの build で、超えた 3 行だけを `--update` で上げた。eager.gzip 1523.9 → 1532.8 kB と eager.requests 9 → 10 は、検索欄の空の状態にギャラリーの入口が加わったぶん。async.gzip 3774.0 → 3795.8 kB は、作例 8 本の文と js/showcase-gallery.js のぶん。
