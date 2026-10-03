@@ -20,7 +20,7 @@
 
 export const TEXT = {
   en: {
-    nav: { examples: 'Examples', teachers: 'For teachers', about: 'About', open: 'Open the map', lang: '日本語', langLabel: 'Read this page in Japanese' },
+    nav: { examples: 'Examples', teachers: 'For teachers', about: 'About', news: 'News on a map', embed: 'Embed a map', history: 'Browse by year', open: 'Open the map', lang: '日本語', langLabel: 'Read this page in Japanese' },
     about: {
       title: 'IntMap — every year of the world, on one map',
       description: 'A free world map you can set to any date from {floorBC} to today, with historical borders, climate, population and live data on one map. No sign-up needed.',
@@ -50,6 +50,7 @@ export const TEXT = {
         h2: 'Use it for',
         news: { h: 'Reading the news', p: 'Each news event is a pin where it happened, with what each outlet reported — and the map around it.', cta: 'Read the news on a map' },
         embed: { h: 'Writing an article', p: 'Put a live map in a blog post or article with one line of HTML: your view, layers and date, with every data credit.', cta: 'Embed a map' },
+        history: { h: 'Looking up a year', p: 'Pick a region and a date and see the names IntMap’s historical map draws there, with the source of every border. Each page opens the map at that place and date.', cta: 'Browse the historical maps by year' },
       },
       examples: { h2: 'Examples', sub: 'Each picture is a screenshot of IntMap. The link opens the same view, date and layers.', open: 'Open this map' },
       support: { h2: 'Support IntMap', p: 'IntMap is free and has no paid plan. Running it is paid for by donations — if it is useful to you, you can help keep it that way.', cta: 'Donate' },
@@ -74,6 +75,7 @@ export const TEXT = {
         ctaPlan: 'A lesson in five steps',
         ctaExamples: 'Examples for class',
         ctaTours: 'Classroom tours',
+        ctaBuild: 'Make your own tour',
       },
       plan: {
         h2: 'A 50-minute lesson in five steps',
@@ -92,6 +94,19 @@ export const TEXT = {
         sub: 'A tour is a short lesson already laid out: a few maps in order, each with sentences to read out and a question for the class. It opens full screen in the map — large type for a projector, everything else put away — and you move through it with Next and Previous.',
         start: 'Start the tour',
         note: 'Move with the arrow keys, Space or a presentation clicker (Page Up / Page Down); F switches to full screen, T hides the text, Esc leaves the tour. The address bar always holds a link to the step on screen, so you can hand that one step to the students. No account is needed.',
+      },
+      build: {
+        h2: 'Make a tour of your own',
+        sub: 'The tours above are ours. The tour builder is for the lesson you teach: you set the map up, add it as a step, write what to say, and the whole tour becomes one link. No account is needed, and nothing is stored on a server.',
+        steps: [
+          { h: 'Open the tour builder', p: 'In the map, open Settings, then “About & support”, then “Classroom tours”, and choose “Make your own tour”. Atlas can open it too, if you ask for it in words.' },
+          { h: 'Add the map as a step', p: 'Set up the place, date, layers and comparison for your first step and press “Add this map as a step”. A step is the map exactly as it was when you added it, the same thing the Share button records.' },
+          { h: 'Write what to say', p: 'Give each step a title, the words to read out and, if you like, a question for the class. You can move steps up and down, replace a step’s map, delete a step, and preview the tour from any step.' },
+          { h: 'Hand out the link', p: 'Copy the link, or use Share on a device that offers it. Anyone who opens it gets your tour in the same classroom mode as the tours above.' },
+        ],
+        link: { h: 'The tour is its link', p: 'Your tour is written into the link itself, so there is nothing to upload and no account to give students. The link has a length the site can serve, and the builder shows how much of it your tour uses and warns before a step would not fit; it does not hand out a link the site would refuse.' },
+        draft: { h: 'Your draft stays in your browser', p: 'While you write, the draft is kept in this browser, so a reload does not lose it. It is not sent anywhere until you share the link. When you open a tour that someone shared, “Edit this tour” opens it in the builder.' },
+        use: { h: 'In a lesson', p: 'Put the link on the classroom screen or in your class materials. Students move through it with Next and Previous on their own devices, and the address bar always holds a link to the step on screen. To change the tour, edit it and share the new link; links already handed out keep showing the tour they were made from.' },
       },
       examples: { h2: 'Examples for class', question: 'Question for class', open: 'Open this map', fits: 'Fits' },
       curriculum: {
@@ -177,7 +192,7 @@ export const TEXT = {
   },
 
   jp: {
-    nav: { examples: '見本', teachers: '先生へ', about: 'IntMap について', open: '地図を開く', lang: 'English', langLabel: 'このページを英語で読む' },
+    nav: { examples: '見本', teachers: '先生へ', about: 'IntMap について', news: 'ニュースを地図で', embed: '地図を埋め込む', history: '年代から探す', open: '地図を開く', lang: 'English', langLabel: 'このページを英語で読む' },
     about: {
       title: 'IntMap — 世界のどの年も、一枚の地図で',
       description: '{floorBC}から今日まで、どの日付にも合わせられる無料の世界地図。歴史上の国境・気候・人口・リアルタイムのデータを一枚に重ねます。登録不要。',
@@ -206,6 +221,7 @@ export const TEXT = {
         h2: 'こんな使い方も',
         news: { h: 'ニュースを読む', p: 'ニュースの出来事が、起きた場所にピンで立ちます。各媒体が何と報じたか、そしてその周りの地図と一緒に読めます。', cta: 'ニュースを地図で読む' },
         embed: { h: '記事を書く', p: 'HTML 1行で、ブログや記事に動く地図を載せられます。あなたが選んだ視点・レイヤー・日付と、すべてのデータの出典表記がそのまま入ります。', cta: '地図を埋め込む' },
+        history: { h: '年代から探す', p: '地域と日付を選ぶと、IntMap の歴史地図がその場所に描く名前の一覧が、国境ごとの出典つきで見られます。どのページからも、その場所と日付で地図が開きます。', cta: '歴史地図を年代から探す' },
       },
       examples: { h2: '見本', sub: '写真はすべて IntMap の画面です。リンクを開くと、同じ視点・日付・レイヤーで地図が開きます。', open: 'この地図を開く' },
       support: { h2: 'IntMap を支援する', p: 'IntMap は無料で、有料プランはありません。運営費は寄付でまかなっています。役に立ったら、無料のままであり続けるための支援をお願いします。', cta: '寄付する' },
@@ -230,6 +246,7 @@ export const TEXT = {
         ctaPlan: '5つのステップで1コマ',
         ctaExamples: '授業で使える見本',
         ctaTours: '授業ツアー',
+        ctaBuild: '自分のツアーを作る',
       },
       plan: {
         h2: '50分の授業を5つのステップで',
@@ -248,6 +265,19 @@ export const TEXT = {
         sub: 'ツアーは、組み立て済みの短い授業です。いくつかの地図を順に並べ、それぞれに読み上げる文と生徒への問いを添えています。地図の中で全画面に開き——プロジェクターでも読める大きな文字で、ほかの画面要素はしまって——「次へ」「前へ」で進みます。',
         start: 'ツアーを始める',
         note: '矢印キー、スペース、プレゼンテーション用のリモコン（Page Up / Page Down）で進みます。F で全画面、T で文を隠し、Esc でツアーを終えます。アドレスバーには常にいま映しているステップへのリンクが入っているので、そのステップだけを生徒に渡すこともできます。アカウントは要りません。',
+      },
+      build: {
+        h2: '自分のツアーを作る',
+        sub: '上のツアーは私たちが作ったものです。ツアー作成は、あなたが教える授業のためのものです。地図を整えてステップとして加え、語りを書くと、ツアー全体が 1 本のリンクになります。アカウントは要らず、サーバには何も保存されません。',
+        steps: [
+          { h: 'ツアー作成を開く', p: '地図で「設定」の「情報とサポート」から「授業ツアー」を開き、「自分のツアーを作る」を選びます。Atlas に言葉で頼んでも開けます。' },
+          { h: '地図をステップとして加える', p: '最初のステップにしたい場所・日付・レイヤー・比較を整えて「いまの地図をステップに追加」を押します。ステップは、加えた時点の地図そのままで、共有ボタンが記録するものと同じです。' },
+          { h: '語りを書く', p: '各ステップに、題・読み上げる言葉・（任意で）クラスへの問いを書きます。ステップの上下の入れ替え、地図の差し替え、削除、好きなステップからの試し再生ができます。' },
+          { h: 'リンクを配る', p: 'リンクをコピーするか、使える端末では共有を使います。リンクを開いた人は、上のツアーと同じ授業モードであなたのツアーを見られます。' },
+        ],
+        link: { h: 'ツアーはリンクそのもの', p: 'ツアーはリンクの中に書き込まれるので、アップロードも、生徒に渡すアカウントも要りません。リンクにはサイトが扱える長さがあり、作成画面はツアーがその何割を使っているかを示して、次のステップが入らないときは前もって知らせます。サイトが断る長さのリンクは渡しません。' },
+        draft: { h: '下書きはこのブラウザに残る', p: '書いている間の下書きはこのブラウザに保存されるので、再読み込みしても消えません。リンクを共有するまで、どこにも送られません。誰かが共有したツアーを開いたときは、「このツアーを編集」で作成画面に取り込めます。' },
+        use: { h: '授業での使い方', p: 'リンクを教室の画面や配布資料に載せます。生徒は自分の端末で「次へ」「前へ」を使って進み、アドレスバーにはいつも表示中のステップへのリンクが入っています。ツアーを直すときは編集して新しいリンクを共有します。すでに配ったリンクは、作ったときのツアーのままです。' },
       },
       examples: { h2: '授業で使える見本', question: '授業での問い', open: 'この地図を開く', fits: '対応' },
       curriculum: {

@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { jsReachability, standalonePages } from './js-reachability.mjs';
 import { codeOnly } from './code-only.mjs';
 import { SITE_TOKEN } from './site-url.mjs';
+import { HUB as HISTORY_HUB } from './history-pages.mjs';
 import { outOfOrder } from './migration-order.mjs';
 
 const ROOT = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'));
@@ -355,6 +356,10 @@ for (const htmlName of ALL.filter((x) => !x.rel.includes('/') && x.rel.endsWith(
     // template char is a value built at runtime (e.g. src="'+esc(img)+'") — not a static file.
     if (!clean || !/^[\w\-./]+$/.test(clean)) continue;
     if (OPTIONAL_LOCAL.has(clean)) continue;
+    /* (teachers-and-entrances) the history pages are WRITTEN BY THE BUILD into dist/ (scripts/history-pages.mjs; none of
+       them is tracked), so a link into their hub cannot name a tracked file. Where they live is that
+       generator's HUB, read here, not retyped. */
+    if (clean === HISTORY_HUB || clean.startsWith(HISTORY_HUB)) continue;
     if (!existsSync(join(ROOT, clean))) err('assets', `${htmlName}: references missing local file "${clean}"`);
   }
 }

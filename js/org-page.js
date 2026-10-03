@@ -11,6 +11,7 @@
  *       pages, so a reader who chose dark in the map reads these in dark too.
  *    ② THE LANGUAGE CHOICE — a click on the language link stores intmap_lp_lang, the key the landing
  *       pages read, so the choice follows the reader to about.html / teachers.html.
+ *       And the saved choice (that key, or the app's language) takes a reader to the page's twin on arrival.
  *    ③ THE CONTACT FORM — POSTs { kind:'inquiry', … } to the reader-reports Edge Function, which checks
  *       the origin, takes from the shared buckets and writes public.org_inquiries as the service role
  *       (supabase/functions/reader-reports/index.ts, _shared/inquiry-shape.js). «Sent» is said ONLY on
@@ -33,6 +34,24 @@
     var s = JSON.parse(localStorage.getItem('intmap_settings') || '{}') || {};
     if (s.theme === 'light' || s.theme === 'dark') d.setAttribute('data-theme', s.theme);
   } catch (_) { /* no storage: the system theme applies */ }
+
+  /* ② (teachers-and-entrances) a reader who chose the other language — in the app's settings (intmap_settings.lang is
+     'jp', the app's spelling) or with a page's language switch (intmap_lp_lang) — is taken to this page's twin, the one
+     the page names in <link rel=alternate>. The same rule the landing pages carry (scripts/landing.mjs PAGE_SCRIPT), so
+     the app's links to these pages need not know the reader's language. Never moves a reader with no saved choice, or
+     one who asked for a language in the address (?lang=). */
+  try {
+    var here = (d.getAttribute('lang') || 'en').toLowerCase(), choice = null;
+    try { choice = localStorage.getItem('intmap_lp_lang'); } catch (_) { /* no storage */ }
+    if (!choice && s && s.lang === 'jp') choice = 'ja';
+    var alt = document.querySelector('link[rel="alternate"][hreflang="' + (here === 'ja' ? 'en' : 'ja') + '"]');
+    if (alt && choice && choice !== here && !/[?&]lang=/.test(location.search)) {
+      var leaf = new URL(alt.getAttribute('href'), location.href).pathname.split('/').pop();
+      var p = location.pathname, base = p.slice(0, p.lastIndexOf('/') + 1);
+      if (here === 'ja') base = base.slice(0, -3);
+      location.replace(base + (here === 'ja' ? '' : 'ja/') + leaf + location.hash);
+    }
+  } catch (_) { /* the page stays as it is */ }
 
   function meta(name) { var m = document.querySelector('meta[name="' + name + '"]'); return m ? m.getAttribute('content') || '' : ''; }
 

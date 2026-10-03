@@ -37,8 +37,9 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { TEXT } from './org-pages-text.mjs';
-import { facts } from './landing.mjs';
+import { TEXT, ORG_NAV } from './org-pages-text.mjs';
+import { facts, pageLinks } from './landing.mjs';
+import { TEXT as LANDING_TEXT } from './landing-text.mjs';
 import { SHOWCASE, CAPTURED } from '../js/showcase.js';
 import { EMBED_SIZES } from '../js/embed-mode.js';
 import { PLANS, DEFAULT_PLAN } from '../supabase/functions/_shared/plans.js';
@@ -49,7 +50,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 function need(re, src, what) { const m = re.exec(src); if (!m) throw new Error('org-pages: cannot read ' + what); return m; }
 
-export const PAGES = ['for-newsrooms', 'for-schools', 'for-research', 'contact', 'support'];
+export const PAGES = ORG_NAV.map(([page]) => page);   /* (teachers-and-entrances) the one list, scripts/org-pages-text.mjs */
 const LANGS = [
   { key: 'en', i: 0, tag: 'en', dir: '', up: './', locale: 'en_US', num: 'en-US' },
   { key: 'jp', i: 1, tag: 'ja', dir: 'ja/', up: '../', locale: 'ja_JP', num: 'ja-JP' },
@@ -175,11 +176,7 @@ function topbar(L, page) {
   <nav class="lp-top-in" aria-label="IntMap">
     <a class="lp-brand" href="./about.html" aria-label="${esc(N.brandHome[k])}"><img src="${L.up}IntMap.Icon.png" alt="" width="28" height="28"><span>IntMap</span></a>
     <div class="og-nav">
-      ${link('for-newsrooms', N.newsrooms)}
-      ${link('for-schools', N.schools)}
-      ${link('for-research', N.research)}
-      ${link('support', N.support)}
-      ${link('contact', N.contact)}
+${ORG_NAV.map(([p, key]) => '      ' + link(p, N[key])).join('\n').trimStart()}
     </div>
     <a class="lp-lang" href="${toOther}" hreflang="${other.tag}" lang="${other.tag}" data-lp-lang="${other.tag}" aria-label="${esc(N.langLabel[k])}">${esc(N.lang[k])}</a>
     <a class="lp-btn lp-btn-sm" href="${L.up}index.html">${esc(N.open[k])}</a>
@@ -191,7 +188,7 @@ function footer(L) {
   const Fo = TEXT.footer, k = L.i;
   return `<footer class="lp-foot">
   <nav class="lp-foot-in">
-    <a href="./teachers.html">${esc(Fo.teachers[k])}</a>
+${pageLinks(L, LANDING_TEXT[L.key], null).map((e) => '    <a href="' + esc(e.href) + '">' + esc(e.label) + '</a>').join('\n')}
     <a href="${L.up}sources.html">${esc(Fo.sources[k])}</a>
     <a href="${L.up}science.html">${esc(Fo.science[k])}</a>
     <a href="${L.up}privacy.html">${esc(Fo.privacy[k])}</a>
