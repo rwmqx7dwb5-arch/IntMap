@@ -324,6 +324,10 @@ export function makeFloatFit(o) {
     if (!el || el.nodeType !== 1 || !el.isConnected) return false;
     if (el === sheet || el.contains(sheet) || el === o.credit || el.contains(o.credit) || el.matches('.m-sheet, .m-scrim')) return false;
     if (el.hasAttribute('data-dragged')) return false;
+    /* a sheet of its own — it carries its own drag handle and its own resting heights (the route planner's .rtp-grip,
+       tests/smoke.spec.js R291 ⑧): capping it to the room above the app's sheet collapsed its mid and full detents into one
+       height. It places itself; holding it is its job, not this one's. */
+    if (el.querySelector(':scope > [class*="grip"]')) return false;
     let cs; try { cs = getComputedStyle(el); } catch (_) { return false; }
     if (cs.position !== 'fixed' && cs.position !== 'absolute') return false;
     if (cs.pointerEvents === 'none' || !drawn(el, cs)) return false;
