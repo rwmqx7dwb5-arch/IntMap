@@ -338,13 +338,13 @@ test('R205 ④ the launch screen picks its mark from the SAVED theme, before the
 /* ── ⑤ 「衛星画像の読み込み時の動作を、極限までシームレスに」「ズームのfpsを劇的に」 ─────────── */
 test('R205 ⑤ a tile request made while the zoom is changing waits instead of fetching', () => {
   const s = rd('js/sat-proto.js');
-  assert.match(s, /function _satZoomHold\(z,signal\)/);
+  assert.match(s, /function _satZoomHold\(z,signal(?:,x,y)?\)/);   /* (map-motion) x,y: the destination's own tiles are not held */
   /* it is the ZOOM, not any movement: a pan asks for tiles it is going to keep */
   const wire = /function _satWireZoom\(\)\{[\s\S]{0,500}?\n    \}/.exec(s);
   assert.ok(wire, '_satWireZoom was not found');
   assert.match(wire[0], /E\.on\('zoomstart'/); assert.match(wire[0], /E\.on\('zoomend'/);
   assert.ok(!/movestart|dragstart/.test(wire[0]), 'holding a pan would be a pure delay');
-  const hold = /function _satZoomHold\(z,signal\)\{[\s\S]{0,900}?\n    \}/.exec(s);
+  const hold = /function _satZoomHold\(z,signal(?:,x,y)?\)\{[\s\S]{0,1200}?\n    \}/.exec(s);
   assert.match(hold[0], /signal&&signal\.aborted/, "MapLibre's own abort is what selects the level");
   assert.match(hold[0], /AbortError/, 'an aborted tile must go to unloaded, not errored');
   assert.match(hold[0], /_SAT_MAX_HOLD/, 'a pinch that never settles must still show imagery');

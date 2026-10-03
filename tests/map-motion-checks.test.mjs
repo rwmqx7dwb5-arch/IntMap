@@ -86,3 +86,29 @@ test('③ the labels: the map-level fade is the SYMBOL fade, and 0 forces a full
     num(/id:'layer-sat',type:'raster'[^}]*\},paint:\{'raster-fade-duration':(\d+)/, body, "layer-sat's raster-fade-duration"),
     'labels and satellite tiles arrive on one clock');
 });
+
+test('④ the release: what _glideRelease reads in the renderer is still there, with the numbers it restates', () => {
+  const s = src('ui/handler_inertia.ts'), hm = src('ui/handler_manager.ts'), map = src('ui/map.ts'), cam = src('ui/camera.ts');
+  assert.equal(num(/INERTIA_CUTOFF_MS=(\d+)/, engine, 'INERTIA_CUTOFF_MS'), num(/const BUFFER_CUTOFF = (\d+);/, s, 'BUFFER_CUTOFF'), 'the buffer the renderer keeps');
+  assert.equal(num(/INERTIA_WINDOW_MS=(\d+)/, engine, 'INERTIA_WINDOW_MS'), num(/const VELOCITY_WINDOW = (\d+);/, s, 'VELOCITY_WINDOW'), 'the window it measures over');
+  assert.match(s, /_inertiaBuffer: InertiaBufferEntry\[\]/, 'HandlerInertia._inertiaBuffer');
+  assert.match(s, /record\(settings: HandlerResult\): void \{[\s\S]*?this\._inertiaBuffer\.push\(\{time: now\(\), settings\}\)/, 'entries are stamped with now() — the frame that applied them');
+  assert.match(s, /deltas\.zoom \+= settings\.zoomDelta/, 'zoomDelta per entry');
+  assert.match(s, /if \(settings\.panDelta\) deltas\.pan\._add\(settings\.panDelta\)/, 'panDelta per entry');
+  assert.match(s, /const defaultZoomInertiaOptions = extend\(\{\s*deceleration: 20,/, 'the zoom glide the renderer cannot be told about (why it is replaced)');
+  assert.match(hm, /this\._inertia\._onMoveEnd\(this\._map\.dragPan\._inertiaOptions\)/, 'the handler manager asks the instance, with the dragPan options');
+  assert.match(map, /_handlers: HandlerManager;/, 'Map._handlers');
+  /* ③ rests on this: an ease draws easing(t) with t measured from the call — easing(0) on the first frame */
+  assert.match(cam, /this\._easeStart = now\(\);/);
+  assert.match(cam, /const t = Math\.min\(\(now\(\) - this\._easeStart\) \/ this\._easeOptions\.duration, 1\);\s*this\._onEaseFrame\(this\._easeOptions\.easing\(t\)\);/);
+});
+
+test('⑤ the destination: the satellite gate asks the renderer\'s tile level the way the renderer picks it', () => {
+  /* _satDestLevel is round(zoom + 1): a raster source rounds, and the satellite source is tileSize 256 */
+  assert.match(src('source/raster_tile_source.ts'), /this\.roundZoom = true;/);
+  assert.match(src('geo/projection/covering_tiles.ts'), /\(options\.roundZoom \? Math\.round : Math\.floor\)\(\s*transform\.zoom \+ scaleZoom\(transform\.tileSize \/ options\.tileSize\)/);
+  const sat = readFileSync(join(ROOT, 'js', 'sat-proto.js'), 'utf8');
+  assert.match(sat, /_satDestLevel=\(d\)=>Math\.max\(0,Math\.min\(19,Math\.round\(d\.zoom\+1\)\)\)/);
+  const body = readFileSync(join(ROOT, 'js', 'app-body.js'), 'utf8');
+  assert.match(body, /'satellite':\{type:'raster',tiles:\([^)]*\),tileSize:256,maxzoom:19/, 'the satellite source is declared tileSize 256 (the +1) and maxzoom 19 (the clamp)');
+});

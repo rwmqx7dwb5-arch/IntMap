@@ -342,7 +342,7 @@ function _redrawLocalGlyphs(m,cover){
     if(!sz||sz.__imSpring||typeof sz.renderFrame!=='function'||!('_targetZoom' in sz||'_delta' in sz)) return false;
     sz.__imSpring=true;
     const stock=sz.renderFrame, stockReset=sz.reset;
-    let z=null, v=0, lastOut=null, lastT=0;
+    let z=null, v=0, lastOut=null, lastT=0, lastTarget=null;
     /* the RENDERER'S clock, the one its own wheel and ease read — so a frozen clock (maplibregl.setNow,
        which tests/map-motion.spec.js steps frame by frame) freezes the spring with them */
     const clock=()=>{ try{ return maplibregl.now(); }catch(_){} try{ return performance.now(); }catch(_){ return Date.now(); } };
@@ -352,6 +352,11 @@ function _redrawLocalGlyphs(m,cover){
       const tr=_tr(mm,true);   /* the transform the handler itself just measured its zoomDelta against */
       if(!tr||typeof this._targetZoom!=='number'||!isFinite(tr.zoom)) return res;
       const target=this._targetZoom, t=clock();
+      /* a notch moved where the wheel is going. ⚠ Not every change: on the globe the handler shifts its
+         target by the latitude's zoom correction EVERY frame (measured: 75 announcements for 16 notches),
+         and each one would replace the warm queue — a destination is a tile set, and 0.05 of a zoom
+         level does not change one. */
+      if(lastTarget==null||Math.abs(target-lastTarget)>0.05){ lastTarget=target; _announceDestination(mm); }
       if(z==null){ z=tr.zoom; v=WHEEL_SPRING_W*(target-z); lastT=t; }
       else if(lastOut!=null) z+=tr.zoom-lastOut;      /* someone else moved the zoom (globe latitude, a clamp) */
       const dt=Math.min(250,Math.max(0,t-lastT)); lastT=t;   /* the step is exact for any dt; the cap only bounds a stall's catch-up */
@@ -363,10 +368,10 @@ function _redrawLocalGlyphs(m,cover){
         /* the stock handler may have just declared the gesture over: keep it open one frame more */
         if(this._finishTimeout){ clearTimeout(this._finishTimeout); delete this._finishTimeout; }
         this._active=true; this._needsRerender=true; res.needsRenderFrame=true;
-      } else if(!res.needsRenderFrame){ z=null; lastOut=null; }
+      } else if(!res.needsRenderFrame){ z=null; lastOut=null; lastTarget=null; }
       return res;
     };
-    if(typeof stockReset==='function') sz.reset=function(){ z=null; lastOut=null; v=0; return stockReset.apply(this,arguments); };
+    if(typeof stockReset==='function') sz.reset=function(){ z=null; lastOut=null; lastTarget=null; v=0; return stockReset.apply(this,arguments); };
     return true;
   }
   /* ══ THE GLIDE AFTER A DRAG STARTS AT THE SPEED THE DRAG WAS RELEASED AT (map-motion) ═══════════
@@ -408,6 +413,159 @@ function _redrawLocalGlyphs(m,cover){
     try{ if(mm.dragPan.isEnabled&&mm.dragPan.isEnabled()) mm.dragPan.enable(mm.__imGlide); }catch(_){ return false; }
     return true;
   }
+  /* ══ THE RELEASE: ONE GLIDE FOR PAN AND ZOOM, ANCHORED AT THE LAST FRAME THE FINGER MOVED (map-motion) ══
+     Measured in the renderer's own time (tests/map-motion.spec.js `virtualRun`), a pinch released at
+     2.25 zoom/s went on at 0.49 — 22 % — for 76 ms and stopped; a pan released at 0.80 px/ms went on
+     at 0.46. Three causes, all in the renderer's HandlerInertia._onMoveEnd (maplibre-gl 6.11.2), and
+     _glideOptions above had fixed only the pan half of the first:
+       ① the ZOOM glide reads module constants nobody can pass (`defaultZoomInertiaOptions`:
+          linearity 0.3, bezier(0,0,0.3,1), deceleration 20 zoom/s²) — the same half-speed start the
+          pan had, and an unreachable one;
+       ② the release speed is measured over `now − first entry`, which includes the gap between the
+          last frame the finger moved the map and the release event — a speed biased low by that gap;
+       ③ the glide's clock starts at the release, so the first frame it draws is at t ≈ 0 and does not
+          move: one frame standing still between the gesture and its glide (the "0.00" in every trace).
+     So the release is computed here, from the renderer's own inertia buffer, for pan AND zoom alike:
+       · speed = movement between the first and LAST entry over the time between them (②);
+       · ONE law for both: the glide lasts `speed / deceleration` (the renderer's law, in pixels). A zoom
+         speed is turned into pixels as the speed of a point half a canvas-width from the pinch centre
+         (ln 2 · w/2 px per zoom/s) — on a 375 px phone that makes the zoom deceleration 19.3 zoom/s²,
+         the renderer's own 20 to within 4 %, and on a 1280 px desktop 5.6;
+       · the one easing (_glideEase) with linearity × f′(0) = 2, so both start at the release speed (①);
+       · and the glide is anchored at the last frame the finger moved: the easing is shifted by that
+         gap, so the first frame it draws already carries on (③). That gap is capped at ONE frame: a
+         moving finger reports every frame, so a longer gap is a finger that had stopped, and carrying
+         the map through it would jump (measured with a 33 ms gap: a first glide frame 4.7× the release
+         speed).
+     Pan and zoom share one duration (the renderer's own compromise — one ease, one easing): the longer
+     of the two, with each amount set so its start speed is still its release speed.
+     The renderer's selection of entries (BUFFER_CUTOFF 160 ms, VELOCITY_WINDOW 60 ms) is restated
+     here; tests/map-motion-checks.test.mjs reads both numbers back out of the installed source.
+     «Inertia 0» (`maxSpeed:0`) stops both. */
+  const INERTIA_CUTOFF_MS=160, INERTIA_WINDOW_MS=60, LN2=Math.LN2, FRAME_MS=1000/60, DRAG_ANNOUNCE_MS=100;
+  /* the entries a release speed is measured over: the renderer's window (the last two entries, and any
+     inside VELOCITY_WINDOW) and at least three frames of it — entries are stamped with the FRAME that
+     applied them, so when two input events land in one frame a two-entry window reads twice the speed
+     (measured: 1,530 px/s for a finger moving at 800). Three frame intervals bound that to a third. */
+  function _inertiaWindow(buf,t){
+    let first=Math.max(0,buf.length-2); while(first>0&&buf[first-1].time>=t-INERTIA_WINDOW_MS) first--;
+    while(first>0&&buf.length&&buf[buf.length-1].time-buf[first].time<3*FRAME_MS) first--;
+    return buf.slice(first);
+  }
+  function _glideRelease(mm){
+    const H=mm&&mm._handlers, I=H&&H._inertia;
+    if(!I||I.__imGlide||typeof I._onMoveEnd!=='function'||!Array.isArray(I._inertiaBuffer)) return false;
+    I.__imGlide=true;
+    const stock=I._onMoveEnd;
+    const clock=()=>{ try{ return maplibregl.now(); }catch(_){ return performance.now(); } };
+    I._onMoveEnd=function(panOpts){
+      const g=(panOpts&&typeof panOpts==='object'&&panOpts.easing===_glideEase)?panOpts:null;
+      if(!g) return stock.apply(this,arguments);           /* someone else's options: the renderer's own answer */
+      const t=clock(), buf=this._inertiaBuffer;
+      while(buf.length&&t-buf[0].time>INERTIA_CUTOFF_MS) buf.shift();
+      const E=_inertiaWindow(buf,t);
+      if(E.length<2||g.maxSpeed===0){ this.clear(); return undefined; }   /* nothing to carry, or «stop on release» */
+      const t0=E[0].time, t1=E[E.length-1].time, span=t1-t0;
+      if(!(span>0)) return stock.apply(this,arguments);
+      let zoom=0, px=0, py=0;
+      for(const {settings:s} of E.slice(1)){ zoom+=s.zoomDelta||0; if(s.panDelta){ px+=s.panDelta.x; py+=s.panDelta.y; } }
+      const gap=Math.min(FRAME_MS,Math.max(0,t-t1));   /* one frame at most: longer is a finger that had stopped moving */
+      const lin0=2/GLIDE_SLOPE0, lin=g.linearity;             /* `lin` carries the reader's «Pan» factor */
+      const panMag=Math.hypot(px,py);
+      const vPan=Math.min(panMag/(span/1000), g.maxSpeed/lin);  /* px/s, the release speed (capped as the renderer caps it) */
+      let w=0; try{ w=mm.getCanvas().clientWidth||mm.getContainer().clientWidth||0; }catch(_){}
+      const decZ=(w>0)?g.deceleration/(LN2*w/2):20;           /* the same law, in zoom units */
+      const vZoom=zoom/(span/1000);                             /* zoom/s, signed */
+      const Tpan=panMag?vPan/g.deceleration:0, Tzoom=zoom?Math.abs(vZoom)/decZ:0, T=Math.max(Tpan,Tzoom);
+      if(!(T>0)) return stock.apply(this,arguments);
+      /* the pan, by the renderer (its centre/offset arithmetic is per projection), told the duration T.
+         It computes speed = min(|pan|·L/(now−t0), maxSpeed), duration = speed/(deceleration·L) and
+         amount = speed·duration/2. With L = lin·(now−t0)/span its speed is vPan·lin (② undone), and the
+         deceleration below makes its duration T. The zoom it would have glided is replaced outright. */
+      const L=lin*(t-t0)/span;
+      const res=stock.call(this, Object.assign({},g,{ linearity:L, maxSpeed:g.maxSpeed,
+        deceleration:panMag?(vPan*lin)/(T*L):g.deceleration }));
+      if(!res) return res;
+      if(zoom){
+        const snap=(typeof mm.getZoomSnap==='function')?mm.getZoomSnap():0;
+        if(!(snap>0)) res.zoom=mm.getZoom()+vZoom*lin0*T/2;     /* amount = speed·T/f′(0) — the start speed is vZoom */
+      }
+      const D=T*1000, start=gap/D;
+      res.duration=Math.max(1,D-gap);
+      res.easing=(p)=>_glideEase(start+p*(1-start));   /* already `start` of the way at the first frame (③) */
+      return res;
+    };
+    return true;
+  }
+  /* ══ WHERE THE CAMERA IS GOING (map-motion) ═════════════════════════════════════════════════════
+     A moving camera often already knows where it will stop: the wheel's spring has a target zoom and
+     an anchor; an ease or a flight (the glide after a pinch or a drag, a double click, Atlas's flyTo)
+     was handed its end. Tiles that are wanted THERE can be fetched now; tiles of the levels the zoom
+     merely passes through cannot be looked at. js/sat-proto.js holds the satellite requests of a
+     changing zoom (#R205) and, measured, that hold was where the blur of a wheel zoom came from (the
+     level the wheel was going to stop at was held like the ones it passed): it asks this instead.
+     Answered from what the renderer was told — the ease's own options, recorded as they are given, and
+     the wheel handler's target — and forgotten on `moveend`. null when the end is not known (a finger
+     still on the glass). */
+  function _destOf(mm,zoom,center,around){
+    try{
+      const z0=mm.getZoom(), z1=isFinite(zoom)?+zoom:z0;
+      let c=null;
+      if(center!=null){ const L=maplibregl.LngLat.convert(center); c=[L.lng,L.lat]; }
+      else if(around!=null){
+        /* the anchor keeps its screen position: in mercator, C′ = A + (C − A)·2^(z0−z1) */
+        const MC=maplibregl.MercatorCoordinate, A=MC.fromLngLat(maplibregl.LngLat.convert(around)), C=MC.fromLngLat(mm.getCenter()), k=Math.pow(2,z0-z1);
+        const L=new MC(A.x+(C.x-A.x)*k, A.y+(C.y-A.y)*k).toLngLat(); c=[L.lng,L.lat];
+      } else { const L=mm.getCenter(); c=[L.lng,L.lat]; }
+      const cv=mm.getCanvas();
+      return { zoom:z1, center:c, size:[cv.clientWidth||0, cv.clientHeight||0] };
+    }catch(_){ return null; }
+  }
+  function _trackDestination(mm){
+    if(!mm||mm.__imDest!==undefined) return;
+    mm.__imDest=null;
+    for(const name of ['easeTo','flyTo']){
+      const raw=mm[name]; if(typeof raw!=='function') continue;
+      mm[name]=function(o){ try{ if(o&&(o.zoom!=null||o.center!=null)){ mm.__imDest=_destOf(mm,o.zoom,o.center,o.around); _announceDestination(mm); } }catch(_){} return raw.apply(this,arguments); };
+    }
+    try{ mm.on('moveend',()=>{ mm.__imDest=null; }); }catch(_){}
+    /* while a drag goes on, its destination moves with it: announced at most every DRAG_ANNOUNCE_MS
+       (a destination is a tile set; ~6 frames is under a tile's travel at any speed the glide caps) */
+    let last=0;
+    try{ mm.on('drag',()=>{ const t=performance.now(); if(t-last<DRAG_ANNOUNCE_MS) return; last=t; _announceDestination(mm); }); }catch(_){}
+  }
+  /* a destination that has just become known is announced once, as the renderer event `imdestination`
+     (GE().events.on('imdestination', …)) — js/sat-proto.js warms its tiles from it */
+  function _announceDestination(mm){ try{ mm.fire('imdestination'); }catch(_){} }
+  /* a finger still dragging (no zoom change) has a destination too: where its glide would carry the map
+     if it lifted now — the same speed, law and amount _glideRelease would use. During a pinch there is
+     none: its glide is short, and naming the level it is passing would release the fetches the zoom
+     gate exists to hold. */
+  function _dragDestination(mm){
+    try{
+      const I=mm._handlers&&mm._handlers._inertia, g=mm.__imGlide;
+      if(!I||!g||g.maxSpeed===0||!mm.dragPan||!mm.dragPan.isActive()) return null;
+      const t=maplibregl.now(), buf=(I._inertiaBuffer||[]).filter((e)=>t-e.time<=INERTIA_CUTOFF_MS);
+      const E=_inertiaWindow(buf,t); if(E.length<2) return null;
+      const span=E[E.length-1].time-E[0].time; if(!(span>0)) return null;
+      let px=0, py=0, zoom=0;
+      for(const {settings:s} of E.slice(1)){ zoom+=s.zoomDelta||0; if(s.panDelta){ px+=s.panDelta.x; py+=s.panDelta.y; } }
+      if(zoom) return null;
+      const mag=Math.hypot(px,py); if(!mag) return null;
+      const v=Math.min(mag/(span/1000), g.maxSpeed/g.linearity), T=v/g.deceleration, A=v*g.linearity*T/2;
+      const cv=mm.getCanvas(), w=cv.clientWidth||0, h=cv.clientHeight||0;
+      const ll=mm.unproject([w/2-px/mag*A, h/2-py/mag*A]);
+      return _destOf(mm,mm.getZoom(),ll,null);
+    }catch(_){ return null; }
+  }
+  function _destination(mm){
+    if(!mm) return null;
+    const dd=_dragDestination(mm); if(dd) return dd;
+    try{ const sz=mm.scrollZoom;
+      if(sz&&sz.__imSpring&&sz._type==='wheel'&&typeof sz._targetZoom==='number'&&(sz._active||sz._zooming))
+        return _destOf(mm,sz._targetZoom,null,sz._aroundPoint?mm.unproject(sz._aroundPoint):null); }catch(_){}
+    return mm.__imDest||null;
+  }
   /* THE ONE `new maplibregl.Map` in the project (tests/maplibre-attribution-xss-checks.test.mjs) */
   function _newMap(o){
     const opts=Object.assign({},o||{});
@@ -418,6 +576,8 @@ function _redrawLocalGlyphs(m,cover){
     if(!_dedupeGlyphDraws(mm)){ try{ mm.once('styledata',()=>_dedupeGlyphDraws(mm)); }catch(_){} }
     try{ _smoothWheel(mm); }catch(_){}   /* (map-motion) the wheel's zoom travels on a spring — see above */
     try{ _applyGlide(mm,null); }catch(_){}   /* (map-motion) …and a drag's glide starts at its release speed */
+    try{ _glideRelease(mm); }catch(_){}      /* (map-motion) …and a pinch's too, with no standing frame */
+    try{ _trackDestination(mm); }catch(_){}  /* (map-motion) where an ease is going — see _destination */
     let credit=null; if(wantCredit){ try{ credit=_mountCredit(mm,extra); }catch(_){} }
     return { mm, credit };
   }
@@ -1615,6 +1775,8 @@ function _redrawLocalGlyphs(m,cover){
        that call sites still reach for on the raw map. Each is a 1:1 pass-through (byte-identical behaviour), so
        adopting them anywhere is safe, and a future adapter (Cesium/Earth) only has to implement these. */
     getZoom(){ const m=_m(); return m?m.getZoom():null; }, getCenter(){ const m=_m(); return m?m.getCenter():null; },
+    /* (map-motion) where the moving camera will stop, when that is known — {zoom, center:[lng,lat], size:[w,h]} or null */
+    destination(){ return _destination(_m()); },
     getBearing(){ const m=_m(); return m?m.getBearing():0; }, getPitch(){ const m=_m(); return m?m.getPitch():0; }, getBounds(){ const m=_m(); return m?m.getBounds():null; },
     /* (#R179) the zoom controls DECLARE a zoom — the case that ran away to z −5.54 on the sphere */
     zoomTo(z,o){ const m=_m(); if(m){ _declare(m,{zoom:true}); m.zoomTo(z,o); } },
@@ -2288,7 +2450,7 @@ function _redrawLocalGlyphs(m,cover){
     can(f){ const a=A(), c=a&&a.capabilities; return !!(c&&c[f]); },
     camera:{ flyTo:o=>A().flyTo(_calm(o)), easeTo:o=>A().easeTo(_calm(o)), jumpTo:o=>A().jumpTo(o), fitBounds:(b,o)=>A().fitBounds(b,_calm(o)), setPadding:p=>A().setPadding(p), get:()=>A().getCamera(), setProjection:mo=>A().setProjection(mo),
       /* (#R160) camera getters + zoom controls so call sites read/drive the camera through the engine, not the raw map */
-      getZoom:()=>A().getZoom(), getCenter:()=>A().getCenter(), getBearing:()=>A().getBearing(), getPitch:()=>A().getPitch(), getBounds:()=>A().getBounds(),
+      getZoom:()=>A().getZoom(), getCenter:()=>A().getCenter(), destination:()=>(A().destination?A().destination():null), getBearing:()=>A().getBearing(), getPitch:()=>A().getPitch(), getBounds:()=>A().getBounds(),
       zoomTo:(z,o)=>A().zoomTo(z,_calm(o)), zoomIn:o=>A().zoomIn(_calm(o)), zoomOut:o=>A().zoomOut(_calm(o)), stop:()=>A().stop(),
       /* (#R172) the camera that would show a box, and the current padding — both read-only */
       forBounds:(b,o)=>A().cameraForBounds?A().cameraForBounds(b,o):null, getPadding:()=>A().getPadding?A().getPadding():null,

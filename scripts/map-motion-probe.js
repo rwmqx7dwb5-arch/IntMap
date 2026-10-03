@@ -121,8 +121,44 @@
     const m = window.__imap;
     let z = NaN, lng = NaN, lat = NaN, loaded = null, moving = null;
     try { z = m.getZoom(); const c = m.getCenter(); lng = c.lng; lat = c.lat; loaded = m.areTilesLoaded(); moving = m.isMoving(); } catch (_) {}
-    MM.frames.push({ t, z, lng, lat, loaded, moving });
+    MM.frames.push({ t, z, lng, lat, loaded, moving, cover: coverage(m) });
     rawRAF(sample);
+  };
+  /* ── what the reader SEES of the tiles, per frame ──
+     For every tiled source a visible layer draws, the renderer computes the IDEAL tiles for the camera
+     (TileManager._updateRetainedTiles receives them; hooked below). Each ideal tile is, this frame:
+       sharp  — it has data;
+       blurry — it has none, but a loaded ANCESTOR is drawn stretched in its place;
+       blank  — neither: the reader sees the background.
+     Counted per source and summed; DEM sources (terrain, hillshade input) are not pictures and are
+     skipped. ⚠ Children drawn in a parent's place (zooming out) are counted as blank here, which
+     over-counts blank on a zoom-out; the gestures that gate are zoom-in and pan. */
+  const hookTiles = (m) => {
+    const tms = m && m.style && m.style.tileManagers; if (!tms) return;
+    for (const id in tms) {
+      const P = Object.getPrototypeOf(tms[id]);
+      if (P && !P.__mmIdeal && typeof P._updateRetainedTiles === 'function') {
+        P.__mmIdeal = true; const raw = P._updateRetainedTiles;
+        P._updateRetainedTiles = function (ideal) { this.__mmIdealIds = ideal; return raw.apply(this, arguments); };
+      }
+    }
+  };
+  const coverage = (m) => {
+    const tms = m && m.style && m.style.tileManagers; if (!tms) return null;
+    const out = { sharp: 0, blurry: 0, blank: 0 };
+    for (const id in tms) {
+      const tm = tms[id], src = tm._source, ideal = tm.__mmIdealIds;
+      if (!ideal || !tm.used || !src || /dem/.test(src.type) || !/raster|vector/.test(src.type)) continue;
+      for (const tid of ideal) {
+        const tile = tm.getTile(tid);
+        if (tile && tile.hasData()) { out.sharp++; continue; }
+        let up = false;
+        for (let z = tid.overscaledZ - 1; z >= 0 && !up; z--) { const p = tm.getTile(tid.scaledTo(z)); if (p && p.hasData()) up = true; }
+        if (up) out.blurry++; else out.blank++;
+        const k = id + (up ? ':blurry' : ':blank'); MM.coverBy[k] = (MM.coverBy[k] || 0) + 1;
+      }
+    }
+    return out;
   };
   /* ── inside the renderer's frame: symbol placement vs. everything else, and the labels it flips ──
      A label BLINKS when it is hidden and shown again (or shown and hidden again) within BLINK_MS — the
@@ -191,6 +227,8 @@
   } catch (_) {}
   MM.start = () => {
     MM.bodyTokens = true;
+    try { hookTiles(window.__imap); } catch (_) {}
+    MM.coverBy = {};
     try { MM.hookRenderer(); } catch (_) {}
     MM.mut = new Map(); try { watchMutations(); } catch (_) {}
     MM.flips = 0; MM.blinks = 0; MM.placements = 0;
@@ -202,6 +240,6 @@
     MM.rec = false; MM.t1 = now();
     const ids = new Map(); for (const [s, id] of MM.stacks) ids.set(id, s);
     const cost = []; for (const [k, c] of MM.cost) { if (!k.includes('#')) { cost.push({ key: k, kind: k, stack: '', ...c }); continue; } const id = +k.split('#')[1]; cost.push({ key: k, kind: k.split('#')[0], stack: ids.get(id), ...c }); }
-    return { t0: MM.t0, t1: MM.t1, mutations: [...MM.mut].sort((a, b) => b[1] - a[1]).slice(0, 12), flips: MM.flips, blinks: MM.blinks, placements: MM.placements, frames: MM.frames, long: MM.long, loaf: MM.loaf, marks: MM.marks, cost };
+    return { t0: MM.t0, t1: MM.t1, coverBy: MM.coverBy, mutations: [...MM.mut].sort((a, b) => b[1] - a[1]).slice(0, 12), flips: MM.flips, blinks: MM.blinks, placements: MM.placements, frames: MM.frames, long: MM.long, loaf: MM.loaf, marks: MM.marks, cost };
   };
 })();

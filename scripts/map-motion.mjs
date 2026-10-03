@@ -52,7 +52,11 @@ const OUT = val('--json', null);
 const ONLY = (val('--only', '') || '').split(',').filter(Boolean);
 const PROFILES = (() => { const p = val('--profile', 'both'); return p === 'both' ? ['desktop', 'mobile'] : [p]; })();
 const PORT = Number(val('--port', 4790));
-const ARMS = DISTS.map((dist, i) => ({ dist, port: PORT + i, base: `http://127.0.0.1:${PORT + i}`, name: dist.split(/[\\/]/).pop() }));
+/* `--setup "<js>|||<js>"` runs one expression per arm in the page after boot — the A/B of a SWITCH inside
+   one build (`--dist d,d --setup "…(false)|||…(true)"`), the way #R203 asked levers to be compared */
+const SETUPS = (val('--setup', '') || '').split('|||');
+const ARMS = DISTS.map((dist, i) => ({ dist, port: PORT + i, base: `http://127.0.0.1:${PORT + i}`, setup: SETUPS[i] || '',
+  name: dist.split(/[\\/]/).pop() + (SETUPS[i] ? `#${i}` : '') }));
 const distOf = (url) => { try { const a = ARMS.find((x) => x.port === Number(new URL(url).port)); return a ? a.dist : ARMS[0].dist; } catch (_) { return ARMS[0].dist; } };
 const HERMETIC = has('--hermetic');
 const TRACE = has('--trace');
@@ -133,6 +137,7 @@ async function newPage(browser, profile, arm) {
   await page.waitForFunction(() => !!window.__imap && window.__imap.isStyleLoaded() && (!window.IntMapGeoEngine.canDraw || window.IntMapGeoEngine.canDraw()), null, { timeout: 90000 });
   await page.evaluate(() => new Promise((r) => { window.__imap.once('idle', r); setTimeout(r, 15000); }));
   await sleep(2500);
+  if (arm.setup) console.log(`  ${arm.name} setup → ${JSON.stringify(await page.evaluate(arm.setup))}`);
   const cdp = await ctx.newCDPSession(page);
   return { ctx, page, cdp };
 }
@@ -144,7 +149,7 @@ function combine(runs) {
     const o0 = objs[0], out = {};
     for (const k of Object.keys(o0)) {
       if (k === 'js' || k === 'styleWriters' || k === 'loafScripts') continue;
-      out[k] = (o0[k] && typeof o0[k] === 'object') ? walk(objs.map((o) => o[k])) : med(objs.map((o) => o[k]));
+      out[k] = typeof o0[k] === 'string' ? objs.map((o) => o[k]).join(' | ') : (o0[k] && typeof o0[k] === 'object') ? walk(objs.map((o) => o[k])) : med(objs.map((o) => o[k]));
     }
     return out;
   };
@@ -163,6 +168,7 @@ const report = { arms: ARMS.map((a) => a.dist), at: new Date().toISOString(), he
 const line = (c) => `moving ${c.movingFrames} frames/${c.movingMs} ms · frame p50 ${c.frame.p50} p95 ${c.frame.p95} max ${c.frame.max} hitches ${c.frame.hitches}` +
   ` · path evenness ${c.path.evenness} handoff ${c.path.handoff} glide ${c.path.glideStart} stalls ${c.path.stalls} · long ${c.long.tasks}/${c.long.taskMs} ms loaf ${c.long.loaf} blocking ${c.long.blockingMs} ms` +
   ` · labels placements ${c.labels.placements} flips ${c.labels.flips} blinks ${c.labels.blinks} placement ${c.labels.placementMs} ms paint ${c.labels.paintMs} ms` +
+  ` · seen blank ${c.seen.blankWhileMoving} blurry ${c.seen.blurryWhileMoving} (moving) noBlank+${c.seen.noBlankAfterStopMs} sharp+${c.seen.sharpAfterStopMs} ms · blank·ms ${c.seen.blankMs} unsharp·ms ${c.seen.unsharpMs}` +
   ` · tiles waiting ${c.tiles.waitingShare} settle ${c.tiles.settleMs} ms idle+${c.tiles.idleAfterInputMs} ms · body/html writes ${c.pageWrites} · js app ${c.jsAppMs} / all ${c.jsTotalMs} ms`;
 try {
   for (const profile of PROFILES) {
@@ -177,7 +183,7 @@ try {
       const c0 = cpuTimes();
       for (let r = 0; r < REPS; r++) {
         const order = ARMS.map((_, i) => i); if (r % 2) order.reverse();   /* ABBA */
-        for (const i of order) runs[i].push(analyse(await measure(opened[i].page, opened[i].cdp, g), g.kind, { owner, charToSource, trace: TRACE, top: TOP }));
+        for (const i of order) runs[i].push(analyse(await measure(opened[i].page, opened[i].cdp, g, r), g.kind, { owner, charToSource, trace: TRACE, top: TOP }));
       }
       const busy = busyShare(c0, cpuTimes());
       report.profiles[profile].gestures[name] = {};
@@ -185,6 +191,7 @@ try {
         const c = combine(runs[i]); c.machineBusyPct = busy;
         report.profiles[profile].gestures[name][arm.name] = c;
         console.log(`-- ${name} · ${arm.name} [machine ${busy}% busy]: ${line(c)}`);
+        if (c.seen && c.seen.by) console.log('     not-sharp tile·frames by source: ' + c.seen.by);
         if (c.loafScripts && c.loafScripts.length) console.log('     long-frame scripts: ' + c.loafScripts.map(([k, d]) => `${k} ${d}ms`).join('  |  '));
         if (c.styleWriters && c.styleWriters.length) console.log('     style/class writes: ' + c.styleWriters.map(([k, n]) => `${k}×${n}`).join('  '));
         for (const j of c.js) console.log(`     ${String(j.ms).padStart(7)} ms  ×${String(j.n).padStart(4)}  max ${String(j.max).padStart(5)}  ${j.who}`);

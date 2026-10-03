@@ -303,11 +303,26 @@ window.IntMapNightSide=(function(){
      ⚠ (#R201) AND THE PIXELS ARE THE PRODUCT'S OWN. No threshold, no gain, no bias: what is written
      is what GIBS sent, and only HOW MUCH OF IT SURVIVES is this file's arithmetic. That is the whole
      content of 「夜の部分は完全に夜間光レイヤーと同じ画像に」. */
-  function drawLights(ctx,W,H){
-    ctx.clearRect(0,0,W,H);
+  /* ══ (map-motion) THE PAINT IS SLICED, AND THE CANVAS ONLY EVER RECEIVES A FINISHED PICTURE ══════════
+     scripts/map-motion.mjs found this loop as the one long animation frame left around a zoom: 35–41 ms
+     in one task (`go` → build → drawLights, 1024² pixels) on the first idle after a zoom-out crossed
+     z5.4 — i.e. while the satellite tiles of the place the reader had just arrived at were still
+     fading in, two frames dropped at the moment the motion ends. The same full repaint runs on every
+     `refresh(true)` (the lights arriving, a clock jump, once a minute while the Sun moves), wherever
+     that lands — including inside a gesture.
+     The pixels are unchanged, byte for byte; what changed is WHEN they are computed. A paint is a job
+     over the rows into its own ImageData, run in idle slices (`requestIdleCallback`, each slice
+     stopping when the idle period has under a millisecond left; a 6 ms budget where there is no idle
+     callback), and only the finished picture is handed to the canvas (`touchDynamicImage` → `draw`,
+     which is a single putImageData). A newer paint (the clock moved again) replaces the running one.
+     ⚠ So the night side appears when its first paint is finished — at the zooms where it is built
+     (below z5.4) its ramp has it under a twentieth of its opacity until z4.6, and `state().built`
+     reports the PAINTED state, which is what its readers (tests/r200, r201) wait for. */
+  let shown=null, job=null;
+  function paintJob(W,H){
     const rows=(()=>{ try{ return GE().layers.imageRowLatitudes(COORDS,H); }catch(_){ return null; } })();
     const S=solar(new Date(clockMs()));
-    const out=ctx.createImageData(W,H), o=out.data;
+    const out=new ImageData(W,H), o=out.data;
     const L=lights;
     const sinDec=Math.sin(S.dec), cosDec=Math.cos(S.dec);
     const th0=D*(280.16+360.9856235*S.d)-S.ra;
@@ -319,26 +334,49 @@ window.IntMapNightSide=(function(){
     const SIN_DAY=0, SIN_NIGHT=Math.sin(TWILIGHT_END*D);   /* the two ends of the ramp, as sines */
     const y0=Math.log(Math.tan(Math.PI/4+LIM*D/2));
     const U0=UNLIT[0], U1=UNLIT[1], U2=UNLIT[2];
-    for(let r=0;r<H;r++){
-      const lat=rows?rows[r]:(LIM-(2*LIM)*(r+0.5)/H);
-      const ph=lat*D, a=Math.sin(ph)*sinDec, b=Math.cos(ph)*cosDec;
-      /* the source mosaic is Web-Mercator, so its own row for this latitude is a Mercator lookup */
-      const my=Math.log(Math.tan(Math.PI/4+Math.max(-LIM,Math.min(LIM,lat))*D/2));
-      const sy=L?Math.max(0,Math.min(L.h-1,Math.round((y0-my)/(2*y0)*L.h))):0;
-      const rowBase=L?sy*L.w:0, oBase=r*W*4;
-      for(let c=0;c<W;c++){
-        const k=oBase+c*4;
-        const sinEl=a+b*cosH[c];
-        if(sinEl>=SIN_DAY){ o[k+3]=0; continue; }        /* day: nothing to draw, and no arithmetic */
-        let n;
-        if(sinEl<=SIN_NIGHT) n=1;
-        else { const t=Math.asin(sinEl)/D/TWILIGHT_END; n=t*t*(3-2*t); }
-        if(L){ const j2=(rowBase+sx[c])*4; o[k]=L.d[j2]; o[k+1]=L.d[j2+1]; o[k+2]=L.d[j2+2]; }
-        else { o[k]=U0; o[k+1]=U1; o[k+2]=U2; }
-        o[k+3]=n>=1?255:Math.round(255*n);
+    let r=0;
+    return { out, done:()=>r>=H, step(until){
+      for(;r<H;r++){
+        if((r&15)===0&&until()) return false;
+        const lat=rows?rows[r]:(LIM-(2*LIM)*(r+0.5)/H);
+        const ph=lat*D, a=Math.sin(ph)*sinDec, b=Math.cos(ph)*cosDec;
+        /* the source mosaic is Web-Mercator, so its own row for this latitude is a Mercator lookup */
+        const my=Math.log(Math.tan(Math.PI/4+Math.max(-LIM,Math.min(LIM,lat))*D/2));
+        const sy=L?Math.max(0,Math.min(L.h-1,Math.round((y0-my)/(2*y0)*L.h))):0;
+        const rowBase=L?sy*L.w:0, oBase=r*W*4;
+        for(let c=0;c<W;c++){
+          const k=oBase+c*4;
+          const sinEl=a+b*cosH[c];
+          if(sinEl>=SIN_DAY){ o[k+3]=0; continue; }        /* day: nothing to draw, and no arithmetic */
+          let n;
+          if(sinEl<=SIN_NIGHT) n=1;
+          else { const t=Math.asin(sinEl)/D/TWILIGHT_END; n=t*t*(3-2*t); }
+          if(L){ const j2=(rowBase+sx[c])*4; o[k]=L.d[j2]; o[k+1]=L.d[j2+1]; o[k+2]=L.d[j2+2]; }
+          else { o[k]=U0; o[k+1]=U1; o[k+2]=U2; }
+          o[k+3]=n>=1?255:Math.round(255*n);
+        }
       }
-    }
-    ctx.putImageData(out,0,0);
+      return true;
+    } };
+  }
+  const _idle=(fn)=>{ try{ if(window.requestIdleCallback){ requestIdleCallback(fn,{timeout:500}); return; } }catch(_){}
+    setTimeout(()=>{ const t0=performance.now(); fn({ timeRemaining:()=>Math.max(0,6-(performance.now()-t0)), didTimeout:false }); },0); };
+  function paint(){
+    const N=imgSize(), J=paintJob(N,N); job=J;
+    const slice=(dl)=>{
+      if(job!==J||!built) return;                       /* replaced by a newer paint, or taken down */
+      const t0=performance.now();
+      /* a timed-out idle callback has no idle time; it still makes progress, one short slice at a time */
+      const until=dl&&!dl.didTimeout?()=>dl.timeRemaining()<1:()=>performance.now()-t0>6;
+      if(!J.step(until)){ _idle(slice); return; }
+      job=null; shown=J.out;
+      try{ GE().layers.touchDynamicImage(DYN); }catch(_){}
+    };
+    _idle(slice);
+  }
+  function drawLights(ctx,W,H){
+    ctx.clearRect(0,0,W,H);
+    if(shown&&shown.width===W&&shown.height===H) ctx.putImageData(shown,0,0);
   }
 
   function zoomNow(){ try{ const c=GE().camera.get(); return (c&&isFinite(c.zoom))?c.zoom:99; }catch(_){ return 99; } }
@@ -384,7 +422,7 @@ window.IntMapNightSide=(function(){
          continues, so a build that cannot make the image unmakes itself. */
       if(!GE().layers.hasDynamicImage(DYN)){ lastErr='no-image'; destroy(); return false; }
     }catch(_){ try{ destroy(); }catch(__){} return false; }
-    built=true;
+    built=true; shown=null; paint();
     /* ⚠ THE MOSAIC IS NOT ON THE BOOT PATH. The app opens at zoom 1.7, and #R192/#R193/#R195 each
        spent part of a round taking megabytes OFF that path (Köppen, cshapes, the 4.3 MB border
        geometry). The night side is already complete and correctly shaped without it, so the tiles
@@ -414,7 +452,7 @@ window.IntMapNightSide=(function(){
     try{ GE().layers.removeDynamicImage(DYN); }catch(_){}
     try{ if(GE().layers.has(LYR)) GE().layers.remove(LYR); }catch(_){}
     try{ if(GE().layers.hasSource(SRC)) GE().layers.removeSource(SRC); }catch(_){}
-    const was=built; built=false; lastKey=''; return was;
+    const was=built; built=false; lastKey=''; job=null; shown=null; return was;
   }
 
   /* repaint when the SUN has moved enough to matter (a quarter degree ≈ one minute of rotation) */
@@ -426,7 +464,7 @@ window.IntMapNightSide=(function(){
     if(!force&&key===lastKey) return false;
     lastKey=key;
     try{ GE().layers.setSourceData(SRC,capFC(new Date(ms))); }catch(_){}
-    try{ if(GE().layers.hasDynamicImage&&GE().layers.hasDynamicImage(DYN)) GE().layers.touchDynamicImage(DYN); }catch(_){}
+    try{ if(GE().layers.hasDynamicImage&&GE().layers.hasDynamicImage(DYN)) paint(); }catch(_){}   /* (map-motion) sliced; the canvas is touched when it is done */
     return true;
   }
 
@@ -541,7 +579,7 @@ window.IntMapNightSide=(function(){
   try{ if(!prefOn()) enabled=false; }catch(_){}
 
   return { apply, refresh:()=>refresh(true), setEnabled, destroy, isOn:()=>enabled,
-    state:()=>({ built, enabled, lights:!!lights, lightsZoom:lightsZ, err:lastErr, zoom:zoomNow(),
+    state:()=>({ built:built&&!!shown, enabled,   /* (map-motion) built AND painted — what a reader of the canvas waits for */ lights:!!lights, lightsZoom:lightsZ, err:lastErr, zoom:zoomNow(),
                  /* (#R550) the epoch the mosaic on screen IS, and the one the clock is asking for —
                     a test can compare them with dl-nightsat's without trusting either to be right */
                  epoch:lightsEpoch||null, wantEpoch:(nlEpoch()||{}).id||null,
