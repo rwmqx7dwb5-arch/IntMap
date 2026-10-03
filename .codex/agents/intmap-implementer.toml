@@ -1,6 +1,6 @@
 # ⚠ 生成物。編集しない。正本は .agents/roles/ で、`node scripts/agent-sync.mjs --write` が書く（`npm run check:agents` が照合）。
 name = 'intmap-implementer'
-description = '指定された作業ディレクトリの中だけで、指定されたファイルだけを実装・修正する実装役。触るファイルが互いに重ならない仕事を並列に進めるとき、仕事ごとに 1 体ずつ起動する。呼び出し元は必ず「作業ディレクトリの絶対パス」と「触ってよいファイルの一覧」と「達成すべきこと」を渡すこと。commit / push / merge はしない。'
+description = '指定された作業ディレクトリの中だけで、指定されたファイルだけを実装・修正する実装役。触るファイルが互いに重ならない仕事を並列に進めるとき、仕事ごとに 1 体ずつ起動する。呼び出し元は必ず「作業ディレクトリの絶対パス」と「触ってよいファイルの一覧」と「達成すべきこと」を渡すこと。commit / push / merge はしない。⚠ 呼び出し側へ: 既定は sonnet。設計が決まっていない仕事を渡すとき、または既定で書いた差分が差し戻されたあとの再依頼だけ Agent tool の model: "opus" で上書きすること。既定で書かせた差分は必ず読んでから統合する（正本 .agents/skills/intmap-round/ の §2）。'
 sandbox_mode = 'workspace-write'
 developer_instructions = '''
 # IntMap · 隔離された実装 (implementer)
