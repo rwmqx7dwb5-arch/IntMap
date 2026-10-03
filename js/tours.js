@@ -10,6 +10,8 @@
  *    · scripts/landing.mjs — the tours section of the teacher pages (teachers.html, ja/teachers.html);
  *    · scripts/showcase-capture.mjs — which makes each step's link (below);
  *    · tests/classroom-tours-checks.test.mjs and tests/landing-showcase.spec.js.
+ *  A tour a TEACHER writes (js/tour-builder.js) is not declared here: it lives in its own address,
+ *  `?tour=custom&t=…` — the codec for that form is at the end of this file, with the other `?tour=` readers.
  *
  *  ══ A STEP IS A MAP STATE, AND ITS LINK IS THE APP'S OWN ══════════════════════════════════════
  *  A step either NAMES an example of js/showcase.js (`example:`) — and is then exactly that example:
@@ -243,19 +245,98 @@ export function tourCover(tour) {
    the page opens on the step's map through the ordinary boot restore (js/map-ui.js) — the reader's saved
    session yields to a link that carries a state — and the player only has to show the words. A link
    with no fragment (typed by hand) works too: the player restores the step itself. */
-export function tourQuery(id, n) { return '?tour=' + encodeURIComponent(id) + '&step=' + Math.max(1, Math.round(+n || 1)); }
+export function tourQuery(id, n, t) {
+  return '?tour=' + encodeURIComponent(id) + (t ? '&t=' + t : '') + '&step=' + Math.max(1, Math.round(+n || 1));
+}
 export function tourLink(id, n) {
   const t = tourById(id); if (!t) return null;
   const steps = tourSteps(t); const i = Math.min(steps.length, Math.max(1, Math.round(+n || 1)));
   const st = steps[i - 1]; if (!st) return null;
   return './index.html' + tourQuery(t.id, i) + (st.hash || '');
 }
-/** `?tour=…&step=…` read back → { id, step } (step counted from 1), or null */
+/** `?tour=…&step=…` read back → { id, step } (step counted from 1) and, for a written tour, `t` — its own text; or null */
 export function tourFromSearch(search) {
   let q; try { q = new URLSearchParams(String(search || '')); } catch (_) { return null; }
   const id = q.get('tour'); if (!id) return null;
   const n = parseInt(q.get('step') || '1', 10);
-  return { id: String(id).trim().toLowerCase(), step: Number.isFinite(n) && n > 0 ? n : 1 };
+  const out = { id: String(id).trim().toLowerCase(), step: Number.isFinite(n) && n > 0 ? n : 1 };
+  const t = q.get('t'); if (t) out.t = t;   /* only a written tour has one */
+  return out;
+}
+
+/* ══ A TOUR WRITTEN BY A READER — `?tour=custom&t=<the tour>&step=<n>` (tour-builder) ═══════════════════
+   A teacher's own tour (js/tour-builder.js) is kept nowhere but in its address: no account, no server, no
+   table. `t` is the tour — its title and, per step, the step's map link (the codec's own fragment, js/map-state.js
+   `MapState.hash()`), its title, the words to read out and the question for the class — as JSON, compressed with
+   DEFLATE (the platform's CompressionStream) and written in base64url, so it needs no escaping in a query.
+   The first character says how the rest is written, so a link written today stays readable when the form changes:
+     'z'  deflate-raw of the UTF-8 JSON (every browser IntMap supports, Node ≥ 18)
+     'j'  the UTF-8 JSON itself — written only where CompressionStream is missing; read everywhere
+   The JSON is { v: 1, n: title, s: [[fragment without '#', title, say, ask], …] }.
+   ⚠ THE PLAYER DOES NOT TRUST THE TEXT. Every step's fragment is read by the codec and WRITTEN AGAIN by it
+   (MapState.encode(MapState.decode(…))): a fragment that names no map becomes a step with no link (the player
+   says so — js/tour-player.js `no-link`), and nothing the codec does not write reaches the address bar. The words
+   are plain text, escaped where they are shown. */
+export const CUSTOM_TOUR_ID = 'custom';
+
+/* ⚠ THE LIMIT IS THE SERVER'S, AND IT WAS MEASURED. The query is sent to the server (the fragment is not), and
+   the hosted site (GitHub Pages) answers a request whose path + query is longer than 8,192 bytes with
+   «414 URI Too Long» — measured 2026-10-03 by bisection against the production origin: a path + query of 8,192
+   bytes is served (200), 8,193 is refused (414). So the builder holds `location.pathname + query` to this, and
+   says so before a step that would cross it is added. It is invalid the day the app is served from another host
+   (re-measure; the method is in dev-notes/2026-10-03-tour-builder.md) or the tour moves out of the query. */
+export const TOUR_REQUEST_LIMIT = 8192;
+
+const b64url = (bytes) => {
+  let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 0x8000)));
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+const unb64url = (s) => {
+  const b = atob(String(s).replace(/-/g, '+').replace(/_/g, '/'));
+  const out = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) out[i] = b.charCodeAt(i);
+  return out;
+};
+async function pipe(bytes, stream) {
+  const res = new Response(new Blob([bytes]).stream().pipeThrough(stream));
+  return new Uint8Array(await res.arrayBuffer());
+}
+const canCompress = () => typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
+
+/** a written tour → the text of its `t` parameter. `tour` is { title, steps: [{ hash, title, say, ask }] } */
+export async function encodeCustomTour(tour) {
+  const steps = ((tour && tour.steps) || []).map((s) => [String((s && s.hash) || '').replace(/^#/, ''), String((s && s.title) || ''), String((s && s.say) || ''), String((s && s.ask) || '')]);
+  const json = JSON.stringify({ v: 1, n: String((tour && tour.title) || ''), s: steps });
+  const bytes = new TextEncoder().encode(json);
+  if (canCompress()) return 'z' + b64url(await pipe(bytes, new CompressionStream('deflate-raw')));
+  return 'j' + b64url(bytes);
+}
+
+/** the text of a `t` parameter → { title, steps: [{ key, title, say, ask, hash }] }, or null when it is not a tour.
+    `canon(hash)` writes a fragment again through the map's codec ('' when it names no map) — js/map-state.js, handed
+    in so this file stays readable without a DOM. */
+export async function decodeCustomTour(t, canon) {
+  const s = String(t || ''); if (s.length < 2) return null;
+  let json;
+  try {
+    const bytes = unb64url(s.slice(1));
+    if (s[0] === 'z') { if (!canCompress()) return null; json = new TextDecoder().decode(await pipe(bytes, new DecompressionStream('deflate-raw'))); }
+    else if (s[0] === 'j') json = new TextDecoder().decode(bytes);
+    else return null;
+  } catch (_) { return null; }
+  let o; try { o = JSON.parse(json); } catch (_) { return null; }
+  if (!o || o.v !== 1 || !Array.isArray(o.s)) return null;
+  const steps = o.s.filter(Array.isArray).map((r, i) => {
+    let hash = null;
+    try { const h = canon ? canon('#' + String(r[0] || '')) : ''; hash = h || null; } catch (_) { hash = null; }
+    return { key: CUSTOM_TOUR_ID + '-' + (i + 1), title: String(r[1] == null ? '' : r[1]), say: String(r[2] == null ? '' : r[2]), ask: String(r[3] == null ? '' : r[3]), hash };
+  });
+  return { title: String(o.n == null ? '' : o.n), steps };
+}
+
+/** the share link of a written tour, opening at step 1: the query carries the tour, the fragment the first step's
+    map (so the page opens on it through the ordinary boot restore, as a declared tour's link does) */
+export function customTourLink(base, t, firstHash) {
+  return String(base || './index.html') + tourQuery(CUSTOM_TOUR_ID, 1, t) + (firstHash || '');
 }
 
 /* ⚠ GENERATED TOUR STEPS — BEGIN (node scripts/showcase-capture.mjs; DO NOT EDIT) */

@@ -30,15 +30,23 @@
  *  the same mode. Atlas sets the map up with its own capabilities and then records it; it never
  *  writes a link.
  *
+ *  ── A TOUR A READER WROTE: `?tour=custom&t=…` (tour-builder) ─────────────────────────────────
+ *  js/tour-builder.js writes a tour into its own address (js/tours.js encodeCustomTour); this player
+ *  reads it back (`tourFor('custom')`, from `opts.t` or the page's query) and plays it in THIS mode —
+ *  the same panel, keys and read-back as a declared tour, nothing copied. Each step's fragment is written
+ *  again by the map's codec before it reaches the address bar. The list of tours offers «Make your own
+ *  tour», and a written (or Atlas-assembled) tour that is playing offers «Edit this tour».
+ *
  *  ⚠ IntMap-authored text is en + jp (CONSTITUTION.md §7).
  *  ⚠ No `window` global is published: the readers import this file by name.
  * ==========================================================================*/
 
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTime } from './chronos.js';
-import { TOURS, tourById, tourSteps, tourQuery, tourFromSearch } from './tours.js';
+import { TOURS, tourById, tourSteps, tourQuery, tourFromSearch, CUSTOM_TOUR_ID, decodeCustomTour } from './tours.js';
 import { MapState } from './map-state.js';   /* the map's state and the address bar's one door (js/map-state.js) */
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the encoder every string below is written with */
+import { icon } from './icons.js';
 
 /* the reader's language, as the app holds it (js/i18n.js) */
 function lang() { try { return window.IntMapI18N.lang(); } catch (_) { return 'en'; } }
@@ -83,7 +91,7 @@ export const CLASSROOM_CSS = [
   '#im-tour button.imt-b:disabled{opacity:0.4;cursor:default;}',
   '#im-tour button.imt-b:focus-visible,#im-tour .imt-dot:focus-visible{outline:2px solid var(--primary-color);outline-offset:2px;}',
   '#im-tour .imt-tools{flex:0 0 auto;display:flex;gap:4px;margin:-6px -8px -6px 0;}',
-  '#im-tour .imt-tools button{width:36px;height:36px;border:none;border-radius:10px;background:transparent;color:var(--text-muted);font-size:17px;cursor:pointer;}',
+  '#im-tour .imt-tools button{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:none;border-radius:10px;background:transparent;color:var(--text-muted);font-size:17px;cursor:pointer;}',
   '#im-tour .imt-tools button:hover{background:var(--input-bg);color:var(--text-main);}',
   '#im-tour.imt-folded .imt-body{display:none;}',
   '#im-tour .imt-keys{margin-top:8px;font-size:0.58em;color:var(--text-muted);text-align:center;}',
@@ -98,6 +106,7 @@ export const CLASSROOM_CSS = [
   '#im-tour-picker button.imtp-t:hover{border-color:var(--primary-color);}',
   '#im-tour-picker .imtp-t b{display:block;font-size:15px;}',
   '#im-tour-picker .imtp-t span{display:block;font-size:12.5px;color:var(--text-muted);margin-top:2px;}',
+  '#im-tour-picker button.imtp-make{border-style:dashed;background:transparent;}',
   '#im-tour-picker .imtp-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:6px;font-size:13px;}',
   '#im-tour-picker .imtp-close{min-height:40px;padding:0 16px;border-radius:12px;border:none;background:var(--primary-fill);color:#fff;font:inherit;font-weight:600;cursor:pointer;}',
   '@media (max-width:640px){#im-tour{padding:14px 14px 12px;border-radius:18px;bottom:calc(var(--credit-h,23px) + 8px);}#im-tour .imt-keys{display:none;}}',
@@ -119,14 +128,24 @@ let panel = null, keysOn = false, clockOn = false;
 function readTemp() { try { const v = JSON.parse(sessionStorage.getItem(TEMP_KEY) || 'null'); return v && Array.isArray(v.steps) ? v : null; } catch (_) { return null; } }
 function writeTemp(v) { try { if (v) sessionStorage.setItem(TEMP_KEY, JSON.stringify(v)); else sessionStorage.removeItem(TEMP_KEY); } catch (_) { } }
 
-/** a tour by id — a declared one, or 'atlas' (the one assembled in this tab) — in the player's shape */
-function tourFor(id) {
-  if (String(id || '').toLowerCase() === 'atlas') {
+/* (tour-builder) a step's fragment written again by the map's codec — '' when it names no map (js/tours.js decodeCustomTour) */
+const canon = (h) => (MapState.carries(h) ? MapState.encode(MapState.decode(h)) : '');
+
+/** a tour by id — a declared one, 'atlas' (the one assembled in this tab) or 'custom' (a tour a reader wrote,
+    carried by its own address: `t` from `opts`, else from the page's query) — in the player's shape */
+async function tourFor(id, opts) {
+  const k = String(id || '').toLowerCase();
+  if (k === 'atlas') {
     const v = readTemp(); if (!v || !v.steps.length) return null;
-    return { id: 'atlas', title: v.title || t('Tour from Atlas', 'Atlas が作ったツアー'), steps: v.steps, temp: true };
+    return { id: 'atlas', title: v.title || t('Tour from Atlas', 'Atlas が作ったツアー'), steps: v.steps, temp: true, t: '' };
+  }
+  if (k === CUSTOM_TOUR_ID) {
+    const tt = (opts && opts.t) || ((tourFromSearch(location.search) || {}).t) || '';
+    const v = await decodeCustomTour(tt, canon); if (!v) return null;
+    return { id: CUSTOM_TOUR_ID, title: v.title || t('Untitled tour', '無題のツアー'), steps: v.steps, temp: false, custom: true, t: tt };
   }
   const d = tourById(id); if (!d) return null;
-  return { id: d.id, title: d.title, steps: tourSteps(d), temp: false };
+  return { id: d.id, title: d.title, steps: tourSteps(d), temp: false, t: '' };
 }
 
 /* ══ WHAT A LINK ASKS FOR, AND WHETHER THE MAP NOW SAYS IT ═══════════════════════════════════════
@@ -176,7 +195,7 @@ async function show(i, opts) {
      the fragment is the map. A page opened on a tour's own address already carries the step's link, and the
      boot restore is applying it (MapState.carriesState): it is not applied a second time. */
   const already = !!(opts && opts.fromBoot) && MapState.carriesState();
-  MapState.address(tourQuery(playing.id, n + 1), st.hash);
+  MapState.address(tourQuery(playing.id, n + 1, playing.t), st.hash);
   if (!already) { try { B.restore({ shared: true }); } catch (e) { paint(false); return { ok: false, reason: String(e && e.message || e) }; } }
   const r = await settled(st.hash);
   if (my === gen) paint(false);
@@ -197,6 +216,8 @@ function paint(waiting) {
   const st = playing.steps[at] || {}; const N = playing.steps.length;
   const dots = playing.steps.map((_, k) => '<button type="button" class="imt-dot" data-imt-go="' + k + '" aria-label="' + H(t('Step ', 'ステップ ') + (k + 1)) + '"' + (k === at ? ' aria-current="step"' : '') + '></button>').join('');
   const tools = '<span class="imt-tools">'
+      /* (tour-builder) a tour a reader wrote, or the one Atlas assembled, can be opened in the tour builder */
+      + (playing.custom || playing.temp ? '<button type="button" data-imt="edit" title="' + H(t('Edit this tour', 'このツアーを編集')) + '" aria-label="' + H(t('Edit this tour', 'このツアーを編集')) + '">' + icon('pencil', { size: 17 }) + '</button>' : '')
       + '<button type="button" data-imt="fold" title="' + H(t('Hide the text (T)', '文を隠す（T）')) + '" aria-label="' + H(t('Hide the text', '文を隠す')) + '">' + (panel.classList.contains('imt-folded') ? '▴' : '▾') + '</button>'
       + '<button type="button" data-imt="full" title="' + H(t('Full screen (F)', '全画面（F）')) + '" aria-label="' + H(t('Full screen', '全画面')) + '">⛶</button>'
       + '<button type="button" data-imt="exit" title="' + H(t('Leave the tour (Esc)', 'ツアーを終える（Esc）')) + '" aria-label="' + H(t('Leave the tour', 'ツアーを終える')) + '">×</button></span>';
@@ -219,6 +240,15 @@ function onPanelClick(e) {
   const a = b.getAttribute('data-imt');
   if (a === 'next') next(); else if (a === 'prev') prev(); else if (a === 'exit') exit();
   else if (a === 'fold') fold(); else if (a === 'full') fullscreen();
+  else if (a === 'edit') editInBuilder();
+}
+/* (tour-builder) leave the classroom mode and hand the tour that was playing to the builder, step by step
+   (its links and words exactly as they were played) — the builder asks before it replaces a draft */
+function editInBuilder() {
+  if (!playing) return;
+  const tour = { title: txt(playing.title), steps: playing.steps.map((s) => ({ title: txt(s.title), say: txt(s.say), ask: txt(s.ask), hash: s.hash || null })) };
+  exit();
+  import('./tour-builder.js').then((m) => m.openBuilder({ load: tour })).catch(() => { });
 }
 function fold() { if (!panel) return; panel.classList.toggle('imt-folded'); paint(false); }
 function fullscreen() {
@@ -259,9 +289,10 @@ function mount() {
 }
 
 /* ══ THE PUBLIC FACE ═════════════════════════════════════════════════════════════════════════════ */
-/** start a tour (a declared id, or 'atlas') at step n (from 1). → the step's read-back */
+/** start a tour (a declared id, 'atlas', or 'custom' — whose text is `opts.t` or the page's own `t`) at step n
+    (from 1). → the step's read-back */
 export async function startTour(id, n, opts) {
-  const tour = tourFor(id); if (!tour) return { ok: false, reason: 'unknown-tour' };
+  const tour = await tourFor(id, opts); if (!tour) return { ok: false, reason: String(id || '').toLowerCase() === CUSTOM_TOUR_ID ? 'unreadable-tour' : 'unknown-tour' };
   if (!tour.steps.length) return { ok: false, reason: 'no-steps' };
   if (!playing && !(opts && opts.fromBoot)) { try { before = MapState.link() || null; } catch (_) { before = null; } }
   playing = tour;
@@ -294,7 +325,7 @@ export function exit() {
 export function status() {
   if (!playing) return null;
   const st = playing.steps[at] || {};
-  return { id: playing.id, title: txt(playing.title), step: at + 1, of: playing.steps.length, temp: playing.temp, stepTitle: st.title ? txt(st.title) : '', ask: st.ask ? txt(st.ask) : '' };
+  return { id: playing.id, title: txt(playing.title), step: at + 1, of: playing.steps.length, temp: playing.temp, custom: !!playing.custom, stepTitle: st.title ? txt(st.title) : '', ask: st.ask ? txt(st.ask) : '' };
 }
 
 /* ── the tour Atlas assembles: the map as it is now, with words ── */
@@ -308,6 +339,18 @@ export function addStep(o) {
   writeTemp(v);
   return { ok: true, count: v.steps.length, hash };
 }
+/* (tour-builder) js/tour-builder.js reads the language, escapes and reaches the map through these — the player's own
+   edges to the globals — rather than opening a second edge to each (scripts/global-surface.mjs counts them) */
+export function readerLang() { return lang(); }
+export function escapeHtml(s) { return H(s); }
+export function mapReady() { const B = BM(); return !!(B && B.restore); }
+/** put one fragment the codec wrote on the map: the address takes it and the share link's own restore applies it */
+export function openLink(hash) {
+  const B = BM(); if (!B || !B.restore) return { ok: false, reason: 'no-map' };
+  MapState.address(null, hash);
+  try { B.restore({ shared: true }); } catch (e) { return { ok: false, reason: String(e && e.message || e) }; }
+  return { ok: true };
+}
 export function tempTour() { return readTemp(); }
 export function clearTemp() { writeTemp(null); if (playing && playing.temp) exit(); return true; }
 export function declaredTours() { return TOURS; }
@@ -318,7 +361,10 @@ export function openPicker() {
   style(); closePicker();
   const v = readTemp();
   const rows = TOURS.map((d) => '<button type="button" class="imtp-t" data-imtp="' + H(d.id) + '"><b>' + H(txt(d.title)) + '</b><span>' + H(txt(d.blurb)) + ' · ' + H(t(d.steps.length + ' steps', d.steps.length + ' ステップ')) + '</span></button>').join('')
-    + (v && v.steps.length ? '<button type="button" class="imtp-t" data-imtp="atlas"><b>' + H(v.title || t('Tour from Atlas', 'Atlas が作ったツアー')) + '</b><span>' + H(t(v.steps.length + ' steps, made in this tab', 'このタブで作った ' + v.steps.length + ' ステップ')) + '</span></button>' : '');
+    + (v && v.steps.length ? '<button type="button" class="imtp-t" data-imtp="atlas"><b>' + H(v.title || t('Tour from Atlas', 'Atlas が作ったツアー')) + '</b><span>' + H(t(v.steps.length + ' steps, made in this tab', 'このタブで作った ' + v.steps.length + ' ステップ')) + '</span></button>' : '')
+    /* (tour-builder) the way to a tour of one's own: the builder, which keeps its draft in this browser */
+    + '<button type="button" class="imtp-t imtp-make" data-imtp-make="1"><b>' + H(t('Make your own tour', '自分のツアーを作る')) + '</b><span>'
+      + H(t('Add the map as it is now as a step, write what to say, and share the tour as a link. No account needed.', 'いまの地図をステップとして加え、語りと問いを書いて、ツアーをリンクで共有します。アカウントは要りません。')) + '</span></button>';
   const box = document.createElement('div'); box.id = 'im-tour-picker'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true');
   box.setAttribute('aria-label', t('Classroom tours', '授業ツアー'));
   /* the scrim behind the list closes it on a click; it is presentational (aria-hidden) — its keyboard
@@ -329,6 +375,7 @@ export function openPicker() {
   box.querySelector('.imtp-scrim').addEventListener('click', closePicker);
   box.querySelector('.imtp-close').addEventListener('click', closePicker);
   box.querySelectorAll('button[data-imtp]').forEach((b) => b.addEventListener('click', () => { startTour(b.getAttribute('data-imtp'), 1); }));
+  box.querySelectorAll('button[data-imtp-make]').forEach((b) => b.addEventListener('click', () => { closePicker(); import('./tour-builder.js').then((m) => m.openBuilder()).catch(() => { }); }));
   box.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); closePicker(); } });
   document.body.appendChild(box);
   try { /** @type {HTMLElement} */ (box.querySelector('.imtp-t')).focus(); } catch (_) { }
@@ -339,7 +386,8 @@ export function openPicker() {
 export function bootFromUrl() {
   const q = tourFromSearch(location.search); if (!q) return Promise.resolve(null);
   /* a tour this build does not have is not a silent nothing: the reader is shown the tours there are */
-  const go2 = () => (tourFor(q.id) ? startTour(q.id, q.step, { fromBoot: true }) : (openPicker(), { ok: false, reason: 'unknown-tour' }));
+  /* a written tour (`?tour=custom&t=…`) whose text cannot be read is the same: the list, not a blank screen */
+  const go2 = async () => ((await tourFor(q.id, { t: q.t })) ? startTour(q.id, q.step, { fromBoot: true, t: q.t }) : (openPicker(), { ok: false, reason: 'unknown-tour' }));
   if (document.readyState === 'loading') return new Promise((r) => document.addEventListener('DOMContentLoaded', () => r(go2()), { once: true }));
   return go2();
 }

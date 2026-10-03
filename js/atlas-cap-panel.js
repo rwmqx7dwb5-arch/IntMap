@@ -370,6 +370,64 @@ export default [
     },
   },
   {
+    row: ['panel.tourBuilder',          'tourBuilder',    'buildTour,makeTour,tourEditor,addMapToTour,shareTour',        'panel',   'time',    'camera,map.layer,time,tour.draft', 'map,time',     'persist', 'explicit', '',     ''],
+    /* (tour-builder) the TOUR BUILDER (js/tour-builder.js): the tour a reader writes for their own lesson, kept in
+       this browser while it is written and shared as a link that carries the whole tour (`?tour=custom&t=…`,
+       js/tours.js) — no account, no server. `action`:
+         open            show the builder panel
+         addStep         record the map AS IT IS NOW (the codec's own fragment, MapState.hash() — the share link's)
+                         as a new step with `title`, `say`, `ask` (at the end, or after `step`); `tourTitle` names the tour
+         replace         step `step` takes the map as it is now (its words stay)
+         edit            set step `step`'s `title` / `say` / `ask` (only those given)
+         move            move step `step` to position `to`
+         remove          delete step `step`
+         title           name the tour (`tourTitle`)
+         list            the draft's steps
+         link            the share link, with how much of the address it uses against the hosted site's measured limit
+         play            preview the draft in the classroom mode from `step` — the same player a shared link opens
+         clear           delete the draft
+       Column 7 is 'persist' (the draft is written to localStorage) and column 8 'explicit' — `clear` and `remove`
+       destroy what a teacher wrote. Column 5 names `tour.draft`, which no restorer puts back, so the turn's undo
+       does not claim to reverse it (js/atlas-capabilities.js UNDO_EXACT). */
+    doc: [
+      { in: 'panel.tour', at: 10, text: ' TOUR BUILDER — A TOUR THE READER WRITES AND SHARES AS A LINK (ツアー作成): {"type":"tourBuilder","action"?:"open"|"addStep"|"replace"|"edit"|"move"|"remove"|"title"|"list"|"link"|"play"|"clear","step"?:int,"to"?:int,"title"?:str,"say"?:str,"ask"?:str,"tourTitle"?:str}. The builder keeps a draft in this browser that the reader can edit in its panel (reorder, replace, delete, write the words) and share as ONE link carrying the whole tour (no account, no server). addStep records the map exactly as it is now — set it up first with the other capabilities (camera, date, layers, compare) — with the step title, what to say and a question for the class; link returns the share link and how much of the address it uses (a tour too long for the hosted site is refused, not shortened); play previews it in the classroom mode. Prefer this over panel.tour addStep when the reader wants to KEEP, EDIT or SHARE the tour; panel.tour addStep is the tab-only tour. For 「ツアーを作る」「この地図をツアーのステップに追加」「ツアーを共有するリンク」「作ったツアーを再生」, "make a tour", "add this map to my tour", "share my tour", "play my tour".' },
+    ],
+    schema: () => ({ type: 'object', properties: { action: one('open', 'addStep', 'replace', 'edit', 'move', 'remove', 'title', 'list', 'link', 'play', 'clear'), step: num(1), to: num(1), title: str(), say: str(), ask: str(), tourTitle: str() } }),
+    async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, L = K.L, esc = K.esc;
+      { const B = await import('./tour-builder.js');
+          const act = String(a.action || 'open').trim();
+          const why = (r) => ({ 'no-map': L('the map has not finished loading', '地図の読み込みが終わっていません'), 'no-link': L('this map cannot be written as a link', 'この地図はリンクにできません'),
+            'no-step': L('there is no such step', 'そのステップはありません'), 'no-steps': L('the tour has no steps yet', 'ツアーにまだステップがありません'),
+            'too-long': L('the tour is too long for a link', 'ツアーがリンクには長すぎます') }[r && r.reason] || String((r && r.reason) || ''));
+          const fail = (head, r) => R(false, warn(esc(head) + ' — ' + esc(why(r))));
+          const size = (m) => (m ? ' · ' + esc(L('link', 'リンク')) + ' ' + m.bytes + ' / ' + m.limit + ' B'
+            + (m.level === 'near' ? ' — ' + esc(L('one more step may not fit', 'あと 1 ステップ入らないかもしれません')) : m.level === 'over' ? ' — ' + esc(L('too long to share; shorten it', '共有できない長さです。短くしてください')) : '') : '');
+          const listHtml = () => { const d = B.getDraft();
+            return '<div style="font-weight:600;margin:2px 0;">' + esc(d.title || L('Untitled tour', '無題のツアー')) + ' (' + d.steps.length + ')</div><ol style="margin:4px 0 4px 18px;padding:0;">'
+              + d.steps.map((s) => '<li>' + esc(s.title || L('(no title)', '（題なし）')) + (s.hash ? '' : ' — ' + esc(L('no map', '地図なし'))) + '</li>').join('') + '</ol>'; };
+          if (act === 'open') { B.openBuilder(); return R(true, note('✓ ' + esc(L('Tour builder opened', 'ツアー作成を開きました'))) + listHtml()); }
+          if (act === 'addStep') {
+            const r = await B.addCurrent({ title: a.title, say: a.say, ask: a.ask, tourTitle: a.tourTitle, after: a.step });
+            if (!r.ok) return fail(L('Could not record the map', '地図を記録できませんでした'), r);
+            return R(true, note('✓ ' + esc(L('Step recorded', 'ステップを記録しました')) + ' (' + r.step + ' / ' + r.count + ')') + size(r.budget)); }
+          if (act === 'replace') { const r = await B.replaceStep(a.step); if (!r.ok) return fail(L('Could not replace the map', '地図を差し替えられませんでした'), r);
+            return R(true, note('✓ ' + esc(L('The step now shows the map as it is', 'ステップをいまの地図にしました')) + ' (' + r.step + ')') + size(r.budget)); }
+          if (act === 'edit') { const r = B.editStep(a.step, { title: a.title, say: a.say, ask: a.ask }); return r.ok ? R(true, note('✓ ' + esc(L('Step updated', 'ステップを更新しました'))) + listHtml()) : fail(L('Could not edit', '編集できませんでした'), r); }
+          if (act === 'move') { const r = B.moveStep(a.step, a.to); return r.ok ? R(true, note('✓ ' + esc(L('Step moved', 'ステップを移動しました'))) + listHtml()) : fail(L('Could not move', '移動できませんでした'), r); }
+          if (act === 'remove') { const r = B.removeStep(a.step); return r.ok ? R(true, note('✓ ' + esc(L('Step deleted', 'ステップを削除しました'))) + listHtml()) : fail(L('Could not delete', '削除できませんでした'), r); }
+          if (act === 'title') { B.setTitle(a.tourTitle != null ? a.tourTitle : a.title); return R(true, note('✓ ' + esc(L('Tour named', 'ツアーの題を付けました'))) + listHtml()); }
+          if (act === 'list') return R(true, listHtml());
+          if (act === 'clear') { B.clearDraft(); return R(true, note('✓ ' + esc(L('The draft tour is deleted', '下書きのツアーを削除しました')))); }
+          if (act === 'link') { const r = await B.shareLink(); if (!r.ok) return fail(L('No link', 'リンクを作れません'), r);
+            return R(true, note('✓ ' + esc(L('Tour link', 'ツアーのリンク'))) + size(r) + '<div style="font-size:12px;word-break:break-all;margin:4px 0;"><a href="' + esc(IntMapSafe.url(r.url)) + '">' + esc(r.url) + '</a></div>'); }
+          if (act === 'play') { const r = await B.preview(a.step || 1);
+            if (r && r.ok) return R(true, note('✓ ' + esc(L('Tour preview started', 'ツアーのプレビューを始めました'))) + ' · ' + esc(L('step ', 'ステップ ')) + r.step + ' / ' + r.of);
+            const miss = []; if (r && r.timeOk === false) miss.push(L('the date', '日付')); if (r && r.off && r.off.length) miss.push(L('layers not on', 'オンにならないレイヤー') + ' ' + r.off.join(', '));
+            return R(false, warn(esc(L('The step did not fully apply', 'ステップが一部しか適用されていません')) + ' — ' + esc(miss.length ? miss.join(' / ') : why(r)))); }
+          return R(false, warn(esc(L('Unknown action', '不明な操作')) + ' «' + esc(act) + '»')); }
+    },
+  },
+  {
     row: ['panel.operatingCosts',       'operatingCosts', 'runningCosts,supportCosts,whereSupportGoes',                  'panel',   'panel',   'panel.donate',           'panel,explanation',   'session', 'none',   '',         ''],
     /* (supporter-funnel) «運営費を見る» / "what does IntMap cost to run" — opens the support panel at «where
        support goes» AND hands Atlas the same facts the panel shows, so it can answer in words without
