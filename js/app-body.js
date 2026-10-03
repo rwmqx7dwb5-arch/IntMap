@@ -3014,6 +3014,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* (#R29.1) Settings → Feedback & bug report entry points. */
     { const fb=document.getElementById('btn-send-feedback'); if(fb) fb.onclick=()=>{ try{ window._openFeedback&&window._openFeedback(); }catch(_){} }; }
     { const bg=document.getElementById('btn-report-bug'); if(bg) bg.onclick=()=>{ try{ window._openBugReport&&window._openBugReport(); }catch(_){} }; }
+    /* (community-next) the reader's map corrections and their answers — js/map-corrections.js, fetched by this click */
+    { const mr=document.getElementById('btn-map-reports'); if(mr) mr.onclick=()=>{ import('./map-corrections.js').then(m=>m.openMine(IM_HOST)).catch(()=>{ try{ imToast(IntMapLang.t(currentLang,'My map reports could not be loaded','地図の誤り報告を読み込めませんでした')); }catch(_){} }); }; }
     bm.addEventListener('click',(e)=>{ if(e.target===bm) close(); });
     window.IntMapDialog.adopt(bm,{ panel:bm.querySelector('.modal-content'), labelledby:'blueberry-title', close });
     /* Record a donation INTENT for a logged-in user (so a future paid plan can recognise supporters).
@@ -3026,6 +3028,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R167) moved to js/feedback.js — see Architecture.md §3.1. */
   feedback(IM_HOST);
+  /* (community-next) a reader who sent a map correction from this device is told, once, when it is answered. A reader who
+     never sent one pays this one localStorage read: the module is fetched only when the device holds an open receipt, and
+     then only after the page is idle (js/map-corrections.js checkForNews decides how often it asks). */
+  try{ const _mc=localStorage.getItem('intmap_corrections'); if(_mc&&_mc.indexOf('"receipt"')>=0){ const _go=()=>import('./map-corrections.js').then(m=>m.checkForNews(IM_HOST)).catch(()=>{}); if(window.requestIdleCallback) requestIdleCallback(_go,{timeout:15000}); else setTimeout(_go,6000); } }catch(_){}
 
   /* ============================================================================
      (#R29.1) PLAYGROUND (beta) — experimental interactive modes, all in one hub:

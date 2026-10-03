@@ -21,6 +21,11 @@
  *       listed rows' name, month and note). A read that fails says so; it never shows zeros or an
  *       empty list in place of «could not be read».
  *
+ *    ⑤ THE CORRECTIONS PAGE (community-next) — the counts (public.map_corrections_summary), the published log
+ *       (public.public_map_corrections — only what an admin published, in the admin's words) and THIS browser's own
+ *       reports: the receipts js/map-corrections.js keeps (localStorage intmap_corrections) read back through
+ *       public.map_correction_status. A receipt the database no longer returns is said to be gone, not hidden.
+ *
  *  The backend address and the publishable key are in the page's <meta> (the generator reads them from
  *  src/vendor.js, where the app's own client is made). The key is public by design; RLS decides.
  *  ⚠ Nothing a reader or the database wrote is inserted as markup: every value goes in as textContent.
@@ -171,6 +176,78 @@
     });
   }
 
+  /* ⑤ the corrections page */
+  function restPost(path, body) {
+    var base = meta('intmap-backend').replace(/\/$/, ''), key = meta('intmap-anon-key');
+    if (!base || !key) return Promise.reject(new Error('no backend'));
+    return fetch(base + '/rest/v1/' + path, { method: 'POST', headers: { apikey: key, accept: 'application/json', 'content-type': 'application/json' }, credentials: 'omit', body: JSON.stringify(body), signal: deadline(READ_DEADLINE_MS) })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+  }
+  function words(el, name) { try { return JSON.parse(el.getAttribute('data-' + name) || '{}') || {}; } catch (_) { return {}; } }
+  function yearOf(el, y) { if (y == null) return ''; return (y < 0 ? el.getAttribute('data-year-bc') : el.getAttribute('data-year-ad')).replace('{y}', String(Math.abs(y))); }
+  function dayOf(el, iso) { try { return new Date(iso).toLocaleDateString(locale(el), { year: 'numeric', month: 'short', day: 'numeric' }); } catch (_) { return String(iso || '').slice(0, 10); } }
+  function muted(list, text) { list.textContent = ''; var li = document.createElement('li'); li.className = 'og-muted'; li.textContent = text; list.appendChild(li); }
+  function span(cls, text) { var s0 = document.createElement('span'); s0.className = cls; s0.textContent = text; return s0; }
+  function div(cls, text) { var d0 = document.createElement('div'); d0.className = cls; d0.textContent = text; return d0; }
+  /* one entry of the log or of the reader's own list — every value as text, a link only when it is http(s) or the map's own fragment */
+  function corrItem(list, r, mine) {
+    var K = words(list, 'kinds'), S = words(list, 'statuses');
+    var li = document.createElement('li');
+    var top = document.createElement('div'); top.className = 'og-corr-top';
+    var st = r.status === 'gone' ? list.getAttribute('data-msg-gone') : (S[r.status] || r.status);
+    top.appendChild(span('og-corr-status is-' + String(r.status).replace(/[^a-z_]/g, ''), st));
+    top.appendChild(span('', [K[r.kind] || r.kind, r.year != null ? yearOf(list, r.year) : '', r.layer_label || '', dayOf(list, r.resolved_at || r.created_at || r.reported_on)].filter(Boolean).join(' · ')));
+    li.appendChild(top);
+    li.appendChild(div('og-corr-place', (r.place_label || ((+r.lat).toFixed(3) + ', ' + (+r.lng).toFixed(3))) + (r.country ? ' · ' + r.country : '')));
+    if (mine && r.message) li.appendChild(div('og-corr-text', r.message));
+    if (r.reply) li.appendChild(div('og-corr-text', r.reply));
+    var links = document.createElement('div'); links.className = 'og-corr-links';
+    if (r.lng != null && r.lat != null) {
+      var a = document.createElement('a'); a.textContent = list.getAttribute('data-msg-open');
+      a.href = list.getAttribute('data-app') + (/^#v=-?\d/.test(String(r.map_link || '')) ? r.map_link : '#v=' + (+r.lng).toFixed(4) + ',' + (+r.lat).toFixed(4) + ',9.00,0,0,f');
+      links.appendChild(a);
+    }
+    if (/^https?:\/\/[^\s]+$/i.test(String(r.fixed_ref || ''))) {
+      var c = document.createElement('a'); c.textContent = list.getAttribute('data-msg-change'); c.href = r.fixed_ref; c.rel = 'noopener'; links.appendChild(c);
+    } else if (r.fixed_ref) li.appendChild(div('og-corr-text', r.fixed_ref));
+    li.appendChild(links);
+    list.appendChild(li);
+  }
+  function wireCorrStats(el) {
+    var loc = locale(el), n = function (x) { return (Number(x) || 0).toLocaleString(loc); };
+    rest('rpc/map_corrections_summary').then(function (s) {
+      if (!s || typeof s !== 'object') throw new Error('empty');
+      if (!Number(s.received)) { el.textContent = el.getAttribute('data-msg-none'); return; }
+      var line = el.getAttribute('data-msg-line').replace('{received}', n(s.received)).replace('{open}', n(s.open)).replace('{fixed}', n(s.fixed))
+        .replace('{notError}', n(s.not_an_error)).replace('{cannot}', n(s.cannot_fix)).replace('{historical}', n(s.historical))
+        .replace('{since}', s.since ? dayOf(el, s.since + 'T00:00:00Z') : '');
+      if (s.median_days_to_answer != null) line += ' ' + el.getAttribute('data-msg-median').replace('{days}', String(s.median_days_to_answer));
+      el.textContent = line;
+    }).catch(function () { el.textContent = el.getAttribute('data-msg-failed'); });
+  }
+  function wireCorrLog(list) {
+    rest('rpc/public_map_corrections?p_limit=200').then(function (rows) {
+      if (!Array.isArray(rows)) throw new Error('not a list');
+      if (!rows.length) { muted(list, list.getAttribute('data-msg-empty')); return; }
+      list.textContent = '';
+      rows.forEach(function (r) { corrItem(list, r, false); });
+    }).catch(function () { muted(list, list.getAttribute('data-msg-failed')); });
+  }
+  /* the receipts js/map-corrections.js keeps (its STORE_KEY — tests/community-next-checks.test.mjs holds the two equal) */
+  function wireCorrMine(list) {
+    var items = [];
+    try { var st = JSON.parse(localStorage.getItem('intmap_corrections') || 'null'); if (st && st.v === 1 && Array.isArray(st.items)) items = st.items.filter(function (i) { return i && /^[A-Za-z0-9_-]{43}$/.test(String(i.receipt || '')); }); } catch (_) { items = []; }
+    if (!items.length) { muted(list, list.getAttribute('data-msg-none')); return; }
+    restPost('rpc/map_correction_status', { p_receipts: items.slice(0, 100).map(function (i) { return i.receipt; }) }).then(function (rows) {
+      if (!Array.isArray(rows)) throw new Error('not a list');
+      list.textContent = '';
+      var seen = {};
+      rows.forEach(function (r) { seen[r.receipt_hash] = true; corrItem(list, r, true); });
+      items.forEach(function (i) { if (i.hash && !seen[i.hash]) corrItem(list, { status: 'gone', kind: i.what, place_label: i.place, lng: i.lng, lat: i.lat, year: i.year, created_at: i.at }, true); });
+      if (!list.children.length) muted(list, list.getAttribute('data-msg-none'));
+    }).catch(function () { muted(list, list.getAttribute('data-msg-failed')); });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     /* ② the language choice */
     document.addEventListener('click', function (e) {
@@ -182,5 +259,8 @@
     if (stats) wireStats(stats);
     var sup = document.getElementById('og-supporters');
     if (sup) wireSupporters(sup);
+    var cs = document.getElementById('og-corr-stats'); if (cs) wireCorrStats(cs);
+    var cl = document.getElementById('og-corr-log'); if (cl) wireCorrLog(cl);
+    var cm = document.getElementById('og-corr-mine'); if (cm) wireCorrMine(cm);
   });
 })();

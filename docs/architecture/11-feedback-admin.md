@@ -41,3 +41,32 @@
   同じアカウント・`noindex`）——状態（new / replied / closed / spam）とメモを付け、削除し、支援者を掲載する。
   保存期間は受信から 730 日、spam は 30 日（`purge_org_inquiries`・pg_cron）。ページの文は `scripts/org-pages-text.mjs`
   （en + jp）、生成と門は `scripts/org-pages.mjs`。営業の手引きは `docs/sales/`。
+- **地図の誤り報告（map corrections）**：読者が「地図のここが違う」を**地点つきで**報告し、運営者が地図の上で裁き、回答が
+  報告者に返り、直したものを公開する往復。
+  - **入口**：地図の右クリック（長押し）▸「ここの地図の誤りを報告」（`js/tool-panel.js`）、地点プロファイルのカードの下の
+    ボタン（`js/place-dossier.js`。地名・国・表示中レイヤーの行をそのまま渡す）、Atlas の `corrections.report`
+    （下書きを入れてカードを開く。**送るのは読者**）。カードは `js/map-corrections.js`（クリックで取得・起動経路に載らない）。
+  - **添付されるもの**：地点、ズーム、**そのときの地図の状態**（`MapState.hash()`＝共有リンクの断片。レイヤー・年・比較も含む。
+    上限を超えたら切らずに省く）、時計が過去なら**その年**。読者が選ぶのは誤りの種類（name / boundary / date / value /
+    position / missing / other）・レイヤー（表示中のレイヤーと基図）・本文・任意の出典 URL。
+  - **書き込み経路**：`reader-reports` の 4 つ目の kind `correction`。語彙・上限・検証規則は
+    `supabase/functions/_shared/correction-shape.js` の `checkCorrection` に 1 回だけ書き、カードは送信前に同じ関数を通す。
+    表 `map_corrections` に INSERT policy も grant も無い。**メールアドレスは求めない**。
+  - **回答の戻り方**：関数が 32 バイトの**受付番号**を作り、表には `sha256` の hex だけを書き、受付番号は 201 の本文で一度だけ
+    返す。端末は `localStorage` の `intmap_corrections` に保持し、`map_correction_status(receipts[])`（anon 可・受付番号を
+    持つ者に自分の行だけ・spam は「終了」と読める）で読む。ログイン中に送ったものは `my_map_corrections()` で全端末から読める。
+    設定 ▸ 情報とサポート ▸「地図の誤り報告」と Atlas の `corrections.mine` が一覧を出す。未回答の受付番号を持つ端末だけが
+    起動後の待機時に最大 12 時間に 1 回確かめ、回答が付いたら一度だけ知らせる（持たない端末の費用は localStorage の 1 回の読み取り）。
+  - **運営者のコンソール `admin-corrections.html`**（`admin.html`・`admin-inquiries.html` と同じアカウント・`noindex`）：
+    全報告を**世界地図の上の点**で並べ（`data/land-mask.png` を経緯度そのままの SVG に敷く）、状態で絞り、点を押すとその報告へ。
+    「読者の見た表示を IntMap で開く」は報告の断片をそのまま本番の地図で開く。半径 25 km 以内の他の報告を重複の候補として出す。
+    **歴史地図の年を持つ報告**には `node scripts/hist-fidelity.mjs --year <年> --in <範囲>` と
+    `.agents/rules/historical-verification.md` §2 の 5 問を出す（報告されたことは誤りであることの証明ではない）。
+    書けるのは状態・回答・変更内容・内部メモ・重複先・公開・公開用の地名だけで、読者の本文は誰も書き換えられない。
+    `resolved_at` は状態に従う（トリガー）。公開は回答のある「確認・修正・誤りなし・直せない」だけ（CHECK）。
+  - **公開の訂正記録 `corrections.html`**（`ja/corrections.html`。`scripts/org-pages.mjs` が生成し、組織向けページの
+    ナビゲーションに並ぶ）：報告のしかた・確かめ方・件数（`map_corrections_summary()`：受付・対応中・修正・誤りなし・
+    歴史の年について・回答までの日数の中央値）・公開した訂正（`public_map_corrections()`：運営者の要約・地点は約 100 m・
+    レイヤー・年。**報告者と本文は出さない**）・このブラウザの報告と回答。Atlas の `corrections.log` が同じものを返す。
+  - **保存期間**：spam は 30 日、公開しなかった回答済みは回答から 730 日、未回答と公開分は残す（`purge_map_corrections`・
+    pg_cron `map-corrections-purge`）。アカウントを削除すると、そのアカウントの報告は消える（`_owned_by_user_cols` が発見する）。

@@ -124,6 +124,7 @@ IntMapLang.define('en', { ui: {
       lblFeedback:"Feedback & bug report",
       sendFeedbackBtn:"Send feedback",
       reportBugBtn:"Report a bug",
+      myMapReportsBtn:"My map reports",
       lblUsageCounts:"Anonymous usage statistics",
       usageCountsOn:"On (default) — send anonymous counts",
       usageCountsOff:"Off — send nothing",

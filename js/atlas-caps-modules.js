@@ -4,6 +4,7 @@
 import caps_account from './atlas-cap-account.js';
 import caps_attach from './atlas-cap-attach.js';
 import caps_chart from './atlas-cap-chart.js';
+import caps_corrections from './atlas-cap-corrections.js';
 import caps_data from './atlas-cap-data.js';
 import caps_dialog from './atlas-cap-dialog.js';
 import caps_layers from './atlas-cap-layers.js';
@@ -28,6 +29,7 @@ export const CAPABILITY_MODULES = {
   "account": caps_account,
   "attach": caps_attach,
   "chart": caps_chart,
+  "corrections": caps_corrections,
   "data": caps_data,
   "dialog": caps_dialog,
   "layers": caps_layers,

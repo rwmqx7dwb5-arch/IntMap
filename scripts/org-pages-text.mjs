@@ -22,7 +22,7 @@ const P = (en, jp) => [en, jp];
 /* the organisation pages, in the order their navigation shows them, each with the key of its name in TEXT.nav —
    the one list: scripts/org-pages.mjs writes exactly these pages and its navigation is built from it, and
    scripts/landing.mjs reads it to link to them from every page it writes. */
-export const ORG_NAV = [['for-newsrooms', 'newsrooms'], ['for-schools', 'schools'], ['for-research', 'research'], ['support', 'support'], ['contact', 'contact']];
+export const ORG_NAV = [['for-newsrooms', 'newsrooms'], ['for-schools', 'schools'], ['for-research', 'research'], ['support', 'support'], ['corrections', 'corrections'], ['contact', 'contact']];
 
 export const TEXT = {
   nav: {
@@ -30,6 +30,7 @@ export const TEXT = {
     schools: P('Schools', '学校'),
     research: P('Research & NGOs', '研究・NGO'),
     support: P('Support', '支援'),
+    corrections: P('Map corrections', '地図の訂正'),
     contact: P('Contact', 'お問い合わせ'),
     open: P('Open the map', '地図を開く'),
     lang: P('日本語', 'English'),
@@ -302,5 +303,73 @@ export const TEXT = {
     ask: P('Send us the name to show and the month you gave. We check the gift by hand, then add you. You can ask to be removed at any time.',
       '表示するお名前と寄付された月をお送りください。寄付を手作業で確認したうえで掲載します。掲載はいつでも取り下げられます。'),
     askBtn: P('Ask to be named', '掲載を申し込む'),
+  },
+  /* (community-next) the public log of map corrections — corrections.html. The live parts (the counts, the log, the
+     reader's own reports on this device) are js/org-page.js; every sentence it shows is here, in data-msg-* attributes. */
+  corrections: {
+    title: P('Map corrections — what readers reported, and what was fixed', '地図の訂正 — 読者からの報告と、直したもの'),
+    description: P('Readers report what is wrong on IntMap\'s maps — a name, a border, a date on a historical map. Every report is checked and answered; this is the public record of what was found and changed.',
+      'IntMap の地図の誤り（地名・境界・歴史地図の年）を読者が報告し、運営者が確かめて回答します。見つかったことと直したことの公開記録です。'),
+    h1: P('A map is only as right as the people who check it.', '地図は、確かめる人がいるだけ正しくなる。'),
+    lede: P('IntMap draws {layers} layers and historical borders back to {floorBC}. Automated checks catch broken shapes; they cannot tell whether a province existed in a given year or a town has the right name. Readers who know a place can. Here is what they told us, and what we did.',
+      'IntMap は {layers} のレイヤーと、{floorBC}までの歴史の境界を描いています。自動の検査は壊れた形を見つけられますが、ある年にその県があったか、町の名前が正しいかは判断できません。その土地を知る読者にはできます。ここには読者が教えてくれたことと、私たちがしたことを載せています。'),
+    howH: P('How to report an error', '誤りの報告のしかた'),
+    how: [
+      P('Point at it', '場所を指す'),
+      P('In the map, right-click (or long-press) the place and choose «Report a map error here», or use the button at the bottom of a place profile card. You can also ask Atlas.',
+        '地図でその場所を右クリック（長押し）して「ここの地図の誤りを報告」を選ぶか、地点プロファイルのカードの下のボタンから。Atlas に頼むこともできます。'),
+      P('Say what is wrong', '何が違うかを書く'),
+      P('Choose the kind of error and the layer, write what it should be, and give a source if you have one. The point, the map view and, on a historical map, the year are attached for you.',
+        '誤りの種類とレイヤーを選び、正しくはどうかを書き、あれば出典を添えます。地点・地図の表示・（歴史地図なら）年は自動で添付されます。'),
+      P('Get the answer', '回答を受け取る'),
+      P('No e-mail or account is needed. A receipt stays on your device, and the answer appears in Settings ▸ My map reports and on this page under «Your reports».',
+        'メールアドレスもアカウントも不要です。受付番号があなたの端末に残り、回答は「設定 ▸ 地図の誤り報告」と、このページの「あなたの報告」に表示されます。'),
+    ],
+    checkH: P('How a report is checked', '報告の確かめ方'),
+    check: [
+      P('Opened as you saw it', 'あなたが見た地図のまま開く'),
+      P('Each report carries the exact view it was made in — layers, year and position — so it is judged on the map you saw, not on a reconstruction.',
+        '報告には、そのときの表示（レイヤー・年・位置）がそのまま付いています。再現ではなく、あなたが見た地図で判断します。'),
+      P('History is checked as history', '歴史は歴史として確かめる'),
+      P('A report about a historical year is checked against when the unit was created and abolished, not only against what a data source says — a source can be wrong too.',
+        '歴史地図の年についての報告は、データ元の記述だけでなく、その単位がいつ設置・廃止されたかに照らして確かめます。データ元が間違っていることもあります。'),
+      P('Fixed at the cause', '原因から直す'),
+      P('When a report is right, the rule that produced the error is fixed, so the same kind of mistake elsewhere is fixed with it — not only the one place reported.',
+        '報告が正しければ、誤りを生んだ規則の側を直します。報告された一か所だけでなく、同じ種類の誤りをまとめて直すためです。'),
+    ],
+    statsH: P('The record so far', 'これまでの記録'),
+    statsLoading: P('Reading the record…', '記録を読み込んでいます…'),
+    statsFail: P('The record could not be read just now.', '記録をいま読み込めませんでした。'),
+    statsNone: P('No report has arrived yet.', '報告はまだ届いていません。'),
+    statsLine: P('{received} reports since {since}: {open} being checked, {fixed} fixed, {notError} checked and found correct, {cannot} confirmed but not yet fixable, {historical} about a historical year.',
+      '{since}以降の報告 {received} 件: 確認中 {open}、修正 {fixed}、確認の結果誤りなし {notError}、誤りと確認・まだ直せない {cannot}、歴史地図の年について {historical}。'),
+    statsMedian: P('Median time to an answer over the last year: {days} days.', '過去 1 年の回答までの日数（中央値）: {days} 日。'),
+    logH: P('Published corrections', '公開した訂正'),
+    logNote: P('Each entry is the operator\'s own summary, published with the answer. The reporter\'s name and words are never shown here.',
+      '各項目は運営者が回答とともに公開した要約です。報告者の名前や文章はここには載せません。'),
+    logLoading: P('Reading the log…', '記録を読み込んでいます…'),
+    logEmpty: P('Nothing has been published yet.', '公開した訂正はまだありません。'),
+    logFail: P('The log could not be read just now.', '記録をいま読み込めませんでした。'),
+    logOpen: P('See it on the map', '地図で見る'),
+    logChange: P('What changed', '変更内容'),
+    mineH: P('Your reports', 'あなたの報告'),
+    mineNote: P('Reports sent from this browser, read with the receipts it keeps. Nothing is shown to anyone else.',
+      'このブラウザから送った報告を、保存された受付番号で読み込みます。ほかの人には表示されません。'),
+    mineNone: P('This browser has not sent a report.', 'このブラウザから送った報告はありません。'),
+    mineFail: P('Your reports could not be read just now.', 'あなたの報告をいま読み込めませんでした。'),
+    mineGone: P('No longer on record', '記録がありません'),
+    kinds: {
+      name: P('Name', '名前'), boundary: P('Border or shape', '境界・形'), date: P('Years shown', '存在した年'), value: P('Layer value', 'レイヤーの値'),
+      position: P('Position', '位置'), missing: P('Missing', '欠落'), other: P('Other', 'その他'),
+    },
+    statuses: {
+      new: P('Received', '受付済み'), confirmed: P('Confirmed — fix on the way', '誤りと確認・修正予定'), fixed: P('Fixed', '修正済み'),
+      not_an_error: P('Checked — the map is right', '確認の結果、誤りではありません'), duplicate: P('Already reported', '既に報告済み'),
+      cannot_fix: P('Confirmed — cannot be fixed yet', '誤りと確認・今は直せません'), closed: P('Closed — no further action', '対応を終了'),
+    },
+    yearBC: P('{y} BC', '紀元前{y}年'),
+    yearAD: P('{y}', '{y}年'),
+    ctaH: P('Seen something wrong?', '誤りを見つけたら'),
+    cta: P('Open the map, point at it, and tell us. It takes a minute and needs no account.', '地図を開いて、その場所を指して教えてください。1 分で済み、アカウントは不要です。'),
   },
 };

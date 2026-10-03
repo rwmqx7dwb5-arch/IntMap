@@ -12,6 +12,8 @@
  *    for-research.html    research groups and NGOs: own data, citing, embedding, adding a dataset
  *    contact.html         the enquiry form → reader-reports (kind 'inquiry') → public.org_inquiries
  *    support.html         what running IntMap costs, this month's AI use, giving, and the supporters
+ *    corrections.html     (community-next) the public log of map corrections: how to report, how a report is
+ *                         checked, the counts, what was published, and this browser's own reports and answers
  *
  *  ══ WHY GENERATED (the same reasons as scripts/landing.mjs, whose facts() this file reuses) ═══════
  *    · the PROSE        → scripts/org-pages-text.mjs (en + jp, one place)
@@ -29,6 +31,7 @@
  *  plain script from this origin: these pages carry no inline script, so script-src is 'self' alone.
  *
  *    admin-inquiries.html (English, noindex) the operator's console for the enquiries and the supporters list
+ *    admin-corrections.html (English, noindex) the operator's console for map corrections — on a map (community-next)
  *
  *    node scripts/org-pages.mjs --write    regenerate the eleven pages
  *    node scripts/org-pages.mjs --check    exit 1 if any differs from what --write would produce
@@ -44,6 +47,7 @@ import { SHOWCASE, CAPTURED } from '../js/showcase.js';
 import { EMBED_SIZES } from '../js/embed-mode.js';
 import { PLANS, DEFAULT_PLAN } from '../supabase/functions/_shared/plans.js';
 import { INQUIRY, INQUIRY_LIMITS } from '../supabase/functions/_shared/inquiry-shape.js';
+import { CORRECTION } from '../supabase/functions/_shared/correction-shape.js';
 import { withInlineHashes } from './csp.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -122,7 +126,8 @@ function cspMeta({ webFonts, backend }) {
     "script-src 'self'",
   ].join('; ') + '">';
 }
-const TALKS = new Set(['contact', 'support']);
+/* the pages that talk to the backend — the only ones whose connect-src names it (tests/sales-channels-checks.test.mjs ④) */
+export const TALKS = new Set(['contact', 'support', 'corrections']);
 const textKey = (page) => page.replace(/^for-/, '');
 
 function head(F, L, page) {
@@ -440,8 +445,79 @@ function supportBody(F, L) {
 </main>`;
 }
 
+/* ── corrections (community-next) ─────────────────────────────────────────────────────────────
+   The words a live value needs (kinds, statuses, the year's spelling) travel as data-* JSON on the element that shows
+   it, so js/org-page.js holds no words; the vocabulary is _shared/correction-shape.js and every word must have a label. */
+function correctionsBody(F, L) {
+  const T = TEXT.corrections, k = L.i, W = words(F, L);
+  for (const v of CORRECTION.kinds) if (!T.kinds[v]) throw new Error('org-pages: no label for the correction kind «' + v + '»');
+  for (const v of CORRECTION.statuses.filter((x) => x !== 'spam').concat('closed')) if (!T.statuses[v]) throw new Error('org-pages: no label for the correction status «' + v + '»');
+  const labels = (o) => esc(JSON.stringify(Object.fromEntries(Object.entries(o).map(([key, v]) => [key, v[k]]))));
+  const common = `data-lang="${L.key}" data-kinds="${labels(T.kinds)}" data-statuses="${labels(T.statuses)}" data-year-bc="${esc(T.yearBC[k])}" data-year-ad="${esc(T.yearAD[k])}"`;
+  return `<main class="lp-main">
+  <section class="lp-hero lp-hero-t">
+    <div class="lp-hero-text">
+      <h1>${esc(T.h1[k])}</h1>
+      <p class="lp-lede">${esc(fill(T.lede[k], W))}</p>
+      <div class="lp-cta">
+        <a class="lp-btn" href="${L.up}index.html">${esc(TEXT.nav.open[k])}</a>
+        <a class="lp-btn lp-btn-2" href="#log">${esc(T.logH[k])}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-sec" id="how">
+    <h2>${esc(T.howH[k])}</h2>
+    <ol class="lp-steps">
+      ${steps(T.how, L, W)}
+    </ol>
+  </section>
+
+  <section class="lp-sec" id="check">
+    <h2>${esc(T.checkH[k])}</h2>
+    <div class="lp-grid3">
+      ${tiles(T.check, L, W)}
+    </div>
+  </section>
+
+  <section class="lp-sec" id="record">
+    <div class="lp-tile og-stats">
+      <h3>${esc(T.statsH[k])}</h3>
+      <p id="og-corr-stats" ${common} data-msg-loading="${esc(T.statsLoading[k])}" data-msg-failed="${esc(T.statsFail[k])}"
+        data-msg-none="${esc(T.statsNone[k])}" data-msg-line="${esc(T.statsLine[k])}" data-msg-median="${esc(T.statsMedian[k])}">${esc(T.statsLoading[k])}</p>
+    </div>
+  </section>
+
+  <section class="lp-sec" id="mine">
+    <h2>${esc(T.mineH[k])}</h2>
+    <p class="lp-sub">${esc(T.mineNote[k])}</p>
+    <ul class="og-corr" id="og-corr-mine" ${common} data-msg-none="${esc(T.mineNone[k])}" data-msg-failed="${esc(T.mineFail[k])}" data-msg-gone="${esc(T.mineGone[k])}"
+      data-msg-open="${esc(T.logOpen[k])}" data-msg-change="${esc(T.logChange[k])}" data-app="${L.up}index.html">
+      <li class="og-muted">${esc(T.logLoading[k])}</li>
+    </ul>
+  </section>
+
+  <section class="lp-sec" id="log">
+    <h2>${esc(T.logH[k])}</h2>
+    <p class="lp-sub">${esc(T.logNote[k])}</p>
+    <ul class="og-corr" id="og-corr-log" ${common} data-msg-empty="${esc(T.logEmpty[k])}" data-msg-failed="${esc(T.logFail[k])}"
+      data-msg-open="${esc(T.logOpen[k])}" data-msg-change="${esc(T.logChange[k])}" data-app="${L.up}index.html">
+      <li class="og-muted">${esc(T.logLoading[k])}</li>
+    </ul>
+  </section>
+
+  <section class="lp-sec" id="talk">
+    <div class="lp-support">
+      <h2>${esc(T.ctaH[k])}</h2>
+      <p>${esc(T.cta[k])}</p>
+      <a class="lp-btn" href="${L.up}index.html">${esc(TEXT.nav.open[k])}</a>
+    </div>
+  </section>
+</main>`;
+}
+
 export function renderPage(F, page, L) {
-  const body = page === 'contact' ? contactBody(F, L) : page === 'support' ? supportBody(F, L) : introBody(F, L, page);
+  const body = page === 'contact' ? contactBody(F, L) : page === 'support' ? supportBody(F, L) : page === 'corrections' ? correctionsBody(F, L) : introBody(F, L, page);
   return withInlineHashes(`${head(F, L, page)}
 <body class="lp og-page" data-org-page="${page}">
 ${topbar(L, page)}
@@ -504,10 +580,70 @@ ${'<meta http-equiv="Content-Security-Policy" content="' + ["default-src 'self'"
 `);
 }
 
+/* ── the corrections console (admin-corrections.html, community-next) ─────────────────────────
+   Generated here for the enquiries console's reason (the backend address and key from their owner), and so the
+   vocabulary it offers is _shared/correction-shape.js's, written into data-* (js/admin-corrections.js restates none). */
+export const ADMIN_CORRECTIONS_PAGE = 'admin-corrections.html';
+export function renderAdminCorrections(F) {
+  const filters = [['open', 'Open'], ['new', 'New'], ['confirmed', 'Confirmed'], ['answered', 'Answered'], ['historical', 'Historical'], ['published', 'Published'], ['spam', 'Spam'], ['all', 'All']];
+  return withInlineHashes(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+${'<meta http-equiv="Content-Security-Policy" content="' + ["default-src 'self'", "base-uri 'self'", "object-src 'none'", "form-action 'self'", "frame-src 'none'",
+    "connect-src 'self' " + F.backend, "img-src 'self' data:", "style-src 'self'", "font-src 'self' data:", "script-src 'self'"].join('; ') + '">'}
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- GENERATED by scripts/org-pages.mjs — the behaviour is js/admin-corrections.js, the look css/admin-inquiries.css + css/admin-corrections.css. -->
+<title>IntMap · Map corrections</title>
+<meta name="intmap-backend" content="${esc(F.backend)}">
+<meta name="intmap-anon-key" content="${esc(F.anonKey)}">
+<link rel="icon" href="./IntMap.Icon.png">
+<link rel="stylesheet" href="./css/admin-inquiries.css">
+<link rel="stylesheet" href="./css/admin-corrections.css">
+<script src="vendor/supabase-js.js"></script>
+<script src="./js/safe-html.js"></script>
+<script src="./js/admin-corrections.js"></script>
+</head>
+<body>
+<header>
+  <h1>IntMap · Map corrections</h1>
+  <div class="row"><a href="./admin.html">Admin console</a><a href="./admin-inquiries.html">Enquiries</a><a href="./corrections.html">Public log</a><span class="who" id="who"></span><button class="btn sec sm" id="mc-signout" type="button" data-effect="private">Sign out</button></div>
+</header>
+<div id="mc-view-auth" class="auth">
+  <h2>Sign in as an administrator</h2>
+  <input id="mc-auth-email" type="email" autocomplete="username" placeholder="Email">
+  <input id="mc-auth-pass" data-effect="private" type="password" autocomplete="current-password" placeholder="Password">
+  <button class="btn" id="mc-auth-submit" type="button" data-effect="private">Sign in</button>
+  <p id="mc-auth-msg"></p>
+</div>
+<main id="mc-view-admin" class="mc hide" data-statuses="${CORRECTION.statuses.join(',')}" data-open="${CORRECTION.open.join(',')}" data-publishable="${CORRECTION.publishable.join(',')}">
+  <div class="tabs">
+    ${filters.map(([f, label]) => '<button class="tab" type="button" data-filter="' + f + '" data-effect="none">' + label + '</button>').join('\n    ')}
+  </div>
+  <p class="mc-summary" id="mc-summary"></p>
+  <div class="mc-grid">
+    <div class="mc-mapwrap">
+      <svg id="mc-map" role="img" aria-label="Reports on a world map" xmlns="http://www.w3.org/2000/svg" viewBox="-180 -90 360 180"></svg>
+      <div class="mc-legend"><span><i class="k-new"></i>new</span><span><i class="k-confirmed"></i>confirmed / cannot fix</span><span><i class="k-fixed"></i>fixed</span><span><i class="k-closed"></i>not an error / duplicate</span><span><i class="k-spam"></i>spam</span>
+        <button class="btn sec sm" id="mc-world" type="button" data-effect="none">Whole world</button><span>Land: Natural Earth (public domain)</span></div>
+    </div>
+    <div id="mc-list"></div>
+  </div>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
+`);
+}
+export const ADMIN_PAGES = [ADMIN_PAGE, ADMIN_CORRECTIONS_PAGE];
+
 export function outputs(F = orgFacts()) {
   const out = {};
   for (const L of LANGS) for (const page of PAGES) out[pagePath(page, L)] = renderPage(F, page, L);
   out[ADMIN_PAGE] = renderAdmin(F);
+  out[ADMIN_CORRECTIONS_PAGE] = renderAdminCorrections(F);
   return out;
 }
 
