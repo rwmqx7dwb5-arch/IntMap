@@ -68,7 +68,7 @@ from unnest(array[
   -- usage-count Edge Function writes it through a SECURITY DEFINER RPC.
   'usage_counts',
   -- (atlas-os) the reader's Atlas investigation notebook on their account, written only when they turn sync
-  -- on. Owner-only through RLS (supabase/tests/18_…).
+  -- on. Owner-only through RLS (supabase/tests/22_…).
   'atlas_notebook_entries'
 ]) as t;                                                    -- 40 assertions
 

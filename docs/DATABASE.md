@@ -358,7 +358,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
   `abandoned` and claimed again; a superseded attempt can neither write nor renew; an expired answer is
   never returned and is swept; the owner reads only their own rows; no client role may call the RPCs,
   insert or update.
-- **`18_atlas_notebook_test.sql`** *(atlas-os)* — the notebook on the account: RLS on, anon has nothing; the owner
+- **`22_atlas_notebook_test.sql`** *(atlas-os)* — the notebook on the account: RLS on, anon has nothing; the owner
   inserts, reads, updates and deletes their own entries and **cannot insert under another account** (WITH CHECK →
   DENIED); another account reads none and changes none; a payload over 1 MiB, a malformed id and an empty question
   are refused (23514); the 101st MiB of one account is refused as `notebook-account-full` and the refused batch

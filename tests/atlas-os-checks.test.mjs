@@ -4,7 +4,7 @@
  *  js/atlas-notebook-store.js (the data), js/atlas-notebook.js (the page), js/atlas-cap-notebook.js
  *  (what Atlas can do with it), js/atlas-state.js (onTurnEnd / captureSections / restoreSections) and
  *  js/atlas-query.js (the answered query, announced as data). The account copy is
- *  supabase/migrations/20261003090000_atlas_notebook.sql, proved by supabase/tests/18_atlas_notebook_test.sql.
+ *  supabase/migrations/20261003120000_atlas_notebook.sql, proved by supabase/tests/22_atlas_notebook_test.sql.
  *
  *  Every check here runs the shipped code: the real registry decides what a replay may re-run, the real
  *  state ledger restores and reads back, and the real query engine answers the same question at two
@@ -268,7 +268,7 @@ test('atlas-os ⑪: the console mounts the notebook, hands it the citations, and
     assert.ok(c && c.legacy, id + ' is registered with a dispatch spelling');
   });
   assert.equal(CAPS.resolve('notebookCompare').id, 'notebook.compare');
-  assert.match(read('supabase/migrations/20261003090000_atlas_notebook.sql'), /with check \(user_id = \(select auth\.uid\(\)\)\)/);
+  assert.match(read('supabase/migrations/20261003120000_atlas_notebook.sql'), /with check \(user_id = \(select auth\.uid\(\)\)\)/);
   assert.ok(!/`/.test(read('js/atlas-notebook.js').split('export const NOTEBOOK_CSS')[1]), 'no back-tick in the notebook stylesheet (CONSTITUTION §2)');
 });
 
