@@ -182,7 +182,7 @@ function liftAdapterMethods(src, idValue, names) {
   const helpers = new Map();
   const reach = (t) => {
     for (const [name, d] of decls) {
-      if (PARAMS.has(name) || helpers.has(name) || !new RegExp(`(^|[^\\w$.])${name.replace(/\$/g, '\\$')}\\s*\\(`).test(t)) continue;
+      if (PARAMS.has(name) || helpers.has(name) || !new RegExp(`(^|[^\\w$.])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\(`).test(t)) continue;
       helpers.set(name, src.slice(d.start, d.end));
       reach(helpers.get(name));
     }

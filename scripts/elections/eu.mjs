@@ -125,8 +125,9 @@ function parseCsv(text, sep = ';') {
 }
 
 const decodeEntities = (s) => String(s == null ? '' : s)
-  .replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&')
-  .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').trim();
+  .replace(/&#39;/g, "'").replace(/&quot;/g, '"')
+  .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ')
+  .replace(/&amp;/g, '&').trim();   /* &amp; LAST — decoded first, «&amp;lt;» would become «<» (double unescaping) */
 
 /** One id per group, derived from the acronym the Parliament prints in English. ⚠ NOT from the
  *  Parliament's own group id: those are term-scoped (GP0001 is the Socialist Group in 1979 and

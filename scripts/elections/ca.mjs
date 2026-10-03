@@ -481,7 +481,7 @@ async function pollingDays(ctx) {
   const html = decodeText(await ctx.get(TURNOUT));
   const days = new Map();
   for (const tr of html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
-    const cells = [...tr[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(c => unentity(c[1].replace(/<[^>]*>/g, '')).trim());
+    const cells = [...tr[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(c => { let t = c[1], p; do { p = t; t = t.replace(/<[^>]*>/g, ''); } while (t !== p); return unentity(t).trim(); });   /* strip until no tag is left (a removed tag can join two halves into a new one) */
     if (!cells.length) continue;
     /* the last date in the cell is polling day: the nineteenth-century rows are a range of weeks */
     const m = [...cells[0].matchAll(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/g)].pop();
