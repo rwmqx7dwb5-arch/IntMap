@@ -79,6 +79,9 @@ EU のパックを組み直したら、25 か国の `native` が全部英語に�
 
 - `node --test tests/companies-elections-live-checks.test.mjs` — 15 本（下の 12 本＋引き継ぎの出所・経度の弧・Atlas の登録）（計画の順序／宣言の両方向／法定期限の算術〈2 月 31 日を作らない〉／分割の拒否と国境の許容／**コミット済みの幾何で 1994 年のドイツを 1979 年に置くと拒まれ、1979 年の版は通る**／列挙／受領証／validate が受領証の欠けを拒む／probe の識別子／workflow の配線と入力の受け渡し／凡例とパネル）
 - `check:elections`（20 秒 → 版と国の組で記憶して 6 秒）・`check:companies`・`node scripts/upstream-liveness.mjs --check`・`tests/upstream-liveness-checks.test.mjs`
+- `tests/history-elections-checks.test.mjs` #R588 ⑤ の「整った最小の束」に、この作業で必須にした欄（政体の `pack`、選挙の `fetchedAt`・`fetchedFrom`・`up`）を足した（足さないと整った束が拒まれ、⑤j・⑤l も同じ理由で落ちていた）。
+- `check:surface` の基準を `--update`: 新しい読みは **`window.IntMapElections` 3 件**（`js/atlas-cap-layers.js` の選挙 3 能力。選挙レイヤーは遅延で、`js/elections.js` はファクトリしか export せず実体はレイヤーが読み込まれたときに出来るので、`js/layer-home.js` と同じく公開された握りを読む）と **`window.IntMapSafe` 1 件**（`js/elections.js` の HTML の符号化。`js/safe-html.js` は export を持たない古典的な読み込みで、全員がこの名前で読む）。
+- `check:perf` の `atlas-console` 非同期チャンクが 1,140.8 kB（天井 1,134.1 kB・帯 5.7 kB）: 選挙を Atlas から動かす 3 能力（`js/atlas-cap-layers.js`）の分で、起動経路には載らない。⚠ `node scripts/perf-budget.mjs --update` は origin/main が 4 commit 先にある（CI が測る木ではない）として拒んだので、天井は origin/main に載せ直してから上げる。
 
 ## 5. 残っていること
 
