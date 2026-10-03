@@ -116,6 +116,7 @@ export const LAZY_REGISTRY = Object.freeze({
   routingTraffic: { publishes: 'IntMapRouteTraffic', load: () => import('./routing-traffic.js'), self: true },
   newsEvents: { publishes: 'IntMapNewsEvents', load: () => import('./news-events.js'), mount: (IM_HOST, m) => { window.IntMapNewsEvents=m.newsEvents(IM_HOST); } },
   photoGeo: { publishes: 'IntMapPhotoGeo', load: () => import('./photo-geo.js'), mount: (IM_HOST, m) => { window.IntMapPhotoGeo=m.photoGeo(IM_HOST); } },
+  myMap: { publishes: 'IntMapMyMap', load: () => import('./my-map.js'), mount: (IM_HOST, m) => { window.IntMapMyMap=m.myMap(IM_HOST); } },
   shakeMap: { publishes: 'IntMapShakeMap', load: () => import('./shakemap.js'), mount: (IM_HOST, m) => { window.IntMapShakeMap=m.shakeMap(IM_HOST); } },
   radiationLayer: { publishes: 'IntMapRadiationObs', load: () => import('./radiation-layer.js'), mount: (IM_HOST, m) => { window.IntMapRadiationObs=m.radiationLayer(IM_HOST); } },
   newsIntel: { publishes: '__imNewsIntel', load: () => import('./news-intel.js'), mount: (IM_HOST, m) => { m.newsIntel(IM_HOST); }, also: ['newsEvents'] },

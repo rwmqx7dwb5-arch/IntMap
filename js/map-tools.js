@@ -1240,13 +1240,15 @@ export function objectList(HOST){
           focus:()=>{ if(p.geo) fitFeats([{geometry:p.geo}]); }, rename:v=>{ labels[pid]=v; },
           setColor:col=>{ p.color=col; try{ HP.repaint(); }catch(_){} },
           remove:()=>{ try{ HP.remove(pid); }catch(_){} } }); }); }catch(_){}
+      /* (map-next) the features of the reader's own map on show — js/my-map.js hands over its own entries (focus, rename, recolour, delete act on the map document) */
+      try{ const MM=window.IntMapMyMap; if(MM&&MM.objects) MM.objects().forEach(o=>out.push(o)); }catch(_){}
       try{ const OT=window.IntMapOutline, cur=OT&&OT.current&&OT.current(); if(cur) out.push({ id:'outline', kind:'outline', dot:'#0a84ff',
         name:labels.outline||cur.name||OL('Boundary outline','行政界アウトライン','Grenzumriss','Контур границы','Contorno'),
         focus:()=>{ try{ OT.focus&&OT.focus(); }catch(_){} }, rename:v=>{ labels.outline=v; }, remove:()=>{ try{ OT.clear(); }catch(_){} } }); }catch(_){}
       return out; }
     function count(){ try{ return collect().length; }catch(_){ return 0; } }
-    const ICON={ pin:icon('pin'), radius:icon('radius'), annot:icon('pencil'), poly:icon('polygon'), outline:icon('square'), upload:icon('folder'), route:icon('compass'), iso:icon('target') };   /* (icon-system) one glyph per object kind, from js/icons.js */
-    function kindLbl(k){ return ({ pin:OL('Pins','ピン','Pins','Метки','Pines'), radius:OL('Radius circles','半径円','Radien','Радиусы','Radios'), annot:OL('Drawings','図形','Zeichnungen','Фигуры','Dibujos'), poly:OL('Polygons','ポリゴン','Polygone','Полигоны','Polígonos'), outline:OL('Boundary outline','行政界アウトライン','Grenzumriss','Контур границы','Contorno'), upload:OL('Uploaded data','アップロードデータ','Uploads','Загрузки','Cargas'), route:OL('Route','経路','Route','Маршрут','Ruta'), iso:OL('Reachable area','到達圏','Erreichbarkeit','Доступность','Alcanzable') })[k]||k; }
+    const ICON={ pin:icon('pin'), radius:icon('radius'), annot:icon('pencil'), poly:icon('polygon'), outline:icon('square'), upload:icon('folder'), route:icon('compass'), iso:icon('target'), mymap:icon('map') };   /* (icon-system) one glyph per object kind, from js/icons.js */
+    function kindLbl(k){ return ({ pin:OL('Pins','ピン','Pins','Метки','Pines'), radius:OL('Radius circles','半径円','Radien','Радиусы','Radios'), annot:OL('Drawings','図形','Zeichnungen','Фигуры','Dibujos'), poly:OL('Polygons','ポリゴン','Polygone','Полигоны','Polígonos'), outline:OL('Boundary outline','行政界アウトライン','Grenzumriss','Контур границы','Contorno'), upload:OL('Uploaded data','アップロードデータ','Uploads','Загрузки','Cargas'), route:OL('Route','経路','Route','Маршрут','Ruta'), iso:OL('Reachable area','到達圏','Erreichbarkeit','Доступность','Alcanzable'), mymap:OL('My map','マイマップ') })[k]||k; }
     let _objs=[];
     /* ⚠⚠ (#R293) 「オブジェクト一覧ポップアップは、オブジェクトの数がゼロになったら自動的に消えるように」
        「になったら」 is a TRANSITION, so this closes on the edge — the panel had objects and now has
@@ -1257,10 +1259,12 @@ export function objectList(HOST){
     function renderList(){ if(!panel) return; const body=panel.querySelector('.iol-body'); if(!body) return;
       _objs=collect();
       if(!_objs.length&&_had>0&&panel.style.display!=='none'){ _had=0; close(); return; }
-      _had=_objs.length; const order=['pin','radius','annot','poly','outline','upload','route','iso']; const groups={}; _objs.forEach(o=>{ (groups[o.kind]=groups[o.kind]||[]).push(o); });   /* (#R120) + poly/outline */
+      _had=_objs.length; const order=['mymap','pin','radius','annot','poly','outline','upload','route','iso']; const groups={}; _objs.forEach(o=>{ (groups[o.kind]=groups[o.kind]||[]).push(o); });
+      /* (map-next) a kind collect() produced and `order` does not name was left out of the list in silence — it is listed after the named ones */
+      Object.keys(groups).forEach(k=>{ if(order.indexOf(k)<0) order.push(k); });   /* (#R120) + poly/outline */
       if(!_objs.length){ body.innerHTML='<div style="color:var(--text-muted);font-size:12px;padding:14px 4px;line-height:1.6;">'+OL('No objects yet. Drop a pin, draw, add a radius, upload GeoJSON, or make a route — they all show up here to manage in one place.','まだオブジェクトがありません。ピン・図形・半径・GeoJSON・経路を作ると、ここで一括管理できます。','Noch keine Objekte.','Пока нет объектов.','Aún no hay objetos.')+'</div>'; return; }
       let h=''; order.forEach(k=>{ const g=groups[k]; if(!g||!g.length) return;
-        h+='<div class="iol-grp"><span>'+ICON[k]+' '+esc(kindLbl(k))+'</span><span style="color:var(--text-muted);font-weight:600;">'+g.length+'</span></div>';
+        h+='<div class="iol-grp"><span>'+(ICON[k]||'')+' '+esc(kindLbl(k))+'</span><span style="color:var(--text-muted);font-weight:600;">'+g.length+'</span></div>';
         g.forEach(o=>{ const i=_objs.indexOf(o);
           h+='<div class="iol-row" data-i="'+i+'">'
             +'<span class="iol-dot" style="background:'+esc(o.dot||'#888')+';"></span>'
