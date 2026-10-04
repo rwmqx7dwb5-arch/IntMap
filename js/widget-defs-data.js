@@ -485,6 +485,26 @@ window.IntMapWidgetDefsData = (function () {
       return cs ? Object.keys(cs).map(function (k) { return Object.assign({ cc: k }, cs[k]); }) : [];
     } catch (e) { return []; }
   }
+  /* ⚠ (widget-watch-unify) ONE ROW FOR ONE CODE, WHICHEVER ISO FORM IT ARRIVES IN. The rows are keyed by the
+     ISO alpha-3 `code` (js/countries-ui.js), while a card's config may hold the alpha-2 its default and the
+     language table (DEF_CC) give — 'US', 'JP'. Matching only `r.cc === cc` found no row for any alpha-2, so a
+     card on its default country showed no name, no population and no warnings. */
+  function countryRow(cc) {
+    var k = String(cc || '').toUpperCase();
+    if (!k) return null;
+    var rows = countryRows();
+    return rows.find(function (r) { return r.cc === k; }) || rows.find(function (r) { return r.a2 && String(r.a2).toUpperCase() === k; }) || null;
+  }
+  /* ⚠ (widget-watch-unify) THE PICKER OFFERS WHAT THE CONFIG TYPE KEEPS. A `country` field is ISO alpha-2
+     (js/widget-store.js validateConfig), and the pickers offered the rows' alpha-3 `code` — MEASURED by
+     evaluating validateConfig: choosing Japan stored 'JPN', which it replaced with the default 'US', so no
+     country a reader chose in the Country, Next-holiday or Country-watch card was ever kept. One list for
+     all three, valued by alpha-2 (a row Natural Earth gives no alpha-2 cannot be held by the field). */
+  function countryOptions() {
+    return countryRows().filter(function (r) { return /^[A-Z]{2}$/.test(String(r.a2 || '').toUpperCase()); })
+      .map(function (r) { var a2 = String(r.a2).toUpperCase(); return { value: a2, label: WC.countryName(a2, r.nameEn || r.cc) }; })
+      .sort(function (a, b) { return a.label.localeCompare(b.label); });
+  }
   WC.define({
     id: 'world.country', family: 'world', variant: 'random', category: 'world', icon: 'flag',
     legacyIds: ['country'], multi: true,
@@ -501,7 +521,7 @@ window.IntMapWidgetDefsData = (function () {
           { value: 'fixed', label: L('A fixed country', '固定の国', 'Ein festes Land', 'Фиксированная страна', 'Un país fijo') },
         ]; } },
       cc: { type: 'country', default: function () { return DEF_CC[langKey()] || 'US'; }, label: function () { return L('Country', '国', 'Land', 'Страна', 'País'); },
-        options: function () { return countryRows().map(function (r) { return { value: r.cc, label: WC.countryName(r.cc, r.name) }; }).sort(function (a, b) { return a.label.localeCompare(b.label); }); } },
+        options: countryOptions },
     },
     defaultConfig: function () { return { mode: 'random', cc: DEF_CC[langKey()] || 'US' }; },
     refreshPolicy: { kind: 'realtime-local', tick: function () { return 'minute'; }, relevantEvents: ['selection'] },
@@ -535,7 +555,7 @@ window.IntMapWidgetDefsData = (function () {
           R.facts(countryFacts(c, true), { cols: 2 }),
           R.actions([
             { label: L('Show on the map', '地図で見る', 'Auf der Karte zeigen', 'Показать на карте', 'Ver en el mapa'), icon: 'pin', run: function () { api.flyCountry(c.cc); } },
-            { label: L('Watch this country', 'この国を監視', 'Dieses Land beobachten', 'Следить за страной', 'Vigilar este país'), icon: 'eye', run: function () { api.addCountryWatch(c.cc); } },
+            { label: L('Watch this country', 'この国を監視', 'Dieses Land beobachten', 'Следить за страной', 'Vigilar este país'), icon: 'eye', run: function () { api.addCountryWatch(c.a2 || c.cc); } },
             cfg.mode === 'random' ? { label: L('Another country', '別の国', 'Anderes Land', 'Другая страна', 'Otro país'), icon: 'refresh', run: function () { api.local({ roll: Math.random() }); } } : null,
           ]),
         ]);
@@ -545,9 +565,9 @@ window.IntMapWidgetDefsData = (function () {
   function pickCountry(ctx, cfg, st, api) {
     var rows = countryRows();
     if (!rows.length) return null;
-    if (cfg.mode === 'fixed') return rows.find(function (r) { return r.cc === cfg.cc; }) || rows[0];
+    if (cfg.mode === 'fixed') return countryRow(cfg.cc) || rows[0];
     if (cfg.mode === 'selected' && ctx.selection.country) {
-      var sel = rows.find(function (r) { return r.cc === String(ctx.selection.country).toUpperCase(); });
+      var sel = countryRow(ctx.selection.country);
       if (sel) return sel;
     }
     /* ⚠ THE RANDOM PICK IS SEEDED BY THE CARD, NOT BY THE CLOCK. A card that re-rolled on every
@@ -607,7 +627,7 @@ window.IntMapWidgetDefsData = (function () {
     supportedSizes: ['s', 'm', 'l'], defaultSize: 'm',
     configSchema: {
       cc: { type: 'country', default: function () { return DEF_CC[langKey()] || 'US'; }, label: function () { return L('Country', '国', 'Land', 'Страна', 'País'); },
-        options: function () { return countryRows().map(function (r) { return { value: r.cc, label: WC.countryName(r.cc, r.name) }; }).sort(function (a, b) { return a.label.localeCompare(b.label); }); } },
+        options: countryOptions },
     },
     defaultConfig: function () { return { cc: DEF_CC[langKey()] || 'US' }; },
     refreshPolicy: { kind: 'stale-while-revalidate', minIntervalMs: 6 * 3600000, staleAfterMs: 24 * 3600000, cacheTtlMs: 3 * 24 * 3600000 },
@@ -988,5 +1008,5 @@ window.IntMapWidgetDefsData = (function () {
   }
 
   return { getJSON: getJSON, firstOf: firstOf, wxWord: wxWord, aqiCat: aqiCat, uvCat: uvCat,
-    flagEmoji: flagEmoji, countryRows: countryRows, DEF_CC: DEF_CC, langKey: langKey, pointOf: pointOf, LOC_CFG: LOC_CFG };
+    flagEmoji: flagEmoji, countryRows: countryRows, countryRow: countryRow, countryOptions: countryOptions, DEF_CC: DEF_CC, langKey: langKey, pointOf: pointOf, LOC_CFG: LOC_CFG };
 })();

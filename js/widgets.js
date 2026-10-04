@@ -102,6 +102,8 @@ export function widgets(HOST){
   WC.on('map', function () { if (built) LAY.repaintAll(); });
   WC.on('online', function () { if (built) LAY.repaintAll(); });
   WC.on('brief', function () { if (built) LAY.repaintAll(); });
+  /* the watched-places module or the country outlines arrived (js/widget-core.js watchModule, js/widget-defs-map.js) */
+  WC.on('watch', function () { if (built) LAY.repaintAll(); });
   WC.on('store-error', function () {
     try { HOST.imToast(WC.L('Your board could not be saved — storage is full', 'ボードを保存できませんでした（保存領域が不足しています）', 'Board konnte nicht gespeichert werden – Speicher voll', 'Не удалось сохранить доску — хранилище заполнено', 'No se pudo guardar el tablero: almacenamiento lleno')); } catch (e) {}
   });

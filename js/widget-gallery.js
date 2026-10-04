@@ -324,6 +324,9 @@ window.IntMapWidgetGallery = (function () {
   function previewContext() {
     var c = Object.assign({}, WC.context());
     c.location = { state: 'prompt', lat: null, lng: null, at: 0, fresh: false };
+    /* (widget-watch-unify) …and says it is a preview, so a card that would LOAD something to answer (the watched
+       places' check, the country outlines) draws from what is already here and fetches nothing */
+    c.preview = true;
     return c;
   }
   function previewApi() {
@@ -335,7 +338,7 @@ window.IntMapWidgetGallery = (function () {
       },
       empty: function (t) { return WC.notice({ icon: 'check', tone: 'muted', text: t }); },
       requestLocation: noop, setLayer: noop, openLayer: noop, openLayersPanel: noop,
-      flyCountry: noop, copy: noop, savePlace: noop, openMonitors: noop, openRoutePanel: noop,
+      flyCountry: noop, copy: noop, savePlace: noop, openWatchedPlaces: noop, openRoutePanel: noop,
       openAtlasBrief: noop, addCountryWatch: noop, chronosNow: noop, chronosShift: noop, runCommand: noop,
     };
   }

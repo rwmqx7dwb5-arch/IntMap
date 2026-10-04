@@ -1094,7 +1094,7 @@ widget-defs-data.js               定義：天気・大気/UV・地震・国・�
 widget-defs-markets.js            定義：為替・暗号資産・Fear&Greed・金銀・Bitcoin ネットワーク
 widget-defs-map.js                定義：地図中心／縮尺／おすすめレイヤー、および IntMap 固有の
                                   9種（有効レイヤー・表示範囲の状況・地図上のニュース・保存地点の警報・
-                                  国のウォッチ・地域監視・経路・Atlas ブリーフィング・Chronos）
+                                  国のウォッチ・見守る場所・経路・Atlas ブリーフィング・Chronos）
 widget-layout.js                  盤面 IntMapWidgetLayout —— S/M/L グリッド・並べ替え（ポインタと
                                   キーボード）・スタック・カードメニュー・Undo・設定フォーム
 widget-gallery.js                 追加ギャラリー IntMapWidgetGallery —— 検索・カテゴリ・実レンダラーの

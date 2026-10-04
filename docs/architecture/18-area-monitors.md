@@ -36,7 +36,7 @@
 - **頻度**: ログイン後、ページが idle になってから 1 回、以後 10 分ごと（ページが隠れている間は休み、見えたときに
   10 分以上経っていれば 1 回）。
 - **入口**: アカウント ▸ 見守る場所（ダイジェスト・設定・既読・一時停止と再開・停止・未見守りの保存場所を 1 押しで追加）／
-  マイプレイスの「見守る場所…」／Atlas の `places.watch`・`places.unwatch`・
+  マイプレイスの「見守る場所…」／ウィジェットの「見守る場所」カード（直近の確認結果を読むだけ。§7.5）／Atlas の `places.watch`・`places.unwatch`・
   `places.watchDigest`（構造化したダイジェストを `exec.watchDigest` で渡す）・`places.watchSeen`。
 - **データ**: `public.place_watches`（`supabase/migrations/20261003211700_place_watches.sql`）——保存場所 1 件に 1 行、
   半径・種類ごとの基準（NULL＝見守らない）・オン/オフ・既読。本人だけ（RLS）・場所は呼び手のものでなければならない・
@@ -48,7 +48,7 @@
 ### 18.2 地域監視基盤 (Area Monitors) — 入口なし
 
 ⚠ **この機能には現在、利用者から到達できる入口が1つも無い。** タブ・ワークスペースのウィンドウ・
-Atlas のどれからも開けず、Atlas は `FEATURE_WITHDRAWN` を返す（`PRODUCT.md` §3.4 が言う唯一の例外）。
+ウィジェット・Atlas のどれからも開けず（ウィジェット板の旧「地域監視」カードは「見守る場所」のカードになった）、Atlas は `FEATURE_WITHDRAWN` を返す（`PRODUCT.md` §3.4 が言う唯一の例外）。
 **撤去であって削除ではない**——モジュール（`js/monitors.js`）・API（`window.IntMapMonitors`）・
 その表示領域・Edge Function（`monitor-run`）・DB の 5 表・cron はすべて動いたまま残してある。
 
