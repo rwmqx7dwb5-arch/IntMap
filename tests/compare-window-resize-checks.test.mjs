@@ -10,7 +10,8 @@ const read = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 test('compare-window-resize ① the compare window asks the app\'s one edge-resize, with a minimum and a phone skip', () => {
   const src = codeOnly(read('js/compare.js'));
   assert.match(src, /HOST\.addEdgeResize\(win,\{ min:\[260,200\], skip:\(\)=>/, 'the compare window does not call addEdgeResize');
-  assert.match(src, /matchMedia\(window\.IntMapDevice\.COMPACT\)\.matches/, 'the skip is the COMPACT media query');
+  assert.match(src, /skip:\(\)=>_compact\(\)/, 'the skip is the phone layout');
+  assert.match(src, /const _compact=\(\)=>\{ try\{ return !!window\.IntMapDevice\.compact\(\); \}/, 'the phone layout is the device module\'s own predicate, read in one place');
   /* its own resize is gone: no corner squares, no second pointer machine */
   assert.doesNotMatch(src, /cmp-rz/, 'the four corner squares are back');
   assert.doesNotMatch(src, /FOUR-corner/);

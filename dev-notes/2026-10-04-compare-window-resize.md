@@ -34,3 +34,9 @@ newsjp: 比較ウィンドウの大きさを、辺と角のどこからでも変
 
 `tests/compare-window-resize-checks.test.mjs`: 比較ウィンドウが `addEdgeResize` を呼ぶ（最小寸法と skip つき）・自前の四隅の機構が無い・
 `addEdgeResize` が `opts.skip` を訊く・skip が真のとき入口（hover と押下）が退く。実際の引き伸ばしはローカルのビルドで実測した（§3）。
+
+## 5. 共有窓口（`check:surface`）
+
+CI の 1 回目で `window.IntMapDevice` の読みが 1 つ増えた（87 → 88）と落ちた（skip が COMPACT を読んだ）。比較ウィンドウは同じ「携帯の配置か」を
+`window.IntMapDevice.compact()` で 3 か所読んでいたので、ファイルの中の 1 つの `_compact()` にまとめ、skip もそれを使う。読みは 87 → 85
+（`node scripts/global-surface.mjs --update` で基準を小さいほうへ）。

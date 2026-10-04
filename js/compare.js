@@ -85,6 +85,8 @@ export function compare(HOST){
   const cmpRead=(u)=>jsonWithin(u,clockFor(u),undefined,{idle:true});   /* (fetch-deadline-layer) see the note at the imports */
   const cmpFail=(msg)=>{ try{ HOST.imToast(msg); }catch(_){ /* no toast surface yet */ } };
   const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+  /* (compare-window-resize) «is this a phone layout» — the device module's own predicate, read in ONE place (it was read three times here) */
+  const _compact=()=>{ try{ return !!window.IntMapDevice.compact(); }catch(_){ return false; } };
   const countryStats=HOST.countryStats, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, t=HOST.t;
   /* ══ ⚠⚠ (#R668) 「携帯か」 IS A QUESTION ABOUT THE DEVICE, NOT ABOUT 768 px ═══════════════════════
      `isMobile()` is a max-width media query, so it answers FALSE for an iPhone held sideways (844 px)
@@ -825,7 +827,7 @@ export function compare(HOST){
       win.querySelector('#cmp-close').onclick=close;
       /* (#R26) The compare window must not sit ON TOP OF the sidebar — clamp its left edge to the sidebar's
          right edge (desktop, sidebar visible on the left). On mobile it's a full-width sheet → no clamp. */
-      const _sbRight=()=>{ try{ if(window.IntMapDevice.compact()) return 0; const sb=document.getElementById('sidebar'); if(!sb||sb.classList.contains('collapsed')) return 0; const r=sb.getBoundingClientRect(); return (r.width>0 && r.left<=2)?(r.right+8):0; }catch(_){ return 0; } };
+      const _sbRight=()=>{ try{ if(_compact()) return 0; const sb=document.getElementById('sidebar'); if(!sb||sb.classList.contains('collapsed')) return 0; const r=sb.getBoundingClientRect(); return (r.width>0 && r.left<=2)?(r.right+8):0; }catch(_){ return 0; } };
       /* drag by header */
       (function(){ const h=win.querySelector('.cmp-head'); let dx=0,dy=0,drag=false;
         h.addEventListener('pointerdown',e=>{ if(e.target.closest('.cmp-btn')) return; drag=true; const r=win.getBoundingClientRect(); dx=e.clientX-r.left; dy=e.clientY-r.top; win.style.right='auto'; win.style.bottom='auto'; win.style.left=r.left+'px'; win.style.top=r.top+'px'; try{h.setPointerCapture(e.pointerId);}catch(_){} });
@@ -840,7 +842,7 @@ export function compare(HOST){
          and corner, the resize cursor on hover, a minimum size. On a phone the window is pinned full-width by the
          COMPACT rule and its height has the grip below (.cmp-resize), so the edge zone stands aside there (`skip`):
          it would only swallow the first pixels of a pan. The ResizeObserver below resizes the map whichever path moved it. */
-      try{ if(typeof HOST.addEdgeResize==='function') HOST.addEdgeResize(win,{ min:[260,200], skip:()=>{ try{ return window.matchMedia(window.IntMapDevice.COMPACT).matches; }catch(_){ return false; } } }); }catch(_){}
+      try{ if(typeof HOST.addEdgeResize==='function') HOST.addEdgeResize(win,{ min:[260,200], skip:()=>_compact() }); }catch(_){}
       /* resize observer → resize the map (+ re-aim the lens/centroid) */
       try{ ro=new ResizeObserver(()=>{ try{ cmap.render.resize(); }catch(_){} if(mode!=='free') syncFromMain(); }); ro.observe(win); }catch(_){}
       /* (#R16) touch resize grip (mobile height) */
@@ -881,7 +883,7 @@ export function compare(HOST){
       try{ document.body.classList.add('cmp-open'); }catch(_){}
       /* (#R26) Make sure the default (bottom-right) position doesn't land ON TOP OF the sidebar on a narrow
          desktop / wide sidebar — nudge the window right of the sidebar if it would overlap. */
-      try{ if(!window.IntMapDevice.compact()){ const sb=document.getElementById('sidebar');
+      try{ if(!_compact()){ const sb=document.getElementById('sidebar');
         if(sb && !sb.classList.contains('collapsed')){ const sr=sb.getBoundingClientRect(); const wr=win.getBoundingClientRect();
           if(sr.width>0 && sr.left<=2 && wr.left < sr.right+8){ win.style.right='auto'; win.style.left=(sr.right+12)+'px'; } } } }catch(_){}
       /* (#R22) Resize several times after the window becomes visible so the GL canvas always fills the
@@ -895,7 +897,7 @@ export function compare(HOST){
        didn't cover a LIVE sidebar resize, so widening the sidebar slid it under the window ("サイドバーを
        広げるとCompare view windowがサイドバーの上に載る"). Pushes the window right if the now-wider sidebar
        would overlap it. */
-    window._cmpReclamp=function(){ try{ if(!win||win.style.display==='none') return; if(window.IntMapDevice.compact()) return;
+    window._cmpReclamp=function(){ try{ if(!win||win.style.display==='none') return; if(_compact()) return;
       const sb=document.getElementById('sidebar'); if(!sb||sb.classList.contains('collapsed')) return;
       const sr=sb.getBoundingClientRect(), wr=win.getBoundingClientRect();
       if(sr.width>0 && sr.left<=2 && wr.left < sr.right+8){ win.style.right='auto'; win.style.left=(sr.right+12)+'px'; try{ cmap.render.resize(); }catch(_){} if(mode!=='free') syncFromMain(); } }catch(_){} };
