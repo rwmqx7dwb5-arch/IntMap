@@ -141,7 +141,7 @@ export const { fetchViaProxy, ownRelayUrl, peekOwnRelay, clockFor } = (() => {
   /* (stalled-fetch-and-surface-gauge) THE WORLD BANK'S INDICATOR API IS THE SECOND SLOW HOST. Measured
      2026-09-28, eight reads of `country/all/indicator/…?format=json&per_page=400` (53–61 KB): 0.34 /
      0.39 / 0.49 / 0.58 / 0.59 / 1.61 / 2.99 s — and 8.23 s for the first read of SP.DYN.TFRT.IN, a cold
-     answer that DIRECT_TIMEOUT_MS would have aborted. The number is the clock js/analysis-timeseries.js
+     answer that DIRECT_TIMEOUT_MS would have aborted. The number is the clock the country time-series chart
      had given this host by hand since #R69 (20 s), the only one the app had for it. Every reader of the host takes it
      from clockFor() now — js/stats-compare.js had three more hand-written 20 s and js/time-countries.js a 12 s, and
      tests/stalled-fetch-and-surface-gauge-checks ⑦ finds any read of a host with its own row that does not; it lapses if the API's cold

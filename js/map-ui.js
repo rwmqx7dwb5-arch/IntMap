@@ -2532,9 +2532,9 @@ export function labelPopup(HOST){
             }).catch(()=>{}); }
           /* (#R20) AI Research Assistant entry point */
           const ai=document.querySelector('.plc-ai');
-          /* (#R224) Atlas is on demand — fetch it, and only fall back to the older research panel if
-             the kernel genuinely cannot be had. Testing for the global would ALWAYS take the fallback. */
-          if(ai) ai.onclick=()=>{ try{ if(window.IntMapAtlas){ window.IntMapAtlas.ensure().then(C=>{ try{ if(C&&C.brief) C.brief(name,lngLat); else if(window.IntMapAIResearch) window.IntMapAIResearch.open(name,lngLat); }catch(_){} }); } else if(window.IntMapAIResearch){ window.IntMapAIResearch.open(name,lngLat); } }catch(_){} };   /* (#R62) brief runs inside Atlas */
+          /* (#R224) Atlas is on demand — js/atlas-loader.js fetches it and then runs the brief. (country-analysis-unify) There is no
+             fallback any more: the older research panel it fell back to is gone, and its brief had no web search and no sources. */
+          if(ai) ai.onclick=()=>{ try{ window.IntMapAtlas.call('brief',name,lngLat); }catch(_){} };   /* (#R62) brief runs inside Atlas */
           /* (#R122) resolve the clicked place's polygon: the caller-supplied era border, else the outline this
              popup drew (works for sub-national regions / cities too), else the modern country polygon under the point. */
           const _placeGeo=()=>{ try{ if(opts&&opts.geojson&&/Polygon/.test(opts.geojson.type||'')) return opts.geojson;

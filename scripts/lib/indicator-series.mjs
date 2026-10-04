@@ -18,9 +18,11 @@
  *                            declaration claims (the second is how a new duplicate cannot arrive unseen)
  *    sameSeries(decls)       the groups of rows that measure one series — derived, never listed
  *
- *  ⚠ WHAT IS DISCOVERED, AND HOW. Only the files that call the World Bank API are read for World Bank
- *  series (the host literal decides — a file that starts fetching one is read the day it does), and only
- *  the row tables shaped the way those files write them:
+ *  ⚠ WHAT IS DISCOVERED, AND HOW. Only the files that read the World Bank are read for World Bank series — a
+ *  file that holds the API's URL, or (country-analysis-unify) one that imports the one read and the one
+ *  catalogue, js/wb-indicators.js — and only the row tables shaped the way those files write them
+ *  (and, since that file, the same shapes naming a catalogue indicator — `k:'<K>'` in place of `code:` / `ind:` —
+ *  whose series is the catalogue's own entry `{k:'<K>', code:'<C>'` (`parts:[…]` summed), read from its text):
  *    `{id:'<key>', code:'<C>'}` · `{id:'<key>', code:['<A>','<B>']}` (summed: one series, `A+B`) ·
  *    `{id:'<key>', modes:[{… code:'<C>'}, …]}` (one row, one series per mode) · `<key>:{ind:'<C>'`.
  *  The country statistics rows are read from the code that paints them: `applyChoro('<key>',s=>s.<field>`.
@@ -33,6 +35,8 @@
    host string at run time is escaped correctly, but CodeQL cannot see the escaping and reports the string's
    unescaped '.' as js/incomplete-hostname-regexp. One literal, so there is no second spelling of the host to drift. */
 const WORLD_BANK_URL = /https:\/\/api\.worldbank\.org\//;
+/* (country-analysis-unify) …or it imports the one World Bank read and its catalogue */
+const CATALOGUE_IMPORT = /from\s*'\.\/wb-indicators\.js'/;
 /** the publishers a `measures` claim may name, and what each means */
 export const PUBLISHERS = Object.freeze({
   worldbank: 'a World Bank WDI series code (a summed series is `A+B`)',
@@ -60,8 +64,21 @@ const add = (m, key, v, src) => {
  */
 export function discoverSeries(files) {
   const out = new Map();
+  /* the catalogue: {k:'<K>', code:'<C>' / {k:'<K>', parts:['<A>','<B>'] — wherever it is among the files handed in */
+  const cat = new Map();
   for (const [, src] of files) {
-    if (WORLD_BANK_URL.test(src)) {
+    if (!/\bWB_INDICATORS\b/.test(src)) continue;
+    for (const m of src.matchAll(/\{\s*k\s*:\s*'([A-Za-z0-9_]+)'\s*,\s*(?:code\s*:\s*'([^']+)'|parts\s*:\s*(\[[^\]]*\]))/g)) {
+      const codes = m[2] ? [m[2]] : [...m[3].matchAll(/'([^']+)'/g)].map((x) => x[1]);
+      if (codes.length && !cat.has(m[1])) cat.set(m[1], 'worldbank:' + codes.join('+'));
+    }
+  }
+  for (const [, src] of files) {
+    if (WORLD_BANK_URL.test(src) || CATALOGUE_IMPORT.test(src)) {
+      /* {id:'wbX', k:'K'} — a row naming a catalogue indicator */
+      for (const m of src.matchAll(/\{\s*id\s*:\s*'([A-Za-z0-9_]+)'\s*,\s*k\s*:\s*'([A-Za-z0-9_]+)'/g)) { const c = cat.get(m[2]); if (c) add(out, m[1], c, src); }
+      /* key:{k:'K' — the key is a whole word */
+      for (const m of src.matchAll(/\b([A-Za-z0-9_]+)\s*:\s*\{\s*k\s*:\s*'([A-Za-z0-9_]+)'/g)) { const c = cat.get(m[2]); if (c) add(out, m[1], c, src); }
       /* `{id:'wbX', code:'C'}` and `{id:'wbX', code:['A','B']}` */
       for (const m of src.matchAll(/\{\s*id\s*:\s*'([A-Za-z0-9_]+)'\s*,\s*code\s*:\s*(\[[^\]]*\]|'[^']+')/g)) {
         const codes = [...m[2].matchAll(/'([^']+)'/g)].map((x) => x[1]);
@@ -72,6 +89,7 @@ export function discoverSeries(files) {
         let i = m.index + m[0].length, depth = 1;
         while (i < src.length && depth) { const c = src[i++]; if (c === '[') depth++; else if (c === ']') depth--; }
         for (const c of src.slice(m.index, i).matchAll(/\bcode\s*:\s*'([^']+)'/g)) add(out, m[1], 'worldbank:' + c[1], src);
+        for (const c of src.slice(m.index, i).matchAll(/\bk\s*:\s*'([A-Za-z0-9_]+)'/g)) { const v = cat.get(c[1]); if (v) add(out, m[1], v, src); }
       }
       /* `key:{ind:'C'` — the key is a whole word (a word boundary before it) */
       for (const m of src.matchAll(/\b([A-Za-z0-9_]+)\s*:\s*\{\s*ind\s*:\s*'([^']+)'/g)) add(out, m[1], 'worldbank:' + m[2], src);

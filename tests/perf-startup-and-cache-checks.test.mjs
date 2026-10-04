@@ -377,9 +377,11 @@ test('R224 ⑥b Atlas is on demand, and every entry point fetches it', () => {
     ['js/keyboard-shortcuts.js', /IntMapAtlas\.call\('toggle'\)/],
     ['js/news-ui.js', /IntMapAtlas\.call\('mountTab'\)/],
     ['js/workspace.js', /IntMapAtlas\.call\('open'\)/],
-    ['js/map-ui.js', /IntMapAtlas\.ensure\(\)/],
+    /* (country-analysis-unify) the place popup's and the country card's 「AI調査」 call the loader's call('brief') — one path,
+       the fallback to the research panel gone with that panel */
+    ['js/map-ui.js', /IntMapAtlas\.call\('brief',/],
     ['js/tool-panel.js', /IntMapAtlas\.ensure\(\)/],
-    ['js/countries-ui.js', /IntMapAtlas\.ensure\(\)/],
+    ['js/countries-ui.js', /IntMapAtlas\.call\('brief',/],
     /* ⚠ (#R296) js/sims.js left this list: its only `IntMapAtlas.call('dispatch')` was the disaster
        panel's 「放射性物質」 choice handing off to the fallout model, and 「4つのうち…全削除」
        removed the wrapper. The fallout model has its own panel now and needs no dispatch to reach
@@ -417,7 +419,7 @@ test('R224 ⑦ katex and html2canvas are fetched by the features that need them'
   /* (#R493) composing the screen — and therefore the html2canvas fetch — moved to
      js/atlas-view-capture.js, which BOTH the shutter and Atlas's view.inspect call. */
   assert.match(read('js/atlas-view-capture.js'), /IntMapVendor\.html2canvas\(\)/);
-  assert.match(read('js/screenshot.js'), /await import\('\.\/atlas-view-capture\.js'\)/);
+  assert.match(read('js/map-ui.js'), /import\('\.\/map-recorder\.js'\)/);   /* (country-analysis-unify) the shutter is the share panel's Image tab; its picture module is fetched when the tab is shown */
   assert.match(read('js/atlas-reply.js'), /IntMapVendor\.katex\(\)/);
   /* the Köppen work canvas decodes at the size it keeps, not at 4096² */
   const dl = read('js/data-layers.js');

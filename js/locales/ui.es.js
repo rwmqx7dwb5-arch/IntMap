@@ -158,7 +158,6 @@ IntMapLang.define('es', { ui: {
       proIntel:"Fuentes primarias locales RU·CN",
       srcModalTitle:"Fuentes de datos y atribución",
       srcModalSub:"IntMap agrega los siguientes datos, imágenes y API de terceros. Todas las marcas pertenecen a sus propietarios.",
-      screenshotSaved:"Captura guardada ✓",
       measureClickClose:"Haz clic en el primer punto para cerrar",
       blueberryTitle:"Apoya IntMap",
       blueberryBody:"Mi objetivo es crear un mapa donde la geografía, el clima, la historia, la ecología, la demografía y los acontecimientos mundiales puedan explorarse en un solo lugar.\nIntMap se desarrolla de forma independiente y se amplía continuamente con nuevas capas, conjuntos de datos y funciones.\nSi te gusta usar IntMap y quieres apoyar su desarrollo futuro, puedes contribuir a continuación.",

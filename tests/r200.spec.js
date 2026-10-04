@@ -39,7 +39,7 @@ test('R200 ① every subject that left js/app-body.js is alive after boot', asyn
     fitTab: typeof window._fitTabFont === 'function',
     /* js/layer-favs.js — reached through the hoisted shims, which is the whole point */
     favs: Array.isArray(window.imLayerFavs),
-    /* js/time-countries.js, js/premium-plan.js, js/screenshot.js */
+    /* js/time-countries.js, js/premium-plan.js; the screenshot button is wired by js/app-body.js to the share panel's Image tab (country-analysis-unify) */
     timeCountries: !!(window.IntMapTimeCountries && typeof window.IntMapTimeCountries.year === 'function'),
     pro: typeof window.refreshProUI === 'function',
     shot: !!document.getElementById('btn-screenshot'),

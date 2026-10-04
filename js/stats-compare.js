@@ -14,8 +14,7 @@
  * 
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
-import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) the World Bank's clock, stated once — the three 20 s written here by hand read it now */
-import { readWithin } from './fetch-deadline.js';
+import { readWorldBank, wbIndicator } from './wb-indicators.js';   /* (country-analysis-unify) the one World Bank read — its cache, its 6-slot limit and its ok / none / unavailable — and the one catalogue of its series */
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
@@ -47,39 +46,45 @@ export function statsCompare(HOST){
     const PAL=['#0a84ff','#ff9500','#34c759','#bf5af2','#ff453a','#5ac8fa','#ffd60a','#ff2d92','#30b0c7','#a2845e'];   /* (#R71) up to 10 countries */
     function short(v){ const a=Math.abs(v); if(a>=1e12) return (v/1e12).toFixed(2)+'T'; if(a>=1e9) return (v/1e9).toFixed(2)+'B'; if(a>=1e6) return (v/1e6).toFixed(2)+'M'; if(a>=1e3) return (v/1e3).toFixed(1)+'k'; return (Math.round(v*100)/100).toLocaleString(); }
     const pct=v=>(Math.round(v*100)/100)+'%', usd=v=>'$'+short(v), num=v=>short(v);
-    /* wb: World Bank indicator id · imf: IMF WEO datamapper code (null = WB only) · sc: scale factor for IMF values */
+    /* (country-analysis-unify) THE ROWS SAY WHAT THIS PANEL DOES WITH AN INDICATOR — its IMF counterpart (imf: the WEO
+       datamapper code, null = World Bank only; imfScale: the factor to the World Bank's unit), how it is formatted, whether
+       it starts selected (def), whether it carries a sign (signed) and whether one country's timeline shows it (tl).
+       WHAT the indicator is — its World Bank series (with the retired codes after it, read in order: `wb` may be an
+       array), and its name — is js/wb-indicators.js's, read in by `W()`. It used to be written here a second time. */
+    const W=(k,o)=>{ const I=wbIndicator(k); return Object.assign({ k, wb:I.fallback?[I.code].concat(I.fallback):I.code, l:I.n }, o); };
+    const N=(k)=>wbIndicator(k).n;   /* the name alone, for a row this panel reads from the country table */
     const IND=[
-      {k:'gdp',    wb:'NY.GDP.MKTP.CD', imf:'NGDPD',      imfScale:1e9, fmt:usd, l:LA('GDP (US$)','GDP（米ドル）','BIP (US$)','ВВП (долл.)','PIB (US$)'), def:1},
-      {k:'gdppc',  wb:'NY.GDP.PCAP.CD', imf:'NGDPDPC',    imfScale:1,   fmt:usd, l:LA('GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу','PIB per cápita'), def:1},
-      {k:'growth', wb:'NY.GDP.MKTP.KD.ZG', imf:'NGDP_RPCH', imfScale:1, fmt:pct, l:LA('GDP growth','GDP成長率','BIP-Wachstum','Рост ВВП','Crecimiento del PIB'), def:1, signed:1},
-      {k:'infl',   wb:'FP.CPI.TOTL.ZG', imf:'PCPIPCH',    imfScale:1,   fmt:pct, l:LA('Inflation (CPI)','インフレ率','Inflation','Инфляция','Inflación'), def:0, signed:1},
-      {k:'unemp',  wb:'SL.UEM.TOTL.ZS', imf:'LUR',        imfScale:1,   fmt:pct, l:LA('Unemployment','失業率','Arbeitslosigkeit','Безработица','Desempleo'), def:0},
-      {k:'debt',   wb:'GC.DOD.TOTL.GD.ZS', imf:'GGXWDG_NGDP', imfScale:1, fmt:pct, l:LA('Govt debt (% GDP)','政府債務(対GDP)','Staatsschulden (% BIP)','Госдолг (% ВВП)','Deuda pública (% PIB)'), def:0},
-      {k:'cab',    wb:'BN.CAB.XOKA.GD.ZS', imf:'BCA_NGDPD', imfScale:1, fmt:pct, l:LA('Current account (% GDP)','経常収支(対GDP)','Leistungsbilanz (% BIP)','Текущий счёт (% ВВП)','Cuenta corriente (% PIB)'), def:0, signed:1},
-      {k:'pop',    wb:'SP.POP.TOTL',    imf:'LP',         imfScale:1e6, fmt:num, l:LA('Population','人口','Bevölkerung','Население','Población'), def:1},
-      {k:'life',   wb:'SP.DYN.LE00.IN', imf:null, fmt:v=>v.toFixed(1), l:LA('Life expectancy','平均寿命','Lebenserwartung','Продолж. жизни','Esperanza de vida'), def:1},
-      {k:'tfr',    wb:'SP.DYN.TFRT.IN', imf:null, fmt:v=>v.toFixed(2), l:LA('Fertility rate','出生率','Geburtenrate','Рождаемость','Fecundidad'), def:0},
-      {k:'mil',    wb:'MS.MIL.XPND.GD.ZS', imf:null, fmt:pct, l:LA('Military (% GDP)','軍事費(対GDP)','Militär (% BIP)','Военные (% ВВП)','Militar (% PIB)'), def:0},
-      {k:'co2',    wb:['EN.GHG.CO2.PC.CE.AR5','EN.ATM.CO2E.PC'], imf:null, fmt:v=>v.toFixed(2)+' t', l:LA('CO₂ per capita','1人当たりCO₂','CO₂ pro Kopf','CO₂ на душу','CO₂ per cápita'), def:0},   /* (#R69) WB retired EN.ATM.CO2E.PC (0 values) — successor series first, old code as fallback */
-      {k:'net',    wb:'IT.NET.USER.ZS', imf:null, fmt:pct, l:LA('Internet users','ネット利用率','Internetnutzer','Интернет-польз.','Usuarios de internet'), def:0},
-      {k:'urban',  wb:'SP.URB.TOTL.IN.ZS', imf:null, fmt:pct, l:LA('Urban population','都市人口率','Stadtbevölkerung','Городское население','Población urbana'), def:0},
-      {k:'exp',    wb:'NE.EXP.GNFS.ZS', imf:null, fmt:pct, l:LA('Exports (% GDP)','輸出(対GDP)','Exporte (% BIP)','Экспорт (% ВВП)','Exportaciones (% PIB)'), def:0},
-      {k:'fdi',    wb:'BX.KLT.DINV.WD.GD.ZS', imf:null, fmt:pct, l:LA('FDI inflows (% GDP)','対内直接投資(対GDP)','ADI-Zuflüsse (% BIP)','ПИИ (% ВВП)','IED (% PIB)'), def:0, signed:1},
-      {k:'health', wb:'SH.XPD.CHEX.GD.ZS', imf:null, fmt:pct, l:LA('Health spending (% GDP)','医療支出(対GDP)','Gesundheitsausgaben','Здравоохранение (% ВВП)','Gasto en salud (% PIB)'), def:0},
-      {k:'edu',    wb:'SE.XPD.TOTL.GD.ZS', imf:null, fmt:pct, l:LA('Education spending (% GDP)','教育支出(対GDP)','Bildungsausgaben','Образование (% ВВП)','Gasto en educación (% PIB)'), def:0},
-      {k:'rnd',    wb:'GB.XPD.RSDV.GD.ZS', imf:null, fmt:pct, l:LA('R&D (% GDP)','研究開発費(対GDP)','F&E (% BIP)','НИОКР (% ВВП)','I+D (% PIB)'), def:0},
-      {k:'renew',  wb:'EG.FEC.RNEW.ZS', imf:null, fmt:pct, l:LA('Renewable energy','再エネ比率','Erneuerbare Energie','Возобновляемая энергия','Energía renovable'), def:0},
-      {k:'forest', wb:'AG.LND.FRST.ZS', imf:null, fmt:pct, l:LA('Forest area','森林率','Waldfläche','Лесистость','Superficie forestal'), def:0},
-      {k:'hom',    wb:'VC.IHR.PSRC.P5', imf:null, fmt:v=>v.toFixed(1), l:LA('Homicide rate (/100k)','殺人率(10万人当り)','Mordrate (/100k)','Убийства (/100 тыс.)','Homicidios (/100k)'), def:0},
+      W('gdp',    {imf:'NGDPD',      imfScale:1e9, fmt:usd, def:1, tl:1}),
+      W('gdppc',  {imf:'NGDPDPC',    imfScale:1,   fmt:usd, def:1, tl:1}),
+      W('growth', {imf:'NGDP_RPCH',  imfScale:1,   fmt:pct, def:1, signed:1}),
+      W('infl',   {imf:'PCPIPCH',    imfScale:1,   fmt:pct, def:0, signed:1}),
+      W('unemp',  {imf:'LUR',        imfScale:1,   fmt:pct, def:0}),
+      W('debt',   {imf:'GGXWDG_NGDP', imfScale:1,  fmt:pct, def:0}),
+      W('cab',    {imf:'BCA_NGDPD',  imfScale:1,   fmt:pct, def:0, signed:1}),
+      W('pop',    {imf:'LP',         imfScale:1e6, fmt:num, def:1, tl:1}),
+      W('life',   {imf:null, fmt:v=>v.toFixed(1), def:1, tl:1}),
+      W('tfr',    {imf:null, fmt:v=>v.toFixed(2), def:0}),
+      W('mil',    {imf:null, fmt:pct, def:0, tl:1}),
+      W('co2',    {imf:null, fmt:v=>v.toFixed(2)+' t', def:0, tl:1}),
+      W('net',    {imf:null, fmt:pct, def:0}),
+      W('urban',  {imf:null, fmt:pct, def:0}),
+      W('exp',    {imf:null, fmt:pct, def:0}),
+      W('fdi',    {imf:null, fmt:pct, def:0, signed:1}),
+      W('health', {imf:null, fmt:pct, def:0}),
+      W('edu',    {imf:null, fmt:pct, def:0}),
+      W('rnd',    {imf:null, fmt:pct, def:0}),
+      W('renew',  {imf:null, fmt:pct, def:0}),
+      W('forest', {imf:null, fmt:pct, def:0}),
+      W('hom',    {imf:null, fmt:v=>v.toFixed(1), def:0}),
       /* (#R70) 機能拡充: the bundled per-country reference values (the old bar-compare's data) become
          first-class indicators — instantly available (no fetch), bars/table always work, time-series shows the
          honest single point. `stat` reads countryStats; `src` is the real underlying source. */
       {k:'area',     stat:s=>s.area,      yr:0, fmt:v=>short(v)+' km²', l:LA('Area','面積','Fläche','Площадь','Superficie'), def:0, src:'Natural Earth'},
       {k:'hdi',      stat:s=>s.hdi,       yr:2022, fmt:v=>(+v).toFixed(3), l:LA('HDI','人間開発指数 (HDI)','HDI','ИЧР','IDH'), def:0, src:'UNDP'},
       {k:'demi',     stat:s=>s.dem,       yr:2023, fmt:v=>(+v).toFixed(2), l:LA('Democracy Index','民主主義指数','Demokratieindex','Индекс демократии','Índice de democracia'), def:0, src:'EIU'},
-      {k:'gdpppp',   stat:s=>s.gdpPPP,    yr:0, fmt:usd, l:LA('GDP (PPP)','GDP（PPP）','BIP (KKP)','ВВП (ППС)','PIB (PPA)'), def:0, src:'IMF/WB (PPP)'},
-      {k:'gdppcppp', stat:s=>s.gdppcPPP,  yr:0, fmt:usd, l:LA('GDP per capita (PPP)','1人当たりGDP（PPP）','BIP pro Kopf (KKP)','ВВП на душу (ППС)','PIB per cápita (PPA)'), def:0, src:'IMF/WB (PPP)'},
-      {k:'milb',     stat:s=>s.milSpend,  yr:2023, fmt:v=>'$'+short(v*1e9), l:LA('Military spending ($)','軍事費（米ドル）','Militärausgaben ($)','Военные расходы ($)','Gasto militar ($)'), def:0, src:'SIPRI'}
+      {k:'gdpppp',   stat:s=>s.gdpPPP,    yr:0, fmt:usd, l:N('gdpppp'), def:0, src:'IMF/WB (PPP)'},
+      {k:'gdppcppp', stat:s=>s.gdppcPPP,  yr:0, fmt:usd, l:N('gdppcppp'), def:0, src:'IMF/WB (PPP)'},
+      {k:'milb',     stat:s=>s.milSpend,  yr:2023, fmt:v=>'$'+short(v*1e9), l:N('milb'), def:0, src:'SIPRI'}
     ];
     /* (#R71) indicator metadata: category (the picker is grouped — "指標選択画面が煩雑"), sign-carrying
        indicators (green/red ± in bars & table — "増減指標は…緑赤"), and bundled-reference fallbacks used to
@@ -113,30 +118,12 @@ export function statsCompare(HOST){
        queued them for minutes, and the World Bank then throttled the IP so EVERYTHING showed "no data".
        Fixed at the root: the cache stores the IN-FLIGHT PROMISE (concurrent duplicates share one request), a
        6-slot scheduler bounds concurrency, and rendering below is incremental. */
-    const cache={};
-    const _wbQ=[]; let _wbAct=0;
-    function _wbSlot(fn){ return new Promise((res,rej)=>{ _wbQ.push({fn,res,rej}); _wbPump(); }); }
-    function _wbPump(){ while(_wbAct<6&&_wbQ.length){ const t=_wbQ.shift(); _wbAct++;
-      Promise.resolve().then(t.fn).then(v=>{ _wbAct--; t.res(v); _wbPump(); },e=>{ _wbAct--; t.rej(e); _wbPump(); }); } }
-    function _wbOne(code,id){ const key='wb|'+id+'|'+code;
-      if(cache[key]===undefined){
-        let wrapped=null;
-        /* a clock — a hung request (WB throttling) must not leak a scheduler slot forever; its length is the World
-           Bank's row in js/proxy-fetch.js `clockFor` (stalled-fetch-and-surface-gauge). A NETWORK failure
-           is NOT negative-cached (the entry is dropped so the next render retries); only a real "API answered,
-           series is empty" is remembered as null. */
-        wrapped=_wbSlot(async()=>{
-          try{
-            const u='https://api.worldbank.org/v2/country/'+encodeURIComponent(code)+'/indicator/'+id+'?format=json&per_page=80&date=1970:2030';
-            const j=JSON.parse((await readWithin(u,clockFor(u))).text);
-            if(Array.isArray(j)&&j[1]){ const out=j[1].filter(d=>d.value!=null).map(d=>({y:+d.date,v:+d.value})).sort((a,b)=>a.y-b.y); if(out.length) return out; }
-            if(Array.isArray(j)) return null;   /* API answered: genuinely no data */
-          }catch(_){}
-          throw 0;                              /* network/parse failure or the clock → retryable */
-        }).catch(()=>{ if(cache[key]===wrapped) delete cache[key]; return null; });
-        cache[key]=wrapped;
-      }
-      return cache[key]; }
+    const cache={};   /* the IMF DataMapper's whole-world payloads (the World Bank's answers are kept by js/wb-indicators.js) */
+    /* (country-analysis-unify) the shared-promise cache and the 6-slot scheduler that were here (#R69) are js/wb-indicators.js's now,
+       for every World Bank reader at once: 'ok' and 'none' are kept, 'unavailable' (network, parse, the clock) is not —
+       the next render asks again, which is what this file's own cache did. */
+    function _wbOne(code,id){ return readWorldBank({ country:code, code:id, date:'1970:2030', perPage:80 })
+      .then(r=>(r.status==='ok'?r.rows.map(d=>({y:d.y,v:d.v})).sort((a,b)=>a.y-b.y):null)); }
     /* id may be an ARRAY of codes tried in order — used where the World Bank RETIRED a series (CO₂:
        EN.ATM.CO2E.PC now returns 0 values; the successor is EN.GHG.CO2.PC.CE.AR5). */
     async function fetchWB(code,id){ const ids=Array.isArray(id)?id:[id];
@@ -178,16 +165,7 @@ export function statsCompare(HOST){
        (all ~220 countries at once, shared-promise cached) instead of a request per (indicator,country).
        Gaps are FILLED from the other source (WB⇄IMF) and finally from the bundled reference values, so major
        countries stop showing "—" just because one source lacks one year ("比較にならない"). ===== */
-    function _wbLatestOne(code){ const key='wbl|'+code;
-      if(cache[key]===undefined){ let wrapped=null;
-        wrapped=(async()=>{ try{
-          const u='https://api.worldbank.org/v2/country/all/indicator/'+encodeURIComponent(code)+'?format=json&mrnev=1&per_page=400';
-          const j=JSON.parse((await readWithin(u,clockFor(u))).text);
-          if(Array.isArray(j)&&j[1]){ const m={}; j[1].forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code) m[d.countryiso3code]={v:+d.value,y:+d.date||0}; }); if(Object.keys(m).length) return m; }
-          if(Array.isArray(j)) return {};
-        }catch(_){} throw 0; })().catch(()=>{ if(cache[key]===wrapped) delete cache[key]; return {}; });
-        cache[key]=wrapped; }
-      return cache[key]; }
+    function _wbLatestOne(code){ return readWorldBank({ code, mrnev:1, perPage:400 }).then(r=>{ const m={}; r.rows.forEach(d=>{ if(d.iso3) m[d.iso3]={v:d.v,y:d.y||0}; }); return m; }); }
     async function wbLatest(id){ const ids=Array.isArray(id)?id:[id]; for(const one of ids){ const m=await _wbLatestOne(one); if(m&&Object.keys(m).length) return m; } return {}; }
     /* (#R94) TIME MACHINE: when the master clock is on a past year, the bar/table/focus show THAT year's real
        figures (World Bank date=<year>, IMF WEO at the year) — honestly, with no present-day gap-fill while
@@ -209,16 +187,7 @@ export function statsCompare(HOST){
       const need=new Set(codes); codes.forEach(cd=>{ const S=_histEntry&&_histEntry(cd); if(S) S.succ.forEach(c=>need.add(c)); });
       need.forEach(cd=>{ const v=_madOne(M,mf,cd,year); if(v!=null) m[cd]={v:v,y:year,real:true}; });
       return m; }
-    function _wbYearOne(code,year){ const key='wby|'+code+'|'+year;
-      if(cache[key]===undefined){ let wrapped=null;
-        wrapped=(async()=>{ try{
-          const u='https://api.worldbank.org/v2/country/all/indicator/'+encodeURIComponent(code)+'?format=json&per_page=400&date='+year;
-          const j=JSON.parse((await readWithin(u,clockFor(u))).text);
-          if(Array.isArray(j)&&j[1]){ const m={}; j[1].forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code) m[d.countryiso3code]={v:+d.value,y:+d.date||year}; }); return m; }
-          if(Array.isArray(j)) return {};
-        }catch(_){} throw 0; })().catch(()=>{ if(cache[key]===wrapped) delete cache[key]; return {}; });
-        cache[key]=wrapped; }
-      return cache[key]; }
+    function _wbYearOne(code,year){ return readWorldBank({ code, date:String(year), perPage:400 }).then(r=>{ const m={}; r.rows.forEach(d=>{ if(d.iso3) m[d.iso3]={v:d.v,y:d.y||year}; }); return m; }); }
     async function wbYear(id,year){ const ids=Array.isArray(id)?id:[id]; for(const one of ids){ const m=await _wbYearOne(one,year); if(m&&Object.keys(m).length) return m; } return {}; }
     function imfAt(vals,scale,year){ const out={}; for(const cd in vals){ const o=vals[cd]; if(o&&o[year]!=null&&isFinite(+o[year])) out[cd]={v:+o[year]*(scale||1),y:year}; } return out; }
     function imfLatest(vals,scale){ const nowY=new Date().getFullYear(); const out={};
@@ -273,7 +242,7 @@ export function statsCompare(HOST){
           const val=_histMadVal(S,mf,year);
           m[cd]=(val!=null)?{v:val,y:year,hist:true,real:true}:null; continue;
         }
-        if(needW&&!popMap){ try{ popMap=await wbYear('SP.POP.TOTL',year)||{}; }catch(_){ popMap={}; } }
+        if(needW&&!popMap){ try{ popMap=await wbYear(wbIndicator('pop').code,year)||{}; }catch(_){ popMap={}; } }
         let sum=0,num=0,den=0,have=0;
         S.succ.forEach(c=>{ const e=m[c]; if(!e||e.v==null) return; const v=e.v;
           if(_HSUM[ind.k]){ sum+=v; have++; } else { const p=popMap[c]&&popMap[c].v; if(p){ num+=v*p; den+=p; have++; } } });
@@ -668,7 +637,7 @@ export function statsCompare(HOST){
         const fy=Math.max(1960,+String(S.from).slice(0,4)), ty=Math.min(new Date().getFullYear(),+String(S.to).slice(0,4));
         const rs=await Promise.all(S.succ.map(c=>fetchWB(c,ind.wb))); const byC={}; S.succ.forEach((c,i)=>{ if(rs[i]) byC[c]=rs[i]; });
         let popByC=null;
-        if(needW){ const rp=await Promise.all(S.succ.map(c=>fetchWB(c,'SP.POP.TOTL'))); popByC={}; S.succ.forEach((c,i)=>{ if(rp[i]) popByC[c]=rp[i]; }); }
+        if(needW){ const rp=await Promise.all(S.succ.map(c=>fetchWB(c,wbIndicator('pop').code))); popByC={}; S.succ.forEach((c,i)=>{ if(rp[i]) popByC[c]=rp[i]; }); }
         const out=[];
         for(let y=fy;y<=ty;y++){
           if(ind.k==='gdp'&&S.gdpEst&&y>=(S.gdpEstFrom||0)){ out.push({y,v:S.gdpEst*1e9}); continue; }
@@ -1026,6 +995,13 @@ export function statsCompare(HOST){
     /* (#R118) state() — the compare panel's LIVE state (also when the user built it BY HAND), so Atlas's
        working context reflects reality instead of only its own past actions. */
     function state(){ try{ return { open:!!(host&&host.isConnected&&document.getElementById('scp-view')), codes:codes.slice(), indicators:(indOrder||[]).slice(), mode, sources:Object.assign({},srcSel) }; }catch(_){ return null; } }
-    return { open, paintOnMap, previewOnMap, clearMap, toggleCountry, indKeys:()=>IND.map(i2=>i2.k), indLabel, state };
+    /* (country-analysis-unify) ONE COUNTRY'S TIMELINE IS THIS PANEL'S TIME-SERIES VIEW, NOT A SECOND CHART. The country card's
+       「時系列グラフ」 and Atlas's `timeSeries` used to open js/analysis-timeseries.js — a modal with six of these same World
+       Bank series, its own fetch, its own cache and its own crosshair. They open this, with the one country and the rows
+       marked `tl` (the six that chart showed), straight into the time-series view — and from there the reader can add a
+       country, pick any of the other indicators, switch to IMF or to the table, which the modal could not. → state() */
+    function timeline(code){ if(!code||!countryStats[code]) return null;
+      open([code], IND.filter(i2=>i2.tl).map(i2=>i2.k), null, 'ts'); return state(); }
+    return { open, timeline, paintOnMap, previewOnMap, clearMap, toggleCountry, indKeys:()=>IND.map(i2=>i2.k), indLabel, state };
   })();
 }

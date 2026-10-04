@@ -53,13 +53,13 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 {
 const CORE = read('js/app-body.js');
 
-/* The ten files and the one name each exports. Every other list below is READ OUT of the sources. */
+/* The nine files and the one name each exports. Every other list below is READ OUT of the sources. */
 const MODULES = [
   ['js/session-tabs.js', 'makeSessionTabs'],
   ['js/layer-dropdown.js', 'makeLayerDropdown'],
   ['js/layer-favs.js', 'makeLayerFavs'],
   ['js/premium-plan.js', 'makePremiumPlan'],
-  ['js/screenshot.js', 'makeScreenshot'],
+  /* (country-analysis-unify) js/screenshot.js left: 「Screenshot」 opens the share panel's Image tab (tests/country-analysis-unify-checks ⑤) */
   ['js/time-countries.js', 'makeTimeCountries'],
   /* the second pass: every section of js/app-body.js was swept for its surface, and these four
      measured 2/2/6/5 inbound against 0/0/0/1 outbound — cleaner cuts than anything in the first. */
@@ -243,7 +243,7 @@ test('R200 ④b: the names the layers menu hands back are HOISTED, because they 
 });
 
 test('R200 ④: no module inherited a closure variable', () => {
-  const mine = /(session-tabs|layer-dropdown|layer-favs|premium-plan|screenshot|time-countries)\.js/;
+  const mine = /(session-tabs|layer-dropdown|layer-favs|premium-plan|time-countries)\.js/;
   const problems = checkSplitScope().filter((p) => mine.test(p.file));
   assert.deepEqual(problems, [], 'split-scope problems:\n' + problems.map((p) => `${p.file}: ${p.msg}`).join('\n'));
 });
@@ -622,7 +622,7 @@ test('#R170 whenStyleReady() resolves on canDraw, not on isStyleLoaded', () => {
 // factories in one file it becomes tempting to "tidy up" by calling them together at the top. They
 // must NOT be. Each block used to run at a specific point of the closure, and these blocks build UI
 // into shared containers (layer rows, panel buttons) where order is visible. So the invariant pinned
-// below is: every factory is called exactly ONCE, and the 41 calls appear in index.html in exactly
+// below is: every factory is called exactly ONCE, and the 39 calls appear in index.html in exactly
 // the order their blocks used to occupy.
 //
 // Everything else is the standing contract from #R163–#R165: values that are REASSIGNED at runtime
@@ -656,7 +656,9 @@ const MOVED = {
   'js/viewshed.js': ['los'],
   'js/weather.js': ['wind', 'weatherEC', 'weatherPanel'],
   'js/layer-packs.js': ['earthSky', 'landCover', 'betaPack2', 'religionLang', 'timeZones', 'gibsScience'],
-  'js/analysis-panels.js': ['timeSeries', 'aiResearch', 'correlate', 'worldEvents', 'edu'],
+  /* (country-analysis-unify) timeSeries and aiResearch left with the chart and the panel they built — a country's timeline is the
+     comparison panel's time-series view, and every 「AI調査」 is Atlas's brief. The check is unchanged: what a file declares is instantiated. */
+  'js/analysis-panels.js': ['correlate', 'worldEvents', 'edu'],
   /* ⚠ (#R296) rf / disaster / earthReplay left this file with their features — 「電波・通信圏と
      見通し線解析を統合」, 「4つのうち…全削除」, 「存在意義が不明だから全削除」. What this list is FOR is
      that every factory a file DECLARES is instantiated — shortening it is the honest edit; the check
@@ -685,8 +687,8 @@ const ORDER = [
   'playground',
   'projView', 'wind', 'drawTool',
   'earthSky', 'landCover', 'betaPack2', 'religionLang',
-  'isolate', 'timeSeries', 'los', 'seaRoute', 'weatherEC',
-  'layerPresets', 'aiResearch', 'correlate', 'worldEvents', 'edu',
+  'isolate', 'los', 'seaRoute', 'weatherEC',
+  'layerPresets', 'correlate', 'worldEvents', 'edu',
   'labelPopup', 'geojsonUpload', 'weatherPanel', 'viewHash', 'share',
   'outline', 'moveShape', 'isochrone', 'radiation', 'arc3d',
   'objectList', 'popArea', 'sun', 'transitReach',   /* (#R469) −slope, deleted */
@@ -725,7 +727,7 @@ test('R166 #1 all seven files are loaded and every factory they define is instan
   }
 });
 
-test('R166 #2 ORDER: the 41 calls appear exactly where their blocks used to run', () => {
+test('R166 #2 ORDER: the 39 calls appear exactly where their blocks used to run', () => {
   // Grouping many blocks into one file makes "call them all together" look harmless. It is not:
   // these blocks append layer rows and panel buttons to shared containers, so their relative order
   // is user-visible. Pin it.

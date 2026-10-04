@@ -209,8 +209,7 @@ const MEMBER = {
      spec red and the round would have looked like the cause, so all six are here.
      Each names the member its OWN doors call: the analysis panels call open() on the implementation
      js/analysis-panels.js awaits, and the aircraft layer calls stats() on the controller it starts. */
-  analysisTimeSeries: ['__imAnalysisTimeSeries', 'open'],
-  analysisResearch: ['__imAnalysisResearch', 'open'],
+  /* (country-analysis-unify) analysisTimeSeries and analysisResearch left the loader with the chart and the panel */
   analysisCorrelate: ['__imAnalysisCorrelate', 'open'],
   /* ⚠ `render`, not `open`. js/analysis-world-events.js publishes { render, evYear } and has no
      open() at all; the member named here has to be the one THAT MODULE'S OWN DOOR calls, which is

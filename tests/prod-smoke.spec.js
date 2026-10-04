@@ -63,7 +63,7 @@ const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapCompare', 'IntMapRouting',
   'DrawTool',             // js/map-tools.js
   'Wind',                 // js/weather.js
   'IntMapBeta2',          // js/layer-packs.js
-  'IntMapAIResearch',     // js/analysis-panels.js
+  'IntMapCorrelate',      // js/analysis-panels.js (country-analysis-unify: IntMapAIResearch left with the research panel)
   'IntMapRadiation',      // js/sims.js
   // (#R167) the sixth split — one global per new file. js/tables.js is data, not factories, so it
   // gets checked the same way: the 27 tables it carries feed the Countries tab and the gazetteer,

@@ -539,12 +539,12 @@ MutationObserver に記録が届く（DOM の update steps）。カメラのフ�
   **世界データ層の 5 層**（行は起動時）／**宇宙エクスプローラ**（床のジェスチャーは起動時）。
   KaTeX と html2canvas も動的 import。
   ⚠ **「起動時に何も作らない」は静的解析では決まらない。** `js/analysis-panels.js` は候補に見えたが、
-  5 ファクトリのうち 2 つが**起動時に Layers パネルのボタンを作る**（`#btn-correlate`／`#btn-edu`）。
+  当時の 5 ファクトリのうち 2 つが**起動時に Layers パネルのボタンを作る**（`#btn-correlate`／`#btn-edu`）。
   ファイルごと遅延化するとボタンが 2 つ消える——**ファクトリ本体の実行文を数えてから**決める。
   ⇒ **だから機能ではなく「起動時に走るもの」で切ってある。** `js/analysis-panels.js` は
-  5 ファクトリの登録・起動時の DOM とリスナー・4 つの公開グローバルの**非同期ファサード**だけを持つ
-  eager shell（17 KB）で、本体は `js/analysis-{timeseries,research,correlate,world-events,edu}.js`
-  の 5 本に分かれて `IntMapLazy` から取られる。
+  3 ファクトリの登録・起動時の DOM とリスナー・2 つの公開グローバルの**非同期ファサード**だけを持つ
+  eager shell で、本体は `js/analysis-{correlate,world-events,edu}.js` の 3 本に分かれて `IntMapLazy` から取られる
+  （国の時系列チャートと調査パネルは、多国比較の時系列表示と Atlas の brief に畳んだ）。
   ⚠ **ファサードはスタブではない。** 呼ばれたらローダーを await して本物を呼ぶ。**取りに行っては
   ならない 2 つの入口**——`IntMapEdu.close()` と地図クリックの転送——だけが `IntMapLazy.ready()` を
   見て、まだ無ければ何もしない（＝クイズを開く前と同じ挙動）。

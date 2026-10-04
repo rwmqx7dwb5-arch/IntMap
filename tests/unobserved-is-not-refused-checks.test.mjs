@@ -37,6 +37,7 @@ import * as acorn from 'acorn';
 import { jsonWithin, readWithin, isUnobserved, untilObserved, UNOBSERVED_RETRIES } from '../js/fetch-deadline.js';
 import { afterTick, tickKey, stopEarlyTimers } from '../js/runtime.js';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { makeWorldBankReader } from '../js/wb-indicators.js';
 import { codeOnly as stripComments } from '../scripts/code-only.mjs';
 import { readLF } from '../scripts/eol.mjs';
 
@@ -246,8 +247,11 @@ test('⑥ wb-layers: a silent half of a summed indicator is not cached as the se
   t.after(() => { globalThis.fetch = real; stopEarlyTimers(); });
   const src = CODE('js/wb-layers.js');
   const prelude = 'const wbCache={}, wbSeriesCache={}; const WB_FROM=1990; const _wbKey=(code)=>Array.isArray(code)?code.join("+"):code;\n';
-  const mk = () => new Function('scope', 'with (scope) { ' + prelude + liftFunction(src, 'wbSeries') + '\nreturn { wbSeries, wbSeriesCache }; }')(
-    inertScope({ readWithin, clockFor: () => 30, isUnobserved, untilObserved, afterTick, tickKey }));
+  /* (country-analysis-unify) wbSeries reads through js/wb-indicators.js's one World Bank read — the real one, built on the real
+     readWithin and a 30 ms clock, fresh per page (its keep-what-answered cache is the page's) */
+  const mk = () => { const WBR = makeWorldBankReader({ readWithin, clockFor: () => 30 });
+    return new Function('scope', 'with (scope) { ' + prelude + liftFunction(src, 'wbSeries') + '\nreturn { wbSeries, wbSeriesCache }; }')(
+      inertScope({ readWorldBank: WBR.read, wbClock: WBR.clock, isUnobserved, untilObserved, afterTick, tickKey })); };
   /* A answers, B never does: before, B was `[]` and A alone was cached as «A+B» */
   let W = mk();
   globalThis.fetch = (u, init) => (/indicator\/A\?/.test(u) ? answer(200, WB_ROWS('JPN', 1)) : silent(init));
@@ -273,7 +277,8 @@ test('⑥ layer-packs: a single-year read that ran out of time is said to be lat
   const run = (series, fetchImpl) => {
     globalThis.fetch = fetchImpl;
     const cache = {};
-    const scope = inertScope({ readWithin, clockFor: () => 30, isUnobserved, cache, state: {}, wbYr: {},
+    /* (country-analysis-unify) the row's fallback read is js/wb-indicators.js readWorldBank — the real one, on a 30 ms clock */
+    const scope = inertScope({ readWorldBank: makeWorldBankReader({ readWithin, clockFor: () => 30 }).read, isUnobserved, cache, state: {}, wbYr: {},
       WB: { k: { ind: 'X', ids: ['wb-k-fill'], src: 'src-wb-k', score: (v) => v } },
       _imCanDraw: () => true, imToast: (m) => toasts.push(m), HOST: { lang: 'en', countryGeo: { features: [] } },
       IntMapLang: { t: (_l, en) => en },   /* (module-graph) the lifted code reads its imported registry binding */

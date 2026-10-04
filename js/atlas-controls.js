@@ -227,7 +227,6 @@ export function makeAtlasControls(HOST, CTX) {
     const MOD_METHODS=['open','toggle','close','clear','exit','refresh','render'];
     const MOD_RE=/^(IntMap[A-Za-z0-9]*|RunwaySearch)$/;
     function moduleCatalog(){ try{ const out=[], seenMod=new Set(); for(const k of Object.keys(window)){ if(!MOD_RE.test(k)) continue;
-      if(k==='IntMapAIResearch') continue;   /* (#R118) absorbed into Atlas (brief) — the legacy panel must not be offered to the planner */
       let v; try{ v=window[k]; }catch(_){ continue; } if(!v||typeof v!=='object') continue; const ms=MOD_METHODS.filter(m=>typeof v[m]==='function'); if(ms.length){ out.push(k+'('+ms.join(',')+')'); seenMod.add(k); } }
       /* ⚠⚠ (#R320) …AND THE ONES THAT HAVE NOT ARRIVED YET. The walk above is `Object.keys(window)`,
          so a module fetched on demand (#R209) is, to the planner, a module IntMap does not have —

@@ -38,6 +38,8 @@
  *  moves up». Measured: writing this inside the kernel put it at 4,964 and five checks went red.
  * ==========================================================================*/
 
+import './safe-html.js';   /* (country-analysis-unify) publishes globalThis.IntMapSafe — the one encoder offerHtml writes through, in Node as in the app */
+
 /* HOST is the app-body host object (only `lang` matters here, and only through the picker the
    kernel already owns). `D` is what this module cannot do for itself and must be handed:
      L      the 5-argument language picker (the other four languages come from js/locales/)
@@ -72,23 +74,27 @@ export const makeAtlasReading = (HOST, D) => {
          (the reader has said what they want in their own words; offering them three guesses at it
          underneath is the same staleness). The head and the note stay — they are the RECORD of what
          Atlas is holding, not an offer, and the reader still needs to see which article this is. */
-  function arrive(headHtml, note, qs) {
-    const p = ensure();
-    try { const exw = p.querySelector('.atl-ex'); if (exw) exw.style.display = 'none'; const subw = p.querySelector('.atl-sub'); if (subw) subw.style.display = 'none'; } catch (_) { }   /* (#R103) drop the intro sub-text once a conversation starts (don't stick it to the top) */
-    const chips = (qs || []).filter(Boolean).map((e) => '<button class="atl-here-q" style="display:block;width:100%;text-align:left;margin:3px 0;padding:7px 10px;font-size:11.5px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);cursor:pointer;">' + esc(e) + '</button>').join('');
+  /* (country-analysis-unify) THE OFFER — starters and a field — BUILT ONCE AND PUT WHERE IT IS ASKED FOR. `arrive()` puts it in
+     the arrival bubble; `offer()` (below) puts it under an answer that is already on screen — the brief, which opens a
+     conversation about a place and used to leave the reader with no next question, where the research panel it
+     replaced offered four. Same markup, same wiring, same retirement on use: one builder (#R776 ③). */
+  /* ⚠ the encoder here is IntMapSafe.html itself (the one encoder, js/safe-html.js), not the kernel's `esc` delegate: `offer()`
+     writes this into a sink of its own, and scripts/output-taint.mjs can judge the one encoder where it cannot follow a handed-in name */
+  function offerHtml(qs) {
+    const chips = (qs || []).filter(Boolean).map((e) => '<button class="atl-here-q" style="display:block;width:100%;text-align:left;margin:3px 0;padding:7px 10px;font-size:11.5px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);cursor:pointer;">' + globalThis.IntMapSafe.html(e) + '</button>').join('');
     /* ⚠ the send glyph is the composer's own up-arrow (#R149: 「白背景黒文字に。plain textの→はやめて」),
        and `Send` is the string the composer's button already carries in all nine languages. */
     const askRow = '<div class="atl-arrive-ask" style="display:flex;gap:6px;margin-top:6px;">'
-      + '<input class="atl-arrive-in" type="text" placeholder="' + esc(L('or ask in your own words…', 'または自分の言葉で聞く…', 'oder in eigenen Worten fragen…', 'или спросите своими словами…', 'o pregunta con tus propias palabras…'))
+      + '<input class="atl-arrive-in" type="text" placeholder="' + globalThis.IntMapSafe.html(L('or ask in your own words…', 'または自分の言葉で聞く…', 'oder in eigenen Worten fragen…', 'или спросите своими словами…', 'o pregunta con tus propias palabras…'))
       + '" style="flex:1 1 auto;min-width:0;height:32px;padding:0 11px;box-sizing:border-box;font-size:11.5px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);outline:none;">'
-      + '<button class="atl-arrive-send" type="button" title="' + esc(L('Send', '送信', 'Senden', 'Отправить', 'Enviar'))
+      + '<button class="atl-arrive-send" type="button" title="' + globalThis.IntMapSafe.html(L('Send', '送信', 'Senden', 'Отправить', 'Enviar'))
       + '" style="flex:0 0 auto;width:32px;height:32px;border-radius:50%;border:1px solid rgba(0,0,0,0.08);background:#fff;color:#111;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg></button></div>';
-    const b = bubble('a', headHtml
-      + '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;line-height:1.5;">' + esc(note) + '</div>'
-      + '<div class="atl-arrive-qs">' + chips + askRow + '</div>');
-    /* Asking retires the offer — one path for both controls, so a chip and a typed question cannot
+    return '<div class="atl-arrive-qs">' + chips + askRow + '</div>';
+  }
+  /* Asking retires the offer — one path for both controls, so a chip and a typed question cannot
        come to behave differently (which is exactly how the two «Ask Atlas» buttons drifted). An empty
        field is not a question: nothing is sent and nothing is retired. */
+  function wireOffer(b) {
     const grp = b.querySelector('.atl-arrive-qs');
     const inp = b.querySelector('.atl-arrive-in');
     const ask = (q) => {
@@ -99,10 +105,30 @@ export const makeAtlasReading = (HOST, D) => {
     try { b.querySelectorAll('.atl-here-q').forEach((btn) => { btn.onclick = () => ask(btn.textContent.trim()); }); } catch (_) { }
     try { const sb = b.querySelector('.atl-arrive-send'); if (sb) sb.onclick = () => ask(inp && inp.value); } catch (_) { }
     try { if (inp) inp.onkeydown = (e) => { if (e && (e.key === 'Enter' || e.keyCode === 13) && !e.shiftKey) { try { e.preventDefault(); } catch (_) { } ask(inp.value); } }; } catch (_) { }
+    return inp;
+  }
+  function arrive(headHtml, note, qs) {
+    const p = ensure();
+    try { const exw = p.querySelector('.atl-ex'); if (exw) exw.style.display = 'none'; const subw = p.querySelector('.atl-sub'); if (subw) subw.style.display = 'none'; } catch (_) { }   /* (#R103) drop the intro sub-text once a conversation starts (don't stick it to the top) */
+    const b = bubble('a', headHtml
+      + '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;line-height:1.5;">' + esc(note) + '</div>'
+      + offerHtml(qs));
+    const inp = wireOffer(b);
     /* ⚠ the field IN the arrival is what the caret goes to; `focus` (the panel's composer) is the
        fallback for a caller whose bubble could not be built. Still nothing sent (#R776). */
     setTimeout(() => { try { if (inp) inp.focus(); else focus(); } catch (_) { } }, 80);
     return b;
+  }
+  /* the offer under an answer already on screen (`el` — its bubble). Nothing is sent and the caret is not moved: the
+     reader is reading the answer. An offer with no starters is not made (the composer below is always there). */
+  function offer(el, qs) {
+    const list = (qs || []).filter(Boolean);
+    if (!el || !list.length) return null;
+    const box = document.createElement('div'); box.style.marginTop = '8px';
+    box.innerHTML = offerHtml(list);
+    el.appendChild(box);
+    wireOffer(box);
+    return box;
   }
 
   /* ⚠⚠⚠ THE STARTERS ARE DERIVED, NOT A FIXED TRIO. #R392 took fixed sentences out of askHere for
@@ -202,5 +228,5 @@ export const makeAtlasReading = (HOST, D) => {
     return true;
   }
 
-  return { arrive, askReading, readingStarters };   /* ⚠ (#R175 ③) nothing is exported for a test's sake — `surfaceText` is reached by the checks the way `readingStarters` is: extracted from this source and RUN (#R505) */
+  return { arrive, askReading, readingStarters, offer };   /* ⚠ (#R175 ③) nothing is exported for a test's sake — `surfaceText` is reached by the checks the way `readingStarters` is: extracted from this source and RUN (#R505) */
 };

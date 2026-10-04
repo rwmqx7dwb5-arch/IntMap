@@ -18,6 +18,7 @@ import * as LM from '../js/layer-manifest.js';
 import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
 import { GROUPS, named as namedOf, rest as restOf, publishedList, byKey, OTHERS_IDS } from './helpers/layer-groups.mjs';
 import { uiLocale, uiLocaleCodes } from './helpers/layer-locale-tables.mjs';
+import { wbRows, wbRowSeries } from './helpers/wb-rows.mjs';   /* (country-analysis-unify) the World Bank rows as js/wb-layers.js builds them */
 import { capsSource } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
 /* shared by the blocks below: the repository root, and one of its files as text */
@@ -578,26 +579,24 @@ test('#R254 ⑦ Others is a real category, Beta means beta, and energy mix is pr
   const wb = read('js/wb-layers.js');
   ['wburban', 'wbtourism'].forEach(k => assert.ok(!wb.includes("{id:'" + k + "'"),
     k + ' came back — it is an exact duplicate of another row and was merged away in #R266'));
-  /* counted by splitting rather than by building a RegExp — see the note in tests/r266-checks */
+  /* (country-analysis-unify) EVALUATED: what each row paints is its indicator in js/wb-indicators.js, joined by the
+     shipped `_wbInd` (tests/helpers/wb-rows.mjs) — the series are no longer written in js/wb-layers.js at all */
+  const rows = wbRows(), series = wbRowSeries(), painted = series.flatMap((r) => [].concat(r.code));
   ['SP.URB.TOTL.IN.ZS', 'ST.INT.ARVL'].forEach((ind) => {
-    const n = wb.split("code:'" + ind + "'").length - 1;
+    const n = painted.filter((c) => c === ind).length;
     assert.equal(n, 1, ind + ' is declared by exactly one layer — that is what «merged» means');
   });
-  /* (#R289) the CO₂ merge, stated the same way: both indicators are declared exactly once, and both
+  /* (#R289) the CO₂ merge, stated the same way: both indicators are painted exactly once, and both
      live inside ONE entry — the second half is what makes it a merge rather than a deletion. */
   const CO2 = ['EN.GHG.CO2.MT.CE.AR5', 'EN.GHG.CO2.PC.CE.AR5'];
-  CO2.forEach((ind) => assert.equal(wb.split("code:'" + ind + "'").length - 1, 1, ind + ' must be declared exactly once'));
-  const co2i = wb.indexOf("{id:'wbco2', modes:[");
-  assert.ok(co2i > 0, 'the CO2 row must be the modal entry');
-  const co2Block = wb.slice(co2i, co2i + 1400);
-  CO2.forEach((ind) => assert.ok(co2Block.includes(ind), ind + ' is not inside the merged CO2 entry'));
-  assert.ok(!wb.includes("{id:'wbco2t'"), 'the separate total-CO2 row came back');
+  CO2.forEach((ind) => assert.equal(painted.filter((c) => c === ind).length, 1, ind + ' must be declared exactly once'));
+  const co2 = rows.find((r) => r.id === 'wbco2');
+  assert.ok(co2 && co2.modes, 'the CO2 row must be the modal entry');
+  CO2.forEach((ind) => assert.ok(co2.modes.some((m) => m.code === ind), ind + ' is not inside the merged CO2 entry'));
+  assert.ok(!rows.some((r) => r.id === 'wbco2t'), 'the separate total-CO2 row came back');
   /* the two indicators the World Bank retired: the API answers «not found» for these, which is
      what 「難民受入数レイヤーはデータを取得できませんでした」 was */
-  /* ⚠ the DECLARATION, not the id in prose: #R266's own note has to name the archived ids to explain
-     why they went, and a bare `includes` on the file would catch the explanation. (Stripping the
-     comments first is worse — CodeQL reads that regex as an incomplete sanitizer.) */
-  ['SM.POP.REFG', 'SH.STA.OWAD.ZS'].forEach(id => assert.ok(!wb.includes("code:'" + id + "'"),
+  ['SM.POP.REFG', 'SH.STA.OWAD.ZS'].forEach(id => assert.ok(!painted.includes(id),
     id + ' is archived by the World Bank — a layer pointing at it can only ever fail'));
   /* the World-Bank rows that are NOT in Others are the ones filed in a real group */
   ['wbco2', 'wbforest', 'wbagri', 'wbhealth', 'wbnet', 'wbmilgdp', 'wbwomparl']

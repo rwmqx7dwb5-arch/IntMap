@@ -92,11 +92,10 @@ test('R231 screenshot: both layers are drawn into the container box, and capture
   assert.match(src, /const cw = Math\.max\(1, cont\.clientWidth\), ch = Math\.max\(1, cont\.clientHeight\);/, 'the box is the container');
   assert.match(src, /out\.width = Math\.round\(cw \* scale\); out\.height = Math\.round\(ch \* scale\);/, 'the output is that box at the renderer density');
   assert.match(src, /ctx\.drawImage\(mapCv, 0, 0, mapCv\.width, mapCv\.height, 0, 0, out\.width, out\.height\)/, 'the map is mapped onto it explicitly');
-  /* the class comes off on every path, in BOTH files: the capture owns it when it set it, and the
-     button owns it across the flash and the encode, which outlive the picture */
+  /* the class comes off on every path: the capture owns it when it set it. (country-analysis-unify) The button that owned it
+     across its own flash and download (js/screenshot.js) is gone — 「Screenshot」 is the share panel's Image tab, whose
+     picture lets the capture set and clear the class itself. */
   assert.match(src, /\} finally \{[\s\S]{0,240}classList\.remove\(CAPTURE_CLASS\)/, 'the capture clears what it set');
-  const shot = read('js/screenshot.js');
-  assert.match(shot, /finally\{ if\(CAPTURE_CLASS\) document\.body\.classList\.remove\(CAPTURE_CLASS\);/, 'and the button clears its own on every path');
   assert.match(read('js/atlas-view-capture.js'), /const CAPTURE_CLASS = 'capture-mode';/, 'one spelling of the class, in one place');
   /* the phone's own controls are controls */
   const css = read('css/intmap.css');

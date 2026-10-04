@@ -30,10 +30,11 @@ import { test, expect } from './helpers/app.js';
 
 test.describe.configure({ mode: 'serial' });
 
-/* the five keys — matched against the loader's own table below rather than trusted from here */
-const ANALYSIS = ['analysisTimeSeries', 'analysisResearch', 'analysisCorrelate', 'analysisEvents', 'analysisEdu'];
+/* the keys — matched against the loader's own table below rather than trusted from here. (country-analysis-unify) Three: the
+   time-series chart and the research panel left — a country's timeline is the comparison's time-series view, and every
+   「AI調査」 is Atlas's brief. */
+const ANALYSIS = ['analysisCorrelate', 'analysisEvents', 'analysisEdu'];
 const GLOBALS = {
-  analysisTimeSeries: '__imAnalysisTimeSeries', analysisResearch: '__imAnalysisResearch',
   analysisCorrelate: '__imAnalysisCorrelate', analysisEvents: '__imAnalysisEvents',
   analysisEdu: '__imAnalysisEdu',
 };
@@ -49,7 +50,7 @@ test('R322 ①: the analysis buttons are built at boot and their implementations
        about: getting a map on screen must not fetch an analysis panel. */
     const bootEnd = marks.renderer || marks.dom || marks.html || 0;
     const chunks = performance.getEntriesByType('resource')
-      .filter((r) => /\/analysis-(timeseries|research|correlate|world-events|edu)[-.]/.test(r.name))
+      .filter((r) => /\/analysis-(correlate|world-events|edu)[-.]/.test(r.name))
       .map((r) => ({ name: r.name.split('/').pop(), at: Math.round(r.startTime) }));
     return {
       bootEnd: Math.round(bootEnd),
@@ -59,10 +60,10 @@ test('R322 ①: the analysis buttons are built at boot and their implementations
       correlateText: ((document.getElementById('btn-correlate') || {}).textContent || '').trim(),
       edu: !!document.getElementById('btn-edu'),
       eduMount: !!document.getElementById('edu-mount'),
-      /* the loader knows all five, by its own table */
+      /* the loader knows all three, by its own table */
       known: keys.filter((k) => (window.IntMapLazy.names() || []).indexOf(k) >= 0),
       /* the façades the rest of the app calls are published EAGERLY, or every door breaks */
-      facades: ['IntMapTimeSeries', 'IntMapAIResearch', 'IntMapCorrelate', 'IntMapEdu'].map((g) => typeof window[g]),
+      facades: ['IntMapCorrelate', 'IntMapEdu'].map((g) => typeof window[g]),
       /* …and the shell owns the events view's entry state, which js/companies-ui.js reads */
       dashView: typeof window._dashView,
       failed: (window.__imLazyCheck || { failed: [] }).failed,
@@ -76,8 +77,8 @@ test('R322 ①: the analysis buttons are built at boot and their implementations
   expect(s.correlateText.length, 'the Correlation button must carry its translated label').toBeGreaterThan(0);
   expect(s.edu, 'the Education button must exist').toBe(true);
   expect(s.eduMount, '#edu-mount is what js/data-layers.js re-appends into the Tools section').toBe(true);
-  expect(s.known.sort(), 'all five implementations must be registered with the loader').toEqual([...ANALYSIS].sort());
-  expect(s.facades, 'the four façades the rest of the app calls must be published eagerly').toEqual(['object', 'object', 'object', 'object']);
+  expect(s.known.sort(), 'all three implementations must be registered with the loader').toEqual([...ANALYSIS].sort());
+  expect(s.facades, 'the two façades the rest of the app calls must be published eagerly').toEqual(['object', 'object']);
   expect(s.dashView, 'the shell owns _dashView so js/companies-ui.js can read it before anything loads').toBe('string');
   expect(s.failed, 'nothing may have failed to load').toEqual([]);
 });

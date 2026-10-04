@@ -31,7 +31,8 @@ import './osm-facilities.js';
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
 import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) how long one read of a host may take */
-import { readWithin, jsonWithin, isUnobserved } from './fetch-deadline.js';
+import { jsonWithin, isUnobserved } from './fetch-deadline.js';
+import { readWorldBank, wbIndicator } from './wb-indicators.js';   /* (country-analysis-unify) the one World Bank read and the one catalogue of its series */
 import { layerInflight } from './layer-rows.js';   /* (restored-layer-catchup) a row's read is in flight there, and its outcome is kept by js/layer-state.js */
 import { layerState } from './layer-state.js';
 import { IntMapGeoEngine } from './geo-engine.js';
@@ -819,31 +820,31 @@ export function betaPack2(HOST){
     /* ---------- World-Bank-backed country choropleths (live, keyless, CORS*) ---------- */
     /* cpi: WGI "Control of Corruption" GOVERNANCE SCORE (0–100, higher = cleaner) — the WGI database
        moved to GOV_WGI_* ids under source=3 (the old CC.EST id now returns 0 rows; curl-verified). */
-    const WB={cpi:{ind:'GOV_WGI_CC.SC',date:'2023',q:'&source=3',ids:['wb-cpi-f','wb-cpi-l'],src:'wb-cpi',
+    const WB={cpi:{k:'cpi',date:'2023',ids:['wb-cpi-f','wb-cpi-l'],src:'wb-cpi',
         ramp:['interpolate',['linear'],['get','s'],10,'#a50026',30,'#f46d43',50,'#fee08b',70,'#74c476',90,'#1a9850'],
         score:v=>Math.max(0,Math.min(100,v)),
-        nm:LA('Corruption (control, WGI)','汚職・腐敗指標（世界銀行WGI）','Korruptionskontrolle (WGI)','Контроль коррупции (WGI)','Control de la corrupción (WGI)'),
+        nm:wbIndicator('cpi').n,
         note:()=>IntMapLang.t(HOST.lang,"World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.","世界銀行ガバナンス指標「腐敗の統制」スコア（0–100、高い=クリーン）。TIのCPIに相当する公開API系指標。","Weltbank-WGI-Wert „Korruptionskontrolle“ (0–100, höher = sauberer) — das Open-API-Gegenstück zum CPI von TI.","Показатель Всемирного банка WGI «Контроль коррупции» (0–100, выше = чище) — аналог CPI от TI с открытым API.","Puntuación WGI del Banco Mundial «Control de la corrupción» (0–100, más alto = más limpio): el equivalente con API abierta al IPC de TI.")},
-      lifeexp:{ind:'SP.DYN.LE00.IN',date:'2022',q:'',ids:['wb-le-f','wb-le-l'],src:'wb-le',
+      lifeexp:{k:'life',date:'2022',ids:['wb-le-f','wb-le-l'],src:'wb-le',
         ramp:['interpolate',['linear'],['get','s'],52,'#a50026',62,'#f46d43',70,'#fee08b',78,'#74add1',85,'#313695'],
         score:v=>v,
         nm:LA('Life expectancy (years)','平均寿命（年）','Lebenserwartung (Jahre)','Ожидаемая продолжительность жизни (лет)','Esperanza de vida (años)'),
         note:()=>IntMapLang.t(HOST.lang,"Life expectancy at birth (World Bank).","出生時平均余命（世界銀行）。","Lebenserwartung bei Geburt (Weltbank).","Ожидаемая продолжительность жизни при рождении (Всемирный банк).","Esperanza de vida al nacer (Banco Mundial).")},
       /* (#R22) New beta choropleths — all live World Bank, keyless + CORS, latest value per country. */
-      unemp:{ind:'SL.UEM.TOTL.ZS',date:'',q:'&mrnev=1',ids:['wb-unemp-f','wb-unemp-l'],src:'wb-unemp',
+      unemp:{k:'unemp',mrnev:1,ids:['wb-unemp-f','wb-unemp-l'],src:'wb-unemp',
         ramp:['interpolate',['linear'],['get','s'],2,'#1a9850',5,'#a6d96a',9,'#fee08b',15,'#f46d43',25,'#a50026'],
         score:v=>v, fmt:v=>(+v).toFixed(1)+'%',
         nm:LA('Unemployment rate (%)','失業率（%）','Arbeitslosenquote (%)','Уровень безработицы (%)','Tasa de desempleo (%)'),
         note:()=>IntMapLang.t(HOST.lang,"Unemployment, total (% of labor force; modeled ILO / World Bank, latest year).","失業率（労働力人口比、ILO推計・世界銀行、最新年）。","Arbeitslosenquote insgesamt (% der Erwerbsbevölkerung; ILO-Modellrechnung / Weltbank, letztes Jahr).","Уровень безработицы, всего (% рабочей силы; модель МОТ / Всемирный банк, последний год).","Desempleo total (% de la población activa; estimación modelada OIT / Banco Mundial, último año).")},
-      internet:{ind:'IT.NET.USER.ZS',date:'',q:'&mrnev=1',ids:['wb-internet-f','wb-internet-l'],src:'wb-internet',
+      internet:{k:'net',mrnev:1,ids:['wb-internet-f','wb-internet-l'],src:'wb-internet',
         ramp:['interpolate',['linear'],['get','s'],10,'#a50026',30,'#f46d43',55,'#fee08b',75,'#74c476',95,'#1a9850'],
         score:v=>v, fmt:v=>(+v).toFixed(1)+'%',
         nm:LA('Internet users (%)','インターネット普及率（%）','Internetnutzer (%)','Пользователи интернета (%)','Usuarios de internet (%)'),
         note:()=>IntMapLang.t(HOST.lang,"Individuals using the Internet (% of population; World Bank, latest year).","人口に占めるインターネット利用者の割合（世界銀行、最新年）。","Internetnutzer (% der Bevölkerung; Weltbank, letztes Jahr).","Пользователи интернета (% населения; Всемирный банк, последний год).","Personas que usan Internet (% de la población; Banco Mundial, último año).")},
-      precip:{ind:'AG.LND.PRCP.MM',date:'',q:'&mrnev=1',ids:['wb-precip-f','wb-precip-l'],src:'wb-precip',
+      precip:{k:'precip',mrnev:1,ids:['wb-precip-f','wb-precip-l'],src:'wb-precip',
         ramp:['interpolate',['linear'],['get','s'],100,'#f6e8c3',400,'#c7eae5',800,'#80cdc1',1500,'#35978f',2800,'#01665e'],
         score:v=>v, fmt:v=>Math.round(v)+' mm',
-        nm:LA('Annual precipitation (mm)','年降水量（mm）','Jahresniederschlag (mm)','Годовое количество осадков (мм)','Precipitación anual (mm)'),
+        nm:wbIndicator('precip').n,
         note:()=>IntMapLang.t(HOST.lang,"Average annual precipitation (depth in mm, long-term; World Bank).","年間平均降水量（深さmm、長期平均・世界銀行）。","Durchschnittlicher Jahresniederschlag (Höhe in mm, langjährig; Weltbank).","Среднегодовое количество осадков (в мм, многолетнее; Всемирный банк).","Precipitación media anual (altura en mm, a largo plazo; Banco Mundial).")}};
     /* ══ (#R266) THESE FIVE ALSO PAINT ONE YEAR AT A TIME ══════════════════════════════════════════
        「その他、年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」 — and this
@@ -851,11 +852,14 @@ export function betaPack2(HOST){
        internet / annual precipitation). Two of them had a year HARD-CODED in the table (`date:'2023'`,
        `date:'2022'`) and the other three asked for `mrnev=1`, so the reader could not move any of
        them. The series itself comes from js/wb-layers.js's `window.IntMapWB.series` — the same fetch,
-       the same cache, one network path for the whole app — and `date`/`q` stay in the table only as
+       the same cache, one network path for the whole app — and `date`/`mrnev` stay in the table only as
        the fallback for a build that somehow runs before that module is up.
        ⚠ THE SOURCE IS BUILT ONCE AND THEN RE-FED. `build()` used to early-return the moment the
        source existed, which is correct for «turn it back on» and wrong for «show me 2010»: the year
        change has to reach `setSourceData`, or the picker moves and the map does not. */
+    /* (country-analysis-unify) a row names its indicator (`k`); the series and the WDI source it lives under are js/wb-indicators.js's.
+       `ind` / `source` are read in here once, so the paths below (the series, the time range, the fallback read) are unchanged. */
+    Object.keys(WB).forEach((k)=>{ const I=wbIndicator(WB[k].k); WB[k].ind=I.code; WB[k].source=I.source||null; });
     const wbYr={};
     /* ══ (map-layer-system) THE YEAR IS THE CLOCK'S HERE TOO ══════════════════════════════════════════════
        MEASURED 2026-10-03: three of these rows paint the SAME World Bank series as a row of js/wb-layers.js
@@ -888,9 +892,10 @@ export function betaPack2(HOST){
           /* the pre-#R266 single-year read, kept as the fallback for a build that beats wbLayers up */
           vals=cache['wb_'+key];
           if(!vals){ vals={};
-            try{ const u='https://api.worldbank.org/v2/country/all/indicator/'+W.ind+'?format=json&per_page=400'+(W.date?('&date='+W.date):'')+(W.q||'');
-              const j=JSON.parse((await readWithin(u,clockFor(u))).text); (j&&j[1]||[]).forEach(row=>{ if(row&&row.value!=null){ const iso=row.countryiso3code||(row.country&&row.country.id); if(iso&&iso.length===3) vals[iso]=+row.value; } });
-            }catch(e){ if(isUnobserved(e)) late=e; }
+            /* (country-analysis-unify) js/wb-indicators.js readWorldBank: `late` is its word for «ran out of time» (isUnobserved) */
+            const r=await readWorldBank({ code:W.ind, date:W.date||'', mrnev:W.mrnev||0, source:W.source||0, perPage:400 });
+            r.rows.forEach(row=>{ if(row.iso3&&row.iso3.length===3) vals[row.iso3]=row.v; });
+            if(r.status==='unavailable'&&r.late) late=r.error;
             /* (unobserved-is-not-refused) A READ THAT RAN OUT OF TIME IS LATE, NOT «COULD NOT LOAD». An empty result is never
                cached (the refusal branch below returns before the cache line), so the next switch-on reads again either way;
                what differs is what the reader is told. Late → say so and draw nothing. */

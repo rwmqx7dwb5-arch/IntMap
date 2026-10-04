@@ -35,7 +35,7 @@ import { aiProxySource } from './helpers/ai-proxy-source.mjs';
 import test from 'node:test';
 import { after } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeViewGround } from '../js/atlas-view-ground.js';
@@ -66,9 +66,11 @@ const CONSOLE_SRC = codeOnly((read('js/atlas-console.js') + '\n' + capsSource())
 
 /* ══ ① ONE CAPTURE, TWO CALLERS ═══════════════════════════════════════════════════════════════ */
 
-test('R493 ①: Atlas and the screenshot button take the SAME picture, by running the same code', () => {
+test('R493 ①: Atlas and the map\'s picture take the SAME capture, by running the same code', () => {
   const cap = read('js/atlas-view-capture.js');
-  const shot = read('js/screenshot.js');
+  /* (country-analysis-unify) the second caller was js/screenshot.js; 「Screenshot」 opens the share panel's Image tab now
+     (tests/country-analysis-unify-checks ⑤), and that tab's picture — js/map-recorder.js postcard — is the caller */
+  const shot = read('js/map-recorder.js');
   const atlas = (read('js/atlas-console.js') + '\n' + capsSource());
 
   /* the module really is the capture: the WebGL-inside-a-render-tick read, the #R231 single
@@ -82,24 +84,21 @@ test('R493 ①: Atlas and the screenshot button take the SAME picture, by runnin
   assert.match(cap, /export function makeViewCapture/, 'and it has ONE door — tests/r175 ③ makes a dynamically-reached export look dead, so the three pieces are members rather than exports');
   assert.equal((cap.match(/^export /gm) || []).length, 1, 'exactly one export');
 
-  /* …and BOTH callers reach it rather than re-implementing it. ⚠ js/screenshot.js reaches it with a
-     DYNAMIC import on purpose: that file rides the eager bundle so the button is wired at boot, and
-     `npm run check:perf` measured the static import putting the whole capture into every reader's
-     startup for a button most of them never press (eager.modules 283 → 284). js/atlas-console.js is
-     itself lazy, so its import is static. */
-  assert.match(codeOnly(shot), /await import\('\.\/atlas-view-capture\.js'\)/,
-    'js/screenshot.js fetches the capture when someone captures, not at boot');
+  /* …and BOTH callers reach it rather than re-implementing it. Both are fetched on demand — the share panel imports
+     js/map-recorder.js the first time its Image tab is shown, js/atlas-console.js is the lazy kernel — so both import it
+     statically and neither puts the capture into every reader's startup (the #R493 eager.modules 283 → 284 measurement
+     is why the old button's file had to import it dynamically). */
+  assert.match(codeOnly(shot), /import \{ makeViewCapture \} from '\.\/atlas-view-capture\.js'/,
+    'js/map-recorder.js imports the shared capture');
   assert.match(codeOnly(atlas), /from '\.\/atlas-view-capture\.js'/,
     'js/atlas-console.js imports the shared capture');
   const shotCode = codeOnly(shot);
-  assert.doesNotMatch(shotCode, /events\.once\('render'/, 'js/screenshot.js must not keep a second frame grab');
-  assert.doesNotMatch(shotCode, /html2canvas\(cont/, 'js/screenshot.js must not keep a second overlay pass');
+  assert.doesNotMatch(shotCode, /events\.once\('render'/, 'js/map-recorder.js must not keep a second frame grab');
+  assert.doesNotMatch(shotCode, /html2canvas\(cont/, 'js/map-recorder.js must not keep a second overlay pass');
   assert.match(shotCode, /makeViewCapture\(/, '…it opens the shared door');
-  assert.match(shotCode, /CAP\.captureCanvas\(/, '…and takes the shared picture through it');
-  /* what stays in the button is the BUTTON's: the class across the whole operation, and the file */
-  assert.match(shotCode, /classList\.add\(CAPTURE_CLASS\)/, 'the button still owns capture-mode…');
-  assert.match(shotCode, /finally\{[^}]*classList\.remove\(CAPTURE_CLASS\)/,
-    '…and still takes it off in `finally` (#R231: a capture that dies must not hide every control)');
+  assert.match(shotCode, /\.captureCanvas\(/, '…and takes the shared picture through it');
+  /* no file in js/ builds a picture of the map on a path of its own any more */
+  assert.ok(!existsSync(join(ROOT, 'js/screenshot.js')), 'the old button\'s own capture path is gone');
 });
 
 /* ══ ② THE IMAGE LEAVES BY THE VISION CHANNEL, NOT IN THE PROMPT TEXT ═════════════════════════

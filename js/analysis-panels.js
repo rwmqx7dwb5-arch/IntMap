@@ -1,9 +1,14 @@
 /* ============================================================================
- *  IntMap · Analysis panels — the EAGER SHELL of IntMapModules.{timeSeries,aiResearch,correlate,worldEvents,edu}
+ *  IntMap · Analysis panels — the EAGER SHELL of IntMapModules.{correlate,worldEvents,edu}
  * ----------------------------------------------------------------------------
- *  Panels that analyse the loaded data rather than draw layers: the shared time-series chart,
- *  the AI research brief, the two-layer correlation/scatter plot, the world-events archive and the
- *  geography quiz. The blocks were moved verbatim out of index.html's DOMContentLoaded closure
+ *  Panels that analyse the loaded data rather than draw layers: the two-layer correlation/scatter
+ *  plot, the world-events archive and the geography quiz.
+ *  ⚠ (country-analysis-unify) THERE WERE FIVE. The country time-series chart (js/analysis-timeseries.js) was six of the
+ *  comparison panel's own series in a modal of its own — the country card's 「時系列グラフ」 opens the comparison's
+ *  time-series view with that one country now (js/stats-compare.js `timeline`). The research panel
+ *  (js/analysis-research.js) was the third rung of a ladder whose first rung is Atlas's brief — which runs a web search
+ *  and cites its sources, which the panel did not — so every 「AI調査」 goes to Atlas's brief, fetched if need be
+ *  (js/atlas-loader.js), and the brief offers the next questions the panel used to (js/atlas-reading.js `offer`). The blocks were moved verbatim out of index.html's DOMContentLoaded closure
  *  (#R166); closure values which are REASSIGNED at runtime are read through the live host
  *  interface (Architecture.md §3.1): countryGeo → HOST.countryGeo, currentLang → HOST.lang,
  *  globalData → HOST.globalData, toolMode → HOST.toolMode.
@@ -16,12 +21,12 @@
  *  file would have deleted two Layers buttons until something asked for a panel nobody could see.
  *
  *  So it is split by WHAT RUNS AT BOOT instead of by feature:
- *    · this file keeps the five factories, the boot-time DOM and listeners, and a thin async facade
- *      on each public global (window.IntMapTimeSeries / IntMapAIResearch / IntMapCorrelate /
- *      IntMapEdu / _dashView / _setDashView / _renderEventsArchive) — so every reader that existed
- *      before still finds what it expects, at boot, with the same name;
- *    · js/analysis-{timeseries,research,correlate,world-events,edu}.js hold the bodies, fetched by
- *      js/lazy-modules.js the first time a facade is called.
+ *    · this file keeps the factories, the boot-time DOM and listeners, and a thin async facade
+ *      on each public global (window.IntMapCorrelate / IntMapEdu / _dashView / _setDashView /
+ *      _renderEventsArchive) — so every reader that existed before still finds what it expects, at
+ *      boot, with the same name;
+ *    · js/analysis-{correlate,world-events,edu}.js hold the bodies, fetched by js/lazy-modules.js the
+ *      first time a facade is called.
  *
  *  ⚠ THE FACADES ARE NOT STUBS. A stub answers open() and nothing else, which is the same silent
  *  hole one layer down (js/lazy-modules.js's header says why). Each facade awaits the loader and
@@ -38,42 +43,6 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 import * as bus from './bus.js';
 
 
-export function timeSeries(HOST){
-  window.IntMapTimeSeries=(function(){
-    /* ⚠ (#R322) A LOAD FAILURE IS NEVER SILENT. This project's most expensive recurring defect is a
-       feature that quietly stops existing (#R162, #R200, #R205, #R208), and "the file is not here
-       yet" is a machine for producing it. js/lazy-modules.js records and console.errors every
-       failure; this says it on the screen the user is looking at, because a button that does
-       nothing at all tells them nothing at all. ⚠ The pair below is spelled out once per factory
-       because a js/ module may hold no top-level declaration (tests/layer-boot-graph-checks.test.mjs #R175 ③) — the same reason
-       GE / esc / jp are already written five times in this file. */
-    function _lazyFail(){ const m=IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
-      try{ HOST.imToast(m); }catch(_){ try{ console.error('[IntMap] analysisTimeSeries: '+m); }catch(__){} } }
-    function _impl(){ try{ if(!window.IntMapLazy) { _lazyFail(); return Promise.resolve(null); }
-        return window.IntMapLazy.need('analysisTimeSeries').then(ok=>{ const I=window.__imAnalysisTimeSeries; if(!ok||!I){ _lazyFail(); return null; } return I; },()=>{ _lazyFail(); return null; });
-      }catch(_){ _lazyFail(); return Promise.resolve(null); } }
-    /* the chart, the six World Bank indicators and the crosshair are in js/analysis-timeseries.js */
-    async function open(){ const I=await _impl(); if(I) return I.open(); }
-    return { open };
-  })();
-}
-
-export function aiResearch(HOST){
-  window.IntMapAIResearch=(function(){
-    /* the loader and the failure notice — see the note above IntMapTimeSeries */
-    function _lazyFail(){ const m=IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
-      try{ HOST.imToast(m); }catch(_){ try{ console.error('[IntMap] analysisResearch: '+m); }catch(__){} } }
-    function _impl(){ try{ if(!window.IntMapLazy) { _lazyFail(); return Promise.resolve(null); }
-        return window.IntMapLazy.need('analysisResearch').then(ok=>{ const I=window.__imAnalysisResearch; if(!ok||!I){ _lazyFail(); return null; } return I; },()=>{ _lazyFail(); return null; });
-      }catch(_){ _lazyFail(); return Promise.resolve(null); } }
-    /* the brief, the suggested questions and the chat thread are in js/analysis-research.js — and so
-       are its two Atlas-persona prompts, which travelled with the code that builds them (#R285). */
-    async function open(name,lngLat){ const I=await _impl(); if(I) return I.open(name,lngLat); }
-    async function askHere(lngLat){ const I=await _impl(); if(I) return I.askHere(lngLat); }
-    return { open, askHere };
-  })();
-}
-
 export function correlate(HOST){
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const countryStats=HOST.countryStats;
@@ -82,7 +51,12 @@ export function correlate(HOST){
     const L=()=>HOST.lang;
     const tr=IntMapLang.pick(()=>L());
     function esc(s){ return window.IntMapSafe.html(s); }
-    /* the loader and the failure notice — see the note above IntMapTimeSeries */
+    /* ⚠ (#R322) A LOAD FAILURE IS NEVER SILENT. This project's most expensive recurring defect is a
+       feature that quietly stops existing (#R162, #R200, #R205, #R208), and "the file is not here
+       yet" is a machine for producing it. js/lazy-modules.js records and console.errors every
+       failure; this says it on the screen the user is looking at, because a button that does
+       nothing at all tells them nothing at all. ⚠ The pair below is spelled out once per factory
+       (the same reason GE / esc / jp are written in each). */
     function _lazyFail(){ const m=IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
       try{ HOST.imToast(m); }catch(_){ try{ console.error('[IntMap] analysisCorrelate: '+m); }catch(__){} } }
     function _impl(){ try{ if(!window.IntMapLazy) { _lazyFail(); return Promise.resolve(null); }
@@ -114,7 +88,7 @@ export function worldEvents(HOST){
     /* ⚠ THE VIEW FLAG IS SET AT BOOT. js/companies-ui.js reads window._dashView on every dashboard
        render, so it has to exist from the first one — the 132-event archive behind it does not. */
     window._dashView=window._dashView||'places';
-    /* the loader and the failure notice — see the note above IntMapTimeSeries */
+    /* the loader and the failure notice — see the note in correlate() above */
     function _lazyFail(){ const m=IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
       try{ HOST.imToast(m); }catch(_){ try{ console.error('[IntMap] analysisEvents: '+m); }catch(__){} } }
     function _impl(){ try{ if(!window.IntMapLazy) { _lazyFail(); return Promise.resolve(null); }
@@ -132,7 +106,7 @@ export function worldEvents(HOST){
 export function edu(HOST){
  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   window.IntMapEdu=(function(){
-    /* the loader and the failure notice — see the note above IntMapTimeSeries */
+    /* the loader and the failure notice — see the note in correlate() above */
     function _lazyFail(){ const m=IntMapLang.t(HOST.lang,"This panel could not be loaded — check your connection and try again.","このパネルを読み込めませんでした。接続を確認して、もう一度お試しください。","Dieses Panel konnte nicht geladen werden — bitte Verbindung prüfen und erneut versuchen.","Не удалось загрузить эту панель — проверьте соединение и попробуйте ещё раз.","No se pudo cargar este panel: comprueba la conexión e inténtalo de nuevo.");
       try{ HOST.imToast(m); }catch(_){ try{ console.error('[IntMap] analysisEdu: '+m); }catch(__){} } }
     function _impl(){ try{ if(!window.IntMapLazy) { _lazyFail(); return Promise.resolve(null); }

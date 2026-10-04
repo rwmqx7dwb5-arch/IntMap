@@ -271,8 +271,11 @@ test('R783 ⑦ the field and the retirement are in the ONE arrival builder', asy
   const both = ATLAS + READING;
   assert.equal(both.split('class="atl-arrive-in"').length - 1, 1, 'the free-text field has more than one copy');
   assert.equal(both.split('class="atl-arrive-qs"').length - 1, 1, 'the starter group has more than one copy');
+  /* (country-analysis-unify) the offer — starters, field, retirement — is built by ONE pair, offerHtml + wireOffer, which
+     arrive() uses and offer() (the next questions under a brief) uses too: still one builder, now with two callers */
   const arriveFn = extractFn(READING, 'arrive');
-  assert.ok(/removeChild\(grp\)/.test(arriveFn), 'the retirement is not in arrive()');
+  assert.ok(/offerHtml\(qs\)/.test(arriveFn) && /wireOffer\(b\)/.test(arriveFn), 'arrive() does not build through the one offer builder');
+  assert.ok(/removeChild\(grp\)/.test(extractFn(READING, 'wireOffer')), 'the retirement is not in the one offer builder');
   assert.ok(!/class="atl-here-q"/.test(extractFn(ATLAS, 'askHere')), 'askHere grew its own arrival markup');
   /* and the surface read is one function, reached by whoever needs it */
   assert.equal(READING.split('function surfaceText(').length - 1, 1, 'surfaceText has more than one definition');

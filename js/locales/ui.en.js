@@ -210,7 +210,6 @@ IntMapLang.define('en', { ui: {
       viewSourcesPage:"Open the data-sources page ↗",
       srcModalTitle:"Data sources & attribution",
       srcModalSub:"IntMap aggregates the following third-party data, imagery and APIs. All trademarks belong to their owners.",
-      screenshotSaved:"Screenshot saved ✓",
       measureClickClose:"Click the first point to close",
       lblMapColor:"Map color",
       mapColorAuto:"Same as appearance",

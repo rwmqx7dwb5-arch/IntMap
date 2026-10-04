@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { byKey } from './helpers/layer-groups.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { wbRows, wbRowSeries } from './helpers/wb-rows.mjs';   /* (country-analysis-unify) the World Bank rows as js/wb-layers.js builds them */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -67,7 +68,8 @@ test('R270 ③ the tile thumbnail interpolates too, and reads the LAYER’s ramp
     layerRamps[e[1]] = e[2].replace(/\s+/g, '');
   }
   let compared = 0;
-  for (const e of read('js/layer-previews.js').matchAll(/'bx-(wb[a-z0-9]+)':\{c:[^,]*,r:\[([^\]]*)\]/g)) {
+  /* (country-analysis-unify) a tile names its row's indicator (`k:`) — its series is js/wb-indicators.js's — and keeps its ramp copy */
+  for (const e of read('js/layer-previews.js').matchAll(/'bx-(wb[a-z0-9]+)':\{k:[^,]*,r:\[([^\]]*)\]/g)) {
     const id = e[1], have = e[2].replace(/\s+/g, '');
     if (!layerRamps[id]) continue;
     compared++;
@@ -183,20 +185,21 @@ test('R270 ⑥ the three moved rows are on exactly one shelf each, and it is the
 });
 
 test('R270 ⑥ no two World-Bank layers share a display name', () => {
-  /* ⚠ READ, NOT RUN: the names are tuple literals in the layer table; reading every row is the whole check. */
-  const src = read('js/wb-layers.js');
+  /* (country-analysis-unify) EVALUATED: a row's name is its indicator's (js/wb-indicators.js), joined by the shipped `_wbInd` —
+     tests/helpers/wb-rows.mjs runs the table, so every row and every mode of a modal row is read as the browser builds it */
   const byLang = [{}, {}];
-  for (const e of src.matchAll(/\{id:'(wb[a-z0-9]+)', code:[\s\S]*?n:LA\('([^']*)','([^']*)'/g)) {
+  for (const r of wbRowSeries()) {
     for (const i of [0, 1]) {
-      const nm = e[2 + i];
-      assert.ok(!byLang[i][nm], `「${nm}」 is the name of both ${byLang[i][nm]} and ${e[1]}`);
-      byLang[i][nm] = e[1];
+      const nm = r.n[i];
+      assert.ok(!byLang[i][nm], `「${nm}」 is the name of both ${byLang[i][nm]} and ${r.id}`);
+      byLang[i][nm] = r.id;
     }
   }
   assert.ok(Object.keys(byLang[1]).length > 50, 'the whole family must have been read');
   /* the two that collided with a layer in ANOTHER file now say which source they are */
-  assert.match(src, /wblife'[\s\S]{0,200}Life expectancy \(World Bank\)/, 'life expectancy must be disambiguated');
-  assert.match(src, /wbfert'[\s\S]{0,200}Fertility rate \(World Bank\)/, 'fertility must be disambiguated');
+  const rows = wbRows();
+  assert.equal(rows.find((r) => r.id === 'wblife').n[0], 'Life expectancy (World Bank)', 'life expectancy must be disambiguated');
+  assert.equal(rows.find((r) => r.id === 'wbfert').n[0], 'Fertility rate (World Bank)', 'fertility must be disambiguated');
 });
 
 /* ── ⑧ a key takes its colours from the thing it is a key to ────────────────────────────────── */

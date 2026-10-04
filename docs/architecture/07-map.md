@@ -1778,6 +1778,11 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
   能力 `time.coverage`。`time.travel` の結果にも、描けなくなったチェック済みの層を添える）。
 - **宣言は時計が現在を離れたときに読む**（`import()`）。現在の時計で預かる層は、時計が一度でも過去へ行った後の
   戦争の行だけなので、起動経路に載せない。
+- **世界銀行の指標は目録 1 つ・取得 1 本**: 系列コード（合算・廃止系列の後継）・名前・単位・国テーブルの欄は
+  `js/wb-indicators.js` の `WB_INDICATORS` だけが持ち、塗り分けの行・多国比較・散布図の軸・時計の国テーブル・タイルの
+  プレビューはキーで引く。取得は同じファイルの `readWorldBank`（応答中の共有・同時 6 本・`ok`／`none` は保持し
+  `unavailable` は保持しない・時間切れは `late`）。系列コードと API の住所が他の js/ に現れると
+  `tests/country-analysis-unify-checks.test.mjs` が落ちる。
 - **自前の時計を持っていた行は時計に従う**: 世界銀行の 61 行（`js/wb-layers.js` `yearFor`。凡例の年は時計を
   動かし、「最新（国ごと）」は現在に戻す）、NASA GIBS の 4 行（`js/layer-packs.js` `gxAt`。日付欄と ‹ › は時計を
   動かす）。自前の日付を残している行（年降水量・人口グリッド・WorldCover・海流・選挙）は `ownDate` で宣言し、

@@ -13,6 +13,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import { wbIndicator } from './wb-indicators.js';   /* (country-analysis-unify) the one catalogue of World Bank series */
 import { correlationReport } from './atlas-reasoning.js';   /* (atlas-reasoning) what the words may say is decided by the sample, in one place — Atlas's panel.correlate reads the same report */
 
 export function analysisCorrelate(HOST){
@@ -59,45 +60,45 @@ export function analysisCorrelate(HOST){
     /* (#R40) World-Bank-backed axes — greatly expands the metric list ("対応する項目を大幅に増やして").
        Loaded on demand (cached) via window.IntMapWB; get(s,code) reads the latest value for that ISO3. */
     let WBV={};
-    [['EN.GHG.CO2.PC.CE.AR5',false,v=>v.toFixed(1)+' t',LA('CO₂ per capita','1人当たりCO₂排出','CO₂ pro Kopf','CO₂ на душу','CO₂ per cápita')],
-     ['SP.URB.TOTL.IN.ZS',false,v=>Math.round(v)+'%',LA('Urban population %','都市人口率','Stadtbevölkerung %','Городское нас. %','Población urbana %')],
-     ['EG.ELC.ACCS.ZS',false,v=>Math.round(v)+'%',LA('Electricity access %','電力アクセス率','Stromzugang %','Доступ к электр. %','Acceso a electricidad %')],
-     ['SH.XPD.CHEX.GD.ZS',false,v=>v.toFixed(1)+'%',LA('Health spend %GDP','医療支出 対GDP','Gesundheitsausg. %BIP','Расходы на здрав. %ВВП','Gasto en salud %PIB')],
-     ['AG.LND.FRST.ZS',false,v=>Math.round(v)+'%',LA('Forest area %','森林面積率','Waldfläche %','Лесная площадь %','Superficie forestal %')],
-     ['EG.FEC.RNEW.ZS',false,v=>Math.round(v)+'%',LA('Renewable energy %','再エネ比率','Erneuerbare Energie %','Возобн. энергия %','Energía renovable %')],
-     ['IT.CEL.SETS.P2',false,v=>Math.round(v),LA('Mobile subs /100','携帯契約 /100人','Mobilfunk /100','Моб. связь /100','Móviles /100')],
-     ['FP.CPI.TOTL.ZG',false,v=>v.toFixed(1)+'%',LA('Inflation % (CPI)','インフレ率','Inflation % (VPI)','Инфляция % (ИПЦ)','Inflación % (IPC)')],
-     ['SE.ADT.LITR.ZS',false,v=>Math.round(v)+'%',LA('Literacy rate %','識字率','Alphabetisierung %','Грамотность %','Alfabetización %')],
-     ['SI.POV.GINI',false,v=>v.toFixed(1),LA('Income inequality (Gini)','所得格差(ジニ)','Ungleichheit (Gini)','Неравенство (Джини)','Desigualdad (Gini)')],
-     ['NE.TRD.GNFS.ZS',true,v=>Math.round(v)+'%',LA('Trade % of GDP','貿易 対GDP','Handel % BIP','Торговля % ВВП','Comercio % PIB')],
-     ['SL.UEM.TOTL.ZS',false,v=>v.toFixed(1)+'%',LA('Unemployment %','失業率','Arbeitslosigkeit %','Безработица %','Desempleo %')],
-     ['GC.DOD.TOTL.GD.ZS',false,v=>Math.round(v)+'%',LA('Govt debt % GDP','政府債務 対GDP','Staatsschulden % BIP','Госдолг % ВВП','Deuda púb. % PIB')],
-     ['SH.DYN.MORT',true,v=>Math.round(v),LA('Under-5 mortality /1k','5歳未満死亡率','Kindersterblichkeit /1k','Смертн. до 5 лет /1k','Mortalidad <5 /1k')],
-     ['EG.USE.ELEC.KH.PC',true,v=>compact(v)+' kWh',LA('Electricity use /capita','電力消費 /人','Stromverbrauch /Kopf','Потр. электр. /чел','Consumo eléctrico /cápita')],
-     ['BX.KLT.DINV.WD.GD.ZS',false,v=>v.toFixed(1)+'%',LA('FDI inflow % GDP','対内直接投資 %','ADI-Zufluss % BIP','ПИИ % ВВП','IED entrante % PIB')],
-     ['NV.IND.MANF.ZS',false,v=>v.toFixed(1)+'%',LA('Manufacturing % GDP','製造業 対GDP','Verarb. Gewerbe % BIP','Промышл. % ВВП','Manufactura % PIB')],
-     ['SE.SEC.ENRR',false,v=>Math.round(v)+'%',LA('Secondary enrollment %','中等教育就学率','Sekundarschulrate %','Среднее образ. %','Matrícula secundaria %')],
-     ['SH.MED.PHYS.ZS',false,v=>v.toFixed(2),LA('Physicians /1k','医師 /1k人','Ärzte /1k','Врачи /1k','Médicos /1k')],
+    [['co2',false,v=>v.toFixed(1)+' t'],
+     ['urban',false,v=>Math.round(v)+'%'],
+     ['elec',false,v=>Math.round(v)+'%'],
+     ['health',false,v=>v.toFixed(1)+'%'],
+     ['forest',false,v=>Math.round(v)+'%'],
+     ['renew',false,v=>Math.round(v)+'%'],
+     ['mobile',false,v=>Math.round(v)],
+     ['infl',false,v=>v.toFixed(1)+'%'],
+     ['lit',false,v=>Math.round(v)+'%'],
+     ['gini',false,v=>v.toFixed(1)],
+     ['trade',true,v=>Math.round(v)+'%'],
+     ['unemp',false,v=>v.toFixed(1)+'%'],
+     ['debt',false,v=>Math.round(v)+'%'],
+     ['u5mort',true,v=>Math.round(v)],
+     ['elecuse',true,v=>compact(v)+' kWh'],
+     ['fdi',false,v=>v.toFixed(1)+'%'],
+     ['manuf',false,v=>v.toFixed(1)+'%'],
+     ['school',false,v=>Math.round(v)+'%'],
+     ['phys',false,v=>v.toFixed(2)],
      /* (#R41) greatly expanded set ("対応する項目を大幅に増やして") — all live, latest-value World Bank, full 5-lang */
-     ['SP.POP.GROW',false,v=>v.toFixed(1)+'%',LA('Population growth %','人口増加率','Bevölkerungswachstum %','Рост населения %','Crecimiento pob. %')],
-     ['SP.RUR.TOTL.ZS',false,v=>Math.round(v)+'%',LA('Rural population %','農村人口率','Landbevölkerung %','Сельское нас. %','Población rural %')],
-     ['NY.GNP.PCAP.CD',true,v=>'$'+compact(v),LA('GNI per capita','1人当たりGNI','BNE pro Kopf','ВНД на душу','INB per cápita')],
-     ['AG.LND.AGRI.ZS',false,v=>Math.round(v)+'%',LA('Agricultural land %','農地率','Landw. Fläche %','С/х земли %','Tierra agrícola %')],
-     ['EN.ATM.PM25.MC.M3',false,v=>v.toFixed(1)+' µg/m³',LA('PM2.5 air pollution','PM2.5大気汚染','PM2.5-Belastung','PM2.5 загрязн.','Contaminación PM2.5')],
-     ['VC.IHR.PSRC.P5',true,v=>v.toFixed(1),LA('Homicide rate /100k','殺人率 /10万','Tötungsrate /100k','Убийства /100k','Homicidios /100k')],
-     ['SE.XPD.TOTL.GD.ZS',false,v=>v.toFixed(1)+'%',LA('Education spend %GDP','教育支出 対GDP','Bildungsausg. %BIP','Расходы на образ. %ВВП','Gasto educación %PIB')],
-     ['SH.H2O.BASW.ZS',false,v=>Math.round(v)+'%',LA('Basic water access %','基本的飲料水 %','Wasserzugang %','Доступ к воде %','Acceso a agua %')],
-     ['SH.STA.BASS.ZS',false,v=>Math.round(v)+'%',LA('Basic sanitation %','基本的衛生 %','Sanitärzugang %','Санитария %','Saneamiento %')],
-     ['GB.XPD.RSDV.GD.ZS',false,v=>v.toFixed(2)+'%',LA('R&D spend %GDP','研究開発費 対GDP','F&E-Ausgaben %BIP','НИОКР %ВВП','Gasto I+D %PIB')],
-     ['SL.TLF.CACT.FE.ZS',false,v=>Math.round(v)+'%',LA('Female labor force %','女性労働参加率','Frauenerwerbsquote %','Жен. занятость %','Mujeres en fuerza lab. %')],
-     ['ST.INT.ARVL',true,v=>compact(v),LA('Tourist arrivals','外国人観光客数','Touristenankünfte','Турист. прибытия','Llegadas turísticas')],
-     ['TX.VAL.TECH.MF.ZS',false,v=>v.toFixed(1)+'%',LA('High-tech exports %','ハイテク輸出 %','Hightech-Exporte %','Высокотех. экспорт %','Exp. alta tecnología %')],
-     ['MS.MIL.TOTL.P1',true,v=>compact(v),LA('Armed forces','軍人数','Streitkräfte','Военнослужащие','Fuerzas armadas')],
-     ['SH.DYN.AIDS.ZS',false,v=>v.toFixed(1)+'%',LA('HIV prevalence %','HIV有病率','HIV-Prävalenz %','Распр. ВИЧ %','Prevalencia VIH %')],
-     ['NY.GDP.MKTP.KD.ZG',false,v=>v.toFixed(1)+'%',LA('GDP growth %','GDP成長率','BIP-Wachstum %','Рост ВВП %','Crecimiento PIB %')],
-     ['SH.XPD.OOPC.CH.ZS',false,v=>v.toFixed(1)+'%',LA('Out-of-pocket health %','自己負担医療費 %','Selbstzahlerquote %','Личные расходы %','Gasto de bolsillo %')],
-     ['AG.LND.ARBL.ZS',false,v=>v.toFixed(1)+'%',LA('Arable land %','耕地率','Ackerland %','Пашня %','Tierra cultivable %')]
-    ].forEach(arr=>{ const code=arr[0]; METRICS.push({id:'wb:'+code,wb:code,log:arr[1],fmt:arr[2],lbl:arr[3],get:(s,c)=>{ const m=WBV[code]; return (m&&c&&m[c])?m[c].v:null; }}); });
+     ['popgrow',false,v=>v.toFixed(1)+'%'],
+     ['rural',false,v=>Math.round(v)+'%'],
+     ['gni',true,v=>'$'+compact(v)],
+     ['agri',false,v=>Math.round(v)+'%'],
+     ['pm25',false,v=>v.toFixed(1)+' µg/m³'],
+     ['hom',true,v=>v.toFixed(1)],
+     ['edu',false,v=>v.toFixed(1)+'%'],
+     ['basw',false,v=>Math.round(v)+'%'],
+     ['bass',false,v=>Math.round(v)+'%'],
+     ['rnd',false,v=>v.toFixed(2)+'%'],
+     ['flfp',false,v=>Math.round(v)+'%'],
+     ['tour',true,v=>compact(v)],
+     ['hitech',false,v=>v.toFixed(1)+'%'],
+     ['milppl',true,v=>compact(v)],
+     ['hiv',false,v=>v.toFixed(1)+'%'],
+     ['growth',false,v=>v.toFixed(1)+'%'],
+     ['oop',false,v=>v.toFixed(1)+'%'],
+     ['arable',false,v=>v.toFixed(1)+'%']
+    ].forEach(arr=>{ const I=wbIndicator(arr[0]), code=I.code; METRICS.push({id:'wb:'+code,wb:code,log:arr[1],fmt:arr[2],lbl:I.n,get:(s,c)=>{ const m=WBV[code]; return (m&&c&&m[c])?m[c].v:null; }}); });   /* (country-analysis-unify) an axis names its indicator; the series (the axis id keeps it — `wb:<code>`, what Atlas's `correlate` passes) and the name are js/wb-indicators.js's */
     function ensureWB(){ try{ const need=[xId,yId].map(id=>METRICS.find(m=>m.id===id)).filter(m=>m&&m.wb&&!WBV[m.wb]);
       if(!need.length||!window.IntMapWB||!window.IntMapWB.fetch) return Promise.resolve();
       return Promise.all(need.map(m=>window.IntMapWB.fetch(m.wb).then(d=>{ WBV[m.wb]=d||{}; }).catch(()=>{ WBV[m.wb]={}; }))); }catch(_){ return Promise.resolve(); } }

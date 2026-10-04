@@ -9,16 +9,18 @@
  *  帯は何？」「このラベル何て書いてある？」 reached something that could recite the layer list and
  *  could not look.
  *
- *  ⚠ THIS FILE IS NOT A NEW CAPTURE. It is the capture js/screenshot.js has performed since #R200,
- *  lifted out so that the screenshot button and Atlas take the SAME picture by running the SAME
- *  code. Writing a second one would have meant two answers to "what does the reader see" — and the
+ *  ⚠ THIS FILE IS NOT A NEW CAPTURE. It is the capture the screenshot button performed since #R200,
+ *  lifted out so that the button and Atlas take the SAME picture by running the SAME code.
+ *  (country-analysis-unify) The button's own file (js/screenshot.js) is gone: 「Screenshot」 opens the share panel's
+ *  Image tab, whose picture (js/map-recorder.js postcard) is this capture's renderer frame with the legends and every
+ *  data credit drawn in — so the two callers are Atlas and that tab. Writing a second one would have meant two answers to "what does the reader see" — and the
  *  two would have drifted the way #R231 measured them drifting inside one file, where the map layer
  *  was sized from the renderer's backing store and the overlay layer from the container's CSS box.
  *  That fix lives below, once, and both callers inherit it.
  *
  *  TWO PICTURES, BECAUSE THEY ANSWER DIFFERENT QUESTIONS — and Atlas chooses which:
  *    · include:'screen' — the map PLUS the DOM that sits on it (legends, scale, markers, the news
- *      band, the timebar), controls hidden, exactly what the screenshot button saves. This is the
+ *      band, the timebar), controls hidden — what the screenshot button used to save. This is the
  *      one that can answer a question about a legend or a band, because those are not in the
  *      renderer's canvas at all.
  *    · include:'map'   — the renderer's frame alone. No html2canvas (198 kB, fetched on demand) and
@@ -47,14 +49,11 @@
  * makeViewCapture(deps) -> { CAPTURE_CLASS, captureCanvas, captureFrame, urls, promptBlock, reset, SENT }
  *
  * deps: { GE, L, esc, snapshot(), waitIdle(ms) } — all injected, so nothing here reaches a global.
- * The screenshot button needs only `GE` and `waitIdle`; the rest is the ledger's.
+ * The share panel's picture needs only `GE`; the rest is the ledger's.
  *
  * ⚠ ONE EXPORT, AND THAT IS A RULE RATHER THAN A TASTE. tests/layer-boot-graph-checks.test.mjs #R175 ③ requires every named
- * export in js/ to be imported BY NAME somewhere — a dead export is dead code. js/screenshot.js
- * reaches this module with a DYNAMIC import (it rides the eager bundle, and the capture must not),
- * and a dynamic import satisfies nothing that check can see. So the module has exactly one door,
- * js/atlas-console.js imports THAT by name, and the button opens the same one at the moment it is
- * pressed. Publishing the three pieces separately would have made two of them look dead.
+ * export in js/ to be imported BY NAME somewhere — a dead export is dead code. So the module has
+ * exactly one door, and js/atlas-console.js and js/map-recorder.js (both fetched on demand) import THAT by name. Publishing the three pieces separately would have made two of them look dead.
  */
 import { makeViewGround } from './atlas-view-ground.js';   /* (#R589) the measurements that turn a picture into an answerable question — and the sentence that says when it is not one */
 
@@ -65,13 +64,13 @@ import './safe-html.js';
 export function makeViewCapture(deps) {
   deps = deps || {};
   var GE = deps.GE, L = deps.L, esc = deps.esc, snapshot = deps.snapshot, waitIdle = deps.waitIdle;
-  /* (#R589) `overpass` is the ONE optional dep: js/screenshot.js builds this factory for the save
-     button, which wants a PNG and no lookup at all. Absent, the framed-feature channel simply does
+  /* (#R589) `overpass` is the ONE optional dep: js/map-recorder.js builds this factory for the share
+     panel's picture, which wants pixels and no lookup at all. Absent, the framed-feature channel simply does
      not run — and says so in the block, rather than reading as «nothing is there». */
   var overpass = deps.overpass;
   var GROUND = makeViewGround();
 
-  /* the class js/screenshot.js has always used to take the controls out of the picture and leave the
+  /* the class the screenshot button always used to take the controls out of the picture and leave the
      legends in. Reused rather than re-declared: a second spelling would hide a different set. */
   const CAPTURE_CLASS = 'capture-mode';
 
@@ -84,8 +83,8 @@ export function makeViewCapture(deps) {
    * came out of a real render tick — see `grabRendererFrame` inside for why that distinction has to
    * survive to the caller.
    *
-   * `markCapture:false` leaves document.body alone — js/screenshot.js manages the class itself
-   * (it must survive its own flash + download), so it opts out and this does not fight it.
+   * `markCapture:false` leaves document.body alone — for a caller that manages the class itself
+   * across more than the picture, so it opts out and this does not fight it.
    */
   async function captureCanvas(o) {
     /* ⚠ DECLARED INSIDE, NOT AT THE TOP OF THE FILE. tests/layer-boot-graph-checks.test.mjs #R175 ③ allows a top-level
