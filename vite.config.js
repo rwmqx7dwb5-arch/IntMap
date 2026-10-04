@@ -145,6 +145,7 @@ export const STATIC_ASSETS = [
      stylesheets they load are copied beside them (admin-inquiries.html also loads vendor/supabase-js.js and
      js/safe-html.js, which are already here for admin.html). */
   'for-newsrooms.html',
+  'press.html',                         // (press-room) the press room — descriptions to copy, the facts, the marks and screenshots to download
   'for-schools.html',
   'for-research.html',
   'contact.html',

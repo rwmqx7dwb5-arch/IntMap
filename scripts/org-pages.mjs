@@ -12,6 +12,10 @@
  *    for-research.html    research groups and NGOs: own data, citing, embedding, adding a dataset
  *    contact.html         the enquiry form → reader-reports (kind 'inquiry') → public.org_inquiries
  *    support.html         what running IntMap costs, this month's AI use, giving, and the supporters
+ *    press.html           (press-room) the material for writing ABOUT IntMap: the brand's descriptions to quote (each with a
+ *                         Copy button), the facts, the logo and screenshots to download, the feed, and where to ask. It
+ *                         carries NO words or numbers of its own about the product: scripts/brand-text.mjs owns the
+ *                         descriptions, scripts/brand.mjs the numbers, js/showcase.js the screenshots.
  *    corrections.html     (community-next) the public log of map corrections: how to report, how a report is
  *                         checked, the counts, what was published, and this browser's own reports and answers
  *
@@ -49,6 +53,10 @@ import { PLANS, DEFAULT_PLAN } from '../supabase/functions/_shared/plans.js';
 import { INQUIRY, INQUIRY_LIMITS, INQUIRY_PIPELINE } from '../supabase/functions/_shared/inquiry-shape.js';
 import { CORRECTION } from '../supabase/functions/_shared/correction-shape.js';
 import { withInlineHashes } from './csp.mjs';
+import { brandFacts, words as brandWords, factWords, jpegInfo } from './brand.mjs';   /* (press-room) the press room says what the brand says, filled the way brand.mjs fills it */
+import { HUB as HISTORY_HUB } from './history-pages.mjs';
+import { OTD_HUB } from './on-this-day-pages.mjs';
+import { pagePath as updatesPath, feedPath as updatesFeed } from './whats-new.mjs';
 import { readLedger } from './outbound-hosts.mjs';
 import { SENDS_WORDS } from '../js/connections-panel.js';
 
@@ -71,6 +79,10 @@ const EXAMPLES = {
   'for-schools': ['europe-1914', 'japan-1900', 'world-100', 'koppen'],
   'for-research': ['world-3000bc', 'koppen', 'ring-of-fire', 'europe-1920'],
 };
+/* (press-room) the marks offered for download. Which files are marks is an editorial choice; that each exists, how big it is and
+   that the build copies it are read from the file and from vite.config.js (tests/press-room-checks.test.mjs). The light-ground mark
+   (IntMap.Icon_BW-inverted.png) is not offered: the build ships only its hashed copy (vite.config.js STATIC_EXCLUDE). */
+const MARKS = [['IntMap.Icon.png', 'logoMark'], ['icons/icon-512.png', 'logoLarge'], ['icons/apple-touch-icon.png', 'logoSmall']];
 /* the contact form's preselection per page: ?for=<audience>&about=<purpose> */
 const ASK = {
   'for-newsrooms': { for: 'newsroom', about: 'embed' },
@@ -272,6 +284,10 @@ function introBody(F, L, page) {
     <ol class="lp-steps">
       ${steps(T.how, L, W)}
     </ol>
+  </section>
+
+  <section class="lp-sec" id="press">
+    <div class="lp-tile"><h3>${esc(T.pressH[k])}</h3><p>${esc(T.press[k])}</p><a class="lp-open" href="./press.html">${esc(T.pressBtn[k])} →</a></div>
   </section>`
     : page === 'for-schools'
       ? `<section class="lp-sec" id="it">
@@ -324,6 +340,123 @@ function introBody(F, L, page) {
   </section>
 
   ${commonTail(page, L)}
+</main>`;
+}
+
+/* ── press (press-room) ───────────────────────────────────────────────────────────────────────── */
+function fileInfo(rel) {
+  const b = readFileSync(join(ROOT, rel));
+  const png = b.length > 24 && b.toString('latin1', 1, 4) === 'PNG';
+  const dim = png ? { width: b.readUInt32BE(16), height: b.readUInt32BE(20) } : jpegInfo(rel);
+  if (!dim.width) throw new Error('org-pages: cannot read the size of ' + rel);
+  return { w: dim.width, h: dim.height, kb: Math.max(1, Math.round(b.length / 1024)), type: png ? 'PNG' : 'JPEG' };
+}
+function pressBody(F, L) {
+  const T = TEXT.press, C = TEXT.common, k = L.i;
+  const BF = brandFacts(), B = brandWords(L.key, BF), S = factWords(BF, L.key);
+  const copyBlock = (id, label, text) => `<div class="lp-tile og-copy-tile">
+        <h3>${esc(label[k])}</h3>
+        <p id="og-copy-${id}" class="og-copy-text">${esc(text)}</p>
+        <button class="lp-btn lp-btn-2 lp-btn-sm og-copy" type="button" hidden data-copy="og-copy-${id}" data-label="${esc(T.copy[k])}" data-msg-copied="${esc(T.copied[k])}" data-msg-failed="${esc(T.copyFailed[k])}">${esc(T.copy[k])}</button>
+      </div>`;
+  const stat = (label, value) => `<div class="lp-tile"><h3>${esc(value)}</h3><p>${esc(label[k])}</p></div>`;
+  const asset = (rel, label) => {
+    const i = fileInfo(rel);
+    return `<li><a class="lp-open" href="${L.up}${rel}" download>${esc(label)} →</a> <span class="og-muted">${i.type} · ${i.w}×${i.h} · ${i.kb.toLocaleString(L.num)} kB</span></li>`;
+  };
+  const shots = Object.keys(CAPTURED).map((id) => SHOWCASE.find((s) => s.id === id)).filter((s) => s && CAPTURED[s.id].image);
+  return `<main class="lp-main">
+  <section class="lp-hero lp-hero-t">
+    <div class="lp-hero-text">
+      <h1>${esc(T.h1[k])}</h1>
+      <p class="lp-lede">${esc(T.lede[k])}</p>
+      <div class="lp-cta">
+        <a class="lp-btn" href="#descriptions">${esc(T.descH[k])}</a>
+        <a class="lp-btn lp-btn-2" href="${L.up}index.html">${esc(TEXT.nav.open[k])}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-sec" id="descriptions">
+    <h2>${esc(T.descH[k])}</h2>
+    <p class="lp-sub">${esc(T.quote[k])}</p>
+    <div class="lp-grid2">
+      ${copyBlock('tagline', T.oneH, B.tagline)}
+      ${copyBlock('short', T.shortL, B.pitch.short)}
+      ${copyBlock('medium', T.mediumL, B.pitch.medium)}
+      ${copyBlock('long', T.longL, B.pitch.long)}
+    </div>
+  </section>
+
+  <section class="lp-sec" id="who">
+    <h2>${esc(T.whoH[k])}</h2>
+    <div class="lp-grid2">
+      <div class="lp-tile"><h3>${esc(T.whoFor[k])}</h3><p>${esc(B.positioning.for)}</p></div>
+      <div class="lp-tile"><h3>${esc(T.whoIs[k])}</h3><p>${esc(B.positioning.is)}</p></div>
+      <div class="lp-tile"><h3>${esc(T.whoThat[k])}</h3><p>${esc(B.positioning.that)}</p></div>
+      <div class="lp-tile"><h3>${esc(T.whoUnlike[k])}</h3><p>${esc(B.positioning.unlike)}</p></div>
+    </div>
+  </section>
+
+  <section class="lp-sec" id="facts">
+    <h2>${esc(T.factsH[k])}</h2>
+    <p class="lp-sub">${esc(T.factsNote[k])}</p>
+    <div class="lp-grid3 og-stat-grid">
+      ${stat(T.statClock, S.floorBC)}
+      ${stat(T.statSnapshots, S.snapshots)}
+      ${stat(T.statLayers, S.layers)}
+      ${stat(T.statLangs, S.langs)}
+    </div>
+    <h3 class="og-sub">${esc(T.proofH[k])}</h3>
+    <ul class="og-list">
+      ${B.proof.map((p) => '<li>' + esc(p) + '</li>').join('\n      ')}
+    </ul>
+    <a class="lp-open" href="${L.up}sources.html">${esc(T.sourcesLink[k])} →</a>
+  </section>
+
+  <section class="lp-sec" id="logo">
+    <h2>${esc(T.assetsH[k])}</h2>
+    <p class="lp-sub">${esc(T.assetsNote[k])}</p>
+    <ul class="og-files">
+      ${MARKS.map(([rel, key]) => asset(rel, T[key][k])).join('\n      ')}
+    </ul>
+  </section>
+
+  <section class="lp-sec" id="screenshots">
+    <h2>${esc(T.shotsH[k])}</h2>
+    <p class="lp-sub">${esc(T.shotsNote[k])}</p>
+    <div class="lp-cards">
+      ${shots.map((s) => {
+        const c = CAPTURED[s.id], i = fileInfo(c.image), href = L.up + 'index.html' + c.hash;
+        return `<article class="lp-card" data-press-shot="${s.id}">
+      <a class="lp-card-img" href="${L.up}${c.image}" download tabindex="-1" aria-hidden="true"><img src="${L.up}${c.thumb || c.image}" alt="" width="1280" height="800" loading="lazy" decoding="async"></a>
+      <div class="lp-card-body">
+        <h3>${esc(s.title[k])}</h3>
+        <p>${esc(s.blurb[k])}</p>
+        <a class="lp-open" href="${L.up}${c.image}" download>${esc(T.download[k])} (${i.w}×${i.h}, ${i.kb.toLocaleString(L.num)} kB) →</a>
+        <a class="lp-open" href="${esc(href)}" data-showcase-link="${s.id}">${esc(C.open[k])} →</a>
+      </div>
+    </article>`;
+      }).join('\n      ')}
+    </div>
+  </section>
+
+  <section class="lp-sec" id="follow">
+    <h2>${esc(T.followH[k])}</h2>
+    <ul class="og-files">
+      <li><a class="lp-open" href="${L.up}${updatesFeed(L)}">${esc(T.feed[k])} →</a></li>
+      <li><a class="lp-open" href="${L.up}${updatesPath(L)}">${esc(T.feedPage[k])} →</a></li>
+      <li><a class="lp-open" href="${L.up}${L.dir}${OTD_HUB}">${esc(T.otd[k])} →</a></li>
+      <li><a class="lp-open" href="${L.up}${L.dir}${HISTORY_HUB}">${esc(T.history[k])} →</a></li>
+    </ul>
+  </section>
+
+  <section class="lp-sec" id="more">
+    <div class="lp-grid2">
+      <div class="lp-tile"><h3>${esc(T.newsroomsH[k])}</h3><p>${esc(T.newsrooms[k])}</p><a class="lp-open" href="./for-newsrooms.html">${esc(T.newsroomsBtn[k])} →</a></div>
+      <div class="lp-tile"><h3>${esc(T.askH[k])}</h3><p>${esc(T.ask[k])}</p><a class="lp-open" href="./contact.html">${esc(T.askBtn[k])} →</a></div>
+    </div>
+  </section>
 </main>`;
 }
 
@@ -619,7 +752,7 @@ function correctionsBody(F, L) {
 }
 
 export function renderPage(F, page, L) {
-  const body = page === 'contact' ? contactBody(F, L) : page === 'support' ? supportBody(F, L) : page === 'security' ? securityBody(F, L) : page === 'corrections' ? correctionsBody(F, L) : introBody(F, L, page);
+  const body = page === 'contact' ? contactBody(F, L) : page === 'support' ? supportBody(F, L) : page === 'security' ? securityBody(F, L) : page === 'corrections' ? correctionsBody(F, L) : page === 'press' ? pressBody(F, L) : introBody(F, L, page);
   return withInlineHashes(`${head(F, L, page)}
 <body class="lp og-page" data-org-page="${page}">
 ${topbar(L, page)}

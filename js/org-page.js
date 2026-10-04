@@ -21,6 +21,8 @@
  *       listed rows' name, month and note). A read that fails says so; it never shows zeros or an
  *       empty list in place of «could not be read».
  *
+ *    ⑥ THE PRESS ROOM (press-room) — the Copy buttons: they copy the text beside them (see wireCopy).
+ *
  *    ⑤ THE CORRECTIONS PAGE (community-next) — the counts (public.map_corrections_summary), the published log
  *       (public.public_map_corrections — only what an admin published, in the admin's words) and THIS browser's own
  *       reports: the receipts js/map-corrections.js keeps (localStorage intmap_corrections) read back through
@@ -254,6 +256,36 @@
     }).catch(function () { muted(list, list.getAttribute('data-msg-failed')); });
   }
 
+  /* ⑥ THE PRESS ROOM (press-room) — a Copy button copies the text of the element it names (data-copy) and says so in the
+     page's own words (data-msg-copied / data-msg-failed). The buttons are in the page hidden: without this script they are
+     not shown and the text is still there to select. «Copied» is said only after the clipboard accepted the text. */
+  function wireCopy() {
+    var btns = document.querySelectorAll('button[data-copy]');
+    function done(b, msg) {
+      b.textContent = msg;
+      setTimeout(function () { b.textContent = b.getAttribute('data-label'); }, 2200);
+    }
+    function legacy(el) {
+      var r = document.createRange(); r.selectNodeContents(el);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      var ok = false; try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
+      sel.removeAllRanges();
+      return ok;
+    }
+    Array.prototype.forEach.call(btns, function (b) {
+      b.hidden = false;
+      b.addEventListener('click', function () {
+        var el = document.getElementById(b.getAttribute('data-copy'));
+        if (!el) return;
+        var ok = function () { done(b, b.getAttribute('data-msg-copied')); };
+        var fail = function () { done(b, b.getAttribute('data-msg-failed')); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(el.textContent).then(ok, function () { if (legacy(el)) ok(); else fail(); });
+        } else if (legacy(el)) ok(); else fail();
+      });
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     /* ② the language choice */
     document.addEventListener('click', function (e) {
@@ -261,6 +293,7 @@
       if (a) { try { localStorage.setItem('intmap_lp_lang', a.getAttribute('data-lp-lang')); } catch (_) { /* no storage */ } }
     });
     wireContact();
+    wireCopy();
     var stats = document.getElementById('og-stats');
     if (stats) wireStats(stats);
     var sup = document.getElementById('og-supporters');

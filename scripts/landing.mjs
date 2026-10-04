@@ -761,7 +761,8 @@ export function renderPage(F, page, L) {
 function sitemap(F) {
   const u = [];
   u.push(`  <url><loc>${esc(F.site)}</loc></url>`);
-  for (const page of PAGES) for (const L of LANGS) {
+  /* (press-room) the organisation pages (ORG_NAV) are public pages too and were not listed; a list typed here would miss the next one */
+  for (const page of [...PAGES, ...ORG_NAV.map(([p]) => p)]) for (const L of LANGS) {
     u.push(`  <url><loc>${esc(F.site + pagePath(page, L))}</loc>\n${LANGS.map((l) => `    <xhtml:link rel="alternate" hreflang="${l.tag}" href="${esc(F.site + pagePath(page, l))}"/>`).join('\n')}\n    <xhtml:link rel="alternate" hreflang="x-default" href="${esc(F.site + pagePath(page, LANGS[0]))}"/>\n  </url>`);
   }
   for (const s of SHOWCASE) for (const L of LANGS) {
