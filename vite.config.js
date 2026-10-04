@@ -46,6 +46,7 @@ import { historyPagesPlugin } from './scripts/history-pages.mjs';
 import { publicApiPlugin } from './scripts/public-api.mjs';
 /* (ops-next) 「更新情報」: whats-new.json, updates.html / ja/updates.html and their Atom feeds, from dev-notes/ */
 import { whatsNewPlugin } from './scripts/whats-new.mjs';
+import { countryPagesPlugin } from './scripts/country-pages.mjs';   // (country-pages) one entry page per country, after the history pages and the public API it links to
 import { onThisDayPagesPlugin } from './scripts/on-this-day-pages.mjs';   // (marketing-next) the «on this day» pages and their cards, written into dist/ like the history pages
 
 const ROOT = resolve(import.meta.dirname);
@@ -753,5 +754,5 @@ export default defineConfig({
      than read off filenames. scripts/perf-budget.mjs is the gate that reads it; it runs on
      every build because the report is what stops "the biggest chunk is big" from being
      mistaken for "startup is slow". */
-  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), historyPagesPlugin(), publicApiPlugin(), whatsNewPlugin(), onThisDayPagesPlugin(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin()],
+  plugins: [buildStampPlugin(ROOT), siteUrlPlugin(), maplibreSharedWorker(), buildReportPlugin(), copyStatic(), historyPagesPlugin(), publicApiPlugin(), countryPagesPlugin(), whatsNewPlugin(), onThisDayPagesPlugin(), appShell(), histTiles(), katexAssets(), supabaseAdminSdk(), supabaseAdminSdkDev(), cesiumAssets(), cesiumDevAssets(), cspHashesPlugin()],
 });

@@ -19,6 +19,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
+const { COUNTRY_HUB } = await import('../scripts/country-pages.mjs');   /* (country-pages) the history hub links it */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -208,7 +209,8 @@ test('⑦ runs partition the years; neighbours differ; pages, links, map links, 
       if (m[3]) m[1] = m[3];
       const abs = m[1].startsWith('__INTMAP_SITE_URL__');   /* an absolute address the build fills in */
       const target = abs ? m[1].slice('__INTMAP_SITE_URL__'.length) : posix.normalize(dir + m[1]);
-      const ok = target === '' || out[target + (target.endsWith('/') ? 'index.html' : '')] || STATIC.has(target) || out[target] || target === 'og-image.jpg';
+      const ok = target === '' || out[target + (target.endsWith('/') ? 'index.html' : '')] || STATIC.has(target) || out[target] || target === 'og-image.jpg'
+        || target === COUNTRY_HUB || target === 'ja/' + COUNTRY_HUB;   /* (country-pages) the history hub links the country list, which its own generator writes */
       assert.ok(ok, rel + ' links to ' + m[1] + ' (' + target + '), which is neither generated nor shipped');
     }
   }
@@ -230,7 +232,8 @@ test('⑦ runs partition the years; neighbours differ; pages, links, map links, 
   const idx = [...out[H.SITEMAP_INDEX].matchAll(/<loc>__INTMAP_SITE_URL__([^<]*)<\/loc>/g)].map((m) => m[1]);
   /* (ops-next) …and the updates pages' sitemap (scripts/whats-new.mjs SITEMAP) */
   const { OTD_SITEMAP } = await import('../scripts/on-this-day-pages.mjs');   /* (marketing-next) the third generator's sitemap */
-  assert.deepEqual(idx, ['sitemap.xml', H.SITEMAP, 'sitemap-updates.xml', OTD_SITEMAP], 'the sitemap index joins the landing sitemap, this one, the one of the updates pages and the «on this day» one');
+  const { COUNTRY_SITEMAP } = await import('../scripts/country-pages.mjs');   /* (country-pages) the fourth */
+  assert.deepEqual(idx, ['sitemap.xml', H.SITEMAP, 'sitemap-updates.xml', OTD_SITEMAP, COUNTRY_SITEMAP], 'the sitemap index joins the landing sitemap, this one, the one of the updates pages, the «on this day» one and the country pages’ one');
 });
 
 test('⑦b the words of the entry pages exist in both languages, key for key', async () => {

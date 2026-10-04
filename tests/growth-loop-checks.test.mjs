@@ -32,7 +32,9 @@ const { SITE_TOKEN } = await import(modUrl('scripts/site-url.mjs'));
 /* (marketing-next) the two doors the build generates (a directory of pages each, en and ja/), by the hub each generator owns */
 const { HUB: HISTORY_HUB } = await import(modUrl('scripts/history-pages.mjs'));
 const { OTD_HUB, dayPath } = await import(modUrl('scripts/on-this-day-pages.mjs'));
-const GENERATED_DOORS = { history: HISTORY_HUB, 'on-this-day': OTD_HUB };
+/* (country-pages) the third: one page per country */
+const { COUNTRY_HUB, countryPath } = await import(modUrl('scripts/country-pages.mjs'));
+const GENERATED_DOORS = { history: HISTORY_HUB, 'on-this-day': OTD_HUB, countries: COUNTRY_HUB };
 const { makeAtlasAgent } = await import(modUrl('js/atlas-agent.js'));
 const AGENT = makeAtlasAgent();
 
@@ -48,6 +50,8 @@ test('growth-loop ① the landing-page doors are the pages scripts/landing.mjs m
   assert.equal(S.sitePageOf(SITE_URL + 'history/europe/1914/', SITE_HOST), 'history');
   assert.equal(S.sitePageOf(SITE_URL + dayPath('10-03', { dir: 'ja/' }), SITE_HOST), 'on-this-day');
   assert.equal(S.sitePageOf(SITE_URL + OTD_HUB + '10-03/card.png', SITE_HOST), null, 'a picture is not a door');
+  assert.equal(S.sitePageOf(SITE_URL + countryPath('JPN', { dir: 'ja/' }), SITE_HOST), 'countries');
+  assert.equal(S.sitePageOf(SITE_URL + 'api/v1/countries/JPN.json', SITE_HOST), null, 'a country\'s API file is not a door');
   assert.equal(shareDir({ dir: '' }), 's/', 'the share pages live under s/ (SITE_PAGES.showcase)');
   /* every door is a declared entry value, and every entry value is a door or one of the two map-link kinds */
   assert.deepEqual(S.METRICS.entry.dim.values.slice().sort(), ['embed', 'link', ...Object.keys(S.SITE_PAGES)].sort());

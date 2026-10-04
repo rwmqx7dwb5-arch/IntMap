@@ -72,6 +72,8 @@ og-image.jpg                    リンクのカードの絵（本物の JPEG。�
 （dist だけ）on-this-day/ ja/on-this-day/ sitemap-on-this-day.xml
                                 この日の歴史地図（暦の日ごとのページ・暦・日ごとのカードの絵 card.png）とその sitemap。
                                 ビルドが scripts/on-this-day-pages.mjs で書く（§8.6.3）
+（dist だけ）countries/ ja/countries/ sitemap-countries.xml
+                                国別の入口ページ（国ごと・一覧）とその sitemap。ビルドが scripts/country-pages.mjs で書く（§8.6.4）
 google….html                    Google Search Console 認証用
 package.json / package-lock     npm スクリプトと依存。dependencies がアプリに入る依存の唯一のリスト
 data-assets.json                **git の外にあるデータ集合の目録**（正本）。集合ごとにパス・中身の sha256・
@@ -1757,6 +1759,9 @@ scripts/
   on-this-day-pages.mjs           この日の歴史地図の静的ページ・カードの絵・sitemap の生成器（onThisDayPagesPlugin）と、
                                   `--queue` の投稿の下書き（承認待ち。投稿・送信はしない）
   on-this-day-text.mjs            そのページと下書きの文の唯一の写し（en + jp）
+  country-pages.mjs               国別の入口ページと sitemap の生成器（countryPagesPlugin）——国の集合と行は public-api.mjs、
+                                  枠は js/country-extent.js、地域は history-pages.mjs REGIONS、出来事は data/on-this-day.json（§8.6.4）
+  country-pages-text.mjs          そのページの文の唯一の写し（en + jp）
   lib/map-card.mjs                リンクのカード（1200×630 PNG）を国境の記録から描く——走査線の塗り・Inter の数字・node:zlib の PNG
   org-pages.mjs                   組織向けページ・相談フォーム・支援のページ（en と ja/）と admin-inquiries.html の**生成器と門**
                                   （`--check`）。数字はその持ち主から読む（facts()・plans.js・EMBED_SIZES・purge の既定値）

@@ -19,6 +19,7 @@
 | リンクのカードの絵 | `og-image.jpg`（本物の JPEG。大きさはファイルから読む） | `index.html` の `og:image*`、歴史地図の入口ページ | 同上 |
 | 歴史地図の入口ページ（地域 × 日付、en / ja） | `scripts/history-pages.mjs`（文言は `scripts/history-pages-text.mjs`） | ビルド時に `dist/history/…`・`dist/ja/history/…`・`dist/sitemap-history.xml`・`dist/sitemap-index.xml` | `tests/marketing-engine-checks.test.mjs` |
 | この日の歴史地図（暦の日ごと、en / ja）・日ごとのカードの絵 | 索引 `data/on-this-day.json`（`scripts/build-on-this-day.mjs`）、文言は `js/on-this-day.js`、ページは `scripts/on-this-day-pages.mjs`（文は `scripts/on-this-day-text.mjs`）、絵は `scripts/lib/map-card.mjs` | ビルド時に `dist/on-this-day/<MM-DD>/`（`card.png` を含む）・`dist/ja/on-this-day/…`・`dist/sitemap-on-this-day.xml`（`sitemap-index.xml` が束ねる） | `tests/marketing-next-checks.test.mjs` |
+| 国別の入口ページ（国ごと、en / ja） | `scripts/country-pages.mjs`（文は `scripts/country-pages-text.mjs`。国の集合と行・条件は `scripts/public-api.mjs`、枠は `js/country-extent.js`） | ビルド時に `dist/countries/<code>/`・`dist/ja/countries/…`・`dist/sitemap-countries.xml`（`sitemap-index.xml` が束ねる） | `tests/country-pages-checks.test.mjs` |
 | 毎日の投稿の下書き（X・Bluesky・Threads、en / ja） | `scripts/on-this-day-pages.mjs --queue [--from YYYY-MM-DD] [--days N]` | 標準出力（承認欄つきの Markdown。**投稿・予約・送信はしない**） | 同上（tag が計数器の規則を通ること・X の文字数） |
 | 紹介ページ・授業ページ・見本・`sitemap.xml`・`robots.txt` | `scripts/landing.mjs`（別の主題。ここでは触らない） | — | `node scripts/landing.mjs --check` |
 

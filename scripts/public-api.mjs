@@ -65,6 +65,7 @@ import { buildStamp } from './build-stamp.mjs';
 import { PROTOCOL } from '../js/embed-client.js';
 import { TEXT as LANDING_TEXT } from './landing-text.mjs';   /* the words for each message, the developer page's own */
 import { EMBED_SIZES } from '../js/embed-mode.js';
+import { countryPath } from './country-pages.mjs';   /* (country-pages) each country's entry page, en and ja (a cycle: read only when the model is built) */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const API_DIR = 'api/v1/';
@@ -172,14 +173,16 @@ function sourceUse() {
 export function countryUniverse(root = ROOT) {
   const j = JSON.parse(gunzipSync(readFileSync(join(root, 'data/ne-countries/ne_10m_admin_0_countries.json.gz'))).toString('utf8'));
   const out = new Map();
-  for (const f of j.features || []) {
+  (j.features || []).forEach((f, i) => {
     const p = f.p || f.properties || {};
     const code = p.ISO_A3_EH && p.ISO_A3_EH !== '-99' ? p.ISO_A3_EH : p.ADM0_A3;
-    if (!/^[A-Z]{3}$/.test(String(code || ''))) continue;
+    if (!/^[A-Z]{3}$/.test(String(code || ''))) return;
     /* a code two features share (Brazil and the Brazilian Island) names the feature whose own ADM0 code it is */
-    if (out.has(code) && p.ADM0_A3 !== code) continue;
-    out.set(code, { code, en: p.NAME_EN || p.NAME || code, jp: p.NAME_JA || null });
-  }
+    if (out.has(code) && p.ADM0_A3 !== code) return;
+    /* `feature`: the index of the feature in the file, so a reader that needs its outline (scripts/country-pages.mjs)
+       decodes the same file and takes the same feature — this one rule decides which feature a code is */
+    out.set(code, { code, en: p.NAME_EN || p.NAME || code, jp: p.NAME_JA || null, feature: i });
+  });
   return out;
 }
 
@@ -267,6 +270,8 @@ export function model({ root = ROOT, served = (rel) => existsSync(join(root, rel
   const byId = new Map(datasets.map((d) => [d.id, d]));
   const countries = [...universe.values()].sort((a, b) => (a.code < b.code ? -1 : 1)).map((c) => ({
     code: c.code, name: { en: c.en, jp: c.jp }, url: site + API_DIR + 'countries/' + c.code + '.json',
+    /* the human page that opens the map on the country (scripts/country-pages.mjs writes one for every code here) */
+    page: { en: site + countryPath(c.code, { dir: '' }), ja: site + countryPath(c.code, { dir: 'ja/' }) },
     datasets: [...new Set((sections.get(c.code) || []).map((s) => s.dataset))],
   }));
   const countryFile = (c) => {
@@ -312,10 +317,15 @@ const WORDS = {
     reasons: { 'licence-not-stated': 'ライセンスがまだ値として述べられていない', 'licence-not-recognised': '述べられた条件が再配布を許すと確認できない', 'credit-not-stated': 'ライセンスが出典表示を求めるのに、記録が表示する出典を述べていない', 'not-served': 'ビルドされたサイトに無い' },
     summary: (o, w) => '再利用できるデータセット ' + o + ' 件 · 出していないもの ' + w + ' 件' },
 };
+/** the obligations of a dataset's terms in words (en / jp) — the catalogue's column, and the country pages' (scripts/country-pages.mjs) */
+export function termsWords(t, lang) {
+  const W = WORDS[lang] || WORDS.en;
+  return [t.credit ? W.creditY : null, t.shareAlike ? W.sa : null, !t.commercial ? W.nc : null].filter(Boolean).join(' · ') || W.none;
+}
 const size = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + ' MB' : n >= 1e3 ? Math.round(n / 1e3) + ' kB' : n + ' B');
 export function catalogHtml(catalog, lang) {
   const W = WORDS[lang] || WORDS.en;
-  const terms = (t) => [t.credit ? W.creditY : null, t.shareAlike ? W.sa : null, !t.commercial ? W.nc : null].filter(Boolean).join(' · ') || W.none;
+  const terms = (t) => termsWords(t, lang);
   const rows = catalog.datasets.map((d) => `      <tr><td><a href="${esc(d.files[0].url)}"><code>${esc(d.id)}</code></a>${d.shards ? ` <span class="lp-note">(${d.shards.count} ${esc(W.file)})</span>` : ''}</td>`
     + `<td>${d.upstreams.map((u) => u.licenceUrl ? `<a href="${esc(u.licenceUrl)}">${esc(u.licence)}</a>` : esc(u.licence)).filter((v, i, a) => a.indexOf(v) === i).join('<br>')}</td>`
     + `<td>${esc(terms(d.terms))}</td><td>${esc(size(d.bytes))}</td><td>${d.credit.map(esc).join('<br>')}</td></tr>`).join('\n');
