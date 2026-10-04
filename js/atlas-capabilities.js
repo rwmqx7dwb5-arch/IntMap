@@ -333,6 +333,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["view.openShared","openShared","openLink,openMapLink,openLocationLink,geoLink,openSharedLink","view","none","camera,map.object","explanation","session","none","text",""],
       ["learn.quest","quest","learnQuest,geoQuest,questLink,challengeLink,quizSet","panel","none","panel.quest,map.quest,camera,time","panel","session","none","",""],
       ["time.weeklyEarth","weeklyEarth","thisWeekOnEarth,weeklyDigest,worldThisWeek,earthThisWeek","time","time","camera,map.myMap,time","map,time,explanation","session","none","",""],
+      ["data.studio","dataStudio","tableToMap,mapMyTable,tableStudio,spreadsheetMap","data","dataStudio","map.dataStudio","map,panel","session","none","","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 

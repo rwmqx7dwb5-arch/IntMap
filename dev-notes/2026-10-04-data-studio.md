@@ -91,6 +91,12 @@ newsjp: データスタジオ——国名・ISO コード・都市名の列を�
 信用しない読み・展開上限、長さ上限で断る、`ds` の無い旧リンクがバイト単位で同じ・`ds` があるときだけ遅延取得、
 起動の静的 import 木に入らない、Excel の表読み（`tests/fixtures/data-studio-population.xlsx`）と文字の枠の読み戻し。
 
+## 合流: 梱包は 1 つ（js/link-codec.js）
+
+同じ日に別のセッション（map-document-unify）が同じ梱包を `js/link-codec.js` に切り出して先に着地した。この回の `js/link-pack.js` は同じ仕事の
+2 つ目の写しになるので**消し**、'z'/'j' の文字（`packText` / `unpackText`）と実測の上限 `LINK_LIMIT_MEASURED` を `js/link-codec.js` へ移した。
+ツアーは自分の展開の上限（`TOUR_INFLATED_MAX`）を `unpackText` に渡す。ツアーの `t` のバイトは変わらない（`tests/map-document-unify-checks` が古いツアーで測る）。
+
 ## 起動費用の天井（`node scripts/perf-budget.mjs --update`）
 
 起動の経路は増やしていない（modulepreload 5 本のまま・eager は変わらず）。上げたのは遅延読み込みの側だけ:
