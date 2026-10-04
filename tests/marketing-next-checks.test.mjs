@@ -199,7 +199,7 @@ test('⑨ the build writes the pages; the sitemap index lists them; every footer
   const vite = read('vite.config.js');
   assert.match(vite, /onThisDayPagesPlugin\(\)/);
   const P = await import('../scripts/on-this-day-pages.mjs');
-  assert.ok(read('scripts/history-pages.mjs').includes('OTD_SITEMAP].map('), 'the sitemap index does not list the «on this day» sitemap');
+  assert.match(read('scripts/history-pages.mjs'), /\[LANDING_SITEMAP, [^\]]*\bOTD_SITEMAP\b[^\]]*\]\.map\(/, 'the sitemap index does not list the «on this day» sitemap');
   for (const f of ['about.html', 'ja/about.html', 'teachers.html', 'for-schools.html', 'ja/for-schools.html']) {
     assert.ok(read(f).includes(P.OTD_HUB), f + ' has no link to the calendar');
   }

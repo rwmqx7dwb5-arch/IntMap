@@ -20,7 +20,7 @@
 
 export const TEXT = {
   en: {
-    nav: { examples: 'Examples', teachers: 'For teachers', about: 'About', news: 'News on a map', embed: 'Embed a map', developers: 'Developers', history: 'Browse by year', onThisDay: 'On this day', open: 'Open the map', lang: '日本語', langLabel: 'Read this page in Japanese' },
+    nav: { examples: 'Examples', teachers: 'For teachers', about: 'About', news: 'News on a map', embed: 'Embed a map', developers: 'Developers', history: 'Browse by year', onThisDay: 'On this day', countries: 'Countries', open: 'Open the map', lang: '日本語', langLabel: 'Read this page in Japanese' },
     about: {
       title: 'IntMap — every year of the world, on one map',
       description: 'A free world map you can set to any date from {floorBC} to today, with historical borders, climate, population and live data on one map. No sign-up needed.',
@@ -251,7 +251,7 @@ export const TEXT = {
   },
 
   jp: {
-    nav: { examples: '見本', teachers: '先生へ', about: 'IntMap について', news: 'ニュースを地図で', embed: '地図を埋め込む', developers: '開発者向け', history: '年代から探す', onThisDay: 'この日の歴史地図', open: '地図を開く', lang: 'English', langLabel: 'このページを英語で読む' },
+    nav: { examples: '見本', teachers: '先生へ', about: 'IntMap について', news: 'ニュースを地図で', embed: '地図を埋め込む', developers: '開発者向け', history: '年代から探す', onThisDay: 'この日の歴史地図', countries: '国から探す', open: '地図を開く', lang: 'English', langLabel: 'このページを英語で読む' },
     about: {
       title: 'IntMap — 世界のどの年も、一枚の地図で',
       description: '{floorBC}から今日まで、どの日付にも合わせられる無料の世界地図。歴史上の国境・気候・人口・リアルタイムのデータを一枚に重ねます。登録不要。',
