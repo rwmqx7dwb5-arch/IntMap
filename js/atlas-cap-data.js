@@ -22,6 +22,7 @@ import { icon } from './icons.js';   /* (icon-system) the one icon set — js/ic
 import { jsonWithin } from './fetch-deadline.js';   /* (developer-embed) the open-data catalogue, read under the host's clock */
 import { clockFor } from './proxy-fetch.js';
 import './safe-html.js';   /* (developer-embed) globalThis.IntMapSafe — every href below goes through its url() */
+import { ATTACH_LOG } from './atlas-file-view.js';   /* (data-studio) a file attached in this conversation, by name — the ledger attach.recall reads */
 
 /* ══ (atlas-os) THE QUERY ENGINE, BOUND TO THE KERNEL — ONE BINDING FOR EVERY CALLER ═══════════════
    `data.query` was the only thing that ran js/atlas-query.js, so the dependency list it binds was written
@@ -512,6 +513,30 @@ export default [
       return R(true, html, { meta: { code: q.sites ? 'OK' : 'NO_RESULTS', category: q.sites ? 'ok' : 'evidence', retryable: false, semanticTarget: cc || (box ? 'view' : 'world'), produced: act === 'show' ? ['map', 'panel', 'explanation'] : ['explanation'], userGoalSatisfied: true,
         companySites: { country: cc, sites: q.sites, totalCompanies: nCo, groups: q.groups, types: q.types, countries: q.countries, companies: q.companies, of: q.of, asOf: q.generatedAt } } }); },
   },
+  {
+    row: ['data.studio',                'dataStudio',     'tableToMap,mapMyTable,tableStudio,spreadsheetMap',            'data',    'dataStudio', 'map.dataStudio',     'map,panel',           'session', 'none',   '',         '',           'external'],
+    /* (data-studio) THE READER'S OWN TABLE ON THE MAP — js/data-studio.js through its published controller. The table is read by the
+       map's file door (CSV / TSV / Excel / pasted; an Atlas attachment by name), its place column is recognised by the values
+       (js/table-bind.js: ISO codes, country names in every language the platform names regions in, GeoNames city names — an
+       ambiguous name is reported, never guessed), countries are joined by key with the GIS layer's `join` and cities become
+       points, one column is coloured by the map's classifier, and the result is a dataset for gis ops and a link (map state
+       `ds`) that carries the table with no server. action:
+         open    show the panel; with attachment (a file attached in this conversation) load that table into it
+         bind    bind the table to places: column, kind (iso3 | iso2 | numeric | country | city; omitted = what the column's
+                 cells were measured to be), within (a country column that narrows a city name)
+         style   colour by field: mode categorical | graduated, method quantile | equal, classes
+         link    the published link and its length      status   what the studio holds      clear   take the table off the map
+       Column 11 'external' — the result carries the reader's table (its column names and unresolved cells): words a third party
+       wrote. Every result that changes the map states want, read by the dataStudio observer AFTER the call. */
+    doc: [
+      { in: 'spatial-analysis', at: 30, text: '{"type":"dataStudio","action"?:"open"|"bind"|"style"|"link"|"status"|"clear","attachment"?:str,"column"?:str,"kind"?:"iso3"|"iso2"|"numeric"|"country"|"city","within"?:str,"field"?:str,"mode"?:"categorical"|"graduated","method"?:"quantile"|"equal","classes"?:int} = DATA STUDIO — THE READER\'S OWN TABLE ON THE MAP (データスタジオ・表を地図に・国別の塗り分け・都市別の塗り分け). For a spreadsheet or CSV that has NO coordinates but names places in a column — country names in any language, ISO 3166 alpha-2/alpha-3/numeric codes, or city names: open (with "attachment" = the name of a CSV/TSV/Excel file attached in this conversation, to load it) recognises the place column from its values and binds the rows; bind re-binds by a column you name; style colours the map by a column (graduated quantile/equal or categories) with a legend; link returns a share link that carries the table itself (nothing is stored on a server). Countries are joined to the Natural Earth outlines, cities become GeoNames points; an ambiguous city name is left unplaced unless a country column narrows it — status lists the unresolved rows. The bound table is a dataset: its id (status → datasetId) is an input of {"type":"gis"} (filter, aggregate, zonal …). Use for 「この表を国別に塗り分けて」「添付した Excel を地図に」「都市名の列で地図にして」「この地図をリンクで共有」, "map this spreadsheet by country", "colour my CSV by the population column". ' },
+    ],
+    /* the reader's own words for it (scored as spellings by the search — js/atlas-capabilities.js scoreParts) */
+    phrases: () => ['データスタジオ', '表を地図に', '国別の塗り分け', '都市別の塗り分け'].concat(['spreadsheet', 'choropleth']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { action: one('open', 'bind', 'style', 'link', 'status', 'clear'), attachment: str(), column: str(),
+      kind: one('iso3', 'iso2', 'numeric', 'country', 'city'), within: str(), field: str(), mode: one('categorical', 'graduated'), method: one('quantile', 'equal'), classes: int(2) } }),
+    async run(a, dctx, K) { return dataStudioRun(a, K); },
+  },
 ];
 
 /* ══ (developer-embed) THE OPEN DATA — what IntMap offers for reuse, under which terms ═══════════════════
@@ -568,4 +593,53 @@ export async function heritageFilterRun(a, dctx, K) { const doHeritage = K.doHer
 
 export async function radiationNearRun(a, dctx, K) { const doRadiationObs = K.doRadiationObs;
       return doRadiationObs(a);   /* (#R585) MEASURED radiation — the body is in js/atlas-controls.js for the same ceiling reason. ⚠ NOT the plume simulation, which is `sim`/`radiation` above; docs/RADIATION.md says why they must stay two answers */
+}
+
+/* ══ (data-studio) data.studio — js/data-studio.js through its published controller ═══════════════════════════
+   Every result that changes the map carries `want` (js/atlas-capabilities.js `dataStudio`): the state it set out to reach,
+   so a table that did not land on the map is not called done. The studio's own sentences for its refusals are used
+   (reasonText) — one set of words for the panel and for Atlas. */
+async function dataStudioRun(a, K) {
+  const R = K.R, L = K.L, warn = K.warn, note = K.note, esc = K.esc;
+  let M = null; try { M = (await import('./data-studio.js')).studio(K.HOST); } catch (_) { M = null; }
+  if (!M || typeof M.state !== 'function') return R(false, warn(esc(L('The data studio could not be loaded', 'データスタジオを読み込めませんでした'))));
+  const act = String(a.action || (a.field ? 'style' : (a.column ? 'bind' : 'open'))).trim();
+  const fail = (r) => R(false, warn(esc(M.reasonText((r && (r.why || r.reason)) || '', r))), { dataStudio: M.state() });
+  const summary = () => {
+    const s = M.state(); const out = [];
+    if (s.source) out.push(esc(s.source.name) + ' · ' + esc(L(s.source.rows + ' rows', s.source.rows + ' 行')) + ' · ' + esc(s.source.columns.join(', ')));
+    if (s.binding) out.push(esc(L('Bound by ', '結び付けた列: ')) + esc(s.binding.column) + ' (' + esc(s.binding.kind) + ') — ' + esc(L(s.binding.resolved + ' of ' + s.binding.total + ' rows placed', s.binding.total + ' 行中 ' + s.binding.resolved + ' 行')) + (s.binding.unresolved ? ' · ' + esc(L('unresolved: ', '未解決: ')) + s.binding.sample.map((u) => esc(u.cell) + ' (' + esc(u.why) + ')').join(', ') : ''));
+    else if (s.detected && s.detected.columns.length) out.push(esc(L('Place columns found: ', '場所の列の候補: ')) + s.detected.columns.map((c) => esc(c.name) + ' ' + esc(c.kind) + ' ' + Math.round(c.ratio * 100) + '%').join(', '));
+    if (s.style) out.push(esc(L('Coloured by ', '塗り分けた列: ')) + esc(s.style.field) + ' (' + esc(s.style.mode) + (s.style.method ? ', ' + esc(s.style.method) : '') + (s.legend ? ', ' + s.legend.classes + ' ' + esc(L('classes', '階級')) : '') + ')');
+    if (s.datasetId) out.push(esc(L('Dataset ', 'データセット ')) + esc(s.datasetId) + (s.drawn ? '' : ' · ' + esc(L('not on the map', '地図に出ていません'))));
+    if (s.problem) out.push(esc(s.problem.text));
+    return out.length ? '<div style="font-size:12.5px;line-height:1.5;margin-top:4px;">' + out.join('<br>') + '</div>' : '';
+  };
+  if (act === 'open') {
+    M.open();
+    if (a.attachment) {
+      const rec = ATTACH_LOG.find(K._curTurn, a.attachment);
+      if (!rec) { const n = ATTACH_LOG.names(K._curTurn); return R(false, warn(esc(L('No attachment called that. In this conversation: ' + (n.join(', ') || 'none'), 'その名前の添付はありません。この会話にあるのは: ' + (n.join('、') || 'なし'))))); }
+      const r = await M.loadAttachment(rec); if (!r.ok) return fail(r);
+      return R(true, note('✓ ' + esc(L('Loaded into the data studio: ', 'データスタジオに読み込みました: ')) + esc(rec.name)) + summary(), { want: { open: true, loaded: true }, dataStudio: M.state() });
+    }
+    return R(true, note('✓ ' + esc(L('Data studio opened', 'データスタジオを開きました'))) + summary(), { want: { open: true }, dataStudio: M.state() });
+  }
+  if (act === 'status') return R(true, summary() || esc(L('The data studio holds no table yet', 'データスタジオにはまだ表がありません')), { dataStudio: M.state() });
+  if (act === 'bind') {
+    const r = await M.bind({ column: a.column, kind: a.kind, within: a.within }); if (!r.ok) return fail(r);
+    const b = M.state().binding;
+    return R(true, note('✓ ' + esc(L('Table bound to places', '表を場所に結びました'))) + summary(), { want: { binding: { column: b.column, kind: b.kind }, drawn: true }, dataStudio: M.state() });
+  }
+  if (act === 'style') {
+    const r = await M.style({ field: a.field, mode: a.mode, method: a.method, classes: a.classes }); if (!r || !r.ok) return fail(r);
+    const st = M.state().style;
+    return R(true, note('✓ ' + esc(L('Map coloured', '地図を塗り分けました'))) + summary(), { want: { style: { field: st.field, mode: st.mode }, drawn: true }, dataStudio: M.state() });
+  }
+  if (act === 'link') {
+    const r = M.link(); if (!r.ok) return fail(Object.assign({ why: r.reason }, r));
+    return R(true, note('✓ ' + esc(L('Link to this map', 'この地図のリンク'))) + ' · ' + r.chars.toLocaleString() + ' ' + esc(L('characters', '文字')) + '<div style="font-size:12px;word-break:break-all;margin:4px 0;"><a href="' + esc(IntMapSafe.url(r.url)) + '">' + esc(r.url.length > 300 ? r.url.slice(0, 300) + '…' : r.url) + '</a></div>' + '<div style="font-size:11.5px;opacity:.75">' + esc(L('The link itself holds the table\'s places and values; whoever has it can read them.', 'リンクそのものに表の場所と値が入っています。受け取った人は中身を読めます。')) + '</div>', { dataStudio: M.state() });
+  }
+  if (act === 'clear') { M.clear(); return R(true, note('✓ ' + esc(L('Table taken off the map', '表を地図から外しました'))), { want: { drawn: false }, dataStudio: M.state() }); }
+  return R(false, warn(esc(L('Unknown action: ', '不明な操作: ') + act)));
 }

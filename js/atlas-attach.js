@@ -484,7 +484,12 @@ export const ATL_FILE = (function () {
          a sheet may hold, that string was the second way this function could grow without bound).
      The line is built from the cells that exist, widest column last, never by walking an array
      to the largest index seen. */
-  async function sheetRows(xml, shared, budget) {
+  /* (data-studio) ONE WALK, TWO READERS. The attachment wants each row as a line of text; the map's import
+     (js/geo-import.js, through sheetTables below) wants the same row as CELLS, before they are flattened —
+     a spreadsheet's columns are what a table is joined and coloured by. Both come out of this one walk, so
+     the three stops above and the `r=` reference rule cannot differ between what Atlas reads and what the
+     map draws. → {rows:[{line, cells: Map(column → text)}], truncated} */
+  async function sheetWalk(xml, shared, budget) {
     const out = []; let cells = 0, chars = 0, cut = false;
     for (const rm of String(xml).matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/g)) {
       const row = new Map(); let auto = 0;
@@ -506,10 +511,70 @@ export const ATL_FILE = (function () {
       let line = '', last = 0;
       for (const c of [...row.keys()].sort(function (a, b2) { return a - b2; })) { line += '\t'.repeat(last ? c - last : c - 1) + row.get(c); last = c; }
       if (!line.trim()) continue;
-      out.push(line); chars += line.length + 1;
+      out.push({ line: line, cells: row }); chars += line.length + 1;
       if (chars > budget) { cut = true; break; }
     }
     return { rows: out, truncated: cut };
+  }
+  async function sheetRows(xml, shared, budget) {
+    const w = await sheetWalk(xml, shared, budget);
+    return { rows: w.rows.map(function (r) { return r.line; }), truncated: w.truncated };
+  }
+  /* The workbook's sheets in the workbook's order, and its shared strings — read ONCE, for both readers. */
+  async function workbook(z, part, td) {
+    const sst = td(await part('xl/sharedStrings.xml'));
+    const shared = [];
+    for (const m of sst.matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>|<si\b[^>]*\/>/g)) shared.push(xmlText(m[1] || '', []));
+    const rels = td(await part('xl/_rels/workbook.xml.rels'));
+    const target = new Map();
+    for (const m of rels.matchAll(/<Relationship\b[^>]*>/g)) {
+      const id = (/\bId="([^"]+)"/.exec(m[0]) || [])[1], tg = (/\bTarget="([^"]+)"/.exec(m[0]) || [])[1];
+      if (id && tg) target.set(id, 'xl/' + String(tg).replace(/^\.?\//, ''));
+    }
+    const wb = td(await part('xl/workbook.xml'));
+    const sheets = [];
+    for (const m of wb.matchAll(/<sheet\b[^>]*>/g)) {
+      const nm = ents((/\bname="([^"]*)"/.exec(m[0]) || [])[1] || 'Sheet');
+      const rid = (/\br:id="([^"]+)"/.exec(m[0]) || [])[1] || '';
+      const path = target.get(rid);
+      if (!path || z.names.indexOf(path) < 0) continue;
+      sheets.push({ name: nm, path: path });
+    }
+    return { shared: shared, sheets: sheets };
+  }
+  /* ══ (data-studio) A WORKBOOK AS TABLES — before it is flattened into text ═══════════════════════════
+     → [{name, rows: [[cell text, …], …], truncated}] — every sheet with at least one non-empty row, each row
+     DENSE from column A to the widest column the sheet uses (a cell the sheet does not write is ''), so a
+     column means the same position in every row, exactly as a delimited file's does. The map's import reads
+     this (js/geo-import.js) and hands the first sheet to the same table decoder a CSV reaches; Atlas keeps
+     reading the text form above. `budget` is the characters the sheet's lines may come to (sheetWalk). */
+  async function sheetTables(z, budget) {
+    let cut = false;
+    const td = function (b) { const r = b ? decodeText(b) : null; return r ? r.text : ''; };
+    const part = async function (n) { if (z.names.indexOf(n) < 0) return null; const b = await z.read(n); if (!b) cut = true; return b; };
+    const wb = await workbook(z, part, td);
+    const out = [];
+    for (const s of wb.sheets) {
+      const w = await sheetWalk(td(await part(s.path)), wb.shared, budget);
+      if (!w.rows.length) continue;
+      let width = 0; w.rows.forEach(function (r) { r.cells.forEach(function (_, c) { if (c > width) width = c; }); });
+      const rows = w.rows.map(function (r) { const a = new Array(width); for (let c = 1; c <= width; c++) a[c - 1] = r.cells.has(c) ? r.cells.get(c) : ''; return a; });
+      out.push({ name: s.name, rows: rows, truncated: w.truncated || cut });
+    }
+    return out;
+  }
+  /* (data-studio) the text form's own framing read back: '--- <sheet> ---' opens each sheet in containerText's
+     xlsx output (above). A file attached to Atlas is kept only as that text (js/atlas-attach-log.js), so a reader
+     that wants one sheet of it as a table asks the writer of the framing rather than guessing at it.
+     → [{name, text}] (the text is the sheet's tab-separated lines) */
+  function sheetSections(text) {
+    const out = []; let cur = null;
+    String(text || '').split('\n').forEach(function (ln) {
+      const m = /^--- (.*) ---$/.exec(ln);
+      if (m) { cur = { name: m[1], lines: [] }; out.push(cur); return; }
+      if (cur) cur.lines.push(ln);
+    });
+    return out.map(function (s) { return { name: s.name, text: s.lines.join('\n').replace(/\n+$/, '') }; });
   }
   /* → {kind, text, truncated}. `truncated` is true when a part this container names could not be
      read whole — over the inflated ceiling, corrupt, or a sheet stopped by sheetRows — so the
@@ -538,26 +603,13 @@ export const ATL_FILE = (function () {
       return { kind: kind, text: tidy(out), truncated: cut };
     }
     if (kind === 'xlsx') {
-      const sst = td(await part('xl/sharedStrings.xml'));
-      const shared = [];
-      for (const m of sst.matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>|<si\b[^>]*\/>/g)) shared.push(xmlText(m[1] || '', []));
-      const rels = td(await part('xl/_rels/workbook.xml.rels'));
-      const target = new Map();
-      for (const m of rels.matchAll(/<Relationship\b[^>]*>/g)) {
-        const id = (/\bId="([^"]+)"/.exec(m[0]) || [])[1], tg = (/\bTarget="([^"]+)"/.exec(m[0]) || [])[1];
-        if (id && tg) target.set(id, 'xl/' + String(tg).replace(/^\.?\//, ''));
-      }
-      const wb = td(await part('xl/workbook.xml'));
+      const wb = await workbook(z, part, td);
       let out = '';
-      for (const m of wb.matchAll(/<sheet\b[^>]*>/g)) {
-        const nm = ents((/\bname="([^"]*)"/.exec(m[0]) || [])[1] || 'Sheet');
-        const rid = (/\br:id="([^"]+)"/.exec(m[0]) || [])[1] || '';
-        const path = target.get(rid);
-        if (!path || z.names.indexOf(path) < 0) continue;
-        const sr = await sheetRows(td(await part(path)), shared, budget);
+      for (const s of wb.sheets) {
+        const sr = await sheetRows(td(await part(s.path)), wb.shared, budget);
         if (sr.truncated) cut = true;
         if (!sr.rows.length) continue;
-        out += '--- ' + nm + ' ---\n' + sr.rows.join('\n') + '\n\n';
+        out += '--- ' + s.name + ' ---\n' + sr.rows.join('\n') + '\n\n';
         if (out.length > budget) break;
       }
       return { kind: kind, text: tidy(out), truncated: cut };
@@ -676,7 +728,8 @@ export const ATL_FILE = (function () {
      answers this file already computes — what container is this, what text does it decode as, and
      what is inside the archive — and a second implementation of any of them is a second thing to
      fix. The map imports THESE. */
-  return { LIMITS: LIMITS, DOC_MIME: DOC_MIME, sniff: sniff, decodeText: decodeText, zipOpen: zipOpen, gunzip: gunzip, xmlText: xmlText, containerText: containerText, read: read };
+  return { LIMITS: LIMITS, DOC_MIME: DOC_MIME, sniff: sniff, decodeText: decodeText, zipOpen: zipOpen, gunzip: gunzip, xmlText: xmlText, containerText: containerText, read: read,
+    zipKind: zipKind, sheetTables: sheetTables, sheetSections: sheetSections };   /* (data-studio) the workbook as tables, for the map's import */
 })();
 
 /* Read a file as text. ⚠ KEPT FOR THE ONE CALLER THAT ALREADY HOLDS TEXT — ATL_FILE.read is what

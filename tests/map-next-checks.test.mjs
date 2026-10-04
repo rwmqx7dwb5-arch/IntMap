@@ -78,8 +78,13 @@ test('② a link is read, not trusted: what does not read is counted, words are 
 });
 
 test('③ the map state carries it last, and fetches its owner only for a link that carries a drawing', () => {
+  /* ⚠ (data-studio) THE INTENT IS «APPENDED, NOT INSERTED», NOT «LAST FOR EVER». `mm` was the last parameter when it was
+     added, so every older link stayed byte-identical; a later field (`ds`, js/data-studio.js) is appended after it for the
+     same reason. What must hold is that `mm` comes after every field older links carry and that nothing was put before it
+     since — the byte check on `old` below is the measurement of that. */
   const rows = MapState.SCHEMA.filter((f) => f.params.length);
-  assert.equal(rows[rows.length - 1].key, 'mymap', 'mm must be the last parameter so older links stay byte-identical');
+  const keys = rows.map((f) => f.key);
+  assert.deepEqual(keys.slice(keys.indexOf('mymap')), ['mymap', 'ds'], 'mm must stay after every older field, with only later fields appended after it');
   const old = '#v=139.7000,35.6800,9.00,0,0,f&l=dl-quakes&tt=1914-06-15&title=T&note=N';
   assert.equal(MapState.encode(MapState.decode(old)), old);
   assert.equal(MapState.decode(old).mymap, null);

@@ -47,7 +47,7 @@
 /** @typedef {{ key:string, cause:string, gen:number, restoring:boolean }} ChangeEvent */
 
 /* ══ THE SCHEMA ══════════════════════════════════════════════════════════════════════════════════
-   ⚠ ORDER IS THE ADDRESS BAR'S ORDER: `#v=…&l=…&d=…&tt=…&cmp=…&ct=…&sat=1&t3=1&s=…&title=…&note=…&b=…&mm=…`, the order js/map-ui.js
+   ⚠ ORDER IS THE ADDRESS BAR'S ORDER: `#v=…&l=…&d=…&tt=…&cmp=…&ct=…&sat=1&t3=1&s=…&title=…&note=…&b=…&mm=…&ds=…`, the order js/map-ui.js
    concatenated since #R211 (the caption appended after it, map-postcard). It is also the restore order — every field but the view is staged on a
    timer, and two steps at the same instant (the isobars' switch and the clock, both at 900 ms) fire in
    the order they were scheduled, which is this order, as before.
@@ -118,6 +118,19 @@ export const SCHEMA = Object.freeze([
      nothing on the map, so «no drawing» needs no applying. */
   { key: 'mymap',   params: ['mm'],        restore: 'full',   at: [300],              session: null,     owner: 'js/my-map.js', lazy: 'myMap',
     doc: 'the reader\'s own map on show — pins, lines and areas with their names and notes (js/my-map-doc.js); absent is «none shown»' },
+  /* (data-studio) THE READER'S TABLE, COLOURED ON THE MAP — js/data-studio.js. A table of countries or cities and a colouring
+     of one of its columns needs no server to be passed on: the shapes are the recipient's own (the same Natural Earth
+     countries, the same GeoNames places), so the link carries only the place each row named, the value, and how it was
+     coloured — packed by js/link-codec.js (the classroom tour's `t` packing). In the fragment, so the host never receives it
+     (RFC 3986 §3.5) and the 8,192-byte request limit does not apply; the studio measures the link against the browser's own
+     ceiling (js/link-codec.js LINK_LIMIT_MEASURED) and refuses by name past it. ⚠ APPENDED AFTER `mm`, NOT INSERTED: a link
+     written before this field has no `ds` and encodes to the same bytes (tests/data-studio-checks.test.mjs holds it).
+     'full', as `mm` is. ⚠ NOT `lazy`: the studio is not in js/lazy-modules.js and publishes nothing on window — js/map-ui.js
+     (viewHash) hears a restore that carries `ds` and `import()`s the module, whose owner registration then receives the value
+     this restore left pending (MapState.own below hands it over while the restore is the latest). The value is opaque here
+     (the same one spelling test `b` gets); js/data-studio.js reads it and does not trust it. */
+  { key: 'ds',      params: ['ds'],        restore: 'full',   at: [300],              session: null,     owner: 'js/data-studio.js',
+    doc: 'a data studio map — the reader\'s table bound to places and coloured by one column (js/data-studio.js), packed; absent is «none»' },
   { key: 'toggles', params: [],            restore: null,     at: [],                 session: 'layers', owner: 'js/session-tabs.js',
     doc: 'every ticked row of the layer panel, base toggles included — the session\'s set, a superset of `layers` (see the note at `toggles` in js/session-tabs.js)' },
 ]);
@@ -171,7 +184,7 @@ export function carries(hash) { return /[#&]v=/.test(String(hash || '')); }
 /** the address-bar form → the state tree. Fields the link does not name are given the value their
     ABSENCE states (no `tt` is «now», no `l` is «no data layers», no `cmp` is «no window»; no `d` is null, «what `l` names», see `display`) — a full
     restore applies the whole state a link describes (share-embed-distribution).
-    @param {string} hash @returns {{ view: ViewValue|null, layers: string[], display: (string[]|null), time: TimeValue, compare: CompareValue, base: ('map'|'sat'), terrain: boolean, sims: any, title: string, note: string, brief: string, mymap: any }} */
+    @param {string} hash @returns {{ view: ViewValue|null, layers: string[], display: (string[]|null), time: TimeValue, compare: CompareValue, base: ('map'|'sat'), terrain: boolean, sims: any, title: string, note: string, brief: string, mymap: any, ds: (string|null) }} */
 export function decode(hash) {
   const H = String(hash || '');
   let view = null;
@@ -207,11 +220,14 @@ export function decode(hash) {
     title: text('title', TITLE_MAX), note: text('note', NOTE_MAX),
     brief: briefText(param(H, 'b')),
     /* (map-next) opaque here, like `s`: js/my-map-doc.js `fromLinkValue` is the one reader of what is inside */
-    mymap: (() => { const m = param(H, 'mm'); return m ? unpackObject(m) : null; })() };
+    mymap: (() => { const m = param(H, 'mm'); return m ? unpackObject(m) : null; })(),
+    /* (data-studio) opaque here, like `b` — the same one spelling test; js/data-studio.js reads what is inside. ⚠ null, not '',
+       when absent: the restore fetches a lazy owner for any value that is not null, and «no table» must fetch nothing. */
+    ds: briefText(param(H, 'ds')) || null };
 }
 
 /** the state tree → the address-bar form. '' when there is no view (nothing to link to).
-    @param {{ view?: ViewValue|null, layers?: string[], display?: (string[]|null), time?: TimeValue, compare?: CompareValue, base?: string, terrain?: boolean, sims?: any, title?: string, note?: string, brief?: string, mymap?: any }} st
+    @param {{ view?: ViewValue|null, layers?: string[], display?: (string[]|null), time?: TimeValue, compare?: CompareValue, base?: string, terrain?: boolean, sims?: any, title?: string, note?: string, brief?: string, mymap?: any, ds?: (string|null) }} st
     @returns {string} */
 export function encode(st) {
   try {
@@ -232,6 +248,7 @@ export function encode(st) {
     const no = captionText(st.note, NOTE_MAX); if (no) h += '&note=' + encodeURIComponent(no);
     const bf = briefText(st.brief); if (bf) h += '&b=' + bf;
     const mm = st.mymap ? packObject(st.mymap) : ''; if (mm) h += '&mm=' + mm;
+    const dv = briefText(st.ds); if (dv) h += '&ds=' + dv;
     return h;
   } catch (_) { return ''; }
 }

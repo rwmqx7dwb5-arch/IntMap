@@ -1139,6 +1139,11 @@ geo-engine が持つ geojson source。手で並べた一覧は、次に足され
 
 ---
 
+⚠ **座標の無い表をこの層に入れる入口は、データスタジオ（`js/data-studio.js`）である**——場所の列を値で判定して行ごとに場所の鍵を
+決め（`js/table-bind.js`）、国は Natural Earth の国のデータセットに **`join`**（鍵の列 `place_key`、右は一意を要求＝`duplicates:'refuse'`）、
+都市は点のデータセットとして登録し、どちらも **`draw()`** と **`style()`** で塗る。新しい演算も新しい分類器も持たない
+（[`docs/architecture/07-map.md`](architecture/07-map.md) §7.3h）。
+
 ## 5.4 Atlas がこの層に処理を依頼する — `js/gis-atlas.js` (`window.IntMapGis.atlas`)
 
 §5 の `data.query` は取り込んだデータセットを**読む**。⚠ **作らせる経路は #R743 まで 1 件も無かった**

@@ -72,6 +72,7 @@ import { companiesUi } from './companies-ui.js';
 import { companies } from './companies.js';
 import { compare } from './compare.js';
 import { countriesUi } from './countries-ui.js';
+import { loadNECountries, neCountriesPath } from './ne-countries.js';   /* (data-studio) handed to the lazy data studio through IM_HOST — see the note at its getters */
 import { dashExtended } from './dash-extended.js';
 import { dataLayers } from './data-layers.js';
 import { droneNav } from './drone-nav.js';
@@ -320,6 +321,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get isMobile(){ return isMobile; },             get t(){ return t; },
     get cName(){ return cName; },                   get searchVal(){ return searchVal; },
     get loadCountryData(){ return loadCountryData; }, get resolveCountryId(){ return resolveCountryId; },
+    /* (data-studio) the Natural Earth loader the country table uses, for the lazy data studio (js/data-studio.js): a static import of
+       js/ne-countries.js from a lazy chunk costs every session two start-up requests (the note in js/data-studio.js) */
+    get loadNECountries(){ return loadNECountries; }, get neCountriesPath(){ return neCountriesPath; },
     get showCountryDetail(){ return showCountryDetail; }, get renderStats(){ return renderStats; },
     get renderCompareFixed(){ return renderCompareFixed; }, get applyTheme(){ return applyTheme; },
     get makeDraggable(){ return makeDraggable; },   get bringToFront(){ return bringToFront; },

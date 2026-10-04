@@ -65,3 +65,38 @@ export function deflateRaw(bytes) { return pipe(bytes, new CompressionStream('de
     ceiling, and the platform's own error when the bytes are not DEFLATE.
     @param {Uint8Array} bytes @param {number} cap @returns {Promise<Uint8Array>} */
 export function inflateRaw(bytes, cap) { return pipe(bytes, new DecompressionStream('deflate-raw'), +cap || 0); }
+
+/* ══ (data-studio) THE LETTER — a JSON document in a link ═══════════════════════════════════════════════
+   'z' + base64url(deflate-raw(utf-8)) where the platform can compress, 'j' + base64url(utf-8) where it cannot. The
+   classroom tour's `t` (js/tours.js) and the data studio's `ds` (js/data-studio.js) carry this; the tour's bytes are
+   the ones it always wrote (tests/map-document-unify-checks holds an old tour against this). The reader takes the
+   caller's ceiling — a link is somebody else's bytes. */
+/** a JSON text → its link form ('z…' or 'j…') @param {string} json @returns {Promise<string>} */
+export async function packText(json) {
+  const bytes = new TextEncoder().encode(String(json));
+  if (canCompress()) return 'z' + toBase64url(await deflateRaw(bytes));
+  return 'j' + toBase64url(bytes);
+}
+/** a link form → the JSON text it carries, or null when it is not one (or inflates past `cap` bytes).
+    @param {string} s @param {number} [cap] the most bytes the text may inflate to (0 / absent: no cap)
+    @returns {Promise<string|null>} */
+export async function unpackText(s, cap) {
+  const t = String(s || ''); if (t.length < 2) return null;
+  try {
+    const bytes = fromBase64url(t.slice(1));
+    if (t[0] === 'z') { if (!canCompress()) return null; return new TextDecoder().decode(await inflateRaw(bytes, +cap || 0)); }
+    if (t[0] === 'j') { if (cap > 0 && bytes.length > cap) return null; return new TextDecoder().decode(bytes); }
+    return null;
+  } catch (_) { return null; }
+}
+
+/* ══ HOW LONG AN ADDRESS A BROWSER KEEPS ═══════════════════════════════════════════════════════════
+   MEASURED in Chromium 153.0.8010.12 (Playwright's bundled build, 2026-10-03; the measurement is in
+   dev-notes/2026-10-03-atlas-briefing.md): an address of 2,097,152 characters loads with its fragment
+   intact, and 2,097,153 is refused (net::ERR_ABORTED) — Chromium's own URL ceiling (url/url_constants.h
+   kMaxURLChars). It is the ONLY browser measured — Firefox and Safari were not, and a reader of this
+   number says so instead of claiming a limit for them. It bounds a value carried in the FRAGMENT: the
+   fragment is never sent to the server (RFC 3986 §3.5), so the host's 8,192-byte request limit
+   (js/tours.js TOUR_REQUEST_LIMIT) does not apply to it. Expire when Chromium changes kMaxURLChars.
+   正本: here. js/atlas-briefing-codec.js re-exports it under the same name. */
+export const LINK_LIMIT_MEASURED = 2097152;

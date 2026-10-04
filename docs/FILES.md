@@ -528,7 +528,9 @@ map-state.js                      地図の状態の**正本**（MapState）。�
                                   ニュースのストーリーが使う）もここに 1 つ
 link-codec.js                     リンクに文書を詰める**唯一の梱包（純関数）**——bytes ⇄ deflate-raw ⇄ base64url。展開は読み手が渡す上限で
                                   読むのをやめて 'too-large' と言う（切り詰めない）。自作ツアーの `t`（tours.js）とブリーフィングの `b`
-                                  （atlas-briefing-codec.js）が使う。出力は以前の 2 つの写しとバイト単位で同じ
+                                  （atlas-briefing-codec.js）が使う。出力は以前の 2 つの写しとバイト単位で同じ。JSON をリンクに入れる
+                                  文字（packText/unpackText: 'z' = deflate-raw + base64url、'j' = そのまま）と、ブラウザが保てるアドレス長の
+                                  実測値 LINK_LIMIT_MEASURED もここ——ツアーの `t`・データスタジオの `ds`・ブリーフィングが読む
 map-doc.js                        **地図ドキュメント（純関数）**——保存した地図・マイマップ・ツアー・Atlas の回答を 1 つの形
                                   `{v,id,kind,title,note,steps:[{state,title,say,ask}],origin,updatedAt}` にし、それぞれと相互に変換する
                                   （fromSavedView / toSavedView / fromMyMap / fromTourDraft / fromCustomTour / toTourInput / toTourLink /
@@ -1352,6 +1354,14 @@ my-map.js                         **マイマップ**（window.IntMapMyMap・遅
 my-map-doc.js                     マイマップの**文書（純関数）**——地物の形と検証（頂点は入るときに 1e-6° へ丸める）、リンク形
                                   （Encoded Polyline・信用せず読み直し、読めない地物は数える）、描く形（大円を 0.1° 以下の断片に・
                                   日付変更線で切る・極を囲む範囲は描かない）、GeoJSON の FeatureCollection
+data-studio.js                    **データスタジオ**（window に公開しない。入口は全部 `import('./data-studio.js')` → `studio(HOST)`）——読者の表（CSV・TSV・Excel・貼り付け・
+                                  Atlas の添付）を地図のファイルの扉（GeoJSONUpload.handle）で読み、場所の列で国（Natural Earth 1:50m に
+                                  gis-ops の join）または都市（GeoNames の点）に結び、GeoJSONUpload.style で塗り分け、データセットとして
+                                  分析・Atlas へ渡し、地図の状態の `ds` 欄（リンクそのものに表を入れる）・GeoJSON/CSV/GeoPackage・絵葉書で公開。
+                                  リンクの文書の符号器と読み手（純関数）も持つ。Layers ▸ Tools・地図データの読み込みの隣・表を落としたとき・Atlas `data.studio`
+table-bind.js                     **表の場所の列**（純関数）——各列が ISO 3166-1 の 2 文字・3 文字・数字コード／国名（Intl.DisplayNames が
+                                  名前を持つ全ロケールと Natural Earth の名前の列から発見）／都市名（GeoNames）のどれかを値で判定し、行ごとに
+                                  場所の鍵（ISO alpha-3、無ければ ADM0_A3／GeoNames id）を返す。同名は曖昧として解決しない（同じ行の国の列で絞る）
 legal-text.js                     利用規約とプライバシーポリシーの**本文**（唯一の写し。JA/EN）
 legal.js                          その本文をアプリ内モーダルに表示する
 dialog.js                         ダイアログの唯一の契約 window.IntMapDialog —— 登録簿（open/adopt・anyOpen）、Esc・Tab トラップ・

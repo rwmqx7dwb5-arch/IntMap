@@ -1508,6 +1508,8 @@ export function layerSidebar(HOST){
       });
     }
     const _lazy=(name,fn)=>(a)=>window.IntMapLazy.need(name).then(()=>{ try{ return !!fn(a); }catch(_){ return false; } });
+    /* (data-studio) the studio's controller once a press of its row has fetched it — the row's `mod` (below) asks it, not window */
+    let dsOpened=null;
     const SIM_TOOLS=[
       /* ══ ⚠⚠⚠ (#R291) THE ROUTING ENTRY, AND WHY IT IS THE FIRST ROW ═════════════════════════════
          「経路機能の正式な入口は、必ず Layers → Tools → Directions / 経路 に置いてください。」
@@ -1561,6 +1563,14 @@ export function layerSidebar(HOST){
         run:()=>import('./quest-panel.js').then(m=>m.openQuest()).then(()=>true,()=>{ try{ HOST.imToast(T('Learn quests could not be loaded — check your connection and try again.','学ぶクエストを読み込めませんでした。接続を確認して、もう一度お試しください。')); }catch(_){} return false; }),
         label:()=>T('Learn quests','学ぶクエスト'),
         hint:()=>T('Find cities and guess years on the map, then share the same set with a class','都市の場所当てと年代当てを地図で。同じ問題をクラスに配れる') },
+      /* (data-studio) DATA STUDIO — the reader's own table (CSV, TSV, Excel, pasted) bound to countries or cities, coloured by a
+         column, handed to analysis and published as a link (js/data-studio.js). A lazy chunk: this row costs the shell a label. */
+      { id:'tool.dataStudio', mod:()=>dsOpened, ic:_svg('<path d="M3 5h18M3 12h18M3 19h18M9 5v14"/>'), en:'Data studio', group:'tool',
+        keys:'data studio table spreadsheet csv excel xlsx choropleth colour by country city join publish link データスタジオ 表 スプレッドシート エクセル 塗り分け 国別 都市別 結合 公開 リンク',
+        run:()=>import('./data-studio.js').then(m=>{ dsOpened=m.studio(HOST); return !!dsOpened.open(); }).catch(()=>false),
+        dot:()=>{ try{ const s=dsOpened&&dsOpened.state(); return !!(s&&s.drawn); }catch(_){ return false; } },
+        label:()=>T('Data studio','データスタジオ'),
+        hint:()=>T('Map your own table by country or city, colour it, analyse it and share it as a link','自分の表を国や都市に結び、塗り分け・分析し、リンクで公開する') },
       { id:'sim.seismic', mod:'IntMapSeismic', ic:SVG_QUAKE, run:null,   /* registered in js/app-body.js beside the OS kernel */
         label:()=>T('Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos'),
         hint:()=>T('Place a source and watch the shaking spread','震源を置いて揺れの広がりを見る','Herd setzen und die Erschütterung verfolgen','Задайте очаг и смотрите, как расходятся колебания','Coloque una fuente y vea propagarse el temblor') },
@@ -1714,7 +1724,9 @@ export function layerSidebar(HOST){
        ⚠ NOT A SECOND SOURCE OF TRUTH. Nothing is cached here — every read goes to the module, so a
        panel closed by its own ×, by Atlas or by a keyboard shortcut is reflected the moment the row
        is re-synced, and a row can never be lit for a tool that is not running. */
-    const _tmod=(t)=>{ try{ return (t&&t.mod)?(window[t.mod]||null):null; }catch(_){ return null; } };
+    /* (data-studio) `mod` names a window global — or, for a module that publishes none (js/data-studio.js), is a function that
+       answers its controller (null until it was fetched) */
+    const _tmod=(t)=>{ try{ return (t&&t.mod)?((typeof t.mod==='function'?t.mod():window[t.mod])||null):null; }catch(_){ return null; } };
     const _toolOn=(t)=>{ const m=_tmod(t); if(!m) return false;
       try{ if(typeof m.isOpen==='function') return !!m.isOpen(); }catch(_){}
       try{ if(typeof m.state==='function'){ const s=m.state(); return !!(s&&s.open); } }catch(_){}
@@ -3421,9 +3433,15 @@ export function geojsonUpload(HOST){
     /* What the layer is CALLED. The file name, plus the entry when it came out of an archive —
        "route.kmz › doc.kml" says where the shape on screen came from without the reader guessing. */
     function labelFor(f,r){ const base=(f&&f.name)||'data'; return r.entry?base+' › '+r.entry:base; }
-    async function handleFiles(files){
+    /* (data-studio) handleFiles(files, {quiet}) → one outcome per file: {ok, label, format, stats, fc, n, datasetId} or
+       {ok:false, why}. It returned nothing before, so the data studio (js/data-studio.js), which takes files through
+       THIS door rather than a second reader, had no way to learn what a file became. A table with no coordinates
+       (format 'table' — the right-hand side of a join, js/geo-import.js) is offered to the studio, which is the step
+       that binds its rows to places; `quiet` is the studio's own call, which takes the outcome itself. */
+    async function handleFiles(files,opts){
       const list=Array.from(files||[]);
-      if(!list.length) return;
+      const out=[];
+      if(!list.length) return out;
       let readGeoFile=null;
       /* on demand: nothing about reading a dropped file belongs in the startup bundle */
       try{ readGeoFile=(await import('./geo-import.js')).GEO_IMPORT.readGeoFile; }
@@ -3431,16 +3449,25 @@ export function geojsonUpload(HOST){
       for(const f of list){
         let r=null;
         try{ r=await readGeoFile(f); }catch(_){ r={ok:false,why:'unreadable'}; }
-        if(!r||!r.ok){ toast(reasonText(r&&r.why,r&&r.detail)); continue; }
+        if(!r||!r.ok){ toast(reasonText(r&&r.why,r&&r.detail)); out.push({ok:false,why:(r&&r.why)||'unreadable',name:(f&&f.name)||''}); continue; }
         const label=labelFor(f,r);
         /* (#R749) A grid takes the other arm. It is a dataset first and a picture second — the
            reverse of the vector path, where addFC draws immediately and registerDataset follows —
            because a grid cannot be painted until its extremes have been measured, and measuring
            them is the registry's job. */
-        if(r.grid){ await registerRaster(r, label); continue; }
+        if(r.grid){ const gid=await registerRaster(r, label); out.push({ok:!!gid,grid:true,label,datasetId:gid||null}); continue; }
         const put=addFC(r.fc, label, r);
-        await registerDataset(r, label, f, put&&put.n);
+        const did=await registerDataset(r, label, f, put&&put.n);
+        const o={ok:true,label,file:f,format:r.format||null,stats:r.stats||null,fc:r.fc,n:put?put.n:null,datasetId:did||null};
+        out.push(o);
+        if(r.format==='table'&&!(opts&&opts.quiet)) offerStudio(o);
       }
+      return out;
+    }
+    /* (data-studio) a dropped table that states no place: the studio is fetched and handed what the file became, and it
+       opens on the step that binds the rows to places. Not a second import — the layer and the dataset above exist already. */
+    function offerStudio(o){
+      import('./data-studio.js').then(m=>m.studio(HOST).receive(o)).catch(()=>{});
     }
     /* ══ (#R749) 落ちてきた格子 — READ, PLACED IN DEGREES, REGISTERED, DRAWN ═══════════════════
        ⚠ THE CONVERSION IS STATED, NOT HIDDEN. js/gis-raster.js's contract is a grid in degrees, and
@@ -3577,12 +3604,17 @@ export function geojsonUpload(HOST){
          on this branch: #btn-gis-panel existed for ~1 s and was gone. Adding one more id to that
          rescue list would fix this button and drop the next one, so the rescue reads the ATTRIBUTE
          instead, and the mark belongs to the button rather than to the list. */
-      wrap.innerHTML=`<hr style="border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;"><button id="btn-upload-geojson" data-lyr-tool="upload" class="ai-test-btn" style="width:100%;">${icon('folder')} <span data-i18n="importGeoFile">Import map data</span></button><button id="btn-gis-panel" data-lyr-tool="upload" class="ai-test-btn" style="width:100%;margin-top:5px;"><span data-i18n="gisWorkbench">Data &amp; analysis</span></button><div id="ugj-list" style="margin-top:5px;"></div>`;
+      wrap.innerHTML=`<hr style="border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;"><button id="btn-upload-geojson" data-lyr-tool="upload" class="ai-test-btn" style="width:100%;">${icon('folder')} <span data-i18n="importGeoFile">Import map data</span></button><button id="btn-gis-panel" data-lyr-tool="upload" class="ai-test-btn" style="width:100%;margin-top:5px;"><span data-i18n="gisWorkbench">Data &amp; analysis</span></button><button id="btn-data-studio" data-lyr-tool="upload" class="ai-test-btn" style="width:100%;margin-top:5px;"><span class="ds-lbl">Data studio</span></button><div id="ugj-list" style="margin-top:5px;"></div>`;
       dd.appendChild(wrap); listEl=wrap.querySelector('#ugj-list');
       wrap.querySelector('#btn-upload-geojson').onclick=()=>fileInput.click();
       /* (#R729) the operating surface for everything that was imported or computed. The module is
          fetched when the button is pressed, never before — a session that only looks at layers
          downloads no polygon clipper (js/gis-core.js). */
+      /* (data-studio) the table → places → colours → link surface, beside the two doors it is built from. IntMap's own words, en + jp. */
+      const dsb=wrap.querySelector('#btn-data-studio');
+      const dsLabel=()=>{ const sp=dsb&&dsb.querySelector('.ds-lbl'); if(sp) sp.textContent=IntMapLang.t(HOST.lang,"Data studio — map your table","データスタジオ — 表を地図に"); };
+      dsLabel(); window.addEventListener('intmap-lang',dsLabel);
+      if(dsb) dsb.onclick=()=>{ try{ import('./data-studio.js').then(m=>m.studio(HOST).open()).catch(()=>{ toast(IntMapLang.t(HOST.lang,"Could not open the data studio","データスタジオを開けませんでした")); }); }catch(_){} };
       wrap.querySelector('#btn-gis-panel').onclick=async()=>{ try{ const ok=window.IntMapLazy?await window.IntMapLazy.need('gisCore'):false; if(ok&&window.IntMapGis) window.IntMapGis.toggle(); else toast(IntMapLang.t(HOST.lang,"Could not open the data panel","データパネルを開けませんでした","Das Datenpanel konnte nicht geöffnet werden","Не удалось открыть панель данных","No se pudo abrir el panel de datos")); }catch(_){} };
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     mountButton(); setTimeout(mountButton,1500);
@@ -3595,8 +3627,10 @@ export function geojsonUpload(HOST){
        because the classifier is the part worth measuring on its own (tests/atlas-geo-resolve-checks.test.mjs (#R737)…). */
     /* (#R749) addRaster/classifyRaster join them for the same reason classify did: the classifier is
        the part worth measuring on its own, and js/gis-core.js needs a door for a grid. */
+    /* (data-studio) `handle` is the file door itself (the studio's drop, picker and paste come through it), and `maxClasses`
+       the classifier's own bound — so a control that offers a number of classes offers the number the classifier keeps. */
     window.GeoJSONUpload={ open:()=>fileInput.click(), add:addFC, addRaster, remove:removeItem,
-      find, link, style, styleOf, styleReason, classify, classifyRaster, _items:items };
+      find, link, style, styleOf, styleReason, classify, classifyRaster, handle:handleFiles, maxClasses:MAX_CLASSES, _items:items };
   })();
 }
 
@@ -3718,6 +3752,9 @@ export function viewHash(HOST){
        intent through the same buttons and checkboxes the reader presses. (#R101) the clock's field is wired at the
        top of this file (its value is js/chronos.js's) and (time-compare-lapse) the comparison window registers its own. */
     function encode(){ return MapState.hash(); }
+    /* (data-studio) a restore that carries a data studio table (`ds`) fetches the studio by the same import() every entry writes;
+       its owner registration receives the value the restore left pending (js/map-state.js `ds`). A restore without one fetches nothing. */
+    MapState.onRestore((e)=>{ if(e&&e.phase==='start'&&e.state&&e.state.ds) import('./data-studio.js').then(m=>{ m.studio(HOST); }).catch(()=>{}); });
     MapState.own('view',{ read:()=>viewOf(GE(),HOST),
       /* the projection buttons first (a projection switch may move the camera), then the camera */
       apply:(v)=>{ try{ const lng=v.lng,lat=v.lat,z=v.zoom,br=v.bearing,pi=v.pitch,proj=v.proj;
