@@ -1646,8 +1646,8 @@ export function dataLayers(HOST){
            spammed moveLayer → styledata, which kept the map from reaching 'idle' — and the GIBS overlays
            (nightsat/relief/popgrid) add inside `whenStyleReady()` (resolves on idle), so during the demo's
            rapid cycling their add was delayed past the 6.5 s window → "ケッペン以外のレイヤーが表示されない".
-           The existing idle/styledata self-heal (labels-on-top block) keeps labels on top during the demo. */
-        if(!window._imDemoActive) setTimeout(()=>{ try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} },700); }
+           The existing idle/styledata self-heal (labels-on-top block) keeps labels on top during the demo. (guide-unify) That demo is gone — the guide is a tour; its guard went with it. */
+        setTimeout(()=>{ try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} },700); }
     });
     /* (#R106) re-localize the "Active layers" heading (+ empty/chip text) on a language change. _refreshActiveLayers
        early-returns when the layer SET is unchanged (a signature guard), so the heading stayed in the old language
@@ -4777,7 +4777,7 @@ export function dataLayers(HOST){
        each dl- checkbox and, if it's unchecked yet its layer is still painted, runs the real hide path. It
        NEVER turns anything on, so it can't cause "勝手にオンになる". */
     window._sweepOrphanLayers=function(){
-      if(!_canDraw()||window._imDemoActive) return;   /* (#R170) reads getStyle().layers — a parsed style suffices */
+      if(!_canDraw()) return;   /* (#R170) reads getStyle().layers — a parsed style suffices */
       try{
         const visSet=new Set();
         GE().scene.getStyle().layers.forEach(l=>{ try{ if((GE().layers.getLayout(l.id,'visibility')||'visible')==='visible') visSet.add(l.id); }catch(_){} });

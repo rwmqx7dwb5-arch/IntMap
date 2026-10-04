@@ -2825,9 +2825,6 @@ IntMapLang.define('ko', { ui: {
   "The file is empty": "파일이 비어 있습니다",   /* map-ui.js (#R576) */
   "Could not read this file": "이 파일을 읽지 못했습니다",   /* map-ui.js (#R576) */
   "AUTO": "자동 재생",
-  "Intro demo:": "첫 데모:",
-  "End the intro demo": "데모 종료",
-  "End tour": "종료",
   "Experimental interactive modes built on real data.": "실제 데이터로 만든 실험적 인터랙티브 모드.",
   "A full 6-DOF flight model — pick an aircraft and airport, then take off and land over the real 3-D terrain.": "6자유도 본격 비행 모델. 기체와 공항을 고르고 실제 3-D 지형 위에서 이착륙하세요.",
   "Pandemic Simulator": "팬데믹 시뮬레이터",

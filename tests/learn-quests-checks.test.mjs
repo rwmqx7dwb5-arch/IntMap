@@ -194,7 +194,9 @@ test('learn-quests ⑦ while a «which year?» question is open, everything that
   const bl = src.slice(src.indexOf('function blind(on)'), src.indexOf('function holdTaps(on)'));
   assert.match(bl, /MapState\.holdAddress\('quest'\)/, 'the year question holds the address bar');
   assert.match(bl, /addressRelease\(\); addressRelease = null;/, 'and lets it go');
-  assert.match(read('js/map-ui.js'), /function save\(\)\{ if\(!booted \|\| restoring \|\| window\._imDemoActive \|\| MapState\.addressHeld\(\)\) return;/, 'the address writer honours the hold');
+  /* (guide-unify) read as «save() returns while the address is held», not as the whole guard line: the demo flag
+     that sat beside it was removed with the tutorial pill, and the claim here is about the hold only */
+  assert.match(read('js/map-ui.js'), /function save\(\)\{ if\([^)]*MapState\.addressHeld\(\)[^)]*\) return;/, 'the address writer honours the hold');
   /* every printer production showed the answer through carries the attribute where it is made */
   const html = read('index.html');
   for (const id of ['news-timeline', 'm-clock', 'live-news-feed']) {

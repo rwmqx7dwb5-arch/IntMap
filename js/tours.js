@@ -235,6 +235,23 @@ export function tourSteps(tour) {
   return ((tour && tour.steps) || []).map(resolveStep).filter(Boolean);
 }
 
+/* ══ THE GUIDE — Settings ▸ Tutorial, a tour made from the examples ═══════════════════════════════
+   (guide-unify) The first-run tutorial used to be its own mechanism in js/onboarding.js: a hand-written list of
+   four layers switched on by a timer. It is now a tour like any other and is played by the same player. Its steps
+   are DERIVED — the examples of js/showcase.js that say `guide: true`, in that file's order, each with the
+   example's own title, sentence, question and captured link — so there is no second list of what to show, and a
+   new example joins the guide by one word in its own declaration. It is not in TOURS: it is not a lesson, and
+   the teacher pages and the picker list TOURS. `?tour=guide` reopens it. Only an example that has been captured
+   (it has a link) is a step. */
+export const GUIDE_TOUR_ID = 'guide';
+export function guideTour() {
+  const steps = SHOWCASE.filter((s) => s.guide).map((s) => {
+    const c = CAPTURED[s.id];
+    return c && c.hash ? { key: s.id, title: s.title, say: s.blurb, ask: s.question, hash: c.hash } : null;
+  }).filter(Boolean);
+  return { id: GUIDE_TOUR_ID, title: LA('A first look at IntMap', 'IntMap をはじめて見る'), steps };
+}
+
 /** the picture a tour is shown with: the first of its steps that is an example (it has a screenshot) */
 export function tourCover(tour) {
   const s = tourSteps(tour).find((x) => x.image);

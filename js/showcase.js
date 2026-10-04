@@ -21,6 +21,11 @@
  *  with the screenshot taken in the same session. `node scripts/landing.mjs --check` fails when a
  *  captured link no longer says what its intent says.
  *
+ *  ══ `guide: true` IS AN ENTRY OF THE FIRST-RUN GUIDE ═════════════════════════════════════════
+ *  Settings ▸ Tutorial plays the entries marked `guide`, in this file's order, as a tour (js/tours.js
+ *  `guideTour`, played by js/tour-player.js) — their titles, sentences, questions and captured links, not a second
+ *  list of layers kept in js/onboarding.js. Marking an entry is how an example joins the guide.
+ *
  *  ══ `drawn` IS THE CLAIM, MADE CHECKABLE ═══════════════════════════════════════════════════════
  *  A historical example's title and sentence say what is on the map at that date. `drawn.labels`
  *  are the names its text relies on — the polity labels the time machinery draws for that day — and
@@ -197,6 +202,7 @@ const DECLARED = [
   {
     id: 'ring-of-fire',
     topic: 'earth',
+    guide: true,
     audience: ['curious', 'teachers'],
     curriculum: ['chiri-c1'],
     title: LA('Volcanoes and plate boundaries', '火山とプレート境界'),
@@ -215,6 +221,7 @@ const DECLARED = [
   {
     id: 'koppen',
     topic: 'earth',
+    guide: true,
     audience: ['curious', 'teachers'],
     curriculum: ['chiri-b1'],
     title: LA('Climates of the world (Köppen–Geiger)', '世界の気候区分（ケッペン）'),
@@ -296,6 +303,7 @@ const DECLARED = [
   {
     id: 'population-density',
     topic: 'society',
+    guide: true,
     audience: ['curious', 'teachers'],
     curriculum: ['chiri-b1'],
     title: LA('Where people live', '人はどこに住んでいるか'),
@@ -314,6 +322,7 @@ const DECLARED = [
   {
     id: 'night-lights',
     topic: 'society',
+    guide: true,
     audience: ['curious', 'teachers'],
     curriculum: ['chiri-b1'],
     title: LA('East Asia at night', '夜の東アジア'),

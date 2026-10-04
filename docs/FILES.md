@@ -1262,7 +1262,7 @@ command-palette.js                **コマンドパレット**（Ctrl/⌘+K）�
                                   ツールバー）・レイヤーの登録簿・端末上の地名・企業・作例とツアーを 1 つの欄で探し、各持ち主の
                                   経路で実行する。最後の行は Atlas。Atlas `panel.palette`。必要になったときに読む
 layer-row-label.js                レイヤー登録簿の 1 行が読者に見せる名前（Atlas とコマンドパレットが同じ読み方をする）
-onboarding.js                     ウェルカムカード・案内デモ・進捗コントロール
+onboarding.js                     ウェルカムカード・ガイドツアーへの入口（`_imStartDemo`。ツアー本体は tour-player.js）・進捗コントロール
 screenshot.js                     スクリーンショットのボタン（busy 状態・`capture-mode`・フラッシュ・保存。
                                   **絵そのものは atlas-view-capture.js**——Atlas と同じ1本を呼ぶ）
 sidebar-style.js                  左サイドバーの材質（不透明／フロスト2種）と、フロスト時にカメラへ渡す左 inset
@@ -1405,7 +1405,8 @@ tours.js                          **授業ツアー**の宣言（純データ）
 tour-player.js                    **授業モード**——ツアーを全画面で再生する（地図・凡例・出典表示・通知だけを残し、大きな文字の
                                   パネルで「次へ／前へ」、矢印・スペース・Page Up/Down・Esc）。段は共有リンクの復元
                                   （IntMapBookmark.restore）で開き、時計とレイヤーを読み返す。Atlas が今の地図を段として記録する
-                                  一時ツアー。src/main.js が `?tour=` と設定の #btn-tours で、Atlas の panel.tour が要求時に読む
+                                  一時ツアー。ガイド（`?tour=guide`。js/tours.js `guideTour` が `guide: true` の作例から導く）も同じ再生器で進む。
+                                  src/main.js が `?tour=` と設定の #btn-tours で、Atlas の panel.tour・js/onboarding.js の入口が要求時に読む
 tour-builder.js                   **ツアー作成**——いまの地図（MapState.hash()）を段として足し、題・話すこと・問いを書き、並べ替え・
                                   差し替え・削除・プレビュー。ツアーは `?tour=custom&t=…` のアドレスそのものに入れて共有（codec は tours.js、
                                   上限は実測の 8,192 バイト）。下書きは localStorage。ピッカー・プレイヤーの「編集」・Atlas の panel.tourBuilder が読む

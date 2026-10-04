@@ -3841,7 +3841,7 @@ export function viewHash(HOST){
        the SAME reload-clean behaviour is preserved via the per-tab `firstLoad` sessionStorage flag (a reload of
        your own tab restores the view only; a fresh open / shared link / same-tab paste restores everything). */
     /* (#R244) …and nothing is written until the boot restore has had its turn — see BOOT_HASH */
-    function save(){ if(!booted || restoring || window._imDemoActive || MapState.addressHeld()) return; const h=encode(); if(!h) return; try{ history.replaceState(null,'',location.pathname+location.search+h); }catch(_){} }
+    function save(){ if(!booted || restoring || MapState.addressHeld()) return; const h=encode(); if(!h) return; try{ history.replaceState(null,'',location.pathname+location.search+h); }catch(_){} }
     /* (#R42b) restore. The VIEW (center/zoom/bearing/pitch/projection) is ALWAYS restored. The FULL state
        (layers + time-travel + compare + base map, EXACTLY) is restored when this is a shared/explicit open —
        i.e. a hashchange navigation (opts.shared, e.g. pasting a link in the same tab) OR the first load of the

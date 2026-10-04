@@ -2835,9 +2835,6 @@ IntMapLang.define('fr', { ui: {
   "The file is empty": "Le fichier est vide",   /* map-ui.js (#R576) */
   "Could not read this file": "Impossible de lire ce fichier",   /* map-ui.js (#R576) */
   "AUTO": "AUTO",
-  "Intro demo:": "Démo d’introduction :",
-  "End the intro demo": "Terminer la démo d’introduction",
-  "End tour": "Terminer",
   "Experimental interactive modes built on real data.": "Modes interactifs expérimentaux fondés sur des données réelles.",
   "A full 6-DOF flight model — pick an aircraft and airport, then take off and land over the real 3-D terrain.": "Un modèle de vol complet à 6 degrés de liberté — choisissez un avion et un aéroport, puis décollez et atterrissez au-dessus du relief 3-D réel.",
   "Pandemic Simulator": "Simulateur de pandémie",

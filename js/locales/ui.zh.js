@@ -3052,9 +3052,6 @@ IntMapLang.define('zh', {
   "The file is empty": "檔案是空的",   /* map-ui.js (#R576) */
   "Could not read this file": "無法讀取這個檔案",   /* map-ui.js (#R576) */
   "AUTO": "自動播放",
-  "Intro demo:": "初次導覽：",
-  "End the intro demo": "結束導覽",
-  "End tour": "結束",
   "Experimental interactive modes built on real data.": "以真實資料打造的實驗性互動模式。",
   "A full 6-DOF flight model — pick an aircraft and airport, then take off and land over the real 3-D terrain.": "完整六自由度飛行模型——選擇機型與機場，在真實 3-D 地形上起降。",
   "Pandemic Simulator": "疫情模擬器",

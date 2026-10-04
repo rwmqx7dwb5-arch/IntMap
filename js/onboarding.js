@@ -1,97 +1,37 @@
 /* ============================================================================
  *  IntMap · Welcome card, guided demo & progress control  (#R167)
  * ----------------------------------------------------------------------------
- *  First-run onboarding: the welcome card, the guided map demo reachable from Settings, and
+ *  First-run onboarding: the welcome card, the door to the guide tour reachable from Settings (the tour itself is js/tour-player.js's), and
  *  the shared honest progress control (window._imProgCtl) that js/map-tools.js also uses.
  *  Two factories, each called where its block used to run — the progress control sits much
  *  further down the closure than the demo.
  * ==========================================================================*/
 
-import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { isLayer, isDisplay } from './layer-manifest.js';
 
 
 export function onboarding(HOST){
-  const GE=()=>IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
-  const ensurePlaceLabels=HOST.ensurePlaceLabels, applyLabelLang=HOST.applyLabelLang, isMobile=HOST.isMobile;
-  /* (#R15c) First-visit showcase — a new user reported the map "was initially just black". On the very
-     first visit (nothing seen before) we auto-cycle a few colorful layers with a bottom pill that names
-     the layer being shown + play/pause + dismiss. It stops the moment the user toggles any layer or hits ×,
-     and remembers it's been seen so it never nags again. Purely additive; touches only its own pill. */
+  const isMobile=HOST.isMobile;
+  /* (guide-unify) The guided tour is no longer a mechanism of its own. It used to be a hand-written list of four
+     layers a timer switched on (SHOW, 9 s each) with a pill of its own; it is now the tour the player already
+     has — js/tour-player.js plays `guide`, whose steps js/tours.js derives from the examples marked `guide` in
+     js/showcase.js. This function is only the DOOR: Settings ▸ Tutorial calls it with force=true.
+     What the first-visit rules were, they still are (nothing calls it unforced today — the welcome card is off
+     and so is the auto-run — but the rules stay with the door): once only (`intmap_demo_seen`), not on a phone
+     (#R16: the heavy layers slowed the mobile start-up), and not over a thematic layer the reader already has on. */
   function _imStartDemo(force){
-    /* (#R21) force=true → the Settings "Tutorial" button re-runs the showcase on demand. */
     if(!force){
       try{ if(localStorage.getItem('intmap_demo_seen')==='1') return; }catch(_){}
-      /* (#R16) Skip the auto-demo on phones: it eagerly loaded 4 heavy layers (incl. Köppen) on the very
-         first visit — slowing the mobile startup the user called slow, and adding to the Köppen OOM risk.
-         Mobile gets a clean, fast first paint instead. Desktop keeps the showcase. */
       try{ if(window.IntMapDevice.compact()) return; }catch(_){}
+      /* (basic-display-not-layers) …a LAYER: the day & night and 3-D buildings rows are `.lyr-row`s too, and they are the
+         map display, not layers (the manifest's `kind`) — so this asks the manifest instead of the row's class */
+      if(Array.prototype.some.call(document.querySelectorAll('#layer-dropdown input[type=checkbox]:checked'),
+        (cb)=>cb.classList.contains('geo-layer-cb') || (isLayer(cb.id) && !isDisplay(cb.id) && !!cb.closest('.lyr-row')))) return;
     }
-    if(!GE().hasRenderer()||!GE().hasRenderer()) return;
-    try{ const old=document.getElementById('im-demo-pill'); if(old) old.remove(); }catch(_){}
-    const jp=()=>HOST.lang==='jp';
-    /* ⚠ (#R251) the tour's four captions were `[id, en, ja]` read by `jp()?s[2]:s[1]`, so the
-       tutorial narrated itself in English to seven of the nine languages. */
-    const LA=IntMapLang.pickArgs(), LT=IntMapLang.pick(()=>HOST.lang);
-    const SHOW=[['dl-climate',LA('Köppen climate','ケッペン気候区分','Köppen-Klima','Климат Кёппена','Clima de Köppen')],['dl-nightsat',LA('Night lights','夜間光（衛星）','Nachtlichter','Ночные огни','Luces nocturnas')],['dl-relief',LA('Elevation relief','標高（段彩）','Höhenrelief','Рельеф высот','Relieve altimétrico')],['dl-popgrid',LA('Population density (1 km grid)','人口密度（1kmグリッド）','Bevölkerungsdichte (1-km-Raster)','Плотность населения (сетка 1 км)','Densidad de población (malla de 1 km)')]];
-    /* don't start if a thematic layer is already on */
-    /* (basic-display-not-layers) …a LAYER: the day & night and 3-D buildings rows are `.lyr-row`s too, and they are the
-       map display, not layers (the manifest's `kind`) — so this asks the manifest instead of the row's class */
-    if(!force && Array.prototype.some.call(document.querySelectorAll('#layer-dropdown input[type=checkbox]:checked'),
-      (cb)=>cb.classList.contains('geo-layer-cb') || (isLayer(cb.id) && !isDisplay(cb.id) && !!cb.closest('.lyr-row')))) return;
-    let idx=-1,timer=null,paused=false,demoToggling=false,done=false,curId=null;
-    const gcb=(id)=>document.getElementById(id);
-    const pill=document.createElement('div'); pill.id='im-demo-pill';
-    pill.style.cssText='position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--sheet-cover, 20px) + 20px);z-index:var(--z-dropdown);display:flex;align-items:center;gap:9px;padding:7px 13px;border-radius:999px;background:var(--popup-bg);border:1px solid rgba(128,128,128,0.22);box-shadow:var(--shadow);backdrop-filter:blur(14px);font-size:12.5px;color:var(--text-main);max-width:92vw;';
-    (document.getElementById('map-container')||document.body).appendChild(pill);
-    const setOff=(id)=>{ const c=id&&gcb(id); if(c&&c.checked){ demoToggling=true; c.checked=false; try{ c.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} setTimeout(()=>{ demoToggling=false; },0); } };
-    const setOn=(id)=>{ const c=gcb(id); if(c&&!c.checked){ demoToggling=true; c.checked=true; try{ c.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} setTimeout(()=>{ demoToggling=false; },0); } };
-    function render(name){ pill.innerHTML='';
-      /* (#R22) Make it unmistakable this is a TEMPORARY one-time intro auto-play, not a permanent state —
-         a pulsing "AUTO" badge + "intro demo" wording + an explicit "End tour" button. */
-      const badge=document.createElement('span'); badge.textContent=IntMapLang.t(HOST.lang,"AUTO","自動再生","AUTO","АВТО","AUTO");
-      badge.style.cssText='font-size:9.5px;font-weight:800;letter-spacing:0.06em;padding:2px 6px;border-radius:999px;background:var(--primary-fill);color:#fff;text-transform:uppercase;animation:imDemoPulse 1.6s ease-in-out infinite;';
-      pill.appendChild(badge);
-      const t=document.createElement('span'); t.innerHTML='<span style="opacity:0.7;">'+(IntMapLang.t(HOST.lang,"Intro demo:","初回デモ:","Einführungsdemo:","Вводная демонстрация:","Demostración inicial:"))+'</span> <b>'+name+'</b>'; pill.appendChild(t);
-      /* (#R32) iOS-clean controls — SVG play/pause + a circular × instead of the ▶ ⏸ × emoji
-         ("中途半端にダサい絵文字を入れるな / iOS風にしろ"). */
-      const _svgPlay='<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
-      const _svgPause='<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
-      const pb=document.createElement('button'); pb.innerHTML=paused?_svgPlay:_svgPause; pb.title=paused?(IntMapLang.t(HOST.lang,"Play","再開","Abspielen","Воспроизвести","Reproducir")):(IntMapLang.t(HOST.lang,"Pause","一時停止","Pause","Пауза","Pausa")); pb.style.cssText='background:var(--input-bg);border:none;color:var(--text-main);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;flex:0 0 auto;'; pb.onclick=()=>{ paused=!paused; if(!paused) schedule(); else clearTimeout(timer); render(name); }; pill.appendChild(pb);
-      const xb=document.createElement('button'); xb.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'; xb.title=IntMapLang.t(HOST.lang,"End the intro demo","デモを終了","Einführungsdemo beenden","Завершить вводную демонстрацию","Terminar la demostración inicial"); xb.setAttribute('aria-label',IntMapLang.t(HOST.lang,"End tour","終了","Tour beenden","Завершить тур","Terminar")); xb.style.cssText='background:var(--input-bg);border:none;border-radius:50%;color:var(--text-main);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;flex:0 0 auto;margin-left:2px;'; xb.onclick=()=>stop(true); pill.appendChild(xb); }
-    /* (#R25) 6.5s → 9s dwell: the GIBS night-lights raster and the DEM color-relief need longer to fetch
-       + paint than the instant Köppen image, so at 6.5s they were toggled OFF before they finished loading
-       ("night lights と elevation relief が表示されない"). 9s gives every showcase layer time to appear. */
-    function schedule(){ clearTimeout(timer); timer=setTimeout(next,9000); }
-    function next(){ if(done||paused) return; try{ setOff(curId); idx=(idx+1)%SHOW.length; const s=SHOW[idx]; curId=s[0]; setOn(curId); render(LT.arr(s[1])); }catch(_){} schedule(); }
-    /* (#R25) Pressing the × on ANY layer legend ends the demo too ("どれかのレイヤの凡例の×を押せばintro demoも
-       終了"). Some legend ×'s only hide the legend without firing a checkbox change, so the dropdown-change
-       listener below wouldn't catch them — hook the close controls explicitly (capture phase). */
-    const onLegendX=(e)=>{ try{ if(e.target&&e.target.closest&&e.target.closest('.layer-popup-x,.kip-x')) stop(true); }catch(_){} };
-    document.addEventListener('click',onLegendX,true);
-    function stop(markSeen){ if(done) return; done=true; clearTimeout(timer);
-      try{ document.removeEventListener('click',onLegendX,true); }catch(_){}
-      /* (#R23) turn off EVERY layer the demo could have switched on (not just the current one) so it can
-         never leave an orphan layer behind ("オンのままで active layers に出ず消せない"). */
-      try{ SHOW.forEach(s=>setOff(s[0])); }catch(_){ setOff(curId); }
-      /* (#R28) belt-and-suspenders: force-hide the demo's MAP layers directly too. If a setOff change handler
-         ran while the map was still busy (the demo starts ~1.4s after load), the checkbox could end up OFF
-         while the raster stayed VISIBLE — a true orphan ("オンなのにactive layersに出ず消せない"). Hiding the
-         actual layers here guarantees the demo can never strand one. */
-      /* (#R171) layer visibility through IntMapGeoEngine — this file no longer names the renderer. */
-      try{ const E=IntMapGeoEngine; if(E) ['lyr-climate','lyr-nightsat','lyr-relief','lyr-popgrid'].forEach(l=>{ if(E.layers.has(l)) E.layers.setVisible(l,false); }); }catch(_){}
-      window._imDemoActive=false;
-      /* (#R27) Re-assert place labels after the demo so the default names aren't left hidden by the
-         demo's layer cycling ("デフォルトで地名ラベルが出ない"). */
-      try{ ensurePlaceLabels(); applyLabelLang(); window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){}
-      try{ pill.remove(); }catch(_){} if(markSeen){ try{ localStorage.setItem('intmap_demo_seen','1'); }catch(_){} }
-      try{ const sv=window.IntMapBookmark&&window.IntMapBookmark.save; if(sv) sv(); }catch(_){}   /* re-sync the hash to the real (demo-free) layer set */ }
-    const dd=document.getElementById('layer-dropdown');
-    if(dd) dd.addEventListener('change',(e)=>{ if(!demoToggling && e.target && e.target.type==='checkbox') stop(true); });
-    window._imDemoStop=()=>stop(true);
-    window._imDemoActive=true;
-    next();
+    try{ localStorage.setItem('intmap_demo_seen','1'); }catch(_){}   /* a guide that has been opened has been seen — what × used to record */
+    /* ⚠ the player only, by import(): a static import of js/tours.js pulled it and js/showcase.js into the start-up chunk (check:perf) */
+    import('./tour-player.js').then((m)=>m.startGuide()).catch(()=>{});
   }
   window._imStartDemo=_imStartDemo;
 

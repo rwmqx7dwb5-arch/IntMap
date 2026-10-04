@@ -2921,12 +2921,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      as well — the Apply path still runs and is now a no-op for this control. */
   { const ns=document.getElementById('setting-night-side');
     if(ns) ns.addEventListener('change',()=>{ try{ if(window.IntMapNightSide) window.IntMapNightSide.setEnabled(ns.value!=='off'); }catch(_){} try{ window._imSyncNightSideRow&&window._imSyncNightSideRow(); }catch(_){} }); }
-  /* (#R21) Tutorial button (top of Settings) — closes the panel and replays the layer showcase. */
+  /* (#R21) Tutorial button (top of Settings) — closes the panel and plays the guide tour (js/onboarding.js is the door, js/tour-player.js the player). */
   (function(){ const tb=document.getElementById('btn-tutorial'); if(!tb) return;
     const lbl=()=>{ const e=document.getElementById('btn-tutorial-lbl'); if(e) e.textContent=IntMapLang.t(currentLang,'Tutorial — layer showcase','チュートリアル（レイヤー紹介ツアー）','Tutorial — Ebenen-Rundgang','Обучение — обзор слоёв','Tutorial — recorrido de capas'); };
     lbl(); window.addEventListener('intmap-lang',lbl);
     tb.onclick=(e)=>{ e.preventDefault(); settingsDirty=false; modal.style.display='none';
-      try{ window._imDemoStop&&window._imDemoStop(); }catch(_){}
       setTimeout(()=>{ try{ window._imStartDemo&&window._imStartDemo(true); }catch(_){} },150); };
   })();
   /* (#R180) the ENGINE line — see the note at its call site below. ⚠ (#R466) it has a NAME now because opening Settings was the only moment it could be right, and the language changes under it. */
