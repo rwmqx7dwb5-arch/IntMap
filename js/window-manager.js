@@ -563,7 +563,7 @@ export function windowManager(HOST){
     _geoBump();   /* a window that has just joined changes the hull */
   }
   function addEdgeResize(panel,opts){ opts=opts||{}; if(!panel||panel.dataset.edgeResize) return; panel.dataset.edgeResize='1';
-    try{ if(!document.getElementById('im-edge-hover-css')){ const st=document.createElement('style'); st.id='im-edge-hover-css'; st.textContent='.im-edge-hover, .im-edge-hover *{cursor:inherit !important;}'; document.head.appendChild(st); } }catch(_){}
+    try{ if(!document.getElementById('im-edge-hover-css')){ const st=document.createElement('style'); st.id='im-edge-hover-css'; st.textContent='.im-edge-hover *{cursor:inherit !important;}';   /* the CHILDREN inherit; the window keeps the cursor written on it (a rule that also matched the window overrode its inline ew-resize with the parent's auto — production, 2026-10-04) */ document.head.appendChild(st); } }catch(_){}
     const M=9, minW=(opts.min&&opts.min[0])||220, minH=(opts.min&&opts.min[1])||130;
     const CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};
     /* (#R311) `rect` is the ONE addition: the arithmetic below is byte-for-byte what it was, and a
