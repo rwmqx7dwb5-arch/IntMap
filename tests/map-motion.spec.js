@@ -29,7 +29,10 @@ import { seededStorageState } from './helpers/session-seed.js';
 import { installHermeticRouting } from './helpers/network.js';
 import { PROBE, GESTURES, PLANS, analyse, measure, virtualRun } from '../scripts/map-motion-lib.mjs';
 
-test.describe.configure({ mode: 'default' });   /* in order, one boot per describe — and a red test does not skip the rest */
+/* serial: one worker per describe and ONE boot for its tests (with the suite's fullyParallel a describe's
+   tests would spread over workers and each would boot its own page — measured as most of this file's
+   time). The price is that a red test skips the rest of its describe. */
+test.describe.configure({ mode: 'serial' });
 test.setTimeout(240_000);
 
 async function open(browser, mobile) {
@@ -45,7 +48,10 @@ async function open(browser, mobile) {
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__imap && window.__imap.isStyleLoaded()
     && (!window.IntMapGeoEngine.canDraw || window.IntMapGeoEngine.canDraw()), null, { timeout: 90_000 });
-  await page.evaluate(() => new Promise((r) => { window.__imap.once('idle', r); setTimeout(r, 15_000); }));
+  /* no wait for `idle` (nothing here is about the tiles, and with the network blocked idle comes late):
+     the app's own milestones instead — the launch screen has lifted (it takes the touches until then)
+     and the main thread has had its first idle after it (js/boot-stage.js) */
+  await page.evaluate(async () => { const B = window.__imBootStage; if (B) { await B.interactive(); await B.settled(); } });
   const cdp = await ctx.newCDPSession(page);
   return { ctx, page, cdp };
 }
@@ -82,7 +88,7 @@ test.describe('desktop · wheel and drag', () => {
   });
 
   test('while the camera moves, nothing rewrites <html>/<body> and labels are not re-placed every frame', async () => {
-    const r = analyse(await measure(s.page, s.cdp, GESTURES.desktop.wheel), 'zoom');
+    const r = analyse(await measure(s.page, s.cdp, GESTURES.desktop.wheel, 0, { tiles: false }), 'zoom');
     expect(r.movingFrames, 'the wheel moved the camera').toBeGreaterThan(3);
     /* js/space-sky.js wrote <body>'s class on every frame; every observer of <body> woke for it */
     expect(r.pageWrites, `class/style writes on <html>/<body>: ${JSON.stringify(r.styleWriters)}`).toBe(0);
@@ -90,8 +96,9 @@ test.describe('desktop · wheel and drag', () => {
     expect(r.labels.placementShare, 'symbol placements per moving frame').toBeLessThan(0.5);
   });
 
+  let defaultDrag = null;   /* the default-settings drag, measured once and read by the Inertia test too (serial) */
   test('the glide after a drag starts at the speed the drag was released at', async () => {
-    const r = await inRendererTime(s, GESTURES.desktop.drag, PLANS.drag());
+    const r = defaultDrag = await inRendererTime(s, GESTURES.desktop.drag, PLANS.drag());
     /* js/geo-engine.js _glideOptions: linearity × f′(0) = 2. Stock: a quarter of the speed or less. */
     expect(r.path.glideStart, 'first glide frame speed / drag speed').toBeGreaterThan(0.4);
   });
@@ -104,6 +111,9 @@ test.describe('desktop · wheel and drag', () => {
 
   test('the Inertia slider is applied: at 0 the map stops on release, at 1 it glides', async () => {
     const travel = async (inertia) => {
+      /* Inertia 1 is the default: the drag the glide test above already measured (deterministic in the
+         renderer's time, so a second run would draw the same frames) */
+      if (inertia === 1 && defaultDrag) return defaultDrag.path.glidePx;
       await s.page.evaluate((v) => { window.imNavInertia = v; window._applyNavSens(); }, inertia);
       return (await inRendererTime(s, GESTURES.desktop.drag, PLANS.drag())).path.glidePx;
     };

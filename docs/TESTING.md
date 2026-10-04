@@ -87,7 +87,7 @@ candidates ending in «Ask Atlas»).
 gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**153 measured spec files / 86.5 min** of serial browser time against a ceiling of 87.5 min (the 1.0 min between
+**154 measured spec files / 87.2 min** of serial browser time against a ceiling of 87.5 min (the 0.3 min between
 them is the room `suite-time-room` made for the specs arriving after it — see below); and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
@@ -732,7 +732,10 @@ frame takes 50–100 ms and the trajectory describes the frame clock. So the gat
 `tests/map-motion.spec.js`, runs the trajectory assertions in the **renderer's time**
 (`virtualRun`: `maplibregl.setNow` frozen and advanced 1000/60 ms per step, input delivered at its
 own time, one real frame per step) and keeps only COUNTS (page writes, placements per moving frame)
-in real time. `tests/map-motion-checks.test.mjs` re-reads the renderer internals the motion work
+in real time. It never waits for the map to go `idle` (with the network blocked that took up to 12 s per
+gesture, and nothing it asserts is about tiles): it waits for the app's own milestones once
+(`__imBootStage.interactive()` / `settled()`), places the camera and draws a frame, and each describe is
+`serial` so its tests share one boot. `tests/map-motion-checks.test.mjs` re-reads the renderer internals the motion work
 relies on from `node_modules/maplibre-gl/src`, so an upgrade that changes them fails by name.
 
 ### Measuring the ENGINE, not the phone: `scripts/mobile-trace.mjs` (#R387)

@@ -202,20 +202,25 @@ export const GESTURES = {
 /* `rep` moves the gesture somewhere the renderer has not been (REP_SHIFT_DEG of longitude per rep):
    a repeat in the same place is drawn from the tile cache and says nothing about arriving tiles */
 export const REP_SHIFT_DEG = 9;
-export async function measure(page, cdp, g, rep = 0) {
-  const c = g.view.center;
-  await jump(page, Object.assign({}, g.view, { center: [((c[0] + rep * REP_SHIFT_DEG + 540) % 360) - 180, c[1]] }));
+/* `opts.tiles:false` — the caller asks about what RUNS while the camera moves (counts), not about the
+   tiles: start from a drawn camera and stop when the camera stops, instead of waiting for `idle`
+   before and after (with the network blocked that is up to 12 s each way, for nothing measured) */
+export async function measure(page, cdp, g, rep = 0, opts = {}) {
+  const c = g.view.center, tiles = opts.tiles !== false;
+  const view = Object.assign({}, g.view, { center: [((c[0] + rep * REP_SHIFT_DEG + 540) % 360) - 180, c[1]] });
+  if (tiles) await jump(page, view); else await placed(page, view);
   const b = await canvasBox(page);
   await page.evaluate(() => { window.__mm.start(); window.__mm.mark('in'); });
   await g.run(page, b, cdp);
   await page.evaluate(() => window.__mm.mark('out'));
-  await page.evaluate(() => new Promise((res) => {
+  await page.evaluate((tiles) => new Promise((res) => {
     const m = window.__imap; let done = false;
     const fin = () => { if (done) return; done = true; window.__mm.mark('idle'); res(); };
     const wait = () => { if (m.isMoving()) return setTimeout(wait, 30); m.once('idle', fin); if (m.loaded() && m.areTilesLoaded() && !m.isMoving()) setTimeout(() => { if (!m.isMoving() && m.areTilesLoaded()) fin(); }, 60); };
-    wait(); setTimeout(fin, 12000);
-  }));
-  await sleep(g.after || 250);   /* work a gesture leaves behind (an idle callback) is part of its cost */
+    const still = () => { if (m.isMoving()) return setTimeout(still, 30); setTimeout(fin, 50); };
+    if (tiles) { wait(); setTimeout(fin, 12000); } else still();
+  }), tiles);
+  await sleep(tiles ? (g.after || 250) : 50);   /* work a gesture leaves behind (an idle callback) is part of its cost */
   return page.evaluate(() => window.__mm.stop());
 }
 
@@ -229,17 +234,32 @@ export async function measure(page, cdp, g, rep = 0) {
    frame rendered per step. The result is the trajectory a 60 Hz display would show, whatever the
    machine — and it is the real app and the real renderer computing it. */
 export const STEP = 1000 / 60;
-async function renderedAt(page, t) {
-  return page.evaluate((t) => new Promise((res) => {
+async function renderedAt(page, t, input) {
+  return page.evaluate(([t, input]) => new Promise((res) => {
     const m = window.__imap; window.maplibregl.setNow(t); m.triggerRepaint();
+    /* After input, two frames: measured, with one the first finger of a session moved nothing (the
+       touch handlers settle their state on the frame after the event). Without input — the glide, the
+       spring between notches — one: the renderer's frame request was queued by triggerRepaint before
+       this callback, so it runs after the map has drawn the frame at t. */
     const raf = window.__mm && window.__mm.rawRAF ? window.__mm.rawRAF : requestAnimationFrame;
-    raf(() => raf(() => { const c = m.getCenter(); res({ t, z: m.getZoom(), lng: c.lng, lat: c.lat }); }));
-  }), t);
+    const read = () => { const c = m.getCenter(); res({ t, z: m.getZoom(), lng: c.lng, lat: c.lat }); };
+    raf(input ? () => raf(read) : read);
+  }), [t, !!input]);
+}
+/* the camera at `view`, drawn — without waiting for the map to go IDLE. A trajectory in the renderer's
+   time does not depend on which tiles have arrived, and with the network blocked (the gate) `idle` can
+   take the full 12 s timeout to come: measured, that wait was most of this spec's wall clock. */
+async function placed(page, view) {
+  await page.evaluate((v) => new Promise((res) => {
+    const m = window.__imap; m.stop(); m.jumpTo(v);
+    const raf = window.__mm && window.__mm.rawRAF ? window.__mm.rawRAF : requestAnimationFrame;
+    raf(() => raf(() => res()));
+  }), view);
 }
 /* `events(k, box)` → the CDP calls to make at step k (an array of thunks); `steps` the number of steps;
    `marks` names steps: { out: k } is the release */
 export async function virtualRun(page, cdp, g, plan) {
-  await jump(page, g.view);
+  await placed(page, g.view);
   const b = await canvasBox(page);
   const t0 = await page.evaluate(() => Math.ceil(performance.now()) + 100000);
   const frames = [];
@@ -249,13 +269,13 @@ export async function virtualRun(page, cdp, g, plan) {
       /* an event is a thunk (delivered at the frame's own time) or { at, call } with `at` the ms since
          the start — input does not arrive on frame boundaries, and WHERE between two frames it lands
          is exactly what a handler that restarts its clock per event is sensitive to */
+      let clock = null;   /* one round trip per change of the clock, not per event */
       for (const e of plan.events(k, b)) {
         const at = typeof e === 'function' ? t : t0 + e.at;
-        await page.evaluate((x) => window.maplibregl.setNow(x), at);
+        if (at !== clock) { await page.evaluate((x) => window.maplibregl.setNow(x), at); clock = at; }
         await (typeof e === 'function' ? e : e.call)(cdp);
       }
-      await page.evaluate((t) => window.maplibregl.setNow(t), t);
-      frames.push(await renderedAt(page, t));
+      frames.push(await renderedAt(page, t, clock != null));   /* sets the clock to t itself */
     }
   } finally { await page.evaluate(() => window.maplibregl.restoreNow()); }
   return { frames, marks: [{ name: 'in', t: t0 }, { name: 'out', t: t0 + (plan.out == null ? plan.steps : plan.out) * STEP - 1 }] };
