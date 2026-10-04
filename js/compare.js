@@ -249,14 +249,6 @@ export function compare(HOST){
       /* (#R16) MOBILE compare: smaller default (44vh, was "大きすぎる") + a touch resize grip (.cmp-resize)
          so the height IS adjustable ("大きさ調節できない" fixed). Native CSS resize ignores touch, hence the grip. */
       '.cmp-resize{display:none;}'+
-      /* (#R20) four-corner resize handles */
-      '.cmp-rz{position:absolute;width:18px;height:18px;z-index:calc(var(--z-inset) + 8);touch-action:none;}'+
-      '.cmp-rz[data-c="nw"]{top:-4px;left:-4px;cursor:nwse-resize;}'+
-      '.cmp-rz[data-c="ne"]{top:-4px;right:-4px;cursor:nesw-resize;}'+
-      '.cmp-rz[data-c="sw"]{bottom:-4px;left:-4px;cursor:nesw-resize;}'+
-      '.cmp-rz[data-c="se"]{bottom:-4px;right:-4px;cursor:nwse-resize;}'+
-      '.cmp-rz::after{content:"";position:absolute;inset:5px;border-radius:3px;border:2px solid rgba(150,160,175,0.55);border-top:none;border-left:none;opacity:0;transition:opacity 0.15s;}'+
-      '#compare-window:hover .cmp-rz::after{opacity:0;}'+   /* (#R47) hide the resize corner-mark (still resizable; the cursor change is the only hint the user wants) */
       '@media'+window.IntMapDevice.COMPACT+'{'+
       '#compare-window{left:6px !important;right:6px !important;top:max(8px,var(--safe-top)) !important;bottom:auto !important;width:auto !important;height:46vh !important;min-width:0 !important;resize:none !important;border-radius:16px;padding-bottom:20px;z-index:calc(var(--z-toast) + 1200);overflow:hidden;}'+
       '.cmp-resize{display:block;position:absolute;left:0;right:0;bottom:0;height:24px;cursor:ns-resize;touch-action:none;z-index:calc(var(--z-inset) + 7);}'+
@@ -749,8 +741,7 @@ export function compare(HOST){
             '<button class="cmp-btn" type="button" id="cmp-tnow">'+IntMapLang.t(HOST.lang,"Now","現在")+'</button>'+
           '</div><div class="cmp-tnote" id="cmp-tnote" hidden></div></div>'+
         '<div class="cmp-body"><div id="compare-map"></div><div class="cmp-when" id="cmp-when" title="'+IntMapLang.t(HOST.lang,"This window | the main map","このウィンドウ｜メイン地図")+'"></div></div>'+
-        '<div class="cmp-rz" data-c="nw"></div><div class="cmp-rz" data-c="ne"></div><div class="cmp-rz" data-c="sw"></div><div class="cmp-rz" data-c="se"></div>'+
-        '<div class="cmp-resize" title="'+(IntMapLang.t(HOST.lang,"Drag to resize","高さを調節","Zum Ändern der Höhe ziehen","Потяните, чтобы изменить высоту","Arrastre para ajustar la altura"))+'"></div>';
+                '<div class="cmp-resize" title="'+(IntMapLang.t(HOST.lang,"Drag to resize","高さを調節","Zum Ändern der Höhe ziehen","Потяните, чтобы изменить высоту","Arrastre para ajustar la altura"))+'"></div>';
       (document.getElementById('map-container')||document.body).appendChild(win);
       try{ window.registerWindow&&window.registerWindow(win); }catch(_){}   /* (#R47) click-to-front */
       /* (#R27) Pull the close × OUT of the wrapping header flow and make it a direct child of the window,
@@ -841,24 +832,15 @@ export function compare(HOST){
         h.addEventListener('pointermove',e=>{ if(!drag) return; win.style.left=Math.max(_sbRight(),Math.min(window.innerWidth-60,e.clientX-dx))+'px'; win.style.top=Math.max(0,Math.min(window.innerHeight-30,e.clientY-dy))+'px'; if(mode!=='free') syncFromMain(); /* lens/centroid follow the window */ });
         h.addEventListener('pointerup',()=>drag=false); h.addEventListener('pointercancel',()=>drag=false);
       })();
-      /* (#R20) FOUR-corner resize ("四隅でできるようにして") — pointer-driven so it also works on touch. */
-      (function(){ let rz=null,sx=0,sy=0,r0=null;
-        win.querySelectorAll('.cmp-rz').forEach(g=>{
-          g.addEventListener('pointerdown',e=>{ rz=g.getAttribute('data-c'); sx=e.clientX; sy=e.clientY; r0=win.getBoundingClientRect();
-            win.style.right='auto'; win.style.bottom='auto'; win.style.left=r0.left+'px'; win.style.top=r0.top+'px';
-            try{ g.setPointerCapture(e.pointerId); }catch(_){} e.preventDefault(); e.stopPropagation(); });
-          g.addEventListener('pointermove',e=>{ if(!rz) return; const dx=e.clientX-sx, dy=e.clientY-sy;
-            let L=r0.left,T=r0.top,W=r0.width,H=r0.height;
-            if(rz.includes('e')) W=r0.width+dx; if(rz.includes('s')) H=r0.height+dy;
-            if(rz.includes('w')){ W=r0.width-dx; L=r0.left+dx; } if(rz.includes('n')){ H=r0.height-dy; T=r0.top+dy; }
-            W=Math.max(240,Math.min(window.innerWidth-20,W)); H=Math.max(180,Math.min(window.innerHeight-20,H));
-            if(rz.includes('w')) L=r0.right-W; if(rz.includes('n')) T=r0.bottom-H;
-            win.style.left=Math.max(0,L)+'px'; win.style.top=Math.max(0,T)+'px';
-            win.style.setProperty('width',W+'px','important'); win.style.setProperty('height',H+'px','important');
-            try{ cmap.render.resize(); }catch(_){} if(mode!=='free') syncFromMain(); });
-          const end=()=>{ rz=null; }; g.addEventListener('pointerup',end); g.addEventListener('pointercancel',end);
-        });
-      })();
+      /* (compare-window-resize) RESIZE FROM ANY EDGE OR CORNER — the app's one edge-resize (js/window-manager.js
+         addEdgeResize), the same the Atlas window and the route card use. 「compare viewのウィンドウ、サイズ変更ができない。」
+         (2026-10-04, a PC, «辺や角をドラッグ»): the window had its OWN four 18 px corner squares (#R20) with their mark hidden
+         (#R47), and no edge at all — four invisible dots were the whole resize. window-manager's own note already listed
+         Compare among the windows that «keep edge-resize», but nothing called it for this window. A 9 px zone on every edge
+         and corner, the resize cursor on hover, a minimum size. On a phone the window is pinned full-width by the
+         COMPACT rule and its height has the grip below (.cmp-resize), so the edge zone stands aside there (`skip`):
+         it would only swallow the first pixels of a pan. The ResizeObserver below resizes the map whichever path moved it. */
+      try{ if(typeof HOST.addEdgeResize==='function') HOST.addEdgeResize(win,{ min:[260,200], skip:()=>{ try{ return window.matchMedia(window.IntMapDevice.COMPACT).matches; }catch(_){ return false; } } }); }catch(_){}
       /* resize observer → resize the map (+ re-aim the lens/centroid) */
       try{ ro=new ResizeObserver(()=>{ try{ cmap.render.resize(); }catch(_){} if(mode!=='free') syncFromMain(); }); ro.observe(win); }catch(_){}
       /* (#R16) touch resize grip (mobile height) */
