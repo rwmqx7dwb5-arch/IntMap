@@ -43,7 +43,7 @@ export function brandFacts() {
   const L = langRegistry();
   return { ...F, langs: L.codes().length, langTags: L.codes().map((c) => L.htmlTag(c)) };
 }
-function factWords(F, lang) {
+export function factWords(F, lang) {
   const n = (v) => v.toLocaleString(lang === 'jp' ? 'ja-JP' : 'en-US');
   return {
     floorBC: lang === 'jp' ? '紀元前' + n(F.bcYears) + '年' : n(F.bcYears) + ' BC',

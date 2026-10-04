@@ -54,7 +54,7 @@ developers.html                 開発者向け——埋め込みをページか
                                 scripts/public-api.mjs で埋める
                                 sitemap.xml・robots.txt とともに scripts/landing.mjs が生成する（手で編集しない。
                                 文は scripts/landing-text.mjs、見本は js/showcase.js）。Architecture.md §8.6
-for-newsrooms.html / for-schools.html / for-research.html / contact.html / support.html
+for-newsrooms.html / press.html / for-schools.html / for-research.html / contact.html / support.html
                                 組織向けの紹介 3 ページ・相談フォーム・支援のページ（英語。ja/ が日本語版）。
                                 scripts/org-pages.mjs が生成する（手で編集しない。文は scripts/org-pages-text.mjs）。Architecture.md §11
 admin-inquiries.html            相談のコンソール（org_inquiries の閲覧・状態とメモ・削除、supporters の掲載）。英語・noindex。

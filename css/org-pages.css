@@ -80,3 +80,11 @@
 .og-corr-place{ font-weight:600; color:var(--pg-ink); }
 .og-corr-text{ font-size:14px; color:var(--pg-ink-2); white-space:pre-wrap; overflow-wrap:anywhere; }
 .og-corr-links{ display:flex; gap:14px; font-size:14px; }
+
+/* (press-room) the press room: a description with its Copy button, the downloadable files */
+.og-copy-tile{ display:flex; flex-direction:column; align-items:flex-start; gap:10px; }
+.og-copy-text{ margin:0; color:var(--pg-ink-2); line-height:1.6; }
+.og-copy-tile .og-copy{ margin-left:0; border:1px solid var(--pg-line); cursor:pointer; font-family:inherit; }
+.og-sub{ font-size:17px; margin:28px 0 8px; color:var(--pg-ink); }
+.og-files{ list-style:none; padding:0; margin:0; display:grid; gap:10px; }
+.og-files .og-muted{ color:var(--pg-mut); font-size:13px; margin-left:8px; }

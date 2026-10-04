@@ -22,11 +22,12 @@ const P = (en, jp) => [en, jp];
 /* the organisation pages, in the order their navigation shows them, each with the key of its name in TEXT.nav —
    the one list: scripts/org-pages.mjs writes exactly these pages and its navigation is built from it, and
    scripts/landing.mjs reads it to link to them from every page it writes. */
-export const ORG_NAV = [['for-newsrooms', 'newsrooms'], ['for-schools', 'schools'], ['for-research', 'research'], ['support', 'support'], ['corrections', 'corrections'], ['security', 'security'], ['contact', 'contact']];
+export const ORG_NAV = [['for-newsrooms', 'newsrooms'], ['press', 'press'], ['for-schools', 'schools'], ['for-research', 'research'], ['support', 'support'], ['corrections', 'corrections'], ['security', 'security'], ['contact', 'contact']];
 
 export const TEXT = {
   nav: {
     newsrooms: P('Newsrooms', '報道機関'),
+    press: P('Press', 'プレス'),
     schools: P('Schools', '学校'),
     research: P('Research & NGOs', '研究・NGO'),
     support: P('Support', '支援'),
@@ -93,6 +94,9 @@ export const TEXT = {
       P('Paste the code into your CMS where it accepts HTML. The frame loads lazily and shows no sign-in, no pop-up and no button of the app.',
         'HTML を受け付ける CMS の欄にコードを貼ります。枠は遅延読み込みで、ログイン・ポップアップ・アプリのボタンは表示しません。'),
     ],
+    pressH: P('Writing about IntMap?', 'IntMap について書く方へ'),
+    press: P('The press room has the descriptions to quote, the facts with their owners, and the logo and screenshots to download.', 'プレスルームに、引用できる説明文・数字とその出典・ダウンロードできるロゴとスクリーンショットをまとめています。'),
+    pressBtn: P('Open the press room', 'プレスルームを開く'),
     examplesH: P('Example maps', '見本の地図'),
     faqH: P('Questions newsrooms ask', 'よくある質問'),
     faq: [
@@ -112,6 +116,62 @@ export const TEXT = {
       P('Write to us with what you need. We will tell you honestly whether IntMap can show it, and how.',
         '必要なものをお知らせください。IntMap で表示できるかどうか、どうすればできるかを正直にお答えします。'),
     ],
+  },
+
+  /* ── press (the press room: material for writing ABOUT IntMap; the descriptions, the numbers and the
+        pictures themselves are NOT here — scripts/brand-text.mjs, brand.mjs facts() and js/showcase.js own them) ── */
+  press: {
+    title: P('IntMap press room — descriptions, facts, logo and screenshots', 'IntMap プレスルーム — 説明文・数字・ロゴ・スクリーンショット'),
+    description: P('What a journalist or blogger needs to write about IntMap: the descriptions to quote, the facts and where they come from, the logo and screenshots to download, and where to ask.',
+      'IntMap について書くための資料室です。引用できる説明文、数字とその出典、ダウンロードできるロゴとスクリーンショット、問い合わせ先をまとめています。'),
+    h1: P('Press room', 'プレスルーム'),
+    lede: P('Everything for writing about IntMap in one place. The words and the numbers on this page are the same ones the app and the site use, so they stay current.',
+      'IntMap について書くための材料を一か所に集めました。このページの文言と数字は、アプリとサイトが使っているものと同じで、いつも最新です。'),
+    oneH: P('In one line', 'ひとことで'),
+    quote: P('Quote any of the descriptions below as written. Please keep the numbers as they appear here, and link to IntMap.',
+      '以下の説明文はそのまま引用していただけます。数字はここに書かれたとおりに、IntMap へのリンクとあわせてお使いください。'),
+    descH: P('Descriptions to quote', '引用できる説明文'),
+    shortL: P('One sentence', '一文'),
+    mediumL: P('Short paragraph', '短い段落'),
+    longL: P('Long paragraph', '長い段落'),
+    copy: P('Copy', 'コピー'),
+    copied: P('Copied', 'コピーしました'),
+    copyFailed: P('Could not copy — select the text and copy it', 'コピーできませんでした。文を選んでコピーしてください'),
+    whoH: P('Who it is for, and what it is', '誰のために、何であるか'),
+    whoFor: P('Who it is for', '誰のために'),
+    whoIs: P('What it is', '何であるか'),
+    whoThat: P('What it does', '何をするか'),
+    whoUnlike: P('How it differs', '何と違うか'),
+    factsH: P('Facts', '数字と事実'),
+    factsNote: P('The numbers are read from the app when this page is built. Each layer and each border source is named, with its licence, on the data sources page.',
+      '数字はこのページを作るときにアプリから読み取っています。レイヤーと国境の出典は、ライセンスとともに出典のページに載せています。'),
+    statClock: P('Clock reaches back to', '時計が遡る範囲'),
+    statSnapshots: P('Historical border snapshots', '歴史的な国境のスナップショット'),
+    statLayers: P('Data layers', 'データレイヤー'),
+    statLangs: P('Interface languages', '画面の言語'),
+    proofH: P('What can be said about it', '裏付けのある紹介文'),
+    sourcesLink: P('Data sources and licences', '出典とライセンス'),
+    assetsH: P('Logo and icons', 'ロゴとアイコン'),
+    assetsNote: P('Use the mark as it is: do not change its colours or proportions. The name is written IntMap, with no space, and is not translated. The assistant is called Atlas.',
+      'マークは色や比率を変えずにそのままお使いください。名前は IntMap（空白なし）と書き、翻訳しません。AI アシスタントの名前は Atlas です。'),
+    download: P('Download', 'ダウンロード'),
+    logoMark: P('IntMap mark (for dark backgrounds)', 'IntMap マーク（暗い地用）'),
+    logoLarge: P('IntMap mark, large', 'IntMap マーク（大）'),
+    logoSmall: P('IntMap mark, small', 'IntMap マーク（小）'),
+    shotsH: P('Screenshots', 'スクリーンショット'),
+    shotsNote: P('Each picture is a real screen of the app at the date and layers named, not a mock-up; the link opens that exact view. The maps carry the credits of the sources they draw — keep the credit line in the picture, and check the licence of each layer on the data sources page before printing.',
+      'どの画像も、題に書かれた日付とレイヤーで撮ったアプリの実際の画面で、作り物ではありません。リンクを開くとその表示がそのまま開きます。地図には描いているデータの出典表示が入っています。画像の出典表示は残したまま、掲載前に出典ページで各レイヤーのライセンスを確認してください。'),
+    followH: P('Keep up with IntMap', 'IntMap の最新情報'),
+    feed: P('What is new — Atom feed', '更新情報フィード（Atom）'),
+    feedPage: P('What is new — the page', '更新情報のページ'),
+    otd: P('The historical map for each day of the year', '一年の日ごとの歴史地図'),
+    history: P('Historical maps by region and date', '地域と日付で開く歴史地図'),
+    newsroomsH: P('Putting a map in a story?', '記事に地図を載せるなら'),
+    newsrooms: P('A view of IntMap can be embedded in an article, with its credits in the frame.', 'IntMap の表示は、出典表示ごと記事に埋め込めます。'),
+    newsroomsBtn: P('For newsrooms', '報道機関の方へ'),
+    askH: P('Questions and interviews', '取材・お問い合わせ'),
+    ask: P('Write to us through the contact page. We answer by e-mail.', 'お問い合わせページからご連絡ください。メールでお返事します。'),
+    askBtn: P('Contact us', 'お問い合わせ'),
   },
 
   /* ── schools ─────────────────────────────────────────────────────────────────────────────── */

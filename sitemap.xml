@@ -52,6 +52,86 @@
     <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/developers.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__developers.html"/>
   </url>
+  <url><loc>__INTMAP_SITE_URL__for-newsrooms.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__for-newsrooms.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/for-newsrooms.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__for-newsrooms.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__ja/for-newsrooms.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__for-newsrooms.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/for-newsrooms.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__for-newsrooms.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__press.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__press.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/press.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__press.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__ja/press.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__press.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/press.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__press.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__for-schools.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__for-schools.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/for-schools.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__for-schools.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__ja/for-schools.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__for-schools.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/for-schools.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__for-schools.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__for-research.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__for-research.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/for-research.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__for-research.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__ja/for-research.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__for-research.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/for-research.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__for-research.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__support.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__support.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/support.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__support.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__ja/support.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__support.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/support.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__support.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__corrections.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__corrections.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/corrections.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__corrections.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__ja/corrections.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__corrections.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/corrections.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__corrections.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__security.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__security.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/security.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__security.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__ja/security.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__security.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/security.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__security.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__contact.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__contact.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/contact.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__contact.html"/>
+  </url>
+  <url><loc>__INTMAP_SITE_URL__ja/contact.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__contact.html"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/contact.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="__INTMAP_SITE_URL__contact.html"/>
+  </url>
   <url><loc>__INTMAP_SITE_URL__s/europe-1914.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="__INTMAP_SITE_URL__s/europe-1914.html"/>
     <xhtml:link rel="alternate" hreflang="ja" href="__INTMAP_SITE_URL__ja/s/europe-1914.html"/>
