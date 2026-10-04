@@ -13,6 +13,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { guideTour, GUIDE_TOUR_ID, TOURS, tourFromSearch, tourQuery } from '../js/tours.js';
 import { SHOWCASE, CAPTURED } from '../js/showcase.js';
+const { makeAtlasCatalogText } = await import('../js/atlas-catalog-text.js');
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -37,9 +38,17 @@ test('② onboarding.js keeps no list of layers and no timer: its door starts th
   assert.doesNotMatch(ob, /const SHOW\s*=/, 'a hand-written layer list is back');
   assert.doesNotMatch(ob, /dl-(climate|nightsat|relief|popgrid)/, 'a layer id is named in onboarding.js — the examples own that');
   assert.doesNotMatch(ob, /setTimeout\(next|im-demo-pill/, 'the demo’s own timer/pill is back');
-  assert.match(ob, /import\('\.\/tour-player\.js'\)[\s\S]*startTour\(GUIDE_TOUR_ID/);
+  assert.match(ob, /import\('\.\/tour-player\.js'\)[\s\S]*startGuide\(\)/);
+  assert.match(rd('js/tour-player.js'), /export function startGuide\(\) \{ return startTour\(GUIDE_TOUR_ID, 1\); \}/, 'the player owns the door into the guide');
   assert.match(ob, /window\._imStartDemo\s*=\s*_imStartDemo/, 'the door keeps its name (r167 / module-split read it)');
   assert.match(ob, /intmap_demo_seen/, 'the once-only rule is kept');
+});
+
+test('②b onboarding.js imports no tour module statically — it runs at start-up, and they are the player\'s (check:perf measured tours + showcase in the start-up chunk)', () => {
+  const ob = rd('js/onboarding.js');
+  const stat = [...ob.matchAll(/^\s*import\s+(?:[^'"()]*?\s+from\s+)?['"]([^'"]+)['"]/gm)].map((m) => m[1]);
+  assert.ok(stat.length > 0, 'the static imports were found (the pattern still reads the file)');
+  for (const p of ['./tours.js', './tour-player.js', './showcase.js']) assert.ok(!stat.includes(p), 'onboarding.js imports ' + p + ' statically');
 });
 
 test('③ the player plays the guide id; it reopens from its address; it is not a lesson', () => {
@@ -65,5 +74,7 @@ test('⑤ the guide is the first choice of the tour list, and Atlas is told it',
   const a = open.indexOf('const guideRow'), b = open.indexOf('const rows = guideRow + TOURS.map');
   assert.ok(a >= 0 && b > a, 'the guide row comes before the lessons');
   assert.ok(open.includes('H(g.id)') && open.includes('data-imtp'), 'the row starts the guide id through the same click handler as the lessons');
-  assert.ok(rd('js/atlas-cap-panel.js').includes('ID — title): guide — '), 'Atlas can open it: panel.tour start id "guide"');
+  const panelText = makeAtlasCatalogText({}, {}).text(['panel.tour']);
+  assert.ok(panelText.includes('ID — title): ' + GUIDE_TOUR_ID + ' — ' + guideTour().title[0]), 'Atlas can open it: panel.tour names the guide first, derived from guideTour()');
+  assert.ok(!rd('js/atlas-cap-panel.js').includes(guideTour().title[0]), 'the guide title is derived, not written into the panel text');
 });

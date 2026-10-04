@@ -8,7 +8,6 @@
  * ==========================================================================*/
 
 import { IntMapLang } from './lang-registry.js';
-import { GUIDE_TOUR_ID } from './tours.js';
 import { isLayer, isDisplay } from './layer-manifest.js';
 
 
@@ -31,7 +30,8 @@ export function onboarding(HOST){
         (cb)=>cb.classList.contains('geo-layer-cb') || (isLayer(cb.id) && !isDisplay(cb.id) && !!cb.closest('.lyr-row')))) return;
     }
     try{ localStorage.setItem('intmap_demo_seen','1'); }catch(_){}   /* a guide that has been opened has been seen — what × used to record */
-    import('./tour-player.js').then((m)=>m.startTour(GUIDE_TOUR_ID,1)).catch(()=>{});
+    /* ⚠ the player only, by import(): a static import of js/tours.js pulled it and js/showcase.js into the start-up chunk (check:perf) */
+    import('./tour-player.js').then((m)=>m.startGuide()).catch(()=>{});
   }
   window._imStartDemo=_imStartDemo;
 

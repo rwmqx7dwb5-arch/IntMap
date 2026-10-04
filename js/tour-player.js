@@ -317,6 +317,8 @@ export async function startTour(id, n, opts) {
   try { const b = panel && /** @type {HTMLElement|null} */ (panel.querySelector('.imt-nav .imt-next')); if (b) b.focus({ preventScroll: true }); } catch (_) { }
   return r;
 }
+/** (guide-unify) Settings ▸ Tutorial's door: the guide (js/tours.js guideTour) from its first step. Here so a caller imports only the player. */
+export function startGuide() { return startTour(GUIDE_TOUR_ID, 1); }
 export function next() { if (!playing) return Promise.resolve({ ok: false, reason: 'no-tour' }); return at < playing.steps.length - 1 ? show(at + 1) : Promise.resolve({ ok: true, step: at + 1, of: playing.steps.length, last: true }); }
 export function prev() { if (!playing) return Promise.resolve({ ok: false, reason: 'no-tour' }); return at > 0 ? show(at - 1) : Promise.resolve({ ok: true, step: 1, of: playing.steps.length, first: true }); }
 export function go(n) { if (!playing) return Promise.resolve({ ok: false, reason: 'no-tour' }); return show(Math.round(+n || 1) - 1); }

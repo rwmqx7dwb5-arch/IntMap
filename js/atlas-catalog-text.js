@@ -33,7 +33,7 @@
  *  invisible features). "Tidying" one is how the correction gets lost. Change one only to fix
  *  what it says about the app, and say which round and which report in the change.
  * ==========================================================================*/
-import { TOURS } from './tours.js';   /* (classroom-tours) the tours are LISTED from their declaration too */
+import { TOURS, guideTour } from './tours.js';   /* (classroom-tours) the tours are LISTED from their declaration too — (guide-unify) the guide first, from js/tours.js guideTour */
 import { SHOWCASE } from './showcase.js';   /* (landing-showcase) the example maps are LISTED from their declaration, never typed here — a typed list misses the next example */
 import { CAPABILITY_MODULES } from './atlas-caps-modules.js';
 import { catalogueBlocks, capabilityEntries } from './atlas-caps.js';
@@ -210,7 +210,7 @@ export function makeAtlasCatalogText(HOST, CTX) {
     /* (landing-showcase) «id — English title» for every example in js/showcase.js (title is an LA(en, jp) tuple) */
     function showcaseList() { return SHOWCASE.map(function (x) { return x.id + ' — ' + x.title[0]; }).join('; '); }
     /* (classroom-tours) «id — English title (n steps)» for every tour in js/tours.js */
-    function tourList() { return TOURS.map(function (x) { return x.id + ' — ' + x.title[0] + ' (' + x.steps.length + ' steps)'; }).join('; '); }
+    function tourList() { var g = guideTour(); return (g.steps.length ? [g.id + ' — ' + g.title[0] + ' (made from the example maps, not a lesson; ' + g.steps.length + ' steps)'] : []).concat(TOURS.map(function (x) { return x.id + ' — ' + x.title[0] + ' (' + x.steps.length + ' steps)'; })).join('; '); }
     var _cacheLang = null, _cache = null;
     function blocks() {
       var lang = langLine();

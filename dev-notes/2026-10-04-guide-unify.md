@@ -36,4 +36,10 @@ newsjp: 設定の「チュートリアル」が、作例の地図から作った
 
 ## 3. 残したもの
 
-- `window._imDemoActive` を読む箇所（`js/data-layers.js`・`js/map-ui.js`）は、もう誰も立てないので常に偽。`js/map-ui.js` は別作業の領分なので触っていない。
+- `window._imDemoActive` を読んでいた 3 か所（`js/data-layers.js` 2・`js/map-ui.js` 1）は、もう誰も立てない旗を読む死んだ分岐だったので除いた。`check:surface` の基準は縮小の向きに更新した（`_imDemoActive`・`_imDemoStop` が消え、`window.IntMapBookmark` の読みは 9→7）。
+
+## 4. 起動経路を保ったこと
+
+- 最初の版は `js/onboarding.js` が `GUIDE_TOUR_ID` を `js/tours.js` から**静的に** import していたので、`tours.js` とその先の `js/showcase.js` が起動チャンクに入り、PR の CI で `check:perf` の EAGER が全行で天井を越えた（requests 10・modules 316）。
+- 入口は `js/tour-player.js` の `startGuide()` だけを `import()` で読む（`tours.js` を自分で `import()` すると名前空間ごと残り、`tours` チャンクの export が tree-shake されず +0.6 kB だった）。同じ機械で `origin/main` を build して比べ、EAGER は raw −4.5 kB・requests 9＝9・modules 314＝314。`tests/guide-unify-checks.test.mjs` ②b が、onboarding が `tours.js`・`tour-player.js`・`showcase.js` を静的に import しないことを測る。
+- Atlas の panel.tour の説明にあったガイドの題名の手書きは、`js/atlas-catalog-text.js` の `tourList()` が `guideTour()` から導くようにした（⑤ はカタログの本文を評価して確かめる）。
