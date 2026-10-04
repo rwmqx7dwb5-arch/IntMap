@@ -51,12 +51,12 @@ test.describe('mobile-next: 375 × 812, touch', () => {
     const rows = await page.evaluate(() => [...document.querySelectorAll('.hn-entry button')].map((b) => { const r = b.getBoundingClientRect(); return { h: r.height, own: document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('button') === b }; }));
     for (const r of rows) { expect(r.own, 'the row is what a finger lands on').toBe(true); expect(r.h).toBeGreaterThanOrEqual(44); }
     await page.tap('.hn-entry [data-hn-entry="here"]');
-    await page.waitForSelector('#hn-popup', { state: 'visible', timeout: 20_000 });
-    await page.waitForFunction(() => document.querySelectorAll('#hn-popup [data-pending]').length === 0 && !!document.querySelector('#hn-popup .hn-sec'), null, { timeout: 60_000 });
+    await page.waitForSelector('#pd-popup', { state: 'visible', timeout: 20_000 });
+    await page.waitForFunction(() => document.querySelectorAll('#pd-popup [data-pending]').length === 0 && !!document.querySelector('#pd-popup .hn-sec'), null, { timeout: 60_000 });
     const card = await page.evaluate(() => ({
-      title: document.getElementById('hn-title').textContent,
-      secs: [...document.querySelectorAll('#hn-popup .hn-sec')].map((s) => ({ h: s.querySelector('.hn-h').textContent, empty: !s.textContent.replace(s.querySelector('.hn-h').textContent, '').trim() })),
-      priv: (document.querySelector('#hn-popup .hn-priv') || {}).textContent || '',
+      title: document.getElementById('pd-title').textContent,
+      secs: [...document.querySelectorAll('#pd-popup .hn-sec')].map((s) => ({ h: s.querySelector('.hn-h').textContent, empty: !s.textContent.replace(s.querySelector('.hn-h').textContent, '').trim() })),
+      priv: (document.querySelector('#pd-popup .hn-priv') || {}).textContent || '',
       center: window.__imap.getCenter(),
       sheet: (document.body.className.match(/sheet-(full|half|min|hidden)/) || [''])[0],
     }));
@@ -67,9 +67,9 @@ test.describe('mobile-next: 375 × 812, touch', () => {
     expect(Math.abs(card.center.lat - TOKYO_TOWER.latitude) < 0.2 && Math.abs(card.center.lng - TOKYO_TOWER.longitude) < 0.2, 'the map went to the reader').toBe(true);
     expect(card.sheet, 'the answer is on the map: the sheet came down').toBe('sheet-min');
     await page.waitForTimeout(700);
-    expect(await page.evaluate(REACH, '#hn-popup'), 'controls a finger cannot use').toEqual([]);
+    expect(await page.evaluate(REACH, '#pd-popup'), 'controls a finger cannot use').toEqual([]);
     /* the record the card drew is also what the past section offers: a tap puts the map in that year (when the record has one here) */
-    const past = await page.$('#hn-popup [data-hn="past"]:not([disabled])');
+    const past = await page.$('#pd-popup [data-hn="past"]:not([disabled])');
     if (past) {
       await past.tap();
       await page.waitForFunction(() => !window.IntMapTime.isLive(), null, { timeout: 10_000 });
@@ -104,13 +104,13 @@ test.describe('mobile-next: 375 × 812, touch', () => {
       return id;
     });
     await boot(page, '/index.html?share=' + id);
-    await page.waitForSelector('#hn-popup', { state: 'visible', timeout: 30_000 });
-    await page.waitForFunction(() => /recorded by the camera/.test(document.getElementById('hn-lead').textContent), null, { timeout: 30_000 });
-    const st = await page.evaluate(() => ({ url: location.search, center: window.__imap.getCenter(), lead: document.getElementById('hn-lead').textContent }));
+    await page.waitForSelector('#pd-popup', { state: 'visible', timeout: 30_000 });
+    await page.waitForFunction(() => /recorded by the camera/.test(document.getElementById('pd-lead').textContent), null, { timeout: 30_000 });
+    const st = await page.evaluate(() => ({ url: location.search, center: window.__imap.getCenter(), lead: document.getElementById('pd-lead').textContent }));
     expect(st.url, 'the query is spent — a reload is an ordinary start').not.toContain('share=');
     expect(st.lead).toContain('2019-04-01 14:22');
     expect(Math.abs(st.center.lat - 35.6586) < 0.05 && Math.abs(st.center.lng - 139.7455) < 0.05, 'the map is at the camera\'s position').toBe(true);
-    await page.tap('#hn-popup [data-hn="lead:0"]');
+    await page.tap('#pd-popup [data-hn="lead:0"]');
     await page.waitForFunction(() => !window.IntMapTime.isLive(), null, { timeout: 10_000 });
     expect(await page.evaluate(() => window.IntMapTime.when().toISOString())).toBe('2019-04-01T05:22:05.000Z');
     const left = await page.evaluate(async (i) => (await (await caches.open('intmap-page-share-inbox')).keys()).filter((k) => k.url.includes(i)).length, id);

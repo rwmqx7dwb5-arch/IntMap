@@ -353,7 +353,7 @@ CI も同じ旗で出す（runner の Docker に依存しない）。
 `supabase/config.toml` に `[functions.*]` として宣言されている。
 ⚠ **`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`ai-provider.js`・`newsgeo.js`・`relay-guard.js`・`rate-limit.js`・
 `atlas-persona.js`・`aviation-codec.js`・`aviation-model.js`・`news-cluster.js`・`news-entities.js`・`news-geo-prompt.js`・
-`news-ingest.js`・`radiation-sources.js`・`volcano-parse.js`・`who-don-extract.js`・`bbox.js`・`read-budget.js`・`client-error-shape.js`・`site-origin.js`・`fetch-relay-policy.js`・`ai-ledger.js`・`ai-usage.js`・`atlas-grade-schema.js`・`ai-stream.js`・`plans.js`・`inquiry-shape.js`・`correction-shape.js`・`place-watch.js`）で、import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
+`news-ingest.js`・`radiation-sources.js`・`volcano-parse.js`・`who-don-extract.js`・`bbox.js`・`read-budget.js`・`client-error-shape.js`・`site-origin.js`・`fetch-relay-policy.js`・`ai-ledger.js`・`ai-usage.js`・`atlas-grade-schema.js`・`ai-stream.js`・`plans.js`・`inquiry-shape.js`・`correction-shape.js`・`place-watch.js`・`great-circle.js`）で、import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
 
 ⚠ この節は `AGENTS.md` から移してきたものである（deploy の実測は #R515、名簿は #R628）。
 **`AGENTS.md` には 32,768 バイトの天井があり、超えた分は無言で落ちる**ので、測定の詳細も名簿も

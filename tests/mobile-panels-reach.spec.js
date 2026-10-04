@@ -134,11 +134,11 @@ test.describe('mobile-panels-reach: 375 × 812, touch', () => {
     const pt = await page.evaluate(() => { const mc = document.getElementById('map-container').getBoundingClientRect(); return { x: Math.round(mc.x + mc.width * 0.5), y: Math.round(mc.y + mc.height * 0.3) }; });
     await page.mouse.click(pt.x, pt.y, { button: 'right' });
     await page.evaluate(() => {
-      const b = [...document.querySelectorAll('#ctx-menu button[data-act]')].find((x) => /Place profile/.test(x.textContent));
+      const b = [...document.querySelectorAll('#ctx-menu button[data-act]')].find((x) => /About the place/.test(x.textContent));
       const sec = b && b.closest('.ctx-sec');
       if (sec && sec.hidden) { const g = sec.previousElementSibling; if (g && g.classList.contains('ctx-grp')) g.click(); }
     });
-    await page.evaluate(() => [...document.querySelectorAll('#ctx-menu button[data-act]')].find((x) => /Place profile/.test(x.textContent)).click());
+    await page.evaluate(() => [...document.querySelectorAll('#ctx-menu button[data-act]')].find((x) => /About the place/.test(x.textContent)).click());
     await page.waitForSelector('#pd-popup', { state: 'visible', timeout: 20_000 });
     await page.waitForFunction(() => document.querySelectorAll('#pd-popup [data-pending]').length === 0, null, { timeout: 30_000 });
     await page.waitForTimeout(600);

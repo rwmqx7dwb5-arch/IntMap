@@ -317,7 +317,7 @@ flag that lives in a comment is not configuration. All twenty-two are declared t
 `fetch-relay` own-fetch-relay, `reader-reports` anon-write-guard, `usage-count` anonymous-usage-counts).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`ai-provider.js`, `newsgeo.js`,
 `relay-guard.js`, `rate-limit.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
-`news-entities.js`, `news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`, `site-origin.js`, `fetch-relay-policy.js`, `ai-ledger.js`, `ai-usage.js`, `atlas-grade-schema.js`, `ai-stream.js`, `plans.js`, `inquiry-shape.js`, `correction-shape.js`, `place-watch.js` — imported today only by the page, kept here so a future server evaluator runs the same rules) that the CLI bundles into the functions that import it.
+`news-entities.js`, `news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`, `bbox.js`, `read-budget.js`, `client-error-shape.js`, `site-origin.js`, `fetch-relay-policy.js`, `ai-ledger.js`, `ai-usage.js`, `atlas-grade-schema.js`, `ai-stream.js`, `plans.js`, `inquiry-shape.js`, `correction-shape.js`, `great-circle.js`, `place-watch.js` — imported today only by the page, kept here so a future server evaluator runs the same rules; the one great-circle distance is the first of the last two, which the second imports as well) that the CLI bundles into the functions that import it.
 
 | Function | `verify_jwt` | Auth | Uses `service_role` for | Provider key |
 |---|---|---|---|---|

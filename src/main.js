@@ -333,9 +333,9 @@ if (/[?&]tour=/.test(location.search)) import('../js/tour-player.js').then((m) =
 document.addEventListener('click', (e) => { const b = e.target && e.target.closest ? e.target.closest('#btn-tours') : null; if (b) import('../js/tour-player.js').then((m) => m.openPicker()); });
 /* (mobile-next) …and the two doors a phone opens IntMap through: the share sheet (`?share=<id>` — sw.js redirected the
    shared photo / link here; js/share-inbox.js) and the installed icon's long-press shortcut «Here, now» (`?here=1` —
-   manifest.webmanifest `shortcuts`; js/here-now.js). Each is a chunk of its own, fetched only on its query. */
+   manifest.webmanifest `shortcuts`; the place card, js/place-dossier.js). Each is a chunk of its own, fetched only on its query. */
 if (/[?&]share=/.test(location.search)) import('../js/share-inbox.js').then((m) => m.bootFromUrl());
-if (/[?&]here=1\b/.test(location.search)) import('../js/here-now.js').then((m) => m.bootFromUrl());
+if (/[?&]here=1\b/.test(location.search)) import('../js/place-dossier.js').then((m) => m.bootFromUrl());
 /* (learn-quests) …and a CHALLENGE LINK (`?quest=<kind>.<seed>.<n>` — js/quest-engine.js questQuery): the same set of questions
    for everyone who opens it, started by js/quest-panel.js once the map is ready. A chunk of its own, fetched only on its query. */
 if (/[?&]quest=/.test(location.search)) import('../js/quest-panel.js').then((m) => m.bootFromUrl());

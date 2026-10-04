@@ -1963,7 +1963,6 @@ export function atlasConsole(HOST){
       get XMET(){ return XMET; },
       get _pearson(){ return _pearson; },
       get _ranks(){ return _ranks; },
-      get _havKm(){ return _havKm; },
       get overpassRaw(){ return overpassRaw; },
       get _agoH(){ return _agoH; },
       get newsSubject(){ return newsSubject; },

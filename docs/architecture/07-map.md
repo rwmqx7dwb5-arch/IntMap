@@ -624,13 +624,26 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
 表に出る 1 つの座標は外接矩形の中心だが、**空間判定はすべて形そのものの上で測る**（結果の注記が
 そう述べる）。
 
-### 7.3f 地点プロファイル (Place dossier) — `js/place-dossier.js`
+### 7.3f 地点カード (Place card — 地点プロファイル／いま、ここ) — `js/place-dossier.js`
 
-**1 地点について、地図が既に持っているものを 1 つの記録にまとめ、1 枚のカードに出す。** 入口は 3 つ:
-地図のコンテキストメニュー（右クリック・長押し）の「現地の情報 ▸ 地点プロファイル」、検索で選んだ場所の
-結果カードの「地点プロファイル」、Atlas の `research.placeProfile`（`{"type":"placeProfile","place"|"lng","lat"}`）。
-モジュールは**そのクリックで取りに行く**（起動経路に載らない）。地図のクリックの所有権には触れない——
-既存のメニューとカードに行動を 1 つ足しただけで、クリックの読み手は増えていない。
+**1 地点について、地図が既に持っているものと、いまそこで起きていることを 1 つの記録にまとめ、1 枚のカードに出す。**
+地点プロファイルと「いま、ここ」は**同じカード・同じ記録**で、違うのは**起点**（どこから来た地点か）と**節の順**だけ。
+
+| 入口 | 起点（`at.from`） | 節の順 |
+|---|---|---|
+| コンテキストメニュー（右クリック・長押し）「現地の情報 ▸ 地点について」・検索結果カードの「地点プロファイル」（`openPlaceDossier`） | `point`（地図で選んだ地点） | この地点 → 時刻と太陽 → いま → かつての名前 → レイヤー |
+| 検索欄の空の状態「いま、ここ」（`js/here-entry.js`）・ホーム画面アイコンの長押し `?here=1`（`bootFromUrl`）（`openHereNow`） | `device`（端末の現在地） | **いま** → この地点 → 時刻と太陽 → かつての名前 → レイヤー |
+| 共有シート・写真の場所（`js/share-inbox.js` → `openHereNow({point})`） | `shared`（共有された地点） | 同上 |
+| Atlas `research.placeProfile` / `research.hereNow` | 地点が渡されれば `point`、`hereNow` に地点が無ければ `device` | 同上（`hereNow` は「いま」が先頭） |
+
+**⚠ 起点が「何が端末から出るか」を決める。** `point` は選ばれたとおりに送る（地名の Nominatim は zoom 14、天気、
+表示中レイヤーのタイル）。`device` と `shared` は**正確な位置を端末から出さない**——送るのは `PRIVACY_GRID_DEG`
+（0.1°・約 11 km）に丸めた地点だけで、送り先はそれが無いと答えられない 2 つ（地名は zoom 10、天気）。標高と
+レイヤーの値は**その起点では読まない**（タイルの要求が位置を述べるため）——節は消えず理由
+`position-kept-on-device` を述べる。地震と出来事はどの起点でも**位置を付けずに読んで端末で絞る**（下の「いま」）。
+privacy.html / `js/legal-text.js` の第 2 項と同じ事実。
+
+モジュールは**そのクリックで取りに行く**（起動経路に載らない）。地図のクリックの所有権には触れない。
 
 | 項目 | どこから | 欠けたとき |
 |---|---|---|
@@ -639,8 +652,12 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
 | 国 | Natural Earth の国境（`HOST.countryGeo`）をアプリ共通の点内判定 `window._imPipGeo`（穴を含む）で引く | 公海・帰属未定＝`none` |
 | 標高・水深 | `IntMapLayers` の `elevation` 登録（terrarium DEM）。その登録と**同じズーム**のタイルを先に待つ | 値が無い／タイル未着＝理由つきの行 |
 | 表示中レイヤーの値 | `IntMapLayers.sampleAt`——`data.layerValues` と GIS カーネルが読むのと同じ窓口。数（`value`/`unit`）・分類（`code`）・表示文（`text`）を分けて持つ | 下の 4 種の理由 |
-| 現地時刻 | Open-Meteo が地点について述べるタイムゾーン（`IntMapWx.point`、`timezone=auto`） | 応答した上流がゾーンを述べない（MET Norway）ときは**その名を挙げて**述べる |
-| 日の出・日の入り・昼の長さ | IntMap 自身の計算（`IntMapWx.sunTimes`。白夜・極夜を含む） | — |
+| 現地時刻 | 天気の取得元が地点について述べるタイムゾーン（`IntMapWx.point`、`timezone=auto`）——**天気と同じ 1 回の応答**から読む | 応答した上流がゾーンを述べない（MET Norway）ときは**その名を挙げて**述べる |
+| 日の出・日の入り・昼の長さ | IntMap 自身の計算（`IntMapWx.sunTimes`。白夜・極夜を含む。端末内で計算し何も送らない） | — |
+| いまの天気と今日 | `IntMapWx.point`（天気パネルと同じ呼び出し。Open-Meteo、代替は MET Norway） | どちらも応答しない＝`unavailable` |
+| 周辺の地震 | `js/events-near.js` `readQuakes`——USGS の M2.5 以上・7 日のフィードを**丸ごと 1 回**読み、`RELATED_DEFAULTS`（300 km）で端末が絞る | 該当なし＝`none`（答え）／フィードが応答しない＝`unavailable`（理由） |
+| 近くの出来事 | `js/events-near.js` `readNewsEvents`——`news_events` の 72 時間を位置を付けずにページ送りで読み、端末が絞る。柵（`NEWS_PAGES`）で切れたら `truncated` とカードが述べる | 同上 |
+| かつての名前 | `IntMapHistCities.near`（改名都市の記録。その記録自身の判定半径）。押すとその年の地図 | 記録に無い＝`none` |
 | 国の統計 | **呼び手が渡す指標の集合と書式**（Atlas は `js/atlas-metrics.js` の集合と `fmtVal`）。カードは統計を書き写さず、既存の国カードを開くボタンを置く | 国に無い指標は 0 ではなく**行が無い** |
 
 **⚠ 読めないレイヤーは行が消えず、理由を持った行になる。** 4 種: `no-value-here`（訊いたが値が無い）・
@@ -652,9 +669,20 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
 行が合算して読むが、宣言がそれを述べていないので、この行に並ぶ。
 
 **⚠ カードと Atlas は同じ記録を読む。** `placeProfile()` が JSON にできる 1 つの記録を作り、`profileHtml()` が
-カードの本文と Atlas の吹き出しの両方を描く。Atlas にはその記録がそのまま `exec.placeProfile` として届く
-（`js/atlas-toolsurface.js` の `observed`）——読者が見ている数と Atlas が引用できる数は同じものである。
-カードは `.country-popup`（ドラッグ・携帯のシート）で、開くと `MAP_ANSWER_EVENT`（`card`）を出す。
+カードの本文と Atlas の吹き出し（`inert`——押しても何も起きない操作は描かない）の両方を描き、`profileSpeech()` が
+読み上げる（`js/map-reader.js`）。Atlas にはその記録がそのまま届く——`research.placeProfile` は `exec.placeProfile`、
+`research.hereNow` は `exec.hereNow` として（`hereNow()` は `placeProfile()` に「いま」を先頭にする指示を足しただけで、
+集める関数も記録の形も 1 つ）。2 つの能力は両方残り、`hereNow` だけが端末の位置を読む扉を持つ（確認の列 `explicit`）。
+カードは `.country-popup`（ドラッグ・携帯のシート）で、開くと `MAP_ANSWER_EVENT`（`card`）を出す。地震と出来事は
+カードが開いている間、地図に点で描く。
+
+**範囲 × 期間の地震・出来事の読み手は 1 つ（`js/events-near.js`）。** カード・見守る場所（`js/place-watch.js`）・
+Atlas の `research.related` / `research.impact` / 実世界オブジェクトの解決が同じ読み手を通る。USGS のフィードは
+セッション内で**1 回の取得を共有**し（同時に来た呼び手は同じ要求を待つ）、USGS が述べる更新間隔（1 分）より古くなったら
+読み直す。フィードが持たない窓（7 日超・M2.5 未満）は黙って切らず `unavailable('window-beyond-feed')` と述べる。
+状態の語彙は `STATE`（`ok` / `none` / `unavailable`＋理由）の 1 か所で、「該当なし」と「取得できなかった」は同じ語にしない。
+距離は `supabase/functions/_shared/great-circle.js` の `haversineKm`（地球半径 6,371 km）1 つで、ページと Edge Function が
+同じものを import する。
 
 ### 7.3g マイマップ (My map) — `js/my-map.js` / `js/my-map-doc.js`
 

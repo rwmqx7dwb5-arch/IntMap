@@ -10,7 +10,8 @@
  *      `?share=<id>`; an oversized second photo is dropped and counted; any other POST is not answered;
  *      activate keeps the inbox; the manifest's share_target names what the worker reads
  *    ④ «Here, now» sends only the rounded point, and only to the two sources that need one: the earthquake feed
- *      and the news are read without a position and filtered here; every section is ok / none / unavailable
+ *      and the news are read without a position and filtered here; the elevation and the layer tiles are not read for
+ *      it; every section is ok / none / unavailable (place-card-unify: the record is the ONE place card's)
  *    ⑤ the renamed-city record answers «what was this place called» by its own guard (Tokyo → Edo)
  *    ⑥ the doors reach it: the empty search field, the context menu, the shortcut, the share query, Atlas
  * ==========================================================================*/
@@ -26,7 +27,9 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 globalThis.window = globalThis;
 globalThis.document = globalThis.document || { getElementById: () => null, body: { contains: () => false }, baseURI: 'https://example.test/IntMap/', readyState: 'complete' };
 const SI = await import('../js/share-inbox.js');
-const HN = await import('../js/here-now.js');
+/* (place-card-unify) «Here, now» is the one place card with its «now» sections first — js/place-dossier.js */
+const HN = await import('../js/place-dossier.js');
+const { EventsNear } = await import('../js/events-near.js');
 const { NominatimGate } = await import('../js/nominatim-gate.js');
 NominatimGate.configure({ gapMs: 0, reset: true });
 
@@ -181,6 +184,7 @@ test('mobile-next ④ «Here, now» sends only the rounded point, and only where
     { public_id: 'e2', representative_title: 'Far event', rep_lng: 2.35, rep_lat: 48.85, last_article_at: new Date().toISOString() }]); } } };
   window.IntMapHistCities = { near: () => [{ id: 'tokyo', today: 'Tokyo', metres: 2500, guard: 20000, spans: [{ name: 'Edo', f: 14570101, t: 18671231, p: 'yy', src: 'h' }] }], ensure: async () => {}, ready: () => true, rights: () => [] };
   const exact = { lng: 139.745433, lat: 35.658585, from: 'device', accuracyM: 12 };
+  EventsNear.configure({});   /* a fresh session: the feed is read by this record, not reused from another test */
   const rec = await HN.hereNow(exact, HOST);
   /* what left the device */
   const sent = HN.sentPoint(exact);
@@ -190,6 +194,8 @@ test('mobile-next ④ «Here, now» sends only the rounded point, and only where
   assert.match(nomi, /lat=35\.7000&lon=139\.7000/); assert.match(nomi, /zoom=10/);
   for (const u of sentUrls) assert.ok(u.indexOf('35.658') < 0 && u.indexOf('139.745') < 0, 'the exact fix is in no request: ' + u);
   assert.ok(!sentUrls.some((u) => /usgs/.test(u) && /lat|lon/.test(u)), 'the earthquake feed is read whole — no position in its URL');
+  assert.deepEqual([rec.layers.status, rec.layers.reason, rec.elevation.status], ['unavailable', 'position-kept-on-device', 'unavailable'], 'the layer and elevation tiles would name the spot — they are not read, and the card says why');
+  assert.equal(rec.focus, 'now'); assert.equal(rec.place.postcode, null, 'a kept position is not given a postcode finer than what was sent');
   assert.ok(!dbCalls.some((c) => /rep_l(at|ng)/.test(String(c[1])) && c[0] !== 'not' && c[0] !== 'select'), 'the news query filters by nothing about the position');
   /* what was found, filtered here */
   assert.equal(rec.quakes.status, 'ok'); assert.deepEqual(rec.quakes.items.map((x) => x.id), ['near']);
@@ -199,16 +205,18 @@ test('mobile-next ④ «Here, now» sends only the rounded point, and only where
   assert.equal(rec.reachKm, 300); assert.equal(rec.at.from, 'device');
   assert.deepEqual(JSON.parse(JSON.stringify(rec)).quakes.items[0].id, 'near', 'the record is JSON — the same object Atlas is handed');
   /* the card's text: every section drawn, holes said */
-  const html = HN.hereNowHtml(rec, HOST);
+  const html = HN.profileHtml(rec, HOST);
   for (const w of ['Weather now', 'Earthquakes nearby', 'News nearby', 'This place in the past', 'Edo', 'Near event', 'stays on this device']) assert.ok(html.includes(w), 'drawn: ' + w);
-  assert.ok(!/<button[^>]*data-hn/.test(HN.hereNowHtml(rec, HOST, { inert: true })), 'Atlas\'s bubble draws no button nothing listens to');
+  assert.ok(!/<button[^>]*data-hn/.test(HN.profileHtml(rec, HOST, { inert: true })), 'Atlas\'s bubble draws no button nothing listens to');
   /* a source that does not answer is a reason, not a blank */
   window.IntMapWx = { point: async () => null, sunTimes: () => null };
   HOST.DB = null;
   globalThis.fetch = async () => { throw Object.assign(new Error('x'), { reason: 'network' }); };
   window.IntMapHistCities = { near: () => [], ensure: async () => {}, ready: () => true, rights: () => [] };
-  const bad = await HN.hereNow({ lng: 10, lat: 10 }, HOST);
-  assert.deepEqual([bad.weather.status, bad.quakes.status, bad.news.status, bad.past.status, bad.sun.status], ['unavailable', 'unavailable', 'unavailable', 'none', 'unavailable']);
+  EventsNear.configure({});   /* the good feed above is not reused: this is the session where USGS is unreachable */
+  const bad = await HN.hereNow({ lng: 10, lat: 10, from: 'device' }, HOST);
+  assert.deepEqual([bad.weather.status, bad.quakes.status, bad.news.status, bad.past.status, bad.time.status], ['unavailable', 'unavailable', 'unavailable', 'none', 'unavailable']);
+  assert.equal(bad.time.sunWhy, 'sun-model-not-loaded');
   assert.equal(bad.news.reason, 'no-database-client'); assert.equal(bad.past.reason, 'no-recorded-renaming-here');
 });
 
@@ -238,9 +246,16 @@ test('mobile-next ⑤ the renamed-city record answers by its own guard — Tokyo
 test('mobile-next ⑥ the doors: the empty field, the context menu, the shortcut, the share query, Atlas', () => {
   assert.match(read('js/search-geocode.js'), /import\('\.\/here-entry\.js'\)/, 'the empty search field shows the two rows');
   assert.match(read('js/here-entry.js'), /data-hn-entry="here"[\s\S]*data-hn-entry="photo"/);
-  assert.match(read('js/tool-panel.js'), /import\('\.\/here-now\.js'\)\.then\(m=>m\.openHereNow\(HOST,\{point:/, 'the context menu opens it for the pressed point');
+  /* (place-card-unify) the context menu opens THE place card for the pressed point (its «now» sections included); the device
+     doors open the same card with «now» first */
+  const tp = read('js/tool-panel.js');
+  assert.match(tp, /import\('\.\/place-dossier\.js'\)\.then\(m=>m\.openPlaceDossier\(HOST,\{lng:lngLat\.lng,lat:lngLat\.lat\}\)\)/, 'the context menu opens it for the pressed point');
+  assert.ok(!/here-now/.test(tp), 'and no second card for the same point');
+  assert.match(read('js/here-entry.js'), /import\('\.\/place-dossier\.js'\)\.then\(\(m\) => m\.openHereNow\(HOST\)\)/);
+  assert.match(read('js/share-inbox.js'), /import \{ whenMapReady, openHereNow \} from '\.\/place-dossier\.js'/);
   const main = read('src/main.js');
   assert.match(main, /\[\?&\]share=/); assert.match(main, /\[\?&\]here=1/);
+  assert.ok(main.includes("import('../js/place-dossier.js').then((m) => m.bootFromUrl())"), 'the shortcut opens the one place card');
   const caps = read('js/atlas-capabilities.js');
   assert.match(caps, /\["research\.hereNow","hereNow",[^\]]*"explicit","place\?","","external"\]/, 'Atlas: the device position is never read unasked');
   assert.match(caps, /\["view\.openShared","openShared",/);
@@ -253,6 +268,7 @@ test('mobile-next ④b the news window is read page by page until a short page; 
   window.IntMapWx = { point: async () => null, sunTimes: () => null };
   globalThis.fetch = async () => { throw Object.assign(new Error('x'), { reason: 'network' }); };
   window.IntMapHistCities = { near: () => [], ensure: async () => {}, ready: () => true, rights: () => [] };
+  EventsNear.configure({});
   const run = async (sizes) => {
     const ranges = []; let call = 0;
     const DB = { from: () => { const q = {}; ['select', 'eq', 'is', 'not', 'gte', 'order'].forEach((m) => { q[m] = () => q; });
@@ -267,5 +283,5 @@ test('mobile-next ④b the news window is read page by page until a short page; 
   assert.deepEqual([a.rec.news.scanned, a.rec.news.truncated, a.rec.news.count], [2007, false, 2007]);
   const b = await run([1000, 1000, 1000, 1000, 1000, 1000]);
   assert.deepEqual([b.ranges.length, b.rec.news.truncated], [5, true], 'the fence stops the read and the record says so');
-  assert.ok(HN.hereNowHtml(b.rec, { lang: 'en', fmtLL: () => '' }).includes('Only the newest 5000 events were read.'));
+  assert.ok(HN.profileHtml(b.rec, { lang: 'en', fmtLL: () => '' }).includes('Only the newest 5000 events were read.'));
 });

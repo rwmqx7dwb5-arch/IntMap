@@ -30,6 +30,8 @@
 //  The digest prints the state; a quiet place and an unread feed are never the same line.
 // ============================================================================
 
+import { haversineKm } from './great-circle.js';   /* the one great-circle distance (page and server) */
+
 /* ── THE DEFAULTS, each with where it comes from ──────────────────────────────────────────────────
    radiusKm 300   — research.impact's own default radius (js/atlas-cap-research.js «km default 300»),
                     which js/atlas-world-objects.js already reuses for «near». One answer to «how far
@@ -77,13 +79,9 @@ export const USGS_WEEK_FEED = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0
    the window js/atlas-anomaly-score.js scores recency over. Canonical there. */
 export const NEWS_WINDOW_MS = 72 * 3600 * 1000;
 
-/** Great-circle distance in km (mean Earth radius 6,371 km). */
-export function haversineKm(lng1, lat1, lng2, lat2) {
-  const t = Math.PI / 180;
-  const dLat = (lat2 - lat1) * t, dLng = (lng2 - lng1) * t;
-  const s = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * t) * Math.cos(lat2 * t) * Math.sin(dLng / 2) ** 2;
-  return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(s)));
-}
+/* Great-circle distance: the one copy is _shared/great-circle.js (the page and the server import it). It is
+   re-exported here because this file's readers and tests/watch-places-checks.test.mjs name it from here. */
+export { haversineKm };
 
 /** A watch row (database shape or camelCase) → the settings this file reads. A threshold that is
  *  NULL means the reader does not watch that kind; it is never filled with the default here. */

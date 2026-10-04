@@ -327,7 +327,7 @@ window.IntMapHistCities = (function () {
   function built(expr) { return !!(expr && cache.built && expr === cache.expr); }
 
   /* ── (mobile-next) THE PLACES WHOSE NAME THE RECORD SAYS CHANGED, AROUND ONE POINT ─────────────────
-     For «いま、ここ» (js/here-now.js): which recorded settlement is THIS point, and what was it called. The identity
+     For «いま、ここ» (the place card, js/place-dossier.js): which recorded settlement is THIS point, and what was it called. The identity
      test is the record's own — the guard `g` the label expression uses (#R521) — so a point is «in» Edo/Tokyo exactly
      when the label layer would rename Tokyo's tile label there. Every span is returned as written (`f`/`t`/`p`/`s`),
      names in the reader's language by the one fallback rule above (`say`); nothing is merged or dated here.
