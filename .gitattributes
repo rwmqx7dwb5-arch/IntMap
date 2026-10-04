@@ -92,7 +92,9 @@ ja/s/*.html                              merge=intmap-generated intmap-merge=reg
 /admin-inquiries.html                    merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
 /corrections.html                        merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
 /admin-corrections.html                  merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
+/press.html                              merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
 ja/contact.html                          merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
+ja/press.html                            merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
 ja/for-newsrooms.html                    merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
 ja/for-research.html                     merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
 ja/for-schools.html                      merge=intmap-generated intmap-merge=regen intmap-regen=scripts/org-pages.mjs,--write
