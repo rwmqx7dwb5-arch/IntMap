@@ -99,3 +99,7 @@ newsjp: 「この日の歴史地図」「年鑑」「出来事」が、出典と
 1 つ目を終わらせ、列の瞬間を飛ばさず終わる）。関連の node 検査 242 件緑。ゲート: static・docs・i18n・archfiles・types・datagov・
 histfidelity・wars・catalog・capabilities・surface 緑。⚠ `data/on-this-day.json` は gzip で 90 → 127 kB（Wikidata の 101 件、9 言語の
 名前と説明）。検索欄の空の状態のカードがこれを読む。
+
+## perf の天井
+
+rebase 後の木で `node scripts/perf-budget.mjs --update` を走らせ、越えた 2 行だけを上げた: 遅延チャンク `time-lapse` 8.5 → 11.1 kB（瞬間の列を再生する形と、再生の持ち主——凡例と Chronos の 2 つの独自タイマーを畳んだ代わり）、`year-book` 19.0 → 22.1 kB（索引の年の切り口と Wikidata の出来事）。起動経路は変わっていない。
