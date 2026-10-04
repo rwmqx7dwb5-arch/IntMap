@@ -275,10 +275,20 @@ test('#R161 #16 the engine contract grew and the news overlay runs through it', 
   } });
   assert.ok(binding, 'the facade exposes onLayer');
   const sent = [], adapter = { onLayer: (...args) => { sent.push(args); return 'adapter-result'; } };
-  const onLayer = new Function('A', '_clickOwnership', 'return (' + binding + ');')(() => adapter, makeClickOwnership());
-  const handler = () => {};
+  /* (quest-blind-everything) a CLICK handler now reaches the adapter through the engine's tap gate (`_gated`, js/geo-engine.js
+     holdTaps): the adapter holds a wrapper that runs the handler unless another owner holds the taps. The contract is
+     unchanged — event and layer are forwarded as they are, and calling what the adapter holds calls the handler. */
+  const gate = (c) => { const g = (...x) => c(...x); g.of = c; return g; };
+  const onLayer = new Function('A', '_clickOwnership', '_gated', 'return (' + binding + ');')(() => adapter, makeClickOwnership(), gate);
+  let ran = 0; const handler = () => { ran++; };
   assert.equal(onLayer('click', 'a-news-marker', handler), 'adapter-result');
-  assert.deepEqual(sent, [['click', 'a-news-marker', handler]], 'the real facade forwards event, layer and callback to its current adapter');
+  assert.equal(sent.length, 1);
+  assert.deepEqual(sent[0].slice(0, 2), ['click', 'a-news-marker'], 'the real facade forwards event and layer to its current adapter');
+  assert.equal(sent[0][2].of, handler, 'the callback the adapter holds is the gate around this handler');
+  sent[0][2](); assert.equal(ran, 1, 'calling what the adapter holds calls the handler');
+  /* a non-click event is not gated: the adapter gets the handler itself */
+  assert.equal(onLayer('mouseenter', 'a-news-marker', handler), 'adapter-result');
+  assert.equal(sent[1][2], handler, 'hover is forwarded untouched');
   /* news overlay: creation, data, declutter, theming and pointer events via GE */
   assert.ok(html.includes("GE.layers.addSource('news-points'"), 'news source not created through the engine');
   assert.ok(html.includes("GE.layers.add({id:'news-dots'"), 'news-dots layer not created through the engine');
