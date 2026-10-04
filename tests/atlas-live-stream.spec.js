@@ -20,11 +20,13 @@
  *    ④ a stream that breaks before `done` is asked again once, plainly, and the turn still answers;
  *    ⑤ (atlas-plan-on-map) a plan Atlas declared stands in the work trace with each step's OBSERVED
  *       state, stays when the turn ends, goes back to what its step drew, and is put in front of the model;
- *    ⑥ (atlas-os) the turns above are filed in the investigation notebook — answered ones only, with the
- *       question, the answer and the operation — and WRITTEN TO INDEXEDDB (what survives a reload);
- *       「地図を再現」 puts the camera back through the dispatch, and the entry is handed on as Markdown.
- *       They ride on this file's turns rather than on a page of their own: a second logged-in boot cost
- *       52 s measured, against 4 s of headroom in the whole-suite budget (scripts/test-budget.mjs).
+ *    ⑥ (notebook-hidden) the investigation notebook is not shown (js/atlas-notebook-store.js NOTEBOOK_SHOWN — the reader,
+ *       2026-10-04: 「機能だけ残すけど、いったんユーザーには存在せず、見えないように。」): after the answered turns above there
+ *       is no notebook strip and no notebook button in the panel, and NOTHING NEW IS WRITTEN to its database — a reader is
+ *       not recorded by a feature they cannot see. The notebook's own logic (filing, replay, Markdown) is held by
+ *       tests/atlas-os-checks.test.mjs against the shown build (tests/helpers/notebook-shown.mjs); when NOTEBOOK_SHOWN goes back
+ *       to true, this test's earlier form (the strip counts 2, IndexedDB holds both, replay and Markdown) is the one to restore —
+ *       dev-notes/2026-10-04-notebook-hidden.md names the commit.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting } from './helpers/network.js';
@@ -201,38 +203,24 @@ test('⑤ the plan Atlas declared in ④ stands in the work trace with its obser
   await page.waitForFunction(() => { const c = window.IntMapGeoEngine.camera.getCenter(); return Math.abs(c.lng - 139.7) < 3 && Math.abs(c.lat - 35.7) < 3; }, null, { timeout: 10_000 });
 });
 
-test('⑥ (atlas-os) the answered turns are in the notebook and in IndexedDB; a replay puts the camera back; Markdown carries them', async () => {
-  /* ① filed: the two answered turns (①② and ④), not the stopped one (③) */
-  await expect(page.locator('#atlas-panel .atl-nb-strip .atl-nb-n')).toHaveText('2', { timeout: 15_000 });
-  /* ② written where a reload reads it — the database itself, opened fresh, not the page's cache */
-  const stored = await page.evaluate(() => new Promise((res, rej) => {
-    const rq = indexedDB.open('intmap-atlas-notebook');
-    rq.onsuccess = () => { const g = rq.result.transaction('entries').objectStore('entries').getAll(); g.onsuccess = () => res(g.result.map((e) => ({ q: e.question, a: e.answer, steps: e.steps.length, camera: e.view && e.view.camera }))); g.onerror = () => rej(g.error); };
-    rq.onerror = () => rej(rq.error);
+test('⑥ (notebook-hidden) the notebook is not shown, and the answered turns are not written to it', async () => {
+  /* the turns above were answered (①②, ④) — the panel holds their replies */
+  await expect(page.locator('#atlas-panel .atl-b.u')).not.toHaveCount(0);
+  /* no strip, no sheet, no notebook button anywhere in the panel */
+  await expect(page.locator('#atlas-panel .atl-nb-strip')).toHaveCount(0);
+  await expect(page.locator('#atlas-panel .atl-nb')).toHaveCount(0);
+  await expect(page.locator('#atlas-panel [data-act="keep"], #atlas-panel [data-act="file"]')).toHaveCount(0);
+  /* nothing new in the database a reload would read — opened fresh, not the page's cache. A browser that never had a
+     notebook has no such database at all, which is the same answer: zero entries. */
+  const stored = await page.evaluate(() => new Promise((res) => {
+    const have = indexedDB.databases ? indexedDB.databases() : Promise.resolve(null);
+    have.then((list) => {
+      if (list && !list.some((d) => d.name === 'intmap-atlas-notebook')) { res(0); return; }
+      const rq = indexedDB.open('intmap-atlas-notebook');
+      rq.onsuccess = () => { const db = rq.result; if (!db.objectStoreNames.contains('entries')) { res(0); return; }
+        const g = db.transaction('entries').objectStore('entries').count(); g.onsuccess = () => res(g.result); g.onerror = () => res(-1); };
+      rq.onerror = () => res(-1);
+    }, () => res(-1));
   }));
-  expect(stored.map((e) => e.q).sort()).toEqual(['三回目', '東京はどこ？']);
-  expect(stored.every((e) => e.a.indexOf('関東平野の南部') >= 0 && e.steps > 0 && e.camera)).toBe(true);
-  await page.click('#atlas-panel .atl-nb-strip');
-  const item = page.locator('#atlas-panel .atl-nb .atl-nb-item').filter({ hasText: '東京はどこ？' });
-  await expect(item).toHaveCount(1);
-  await item.click();
-  await expect(page.locator('#atlas-panel .atl-nb-dq')).toHaveText('東京はどこ？');
-  await expect(page.locator('#atlas-panel .atl-nb-ans')).toContainText('関東平野');
-  /* ③ replay: the camera is sent away, and comes back to where the answer left it */
-  const want = stored.find((e) => e.q === '東京はどこ？').camera;
-  await page.evaluate(() => window.IntMapGeoEngine.camera.jumpTo({ center: [-40, -30], zoom: 2 }));
-  await page.click('#atlas-panel .atl-nb-act[data-act="replay"]');
-  await expect(page.locator('#atlas-panel .atl-nb')).toBeHidden();
-  await expect(page.locator('#atlas-panel .atl-b.u').last()).toContainText('東京はどこ？', { timeout: 10_000 });
-  await page.waitForFunction((w) => { const c = window.IntMapAtlasState.captureSections(['camera']).camera;
-    return c && Math.abs(c.lng - w.lng) < 1e-3 && Math.abs(c.lat - w.lat) < 1e-3 && Math.abs(c.zoom - w.zoom) < 1e-2; }, want, { timeout: 30_000 });
-  /* ④ handed on: the strip opens the list again (not the entry last read), and the entry exports as Markdown */
-  await page.click('#atlas-panel .atl-nb-strip');
-  await page.locator('#atlas-panel .atl-nb .atl-nb-item').filter({ hasText: '東京はどこ？' }).click();
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#atlas-panel .atl-nb-act[data-act="md"]')]);
-  expect(dl.suggestedFilename()).toMatch(/^intmap-atlas-notebook-\d{4}-\d{2}-\d{2}\.md$/);
-  const fs = await import('node:fs');
-  const md = fs.readFileSync(await dl.path(), 'utf8');
-  expect(md).toContain('## 東京はどこ？');
-  expect(md).toContain('関東平野の南部');
+  expect(stored).toBe(0);
 });

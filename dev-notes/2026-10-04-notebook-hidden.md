@@ -25,3 +25,10 @@ newsjp: Atlas の調査ノートの表示を止めました。新しく記録す
 
 `NOTEBOOK_SHOWN = true` → `node scripts/atlas-caps.mjs --write` → 台本録画の再生成 → プライバシー文を戻す。
 上の検査は定数を `true` にした版のソースでも全入口を見つける。
+
+## `tests/atlas-live-stream.spec.js` ⑥
+
+ノートが見えている前提の ⑥（帯の件数 2・IndexedDB に 2 件・地図を再現・Markdown）は、隠している間は成り立たない（記録しないので）。
+「隠している間は帯もボタンも無く、データベースに新しく書かない」に書き換えた。ノートのロジックは `tests/atlas-os-checks.test.mjs` が
+見えている版（`tests/helpers/notebook-shown.mjs`）で守っている。⚠ **`NOTEBOOK_SHOWN` を true に戻すときは、⑥ を `cfef70a6` の
+形（`git show cfef70a6:tests/atlas-live-stream.spec.js`）に戻す**。
