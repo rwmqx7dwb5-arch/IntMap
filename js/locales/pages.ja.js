@@ -703,6 +703,7 @@ window.IntMapPageI18N.define('ja', {
     "SaveEcoBot / data.gov.ua — radiation monitoring (CC BY)": "出典一覧には残していますが、ここからの値は現在1点も地図に出ていません。ウクライナのオープンデータは観測局の座標と測定値の一括アーカイブから成り、現在値を返す公開エンドポイントがありません（SaveEcoBot 自身の API は鍵を要求します）。測定値の無い座標一覧は線量図ではないので、ウクライナは埋めずに空白のままにし、その空白を明示するためにこの出典をここに残しています。",
     "Fukushima Daiichi release time series (JAEA, Katata et al. 2015, CC BY 3.0)": "ライブの地図には描きません。data/fukushima-release.json に同梱し、放射性物質の拡散パネルの「2011 年の答え合わせ」でだけ使います。日本原子力研究開発機構（JAEA）が再構成した福島第一からの Cs-137 の大気放出で、2011 年 3 月 11 日から 4 月 30 日までの 71 区間それぞれの放出率と放出高度です。Katata ほか（2015）Atmospheric Chemistry and Physics 15, 1029–1070（doi:10.5194/acp-15-1029-2015）の、機械で読める付属資料から取っています。放出率そのものが拡散モデルを実測に合わせて推定されたものなので、答え合わせでは放出の時刻がどれだけ効くかを測るために使い、独立の検証としては扱いません。",
     "Fukushima Cs-137 deposition survey (MEXT/NRA via IRSN, CC BY 4.0)": "ライブの地図には描きません。data/radiation-hindcast.json に同梱し、放射性物質の拡散パネルの「2011 年の答え合わせ」にだけ表示します。日本政府（文部科学省、のちに原子力規制委員会）の航空機モニタリングによる Cs-137 の地表沈着量を、0.05° のセルごとの平均（1,740 セル・172 万回の測定）にして IRSN が編纂・公開したものです（Dumont Le Brazidec と Saunier、2022、doi:10.5281/zenodo.7016491）。このファイルには基準日が書かれていません。元になった文科省／規制委の地図は 2012 年 6 月 28 日に減衰補正されており、その日付を採っています。同じ放出と 2011 年の ERA5 の風でのモデル自身の計算と並べるだけで、モデルの調整には使いません。",
+    "NASA EONET — Earth Observatory Natural Event Tracker": "ブラウザからは取得しません。scripts/build-weekly-earth.mjs がビルド時に、NASA の地球観測所自然イベント追跡（EONET）が載せる自然現象——山火事・嵐・火山・洪水など——を data/weekly-earth.json に読み込み、週ごとの「今週の地球」ページと Atlas の time.weeklyEarth の答えに使います。EONET のデータは米国政府の著作物で著作権の対象ではありませんが、NASA は出典の明示を求めているため、これを元にしたページと答えはすべて EONET の名を示します。",
   }
 ,
 

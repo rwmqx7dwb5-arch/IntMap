@@ -84,7 +84,7 @@ const unitWords = (u, lang) => (u === 'kts' ? T(lang, 'kt', 'ノット') : u ===
   : u === 'NM^2' ? T(lang, 'sq NM', '平方海里') : String(u || ''));
 const num = (v, lang) => (+v).toLocaleString(lang === 'jp' ? 'ja-JP' : 'en-US', { maximumFractionDigits: 1 });
 /** 'YYYY-MM-DD HH:MM UTC' of an ISO instant (both languages: the upstreams' own clock) */
-export const utcWords = (iso) => String(iso).slice(0, 10) + ' ' + String(iso).slice(11, 16) + ' UTC';
+const utcWords = (iso) => String(iso).slice(0, 10) + ' ' + String(iso).slice(11, 16) + ' UTC';
 /** '21–27 September 2026', '28 September – 4 October 2026' / '2026年9月21日〜27日', '2026年9月28日〜10月4日' for a week (its seven UTC days) */
 export function weekWords(w, lang) {
   const a = new Date(w.from + 'T00:00:00Z'), b = new Date(Date.parse(w.to + 'T00:00:00Z') - DAY);
@@ -129,7 +129,7 @@ export function headline(week) {
   return e ? Object.assign({ kind: 'event' }, e) : null;
 }
 /** the counts a summary is written from: { quakes, byCategory:[{cat, n}], fewer } */
-export function counts(week) {
+function counts(week) {
   const by = new Map();
   for (const e of week.events) { const o = by.get(e.cat) || { cat: e.cat, n: 0 }; o.n++; by.set(e.cat, o); }
   return { quakes: week.quakes.length, byCategory: [...by.values()], fewer: week.fewer || {} };
