@@ -14,7 +14,10 @@
  *  at 23° N would carry the row for about 43.7° N — the Alps, green. So «red at the Sahara» is both
  *  «painted» and «painted as Mercator».
  *
- *  ⚠ UNSEEDED: Köppen is one of the default-on layers, and the suite's seed switches those off.
+ *  ⚠ UNSEEDED, AND THE ROW IS TICKED THE WAY A READER TICKS IT. Until basic-display-not-layers (#900,
+ *  2026-10-02) Köppen was default-on and this spec waited for it after boot; since then no layer is on for a
+ *  first visit, so that wait measured a layer nobody had asked for and timed out at 90 s on the nightly deep
+ *  tier (2026-10-02/03, `lyr-climate` absent). The claim is about painting once it IS on, not about the default.
  * ==========================================================================*/
 import { test, expect } from '@playwright/test';
 import { bootEngine } from './helpers/engine.js';
@@ -24,6 +27,11 @@ test.use({ storageState: { cookies: [], origins: [] } });
 test('Köppen paints the Cesium globe, as Mercator, and keeps painting through updateImage', async ({ page }) => {
   test.setTimeout(240_000);
   await bootEngine(page, 'cesium', { timeout: 120_000 });
+  await page.waitForFunction(() => !!document.getElementById('dl-climate'), null, { timeout: 60_000 });
+  await page.evaluate(() => {
+    const cb = document.getElementById('dl-climate');
+    if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+  });
   const ready = () => page.waitForFunction(() => {
     const r = window.IntMapGeoEngine.raw()._layerById.get('lyr-climate');
     return !!(r && r.imagery && r.imagery.ready && !r.retiring);

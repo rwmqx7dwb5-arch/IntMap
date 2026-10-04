@@ -143,6 +143,11 @@ test('layer-manifest ⑤ each lazy link is real: switching the row on loads the 
    in the stack) and the row's legend. tests/fixtures/layer-packages-before.json is that same evaluation, run on the tree
    BEFORE the move (IM_LAYER_PACKAGES_CAPTURE=<file> writes the evaluation there — never into the checkout, scripts/tree-writers.mjs
    — and the file was copied over the fixture; how it was taken is in dev-notes/2026-10-02-layer-packages.md).
+   ⚠ (wave3-nightly-root) RE-TAKEN ONCE, THE SAME WAY, AFTER #902 (icons from glyphs to js/icons.js SVG): the radar
+   player's ⏮ ◀ ▶ ▶ ⏭ and the 🕒 of the radar and fire «when» line became `<svg class="im-icon">`, and the nightly deep
+   tier went red on dl-radar (2026-10-02/03). The capture of cb3a3918 differed from the old fixture in exactly those six
+   legend strings (dl-radar and dl-thermal, three phases each) and nowhere else — every layer, source, paint, layout,
+   tile and stack position was byte-identical — so the move this test guards is still measured against what it drew.
    The upstreams are answered from here so the drawing is deterministic: RainViewer's frame index (two frames) and the
    GIBS 4×4 probe the fire row makes; every other external host stays blocked (tests/helpers/network.js). Calendar dates
    and digits inside legend text are masked — they are the day and the timezone the run happens in, not the drawing —

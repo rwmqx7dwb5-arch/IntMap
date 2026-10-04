@@ -1251,8 +1251,15 @@ export function volcanoIntel(HOST){
     return fc.features.filter(f=>String(f.properties.n||'').toLowerCase().indexOf(s)>=0)
       .slice(0,20).map(f=>({ v:f.properties.v, name:f.properties.n, country:f.properties.c }));
   }
-  /* the health of each rung, so a legend can print three states rather than two */
-  function feeds(){ const o={}; for(const k of Object.keys(FEEDS)) o[k]={ state:FEEDS[k].state, at:FEEDS[k].at, rows:FEEDS[k].rows?FEEDS[k].rows.length:0 }; return o; }
+  /* the health of each rung, so a legend can print three states rather than two.
+     ⚠ (wave3-nightly-root) `settled` is THIS file's word for «the feed reached a verdict», so no reader has to keep
+     its own list of verdicts: the nightly spec listed ok/failed, and the day `mark()` learned `unavailable` (the
+     publisher refused us — volcano-feed-weekly, 2026-10-03) it called an honest refusal «never settled».
+     The verdicts are the three states `mark()` (above) writes — keep the two together; `idle` and `loading` (pull()) are not. */
+  const FEED_VERDICTS=['ok','failed','unavailable'];
+  function feeds(){ const o={}; for(const k of Object.keys(FEEDS)){ const f=FEEDS[k];
+    o[k]={ state:f.state, settled:FEED_VERDICTS.indexOf(f.state)>=0, at:f.at, rows:f.rows?f.rows.length:0,
+      unavailable:f.state==='unavailable'?(f.unavailable||null):null }; } return o; }
 
   /* ⚠ (#R395) THE CARD FOLLOWS THE LANGUAGE SWITCH. Every string in it — labels and, since this
      round, values — is resolved at render time, so the only thing missing was a reason to render
