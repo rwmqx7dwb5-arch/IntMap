@@ -90,3 +90,13 @@ newsjp: データスタジオ——国名・ISO コード・都市名の列を�
 曖昧な都市を解決しない・国の列で絞ると解決する、数量の列を鍵にしない、リンクの往復（`ds` 経由・ツアーの包み方も同じ）と
 信用しない読み・展開上限、長さ上限で断る、`ds` の無い旧リンクがバイト単位で同じ・`ds` があるときだけ遅延取得、
 起動の静的 import 木に入らない、Excel の表読み（`tests/fixtures/data-studio-population.xlsx`）と文字の枠の読み戻し。
+
+## 起動費用の天井（`node scripts/perf-budget.mjs --update`）
+
+起動の経路は増やしていない（modulepreload 5 本のまま・eager は変わらず）。上げたのは遅延読み込みの側だけ:
+
+| 行 | 前の天井 | 実測 | 理由 |
+|---|---|---|---|
+| async.gzip | 4098.8 kB | 4131.8 kB | 新しい遅延 chunk `data-studio`（約 47 kB）と `link-pack`（約 1.2 kB）。パネルを開いたときだけ読まれる |
+| async chunk `atlas-console` | 1417.4 kB | 1428.2 kB | Atlas の能力 `data.studio` の宣言・説明文・観測器（能力の行は atlas-console の chunk に入る）と、同じ回に着地した学ぶクエストの `learn.quest` |
+| dist.assets | 19664.6 kB | 19770.2 kB | 上の 2 つの chunk と、その gzip 版 |
