@@ -209,7 +209,7 @@ export const SITE_PAGES = Object.freeze({ showcase: /(?:^|\/)s\/[^/]+\.html$/, a
      and «on this day» (scripts/on-this-day-pages.mjs), each a directory with an index, in English and under ja/ */
   history: /(?:^|\/)history\/(?:[^/]+\/){0,2}(?:index\.html)?$/, 'on-this-day': /(?:^|\/)on-this-day\/(?:\d{2}-\d{2}\/)?(?:index\.html)?$/,
   /* (country-pages) one page per country (scripts/country-pages.mjs) — its lower-case three-letter code a directory — and the list */
-  countries: /(?:^|\/)countries\/(?:[a-z]{3}\/)?(?:index\.html)?$/ });
+  countries: /(?:^|\/)countries\/(?:[a-z]{3}\/)?(?:index\.html)?$/,
   /* (weekly-earth) «this week on Earth» (scripts/weekly-earth-pages.mjs): the hub and one page per ISO week, en and ja/ — not the feed */
   weekly: /(?:^|\/)weekly\/(?:\d{4}-W\d{2}\/)?(?:index\.html)?$/ });
 

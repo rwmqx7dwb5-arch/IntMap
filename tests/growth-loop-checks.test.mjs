@@ -34,8 +34,8 @@ const { HUB: HISTORY_HUB } = await import(modUrl('scripts/history-pages.mjs'));
 const { OTD_HUB, dayPath } = await import(modUrl('scripts/on-this-day-pages.mjs'));
 /* (country-pages) the third: one page per country */
 const { COUNTRY_HUB, countryPath } = await import(modUrl('scripts/country-pages.mjs'));
+const { WEEKLY_HUB } = await import(modUrl('scripts/weekly-earth-pages.mjs'));   /* (weekly-earth) the fourth generated door */
 const GENERATED_DOORS = { history: HISTORY_HUB, 'on-this-day': OTD_HUB, countries: COUNTRY_HUB, weekly: WEEKLY_HUB };
-const { WEEKLY_HUB } = await import(modUrl('scripts/weekly-earth-pages.mjs'));   /* (weekly-earth) the third generated door */
 const { makeAtlasAgent } = await import(modUrl('js/atlas-agent.js'));
 const AGENT = makeAtlasAgent();
 

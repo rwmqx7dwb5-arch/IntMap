@@ -75,3 +75,7 @@ check:datagov が束を in-band の日付で数え、`scripts/data-refresh.mjs` 
 - 投稿とフィードの告知は所有者の承認事項（`docs/marketing/README.md` A8）。
 - 2025-W40〜W43 の週は EONET の山火事が極端に少ない（数えて載せない数が 55・1・3・6）。上流の記録がそうであって、
   この記録の欠落ではない（同じ要求で W44 以降は数百件）。
+
+## perf の天井
+
+`check:perf` の `dist.total` を main の天井 880,995,962 B に、この回がビルドで足した実測 5,789,779 B（`weekly/` と `ja/weekly/` のページ・フィード・`sitemap-weekly.xml`・`data/weekly-earth.json`）だけを足して **886,785,741 B** に、`dist.data` を同じく `data/weekly-earth.json` 569,301 B だけ足して **745,671,828 B** にした。理由は流入の扉（週ページ）と週の蓄積そのもの。このマシンのビルドと main の計測の差は入れていない。
