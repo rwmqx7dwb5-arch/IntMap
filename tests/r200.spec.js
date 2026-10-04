@@ -82,7 +82,21 @@ test('R200 ③ moving the master clock moves the sun, the horizon and the termin
     const m = window.__imap;
     const at = async (iso) => {
       window.IntMapTime.set(new Date(iso), { source: 'r200' });
-      await new Promise((r) => setTimeout(r, 2200));
+      /* ⚠ (night-side-catchup) WAIT FOR THE PICTURE OF THIS INSTANT, NOT FOR 2.2 SECONDS. The night
+         side publishes which instant its canvas holds and whether that is the exact (full-size) picture
+         (js/night-side.js state().paint). A fixed wait measured the runner: CI (no GPU, two workers)
+         read alpha 37 at midnight AND at noon after 2.2 s, because the paint then waited for idle time
+         a busy page never has. The ceiling is the slowest full repaint measured with the CPU throttled
+         ×4 on a loaded machine (10.4 s, the first jump after the throttle landed) times three — a
+         runner slower than that is the regression this test exists to catch. The sky's own readers (light, horizon) are set
+         synchronously on the clock event, so the wait covers them too. */
+      const want = Date.parse(iso), t0 = performance.now();
+      for (;;) {
+        const p = window.IntMapNightSide.state().paint;
+        if (p && p.full && p.at === want) break;
+        if (performance.now() - t0 > 31_000) break;          /* the assertions below then say what is wrong */
+        await new Promise((r) => setTimeout(r, 50));
+      }
       const L = m.getLight();
       /* `painted` is the geometry the SOURCE really holds — proof that the night side repainted on the
          clock event, not just that its pure ring function would compute something different. */
@@ -100,7 +114,8 @@ test('R200 ③ moving the master clock moves the sun, the horizon and the termin
         painted = cv.getContext('2d').getImageData(col, row, 1, 1).data[3];
       }
       return { hz: m.getSky()['horizon-color'], sun: L && L.position ? L.position.map((x) => +(+x).toFixed(1)) : null,
-               night: window.IntMapNightSide._nightAt(139.7, 35.7), painted };
+               night: window.IntMapNightSide._nightAt(139.7, 35.7), painted,
+               paint: window.IntMapNightSide.state().paint, want, waitedMs: Math.round(performance.now() - t0) };
     };
     m.jumpTo({ center: [139.7, 35.7], zoom: 3.4 });             /* Tokyo: UTC+9 */
     await new Promise((r) => setTimeout(r, 1500));
@@ -123,6 +138,11 @@ test('R200 ③ moving the master clock moves the sun, the horizon and the termin
   expect(seen.noon.night, 'and in daylight at local noon').toBeLessThan(0.05);
   /* …and the CANVAS took it (the night side subscribes from wire(), which app-body calls at map-load
      — i.e. after window.IntMapTime exists. js/theme-sky.js's copy did not, until #R200.) */
+  /* …the canvas says it holds the exact picture of each instant, within the ceiling above */
+  for (const k of ['night', 'noon'])
+    expect({ at: seen[k].paint && seen[k].paint.at, full: seen[k].paint && seen[k].paint.full },
+      `the ${k} picture was painted for the instant the clock was moved to (waited ${seen[k].waitedMs} ms)`)
+      .toEqual({ at: seen[k].want, full: true });
   expect(seen.night.painted, 'the night canvas exists and was read').not.toBeNull();
   expect(seen.night.painted - seen.noon.painted, 'the painted alpha moved, not just the model').toBeGreaterThan(200);
 });

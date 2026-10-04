@@ -141,11 +141,13 @@ test.describe('desktop · wheel and drag', () => {
     expect(st.held, 'and the passing levels are still held (#R205)').toBeGreaterThan(0);
   });
 
-  test('the night side is repainted in idle slices: the canvas only ever receives a finished picture', async () => {
+  test('the night side is repainted in slices: the canvas only ever receives a finished picture', async () => {
     /* js/night-side.js paint(). The whole-Earth night image (1024² pixels) was one 35–58 ms task on the
        first idle after a zoom-out crossed z5.4 — the frame the motion ended on. The assertion is about
        ORDER, not milliseconds: the call that asks for a repaint returns with the canvas unchanged, and
-       the new picture arrives afterwards, whole. */
+       the new picture arrives afterwards, whole. (night-side-catchup: the slices are ordinary tasks of
+       ≤5 ms rather than idle callbacks, and a coarse picture precedes the exact one — both are finished
+       pictures, so the order asserted here is the same.) */
     const sat = await s.page.evaluate(() => { const b = document.getElementById('btn-view-sat'); if (b && !b.classList.contains('active')) b.click();
       return true; });
     expect(sat).toBe(true);
