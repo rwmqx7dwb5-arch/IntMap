@@ -31,11 +31,12 @@
  *       bare word would have passed on prose ("…reach…", "…Earth Replay…") that tells the model
  *       nothing it can emit, and prose is precisely what was there while the feature was invisible.
  *
- *  WITHDRAWN, NOT MISSING. `monitor` is deliberately absent from the catalogue: #R231 withdrew the
- *  feature 「一旦撤去」 and its dispatch case exists only to answer FEATURE_WITHDRAWN. That is the one
- *  allowed exception, and it is verified to still BE withdrawn — if the case stops returning its proof
+ *  WITHDRAWN, NOT MISSING. A capability may be deliberately absent from the catalogue when its feature
+ *  is withdrawn and its dispatch case exists only to answer a proof code (the area monitors' `monitor`
+ *  was the one such case until the feature was removed outright; none is withdrawn today). That is the
+ *  one allowed exception, and it is verified to still BE withdrawn — if the case stops returning its proof
  *  code the exception stops applying and the gate fails. (atlas-capability-single-source) The exception
- *  is the capability's own `policy.withdrawn` ({ why, proofCode }, js/atlas-cap-system.js), read through
+ *  is the capability's own `policy.withdrawn` ({ why, proofCode }, in its js/atlas-cap-<namespace>.js entry), read through
  *  the registry — it was written here a second time, under a different key, and the two could disagree.
  *
  *    node scripts/atlas-catalog.mjs            # report every capability and its catalogue status

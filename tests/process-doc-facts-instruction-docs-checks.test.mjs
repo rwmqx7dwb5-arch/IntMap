@@ -229,7 +229,7 @@ test('R403 ④ a legitimately PARTIAL list of functions is not read as the roste
        needs the sentence to still exist in the shape the rule reads. */
     assert.ok(/を共有するのは\d+本\*\*（`[a-z-]+`/.test(arch),
       'the relay-guard list is gone from the spec (Architecture.md + docs/architecture/) — case ④ is no longer proven by the tree');
-    assert.ok(/for f in refresh-news monitor-run/.test(arch),
+    assert.ok(/for f in refresh-news [a-z]/.test(arch),
       'the split deploy loop is gone from the spec (Architecture.md + docs/architecture/) — case ④ is no longer proven by the tree');
     assert.ok(/All [a-z-]+ are declared there now/.test(rd('docs/SECURITY-ARCHITECTURE.md')),
       'the "four most recently added" sentence is gone from docs/SECURITY-ARCHITECTURE.md — case ④ is no longer proven by the tree');
@@ -287,7 +287,7 @@ const NEW_RULES = [
     /* (#R510) ais-feed made it ten; (#R585) radiation-feed made it twelve. The MUTATION is what
        this row is for — the number itself is Architecture.md's business and doc-facts already checks
        it — but the SEED has to be a string that exists, so it tracks the count by hand on purpose. */
-    /* (#R801) ai-proxy and monitor-run took the bounded reader: fifteen. */
+    /* (#R801) ai-proxy and the area-monitor runner (since retired) took the bounded reader: fifteen. */
     /* (atlas-semantic-search) the seed is the count the imports state (GUARD_N above), and the mutation is one short of it. */
     from: '`_shared/relay-guard.js` を共有するのは' + GUARD_N + '本', to: '`_shared/relay-guard.js` を共有するのは' + (GUARD_N - 1) + '本' },
 

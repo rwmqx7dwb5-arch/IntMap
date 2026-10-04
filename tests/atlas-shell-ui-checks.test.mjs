@@ -1,18 +1,18 @@
 /* ============================================================================
- *  The app shell's own UI, as the R147–R159 and #R455 batches left it — the Köppen legend, the area
- *  monitor, satellite imagery, Street View coverage, the toolbar and sidebars, Companies, the news
+ *  The app shell's own UI, as the R147–R159 and #R455 batches left it — the Köppen legend, satellite
+ *  imagery, Street View coverage, the toolbar and sidebars, Companies, the news
  *  band and button, and the layer preview images
  * ----------------------------------------------------------------------------
  *  (tests-by-topic) These arrived in rounds that were ABOUT Atlas, so they were filed with Atlas; none
  *  of them is about Atlas. They are grouped here by subject, one section per subject, until each
  *  subject's own file takes them. Every test keeps the title it had:
- *    tests/r147-checks.test.mjs (SV, satellite, monitor) · tests/r149-checks.test.mjs (#7, #3) ·
- *    tests/r150-checks.test.mjs (#6, #3, #8, #1) · tests/r151-checks.test.mjs (#1, #3, #4, #6, #7, #8, #10) ·
+ *    tests/r147-checks.test.mjs (SV, satellite) · tests/r149-checks.test.mjs (#3) ·
+ *    tests/r150-checks.test.mjs (#3, #8, #1) · tests/r151-checks.test.mjs (#1, #3, #4, #7, #8, #10) ·
  *    tests/r159-checks.test.mjs (#3, #4, #6) · tests/r455-checks.test.mjs (③, ④, ⑥)
  *  ⚠ WHY THESE ARE STILL SPELLINGS: every one asserts CSS, markup or code inside js/app-body.js's
  *  DOMContentLoaded closure (or the modules it builds with the page) — the map, the DOM and the style
- *  engine they describe do not exist in node. The two exceptions read files on disk (the preview PNGs)
- *  and a migration, which are facts about those files.
+ *  engine they describe do not exist in node. The one exception reads files on disk (the preview PNGs),
+ *  which are facts about those files.
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -24,8 +24,6 @@ import { readLF } from '../scripts/eol.mjs';
 
 const root = new URL('../', import.meta.url);
 const html = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
-const migDir = new URL('supabase/migrations/', root);
-const migs = readdirSync(migDir).map(f => readFileSync(new URL(f, migDir), 'utf8')).join('\n');
 const has = (s) => html.includes(s);
 const ok = (s, msg) => assert.ok(has(s), msg || ('missing: ' + s.slice(0, 90)));
 const gone = (s, msg) => assert.ok(!has(s), msg || ('should be removed: ' + s.slice(0, 90)));
@@ -59,54 +57,6 @@ test('R151 #3 Köppen legend clamps to content (stops when all shown) + stable r
   assert.match(html, /lg\.style\.maxHeight='none'; lg\.style\.height='auto';/, 'measures natural height with a temporary auto');
   // scrollbar gutter reserved so the row text width is constant while resizing
   assert.match(html, /\.koppen-legend \.kl-scroll\{[^}]*scrollbar-gutter:stable;/, 'scrollbar-gutter:stable on the inner scroll');
-});
-
-/* ══════════════════════════════════════════════════════════════════════════════════════════════
-   The area monitor (R147 #14, R149 #7, R150 #6, R151 #6)
-   ══════════════════════════════════════════════════════════════════════════════════════════════ */
-test('R147 #14 monitor create dialog falls back to the current map view', () => {
-  /* kept as a spelling: CSS, markup and js/app-body.js closure code — the map, the DOM and the style engine they describe do not exist in node */
-  assert.match(html, /if\(!area\)\{ const mv=mapViewArea\(\); if\(mv\)\{ area=mv; usingView=true; \} \}/,
-    'openCreateDialog defaults to mapViewArea when no area is set');
-});
-test('R149 #7 monitor toast root cause: _toast calls the closure fns (not window.imToast) with an alert fallback', () => {
-  // The bug: index.html is NOT a module, so imToast/aiToast are closure-scoped, never on window.
-  // Guarding on window.imToast made EVERY monitor toast (incl. create-failure feedback) silently no-op.
-  const m = html.match(/function _toast\(msg\)\{[^\n]*\}/);
-  assert.ok(m, '_toast is defined on one line');
-  const t = m[0];
-  assert.ok(/typeof imToast==='function'/.test(t), '_toast uses typeof imToast guard');
-  assert.ok(/typeof aiToast==='function'/.test(t), '_toast falls back to aiToast');
-  assert.ok(/alert\(String\(msg\)\)/.test(t), '_toast has a guaranteed alert() last resort');
-  assert.ok(!/if\(window\.imToast\)\s*return imToast/.test(html), 'the broken window.imToast guard is gone');
-});
-
-test('R149 #7 monitor create dialog shows guaranteed INLINE failure feedback', () => {
-  /* kept as a spelling: CSS, markup and js/app-body.js closure code — the map, the DOM and the style engine they describe do not exist in node */
-  assert.match(html, /id="mon-create-err"/, 'inline error element exists in the create dialog');
-  assert.match(html, /const showErr=\(m\)=>\{/, 'create handler has a showErr helper');
-  // both the no-area path and the create() failure path surface it
-  assert.ok((html.match(/showErr\(/g) || []).length >= 2, 'showErr used for no-area AND create failure');
-});
-test('R150 #6 monitor save root cause — client sets user_id AND the DB defaults it to auth.uid()', () => {
-  // area_monitors.user_id is `not null` + insert RLS `with check (user_id = auth.uid())`; the client row
-  // previously OMITTED user_id, so every UI insert failed → "Could not save the monitor."
-  // (#R162) IntMapMonitors moved to js/monitors.js, so the session user now arrives through the
-  // explicit host interface (H.user, a live getter over currentUser) instead of the closure.
-  // Same behaviour — create() still derives user_id client-side rather than omitting it.
-  // (#R163) the host parameter was renamed H → HOST (the old name collided with ordinary `H` locals
-  // for Height/Hourly in the newly-split modules) and the object itself is now the shared IM_HOST.
-  assert.match(html, /const _uid=\(HOST\.user&&HOST\.user\.id\)\|\|null;/, 'create() derives the session user id');
-  assert.match(html, /get user\(\)\{ return currentUser; \}/, 'HOST.user is a LIVE read of currentUser (login/logout must not go stale)');
-  assert.match(html, /const row=\{ user_id:_uid, name:/, 'insert row now carries user_id (like feedback/bug_reports/donations)');
-  // belt-and-suspenders DB default
-  assert.match(migs, /alter column user_id set default auth\.uid\(\)/, 'migration adds a DB default of auth.uid()');
-});
-test('R151 #6 monitor highlight is cleared when the monitor is deleted', () => {
-  /* kept as a spelling: CSS, markup and js/app-body.js closure code — the map, the DOM and the style engine they describe do not exist in node */
-  assert.match(html, /let _shownMonId=null;/, 'tracks which monitor area is painted');
-  assert.match(html, /function showOnMap\(area,points,monId\)\{ try\{ if\(!_ensureLayers\(\)\) return; _shownMonId=\(monId!=null\?monId:null\);/, 'showOnMap records the monitor id');
-  assert.match(html, /if\(!error && \(_shownMonId===id \|\| _shownMonId==null\)\) clearMap\(\);/, 'remove() clears the leftover highlight');
 });
 
 /* ══════════════════════════════════════════════════════════════════════════════════════════════

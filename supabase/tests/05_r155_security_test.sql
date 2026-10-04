@@ -93,11 +93,6 @@ select ok(not has_table_privilege('anon','public.community_posts','delete'),    
 select ok(not has_table_privilege('anon','public.community_posts','update'),        'R155: anon cannot UPDATE community_posts');
 select ok(not has_table_privilege('authenticated','public.donations','delete'),     'R155: authenticated cannot DELETE donations');
 select ok(not has_table_privilege('authenticated','public.donations','update'),     'R155: authenticated cannot UPDATE donations');
--- Monitor results cannot be forged at the GRANT layer (not just RLS): no user write.
-select ok(not has_table_privilege('authenticated','public.monitor_runs','insert'),     'R155: authenticated cannot INSERT monitor_runs (run results unforgeable)');
-select ok(not has_table_privilege('authenticated','public.monitor_evidence','insert'), 'R155: authenticated cannot INSERT monitor_evidence');
-select ok(not has_table_privilege('authenticated','public.monitor_reports','update'),  'R155: authenticated cannot UPDATE monitor_reports (reports client-immutable)');
-select ok(    has_table_privilege('authenticated','public.monitor_reports','select'),  'R155: authenticated CAN still read its own monitor_reports (RLS-gated)');
 select ok(not has_table_privilege('anon','public.profiles','select'),               'R155: anon has NO access to profiles (uses profiles_public)');
 
 -- PII-leak invariant: no world-readable profiles. A cannot read B's email/flags;

@@ -11,7 +11,7 @@
  *     ceiling. ⇒ In every function that reads a provider key, no fetch-like call is aimed at a
  *     provider host; the door (_shared/ai-provider.js providerFetch) is evaluated: without a ceiling,
  *     with the bucket refusing, and with the database silent, NOTHING reaches the provider.
- *  ③ monitor-run put the provider's error body into monitor_runs.error_detail (its owner reads it).
+ *  ③ The area-monitor runner (since retired) put the provider's error body into a run record its owner read.
  *     ⇒ providerFail carries a status and a length and has no argument a body could travel through,
  *       and no function concatenates a `.text()` into an error it builds.
  *  ④ No function holding a paid key except atlas-embed had a project-wide ceiling, and atlas-embed's
@@ -136,7 +136,8 @@ function runEdge(fn, requests, o) {
 
 /* ══ ① the model table ═══════════════════════════════════════════════════════════════════════ */
 test('edge-spend-and-models ① one model table, and every chat caller reads it', () => {
-  assert.ok(CHAT.length >= 5, 'the discovery sees the chat callers: ' + CHAT.join(', '));
+  /* a guard that the discovery still sees, not a policy: it moved 5 → 4 when the area-monitor runner was removed (monitors-retire) */
+  assert.ok(CHAT.length >= 4, 'the discovery sees the chat callers: ' + CHAT.join(', '));
   const T = P.PROVIDER_DEFAULT_MODEL;
   assert.deepEqual(Object.keys(T).sort(), ['anthropic', 'gemini', 'openai']);
   assert.equal(T.openai, P.OPENAI_DEFAULT_MODEL, 'the OpenAI row IS the constant, not a second spelling of it');
@@ -163,8 +164,8 @@ function modelIdsSpelled(codeOf = (f) => CODE.get(f)) {
 }
 
 test('edge-spend-and-models ① the literal ban is not vacuous — an id written back into a function is found', () => {
-  const back = (f) => f === 'monitor-run' ? CODE.get(f) + '\nconst m = "gemini-2.0-flash";' : CODE.get(f);
-  assert.deepEqual(modelIdsSpelled(back), ['monitor-run: gemini-2.0-flash']);
+  const back = (f) => f === 'news-ingest' ? CODE.get(f) + '\nconst m = "gemini-2.0-flash";' : CODE.get(f);
+  assert.deepEqual(modelIdsSpelled(back), ['news-ingest: gemini-2.0-flash']);
 });
 
 /* ══ ② the door ═════════════════════════════════════════════════════════════════════════════ */
@@ -178,7 +179,8 @@ function bareProviderCalls(code) {
 }
 
 test('edge-spend-and-models ② no function that holds a provider key reaches a provider except through the door', () => {
-  assert.ok(KEYED.length >= 6, 'the discovery sees the keyed functions: ' + KEYED.join(', '));
+  /* a guard, not a policy: 6 → 5 with the area-monitor runner's removal (monitors-retire) */
+  assert.ok(KEYED.length >= 5, 'the discovery sees the keyed functions: ' + KEYED.join(', '));
   const problems = [];
   for (const f of KEYED) {
     const code = CODE.get(f);
@@ -264,25 +266,34 @@ test('edge-spend-and-models ③ providerFail has no way to carry a body, and no 
   const offenders = [];
   for (const f of FUNCTIONS) for (const l of bodyInError(CODE.get(f))) offenders.push(f + ': ' + l.trim().slice(0, 140));
   assert.deepEqual(offenders, []);
-  /* the forms it forbids, exactly as monitor-run and news-ingest wrote them before this round */
+  /* the forms it forbids, exactly as the area-monitor runner (since retired) and news-ingest wrote them before this round */
   assert.equal(bodyInError('    if (!r.ok) throw new Error("openai " + r.status + " " + (await r.text().catch(() => "")).slice(0, 200));').length, 1);
   assert.equal(bodyInError('    if (!r.ok) return { status: r.status, error: (await r.text().catch(() => "")).slice(0, 300) };').length, 1);
   assert.equal(bodyInError('    if (!r.ok) throw providerFail(r.status, await bodyLength(r));').length, 0);
 });
 
 /* ══ ④ every keyed function has a project-wide ceiling, and the scheduled ones agree with pg_cron ═ */
-/* The cron jobs as the migrations leave them: the LAST migration that schedules a job name wins. */
+/* The cron jobs as the migrations leave them: the LAST migration that schedules a job name wins, and
+   (monitors-retire) a later `cron.unschedule('<name>')` removes it — the area monitors' job was the first
+   to be taken away, and reading only the schedules would have kept it alive here forever. Within a file
+   the calls are replayed in text order. `parsed` counts every schedule read, so the caller can prove the
+   parser saw the migrations at all without a hand-written number of jobs. */
 function cronJobs() {
   const dir = join(ROOT, 'supabase/migrations');
   const jobs = new Map();
+  let parsed = 0;
   for (const f of readdirSync(dir).filter((x) => x.endsWith('.sql')).sort()) {
     const sql = read(join(dir, f));
-    for (const m of sql.matchAll(/cron\.schedule\(\s*'([^']+)'\s*,\s*'([^']+)'\s*,\s*\$cmd\$([\s\S]*?)\$cmd\$/g)) {
-      const target = (/functions(?:\/v1)?\/([a-z0-9-]+)'/.exec(m[3]) || /\/([a-z0-9-]+)'\s*,/.exec(m[3]) || [])[1] || '';
-      const stages = (/"stages"\s*:\s*\[([^\]]*)\]/.exec(m[3]) || [])[1];
-      jobs.set(m[1], { target, runsPerDay: runsPerDay(m[2]), stages: stages === undefined ? null : [...stages.matchAll(/"([a-z]+)"/g)].map((x) => x[1]), migration: f });
+    for (const m of sql.matchAll(/cron\.unschedule\(\s*'([^']+)'\s*\)|cron\.schedule\(\s*'([^']+)'\s*,\s*'([^']+)'\s*,\s*\$cmd\$([\s\S]*?)\$cmd\$/g)) {
+      const [, gone, name, expr, cmd] = m;
+      if (gone) { jobs.delete(gone); continue; }
+      parsed++;
+      const target = (/functions(?:\/v1)?\/([a-z0-9-]+)'/.exec(cmd) || /\/([a-z0-9-]+)'\s*,/.exec(cmd) || [])[1] || '';
+      const stages = (/"stages"\s*:\s*\[([^\]]*)\]/.exec(cmd) || [])[1];
+      jobs.set(name, { target, runsPerDay: runsPerDay(expr), stages: stages === undefined ? null : [...stages.matchAll(/"([a-z]+)"/g)].map((x) => x[1]), migration: f });
     }
   }
+  Object.defineProperty(jobs, 'parsed', { value: parsed });
   return jobs;
 }
 /* Minute and hour fields only — every schedule this project has. Anything else is refused rather
@@ -298,7 +309,7 @@ function runsPerDay(expr) {
 
 test('edge-spend-and-models ④ every function that reads a provider key exports a project-wide ceiling named after itself', () => {
   const jobs = cronJobs();
-  assert.ok(jobs.size >= 4, 'the cron migration is read: ' + [...jobs.keys()].join(', '));
+  assert.ok(jobs.parsed > 0 && jobs.size > 0, 'the cron migrations are read: ' + jobs.parsed + ' schedule(s), in force ' + [...jobs.keys()].join(', '));
   const problems = [];
   for (const f of KEYED) {
     const { spend } = runEdge(f, [], { env: {} });
@@ -430,8 +441,8 @@ test('edge-spend-and-models ⑥ every code file in a function directory is deplo
     }
   }
   assert.deepEqual(problems, []);
-  /* the graph is real: ai-proxy reaches the door, monitor-run its logic, atlas-embed its core */
+  /* the graph is real: ai-proxy reaches the door and its own split files, atlas-embed its core */
   assert.ok(REACH.get('ai-proxy').some((x) => x.endsWith('ai-provider.js')));
-  assert.ok(REACH.get('monitor-run').some((x) => x.endsWith('logic.mjs')));
+  assert.ok(REACH.get('ai-proxy').some((x) => x.endsWith('ask.ts')));
   assert.ok(REACH.get('atlas-embed').some((x) => x.endsWith('core.js')));
 });

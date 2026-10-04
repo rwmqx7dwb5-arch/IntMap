@@ -181,5 +181,5 @@ test('#R172 the count of renderer-independent modules only goes up', () => {
 
 test('#R173 two more modules stopped touching the renderer', () => {
   assert.deepEqual(rawMapUses('street-view.js'), [], 'street-view is engine-only');
-  assert.deepEqual(rawMapUses('monitors.js'), [], 'monitors is engine-only');
+  /* (monitors-retire) the other, js/monitors.js, was removed with the area monitors */
 });

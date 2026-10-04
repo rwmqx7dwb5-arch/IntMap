@@ -57,11 +57,24 @@ function liveRuns() {
 }
 
 /* ── ① every spelling the dispatch answered still reaches the same case ─────────────────────── */
+/* ⚠ (monitors-retire) A CAPABILITY REMOVED ON PURPOSE IS DECLARED HERE, WITH ITS REASON — and only here. The
+   photograph exists to catch a refactor that loses a spelling by accident, and an accidental loss and an approved
+   removal look identical from the dispatch, so the removal has to be said in words. Each entry must really be gone
+   (checked below: it resolves to no case and no registry row), so the exemption cannot outlive its reason; delete
+   the line if the capability ever comes back. */
+const REMOVED_ON_PURPOSE = {
+  monitor: 'the area monitors were removed outright, module and server, with the user\'s approval (2026-10-04, monitors-retire); the capability had answered only FEATURE_WITHDRAWN since #R231',
+};
 test('atlas-one-declaration ①: all 368 dispatch spellings of the photograph reach the case they reached before', () => {
   const runs = liveRuns(), live = new Set(runs.flat());
   let n = 0;
   for (const before of BEFORE.dispatchRuns) {
     for (const sp of before) {
+      if (Object.prototype.hasOwnProperty.call(REMOVED_ON_PURPOSE, sp)) {
+        assert.ok(!live.has(sp) && !CAPS.ofSpelling(sp), `'${sp}' is declared removed on purpose but still reaches a case — delete its REMOVED_ON_PURPOSE line`);
+        n++;
+        continue;
+      }
       const to = CAPS.dispatchName(sp);
       assert.ok(before.includes(to), `'${sp}' now reaches '${to}', which was not in its case before (${before.join(', ')})`);
       assert.ok(live.has(to), `'${sp}' resolves to '${to}', which no case answers any more`);

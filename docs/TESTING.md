@@ -83,11 +83,11 @@ share of the map, every tap target ≥ 44 px, legends invisible until the chip, 
 candidates ending in «Ask Atlas»).
 
 
-**The tiers, measured** (`node scripts/test-budget.mjs`, 2026-10-03): the **core** tier that
-gates a push is **6 spec files / 0.4 min** against a ceiling of 0.4 min — that is the FIXED gate; a PR
+**The tiers, measured** (`node scripts/test-budget.mjs`, 2026-10-04): the **core** tier that
+gates a push is **5 spec files / 0.3 min** against a ceiling of 0.3 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**154 measured spec files / 87.2 min** of serial browser time against a ceiling of 87.5 min (the 0.3 min between
+**153 measured spec files / 87.0 min** of serial browser time against a ceiling of 87.5 min (the 0.5 min between
 them is the room `suite-time-room` made for the specs arriving after it — see below); and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
@@ -1013,7 +1013,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **148 spec files** against core's 6 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **148 spec files** against core's 5 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
@@ -2229,9 +2229,8 @@ table), and by reading it only where the fact is a spelling.
   refuses a redirected POST; `followRedirects` follows same-origin https hops, refuses a different
   host / scheme / port and a loop past `MAX_REDIRECTS`, and hands the hop to the caller's
   `allowRedirect`. ai-proxy: `settle()` runs immediately before the success return, `refund()` returns
-  early for a call that did not charge, the body goes through `readCapped`; monitor-run reads its
-  body only after `auth.getUser()` and returns no database error text; the two functions cap the
-  provider answer at one equal number; no Edge Function carries the Gemini key in a query string; the
+  early for a call that did not charge, the body goes through `readCapped`; it caps the provider answer through the shared door's one
+  number (the area-monitor runner it was once checked beside is removed); no Edge Function carries the Gemini key in a query string; the
   ledger migration refunds with one `DELETE … RETURNING` guarded by `succeeded`; and ⑦ reads
   `node_modules/cesium` for the evaluation that still requires `'unsafe-eval'` — the day it is gone
   the test demands the directive be removed.
@@ -2990,7 +2989,7 @@ reader here for this list; adding a rule means adding a row.
 | `arch-split` | the current-state spec's map (`Architecture.md`) and its chapters (`docs/architecture/`, discovered by `scripts/architecture-spec.mjs`) disagree: a chapter the map's table does not name, a row pointing at a file without that `## N.` heading, a chapter the sweep did not read, or a chapter written back into the map. Green prints how many chapters and lines were read — a rule reading the map alone would read no chapter text |
 | `arch-rounds` | the spec — `Architecture.md` and every chapter under `docs/architecture/`, each with its own line numbers — carries a round or pull-request reference, of any number of digits (`R1000` used to slip past a `R\d{1,3}` needle) — the history belongs in `dev-notes/` |
 | `cesium` | a document describes the second engine as withdrawn while it ships |
-| `monitors` | a document presents the withdrawn Area Monitors entry point as still clickable |
+| `monitors` | the area-monitors module and runner are gone from the tree, and a document names one of their removed pieces (the module, the runner, its tables or functions, a Monitors tab) on a line that does not say it is gone |
 | `news-path` | the privacy policy describes a news path the switches in `js/app-body.js` do not take |
 | `csp` | the CSP as `index.html` writes it is not the CSP the documents describe |
 | `db-tables` | the migrations, the pgTAP structure test and the documents disagree about the tables |
@@ -3296,7 +3295,7 @@ rule of this shape:
 What it still does not read, written down rather than papered over:
 
 - **A bare English numeral that attaches to nothing.** `docs/SECURITY-ARCHITECTURE.md` §5 opens
-  "There are twenty-two Edge Functions, and this table used to list two." A statement of how many
+  "There are twenty-one Edge Functions, and this table used to list two." A statement of how many
   there are and a sentence of the document's own history sit in **one sentence**, and nothing
   structural separates them. It was tried at section scope and at paragraph scope and measured:
   widening far enough to catch the first turns the second into a failure. The counted Japanese
@@ -4073,9 +4072,9 @@ Docker + the Supabase CLI (`supabase db start && supabase db reset --local && su
   on `ai_usage` and `ai_turns`; `record_ai_usage` adds two requests of one turn to both rows and never
   changes `count`; zero calls write nothing and negatives read as 0; an account not charged today gets
   a row with `count` 0; only service_role may call it. Its source-side pair is
-  `tests/ai-one-ledger-checks.test.mjs`, which EVALUATES `ai-proxy` and `monitor-run` (usage
-  normalisation, the Anthropic cache breakpoints, «Run now» charging the reader's allowance, the
-  bucket key).
+  `tests/ai-one-ledger-checks.test.mjs`, which EVALUATES `ai-proxy` (usage normalisation, the
+  Anthropic cache breakpoints, the ledger's doors, the bucket key; the area-monitor runner it also
+  evaluated was removed).
 - **`tests/process-database-checks.test.mjs`** (`node --test`, #R507) — the source-side pair: the migrations
   end with `profiles_public` as a table, the drop of the old view is guarded on `relkind` so the
   migration stays re-runnable, only `SELECT` is ever granted, the PostgREST schema reload sits
@@ -4086,8 +4085,7 @@ Docker + the Supabase CLI (`supabase db start && supabase db reset --local && su
   CI (grants `authenticated` the blanket table-level `UPDATE` on `profiles`) and then asserts the
   `tg_profiles_guard_privcols` trigger still freezes `is_admin`/`is_pro`/`plan`/`email` while
   `display_name` stays editable; also asserts the least-privilege column/table grants, the no
-  world-readable-profiles invariant, that monitor results are unforgeable at the grant layer, and
-  the public-write length caps. (This is the case vanilla CI could not otherwise reproduce.)
+  world-readable-profiles invariant, and the public-write length caps. (This is the case vanilla CI could not otherwise reproduce.)
 - **`tests/auth-security-checks.test.mjs`** (`node --test`, #R155) — source regression guards over
   `index.html` + `admin.html`: passkeys wired, `delete-account` called with `confirm`, reset/
   change/logout-all present, HIBP k-anonymity sends only a 5-char prefix, GA `page_location`
@@ -4839,7 +4837,7 @@ migration の既定値・CHECK を照合する。③ ページの読み手と実
 ### `tests/widget-watch-unify-checks.test.mjs` (widget-watch-unify)
 5 本・ネットワーク無し。ウィジェットの定義を**読み込んで描画**する。① 「見守る場所」のカードは本物の `js/place-watch.js`
 （代役のアカウントとフィードで `checkNow`）の `digestData` の新着だけを、その文で並べ、ボタンはアカウントの「見守る場所」を
-開く。旧 ID `intmap.monitors` はこのカードの別名で、板のどのカードも `window.IntMapMonitors` を読まない。② 「監視は
+開く。旧 ID `intmap.monitors` はこのカードの別名で、板のどのカードも撤去済みの `window.IntMapMonitors` を読まない。② 「監視は
 サイドバーにあります」と未登録の `tab.monitors` を呼ぶ経路が `js/` に無い。③ 「保存地点の警報」と見守りが同じ地点に
 同じ警報を出す（区域が地点を含むものだけ。周辺の矩形なら 3 件出ていた）。④ 「国のウォッチ」は出荷している Natural Earth
 10 m で、ピンの地点がその国の中にある見出しだけを出す（TR・RU・NO・NE に無関係な見出しが出ない・JP と FR に自国の見出し・

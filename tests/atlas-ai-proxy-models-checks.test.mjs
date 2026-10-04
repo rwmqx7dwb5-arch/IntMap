@@ -113,7 +113,7 @@ test('R722 ① every read of the request model/provider sits behind the server-s
   assert.match(op.slice(0, 400), /if \(!isDev\) return json\(\{ error: "not_found" \}, 404\);/);
 
   /* and the whole grant is decided from the immutable account id, not from an address or a plan. */
-  /* (ai-one-ledger) decided in _shared/ai-ledger.js accountFor (shared with monitor-run), from the id */
+  /* (ai-one-ledger) decided in _shared/ai-ledger.js accountFor (the one ledger every charge goes through), from the id */
   assert.match(PROXY, /const isDev = account\.isDev;/);
   assert.match(CODE('supabase/functions/_shared/ai-ledger.js'), /const isDev = devUserIds\(env\)\.includes\(id\.toLowerCase\(\)\)/);
 });
@@ -317,7 +317,7 @@ test('R147 #13 free AI quota is 10/day on the client and server', async () => {
   const { PLANS } = await import('../supabase/functions/_shared/plans.js');
   const { PLAN_LIMITS } = await import('../supabase/functions/_shared/ai-ledger.js');
   assert.equal(PLANS.free.aiTurnsPerDay, 10, 'server free plan = 10 questions a day (_shared/plans.js)');
-  assert.equal(PLAN_LIMITS.free, 10, 'PLAN_LIMITS.free (ai-one-ledger: shared with monitor-run) reads the plan table');
+  assert.equal(PLAN_LIMITS.free, 10, 'PLAN_LIMITS.free (ai-one-ledger) reads the plan table');
   assert.ok(!/up to 30 uses per day/.test(html), 'no stale "30 uses per day" copy');
   assert.ok(!/1日30回/.test(html), 'no stale JP "1日30回"');
 });

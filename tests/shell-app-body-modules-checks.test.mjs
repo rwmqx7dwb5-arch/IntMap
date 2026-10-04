@@ -282,7 +282,8 @@ test('R200 ⑤: the core keeps shrinking, and the ceiling follows the floor DOWN
 //   • the 5-language UI string table           → js/i18n.js
 //   • the built-in news gazetteer              → js/gazetteer.js
 //   • dashboard cards + data-source registry   → js/reference-data.js
-//   • IntMapLayerPreviews / Maddison / HistStates / HistId / IntMapMonitors → js/*.js
+//   • IntMapLayerPreviews / Maddison / HistStates / HistId → js/*.js (a fifth, the area monitors,
+//     was later retired outright)
 //
 // The modules' BODIES were moved byte-identically; what used to be closure variables became
 // explicit FACTORY PARAMETERS. That is only sound while those variables are assigned exactly
@@ -314,7 +315,7 @@ const HTML_CODE = code(html);
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */
 test('R162 #1 index.html loads every extracted file, before the main script body', () => {
   const need = ['js/i18n.js', 'js/gazetteer.js', 'js/reference-data.js',
-    'js/layer-previews.js', 'js/history.js', 'js/monitors.js'];
+    'js/layer-previews.js', 'js/history.js'];
   // The app has small DOMContentLoaded handlers early in <head> (theme, stale-build notice);
   // the MAIN body is the last one — that is what must run after the module files are loaded.
   const mainAt = html.lastIndexOf("window.addEventListener('DOMContentLoaded'");
@@ -338,7 +339,7 @@ test('R162 #2 the moved code is GONE from index.html (no stale duplicate copy)',
   for (const needle of [
     'const i18n={', 'const _BUILTIN_GZ=[', 'const _EXTRA_GZ=[',
     'const DEFAULT_DASH_CARDS=[', 'const DATA_SOURCES=[',
-    'window.IntMapMonitors=(function(){', 'window.IntMapMaddison=(function(){',
+    'window.IntMapMaddison=(function(){',
     'window.IntMapHistStates=(function(){', 'window.IntMapHistId=(function(){',
     'window.IntMapLayerPreviews=(function(){',
   ]) assert.ok(!html.includes(needle), `index.html no longer defines ${needle}`);
@@ -356,7 +357,7 @@ test('R162 #3 index.html binds each extracted global back into the closure', () 
   assert.match(rd('js/app-body.js'), /^import \{ IntMapRefData \} from '\.\/reference-data\.js';$/m, '…from the binding js/reference-data.js exports');
 });
 
-/* spelling kept: browser script (js/history.js, js/monitors.js, js/layer-previews.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
+/* spelling kept: browser script (js/history.js, js/layer-previews.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
 test('R162 #4 each factory is instantiated with exactly its declared dependencies', () => {
   /* (module-graph) the registry is gone: each factory is `export function name(params){` and the shell calls
      it by the name it imports it under — the dependencies it is handed are unchanged */
@@ -364,9 +365,6 @@ test('R162 #4 each factory is instantiated with exactly its declared dependencie
     'window.IntMapMaddison=maddison();': ['js/history.js', 'maddison', []],
     'window.IntMapHistStates=histStates(countryStats);': ['js/history.js', 'histStates', ['countryStats']],
     'window.IntMapHistId=histId(countryStats);': ['js/history.js', 'histId', ['countryStats']],
-    // (#R163) the private host object became the shared IM_HOST and the parameter was renamed H → HOST
-    // (#R180) …and the renderer parameter is gone: no module receives the raw handle any more.
-    'window.IntMapMonitors=monitors(IM_HOST);': ['js/monitors.js', 'monitors', ['HOST']],
     /* (#R225) one argument fewer: geoLayersDB went with the geopolitics layers it described */
     'window.IntMapLayerPreviews=layerPreviews(countryStats,loadCountryData);':
       ['js/layer-previews.js', 'layerPreviews', ['countryStats', 'loadCountryData']],
@@ -418,25 +416,20 @@ test('R162 #5 INVARIANT: every value passed to a factory is assigned exactly onc
   assert.ok(/function\s+loadCountryData\s*\(/.test(HTML_CODE), 'loadCountryData is a function declaration');
 });
 
-/* spelling kept: browser script (js/monitors.js) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
-test('R162 #5b INVARIANT: mutable host values reach monitors as GETTERS, never copies', () => {
-  // The bug this guards: js/monitors.js read `radiusItems` via `typeof radiusItems!=='undefined'`.
+/* spelling kept: page markup / inline script (index.html) — only a browser document runs it. */
+test('R162 #5b INVARIANT: mutable host values reach the modules as GETTERS, never copies', () => {
+  // The bug this guards: the area-monitors module (since retired) read `radiusItems` via `typeof radiusItems!=='undefined'`.
   // Once moved out of the closure that guard silently evaluated false, so activeArea() fell
   // through to "no area selected" — the radius→monitor path was lost with NO error. These four
   // are all rebound at runtime, so a captured parameter would reintroduce exactly that failure.
-  // (#R163) these four moved from monitors' own inline host object into the shared IM_HOST, and the
-  // module parameter was renamed H → HOST. Same invariant, one object: still getters, never copies.
+  // (#R163) these four moved from that module's own inline host object into the shared IM_HOST, which
+  // every module reads. Same invariant, one object: still getters, never copies. (monitors-retire) The
+  // module that first paid for it is gone; the invariant is IM_HOST's, so it is asked of IM_HOST.
   const host = html.slice(html.indexOf('const IM_HOST={'), html.indexOf('const IM_HOST={') + 3000);
   for (const [prop, src] of [['lang', 'currentLang'], ['user', 'currentUser'], ['mode', 'currentMode'], ['radiusItems', 'radiusItems']]) {
     assert.ok(new RegExp(`get\\s+${prop}\\(\\)\\s*\\{\\s*return\\s+${src};`).test(host),
       `${prop} must be a live getter over ${src}, not a captured value`);
   }
-  const mon = rd('js/monitors.js');
-  for (const stale of ["typeof radiusItems!=='undefined'", "typeof currentLang!=='undefined'", "typeof currentUser!=='undefined'", "typeof currentMode!=='undefined'"]) {
-    assert.ok(!mon.includes(stale), `monitors.js must not probe the vanished closure binding (${stale})`);
-  }
-  assert.ok(mon.includes('HOST.radiusItems') && mon.includes('HOST.lang') && mon.includes('HOST.user') && mon.includes('HOST.mode'),
-    'monitors.js reads the mutable state through the host interface');
 });
 
 /* spelling kept: browser script (js/i18n.js, js/gazetteer.js, js/reference-data.js, …) — it runs against window, the DOM and the live map; the claim is what its code says or calls. */
@@ -450,7 +443,7 @@ test('R162 #6 the extracted files define the globals the app depends on', () => 
     'reference-data.js sets window.IntMapRefData');
   /* (module-graph) «extends the registry without clobbering it» → the registry is gone: the file does not
      touch it at all, and exports its factories instead */
-  for (const [f, names] of [['js/layer-previews.js', ['layerPreviews']], ['js/history.js', ['maddison', 'histStates', 'histId']], ['js/monitors.js', ['monitors']]]) {
+  for (const [f, names] of [['js/layer-previews.js', ['layerPreviews']], ['js/history.js', ['maddison', 'histStates', 'histId']]]) {
     assert.doesNotMatch(code(rd(f)), /\bIntMapModules\b/, `${f} does not touch the retired window.IntMapModules registry`);
     for (const n of names) assert.match(rd(f), new RegExp(`^export function ${n}\\(`, 'm'), `${f} exports its ${n} factory`);
   }
@@ -493,7 +486,6 @@ test('R162 #8 index.html actually shrank and the CSS really moved', () => {
   // tokens live in the extracted stylesheet", not "the sidebar is 440 px wide" — pinning
   // the value made a legitimate width change fail a split-integrity test (#R203's trap).
   assert.match(css, /--sidebar-w:\s*\d+(px|vw)/, 'the design tokens moved with it');
-  assert.ok(css.includes('.mon-'), 'monitor styles stayed in CSS (no CSS-in-JS template literal — #R152)');
 });
 
 /* spelling kept: stylesheet rule (css/intmap.css) — Node has no cascade or layout to evaluate it in. */

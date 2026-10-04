@@ -94,7 +94,6 @@ import { mapTooltip } from './map-tooltip.js';
 import { geojsonUpload, labelPopup, layerPresets, layerRegistry, layerSidebar, share, ticker, viewHash } from './map-ui.js';
 import { mobileMapInput } from './mobile-map-input.js';
 import { layoutReflow, mobileUI } from './mobile-ui.js';
-import { monitors } from './monitors.js';
 import { netHealth } from './net-health.js';
 import { newsPulse } from './news-pulse.js';   /* (news-intelligence) the News pulse row and its doors; the body (js/news-intel.js) is lazy */
 import { newsContext } from './news-context.js';
@@ -278,7 +277,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      lost the Area-Monitors radius capture exactly that way). So a split-out module is a FACTORY,
      called at the spot the original block occupied:
          window.IntMapX = window.IntMapModules.x(map, IM_HOST);
-     and it reads everything it needs from this one object. #R162 gave js/monitors.js a private host
+     and it reads everything it needs from this one object. #R162 gave the (since retired) area-monitors module a private host
      object; #R163 promotes it to the project-wide convention so the next module costs nothing.
 
      EVERY member is a getter, deliberately, for two independent reasons:
@@ -4183,19 +4182,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      Real gridded-census data, not a country-share guess: the WorldPop Global Project population raster
      (~100 m grid, 2020) summed over the exact polygon by the WorldPop stats API (api.worldpop.org, CORS-open,
      async task polling). Rings are decimated to ≤80 vertices for the GET URL; results are cached per shape. */
-  /* ==================== (#R141) AREA MONITORS — saved area watches + evidence-backed change reports ====================
-     Additive & self-contained. Lives inside the main app scope so it can read currentLang / map / radiusItems /
-     currentUser / requireLogin / DrawTool / IntMapRegionResolver / IntMapOutline. Data + auth via window.sb (RLS
-     scopes every read to the owner). The server-side runner is the monitor-run Edge Function; this module only
-     CREATES/EDITS monitors and DISPLAYS runs/evidence/reports — it never fabricates a run or a report. */
-  /* (#R239) `tabMonitors` moved to js/locales/ui.*.js with every other keyed string — the `I18({en,jp,
-     de,ru,es})` helper that used to sit here was five languages by construction, which is the defect
-     scripts/i18n-keyed-audit.mjs exists to make impossible. */
-  /* (#R162) moved to js/monitors.js — see Architecture.md §3.1.
-     (#R163) its private host object became the shared IM_HOST, which is a superset of the ten values
-     this module reads (lang/user/mode/radiusItems live, plus the six helpers). */
-  window.IntMapMonitors=monitors(IM_HOST);
-
   /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
   popArea(IM_HOST);
 

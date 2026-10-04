@@ -3,13 +3,14 @@
 // ----------------------------------------------------------------------------
 //  WHAT WAS FOUND (audit of supabase/functions, 2026-09-29):
 //    ① The default model of each provider was spelled in five functions, and the five had drifted:
-//       ai-proxy said gemini-3.5-flash while monitor-run / news-ingest / refresh-news / who-don said
+//       ai-proxy said gemini-3.5-flash while the area-monitor runner (since retired) / news-ingest /
+//       refresh-news / who-don said
 //       gemini-2.0-flash, and every Anthropic default was claude-3-5-haiku-latest. A default spelled
 //       in five places is five defaults (.agents/rules/no-ad-hoc-hardcoding.md §1 «既にある仕組みの写し»).
 //    ② Three private copies of «fetch a provider under a deadline» (ai-proxy, its unwired backup,
-//       monitor-run), and three functions calling the provider with a bare fetch and no byte ceiling.
-//    ③ monitor-run concatenated `r.text().slice(0,200)` — the provider's own error body — into the
-//       Error it stored in monitor_runs.error_detail, which the monitor's owner reads. The body is not
+//       the area-monitor runner), and three functions calling the provider with a bare fetch and no byte ceiling.
+//    ③ the area-monitor runner concatenated `r.text().slice(0,200)` — the provider's own error body —
+//       into the Error it stored for the monitor's owner to read. The body is not
 //       a controlled surface: it can echo the request, name an organisation or carry an account id.
 //       ai-proxy had the same shape and #R801 cut it to a length; the other four still carried it.
 //    ④ No function that holds a paid key except atlas-embed had a PROJECT-WIDE ceiling. ai-proxy
@@ -38,8 +39,7 @@ import { makeLimiter, restRpcClient } from "./rate-limit.js";
 
 /* ══ ① THE MODEL TABLE ═════════════════════════════════════════════════════════════════════════
    The canonical place for «which model answers when nobody chose one». Every function that calls a
-   chat model reads its default from here; a function-specific secret (MONITOR_AI_MODEL,
-   NEWS_GEO_MODEL, WHO_DON_MODEL, …) and then the shared AI_MODEL secret still win over it, exactly
+   chat model reads its default from here; a function-specific secret (NEWS_GEO_MODEL, WHO_DON_MODEL, …) and then the shared AI_MODEL secret still win over it, exactly
    as before — this table is only what answers when both are unset.
 
    (#R736) OpenAI = GPT-5.6 Terra, on the user's instruction, for every reader and the developer
@@ -70,8 +70,8 @@ export const PROVIDER_DEFAULT_MODEL = Object.freeze({
    (#R801) The ceiling on an answer: the largest this project asks for is a few hundred KB of JSON
    plus citations; 16 MiB is two orders of magnitude above that and one below the isolate's memory.
    Expires if a task starts asking for binary output (images, audio), which none does today.
-   These used to be written in ai-proxy and monitor-run separately and held equal by a test; they
-   are one number now. */
+   These used to be written in ai-proxy and the area-monitor runner separately and held equal by a
+   test; they are one number now. */
 export const PROVIDER_TIMEOUT_MS = 55000;
 export const PROVIDER_MAX_BYTES = 16 * 1024 * 1024;
 
@@ -82,7 +82,7 @@ export const PROVIDER_HOSTS = Object.freeze(["api.openai.com", "api.anthropic.co
 
 /* ══ ③ A PROVIDER FAILURE CARRIES A STATUS AND A LENGTH ══════════════════════════════════════════
    ⚠ THE UPSTREAM BODY IS NOT OURS TO REPEAT. Every one of these functions stores or returns what a
-   failure says — monitor_runs.error_detail (the owner reads it), news_ingest_runs.notes (admins),
+   failure says — news_ingest_runs.notes (admins),
    a scheduler's JSON answer, a console line. A provider error body can echo the prompt, name the
    organisation or project, or carry an account identifier. What anyone downstream can act on is the
    status; whether there was a body at all is the only other part worth keeping.

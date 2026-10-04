@@ -87,7 +87,6 @@ IntMapLang.define('en', { ui: {
       aiSumBtn:"Summarize this area with AI", popInArea:"Population in this area", popCalcing:"Calculating population…", popFail:"Population lookup failed — try again.", newsInArea:"News in this area", elevProfile:"Elevation profile", finalizeMeas:"Keep on map", aiSumTitle:"Area briefing", aiSumSub:"{n} news pins in the selected area", aiSumNoArea:"Draw an area or place a circle first.", aiSumNoNews:"No news pins inside this area.",
       aiVisHead:"AI change detection", aiVisBtn:"Detect changes", aiVisTitle:"Satellite change report", aiVisSub:"Comparing {a} → {b}", aiVisBefore:"Before", aiVisAfter:"After", aiVisCapturing:"Capturing imagery…", aiVisPickDates:"Pick two dates to compare.", aiVisNeedsDated:"Switch to a date-selectable provider (MODIS / VIIRS / Sentinel-2) in Satellite mode.", aiVisCapFail:"Couldn't capture the map imagery." 
 ,
-      tabMonitors:'Monitors',
       /* ══ ⚠⚠⚠ (#R239) MOVED HERE — THE KEYED TABLE HAD SIX HOMES AND FIVE OF THEM SPOKE
          FIVE LANGUAGES ═══════════════════════════════════════════════════════════════════════
          js/i18n-late.js, js/data-layers.js, js/wheel-zoom.js, js/workspace.js, js/app-body.js and

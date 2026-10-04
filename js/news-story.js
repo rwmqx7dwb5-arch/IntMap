@@ -283,7 +283,7 @@ export function newsStory(HOST) {
     const e = ensurePop(); e.style.display = 'block';
     try { HOST.bringToFront(e); } catch (_) { }
     /* on a phone the event reader holds the sheet at full height over the map the story is drawn on — lower it to
-       its peek (js/monitors.js does the same for a card that belongs to the map) */
+       its peek */
     try { if (window.__setDetent && window.IntMapDevice.compact()) window.__setDetent('peek'); } catch (_) { }
     if (e.getAttribute('data-dragged') !== '1') {
       try {

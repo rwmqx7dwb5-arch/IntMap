@@ -160,21 +160,6 @@ export default [
     },
   },
   {
-    row: ['system.monitor',             'monitor',        '',                                                            'system',  'none',    '',                       '',                    'read',    'none',   '',         ''],
-    /* DELIBERATELY not offered to the planner, with the reason and the proof (the only way to be absent from the catalogue) */
-    policy: { withdrawn: { why: '#R231 withdrew area monitors 「一旦撤去」 — the dispatch case exists only to answer FEATURE_WITHDRAWN, and docs/AREA-MONITORS.md is the record of the design that is waiting', proofCode: 'FEATURE_WITHDRAWN' } },
-    schema: () => (noArgs('monitor')), /* withdrawn (#R231) — the case answers FEATURE_WITHDRAWN */
-      /* (#R231) 「Monitorsは…一旦撤去」 — the ~120-line body is deleted (it is in git; the file has
-         a line ceiling). It ended in IntMapOS.exec('tab.monitors'), which is no longer registered,
-         so it would have replied "✓ Your monitors" and opened nothing — #R141's own rule forbids
-         claiming a result that did not happen. Nothing can reach this case now; if one ever does,
-         it says so. Restoring the feature: this case, the catalogue note below, the tab button in
-         index.html, and the two routes in js/session-tabs.js. See DEV-NOTES #R231 §Monitors. */
-    async run(a, dctx, K) { const R = K.R, warn = K.warn, HOST = K.HOST;
-      return R(false, warn(IntMapLang.t(HOST.lang,'Area monitors are not available right now.','エリア監視は現在ご利用いただけません。','Gebietsmonitore sind derzeit nicht verfügbar.','Мониторы районов сейчас недоступны.','Los monitores de área no están disponibles por ahora.')), {meta:{code:'FEATURE_WITHDRAWN',category:'capability',retryable:false,userGoalSatisfied:false,produced:[]}});
-    },
-  },
-  {
     row: ['system.control',             'control',        '',                                                            'system',  'control', 'ui.any',                 'panel',               'session', 'none',   '',         ''],
     doc: [
       { in: 'system.control', text: 'UNIVERSAL fallback for anything not listed above (so EVERY operation is possible): {"type":"control","target":"<on-screen control name or #id>","value"?:str|num,"on"?:bool} — finds & clicks/sets/toggles any button, checkbox, dropdown, slider, date picker or input. Useful addressable patterns (every UI element is named, incl. per-layer micro-controls): "favorite: <layer name>" (★), "date: <layer name>" with value "YYYY-MM-DD" (change a dated raster layer\'s date — e.g. 「気温レイヤーの日付を2023-06-01に」), "close legend: <name>", "opacity: <layer>". Prefer a specific action; otherwise ALWAYS use "control" rather than refusing.\n' },

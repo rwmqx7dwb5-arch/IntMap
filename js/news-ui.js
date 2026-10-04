@@ -525,7 +525,6 @@ export function newsUi(HOST){
     /* Hide all panels first (pin-mode toggle now lives inside #ai-geocode-row, #28) */
     feed.style.display='none'; if(cfeed) cfeed.style.display='none'; dash.style.display='none'; comm.style.display='none'; if(afeed) afeed.style.display='none'; filterToggle.style.display='none';
     { const df=document.getElementById('docked-feed'); if(df) df.style.display='none'; }   /* (#R238) */
-    { const _mf=document.getElementById('monitors-feed'); if(_mf) _mf.style.display='none'; }   /* (#R141) hide Monitors feed unless its tab is active */
     { const gr=document.getElementById('ai-geocode-row'); if(gr) gr.style.display='none'; }
     /* Stats compare panel only belongs on the Stats tab (#26) */
     if(HOST.mode!=='stats'){ const scf=document.getElementById('stats-compare-fixed'); if(scf){ scf.classList.remove('show'); scf.innerHTML=''; } feed.style.paddingBottom=''; }
@@ -539,7 +538,7 @@ export function newsUi(HOST){
        shared with News/Info); leaving Countries cancels an active pick so the crosshair/handler never lingers. */
     { const cpk=document.getElementById('csearch-pick'); if(cpk) cpk.classList.toggle('on-tab', HOST.mode==='stats'); }
     if(!document.body.classList.contains('ws-mode') && HOST.mode!=='stats' && window.__countryPickActive && window.__countryPickActive()){ try{ window.__countryPick(false); }catch(_){} }
-    { const ip=document.getElementById('search-input'); if(ip) ip.placeholder = (HOST.mode==='stats'||HOST.mode==='info'||HOST.mode==='monitors') ? (IntMapLang.t(HOST.lang,'Filter…','絞り込み...','Filtern…','Фильтр…','Filtrar…')) : HOST.t('searchPh'); }
+    { const ip=document.getElementById('search-input'); if(ip) ip.placeholder = (HOST.mode==='stats'||HOST.mode==='info') ? (IntMapLang.t(HOST.lang,'Filter…','絞り込み...','Filtern…','Фильтр…','Filtrar…')) : HOST.t('searchPh'); }
 
     /* (#R11) No tab selected → blank sidebar content (map stays prominent). News pins still load when the
        user opens the News tab. (#R19) The blank state now hosts the opt-in Apple-style widget board. */
@@ -565,9 +564,6 @@ export function newsUi(HOST){
       if(sb) sb.style.display='none';
       try{ HOST.updateOcclusion(); }catch(_){} return; }
     if(HOST.mode==='info'){ dash.style.display='flex'; sb.style.display='flex'; HOST.renderDashboard(); HOST.updateOcclusion(); return; }
-    if(HOST.mode==='monitors'){ const mf=document.getElementById('monitors-feed'); if(mf) mf.style.display='flex'; sb.style.display='flex';   /* (#R141) Monitors tab */
-      try{ window.IntMapMonitors&&window.IntMapMonitors.render(HOST.searchVal()); }catch(_){}
-      try{ HOST.updateOcclusion(); }catch(_){} return; }
     if(HOST.mode==='community'){ comm.style.display='flex'; sb.style.display='none'; HOST.loadCommunity(); HOST.updateOcclusion(); return; }
     if(HOST.mode==='stats'){ if(cfeed) cfeed.style.display='flex'; sb.style.display='flex'; HOST.renderStats(HOST.searchVal()); return; }
     if(HOST.mode==='news'||HOST.mode==='saved'){

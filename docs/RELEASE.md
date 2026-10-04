@@ -253,7 +253,7 @@ node scripts/release-state.mjs --diff <function>   # その関数の実際の差
 「古い」と呼び、中身で測ると**違っていたのは 7 本**（`ais-feed` は 1 バイトも違わなかった）。
 
 > **MEASURED 2026-09-16、この道具が最初に測った本番**: Edge 17 本中 7 本がリポジトリと別の
-> ソースで走っていた。うち `monitor-run` / `news-ingest` / `refresh-news` は Atlas persona の
+> ソースで走っていた。うち 3 本（その後撤去した旧・地域監視の関数と `news-ingest` / `refresh-news`）は Atlas persona の
 > `workspace` 段落を持たない版＝**挙動が違う**（`ai-proxy` だけが新しい版だった）。7 本を
 > deploy して 17/17 一致にした。静的サイトは一致。**DB は local 7 本が remote に無く、
 > remote 2 本が local に無い**（`docs/DATABASE.md` のベースライン再構築の経緯を読むこと）。

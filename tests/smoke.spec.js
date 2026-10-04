@@ -540,7 +540,7 @@ test('R276 ⑲ the wind legend is the renderer\'s own colour table, ends where t
 });
 
 /* ══ #R286 ══════════════════════════════════════════════════════════════════════════════════════
-   tests/monitors.spec.js's console-error gate failed intermittently with twenty refusals of
+   the area-monitors spec's console-error gate (since retired) failed intermittently with twenty refusals of
    「Loading the image 'imapsat://2/0/2' violates … "img-src 'self' https: data: blob:"」.
    `imapsat://` is IntMap's OWN scheme (js/sat-proto.js registers it), so a tile served through it
    never becomes a browser image load at all — the message meant some path was handing the raw
@@ -548,7 +548,7 @@ test('R276 ⑲ the wind legend is the renderer\'s own colour table, ends where t
    prefetch, which read the ACTIVE STYLE's tile template and assigned it to `new Image().src`; the
    satellite source has held the protocol URL since #R158 and is the default basemap since #R207.
    Intermittent because that block fires only on a fast `moveend` PAIR, which the monitors spec
-   produces when `_radiusFromPoint` moves the camera Tokyo → Paris.
+   produced when `_radiusFromPoint` moves the camera Tokyo → Paris.
 
    This asserts the whole shape rather than the absence of one string: the subject is live (the
    satellite source really is protocol-backed), the prefetch SAW that template and refused it (so a

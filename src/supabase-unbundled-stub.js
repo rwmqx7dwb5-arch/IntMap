@@ -7,7 +7,7 @@
  *  write goes through `.from()` / `.rpc()` (postgrest-js), sign-in through `.auth` (auth-js), the
  *  live subscriptions through `.channel()` (realtime-js), and every Edge Function is called with a
  *  plain `fetch` to `<SUPABASE_URL>/functions/v1/<name>` (js/ai-core.js, js/auth-ui.js,
- *  js/monitors.js, js/proxy-fetch.js …) — never through `supabase.functions.invoke`. There is no
+ *  js/proxy-fetch.js …) — never through `supabase.functions.invoke`. There is no
  *  Storage bucket in this project.
  *
  *  MEASURED at the 2.58 → 2.117 update: storage-js (+ iceberg-js) and functions-js were 31.3 kB of

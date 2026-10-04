@@ -11,7 +11,7 @@
 //       whole of the time #R147 had already moved free to 10 — a header that restates a constant is
 //       a second copy, and the copy is the one a reader meets first.
 //    3. Atomically consumes one use for today    (consume_ai_turn RPC, which charges increment_ai_usage
-//       once per turn — through _shared/ai-ledger.js, the door monitor-run's «Run now» charges through too).
+//       once per turn — through _shared/ai-ledger.js, the one door every charge goes through).
 //       → over quota returns 429 {error:"limit", used, limit}.
 //    4. Calls the provider with a SERVER-HELD key (model fixed here — the user
 //       never sees a key or a model picker).

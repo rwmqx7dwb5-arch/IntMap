@@ -418,7 +418,7 @@ test('#R351 ⑮ the ingest logic is server-only and reaches no client bundle', (
 /* 綴りのまま: 対象は Deno の Edge Function（Deno.serve・npm: import）で、Node からは読み込めない */
 test('#R351 ⑯ news-ingest is fail-closed, deadline-bounded, and touches neither current_news nor refresh-news', () => {
   const fn = codeOnly(rd('supabase/functions/news-ingest/index.ts'));
-  /* 秘密が無ければ何もしない（refresh-news / monitor-run と同じ形）。 */
+  /* 秘密が無ければ何もしない（refresh-news と同じ形）。 */
   assert.match(fn, /NEWS_INGEST_SECRET/);
   assert.match(fn, /if \(!secret\)/, 'not fail-closed: an unset secret must refuse every request');
   assert.match(fn, /timingSafeEqual\(got, secret\)/);

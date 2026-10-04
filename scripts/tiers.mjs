@@ -53,8 +53,8 @@
  *      a spec may stand in the gate only if it costs at most CORE_MAX_S seconds to run.
  *
  *  ⚠ Plus two exceptions, and neither is a list of favourites:
- *    · CORE_ALWAYS — the four suites that ARE the gate rather than a round's regression file:
- *      smoke, security, internal-qa, monitors. They run whatever they cost.
+ *    · CORE_ALWAYS — the three suites that ARE the gate rather than a round's regression file:
+ *      smoke, security, internal-qa (a fourth, monitors, was retired with the feature). They run whatever they cost.
  *    · THE SPECS THIS CHANGE ADDED OR EDITED — derived from the DIFF, not written down (see
  *      `changedSpecs()` below). #R203's "a new spec is core until somebody says otherwise" is exactly
  *      right for the work in front of the PR and exactly wrong afterwards, and the diff makes the
@@ -136,9 +136,9 @@ export function allSpecs() {
    pass #R205's price of six seconds, which is exactly how a gate grows back one file at a time —
    the price stops the expensive ones and lets the accumulation through underneath it.
 
-   At one second nothing that boots the app can pay, so what stands in front of a push is the four
+   At one second nothing that boots the app can pay, so what stands in front of a push is the three
    suites that ARE the gate plus the spec of the round being worked on, and nothing else can drift
-   in. That is the smallest honest gate this project can have: the broad smoke/QA/security/monitors
+   in. That is the smallest honest gate this project can have: the broad smoke/QA/security
    coverage, and the round's own regressions.
 
    ⚠ NOTHING IS DELETED. Every one of those six still runs nightly and on demand, and the TOTAL
@@ -147,7 +147,7 @@ export function allSpecs() {
 export const CORE_MAX_S = 1;
 
 /* The suites that are the gate itself rather than one round's regression file. Whatever they cost. */
-export const CORE_ALWAYS = ['smoke', 'security', 'internal-qa', 'monitors'];
+export const CORE_ALWAYS = ['smoke', 'security', 'internal-qa'];
 
 const bare = (f) => basename(String(f).split(':')[0]).replace(/\.spec\.js$/, '');
 

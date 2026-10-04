@@ -436,7 +436,7 @@ const MARKUP = corpus(JS_FILES.concat(['index.html', ...standalonePages(ROOT)].m
 
 test('D①: every click/Enter handler that reaches a write is on an element that declares data-effect', () => {
   const found = scanHandlers(JS_FILES, MARKUP);
-  assert.ok(found.length >= 10, 'the scan sees the handlers it exists for (feedback, community, account, monitors): ' + found.length);
+  assert.ok(found.length >= 10, 'the scan sees the handlers it exists for (feedback, community, account): ' + found.length);
   const bad = found.filter((x) => !x.declared).map((x) => `${x.where} ${x.selector || '(target not resolved)'} → ${x.sink}`);
   assert.deepEqual(bad, [], 'undeclared:\n' + bad.join('\n'));
 });

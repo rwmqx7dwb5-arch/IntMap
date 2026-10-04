@@ -426,11 +426,11 @@ jobs:
           cache: npm
       - run: npm ci
       - uses: ./.github/actions/data-assets    # (data-outside-git) the datasets outside git, before anything reads them
-      # (#R166) Was `node --test tests/security-logic.mjs tests/monitor-logic.test.mjs`, so the R1xx
+      # (#R166) Was `node --test` over two named files (security-logic and the since-retired area-monitor logic), so the R1xx
       # source-level suites ran only on a developer's machine — including the file-split invariants,
       # which is exactly the kind of guard that must not be optional. The glob is the one `npm test`
       # uses (package.json `test:checks`), so the two can no longer drift.
-      - name: Source-level regression checks (Edge Function invariants, area-monitor engine, R1xx suites)
+      - name: Source-level regression checks (Edge Function invariants, R1xx suites)
         run: npm run test:checks -- --test-shard=${{ matrix.shard }}/${{ matrix.of }} --timings "$RUNNER_TEMP/checks-timings.json"
       # (gate-parity-and-shards) The seconds each file took go back into .github/checks-cost.json by
       # hand (`node scripts/checks-shards.mjs --update`), as gate-timings do: the ledger decides

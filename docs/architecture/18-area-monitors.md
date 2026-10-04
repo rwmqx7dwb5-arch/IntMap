@@ -1,13 +1,12 @@
-# IntMap — 現状仕様書 §18 見守る場所と地域監視基盤 (Watched places · Area Monitors)
+# IntMap — 現状仕様書 §18 見守る場所 (Watched places)
 
 > **現状仕様書の §18。** 案内図は [`Architecture.md`](../../Architecture.md)（§ → ファイルの表）。**節番号は案内図と共有している**
 > ——他の文書・コード・テストが書く「`Architecture.md` §18.x」は、このファイル（と案内図の表が同じ行に挙げる文書）の見出しを指す。
 > 今どうなっているかだけを書く。変更履歴・ラウンド番号・PR 番号は書かない（`npm run check:docs` の `arch-rounds` がこのファイルも読む）。
 
-## 18. 見守る場所と地域監視基盤
+## 18. 見守る場所
 
-「場所について何かが起きたら知らせる」には 2 つの実装がある。**利用者に届いているのは §18.1 の見守る場所だけ**で、
-§18.2 の地域監視基盤は入口が無いまま動いている。
+「場所について何かが起きたら知らせる」の実装は §18.1 の見守る場所だけである。以前の地域監視基盤は撤去済み（§18.2）。
 
 ### 18.1 見守る場所 (Watched places)
 
@@ -45,16 +44,11 @@
 - **IntMap を閉じている間の通知（Web Push）は無い。** 設計と承認待ちの事項は [`docs/AREA-MONITORS.md`](../AREA-MONITORS.md)
   の「Watched places」節。
 
-### 18.2 地域監視基盤 (Area Monitors) — 入口なし
+### 18.2 旧・地域監視基盤 (Area Monitors) — 撤去済み
 
-⚠ **この機能には現在、利用者から到達できる入口が1つも無い。** タブ・ワークスペースのウィンドウ・
-ウィジェット・Atlas のどれからも開けず（ウィジェット板の旧「地域監視」カードは「見守る場所」のカードになった）、Atlas は `FEATURE_WITHDRAWN` を返す（`PRODUCT.md` §3.4 が言う唯一の例外）。
-**撤去であって削除ではない**——モジュール（`js/monitors.js`）・API（`window.IntMapMonitors`）・
-その表示領域・Edge Function（`monitor-run`）・DB の 5 表・cron はすべて動いたまま残してある。
-
-サーバー側が監視地域を定期実行し、**変化の有無はコードが判定し、AI は説明のみを書く**
-（取得 → 正規化／重複排除 → スナップショット → 機械的 diff → change score → 閾値超過時のみ AI →
-AI が引いた evidence ID をコードで検証 → 永続化）。⚠ **取得失敗は「変化なし」ではなく専用 status。**
-
-**設計・DB・status 一覧・cron の SQL・復帰させるときに戻す入口の正本は
-[`docs/AREA-MONITORS.md`](../AREA-MONITORS.md)。**
+保存した範囲をサーバーが定期実行で見張り、変化を AI が説明する旧機能は、入口を先に撤去したあと**基盤ごと撤去した**。
+撤去したもの: ページのモジュールと表示領域、Edge Function `monitor-run`、DB の 5 表（`area_monitors` ほか）と関数 10 個・policy・trigger・
+realtime の登録、cron の job とその vault の秘密（migration `20261004150000_retire_area_monitors.sql`）、Atlas の撤去済み能力。
+ウィジェット板の旧「地域監視」カードの ID は「見守る場所」のカード（§7.5）の別名として残る。
+「変化の有無はコードが決め、モデルには訊かない」という設計の規則は見守る場所が引き継いだ——その経緯と、承認待ちの
+Web Push の設計は [`docs/AREA-MONITORS.md`](../AREA-MONITORS.md)。

@@ -400,7 +400,7 @@ window.IntMapWidgetCore = (function () {
   var _ctxCache = null, _ctxAt = 0;
 
   /* ══ WATCHED PLACES — THE ONE «SOMETHING HAPPENED NEAR MY PLACE» THE BOARD READS (widget-watch-unify) ══
-     The board used to read the withdrawn Area Monitors (window.IntMapMonitors) for its «monitors» card,
+     The board used to read the withdrawn Area Monitors module (since removed) for its «monitors» card,
      its Smart Stack rung and the places the alerts card looks at — an API with no reader-facing entry
      point (docs/architecture/18-area-monitors.md §18.2), behind a button that toasted «Monitors are in
      the sidebar» when there was no such sidebar. What a reader has is Watched places (js/place-watch.js

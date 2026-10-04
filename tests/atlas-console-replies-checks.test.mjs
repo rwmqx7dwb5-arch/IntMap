@@ -669,7 +669,7 @@ test('#R370 ④ every R370 rename is present, and the key it replaced is gone fr
 });
 
 /* ── ⑤ the three defects that were not collisions ──────────────────────────────────────────── */
-test('#R370 ⑤ no Japanese argument is the English word, and the dead `ago` helper is gone', () => {
+test('#R370 ⑤ no Japanese argument is the English word', () => {
   /* read, not run: the same: the arguments of L() are the text the i18n gate reads. */
   const wp = read('js/world-packs.js');
   assert.ok(wp.includes(`L('Moderate','中程度'`), "world-packs.js: the Japanese for 'Moderate' is the English word again");
@@ -677,13 +677,8 @@ test('#R370 ⑤ no Japanese argument is the English word, and the dead `ago` hel
   assert.ok(wp.includes(`L('Extreme','極端（最も深刻）'`), "world-packs.js: the Japanese for 'Extreme' has English mixed back in");
   assert.ok(!wp.includes(`'Extreme（最も深刻）'`), "world-packs.js: 'Extreme（最も深刻）' is back");
 
-  /* `rel` was declared and never called — its ML('ago','','','','') never rendered, so there was
-     nothing to translate. The only `rel` left in the file must be the rel="noopener" attribute. */
-  const mon = read('js/monitors.js');
-  assert.ok(!mon.includes(`ML('ago'`), 'monitors.js: the dead `rel` helper with the empty translations is back');
-  /* …and the Russian branch beside it, which printed «мин назад» with no number at all */
-  assert.ok(!mon.includes(`'мин назад',Math.round(diff/60)+' min'`),
-    'monitors.js: the Russian relative time is missing its number again');
+  /* (monitors-retire) The third defect, the dead `ago` helper and its number-less Russian, lived in the
+     area-monitors module, which is removed — there is no file left for it to come back in. */
 });
 
 /* ── ⑤b ⚠⚠ WHEN A MEANING LEAVES, THE ROW IT WAS TRANSLATED FOR STAYS ─────────────────────────

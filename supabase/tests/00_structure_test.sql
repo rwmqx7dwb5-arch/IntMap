@@ -4,7 +4,7 @@
 --  Executed by `supabase test db` (see docs/DATABASE.md).
 -- ============================================================================
 begin;
-select plan(120);  -- (community-next) +2: map_corrections joins both lists   -- (watch-places) +2: place_watches joins both lists   -- (collection-workspace) +4: saved_views and collection_shares join both lists   -- (sales-channels) +4: org_inquiries and supporters join both lists   -- (atlas-os) +2: atlas_notebook_entries joins both lists   -- (news-intelligence) +2: news_event_entities joins both lists   -- (account-data-center / my-places) +4: account_data_catalog and saved_places join both lists
+select plan(104);  -- (monitors-retire) −16: the five area-monitor tables leave both lists (−10) and their six key/function assertions go (−6)   -- (community-next) +2: map_corrections joins both lists   -- (watch-places) +2: place_watches joins both lists   -- (collection-workspace) +4: saved_views and collection_shares join both lists   -- (sales-channels) +4: org_inquiries and supporters join both lists   -- (atlas-os) +2: atlas_notebook_entries joins both lists   -- (news-intelligence) +2: news_event_entities joins both lists   -- (account-data-center / my-places) +4: account_data_catalog and saved_places join both lists
                    -- (anonymous-usage-counts) +2: usage_counts joins both lists   -- (atlas-stream-replay) +2: ai_turn_answers joins both lists
                    -- (atlas-semantic-search) +2: atlas_capability_vectors joins both lists   -- (client-error-log) +2: client_errors joins both lists
                    -- (#R801) +2 tables in both lists, +2 has_function   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
@@ -34,11 +34,9 @@ from unnest(array[
   -- (#R491) the TERM-GLOSS lane's counter. Its own table rather than a column on ai_usage, so the
   -- two budgets cannot block each other in either direction (Architecture.md §5).
   'ai_gloss_usage','relay_rate_buckets',
-  -- (#R141) area-monitoring feature. (#R280) monitor_seen_items was created by the #R144
-  -- hardening migration and never reached this list, so the ONE assertion that says "RLS is on
-  -- for every table we have" was measuring 19 of the 20 that exist. A table missing from the
-  -- list cannot fail the list.
-  'area_monitors','monitor_runs','monitor_evidence','monitor_reports','monitor_seen_items',
+  -- (#R280) A table missing from the list cannot fail the list: the ONE assertion that says "RLS is
+  -- on for every table we have" once measured 19 of the 20 that existed. (The area-monitor tables
+  -- that taught that were later retired, 20261004150000_retire_area_monitors.sql.)
   -- (#R334) the Event tables. The map's subject becomes the EVENT rather than the article;
   -- current_news is untouched above, still serving article mode.
   'news_sources','news_source_feeds','news_articles','news_events','news_event_articles',
@@ -93,7 +91,7 @@ from unnest(array[
   -- shared_collection(token)) (supabase/tests/24_collection_workspace_test.sql).
   'saved_views',
   'collection_shares'
-]) as t;                                                    -- 49 assertions
+]) as t;                                                    -- 44 assertions
 
 -- 2) RLS is ENABLED on every one of them (fail-closed: a table with RLS off fails).
 select ok(
@@ -105,7 +103,6 @@ from unnest(array[
   'bug_reports','community_posts','community_comments','community_votes',
   'community_comment_votes','community_reports','geo_pins','dashboard_cards',
   'current_news','ai_turns','ai_gloss_usage','relay_rate_buckets',
-  'area_monitors','monitor_runs','monitor_evidence','monitor_reports','monitor_seen_items',
   'news_sources','news_source_feeds','news_articles','news_events','news_event_articles',
   -- (#R351) …and the ingest telemetry beside them (docs/NEWS-EVENTS.md §13). Operational
   -- rather than public: admin reads it, service_role writes it.
@@ -125,7 +122,7 @@ from unnest(array[
   'map_corrections',                                         -- (community-next) see the note above
   'place_watches',                                           -- (watch-places) see the note above
   'saved_views','collection_shares'                         -- (collection-workspace) see the note above
-]) as t;                                                    -- 49 assertions
+]) as t;                                                    -- 44 assertions
 
 -- (#R386) 2b) The operator RPCs exist. The admin console has buttons wired to these four names;
 --   a button that calls a function which is not there fails at the moment an operator needs it.
@@ -154,16 +151,6 @@ select has_function('public','consume_ai_turn', array['uuid','integer','text','i
 select has_function('public','refund_ai_turn', array['uuid','text'], 'refund_ai_turn(uuid,text) exists');
 select has_function('public','settle_ai_turn', array['uuid','text'], 'settle_ai_turn(uuid,text) exists');   -- (#R801)
 select has_function('public','relay_take', array['text','text','integer','numeric','integer'], 'relay_take(...) exists');   -- (#R801)
-
--- 6) (#R141) Area-monitoring keys, relationships and functions.
-select col_is_pk('public','area_monitors', array['id'], 'area_monitors PK is (id)');
-select fk_ok('public','monitor_runs','monitor_id','public','area_monitors','id',
-             'monitor_runs.monitor_id → area_monitors.id');
-select fk_ok('public','monitor_reports','run_id','public','monitor_runs','id',
-             'monitor_reports.run_id → monitor_runs.id');
-select has_function('public','monitor_claim_due', array['integer','integer'], 'monitor_claim_due(int,int) exists');
-select has_function('public','monitor_limit', array['uuid'], 'monitor_limit(uuid) exists');
-select has_function('public','monitor_mark_read', array['uuid'], 'monitor_mark_read(uuid) exists');
 
 reset role;
 select * from finish();

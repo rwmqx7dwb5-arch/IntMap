@@ -135,13 +135,15 @@ test('R500 ①〜④ the three new rules go red when the fact drifts, and when i
       assert.match(r.out, /capability-count/, 'the report does not name the rule that failed');
     });
 
-    /* ②a 総数だけを動かす */
+    /* ②a 総数だけを動かす。⚠ (monitors-retire) 種の数は文書が今述べている数から取る——「22」と書いてあったので、
+       prompt を 1 本持つ関数を撤去した正しい変更（22 → 21）でこの検査だけが錨を失った（⑨ の #R510 と同じ形）。 */
+    const promptNow = (() => { for (const f of specFiles(ROOT)) { const m = /\*\*(\d+) 本すべての system prompt/.exec(readLF(join(ROOT, f))); if (m) return m[1]; } return '22'; })();
     await t.test('②a prompt-count catches a wrong total', () => {
       const r = withBroken([{ file: 'Architecture.md', why: 'the stated number of system prompts',
-        from: '**22 本すべての system prompt', to: '**' + String(2) + String(0) + ' 本すべての system prompt' }],
+        from: '**' + promptNow + ' 本すべての system prompt', to: '**' + String(Number(promptNow) - 2) + ' 本すべての system prompt' }],
         () => docFacts('prompt-count'));
       assert.equal(r.code, 1, 'the stated total may disagree with EXPECTED_CALLS and stay green');
-      assert.match(r.out, /EXPECTED_CALLS sums to 22/, 'the report does not say what the table actually sums to');
+      assert.match(r.out, new RegExp('EXPECTED_CALLS sums to ' + promptNow), 'the report does not say what the table actually sums to');
     });
 
     /* ②b 総数は正しいまま、内訳の1行だけを動かす——#R500 の実物はこの形だった
@@ -207,7 +209,7 @@ test('R500 ①〜④ the three new rules go red when the fact drifts, and when i
       assert.equal(a.code, 1, 'Architecture.md may drop the registry size in silence');
 
       const b = withBroken([{ file: 'Architecture.md', why: 'the prompt total disappears',
-        from: '**22 本すべての system prompt', to: '**すべての system prompt' }],
+        from: '**' + promptNow + ' 本すべての system prompt', to: '**すべての system prompt' }],
         () => docFacts('prompt-count'));
       assert.equal(b.code, 1, 'Architecture.md may drop the prompt total in silence');
     });
@@ -222,7 +224,7 @@ test('R500 ①〜④ the three new rules go red when the fact drifts, and when i
 /* ── ⑤ ai-proxy の散文が、20 行下の定数と一致する ─────────────────────────────────── */
 test('R500 ⑤ ai-proxy says the free quota its own PLAN_LIMITS grants', () => {
   const src = aiProxySource();
-  /* (ai-one-ledger) PLAN_LIMITS moved to _shared/ai-ledger.js when monitor-run began charging the same
+  /* (ai-one-ledger) PLAN_LIMITS moved to _shared/ai-ledger.js when a second caller (the since-retired area-monitor runner) began charging the same
      allowance; the prose in ai-proxy's header is still held to it */
   /* (supporter-funnel) …and PLAN_LIMITS is now the `aiTurnsPerDay` column of the plan table in
      _shared/plans.js, so the free number is read from there: one row per plan, in an object literal */

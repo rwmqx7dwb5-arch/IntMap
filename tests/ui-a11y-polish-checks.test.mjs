@@ -251,10 +251,11 @@ test('ui-a11y-polish ⑦ light: accent text is ≥4.5:1 on every grey surface it
 });
 
 test('⑧ text on an accent TINT (the «first report» badge, the evidence chip) reads at 4.5:1 in both themes, on every surface', () => {
-  /* Measured before: `.ev-badge.first` 4.33:1 light / 4.03:1 dark, `.mon-evchip` 3.23:1 light — hard-coded
+  /* Measured before: `.ev-badge.first` 4.33:1 light / 4.03:1 dark, the area monitors' evidence chip 3.23:1 light (that
+     chip went with the retired module) — hard-coded
      rgba(0,122,255,…) tints under the accent itself. Both now read the two tokens derived from the accent:
      the tint is the accent at 12 %, the text is the accent pulled 25 % toward the body text colour. */
-  for (const sel of ['.ev-badge.first', '.mon-evchip']) {
+  for (const sel of ['.ev-badge.first']) {
     const d = Object.assign({}, ...bySel(sel).map((r) => r.decl));
     assert.match(String(d.color), /var\(--primary-on-tint\)/, `${sel} writes its text with the token`);
     assert.match(String(d.background), /var\(--primary-tint\)/, `${sel} paints its tint with the token`);

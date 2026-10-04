@@ -110,7 +110,6 @@ IntMapLang.define('es', { ui: {
       aiVisHead:"Detección de cambios por IA", aiVisBtn:"Detectar cambios", aiVisTitle:"Informe de cambios por satélite", aiVisSub:"Comparando {a} → {b}", aiVisBefore:"Antes", aiVisAfter:"Después", aiVisCapturing:"Capturando imágenes…", aiVisPickDates:"Elige dos fechas para comparar.", aiVisNeedsDated:"Cambia a un proveedor con fecha (MODIS / VIIRS / Sentinel-2) en el modo satélite.", aiVisCapFail:"No se pudieron capturar las imágenes del mapa.",
       mTitleMap:"Mapa", mTitleTools:"Herramientas", mDone:"Hecho"
 ,
-      tabMonitors:'Monitores',
       /* ══ ⚠⚠⚠ (#R239) MOVED HERE — THE KEYED TABLE HAD SIX HOMES AND FIVE OF THEM SPOKE
          FIVE LANGUAGES ═══════════════════════════════════════════════════════════════════════
          js/i18n-late.js, js/data-layers.js, js/wheel-zoom.js, js/workspace.js, js/app-body.js and

@@ -30,10 +30,5 @@ select is(
 
 select ok(obj_description('public.is_admin()'::regprocedure, 'pg_proc') ~ 'ANON MAY CALL: \S', 'is_admin() states in its comment why anon may call it');
 
-select ok(not has_function_privilege('anon', 'public.monitor_limit_self()', 'execute'),      'anon cannot execute monitor_limit_self');
-select ok(    has_function_privilege('authenticated', 'public.monitor_limit_self()', 'execute'), 'authenticated still can');
-select ok(not has_function_privilege('anon', 'public.monitor_mark_read(uuid)', 'execute'),   'anon cannot execute monitor_mark_read');
-select ok(    has_function_privilege('authenticated', 'public.monitor_mark_read(uuid)', 'execute'), 'authenticated still can');
-
 select * from finish();
 rollback;

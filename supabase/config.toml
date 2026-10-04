@@ -87,11 +87,9 @@ enabled = false
 #  no route and no verify_jwt, and giving it a [functions.*] block here would try to deploy it as an
 #  endpoint. It is listed nowhere on purpose — this note is so that stays deliberate.
 #
-#  THE ELEVEN, and why each is where it is:
+#  THE FIRST NINE, and why each is where it is (the rest are explained at their own block below):
 #    ai-proxy        JWT   the caller's identity IS the quota; anonymous use is the whole thing to stop
 #    delete-account  JWT   deletes the CALLER's own account; it also re-verifies the user explicitly
-#    monitor-run     no    two callers, two credentials: pg_cron with x-monitor-secret and the "Run
-#                          now" button with a user JWT. It does its own auth for both, fail-closed.
 #    refresh-news    no    called by a scheduler with the REFRESH_SECRET header; fail-closed if unset
 #    news-ingest     no    (#R351) the Event pipeline's collector: same shape as refresh-news — a
 #                          scheduler calls it with NEWS_INGEST_SECRET, fail-closed if unset. It writes
@@ -119,12 +117,6 @@ enabled = false
 verify_jwt = true
 
 [functions.refresh-news]
-verify_jwt = false
-
-# monitor-run (#R141) is deployed --no-verify-jwt: pg_cron calls it with a shared
-# secret (x-monitor-secret) and the "Run now" UI calls it with a user JWT; the
-# function does its OWN auth for both paths (fail-closed on the secret).
-[functions.monitor-run]
 verify_jwt = false
 
 # sv-cov (#R145) is a keyless, tightly-allowlisted relay of Google's public Street
@@ -215,7 +207,7 @@ verify_jwt = false
 
 # news-ingest (#R351) collects the Source Registry's feeds into the Event tables (news_articles /
 # news_events / …). Deployed --no-verify-jwt: a scheduler calls it with the x-news-ingest-secret
-# header and the function does its own fail-closed auth, exactly like refresh-news and monitor-run.
+# header and the function does its own fail-closed auth, exactly like refresh-news.
 [functions.news-ingest]
 verify_jwt = false
 

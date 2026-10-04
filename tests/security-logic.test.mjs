@@ -180,7 +180,7 @@ test('ai-proxy grants the developer override by USER ID, not by e-mail', () => {
   assert.ok(!/DEFAULT_DEV_EMAILS/.test(code), 'a hard-coded developer e-mail list is back');
   assert.ok(!/@privaterelay\.appleid\.com/.test(code), 'a real e-mail address is compiled into a public repo');
   assert.ok(!/user\.email/.test(code), 'the privilege still depends on a mutable e-mail field');
-  /* (ai-one-ledger) the rule lives in _shared/ai-ledger.js now (monitor-run resolves the same account) */
+  /* (ai-one-ledger) the rule lives in _shared/ai-ledger.js now (every caller of the ledger resolves the same account) */
   const ledger = codeOnly(read('supabase/functions/_shared/ai-ledger.js'));
   assert.ok(!/\.email\b/.test(ledger), 'the shared ledger decides the override from an e-mail field');
   assert.match(ledger, /DEV_USER_IDS/, 'the id-based override is missing');

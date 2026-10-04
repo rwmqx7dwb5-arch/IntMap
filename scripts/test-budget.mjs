@@ -223,7 +223,10 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
        forbids («上限を下げて塞がない»). It is not unbounded: every spec is charged to
        TOTAL_BUDGET_S below whichever tier runs it, and a touched spec that is expensive runs once
        in front of its PR and then goes back to the nightly by itself. */
-const BUDGET_S = 26;                    /* fixed core: 0.4 min — measured 26 s over 6 files (2026-09-25) */
+/* (monitors-retire, 2026-10-04) tests/monitors.spec.js went with the feature it tested, and with it
+   its entry of 10 s: the fixed gate is 16 s over 5 files (smoke 8, security 4, internal-qa 2, r157 1,
+   r510 1), and the ceiling follows that floor down 26 → 16. Nothing else moved. */
+const BUDGET_S = 16;                    /* fixed core: 0.3 min — measured 16 s over 5 files (2026-10-04) */
 /* ⚠⚠ (#R410) THE TOTAL CEILING MOVED AGAIN, BY THE MEASURED AMOUNT — 4,536 -> 4,595 (+59 s).
    Saying it here as well as in the ledger because this file's own message is «never raise it»;
    #R388 (core) and #R405 (total, +7) are the precedents for saying so plainly. The round adds the

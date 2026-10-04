@@ -7,7 +7,7 @@
  *  usually SILENT, because this codebase guards soft dependencies with
  *  `typeof X !== 'undefined'` and wraps work in try/catch. A moved module can
  *  therefore keep "working" while quietly skipping a whole branch (that is exactly
- *  how #R162 first broke Area Monitors' radius capture: `radiusItems` became
+ *  how #R162 first broke the (since retired) area monitors' radius capture: `radiusItems` became
  *  undefined, so activeArea() silently fell through to "no area selected").
  *
  *  So: parse each js/*.js with a REAL parser, resolve its scopes, and fail if any

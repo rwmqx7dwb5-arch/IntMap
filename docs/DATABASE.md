@@ -78,15 +78,6 @@ is the human explanation.
 | `account_data_catalog` *(account-data-center)* | **One sentence per account-owned table**: `tbl`, `written_by` (`you` = the reader typed or chose it / `intmap` = recorded about the reader's use), `label_*`, `purpose_*`, `retention_*` in `en` and `jp`. It explains; it never filters — an owned table with no row is still counted and exported, and `23_account_data_center_test.sql` fails until the row is written. | Everyone (it holds no one's data — it is the privacy inventory). | **Migrations only** (no role holds a write grant). |
 | `who_don_extracts` *(#R650)* | The case and death counts read out of each WHO Disease Outbreak News item — the one field WHO does not publish as data. `cases`/`deaths` are **nullable on purpose**: NULL means «WHO states no cumulative total», which is not zero. `source_hash` is the hash of the prose the model was actually given, so a rewritten item re-extracts and an unchanged one is never paid for twice. | Everyone. | **service_role only** (`who-don`). |
 
-### Area monitors (#R141 / #R144)
-| Table | Purpose | Read | Write |
-|---|---|---|---|
-| `area_monitors` | A saved area watch (geometry + sources + comparison/sensitivity + schedule + denormalized run-state). | Owner. | Owner insert/delete; UPDATE is a **column grant** (config columns only — **not** `next_run_at` or the run-state columns) reinforced by the `tg_monitors_guard_state` trigger. |
-| `monitor_runs` | One execution attempt (status, snapshot, mechanical diff, AI meta). | Owner. | **service_role only** — results cannot be forged. |
-| `monitor_evidence` | Structured evidence gathered by a run (`ev_key`, source, url, coords, `dedup_key`). | Owner. | **service_role only.** |
-| `monitor_reports` | The report a run generated (severity, headline, summary, grounded `changes`, metrics, change_points). | Owner. | **service_role only**; `read` flips via `monitor_mark_read`. |
-| `monitor_seen_items` *(#R144)* | Long-lived per-item ledger (one row per `dedup_key`) → "past N days" baseline + cap-proof novelty. | Owner. | **service_role only.** |
-
 ### News events (#R334)
 
 The Event side of the news pipeline — see [`NEWS-EVENTS.md`](NEWS-EVENTS.md) for why each column
@@ -210,12 +201,8 @@ itself; `grant execute` means "may call", never "may do".
 | `public.beat_ai_answer(uuid, text, text, integer, integer)` / `finish_ai_answer(uuid, text, text, integer, boolean, integer, jsonb)` | SECURITY DEFINER, `search_path=''` | *(atlas-stream-replay)* Renew the lease / write the result — only for the attempt that holds the claim, so a superseded run changes nothing. A failure stores its status and no body. EXECUTE = service_role only. |
 | `public.atlas_notebook_account_bound()` (trigger) | **SECURITY INVOKER**, `search_path=''` | *(atlas-os)* BEFORE INSERT OR UPDATE on `atlas_notebook_entries`: refuses a row that would take one account past 100 MiB of notebook (`notebook-account-full`, P0001). It sums only the writer's own rows, which RLS already shows them, so it needs no privilege the caller lacks. |
 | `public.sweep_ai_turn_answers()` | SECURITY DEFINER, `search_path=''` | *(atlas-stream-replay)* Deletes every expired held answer. Scheduled every 15 minutes as pg_cron job `ai-turn-answers-sweep` (scheduled idempotently when pg_cron exists). EXECUTE = service_role only. |
-| `public.record_ai_usage(uuid, text, integer, integer, bigint, bigint, bigint, bigint)` | SECURITY DEFINER, `search_path=''` | *(ai-one-ledger)* Adds one request's provider usage — normalised by `supabase/functions/_shared/ai-usage.js` — to today's `ai_usage` row (inserting it with `count` 0 if absent) and, when the turn key names a live `ai_turns` row, to that row. Negative/null inputs read as 0; zero calls write nothing; never touches `count`. Called by `ai-proxy` and `monitor-run` through `_shared/ai-ledger.js`. EXECUTE = service_role only. |
+| `public.record_ai_usage(uuid, text, integer, integer, bigint, bigint, bigint, bigint)` | SECURITY DEFINER, `search_path=''` | *(ai-one-ledger)* Adds one request's provider usage — normalised by `supabase/functions/_shared/ai-usage.js` — to today's `ai_usage` row (inserting it with `count` 0 if absent) and, when the turn key names a live `ai_turns` row, to that row. Negative/null inputs read as 0; zero calls write nothing; never touches `count`. Called by `ai-proxy` through `_shared/ai-ledger.js`. EXECUTE = service_role only. |
 | `public.operating_stats()` *(supporter-funnel)* | SECURITY DEFINER, `search_path=''`, STABLE | This month's (UTC) project-wide totals from `ai_usage`'s cost columns — `provider_calls`, `unmetered_calls`, input tokens (full-price + cache read + cache write), `cached_tokens`, `output_tokens` — plus `metered_since` (the first day any cost was recorded) and `as_of`. **Aggregates only**: no user id, no per-account or per-day row. `count` is deliberately not summed (it is net of refunds and negative on some days, so it is not a number of answers). EXECUTE = anon, authenticated, service_role — the comment states why (`ANON MAY CALL`): the support panel shows it to every reader. The page calls it with GET, which PostgREST runs read-only. |
-| `public.monitor_limit(uuid)` / `monitor_limit_self()` *(#R144)* | SECURITY DEFINER, `search_path=''` | Per-plan monitor cap (5 / 25 / 200 — the `monitors` column of `supabase/functions/_shared/plans.js`, held to this body by `tests/supporter-funnel-checks.test.mjs`). `(uuid)` is **service_role-only** (users can't probe another user's plan); the UI reads its own via `monitor_limit_self()`. Enforced by a BEFORE INSERT trigger. |
-| `public.monitor_claim_due(int,int)` / `monitor_claim_one(uuid,uuid,int,int)` *(#R144)* | SECURITY DEFINER, `search_path=''` | Atomic claims (cron `FOR UPDATE SKIP LOCKED`; manual `UPDATE…WHERE…RETURNING`). service_role only. |
-| `public.monitor_finalize(...)` / `monitor_commit_report(...)` *(#R144)* | SECURITY DEFINER, `search_path=''` | Finalize a run + (optionally) insert its report + update the monitor meta in one transaction. service_role only. |
-| `public.tg_monitors_guard_state()` + `trg_monitors_guard` *(#R144)* | SECURITY DEFINER, `search_path=''` | BEFORE UPDATE on `area_monitors`: freezes run-state columns and server-owns `next_run_at` for any non-runner caller (grant-independent). |
 | `public.tg_community_stamp_provenance()` + `trg_community_posts_provenance` / `trg_community_comments_provenance` | SECURITY DEFINER, `search_path=''` | BEFORE INSERT on `community_posts` / `community_comments`: for any caller that is not service_role or a no-JWT session, `author_name` := the author's `profiles_public.display_name` (no name → the `User-` + first five alphanumerics of the id handle the client shows), `created_at` := `now()`, `edited_at` := null. What the request said about them is never read (grant-independent, like `tg_profiles_guard_privcols`). |
 
 Every SECURITY DEFINER function pins a `search_path` that does not contain `public` and
@@ -234,8 +221,8 @@ holds CREATE. ⚠ **Read the catalogue, not the CREATE statement:** the news-eve
 A SECURITY DEFINER function runs with its owner's rights, so **who may call it is its whole access
 control** — and PostgreSQL gives EXECUTE to PUBLIC on creation while Supabase's default privileges give
 it to `anon`. `grant … to authenticated` does not revoke those: measured 2026-09-26, `anon` could
-execute `monitor_limit_self()` and `monitor_mark_read(uuid)` in production although their migrations
-granted `authenticated` only (`20260926090000` revokes them). The rule, asserted over the catalogue by
+execute two area-monitor functions (since removed with that feature) in production although their migrations
+granted `authenticated` only (`20260926090000` revoked them). The rule, asserted over the catalogue by
 `supabase/tests/11_definer_execute_test.sql`: **`anon` may execute a callable SECURITY DEFINER function in
 `public` only when an RLS policy that applies to `anon` calls it** (a policy runs with the caller's
 privileges) **or its own COMMENT says why in words — `ANON MAY CALL: <reason>`** (`is_admin()`: it
@@ -266,13 +253,9 @@ same pgTAP file asserts zero grants.
    `ai_usage_count_nonnegative` / `ai_gloss_usage_count_nonnegative` (`count >= 0`), which every role
    meets; `17_ai_counters_never_negative_test.sql` asserts that every `count` column in `public` has a
    lower bound. To give an account more uses, set `profiles.plan` (or `DEV_USER_IDS`) — not `count`.
-4. **(#R144) Server-owned run-state.** Monitor run results (`monitor_runs`/`_evidence`/`_reports`/
-   `_seen_items`) have no write policy → only `service_role` writes them, so they cannot be forged.
-   On `area_monitors`, the run-state columns and `next_run_at` are protected by **both** a column
-   grant **and** the `tg_monitors_guard_state` trigger — the trigger matters because in production
-   Supabase's default privileges grant users full table UPDATE (RLS is the real protection), which
-   would otherwise let a user forge run metadata or hand-pick their execution time. `monitor_limit`
-   is service-role-only so plans can't be enumerated.
+4. *(retired)* **Server-owned run-state** was the guarantee of the area-monitor tables, which were
+   removed with that feature (`20261004150000_retire_area_monitors.sql`). The number is kept so that
+   «guarantee 5» below still names the same thing.
 5. **Community provenance is the server's.** An author writes the content of a post or comment; the
    name it appears under and the time it was posted are written by `tg_community_stamp_provenance`
    (INSERT) and are not in the UPDATE grant (#R801). A REST call that names `created_at` / `edited_at`
@@ -282,9 +265,8 @@ same pgTAP file asserts zero grants.
    report goes through the `reader-reports` Edge Function, which counts it against shared buckets.
    `14_anon_write_guard_test.sql` states this over the catalogue (every table in `public`), not over names.
 
-Guarantees 1–3 (and the R144 monitor matrix) are proven by the pgTAP tests
-(`04_monitors_test.sql` simulates the prod default grant; guarantee 5 is
-`12_db_provenance_hardening_test.sql`, which simulates it too) — see [`DATABASE.md`](DATABASE.md#rls--permission-testing).
+Guarantees 1–3 are proven by the pgTAP tests (guarantee 5 is
+`12_db_provenance_hardening_test.sql`, which simulates the prod default grant) — see [`DATABASE.md`](DATABASE.md#rls--permission-testing).
 
 ## Admin privileges
 
@@ -327,9 +309,10 @@ update public.profiles set is_admin = true where email = 'you@example.com';
 
 `supabase db pull` and this baseline capture schema, RLS, functions, triggers, grants. They do
 **not** capture: OAuth provider config + secrets, auth redirect URLs, email templates, project
-API keys, or the **vault secrets** the cron jobs send (`refresh_news_secret`, `monitor_run_secret`,
-`news_ingest_secret`). (The three Storage buckets ARE created by migrations, and so are the four
-`pg_cron` jobs — `20260925090000_cron_jobs_as_code.sql`; a job whose vault secret is absent posts
+API keys, or the **vault secrets** the cron jobs send (`refresh_news_secret`,
+`news_ingest_secret`). (The three Storage buckets ARE created by migrations, and so are the
+`pg_cron` jobs — `20260925090000_cron_jobs_as_code.sql`, less the retired area monitors' job that
+`20261004150000_retire_area_monitors.sql` unschedules; a job whose vault secret is absent posts
 nothing.) Record those changes in [`MIGRATIONS.md`](MIGRATIONS.md) manually.
 
 ---
@@ -353,7 +336,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **49**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **44**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin` (and is not a view).
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't

@@ -265,7 +265,6 @@
     "tests/maplibre-6-migration-checks.test.mjs": 0.2,
     "tests/maplibre-attribution-xss-checks.test.mjs": 2.6,
     "tests/module-split-checks.test.mjs": 6.3,
-    "tests/monitor-logic.test.mjs": 0,
     "tests/multi-aspect-audit-checks.test.mjs": 0.2,
     "tests/mutation-tests-off-tree-checks.test.mjs": 90,
     "tests/news-cluster-checks.test.mjs": 5.7,

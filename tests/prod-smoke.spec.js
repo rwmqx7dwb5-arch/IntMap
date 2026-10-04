@@ -48,7 +48,7 @@ const MODULE_GLOBALS = ['IntMapCompanies', 'IntMapCompare', 'IntMapRouting',
      THE CHECK IS NOT DROPPED, IT MOVED: the (#R209) test below asks the loader for every on-demand
      module and then requires each one to have arrived, which covers all EIGHT split files rather
      than the two this list happened to name. */
-  'IntMapTimeBorders', 'IntMapMonitors',
+  'IntMapTimeBorders',
   /* (#R231) js/basemap-switch.js — the phone's base-map square. An EAGER global (the file is an IIFE
      that publishes on import) and NOT an IntMapModules factory, so this list is where a deploy that
      lost the file is caught. */

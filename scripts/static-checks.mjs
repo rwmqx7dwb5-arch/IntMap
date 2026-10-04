@@ -511,7 +511,6 @@ try {
       ['const _EXTRA_GZ=[', 'js/gazetteer.js'],
       ['const DEFAULT_DASH_CARDS=[', 'js/reference-data.js'],
       ['const DATA_SOURCES=[', 'js/reference-data.js'],
-      ['window.IntMapMonitors=(function(){', 'js/monitors.js'],
       ['window.IntMapMaddison=(function(){', 'js/history.js'],
       ['window.IntMapHistStates=(function(){', 'js/history.js'],
       ['window.IntMapHistId=(function(){', 'js/history.js'],

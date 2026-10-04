@@ -76,8 +76,8 @@ export function workspace(HOST){
          Companies/Countries/Atlasの並びから一旦撤去。」 Workspace mode listed it in its window menu,
          which is one of the 導線 the withdrawal has to close; leaving it would let a desktop reader
          open by name exactly the panel the phone and the sidebar no longer offer.
-         ⚠ #monitors-feed still exists in index.html and js/monitors.js still builds it — nothing is
-         deleted, this row is. Its default rect below (`monitors:flo(3)`) goes with it. */
+         (monitors-retire) The feed and the module behind it were later removed as well. Its default
+         rect below (`monitors:flo(3)`) went with this row. */
       /* (#R101) Community window removed from workspace mode ("まだコミュニティ機能が残っている") — the community
          feature was already retired from the sidebar (R98); this leftover window/menu entry is gone too. */
       {id:'map',   sels:['#map-container'],   t:()=>T('Map','地図','Karte','Карта','Mapa'), min:[380,300]},

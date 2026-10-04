@@ -84,7 +84,6 @@
   ".dash-nav → 6",
   "#live-news-feed .stats-toolbar → 6",
   "#countries-feed .stats-toolbar → 6",
-  ".mon-ov → 100000",
   "#space-view .sp-sidebox → 9",
   "#space-view .sp-timebox → 8",
   "#docked-feed .im-docked → auto !important",

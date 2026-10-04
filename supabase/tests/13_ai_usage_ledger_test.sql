@@ -3,7 +3,7 @@
 --    ① the six cost columns exist on ai_usage and on ai_turns, default 0;
 --    ② record_ai_usage adds to today's ai_usage row and to the live turn row, and NEVER changes
 --      count (the allowance) — recording a cost neither spends nor refunds a use;
---    ③ an account with no row today (the developer, a scheduled monitor's owner) gets one with
+--    ③ an account with no row today (the developer, for one) gets one with
 --      count 0; zero calls write nothing; negative inputs read as 0;
 --    ④ only service_role may call it; the owner reads the numbers through the existing RLS.
 -- ============================================================================
