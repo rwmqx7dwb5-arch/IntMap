@@ -48,7 +48,7 @@ window.IntMapWidgetSmart = (function () {
     if (/country|place-alerts/.test(id)) t.selection = true;
     if (/chronos|progress|time\.|moon\./.test(id)) t.chronos = true;
     if (/hazard|alert|quake|viewport-situation/.test(id)) t.hazard = true;
-    if (/route|monitors|atlas-brief/.test(id)) t.task = true;
+    if (/route|watched-places|atlas-brief/.test(id)) t.task = true;
     if (/moon|sun\.rise|space\.kp/.test(id)) t.night = true;
     if (/^markets\./.test(id)) t.market = true;
     return t;
@@ -84,7 +84,9 @@ window.IntMapWidgetSmart = (function () {
     }
     if (t.task) {
       if (/route/.test(def.id) && ctx.route && ctx.route.active) return { score: 800, reason: L('a route is on the map', '経路を表示中のため', 'eine Route liegt auf der Karte', 'на карте есть маршрут', 'hay una ruta en el mapa') };
-      if (/monitors/.test(def.id) && ctx.monitors && ctx.monitors.length) return { score: 780, reason: L('you are monitoring an area', '地域を監視中のため', 'Sie beobachten ein Gebiet', 'вы наблюдаете за районом', 'está vigilando una zona') };
+      /* (widget-watch-unify) the watched places (js/place-watch.js) — it comes forward when the watcher's last
+         run found something NEW, not merely because a place is watched (the withdrawn monitors' rung) */
+      if (/watched-places/.test(def.id) && ctx.watch && ctx.watch.fresh > 0) return { score: 780, reason: L('something new is near a place you watch', '見守る場所の近くに新着があるため') };
     }
     if (t.selection && ctx.selection && ctx.selection.country) {
       return { score: 700, reason: L('a country is selected', '国を選択中のため', 'ein Land ist ausgewählt', 'выбрана страна', 'hay un país seleccionado') };

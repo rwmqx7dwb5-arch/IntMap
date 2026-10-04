@@ -4836,6 +4836,15 @@ migration の既定値・CHECK を照合する。③ ページの読み手と実
 （初回の基準をアカウントに保存 → 新着 → トースト 1 回 → 同じものを再び知らせない → 既読がアカウントへ）。⑤ Atlas の能力（places.watch・unwatch・watchDigest・watchSeen）を
 代役の DB で実行（未ログイン・入力なし・2 度目・見守っていない場所の停止）。⑥ 入口は動的 import、書き込む操作要素は効果を
 宣言し、撤去済みの `tab.monitors` を呼ばず、AI を呼ばない。
+### `tests/widget-watch-unify-checks.test.mjs` (widget-watch-unify)
+5 本・ネットワーク無し。ウィジェットの定義を**読み込んで描画**する。① 「見守る場所」のカードは本物の `js/place-watch.js`
+（代役のアカウントとフィードで `checkNow`）の `digestData` の新着だけを、その文で並べ、ボタンはアカウントの「見守る場所」を
+開く。旧 ID `intmap.monitors` はこのカードの別名で、板のどのカードも `window.IntMapMonitors` を読まない。② 「監視は
+サイドバーにあります」と未登録の `tab.monitors` を呼ぶ経路が `js/` に無い。③ 「保存地点の警報」と見守りが同じ地点に
+同じ警報を出す（区域が地点を含むものだけ。周辺の矩形なら 3 件出ていた）。④ 「国のウォッチ」は出荷している Natural Earth
+10 m で、ピンの地点がその国の中にある見出しだけを出す（TR・RU・NO・NE に無関係な見出しが出ない・JP と FR に自国の見出し・
+場所不明の擬似座標は数えない・散らしたピンは元の地点で）、警報はその国の alpha-3 で訊き、国の選択肢は
+`validateConfig` が保つ alpha-2（国・祝日のカードも）。⑤ 警報の判定は見守りの読み手に訊き、板に矩形を持たない。
 ### `tests/collection-workspace-checks.test.mjs` (collection-workspace)
 4 本・データベース無し（DB の半分は `supabase/tests/24_collection_workspace_test.sql`）。① migration の扉——`save_view` /
 `publish_collection` / `copy_shared_collection` は uuid を取らず `auth.uid()` で口座を決め anon から剥がされ、2 表とも

@@ -2,12 +2,12 @@
  *  IntMap · WIDGET DEFINITIONS — THE ONES ONLY THIS APP CAN BUILD
  * ----------------------------------------------------------------------------
  *  Map centre · map scale · featured layer · active layers · viewport situation · map news ·
- *  saved-place alerts · country watch · monitor summary · route status · Atlas briefing · Chronos.
+ *  saved-place alerts · country watch · watched places · route status · Atlas briefing · Chronos.
  *
  *  ══ WHY THESE AND NOT MORE CLOCKS ═════════════════════════════════════════════════════════════
  *  A twelfth clock is a thing any dashboard can show. "Which warnings are in force inside the piece
  *  of the world I am looking at, from the same normalised feed the map is painting" is not — it
- *  exists because the alert pipeline, the layer registry, the news geocoder, the monitors and the
+ *  exists because the alert pipeline, the layer registry, the news geocoder, the watched places and the
  *  master clock are all already here.
  *
  *  ══ ⚠ EVERY ONE OF THESE READS AN EXISTING SUBSYSTEM. NONE OF THEM RE-IMPLEMENTS ONE ═══════════
@@ -463,18 +463,23 @@ import { IntMapGeoEngine } from './geo-engine.js';
   WC.define({
     id: 'intmap.place-alerts', family: 'intmap', variant: 'place-alerts', category: 'hazard-live', icon: 'bell',
     nm: function () { return L('Alerts for your places', '保存地点の警報', 'Warnungen für Ihre Orte', 'Предупреждения по вашим местам', 'Avisos para sus lugares'); },
-    desc: function () { return L('Warnings in force at the places you saved or are watching', '保存・監視している地点で発令中の警報', 'Warnungen an Ihren gespeicherten Orten', 'Действующие предупреждения по вашим местам', 'Avisos vigentes en los lugares que guardó'); },
+    desc: function () { return L('Warnings in force at the places you saved or watch', '保存した場所・見守る場所で発令中の警報'); },
     keywords: function () { return [L('alerts', '警報', 'Warnungen', 'предупреждения', 'avisos'), L('saved places', '保存地点', 'gespeicherte Orte', 'сохранённые места', 'lugares guardados'), L('warning', '注意報', 'Warnung', 'оповещение', 'alerta')]; },
     supportedSizes: ['s', 'm', 'l'], defaultSize: 'm',
     configSchema: {
       includeHere: { type: 'boolean', default: true, label: function () { return L('Include my location', '現在地も含める', 'Meinen Standort einbeziehen', 'Включать моё местоположение', 'Incluir mi ubicación'); } },
-      radiusKm: { type: 'number', default: 40, min: 5, max: 300, label: function () { return L('Around each place', '各地点の周辺', 'Umkreis je Ort', 'Вокруг каждого места', 'Alrededor de cada lugar'); } },
+      /* ⚠ (widget-watch-unify) NO «AROUND EACH PLACE» RADIUS. A warning is in force at a place when its AREA
+         CONTAINS the place — the rule Watched places judges by (placeAlerts below). The radius this card had
+         widened the test to a box of radiusKm/111 degrees, so the same saved place could show a warning here
+         that its watch (and the warnings layer's own tap) said was not there. A stored radiusKm is dropped by
+         js/widget-store.js validateConfig, which keeps only what the schema names. */
     },
-    defaultConfig: function () { return { includeHere: true, radiusKm: 40 }; },
-    refreshPolicy: { kind: 'realtime-local', tick: function () { return 'minute'; }, relevantEvents: ['map', 'geo', 'alerts'] },
+    defaultConfig: function () { return { includeHere: true }; },
+    refreshPolicy: { kind: 'realtime-local', tick: function () { return 'minute'; }, relevantEvents: ['map', 'geo', 'alerts', 'watch'] },
     renderers: {
       s: function (ctx, cfg, st, api) {
         var r = placeAlerts(ctx, cfg);
+        if (r.loading) return null;
         if (r.reason) return api.empty(r.reason);
         if (!r.rows.length) return api.empty(noAlerts());
         var a = r.rows[0];
@@ -482,6 +487,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
       },
       m: function (ctx, cfg, st, api) {
         var r = placeAlerts(ctx, cfg);
+        if (r.loading) return null;
         if (r.reason) return api.empty(r.reason);
         if (!r.rows.length) return api.empty(noAlerts());
         return el('div', { class: 'wgt-body' }, [
@@ -493,6 +499,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
       },
       l: function (ctx, cfg, st, api) {
         var r = placeAlerts(ctx, cfg);
+        if (r.loading) return null;
         if (r.reason) return api.empty(r.reason);
         if (!r.rows.length) return api.empty(noAlerts());
         var byPlace = {};
@@ -508,7 +515,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
           })),
           R.actions([
             { label: L('Open the warnings layer', '警報レイヤーを開く', 'Warnebene öffnen', 'Открыть слой предупреждений', 'Abrir la capa de avisos'), icon: 'layers', run: function () { api.setLayer('wp-dl-alerts', true); } },
-            { label: L('Watch a place', '地点を監視', 'Ort beobachten', 'Наблюдать за местом', 'Vigilar un lugar'), icon: 'eye', run: function () { api.openMonitors(); } },
+            { label: L('Watched places', '見守る場所'), icon: 'eye', run: function () { api.openWatchedPlaces(); } },
           ]),
           R.source({ at: r.at }),
         ]);
@@ -518,9 +525,20 @@ import { IntMapGeoEngine } from './geo-engine.js';
   function noAlerts() {
     return L('No warnings are in force at your places', '保存地点で発令中の警報はありません', 'An Ihren Orten sind keine Warnungen aktiv', 'По вашим местам предупреждений нет', 'No hay avisos vigentes en sus lugares');
   }
+  /* ══ ⚠ ONE ANSWER TO «IS THIS WARNING IN FORCE AT THIS PLACE» (widget-watch-unify) ═════════════════
+     Asked of Watched places' own warnings reader (js/place-watch.js makeReaders().warning(): the warnings
+     layer's records whose AREA CONTAINS the point, by the layer's own point test — the answer the map gives
+     when the reader taps there). It is not re-implemented here: a second test is how this card used a
+     padded box while the watch used the area, and the two disagreed about the same saved place. */
+  function layerOffText() {
+    return L('The warnings layer has not been switched on yet', '警報レイヤーがまだ有効になっていません', 'Die Warnebene ist noch nicht eingeschaltet', 'Слой предупреждений ещё не включён', 'La capa de avisos aún no está activada');
+  }
   function placeAlerts(ctx, cfg) {
-    var W = alertsPack();
-    if (!W) return { rows: [], reason: L('The warnings layer has not been switched on yet', '警報レイヤーがまだ有効になっていません', 'Die Warnebene ist noch nicht eingeschaltet', 'Слой предупреждений ещё не включён', 'La capa de avisos aún no está activada') };
+    if (!alertsPack()) return { rows: [], reason: layerOffText() };
+    var M = WC.watchModule({ anyReader: !ctx.preview });   /* a gallery preview loads nothing */
+    if (!M) return { rows: [], loading: true };
+    var wr = M.makeReaders().warning();
+    if (!wr || wr.state !== 'ok') return { rows: [], reason: layerOffText() };
     var places = (ctx.places || []).slice();
     if (cfg.includeHere && ctx.location.state === 'granted' && ctx.location.lat != null) {
       places.unshift({ name: L('My location', '現在地', 'Mein Standort', 'Моё местоположение', 'Mi ubicación'), lat: ctx.location.lat, lng: ctx.location.lng });
@@ -528,15 +546,12 @@ import { IntMapGeoEngine } from './geo-engine.js';
     if (!places.length) {
       return { rows: [], reason: L('Save a place, or allow your location, to watch it here', '地点を保存するか位置情報を許可すると、ここに表示されます', 'Speichern Sie einen Ort oder erlauben Sie Ihren Standort', 'Сохраните место или разрешите геолокацию', 'Guarde un lugar o permita su ubicación para verlo aquí') };
     }
-    var pad = (cfg.radiusKm || 40) / 111;
-    var rows = [], at = 0;
+    var rows = [];
     places.forEach(function (p) {
-      var q = W.alertsQuery({ lng: p.lng, lat: p.lat, padDeg: pad, limit: 6 });
-      at = Math.max(at, q.at || 0);
-      (q.alerts || []).forEach(function (a) { rows.push(Object.assign({ placeName: p.name || WC.countryName(a.iso, a.iso) }, a)); });
+      (wr.near(p.lng, p.lat) || []).forEach(function (a) { rows.push(Object.assign({ placeName: p.name || WC.countryName(a.iso, a.iso) }, a)); });
     });
     rows.sort(function (a, b) { return (b.level - a.level) || ((b.at || 0) - (a.at || 0)); });
-    return { rows: rows, at: at };
+    return { rows: rows, at: wr.at || 0 };
   }
   function flyAlert(a) {
     if (a && a.bbox) WC.fitBounds([[a.bbox[0], a.bbox[1]], [a.bbox[2], a.bbox[3]]], { padding: 60, maxZoom: 9 });
@@ -554,7 +569,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
     supportedSizes: ['s', 'm', 'l'], defaultSize: 'm',
     configSchema: {
       cc: { type: 'country', default: 'US', label: function () { return L('Country', '国', 'Land', 'Страна', 'País'); },
-        options: function () { var D = window.IntMapWidgetDefsData; return (D ? D.countryRows() : []).map(function (r) { return { value: r.cc, label: WC.countryName(r.cc, r.name) }; }).sort(function (a, b) { return a.label.localeCompare(b.label); }); } },
+        options: function () { var D = window.IntMapWidgetDefsData; return D ? D.countryOptions() : []; } },
       follow: { type: 'boolean', default: true, label: function () { return L('Follow the country selected on the map', '地図で選択中の国に追従', 'Dem auf der Karte gewählten Land folgen', 'Следовать за выбранной страной', 'Seguir al país seleccionado en el mapa'); } },
     },
     defaultConfig: function (ctx) { return { cc: (ctx && ctx.selection && ctx.selection.country) || 'US', follow: true }; },
@@ -564,20 +579,20 @@ import { IntMapGeoEngine } from './geo-engine.js';
       s: function (ctx, cfg, st, api) {
         var w = watch(ctx, cfg); if (!w) return noMap(api);
         return el('div', { class: 'wgt-body' }, [
-          el('div', { class: 'wgt-row gap' }, [el('span', { class: 'wgt-flag', text: flagOf(w.cc), 'aria-hidden': 'true' }),
-            R.value({ small: true, value: WC.countryName(w.cc, w.name),
+          el('div', { class: 'wgt-row gap' }, [el('span', { class: 'wgt-flag', text: flagOf(w.a2), 'aria-hidden': 'true' }),
+            R.value({ small: true, value: WC.countryName(w.a2 || w.cc, w.nameEn || w.cc),
               caption: w.alerts.length ? (w.alerts.length + ' ' + L('warnings', '警報', 'Warnungen', 'предупреждений', 'avisos')) : L('no warnings', '警報なし', 'keine Warnungen', 'нет предупреждений', 'sin avisos') })]),
         ]);
       },
       m: function (ctx, cfg, st, api) {
         var w = watch(ctx, cfg); if (!w) return noMap(api);
         return el('div', { class: 'wgt-body' }, [
-          el('div', { class: 'wgt-row gap' }, [el('span', { class: 'wgt-flag', text: flagOf(w.cc), 'aria-hidden': 'true' }),
-            R.value({ small: true, value: WC.countryName(w.cc, w.name) })]),
+          el('div', { class: 'wgt-row gap' }, [el('span', { class: 'wgt-flag', text: flagOf(w.a2), 'aria-hidden': 'true' }),
+            R.value({ small: true, value: WC.countryName(w.a2 || w.cc, w.nameEn || w.cc) })]),
           R.chips([
             { icon: 'users', label: L('Population', '人口', 'Bevölkerung', 'Население', 'Población'), value: w.pop != null ? WC.compact(w.pop) : '—' },
             { icon: 'bell', label: L('Warnings', '警報', 'Warnungen', 'Предупреждения', 'Avisos'), value: w.alerts.length },
-            { icon: 'news', label: L('Headlines', '見出し', 'Meldungen', 'Заголовки', 'Titulares'), value: w.news.length },
+            { icon: 'news', label: L('Headlines', '見出し', 'Meldungen', 'Заголовки', 'Titulares'), value: newsCount(w) },
           ]),
           R.actions([
             { label: L('Show on the map', '地図で見る', 'Auf der Karte zeigen', 'Показать на карте', 'Ver en el mapa'), icon: 'pin', run: function () { api.flyCountry(w.cc); } },
@@ -588,8 +603,8 @@ import { IntMapGeoEngine } from './geo-engine.js';
       l: function (ctx, cfg, st, api) {
         var w = watch(ctx, cfg); if (!w) return noMap(api);
         return el('div', { class: 'wgt-body' }, [
-          el('div', { class: 'wgt-row gap' }, [el('span', { class: 'wgt-flag big', text: flagOf(w.cc), 'aria-hidden': 'true' }),
-            R.value({ small: true, value: WC.countryName(w.cc, w.name),
+          el('div', { class: 'wgt-row gap' }, [el('span', { class: 'wgt-flag big', text: flagOf(w.a2), 'aria-hidden': 'true' }),
+            R.value({ small: true, value: WC.countryName(w.a2 || w.cc, w.nameEn || w.cc),
               caption: ctx.chronos && !ctx.chronos.isLive ? (L('as of', '時点', 'Stand', 'на дату', 'a fecha de') + ' ' + ctx.chronos.iso) : '' })]),
           R.facts([
             { k: L('Population', '人口', 'Bevölkerung', 'Население', 'Población'), v: w.pop != null ? WC.compact(w.pop) : '—' },
@@ -613,83 +628,163 @@ import { IntMapGeoEngine } from './geo-engine.js';
       },
     },
   });
-  function flagOf(cc) { var D = window.IntMapWidgetDefsData; return D ? D.flagEmoji(cc) : ''; }
-  function watch(ctx, cfg) {
-    var D = window.IntMapWidgetDefsData;
-    var cc = (cfg.follow && ctx.selection.country) ? String(ctx.selection.country).toUpperCase() : cfg.cc;
-    var row = (D ? D.countryRows() : []).find(function (r) { return r.cc === cc; }) || { cc: cc };
-    var W = alertsPack();
-    var iso3 = row.iso3 || null;
-    var alerts = W ? (W.alertsQuery({ iso: iso3 || cc, limit: 8 }).alerts || []) : [];
-    var news = mapNewsForCountry(cc);
-    return Object.assign({ cc: cc, alerts: alerts, news: news }, row);
+  function flagOf(a2) { var D = window.IntMapWidgetDefsData; return (D && a2) ? D.flagEmoji(a2) : ''; }
+  /* ══ ⚠ WHICH COUNTRY A RECORD BELONGS TO IS ASKED OF THE RECORD, NEVER OF A SPELLING (widget-watch-unify) ══
+     MEASURED (evaluated, this file as it was): the headlines were chosen by
+     String(p.mapped).toUpperCase().indexOf(cc) — but `mapped` is not a country, it is the pin's kind,
+     'true' (placed on its subject) or 'none' (a pseudo-point: js/app-body.js applyPinMode). So «TR» and «RU»
+     (substrings of TRUE) listed every placed headline in the world, «NO» and «NE» (of NONE) every unplaced
+     one, and every other country none. The warnings were asked for by `row.iso3`, a field the country rows
+     do not have (they are keyed by the ISO alpha-3 `code` — js/countries-ui.js), so the 2-letter code the
+     card's config holds matched no warning record (those carry alpha-3: js/world-packs.js).
+     Now: the country row is resolved by its code (D.countryRow — alpha-2 or alpha-3); the warnings are the
+     layer's records issued for that alpha-3; a headline is the country's when its PIN'S POINT lies in the
+     country's outline — js/news-intel-core.js makeCountryIndex, the point test the news brief and the news
+     story use (it refuses to place by name: an event called «Georgia» sits in Atlanta). */
+  var _cidx = null, _cidxP = null;
+  function countryIndex(preview) {
+    if (_cidx) return { state: 'ok', index: _cidx };
+    var NI = window.IntMapNewsIntel;
+    if (!NI || typeof NI.outlines !== 'function') return { state: 'unavailable' };
+    if (!_cidxP && !preview) {   /* a gallery preview fetches nothing (js/widget-gallery.js previewContext) */
+      /* the 10 m outline: js/news-intel-core.js COAST_KM is measured against it (js/news-intel.js says why) */
+      _cidxP = Promise.all([import('./news-intel-core.js'), NI.outlines('10m')]).then(function (r) {
+        _cidx = r[0].makeCountryIndex((r[1] && r[1].features) || []);
+        WC.emit('watch');
+        return _cidx;
+      }, function () { _cidxP = null; return null; });   /* a failed read is asked again on the next paint */
+    }
+    return { state: 'loading' };
   }
-  function mapNewsForCountry(cc) {
+  /* the key js/news-intel-core.js countryKeyOf gives that country's outline: its alpha-2, or X-<alpha-3>
+     where Natural Earth has no alpha-2 (-99: Northern Cyprus, Somaliland …) */
+  function outlineKeyOf(row) {
+    if (row && /^[A-Z]{2}$/.test(row.a2 || '')) return row.a2;
+    return (row && row.code) ? 'X-' + String(row.code).toUpperCase() : '';
+  }
+  function newsInCountry(row, preview) {
+    var ix = countryIndex(preview);
+    if (ix.state !== 'ok') return { state: ix.state, items: [] };
+    var key = outlineKeyOf(row);
     var host = WC.host();
     var feats = (host && host.newsFeatures) || [];
-    return feats.filter(function (f) { var p = f.properties || {}; return p.mapped && String(p.mapped).toUpperCase().indexOf(String(cc).toUpperCase()) >= 0; })
-      .slice(0, 5)
-      .map(function (f) { var p = f.properties || {}; return { title: String(p.title || ''), publisher: String(p.publisher || ''), link: p.link || null }; });
+    var items = !key ? [] : feats.filter(function (f) {
+      var p = f.properties || {};
+      if (p.mapped !== 'true') return false;                 /* 'none' is a pseudo-point, not a place */
+      /* the pin's own anchor — js/news-ui.js _spreadDupNewsPins fans stacked pins out and keeps it in __oc */
+      var c = f.__oc || (f.geometry && f.geometry.coordinates);
+      return !!c && ix.index.keyAt(+c[0], +c[1]) === key;
+    }).map(function (f) { var p = f.properties || {}; return { title: String(p.title || ''), publisher: String(p.publisher || ''), link: p.link || null }; });
+    return { state: 'ok', items: items };
   }
+  function watch(ctx, cfg) {
+    var D = window.IntMapWidgetDefsData;
+    var want = (cfg.follow && ctx.selection.country) ? ctx.selection.country : cfg.cc;
+    var row = (D && D.countryRow) ? D.countryRow(want) : null;
+    var cc = row ? row.cc : String(want || '').toUpperCase();
+    var W = alertsPack();
+    var alerts = (W && row && row.code) ? (W.alertsQuery({ iso: row.code, limit: 8 }).alerts || []) : [];
+    var news = row ? newsInCountry(row, ctx.preview) : { state: 'ok', items: [] };
+    return Object.assign({}, row || {}, { cc: cc, a2: row && /^[A-Z]{2}$/.test(row.a2 || '') ? row.a2 : '', alerts: alerts, news: news.items, newsState: news.state });
+  }
+  function newsCount(w) { return w.newsState === 'ok' ? w.news.length : w.newsState === 'loading' ? '…' : '—'; }
 
   /* ══════════════════════════════════════════════════════════════════════════════════════════════
-     MONITOR SUMMARY (§15.F)
-     ══════════════════════════════════════════════════════════════════════════════════════════════ */
+     WATCHED PLACES (§15.F) — what is new near the places the reader watches
+     ══════════════════════════════════════════════════════════════════════════════════════════════
+     (widget-watch-unify) This card was «Area monitors»: it read window.IntMapMonitors, a subsystem whose every
+     entry point was withdrawn (docs/architecture/18-area-monitors.md §18.2), and its «Open monitors» button
+     ran an unregistered command and toasted «Monitors are in the sidebar» — there is no such sidebar. It
+     now reads Watched places (§18.1), the product built where those entry points were: the watcher's LAST
+     RUN, through digestData() — the same structured digest Atlas reads (places.watchDigest) — and its
+     button opens Account ▸ Watched places. Nothing here judges near / strong / new; that is
+     supabase/functions/_shared/place-watch.js, run by the watcher.
+     ⚠ THE OLD ID IS KEPT AS A LEGACY ID, so a board that saved «intmap.monitors» comes back with this card
+     in its place (js/widget-store.js resolves it through WC.resolveId). */
+  var _watchAsked = false, _watchErr = '';
+  function watchState(preview) {
+    var host = WC.host();
+    if (!host || !host.user) return { state: 'signed-out' };
+    var M = WC.watchModule();
+    if (!M) return { state: 'loading' };
+    var run = M.lastRun();
+    if (run) return { state: 'ok', M: M, d: M.digestData(run) };
+    if (_watchErr) return { state: 'error', error: _watchErr };
+    /* the watcher has not finished a run yet (its first look waits for an idle page): this card, being
+       painted, asks for the same check Atlas's places.watchDigest asks for — once; js/place-watch.js
+       checkNow hands every caller the one running check, so this never starts a second */
+    if (!_watchAsked && !preview) {   /* a gallery preview asks for nothing */
+      _watchAsked = true;
+      Promise.resolve(M.checkNow(host)).then(function (r) { if (r && !r.ok) _watchErr = String(r.error || 'failed'); WC.invalidateContext(); WC.emit('watch'); },
+        function () { _watchErr = 'failed'; WC.emit('watch'); });
+    }
+    return { state: 'loading' };
+  }
+  function watchKindIcon(k) { return k === 'warning' ? 'bell' : k === 'news' ? 'news' : k === 'volcano' ? 'target' : 'activity'; }
+  function watchItemRow(M, it, placeName, lang) {
+    var sub = [placeName, it.source || null, it.at ? WC.ago(+new Date(it.at)) : null].filter(Boolean).join(' · ');
+    var row = { icon: watchKindIcon(it.kind), title: M.itemLine(it, lang), sub: sub };
+    if (it.url) row.href = it.url;
+    else if (isFinite(it.lng) && isFinite(it.lat)) row.onClick = function () { WC.flyTo({ center: [it.lng, it.lat], zoom: 7 }); };
+    return row;
+  }
+  /* the records of every watched place, the fresh ones (what the digest calls new) apart, each with its place */
+  function watchRows(M, places, lang, n) {
+    var fresh = [], current = [], freshN = 0, currentN = 0;
+    places.forEach(function (p) {
+      freshN += p.fresh.length; currentN += p.current.length;
+      p.fresh.forEach(function (it) { fresh.push(watchItemRow(M, it, p.name, lang)); });
+      p.current.forEach(function (it) { current.push(watchItemRow(M, it, p.name, lang)); });
+    });
+    return { fresh: fresh.slice(0, n), current: current.slice(0, n), freshN: freshN, currentN: currentN };
+  }
+  function watchErrorText(e) {
+    if (e === 'not_deployed') return L('Watched places are not available yet', '見守る場所はまだ利用できません');
+    return L('Your watched places could not be read just now', '見守る場所を今は読み取れませんでした');
+  }
+  function watchKindWord(k) {
+    return k === 'quake' ? L('earthquakes', '地震') : k === 'warning' ? L('warnings', '警報') : k === 'volcano' ? L('volcanoes', '火山') : L('news', 'ニュース');
+  }
+  function watchBody(ctx, cfg, st, api, size) {
+    var s = watchState(ctx.preview);
+    if (s.state === 'loading') return null;
+    var open = { label: L('Open watched places', '見守る場所を開く'), icon: 'eye', run: function () { api.openWatchedPlaces(); } };
+    var note = function (icon, tone, text) { return el('div', { class: 'wgt-body' }, [WC.notice({ icon: icon, tone: tone, text: text }), size === 's' ? null : R.actions([open])]); };
+    if (s.state === 'signed-out') return note('eye', 'muted', L('Sign in to watch your saved places', 'ログインすると保存した場所を見守れます'));
+    if (s.state === 'error') return note('close', 'warn', watchErrorText(s.error));
+    var watched = s.d.places.filter(function (p) { return !(p.settings && p.settings.enabled === false); });
+    if (!watched.length) return note('eye', 'muted', L('No place is watched yet', '見守っている場所はまだありません'));
+    var rows = watchRows(s.M, watched, ctx.lang, size === 'l' ? 6 : 3);
+    var caption = rows.freshN ? L('new near your watched places', '見守る場所の近くの新着') : L('nothing new near your watched places', '見守る場所の近くに新着はありません');
+    if (size === 's') return el('div', { class: 'wgt-body' }, [R.value({ value: rows.freshN, caption: caption })]);
+    /* a feed that could not be read is said, never shown as «nothing» (js/place-watch.js) */
+    var unread = [];
+    watched.forEach(function (p) { Object.keys(p.sources || {}).forEach(function (k) { if (p.sources[k].state === 'unavailable' && unread.indexOf(k) < 0) unread.push(k); }); });
+    var list = rows.freshN ? rows.fresh : rows.current;
+    return el('div', { class: 'wgt-body' }, [
+      R.value({ value: rows.freshN, caption: caption }),
+      list.length ? R.list(list, { dense: true }) : null,
+      unread.length ? WC.notice({ icon: 'activity', tone: 'muted', text: L('Not read this time: ', '今回確認できなかったもの: ') + unread.map(watchKindWord).join(' · ') }) : null,
+      R.actions([open]),
+      R.source({ at: s.d.at ? +new Date(s.d.at) : null }),
+    ]);
+  }
   WC.define({
-    id: 'intmap.monitors', family: 'intmap', variant: 'monitors', category: 'hazard-live', icon: 'eye',
-    nm: function () { return L('Area monitors', '地域監視', 'Gebietsüberwachung', 'Мониторы районов', 'Monitores de zona'); },
-    desc: function () { return L('The areas you have asked IntMap to keep an eye on', 'IntMap に監視を依頼した地域', 'Bereiche, die IntMap für Sie beobachtet', 'Районы, за которыми следит IntMap', 'Zonas que IntMap vigila por usted'); },
-    keywords: function () { return [L('monitor', '監視', 'Überwachung', 'мониторинг', 'monitor'), L('watch area', '監視地域', 'Beobachtungsgebiet', 'зона наблюдения', 'zona vigilada'), L('report', 'レポート', 'Bericht', 'отчёт', 'informe')]; },
+    id: 'intmap.watched-places', legacyIds: ['intmap.monitors'], family: 'intmap', variant: 'watched-places', category: 'hazard-live', icon: 'eye',
+    nm: function () { return L('Watched places', '見守る場所'); },
+    desc: function () { return L('What is new near the places you watch — earthquakes, warnings, volcanoes and news', '見守っている場所の近くの新着——地震・警報・火山・ニュース'); },
+    keywords: function () { return [L('watched places', '見守る場所'), L('near my places', '保存した場所の近く'), L('monitor', '監視', 'Überwachung', 'мониторинг', 'monitor'), L('alerts', '警報', 'Warnungen', 'предупреждения', 'avisos')]; },
     supportedSizes: ['s', 'm', 'l'], defaultSize: 'm',
     configSchema: {}, defaultConfig: function () { return {}; },
-    refreshPolicy: { kind: 'stale-while-revalidate', minIntervalMs: 5 * 60000, staleAfterMs: 30 * 60000, cacheTtlMs: 0 },
-    cacheable: false,                                       /* an account's monitors never go in a shared cache */
-    requestKey: function () { return 'monitors:list'; },
-    loader: function () {
-      var M = window.IntMapMonitors;
-      if (!M || !M._list) return Promise.resolve({ empty: true });
-      return Promise.resolve(M._list()).then(function (rows) {
-        WC.setMonitors(rows || []);            /* the Smart Stack asks the context, not the network */
-        if (!Array.isArray(rows) || !rows.length) return { empty: true };
-        return { data: rows, source: 'IntMap' };
-      }).catch(function () { return { empty: true }; });
-    },
-    emptyText: function () { return L('You are not monitoring any area yet', 'まだ監視中の地域はありません', 'Sie beobachten noch kein Gebiet', 'Вы пока не наблюдаете ни за одним районом', 'Aún no vigila ninguna zona'); },
+    cacheable: false,                                       /* an account's watched places never go in a shared cache */
+    /* the watcher runs on its own clock; the card re-reads its last run each minute and when it arrives */
+    refreshPolicy: { kind: 'realtime-local', tick: function () { return 'minute'; }, relevantEvents: ['watch'] },
     renderers: {
-      s: function (ctx, cfg, st) {
-        if (!st.data) return null;
-        return el('div', { class: 'wgt-body' }, [R.value({ value: st.data.length, caption: L('areas monitored', '監視中の地域', 'beobachtete Gebiete', 'наблюдаемых районов', 'zonas vigiladas') })]);
-      },
-      m: function (ctx, cfg, st, api) {
-        if (!st.data) return null;
-        return el('div', { class: 'wgt-body' }, [
-          R.value({ value: st.data.length, caption: L('areas monitored', '監視中の地域', 'beobachtete Gebiete', 'наблюдаемых районов', 'zonas vigiladas') }),
-          R.list(st.data.slice(0, 3).map(function (m) { return monRow(m, api); }), { dense: true }),
-          R.actions([{ label: L('Open monitors', '監視を開く', 'Überwachung öffnen', 'Открыть мониторы', 'Abrir monitores'), icon: 'eye', run: function () { api.openMonitors(); } }]),
-        ]);
-      },
-      l: function (ctx, cfg, st, api) {
-        if (!st.data) return null;
-        return el('div', { class: 'wgt-body' }, [
-          R.value({ value: st.data.length, caption: L('areas monitored', '監視中の地域', 'beobachtete Gebiete', 'наблюдаемых районов', 'zonas vigiladas') }),
-          R.list(st.data.slice(0, 8).map(function (m) { return monRow(m, api, true); }), { dense: true }),
-          R.actions([{ label: L('Open monitors', '監視を開く', 'Überwachung öffnen', 'Открыть мониторы', 'Abrir monitores'), icon: 'eye', run: function () { api.openMonitors(); } }]),
-        ]);
-      },
+      s: function (ctx, cfg, st, api) { return watchBody(ctx, cfg, st, api, 's'); },
+      m: function (ctx, cfg, st, api) { return watchBody(ctx, cfg, st, api, 'm'); },
+      l: function (ctx, cfg, st, api) { return watchBody(ctx, cfg, st, api, 'l'); },
     },
   });
-  function monRow(m, api, big) {
-    var M = window.IntMapMonitors;
-    var status = '';
-    try { status = (M && M.statusLabel) ? M.statusLabel(m) : ''; } catch (e) {}
-    return {
-      icon: m.enabled === false ? 'close' : 'eye',
-      title: m.name || (m.id || ''),
-      sub: [status, big && m.last_run_at ? WC.ago(+new Date(m.last_run_at)) : null].filter(Boolean).join(' · '),
-      label: (m.name || '') + (status ? ' — ' + status : ''),
-      onClick: function () { try { if (M && M.openDetail) M.openDetail(m.id); else api.openMonitors(); } catch (e) { api.openMonitors(); } },
-    };
-  }
 
   /* ══════════════════════════════════════════════════════════════════════════════════════════════
      ROUTE STATUS (§15.G)

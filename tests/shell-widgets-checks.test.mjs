@@ -488,7 +488,7 @@ function loadSmart() {
   const defs = {
     'hazard.earthquake': { id: 'hazard.earthquake', nm: () => 'Quake' },
     'intmap.route': { id: 'intmap.route', nm: () => 'Route' },
-    'intmap.monitors': { id: 'intmap.monitors', nm: () => 'Monitors' },
+    'intmap.watched-places': { id: 'intmap.watched-places', nm: () => 'Watched places' },
     'world.country': { id: 'world.country', nm: () => 'Country' },
     'weather.here': { id: 'weather.here', nm: () => 'Weather' },
     'map.centre': { id: 'map.centre', nm: () => 'Centre' },
@@ -515,7 +515,7 @@ test('R292 ⑫: the Smart Stack ladder returns the order §14 asks for', () => {
       member('d', 'intmap.route'), member('e', 'hazard.earthquake')],
   };
   const ctx = {
-    alerts: { worst: 4 }, route: { active: true }, monitors: [{ id: 1 }],
+    alerts: { worst: 4 }, route: { active: true }, watch: { fresh: 1, watched: 1 },
     selection: { country: 'JP' }, location: { state: 'granted' }, map: { lng: 0, lat: 0, zoom: 3 },
     chronos: { isLive: true }, layers: { on: [], all: [], count: 0 },
   };
@@ -538,7 +538,7 @@ test('R292 ⑫: the Smart Stack ladder returns the order §14 asks for', () => {
 
 test('R292 ⑫b: an ordinary score wobble cannot move the front card, an emergency can', () => {
   const S = loadSmart();
-  const quiet = { alerts: { worst: 0 }, route: { active: false }, monitors: [], selection: {}, location: { state: 'prompt' }, map: null, chronos: { isLive: true }, layers: { on: [] } };
+  const quiet = { alerts: { worst: 0 }, route: { active: false }, watch: null, selection: {}, location: { state: 'prompt' }, map: null, chronos: { isLive: true }, layers: { on: [] } };
   const stack = { i: 'st2', k: 'stack', mode: 'smart', s: 'm', ix: 0, pin: null, off: [], auto: true,
     m: [member('a', 'markets.fx'), member('b', 'hazard.earthquake')] };
   S._reset();

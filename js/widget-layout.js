@@ -75,7 +75,16 @@ window.IntMapWidgetLayout = (function () {
         } catch (e) { WC.toast(L('Could not copy', 'コピーできませんでした', 'Kopieren fehlgeschlagen', 'Не удалось скопировать', 'No se pudo copiar')); }
       },
       savePlace: function (p) { savePlace(p); },
-      openMonitors: function () { return runCommand('tab.monitors') || WC.toast(L('Monitors are in the sidebar', '監視はサイドバーにあります', 'Die Überwachung liegt in der Seitenleiste', 'Мониторы — в боковой панели', 'Los monitores están en la barra lateral')); },
+      /* (widget-watch-unify) THE «OPEN MONITORS» DOOR NAMED A COMMAND THAT IS NOT REGISTERED. `tab.monitors`
+         was withdrawn with the Area Monitors (js/session-tabs.js), so the button always fell through to a
+         toast saying «Monitors are in the sidebar» — and there is no such sidebar. The door now opens what a
+         reader has: Account ▸ Watched places, the same sheet js/auth-ui.js and js/my-places.js open (a
+         signed-out reader is shown the sign-in, by that sheet). */
+      openWatchedPlaces: function () {
+        var h = WC.host();
+        return import('./place-watch.js').then(function (M) { return M.openWatchDigest(h); })
+          .catch(function () { WC.toast(L('Could not open your watched places', '見守る場所を開けませんでした')); });
+      },
       /* ⚠ (#R299) THE FALLBACK NAMED A COMMAND THAT DOES NOT EXIST. `tool.route` is registered
          nowhere — the Tools row's id is `tool.directions` (js/map-ui.js) — so on the one path that
          reaches it (IntMapRouting absent, i.e. the router module has not been built) the card's

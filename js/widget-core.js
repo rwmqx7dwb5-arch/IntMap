@@ -397,8 +397,41 @@ window.IntMapWidgetCore = (function () {
      this object, which makes each renderer a pure function of (context, data, config) — testable,
      and unable to acquire a hidden dependency on load order. Every field is defensive: a subsystem
      that has not booted yet answers `null`, never throws. */
-  var _ctxCache = null, _ctxAt = 0, _monitors = [];
-  WC.setMonitors = function (rows) { _monitors = Array.isArray(rows) ? rows : []; WC.invalidateContext(); };
+  var _ctxCache = null, _ctxAt = 0;
+
+  /* ══ WATCHED PLACES — THE ONE «SOMETHING HAPPENED NEAR MY PLACE» THE BOARD READS (widget-watch-unify) ══
+     The board used to read the withdrawn Area Monitors (window.IntMapMonitors) for its «monitors» card,
+     its Smart Stack rung and the places the alerts card looks at — an API with no reader-facing entry
+     point (docs/architecture/18-area-monitors.md §18.2), behind a button that toasted «Monitors are in
+     the sidebar» when there was no such sidebar. What a reader has is Watched places (js/place-watch.js
+     §18.1), so that is what is read here: the SAME module Account ▸ Watched places and Atlas
+     (places.watchDigest) read — its last run, its digest, its warnings reader. Nothing is re-derived.
+     ⚠ LOADED ON DEMAND AND ONLY FOR A SIGNED-IN READER — the module's own rule («never on the boot path of
+     a signed-out reader»). For a signed-in reader js/auth-ui.js has already loaded it (it starts the
+     watcher), so this import resolves from the module cache. It is fetched for a signed-out reader only
+     when a card that needs its warnings reader is on the board (WC.watchModule({ anyReader: true })). */
+  var _pw = null, _pwP = null;
+  WC.watchModule = function (opts) {
+    if (_pw) return _pw;
+    if (_pwP) return null;
+    var signedIn = !!(HOST && HOST.user);
+    if (!signedIn && !(opts && opts.anyReader)) return null;
+    _pwP = import('./place-watch.js').then(function (m) {
+      _pw = m; WC.invalidateContext(); WC.emit('watch'); return m;
+    }, function () { _pwP = null; return null; });   /* a failed fetch is asked again on the next paint — it really failed */
+    return null;
+  };
+  /* what the last run of the watcher found, as the context carries it (null: not signed in / not run yet) */
+  function watchSummary() {
+    if (!HOST || !HOST.user) return null;
+    var M = WC.watchModule();
+    if (!M || typeof M.lastRun !== 'function') return null;
+    var run = M.lastRun();
+    if (!run) return null;
+    var watched = 0;
+    (run.results || []).forEach(function (r) { if (!r.paused) watched++; });
+    return { fresh: M.freshCount(), watched: watched, at: run.at || null };
+  }
   WC.context = function (force) {
     if (!force && _ctxCache && Date.now() - _ctxAt < 250) return _ctxCache;
     var c = {};
@@ -440,9 +473,9 @@ window.IntMapWidgetCore = (function () {
       try { var Sea = window.IntMapRoute; if (Sea && Sea.active && Sea.active()) return { active: true, sea: true }; } catch (e) {}
       return { active: false };
     })();
-    /* the monitors the account owns. `_list()` is asynchronous (it is a query), so the context
-       carries what the LAST answer was and the card's own loader is what refreshes it. */
-    c.monitors = _monitors;
+    /* the watched places: what the watcher's LAST run found. The watcher runs on its own clock
+       (js/place-watch.js, every 10 minutes while IntMap is open); the board never runs a check of its own. */
+    c.watch = watchSummary();
     c.places = WC.savedPlaces();
     c.alerts = (function () { try { var W = window.IntMapWorld; return (W && W.alerts) ? W.alerts() : null; } catch (e) { return null; } })();
     _ctxCache = c; _ctxAt = Date.now();
@@ -529,7 +562,8 @@ window.IntMapWidgetCore = (function () {
     } catch (e) { return false; }
   };
 
-  /* saved places — the reader's own list, wherever the app keeps it */
+  /* saved places — the reader's own list, wherever the app keeps it: the board's own pins, and the
+     places the account WATCHES (the watcher's last run carries each one's name and point) */
   WC.savedPlaces = function () {
     var out = [];
     try {
@@ -537,9 +571,11 @@ window.IntMapWidgetCore = (function () {
       if (Array.isArray(raw)) raw.forEach(function (p) { if (p && isFinite(p.lat) && isFinite(p.lng)) out.push({ name: String(p.name || ''), lat: +p.lat, lng: +p.lng, cc: p.cc || null }); });
     } catch (e) {}
     try {
-      var m = window.IntMapMonitors && window.IntMapMonitors.list && window.IntMapMonitors.list();
-      if (Array.isArray(m)) m.forEach(function (x) {
-        if (x && isFinite(x.center_lat) && isFinite(x.center_lng)) out.push({ name: String(x.name || ''), lat: +x.center_lat, lng: +x.center_lng, cc: null, watch: true });
+      var M = (HOST && HOST.user) ? WC.watchModule() : null;
+      var run = M && typeof M.lastRun === 'function' ? M.lastRun() : null;
+      ((run && run.results) || []).forEach(function (r) {
+        var p = r && r.place;
+        if (p && isFinite(p.lat) && isFinite(p.lng)) out.push({ name: String(p.name || ''), lat: +p.lat, lng: +p.lng, cc: null, watch: true });
       });
     } catch (e) {}
     return out;

@@ -1806,7 +1806,7 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   ⚠ **既定の設定値は関数**（`defaultConfig(context)`）。カードが作られる瞬間に評価されるので、
   ファイル内のどこに書いたかに依存しない。
 - **WidgetContext** — レンダラが知ってよいことの全部（言語・テーマ・単位・位置情報の許可状態・
-  地図の中心と範囲・選択中の国／地点・有効レイヤー・Chronos・経路・監視・保存地点・オンライン状態）。
+  地図の中心と範囲・選択中の国／地点・有効レイヤー・Chronos・経路・見守る場所の直近の確認結果・保存地点・オンライン状態）。
   ⚠ **レンダラはグローバルを直接読まない。** 渡されたものだけを読むので、純関数として検査できる。
 - **状態モデル**は12状態（`idle` / `loading` / `ready` / `refreshing` / `stale` / `offline` /
   `permission-required` / `permission-denied` / `empty` / `rate-limited` / `temporary-error` /
@@ -1842,7 +1842,7 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
 - **局所計算のカードは盤面で1本だけのティッカー**に購読する（`WC.tick('second'|'minute')`）。
   購読が0になるとタイマー自体が止まる。⚠ **定義の中で `setInterval` を開かない。**
 - **スタック**は手動と Smart の2つ。Smart は `window.IntMapWidgetSmart` が文脈から**決定論的に**
-  順位を付け（固定 → 重大警報 → 実行中の経路／監視 → 選択中の国 → 現在地 → 地図の範囲 → Chronos →
+  順位を付け（固定 → 重大警報 → 実行中の経路／見守る場所の新着 → 選択中の国 → 現在地 → 地図の範囲 → Chronos →
   時間帯 → 直近使用 → 通常）、**「なぜ表示されたか」を同じ計算から答える**。差が小さいときは
   前面のカードを動かさない（`MARGIN` / `SETTLE`）が、重大警報は即座に前へ出る（`URGENT`）。
 - **追加は `window.IntMapWidgetGallery`**（モバイルはボトムシート／デスクトップはモーダル）。検索・
@@ -1855,6 +1855,19 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
   **同じ正規化済みの `feats`**）、経路は `IntMapRouting.summary()`（読み手が見ている代替経路から導出）、
   レイヤーは `window.IntMapDefaultLayers` とアプリ自身のチェックボックス経由の切替、ニュースは
   `HOST.newsFeatures`（`IntMapNewsGeo` の結果）。⚠ **カードが2つ目の真実を作らない。**
+- **場所と国の判定も、持ち主に訊く。**
+  - 「見守る場所」のカード（`intmap.watched-places`。旧 `intmap.monitors` は別名として同じカードへ解決する）は
+    `js/place-watch.js` の直近の確認（`lastRun()` → `digestData()`、Atlas の `places.watchDigest` と同じもの）を出し、
+    ボタンはアカウントの「見守る場所」（`openWatchDigest`）を開く。モジュールは**ログインしている読み手にだけ**、
+    必要になったときに読み込む（`WC.watchModule()`）。カードは自分で判定しない（§18.1）。
+  - 「保存地点の警報」は、見守る場所の警報の読み手（`makeReaders().warning().near()` ——警報レイヤー自身の
+    点判定で、区域がその地点を**含む**記録）を使う。周辺の矩形（半径の設定）は持たない。
+  - 「国のウォッチ」の見出しは、ピンの地点（散らす前の `__oc`）が国の輪郭の中にあるもの
+    （`js/news-intel-core.js` `makeCountryIndex`、Natural Earth 10 m。国日報とストーリーと同じ判定）。
+    場所不明の擬似座標（`mapped:'none'`）は数えない。警報はその国の alpha-3 で発表された記録。
+  - `country` 型の設定は ISO alpha-2 で、国の選択肢（`countryOptions()`）も alpha-2 を出す。
+    国の行（alpha-3 が鍵）は `countryRow()` が alpha-2 からも引く。
+  - 読み込みが要る答え（見守りの確認・輪郭・モジュール）は、ギャラリーのプレビュー（文脈の `preview: true`）では始めない。
 - **Atlas ブリーフィングのカードは AI を呼ばない。** 更新方針は `manual`、ローダ無し。
   読み手が Atlas に頼んだブリーフを `window.IntMapWidgetBriefStore.remember()` が**渡してくる**だけ。
 - **スタイルは `css/intmap.css` の1節**（`--widget-*` トークン）。JS は `<style>` を作らない。

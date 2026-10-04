@@ -67,6 +67,7 @@ window.IntMapWidgetStore = (function () {
         case 'boolean': out[k] = (v == null ? !!dflt : !!v); break;
         case 'timezone': out[k] = S.validTZ(v) ? v : (S.validTZ(dflt) ? dflt : 'UTC'); break;
         case 'currency': out[k] = /^[A-Z]{3}$/.test(String(v || '').toUpperCase()) ? String(v).toUpperCase() : dflt; break;
+        /* ISO 3166-1 alpha-2 — what the pickers offer (js/widget-defs-data.js countryOptions) */
         case 'country': out[k] = /^[A-Za-z]{2}$/.test(String(v || '')) ? String(v).toUpperCase() : dflt; break;
         case 'date': out[k] = (v && !isNaN(new Date(v).getTime())) ? String(v) : (dflt || ''); break;
         case 'list': {
