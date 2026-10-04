@@ -17,7 +17,8 @@
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
 import { IntMapGeoEngine } from './geo-engine.js';   /* the renderer, through the contract */
-import { showPlaces, openView } from './my-places.js';
+import { showPlaces, openDoc, kindLabel } from './my-places.js';
+import { fromSavedView, isTour } from './map-doc.js';   /* (map-document-unify) a published map is a map document: a map, a my map, a tour, an Atlas answer */
 import { MapState } from './map-state.js';   /* the address bar is written through the store's one door */
 
 /* the token the database mints: 32 hex characters (gen_random_uuid() without its dashes) */
@@ -45,9 +46,7 @@ export function tokenFromSearch(search) {
 /** The link of a published collection, on the page it is made from (the app's own address, no fragment). */
 export function shareUrl(token, loc) {
   if (!TOKEN_RE.test(String(token || ''))) return '';
-  const L = loc || (typeof location !== 'undefined' ? location : null);
-  const base = L ? (String(L.origin || '') + String(L.pathname || '/')) : '';
-  return base + '?collection=' + token;
+  return MapState.pageLink('?collection=' + token, '', loc || null);   /* (map-document-unify) the one link assembly */
 }
 
 /** The address without `?collection=` — what the bar shows once the visitor has closed the collection. */
@@ -203,9 +202,17 @@ function showShared(HOST, token, col) {
   }
   if (col.views.length) {
     body.push(el('div', { cls: 'scol-t', text: T('Maps', '地図') + ' · ' + col.views.length }));
+    /* (map-document-unify) each map says what it is; a tour (several steps) plays in the classroom mode — read-only:
+       the visitor keeps it only by «Add to My places» (copy_shared_collection copies its steps) */
     col.views.forEach((v) => {
-      const b = el('button', { cls: 'scol-row', type: 'button', title: T('Open this map', 'この地図を開く') }, [el('b', { text: v.name }), v.note ? el('span', { text: v.note }) : null]);
-      b.onclick = () => { const r = openView(v); if (!r.ok) msg.textContent = T('This map could not be opened here.', 'この地図はここでは開けません。'); };
+      const d = fromSavedView(v), tour = isTour(d);
+      const sub = [kindLabel(d ? d.kind : 'view', lang) + (tour ? ' · ' + T(d.steps.length + ' steps', d.steps.length + ' ステップ') : ''), v.note].filter(Boolean).join(' — ');
+      const b = el('button', { cls: 'scol-row', type: 'button', title: tour ? T('Play this tour', 'このツアーを再生') : T('Open this map', 'この地図を開く') }, [el('b', { text: v.name }), el('span', { text: sub })]);
+      b.onclick = async () => {
+        /* a tour takes the screen in the classroom mode, which puts this card away with everything else and gives it back on leaving */
+        const r = await openDoc(d);
+        if (!tour && (!r || !r.ok)) msg.textContent = T('This map could not be opened here.', 'この地図はここでは開けません。');
+      };
       body.push(b);
     });
   }

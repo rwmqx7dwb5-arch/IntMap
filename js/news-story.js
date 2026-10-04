@@ -24,6 +24,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import * as bus from './bus.js';
 import { IntMapTime } from './chronos.js';
+import { MapState } from './map-state.js';   /* (map-document-unify) the one link assembly (pageLink) */
 import { everyTick, stopTick } from './runtime.js';
 import { makeCountryIndex, isIso2, arc } from './news-intel-core.js';
 import { STORY, decodeTerms, suggest, buildStory, frameAt, storyQuery, storyFromSearch, isTerm, failureOf } from './news-story-core.js';
@@ -319,7 +320,7 @@ export function newsStory(HOST) {
   }
   function link() {
     const q = storyQuery(st.terms); if (!q) return '';
-    try { return location.origin + location.pathname + q; } catch (_) { return q; }
+    return MapState.pageLink(q, '') || q;   /* (map-document-unify) the one link assembly */
   }
   async function copyLink() {
     const u = link(); if (!u) return;

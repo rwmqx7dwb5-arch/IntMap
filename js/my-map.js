@@ -34,6 +34,7 @@ import { MapState } from './map-state.js';
 import { icon } from './icons.js';
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the one encoder every string below is written with */
 import * as D from './my-map-doc.js';
+import { fromMyMap } from './map-doc.js';   /* (map-document-unify) a my map, as the one map document the Library and the account hold */
 import * as bus from './bus.js';   /* the declared events (js/bus.js): the language change is heard through it, not a bare window listener */
 
 /* where the library is kept. One key: {v:1, current, maps:[doc…]} */
@@ -342,10 +343,29 @@ export function myMap(HOST) {
   /** the share link: the map as it is now (place, layers, date) with this drawing on it */
   function link() {
     const d = shownDoc(); if (!d || !d.features.length) return { ok: false, reason: 'empty' };
-    let url = ''; try { url = location.origin + location.pathname + MapState.hash(); } catch (_) { url = ''; }
+    let url = ''; try { url = MapState.pageLink('', MapState.hash()); } catch (_) { url = ''; }   /* (map-document-unify) the one link assembly */
     let carried = null; try { carried = MapState.decode(url.slice(url.indexOf('#'))).mymap; } catch (_) { carried = null; }
     if (!carried) return { ok: false, reason: 'no-link' };
     return { ok: true, url, bytes: new TextEncoder().encode(url).length, count: d.features.length };
+  }
+  /* ══ (map-document-unify) INTO THE ACCOUNT — the same door as every saved map (js/my-places.js saveView) ══════
+     A my map has no camera of its own; kept in the account it is the map as it is shown now WITH that drawing on
+     it (js/map-doc.js fromMyMap) — the fragment a link of it writes, so it opens on every device the way its link
+     opens here. The browser's library stays where it is; this is a copy in the account, saved again to update. */
+  function documentOf(id) {
+    const d = lib.maps.find((m) => m.id === (id || lib.current)); if (!d) return null;
+    let here = null; try { here = MapState.decode(MapState.hash()); } catch (_) { here = null; }
+    return fromMyMap(d, here);
+  }
+  async function saveToAccount(o) {
+    o = o || {};
+    const d = lib.maps.find((m) => m.id === (o.id || lib.current));
+    if (!d || !d.features.length) return { ok: false, reason: 'empty' };
+    const doc = documentOf(d.id); if (!doc) return { ok: false, reason: 'no-link' };
+    if (!HOST.user) { try { HOST.openAuthModal(); } catch (_) { } return { ok: false, reason: 'sign_in' }; }
+    const P = await import('./my-places.js');
+    const r = await P.saveView(HOST.DB, { doc, name: o.name, note: o.note, collection: o.collection, lang: HOST.lang });
+    return r.ok ? r : Object.assign({ reason: r.error, text: P.placeFailureText(r.error, HOST.lang) }, r);
   }
   /** the dataset record of what is shown — the shape js/gis-datasets.js and js/gis-export.js read */
   function record() {
@@ -557,6 +577,8 @@ export function myMap(HOST) {
       + btn('copy', 'link', L('Copy link', 'リンクをコピー'), 'mm-btn', has ? '' : ' disabled')
       + (canShare ? btn('share', 'share', L('Share', '共有'), 'mm-btn', has ? '' : ' disabled') : '')
       + btn('analyze', 'chart', L('Use in analysis', '分析に使う'), 'mm-btn', has ? '' : ' disabled')
+      /* (map-document-unify) into the account — the Library's saved maps, on every device */
+      + (shown === 'received' ? '' : btn('account', 'save', L('Save to account', 'アカウントに保存'), 'mm-btn', (has ? '' : ' disabled') + ' data-effect="private"'))
       + '</div><div class="mm-bar" style="margin-top:6px">'
       + btn('export-geojson', 'save', L('GeoJSON', 'GeoJSON'), 'mm-btn', has ? '' : ' disabled')
       + btn('export-geopackage', 'save', L('GeoPackage', 'GeoPackage'), 'mm-btn', has ? '' : ' disabled')
@@ -565,6 +587,7 @@ export function myMap(HOST) {
   function saidHtml() { return H(said.text) + (said.url ? '<input type="text" readonly value="' + H(said.url) + '" aria-label="' + H(L('Map link', '地図のリンク')) + '">' : ''); }
   function say(text, url) { said = { text: String(text || ''), url: String(url || '') }; const el = panel && panel.querySelector('.mm-said'); if (el) el.innerHTML = saidHtml(); }
   const reasonText = (r) => ({
+    'sign_in': L('Sign in to keep your maps in your account.', 'アカウントに保存するにはログインしてください。'),
     'empty': L('There is nothing on this map yet.', 'この地図にはまだ何もありません。'),
     'no-link': L('This map cannot be written as a link.', 'この地図はリンクにできません。'),
     'received': L('A shared map is read-only. Keep a copy to edit it.', '共有された地図は読み取り専用です。編集するには保存してください。'),
@@ -634,6 +657,7 @@ export function myMap(HOST) {
     if (a === 'hide') { hide(); close(); return; }
     if (a === 'copy') { await copyLink(); return; }
     if (a === 'share') { await nativeShare(); return; }
+    if (a === 'account') { say(L('Saving…', '保存しています…')); const r = await saveToAccount({}); say(r.ok ? (r.created ? L('Saved to your Library: ' + r.name, 'ライブラリに保存しました: ' + r.name) : L('Already in your Library — updated: ' + r.name, 'ライブラリに保存済みでした（更新）: ' + r.name)) : (r.text || reasonText(r))); return; }
     if (a === 'analyze') { say(L('Opening analysis…', '分析を開いています…')); const r = await analyze(); say(r.ok ? L('Added to Data and analysis as «' + r.title + '» (' + r.features + ').', '「' + r.title + '」（' + r.features + ' 件）をデータと分析に追加しました。') : reasonText(r)); return; }
     if (a === 'export-geojson' || a === 'export-geopackage') { const r = await exportFile(a.slice(7)); say(r.ok ? L('Saved ' + r.filename, r.filename + ' を保存しました') : reasonText(r)); return; }
   }
@@ -697,6 +721,6 @@ export function myMap(HOST) {
     open, close, isOpen: () => !!panel, state, objects,
     add, edit, remove, setTitle, show, hide, newMap, switchMap, deleteMap, keepReceived, collect,
     startDraw, finishDraw, stopDraw: () => { stopDraw(); return { ok: true }; }, undoVertex,
-    link, exportFile, analyze, zoomTo,
+    link, exportFile, analyze, zoomTo, documentOf, saveToAccount,
   };
 }

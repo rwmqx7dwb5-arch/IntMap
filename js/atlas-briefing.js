@@ -32,6 +32,8 @@ import { notebookStore, restoreView } from './atlas-notebook.js';
 import { normalize } from './atlas-notebook-store.js';
 import { BriefingLink } from './briefing-link.js';
 import { MapState } from './map-state.js';
+import { layerField, keepInLibrary } from './atlas-notebook.js';   /* (map-document-unify) the answer kept as a map, the notebook's way */
+import { fromBriefing } from './map-doc.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { icon } from './icons.js';
 import { IntMapLang } from './lang-registry.js';
@@ -76,7 +78,7 @@ export function makeAtlasBriefing(NOTEBOOK) {
   const GE = () => IntMapGeoEngine;
   const fmtWhen = (ms) => { try { return ms ? new Date(ms).toLocaleString(IntMapLang.locale(D && D.lang ? D.lang() : 'en'), { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'; } catch (_) { return ''; } };
   const kb = (n) => (n >= 1024 ? (Math.round(n / 102.4) / 10) + ' kB' : n + ' B');
-  const page = () => { try { return location.origin + location.pathname; } catch (_) { return ''; } };
+  const page = () => MapState.pageLink('', '');   /* (map-document-unify) the page's address, from the one link assembly */
   const here = () => ({ view: MapState.read('view') || null, base: MapState.read('base'), terrain: !!MapState.read('terrain') });
 
   /* ══ THE RECIPIENT'S SIDE ════════════════════════════════════════════════════════════════════════ */
@@ -256,7 +258,7 @@ export function makeAtlasBriefing(NOTEBOOK) {
   /* data-effect: what a press does to stored data — js/atlas-controls.js reads it before Atlas presses it (scripts/data-effects.mjs) */
   const OPEN = { none: '<button type="button" class="atl-br-act" data-effect="none"', private: '<button type="button" class="atl-br-act" data-effect="private"',
     outward: '<button type="button" class="atl-br-act" data-effect="outward"' };
-  const EFFECT = { rebuild: 'none', compare: 'private', keep: 'private', copy: 'none', share: 'outward', preview: 'none', file: 'none' };
+  const EFFECT = { rebuild: 'none', compare: 'private', keep: 'private', savemap: 'private', copy: 'none', share: 'outward', preview: 'none', file: 'none' };
   const btn = (act, ic, label, dis) => OPEN[EFFECT[act]] + ' data-act="' + act + '"' + (dis ? ' disabled' : '') + '>' + icon(ic, { size: 16 }) + '<span>' + esc(label) + '</span></button>';
 
   function layerName(id) {
@@ -278,7 +280,9 @@ export function makeAtlasBriefing(NOTEBOOK) {
     h += '<div class="atl-br-q">' + esc(s.question) + '</div><div class="atl-br-meta">' + esc(L('Investigated', '調査日時') + ' ' + fmtWhen(s.at)) + '</div>';
     const nRep = (s.steps || []).filter((x) => x.replay).length;
     h += '<div class="atl-br-acts">' + btn('rebuild', 'map', L('Rebuild map', '地図を再現'), !nRep)
-      + btn('compare', 'reset', L('Compare with now', '今と比べる'), !(s.results || []).length) + btn('keep', 'save', L('Keep in my notebook', 'ノートに保存')) + '</div>';
+      + btn('compare', 'reset', L('Compare with now', '今と比べる'), !(s.results || []).length) + btn('keep', 'save', L('Keep in my notebook', 'ノートに保存'))
+      /* (map-document-unify) the whole briefing — a step per answer — into the account's Library, where it plays as a tour */
+      + btn('savemap', 'map', L('Save as a map', '地図として保存')) + '</div>';
     h += '<div class="atl-br-ans atl-md"></div>';
     if (s.note) h += '<div class="atl-br-note"><b>' + esc(L('Note from the sender', '送り手のメモ')) + '</b> ' + esc(s.note) + '</div>';
     /* ── the evidence ── */
@@ -377,6 +381,7 @@ export function makeAtlasBriefing(NOTEBOOK) {
       const act = b.dataset.act, i = open.index;
       if (act === 'rebuild') rebuild(i);
       else if (act === 'compare') compare(i);
+      else if (act === 'savemap') keepInLibrary(fromBriefing(open.b, { classify: layerField }));
       else if (act === 'keep') { const k = await keep(i); b.querySelector('span').textContent = k.ok ? (k.already ? L('Already in your notebook', 'ノートに保存済み') : L('Kept in your notebook', 'ノートに保存しました')) : L('Could not keep it', '保存できませんでした'); b.disabled = !!k.ok; }
     }));
   }

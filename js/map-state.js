@@ -236,6 +236,37 @@ export function encode(st) {
   } catch (_) { return ''; }
 }
 
+/* ══ (map-document-unify) A FRAGMENT FROM OUTSIDE, AND THE PAGE A LINK IS WRITTEN ON ══════════════
+   Two rules every place that hands a map on — or takes one in — had written for itself: «a fragment from outside is
+   read by the codec and written again by it» (the tour player's `canon`, the saved maps' `canonicalState`) and «a
+   link is this page's address, a query and a fragment» (seven hand-concatenated `location.origin + location.pathname`
+   — the share link, the embed, a reader's own map, a written tour, a briefing, a published collection, a news
+   story). Each is said ONCE here, and the places call it. */
+
+/** a fragment from outside (a saved map, a tour step, a link somebody wrote) → the fragment the codec writes for the
+    same map, with its '#'; '' when it names no map. Nothing the codec does not write survives — an unknown
+    parameter is dropped, a caption is cleaned and cut.
+    @param {any} hash a fragment, with or without its '#' @returns {string} */
+export function canonical(hash) {
+  const h = '#' + String(hash == null ? '' : hash).replace(/^#/, '');
+  if (!carries(h)) return '';
+  try { return encode(decode(h)); } catch (_) { return ''; }
+}
+
+/** the one assembly of a link on this page: the page's own address (origin + path), then `query` — '?a=b…', '' for
+    none, null for the query the page has now — then `hash` (a fragment the codec wrote, with or without '#'; '' for
+    none). `loc` stands in for `location` (a check, or a page that is not this one).
+    @param {string|null} query @param {string} [hash] @param {{origin?:string, pathname?:string, search?:string}|null} [loc]
+    @returns {string} */
+export function pageLink(query, hash, loc) {
+  /** @type {any} */ let L = loc || null;
+  if (!L) { try { L = typeof location !== 'undefined' ? location : null; } catch (_) { L = null; } }
+  const base = L ? String(L.origin || '') + String(L.pathname || '/') : '';
+  const q = query == null ? String((L && L.search) || '') : (query ? (String(query).charAt(0) === '?' ? String(query) : '?' + query) : '');
+  const h = hash ? (String(hash).charAt(0) === '#' ? String(hash) : '#' + hash) : '';
+  return base + q + h;
+}
+
 /* ══ THE SHARED READERS — the one place each value is assembled from its source ══════════════════
    The owners call these with the live source; js/atlas-state.js calls the same functions with the
    engine and clock it was handed, so a headless Atlas (the node checks) and the app read the camera
@@ -293,7 +324,7 @@ function stage(f, o, value, ctx) {
 /** @type {null|{reason:string}} the one hold on the address bar (holdAddress) */
 let addressHold = null;
 export const MapState = {
-  SCHEMA, PARAMS, SETTLE_MS, encode, decode, carries, TITLE_MAX, NOTE_MAX, captionText, briefText,
+  SCHEMA, PARAMS, SETTLE_MS, encode, decode, carries, TITLE_MAX, NOTE_MAX, captionText, briefText, canonical, pageLink,
 
   /** own(key, { read, apply, prepare }) — the module that decides a field. Re-registering replaces.
       A restore that reached this field before its owner existed hands its value over now (if that
@@ -321,7 +352,7 @@ export const MapState = {
   /** who is holding the address bar now, or null */
   addressHeld() { return addressHold ? addressHold.reason : null; },
   /** the share link of the map as it is now */
-  link() { try { return location.origin + location.pathname + location.search + MapState.hash(); } catch (_) { return ''; } },
+  link() { try { return pageLink(null, MapState.hash()); } catch (_) { return ''; } },
   /** (classroom-tours) address(query, hash) — the address bar's PAGE fields and, when given, a link's fragment.
       The query is the page's mode, not the map: `?tour=<id>&step=<n>` (js/tours.js), `?embed=1`. It carries no
       field of SCHEMA and the codec never reads it; the map stays in the fragment, which only `encode` writes.

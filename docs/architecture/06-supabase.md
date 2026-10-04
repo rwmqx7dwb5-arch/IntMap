@@ -40,6 +40,15 @@
 **コレクションはワークスペースである（collection-workspace）。** `saved_views` は**保存した地図**——共有リンクの
 フラグメント（`js/map-state.js` の codec が書くもの）を名前・メモ・コレクションつきで持つ。入口は `save_view()` だけで、
 同じフラグメントは同じ 1 行（`created=false`）、上限は `saved_views_limit()`（1 アカウント 2,000・暴走の柵）。
+**保存した地図は地図ドキュメントである（map-document-unify・`js/map-doc.js`）。** 1 行は地図 1 枚だけでなく、
+マイマップ（フラグメントの `mm=` が図形を運ぶ）・ツアー・Atlas の回答も持つ: `kind`（`view`|`map`|`tour`|`brief`。
+名前の札で、DB はこれで分岐しない）と `steps`（言葉を持たない地図 1 枚は NULL＝以前の行と同じ。それ以外は
+`[{state,title,say,ask}]`、`saved_view_steps_limit()`＝200 段・1 MiB まで）。行の `state` は最初に地図を持つ段の地図。
+同一性は `doc_md5`＝md5(state ‖ steps)——`steps` が NULL の行では `state_md5` と同じなので、既存の行の「同じ地図は 1 行」は
+変わらず、同じ地図から始まる別のツアーは別の行になる。入口は `save_view()` の 2 つの形（4 引数＝地図 1 枚、
+6 引数＝`kind` と `steps` つき。6 引数側は既定値を持たないので 4 引数の呼び出しは曖昧にならない）。
+`kind`・`steps` はその場で書き換えられない（保存し直す）。`shared_collection` は各地図の `kind` と `steps` も返し、
+`copy_shared_collection` はそれごと写す（同じドキュメントは「保存済み」）。
 `collection_shares` は持ち主が**明示的に**公開したコレクション（`collection` NULL＝全部）で、入口は
 `publish_collection()` だけ・1 コレクション 1 本（2 度目は同じトークン）。トークンは `gen_random_uuid()` の 32 桁
 （122 ビット）で、**リンクそのものが閲覧の鍵**。公開の読み取りは `shared_collection(token)` **1 つだけ**——

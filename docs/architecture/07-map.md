@@ -687,6 +687,8 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
 ### 7.3g マイマップ (My map) — `js/my-map.js` / `js/my-map-doc.js`
 
 **読者が自分で描くピン・線・範囲と、その名前・メモ・色。保存し、共有リンクで運び、測り、分析し、書き出す。**
+ログインしていれば「アカウントに保存」で、いまの地図の上のこの図形を地図ドキュメント（`js/map-doc.js` `fromMyMap`——フラグメントの
+`mm=` が図形を運ぶ）にしてライブラリ（§8.1.2）の `save_view` に渡す（map-document-unify）。ブラウザの一覧は残る。
 入口: **Layers ▸ Tools ▸ マイマップ**（`tool.myMap`）・Atlas `map.myMap`（`{"type":"myMap","action":…}`）・
 オブジェクト一覧（種類 `mymap`）・`mm=` を持つ共有リンク。モジュールは遅延（`IntMapLazy` の `myMap`、公開名
 `window.IntMapMyMap`）で、起動経路に載らない。

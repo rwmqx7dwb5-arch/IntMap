@@ -134,7 +134,7 @@ function readTemp() { try { const v = JSON.parse(sessionStorage.getItem(TEMP_KEY
 function writeTemp(v) { try { if (v) sessionStorage.setItem(TEMP_KEY, JSON.stringify(v)); else sessionStorage.removeItem(TEMP_KEY); } catch (_) { } }
 
 /* (tour-builder) a step's fragment written again by the map's codec — '' when it names no map (js/tours.js decodeCustomTour) */
-const canon = (h) => (MapState.carries(h) ? MapState.encode(MapState.decode(h)) : '');
+const canon = MapState.canonical;   /* (map-document-unify) the one rule, js/map-state.js */
 
 /** a tour by id — a declared one, 'atlas' (the one assembled in this tab) or 'custom' (a tour a reader wrote,
     carried by its own address: `t` from `opts`, else from the page's query) — in the player's shape */
