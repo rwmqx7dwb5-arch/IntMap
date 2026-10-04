@@ -99,7 +99,7 @@ function layerId(d) {
        its count per page load can never pass the questions' (growth-loop). */
 export const METRICS = Object.freeze({
   view:         { dim: closed(['']),                                          max: 1,   maxDims: 1 },   // the map was opened (one per page load)
-  entry:        { dim: closed(['link', 'embed', 'showcase', 'about', 'teachers', 'news-map', 'embed-map', 'developers', 'history', 'on-this-day', 'countries']), max: 1, maxDims: 11 },   // opened from a link that carries a map view (a shared or saved link), embedded in another page (?embed=1), or reached from one of IntMap's own pages a visitor lands on first (an example's share page s/, the about page, the teacher page, the two pages by use news-map and embed-map, the developer page, the historical-map entry pages history/, the «on this day» pages on-this-day/ and the country pages countries/ — SITE_PAGES below)
+  entry:        { dim: closed(['link', 'embed', 'showcase', 'about', 'teachers', 'news-map', 'embed-map', 'developers', 'history', 'on-this-day', 'countries', 'weekly']), max: 1, maxDims: 12 },   // opened from a link that carries a map view (a shared or saved link), embedded in another page (?embed=1), or reached from one of IntMap's own pages a visitor lands on first (an example's share page s/, the about page, the teacher page, the two pages by use news-map and embed-map, the developer page, the historical-map entry pages history/, the «on this day» pages on-this-day/, the country pages countries/ and the «this week on Earth» pages weekly/ — SITE_PAGES below)
   ref:          { dim: referrer,                                              max: 1,   maxDims: 200 },   // the host name of the page the reader came from (direct = none)
   utm_source:   { dim: token,                                                 max: 1,   maxDims: 100 },   // the utm_source tag of the address
   utm_medium:   { dim: token,                                                 max: 1,   maxDims: 100 },   // the utm_medium tag of the address
@@ -210,6 +210,8 @@ export const SITE_PAGES = Object.freeze({ showcase: /(?:^|\/)s\/[^/]+\.html$/, a
   history: /(?:^|\/)history\/(?:[^/]+\/){0,2}(?:index\.html)?$/, 'on-this-day': /(?:^|\/)on-this-day\/(?:\d{2}-\d{2}\/)?(?:index\.html)?$/,
   /* (country-pages) one page per country (scripts/country-pages.mjs) — its lower-case three-letter code a directory — and the list */
   countries: /(?:^|\/)countries\/(?:[a-z]{3}\/)?(?:index\.html)?$/ });
+  /* (weekly-earth) «this week on Earth» (scripts/weekly-earth-pages.mjs): the hub and one page per ISO week, en and ja/ — not the feed */
+  weekly: /(?:^|\/)weekly\/(?:\d{4}-W\d{2}\/)?(?:index\.html)?$/ });
 
 /** the kind of IntMap page the visitor came from ('showcase' or a PAGES name of landing.mjs), or null — only for a
     referrer on IntMap's own host (`selfHost`); any other referrer is `referrerOf`'s. */

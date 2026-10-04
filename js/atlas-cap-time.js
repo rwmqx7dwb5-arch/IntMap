@@ -71,6 +71,19 @@ export default [
     async run(a, dctx, K) { return onThisDay(a, K); },
   },
   {
+    row: ['time.weeklyEarth',           'weeklyEarth',    'thisWeekOnEarth,weeklyDigest,worldThisWeek,earthThisWeek',    'time',    'time',    'camera,map.myMap,time',  'map,time,explanation', 'session', 'none',   '',         ''],
+    /* (weekly-earth) THIS WEEK ON EARTH — one ISO week of the archive scripts/build-weekly-earth.mjs keeps (js/weekly-earth.js
+       over data/weekly-earth.json): the earthquakes of M 5.5+ the USGS catalogue lists and the natural events NASA's EONET
+       tracks, the week's headline (its largest earthquake — a count), and the address of the week's public page. Read-only,
+       unless `open` (the n-th item: the map on its place and day with the item as a received pin — the share link's restore,
+       read back) or `show` (the whole week on the map, every placed item a pin). */
+    doc: [
+      { in: 'time.coverage', at: 27, text: '{"type":"weeklyEarth","week"?:"YYYY-Www"|"YYYY-MM-DD" (an ISO week, or any day inside it; default: the newest week the archive holds),"open"?:int (1-based, an item of the list),"show"?:bool} = THIS WEEK ON EARTH / 今週の地球 — one ISO week (Monday 00:00 UTC to Monday) of IntMap\'s weekly archive of the planet\'s large natural events: every earthquake of magnitude 5.5 and above the USGS catalogue lists (magnitude, time, depth and USGS\'s own place string) and every natural event NASA\'s EONET tracks with an observation in that week (severe storms with their stated wind, volcanoes, floods, sea and lake ice, and wildfires whose stated burned area is 10,000 ha or more — the smaller ones are only counted), each with its originating source, plus the week\'s largest earthquake and the address of the week\'s public page (weekly/<YYYY>-W<ww>/, with an Atom feed). Weeks are added once they end; the archive starts 2025-W40. open:n opens the n-th item on the map (its place, its day, and the item as a pin) and reports it open only once the clock says so; show:true opens the whole week on the map, every placed item a pin. Answer from what it returns, as the upstreams state it (no damage or consequences no source states), and give the page address. Use for 「今週世界で何が起きた？」「先週の大きな地震は？」「今週の地球」「what happened on Earth this week」「last week\'s earthquakes」. For a live feed of today\'s quakes use the earthquake layer instead. ' },
+    ],
+    schema: () => ({ type: 'object', properties: { week: str(), open: int(1, 999), show: bool() } }),
+    async run(a, dctx, K) { return weeklyEarth(a, K); },
+  },
+  {
     row: ['time.compare',               'timeCompare',    'compareTime,compareYear',                                     'time',    'timeView', 'panel.compare,time.compare', 'panel,time',         'session', 'none',   '',         ''],
     /* (time-compare-lapse) THE COMPARISON WINDOW AT AN INSTANT OF ITS OWN — 「1914 年 | 今日」. Opens the window if it is
        closed, and sets ITS clock (js/compare.js `setTime`) without moving the main map's: a year, a date, «now», or
@@ -311,6 +324,51 @@ async function onThisDay(a, K) {
     return R(false, warn(esc(L('The event did not fully open', '出来事が一部しか開いていません')) + ' — ' + esc(m.reason || miss.join(' / '))) + '<div>' + esc(D.text) + '</div>', { meta });
   }
   return R(true, note('✓ ' + esc(L('On this day — ', 'この日の歴史 — ')) + esc(day)) + (a.show ? ' — ' + esc(L('opened as a sheet', 'シートで表示しました')) : '') + listHtml + src, { meta });
+}
+
+/* ══ (weekly-earth) THIS WEEK ON EARTH, FOR ATLAS ═════════════════════════════════════════════════════════════
+   The same reader the generated pages use (js/weekly-earth.js), so what Atlas says about a week is what its page says,
+   worded the same way, and an item Atlas opens is opened by the same link the page writes. */
+async function weeklyEarth(a, K) {
+  const R = K.R, L = K.L, warn = K.warn, esc = K.esc, note = K.note, HOST = K.HOST;
+  const WE = await import('./weekly-earth.js');
+  const lang = (HOST && HOST.lang) || 'en';
+  let idx;
+  try { idx = await WE.loadIndex(); } catch (e) { return R(false, warn(esc(L('The weekly archive could not be read', '週ごとの記録を読めませんでした'))), { meta: { code: 'UNAVAILABLE', category: 'transient', retryable: true, produced: [], userGoalSatisfied: false } }); }
+  const week = WE.weekIn(idx, a.week);
+  if (!week) {
+    const span = idx.weeks.length ? idx.weeks[idx.weeks.length - 1].w + ' – ' + idx.weeks[0].w : '';
+    return R(false, warn(esc(L('The archive holds no such week (it holds ' + span + ')', 'その週は記録にありません（記録は ' + span + '）'))), { meta: { code: 'NO_SUCH_WEEK', category: 'input', retryable: false, produced: [], userGoalSatisfied: false, weeks: span } });
+  }
+  const items = WE.itemsOf(week);
+  let page = WE.pagePath(week, lang === 'jp' ? 'ja/' : '');
+  try { page = new URL(page, document.baseURI).href; } catch (_) { /* headless: the path relative to the site */ }
+  const facts = items.map((it, i) => { const D = WE.describe(it, idx, lang); return { n: i + 1, kind: D.kind, title: D.title, detail: D.sub, at: D.at || null, source: D.url }; });
+  const H = WE.headline(week);
+  const words = WE.weekWords(week, lang), summary = WE.summary(week, idx, lang);
+  const meta = { weeklyEarth: { week: week.w, from: week.from, to: week.to, summary, headline: H ? WE.describe(H, idx, lang).title : null, provisional: !!week.provisional,
+    fewerWildfires: (week.fewer && week.fewer.wildfires) || 0, page, items: facts } };
+  const li = (f) => '<li>' + esc(f.title) + ' <span style="color:var(--text-muted);font-size:12px;">(' + esc(f.detail) + ')</span></li>';
+  const listHtml = facts.length ? '<ol style="margin:4px 0 4px 18px;padding:0;">' + facts.map(li).join('') + '</ol>' : '<div>' + esc(L('Nothing is recorded in this week.', 'この週には記録がありません。')) + '</div>';
+  const pageHtml = '<div><a href="' + esc(IntMapSafe.url(page)) + '" target="_blank" rel="noopener">' + esc(L('This week on Earth — the page for ', '今週の地球 — ') + words) + '</a></div>';
+  const src = '<div style="font-size:12px;color:var(--text-muted);">' + esc(L('Sources: ', '出典: ')) + esc(idx.sources.usgs.name) + ' · ' + esc(idx.sources.eonet.name) + '</div>';
+  const head = note('✓ ' + esc(L('This week on Earth — ', '今週の地球 — ')) + esc(words) + ' (' + esc(week.w) + ')') + '<div>' + esc(summary) + '</div>';
+  /* the page's own link, opened by the gallery's opener (the share link's restore, read back) */
+  const openHref = async (href, at) => (await import('./showcase-gallery.js')).openLink(href, { at, layers: [] });
+  if (a.open != null) {
+    const it = items[(+a.open) - 1];
+    if (!it) return R(false, warn(esc(L('There is no item ' + a.open + ' in ' + week.w, week.w + ' に ' + a.open + ' 番目の項目はありません'))) + listHtml, { meta: Object.assign({ code: 'NO_SUCH_ITEM', category: 'input', retryable: false, produced: ['explanation'], userGoalSatisfied: false }, meta) });
+    const m = await openHref(WE.linkFor(it, week, idx, lang), WE.stateFor(it, week, idx, lang).time.at);
+    const D = WE.describe(it, idx, lang);
+    if (m.timeOk) return R(true, note('✓ ' + esc(L('Opened on the map: ', '地図で開きました: ')) + esc(D.title)) + '<div>' + esc(D.sub) + '</div>' + (it.at ? '' : '<div>' + esc(L('It is not placed: its source gives no point for it.', '位置は示していません: 出典が点を与えていません。')) + '</div>') + pageHtml + src, { meta });
+    return R(false, warn(esc(L('The item did not fully open', '項目が一部しか開いていません')) + ' — ' + esc(m.reason || L('the date', '日付'))) + '<div>' + esc(D.title) + '</div>', { meta });
+  }
+  if (a.show) {
+    const m = await openHref(WE.weekLink(week, idx, lang), WE.weekState(week, idx, lang).time.at);
+    if (!m.timeOk) return R(false, warn(esc(L('The week did not fully open on the map', '週を地図で開ききれませんでした')) + ' — ' + esc(m.reason || L('the date', '日付'))) + head + listHtml, { meta });
+    return R(true, head + '<div>' + esc(L('Opened on the map: every placed item as a pin.', '地図で開きました: 位置のある項目をすべてピンで示しています。')) + '</div>' + listHtml + pageHtml + src, { meta });
+  }
+  return R(true, head + listHtml + pageHtml + src, { meta });
 }
 
 /* ══ (atlas-reasoning) WHAT CHANGED BETWEEN TWO INSTANTS ═════════════════════════════════════════════════════

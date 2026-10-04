@@ -233,7 +233,8 @@ test('⑦ runs partition the years; neighbours differ; pages, links, map links, 
   /* (ops-next) …and the updates pages' sitemap (scripts/whats-new.mjs SITEMAP) */
   const { OTD_SITEMAP } = await import('../scripts/on-this-day-pages.mjs');   /* (marketing-next) the third generator's sitemap */
   const { COUNTRY_SITEMAP } = await import('../scripts/country-pages.mjs');   /* (country-pages) the fourth */
-  assert.deepEqual(idx, ['sitemap.xml', H.SITEMAP, 'sitemap-updates.xml', OTD_SITEMAP, COUNTRY_SITEMAP], 'the sitemap index joins the landing sitemap, this one, the one of the updates pages, the «on this day» one and the country pages’ one');
+  const { WEEKLY_SITEMAP } = await import('../scripts/weekly-earth-pages.mjs');   /* (weekly-earth) the weekly digest's */
+  assert.deepEqual(idx, ['sitemap.xml', H.SITEMAP, 'sitemap-updates.xml', OTD_SITEMAP, COUNTRY_SITEMAP, WEEKLY_SITEMAP], 'the sitemap index joins the landing sitemap, this one, the one of the updates pages, the «on this day» one, the country pages’ one and the weekly one');
 });
 
 test('⑦b the words of the entry pages exist in both languages, key for key', async () => {

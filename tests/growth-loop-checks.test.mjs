@@ -34,7 +34,8 @@ const { HUB: HISTORY_HUB } = await import(modUrl('scripts/history-pages.mjs'));
 const { OTD_HUB, dayPath } = await import(modUrl('scripts/on-this-day-pages.mjs'));
 /* (country-pages) the third: one page per country */
 const { COUNTRY_HUB, countryPath } = await import(modUrl('scripts/country-pages.mjs'));
-const GENERATED_DOORS = { history: HISTORY_HUB, 'on-this-day': OTD_HUB, countries: COUNTRY_HUB };
+const GENERATED_DOORS = { history: HISTORY_HUB, 'on-this-day': OTD_HUB, countries: COUNTRY_HUB, weekly: WEEKLY_HUB };
+const { WEEKLY_HUB } = await import(modUrl('scripts/weekly-earth-pages.mjs'));   /* (weekly-earth) the third generated door */
 const { makeAtlasAgent } = await import(modUrl('js/atlas-agent.js'));
 const AGENT = makeAtlasAgent();
 
@@ -216,6 +217,6 @@ test('growth-loop ④ the privacy policy states both new counts, in English and 
   const legal = src('js/legal-text.js');
   assert.match(legal, /the <b>kind<\/b> of each Atlas answer \(text only, map, chart, or a mix/);
   assert.match(legal, /Atlas の回答の<b>種類<\/b>（文章のみ・地図・グラフ・その組み合わせ/);
-  assert.match(legal, /one of the Service's own introduction pages \(an example, About, For teachers, Reading the news on a map, Embedding a map, the historical maps by year, On this day\)/);
-  assert.match(legal, /本サービスの紹介ページ（作例・概要・教員向け・ニュースを地図で読む・記事に地図を埋め込む・年代から探す歴史地図・この日の歴史地図）から開いたか/);
+  assert.match(legal, /one of the Service's own introduction pages \(an example, About, For teachers, Reading the news on a map, Embedding a map, the historical maps by year, On this day, This week on Earth\)/);
+  assert.match(legal, /本サービスの紹介ページ（作例・概要・教員向け・ニュースを地図で読む・記事に地図を埋め込む・年代から探す歴史地図・この日の歴史地図・今週の地球）から開いたか/);
 });
