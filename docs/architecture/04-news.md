@@ -339,5 +339,10 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 - **サーバーの読み口**（migration `20261003211600_news_story.sql`）: `news_title_terms(text)`（語を切る唯一の規則・
   GIN 索引の式）・`news_story(terms, since, until)`（`setof news_events`）・`news_story_terms(text, since, until, max_share)`
   （数だけの jsonb）。⚠ ブラウザは見出しを語に切らない。
+  本体は `20261004090000_news_story_one_scan.sql`: `news_story_terms` は GIN 索引を **1 回だけ**読み（文の語のどれか・
+  `&&`）、語と対の数をその集合の GROUP BY で出す——語の数に比例して走査が増えない。どちらの関数も語の照合を
+  MATERIALIZED の囲いに入れ、汎用計画が時刻の索引で全行の語を切る道を塞ぐ（実測と理由は NEWS-EVENTS §17.5）。
+- **読めなかったときは理由を言う**（`failureOf`）: 時間切れ・権限・未配備・データベース不在・ネットワーク・その他を
+  分け、どれも「ストーリーが無い」とは言わない。Atlas には `errorKind` を渡す。
 - **入口**: 出来事の詳細（`js/news-events.js`）の「この出来事の流れを追う」・リンク・命令・Atlas `news.story`。
 - ⚠ **ストーリーは述べた問いであって判定ではない**——カードは常に「見出しに … を含む出来事」と言い、線は報道の順序。

@@ -1,6 +1,8 @@
 ---
 title: スマホでしかできないこと——「いま、ここ」（現在地の天気・地震・ニュース・かつての名前を 1 枚で、正確な位置は端末から出さない）と「共有で開く」（共有シートの宛先になり、写真はカメラの記録から撮影地と撮影日の地図へ）。浮く単体ボタンもシートの上へ
 date: 2026-10-03
+newsen: On phones: "Here and now" shows weather, earthquakes, news and a place's former names in one card without sending your exact position, and IntMap can receive photos shared from the share sheet.
+newsjp: スマホ向け: 「いま、ここ」が現在地の天気・地震・ニュース・かつての名前を 1 枚で示します（正確な位置は送りません）。共有シートから写真を IntMap で開くこともできます。
 ---
 
 〈依頼〉全権委任の監査（common: 商品開発）。分野はモバイル。今日すでに着地した mobile-shell・mobile-shell-flow・mobile-card-reach・mobile-panels-reach・mobile performance の上に、**スマホでしかできない体験**を商品として積む。途中で追加: 本番 f01c607（375×812）で、地図上のオブジェクトの一覧を開く丸ボタン `#iol-fab` が中段シートのレイヤー画面の検索欄 `input.lsr-q` に重なり、重なった範囲のタップをボタンが取る——#944 の調整は「中に押せる要素を持つパネル」だけを探すので、ボタン単体が対象外。

@@ -172,6 +172,33 @@ export function frameAt(story, i) {
   return { day: d.day, index: k, past: S.events.filter((e) => dayOf(e.at) < d.day), now: d.events.slice(), edges: S.edges.filter((x) => x.day <= d.day), spread: S.spread[k] };
 }
 
+/* ── when the server did not answer ──────────────────────────────────────────────────────────────── */
+/** failureOf(error) → { kind, code } — WHY a read of the news collection failed, from what the failure itself carries
+ *  (a PostgREST error's SQLSTATE / PGRST code, or the exception fetch threw). Measured 2026-10-04 on production: the
+ *  story card said «could not be reached» for every failure, while the server had answered — with 57014, the anon
+ *  statement timeout — in 3.1 s. A failure to answer is not a failure to connect, and neither is «no story».
+ *    timeout      57014 (query_canceled: statement_timeout) — the server stopped counting
+ *    denied       42501 (insufficient_privilege), PGRST301/302 (the key was refused)
+ *    missing      42883 (no such function), 42P01 (no such table), PGRST202/205 (not in the API's schema cache)
+ *    unavailable  class 08 (connection), 53 (insufficient resources), 57P (shutdown), PGRST000–003 (the API could not
+ *                 reach its database) — the server answered, its database did not
+ *    unreachable  no code and a fetch exception (TypeError «Failed to fetch» / «Load failed»), or no client —
+ *                 nothing answered
+ *    failed       anything else, with its code if it had one (a code-less error that is not a fetch exception is
+ *                 NOT called unreachable — we do not know that it was) */
+export function failureOf(error) {
+  const e = error || {};
+  const code = typeof e.code === 'string' ? e.code : (e.code != null ? String(e.code) : '');
+  if (code === '57014') return { kind: 'timeout', code };
+  if (code === '42501' || code === 'PGRST301' || code === 'PGRST302') return { kind: 'denied', code };
+  if (code === '42883' || code === '42P01' || code === 'PGRST202' || code === 'PGRST205') return { kind: 'missing', code };
+  if (/^(08|53|57P)/.test(code) || /^PGRST00[0-3]$/.test(code)) return { kind: 'unavailable', code };
+  /* the three engines' words for «the request never got an answer» (Chromium, WebKit, Gecko, Node's undici), which
+     supabase-js passes on as the message of a code-less error; and this page's own «there is no client to ask» */
+  if (!code && (e.name === 'TypeError' || /Failed to fetch|Load failed|NetworkError|fetch failed|no database client/i.test(String(e.message || '')))) return { kind: 'unreachable', code: null };
+  return { kind: 'failed', code: code || null };
+}
+
 /* ── the address: `?story=afd,victory` ─────────────────────────────────────────────────────────── */
 /** storyQuery(terms) → '?story=a,b' (the words as the server spells them, so the link names the same thread) */
 export function storyQuery(terms) {

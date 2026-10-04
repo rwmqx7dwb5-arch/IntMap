@@ -1,6 +1,8 @@
 ---
 title: Atlas ブリーフィング——調査ノートの回答を、開けばそのまま読めるリンクにする。受け取った人はアカウントなしで、回答が終わったときの地図の上で回答と根拠（とその時刻）を読み、記録時の行が地図に描かれる。中身はリンクの断片に入り、サーバーには送られない。Atlas の `thisTurn` で「調べてブリーフィングにして」が 1 回の依頼になる
 date: 2026-10-03
+newsen: Atlas briefings: share a research note as a link. Anyone can open it without an account and read the answer, its sources and the map as it ended.
+newsjp: Atlas ブリーフィング: 調査ノートをリンクで共有できます。受け取った人はアカウントなしで、回答と根拠と、回答が終わったときの地図をそのまま読めます。
 ---
 
 〈依頼〉全権委任の第 2 波、Atlas 分野。「Atlas を『質問に答える窓』から次の段の商品へ」。例として、複数ステップの調査を

@@ -59,6 +59,22 @@ test('① Ctrl/⌘+K: one field finds a layer, an action and a place, and each c
   /* …and the command with a title that has no control on screen yet (the company footprint) */
   await page.locator('#cp-input').fill('company sites');
   await expect(box.locator('.cp-row[data-kind="action"] .cp-t', { hasText: 'Company sites map' })).toHaveCount(1);
+  /* (wave2-prod-fixes) …and the commands a tool row names (Layers ▸ Tools — `data-act`, no `btn`, no `title`). MEASURED on
+     production: «radiation» and «plume» found no plume simulator, and none of the eight was in the palette. Every tool row
+     whose command the kernel holds is found by its own name, and «radiation» by the capability registry's spelling. */
+  const tools = await page.evaluate(() => [...document.querySelectorAll('.lst-toolrow[data-act]')].filter((r) => window.IntMapOS.has(r.dataset.act))
+    .map((r) => ({ id: r.dataset.act, name: r.querySelector('b').textContent.trim() })));
+  expect(tools.length, 'the Layers panel has tool rows').toBeGreaterThan(5);
+  for (const tl of tools) {
+    await page.locator('#cp-input').fill(tl.name);
+    await expect(box.locator('.cp-row[data-kind="action"] .cp-t', { hasText: tl.name }).first(), tl.id + ' is in the palette by its name').toBeVisible();
+  }
+  const plume = tools.find((x) => x.id === 'sim.radiation');
+  expect(plume, 'the plume simulator has a tool row').toBeTruthy();
+  for (const q of ['radiation', 'plume']) {
+    await page.locator('#cp-input').fill(q);
+    await expect(box.locator('.cp-row[data-kind="action"] .cp-t', { hasText: plume.name }).first(), '«' + q + '» finds ' + plume.name).toBeVisible();
+  }
 
   /* a place on the device, flown to by the search's own flight */
   await page.locator('#cp-input').fill('Japan');

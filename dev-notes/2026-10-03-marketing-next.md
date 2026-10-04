@@ -1,6 +1,8 @@
 ---
 title: この日の歴史地図——暦の 1 日について地図の記録が述べる出来事を 1 つの索引にし、アプリのカードとシート・Atlas・日ごとの静的ページとその日の記録から描いたカードの絵・SNS 投稿の下書き（承認待ち）が同じものを読む。地図の名前がエポック内の問い順に依存していたのを直す
 date: 2026-10-03
+newsen: This day in history: pick a calendar day and see the events the map records for it, as a card, in Atlas, and on a page for each day.
+newsjp: この日の歴史地図: 暦の 1 日を選ぶと、地図が記録している出来事をカード・Atlas・日ごとのページで見られます。
 ---
 
 〈依頼〉「次の流入エンジン」——マーケティングを分野として、新しい読者を連れてくる商品を作り切る。例として「地図自身が毎日生む

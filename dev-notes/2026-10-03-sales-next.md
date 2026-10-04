@@ -1,6 +1,8 @@
 ---
 title: 授業ツアーを紙にする「印刷用ワークシート」と、相談のコンソールの「パイプライン」——学校に持っていける授業パックと、話が始まった組織を落とさない台帳
 date: 2026-10-03
+newsen: Classroom tours can be printed as worksheets: each step becomes a map image with its legend and sources, ready to hand out.
+newsjp: 授業ツアーを印刷用ワークシートにできます。各段が凡例と出典つきの地図の絵になり、そのまま配れます。
 ---
 
 〈依頼〉「改善ではなく商品開発、マーケティング、営業。足し算。全権を委任する」の営業の 2 本目。

@@ -1,6 +1,8 @@
 ---
 title: コレクションをワークスペースにする——場所に加えて「地図そのもの」をアカウントに保存し、コレクションを持ち主の明示的な操作で閲覧専用リンクとして公開する（見た人はログインすれば自分のアカウントへ写せる）
 date: 2026-10-03
+newsen: Collections are now workspaces: save the map itself to your account, and publish a collection as a read-only link that others can copy into their own places.
+newsjp: コレクションがワークスペースになりました。場所に加えて地図そのものをアカウントに保存でき、閲覧専用リンクで公開すると、受け取った人は自分のマイプレイスへ写せます。
 ---
 
 〈依頼〉全権委任の第 2 波。分野はバックエンド・Supabase・データ保護・アカウント。第 1 波（`2026-10-03-platform-backend`）が

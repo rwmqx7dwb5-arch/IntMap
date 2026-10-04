@@ -94,6 +94,18 @@ test('② a reader\'s line is both languages or neither, plain, and in Japanese 
   assert.deepEqual(DN.checkNotes(ROOT), [], 'the records as they are pass the check');
 });
 
+test('② omitting the reader line is a decision: a branch that changes PRODUCT.md or adds a root page must say so', () => {
+  const rec = 'dev-notes/2026-10-04-x.md';
+  const none = () => ({ title: 'x' });
+  assert.deepEqual(DN.newsOmissions([{ status: 'A', file: rec }, { status: 'M', file: 'js/a.js' }], none), [], 'no signal, nothing asked');
+  assert.equal(DN.newsOmissions([{ status: 'A', file: rec }, { status: 'M', file: 'PRODUCT.md' }], none).length, 1, 'PRODUCT.md changed');
+  assert.equal(DN.newsOmissions([{ status: 'A', file: rec }, { status: 'A', file: 'security.html' }], none).length, 1, 'a page was added');
+  assert.deepEqual(DN.newsOmissions([{ status: 'A', file: rec }, { status: 'M', file: 'index.html' }], none), [], 'editing a page is not adding one');
+  assert.deepEqual(DN.newsOmissions([{ status: 'A', file: rec }, { status: 'M', file: 'PRODUCT.md' }], () => ({ newsen: 'a', newsjp: 'あ' })), [], 'the lines answer it');
+  assert.deepEqual(DN.newsOmissions([{ status: 'A', file: rec }, { status: 'M', file: 'PRODUCT.md' }], () => ({ internal: 'merge only' })), [], 'so does an internal reason');
+  assert.deepEqual(DN.newsOmissions([{ status: 'M', file: rec }, { status: 'M', file: 'PRODUCT.md' }], none), [], 'only records added on the branch are asked');
+});
+
 test('② the generator: entries newest first, pages in both languages, an Atom feed per language, a sitemap', () => {
   const M = WN.collect(ROOT, { repo: 'https://github.com/o/r' });
   assert.deepEqual(M.problems, []);

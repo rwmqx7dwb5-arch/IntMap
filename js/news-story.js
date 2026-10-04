@@ -26,7 +26,7 @@ import * as bus from './bus.js';
 import { IntMapTime } from './chronos.js';
 import { everyTick, stopTick } from './runtime.js';
 import { makeCountryIndex, isIso2, arc } from './news-intel-core.js';
-import { STORY, decodeTerms, suggest, buildStory, frameAt, storyQuery, storyFromSearch, isTerm } from './news-story-core.js';
+import { STORY, decodeTerms, suggest, buildStory, frameAt, storyQuery, storyFromSearch, isTerm, failureOf } from './news-story-core.js';
 
 export function newsStory(HOST) {
   const GE = () => IntMapGeoEngine;
@@ -47,7 +47,9 @@ export function newsStory(HOST) {
   const RAMP = [0, '#7cc4ff', 0.5, '#0a84ff', 1, '#5e2ca5'];
 
   const st = { open: false, seq: 0, terms: [], seed: null, stats: null, sug: null, rows: null, story: null, frame: -1,
-    loading: false, err: '', playing: null, untilMs: null, painted: 0, paintError: '' };
+    loading: false, err: '', fail: null, playing: null, untilMs: null, painted: 0, paintError: '' };
+  /* a failed read is recorded as WHY it failed (js/news-story-core.js failureOf) — the card and Atlas say which */
+  const failed = (e) => { st.err = (e && e.message) || String(e); st.fail = failureOf(e); };
 
   /* ── the clock: the story ends at the master clock's instant ─────────────────────────────────── */
   function clockUntil() {
@@ -95,7 +97,7 @@ export function newsStory(HOST) {
     const p = o || {};
     const my = ++st.seq;
     pause();
-    st.open = true; st.err = ''; st.loading = true; st.rows = null; st.story = null; st.frame = -1;
+    st.open = true; st.err = ''; st.fail = null; st.loading = true; st.rows = null; st.story = null; st.frame = -1;
     st.seed = p.from ? { id: String(p.from), title: String(p.text || '') } : (p.text ? { id: null, title: String(p.text) } : null);
     const asked = Array.isArray(p.terms) ? p.terms : (typeof p.terms === 'string' ? p.terms.split(/[,\s]+/) : (p.search ? (storyFromSearch(p.search) || []) : []));
     const want = Array.from(new Set(asked.map((t) => String(t).normalize('NFKC').trim().toLowerCase()))).filter(isTerm).slice(0, STORY.MAX_TERMS);
@@ -112,7 +114,7 @@ export function newsStory(HOST) {
       const known = new Set(stats.terms.map((x) => x.t));
       st.terms = st.terms.filter((t) => known.has(t));
       if (st.terms.length) await load(my, sp);
-    } catch (e) { if (my === st.seq) st.err = (e && e.message) || String(e); }
+    } catch (e) { if (my === st.seq) failed(e); }
     if (my !== st.seq) return null;
     st.loading = false;
     draw(); paint();
@@ -132,10 +134,10 @@ export function newsStory(HOST) {
     const next = Array.from(new Set((terms || []).map((t) => String(t).toLowerCase()))).filter((t) => isTerm(t) && known.has(t)).slice(0, STORY.MAX_TERMS);
     const my = ++st.seq;
     pause();
-    st.terms = next; st.rows = null; st.story = null; st.frame = -1; st.err = '';
+    st.terms = next; st.rows = null; st.story = null; st.frame = -1; st.err = ''; st.fail = null;
     if (!next.length) { st.loading = false; draw(); paint(); return summary(); }
     st.loading = true; draw();
-    try { await load(my, { since: new Date(st.untilMs - STORY.SPAN_DAYS * DAY).toISOString(), until: new Date(st.untilMs).toISOString() }); } catch (e) { if (my === st.seq) st.err = (e && e.message) || String(e); }
+    try { await load(my, { since: new Date(st.untilMs - STORY.SPAN_DAYS * DAY).toISOString(), until: new Date(st.untilMs).toISOString() }); } catch (e) { if (my === st.seq) failed(e); }
     if (my !== st.seq) return null;
     st.loading = false; draw(); paint();
     return summary();
@@ -386,7 +388,7 @@ export function newsStory(HOST) {
     const e = ensurePop(); const body = e.querySelector('#nstory-body');
     const msg = (t) => { built = -1; body.innerHTML = '<div class="nint-empty">' + S(t) + '</div>'; };
     if (st.loading) return msg(L('Reading the story…', 'ストーリーを読み込んでいます…'));
-    if (st.err) return msg(L('The news collection could not be reached — this does not mean there is no story', 'ニュースの収集に到達できませんでした（ストーリーが無いという意味ではありません）'));
+    if (st.err) return msg(failureLine());
     if (!st.terms.length) {
       return msg(st.sug && st.sug.chips.length
         ? L('No word of this headline is shared by enough other events to make a thread on its own. Switch on words above to follow them.', 'この見出しには、それだけで流れになるほど他の出来事と共有されている名前がありません。上の語を選ぶと、その語で追えます。')
@@ -437,10 +439,23 @@ export function newsStory(HOST) {
     return '<li><button type="button" class="nint-ev' + (seed ? ' nst-seed' : '') + '" data-nst-ev="' + S(e.id) + '"><span class="nint-ev-t">' + S(e.title) + '</span><span class="nint-ev-m">' + S(meta) + (seed ? ' · ' + S(L('opened from here', 'ここから開いた')) : '') + '</span></button></li>';
   }
 
+  /* what the card says when a read failed — the reason the failure carried, never «no story» */
+  function failureLine() {
+    const f = st.fail || { kind: 'failed', code: null };
+    const not = L(' — this does not mean there is no story', '（ストーリーが無いという意味ではありません）');
+    if (f.kind === 'timeout') return L('The news collection stopped before it finished counting these words (the database time limit)', 'ニュースの収集が、この語の集計を時間内に終えられず打ち切りました（データベースの時間上限）') + not;
+    if (f.kind === 'denied') return L('The news collection refused this request (permission)', 'ニュースの収集がこの要求を拒否しました（権限）') + not;
+    if (f.kind === 'missing') return L('The news collection does not have the story reader yet (it is not deployed on this server)', 'ニュースの収集に、ストーリーの読み口がまだありません（このサーバーには未配備です）') + not;
+    if (f.kind === 'unavailable') return L('The news collection answered, but its database was unavailable', 'ニュースの収集は応答しましたが、そのデータベースが利用できませんでした') + not;
+    if (f.kind === 'unreachable') return L('The news collection could not be reached (no network answer)', 'ニュースの収集に到達できませんでした（ネットワークの応答がありません）') + not;
+    return L('The news collection returned an error', 'ニュースの収集がエラーを返しました') + (f.code ? ' (' + f.code + ')' : '') + not;
+  }
+
   /** summary() — what Atlas is handed: the words, the counts, the span, the spread and the events, with what was not placed */
   function summary() {
     const S2 = st.story;
     const base = { ok: !st.err, open: st.open, terms: st.terms.slice(), naming: namingLine(), until: st.untilMs ? new Date(st.untilMs).toISOString() : null, error: st.err || null,
+      errorKind: st.fail ? st.fail.kind : null, errorCode: st.fail ? st.fail.code : null,
       suggested: st.sug && st.sug.pick ? st.sug.pick.terms.slice() : null,
       choices: st.sug ? st.sug.choices.slice(0, 5).map((c) => ({ terms: c.terms, events: c.n })) : [],
       link: link() || null };
@@ -464,7 +479,7 @@ export function newsStory(HOST) {
 
   const API = { open, close, setTerms, play, pause, seek, summary, link,
     isOpen: () => st.open,
-    state: () => ({ open: st.open, terms: st.terms.slice(), loading: st.loading, error: st.err || null, events: st.story ? st.story.events.length : 0,
+    state: () => ({ open: st.open, terms: st.terms.slice(), loading: st.loading, error: st.err || null, errorKind: st.fail ? st.fail.kind : null, events: st.story ? st.story.events.length : 0,
       frame: st.frame, days: st.story ? st.story.days.length : 0, playing: !!st.playing, painted: st.painted, paintError: st.paintError || null }) };
   window.__imNewsStory = API;
   return API;
