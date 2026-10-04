@@ -563,6 +563,7 @@ export function windowManager(HOST){
     _geoBump();   /* a window that has just joined changes the hull */
   }
   function addEdgeResize(panel,opts){ opts=opts||{}; if(!panel||panel.dataset.edgeResize) return; panel.dataset.edgeResize='1';
+    try{ if(!document.getElementById('im-edge-hover-css')){ const st=document.createElement('style'); st.id='im-edge-hover-css'; st.textContent='.im-edge-hover, .im-edge-hover *{cursor:inherit !important;}'; document.head.appendChild(st); } }catch(_){}
     const M=9, minW=(opts.min&&opts.min[0])||220, minH=(opts.min&&opts.min[1])||130;
     const CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};
     /* (#R311) `rect` is the ONE addition: the arithmetic below is byte-for-byte what it was, and a
@@ -587,8 +588,13 @@ export function windowManager(HOST){
        IT DIFFERS: writing the same value back would churn the `style` attribute, the per-window
        MutationObserver would bump the generation, and the cache would invalidate itself once per
        pointer event — the exact cost this is removing. */
-    panel.addEventListener('pointermove',(e)=>{ if(panel.dataset.resizing||_inWsWin2()) return; const g=_geoOf(panel); const d=edgeAt(e.clientX,e.clientY,g?g.r:null); const cv=d?CUR[d]:''; if(panel.style.cursor!==cv) panel.style.cursor=cv; });
-    panel.addEventListener('pointerleave',()=>{ if(!panel.dataset.resizing) panel.style.cursor=''; });
+    panel.addEventListener('pointermove',(e)=>{ if(panel.dataset.resizing||_inWsWin2()) return; const g=_geoOf(panel); const d=edgeAt(e.clientX,e.clientY,g?g.r:null); const cv=d?CUR[d]:''; if(panel.style.cursor!==cv){ panel.style.cursor=cv; panel.classList.toggle('im-edge-hover',!!cv); } });
+    /* (studio-wait-edge-cursor) A CHILD THAT SETS ITS OWN CURSOR HID THE RESIZE CURSOR. The compare window's edge, over its
+       map canvas, showed «grab» (production, 2026-10-04: the middle of the left edge) — the canvas's cursor is its own, so the
+       one written on the window never showed there, though the drag worked. The workspace windows met this in #R107 and
+       answered it with a class that makes every descendant inherit the window's cursor while the pointer is in the edge
+       zone (js/workspace.js .rz-hover); this is the same answer for every window that asks for edge-resize. */
+    panel.addEventListener('pointerleave',()=>{ if(!panel.dataset.resizing){ panel.style.cursor=''; panel.classList.remove('im-edge-hover'); } });
     const start=(e,d)=>{ e.preventDefault(); e.stopPropagation(); panel.dataset.resizing=d; bringToFront(panel);
       const r=panel.getBoundingClientRect(), op=panel.offsetParent||document.documentElement, opr=op.getBoundingClientRect();
       /* (#R48) ROOT CAUSE of the buggy resize: the Atlas panel is centred with transform:translateX(-50%) (from

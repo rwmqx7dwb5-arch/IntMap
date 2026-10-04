@@ -32,6 +32,7 @@
  * ==========================================================================*/
 import { IntMapLang } from './lang-registry.js';
 import { MapState } from './map-state.js';
+import { IntMapGeoEngine } from './geo-engine.js';   /* (studio-wait-edge-cursor) whenCanDraw — the map is told to the studio, not guessed */
 import { icon } from './icons.js';
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the one encoder every string below is written with */
 import * as bus from './bus.js';   /* the declared events: the language change is heard through it */
@@ -314,6 +315,12 @@ function dataStudio(HOST) {
       return { ok: false, why: S.problem.why, detail: S.problem.detail };
     }
     S.result = { datasetId: resultId, made, fieldOf, placed: false };
+    /* (studio-wait-edge-cursor) A MAP THAT IS STILL LOADING IS NOT A MAP THAT CANNOT DRAW. A shared link opened before the
+       style had finished loading (or while it was being swapped) failed at addSource with «Style is not done loading», and
+       the studio told the reader to switch to the flat map — advice about the projection for a matter of time (production,
+       2026-10-04). The engine already answers «when can I draw» (js/geo-engine.js whenCanDraw); the studio waits for it and
+       says it is waiting. The refusal below is now only what the renderer refused with a style in hand. */
+    try { if (!IntMapGeoEngine.canDraw()) { S.busy = L('Waiting for the map to finish loading…', '地図の読み込みが終わるのを待っています…'); render(); await IntMapGeoEngine.whenCanDraw(); } } catch (_) { /* no engine: draw() answers below */ }
     const d = window.IntMapGis.draw(resultId);
     S.busy = '';
     if (!d || !d.ok) { S.problem = { why: (d && d.why) || 'draw-not-rendered' }; return { ok: false, why: S.problem.why }; }
