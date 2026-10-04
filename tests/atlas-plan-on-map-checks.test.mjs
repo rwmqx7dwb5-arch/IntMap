@@ -195,7 +195,7 @@ test('atlas-plan-on-map ⑤ what a call drew is what appeared or changed between
   assert.equal(bboxOf([]), null);
 });
 
-test('atlas-plan-on-map ⑤ the console keeps ONE ledger, hands it to the loop and the HUD, and puts its block in every step', () => {
+test('atlas-plan-on-map ⑤ the console keeps ONE ledger, hands it to the loop and the trace, and puts its block in every step', () => {
   const c = rd('js/atlas-console.js');
   assert.equal((c.match(/makeAtlasPlan\(\)/g) || []).length, 1);
   assert.match(c, /makeAtlasLive\(HOST,\{[^}]*plan:PLAN/);
@@ -203,5 +203,7 @@ test('atlas-plan-on-map ⑤ the console keeps ONE ledger, hands it to the loop a
   assert.match(c, /tail\+=PLAN\.promptBlock\(\)/);
   const live = rd('js/atlas-live.js');
   assert.match(live, /makePlanView\(deps\.plan/);
-  assert.match(live, /\+ ATLAS_PLAN_CSS/);
+  /* (atlas-progress-one) the view renders into the work trace, not into a card on the map */
+  assert.match(live, /querySelector\('\.atl-trace-plan'\)/);
+  assert.doesNotMatch(live, /atl-hud-plan/);
 });

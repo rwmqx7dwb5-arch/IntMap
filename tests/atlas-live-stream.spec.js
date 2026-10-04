@@ -14,11 +14,12 @@
  *  It holds, in the page:
  *    ① a note on the way («まず…», `turn:"continuing"`) goes to the trace, never the reply bubble;
  *    ② the answer is visible WHILE it is written, and is replaced — not appended to — by the answer
- *       the loop returns; the map HUD showed the operation start and finish;
+ *       the loop returns; the operation's row is ticked in the trace, and while the trace can be seen
+ *       the map carries no progress of its own (atlas-progress-one);
  *    ③ a stop mid-sentence keeps the draft, marked unfinished, and records no answer;
  *    ④ a stream that breaks before `done` is asked again once, plainly, and the turn still answers;
- *    ⑤ (atlas-plan-on-map) a plan Atlas declared stands in the HUD with each step's OBSERVED state,
- *       stays when the turn ends, goes back to what its step drew, and is put in front of the model;
+ *    ⑤ (atlas-plan-on-map) a plan Atlas declared stands in the work trace with each step's OBSERVED
+ *       state, stays when the turn ends, goes back to what its step drew, and is put in front of the model;
  *    ⑥ (atlas-os) the turns above are filed in the investigation notebook — answered ones only, with the
  *       question, the answer and the operation — and WRITTEN TO INDEXEDDB (what survives a reload);
  *       「地図を再現」 puts the camera back through the dispatch, and the entry is handed on as Markdown.
@@ -118,7 +119,7 @@ const ask = async (q) => {
 };
 const lastReply = () => page.locator('#atlas-panel .atl-b.a').last();
 
-test('①② the note goes to the trace, the answer is shown while written and then replaced, the HUD follows the operation', async () => {
+test('①② the note goes to the trace, the answer is shown while written and then replaced, the trace follows the operation', async () => {
   await ask('東京はどこ？');
   /* ① the note, live, in the trace — and not in the reply */
   await expect(page.locator('#atlas-panel .atl-trace-row.say').last()).toContainText(NOTE, { timeout: 20_000 });
@@ -130,8 +131,10 @@ test('①② the note goes to the trace, the answer is shown while written and t
   const draft = lastReply().locator('.atl-draft.live');
   await expect(draft).toContainText('関東平野', { timeout: 20_000 });
   await expect(draft.locator('.atl-caret')).toHaveCount(1);
-  /* the HUD showed the operation start and end on the map */
-  await expect(page.locator('.atl-hud .atl-hud-op.ok')).toHaveCount(1, { timeout: 20_000 });
+  /* the trace ticked the operation — and, the trace being on screen, nothing on the map said it again
+     (atlas-progress-one: four indicators for one turn was the defect) */
+  await expect(page.locator('#atlas-panel .atl-trace').last().locator('.atl-trace-rows > .atl-trace-row.ok')).not.toHaveCount(0, { timeout: 20_000 });
+  await expect(page.locator('.atl-hud.on')).toHaveCount(0);
   await page.evaluate(() => { window.__live.released = true; });
   /* the answer replaces the draft: one copy of the sentence, no draft, no caret */
   await expect(lastReply().locator('.atl-draft')).toHaveCount(0, { timeout: 20_000 });
@@ -170,29 +173,32 @@ test('④ a stream that breaks before done is asked again once, plainly, and the
   expect(bodies.filter((x) => x === false).length).toBe(1);
 });
 
-test('⑤ the plan Atlas declared in ④ stands on the map with its observed states, outlives the turn, and goes back to what a step drew', async () => {
-  const steps = page.locator('.atl-hud .atl-plan .atl-plan-step');
+test('⑤ the plan Atlas declared in ④ stands in the work trace with its observed states, outlives the turn, and goes back to what a step drew', async () => {
+  const trace = page.locator('#atlas-panel .atl-trace').filter({ has: page.locator('.atl-plan') });
+  await expect(trace).toHaveCount(1);                              /* one plan, in one place */
+  await expect(page.locator('.atl-hud .atl-plan, .atl-hud-plan')).toHaveCount(0);   /* and not on the map */
+  const steps = trace.locator('.atl-plan .atl-plan-step');
   await expect(steps).toHaveCount(2);
   const snap = await page.evaluate(() => window.IntMapAtlasDebug.plan());
   expect(snap.goal).toBe('東京を示す');
+  await expect(trace.locator('.atl-plan-goal')).toHaveText('東京を示す');
   expect(snap.steps[0].ops.length).toBe(1);                       /* the call made after the plan call serves step 1 */
   expect(snap.steps[1].state).toBe('pending');                     /* never made current: not started */
-  /* the state is the executor's verdict — and only `completed` wears the tick */
+  /* the state is the executor's verdict — and only `completed` wears the tick (the trace's own mark) */
   await expect(steps.nth(0)).toHaveClass(new RegExp('s-' + snap.steps[0].ops[0].state));
-  expect(await steps.nth(0).locator('.atl-plan-mark.ok').count()).toBe(snap.steps[0].ops[0].state === 'completed' ? 1 : 0);
+  expect(await steps.nth(0).evaluate((el) => el.classList.contains('ok'))).toBe(snap.steps[0].ops[0].state === 'completed');
   /* the model was shown the plan on the step after it was declared (④: the broken stream, its plain retry, step 2) */
   expect(await page.evaluate(() => window.__live.bodies.map((b) => b.plan))).toEqual([false, false, true]);
+  /* the turn ended: the trace folded, the plan's head (goal and N/M) still stands, the steps open with the trace */
+  await expect(trace.locator('.atl-plan-count')).toBeVisible();
+  await expect(steps.nth(0)).toBeHidden();
+  await trace.locator('.atl-trace-head').click();
+  await expect(steps.nth(0)).toBeVisible();
   /* the way back to what step 1 drew: the camera is sent elsewhere and the step is pressed */
   await expect(steps.nth(0)).toHaveClass(/(^|\s)can(\s|$)/);
-  await page.evaluate(() => { window.IntMapGeoEngine.camera.jumpTo({ center: [-40, -30], zoom: 2 }); document.querySelector('.atl-hud .atl-plan-step.can').click(); });
+  await page.evaluate(() => { window.IntMapGeoEngine.camera.jumpTo({ center: [-40, -30], zoom: 2 }); });
+  await steps.nth(0).click();
   await page.waitForFunction(() => { const c = window.IntMapGeoEngine.camera.getCenter(); return Math.abs(c.lng - 139.7) < 3 && Math.abs(c.lat - 35.7) < 3; }, null, { timeout: 10_000 });
-  /* the turn ended: the HUD rests with the plan, folded — still there, and it opens again */
-  await expect(page.locator('.atl-hud.rest .atl-plan.collapsed')).toHaveCount(1, { timeout: 10_000 });
-  await page.click('.atl-hud .atl-plan-head');
-  await expect(page.locator('.atl-hud .atl-plan.collapsed')).toHaveCount(0);
-  /* hidden on request */
-  await page.click('.atl-hud .atl-plan-x');
-  await expect(page.locator('.atl-hud .atl-plan')).toHaveCount(0);
 });
 
 test('⑥ (atlas-os) the answered turns are in the notebook and in IndexedDB; a replay puts the camera back; Markdown carries them', async () => {
