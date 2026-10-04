@@ -166,6 +166,8 @@ newsjp: <同じことを 1 行・日本語>
 - **読者に見える変化を起こしたら `newsen:` / `newsjp:` を書く**——それがそのまま更新情報（設定 ▸ 新着・`updates.html`・
   Atom フィード・Atlas の `system.whatsNew`）になる（`scripts/whats-new.mjs`）。平文・絵文字なし・280 字以内・
   技術者向けの言葉でなく**使う人に何が変わったか**。内部だけの変更には書かない（書かなければ告知されない）。
+  ⚠ **書き忘れは黙って飛ばされる**ので、branch が記録を足し、かつ `PRODUCT.md` を変えた／ルートに `*.html` を足したときは、
+  その記録に `newsen:`/`newsjp:` か `internal: <なぜ読者に見えないか>` が無いと `--check` が落ちる（`scripts/dev-notes.mjs` `newsOmissions`）。
 - 書いたら `node scripts/dev-notes.mjs --check`。⚠ **`DEV-NOTES.md` は固定の案内で、一覧を持たない**——一覧を追跡していた間は、1 本 merge されるたびに開いている PR が全部このファイルで衝突した（実測 4 本同時）。一覧は `node scripts/dev-notes.mjs --list`。
 - 詳しさは既存のエントリと同じ程度（**何を・なぜ・実測**）。否定された見立ても残す。
 - `R<N>.md` は番号で呼んでいた頃の記録で、名前は当時のまま（読むだけ・書き換えない）。

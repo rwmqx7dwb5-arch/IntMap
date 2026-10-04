@@ -1,6 +1,8 @@
 ---
 title: 見守る場所——撤去された地域監視の入口の代わりに、保存した場所の周辺の地震・警報・火山・ニュースの新着をページが判定して知らせる。AI もサーバーの定期実行も使わず、既読はアカウントに、閉じている間の通知（Web Push）は設計のみ・承認待ち
 date: 2026-10-03
+newsen: Watch places: saved places now report new earthquakes, alerts, volcano activity and news nearby, and remember what you have already read.
+newsjp: 見守る場所: 保存した場所の周辺で起きた地震・警報・火山・ニュースの新着を知らせ、読んだものを覚えます。
 ---
 
 〈依頼〉全権委任の再開発の 1 本。分野は地域監視 (Area Monitors)——入口は撤去済みで基盤は動いたまま。

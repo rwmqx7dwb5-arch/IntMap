@@ -1,6 +1,8 @@
 ---
 title: find_capability の語の検索に「句」を足した——到達は 34 → 37 / 157（問い丸ごとは 2 → 4 / 74）。日本語は 15 / 78 のまま。到達を大きく上げる 3 つの案は、どれも返す行と文書を膨らませて正しい行を「当てる」形になったので採らず、測った数と一緒に残す
 date: 2026-10-04
+newsen: Atlas finds the right tool more often when a request uses a phrase rather than a single word.
+newsjp: Atlas が、依頼が単語ではなく句で書かれていても、合う道具を見つけやすくなりました。
 ---
 
 〈依頼〉ops-next 担当が Atlas の夜間評価に足した到達の計器（`scripts/atlas-eval/reach.mjs`。この時点では ops-next の

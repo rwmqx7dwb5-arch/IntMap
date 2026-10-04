@@ -266,6 +266,52 @@ export function newsProblems(fm) {
   return out;
 }
 
+/* ══ (wave2-prod-fixes) A RECORD THAT CHANGED WHAT A READER SEES MUST SAY SO ══════════════════════════
+   Observed 2026-10-04: all fourteen records of the second wave changed what a reader sees and none carried
+   `newsen:`/`newsjp:`, so the site's «what's new» announced none of it — a record without the lines is skipped
+   without a word. The lines stay the author's to write (nothing is generated from an engineer's title); what
+   is checked is that omitting them is a decision. THE SIGNAL IS A FACT OF THE DIFF, not a list of names: a
+   branch that ADDS a record and also changes PRODUCT.md (the document of what a reader can do) or ADDS a page
+   at the site root (*.html — a page a reader can open) changed what a reader sees. Such a record carries the
+   two lines, or `internal: <why>` (a train that only merges, a refactor that rewrote PRODUCT.md's wording).
+   ⚠ Only records ADDED on this branch are asked: a squash-merged train carries many records in one commit, so
+   history cannot say which record owns which change — the branch's own diff against its merge-base can.
+   Not detected (a known limit, not a promise): a new capability or layer that changes no page and no
+   PRODUCT.md line. Expires: when PRODUCT.md stops being the document of what a reader can do. Canon: here. */
+export const READER_SIGNALS = [
+  { why: 'PRODUCT.md changed', test: (f, status) => f === 'PRODUCT.md' && status !== 'D' },
+  { why: 'a page was added at the site root', test: (f, status) => /^[^/]+.html$/.test(f) && status === 'A' },
+];
+/** Pure: `changed` = [{status, file}] for the whole branch, `fmOf(file)` = a record's front matter. Returns sentences. */
+export function newsOmissions(changed, fmOf) {
+  const signals = [];
+  for (const s of READER_SIGNALS) for (const c of changed) if (s.test(c.file, c.status) && !signals.includes(s.why)) signals.push(s.why);
+  if (!signals.length) return [];
+  const out = [];
+  for (const c of changed) {
+    if (c.status !== 'A' || !c.file.startsWith(NOTES_DIR + '/') || !DATED.test(c.file.slice(NOTES_DIR.length + 1))) continue;
+    const fm = fmOf(c.file) || {};
+    if (fm.newsen || fm.newsjp || fm.internal) continue;
+    out.push(`${c.file}: this branch changes what a reader sees (${signals.join('; ')}) but the record has no newsen/newsjp — write the reader's line, or internal: <why no reader sees it> in its front matter`);
+  }
+  return out;
+}
+/** The branch's changes against its merge-base with origin/main; null when git or the base is unavailable (a shallow CI checkout). */
+export function branchChanges(root = ROOT) {
+  try {
+    const run = (a) => execFileSync('git', a, { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'] });
+    const base = run(['merge-base', 'HEAD', 'origin/main']).trim();
+    if (!base) return null;
+    const rows = run(['diff', '--name-status', '--no-renames', base]).split(String.fromCharCode(10)).filter(Boolean);
+    return rows.map((r) => { const [status, ...f] = r.split(String.fromCharCode(9)); return { status: status[0], file: f.join(String.fromCharCode(9)) }; });
+  } catch { return null; }
+}
+export function checkNewsOmissions(root = ROOT) {
+  const changed = branchChanges(root);
+  if (!changed) return [];
+  return newsOmissions(changed, (f) => { try { return frontMatter(rd(root, f)); } catch { return null; } });
+}
+
 /* ══ READING dev-notes/ ═════════════════════════════════════════════════════════════════════ */
 function frontMatter(text) {
   const m = /^---\n([\s\S]*?)\n---\n/.exec(text);
@@ -503,7 +549,7 @@ if (isCLI) {
     console.log(e ? `${e.kind === 'dated' ? e.date : 'R' + e.round} ${e.title}  (${e.file})` : '(none)');
     process.exit(0);
   }
-  const p = checkNotes(root);
+  const p = [...checkNotes(root), ...checkNewsOmissions(root)];
   if (p.length) { for (const x of p) console.error('✗ ' + x); process.exit(1); }
   console.log(`dev-notes: ${entries(root).length} entries, ${INDEX_FILE} is the fixed pointer (the list is --list)`);
   process.exit(0);

@@ -412,6 +412,7 @@ export function myMap(HOST) {
     try { GE().events.claimClick(e); } catch (_) { }
     sel = fid; paint(); if (panel) { render(); focusFeature(fid, false); }
     try { if (popup) popup.remove(); } catch (_) { }
+    style();   /* the card's own rules (.mm-pop*) — a restored drawing is pressed on the map before the panel has ever opened (wave2-prod-fixes) */
     const own = shown === 'own';
     const html = '<div class="mm-pop">' + (f.name ? '<b>' + H(f.name) + '</b>' : '<b class="mm-pop-un">' + H(kindName(f.kind)) + '</b>')
       + (f.note ? '<div class="mm-pop-note">' + H(f.note) + '</div>' : '')
@@ -475,7 +476,8 @@ export function myMap(HOST) {
     '.mm-pop-note{white-space:pre-wrap;margin:2px 0 4px;}',
     '.mm-pop-m{font-size:12px;color:var(--text-muted);}',
     '.mm-pop-from{margin-top:6px;font-size:11.5px;color:var(--text-muted);}',
-    '.mm-pop-edit{display:inline-flex;align-items:center;gap:5px;margin-top:8px;min-height:32px;padding:0 10px;border-radius:9px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font:inherit;font-weight:600;cursor:pointer;}',
+    /* its colours are the place card's (css/intmap.css, `.plc-popup` — a button on that surface), not written here (wave2-prod-fixes) */
+    '.mm-pop-edit{display:inline-flex;align-items:center;gap:5px;margin-top:8px;min-height:32px;padding:0 10px;border-radius:9px;font:inherit;font-weight:600;cursor:pointer;}',
     '@media (max-width:640px){#im-mymap{top:auto;left:8px;right:8px;bottom:calc(var(--credit-h,23px) + 8px);width:auto;max-height:62dvh;border-radius:20px;}}',
   ].join('\n');
   let styled = false;

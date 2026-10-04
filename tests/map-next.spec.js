@@ -105,6 +105,30 @@ test('my map: draw, name, link, receive, keep, reload, export, analyse', async (
   await page.waitForFunction(() => !!window.IntMapMyMap && window.IntMapMyMap.state().shown === 'own', null, { timeout: 30_000 });
   expect((await page.evaluate(() => window.IntMapMyMap.state())).features.length).toBe(3);
 
+  /* (wave2-prod-fixes) the pin's card, pressed on the map BEFORE the panel has opened in this page — the state production
+     was measured in: «Edit» was rgb(245,245,247) on rgb(240,240,240) in the dark theme. Read as a reader reads it: the
+     button's ink against its fill composited over the card, by WCAG contrast (AA for text is 4.5). */
+  const theme0 = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+  for (const theme of ['light', 'dark']) {
+    await page.evaluate((th) => { document.documentElement.setAttribute('data-theme', th); document.querySelectorAll('.maplibregl-popup').forEach((x) => x.remove()); }, theme);
+    /* the pin is pressed where the renderer has drawn it — after a reload under load the source can be filled a few frames before the symbol is */
+    await page.waitForFunction(() => window.__imap.queryRenderedFeatures({ layers: ['mymap-pt'] }).length > 0, null, { timeout: 20_000 });
+    const pin = await page.evaluate(() => { const m = window.__imap, g = m.getSource('mymap-src').serialize().data.features.find((x) => x.geometry.type === 'Point').geometry.coordinates; const pt = m.project({ lng: g[0], lat: g[1] }); const r = m.getCanvas().getBoundingClientRect(); return { x: r.left + pt.x, y: r.top + pt.y }; });
+    await page.mouse.click(pin.x, pin.y);
+    const edit = page.locator('.maplibregl-popup .mm-pop-edit');
+    await expect(edit, 'the pin card offers Edit (' + theme + ')').toBeVisible({ timeout: 10_000 });
+    const ratio = await edit.evaluate((b) => {
+      const rgba = (s) => { const m = String(s).match(/[\d.]+/g) || []; return [+m[0] || 0, +m[1] || 0, +m[2] || 0, m[3] == null ? 1 : +m[3]]; };
+      const over = (top, under) => [0, 1, 2].map((i) => top[i] * top[3] + under[i] * (1 - top[3]));
+      const card = rgba(getComputedStyle(b.closest('.maplibregl-popup-content')).backgroundColor);
+      const fill = over(rgba(getComputedStyle(b).backgroundColor), card), ink = over(rgba(getComputedStyle(b).color), fill);
+      const lum = (c) => { const l = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2]; };
+      const a = lum(fill), z = lum(ink); return (Math.max(a, z) + 0.05) / (Math.min(a, z) + 0.05);
+    });
+    expect(ratio, 'Edit is readable on the pin card in the ' + theme + ' theme (WCAG ratio)').toBeGreaterThanOrEqual(4.5);
+  }
+  await page.evaluate((th) => { if (th) document.documentElement.setAttribute('data-theme', th); document.querySelectorAll('.maplibregl-popup').forEach((x) => x.remove()); }, theme0);
+
   /* a GeoJSON file */
   await page.evaluate(() => window.IntMapMyMap.open());
   const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('#im-mymap [data-mm="export-geojson"]').click()]);
@@ -142,5 +166,21 @@ test('my map on a phone: every control in the panel is reachable by a finger', a
   });
   await page.screenshot({ path: 'C:/Users/gyuuk/AppData/Local/Temp/map-next-phone.png' });
   expect(bad).toEqual([]);
+
+  /* (wave2-prod-fixes) a tab's bar is there only while its tab is what the sheet shows. MEASURED on production: the last
+     tab Companies, the search opened with nothing typed — and «Tap company rows to select and compare.» lay across the
+     foot of the list. Asked of the screen: what a finger at the bar's place would touch. */
+  await page.evaluate(() => { try { window.IntMapMyMap.close(); } catch (_) { } document.getElementById('btn-info').click(); });
+  await expect(page.locator('#co-compare-fixed')).toHaveClass(/\bshow\b/, { timeout: 10_000 });
+  await page.locator('#ms-input').focus();
+  await expect(page.locator('#ms-results')).not.toBeEmpty({ timeout: 15_000 });
+  await page.waitForTimeout(500);   /* the sheet's spring to `full` */
+  const under = await page.evaluate(() => {
+    const bar = document.getElementById('co-compare-fixed'), r = bar.getBoundingClientRect();
+    const y = Math.min(innerHeight - 2, r.top + r.height / 2), hit = document.elementFromPoint(innerWidth / 2, y);
+    return { barHit: !!(hit && bar.contains(hit)), listHit: !!(hit && hit.closest('#ms-results')) };
+  });
+  expect(under.barHit, 'the Companies bar is not over the search list').toBe(false);
+  expect(under.listHit, 'the search list is what the finger meets at the foot of the sheet').toBe(true);
   await ctx.close();
 });

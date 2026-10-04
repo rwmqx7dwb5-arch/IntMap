@@ -1,6 +1,8 @@
 ---
 title: 埋め込みをページから動かす API（js/embed-client.js）と、台帳が再配布を許すデータだけを出す静的なオープンデータ API（api/v1/）、開発者向けページ
 date: 2026-10-03
+newsen: For developers: control an embedded map from your page with a small script, and use a static open-data API of the datasets whose licenses allow redistribution.
+newsjp: 開発者向け: 埋め込んだ地図を小さなスクリプトでページから操作でき、再配布が許されるデータだけを出す静的なオープンデータ API も使えます。
 ---
 
 〈依頼〉 全権委任の「配信と外部への流通」分野。IntMap を他所のサイト・授業資料・記事の中で生かす流通経路を、

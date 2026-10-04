@@ -9,7 +9,10 @@
 --    · news_story_terms counts, for each word of a text, the events naming it, how often it is capitalised
 --      mid-sentence in sentence-case headlines (a title-case headline is not counted), and how many events
 --      hold two words together — and nothing it returns is a headline;
---    · both are SECURITY INVOKER and callable by anon.
+--    · both are SECURITY INVOKER and callable by anon;
+--    · (20261004090000_news_story_one_scan.sql) news_story_terms reads the headline-word index once for all the
+--      text's words and never calls news_story — a 24-word text over 4,000 events answers inside the anon
+--      statement timeout production enforces (3 s; the old body, three passes of the table per word, did not).
 --  Which words to suggest from those counts is evaluated in Node by tests/news-next-checks.test.mjs.
 -- ============================================================================
 begin;
@@ -82,6 +85,61 @@ select is((select v from _cap where k = 'tm_afd'),   '{"t": "afd", "df": 4, "cap
           'news-story: «afd» is in 4 headlines, capitalised mid-sentence in all 3 sentence-case ones where it is not the first word');
 select is((select v from _cap where k = 'tm_pair'),  '[["afd", "victory", 3]]', 'news-story: the pair count — 3 events hold «afd» and «victory» together («wins» is in one headline only)');
 select is((select v from _cap where k = 'tm_text'),  'false', 'news-story: news_story_terms returns counts, not headlines');
+
+-- ─────────────────────────────────────────────────────────────────────────────
+--  4. ONE READ, NOT ONE PER WORD (20261004090000_news_story_one_scan.sql)
+-- ----------------------------------------------------------------------------
+--  Production (2026-10-04, 18,429 active events): the old news_story_terms called news_story twice per word and
+--  once per pair, and each call — planned without its arguments — cut every headline of the span into words:
+--  one word 1.3 s, two words over the anon statement timeout (3 s, 57014). The body now counts every word and
+--  pair from one set. Asserted two ways: the body does not call news_story, and a 24-word text over 4,000
+--  events answers under the same 3 s the anon role is held to.
+-- ─────────────────────────────────────────────────────────────────────────────
+select ok(position('news_story(' in (select prosrc from pg_proc where oid = 'public.news_story_terms(text, timestamptz, timestamptz, real)'::regprocedure)) = 0,
+          'news-story: news_story_terms does not call news_story (no pass per word)');
+select ok((select prosrc from pg_proc where oid = 'public.news_story(text[], timestamptz, timestamptz)'::regprocedure) ~* 'as materialized',
+          'news-story: news_story reads the word index behind a MATERIALIZED fence (the span cannot pull the time index in)');
+
+insert into public.news_events (public_id, representative_title, primary_category, rep_lng, rep_lat, first_published_at, independent_source_count, status)
+select 'tld' || i,
+       format('%s says %s and %s talks on the %s of %s after %s',
+              (array['Alpha','Bravo','Charlie','Delta','Echo','Foxtrot'])[1 + i % 6],
+              (array['minister','leader','general','mayor'])[1 + i % 4],
+              (array['Golf','Hotel','India','Juliet','Kilo'])[1 + i % 5],
+              (array['future','price','border','vote','trade'])[1 + (i / 7) % 5],
+              (array['Lima','Mike','November','Oscar','Papa','Quebec','Romeo'])[1 + i % 7],
+              (array['week','month','summit','storm'])[1 + (i / 3) % 4]),
+       'world', 0, 0, timestamptz '2031-05-01' + (i % 50) * interval '1 day', 1, 'active'
+  from generate_series(1, 4000) as i;
+
+create function _timed(k text, q text) returns void language plpgsql as $$
+declare c text; t0 timestamptz := clock_timestamp();
+begin
+  execute q into c;
+  insert into _cap values (k, 'ok');
+  insert into _cap values (k || '_ms', round(extract(epoch from clock_timestamp() - t0) * 1000)::text);
+exception
+  when query_canceled then insert into _cap values (k, 'TIMEOUT');
+  when others then insert into _cap values (k, 'ERR:' || sqlstate);
+end;
+$$;
+
+set local role anon;
+set local statement_timeout = '3s';
+select _timed('load', $q$select public.news_story_terms(
+  'Alpha Bravo Charlie Delta Echo Foxtrot minister leader general mayor Golf Hotel India Juliet Kilo future price border vote trade Lima Mike November Oscar',
+  '2031-05-01', '2031-06-25')::text$q$);
+select _sel('load_n',  $q$select (public.news_story_terms('Alpha minister Golf future Lima week', '2031-05-01', '2031-06-25') ->> 'n')$q$);
+select _sel('load_df', $q$select (select (t ->> 'df') from jsonb_array_elements(public.news_story_terms('Alpha minister Golf future Lima week', '2031-05-01', '2031-06-25') -> 'terms') t where t ->> 't' = 'alpha')$q$);
+reset statement_timeout;
+reset role;
+
+select is((select v from _cap where k = 'load'), 'ok',
+          'news-story: 24 words over 4,000 events answer inside the anon statement timeout (3 s) — took ' || coalesce((select v from _cap where k = 'load_ms'), '?') || ' ms');
+select is((select v from _cap where k = 'load_n'), '4000', 'news-story: the 4,000 events are in the span');
+select is((select v from _cap where k = 'load_df'),
+          (select count(*)::text from public.news_events where public_id like 'tld%' and representative_title like 'Alpha %'),
+          'news-story: the one-read count of «alpha» is the number of headlines that name it');
 
 select * from finish();
 rollback;

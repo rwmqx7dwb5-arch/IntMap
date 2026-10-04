@@ -1,6 +1,8 @@
 ---
 title: 放射拡散モデルの「外れの内訳」——事故そのものの放出の時間変化（JAEA の付属 CSV）を与える口と、地域の風の入れ子を足し、2011 年の答え合わせを 1 段に 1 つの変更で測り直す。相関 0.28→0.46、2 倍以内 10.5→29.4 %。既定値の変更は門が止めたので測って記録した
 date: 2026-10-03
+newsen: The radiation dispersion check against Fukushima 2011 now uses the published release timeline and a regional wind nest: correlation rose from 0.28 to 0.46.
+newsjp: 放射拡散モデルの福島 2011 との答え合わせが、公表された放出の時間変化と地域の風の入れ子を使うようになり、相関が 0.28 から 0.46 に上がりました。
 ---
 
 〈依頼〉全権委任・「商品開発。構造改革。」分野は科学の計器・シミュレータ。同じ日の radiation-hindcast が

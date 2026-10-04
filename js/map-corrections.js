@@ -293,18 +293,55 @@ function ensureStyle() {
   document.head.appendChild(st);
 }
 
+/* ══ THE CARD IS ON THE SCREEN, AND ESCAPE PUTS IT AWAY (wave2-prod-fixes) ══════════════════════════════════════
+   MEASURED on production (cb3a391, a 1000 px window): the report card's right edge at 1021 px and its × at 1008 px — off
+   the screen — and Escape did nothing. The first-open placement wrote `container width − 384`, a guess at the card's
+   width; the card is 360 px of content plus the detail card's padding and border (.country-popup), 406 px, so every
+   card it placed hung 22 px past the right edge of the map, and nothing re-measured it when the window, the card or the
+   map changed size. Now the card is MEASURED where it stands and held inside the part of its container the reader can
+   see (the container clipped by the window), on opening, whenever the card's own size changes (the list of reports
+   arrives after the card opens) and when the window is resized. A dragged card keeps where it was dragged to unless that
+   is off the screen; the window manager writes a drag as an `!important` inline position, so this writes back the same
+   way. On a phone the stylesheet docks the card to the sheet (css/intmap.css `#map-container > .country-popup`), so
+   there is nothing to place. */
+const EDGE = 12;   /* the gap the first-open placement has always kept from the map's left edge (Math.max(12, …)) */
+function seen(c) { try { return c.isConnected && getComputedStyle(c).display !== 'none'; } catch (_) { return false; } }
+function keepOnScreen(c) {
+  if (!seen(c)) return;
+  if (getComputedStyle(c).position === 'fixed') return;   /* docked by the phone's stylesheet — its place is not this file's to choose */
+  const op = c.offsetParent; if (!op) return;
+  const P = op.getBoundingClientRect(), de = document.documentElement;
+  const vis = { left: Math.max(P.left, 0), right: Math.min(P.right, de.clientWidth || innerWidth), top: Math.max(P.top, 0), bottom: Math.min(P.bottom, de.clientHeight || innerHeight) };
+  const r = c.getBoundingClientRect();
+  const x = Math.min(Math.max(r.left, vis.left + EDGE), Math.max(vis.left + EDGE, vis.right - r.width - EDGE));
+  const y = Math.min(Math.max(r.top, vis.top + EDGE), Math.max(vis.top + EDGE, vis.bottom - r.height - EDGE));
+  if (Math.abs(x - r.left) < 0.5 && Math.abs(y - r.top) < 0.5) return;
+  const imp = c.hasAttribute('data-dragged') ? 'important' : '';
+  c.style.setProperty('left', Math.round(c.offsetLeft + x - r.left) + 'px', imp);
+  c.style.setProperty('top', Math.round(c.offsetTop + y - r.top) + 'px', imp);
+}
+let _onResize = null;
+function holdOnScreen(c) {
+  try { new ResizeObserver(() => keepOnScreen(c)).observe(c); } catch (_) { /* placed on opening only */ }
+  if (!_onResize) { _onResize = () => { ['mc-popup', 'mc-mine'].forEach((id) => { const k = document.getElementById(id); if (k) keepOnScreen(k); }); }; window.addEventListener('resize', _onResize); }
+}
+
 function card(HOST, id, titleText) {
   ensureStyle();
   let c = document.getElementById(id);
   if (!c) {
-    c = el('div', 'country-popup mc-popup'); c.id = id; c.setAttribute('role', 'dialog');
+    c = el('div', 'country-popup mc-popup'); c.id = id; c.setAttribute('role', 'dialog'); c.tabIndex = -1;
     const x = el('button', 'country-popup-close', '×'); x.type = 'button';
     x.addEventListener('click', () => { c.style.display = 'none'; });
+    /* Escape is the ×, from anywhere inside the card (the card takes focus when it opens, below) — and is used up here,
+       so the sidebar's own Escape (js/app-body.js) does not also fold the sidebar underneath */
+    c.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !e.defaultPrevented && !e.isComposing) { e.stopPropagation(); e.preventDefault(); c.style.display = 'none'; } });
     const head = el('div', 'country-popup-header'); head.appendChild(el('h3'));
     c.appendChild(x); c.appendChild(head); c.appendChild(el('div', 'mc-body'));
     (document.getElementById('map-container') || document.body).appendChild(c);
     try { HOST.makeDraggable(c, head); } catch (_) { /* a fixed card still reads */ }
     c.addEventListener('mousedown', () => { try { HOST.bringToFront(c); } catch (_) { /* order is cosmetic */ } });
+    holdOnScreen(c);
   }
   const { L } = words(HOST.lang);
   const x = c.querySelector('.country-popup-close'); x.title = L('Close', '閉じる'); x.setAttribute('aria-label', L('Close', '閉じる'));
@@ -315,8 +352,10 @@ function card(HOST, id, titleText) {
     const mc = document.getElementById('map-container');
     /* the list opens a step down and left of the report card, so the two can be read side by side */
     const off = id === 'mc-mine' ? 36 : 0;
-    if (mc) { const r = mc.getBoundingClientRect(); c.style.left = Math.max(12, r.width - 384 - off) + 'px'; c.style.top = (84 + off) + 'px'; }
+    if (mc) { const r = mc.getBoundingClientRect(); c.style.left = Math.max(EDGE, r.width - c.offsetWidth - 24 - off) + 'px'; c.style.top = (84 + off) + 'px'; }
   }
+  keepOnScreen(c);
+  if (!c.contains(document.activeElement)) { try { c.focus({ preventScroll: true }); } catch (_) { /* focus is a courtesy */ } }
   try { HOST.bringToFront(c); } catch (_) { /* order is cosmetic */ }
   try { bus.emit(MAP_ANSWER_EVENT, { kind: 'card' }); } catch (_) { /* no sheet */ }
   const body = c.querySelector('.mc-body'); body.textContent = '';
@@ -409,7 +448,7 @@ export function openCorrection(HOST, at) {
           : L('Not sent — the server could not be reached. Your text is kept; please try again.', '送信できませんでした（サーバーに届きません）。文章は残っています。もう一度お試しください。');
     }
   });
-  try { msg.focus(); } catch (_) { /* focus is a courtesy */ }
+  try { msg.focus({ preventScroll: true }); } catch (_) { /* focus is a courtesy — and never a reason to scroll the map's container */ }
   return body;
 }
 

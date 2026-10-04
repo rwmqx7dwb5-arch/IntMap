@@ -1,6 +1,8 @@
 ---
 title: 「このページの通信」——ページが実際に通信した相手をブラウザ自身の報告から記録し、公開した記載（プライバシー §4）と読者の手元で突き合わせる。あわせて公開のセキュリティのページと、存在しなかった非公開の報告窓口を作る
 date: 2026-10-03
+newsen: A new "This page's connections" view in Settings lists who this page actually contacted and checks it against the privacy page. New security page and private way to report a vulnerability.
+newsjp: 設定に「このページの通信」を追加しました。このページが実際に通信した相手を一覧し、プライバシーの記載と突き合わせます。セキュリティのページと、非公開の脆弱性報告の窓口も新設しました。
 ---
 
 〈依頼〉全権委任の第 2 波（分野: セキュリティとプライバシー——信頼を商品にする）。監査ではなく商品を作る。

@@ -103,6 +103,20 @@ test('R753 ① the account button carries no icon on a wide screen, and still is
   expect(phone.avW, 'as the 34 px round button it has been since #R32').toBe(34);
   expect(phone.nameDisplay, 'and the name stays hidden there').toBe('none');
   expect(phone.btnW).toBe(34);
+  /* (wave2-prod-fixes) …and a finger's 44 px still lands on it (#901): the hit area, read through elementFromPoint along
+     both axes from the centre — the visible round and the press target are two boxes, and both are measured. The sheet is
+     raised first: at its resting height the header row is below the screen, where no finger reaches anything. */
+  await page.evaluate(() => { try { window.__setDetent('full', false); } catch (_) { } });
+  await page.waitForTimeout(300);
+  const hit = await page.evaluate(() => {
+    const b = document.getElementById('btn-account'), r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const own = (x, y) => { const k = document.elementFromPoint(x, y); return !!(k && (k === b || b.contains(k))); };
+    let up = 0, dn = 0, lf = 0, rt = 0;
+    while (up < 30 && own(cx, cy - up - 1)) up++; while (dn < 30 && own(cx, cy + dn + 1)) dn++;
+    while (lf < 30 && own(cx - lf - 1, cy)) lf++; while (rt < 30 && own(cx + rt + 1, cy)) rt++;
+    return Math.min(up + dn + 1, lf + rt + 1);
+  });
+  expect(hit, 'the press target is 44 px across, a finger\'s size').toBeGreaterThanOrEqual(44);
   await page.setViewportSize({ width: 1280, height: 900 });
 });
 

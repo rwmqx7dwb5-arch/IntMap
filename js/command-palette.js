@@ -8,12 +8,16 @@
  *  pandemic simulators, the company atlas, the sidebar…); none existed. This is it.
  *
  *  ── WHAT IS IN IT — DISCOVERED, NEVER LISTED (.agents/rules/no-ad-hoc-hardcoding.md §2-4) ──────────────────────
- *    action    every kernel command (window.IntMapOS) that is BOUND TO A CONTROL — its meta `btn`, or a control that
- *              names it with `data-os-act` — named by that control in the reader's language and run through the
- *              kernel (`exec`, source 'palette'); every command whose meta declares a reader-facing `title` ([en, jp]),
-              by that title, even before its control is drawn; and every control of the app's toolbars (ACTION_SURFACES below),
- *              pressed. A command with no control is a parameterised API (`layer.on {id}`), not something to offer
- *              by name — Atlas is the door for those, and Atlas is the last row.
+ *    action    every kernel command (window.IntMapOS) that something already NAMES for a reader (`nameCommand` below):
+ *              a control bound to it — its meta `btn`, a control that names it with `data-os-act`, or a row that
+ *              carries it as `data-act` (the Layers panel's tool rows, js/map-ui.js SIM_TOOLS) — named by that control
+ *              in the reader's language, or the reader-facing `title` ([en, jp]) its meta declares, even before its
+ *              control is drawn. Each is also found by the spellings the capability registry gives the same id
+ *              (window.IntMapCapabilities — «radiation», «fallout», «plume» for the plume simulator), and run through
+ *              the kernel (`exec`, source 'palette'). Every control of the app's toolbars (ACTION_SURFACES below) is
+ *              offered too, pressed. A command nothing names is refused, with the reason `nameCommand` gives: its only
+ *              names are its id and a developer's label, neither in the reader's language — Atlas is the door for
+ *              those, and Atlas is the last row.
  *    layer     every row of the Layers registry (#layer-dropdown), named as the panel names it (js/layer-row-label.js,
  *              the reading Atlas uses), with its state; choosing it switches it — the same `change` the row fires.
  *              The rows the reader asked never to be shown as rows (window.IntMapHiddenLayerRows) are not offered.
@@ -89,26 +93,77 @@ const nameOf = (el) => String((el && (el.getAttribute('aria-label') || el.getAtt
    measure, share, layers, compass), the sidebar's tabs, the Layers panel's tools strip and the tool buttons. Named
    as surfaces, not as buttons — a control added to any of them is offered without an edit here. */
 const ACTION_SURFACES = ['.map-controls-top button[id]', '.control-panel button[id]', '#layer-tools button', 'button[id^="btn-tool-"]'];
+
+/* ══ WHAT A KERNEL COMMAND IS CALLED, FOR A READER — OR WHY IT HAS NO NAME (wave2-prod-fixes) ══════════════════════
+   MEASURED on production (cb3a391): «radiation» and «plume» found no plume simulator, and the palette held none of
+   sim.radiation, sim.terrainWater, sim.ashPlume, sim.los, sim.reach, sim.sun, sim.nightSky, sim.drone. Each is a row of
+   the Layers panel's tool list with a name and a hint in the reader's language (js/map-ui.js SIM_TOOLS), registered in
+   the kernel beside that row — but the row carries its command as `data-act`, its meta has no `btn` and no `title`, and
+   the palette asked only those two. The names existed; the palette was not reading the place they were written.
+   So a command is named from what already names it, in this order, and the capability registry's spellings for the same
+   id (column 1 the dispatch spelling, column 2 its aliases — js/atlas-capabilities.js «THE TABLE») are added to what it
+   is found by. Nothing is listed here: a new control, a new tool row or a new capability row is read the same way. */
+/**
+ * @param {string} id   the kernel command
+ * @param {{meta?:any, control?:{title?:string, sub?:string, terms?:string[]}|null, cap?:{legacy?:string, aliases?:string[]}|null,
+ *          txt?:(v:any)=>string}} src  what names it: the control bound to it (already read), its meta, its capability row
+ * @returns {{title:string, sub:string, terms:string[], from:string, refused?:undefined}|{refused:string}}
+ */
+export function nameCommand(id, src) {
+  const s = src || {}, m = s.meta || {}, c = s.control || null, cap = s.cap || null;
+  const capTerms = cap ? [cap.legacy || ''].concat(Array.isArray(cap.aliases) ? cap.aliases : []) : [];
+  const terms = [m.label || '', id].concat(capTerms, (c && c.terms) || []).map((x) => String(x || '').trim()).filter(Boolean);
+  if (c && c.title) return { title: c.title, sub: c.sub || '', terms, from: 'control' };
+  if (Array.isArray(m.title) && m.title.length) return { title: (s.txt || ((v) => String(v[0])))(m.title), sub: '', terms, from: 'title' };
+  /* the meta's `label` is a developer's English line («Command palette · open (params.query)», «layer.on {id}») and the id
+     is a key — offering either would show a reader a name nobody wrote for a reader, in one language */
+  return { refused: 'no control names it and its meta declares no reader-facing title — its only names are its id and a developer label' };
+}
+/* a control that carries a command: what a reader sees it called — its accessible name when it states one (aria-label,
+   title); else, for a row with a heading (the tool rows: a bold name over a hint), the heading, described by the hint;
+   else its text. */
+function controlName(el) {
+  if (!el || el.disabled || el.hidden) return null;
+  const stated = el.getAttribute('aria-label') || el.getAttribute('title');
+  const head = !stated && el.querySelector ? el.querySelector('b, strong, h1, h2, h3, h4') : null;
+  const title = head ? String(head.textContent || '').replace(/\s+/g, ' ').trim() : nameOf(el);
+  if (!title) return null;
+  let sub = '';
+  if (head) { const all = nameOf(el); sub = all.startsWith(title) ? all.slice(title.length).replace(/›\s*$/, '').trim() : ''; }
+  const terms = [el.id || '', el.getAttribute('data-nm') || ''].filter(Boolean);
+  return { title, sub, terms };
+}
+function capOf(id) { try { const C = window.IntMapCapabilities; return (C && C.resolve) ? C.resolve(id) : null; } catch (_) { return null; } }
 function actionEntries() {
   const out = [], seen = new Set();
+  const OS = window.IntMapOS;
+  const exec = (id) => () => OS.exec(id, { source: 'palette' });
+  const offer = (id, el) => {
+    if (out.some((e) => e.key === 'cmd:' + id) || (el && seen.has(el))) return;
+    const control = el ? controlName(el) : null;
+    if (el && !control) return;
+    const n = nameCommand(id, { meta: OS.meta(id) || {}, control, cap: capOf(id), txt });
+    if (n.refused !== undefined) return;
+    if (el) seen.add(el);
+    out.push({ key: 'cmd:' + id, kind: 'action', title: n.title, sub: n.sub || t('Action', '操作'), terms: n.terms, run: exec(id) });
+  };
+  try {
+    if (OS && OS.list) OS.list().forEach((id) => { const m = OS.meta(id) || {}; if (m.btn) offer(id, document.getElementById(m.btn)); });
+    /* a control that names its command: `data-os-act`, or `data-act` when (and only when) the value IS a kernel command —
+       `data-act` is also a module-local switch elsewhere («play», «toggle»), which the kernel does not hold */
+    for (const attr of ['data-os-act', 'data-act']) {
+      document.querySelectorAll('[' + attr + ']').forEach((el) => { const id = el.getAttribute(attr); if (OS && OS.has && OS.has(id)) offer(id, el); });
+    }
+    /* a command that declares a reader-facing TITLE ([en, jp] in its meta) is offered by that title even while no control
+       bound to it is on screen — the control may live in a panel that has not been drawn yet */
+    if (OS && OS.list) OS.list().forEach((id) => offer(id, null));
+  } catch (_) { }
   const push = (el, key, run, terms) => {
     if (!el || seen.has(el) || el.disabled || el.hidden) return;
     const title = nameOf(el); if (!title) return;
     seen.add(el);
     out.push({ key, kind: 'action', title, sub: t('Action', '操作'), terms: (terms || []).concat([el.id || '']).filter(Boolean), run });
   };
-  const OS = window.IntMapOS;
-  const exec = (id) => () => OS.exec(id, { source: 'palette' });
-  try {
-    if (OS && OS.list) OS.list().forEach((id) => { const m = OS.meta(id) || {}; if (m.btn) push(document.getElementById(m.btn), 'cmd:' + id, exec(id), [m.label || '', id]); });
-    document.querySelectorAll('[data-os-act]').forEach((el) => { const id = el.getAttribute('data-os-act'); if (OS && OS.has && OS.has(id)) push(el, 'cmd:' + id, exec(id), [(OS.meta(id) || {}).label || '', id]); });
-  } catch (_) { }
-  /* a command that declares a reader-facing TITLE ([en, jp] in its meta) is offered by that title even while no control
-     bound to it is on screen — the control may live in a panel that has not been drawn yet */
-  try {
-    if (OS && OS.list) OS.list().forEach((id) => { const m = OS.meta(id) || {}; if (!Array.isArray(m.title) || out.some((e) => e.key === 'cmd:' + id)) return;
-      out.push({ key: 'cmd:' + id, kind: 'action', title: txt(m.title), sub: t('Action', '操作'), terms: [m.label || '', id], run: exec(id) }); });
-  } catch (_) { }
   for (const sel of ACTION_SURFACES) {
     try { document.querySelectorAll(sel).forEach((el) => push(el, 'el:' + (el.id || nameOf(el)), () => el.click())); } catch (_) { }
   }

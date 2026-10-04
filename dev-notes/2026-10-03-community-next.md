@@ -1,6 +1,8 @@
 ---
 title: 地図の誤り報告を往復にした——読者が「ここが違う」を地点・表示・年つきで送り、運営者が地図の上で裁き、回答が受付番号で報告者に返り、直したものを公開の訂正記録に載せる
 date: 2026-10-03
+newsen: Report a map error with its place, view and year, get a reply under a reference number, and see fixes in a public corrections log.
+newsjp: 地図の誤りを地点・表示・年つきで報告でき、受付番号で回答を受け取れます。直したものは公開の訂正記録に載ります。
 ---
 
 〈依頼〉「様々な側面から監査し、すべてやりきって。……改善ではなく商品開発、マーケティング、営業。」の 1 本。
