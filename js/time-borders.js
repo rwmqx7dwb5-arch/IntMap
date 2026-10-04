@@ -930,9 +930,11 @@ export function timeBorders(HOST){
       for(const i of ix){ const f=d.feats[i], m=f[9]||{}, NAME=f[0].en||'';
         /* (hist-coverage-expansion) a name scripts/histclio/review.json withholds — the shape is Cliopatria's,
            the name is not drawn before the year history places the polity's beginning or after its end
-           (clio-lifespan-review: `ws` says which, `wc` that the year is approximate), and the card says so
-           (`blankNote`, the same lane the sheets' withheld names use) */
+           (clio-lifespan-review: `ws` says which, `wc` that the year is approximate), or between two lives
+           under one name (histclio-review-gaps: `ws` 'gap', `wy` the last year of the first, `wz` the
+           first of the second), and the card says so (`blankNote`, the same lane the sheets' withheld names use) */
         const W=m.wn?{_wName:m.wn,_wSide:m.ws||'end',_wYear:m.wy,_wQ:m.wq||'',_wBy:'history',_wCirca:m.wc?1:0}:null;
+        if(W&&m.ws==='gap') W._wYear2=m.wz;
         feats.push({type:'Feature',geometry:_clGeomOf(d,i),properties:Object.assign(W?{NAME:'',_rec:'clio'}:{NAME:NAME,name:NAME,_i18n:hnFor('clio',NAME,f[1],f[0])||f[0],_rec:'clio'},W||{},
           f[1]?{_qid:f[1]}:{},(m.w&&!W)?{_wiki:m.w}:{},m.of?{_of:m.of,PARTOF:m.of}:{},m.r?{_realm:1}:{})}); }
       return {type:'FeatureCollection',features:feats}; }
@@ -2560,7 +2562,7 @@ export function timeBorders(HOST){
       for(const f of feats){ const p=f.properties||{};
         /* (hist-era-span-fidelity) a name THIS map withheld is not a shape upstream left unnamed — the
            sentence below says «upstream leaves unnamed», so the two are counted apart */
-        if(p.NAME||p.name) named++; else if(p._wName){ if(!wh.has(p._wName)) wh.set(p._wName,{name:String(p._wName),side:p._wSide,year:+p._wYear}); } else blank++;
+        if(p.NAME||p.name) named++; else if(p._wName){ if(!wh.has(p._wName)) wh.set(p._wName,Object.assign({name:String(p._wName),side:p._wSide,year:+p._wYear},p._wSide==='gap'?{year2:+p._wYear2}:{})); } else blank++;
         /* ⚠ upstream spells the same field both ways across its own files (48 `TYPE` / 93 `type`,
            measured in scripts/build-hist-eras.mjs). The bundle folds them to one; the remote
            fallback hands them over as upstream wrote them, so both are read here. */
@@ -2601,8 +2603,9 @@ export function timeBorders(HOST){
        (CONSTITUTION §7). */
     function _withheldNote(c){ const w=(c&&c.withheld)||[]; if(!w.length) return '';
       const A=_yTxt(c.asked), k=String(w.length);
-      const le=w.map(x=>'«'+x.name+'» ('+(x.side==='end'?'ended ':'began ')+_yTxt(x.year)+')').join(', ');
-      const lj=w.map(x=>'「'+x.name+'」（'+_yTxt(x.year)+(x.side==='end'?'に終焉':'に成立')+'）').join('、');
+      /* (histclio-review-gaps) a gap is neither side: the first life ended in `year`, the second began in `year2` */
+      const le=w.map(x=>'«'+x.name+'» ('+(x.side==='gap'?'ended '+_yTxt(x.year)+', again from '+_yTxt(x.year2):(x.side==='end'?'ended ':'began ')+_yTxt(x.year))+')').join(', ');
+      const lj=w.map(x=>'「'+x.name+'」（'+(x.side==='gap'?_yTxt(x.year)+'に一度終わり、'+_yTxt(x.year2)+'に再興':_yTxt(x.year)+(x.side==='end'?'に終焉':'に成立'))+'）').join('、');
       return ' '+_LTB.arr(LA(
         'In ' + A + ', ' + k + ' of the names on this sheet are not drawn, because the polity each names had already ended or had not yet begun (Wikidata, checked against the historical record): ' + le + '. Their shapes are drawn as upstream drew them, without the name.',
         A + ' には、この枚の名前のうち ' + k + ' 件を描いていない——その名が指す政体が、その年にはもう終わっていたか、まだ始まっていなかったため（Wikidata の日付を史実と照合）: ' + lj + '。形は上流が描いたとおりに、名前を外して描いている。')); }
@@ -2681,6 +2684,16 @@ export function timeBorders(HOST){
           const tn=typeNote(f); if(tn) lines.push(tn);
           return { title:_LTB.arr(LA('Upstream names this shape «'+wn+'», but that polity did not exist in '+Y,
                                      '上流はこの形を「'+wn+'」と呼ぶが、その政体は '+Y+' には存在しない')),
+                   lines:lines }; }
+        /* (histclio-review-gaps) a Cliopatria name withheld between two lives the historical record places
+           under one name — the first ended in B, the second began in B2, and neither existed in between */
+        if(p._wSide==='gap'&&p._wBy==='history'){
+          const B2=_yTxt(+p._wYear2);
+          lines.push(_LTB.arr(LA('The historical record places a break in this polity: it ended in '+B+', and a polity of the same name arose again in '+B2+', so the name is not drawn between those years'+(q?' (Wikidata: '+id+')':'')+'. The shape is drawn as the record drew it.',
+                                  '史実はこの政体に断絶を置く——'+B+' に一度終わり、同じ名の政体が '+B2+' に再び興った。そのためその間はこの名前を描かない'+(q?'（Wikidata: '+id+'）':'')+'。形は記録が描いたとおりに描いている。')));
+          const tn=typeNote(f); if(tn) lines.push(tn);
+          return { title:_LTB.arr(LA('The record names this shape «'+wn+'», but no polity of that name existed in '+Y,
+                                     '記録はこの形を「'+wn+'」と呼ぶが、その名の政体は '+Y+' には存在しなかった')),
                    lines:lines }; }
         /* (hist-coverage-expansion) a Cliopatria name withheld after the end the historical record places */
         if(p._wSide==='end'&&p._wBy==='history'){

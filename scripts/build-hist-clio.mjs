@@ -318,7 +318,9 @@ const readWiki = () => JSON.parse(readFileSync(FACTS, 'utf8')).wiki || {};
    A verified QID's own lifespan is a second statement about the same polity, and where the two differ by
    more than FINDING_SLACK years the difference is a FINDING — the machine does not decide which is
    history. scripts/histclio/review.json judges: `rows` (the name is withheld before the year history
-   places the beginning, `s`, and/or after the year it places the end, `e`; the shape stays, as Cliopatria drew it), `refuted` (examined, not applied, with the
+   places the beginning, `s`, and/or after the year it places the end, `e`, and/or inside a `gaps` span
+   [from, to] — two lives under one name with the years between them belonging to neither; the shape
+   stays, as Cliopatria drew it), `refuted` (examined, not applied, with the
    reason), `pending` (not yet judged — drawn as Cliopatria states, and counted). The gate fails on any
    finding in none of the three, so the next release arrives already counted.
      observed 2026-10-04: with verified QIDs, 79 names are drawn more than 25 years after Wikidata's
@@ -343,24 +345,49 @@ export function findingsOf(feats, facts) {
 }
 /* the sides a review entry judges: a row judges the side(s) it bounds (`s` start, `e` end); a refuted
    entry judges its `side`, or both when it names none. A finding is judged by name AND side, so one
-   name can be bounded on one side and refuted on the other (Kingdom of Poland). */
-export const judgedSides = (r) => (r.s != null || r.e != null ? [r.s != null && 'start', r.e != null && 'end'].filter(Boolean) : r.side ? [r.side] : ['start', 'end']);
+   name can be bounded on one side and refuted on the other (Kingdom of Poland).
+   A `gaps` span judges the END side: the finding it answers is «the name is drawn after its item's
+   end», and the answer is that the item did end there and the name drawn after the gap is a second
+   life (Emirate of Nejd: the item is the Second Saudi State, ended 1891; Ibn Saud's state from 1902). */
+const bounds = (r) => r.s != null || r.e != null || (Array.isArray(r.gaps) && r.gaps.length > 0);
+export const judgedSides = (r) => (bounds(r) ? [r.s != null && 'start', (r.e != null || (r.gaps && r.gaps.length)) && 'end'].filter(Boolean) : r.side ? [r.side] : ['start', 'end']);
 export const judgedKeys = (review) => new Set([...review.rows, ...review.refuted].flatMap((r) => judgedSides(r).map((x) => r.name + '|' + x)));
-/* the rows a review row withholds the name of: before 1 January of `s` (the first year history places
-   the polity in) and from 1 January of the year after `e` (the last). The shape stays; the name does not. */
+/* the zones of the timeline a review row cuts, in order, each [from, to) as sortable YYYYMMDD with what the
+   name does there: before 1 January of `s` (the first year history places the polity in) withheld as
+   'start'; from 1 January of the year after `e` (the last) withheld as 'end'; and each `gaps` span
+   [a, b] — inclusive, astronomical — withheld from 1 January of `a` to 1 January of `b + 1` as 'gap',
+   bounded by the last year of the first life (a − 1) and the first of the second (b + 1). Between
+   them the name is drawn. One function, so the builder and the gate cut the same timeline. */
+export function reviewZones(R) {
+  const lo = R.s != null ? ymd(R.s, 1, 1) : -Infinity, hi = R.e != null ? ymd(R.e + 1, 1, 1) : Infinity, z = [];
+  if (lo > -Infinity) z.push({ s: -Infinity, e: lo, side: 'start', y: R.s });
+  let at = lo;
+  for (const [a, b] of R.gaps || []) {
+    const gs = Math.max(ymd(a, 1, 1), lo), ge = Math.min(ymd(b + 1, 1, 1), hi);
+    if (gs >= ge) continue;
+    if (at < gs) z.push({ s: at, e: gs, side: null });
+    z.push({ s: gs, e: ge, side: 'gap', y: a - 1, y2: b + 1 }); at = ge;
+  }
+  if (at < hi) z.push({ s: at, e: hi, side: null });
+  if (hi < Infinity) z.push({ s: hi, e: Infinity, side: 'end', y: R.e });
+  return z;
+}
+/* the rows a review row withholds the name of — each row cut at the zones above. The shape stays; the
+   name does not, and the withheld piece says which side and which year(s) history gives. */
 function applyReview(rows, review) {
   const by = new Map(review.rows.map((r) => [r.name, r]));
   const out = [];
   for (const r of rows) {
     const R = by.get(r.name);
-    if (!R || (R.e == null && R.s == null)) { out.push(r); continue; }
-    const lo = R.s != null ? ymd(R.s, 1, 1) : -Infinity, hi = R.e != null ? ymd(R.e + 1, 1, 1) : Infinity;
-    const withheld = (side, y) => { const wm = { ...r.meta, wn: r.name, ws: side, wy: y }; if (R.wd) wm.wq = R.wd; if (R.circa) wm.wc = 1;
-      return { ...r, name: '', qid: null, meta: wm }; };
-    /* the row cut at the two bounds: before `lo` withheld as not yet begun, after `hi` as ended */
-    if (r.s < lo) out.push({ ...withheld('start', R.s), s: r.s, e: Math.min(r.e, lo) });
-    if (Math.max(r.s, lo) < Math.min(r.e, hi)) out.push({ ...r, s: Math.max(r.s, lo), e: Math.min(r.e, hi) });
-    if (r.e > hi) out.push({ ...withheld('end', R.e), s: Math.max(r.s, hi), e: r.e });
+    if (!R || !bounds(R)) { out.push(r); continue; }
+    for (const z of reviewZones(R)) {
+      const s = Math.max(r.s, z.s), e = Math.min(r.e, z.e);
+      if (s >= e) continue;
+      if (!z.side) { out.push({ ...r, s, e }); continue; }
+      const wm = { ...r.meta, wn: r.name, ws: z.side, wy: z.y }; if (z.side === 'gap') wm.wz = z.y2;
+      if (R.wd) wm.wq = R.wd; if (R.circa && z.side !== 'gap') wm.wc = 1;
+      out.push({ ...r, name: '', qid: null, meta: wm, s, e });
+    }
   }
   return out;
 }
@@ -829,14 +856,31 @@ export function check() {
     const loose = findingsOf(d.feats, readFacts()).filter((x) => !listed.has(x.name + '|' + x.side));
     ok(loose.length === 0, loose.length + ' finding(s) of a name drawn outside its polity\'s life are in no list of scripts/histclio/review.json: ' + loose.slice(0, 4).map((x) => x.name + ' (' + x.side + ' ' + x.drawn + ' vs ' + x.wd + ')').join(', '));
     for (const R of review.rows) {
-      ok(R.s != null || R.e != null, R.name + ': a reviewed row must bound a start (s) or an end (e)');
+      ok(bounds(R), R.name + ': a reviewed row must bound a start (s), an end (e) or a gap (gaps)');
+      /* a gap lies BETWEEN two lives: whole years, in order, apart, and strictly inside the row's own
+         bounds — a gap touching `s` or `e` is a start or an end written as a gap */
+      const G = R.gaps == null ? [] : R.gaps;
+      ok(Array.isArray(G) && G.every((g, i) => Array.isArray(g) && g.length === 2 && g.every(Number.isInteger) && g[0] <= g[1]
+        && (R.s == null || g[0] > R.s) && (R.e == null || g[1] < R.e) && (i === 0 || g[0] > G[i - 1][1] + 1)),
+        R.name + ': gaps must be [[from, to], …] — whole astronomical years, from ≤ to, in order, not touching, inside s..e');
+      /* no shipped row carries the name inside a gap: [from 1 January, to + 1 1 January) */
+      const inGap = G.length ? d.feats.filter((f) => f[0].en === R.name && G.some(([a, b]) => ymd(f[2], f[3], f[4]) < ymd(b + 1, 1, 1) && ymd(f[5], f[6], f[7]) > ymd(a, 1, 1))) : [];
+      ok(inGap.length === 0, R.name + ' is still named inside a gap scripts/histclio/review.json places in its life: ' + inGap.slice(0, 3).map((f) => f[2] + '–' + f[5]).join(', '));
       const late = R.e == null ? [] : d.feats.filter((f) => f[0].en === R.name && f[5] - 1 > R.e);
       ok(late.length === 0, R.name + ' is still named after ' + R.e + ', the year scripts/histclio/review.json places its end');
       const early = R.s == null ? [] : d.feats.filter((f) => f[0].en === R.name && f[2] < R.s);
       ok(early.length === 0, R.name + ' is still named before ' + R.s + ', the year scripts/histclio/review.json places its beginning');
       ok(/^Q\d+$/.test(String(R.wd || '')), R.name + ': a reviewed row must name the Wikidata item (wd) of the polity it bounds');
       ok(typeof R.history === 'string' && R.history.length > 20, R.name + ': a reviewed row must say what history states');
-    } }
+    }
+    /* …and the other way: every withheld shipped row names a side a reviewed row states, with that row's
+       years — a gap's bounds are the last year of the first life and the first of the second */
+    const byName = new Map(review.rows.map((R) => [R.name, R]));
+    const stray = d.feats.filter((f) => { const m = f[9] || {}; if (!m.wn || m.ws == null) return false; const R = byName.get(m.wn); if (!R) return false;
+      if (m.ws === 'start') return m.wy !== R.s; if (m.ws === 'end') return m.wy !== R.e;
+      if (m.ws === 'gap') return !(R.gaps || []).some(([a, b]) => m.wy === a - 1 && m.wz === b + 1);
+      return true; });
+    ok(stray.length === 0, stray.length + ' withheld Cliopatria row(s) carry a side or year no reviewed row states: ' + stray.slice(0, 3).map((f) => f[9].wn + ' ' + f[9].ws + ' ' + f[9].wy).join(', ')); }
   /* ⚠ CC BY 4.0 MAKES CREDIT A CONDITION OF REDISTRIBUTION: the reader-facing row must exist, by its exact name */
   const ref = readFileSync(join(ROOT, 'js', 'reference-data.js'), 'utf8');
   ok(ref.includes("n:'" + CREDIT_ROW + "'") && /lic:'CC BY 4.0'/.test(ref.slice(ref.indexOf(CREDIT_ROW))), 'js/reference-data.js does not credit Cliopatria as «' + CREDIT_ROW + '» with its licence');

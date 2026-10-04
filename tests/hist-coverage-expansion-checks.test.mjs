@@ -97,6 +97,47 @@ test('④b every finding is judged by name AND side, and each side is judged onc
   for (const r of review.refuted) assert.ok(['date-disputed', 'other-identity', 'name-not-claim'].includes(r.why) && r.history.length > 20, r.name + ': a refutation needs a reason and a sentence of history');
 });
 
+test('④c (histclio-review-gaps) two lives under one name: the years between them are withheld as a gap', async () => {
+  const { reviewZones, judgedSides } = await import('../scripts/build-hist-clio.mjs');
+  /* the timeline a gap row cuts — inclusive astronomical years, the gap bounded by the last year of the
+     first life and the first of the second; outside s..e the start and end sides as before */
+  assert.deepEqual(reviewZones({ e: 1859, gaps: [[1807, 1848]] }).map((z) => [z.s, z.e, z.side, z.y, z.y2]),
+    [[-Infinity, ymd(1807, 1, 1), null, undefined, undefined], [ymd(1807, 1, 1), ymd(1849, 1, 1), 'gap', 1806, 1849],
+     [ymd(1849, 1, 1), ymd(1860, 1, 1), null, undefined, undefined], [ymd(1860, 1, 1), Infinity, 'end', 1859, undefined]]);
+  assert.deepEqual(reviewZones({ s: 900, gaps: [[1000, 1009], [1100, 1100]] }).filter((z) => z.side).map((z) => [z.side, z.y, z.y2]),
+    [['start', 900, undefined], ['gap', 999, 1010], ['gap', 1099, 1101]]);
+  /* a gap answers the end-side finding (the item ended where the gap begins), once */
+  assert.deepEqual(judgedSides({ gaps: [[1892, 1901]] }), ['end']);
+  assert.deepEqual(judgedSides({ e: 1859, gaps: [[1807, 1848]] }), ['end']);
+  /* Emirate of Nejd: the Second Saudi State fell at Mulayda (21 January 1891); Ibn Saud retook Riyadh on
+     13 January 1902 — Cliopatria draws the name 1824–1925 without a break */
+  const d = load('data/hist-clio.js', '__HISTCLIO');
+  const names = (y, m = 6, dd = 15) => new Set(d.feats.filter((f) => inForce(f, ymd(y, m, dd))).map((f) => f[0].en));
+  assert.ok(names(1890).has('Emirate of Nejd') && names(1891).has('Emirate of Nejd'), 'the Emirate of Nejd is withheld before its fall');
+  for (const y of [1892, 1895, 1901]) assert.ok(!names(y).has('Emirate of Nejd'), 'Emirate of Nejd drawn in ' + y + ', between the Second Saudi State and Ibn Saud');
+  assert.ok(names(1902).has('Emirate of Nejd') && names(1910).has('Emirate of Nejd'), 'the second life from 1902 is not drawn');
+  const g = d.feats.filter((f) => f[9] && f[9].wn === 'Emirate of Nejd');
+  assert.ok(g.length && g.every((f) => f[9].ws === 'gap' && f[9].wy === 1891 && f[9].wz === 1902 && f[9].wq === 'Q146862' && !f[0].en),
+    'the Nejd rows of 1892–1901 are not withheld as «gap 1891/1902»');
+  /* Empire of Haiti is judged (1804–1806, 1849–1859) though no row ships today: OpenHistoricalMap and
+     CShapes state Hispaniola for every year Cliopatria names it (1805–1915) */
+  const review = JSON.parse(readFileSync(join(ROOT, 'scripts', 'histclio', 'review.json'), 'utf8'));
+  const hai = review.rows.find((r) => r.name === 'Empire of Haiti');
+  assert.deepEqual([hai.e, hai.gaps], [1859, [[1807, 1848]]]);
+  assert.ok(!review.refuted.some((r) => r.name === 'Emirate of Nejd'), 'Emirate of Nejd is both bounded and refuted');
+  for (const y of [1810, 1830, 1870]) assert.ok(!names(y).has('Empire of Haiti'), 'Empire of Haiti drawn in ' + y);
+  /* the card says both years, in the reader's language (en + jp — CONSTITUTION §7) */
+  const { timeBorders } = await import('../scripts/histeras/time-borders.mjs');
+  const f = { properties: { NAME: '', _wName: 'Emirate of Nejd', _wSide: 'gap', _wYear: 1891, _wYear2: 1902, _wQ: 'Q146862', _wBy: 'history' } };
+  for (const [lang, re, title] of [['en', /ended in 1891.*arose again in 1902/, /no polity of that name existed/], ['jp', /1891.*一度終わり.*1902.*再び興った/, /その名の政体は/]]) {
+    const { api } = await timeBorders({ lang });
+    const n = api.blankNote(f);
+    assert.match(n.lines.join(' '), re, lang + ': the card does not state the gap');
+    assert.match(n.title, title, lang + ': the title does not say no polity of that name existed');
+    assert.doesNotMatch(n.lines.join(' '), /began|ended in 1891, so the name is not drawn after/, lang + ': a gap read as a start or an end');
+  }
+});
+
 test('⑤ the composed band: no Cliopatria row keeps a quarter of its ground where OHM states it', () => {
   const d = load('data/hist-clio.js', '__HISTCLIO'), hb = load('data/hist-borders.js', '__HISTB');
   /* the rows were cut on OHM's own dates, so in OHM's band every Cliopatria piece is the row less OHM —
