@@ -208,9 +208,27 @@ async function decode(buf) {
   try { return await createImageBitmap(new Blob([buf])); } catch (_) { return null; }
 }
 
+/* ══ (map-motion) WARMING WHERE THE CAMERA IS GOING ═════════════════════════════════════════════════
+   js/sat-proto.js names the tiles the camera's DESTINATION will draw (the wheel's target, the end of a
+   glide) before the renderer asks for them — it asks only when the camera gets there. This fetches
+   their bytes into `raw`, so the renderer's request is answered by a decode instead of a round trip.
+   Bytes only: no decode, no bitmap, nothing posted back. A newer batch REPLACES the queue (the camera
+   changed its mind; the old destination is nobody's), and at most WARM_LANES fetches are in the air,
+   so a warm can never stand in front of the visible tiles in the connection pool by more than that. */
+const WARM_LANES = 4;
+let warmQueue = [], warmLive = 0;
+function warmPump() {
+  while (warmLive < WARM_LANES && warmQueue.length) {
+    const [z, y, x] = warmQueue.shift();
+    warmLive++;
+    fetchTile(z, y, x).catch(() => null).finally(() => { warmLive--; warmPump(); });
+  }
+}
+
 self.onmessage = async (ev) => {
   const m = ev.data || {};
   if (m.type === 'config') { if (m.rawMax) RAW_MAX = m.rawMax; if (m.depthMax) DEPTH_MAX = m.depthMax; return; }
+  if (m.type === 'warm') { warmQueue = (Array.isArray(m.tiles) ? m.tiles : []).filter((t) => !raw.has(t[0] + '/' + t[2] + '/' + t[1])); warmPump(); return; }
   if (m.type === 'abort') { const a = aborts.get(m.id); if (a) { try { a.abort(); } catch (_) { } aborts.delete(m.id); } return; }
   if (m.type !== 'tile') return;
   const ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;

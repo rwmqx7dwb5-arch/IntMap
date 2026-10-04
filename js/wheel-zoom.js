@@ -40,10 +40,11 @@ export function makeWheelZoom(HOST, CTX) {
          Pan scales the fling speed, Inertia scales the glide DURATION and can disable it entirely (0). On a
          1:1 touch/mouse drag the glide is the only thing these sliders can change — so this is also what makes
          the Pan/Inertia sliders visibly affect MOBILE behavior. */
-      try{
-        if(iner<=0.02){ GE().input.set('dragPan',true); }   /* glide off → stops on release */
-        else { GE().input.set('dragPan',true); }
-      }catch(_){}
+      /* ⚠ (map-motion) THESE TWO SLIDERS HAD BEEN APPLIED TO NOTHING. Both branches below used to be
+         `input.set('dragPan',true)` — which takes no options — so the values were saved, restored and
+         shown, and the glide was MapLibre's default whatever they said. The glide is now the view's
+         (js/geo-engine.js _glideOptions: it starts at the release speed; these scale it). */
+      try{ GE().input.set('dragPan',true); GE().input.setGlide({ speed:p, length:iner }); }catch(_){}
       try{ GE().input.set('touchZoomRotate',true); }catch(_){}
       /* (#R25/#21) Take over double-tap zoom so its amount follows the Zoom slider on touch (built-in is a
          fixed +1). The custom dblclick handler does the sensitivity-scaled easeTo. */

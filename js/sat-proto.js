@@ -236,9 +236,11 @@ export function satProto(HOST){
        still answer synchronously, and the main-thread path above stays as the fallback. See
        DEV-NOTES #R192 §5. */
     let _satWReady=false;
+    /* the worker client, or null — read from the global in this one place (map-motion: the warm path
+       below and the tile path share it rather than each reading window.IntMapSatWorker) */
     function _satWorker(){
       const W=window.IntMapSatWorker;
-      if(!W||!W.available()) return false;
+      if(!W||!W.available()) return null;
       if(!_satWReady){ _satWReady=true;
         W.configure({ rawMax:_SAT_RAW_MAX, depthMax:_SAT_DEPTH_MAX,
           /* the worker learned how deep the imagery goes — keep the MIRROR current, because
@@ -247,11 +249,11 @@ export function satProto(HOST){
             let v=_satDepth.get(k); if(!v){ v={have:null,stop:null}; _satDepth.set(k,v);
               if(_satDepth.size>_SAT_DEPTH_MAX){ const f=_satDepth.keys().next().value; _satDepth.delete(f); } }
             v.have=have; v.stop=stop; } } }); }
-      return true;
+      return W;
     }
     function _satViaWorker(z,y,x,hi,signal){
-      if(!_satWorker()) return null;
-      return window.IntMapSatWorker.tile(z,y,x,hi,signal);
+      const W=_satWorker(); if(!W) return null;
+      return W.tile(z,y,x,hi,signal);
     }
     /* ══ (#R205) THE LEVELS A ZOOM PASSES THROUGH ARE NOT LEVELS ANYONE LOOKS AT ═══════════════════
        「衛星画像の読み込み時の動作を、極限までシームレスにして。（高速・違和感低減・点滅軽減）」
@@ -287,22 +289,82 @@ export function satProto(HOST){
     /* ⚠ counted, because the thing this change removes is WORK, and work is not visible in a frame
        rate: the fetches happen inside src/sat-worker.js, so the page's own PerformanceResourceTiming
        shows nothing at all (measured: 0 entries for arcgisonline during a full sweep). */
-    const _satStat={ req:0, held:0, dropped:0, resolved:0 };
+    const _satStat={ req:0, held:0, dropped:0, resolved:0, ahead:0, warmed:0 };
     function _satWireZoom(){
       if(_satZoomWired) return; _satZoomWired=true;
       try{ const E=GE().events;
         E.on('zoomstart',()=>{ _satZooming=true; clearTimeout(_satZoomT); });
         E.on('zoomend',()=>{ clearTimeout(_satZoomT); _satZoomT=setTimeout(()=>{ _satZooming=false; },_SAT_SETTLE); });
+        GE().camera.onDestination(_satWarmDestination);
       }catch(_){ _satZoomWired=false; }
     }
-    function _satZoomHold(z,signal){
+    /* ══ (map-motion) …BUT THE LEVEL THE ZOOM IS GOING TO IS A LEVEL SOMEONE LOOKS AT ═══════════════
+       The hold above treated every level of a changing zoom alike, including the one it will STOP at.
+       MEASURED (scripts/map-motion.mjs, the same build with the gate on and off, live Esri): over an
+       eight-notch wheel zoom the share of satellite tile·frames drawn blurry (a stretched ancestor)
+       while moving was 0.455 with the hold and 0.110 without it; the hold was the blur. Without it,
+       though, a pinch reached sharp 617 ms after it stopped instead of 250 — the passing levels'
+       fetches queued in front of the final one. Both halves are right, about different tiles.
+       So a request is released at once when its tile is one the camera's DESTINATION will draw
+       (js/geo-engine.js `camera.destination()`: the wheel's target, or the end an ease or a glide was
+       given): the level the renderer will ask for there (`round(zoom + 1)`, the source being
+       tileSize 256), or up to two levels shallower (a pitched view's far rows), inside the
+       destination's viewport plus one tile. Everything else is held exactly as before. A finger still
+       on the glass has no destination, so a pinch in progress is held as it was. */
+    /* the destination's tile rectangle at level z: centre (in level-z tile units) and half extents
+       (half the viewport plus one tile) */
+    function _satDestRect(d,z){
+      const n=Math.pow(2,z), tilePx=512*Math.pow(2,d.zoom)/n;          /* one level-z tile, in CSS px at the destination */
+      const lat=Math.max(-85.05,Math.min(85.05,d.center[1])), s=Math.sin(lat*Math.PI/180);
+      return { n, cx:(d.center[0]+180)/360*n, cy:(0.5-Math.log((1+s)/(1-s))/(4*Math.PI))*n, hx:d.size[0]/2/tilePx+1, hy:d.size[1]/2/tilePx+1 };
+    }
+    const _satDestLevel=(d)=>Math.max(0,Math.min(19,Math.round(d.zoom+1)));   /* what the renderer will ask for there */
+    function _satDest(){ let d=null; try{ d=GE().camera.destination(); }catch(_){}
+      return (d&&isFinite(d.zoom)&&d.center&&d.size&&d.size[0]>0)?d:null; }
+    function _satWantedThere(z,x,y){
+      const d=_satDest(); if(!d) return false;
+      const L=_satDestLevel(d);
+      if(z>L||z<L-2) return false;
+      const R=_satDestRect(d,z);
+      let dx=Math.abs((x+0.5)-R.cx); dx=Math.min(dx,R.n-dx);               /* across the antimeridian */
+      return dx<=R.hx+0.5 && Math.abs((y+0.5)-R.cy)<=R.hy+0.5;
+    }
+    /* ══ (map-motion) …AND ITS BYTES ARE FETCHED BEFORE THE RENDERER ASKS ═════════════════════════════
+       The renderer asks for a level only once the camera is at it; the destination is known earlier —
+       a notch gives the wheel's target ~150 ms before the zoom gets there, a released drag gives the
+       glide's end before the glide has moved. So when a destination is announced (`camera.onDestination`,
+       js/geo-engine.js) its tiles at the level the renderer will ask for — the four children instead
+       when this session stitches @2x — are fetched into the worker's byte cache, nearest the centre
+       first (src/sat-worker.js `warm`: four lanes, a newer destination replaces the queue). Only
+       while the satellite layer is drawn, and never more than one screenful and its margin. */
+    function _satWarmDestination(){
+      const d=_satDest(); if(!d) return;
+      try{ if(GE().layers.getLayout('layer-sat','visibility')!=='visible') return; }catch(_){ return; }
+      const W=_satWorker(); if(!W||!W.warm) return;
+      const L=_satDestLevel(d); if(L<_SAT_HOLD_MINZ) return;              /* the shallow levels are shared and resident */
+      const R=_satDestRect(d,L), out=[];
+      for(let y=Math.max(0,Math.floor(R.cy-R.hy)); y<=Math.min(R.n-1,Math.floor(R.cy+R.hy)); y++)
+        for(let xx=Math.floor(R.cx-R.hx); xx<=Math.floor(R.cx+R.hx); xx++){
+          const x=((xx%R.n)+R.n)%R.n;
+          out.push([Math.hypot(xx+0.5-R.cx,y+0.5-R.cy), L, y, x]); }
+      out.sort((a,b)=>a[0]-b[0]);
+      const tiles=[];
+      for(const [,z,y,x] of out){
+        if(_satHiDPI&&z<19){ const st=_satKnownStop(z,x,y); if(!(st!=null&&z+1>st)){ for(const [a,b] of [[0,0],[1,0],[0,1],[1,1]]) tiles.push([z+1,2*y+b,2*x+a]); continue; } }
+        tiles.push([z,y,x]); }
+      _satStat.warmed+=tiles.length;
+      W.warm(tiles);
+    }
+    function _satZoomHold(z,signal,x,y){
       if(!_satGateOn||!_satZooming||z<_SAT_HOLD_MINZ) return null;
+      if(_satWantedThere(z,x,y)){ _satStat.ahead++; return null; }
       _satStat.held++;
       return new Promise((resolve,reject)=>{
         const t0=Date.now();
         const tick=()=>{
           if(signal&&signal.aborted){ _satStat.dropped++; const e=new Error('aborted'); e.name='AbortError'; reject(e); return; }
           if(!_satZooming||Date.now()-t0>=_SAT_MAX_HOLD){ resolve(); return; }
+          if(_satWantedThere(z,x,y)){ _satStat.ahead++; resolve(); return; }   /* the destination became known (a release) */
           setTimeout(tick,60);
         };
         tick();
@@ -312,7 +374,7 @@ export function satProto(HOST){
       const mm=/imapsat:\/\/(\d+)\/(\d+)\/(\d+)/.exec(params&&params.url||''); if(!mm) throw new Error('bad imapsat url');
       const z=+mm[1], y=+mm[2], x=+mm[3], signal=abortController&&abortController.signal;
       _satWireZoom(); _satStat.req++;
-      const hold=_satZoomHold(z,signal); if(hold) await hold;
+      const hold=_satZoomHold(z,signal,x,y); if(hold) await hold;
       _satStat.resolved++;
       const via=_satViaWorker(z,y,x,_satHiDPI,signal);
       if(via){ try{ const r=await via; if(r&&r.data) return {data:r.data}; }catch(_){ /* fall through to the thread */ } }
@@ -362,8 +424,8 @@ export function satProto(HOST){
       /* (#R205) the zoom gate, so a test can prove that a held request is released by the settle and
          cancelled by MapLibre's own abort rather than inferring it from a network count */
       zoomGate:()=>({ on:_satGateOn, zooming:_satZooming, wired:_satZoomWired, settleMs:_SAT_SETTLE, maxHoldMs:_SAT_MAX_HOLD, minZoom:_SAT_HOLD_MINZ,
-        req:_satStat.req, held:_satStat.held, dropped:_satStat.dropped, resolved:_satStat.resolved }),
-      resetZoomStats:()=>{ _satStat.req=0; _satStat.held=0; _satStat.dropped=0; _satStat.resolved=0; return true; },
+        req:_satStat.req, held:_satStat.held, dropped:_satStat.dropped, resolved:_satStat.resolved, ahead:_satStat.ahead, warmed:_satStat.warmed }),
+      resetZoomStats:()=>{ _satStat.req=0; _satStat.held=0; _satStat.dropped=0; _satStat.resolved=0; _satStat.ahead=0; _satStat.warmed=0; return true; },
       /* ⚠ the OFF switch exists so the A/B can be run inside ONE build — #R203 recorded two levers
          that measured WORSE than the shipped setting, and the only reason that is known is that both
          were measured against the same binary rather than against a memory of a number. */

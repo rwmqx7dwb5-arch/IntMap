@@ -47,7 +47,9 @@ test('r201 ①a the five-ring staircase is gone from js/night-side.js', () => {
 });
 
 test('r201 ①b the drawn pixel is the GIBS pixel — no threshold, no gain, no bias', () => {
-  const body = NIGHT.slice(NIGHT.indexOf('function drawLights'), NIGHT.indexOf('function zoomNow'));
+  /* (map-motion) the pixels are written by the sliced paint job; drawLights only puts the finished picture */
+  const body = NIGHT.slice(NIGHT.indexOf('function paintJob'), NIGHT.indexOf('function zoomNow'));
+  assert.ok(NIGHT.indexOf('function paintJob') > 0, 'the paint job is where the pixels are computed');
   /* the three colour writes take the source byte and nothing else */
   const writes = body.match(/o\[k(?:\+\d)?\]\s*=\s*L\.d\[j2(?:\+\d)?\];/g) || [];
   assert.equal(writes.length, 3, 'R, G and B are copied straight out of the mosaic');

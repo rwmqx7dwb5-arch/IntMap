@@ -134,6 +134,10 @@ export interface GeoEngineAdapterCore {
   once(e?: any, c?: any): any;
   getZoom(): any;
   getCenter(): any;
+  /** (map-motion) MapLibre only — Cesium has no wheel spring or recorded ease */
+  destination?(): any;
+  /** (map-motion) MapLibre only — subscribe to destinations as they become known */
+  onDestination?(fn?: any): any;
   getBearing(): any;
   getPitch(): any;
   getBounds(): any;
@@ -165,6 +169,8 @@ export interface GeoEngineAdapterCore {
   hasAircraftCloud(id?: any): any;
   projectMercAlt(xy?: any): any;
   setDragPan(on?: any): any;
+  /** (map-motion) the glide after a pan; MapLibre only — Cesium has its own camera inertia */
+  setGlide?(o?: any): any;
   getContainer(): any;
   getSize(): any;
   setCursor(c?: any): any;
@@ -283,6 +289,10 @@ export interface GeoEngineCamera {
   setProjection(mo?: any): any;
   getZoom(): any;
   getCenter(): any;
+  /** (map-motion) where the moving camera will stop, when known */
+  destination(): any;
+  /** (map-motion) subscribe to destinations as they become known (false where the engine has none) */
+  onDestination(fn?: any): any;
   getBearing(): any;
   getPitch(): any;
   getBounds(): any;
@@ -455,6 +465,7 @@ export interface GeoEngineRender {
 export interface GeoEngineInput {
   setDragPan(on?: any): any;
   set(name?: any, on?: any): any;
+  setGlide(o?: any): any;
   names(): any;
   setAll(on?: any): any;
   setZoomRate(r?: any, wheel?: any): any;

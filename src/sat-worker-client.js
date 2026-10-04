@@ -60,6 +60,11 @@ window.IntMapSatWorker=(function(){
       if(signal){ try{ signal.addEventListener('abort',()=>{ try{ it.postMessage({type:'abort',id}); }catch(_){} },{once:true}); }catch(_){} }
       return p;
     },
+    /* (map-motion) fetch these tiles' bytes ahead of the renderer — [[z,y,x],…], replacing any batch
+       still queued (src/sat-worker.js `warm`). Nothing comes back; the renderer's own request later
+       finds the bytes. false when there is no worker. */
+    warm(tiles){ const it=worker(); if(!it) return false;
+      try{ it.postMessage({type:'warm', tiles:Array.isArray(tiles)?tiles:[]}); return true; }catch(_){ return false; } },
     /* ══ ⚠⚠ (#R322) GIVING THE THREAD BACK — see the same note in tsunami-worker-client.js ═══════
        ⚠ THE PENDING TILES ARE REJECTED, NOT RESOLVED, and that is the difference from the tsunami
        client: a tile promise resolves to {data, mode} and js/sat-proto.js hands that straight to
