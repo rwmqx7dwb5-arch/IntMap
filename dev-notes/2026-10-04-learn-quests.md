@@ -1,6 +1,7 @@
 ---
 title: 学ぶクエスト——地図の実データから問題を作り、地図の上で答える出題エンジン（場所当て・年代当て）と、クラス全員に同じ問題を配る挑戦リンク
 date: 2026-10-04
+pr: 973
 newsen: Learn quests: find cities on the map or guess the year of a day in history with the year hidden, answered on the map. A challenge link gives a whole class the same questions.
 newsjp: 学ぶクエスト——都市の場所当てと、年を隠した歴史のある日の年代当てを、地図の上で答えます。挑戦リンクを開いた人は全員が同じ問題を解けます。
 ---
