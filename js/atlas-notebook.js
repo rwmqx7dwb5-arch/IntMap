@@ -25,7 +25,7 @@
  * ==========================================================================*/
 import {
   entryFromTurn, makeNotebookStore, idbBackend, memoryBackend, toMarkdown, toFile, fromFile,
-  rowFromEntry, entryFromRow, mergeCloud, diffResults,
+  rowFromEntry, entryFromRow, mergeCloud, diffResults, NOTEBOOK_SHOWN,
 } from './atlas-notebook-store.js';
 import { icon } from './icons.js';
 import { IntMapLang } from './lang-registry.js';
@@ -58,7 +58,7 @@ function readPrefs() {
   catch (_) { return { keep: true, sync: false }; }
 }
 /** is the reader keeping answers? — js/atlas-cap-notebook.js asks before it files a comparison */
-export function keepingOn() { return readPrefs().keep; }
+export function keepingOn() { return NOTEBOOK_SHOWN && readPrefs().keep; }
 function writePrefs(p) { try { localStorage.setItem(PREF_KEY, JSON.stringify({ keep: !!p.keep, sync: !!p.sync })); } catch (_) { } }
 
 /* ══ THE VIEW, AS THE RESTORERS SEE IT ═════════════════════════════════════════════════════════════
@@ -124,7 +124,7 @@ export function makeAtlasNotebook() {
   function onFiled(fn) { if (typeof fn === 'function') filedSubs.push(fn); return () => { const i = filedSubs.indexOf(fn); if (i >= 0) filedSubs.splice(i, 1); }; }
   const told = (e, t, why) => { filedSubs.slice().forEach((f) => { try { f(e, t, why); } catch (_) { } }); return e; };
   async function fileTurn(t) {
-    const prefs = readPrefs();
+    const prefs = NOTEBOOK_SHOWN ? readPrefs() : { keep: false, sync: false };   /* hidden: nothing is stored or synced behind the reader's back */
     if (!t) return null;
     const claimed = claims.delete(t.turnId);
     if (!prefs.keep && !claimed) return null;
@@ -364,7 +364,7 @@ export function makeAtlasNotebook() {
   }
   function refresh() { renderStrip(); if (sheet && sheet.style.display !== 'none' && view !== 'detail') render(); }
   function show(id) {
-    if (!panel) return false;
+    if (!panel || !NOTEBOOK_SHOWN) return false;
     if (!sheet) {
       sheet = document.createElement('div'); sheet.className = 'atl-nb'; sheet.setAttribute('role', 'dialog');
       sheet.innerHTML = '<div class="atl-nb-top"><button type="button" class="atl-nb-back"></button><div class="atl-nb-title"></div><button type="button" class="atl-nb-more">' + icon('sliders', { size: 17 }) + '</button></div><div class="atl-nb-body"></div>';
@@ -386,15 +386,17 @@ export function makeAtlasNotebook() {
     D = deps || D; panel = p || panel;
     if (!panel || mounted) return API;
     mounted = true;
-    strip = document.createElement('button'); strip.type = 'button'; strip.className = 'atl-nb-strip';
-    const head = panel.querySelector('.atl-head');
-    if (head && head.nextSibling) panel.insertBefore(strip, head.nextSibling); else panel.insertBefore(strip, panel.firstChild);
-    strip.addEventListener('click', () => show());
+    if (NOTEBOOK_SHOWN) {
+      strip = document.createElement('button'); strip.type = 'button'; strip.className = 'atl-nb-strip';
+      const head = panel.querySelector('.atl-head');
+      if (head && head.nextSibling) panel.insertBefore(strip, head.nextSibling); else panel.insertBefore(strip, panel.firstChild);
+      strip.addEventListener('click', () => show());
+    }
+    /* the turn listener stays even when hidden: a briefing turn is claimed and built through it (fileTurn stores nothing then) */
     try { D.ASTATE.onTurnEnd((t) => { fileTurn(Object.assign({}, t, { operations: (t.operations || []).slice() })).then(refresh, () => { }); }); } catch (_) { }
     try { window.IntMapOS.on((ev) => { if (ev && ev.kernel === 'query' && ev.phase === 'answered' && ev.result) buffer.push(ev.result); }); } catch (_) { }
-    store.on(() => renderStrip());
-    renderStrip();
-    if (readPrefs().sync) setTimeout(() => { syncNow().catch(() => { }); }, 0);
+    if (NOTEBOOK_SHOWN) { store.on(() => renderStrip()); renderStrip(); }
+    if (NOTEBOOK_SHOWN && readPrefs().sync) setTimeout(() => { syncNow().catch(() => { }); }, 0);
     return API;
   }
 

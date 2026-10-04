@@ -18,6 +18,7 @@
  * ==========================================================================*/
 import { str, int, list, bool } from './atlas-caps.js';
 import { notebookStore, restoreView } from './atlas-notebook.js';
+import { NOTEBOOK_SHOWN } from './atlas-notebook-store.js';
 import { liveBriefing } from './atlas-briefing.js';
 
 const when = (ms) => { try { return new Date(ms).toISOString().replace('T', ' ').slice(0, 16) + ' UTC'; } catch (_) { return ''; } };
@@ -32,7 +33,7 @@ export default [
     async run(a, dctx, K) { const R = K.R, L = K.L, esc = K.esc, note = K.note, warn = K.warn;
       const B = liveBriefing();
       if (!B) return R(false, warn(esc(L('The briefing composer is not mounted.', 'ブリーフィングの作成画面がまだ用意されていません。'))), { meta: { code: 'unavailable' } });
-      const S = notebookStore(), ids = [];
+      const S = NOTEBOOK_SHOWN ? notebookStore() : { get: async () => null, list: async () => [] }, ids = [];   /* hidden: the notebook is not a place to read from */
       [].concat(a.ids || []).forEach((x) => { const s = String(x || '').trim(); if (s && ids.indexOf(s) < 0) ids.push(s); });
       const missing = [];
       for (const id of ids.slice()) if (!(await S.get(id))) { missing.push(id); ids.splice(ids.indexOf(id), 1); }

@@ -18,7 +18,7 @@
  * ==========================================================================*/
 import { str, int, list } from './atlas-caps.js';
 import { notebookStore, restoreView, keepingOn } from './atlas-notebook.js';
-import { diffResults, newId, normalize } from './atlas-notebook-store.js';
+import { diffResults, newId, normalize, NOTEBOOK_SHOWN } from './atlas-notebook-store.js';
 import { queryEngine } from './atlas-cap-data.js';
 
 /* an entry named by id, or — when Atlas only has the reader's words — the newest one they match */
@@ -34,14 +34,21 @@ async function findEntry(a) {
 const when = (ms) => { try { return new Date(ms).toISOString().replace('T', ' ').slice(0, 16) + ' UTC'; } catch (_) { return ''; } };
 const fmtN = (v) => (typeof v === 'number' && isFinite(v)) ? (Math.abs(v) >= 1000 ? Math.round(v).toLocaleString() : String(Math.round(v * 100) / 100)) : String(v == null ? '—' : v);
 
+/* hidden (js/atlas-notebook-store.js NOTEBOOK_SHOWN): the three are WITHDRAWN — absent from the catalogue, the planner never offers them,
+   and a call that still arrives is answered FEATURE_WITHDRAWN rather than served */
+const HIDDEN = NOTEBOOK_SHOWN ? undefined : { withdrawn: { why: 'the owner hid the investigation notebook 2026-10-04 (NOTEBOOK_SHOWN in js/atlas-notebook-store.js) — the case exists only to answer FEATURE_WITHDRAWN; set it to true to bring the capability back', proofCode: 'FEATURE_WITHDRAWN' } };
+const gone = (K, code) => K.R(false, K.warn(K.esc(K.L('The investigation notebook is not available.', '調査ノートは現在ご利用いただけません。'))), { meta: { code } });
+
 export default [
   {
     row: ['notebook.list',              'notebook',       'notebookList,investigations,pastQuestions,myInvestigations', 'research','none',    '',                       'explanation',         'read',    'none',   '',         '', 'external'],
+    policy: HIDDEN,
     doc: [
       { in: 'notebook', at: 10, text: '{"type":"notebook","query"?:str,"limit"?:int} = THE READER\'S INVESTIGATION NOTEBOOK (調査ノート) — every question they asked Atlas before, on this device (and on every device when they turned account sync on), with its date, its answer, how many map steps drew it and how many rows its queries found. Searched by the reader\'s own words (all terms must occur; newest first). Use it when they refer to something they investigated earlier — 「前に調べた」「先週の台湾の件」「この前の地震の問い合わせ」「my earlier question about…」 — instead of answering as if the conversation were new, and pass the id it returns to notebookOpen or notebookCompare. ' },
     ],
     schema: () => ({ type: 'object', properties: { query: str(), limit: int(1, 200) } }),
     async run(a, dctx, K) { const R = K.R, L = K.L, esc = K.esc, note = K.note;
+      if (!NOTEBOOK_SHOWN) return gone(K, 'FEATURE_WITHDRAWN');
       const all = await notebookStore().list(String(a.query || '').trim());
       const n = Math.max(1, Math.min(200, +a.limit || 20));
       if (!all.length) return R(true, note(esc(a.query ? L('Nothing in the investigation notebook matches', '調査ノートに一致する記録はありません') + ' «' + String(a.query) + '»' : L('The investigation notebook is empty.', '調査ノートは空です。'))), { meta: { notebook: { count: 0 } } });
@@ -56,11 +63,13 @@ export default [
   },
   {
     row: ['notebook.open',              'notebookOpen',   'openInvestigation,reopenInvestigation,replayInvestigation',   'research','time',    'camera,map.layer,time',  'map,time',            'session', 'none',   '',         '', 'external'],
+    policy: HIDDEN,
     doc: [
       { in: 'notebook', at: 20, text: '{"type":"notebookOpen","id":str,"only"?:["time"|"layers"|"camera",…]} = REOPEN ONE NOTEBOOK ENTRY (調査ノートを開く・地図を再現): the clock, the layers and the camera are put back exactly as that answer left them and READ BACK (a section that did not come back is named), and the result hands you that answer\'s text and THE EXACT CALLS that drew its map, as {"type":…} objects. Re-issue the ones the reader needs — they are the same calls, so they draw the same thing — or answer from the stored text; nothing is re-run for you. "query" instead of "id" opens the newest entry matching those words. ' },
     ],
     schema: () => ({ type: 'object', properties: { id: str(), query: str(), only: list(str()) } }),
     async run(a, dctx, K) { const R = K.R, L = K.L, esc = K.esc, note = K.note, warn = K.warn;
+      if (!NOTEBOOK_SHOWN) return gone(K, 'FEATURE_WITHDRAWN');
       const f = await findEntry(a);
       if (!f.e) return R(false, warn(esc(f.why === 'needs-id' ? L('Name the entry to open (its id) or the words to find it by.', '開く記録の id か、探す言葉を指定してください。') : L('No notebook entry matches', '一致する記録はありません') + ' «' + String(f.q || '') + '»')), { meta: { code: f.why === 'needs-id' ? 'needs_input' : 'not_found' } });
       const e = f.e, only = a.only ? [].concat(a.only).map(String) : null;
@@ -83,11 +92,13 @@ export default [
   },
   {
     row: ['notebook.compare',           'notebookCompare', 'compareInvestigation,whatChangedSince,recheckInvestigation', 'research','none',    '',                       'explanation',         'read',    'none',   '',         'atlasQuery', 'external'],
+    policy: HIDDEN,
     doc: [
       { in: 'notebook', at: 30, text: '{"type":"notebookCompare","id":str} = 今と比べる / WHAT CHANGED SINCE: runs every query a notebook entry made AGAIN, NOW, on the same specification, and compares the rows BY THEIR IDENTITY — rows that newly match, rows that no longer match, values that changed (with the difference) — computed by IntMap, not judged. The comparison is filed in the notebook beside the original, so the same question builds a history. Where either side matched more rows than it kept, it says that a row «gone» may only have moved below the row limit. An entry with no query rows has nothing to compare mechanically: answer its question again instead (the reader can press 「もう一度訊く」). ' },
     ],
     schema: () => ({ type: 'object', properties: { id: str(), query: str() } }),
     async run(a, dctx, K) { const R = K.R, L = K.L, esc = K.esc, note = K.note, warn = K.warn;
+      if (!NOTEBOOK_SHOWN) return gone(K, 'FEATURE_WITHDRAWN');
       const f = await findEntry(a);
       if (!f.e) return R(false, warn(esc(f.why === 'needs-id' ? L('Name the entry to compare (its id) or the words to find it by.', '比べる記録の id か、探す言葉を指定してください。') : L('No notebook entry matches', '一致する記録はありません') + ' «' + String(f.q || '') + '»')), { meta: { code: f.why === 'needs-id' ? 'needs_input' : 'not_found' } });
       const e = f.e;

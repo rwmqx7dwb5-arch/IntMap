@@ -140,7 +140,7 @@ export const CATALOGUE_CHUNKS = [
       { name: 'research.impact' },
       /* (atlas-os) THE READER'S INVESTIGATION NOTEBOOK — what they asked before, kept beyond the session (js/atlas-notebook.js).
          Placed beside the research blocks because it is how an earlier investigation is picked up again. */
-      { name: 'notebook', head: 'INVESTIGATION NOTEBOOK (調査ノート — earlier questions, answers, maps and query rows, kept across sessions): ' },
+      { name: 'notebook', head: 'BRIEFINGS (ブリーフィング — an investigation packed into a link; the investigation notebook behind this section is hidden, NOTEBOOK_SHOWN in js/atlas-notebook-store.js): ' },
       /* 32 */
       { name: 'ui.inlineControls' },
       /* 33 */

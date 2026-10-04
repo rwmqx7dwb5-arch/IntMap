@@ -29,7 +29,7 @@
  * ==========================================================================*/
 import { buildBriefing, packBriefing, unpackBriefing, briefingLink, LINK_LIMIT_MEASURED } from './atlas-briefing-codec.js';
 import { notebookStore, restoreView } from './atlas-notebook.js';
-import { normalize } from './atlas-notebook-store.js';
+import { normalize, NOTEBOOK_SHOWN } from './atlas-notebook-store.js';
 import { BriefingLink } from './briefing-link.js';
 import { MapState } from './map-state.js';
 import { layerField, keepInLibrary } from './atlas-notebook.js';   /* (map-document-unify) the answer kept as a map, the notebook's way */
@@ -179,7 +179,7 @@ export function makeAtlasBriefing(NOTEBOOK) {
       [{ type: 'briefingOpen', section: i + 1, only: ['time'] }].concat(steps, [{ type: 'briefingOpen', section: i + 1 }]));
   }
   async function keep(i) {
-    const s = open && open.b && open.b.sections[i]; if (!s) return { ok: false };
+    const s = open && open.b && open.b.sections[i]; if (!s || !NOTEBOOK_SHOWN) return { ok: false };
     const S = notebookStore();
     if (await S.get(s.id)) return { ok: true, already: true, id: s.id };
     const e = normalize(Object.assign({}, s, { updatedAt: Date.now(), pinned: false, followOf: null, syncedAt: 0 }));
@@ -280,7 +280,7 @@ export function makeAtlasBriefing(NOTEBOOK) {
     h += '<div class="atl-br-q">' + esc(s.question) + '</div><div class="atl-br-meta">' + esc(L('Investigated', '調査日時') + ' ' + fmtWhen(s.at)) + '</div>';
     const nRep = (s.steps || []).filter((x) => x.replay).length;
     h += '<div class="atl-br-acts">' + btn('rebuild', 'map', L('Rebuild map', '地図を再現'), !nRep)
-      + btn('compare', 'reset', L('Compare with now', '今と比べる'), !(s.results || []).length) + btn('keep', 'save', L('Keep in my notebook', 'ノートに保存'))
+      + (NOTEBOOK_SHOWN ? btn('compare', 'reset', L('Compare with now', '今と比べる'), !(s.results || []).length) + btn('keep', 'save', L('Keep in my notebook', 'ノートに保存')) : '')
       /* (map-document-unify) the whole briefing — a step per answer — into the account's Library, where it plays as a tour */
       + btn('savemap', 'map', L('Save as a map', '地図として保存')) + '</div>';
     h += '<div class="atl-br-ans atl-md"></div>';
@@ -342,8 +342,8 @@ export function makeAtlasBriefing(NOTEBOOK) {
         + '<button type="button" class="atl-br-mini" data-effect="none" data-mv="' + i + ':1" aria-label="' + esc(L('Move down', '下へ')) + '"' + (i < d.items.length - 1 ? '' : ' disabled') + '>' + icon('chevronR', { size: 13 }) + '</button>'
         + '<button type="button" class="atl-br-mini" data-effect="none" data-rm="' + i + '" aria-label="' + esc(L('Remove from the briefing', 'ブリーフィングから外す')) + '">' + icon('close', { size: 13 }) + '</button></div>';
     });
-    h += '<button type="button" class="atl-br-add" data-effect="none">' + icon('book', { size: 14 }) + '<span>' + esc(d.picking ? L('Close the notebook list', 'ノートの一覧を閉じる') : L('Add answers from the notebook', 'ノートから回答を足す')) + '</span></button>';
-    if (d.picking) h += '<input type="search" class="atl-br-pq" data-effect="none" aria-label="' + esc(L('Search the notebook…', 'ノートを検索…')) + '" value="' + esc(d.pickQ) + '" placeholder="' + esc(L('Search the notebook…', 'ノートを検索…')) + '"><div class="atl-br-pick"></div>';
+    if (NOTEBOOK_SHOWN) h += '<button type="button" class="atl-br-add" data-effect="none">' + icon('book', { size: 14 }) + '<span>' + esc(d.picking ? L('Close the notebook list', 'ノートの一覧を閉じる') : L('Add answers from the notebook', 'ノートから回答を足す')) + '</span></button>';
+    if (NOTEBOOK_SHOWN && d.picking) h += '<input type="search" class="atl-br-pq" data-effect="none" aria-label="' + esc(L('Search the notebook…', 'ノートを検索…')) + '" value="' + esc(d.pickQ) + '" placeholder="' + esc(L('Search the notebook…', 'ノートを検索…')) + '"><div class="atl-br-pick"></div>';
     h += '<label class="atl-br-row atl-br-sw"><input type="checkbox" class="atl-br-wn" data-effect="none"' + (d.withNotes ? ' checked' : '') + '><span>' + esc(L('Include my notes', '自分のメモも含める')) + '<small>' + esc(L('Off: your notes stay on this device.', 'オフのとき、メモはこの端末から出ません。')) + '</small></span></label>';
     if (d.link) {
       const ok = fits();
@@ -353,7 +353,7 @@ export function makeAtlasBriefing(NOTEBOOK) {
             + L('Hand on the notebook file instead, or remove an answer.', 'ノートのファイルで渡すか、回答を減らしてください。')) + '</small></div>';
       h += '<input type="text" class="atl-br-url" data-effect="none" readonly aria-label="' + esc(L('Briefing link', 'ブリーフィングのリンク')) + '" value="' + esc(ok ? d.link : '') + '">';
       h += '<div class="atl-br-acts">' + btn('copy', 'clipboard', L('Copy link', 'リンクをコピー'), !ok) + btn('share', 'share', L('Share…', '共有…'), !ok || !navigator.share)
-        + btn('preview', 'eye', L('Preview', 'プレビュー'), !ok) + btn('file', 'save', L('Notebook file', 'ノートのファイル')) + '</div>';
+        + btn('preview', 'eye', L('Preview', 'プレビュー'), !ok) + (NOTEBOOK_SHOWN ? btn('file', 'save', L('Notebook file', 'ノートのファイル')) : '') + '</div>';
     }
     if (d.status) h += '<div class="atl-br-meta">' + esc(d.status) + '</div>';
     return h;

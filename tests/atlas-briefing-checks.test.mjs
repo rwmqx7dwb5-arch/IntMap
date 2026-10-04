@@ -166,7 +166,7 @@ test('⑧ a turn a briefing waits for is built even when the reader keeps nothin
   const el = () => ({ style: {}, dataset: {}, className: '', innerHTML: '', setAttribute() { }, addEventListener() { }, querySelector: () => null, querySelectorAll: () => [], appendChild() { } });
   globalThis.document = globalThis.document || { createElement: el, getElementById: () => null };
   window.IntMapSafe = window.IntMapSafe || { html: (s) => String(s), url: (s) => String(s) };
-  const { makeAtlasNotebook, notebookStore } = await import('../js/atlas-notebook.js');
+  const { makeAtlasNotebook, notebookStore } = (await (await import('./helpers/notebook-shown.mjs')).shownNotebook()).notebook;   /* the notebook's own logic, as it runs when shown */
   const NB = makeAtlasNotebook();
   const panel = Object.assign(el(), { insertBefore() { }, firstChild: null });
   NB.mount(panel, { ASTATE: { onTurnEnd() { }, captureSections: () => ({ camera: { lng: 1, lat: 2, zoom: 3, bearing: 0, pitch: 0, base: 'map', projection: 'globe' }, time: { live: true, t: null }, layers: {} }) },
