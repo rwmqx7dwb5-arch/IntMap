@@ -1,12 +1,12 @@
 {
   "eager": {
-    "raw": 4867450,
-    "gzip": 1606284,
-    "brotli": 1217264,
+    "raw": 4848175,
+    "gzip": 1599091,
+    "brotli": 1207756,
     "requests": 9,
-    "modules": 314,
-    "cssRaw": 390457,
-    "cssGzip": 63660
+    "modules": 313,
+    "cssRaw": 384505,
+    "cssGzip": 63308
   },
   "async": {
     "raw": 12588163,
@@ -25,8 +25,8 @@
       "atlas-attach": 23189,
       "atlas-caps-modules": 80,
       "atlas-chart": 10493,
-      "atlas-console": 1469799,
-      "atlas-executor": 59369,
+      "atlas-console": 1449115,
+      "atlas-executor": 59145,
       "atlas-geo-resolve": 49361,
       "atlas-notebook": 271,
       "atlas-query": 48520,
@@ -131,14 +131,14 @@
       "tour-worksheet": 13872,
       "tours": 34019,
       "tsunami": 37469,
-      "ui.de": 16300,
-      "ui.es": 16576,
-      "ui.fr": 428941,
+      "ui.de": 16278,
+      "ui.es": 16553,
+      "ui.fr": 424231,
       "ui.jp": 23618,
-      "ui.ko": 422378,
-      "ui.ru": 23739,
-      "ui.zh": 401584,
-      "ui.zh-hans": 401580,
+      "ui.ko": 417664,
+      "ui.ru": 23709,
+      "ui.zh": 397504,
+      "ui.zh-hans": 397500,
       "viewshed": 33694,
       "volcano-intel": 109275,
       "volcano-layers": 14776,
@@ -155,7 +155,7 @@
   "dist": {
     "total": 886785741,
     "data": 745671828,
-    "assets": 20093791
+    "assets": 20070894
   },
   "phone": {
     "bytes": 342631,
