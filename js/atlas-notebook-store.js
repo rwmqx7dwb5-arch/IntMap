@@ -24,6 +24,20 @@
 
 import { IntMapLang } from './lang-registry.js';
 
+/* ⚠ THE ONE SWITCH: IS THE INVESTIGATION NOTEBOOK SHOWN TO THE READER AT ALL?
+   Observed 2026-10-04: the owner called it 「Investigation notebook とかいう謎機能」 and, asked, answered
+   「機能だけ残すけど、いったんユーザーには存在せず、見えないように」 — keep the feature, make it not exist for the reader.
+   While this is false: no strip above the Atlas field, no panel, no settings; the notebook.* capabilities are
+   WITHDRAWN (policy.withdrawn, so Atlas neither lists nor offers them and never says it saved anything); no turn is
+   written to the device or the account (a briefing turn is still built and handed over, not stored); the
+   briefing's notebook doors (keep, compare, add from the notebook, the notebook file) are not drawn. What was
+   already stored is not touched.
+   TO BRING IT BACK: set this to true, then `node scripts/atlas-caps.mjs --write` (regenerates WITHDRAWN in
+   js/atlas-capabilities.js) and `node scripts/atlas-eval/scripted-cassettes.mjs --write`; restore the privacy
+   sentence in js/legal-text.js. tests/notebook-hidden-checks.test.mjs fails if any door stops asking this constant.
+   Expires: when the owner decides the notebook is a product feature again (or removes it). */
+export const NOTEBOOK_SHOWN = false;
+
 const FORMAT = 'intmap-atlas-notebook';
 const VERSION = 1;
 

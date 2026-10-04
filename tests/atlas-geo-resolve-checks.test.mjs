@@ -215,6 +215,7 @@ test('R413 ⑥: every camelCase spelling in the registry is reachable by the wor
   let camel = 0;
   for (const cap of CAPS.all()) {
     for (const a of (cap.aliases || [])) {
+      if (cap.withdrawn) continue;   /* a withdrawn capability is unreachable by design (score -1, as system.monitor); its aliases return with the switch that restores it */
       const w = words(a);
       if (w === a.toLowerCase()) continue;          /* not camelCase — nothing to split */
       camel++;
