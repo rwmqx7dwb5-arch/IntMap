@@ -413,7 +413,7 @@ const LINKED_KEYS = MapState.SCHEMA.filter((f) => f.params.length).map((f) => f.
 function stateNow() {
   const hash = MapState.hash();
   let link = '';
-  try { link = appUrl(location.origin + location.pathname + location.search + hash); } catch (_) { link = ''; }
+  try { link = appUrl(MapState.pageLink(null, hash)); } catch (_) { link = ''; }   /* (map-document-unify) the one link assembly */
   return { state: MapState.snapshot(LINKED_KEYS), hash, link };
 }
 

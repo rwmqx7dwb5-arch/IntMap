@@ -20,9 +20,14 @@
 import { IntMapLang } from './lang-registry.js';
 import { IntMapGeoEngine } from './geo-engine.js';   /* the renderer, through the contract */
 import { MapState } from './map-state.js';           /* (collection-workspace) a saved map IS a share link's fragment */
+/* (map-document-unify) every saved thing is a map document — a map, a my map, a tour, an Atlas answer (js/map-doc.js) */
+import { readMapDoc, fromSavedView, toSavedView, fromTourDraft, toTourInput, isTour, firstState, STEPS_MAX } from './map-doc.js';
 
 const COLS = 'id,name,note,collection,lng,lat,zoom,source,created_at,updated_at';
-const VIEW_COLS = 'id,name,note,collection,state,created_at,updated_at';
+const VIEW_COLS = 'id,name,note,collection,state,kind,steps,created_at,updated_at';
+/* the columns of a database the documents' migration (20261004120000_map_documents.sql) has not reached yet — every
+   row there is one map. Read only when the first read is refused for naming a column that is not there (42703). */
+const VIEW_COLS_BEFORE_DOCUMENTS = 'id,name,note,collection,state,created_at,updated_at';
 
 /* ── pure helpers (tests/platform-backend-checks.test.mjs runs them in Node) ───────────────────── */
 
@@ -82,6 +87,8 @@ export function matchPlaces(places, q) {
 function errOf(error) {
   const c = error && error.code;
   if (c === '42501') return 'sign_in';
+  /* (map-document-unify) the fence on a document's steps is a 54000 too; the database names which fence it is */
+  if (c === '54000' && /saved_view_steps_limit/.test(String((error && error.message) || ''))) return 'too_many_steps';
   if (c === '54000') return 'full';
   if (c === '22023' || c === '23514') return 'invalid';
   return 'failed';
@@ -155,9 +162,7 @@ function viewStateNow() {
 /** A fragment read back and WRITTEN AGAIN by the codec: nothing the codec does not write is kept or opened
  *  (a map from someone else's collection is text from outside — the tour player's rule, js/tour-player.js canon). */
 export function canonicalState(state) {
-  const h = '#' + String(state || '').replace(/^#/, '');
-  if (!MapState.carries(h)) return '';
-  try { return MapState.encode(MapState.decode(h)).replace(/^#/, ''); } catch (_) { return ''; }
+  return MapState.canonical(state).replace(/^#/, '');   /* (map-document-unify) the one rule, js/map-state.js */
 }
 
 /** A name for a map that has none: its caption, else the day it is saved. */
@@ -167,20 +172,27 @@ export function viewLabel(state, lang, now) {
   return IntMapLang.t(lang, 'Map · ' + d, '地図 · ' + d);
 }
 
-/** Save a map. @returns {Promise<{ok, id?, created?, count?, name?, error?}>} */
+/** Save a map — `v.state`, one map's fragment — or a whole map document — `v.doc` (js/map-doc.js: a tour, a my map,
+ *  an Atlas answer). A document of one map with no words of its own is saved exactly as a map is (the four-argument
+ *  door); anything more goes with its kind and its steps (the six-argument one).
+ *  @returns {Promise<{ok, id?, created?, count?, name?, error?}>} */
 export async function saveView(DB, v) {
   if (!DB) return { ok: false, error: 'unavailable' };
   v = v || {};
-  const state = canonicalState(v.state);
+  const doc = v.doc ? toSavedView(v.doc) : null;
+  const state = doc ? doc.state : canonicalState(v.state);
   if (!state) return { ok: false, error: 'no_map' };
-  const name = String(v.name || '').trim() || viewLabel(state, v.lang);
+  const name = String(v.name || '').trim() || (doc && doc.name) || viewLabel(state, v.lang);
+  const args = {
+    p_name: name.slice(0, 120), p_state: state,
+    p_note: v.note != null ? String(v.note).slice(0, 2000) : (doc && doc.note ? doc.note : null),
+    p_collection: v.collection == null ? null : String(v.collection).trim().slice(0, 60),
+  };
+  if (doc && (doc.steps || (doc.kind !== 'view' && doc.kind !== 'map'))) { args.p_kind = doc.kind; args.p_steps = doc.steps; }
   try {
-    const { data, error } = await DB.rpc('save_view', {
-      p_name: name.slice(0, 120), p_state: state,
-      p_note: v.note == null ? null : String(v.note).slice(0, 2000),
-      p_collection: v.collection == null ? null : String(v.collection).trim().slice(0, 60),
-    });
-    if (error) { const e = errOf(error); return { ok: false, error: e === 'full' ? 'full_maps' : e }; }
+    const { data, error } = await DB.rpc('save_view', args);
+    /* 23514: the row's own CHECK — a document past 1 MiB of steps (the migration states the bound) */
+    if (error) { const e = errOf(error); return { ok: false, error: e === 'full' ? 'full_maps' : (error.code === '23514' ? 'too_large' : e) }; }
     const row = Array.isArray(data) ? data[0] : data;
     if (!row || !row.view_id) return { ok: false, error: 'failed' };
     return { ok: true, id: row.view_id, created: !!row.created, count: Number(row.view_count) || 0, name };
@@ -194,7 +206,8 @@ const saveMapDoor = (DB, v) => saveView(DB, v);
 export async function listViews(DB) {
   if (!DB) return { ok: false, error: 'unavailable' };
   try {
-    const { data, error } = await DB.from('saved_views').select(VIEW_COLS).order('created_at', { ascending: false });
+    let { data, error } = await DB.from('saved_views').select(VIEW_COLS).order('created_at', { ascending: false });
+    if (error && error.code === '42703') ({ data, error } = await DB.from('saved_views').select(VIEW_COLS_BEFORE_DOCUMENTS).order('created_at', { ascending: false }));
     if (error) return { ok: false, error: errOf(error) };
     return { ok: true, views: Array.isArray(data) ? data : [] };
   } catch (_) { return { ok: false, error: 'failed' }; }
@@ -212,11 +225,12 @@ async function removeViews(DB, ids) {
   } catch (_) { return { ok: false, error: 'failed' }; }
 }
 
-/** Rename a saved map. @returns {Promise<{ok, error?}>} */
+/** Rename a saved map, or file it in a collection (map-document-unify: the Library's «Collection…»). @returns {Promise<{ok, error?}>} */
 async function updateView(DB, id, patch) {
   if (!DB) return { ok: false, error: 'unavailable' };
   const row = {};
   if (patch && patch.name != null) row.name = String(patch.name).trim().slice(0, 120);
+  if (patch && patch.collection != null) row.collection = String(patch.collection).trim().slice(0, 60);
   if (!Object.keys(row).length) return { ok: true };
   try {
     const { error } = await DB.from('saved_views').update(row).eq('id', String(id));
@@ -234,6 +248,67 @@ export function openView(view) {
   MapState.address(null, '#' + state);
   try { B.restore({ shared: true }); } catch (e) { return { ok: false, reason: String((e && e.message) || e) }; }
   return { ok: true, state };
+}
+
+/* ══ (map-document-unify) A DOCUMENT, OPENED — one map through the share link's restore, several as a tour ══════════
+   A document of more than one step is played in the classroom mode (js/tour-player.js) as a tour a teacher wrote: its
+   steps are packed into a `t` by js/tours.js and played as `?tour=custom` — the same player, keys and read-back,
+   nothing copied. Every fragment is written again by the codec on the way (js/map-doc.js readMapDoc). */
+export async function openDoc(doc, opts) {
+  const d = readMapDoc(doc); if (!d || !firstState(d)) return { ok: false, reason: 'no-link' };
+  if (isTour(d) && !(opts && opts.asMap)) return playDoc(d, 1);
+  return openView({ state: firstState(d) });
+}
+/** play a document in the classroom mode from step n (from 1) → the player's read-back */
+export async function playDoc(doc, n) {
+  const tour = toTourInput(doc); if (!tour) return { ok: false, reason: 'no-steps' };
+  const [T, P] = await Promise.all([import('./tours.js'), import('./tour-player.js')]);
+  return P.startTour(T.CUSTOM_TOUR_ID, Math.max(1, Math.round(+n || 1)), { t: await T.encodeCustomTour(tour) });
+}
+/** the document on paper: played, then handed to the worksheet (js/tour-worksheet.js pictures the tour that is playing) */
+export async function printDoc(doc) {
+  await playDoc(doc, 1);
+  const P = await import('./tour-player.js'); if (!P.status()) return { ok: false, reason: 'no-tour' };
+  const W = await import('./tour-worksheet.js');
+  return W.makeWorksheet();
+}
+/** what the reader calls each kind of document, in their language */
+export function kindLabel(kind, lang) {
+  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  if (kind === 'map') return T('My map', 'マイマップ');
+  if (kind === 'tour') return T('Tour', 'ツアー');
+  if (kind === 'brief') return T('Atlas answer', 'Atlas の回答');
+  return T('Map', '地図');
+}
+
+/* ══ (map-document-unify) WHAT IS KEPT ON THIS DEVICE AND NOT IN THE ACCOUNT ══════════════════════════════════════
+   The reader's own maps (js/my-map.js — its library in this browser), the tour being written (js/tour-builder.js) and
+   the tour Atlas assembled in this tab (js/tour-player.js). Each is asked of its OWNER — this file does not know where
+   they keep it — and becomes a document (`doc()`) only when it is saved or played. */
+export async function deviceDocs() {
+  const out = [];
+  try {
+    const Z = typeof window !== 'undefined' ? window.IntMapLazy : null;
+    if (Z && Z.need) {
+      await Z.need('myMap');
+      const M = window.IntMapMyMap;
+      if (M && M.state) M.state().maps.filter((m) => m.count).forEach((m) => out.push({ from: 'mymap', id: m.id, kind: 'map', title: m.title, count: m.count, current: !!m.current,
+        doc: () => M.documentOf(m.id), open: () => { M.switchMap(m.id); M.open(); return { ok: true }; } }));
+    }
+  } catch (_) { }
+  try {
+    const B = await import('./tour-builder.js');
+    const d = B.getDraft();
+    if (d.steps.length) out.push({ from: 'tour-draft', id: 'tour-draft', kind: 'tour', title: d.title, count: d.steps.length,
+      doc: () => fromTourDraft(B.getDraft(), 'tour-draft'), open: () => B.openBuilder() });
+  } catch (_) { }
+  try {
+    const P = await import('./tour-player.js');
+    const t = P.tempTour();
+    if (t && t.steps && t.steps.length) out.push({ from: 'atlas-tour', id: 'atlas-tour', kind: 'tour', title: t.title, count: t.steps.length,
+      doc: () => fromTourDraft(P.tempTour(), 'atlas-tour'), open: () => P.startTour('atlas', 1) });
+  } catch (_) { }
+  return out;
 }
 
 /** Put places on the map as pins (the session pin system — popup, Objects list, measure, remove).
@@ -280,6 +355,8 @@ export function placeFailureText(error, lang) {
   if (error === 'invalid') return T('That place needs a name and a position on the globe.', '場所には名前と地球上の位置が必要です。');
   if (error === 'full_maps') return T('This account already holds the most maps it can. Delete some to save more.', 'このアカウントに保存できる地図の上限に達しています。いくつか削除してから保存してください。');
   if (error === 'no_map') return T('The map has no view to save yet.', '保存できる地図の表示がまだありません。');
+  if (error === 'too_many_steps') return T('A tour in your account can hold at most ' + STEPS_MAX + ' steps. Split it into two.', 'アカウントに保存できるツアーは ' + STEPS_MAX + ' ステップまでです。2 つに分けてください。');
+  if (error === 'too_large') return T('This is too large to keep in your account. Shorten its words or remove some steps.', 'アカウントに保存するには大きすぎます。文を短くするか、ステップを減らしてください。');
   if (error === 'unavailable') return T('The account service is not reachable right now.', 'アカウントのサービスに接続できません。');
   return T('Could not reach your places. Please try again.', '場所を取得できませんでした。もう一度お試しください。');
 }
@@ -339,15 +416,25 @@ function ensureStyle() {
     + '.mpl-share{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:rgba(128,128,128,0.08);font-size:12.5px;line-height:1.5;}'
     + '.mpl-share p{margin:0 0 8px;color:var(--text-muted);}'
     + '.mpl-share input{width:100%;box-sizing:border-box;padding:7px 10px;border-radius:9px;border:1px solid rgba(128,128,128,0.22);background:var(--card-bg);color:var(--text-main);font-size:12px;margin:0 0 8px;}'
-    + '.mpl-share .mpl-btns{margin:0;}';
+    + '.mpl-share .mpl-btns{margin:0;}'
+    /* (map-document-unify) a document's actions, on a line under its row */
+    + '.mpl-acts{display:flex;flex-wrap:wrap;align-items:center;gap:2px 4px;margin:-4px 0 4px;padding-left:2px;}'
+    + '.mpl-acts:empty{display:none;}'
+    + '.mpl-acts + .mpl-row{box-shadow:inset 0 0.5px 0 rgba(128,128,128,0.22);}'
+    + '.mpl-acts .mpl-edit{flex:1 1 140px;}';
   document.head.appendChild(st);
 }
 
-/** Open the «My places» sheet. `HOST` is the app host (DB, user, lang, addPin, imToast, openAuthModal). */
-export async function openMyPlaces(HOST) {
+/** Open the Library (the «My places» sheet). `HOST` is the app host (DB, user, lang, addPin, imToast, openAuthModal).
+ *  (map-document-unify) `opts.save` — a map document (js/map-doc.js) the reader asked to keep: it is saved into the
+ *  account once the sheet has read the account, and the sheet says what happened. */
+export async function openMyPlaces(HOST, opts) {
   const lang = HOST && HOST.lang;
   const T = (en, jp) => IntMapLang.t(lang, en, jp);
-  if (!HOST || !HOST.user) { try { HOST && HOST.openAuthModal && HOST.openAuthModal(); } catch (_) { } return; }
+  if (!HOST || !HOST.user) {
+    if (opts && opts.save) { try { HOST.imToast(placeFailureText('sign_in', lang)); } catch (_) { } }
+    try { HOST && HOST.openAuthModal && HOST.openAuthModal(); } catch (_) { } return;
+  }
   ensureStyle();
   const old = document.getElementById('mpl-modal'); if (old) old.remove();
 
@@ -366,8 +453,9 @@ export async function openMyPlaces(HOST) {
   const watchBtn = el('button', { cls: 'acct-btn acct-btn-quiet', id: 'mpl-watch', text: T('Watch places…', '見守る場所…') });
   const close = el('button', { cls: 'acct-close', id: 'mpl-close', text: T('Close', '閉じる') });
   const sheet = el('div', { cls: 'acct-sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'mpl-h', tabindex: '-1' }, [
-    el('h2', { cls: 'acct-h', id: 'mpl-h', text: T('My places', 'マイプレイス') }),
-    el('p', { cls: 'mpl-lead', text: T('Places and maps saved to your account — on every device you sign in on. File them into collections; a collection can be published as a read-only link.', 'アカウントに保存した場所と地図です。ログインしたどの端末でも開けます。コレクションにまとめ、閲覧専用のリンクとして公開することもできます。') }),
+    /* (map-document-unify) ONE SHELF: places, saved maps, my maps, tours and Atlas answers — and what this device holds that the account does not */
+    el('h2', { cls: 'acct-h', id: 'mpl-h', text: T('Library', 'ライブラリ') }),
+    el('p', { cls: 'mpl-lead', text: T('Everything you keep of a map: places, maps, your own drawn maps, tours and Atlas answers. What is saved to your account opens on every device you sign in on; file it into collections, and publish a collection as a read-only link.', '地図について残したものすべて——場所・地図・自分で描いた地図・ツアー・Atlas の回答——です。アカウントに保存したものはログインしたどの端末でも開けます。コレクションにまとめ、閲覧専用のリンクとして公開することもできます。') }),
     el('div', { cls: 'acct-grp-t', text: T('Save', '保存') }),
     el('div', { cls: 'acct-card' }, [el('div', { cls: 'mpl-add' }, [name, coll, note]), el('div', { cls: 'mpl-btns' }, [saveView, saveMap])]),
     msg,
@@ -447,7 +535,7 @@ export async function openMyPlaces(HOST) {
     list.textContent = '';
     if (!places.length && !views.length) {
       list.appendChild(el('div', { cls: 'acct-card' }, [el('div', { cls: 'mpl-lead', text: T('Nothing saved yet. Save the map centre or this map above, or open a pin and press Save.', 'まだ何も保存していません。上で地図の中心やこの地図を保存するか、ピンを開いて「保存」を押してください。') })]));
-      showAll.disabled = true; return;
+      showAll.disabled = true; renderDevice(); return;
     }
     showAll.disabled = !places.length;
     /* everything at once — one link for every place and map in the account */
@@ -495,12 +583,18 @@ export async function openMyPlaces(HOST) {
         };
         rows.push(el('div', { cls: 'mpl-row' }, [txt, ren, del]));
       });
-      /* (collection-workspace) a saved map: open it (the share link's own restore), rename it, delete it */
+      /* (collection-workspace) a saved map: open it (the share link's own restore), rename it, delete it.
+         (map-document-unify) …and every saved document: its kind on the row; a tour (several steps) opens in the
+         classroom mode and can be printed as a worksheet; any of them can be moved to another collection. */
       g.views.forEach((v) => {
-        const txt = el('button', { cls: 'mpl-txt', type: 'button', title: T('Open this map', 'この地図を開く') }, [
-          el('b', { text: v.name }), el('span', { text: v.note || T('Saved map', '保存した地図') }),
+        const d = fromSavedView(v);
+        const tour = isTour(d);
+        const sub = v.note || (tour ? T(d.steps.length + ' steps', d.steps.length + ' ステップ') : T('Saved map', '保存した地図'));
+        const txt = el('button', { cls: 'mpl-txt', type: 'button', title: tour ? T('Play this tour', 'このツアーを再生') : T('Open this map', 'この地図を開く') }, [
+          el('b', { text: v.name }), el('span', { text: sub }),
         ]);
-        txt.onclick = () => { const r = openView(v); if (!r.ok) { msg.textContent = placeFailureText('no_map', lang); return; } shut(); };
+        /* a tour leaves the sheet first: the classroom mode takes the screen while its first step settles */
+        txt.onclick = async () => { if (tour) { shut(); await openDoc(d); return; } const r = await openDoc(d); if (!r.ok) { msg.textContent = placeFailureText('no_map', lang); return; } shut(); };
         const ren = el('button', { cls: 'mpl-ic', text: T('Rename', '名前変更') });
         ren.dataset.effect = 'private';
         let editing = null;
@@ -529,13 +623,89 @@ export async function openMyPlaces(HOST) {
           views = views.filter((x) => x.id !== v.id); render();
           msg.textContent = T('Deleted: ' + v.name, '削除しました: ' + v.name);
         };
-        rows.push(el('div', { cls: 'mpl-row' }, [el('span', { cls: 'mpl-kind', text: T('Map', '地図') }), txt, ren, del]));
+        rows.push(el('div', { cls: 'mpl-row' }, [el('span', { cls: 'mpl-kind', text: kindLabel(d ? d.kind : 'view', lang) }), txt, ren, del]));
+        rows.push(docActions(d, { collection: v }));
       });
       list.appendChild(el('div', { cls: 'acct-card' }, rows));
     });
+    renderDevice();
   };
+
+  /* ── (map-document-unify) the actions a document has, as a line under its row — only the ones that mean something
+     for it: a tour is played and printed; a saved row is moved to a collection; a document on this device is saved to
+     the account (into the collection typed above, if any). ── */
+  const docActions = (d, o) => {
+    const acts = [];
+    /* each control states what its press does in its own markup (scripts/data-effects.mjs reads the literal) */
+    const btn = (text) => { const b = el('button', { cls: 'mpl-ic', type: 'button', text }); acts.push(b); return b; };
+    if (isTour(d)) {
+      const play = btn(T('Play as a tour', 'ツアーとして再生'));
+      play.dataset.effect = 'none';
+      play.onclick = async () => { shut(); await playDoc(d, 1); };
+      const print = btn(T('Print worksheet', 'ワークシートを印刷'));
+      print.dataset.effect = 'none';
+      print.onclick = async () => { shut(); await printDoc(d); };
+    }
+    if (o.save) {
+      const keep = btn(T('Save to account', 'アカウントに保存'));
+      keep.dataset.effect = 'private';   /* writes the reader's own row (save_view) */
+      keep.onclick = async () => {
+        keep.disabled = true;
+        const r = await saveMapDoor(HOST.DB, { doc: o.save(), collection: coll.value || null, lang });
+        keep.disabled = false;
+        if (!r.ok) { msg.textContent = placeFailureText(r.error, lang); return; }
+        msg.textContent = r.created ? T('Saved to your Library: ' + r.name, 'ライブラリに保存しました: ' + r.name) : T('Already in your Library — updated: ' + r.name, 'ライブラリに保存済みでした（更新）: ' + r.name);
+        await reload();
+      };
+    }
+    if (o.collection) {
+      const v = o.collection;
+      /* filed in another collection IN the row (no window.prompt — §8.1.2), the same gesture as Rename */
+      let editing = null;
+      const mv = btn(T('Collection…', 'コレクション…'));
+      mv.dataset.effect = 'private';   /* re-files the reader's own row */
+      mv.onclick = async () => {
+        if (!editing) {
+          editing = el('input', { cls: 'mpl-edit', type: 'text', maxlength: '60', 'aria-label': T('Collection', 'コレクション'), placeholder: T('Collection (empty: unfiled)', 'コレクション（空欄: 未分類）') });
+          editing.value = v.collection || '';
+          editing.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); mv.click(); } else if (e.key === 'Escape') { e.stopPropagation(); render(); } };
+          mv.before(editing); mv.textContent = T('Move', '移す');
+          try { editing.focus(); editing.select(); } catch (_) { }
+          return;
+        }
+        const nc = editing.value.trim();
+        if (nc === (v.collection || '')) { render(); return; }
+        const r = await updateView(HOST.DB, v.id, { collection: nc });
+        if (!r.ok) { msg.textContent = placeFailureText(r.error, lang); return; }
+        v.collection = nc.slice(0, 60); render();
+        msg.textContent = T('Moved to ' + (nc || 'Unfiled') + ': ' + v.name, (nc || '未分類') + ' に移しました: ' + v.name);
+      };
+    }
+    return el('div', { cls: 'mpl-acts' }, acts);
+  };
+
+  /* ── (map-document-unify) ON THIS DEVICE — the maps, tours and drafts that are not in the account yet ── */
+  const renderDevice = () => {
+    if (!device.length) return;
+    list.appendChild(el('div', { cls: 'acct-grp-t', text: T('On this device', 'この端末') + ' · ' + device.length }));
+    list.appendChild(el('p', { cls: 'mpl-lead', text: T('Kept in this browser only. Save one to your account to open it on every device and file it in a collection.', 'このブラウザにだけあります。アカウントに保存すると、どの端末でも開け、コレクションにも入れられます。') }));
+    const rows = [];
+    device.forEach((x) => {
+      const sub = x.from === 'mymap' ? T(x.count + ' item(s) drawn', '描いたもの ' + x.count + ' 件')
+        : x.from === 'tour-draft' ? T('The tour you are writing · ' + x.count + ' steps', '作成中のツアー · ' + x.count + ' ステップ')
+        : T('Made by Atlas in this tab · ' + x.count + ' steps', 'このタブで Atlas が作成 · ' + x.count + ' ステップ');
+      const txt = el('button', { cls: 'mpl-txt', type: 'button', title: T('Open', '開く') }, [el('b', { text: x.title || (x.kind === 'tour' ? T('Untitled tour', '無題のツアー') : T('Untitled map', '無題の地図')) }), el('span', { text: sub })]);
+      txt.onclick = async () => { await x.open(); shut(); };
+      rows.push(el('div', { cls: 'mpl-row' }, [el('span', { cls: 'mpl-kind', text: kindLabel(x.kind, lang) }), txt]));
+      let d = null; try { d = x.kind === 'tour' ? x.doc() : null; } catch (_) { d = null; }
+      rows.push(docActions(d, { save: () => x.doc() }));
+    });
+    list.appendChild(el('div', { cls: 'acct-card' }, rows));
+  };
+  let device = [];
   const reload = async () => {
-    const [rp, rv, rs] = await Promise.all([listPlaces(HOST.DB), listViews(HOST.DB), SC().then((M) => M.listShares(HOST.DB)).catch(() => ({ ok: false }))]);
+    const [rp, rv, rs, dv] = await Promise.all([listPlaces(HOST.DB), listViews(HOST.DB), SC().then((M) => M.listShares(HOST.DB)).catch(() => ({ ok: false })), deviceDocs().catch(() => [])]);
+    device = dv || [];
     if (!rp.ok) { msg.textContent = placeFailureText(rp.error, lang); return; }
     places = rp.places; views = rv.ok ? rv.views : []; shares = rs.ok ? rs.shares : [];
     render();
@@ -572,4 +742,10 @@ export async function openMyPlaces(HOST) {
   try { sheet.focus(); } catch (_) { }
   list.appendChild(el('p', { cls: 'mpl-lead', text: T('Reading your places…', '場所を読み込み中…') }));
   await reload();
+  if (opts && opts.save) {
+    const r = await saveMapDoor(HOST.DB, { doc: opts.save, lang });
+    if (!r.ok) { msg.textContent = placeFailureText(r.error, lang); return; }
+    msg.textContent = r.created ? T('Saved to your Library: ' + r.name, 'ライブラリに保存しました: ' + r.name) : T('Already in your Library — updated: ' + r.name, 'ライブラリに保存済みでした（更新）: ' + r.name);
+    await reload();
+  }
 }

@@ -29,6 +29,7 @@
 import { str, num, one, bool } from './atlas-caps.js';
 import { IntMapLang } from './lang-registry.js';
 import { MapState } from './map-state.js';   /* (collection-workspace) «this map» is the share link's fragment */
+import { readMapDoc, fromSavedView, fromNotebookEntry } from './map-doc.js';   /* (map-document-unify) every saved thing is one map document */
 
 const SIGN_IN = { code: 'SIGN_IN_REQUIRED', category: 'input', retryable: false, userGoalSatisfied: false, produced: [] };
 const needs = (code, extra) => ({ meta: Object.assign({ code, category: 'input', retryable: true, userGoalSatisfied: false, produced: [] }, extra || null) });
@@ -41,11 +42,58 @@ function placeLines(places, esc) {
     + (p.note ? ' — ' + esc(p.note) : '') + ' <span style="opacity:.6;">[id ' + esc(p.id) + ']</span></div>').join('');
 }
 
-/* (collection-workspace) the saved maps and the published links, read back the same way */
-function viewLines(views, esc, T) {
-  return views.map((v) => '<div style="font-size:12px;line-height:1.6;"><b>' + esc(v.name) + '</b> · ' + esc(T('map', '地図'))
+/* (collection-workspace) the saved maps and the published links, read back the same way.
+   (map-document-unify) each saved map says what kind of document it is, and a tour how many steps it has */
+function viewLines(views, esc, T, lang) {
+  return views.map((v) => '<div style="font-size:12px;line-height:1.6;"><b>' + esc(v.name) + '</b> · ' + esc(docKind(v, lang))
     + (v.collection ? ' · ' + esc(v.collection) : '')
     + (v.note ? ' — ' + esc(v.note) : '') + ' <span style="opacity:.6;">[id ' + esc(v.id) + ']</span></div>').join('');
+}
+function docKind(v, lang) {
+  const d = fromSavedView(v);
+  const T = (en, jp) => IntMapLang.t(lang, en, jp);
+  const k = d ? d.kind : 'view';
+  const name = k === 'map' ? T('my map', 'マイマップ') : k === 'tour' ? T('tour', 'ツアー') : k === 'brief' ? T('Atlas answer', 'Atlas の回答') : T('map', '地図');
+  return d && d.steps.length > 1 ? name + ' · ' + T(d.steps.length + ' steps', d.steps.length + ' ステップ') : name;
+}
+/* (map-document-unify) WHAT «SAVE» KEEPS — the map in front of the reader, or one of the other things a reader makes of
+   a map, each asked of its owner and turned into the one map document (js/map-doc.js) the account holds:
+     map       the map as it is now (the share link's fragment)            — the default
+     myMap     the reader's own drawn map on show (js/my-map.js), over the map as it is now
+     tour      the tour being written in the tour builder (js/tour-builder.js)
+     atlasTour the tour Atlas assembled in this tab (js/tour-player.js addStep)
+     answer    a notebook entry — `entry` (its id), else the newest — kept as a map with its question and answer
+   → { ok, doc } | { ok:false, code, text? } — the code and the sentence (in the reader's language, `T`) say what is missing. */
+async function docToSave(a, T) {
+  const what = a.what || 'map';
+  if (what === 'map') {
+    let state = ''; try { const h = MapState.hash(); state = MapState.carries(h) ? h : ''; } catch (_) { state = ''; }
+    return state ? { ok: true, doc: readMapDoc({ kind: 'view', title: '', steps: [{ state }] }) } : { ok: false, code: 'NO_MAP' };
+  }
+  if (what === 'myMap' || what === 'tour' || what === 'atlasTour') {
+    /* asked of their owners by the Library's one reader of them (js/my-places.js deviceDocs) */
+    const dv = await (await import('./my-places.js')).deviceDocs();
+    if (what === 'myMap') {
+      const x = dv.find((y) => y.from === 'mymap' && y.current);
+      if (!x) return { ok: false, code: 'NOTHING_DRAWN', text: T('There is nothing on your my map yet.', 'マイマップにはまだ何も描かれていません。') };
+      const doc = x.doc();
+      return doc ? { ok: true, doc } : { ok: false, code: 'NO_MAP' };
+    }
+    const x = dv.find((y) => y.from === (what === 'tour' ? 'tour-draft' : 'atlas-tour'));
+    const doc = x ? x.doc() : null;
+    if (!doc) return { ok: false, code: 'NO_TOUR', text: what === 'tour' ? T('No tour is being written.', '作成中のツアーはありません。') : T('No tour has been assembled in this tab.', 'このタブで作ったツアーはありません。') };
+    return { ok: true, doc };
+  }
+  if (what === 'answer') {
+    const NB = await import('./atlas-notebook.js');
+    const S = NB.notebookStore();
+    let e = a.entry ? await S.get(a.entry) : null;
+    if (!e && !a.entry) { const all = await S.list(''); e = (all || []).slice().sort((x, y) => (+y.at || 0) - (+x.at || 0))[0] || null; }
+    if (!e) return { ok: false, code: 'NOT_FOUND', text: T('There is no such answer in the notebook.', 'ノートにその回答はありません。') };
+    const doc = fromNotebookEntry(e, { classify: NB.layerField });
+    return doc && doc.steps[0].state ? { ok: true, doc } : { ok: false, code: 'NO_MAP', text: T('That answer kept no view of the map.', 'その回答には地図の表示が記録されていません。') };
+  }
+  return { ok: false, code: 'NEEDS_INPUT' };
 }
 function shareLines(shares, esc, T) {
   return shares.map((s) => '<div style="font-size:12px;line-height:1.6;">' + esc(T('Published', '公開中')) + ': <b>'
@@ -143,7 +191,7 @@ export default [
       if (!r.places.length && !views.length) return R(true, note(esc(T('No saved places or maps yet.', '保存した場所や地図はまだありません。'))));
       if (!hit.length && !vhit.length) return R(true, note(esc(T('No saved place or map matches that. Collections: ', '一致する保存場所・地図はありません。コレクション: ') + (M.groupCollection(r.places, views).map((g) => g.collection || T('Unfiled', '未分類')).join(' · ')))));
       return R(true, '<div style="font-weight:600;margin:2px 0 6px;">' + esc(T('My places — ' + hit.length + ' place(s), ' + vhit.length + ' map(s)', 'マイプレイス — 場所 ' + hit.length + ' 件・地図 ' + vhit.length + ' 件')) + '</div>'
-        + placeLines(hit, esc) + viewLines(vhit, esc, T) + shareLines(shares, esc, T));
+        + placeLines(hit, esc) + viewLines(vhit, esc, T, lang) + shareLines(shares, esc, T));
     },
   },
   {
@@ -198,28 +246,30 @@ export default [
   {
     row: ['places.saveView',            'saveMap',        'saveView,saveThisMap,keepThisMap,bookmarkMap', 'places', 'none', 'account.places', 'explanation', 'persist', 'explicit', '', ''],
     doc: [
-      { in: 'more-features', at: 220, text: '{"type":"saveMap","name"?:str,"note"?:str,"collection"?:str} = SAVE THE MAP AS IT IS NOW TO THE READER\'S ACCOUNT — the layers that are on, the date on the clock, the base map, the camera and the caption, exactly what a share link holds — under a name, in a collection beside the saved places, so it opens again on any device («保存した地図»). With no name it takes the map\'s caption or the date. Saving the same map again updates it and says it was already saved. Use for 「この地図を保存して」「今の表示を『1914年のヨーロッパ』として保存」「京都旅行に入れておいて」, "save this map", "keep this view as Europe 1914 in my Field trip collection"; ' },
+      { in: 'more-features', at: 220, text: '{"type":"saveMap","name"?:str,"note"?:str,"collection"?:str,"what"?:"map"|"myMap"|"tour"|"atlasTour"|"answer","entry"?:str} = SAVE THE MAP AS IT IS NOW TO THE READER\'S ACCOUNT — the layers that are on, the date on the clock, the base map, the camera and the caption, exactly what a share link holds — under a name, in a collection beside the saved places, so it opens again on any device («保存した地図», the Library). With no name it takes the map\'s caption or the date. Saving the same map again updates it and says it was already saved. "what" keeps something else the reader made of a map, as ONE saved document in the same Library: "myMap" the reader\'s own drawn map on show (pins, lines, areas — マイマップ) over the map as it is now; "tour" the tour being written in the tour builder (ツアー作成の下書き); "atlasTour" the tour you assembled in this tab with panel.tour addStep; "answer" a notebook entry (its "entry" id, else the newest) kept as a map with its question and answer. A saved tour (several steps) can be filed in a collection, published read-only and played by whoever opens the link. Use for 「この地図を保存して」「今の表示を『1914年のヨーロッパ』として保存」「京都旅行に入れておいて」「このツアーをアカウントに保存」「マイマップを別の端末でも開けるように」「さっきの回答を地図として保存」, "save this map", "keep this view as Europe 1914 in my Field trip collection", "save my tour to my account"; ' },
     ],
-    schema: () => ({ type: 'object', properties: { name: str(), note: str(), collection: str() } }),
+    schema: () => ({ type: 'object', properties: { name: str(), note: str(), collection: str(), what: one('map', 'myMap', 'tour', 'atlasTour', 'answer'), entry: str() } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
       const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
       if (!HOST.user) return R(false, warn(T('Sign in to keep maps in your account.', '地図をアカウントに保存するにはログインしてください。')), { meta: SIGN_IN });
       const M = await import('./my-places.js');
-      let state = '';
-      try { const h = MapState.hash(); state = MapState.carries(h) ? h : ''; } catch (_) { state = ''; }
-      const r = await M.saveView(HOST.DB, { name: a.name, note: a.note, collection: a.collection, state, lang });
+      const w = await docToSave(a, T);
+      if (!w.ok && w.text) return R(false, warn(esc(w.text)), needs(w.code));
+      if (!w.ok) return R(false, warn(esc(M.placeFailureText('no_map', lang))), needs(w.code));
+      const r = await M.saveView(HOST.DB, { doc: w.doc, name: a.name, note: a.note, collection: a.collection, lang });
       if (!r.ok) return R(false, warn(esc(M.placeFailureText(r.error, lang))), r.error === 'sign_in' ? { meta: SIGN_IN } : needs(String(r.error || 'failed').toUpperCase()));
+      const what = M.kindLabel(w.doc.kind, lang) + (w.doc.steps.length > 1 ? ' (' + T(w.doc.steps.length + ' steps', w.doc.steps.length + ' ステップ') + ')' : '');
       return R(true, note(esc(r.created
-        ? T('Map saved to My places: ' + r.name + ' (' + r.count + ' saved)', '地図をマイプレイスに保存しました: ' + r.name + '（計 ' + r.count + ' 件）')
-        : T('This map was already saved — updated: ' + r.name, 'この地図は保存済みでした（更新）: ' + r.name))), { meta: { code: r.created ? 'OK' : 'ALREADY_SAVED', category: 'ok', retryable: false, userGoalSatisfied: true, produced: ['explanation'], viewId: String(r.id) } });
+        ? T(what + ' saved to the Library: ' + r.name + ' (' + r.count + ' saved)', what + 'をライブラリに保存しました: ' + r.name + '（計 ' + r.count + ' 件）')
+        : T('This was already saved — updated: ' + r.name, '保存済みでした（更新）: ' + r.name))), { meta: { code: r.created ? 'OK' : 'ALREADY_SAVED', category: 'ok', retryable: false, userGoalSatisfied: true, produced: ['explanation'], viewId: String(r.id), kind: w.doc.kind, steps: w.doc.steps.length } });
     },
   },
   {
     row: ['places.openView',            'openSavedMap',   'openMap,openSavedView,restoreSavedMap,loadSavedMap', 'places', 'time', 'camera,map.layer,time', 'map,time', 'session', 'none', '', ''],   /* observed as notebook.open is: the restore is the share link's own */
     doc: [
-      { in: 'more-features', at: 230, text: '{"type":"openSavedMap","name"?:str,"id"?:str,"collection"?:str} = OPEN ONE OF THE READER\'S SAVED MAPS — the whole map comes back as it was saved (layers, date, base map, camera, caption), the way its share link would open it. Name it (exact or part of its name) or give its id from myPlaces; when several match, nothing is opened and they are listed. Use for 「保存した『1914年のヨーロッパ』を開いて」「京都旅行の地図を出して」, "open my saved map Europe 1914"; ' },
+      { in: 'more-features', at: 230, text: '{"type":"openSavedMap","name"?:str,"id"?:str,"collection"?:str,"asMap"?:bool,"step"?:num} = OPEN ONE OF THE READER\'S SAVED MAPS — the whole map comes back as it was saved (layers, date, base map, camera, caption, the reader\'s own drawing), the way its share link would open it. A saved TOUR or a saved briefing of several answers (several steps) is PLAYED in the classroom mode from "step" (default 1) — pass "asMap":true to open only its first map instead. Name it (exact or part of its name) or give its id from myPlaces; when several match, nothing is opened and they are listed. Use for 「保存した『1914年のヨーロッパ』を開いて」「京都旅行の地図を出して」「保存したツアーを再生して」, "open my saved map Europe 1914", "play my saved Meiji tour"; ' },
     ],
-    schema: () => ({ type: 'object', properties: { name: str(), id: str(), collection: str() } }),
+    schema: () => ({ type: 'object', properties: { name: str(), id: str(), collection: str(), asMap: bool(), step: num(1, 200) } }),
     async run(a, dctx, K) { const R = K.R, note = K.note, warn = K.warn, esc = K.esc, HOST = K.HOST;
       const lang = HOST.lang, T = (en, jp) => IntMapLang.t(lang, en, jp);
       if (!HOST.user) return R(false, warn(T('Sign in to open your saved maps.', '保存した地図を開くにはログインしてください。')), { meta: SIGN_IN });
@@ -228,8 +278,16 @@ export default [
       const r = await M.listViews(HOST.DB);
       if (!r.ok) return R(false, warn(esc(M.placeFailureText(r.error, lang))), r.error === 'sign_in' ? { meta: SIGN_IN } : null);
       const hit = M.matchPlaces(r.views, { id: a.id, name: a.name, collection: a.collection });
-      if (!hit.length) return R(false, warn(esc(r.views.length ? T('No saved map matches that.', '一致する保存した地図はありません。') : T('No saved maps yet.', '保存した地図はまだありません。'))) + viewLines(r.views, esc, T), needs('NOT_FOUND', { semanticTarget: String(a.name || a.id || a.collection || '') }));
-      if (hit.length > 1) return R(false, warn(esc(T('Several saved maps match — which one?', '複数の保存した地図が一致します。どれですか？'))) + viewLines(hit, esc, T), needs('AMBIGUOUS'));
+      if (!hit.length) return R(false, warn(esc(r.views.length ? T('No saved map matches that.', '一致する保存した地図はありません。') : T('No saved maps yet.', '保存した地図はまだありません。'))) + viewLines(r.views, esc, T, lang), needs('NOT_FOUND', { semanticTarget: String(a.name || a.id || a.collection || '') }));
+      if (hit.length > 1) return R(false, warn(esc(T('Several saved maps match — which one?', '複数の保存した地図が一致します。どれですか？'))) + viewLines(hit, esc, T, lang), needs('AMBIGUOUS'));
+      /* (map-document-unify) a document of several steps plays as a tour, read back by the classroom mode itself; one map opens */
+      const d = fromSavedView(hit[0]);
+      if (d && d.steps.length > 1 && !a.asMap) {
+        const p = (await M.playDoc(d, a.step || 1)) || {};
+        if (p.step == null) return R(false, warn(esc(M.placeFailureText('no_map', lang))), needs('NO_MAP'));
+        return R(true, note(esc(T('Playing the saved tour: ' + hit[0].name + ' — step ' + p.step + ' of ' + d.steps.length, '保存したツアーを再生しています: ' + hit[0].name + '（ステップ ' + p.step + ' / ' + d.steps.length + '）'))),
+          { meta: { code: 'OK', category: 'ok', retryable: false, userGoalSatisfied: true, produced: ['map', 'time'], tour: { step: p.step, of: d.steps.length, settled: !!p.ok } } });
+      }
       const o = M.openView(hit[0]);
       if (!o.ok) return R(false, warn(esc(M.placeFailureText('no_map', lang))), needs('NO_MAP'));
       return R(true, note(esc(T('Opened the saved map: ' + hit[0].name, '保存した地図を開きました: ' + hit[0].name))), { meta: { code: 'OK', category: 'ok', retryable: false, userGoalSatisfied: true, produced: ['map', 'time'] } });

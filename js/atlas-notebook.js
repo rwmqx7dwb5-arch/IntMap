@@ -30,8 +30,24 @@ import {
 import { icon } from './icons.js';
 import { IntMapLang } from './lang-registry.js';
 import './safe-html.js';
+import * as bus from './bus.js';   /* (map-document-unify) the Library is asked for through the declared event */
+import { sharedIds, sharedDisplayIds } from './layer-manifest.js';   /* which field of the share link a layer box is */
+import { fromNotebookEntry } from './map-doc.js';
 
 const PREF_KEY = 'intmap_atlas_notebook';
+
+/* ══ (map-document-unify) AN ANSWER, KEPT AS A MAP ═════════════════════════════════════════════════
+   The view the notebook captured (`captureView` below) becomes the map state's fields through js/map-doc.js
+   stateOfNotebookView — the one translation; this is what it needs from the page: which field of the share link
+   each ticked box belongs to (the layer manifest's `share` rows: a data layer → `l`, a display item → `d`; a box
+   that is neither is not something a link carries). */
+let _fields = null;
+export function layerField(id) {
+  if (!_fields) _fields = { layer: new Set(sharedIds()), display: new Set(sharedDisplayIds()) };
+  return _fields.layer.has(id) ? 'layer' : (_fields.display.has(id) ? 'display' : null);
+}
+/** ask the Library to keep a map document in the account (js/auth-ui.js opens it with the app host) */
+export function keepInLibrary(doc) { if (!doc) return false; bus.emit('intmap-open-library', { doc }); return true; }
 const TABLE = 'atlas_notebook_entries';
 const esc = (s) => IntMapSafe.html(s);   /* js/safe-html.js — the one output encoder (imported above for its side effect: it publishes, it does not export) */
 
@@ -259,13 +275,14 @@ export function makeAtlasNotebook() {
        — each opening is a whole literal, so the declaration is readable where the markup is written */
     const OPEN = { none: '<button type="button" class="atl-nb-act" data-effect="none"', private: '<button type="button" class="atl-nb-act" data-effect="private"',
       outward: '<button type="button" class="atl-nb-act" data-effect="outward"', destructive: '<button type="button" class="atl-nb-act" data-effect="destructive"' };
-    const EFFECT = { replay: 'none', compare: 'private', ask: 'outward', md: 'none', brief: 'none', pin: 'private', del: 'destructive' };   /* brief: opens the composer — the link is made there, and handed on only by the reader's own copy or share */
+    const EFFECT = { replay: 'none', compare: 'private', ask: 'outward', md: 'none', brief: 'none', savemap: 'private', pin: 'private', del: 'destructive' };   /* savemap: the answer, saved into the account's Library as a map (map-document-unify) */   /* brief: opens the composer — the link is made there, and handed on only by the reader's own copy or share */
     const btn = (act, ic, label, dis) => OPEN[EFFECT[act]] + ' data-act="' + act + '"' + (dis ? ' disabled' : '') + '>' + icon(ic, { size: 16 }) + '<span>' + esc(label) + '</span></button>';
     let h = '<div class="atl-nb-dq">' + esc(e.question) + '</div><div class="atl-nb-meta">' + esc(fmtWhen(e.at)) + '</div>';
     h += '<div class="atl-nb-acts">' + btn('replay', 'map', L('Rebuild map', '地図を再現'), !nRep && !e.view)
       + btn('compare', 'reset', L('Compare with now', '今と比べる'), !(e.results || []).length)
       + btn('ask', 'chat', L('Ask again', 'もう一度訊く')) + btn('md', 'share', L('Export', '書き出し'))
       + (D.share ? btn('brief', 'link', L('Share as briefing', 'ブリーフィングで共有')) : '')
+      + btn('savemap', 'save', L('Save as a map', '地図として保存'), !e.view)
       + btn('pin', 'star', e.pinned ? L('Unpin', 'ピンを外す') : L('Pin to top', 'ピン留め')) + btn('del', 'trash', L('Delete', '削除')) + '</div>';
     if (chain.length > 1) {
       h += '<div class="atl-nb-chain"><span>' + esc(L('This question in the notebook', 'この問いの記録')) + '</span>'
@@ -297,6 +314,7 @@ export function makeAtlasNotebook() {
       else if (act === 'ask') askAgain(e);
       else if (act === 'md') exportMd([e.id]);
       else if (act === 'brief') { if (D.share) D.share([e.id]); }
+      else if (act === 'savemap') keepInLibrary(fromNotebookEntry(e, { classify: layerField }));
       else if (act === 'pin') { await store.update(e.id, { pinned: !e.pinned }); renderDetail(body, e.id); }
       else if (act === 'del') { if (!confirm(L('Delete this entry from the notebook?', 'この記録をノートから削除しますか？'))) return; await removeEntry(e.id); view = 'list'; render(); }
     }));

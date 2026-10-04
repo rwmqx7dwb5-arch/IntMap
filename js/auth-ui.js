@@ -197,6 +197,9 @@ export function authUi(HOST){
     fb.onclick=()=>{ try{ window._openFeedback&&window._openFeedback(); }catch(_){} };
     if(settingsBtn&&settingsBtn.parentNode) settingsBtn.parentNode.insertBefore(fb,settingsBtn);
     else document.body.appendChild(fb);
+    /* (map-document-unify) the Library is asked for by the places that hold no host of their own — the tour builder, Atlas's
+       notebook and briefing — with the map document to save into the account, if any (js/bus.js 'intmap-open-library') */
+    bus.on('intmap-open-library',(e)=>{ const d=e&&e.detail; import('./my-places.js').then(M=>M.openMyPlaces(HOST,{ save:(d&&d.doc)||null })).catch(()=>{}); });
 
     const m=document.createElement('div'); m.id='auth-modal';
     m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:calc(var(--z-toast) + 2000);padding:20px;';
@@ -476,7 +479,7 @@ export function authUi(HOST){
 
         <div class="acct-grp-t">${_authL('Your data','あなたのデータ')}</div>
         <div class="acct-card acct-rows">
-          <button class="acct-row" id="acct-my-places">${_authL('My places','マイプレイス')}</button>
+          <button class="acct-row" id="acct-my-places">${_authL('Library · My places','ライブラリ（マイプレイス）')}</button>
           <button class="acct-row" id="acct-watch">${_authL('Watched places','見守る場所')}</button>
           <button class="acct-row" id="acct-your-data">${_authL('What IntMap holds about you','IntMap が保持しているあなたのデータ')}</button>
           <button class="acct-row" id="acct-export" data-effect="private">${_authL('Download a copy of your data (JSON)','データのコピーをダウンロード（JSON）')}</button>

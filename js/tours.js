@@ -40,6 +40,7 @@
 
 import { IntMapLang } from './lang-registry.js';   /* pickArgs() — the same tuple helper js/showcase.js uses */
 import { SHOWCASE, CAPTURED } from './showcase.js';
+import { toBase64url, fromBase64url, deflateRaw, inflateRaw, canCompress } from './link-codec.js';   /* (map-document-unify) the one packing */
 
 const LA = /** @type {(...a: string[]) => string[]} */ (IntMapLang.pickArgs());
 
@@ -287,28 +288,24 @@ export const CUSTOM_TOUR_ID = 'custom';
    (re-measure; the method is in dev-notes/2026-10-03-tour-builder.md) or the tour moves out of the query. */
 export const TOUR_REQUEST_LIMIT = 8192;
 
-const b64url = (bytes) => {
-  let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 0x8000)));
-  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-};
-const unb64url = (s) => {
-  const b = atob(String(s).replace(/-/g, '+').replace(/_/g, '/'));
-  const out = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) out[i] = b.charCodeAt(i);
-  return out;
-};
-async function pipe(bytes, stream) {
-  const res = new Response(new Blob([bytes]).stream().pipeThrough(stream));
-  return new Uint8Array(await res.arrayBuffer());
-}
-const canCompress = () => typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
+/* (map-document-unify) the packing is js/link-codec.js — the same bytes this file wrote with its own copy, which the
+   briefing's codec also had (tests/map-document-unify-checks holds a tour written by that copy against this one) */
+
+/* ⚠ HOW BIG A TOUR MAY INFLATE TO. A `t` is somebody else's bytes, and DEFLATE can expand a few kilobytes a
+   thousandfold, so the reader stops at this size and the tour is not read (the player then shows the list of
+   tours, as for any unreadable `t`). A DECISION, NOT A MEASUREMENT: twice the account's ceiling on one saved
+   document's steps (supabase/migrations/20261004120000_map_documents.sql, 1 MiB) — the largest tour IntMap itself
+   writes into a `t` is a saved document played from the Library — doubled for the JSON escaping that differs
+   between the two spellings. Expire when that ceiling moves. */
+export const TOUR_INFLATED_MAX = 2 * 1048576;
 
 /** a written tour → the text of its `t` parameter. `tour` is { title, steps: [{ hash, title, say, ask }] } */
 export async function encodeCustomTour(tour) {
   const steps = ((tour && tour.steps) || []).map((s) => [String((s && s.hash) || '').replace(/^#/, ''), String((s && s.title) || ''), String((s && s.say) || ''), String((s && s.ask) || '')]);
   const json = JSON.stringify({ v: 1, n: String((tour && tour.title) || ''), s: steps });
   const bytes = new TextEncoder().encode(json);
-  if (canCompress()) return 'z' + b64url(await pipe(bytes, new CompressionStream('deflate-raw')));
-  return 'j' + b64url(bytes);
+  if (canCompress()) return 'z' + toBase64url(await deflateRaw(bytes));
+  return 'j' + toBase64url(bytes);
 }
 
 /** the text of a `t` parameter → { title, steps: [{ key, title, say, ask, hash }] }, or null when it is not a tour.
@@ -318,8 +315,8 @@ export async function decodeCustomTour(t, canon) {
   const s = String(t || ''); if (s.length < 2) return null;
   let json;
   try {
-    const bytes = unb64url(s.slice(1));
-    if (s[0] === 'z') { if (!canCompress()) return null; json = new TextDecoder().decode(await pipe(bytes, new DecompressionStream('deflate-raw'))); }
+    const bytes = fromBase64url(s.slice(1));
+    if (s[0] === 'z') { if (!canCompress()) return null; json = new TextDecoder().decode(await inflateRaw(bytes, TOUR_INFLATED_MAX)); }
     else if (s[0] === 'j') json = new TextDecoder().decode(bytes);
     else return null;
   } catch (_) { return null; }

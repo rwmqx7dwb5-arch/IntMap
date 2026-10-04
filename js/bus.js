@@ -143,6 +143,11 @@ export const EVENTS = Object.freeze({
     aliases: ['intmap:ai-limit'],
     pending: { 'js/ai-core.js': 'pinned', 'js/supporter.js': 'pinned' },
   },
+  'intmap-open-library': {
+    means: 'something asks for the Library (js/my-places.js — places, saved maps, tours, Atlas answers), with a map document (js/map-doc.js) to save into the account if it carries one; js/auth-ui.js opens it with the app host',
+    detail: '{ doc }',
+    from: ['js/atlas-notebook.js', 'js/tour-builder.js'],
+  },
   'intmap-theme': {
     means: 'the colour theme (data-theme on <html>) changed between light and dark; the sky re-renders',
     detail: null,

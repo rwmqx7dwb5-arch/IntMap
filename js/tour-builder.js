@@ -31,6 +31,8 @@
 import { MapState } from './map-state.js';
 import { CUSTOM_TOUR_ID, TOUR_REQUEST_LIMIT, encodeCustomTour, customTourLink, tourQuery } from './tours.js';
 import { icon } from './icons.js';
+import * as bus from './bus.js';   /* (map-document-unify) the Library is asked for through the declared event */
+import { fromTourDraft, hasMap } from './map-doc.js';   /* (map-document-unify) the draft as the one map document the account keeps */
 /* the player's reading of the language, its HTML encoder and its way to the map (js/tour-player.js) */
 import { IntMapLang } from './lang-registry.js';
 import { readerLang, escapeHtml, mapReady, openLink, startTour } from './tour-player.js';
@@ -89,7 +91,7 @@ export async function shareLink() {
   if (!draft.steps.length) return { ok: false, reason: 'no-steps' };
   const m = await measure();
   if (m.level === 'over') return { ok: false, reason: 'too-long', bytes: m.bytes, limit: m.limit, level: m.level };
-  let base = './index.html'; try { base = location.origin + location.pathname; } catch (_) { }
+  const base = MapState.pageLink('', '') || './index.html';   /* (map-document-unify) the one link assembly */
   const first = draft.steps.find((s) => s.hash);
   return { ok: true, url: customTourLink(base, m.t, first === draft.steps[0] ? first.hash : ''), bytes: m.bytes, limit: m.limit, level: m.level };
 }
@@ -143,6 +145,15 @@ export function clearDraft() { draft = { title: '', steps: [] }; changed(true); 
 /** the draft as plain data (steps from 1) */
 export function getDraft() { return { title: draft.title, steps: draft.steps.map((s, i) => ({ step: i + 1, title: s.title, say: s.say, ask: s.ask, hash: s.hash })) }; }
 
+/** (map-document-unify) keep the draft in the account: the Library (js/my-places.js, opened by the app's account owner
+    through js/bus.js 'intmap-open-library') saves it as a tour document — the same door every saved map takes */
+export function saveToAccount() {
+  const doc = fromTourDraft(getDraft(), 'tour-draft');
+  if (!doc) return { ok: false, reason: 'no-steps' };
+  if (!hasMap(doc)) return { ok: false, reason: 'no-link' };
+  bus.emit('intmap-open-library', { doc });
+  return { ok: true, steps: doc.steps.length };
+}
 /** show step n's map on the map (the share link's own restore — the path a pasted link takes) */
 export function showStep(n) {
   const i = idx(n); if (!inRange(i)) return { ok: false, reason: 'no-step' };
@@ -246,6 +257,8 @@ function render() {
         + '<button type="button" class="tb-btn" data-tb="preview" data-i="0"' + (N ? '' : ' disabled') + '>' + icon('play', { size: 16 }) + H(t('Preview', 'プレビュー')) + '</button>'
         + '<button type="button" class="tb-btn" data-tb="copy"' + (N ? '' : ' disabled') + '>' + icon('link', { size: 16 }) + H(t('Copy link', 'リンクをコピー')) + '</button>'
         + (canShare ? '<button type="button" class="tb-btn" data-tb="share"' + (N ? '' : ' disabled') + '>' + icon('share', { size: 16 }) + H(t('Share', '共有')) + '</button>' : '')
+        /* (map-document-unify) into the account: the Library keeps the tour on every device, files it in a collection and publishes it */
+        + '<button type="button" class="tb-btn" data-tb="account" data-effect="private"' + (N ? '' : ' disabled') + '>' + icon('save', { size: 16 }) + H(t('Save to account', 'アカウントに保存')) + '</button>'
       + '</div>'
       + '<div class="tb-said" aria-live="polite">' + saidHtml() + '</div>'
       + (N || draft.title ? '<button type="button" class="tb-clear" data-tb="clear">' + H(t('Start over (delete this draft)', '最初からやり直す（下書きを削除）')) + '</button>' : '')
@@ -312,6 +325,7 @@ async function onClick(e) {
     removeStep(n); cur = -1; return;
   }
   if (a === 'copy') { await copyLink(); return; }
+  if (a === 'account') { const r = saveToAccount(); if (!r.ok) say(reasonText(r)); return; }
   if (a === 'share') { await nativeShare(); return; }
   if (a === 'clear') { if (window.confirm(t('Delete this draft tour? This cannot be undone.', 'この下書きのツアーを削除しますか？ 元に戻せません。'))) { cur = -1; said = { text: '', url: '' }; clearDraft(); } }
 }

@@ -25,6 +25,8 @@
 
 import { normalize } from './atlas-notebook-store.js';
 import { encode, captionText } from './map-state.js';
+import { toBase64url, fromBase64url, deflateRaw, inflateRaw } from './link-codec.js';   /* (map-document-unify) the one packing */
+import { stateOfNotebookView } from './map-doc.js';
 
 export const BRIEFING_FORMAT = 'intmap-briefing';
 const BRIEFING_VERSION = 1;
@@ -90,35 +92,13 @@ export function readBriefing(obj) {
     lang: String(obj.lang || '').slice(0, 12), at: +obj.at || 0, sections, rejected: all.length - sections.length };
 }
 
-/* ══ PACKING ═══════════════════════════════════════════════════════════════════════════════════════ */
-const b64url = (bytes) => {
-  let s = ''; const CH = 0x8000;
-  for (let i = 0; i < bytes.length; i += CH) s += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
-  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-};
-const unb64url = (s) => {
-  const b = atob(s.replace(/-/g, '+').replace(/_/g, '/'));
-  const out = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) out[i] = b.charCodeAt(i);
-  return out;
-};
-async function pipe(bytes, stream, cap) {
-  const w = stream.writable.getWriter();
-  w.write(bytes).catch(() => { }); w.close().catch(() => { });
-  const r = stream.readable.getReader(), parts = []; let n = 0;
-  for (;;) {
-    const { value, done } = await r.read();
-    if (done) break;
-    n += value.length;
-    if (cap && n > cap) { try { await r.cancel(); } catch (_) { } throw new Error('too-large'); }
-    parts.push(value);
-  }
-  const out = new Uint8Array(n); let k = 0; parts.forEach((p) => { out.set(p, k); k += p.length; });
-  return out;
-}
+/* ══ PACKING ═══════════════════════════════════════════════════════════════════════════════════════
+   (map-document-unify) js/link-codec.js — the one deflate-raw + base64url a link carries (a written tour's `t` is
+   the same packing); the ceiling below is this reader's own */
 /** the briefing object → the link's `b` value */
 export async function packBriefing(obj) {
   const bytes = new TextEncoder().encode(JSON.stringify(obj));
-  return PACKING + b64url(await pipe(bytes, new CompressionStream('deflate-raw'), 0));
+  return PACKING + toBase64url(await deflateRaw(bytes));
 }
 /** a link's `b` value → the validated briefing (readBriefing). Throws a named Error: 'not-a-briefing' |
     'unknown-packing' | 'corrupt' | 'too-large' | 'newer-version' | 'empty-briefing' */
@@ -126,9 +106,9 @@ export async function unpackBriefing(packed) {
   const p = String(packed || '');
   if (!/^[A-Za-z0-9_-]+$/.test(p)) throw new Error('not-a-briefing');
   if (p.charAt(0) !== PACKING) throw new Error('unknown-packing');
-  let bytes; try { bytes = unb64url(p.slice(1)); } catch (_) { throw new Error('corrupt'); }
+  let bytes; try { bytes = fromBase64url(p.slice(1)); } catch (_) { throw new Error('corrupt'); }
   let raw;
-  try { raw = await pipe(bytes, new DecompressionStream('deflate-raw'), MAX_INFLATED); }
+  try { raw = await inflateRaw(bytes, MAX_INFLATED); }
   catch (e) { throw new Error(e && e.message === 'too-large' ? 'too-large' : 'corrupt'); }
   let obj; try { obj = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(raw)); } catch (_) { throw new Error('corrupt'); }
   return readBriefing(obj);
@@ -140,14 +120,9 @@ export async function unpackBriefing(packed) {
    The rest of that view (the clock and the layers) is put back by the briefing itself, through the same
    restorers the notebook and undo use: absent from the link, the map-state restore first states «now, no
    data layers», and the briefing then applies its own once that restore has settled. */
-function viewOfSection(s) {
-  const c = s && s.view && s.view.camera;
-  if (!c || !isFinite(+c.lng) || !isFinite(+c.lat) || !isFinite(+c.zoom)) return null;
-  return {
-    view: { lng: +c.lng, lat: +c.lat, zoom: +c.zoom, bearing: +c.bearing || 0, pitch: +c.pitch || 0, proj: c.projection === 'flat' ? 'flat' : 'globe' },
-    base: c.base === 'satellite' ? 'sat' : 'map', terrain: c.projection === '3d-terrain',
-  };
-}
+/* (map-document-unify) the camera's half of js/map-doc.js stateOfNotebookView — the one translation of the notebook's
+   view into the map state's fields (a saved Atlas answer takes the clock and the layers from the same function) */
+const viewOfSection = (s) => stateOfNotebookView(s && s.view);
 /** `page` is the app's address without query or fragment (location.origin + location.pathname); `here` is the
     composer's own map ({ view, base, terrain } as js/map-state.js reads them), used only when no section kept a
     camera — a link needs a `v` to be a map link at all. '' when neither has one. */

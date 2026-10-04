@@ -520,6 +520,17 @@ map-state.js                      地図の状態の**正本**（MapState）。�
                                   （`encode` / `decode`）・共有リンク・セッション保存（`session()`）・Atlas の camera / time
                                   節はその写像。値は持ち主（`own`）の `read()` が返し、ストアは複製を持たない。復元は
                                   世代つきの 1 回の適用（`restore`）で、変化の通知は「復元」か「読者」かを述べる。
+                                  外から来たフラグメントの書き直し（`canonical`）と、このページのアドレス＋クエリ＋フラグメントの
+                                  組み立て（`pageLink`。共有リンク・埋め込み・マイマップ・自作ツアー・ブリーフィング・公開コレクション・
+                                  ニュースのストーリーが使う）もここに 1 つ
+link-codec.js                     リンクに文書を詰める**唯一の梱包（純関数）**——bytes ⇄ deflate-raw ⇄ base64url。展開は読み手が渡す上限で
+                                  読むのをやめて 'too-large' と言う（切り詰めない）。自作ツアーの `t`（tours.js）とブリーフィングの `b`
+                                  （atlas-briefing-codec.js）が使う。出力は以前の 2 つの写しとバイト単位で同じ
+map-doc.js                        **地図ドキュメント（純関数）**——保存した地図・マイマップ・ツアー・Atlas の回答を 1 つの形
+                                  `{v,id,kind,title,note,steps:[{state,title,say,ask}],origin,updatedAt}` にし、それぞれと相互に変換する
+                                  （fromSavedView / toSavedView / fromMyMap / fromTourDraft / fromCustomTour / toTourInput / toTourLink /
+                                  toLink / fromNotebookEntry / fromBriefing）。ノートの view を地図の状態の欄へ写す唯一の関数
+                                  `stateOfNotebookView` もここ（ブリーフィングのリンクのカメラも同じ関数）。外から来たフラグメントは必ず codec が書き直す
                                   window 公開なし（import で読む）
 briefing-link.js                  MapState の `brief` 欄（リンクの `&b=`）の持ち主。起動時から欄を持つのでアドレスの書き直しで
                                   ブリーフィングが落ちない。値を受けたら Atlas のカーネルを取りに行き、中身は見ない
@@ -1309,10 +1320,14 @@ account-data.js                  「あなたのデータ」——アカウン�
 my-places.js                      マイプレイス——アカウントに保存した場所（save_place が唯一の入口・同じ位置は 1 件）。表示はセッションの
                                   ピン（HOST.addPin）を使う。アカウントのシート・ピンのポップアップ・Atlas から。オンデマンド（my-places）。
                                   保存した地図（save_view・共有リンクのフラグメントを codec に書き直させて保存し、IntMapBookmark.restore で開く）と、
-                                  コレクションごとの公開の操作もこのシート（collection-workspace）
+                                  コレクションごとの公開の操作もこのシート（collection-workspace）。このシートが**ライブラリ**——保存した場所・
+                                  地図・マイマップ・ツアー・Atlas の回答を種類の札つきで 1 つの一覧に並べ、各行から開く（複数段は授業モードで
+                                  再生）・ワークシート印刷・コレクションへ移す。「この端末」の節はアカウントに未保存のマイマップ・作成中の
+                                  ツアー・Atlas の一時ツアーを持ち主に訊いて並べ、「アカウントに保存」する（map-document-unify）。保存は
+                                  地図ドキュメントを save_view に渡す（1 枚の地図は従来どおりの 4 引数、段のあるものは kind と steps つき）
 shared-collection.js              公開コレクション——publish_collection / 公開の停止（所有者の DELETE）/ 公開の読み取り shared_collection(token) /
                                   自分のアカウントへの写し copy_shared_collection と、`?collection=<token>` で開いたページのカード（場所をピンで、
-                                  地図を一覧で）。auth-ui.js がそのページでだけ読み込む。オンデマンド（collection-workspace）
+                                  地図を一覧で。複数段の地図＝ツアーは授業モードで再生）。auth-ui.js がそのページでだけ読み込む。オンデマンド（collection-workspace）
 place-watch.js                    見守る場所——保存した場所の周辺の地震（USGS）・気象警報（警報レイヤー自身の記録）・火山の警戒レベル
                                   （volcano-intel）・独立した複数媒体が報じた出来事（news_events）を、IntMap を開いている間 10 分ごとに
                                   読み、新しいものをトースト 1 回とアカウントボタンの印で知らせ、ダイジェストのシートに出す。判定は
@@ -1696,9 +1711,9 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全22本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（49本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（50本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
-  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション。24本）
+  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 攻撃ケース ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継のレート制限 ＋ 監査の是正 ＋ エラー記録 ＋ 能力ベクトル ＋ SECURITY DEFINER の呼び出し権限 ＋ 出自の固定 ＋ AI の費用台帳 ＋ 匿名の直接書き込みの全数 ＋ 再受信の答え ＋ 匿名の利用統計 ＋ AI の日次カウンタは負にならない ＋ 組織からの相談と支援者の一覧 ＋ Atlas の調査ノート（本人だけ） ＋ ニュースの読み口（脈・日報・企業・取り込みの健全性） ＋ アカウントのデータ（目録・書き出し・マイプレイス） ＋ 見守る場所 ＋ 保存した地図と公開コレクション ＋ 地図ドキュメント（ツアー・回答の段）。29本）
   functions/<name>/index.ts       Edge Functions（22本。一覧と各本の役割は Architecture.md §6.2。
                                   usage-count/shape.js は関数の中の宣言で、ブラウザも import する）
   functions/ai-proxy/*.ts         ai-proxy は仕事ごとのモジュール（index.ts＝経路の表・ask.ts＝1 回の要求・

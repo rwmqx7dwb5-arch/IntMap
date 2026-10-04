@@ -142,6 +142,12 @@ A migration is **destructive** if it contains any of: `DROP TABLE`, `DROP COLUMN
 `DISABLE ROW LEVEL SECURITY`, `DROP POLICY` (without an immediate re-create), replacing a
 function, or `DROP INDEX`.
 
+A UNIQUE that is **the same set on every existing row** — a generated column equal to the old key wherever the new
+column is NULL — cannot fail on the data, and the row identity of what is already stored does not change. Add the new
+constraint **before** dropping the old one, find the old one by its columns rather than by the name PostgreSQL gave it,
+and still treat the migration as one of these (worked example: `20261004120000_map_documents.sql`, which states its blast
+radius and recovery path in its header).
+
 For any of these:
 1. **Take a fresh backup** and verify it restores (`BACKUP-RESTORE.md`).
 2. State the blast radius in the PR (what data/permission is affected, how to detect breakage).
