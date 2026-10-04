@@ -105,3 +105,24 @@ newsjp: 歴史地図の国境を、Seshat の Cliopatria（紀元前 3400 年か
 `npm run check:histclio`（新設・`scripts/build-hist-clio.mjs --check`）、`tests/hist-coverage-expansion-checks.test.mjs`。
 `scripts/hist-fidelity.mjs` は合成の和集合を測り、**世界の陸地に対する**政体の割合 `polityLand` と第 1 級の割合
 `unitLand` を新たに記録する（従来の `pct` は分母が政体の土地なので、政体が増えると下がる）。
+
+### check:perf の天井を上げた理由（`--update`、超えた行だけ）
+
+rebase 後の build で測った:
+- `dist.total` 866,001.7 → 924,051.8 kB・`dist.data` 728,195.1 → 760,169.7 kB——新しい 2 つの記録
+  （`data/hist-clio.js` 19.3 MB・`data/hist-eras-rest.js` 7.4 MB）と、それを年で切った `data/hvt/` のタイル。
+  どちらも時計がその年を求めたときだけ、その瞬間のチャンクを Range で読む（起動時には読まない）。
+- `eager.raw` 4,753.4 → 4,779.0 kB・`eager.gzip` 1,568.6 → 1,577.5 kB・`eager.brotli` 1,182.3 → 1,189.8 kB——
+  起動経路にある `js/time-borders.js`（合成・注記・変化日の精度）と `js/year-book.js`・`js/atlas-cap-time.js`・
+  `js/atlas-reasoning.js` の増分。
+- `check:assets`: 6 MB を超える 2 ファイルに理由を書いた（`scripts/asset-report.mjs` `ALLOW.bigFile`）。
+
+### 統合時に直したもの
+
+- `tests/smoke.spec.js` の 2 か所が地図の鍵を `cs196…` と綴りで待っていた。1960 年は CShapes の下に
+  Cliopatria が答える（グリーンランド・スヴァールバル）ので鍵は `cp:cs196…` になる——`/^(cp:)?cs196/` に。
+- 文書の数（`check:docs`）: 名前表の訳語 13,612・境界の環 74,737 を実体に合わせた。
+- 改行コード: 9 言語の出典ページのうち 7 本は CRLF で、置換の道具が LF に書き換えて全行の差分になっていた。
+  元のバイトに 2 か所の置換だけを当て直した（`git hash-object --no-filters`）。
+- main の #975（日付つき出来事の索引）と重なった年鑑: 合成した答えの日は、その**最初の記録**（CShapes）の
+  索引から読む。記録の説明は「複数の記録を精度の順に重ね……」。
