@@ -25,7 +25,7 @@ export const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 /* ---- Plan → daily free-use limit: PLAN_LIMITS in _shared/ai-ledger.js (ai-one-ledger). It lived here
-   until a second caller (monitor-run's «Run now») had to charge the same allowance — one table, read
+   until a second caller (the since-retired area-monitor «Run now») had to charge the same allowance — one table, read
    by both, rather than a copy in each. */
 /* == (#R491) THE TERM GLOSS IS A SEPARATE LANE, NOT A BIGGER ALLOWANCE =========================
    Selecting a phrase inside an Atlas answer and asking what it means is a different kind of call

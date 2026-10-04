@@ -433,8 +433,9 @@ export function drawTool(HOST){
       toggle(){ if(this.active()) this.exit(); else this.start(); },
       exit(){ state='off'; silent=false; _onFinish=null; raw=[]; coarse=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; lastAreaPx=null; closeAux=null; setData(); unwire(); try{ GE().input.set('dragPan',true); }catch(_){} try{ GE().render.canvas().style.cursor=''; }catch(_){} setBtn(false); if(panel) panel.style.display='none'; },
       onResolution(v){ resolution=Math.max(0,Math.min(100,+v||0)); recomputeLine(); setData(); updateNumbers(); },
-      /* (#R141) Expose the drawn area as a GeoJSON Polygon/MultiPolygon for the area-monitor feature.
-         Finishes the stroke first if it is still being drawn, so "monitor this drawn area" works mid-gesture. */
+      /* (#R141) Expose the drawn area as a GeoJSON Polygon/MultiPolygon (written for the since-retired area
+         monitors; read today by onFinish and the seismic source capture). Finishes the stroke first if it is
+         still being drawn, so a reader asking mid-gesture gets the shape on screen. */
       currentGeometry(){ try{ if(state==='drawing') finish(); const rings=(loopRings||[]).filter(r=>r&&r.length>=4); if(!rings.length) return null; return rings.length===1?{type:'Polygon',coordinates:[rings[0]]}:{type:'MultiPolygon',coordinates:rings.map(r=>[r])}; }catch(_){ return null; } },
       /* Debug/verification hook (same spirit as window.__sat / window.__ai): lets us prove the
          area-invariant-under-the-slider contract and the geodesic length without map interaction. */

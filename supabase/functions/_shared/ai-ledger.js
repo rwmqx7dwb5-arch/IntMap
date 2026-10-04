@@ -2,10 +2,10 @@
 //  IntMap · _shared/ai-ledger.js — every AI call a reader causes goes through ONE ledger  (ai-one-ledger)
 // ----------------------------------------------------------------------------
 //  WHAT WAS FOUND (audit, 2026-09-29):
-//    ① monitor-run's «Run now» called the provider on the server's key and never touched the reader's
-//       AI allowance. ai-proxy charged `consume_ai_turn`; monitor-run charged nothing, so one free
-//       account with its five monitors (monitor_limit, free = 5) could start 5 × 120 = 600 manual
-//       runs an hour (MANUAL_COOLDOWN_MS is 30 s per monitor), each allowed to call the provider,
+//    ① the area-monitor runner's «Run now» (since retired) called the provider on the server's key and
+//       never touched the reader's AI allowance. ai-proxy charged `consume_ai_turn`; the runner charged
+//       nothing, so one free account with its five monitors could start 5 × 120 = 600 manual
+//       runs an hour (30 s cooldown per monitor), each allowed to call the provider,
 //       while the same account was held to 10 turns a day in Atlas. The only
 //       fence was the project-wide spendCeiling, which is a fence on the invoice, not on an account.
 //    ② The plan table and the developer override lived inside ai-proxy, so a second caller that
@@ -19,7 +19,8 @@
 //                                      the project ceiling, ai-quota-fairness)
 //    · the turn ledger's four doors   (openTurn / refundTurn / settleTurn / recordUsage → the
 //                                      SECURITY DEFINER RPCs of public.ai_turns and public.ai_usage)
-//  ai-proxy and monitor-run both call these; neither spells a limit or an RPC of the ledger itself.
+//  ai-proxy calls these (the retired area-monitor runner did too); it spells no limit or RPC of the
+//  ledger itself.
 //
 //  ⚠⚠ NOTHING HERE IS A NEW LIMIT (CONSTITUTION.md §5). The plan numbers are ai-proxy's, moved, not
 //  changed; TURN_MAX_CALLS and TURN_TTL_S stay beside the Atlas turn they describe (ai-proxy). What is
@@ -107,8 +108,8 @@ const firstRow = (data) => (Array.isArray(data) ? data[0] : data) || null;
 /* openTurn — consume one use for TODAY, once per turn key (public.consume_ai_turn).
      → { allowed, charged, used, calls, reason }   reason '' | 'limit' | 'turn_calls'
    The developer consumes nothing (allowed, charged false). An empty turn key charges every call —
-   consume_ai_turn's own rule. `maxCalls` and `ttlSeconds` are the CALLER's (Atlas's turn is not a
-   monitor run); the database clamps both. */
+   consume_ai_turn's own rule. `maxCalls` and `ttlSeconds` are the CALLER's (a turn's bounds are
+   the caller's to state); the database clamps both. */
 export async function openTurn(db, account, o) {
   const opt = o || {};
   if (account && account.isDev) return { allowed: true, charged: false, used: 0, calls: 0, reason: "" };

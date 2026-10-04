@@ -19,7 +19,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/migrations/*.sql` — **唯一の設計図**（50本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
-- `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継の共有レート制限 ＋ 監査の是正＝答えた turn は返金されない・全表の TRUNCATE 不可・search_path・報告の帰属・著者が編集できる列 ＋ エラー記録＝匿名は読めも書けもしない・admin は読むだけ・同じ fingerprint は回数を足す・30 日の保持 ＋ 能力ベクトル ＋ SECURITY DEFINER 関数を `anon` が呼べるのは `anon` に効く RLS が呼ぶものだけ ＋ 出自の固定＝SECURITY DEFINER の search_path に呼び手が CREATE できる schema が無い・公開バケットに一覧用の SELECT ポリシーが無い・コミュニティ投稿の著者名と投稿時刻は DB が書く・INSERT は列単位 grant ＋ 匿名の直接書き込みの全数＝`public` のどの表も `anon` の INSERT を受けない・報告の 2 表は service_role だけが書く ＋ AI の日次カウンタの符号＝`count` 列を持つ全表に下限の CHECK・所有者ロール（Studio）でも負の値を書けない・1 つのターンの返金は課金した 1 回ぶんだけ、課金した日へ ＋ アカウントのデータ＝所有される全表に説明の 1 行がある・目録と書き出しは呼び手のものだけ・書き出せる範囲は削除する範囲と表ごとに一致・マイプレイスの入口は `save_place()` だけで同じ位置は 1 件 ＋ 保存した地図と公開コレクション＝入口は `save_view()` と `publish_collection()` だけ・同じ地図は 1 件・1 コレクション 1 リンク・`anon` は `shared_collection(token)` でそのコレクションだけを id もアカウントも無しに読む・写しは 2 度でも 1 度と同じ・公開をやめるとリンクは死ぬ）。
+- `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表 ＋ 中継の共有レート制限 ＋ 監査の是正＝答えた turn は返金されない・全表の TRUNCATE 不可・search_path・報告の帰属・著者が編集できる列 ＋ エラー記録＝匿名は読めも書けもしない・admin は読むだけ・同じ fingerprint は回数を足す・30 日の保持 ＋ 能力ベクトル ＋ SECURITY DEFINER 関数を `anon` が呼べるのは `anon` に効く RLS が呼ぶものだけ ＋ 出自の固定＝SECURITY DEFINER の search_path に呼び手が CREATE できる schema が無い・公開バケットに一覧用の SELECT ポリシーが無い・コミュニティ投稿の著者名と投稿時刻は DB が書く・INSERT は列単位 grant ＋ 匿名の直接書き込みの全数＝`public` のどの表も `anon` の INSERT を受けない・報告の 2 表は service_role だけが書く ＋ AI の日次カウンタの符号＝`count` 列を持つ全表に下限の CHECK・所有者ロール（Studio）でも負の値を書けない・1 つのターンの返金は課金した 1 回ぶんだけ、課金した日へ ＋ アカウントのデータ＝所有される全表に説明の 1 行がある・目録と書き出しは呼び手のものだけ・書き出せる範囲は削除する範囲と表ごとに一致・マイプレイスの入口は `save_place()` だけで同じ位置は 1 件 ＋ 保存した地図と公開コレクション＝入口は `save_view()` と `publish_collection()` だけ・同じ地図は 1 件・1 コレクション 1 リンク・`anon` は `shared_collection(token)` でそのコレクションだけを id もアカウントも無しに読む・写しは 2 度でも 1 度と同じ・公開をやめるとリンクは死ぬ）。
 
 ### 16.2 RLS の3大保証（テストで実証）
 
@@ -83,8 +83,8 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
   `if:` で secret / 変数を読む skip は理由を宣言したもの（Pages の停止スイッチ `ENABLE_PAGES_DEPLOY`）だけを通す。
   方針 ＝ **Managed backups 優先**＋その pg_dump を予備とする。
 - `.github/workflows/supabase-deploy.yml` — Edge Functions と migration の配備、および nightly のドリフト検査（§15.4）。
-- **pg_cron の job 定義**は migration `20260925090000_cron_jobs_as_code.sql` にある（4 本・名前で
-  `cron.schedule` するので冪等）。秘密は vault（`refresh_news_secret`・`monitor_run_secret`・`news_ingest_secret`）
+- **pg_cron の job 定義**は migration `20260925090000_cron_jobs_as_code.sql` にある（名前で `cron.schedule`
+  するので冪等。旧・地域監視の 1 本は `20261004150000_retire_area_monitors.sql` が外し、残りは 3 本）。秘密は vault（`refresh_news_secret`・`news_ingest_secret`）
   から読み、**secret が vault に無い DB では何も POST しない**（URL は本番のもの）。pg_cron の無い
   ローカル／CI の再構築では何もしない。
 

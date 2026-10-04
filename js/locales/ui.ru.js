@@ -111,7 +111,6 @@ IntMapLang.define('ru', { ui: {
       aiVisHead:"ИИ-обнаружение изменений", aiVisBtn:"Обнаружить изменения", aiVisTitle:"Отчёт об изменениях со спутника", aiVisSub:"Сравнение {a} → {b}", aiVisBefore:"До", aiVisAfter:"После", aiVisCapturing:"Захват снимков…", aiVisPickDates:"Выберите две даты для сравнения.", aiVisNeedsDated:"Переключитесь на провайдера с выбором даты (MODIS / VIIRS / Sentinel-2) в режиме спутника.", aiVisCapFail:"Не удалось захватить снимки карты.",
       mTitleMap:"Карта", mTitleTools:"Инструменты", mDone:"Готово" 
 ,
-      tabMonitors:'Мониторы',
       /* ══ ⚠⚠⚠ (#R239) MOVED HERE — THE KEYED TABLE HAD SIX HOMES AND FIVE OF THEM SPOKE
          FIVE LANGUAGES ═══════════════════════════════════════════════════════════════════════
          js/i18n-late.js, js/data-layers.js, js/wheel-zoom.js, js/workspace.js, js/app-body.js and

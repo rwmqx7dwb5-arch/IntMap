@@ -51,7 +51,7 @@ const json = (body: unknown, status = 200) =>
    the auth user was removed even when rows had NOT been. That is fail-OPEN in the worst possible
    direction: once auth.users is gone the person cannot sign in to ask again, and the rows that
    survived are exactly the ones nobody can now attribute or purge. It also could not have covered a
-   table nobody remembered to add — `monitor_seen_items` was appended by hand in #R155, and the next
+   table nobody remembered to add — one table (an area-monitor ledger, since retired) was appended by hand in #R155, and the next
    table would have been missed in silence.
 
    ⚠ AND THE CASCADE IS NOT A SUBSTITUTE. Audited on this schema: donations, feedback and bug_reports

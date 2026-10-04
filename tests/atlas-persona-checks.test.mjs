@@ -84,7 +84,7 @@ test('R781 ③ no mode writes prose without the clause', () => {
 });
 
 test('R781 ④ the Edge Function mirror carries the same sentence', async () => {
-  /* Three server-side prompts (monitor-run / refresh-news / news-ingest) cannot import js/, so
+  /* The server-side prompts (refresh-news / news-ingest) cannot import js/, so
      they read the generated copy. scripts/static-checks.mjs fails on drift as a byte diff; this
      asks the copy itself, so what is measured is the clause the server prompts actually receive. */
   const mirror = await import('../supabase/functions/_shared/atlas-persona.js');

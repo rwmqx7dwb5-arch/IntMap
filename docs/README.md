@@ -14,7 +14,7 @@
 |---|---|---|---|
 | [`../AGENTS.md`](../AGENTS.md) | 作業する人／AI | **どう働くか** — セッションの始め方、着手前の確認、変更の作法、ワークフロー、報告、**USB バックアップの頻度と手順**。⚠ **32,768 バイトの天井がある**（`npm run check:agents`） | 開発環境・Git 運用・CI/CD・deployment の前提が変わったとき |
 | [`../CLAUDE.md`](../CLAUDE.md) | Claude Code | **`AGENTS.md` を import したうえで、Claude Code でしか意味を持たない作法**（委譲の呼び方・preview ツール・ハーネスの worktree・権限） | Claude Code 側の作法が変わったとき |
-| [`AGENT-SETUP.md`](AGENT-SETUP.md) | 同上／Codex | **2 製品の配線図** — 何が共通で、何が製品固有で、**何が手作業で残るか**。Codex の初期設定。**Edge Function の名簿（22 本の名前と `_shared/` の扱い）と `--use-api` の実測、および USB バックアップのスクリプトが守る不変条件（§10）もここが正本**（`AGENTS.md` は 1 行で指すだけ） | 対応する製品・その設定が変わったとき／Edge Function を足す・消すとき／`scripts/backup-usb.ps1` を書き換えるとき |
+| [`AGENT-SETUP.md`](AGENT-SETUP.md) | 同上／Codex | **2 製品の配線図** — 何が共通で、何が製品固有で、**何が手作業で残るか**。Codex の初期設定。**Edge Function の名簿（21 本の名前と `_shared/` の扱い）と `--use-api` の実測、および USB バックアップのスクリプトが守る不変条件（§10）もここが正本**（`AGENTS.md` は 1 行で指すだけ） | 対応する製品・その設定が変わったとき／Edge Function を足す・消すとき／`scripts/backup-usb.ps1` を書き換えるとき |
 | [`../CONSTITUTION.md`](../CONSTITUTION.md) | 同上 | **何を守るか** — 製品の不文律、壊れやすい罠、地図・モバイルの作法、鍵とニュースの方針、文書の分担 | ユーザーが方針を変えたとき |
 | [`../.agents/rules/execution-strategy.md`](../.agents/rules/execution-strategy.md) | 作業する AI | **どう速く・安全にやるか** — 依頼の分解、並列化と委譲の判断基準、並列編集の隔離、検証の段、context の節約（`AGENTS.md` §5.0 の正本） | 並列化・委譲・検証の方針が変わったとき |
 | [`../.agents/rules/no-ad-hoc-hardcoding.md`](../.agents/rules/no-ad-hoc-hardcoding.md) | 作業する AI | **場当たりのハードコーディングの禁止** — 報告された 1 件のための分岐・特例・埋め込み一覧を足さず、その事例を生んだ構造を直す。着手前の 3 問、定数に必ず書く 3 点、実測された失敗の形（`AGENTS.md` §3 の 9 の正本） | 新しい「場当たりの形」を実測したとき（表に 1 行足す） |
@@ -59,7 +59,7 @@
 | [`architecture/15-ops-quality.md`](architecture/15-ops-quality.md) | 同上 | 現状仕様 **§15 運用品質基盤 (CI・テスト・リリース・監視)** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
 | [`architecture/16-data-protection.md`](architecture/16-data-protection.md) | 同上 | 現状仕様 **§16 データ保護基盤 (migrations・RLS/権限テスト・バックアップ・復元)** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
 | [`architecture/17-security.md`](architecture/17-security.md) | 同上 | 現状仕様 **§17 セキュリティ基盤** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
-| [`architecture/18-area-monitors.md`](architecture/18-area-monitors.md) | 同上 | 現状仕様 **§18 見守る場所と地域監視基盤 (Watched places · Area Monitors)** の本文（節番号は案内図と同じ） | その主題の実装を変えたとき（**同じコミットで**） |
+| [`architecture/18-area-monitors.md`](architecture/18-area-monitors.md) | 同上 | 現状仕様 **§18 見守る場所 (Watched places)** の本文（節番号は案内図と同じ。§18.2 は撤去済みの旧・地域監視基盤の記録） | その主題の実装を変えたとき（**同じコミットで**） |
 | [`FILES.md`](FILES.md) | 同上 | **ファイル台帳**（Architecture §3。節番号は同じ） | `js/` 等にファイルを足す・消す・改名したとき |
 | [`MAP-LAYERS.md`](MAP-LAYERS.md) | レイヤーを触る人 | **レイヤー実装の詳細**（Architecture §7.1・§7.2・§7.5–§7.10。節番号は同じ）——気象警報フィード・ラベル・地形と水・物理・ECMWF | 該当のレイヤーの挙動を変えたとき |
 | [`GIS-CORE.md`](GIS-CORE.md) | データを持ち込んで分析する人／その層を触る人 | **データセットと処理の基盤の正本** — データセットの契約（`id`・`fields[]` の型づけ規則・`crs`／`sourceCrs`・`provenance`）、処理の宣言と**出力が次の入力になる**規約、各処理が**何を拒み、なぜ拒むか**（コードの全一覧）、プロジェクト保存が**何を保存して何を保存しないか**、横断クエリ（`js/atlas-query.js`）がこの層を引く向き。⚠ 幾何計算の適用範囲と誤差（球面／平面のどちらで測るか）もここが正本 | データセットの契約・処理・拒否コード・保存の形を変えたとき |
@@ -75,7 +75,7 @@
 | [`PHOTO-GEOLOCATION.md`](PHOTO-GEOLOCATION.md) | 写真の撮影地点探索を触る人 | **山並み照合の正本** — 二つの矩形（探索範囲と地形取得範囲）、terrarium の欠陥と尖りの除去、順位付け規則がなぜ explainedDeg なのか、実写真 12 枚の評価と適用範囲。⚠ **撮影地点を特定できる完成品ではない**（12 枚中 3 枚しか答えを出さない）ことを最初に書いてある | 照合ロジック・閾値・評価集合を変えたとき |
 | [`INTERNET-HEALTH.md`](INTERNET-HEALTH.md) | インターネットの健康状態を触る人 | **どの観測網を、どういう条件で使っているか** — 供給者の一覧と鍵・CORS・ライセンスの実測、**採用しなかった候補とその理由**、範囲→地物の解決と何を拒むか、「打ち間違いと平穏な地球が同じ応答になる」罠 | 供給者を足す・変える、条件が変わったとき |
 | [`RADIATION-MODEL.md`](RADIATION-MODEL.md) | 放射性物質拡散を触る人 | **モデルの数の正本** — 事故 × 核種ごとの放出量、地表沈着→線量係数（**どの慣習で採ったか**）、沈着密度による法定区分が**核種ごとに存在したりしなかったりする**こと、環境半減期、乱流と境界層、モンテカルロ誤差、気象場の解像度と領域の上限、そして**このモデルがやらないこと** | 定数を足した・変えたとき／一次資料が改訂されたとき |
-| [`AREA-MONITORS.md`](AREA-MONITORS.md) | 同上 | 地域監視の設計・DB・cron。⚠ **現在は利用者から到達できる入口が無い**（撤去であって削除ではない） | 監視の仕組みを変えたとき／復帰させたとき |
+| [`AREA-MONITORS.md`](AREA-MONITORS.md) | 同上 | 見守る場所の設計ノート（「変化はコードが決める」規則・旧・地域監視を置き換えた理由・承認待ちの Web Push 設計）。旧・地域監視基盤は撤去済み | 見守る場所の設計を変えたとき／Web Push を承認・実装したとき |
 | [`../fonts/README.md`](../fonts/README.md) | 書体を触る人 | **IntMap が全ての文字を描く書体の正本** — 「IntMap内のすべての文字は以下にしろ（恒久的に）」という指示、書記体系ごとの対応表（Inter／Noto Sans JP・SC・TC／Pretendard／Twemoji flags）、同梱ファイルの正体と地図用 SDF グリフアトラスの再生成手順。⚠ **OFL が要求する著作権表示・ライセンス表示そのもの**（同ファイル末尾がそう明言）なので、消したり要約したりしない | 同梱する書体・グリフアトラス・ライセンスが変わったとき |
 
 ## 運用

@@ -28,7 +28,7 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* ============================================================================
  *  IntMap · #R286 source checks — a tile template is not always a URL
  * ----------------------------------------------------------------------------
- *  tests/monitors.spec.js's console-error gate failed intermittently with twenty
+ *  the area-monitors spec's console-error gate (since retired with the feature) failed intermittently with twenty
  *  refusals of 「Loading the image 'imapsat://2/0/2' violates … "img-src 'self'
  *  https: data: blob:"」. `imapsat://` is IntMap's OWN scheme — js/sat-proto.js
  *  registers it — so a tile served through it is never a browser image load at

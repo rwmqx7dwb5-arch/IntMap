@@ -7,8 +7,8 @@
 //    ① a bounded fetch keeps its deadline over the BODY, not only the headers, and caps bytes;
 //    ② redirects are inspected hop by hop (same https origin, or the caller's own rule), bounded;
 //    ③ ai-proxy settles a turn before answering and refunds only the call that charged;
-//    ④ the request body of ai-proxy is read through the capped reader, and monitor-run reads
-//       its body only after the caller is known;
+//    ④ the request body of ai-proxy is read through the capped reader (the area-monitor runner,
+//       which read its body only after the caller was known, has since been retired);
 //    ⑤ no Edge Function puts the Gemini key in a query string;
 //    ⑥ the ledger migration refuses to refund a settled turn in one atomic statement;
 //    ⑦ 'unsafe-eval' in the page CSP is still REQUIRED (Cesium bundles knockout, which evaluates
@@ -118,7 +118,7 @@ test('R801 ③ ai-proxy settles the turn before answering and refunds only the c
   const proxy = codeOnly(aiProxySource());
   const settleDef = proxy.indexOf('const settle = async');
   assert.ok(settleDef > 0, 'no settle() in ai-proxy');
-  /* (ai-one-ledger) the ledger's doors are _shared/ai-ledger.js's, shared with monitor-run's «Run now» */
+  /* (ai-one-ledger) the ledger's doors are _shared/ai-ledger.js's — one door for every caller that charges */
   const ledger = codeOnly(read('supabase/functions/_shared/ai-ledger.js'));
   assert.match(proxy, /settleTurn\(db, account, turnId\)/, 'settle() does not go through the ledger door');
   assert.match(ledger, /db\.rpc\("settle_ai_turn"/, 'settle_ai_turn is never called');
@@ -135,22 +135,15 @@ test('R801 ③ ai-proxy settles the turn before answering and refunds only the c
 });
 
 /* ⚠ READ, NOT RUN: "no unbounded body read anywhere in the function" is a claim about every path of
-   two Deno handlers, which a harness can only sample; the source is the universe here. */
-test('R801 ④ request bodies: ai-proxy reads through the capped reader, monitor-run only after auth', () => {
+   a Deno handler, which a harness can only sample; the source is the universe here. */
+test('R801 ④ request bodies: ai-proxy reads through the capped reader', () => {
   const proxy = codeOnly(aiProxySource());
   assert.match(proxy, /readCapped\(req, MAX_BODY_BYTES\)/);
   assert.doesNotMatch(proxy, /req\.(arrayBuffer|json|text)\(\)/, 'an unbounded body read survives in ai-proxy');
-  const mon = codeOnly(read('supabase/functions/monitor-run/index.ts'));
-  assert.doesNotMatch(mon, /req\.(arrayBuffer|json|text)\(\)/, 'an unbounded body read survives in monitor-run');
-  const getUser = mon.indexOf('userClient.auth.getUser()');
-  const readBody = mon.indexOf('await readPayload()');
-  assert.ok(getUser > 0 && readBody > getUser, 'monitor-run must verify the caller before it reads the body');
-  assert.doesNotMatch(mon, /message: claimErr\.message/, 'the database error text must not reach the caller');
-  assert.doesNotMatch(mon, /error_detail: String\(\(e as Error\)\?\.message/, 'an exception message must not be stored where the owner reads it');
   /* the provider ceiling is ONE number — (edge-spend-and-models) now literally one: the shared door's.
-     Neither function declares its own, and both reach the provider through _shared/ai-provider.js
+     ai-proxy declares none of its own and reaches the provider through _shared/ai-provider.js
      (tests/edge-spend-and-models-checks ② holds every keyed function to the door). */
-  for (const [name, src] of [['ai-proxy', proxy], ['monitor-run', mon]]) {
+  for (const [name, src] of [['ai-proxy', proxy]]) {
     assert.doesNotMatch(src, /const PROVIDER_MAX_BYTES =/, name + ' declares a provider ceiling of its own again');
     assert.match(src, /from "\.\.\/_shared\/ai-provider\.js"/, name + ' does not use the shared door');
   }

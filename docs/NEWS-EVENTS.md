@@ -904,7 +904,7 @@ AI に掛ける）で `assign` より**前**（Event は AI の座標で組ま�
 - 上流の取得は `_shared/relay-guard.js` の `fetchGuarded`（期限 15 s・6 MB・content-type）。
   ⚠ `refresh-news` は `AbortSignal` を 1 つも持っていない。同じ形を新しく作らない。
 - **壁時計の予算**を見て、足りなければその段で止めて次の run に残す（既定 240 s）。
-- cron は **2 本**。SQL の形は `docs/AREA-MONITORS.md` §4 と同じで、秘密は**ヘッダ**で送り、
+- cron は **2 本**。job の定義は migration `20260925090000_cron_jobs_as_code.sql` にあり、秘密は vault から**ヘッダ**で送り、
   body で段を選ぶ:
 
   | job | 間隔 | body |

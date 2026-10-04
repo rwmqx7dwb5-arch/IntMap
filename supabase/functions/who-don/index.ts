@@ -117,7 +117,7 @@ const RESERVE_MS = 20000;
 const SLUG_RE = /^[A-Za-z0-9._-]{1,120}$/;
 
 /* (#R138-style) Constant-time comparison — a secret must not be recoverable one byte at a time.
-   ⚠ The same eight lines are in monitor-run, refresh-news and news-ingest. They are not shared
+   ⚠ The same eight lines are in refresh-news and news-ingest. They are not shared
    because relay-guard is the library for KEYLESS public relays and this is the one thing those
    functions must not import from a place that could ever answer "true" by default. */
 function timingSafeEqual(a, b) {

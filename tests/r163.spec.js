@@ -1,8 +1,8 @@
 // R163 behavioural checks in a real browser — the seven modules moved out of index.html.
 //
 // WHY THIS FILE EXISTS. #R162 split index.html and every static check stayed green while a whole
-// feature quietly died: js/monitors.js lost `radiusItems`, so activeArea() fell through to "no area
-// selected". No exception, no console error — this codebase guards soft dependencies with
+// feature quietly died: the area-monitors module (since retired) lost `radiusItems`, so activeArea()
+// fell through to "no area selected". No exception, no console error — this codebase guards soft dependencies with
 // `typeof X !== 'undefined'` inside try/catch, so a vanished binding just skips the branch. Only a
 // browser test that USES the feature can see that. #R163 moved 566 KB more (flight sim, historical
 // borders, stats compare, routing, map compare, companies, street view), so each one is exercised
@@ -60,7 +60,6 @@ test('R163 #2 each extracted global exists with its real API surface (not an emp
       streetView: shape(window.IntMapStreetView),
       flightSim: shape(window.IntMapFlightSim),
       timeBorders: shape(window.IntMapTimeBorders),
-      monitors: shape(window.IntMapMonitors),
     };
   });
   // Each of these modules early-returns a 2-3 key stub when `map` is missing, so the key set — not
@@ -72,7 +71,6 @@ test('R163 #2 each extracted global exists with its real API surface (not an emp
   expect(api.streetView).toEqual(expect.arrayContaining(['open', 'close', 'coverage', 'nearestCoverage']));
   expect(api.flightSim).toEqual(expect.arrayContaining(['start', 'stop', 'setup', 'active', 'aircraft', 'airports']));
   expect(api.timeBorders).toEqual(expect.arrayContaining(['_go', '_clear', 'current', 'geomFor', 'resolveHist']));
-  expect(api.monitors).toEqual(expect.arrayContaining(['render', 'create', 'activeArea', 'atlas'])); // #R162 stays alive
 });
 
 test('R163 #3 the flight model still computes real physics through the host interface', async () => {

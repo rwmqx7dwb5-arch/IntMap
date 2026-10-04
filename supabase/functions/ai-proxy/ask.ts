@@ -11,8 +11,8 @@ import { createClient } from "@supabase/supabase-js";   // pinned in this functi
    body and the provider's answer are read through them so a byte ceiling and a deadline hold WHILE
    the bytes arrive, not after they have all been buffered. */
 import { readCapped, RelayError } from "../_shared/relay-guard.js";
-/* (ai-one-ledger) The plan table, the account and the turn ledger's doors (shared with monitor-run,
-   which charges the same allowance), and what a provider answer cost (one shape for three providers,
+/* (ai-one-ledger) The plan table, the account and the turn ledger's doors (written to be shared by
+   every caller that charges the same allowance), and what a provider answer cost (one shape for three providers,
    plus the Anthropic prompt-cache breakpoints). */
 import { accountFor, openTurn, refundTurn, settleTurn, recordUsage, LedgerUnavailable, cohortOf, NEWCOMER } from "../_shared/ai-ledger.js";
 import { usageMeter } from "../_shared/ai-usage.js";
@@ -62,7 +62,7 @@ export async function ask(req: Request): Promise<Response> {
   const db = createClient(url, serviceKey, { auth: { persistSession: false } });
 
   // 2) Plan → limit. (ai-one-ledger) Resolved by _shared/ai-ledger.js accountFor — profiles.plan, then
-  //    the developer override below — so monitor-run's «Run now» resolves the SAME account the same way.
+  //    the developer override below — so any other caller of the ledger resolves the SAME account the same way.
   /* (#R31/#R32) Developer override → UNLIMITED AI, quota never consumed ("AI機能の使用は無制限に").
      ⚠ IT IS A USER ID NOW, AND THE ID LIVES IN A SECRET RATHER THAN IN THIS FILE. The rule used to be
      a hard-coded e-mail address compiled into a PUBLIC repository, which is three separate problems:
@@ -127,7 +127,7 @@ export async function ask(req: Request): Promise<Response> {
     }
   } else if (!isDev) try {
     /* (ai-one-ledger) through the shared door (_shared/ai-ledger.js openTurn → consume_ai_turn), with
-       THIS function's turn bounds — the same door monitor-run's «Run now» charges through. */
+       THIS function's turn bounds — the one door every charge goes through. */
     const row = await openTurn(db, account, { turn: turnId, maxCalls: TURN_MAX_CALLS, ttlSeconds: TURN_TTL_S });
     used = row.used;
     charged = row.charged;

@@ -34,7 +34,6 @@ import { auditLedger } from './ledger-claims.mjs';
 import { claims, CHECKED, ENGLISH_CARDINALS } from './doc-claims.mjs';
 import { authoredLangs, carriedLangs } from './lang-policy.mjs';
 import { requireData } from './data-assets.mjs';
-import { namespaceFiles } from './atlas-caps.mjs';
 import { specFiles, chapters, guideRows, numberSpace, GUIDE, CHAPTER_DIR } from './architecture-spec.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -303,7 +302,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
    *
    *    · Architecture.md   「⚠ **5本の無認証中継**（`alerts-relay` / `cable-geo` / …）」
    *                         — complete, about the unauthenticated relays, not about the roster
-   *    · Architecture.md   `for f in refresh-news monitor-run sv-cov …` — the deploy loop, split
+   *    · Architecture.md   `for f in refresh-news sv-cov alerts-relay …` — the deploy loop, split
    *                         in two, so neither half is the whole set
    *    · docs/SECURITY-ARCHITECTURE.md  "All twelve are declared there now (`aviation-feed` #R341,
    *                         `routing-relay` #R347, …)" — names the four that were added, not all
@@ -846,44 +845,36 @@ const PUBLISHER = PUBLISHERS[0] || '.github/workflows/ci.yml';
   }
 }
 
-/* ═══ 14. Area Monitors: withdrawn in the code ⇒ withdrawn in the documents ═══════════════
-   The tab, the workspace window and the Atlas route were all removed; three documents went on
-   describing a Monitors tab a reader could click. The code states the fact twice — the button
-   is not in the markup and the dispatch answers with a withdrawal code — so the documents can
-   be held to it. */
+/* ═══ 14. Area Monitors: removed from the tree ⇒ no document describes them as present ════════
+   The tab, the workspace window and the Atlas route were withdrawn first, and three documents went
+   on describing a Monitors tab a reader could click. Later the module, the runner and the tables
+   were removed outright (monitors-retire). The tree states that fact itself — the page module and
+   the Edge Function directory are absent, and a migration drops the tables — so every document is
+   held to it: a line that names one of the removed pieces must say, on that line, that it is gone.
+   ⚠ THE NEEDLES ARE THE PIECES' OWN NAMES, NOT A WORD LIKE «monitor»: «monitoring» (docs/MONITORING.md)
+   and «watch» (the Watched places that replaced them) are present and must not trip this. */
 {
-  const noTab = !/id="btn-monitors"/.test(rd('index.html'));
-  /* (atlas-capability-modules) the dispatch is the kernel PLUS every capability entry — the answer a
-     capability gives lives in its js/atlas-cap-<namespace>.js, discovered, not in one named file. */
-  const dispatchFiles = ['js/atlas-console.js', ...namespaceFiles(ROOT)];
-  const withdrawn = dispatchFiles.some((f) => /FEATURE_WITHDRAWN/.test(rd(f)));
-  if (noTab && withdrawn) {
-    const NAMED = [SPEC, 'docs/AREA-MONITORS.md', 'PRODUCT.md'];
-    let namedRead = 0, monitorDocs = 0, tabLines = 0;
-    for (const f of NAMED) {
-      const body = f === SPEC ? ARCH : BODY.get(f) || '';
-      if (body) namedRead++;
-      if (/Monitor/i.test(body) && !/撤去|WITHDRAWN|withdrawn/.test(body)) {
-        fail('monitors', f + ' describes Area Monitors without saying the feature has no entry point');
-      }
-    }
+  const moduleGone = !has('js/monitors.js');
+  const runnerGone = !has('supabase/functions/monitor-run');
+  if (moduleGone && runnerGone) {
+    const PIECE = /js\/monitors\.js|window\.IntMapMonitors|\bmonitor-run\b|\barea_monitors\b|\bmonitor_limit(?:_self)?\b|Monitors\s*タブ/;
+    const GONE = /撤去|削除|廃止|無い|ない|retired|removed|withdrawn|WITHDRAWN|no longer/;
+    let swept = 0, lines = 0;
     eachDoc((f, s) => {
-      monitorDocs++;
+      swept++;
       for (const line of s.split('\n')) {
-        if (!/Monitors\s*タブ/.test(line)) continue;
-        tabLines++;
-        if (!/撤去|無い|ない|WITHDRAWN/.test(line)) {
-          fail('monitors', f + ' still describes a Monitors tab as present: ' + line.trim().slice(0, 90));
-        }
+        if (!PIECE.test(line)) continue;
+        lines++;
+        if (!GONE.test(line)) fail('monitors', f + ' describes a removed Area Monitors piece as present: ' + line.trim().slice(0, 90));
       }
     });
-    if (!namedRead) fail('monitors', 'none of the ' + NAMED.length + ' documents that describe Area Monitors could be read — the universe is empty');
+    if (!swept) fail('monitors', 'no document was swept — the universe is empty');
     if (!problems.some((x) => x.startsWith('monitors'))) {
-      ok('monitors', 'the feature is withdrawn in the code and the documents say so · ' + namedRead + '/' + NAMED.length
-        + ' named documents read · ' + monitorDocs + ' documents swept, ' + tabLines + ' Monitors-tab line(s) checked');
+      ok('monitors', 'the module and the runner are gone from the tree and the documents say so · '
+        + swept + ' documents swept, ' + lines + ' line(s) naming a removed piece checked');
     }
   } else {
-    ok('monitors', 'the Monitors entry point is back — this rule needs rewriting (0 of ' + DOCS.length + ' documents swept)');
+    ok('monitors', 'the Area Monitors module or runner is back in the tree — this rule needs rewriting (0 of ' + DOCS.length + ' documents swept)');
   }
 }
 
@@ -1053,9 +1044,17 @@ const PUBLISHER = PUBLISHERS[0] || '.github/workflows/ci.yml';
    The harness asserted RLS on 19 tables, the migrations created 20, and the DB page said 15.
    A table missing from the assertion list cannot fail the assertion. */
 {
-  const sqlAll = readdirSync(join(ROOT, 'supabase/migrations')).filter((f) => f.endsWith('.sql'))
+  /* (monitors-retire) THE TABLES THAT EXIST ARE THE ONES CREATED AND NOT SINCE DROPPED. This read every
+     `create table` in every migration as «exists», so the first migration to drop a table (the retired
+     area monitors) would have demanded that the harness keep asserting five tables the database no
+     longer has. The migrations are replayed in file order — the order `supabase db push` applies them —
+     and within a file in text order, so a later drop removes and a later re-create restores. */
+  const sqlAll = readdirSync(join(ROOT, 'supabase/migrations')).filter((f) => f.endsWith('.sql')).sort()
     .map((f) => rd('supabase/migrations/' + f)).join('\n');
-  const created = new Set([...sqlAll.matchAll(/create table (?:if not exists )?public\.([a-z0-9_]+)/gi)].map((x) => x[1].toLowerCase()));
+  const created = new Set();
+  for (const x of sqlAll.matchAll(/\b(create table (?:if not exists )?|drop table (?:if exists )?)public\.([a-z0-9_]+)/gi)) {
+    if (/^create/i.test(x[1])) created.add(x[2].toLowerCase()); else created.delete(x[2].toLowerCase());
+  }
   /* ⚠ EVERY enumeration IS ITS OWN CLAIM. The file lists the tables TWICE — once for "the table
      exists", once for "RLS is on for it" — and reading the file as one bag of names hides a table
      that is missing from exactly one of them, which is the shape the defect actually had. */

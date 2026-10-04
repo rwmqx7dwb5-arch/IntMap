@@ -22,7 +22,7 @@ import { codeOnly } from '../scripts/code-only.mjs';
 //
 // #R162 moved the reference-data tables and four small modules out of index.html. #R163 moves the
 // seven big self-contained FEATURE modules (566 KB): flight sim, historical borders, stats compare,
-// routing, map compare, companies, street view — and promotes what was monitors' private host object
+// routing, map compare, companies, street view — and promotes what was the (since retired) area monitors' private host object
 // into ONE shared IM_HOST that every module receives.
 //
 // The load-bearing invariant is the same one #R162 nearly lost a feature to, and it is asserted

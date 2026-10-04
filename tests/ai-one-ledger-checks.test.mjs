@@ -7,22 +7,23 @@
  *  ① No function read the provider's usage block, so neither the cost of one Atlas turn nor the
  *     prompt-cache hit rate was measured anywhere.
  *     ⇒ _shared/ai-usage.js normalizeUsage turns the three providers' blocks into one shape, and says
- *       null (not zero) when a block is missing; ai-proxy and monitor-run, EVALUATED, write the total
- *       to record_ai_usage with the right turn key.
+ *       null (not zero) when a block is missing; ai-proxy, EVALUATED, writes the total to
+ *       record_ai_usage with the right turn key.
  *  ② ai-proxy's Anthropic path sent no cache_control, so the fixed ~7k-token prefix (instructions +
  *     functions) was billed in full on every one of up to TURN_MAX_CALLS calls.
  *     ⇒ withPromptCache marks the last tool and the last system block, never more than four marks,
  *       never edits the caller's object; ai-proxy, EVALUATED on the Anthropic turn path, sends them.
- *  ③ monitor-run's «Run now» called the provider without touching the reader's AI allowance.
- *     ⇒ EVALUATED: a manual run that reaches the AI step asks consume_ai_turn first; refused, it sends
- *       nothing to the provider and ends quota_exceeded; a scheduled run is not charged.
+ *  ③ The area-monitor runner's «Run now» called the provider without touching the reader's AI
+ *     allowance. (monitors-retire) That runner is removed, and with it the two evaluations that held
+ *     it to the ledger; what remains of ③ is the ledger's own doors, asked directly below
+ *     (openTurn with a caller's own turn bounds).
  *  ④ The per-caller bucket was keyed by x-forwarded-for even where the caller was a verified account.
  *     ⇒ callerKey(req, verifiedUid) keys by the account when there is one, and never by a value that
  *       is not a UUID (an unverified claim would be a fresh bucket per request).
  *
  *  Runner: the Edge Functions are evaluated in a child process with Deno.serve captured and fetch
- *  stubbed (the shape of tests/edge-spend-and-models-checks.test.mjs); ai-proxy and monitor-run are
- *  TypeScript and run under Node's type stripping. Nothing here reads a function as text.
+ *  stubbed (the shape of tests/edge-spend-and-models-checks.test.mjs); ai-proxy is TypeScript and
+ *  runs under Node's type stripping. Nothing here reads a function as text.
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -155,8 +156,8 @@ test('ai-one-ledger ③ the ledger doors: the account, the charge, the refusal, 
 
   const acct = { id: uid, plan: 'free', isDev: false, limit: 10 };
   db = fakeDb({ consume_ai_turn: { data: [{ used: 3, allowed: true, charged: true, calls: 1, reason: '' }], error: null } });
-  assert.deepEqual(await L.openTurn(db, acct, { turn: 'monitor:r1', maxCalls: 1, ttlSeconds: 900 }), { allowed: true, charged: true, used: 3, calls: 1, reason: '' });
-  assert.deepEqual(db.calls[0].args, { p_user: uid, p_limit: 10, p_turn: 'monitor:r1', p_max_calls: 1, p_ttl_seconds: 900 });
+  assert.deepEqual(await L.openTurn(db, acct, { turn: 'job:r1', maxCalls: 1, ttlSeconds: 900 }), { allowed: true, charged: true, used: 3, calls: 1, reason: '' });
+  assert.deepEqual(db.calls[0].args, { p_user: uid, p_limit: 10, p_turn: 'job:r1', p_max_calls: 1, p_ttl_seconds: 900 });
   db = fakeDb({ consume_ai_turn: { data: [{ used: 10, allowed: false, charged: false, calls: 1, reason: 'limit' }], error: null } });
   assert.equal((await L.openTurn(db, acct, { turn: 'x' })).reason, 'limit');
   /* the ledger's silence is not permission */
@@ -272,76 +273,4 @@ test('ai-one-ledger ① ai-proxy records a failed request\'s cost too, and recor
   const [down] = runEdge('ai-proxy', [ask], { env, routes: [...base, ['*', 'api\\.openai\\.com/v1/responses', { status: 500, json: { error: { message: 'x' } } }]] });
   assert.notEqual(down.status, 200);
   assert.deepEqual(rpcArgs(down.calls, 'record_ai_usage'), [], 'a request that read no provider answer writes no cost');
-});
-
-/* monitor-run: a monitor that WILL reach the AI step (a previous run exists, the ledger has items,
-   every current item is new, min_score 0) */
-function monitorRoutes(consume, claimUser) {
-  const monitor = { id: 'mon-1', user_id: claimUser, name: 'Osaka', enabled: true, geometry_kind: 'circle', center_lng: 135.5, center_lat: 34.7, radius_km: 50,
-    sources: ['news'], sensitivity: { min_new: 1, min_score: 0 }, comparison: { mode: 'previous_run' }, interval_minutes: 360, run_count: 3 };
-  const news = [0, 1, 2, 3].map((i) => ({ id: 'n' + i, lang: 'en', title: 'Headline ' + i, publisher: 'Pub ' + (i % 2), link: 'https://news.example/' + i,
-    pub_date: new Date(Date.now() - 3600e3).toISOString(), subject_lng: 135.5 + i * 0.01, subject_lat: 34.7, subject_name_en: 'Osaka' }));
-  return [
-    ['*', '/auth/v1/user$', { json: { ...USER, id: claimUser } }],
-    ['*', '/rest/v1/profiles', { json: [] }],
-    ['*', '/rest/v1/rpc/monitor_claim_one$', { json: [{ claimed: true, reason: '', monitor }] }],
-    ['*', '/rest/v1/rpc/monitor_claim_due$', { json: [monitor] }],
-    ['POST', '/rest/v1/monitor_runs', { status: 201, json: { id: 'run-1' } }],
-    ['GET', '/rest/v1/monitor_runs', { json: [{ id: 'run-0', snapshot: { news: { keys: [], count: 0, publishers: 0 } } }] }],
-    ['*', '/rest/v1/current_news', { json: news }],
-    ['HEAD', '/rest/v1/monitor_seen_items', { headers: { 'content-range': '*/7' } }],
-    ['*', '/rest/v1/monitor_seen_items', { json: [] }],
-    ['*', '/rest/v1/monitor_evidence', { status: 201, json: [] }],
-    ['*', '/rest/v1/rpc/consume_ai_turn$', { json: [consume] }],
-    ['*', '/rest/v1/rpc/(refund|settle)_ai_turn$', { json: null }],
-    ['*', '/rest/v1/rpc/record_ai_usage$', { json: null }],
-    ['*', '/rest/v1/rpc/monitor_finalize$', { json: null }],
-    ['*', '/rest/v1/rpc/monitor_commit_report$', { json: 'rep-1' }],
-    ['*', '/rest/v1/area_monitors', { json: [] }],
-    ['*', 'api\\.openai\\.com/v1/responses', { json: { model: 'gpt-x', output_text: JSON.stringify({ severity: 'low', changes: [{ claim: 'Something happened', evidence_ids: ['ev_1'] }] }),
-      usage: { input_tokens: 1500, input_tokens_details: { cached_tokens: 0 }, output_tokens: 80 } } }],
-  ];
-}
-const MON_ENV = { SUPABASE_URL: SUPA, SUPABASE_ANON_KEY: 'anon', SUPABASE_SERVICE_ROLE_KEY: 'svc', AI_PROVIDER: 'openai', OPENAI_API_KEY: 'sk-stub', MONITOR_SECRET: 'sek' };
-const runNow = { headers: { authorization: 'Bearer good', 'content-type': 'application/json' }, body: { monitorId: 'mon-1' } };
-
-test('ai-one-ledger ③ monitor-run «Run now» spends the reader\'s AI allowance through the same ledger', () => {
-  /* inside the allowance: charged first, then the provider, then settled once the report is committed */
-  const [ok] = runEdge('monitor-run', [runNow], { env: MON_ENV, routes: monitorRoutes({ used: 4, allowed: true, charged: true, calls: 1, reason: '' }, USER.id) });
-  assert.equal(ok.status, 200, JSON.stringify(ok.json));
-  assert.equal(ok.json.status, 'success+report', JSON.stringify(ok.json));
-  const consume = rpcArgs(ok.calls, 'consume_ai_turn');
-  assert.equal(consume.length, 1);
-  assert.deepEqual([consume[0].p_user, consume[0].p_limit, consume[0].p_turn, consume[0].p_max_calls], [USER.id, L.PLAN_LIMITS.free, 'monitor:run-1', 1],
-    'the caller\'s own allowance, the plan table ai-proxy reads, one use per run');
-  const order = ok.calls.map((c) => c.provider ? 'provider' : (c.url.match(/rpc\/(\w+)$/) || [])[1]).filter(Boolean);
-  assert.ok(order.indexOf('consume_ai_turn') < order.indexOf('provider'), 'charged before the provider was asked: ' + order.join(' '));
-  assert.ok(order.indexOf('monitor_commit_report') < order.indexOf('settle_ai_turn'), 'settled once the report exists: ' + order.join(' '));
-  assert.deepEqual(rpcArgs(ok.calls, 'refund_ai_turn'), []);
-  assert.deepEqual(rpcArgs(ok.calls, 'record_ai_usage'), [{ p_user: USER.id, p_turn: 'monitor:run-1', p_calls: 1, p_unmetered: 0, p_input: 1500, p_cached_read: 0, p_cache_write: 0, p_output: 80 }]);
-
-  /* over the allowance: nothing reaches the provider, the run keeps its data and says why */
-  const [over] = runEdge('monitor-run', [runNow], { env: MON_ENV, routes: monitorRoutes({ used: 10, allowed: false, charged: false, calls: 1, reason: 'limit' }, USER.id) });
-  assert.equal(over.json.status, 'quota_exceeded', JSON.stringify(over.json));
-  assert.deepEqual(over.calls.filter((c) => c.provider), [], 'the provider was asked on an exhausted allowance');
-  const fin = rpcArgs(over.calls, 'monitor_finalize')[0];
-  assert.equal(fin.run_patch.status, 'quota_exceeded');
-  assert.equal(fin.run_patch.report_generated, false);
-  assert.ok(fin.run_patch.snapshot && fin.run_patch.diff, 'what the run measured is kept');
-  assert.ok(fin.run_patch.evidence_count > 0);
-
-  /* the ledger silent: fails closed, like ai-proxy's quota_unavailable */
-  const silent = monitorRoutes(null, USER.id).map((r) => (r[1] === '/rest/v1/rpc/consume_ai_turn$' ? ['*', r[1], { status: 503, json: { message: 'down' } }] : r));
-  const [shut] = runEdge('monitor-run', [runNow], { env: MON_ENV, routes: silent });
-  assert.deepEqual(shut.calls.filter((c) => c.provider), [], 'a ledger that did not answer is not permission');
-  assert.equal(rpcArgs(shut.calls, 'monitor_finalize')[0].run_patch.error_category, 'quota_unavailable');
-});
-
-test('ai-one-ledger ③ the schedule is not charged, and its cost is still recorded on the owner', () => {
-  const owner = '00000000-0000-4000-8000-0000000000aa';
-  const [cron] = runEdge('monitor-run', [{ headers: { 'x-monitor-secret': 'sek', 'content-type': 'application/json' } }], { env: MON_ENV, routes: monitorRoutes({ used: 99, allowed: false, charged: false, calls: 1, reason: 'limit' }, owner) });
-  assert.equal(cron.status, 200, JSON.stringify(cron.json));
-  assert.equal(cron.json.results['mon-1'], 'success+report');
-  assert.deepEqual(rpcArgs(cron.calls, 'consume_ai_turn'), [], 'a scheduled run spends no use (unchanged by this round)');
-  assert.deepEqual(rpcArgs(cron.calls, 'record_ai_usage'), [{ p_user: owner, p_turn: '', p_calls: 1, p_unmetered: 0, p_input: 1500, p_cached_read: 0, p_cache_write: 0, p_output: 80 }]);
 });

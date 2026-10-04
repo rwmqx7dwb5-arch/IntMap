@@ -358,15 +358,6 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
       <button class="mode-btn" id="btn-news" data-i18n="tabNews">News</button>
       <button class="mode-btn" id="btn-info" data-i18n="tabCompanies">Companies</button><!-- (#R139) Information tab retired → Companies (id kept to avoid churn; mode string stays 'info') -->
       <button class="mode-btn" id="btn-stats" data-i18n="tabStats">Countries</button><!-- (#R73) tab renamed Stats→Data→Countries (user picked from 5 candidates) -->
-      <!-- ══ (#R231) MONITORS IS WITHDRAWN FROM THE TAB ROW ═══════════════════════════════════════
-           「MonitorsはNews/Companies/Countries/Atlasの並びから一旦撤去。」 The button is gone from the
-           row, and with it every ROUTE that used to land on the tab: js/session-tabs.js no longer
-           registers `tab.monitors` with IntMapOS or restores `mode:'monitors'` from a saved session,
-           js/atlas-console.js no longer offers the `monitor` action to the planner, and
-           js/workspace.js no longer opens a Monitors window.
-           ⚠ NOTHING IS DELETED. js/monitors.js, its factory, #monitors-feed below and the Supabase
-           tables are untouched — the feature is unreachable, not removed, because the instruction says
-           一旦 (for now). Putting it back is this button plus the four call sites named above. -->
       <button class="mode-btn mode-atlas" id="btn-community" title="Atlas">Atlas</button><!-- (#R98) Community removed; this sidebar slot now opens the Atlas AI console (id kept to avoid churn). (#R101) no ✨; Atlas-gradient background, News/Countries shape. -->
       <!-- (#R238) the dock tab — in the markup so the tab row, the i18n sweep and .mode-btn all reach it; hidden until the setting is on (js/window-manager.js `wireDock`) -->
       <button class="mode-btn" id="btn-docked" data-i18n="tabDocked" style="display:none;">Panels</button>
@@ -408,7 +399,6 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
       <input type="text" id="companies-search-input" class="search-input" placeholder="Filter companies…" data-i18n-ph="filterCompaniesPh">
     </div>
     <div class="content-area" id="info-dashboard" style="display:none;"></div>
-    <div class="content-area" id="monitors-feed" style="display:none;"></div><!-- (#R141) Monitors tab feed (list + report/evidence detail overlays render here) -->
     <div class="content-area" id="community-feed" style="display:none;"></div>
     <!-- (#R112) Atlas is a REAL sidebar tab (like News/Information/Countries): in normal + mobile mode the Atlas
          console mounts, in normal flow, INTO this content area below the tab bar — no popup overlay. Workspace mode

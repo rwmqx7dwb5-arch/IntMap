@@ -50,8 +50,9 @@ export function makeAtlasState(HOST) {
     var SECTIONS = ['camera', 'selection', 'pinnedPoint', 'deviceLocation', 'viewport', 'time',
       'activeLayers', 'panels', 'objects', 'routing', 'simulations', 'comparison', 'settings',
       'pendingOperations', 'capabilityAvailability',
-      /* (#R397) three subsystems Atlas could already OPERATE and could not SEE */
-      'alerts', 'monitors', 'workspace'];
+      /* (#R397) subsystems Atlas could already OPERATE and could not SEE (a third, the area
+         monitors, was retired with its module) */
+      'alerts', 'workspace'];
     API.SECTIONS = SECTIONS.slice();
 
     var providers = Object.create(null);
@@ -377,18 +378,6 @@ export function makeAtlasState(HOST) {
         try { var cb = d && d.getElementById('dl-alerts'); out.layerOn = !!(cb && cb.checked); } catch (_) { }
         try { if (typeof A.maCountries === 'function') out.countriesLoaded = (A.maCountries() || []).length; } catch (_) { }
         try { if (typeof A.palette === 'function') out.palette = String(A.palette() || ''); } catch (_) { }
-        return out;
-      });
-
-      reg('monitors', function () {
-        var M = GLOBAL('IntMapMonitors');
-        if (!M) return null;
-        /* ⚠ THE MONITOR LIST IS NOT READ HERE. `IntMapMonitors.atlas.listText()` and `_list()` are both
-           async and both hit Supabase; a state provider that awaited them would put a network round
-           trip on every turn and on every operation boundary. What is cheap and true is that the
-           subsystem is present and whether an area is currently drawn. */
-        var out = { present: true, areaActive: false };
-        try { if (typeof M.activeArea === 'function') out.areaActive = !!M.activeArea(); } catch (_) { }
         return out;
       });
 
@@ -928,9 +917,6 @@ export function makeAtlasState(HOST) {
       if (al && (al.layerOn || al.countriesLoaded)) lines.push('Official warning layer: ' + (al.layerOn ? 'ON' : 'off') +
         (al.countriesLoaded ? (', feeds loaded for ' + al.countriesLoaded + ' country/countries') : '') +
         (al.palette ? (', shaded by ' + str(al.palette)) : '') + '.');
-
-      var mo = snap.monitors;
-      if (mo && mo.present) lines.push('Area monitoring is available' + (mo.areaActive ? ' and a monitored area is on the map' : '') + '.');
 
       var ws = snap.workspace;
       if (ws && ws.active) lines.push('Workspace (free-floating windows) is ACTIVE.');

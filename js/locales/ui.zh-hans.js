@@ -242,7 +242,6 @@ IntMapLang.define('zh-hans', {
       aiSumBtn:"以 AI 摘要这个区域", popInArea:"此区域人口", popCalcing:"正在计算人口…", popFail:"人口查询失败 — 请再试一次。", newsInArea:"此区域的新闻", elevProfile:"高程剖面", finalizeMeas:"保留在地图上", aiSumTitle:"区域简报", aiSumSub:"所选区域内有 {n} 个新闻图钉", aiSumNoArea:"请先画出范围或放置圆形。", aiSumNoNews:"此区域内没有新闻图钉。",
       aiVisHead:"AI 变化侦测", aiVisBtn:"侦测变化", aiVisTitle:"卫星影像变化报告", aiVisSub:"比较 {a} → {b}", aiVisBefore:"之前", aiVisAfter:"之后", aiVisCapturing:"正在撷取影像…", aiVisPickDates:"请选择两个日期进行比较。", aiVisNeedsDated:"请在卫星模式中改用可选日期的提供者（MODIS／VIIRS／Sentinel-2）。", aiVisCapFail:"无法撷取地图影像。" 
 ,
-      tabMonitors:"监控",
     
       ttlLayersPanel:"图层",
       ttlFavorite:"收藏",
@@ -461,8 +460,7 @@ IntMapLang.define('zh-hans', {
     'Advisory': "注意",   /* world-packs.js */
     'Age of the elements': "元素的年龄",   /* satellite-detail.js */
     'AGL': "离地高度",   /* flight-sim.js */
-    'ago': "前",   /* monitors.js */
-    'AI failed (data kept)': "AI 执行失败（数据已保留）",   /* monitors.js */
+    'ago': "前",
     'AI-generated — verify with primary sources for important decisions.': "AI 生成内容 — 重要决策请以原始数据查证。",   /* analysis-panels.js */
     'Air around it': "周围空气",   /* aircraft-detail.js */
     'air quality': "空气质量",   /* atlas-console.js */
@@ -493,7 +491,6 @@ IntMapLang.define('zh-hans', {
     'already': "已经",   /* atlas-console.js */
     'Already in normal mode': "已经是一般模式",   /* atlas-console.js */
     'Already in workspace mode': "已经是工作区模式",   /* atlas-console.js */
-    'Already running — it’s in progress.': "已在执行中 — 正在进行。",   /* monitors.js */
     'Already running on': "已在执行于",   /* atlas-console.js */
     'alt': "高度",   /* atlas-sims.js */
     'Alternative': "替代方案",   /* routing.js */
@@ -529,12 +526,11 @@ IntMapLang.define('zh-hans', {
     'Approximate — historical powers mapped onto modern borders.': "概略 — 历史强权对应到现代国界。",   /* atlas-console.js */
     'Apr': "4月",   /* ocean-currents.js */
     'area': "面积",   /* countries-ui.js */
-    'Area': "面积",   /* monitors.js */
+    'Area': "面积",
     'area layer values': "区域图层数值",   /* atlas-console.js */
-    'Area monitor': "区域监看",   /* monitors.js */
+    'Area monitor': "区域监看",
     'area news': "区域新闻",   /* atlas-console.js */
     'area population': "区域人口",   /* atlas-console.js */
-    'Area ready': "范围已就绪",   /* monitors.js */
     'area(s)': "个区域",   /* routing.js */
     'Arrival times': "到达时刻",   /* routing.js */
     'Arrivals are ray-traced through the IASP91 Earth model; surface waves use 3.5 / 4.4 km/s group velocity. Ground motion is the stochastic method (Brune source; trilinear geometrical spreading AND path duration after Atkinson & Boore 1995; frequency-dependent crustal Q = Q₀·f^η after Raoof, Herrmann & Malagnini 1999; κ = 0.035 s; and the Cartwright & Longuet-Higgins 1956 peak factor with its bandwidth term). A point source and a drawn rupture are the SAME finite source: a point stands for the rupture its magnitude implies (Wells & Coppersmith 1994, log₁₀ A = −3.49 + 0.91·M — 2,163 km² at M7.5), so the distance is to that footprint combined with the focal depth, and a drawn rupture uses its own outline instead (M₀ = μAD̄) with wavefronts that carry the rupture propagation (Vr = 0.75β). No pseudo-depth is added to either, so the two agree at the same magnitude. The site term varies with the real terrain: Vs30 from topographic slope (Wald & Allen 2007) in quarter-wavelength amplification, measured over the DEM\'s own sample spacing and skipped where that is coarser than 2 km; sea cells are not painted. MMI is converted with the ShakeMap relation of Worden et al. 2012 from PGV taken over the band a strong-motion record delivers it in (4-pole high-pass at 0.1 Hz), and is NOT the JMA shindo scale. The JMA shindo IS its own definition here (気象庁「計測震度の算出方法」): the period-effect, 10 Hz high-cut and 0.5 Hz low-cut filters applied to the acceleration spectrum, then the level exceeded for a total of 0.3 s, I = 2·log₁₀ a₀ + 0.94 — the three components isotropised at V/H = 2/3 rather than simulated separately. The painted field runs to the end of the lowest class of the chosen scale: within 1,500 km it follows the terrain, and beyond that one cell is wider than the landforms inside it, so the field is a function of distance alone and is drawn as such. Past 1,000 km the regional spreading law is extrapolated, the panel says how much of the field that is, and the table still declines to print an intensity there. Educational model: in a real emergency follow the official authorities.': "到达时刻以 IASP91 地球模型进行射线追踪；表面波采用 3.5／4.4 km/s 群速度。地动采用随机震源法（Brune 震源谱；三段折线几何衰减与路径延时（Atkinson & Boore 1995）；频率相依的地壳 Q = Q₀·f^η（Raoof, Herrmann & Malagnini 1999）；κ = 0.035 秒；以及含带宽项的 Cartwright & Longuet-Higgins 1956 峰值因子）。点震源与绘制的震源域视为同一个有限震源：点震源代表其规模所隐含的破裂面（Wells & Coppersmith 1994，log₁₀ A = −3.49 + 0.91·M，M7.5 时为 2,163 km²），距离即为到该面的距离与震源深度的合成；绘制震源域时则改用其自身轮廓（M₀ = μAD̄），波前并带有破裂传播（Vr = 0.75β）。两者都不另加等效深度，因此相同规模下两者一致。场址项随真实地形变化：以地形坡度推估 Vs30（Wald & Allen 2007）并代入四分之一波长放大法，坡度以 DEM 自身的采样间距量测，间距粗于 2 km 时不使用；海域不上色。MMI 以 Worden et al. 2012 的 ShakeMap 关系式由 PGV 换算，PGV 取自强震纪录实际可提供的频带（0.1 Hz 四阶高通），并非气象厅震度阶级。气象厅震度在此依其本身定义计算（気象庁「计测震度の算出方法」）：对加速度频谱施加周期效应、10 Hz 高切与 0.5 Hz 低切滤波，取合计超过 0.3 秒的加速度 a₀，I = 2·log₁₀ a₀ + 0.94；三分量以 V/H = 2/3 等向化处理，而非分别模拟。着色范围延伸到所选阶级最低一级的边界：1,500 km 以内依循地形，超出后单一格子已宽于其中的地形起伏，因此仅为距离的函数并如实绘制。超过 1,000 km 属于区域衰减式的外插，面板会标示其占比，表格则不列出震度。此为教育用模型：实际灾害时请遵从官方指示。",   /* seismic.js */
@@ -630,7 +626,7 @@ IntMapLang.define('zh-hans', {
     'by rail': "搭乘铁路",   /* atlas-console.js */
     'Call sign': "呼号",   /* aircraft-detail.js */
     'CAM LVL': "视点水平",   /* flight-sim.js */
-    'Cancel': "取消",   /* flight-sim.js monitors.js */
+    'Cancel': "取消",   /* flight-sim.js */
     'Cancel — click the far end': "取消 — 请点击另一端",   /* viewshed.js */
     'capped': "已达上限",   /* terrain-water.js */
     'Car park': "停车场",   /* drone-ops.js */
@@ -642,8 +638,6 @@ IntMapLang.define('zh-hans', {
     'Centered the map on the location': "已将地图置中于该位置",   /* atlas-console.js */
     'Central Powers': "同盟国阵营",   /* atlas-sims.js */
     'Cesium could not start': "Cesium 无法启动",   /* atlas-console.js */
-    'Change (partial)': "变化（部分）",   /* monitors.js */
-    'Change reported': "已回报变化",   /* monitors.js */
     /* viewshed.js */
     'Channel': "频道",   /* terrain-water.js */
     'Check other routes': "查看其他路线",   /* drone-nav.js */
@@ -706,8 +700,7 @@ IntMapLang.define('zh-hans', {
     'Commodity': "商品",   /* world-packs.js */
     'companies': "家企业",   /* industry-web.js */
     'Companies': "企业",   /* workspace.js */
-    'Compare': "比较",   /* app-body.js atlas-console.js monitors.js */
-    'Compare against': "比较对象",   /* monitors.js */
+    'Compare': "比较",   /* app-body.js atlas-console.js */
     'Compare countries': "比较国家",   /* stats-compare.js */
     'Compare off': "关闭比较",   /* atlas-console.js */
     'Compare panel': "比较面板",   /* atlas-console.js */
@@ -757,7 +750,7 @@ IntMapLang.define('zh-hans', {
     'Could not compute (service busy) — try again': "无法计算（服务忙碌）— 请再试一次",   /* map-tools.js */
     'Could not compute the reachable area (routing service busy) — try again.': "无法计算可达范围（路径服务忙碌）— 请再试一次。",   /* atlas-console.js */
     'Could not confirm the layer actually painted on the map (its data may still be loading or its source may be down) — check the map; toggling it again may help': "无法确认图层是否真的画在地图上（数据可能仍在加载，或来源已离线）— 请检查地图，重新切换一次或许有帮助",   /* atlas-console.js */
-    'Could not create the monitor.': "无法建立监看。",   /* atlas-console.js monitors.js */
+    /* atlas-console.js */
     /* atlas-console.js */
     'Could not draw the map shading': "无法绘制地图着色",   /* atlas-console.js */
     'Could not draw the markers (map still loading)': "无法绘制标记（地图仍在加载）",   /* atlas-console.js */
@@ -769,7 +762,6 @@ IntMapLang.define('zh-hans', {
     'Could not load country data — try again.': "无法加载国家数据 — 请再试一次。",   /* analysis-panels.js */
     'Could not load enough terrain data — try again.': "无法加载足够的地形数据 — 请再试一次。",   /* viewshed.js */
     'Could not load enough terrain data — wait a moment and press Analyze again.': "无法加载足够的地形数据 — 请稍候再按「分析」。",   /* viewshed.js */
-    'Could not load monitors.': "无法加载监看列表。",   /* monitors.js */
     'Could not load the satellite catalog.': "无法加载卫星目录。",   /* satellites-live.js */
     'Could not paint the highlight (map still loading) — try again': "无法绘制标示（地图仍在加载）— 请再试一次",   /* atlas-console.js */
     /* atlas-console.js */
@@ -778,7 +770,6 @@ IntMapLang.define('zh-hans', {
     'Could not research this right now': "目前无法进行这项研究",   /* atlas-console.js */
     /* atlas-console.js */
     'Could not run the map self-check for this answer.': "无法对这个回答执行地图自我检查。",   /* atlas-console.js */
-    'Could not save the monitor.': "无法保存监看。",   /* monitors.js */
     'Could not start the flight simulator': "无法启动飞行模拟器",   /* atlas-console.js */
     'Could not verify the drawn shapes on the map': "无法在地图上验证所绘制的图形",   /* atlas-console.js */
     'Couldn\'t get your location — please try again.': "无法取得你的位置 — 请再试一次。",   /* atlas-console.js */
@@ -793,9 +784,8 @@ IntMapLang.define('zh-hans', {
     'country stats': "国家统计",   /* atlas-console.js */
     'covered': "已涵盖",   /* sims.js */
     'CRASHED': "坠毁",   /* flight-sim.js */
-    'Create monitor': "建立监看",   /* monitors.js */
     /* terrain-water.js */
-    'Critical': "严重",   /* monitors.js */
+    'Critical': "严重",
     'Crop': "作物",   /* world-packs.js */
     'Crop cultivation': "作物栽培",   /* world-packs.js */
     'cross-sections': "剖面",   /* terrain-water.js */
@@ -803,7 +793,7 @@ IntMapLang.define('zh-hans', {
     'Crustal Q = Q₀·f^η': "地壳 Q = Q₀·f^η",   /* seismic.js */
     'current': "目前",   /* news-timeline.js */
     'Current location': "目前位置",   /* atlas-console.js */
-    'Current map view': "目前地图画面",   /* monitors.js */
+    'Current map view': "目前地图画面",
     'current view': "目前画面",   /* atlas-console.js */
     'Custom': "自定义",   /* drone-nav.js */
     'Custom color': "自定义颜色",   /* tool-panel.js */
@@ -811,7 +801,7 @@ IntMapLang.define('zh-hans', {
     'Custom score': "自定义评分",   /* atlas-console.js */
     'Cycle': "周期",   /* map-tools.js routing.js */
     'd': "日",   /* terrain-water.js */
-    'Daily': "每日",   /* monitors.js */
+    'Daily': "每日",
     'Data & connection status': "数据与连接状态",   /* atlas-console.js */
     'Data used': "使用的数据",   /* atlas-console.js */
     'Date': "日期",   /* news-timeline.js */
@@ -822,8 +812,8 @@ IntMapLang.define('zh-hans', {
     'Dec': "12月",   /* ocean-currents.js */
     'deep space': "深太空",   /* satellite-detail.js */
     'default': "默认",   /* atlas-console.js */
-    'Delete': "删除",   /* map-tools.js monitors.js tool-panel.js */
-    'Delete this monitor and its history?': "要删除此监看及其历史纪录吗？",   /* monitors.js */
+    'Delete': "删除",   /* map-tools.js tool-panel.js */
+    'Delete this monitor and its history?': "要删除此监看及其历史纪录吗？",
     'Deleted': "已删除",   /* atlas-console.js */
     'density ': "密度 ",   /* atlas-console.js */
     'Depart at': "出发时间",   /* routing.js */
@@ -876,7 +866,7 @@ IntMapLang.define('zh-hans', {
     'drawings': "个绘制图形",   /* atlas-console.js */
     'Drawings': "绘制图形",   /* map-tools.js */
     'drawn': "已绘制",   /* atlas-console.js */
-    'Drawn area': "绘制的范围",   /* monitors.js */
+    'Drawn area': "绘制的范围",
     "Drawn from real first-level administrative boundaries (the bundled Natural Earth index)": "依实际的一级行政界线绘制（内置 Natural Earth 索引）",   /* (#R489) */
     "No boundary could be resolved for": "无法解析出界线",   /* (#R489) */
     "No boundary resolved": "界线未解析",   /* (#R489) */
@@ -888,14 +878,13 @@ IntMapLang.define('zh-hans', {
     'Drone navigation': "无人机航线规划",   /* drone-nav.js */
     'Drone planner open': "已开启无人机规划器",   /* atlas-console.js */
     'Drone planner unavailable': "无人机规划器无法使用",   /* atlas-console.js */
-    'due now': "现已到期",   /* monitors.js */
     'Duration': "持续时间",   /* satellite-detail.js */
     'each indicator’s value for this year, by its own source': "各指标当年的数值，依其各自来源",   /* stats-compare.js */
     /* seismic.js */
     'earth horizon': "地球地平线",   /* viewshed.js */
     'Earth Replay': "地球回放",   /* atlas-console.js sims.js */
     'earthquakes': "地震",   /* atlas-console.js */
-    'Earthquakes': "地震",   /* monitors.js */
+    'Earthquakes': "地震",
     'Earthquakes (7 days, in radius)': "地震（7 天内，半径范围）",   /* atlas-console.js */
     'Earthquakes near the route (last 24 h)': "路线附近的地震（过去 24 小时）",   /* routing.js */
     'east': "东",   /* atlas-console.js */
@@ -927,20 +916,15 @@ IntMapLang.define('zh-hans', {
     'equinox': "分点",   /* sims.js */
     'Era borders are still loading here — click again in a moment': "此处的年代国界仍在加载 — 请稍后再点一次",   /* app-body.js stats-compare.js */
     'error': "错误",   /* atlas-console.js */
-    'Error': "错误",   /* monitors.js */
-    'Error (data not saved)': "错误（数据未保存）",   /* monitors.js */
-    'Error (report not saved)': "错误（报告未保存）",   /* monitors.js */
+    'Error': "错误",
     'est. wave': "推估波高",   /* seismic.js */
     'Estimated time': "预估时间",   /* drone-nav.js */
     'Events (grouped news, last ': "事件（分群新闻，最近 ",   /* atlas-console.js */
     'events; the ': "起事件；共 ",   /* atlas-console.js */
-    'Every': "每",   /* monitors.js */
-    'Every 12 hours': "每 12 小时",   /* monitors.js */
-    'Every 3 hours': "每 3 小时",   /* monitors.js */
-    'Every 30 min': "每 30 分钟",   /* monitors.js */
-    'Every 6 hours': "每 6 小时",   /* monitors.js */
+    'Every': "每",
+    'Every 30 min': "每 30 分钟",
     'Every condition is met.': "所有条件皆已满足。",   /* drone-nav.js */
-    'Evidence': "证据",   /* monitors.js */
+    'Evidence': "证据",
     'Exchange rates could not be fetched, so nothing is converted.': "无法取得汇率，因此未做任何换算。",   /* industry-web.js */
     'excl. pop <': "排除人口低于",   /* atlas-console.js */
     'excl. pop >': "排除人口高于",   /* atlas-console.js */
@@ -985,7 +969,7 @@ IntMapLang.define('zh-hans', {
     'findings': "项发现",   /* atlas-console.js */
     'Fine': "细",   /* terrain-water.js */
     'Finish drawing': "结束绘制",   /* seismic.js tool-panel.js */
-    'Fires': "火灾",   /* monitors.js */
+    'Fires': "火灾",
     'Firm — ': "平稳 — ",   /* flight-sim.js */
     'first arrival': "初达波",   /* tsunami.js */
     'First report': "最早报道",   /* atlas-console.js */
@@ -1046,7 +1030,7 @@ IntMapLang.define('zh-hans', {
     'GDP & population: Maddison Project (real GDP, 2011 int$). Other indicators: World Bank aggregate of the successor states.': "GDP 与人口：Maddison Project（实质 GDP，2011 年国际元）。其他指标：世界银行对继承国的合计。",   /* countries-ui.js */
     'GEAR': "起落架",   /* flight-sim.js */
     'gear-up belly landing': "收起起落架的机腹着陆",   /* flight-sim.js */
-    'Generated': "产生时间",   /* monitors.js */
+    'Generated': "产生时间",
     'Geography': "地理",   /* countries-ui.js */
     'Geolocation unavailable': "无法取得定位",   /* atlas-console.js */
     'Geostationary': "地球同步静止",   /* satellites-live.js */
@@ -1087,9 +1071,8 @@ IntMapLang.define('zh-hans', {
     'Hide': "隐藏",   /* aircraft-detail.js tool-panel.js */
     'Hide (reopen from the dock)': "隐藏（可从停靠列重新开启）",   /* workspace.js */
     'Hide ticker': "隐藏跑马灯",   /* map-ui.js */
-    'High': "高",   /* atlas-console.js monitors.js widgets.js */
+    'High': "高",   /* atlas-console.js widgets.js */
     'High ': "高 ",   /* atlas-console.js */
-    'High — smaller changes': "高 — 变化较小",   /* monitors.js */
     'High Earth orbit': "高地球轨道",   /* satellite-detail.js */
     'High tide': "满潮",   /* world-packs.js */
     'highest': "最高",   /* atlas-console.js */
@@ -1109,8 +1092,8 @@ IntMapLang.define('zh-hans', {
     'horizon scanned to': "地平线扫描至",   /* sims.js */
     'horizon: measured from the DEM': "地平线：由 DEM 实测",   /* night-sky.js */
     'horizon: NOT measured — ': "地平线：未实测 — ",   /* night-sky.js */
-    'Hourly': "每小时",   /* monitors.js */
-    'How often': "频率",   /* monitors.js */
+    'Hourly': "每小时",
+    'How often': "频率",
     'Humidity': "湿度",   /* weather.js */
     'Identity': "识别",   /* aircraft-detail.js */
     /* seismic.js */
@@ -1142,12 +1125,11 @@ IntMapLang.define('zh-hans', {
     'Interplanetary spacecraft, from JPL Horizons trajectories': "行星际探测器，依 JPL Horizons 轨迹",   /* space.js */
     /* atlas-console.js */
     /* sims.js */
-    'Invalid area': "范围无效",   /* monitors.js */
     'isolate': "单独显示",   /* atlas-console.js */
     'Isolate': "单独显示",   /* atlas-console.js */
     'Isolate off': "关闭单独显示",   /* atlas-console.js */
     'Isotope': "同位素",   /* atlas-console.js */
-    'items': "项",   /* monitors.js */
+    'items': "项",
     'Jan': "1月",   /* ocean-currents.js */
     /* world-packs.js */
     /* world-packs.js */
@@ -1157,14 +1139,13 @@ IntMapLang.define('zh-hans', {
     'Jump to latest': "跳到最新",   /* atlas-console.js */
     'Jun': "6月",   /* ocean-currents.js */
     'Jupiter Trojan': "木星特洛伊",   /* space.js */
-    'just now': "刚刚",   /* monitors.js */
+    'just now': "刚刚",
     'k m³': "千 m³",   /* terrain-water.js */
     'Keep ': "保留 ",   /* routing.js */
     'Keep on map': "保留在地图上",   /* tool-panel.js */
     'Keep zooming in to return to the map': "持续放大即可回到地图",   /* space.js */
     'Keep zooming out for space': "持续缩小即可进入太空",   /* space.js */
     'Keplerian two-body core with a selectable launch angle, plus Allen–Eggers atmospheric drag on the re-entry vehicle, an Earth-rotation (Coriolis) ground track and an optional MaRV terminal weave. Boost thrust is treated as an impulsive burnout at ~200 km; the 3-D arc is drawn to real world scale. Educational estimate — not an operational tool.': "以克卜勒二体问题为核心，可选择发射角，并对重返载具加入 Allen–Eggers 大气阻力、地球自转（科氏力）地面轨迹，以及可选的机动弹头终端机动。助推推力视为在约 200 km 高度的瞬时燃烧结束；立体弧线以真实世界尺度绘制。教育性推估 — 并非作战工具。",   /* atlas-console.js */
-    'Key changes': "主要变化",   /* monitors.js */
     'Keyboard shortcuts': "键盘快捷键",   /* atlas-console.js keyboard-shortcuts.js */
     'Kind': "种类",   /* space.js */
     'Lagrangian particle model on LIVE Open-Meteo wind/temperature/precipitation (or the ERA5 archive for a past date): advection + stability-scaled turbulent diffusion + wet & dry deposition + radioactive decay. The source term (Bq), emission duration, isotope half-life and start time are yours to set; the colored ground zones are the final deposition classified by the real Chernobyl Cs-137 thresholds, and the dose figures assume a Cs-137 ground-shine conversion. EDUCATIONAL approximation, NOT an operational forecast — in a real emergency follow official authorities (SPEEDI / IAEA / local government).': "以实时 Open-Meteo 风场／气温／降水（或过去日期的 ERA5 文件）驱动的拉格朗日粒子模型：平流＋依稳定度调整的紊流扩散＋湿沉降与干沉降＋放射性衰变。源项（Bq）、排放持续时间、同位素半衰期与起始时刻皆可自行设置；地面彩色分区为最终沉降量，依切尔诺贝利实际的铯-137 门槛分级，剂量数字则假设铯-137 地面辐射的换算。此为教育性近似，并非作业预报 — 实际灾害时请遵从官方指示（SPEEDI／IAEA／地方政府）。",   /* atlas-console.js */
@@ -1173,8 +1154,7 @@ IntMapLang.define('zh-hans', {
     'landing sites reachable': "处可到达的降落地点",   /* atlas-console.js */
     'Language': "语言",   /* atlas-console.js */
     'Largest spill': "最大泄漏",   /* terrain-water.js */
-    'Last': "最近",   /* monitors.js */
-    'Last run': "上次执行",   /* monitors.js */
+    'Last': "最近",
     'Last seen': "最后出现",   /* aircraft-detail.js */
     'Latest': "最新",   /* stats-compare.js */
     'latest available at or before': "在此时刻或之前可取得的最新数据",   /* world-packs.js */
@@ -1225,7 +1205,6 @@ IntMapLang.define('zh-hans', {
     'Loaded news near here': "附近已加载的新闻",   /* atlas-console.js */
     'Loading cameras…': "正在加载摄影机…",   /* cameras.js */
     'Loading data…': "正在加载数据…",   /* stats-compare.js */
-    'Loading monitors…': "正在加载监看…",   /* monitors.js */
     'Loading runways…': "正在加载跑道…",   /* flight-sim.js */
     'Loading terrain DEM…': "正在加载地形 DEM…",   /* viewshed.js */
     'Loading the current atlas…': "正在加载海流图集…",   /* ocean-currents.js */
@@ -1242,16 +1221,13 @@ IntMapLang.define('zh-hans', {
     'location web-verified': "位置已由网络查证",   /* atlas-console.js */
     'Lofted': "高抛弹道",   /* atlas-console.js */
     'log': "对数",   /* analysis-panels.js */
-    'Log in': "登录",   /* monitors.js */
-    'Log in to create and view area monitors.': "请登录以建立与检视区域监看。",   /* monitors.js */
-    'Log in to run monitors.': "请登录以执行监看。",   /* monitors.js */
+    'Log in': "登录",
     /* atlas-console.js */
     'long-run estimates for this year — World Bank / IMF annual series begin in 1960': "该年份的长期推估值 — 世界银行／IMF 年度序列自 1960 年开始",   /* stats-compare.js */
     'Looking for a photo of this airframe…': "正在寻找这架机体的照片…",   /* aircraft-detail.js */
     'LOS breaks': "视线中断",   /* drone-nav.js */
-    'Low': "低",   /* atlas-console.js monitors.js widgets.js */
+    'Low': "低",   /* atlas-console.js widgets.js */
     'Low ': "低 ",   /* atlas-console.js */
-    'Low — only big changes': "低 — 仅重大变化",   /* monitors.js */
     'Low Earth orbit (LEO)': "低地球轨道（LEO）",   /* satellite-detail.js */
     'Low tide': "干潮",   /* world-packs.js */
     'Lower': "较低",   /* terrain-water.js */
@@ -1266,7 +1242,7 @@ IntMapLang.define('zh-hans', {
     'Make a U-turn': "回转",   /* routing.js */
     'Manage all map objects': "管理所有地图对象",   /* map-tools.js */
     'Manage every pin, drawing, radius, route, uploaded layer and reachable-area here — rename, recolor, hide or delete.': "在这里管理每一个图钉、绘图、半径、路线、上传的图层与可达范围 — 可重新命名、换色、隐藏或删除。",   /* atlas-console.js */
-    'Map': "地图",   /* atlas-console.js monitors.js workspace.js */
+    'Map': "地图",   /* atlas-console.js workspace.js */
     'MAP': "地图",   /* flight-sim.js */
     'Map ⇄ satellite': "地图 ⇄ 卫星",   /* keyboard-shortcuts.js */
     'map center': "地图中心",   /* atlas-console.js */
@@ -1300,8 +1276,7 @@ IntMapLang.define('zh-hans', {
     'measured cells': "个实测格",   /* ocean-currents.js */
     'measured DEM': "实测 DEM",   /* tsunami.js */
     'measuring the horizon from the terrain…': "正在由地形量测地平线…",   /* night-sky.js */
-    'Medium': "中",   /* monitors.js terrain-water.js */
-    'Medium (default)': "中（默认）",   /* monitors.js */
+    'Medium': "中",   /* terrain-water.js */
     'Medium Earth orbit (MEO)': "中地球轨道（MEO）",   /* satellite-detail.js */
     'Merge': "合并",   /* routing.js */
     'Messages': "讯息",   /* aircraft-detail.js */
@@ -1323,10 +1298,7 @@ IntMapLang.define('zh-hans', {
     'moderate': "中等",   /* analysis-panels.js atlas-console.js seismic.js */
     'Moderate': "中等",   /* widgets.js */
     'Module/method not found': "找不到模块或方法",   /* atlas-controls.js */
-    'Monitor created': "已建立监看",   /* atlas-console.js */
-    'Monitor created.': "已建立监看。",   /* monitors.js */
-    'Monitor not found.': "找不到监看。",   /* monitors.js */
-    'Monitor ran: ': "监看已执行：",   /* monitors.js */
+    /* atlas-console.js */
     'Monitors': "监看",   /* workspace.js */
     /* atlas-console.js */
     'month': "月",   /* space.js */
@@ -1340,7 +1312,7 @@ IntMapLang.define('zh-hans', {
     'my location': "我的位置",   /* atlas-console.js atlas-geo-resolve.js */
     /* sims.js */
     'Naked-eye conditions': "肉眼观测条件",   /* satellite-detail.js */
-    'Name': "名称",   /* monitors.js satellite-detail.js */
+    'Name': "名称",   /* satellite-detail.js */
     'named currents · ': "条具名海流・",   /* ocean-currents.js */
     'Named in the answer but not placed (couldn’t locate precisely): ': "回答中提到但未标绘（无法精确定位）：",   /* atlas-verify.js */
     'Named in the answer but not placed (the map lookup did not answer — not a judgement about the place): ': "回答中提到但未标绘（地图查询未回应，并非表示无法确定该地点）：",   /* atlas-verify.js */
@@ -1362,33 +1334,27 @@ IntMapLang.define('zh-hans', {
     'Need two places': "需要两个地点",   /* atlas-console.js */
     'negative': "负",   /* analysis-panels.js */
     'net': "净额",   /* routing.js */
-    'Network error — please try again.': "网络错误 — 请再试一次。",   /* monitors.js */
     'Neutral': "中性",   /* atlas-sims.js */
     'Never sunlit on': "完全无日照于",   /* sims.js */
-    'New event clusters': "新的事件群",   /* monitors.js */
-    'New monitor': "新增监看",   /* monitors.js */
     'New moon': "新月",   /* space.js */
     'New name': "新名称",   /* map-tools.js */
     'New route': "新路线",   /* drone-nav.js */
     'newest': "最新",   /* atlas-console.js */
     'news': "新闻",   /* atlas-console.js */
-    'News': "新闻",   /* atlas-console.js monitors.js news-timeline.js */
+    'News': "新闻",   /* atlas-console.js news-timeline.js */
     /* sims.js */
     'News / Info / Countries / Community tab': "新闻／信息／国家／社区分页",   /* keyboard-shortcuts.js */
     'News along the route': "沿途新闻",   /* routing.js */
     'News feed': "新闻来源",   /* atlas-console.js */
-    'Next': "下一个",   /* monitors.js */
+    'Next': "下一个",
     'Next pass': "下次通过",   /* satellite-detail.js */
-    'Next run': "下次执行",   /* monitors.js */
     'Night side of the Earth': "地球的夜侧",   /* atlas-console.js */
     'Night sky': "星空",   /* tool-panel.js */
     'Night-lights tiles could not be loaded': "无法加载夜间灯光瓦片",   /* data-layers.js */
     'No': "否",   /* countries-ui.js */
     'No aircraft matching': "没有符合的航机",   /* atlas-console.js */
-    'No area selected.': "未选取任何区域。",   /* monitors.js */
-    'No area selected. Set a radius, draw an area, or resolve a region — or use the current map view below.': "未选取任何区域。请设置半径、画出范围或指定一个地区 — 或使用下方目前的地图画面。",   /* monitors.js */
     'No boundary polygon found for': "找不到界线多边形：",   /* atlas-console.js */
-    'No change': "没有变化",   /* monitors.js */
+    'No change': "没有变化",
     'No closed area was drawn — draw a loop on the map.': "未画出封闭范围 — 请在地图上围成一圈。",   /* seismic.js */
     'No coast in this view — pan to a coastline, or tap one for its tide times.': "此画面中没有海岸 — 请移动到海岸线，或点击一处查看潮汐时刻。",   /* world-packs.js */
     'No conflict with any other saved route.': "与其他已保存的路线没有冲突。",   /* drone-nav.js */
@@ -1404,7 +1370,6 @@ IntMapLang.define('zh-hans', {
     /* routing.js */
     /* terrain-water.js */
     'No elevation data for this route yet.': "此路线尚无高程数据。",   /* routing.js */
-    'No evidence stored.': "未保存任何证据。",   /* monitors.js */
     'No geolocated articles in the loaded news for this window/area': "此时间范围／区域内，已加载的新闻中没有已定位的报道",   /* atlas-console.js */
     'No headlines have loaded yet.': "尚未加载任何标题。",   /* news-sources.js */
     'No historical route found.': "找不到历史路线。",   /* routing.js */
@@ -1414,7 +1379,6 @@ IntMapLang.define('zh-hans', {
     'No match': "没有符合项目",   /* stats-compare.js */
     'No matching countries / metric unavailable.': "没有符合的国家／该指标无法使用。",   /* atlas-reply.js */
     /* atlas-console.js */
-    'No monitors yet. Set a radius, draw an area, or resolve a region, then create a monitor to watch it for changes.': "尚无监看。请先设置半径、画出范围或指定地区，再建立监看以追踪其变化。",   /* monitors.js */
     'No objects on the map.': "地图上没有对象。",   /* atlas-console.js */
     'No objects yet. Drop a pin, draw, add a radius, upload GeoJSON, or make a route — they all show up here to manage in one place.': "尚无对象。放置图钉、绘图、加入半径、上传 GeoJSON 或建立路线 — 全都会出现在这里统一管理。",   /* map-tools.js */
     'No opacity control: ': "没有不透明度控制：",   /* atlas-console.js */
@@ -1434,7 +1398,6 @@ IntMapLang.define('zh-hans', {
     'No route to check': "没有可检查的路线",   /* atlas-console.js */
     'No route to return from': "没有可回程的路线",   /* atlas-console.js */
     'No route yet': "尚无路线",   /* atlas-console.js */
-    'No runs yet.': "尚未执行过。",   /* monitors.js */
     'No satellite matching': "没有符合的卫星",   /* atlas-console.js */
     'no satellite night-lights record exists before {y}': "{y} 年之前没有卫星夜间灯光纪录",   /* data-layers.js */
     'No Street View coverage here': "此处没有街景涵盖",   /* street-view.js */
@@ -1445,7 +1408,7 @@ IntMapLang.define('zh-hans', {
     'No tributaries returned by OpenStreetMap here': "OpenStreetMap 在此处没有回传任何支流",   /* atlas-console.js */
     'no wave in this run': "本次模拟没有产生波浪",   /* tsunami.js */
     /* data-layers.js */
-    'None': "无",   /* monitors.js */
+    'None': "无",
     'none — everything is held': "无 — 全部保留",   /* terrain-water.js */
     'None (default feeds only)': "无（仅默认数据源）",   /* news-sources.js */
     'none (k=1)': "无（k=1）",   /* viewshed.js */
@@ -1573,7 +1536,7 @@ IntMapLang.define('zh-hans', {
     'Park': "公园",   /* drone-ops.js */
     'Part of the route is above 180 m, the highest level the wind model publishes — the 180 m wind is used there rather than an extrapolation.': "部分路线高于 180 米，那是风场模型公布的最高层 — 该处直接采用 180 米的风，而非外插。",   /* drone-ops.js */
     'partial': "偏食",   /* space.js */
-    'Partial': "部分",   /* monitors.js */
+    'Partial': "部分",
     'partners': "伙伴",   /* world-packs.js */
     /* world-packs.js */
     "A published cloud region or campus. The point is the location the operator publishes (a city or county), not a surveyed building; fields the operator does not publish are left out rather than estimated.": "已公布的云端区域或园区。点位是营运者公布的地点（城市或郡），并非实测建物；营运者未公布的字段一律略过，不做估算。",   /* datacenters.js */
@@ -1608,12 +1571,11 @@ IntMapLang.define('zh-hans', {
     "Surveyed in OpenStreetMap. Every field above comes from that object’s own tags; nothing is inferred.": "OpenStreetMap 的实测数据。以上字段皆为该对象自身的标签，未做任何推论。",   /* datacenters.js */
     'Partners shown': "显示的伙伴",   /* world-packs.js */
     'Pass in progress': "通过中",   /* satellite-detail.js */
-    'past 30 days': "过去 30 天",   /* monitors.js */
     'Path length (3-D)': "路径长度（立体）",   /* drone-nav.js */
-    'Pause': "暂停",   /* monitors.js terrain-water.js */
+    'Pause': "暂停",   /* terrain-water.js */
     'PAUSE': "暂停",   /* flight-sim.js */
     'paused': "已暂停",   /* space.js */
-    'Paused': "已暂停",   /* atlas-console.js monitors.js */
+    'Paused': "已暂停",   /* atlas-console.js */
     'PAUSED': "已暂停",   /* flight-sim.js */
     /* widgets.js */
     'Peak coastal height (Green’s law)': "沿岸最大波高（格林定律）",   /* tsunami.js */
@@ -1649,8 +1611,6 @@ IntMapLang.define('zh-hans', {
     'Plate code': "板块代码",   /* layer-packs.js */
     'playable now': "现在可玩",   /* tsunami.js */
     'Playground unavailable': "游乐场无法使用",   /* atlas-console.js */
-    'Please set an area to monitor first (radius, drawn area, region, or the current map view).': "请先设置要监看的区域（半径、绘制范围、地区或目前地图画面）。",   /* monitors.js */
-    'Please wait a moment before running again.': "请稍候再重新执行。",   /* monitors.js */
     /* sims.js */
     'plume reach': "烟流范围",   /* atlas-console.js */
     /* sims.js */
@@ -1685,17 +1645,15 @@ IntMapLang.define('zh-hans', {
     'Press and drag on the map to trace an area': "在地图上按住并拖动以描绘范围",   /* map-tools.js */
     'Press and drag on the map to trace any outline.': "在地图上按住并拖动即可描绘任何轮廓。",   /* tool-panel.js */
     'Pressure': "气压",   /* weather.js */
-    'previous run': "上次执行",   /* monitors.js */
+    'previous run': "上次执行",
     'Primary energy': "一次能源",   /* world-packs.js */
     'Prison': "监狱",   /* drone-ops.js */
     'Propagator branch': "外推方法分支",   /* satellite-detail.js */
     'Public-transit routing (Transitous / MOTIS) — includes REAL-TIME updates for this trip (live departures / delays where the operator publishes them).': "大众运输路径规划（Transitous／MOTIS）— 本行程含实时更新（营运者有公布时的实时发车／误点）。",   /* atlas-console.js */
     'Public-transit routing (Transitous / MOTIS) — timetable-based (no real-time data for this trip).': "大众运输路径规划（Transitous／MOTIS）— 以时刻表为准（本行程无实时数据）。",   /* atlas-console.js */
     /* atlas-console.js */
-    'Publishers': "媒体",   /* monitors.js */
     'QNH': "修正海平面气压",   /* aircraft-detail.js */
     'Querying Wikidata…': "正在查询 Wikidata…",   /* industry-web.js */
-    'Quota exceeded': "已超过用量上限",   /* monitors.js */
     'radio 4/3': "无线电 4/3",   /* viewshed.js */
     'Radio coverage': "无线电涵盖",   /* atlas-console.js sims.js */
     'Radio frequency': "无线电频率",   /* drone-nav.js */
@@ -1712,7 +1670,6 @@ IntMapLang.define('zh-hans', {
     'Raise': "抬升",   /* terrain-water.js */
     'raised to clear the terrain below it': "已抬高以避开下方地形",   /* aircraft-detail.js */
     /* atlas-console.js */
-    'Ran: ': "已执行：",   /* monitors.js */
     'Range (km)': "射程（公里）",   /* viewshed.js */
     'rate-limited': "受频率限制",   /* atlas-console.js */
     'rays': "射线",   /* viewshed.js */
@@ -1747,7 +1704,7 @@ IntMapLang.define('zh-hans', {
     'Refraction': "折射",   /* viewshed.js */
     'Refresh': "刷新",   /* weather.js */
     'Regenerate': "重新产生",   /* analysis-panels.js */
-    'Region': "地区",   /* monitors.js */
+    'Region': "地区",
     'Registration': "注册编号",   /* aircraft-detail.js */
     'Rejected — invalid/degenerate shape (not drawn)': "已拒绝 — 形状无效或退化（未绘制）",   /* atlas-console.js */
     /* atlas-console.js */
@@ -1760,8 +1717,7 @@ IntMapLang.define('zh-hans', {
     'reloading…': "重新加载中…",   /* atlas-console.js */
     'Remove': "移除",   /* atlas-console.js */
     'Rename': "重新命名",   /* map-tools.js */
-    'Report not found.': "找不到报告。",   /* monitors.js */
-    'Reports': "报告",   /* monitors.js */
+    'Reports': "报告",
     'Research: ': "研究：",   /* analysis-panels.js atlas-console.js */
     'Researching…': "研究中…",   /* atlas-console.js */
     'Researching… (background, history, economy, military, recent developments)': "研究中…（背景、历史、经济、军事、近期发展）",   /* analysis-panels.js */
@@ -1776,7 +1732,7 @@ IntMapLang.define('zh-hans', {
     'restricted areas within their buffers': "其缓冲区内的限制区",   /* atlas-console.js */
     'Restricted-area data could not be fetched — this route has NOT been checked against airports, military areas or reserves.': "无法取得限制区数据 — 本路线尚未与机场、军事区或保护区比对。",   /* drone-ops.js */
     'Result': "结果",   /* drone-nav.js */
-    'Resume': "继续",   /* monitors.js */
+    'Resume': "继续",
     'Resume drawing': "继续绘制",   /* tool-panel.js */
     /* atlas-console.js */
     'retrograde': "逆行",   /* space.js */
@@ -1807,10 +1763,8 @@ IntMapLang.define('zh-hans', {
     'routes — tap one to show it on the map': "条路线 — 点一条即可显示在地图上",   /* atlas-console.js */
     /* routing.js */
     'RUD': "方向舵",   /* flight-sim.js */
-    'Run history': "执行纪录",   /* monitors.js */
-    'Run now': "立即执行",   /* monitors.js */
     'Run this request again': "重新执行这个请求",   /* atlas-console.js */
-    'Running…': "执行中…",   /* monitors.js */
+    'Running…': "执行中…",
     /* terrain-water.js */
     'rupture': "震源域",   /* seismic.js */
     'Rupture': "震源域",   /* seismic.js tsunami.js */
@@ -1827,7 +1781,7 @@ IntMapLang.define('zh-hans', {
     'Saved': "已保存",   /* atlas-console.js */
     'Saved routes': "已保存的路线",   /* drone-nav.js */
     'Scanning the coast in view…': "正在扫描画面中的海岸…",   /* world-packs.js */
-    'Scheduled': "已调度",   /* monitors.js */
+    'Scheduled': "已调度",
     'Science': "科学",   /* satellites-live.js */
     'Screenshot': "屏幕撷取",   /* atlas-console.js workspace.js */
     'Sea floor near the source': "震源附近的海底地形",   /* tsunami.js */
@@ -1971,7 +1925,6 @@ IntMapLang.define('zh-hans', {
     'Selected altitude': "选定高度",   /* aircraft-detail.js */
     'Semi-major axis': "半长轴",   /* space.js */
     'Send': "送出",   /* analysis-panels.js atlas-console.js */
-    'Sensitivity': "灵敏度",   /* monitors.js */
     'Sep': "9月",   /* ocean-currents.js */
     'Set by the drawn rupture — remove it to edit': "由所绘震源域决定 — 移除后才可编辑",   /* seismic.js */
     'Set the heights and range, then analyze. Leave the frequency empty for pure geometry; give one to also get first-Fresnel and diffraction.': "设置高度与距离后再分析。频率留空即为纯几何计算；填入频率则会一并算出第一菲涅耳区与绕射。",   /* viewshed.js */
@@ -1997,9 +1950,8 @@ IntMapLang.define('zh-hans', {
     'Show': "显示",   /* aircraft-detail.js space.js tool-panel.js */
     'Show / hide': "显示／隐藏",   /* map-tools.js */
     'Show / hide on the map': "在地图上显示／隐藏",   /* atlas-console.js */
-    'Show change points on map': "在地图上显示变化点",   /* monitors.js */
     'Show details': "显示详情",   /* terrain-water.js */
-    'Show on map': "在地图上显示",   /* monitors.js */
+    'Show on map': "在地图上显示",
     'Showing the nearest available panorama — exact Street View coverage couldn\'t be verified (a network filter or browser extension may be blocking Google\'s tiles)': "显示最近可用的全景 — 无法确认确切的街景涵盖（可能有网络过滤器或浏览器扩充功能挡住了 Google 的瓦片）",   /* street-view.js */
     'Shown on the map': "已显示在地图上",   /* atlas-console.js */
     'shown on the map. I could not compile a written summary this time — try rephrasing the question.': "已显示在地图上。这次无法整理出文字摘要 — 请换个说法再问。",   /* atlas-console.js */
@@ -2025,12 +1977,11 @@ IntMapLang.define('zh-hans', {
     'Some regions from real OpenStreetMap boundaries': "部分地区取自 OpenStreetMap 的实际界线",   /* atlas-console.js */
     'Some ride-segment shapes could not be retrieved — those legs are listed above but not drawn on the map (no straight-line substitutes).': "部分乘车路段的形状无法取得 — 这些路段列在上方但未画在地图上（不以直线代替）。",   /* atlas-console.js */
     'Some targets could not be matched to border data — checking with the model': "部分目标无法对应到界线数据 — 正在向模型确认",   /* atlas-console.js */
-    'soon': "即将",   /* monitors.js */
+    'soon': "即将",
     /* atlas-console.js */
     'SOUND': "音效",   /* flight-sim.js */
     'Source': "来源",   /* aircraft-detail.js atlas-console.js cameras.js */
     'Source term': "源项",   /* atlas-console.js */
-    'Source unavailable': "来源无法使用",   /* monitors.js */
     'Source: AI-estimated (neither OpenStreetMap nor Wikidata had matching entries here — positions are approximate, verify before relying on them)': "来源：AI 推估（此处 OpenStreetMap 与 Wikidata 都没有相符的项目 — 位置为概略值，采用前请自行查证）",   /* atlas-console.js */
     'Source: Our World in Data — Ember (electricity) and the Energy Institute Statistical Review (primary energy). The map shades the low-carbon share of electricity, and the fossil share of primary energy; the bar is the mix itself, because nine sources are not one color.': "来源：Our World in Data — Ember（电力）与 Energy Institute Statistical Review（一次能源）。地图着色为电力的低碳占比，以及一次能源的化石占比；长条则是能源结构本身，因为九种来源不能用一种颜色表示。",   /* world-packs.js */
     'Sources': "来源",   /* atlas-console.js space.js */
@@ -2141,7 +2092,6 @@ IntMapLang.define('zh-hans', {
     'Terrain shadow': "地形阴影",   /* sims.js */
     'terrain to': "地形量测至",   /* seismic.js */
     'Terrain too coarse here — uniform site class used': "此处地形过于粗糙 — 已改用单一场址分类",   /* seismic.js */
-    'That area is too large/detailed to save. Try a simpler shape.': "该范围太大或太细致，无法保存。请改用较简单的形状。",   /* monitors.js */
     'That name is ambiguous — which did you mean?': "这个名称不明确 — 你指的是哪一个？",   /* atlas-console.js */
     'That range reaches past the map’s poles — reduce it.': "该范围已超出地图的两极 — 请缩小。",   /* viewshed.js */
     'The AI provider quota was reached — this is separate from your IntMap free uses. Please try again later.': "AI 供应商的用量上限已达 — 这与你的 IntMap 免费次数无关。请稍后再试。",   /* ai-core.js */
@@ -2171,15 +2121,12 @@ IntMapLang.define('zh-hans', {
     'the loaded catalog is': "已加载的目录为",   /* atlas-console.js */
     'The map highlight could not be drawn (map still loading)': "无法绘制地图标示（地图仍在加载）",   /* atlas-reply.js */
     'The map view could not be updated for this, but the explanation above stands.': "无法为此更新地图画面，但上面的说明仍然成立。",   /* atlas-console.js */
-    'The monitor runs on our servers even when this page is closed. A report is generated only when a meaningful change is detected — every claim links to its source.': "即使关闭这个页面，监看仍会在我们的服务器上执行。只有侦测到有意义的变化时才会产生报告 — 每一项主张都会链接到其来源。",   /* monitors.js */
     'The monthly fields could not be read — the mean is shown.': "无法读取月别数据 — 显示年平均。",   /* ocean-currents.js */
     'the Moon is up here': "月亮在此地已升起",   /* space.js */
     'The obstacle is close to the far end, so raising THIS antenna barely helps — raise the other one.': "障碍物靠近另一端，因此提高「这一端」的天线几乎没有帮助 — 请提高另一端。",   /* viewshed.js */
     'The orbit': "轨道",   /* satellite-detail.js */
     'The ownership statements could not be fetched this time, so no lines are drawn. That is a failed query, not an absence of ownership.': "这次无法取得持股关系的叙述，因此没有画出任何连接。这是查询失败，并不代表没有持股关系。",   /* industry-web.js */
     'The parameters changed — press {icon:play} to recompute the intensity map.': "参数已变更 — 请按 {icon:play} 重新计算震度分布。",   /* seismic.js */
-    'The past 30 days': "过去 30 天",   /* monitors.js */
-    'The previous run': "上次执行",   /* monitors.js */
     'the query took longer than 45 s': "查询超过 45 秒",   /* industry-web.js */
     'the region outline was not available, so related places are shown as points': "无法取得该地区的轮廓，因此相关地点以点显示",   /* atlas-console.js */
     'The route already ends at the launch point': "路线已经在起飞点结束",   /* atlas-console.js */
@@ -2220,8 +2167,6 @@ IntMapLang.define('zh-hans', {
     'This feed could not be fetched just now, so nothing below is a statement about what is in force.': "目前无法取得此数据源，因此以下内容并不代表实际生效中的警报。",   /* world-packs.js */
     'This help': "本说明",   /* keyboard-shortcuts.js */
     'This mission has ended. The trajectory is still published; the spacecraft is no longer operating.': "这项任务已结束。轨迹仍持续公布；太空船已不再运作。",   /* space.js */
-    'This monitor can’t run right now.': "这个监看目前无法执行。",   /* monitors.js */
-    'This monitor is paused — resume it to run.': "这个监看已暂停 — 请先恢复再执行。",   /* monitors.js */
     'This orbit is not closed — the object passes the Sun once and leaves. There is no period and no repeat.': "这条轨道不封闭 — 天体只经过太阳一次便离去。没有周期，也不会重复。",   /* space.js */
     'This satellite does not rise above the horizon here in the next 24 hours.': "未来 24 小时内，这颗卫星不会升到此地的地平线之上。",   /* satellite-detail.js */
     'This satellite is no longer in the current catalog.': "这颗卫星已不在目前的目录中。",   /* satellite-detail.js */
@@ -2239,7 +2184,6 @@ IntMapLang.define('zh-hans', {
     /* terrain-water.js */
     'Time-series': "时间序列",   /* atlas-console.js stats-compare.js */
     'Time-zone data unavailable': "无法取得时区数据",   /* layer-packs.js */
-    'Timed out': "已逾时",   /* monitors.js */
     'Timezones': "时区",   /* countries-ui.js */
     'tkgCom': 'tkgCom',   /* i18n-late.js */
     'tkgCrypto': 'tkgCrypto',   /* i18n-late.js */
@@ -2326,9 +2270,7 @@ IntMapLang.define('zh-hans', {
     /* world-packs.js */
     'Usable for PV': "可用于太阳光电",   /* sims.js */
     'Use': "使用",   /* drone-nav.js */
-    'Use current map view': "使用目前的地图画面",   /* monitors.js */
     /* routing.js */
-    'Using the current map view — pan/zoom before creating, or close and set a radius, draw an area or resolve a region for a tighter watch.': "使用目前的地图画面 — 建立前可先平移或缩放，或关闭后改以半径、绘制范围或指定地区来更精准地监看。",   /* monitors.js */
     'using the map’s center as the observer': "以地图中心作为观测者",   /* space.js */
     'UTC': "UTC",   /* space.js */
     'V/SPEED': "垂直速度",   /* flight-sim.js */
@@ -2344,7 +2286,6 @@ IntMapLang.define('zh-hans', {
     'very weak': "很弱",   /* analysis-panels.js */
     'view': "画面",   /* night-sky.js */
     'View': "检视",   /* cameras.js workspace.js */
-    'View report': "检视报告",   /* monitors.js */
     'Viewing the future': "正在检视未来",   /* news-timeline.js */
     'Viewing the past': "正在检视过去",   /* news-timeline.js */
     /* news-timeline.js */
@@ -2362,8 +2303,7 @@ IntMapLang.define('zh-hans', {
     /* data-layers.js */
     'Warning': "警告",   /* world-packs.js */
     'Warnings': "警报",   /* world-packs.js */
-    'Watch for': "注意",   /* monitors.js */
-    'Watching': "监看中",   /* monitors.js */
+    'Watching': "监看中",
     'water': "水",   /* sims.js */
     /* terrain-water.js */
     'Water source': "水源",   /* terrain-water.js (#R284) */
@@ -2374,7 +2314,7 @@ IntMapLang.define('zh-hans', {
     'ways in the corridor': "条廊道内的路径",   /* routing.js */
     'weak': "弱",   /* analysis-panels.js atlas-console.js seismic.js */
     'weather': "天气",   /* atlas-console.js */
-    'Weather': "天气",   /* monitors.js weather.js */
+    'Weather': "天气",   /* weather.js */
     'Weather (live)': "天气（实时）",   /* tool-panel.js */
     'weather (no place given)': "天气（未指定地点）",   /* atlas-console.js */
     'Weather along the way': "沿途天气",   /* routing.js */
@@ -2443,8 +2383,7 @@ IntMapLang.define('zh-hans', {
     'years': "年",   /* space.js */
     'Years': "年",   /* stats-compare.js */
     'Yes': "是",   /* countries-ui.js */
-    'You have reached your monitor limit for this plan.': "你已达到此方案的监看数量上限。",   /* monitors.js */
-    'Your monitors': "你的监看",   /* atlas-console.js */
+    /* atlas-console.js */
     'yr': "年",   /* atlas-console.js countries-ui.js space.js */
     'zenith': "天顶",   /* night-sky.js */
     'zonal': "东西流",   /* ocean-currents.js */
@@ -2648,7 +2587,6 @@ IntMapLang.define('zh-hans', {
        and these are that gap closed. WARNING: ui.zh-hans.js is REGENERATED from this file,
        never edited by hand: `node scripts/zh-hans.mjs`. */
     ')': "）",
-    'Area monitors are not available right now.': "区域监视目前无法使用。",
     'Below are news headlines reported within a single geographic area. In about three concise lines, summarize what is happening in this region from a geopolitical perspective. Begin each line with \'- \'. Stay grounded in the given headlines and avoid over-speculation.': "以下是在同一个地理范围内报道的新闻标题。请以地缘政治的角度，用大约三行简洁的中文摘要这个地区正在发生的事。每一行以「- 」开头。只根据所给的标题陈述，避免过度推测。",
     'Compare two images of the same area (first = earlier, second = later). Report: military construction/expansion, movement of ships/aircraft/vehicles, land clearing, natural disasters (floods, fires, landslides), and urban/infrastructure change. Use bullet points, each with a confidence level (high/medium/low). If nothing changed, say so, and beware false positives from clouds, image quality, or seasonal differences.': "请比对同一地区的两张影像（第一张＝较早，第二张＝较晚）。请报告：军事设施的兴建与扩张，船舰、航空器、车辆等装备的移动，土地整地与伐除，自然灾害（洪水、火灾、山崩等），以及都市与基础设施的变化。以条列方式呈现，每一项标注信心水准（高／中／低）。若没有变化就直接说明，并注意云量、影像质量或季节差异造成的误判。",
     'The drawn outline is the fault’s surface projection. Dip, width and depth are estimated from its length and shape (Wells & Coppersmith 1994 with the magnitude eliminated); the mean slip follows from the stress drop above (Eshelby). Leave a box empty to keep it estimated.': "所绘的轮廓是断层的地表投影。倾角、宽度与深度由其长度和形状推估（Wells & Coppersmith 1994，并消去规模项）；平均滑移量则由上方的应力降导出（Eshelby）。字段留空即维持推估值。",
@@ -4092,8 +4030,6 @@ IntMapLang.define('zh-hans', {
   "Ukraine frontline (live)": "乌克兰前线（实时）",
   "3D buildings (cities)": "3D 建筑（城市）",
   "Volcanoes (Smithsonian GVP)": "火山（史密森尼 GVP）",   /* (#R432) */
-  "Unchanged / not confirmed": "未变／未确认",
-  "Data gaps": "数据缺口",
   "Limitations": "限制与不确定性",
   "arrives": "到达",
   "no arrival": "未到达",

@@ -21,7 +21,7 @@ the data flow, an Edge Function, or the auth model changes.
 | Per-user private data (`favorites`, `user_prefs`, `donations`/`feedback`/`bug_reports` PII, `ai_usage`) | Postgres | **RLS** + column grants + SECURITY DEFINER RPCs |
 | Admin capability + billing (`profiles.is_admin`/`is_pro`/`plan`/`email`) | Postgres | RLS (`is_admin()`) + column grant + **`tg_profiles_guard_privcols` BEFORE-UPDATE trigger** (grant-independent freeze, #R155) — no self-escalation of admin or billing plan |
 | Provider API keys (AI, etc.) | Edge Function env (server only) | Never sent to the browser; never logged |
-| AI spend / quota | `ai_usage` + `ai-proxy` and `monitor-run`'s «Run now», through one ledger (`_shared/ai-ledger.js`) (per account); `relay_rate_buckets` `<fn>:global:day` (per project), and `ai-proxy:newcomer:day` (the share of it accounts under a week old draw from) | JWT-gated proxy + atomic RPC; fail-closed scheduler secrets; **a project-wide daily ceiling in every function that holds a provider key** (§5, «Spend ceilings») |
+| AI spend / quota | `ai_usage` + `ai-proxy`, through one ledger (`_shared/ai-ledger.js`) (per account); `relay_rate_buckets` `<fn>:global:day` (per project), and `ai-proxy:newcomer:day` (the share of it accounts under a week old draw from) | JWT-gated proxy + atomic RPC; fail-closed scheduler secrets; **a project-wide daily ceiling in every function that holds a provider key** (§5, «Spend ceilings») |
 | Integrity of what every visitor sees | `index.html` render paths | **XSS output-encoding** (`window.IntMapSafe`) + CSP |
 
 **Adversaries considered:** an anonymous internet user; a *logged-in* user attacking other
@@ -83,7 +83,7 @@ flowchart LR
    in `js/atlas-executor.js` step 4b, before anything runs: a capability whose confirm column is
    `explicit`, **or a control whose element declares `data-effect="outward"` / `"destructive"`**
    (a community post, vote, comment or report; feedback and bug reports; an email, password or
-   avatar change; logging out everywhere; deleting a post, a comment, a passkey, a monitor or the
+   avatar change; logging out everywhere; deleting a post, a comment, a passkey or the
    account), answers `needs_confirm` when the model asks for it after outside content was in the
    turn. The reader's answer runs the same call; a UI press, or a request with no outside content
    in the turn, is unchanged. `system.control` presses any button, so the rule is carried by the
@@ -111,8 +111,8 @@ flowchart LR
     schema-wide default privileges grant `anon`/`authenticated` **full** table privileges on
     every `public` table (`relacl = {authenticated=arwdDxtm,…}`), so a *column-level* grant does
     **not** actually restrict a table that has a permissive RLS policy. Where a column must stay
-    server-owned even though its row is user-editable (the Area-Monitors run-state + `next_run_at`),
-    protection is a **BEFORE UPDATE trigger** (`tg_monitors_guard_state`), not the grant. Tables
+    server-owned even though its row is user-editable (`profiles.is_admin` / `is_pro` / `plan` / `email`),
+    protection is a **BEFORE UPDATE trigger** (`tg_profiles_guard_privcols`, §11), not the grant. Tables
     whose writes are meant to be service-role-only rely on RLS **default-deny** (no write policy) —
     that holds in prod regardless of grants. pgTAP now simulates the prod grant so tests catch this.
   - **Who wrote a community post, and when, is the database's statement.** The INSERT grant on
@@ -130,12 +130,10 @@ flowchart LR
   `increment_ai_usage` / `refund_ai_usage` (and, for its cost columns only, `record_ai_usage`), whose
   EXECUTE is granted to `service_role` only.
   ⚠ **(ai-one-ledger) Every path that calls a model on a reader's behalf spends the same allowance.**
-  `monitor-run`'s «Run now» used to call the provider on the server's key without touching it — one
-  free account's five monitors could start 600 manual runs an hour (30 s cooldown each), bounded only by
-  the project-wide ceiling. It now charges `consume_ai_turn` through `_shared/ai-ledger.js` (the plan
-  table and the account resolution ai-proxy uses) at the moment a run reaches the AI step, sends
-  nothing to the provider when the allowance is spent (run ends `quota_exceeded`, data kept), and fails
-  closed when the ledger does not answer. Scheduled runs are not charged (unchanged).
+  The area monitors' «Run now» (a second caller, since removed with that feature) once called the
+  provider without touching it — one free account's five monitors could start 600 manual runs an hour.
+  The ledger (`_shared/ai-ledger.js`: the plan table, the account resolution, `consume_ai_turn`) is the
+  one door such a caller goes through, and it fails closed when the ledger does not answer.
   The term-gloss lane has the identical shape in its own table (`ai_gloss_usage`,
   `consume_ai_gloss` / `refund_ai_gloss`).
   ⚠ **Which lane pays is declared in a header (`x-intmap-lane`) and is therefore not trusted.**
@@ -309,9 +307,9 @@ CodeQL runs the JS XSS queries.
 
 ## 5. Edge Functions & `service_role` usage
 
-**There are twenty-two Edge Functions, and this table used to list two.** `supabase/config.toml` used
+**There are twenty-one Edge Functions, and this table used to list two.** `supabase/config.toml` used
 to declare five and the other three carried their deploy flag only in a header comment — a deploy
-flag that lives in a comment is not configuration. All twenty-two are declared there now
+flag that lives in a comment is not configuration. All twenty-one are declared there now
 (`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351, `volcano-feed` #R353,
 `quotes-relay` #R533, `client-errors` client-error-log, `atlas-embed` atlas-semantic-search,
 `fetch-relay` own-fetch-relay, `reader-reports` anon-write-guard, `usage-count` anonymous-usage-counts).
@@ -324,7 +322,6 @@ flag that lives in a comment is not configuration. All twenty-two are declared t
 | `ai-proxy` | **true** | Supabase JWT (login required) → 401 | plan lookup + `consume/refund/settle_ai_turn` RPCs + the `ai-proxy:global:day` bucket (and, for an account under a week old, `ai-proxy:newcomer:day` first) | server env only, never logged; every provider request through `_shared/ai-provider.js` |
 | `atlas-embed` | **true** | Supabase JWT, and the function resolves the caller itself (`/auth/v1/user`) → 401 `signed_out`; the per-user buckets (minute, seed hour, **share of the day**) are keyed by that id | `atlas_capability_catalog_size` / `_similarity` / `_seed` RPCs and the shared `relay_take` buckets | `OPENAI_API_KEY` (the same secret as `ai-proxy`), server env only, never returned. The query is embedded per call and **not stored**; the catalogue key is recomputed from the text before anything is embedded or stored |
 | `delete-account` | **true** | Supabase JWT **and** an explicit re-check; body must be `{"confirm":"DELETE"}` | `delete_account_data(uuid)` then `auth.admin.deleteUser` | — |
-| `monitor-run` | false | two callers, two credentials: pg_cron's `x-monitor-secret` (from Vault) or a user JWT; fail-closed on the secret | claim/finalize monitor runs; the `monitor-run:global:day` bucket | server env only; provider requests through `_shared/ai-provider.js` |
 | `refresh-news` | false (by design) | **fail-closed shared secret** (`x-refresh-secret` header, constant-time) | write `current_news`, read `geo_pins`; the `refresh-news:global:day` bucket | server env only; provider requests through `_shared/ai-provider.js` |
 | `news-ingest` | false (by design) | **fail-closed shared secret** (`x-news-ingest-secret` header, constant-time, POST only) | write the `news_*` Event tables; read `news_sources` / `news_source_feeds`; the `news-ingest:global:day` bucket | server env only; provider requests through `_shared/ai-provider.js` |
 | `who-don` | false (by design) | two callers: the public GET (already-extracted counts, per-address `callerGate` bucket) and the ingest POST behind a **fail-closed shared secret** (`x-who-don-secret` header, constant-time) | read (anon key) / upsert (service role) `who_don_extracts`; the `who-don:global:day` bucket | the AI provider key, server env only; provider requests through `_shared/ai-provider.js` |
@@ -359,7 +356,7 @@ their values.
 Per-account quotas (`PLAN_LIMITS`, `TURN_MAX_CALLS`) bound an account, and an account costs nothing
 to make; the scheduler secrets bound who may call, not how much a leaked secret or a loop can spend.
 The September 2026 audit found that only `atlas-embed` and `routing-relay` bounded the project at
-all. Now `ai-proxy`, `atlas-embed`, `monitor-run`, `news-ingest`, `refresh-news` and `who-don`
+all. Now `ai-proxy`, `atlas-embed`, `news-ingest`, `refresh-news` and `who-don`
 reach a paid provider only through **one door**, `_shared/ai-provider.js` `providerFetch`:
 - it takes one unit from `<function>:global:day` in `public.relay_rate_buckets` (the same
   `relay_take` row lock as the relays; no new migration) **before** anything is sent — one unit per
@@ -368,13 +365,13 @@ reach a paid provider only through **one door**, `_shared/ai-provider.js` `provi
 - without a ceiling (or a receipt the ceiling minted) it sends nothing, and it refuses any host that
   is not a provider, so it cannot be used as a general fetch;
 - its failures carry a **status and a length, never the provider's body** (`providerFail`). The body
-  used to reach `monitor_runs.error_detail` (readable by the monitor's owner) and
+  used to reach a run record its owner read (the area monitors', since removed) and
   `news_ingest_runs`; a provider error body can echo the prompt or name the account.
 The numbers are each function's own, with the observation and the expiry beside the constant, and
 each can be moved without a deploy through `<FUNCTION>_GLOBAL_PER_DAY`:
-`ai-proxy` 3,000 requests (~26× the busiest recorded day, 2026-09-17: 114); `monitor-run`,
+`ai-proxy` 3,000 requests (~26× the busiest recorded day, 2026-09-17: 114);
 `refresh-news` and `news-ingest` are **derived from their pg_cron schedules** (runs a day × the most
-one run can ask × 2 for hand-run jobs — 2,880 / 2,304 / 6,336), and
+one run can ask × 2 for hand-run jobs — 2,304 / 6,336), and
 `tests/edge-spend-and-models-checks.test.mjs` fails if a schedule in the migrations changes under
 them; `who-don` 1,000 (its busiest day, the 2026-09-09 backfill, was 461 extractions); `atlas-embed`
 keeps its 20,000 units and adds **one account's share of the day** (the day ÷ `READERS_PER_ADDRESS`
@@ -984,9 +981,9 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    `14_anon_write_guard_test.sql` keeps it at zero). What `authenticated` may still insert through PostgREST
    is by design and needs an account: `community_posts`, `community_comments`, `community_votes`,
    `community_comment_votes`, `community_reports`, `favorites`, `user_prefs`, `saved_news_events`,
-   `donations`, `area_monitors`, and the admin-only `geo_pins` / `dashboard_cards`. Of these the votes and
-   reports are one row per (post, account) by primary key, a saved event one per (event, account), and
-   `area_monitors` is capped by `monitor_limit()`; **posts, comments, favorites (unique per article link,
+   `donations`, and the admin-only `geo_pins` / `dashboard_cards`. Of these the votes and
+   reports are one row per (post, account) by primary key and a saved event one per (event, account);
+   **posts, comments, favorites (unique per article link,
    which the caller writes) and donation intents have no count ceiling per account**.
    An account is not free, though: measured 2026-09-30, production's `GET /auth/v1/settings` answers
    `mailer_autoconfirm: false` and `anonymous_users: false` — an e-mail sign-up must be confirmed, and the

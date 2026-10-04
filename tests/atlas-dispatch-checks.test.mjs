@@ -94,16 +94,17 @@ test('R278 ① the catalogue gate names an uncatalogued capability, and only the
 });
 
 /* ── ② EVERY LIVE CAPABILITY IS DESCRIBED TO THE PLANNER ───────────────────────────────────────
-   The #R115 rule, enforced instead of merely written down. `monitor` is the one exception and it is
-   allowed only while it really is withdrawn (#R231). */
+   The #R115 rule, enforced instead of merely written down. A withdrawn capability is the one
+   exception, allowed only while it really is withdrawn; the last one (`monitor`, #R231) was removed
+   outright with the area monitors, so there is none today. */
 test('R278 ② no capability is implemented and invisible', () => {
   const { rows, missing } = auditLines(ATLAS().split(/\r?\n/));
   assert.equal(missing.length, 0, `invisible to the planner: ${missing.map((m) => m.names.join('/')).join(', ')}`);
   assert.ok(rows.length > 100, 'the dispatch really was scanned');
   const wd = rows.filter((r) => r.withdrawn).map((r) => r.names[0]);
   /* each exception is a named decision and carries its reason (who decided, when, how to restore) in policy.withdrawn.why */
-  assert.deepEqual(wd.slice().sort(), ['monitor', 'notebook', 'notebookCompare', 'notebookOpen'], 'withdrawal is an exception with a reason, not a habit');
-  for (const id of ['system.monitor', 'notebook.list', 'notebook.open', 'notebook.compare']) {
+  assert.deepEqual(wd.slice().sort(), ['notebook', 'notebookCompare', 'notebookOpen'], 'withdrawal is an exception with a reason, not a habit');
+  for (const id of ['notebook.list', 'notebook.open', 'notebook.compare']) {
     const why = CAPS_REG().resolve(id).withdrawn.why;
     assert.match(why, /#R\d+|\d{4}-\d{2}-\d{2}/, id + ': the reason names when it was decided');
   }

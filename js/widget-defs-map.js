@@ -692,7 +692,7 @@ import { IntMapGeoEngine } from './geo-engine.js';
   /* ══════════════════════════════════════════════════════════════════════════════════════════════
      WATCHED PLACES (§15.F) — what is new near the places the reader watches
      ══════════════════════════════════════════════════════════════════════════════════════════════
-     (widget-watch-unify) This card was «Area monitors»: it read window.IntMapMonitors, a subsystem whose every
+     (widget-watch-unify) This card was «Area monitors»: it read the area-monitors module (since removed), whose every
      entry point was withdrawn (docs/architecture/18-area-monitors.md §18.2), and its «Open monitors» button
      ran an unregistered command and toasted «Monitors are in the sidebar» — there is no such sidebar. It
      now reads Watched places (§18.1), the product built where those entry points were: the watcher's LAST

@@ -84,8 +84,6 @@
   ⚠ **上流の本文と例外文言は応答にもログにも出さない。**
 - **refresh-news** ＝ **fail-closed**。`REFRESH_SECRET` 未設定なら全リクエスト拒否（公開実行しない）。
   秘密は `x-refresh-secret` **ヘッダのみ**・**定数時間比較**・POST のみ。
-- **monitor-run** ＝ 同型の fail-closed（`x-monitor-secret`）。ユーザーの「今すぐ実行」は JWT ＋ 所有権照合
-  ＋ AI の段では `ai-proxy` と同じ AI 枠の消費（`_shared/ai-ledger.js`）。
 - **delete-account** ＝ `verify_jwt` ＋ 関数内検証 ＋ `confirm:"DELETE"`。**1トランザクション**で
   所有行を削除し、**削除後に数え直して**残っていれば raise（fail-closed）。Auth ユーザーの削除はその後だけ。
 - **アカウントの目録・書き出し・場所の保存**（`account_data_inventory` / `export_account_data` / `save_place`）

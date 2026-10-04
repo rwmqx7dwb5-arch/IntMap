@@ -258,7 +258,6 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["research.events","events","newsEvents,groupNews","research","paint","map.poi","map,explanation","session","none","place?","newsEvents","external"],
       ["news.category","newsCategory","newsFilter,eventCategory","data","paint","panel.news","map,explanation","session","none","text","newsEvents","external"],
       ["system.module","module","","system","panel","panel.any","panel","session","none","",""],
-      ["system.monitor","monitor","","system","none","","","read","none","",""],
       ["system.control","control","","system","control","ui.any","panel","session","none","",""],
       ["data.volcano","volcano","volcanoCard,volcanoInfo","data","panel","panel.volcano","panel","session","none","text","volcanoIntel"],
       ["map.volcanoFilter","volcanoFilter","volcanoMode,volcanoTime","map","paint","map.volcano","map","session","none","","volcanoIntel"],

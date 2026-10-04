@@ -214,8 +214,8 @@ export function makeSessionTabs(HOST, CTX) {
      sidebar would show the Monitors feed with no tab lit and no way back except another command.
      Not registering it means IntMapOS.exec('tab.monitors') is an unknown command — which is the
      honest answer — and js/atlas-console.js no longer offers the planner an action that calls it.
-     ⚠ js/monitors.js, its factory and #monitors-feed are untouched: restoring the feature is this
-     line, the button in index.html, the restore mapping above, and the Atlas action. */
+     (monitors-retire) The module, its feed, the server runner and its tables have since been removed
+     outright — docs/AREA-MONITORS.md says what replaced them (Watched places). */
   /* (#R112) The 4th sidebar slot is Atlas. In normal + mobile mode it is a REAL tab (setMode → renders into
      #atlas-feed like News/Info/Countries); in workspace mode Atlas keeps its own floating window. */
   /* (#R224) the kernel is on demand — open() has to be reached through window.IntMapAtlas, or a

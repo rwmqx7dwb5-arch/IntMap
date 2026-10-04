@@ -2,8 +2,7 @@
  *  supporter-funnel — where support goes, when it is mentioned, and the one plan table
  * ----------------------------------------------------------------------------
  *  ① every value that differs by plan is a column of supabase/functions/_shared/plans.js, and the
- *    readers that cannot import it (the monitor_limit() SQL, the page's
- *    AI_FREE_DAILY) say the same numbers, and ai-proxy imports it — measured, not restated;
+ *    reader that cannot import it (the page's AI_FREE_DAILY) says the same numbers, and ai-proxy imports it — measured, not restated;
  *  ② nothing is sold: no plan other than free is `offered`, and the free numbers are the ones in force;
  *  ③ public.operating_stats() returns aggregates only, never sums the refund-skewed `count`, and states
  *    in its comment why anon may call it;
@@ -50,20 +49,20 @@ test('① ai-proxy\'s gloss allowance is the plan table\'s aiGlossPerDay column,
   assert.ok(Object.values(P.planColumn('aiGlossPerDay')).every((n) => Number.isInteger(n) && n > 0));
 });
 
-test('① the newest monitor_limit() body gives each plan the plan table\'s `monitors`', () => {
-  /* discovered, not named: the last migration (by file order) that defines the function is the one in force */
+test('① no plan column outlives its reader: the SQL plan copy (monitor_limit) is dropped and the table has no `monitors`', () => {
+  /* (monitors-retire) The area monitors were the only reader of a per-plan monitor count, held here to the
+     SQL monitor_limit() body. The feature is retired, so what is asserted is that BOTH halves left together:
+     the last migration (by file order) that names the function drops it, and no plan row still carries a
+     number nothing reads. Discovered, not named — a later migration that recreates it fails this. */
   const files = readdirSync(join(ROOT, 'supabase/migrations')).filter((f) => f.endsWith('.sql')).sort();
-  let body = null;
+  let last = null;
   for (const f of files) {
-    const m = rd('supabase/migrations/' + f).match(/create or replace function public\.monitor_limit\(p_user uuid\)[\s\S]*?\$\$([\s\S]*?)\$\$/);
-    if (m) body = m[1];
+    const sql = rd('supabase/migrations/' + f);
+    if (/create or replace function public\.monitor_limit\(/.test(sql)) last = 'create';
+    if (/drop function if exists public\.monitor_limit\(/.test(sql)) last = 'drop';
   }
-  assert.ok(body, 'no migration defines public.monitor_limit(uuid)');
-  const ret = (re) => { const m = body.match(re); return m ? Number(m[1]) : null; };
-  assert.equal(ret(/v_plan = 'unlimited' then return (\d+)/), P.PLANS.unlimited.monitors);
-  assert.equal(ret(/v_plan in \('pro','plus'\)[^;]*then return (\d+)/), P.PLANS.pro.monitors);
-  assert.equal(P.PLANS.plus.monitors, P.PLANS.pro.monitors, 'the SQL gives plus and pro one number; the table must too, or the SQL changes');
-  assert.equal(ret(/return (\d+);\s*--\s*free/), P.PLANS.free.monitors);
+  assert.equal(last, 'drop', 'monitor_limit() is still defined by the migrations in force');
+  for (const [name, row] of Object.entries(P.PLANS)) assert.ok(!('monitors' in row), `plan ${name} still carries a monitors column`);
 });
 
 test('① the page\'s pre-answer allowance is the free plan\'s', () => {

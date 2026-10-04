@@ -3643,72 +3643,6 @@
       .m-sheet .layer-dropdown .lyr-star{ margin-left:auto; }
       .m-sheet .layer-fav-chips{ width:100%; }
     }
-    /* ==================== (#R141) AREA MONITORS ==================== */
-    .mon-wrap{padding:4px 2px 20px}
-    .mon-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:2px 0 10px}
-    .mon-new-btn{background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;border:none;border-radius:9px;padding:8px 14px;font-weight:600;cursor:pointer;font-size:13px}
-    .mon-area-hint{font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%}
-    .mon-empty,.mon-loading{color:var(--text-muted);font-size:13px;padding:18px 6px;text-align:center;line-height:1.5}
-    .mon-list{display:flex;flex-direction:column;gap:8px}
-    .mon-row{display:flex;gap:8px;align-items:stretch;background:var(--card-bg,#fff);border:1px solid rgba(128,128,128,.18);border-radius:12px;padding:10px 11px}
-    .mon-row-main{flex:1;min-width:0;cursor:pointer}
-    .mon-row-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-    .mon-name{font-weight:600;font-size:13.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
-    .mon-row-sub{font-size:11.5px;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .mon-row-meta{font-size:11px;color:var(--text-muted);margin-top:3px;opacity:.9}
-    .mon-chip{font-size:10.5px;font-weight:600;color:var(--c);border:1px solid var(--c);border-radius:20px;padding:1px 8px;white-space:nowrap}
-    .mon-sev{font-size:10px;font-weight:700;color:#fff;background:var(--c);border-radius:20px;padding:1px 7px}
-    .mon-row-acts{display:flex;flex-direction:column;gap:4px;justify-content:center}
-    .mon-ic{width:30px;height:26px;border-radius:7px;border:1px solid rgba(128,128,128,.2);background:var(--input-bg,rgba(128,128,128,.08));color:var(--text);cursor:pointer;font-size:12px;line-height:1}
-    .mon-ic:hover{background:rgba(10,132,255,.12)}
-    .mon-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:calc(var(--z-overlay) + 10);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px)}
-    .mon-dialog{background:var(--card-bg,#fff);color:var(--text);border-radius:16px;max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:20px 18px;position:relative;box-shadow:0 12px 40px rgba(0,0,0,.35)}
-    .mon-x{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:none;background:rgba(128,128,128,.15);color:var(--text);cursor:pointer;font-size:14px}
-    .mon-h3{margin:0 30px 12px 0;font-size:17px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .mon-h4{margin:16px 0 6px;font-size:13px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em}
-    .mon-lbl{display:block;font-size:12px;color:var(--text-muted);margin:12px 0 4px}
-    .mon-inp{width:100%;box-sizing:border-box;padding:9px 10px;border-radius:9px;border:1px solid rgba(128,128,128,.25);background:var(--input-bg,rgba(128,128,128,.06));color:var(--text);font-size:14px}
-    .mon-area-box{font-size:12.5px;background:rgba(10,132,255,.09);border:1px solid rgba(10,132,255,.25);border-radius:9px;padding:8px 10px;margin-bottom:4px}
-    .mon-area-none{background:rgba(255,159,10,.09);border-color:rgba(255,159,10,.3);color:var(--text-muted)}
-    .mon-viewbtn{margin-top:8px;background:var(--input-bg,rgba(128,128,128,.08));border:1px solid rgba(128,128,128,.2);color:var(--text);border-radius:9px;padding:8px 12px;cursor:pointer;font-size:12.5px;width:100%}
-    .mon-src-row{display:flex;flex-wrap:wrap;gap:8px}
-    .mon-src{display:flex;align-items:center;gap:5px;font-size:12.5px;background:var(--input-bg,rgba(128,128,128,.06));border:1px solid rgba(128,128,128,.2);border-radius:8px;padding:6px 9px;cursor:pointer}
-    .mon-src-off{opacity:.55;cursor:not-allowed}
-    .mon-soon{font-size:9.5px;color:var(--text-muted);border:1px solid rgba(128,128,128,.3);border-radius:6px;padding:0 4px}
-    .mon-note{font-size:11.5px;color:var(--text-muted);line-height:1.5;margin:14px 0 4px;background:rgba(128,128,128,.06);padding:9px 11px;border-radius:9px}
-    .mon-dlg-acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px}
-    .mon-detail-acts{justify-content:flex-start}
-    .mon-cancel,.mon-save,.mon-btn{border-radius:9px;padding:8px 14px;font-size:13px;cursor:pointer;border:1px solid rgba(128,128,128,.25);background:var(--input-bg,rgba(128,128,128,.08));color:var(--text)}
-    .mon-save{background:linear-gradient(135deg,#0a84ff,#5e5ce6);color:#fff;border:none;font-weight:600}
-    .mon-save:disabled{opacity:.45;cursor:not-allowed}
-    .mon-btn-danger{color:#ff453a;border-color:rgba(255,69,58,.4)}
-    .mon-kvs{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin:6px 0}
-    .mon-kv{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;border-bottom:1px solid rgba(128,128,128,.12);padding:4px 0}
-    .mon-kv span{color:var(--text-muted)}
-    .mon-runs{display:flex;flex-direction:column;gap:5px}
-    .mon-run{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;padding:7px 9px;border:1px solid rgba(128,128,128,.15);border-radius:9px}
-    .mon-run-clickable{cursor:pointer} .mon-run-clickable:hover{background:rgba(10,132,255,.08)}
-    .mon-run-l{display:flex;align-items:center;gap:7px} .mon-run-link{color:#0a84ff;font-weight:600}
-    .mon-rep-head{display:flex;align-items:flex-start;gap:10px}
-    .mon-sev-badge{font-size:11px;font-weight:700;color:#fff;background:var(--c);border-radius:7px;padding:3px 8px;flex:0 0 auto;margin-top:2px}
-    .mon-summary{font-size:13.5px;line-height:1.55;color:var(--text)}
-    .mon-metrics{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
-    .mon-metric{background:var(--input-bg,rgba(128,128,128,.07));border-radius:9px;padding:7px 11px;font-size:12px}
-    .mon-metric span{display:block;color:var(--text-muted);font-size:10.5px;margin-bottom:2px}
-    .mon-changes{margin:4px 0;padding-left:2px;list-style:none;display:flex;flex-direction:column;gap:8px}
-    .mon-change{font-size:13px;line-height:1.5}
-    .mon-claim{color:var(--text)}
-    .mon-evchip{font-size:10.5px;font-weight:600;color:var(--primary-on-tint);background:var(--primary-tint);border:1px solid color-mix(in srgb, var(--primary-color) 30%, transparent);border-radius:6px;padding:1px 6px;cursor:pointer;margin-left:2px}
-    .mon-ul{margin:4px 0;padding-left:18px;font-size:12.5px;color:var(--text-muted);line-height:1.5}
-    .mon-evlist{display:flex;flex-direction:column;gap:7px}
-    .mon-evcard{display:flex;gap:9px;border:1px solid rgba(128,128,128,.16);border-radius:10px;padding:8px 10px;transition:background .3s}
-    .mon-ev-hl{background:rgba(10,132,255,.14)}
-    .mon-evk{font-size:10.5px;font-weight:700;color:var(--text-muted);flex:0 0 auto;padding-top:2px}
-    .mon-evtitle{font-size:12.5px;line-height:1.4} .mon-evtitle a{color:#0a84ff;text-decoration:none}
-    .mon-evmeta{font-size:10.5px;color:var(--text-muted);margin-top:2px}
-    .mon-evkind-new{color:#30a46c;font-weight:600} .mon-evkind-continuing{color:var(--text-muted)}
-    .mon-repfoot{font-size:10.5px;color:var(--text-muted);margin-top:14px;text-align:right}
-    @media (max-width:768px){ .mon-kvs{grid-template-columns:1fr} .mon-dialog{max-height:92vh} }
 
     /* ══ (#R180) THE SECOND ENGINE'S DRAWING SURFACE ═══════════════════════════════════════
        Cesium ships Widgets/widgets.css, and none of it is wanted here: it styles the timeline,
@@ -5621,7 +5555,7 @@ body.nvg-on #route-panel{ display:none !important; }
    opens at the card level and lets the window manager raise it from there.
    ⚠ NO NEW COLOUR TOKENS. --text-main / --text-muted / --primary-color / --input-bg / --card-bg /
    --panel-bg / --glass-* / --shadow, plus the two status hues this sheet already uses elsewhere
-   (`.rtp-err`'s amber and `.mon-btn-danger`'s red), so dark mode needs no second copy of any of it.
+   (`.rtp-err`'s amber and the danger red #ff453a), so dark mode needs no second copy of any of it.
    ══════════════════════════════════════════════════════════════════════════════════════════════ */
 .pg-panel{
   display:none; position:fixed; z-index:calc(var(--z-popup) + 200);

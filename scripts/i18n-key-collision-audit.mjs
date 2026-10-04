@@ -54,25 +54,25 @@ import { parseAll, context, shapeOf } from './i18n-helpers.mjs';
 const BENIGN = new Set([
   /* (#R386) 'World' — 地球のウィジェット（世界）と、ニュースの節（国際）。fr『Monde』/ zh『世界』/ ko『세계』は**どちらの意味でも読める**ので、1 行で務まる。 ⚠ 同じ組の 'Business' / 'Latest' / 'Updated' / 'events' はここに入れていない——あれは一行では務まらないので、英語のほうを変えた。 */
   'World',
-  /* (icon-system) two keys that met when the emoji in front of one site's English came off («🌊 Ocean currents», «📍 Current
-     map view»): 海流 / 海流（暖流・寒流） is the same layer, named shorter and longer; 現在の地図の中心 (where the flight
-     starts) / 現在の地図表示 (what a monitor watches) are both «the map as it is now». fr «Courants océaniques» /
-     «Vue actuelle de la carte», ko and zh likewise, read right at every site. («🗓 Events» did NOT fit — 出来事 / 件数 —
-     so the dashboard's English became «World events».) */
-  'Ocean currents', 'Current map view',
+  /* (icon-system) a key that met another when the emoji in front of one site's English came off («🌊 Ocean currents»):
+     海流 / 海流（暖流・寒流） is the same layer, named shorter and longer; fr «Courants océaniques», ko and zh likewise,
+     read right at every site. («🗓 Events» did NOT fit — 出来事 / 件数 — so the dashboard's English became «World
+     events».) (monitors-retire) «Current map view», «Error», «Limitations» and «Watching» left this list with the area
+     monitors: each collided only with that module's site, so none of them collides any more. */
+  'Ocean currents',
 
   ' d', ' h', ' min', ' s', ' yr', 'active', 'Address', 'Advisory', 'Aerosol / haze',
   'Agricultural land %', 'Aircraft', 'Aircraft at real altitude', 'Altitude', 'Area', 'articles',
   'Austria-Hungary', 'Azimuth', 'Back to now', 'Battery', 'briefing', 'British Guiana', 'Call sign',
   'Cancel', 'Caribbean', 'Chemicals', 'Clear', 'Clock', 'CO₂ per capita', 'Coins', 'Compare',
   'Continue', 'Copied', 'Corruption (control, WGI)', 'Countries', 'Country', 'Day', 'Details', 'Done',
-  'Drag to resize', 'Draw / trace', 'Economy', 'Elapsed', 'Elevation', 'Error', 'Extreme',
+  'Drag to resize', 'Draw / trace', 'Economy', 'Elapsed', 'Elevation', 'Extreme',
   'FDI inflow % GDP', 'Fertility rate', 'Filter by value', 'flight path', 'From the map center',
   'GDP (nominal)', 'GDP growth %', 'Geolocation unavailable', 'Govt debt % GDP', 'Grid', 'HDI',
   'Heavy rain', 'High', 'High-tech exports %', 'highways', 'history', 'Homicide rate /100k', 'in ',
   'In service', 'Inclination', 'Income inequality (Gini)', 'Industry', 'Inflation % (CPI)',
   'Internet users', 'Internet users %', 'Isolate', 'Joseon', 'Large', 'launch', 'Length',
-  'Limitations', 'Literacy rate %', 'live', 'Low', 'Lowest', 'Manufacturing % GDP',
+  'Literacy rate %', 'live', 'Low', 'Lowest', 'Manufacturing % GDP',
   'Markets', 'Medium', 'Mil. spending (% GDP)', 'Military', 'Military (% GDP)', 'moderate', 'Moderate',
   'Name', 'nearby', 'Need start & destination', 'Neutral', 'News', 'No dated eruption',
   'No layers are on', 'objects', 'Observatory', 'of the view', 'Operator',
@@ -86,7 +86,7 @@ const BENIGN = new Set([
   'Time-series', 'tolls', 'Track', 'Trade % of GDP', 'Try again', 'Tsunami propagation', 'Turn left',
   'Turn right', 'Type', 'unavailable', 'Under-5 mortality /1k', 'Unemployment %', 'United States',
   'Unknown color', 'Urban population %', 'valid', 'Very high', 'View', 'Volume', 'warning', 'Warning',
-  'Warnings', 'Watching', 'Weather', 'Website', 'Week', 'Year', 'You have arrived',
+  'Warnings', 'Weather', 'Website', 'Week', 'Year', 'You have arrived',
 ]);
 
 /* ── collect every strict translation call site, grouped by English key ─────────────────────── */

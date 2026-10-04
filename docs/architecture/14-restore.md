@@ -22,26 +22,25 @@
    supabase db diff --schema public # drift がゼロであることを確認
    ```
    ローカル検証は `supabase start && supabase db reset`（migrations ＋ `supabase/seed.sql`）。
-4. **Edge Functions を22本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
+4. **Edge Functions を21本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
    ```bash
    for f in ai-proxy delete-account atlas-embed; do supabase functions deploy $f --project-ref <REF>; done
-   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed ais-feed news-ingest routing-relay volcano-feed gdelt-relay quotes-relay who-don client-errors fetch-relay reader-reports; do
+   for f in refresh-news sv-cov alerts-relay cable-geo news-relay aviation-feed ais-feed news-ingest routing-relay volcano-feed gdelt-relay quotes-relay who-don client-errors fetch-relay reader-reports; do
      supabase functions deploy $f --no-verify-jwt --project-ref <REF>
    done
    ```
 5. **Secrets を設定する**（§6.3）。最低限：
    ```bash
    supabase secrets set AI_PROVIDER=anthropic ANTHROPIC_API_KEY=... \
-     REFRESH_SECRET=... MONITOR_SECRET=... NEWS_INGEST_SECRET=...
+     REFRESH_SECRET=... NEWS_INGEST_SECRET=...
    ```
    ⚠ `REFRESH_SECRET` は**必須**（未設定だと `refresh-news` は全リクエストを拒否する）。
    `NEWS_INGEST_SECRET` も同じく必須（未設定だと `news-ingest` が全リクエストを拒否する）。
 6. **cron**（pg_cron ＋ `net.http_post`。秘密は**ヘッダ**で送る）——job 定義は migration
    `20260925090000_cron_jobs_as_code.sql` が作る（URL は本番の project ref。別プロジェクトでは書き換える）。
-   秘密は vault に `refresh_news_secret`・`monitor_run_secret`・`news_ingest_secret` として置く
+   秘密は vault に `refresh_news_secret`・`news_ingest_secret` として置く
    （`select vault.create_secret('<値>', '<名前>');`。無い job は何も POST しない）：
    - `refresh-news` を約20分ごと（`x-refresh-secret`）。初回は手動で1回叩いて `current_news` を埋める。
-   - `monitor-run` を定期実行（`x-monitor-secret`）。SQL は `docs/AREA-MONITORS.md`。
    - `news-ingest` を約20分ごと（`x-news-ingest-secret`）。手順は
      [`docs/NEWS-EVENTS.md`](../NEWS-EVENTS.md) §12。
 7. **静的ホスティング**——**配信するのは `dist/`**（リポジトリのソースツリーではない）。

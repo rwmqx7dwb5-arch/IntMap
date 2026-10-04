@@ -87,7 +87,6 @@ IntMapLang.define('jp', { ui: {
       aiSumBtn:"この範囲をAIで要約", popInArea:"この範囲の人口", popCalcing:"人口を算出中…", popFail:"人口を取得できませんでした。もう一度お試しください。", newsInArea:"この範囲のニュース", elevProfile:"標高断面", finalizeMeas:"地図に残す", aiSumTitle:"エリア地政学ブリーフィング", aiSumSub:"選択範囲内のニュース {n}件", aiSumNoArea:"先に範囲を描画するか円を配置してください。", aiSumNoNews:"この範囲内にニュースピンがありません。",
       aiVisHead:"AI変化検出", aiVisBtn:"変化を検出", aiVisTitle:"衛星画像 変化レポート", aiVisSub:"{a} → {b} を比較", aiVisBefore:"過去", aiVisAfter:"新しい", aiVisCapturing:"画像を取得中…", aiVisPickDates:"比較する2つの日付を選択してください。", aiVisNeedsDated:"衛星モードで日付選択可能なプロバイダ（MODIS / VIIRS / Sentinel-2）に切替えてください。", aiVisCapFail:"地図画像を取得できませんでした。"
 ,
-      tabMonitors:'モニター',
       /* ══ ⚠⚠⚠ (#R239) MOVED HERE — THE KEYED TABLE HAD SIX HOMES AND FIVE OF THEM SPOKE
          FIVE LANGUAGES ═══════════════════════════════════════════════════════════════════════
          js/i18n-late.js, js/data-layers.js, js/wheel-zoom.js, js/workspace.js, js/app-body.js and

@@ -250,11 +250,19 @@ test('R318 ②g: it goes red when the registry truncates its own population', ()
 });
 
 test('R318 ②h: it goes red when a withdrawal quietly ends', () => {
-  /* (atlas-capability-modules) the proof lives in the monitor entry's run; take it out of that run */
-  const damaged = dispatchGroups().map((g) => (g.names.includes('monitor') ? Object.assign({}, g, { src: "return R(true, 'ok');" }) : g));
-  assert.ok(damaged.some((g) => g.names.includes('monitor')), 'the monitor entry moved');
-  assert.ok(/FEATURE_WITHDRAWN/.test(dispatchGroups().find((g) => g.names.includes('monitor')).src), 'the undamaged run carries the proof — the fixture removes something real');
-  assert.ok(failing(auditOn({ groups: damaged }), 'withdrawal-honest').length,
+  /* (monitors-retire) The witness was the area monitors' entry, whose run answered FEATURE_WITHDRAWN; the
+     feature is removed and no capability is withdrawn today. The rule is the audit's, not that entry's,
+     so the withdrawal is now a FIXTURE: a registry that withdraws one spelling with a proof code, and a
+     dispatch entry for it — once carrying the proof (green), once answering success (red). */
+  const retired = { id: 'test.retired', legacy: 'retired', withdrawn: { why: 'a fixture withdrawal', proofCode: 'FEATURE_WITHDRAWN' } };
+  const fakeCaps = Object.assign(Object.create(CAPS), {
+    withdrawn: () => [retired.id],
+    resolve: (id) => (id === retired.id ? retired : CAPS.resolve(id)),
+  });
+  const entry = (src) => [...dispatchGroups(), { names: ['retired'], id: retired.id, file: 'fixture', line: 'fixture:1', src }];
+  assert.deepEqual(failing(auditOn({ caps: fakeCaps, groups: entry("return R(false, warn('gone'), {meta:{code:'FEATURE_WITHDRAWN'}});") }), 'withdrawal-honest'), [],
+    'a withdrawal whose run still carries its proof is honest — the fixture is not red by construction');
+  assert.ok(failing(auditOn({ caps: fakeCaps, groups: entry("return R(true, 'ok');") }), 'withdrawal-honest').length,
     'an exception that stops being true must stop being an exception');
 });
 
@@ -1229,15 +1237,21 @@ test('R582 ① the index names every capability the registry holds, and nothing 
     'the index names something the registry does not have');
 });
 
-/* ② A WITHDRAWN capability must NOT be advertised. `system.monitor` was removed in #R231 and
-      returns FEATURE_WITHDRAWN; naming it would send Atlas to a door that answers with an error. */
+/* ② A WITHDRAWN capability must NOT be advertised: naming it would send Atlas to a door that answers
+      with an error. (monitors-retire) The witness was `system.monitor`, removed outright with the
+      area monitors, so nothing is withdrawn today — and a check over an empty set is vacuous. The
+      registry's own objects carry the flag, so a PRIVATE instance withdraws one capability that the
+      index does name, and the index must stop naming it. Real withdrawals are still asked first. */
 test('R582 ② withdrawn capabilities are not advertised', () => {
   const shown = indexed(caps.index());
-  const gone = caps.withdrawn();
-  assert.ok(gone.length >= 1, 'this check is vacuous if nothing is withdrawn');
-  gone.forEach((id) => {
+  caps.withdrawn().forEach((id) => {
     assert.ok(!shown.has(id), id + ' is withdrawn but is offered to Atlas');
   });
+  const priv = makeAtlasCapabilities({}, { publish: false });
+  const victim = priv.all().find((c) => !c.withdrawn && indexed(priv.index()).has(c.id));
+  assert.ok(victim, 'the private registry offers at least one capability to withdraw');
+  victim.withdrawn = { why: 'a fixture withdrawal' };
+  assert.ok(!indexed(priv.index()).has(victim.id), victim.id + ' is withdrawn but is offered to Atlas');
 });
 
 /* ③ THE DEFECT, STATED AS A NUMBER. Before this round the simulators Atlas could see at decision

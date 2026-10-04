@@ -188,7 +188,7 @@ export async function followRedirects(url, init, opts) {
 }
 
 /* ══ ANY METHOD, ONE DEADLINE THAT COVERS THE BODY, ONE BYTE CEILING ══════════════════════════
-   (#R801) ai-proxy and monitor-run wrapped `fetch` in a timer and cleared it the moment the headers
+   (#R801) ai-proxy and the area-monitor runner (since retired) wrapped `fetch` in a timer and cleared it the moment the headers
    arrived, so a provider that answered the headers promptly and then streamed the body slowly was
    outside the leash for as long as it liked. This keeps the signal armed until the last byte is in,
    caps the bytes while they stream, and hands back a Response built from what was read — so a

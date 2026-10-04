@@ -2,7 +2,7 @@
  *  IntMap · sync the Atlas persona into the Edge Function bundle  (#R285)
  * ----------------------------------------------------------------------------
  *  js/atlas-persona.js is the SINGLE SOURCE OF TRUTH for who Atlas is. The
- *  monitor-run and refresh-news Edge Functions speak as Atlas too, and an Edge
+ *  refresh-news and news-ingest Edge Functions speak as Atlas too, and an Edge
  *  Function cannot import a file outside supabase/functions/ — so a
  *  byte-identical copy lives at supabase/functions/_shared/atlas-persona.js.
  *  This script writes that copy and `--check` verifies it is in sync (wired

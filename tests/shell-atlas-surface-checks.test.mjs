@@ -38,7 +38,7 @@ const noJs = (p) => codeOnly(read(p));
                        /* whole-line // comments */
 const noHtml = (p) => codeOnly(read(p), { lang: 'html' });
 
-/* ── ⑤ Monitors is withdrawn, and every route with it ───────────────────────────────────────── */
+/* ── ⑤ Monitors is withdrawn, and every route with it — and then removed outright ──────────────── */
 /* spelling kept: page markup / inline script (index.html) — only a browser document runs it. */
 test('R231 Monitors: the tab and all four routes to it are closed', () => {
   assert.ok(!/id="btn-monitors"/.test(noHtml('index.html')), 'no tab button');
@@ -51,10 +51,12 @@ test('R231 Monitors: the tab and all four routes to it are closed', () => {
   assert.ok(!/monitors:flo\(/.test(noJs('js/workspace.js')), 'and no default rect for one');
   const atlas = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.ok(!/\+'AREA MONITORS \(saved SERVER-SIDE/.test(atlas), 'the planner is not offered the action');
-  assert.match(atlas, /FEATURE_WITHDRAWN/, 'and if one arrives anyway the reply says so rather than claiming success');
-  /* ⚠ WITHDRAWN, NOT DELETED — 一旦撤去. The feature must still be here to come back. */
-  assert.ok(existsSync(join(ROOT, 'js/monitors.js')), 'js/monitors.js is untouched');
-  assert.match(read('index.html'), /id="monitors-feed"/, 'and so is its content area');
+  /* (monitors-retire) 一旦撤去 became a removal (approved 2026-10-04): the module, its feed, the runner and
+     the dispatch entry that only answered FEATURE_WITHDRAWN are gone, so nothing a route could reach is left. */
+  assert.doesNotMatch(atlas, /'system\.monitor'/, 'the withdrawn dispatch entry is gone with the feature');
+  assert.ok(!existsSync(join(ROOT, 'js/monitors.js')), 'the module is removed');
+  assert.ok(!existsSync(join(ROOT, 'supabase/functions/monitor-run')), 'and so is its server runner');
+  assert.doesNotMatch(read('index.html'), /id="monitors-feed"/, 'and its content area');
 });
 
 /* ── ⑨ Atlas: an attached picture is not a speech bubble ────────────────────────────────────── */

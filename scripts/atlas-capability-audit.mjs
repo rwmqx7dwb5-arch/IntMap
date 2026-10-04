@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 /* ⚠ COMMENTS ARE NOT CODE, AND THIS REPOSITORY HAS PAID FOR THAT NINE TIMES (see the recurring-
    failures memo: a check matching its own explanatory note). Three of the checks below look for a
    CALL, and every file that explains why a call was removed contains the call's spelling in prose —
-   js/session-tabs.js says in words that `tab.monitors` is deliberately unregistered, which is the
+   js/session-tabs.js says in words that a withdrawn tab command is deliberately unregistered, which is the
    opposite of the defect. So they read this, not the file.
    (#R345) It USED to be two lines of regex right here, and tests/helpers/fn-cors.js was about to
    become the second copy — so the stripper moved to scripts/code-only.mjs and both import it. */

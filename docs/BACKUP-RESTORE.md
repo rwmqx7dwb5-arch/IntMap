@@ -84,8 +84,9 @@ Auth provider config/secrets, redirect URLs, email templates, project API keys, 
 the cron jobs read, and (server-side) Storage bucket configuration. For a full auth/storage recovery,
 use a **managed** backup. Record dashboard-only settings in [`MIGRATIONS.md`](MIGRATIONS.md).
 (The `pg_cron` **job definitions** are no longer dashboard-only: migration
-`20260925090000_cron_jobs_as_code.sql` creates them. Their secrets live in vault — `refresh_news_secret`,
-`monitor_run_secret`, `news_ingest_secret` — and a job whose secret is absent posts nothing.)
+`20260925090000_cron_jobs_as_code.sql` creates them, and `20261004150000_retire_area_monitors.sql` removes the
+retired area monitors' job. Their secrets live in vault — `refresh_news_secret`, `news_ingest_secret` — and a job
+whose secret is absent posts nothing.)
 
 ## Verify a backup restores (drill) — §10
 

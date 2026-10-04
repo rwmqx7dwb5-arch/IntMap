@@ -13,7 +13,7 @@
  *      vision         "You are Atlas Vision, a rigorous multimodal reader …"
  *      brief          "You are a geopolitical and area-studies research assistant."
  *      historical     "You are a historical-geography engine."
- *      monitor-run    "You are IntMap's area-monitoring analyst."
+ *      area monitor   "You are IntMap's area-monitoring analyst."  (retired since)
  *      refresh-news   "You are a precise geocoder for a world news map."
  *
  *  Four of the eight were not Atlas at all. Whatever Atlas sounded like was
