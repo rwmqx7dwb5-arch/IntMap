@@ -79,6 +79,7 @@
 | 国境のどの辺を描くか | `npm run check:bordercoast` |
 | 拡大時の精密な輪郭 | `npm run check:borderdetail` |
 | 歴史地点（Pleiades） | `npm run check:histplaces` |
+| 歴史上の都市人口 | `npm run check:histurban` |
 | Atlas の dispatch / catalogue | `npm run check:catalog` |
 | Atlas の能力表 | `npm run check:capabilities` |
 | Atlas の観測器の判定 | `npm run check:atlasrepeat` |

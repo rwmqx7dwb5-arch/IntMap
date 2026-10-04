@@ -123,6 +123,7 @@ const DERIVED = [
     { id: "bx-wbrural", key: "wbrural", rest: true },
     { id: "bx-wbdensity", key: "wbdensity", rest: true },
     { id: "bx-wbref", key: "wbref", rest: true },
+    { id: "dl-histurban", key: "histurban", label: "lyrHistUrban", rest: true, share: true },
   ] },
   { key: "lyrGrpHazard", layers: [
     { id: "wp-dl-alerts", key: "alerts", share: true, lazy: ["worldPacksBody"] },
@@ -329,6 +330,7 @@ const DECLARATIONS = [
   { id: "bx-wbrural", shelf: "lyrGrpDemo", order: 100, key: "wbrural", rest: true, measures: ["worldbank:SP.RUR.TOTL.ZS"] },   // bx-wbrural.js
   { id: "bx-wbdensity", shelf: "lyrGrpDemo", order: 110, key: "wbdensity", rest: true, measures: ["worldbank:EN.POP.DNST"] },   // bx-wbdensity.js
   { id: "bx-wbref", shelf: "lyrGrpDemo", order: 120, key: "wbref", rest: true, measures: ["worldbank:SM.POP.RHCR.EA+SM.POP.RRWA.EA"] },   // bx-wbref.js
+  { id: "dl-histurban", shelf: "lyrGrpDemo", order: 130, key: "histurban", label: "lyrHistUrban", rest: true, share: true, sources: ["Reba, Reitsma & Seto (2016) — historical urban populations, 3700 BC – AD 2000 (CC BY 4.0)"], pkg: "histurban" },   // dl-histurban.js
   { id: "wp-dl-alerts", shelf: "lyrGrpHazard", order: 10, key: "alerts", share: true, lazy: ["worldPacksBody"] },   // wp-dl-alerts.js
   { id: "bx-eq", shelf: "lyrGrpHazard", order: 20, key: "eq", registry: ["earthquakes"] },   // bx-eq.js
   { id: "beta-dl-volc2", shelf: "lyrGrpHazard", order: 30, key: "volc2", share: true, registry: ["volcanoes"], commands: ["volcano.open", "volcano.mode", "volcano.filter", "volcano.time"], atlas: ["map.volcanoFilter"], sources: ["Smithsonian GVP"] },   // beta-dl-volc2.js
@@ -452,6 +454,7 @@ const DECLARATIONS = [
 /** (layer-packages) every layer package a declaration names → its factory, fetched on first use (js/data-layers.js) */
 const PACKAGES = {
   "alliances": () => import('./layer-pkg-alliances.js').then((m) => m.alliancesPackage),
+  "histurban": () => import('./layer-pkg-histurban.js').then((m) => m.histurbanPackage),
   "radar": () => import('./layer-pkg-radar.js').then((m) => m.radarPackage),
   "subcables": () => import('./layer-pkg-subcables.js').then((m) => m.subcablesPackage),
   "thermal": () => import('./layer-pkg-thermal.js').then((m) => m.thermalPackage),

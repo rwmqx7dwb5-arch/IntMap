@@ -665,6 +665,8 @@ data-layers.js                    データレイヤーの目録＋エンジン�
                                   （下の layer-pkg-*.js）へ 1 本の経路で委ねる（`_pkgSwitch` / `_pkgOpacity`・初めて切り替えたときに取る）。
                                   ⚠ 行数・window への代入数・名前で切り替える行は下がるだけ（scripts/layer-packages.mjs）
 layer-pkg-subcables.js            **レイヤー・パッケージ** 海底ケーブル dl-subcables — 取得の梯子・描画の梯子・クリック情報・切替・不透明度
+layer-pkg-histurban.js            **レイヤー・パッケージ** 歴史上の都市人口 dl-histurban — 人口に比例した円（記載ごとに1つ）・
+                                  名前と数値（記載年つき）のラベル・人口の推移カード。切替時に初めて data/hist-urban.json を取得
 layer-pkg-radar.js                **レイヤー・パッケージ** RainViewer レーダー dl-radar — フレーム索引・再生（window._rvPlayer）・4 分ごとの更新・切替
 layer-pkg-thermal.js              **レイヤー・パッケージ** 火災・熱異常 dl-thermal — GIBS の日ごとの探査・24/48/72 h の重ね・再構築・不透明度
 layer-pkg-alliances.js            **レイヤー・パッケージ** NATO dl-nato・EU dl-eu・国防費 dl-milSpend（部品を共有する 1 族）— 加盟年の色と凡例・
@@ -744,6 +746,9 @@ hist-cities.js                    時計の年の**都市名** IntMapHistCities�
 hist-places.js                    Pleiades の独立した歴史地名 IntMapHistPlaces。遅延取得した出典レコードを
                                   `imhp-lbl` に描き、IntMapPlaceReaders へ出典IDによるカードを登録。
                                   現代都市の改名は行わず、概略の名称期間と代表点の限界を保持する
+hist-urban.js                     歴史上の都市人口の**規則の正本**（純関数）。時刻 T に都市が示す数値（その年以前で最も新しい
+                                  記載年の数値を、その年の窓の中でだけ）・人口の推移・名前での検索・収録基準・1 回だけの遅延取得。
+                                  地図（layer-pkg-histurban.js）と Atlas（time.cityPopulation）とテストが同じ関数に訊く
 us-elections.js                   すべての米大統領選挙 IntMapUSElections（州をクリックするとその州の票と選挙人）
 net-health.js                     インターネットの健康状態の**2行**（障害／到達性）IntMapNetHealth（**eager**——行と IntMapOS 命令だけ・`ROWS` が行の正本）
 net-health-live.js                その測定そのもの（**on-demand**・`__imNetHealth`・`PROVIDERS` が観測網の正本／信号の一覧は応答から発見／docs/INTERNET-HEALTH.md）
@@ -900,7 +905,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  210 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  211 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1023,7 +1028,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全210を検索・到達可能 207）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全211を検索・到達可能 208）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1039,7 +1044,9 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 210能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-hist-urban.js               Atlas の `time.cityPopulation` の本体——歴史上の都市人口の記録に、ある年の大都市・ある都市の人口の推移を訊き、
+                                  値（`exec.cityPopulation`）と同じ事実の文で返す。規則は hist-urban.js。初回の呼び出しで動的 import（Atlas のチャンクに載せない）
+atlas-schemas.js                  **引数の schema**（#R406）— 211能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1540,6 +1547,10 @@ offline-sources.json              **どの供給元のファイルを回線な�
 hist-places.json                  Pleiades の独立地名（6698 地点・12646 件の年代付き名称記録）。CC BY 3.0。
                                   出典の代表点・原綴り・転写・言語コード・期間を保持し、Chronos 旅行時に遅延取得。
                                   名称の期間は創建・廃絶の年代を意味しない。生成は scripts/build-hist-places.mjs
+hist-urban.json                   歴史上の都市人口（Reba・Reitsma・Seto 2016＝Chandler と Modelski の表に座標を付けたもの。CC BY 4.0）。
+                                  各数値を出典の表・記載年・位置の確からしさ（1〜3）とともに保持し、補間しない。表示窓（記録自身の
+                                  再記載の間隔から導出）・表をまたぐ同一性・hist-places / hist-cities への結び付きを含む。
+                                  生成は scripts/build-hist-urban.mjs
 hist-cities.json                  時計の年の都市名の記録（6474 都市・9246 の歴史名・125 か国）。
                                   手書き＋Wikidata（CC0）＋OpenHistoricalMap（CC0）＋Pleiades
                                   （CC BY 3.0）の和集合で、行ごとに
@@ -1886,6 +1897,11 @@ scripts/
                                   --check は固定した記録との完全一致をネットワーク無しで測る
   histplaces/pleiades-record.json 独立歴史地名の固定した出典証拠。名称・権利表記・集落型・代表点と、
                                   取得日・入力件数・入力ハッシュを保持する。手書きの地名一覧ではない
+  build-hist-urban.mjs            Reba ほか（2016）の 3 つの CSV（figshare・md5 と sha256 を固定）→ data/hist-urban.json。
+                                  表示窓は記録自身の「次に記載されるまでの間隔」の中央値、同一性は座標＋名前、他の地名記録とは
+                                  相互最近傍＋共通名で結ぶ。--harvest は上流を読み直す、--check は固定記録との完全一致（check:histurban）
+  histurban/reba-record.json      都市人口の固定した出典証拠。3 表の空でないセルを文字列のまま・取得日・URL・md5・sha256。
+                                  手書きの都市一覧ではない
   build-hist-cities.mjs           手書きの記録（`scripts/histcities/*.mjs`）と、上流から導出した記録の
                                   **和集合** → `data/hist-cities.json`（6474 都市／9246 の歴史名／125 か国）。
                                   ⚠ **手書きの 611 行は 1 件も落とさない**（`--check` が測る）——実測で、
@@ -2258,7 +2274,7 @@ scripts/
                                   index.html の theme-color・apple-mobile-web-app-title も見る）。maskable の縮尺は
                                   マークの最遠点（ΔE00 ≥ 1）を安全域（半径 40 %）に収めるよう導き、`any` と同じ絵に
                                   なるなら 1 ファイルで両方を名乗る
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 148 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 5 本 / deep 149 本（core は固定部分。PR では差分で追加・変更された spec も core で走る）。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

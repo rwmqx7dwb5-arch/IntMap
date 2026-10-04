@@ -46,6 +46,20 @@ export default [
     async run(a, dctx, K) { return coverage(a, K); },
   },
   {
+    row: ['time.cityPopulation',        'cityPopulation', 'historicalPopulation,largestCities,urbanPopulation',          'time',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+    /* (hist-urban-population) THE HISTORICAL URBAN-POPULATION RECORD, ASKED BY YEAR OR BY CITY. The rule — which figure a
+       city shows at a year, how long a stated figure is carried, which cities are listed — is js/hist-urban.js (the ONE place;
+       the map layer reads the same functions), over data/hist-urban.json (Reba, Reitsma & Seto 2016, Chandler + Modelski,
+       CC BY 4.0). Nothing is interpolated or chosen: where both books state the same year, both figures come back. */
+    doc: [
+      { in: 'time.coverage', at: 22, text: '{"type":"cityPopulation","year"?:int (the calendar year as written, positive),"era"?:"BC"|"AD" (default AD),"city"?:str,"limit"?:int (default 10)} = HISTORICAL CITY POPULATIONS / 歴史上の都市人口 — what the historical urban-population record states (Reba, Reitsma & Seto 2016: the geocoded tables of Chandler 1987 and Modelski 2003, 3700 BC – AD 2000, CC BY 4.0). With a YEAR: the largest cities the record lists at that year, each with its country, the figure(s) AS THE BOOK STATES THEM for the year it stated them (statedYear — nothing is interpolated, a figure is carried only inside the record’s own restatement window) and the book; where Chandler and Modelski both state the same year BOTH figures are returned and neither is chosen. With a CITY (and optionally a year): every city the record holds under that name — homonyms (Springfield, Portland) stay separate, each with its country and coordinates — with its whole population history, its state at the year, or the explicit statement that the record lists none (with the nearest years it does state). Absence is «not listed», never «did not exist»: each table lists cities only above its size threshold (the result carries them). Quote the figures with the book and the stated year, say which are Chandler and which Modelski, and quote the source and licence. No year and no city = the span and tables of the record. If the layer row dl-histurban exists, it draws the same record on the map. Use for 「1000年に人口が一番多かった都市は？」「紀元前500年のバビロンの人口」「ローマの人口の推移」「何年の人口」「largest cities in 1500」「population of Baghdad in 1000」「urban population history」. ' },
+    ],
+    phrases: () => ['都市人口', '人口の多い都市', '何年の人口', '人口の推移', '最大の都市'].concat(['largest cities', 'city population', 'urban population', 'population history']),   /* the Japanese phrases, then the English words — two lists, not translations of each other */
+    schema: () => ({ type: 'object', properties: { year: int(), era: str(), city: str(), limit: int() } }),
+    /* the answer lives in js/atlas-hist-urban.js, fetched on first use, so the Atlas chunk does not carry it */
+    async run(a, dctx, K) { const { cityPopulation } = await import('./atlas-hist-urban.js'); return cityPopulation(a, K); },
+  },
+  {
     row: ['time.yearbook',              'yearbook',       'readYear,worldInYear,yearBook',                               'time',    'none',    'time',                   'explanation',         'session', 'none',   '',         ''],
     /* (map-layer-system) THE YEAR BOOK — the instant read off the records the map draws (js/year-book.js): the polities
        the border record draws (largest by the area of the drawn shape), the days inside the year on which it changes and
@@ -294,6 +308,7 @@ async function yearbook(a, K) {
   const r = await YB.readYear(when, YB.pageDeps(h));
   return R(true, YB.atlasHtml(r, when, !!a.show, h.lang(), note), { yearbook: r });
 }
+
 
 /* ══ (marketing-next) ON THIS DAY, FOR ATLAS ═════════════════════════════════════════════════════════════════
    The same reader the search card and the sheet use (js/on-this-day.js), so what Atlas says about 3 October is what the

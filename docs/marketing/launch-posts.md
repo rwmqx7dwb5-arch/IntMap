@@ -14,14 +14,14 @@
 ```text
 Name: IntMap
 Tagline: Every year of the world, on one map
-Description: A free world map you can set to any date from 123,000 BC to today. Borders, figures and 165 layers follow the clock, every source is named, and one link reopens exactly what you see. No sign-up.
+Description: A free world map you can set to any date from 123,000 BC to today. Borders, figures and 166 layers follow the clock, every source is named, and one link reopens exactly what you see. No sign-up.
 Link: <URL>
 
 Hi Product Hunt —
 
 IntMap is the world map I wanted and could not find: one map with one clock for everything on it.
 
-Move the clock anywhere from 123,000 BC to today and the map follows. Borders come from 54 historical snapshots before 1689, OpenHistoricalMap from 1689 to 1885, and CShapes 2.0 day by day from 1886 to 2019. The 165 layers on the same map — climate, hazards, population, economy, infrastructure, live feeds — each name their source, and a layer whose source says nothing about the date you chose is not drawn, rather than showing today's data under an old date.
+Move the clock anywhere from 123,000 BC to today and the map follows. Borders come from 54 historical snapshots before 1689, OpenHistoricalMap from 1689 to 1885, and CShapes 2.0 day by day from 1886 to 2019. The 166 layers on the same map — climate, hazards, population, economy, infrastructure, live feeds — each name their source, and a layer whose source says nothing about the date you chose is not drawn, rather than showing today's data under an old date.
 
 Things to try:
 - Open Europe on 27 June 1914, then on 1 July 1920, and compare the two.
@@ -90,7 +90,7 @@ I would like to know where it is wrong. Every source and licence is on the Data 
 - 言語: English · リンク先: [site:] · utm_source: `reddit`
 
 ```text
-Title: IntMap: a free world map you can set to any date from 123,000 BC to today — the borders, figures and 165 layers follow the clock
+Title: IntMap: a free world map you can set to any date from 123,000 BC to today — the borders, figures and 166 layers follow the clock
 URL: <URL>
 
 (Link post. Read the subreddit's rules before posting; this is a draft.)
@@ -121,7 +121,7 @@ I would value criticism of the time model and of how the three border records ar
 
 [2/4] Borders: 54 historical snapshots before 1689, OpenHistoricalMap 1689–1885, and CShapes 2.0 day by day 1886–2019.
 
-[3/4] 165 layers sit on the same map, each with its source named. If a source says nothing about the date on the clock, the layer is not drawn — no old labels on today's data.
+[3/4] 166 layers sit on the same map, each with its source named. If a source says nothing about the date on the clock, the layer is not drawn — no old labels on today's data.
 
 [4/4] A link reopens the same place, date and layers on any device, and the same map can be embedded on another site. Signed in, Atlas — the built-in assistant — drives the map from plain words.
 ```
@@ -135,7 +135,7 @@ I would value criticism of the time model and of how the three border records ar
 
 [2/4] 国境は、1689年より前が54枚の歴史スナップショット、1689〜1885年が OpenHistoricalMap、1886〜2019年が CShapes 2.0（日単位）です。
 
-[3/4] 同じ地図に165のレイヤー。すべて出典を明記し、選んだ日付を出典が述べていないレイヤーは描きません。古い日付の下に今日のデータを出すことはしません。
+[3/4] 同じ地図に166のレイヤー。すべて出典を明記し、選んだ日付を出典が述べていないレイヤーは描きません。古い日付の下に今日のデータを出すことはしません。
 
 [4/4] リンク一つで同じ場所・日付・レイヤーをどの端末でも開けます。他のサイトへの埋め込みも可。ログインすれば AI アシスタントの Atlas が言葉どおりに地図を動かします。
 ```

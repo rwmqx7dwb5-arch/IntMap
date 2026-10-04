@@ -46,6 +46,7 @@ codex:
 | `npm run check:bordercoast` | 歴史国境の各辺が「国境」か「その記録が持つ海岸線の写し」かの印（`data/border-coast.js`）。⚠ こちらは**同梱データだけから全リングを再導出して突き合わせる**（上流不要・約 16 秒） |
 | `npm run check:borderdetail` | 拡大したときに実際に描かれる精密な輪郭（`data/border-detail/`・**リポジトリ最大の出荷面**。git の外にあり、件数・バイト数・sha256 は `data-assets.json`。無ければ赤で `npm run data:pull` と言う）。再導出はしない（上流は 3.4 GB）。chunk 名が中身の SHA-256 であること・精密化した記録が元の粗い輪郭と指紋一致すること（**古い断片が修正済みの輪郭の上に描かれる**のがこれが捕まえる故障）・断片が index の bbox に収まること・孤立した資産が無いことを測る。オフライン・実測 41 秒 |
 | `npm run check:histplaces` | 現代名を持たない歴史地名（`data/hist-places.json`・Pleiades・CC BY 3.0）を、同梱のライセンス記録から**byte 単位で再導出**して照合する。オフライン・実測 0.14 秒 |
+| `npm run check:histurban` | 歴史上の都市人口（`data/hist-urban.json`・Reba ほか 2016・CC BY 4.0）を、同梱のライセンス記録から**byte 単位で再導出**して照合する（表示窓・表をまたぐ同一性・他の地名記録への結び付きも）。オフライン・実測約 2 秒 |
 | `npm run check:catalog` | Atlas catalogue（押せるのに届かない機能が出ない） |
 | `npm run check:perf` | 起動費用の天井（**build が要る**） |
 | `npm run check:assets` | 配られる全ファイルに読み手がいる（**build が要る**） |

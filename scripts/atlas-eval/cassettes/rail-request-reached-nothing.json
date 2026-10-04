@@ -250,6 +250,10 @@
             {
               "id": "time.weeklyEarth",
               "tool": "time_weeklyEarth"
+            },
+            {
+              "id": "time.cityPopulation",
+              "tool": "time_cityPopulation"
             }
           ]
         }

@@ -166,6 +166,11 @@ export const TIME = Object.freeze({
   'bx-wbforest': WB,
 
   /* ── population ── */
+  /* the urban-population record states a figure per city and year, 3700 BC – AD 2024: the bounds are cited from the file; js/hist-urban.js owns what a year shows (the window of each stated year) */
+  'dl-histurban': { kind: 'record', from: -3699, to: 2024, by: 'data/hist-urban.json',
+    cite: { from: 'data/hist-urban.json#span.from', to: 'data/hist-urban.json#span.to' },
+    follows: 'js/layer-pkg-histurban.js apply', self: 'js/layer-pkg-histurban.js apply',
+    says: LA('Urban populations stated by Chandler and Modelski (Reba et al. 2016)', 'Chandler と Modelski が述べた都市人口（Reba ほか 2016）') },
   'dl-popgrid': { kind: 'record', from: 2000, to: 2020, carry: 'last', by: 'js/data-layers.js POPGRID_EPOCHS', ownDate: 'js/data-layers.js POPGRID_EPOCHS',
     says: LA('WorldPop population grid (2000–2020)', 'WorldPop 人口グリッド（2000〜2020 年）') },
   'dl-nightsat': { kind: 'record', from: 2012, to: 2016, carry: 'last', by: 'js/night-lights.js forYear', self: 'js/night-lights.js forYear',
