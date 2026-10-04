@@ -41,6 +41,7 @@
  *  global (check:surface).
  * ==========================================================================*/
 import { makeAtlasGeoObject } from './atlas-geo-object.js';
+import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /* the one great-circle distance (page and server) */
 
 export const RELATED_DEFAULTS = { km: 300, hours: 72 };
 
@@ -49,7 +50,6 @@ export function makeAtlasWorldObjects(deps) {
     deps = deps || {};
     var geo = deps.geo || makeAtlasGeoObject();
     var HOUR = 3600000;
-    var EARTH_KM = 6371;   /* the mean radius js/atlas-console.js's `_havKm` also uses */
 
     var num = function (v) { return (v == null || v === '' || typeof v === 'boolean' || !isFinite(Number(v))) ? null : Number(v); };
     var str = function (v, n) { return String(v == null ? '' : v).slice(0, n || 200); };
@@ -58,9 +58,7 @@ export function makeAtlasWorldObjects(deps) {
     /** great-circle distance in km, or null when either end is not placed */
     function distanceKm(a, b) {
       if (!geo.placed(a) || !geo.placed(b)) return null;
-      var r = Math.PI / 180, dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
-      var h = Math.pow(Math.sin(dLat / 2), 2) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.pow(Math.sin(dLng / 2), 2);
-      return 2 * EARTH_KM * Math.asin(Math.min(1, Math.sqrt(h)));
+      return haversineKm(a.lng, a.lat, b.lng, b.lat);
     }
 
     function inside(pt, bounds) {

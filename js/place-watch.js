@@ -37,22 +37,19 @@
 import { IntMapLang } from './lang-registry.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { loadData } from './data-door.js';
-import { jsonWithin } from './fetch-deadline.js';   /* a read that is guaranteed to end */
-import { clockFor } from './proxy-fetch.js';        /* …and how long a given host may take — decided there, per host */
+import { EventsNear, makeEventsNear } from './events-near.js';   /* the one reader of the USGS feed and the news window */
 import { everyTick, stopTick } from './runtime.js';  /* the one timer wheel (it already skips a hidden page) */
 import { listPlaces, placeFailureText } from './my-places.js';
 import {
-  WATCH_DEFAULTS, QUAKE_FLOOR_MAG, RADIUS_MAX_KM, KINDS, USGS_WEEK_FEED, NEWS_WINDOW_MS,
+  WATCH_DEFAULTS, QUAKE_FLOOR_MAG, RADIUS_MAX_KM, KINDS, NEWS_WINDOW_MS,
   watchSettings, watchedKinds, quakeItems, warningItems, volcanoItems, newsItems, evaluate, nextSeen, triage,
 } from '../supabase/functions/_shared/place-watch.js';
 
 const WCOLS = 'place_id,radius_km,quake_min_mag,alert_min_level,volcano_min_rank,news_min_sources,enabled,seen_at,seen_keys,created_at,updated_at';
-const NEWS_COLS = 'public_id,representative_title,rep_lng,rep_lat,rep_place_name_en,independent_source_count,article_count,last_article_at,first_published_at,status,'
-  + 'representative:news_articles!news_events_representative_article_id_fkey(canonical_url,source_id)';
-/* The news read is ONE query for every watch. MEASURED 2026-10-03: 296 active events in the last 72 h
-   with ≥ 2 independent outlets, 48.8 kB. 1,000 is ~3× that; a full page is REPORTED (`truncated`),
-   never treated as «that is all there was». */
-const NEWS_PAGE = 1000;
+/* The news read is ONE read for every watch (js/events-near.js readNewsEvents). MEASURED 2026-10-03: 296 active
+   events in the last 72 h with ≥ 2 independent outlets, 48.8 kB. The window is read page by page until a short page
+   (the reader's NEWS_PAGE / NEWS_PAGES); a read cut by that fence is REPORTED (`truncated`), never treated as
+   «that is all there was». Until the reader was shared this file read ONE page of 1,000 rows and stopped. */
 /* How often the page looks while IntMap is open: 10 minutes — the granularity the Area Monitors'
    cron used (docs/AREA-MONITORS.md, every ten minutes), and the feeds read here regenerate every minute (USGS) to
    every few minutes, so a reader learns of a new record at most ~10 min after IntMap could have.
@@ -60,7 +57,7 @@ const NEWS_PAGE = 1000;
 const TICK_MS = 10 * 60 * 1000;
 /* The volcano warm-up and the news query get this long before they are called unavailable — the
    deadline js/volcano-intel.js already gives its slowest feed (getMonitoredVolcanoes, 20,000 ms). The
-   USGS read is bounded by js/fetch-deadline.js with js/proxy-fetch.js clockFor's clock for that host. */
+   USGS read is bounded inside js/events-near.js by js/fetch-deadline.js with js/proxy-fetch.js clockFor's clock. */
 const READ_MS = 20000;
 /* How many announced keys this DEVICE remembers, so a reload does not announce the same record twice.
    The same bound as the account's SEEN_MAX would be the generous choice; this is a per-device cache. */
@@ -148,17 +145,20 @@ async function withDeadline(p, ms) {
 /** The network read and the globals are parameters so tests/watch-places-checks.test.mjs runs the real readers. */
 export function makeReaders(env) {
   env = env || {};
-  const getJSON = env.json || ((u) => jsonWithin(u, clockFor(u), { cache: 'no-cache' }));
+  /* a caller that brings its own fetch (tests/watch-places-checks.test.mjs) gets a reader of its own; the app shares one */
+  const EV = env.json ? makeEventsNear({ json: env.json }) : EventsNear;
   const W = env.window || (typeof window !== 'undefined' ? window : {});
   const load = env.loadData || loadData;
   return {
+    /* the earthquakes and the news are read by the app's one reader of each (js/events-near.js): one USGS read
+       shared with the card and Atlas inside its freshness window, and the news window read page by page. Only the
+       READING moved; what counts as near, strong enough and new is still the rule in _shared/place-watch.js. The
+       reasons below are the ones the digest has always printed. */
     async quake() {
-      try {
-        return { state: 'ok', data: await getJSON(USGS_WEEK_FEED) };
-      } catch (e) {
-        const why = e && e.reason;   /* js/fetch-deadline.js says why nothing arrived */
-        return { state: 'unavailable', reason: why === 'timeout' ? 'usgs-deadline' : why === 'http' ? 'usgs-http-' + e.status : why === 'parse' ? 'usgs-unparseable' : 'usgs-unreachable' };
-      }
+      const r = await EV.readQuakes({});
+      if (r.state !== 'unavailable') return { state: 'ok', data: { type: 'FeatureCollection', features: r.features } };
+      const why = r.reason;   /* js/fetch-deadline.js says why nothing arrived */
+      return { state: 'unavailable', reason: why === 'timeout' ? 'usgs-deadline' : why === 'http' ? 'usgs-http-' + r.status : why === 'parse' ? 'usgs-unparseable' : 'usgs-unreachable' };
     },
     /* ⚠ THE ONE NORMALISATION. The warnings are read from the warnings layer's own records
        (js/world-packs.js IntMapWorld.alertsQuery — the list the map paints, already on the agencies'
@@ -204,16 +204,9 @@ export function makeReaders(env) {
       } catch (e) { return { state: 'unavailable', reason: (e && e.message === 'deadline') ? 'volcano-deadline' : 'volcano-unreadable' }; }
     },
     async news(DB, minSources) {
-      if (!DB) return { state: 'unavailable', reason: 'no-database' };
-      try {
-        const since = new Date(Date.now() - NEWS_WINDOW_MS).toISOString();
-        const { data, error } = await withDeadline(DB.from('news_events').select(NEWS_COLS)
-          .eq('status', 'active').gte('last_article_at', since).not('rep_lng', 'is', null)
-          .gte('independent_source_count', minSources).order('last_article_at', { ascending: false }).limit(NEWS_PAGE), READ_MS);
-        if (error) return { state: 'unavailable', reason: 'news-query-' + (error.code || 'failed') };
-        const rows = Array.isArray(data) ? data : [];
-        return { state: 'ok', rows, truncated: rows.length >= NEWS_PAGE };
-      } catch (e) { return { state: 'unavailable', reason: (e && e.message === 'deadline') ? 'news-deadline' : 'news-unreachable' }; }
+      const r = await EV.readNewsEvents({ db: DB, hours: NEWS_WINDOW_MS / 3600000, minSources, deadlineMs: READ_MS });
+      if (r.state !== 'unavailable') return { state: 'ok', rows: r.rows, truncated: r.truncated };
+      return { state: 'unavailable', reason: r.reason === 'no-database-client' ? 'no-database' : r.reason === 'timeout' ? 'news-deadline' : r.reason === 'http' ? 'news-query-' + (r.code || 'failed') : 'news-unreachable' };
     },
   };
 }

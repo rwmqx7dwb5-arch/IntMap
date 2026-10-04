@@ -108,8 +108,10 @@ test('② the numbers the rules name are the numbers the migration enforces', ()
   assert.match(col('volcano_min_rank'), new RegExp('default ' + C.WATCH_DEFAULTS.volcanoMinRank + '\\b'));
   assert.match(col('news_min_sources'), new RegExp('default ' + C.WATCH_DEFAULTS.newsMinSources + '\\b'));
   assert.match(sql, new RegExp('cardinality\\(seen_keys\\) <= ' + C.SEEN_MAX + '\\b'));
-  /* the USGS feed is the one the rest of the app reads */
-  assert.ok(read('js/atlas-cap-research.js').includes("USGS_WEEK = '" + C.USGS_WEEK_FEED + "'"), 'js/atlas-cap-research.js reads the same USGS feed');   /* a substring, not a regex built from a URL */
+  /* the USGS feed is the one the rest of the app reads — (place-card-unify) through the ONE reader: js/events-near.js takes the
+     URL from this file, and every other reader of the week's feed goes through it instead of naming the URL again */
+  assert.match(read('js/events-near.js'), /import \{ USGS_WEEK_FEED, QUAKE_FLOOR_MAG \} from '\.\.\/supabase\/functions\/_shared\/place-watch\.js'/, 'js/events-near.js reads the feed this file names');
+  for (const f of ['js/atlas-cap-research.js', 'js/place-dossier.js', 'js/place-watch.js']) assert.ok(!read(f).includes(C.USGS_WEEK_FEED), f + ' reads the week\'s feed through js/events-near.js, not by its own URL');   /* a substring, not a regex built from a URL */
 });
 
 /* ── a stand-in account: place_watches, saved_places, news_events ───────────────────────────── */
@@ -120,6 +122,7 @@ function fakeDB(state) {
     const chain = {
       select(cols) { ctx.cols = cols; return chain; }, order() { return chain; }, limit(n) { ctx.limit = n; return chain; },
       gte(c, v) { ctx.filters.push(['gte', c, v]); return chain; }, not(c, o, v) { ctx.filters.push(['not', c, v]); return chain; },
+      is(c, v) { ctx.filters.push(['is', c, v]); return chain; }, range(a, b) { ctx.range = [a, b]; return chain; },
       eq(c, v) { ctx.filters.push(['eq', c, v]); return chain; }, in(c, v) { ctx.filters.push(['in', c, v]); return chain; },
       delete() { ctx.op = 'delete'; return chain; },
       update(row) { ctx.op = 'update'; ctx.row = row; return chain; },

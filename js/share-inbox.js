@@ -5,7 +5,7 @@
  *  SENDING side of it (js/map-ui.js IntMapShare, the postcard). Now an installed IntMap is a destination:
  *
  *    · a PHOTO       the camera's own record of where and when (EXIF GPS + DateTimeOriginal, read on the device by
- *                    js/photo-geo-exif.js) → a pin there, «Here, now» for that point, and the map of the day it was
+ *                    js/photo-geo-exif.js) → a pin there, the place card («Here, now» first) for that point, and the map of the day it was
  *                    taken. A photo with no position is not guessed at: it is offered to the photo-geolocation panel
  *                    (js/photo-geo.js — the skyline match), which is an estimate and says so.
  *    · a MAP LINK    Google Maps / Apple Maps / OpenStreetMap / a `geo:` URI / bare coordinates → the point itself.
@@ -26,7 +26,7 @@ import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { whenHost } from './host-door.js';
 import { MapState } from './map-state.js';
-import { whenMapReady, openHereNow } from './here-now.js';
+import { whenMapReady, openHereNow } from './place-dossier.js';   /* the one place card, «now» first; a shared point keeps its exact position on the device */
 import './photo-geo-exif.js';   /* publishes globalThis.IntMapPhotoExif */
 
 const finite = (v) => typeof v === 'number' && isFinite(v);

@@ -57,6 +57,7 @@
  * ==========================================================================*/
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
+import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /* the one great-circle distance */
 
 export function volcanoIntel(HOST){
   const L=IntMapLang.pick(()=>HOST.lang);
@@ -784,15 +785,11 @@ export function volcanoIntel(HOST){
         m:q.properties&&q.properties.mag, at:q.properties&&q.properties.time,
         depth:q.geometry&&q.geometry.coordinates&&q.geometry.coordinates[2],
         place:q.properties&&q.properties.place, url:q.properties&&q.properties.url,
-        km:haversine(c[1],c[0],q.geometry.coordinates[1],q.geometry.coordinates[0]) }));
+        km:haversineKm(c[0],c[1],q.geometry.coordinates[0],q.geometry.coordinates[1]) }));
       const out={ ok:true, rows, radiusKm:radiusKm||50, days:days||30 };
       quakeCache.set(key,out); return out;
     }catch(e){ const out={ ok:false, rows:[], radiusKm:radiusKm||50, days:days||30 }; quakeCache.set(key,out); return out; }
   }
-  function haversine(la1,lo1,la2,lo2){ const R=6371, r=Math.PI/180;
-    const dLa=(la2-la1)*r, dLo=(lo2-lo1)*r;
-    const a=Math.sin(dLa/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dLo/2)**2;
-    return 2*R*Math.asin(Math.min(1,Math.sqrt(a))); }
 
   /* ══ 7. NEAREST AERODROMES — OpenStreetMap, asked per volcano ══════════════════════════════
      「周辺人口・空港・航空路への影響」. The population radii are bundled (GVP measures them); the
@@ -812,7 +809,7 @@ export function volcanoIntel(HOST){
         const t=el.tags||{}, lat=el.lat!=null?el.lat:(el.center&&el.center.lat), lon=el.lon!=null?el.lon:(el.center&&el.center.lon);
         if(lat==null||lon==null) return null;
         return { name:t[osmName()]||t['name:en']||t.name||t.icao||t.iata||'', icao:t.icao||'', iata:t.iata||'',
-          kind:t.aerodrome||t['aerodrome:type']||'', km:haversine(c[1],c[0],lat,lon), lat, lng:lon };
+          kind:t.aerodrome||t['aerodrome:type']||'', km:haversineKm(c[0],c[1],lon,lat), lat, lng:lon };
       }).filter(Boolean).filter(a=>a.name||a.icao||a.iata).sort((a,b)=>a.km-b.km).slice(0,12);
       const out={ ok:true, rows, radiusKm:radiusKm||150 };
       aptCache.set(key,out); return out;

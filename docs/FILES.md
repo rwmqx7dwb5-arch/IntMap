@@ -1246,21 +1246,24 @@ sidebar-style.js                  左サイドバーの材質（不透明／フ�
 search-geocode.js                 検索欄——問い合わせの前処理・ジオコーディング・結果カード。`goToLocal`（端末上の 1 行へ同じ飛び方で）
 wiki-lookup.js                    地物の Wikipedia 記事を**照会用の欄**（wikidata・name:<言語>・name:en…）から引く。表示用の `name`
                                   （多言語を並べた表記）は最後に、1 つの名前のときだけ。地名ポップアップの Wikipedia ボタンが使う
-place-dossier.js                  地点プロファイル——1 地点について地図が持つもの（名前と行政区分・国・標高・表示中レイヤーの
-                                  値・現地時刻と日の出入り）を 1 つの記録にし、カードに描く。Atlas `research.placeProfile` も
-                                  同じ記録を返す。読めない項目は理由つきの行（docs/architecture/07-map.md §7.3f）
-here-now.js                       **いま、ここ**——端末の現在地（または任意の地点）について、いまの天気・現地時刻と日の出入り・
-                                  300 km 以内の地震（USGS 7 日）と出来事（72 時間）・その場所のかつての名前（hist-cities.js `near`）
-                                  を 1 つの記録にし、カードと地図の点に描く。外へ出るのは 0.1° に丸めた地点だけ（地名と天気）、
-                                  地震とニュースは位置を送らずに読んで端末で絞る。Atlas `research.hereNow` も同じ記録。
-                                  入口: 検索欄の空の状態・長押しメニュー・ホーム画面アイコンのショートカット（`?here=1`）
+place-dossier.js                  **地点カード**（地点プロファイル／いま、ここ）——1 地点について地図が持つもの（名前と行政区分・国・
+                                  標高・表示中レイヤーの値・現地時刻と日の出入り）と、いまそこで起きていること（天気・300 km 以内の
+                                  地震と出来事・かつての名前）を 1 つの記録にし、1 枚のカードと地図の点に描く。起点（地図の地点／
+                                  端末の現在地／共有された地点）が何を端末の外へ送るかを決める——端末と共有は 0.1° に丸めた地点だけ。
+                                  Atlas `research.placeProfile` と `research.hereNow` は同じ記録を返す。外から呼ばれる名前は
+                                  `openPlaceDossier`（地図の地点）・`openHereNow`（端末／共有、「いま」が先頭）・`bootFromUrl`（`?here=1`）
+                                  （docs/architecture/07-map.md §7.3f）
+events-near.js                    範囲 × 期間の地震と出来事の**読み手 1 つ**——USGS の M2.5 以上・7 日のフィードをセッション内で 1 回
+                                  取得して共有し、`news_events` の窓をページ送りで読み、どちらも位置を送らずに端末で範囲を絞る。
+                                  状態の語彙（`ok` / `none` / `unavailable`＋理由）の正本。地点カード・place-watch.js・
+                                  Atlas の research.related / impact / 実世界オブジェクトが読む
 here-entry.js                     検索欄の空の状態の先頭に「いま、ここ」「写真の場所」の 2 行を出す（search-geocode.js が
                                   作例ギャラリーと一緒に読む）。写真は押した瞬間にファイル選択を開く
 share-inbox.js                    **共有で開く**——共有シート（manifest の share_target → sw.js が受けて `?share=<id>`）・写真の
                                   場所・Atlas `view.openShared` が渡したものを地図で開く。写真はカメラの記録（EXIF の位置と撮影時刻、
-                                  photo-geo-exif.js）からピン・いま、ここ・撮影日の地図。位置の無い写真は稜線照合（photo-geo.js）へ。
+                                  photo-geo-exif.js）からピン・地点カード（「いま」が先頭）・撮影日の地図。位置の無い写真は稜線照合（photo-geo.js）へ。
                                   地図のリンク（Google／Apple／OSM／geo:／座標）は地点、名前だけのリンクと文は検索、短縮リンクはそう言う
-host-door.js                      app-body.js の IM_HOST を、URL や委譲されたタップで開く遅延モジュール（share-inbox.js・here-now.js・
+host-door.js                      app-body.js の IM_HOST を、URL や委譲されたタップで開く遅延モジュール（share-inbox.js・place-dossier.js・
                                   here-entry.js）へ渡す葉（import なし）
 compare.js                        並べて／スワイプで比べる地図 IntMapCompare。**独自の時計**（`makeClock('compare')`）を持ち、
                                   「メイン地図の時刻に従う／独自の時刻」を切り替える。選んだ層はその時計で時間カーネルの規則に
@@ -1711,7 +1714,8 @@ supabase/
                                   atlas-grade-schema.js / site-origin.js / plans.js /
                                   inquiry-shape.js〔組織からの相談の語彙・上限・返信先の規則。org-pages.mjs も読む〕・
                                   correction-shape.js〔地図の誤り報告の語彙・上限・検証規則・受付番号とそのハッシュ。カードと関数と生成器が読む〕 /
-                                  place-watch.js〔見守る場所の判定——近さ・強さ・新しさ。今はページだけが読む。将来のサーバー評価が同じ規則を使うためここに置く〕）
+                                  place-watch.js〔見守る場所の判定——近さ・強さ・新しさ。今はページだけが読む。将来のサーバー評価が同じ規則を使うためここに置く〕 /
+                                  great-circle.js〔大円距離 `haversineKm`（地球半径 6,371 km）の唯一の実装。ページと関数が import する〕）
                                   ⚠ site-origin.js は**本番のアドレスの唯一の置き場**（`CUSTOM_DOMAIN` が
                                   変える値）。ブラウザ・Edge Function・スクリプト・テストが import し、
                                   workflow は scripts/site-url.mjs 経由で読む（domain-portable）

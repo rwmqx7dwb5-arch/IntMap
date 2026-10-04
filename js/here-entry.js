@@ -3,7 +3,7 @@
  * ----------------------------------------------------------------------------
  *  The sheet's head field is the phone's one entry (docs/architecture/09-mobile.md §9.2): focusing it with nothing
  *  typed already shows the example maps (js/showcase-gallery.js). Above them, two rows that only a phone makes
- *  natural — what is happening where I stand (js/here-now.js), and where a photo in my library was taken
+ *  natural — what is happening where I stand (the place card's «Here, now», js/place-dossier.js), and where a photo in my library was taken
  *  (js/share-inbox.js openShared). Neither opens by itself and neither reads the position before it is pressed:
  *  the browser's own location prompt follows the press.
  *  Loaded with the gallery on the first empty focus (js/search-geocode.js); the two modules it opens are fetched
@@ -53,7 +53,7 @@ export function showEntry(res) {
     /* the press ends the search: the field gives up the caret (on a phone the keyboard closes and the sheet comes down) */
     try { const inp = document.getElementById('ms-input'); if (inp) inp.blur(); } catch (_) { /* no field */ }
     res.style.display = 'none'; res.innerHTML = '';
-    if (b.dataset.hnEntry === 'here') import('./here-now.js').then((m) => m.openHereNow(HOST)).catch(() => {});
+    if (b.dataset.hnEntry === 'here') import('./place-dossier.js').then((m) => m.openHereNow(HOST)).catch(() => {});
     else pickPhoto(HOST);
   });
   res.insertBefore(row, res.firstChild);

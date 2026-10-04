@@ -26,13 +26,14 @@ import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import { worldObjects } from './atlas-world-objects.js';   /* (world-objects) the one shape a result names the thing it is about by */
 const W = worldObjects;   /* the one session index (js/atlas-world-objects.js) */
-import { placeProfile, profileHtml } from './place-dossier.js';   /* (place-dossier) research.placeProfile's gatherer and renderer */
+import { placeProfile, hereNow, profileHtml, placeCardStyle } from './place-dossier.js';   /* (place-dossier · place-card-unify) the ONE place card: research.placeProfile and research.hereNow gather and draw the same record */
+import { readQuakes } from './events-near.js';   /* (place-card-unify) the app's one reader of the USGS feed — shared with the card and the watched places */
+import { haversineKm } from '../supabase/functions/_shared/great-circle.js';   /* the one great-circle distance */
 
 /* ══ (world-objects) RESOLVING «THAT EARTHQUAKE / THIS VOLCANO / THAT COMPANY» TO ONE REAL-WORLD OBJECT ═══════════════
    The index (js/atlas-world-objects.js) holds what this session already surfaced; a miss falls through to the readers
    the product already has — the loaded news, the volcano catalogue, the company atlas, the USGS feed — each of which
    writes its record down through the SAME adapters. Nothing here guesses: a name nothing holds is answered as not found. */
-const USGS_WEEK = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson';
 async function resolveWorldObject(a, K) {
   const HOST = K.HOST, q = String(a.ref || a.name || a.place || '').trim(), type = String(a.objectType || '').trim() || undefined;
   if (!q) return { obj: null, code: 'NEEDS_INPUT' };
@@ -63,8 +64,8 @@ async function resolveWorldObject(a, K) {
   }
   if (want('earthquake')) {
     try {
-      const j = await K._fetchJSON(USGS_WEEK);
-      const qs = W.register(((j && j.features) || []).map((f) => W.fromUsgs(f)).filter(Boolean));
+      const rq = await readQuakes({});
+      const qs = W.register(rq.features.map((f) => W.fromUsgs(f)).filter(Boolean));
       const hit = W.find(q, { type: 'earthquake' }); if (hit && qs.indexOf(hit) >= 0) return { obj: hit, via: 'usgs' };
     } catch (_) { /* the feed is optional here */ }
   }
@@ -155,12 +156,14 @@ export default [
     },
   },
   {
-    /* (place-dossier) EVERYTHING THE MAP KNOWS ABOUT ONE POINT, AS VALUES — js/place-dossier.js gathers it,
+    /* (place-dossier · place-card-unify) EVERYTHING THE MAP KNOWS ABOUT ONE POINT, AS VALUES — js/place-dossier.js gathers it (the
+       same gatherer and record research.hereNow returns; the two capabilities differ only in which sections come first and in
+       hereNow's door to the device position),
        the card on the map draws the same record, and Atlas receives it whole as `exec.placeProfile`
        (js/atlas-toolsurface.js → `observed`), so a figure Atlas quotes is one the reader can see. */
     row: ['research.placeProfile',      'placeProfile',   'placeDossier,pointProfile,whatIsHere',                        'research','none',    '',                       'explanation',         'read',    'none',   'point',    ''],
     doc: [
-      { in: 'country', at: 55, text: '{"type":"placeProfile","place"?:str,"lng"?:num,"lat"?:num} = PLACE PROFILE / 地点プロファイル — one card of everything IntMap holds about a single point, as values with their units and sources: coordinates, the OpenStreetMap name and administrative chain (市区町村・都道府県・州), the country (Natural Earth) with its statistics, the elevation or sea depth (標高・水深, terrarium DEM), the value of EVERY data layer the reader has switched on at that point (表示中レイヤーの値) — and, by name, each layer that is on but cannot be read at a point, with the reason — the local time and time zone (現地時刻・タイムゾーン), sunrise, sunset and daylight (日の出・日の入り・昼の長さ). Use it for 「この地点について教えて」「ここはどんな場所」「what is at this spot / what does the map know here」. A section that could not be read says why instead of being left out; do not describe an unavailable section as empty. "place":"here" is the point Atlas last touched (e.g. after askHere). ' },
+      { in: 'country', at: 55, text: '{"type":"placeProfile","place"?:str,"lng"?:num,"lat"?:num} = PLACE PROFILE / 地点プロファイル — one card of everything IntMap holds about a single point, as values with their units and sources: coordinates, the OpenStreetMap name and administrative chain (市区町村・都道府県・州), the country (Natural Earth) with its statistics, the elevation or sea depth (標高・水深, terrarium DEM), the value of EVERY data layer the reader has switched on at that point (表示中レイヤーの値) — and, by name, each layer that is on but cannot be read at a point, with the reason — the local time and time zone (現地時刻・タイムゾーン), sunrise, sunset and daylight (日の出・日の入り・昼の長さ) — and what is happening there now: the weather now, the earthquakes of M2.5+ within 300 km in the last 7 days (USGS), the news events placed within 300 km in the last 72 hours, and what the place used to be called. It is the SAME card and record as hereNow (which lists the «now» sections first). Use it for 「この地点について教えて」「ここはどんな場所」「what is at this spot / what does the map know here」. A section that could not be read says why instead of being left out; do not describe an unavailable section as empty. "place":"here" is the point Atlas last touched (e.g. after askHere). ' },
     ],
     schema: () => ({ type: 'object', properties: { place: str(), lng: lng(), lat: lat() }, anyOf: [{ required: ['place'] }, { required: ['lat', 'lng'] }] }),
     async run(a, dctx, K) { const geocode = K.geocode, R = K.R, warn = K.warn, esc = K.esc, L = K.L, HOST = K.HOST;
@@ -172,23 +175,23 @@ export default [
       const prof=await placeProfile(pt, HOST, { ensureCountries: K.ensureData, metrics: Object.assign({}, K.METRICS, K.XMET), label: K.lx, format: K.fmtVal });
       const ttl=(prof.place&&prof.place.status==='ok'&&prof.place.name)||pt.name||prof.at.text;
       const wp=W.register(W.fromPlaceProfile(Object.assign({asked:pt.name},prof), ptProv))[0];   /* (world-objects) the profile's point, named by a ref the follow-ups can open */
-      const out=R(true, '<div><b>'+icon('pin')+' '+esc(ttl)+'</b>'+profileHtml(prof, HOST)+'</div>', { exec: { placeProfile: prof } });
+      placeCardStyle();   /* the «now» and «past» lists' rules — the bubble draws the card's sections */
+      const out=R(true, '<div><b>'+icon('pin')+' '+esc(ttl)+'</b>'+profileHtml(prof, HOST, { inert: true })+'</div>', { exec: { placeProfile: prof } });
       if(wp) out.exec.worldObjects={ subject: wp.ref, objects: [W.brief(wp)] };
       return out;
     },
   },
   {
-    /* (mobile-next) WHAT IS HAPPENING HERE, NOW — js/here-now.js gathers it (weather now, earthquakes and news within the
+    /* (mobile-next · place-card-unify) WHAT IS HAPPENING HERE, NOW — js/place-dossier.js gathers it (weather now, earthquakes and news within the
        reach, the place's former names), the card on the map draws the same record, and Atlas receives it whole as
        `exec.hereNow`. With no place it reads the DEVICE position (js/locate-me.js, the one reading view.locate uses),
        which is why the confirm cell is `explicit`: Atlas proposing it unasked must not read the sensor silently. */
     row: ['research.hereNow',           'hereNow',        'hereAndNow,whatIsHappeningHere,aroundMeNow,nearMeNow',          'research','none',    '',                       'explanation',         'read',    'explicit','place?',   '',  'external'],
     doc: [
-      { in: 'country', at: 56, text: '{"type":"hereNow","place"?:str,"lng"?:num,"lat"?:num} = HERE, NOW / いま、ここ — what is happening at one point right now, as values with their sources: the weather now and today (Open-Meteo, MET Norway as fallback) with the local time, sunrise and sunset, the earthquakes of M2.5+ within 300 km in the last 7 days (USGS), the news events placed within 300 km in the last 72 hours (IntMap news events), and what the place used to be called with each span (IntMap\'s renamed-city record — e.g. Edo for Tokyo). With NO place it uses the reader\'s device position (asks browser permission; the exact position stays on the device — only a point rounded to 0.1° is sent, for the place name and the weather). Use it for 「いまここで何が起きてる」「近くで地震あった？」「この辺のニュース」「ここは昔なんて呼ばれてた」, "what is happening around me", "anything near me right now". A section that could not be read says why; an empty section (no quake within the reach) is an answer, not a failure. ' },
+      { in: 'country', at: 56, text: '{"type":"hereNow","place"?:str,"lng"?:num,"lat"?:num} = HERE, NOW / いま、ここ — what is happening at one point right now, as values with their sources: the weather now and today (Open-Meteo, MET Norway as fallback) with the local time, sunrise and sunset, the earthquakes of M2.5+ within 300 km in the last 7 days (USGS), the news events placed within 300 km in the last 72 hours (IntMap news events), and what the place used to be called with each span (IntMap\'s renamed-city record — e.g. Edo for Tokyo) — plus everything placeProfile reads (it is the SAME card and record, with these sections first). With NO place it uses the reader\'s device position (asks browser permission; the exact position stays on the device — only a point rounded to 0.1° is sent, for the place name and the weather). Use it for 「いまここで何が起きてる」「近くで地震あった？」「この辺のニュース」「ここは昔なんて呼ばれてた」, "what is happening around me", "anything near me right now". A section that could not be read says why; an empty section (no quake within the reach) is an answer, not a failure. ' },
     ],
     schema: () => ({ type: 'object', properties: { place: str(), lng: lng(), lat: lat() } }),
     async run(a, dctx, K) { const geocode = K.geocode, R = K.R, warn = K.warn, esc = K.esc, L = K.L, HOST = K.HOST;
-      const HN = await import('./here-now.js');
       let pt=null;
       if(a.lng!=null&&a.lat!=null&&isFinite(+a.lng)&&isFinite(+a.lat)) pt={lng:+a.lng,lat:+a.lat,name:String(a.place||'')};
       else if(a.place&&String(a.place).toLowerCase()==='here'&&K._herePoint) pt={lng:+K._herePoint.lng,lat:+K._herePoint.lat,name:K._herePoint.name||''};
@@ -201,10 +204,11 @@ export default [
         try{ if(window.IntMapLocate&&window.IntMapLocate.start) window.IntMapLocate.start({ fly: false, fix }); }catch(_){}
         pt={lng:fix.lng,lat:fix.lat,from:'device',accuracyM:fix.acc};
       }
-      const rec=await HN.hereNow(pt, HOST);
-      HN.style();
+      /* (place-card-unify) the SAME gatherer and record as research.placeProfile, with the «now» sections first */
+      const rec=await hereNow(pt, HOST, { ensureCountries: K.ensureData, metrics: Object.assign({}, K.METRICS, K.XMET), label: K.lx, format: K.fmtVal });
+      placeCardStyle();
       const ttl=(rec.place&&rec.place.status==='ok'&&rec.place.name)||pt.name||rec.at.text;
-      return R(true, '<div><b>'+icon('target')+' '+esc((pt.from==='device'?L('Here, now','いま、ここ')+' — ':'')+ttl)+'</b>'+HN.hereNowHtml(rec, HOST, { inert: true })+'</div>', { exec: { hereNow: rec } });
+      return R(true, '<div><b>'+icon('target')+' '+esc((pt.from==='device'?L('Here, now','いま、ここ')+' — ':'')+ttl)+'</b>'+profileHtml(rec, HOST, { inert: true })+'</div>', { exec: { hereNow: rec } });
     },
   },
   {
@@ -250,7 +254,11 @@ export default [
       const extra = W.fromLoadedNews((typeof HOST.globalData !== 'undefined' && HOST.globalData) || []);
       let quakeFeedFailed = false;
       if (!types.length || types.indexOf('earthquake') >= 0) {
-        try { const j = await K._fetchJSON(USGS_WEEK); ((j && j.features) || []).forEach((f) => { const o = W.fromUsgs(f); if (o) extra.push(o); }); } catch (_) { quakeFeedFailed = true; }
+        /* the whole feed (the object's own reach is applied by W.related); `unavailable` is a feed that did not answer — said
+           below — and never the same as a feed that answered with nothing near */
+        const rq = await readQuakes({});
+        if (rq.state === 'unavailable') quakeFeedFailed = true;
+        else rq.features.forEach((f) => { const o = W.fromUsgs(f); if (o) extra.push(o); });
       }
       const res = W.related(r.obj, { km: a.km, hours: a.hours, types, extra });
       W.register(res.items.map((x) => x.object));   /* what was found can be followed next */
@@ -650,7 +658,7 @@ export default [
     ],
     chips: 'map.poi',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { place: str(), lng: lng(), lat: lat(), km: num(0), event: str(), focus: list(str()) } }),
-    async run(a, dctx, K) { const ensureData = K.ensureData, _fetchJSON = K._fetchJSON, R = K.R, warn = K.warn, L = K.L, _havKm = K._havKm, _setLast = K._setLast, DEIXIS_RE = K.DEIXIS_RE, placeExtent = K.placeExtent, geocode = K.geocode, esc = K.esc, overpassPOIs = K.overpassPOIs, overpassRaw = K.overpassRaw, HOST = K.HOST, _newsData = K._newsData, clearPois = K.clearPois, paintPois = K.paintPois, GE = K.GE, codeAtPoint = K.codeAtPoint, countryStats = K.countryStats, nm = K.nm, _PINNED = K._PINNED;
+    async run(a, dctx, K) { const ensureData = K.ensureData, _fetchJSON = K._fetchJSON, R = K.R, warn = K.warn, L = K.L, _havKm = (p1, p2) => haversineKm(p1.lng, p1.lat, p2.lng, p2.lat), _setLast = K._setLast, DEIXIS_RE = K.DEIXIS_RE, placeExtent = K.placeExtent, geocode = K.geocode, esc = K.esc, overpassPOIs = K.overpassPOIs, overpassRaw = K.overpassRaw, HOST = K.HOST, _newsData = K._newsData, clearPois = K.clearPois, paintPois = K.paintPois, GE = K.GE, codeAtPoint = K.codeAtPoint, countryStats = K.countryStats, nm = K.nm, _PINNED = K._PINNED;
       { /* (#R75) vision §11 — WHERE an event's impact
           spreads: real critical facilities + population context + nearby quakes/news around a point, on the map. */
           await ensureData();
@@ -692,7 +700,9 @@ export default [
             const j=await overpassRaw(q3).catch(()=>null); if(!j) return null;
             /* a successful reply with ZERO cities is a real answer (open ocean), not a failure */
             return j.elements.map(e=>({lng:+e.lon,lat:+e.lat,name:(e.tags&&(e.tags['name:'+(HOST.lang==='jp'?'ja':HOST.lang)]||e.tags.name))||'?',pop:+((e.tags&&e.tags.population)||0)})).filter(c2=>isFinite(c2.pop)&&c2.pop>0); });
-          const qkP=_fetchJSON('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson').catch(()=>null);
+          /* (place-card-unify) the app's one reader of the week's feed, filtered to the radius here. `unavailable` (the feed did not
+             answer) is said in the report and marked partial — it used to be `.catch(()=>null)`, which drew «no quakes» for both */
+          const qkP=readQuakes({ area:{ point:ctr, radiusKm:kmR }, days:7 });
           const facRes=await Promise.all(facJobs);
           let cities=await cityJob();   /* sequential — after the facility race frees the Overpass slots */
           const qk=await qkP;
@@ -701,7 +711,7 @@ export default [
           const fac=[]; facRes.forEach(fr=>{ (fr.list||[]).forEach(p2=>{ const d=inR(p2); if(d==null) return; fac.push(Object.assign({},p2,{_d:d,_k:fr.k})); }); });
           fac.sort((x,y)=>x._d-y._d);
           if(cities){ cities=cities.map(c2=>Object.assign(c2,{_d:inR(c2)})).filter(c2=>c2._d!=null).sort((x,y)=>y.pop-x.pop).slice(0,10); }
-          let qkN=[]; if(qk&&Array.isArray(qk.features)) qkN=qk.features.filter(f2=>{ const c=f2.geometry&&f2.geometry.coordinates; return c&&_havKm({lng:+c[0],lat:+c[1]},ctr)<=kmR; });
+          const qkN=qk.state==='ok'?qk.features:[], qkFailed=qk.state==='unavailable';
           let news=null; try{ news=_newsData({lng:ctr.lng,lat:ctr.lat,name:label},label); }catch(_){}
           /* draw: pins (facilities + top cities) + the radius circle + fit */
           clearPois();
@@ -722,6 +732,7 @@ export default [
           else html+='<div style="font-size:11px;color:var(--text-muted);">'+L('No populated cities/towns within the radius (per OSM population tags)','半径内に人口タグ付きの都市・町はありません（OSM基準）','Keine Städte im Radius (OSM)','Городов в радиусе нет (OSM)','Sin ciudades en el radio (OSM)')+'</div>';
           if(cs) html+='<div style="font-size:11px;color:var(--text-muted);">'+esc(nm(cs))+': '+L('density ','人口密度 ','Dichte ','плотность ','densidad ')+(cs.density!=null?Math.round(cs.density).toLocaleString()+'/km²':'—')+'</div>';
           if(qkN.length) html+='<div style="font-size:12px;margin:4px 0 1px;"><b>'+L('Earthquakes (7 days, in radius)','地震（過去7日・半径内）','Beben (7 Tage)','Землетрясения (7 дней)','Sismos (7 días)')+'</b>: '+qkN.length+' — max M'+Math.max.apply(null,qkN.map(f2=>(f2.properties&&f2.properties.mag)||0)).toFixed(1)+'</div>';
+          if(qkFailed) html+=warn(L('The USGS feed could not be read — earthquakes are not part of this answer.', 'USGS のフィードを読めなかったため、地震はこの答えに含まれていません。'));
           if(news) html+='<div style="font-size:11px;color:var(--text-muted);margin-top:3px;">'+icon('news')+' '+L('Loaded news near here','周辺の読み込み済みニュース','Geladene News','Новости рядом','Noticias cercanas')+':<br>'+esc(String(news).split('\n').slice(0,3).join(' · ').slice(0,220))+'</div>';
           html+='<div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">'+L('Sources: OpenStreetMap (facilities, city population tags — coverage varies by region), USGS (earthquakes), IntMap country statistics. Pins are clickable; the circle marks the analysis radius.','出典: OpenStreetMap（施設・都市人口タグ — 地域によって登録密度が異なります）、USGS（地震）、IntMap国別統計。ピンはクリック可能、円は分析半径です。','Quellen: OpenStreetMap, USGS, IntMap-Statistiken.','Источники: OpenStreetMap, USGS, статистика IntMap.','Fuentes: OpenStreetMap, USGS, estadísticas de IntMap.')+'</div>';
           if(!okP&&K._pois.length) html+=warn(L('Could not draw the markers (map still loading)','マーカーを描画できませんでした（地図読込中）','Marker nicht gezeichnet','Маркеры не отрисованы','Marcadores no dibujados'));
@@ -735,7 +746,7 @@ export default [
           const wQk=qkN.filter(f2=>!quakeF||f2.id!==quakeF.id).map(f2=>W.fromUsgs(f2,{links:toCentre})).filter(Boolean);
           W.register([subj].concat(wFac,wCity,wQk).filter(Boolean));
           const wShown=[subj].concat(wFac.slice(0,50),wCity.slice(0,8),wQk.slice().sort((x,y)=>((y.facts.magnitude||0)-(x.facts.magnitude||0))).slice(0,10)).filter(Boolean);
-          const exec={ worldObjects:{ subject:subj&&subj.ref, objects:wShown.map(W.brief), totals:{ facility:wFac.length, city:wCity.length, earthquake:wQk.length } } };
+          const exec={ worldObjects:{ subject:subj&&subj.ref, objects:wShown.map(W.brief), totals:{ facility:wFac.length, city:wCity.length, earthquake:wQk.length }, partial: qkFailed || undefined } };
           return R(true, html, Object.assign({}, _PINNED(null,okP), { exec })); }   /* (#R802) the facilities and cities this analysis pinned, declared by the painter — `okP` is the same witness the sentence above prints */
     },
   },
@@ -746,7 +757,7 @@ export default [
     ],
     chips: 'map.poi',   /* the map's on/off chip a completed run switches (js/atlas-console.js _ovlOf) */
     schema: () => ({ type: 'object', properties: { place: str(), hours: num(1), n: int(1) } }),
-    async run(a, dctx, K) { const ensureData = K.ensureData, HOST = K.HOST, fetchData = K.fetchData, _agoH = K._agoH, WORLD_RE = K.WORLD_RE, DEIXIS_RE = K.DEIXIS_RE, geocode = K.geocode, placeExtent = K.placeExtent, R = K.R, warn = K.warn, L = K.L, esc = K.esc, _bboxOK = K._bboxOK, newsSubject = K.newsSubject, _havKm = K._havKm, note = K.note, groupNewsEvents = K.groupNewsEvents, clearPois = K.clearPois, paintPois = K.paintPois, GE = K.GE, _atlCleanUrl = K._atlCleanUrl, linkCards = K.linkCards, EVENT_RULES = K.EVENT_RULES, _PINNED = K._PINNED;
+    async run(a, dctx, K) { const ensureData = K.ensureData, HOST = K.HOST, fetchData = K.fetchData, _agoH = K._agoH, WORLD_RE = K.WORLD_RE, DEIXIS_RE = K.DEIXIS_RE, geocode = K.geocode, placeExtent = K.placeExtent, R = K.R, warn = K.warn, L = K.L, esc = K.esc, _bboxOK = K._bboxOK, newsSubject = K.newsSubject, _havKm = (p1, p2) => haversineKm(p1.lng, p1.lat, p2.lng, p2.lat), note = K.note, groupNewsEvents = K.groupNewsEvents, clearPois = K.clearPois, paintPois = K.paintPois, GE = K.GE, _atlCleanUrl = K._atlCleanUrl, linkCards = K.linkCards, EVENT_RULES = K.EVENT_RULES, _PINNED = K._PINNED;
       { /* (#R76) vision §6 / stage 4 — the loaded news
           grouped into EVENTS (one real-world occurrence, many articles) instead of a flat article list.
           (#R340) THE GROUPING ITSELF IS js/news-cluster.js — the one implementation, with the production

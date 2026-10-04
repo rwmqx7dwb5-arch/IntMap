@@ -27,6 +27,11 @@ import { test } from 'node:test';
 import { makeAtlasGeoObject } from '../js/atlas-geo-object.js';
 import { makeAtlasWorldObjects, RELATED_DEFAULTS } from '../js/atlas-world-objects.js';
 import caps from '../js/atlas-cap-research.js';
+/* (place-card-unify) the capabilities read the USGS feed through the app's one reader (js/events-near.js), not the kernel's
+   `_fetchJSON`; the stand-in feed is handed to that reader, the way tests hand NominatimGate its pace */
+import { EventsNear } from '../js/events-near.js';
+const usgsFeed = (j) => EventsNear.configure({ json: typeof j === 'function' ? j : async () => j });
+usgsFeed({ features: [] });
 
 const geo = makeAtlasGeoObject();
 const fresh = () => makeAtlasWorldObjects({ geo });
@@ -158,8 +163,12 @@ test('⑥ research.object / research.related run: a registered ref resolves; a s
   const kinds = rel.exec.worldObjects.related.map((x) => x.type).sort();
   assert.deepEqual(kinds, ['article', 'facility'], 'the dam by place, the article by place and time');
   assert.ok(rel.exec.worldObjects.related.every((x) => x.why.length), 'every result says why'); assert.equal(rel.exec.worldObjects.total, 2);
-  const broken = await entry('research.related').run({ ref: q.ref }, {}, kernel(worldObjects, { _fetchJSON: async () => { throw new Error('down'); } }));
+  usgsFeed(async () => { throw new Error('down'); });
+  const broken = await entry('research.related').run({ ref: q.ref }, {}, kernel(worldObjects));
   assert.equal(broken.exec.worldObjects.partial, true); assert.match(broken.html, /USGS feed could not be read/);
+  usgsFeed({ features: [] });
+  const quiet = await entry('research.related').run({ ref: q.ref }, {}, kernel(worldObjects));
+  assert.equal(quiet.exec.worldObjects.partial, undefined, 'a feed that answered with nothing near is not a feed that failed');
   assert.ok(plant.ref);
 });
 
@@ -185,8 +194,10 @@ test('⑦ the producers hand their objects over, run through their own dispatch'
     codeAtPoint: () => null, countryStats: {}, nm: () => '', _PINNED: (x) => x, _lastPlace: null, _pois: pois,
   });
   Object.defineProperty(K, '_pois', { get: () => pois, set: (v) => { pois.length = 0; pois.push(...v); } });
+  usgsFeed(feed);
   const res = await entry('research.impact').run({ event: 'quake', km: 300, focus: ['dam'] }, {}, K);
   assert.equal(res.ok, true);
+  assert.equal(res.exec.worldObjects.partial, undefined, 'the week\'s feed answered');
   const wo = res.exec.worldObjects;
   assert.equal(wo.subject, 'earthquake:us7000test'); assert.deepEqual(Object.keys(wo.totals).sort(), ['city', 'earthquake', 'facility']);
   const rel = worldObjects.related(wo.subject);
