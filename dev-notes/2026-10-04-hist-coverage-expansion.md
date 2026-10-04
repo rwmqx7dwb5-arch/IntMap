@@ -139,3 +139,17 @@ rebase 後の build で測った:
 `npm test`: checks は上の台帳だけが赤（`--update` で解消）。browser は 1 件（R766 ②）が負荷下で落ち、その後ろの
 8 件が走らなかった——単独で再実行して R766 ①〜③・time-compare-lapse ①②・timelapse-video-export ①②・
 installable-app ①〜⑤ がすべて緑（timelapse-video-export ② は 1 度だけ WebM の復号コマ数が 2 になり、再実行で緑）。
+
+### PR の CI で落ちたもの（1 回目）
+
+- **公開ページは生成物だった**: about・teachers（`scripts/landing.mjs` ＋ `landing-text.mjs`）、press と
+  `docs/marketing/{press-kit,launch-posts}.md`（`scripts/brand.mjs` ＋ `brand-text.mjs`、press は `scripts/org-pages.mjs`）。
+  手で書いた文を戻し、文言ファイルを直して生成し直した。Cliopatria の下限は記録から導く新しい事実
+  `{clioFromBC}`（`data/hist-clio.js` の `window[0]`）で、数字は文言に書かない。
+- **この日の歴史（`data/on-this-day.json`）**: 1886 年からの答えが `composite:cshapes+clio` になり、日の記録
+  （`cshapes`）と一致しなくなって CShapes の日が全部「日の記録ではない」として落ちた。合成した答えの日は**最初の記録**の
+  もので、Cliopatria の片（`_rec`）は政体の比較から外す——同名の片（ロシア帝国の北極海の島々）が国の面積と箱を動かし、
+  2008 年のコソボを「現れた」から「境界が変わった」に変えていた。直したあとの出力は main と同一。
+- `tests/history-era-names-checks.test.mjs` #R695 ③: 識別子の欄が答える QID の母集合に `data/hist-clio.js` を足した。
+- `tests/marketing-engine-checks.test.mjs` ⑥: 1913 年は CShapes が先頭の合成、紀元前 3000 年は枚を含む合成。
+- `.github/workflows/ci.yml` の境界の環の数（74,737）。

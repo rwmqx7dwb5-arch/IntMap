@@ -230,7 +230,8 @@ test('#R695 ③ the table only ever names something one of the three records dra
   const t = doc();
   const csNames = new Set(bundle('cshapes.js', '__CSHAPES', ROOT).feats.map((f) => csName(f[0])));
   const erNames = new Set(census(eraBundle(ROOT)).map((r) => r.name));
-  const hbQids = new Set(bundle('hist-borders.js', '__HISTB', ROOT).feats.map((f) => f[1]).filter(Boolean));
+  /* (hist-coverage-expansion) every record that states identifiers: OpenHistoricalMap's relations and Cliopatria's verified rows */
+  const hbQids = new Set([...bundle('hist-borders.js', '__HISTB', ROOT).feats, ...bundle('hist-clio.js', '__HISTCLIO', ROOT).feats].map((f) => f[1]).filter(Boolean));
   for (const k of Object.keys(t.byName.cshapes)) assert.ok(csNames.has(k), 'cshapes lane names "' + k + '", which data/cshapes.js does not draw');
   for (const k of Object.keys(t.byName.eras)) assert.ok(erNames.has(k), 'era lane names "' + k + '", which data/hist-eras.js does not draw');
   for (const k of Object.keys(t.prose)) assert.ok(erNames.has(k), 'prose lane names "' + k + '", which data/hist-eras.js does not draw');

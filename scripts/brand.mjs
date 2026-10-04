@@ -49,6 +49,7 @@ export function factWords(F, lang) {
     floorBC: lang === 'jp' ? '紀元前' + n(F.bcYears) + '年' : n(F.bcYears) + ' BC',
     snapshots: n(F.snapshots), ohmFrom: String(F.ohmFrom), ohmTo: String(F.ohmTo),
     csFrom: String(F.csFrom), csTo: String(F.csTo), layers: n(F.layers), langs: n(F.langs),
+    clioFromBC: lang === 'jp' ? '紀元前' + n(F.clioBCYears) + '年' : n(F.clioBCYears) + ' BC',
   };
 }
 /* `{date:<id>}` / `{image:<id>}`: an example map's date and picture, from js/showcase.js (the declaration the

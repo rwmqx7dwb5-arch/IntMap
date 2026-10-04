@@ -47,7 +47,7 @@ export const BRAND = {
       unlike: 'Unlike printed atlases and static historical maps, which show one moment someone chose for you, and unlike GIS tools, which expect you to bring and prepare the data yourself.',
     },
     proof: [
-      'Borders for every year: {snapshots} historical snapshots before {ohmFrom}, OpenHistoricalMap from {ohmFrom} to {ohmTo}, and CShapes 2.0 day by day from {csFrom} to {csTo}.',
+      'Borders for every year, layered by precision: CShapes 2.0 day by day from {csFrom} to {csTo}, OpenHistoricalMap from {ohmFrom} to {ohmTo}, Cliopatria from the Seshat Global History Databank year by year from {clioFromBC} where those are silent, and {snapshots} historical snapshots where none of them speaks.',
       '{layers} layers — climate, hazards, population, economy, infrastructure, live feeds — each with its source and licence on the Data sources page. A layer whose source does not describe the chosen date is not drawn.',
       'One link reopens the same place, date and layers on any device; the same map can be embedded on another site.',
       'Atlas, IntMap’s AI assistant, operates the map from plain language for signed-in users, within a daily limit per account.',
@@ -56,7 +56,7 @@ export const BRAND = {
     pitch: {
       short: 'A free world map you can set to any year from {floorBC} to today.',
       medium: 'IntMap is a free world map with one clock for everything on it. Set it to any date from {floorBC} to today and the borders, figures and {layers} layers follow, each with its source named. It runs in a browser with no sign-up, and one link reopens exactly what you see.',
-      long: 'IntMap is a free world map with one clock for everything on it. Move the clock anywhere from {floorBC} to today and the map moves with it: country borders from {snapshots} historical snapshots before {ohmFrom}, from OpenHistoricalMap from {ohmFrom} to {ohmTo}, and day by day from CShapes 2.0 from {csFrom} to {csTo}. On the same map sit {layers} layers — climate, hazards, population, economy, infrastructure and live feeds — and every one names its source; a layer whose source does not describe the chosen date is simply not drawn. A link reopens the same place, date and layers on any device, and the page for teachers shows how to build a lesson on that. Signed in, Atlas, IntMap’s AI assistant, operates the map from plain language. IntMap has no ads and no paid plan and is kept running by donations.',
+      long: 'IntMap is a free world map with one clock for everything on it. Move the clock anywhere from {floorBC} to today and the map moves with it: country borders day by day from CShapes 2.0 ({csFrom}–{csTo}) and OpenHistoricalMap ({ohmFrom}–{ohmTo}), year by year from Cliopatria (Seshat Global History Databank, from {clioFromBC}) where those are silent, and from {snapshots} historical snapshots where none of them speaks. On the same map sit {layers} layers — climate, hazards, population, economy, infrastructure and live feeds — and every one names its source; a layer whose source does not describe the chosen date is simply not drawn. A link reopens the same place, date and layers on any device, and the page for teachers shows how to build a lesson on that. Signed in, Atlas, IntMap’s AI assistant, operates the map from plain language. IntMap has no ads and no paid plan and is kept running by donations.',
     },
   },
   jp: {
@@ -72,7 +72,7 @@ export const BRAND = {
       unlike: '誰かが選んだ一瞬だけを見せる地図帳や静的な歴史地図とも、データを自分で用意することが前提の GIS とも違います。',
     },
     proof: [
-      'すべての年の国境：{ohmFrom}年より前は{snapshots}枚の歴史スナップショット、{ohmFrom}〜{ohmTo}年は OpenHistoricalMap、{csFrom}〜{csTo}年は CShapes 2.0 を日単位で。',
+      'すべての年の国境を精度の順に重ねて：{csFrom}〜{csTo}年は CShapes 2.0、{ohmFrom}〜{ohmTo}年は OpenHistoricalMap（どちらも日単位）、それらが述べない土地に Seshat Global History Databank の Cliopatria（{clioFromBC}から・年単位）、どれも述べない土地に{snapshots}枚の歴史スナップショット。',
       '気候・災害・人口・経済・インフラ・リアルタイムの{layers}のレイヤー。すべての出典とライセンスを「データの出典」ページに載せています。選んだ日付を出典が述べていないレイヤーは描きません。',
       'リンク一つで、同じ場所・日付・レイヤーをどの端末でも開き直せます。同じ地図を他のサイトに埋め込むこともできます。',
       'IntMap の AI アシスタント Atlas が、ログインした人の言葉どおりに地図を操作します（アカウントごとに一日の上限あり）。',
@@ -81,7 +81,7 @@ export const BRAND = {
     pitch: {
       short: '{floorBC}から今日まで、どの年にも合わせられる無料の世界地図。',
       medium: 'IntMap は、地図の上のすべてに一つの時計を持つ無料の世界地図です。{floorBC}から今日までのどの日付に合わせても、国境・数字・{layers}のレイヤーがついてきて、それぞれの出典が明記されています。ブラウザで登録なしに使え、リンク一つで見ているものをそのまま開き直せます。',
-      long: 'IntMap は、地図の上のすべてに一つの時計を持つ無料の世界地図です。時計を{floorBC}から今日までのどこへ動かしても、地図がついてきます。国境は、{ohmFrom}年より前が{snapshots}枚の歴史スナップショット、{ohmFrom}〜{ohmTo}年が OpenHistoricalMap、{csFrom}〜{csTo}年が CShapes 2.0 による日単位のものです。同じ地図に気候・災害・人口・経済・インフラ・リアルタイムの{layers}のレイヤーが重なり、すべてが出典を明記しています。選んだ日付を出典が述べていないレイヤーは、そもそも描きません。リンク一つで同じ場所・日付・レイヤーをどの端末でも開け、それを使った授業の組み立て方を「先生へ」のページにまとめています。ログインすれば、AI アシスタントの Atlas が言葉どおりに地図を操作します。広告も有料プランもなく、寄付で運営しています。',
+      long: 'IntMap は、地図の上のすべてに一つの時計を持つ無料の世界地図です。時計を{floorBC}から今日までのどこへ動かしても、地図がついてきます。国境は、{csFrom}〜{csTo}年の CShapes 2.0 と {ohmFrom}〜{ohmTo}年の OpenHistoricalMap（どちらも日単位）、それらが述べない土地に Seshat Global History Databank の Cliopatria（{clioFromBC}から・年単位）、どれも述べない土地に{snapshots}枚の歴史スナップショットを重ねたものです。同じ地図に気候・災害・人口・経済・インフラ・リアルタイムの{layers}のレイヤーが重なり、すべてが出典を明記しています。選んだ日付を出典が述べていないレイヤーは、そもそも描きません。リンク一つで同じ場所・日付・レイヤーをどの端末でも開け、それを使った授業の組み立て方を「先生へ」のページにまとめています。ログインすれば、AI アシスタントの Atlas が言葉どおりに地図を操作します。広告も有料プランもなく、寄付で運営しています。',
     },
   },
 };
