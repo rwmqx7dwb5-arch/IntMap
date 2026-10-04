@@ -66,13 +66,18 @@ test('③ every download exists and is copied by the build; every other link res
   const { pagePath: updatesPage, feedPath } = await mod('scripts/whats-new.mjs');
   const { HUB } = await mod('scripts/history-pages.mjs');
   const { OTD_HUB } = await mod('scripts/on-this-day-pages.mjs');
+  /* the hubs the build writes into dist/ (history, on this day, countries, …) are the ones the footer links — read from
+     scripts/landing.mjs pageLinks, the one list of them, so a new generator's hub is not a case added here by hand */
+  const { pageLinks } = await mod('scripts/landing.mjs');
+  const { TEXT: LT } = await mod('scripts/landing-text.mjs');
   const shipped = (rel) => !STATIC_EXCLUDE.some((x) => rel === x || rel.startsWith(x + '/'))
     && (STATIC_ASSETS.some((a) => rel === a || rel.startsWith(a + '/')) || /^[^/]+\.png$/.test(rel));
   assert.ok(shipped('press.html'), 'press.html is copied (vite.config.js STATIC_ASSETS)');
   const Ls = [{ key: 'en', dir: '', up: './' }, { key: 'jp', dir: 'ja/', up: '../' }];
   for (const L of Ls) {
     const rel = L.dir + 'press.html', html = rd(rel);
-    const buildWritten = new Set([updatesPage(L), feedPath(L), L.dir + HUB, L.dir + OTD_HUB]);
+    const buildWritten = new Set([updatesPage(L), feedPath(L), L.dir + HUB, L.dir + OTD_HUB,
+      ...pageLinks(L, LT[L.key]).map((x) => x.href).filter((h) => h.endsWith('/')).map((h) => normalize(L.dir + h).replace(/\\/g, '/'))]);
     const downloads = [...html.matchAll(/<a [^>]*href="([^"]+)"[^>]*\bdownload\b/g)].map((m) => m[1]);
     assert.ok(downloads.length >= 4, rel + ' offers marks and screenshots');
     for (const ref of downloads) {
