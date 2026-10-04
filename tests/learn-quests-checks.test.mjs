@@ -182,7 +182,7 @@ function elementSpan(html, idAttr) {
 
 test('learn-quests ⑦ while a «which year?» question is open, one class on <body> hides every element that prints the year', () => {
   const src = read('js/quest-panel.js');
-  const cls = /export const BLIND_CLASS = '([a-z-]+)'/.exec(src), list = /export const BLIND_SELECTORS = (\[[^\]]*\]);/.exec(src);
+  const cls = /const BLIND_CLASS = '([a-z-]+)'/.exec(src), list = /const BLIND_SELECTORS = (\[[^\]]*\]);/.exec(src);
   assert.ok(cls && list, 'BLIND_CLASS / BLIND_SELECTORS are not declared where the check reads them');
   const sels = JSON.parse(list[1].replace(/'/g, '"'));
   /* the rule is built from the list, with the class, and it hides (visibility — nothing around them moves) */

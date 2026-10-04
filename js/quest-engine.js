@@ -117,7 +117,7 @@ export function whereRows(doc) {
    threshold is written anywhere: a rebuilt file moves the cuts with its own N.
    Question i of n is asked from band ⌊3i/n⌋ — a set climbs from easy to hard, so a link needs no level of its own;
    a band that runs out lends the question to the nearest band that has rows left. */
-export const WHERE_BANDS = 3;
+const WHERE_BANDS = 3;
 export const bandOf = (i, n) => Math.min(WHERE_BANDS - 1, Math.floor(i * WHERE_BANDS / Math.max(1, n)));
 /** the rank where each band starts and ends: [0, ⌊N^(1/3)⌉, ⌊N^(2/3)⌉, N] */
 export function bandEdges(N) {

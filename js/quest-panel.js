@@ -46,8 +46,8 @@ const pick = (o) => (o ? (lang() === 'jp' ? o.jp : o.en) : '');
      #m-clock         the phone's way into Chronos (opening it would print the date)
      .dl-clockrow     a legend's «Year» field (js/data-layers.js legendClockYear) shows the clock's year
    `visibility` rather than `display`, so nothing around them moves while they are hidden. */
-export const BLIND_CLASS = 'im-quest-blind';
-export const BLIND_SELECTORS = ['#news-timeline', '#m-clock', '.dl-clockrow'];
+const BLIND_CLASS = 'im-quest-blind';
+const BLIND_SELECTORS = ['#news-timeline', '#m-clock', '.dl-clockrow'];
 
 /** the files the kinds name in `needs`, each read by its own reader: the gazetteer through the data door, the day
  *  index through js/on-this-day.js (that file is the index's one reader) */
@@ -123,7 +123,7 @@ function blind(on) { try { document.body.classList.toggle(BLIND_CLASS, !!on); } 
 let unnamedIds = [];
 function flip(id, on) { const cb = document.getElementById(id); if (!cb || cb.checked === on) return false;
   try { cb.checked = on; cb.dispatchEvent(new Event('change', { bubbles: true })); return true; } catch (_) { return false; } }
-export function unnamed(on) {
+function unnamed(on) {
   if (on) { nameItems().forEach((id) => { if (unnamedIds.indexOf(id) < 0 && flip(id, false)) unnamedIds.push(id); }); }
   else { const ids = unnamedIds; unnamedIds = []; ids.forEach((id) => flip(id, true)); }
   return unnamedIds.slice();
@@ -425,7 +425,7 @@ const CSS = [
   '.qst .qst-year input[type=range]{flex:1;min-width:0;accent-color:var(--primary-color);}',
   '.qst .qst-year input[type=number]{width:84px;padding:6px 8px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font:inherit;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;text-align:center;}',
   '.qst .ai-test-btn{width:100%;margin-top:6px;}',
-  '.qst .qst-go{background:var(--primary-color);color:#fff;border-color:transparent;font-weight:600;}',
+  '.qst .qst-go{background:var(--primary-fill);color:#fff;border-color:transparent;font-weight:600;}',
   '.qst .qst-hint{font-size:12px;color:var(--text-muted);line-height:1.45;margin:4px 0 6px;}',
   '.qst .qst-res{display:flex;align-items:baseline;gap:6px;padding:10px 12px;border-radius:12px;background:rgba(255,149,0,0.10);font-variant-numeric:tabular-nums;}',
   '.qst .qst-res.good{background:rgba(52,199,89,0.12);}',
