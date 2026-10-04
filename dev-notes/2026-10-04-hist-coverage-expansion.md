@@ -126,3 +126,16 @@ rebase 後の build で測った:
   元のバイトに 2 か所の置換だけを当て直した（`git hash-object --no-filters`）。
 - main の #975（日付つき出来事の索引）と重なった年鑑: 合成した答えの日は、その**最初の記録**（CShapes）の
   索引から読む。記録の説明は「複数の記録を精度の順に重ね……」。
+
+### 統治台帳（`data/governance-ledger.json`）に 4 件を「未宣言」として記録した理由
+
+`data/hist-clio`・`data/hist-eras-rest`（束の側）と `scripts/build-hist-clio.mjs → …`（書き手の側）。書き手は
+`GOVERNANCE` で publisher・url・cadence（`CLIOPATRIA` は観測した公開履歴から P6M）・builtBy を値として述べ、束の
+`src` がライセンスと改変を述べるが、残りの facet（取得日・行数・欠損など）はこの形式の束に値の欄が無い——
+隣の `data/hist-borders`・`data/hist-eras` と同じ状態で、同じ理由で数える（178 件・2,353 facet）。
+
+### 全件テスト
+
+`npm test`: checks は上の台帳だけが赤（`--update` で解消）。browser は 1 件（R766 ②）が負荷下で落ち、その後ろの
+8 件が走らなかった——単独で再実行して R766 ①〜③・time-compare-lapse ①②・timelapse-video-export ①②・
+installable-app ①〜⑤ がすべて緑（timelapse-video-export ② は 1 度だけ WebM の復号コマ数が 2 になり、再実行で緑）。
