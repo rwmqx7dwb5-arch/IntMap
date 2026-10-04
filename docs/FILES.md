@@ -1651,18 +1651,26 @@ data/hist-borders.js              歴史的国境の 1689–1885（OpenHistorica
 data/hist-eras.js                 全時代の国境スナップショット 54 枚（紀元前 123000 年〜西暦 2010 年・
                                   aourednik/historical-basemaps・**GPL-3.0**・`window.__HISTERAS`・
                                   `scripts/build-hist-eras.mjs`／`npm run check:histeras`）。
-                                  1689 年より前は、これが唯一の国境の答え。
+                                  1886 年より前の合成では最後に答える記録（下の `data/hist-eras-rest.js`）。
                                   ⚠ **git の外**（`data-assets.json`・`npm run data:pull` がコピーを置く）
                                   ⚠ **名前は英語 1 つだけ**——訳語は下の `data/histnames.json`
+data/hist-clio.js                 **国境の合成の年単位の層**（Cliopatria v0.2.1・Seshat Global History Databank・
+                                  **CC BY 4.0**・`window.__HISTCLIO`・`scripts/build-hist-clio.mjs`／`npm run check:histclio`）。
+                                  紀元前 3400〜2019 年。1689〜1885 年は OpenHistoricalMap、1886 年からは CShapes が述べる
+                                  土地をその日付ごとに除いた残り。
+                                  行は hist-borders と同じ形（終わりは排他）＋ `f[9]`＝`{w, of, r, wn…}`
+                                  （Wikipedia・属する領域・領域の印・史実が外した名前）。QID は検証済みのものだけ
+data/hist-eras-rest.js            年別の枚から、その枚の年に OHM と Cliopatria が述べる土地を除いた残り
+                                  （**GPL-3.0**・`window.__HISTERASREST`・1886 年より前のすべての枚・同じビルダー）
 data/histnames.json               **歴史的な政体名の、記録をまたぐ 1 つの表**（Wikidata・**CC0 1.0**
                                   ＋ 上流の説明文の訳・`scripts/build-histnames.mjs`／
-                                  `npm run check:histnames`）。`byQid` が `data/hist-borders.js` の
+                                  `npm run check:histnames`）。`byQid` が `data/hist-borders.js` と `data/hist-clio.js` の
                                   述べる QID に、`byName.cshapes` / `byName.eras` が綴りに答え、
                                   `prose` が上流の**説明文**を訳す（`d` の印つき）。
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは8つ・全 56,194 リング分／
+                                  **発見された**束すべて・いまは10・全 74,737 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
@@ -1910,6 +1918,11 @@ scripts/
   histcities/harvest.mjs          上流の収穫（Wikidata の SPARQL・Pleiades の JSON-LD・OHM の Overpass）。生成物は
   histcities/upstream.mjs         `histcities/derived-{wikidata,pleiades,ohm}.mjs` として
                                   記録ファイルの形で commit する（`--check` は無ネットワークで再現する）
+  build-hist-clio.mjs             Cliopatria（固定したリリースと sha256）→ `data/hist-clio.js`、年別の枚 → `data/hist-eras-rest.js`。
+                                  国境を精度の順に合成する引き算をここで 1 回だけ行う（Worker スレッドで並列・結果は入力の
+                                  ハッシュでディスクに置く）。
+                                  QID の同一性は `scripts/histclio/wikidata.json`、史実による名前の差し止めは
+                                  `scripts/histclio/review.json`。`--fetch`（ネットワーク）／既定（ビルド）／`--check`（オフライン）
   build-hist-eras.mjs             aourednik/historical-basemaps の `world_*.geojson` 54 枚 → `data/hist-eras.js`。
                                   一覧は上流のディレクトリから発見し、年の規約（`bc323` → 天文年 −322）は
                                   1 関数だけが持つ。`--check` はそれを評価して照合する。

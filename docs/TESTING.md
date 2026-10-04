@@ -1721,6 +1721,33 @@ The wiring between the two products, and the four steps that stayed manual, are 
 その表は #R695 で **3 つの記録すべてに答えるもの**になったので、束の門から**独立した**
 （主題が「その束」ではなく「名前」になったため）。下の `npm run check:histnames` を見ること。
 
+## 国境の合成（Cliopatria と枚の残り） — `npm run check:histclio` (`scripts/build-hist-clio.mjs --check`)
+
+`data/hist-clio.js`（Cliopatria から OpenHistoricalMap と CShapes の土地を引いたもの）と `data/hist-eras-rest.js`（年別の枚から
+OHM と Cliopatria の土地を引いたもの）を測る。⚠ **再導出はしない**——上流は 46 MB のリリースで、引き算は
+16 スレッドで約 20 分かかる。測るのは**コミットされたバイト**と、**それが何に対して作られたか**:
+
+- `src` が Cliopatria と CC BY 4.0（枚の残りは historical-basemaps と GPL-3.0）を名乗り、固定したリリースの
+  commit と sha256 で作られていること
+- **引いた相手の sha256 が、いま同梱されている相手と一致すること**（`basis`）——cshapes・hist-borders・hist-clio・
+  hist-eras のどれかを作り直せば、合成は古くなり赤くなる。合成は隣の記録の関数だから
+- どの行も暦の日付（月 1〜12・日 1〜31）を持つこと（紀元前の YYYYMMDD は負数で、剰余を取ると 1 月が −99 になる——
+  実際に一度そう書き出した）・CShapes の最後の日を越える行が無いこと・リング番号が解決し、どの行にも使われない
+  リングが無いこと・1886 年より前の枚がすべて同じ順で載っていること
+- **出荷した QID はすべて、それが描かれている政体だと確かめられること**（`scripts/histclio/wikidata.json` の
+  事実から、ビルドと同じ `verifiedQid` で決め直す。historical-verification.md §4-3）
+- **所見（名前が政体の存続期間の外に描かれている）がすべて `scripts/histclio/review.json` のどれかのリストに
+  あること**、そして `rows` が外した名前が、その年より後に 1 行も残っていないこと
+- CC BY 4.0 の出典行（`js/reference-data.js`）が名前どおりに在ること
+
+回帰は `tests/hist-coverage-expansion-checks.test.mjs`: 紀元前の年の換算（漢は紀元前 202 年＝天文年 −201）、
+年と場所を名指した史実の照合（モンゴル帝国は 1200 年に無く 1250 年に在る・アッバース朝は 1260 年に無い・
+ビザンツ帝国は 1460 年に無い）、OHM の帯で Cliopatria の行が OHM の土地を 4 分の 1 以上持たないこと、
+ページのモジュールを走らせて 1250 年と 1750 年が `composite` を、1900 年が `cshapes` を答えること。
+
+**残る危険を明示で**: QID を持たない（または検証で外した）行の名前は、存続期間を Wikidata に照らせない。
+`pending` の所見は Cliopatria が述べるとおりに描いている。
+
 ## The one historical-name table — `npm run check:histnames` (`scripts/build-histnames.mjs --check`, #R695)
 
 `.github/workflows/ci.yml` のステップとして走る。⚠ **この門は 2 つの強さを持つ。**
@@ -1889,9 +1916,9 @@ internal consistency is not geographic accuracy.
 
 ⚠ **こちらは再導出する。** `scripts/build-border-coast.mjs --check` は上流を必要としない——
 入力は `data/` から**発見された**束（いまは6つ——`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-eras` / `hist-kuni`）と
-`data/coastline.json.gz` だけなので、**全 56,194 リングを判定し直して `data/border-coast.js` と
+`data/coastline.json.gz` だけなので、**全 74,737 リングを判定し直して `data/border-coast.js` と
 バイト単位で突き合わせる**。⚠ **束の母集合そのものも門である**——印されている集合が `data/` の束の集合と一致しなければ落ちるので、束を1つ足して印を忘れることができない（`data/hist-eras.js` は、手で並べた一覧だったころ気づかれずに抜けていた）。⚠ **`npm test` の中の写しは `--sample 8`**
-（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 56,194 リング）ので、網羅版は CI の
+（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 74,737 リング）ので、網羅版は CI の
 `npm run check:bordercoast` に置き、suite の中は 8 本に 1 本を再導出する。形の検査は
 **全件**を歩いたままなので、抜けるのは「再導出」の母数だけ）。
 上の門が「記録が自分自身と整合するか」を問うのに対し、ここは

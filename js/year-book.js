@@ -134,8 +134,11 @@ export async function readYear(when, deps, opts) {
         const by = new Map();
         for (const r of rows) { const k = r.en; const was = by.get(k); if (!was) by.set(k, Object.assign({ parts: 1 }, r)); else { was.km2 += r.km2; was.parts++; if (r.bbox && was.bbox) was.bbox = [Math.min(was.bbox[0], r.bbox[0]), Math.min(was.bbox[1], r.bbox[1]), Math.max(was.bbox[2], r.bbox[2]), Math.max(was.bbox[3], r.bbox[3])]; } }
         const list = [...by.values()].sort((a, b) => b.km2 - a.km2);
-        const total = list.reduce((s, r) => s + r.km2, 0);
-        const rec = TB.recordOf ? TB.recordOf(c.tier) : null;
+        /* (hist-coverage-expansion) a realm (Cliopatria's «(Holy Roman Empire)») is the union of polities also listed — its area is not counted twice */
+        const realms = new Set(feats.filter((f) => f.properties && f.properties._realm).map((f) => nameIn(f.properties, 'en')));
+        const total = list.reduce((s, r) => s + (realms.has(r.en) ? 0 : r.km2), 0);
+        /* (hist-coverage-expansion) a composed answer names its own records; the tier alone cannot say which */
+        const rec = c.record || (TB.recordOf ? TB.recordOf(c.tier) : null);
         out.borders = { modern: false, tier: c.tier, count: list.length, unnamed: c.fc.features.length - feats.length, totalKm2: total, largest: list.slice(0, top), record: rec };
         if (rec && rec.src) out.sources.push(rec.src);
       }
@@ -188,7 +191,9 @@ export async function readYear(when, deps, opts) {
           const appeared = [...B.keys()].filter((k) => !A.has(k)).map((k) => B.get(k).local);
           const ended = [...A.keys()].filter((k) => !B.has(k)).map((k) => A.get(k).local);
           const reshaped = [...B.keys()].filter((k) => A.has(k) && A.get(k).geom !== B.get(k).geom).map((k) => B.get(k).local);
-          days.push({ date: isoDay(d), ms: d.getTime(), appeared, ended, reshaped });
+          /* (hist-coverage-expansion) a change the record dates to the year alone is printed as the year */
+          const prec = TB.changePrecision ? TB.changePrecision(d) : 'day';
+          days.push({ date: prec === 'year' ? isoDay(d).replace(/-01-01$/, '') : isoDay(d), prec, ms: d.getTime(), appeared, ended, reshaped });
         }
         out.changes = { kind: 'days', days, more: Math.max(0, ofYear.length - maxDays), stated: false };
       }

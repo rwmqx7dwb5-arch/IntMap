@@ -249,14 +249,32 @@ function records() {
      the OHM band publishes `window`, and CShapes' reach is the span of its own rows. */
   let csLo = Infinity, csHi = -Infinity;
   for (const f of cs.feats) { if (f[2] < csLo) csLo = f[2]; if (f[5] > csHi) csHi = f[5]; }
-  _rec = { cs, hb, er, csLo, csHi, hbLo: hb.window[0], hbHi: hb.window[1] };
+  /* (hist-coverage-expansion) the two records the page composes below CShapes — absent, the band chain answers */
+  const opt = (rel) => (fs.existsSync(path.join(ROOT, rel)) ? load(rel) : null);
+  _rec = { cs, hb, er, csLo, csHi, hbLo: hb.window[0], hbHi: hb.window[1], cl: opt('data/hist-clio.js'), rs: opt('data/hist-eras-rest.js') };
   return _rec;
 }
 const resolve = (polys, rings) => polys.map((poly) => poly.map((r) => rings[r]));
-function politiesAt(y) {
-  const { cs, hb, er, csLo, csHi, hbLo, hbHi } = records(), out = [];
+export function politiesAt(y, opt = {}) {
+  /* `opt.band` asks for the chain as it was before the composition (one record per band) — the comparison the
+     checks make, never what the gate records */
+  const R = records(), { cs, hb, er, csLo, csHi, hbLo, hbHi } = R, cl = opt.band ? null : R.cl, rs = opt.band ? null : R.rs, out = [];
   if (y >= csLo && y <= csHi) {
     for (const f of cs.feats) if (inForce(f, y, 7, 1)) out.push({ nm: f[0], polys: resolve(f[8], cs.rings) });
+    /* (hist-coverage-expansion) …and Cliopatria on the ground CShapes leaves (js/time-borders.js csComposite) */
+    if (cl) for (const f of cl.feats) if (!(f[9] && f[9].r) && inForce(f, y, 7, 1)) out.push({ nm: f[0].en, polys: resolve(f[8], cl.rings) });
+    return out;
+  }
+  /* (hist-coverage-expansion) below CShapes the page draws a COMPOSITION — OHM in its band, Cliopatria, and
+     the sheet less both (js/time-borders.js `compositeAt`); the subtraction is in the files, so the measure
+     is their union. The sheet is chosen as this gate has always chosen it (latest at or before the year). */
+  if (y < csLo && cl && rs) {
+    if (y >= hbLo && y <= hbHi) for (const f of hb.feats) if (inForce(f, y, 7, 1)) out.push({ nm: (f[0] && f[0].en) || f[1], polys: resolve(f[8], hb.rings) });
+    /* a realm (`r`) is the union of member rows drawn beside it — its ground is counted through them */
+    for (const f of cl.feats) if (!(f[9] && f[9].r) && inForce(f, y, 7, 1)) out.push({ nm: f[0].en, polys: resolve(f[8], cl.rings) });
+    let sb = null;
+    for (const s of rs.snaps) if (s.y <= y && (!sb || s.y > sb.y)) sb = s;
+    if (sb) for (const f of sb.feats) out.push({ nm: (f[0] && f[0].en) || '?', polys: resolve(f[2], rs.rings) });
     return out;
   }
   if (y >= hbLo && y <= hbHi) {
@@ -281,7 +299,24 @@ function firstLevelAt(bs, y) {
 }
 export function coverage(bs, y) {
   const m = measure(politiesAt(y), firstLevelAt(bs, y), RES);
-  return { year: y, ...m };
+  return { year: y, ...m, ...landShares(m) };
+}
+/* ══ (hist-coverage-expansion) THE SHARE OF THE WORLD'S LAND, NOT ONLY OF THE LAND INSIDE A POLITY ══════
+   `pct` above is «of the ground the map puts inside a polity, how much carries a first-level unit». Its
+   denominator is the polity layer, so drawing MORE polities lowers it although not one province was lost —
+   the composition this round adds does exactly that. Two shares whose denominator is the land itself say
+   what each layer covers of the world: `polityLand` (any polity drawn) and `unitLand` (a first-level unit
+   drawn), both area-weighted. Land is the present-day outline set the holes are read against (neGrid). */
+/** the share of the world's land inside a drawn polity at `y` (area-weighted, the neGrid land) */
+export function polityLandAt(y, opt) { return landShares(measure(politiesAt(y, opt), [], RES)).polityLand; }
+function landShares(m) {
+  const { G, cell } = neGrid(), cid = m.cells.cid, cov = m.cells.cov;
+  let L = 0, P = 0, U = 0;
+  for (let j = 0; j < G.NY; j++) {
+    const w = Math.cos(G.latC(j) * Math.PI / 180), base = j * G.NX;
+    for (let i = 0; i < G.NX; i++) { const k = base + i; if (cell[k] < 0) continue; L += w; if (cid[k] >= 0) P += w; if (cov[k]) U += w; }
+  }
+  return { polityLand: L ? 100 * P / L : 0, unitLand: L ? 100 * U / L : 0 };
 }
 
 /* ══ 3b. THE HOLES, AND WHY EACH ONE IS A HOLE ════════════════════════════════════════════
@@ -695,7 +730,7 @@ async function main() {
     const { selfOverlaps, ...rest } = observed;   /* (hist-coverage) the namesake count is retired — see «2. DOUBLE CLAIM» */
     const next = { ...rest, measured: today, res: RES,
       unsourcedSpans: spans.length, claims: kinds,
-      years: cov.map((c) => ({ year: c.year, pct: +c.pct.toFixed(2), pctArea: +c.pctArea.toFixed(2), zero: c.zero, partial: c.partial, full: c.full })) };
+      years: cov.map((c) => ({ year: c.year, pct: +c.pct.toFixed(2), pctArea: +c.pctArea.toFixed(2), polityLand: +c.polityLand.toFixed(2), unitLand: +c.unitLand.toFixed(2), zero: c.zero, partial: c.partial, full: c.full })) };
     fs.writeFileSync(path.join(ROOT, OBSERVED), JSON.stringify(next, null, 2) + '\n');
     fs.writeFileSync(path.join(ROOT, HOLES), JSON.stringify({ note: HOLES_NOTE, measured: today, res: RES, reasons: HOLE_REASONS, years: holeYears }) + '\n');
     fs.writeFileSync(path.join(ROOT, CLAIMS), JSON.stringify({ note: CLAIMS_NOTE, measured: today, kinds: histScale().CLAIM_KINDS, pairs }) + '\n');
@@ -756,6 +791,10 @@ async function main() {
        purpose (by removing a claim nobody made) re-records it with --update and says why. */
     say(c.pct >= was.pct - 0.5, 'coverage-' + c.year,
       `${c.pct.toFixed(1)}% of the land inside a polity carries a first-level unit (was ${was.pct}%) — 0%:${c.zero} 一部だけ:${c.partial} 丸ごと:${c.full}`);
+    /* (hist-coverage-expansion) the two shares of the world's land — neither may shrink */
+    if (was.polityLand != null) say(c.polityLand >= was.polityLand - 0.5, 'polity-land-' + c.year,
+      `${c.polityLand.toFixed(1)}% of the world's land is inside a drawn polity (was ${was.polityLand}%); ${c.unitLand.toFixed(1)}% carries a first-level unit (was ${was.unitLand}%)`);
+    if (was.unitLand != null && !(c.unitLand >= was.unitLand - 0.5)) say(false, 'unit-land-' + c.year, `${c.unitLand.toFixed(1)}% of the world's land carries a first-level unit, under the recorded ${was.unitLand}%`);
   }
 
   if (has('--report')) {

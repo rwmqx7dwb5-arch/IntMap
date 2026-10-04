@@ -147,6 +147,9 @@ export function timeBorders(HOST){
     /* (#R410) the YEAR the reader is on (shownY is the SNAPSHOT key, and one aourednik snapshot answers many
        years), and the collection currently on the source — the two things a re-tag of the labels needs. */
     let shownYear=null, shownFC=null;
+    /* (hist-coverage-expansion) the sheet a COMPOSED collection draws its last layer from — `shownY` is
+       the composition's key then, a string, and the sentence still has to name the sheet's year */
+    let shownSheet=null;
     /* (#R94o) CLOSEST snapshot, not just the closest ≤ year — so a mid-gap year like 1910 shows the 1914 borders
        (Japan's southern Sakhalin/Karafuto, held since 1905) instead of the staler 1900, i.e. borders change at the
        gap midpoint, roughly halving how long a year is shown with the "wrong" borders. A FORWARD jump is only
@@ -795,7 +798,13 @@ export function timeBorders(HOST){
        geometry with no name, and the label layers, which key off the name, pass over it. */
     async function erFC(d,y){ const k='er'+y; let fc=_erFC.get(k); if(fc) return fc;
       const sn=await erSheet(y); if(!sn||!sn.feats) return null;
+      fc=_sheetFC(sn,d,null); _erFC.set(k,fc); return fc; }
+    /* one sheet → one collection, for both records that carry sheets: data/hist-eras.js, and
+       (hist-coverage-expansion) data/hist-eras-rest.js, the same sheets less the ground the records above
+       them state. `rec` marks the second kind's features so the layer's sentence can count them apart. */
+    function _sheetFC(sn,d,rec){
       const poly=ids=>ids.map(p=>p.map(ri=>d.rings[ri]));
+      const R=rec?{_rec:rec}:{};
       const feats=[];
       for(const ft of sn.feats){ const nm=(ft[0]&&ft[0].en)||'', at=ft[1]||{}, ps=poly(ft[2]);
         if(!ps.length) continue;
@@ -804,13 +813,13 @@ export function timeBorders(HOST){
            1850-1885 features carry and every reader of it stays one reader. */
         const i18=hnFor('eras',nm,null,null)||hnEraGloss(nm);   /* (#R700) …and when the whole string has no row, the base's, with the possessor put back */
         feats.push({type:'Feature',
-          properties:Object.assign({NAME:nm},i18?{_i18n:i18}:{},(i18&&i18._d)?{_desc:1}:{},at.s?{SUBJECTO:at.s}:{},at.p?{PARTOF:at.p}:{},at.t?{TYPE:at.t}:{},at.bp!=null?{BORDERPRECISION:at.bp}:{}),
+          properties:Object.assign({NAME:nm},i18?{_i18n:i18}:{},(i18&&i18._d)?{_desc:1}:{},at.s?{SUBJECTO:at.s}:{},at.p?{PARTOF:at.p}:{},at.t?{TYPE:at.t}:{},at.bp!=null?{BORDERPRECISION:at.bp}:{},R),
           geometry:(ps.length===1)?{type:'Polygon',coordinates:ps[0]}:{type:'MultiPolygon',coordinates:ps}}); }
       for(const [i,ids] of (sn.blank||[]).entries()){ const ps=poly(ids); if(!ps.length) continue;
         const bp=sn.blankPrecision&&sn.blankPrecision[i];
-        feats.push({type:'Feature',properties:Object.assign({NAME:''},bp!=null?{BORDERPRECISION:bp}:{}),
+        feats.push({type:'Feature',properties:Object.assign({NAME:''},bp!=null?{BORDERPRECISION:bp}:{},R),
           geometry:(ps.length===1)?{type:'Polygon',coordinates:ps[0]}:{type:'MultiPolygon',coordinates:ps}}); }
-      fc={type:'FeatureCollection',features:feats}; _erFC.set(k,fc); return fc; }
+      return {type:'FeatureCollection',features:feats}; }
     async function fetchFC(year){ if(cache.has(year)) return cache.get(year);
       /* ⚠ (Turf 7) `turf.union` is on its own chunk (src/vendor.js ensureUnion) and every path below
          hands its snapshot to _correctEra, whose two dissolves need it. Asked for in PARALLEL with the
@@ -831,6 +840,107 @@ export function timeBorders(HOST){
         if(!r.ok) continue; const j=await r.json(); if(!j||!Array.isArray(j.features)) continue;
         await _union(); const cj=_correctEra(j,year); cache.set(year,cj); try{ window.IntMapCache&&window.IntMapCache.set('hb_'+year,cj); }catch(_){} return cj;
       }catch(_){} } return null; }
+    /* ══ ⚠⚠⚠ (hist-coverage-expansion) BELOW 1886 THE WORLD IS A COMPOSITION, NOT A BAND ══════════════
+       「歴史地図の coverage を徹底的に増強しろ。より広く、より正確に。」 Until this round one record answered
+       each instant, chosen by the band the year fell in — OpenHistoricalMap 1689–1885, else the nearest
+       historical-basemaps sheet — and the band decided, not the ground. Measured 2026-10-04 (0.5° grid,
+       land weighted by area): OHM states 60.2% of the land in 1689 and 71.8% in 1800, and the map drew
+       nothing on the rest although the sheets and Seshat's Cliopatria state most of it; below 1689 a
+       sheet answered every year to its neighbour (the 1200 sheet drew 1200–1239, before the Mongols).
+       Now three records answer every instant before 1886, in order of precision, each on the ground the
+       ones above it leave:
+           OpenHistoricalMap (day-exact, 1689–1885)  →  Cliopatria (to the year, 3400 BC–1885)
+                                                   →  the historical-basemaps sheet (nearest sheet)
+       ⚠ THE SUBTRACTION IS NOT DONE HERE. scripts/build-hist-clio.mjs cut each record against the ones
+       above it when it wrote data/hist-clio.js and data/hist-eras-rest.js, so this draws the UNION of
+       three files and makes no geometric decision of its own — and scripts/hist-fidelity.mjs measures the
+       same three files. One rule, written once, in the data.
+       ⚠ IT IS NOT A PRECONDITION. If either new record cannot be read, `compositeAt` answers null and
+       the chain below answers exactly as before this round (OHM in its band, else the whole sheet). */
+    /* which records drew how many shapes into a composed collection — what the layer's sentence counts */
+    const _made=new WeakMap();
+    /* the records a composed collection cites, in their own words — the year book reads this off the answer */
+    function _recordFor(made){ const ps=[['cshapes',made.cs,_csD],['ohm',made.ohm,_hbD],['clio',made.clio,_clD],['sheet',made.sheet!=null?1:0,_rsD]]
+        .filter(x=>x[1]&&x[2]&&x[2].src).map(x=>({ tier:x[0], src:x[2].src, citation:x[2].citation||null }));
+      return ps.length?{ tier:'composite', src:ps.map(x=>x.src).join(' + '), built:null, parts:ps }:null; }
+    async function csComposite(csKey,csfc,year,mon,day){ try{
+      const cd=await clLoad(); if(!cd) return null;
+      const k='cl'+_epochIn(_clBnd||[],_ymd(year,mon,day));
+      let cl=cache.get(k); if(!cl){ cl=await clFC(cd,year,mon,day); cache.set(k,cl); }
+      if(!cl||!cl.features.length) return null;
+      const key='cp:'+csKey+'|'+k;
+      let fc=cache.get(key);
+      if(!fc){ fc={type:'FeatureCollection',features:csfc.features.concat(cl.features)};
+        _lnOf.set(fc,{type:'FeatureCollection',features:_linesFor(csfc).features.concat(_linesFor(cl).features)});
+        _made.set(fc,{cs:csfc.features.length,ohm:0,clio:cl.features.length,sheet:null}); cache.set(key,fc); }
+      return { key, fc, corr:false, tier:'composite', sheet:null, record:_recordFor(_made.get(fc)) }; }catch(_){ return null; } }
+    let _clD=null,_clP=null,_clH=null,_clBnd=null; const _clGeom=new Map();
+    function clLoad(){ if(_clD) return Promise.resolve(_clD); if(_clP) return _clP;
+      _clP=Promise.resolve().then(()=>HB().open({file:'data/hist-clio.js',global:'__HISTCLIO'}))
+        /* every edge the record has: its rows all end by CShapes' first day, and no clock reaches below the record's deepest sheet */
+        .then(h=>h?h.edges('exclusive',_ymd(-999999,1,1),_ymd(CS_MAX+1,1,1)).then(b=>{ _clBnd=b; _clH=h; _clD=h.data; return _clD; }):null)
+        .catch(()=>null)
+        .then(d=>{ if(!d) _clP=null; return d; });
+      return _clP; }
+    function _clGeomOf(d,idx){ let g=_clGeom.get(idx); if(g) return g;
+      const polys=d.feats[idx][8].map(poly=>poly.map(ri=>d.rings[ri]));
+      g=(polys.length===1)?{type:'Polygon',coordinates:polys[0]}:{type:'MultiPolygon',coordinates:polys};
+      _clGeom.set(idx,g); return g; }
+    /* the Cliopatria rows in force at an instant. ⚠ A ROW IS DATED TO THE YEAR (its start is 1 January
+       of the year Cliopatria names — the record states no day), except where its edge is a day
+       OpenHistoricalMap states (the builder split it there). `_rec` names the record for the sentence and
+       the click; `_wiki` is the English Wikipedia article Cliopatria binds the row to, `_of` the polity the
+       row is a member of in Cliopatria's own hierarchy (`PARTOF`, the field the sheets use for the same fact).
+       ⚠ A REALM IS DRAWN OVER ITS MEMBERS. Cliopatria states «(Holy Roman Empire)», «(Kingdom of France)»
+       as the union of member rows that are polities of their own (the Kingdom of Bohemia, the County of
+       Champagne); `_realm` marks the aggregate. Its outline and its name are on the map — a reader in 1250
+       sees the Empire and its principalities at once — and the label layers, which are the click targets,
+       answer for each by its own name. */
+    async function clFC(d,year,mon,day){ const feats=[];
+      const ix=await _clH.at(_ymd(year,mon,day),'exclusive');
+      for(const i of ix){ const f=d.feats[i], m=f[9]||{}, NAME=f[0].en||'';
+        /* (hist-coverage-expansion) a name scripts/histclio/review.json withholds — the shape is Cliopatria's,
+           the name is not drawn after the year history places the polity's end, and the card says so
+           (`blankNote`, the same lane the sheets' withheld names use) */
+        const W=m.wn?{_wName:m.wn,_wSide:m.ws||'end',_wYear:m.wy,_wQ:m.wq||'',_wBy:'history'}:null;
+        feats.push({type:'Feature',geometry:_clGeomOf(d,i),properties:Object.assign(W?{NAME:'',_rec:'clio'}:{NAME:NAME,name:NAME,_i18n:hnFor('clio',NAME,f[1],f[0])||f[0],_rec:'clio'},W||{},
+          f[1]?{_qid:f[1]}:{},(m.w&&!W)?{_wiki:m.w}:{},m.of?{_of:m.of,PARTOF:m.of}:{},m.r?{_realm:1}:{})}); }
+      return {type:'FeatureCollection',features:feats}; }
+    let _rsD=null,_rsP=null,_rsH=null;
+    function rsLoad(){ if(_rsD) return Promise.resolve(_rsD); if(_rsP) return _rsP;
+      _rsP=Promise.resolve().then(()=>HB().open({file:'data/hist-eras-rest.js',global:'__HISTERASREST'}))
+        .then(h=>{ if(h){ _rsH=h; _rsD=h.data; return _rsD; } return null; }, ()=>null)
+        .then(d=>{ if(!d) _rsP=null; return d; });
+      return _rsP; }
+    const rsYears=d=>(d&&d.snaps)?d.snaps.map(s=>s.y):[];
+    async function rsFC(d,y){ const k='rs'+y; if(cache.has(k)) return cache.get(k);
+      let sn=null; try{ sn=_rsH?await _rsH.snap(y):null; }catch(_){ sn=null; }
+      if(!sn||!sn.feats) return null;
+      const fc=_correctEra(_sheetFC(sn,d,'sheet'),y); cache.set(k,fc); return fc; }
+    /* the composed world at an instant before CShapes, or null when it cannot be composed */
+    async function compositeAt(year,mon,day){
+      if(year>=CS_MIN) return null;
+      const [cd,rd]=await Promise.all([clLoad(),rsLoad(),bcLoad(),hnLoad(),spLoad()]);
+      if(!cd||!rd) return null;
+      const parts=[], keys=[], made={ohm:0,clio:0,sheet:null};
+      if(year>=HB_MIN&&year<=HB_MAX){ const hd=await hbLoad();
+        if(hd){ let k; try{ k='hb'+hbEpoch(hd,year,mon,day); }catch(_){ k='hb'+year; }
+          let fc=cache.get(k); if(!fc){ try{ fc=await hbFC(hd,year,mon,day); cache.set(k,fc); }catch(_){ fc=null; } }
+          if(fc){ parts.push(fc); keys.push(k); made.ohm=fc.features.length; } } }
+      { const k='cl'+_epochIn(_clBnd||[],_ymd(year,mon,day));
+        let fc=cache.get(k); if(!fc){ try{ fc=await clFC(cd,year,mon,day); cache.set(k,fc); }catch(_){ fc=null; } }
+        if(!fc) return null;
+        parts.push(fc); keys.push(k); made.clio=fc.features.length; }
+      let corr=false;
+      const ys=rsYears(rd), ny=ys.length?nearest(year,ys):null;
+      if(ny!=null){ const raw=await rsFC(rd,ny);
+        if(raw){ corr=_eraState(raw,year); const shown=_eraShow(raw,year); parts.push(shown); keys.push('rs'+ny); made.sheet=ny; } }
+      const key='cp:'+keys.join('|')+'|'+corr;
+      let fc=cache.get(key);
+      if(!fc){ fc={type:'FeatureCollection',features:[].concat(...parts.map(p=>p.features))};
+        _lnOf.set(fc,{type:'FeatureCollection',features:[].concat(...parts.map(p=>_linesFor(p).features))});
+        _made.set(fc,made); cache.set(key,fc); }
+      return { key, fc, corr, tier:'composite', sheet:made.sheet, record:_recordFor(_made.get(fc)) }; }
     /* ══ (#R520) 一国につき一つ — THE ERA NAMES GET THEIR OWN POINT SOURCE ══════════════════════
        「昔の国名ラベルが1国につき何十個も出る。」 `imtb-lbl` / `imtb-lbl2` took their text FROM THE
        BORDER POLYGONS — `source:'imtb-src'` with `symbol-placement:'point'` — and that is not one
@@ -1086,7 +1196,7 @@ export function timeBorders(HOST){
        year re-localized) makes that statement describe something that is no longer drawn. */
     function _pushLbl(fc){ _blankClose(); try{ if(GE().layers.hasSource('imtb-lbl-src')) GE().layers.setSourceData('imtb-lbl-src',_labelFC(fc)); }catch(_){} }
     function ensure(){ try{ if(!_imCanDraw()) return false;
-      if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · historical-basemaps (aourednik, GPL-3.0)'});
+      if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · Cliopatria (Seshat Global History Databank, CC BY 4.0) · historical-basemaps (aourednik, GPL-3.0)'});
       /* ══ (#R531) THE STROKED OUTLINE IS NOT THE POLYGON ═══════════════════════════════════════
          「昔の国境は海岸より先まであるのが気持ち悪い。」 A political record's ring is two kinds of edge in
          one loop: the boundaries between polities, which only that record knows, and the polity's own
@@ -1102,7 +1212,7 @@ export function timeBorders(HOST){
          ⚠ AND THE CREDIT MOVES WITH THE LINE. `imtb-src` kept the attribution because it was what
          drew; after this it only holds the click target, and the visible line would have come from a
          source that credits nobody. Both carry it — MapLibre folds identical strings into one. */
-      if(!GE().layers.hasSource('imtb-ln-src')) GE().layers.addSource('imtb-ln-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · historical-basemaps (aourednik, GPL-3.0)'});
+      if(!GE().layers.hasSource('imtb-ln-src')) GE().layers.addSource('imtb-ln-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · Cliopatria (Seshat Global History Databank, CC BY 4.0) · historical-basemaps (aourednik, GPL-3.0)'});
       /* (#R520) the era NAMES — one Point per country, derived from `imtb-src` (see `_labelFC`). No `attribution`
          of its own: it is the same datasets, already credited by the source it is derived from, whose
          `imtb-line` is on screen in exactly the moments these labels are. */
@@ -1745,7 +1855,7 @@ export function timeBorders(HOST){
          map cannot strand it — R41's lesson; it no longer hard-resolves, see its note above), and guard on the travel seq so a stale deferred apply
          from an earlier year can't clobber a newer one ("タイムマシンで変更しても国境線が変化しない"). */
       else whenStyleReady().then(()=>{ if(active&&seq===mySeq) apply(fc); }); }
-    function clear(){ const was=active; active=false; shownY=null; shownCorr=false; shownYear=null; shownFC=null;
+    function clear(){ const was=active; active=false; shownY=null; shownCorr=false; shownYear=null; shownFC=null; shownSheet=null;
       _writeNote();   /* (#R682) the row must never state a date the map has left */
       _blankClose();  /* (#R707) …and no popup may keep describing a shape the map has stopped drawing */
       /* (#R101) empty the era polygons + hide the near-invisible imtb-fill click-target so a returned-to-Now map has
@@ -1780,7 +1890,18 @@ export function timeBorders(HOST){
       if(year>=CS_MIN&&year<=CS_MAX){ const d=(await Promise.all([csLoad(),bcLoad(),hnLoad()]))[0];   /* (#R531) the marks settle before the first collection is built, so nothing is cached unmarked */
         if(d){ let key; try{ key='cs'+csEpoch(d,year,mon,day)+String(_csNameKey(_ymd(year,mon,day))).padStart(8,'0'); }catch(_){ key='cs'+year; }   /* the EPOCH, not the date: a quiet decade keeps one cache entry and re-renders nothing — (marketing-next) and the year of the name rules, which can turn inside an epoch: eight more digits, so the key stays «record + digits» (the tier is what is left when the digits are taken off) */
           let fc=cache.get(key); if(!fc){ try{ fc=await csFC(d,year,mon,day); cache.set(key,fc); }catch(_){ fc=null; } }
-          if(fc) return { key, fc, corr:false, tier:'cshapes' }; } }
+          if(fc){
+            /* (hist-coverage-expansion) …and from 1886 the composition goes on: CShapes is the record above, and
+               Cliopatria draws only the ground CShapes leaves (the builder subtracted it on CShapes' own dates).
+               Measured 2026-10-04: CShapes alone puts 75.7% of the world's land inside a polity on 1 July 1886 —
+               the interior of Africa before the partition is not in a state system's record. When Cliopatria has
+               nothing there (or cannot be read) the answer is CShapes' alone, as before. */
+            const cc=await csComposite(key,fc,year,mon,day);
+            return cc||{ key, fc, corr:false, tier:'cshapes' }; } } }
+      /* (hist-coverage-expansion) below CShapes, the composed world — OHM, then Cliopatria, then the
+         sheet, each on the ground the ones above leave. Null (a record that could not be read) falls
+         through to the band-by-band chain below, which is unchanged. */
+      if(year<CS_MIN){ try{ const c=await compositeAt(year,mon,day); if(c) return c; }catch(_){} }
       /* (#R518, widened #R690) HB_MIN–1885 → the same day-exact treatment, off data/hist-borders.js.
          ⚠ AND THE FALL-THROUGH IS PER INSTANT, NOT PER BAND — `fc.features.length`. #R690 widened the
          band by nearly two centuries and the record does not fill it evenly, so a day inside the
@@ -1826,7 +1947,7 @@ export function timeBorders(HOST){
       /* (#R140) the same collection already on screen: don't re-push it — and don't silently give up when the style is
          mid-load, retry once ready instead of latching absent borders */
       if(shownY===r.key&&shownCorr===r.corr){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===r.key&&shownCorr===r.corr&&ensure()) window._applyBorders(); }); }catch(_){} return; }
-      shownY=r.key; shownCorr=r.corr; apply(r.fc); }
+      shownY=r.key; shownCorr=r.corr; shownSheet=(r.sheet!=null)?r.sheet:null; apply(r.fc); }
     IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */
       /* (#R94i) recent years (after the last aourednik snapshot, 2010) → keep the MODERN borders: they are the
          accurate present-day borders (incl. South Sudan 2011, etc.), which the stale 2010 snapshot lacks. */
@@ -1969,7 +2090,10 @@ export function timeBorders(HOST){
          Keep the statistical carrier below, but restore source identity for every record. */
       let hbEn=String(nm||''), hbLoc=_eraLocName(nm)||nm;
       try{ const ftr=featureAt(nm,lngLat); if(ftr){ if(ftr.geometry) out.geometry=ftr.geometry; if(ftr.properties&&ftr.properties._gw!=null) gwCode=ftr.properties._gw;
-        const i18=ftr.properties&&ftr.properties._i18n; if(i18&&i18.en){ hbEn=i18.en; hbLoc=i18[lg]||i18.en; } } }catch(_){}
+        const i18=ftr.properties&&ftr.properties._i18n; if(i18&&i18.en){ hbEn=i18.en; hbLoc=i18[lg]||i18.en; }
+        /* (hist-coverage-expansion) Cliopatria binds each row to the English Wikipedia article for the polity in
+           those years — the record's own identity, so it is the article the card opens */
+        if(ftr.properties&&ftr.properties._wiki) out.wiki=String(ftr.properties._wiki).replace(/ /g,'_'); } }catch(_){}
       let code=null, empire=false;
       /* 1) empires / former states — the era polygon NAME matches a former-state regex. The historical basemap is
          AUTHORITATIVE about identity, so use the registry's canonical era name + Wikipedia even when the state has
@@ -2313,7 +2437,20 @@ export function timeBorders(HOST){
       try{ const h=await hbLoad(); if(h) for(const k of hbBounds(h)) out.push(k); }catch(_){}
       try{ const c=await csLoad(); if(c) for(const k of csBounds(c)) out.push(k); }catch(_){}
       try{ const e=_erD||window.__HISTERAS||null; if(e) for(const y of erYears(e)) if(y<HB_MIN) out.push(_ymd(y,1,1)); }catch(_){}
-      return out.sort((a,b)=>a-b); }
+      /* (hist-coverage-expansion) the composed world changes when a Cliopatria row begins or ends, and when
+         its sheet layer moves to the next sheet — asked only of what is already open, like the sheets above */
+      try{ if(_clD&&_clBnd) for(const k of _clBnd) out.push(k); }catch(_){}
+      try{ if(_rsD) for(const y of rsYears(_rsD)) out.push(_ymd(y,1,1)); }catch(_){}
+      return [...new Set(out)].sort((a,b)=>a-b); }
+    /* ⚠ (hist-coverage-expansion) A CHANGE DATE IS ONLY AS PRECISE AS THE RECORD THAT STATES IT. CShapes and
+       OpenHistoricalMap state days; Cliopatria states years and the sheets state the year they depict, and
+       both are keyed to 1 January only so they sort among the days. A reader that prints a change prints
+       `'year'` ones as the year — 1 January is not a date anyone stated. A Cliopatria edge that the builder
+       split on an OpenHistoricalMap day IS that day, and is found among OHM's own edges. */
+    function changePrecision(when){ try{ const t=_kOf(when);
+      if((_hbD&&hbBounds().indexOf(t)>=0)||(_csD&&csBounds().indexOf(t)>=0)) return 'day';
+      if(_clD&&_clBnd&&_clBnd.indexOf(t)>=0) return 'year';
+      const y=Math.floor(t/10000); return (y<CS_MIN&&(_erD||_rsD))?'year':'day'; }catch(_){ return 'day'; } }
     async function changeAfter(when){ try{ const t=_kOf(when), b=await _allBounds();
       for(const k of b) if(k>t) return _kToDate(k); return null; }catch(_){ return null; } }
     async function changeBefore(when){ try{ const t=_kOf(when), b=await _allBounds();
@@ -2322,6 +2459,11 @@ export function timeBorders(HOST){
     async function changeAt(when){ try{
       const w=(when instanceof Date&&!isNaN(when.getTime()))?when:null; if(!w) return null;
       const y=w.getFullYear();   /* (#R695) LOCAL, like `_kOf` two lines up — one clock per function; mixing UTC and local here would shift a day at the year boundary */
+      /* (hist-coverage-expansion) the composed world began on the latest of the edges its three layers stand on */
+      if(y<CS_MIN&&_clD&&_rsD){ const t=_ymd(y,w.getMonth()+1,w.getDate()); let best=_epochIn(_clBnd||[],t);
+        if(y>=HB_MIN&&y<=HB_MAX&&_hbD){ const e=hbEpoch(_hbD,y,w.getMonth()+1,w.getDate()); if(e>best) best=e; }
+        const ys=rsYears(_rsD), ny=ys.length?nearest(y,ys):null; if(ny!=null){ const k=_ymd(ny,1,1); if(k<=t&&k>best) best=k; }
+        return _kToDate(best); }
       if(y>=HB_MIN&&y<=HB_MAX){ const h=await hbLoad(); if(!h) return null;
         return _kToDate(hbEpoch(h,y,w.getMonth()+1,w.getDate())); }
       /* ⚠⚠⚠ (#R698) THIS ASKED `shownY`, AND `shownY` IS A PROMISE'S OUTPUT. #R695 wrote it as
@@ -2340,7 +2482,9 @@ export function timeBorders(HOST){
         return (ny==null||ny>=HB_MIN)?null:_kToDate(_ymd(ny,1,1)); }
       if(y<CS_MIN||y>CS_MAX) return null;
       const d=await csLoad(); if(!d) return null;
-      return _kToDate(csEpoch(d,y,w.getMonth()+1,w.getDate())); }catch(_){ return null; } }
+      /* (hist-coverage-expansion) a Cliopatria edge under CShapes changes the composed world too */
+      const t=_ymd(y,w.getMonth()+1,w.getDate()), ce=csEpoch(d,y,w.getMonth()+1,w.getDate()), le=(_clD&&_clBnd)?_epochIn(_clBnd,t):ce;
+      return _kToDate(Math.max(ce,le<=t?le:ce)); }catch(_){ return null; } }
     async function changeDates(){ try{ return (await _allBounds()).map(_kToDate); }catch(_){ return []; } }
     /* ⚠ (#R695) THE FLOOR OF THE STEPPER IS NOT A NUMBER THIS FILE OWNS. It is the oldest year any
        record here can put on the screen, and #R682 recorded that this function was still naming
@@ -2373,9 +2517,14 @@ export function timeBorders(HOST){
        ⚠ The neighbouring sheets are read out of the record too (`erYears`), which is how the reader
        learns there is nothing between 10000 BC and 123000 BC without that gap being typed here. */
     function coverage(){ try{
-      if(!active||typeof shownY!=='number'||!shownFC||!shownFC.features) return {active:false,era:false};
+      /* (hist-coverage-expansion) a COMPOSED collection is keyed 'cp:…'; its sheet layer is the features the
+         builder kept of the sheet (`_rec:'sheet'`), and those are what the sheet's sentence counts */
+      const comp=(typeof shownY==='string')&&shownY.indexOf('cp:')===0;
+      if(!active||(typeof shownY!=='number'&&!comp)||!shownFC||!shownFC.features) return {active:false,era:false};
+      const feats=comp?shownFC.features.filter(f=>(f.properties||{})._rec==='sheet'):shownFC.features;
+      const sy=comp?shownSheet:shownY;
       let named=0,blank=0; const ty=new Map(), wh=new Map();
-      for(const f of shownFC.features){ const p=f.properties||{};
+      for(const f of feats){ const p=f.properties||{};
         /* (hist-era-span-fidelity) a name THIS map withheld is not a shape upstream left unnamed — the
            sentence below says «upstream leaves unnamed», so the two are counted apart */
         if(p.NAME||p.name) named++; else if(p._wName){ if(!wh.has(p._wName)) wh.set(p._wName,{name:String(p._wName),side:p._wSide,year:+p._wYear}); } else blank++;
@@ -2383,8 +2532,9 @@ export function timeBorders(HOST){
            measured in scripts/build-hist-eras.mjs). The bundle folds them to one; the remote
            fallback hands them over as upstream wrote them, so both are read here. */
         const t=p.TYPE||p.type; if(t) ty.set(String(t),(ty.get(String(t))||0)+1); }
-      const ys=erYears(_erD)||[], i=ys.indexOf(shownY);
-      return { active:true, era:true, year:shownY, asked:shownYear, feats:shownFC.features.length,
+      const ys=(comp?rsYears(_rsD):erYears(_erD))||[], i=ys.indexOf(sy);
+      return { active:true, era:sy!=null, year:sy, asked:shownYear, feats:feats.length,
+               composite:comp?Object.assign({},_made.get(shownFC)||{}):null,
                named, blank, withheld:[...wh.values()], types:[...ty.entries()].sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?-1:1)),
                prev:(i>0)?ys[i-1]:null, next:(i>=0&&i<ys.length-1)?ys[i+1]:null };
     }catch(_){ return {active:false,era:false}; } }
@@ -2395,11 +2545,24 @@ export function timeBorders(HOST){
     /* the nine-language sentence the layer row carries while the snapshot tier is drawing.
        ⚠ THE POSITIONS ARE en, jp, de, ru, es, zh-Hant, zh-Hans, fr, ko — not alphabetical and not
        the language menu's order (js/time-admin1.js:112 records the measurement). */
-    function note(){ const c=coverage(); if(!c.era) return '';
+    function note(){ const c=coverage(); if(!c.era&&!c.composite) return '';
+      const head=c.composite?_compNote(c.composite):'';
+      if(!c.era) return head;
       const Y=_yTxt(c.year), nb=[c.prev,c.next].filter(y=>y!=null).map(_yTxt).join(' / ');
       const n=String(c.feats), b=String(c.blank);
       const tn=c.types.reduce((s,e)=>s+e[1],0), t=String(tn), lst=c.types.map(e=>e[0]+' ×'+e[1]).join(' · ');
-      return _sheetNote(c,Y,nb,n,b,tn,t,lst)+_withheldNote(c); }
+      return head+_sheetNote(c,Y,nb,n,b,tn,t,lst)+_withheldNote(c); }
+    /* (hist-coverage-expansion) what a composed world is made of, counted off the collection on the source.
+       New text: en + jp (CONSTITUTION §7). */
+    function _compNote(m){ const o=+m.ohm||0, c=+m.cs||0, k=String(+m.clio||0), sh=(m.sheet!=null)?_yTxt(m.sheet):null;
+      const enP=[], jpP=[];
+      if(c){ enP.push('CShapes 2.0 (dated to the day) — '+c+' shapes'); jpP.push('CShapes 2.0（日単位）— '+c+' 件'); }
+      if(o){ enP.push('OpenHistoricalMap (dated to the day) — '+o+' shapes'); jpP.push('OpenHistoricalMap（日単位）— '+o+' 件'); }
+      enP.push('Cliopatria, Seshat Global History Databank (dated to the year) — '+k+' shapes'); jpP.push('Cliopatria（Seshat Global History Databank・年単位）— '+k+' 件');
+      if(sh){ enP.push('historical-basemaps, its '+sh+' sheet — on the ground neither states'); jpP.push('historical-basemaps の '+sh+' の枚——どちらも述べていない土地に'); }
+      return _LTB.arr(LA(
+        'These borders are composed from several records, each drawn only on ground the ones before it leave unstated at this date: '+enP.join('; ')+'. Where two records disagree, the more precise one is drawn. ',
+        'この国境は複数の記録を重ねて描いている。各記録は、この日付に前の記録が述べていない土地にだけ描かれる: '+jpP.join('／')+'。2 つの記録が食い違う土地では、精度の高いほうを描く。')); }
     /* (hist-era-span-fidelity) the names the reader's year withholds, said where the layer says what it
        draws — counted off the collection on the source, like the rest of the row. New text: en + jp
        (CONSTITUTION §7). */
@@ -2486,6 +2649,14 @@ export function timeBorders(HOST){
           return { title:_LTB.arr(LA('Upstream names this shape «'+wn+'», but that polity did not exist in '+Y,
                                      '上流はこの形を「'+wn+'」と呼ぶが、その政体は '+Y+' には存在しない')),
                    lines:lines }; }
+        /* (hist-coverage-expansion) a Cliopatria name withheld after the end the historical record places */
+        if(p._wSide==='end'&&p._wBy==='history'){
+          lines.push(_LTB.arr(LA('The historical record places the end of this polity in '+B+', so the name is not drawn after that year'+(q?' (Wikidata: '+id+')':'')+'. The shape is drawn as the record drew it.',
+                                  '史実はこの政体の終焉を '+B+' に置く。そのためその年より後はこの名前を描かない'+(q?'（Wikidata: '+id+'）':'')+'。形は記録が描いたとおりに描いている。')));
+          const tn=typeNote(f); if(tn) lines.push(tn);
+          return { title:_LTB.arr(LA('The record names this shape «'+wn+'», but that polity no longer existed in '+Y,
+                                     '記録はこの形を「'+wn+'」と呼ぶが、その政体は '+Y+' にはもう存在しない')),
+                   lines:lines }; }
         lines.push(p._wSide==='start'
           ? _LTB.arr(LA('Wikidata ('+id+') states that this polity began in '+B+', and the historical record agrees, so the name is not drawn before that year. The shape is drawn as upstream drew it.',
                         'Wikidata（'+id+'）はこの政体の成立を '+B+' と述べ、史実もそれと一致する。そのためその年より前はこの名前を描かず、形だけを上流が描いたとおりに描いている。'))
@@ -2549,6 +2720,11 @@ export function timeBorders(HOST){
              /* (map-layer-system) which record answered — `collectionAt` names its tier, and the record names itself:
                 the bundle's own `src` and `built` (the mirror keeps every scalar the bundle states at its top), so the
                 year book (js/year-book.js) cites the record in the record's words rather than in a copy of them */
-             recordOf:(tier)=>{ try{ const d=tier==='cshapes'?_csD:tier==='ohm'?_hbD:tier==='snapshot'?(_erD||window.__HISTERAS||null):null; return d?{ tier, src:d.src||null, built:d.built||null }:null; }catch(_){ return null; } } };   /* (#R518) the range the stepper can walk — both day-exact records, and (#R695) the era sheets below them */
+             recordOf:(tier)=>{ try{
+               /* (hist-coverage-expansion) a composed world cites each record it was composed of, in its own words */
+               if(tier==='composite'){ const ps=[['ohm',_hbD],['clio',_clD],['sheet',_rsD]].filter(x=>x[1]&&x[1].src).map(x=>({ tier:x[0], src:x[1].src, citation:x[1].citation||null }));
+                 return ps.length?{ tier, src:ps.map(x=>x.src).join(' + '), built:null, parts:ps }:null; }
+               const d=tier==='cshapes'?_csD:tier==='ohm'?_hbD:tier==='snapshot'?(_erD||window.__HISTERAS||null):null; return d?{ tier, src:d.src||null, built:d.built||null }:null; }catch(_){ return null; } },
+             changePrecision, compositeAt };   /* (#R518) the range the stepper can walk — both day-exact records, and (#R695) the era sheets below them */
   })();
 }

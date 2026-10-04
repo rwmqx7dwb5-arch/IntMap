@@ -25,7 +25,7 @@
  *  test. That lane is separate below (`byQid`) and is the reason this round can raise the middle
  *  row without touching the 13 MB bundle.
  * ==========================================================================*/
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ringBox } from '../histeras/census.mjs';
@@ -106,10 +106,14 @@ function changeYears(d, i0, i1) {
  * a feature. The answer is keyed by QID because that is what Wikidata is asked.
  */
 export function histBordersQidGaps(langs, root = ROOT) {
-  const d = bundle('hist-borders.js', '__HISTB', root);
+  /* (hist-coverage-expansion) data/hist-clio.js states a Wikidata QID on every Cliopatria row and writes only
+     the English name, so its rows ask the same question by the same key — one identifier lane for every
+     record that carries identifiers, never a second table */
+  const ds = [bundle('hist-borders.js', '__HISTB', root)];
+  if (existsSync(join(root, 'data', 'hist-clio.js'))) ds.push(bundle('hist-clio.js', '__HISTCLIO', root));
   const want = langs.filter((l) => l !== 'en');
   const need = new Map();                       /* qid → Set(lang) */
-  for (const f of d.feats) {
+  for (const d of ds) for (const f of d.feats) {
     if (!f[1]) continue;
     for (const l of want) {
       if (f[0][l]) continue;
