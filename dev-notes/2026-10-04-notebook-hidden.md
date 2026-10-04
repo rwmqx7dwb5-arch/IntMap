@@ -32,3 +32,11 @@ newsjp: Atlas の調査ノートの表示を止めました。新しく記録す
 「隠している間は帯もボタンも無く、データベースに新しく書かない」に書き換えた。ノートのロジックは `tests/atlas-os-checks.test.mjs` が
 見えている版（`tests/helpers/notebook-shown.mjs`）で守っている。⚠ **`NOTEBOOK_SHOWN` を true に戻すときは、⑥ を `cfef70a6` の
 形（`git show cfef70a6:tests/atlas-live-stream.spec.js`）に戻す**。
+
+## 起動費用の天井（`node scripts/perf-budget.mjs --update`）
+
+CI で `eager.brotli` が 1188.7 kB（天井 1182.3 kB・幅 5.9 kB）になった。起動の静的グラフのモジュール数は main と同じ 314 で、新しいモジュールは
+入っていない（`atlas-cap-briefing.js` の静的 import が原因かと疑い、呼び出し時の `import()` に変えて測ったが 1188.7 kB のまま——その見立ては
+否定して元に戻した）。増えたのは起動時に読まれる文字そのもの: 能力表（`js/atlas-capabilities.js`）の `WITHDRAWN` に足した 3 つの撤去理由
+（利用者の言葉・日付・戻す手順。`R278 ②` が理由を要求する）と、プライバシー文の差し替え。同じ日の main への着地で幅がほぼ使われていたところに
+これが乗った。撤去理由は検査が要求する記録なので削らず、天井を上げた（eager.brotli 1182.3 → 1188.7 kB）。
