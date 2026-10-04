@@ -159,3 +159,11 @@ installable-app ①〜⑤ がすべて緑（timelapse-video-export ② は 1 度
 - `check:surface`: `window.IntMapSafe` の読みが 144 → 145。この branch の差分には無く、main 自身の CI（Gates）も同じ門で赤
   ——main に入った変更の 1 読みを台帳に数えた（`node scripts/global-surface.mjs --update`）。
 - `timelapse-video-export ②`: WebM の再生で数えたコマが 3 でなく 2（再生のタイミングに依る計数）。単独の再実行では緑。
+
+### PR の CI（3 回目）
+
+- `tests/process-agent-context-checks.test.mjs` #R295 ⑥: main で `.agents/rules/execution-strategy.md` が育ち、この
+  branch の 1 語と合わせて 6,156 バイト（天井 6,144）。表の行の見出しを「全時代の国境」に縮めた（6,138）。
+- `timelapse-video-export ②`（WebM の復号コマ 3 のはずが 2）: **この変更が原因ではないことを実測した**——1886 年からの
+  合成を無効にした build でも 3 回中 1 回同じく落ちる（1910–1911 年は CShapes の帯で、合成の他の部分は通らない）。
+  録画器の「要求の後の描画でコマが取られる」性質が負荷に左右される既存の揺らぎで、録画器（別の作業の持ち物）には触れていない。
