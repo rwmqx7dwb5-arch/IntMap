@@ -87,7 +87,7 @@ candidates ending in «Ask Atlas»).
 gates a push is **5 spec files / 0.3 min** against a ceiling of 0.3 min — that is the FIXED gate; a PR
 also runs, in core, **every spec it added or edited** (read from the diff, `scripts/tiers.mjs`
 `changedSpecs()`), which has no ceiling of its own on purpose (`scripts/test-budget.mjs`, `BUDGET_S`); the **whole** suite is
-**153 measured spec files / 87.0 min** of serial browser time against a ceiling of 87.5 min (the 0.5 min between
+**154 measured spec files / 87.0 min** of serial browser time against a ceiling of 87.5 min (the 0.5 min between
 them is the room `suite-time-room` made for the specs arriving after it — see below); and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
@@ -109,7 +109,7 @@ them is the room `suite-time-room` made for the specs arriving after it — see 
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **148 spec files** — is the whole suite minus core
+**deep** tier — **149 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -1013,7 +1013,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **148 spec files** against core's 5 (plus, on a PR, whatever that PR added or
+tier: `npm run test:deep`, **149 spec files** against core's 5 (plus, on a PR, whatever that PR added or
 edited — `scripts/tiers.mjs` `changedSpecs()`, read from the diff; those stay in the nightly too), because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
@@ -2170,6 +2170,13 @@ script、読者向けの出典行。
 
 オフライン・**実測 0.14 秒**。⚠ 残余: 上流の Pleiades ダンプ自体は再取得しないので、
 **「同梱記録と束は一致するが、上流はそのあと更新された」はこの門を通る**（`asOf` がその日付を名乗る）。
+
+`scripts/build-hist-urban.mjs --check`（`check:histurban`）は `data/hist-urban.json`（歴史上の都市人口・Reba ほか 2016・
+CC BY 4.0）を、同梱の固定記録 `scripts/histurban/reba-record.json`（3 つの CSV の空でないセルを文字列のまま・md5 と
+sha256 を固定）から**ネットワーク無しで**導き直し、バイト単位で照合する。表示窓・表をまたぐ同一性・Pleiades / 歴史都市名への
+結び付きも同じ導出に入るので、規則の変更は必ずこの門を通る。数値の主張は `tests/hist-urban-population-checks.test.mjs` が測る
+——全数値が出典のセルそのもの・補間なし・窓の外では描かない・確からしさの保持・座標＋名前の同一性・結び付きが相互最近傍。
+地図の層は `tests/hist-urban-population.spec.js`、Atlas は `tests/hist-urban-population-atlas-checks.test.mjs`。
 
 ### `npm run check:kuni` — 上流が黙っている区分を、出荷したバイトの側から測る (#R669)
 

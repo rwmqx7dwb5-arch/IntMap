@@ -318,3 +318,12 @@ export const DERIVED_FROM_THE_REPOSITORY = {
     canon: 'scripts/lib/upstream-cadence.mjs DERIVED_FROM_THE_REPOSITORY',
   },
 };
+
+export const REBA_URBAN = {
+  cadence: 'static',
+  cadenceBasis: {
+    observed: 'measured 2026-10-04 on api.figshare.com/v2/articles/2059494, 2059497 and 2059500: the three CSV articles of Reba, Reitsma & Seto (2016) were last versioned 2016-06-18 (v3), 2016-06-07 (v2) and 2016-06-18 (v3), and a figshare version is immutable once published',
+    expires: 'if any of the three articles publishes a new version (api.figshare.com/v2/articles/<id> `version` above 3, 2, 3)',
+    canon: 'scripts/lib/upstream-cadence.mjs REBA_URBAN',
+  },
+};

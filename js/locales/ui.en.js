@@ -159,6 +159,7 @@ IntMapLang.define('en', { ui: {
       mLayers:"Layers", mLegend:"Legend",   /* (mobile-shell) the phone control group's Layers button and the legend chip */
       lyrRelief:"Elevation (color relief)",
       lyrSubcables:"Submarine cables",
+      lyrHistUrban:"Historical city populations",
       lyrMilSpend:"Military spending",
       lyrGDPpc:"GDP per capita",
       lyrTFR:"Total fertility rate",

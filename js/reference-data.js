@@ -514,6 +514,10 @@ export const IntMapRefData = (function(){
        harvest leaves out and counts — so this row can say CC BY 3.0 because that was made true of
        what ships, not because a dataset-wide claim was believed. */
     {n:'Pleiades — a gazetteer of past places (CC BY 3.0)',u:'https://pleiades.stoa.org/credits',lic:'CC BY 3.0',licUrl:'https://creativecommons.org/licenses/by/3.0/',credit:true},
+    /* (hist-urban-population) the geocoded city tables of Chandler and Modelski, 3700 BC – AD 2000 — data/hist-urban.json,
+       built by scripts/build-hist-urban.mjs, whose GOVERNANCE.paidBy is this row's `n` (compared as a value). CC BY 4.0:
+       the credit is the article's citation, doi:10.1038/sdata.2016.34. */
+    {n:'Reba, Reitsma & Seto (2016) — historical urban populations, 3700 BC – AD 2000 (CC BY 4.0)',u:'https://doi.org/10.1038/sdata.2016.34',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     /* (#R518 borders, #R530 subdivisions) ONE ORGANISATION, ONE ROW. Both sets the map draws come
        from OHM — the day-exact borders of 1689-1885 (data/hist-borders.js, widened from 1850 by
        #R690) and the first-level

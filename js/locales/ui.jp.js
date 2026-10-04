@@ -159,6 +159,7 @@ IntMapLang.define('jp', { ui: {
       mLayers:"レイヤー", mLegend:"凡例",   /* (mobile-shell) */
       lyrRelief:"標高（カラー段彩）",
       lyrSubcables:"海底ケーブル",
+      lyrHistUrban:"歴史上の都市人口",
       lyrMilSpend:"国防費",
       lyrGDPpc:"1人当たりGDP",
       lyrTFR:"合計特殊出生率",
