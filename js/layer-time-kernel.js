@@ -265,6 +265,7 @@ function paintLegend(at) {
   if (!rows.length || legendDismissedAt === at.when) { if (el) el.style.display = 'none'; return; }
   if (!el) {
     el = d.createElement('div'); el.className = 'data-legend generic-legend'; el.id = 'data-legend-worldtime';
+    el.setAttribute('data-prints-map-time', '');   /* it names the instant (js/quest-panel.js hides what says so) */
     (d.getElementById('map-container') || d.body).appendChild(el);
     try { W()._wireLegendDrag && W()._wireLegendDrag(el); } catch (_) { /* not draggable */ }
   }

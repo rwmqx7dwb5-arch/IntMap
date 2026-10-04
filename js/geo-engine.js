@@ -190,6 +190,31 @@ function _redrawLocalGlyphs(m,cover){
      one click gets the same `originalEvent`, and a stale claim can therefore never match a later
      click. The label side defers its popup by one microtask so it asks after the whole synchronous
      dispatch has run; see `_deferLabel` in js/map-ui.js. */
+  /* ══ (quest-blind-everything) …AND A CLAIM IS PER CLICK, BUT SOME OWNERS OWN EVERY CLICK FOR A WHILE ══
+     claimClick answers «I took THIS tap» after the fact, and only listeners that ask clickClaimed() honour it —
+     the news dots, a volcano, a pin do not ask, so a quest's answer tap on a city also opened the news article
+     under it (measured in production, 2026-10-04: «290 / 1000» and the Riyadh article, from one tap). A mode that
+     owns the map's taps until it says otherwise (a place question waiting for its answer) is a different fact,
+     and it belongs where every click handler already passes: the engine's own on / onLayer. `holdTaps(owner)`
+     makes `owner` the only one whose click handlers run (a handler names its owner with the option
+     `{ tapOwner }`); it returns the release, and a newer hold replaces an older one. Only 'click' is gated —
+     hover, move and the map's own gestures are untouched, so the reader can still pan and zoom to find the place. */
+  let _tapHolder=null;
+  const _tapWrapped=new WeakMap();   /* handler → { owner → the gated handler the adapter holds } */
+  function _holdTaps(owner){ const tok={ owner:String(owner||'') }; _tapHolder=tok; return ()=>{ if(_tapHolder===tok) _tapHolder=null; }; }
+  function _tapsHeldBy(){ return _tapHolder?_tapHolder.owner:null; }
+  function _gated(c,options){
+    if(typeof c!=='function') return c;
+    const owner=(options&&options.tapOwner)?String(options.tapOwner):'';
+    let byOwner=_tapWrapped.get(c); if(!byOwner){ byOwner=new Map(); _tapWrapped.set(c,byOwner); }
+    let g=byOwner.get(owner);
+    if(!g){ g=function(ev){ if(_tapHolder&&_tapHolder.owner!==owner) return; return c.apply(this,arguments); }; byOwner.set(owner,g); }
+    return g;
+  }
+  function _gatedOf(c,options){ const byOwner=(typeof c==='function')?_tapWrapped.get(c):null; if(!byOwner) return c;
+    /* no owner named: the one gated copy this handler has (a handler registered under two owners must name the one it removes) */
+    if(!options&&byOwner.size===1) return byOwner.values().next().value;
+    const owner=(options&&options.tapOwner)?String(options.tapOwner):''; return byOwner.get(owner)||c; }
   let _claimedOE=null;
   function _claimClick(e){ try{ _claimedOE=(e&&e.originalEvent)||e||null; }catch(_){ _claimedOE=null; } }
   function _clickClaimed(e){ try{ const oe=(e&&e.originalEvent)||e||null; return !!(oe&&_claimedOE===oe); }catch(_){ return false; } }
@@ -2681,7 +2706,8 @@ function _redrawLocalGlyphs(m,cover){
       setGlide:o=>(A().setGlide?A().setGlide(o):false),
       setAll:on=>{ let n=0; A().gestures().forEach(g=>{ if(A().setGesture(g,on)) n++; }); return n; },
       setZoomRate:(r,wheel)=>A().setZoomRate(r,wheel) },
-    events:{ on:(e,c)=>A().on(e,c), off:(e,c)=>A().off(e,c), once:(e,c)=>A().once(e,c),
+    events:{ on:(e,c,options)=>A().on(e,e==='click'?_gated(c,options):c), off:(e,c,options)=>A().off(e,e==='click'?_gatedOf(c,options):c),
+      once:(e,c,options)=>A().once(e,e==='click'?_gated(c,options):c),
       /* (#R161) pointer events scoped to a rendered LAYER (hover/click a feature) */
       /* ══ (#R207) WHICH LAYERS ARE CLICKABLE IS NOW KNOWN, NOT GUESSED ═══════════════════════════
          「地図上の他のものをクリックした際は、その下にある地名ラベルを同時にクリックした判定になることが
@@ -2696,13 +2722,15 @@ function _redrawLocalGlyphs(m,cover){
          So the registration IS the record. Every `onLayer('click', id, …)` in the app passes through
          here, whichever adapter is installed, and `clickLayers()` answers with the ids that are
          currently both registered and present. See `_ownedByOther` in js/map-ui.js. */
-      onLayer:(e,l,c,options)=>{ const adapter=A(); if(e==='click') _clickOwnership.on(adapter,l,c,options); return adapter.onLayer(e,l,c); },
-      offLayer:(e,l,c)=>{ const adapter=A(), result=adapter.offLayer(e,l,c);
+      onLayer:(e,l,c,options)=>{ const adapter=A(); if(e==='click'){ _clickOwnership.on(adapter,l,c,options); return adapter.onLayer(e,l,_gated(c,options)); } return adapter.onLayer(e,l,c); },
+      offLayer:(e,l,c)=>{ const adapter=A(), result=adapter.offLayer(e,l,e==='click'?_gatedOf(c):c);
         if(e==='click') _clickOwnership.off(adapter,l,c); return result; },
       onceLayer:(e,l,c)=>A().onceLayer?A().onceLayer(e,l,c):null,
       clickLayers:(options)=>_clickOwnership.layers(options),
       /* (#R210) "I consumed this click" / "did anyone?" — see the ownership note above. */
-      claimClick:(e)=>_claimClick(e), clickClaimed:(e)=>_clickClaimed(e), pressAt:(pt)=>{ const a=A(); return (a&&a.pressAt)?a.pressAt(pt):false; } },
+      claimClick:(e)=>_claimClick(e), clickClaimed:(e)=>_clickClaimed(e),
+      /* (quest-blind-everything) the one owner whose click handlers run until it releases — see _holdTaps */
+      holdTaps:(owner)=>_holdTaps(owner), tapsHeldBy:()=>_tapsHeldBy(), pressAt:(pt)=>{ const a=A(); return (a&&a.pressAt)?a.pressAt(pt):false; } },
     raw(){ return A().raw(); }
    };
   }
