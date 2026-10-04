@@ -22,8 +22,8 @@
  *    · DECIDING — a function call is announced the moment its NAME exists, before its arguments are
  *      complete, as 「next: …」 on the live row — a statement about intent, never a row that says the
  *      operation is running (that row is still opened by the executor's own event).
- *    · DRAWING — every operation's start and end is shown ON THE MAP as well (the HUD below), so a
- *      reader watching the map sees what is being drawn while it is drawn.
+ *    · WHEN THE TRACE CANNOT BE SEEN — one small pill on the map (the HUD below) says what the trace's
+ *      head says. Only then: while the trace is on screen the map carries nothing (atlas-progress-one).
  *
  *  ⚠⚠⚠ NOTHING HERE DECIDES ANYTHING, AND NOTHING HERE IS AN ANSWER. The draft is replaced by the
  *  answer js/atlas-agent.js returns; a stream that resets (a provider retry) withdraws what it showed;
@@ -36,7 +36,8 @@
  *  (latency()). window.IntMapAtlasDebug.latency() reads it — the same numbers before and after.
  * ==========================================================================*/
 
-import { makePlanView, ATLAS_PLAN_CSS } from './atlas-plan.js';   /* (atlas-plan-on-map) Atlas's plan, its observed states and the way back to what each step drew — in this HUD's column */
+import { makePlanView } from './atlas-plan.js';   /* (atlas-plan-on-map) Atlas's plan, its observed states and the way back to what each step drew — in the work trace since atlas-progress-one */
+import { everyTick } from './runtime.js';   /* (atlas-progress-one) the one timer wheel — whether the trace can be seen is looked at, not assumed */
 
 /* ══ makeDraftReader — the top-level string fields of a JSON object that is still arriving ═════
    feed(delta) → { mode: 'json'|'prose'|'', turn, answerMode, text }
@@ -141,13 +142,13 @@ export function makeAtlasLive(HOST, deps) {
   const PROG = deps.progress || null;
   const now = () => { try { return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now(); } catch (_) { return Date.now(); } };
   const raf = (f) => { try { return requestAnimationFrame(f); } catch (_) { return setTimeout(f, 16); } };
-  /* (atlas-plan-on-map) the plan stands in the HUD's column, above the operations — the one place on the
-     map that was measured to be free (below). It outlives the turn: when the turn ends and a plan is
-     showing, the HUD RESTS (the live word and the chips go, the plan stays) instead of fading away. */
-  let planShown = false;
+  /* (atlas-progress-one) THE PLAN STANDS IN THE LATEST TURN'S WORK TRACE (js/atlas-progress.js
+     `.atl-trace-plan`), not on the map. It outlives the turn there: the trace stays in the conversation,
+     and the next turn's trace takes it over (makePlanView moves it — one plan, one place). */
+  let lastAi = null;
   const PLANV = deps.plan ? makePlanView(deps.plan, { L, GE: deps.GE, objects: deps.objects,
-    slot: () => { const h = hudEl(); return h ? h.querySelector('.atl-hud-plan') : null; },
-    changed: (on) => { planShown = !!on; try { if (hud && (hud.classList.contains('rest') || hud.classList.contains('off'))) restOrFade(hud); } catch (_) { } } }) : null;
+    slot: () => { try { const el = (PROG && PROG.traceEl && lastAi) ? PROG.traceEl(lastAi) : null; return el ? el.querySelector('.atl-trace-plan') : null; } catch (_) { return null; } },
+    mark: (st) => ((PROG && PROG.markEl) ? PROG.markEl(st) : null) }) : null;
 
   /* ── the per-reply state, keyed by the bubble (one live reply at a time, as js/atlas-progress.js) ── */
   const turns = new WeakMap();
@@ -162,10 +163,12 @@ export function makeAtlasLive(HOST, deps) {
     if (current && current !== ai) { try { end(current, 'superseded'); } catch (_) { } }
     current = ai;
     const st = { t0: now(), lat: { streamed: false, steps: 0 }, reader: null, call: 0, thought: '', narr: null,
-      draftShown: false, painted: false, hudOps: Object.create(null), ended: false };
+      draftShown: false, painted: false, seenOps: Object.create(null), ended: false };
     turns.set(ai, st);
     history.push(st.lat);
     if (history.length > 20) history.shift();
+    lastAi = ai;
+    try { if (PLANV) PLANV.render(); } catch (_) { }   /* a plan from an earlier turn moves into this turn's trace */
     hudBegin(st);
     return st;
   }
@@ -225,7 +228,7 @@ export function makeAtlasLive(HOST, deps) {
           if (name === 'think') {
             st.thought += String((data && data.d) || '');
             const h = thoughtHeadline(st.thought);
-            if (h) { mark(st, 'firstVisible'); mark(st, 'firstThought'); if (PROG) PROG.detail(ai, h); hudWord(st, h); }
+            if (h) { mark(st, 'firstVisible'); mark(st, 'firstThought'); if (PROG) PROG.detail(ai, h); }
           } else if (name === 'text') {
             const r = st.reader.feed((data && data.d) || '');
             if (!r.text) return;
@@ -243,7 +246,6 @@ export function makeAtlasLive(HOST, deps) {
             if (PROG) PROG.detail(ai, L('Next: ', '次: ', 'Als Nächstes: ', 'Далее: ', 'Siguiente: ') + st.callNames.map(wordForTool).join(', '));
           } else if (name === 'search') {
             if (PROG) PROG.detail(ai, L('Searching the web', 'Web を検索中', 'Durchsuche das Web', 'Ищу в интернете', 'Buscando en la web'));
-            hudWord(st, L('Searching the web', 'Web を検索中', 'Durchsuche das Web', 'Ищу в интернете', 'Buscando en la web'));
           } else if (name === 'reset') {
             /* the provider is being asked again: what was shown came from an attempt that will not answer */
             st.reader = makeDraftReader(); st.thought = ''; st.callNames = [];
@@ -293,69 +295,129 @@ export function makeAtlasLive(HOST, deps) {
       ai.__atlDraft = '';
       try { const el = ai.querySelector('.atl-draft'); if (el) el.remove(); } catch (_) { }
     }
+    try { if (PROG && PROG.outcome) PROG.outcome(ai, how); } catch (_) { }   /* the trace's head says how the turn ended */
     hudEnd(st, how);
   }
   /* the answer is on screen — a moment, not an end (the bubble may still be composing) */
   function answered(ai) { const st = stateOf(ai); if (st) mark(st, 'answer'); }
 
-  /* ══ THE MAP HUD — what is being done, where it is being done ══════════════════════════════════
-     The trace is in the sidebar; the drawing is on the map, and a reader watching one is not reading
-     the other. So the same lifecycle is shown on the map: the live word, and one chip per operation
-     that runs while it runs and is ticked (or crossed) when the executor says it ended. Rows come only
-     from the executor's events — a preview never puts a chip here. */
-  let hud = null, hudFade = null;
+  /* ══ THE MAP PILL — ONLY WHEN THE TRACE CANNOT BE SEEN (atlas-progress-one) ═══════════════════════
+     ⚠⚠⚠ THERE WERE FOUR. For one turn the reader was shown the trace in the sidebar (its head saying
+     「Researching」), a pill on the map saying 「Atlas · Researching」, a row of operation chips above it
+     saying 「Researching」 again, and the plan as a card of its own — 「この表示、煩雑過ぎない？」. Each
+     was added on its own (atlas-live-stream put the HUD on the map so a reader watching the map saw
+     the drawing; atlas-plan-on-map put the plan in its column) and nobody decided how they related.
+     So: the trace is the one place, the plan is inside it, and the map carries nothing WHILE THE TRACE
+     CAN BE SEEN. When it cannot (the sidebar closed, the phone's sheet lowered, the workspace window
+     minimised, the trace scrolled away), one pill says what the trace's head says, and pressing it
+     opens Atlas.
+     ⚠ 「CAN BE SEEN」 IS LOOKED AT, NOT INFERRED FROM A MODE OR A WIDTH. display, visibility and
+     opacity pass for an element a panel is lying on ([[intmap-visible-is-not-unoccluded]]), and the
+     sidebar, the sheet and the workspace each hide it in a different way. So the trace is seen when part
+     of it is inside the viewport, nothing above it is transparent, and the point the reader would look
+     at answers to the trace itself (elementsFromPoint, with the pill — which may stand over it —
+     looked through). Asked on the runtime's wheel while a turn runs and for the moment after it ends.
+     ⚠ THE WORD IS THE TRACE'S. js/atlas-progress.js liveWord() is what its head shows; this pill keeps
+     no word of its own, so the two cannot disagree and 「Researching」 is written in one place. */
+  let hud = null, stopSeen = null;
+  const pill = { ai: null, live: false, endedAt: 0, how: '' };
+  const SEEN_TICK_MS = 400;     /* how often 「can the trace be seen」 is asked while it matters — under half a second between closing the sidebar and the pill */
+  const END_SHOW_MS = 2600;     /* the ending word stays this long, then the pill goes (the HUD's fade, kept) */
   function hudEl() {
     if (hud && hud.isConnected) return hud;
     try {
       const host = document.getElementById('map');
       const parent = host && host.parentElement;
       if (!parent) return null;
-      hud = document.createElement('div');
+      hud = document.createElement('button');
+      hud.type = 'button';
       hud.className = 'atl-hud';
-      hud.setAttribute('role', 'status');
       hud.setAttribute('aria-live', 'polite');
-      hud.innerHTML = '<div class="atl-hud-head"><span class="atl-hud-dot"></span><span class="atl-hud-name">Atlas</span><span class="atl-hud-word"></span></div><div class="atl-hud-ops"></div><div class="atl-hud-plan"></div>';
+      hud.innerHTML = '<span class="atl-hud-dot"></span><span class="atl-hud-name">Atlas</span><span class="atl-hud-word"></span><span class="atl-hud-step"></span>';
+      hud.addEventListener('click', openTrace);
       parent.appendChild(hud);
       return hud;
     } catch (_) { return null; }
   }
-  function hudBegin(st) {
-    const h = hudEl(); if (!h) return;
-    try { clearTimeout(hudFade); } catch (_) { }
-    try {
-      h.querySelector('.atl-hud-ops').innerHTML = '';
-      h.classList.remove('done', 'off', 'rest');
-      h.classList.add('on');
-      h.querySelector('.atl-hud-word').textContent = L('Thinking', '考え中', 'Denke nach', 'Думаю', 'Pensando');
-    } catch (_) { }
-    st.hud = h;
+  /* pressing the pill opens Atlas through the doors that already exist: the sheet's own detent on a phone
+     (js/mobile-ui.js __setDetent), then the console's open() — which uncollapses the sidebar and restores
+     a minimised workspace window — and finally the trace is brought into its scroller's view */
+  function openTrace() {
+    try { const b = document.body.classList, setDetent = window.__setDetent; if (typeof setDetent === 'function' && (b.contains('sheet-min') || b.contains('sheet-hidden'))) setDetent('half'); } catch (_) { }
+    try { if (typeof deps.openPanel === 'function') deps.openPanel(); } catch (_) { }
+    setTimeout(() => { try { const el = PROG && PROG.traceEl ? PROG.traceEl(pill.ai) : null; if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' }); } catch (_) { } tick(); }, 120);
   }
-  function hudWord(st, w) {
-    try { if (st && st.hud && !st.ended) st.hud.querySelector('.atl-hud-word').textContent = String(w || '').slice(0, 90); } catch (_) { }
+  /* traceSeen(el) — can the reader see this trace right now? */
+  function traceSeen(el) {
+    try {
+      if (!el || !el.isConnected) return false;
+      const vw = window.innerWidth || 0, vh = window.innerHeight || 0;
+      const r = el.getBoundingClientRect();
+      const x0 = Math.max(0, r.left), x1 = Math.min(vw, r.right), y0 = Math.max(0, r.top), y1 = Math.min(vh, r.bottom);
+      if (!(x1 - x0 >= 2 && y1 - y0 >= 2)) return false;
+      for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+        const cs = getComputedStyle(n);
+        if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) < 0.05) return false;
+      }
+      const pts = [[(x0 + x1) / 2, (y0 + y1) / 2]];
+      const head = el.querySelector('.atl-trace-head');
+      if (head) { const h = head.getBoundingClientRect(); pts.unshift([(h.left + h.right) / 2, (h.top + h.bottom) / 2]); }
+      return pts.some((p) => {
+        if (!(p[0] >= 0 && p[1] >= 0 && p[0] < vw && p[1] < vh)) return false;
+        const hits = document.elementsFromPoint(p[0], p[1]) || [];
+        const top = hits.find((h) => !(hud && (h === hud || hud.contains(h))));
+        return !!top && el.contains(top);
+      });
+    } catch (_) {
+      /* could not look: nothing is put on the map — the trace is still where it always is */
+      return true;
+    }
+  }
+  function paintPill(h) {
+    try {
+      const word = (PROG && PROG.liveWord) ? PROG.liveWord(pill.ai) : '';
+      h.querySelector('.atl-hud-word').textContent = String(word || '').slice(0, 90);
+      let step = '';
+      const snap = (pill.live && deps.plan && typeof deps.plan.snapshot === 'function') ? deps.plan.snapshot() : null;
+      if (snap && snap.live && snap.thisTurn && snap.steps.length) {
+        step = L('Step {i}/{n}', '手順 {i}/{n}').split('{i}').join(String(snap.current)).split('{n}').join(String(snap.steps.length));
+      }
+      h.querySelector('.atl-hud-step').textContent = step;
+      h.setAttribute('aria-label', 'Atlas · ' + word + (step ? ' · ' + step : '') + ' — ' + L('Open Atlas', 'Atlas を開く'));
+    } catch (_) { }
+  }
+  function tick() {
+    const h = hudEl(); if (!h) return;
+    const ending = !pill.live;
+    if (ending && Date.now() - pill.endedAt >= END_SHOW_MS) { setPill(h, false); stopTicking(); return; }
+    const seen = traceSeen(PROG && PROG.traceEl ? PROG.traceEl(pill.ai) : null);
+    if (seen) { setPill(h, false); return; }
+    paintPill(h);
+    h.classList.toggle('done', ending);
+    setPill(h, true);
+  }
+  function setPill(h, on) {
+    try {
+      if (on) { h.classList.remove('off'); h.classList.add('on'); h.tabIndex = 0; }
+      else if (h.classList.contains('on')) { h.classList.remove('on'); h.classList.add('off'); h.tabIndex = -1; }
+    } catch (_) { }
+  }
+  function stopTicking() { try { if (stopSeen) { stopSeen(); stopSeen = null; } } catch (_) { } }
+  function hudBegin(st) {
+    pill.ai = lastAi; pill.live = true; pill.endedAt = 0; pill.how = '';
+    try { stopSeen = everyTick('atl-hud-seen', SEEN_TICK_MS, tick); } catch (_) { stopSeen = null; }
+    try { tick(); } catch (_) { }
+    st.hud = true;
   }
   function hudEnd(st, how) {
-    const h = st && st.hud; if (!h) return;
-    try {
-      h.classList.add('done');
-      h.querySelector('.atl-hud-word').textContent = how === 'answered'
-        ? L('Answered', '回答しました', 'Beantwortet', 'Ответ готов', 'Respondido')
-        : (how === 'error' ? L('Could not answer', '回答できませんでした', 'Keine Antwort möglich', 'Не удалось ответить', 'No se pudo responder')
-          : L('Stopped', '停止しました', 'Angehalten', 'Остановлено', 'Detenido'));
-      h.querySelectorAll('.atl-hud-op.run').forEach((o) => { o.classList.remove('run'); o.classList.add('skip'); });
-      clearTimeout(hudFade);
-      hudFade = setTimeout(() => restOrFade(h), 2600);
-    } catch (_) { }
+    if (!st || !st.hud || pill.ai !== lastAi) return;
+    pill.live = false; pill.endedAt = Date.now(); pill.how = String(how || '');
+    try { tick(); } catch (_) { }
   }
-  /* after a turn: a plan on show keeps the HUD at rest (the plan alone); otherwise it fades as before */
-  function restOrFade(h) {
-    try {
-      if (!h.classList.contains('done')) return;
-      if (planShown) { h.classList.remove('off'); h.classList.add('on', 'rest'); }
-      else { h.classList.remove('on', 'rest'); h.classList.add('off'); }
-    } catch (_) { }
-  }
-  const HUD_STATE = { completed: 'ok', partial: 'warn', unobserved: 'warn', failed: 'fail', cancelled: 'skip', superseded: 'skip' };
-  /* watch(EXEC) — ONE subscription, routed to the live reply (the js/atlas-progress.js watch rule). */
+  /* watch(EXEC) — ONE subscription, routed to the live reply (the js/atlas-progress.js watch rule). It no
+     longer puts anything on the map — the trace has the operation's row — and keeps only what the
+     measured wait needs: when the first operation started and when the first drawing landed. */
+  const DREW = { completed: 1 };
   let subscribed = false;
   function watch(EXEC) {
     if (subscribed || !EXEC || typeof EXEC.on !== 'function') return;
@@ -363,27 +425,15 @@ export function makeAtlasLive(HOST, deps) {
     EXEC.on((ev) => {
       try {
         if (!ev || !ev.operationId || !current) return;
-        const st = stateOf(current); if (!st || st.ended || !st.hud) return;
-        const ops = st.hud.querySelector('.atl-hud-ops');
-        let chip = st.hudOps[ev.operationId];
-        if (!chip) {
-          if (ev.phase !== 'started') return;      /* a chip is opened by the operation starting, nothing earlier */
+        const st = stateOf(current); if (!st || st.ended) return;
+        if (!st.seenOps[ev.operationId]) {
+          if (ev.phase !== 'started') return;      /* an operation is counted from its start, nothing earlier */
+          st.seenOps[ev.operationId] = true;
           mark(st, 'firstOp');
-          const word = (PROG && PROG.wordFor) ? PROG.wordFor(ev.capabilityId) : String(ev.capabilityId || '');
-          chip = document.createElement('div');
-          chip.className = 'atl-hud-op run';
-          chip.innerHTML = '<span class="atl-hud-mark"></span><span class="atl-hud-w"></span>';
-          chip.querySelector('.atl-hud-w').textContent = word;
-          ops.appendChild(chip);
-          while (ops.children.length > 4) ops.removeChild(ops.firstChild);
-          st.hudOps[ev.operationId] = chip;
-          hudWord(st, word);
         }
-        const s = HUD_STATE[ev.phase];
-        if (s) {
-          chip.className = 'atl-hud-op ' + s;
+        if (DREW[ev.phase]) {
           const produced = Array.isArray(ev.produced) ? ev.produced : [];
-          if (s === 'ok' && (produced.indexOf('map') >= 0 || produced.indexOf('chart') >= 0)) mark(st, 'firstDraw');
+          if (produced.indexOf('map') >= 0 || produced.indexOf('chart') >= 0) mark(st, 'firstDraw');
         }
       } catch (_) { }
     });
@@ -395,7 +445,7 @@ export function makeAtlasLive(HOST, deps) {
 }
 
 /* ⚠ CSS IN QUOTED STRINGS ONLY (CONSTITUTION §2 — a back-tick here would blank the site).
-   Concatenated into the panel's sheet by js/atlas-styles.js. The HUD sits outside #atlas-panel (it is
+   Concatenated into the panel's sheet by js/atlas-styles.js. The pill sits outside #atlas-panel (it is
    on the map), so its rules are not scoped to the panel. */
 export const ATLAS_LIVE_CSS =
   '#atlas-panel .atl-draft{margin-bottom:6px;}'
@@ -406,39 +456,28 @@ export const ATLAS_LIVE_CSS =
   + '#atlas-panel .atl-trace-row.say{align-items:flex-start;}'
   + '#atlas-panel .atl-trace-row.say .atl-trace-det{white-space:normal;overflow:visible;opacity:.9;font-style:italic;}'
   /* ⚠ WHERE IT STANDS WAS MEASURED, NOT CHOSEN: at the top of the map it sat under the search bar, the
-     engine switches and every floating legend (a screenshot of the first build showed only its spinner).
-     The bottom centre of the map is the one band no control occupies on a desktop — the readout is
-     bottom-left, Chronos bottom-right — and the head sits lowest, with the operations stacked above it.
-     On a phone the Atlas sheet covers the bottom, so there it stands under the top bar instead. */
+     engine switches and every floating legend. The bottom centre of the map is the one band no control
+     occupies on a desktop — the readout is bottom-left, Chronos bottom-right. On a phone the sheet covers
+     the bottom, so there it stands under the top bar instead (ATLAS_LIVE_CSS_MOBILE). */
   + '.atl-hud{position:absolute;left:50%;bottom:calc(58px + var(--safe-bottom));transform:translate(-50%,8px);z-index:var(--z-map-overlay);pointer-events:none;'
-  + 'display:flex;flex-direction:column-reverse;align-items:center;gap:5px;max-width:min(560px,calc(100% - 32px));opacity:0;'
-  + 'transition:opacity .22s ease,transform .22s ease;font:500 12px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;}'
-  + '.atl-hud.on{opacity:1;transform:translate(-50%,0);}'
-  + '.atl-hud.off{opacity:0;}'
-  + '.atl-hud-head,.atl-hud-op{display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;max-width:100%;'
+  + 'display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;max-width:min(420px,calc(100% - 32px));opacity:0;margin:0;cursor:pointer;'
   + 'background:var(--sidebar-bg,rgba(28,28,30,0.85));color:var(--text-main,#fff);border:1px solid rgba(127,127,127,0.22);'
-  + 'backdrop-filter:blur(18px) saturate(1.6);-webkit-backdrop-filter:blur(18px) saturate(1.6);box-shadow:0 6px 22px rgba(0,0,0,0.18);}'
+  + 'backdrop-filter:blur(18px) saturate(1.6);-webkit-backdrop-filter:blur(18px) saturate(1.6);box-shadow:0 6px 22px rgba(0,0,0,0.18);'
+  + 'transition:opacity .22s ease,transform .22s ease;font:500 12px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;}'
+  + '.atl-hud.on{opacity:1;transform:translate(-50%,0);pointer-events:auto;}'
+  + '.atl-hud.off{opacity:0;}'
+  + '.atl-hud:not(.on){visibility:hidden;transition:opacity .22s ease,transform .22s ease,visibility 0s linear .22s;}'
   + '.atl-hud-name{font-weight:700;}'
   + '.atl-hud-word{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted,rgba(255,255,255,0.75));}'
+  + '.atl-hud-step{flex:0 0 auto;font-variant-numeric:tabular-nums;color:var(--text-muted,rgba(255,255,255,0.75));}'
+  + '.atl-hud-step:empty{display:none;}'
+  + '.atl-hud-step::before{content:"\\00b7";margin-right:7px;}'
   + '.atl-hud-dot{width:8px;height:8px;border-radius:50%;background:#0a84ff;flex:0 0 8px;animation:atl-hud-pulse 1.2s ease-in-out infinite;}'
   + '.atl-hud.done .atl-hud-dot{animation:none;background:#30d158;}'
   + '@keyframes atl-hud-pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.35;transform:scale(.7);}}'
-  + '.atl-hud-ops{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;}'
-  + '.atl-hud-op{padding:4px 10px;font-size:11.5px;}'
-  + '.atl-hud-w{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
-  + '.atl-hud-mark{flex:0 0 10px;width:10px;height:10px;display:inline-block;border-radius:50%;}'
-  + '.atl-hud-op.run .atl-hud-mark{border:1.6px solid currentColor;border-top-color:transparent;animation:atl-trace-spin .7s linear infinite;}'
-  + '.atl-hud-op.ok .atl-hud-mark{background:#30d158;}'
-  + '.atl-hud-op.warn .atl-hud-mark{background:#ff9f0a;}'
-  + '.atl-hud-op.fail .atl-hud-mark,.atl-hud-op.skip .atl-hud-mark{background:#ff453a;}'
-  + '@keyframes atl-trace-spin{to{transform:rotate(360deg);}}'
   + '@media (prefers-reduced-motion:reduce){.atl-hud,.atl-hud.on{transition:none;transform:translate(-50%,0);}'
-  + '.atl-hud-dot,.atl-hud-op.run .atl-hud-mark,#atlas-panel .atl-caret{animation:none;}}'
-  + ATLAS_PLAN_CSS;
-/* On a phone the Atlas sheet covers the bottom of the map, so the HUD stands under the top bar. Placed
+  + '.atl-hud-dot,#atlas-panel .atl-caret{animation:none;}}';
+/* On a phone the Atlas sheet covers the bottom of the map, so the pill stands under the top bar. Placed
    inside the panel sheet's phone block by js/atlas-styles.js — the boundary is IntMapDevice.COMPACT. */
 export const ATLAS_LIVE_CSS_MOBILE =
-  '.atl-hud{bottom:auto;top:calc(64px + var(--safe-top));flex-direction:column;transform:translate(-50%,-8px);}'
-  /* (atlas-plan-on-map) measured at 390 px: the round controls stand in two columns at the left and right
-     edges (about 76 px each), so the plan takes the band between them rather than sliding under either */
-  + '.atl-plan{width:min(300px,calc(100vw - 156px));}';
+  '.atl-hud{bottom:auto;top:calc(64px + var(--safe-top));transform:translate(-50%,-8px);}';

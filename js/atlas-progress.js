@@ -222,6 +222,10 @@ export function makeAtlasProgress(HOST, deps) {
         + '<span class="atl-trace-chev">' + SVG_CHEV + '</span>'
         + '<span class="atl-trace-sum"></span>'
         + '<span class="atl-trace-ms"></span></button>'
+        /* (atlas-progress-one) THE PLAN STANDS HERE, between the head and the rows — js/atlas-plan.js
+           makePlanView renders into it. It was a card on the map until the reader counted four progress
+           indicators for one turn; the plan is the turn's work, so it is in the record of the work. */
+        + '<div class="atl-trace-plan"></div>'
         + '<div class="atl-trace-rows" role="list"></div>';
       bubble.insertAdjacentElement('beforebegin', el);
       const head = el.querySelector('.atl-trace-head');
@@ -232,7 +236,7 @@ export function makeAtlasProgress(HOST, deps) {
         } catch (_) { }
       });
     } catch (_) { return null; }
-    tr = { el: el, rows: [], byOp: Object.create(null), t0: now(), pendingAct: null, done: false, liveWord: '' };
+    tr = { el: el, rows: [], byOp: Object.create(null), t0: now(), pendingAct: null, done: false, liveWord: '', how: '' };
     traces.set(bubble, tr);
     paintHead(tr);
     try {
@@ -281,7 +285,10 @@ export function makeAtlasProgress(HOST, deps) {
       {
         const s = sum.querySelector('.atl-stage');
         if (s && s.parentNode) s.parentNode.removeChild(s);
-        sum.textContent = (n === 1
+        /* (atlas-progress-one) HOW THE TURN ENDED IS SAID HERE AND NOWHERE ELSE — 「Answered」/「Stopped」
+           used to be said by the map HUD, which is gone while this head can be seen (js/atlas-live.js). */
+        const how = ENDWORD[tr.how] ? ENDWORD[tr.how]() + ' · ' : '';
+        sum.textContent = how + (n === 1
             ? L('1 step', '1 ステップ', '1 Schritt', '1 шаг', '1 paso')
             /* ⚠ ITS OWN KEY, NOT THE BARE 'steps'. That English string is already in the inline
                tables, put there for js/tsunami.js and js/viewshed.js where it counts SIMULATION
@@ -485,7 +492,9 @@ export function makeAtlasProgress(HOST, deps) {
       tr.el.classList.remove('open');
       const head = tr.el.querySelector('.atl-trace-head');
       if (head) head.setAttribute('aria-expanded', 'false');
-      if (!tr.rows.length) tr.el.remove();   /* a turn with no steps has nothing to show */
+      /* a turn with no steps has nothing to show — unless the plan stands in it (atlas-progress-one) */
+      const pl = tr.el.querySelector('.atl-trace-plan');
+      if (!tr.rows.length && !(pl && pl.children && pl.children.length)) tr.el.remove();
     } catch (_) { }
   }
 
@@ -517,7 +526,43 @@ export function makeAtlasProgress(HOST, deps) {
     try { const d = rec && rec.row && rec.row.querySelector('.atl-trace-det'); if (d) d.textContent = String(text || ''); } catch (_) { }
   }
 
+  /* ── (atlas-progress-one) WHAT THE OTHER TWO VIEWS READ FROM THIS ONE ───────────────────────────
+     js/atlas-live.js shows a one-line pill on the map ONLY when this trace cannot be seen, and it says
+     what this head says — so it asks this file for the word rather than keeping its own. js/atlas-plan.js
+     draws the plan's steps inside the trace with the same marks the rows wear. */
+  const ENDWORD = {
+    answered: () => L('Answered', '回答しました', 'Beantwortet', 'Ответ готов', 'Respondido'),
+    error: () => L('Could not answer', '回答できませんでした', 'Keine Antwort möglich', 'Не удалось ответить', 'No se pudo responder'),
+    cancelled: () => L('Stopped', '停止しました', 'Angehalten', 'Остановлено', 'Detenido'),
+    superseded: () => L('Stopped', '停止しました', 'Angehalten', 'Остановлено', 'Detenido')
+  };
+  /* outcome(bubble, how) — js/atlas-live.js end(): 'answered' | 'error' | 'cancelled' | 'superseded'.
+     The cancel path calls done() first (the Stopped note must stand where the word stood), so a trace
+     that has already finished is repainted, not left without its ending. */
+  function outcome(bubble, how) {
+    const tr = traces.get(bubble); if (!tr) return;
+    tr.how = ENDWORD[how] ? String(how) : '';
+    if (tr.done) paintHead(tr);
+  }
+  function traceEl(bubble) { const tr = bubble ? traces.get(bubble) : null; return (tr && tr.el) || null; }
+  /* the word the head shows now: the live word while the turn runs, the ending word after it */
+  function liveWord(bubble) {
+    const tr = bubble ? traces.get(bubble) : null; if (!tr) return '';
+    /* the ending is the ending from the moment it is known — js/atlas-console.js ends the stream (outcome) a
+       moment before it calls done() */
+    if (tr.done || ENDWORD[tr.how]) return ENDWORD[tr.how] ? ENDWORD[tr.how]() : '';
+    return String(tr.liveWord || PHASE_WORD.think());
+  }
+  /* the mark element a row of this trace wears for a state — handed to the plan's step rows so a tick is one tick */
+  function markEl(state) {
+    const m = document.createElement('span');
+    m.className = 'atl-trace-mark';
+    m.innerHTML = MARK[state] || '';
+    return m;
+  }
+
   return { open, step, phase, plan, watch, done, live, stageHtml, setStage, setLive, wordFor, detailFor, detail, say, sayText,
+    outcome, traceEl, liveWord, markEl, endWord: (how) => (ENDWORD[how] ? ENDWORD[how]() : ''),
     /* ⚠ (#R744) phaseWord() EXISTS BECAUSE A CHECK NEEDS THE WORD, NOT THE MARKUP. #R723 ② asked
        「does any capability announce itself as thinking?」 by testing stageHtml('think') for the
        capability's word; the marker no longer carries text, so that question would now be answered
@@ -559,5 +604,24 @@ export const ATLAS_PROGRESS_CSS =
   + '#atlas-panel .atl-trace-word{flex:0 1 auto;}'
   + '#atlas-panel .atl-trace-det{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.72;}'
   + '#atlas-panel .atl-trace-t{flex:0 0 auto;font-variant-numeric:tabular-nums;opacity:.6;}'
+  /* (atlas-progress-one) THE PLAN, INSIDE THE TRACE. Its head (goal and N/M) stays when the trace is
+     folded — the one line a finished multi-step turn still has to say; its steps open with the rows and
+     wear the rows' own marks (the same vocabulary: tick, ring, cross, spinner). */
+  + '#atlas-panel .atl-trace-plan:empty{display:none;}'
+  + '#atlas-panel .atl-trace-plan{padding:1px 4px 2px 9px;}'
+  + '#atlas-panel .atl-plan-head{display:flex;align-items:baseline;gap:6px;font-size:11.5px;line-height:1.45;color:var(--text-main);}'
+  + '#atlas-panel .atl-plan-goal{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}'
+  + '#atlas-panel .atl-plan-count{flex:0 0 auto;font-variant-numeric:tabular-nums;color:var(--text-muted);}'
+  + '#atlas-panel .atl-plan.bad .atl-plan-count{color:#ff453a;}'
+  + '#atlas-panel .atl-plan.warn .atl-plan-count{color:#ff9f0a;}'
+  + '#atlas-panel .atl-plan-steps{list-style:none;margin:1px 0 3px;padding:0 0 3px;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.18));}'
+  + '#atlas-panel .atl-trace:not(.open) .atl-plan-steps{display:none;}'
+  + '#atlas-panel .atl-plan-step{border-radius:6px;}'
+  + '#atlas-panel .atl-plan-step.cur{color:var(--text-main);}'
+  + '#atlas-panel .atl-plan-step.can{cursor:pointer;}'
+  + '#atlas-panel .atl-plan-step.can .atl-trace-word{text-decoration:underline;text-decoration-color:rgba(127,127,127,0.5);text-underline-offset:2px;}'
+  + '#atlas-panel .atl-plan-step.can:hover,#atlas-panel .atl-plan-step.can:focus-visible{background:var(--input-bg);outline:none;}'
+  + '#atlas-panel .atl-trace-row.pending .atl-trace-mark::before,#atlas-panel .atl-trace-row.noop .atl-trace-mark::before{content:"";width:7px;height:7px;border-radius:50%;border:1.4px solid currentColor;opacity:.55;}'
+  + '#atlas-panel .atl-trace-row.noop .atl-trace-mark::before{border-style:dashed;}'
   + '@media (prefers-reduced-motion:reduce){#atlas-panel .atl-trace-row.run .atl-trace-mark::before{animation:none;}'
   + '#atlas-panel .atl-trace-chev{transition:none;}}';

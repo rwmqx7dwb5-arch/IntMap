@@ -2569,7 +2569,7 @@ export function atlasConsole(HOST){
     function stageDots(k){ return PROG.stageHtml(k); } 
     /* (atlas-live-stream) js/atlas-live.js — reads the model call while it streams; `_liveTools` is the turn's tool table, so a call it announces is named in the reader's words */
     const PLAN=makeAtlasPlan();   /* (atlas-plan-on-map) ONE per conversation: a later turn may name a step of it */
-    let _liveTools=null; const LIVE=makeAtlasLive(HOST,{L,esc,md:(s)=>mdMini(s),progress:PROG,plan:PLAN,GE,objects:()=>window.IntMapObjects||null,wordForTool:(n)=>{ const t=_liveTools&&_liveTools[n]; return PROG.wordFor((t&&t.capabilityId)||String(n||'').replace('_','.')); }});
+    let _liveTools=null; const LIVE=makeAtlasLive(HOST,{L,esc,md:(s)=>mdMini(s),progress:PROG,plan:PLAN,openPanel:()=>open(),GE,objects:()=>window.IntMapObjects||null,wordForTool:(n)=>{ const t=_liveTools&&_liveTools[n]; return PROG.wordFor((t&&t.capabilityId)||String(n||'').replace('_','.')); }});
     const _pend=(b,k)=>{ try{ PROG.open(b); PROG.watch(EXEC); PROG.phase(b,k); }catch(_){} return b; };   /* a pending reply: the trace above it, the live word inside it */
     /* (#R159) ── COMPOSITE-ANSWER INTEGRATION ─────────────────────────────────────────────────────────────────
        One request must produce ONE final answer — not the first (failed) analysis and the repaired analysis stacked

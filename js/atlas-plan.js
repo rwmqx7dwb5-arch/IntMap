@@ -1,7 +1,7 @@
 /* ============================================================================
- *  IntMap · Atlas — THE PLAN, ON THE MAP   (atlas-plan-on-map)
+ *  IntMap · Atlas — THE PLAN   (atlas-plan-on-map → atlas-progress-one)
  *  window-less module: the ledger is driven by js/atlas-agent.js runTurn, the view is mounted by
- *  js/atlas-live.js into the map HUD
+ *  js/atlas-live.js into the work trace (js/atlas-progress.js), between its head and its rows
  * ----------------------------------------------------------------------------
  *  ══ WHAT WAS MISSING ══════════════════════════════════════════════════════════════════════
  *  A question like 「台湾海峡が封鎖されたら影響は」 is several pieces of work — the strait, the shipping
@@ -39,7 +39,7 @@
 export const PLAN_TOOL = {
   name: 'plan',
   description: 'Declare your plan for a request that takes several pieces of work, and say which step the calls '
-    + 'that follow serve. The reader sees the plan on the map, with each step\'s state as IntMap observes it. '
+    + 'that follow serve. The reader sees the plan above your work, with each step\'s state as IntMap observes it. '
     + 'First call: {"goal", "steps":[short titles in the reader\'s language], "current":1}, made in the SAME reply '
     + 'as the calls of step 1. Moving on: {"current":n} in the same reply as that step\'s calls. To replace the plan, '
     + 'send new steps. A request that one or two calls answer needs no plan. The plan stays in the conversation: '
@@ -158,7 +158,7 @@ export function makeAtlasPlan() {
     activeThisTurn = true;
     emit({ type: 'plan' });
     return { ok: true, plan: forModel(),
-      note: 'Plan recorded and shown to the reader on the map. The calls you make from here serve step ' + (plan.current + 1)
+      note: 'Plan recorded and shown to the reader above your work. The calls you make from here serve step ' + (plan.current + 1)
         + ' until you set "current" again. Each step\'s state is what IntMap OBSERVES of those calls, never what you say.' };
   }
 
@@ -273,18 +273,17 @@ export function bboxOf(features) {
   return (w <= e && s <= n) ? [[w, s], [e, n]] : null;
 }
 
-const SVG_CHECK = '<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.3l2.3 2.2 4.7-5"/></svg>';
-const SVG_CROSS = '<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3.5 3.5l5 5M8.5 3.5l-5 5"/></svg>';
-const SVG_CHEV = '<svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg>';
-const SVG_X = '<svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3l6 6M9 3l-6 6"/></svg>';
-
 /**
- * makePlanView(ledger, deps) — the plan in the map HUD.
+ * makePlanView(ledger, deps) — the plan in the work trace.
  *   deps.L(en, jp)   the console's language picker
  *   deps.GE()        the renderer (js/geo-engine.js IntMapGeoEngine)
  *   deps.objects()   js/map-tools.js IntMapObjects, or null
- *   deps.slot()      the element to render into (js/atlas-live.js's HUD slot), or null
- *   deps.changed()   told when the view gained or lost content (the HUD decides whether to rest or fade)
+ *   deps.slot()      the element to render into (the latest turn's `.atl-trace-plan`), or null
+ *   deps.mark(s)     the trace's own mark element for a trace state (js/atlas-progress.js markEl)
+ *
+ * ⚠ (atlas-progress-one) IT WAS A CARD ON THE MAP, WITH A FOLD AND A CLOSE BUTTON OF ITS OWN. The reader
+ * counted four progress indicators for one turn (this card, two HUD pills and the trace) and asked for one.
+ * The plan is now part of the trace: it folds with the trace's head, and there is nothing to close.
  */
 export function makePlanView(ledger, deps) {
   deps = deps || {};
@@ -292,7 +291,6 @@ export function makePlanView(ledger, deps) {
   const GE = deps.GE || (() => null);
   const OBJ = deps.objects || (() => null);
   const before = Object.create(null);    /* callId → fingerprint at start */
-  let collapsed = false, dismissed = 0, collapseTm = null;
 
   const WORDS = {
     pending: () => L('Not started', '未着手'), running: () => L('Running', '実行中'), completed: () => L('Done', '完了'),
@@ -335,11 +333,6 @@ export function makePlanView(ledger, deps) {
         return;   /* noteDrawing re-renders */
       }
     }
-    if (ev.type === 'plan') { collapsed = false; dismissed = 0; clearTimeout(collapseTm); }
-    if (ev.type === 'turn' && ev.phase === 'end') {
-      clearTimeout(collapseTm);
-      collapseTm = setTimeout(() => { collapsed = true; render(); }, 2600);
-    }
     render();
   });
 
@@ -375,104 +368,64 @@ export function makePlanView(ledger, deps) {
     return false;
   }
 
-  /* ── the card ── built with the DOM, so nothing the model wrote is ever parsed as markup ── */
-  function mark(state) {
-    const m = document.createElement('span');
-    const cls = state === 'completed' ? 'ok' : ((state === 'failed' || state === 'stopped') ? 'fail' : state);
-    m.className = 'atl-plan-mark ' + cls;
-    if (cls === 'ok') m.innerHTML = SVG_CHECK; else if (cls === 'fail') m.innerHTML = SVG_CROSS;
-    return m;
-  }
+  /* ── the plan, in the work trace ── built with the DOM, so nothing the model wrote is ever parsed as
+     markup. ⚠ (atlas-progress-one) THE STEPS WEAR THE TRACE'S OWN MARKS: a step is a row of the trace
+     (`.atl-trace-row`) in the trace state its observed state maps to, so a tick, a ring and a cross
+     mean the same thing on a step as on an operation. The state's WORD is written only where the mark
+     alone cannot say which state it is (a ring is partial, unobserved or waiting) — a tick that also
+     said 「Done」 would be the same fact twice. */
+  const TRACE_STATE = { completed: 'ok', partial: 'warn', unobserved: 'warn', waiting: 'warn', failed: 'fail', stopped: 'skip',
+    running: 'run', pending: 'pending', noop: 'noop' };
+  const SAYS_ITSELF = { completed: 1, running: 1, pending: 1 };
+  let lastSlot = null;
   function render() {
-    const slot = deps.slot ? deps.slot() : null; if (!slot) return;
+    const slot = deps.slot ? deps.slot() : null;
+    /* ONE PLACE: the plan stands in the latest turn's trace, and leaves the one it stood in before */
+    if (lastSlot && lastSlot !== slot) { try { lastSlot.innerHTML = ''; } catch (_) { } }
+    lastSlot = slot;
+    if (!slot) return;
     const s = ledger.snapshot();
-    if (!s || dismissed === s.id) { slot.innerHTML = ''; if (deps.changed) deps.changed(false); return; }
+    if (!s) { slot.innerHTML = ''; return; }
     const done = s.steps.filter((x) => x.state === 'completed').length;
     const bad = s.steps.some((x) => x.state === 'failed' || x.state === 'stopped');
     const warn = s.steps.some((x) => x.state === 'partial' || x.state === 'unobserved' || x.state === 'waiting');
     let card = slot.querySelector('.atl-plan');
     if (!card) {
-      slot.innerHTML = '<div class="atl-plan"><div class="atl-plan-top"><button type="button" class="atl-plan-head"><span class="atl-plan-goal"></span>'
-        + '<span class="atl-plan-count"></span><span class="atl-plan-chev">' + SVG_CHEV + '</span></button>'
-        + '<button type="button" class="atl-plan-x">' + SVG_X + '</button></div><ol class="atl-plan-steps"></ol></div>';
+      slot.innerHTML = '<div class="atl-plan"><div class="atl-plan-head"><span class="atl-plan-goal"></span>'
+        + '<span class="atl-plan-count"></span></div><ol class="atl-plan-steps"></ol></div>';
       card = slot.querySelector('.atl-plan');
-      card.querySelector('.atl-plan-head').addEventListener('click', () => { collapsed = !collapsed; clearTimeout(collapseTm); render(); });
-      card.querySelector('.atl-plan-x').addEventListener('click', () => { const c = ledger.snapshot(); dismissed = c ? c.id : 0; render(); });
-      card.querySelector('.atl-plan-steps').addEventListener('click', (e) => {
+      const ol0 = card.querySelector('.atl-plan-steps');
+      if (ol0 && ol0.addEventListener) ol0.addEventListener('click', (e) => {
         const li = e.target && e.target.closest ? e.target.closest('.atl-plan-step.can') : null; if (!li) return;
         const c = ledger.snapshot(); const st = c && c.steps[+li.dataset.n - 1]; if (st) focus(st);
       });
     }
-    card.classList.toggle('collapsed', collapsed);
     card.classList.toggle('bad', bad); card.classList.toggle('warn', !bad && warn);
     card.querySelector('.atl-plan-goal').textContent = s.goal || L('Plan', '計画');
     card.querySelector('.atl-plan-count').textContent = done + '/' + s.steps.length;
-    const head = card.querySelector('.atl-plan-head');
-    head.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-    head.setAttribute('title', collapsed ? L('Show the plan', '計画を表示') : L('Fold the plan', '計画をたたむ'));
-    card.querySelector('.atl-plan-x').setAttribute('aria-label', L('Hide the plan', '計画を隠す'));
     const ol = card.querySelector('.atl-plan-steps');
     while (ol.firstChild) ol.removeChild(ol.firstChild);
     s.steps.forEach((st) => {
       const can = !!targetOf(st);
+      const ts = TRACE_STATE[st.state] || 'warn';
+      const word = (WORDS[st.state] || (() => st.state))();
       const li = document.createElement('li');
-      li.className = 'atl-plan-step s-' + st.state + (can ? ' can' : '') + (s.live && s.thisTurn && st.n === s.current ? ' cur' : '');
+      li.className = 'atl-trace-row atl-plan-step ' + ts + ' s-' + st.state + (can ? ' can' : '') + (s.live && s.thisTurn && st.n === s.current ? ' cur' : '');
       li.dataset.n = String(st.n);
-      li.appendChild(mark(st.state));
-      const t = document.createElement('span'); t.className = 'atl-plan-t'; t.textContent = st.n + '. ' + st.title; li.appendChild(t);
-      const w = document.createElement('span'); w.className = 'atl-plan-st'; w.textContent = (WORDS[st.state] || (() => st.state))(); li.appendChild(w);
+      li.setAttribute('aria-label', st.n + '. ' + st.title + ' — ' + word);
+      let m = null; try { m = deps.mark ? deps.mark(ts) : null; } catch (_) { m = null; }
+      if (!m) { m = document.createElement('span'); m.className = 'atl-trace-mark'; }
+      li.appendChild(m);
+      const t = document.createElement('span'); t.className = 'atl-trace-word'; t.textContent = st.n + '. ' + st.title; li.appendChild(t);
+      const w = document.createElement('span'); w.className = 'atl-trace-det'; w.textContent = SAYS_ITSELF[st.state] ? '' : word; li.appendChild(w);
+      li.setAttribute('title', can ? word + ' — ' + L('Show what this step drew', 'この手順が描いたものへ移動') : word);
       if (can) {
         li.setAttribute('role', 'button'); li.tabIndex = 0;
-        li.setAttribute('title', L('Show what this step drew', 'この手順が描いたものへ移動'));
         li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); focus(st); } });
       }
       ol.appendChild(li);
     });
-    if (deps.changed) deps.changed(true);
   }
 
   return { render, focus, targetOf, fingerprint };
 }
-
-/* ⚠ CSS IN QUOTED STRINGS ONLY (CONSTITUTION §2). Appended to js/atlas-live.js's HUD sheet: the card
-   stands in the HUD's own column, so it inherits the place that was measured for it (bottom centre on a
-   desktop, under the top bar on a phone) and needs no position of its own. The HUD lets clicks through
-   to the map; the card alone takes them. */
-export const ATLAS_PLAN_CSS =
-  '.atl-hud-plan{pointer-events:auto;max-width:100%;}'
-  + '.atl-hud:not(.on) .atl-hud-plan{pointer-events:none;}'
-  + '.atl-hud-plan:empty{display:none;}'
-  + '.atl-plan{width:min(360px,calc(100vw - 32px));border-radius:16px;overflow:hidden;'
-  + 'background:var(--sidebar-bg,rgba(28,28,30,0.85));color:var(--text-main,#fff);border:1px solid rgba(127,127,127,0.22);'
-  + 'backdrop-filter:blur(18px) saturate(1.6);-webkit-backdrop-filter:blur(18px) saturate(1.6);box-shadow:0 6px 22px rgba(0,0,0,0.18);}'
-  + '.atl-plan-top{display:flex;align-items:center;}'
-  + '.atl-plan-head{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:8px;padding:8px 6px 8px 12px;background:none;border:0;color:inherit;font:inherit;font-weight:600;cursor:pointer;text-align:left;}'
-  + '.atl-plan-goal{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
-  + '.atl-plan-count{flex:0 0 auto;font-variant-numeric:tabular-nums;color:var(--text-muted,rgba(255,255,255,0.75));font-weight:500;}'
-  + '.atl-plan.bad .atl-plan-count{color:#ff453a;}'
-  + '.atl-plan.warn .atl-plan-count{color:#ff9f0a;}'
-  + '.atl-plan-chev{flex:0 0 auto;display:inline-flex;opacity:.6;transition:transform .2s ease;}'
-  + '.atl-plan.collapsed .atl-plan-chev{transform:rotate(-90deg);}'
-  + '.atl-plan-x{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;margin-right:4px;border:0;border-radius:50%;background:none;color:inherit;opacity:.55;cursor:pointer;}'
-  + '.atl-plan-x:hover,.atl-plan-head:hover .atl-plan-chev{opacity:.9;}'
-  + '.atl-plan-steps{list-style:none;margin:0;padding:0 6px 6px;max-height:min(40vh,260px);overflow-y:auto;}'
-  + '.atl-plan.collapsed .atl-plan-steps{display:none;}'
-  + '.atl-plan-step{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:10px;font-size:12px;}'
-  + '.atl-plan-step.can{cursor:pointer;}'
-  + '.atl-plan-step.can:hover,.atl-plan-step.can:focus-visible{background:rgba(127,127,127,0.16);outline:none;}'
-  + '.atl-plan-step.cur{background:rgba(10,132,255,0.14);}'
-  + '.atl-plan-t{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
-  + '.atl-plan-step.can .atl-plan-t{text-decoration:underline;text-decoration-color:rgba(127,127,127,0.5);text-underline-offset:2px;}'
-  + '.atl-plan-st{flex:0 0 auto;font-size:11px;color:var(--text-muted,rgba(255,255,255,0.75));}'
-  + '.atl-plan-mark{flex:0 0 14px;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;color:#fff;}'
-  + '.atl-plan-mark.ok{background:#30d158;}'
-  + '.atl-plan-mark.fail{background:#ff453a;}'
-  + '.atl-plan-mark.pending{border:1.6px solid rgba(127,127,127,0.6);}'
-  + '.atl-plan-mark.noop{border:1.6px dashed rgba(127,127,127,0.6);}'
-  /* ⚠ partial / unobserved are a ring, never a tick: nobody saw the effect complete */
-  + '.atl-plan-mark.partial,.atl-plan-mark.unobserved{border:2px solid #ff9f0a;}'
-  + '.atl-plan-mark.waiting{border:2px solid #0a84ff;}'
-  + '.atl-plan-mark.running{border:1.6px solid #0a84ff;border-top-color:transparent;animation:atl-trace-spin .7s linear infinite;}'
-  + '.atl-hud.rest{opacity:1;transform:translate(-50%,0);}'
-  + '.atl-hud.rest .atl-hud-head,.atl-hud.rest .atl-hud-ops{display:none;}'
-  + '@media (prefers-reduced-motion:reduce){.atl-plan-mark.running{animation:none;}.atl-plan-chev{transition:none;}}';
