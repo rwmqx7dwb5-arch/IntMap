@@ -183,6 +183,8 @@ export const CATALOGUE_CHUNKS = [
       { name: 'about-and-showcase', head: 'ABOUT INTMAP AND THE EXAMPLE MAPS: ' },
       /* 50 (classroom-tours) */
       { name: 'panel.tour' },
+      /* 51 (learn-quests) */
+      { name: 'learn.quest' },
 ];
 
 export function makeAtlasCatalogText(HOST, CTX) {

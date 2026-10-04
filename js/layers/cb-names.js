@@ -7,4 +7,5 @@ export default {
   label: 'placeNames',
   on: true,
   html: true,
+  names: true,
 };

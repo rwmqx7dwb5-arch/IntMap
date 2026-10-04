@@ -130,11 +130,17 @@ const WAR_ZOOM = 5;
 /** the war layer that draws an event: the manifest's row id for the war record's id (js/layer-manifest.js `dl-<war>`) */
 export const warLayerOf = (ev) => (ev.src === 'wars' ? 'dl-' + ev.war : null);
 
+/** the camera an event opens on: a war event at its place, a border event fitted to the polities it is about, and
+ *  the whole world for an event with no box. (learn-quests) js/quest-engine.js asks the same question for the map a
+ *  «which year?» question is asked on, so the two cannot place one event differently. */
+export function viewOf(ev) {
+  const b = boxOf(ev);
+  return ev.src === 'wars' && b ? { lng: b[0], lat: b[1], zoom: WAR_ZOOM, bearing: 0, pitch: 0, proj: 'flat' }
+    : b ? fitView(b[0], b[1], b[2], b[3], MAX_ZOOM) : fitView(-180, -60, 180, 75);
+}
 /** the map state an event opens: its date, its place, its war layer, and its headline as the link's title */
 function stateFor(ev, idx, lang) {
-  const b = boxOf(ev);
-  const view = ev.src === 'wars' && b ? { lng: b[0], lat: b[1], zoom: WAR_ZOOM, bearing: 0, pitch: 0, proj: 'flat' }
-    : b ? fitView(b[0], b[1], b[2], b[3], MAX_ZOOM) : fitView(-180, -60, 180, 75);
+  const view = viewOf(ev);
   const D = describe(ev, idx, lang);
   const layer = warLayerOf(ev);
   return { view, layers: layer ? [layer] : [], time: { at: ev.d }, title: D.year + ' · ' + D.text };

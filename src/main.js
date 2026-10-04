@@ -336,6 +336,9 @@ document.addEventListener('click', (e) => { const b = e.target && e.target.close
    manifest.webmanifest `shortcuts`; js/here-now.js). Each is a chunk of its own, fetched only on its query. */
 if (/[?&]share=/.test(location.search)) import('../js/share-inbox.js').then((m) => m.bootFromUrl());
 if (/[?&]here=1\b/.test(location.search)) import('../js/here-now.js').then((m) => m.bootFromUrl());
+/* (learn-quests) …and a CHALLENGE LINK (`?quest=<kind>.<seed>.<n>` — js/quest-engine.js questQuery): the same set of questions
+   for everyone who opens it, started by js/quest-panel.js once the map is ready. A chunk of its own, fetched only on its query. */
+if (/[?&]quest=/.test(location.search)) import('../js/quest-panel.js').then((m) => m.bootFromUrl());
 
 /* ── (#R162/#R163 → module-graph) THE REQUIRED-MODULE GUARD ─────────────────────────────────────
    It used to hold MODULE_FACTORIES — 107 names, checked AFTER boot against window.IntMapModules,

@@ -1554,6 +1554,13 @@ export function layerSidebar(HOST){
         dot:()=>{ try{ const M=window.IntMapMyMap, s=M&&M.state(); return !!(s&&s.showing&&s.showing.count); }catch(_){ return false; } },
         label:()=>T('My map','マイマップ'),
         hint:()=>T('Draw pins, lines and areas with notes; keep, share and analyse them','ピン・線・範囲とメモを描き、保存・共有・分析する') },
+      /* (learn-quests) questions made from the map's own data, answered on the map (js/quest-panel.js — a chunk of its own,
+         reached by import(); it publishes no global, so the row carries no `mod` and a press always opens it). */
+      { id:'tool.learnQuest', ic:_svg('<path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>'), en:'Learn quests', group:'tool',
+        keys:'learn quest quiz game geography history where when city year challenge class lesson 学ぶ クエスト クイズ 場所当て 年代当て 地理 歴史 挑戦 授業',
+        run:()=>import('./quest-panel.js').then(m=>m.openQuest()).then(()=>true,()=>{ try{ HOST.imToast(T('Learn quests could not be loaded — check your connection and try again.','学ぶクエストを読み込めませんでした。接続を確認して、もう一度お試しください。')); }catch(_){} return false; }),
+        label:()=>T('Learn quests','学ぶクエスト'),
+        hint:()=>T('Find cities and guess years on the map, then share the same set with a class','都市の場所当てと年代当てを地図で。同じ問題をクラスに配れる') },
       { id:'sim.seismic', mod:'IntMapSeismic', ic:SVG_QUAKE, run:null,   /* registered in js/app-body.js beside the OS kernel */
         label:()=>T('Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos'),
         hint:()=>T('Place a source and watch the shaking spread','震源を置いて揺れの広がりを見る','Herd setzen und die Erschütterung verfolgen','Задайте очаг и смотрите, как расходятся колебания','Coloque una fuente y vea propagarse el temblor') },

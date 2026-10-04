@@ -7,4 +7,5 @@ export default {
   label: 'geoLabels',
   on: true,
   html: true,
+  names: true,
 };

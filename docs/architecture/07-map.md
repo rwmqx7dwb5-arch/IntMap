@@ -37,7 +37,7 @@
 - **何であるか**——`kind`。`'display'` は**基本表示**の項目でレイヤーではない（数えず・`l=` で運ばず・Atlas の「全レイヤー」に入れない）。
   無ければレイヤー。読み手は `js/layer-manifest.js` の `isDisplay` / `dataLayers` / `displayItems` に訊く（MAP-LAYERS §7.2）
 - **どこに立つか**——`id`・`shelf`・`order`（棚そのものの並びは `js/layers/_shelves.js`）
-- **行の事実**——`key`・`label`・`rest`・`on`（既定で点くレイヤーは無い）・`share`・`html`・`lazy`。レイヤー欄の一覧はここから**導出**され
+- **行の事実**——`key`・`label`・`rest`・`on`（既定で点くレイヤーは無い）・`share`・`html`・`names`（地図に名前を書く行）・`lazy`。レイヤー欄の一覧はここから**導出**され
   （索引を書くときに `deriveShelves`）、`js/layer-manifest.js` がそれを読み手に渡す（手で持つ一覧は無い）
 - **他の登録簿の中の同じレイヤー**——`registry`（`IntMapLayers`）・`state`（共有リンクの状態）・`commands`（`IntMapOS`）・
   `atlas`（能力の項目）・`sources`（出典の行）・`time`（Chronos の契約）。それぞれの登録簿が別の綴りで持っていた
