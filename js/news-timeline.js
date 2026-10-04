@@ -7,8 +7,7 @@
  *  newsFeatures are read-write here (see tests/atlas-console-kernel-checks.test.mjs (#R165) for the RW contract).
  * ==========================================================================*/
 
-/* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
-import { everyTick, stopTick } from './runtime.js';
+/* (time-index-unify) no timer of its own any more: the forecast transport plays through js/time-lapse.js (see fcPlay). */
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
@@ -478,14 +477,15 @@ export function newsTimeline(HOST){
       IntMapTime.set(new Date(t),{allowFuture:true,source:'ui'}); }
     /* the SAME icon declaration the weather legends read (#R284), so the two views of one clock can
        never disagree about which button is 「再生」 and which is 「次へ」 */
-    /* (#R293) the transport plays the CLOCK, not the model's index: one interval, one writer */
-    let fcTimer=0;
-    const fcPlaying=()=>!!fcTimer;
-    function fcStop(){ if(fcTimer){ stopTick(fcTimer); fcTimer=0; } }
-    function fcPlay(){ fcStop(); if(!fcReady()) return;
-      fcTimer=everyTick('news-timeline:forecast-play',900,()=>{ const i=fcAtClock(); const n=fcCount();
-        if(i<0){ fcGo(Math.max(0,EC().nowIndex?EC().nowIndex():0)); return; }
-        fcGo(i+1>=n?0:i+1); }); }
+    /* (#R293) the transport plays the CLOCK, not the model's index: one interval, one writer.
+       (time-index-unify) …and it is the SAME run the weather legend's Play starts — js/time-lapse.js, through the model's
+       valid times (js/wx-ecmwf.js `play`) — so the two buttons are one player and can never run at once. */
+    const fcPlaying=()=>{ try{ return !!(EC()&&EC().isPlaying()); }catch(_){ return false; } };
+    function fcStop(){ if(fcPlaying()){ try{ EC().pause(); }catch(_){} } }
+    function fcPlay(){ if(!fcReady()) return;
+      /* off the model's window the run starts at its «now» step, as this transport always did */
+      if(fcAtClock()<0) fcGo(Math.max(0,EC().nowIndex?EC().nowIndex():0));
+      try{ EC().play(); }catch(_){} }
     function buildPlayer(){
       if(!playerEl) return;
       if(mode!=='time'||!fcReady()){ fcStop(); playerEl.style.display='none'; playerEl.innerHTML=''; return; }
@@ -498,7 +498,6 @@ export function newsTimeline(HOST){
         +P.b('next',L5('One step forward','1つ次の時刻','Ein Schritt vor','На шаг вперёд','Un paso adelante'),P.IC.next)
         +P.b('now',L5('Back to now','現在に戻る','Zurück zu jetzt','К текущему времени','Volver a ahora'),L5('Now','現在','Jetzt','Сейчас','Ahora'),'ecl-now');
       playerEl.querySelectorAll('.ecl-b').forEach(b=>{ b.onclick=()=>{ const a=b.getAttribute('data-act');
-        const E2=EC(); if(E2&&E2.pause) { try{ E2.pause(); }catch(_){} }
         const i=fcAtClock();
         if(a==='first'){ fcStop(); fcGo(0); }
         else if(a==='prev'){ fcStop(); fcGo((i<0?0:i)-1); }
@@ -884,6 +883,7 @@ export function newsTimeline(HOST){
        slider, and the tab appears as soon as the model's metadata lands */
     try{ (window.IntMapECMWF||{on:()=>{}}).on(ev=>{ try{
       if(ev.type==='meta'){ buildPlayer(); if(datePicker) datePicker.max=fcMaxISO(); }
+      if(ev.type==='play') buildPlayer();   /* (time-index-unify) the one player started or stopped — from here or a legend */
     }catch(_){} }); }catch(_){}
     IntMapTime.on(e=>{ refreshUI(e);
       /* Refetch the news feed only when the DAY (or live-state) actually changed. */

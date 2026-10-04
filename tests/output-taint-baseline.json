@@ -1,12 +1,11 @@
 {
  "//": "written by scripts/output-taint.mjs --update — values reaching an HTML sink (innerHTML/outerHTML/insertAdjacentHTML/setHTML) that the analysis cannot show to be markup-free, per file; ratcheted both ways by check:static",
- "sinks": 748,
- "total": 381,
+ "sinks": 736,
+ "total": 380,
  "files": {
   "js/analysis-correlate.js": 4,
   "js/analysis-edu.js": 6,
   "js/analysis-timeseries.js": 1,
-  "js/analysis-world-events.js": 1,
   "js/app-body.js": 5,
   "js/article-reader.js": 1,
   "js/atlas-briefing.js": 1,

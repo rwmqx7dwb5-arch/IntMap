@@ -5,7 +5,8 @@
  *  every one of those days: the border record the map draws (CShapes 2.0) dates the day each polity appears, ends
  *  or is redrawn, and the war record (data/wars.json) dates its events. data/on-this-day.json is that, indexed by
  *  calendar day (scripts/build-on-this-day.mjs computes it with the map's own code and says what it leaves out and
- *  why). This file is its ONE reader, for every door:
+ *  why). That file is THE index of dated events (js/time-index.js holds its records and cuts it); this file is the
+ *  reader of its CALENDAR cut, for every door:
  *    · the place search's EMPTY state — a card above the example maps: today's headline, one tap opens it on the
  *      map (js/showcase-gallery.js asks for it);
  *    · the SHEET (`openOnThisDay`) — every event of a day, day by day with ‹ ›, each opening the map on its date,
@@ -25,16 +26,16 @@ import { IntMapLang } from './lang-registry.js';
 import { encode } from './map-state.js';
 import { rankChanges } from './atlas-reasoning.js';
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the escaper the doors below write with (js/year-book.js imports it the same way) */
-/* ⚠ STATIC, NOT import(): these four are already in the start-up bundle, and a dynamic import() of a module the start-up
+/* ⚠ STATIC, NOT import(): these are already in the start-up bundle, and a dynamic import() of a module the start-up
    bundle holds makes the bundler split it into a chunk of its own — measured on the first build of this file: four more
    requests before the map draws (fetch-deadline, proxy-fetch, mobile-sheet, bus; eager.requests 9 → 13). Imported here they
-   cost nothing, and all four load in Node, so the page generator and the checks can still import this file. */
-import { jsonWithin } from './fetch-deadline.js';   /* the app's one clocked reader */
-import { clockFor } from './proxy-fetch.js';
+   cost nothing, and they load in Node, so the page generator and the checks can still import this file. The index's
+   own reader (fetch-deadline, proxy-fetch) is js/time-index.js's now, imported the same way. */
+import { INDEX_PATH, onDay, loadIndex } from './time-index.js';   /* (time-index-unify) the one index, its calendar cut and its reader */
 import { MAP_ANSWER_EVENT } from './mobile-sheet.js';   /* «an answer is on the map» — the phone's sheet comes down */
 import * as bus from './bus.js';
 
-export const INDEX_PATH = 'data/on-this-day.json';
+export { INDEX_PATH, loadIndex };
 
 /* ══ THE PURE HALF — also what the generated pages and the drafts run (Node) ══════════════════════════ */
 const pad = (n) => String(n).padStart(2, '0');
@@ -57,8 +58,8 @@ export function allDays() {
 /** the next / previous calendar day of 'MM-DD' (02-29 included) */
 export function stepDay(md, by) { const A = allDays(); const i = A.indexOf(md); return i < 0 ? null : A[(i + by + A.length) % A.length]; }
 
-/** the events of 'MM-DD', oldest first (the index's order) */
-export const eventsOn = (idx, md) => ((idx && idx.days && idx.days[md]) || []).slice();
+/** the events of 'MM-DD', oldest first (the index's order) — the index's calendar cut (js/time-index.js onDay) */
+export const eventsOn = onDay;
 
 const T = (lang, en, jp) => IntMapLang.t(lang, en, jp);
 const nameOf = (p, lang) => (lang === 'jp' && p.jp ? p.jp : p.en);
@@ -147,16 +148,6 @@ function stateFor(ev, idx, lang) {
 }
 /** the address that opens an event: 'index.html#v=…' */
 export const linkFor = (ev, idx, lang) => 'index.html' + encode(stateFor(ev, idx, lang));
-
-/* ══ THE INDEX, READ ONCE ═══════════════════════════════════════════════════════════════════════════ */
-let _idx = null;
-/** the index, through the app's one clocked reader (js/fetch-deadline.js) — read the first time a door asks */
-export async function loadIndex() {
-  if (!_idx) {
-    _idx = jsonWithin(INDEX_PATH, clockFor(INDEX_PATH)).catch((e) => { _idx = null; throw e; });
-  }
-  return _idx;
-}
 
 /* ══ OPENING AN EVENT ON THE MAP ═════════════════════════════════════════════════════════════════════ */
 /** → { ok, timeOk, off, event } — the share link's own restore, read back by the gallery's opener (js/showcase-gallery.js openLink) */

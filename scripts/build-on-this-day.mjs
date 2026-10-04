@@ -38,7 +38,16 @@
  *  marked `maybeYearOnly` — the same mark js/atlas-reasoning.js rankChanges gives a 1 January border day — because
  *  some of them are years (1889-01-01 «Southern Rhodesia») and some are days (1956-01-01 Sudan); the readers say
  *  so and never make one the day's headline.
- *  A war event is the record's own row with its own full date (`d`, and `d2` where the operation lasts).
+ *  A war event is the record's own row with its own full date (`d`, and `d2` where the operation lasts) — read by
+ *  js/time-index.js `warRecords`, the same reading the year book makes of the same file.
+ *
+ *  ══ (time-index-unify) THE INDEX, NOT ONLY THE CALENDAR ══════════════════════════════════════════════════════
+ *  This file writes THE index of dated events (js/time-index.js holds its records and its cuts). `days` is its
+ *  calendar cut — the records the map's own records date by the day, exactly as before. `events` beside it holds the
+ *  dated events neither record states, as WIKIDATA states them (scripts/fetch-world-events.mjs → the committed
+ *  snapshot scripts/time-index/wikidata-events.json, read here; this builder never asks the network): each with its
+ *  item, the property that dated it and the precision Wikidata gives. They are read by year (the year book) and up
+ *  to an instant (the dashboard's «World events»), not by the calendar pages, whose promise is the map's records.
  *
  *    node scripts/build-on-this-day.mjs           write data/on-this-day.json
  *    node scripts/build-on-this-day.mjs --check   re-derive and compare with the committed file (exit 1 on a difference)
@@ -51,15 +60,15 @@ export const GOVERNANCE = {
   'data/on-this-day.json': {
     /* the calendar index of the border records' change days (CShapes 2.0 · OpenHistoricalMap) and the war record's dated events,
        computed by the map's own code from the bundles here — it names CShapes polities, so CShapes' terms travel with it */
-    publisher: 'IntMap (derived from CShapes 2.0, OpenHistoricalMap and the war record in this repository)',
+    publisher: 'IntMap (derived from CShapes 2.0, OpenHistoricalMap and the war record in this repository; dated events beside them from Wikidata, CC0)',
     url: 'https://icr.ethz.ch/data/cshapes/',
     licence: 'CC BY-NC-SA 4.0',
     attribution: true,
     paidBy: 'CShapes 2.0 (Schvitz et al., ETH Zürich)',
     cadence: 'static',
     cadenceBasis: {
-      observed: 'derived only from other bundles in this repository (data/cshapes.js, data/hist-borders.js, data/wars.json) and never from an upstream; it changes when they are rebuilt, and `--check` says whether it still matches them',
-      expires: 'if the builder starts reading an upstream directly',
+      observed: 'derived only from other bundles in this repository (data/cshapes.js, data/hist-borders.js, data/wars.json) and the committed Wikidata snapshot scripts/time-index/wikidata-events.json (written by scripts/fetch-world-events.mjs, retrieved 2026-10-04), never from an upstream at build time; it changes when they are rebuilt, and `--check` says whether it still matches them',
+      expires: 'if the builder starts reading an upstream directly, or when scripts/fetch-world-events.mjs is run again',
       canon: 'scripts/build-on-this-day.mjs GOVERNANCE',
     },
     builtBy: 'scripts/build-on-this-day.mjs',
@@ -68,6 +77,8 @@ export const GOVERNANCE = {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const OUT = 'data/on-this-day.json';
+/* the Wikidata statements the index carries, as last fetched (scripts/fetch-world-events.mjs SNAPSHOT) */
+const WIKIDATA_SNAPSHOT = 'scripts/time-index/wikidata-events.json';
 
 /* the records whose dates are days (header): CShapes, from its first year — the OpenHistoricalMap record is not one of them */
 export const DAY_RECORDS = ['cshapes'];
@@ -161,21 +172,25 @@ export async function build() {
     put(pad(m) + '-' + pad(d), ev);
   }
 
-  /* ── the war record's dated events ── */
+  /* ── the war record's dated events (js/time-index.js warRecords — the year book's reading of the same file; only a
+        full date is a day) ── */
   const W = JSON.parse(readFileSync(join(ROOT, 'data/wars.json'), 'utf8'));
+  const TI = await import('../js/time-index.js');
   const wars = {};
-  for (const w of W.wars) {
-    wars[w.id] = { en: w.name.en, jp: w.name.jp, from: w.from, to: w.to };
-    for (const e of w.events || []) {
-      const mm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(e.d || ''));
-      if (!mm) continue;   /* only a full date is a day */
-      const ev = { d: e.d, src: 'wars', war: w.id, kind: e.kind || '', name: { en: e.name.en, jp: e.name.jp } };
-      if (e.d2) ev.d2 = e.d2;
-      if (Array.isArray(e.at)) ev.at = e.at.map((x) => Math.round(x * 1000) / 1000);
-      if (e.wiki) ev.wiki = e.wiki;
-      put(mm[2] + '-' + mm[3], ev);
-    }
-  }
+  for (const w of W.wars) wars[w.id] = { en: w.name.en, jp: w.name.jp, from: w.from, to: w.to };
+  for (const ev of TI.warRecords(W, ['en', 'jp'])) put(ev.d.slice(5, 7) + '-' + ev.d.slice(8, 10), ev);
+
+  /* ── the dated events beside them, as Wikidata states them (the committed snapshot — header) ── */
+  const WD = JSON.parse(readFileSync(join(ROOT, WIKIDATA_SNAPSHOT), 'utf8'));
+  const events = WD.rows.map((r) => {
+    const ev = { d: r.d, src: 'wikidata', prec: r.prec, q: r.q, prop: r.prop, kind: r.kind };
+    if (r.cal) ev.cal = r.cal;
+    if (r.at) ev.at = r.at;
+    ev.name = r.name;
+    if (r.desc) ev.desc = r.desc;
+    if (r.wiki && (r.wiki.en || r.wiki.jp)) ev.wiki = r.wiki;
+    return ev;
+  });
 
   /* each day's events oldest first; a border day before a war event on the same date */
   const order = { cshapes: 0, wars: 1 };
@@ -184,11 +199,13 @@ export async function build() {
   return {
     v: 1,
     built: 'scripts/build-on-this-day.mjs',
-    src: { cshapes: CS.src, wars: W.src },
+    src: { cshapes: CS.src, wars: W.src, wikidata: WD.src + ' — retrieved ' + WD.retrieved },
     span: { from: B.csFrom, to: B.csTo },
+    dayRecords: DAY_RECORDS,   /* the border records this index carries BY THE DAY — the year book asks it (js/year-book.js) */
     skipped,
     wars,
     days: sorted,
+    events,
   };
 }
 

@@ -33,6 +33,14 @@
  *  1/fps of recorded time — and `sink.end(reason)` hears how the run ended. Only drawn frames reach it (the three
  *  conditions above), so a recording has no blank and no half-drawn instant. The export row beside the lapse
  *  (index.html #ntl-rec) is mounted here and fetches the recorder only when it is opened (`openRecorder`).
+ *  ⚠ (time-index-unify) A RUN CAN BE A LIST OF INSTANTS. A forecast model publishes its valid times unevenly (hourly,
+ *  then every three, then every six hours), and two players used to step them, each with its own timer: the weather
+ *  legend's (js/wx-ecmwf.js `play`, the model's own index every 700 ms) and the Chronos panel's forecast transport
+ *  (js/news-timeline.js `fcPlay`, the clock every 900 ms) — both could run at once, one moving the model behind the
+ *  clock's back. Both are now THIS player: `startLapse({ instants, at, loop, owner })` plays the clock through exactly
+ *  the instants given (each set with `allowFuture`, since a forecast is ahead of now), frame by drawn frame like any
+ *  lapse, and `owner` names who started it ('forecast:<model id>') so each view can say whether it is ITS run that is
+ *  playing (`lapseOwner`). One page, one player: starting one run ends the other.
  * ==========================================================================*/
 import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
@@ -65,6 +73,11 @@ const st = {
   frames: 0, /** @type {number|null} */ total: null, /** @type {string|null} */ ended: null,
   /** @type {{at:string, entered:{id:string,name:string}[], left:{id:string,name:string}[]}[]} */ changes: [],
 };
+/** (time-index-unify) the instants of a list run (ms, ascending) and who started the run — null for a stepped run
+    @type {number[]|null} */
+let list = null;
+/** @type {string|null} */
+let owner = null;
 /** @type {Map<string,{name:string,drawn:boolean}>|null} */
 let lastDrawn = null;
 let runToken = 0;
@@ -79,6 +92,7 @@ const emit = () => { const s = lapseState(); subs.forEach((f) => { try { f(s); }
 /** the next instant after `ms` by the player's step, or null past the end */
 /** how many instants the run from st.from to its end holds — what a recording's progress counts against */
 function countFrames() {
+  if (list) return list.length;
   if (st.from == null) return null;
   const end = st.to == null ? Date.now() : st.to;
   if (st.unit === 'year') {
@@ -90,6 +104,7 @@ function countFrames() {
   return Math.floor((end - st.from) / (st.step * (st.unit === 'day' ? DAY : HOUR))) + 1;
 }
 function nextAfter(ms) {
+  if (list) { for (const t of list) if (t > ms) return t; return null; }
   let n;
   if (st.unit === 'year') { const y = new Date(ms).getUTCFullYear() + st.step; n = yearInstant(y); }
   else n = ms + st.step * (st.unit === 'day' ? DAY : HOUR);
@@ -100,7 +115,8 @@ function nextAfter(ms) {
 function put(ms) {
   ownWrite = true;
   try {
-    if (ms >= Date.now()) IntMapTime.setNow({ source: 'lapse' });
+    if (list) IntMapTime.set(new Date(ms), { source: 'lapse', allowFuture: true });   /* a listed instant is set as given — a forecast's is ahead of now */
+    else if (ms >= Date.now()) IntMapTime.setNow({ source: 'lapse' });
     else if (st.unit === 'year') IntMapTime.setYear(new Date(ms).getUTCFullYear(), { source: 'lapse' });
     else IntMapTime.set(new Date(ms), { source: 'lapse' });
   } finally { ownWrite = false; }
@@ -189,6 +205,25 @@ async function noteChanges() {
     and does not loop). → lapseState() */
 export function startLapse(o) {
   o = o || {};
+  /* (time-index-unify) a list of instants — the clock is played through exactly these (header) */
+  if (Array.isArray(o.instants)) {
+    const L = [...new Set(o.instants.map(Number).filter((x) => isFinite(x)))].sort((a, b) => a - b);
+    if (!L.length) return Object.assign(lapseState(), { error: 'no-start' });
+    if (sink) { const k = sink; sink = null; try { k.end('replaced'); } catch (_) { /* the recorder */ } }
+    list = L; owner = o.owner ? String(o.owner) : null;
+    st.unit = 'hour'; st.step = 1; st.from = L[0]; st.to = L[L.length - 1];
+    if (o.fps != null && RATES.indexOf(+o.fps) >= 0) st.fps = +o.fps;
+    if (o.loop != null) st.loop = !!o.loop;
+    st.ended = null; st.changes = []; st.frames = 0; lastDrawn = null; st.total = L.length;
+    st.playing = true; const token = ++runToken;
+    /* start where the caller stands (the nearest listed instant), else at the first */
+    const at = o.at != null && isFinite(+o.at) ? L.reduce((b, t) => (Math.abs(t - +o.at) < Math.abs(b - +o.at) ? t : b), L[0]) : L[0];
+    if (IntMapTime.isLive() || IntMapTime.when().getTime() !== at) put(at);
+    run(token);
+    emit();
+    return lapseState();
+  }
+  list = null; owner = o.owner ? String(o.owner) : null;
   if (o.unit && UNITS.indexOf(o.unit) >= 0) st.unit = o.unit;
   if (o.step != null && Math.round(+o.step) >= 1) st.step = Math.round(+o.step);
   if (o.fps != null && RATES.indexOf(+o.fps) >= 0) st.fps = +o.fps;
@@ -233,10 +268,15 @@ export function lapseState() {
     rate: reducedMotion() ? RATES[0] : st.fps, reducedMotion: reducedMotion(), loop: st.loop,
     from: iso(st.from), to: st.to == null ? null : iso(st.to), at: IntMapTime.isLive() ? null : IntMapTime.iso(),
     frames: st.frames, total: st.total, recording: !!sink, ended: st.ended, changes: st.changes.slice(),
+    owner, instants: list ? list.length : null,
   };
 }
+/** (time-index-unify) who started the run that is playing — 'forecast:<model id>' for a forecast — or null when nothing plays */
+export function lapseOwner() { return st.playing ? owner : null; }
+/** the rates a run may be played at, frames per second (the panel's speed buttons) */
+export const LAPSE_RATES = RATES;
 /** onLapse(fn) — fn(state) on every change; returns the unsubscribe */
-function onLapse(fn) { if (typeof fn !== 'function') return () => {}; subs.add(fn); return () => { subs.delete(fn); }; }
+export function onLapse(fn) { if (typeof fn !== 'function') return () => {}; subs.add(fn); return () => { subs.delete(fn); }; }
 /* a hand on the clock pauses the player — the player is one writer, not the only one */
 IntMapTime.on((e) => { if (st.playing && !ownWrite && e && e.source !== 'lapse') stopLapse('clock-moved'); });
 

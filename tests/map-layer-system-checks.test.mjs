@@ -222,7 +222,8 @@ const maddisonReader = () => {
   let lo = Infinity; for (const c of Object.keys(data)) for (const y of Object.keys(data[c])) lo = Math.min(lo, +y);
   return { load: async () => data, minYear: lo, maxYear: 2018, popN: (c, y) => { const r = rec(c, y); return r && r[1] != null ? r[1] * 1000 : null; }, gdppc: (c, y) => { const r = rec(c, y); return r && r[0] != null ? r[0] : null; } };
 };
-const yearDeps = () => ({ borders: cshapesBorders(), maddison: maddisonReader(), wars: async () => JSON.parse(read('data/wars.json')), lang: () => 'en', countryName: (c) => c });
+/* (time-index-unify) `index` — the one index of dated events (data/on-this-day.json), which the page reads through js/time-index.js loadIndex */
+const yearDeps = () => ({ borders: cshapesBorders(), maddison: maddisonReader(), wars: async () => JSON.parse(read('data/wars.json')), index: async () => JSON.parse(read('data/on-this-day.json')), lang: () => 'en', countryName: (c) => c });
 
 test('⑥ the area of a drawn shape is computed on the sphere (a 1°×1° cell at the equator: R²·Δλ·sin 1° = 12,391 km² on R = 6,378,137 m)', async () => {
   const { areaKm2 } = await import('../js/year-book.js');
@@ -286,7 +287,7 @@ test('⑦ Atlas\'s answers are built beside the readers, from the same facts', a
   const h = atlasHtml(r, new Date(1920, 5, 15), false, 'en', note);
   assert.match(h, /The world in 1920/);
   assert.match(h, /CShapes 2\.0/);
-  assert.match(h, /1920-02-02[^|]*−Khiva/);
+  assert.match(h, /1920-02-02[^|]*−Khanate of Khiva/);   /* (time-index-unify) the name the map writes on the outline that day (the index's), not the record's row name */
   const { b } = await browser();
   const f = await b.facts('wblife', 2);
   const a = b.atlasHtml(f, note);
