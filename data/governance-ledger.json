@@ -1,7 +1,7 @@
 {
   "gov": {
     "note": "これは「まだ果たしていない義務」の台帳であって、免責ではない。 Every entry is a bundle or a builder that does not yet state its own provenance as a value. The gate fails on anything NOT in here, and fails again when the counts are larger than reality — so a repair always shrinks this file, and nothing may be added to it except by a round that says in DEV-NOTES.md why the structure could not state it instead (.agents/rules/no-ad-hoc-hardcoding.md §6).",
-    "generatedAt": "2026-10-03T15:17:13.238Z",
+    "generatedAt": "2026-10-04T06:23:17.239Z",
     "declaredBy": "scripts/data-governance.mjs",
     "cadence": "static"
   },
@@ -1595,6 +1595,27 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "data/weekly-earth",
+      "facets": [
+        "origin.publisher",
+        "origin.url",
+        "origin.retrievedAt",
+        "rights.licence",
+        "rights.licenceUrl",
+        "rights.attribution",
+        "rights.paidBy",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "freshness.cadence",
+        "integrity.schema",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "data/whc-detail",
       "facets": [
         "origin.publisher",
@@ -2958,6 +2979,19 @@
       "why": "facet-undeclared"
     },
     {
+      "subject": "scripts/build-weekly-earth.mjs → data/weekly-earth.json",
+      "facets": [
+        "origin.retrievedAt",
+        "freshness.generatedAt",
+        "freshness.asOf",
+        "integrity.rows",
+        "integrity.missing",
+        "integrity.outOfRange",
+        "integrity.duplicates"
+      ],
+      "why": "facet-undeclared"
+    },
+    {
       "subject": "scripts/build-who-don.mjs → data/who-don.json.gz",
       "facets": [
         "origin.retrievedAt",
@@ -3343,8 +3377,8 @@
   ],
   "unreadableDeclaration": [],
   "counts": {
-    "undeclared": 172,
-    "undeclaredFacets": 2275,
+    "undeclared": 174,
+    "undeclaredFacets": 2297,
     "updateFailureExposed": 0,
     "shardsWithoutIndex": 1,
     "unreadableDeclaration": 0

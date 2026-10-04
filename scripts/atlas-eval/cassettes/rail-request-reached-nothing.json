@@ -246,6 +246,10 @@
             {
               "id": "time.onThisDay",
               "tool": "time_onThisDay"
+            },
+            {
+              "id": "time.weeklyEarth",
+              "tool": "time_weeklyEarth"
             }
           ]
         }

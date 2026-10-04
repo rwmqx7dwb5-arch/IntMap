@@ -293,6 +293,7 @@ builder を走らせた日のまま（spacecraft・small-bodies 08-10、osm-dipl
 | `build-deepsky.mjs`（SIMBAD） | TAP 4 本・鍵なし。状態・JSON・`data` 配列を確かめ、床（80 天体）を書く前に訊く |
 | `probe-gibs-range.mjs`（GIBS） | タイル要求のみ・鍵なし。200 と 404 だけが答えで、それ以外は書く前に止まる |
 | `build-who-don.mjs`（WHO） | 公開 API へのページ要求 36 件前後・鍵なし。全ページの状態を確かめる |
+| `build-weekly-earth.mjs`（USGS・NASA EONET、2026-10-04） | 要求 2 件・鍵なし。USGS 自身の件数と EONET の事象の形を確かめてから書き、既にある週は保つ（周期 `P7D`＝記録の単位が ISO 週） |
 
 | 載せなかったもの | 理由 |
 |---|---|

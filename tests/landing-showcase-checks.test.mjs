@@ -27,6 +27,7 @@ import { STATIC_ASSETS, STATIC_EXCLUDE } from '../vite.config.js';
 import { HUB as HISTORY_HUB, SITEMAP_INDEX } from '../scripts/history-pages.mjs';
 import { OTD_HUB } from '../scripts/on-this-day-pages.mjs';   /* (marketing-next) the «on this day» calendar, written into dist/ by the build like the history hub */
 import { COUNTRY_HUB } from '../scripts/country-pages.mjs';   /* (country-pages) the country list, written into dist/ by the build */
+import { WEEKLY_HUB } from '../scripts/weekly-earth-pages.mjs';   /* (weekly-earth) the weekly digest's hub, written into dist/ by the build likewise */
 import { SITE_TOKEN, fillSiteToken, guardedHosts } from '../scripts/site-url.mjs';
 import { SITE_URL } from '../supabase/functions/_shared/site-origin.js';
 
@@ -110,6 +111,7 @@ test('④ every asset a generated page names is copied into dist/, and the sitem
       if (rel === HISTORY_HUB || rel === 'ja/' + HISTORY_HUB) continue;
       if (rel === OTD_HUB || rel === 'ja/' + OTD_HUB) continue;
       if (rel === COUNTRY_HUB || rel === 'ja/' + COUNTRY_HUB) continue;
+      if (rel === WEEKLY_HUB || rel === 'ja/' + WEEKLY_HUB) continue;   /* (weekly-earth) written into dist/ by weeklyEarthPagesPlugin */
       assert.ok(existsSync(join(ROOT, rel)), page + ' names ' + ref + ', which does not exist');
       if (rel !== 'index.html') assert.ok(copied(rel), page + ' names ' + rel + ', which the build does not copy');
     }

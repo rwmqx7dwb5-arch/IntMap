@@ -245,6 +245,11 @@ export const IntMapRefData = (function(){
     {n:'GRDC / World Bank — Major River Basins of the World',u:'https://datacatalog.worldbank.org/search/dataset/0041426'},
     {n:'OpenTopoMap',u:'https://opentopomap.org/'},
     {n:'USGS Earthquake Hazards Program',u:'https://earthquake.usgs.gov/',lic:'Public domain',licUrl:'https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits',credit:false},
+    /* (weekly-earth) «This week on Earth» (weekly/ and Atlas time.weeklyEarth): the natural events NASA's EONET tracks, read at
+       BUILD time by scripts/build-weekly-earth.mjs into data/weekly-earth.json — the reader's browser never asks EONET anything.
+       A U.S. Government work; NASA asks to be acknowledged, and every page and answer built from it names EONET and the
+       originating source of each event. The name below is the `paidBy` of that builder's GOVERNANCE (check:datagov). */
+    {n:'NASA EONET — Earth Observatory Natural Event Tracker',u:'https://eonet.gsfc.nasa.gov/',lic:'U.S. Government work — not subject to copyright',licUrl:'https://www.nasa.gov/nasa-brand-center/images-and-media/',credit:true},
     {n:'OpenStreetMap Overpass API',u:'https://wiki.openstreetmap.org/wiki/Overpass_API',lic:'ODbL 1.0',licUrl:'https://opendatacommons.org/licenses/odbl/1-0/',credit:true},
     {n:'Wikidata Query Service',u:'https://query.wikidata.org/',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false},
     {n:'GeoNames',u:'https://www.geonames.org/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},

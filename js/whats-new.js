@@ -22,6 +22,7 @@ import { jsonWithin } from './fetch-deadline.js';
 import { IntMapLang } from './lang-registry.js';
 import { iconNode } from './icons.js';
 import * as bus from './bus.js';
+import { hubHref } from './weekly-earth.js';   /* (weekly-earth) the weekly digest's pages, one more way back to IntMap */
 
 /* where the build writes the list (scripts/whats-new.mjs JSON_PATH) */
 const LIST_URL = './whats-new.json';
@@ -173,7 +174,10 @@ function render(root, list, lang, unread) {
   page.href = lang === 'jp' ? './ja/updates.html' : './updates.html'; page.target = '_blank'; page.rel = 'noopener';
   const feed = el('a', 'ai-test-btn', t(lang, 'Feed (Atom)', 'フィード（Atom）'));
   feed.href = lang === 'jp' ? './ja/updates.xml' : './updates.xml'; feed.target = '_blank'; feed.rel = 'noopener';
-  foot.append(page, feed);
+  /* (weekly-earth) the other thing IntMap publishes every week — the planet's large natural events (scripts/weekly-earth-pages.mjs) */
+  const weekly = el('a', 'ai-test-btn', t(lang, 'This week on Earth', '今週の地球'));
+  weekly.href = hubHref(lang); weekly.target = '_blank'; weekly.rel = 'noopener';
+  foot.append(page, feed, weekly);
   panel.appendChild(foot);
 }
 

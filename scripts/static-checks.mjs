@@ -20,6 +20,7 @@ import { HUB as HISTORY_HUB } from './history-pages.mjs';
 import { OTD_HUB } from './on-this-day-pages.mjs';
 import { COUNTRY_HUB } from './country-pages.mjs';
 import { pagePath as UPDATES_PAGE, feedPath as UPDATES_FEED } from './whats-new.mjs';
+import { WEEKLY_HUB } from './weekly-earth-pages.mjs';   /* (weekly-earth) the weekly digest's hub, written by the build */
 import { outOfOrder } from './migration-order.mjs';
 
 const ROOT = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'));
@@ -367,6 +368,7 @@ for (const htmlName of ALL.filter((x) => !x.rel.includes('/') && x.rel.endsWith(
     if (clean === UPDATES_PAGE({ dir: '' }) || clean === UPDATES_FEED({ dir: '' })) continue;
     if (clean === OTD_HUB || clean.startsWith(OTD_HUB)) continue;   /* (marketing-next) the «on this day» pages: the same, from scripts/on-this-day-pages.mjs */
     if (clean === COUNTRY_HUB || clean.startsWith(COUNTRY_HUB)) continue;   /* (country-pages) the country pages: the same, from scripts/country-pages.mjs */
+    if (clean === WEEKLY_HUB || clean.startsWith(WEEKLY_HUB)) continue;   /* (weekly-earth) «this week on Earth»: the same, from scripts/weekly-earth-pages.mjs */
     if (!existsSync(join(ROOT, clean))) err('assets', `${htmlName}: references missing local file "${clean}"`);
   }
 }
