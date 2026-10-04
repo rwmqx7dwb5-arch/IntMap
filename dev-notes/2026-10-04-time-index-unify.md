@@ -68,7 +68,7 @@ newsjp: 「この日の歴史地図」「年鑑」「出来事」が、出典と
 `window._evYear`・`data-im-change="eventsYear"` は無くなり、‹ › は時計そのものを 1 年動かす。時計が別の日に動くと一覧も動く。
 カードは記録ごとの出典（国境の記録・戦争の記録・Wikidata と QID）と日付の精度（「開始 1918-01」「1917」）を出す。
 ⚠ 「この画面が出ているか」はシェルの `window._dashView` ではなく、最後に描いた要素に訊く（大域の読みを増やさない）。
-`window.IntMapSafe` の読みが 1 つ増えた（`.url()`——`href` の先頭は url で守る規則。`tests/global-surface-baseline.json` を更新）。
+出来事の画面は `href` の先頭を `IntMapSafe.url()` で守る。読みは window を通さず、持ち主 `js/safe-html.js` を import して `globalThis.IntMapSafe` から（`js/on-this-day.js` と同じ形）——窓口の読みは増えていない。
 
 ## 5. 予報の再生は 1 つ（`js/time-lapse.js`）
 

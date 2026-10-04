@@ -14,6 +14,7 @@
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { icon } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
+import './safe-html.js';   /* publishes globalThis.IntMapSafe — the escaper every href and label below goes through */
 import { IntMapTime } from './chronos.js';   /* the master clock the list stands at */
 import { loadIndex, records, upTo, sourceOf, eventName, eventDesc, dateWords } from './time-index.js';   /* (time-index-unify) the one index */
 import { describe, boxOf } from './on-this-day.js';   /* the words «On this day» gives the border and war records — one wording for both views */
@@ -93,10 +94,10 @@ export function analysisEvents(HOST){
         '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:'+esc(col)+'22;color:'+esc(col)+';">'+esc(c.tl)+'</span></div>'+
         '<h4 class="wiki-card-title" style="margin:0 0 4px;">'+esc(c.title)+'</h4>'+(c.sub?'<p class="wiki-card-body" style="margin:0;">'+esc(c.sub)+'</p>':'')+
         '<div class="wiki-card-footer" style="display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;"><span style="font-size:11px;color:var(--text-muted);">'+esc(c.src)+'</span>'+
-        c.links.map((l)=>'<a href="'+window.IntMapSafe.url(l.href)+'" target="_blank" rel="noopener" class="wiki-link" data-im-click="stopPropagation">'+esc(l.label)+' ↗</a>').join('')+'</div></div></div>';
+        c.links.map((l)=>'<a href="'+globalThis.IntMapSafe.url(l.href)+'" target="_blank" rel="noopener" class="wiki-link" data-im-click="stopPropagation">'+esc(l.label)+' ↗</a>').join('')+'</div></div></div>';
     }
     /* the app's one escaper (js/safe-html.js) */
-    const esc=(s)=>window.IntMapSafe.html(String(s==null?'':s));
+    const esc=(s)=>globalThis.IntMapSafe.html(String(s==null?'':s));
     /* renderDashboard delegates here when the Events view is active */
     window._renderEventsArchive=function(dash,q){
       const seg='<div class="dash-nav"><button class="dash-nav-btn" data-im-click="dashView" data-im-arg="places">'+((icon('pin')+' '+IntMapLang.t(HOST.lang,'Places','場所','Orte','Места','Lugares')))+'</button><button class="dash-nav-btn active" data-im-click="dashView" data-im-arg="events">'+((icon('calendar')+' '+IntMapLang.t(HOST.lang,'World events','出来事','Ereignisse','События','Sucesos')))+'</button></div>';
