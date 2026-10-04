@@ -534,9 +534,13 @@ function _redrawLocalGlyphs(m,cover){
     let last=0;
     try{ mm.on('drag',()=>{ const t=performance.now(); if(t-last<DRAG_ANNOUNCE_MS) return; last=t; _announceDestination(mm); }); }catch(_){}
   }
-  /* a destination that has just become known is announced once, as the renderer event `imdestination`
-     (GE().events.on('imdestination', …)) — js/sat-proto.js warms its tiles from it */
-  function _announceDestination(mm){ try{ mm.fire('imdestination'); }catch(_){} }
+  /* a destination that has just become known is announced once, to the subscribers of
+     `camera.onDestination(fn)` — js/sat-proto.js warms its tiles from it. ⚠ A capability of THIS view,
+     not a renderer event name: an `events.on('…')` subscription is a promise every engine must be able
+     to keep (tests/engine-cesium-adapter-checks R181 ③), and Cesium has no wheel spring and no recorded
+     ease to name a destination from — so it offers no `onDestination`, and the facade says so (false). */
+  function _announceDestination(mm){ const subs=mm&&mm.__imDestSubs; if(!subs) return;
+    for(const fn of subs){ try{ fn(); }catch(_){} } }
   /* a finger still dragging (no zoom change) has a destination too: where its glide would carry the map
      if it lifted now — the same speed, law and amount _glideRelease would use. During a pinch there is
      none: its glide is short, and naming the level it is passing would release the fetches the zoom
@@ -1777,6 +1781,9 @@ function _redrawLocalGlyphs(m,cover){
     getZoom(){ const m=_m(); return m?m.getZoom():null; }, getCenter(){ const m=_m(); return m?m.getCenter():null; },
     /* (map-motion) where the moving camera will stop, when that is known — {zoom, center:[lng,lat], size:[w,h]} or null */
     destination(){ return _destination(_m()); },
+    /* (map-motion) call `fn` each time a destination becomes known; returns an unsubscribe */
+    onDestination(fn){ const m=_m(); if(!m||typeof fn!=='function') return false;
+      const subs=m.__imDestSubs||(m.__imDestSubs=new Set()); subs.add(fn); return ()=>subs.delete(fn); },
     getBearing(){ const m=_m(); return m?m.getBearing():0; }, getPitch(){ const m=_m(); return m?m.getPitch():0; }, getBounds(){ const m=_m(); return m?m.getBounds():null; },
     /* (#R179) the zoom controls DECLARE a zoom — the case that ran away to z −5.54 on the sphere */
     zoomTo(z,o){ const m=_m(); if(m){ _declare(m,{zoom:true}); m.zoomTo(z,o); } },
@@ -2450,7 +2457,7 @@ function _redrawLocalGlyphs(m,cover){
     can(f){ const a=A(), c=a&&a.capabilities; return !!(c&&c[f]); },
     camera:{ flyTo:o=>A().flyTo(_calm(o)), easeTo:o=>A().easeTo(_calm(o)), jumpTo:o=>A().jumpTo(o), fitBounds:(b,o)=>A().fitBounds(b,_calm(o)), setPadding:p=>A().setPadding(p), get:()=>A().getCamera(), setProjection:mo=>A().setProjection(mo),
       /* (#R160) camera getters + zoom controls so call sites read/drive the camera through the engine, not the raw map */
-      getZoom:()=>A().getZoom(), getCenter:()=>A().getCenter(), destination:()=>(A().destination?A().destination():null), getBearing:()=>A().getBearing(), getPitch:()=>A().getPitch(), getBounds:()=>A().getBounds(),
+      getZoom:()=>A().getZoom(), getCenter:()=>A().getCenter(), destination:()=>(A().destination?A().destination():null), onDestination:(fn)=>(A().onDestination?A().onDestination(fn):false), getBearing:()=>A().getBearing(), getPitch:()=>A().getPitch(), getBounds:()=>A().getBounds(),
       zoomTo:(z,o)=>A().zoomTo(z,_calm(o)), zoomIn:o=>A().zoomIn(_calm(o)), zoomOut:o=>A().zoomOut(_calm(o)), stop:()=>A().stop(),
       /* (#R172) the camera that would show a box, and the current padding — both read-only */
       forBounds:(b,o)=>A().cameraForBounds?A().cameraForBounds(b,o):null, getPadding:()=>A().getPadding?A().getPadding():null,

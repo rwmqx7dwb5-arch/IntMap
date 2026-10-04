@@ -125,7 +125,7 @@ hitch 0。滑らかさを壊していたのはフレームの数ではなく、*
 | 何 | どこ | どう |
 |---|---|---|
 | 離したときの滑り（パンとズーム） | `js/geo-engine.js` `_glideRelease` | レンダラの `_onMoveEnd` を包む。速さは最初と最後の記録の間で測り、窓は最低 3 フレーム。パンもズームも「持続 = 速さ / 減速度」の 1 つの法則（ズームは画面幅の半分の点の速さ ln2·w/2 px に直す——375 px の携帯で 19.3 zoom/s²、レンダラ既定の 20 とほぼ同じ）。どちらも離した速さで始まる。緩和を最後に指が動いたフレームに錨を置いてずらす（最大 1 フレーム。それ以上の間隙は指が止まっていた） |
-| カメラの行き先 | `js/geo-engine.js` `camera.destination()`・イベント `imdestination` | ホイールのばねの目標、`easeTo`/`flyTo` の終点、ドラッグ中なら「いま離したら着く所」。ピンチ中は答えない |
+| カメラの行き先 | `js/geo-engine.js` `camera.destination()`・`camera.onDestination(fn)` | ホイールのばねの目標、`easeTo`/`flyTo` の終点、ドラッグ中なら「いま離したら着く所」。ピンチ中は答えない |
 | 衛星の行き先優先 | `js/sat-proto.js`・`src/sat-worker.js` `warm` | 保留はそのまま、**行き先が描くタイルだけ**即座に取る。行き先が分かった時点でその段のタイルを中心から順にワーカーのバイトキャッシュへ先取り（4 本・新しい行き先が置き換える） |
 | 夜側 | `js/night-side.js` `paint()` | 画素は 1 バイトも変えず、アイドル時間に区切って計算し、出来上がった絵だけをキャンバスに渡す |
 
@@ -203,3 +203,17 @@ hitch 0。滑らかさを壊していたのはフレームの数ではなく、*
 
 junit のファイル時間 40.0 s（同じ機械・1 worker・10 件全部緑）を `tests/durations.json` に記録。全体は
 87.2 分 / 154 本、deep 148 本。起動の gzip はこの木では天井の内側（`check:perf` 緑）で、`--update` は要らなかった。
+
+## 7. PR の CI で赤だった 3 つ（run 37180731980）
+
+- **check:surface**: `window.IntMapSatWorker` の読みが 2 → 3（第 2 段の先取りが自分で読んでいた）。読みを足して
+  台帳を上げるのではなく、`js/sat-proto.js` の `_satWorker()` がクライアントを返すようにし、タイルの経路と
+  先取りの経路がそれを使う——読みは 1 か所（2 → 1）。台帳は小さくなった側へ `--update`。
+- **R181 ③（engine-cesium-adapter）**: `events.on('imdestination')` は「両エンジンが上げられる名前」の約束を
+  破っていた（Cesium には行き先が無い）。行き先は描画イベントの名前ではなく、この view の能力
+  `camera.onDestination(fn)` にした。Cesium の adapter は持たず、facade は false を返す。
+- **tests/security.spec.js:183**（2 回とも赤）: 埋め込んだ `onerror` 属性の違反報告を**固定の 300 ms**待って
+  数えていた。CDP の CPU 絞りで測ると、報告が届くまで 1.6 ms（絞りなし）・186 ms（20×）・1,771 ms（40×）。
+  CI ではこの spec が GPU の無い 2 worker で、同じ shard の `tests/map-motion.spec.js`（PR では変更した spec
+  として core に入る）と並んで走り、主スレッドが詰まっていた。main の #962 の push の CI は緑。⇒ 主張は
+  そのまま、待ちを「報告と拒否の記録が届くまで（最長 10 s）」の状態待ちにした。

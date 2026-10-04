@@ -236,9 +236,11 @@ export function satProto(HOST){
        still answer synchronously, and the main-thread path above stays as the fallback. See
        DEV-NOTES #R192 §5. */
     let _satWReady=false;
+    /* the worker client, or null — read from the global in this one place (map-motion: the warm path
+       below and the tile path share it rather than each reading window.IntMapSatWorker) */
     function _satWorker(){
       const W=window.IntMapSatWorker;
-      if(!W||!W.available()) return false;
+      if(!W||!W.available()) return null;
       if(!_satWReady){ _satWReady=true;
         W.configure({ rawMax:_SAT_RAW_MAX, depthMax:_SAT_DEPTH_MAX,
           /* the worker learned how deep the imagery goes — keep the MIRROR current, because
@@ -247,11 +249,11 @@ export function satProto(HOST){
             let v=_satDepth.get(k); if(!v){ v={have:null,stop:null}; _satDepth.set(k,v);
               if(_satDepth.size>_SAT_DEPTH_MAX){ const f=_satDepth.keys().next().value; _satDepth.delete(f); } }
             v.have=have; v.stop=stop; } } }); }
-      return true;
+      return W;
     }
     function _satViaWorker(z,y,x,hi,signal){
-      if(!_satWorker()) return null;
-      return window.IntMapSatWorker.tile(z,y,x,hi,signal);
+      const W=_satWorker(); if(!W) return null;
+      return W.tile(z,y,x,hi,signal);
     }
     /* ══ (#R205) THE LEVELS A ZOOM PASSES THROUGH ARE NOT LEVELS ANYONE LOOKS AT ═══════════════════
        「衛星画像の読み込み時の動作を、極限までシームレスにして。（高速・違和感低減・点滅軽減）」
@@ -293,7 +295,7 @@ export function satProto(HOST){
       try{ const E=GE().events;
         E.on('zoomstart',()=>{ _satZooming=true; clearTimeout(_satZoomT); });
         E.on('zoomend',()=>{ clearTimeout(_satZoomT); _satZoomT=setTimeout(()=>{ _satZooming=false; },_SAT_SETTLE); });
-        E.on('imdestination',_satWarmDestination);
+        GE().camera.onDestination(_satWarmDestination);
       }catch(_){ _satZoomWired=false; }
     }
     /* ══ (map-motion) …BUT THE LEVEL THE ZOOM IS GOING TO IS A LEVEL SOMEONE LOOKS AT ═══════════════
@@ -330,7 +332,7 @@ export function satProto(HOST){
     /* ══ (map-motion) …AND ITS BYTES ARE FETCHED BEFORE THE RENDERER ASKS ═════════════════════════════
        The renderer asks for a level only once the camera is at it; the destination is known earlier —
        a notch gives the wheel's target ~150 ms before the zoom gets there, a released drag gives the
-       glide's end before the glide has moved. So when a destination is announced (`imdestination`,
+       glide's end before the glide has moved. So when a destination is announced (`camera.onDestination`,
        js/geo-engine.js) its tiles at the level the renderer will ask for — the four children instead
        when this session stitches @2x — are fetched into the worker's byte cache, nearest the centre
        first (src/sat-worker.js `warm`: four lanes, a newer destination replaces the queue). Only
@@ -338,7 +340,7 @@ export function satProto(HOST){
     function _satWarmDestination(){
       const d=_satDest(); if(!d) return;
       try{ if(GE().layers.getLayout('layer-sat','visibility')!=='visible') return; }catch(_){ return; }
-      const W=window.IntMapSatWorker; if(!W||!W.warm||!_satWorker()) return;
+      const W=_satWorker(); if(!W||!W.warm) return;
       const L=_satDestLevel(d); if(L<_SAT_HOLD_MINZ) return;              /* the shallow levels are shared and resident */
       const R=_satDestRect(d,L), out=[];
       for(let y=Math.max(0,Math.floor(R.cy-R.hy)); y<=Math.min(R.n-1,Math.floor(R.cy+R.hy)); y++)

@@ -136,6 +136,8 @@ export interface GeoEngineAdapterCore {
   getCenter(): any;
   /** (map-motion) MapLibre only — Cesium has no wheel spring or recorded ease */
   destination?(): any;
+  /** (map-motion) MapLibre only — subscribe to destinations as they become known */
+  onDestination?(fn?: any): any;
   getBearing(): any;
   getPitch(): any;
   getBounds(): any;
@@ -289,6 +291,8 @@ export interface GeoEngineCamera {
   getCenter(): any;
   /** (map-motion) where the moving camera will stop, when known */
   destination(): any;
+  /** (map-motion) subscribe to destinations as they become known (false where the engine has none) */
+  onDestination(fn?: any): any;
   getBearing(): any;
   getPitch(): any;
   getBounds(): any;

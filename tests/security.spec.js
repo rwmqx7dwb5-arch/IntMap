@@ -203,8 +203,15 @@ test('the app boots with no CSP violation, and markup runs code only by a declar
     host.querySelector('[data-im-click="pinPopupClose"] span').click();
     host.querySelector('[data-im-click="_closePinPopup"]').click();
     window._closePinPopup = keep;
-    await new Promise((res) => setTimeout(res, 300));
-    const refused = (window.__imErrors || []).some((e) => e.kind === 'inline-action' && /unknown-action click:_closePinPopup/.test(e.msg));
+    /* ⚠ (map-motion) WAIT FOR THE REPORTS, NOT FOR 300 ms. The violation is a queued task behind the
+       image's error event, and the refusal is recorded asynchronously; on a saturated main thread both
+       come later. MEASURED with CDP CPU throttling: the report arrived 1.6 ms after insertion unthrottled,
+       186 ms at 20×, 1,771 ms at 40× — and on CI (two workers, no GPU, a heavy spec beside it) this test
+       failed twice at the fixed 300 ms with zero reports. Same assertions below; the deadline is only
+       how long to keep looking. */
+    const isRefused = () => (window.__imErrors || []).some((e) => e.kind === 'inline-action' && /unknown-action click:_closePinPopup/.test(e.msg));
+    for (let i = 0; i < 200 && !(window.__imCspViolations.length && isRefused()); i++) await new Promise((res) => setTimeout(res, 50));
+    const refused = isRefused();
     host.remove();
     return { injected: window.__imInjected, called, refused, violations: window.__imCspViolations.slice() };
   });
