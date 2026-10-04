@@ -9,7 +9,10 @@ const read = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 test('studio-wait-edge-cursor ① addEdgeResize makes every child inherit the edge cursor while the pointer is in the edge zone', () => {
   const src = read('js/window-manager.js');
   const body = src.slice(src.indexOf('function addEdgeResize('), src.indexOf('function _armCornerCatch('));
-  assert.match(body, /\.im-edge-hover, \.im-edge-hover \*\{cursor:inherit !important;\}/, 'the inherit rule is not installed');
+  assert.match(body, /'\.im-edge-hover \*\{cursor:inherit !important;\}'/, 'the inherit rule is not installed');
+  /* (edge-cursor-selector) only the CHILDREN inherit: a rule that also matched the window overrode the ew-resize written on
+     it with its parent's auto (production, 2026-10-04 — the computed cursor of the window and the canvas were both auto) */
+  assert.doesNotMatch(body, /\.im-edge-hover, /, 'the rule matches the window itself, which overrides the cursor written on it');
   assert.match(body, /panel\.classList\.toggle\('im-edge-hover',!!cv\)/, 'hover in the edge zone does not set the class');
   assert.match(body, /pointerleave[\s\S]{0,200}panel\.classList\.remove\('im-edge-hover'\)/, 'leaving does not clear the class');
   /* the class is toggled only when the cursor changes — the #R311 rule that hover must not churn the style attribute */
