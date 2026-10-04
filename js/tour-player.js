@@ -48,7 +48,7 @@
 
 import { IntMapLang } from './lang-registry.js';
 import { IntMapTime } from './chronos.js';
-import { TOURS, tourById, tourSteps, tourQuery, tourFromSearch, CUSTOM_TOUR_ID, decodeCustomTour } from './tours.js';
+import { TOURS, tourById, tourSteps, tourQuery, tourFromSearch, CUSTOM_TOUR_ID, decodeCustomTour, GUIDE_TOUR_ID, guideTour } from './tours.js';
 import { MapState } from './map-state.js';   /* the map's state and the address bar's one door (js/map-state.js) */
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the encoder every string below is written with */
 import { icon } from './icons.js';
@@ -143,6 +143,10 @@ async function tourFor(id, opts) {
   if (k === 'atlas') {
     const v = readTemp(); if (!v || !v.steps.length) return null;
     return { id: 'atlas', title: v.title || t('Tour from Atlas', 'Atlas が作ったツアー'), steps: v.steps, temp: true, t: '' };
+  }
+  if (k === GUIDE_TOUR_ID) {   /* (guide-unify) Settings ▸ Tutorial: the examples marked `guide`, as a tour (js/tours.js guideTour) */
+    const g = guideTour(); if (!g.steps.length) return null;
+    return { id: g.id, title: g.title, steps: g.steps, temp: false, t: '' };
   }
   if (k === CUSTOM_TOUR_ID) {
     const tt = (opts && opts.t) || ((tourFromSearch(location.search) || {}).t) || '';
@@ -380,7 +384,10 @@ function closePicker() { const p = document.getElementById('im-tour-picker'); if
 export function openPicker() {
   style(); closePicker();
   const v = readTemp();
-  const rows = TOURS.map((d) => '<button type="button" class="imtp-t" data-imtp="' + H(d.id) + '"><b>' + H(txt(d.title)) + '</b><span>' + H(txt(d.blurb)) + ' · ' + H(t(d.steps.length + ' steps', d.steps.length + ' ステップ')) + '</span></button>').join('')
+  /* (guide-unify) the first choice: the first look at IntMap, made from the example maps (js/tours.js guideTour) — not a lesson, so not in TOURS */
+  const g = guideTour();
+  const guideRow = g.steps.length ? '<button type="button" class="imtp-t" data-imtp="' + H(g.id) + '"><b>' + H(txt(g.title)) + '</b><span>' + H(t('A short tour of example maps, one question each · ' + g.steps.length + ' steps', '例の地図をめぐる短いツアーです。各段に問いが付きます · ' + g.steps.length + ' ステップ')) + '</span></button>' : '';
+  const rows = guideRow + TOURS.map((d) => '<button type="button" class="imtp-t" data-imtp="' + H(d.id) + '"><b>' + H(txt(d.title)) + '</b><span>' + H(txt(d.blurb)) + ' · ' + H(t(d.steps.length + ' steps', d.steps.length + ' ステップ')) + '</span></button>').join('')
     + (v && v.steps.length ? '<button type="button" class="imtp-t" data-imtp="atlas"><b>' + H(v.title || t('Tour from Atlas', 'Atlas が作ったツアー')) + '</b><span>' + H(t(v.steps.length + ' steps, made in this tab', 'このタブで作った ' + v.steps.length + ' ステップ')) + '</span></button>' : '')
     /* (tour-builder) the way to a tour of one's own: the builder, which keeps its draft in this browser */
     + '<button type="button" class="imtp-t imtp-make" data-imtp-make="1"><b>' + H(t('Make your own tour', '自分のツアーを作る')) + '</b><span>'

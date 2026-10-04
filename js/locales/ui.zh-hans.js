@@ -3056,9 +3056,6 @@ IntMapLang.define('zh-hans', {
   "The file is empty": "文件是空的",   /* map-ui.js (#R576) */
   "Could not read this file": "无法读取这个文件",   /* map-ui.js (#R576) */
   "AUTO": "自动播放",
-  "Intro demo:": "初次导览：",
-  "End the intro demo": "结束导览",
-  "End tour": "结束",
   "Experimental interactive modes built on real data.": "以真实数据打造的实验性互动模式。",
   "A full 6-DOF flight model — pick an aircraft and airport, then take off and land over the real 3-D terrain.": "完整六自由度飞行模型——选择机型与机场，在真实 3-D 地形上起降。",
   "Pandemic Simulator": "疫情模拟器",
