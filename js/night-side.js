@@ -311,19 +311,53 @@ window.IntMapNightSide=(function(){
      `refresh(true)` (the lights arriving, a clock jump, once a minute while the Sun moves), wherever
      that lands — including inside a gesture.
      The pixels are unchanged, byte for byte; what changed is WHEN they are computed. A paint is a job
-     over the rows into its own ImageData, run in idle slices (`requestIdleCallback`, each slice
-     stopping when the idle period has under a millisecond left; a 6 ms budget where there is no idle
-     callback), and only the finished picture is handed to the canvas (`touchDynamicImage` → `draw`,
-     which is a single putImageData). A newer paint (the clock moved again) replaces the running one.
-     ⚠ So the night side appears when its first paint is finished — at the zooms where it is built
-     (below z5.4) its ramp has it under a twentieth of its opacity until z4.6, and `state().built`
-     reports the PAINTED state, which is what its readers (tests/r200, r201) wait for. */
+     over the rows into its own ImageData, and only a finished picture is handed to the canvas
+     (`touchDynamicImage` → `draw`, which is a single putImageData).
+     ══ ⚠⚠ (night-side-catchup) …AND THE SLICES ARE NOT WAITED FOR — THEY ARE TAKEN ═════════════════
+     The first version ran the slices on `requestIdleCallback`, and an idle period is exactly what a
+     busy page does not have. MEASURED: CI (no GPU, two workers) still showed the OLD picture 2.2 s
+     after the master clock moved — tests/r200 ③ read alpha 37 at Tokyo's midnight AND at its noon —
+     and on this build with the CPU throttled ×4 the noon repaint took 9.8 s to reach the canvas. To
+     the reader: on a slow device, moving the clock left the terminator where it was.
+     So a slice is now an ordinary task (a MessageChannel message — js/seismic.js's `_yield` measured
+     why not setTimeout: nested timers clamp to 4 ms), each at most PAINT_SLICE_MS of work, posted
+     again at once until the picture is finished. The event loop runs between any two of them, so no
+     task is long (#963's claim, kept), and the paint takes the CPU it needs instead of waiting for the
+     page to go quiet.
+     ⚠ COARSE FIRST, THEN EXACT. The first pass is the same arithmetic at a quarter of the side (1/16
+     of the pixels), handed to the canvas and stretched by it; the full pass follows and replaces it.
+     So the terminator moves within a slice or two of the clock, and is pixel-exact a moment later —
+     «roughly now, correct soon», the order Google Earth refines in.
+     ⚠ A NEWER TARGET REPLACES; THE SAME TARGET DOES NOT RESTART. A job is keyed by the clock minute
+     (the quarter degree refresh() keys on), the mosaic and the size. A clock that moves again
+     abandons the running job and starts from the new instant — work that can no longer be shown is
+     not finished — while a second request for the picture already being drawn (build() then
+     refresh(true), the clock event and a public refresh() for one jump) is a no-op, not a restart.
+     ⚠ `state().paint` publishes which instant the canvas holds and whether it is the exact picture,
+     so a reader waits for THAT rather than for a number of seconds (tests/r200 ③). `state().built`
+     still means «built AND a full-size picture has been painted», which is what its readers
+     (tests/r200, r201, map-motion) wait for. */
+  /* ⚠ THE SLICE. 5 ms is the yield interval React's scheduler uses for the same job (work in ordinary
+     tasks, a frame free to run between any two); it leaves two thirds of a 60 Hz frame to the renderer.
+     Invalid if a slice must fit inside a single 120 Hz frame together with the render (then ~3 ms).
+     Only this file uses it. */
+  const PAINT_SLICE_MS=5;
+  const _post=(function(){
+    try{
+      if(typeof MessageChannel!=='function') throw 0;
+      const ch=new MessageChannel(), q=[];
+      ch.port1.onmessage=()=>{ const f=q.shift(); if(f) f(); };
+      return (fn)=>{ q.push(fn); ch.port2.postMessage(0); };
+    }catch(_){ return (fn)=>{ setTimeout(fn,0); }; }
+  })();
   let shown=null, job=null;
-  function paintJob(W,H){
+  /* what the canvas holds: the instant it was computed for, whether it is the exact (full-size)
+     picture, the job key it came from — and how long the last full paint took, request → canvas */
+  let shownAt=null, shownFull=false, shownKey='', everFull=false, lastPaintMs=null;
+  function paintJob(W,H,ms,L){
     const rows=(()=>{ try{ return GE().layers.imageRowLatitudes(COORDS,H); }catch(_){ return null; } })();
-    const S=solar(new Date(clockMs()));
+    const S=solar(new Date(ms));
     const out=new ImageData(W,H), o=out.data;
-    const L=lights;
     const sinDec=Math.sin(S.dec), cosDec=Math.cos(S.dec);
     const th0=D*(280.16+360.9856235*S.d)-S.ra;
     /* per COLUMN: cos H, and the source column */
@@ -359,24 +393,39 @@ window.IntMapNightSide=(function(){
       return true;
     } };
   }
-  const _idle=(fn)=>{ try{ if(window.requestIdleCallback){ requestIdleCallback(fn,{timeout:500}); return; } }catch(_){}
-    setTimeout(()=>{ const t0=performance.now(); fn({ timeRemaining:()=>Math.max(0,6-(performance.now()-t0)), didTimeout:false }); },0); };
+  const paintKey=(ms,L,N)=>Math.round(ms/60000)+'|'+(L?(L.w+':'+lightsEpoch):'unlit')+'|'+N;
   function paint(){
-    const N=imgSize(), J=paintJob(N,N); job=J;
-    const slice=(dl)=>{
-      if(job!==J||!built) return;                       /* replaced by a newer paint, or taken down */
+    const ms=clockMs(), L=lights, N=imgSize(), key=paintKey(ms,L,N);
+    if(job&&job.key===key) return;                     /* that picture is already being drawn */
+    if(!job&&shownFull&&shownKey===key) return;         /* …or is already on the canvas */
+    const sizes=[Math.max(1,N>>2), N];                  /* coarse, then exact */
+    const P={ key, ms, L, t0:performance.now(), stage:0, J:paintJob(sizes[0],sizes[0],ms,L) };
+    job=P;
+    const slice=()=>{
+      if(job!==P||!built) return;                       /* replaced by a newer paint, or taken down */
       const t0=performance.now();
-      /* a timed-out idle callback has no idle time; it still makes progress, one short slice at a time */
-      const until=dl&&!dl.didTimeout?()=>dl.timeRemaining()<1:()=>performance.now()-t0>6;
-      if(!J.step(until)){ _idle(slice); return; }
-      job=null; shown=J.out;
+      if(!P.J.step(()=>performance.now()-t0>PAINT_SLICE_MS)){ _post(slice); return; }
+      const last=P.stage===sizes.length-1;
+      shown=P.J.out; shownAt=P.ms; shownFull=last; shownKey=P.key;
+      if(last){ job=null; everFull=true; lastPaintMs=Math.round(performance.now()-P.t0); }
       try{ GE().layers.touchDynamicImage(DYN); }catch(_){}
+      if(!last){ P.stage++; P.J=paintJob(sizes[P.stage],sizes[P.stage],P.ms,P.L); _post(slice); }
     };
-    _idle(slice);
+    _post(slice);
   }
+  /* the coarse picture is stretched by the canvas itself: its rows are linear in the renderer's
+     vertical coordinate at any size (imageRowLatitudes), so scaling the image keeps them in place */
+  let _scratch=null;
   function drawLights(ctx,W,H){
     ctx.clearRect(0,0,W,H);
-    if(shown&&shown.width===W&&shown.height===H) ctx.putImageData(shown,0,0);
+    if(!shown) return;
+    if(shown.width===W&&shown.height===H){ ctx.putImageData(shown,0,0); return; }
+    try{
+      if(!_scratch) _scratch=document.createElement('canvas');
+      if(_scratch.width!==shown.width||_scratch.height!==shown.height){ _scratch.width=shown.width; _scratch.height=shown.height; }
+      _scratch.getContext('2d').putImageData(shown,0,0);
+      ctx.imageSmoothingEnabled=true; ctx.drawImage(_scratch,0,0,W,H);
+    }catch(_){}
   }
 
   function zoomNow(){ try{ const c=GE().camera.get(); return (c&&isFinite(c.zoom))?c.zoom:99; }catch(_){ return 99; } }
@@ -422,7 +471,7 @@ window.IntMapNightSide=(function(){
          continues, so a build that cannot make the image unmakes itself. */
       if(!GE().layers.hasDynamicImage(DYN)){ lastErr='no-image'; destroy(); return false; }
     }catch(_){ try{ destroy(); }catch(__){} return false; }
-    built=true; shown=null; paint();
+    built=true; shown=null; shownAt=null; shownFull=false; shownKey=''; everFull=false; paint();
     /* ⚠ THE MOSAIC IS NOT ON THE BOOT PATH. The app opens at zoom 1.7, and #R192/#R193/#R195 each
        spent part of a round taking megabytes OFF that path (Köppen, cshapes, the 4.3 MB border
        geometry). The night side is already complete and correctly shaped without it, so the tiles
@@ -452,7 +501,7 @@ window.IntMapNightSide=(function(){
     try{ GE().layers.removeDynamicImage(DYN); }catch(_){}
     try{ if(GE().layers.has(LYR)) GE().layers.remove(LYR); }catch(_){}
     try{ if(GE().layers.hasSource(SRC)) GE().layers.removeSource(SRC); }catch(_){}
-    const was=built; built=false; lastKey=''; job=null; shown=null; return was;
+    const was=built; built=false; lastKey=''; job=null; shown=null; shownAt=null; shownFull=false; shownKey=''; everFull=false; return was;
   }
 
   /* repaint when the SUN has moved enough to matter (a quarter degree ≈ one minute of rotation) */
@@ -579,7 +628,11 @@ window.IntMapNightSide=(function(){
   try{ if(!prefOn()) enabled=false; }catch(_){}
 
   return { apply, refresh:()=>refresh(true), setEnabled, destroy, isOn:()=>enabled,
-    state:()=>({ built:built&&!!shown, enabled,   /* (map-motion) built AND painted — what a reader of the canvas waits for */ lights:!!lights, lightsZoom:lightsZ, err:lastErr, zoom:zoomNow(),
+    state:()=>({ built:built&&!!shown&&everFull, enabled,   /* (map-motion) built AND painted at full size — what a reader of the canvas waits for */
+                 /* (night-side-catchup) the instant the canvas holds, whether that is the exact picture,
+                    and the instant still being drawn — a reader waits for THIS, not for seconds */
+                 paint:{ at:shownAt, full:shownFull, pending:job?job.ms:null, stage:job?(job.stage?'full':'coarse'):null, lastMs:lastPaintMs },
+                 lights:!!lights, lightsZoom:lightsZ, err:lastErr, zoom:zoomNow(),
                  /* (#R550) the epoch the mosaic on screen IS, and the one the clock is asking for —
                     a test can compare them with dl-nightsat's without trusting either to be right */
                  epoch:lightsEpoch||null, wantEpoch:(nlEpoch()||{}).id||null,
