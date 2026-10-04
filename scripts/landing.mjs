@@ -93,7 +93,7 @@ export function facts() {
 }
 
 /* the facts, written in each language */
-function factWords(F, lang) {
+export function factWords(F, lang) {
   const n = (v) => v.toLocaleString(lang === 'jp' ? 'ja-JP' : 'en-US');
   return {
     floorBC: lang === 'jp' ? '紀元前' + n(F.bcYears) + '年' : n(F.bcYears) + ' BC',
