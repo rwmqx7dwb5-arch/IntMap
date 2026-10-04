@@ -580,7 +580,8 @@ export function windowManager(HOST){
        pins it to `width:100%`, and an invisible border-zone that fought that is precisely the
        「サイドバー内Atlasに左右方向のリサイズ機構があり、変なことになる」 report #R130 fixed for
        `atl-tab`. 「中で左右に動かせないようにきちんと幅を左右詰めて固定して。」 */
-    const _inWsWin2=()=>{ try{ if(isDocked(panel)) return true; if(panel.classList&&panel.classList.contains('atl-tab')) return true; return !!(panel.parentElement&&panel.parentElement.classList&&panel.parentElement.classList.contains('ws-body')); }catch(_){ return false; } }; /* (#R153) same fix as _inWsWin: only the window's own content (direct .ws-body child) is exempt from edge-resize — in-map popups nested in the relocated #map-container resize normally */
+    /* (compare-window-resize) `opts.skip()` — a caller that knows when its window must not edge-resize (the compare window on a phone) */
+    const _inWsWin2=()=>{ try{ if(typeof opts.skip==='function'&&opts.skip()) return true; if(isDocked(panel)) return true; if(panel.classList&&panel.classList.contains('atl-tab')) return true; return !!(panel.parentElement&&panel.parentElement.classList&&panel.parentElement.classList.contains('ws-body')); }catch(_){ return false; } }; /* (#R153) same fix as _inWsWin: only the window's own content (direct .ws-body child) is exempt from edge-resize — in-map popups nested in the relocated #map-container resize normally */
     /* (#R311) hovering is CURSOR FEEDBACK, so it reads the cached rectangle; the PRESS below still
        measures live, which is why the grab zone is unchanged. ⚠ AND THE CURSOR IS ONLY WRITTEN WHEN
        IT DIFFERS: writing the same value back would churn the `style` attribute, the per-window
