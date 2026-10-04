@@ -12,7 +12,9 @@
  *    · THE MAP OF THE YEAR — how many polities the border record draws, the largest by the area of the drawn
  *      shape, which record answers this instant and what it says about itself (its own `src`);
  *    · WHAT CHANGED — the days inside the year on which the record changes, and on each, who appears, who is
- *      gone and whose shape changed (the record's states either side of the day, compared);
+ *      gone and whose shape changed — (time-index-unify) the index's border days (js/time-index.js, the ones «On this
+ *      day» states) for the record it carries by the day, the record's own states either side of the day otherwise;
+ *    · DATED EVENTS — the events the index carries beside the map's records, as Wikidata states them;
  *    · CONFLICT — the wars data/wars.json documents in force, and its dated events inside the year;
  *    · PEOPLE AND OUTPUT — the Maddison Project's population and GDP per head for the year, where it states them;
  *    · WHAT THE MAP CAN DRAW — how many layers' sources state this instant (js/layer-time-kernel.js).
@@ -36,6 +38,8 @@ import { IntMapGeoEngine } from './geo-engine.js';
 import { TIME } from './layer-time-decl.js';
 import { jsonWithin } from './fetch-deadline.js';   /* the app's one clock on a read */
 import { clockFor } from './proxy-fetch.js';   /* the war rows' spans, as the time table states them (cited to data/wars.json) */
+/* (time-index-unify) the one index of dated events — its records, its year cut, and the reader the page shares with «On this day» */
+import { warRecords, records, inYear, loadIndex, eventName, eventDesc, dateWords } from './time-index.js';
 import './safe-html.js';   /* publishes globalThis.IntMapSafe — the escaper esc() below reads, in Node as in the app */
 
 const R_EARTH = 6378137;   /* WGS84 equatorial radius (m) — the sphere the ring area below is computed on */
@@ -106,6 +110,8 @@ const nameIn = (p, lang) => { if (!p) return ''; const i = p._i18n; return Strin
  *   borders  js/time-borders.js (window.IntMapTimeBorders)   maddison  window.IntMapMaddison
  *   wars     () => the data/wars.json object                  layerTime window.IntMapLayerTime
  *   lang     () => the reader's language                      countryName (code) => a name
+ *   index    () => the index of dated events (js/time-index.js loadIndex) — the change days of a record it carries by
+ *            the day, and the dated events beside the map's records
  * @param {Date} when @param {any} deps @param {{ top?: number, maxDays?: number }} [opts]
  */
 export async function readYear(when, deps, opts) {
@@ -136,16 +142,46 @@ export async function readYear(when, deps, opts) {
     } catch (_) { out.borders = { failed: true }; }
   }
 
-  /* ── what changed inside the year ── */
+  /* ── the index of dated events (js/time-index.js) — read once, for the change days and the dated events below ── */
+  let IX = null;
+  if (deps.index) { try { IX = await deps.index(); } catch (_) { IX = null; } }
+
+  /* ── what changed inside the year ──
+     (time-index-unify) For a record the index carries BY THE DAY (its `dayRecords`: CShapes), the change days ARE the
+     index's records of the year — the one rule «On this day» states them by (scripts/build-on-this-day.mjs: a polity
+     the record itself has an edge for, a redrawing of at least 1 km², the 1 January days marked), so the year book and
+     the calendar cannot disagree about which days and which polities. The names are the ones the map WRITES on the
+     outlines that day (the index's, en and jp): the record's own row names are often today's — CShapes calls British
+     East Africa «Kenya» in 1919, so reading them made 1920-07-23 «Kenya ends, Kenya begins». In another language, the
+     drawn feature's own name for the same state-system code (the day itself for what begins or is redrawn, the day
+     before for what ends). For a record the index
+     does not carry by the day (OpenHistoricalMap, 1689–1885: its dates are written as days but it does not vouch for
+     them — the index's header gives the measurement), the days are read off the record as before and marked `stated:
+     false`, and the page says to read them as the year. */
   if (TB && TB.changeDates && out.borders && !out.borders.modern && !out.borders.failed) {
     try {
-      const all = await TB.changeDates();
-      const inYear = all.filter((d) => d instanceof Date && d.getFullYear() === year);
       if (out.borders.tier === 'snapshot') out.changes = { kind: 'sheets', days: [], note: 'sheet' };
-      else {
+      else if (IX && Array.isArray(IX.dayRecords) && IX.dayRecords.includes(out.borders.tier)) {
+        const recs = inYear(records(IX), year).filter((r) => r.src === out.borders.tier);
+        const days = [];
+        const gwNames = (fc, m) => { for (const f of (fc && fc.features) || []) { const p = f.properties || {}; if (p._gw != null && !m.has(+p._gw)) { const n = nameIn(p, lang); if (n) m.set(+p._gw, n); } } return m; };
+        for (const r of recs.slice(0, maxDays)) {
+          const [y, mo, d] = r.d.split('-').map(Number);
+          const at = new Date(0); at.setUTCFullYear(y, mo - 1, d); at.setUTCHours(12, 0, 0, 0);   /* the instant js/time-borders.js changeDates gives a day */
+          /* a state-system code can name two rows either side of the day (British East Africa → Kenya), so what begins or is
+             redrawn is named by the day itself and what ends by the day before */
+          const onDay = new Map(), dayBefore = new Map();
+          if (lang !== 'en' && lang !== 'jp' && TB.collectionAt) { gwNames((await TB.collectionAt(at) || {}).fc, onDay); gwNames((await TB.collectionAt(new Date(at.getTime() - 86400000)) || {}).fc, dayBefore); }
+          const nm = (m) => (p) => (lang === 'jp' ? p.jp || p.en : lang === 'en' ? p.en : ((p.gw || []).map((g) => m.get(g)).find(Boolean)) || p.en);
+          days.push({ date: r.d, ms: at.getTime(), appeared: (r.appeared || []).map(nm(onDay)), ended: (r.ended || []).map(nm(dayBefore)), reshaped: (r.redrawn || []).map(nm(onDay)), maybeYearOnly: !!r.maybeYearOnly });
+        }
+        out.changes = { kind: 'days', days, more: Math.max(0, recs.length - maxDays), stated: true };
+      } else {
+        const all = await TB.changeDates();
+        const ofYear = all.filter((d) => d instanceof Date && d.getFullYear() === year);
         const days = [];
         const nameSet = (fc) => { const m = new Map(); for (const f of (fc && fc.features) || []) { const n = nameIn(f.properties, 'en'); if (n && !m.has(n)) m.set(n, { geom: f.geometry, local: nameIn(f.properties, lang) }); } return m; };
-        for (const d of inYear.slice(0, maxDays)) {
+        for (const d of ofYear.slice(0, maxDays)) {
           const before = await TB.collectionAt(new Date(d.getTime() - 86400000)), after = await TB.collectionAt(d);
           if (!before || !after || !before.fc || !after.fc) continue;
           const A = nameSet(before.fc), B = nameSet(after.fc);
@@ -154,9 +190,17 @@ export async function readYear(when, deps, opts) {
           const reshaped = [...B.keys()].filter((k) => A.has(k) && A.get(k).geom !== B.get(k).geom).map((k) => B.get(k).local);
           days.push({ date: isoDay(d), ms: d.getTime(), appeared, ended, reshaped });
         }
-        out.changes = { kind: 'days', days, more: Math.max(0, inYear.length - maxDays) };
+        out.changes = { kind: 'days', days, more: Math.max(0, ofYear.length - maxDays), stated: false };
       }
     } catch (_) { out.changes = { failed: true }; }
+  }
+
+  /* ── (time-index-unify) the dated events the index carries beside the map's records — as Wikidata states them, each
+        with the property that dated it and its precision. Not every event of the year: the ones the index holds. ── */
+  if (IX && Array.isArray(IX.events)) {
+    const ev = inYear(IX.events, year);
+    out.dated = { events: ev.map((r) => ({ date: r.d, words: dateWords(r, lang), name: eventName(r, lang), desc: eventDesc(r, lang), at: r.at || null, kind: r.kind || '', q: r.q, prop: r.prop, prec: r.prec, cal: r.cal || null })) };
+    if (ev.length && IX.src && IX.src.wikidata) out.sources.push(IX.src.wikidata);
   }
 
   /* ── conflict: the wars the record documents ── */
@@ -167,12 +211,13 @@ export async function readYear(when, deps, opts) {
         const y0 = year * 10000 + 101, y1 = year * 10000 + 1231;
         const num = (s) => +String(s || '').replace(/-/g, '');
         const wars = W.wars.filter((w) => num(w.from) <= y1 && num(w.to) >= y0);
-        const events = [];
-        for (const w of wars) for (const e of w.events || []) {
-          const a = num(e.d), b = num(e.d2 || e.d);
-          if (a <= y1 && b >= y0) events.push({ date: e.d, to: e.d2 || null, name: (e.name && (e.name[lang] || e.name.en)) || '', kind: e.kind || '', at: e.at || null, war: (w.name && (w.name[lang] || w.name.en)) || w.id });
-        }
-        events.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+        /* (time-index-unify) the war record's events are the index's war records (js/time-index.js warRecords — the
+           reading the index builder makes of this same file), cut by year; here in every language the record writes */
+        const inForce = new Map(wars.map((w) => [w.id, w]));
+        const events = inYear(warRecords({ wars }), year).filter((r) => inForce.has(r.war)).map((r) => {
+          const w = inForce.get(r.war);
+          return { date: r.d, to: r.d2 || null, name: (r.name && (r.name[lang] || r.name.en)) || '', kind: r.kind || '', at: r.at || null, war: (w.name && (w.name[lang] || w.name.en)) || w.id };
+        });
         out.conflicts = { wars: wars.map((w) => ({ id: w.id, name: (w.name && (w.name[lang] || w.name.en)) || w.id, from: w.from, to: w.to })), events };
         if (wars.length && W.src) out.sources.push(W.src);
       }
@@ -276,6 +321,8 @@ function body(r, H, t) {
         + (d.reshaped.length ? '<span class="yb-s">' + e(t('new borders: ', '国境が変わる: ') + d.reshaped.join(t(', ', '、'))) + '</span>' : '') + '</button></li>').join('') + '</ol>'
         + (C.more ? '<p class="yb-note">' + e(t('and ' + C.more + ' more days', 'ほか ' + C.more + ' 日')) + '</p>' : '')
         + '<p class="yb-note">' + e(t('Days on which the border record’s state differs from the day before. Tap a day to go there.', '国境の記録の状態が前日と異なる日。日付を押すとその日へ移動します。')) + '</p>'
+        + (C.stated === false ? '<p class="yb-note">' + e(t('This record writes its dates as days but does not vouch for them as days — many fall on the 1st of a month — so read them as the year.', 'この記録は日付を日単位で書いていますが、日単位であることを保証していません（多くが月の1日です）。年として読んでください。')) + '</p>' : '')
+        + (C.days.some((d) => d.maybeYearOnly) ? '<p class="yb-note">' + e(t('A 1 January day may be a year the record states as its first day.', '1月1日の日付は、記録が年だけを述べている場合があります。')) + '</p>' : '')
       : '<p class="yb-note">' + e(t('The border record does not change during this year.', 'この年の間、国境の記録は変わりません。')) + '</p>');
   } else if (C && C.kind === 'sheets') {
     h += sec(t('What changed on the map', '地図の変化'), '<p class="yb-note">' + e(t('Before 1689 the record is a series of sheets, one per period — it states no day on which a border moved, so none is given here.', '1689 年より前の記録は時期ごとの 1 枚で、国境が動いた日を述べていません。そのためここでも日付は示しません。')) + '</p>');
@@ -287,6 +334,13 @@ function body(r, H, t) {
       + (W.events.length ? '<ol class="yb-list">' + W.events.slice(0, 40).map((ev) => '<li><button type="button" class="yb-row" data-at="' + e(JSON.stringify(ev.at || null)) + '"><span class="yb-n">' + e(ev.date + (ev.to ? ' – ' + ev.to : '')) + '</span><span class="yb-s">' + e(ev.name) + '</span></button></li>').join('') + '</ol>'
         + (W.events.length > 40 ? '<p class="yb-note">' + e(t('and ' + (W.events.length - 40) + ' more events', 'ほか ' + (W.events.length - 40) + ' 件')) + '</p>' : '') : '')
       + '<p class="yb-note">' + e(t('Only the wars IntMap’s war record documents day by day — not every conflict of the year.', 'IntMap の戦争記録が日単位で扱う戦争だけです（この年のすべての紛争ではありません）。')) + '</p>');
+  }
+  /* (time-index-unify) the dated events the index carries beside the map's records */
+  const DV = r.dated;
+  if (DV && DV.events && DV.events.length) {
+    h += sec(t('Dated events', '日付のある出来事'), '<ol class="yb-list">' + DV.events.map((ev) => '<li><button type="button" class="yb-row" data-at="' + e(JSON.stringify(ev.at || null)) + '"><span class="yb-n">' + e(ev.name) + '</span><span class="yb-v">' + e(ev.words) + '</span>'
+      + (ev.desc ? '<span class="yb-s">' + e(ev.desc) + '</span>' : '') + '</button></li>').join('') + '</ol>'
+      + '<p class="yb-note">' + e(t('As Wikidata states them — the date to the precision it gives, and the place where it gives one. Only the events IntMap’s index carries, not every event of the year.', 'Wikidata の記述どおり（日付は Wikidata が示す精度で、場所は示されている場合のみ）。IntMap の索引にある出来事だけで、この年のすべての出来事ではありません。')) + '</p>');
   }
   /* economy */
   const E = r.economy;
@@ -336,7 +390,7 @@ function warsFor(year) {
 /** the deps readYear takes, from the page */
 export function pageDeps(h) {
   return {
-    borders: window.IntMapTimeBorders, maddison: window.IntMapMaddison, layerTime: window.IntMapLayerTime, lang: h.lang, wars: warsFor,
+    borders: window.IntMapTimeBorders, maddison: window.IntMapMaddison, layerTime: window.IntMapLayerTime, lang: h.lang, wars: warsFor, index: loadIndex,
     countryName: (code) => { try { const s = h.countryStats && h.countryStats()[code]; if (s) return (h.lang() === 'jp' ? (s.nameJp || s.nameEn) : s.nameEn) || code; } catch (_) { /* below */ } return code; },
   };
 }
@@ -362,10 +416,12 @@ export function atlasHtml(r, when, show, lang, note) {
   else if (B && !B.failed) out += '<div>' + esc(t('Border record: ', '国境の記録: ')) + esc((B.record && B.record.src) || B.tier) + ' · ' + B.count + esc(t(' polities drawn. Largest by drawn area: ', ' の政体。描かれた面積の大きい順: '))
     + B.largest.slice(0, 10).map((p) => esc(p.name) + ' ' + Math.round(p.km2).toLocaleString() + ' km²' + (p.subjectTo ? ' (' + esc(t('under ', '従属先 ') + p.subjectTo) + ')' : '')).join(' · ') + '</div>';
   const C = r.changes;
-  if (C && C.kind === 'days') out += '<div>' + esc(t('Days the border record changes in this year: ', 'この年に国境の記録が変わる日: ')) + (C.days.length ? C.days.map((d) => esc(d.date) + (d.appeared.length ? ' +' + esc(d.appeared.join(', ')) : '') + (d.ended.length ? ' −' + esc(d.ended.join(', ')) : '') + (d.reshaped.length ? ' ~' + esc(d.reshaped.join(', ')) : '')).join(' | ') : esc(t('none', 'なし'))) + (C.more ? esc(t(' (and ' + C.more + ' more)', '（ほか ' + C.more + ' 日）')) : '') + '</div>';
+  if (C && C.kind === 'days') out += '<div>' + esc(t('Days the border record changes in this year: ', 'この年に国境の記録が変わる日: ')) + (C.days.length ? C.days.map((d) => esc(d.date) + (d.appeared.length ? ' +' + esc(d.appeared.join(', ')) : '') + (d.ended.length ? ' −' + esc(d.ended.join(', ')) : '') + (d.reshaped.length ? ' ~' + esc(d.reshaped.join(', ')) : '')).join(' | ') : esc(t('none', 'なし'))) + (C.more ? esc(t(' (and ' + C.more + ' more)', '（ほか ' + C.more + ' 日）')) : '') + (C.stated === false ? esc(t(' (this record does not vouch for these as days; read them as the year)', '（この記録は日単位であることを保証していません。年として読んでください）')) : '') + '</div>';
   else if (C && C.kind === 'sheets') out += '<div>' + esc(t('Before 1689 the border record is one sheet per period and states no change days.', '1689 年より前の国境の記録は時期ごとの 1 枚で、変化の日を述べていません。')) + '</div>';
   const W = r.conflicts;
   if (W && W.wars && W.wars.length) out += '<div>' + esc(t('Wars in IntMap’s war record: ', 'IntMap の戦争記録にある戦争: ')) + W.wars.map((w) => esc(w.name)).join(' · ') + ' — ' + W.events.slice(0, 25).map((e) => esc(e.date + ' ' + e.name)).join(' | ') + (W.events.length > 25 ? esc(t(' …', ' …')) : '') + '</div>';
+  const DV = r.dated;
+  if (DV && DV.events && DV.events.length) out += '<div>' + esc(t('Dated events (Wikidata): ', '日付のある出来事（Wikidata）: ')) + DV.events.slice(0, 25).map((x) => esc(x.words + ' ' + x.name)).join(' | ') + (DV.events.length > 25 ? esc(t(' …', ' …')) : '') + '</div>';
   const E = r.economy;
   if (E && E.countries) out += '<div>' + esc(t('Maddison Project (by country code, not polity): population stated for ' + E.popStated + ' countries, ', 'Maddison Project（国コード別・政体別ではない）: ' + E.popStated + ' か国の人口、')) + E.byPop.slice(0, 6).map((x) => esc(x.name) + ' ' + (x.pop / 1e6).toFixed(1) + 'M').join(' · ') + '</div>';
   const Ly = r.layers;

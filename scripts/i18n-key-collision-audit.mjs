@@ -86,7 +86,7 @@ const BENIGN = new Set([
   'Time-series', 'tolls', 'Track', 'Trade % of GDP', 'Try again', 'Tsunami propagation', 'Turn left',
   'Turn right', 'Type', 'unavailable', 'Under-5 mortality /1k', 'Unemployment %', 'United States',
   'Unknown color', 'Urban population %', 'valid', 'Very high', 'View', 'Volume', 'warning', 'Warning',
-  'Warnings', 'Watching', 'Weather', 'Website', 'Week', 'Year', 'Years', 'You have arrived',
+  'Warnings', 'Watching', 'Weather', 'Website', 'Week', 'Year', 'You have arrived',
 ]);
 
 /* ── collect every strict translation call site, grouped by English key ─────────────────────── */

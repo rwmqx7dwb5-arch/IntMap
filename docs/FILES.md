@@ -595,9 +595,16 @@ time-lapse.js                     **タイムラプス**——メイン地図の
                                   描画が追いついてから（時間カーネルの判定・全タイル・その瞬間の国境）次へ進む。速度・ループ・
                                   prefers-reduced-motion（最遅に固定）。UI は Chronos パネル #ntl-lapse（news-timeline.js が初回に読む）、
                                   Atlas `time.lapse` と状態 `lapseState()`。録画のときはコマの受け手（sink）に描き終えたコマを渡す。
-                                  書き出し欄 #ntl-rec を置き、開いたときに map-recorder.js を読む（`openRecorder`）
+                                  書き出し欄 #ntl-rec を置き、開いたときに map-recorder.js を読む（`openRecorder`）。
+                                  **予報の再生もこれ**——`startLapse({ instants, owner })` でモデルの有効時刻の列をそのまま再生し
+                                  （wx-ecmwf.js の `play`＝凡例の再生ボタンと、Chronos の予報の再生が同じ 1 つの再生）、`lapseOwner()` が誰の再生かを答える
+time-index.js                     **日付つき出来事の索引（1 つ）**——data/on-this-day.json の記録（国境の記録の変化日・戦争の記録の作戦・
+                                  Wikidata が述べる出来事）の形・出典（`sourceOf`）・日付の精度と、その切り口：暦の日（`onDay`＝この日の歴史地図）・
+                                  年（`inYear`＝年鑑）・時刻まで（`upTo`＝情報ダッシュボードの「出来事」）。戦争の記録の読み方（`warRecords`）は
+                                  索引の生成器と年鑑が共有する。必要になったときに読む
 year-book.js                      **年鑑（その年の世界）**——時計の瞬間を、地図が描く記録から読んだページにする（政体と描かれた面積・
-                                  その年に国境の記録が変わる日・戦争の記録・Maddison・描けるレイヤー数）。Chronos パネルの「この年を読む」
+                                  その年に国境の記録が変わる日（索引が日単位で持つ記録は time-index.js の年の切り口）・戦争の記録・
+                                  Wikidata が述べる日付つきの出来事・Maddison・描けるレイヤー数）。Chronos パネルの「この年を読む」
                                   （news-timeline.js が押されたときに読む）と Atlas `time.yearbook`。docs/architecture/07-map.md §7.4b
 map-recorder.js                   **タイムラプスの動画書き出しと、比較の 1 枚画像と、地図の絵葉書**——1 つの合成器（地図・その瞬間・
                                   出典・語標とリンク）。描き終えたコマだけを MediaRecorder に 1/fps ずつ書く（地図を待つ間は録画を止める）。
@@ -1065,7 +1072,7 @@ analysis-panels.js                分析パネルの EAGER SHELL ——「起動
 analysis-timeseries.js            ↳ 時系列チャートの実装        __imAnalysisTimeSeries（遅延）
 analysis-research.js              ↳ AI リサーチの実装           __imAnalysisResearch（遅延）
 analysis-correlate.js             ↳ 相関・散布図の実装          __imAnalysisCorrelate（遅延）
-analysis-world-events.js          ↳ 世界の出来事アーカイブの実装 __imAnalysisEvents（遅延）
+analysis-world-events.js          ↳ 世界の出来事の実装 __imAnalysisEvents（遅延）——time-index.js の索引を**地図の時刻まで**新しい順に並べる（手書きの表は無い）
 analysis-edu.js                   ↳ 学習モード・地図クイズの実装 __imAnalysisEdu（遅延）
 stats-compare.js                  多国統計比較 IntMapStatsCompare
 countries-ui.js                   Countries タブと国の詳細
@@ -1358,7 +1365,7 @@ showcase-gallery.js               **アプリ内の作例ギャラリー**——
                                   カードを並べ、「すべて見る」・data-im-gallery・Atlas の panel.gallery で一覧を開く。
                                   カードは showcase.js と tours.js から導く。1 タップで見本を開く openShowcase は
                                   Atlas の panel.showcase も使う（共有リンクの復元＋読み返し）。自動では開かない。必要になったときに読む
-on-this-day.js                    **この日の歴史地図**——data/on-this-day.json の唯一の読み手。暦の日の出来事・見出しの規則・
+on-this-day.js                    **この日の歴史地図**——日付つき出来事の索引（time-index.js）の暦の日の切り口の読み手。暦の日の出来事・見出しの規則・
                                   文（en + jp）・地図のリンク（日付・場所・戦争のレイヤー・題）と、検索欄の空の状態のカード・
                                   日ごとのシート。Atlas の time.onThisDay、静的ページと下書き（Node）も同じ関数を読む。必要になったときに読む（§8.6.3）
 tours.js                          **授業ツアー**の宣言（純データ）——地図の状態を順に並べ、各段に日英の語り（say）と生徒への問い（ask）。
@@ -1676,7 +1683,8 @@ data/hist-fidelity.json           歴史地図の**観測値**（目標値では
                                   （紀元前 500 年から 2019 年までの 18 年）。`--update` で記録し直す
 us-elections.json / us-states.json  米大統領選挙（60回・州別2,342行の得票と選挙人つき）
 elections/                        各国の**国政選挙**（index.json＝polity・選挙・政党／`<版>.geo.json`＝選挙区の境界を**版ごとに**1つ／`<選挙>.res.json`＝結果）。scripts/elections/ の各パックが書き、scripts/build-elections.mjs が統合し、`--check` が形式と結合を毎回検証する。契約は scripts/lib/elections-schema.mjs
-on-this-day.json                  暦の日（MM-DD）ごとの、記録が日付をつけた出来事（CShapes の変化日・戦争の記録）。scripts/build-on-this-day.mjs が書き、--check が照合する（§8.6.3）
+on-this-day.json                  **日付つき出来事の索引**——暦の日（MM-DD）ごとの、記録が日付をつけた出来事（CShapes の変化日・戦争の記録＝`days`）と、
+                                  その横に Wikidata が述べる出来事（`events`：項目・日付を述べた属性・精度つき）。scripts/build-on-this-day.mjs が書き、--check が照合する（§8.6.3）
 wars.json                         6つの戦争の記録（支配・戦線・作戦・種別・兵力と死傷／`scripts/build-wars.mjs` が書き、検証する）
 religion.json / language.json     宗教の分布／言語の分布（国ごとの記録＋言語名・ISO 639-3・訳）
 language-tree.json                Glottolog の分類全体（族・言語・国が指す標準／親・カテゴリ・存続状態）
@@ -1765,8 +1773,10 @@ scripts/
   history-pages.mjs               歴史地図の入口ページの生成器——js/time-borders.js を Node で動かし、地図が描く名前を
                                   地域 × 日付で書く。vite.config.js の historyPagesPlugin がビルド時に子プロセスで走らせる（§8.6.2）
   history-pages-text.mjs          入口ページの文の唯一の写し（en + jp）
-  build-on-this-day.mjs           data/on-this-day.json を書く——地図のコード（history-pages.mjs mapReader）で CShapes の変化日と
-                                  その前日を比べ、戦争の記録の出来事と合わせて暦の日ごとに。`--check` で記録と照合（§8.6.3）
+  build-on-this-day.mjs           data/on-this-day.json（日付つき出来事の索引）を書く——地図のコード（history-pages.mjs mapReader）で CShapes の変化日と
+                                  その前日を比べ、戦争の記録の出来事と合わせて暦の日ごとに。Wikidata の出来事は下の写しから。`--check` で記録と照合（§8.6.3）
+  fetch-world-events.mjs          索引が運ぶ Wikidata の出来事を取る（選んだ記事 → 項目 → 日付・精度・場所・名前・説明）。日付を述べない項目は
+                                  落とし、史実と矛盾する値は理由つきで拒む。写しは scripts/time-index/wikidata-events.json（生成器はネットに出ない）
   on-this-day-pages.mjs           この日の歴史地図の静的ページ・カードの絵・sitemap の生成器（onThisDayPagesPlugin）と、
                                   `--queue` の投稿の下書き（承認待ち。投稿・送信はしない）
   on-this-day-text.mjs            そのページと下書きの文の唯一の写し（en + jp）
@@ -1784,8 +1794,10 @@ scripts/
   history-pages.mjs               歴史地図の入口ページの生成器——js/time-borders.js を Node で動かし、地図が描く名前を
                                   地域 × 日付で書く。vite.config.js の historyPagesPlugin がビルド時に子プロセスで走らせる（§8.6.2）
   history-pages-text.mjs          入口ページの文の唯一の写し（en + jp）
-  build-on-this-day.mjs           data/on-this-day.json を書く——地図のコード（history-pages.mjs mapReader）で CShapes の変化日と
-                                  その前日を比べ、戦争の記録の出来事と合わせて暦の日ごとに。`--check` で記録と照合（§8.6.3）
+  build-on-this-day.mjs           data/on-this-day.json（日付つき出来事の索引）を書く——地図のコード（history-pages.mjs mapReader）で CShapes の変化日と
+                                  その前日を比べ、戦争の記録の出来事と合わせて暦の日ごとに。Wikidata の出来事は下の写しから。`--check` で記録と照合（§8.6.3）
+  fetch-world-events.mjs          索引が運ぶ Wikidata の出来事を取る（選んだ記事 → 項目 → 日付・精度・場所・名前・説明）。日付を述べない項目は
+                                  落とし、史実と矛盾する値は理由つきで拒む。写しは scripts/time-index/wikidata-events.json（生成器はネットに出ない）
   on-this-day-pages.mjs           この日の歴史地図の静的ページ・カードの絵・sitemap の生成器（onThisDayPagesPlugin）と、
                                   `--queue` の投稿の下書き（承認待ち。投稿・送信はしない）
   on-this-day-text.mjs            そのページと下書きの文の唯一の写し（en + jp）

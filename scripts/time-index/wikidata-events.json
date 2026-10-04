@@ -1,0 +1,3438 @@
+{
+ "src": "Wikidata (CC0 1.0, wikidata.org) — items selected by IntMap; dates, places, names and descriptions as Wikidata states them",
+ "retrieved": "2026-10-04",
+ "api": "https://www.wikidata.org/w/api.php",
+ "dateProps": [
+  "P585",
+  "P580",
+  "P1619",
+  "P606",
+  "P619",
+  "P575",
+  "P577",
+  "P571"
+ ],
+ "rows": [
+  {
+   "q": "Q42005",
+   "kind": "disaster",
+   "d": "1346",
+   "prec": "year",
+   "prop": "P580",
+   "cal": "julian",
+   "at": [
+    108,
+    35
+   ],
+   "atBy": "P276 Q48",
+   "name": {
+    "en": "Black Death",
+    "jp": "黒死病",
+    "de": "Schwarzer Tod",
+    "ru": "Чёрная смерть",
+    "es": "peste negra",
+    "zh": "黑死病",
+    "fr": "peste noire",
+    "ko": "흑사병"
+   },
+   "desc": {
+    "en": "1346–1353 pandemic in Eurasia and North Africa",
+    "jp": "14世紀のヨーロッパにおけるペストの大流行",
+    "de": "Pest-Pandemien im Europa des Spätmittelalters",
+    "ru": "пандемия чумы в 1346-1353 гг. в Европе",
+    "es": "pandemia en Europa, Asia y África del siglo XIV, la más devastadora en la historia de la humanidad",
+    "zh": "大流行在歐洲和亞洲在1300年代",
+    "fr": "pandémie de peste bubonique au XIVe siècle",
+    "ko": "1300년대 유라시아에서 발생한 전염병"
+   },
+   "wiki": {
+    "en": "Black Death",
+    "jp": "黒死病"
+   }
+  },
+  {
+   "q": "Q160077",
+   "kind": "war",
+   "d": "1453-04-06",
+   "prec": "day",
+   "prop": "P580",
+   "cal": "julian",
+   "at": [
+    28.935,
+    41.03
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Fall of Constantinople",
+    "jp": "コンスタンティノープルの陥落",
+    "de": "Eroberung von Konstantinopel",
+    "ru": "Падение Константинополя",
+    "es": "Caída de Constantinopla",
+    "zh": "君士坦丁堡的陷落",
+    "zh-hans": "君士坦丁堡的陷落",
+    "fr": "chute de Constantinople",
+    "ko": "콘스탄티노폴리스의 함락"
+   },
+   "desc": {
+    "en": "1453 capture of the Byzantine capital by the Ottoman Empire",
+    "jp": "オスマン帝国による包囲戦、東ローマ帝国の滅亡（1453年5月29日）",
+    "de": "Schlacht der Türkenkriege (1453)",
+    "ru": "захват столицы Византийской империи армией османского султана Мехмеда II",
+    "es": "sitio y captura de la capital del Imperio Bizantino por parte del Imperio Otomano en 1453",
+    "fr": "prise de la capitale byzantine par l'Empire ottoman en 1453"
+   },
+   "wiki": {
+    "en": "Fall of Constantinople",
+    "jp": "コンスタンティノープルの陥落"
+   }
+  },
+  {
+   "q": "Q18578423",
+   "kind": "geo",
+   "d": "1492",
+   "prec": "year",
+   "prop": "P580",
+   "cal": "julian",
+   "at": [
+    -75,
+    15
+   ],
+   "atBy": "P276 Q1247",
+   "name": {
+    "en": "voyages by Christopher Columbus",
+    "jp": "クリストファー・コロンブスの航海",
+    "de": "Entdeckung Amerikas 1492",
+    "es": "viajes de Cristóbal Colón",
+    "zh": "克里斯托弗·哥倫布的航行",
+    "zh-hans": "克里斯托弗·哥伦布的航行",
+    "fr": "voyages de Christophe Colomb",
+    "ko": "콜럼버스의 항해"
+   },
+   "desc": {
+    "en": "1492–1504 voyages to the Americas; beginning of the Columbian exchange",
+    "jp": "1492年から1504年にかけてクリストファー・コロンブスが行った航海",
+    "de": "Europäische Entdeckung Amerikas im Jahr 1492 durch Kolumbus"
+   },
+   "wiki": {
+    "en": "Voyages of Christopher Columbus"
+   }
+  },
+  {
+   "q": "Q12562",
+   "kind": "revolution",
+   "d": "1517-10-31",
+   "prec": "day",
+   "prop": "P580",
+   "cal": "julian",
+   "name": {
+    "en": "Protestant Reformation",
+    "jp": "宗教改革",
+    "de": "Reformation",
+    "ru": "Реформация",
+    "es": "Reforma protestante",
+    "fr": "Réforme protestante",
+    "ko": "종교 개혁"
+   },
+   "desc": {
+    "en": "16th-century movement in Western Christianity",
+    "jp": "16世紀のキリスト教世界における教会体制上の革新運動",
+    "de": "religiöse Erneuerungsbewegung",
+    "ru": "религиозное и общественное движение в Европе XVI в.",
+    "es": "movimiento religioso cristiano iniciado en Alemania en el siglo XVI por Martín Lutero",
+    "fr": "mouvement de transformation du christianisme occidental initié par Martin Luther en 1517",
+    "ko": "서방교회의 개혁을 위한 교회 내부 운동"
+   },
+   "wiki": {
+    "en": "Reformation",
+    "jp": "宗教改革"
+   }
+  },
+  {
+   "q": "Q845981",
+   "kind": "space",
+   "d": "1543",
+   "prec": "year",
+   "prop": "P577",
+   "cal": "julian",
+   "name": {
+    "en": "De revolutionibus orbium coelestium",
+    "jp": "天球の回転について",
+    "de": "De revolutionibus orbium coelestium",
+    "ru": "О вращении небесных сфер",
+    "es": "De revolutionibus orbium coelestium",
+    "zh": "天體運行論",
+    "zh-hans": "天体运行论",
+    "fr": "De revolutionibus orbium coelestium",
+    "ko": "천구의 회전에 관하여"
+   },
+   "desc": {
+    "en": "book by Copernicus",
+    "jp": "コペルニクスの書籍",
+    "de": "Buch von Nikolaus Kopernikus",
+    "es": "obra de Nicolás Copérnico",
+    "fr": "Traité de Copernic exposant son système héliocentrique",
+    "ko": "코페르니쿠스의 서적"
+   },
+   "wiki": {
+    "en": "De revolutionibus orbium coelestium",
+    "jp": "天球の回転について"
+   }
+  },
+  {
+   "q": "Q150995",
+   "kind": "geo",
+   "d": "1648-10-24",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    7.628,
+    51.962
+   ],
+   "atBy": "P276 Q316814",
+   "name": {
+    "en": "Peace of Westphalia",
+    "jp": "ヴェストファーレン条約",
+    "de": "Westfälischer Friede",
+    "ru": "Вестфальский мир",
+    "es": "Paz de Westfalia",
+    "zh": "西發里亞和約",
+    "zh-hans": "威斯特伐利亚和约",
+    "fr": "traités de Westphalie",
+    "ko": "베스트팔렌 조약"
+   },
+   "desc": {
+    "en": "peace treaty ending the Thirty and Eighty Years' Wars",
+    "jp": "三十年戦争の講和条約（1648年締結）",
+    "de": "1648 geschlossene Friedensverträge zum Abschluss des Dreißigjährigen Kriegs",
+    "ru": "два мирных соглашения 1648 года, которыми завершилась Тридцатилетняя война",
+    "es": "tratados de paz para la finalización de la guerra de los Treinta Años, firmados en 1648",
+    "zh": "結束三十年戰爭和八十年戰爭的和平條約",
+    "zh-hans": "结束三十年战争和八十年战争的和平条约",
+    "fr": "traités signés en 1648 à Münster et Osnabrück mettant fin à la guerre de Trente Ans et à la guerre de Quatre-Vingts Ans",
+    "ko": "30년 전쟁의 종지부를 찍은 1648년에 체결된 평화 조약"
+   },
+   "wiki": {
+    "en": "Peace of Westphalia",
+    "jp": "ヴェストファーレン条約"
+   }
+  },
+  {
+   "q": "Q205921",
+   "kind": "space",
+   "d": "1687",
+   "prec": "year",
+   "prop": "P577",
+   "name": {
+    "en": "Philosophiæ Naturalis Principia Mathematica",
+    "jp": "自然哲学の数学的諸原理",
+    "de": "Philosophiae Naturalis Principia Mathematica",
+    "ru": "Математические начала натуральной философии",
+    "es": "Philosophiæ naturalis principia mathematica",
+    "zh": "自然哲學的數學原理",
+    "zh-hans": "自然哲学的数学原理",
+    "fr": "Philosophiæ naturalis principia mathematica",
+    "ko": "자연철학의 수학적 원리"
+   },
+   "desc": {
+    "en": "1687 work by Isaac Newton describing his laws of motion and gravitation",
+    "jp": "アイザック・ニュートンの著書で、ニュートン力学体系の解説書",
+    "de": "Buch von Isaac Newton",
+    "ru": "фундаментальный труд Ньютона, в котором он сформулировал закон всемирного тяготения и три закона движения",
+    "es": "libro de Isaac Newton",
+    "fr": "livre scientifique de Isaac Newton",
+    "ko": "영국의 뉴턴이 지은 물리학 서적"
+   },
+   "wiki": {
+    "en": "Philosophiæ Naturalis Principia Mathematica",
+    "jp": "自然哲学の数学的諸原理"
+   }
+  },
+  {
+   "q": "Q191055",
+   "kind": "disaster",
+   "d": "1755-11-01",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    -11,
+    36
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "1755 Lisbon earthquake",
+    "jp": "リスボン地震",
+    "de": "Erdbeben von Lissabon 1755",
+    "ru": "Лиссабонское землетрясение",
+    "es": "Terremoto de Lisboa de 1755",
+    "zh": "1755年里斯本大地震",
+    "zh-hans": "1755年里斯本大地震",
+    "fr": "tremblement de terre de Lisbonne",
+    "ko": "1755년 리스본 지진"
+   },
+   "desc": {
+    "en": "earthquake in 1755",
+    "de": "Erdbeben in Lissabon in Portugal",
+    "ru": "землетрясение в 1755 году",
+    "es": "megasismo tsunamigénico extremo y mortífero epicentral al suroeste de Portugal, en el Atlántico norte",
+    "zh": "1755年發生在里斯本的大地震",
+    "fr": "tremblement de terre en 1755",
+    "ko": "1755년 포르투갈 해역에서 발생한 지진과 지진해일"
+   },
+   "wiki": {
+    "en": "1755 Lisbon earthquake",
+    "jp": "リスボン地震 (1755年)"
+   }
+  },
+  {
+   "q": "Q2269",
+   "kind": "economic",
+   "d": "1760",
+   "prec": "year",
+   "prop": "P580",
+   "name": {
+    "en": "Industrial Revolution",
+    "jp": "産業革命",
+    "de": "Industrielle Revolution",
+    "ru": "промышленная революция",
+    "es": "Revolución Industrial",
+    "fr": "Révolution industrielle",
+    "ko": "산업 혁명"
+   },
+   "desc": {
+    "en": "transition to new manufacturing processes in Europe and the United States, in the 18th-19th centuries",
+    "jp": "18世紀半ばから19世紀にかけて起こった一連の産業の変革と、それにともなう社会構造の変革",
+    "de": "wirtschaftliche und soziale Veränderung nach 1750",
+    "ru": "Переход от ручного труда к машинному",
+    "es": "período histórico de transformaciones económicas y sociales (1762-1847)",
+    "fr": "transition vers de nouveaux procédés de fabrication en Europe et aux États-Unis aux XVIIIe et XIXe siècles",
+    "ko": "1760–1840년대 급격한 기술변화"
+   },
+   "wiki": {
+    "en": "Industrial Revolution",
+    "jp": "産業革命"
+   }
+  },
+  {
+   "q": "Q127912",
+   "kind": "revolution",
+   "d": "1776-07-04",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    -75.15,
+    39.949
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "United States Declaration of Independence",
+    "jp": "アメリカ独立宣言",
+    "de": "Unabhängigkeitserklärung der Vereinigten Staaten",
+    "ru": "Декларация независимости США",
+    "es": "Declaración de Independencia de los Estados Unidos",
+    "zh": "美國獨立宣言",
+    "zh-hans": "美国独立宣言",
+    "fr": "Déclaration d'indépendance des États-Unis",
+    "ko": "미국 독립선언"
+   },
+   "desc": {
+    "en": "1776 assertion of colonial America's independence from Great Britain",
+    "jp": "北米の13植民地が独立を宣言した文書",
+    "de": "Erklärung des Zweiten Kontinentalkongresses",
+    "ru": "исторический документ, в котором британские колонии в Северной Америке объявили независимость от Великобритании",
+    "es": "documento que proclamó la independencia y fundación de los Estados Unidos de América",
+    "fr": "texte de 1776 déclarant l'indépendance de treize colonies américaines vis-à-vis de la Grande-Bretagne",
+    "ko": "1776년 작성"
+   },
+   "wiki": {
+    "en": "United States Declaration of Independence",
+    "jp": "アメリカ独立宣言"
+   }
+  },
+  {
+   "q": "Q6534",
+   "kind": "revolution",
+   "d": "1789-05-05",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    2,
+    47
+   ],
+   "atBy": "P276 Q142",
+   "name": {
+    "en": "French Revolution",
+    "jp": "フランス革命",
+    "de": "Französische Revolution",
+    "ru": "Великая французская революция",
+    "es": "Revolución francesa",
+    "zh": "法國大革命",
+    "zh-hans": "法国大革命",
+    "fr": "Révolution française",
+    "ko": "프랑스 혁명"
+   },
+   "desc": {
+    "en": "A period of political and societal change in France from 1789 to 1799",
+    "jp": "18世紀末にフランスで発生した市民革命",
+    "de": "Revolution in Frankreich Ende des 18. Jahrhunderts",
+    "ru": "буржуазная революция во Франции 1789—1799 годов",
+    "es": "conflicto social y político entre 1789 y 1799",
+    "fr": "période de l'histoire de France et de ses colonies, du 5 mai 1789 au 9 novembre 1799",
+    "ko": "1789년부터 1799년까지 프랑스에서 일어난 혁명"
+   },
+   "wiki": {
+    "en": "French Revolution",
+    "jp": "フランス革命"
+   }
+  },
+  {
+   "q": "Q689128",
+   "kind": "revolution",
+   "d": "1791-08-14",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    -72.333,
+    19.1
+   ],
+   "atBy": "P276 Q861551",
+   "name": {
+    "en": "Haitian Revolution",
+    "jp": "ハイチ革命",
+    "de": "Haitianische Revolution",
+    "ru": "Гаитянская революция",
+    "es": "Revolución haitiana",
+    "zh": "海地革命",
+    "zh-hans": "海地革命",
+    "fr": "révolution haïtienne",
+    "ko": "아이티 혁명"
+   },
+   "desc": {
+    "en": "1791 slave revolt in the French colony of Saint-Domingue",
+    "jp": "フランスの植民地サン＝ドマングで1791年に起こったアフリカ人奴隷の反乱",
+    "de": "Sklavenaufstand in der französischen Kolonie Saint-Domingue (1791)",
+    "ru": "единственное в истории успешное восстание рабов",
+    "es": "revuelta de esclavos en la colonia francesa de Saint-Domingue en 1791",
+    "fr": "processus de transformations socio-politiques de la colonie française de Saint-Domingue vers la constitution d'un État indépendant"
+   },
+   "wiki": {
+    "en": "Haitian Revolution",
+    "jp": "ハイチ革命"
+   }
+  },
+  {
+   "q": "Q46362",
+   "kind": "geo",
+   "d": "1814-09",
+   "prec": "month",
+   "prop": "P580",
+   "at": [
+    16.364,
+    48.209
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Congress of Vienna",
+    "jp": "ウィーン会議",
+    "de": "Wiener Kongress",
+    "ru": "Венский конгресс",
+    "es": "Congreso de Viena",
+    "fr": "congrès de Vienne",
+    "ko": "빈 회의"
+   },
+   "desc": {
+    "en": "conference of ambassadors of European states (September/November 1814 to June 1815)",
+    "jp": "オーストリア帝国の首都ウィーンにおいて開催された国際会議",
+    "de": "Konferenz zur Neuordnung Europas nach den Befreiungskriegen",
+    "ru": "конгресс, созванный после окончания Наполеоновских войн в Европе",
+    "es": "encuentro político internacional (1814–1815)",
+    "fr": "conférence des représentants diplomatiques des grandes puissances européennes, de septembre 1814 à juin 1815",
+    "ko": "나폴레옹 전쟁의 결과를 수습하기 위해 유럽 강대국들이 모여서 한 회의"
+   },
+   "wiki": {
+    "en": "Congress of Vienna",
+    "jp": "ウィーン会議"
+   }
+  },
+  {
+   "q": "Q48314",
+   "kind": "war",
+   "d": "1815-06-18",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    4.412,
+    50.678
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Battle of Waterloo",
+    "jp": "ワーテルローの戦い",
+    "de": "Schlacht bei Waterloo",
+    "ru": "Битва при Ватерлоо",
+    "es": "Batalla de Waterloo",
+    "zh-hans": "滑铁卢战役",
+    "fr": "bataille de Waterloo",
+    "ko": "워털루 전투"
+   },
+   "desc": {
+    "en": "1815 battle during the War of the Seventh Coalition",
+    "jp": "1815年にヨーロッパで発生した戦争",
+    "de": "Schlacht der Koalitionskriege (1815)",
+    "ru": "последнее крупное сражение Наполеона Бонапарта",
+    "es": "última batalla de las guerras napoleónicas",
+    "zh-hans": "1815年拿破仑和反法联盟之间的战役",
+    "fr": "bataille de la guerre de la Septième Coalition",
+    "ko": "1815년 워털루 전역의 마지막 전투 중 하나"
+   },
+   "wiki": {
+    "en": "Battle of Waterloo",
+    "jp": "ワーテルローの戦い"
+   }
+  },
+  {
+   "q": "Q238262",
+   "kind": "geo",
+   "d": "1842-08-29",
+   "prec": "day",
+   "prop": "P585",
+   "name": {
+    "en": "Treaty of Nanjing",
+    "jp": "南京条約",
+    "de": "Vertrag von Nanking",
+    "ru": "Нанкинский договор",
+    "es": "Tratado de Nankín",
+    "zh": "南京條約",
+    "zh-hans": "南京条约",
+    "fr": "traité de Nankin",
+    "ko": "난징 조약"
+   },
+   "desc": {
+    "en": "1842 treaty between Qing China and Britain which ceded Hong Kong and ended the First Opium War",
+    "jp": "1842年にアヘン戦争を終結させるため、清とイギリスの間で結ばれた講和条約",
+    "es": "tratado de paz durante la primera guerra del Opio",
+    "zh": "中國清朝與英國簽訂的不平等條約",
+    "zh-hans": "中国清朝与英国签订的不平等条约",
+    "fr": "Traité proclamant la cession de l'île de Hong Kong au Royaume-Uni"
+   },
+   "wiki": {
+    "en": "Treaty of Nanking",
+    "jp": "南京条約"
+   }
+  },
+  {
+   "q": "Q20124",
+   "kind": "space",
+   "d": "1859-11-24",
+   "prec": "day",
+   "prop": "P577",
+   "name": {
+    "en": "On the Origin of Species",
+    "jp": "種の起源",
+    "de": "Über die Entstehung der Arten",
+    "ru": "Происхождение видов",
+    "es": "El origen de las especies",
+    "zh": "物种起源",
+    "zh-hans": "物种起源",
+    "fr": "De l'origine des espèces",
+    "ko": "종의 기원"
+   },
+   "desc": {
+    "en": "treatise on natural selection, written by Charles Darwin",
+    "jp": "チャールズ・ダーウィンの著作",
+    "de": "Buch von Charles Darwin",
+    "ru": "книга Чарльза Дарвина",
+    "es": "libro de Charles Darwin",
+    "fr": "ouvrage de Charles Darwin",
+    "ko": "찰스 다윈의 저서"
+   },
+   "wiki": {
+    "en": "On the Origin of Species",
+    "jp": "種の起源"
+   }
+  },
+  {
+   "q": "Q8707",
+   "kind": "revolution",
+   "d": "1868",
+   "prec": "year",
+   "prop": "P580",
+   "name": {
+    "en": "Meiji restoration",
+    "jp": "明治維新",
+    "de": "Meiji-Restauration",
+    "ru": "Реставрация Мэйдзи",
+    "es": "Restauración Meiji",
+    "zh": "明治維新",
+    "zh-hans": "明治维新",
+    "fr": "restauration de Meiji",
+    "ko": "메이지 유신"
+   },
+   "desc": {
+    "en": "reform restoring the imperial rule in Japan in the last third of the 19th century",
+    "jp": "幕藩体制から天皇中心の近代国家へ転換した変革",
+    "de": "Erneuerung der kaiserlichen Macht zu Beginn der Meiji-Zeit",
+    "ru": "комплекс политических, экономических и социальных реформ",
+    "es": "Sucesos que condujeron a un cambio estructural, político y social en Japón entre 1866 y 1869",
+    "fr": "renversement du shogunat de Tokugawa et recouvrement des pouvoirs de l'empereur en 1868",
+    "ko": "메이지 천황 때 왕정복고를 이룩하고 근대화를 위해 실시한 변혁의 총칭"
+   },
+   "wiki": {
+    "en": "Meiji Restoration",
+    "jp": "明治維新"
+   }
+  },
+  {
+   "q": "Q899",
+   "kind": "economic",
+   "d": "1869-11-17",
+   "prec": "day",
+   "prop": "P1619",
+   "at": [
+    32.344,
+    30.705
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Suez Canal",
+    "jp": "スエズ運河",
+    "de": "Suezkanal",
+    "ru": "Суэцкий канал",
+    "es": "canal de Suez",
+    "zh": "蘇伊士運河",
+    "zh-hans": "苏伊士运河",
+    "fr": "canal de Suez",
+    "ko": "수에즈 운하"
+   },
+   "desc": {
+    "en": "artificial sea-level waterway in Egypt",
+    "jp": "エジプトの国際運河",
+    "de": "Schifffahrtskanal in Ägypten, der das Mittelmeer mit dem Roten Meer verbindet",
+    "ru": "судоходный бесшлюзовый канал в Египте",
+    "es": "canal artificial navegable de Egipto",
+    "zh": "位於亞洲及非洲交界處的運河",
+    "zh-hans": "处于地中海和红海之间的埃及运河",
+    "fr": "canal navigable situé en Égypte",
+    "ko": "지중해와 홍해를 잇는 수로이다."
+   },
+   "wiki": {
+    "en": "Suez Canal",
+    "jp": "スエズ運河"
+   }
+  },
+  {
+   "q": "Q8094772",
+   "kind": "disaster",
+   "d": "1883-05-20",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    105.423,
+    -6.102
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "1883 eruption of Krakatoa",
+    "jp": "1883年のクラカトア噴火",
+    "de": "Eruption des Krakatau 1883",
+    "ru": "Извержение вулкана Кракатау 1883 года",
+    "es": "Erupción del volcán Krakatoa en 1883",
+    "fr": "Éruption du Krakatoa en 1883",
+    "ko": "1883년 크라카타우산 분화"
+   },
+   "desc": {
+    "en": "catastrophic volcanic eruption",
+    "ru": "крупное вулканическое извержение в Зондском проливе",
+    "es": "catástrofe natural ocurrida en 1883 en el estrecho de la Sonda, Indonesia",
+    "fr": "éruption volcanique cataclysmique survenue en Indonésie",
+    "ko": "1883년 인도네시아 수마트라섬 남부 크라카타우산에서 일어난 대규모 분화"
+   },
+   "wiki": {
+    "en": "1883 eruption of Krakatoa",
+    "jp": "1883年のクラカタウの噴火"
+   }
+  },
+  {
+   "q": "Q688605",
+   "kind": "space",
+   "d": "1903-12-17",
+   "prec": "day",
+   "prop": "P606",
+   "name": {
+    "en": "Flyer I",
+    "jp": "ライトフライヤー号",
+    "de": "Wright Flyer",
+    "ru": "Флайер 1",
+    "es": "Wright Flyer",
+    "zh": "萊特飛行器",
+    "zh-hans": "莱特飞行器",
+    "fr": "Wright Flyer",
+    "ko": "라이트 플라이어"
+   },
+   "desc": {
+    "en": "heavier-than-air powered aircraft, designed and built by the Wright Brothers",
+    "jp": "ライト兄弟の製作した飛行機",
+    "de": "erstes von den Brüdern Wright hergestellte Doppeldecker-Motorflugzeug",
+    "es": "primer vehículo volador creado en la historia",
+    "fr": "avion avec lequel les frères Wright effectuèrent leurs premiers vols motorisés",
+    "ko": "라이트 형제가 제작한 비행기"
+   },
+   "wiki": {
+    "en": "Wright Flyer",
+    "jp": "ライトフライヤー号"
+   }
+  },
+  {
+   "q": "Q211386",
+   "kind": "disaster",
+   "d": "1906-04-18",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    -122.55,
+    37.75
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "1906 San Francisco earthquake",
+    "jp": "サンフランシスコ地震",
+    "de": "Erdbeben von San Francisco 1906",
+    "ru": "Землетрясение в Сан-Франциско",
+    "es": "terremoto de 1906",
+    "zh": "1906年舊金山大地震",
+    "zh-hans": "1906年旧金山大地震",
+    "fr": "séisme de 1906 à San Francisco",
+    "ko": "1906년 샌프란시스코 지진"
+   },
+   "desc": {
+    "en": "major earthquake that struck San Francisco and the coast of Northern California",
+    "jp": "1906年にサンフランシスコ周辺で発生した大地震",
+    "de": "Erdbeben",
+    "ru": "землетрясение, произошедшее в 5:12 утра 18 апреля 1906 года в Сан-Франциско",
+    "es": "Desastre natural de San Francisco, California de 7,9 Mw",
+    "fr": "séisme américain",
+    "ko": "1906년 미국 캘리포니아주 샌프란시스코에서 발생한 지진"
+   },
+   "wiki": {
+    "en": "1906 San Francisco earthquake",
+    "jp": "サンフランシスコ地震"
+   }
+  },
+  {
+   "q": "Q2577588",
+   "kind": "disaster",
+   "d": "1912-04-14",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    -49.946,
+    41.732
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "sinking of the RMS Titanic",
+    "jp": "タイタニック号沈没事故",
+    "de": "Untergang der RMS Titanic",
+    "ru": "крушение «Титаника»",
+    "es": "hundimiento del RMS Titanic",
+    "fr": "naufrage du Titanic",
+    "ko": "타이타닉호 침몰 사고"
+   },
+   "desc": {
+    "en": "maritime disaster in the North Atlantic Ocean on the night of 14–15 April 1912",
+    "jp": "1912年に北大西洋で発生した海難事故",
+    "de": "Schiffskatastrophe im Nordatlantik in der Nacht vom 14. auf den 15. April 1912",
+    "ru": "одна из крупнейших морских катастроф в истории 15 апреля 1912 года",
+    "es": "accidente marítimo en el Atlántico Norte en 1912",
+    "zh": "英國的鐵達尼號皇家郵輪沉沒事件",
+    "fr": "catastrophe maritime",
+    "ko": "1912년 해상 참사"
+   },
+   "wiki": {
+    "en": "Sinking of the Titanic",
+    "jp": "タイタニック号沈没事故"
+   }
+  },
+  {
+   "q": "Q7350",
+   "kind": "economic",
+   "d": "1914-08-15",
+   "prec": "day",
+   "prop": "P1619",
+   "at": [
+    -79.75,
+    9.12
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Panama Canal",
+    "jp": "パナマ運河",
+    "de": "Panamakanal",
+    "ru": "Панамский канал",
+    "es": "Canal de Panamá",
+    "zh": "巴拿馬運河",
+    "zh-hans": "巴拿马运河",
+    "fr": "canal de Panama",
+    "ko": "파나마 운하"
+   },
+   "desc": {
+    "en": "large canal in Panama",
+    "jp": "パナマ共和国の国際運河",
+    "de": "künstliche Wasserstraße in Mittelamerika, die den Atlantik mit dem Pazifik verbindet",
+    "ru": "судоходный канал, соединяющий Тихий и Атлантический океаны",
+    "es": "canal navegable artificial entre los océanos Atlántico y Pacífico",
+    "zh": "連接太平洋和大西洋的航運要道",
+    "zh-hans": "连接太平洋和大西洋的航运要道",
+    "fr": "canal maritime à travers l'isthme de Panama, mis en service en 1914",
+    "ko": "대서양과 태평양을 연결하는 중앙아메리카의 수로"
+   },
+   "wiki": {
+    "en": "Panama Canal",
+    "jp": "パナマ運河"
+   }
+  },
+  {
+   "q": "Q8729",
+   "kind": "revolution",
+   "d": "1917",
+   "prec": "year",
+   "prop": "P585",
+   "at": [
+    70.117,
+    58.65
+   ],
+   "atBy": "P276 Q34266",
+   "name": {
+    "en": "Russian Revolution",
+    "jp": "ロシア革命",
+    "de": "Russische Revolution",
+    "ru": "Революция 1917 года в России",
+    "es": "Revolución rusa",
+    "fr": "révolution russe",
+    "ko": "러시아 혁명"
+   },
+   "desc": {
+    "en": "1917-1922 political change in Russia",
+    "jp": "1917年にロシア帝国で起きた2度の革命を指す名称",
+    "de": "revolutionäre Umwälzungen in der russischen Geschichte des frühen 20. Jahrhunderts",
+    "ru": "серия событий, произошедших в России в 1917 году, в результате которых был изменён государственный строй в стране",
+    "es": "periodo histórico del siglo XX, considerado el inicio del poder del comunismo y la caída de la monarquía",
+    "fr": "processus révolutionnaire ayant conduit en 1917 au renversement du régime tsariste de Russie (révolution de Février), puis à la prise du pouvoir par les bolchéviques (révolution d'Octobre)",
+    "ko": "1917년 러시아 제국에서 발생한 혁명"
+   },
+   "wiki": {
+    "en": "Russian Revolution",
+    "jp": "ロシア革命"
+   }
+  },
+  {
+   "q": "Q178275",
+   "kind": "disaster",
+   "d": "1918-01",
+   "prec": "month",
+   "prop": "P580",
+   "name": {
+    "en": "1918–1920 flu pandemic",
+    "jp": "スペインかぜ",
+    "de": "Spanische Grippe",
+    "ru": "испанский грипп",
+    "es": "pandemia de gripe de 1918",
+    "zh": "西班牙流感",
+    "zh-hans": "西班牙流感",
+    "fr": "grippe espagnole",
+    "ko": "스페인 독감"
+   },
+   "desc": {
+    "en": "1918–1920 global influenza pandemic caused by the H1N1 influenza A virus",
+    "jp": "1918～1919年に世界的に流行したインフルエンザ",
+    "de": "Grippepandemie",
+    "ru": "пандемия гриппа в 1918 году",
+    "es": "pandemia mundial de influenza de 1918-1920 causada por el virus de la influenza A H1N1",
+    "zh": "流感大流行",
+    "fr": "pandémie de grippe A (H1N1)",
+    "ko": "1918년에 발생했던 인플루엔자 바이러스"
+   },
+   "wiki": {
+    "en": "Spanish flu",
+    "jp": "スペインかぜ"
+   }
+  },
+  {
+   "q": "Q8736",
+   "kind": "geo",
+   "d": "1919-06-28",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    2.12,
+    48.805
+   ],
+   "atBy": "P276 Q1583447",
+   "name": {
+    "en": "Treaty of Versailles",
+    "jp": "ヴェルサイユ条約",
+    "de": "Friedensvertrag von Versailles",
+    "ru": "Версальский договор",
+    "es": "Tratado de Versalles",
+    "fr": "traité de Versailles",
+    "ko": "베르사유 조약"
+   },
+   "desc": {
+    "en": "most important of the peace treaties of the First World War which ended the state of war between Germany and the Allied Powers",
+    "jp": "第一次世界大戦後の連合国とドイツの講和条約",
+    "de": "Dokument zur Beendigung des Ersten Weltkriegs",
+    "ru": "мирный договор, официально завершивший Первую мировую войну",
+    "es": "acuerdo de paz en el cual pone fin a la Primera Guerra Mundial",
+    "fr": "traité de paix entre l'Allemagne et les Alliés, signé en 1919",
+    "ko": "1919년 6월 독일 제국과 연합국 사이 맺은 제1차 세계 대전의 평화협정"
+   },
+   "wiki": {
+    "en": "Treaty of Versailles",
+    "jp": "ヴェルサイユ条約"
+   }
+  },
+  {
+   "q": "Q274498",
+   "kind": "disaster",
+   "d": "1923-09-01",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    139.135,
+    35.33
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "1923 Great Kantō Earthquake",
+    "jp": "関東地震",
+    "de": "Großes Kantō-Erdbeben 1923",
+    "ru": "Великое землетрясение Канто",
+    "es": "Gran terremoto de Kantō",
+    "zh": "關東大地震",
+    "zh-hans": "关东大地震",
+    "fr": "séisme de 1923 de Kantō",
+    "ko": "간토 대지진"
+   },
+   "desc": {
+    "en": "earthquake",
+    "jp": "1923年に関東大震災を引き起こした大地震",
+    "de": "Erdbeben in Japan am 1. September 1923",
+    "ru": "сильное землетрясение в Японии в 1923 году",
+    "es": "terremoto en Japón ocurrido en 1923 de 7,8 Mw",
+    "zh": "1923年矩震級8.1之大地震",
+    "fr": "tremblement de terre au Japon, XXe siècle",
+    "ko": "1923년 일본 혼슈 남동부를 중심으로 한 지진과 쓰나미"
+   },
+   "wiki": {
+    "en": "Great Kantō Earthquake",
+    "jp": "関東地震"
+   }
+  },
+  {
+   "q": "Q201684",
+   "kind": "economic",
+   "d": "1929-10-24",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    -98.579,
+    39.828
+   ],
+   "atBy": "P276 Q30",
+   "name": {
+    "en": "Wall Street crash of 1929",
+    "jp": "ウォール街大暴落",
+    "de": "Schwarzer Donnerstag",
+    "ru": "Биржевой крах 1929 года",
+    "es": "Crac del 29",
+    "zh": "1929年華爾街股災",
+    "zh-hans": "1929年华尔街股灾",
+    "fr": "krach de 1929",
+    "ko": "검은 목요일"
+   },
+   "desc": {
+    "en": "major American stock market crash",
+    "jp": "1929年のニューヨーク株式市場の株価大暴落",
+    "de": "US-Börsencrash 1929",
+    "es": "caída de la bolsa de Nueva York en octubre de 1929",
+    "fr": "krach boursier",
+    "ko": "1929년 10월 일어난 미국 증시 대폭락 사건"
+   },
+   "wiki": {
+    "en": "Wall Street crash of 1929",
+    "jp": "ウォール街大暴落"
+   }
+  },
+  {
+   "q": "Q207342",
+   "kind": "space",
+   "d": "1945-07-16",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    -106.475,
+    33.677
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Trinity",
+    "jp": "トリニティ実験",
+    "de": "Trinity-Test",
+    "ru": "Тринити",
+    "es": "Prueba Trinity",
+    "zh": "三位一體核試",
+    "zh-hans": "三位一体核试",
+    "fr": "Trinity",
+    "ko": "트리니티"
+   },
+   "desc": {
+    "en": "1945 first detonation of a nuclear weapon",
+    "jp": "アメリカ合衆国で行なわれた人類最初の核実験",
+    "de": "erster Test einer Atombombe",
+    "ru": "Первое в мире испытание ядерного оружия",
+    "es": "prueba nuclear",
+    "fr": "premier essai nucléaire américain de 1945",
+    "ko": "미국의 핵 실험"
+   },
+   "wiki": {
+    "en": "Trinity (nuclear test)",
+    "jp": "トリニティ実験"
+   }
+  },
+  {
+   "q": "Q1065",
+   "kind": "geo",
+   "d": "1945-10-24",
+   "prec": "day",
+   "prop": "P571",
+   "name": {
+    "en": "United Nations",
+    "jp": "国際連合",
+    "de": "Vereinte Nationen",
+    "ru": "Организация Объединённых Наций",
+    "es": "Organización de las Naciones Unidas",
+    "zh": "聯合國",
+    "zh-hans": "联合国",
+    "fr": "Organisation des Nations unies",
+    "ko": "유엔"
+   },
+   "desc": {
+    "en": "global international and intergovernmental organization",
+    "jp": "政府間組織",
+    "de": "globale internationale und zwischenstaatliche Organisation",
+    "ru": "всемирная межгосударственная организация",
+    "es": "organización internacional e intergubernamental mundial",
+    "zh": "全球國際跨政府組織",
+    "zh-hans": "全球国际跨政府组织",
+    "fr": "organisation internationale regroupant, à quelques exceptions près, tous les États de la planète",
+    "ko": "세계 최대의 정부 조직 기구"
+   },
+   "wiki": {
+    "en": "United Nations",
+    "jp": "国際連合"
+   }
+  },
+  {
+   "q": "Q3350154",
+   "kind": "assassination",
+   "d": "1948-01-30",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    77.214,
+    28.601
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "assassination of Mahatma Gandhi",
+    "jp": "マハトマ・ガンディーの暗殺",
+    "de": "Ermordung von Mahatma Gandhi",
+    "ru": "Убийство Махатмы Ганди",
+    "es": "asesinato de Mahatma Gandhi",
+    "zh": "納拉揚·安普特",
+    "zh-hans": "纳拉扬·安普特",
+    "fr": "assassinat de Mahatma Gandhi"
+   },
+   "desc": {
+    "en": "1948 murder in New Delhi, India"
+   },
+   "wiki": {
+    "en": "Assassination of Mahatma Gandhi",
+    "jp": "マハトマ・ガンディーの暗殺"
+   }
+  },
+  {
+   "q": "Q7184",
+   "kind": "geo",
+   "d": "1949-04-04",
+   "prec": "day",
+   "prop": "P571",
+   "at": [
+    4.426,
+    50.879
+   ],
+   "atBy": "P276 Q12800833",
+   "name": {
+    "en": "NATO",
+    "jp": "北大西洋条約機構",
+    "de": "Nordatlantikvertragsorganisation",
+    "ru": "Организация Североатлантического договора",
+    "es": "OTAN",
+    "zh": "北大西洋公約組織",
+    "zh-hans": "北大西洋公约组织",
+    "fr": "Organisation du Traité de l'Atlantique Nord",
+    "ko": "북대서양 조약 기구"
+   },
+   "desc": {
+    "en": "intergovernmental military alliance between 32 member states",
+    "jp": "北米、欧州各国が加盟する政府間軍事同盟",
+    "de": "militärisches Bündnis europäischer und nordamerikanischer Staaten",
+    "ru": "международный военно-политический блок",
+    "es": "alianza militar intergubernamental",
+    "zh": "國際軍事聯盟",
+    "zh-hans": "国际军事联盟",
+    "fr": "alliance militaire intergouvernementale",
+    "ko": "북아메리카와 유럽 국가들의 안보 동맹"
+   },
+   "wiki": {
+    "en": "NATO",
+    "jp": "北大西洋条約機構"
+   }
+  },
+  {
+   "q": "Q10872057",
+   "kind": "revolution",
+   "d": "1949-10-01",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    116.391,
+    39.905
+   ],
+   "atBy": "P276 Q164055",
+   "name": {
+    "en": "proclamation of the People's Republic of China",
+    "jp": "中華人民共和国開国大典",
+    "ru": "Провозглашение Китайской Народной Республики",
+    "es": "Proclamación de la República Popular China",
+    "zh": "中華人民共和國開國大典",
+    "zh-hans": "中华人民共和国开国大典",
+    "fr": "proclamation de la république populaire de Chine",
+    "ko": "중화인민공화국 개국대전"
+   },
+   "desc": {
+    "en": "official founding of the PRC",
+    "es": "fundación oficial de la República Popular China por Mao Zedong en la Plaza de Tiananmén, Pekín (1 de octubre de 1949)",
+    "zh": "歷史事件,中華人民共和國正式成立",
+    "zh-hans": "历史事件,中华人民共和国正式成立",
+    "fr": "naissance officielle de la Chine communiste en 1949"
+   },
+   "wiki": {
+    "en": "Proclamation of the People's Republic of China",
+    "jp": "中華人民共和国開国大典"
+   }
+  },
+  {
+   "q": "Q4567715",
+   "kind": "space",
+   "d": "1953-02",
+   "prec": "month",
+   "prop": "P580",
+   "name": {
+    "en": "1953 British Mount Everest Expedition",
+    "jp": "イギリス登山隊による1953年のエベレスト遠征",
+    "de": "britische Mount-Everest-Expedition 1953",
+    "ru": "Британская экспедиция на Джомолунгму",
+    "es": "Expedición británica al Everest de 1953",
+    "fr": "expédition britannique du Mont Everest de 1953",
+    "ko": "1953년 영국 에베레스트 원정대"
+   },
+   "desc": {
+    "en": "first successful ascent of Mount Everest",
+    "de": "erste erfolgreiche Besteigung des Mount Everest",
+    "ru": "Первая в истории экспедиция, которой удалось достигнуть вершины Джомолунгмы",
+    "es": "primera ascensión a la cima del Everest",
+    "fr": "première ascension du Mont Everest"
+   },
+   "wiki": {
+    "en": "1953 British Mount Everest expedition"
+   }
+  },
+  {
+   "q": "Q1895685",
+   "kind": "space",
+   "d": "1953-04-25",
+   "prec": "day",
+   "prop": "P577",
+   "name": {
+    "en": "Molecular Structure of Nucleic Acids: A Structure for Deoxyribose Nucleic Acid",
+    "jp": "核酸の分子構造: デオキシリボース核酸の構造",
+    "de": "Molecular Structure of Nucleic Acids: A Structure for Deoxyribose Nucleic Acid",
+    "ru": "Molecular Structure of Nucleic Acids: A Structure for Deoxyribose Nucleic Acid",
+    "es": "Molecular Structure of Nucleic Acids: A Structure for Deoxyribose Nucleic Acid",
+    "zh": "核酸分子結構",
+    "zh-hans": "核酸分子结构",
+    "fr": "Molecular Structure of Nucleic Acids: A Structure for Deoxyribose Nucleic Acid"
+   },
+   "desc": {
+    "en": "article published 1953 describing the structure of DNA",
+    "jp": "1953年の論文",
+    "de": "wissenschaftlicher Artikel (veröffentlicht am 1953/04/25)",
+    "ru": "научная статья",
+    "es": "artículo científico que describe la estructura del ADN",
+    "zh": "1953年論文",
+    "zh-hans": "1953年关于脱氧核糖核酸（DNA）的科学论文",
+    "fr": "article publié par Francis Crick et James D. Watson dans la revue scientifique Nature",
+    "ko": "1953년 논문"
+   },
+   "wiki": {
+    "en": "Molecular Structure of Nucleic Acids: A Structure for Deoxyribose Nucleic Acid"
+   }
+  },
+  {
+   "q": "Q11264",
+   "kind": "revolution",
+   "d": "1953-07-26",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    -79.5,
+    22
+   ],
+   "atBy": "P276 Q241",
+   "name": {
+    "en": "Cuban Revolution",
+    "jp": "キューバ革命",
+    "de": "Kubanische Revolution",
+    "ru": "Кубинская революция",
+    "es": "Revolución cubana",
+    "zh": "古巴革命",
+    "zh-hans": "古巴革命",
+    "fr": "Révolution cubaine",
+    "ko": "쿠바 혁명"
+   },
+   "desc": {
+    "en": "revolution in Cuba starting in 1953 culminating in 1959",
+    "jp": "1959年キューバで行われた社会主義革命",
+    "de": "historische Ereignisse in Kuba",
+    "ru": "вооружённая борьба за власть на Кубе с 1953 по 1959 год",
+    "es": "conflicto en Cuba entre 1953 y 1959",
+    "zh": "拉丁美洲共產主義革命（1959年）",
+    "zh-hans": "拉丁美洲共产主义革命（1959年）",
+    "fr": "renversement du régime de Fulgencio Batista",
+    "ko": "쿠바에서 공산국가를 수립한 사건"
+   },
+   "wiki": {
+    "en": "Cuban Revolution",
+    "jp": "キューバ革命"
+   }
+  },
+  {
+   "q": "Q41644",
+   "kind": "geo",
+   "d": "1955-05-14",
+   "prec": "day",
+   "prop": "P571",
+   "name": {
+    "en": "Warsaw Pact",
+    "jp": "ワルシャワ条約機構",
+    "de": "Warschauer Pakt",
+    "ru": "Организация Варшавского договора",
+    "es": "Pacto de Varsovia",
+    "zh": "華沙條約組織",
+    "zh-hans": "华沙条约组织",
+    "fr": "Pacte de Varsovie",
+    "ko": "바르샤바 조약 기구"
+   },
+   "desc": {
+    "en": "European Eastern Military Alliance (1954 – 1991)",
+    "jp": "20世紀後半に存在した東ヨーロッパ諸国間の軍事同盟",
+    "de": "Internationales Militärbündnis osteuropäischer Staaten (1955–1991)",
+    "ru": "военный союз восточноевропейских социалистических государств при ведущей роли Советского Союза",
+    "es": "antigua alianza militar internacional entre la URSS y varias naciones del este de Europa (1955-1991)",
+    "zh-hans": "国际组织联盟",
+    "fr": "ancienne alliance militaire pilotée par l'URSS",
+    "ko": "냉전 시기 동구권 국가들이 결성한 군사 동맹 조약 기구"
+   },
+   "wiki": {
+    "en": "Warsaw Pact",
+    "jp": "ワルシャワ条約機構"
+   }
+  },
+  {
+   "q": "Q167457",
+   "kind": "economic",
+   "d": "1957-03-25",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    12.483,
+    41.893
+   ],
+   "atBy": "P276 Q220",
+   "name": {
+    "en": "Treaty of Rome",
+    "jp": "ローマ条約",
+    "de": "Vertrag zur Gründung der Europäischen Gemeinschaft",
+    "ru": "Римский договор",
+    "es": "Tratados de Roma",
+    "zh": "羅馬條約",
+    "zh-hans": "罗马条约",
+    "fr": "traité instituant la Communauté économique européenne",
+    "ko": "로마 조약"
+   },
+   "desc": {
+    "en": "Founding Treaties of the European Communities (1957)",
+    "de": "EU-Vertrag",
+    "ru": "международный договор 1957 года",
+    "es": "Tratados de fundacionales de las Comunidades Europeas (1957)",
+    "fr": "texte fondateur de l'Union européenne"
+   },
+   "wiki": {
+    "en": "Treaty of Rome",
+    "jp": "ローマ条約"
+   }
+  },
+  {
+   "q": "Q80811",
+   "kind": "space",
+   "d": "1957-10-04",
+   "prec": "day",
+   "prop": "P619",
+   "name": {
+    "en": "Sputnik 1",
+    "jp": "スプートニク1号",
+    "de": "Sputnik 1",
+    "ru": "Спутник-1",
+    "es": "Sputnik 1",
+    "zh": "史潑尼克1號",
+    "fr": "Spoutnik 1",
+    "ko": "스푸트니크 1호"
+   },
+   "desc": {
+    "en": "first artificial Earth satellite",
+    "jp": "ソビエト連邦による世界初の人工衛星",
+    "de": "erster künstlicher Erdsatellit",
+    "ru": "первый искусственный спутник Земли",
+    "es": "primer satélite artificial",
+    "fr": "premier satellite artificiel créé par l'Homme",
+    "ko": "소비에트 연방의 세계 첫 인공위성"
+   },
+   "wiki": {
+    "en": "Sputnik 1",
+    "jp": "スプートニク1号"
+   }
+  },
+  {
+   "q": "Q182524",
+   "kind": "space",
+   "d": "1961-04-12",
+   "prec": "day",
+   "prop": "P619",
+   "name": {
+    "en": "Vostok 1",
+    "jp": "ボストーク1号",
+    "de": "Wostok 1",
+    "ru": "Восток-1",
+    "es": "Vostok 1",
+    "zh": "東方一號",
+    "zh-hans": "东方一号",
+    "fr": "Vostok 1",
+    "ko": "보스토크 1호"
+   },
+   "desc": {
+    "en": "spaceflight of the Vostok programme",
+    "jp": "1961年にソビエト連邦によって行われた人類初の有人宇宙飛行で使用された宇宙船",
+    "de": "erster bemannter Weltraumflug",
+    "ru": "советский космический корабль на котором Юрий Алексеевич Гагарин полетел в космическое пространство",
+    "es": "misión y cosmonave soviética, primera misión espacial tripulada",
+    "fr": "mission spatiale soviétique de 1961",
+    "ko": "보스토크 계획의 소련 우주선"
+   },
+   "wiki": {
+    "en": "Vostok 1",
+    "jp": "ボストーク1号"
+   }
+  },
+  {
+   "q": "Q5086",
+   "kind": "geo",
+   "d": "1961-08-13",
+   "prec": "day",
+   "prop": "P571",
+   "at": [
+    13.441,
+    52.504
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Berlin Wall",
+    "jp": "ベルリンの壁",
+    "de": "Berliner Mauer",
+    "ru": "Берлинская стена",
+    "es": "Muro de Berlín",
+    "zh": "柏林圍牆",
+    "zh-hans": "柏林墙",
+    "fr": "Mur de Berlin",
+    "ko": "베를린 장벽"
+   },
+   "desc": {
+    "en": "barrier constructed by the German Democratic Republic, enclosing West Berlin (1961–1989)",
+    "jp": "東西ベルリンを分断した国境",
+    "de": "ehemaliges Grenzbefestigungssystem der DDR in Berlin von 1961 bis 1989",
+    "ru": "пограничная стена вокруг Западного Берлина в 1961—1989 годах",
+    "es": "sección de la frontera interalemana",
+    "zh-hans": "冷战时苏联在西柏林外围建立的边界",
+    "fr": "mur entourant l’enclave de Berlin-Ouest de 1961 à 1989",
+    "ko": "서베를린을 한때 봉쇄했던 장벽"
+   },
+   "wiki": {
+    "en": "Berlin Wall",
+    "jp": "ベルリンの壁"
+   }
+  },
+  {
+   "q": "Q128160",
+   "kind": "war",
+   "d": "1962-10-14",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    -82.388,
+    23.117
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Cuban Missile Crisis",
+    "jp": "キューバ危機",
+    "de": "Kubakrise",
+    "ru": "Карибский кризис",
+    "es": "Crisis de los misiles en Cuba",
+    "zh": "古巴導彈危機",
+    "zh-hans": "古巴导弹危机",
+    "fr": "crise des missiles de Cuba",
+    "ko": "쿠바 미사일 위기"
+   },
+   "desc": {
+    "en": "October 1962 confrontation between the Soviet Union, Cuba and the United States",
+    "jp": "1962年にキューバで発生した、アメリカ・旧ソ連間の緊張を高めた一連の出来事",
+    "de": "Konfrontation zwischen den USA und der UdSSR im Oktober 1962",
+    "ru": "чрезвычайно напряжённое политическое, дипломатическое и военное противостояние между СССР и Соединёнными Штатами в октябре 1962 года",
+    "es": "grave tensión entre la Unión Soviética y los Estados Unidos por misiles soviéticos en Cuba",
+    "fr": "confrontation entre les USA et l'URSS en 1962",
+    "ko": "1962년 10월 시작된 미국과 소련과의 대립"
+   },
+   "wiki": {
+    "en": "Cuban Missile Crisis",
+    "jp": "キューバ危機"
+   }
+  },
+  {
+   "q": "Q193484",
+   "kind": "assassination",
+   "d": "1963-11-22",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    -96.808,
+    32.779
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "assassination of John F. Kennedy",
+    "jp": "ケネディ大統領暗殺事件",
+    "de": "Attentat auf John F. Kennedy",
+    "ru": "убийство Джона Кеннеди",
+    "es": "asesinato de John F. Kennedy",
+    "zh": "甘迺迪遇刺案",
+    "zh-hans": "肯尼迪遇刺案",
+    "fr": "assassinat de John F. Kennedy",
+    "ko": "존 F. 케네디 암살 사건"
+   },
+   "desc": {
+    "en": "1963 murder in Dallas, Texas, U.S",
+    "jp": "1963年にアメリカで発生した暗殺事件",
+    "de": "Ermordung des amtierenden US-Präsidenten am 22. November 1963 in Dallas",
+    "ru": "убийство 35-го президента США в 1963 году в Далласе",
+    "es": "asesinato del presidente de los Estados Unidos el viernes 22 de noviembre de 1963 en Dallas, Texas",
+    "fr": "assassinat du 35e président des États-Unis en 1963",
+    "ko": "1963년 11월 22일 미국의 존 F. 케네디 대통령이 리 하비 오스월드의 총에 맞아 암살당한 사건"
+   },
+   "wiki": {
+    "en": "Assassination of John F. Kennedy",
+    "jp": "ケネディ大統領暗殺事件"
+   }
+  },
+  {
+   "q": "Q757963",
+   "kind": "assassination",
+   "d": "1968-04-04",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    -90.058,
+    35.135
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "assassination of Martin Luther King Jr.",
+    "jp": "マーティン・ルーサー・キング・ジュニア暗殺事件",
+    "de": "Attentat auf Martin Luther King",
+    "ru": "Убийство Мартина Лютера Кинга",
+    "es": "asesinato de Martin Luther King Jr.",
+    "fr": "assassinat de Martin Luther King",
+    "ko": "마틴 루터 킹 주니어 암살 사건"
+   },
+   "desc": {
+    "en": "April 1968 murder in Memphis, Tennessee, U.S",
+    "de": "Attentat auf den Bürgerrechtler Martin Luther King in Memphis, Tennessee 1968",
+    "es": "asesinato de Martin Luther King Jr",
+    "fr": "assassinat en 1968 à Memphis"
+   },
+   "wiki": {
+    "en": "Assassination of Martin Luther King Jr.",
+    "jp": "マーティン・ルーサー・キング・ジュニア暗殺事件"
+   }
+  },
+  {
+   "q": "Q51402",
+   "kind": "revolution",
+   "d": "1969-06-28",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    -74.002,
+    40.734
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Stonewall riots",
+    "jp": "ストーンウォールの反乱",
+    "de": "Stonewall",
+    "ru": "Стоунволлские бунты",
+    "es": "disturbios de Stonewall",
+    "zh": "石牆暴動",
+    "zh-hans": "石牆暴動",
+    "fr": "émeutes de Stonewall",
+    "ko": "스톤월 폭동"
+   },
+   "desc": {
+    "en": "1969 LGBT rights demonstrations in New York City, United States",
+    "de": "Demonstrationen für LGBT-Rechte im Jahr 1969 in New York City",
+    "ru": "восстание за права ЛГБТ в Нью-Йорке в 1969 году",
+    "es": "manifestación espontánea de grupos LGBT, originaria del movimiento LGBT moderno",
+    "fr": "émeutes LGBT contre la police de New York en 1969",
+    "ko": "1969년 미국 뉴욕에서 일어난 성소수자 항쟁"
+   },
+   "wiki": {
+    "en": "Stonewall riots",
+    "jp": "ストーンウォールの反乱"
+   }
+  },
+  {
+   "q": "Q43653",
+   "kind": "space",
+   "d": "1969-07-16",
+   "prec": "day",
+   "prop": "P619",
+   "name": {
+    "en": "Apollo 11",
+    "jp": "アポロ11号",
+    "de": "Apollo 11",
+    "ru": "Аполлон-11",
+    "es": "Apolo 11",
+    "zh": "阿波羅11號",
+    "zh-hans": "阿波罗11号",
+    "fr": "Apollo 11",
+    "ko": "아폴로 11호"
+   },
+   "desc": {
+    "en": "first Moon landing and fifth crewed flight of the United States Apollo program",
+    "jp": "史上初めて人類を月に着陸させることに成功したアポロ宇宙船",
+    "de": "Raumfahrtmission der NASA (1969)",
+    "ru": "американский пилотируемый космический корабль серии «Аполлон»",
+    "es": "primera misión espacial que permitió a los humanos llegar a la superficie lunar",
+    "zh": "人類首次登陸月球的太空任務",
+    "fr": "11e mission du programme spatial américain Apollo (premiers pas de l'homme sur la Lune)",
+    "ko": "1969년 발사된 유인 우주선"
+   },
+   "wiki": {
+    "en": "Apollo 11",
+    "jp": "アポロ11号"
+   }
+  },
+  {
+   "q": "Q1420512",
+   "kind": "economic",
+   "d": "1971-08-15",
+   "prec": "day",
+   "prop": "P585",
+   "name": {
+    "en": "Nixon Shock",
+    "jp": "ニクソン・ショック",
+    "de": "Nixon-Schock",
+    "ru": "Никсоновский шок",
+    "es": "shock de Nixon",
+    "zh": "尼克森衝擊",
+    "zh-hans": "尼克松冲击",
+    "ko": "닉슨 충격"
+   },
+   "desc": {
+    "en": "1971 decoupling of the US dollar from gold",
+    "jp": "アメリカの歴史的事象",
+    "de": "Zwei weitreichende Entscheidungen der US-Regierung im Jahre 1971"
+   },
+   "wiki": {
+    "en": "Nixon shock",
+    "jp": "ニクソン・ショック"
+   }
+  },
+  {
+   "q": "Q862054",
+   "kind": "geo",
+   "d": "1972-02-21",
+   "prec": "day",
+   "prop": "P580",
+   "name": {
+    "en": "1972 Nixon visit to China",
+    "jp": "ニクソン大統領の中国訪問",
+    "de": "Richard Nixons Besuch in China 1972",
+    "ru": "Визит Никсона в Китай",
+    "es": "Visita de Nixon a China en 1972",
+    "zh": "1972年尼克森訪華",
+    "zh-hans": "1972年尼克松访华",
+    "fr": "Visite de Richard Nixon en Chine en 1972",
+    "ko": "1972년 리처드 닉슨의 중국 방문"
+   },
+   "desc": {
+    "en": "official United States visit to the People's Republic of China, leading to establishment of diplomatic relations",
+    "jp": "1972年に行われたニクソン・アメリカ大統領の中国への訪問",
+    "de": "Staatsbesuch der USA bei der VR China, welcher zu Verbesserungen der diplomatischen Beziehungen führte",
+    "fr": "Visite diplomatique en février 1972"
+   },
+   "wiki": {
+    "en": "1972 visit by Richard Nixon to China",
+    "jp": "ニクソン大統領の中国訪問"
+   }
+  },
+  {
+   "q": "Q229007",
+   "kind": "assassination",
+   "d": "1972-09-05",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    11.549,
+    48.18
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Munich massacre",
+    "jp": "ミュンヘンオリンピック事件",
+    "de": "Geiselnahme von München",
+    "ru": "теракт на Олимпийских играх в Мюнхене",
+    "es": "Masacre de Múnich",
+    "zh": "慕尼黑慘案",
+    "zh-hans": "慕尼黑惨案",
+    "fr": "prise d'otages des Jeux olympiques de Munich",
+    "ko": "뮌헨 올림픽 참사"
+   },
+   "desc": {
+    "en": "Palestinian terror attack during the 1972 Summer Olympics in Munich, West Germany",
+    "jp": "1972年に西ドイツで発生したテロ事件",
+    "de": "Anschlag bei den Olympischen Sommerspielen 1972",
+    "ru": "террористический акт на Олимпиаде '72",
+    "es": "Ataque ocurrido durante los Juegos Olímpicos de 1972 en Munich, Alemania Occidental",
+    "fr": "prise d'otages et attaque terroriste (1972)"
+   },
+   "wiki": {
+    "en": "Munich massacre",
+    "jp": "ミュンヘンオリンピック事件"
+   }
+  },
+  {
+   "q": "Q316817",
+   "kind": "economic",
+   "d": "1973-10-16",
+   "prec": "day",
+   "prop": "P580",
+   "name": {
+    "en": "1973 oil crisis",
+    "jp": "1973年石油危機",
+    "de": "Ölkrise 1973",
+    "ru": "Нефтяной кризис 1973 года",
+    "es": "crisis del petróleo de 1973",
+    "zh": "第一次石油危機",
+    "zh-hans": "第一次石油危机",
+    "fr": "premier choc pétrolier",
+    "ko": "유류 파동"
+   },
+   "desc": {
+    "en": "1973 petroleum shortage",
+    "jp": "1973年に発生した石油危機",
+    "ru": "период Холодной войны 1973—1974 годов",
+    "es": "crisis derivada de la escasez de petróleo en 1973",
+    "fr": "crise économique de 1973-74 due à la surproduction de pétrole"
+   },
+   "wiki": {
+    "en": "1973 oil crisis",
+    "jp": "1973年石油危機"
+   }
+  },
+  {
+   "q": "Q126065",
+   "kind": "revolution",
+   "d": "1978-01",
+   "prec": "month",
+   "prop": "P580",
+   "at": [
+    53,
+    32
+   ],
+   "atBy": "P276 Q794",
+   "name": {
+    "en": "Iranian Revolution",
+    "jp": "イラン革命",
+    "de": "islamische Revolution",
+    "ru": "Исламская революция в Иране",
+    "es": "Revolución iraní",
+    "zh": "伊朗伊斯蘭革命",
+    "zh-hans": "伊朗伊斯兰革命",
+    "fr": "Révolution iranienne",
+    "ko": "이란 혁명"
+   },
+   "desc": {
+    "en": "1978–1979 revolution that overthrew the Iranian monarchy",
+    "jp": "イラン・パフラヴィー朝から、シャリーア（イスラム法）に基づく政教一致の独裁体制を樹立させたイスラム革命（1978–1979）",
+    "de": "Revolution 1978–1979, die die iranische Monarchie stürzte",
+    "ru": "революция 1979 года в Иране",
+    "es": "revolución Islámica ocurrida en Irán (1978-1979)",
+    "fr": "révolution iranienne islamique de 1979",
+    "ko": "1979년 이란에서 벌어진 정치 혁명"
+   },
+   "wiki": {
+    "en": "Iranian Revolution",
+    "jp": "イラン革命"
+   }
+  },
+  {
+   "q": "Q83085",
+   "kind": "war",
+   "d": "1979-12-25",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    69.133,
+    34.517
+   ],
+   "atBy": "P276 Q476757",
+   "name": {
+    "en": "Soviet-Afghan War",
+    "jp": "アフガニスタン紛争",
+    "de": "Sowjetischer Krieg in Afghanistan",
+    "ru": "Афганская война (1979—1989)",
+    "es": "guerra afgano-soviética",
+    "fr": "guerre d'Afghanistan",
+    "ko": "소비에트 연방의 아프가니스탄 침공"
+   },
+   "desc": {
+    "en": "1979–1989 war between the Soviet Union and Afghan insurgents",
+    "de": "militärisches Eingreifen der Sowjetunion in Afghanistan zwischen 1979 und 1989",
+    "ru": "военный конфликт между правительством Демократической Республики Афганистан (при поддержке СССР) и афганскими моджахедами",
+    "es": "conflicto bélico en Afganistán, con intervención soviética entre 1979 y 1989",
+    "zh-hans": "苏联-阿富汗战争",
+    "fr": "guerre entre l'URSS et des insurgés afghans de 1979 à 1989",
+    "ko": "소련과 아프가니스탄의 전쟁"
+   },
+   "wiki": {
+    "en": "Soviet–Afghan War",
+    "jp": "アフガニスタン紛争 (1978年-1989年)"
+   }
+  },
+  {
+   "q": "Q82664",
+   "kind": "war",
+   "d": "1980-09-22",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    53,
+    32
+   ],
+   "atBy": "P276 Q794",
+   "name": {
+    "en": "Iran–Iraq War",
+    "jp": "イラン・イラク戦争",
+    "de": "Erster Golfkrieg",
+    "ru": "Ирано-иракская война",
+    "es": "guerra entre Irán e Irak",
+    "zh": "兩伊戰爭",
+    "zh-hans": "两伊战争",
+    "fr": "guerre Iran-Irak",
+    "ko": "이란-이라크 전쟁"
+   },
+   "desc": {
+    "en": "1980-1988 war between Iran and Iraq",
+    "jp": "1980年から1988年のイランとイラク間の戦争",
+    "de": "Krieg zwischen dem Irak und Iran von 1980 bis 1988",
+    "ru": "военный конфликт между Ираном и Ираком",
+    "es": "conflicto bélico de 1980 a 1988 entre Irán e Irak",
+    "zh": "伊朗與伊拉克於1980年至1988年發動的一場戰爭",
+    "fr": "guerre qui a opposé l'Iran à l'Irak entre septembre 1980 et août 1988",
+    "ko": "1980~1988년 이라크와 이란 사이에 벌어진 전쟁"
+   },
+   "wiki": {
+    "en": "Iran–Iraq War",
+    "jp": "イラン・イラク戦争"
+   }
+  },
+  {
+   "q": "Q48249",
+   "kind": "war",
+   "d": "1982-04-02",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    -59,
+    -51.75
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Falklands War",
+    "jp": "フォークランド紛争",
+    "de": "Falklandkrieg",
+    "ru": "Фолклендская война",
+    "es": "Guerra de las Malvinas",
+    "fr": "guerre des Malouines",
+    "ko": "포클랜드 전쟁"
+   },
+   "desc": {
+    "en": "undeclared war between Argentina and the United Kingdom in 1982",
+    "jp": "フォークランド諸島の領有権を巡ったイギリスとアルゼンチンとの紛争",
+    "de": "Krieg zwischen Argentinien und Großbritannien 1982",
+    "ru": "война 1982 года между Великобританией и Аргентиной за контроль над Фолклендскими (Мальвинскими) островами",
+    "es": "conflicto bélico ocurrido durante 1982 entre la República Argentina y el Reino Unido",
+    "fr": "guerre entre l'Argentine et le Royaume-Uni en 1982 au sujet des îles Malouines",
+    "ko": "1982년 아르헨티나와 영국 사이의 선언되지 않은 전쟁"
+   },
+   "wiki": {
+    "en": "Falklands War",
+    "jp": "フォークランド紛争"
+   }
+  },
+  {
+   "q": "Q129029",
+   "kind": "disaster",
+   "d": "1984-12-03",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    77.411,
+    23.281
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Bhopal disaster",
+    "jp": "ボパール化学工場事故",
+    "de": "Katastrophe von Bhopal",
+    "ru": "Бхопальская катастрофа",
+    "es": "desastre de Bhopal",
+    "zh": "博帕爾事件",
+    "zh-hans": "博帕尔事件",
+    "fr": "catastrophe de Bhopal",
+    "ko": "보팔 가스 폭발사고"
+   },
+   "desc": {
+    "en": "gas leak accident in Bhopal, India on 3 December 1984",
+    "jp": "1984年にインドで発生したガス漏れ事故",
+    "de": "Unfall in einer indischen Chemieanlage 1984",
+    "ru": "индийская техногенная катастрофа 1984 года",
+    "es": "desastre industrial en la India",
+    "fr": "catastrophe industrielle"
+   },
+   "wiki": {
+    "en": "Bhopal disaster",
+    "jp": "ボパール化学工場事故"
+   }
+  },
+  {
+   "q": "Q684265",
+   "kind": "economic",
+   "d": "1985-09-22",
+   "prec": "day",
+   "prop": "P585",
+   "name": {
+    "en": "Plaza Accord",
+    "jp": "プラザ合意",
+    "de": "Plaza-Abkommen",
+    "ru": "Соглашение «Плаза»",
+    "es": "Acuerdo de Plaza",
+    "zh": "廣場協議",
+    "zh-hans": "广场协议",
+    "fr": "accords du Plaza",
+    "ko": "플라자 합의"
+   },
+   "desc": {
+    "en": "1985 international agreement on fiscal policy",
+    "jp": "1985年の先進5カ国財務大臣・中央銀行総裁会議における合意",
+    "de": "völkerrechtlicher Vertrag zur Kontrolle der internationalen Währungsmärkte (1985)",
+    "ru": "соглашение о постепенной контролируемой девальвации доллара США 1985 г."
+   },
+   "wiki": {
+    "en": "Plaza Accord",
+    "jp": "プラザ合意"
+   }
+  },
+  {
+   "q": "Q858145",
+   "kind": "space",
+   "d": "1986-01-28",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    -80.28,
+    28.64
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Space Shuttle Challenger disaster",
+    "jp": "チャレンジャー号爆発事故",
+    "de": "Challenger-Katastrophe",
+    "ru": "катастрофа шаттла «Челленджер»",
+    "es": "accidente del transbordador espacial Challenger",
+    "zh": "挑戰者號太空梭災難",
+    "zh-hans": "挑战者号航天飞机灾难",
+    "fr": "accident de la navette spatiale Challenger",
+    "ko": "챌린저 우주왕복선 폭발 사고"
+   },
+   "desc": {
+    "en": "in-flight breakup of the Challenger space shuttle in US",
+    "jp": "1986年にアメリカで発生したスペースシャトル爆発事故",
+    "ru": "взрыв шаттла «Челенджер» на старте 28 января 1986 года",
+    "es": "tragedia aeroespacial en el Atlántico (cerca de EE.UU.) en 1986 por desintegración de la nave",
+    "zh-hans": "1986年1月28日发生的航天灾难",
+    "fr": "accident spatial survenu le 28 janvier 1986",
+    "ko": "미국 우주왕복선의 기내 해체"
+   },
+   "wiki": {
+    "en": "Space Shuttle Challenger disaster",
+    "jp": "チャレンジャー号爆発事故"
+   }
+  },
+  {
+   "q": "Q486",
+   "kind": "disaster",
+   "d": "1986-04-26",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    30.099,
+    51.389
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Chernobyl disaster",
+    "jp": "チェルノブイリ原子力発電所事故",
+    "de": "Nuklearkatastrophe von Tschernobyl",
+    "ru": "авария на Чернобыльской АЭС",
+    "es": "accidente de Chernóbil",
+    "zh": "車諾比爾事故",
+    "zh-hans": "切尔诺贝利核事故",
+    "fr": "catastrophe nucléaire de Tchernobyl",
+    "ko": "체르노빌 원자력 발전소 사고"
+   },
+   "desc": {
+    "en": "1986 nuclear accident in the Soviet Union",
+    "jp": "1986年にソ連のチェルノブイリ原子力発電所で発生した原子力災害",
+    "de": "Nuklearunfall in der Sowjetunion (1986)",
+    "ru": "крупнейшая катастрофа в истории ядерной энергетики 26 апреля 1986 года",
+    "es": "accidente nuclear en la Central Nuclear de Chernóbil en Ucrania en 1986",
+    "zh-hans": "乌克兰境内切尔诺贝利的核反应堆融毁事故",
+    "fr": "catastrophe nucléaire majeure ayant eu lieu dans la nuit du 25 au 26 avril 1986 en Ukraine",
+    "ko": "체르노빌 원자력 발전소에서 발생한 폭발에 의한 방사능 유출 사고"
+   },
+   "wiki": {
+    "en": "Chernobyl disaster",
+    "jp": "チェルノブイリ原子力発電所事故"
+   }
+  },
+  {
+   "q": "Q466",
+   "kind": "space",
+   "d": "1989-03-12",
+   "prec": "day",
+   "prop": "P575",
+   "name": {
+    "en": "World Wide Web",
+    "jp": "World Wide Web",
+    "ru": "всемирная паутина",
+    "zh": "全球資訊網",
+    "zh-hans": "万维网",
+    "ko": "월드 와이드 웹"
+   },
+   "desc": {
+    "en": "global system of interlinked hypertext documents accessed via the Internet",
+    "jp": "インターネット経由でアクセスされるハイパーテキスト・ドキュメント・システム",
+    "de": "über das Internet abrufbares System von elektronischen Hypertext-Dokumenten",
+    "ru": "распределенная система, предоставляющая доступ к связанным между собой документам",
+    "es": "sistema de distribución de documentos de hipertexto o hipermedios interconectados y accesibles vía Internet",
+    "zh": "別名：萬維網、環球網、全球信息網",
+    "zh-hans": "由许多互相链接的超文本组成的系统，通过互联网访问",
+    "fr": "système mondial de documents liés entre eux par des liens hypertextes et accessibles via l'Internet",
+    "ko": "인터넷에 연결된 컴퓨터의 정보 공유를 위한 전 세계적인 정보 공간"
+   },
+   "wiki": {
+    "en": "World Wide Web",
+    "jp": "World Wide Web"
+   }
+  },
+  {
+   "q": "Q99717",
+   "kind": "revolution",
+   "d": "1989-04-15",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    116.392,
+    39.903
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "1989 Tiananmen Square protests and massacre",
+    "jp": "六四天安門事件",
+    "de": "Tian’anmen-Massaker",
+    "ru": "Протесты на площади Тяньаньмэнь (1989)",
+    "es": "Protestas de la Plaza de Tian'anmen de 1989",
+    "zh": "六四事件",
+    "zh-hans": "六四事件",
+    "fr": "manifestations de la place Tian'anmen",
+    "ko": "1989년 톈안먼 사건"
+   },
+   "desc": {
+    "en": "Chinese pro-democracy movement and subsequent massacre",
+    "jp": "1989年に中国で発生した民主化デモおよび武力鎮圧事件",
+    "de": "gewaltsame Niederschlagung eines Volksaufstandes in China 1989",
+    "ru": "акции протеста в Пекине",
+    "es": "serie de manifestaciones en la República Popular China en 1989",
+    "zh": "1989年4月開始的中華人民共和國抗議示威活動，當年6月4日始遭到中國人民解放軍武力鎮壓",
+    "zh-hans": "1989年4月开始的中华人民共和国抗议示威活动，当年6月4日始遭到中国人民解放军武力镇压",
+    "fr": "événement politique en Chine",
+    "ko": "중국의 민주화 운동과 그에 따른 학살"
+   },
+   "wiki": {
+    "en": "1989 Tiananmen Square protests and massacre",
+    "jp": "六四天安門事件"
+   }
+  },
+  {
+   "q": "Q69163529",
+   "kind": "revolution",
+   "d": "1989-11-09",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    13.404,
+    52.519
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "fall of the Berlin Wall",
+    "jp": "ベルリンの壁崩壊",
+    "de": "Mauerfall",
+    "ru": "падение Берлинской стены",
+    "es": "Caída del muro de Berlín",
+    "fr": "chute du Mur de Berlin",
+    "ko": "베를린 장벽 붕괴"
+   },
+   "desc": {
+    "en": "historical event in November 1989 where the Berlin Wall was opened and demolished",
+    "jp": "1989年にドイツで始まった「ベルリンの壁」の撤去作業",
+    "de": "Öffnung der Berliner Mauer",
+    "es": "suceso histórico en donde el muro de Berlín fue abierto y demolido",
+    "fr": "événement historique en novembre 1989",
+    "ko": "철의 장막이 무너지고 공산주의의 몰락이 시작된 사건"
+   },
+   "wiki": {
+    "en": "Fall of the Berlin Wall",
+    "jp": "ベルリンの壁崩壊"
+   }
+  },
+  {
+   "q": "Q192446",
+   "kind": "space",
+   "d": "1990",
+   "prec": "year",
+   "prop": "P571",
+   "name": {
+    "en": "Human Genome Project",
+    "jp": "ヒトゲノム計画",
+    "de": "Humangenomprojekt",
+    "ru": "проект «Геном человека»",
+    "es": "Proyecto Genoma Humano",
+    "zh": "人類基因組計劃",
+    "zh-hans": "人类基因组计划",
+    "fr": "projet génome humain",
+    "ko": "인간 게놈 프로젝트"
+   },
+   "desc": {
+    "en": "research program for sequencing the human genome",
+    "de": "internationales Forschungsprojekt mit dem Ziel, das menschliche Genom zu entschlüsseln",
+    "ru": "исследовательская программа по поиску генома человека",
+    "es": "proyecto de investigación científica",
+    "fr": "projet",
+    "ko": "인간 유전체의 염기 서열을 밝히는 것을 목적으로 한 프로젝트"
+   },
+   "wiki": {
+    "en": "Human Genome Project",
+    "jp": "ヒトゲノム計画"
+   }
+  },
+  {
+   "q": "Q37643",
+   "kind": "war",
+   "d": "1990-08-02",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    47.6,
+    29.167
+   ],
+   "atBy": "P276 Q817",
+   "name": {
+    "en": "Gulf War",
+    "jp": "湾岸戦争",
+    "de": "Zweiter Golfkrieg",
+    "ru": "Война в Персидском заливе",
+    "es": "Guerra del Golfo",
+    "zh": "波斯灣戰爭",
+    "fr": "guerre du Golfe",
+    "ko": "걸프 전쟁"
+   },
+   "desc": {
+    "en": "1990–1991 conflict between Iraq and a 42-country coalition",
+    "jp": "イラクとアメリカ主導の多国籍軍間の戦争",
+    "de": "Krieg in Irak und Kuwait zwischen 1990 und 1991",
+    "ru": "война международной коалиции во главе с США против Ирака (1990—1991)",
+    "es": "campaña militar de la Coalición Internacional contra el régimen de Saddam Hussein",
+    "zh-hans": "1991年由美国领导的多国联军与伊拉克之间的战争",
+    "fr": "guerre opposant l'Irak à une coalition, de 1990 à 1991",
+    "ko": "1991년에 일어난 이라크와 다국적 연합군 간의 전쟁"
+   },
+   "wiki": {
+    "en": "Gulf War",
+    "jp": "湾岸戦争"
+   }
+  },
+  {
+   "q": "Q131297",
+   "kind": "disaster",
+   "d": "1994-04-07",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    30,
+    -2
+   ],
+   "atBy": "P276 Q1037",
+   "name": {
+    "en": "1994 Genocide against Tutsi",
+    "jp": "1994年 ツチ族に対するジェノサイド",
+    "de": "Völkermord in Ruanda",
+    "ru": "геноцид в Руанде",
+    "es": "Genocidio de 1994 contra los tutsis",
+    "zh": "盧安達大屠殺",
+    "zh-hans": "卢旺达大屠杀",
+    "fr": "génocide contre les Tutsis de 1994",
+    "ko": "르완다 집단학살"
+   },
+   "desc": {
+    "en": "1994 genocide against the Tutsi in Rwanda in which 800,000 were killed",
+    "de": "umfangreiche Gewalttaten in Ruanda 1994",
+    "ru": "массовое убийство руандийских тутси местными хуту 6 апреля — 18 июля 1994 года",
+    "es": "exterminio de la población tutsi de Ruanda en 1994",
+    "fr": "génocide en 1994"
+   },
+   "wiki": {
+    "en": "Rwandan genocide",
+    "jp": "ルワンダ虐殺"
+   }
+  },
+  {
+   "q": "Q957012",
+   "kind": "revolution",
+   "d": "1994-04-26",
+   "prec": "day",
+   "prop": "P580",
+   "name": {
+    "en": "1994 South African general election",
+    "jp": "1994年南アフリカ総選挙",
+    "de": "Parlamentswahl in Südafrika 1994",
+    "ru": "Парламентские выборы в ЮАР (1994)",
+    "es": "elecciones generales en Sudáfrica de 1994",
+    "zh": "1994年南非大選",
+    "zh-hans": "1994年南非大选",
+    "fr": "élections générales sud-africaines de 1994",
+    "ko": "1994년 남아공 총선"
+   },
+   "desc": {
+    "en": "first South African election held under universal suffrage",
+    "de": "Wahl",
+    "es": "primeras elecciones democráticas desde la abolición del Apartheid en 1994",
+    "fr": "premières élections non raciales au suffrage universel de l'histoire du pays"
+   },
+   "wiki": {
+    "en": "1994 South African general election"
+   }
+  },
+  {
+   "q": "Q2608162",
+   "kind": "assassination",
+   "d": "1995-11-04",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    34.781,
+    32.082
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "assassination of Yitzhak Rabin",
+    "jp": "イツハク・ラビン暗殺事件",
+    "ru": "убийство Ицхака Рабина",
+    "es": "Asesinato de Yitzhak Rabin",
+    "zh": "拉賓遇刺案",
+    "zh-hans": "拉宾遇刺案",
+    "fr": "assassinat d'Yitzhak Rabin"
+   },
+   "desc": {
+    "en": "1995 murder in Tel Aviv, Israel",
+    "jp": "1995年のイスラエル・テルアビブでの暗殺事件",
+    "es": "magnicidio contra el primer ministro israelí Isaac Rabin",
+    "fr": "assassinat du premier ministre israélien en 1995"
+   },
+   "wiki": {
+    "en": "Assassination of Yitzhak Rabin"
+   }
+  },
+  {
+   "q": "Q15251",
+   "kind": "geo",
+   "d": "1997-07-01",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    114.159,
+    22.278
+   ],
+   "atBy": "P276 Q8646",
+   "name": {
+    "en": "handover of Hong Kong",
+    "jp": "香港返還",
+    "de": "Wiedererlangung der Unabhängigkeit von Hongkong",
+    "ru": "Передача Гонконга КНР",
+    "es": "Transferencia de soberanía de Hong Kong",
+    "zh": "香港回歸",
+    "zh-hans": "香港回归",
+    "fr": "Transfert de souveraineté sur Hong Kong",
+    "ko": "홍콩 반환"
+   },
+   "desc": {
+    "en": "transfer of sovereignty of Hong Kong to the People's Republic of China",
+    "jp": "イギリスが香港の主権を中国ヘ引き継いだ歴史的出来事",
+    "de": "Ende des Status als britische Kolonie",
+    "ru": "Процесс деколонизации в Великобритании, ознаменовавший конец Британской колониальной империи и передачи Гонконга КНР",
+    "es": "Retorno por parte del Reino Unido a la República Popular de China",
+    "zh": "英國將香港移交中華人民共和國的歷史事件",
+    "zh-hans": "英国将香港移交中华人民共和国的历史事件",
+    "fr": "transfert de souveraineté sur Hong Kong du Royaume-uni à la République populaire de Chine",
+    "ko": "영국이 홍콩의 주권을 중국에 이어 역사적 사건"
+   },
+   "wiki": {
+    "en": "Handover of Hong Kong",
+    "jp": "香港返還"
+   }
+  },
+  {
+   "q": "Q80880",
+   "kind": "economic",
+   "d": "1997-07-02",
+   "prec": "day",
+   "prop": "P580",
+   "name": {
+    "en": "1997 Asian financial crisis",
+    "jp": "アジア通貨危機",
+    "de": "Asienkrise",
+    "ru": "Азиатский финансовый кризис",
+    "es": "crisis financiera asiática",
+    "zh": "亞洲金融危機",
+    "zh-hans": "亚洲金融危机",
+    "fr": "crise économique asiatique",
+    "ko": "1997년 아시아 금융 위기"
+   },
+   "desc": {
+    "en": "financial crisis in many East/Southeast Asian countries starting in 1997",
+    "jp": "1997年から1998年にかけて東アジアおよび東南アジアを襲った地域金融危機",
+    "de": "ökonomische Krise in Asien",
+    "ru": "кризис в Азии",
+    "es": "crisis financiera de 1997",
+    "zh": "1997年亞洲部分國家發生的金融危機",
+    "zh-hans": "1997年亚洲部分国家发生的金融危机",
+    "fr": "crise économique",
+    "ko": "1997년 7월부터 시작되어 세계 경제에 불안을 야기한 일련의 금융 위기"
+   },
+   "wiki": {
+    "en": "1997 Asian financial crisis",
+    "jp": "アジア通貨危機"
+   }
+  },
+  {
+   "q": "Q4916",
+   "kind": "economic",
+   "d": "1999-01-01",
+   "prec": "day",
+   "prop": "P580",
+   "name": {
+    "jp": "ユーロ",
+    "de": "Euro",
+    "ru": "евро",
+    "zh": "歐元",
+    "zh-hans": "欧元",
+    "ko": "유로",
+    "en": "euro"
+   },
+   "desc": {
+    "en": "currency of most countries in the European Union",
+    "jp": "欧州連合の多くの国で使われている通貨",
+    "de": "europäische Währung",
+    "ru": "официальная валюта большинства стран еврозоны (Евросоюза)",
+    "es": "moneda oficial de la eurozona emitida por el Banco Central Europeo",
+    "zh": "歐盟貨幣",
+    "zh-hans": "欧盟货币",
+    "fr": "monnaie de l’Union européenne",
+    "ko": "유럽 연합의 공식 통화"
+   },
+   "wiki": {
+    "en": "Euro",
+    "jp": "ユーロ"
+   },
+   "refused": [
+    {
+     "p": "P580",
+     "v": "2002-01-01",
+     "why": "the day the euro’s notes and coins began to circulate, not the day the currency began: it was introduced on 1 January 1999 (Council Regulation (EC) No 974/98, Art. 2), the item’s other P580"
+    }
+   ]
+  },
+  {
+   "q": "Q10806",
+   "kind": "war",
+   "d": "2001-09-11",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    -77.108,
+    38.88
+   ],
+   "atBy": "P276 Q107126",
+   "name": {
+    "en": "September 11 attacks",
+    "jp": "アメリカ同時多発テロ事件",
+    "de": "Terroranschläge am 11. September 2001",
+    "ru": "Теракты 11 сентября 2001 года",
+    "es": "Atentados del 11 de septiembre de 2001",
+    "zh": "九一一襲擊事件",
+    "zh-hans": "九一一袭击事件",
+    "fr": "attentats du 11 septembre 2001",
+    "ko": "9·11 테러"
+   },
+   "desc": {
+    "en": "2001 attacks in the United States",
+    "jp": "2001年9月11日にアメリカで発生した同時多発テロ攻撃事件",
+    "de": "Flugzeugentführungen mit anschließenden Selbstmordattentaten in den Vereinigten Staaten",
+    "ru": "серия террористических атак 11 сентября 2001 года",
+    "es": "ataques ocurridos en los Estados Unidos en 2001",
+    "zh": "2001年9月11日於美國多地同步發生的恐怖襲擊事件",
+    "zh-hans": "2001年9月11日于美国多地同步发生的恐怖袭击事件",
+    "fr": "série d'attentats-suicides aux États-Unis, perpétrés au moyen d’avions",
+    "ko": "2001년 9월 11일에 미국을 노린 테러 공격"
+   },
+   "wiki": {
+    "en": "September 11 attacks",
+    "jp": "アメリカ同時多発テロ事件"
+   }
+  },
+  {
+   "q": "Q107802",
+   "kind": "war",
+   "d": "2003-03-20",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    43,
+    33
+   ],
+   "atBy": "P276 Q796",
+   "name": {
+    "en": "2003 invasion of Iraq",
+    "jp": "イラク軍事介入（2003年）",
+    "de": "Invasion im Irak 2003",
+    "ru": "Вторжение коалиционных сил в Ирак",
+    "es": "invasión de Irak de 2003",
+    "zh": "2003年入侵伊拉克",
+    "zh-hans": "2003年入侵伊拉克",
+    "fr": "invasion de l'Irak de 2003",
+    "ko": "2003년 이라크 침공"
+   },
+   "desc": {
+    "en": "2003 military invasion led by the United States",
+    "jp": "2003年にイラク戦争で行われた軍事作戦",
+    "de": "Beginn des Irakkrieges",
+    "ru": "Вторжение США и их союзников в Ирак с целью свержения диктатуры Саддама Хусейна",
+    "es": "etapa de la guerra de Irak",
+    "zh": "2003年的戰爭",
+    "fr": "opération militaire de la guerre d'Irak",
+    "ko": "2003년 이라크에 대한 무력침공"
+   },
+   "wiki": {
+    "en": "2003 invasion of Iraq",
+    "jp": "2003年イラク攻撃"
+   }
+  },
+  {
+   "q": "Q130754",
+   "kind": "disaster",
+   "d": "2004-12-26",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    95.982,
+    3.295
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "2004 Indian Ocean earthquake",
+    "jp": "スマトラ島沖地震",
+    "de": "Erdbeben im Indischen Ozean 2004",
+    "ru": "Землетрясение в Индийском океане в 2004 году",
+    "es": "Terremoto y tsunami del Océano Índico de 2004",
+    "zh": "2004年印度洋大地震",
+    "zh-hans": "2004年印度洋大地震",
+    "fr": "séisme et tsunami de 2004 dans l'océan Indien",
+    "ko": "2004년 인도양 지진해일"
+   },
+   "desc": {
+    "en": "megathrust underwater earthquake and subsequent tsunami in the Indian Ocean",
+    "jp": "2004年12月26日にインドネシアのスマトラ島沖で発生した巨大地震",
+    "de": "unterseeisches Erdbeben, mit anschließenden Tsunamis",
+    "ru": "сильнейшее землетрясение, вызвавшее смертоносное цунами 26 декабря 2004",
+    "es": "megasismo tsunamigénico, violento y mortífero de 9.3 Mw, con hipocentro submarino, (c. Indonesia) el 26 de diciembre",
+    "fr": "séisme en Indonésie et tsunami dans l'océan Indien",
+    "ko": "2004년 인도네시아 수마트라섬 해역에서 일어난 초거대지진"
+   },
+   "wiki": {
+    "en": "2004 Indian Ocean earthquake and tsunami",
+    "jp": "スマトラ島沖地震 (2004年)"
+   }
+  },
+  {
+   "q": "Q16422",
+   "kind": "disaster",
+   "d": "2005-08-23",
+   "prec": "day",
+   "prop": "P580",
+   "name": {
+    "en": "Hurricane Katrina",
+    "jp": "ハリケーン・カトリーナ",
+    "de": "Hurrikan Katrina",
+    "ru": "Катрина",
+    "es": "Huracán Katrina",
+    "zh": "颶風卡特里娜",
+    "zh-hans": "飓风卡特里娜",
+    "fr": "ouragan Katrina",
+    "ko": "허리케인 카트리나"
+   },
+   "desc": {
+    "en": "Category 5 Atlantic hurricane in 2005",
+    "jp": "2005年に大西洋で発生したハリケーン",
+    "de": "tropischer Wirbelsturm mit verheerenden Folgen in den USA, 2005",
+    "ru": "ураган 2005 года",
+    "es": "mortífero huracán del Atlántico de categoría 5, en 2005",
+    "zh-hans": "2005年出现的一个五级飓风",
+    "fr": "ouragan de catégorie 5 en août 2005"
+   },
+   "wiki": {
+    "en": "Hurricane Katrina",
+    "jp": "ハリケーン・カトリーナ"
+   }
+  },
+  {
+   "q": "Q621427",
+   "kind": "space",
+   "d": "2007-01-09",
+   "prec": "day",
+   "prop": "P571",
+   "name": {
+    "ru": "IPhone (первого поколения)",
+    "ko": "아이폰",
+    "en": "iPhone"
+   },
+   "desc": {
+    "en": "first smartphone of the iPhone line by Apple Inc.",
+    "jp": "2007年に発売されたAppleのスマートフォン",
+    "de": "erstes Smartphone der iPhone-Reihe von Apple (2007)",
+    "ru": "Смартфон от Apple",
+    "es": "1ª generación del teléfono inteligente de gama alta desarrollado por Apple Inc.",
+    "zh": "蘋果公司開發的智能手機",
+    "zh-hans": "苹果公司开发的智能手机",
+    "fr": "premier iPhone à avoir été commercialisé, prenant en charge les réseaux EDGE",
+    "ko": "Apple의 1세대 스마트폰"
+   },
+   "wiki": {
+    "en": "IPhone (1st generation)",
+    "jp": "IPhone (初代)"
+   },
+   "refused": [
+    {
+     "p": "P577",
+     "v": "2007-06-09",
+     "why": "the first iPhone went on sale in the United States on 29 June 2007 (Apple press release, 28 June 2007, «iPhone Premieres This Friday Night at Apple Retail Stores»); nothing happened on 9 June"
+    }
+   ]
+  },
+  {
+   "q": "Q3269580",
+   "kind": "economic",
+   "d": "2008-09-15",
+   "prec": "day",
+   "prop": "P585",
+   "name": {
+    "en": "bankruptcy of Lehman Brothers",
+    "jp": "リーマン・ショック",
+    "es": "Quiebra de Lehman Brothers",
+    "zh-hans": "雷曼兄弟迷你债券事件",
+    "fr": "faillite de Lehman Brothers",
+    "ko": "리먼 브라더스의 파산"
+   },
+   "desc": {
+    "en": "financial collapse and Chapter 11 bankruptcy filing of American investment bank Lehman Brothers Holdings Inc. and related entities during subprime mortgage crisis and great recession",
+    "jp": "2008年のアメリカの投資銀行の倒産による金融危機",
+    "ko": "2008년 9월 일어난 금융 회사 리먼 브라더스의 파산 사태"
+   },
+   "wiki": {
+    "en": "Bankruptcy of Lehman Brothers",
+    "jp": "リーマン・ショック"
+   }
+  },
+  {
+   "q": "Q956475",
+   "kind": "economic",
+   "d": "2009",
+   "prec": "year",
+   "prop": "P580",
+   "name": {
+    "en": "Greek government-debt crisis",
+    "jp": "ギリシャ債務危機",
+    "de": "Griechische Staatsschuldenkrise",
+    "ru": "Долговой кризис в Греции",
+    "es": "Crisis financiera en Grecia de 2010-2012",
+    "zh": "希臘國債危機",
+    "zh-hans": "希腊国债危机",
+    "fr": "crise de la dette publique grecque",
+    "ko": "그리스 국가 부채 위기"
+   },
+   "desc": {
+    "en": "economic crisis",
+    "de": "Wirtschaftskrise in Griechenland seit 2010",
+    "es": "Crisis griega",
+    "fr": "crise économique"
+   },
+   "wiki": {
+    "en": "Greek government-debt crisis"
+   }
+  },
+  {
+   "q": "Q43777",
+   "kind": "disaster",
+   "d": "2010-01-12",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    -72.445,
+    18.451
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "2010 Haiti earthquake",
+    "jp": "ハイチ地震",
+    "de": "Erdbeben in Haiti 2010",
+    "ru": "Землетрясение на Гаити",
+    "es": "terremoto de Haití de 2010",
+    "fr": "séisme de 2010 à Haïti",
+    "ko": "2010년 아이티 지진"
+   },
+   "desc": {
+    "en": "12 January 2010 magnitude 7.0 Mw earthquake",
+    "jp": "ハイチで起こった大規模地震",
+    "de": "Erdbebenereignis",
+    "ru": "Природная катастрофа, унесшая более 200 тыс. жизней",
+    "es": "sismo extremo y mortífero, de 7.0 Mw, con epicentro muy cerca de Puerto Príncipe",
+    "fr": "tremblement de terre très meurtrier survenu le 12 janvier 2010 à Haïti",
+    "ko": "2010년 아이티 포르토프랭스 인근에서 발생한 지진"
+   },
+   "wiki": {
+    "en": "2010 Haiti earthquake",
+    "jp": "ハイチ地震 (2010年)"
+   }
+  },
+  {
+   "q": "Q4735638",
+   "kind": "disaster",
+   "d": "2010-04-20",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    -88.387,
+    28.737
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Deepwater Horizon oil spill",
+    "jp": "2010年メキシコ湾原油流出事故",
+    "de": "Ölpest im Golf von Mexiko 2010",
+    "ru": "Разлив нефти вследствие взрыва платформы Deepwater Horizon",
+    "es": "Derrame de petróleo de Deepwater Horizon",
+    "fr": "marée noire de Deepwater Horizon",
+    "ko": "딥워터 호라이즌 기름 유출 사고"
+   },
+   "desc": {
+    "en": "oil spill that began in April 2010 in the Gulf of Mexico",
+    "de": "ökologische Katastrophe",
+    "es": "derrame de petróleo que comenzó en abril de 2010 en el Golfo de México"
+   },
+   "wiki": {
+    "en": "Deepwater Horizon oil spill",
+    "jp": "2010年メキシコ湾原油流出事故"
+   },
+   "refused": [
+    {
+     "p": "P585",
+     "v": "2010-04-15",
+     "why": "the blowout and explosion of the Deepwater Horizon were on 20 April 2010 (National Commission on the BP Deepwater Horizon Oil Spill, Report to the President, January 2011) — the item’s own P580"
+    }
+   ]
+  },
+  {
+   "q": "Q33761",
+   "kind": "revolution",
+   "d": "2010-12-17",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    15.5,
+    10.5
+   ],
+   "atBy": "P276 Q143487",
+   "name": {
+    "en": "Arab Spring",
+    "jp": "アラブの春",
+    "de": "Arabischer Frühling",
+    "ru": "Арабская весна",
+    "es": "Primavera Árabe",
+    "fr": "printemps arabe",
+    "ko": "아랍의 봄"
+   },
+   "desc": {
+    "en": "protests and revolutions in the Arab world in the 2010s",
+    "jp": "2010年から2012年にかけてアラブ世界において発生した、前例にない大規模反政府デモを主とした騒乱の総称",
+    "de": "Serie von Protesten, Aufständen und Revolutionen in der arabischen Welt",
+    "ru": "волна протестов и восстаний, проходившая в арабском мире в начале 2011 года",
+    "es": "serie de protestas populares y revoluciones en los países árabes acontecidos en la década de 2010",
+    "fr": "contestations populaires dans de nombreux pays du monde arabe à partir de décembre 2010"
+   },
+   "wiki": {
+    "en": "Arab Spring",
+    "jp": "アラブの春"
+   }
+  },
+  {
+   "q": "Q81545",
+   "kind": "revolution",
+   "d": "2011-02-15",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    16.521,
+    31.196
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Libyan Civil War",
+    "jp": "2011年リビア内戦",
+    "de": "Bürgerkrieg in Libyen",
+    "ru": "Гражданская война в Ливии",
+    "es": "guerra de Libia de 2011",
+    "fr": "guerre civile libyenne",
+    "ko": "리비아 내전"
+   },
+   "desc": {
+    "en": "2011 armed conflict in the North African country of Libya",
+    "jp": "2011年にリビアにおいて勃発した反政府勢力間の内戦",
+    "de": "aus Demonstrationen hervorgegangener Krieg im Zuge des Arabischen Frühlings",
+    "ru": "вооружённый конфликт в Ливии",
+    "es": "conflicto bélico internacional",
+    "fr": "guerre entre le gouvernement de Mouammar Kadhafi et ses opposants (2011)",
+    "ko": "2011년 북아프리카 리비아의 무력 충돌"
+   },
+   "wiki": {
+    "en": "Libyan civil war (2011)",
+    "jp": "2011年リビア内戦"
+   }
+  },
+  {
+   "q": "Q36204",
+   "kind": "disaster",
+   "d": "2011-03-11",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    142.369,
+    38.322
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "2011 Tōhoku earthquake and tsunami",
+    "jp": "東北地方太平洋沖地震",
+    "de": "Tōhoku-Erdbeben 2011",
+    "ru": "землетрясение в Японии",
+    "es": "Terremoto y tsunami de Japón de 2011",
+    "zh": "2011年日本東北地方太平洋近海地震",
+    "fr": "séisme de 2011 de la côte Pacifique du Tōhoku",
+    "ko": "도호쿠 지방 태평양 해역 지진"
+   },
+   "desc": {
+    "en": "megathrust earthquake off the east coast of Japan",
+    "jp": "2011年3月11日に日本の三陸沖の太平洋を震源として発生した巨大地震",
+    "de": "Erdbeben in Japan",
+    "ru": "землетрясение 2011 года магнитудой 9,0—9,1 балла",
+    "es": "megasismo tsunamigénico, violento y mortífero, de 9.1 Mw, ocurrido en la costa noreste de Japón, el 11 de marzo",
+    "fr": "séisme au large du Japon en 2011",
+    "ko": "규모 9.0 - 9.1(Mw) 2011년 3월 11일 14:46 JST(05:47 UTC)에 일본 연안에서 발생한 해저 메가스러스트 지진"
+   },
+   "wiki": {
+    "en": "2011 Tōhoku earthquake and tsunami",
+    "jp": "東北地方太平洋沖地震"
+   }
+  },
+  {
+   "q": "Q402",
+   "kind": "space",
+   "d": "2012",
+   "prec": "year",
+   "prop": "P575",
+   "name": {
+    "en": "Higgs boson",
+    "jp": "ヒッグス粒子",
+    "de": "Higgs-Boson",
+    "ru": "бозон Хиггса",
+    "es": "bosón de Higgs",
+    "fr": "boson de Higgs",
+    "ko": "히그스 보손"
+   },
+   "desc": {
+    "en": "elementary particle transmitting the Higgs field giving particles mass",
+    "jp": "物質に質量を与える素粒子",
+    "de": "Elementarteilchen",
+    "ru": "элементарная частица, квант поля Хиггса, ответственная за нарушение электрослабой симметрии",
+    "es": "partícula elemental de la materia",
+    "zh-hans": "标准模型预言存在的一种基本粒子",
+    "fr": "particule élémentaire impliquée dans la masse au repos"
+   },
+   "wiki": {
+    "en": "Higgs boson",
+    "jp": "ヒッグス粒子"
+   }
+  },
+  {
+   "q": "Q15920546",
+   "kind": "war",
+   "d": "2014-02-20",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    34,
+    45
+   ],
+   "atBy": "P276 Q7835",
+   "name": {
+    "en": "Russian annexation of Crimea",
+    "jp": "ロシアによるクリミア・セヴァストポリの編入",
+    "de": "Annexion der Krim durch Russland",
+    "ru": "аннексия Крыма Российской Федерацией",
+    "es": "anexión de Crimea por Rusia",
+    "zh": "俄羅斯合併克里米亞",
+    "zh-hans": "俄罗斯合并克里米亚",
+    "fr": "annexion de la Crimée par la Russie en 2014",
+    "ko": "러시아의 크림반도 합병"
+   },
+   "desc": {
+    "en": "annexation of Crimea into Russia in 2014",
+    "jp": "2014年の領土の併合",
+    "de": "völkerrechtswidrige Annexion der Krim durch Russland von der Ukraine im Jahre 2014",
+    "ru": "присоединение Крыма Россией в 2014 году",
+    "es": "anexión de Crimea por parte de Rusia de Ucrania en 2014",
+    "fr": "événement de la guerre russo-ukrainienne",
+    "ko": "2014년 러시아가 크림 공화국을 합병한 사건"
+   },
+   "wiki": {
+    "en": "2014 Russian annexation of Crimea",
+    "jp": "ロシアによるクリミアの併合"
+   }
+  },
+  {
+   "q": "Q21479779",
+   "kind": "war",
+   "d": "2015-11-13",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    2.371,
+    48.863
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "November 2015 Paris attacks",
+    "jp": "パリ同時多発テロ事件",
+    "de": "Terroranschläge am 13. November 2015 in Paris",
+    "ru": "террористические акты в Париже 13 ноября 2015 года",
+    "es": "atentados de París de noviembre de 2015",
+    "zh": "2015年11月巴黎襲擊案",
+    "fr": "attentats du 13 novembre 2015 en Île-de-France",
+    "ko": "2015년 11월 파리 테러"
+   },
+   "desc": {
+    "en": "series of terrorist attacks in Paris, France, Europe, on November 13, 2015",
+    "jp": "2015年にフランスで発生した同時多発テロ攻撃事件",
+    "de": "Attentatsserie in der Region Île-de-France, Frankreich",
+    "ru": "крупная террористическая акция, совершенная в разных районах французской столицы",
+    "es": "serie de ataques terroristas de corte yihadista en Francia, Europa",
+    "fr": "série d'attentats islamistes ayant eu lieu en Île-de-France",
+    "ko": "2015년 프랑스 테러"
+   },
+   "wiki": {
+    "en": "November 2015 Paris attacks",
+    "jp": "パリ同時多発テロ事件"
+   }
+  },
+  {
+   "q": "Q21707860",
+   "kind": "geo",
+   "d": "2015-12-12",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    2.352,
+    48.857
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "Paris Agreement",
+    "jp": "パリ協定",
+    "de": "Übereinkommen von Paris",
+    "ru": "Парижское соглашение по климату",
+    "es": "Acuerdo de París",
+    "fr": "accord universel des négociations climatiques de Paris",
+    "ko": "파리 협정"
+   },
+   "desc": {
+    "en": "2015 international treaty regarding climate change",
+    "jp": "気候変動抑制に関する多国間の国際的な協定",
+    "de": "Weltklimavertrag, beschlossen 2015 in Paris",
+    "ru": "соглашение в рамках Рамочной конвенции ООН об изменении климата",
+    "es": "tratado internacional de 2015 sobre cambio climático",
+    "fr": "premier accord international ratifié sur le climat"
+   },
+   "wiki": {
+    "en": "Paris Agreement",
+    "jp": "パリ協定 (気候変動)"
+   }
+  },
+  {
+   "q": "Q21738197",
+   "kind": "space",
+   "d": "2015-12-22",
+   "prec": "day",
+   "prop": "P619",
+   "name": {
+    "en": "Falcon 9 Flight 20",
+    "jp": "ファルコン9フライト20",
+    "de": "Falcon-9-Flug 20",
+    "ru": "20-й полёт Falcon 9",
+    "es": "Falcon 9 Vuelo 20",
+    "zh": "獵鷹9號第20次飛行任務",
+    "zh-hans": "猎鹰9号第20次飞行任务"
+   },
+   "desc": {
+    "en": "20th launch of the Falcon 9 rocket, carrying 11 Orbcomm-OG2 satellites; first landing of an orbital rocket first stage",
+    "de": "war der 20. Flug einer Rakete des Typs Falcon 9 des US-amerikanischen privaten Raumfahrtunternehmens SpaceX. Der Start fand am 21. Dezember 2015 ab 20:29 Uhr Ortszeit, Eastern Time statt"
+   },
+   "wiki": {
+    "en": "Falcon 9 flight 20"
+   }
+  },
+  {
+   "q": "Q21812812",
+   "kind": "geo",
+   "d": "2016-06-23",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    -2,
+    54.6
+   ],
+   "atBy": "P276 Q145",
+   "name": {
+    "en": "2016 United Kingdom European Union membership referendum",
+    "jp": "イギリスの欧州連合離脱是非を問う国民投票",
+    "de": "EU-Mitgliedschaftsreferendum im Vereinigten Königreich 2016",
+    "ru": "референдум о членстве Великобритании в Европейском союзе",
+    "es": "referéndum sobre la permanencia del Reino Unido en la Unión Europea",
+    "fr": "référendum sur l'appartenance du Royaume-Uni à l'Union européenne",
+    "ko": "2016년 영국 유럽 연합 회원국 국민투표"
+   },
+   "desc": {
+    "en": "referendum on the United Kingdom's membership of the European Union which took place on 23 June 2016",
+    "de": "Referendum im Vereinigten Königreich am 23. Juni 2016",
+    "ru": "референдум 2016 года",
+    "es": "plebiscito que tuvo lugar el 23 de junio 2016",
+    "fr": "référendum britannique le 23 juin 2016",
+    "ko": "유럽 연합 잔류에 대한 국민투표"
+   },
+   "wiki": {
+    "en": "2016 United Kingdom European Union membership referendum",
+    "jp": "イギリスの欧州連合離脱是非を問う国民投票"
+   }
+  },
+  {
+   "q": "Q63167656",
+   "kind": "disaster",
+   "d": "2019-04-15",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    2.35,
+    48.853
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "2019 fire at Notre-Dame de Paris",
+    "jp": "ノートルダム大聖堂の火災",
+    "de": "Brand der Kathedrale Notre-Dame de Paris",
+    "ru": "пожар в соборе Парижской Богоматери (2019)",
+    "es": "incendio en la catedral de Notre Dame de París",
+    "zh": "2019年巴黎聖母院大火",
+    "fr": "incendie de Notre-Dame de Paris",
+    "ko": "노트르담 대성당 화재"
+   },
+   "desc": {
+    "en": "2019 church fire in Paris, France",
+    "jp": "2019年4月にフランス・パリのノートルダム大聖堂で発生した火災",
+    "de": "Großbrand in der Nacht vom 15. auf den 16. April 2019",
+    "ru": "пожар в соборе Парижской Богоматери в 2019 году",
+    "es": "incidente en Francia en 2019",
+    "zh": "發生於巴黎聖母院的火災",
+    "fr": "incendie de la cathédrale Notre-Dame de Paris le 15 avril 2019",
+    "ko": "2019년 프랑스 파리 노트르담 대성당에서 발생한 화재"
+   },
+   "wiki": {
+    "en": "Notre-Dame fire",
+    "jp": "ノートルダム大聖堂の火災"
+   }
+  },
+  {
+   "q": "Q81068910",
+   "kind": "disaster",
+   "d": "2019-12-01",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    114.298,
+    30.595
+   ],
+   "atBy": "P276 Q11746",
+   "name": {
+    "en": "COVID-19 pandemic",
+    "jp": "新型コロナウイルス感染症 (COVID-19) の世界的流行",
+    "de": "COVID-19-Pandemie",
+    "ru": "пандемия COVID-19",
+    "es": "pandemia de COVID-19",
+    "zh": "2019冠狀病毒病疫情",
+    "zh-hans": "2019冠状病毒病疫情",
+    "fr": "pandémie de Covid-19",
+    "ko": "코로나바이러스감염증-19 유행"
+   },
+   "desc": {
+    "en": "pandemic caused by SARS-CoV-2 (2019–2023)",
+    "jp": "新型コロナウイルス（SARS-CoV-2）による肺炎等（COVID-19）の世界的流行",
+    "de": "weltweite virale Infektionskrankheit",
+    "ru": "пандемия коронавирусной инфекции 2019 года (COVID-19), продолжавшаяся с 2020 по 2023 год",
+    "es": "epidemia global de la enfermedad ocasionada por el virus SARS-CoV-2",
+    "zh": "2019年—2023年，由嚴重急性呼吸系統綜合徵冠狀病毒2（SARS-CoV-2）引發的全球疫情",
+    "zh-hans": "2019年—2023年，由严重急性呼吸系统综合征冠状病毒2（SARS-CoV-2）引发的全球疫情",
+    "fr": "épisode viral débuté à Wuhan en 2019",
+    "ko": "중국 후베이성 우한시에서 유래한 신종 코로나바이러스 유행 사건"
+   },
+   "wiki": {
+    "en": "COVID-19 pandemic",
+    "jp": "新型コロナウイルス感染症の世界的流行 (2019年-)"
+   }
+  },
+  {
+   "q": "Q104705419",
+   "kind": "geo",
+   "d": "2021-01-06",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    -77.009,
+    38.89
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "January 6 United States Capitol attack",
+    "jp": "2021年アメリカ合衆国議会議事堂襲撃事件",
+    "de": "Sturm auf das Kapitol in Washington 2021",
+    "ru": "захват Капитолия",
+    "es": "asalto al Capitolio de los Estados Unidos de 2021",
+    "zh": "2021年衝擊美國國會大廈事件",
+    "fr": "assaut du Capitole des États-Unis par des partisans de Donald Trump",
+    "ko": "2021년 미국 국회의사당 습격"
+   },
+   "desc": {
+    "en": "2021 attempt to prevent the U.S. presidential electoral vote count",
+    "jp": "2021年1月6日にアメリカ合衆国で起きた政治的な暴動事件",
+    "de": "gewaltsamer Angriff auf das Kapitol durch Anhänger Donald Trumps am 6. Januar 2021",
+    "ru": "попытка демонстрантов в 2021 году предотвратить смену власти в США по итогам выборов 2020 года",
+    "es": "irrupción violenta de partidarios de Donald Trump en el Capitolio de los Estados Unidos",
+    "zh": "2021年1月6日在美國國會大廈附近發生的騷亂",
+    "fr": "interruption violente de la séance de certification par le Congrès de la victoire de Joe Biden à l'élection présidentielle américaine de 2020",
+    "ko": "2021년 1월 6일에 미국 국회의사당에서 대통령 선거인단 투표 집계를 저지하려는 목적으로 발생한 소요사태"
+   },
+   "wiki": {
+    "en": "January 6 United States Capitol attack",
+    "jp": "2021年アメリカ合衆国議会議事堂襲撃事件"
+   }
+  },
+  {
+   "q": "Q107461898",
+   "kind": "war",
+   "d": "2021-05-01",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    66,
+    33
+   ],
+   "atBy": "P276 Q889",
+   "name": {
+    "en": "2021 Taliban offensive",
+    "jp": "2021年ターリバーン攻勢",
+    "de": "Vormarsch der Taliban in Afghanistan 2021",
+    "ru": "Наступление «Талибана» (2021)",
+    "es": "Ofensiva talibana de 2021",
+    "fr": "offensive des talibans de 2021",
+    "ko": "2021년 탈레반 공세"
+   },
+   "desc": {
+    "en": "2021 military offensive by the Taliban causing the fall of the Islamic Republic of Afghanistan",
+    "de": "Militäroffensive der Taliban im Jahr 2021",
+    "ru": "наступление исламской террористической организации \"Талибан\" на города Афганистана.",
+    "es": "campaña militar talibana en Afganistán",
+    "fr": "offensive militaire en Afghanistan",
+    "ko": "아프가니스탄의 탈레반 공세"
+   },
+   "wiki": {
+    "en": "2021 Taliban offensive",
+    "jp": "2021年ターリバーン攻勢"
+   }
+  },
+  {
+   "q": "Q186447",
+   "kind": "space",
+   "d": "2021-12-25",
+   "prec": "day",
+   "prop": "P619",
+   "name": {
+    "en": "James Webb Space Telescope",
+    "jp": "ジェイムズ・ウェッブ宇宙望遠鏡",
+    "de": "James-Webb-Weltraumteleskop",
+    "ru": "Космический телескоп «Джеймс Уэбб»",
+    "es": "Telescopio espacial James Webb",
+    "zh": "詹姆斯·韋伯太空望遠鏡",
+    "zh-hans": "詹姆斯·韦布空间望远镜",
+    "fr": "télescope spatial James-Webb",
+    "ko": "제임스 웹 우주망원경"
+   },
+   "desc": {
+    "en": "NASA/ESA/CSA space infrared telescope launched in 2021",
+    "jp": "2021年に打ち上げられた宇宙望遠鏡",
+    "de": "Infrarot-Weltraumteleskop",
+    "ru": "орбитальная обсерватория",
+    "es": "observatorio espacial lanzado en 2021",
+    "fr": "télescope spatial de la NASA, l'ESA et l'ASC",
+    "ko": "2021년에 발사된 우주 천문대"
+   },
+   "wiki": {
+    "en": "James Webb Space Telescope",
+    "jp": "ジェイムズ・ウェッブ宇宙望遠鏡"
+   }
+  },
+  {
+   "q": "Q110999040",
+   "kind": "war",
+   "d": "2022-02-24",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    31,
+    49
+   ],
+   "atBy": "P276 Q27468",
+   "name": {
+    "en": "full-scale Russo-Ukrainian war",
+    "jp": "ロシアのウクライナ侵攻",
+    "de": "Russischer Überfall auf die Ukraine 2022",
+    "ru": "вторжение России на Украину (с 2022)",
+    "es": "invasión rusa a Ucrania",
+    "zh": "俄羅斯入侵烏克蘭",
+    "zh-hans": "俄罗斯入侵乌克兰",
+    "fr": "invasion de l'Ukraine par la Russie",
+    "ko": "러시아의 우크라이나 침공"
+   },
+   "desc": {
+    "en": "full-scale invasion of Ukraine by Russia starting on 24 February 2022, part of Russo-Ukrainian War",
+    "jp": "2022年2月24日に開始されたロシア連邦によるウクライナへの全面侵攻",
+    "de": "Einmarsch Russlands in die Ukraine seit dem 24. Februar 2022, Teil des Russisch-Ukrainischen Krieges",
+    "ru": "нападение российских войск на Украину, начавшееся 24 февраля 2022 года",
+    "es": "conflicto armado en curso en Europa Oriental desde 2022",
+    "zh": "自2022年2月24日起俄羅斯對烏克蘭的全面戰爭",
+    "zh-hans": "自2022年2月24日起俄罗斯对乌克兰的全面战争",
+    "fr": "invasion à grande échelle de l'Ukraine par la Russie débutant le 24 février 2022, phase de la guerre russo-ukrainienne",
+    "ko": "러시아가 우크라이나를 침공하면서 발발한 전쟁"
+   },
+   "wiki": {
+    "en": "Russo-Ukrainian war (2022–present)",
+    "jp": "ロシアのウクライナ侵攻"
+   }
+  },
+  {
+   "q": "Q112967003",
+   "kind": "assassination",
+   "d": "2022-07-08",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    135.784,
+    34.694
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "assassination of Shinzō Abe",
+    "jp": "安倍晋三銃撃事件",
+    "de": "Attentat auf Shinzō Abe",
+    "ru": "Убийство Синдзо Абэ",
+    "es": "asesinato de Shinzō Abe",
+    "zh": "安倍晉三遇刺案",
+    "zh-hans": "安倍晋三遇刺案",
+    "fr": "assassinat de Shinzō Abe",
+    "ko": "아베 신조 피살 사건"
+   },
+   "desc": {
+    "en": "2022 killing of former Japanese prime minister",
+    "jp": "2022年7月8日に奈良県奈良市で発生した暗殺事件",
+    "de": "Ermordung des ehemaligen japanischen Premierministers am 8. Juli 2022",
+    "ru": "обстоятельства смерти бывшего премьера Японии 8 июля 2022 года",
+    "es": "asesinato del ex primer ministro japonés Shinzō Abe en 2022",
+    "zh": "2022年日本前內閣總理大臣安倍晉三遭槍擊身亡事件",
+    "zh-hans": "2022年日本前内阁总理大臣安倍晋三遭枪击身亡事件",
+    "fr": "attentat contre l'ancien premier ministre japonais Shinzō Abe le 8 juillet 2022",
+    "ko": "2022년 일본 나라현 나라시에서 발생한 총격 사건"
+   },
+   "wiki": {
+    "en": "Assassination of Shinzo Abe",
+    "jp": "安倍晋三銃撃事件"
+   }
+  },
+  {
+   "q": "Q115564437",
+   "kind": "space",
+   "d": "2022-11-30",
+   "prec": "day",
+   "prop": "P577",
+   "name": {
+    "en": "ChatGPT",
+    "jp": "ChatGPT",
+    "es": "ChatGPT",
+    "ko": "챗GPT"
+   },
+   "desc": {
+    "en": "artificial intelligence chatbot developed by OpenAI",
+    "jp": "OpenAIが開発したチャットボット",
+    "de": "Chatbot auf Basis künstlicher Intelligenz von OpenAI",
+    "ru": "сервис на основе ИИ, созданный американской компанией OpenAI",
+    "es": "bot de charla basado en inteligencia artificial desarrollado por OpenAI",
+    "zh": "OpenAI開發的人工智慧語言模型",
+    "zh-hans": "OpenAI开发的人工智能语言模型",
+    "fr": "agent conversationnel développé par OpenAI",
+    "ko": "대화형 인공지능 챗봇"
+   },
+   "wiki": {
+    "en": "ChatGPT",
+    "jp": "ChatGPT"
+   }
+  },
+  {
+   "q": "Q116691303",
+   "kind": "disaster",
+   "d": "2023-02-06",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    37.032,
+    37.174
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "2023 Turkey–Syria earthquakes",
+    "jp": "トルコ・シリア地震",
+    "de": "Erdbeben in der Türkei und Syrien 2023",
+    "ru": "Землетрясение в Турции и Сирии (2023)",
+    "es": "terremotos de Turquía y Siria de 2023",
+    "zh": "2023年土耳其-敘利亞地震",
+    "zh-hans": "2023年土耳其-叙利亚地震",
+    "fr": "séismes de 2023 en Turquie et Syrie",
+    "ko": "2023년 튀르키예-시리아 지진"
+   },
+   "desc": {
+    "en": "The earthquake that caused destruction in Türkiye and Syria on February 6, 2023",
+    "jp": "2023年2月6日にトルコ・シリアで発生した地震",
+    "de": "starkes Erdbeben im Süden der Türkei und im Norden Syriens am 6. Februar 2023",
+    "ru": "землетрясения, произошедшие 6 февраля 2023 года",
+    "es": "gran terremoto en la región fronteriza entre Turquía y Siria",
+    "zh": "2023年2月6日於土耳其發生的一系列地震",
+    "zh-hans": "2023年2月6日于土耳其和叙利亚边境发生的一系列地震",
+    "fr": "séismes survenus en Turquie et Syrie le 6 février 2023",
+    "ko": "2023년 튀르키예 중부와 시리아 남부에서 발생한 지진"
+   },
+   "wiki": {
+    "en": "2023 Turkey–Syria earthquakes",
+    "jp": "トルコ・シリア地震"
+   }
+  },
+  {
+   "q": "Q117716414",
+   "kind": "war",
+   "d": "2023-04-15",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    32.527,
+    15.603
+   ],
+   "atBy": "P276 Q1963",
+   "name": {
+    "en": "Sudanese civil war",
+    "jp": "スーダン内戦",
+    "de": "Krieg im Sudan",
+    "ru": "Гражданская война в Судане (с 2023)",
+    "es": "tercera guerra civil sudanesa",
+    "fr": "conflit soudanais",
+    "ko": "2023년 수단군-신속 지원군 대치"
+   },
+   "desc": {
+    "en": "ongoing military conflict in Sudan since 2023",
+    "jp": "2023年に始まったスーダンの内戦",
+    "de": "anhaltender militärischer Konflikt im Sudan",
+    "ru": "идущий с 2023 вооружённый конфликт в Судане между Вооружёнными силами Судана и Силами быстрого реагирования",
+    "es": "conflicto armado en curso en Sudán desde 2023",
+    "fr": "conflit armé en cours au Soudan depuis le 15 avril 2023",
+    "ko": "수단에서 발생한 정부군과 신속지원군 사이의 내전"
+   },
+   "wiki": {
+    "en": "Sudanese civil war (2023–present)",
+    "jp": "スーダン内戦 (2023年-)"
+   }
+  },
+  {
+   "q": "Q122976243",
+   "kind": "war",
+   "d": "2023-10-07",
+   "prec": "day",
+   "prop": "P580",
+   "at": [
+    34.51,
+    31.36
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "October 7 attacks",
+    "jp": "アル＝アクサ洪水作戦",
+    "de": "Hamas-Angriff auf Israel 2023",
+    "ru": "Вторжение ХАМАС в Израиль (2023)",
+    "es": "Operación Inundación de Al-Aqsa",
+    "zh": "2023年哈瑪斯襲擊以色列",
+    "fr": "attaques du Hamas contre Israël",
+    "ko": "2023년 10월 7일 하마스의 이스라엘 공격"
+   },
+   "desc": {
+    "en": "terrorist attack and massacre in southern Israel on October 7, 2023 carried out by the Islamic Fundamentalist Terrorist Group Hamas",
+    "jp": "2023年にハマースがイスラエルに侵攻した出来事",
+    "de": "Terrorangriff, der unter Führung der islamistischen Hamas aus dem Gazastreifen am 7. Oktober 2023 gegen Israel gestartet wurde",
+    "ru": "вторжение ХАМАС в приграничные районы Израиля, начавшееся 7 октября 2023 года",
+    "es": "ataque sorpresa hecho por Hamás en contra de Israel",
+    "fr": "série d'attaques du Hamas contre Israël",
+    "ko": "2023년 10월 7일 하마스의 가자 외곽 지구 공격"
+   },
+   "wiki": {
+    "en": "October 7 attacks",
+    "jp": "2023年ハマスによるイスラエル攻撃"
+   }
+  },
+  {
+   "q": "Q125289722",
+   "kind": "disaster",
+   "d": "2024-04-03",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    121.666,
+    23.77
+   ],
+   "atBy": "P625",
+   "name": {
+    "en": "2024 Hualien earthquake",
+    "jp": "2024年花蓮地震",
+    "de": "Hualien-Erdbeben 2024",
+    "ru": "Землетрясение на Тайване (2024)",
+    "es": "Terremoto de Taiwán de 2024",
+    "zh": "2024年花蓮地震",
+    "fr": "séisme de 2024 à Hualien",
+    "ko": "2024년 화롄 지진"
+   },
+   "desc": {
+    "en": "natural disaster affecting Taiwan",
+    "jp": "2024年4月3日に台湾東部沖で発生した地震",
+    "de": "Erdbeben nahe der Stadt Hualien an der Ostküste Taiwans am 3. April 2024",
+    "ru": "массовые природные разрушения",
+    "es": "sismo severo y fatal el 3 de abril, de magnitud 7.4 Mw",
+    "zh": "2024年4月3日臺灣地震",
+    "zh-hans": "震央位於台灣花蓮縣近海的大地震",
+    "fr": "séisme de magnitude 7 à Taïwan",
+    "ko": "2024년 4월 대만 동부에서 발생한 대지진"
+   },
+   "wiki": {
+    "en": "2024 Hualien earthquake",
+    "jp": "花蓮地震 (2024年)"
+   }
+  },
+  {
+   "q": "Q101110072",
+   "kind": "geo",
+   "d": "2024-11-05",
+   "prec": "day",
+   "prop": "P585",
+   "name": {
+    "en": "2024 United States presidential election",
+    "jp": "2024年アメリカ合衆国大統領選挙",
+    "de": "Präsidentschaftswahl in den Vereinigten Staaten 2024",
+    "ru": "президентские выборы в США в 2024 году",
+    "es": "elecciones presidenciales de Estados Unidos de 2024",
+    "zh": "2024年美國總統選舉",
+    "zh-hans": "2024年美国总统选举",
+    "fr": "élection présidentielle américaine de 2024",
+    "ko": "2024년 미국 대통령 선거"
+   },
+   "desc": {
+    "en": "60th quadrennial U.S. presidential election",
+    "jp": "2024年にアメリカで行われた第60回アメリカ合衆国大統領選挙",
+    "de": "60. Wahl des Präsidenten der Vereinigten Staaten von Amerika",
+    "ru": "60-е президентские выборы в США, прошедшие 5 ноября 2024 года",
+    "es": "sexagésimas elecciones de presidente y vicepresidente de los Estados Unidos",
+    "zh": "第60屆美國總統選舉",
+    "zh-hans": "第60届美国总统选举",
+    "fr": "élection du président des États-Unis",
+    "ko": "60번째 미국 대통령 선거"
+   },
+   "wiki": {
+    "en": "2024 United States presidential election",
+    "jp": "2024年アメリカ合衆国大統領選挙"
+   }
+  },
+  {
+   "q": "Q131404510",
+   "kind": "revolution",
+   "d": "2024-12-08",
+   "prec": "day",
+   "prop": "P585",
+   "at": [
+    38.583,
+    35.217
+   ],
+   "atBy": "P276 Q858",
+   "name": {
+    "en": "Fall of the Assad regime",
+    "jp": "アサド政権の崩壊",
+    "de": "Sturz des Assad-Regimes",
+    "ru": "Падение режима Асада",
+    "es": "caída del régimen de Bashar al-Ásad",
+    "zh-hans": "阿萨德政权垮台",
+    "fr": "chute du régime Assad",
+    "ko": "알아사드 정권의 몰락"
+   },
+   "desc": {
+    "en": "End of Assadist rule in Syria",
+    "jp": "2024年にシリアの独裁政権が崩壊した出来事",
+    "de": "Sturz der dynastischen Familie, die Syrien zwischen 1971 und 2024 regierte.",
+    "ru": "завершение правления Асадов в Сирии",
+    "es": "caída del régimen político liderado por Bashar al-Ásad",
+    "fr": "chute du régime politique mené par Bachar el-Assad",
+    "ko": "2024년 발생한 시리아 아사드 정권의 붕괴 사건"
+   },
+   "wiki": {
+    "en": "Fall of the Assad regime",
+    "jp": "アサド政権の崩壊"
+   }
+  }
+ ],
+ "dropped": [
+  {
+   "seed": "Assassination of Abraham Lincoln",
+   "q": "Q1025404",
+   "reason": "the item states no date to the year by P585/P580/P1619/P606/P619/P575/P577/P571 once P585 1865-04-15 is refused: the item’s only date is the day Lincoln died; he was shot at Ford’s Theatre on the evening of 14 April 1865 (the item’s own enwiki article opens «On the evening of April 14, 1865»)"
+  },
+  {
+   "seed": "History of penicillin",
+   "q": "Q3042914",
+   "reason": "the item states no date to the year by P585/P580/P1619/P606/P619/P575/P577/P571"
+  },
+  {
+   "seed": "2018 inter-Korean summits",
+   "q": "Q54854623",
+   "reason": "the item states no date to the year by P585/P580/P1619/P606/P619/P575/P577/P571"
+  },
+  {
+   "seed": "Invasion of Kuwait",
+   "q": "Q856650",
+   "reason": "the item states no date to the year by P585/P580/P1619/P606/P619/P575/P577/P571 that its own end time (P582) does not precede"
+  },
+  {
+   "seed": "Christiaan Barnard",
+   "q": "Q188803",
+   "reason": "the item states no date to the year by P585/P580/P1619/P606/P619/P575/P577/P571"
+  },
+  {
+   "seed": "Dolly (sheep)",
+   "q": "Q171433",
+   "reason": "the item states no date to the year by P585/P580/P1619/P606/P619/P575/P577/P571"
+  }
+ ],
+ "stale": []
+}

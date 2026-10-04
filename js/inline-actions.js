@@ -67,8 +67,6 @@ export const ACTIONS = Object.freeze({
      js/analysis-world-events.js) */
   dashView: { on: 'click', run: (el) => ifWord(el, ['places', 'events'], (v) => call('_setDashView', v)) },
   dashCategory: { on: 'click', run: (el) => ifWord(el, ['mil', 'tech', 'maritime', 'geo'], (c) => call('toggleDashCat', c)) },
-  /* Dashboard › Events — the two year bounds */
-  eventsYear: { on: 'change', run: (el) => ifWord(el, ['min', 'max'], (w) => call('_evYear', w, el.value)) },
 
   /* Countries — sort and the value filter (js/countries-ui.js) */
   statsSort: { on: 'change', run: (el) => call('setStatsSort', el.value) },

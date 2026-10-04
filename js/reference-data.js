@@ -581,6 +581,9 @@ export const IntMapRefData = (function(){
        found only CShapes — the outlines, not the dates, the fronts, the operations or the figures.
        The record is ours, it is public, and a source a layer names has to be reachable from here. */
     {n:'IntMap war record (scripts/wars/)',u:'https://github.com/rwmqx7dwb5-arch/IntMap/tree/main/scripts/wars',lic:'IntMap — Personal & Research Use License'},
+    /* (time-index-unify) the dated events beside the map's records — World events, the year book — are Wikidata's
+       statements (item, the property that dated it, its precision), read at BUILD time by scripts/fetch-world-events.mjs */
+    {n:'Dated world events — Wikidata (dates, places, names, descriptions)',u:'https://www.wikidata.org/',lic:'CC0 1.0',licUrl:'https://creativecommons.org/publicdomain/zero/1.0/',credit:false},
     {n:'Maddison Project Database 2020 (Bolt & van Zanden)',u:'https://www.rug.nl/ggdc/historicaldevelopment/maddison/'},
     {n:'World Bank Open Data',u:'https://data.worldbank.org/',lic:'CC BY 4.0',licUrl:'https://creativecommons.org/licenses/by/4.0/',credit:true},
     {n:'IMF World Economic Outlook',u:'https://www.imf.org/en/Publications/WEO'},

@@ -462,7 +462,10 @@ import * as bus from './bus.js';
   var metaP = null;
   var idx = 0;              /* index into meta.validTimes */
   var idxSet = false;       /* has anyone chosen a step yet? */
-  var playing = false, playTimer = 0, playMs = 700;
+  /* (time-index-unify) playback is the app's one player (js/time-lapse.js), not a timer here — see `play` */
+  var PLAY_OWNER = 'forecast:' + DOMAIN;
+  var TL = null, tlUnsub = null, wasPlaying = false, wantMs = 0;
+  function playingNow() { return !!(TL && TL.lapseOwner() === PLAY_OWNER); }
   var listeners = [];
   /* (#R356) sdk / sdkP / protoReg are ONE PER PAGE and are declared in the shared prelude above:
      the bundle is fetched once and the om scheme is registered once, however many models are open. */
@@ -633,8 +636,8 @@ import * as bus from './bus.js';
      a reader who turns round gets it in the wrong direction. This costs one byte and no reader, so
      it runs on every index change: the hour itself first, then alternating out so the near ones
      leave before the far ones, ahead further than behind because that is where the reader is going.
-     ⚠ PLAYBACK ASKS FOR EVERY HOUR IN TURN at `playMs` (700 ms), so a window that only reaches eight
-     hours ahead is overtaken in six seconds — while playing the run is staged twice as far. */
+     ⚠ PLAYBACK ASKS FOR EVERY HOUR IN TURN (one frame a second at the lapse's default rate — js/time-lapse.js), so a
+     window that only reaches eight hours ahead is overtaken in seconds — while playing the run is staged twice as far. */
   /* ⚠ (#R310) TRIED AND REMOVED: warming the file's TRAILER (`bytes=-65536`) from `ready()`, so the
      SDK's own read of the same region would come from the browser's cache while the 340 kB bundle
      was still downloading. Two reasons it is not here. It never ran — the boot stage-in (#R308) has
@@ -1994,6 +1997,7 @@ import * as bus from './bus.js';
        (`_followClock`) whether or not a weather layer is on, and staging files for a layer nobody
        switched on is bytes nobody asked for. */
     if (sdk && !(opt && opt.quiet)) {
+      var playing = playingNow();
       touchAround(idx, playing ? TOUCH_PLAY_AHEAD : TOUCH_AHEAD);
       /* ⚠ (#R310) …AND THE OPEN, WHICH IS TWO MORE ROUND TRIPS NOBODY WAS OVERLAPPING. The HEAD and
          the trailer read that `setToOmFile` costs depend on the file name and on nothing else, so
@@ -2034,19 +2038,39 @@ import * as bus from './bus.js';
   }catch(_){}
     if((n|0)<60) setTimeout(function(){ wireClock((n|0)+1); },200); })(0);
   function step(n) { if (!meta) return; var c = meta.validTimes.length; setIndex(((idx + n) % c + c) % c, { now: true }); }
-  function play() {
-    if (playing || !meta) return;
-    playing = true; emit('play', { playing: true });
-    var tick = function () {
-      if (!playing) return;
-      step(1);
-      playTimer = setTimeout(tick, playMs);
-    };
-    playTimer = setTimeout(tick, playMs);
+  /* ══ (time-index-unify) ONE PLAYER: THE CLOCK, THROUGH THIS MODEL'S VALID TIMES ═══════════════════════
+     Play used to run a timer of its own here (the index, every 700 ms) while the Chronos panel's forecast transport
+     ran another (the clock, every 900 ms); both could run at once, and this one moved the model behind the clock's
+     back. Both are now js/time-lapse.js: `startLapse({ instants })` plays the master clock through exactly the valid
+     times this model publishes, a frame only once the map has drawn it, and this axis follows the clock as it always
+     does (`_followClock`). `PLAY_OWNER` says the run is this model's, so `isPlaying` is true only for it, and the
+     legend's Play and the panel's Play are one button with two faces. A hand on any other control stops the run
+     (`pause` here; a clock moved elsewhere stops it in the lapse itself). */
+  function onLapseState() { var now = playingNow(); if (now !== wasPlaying) { wasPlaying = now; emit('play', { playing: now }); } }
+  function lapse() {
+    if (TL) return Promise.resolve(TL);
+    /* the members this file uses, named here where the module arrives (scripts/export-readers.mjs reads them off `m`) */
+    return import('./time-lapse.js').then((m) => {
+      TL = { startLapse: m.startLapse, stopLapse: m.stopLapse, lapseOwner: m.lapseOwner, lapseState: m.lapseState, LAPSE_RATES: m.LAPSE_RATES };
+      if (!tlUnsub) tlUnsub = m.onLapse(onLapseState);
+      return TL;
+    });
   }
-  function pause() { playing = false; clearTimeout(playTimer); playTimer = 0;
+  function play() {
+    if (playingNow() || !meta) return;
+    var at = tms(meta.validTimes[idx]);
+    lapse().then(function (m) {
+      if (!meta) return;
+      var o = { instants: meta.validTimes.map(tms), at: at, loop: true, owner: PLAY_OWNER };
+      if (wantMs) { var want = 1000 / wantMs; o.fps = m.LAPSE_RATES.reduce(function (b, r) { return Math.abs(r - want) < Math.abs(b - want) ? r : b; }, m.LAPSE_RATES[0]); }
+      m.startLapse(o);
+      onLapseState();
+    }).catch(function () {});
+  }
+  function pause() {
+    if (playingNow()) TL.stopLapse('stopped');
     _pushNow();                       /* (#R288) the clock lands where the player stopped */
-    emit('play', { playing: false }); }
+    onLapseState(); }
 
   /* ── colour scales & legends ──────────────────────────────────────────────────────────────────
      The legend is BUILT FROM THE RENDERER'S OWN TABLE, not written beside it. 「凡例の最大値と実際の
@@ -2321,10 +2345,11 @@ import * as bus from './bus.js';
     followClock: _followClock,
     validTime: function (i) { return meta ? (meta.validTimes[i == null ? idx : i] || '') : ''; },
     referenceTime: function () { return meta ? meta.referenceTime : ''; },
-    isPlaying: function () { return playing; },
+    isPlaying: playingNow,
     play: play, pause: pause,
-    togglePlay: function () { playing ? pause() : play(); },
-    playInterval: function (ms) { if (ms) playMs = Math.max(120, ms | 0); return playMs; },
+    togglePlay: function () { playingNow() ? pause() : play(); },
+    /* the frame time a run of this model asks the player for (ms) — the nearest of the player's rates is used */
+    playInterval: function (ms) { if (ms) wantMs = Math.max(120, ms | 0); return wantMs || (TL ? Math.round(1000 / TL.lapseState().rate) : 1000); },
     fileUrl: fileUrl,
     omUrl: omUrl,
     omRasterUrl: omRasterUrl,          /* (#R325) …with `tile_size` — raster only, see `omUrl` */
@@ -2381,7 +2406,7 @@ import * as bus from './bus.js';
     _settings: omSettings,
     /* (#R307) `touched` — how many forecast files have had their cold stage-in paid ahead of the
        reader. It is the number the wind's speed is made of, so it is printed rather than assumed. */
-    _state: function () { return { meta: meta, idx: idx, playing: playing, held: held ? held.key : null, variable: held ? held.variable : null, frames: frames.length, touched: touchN }; }
+    _state: function () { return { meta: meta, idx: idx, playing: playingNow(), held: held ? held.key : null, variable: held ? held.variable : null, frames: frames.length, touched: touchN }; }
   };
   }
 
