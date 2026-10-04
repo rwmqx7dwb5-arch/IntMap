@@ -1,6 +1,7 @@
 ---
 title: 学ぶクエストが本番で答えを見せていた——年は凡例・ニュース一覧・アドレスバーに、場所当てのタップはニュースの点に。印字する要素が自分で述べる属性と、エンジンの「タップを持つ者」
 date: 2026-10-04
+pr: 978
 newsen: In Learn quests, the year is now hidden everywhere it appears while you guess, and tapping your answer no longer opens a news story under it.
 newsjp: 学ぶクエストで、年を当てる間は年がどこにも出なくなり、場所当てで答えをタップしても下のニュースが開かなくなりました。
 ---
