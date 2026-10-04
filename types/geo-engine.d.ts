@@ -129,9 +129,10 @@ export interface GeoEngineAdapterCore {
   setPaint(id?: any, p?: any, v?: any): any;
   setLayout(id?: any, p?: any, v?: any, o?: any): any;
   setOpacity(id?: any, v?: any): any;
-  on(e?: any, c?: any): any;
-  off(e?: any, c?: any): any;
-  once(e?: any, c?: any): any;
+  /** options.tapOwner — the owner a click handler runs for while holdTaps() is held (js/geo-engine.js _holdTaps) */
+  on(e?: any, c?: any, options?: any): any;
+  off(e?: any, c?: any, options?: any): any;
+  once(e?: any, c?: any, options?: any): any;
   getZoom(): any;
   getCenter(): any;
   /** (map-motion) MapLibre only — Cesium has no wheel spring or recorded ease */
@@ -472,15 +473,18 @@ export interface GeoEngineInput {
 }
 
 export interface GeoEngineEvents {
-  on(e?: any, c?: any): any;
-  off(e?: any, c?: any): any;
-  once(e?: any, c?: any): any;
+  on(e?: any, c?: any, options?: any): any;
+  off(e?: any, c?: any, options?: any): any;
+  once(e?: any, c?: any, options?: any): any;
   onLayer(e?: any, l?: any, c?: any, options?: any): any;
   offLayer(e?: any, l?: any, c?: any): any;
   onceLayer(e?: any, l?: any, c?: any): any;
   clickLayers(options?: any): any;
   claimClick(e?: any): any;
   clickClaimed(e?: any): any;
+  /** the one owner whose click handlers run until the returned release is called */
+  holdTaps(owner?: any): () => void;
+  tapsHeldBy(): string | null;
   pressAt(pt?: any): any;
 }
 

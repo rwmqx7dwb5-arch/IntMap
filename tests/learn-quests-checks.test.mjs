@@ -180,31 +180,36 @@ function elementSpan(html, idAttr) {
   return [open, html.length];
 }
 
-test('learn-quests ⑦ while a «which year?» question is open, one class on <body> hides every element that prints the year', () => {
+test('learn-quests ⑦ while a «which year?» question is open, everything that says it prints the map\'s time is hidden, and the address bar waits', () => {
   const src = read('js/quest-panel.js');
-  const cls = /const BLIND_CLASS = '([a-z-]+)'/.exec(src), list = /const BLIND_SELECTORS = (\[[^\]]*\]);/.exec(src);
-  assert.ok(cls && list, 'BLIND_CLASS / BLIND_SELECTORS are not declared where the check reads them');
-  const sels = JSON.parse(list[1].replace(/'/g, '"'));
-  /* the rule is built from the list, with the class, and it hides (visibility — nothing around them moves) */
-  assert.match(src, /'body\.' \+ BLIND_CLASS \+ ' ' \+ BLIND_SELECTORS\.join\(', body\.' \+ BLIND_CLASS \+ ' '\) \+ '\{visibility:hidden !important;pointer-events:none !important;\}'/);
+  const cls = /const BLIND_CLASS = '([a-z-]+)'/.exec(src), attr = /const BLIND_ATTR = '([a-z-]+)'/.exec(src);
+  assert.ok(cls && attr, 'BLIND_CLASS / BLIND_ATTR are not declared where the check reads them');
+  assert.equal(attr[1], 'data-prints-map-time');
+  /* the rule hides the ATTRIBUTE — no list of printers lives in this file any more (production found three it missed) */
+  assert.match(src, /'body\.' \+ BLIND_CLASS \+ ' \[' \+ BLIND_ATTR \+ '\]\{visibility:hidden !important;pointer-events:none !important;\}'/);
+  assert.doesNotMatch(codeOnly(src), /BLIND_SELECTORS|'#news-timeline'|'#m-clock'/, 'a hand-written list of printers is back');
   assert.match(src, /if \(q\.kind === 'when'\) \{[^}]*blind\(true\); showDay\(q\); \}/, 'a when question turns the class on');
   assert.match(src, /else blind\(false\);\s+\/\* the answer is out/, 'the reveal turns it off');
+  /* …and the class holds the address bar, which would print tt= (the answer) */
+  const bl = src.slice(src.indexOf('function blind(on)'), src.indexOf('function holdTaps(on)'));
+  assert.match(bl, /MapState\.holdAddress\('quest'\)/, 'the year question holds the address bar');
+  assert.match(bl, /addressRelease\(\); addressRelease = null;/, 'and lets it go');
+  assert.match(read('js/map-ui.js'), /function save\(\)\{ if\(!booted \|\| restoring \|\| window\._imDemoActive \|\| MapState\.addressHeld\(\)\) return;/, 'the address writer honours the hold');
+  /* every printer production showed the answer through carries the attribute where it is made */
   const html = read('index.html');
-  /* #news-timeline is Chronos: every element js/news-timeline.js writes into (the shown year on the collapsed button,
-     the large readout, the rail…) lies inside it */
-  assert.ok(sels.includes('#news-timeline'));
+  for (const id of ['news-timeline', 'm-clock', 'live-news-feed']) {
+    const tag = new RegExp('<[a-z]+ [^>]*id="' + id + '"[^>]*>').exec(html);
+    assert.ok(tag && tag[0].includes(attr[1]), '#' + id + ' prints the map\'s time and does not say so');
+  }
+  assert.match(read('js/layer-time-kernel.js'), /el\.id = 'data-legend-worldtime';\s+el\.setAttribute\('data-prints-map-time', ''\)/, 'the «The map at <day>» legend does not say it prints the time');
+  assert.match(read('js/data-layers.js'), /row\.className='dl-clockrow';[^\n]*row\.setAttribute\('data-prints-map-time',''\)/, 'the legend year field does not say it prints the time');
+  /* #news-timeline is Chronos: every element js/news-timeline.js writes into lies inside it, so the attribute covers them */
   const [a, b] = elementSpan(html, 'id="news-timeline"');
   const ntlIds = [...new Set([...read('js/news-timeline.js').matchAll(/getElementById\('(ntl-[a-z-]+)'\)/g)].map((m) => m[1]))].filter((id) => html.includes('id="' + id + '"'));
   assert.ok(ntlIds.includes('ntl-open-t') && ntlIds.includes('ntl-bigval') && ntlIds.length > 10, 'the Chronos ids were read (' + ntlIds.length + ')');
-  for (const id of ntlIds) { const at = html.indexOf('id="' + id + '"'); assert.ok(at > a && at < b, '#' + id + ' (written by js/news-timeline.js) is outside #news-timeline — the class would not hide it'); }
-  /* the year really is printed there: the collapsed button's line is set from the clock's year/date */
-  assert.match(read('js/news-timeline.js'), /ot\.textContent=\(mode==='year'\)\?yLabel\(e\.year\)/);
-  /* every other selector hits an element that exists: an id in index.html, a class a module builds around the year field */
-  for (const s of sels) {
-    if (s.startsWith('#')) assert.ok(html.includes('id="' + s.slice(1) + '"'), s + ' is not in index.html');
-    else if (s === '.dl-clockrow') assert.match(read('js/data-layers.js'), /row\.className='dl-clockrow'[\s\S]{0,1500}class="dl-clockyear"[\s\S]{0,3000}y=IntMapTime\.isLive\(\)\?null:IntMapTime\.year\(\)/, '.dl-clockrow is not the row that prints the clock\'s year');
-    else assert.fail('a selector the check does not know how to hold to an element: ' + s);
-  }
+  for (const id of ntlIds) { const at = html.indexOf('id="' + id + '"'); assert.ok(at > a && at < b, '#' + id + ' (written by js/news-timeline.js) is outside #news-timeline'); }
+  /* the legend card really prints the day */
+  assert.match(read('js/layer-time-kernel.js'), /tr\('The map at ' \+ day/);
 });
 
 test('learn-quests ⑧ Atlas: learn.quest is registered, and its catalogue text names every kind', async () => {
@@ -237,4 +242,38 @@ test('learn-quests ⑨ while a «where is it?» question is open, the rows that 
   /* the switch-back is exactly what was switched off: a row the reader had off stays off */
   const unn = src.slice(src.indexOf('let unnamedIds'), src.indexOf('return unnamedIds.slice();'));
   assert.match(unn, /flip\(id, false\)\) unnamedIds\.push\(id\)/, 'only a row this file actually turned off is remembered');
+});
+
+test('learn-quests ⑩ while a place question waits, the engine runs only the quest\'s click handler — the news dots under the tap stay shut', async () => {
+  const { IntMapGeoEngine: E } = await import('../js/geo-engine.js');
+  const held = { click: [], layer: [] };
+  const adapter = { id: 'fake-quest-taps',
+    on: (e, c) => { if (e === 'click') held.click.push(c); }, off: (e, c) => { held.click = held.click.filter((x) => x !== c); }, once: () => {},
+    onLayer: (e, l, c) => { if (e === 'click') held.layer.push(c); }, offLayer: (e, l, c) => { held.layer = held.layer.filter((x) => x !== c); },
+    getLayer: () => null, raw: () => null };
+  const prev = E.adapter(); E.use(adapter);
+  try {
+    const ran = [];
+    const news = () => ran.push('news'), pin = () => ran.push('pin'), quest = () => ran.push('quest');
+    E.events.onLayer('click', 'news-dots', news);
+    E.events.on('click', pin);
+    E.events.on('click', quest, { tapOwner: 'quest' });
+    const fire = () => { ran.length = 0; [...held.click, ...held.layer].forEach((h) => h({ lngLat: { lng: 0, lat: 0 } })); return ran.slice().sort(); };
+    assert.deepEqual(fire(), ['news', 'pin', 'quest'], 'nobody holds the taps: every handler runs');
+    const release = E.events.holdTaps('quest');
+    assert.equal(E.events.tapsHeldBy(), 'quest');
+    assert.deepEqual(fire(), ['quest'], 'the quest holds the taps: only its handler runs');
+    release();
+    assert.equal(E.events.tapsHeldBy(), null);
+    assert.deepEqual(fire(), ['news', 'pin', 'quest'], 'released: every handler runs again');
+    /* off() finds the gated handler it registered */
+    E.events.off('click', quest, { tapOwner: 'quest' }); E.events.offLayer('click', 'news-dots', news);
+    assert.deepEqual(fire(), ['pin'], 'off() removed exactly the handlers it was given');
+  } finally { E.use(prev || { id: 'none' }); }
+  /* the quest takes the hold while the question waits, and lets it go on the answer and on closing */
+  const src = read('js/quest-panel.js');
+  assert.match(src, /else \{ blind\(false\); unnamed\(true\); holdTaps\(true\); worldView\(\); \}/);
+  assert.match(src, /'where'\) \{ unnamed\(false\); holdTaps\(false\);/);
+  assert.match(src, /function endSet\(\) \{[^}]*holdTaps\(false\)/);
+  assert.match(src, /GE\(\)\.events\.on\('click', onMapClick, \{ tapOwner: 'quest' \}\)/);
 });

@@ -290,6 +290,8 @@ function stage(f, o, value, ctx) {
   });
 }
 
+/** @type {null|{reason:string}} the one hold on the address bar (holdAddress) */
+let addressHold = null;
 export const MapState = {
   SCHEMA, PARAMS, SETTLE_MS, encode, decode, carries, TITLE_MAX, NOTE_MAX, captionText, briefText,
 
@@ -312,6 +314,12 @@ export const MapState = {
     return out; },
   /** the address-bar form of the map as it is now */
   hash() { return encode(MapState.snapshot()); },
+  /** (quest-blind-everything) holdAddress(reason) — the address bar stops following the map until the returned
+      release is called (a «which year?» question: the bar would print `tt=`, the answer). The map still changes;
+      only its projection into the bar waits. A newer hold replaces an older one. @param {string} reason */
+  holdAddress(reason) { const tok = { reason: String(reason || '') }; addressHold = tok; return () => { if (addressHold === tok) addressHold = null; }; },
+  /** who is holding the address bar now, or null */
+  addressHeld() { return addressHold ? addressHold.reason : null; },
   /** the share link of the map as it is now */
   link() { try { return location.origin + location.pathname + location.search + MapState.hash(); } catch (_) { return ''; } },
   /** (classroom-tours) address(query, hash) — the address bar's PAGE fields and, when given, a link's fragment.

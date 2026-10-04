@@ -346,7 +346,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <!-- (mobile-shell) THE PHONE SHEET'S HEAD — the grip and the one field that both finds a place and asks Atlas, with
          Chronos beside it. Phone only (css hides it on the desktop); js/mobile-ui.js lends #map-search and
          #coord-readout into the two slots at phone widths and hands them back when the window widens. -->
-    <div class="m-head" id="m-head"><div class="sheet-grip" id="sheet-grip" aria-hidden="true"></div><div class="m-head-row"><div class="m-search-slot" id="m-search-slot"></div><button class="m-clock" id="m-clock" type="button" aria-label="Chronos" data-i18n-aria="tlMachine" title="Chronos" data-i18n-title="tlMachine"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M12 6.9V12l3.7 2.2"/></svg></button></div><div class="m-readout-slot" id="m-readout-slot"></div></div>
+    <div class="m-head" id="m-head"><div class="sheet-grip" id="sheet-grip" aria-hidden="true"></div><div class="m-head-row"><div class="m-search-slot" id="m-search-slot"></div><button class="m-clock" id="m-clock" data-prints-map-time type="button" aria-label="Chronos" data-i18n-aria="tlMachine" title="Chronos" data-i18n-title="tlMachine"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M12 6.9V12l3.7 2.2"/></svg></button></div><div class="m-readout-slot" id="m-readout-slot"></div></div>
     <div class="header-area">
       <div class="title-group"><h2>IntMap</h2><div class="lang-toggle"><button class="lang-btn active" id="lang-en" data-effect="private">EN</button><button class="lang-btn" id="lang-jp" data-effect="private">JP</button><button class="lang-btn" id="lang-de" data-effect="private">DE</button><button class="lang-btn" id="lang-ru" data-effect="private">RU</button><button class="lang-btn" id="lang-es" data-effect="private" title="Español">ES</button></div></div>
       <!-- (#R123) desktop normal mode: the action buttons (WS / Log in / Feedback / Settings) live on a fixed
@@ -396,7 +396,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <div id="ai-geocode-row" style="display:none; margin:0 0 10px 0;">
       <button class="ai-action-btn" id="ai-translate-btn" style="margin-top:0;"><span data-icon="world"></span> <span data-i18n="aiTranslateTitles">Translate titles</span></button>
     </div>
-    <div class="content-area" id="live-news-feed"></div>
+    <div class="content-area" id="live-news-feed" data-prints-map-time></div>
     <!-- (#R79b) Countries gets its OWN search bar too — in workspace mode News & Countries are separate
          windows, so Countries can no longer borrow the shared #sidebar-search-bar (which lives in News). -->
     <div class="search-bar" id="countries-search-bar" style="display:none;">
@@ -536,7 +536,7 @@ window.__imBuild='__INTMAP_BUILD_STAMP__';/* (#R121) build marker — which buil
     <!-- (#R101) Time-machine popup redesigned to match the requested layout: title + "viewing past" badge + ×,
          a Year/Date mode toggle, a big current-value readout + "Back to now", a year (or recent-date) slider with
          era marks, and a "What's applied" chip row. Closes when the user operates elsewhere on the map. -->
-    <div id="news-timeline" class="news-timeline collapsed">
+    <div id="news-timeline" class="news-timeline collapsed" data-prints-map-time>
       <!-- (#R102/#27) collapsed = the labeled entry point (per the attached mock). ⚠ (#R289) renamed it to 「Chronos / Control the map's time」: it names no year, so nothing here follows the clock's floor. ⚠ (#R504) the glyph is a CLOCK (face, cardinal marks, hour+minute hands, pivot), built like the compass rose — the old rotate-ccw arrow read as 「戻す」 at 23 px; DEV-NOTES #R504 §7. ⚠ no id in it: the compass roses share this document (r504 ⑧). -->
       <button class="ntl-open" id="ntl-toggle" type="button" title="Chronos" data-i18n-title="tlMachine" data-time-intent>
           <span class="ntl-open-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M12 3.6v1.6M20.4 12h-1.6M12 20.4v-1.6M3.6 12h1.6" stroke-opacity="0.55"/><path d="M12 6.9V12l3.7 2.2"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg></span>

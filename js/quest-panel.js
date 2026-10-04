@@ -7,7 +7,7 @@
  *    · where — tap the city on the map. The answer is drawn: the true place, the tapped point and the great
  *              circle between them (js/geodesy.js — the same formula that gives the kilometres).
  *    · when  — the map is put on the day and at the place of a dated event, the year hidden: every element of
- *              the page that prints the map's year or date (BLIND_SELECTORS) is hidden by ONE class on <body>
+ *              the page that says it prints the map's year or date ([data-prints-map-time]) is hidden by ONE class on <body>
  *              while the question is open. The answer is a year; the reveal takes the class off, so the clock
  *              itself then shows the day the record states.
  *  Doors: the quiz menu (js/analysis-edu.js), Layers ▸ Tools (js/map-ui.js SIM_TOOLS), a challenge link
@@ -38,16 +38,16 @@ const lang = () => (HOST && HOST.lang) || 'en';
 const t = (en, jp) => IntMapLang.t(lang(), en, jp);
 const pick = (o) => (o ? (lang() === 'jp' ? o.jp : o.en) : '');
 
-/* ══ THE YEAR, HIDDEN — one class on <body>, and the elements it hides ════════════════════════════
-   Found by reading what prints the map's year or date (tests/learn-quests-checks.test.mjs holds each
-   selector to the element it is meant to hit):
-     #news-timeline   Chronos — the collapsed button names the shown year/date (#ntl-open-t), the open body
-                      prints it large (#ntl-bigval / #ntl-bigdate), the rail marks it (#ntl-peek)
-     #m-clock         the phone's way into Chronos (opening it would print the date)
-     .dl-clockrow     a legend's «Year» field (js/data-layers.js legendClockYear) shows the clock's year
-   `visibility` rather than `display`, so nothing around them moves while they are hidden. */
+/* ══ THE YEAR, HIDDEN — one class on <body>, and what it hides is what SAYS it prints the time ═════════
+   The first version hid a list written here (#news-timeline, #m-clock, .dl-clockrow), found by reading. Production
+   (2026-10-04) showed the answer anyway: the legend «The map at 1945-03-07» (js/layer-time-kernel.js), the news
+   feed of that day, and `tt=` in the address bar — three printers the list did not know. A list of printers rots
+   the day a module starts printing the date. So the printer says so: an element whose text names the map's
+   instant carries `data-prints-map-time` where it is made (index.html, js/layer-time-kernel.js,
+   js/data-layers.js), and the class hides that attribute. The address bar is held, not hidden
+   (MapState.holdAddress). `visibility` rather than `display`, so nothing around them moves. */
 const BLIND_CLASS = 'im-quest-blind';
-const BLIND_SELECTORS = ['#news-timeline', '#m-clock', '.dl-clockrow'];
+const BLIND_ATTR = 'data-prints-map-time';
 
 /** the files the kinds name in `needs`, each read by its own reader: the gazetteer through the data door, the day
  *  index through js/on-this-day.js (that file is the index's one reader) */
@@ -115,7 +115,18 @@ function putBack() {
   try { if (s.when) IntMapTime.set(s.when, { source: 'quest' }); else IntMapTime.setNow({ source: 'quest' }); } catch (_) { }
   try { if (s.cam && s.cam.center) GE().camera.flyTo({ center: [s.cam.center.lng, s.cam.center.lat], zoom: s.cam.zoom, bearing: s.cam.bearing, pitch: s.cam.pitch, duration: 800 }); } catch (_) { }
 }
-function blind(on) { try { document.body.classList.toggle(BLIND_CLASS, !!on); } catch (_) { } }
+let addressRelease = null, tapRelease = null;
+function blind(on) {
+  try { document.body.classList.toggle(BLIND_CLASS, !!on); } catch (_) { }
+  if (on && !addressRelease) { try { addressRelease = MapState.holdAddress('quest'); } catch (_) { } }
+  if (!on && addressRelease) { addressRelease(); addressRelease = null; }
+}
+/* While a place question waits for its tap, the tap is the answer and nothing else's: the engine runs only this
+   file's click handler (js/geo-engine.js holdTaps — the news dots, a volcano, a pin do not ask clickClaimed()). */
+function holdTaps(on) {
+  if (on && !tapRelease) { try { tapRelease = GE().events.holdTaps('quest'); } catch (_) { } }
+  if (!on && tapRelease) { tapRelease(); tapRelease = null; }
+}
 /* A place question the map answers itself is not a question: the rows that write names (place names, feature labels,
    points of interest — each row says so, js/layers/<id>.js `names`) are switched off through the reader's own switch
    while it is open, and exactly the ones this file switched off are switched back on once the answer is shown. The
@@ -183,7 +194,7 @@ function style() {
 function ensure() {
   style();
   /* the map tap and the language are heard while the panel is open — closeQuest() lets go of both */
-  if (!clickOn) { try { GE().events.on('click', onMapClick); clickOn = true; } catch (_) { } }
+  if (!clickOn) { try { GE().events.on('click', onMapClick, { tapOwner: 'quest' }); clickOn = true; } catch (_) { } }
   if (!langOff) langOff = bus.on('intmap-lang', () => { if (panel && panel.style.display !== 'none') paint(); });
   if (panel && panel.isConnected) return panel;
   panel = document.createElement('div'); panel.className = 'tool-panel qst'; panel.id = 'quest-panel';
@@ -322,7 +333,7 @@ function ask() {
   const q = Q.qs[Q.i];
   Q.phase = 'ask'; Q.answer = null;
   clearDrawing();
-  if (q.kind === 'when') { unnamed(false); blind(true); showDay(q); } else { blind(false); unnamed(true); worldView(); }
+  if (q.kind === 'when') { unnamed(false); holdTaps(false); blind(true); showDay(q); } else { blind(false); unnamed(true); holdTaps(true); worldView(); }
   paint();
 }
 function answer(a) {
@@ -330,7 +341,7 @@ function answer(a) {
   const q = Q.qs[Q.i];
   const r = engine.score(q, a);
   Q.results[Q.i] = r; Q.phase = 'shown';
-  if (q.kind === 'where') { unnamed(false); drawAnswer(q.at, a ? [a.lng, a.lat] : null); }
+  if (q.kind === 'where') { unnamed(false); holdTaps(false); drawAnswer(q.at, a ? [a.lng, a.lat] : null); }
   else blind(false);   /* the answer is out: the clock may say the day now */
   try { bus.emit(MAP_ANSWER_EVENT, { kind: 'card' }); } catch (_) { }
   paint();
@@ -342,7 +353,7 @@ function next() {
   Q.newBest = keepBest(Q.kind, Q.n, questState().points);
   paint();
 }
-function endSet() { Q = null; blind(false); unnamed(false); clearDrawing(); }
+function endSet() { Q = null; blind(false); unnamed(false); holdTaps(false); clearDrawing(); }
 
 /** Start a set. `o` = { kind, seed?, n? } — a new seed when none is given. Resolves with questState() once the first
  *  question is on screen, or with { ok:false, reason } when the kind is unknown or its data cannot be read. */
@@ -378,7 +389,7 @@ export function closeQuest(opts) {
   const wasOpen = questState().open;
   endSet();
   if (panel) panel.style.display = 'none';
-  if (clickOn) { try { GE().events.off('click', onMapClick); } catch (_) { } clickOn = false; }
+  if (clickOn) { try { GE().events.off('click', onMapClick, { tapOwner: 'quest' }); } catch (_) { } clickOn = false; }
   if (langOff) { langOff(); langOff = null; }
   if (opts && opts.keepMap) saved = null; else putBack();
   return wasOpen;
@@ -403,7 +414,7 @@ export async function bootFromUrl() {
 
 /* ══ THE LOOK — iOS-like, on the app's own variables (css/intmap.css), injected when first drawn ══════════ */
 const CSS = [
-  'body.' + BLIND_CLASS + ' ' + BLIND_SELECTORS.join(', body.' + BLIND_CLASS + ' ') + '{visibility:hidden !important;pointer-events:none !important;}',
+  'body.' + BLIND_CLASS + ' [' + BLIND_ATTR + ']{visibility:hidden !important;pointer-events:none !important;}',
   '#quest-panel.qst{display:none;top:70px;left:50%;right:auto;transform:translateX(-50%);z-index:calc(var(--z-sheet) - 50);width:min(360px,calc(100vw - 24px));max-height:min(74vh,640px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;}',
   '.qst .qst-head{display:flex;align-items:center;justify-content:space-between;cursor:move;}',
   '.qst .tp-close{width:32px;height:32px;border:none;border-radius:50%;background:var(--input-bg);color:var(--text-main);font-size:18px;line-height:1;cursor:pointer;}',
