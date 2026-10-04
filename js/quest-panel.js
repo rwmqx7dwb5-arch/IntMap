@@ -257,7 +257,7 @@ function paintQuestion() {
   if (!res) {
     if (q.kind === 'when') {
       const mid = Math.round((q.span.from + q.span.to) / 2), y = Q.answer != null ? Q.answer : mid;
-      body += '<div class="qst-year"><input type="range" id="qst-yr" min="' + H(q.span.from) + '" max="' + H(q.span.to) + '" step="1" value="' + H(y) + '" aria-label=""' + H(t('Year', '年')) + '">'
+      body += '<div class="qst-year"><input type="range" id="qst-yr" min="' + H(q.span.from) + '" max="' + H(q.span.to) + '" step="1" value="' + H(y) + '" aria-label="' + H(t('Year', '年')) + '">'
         + '<input type="number" id="qst-yv" min="' + H(q.span.from) + '" max="' + H(q.span.to) + '" step="1" value="' + H(y) + '" inputmode="numeric" aria-label="' + H(t('Year', '年')) + '"></div>'
         + '<button type="button" class="ai-test-btn qst-go" id="qst-ok">' + icon('check') + ' ' + H(t('Answer', '答える')) + '</button>';
     } else body += '<div class="qst-hint">' + H(t('Move and zoom the map freely, then tap once.', '地図は自由に動かせます。決めたら 1 回タップします。')) + '</div>';
