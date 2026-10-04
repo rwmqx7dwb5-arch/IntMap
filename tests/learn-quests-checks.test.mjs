@@ -202,6 +202,10 @@ test('learn-quests ⑦ while a «which year?» question is open, everything that
     assert.ok(tag && tag[0].includes(attr[1]), '#' + id + ' prints the map\'s time and does not say so');
   }
   assert.match(read('js/layer-time-kernel.js'), /el\.id = 'data-legend-worldtime';\s+el\.setAttribute\('data-prints-map-time', ''\)/, 'the «The map at <day>» legend does not say it prints the time');
+  /* (quest-narration-and-label) production, 2026-10-04: the screen-reader narration read «Showing 1995-08-30» during the question */
+  assert.match(read('js/map-narrator.js'), /live\.id = 'map-narration';[^\n]*\n\s*live\.setAttribute\('data-prints-map-time', ''\)/, 'the map narration does not say it reads out the time');
+  /* …and every attribute the panel writes is well-formed (the year slider wrote aria-label="" year"") */
+  assert.doesNotMatch(read('js/quest-panel.js'), /=""' \+/, 'an attribute is closed before its value is written');
   assert.match(read('js/data-layers.js'), /row\.className='dl-clockrow';[^\n]*row\.setAttribute\('data-prints-map-time',''\)/, 'the legend year field does not say it prints the time');
   /* #news-timeline is Chronos: every element js/news-timeline.js writes into lies inside it, so the attribute covers them */
   const [a, b] = elementSpan(html, 'id="news-timeline"');

@@ -112,6 +112,7 @@ export function makeMapNarrator(HOST, CTX) {
   /* the region: named, described by the status, and reachable when the renderer put nothing focusable in it */
   const live = document.createElement('div');
   live.id = 'map-narration'; live.className = 'im-sr-only';
+  live.setAttribute('data-prints-map-time', '');   /* it reads out the map's instant («Showing 1995-08-30») — js/quest-panel.js hides what says so while a «which year?» question is open */
   live.setAttribute('role', 'status'); live.setAttribute('aria-live', 'polite'); live.setAttribute('aria-atomic', 'true');
   document.body.appendChild(live);
   mapEl.setAttribute('role', 'region');
