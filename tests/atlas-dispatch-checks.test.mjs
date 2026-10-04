@@ -39,6 +39,7 @@ import { readLF } from '../scripts/eol.mjs';
 import { codeOnly, codeOnly as stripComments } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { importModule } from './helpers/import-module.mjs';
+const CAPS_REG = () => makeAtlasCapabilities({}, { publish: false });
 import { appSource } from './app-source.mjs';
 import { capsSource, capabilityEntry, catalogueText as plannerCatalogue } from './helpers/atlas-kernel.mjs';   /* (atlas-capability-modules) what each capability does lives in js/atlas-cap-<namespace>.js now — the kernel is both */
 
@@ -100,7 +101,13 @@ test('R278 ② no capability is implemented and invisible', () => {
   assert.equal(missing.length, 0, `invisible to the planner: ${missing.map((m) => m.names.join('/')).join(', ')}`);
   assert.ok(rows.length > 100, 'the dispatch really was scanned');
   const wd = rows.filter((r) => r.withdrawn).map((r) => r.names[0]);
-  assert.deepEqual(wd, ['monitor'], 'withdrawal is an exception with a reason, not a habit');
+  /* each exception is a named decision and carries its reason (who decided, when, how to restore) in policy.withdrawn.why */
+  assert.deepEqual(wd.slice().sort(), ['monitor', 'notebook', 'notebookCompare', 'notebookOpen'], 'withdrawal is an exception with a reason, not a habit');
+  for (const id of ['system.monitor', 'notebook.list', 'notebook.open', 'notebook.compare']) {
+    const why = CAPS_REG().resolve(id).withdrawn.why;
+    assert.match(why, /#R\d+|\d{4}-\d{2}-\d{2}/, id + ': the reason names when it was decided');
+  }
+  assert.match(CAPS_REG().resolve('notebook.list').withdrawn.why, /NOTEBOOK_SHOWN/, 'and how to bring it back');
 
   /* the six that were missing this round, named individually so a future edit that drops one is a
      failure with its name on it rather than a count that moved */

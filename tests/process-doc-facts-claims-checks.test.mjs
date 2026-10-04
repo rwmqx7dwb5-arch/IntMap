@@ -323,7 +323,8 @@ test('R500 ⑦ Architecture.md does not carry the same block twice', () => {
    retypes them. Only the WRONGNESS is written down. */
 const CAPS = makeAtlasCapabilities({});
 const CAP_TOTAL = CAPS.list().length;
-const CAP_LIVE = CAP_TOTAL - (CAPS.withdrawn() || []).length;
+const CAP_WD = (CAPS.withdrawn() || []).length;
+const CAP_LIVE = CAP_TOTAL - CAP_WD;
 
 const WORD = { one: 1, two: 2, three: 3, seventeen: 17 };
 const EDGE = { noun: 'Edge Functions?', units: ['本', '函数'], words: WORD };
@@ -603,7 +604,7 @@ test('#R699 ⑫ capability-count goes red on the sentence that was shipped for n
     const rel = 'DECISIONS.md';
     const original = readFileSync(join(ROOT, rel));
     const text = original.toString('utf8');
-    const good = `（${CAP_TOTAL} のうち撤去済み 1 を除く ${CAP_LIVE}）`;
+    const good = `（${CAP_TOTAL} のうち撤去済み ${CAP_WD} を除く ${CAP_LIVE}）`;
     assert.ok(text.includes(good), `${rel} no longer carries «${good}»`);
     try {
       SCRATCH.write(rel, text.split(good).join('（130 のうち撤去済み 137 を除く 136）'));
@@ -613,7 +614,7 @@ test('#R699 ⑫ capability-count goes red on the sentence that was shipped for n
           { cwd: SCRATCH.root, encoding: 'utf8' });
       } catch (e) { code = e.status ?? 1; out = (e.stdout || '') + (e.stderr || ''); }
       assert.equal(code, 1, 'the withdrawn/reachable claim went unchecked again:\n' + out);
-      assert.match(out, /withdrawn count holds 1/, out);
+      assert.match(out, new RegExp('withdrawn count holds ' + CAP_WD), out);
       /* ⚠ (#R743) DERIVED FOR THE SAME REASON THE SEED ABOVE IS. This line held the literal 138 —
          the very number the rule exists to stop anybody writing down — so the round that registered
          two capabilities turned a working guard into a red test about nothing. */

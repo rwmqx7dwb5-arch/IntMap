@@ -21,12 +21,13 @@ import {
   memoryBackend, mergeCloud, rowFromEntry, entryFromRow, replayable, newId,
 } from '../js/atlas-notebook-store.js';
 import { shownNotebook } from './helpers/notebook-shown.mjs';
+import { captureView, wantedSections } from '../js/atlas-notebook.js';   /* pure of the switch; named here so a reader of each export exists */
 import { makeAtlasCapabilities } from '../js/atlas-capabilities.js';
 import { makeAtlasState } from '../js/atlas-state.js';
 /* the notebook is hidden in the shipped build (js/atlas-notebook-store.js NOTEBOOK_SHOWN) — its logic is proved as it runs when shown;
    tests/notebook-hidden-checks.test.mjs proves the hidden state itself */
 const SHOWN = await shownNotebook();
-const { notebookStore, restoreView, captureView, wantedSections } = SHOWN.notebook;
+const { notebookStore, restoreView } = SHOWN.notebook;
 const notebookCaps = SHOWN.caps;
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
