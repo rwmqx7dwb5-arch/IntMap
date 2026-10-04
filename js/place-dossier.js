@@ -85,7 +85,7 @@ export function sentPoint(pt) {
 }
 /** the origins whose exact position stays on the device (the rest — `point` — is a point the reader picked on the map) */
 const KEPT = new Set(['device', 'shared']);
-export function keepsPosition(from) { return KEPT.has(String(from || '')); }
+function keepsPosition(from) { return KEPT.has(String(from || '')); }
 /* the zoom Nominatim is asked at: 14 (neighbourhood) for a picked point — the chain then names the district; 10 (town)
    for a kept position — asking a finer zoom of a rounded point would name a neighbourhood the reader is not in */
 const ZOOM_POINT = 14, ZOOM_KEPT = 10;

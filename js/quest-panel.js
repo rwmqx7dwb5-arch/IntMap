@@ -394,7 +394,7 @@ export async function bootFromUrl() {
   await new Promise((res) => {
     const t0 = Date.now();
     const ok = () => { try { return GE().hasRenderer() && GE().ready(); } catch (_) { return false; } };
-    /* 30 s: the bound js/here-now.js whenMapReady waits for the same renderer at boot; the set starts either way */
+    /* 30 s: the bound js/place-dossier.js whenMapReady waits for the same renderer at boot; the set starts either way */
     const tick = () => { if (ok() || Date.now() - t0 > 30000) res(); else setTimeout(tick, 150); };
     tick();
   });

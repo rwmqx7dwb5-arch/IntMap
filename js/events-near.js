@@ -32,7 +32,7 @@ import { haversineKm } from '../supabase/functions/_shared/great-circle.js';
 import { USGS_WEEK_FEED, QUAKE_FLOOR_MAG } from '../supabase/functions/_shared/place-watch.js';
 
 export const STATE = Object.freeze({ OK: 'ok', NONE: 'none', UNAVAILABLE: 'unavailable' });
-export const REASON = Object.freeze({
+const REASON = Object.freeze({
   BEYOND_FEED: 'window-beyond-feed', NONE_WITHIN: 'none-within-reach', NO_DB: 'no-database-client', PARSE: 'parse',
 });
 
@@ -52,7 +52,7 @@ export const QUAKE_FEED_TTL_MS = 60 * 1000;
 export const NEWS_PAGE = 1000, NEWS_PAGES = 5;
 /* the columns every caller needs: the card's (title, place, outlets, category) and the watched places' (status,
    counts, the representative article's link and outlet). One select, so one shape of row. */
-export const NEWS_COLS = 'public_id,representative_title,rep_lng,rep_lat,rep_place_name_en,independent_source_count,article_count,last_article_at,first_published_at,status,primary_category,'
+const NEWS_COLS = 'public_id,representative_title,rep_lng,rep_lat,rep_place_name_en,independent_source_count,article_count,last_article_at,first_published_at,status,primary_category,'
   + 'representative:news_articles!news_events_representative_article_id_fkey(canonical_url,source_id)';
 
 const finite = (v) => typeof v === 'number' && isFinite(v);
