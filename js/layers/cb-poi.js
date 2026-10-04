@@ -13,4 +13,5 @@ export default {
   label: 'poiLabels',
   on: true,
   html: true,
+  names: true,
 };

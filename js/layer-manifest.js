@@ -54,9 +54,9 @@
 /** the Layers list — every shelf of js/layers/_shelves.js in panel order, its rows in `order` (scripts/lib/layer-descriptor.mjs deriveShelves) */
 const DERIVED = [
   { key: "base", layers: [
-    { id: "cb-names", kind: "display", label: "placeNames", on: true, html: true },
-    { id: "cb-geolabels", kind: "display", label: "geoLabels", on: true, html: true },
-    { id: "cb-poi", kind: "display", label: "poiLabels", on: true, html: true },
+    { id: "cb-names", kind: "display", label: "placeNames", on: true, html: true, names: true },
+    { id: "cb-geolabels", kind: "display", label: "geoLabels", on: true, html: true, names: true },
+    { id: "cb-poi", kind: "display", label: "poiLabels", on: true, html: true, names: true },
     { id: "cb-borders", kind: "display", label: "borders", on: true, html: true },
     { id: "cb-coast", kind: "display", label: "coastline", html: true },
     { id: "cb-admin1", kind: "display", label: "adminBounds", on: true, html: true },
@@ -272,9 +272,9 @@ const DERIVED = [
 ];
 /** every declaration whole, links included, in panel order */
 const DECLARATIONS = [
-  { id: "cb-names", kind: "display", shelf: "base", order: 10, label: "placeNames", on: true, html: true },   // cb-names.js
-  { id: "cb-geolabels", kind: "display", shelf: "base", order: 20, label: "geoLabels", on: true, html: true },   // cb-geolabels.js
-  { id: "cb-poi", kind: "display", shelf: "base", order: 30, label: "poiLabels", on: true, html: true },   // cb-poi.js
+  { id: "cb-names", kind: "display", shelf: "base", order: 10, label: "placeNames", on: true, html: true, names: true },   // cb-names.js
+  { id: "cb-geolabels", kind: "display", shelf: "base", order: 20, label: "geoLabels", on: true, html: true, names: true },   // cb-geolabels.js
+  { id: "cb-poi", kind: "display", shelf: "base", order: 30, label: "poiLabels", on: true, html: true, names: true },   // cb-poi.js
   { id: "cb-borders", kind: "display", shelf: "base", order: 40, label: "borders", on: true, html: true },   // cb-borders.js
   { id: "cb-coast", kind: "display", shelf: "base", order: 50, label: "coastline", html: true },   // cb-coast.js
   { id: "cb-admin1", kind: "display", shelf: "base", order: 60, label: "adminBounds", on: true, html: true },   // cb-admin1.js
@@ -494,6 +494,8 @@ export const isDisplay = (id) => { const l = BY_ID.get(id); return !!l && l.kind
 export const dataLayers = () => LAYERS.filter((l) => l.kind !== 'display');
 /** (basic-display-not-layers) the map display, in panel order — the items the 基本表示 section switches */
 export const displayItems = () => LAYERS.filter((l) => l.kind === 'display');
+/** (learn-quests) the rows that write names on the map — the declaration's own `names` (scripts/lib/layer-descriptor.mjs) */
+export const nameItems = () => LAYERS.filter((l) => l.names === true).map((l) => l.id);
 
 /** the curated shelves in panel order, in the shape reorganizeLayerPanel has always read:
     `[heading key, short names, how many the reader named]` (empty shelves included — their keys are kept) */

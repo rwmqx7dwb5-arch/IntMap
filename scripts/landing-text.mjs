@@ -108,6 +108,16 @@ export const TEXT = {
         draft: { h: 'Your draft stays in your browser', p: 'While you write, the draft is kept in this browser, so a reload does not lose it. It is not sent anywhere until you share the link. When you open a tour that someone shared, “Edit this tour” opens it in the builder.' },
         use: { h: 'In a lesson', p: 'Put the link on the classroom screen or in your class materials. Students move through it with Next and Previous on their own devices, and the address bar always holds a link to the step on screen. To change the tour, edit it and share the new link; links already handed out keep showing the tour they were made from.' },
       },
+      quests: {
+        h2: 'The same questions for the whole class',
+        sub: 'Learn quests ask questions made from the map’s own data, and students answer them on the map: “Find the place” names a city and they tap where it is; “Guess the year” shows a day in history with the year hidden and they answer the year. Each answer is shown on the map.',
+        steps: [
+          { h: 'Play a set', p: 'In the map, open the quiz (Layers, then Tools, then Learn quests — or the quiz menu) and choose a quest. A set is five or ten questions and climbs from easy to hard.' },
+          { h: 'Copy the challenge link', p: 'At the end of the set, copy the challenge link. It holds which quest it is, a seed and the number of questions — nothing about you and nothing about the answers.' },
+          { h: 'Everyone gets the same questions', p: 'Every student who opens the link answers exactly the same questions in the same order, on their own device, so the class can compare scores and talk about the same places and years.' },
+        ],
+        note: 'No account is needed, and nothing is sent anywhere: the scores stay on each device (the best score is kept in that browser). The questions come from the map’s data — GeoNames for the cities, the border record and IntMap’s war record for the days — and a rebuilt dataset can change the questions a link gives.',
+      },
       examples: { h2: 'Examples for class', question: 'Question for class', open: 'Open this map', fits: 'Fits' },
       curriculum: {
         h2: 'Where the examples fit Japan’s high-school course',
@@ -337,6 +347,16 @@ export const TEXT = {
         link: { h: 'ツアーはリンクそのもの', p: 'ツアーはリンクの中に書き込まれるので、アップロードも、生徒に渡すアカウントも要りません。リンクにはサイトが扱える長さがあり、作成画面はツアーがその何割を使っているかを示して、次のステップが入らないときは前もって知らせます。サイトが断る長さのリンクは渡しません。' },
         draft: { h: '下書きはこのブラウザに残る', p: '書いている間の下書きはこのブラウザに保存されるので、再読み込みしても消えません。リンクを共有するまで、どこにも送られません。誰かが共有したツアーを開いたときは、「このツアーを編集」で作成画面に取り込めます。' },
         use: { h: '授業での使い方', p: 'リンクを教室の画面や配布資料に載せます。生徒は自分の端末で「次へ」「前へ」を使って進み、アドレスバーにはいつも表示中のステップへのリンクが入っています。ツアーを直すときは編集して新しいリンクを共有します。すでに配ったリンクは、作ったときのツアーのままです。' },
+      },
+      quests: {
+        h2: 'クラス全員に同じ問題を',
+        sub: '学ぶクエストは、地図自身のデータから作った問題を、生徒が地図の上で答えるものです。「場所当て」は都市の名前が出て、その場所を地図でタップします。「年代当て」は歴史のある日の地図を年を隠して見せ、何年かを答えます。答えはどれも地図で示します。',
+        steps: [
+          { h: 'セットを解く', p: '地図で「レイヤー」の「ツール」から「学ぶクエスト」を開くか、クイズのメニューから選びます。1 セットは 5 問か 10 問で、やさしい問題からむずかしい問題へ進みます。' },
+          { h: '挑戦リンクをコピーする', p: 'セットの最後に挑戦リンクをコピーします。リンクに入っているのはクエストの種類・seed・問題数だけで、あなたのことも答えも入っていません。' },
+          { h: '全員が同じ問題を解く', p: 'リンクを開いた生徒は全員、自分の端末で同じ問題を同じ順で解きます。得点を比べ、同じ場所と年について話し合えます。' },
+        ],
+        note: 'アカウントは要らず、どこにも送信しません。得点はそれぞれの端末にだけ残ります（自己ベストはそのブラウザに保存）。問題は地図のデータ——都市は GeoNames、日付は国境の記録と IntMap の戦争記録——から作るので、データを作り直すと同じリンクの問題が変わることがあります。',
       },
       examples: { h2: '授業で使える見本', question: '授業での問い', open: 'この地図を開く', fits: '対応' },
       curriculum: {

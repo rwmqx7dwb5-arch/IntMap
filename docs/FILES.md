@@ -877,7 +877,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  208 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  209 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -893,6 +893,7 @@ atlas-cap-chart.js                Atlas の能力 — グラフの合成（chart
 atlas-cap-data.js                 Atlas の能力 — データの問い合わせ・分析・読み取り（data.*）
 atlas-cap-dialog.js               Atlas の能力 — 回答と問い返し（dialog.*）
 atlas-cap-layers.js               Atlas の能力 — レイヤーの切り替え・透明度・レイヤー別の操作（layers.*）
+atlas-cap-learn.js                Atlas の能力 — 学ぶクエスト（learn.quest：出題の開始・挑戦リンク・状態・終了）
 atlas-cap-map.js                  Atlas の能力 — 地図への描画・強調・計測・消去（map.*）
 atlas-cap-navigation.js           Atlas の能力 — ナビゲーション（navigation.*）
 atlas-cap-news.js                 Atlas の能力 — ニュースの分類（news.category）
@@ -999,7 +1000,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全208を検索・到達可能 207）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全209を検索・到達可能 208）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1015,9 +1016,9 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 208能力ぶんの型・列挙・範囲と `required`/`anyOf`。
-atlas-schemas.js                  **引数の schema**（#R406）— 208 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
-atlas-schemas.js                  **引数の schema**（#R406）— 208 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
+atlas-schemas.js                  **引数の schema**（#R406）— 209能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 209 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
+atlas-schemas.js                  **引数の schema**（#R406）— 209 能力ぶんの型・列挙・範囲と `required`/`anyOf`。                                  綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）
@@ -1370,6 +1371,12 @@ tour-builder.js                   **ツアー作成**——いまの地図（Map
 tour-worksheet.js                 **印刷用ワークシート**——再生中のツアーの各段をプレイヤーの go() で開き、time-lapse.js の mapDrawn で描き終えを
                                   待ち、map-recorder.js の postcard で撮って、生徒用／教員用の A4 の紙（地図・日付・問い・解答欄・出典）を
                                   印刷プレビューに出す（window.print）。授業モードのプリンタのボタンと Atlas の panel.tourWorksheet が読む
+quest-engine.js                   **学ぶクエストの出題エンジン**（純関数・Node でも読める）——種類のレジストリ（場所当て where：GeoNames の
+                                  settlement を人口の順位の対数で 3 段／年代当て when：この日の歴史地図の出来事、1 月 1 日付けと年を印字する文は除く）、
+                                  seed からの決定的な問題列、1 つの採点尺度、挑戦リンク `?quest=<kind>.<seed>.<n>` の読み書き（§8.6.4）
+quest-panel.js                    **学ぶクエストのパネル**——出題・地図のタップ・答えの大円と距離・年代当ての間は年の表示を body の class 1 つで隠す・
+                                  合計と挑戦リンク・自己ベスト（localStorage）。閉じると時計と視点を戻す。クイズのメニュー・レイヤー ▸ ツール・
+                                  src/main.js（`?quest=`）・Atlas の learn.quest が import() で読む（遅延・グローバル無し）
 premium-plan.js                   プレミアムの節——ただしその全機能が無料である
 supporter.js                      IntMap を支援する——支援パネルの「支援の使い道」（プラン表の 1 日の上限と
                                   public.operating_stats() の今月の AI 要求数・トークン数）と、控えめな提案カード

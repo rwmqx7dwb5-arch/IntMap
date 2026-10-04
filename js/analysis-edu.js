@@ -47,8 +47,14 @@ export function analysisEdu(HOST){
         '<button class="ai-test-btn" data-q="shape" style="width:100%;">'+icon('square')+' '+(IntMapLang.t(HOST.lang,"Silhouette quiz (shape → country)","シルエットクイズ（国の形→国名）","Umrissquiz (Form → Land)","Викторина по силуэтам (форма → страна)","Cuestionario de siluetas (forma → país)"))+'</button>'+
         '<button class="ai-test-btn" data-q="duelpop" style="width:100%;">'+icon('users')+' '+(IntMapLang.t(HOST.lang,"Population duel (which is bigger?)","人口対決（どちらが多い?）","Bevölkerungsduell (welches ist größer?)","Дуэль по населению (где больше?)","Duelo de población (¿cuál es mayor?)"))+'</button>'+
         '<button class="ai-test-btn" data-q="duelarea" style="width:100%;">'+icon('set-square')+' '+(IntMapLang.t(HOST.lang,"Area duel (which is larger?)","面積対決（どちらが広い?）","Flächenduell (welches ist größer?)","Дуэль по площади (что больше?)","Duelo de superficie (¿cuál es mayor?)"))+'</button>'+
+        /* (learn-quests) the questions made from the map's own data — js/quest-panel.js, fetched when one is chosen */
+        '<div style="font-size:11px;font-weight:600;color:var(--text-muted);margin:6px 0 0;">'+icon('graduation')+' '+esc(IntMapLang.t(HOST.lang,"Learn quests","学ぶクエスト"))+'</div>'+
+        '<button class="ai-test-btn" data-quest="where" style="width:100%;">'+icon('pin')+' '+esc(IntMapLang.t(HOST.lang,"Find the place (tap the city on the map)","場所当て（都市を地図でタップ）"))+'</button>'+
+        '<button class="ai-test-btn" data-quest="when" style="width:100%;">'+icon('clock')+' '+esc(IntMapLang.t(HOST.lang,"Guess the year (a day in history, year hidden)","年代当て（年を隠した歴史のある日）"))+'</button>'+
         '<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-top:4px;">'+(IntMapLang.t(HOST.lang,"Each answer shows a learning card about the country.","正解すると、その国の解説カードが表示されます。","Nach jeder Antwort erscheint eine Lernkarte zum Land.","После каждого ответа показывается карточка с фактами о стране.","Cada respuesta muestra una ficha didáctica sobre el país."))+'</div></div>';
-      wire(); p.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{ mode=b.getAttribute('data-q'); next(); }); }
+      wire(); p.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{ mode=b.getAttribute('data-q'); next(); });
+      p.querySelectorAll('[data-quest]').forEach(b=>b.onclick=()=>{ const kind=b.getAttribute('data-quest'); closeP();
+        import('./quest-panel.js').then(m=>m.startQuest({kind})).catch(()=>{ try{ HOST.imToast(IntMapLang.t(HOST.lang,"Learn quests could not be loaded — check your connection and try again.","学ぶクエストを読み込めませんでした。接続を確認して、もう一度お試しください。")); }catch(_){} }); }); }
     /* country silhouette → compact SVG (equirectangular, cos-lat corrected; antimeridian spanners skipped) */
     function shapeSVG(code){ try{
       if(!window.countryGeo) return null;

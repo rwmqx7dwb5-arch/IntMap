@@ -340,6 +340,20 @@ ${['link', 'draft', 'use'].map((k) => `      <div class="lp-tile"><h3>${esc(B[k]
   </section>`;
 }
 
+/* (learn-quests) the challenge link of the learn quests — js/quest-panel.js. The words are in scripts/landing-text.mjs
+   and describe what that file does: the same (quest, seed, number) gives every student the same questions. */
+function questsSection(P) {
+  const Q = P.quests;
+  return `  <section class="lp-sec" id="quests">
+    <h2>${esc(Q.h2)}</h2>
+    <p class="lp-sub">${esc(Q.sub)}</p>
+    <ol class="lp-steps">
+${Q.steps.map((st) => `      <li><h3>${esc(st.h)}</h3><p>${esc(st.p)}</p></li>`).join('\n')}
+    </ol>
+    <p class="lp-note">${esc(Q.note)}</p>
+  </section>`;
+}
+
 function toursSection(L, P) {
   const k = L.i, Tt = P.tours;
   const cards = TOURS.map((tour) => {
@@ -404,6 +418,8 @@ ${P.plan.steps.map((st) => `      <li><h3>${esc(st.h)}</h3><p>${esc(st.p)}</p></
 ${toursSection(L, P)}
 
 ${buildSection(P)}
+
+${questsSection(P)}
 
   <section class="lp-sec" id="examples">
     <h2>${esc(P.examples.h2)}</h2>

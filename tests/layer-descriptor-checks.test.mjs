@@ -46,12 +46,18 @@ const gate = (args) => {
    `kind: 'display'` right after its id; the catalogue states every row's kind; the two layers that were `on` are not
    (so they leave defaultLayers/defaultOn); the share link's `l=` no longer carries the display rows. */
 const NO_LONGER_ON = new Set(['dl-climate', 'dl-subcables']);
+/* (learn-quests, 2026-10-04) the SECOND deliberate change: a row that writes names on the map says so (`names: true`,
+   right after `html` — ROW_FIELDS order), so a place question can switch exactly those off. Which rows say it is read
+   from the declarations themselves, not listed here; the amendment adds that one key and nothing else, so ① still
+   proves that nothing ELSE moved. */
+const NAMES = new Set(M.LAYERS.filter((l) => l.names === true).map((l) => l.id));
 function amendPhotograph(text) {
   const P = JSON.parse(text);
   const display = new Set(P.SHELVES.filter((s) => s.key === 'base').flatMap((s) => s.layers.map((l) => l.id)));
   const row = (r) => { const o = {}; for (const [k, v] of Object.entries(r)) {
     if (k === 'on' && NO_LONGER_ON.has(r.id)) continue;
-    o[k] = v; if (k === 'id' && display.has(r.id)) o.kind = 'display'; } return o; };
+    o[k] = v; if (k === 'id' && display.has(r.id)) o.kind = 'display';
+    if (k === 'html' && NAMES.has(r.id)) o.names = true; } return o; };
   P.SHELVES = P.SHELVES.map((s) => ({ key: s.key, layers: s.layers.map(row) }));
   P.LAYERS = P.LAYERS.map(row); P.htmlRows = P.htmlRows.map(row);
   P.defaultLayers = P.defaultLayers.filter((id) => !NO_LONGER_ON.has(id));

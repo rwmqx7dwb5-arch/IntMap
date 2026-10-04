@@ -35,9 +35,16 @@ window.IntMapGeodesy=(function(){
     const lo2=lo1+Math.atan2(Math.sin(br)*Math.sin(dr)*Math.cos(la1), Math.cos(dr)-Math.sin(la1)*Math.sin(la2));
     return [_r2d(lo2), _r2d(la2)];
   }
+  /* (learn-quests) the central angle a→b in radians (haversine) — the one formula the great circle below walks and
+     the distance next to it measures, so the line drawn and the kilometres reported cannot disagree */
+  function _centralAngle(a,b){
+    const la1=_d2r(a[1]),lo1=_d2r(a[0]),la2=_d2r(b[1]),lo2=_d2r(b[0]);
+    return 2*Math.asin(Math.min(1,Math.sqrt(Math.sin((la2-la1)/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin((lo2-lo1)/2)**2)));
+  }
+  function _distKm(a,b){ return _centralAngle(a,b)*_R_EARTH_KM; }           /* great-circle distance, [lng,lat] → km */
   function _gcPoints(a,b,n){                                                /* great-circle a→b, unwrapped lon */
     const la1=_d2r(a[1]),lo1=_d2r(a[0]),la2=_d2r(b[1]),lo2=_d2r(b[0]);
-    const d=2*Math.asin(Math.min(1,Math.sqrt(Math.sin((la2-la1)/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin((lo2-lo1)/2)**2)));
+    const d=_centralAngle(a,b);
     if(!isFinite(d)||d<1e-9) return [[a[0],_clampLat(a[1])],[b[0],_clampLat(b[1])]];
     const out=[]; let prev=null;
     for(let i=0;i<=n;i++){ const f=i/n, A=Math.sin((1-f)*d)/Math.sin(d), B=Math.sin(f*d)/Math.sin(d);
@@ -131,7 +138,7 @@ window.IntMapGeodesy=(function(){
     }catch(_){} });
     return out;
   }
-  return { _R_EARTH_KM, _HALF_CIRCUM, _d2r, _r2d, _clampLat, _dest, _gcPoints, _gcRingUnwrapped,
+  return { _R_EARTH_KM, _HALF_CIRCUM, _d2r, _r2d, _clampLat, _dest, _distKm, _gcPoints, _gcRingUnwrapped,
            _clipHalf, _splitPolyToWindows, _splitLineToWindows, diskFillPolys, diskOutlineLines,
            sanitizeFeatures };
 })();

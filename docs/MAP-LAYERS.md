@@ -684,6 +684,7 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 | `on` | 初回訪問者に ON（`window.IntMapDefaultOn` はここから導く）。**レイヤーには 1 つも無い**（基本表示の 7 項目だけ） |
 | `share` | 共有リンクが運ぶ——レイヤーは `&l=`、基本表示は `&d=` |
 | `html` | 行そのものを宣言から書く（`js/layer-rows.js`。以前は `index.html` の markup） |
+| `names` | その行は地図に**名前を書く**（地名・自然地名・施設名）。「どこにある？」の答えがそこから読める——学ぶクエストの場所当てはこの行だけを出題中に切る（`nameItems()`） |
 | `lazy` | その行を ON にすると読まれる遅延モジュール（`js/lazy-modules.js` の `LAZY_REGISTRY`） |
 | `registry` | `window.IntMapLayers` に登録する id（Atlas が「描かれているもの」を読む入口） |
 | `state` | 共有リンクがモジュールの状態を運ぶ鍵（`window.IntMapShareState`） |
