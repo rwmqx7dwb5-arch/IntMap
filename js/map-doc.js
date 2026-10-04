@@ -32,12 +32,12 @@
 import { canonical, encode, captionText } from './map-state.js';
 import { toLinkValue } from './my-map-doc.js';
 
-export const DOC_VERSION = 1;
+const DOC_VERSION = 1;
 export const KINDS = Object.freeze(['view', 'map', 'tour', 'brief']);
 /* the account's own limits on a saved map's words (supabase/migrations/20261003211500_collection_workspace.sql:
    name 1-120, note ≤ 2000) — a document is cut to them on the way in, so what is kept is what was shown */
-export const NAME_MAX = 120;
-export const DOC_NOTE_MAX = 2000;
+const NAME_MAX = 120;
+const DOC_NOTE_MAX = 2000;
 /* ⚠ THE MOST STEPS ONE DOCUMENT HOLDS — the account's fence on a saved document's steps
    (supabase/migrations/20261004120000_map_documents.sql, which states the estimate). THE ONE COPY in the page. */
 export const STEPS_MAX = 200;
@@ -46,7 +46,7 @@ const str = (/** @type {any} */ v) => String(v == null ? '' : v);
 /** a fragment from outside → the codec's own, without '#' ('' when it names no map) @param {any} h */
 export const stateOf = (h) => canonical(h).replace(/^#/, '');
 /** does this fragment carry a reader's own drawing (`mm=`)? — a map is a «my map» by what it holds @param {string} state */
-export const holdsMyMap = (state) => /(^|&)mm=/.test(str(state).replace(/^#/, ''));
+const holdsMyMap = (state) => /(^|&)mm=/.test(str(state).replace(/^#/, ''));
 
 /** @typedef {{ state:string, title:string, say:string, ask:string }} Step */
 /** @typedef {{ v:number, id:string, kind:string, title:string, note:string, steps:Step[], origin:{from:string, ref:(string|null)}, updatedAt:number }} MapDoc */

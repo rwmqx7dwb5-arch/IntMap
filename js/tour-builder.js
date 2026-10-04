@@ -147,7 +147,7 @@ export function getDraft() { return { title: draft.title, steps: draft.steps.map
 
 /** (map-document-unify) keep the draft in the account: the Library (js/my-places.js, opened by the app's account owner
     through js/bus.js 'intmap-open-library') saves it as a tour document — the same door every saved map takes */
-export function saveToAccount() {
+function saveToAccount() {
   const doc = fromTourDraft(getDraft(), 'tour-draft');
   if (!doc) return { ok: false, reason: 'no-steps' };
   if (!hasMap(doc)) return { ok: false, reason: 'no-link' };

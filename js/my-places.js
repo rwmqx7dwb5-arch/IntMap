@@ -266,7 +266,7 @@ export async function playDoc(doc, n) {
   return P.startTour(T.CUSTOM_TOUR_ID, Math.max(1, Math.round(+n || 1)), { t: await T.encodeCustomTour(tour) });
 }
 /** the document on paper: played, then handed to the worksheet (js/tour-worksheet.js pictures the tour that is playing) */
-export async function printDoc(doc) {
+async function printDoc(doc) {
   await playDoc(doc, 1);
   const P = await import('./tour-player.js'); if (!P.status()) return { ok: false, reason: 'no-tour' };
   const W = await import('./tour-worksheet.js');
