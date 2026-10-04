@@ -3,7 +3,7 @@
  * ----------------------------------------------------------------------------
  *  #R409 の報告の**もう半分**: 「初回描画では時代名がそもそも反映されない」。
  *  原因は順序である。国名ラベルの解決に要る present-day の名前は `countryStats` に
- *  あり、その中身は **Natural Earth の属性ファイル（CDN）** が届いてから入る。
+ *  あり、その中身は **Natural Earth の属性ファイル**（#903 以降は本サイトの data/ne-countries/）が届いてから入る。
  *  js/time-borders.js は時計の 45 ms 後に描き、js/time-countries.js は 340 ms 待って
  *  そこから国別表・Maddison・HDI を **await** する——つまり地図のほうが先に、
  *  **空の表**を見て札を書き、二度と書き直さなかった。
@@ -24,6 +24,7 @@
  *  とは分けてある。門のほうは 1939→1916 を共有 page で数秒で測る。
  * ==========================================================================*/
 import { test, expect } from './helpers/app.js';
+import { isNECountriesUrl } from './helpers/ne-countries-route.js';
 
 /* ⚠ A VIEWPORT PER CLAIM, because both era layers collide like any other symbol layer (`text-padding`
    6, no allow-overlap) and `queryRenderedFeatures` answers with what was PLACED — which is the right
@@ -93,9 +94,12 @@ test('R410 ② 国別属性が国境より遅れて届いても、地図の国�
   const gate = new Promise(resolve => { release = resolve; });
   const stages = [], started = Date.now();
   const mark = stage => stages.push({ stage, ms: Date.now() - started });
-  const attributeResponse = page.waitForResponse(response => /ne_\d+m_admin_0_countries\.geojson/.test(response.url()) && response.ok(), { timeout: GOTO_MS + STAGE_MS.boot + STAGE_MS.eraBorders + STAGE_MS.attributes });
+  /* ⚠ (wave3-nightly-root) the files are named by js/ne-countries.js, not spelled here: this route
+     spelled the jsDelivr `.geojson` URL, and after #903 moved them to data/ne-countries/ it held
+     nothing — `delayed` 0 on the nightly deep tier 2026-10-02 and 2026-10-03. */
+  const attributeResponse = page.waitForResponse(response => isNECountriesUrl(response.url()) && response.ok(), { timeout: GOTO_MS + STAGE_MS.boot + STAGE_MS.eraBorders + STAGE_MS.attributes });
   attributeResponse.catch(() => {});
-  await page.route(/ne_\d+m_admin_0_countries\.geojson/, async (route) => {
+  await page.route(isNECountriesUrl, async (route) => {
     delayed++;
     await gate;
     await route.continue();

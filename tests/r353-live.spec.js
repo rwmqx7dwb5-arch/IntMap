@@ -50,8 +50,14 @@ test('R353-live ① every rung of the status ladder is reachable, and each says 
   /* ⚠ (#R432) `usgsMon` IS IN THIS LIST NOW. #R395 added it as the fifth feed and this loop kept
      naming four, so the feed that produced every one of the six unplaced volcanoes that broke this
      test was the one nobody was watching settle. */
+  /* ⚠ (wave3-nightly-root) WHICH STATES ARE VERDICTS IS THE MODULE'S ANSWER (`settled`), NOT A LIST HERE.
+     This read `['ok', 'failed']`; volcano-feed-weekly (2026-10-03) gave the weekly feed a third verdict,
+     `unavailable` — the relay read the Smithsonian and was refused (403, a Cloudflare challenge) — and the
+     nightly deep tier called that honest answer «never settled» (2026-10-02/03). The feed NAMES stay
+     written out: tests/hazard-volcano-checks.test.mjs #R432 ⑤ derives them from the module and holds
+     this loop to every one of them. */
   for (const k of ['usgs', 'usgsMon', 'vona', 'jma', 'weekly']) {
-    expect(['ok', 'failed'], k + ' never settled: ' + feeds[k].state).toContain(feeds[k].state);
+    expect(feeds[k].settled, k + ' never settled: ' + feeds[k].state).toBe(true);
   }
   /* USGS HANS and the Smithsonian relay are the two that must answer for the ladder to mean
      anything; JMA's file is only present while Japan has a warning in force, and the VONA feed is a
@@ -61,8 +67,17 @@ test('R353-live ① every rung of the status ladder is reachable, and each says 
      is never legitimately empty — and since #R432 the bundled catalog is built to cover it */
   expect(feeds.usgsMon.state).toBe('ok');
   expect(feeds.usgsMon.rows).toBeGreaterThan(0);
-  expect(feeds.weekly.state).toBe('ok');
-  expect(feeds.weekly.rows).toBeGreaterThan(0);
+  /* the weekly report: either it was read and is never empty, or the relay read the publisher and was
+     REFUSED and says so — with the refusal's status and when it was checked. `failed` (the relay itself
+     did not answer) is ours, and stays red. Which of the two it is, is the publisher's weather. */
+  if (feeds.weekly.state === 'unavailable') {
+    expect(feeds.weekly.unavailable, 'a refusal that does not say what was refused').toBeTruthy();
+    expect(feeds.weekly.unavailable.status, 'the refusal names the publisher\'s HTTP status').toBeGreaterThanOrEqual(400);
+    expect(Date.parse(feeds.weekly.unavailable.checkedAt), 'the refusal says when it was checked').toBeGreaterThan(0);
+  } else {
+    expect(feeds.weekly.state).toBe('ok');
+    expect(feeds.weekly.rows).toBeGreaterThan(0);
+  }
   expect(feeds.vona.state).toBe('ok');
   expect(feeds.vona.rows).toBeGreaterThan(0);
 

@@ -33,6 +33,7 @@
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics, isBenign } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
+import { routeNECountries } from './helpers/ne-countries-route.js';
 import { factoryHomes } from './app-source.mjs';
 
 test.describe.configure({ mode: 'serial' });
@@ -54,8 +55,12 @@ const NEWS_SEED = {
   })),
 };
 
-/* A two-country stand-in for the 4.7 MB Natural Earth file js/countries-ui.js downloads. Same shape
-   (ISO_A3_EH + POP_EST), so loadCountryData() takes its normal path and finishes in milliseconds. */
+/* A two-country stand-in for the Natural Earth files js/countries-ui.js reads. Same shape
+   (ISO_A3_EH + POP_EST), so loadCountryData() takes its normal path and finishes in milliseconds.
+   ⚠ (wave3-nightly-root) It is SERVED in the shipped form, at the shipped paths, by
+   tests/helpers/ne-countries-route.js, which asks js/ne-countries.js for both. The route used to spell
+   the jsDelivr URL; after #903 moved the files to data/ne-countries/ it matched nothing, and #8 parsed
+   the 258 real countries instead of these 2 (nightly deep tier 2026-10-02 and 2026-10-03). */
 const NE_STUB = {
   type: 'FeatureCollection',
   features: [
@@ -70,9 +75,8 @@ test.beforeAll(async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, storageState: seededStorageState() });
   await installHermeticRouting(context);
   /* Registered AFTER the catch-all so it wins (Playwright runs the most recent matching handler
-     first): the Natural Earth boundaries resolve instantly instead of downloading 4.7 MB. */
-  await context.route(/natural-earth-vector.*admin_0_countries\.geojson/, (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(NE_STUB) }));
+     first): every scale of the Natural Earth table resolves to the stand-in. */
+  await routeNECountries(context, NE_STUB);
   await context.addInitScript((seed) => {
     try {
       localStorage.setItem('intmap_ws4', JSON.stringify({ on: false }));
@@ -327,7 +331,7 @@ test('R168 #7 WRITE-THROUGH: appendNewsBatch advances renderedCount (no duplicat
 
 test('R168 #8 WRITE-THROUGH: loadCountryData sets countryGeo/countryDataLoaded and index.html re-adds the layer', async () => {
   // js/countries-ui.js assigns HOST.countryGeo / HOST.countryDataLoaded / HOST.countryDataPromise.
-  // (Natural Earth is stubbed in beforeAll, so the real 4.7 MB download costs milliseconds here.)
+  // (Natural Earth is stubbed in beforeAll at every scale, so the real files cost nothing here.)
   // Loaded the way the app does it: setMode('stats') runs `if(!countryDataLoaded) loadCountryData()`
   // through the shim. The module then does `HOST.countryGeo=gj; window.countryGeo=HOST.countryGeo;`
   // — reading BACK through the host, so a missing setter would publish null here.
