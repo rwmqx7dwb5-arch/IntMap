@@ -1,6 +1,7 @@
 ---
 title: Cliopatria の名前が史実の存続期間の外に描かれていた所見 119 件を史実で審査した——45 件で名前を外し（始まり側を新たに表せるようにした）、72 件は理由と史実の文を添えて反証
 date: 2026-10-05
+pr: 995
 newsen: Historical borders no longer name a polity outside the years history gives it — for example the Khmer Empire after 1431, Malacca after 1511 or the Holy Roman Empire before 962; the shape stays and its card says why.
 newsjp: 歴史地図で、史実が存続を認めない年に政体の名前を描かなくなりました（1431 年以後のクメール帝国、1511 年以後のマラッカ王国、962 年より前の神聖ローマ帝国など）。形は残り、カードが理由を述べます。
 ---
@@ -72,4 +73,5 @@ Wikidata の年は項目の範囲で決まる（Burma Q836 は 1948 年の独立
   ④b に「名前と側の組で 1 回だけ審査」を足した。
 - カードはページ自身のモジュール（`scripts/histeras/time-borders.mjs`）で文を出して確かめた: 神聖ローマ帝国 950 年
   「史実はこの政体の成立を 962年 に置く」、ヒムヤル 590 年「終焉を 570年頃 に置く」。
+- ⚠ **名前表も読み手だった。** `data/histnames.json` の識別子欄は OHM と Cliopatria の両方の QID から作られる（`histBordersQidGaps`）。«First Hellenic Republic» を 1832 年で外すと、OHM の帯を引いた後に名前付きで残る行が 0 になり、Q528546 を述べる行が無いまま表に残って `check:histnames` が CI で落ちた。`node scripts/build-histnames.mjs --identifiers` で作り直した（Q528546 を削除、#991 が足した Cliopatria 行の分だけ 6 項目の言語が広がった）。名前を外す変更は**名前表の再生成も伴う**。
 - ⚠ 自分の門の正規表現 `/^Qd+$/` を heredoc 経由で書いて `d` が `d` になり、全行が落ちた——門が最初に赤くなって気づいた。
