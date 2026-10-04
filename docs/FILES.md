@@ -528,7 +528,9 @@ map-state.js                      地図の状態の**正本**（MapState）。�
                                   ニュースのストーリーが使う）もここに 1 つ
 link-codec.js                     リンクに文書を詰める**唯一の梱包（純関数）**——bytes ⇄ deflate-raw ⇄ base64url。展開は読み手が渡す上限で
                                   読むのをやめて 'too-large' と言う（切り詰めない）。自作ツアーの `t`（tours.js）とブリーフィングの `b`
-                                  （atlas-briefing-codec.js）が使う。出力は以前の 2 つの写しとバイト単位で同じ
+                                  （atlas-briefing-codec.js）が使う。出力は以前の 2 つの写しとバイト単位で同じ。JSON をリンクに入れる
+                                  文字（packText/unpackText: 'z' = deflate-raw + base64url、'j' = そのまま）と、ブラウザが保てるアドレス長の
+                                  実測値 LINK_LIMIT_MEASURED もここ——ツアーの `t`・データスタジオの `ds`・ブリーフィングが読む
 map-doc.js                        **地図ドキュメント（純関数）**——保存した地図・マイマップ・ツアー・Atlas の回答を 1 つの形
                                   `{v,id,kind,title,note,steps:[{state,title,say,ask}],origin,updatedAt}` にし、それぞれと相互に変換する
                                   （fromSavedView / toSavedView / fromMyMap / fromTourDraft / fromCustomTour / toTourInput / toTourLink /
@@ -898,7 +900,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/atlas-country-ids-checks.test.mjs (#R742)。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  210 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  211 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）。
                                   行・planner の方針・カメラの事後条件は能力の項目（atlas-cap-*.js）の写しで、
                                   `GENERATED ROWS` / `GENERATED POLICY` / `GENERATED CAMERA GOALS` の印の間を
@@ -1021,7 +1023,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全210を検索・到達可能 209）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全211を検索・到達可能 210）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -1037,7 +1039,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 210能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 211能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   各 schema は能力の項目（js/atlas-cap-*.js）が宣言し、ここはそれを組んで引く。
                                   綴りは同じ項目の run が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -1352,6 +1354,14 @@ my-map.js                         **マイマップ**（window.IntMapMyMap・遅
 my-map-doc.js                     マイマップの**文書（純関数）**——地物の形と検証（頂点は入るときに 1e-6° へ丸める）、リンク形
                                   （Encoded Polyline・信用せず読み直し、読めない地物は数える）、描く形（大円を 0.1° 以下の断片に・
                                   日付変更線で切る・極を囲む範囲は描かない）、GeoJSON の FeatureCollection
+data-studio.js                    **データスタジオ**（window に公開しない。入口は全部 `import('./data-studio.js')` → `studio(HOST)`）——読者の表（CSV・TSV・Excel・貼り付け・
+                                  Atlas の添付）を地図のファイルの扉（GeoJSONUpload.handle）で読み、場所の列で国（Natural Earth 1:50m に
+                                  gis-ops の join）または都市（GeoNames の点）に結び、GeoJSONUpload.style で塗り分け、データセットとして
+                                  分析・Atlas へ渡し、地図の状態の `ds` 欄（リンクそのものに表を入れる）・GeoJSON/CSV/GeoPackage・絵葉書で公開。
+                                  リンクの文書の符号器と読み手（純関数）も持つ。Layers ▸ Tools・地図データの読み込みの隣・表を落としたとき・Atlas `data.studio`
+table-bind.js                     **表の場所の列**（純関数）——各列が ISO 3166-1 の 2 文字・3 文字・数字コード／国名（Intl.DisplayNames が
+                                  名前を持つ全ロケールと Natural Earth の名前の列から発見）／都市名（GeoNames）のどれかを値で判定し、行ごとに
+                                  場所の鍵（ISO alpha-3、無ければ ADM0_A3／GeoNames id）を返す。同名は曖昧として解決しない（同じ行の国の列で絞る）
 legal-text.js                     利用規約とプライバシーポリシーの**本文**（唯一の写し。JA/EN）
 legal.js                          その本文をアプリ内モーダルに表示する
 dialog.js                         ダイアログの唯一の契約 window.IntMapDialog —— 登録簿（open/adopt・anyOpen）、Esc・Tab トラップ・

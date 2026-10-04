@@ -248,6 +248,9 @@ export function auditWith({ caps, docs, atlas, groups, controls, capSrc, execSrc
       /* (map-next) the "myMap" observer asks js/my-map.js what the reader's own map holds and shows, and the renderer
          how many features are drawn in the surfaces it claimed under 'map.myMap' — the map, and the map's objects. */
       myMap: ['map', 'object'],
+      /* (data-studio) the "dataStudio" observer asks js/data-studio.js what the studio holds (its panel, binding and colouring)
+         and whether the dataset it drew is still a layer on the map — the map and a panel. */
+      dataStudio: ['map', 'panel'],
       sim: ['map', 'camera'], control: ['panel'], none: ['explanation', 'panel', 'view', 'camera', 'map'] };
 
   /* ⑦ what a capability says it PRODUCES is something its verifier can observe */

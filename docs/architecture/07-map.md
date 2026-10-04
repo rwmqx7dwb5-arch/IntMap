@@ -403,6 +403,10 @@ KML、KMZ、GPX、CSV・TSV その他の区切り文字つきテキスト、セ�
 見出しの無いファイルにこの道は無い（列に名前が無ければ `join` も `compute` も書けないし、
 それが表である証拠も残らない）。
 
+**Excel（`.xlsx`）も表として読む**——zip の中身が `xl/workbook.xml` を持つとき、`ATL_FILE.sheetTables` がセルのまま返した
+最初の読める sheet を上の表の decoder（`decodeRows`）が読む。座標の無い表を**場所に結ぶ**段はここではなく
+データスタジオ（§7.3h）にあり、そのような表を落とすとスタジオが開く。
+
 **取り込んだ結果は必ず `window.IntMapGeodesy.sanitizeFeatures` を通る**（`js/geodesy.js`）。そこが
 `MultiPoint` と `GeometryCollection` を落とすので、decoder 側で**単一 geometry に展開してから**渡す。
 
@@ -700,7 +704,7 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
 | 辺 | 2 頂点を結ぶ**大円**（計測ツールと同じ「地球上の直線」）。描く形・分析するデータセット・書き出すファイルは**同じ 1 つの形**——大円を 0.1° 以下の断片にし（`DENSIFY_DEG`）、日付変更線で切る（`js/geodesy.js` の `_splitLineToWindows` / `_splitPolyToWindows`）。⚠ 極を囲む範囲は描かず（`polar`）、パネルとファイル（`geometry:null`・`polar:true`）がそう述べる |
 | 計測 | 線の長さ・範囲の面積と周囲は**計測ツールの関数**（`HOST.ringArea`・turf の大円距離）で、表示は読者の単位設定（`HOST.distTXT` / `areaTXT`——計測パネルの `distHTML` / `areaHTML` と同じ数と単位の文字版） |
 | 保存 | このブラウザの `localStorage` `intmap_mymaps`（`{v:1, current, maps:[…]}`。地図はいくつでも）。読み込むときに全地物を今の規則で読み直し、読めない地物は数えてパネルが述べる。保存を拒まれたら（容量・プライベート）パネルがそう述べ、リンクか書き出しを勧める |
-| 地図の状態 | `js/map-state.js` の `mymap` 欄（`&mm=`・アドレスバーの最後）。値は `toLinkValue`（頂点は Encoded Polyline、1e-6°）を `s=` と同じく base64url の JSON に包んだもの。`read` は表示中の地図（空なら無し）。**`apply` は信用しない**——`fromLinkValue` が全欄を手で描いた頂点と同じ規則で読み直し、読めない地物は数える。**同じ id の地図がこのブラウザにあれば手元の写しを出す**（リンクより新しい）。他人の地図は読み取り専用で出し、「自分の地図として保存」で**新しい id の写し**を作る。行の `lazy: 'myMap'` は、値を持つ復元だけがこの module を取りに行くことを述べる（値の無い復元では取りに行かない）。`restore:'full'`——落ちた再読み込みは図形なしで開く。⚠ 地図の状態を持たない起動（ハッシュの無い URL）では module を取りに行かず、何も描かない——パネルを開くと現在の地図が出る（「最初の 1 枚」は地図が全面） |
+| 地図の状態 | `js/map-state.js` の `mymap` 欄（`&mm=`。後に足された `ds`（データスタジオの表、§7.3h）だけがその後ろに来る）。値は `toLinkValue`（頂点は Encoded Polyline、1e-6°）を `s=` と同じく base64url の JSON に包んだもの。`read` は表示中の地図（空なら無し）。**`apply` は信用しない**——`fromLinkValue` が全欄を手で描いた頂点と同じ規則で読み直し、読めない地物は数える。**同じ id の地図がこのブラウザにあれば手元の写しを出す**（リンクより新しい）。他人の地図は読み取り専用で出し、「自分の地図として保存」で**新しい id の写し**を作る。行の `lazy: 'myMap'` は、値を持つ復元だけがこの module を取りに行くことを述べる（値の無い復元では取りに行かない）。`restore:'full'`——落ちた再読み込みは図形なしで開く。⚠ 地図の状態を持たない起動（ハッシュの無い URL）では module を取りに行かず、何も描かない——パネルを開くと現在の地図が出る（「最初の 1 枚」は地図が全面） |
 | 共有 | 共有リンク・埋め込み・絵葉書・授業ツアーの段（`MapState.hash()`）は図形を運ぶ。パネルの「リンクをコピー」は今の地図（場所・レイヤー・日付）にこの図形を載せたリンクと、その長さ |
 | 分析 | 「分析に使う」は表示中の地図を `IntMapData.add` で**データセット**にする（`provenance: {kind:'sketch', author:'reader'|'shared-link', map, title, at, edges}`）。**その時点の写し**であって、地図を描き足しても変わらない（由来が時刻と地図の id を述べる）。`kind` が `op` でないので属性は編集でき、プロジェクト保存は本体ごと保存する（`docs/GIS-CORE.md` §4） |
 | 書き出し | GeoJSON / GeoPackage を `js/gis-export.js` の `write`（データセットと同じ記録の形）で。ライセンスは誰も述べていないので書かない |
@@ -708,6 +712,32 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
 | 描く | 地図のクリックで頂点を置く。ピンは 1 回、線はダブルクリック・Enter・最後の点・「完了」、範囲は最初の点・ダブルクリック・Enter・「完了」で確定。Backspace で 1 点戻し、Esc でやめる。⚠ **地球の外を押しても頂点にしない**——球の脇の黒い空間や空を押すと `unproject` は奥の縁や地平線の点を返す（実測: 球の 10 px 左で 10.42°N 70.63°W＝球の裏側）。レンダラの `coords.onSurface` に訊き、外ならパネルがそう述べる（§7 の 01 章）。描いている間はダブルクリックのズームを止め、クリックは `claimClick` で自分のものにする（地名ラベルが開かない）。計測ツールや自由描画が始まれば退く。近さの判定は計測ツールの `SNAP_PX` |
 | 地図の層 | `mymap-src`（形）・`mymap-lbl-src`（名前のある地物の名前）・`mymap-draft-src`（描きかけ）。前の 2 つは `render.claim(…, 'map.myMap', {clear})` で、地図の消去は**隠す**（削除しない） |
 | Atlas | `map.myMap`（open / add / edit / remove / title / show / hide / list / link / export / analyze / new / collect / keep / draw）。観測器 `myMap` は module 自身の状態（表示・地図 id・地物 id と名前・メモ・色）と描かれた地物数を**呼んだ後に**読み、結果の `want` と一致したときだけ完了とする。状態の `myMap` 節に一覧が載る |
+
+### 7.3h データスタジオ (Data studio) — `js/data-studio.js` / `js/table-bind.js`
+
+**読者の表を、地図・分析・公開まで 1 枚のパネルで。** 取り込み（§7.3d）・データセットと処理（§7.3e）・属性による着色・
+書き出し・絵葉書は前から在り、これはそれらを 1 つの流れにまとめて、欠けていた 3 段——①座標の無い表を場所に結ぶ
+②Excel を地図に出す ③取り込んだ表を公開する——だけを足した面である。入口: **Layers ▸ Tools ▸ データスタジオ**
+（`tool.dataStudio`）・レイヤー ▾ の「地図データを読み込む」の隣の「データスタジオ」・**座標の無い表を地図に落としたとき**
+（`js/map-ui.js` の `handleFiles` が `format:'table'` を受けたら、遅延でスタジオを呼んでその表を渡す）・Atlas `data.studio`・
+`ds=` を持つ共有リンク。モジュールは**どの入口も同じ字句の `import('./data-studio.js')`** で読み（`js/lazy-modules.js` に登録せず、window に何も公開しない。`studio(HOST)` が 1 つの制御器を返す）、起動経路に載らない。`ds` を持つ復元は `js/map-ui.js` の viewHash が `MapState.onRestore` で聞いて import し、登録された持ち主が復元の保留値を受け取る
+（`js/table-bind.js` も同じ——起動の静的 import 木に入らないことを `tests/data-studio-checks.test.mjs` が測る）。
+
+| 段 | 何を・どの部品で |
+|---|---|
+| データ | ドロップ・ファイル選択・貼り付け・Atlas の添付。⚠ **新しい読み手は無い**——どれも File にして地図のファイルの扉 `GeoJSONUpload.handle(files, {quiet})`（＝`handleFiles`）を通す。扉は 1 ファイルごとの結果（`format`・`stats`・`fc`・データセット id）を返す。座標を持つ表は従来どおり点になり、スタジオはその層を塗るだけ |
+| Excel | `js/atlas-attach.js` の `ATL_FILE.sheetTables(zip)`——Atlas の添付が文字に平らにする**同じ走査**（`sheetWalk`。列の上限・セル数・文字数で止まる規則も同じ）からセルのまま表を返す。`js/geo-import.js` は zip の中身が `xl/workbook.xml` を持つとき（拡張子ではない）最初に読める sheet を **CSV と同じ表の decoder**（`decodeRows`）へ渡す——緯度経度の列があれば点、無ければ `geometry:null` の表。どの sheet が答えたかは `stats.sheet` / `stats.sheets` |
+| 場所に結ぶ | `js/table-bind.js`（純関数）。各列を**値で**判定する: ISO 3166-1 の 2 文字・3 文字・数字コード（対応は Natural Earth の `ISO_A2_EH` / `ISO_A3_EH` / `ISO_N3_EH`）、国名（`Intl.DisplayNames` が地域名を持つ**全ロケール**——2 文字の言語コード全部と IntMap の言語の HTML タグを `supportedLocalesOf` に訊いて発見——と Natural Earth の `NAME*` 列）、都市名（`data/gazetteer-phone.json.gz` の `en` / `ja` / `disp` / `alt`。列は `fields` の名前で引く）。正規化は大小・ラテン/ギリシャ/キリル文字のアクセント（U+0300–036F だけ。仮名の濁点は落とさない）・句読点と括弧。自動で鍵に選ぶのは一致率 `DETECT_MIN`（推定値。由来は定数の隣）以上の列で、同率ならコード → 国名 → 都市名。列と種類は読者が選び直せる |
+| 曖昧と未解決 | ⚠ **同名は推測しない**——都市名が複数の場所に当たる行は `ambiguous`（候補つき）で、人口最大を黙って選ばない。同じ行に国の列があればその国で絞る（コードでも国名でも読む）。国名が 2 か国に当たる場合（例「Congo」）も同じ。⚠ **数量の列を鍵にしない**——小さい整数は偶然 ISO 数字コードに当たる（4 はアフガニスタン）ので、数字コードの列は**規格の書き方（先頭ゼロを保った 3 桁）のセルが 1 つ以上ある**ときだけ候補にし、無ければ `numeric-not-evidenced` と述べる（読者が選べばゼロの落ちたコードも読む）。未解決の行はパネルに理由つきで並ぶ |
+| 結合 | 国: Natural Earth 1:50m（`data/ne-countries/`、242 件）を一度だけデータセットに登録し（列は `place_key`・`NAME`・`NAME_JA`・`ISO_*_EH`、`place_key` は ISO alpha-3、無ければ `ADM0_A3`）、鍵の列を足した表と **`js/gis-ops.js` の `join`**（`duplicates:'refuse'`・`unmatched:'keep'`）。表の列名が国の列と重なるときは結合の前に `table_` を前置する（再試行ではない）。同じ国を指す行が複数あれば `join-right-not-unique` を読者に述べる。都市: GeoNames の位置の点のデータセット（未解決の行は `geometry:null` で残る）。どちらも provenance `{kind:'bind', file, keyColumn, keyKind, resolved, rows, unresolved, places}` を持ち、描画は `IntMapGis.draw()` |
+| 塗り分け | `GeoJSONUpload.style(datasetId, spec)`（§7.3e の分類器と凡例。階級数の上限は扉が出す `maxClasses`）。表を結んだ直後は、鍵でも国の列でもなく**全値が数の最初の列**を分位で塗る。方式（分類／段階）・区切り（分位／等間隔）・階級数は読者が変える |
+| 分析 | 結んだ表はデータセット（id はパネルと Atlas の状態に出る）。「データと分析」は `IntMapGis.open()`、「Atlas に聞く」は `IntMapAtlas.call('open')`（Atlas は `data.studio` の `status` と各結果の `dataStudio` で id を読む） |
+| 公開 | 地図の状態の **`ds`** 欄（`&ds=`、`mm` の後ろに**追加**——それより前に書かれたリンクはバイト単位で同じ）。値は `{v:1, t, k, c:[鍵の列, 塗った列, 国の列], r:[[鍵のセル, 場所の鍵, 値, 国のセル]…], s}` を `js/link-codec.js`（授業ツアーの `t` と**同じ**符号化）で包んだもの。国の形と都市の位置は受け手の IntMap が持っているので、リンクが運ぶのは表の 2〜3 列と塗り方だけ。⚠ **fragment はサーバへ送られない**（RFC 3986 §3.5）ので 8,192 バイトの制限は掛からず、長さはブラウザの実測上限 `LINK_LIMIT_MEASURED`（Chromium、2,097,152 文字）と比べて表示し、超えたら「リンクに入りきらない」と述べて書き出しへ案内する。書き出しは `js/gis-export.js` の `formats('vector')` が答える形式すべて、絵葉書は `js/map-recorder.js` の `postcard()` |
+| 受け手 | `ds` を持つリンクの復元はスタジオを遅延で取りに行き、⚠ **信用せず読む**（`readStudio`: 版・種類・鍵の綴り・塗る列がリンクに在るか。読めない行は数えて述べる）。場所はリンクが述べた**鍵**で引き直し（セルから推測し直さない——ブラウザの ICU が違っても同じ国になる）、このIntMapが知らない鍵は未解決。同じ結合・同じ塗り分けで描き、凡例に「データ: 元のファイル名 — リンクを送った人が共有」と出典の国境・地名を出す |
+| Atlas | `data.studio`（open / bind / style / link / status / clear、open は `attachment` で会話の添付を読み込む）。観測器 `dataStudio` は module を `import()` して `studioState()` を呼んだ**後に**スタジオの状態（パネル・結び付けの列と種類・塗った列と方式）と、描いたデータセットが地図の取り込み一覧にまだ在るか（`GeoJSONUpload.find`）を読み、結果の `want` と一致したときだけ完了。同じ列で結び直すのは `already_there`。結果は読者の表（列名と未解決のセル）を運ぶので列 11 は `external` |
+
+⚠ **プライバシー**: 公開リンクは表の中身をリンクそのものに入れる——サーバに保存しない代わりに、リンクを渡した相手には
+中身が見える。`js/legal-text.js` のプライバシーポリシー §1 が en / jp でそう述べる。
 
 ### 7.4 Chronos（統一時間）と「年」
 

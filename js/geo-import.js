@@ -326,6 +326,17 @@ export const GEO_IMPORT = (function () {
     if (!d || d.agree < 0.7) return { ok: false, why: 'not-a-table' };
     const comma = d.delim === ';';        /* see decimal(): ';' between columns frees ',' to be a point */
     const rows = parseDelimited(ctx.text, d.delim).filter((r) => r.length === d.cols);
+    return decodeRows(rows, { comma: comma, delimiter: d.delim });
+  }
+
+  /* (data-studio) ROWS OF CELLS → the same three answers, whoever split them. A delimited text is split by the
+     delimiter above; a spreadsheet arrives already split into cells (ATL_FILE.sheetTables) — and from here on a
+     workbook's sheet is the same table a CSV is: the same header test, the same geometry column, the same
+     latitude/longitude vetoes and evidence, the same geometry-less table for a join. One decoder, two splitters.
+     `o.delimiter` is what the stats report («how was this split»): the character, or 'xlsx'. */
+  function decodeRows(rows, o) {
+    const comma = !!(o && o.comma);
+    const d = { delim: (o && o.delimiter) || ',' };
     if (!rows.length) return { ok: false, why: 'not-a-table' };
     const hasHeader = looksLikeHeader(rows[0], rows.slice(1), comma);
     const headers = hasHeader ? rows[0].map(normHeader) : rows[0].map((_, i) => '#' + (i + 1));
@@ -739,6 +750,28 @@ export const GEO_IMPORT = (function () {
       if (sr.prj && !sr.sourceCrs) sr.sourceCrs = 'PRJ:' + ((sr.stats && sr.stats.base) || 'file');
       sr.entry = (sr.stats && sr.stats.base) ? (sr.stats.base + '.shp') : undefined;
       return sr;
+    }
+    /* ⚠ (data-studio) A WORKBOOK IS A TABLE, NOT AN ARCHIVE OF TEXT FILES. Walked as entries below, an .xlsx
+       answered 'archive' — its sheets are XML that no decoder here recognises — so a spreadsheet was the one
+       everyday table the map could not read, while Atlas's attachment reader (js/atlas-attach.js) had read it
+       since #R540. Recognised by the parts INSIDE the container (ATL_FILE.zipKind: `xl/workbook.xml`), never by
+       ".xlsx" — the same rule as everything else this file reads. The sheets come back as CELLS from the same
+       walk the attachment reader flattens into text, and the first sheet that decodes goes through decodeRows:
+       the decoder a CSV reaches, so a sheet with latitude and longitude columns becomes points and one without
+       becomes the geometry-less table a join takes. Which sheet answered, and which others exist, ride in `stats`. */
+    if (ATL_FILE.zipKind(names) === 'xlsx') {
+      const sheets = await ATL_FILE.sheetTables(z, GEO_IMPORT_LIMITS.readBytes);
+      if (!sheets.length) return { ok: false, why: 'empty' };
+      let first = null;
+      for (const s of sheets) {
+        const r = decodeRows(s.rows, { comma: false, delimiter: 'xlsx' });
+        if (!first) first = r;
+        if (!r.ok) continue;
+        r.entry = s.name;
+        r.stats = Object.assign({}, r.stats, { sheet: s.name, sheets: sheets.map((x) => x.name), truncated: !!s.truncated });
+        return r;
+      }
+      return first;
     }
     const likely = (n) => /\.(kml|geojson|json|gpx|csv|tsv|txt)$/i.test(n) ? 0 : 1;
     const ordered = names.slice().filter((n) => !/\/$/.test(n) && !/^__MACOSX\//.test(n)).sort((a, b) => likely(a) - likely(b));

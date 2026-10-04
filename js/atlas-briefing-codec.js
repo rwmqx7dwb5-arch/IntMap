@@ -25,7 +25,7 @@
 
 import { normalize } from './atlas-notebook-store.js';
 import { encode, captionText } from './map-state.js';
-import { toBase64url, fromBase64url, deflateRaw, inflateRaw } from './link-codec.js';   /* (map-document-unify) the one packing */
+import { toBase64url, fromBase64url, deflateRaw, inflateRaw, LINK_LIMIT_MEASURED } from './link-codec.js';   /* (map-document-unify) the one packing — and (data-studio) the measured address ceiling */
 import { stateOfNotebookView } from './map-doc.js';
 
 export const BRIEFING_FORMAT = 'intmap-briefing';
@@ -43,15 +43,11 @@ export const TITLE_MAX = 140;   /* the notebook's own title length (js/atlas-not
    different one. Expire when that ceiling moves (it is the notebook's estimate too). */
 export const MAX_INFLATED = 8 * 1048576;
 
-/* ══ HOW LONG A LINK A BROWSER KEEPS ═══════════════════════════════════════════════════════════════
-   MEASURED in Chromium 153.0.8010.12 (Playwright's bundled build, 2026-10-03; the measurement is in
-   dev-notes/2026-10-03-atlas-briefing.md): an address of 2,097,152 characters loads with its fragment
-   intact, and 2,097,153 is refused (net::ERR_ABORTED). That is Chromium's own URL ceiling
-   (url/url_constants.h kMaxURLChars). It is the ONLY browser measured here — Firefox and
-   Safari were not, and the composer says so instead of claiming a limit for them. A briefing whose link
-   is longer is not offered as a link: the composer hands on the notebook file instead (the same entries,
-   in full). Expire when Chromium changes kMaxURLChars. */
-export const LINK_LIMIT_MEASURED = 2097152;
+/* ══ HOW LONG A LINK A BROWSER KEEPS ══════════════════════════════════════════════════════════════
+   MEASURED in Chromium (kMaxURLChars, 2,097,152 characters) — the measurement and its expiry live with the number in
+   js/link-codec.js (data-studio), which the data studio's link reads too. A briefing whose link is longer is not offered
+   as a link: the composer hands on the notebook file instead (the same entries, in full). */
+export { LINK_LIMIT_MEASURED };
 
 /* ══ ENTRIES → BRIEFING ════════════════════════════════════════════════════════════════════════════
    Only what the recipient needs. A step that a replay will not run (a look-up, a setting, the notebook's

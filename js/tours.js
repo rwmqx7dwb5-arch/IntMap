@@ -40,7 +40,7 @@
 
 import { IntMapLang } from './lang-registry.js';   /* pickArgs() — the same tuple helper js/showcase.js uses */
 import { SHOWCASE, CAPTURED } from './showcase.js';
-import { toBase64url, fromBase64url, deflateRaw, inflateRaw, canCompress } from './link-codec.js';   /* (map-document-unify) the one packing */
+import { packText, unpackText } from './link-codec.js';   /* (map-document-unify, data-studio) the one packing — the 'z'/'j' letter included */
 
 const LA = /** @type {(...a: string[]) => string[]} */ (IntMapLang.pickArgs());
 
@@ -303,9 +303,7 @@ export const TOUR_INFLATED_MAX = 2 * 1048576;
 export async function encodeCustomTour(tour) {
   const steps = ((tour && tour.steps) || []).map((s) => [String((s && s.hash) || '').replace(/^#/, ''), String((s && s.title) || ''), String((s && s.say) || ''), String((s && s.ask) || '')]);
   const json = JSON.stringify({ v: 1, n: String((tour && tour.title) || ''), s: steps });
-  const bytes = new TextEncoder().encode(json);
-  if (canCompress()) return 'z' + toBase64url(await deflateRaw(bytes));
-  return 'j' + toBase64url(bytes);
+  return packText(json);
 }
 
 /** the text of a `t` parameter → { title, steps: [{ key, title, say, ask, hash }] }, or null when it is not a tour.
@@ -313,13 +311,9 @@ export async function encodeCustomTour(tour) {
     in so this file stays readable without a DOM. */
 export async function decodeCustomTour(t, canon) {
   const s = String(t || ''); if (s.length < 2) return null;
-  let json;
-  try {
-    const bytes = fromBase64url(s.slice(1));
-    if (s[0] === 'z') { if (!canCompress()) return null; json = new TextDecoder().decode(await inflateRaw(bytes, TOUR_INFLATED_MAX)); }
-    else if (s[0] === 'j') json = new TextDecoder().decode(bytes);
-    else return null;
-  } catch (_) { return null; }
+  /* the ceiling is this file's (TOUR_INFLATED_MAX); the letter and the bytes are js/link-codec.js's */
+  const json = await unpackText(s, TOUR_INFLATED_MAX);
+  if (json == null) return null;
   let o; try { o = JSON.parse(json); } catch (_) { return null; }
   if (!o || o.v !== 1 || !Array.isArray(o.s)) return null;
   const steps = o.s.filter(Array.isArray).map((r, i) => {

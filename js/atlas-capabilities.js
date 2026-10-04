@@ -333,6 +333,7 @@ export function makeAtlasCapabilities(HOST, OPTS) {
       ["view.openShared","openShared","openLink,openMapLink,openLocationLink,geoLink,openSharedLink","view","none","camera,map.object","explanation","session","none","text",""],
       ["learn.quest","quest","learnQuest,geoQuest,questLink,challengeLink,quizSet","panel","none","panel.quest,map.quest,camera,time","panel","session","none","",""],
       ["time.weeklyEarth","weeklyEarth","thisWeekOnEarth,weeklyDigest,worldThisWeek,earthThisWeek","time","time","camera,map.myMap,time","map,time,explanation","session","none","",""],
+      ["data.studio","dataStudio","tableToMap,mapMyTable,tableStudio,spreadsheetMap","data","dataStudio","map.dataStudio","map,panel","session","none","","","external"],
     ];
     /* ⚠ GENERATED ROWS — END */
 
@@ -1253,6 +1254,42 @@ export function makeAtlasCapabilities(HOST, OPTS) {
           if (after.mm.shown && after.mm.count > 0 && after.drawn === 0) return { status: 'partial', produced: [], code: 'not_rendered', observed: { myMap: after.mm, drawn: 0 }, html: html };
           if (holds(before) === true) return { status: 'completed', code: 'already_there', observed: { myMap: after.mm }, html: html };
           return { status: 'completed', code: 'ok', observed: { myMap: after.mm, drawn: after.drawn }, html: html };
+        }
+      },
+      /* ══ (data-studio) THE READER'S TABLE ON THE MAP, READ OFF THE STUDIO AND THE MAP ═══════════════════════════════
+         `observe` imports js/data-studio.js (the same literal import() every entry writes — the module publishes nothing on window)
+         and asks `studioState()` what it holds NOW — the panel, the binding (column and
+         kind), the colouring (column and mode) — and whether the dataset it drew is still a layer on the map (the studio
+         asks the map's own upload list, `GeoJSONUpload.find`, so «drawn» is the map's word). The capability states in
+         `raw.want` what it set out to reach: `open`, `loaded`, `binding` {column, kind}, `style` {field, mode}, `drawn`.
+         Done is «after holds want»; true before the call is `already_there` (binding the same column twice is the same
+         state, said so — .agents/rules/one-pass-or-a-reason.md §1). Bound or coloured but NOT on the map is `not_rendered`.
+         The module not loaded is `unobserved`. A read (status, link) states no want and completes on its answer. */
+      dataStudio: {
+        observe: function () {
+          return import('./data-studio.js').then(function (m) { return { ds: m.studioState() }; }, function () { return { ds: null }; });
+        },
+        verify: function (ctx, args, before, after, raw) {
+          var html = (raw && raw.html) || '';
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: html };
+          var want = raw && raw.want;
+          if (!want) return { status: 'completed', code: 'ok', observed: { dataStudio: after && after.ds }, html: html };
+          var holds = function (o, withDrawn) {
+            var m = o && o.ds; if (!m) return null;
+            if ('open' in want && !!m.open !== !!want.open) return false;
+            if (want.loaded && !m.source) return false;
+            if (want.binding && !(m.binding && m.binding.column === want.binding.column && m.binding.kind === want.binding.kind)) return false;
+            if (want.style && !(m.style && m.style.field === want.style.field && m.style.mode === want.style.mode)) return false;
+            if (withDrawn && 'drawn' in want && !!m.drawn !== !!want.drawn) return false;
+            return true;
+          };
+          var now = holds(after, false);
+          if (now === null) return { status: 'unobserved', produced: [], code: 'not_observable', observed: { dataStudio: null }, html: html };
+          if (!now) return { status: 'partial', produced: [], code: 'no_change', observed: { dataStudio: after.ds, want: want }, html: html };
+          if (want.drawn === true && !after.ds.drawn) return { status: 'partial', produced: [], code: 'not_rendered', observed: { dataStudio: after.ds, drawn: false }, html: html };
+          if (want.drawn === false && after.ds.drawn) return { status: 'partial', produced: [], code: 'no_change', observed: { dataStudio: after.ds, want: want }, html: html };
+          if (holds(before, true) === true) return { status: 'completed', code: 'already_there', observed: { dataStudio: after.ds }, html: html };
+          return { status: 'completed', code: 'ok', observed: { dataStudio: after.ds }, html: html };
         }
       },
       /* ══ ⚠⚠⚠ (#R754) THIS ONE ASKS THE PAINTER, AND IT ASKS AFTER ═════════════════════════════
