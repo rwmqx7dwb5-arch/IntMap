@@ -322,7 +322,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get cName(){ return cName; },                   get searchVal(){ return searchVal; },
     get loadCountryData(){ return loadCountryData; }, get resolveCountryId(){ return resolveCountryId; },
     /* (data-studio) the Natural Earth loader the country table uses, for the lazy data studio (js/data-studio.js): a static import of
-       js/ne-countries.js from a lazy chunk costs every session two start-up requests (the note in js/data-studio.js) */
+     * js/ne-countries.js from a lazy chunk costs every session two start-up requests (the note in js/data-studio.js) */
     get loadNECountries(){ return loadNECountries; }, get neCountriesPath(){ return neCountriesPath; },
     get showCountryDetail(){ return showCountryDetail; }, get renderStats(){ return renderStats; },
     get renderCompareFixed(){ return renderCompareFixed; }, get applyTheme(){ return applyTheme; },
