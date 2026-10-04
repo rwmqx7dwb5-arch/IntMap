@@ -12,7 +12,7 @@
  *    · deflateRaw / inflateRaw     — bytes ⇄ raw DEFLATE (RFC 1951) through CompressionStream /
  *                                    DecompressionStream; `inflateRaw` stops READING at the ceiling it is
  *                                    handed and throws Error('too-large') — it never truncates
- *    · canCompress                 — whether the platform has both streams
+ *    · canCompress (private)       — whether the platform has both streams (packText / unpackText ask it)
  *  ⚠ BYTE-FOR-BYTE WHAT THE TWO WRITERS WROTE BEFORE. A link already sent is somebody's lesson: the tour's `t`
  *  and the briefing's `b` are the same bytes after this file as before it (tests/map-document-unify-checks
  *  holds a tour written by the old code, as text, against the new). The stream is fed the whole input in one
@@ -38,7 +38,7 @@ export function fromBase64url(s) {
 }
 
 /** does this platform have both DEFLATE streams? */
-export const canCompress = () => typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
+const canCompress = () => typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
 
 /** run `bytes` through a transform stream; with `cap` > 0, stop reading past `cap` bytes and throw Error('too-large')
     @param {Uint8Array} bytes @param {{ writable: WritableStream, readable: ReadableStream }} stream @param {number} cap
