@@ -929,9 +929,10 @@ export function timeBorders(HOST){
       const ix=await _clH.at(_ymd(year,mon,day),'exclusive');
       for(const i of ix){ const f=d.feats[i], m=f[9]||{}, NAME=f[0].en||'';
         /* (hist-coverage-expansion) a name scripts/histclio/review.json withholds — the shape is Cliopatria's,
-           the name is not drawn after the year history places the polity's end, and the card says so
+           the name is not drawn before the year history places the polity's beginning or after its end
+           (clio-lifespan-review: `ws` says which, `wc` that the year is approximate), and the card says so
            (`blankNote`, the same lane the sheets' withheld names use) */
-        const W=m.wn?{_wName:m.wn,_wSide:m.ws||'end',_wYear:m.wy,_wQ:m.wq||'',_wBy:'history'}:null;
+        const W=m.wn?{_wName:m.wn,_wSide:m.ws||'end',_wYear:m.wy,_wQ:m.wq||'',_wBy:'history',_wCirca:m.wc?1:0}:null;
         feats.push({type:'Feature',geometry:_clGeomOf(d,i),properties:Object.assign(W?{NAME:'',_rec:'clio'}:{NAME:NAME,name:NAME,_i18n:hnFor('clio',NAME,f[1],f[0])||f[0],_rec:'clio'},W||{},
           f[1]?{_qid:f[1]}:{},(m.w&&!W)?{_wiki:m.w}:{},m.of?{_of:m.of,PARTOF:m.of}:{},m.r?{_realm:1}:{})}); }
       return {type:'FeatureCollection',features:feats}; }
@@ -2683,8 +2684,9 @@ export function timeBorders(HOST){
                    lines:lines }; }
         /* (hist-coverage-expansion) a Cliopatria name withheld after the end the historical record places */
         if(p._wSide==='end'&&p._wBy==='history'){
-          lines.push(_LTB.arr(LA('The historical record places the end of this polity in '+B+', so the name is not drawn after that year'+(q?' (Wikidata: '+id+')':'')+'. The shape is drawn as the record drew it.',
-                                  '史実はこの政体の終焉を '+B+' に置く。そのためその年より後はこの名前を描かない'+(q?'（Wikidata: '+id+'）':'')+'。形は記録が描いたとおりに描いている。')));
+          const Bc=p._wCirca?_LTB.arr(LA('c. '+B,B+'頃')):B;
+          lines.push(_LTB.arr(LA('The historical record places the end of this polity '+(p._wCirca?'at about ':'in ')+B+', so the name is not drawn after that year'+(q?' (Wikidata: '+id+')':'')+'. The shape is drawn as the record drew it.',
+                                  '史実はこの政体の終焉を '+Bc+' に置く。そのためその年より後はこの名前を描かない'+(q?'（Wikidata: '+id+'）':'')+'。形は記録が描いたとおりに描いている。')));
           const tn=typeNote(f); if(tn) lines.push(tn);
           return { title:_LTB.arr(LA('The record names this shape «'+wn+'», but that polity no longer existed in '+Y,
                                      '記録はこの形を「'+wn+'」と呼ぶが、その政体は '+Y+' にはもう存在しない')),

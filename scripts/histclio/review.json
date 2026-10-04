@@ -1,5 +1,5 @@
 {
- "note": "Reviewed lifespans for data/hist-clio.js (Cliopatria). The machine FINDS (scripts/build-hist-clio.mjs: a row drawn more than FINDING_SLACK years outside the lifespan Wikidata states for a QID shown to be that polity) and this file JUDGES. `rows` act on the map: from the year after `e` (astronomical; `e` itself is inside) the shape is drawn without the name, and its card says which name Cliopatria gives and the year the historical record (`history`) places the end — the bound is history's, `wd` is the Wikidata item for the polity that states the same or a nearby year. `refuted` are findings examined and NOT applied, with the reason. `pending` are findings not yet judged: they are drawn as Cliopatria states them, and the gate fails on any finding in none of the three lists — so a new one arrives counted. Gate: npm run check:histclio.",
+ "note": "Reviewed lifespans for data/hist-clio.js (Cliopatria). The machine FINDS (scripts/build-hist-clio.mjs: a row drawn more than FINDING_SLACK years outside the lifespan Wikidata states for a QID shown to be that polity) and this file JUDGES. `rows` act on the map: before `s` and from the year after `e` (astronomical; `s` and `e` themselves are inside) the shape is drawn without the name, and its card says which name Cliopatria gives and the year the historical record (`history`) places the beginning or the end (`circa`: that year is approximate) — the bound is history's, `wd` is the Wikidata item for the polity that states the same or a nearby year. `refuted` are findings examined and NOT applied, with the reason (`why`: date-disputed, other-identity or name-not-claim); a `side` limits one to that side. A finding is judged by name and side. `pending` are findings not yet judged: they are drawn as Cliopatria states them, and the gate fails on any finding in none of the three lists — so a new one arrives counted. Gate: npm run check:histclio.",
  "rows": [
   {
    "name": "Byzantine Empire",
@@ -78,6 +78,286 @@
    "e": 1659,
    "wd": "Q1136188",
    "history": "The last Saadi sultan was killed in 1659; the Alaouites had taken Morocco by 1668."
+  },
+  {
+   "name": "Astrakhan Khanate",
+   "e": 1556,
+   "wd": "Q210163",
+   "history": "Muscovy conquered Astrakhan in 1556 and annexed the khanate."
+  },
+  {
+   "name": "Byeonhan",
+   "e": 400,
+   "wd": "Q1378584",
+   "history": "The Byeonhan confederacy developed into the Gaya confederacy during the 3rd and 4th centuries; Silla annexed the last Gaya states in 562.",
+   "circa": true
+  },
+  {
+   "name": "Cao",
+   "e": -486,
+   "wd": "Q284964",
+   "history": "The state of Song conquered the state of Cao in 487 BC."
+  },
+  {
+   "name": "Chen",
+   "e": -478,
+   "wd": "Q1069690",
+   "history": "King Hui of Chu annexed the state of Chen in 479 BC."
+  },
+  {
+   "name": "County of Urgell",
+   "e": 1413,
+   "wd": "Q1514510",
+   "history": "After the revolt of Count James II of Urgell failed in 1413, the county was confiscated and joined to the Crown of Aragon."
+  },
+  {
+   "name": "Duchy of Anhalt",
+   "s": 1863,
+   "wd": "Q16550783",
+   "history": "The duchies of Anhalt-Dessau, Anhalt-Köthen and Anhalt-Bernburg were separate states until they were united as the Duchy of Anhalt in 1863."
+  },
+  {
+   "name": "Duchy of Thuringia",
+   "s": 631,
+   "wd": "Q5311389",
+   "history": "King Dagobert I set Radulf over the Thuringians as duke in 631/632; before that Thuringia was ruled directly by the Franks after the fall of the Thuringian kingdom in 531.",
+   "circa": true
+  },
+  {
+   "name": "Dál Riata",
+   "e": 843,
+   "wd": "Q111471",
+   "history": "Cináed mac Ailpín, king of Dál Riata, became king of the Picts c. 843; the joint kingdom was called Alba by 900.",
+   "circa": true
+  },
+  {
+   "name": "Fifteenth Dynasty of Egypt",
+   "e": -1549,
+   "wd": "Q728479",
+   "history": "Ahmose I took Avaris and expelled the Hyksos Fifteenth Dynasty c. 1550 BC, founding the Eighteenth Dynasty.",
+   "circa": true
+  },
+  {
+   "name": "First Hellenic Republic",
+   "e": 1832,
+   "wd": "Q528546",
+   "history": "The London Conference of 1832 made Greece a kingdom under Otto of Bavaria, ending the First Hellenic Republic."
+  },
+  {
+   "name": "First Toungoo Empire",
+   "e": 1599,
+   "wd": "Q23039102",
+   "history": "The First Toungoo Empire collapsed when Pegu fell in 1599; the Restored Toungoo (Nyaungyan) kingdom that followed ruled until 1752."
+  },
+  {
+   "name": "French Indochina",
+   "s": 1887,
+   "wd": "Q185682",
+   "history": "The Indochinese Union was created in 1887 from Cochinchina (French from 1862), the protectorates of Annam and Tonkin, and Cambodia."
+  },
+  {
+   "name": "Halych-Volhynia occupation",
+   "s": 1199,
+   "wd": "Q239502",
+   "history": "Roman the Great united the principalities of Halych and Volhynia in 1199; before that they were separate principalities of Rus’."
+  },
+  {
+   "name": "Himyarite Kingdom",
+   "e": 570,
+   "wd": "Q289577",
+   "history": "Aksum conquered Himyar in 525; the Aksumite-installed kings Abraha and his sons ruled Yemen until the Sasanian conquest c. 570.",
+   "circa": true
+  },
+  {
+   "name": "Holy Roman Empire",
+   "s": 962,
+   "wd": "Q12548",
+   "history": "Otto I was crowned emperor in Rome in 962; before that his realm was the East Frankish (German) kingdom."
+  },
+  {
+   "name": "Khmer Empire",
+   "e": 1431,
+   "wd": "Q201705",
+   "history": "Ayutthaya sacked Angkor in 1431; the court moved south and the post-Angkor Kingdom of Cambodia followed."
+  },
+  {
+   "name": "Khoshut Khanate",
+   "s": 1642,
+   "wd": "Q10921634",
+   "history": "Güshi Khan of the Khoshut conquered Tibet and founded the Khoshut Khanate in 1642; before that the Khoshut were a tribe of the Oirat confederation."
+  },
+  {
+   "name": "Kingdom of Armenia",
+   "e": 428,
+   "wd": "Q208404",
+   "history": "The Sasanians deposed the last Arsacid king of Armenia, Artaxias IV, in 428 and made the country a marzpanate."
+  },
+  {
+   "name": "Kingdom of Georgia",
+   "e": 1490,
+   "wd": "Q154667",
+   "history": "The Kingdom of Georgia broke up in civil war after 1466 and in 1490 was formally divided into the kingdoms of Kartli, Kakheti and Imereti."
+  },
+  {
+   "name": "Kingdom of Italy",
+   "s": 781,
+   "wd": "Q838931",
+   "history": "Charlemagne conquered the Kingdom of the Lombards in 774 and had his son Pepin crowned King of Italy in 781; Cliopatria’s rows of 568–774 are the Lombard kingdom."
+  },
+  {
+   "name": "Kingdom of Seisyllwg",
+   "e": 920,
+   "wd": "Q2456191",
+   "history": "Hywel Dda joined Seisyllwg to Dyfed c. 920, forming the kingdom of Deheubarth.",
+   "circa": true
+  },
+  {
+   "name": "Lakhmid Kingdom",
+   "e": 602,
+   "wd": "Q943191",
+   "history": "Khosrow II deposed the last Lakhmid king, al-Nuʿman III, in 602; al-Hira was then governed by Sasanian appointees until the Muslim conquest of 633."
+  },
+  {
+   "name": "Later Zhou",
+   "s": 951,
+   "wd": "Q1154556",
+   "history": "The Later Zhou was a Five Dynasties regime of 951–960; Cliopatria’s rows of 750–256 BC are the Eastern Zhou, which ended in 256 BC."
+  },
+  {
+   "name": "Magna Frisia",
+   "e": 734,
+   "wd": "Q87791",
+   "history": "Charles Martel killed the Frisian king Poppo at the Battle of the Boarn in 734, ending the Frisian kingdom; the Frisians east of the Lauwers were subdued by Charlemagne by 785."
+  },
+  {
+   "name": "Maynila",
+   "e": 1571,
+   "wd": "Q4401247",
+   "history": "Miguel López de Legazpi took Maynila in 1571 and founded Spanish Manila on its site."
+  },
+  {
+   "name": "Middle Kingdom of Egypt",
+   "e": -1649,
+   "wd": "Q191324",
+   "history": "Conventions end the Middle Kingdom with the Twelfth Dynasty (c. 1802 BC) or with the Thirteenth (c. 1650 BC), when the Hyksos Fifteenth Dynasty took the north.",
+   "circa": true
+  },
+  {
+   "name": "Natalia Republic",
+   "e": 1843,
+   "wd": "Q1029847",
+   "history": "Britain annexed the Natalia Republic in 1843 as the Colony of Natal."
+  },
+  {
+   "name": "Novgorod Republic",
+   "s": 1136,
+   "wd": "Q151536",
+   "history": "Novgorod expelled Prince Vsevolod Mstislavich in 1136, the conventional beginning of the republic; before that it was a principality of Kievan Rus’."
+  },
+  {
+   "name": "Peloponnesian League",
+   "e": -365,
+   "wd": "Q208742",
+   "history": "After Thebes defeated Sparta at Leuctra (371 BC), Sparta’s allies made a separate peace with Thebes in 366/365 BC and the Peloponnesian League dissolved."
+  },
+  {
+   "name": "Portuguese Ceylon",
+   "e": 1658,
+   "wd": "Q1709007",
+   "history": "The Dutch took Colombo in 1656 and Jaffna, the last Portuguese stronghold in Ceylon, in 1658."
+  },
+  {
+   "name": "Principality of Vladimir-Suzdal",
+   "e": 1389,
+   "wd": "Q83546",
+   "history": "Dmitry Donskoy bequeathed the grand principality of Vladimir to his son in 1389 as a patrimony of Moscow, merging it into Muscovy."
+  },
+  {
+   "name": "Pskov Republic",
+   "s": 1348,
+   "wd": "Q317078",
+   "history": "Novgorod recognised Pskov’s independence by the Treaty of Bolotovo in 1348; before that Pskov belonged to the Novgorod Republic."
+  },
+  {
+   "name": "Ptolemaic Kingdom",
+   "s": -322,
+   "wd": "Q2320005",
+   "history": "Ptolemy became satrap of Egypt after Alexander’s death in 323 BC and took the royal title in 305 BC; before 323 BC Egypt was part of Alexander’s empire."
+  },
+  {
+   "name": "Roman Kingdom",
+   "e": -508,
+   "wd": "Q201038",
+   "history": "The expulsion of Tarquinius Superbus in 509 BC ended the Roman Kingdom and began the Republic."
+  },
+  {
+   "name": "Seventeenth Dynasty of Egypt",
+   "e": -1549,
+   "wd": "Q642301",
+   "history": "The Theban Seventeenth Dynasty ended with Kamose c. 1550 BC; his brother Ahmose I founded the Eighteenth Dynasty.",
+   "circa": true
+  },
+  {
+   "name": "Shang Dynasty",
+   "e": -1045,
+   "wd": "Q128938",
+   "history": "The Zhou conquered the Shang at the Battle of Muye, conventionally dated 1046 BC (estimates range from 1122 to 1027 BC).",
+   "circa": true
+  },
+  {
+   "name": "Shunten Dynasty",
+   "e": 1259,
+   "wd": "Q6151113",
+   "history": "By the traditional chronology of the Ryūkyū histories, the Shunten dynasty ruled 1187–1259 and was followed by the Eiso dynasty (1260–1349)."
+  },
+  {
+   "name": "Sultanate of Malacca",
+   "e": 1511,
+   "wd": "Q46652",
+   "history": "Portugal took Malacca in 1511; the sultan’s line continued as the Sultanate of Johor."
+  },
+  {
+   "name": "Sur Empire",
+   "e": 1556,
+   "wd": "Q373650",
+   "history": "Akbar’s victory at the Second Battle of Panipat in 1556 ended the Sur Empire."
+  },
+  {
+   "name": "Taifa of Algeciras",
+   "e": 1058,
+   "wd": "Q1183407",
+   "history": "Al-Muʿtadid of Seville annexed the taifa of Algeciras in 1058; no later taifa of Algeciras is recorded."
+  },
+  {
+   "name": "Taifa of Almería",
+   "e": 1147,
+   "wd": "Q2580032",
+   "history": "The Almoravids took Almería in 1091; it was a taifa again in 1145–1147 until Alfonso VII of Castile took it in 1147, and no later taifa of Almería is recorded."
+  },
+  {
+   "name": "Taifa of Saltés and Huelva",
+   "e": 1051,
+   "wd": "Q2081763",
+   "history": "Al-Muʿtadid of Seville annexed the taifa of Huelva and Saltés in 1051; no later taifa there is recorded."
+  },
+  {
+   "name": "Upper Burgundy",
+   "e": 933,
+   "wd": "Q33235",
+   "history": "Rudolph II united Upper and Lower Burgundy in 933, forming the Kingdom of Arles."
+  },
+  {
+   "name": "Western Satraps",
+   "e": 415,
+   "wd": "Q2086608",
+   "history": "Chandragupta II of the Gupta Empire conquered the Western Satraps, defeating Rudrasimha III, c. 405–415.",
+   "circa": true
+  },
+  {
+   "name": "Xu",
+   "e": -511,
+   "wd": "Q2650109",
+   "history": "The state of Wu destroyed the state of Xu in 512 BC."
   }
  ],
  "refuted": [
@@ -95,841 +375,369 @@
    "name": "Kingdom of Israel",
    "why": "other-identity",
    "history": "Cliopatria's rows to 722 BC are the northern Kingdom of Israel, destroyed by Assyria in 722 BC; the QID it carries is the united monarchy."
-  }
- ],
- "pending": [
-  {
-   "name": "Alodia",
-   "q": "Q449639",
-   "side": "start",
-   "drawn": 347,
-   "wd": 600
   },
   {
-   "name": "Astrakhan Khanate",
-   "q": "Q210163",
-   "side": "end",
-   "drawn": 1688,
-   "wd": 1556
+   "name": "Alodia",
+   "why": "date-disputed",
+   "history": "The Nubian kingdoms grew out of the collapse of Kush (Meroe) c. 350; Alodia’s founding is undated and it is first attested in the 6th century, so neither year is a stated beginning."
   },
   {
    "name": "Bidar Sultanate",
-   "q": "Q669317",
-   "side": "start",
-   "drawn": 1492,
-   "wd": 1527
+   "why": "date-disputed",
+   "history": "Qasim Barid ruled Bidar as regent of the Bahmanis from 1492; his son Amir Barid declared independence c. 1527, and the sultanate is dated 1492–1619 in most accounts."
   },
   {
    "name": "Burgundian Kingdom",
-   "q": "Q13590051",
-   "side": "end",
-   "drawn": 660,
-   "wd": 534
+   "why": "other-identity",
+   "history": "The Franks conquered the Kingdom of the Burgundians in 534; Cliopatria’s rows of 602–660 are the Merovingian sub-kingdom of Burgundy, which the record also calls the Kingdom of Burgundy."
   },
   {
    "name": "Burma",
-   "q": "Q836",
-   "side": "start",
-   "drawn": 1820,
-   "wd": 1948
-  },
-  {
-   "name": "Byeonhan",
-   "q": "Q1378584",
-   "side": "end",
-   "drawn": 566,
-   "wd": 400
-  },
-  {
-   "name": "Cao",
-   "q": "Q284964",
-   "side": "end",
-   "drawn": -450,
-   "wd": -486
+   "why": "other-identity",
+   "history": "Cliopatria’s 1820–1885 rows are the Konbaung kingdom of Burma, annexed by Britain in 1885; the QID is the modern state founded at independence in 1948."
   },
   {
    "name": "Caucasian Albania",
-   "q": "Q177076",
-   "side": "end",
-   "drawn": 509,
-   "wd": 461
-  },
-  {
-   "name": "Caucasian Albania",
-   "q": "Q177076",
-   "side": "start",
-   "drawn": -62,
-   "wd": -1
-  },
-  {
-   "name": "Chen",
-   "q": "Q1069690",
-   "side": "end",
-   "drawn": -450,
-   "wd": -478
+   "why": "date-disputed",
+   "history": "Albanian kings fought Pompey in 65 BC; the Sasanians abolished the monarchy in 461, restored it under Vachagan III (c. 487) and made Albania a marzpanate c. 510."
   },
   {
    "name": "Chu",
-   "q": "Q504759",
-   "side": "start",
-   "drawn": -749,
-   "wd": -721
+   "why": "date-disputed",
+   "history": "Chu was a Zhou-era state from the 11th century BC whose rulers took the royal title in 704 BC; Wikidata’s year is the start of the Spring and Autumn period."
   },
   {
    "name": "County of Besalú",
-   "q": "Q1541642",
-   "side": "start",
-   "drawn": 898,
-   "wd": 988
+   "why": "date-disputed",
+   "history": "Besalú was a Carolingian county under its own counts from the late 9th century; Wikidata’s 988 is when the Catalan counties stopped recognising Frankish suzerainty."
   },
   {
    "name": "County of Ribagorza",
-   "q": "Q1297894",
-   "side": "start",
-   "drawn": 866,
-   "wd": 900
+   "why": "date-disputed",
+   "history": "Ribagorza had its own counts from c. 872 under Raymond I."
   },
   {
    "name": "County of Savoy",
-   "q": "Q1232887",
-   "side": "end",
-   "drawn": 1539,
-   "wd": 1416
-  },
-  {
-   "name": "County of Urgell",
-   "q": "Q1514510",
-   "side": "end",
-   "drawn": 1688,
-   "wd": 1413
+   "why": "name-not-claim",
+   "history": "The County of Savoy was raised to a duchy by Emperor Sigismund in 1416; Cliopatria names the continuing Savoyard state by its earlier title."
   },
   {
    "name": "Dauphiné",
-   "q": "Q151999",
-   "side": "start",
-   "drawn": 1260,
-   "wd": 1349
-  },
-  {
-   "name": "Duchy of Anhalt",
-   "q": "Q16550783",
-   "side": "start",
-   "drawn": 1806,
-   "wd": 1863
-  },
-  {
-   "name": "Duchy of Thuringia",
-   "q": "Q5311389",
-   "side": "start",
-   "drawn": 567,
-   "wd": 631
-  },
-  {
-   "name": "Dál Riata",
-   "q": "Q111471",
-   "side": "end",
-   "drawn": 899,
-   "wd": 843
+   "why": "other-identity",
+   "history": "Cliopatria’s 1260–1349 rows are the independent Dauphiné of Viennois ruled by its dauphins until Humbert II sold it to France in 1349; the QID is the French province that followed."
   },
   {
    "name": "Eastern Moghulistan",
-   "q": "Q1191125",
-   "side": "end",
-   "drawn": 1686,
-   "wd": 1570
+   "why": "other-identity",
+   "history": "The QID is undivided Moghulistan; after 1514 Chagatayid Moghul khans ruled the Yarkent Khanate and the Turpan khanate in the Tarim basin until the Dzungar conquest of 1680."
   },
   {
    "name": "Elam",
-   "q": "Q128904",
-   "side": "start",
-   "drawn": -3199,
-   "wd": -2699
+   "why": "date-disputed",
+   "history": "Proto-Elamite Susa and Anshan formed a state society from c. 3200 BC; the first Elamite dynasty (Awan) is dated c. 2700 BC."
   },
   {
    "name": "Emirate of Nejd",
-   "q": "Q146862",
-   "side": "end",
-   "drawn": 1925,
-   "wd": 1891
+   "why": "other-identity",
+   "history": "The Second Saudi State (the QID) fell to the Rashidis in 1891; Ibn Saud’s Emirate of Riyadh and Nejd (1902–1921) and Sultanate of Nejd (to 1926) are the later Saudi state Cliopatria also draws under this name. The gap of 1891–1902 needs a span the builder cannot express."
   },
   {
    "name": "Empire of Kanem",
-   "q": "Q1139762",
-   "side": "start",
-   "drawn": 1072,
-   "wd": 1100
-  },
-  {
-   "name": "Fifteenth Dynasty of Egypt",
-   "q": "Q728479",
-   "side": "end",
-   "drawn": -1500,
-   "wd": -1549
-  },
-  {
-   "name": "First Hellenic Republic",
-   "q": "Q528546",
-   "side": "end",
-   "drawn": 1912,
-   "wd": 1832
-  },
-  {
-   "name": "First Toungoo Empire",
-   "q": "Q23039102",
-   "side": "end",
-   "drawn": 1756,
-   "wd": 1599
-  },
-  {
-   "name": "French Indochina",
-   "q": "Q185682",
-   "side": "start",
-   "drawn": 1860,
-   "wd": 1887
+   "why": "date-disputed",
+   "history": "Kanem existed from the 8th or 9th century; its Sayfawa ruler Hummay converted to Islam c. 1085."
   },
   {
    "name": "Funan",
-   "q": "Q867782",
-   "side": "end",
-   "drawn": 640,
-   "wd": 550
+   "why": "date-disputed",
+   "history": "Chenla absorbed Funan in the late 6th and early 7th centuries; Chinese records note Funan embassies until the 640s."
   },
   {
    "name": "Giudicato of Cagliari",
-   "q": "Q2297073",
-   "side": "start",
-   "drawn": 866,
-   "wd": 1000
+   "why": "date-disputed",
+   "history": "The Sardinian judicates emerged from Byzantine rule between the 9th and 11th centuries; Cagliari’s judges are documented from the 11th century."
   },
   {
    "name": "Gurjara-Pratihara Dynasty",
-   "q": "Q5324",
-   "side": "start",
-   "drawn": 732,
-   "wd": 800
-  },
-  {
-   "name": "Halych-Volhynia occupation",
-   "q": "Q239502",
-   "side": "start",
-   "drawn": 1056,
-   "wd": 1199
-  },
-  {
-   "name": "Himyarite Kingdom",
-   "q": "Q289577",
-   "side": "end",
-   "drawn": 601,
-   "wd": 525
-  },
-  {
-   "name": "Holy Roman Empire",
-   "q": "Q12548",
-   "side": "start",
-   "drawn": 922,
-   "wd": 962
+   "why": "date-disputed",
+   "history": "Nagabhata I founded the Pratihara kingdom c. 730 and fought the Arab invasions in the 730s."
   },
   {
    "name": "Janapada of Aśmaka",
-   "q": "Q1194906",
-   "side": "end",
-   "drawn": -350,
-   "wd": -424
+   "why": "date-disputed",
+   "history": "The chronology of the mahajanapadas rests on the uncertain dating of the Buddha; no event fixes the end of Assaka."
   },
   {
    "name": "Janapada of Gandhāra",
-   "q": "Q112980583",
-   "side": "end",
-   "drawn": -500,
-   "wd": -534
+   "why": "date-disputed",
+   "history": "Cyrus the Great conquered Gandhāra c. 535 BC, and Darius I’s Behistun inscription (c. 518 BC) lists it as a satrapy; Cliopatria’s 500 BC is within that range."
   },
   {
    "name": "Janapada of Kosala",
-   "q": "Q756854",
-   "side": "end",
-   "drawn": -450,
-   "wd": -500
+   "why": "date-disputed",
+   "history": "Magadha under Ajatashatru annexed Kosala in the 5th century BC; the date rests on the uncertain dating of the Buddha."
   },
   {
    "name": "Kadamba Empire",
-   "q": "Q1479952",
-   "side": "end",
-   "drawn": 554,
-   "wd": 525
+   "why": "date-disputed",
+   "history": "The Chalukyas reduced the Kadambas of Banavasi to vassals between c. 540 and the 560s."
   },
   {
    "name": "Karkota Dynasty",
-   "q": "Q466433",
-   "side": "start",
-   "drawn": 592,
-   "wd": 625
+   "why": "date-disputed",
+   "history": "Durlabhavardhana founded the Karkota dynasty in the early 7th century; the reign dates derived from Kalhana’s Rājataraṅgiṇī differ by decades."
   },
   {
    "name": "Khanate of Sibir",
-   "q": "Q190513",
-   "side": "start",
-   "drawn": 1429,
-   "wd": 1490
-  },
-  {
-   "name": "Khmer Empire",
-   "q": "Q201705",
-   "side": "end",
-   "drawn": 1867,
-   "wd": 1431
-  },
-  {
-   "name": "Khoshut Khanate",
-   "q": "Q10921634",
-   "side": "start",
-   "drawn": 1582,
-   "wd": 1650
-  },
-  {
-   "name": "Kingdom of Armenia",
-   "q": "Q208404",
-   "side": "end",
-   "drawn": 646,
-   "wd": 428
+   "why": "date-disputed",
+   "history": "The Siberian Khanate grew out of the Khanate of Tyumen (from the 1420s); its seat moved to Qashliq c. 1490."
   },
   {
    "name": "Kingdom of Bhutan",
-   "q": "Q917",
-   "side": "start",
-   "drawn": 1636,
-   "wd": 1949
+   "why": "name-not-claim",
+   "history": "Bhutan was unified as a state by Zhabdrung Ngawang Namgyal in the 1630s and became a hereditary monarchy in 1907; Cliopatria names the continuing state by its later title."
   },
   {
    "name": "Kingdom of Brittany",
-   "q": "Q771193",
-   "side": "start",
-   "drawn": 825,
-   "wd": 851
+   "why": "name-not-claim",
+   "history": "Nominoe ruled Brittany from 831 and won independence at Ballon in 845; his son Erispoe was recognised as king in 851."
   },
   {
    "name": "Kingdom of Brycheiniog",
-   "q": "Q954585",
-   "side": "end",
-   "drawn": 1084,
-   "wd": 1045
+   "why": "date-disputed",
+   "history": "Brycheiniog had native kings until the Norman conquest by Bernard de Neufmarché in 1088–1093."
   },
   {
    "name": "Kingdom of Castile",
-   "q": "Q179293",
-   "side": "start",
-   "drawn": 961,
-   "wd": 1065
+   "why": "name-not-claim",
+   "history": "Castile was a county, autonomous under Fernán González from the 930s, and became a kingdom under Ferdinand I (1035/1037) or Sancho II (1065)."
   },
   {
    "name": "Kingdom of Denmark",
-   "q": "Q756617",
-   "side": "start",
-   "drawn": 936,
-   "wd": 965
-  },
-  {
-   "name": "Kingdom of Georgia",
-   "q": "Q154667",
-   "side": "end",
-   "drawn": 1794,
-   "wd": 1466
+   "why": "date-disputed",
+   "history": "Gorm the Old ruled a Danish kingdom from Jelling from c. 936; Harald Bluetooth’s Jelling stone (c. 965) claims he won all of Denmark."
   },
   {
    "name": "Kingdom of Gwent",
-   "q": "Q2594661",
-   "side": "end",
-   "drawn": 1055,
-   "wd": 950
+   "why": "date-disputed",
+   "history": "Gwent was joined to Morgannwg in the mid-10th century but had its own kings again in the 11th, until Caradog ap Gruffydd (died 1081)."
   },
   {
    "name": "Kingdom of Gwynedd",
-   "q": "Q816814",
-   "side": "end",
-   "drawn": 1284,
-   "wd": 1216
-  },
-  {
-   "name": "Kingdom of Italy",
-   "q": "Q172579",
-   "side": "start",
-   "drawn": 587,
-   "wd": 1861
+   "why": "date-disputed",
+   "history": "Gwynedd’s princes ruled until the English conquest of 1282–1283 (Statute of Rhuddlan, 1284); 1216 is when Llywelyn ab Iorwerth became overlord of native Wales."
   },
   {
    "name": "Kingdom of Janggala",
-   "q": "Q13093931",
-   "side": "start",
-   "drawn": 1046,
-   "wd": 1100
+   "why": "date-disputed",
+   "history": "Airlangga divided his realm into Janggala and Panjalu (Kediri) c. 1045."
   },
   {
    "name": "Kingdom of Lazica",
-   "q": "Q136884",
-   "side": "end",
-   "drawn": 777,
-   "wd": 700
+   "why": "date-disputed",
+   "history": "Lazica (Egrisi) remained a Byzantine-dependent principality until the Kingdom of Abkhazia absorbed it in the 780s."
   },
   {
    "name": "Kingdom of Morgannwg",
-   "q": "Q13131807",
-   "side": "start",
-   "drawn": 540,
-   "wd": 580
+   "why": "date-disputed",
+   "history": "The early kingdoms of south-east Wales (Glywysing, Gwent, Morgannwg) have no recorded founding; the name Morgannwg is traditionally derived from a 7th- or 8th-century king Morgan."
   },
   {
    "name": "Kingdom of Northumbria",
-   "q": "Q107299",
-   "side": "start",
-   "drawn": 612,
-   "wd": 653
+   "why": "date-disputed",
+   "history": "Æthelfrith united Bernicia and Deira c. 604, forming Northumbria."
   },
   {
    "name": "Kingdom of Poland",
-   "q": "Q577867",
    "side": "end",
-   "drawn": 1449,
-   "wd": 1385
+   "why": "other-identity",
+   "history": "The QID is the Kingdom of Poland of 1025–1385; after the Union of Krewo (1385) the Crown of the Kingdom of Poland continued in union with Lithuania."
   },
   {
    "name": "Kingdom of Poland",
-   "q": "Q577867",
    "side": "start",
-   "drawn": 962,
-   "wd": 1025
-  },
-  {
-   "name": "Kingdom of Seisyllwg",
-   "q": "Q2456191",
-   "side": "end",
-   "drawn": 959,
-   "wd": 920
+   "why": "name-not-claim",
+   "history": "Mieszko I’s Piast realm (from c. 960, baptised 966) is the state Cliopatria draws; its rulers were crowned kings in 1025 and 1076."
   },
   {
    "name": "Kingdom of Serbia",
-   "q": "Q241748",
-   "side": "start",
-   "drawn": 1188,
-   "wd": 1882
+   "why": "other-identity",
+   "history": "Cliopatria’s 1188–1351 rows are the medieval Serbian state of the Nemanjić (crowned kings from 1217, empire from 1346); the QID is the modern kingdom of 1882."
   },
   {
    "name": "Kingdom of Sophene",
-   "q": "Q2626105",
-   "side": "end",
-   "drawn": 113,
-   "wd": -93
-  },
-  {
-   "name": "Kingdom of Sophene",
-   "q": "Q2626105",
-   "side": "start",
-   "drawn": -255,
-   "wd": -201
+   "why": "date-disputed",
+   "history": "Arsames founded Sophene c. 260 BC and Tigranes the Great annexed it c. 94 BC, but Rome restored Sophene as a client kingdom (Sohaemus, AD 54) until Trajan annexed Armenia in 114."
   },
   {
    "name": "Kingdom of Urartu",
-   "q": "Q185068",
-   "side": "end",
-   "drawn": -550,
-   "wd": -589
+   "why": "date-disputed",
+   "history": "Urartu fell c. 590–585 BC, probably to the Medes; one reading of the Nabonidus Chronicle has Cyrus campaign against it in 547 BC."
   },
   {
    "name": "Kingdom of the Iberians",
-   "q": "Q154816",
-   "side": "start",
-   "drawn": 814,
-   "wd": 888
-  },
-  {
-   "name": "Lakhmid Kingdom",
-   "q": "Q943191",
-   "side": "end",
-   "drawn": 633,
-   "wd": 602
-  },
-  {
-   "name": "Later Zhou",
-   "q": "Q1154556",
-   "side": "start",
-   "drawn": -749,
-   "wd": 951
+   "why": "name-not-claim",
+   "history": "Ashot I ruled the Bagratid principality of Iberia (Tao-Klarjeti) from 813; his descendant Adarnase IV took the royal title in 888."
   },
   {
    "name": "Lavo Kingdom",
-   "q": "Q1332305",
-   "side": "start",
-   "drawn": 638,
-   "wd": 700
-  },
-  {
-   "name": "Magna Frisia",
-   "q": "Q87791",
-   "side": "end",
-   "drawn": 771,
-   "wd": 734
+   "why": "date-disputed",
+   "history": "Lavo (Lopburi) was a Dvaravati-period polity whose founding is undated; local tradition places it in the 7th century."
   },
   {
    "name": "Makuria",
-   "q": "Q829356",
-   "side": "start",
-   "drawn": 347,
-   "wd": 500
-  },
-  {
-   "name": "Maynila",
-   "q": "Q4401247",
-   "side": "end",
-   "drawn": 1599,
-   "wd": 1571
-  },
-  {
-   "name": "Middle Kingdom of Egypt",
-   "q": "Q191324",
-   "side": "end",
-   "drawn": -1600,
-   "wd": -1781
+   "why": "date-disputed",
+   "history": "Makuria emerged from the collapse of Kush (Meroe) c. 350; its founding is undated and it is first attested in the 6th century."
   },
   {
    "name": "Montenegro",
-   "q": "Q236",
-   "side": "start",
-   "drawn": 1913,
-   "wd": 2006
-  },
-  {
-   "name": "Natalia Republic",
-   "q": "Q1029847",
-   "side": "end",
-   "drawn": 1909,
-   "wd": 1843
+   "why": "other-identity",
+   "history": "Cliopatria’s 1853–1915 rows are the Principality (1852) and Kingdom (1910–1918) of Montenegro; the QID is the state independent since 2006."
   },
   {
    "name": "Nepal",
-   "q": "Q837",
-   "side": "start",
-   "drawn": 1775,
-   "wd": 2008
+   "why": "other-identity",
+   "history": "Prithvi Narayan Shah took Kathmandu in 1768, founding the Kingdom of Nepal; the QID’s 2008 is the federal republic."
   },
   {
    "name": "Netherlands Antilles",
-   "q": "Q25227",
-   "side": "start",
-   "drawn": 1815,
-   "wd": 1954
+   "why": "name-not-claim",
+   "history": "The Dutch colony of Curaçao and Dependencies (from 1815) was renamed the Netherlands Antilles in 1948 and became an autonomous country in 1954; Cliopatria names the continuing colony by its later name."
   },
   {
    "name": "Nobatia",
-   "q": "Q568523",
-   "side": "start",
-   "drawn": 347,
-   "wd": 400
-  },
-  {
-   "name": "Novgorod Republic",
-   "q": "Q151536",
-   "side": "start",
-   "drawn": 1056,
-   "wd": 1136
+   "why": "date-disputed",
+   "history": "Nobatia emerged in Lower Nubia after the collapse of Kush (Meroe) c. 350; its founding is undated (King Silko is attested c. 450)."
   },
   {
    "name": "Oirat Confederation",
-   "q": "Q4332415",
-   "side": "end",
-   "drawn": 1676,
-   "wd": 1628
+   "why": "date-disputed",
+   "history": "The Oirat league persisted alongside the rising Dzungars until Galdan Boshugtu subdued the other Oirat chiefs in the 1670s and took the title of khan in 1678."
   },
   {
    "name": "Old Kingdom of Norway",
-   "q": "Q20",
-   "side": "start",
-   "drawn": 866,
-   "wd": 900
-  },
-  {
-   "name": "Peloponnesian League",
-   "q": "Q208742",
-   "side": "end",
-   "drawn": -337,
-   "wd": -365
-  },
-  {
-   "name": "Portuguese Ceylon",
-   "q": "Q1709007",
-   "side": "end",
-   "drawn": 1686,
-   "wd": 1658
+   "why": "date-disputed",
+   "history": "Harald Fairhair’s unification of Norway is dated by the sagas to c. 872, by modern estimates to c. 880–900."
   },
   {
    "name": "Principality of Capua",
-   "q": "Q1280122",
-   "side": "start",
-   "drawn": 840,
-   "wd": 900
+   "why": "name-not-claim",
+   "history": "Capua was a Lombard gastaldate and county from the 840s with its own rulers, who took the princely title c. 900."
   },
   {
    "name": "Principality of Jersika",
-   "q": "Q1687929",
-   "side": "start",
-   "drawn": 1111,
-   "wd": 1190
+   "why": "date-disputed",
+   "history": "Jersika is first recorded in the early 13th century (Henry of Livonia); its founding is undated."
   },
   {
    "name": "Principality of Koknese",
-   "q": "Q2502248",
-   "side": "start",
-   "drawn": 1111,
-   "wd": 1180
+   "why": "date-disputed",
+   "history": "Koknese is first recorded in the early 13th century (Henry of Livonia); its founding is undated."
   },
   {
    "name": "Principality of Rostov-Suzdal",
-   "q": "Q83546",
-   "side": "start",
-   "drawn": 1056,
-   "wd": 1125
+   "why": "date-disputed",
+   "history": "Rostov was a Rus’ appanage principality from the early 11th century; under Yuri Dolgorukiy (from c. 1125) it became the independent principality of Rostov-Suzdal."
   },
   {
    "name": "Principality of Theodoro",
-   "q": "Q874954",
-   "side": "start",
-   "drawn": 1333,
-   "wd": 1360
-  },
-  {
-   "name": "Principality of Vladimir-Suzdal",
-   "q": "Q83546",
-   "side": "end",
-   "drawn": 1486,
-   "wd": 1389
-  },
-  {
-   "name": "Pskov Republic",
-   "q": "Q317078",
-   "side": "start",
-   "drawn": 1285,
-   "wd": 1348
-  },
-  {
-   "name": "Ptolemaic Kingdom",
-   "q": "Q2320005",
-   "side": "start",
-   "drawn": -330,
-   "wd": -304
+   "why": "date-disputed",
+   "history": "The Gothic principality of Theodoro took shape in the 14th century; its first known prince is attested in the 1360s, and its origins are undated."
   },
   {
    "name": "Qataban",
-   "q": "Q748595",
-   "side": "end",
-   "drawn": 183,
-   "wd": 150
-  },
-  {
-   "name": "Roman Kingdom",
-   "q": "Q201038",
-   "side": "end",
-   "drawn": -480,
-   "wd": -508
+   "why": "date-disputed",
+   "history": "Hadramawt absorbed Qataban in the late 2nd century AD; proposed dates range from c. 150 to c. 200."
   },
   {
    "name": "Serbian Despots",
-   "q": "Q878319",
-   "side": "start",
-   "drawn": 1375,
-   "wd": 1402
-  },
-  {
-   "name": "Seventeenth Dynasty of Egypt",
-   "q": "Q642301",
-   "side": "end",
-   "drawn": -1500,
-   "wd": -1549
-  },
-  {
-   "name": "Shang Dynasty",
-   "q": "Q128938",
-   "side": "end",
-   "drawn": -1000,
-   "wd": -1045
-  },
-  {
-   "name": "Shunten Dynasty",
-   "q": "Q6151113",
-   "side": "end",
-   "drawn": 1313,
-   "wd": 1259
+   "why": "name-not-claim",
+   "history": "Prince Lazar’s Moravian Serbia (from 1371) passed to his son Stefan, who took the title of despot in 1402."
   },
   {
    "name": "Small Horde",
-   "q": "Q631210",
-   "side": "end",
-   "drawn": 1737,
-   "wd": 1634
-  },
-  {
-   "name": "Sultanate of Malacca",
-   "q": "Q46652",
-   "side": "end",
-   "drawn": 1799,
-   "wd": 1511
+   "why": "other-identity",
+   "history": "The Lesser Nogai Horde, founded in 1557 on the North Caucasus steppe, remained a nominal dependency of the Crimean Khanate; the QID is the Great Nogai Horde, broken by the Kalmyks in the 1630s."
   },
   {
    "name": "Sultanate of Mempawah",
-   "q": "Q19746028",
-   "side": "start",
-   "drawn": 1619,
-   "wd": 1740
+   "why": "name-not-claim",
+   "history": "Mempawah was ruled by a Dayak line before the Bugis prince Opu Daeng Menambon became its ruler c. 1740 and made it an Islamic sultanate."
   },
   {
    "name": "Sultanate of Oman",
-   "q": "Q842",
-   "side": "start",
-   "drawn": 1744,
-   "wd": 1970
-  },
-  {
-   "name": "Sur Empire",
-   "q": "Q373650",
-   "side": "end",
-   "drawn": 1594,
-   "wd": 1556
+   "why": "other-identity",
+   "history": "The Al Said dynasty has ruled Oman (as Muscat and Oman) since 1744; the QID’s 1970 is the renaming to the Sultanate of Oman."
   },
   {
    "name": "Swiss Confederation",
-   "q": "Q39",
-   "side": "start",
-   "drawn": 1294,
-   "wd": 1848
+   "why": "other-identity",
+   "history": "The Old Swiss Confederacy dates from the alliance of 1291; the QID’s 1848 is the federal state."
   },
   {
    "name": "Tabal Kingdom",
-   "q": "Q727710",
-   "side": "end",
-   "drawn": -700,
-   "wd": -800
-  },
-  {
-   "name": "Taifa of Algeciras",
-   "q": "Q1183407",
-   "side": "end",
-   "drawn": 1168,
-   "wd": 1058
-  },
-  {
-   "name": "Taifa of Almería",
-   "q": "Q2580032",
-   "side": "end",
-   "drawn": 1249,
-   "wd": 1147
+   "why": "date-disputed",
+   "history": "Assyrian records name kings of Tabal until the mid-7th century BC (Mugallu under Ashurbanipal)."
   },
   {
    "name": "Taifa of Niebla",
-   "q": "Q2668600",
-   "side": "end",
-   "drawn": 1249,
-   "wd": 1053
-  },
-  {
-   "name": "Taifa of Saltés and Huelva",
-   "q": "Q2081763",
-   "side": "end",
-   "drawn": 1151,
-   "wd": 1051
+   "why": "other-identity",
+   "history": "Niebla was a taifa again in 1145–1150 and in 1234–1262, when Alfonso X took it; the QID is the first taifa (to 1053)."
   },
   {
    "name": "Taifa of Silves",
-   "q": "Q1994569",
-   "side": "end",
-   "drawn": 1168,
-   "wd": 1063
+   "why": "other-identity",
+   "history": "Silves was a taifa again in 1144–1155; the QID is the first taifa (to 1063)."
   },
   {
    "name": "Taifa of Valencia",
-   "q": "Q676811",
-   "side": "end",
-   "drawn": 1249,
-   "wd": 1094
+   "why": "other-identity",
+   "history": "Valencia was a taifa again in 1145–1172 and in 1229–1238, when James I took it; the QID is the first taifa (to 1094)."
   },
   {
    "name": "Tarumanagara",
-   "q": "Q2247225",
-   "side": "start",
-   "drawn": 367,
-   "wd": 450
+   "why": "date-disputed",
+   "history": "Tarumanagara is known from King Purnawarman’s inscriptions of the 5th century; a founding in 358 rests on the late Wangsakerta manuscripts."
   },
   {
    "name": "Unified Silla",
-   "q": "Q715257",
-   "side": "end",
-   "drawn": 935,
-   "wd": 892
-  },
-  {
-   "name": "Upper Burgundy",
-   "q": "Q33235",
-   "side": "end",
-   "drawn": 959,
-   "wd": 933
+   "why": "date-disputed",
+   "history": "Silla lost most of its territory in the Later Three Kingdoms period (from 892) but survived until its last king surrendered to Goryeo in 935."
   },
   {
    "name": "Vakataka Kingdom",
-   "q": "Q1501306",
-   "side": "end",
-   "drawn": 554,
-   "wd": 500
+   "why": "date-disputed",
+   "history": "Vakataka rule ended in the mid-6th century; the last well-attested king, Harishena (c. 475–500), was followed by obscure successors."
   },
   {
    "name": "Visigothic Kingdom",
-   "q": "Q126936",
-   "side": "start",
-   "drawn": 426,
-   "wd": 476
+   "why": "date-disputed",
+   "history": "The Visigoths were settled in Aquitaine as federates in 418, founding the kingdom of Toulouse; Euric ruled independently from c. 475."
   },
   {
    "name": "Western Moghulistan",
-   "q": "Q1191125",
-   "side": "end",
-   "drawn": 1635,
-   "wd": 1570
-  },
-  {
-   "name": "Western Satraps",
-   "q": "Q2086608",
-   "side": "end",
-   "drawn": 489,
-   "wd": 405
+   "why": "other-identity",
+   "history": "The QID is undivided Moghulistan; after 1514 Chagatayid Moghul khans ruled the Yarkent Khanate and the Turpan khanate in the Tarim basin until the Dzungar conquest of 1680."
   },
   {
    "name": "Western Xia",
-   "q": "Q7427",
-   "side": "start",
-   "drawn": 990,
-   "wd": 1038
-  },
-  {
-   "name": "Xu",
-   "q": "Q2650109",
-   "side": "end",
-   "drawn": -284,
-   "wd": -511
+   "why": "date-disputed",
+   "history": "The Tangut Li clan ruled the Ordos as a de facto independent state from the 980s; Li Yuanhao proclaimed the Western Xia empire in 1038."
   },
   {
    "name": "Yue",
-   "q": "Q1936158",
-   "side": "start",
-   "drawn": -499,
-   "wd": -333
+   "why": "other-identity",
+   "history": "The QID is Minyue (334–110 BC); Cliopatria’s rows are the Spring and Autumn state of Yue, whose king Goujian reigned from 496 BC and which Chu defeated c. 334 BC."
   },
   {
    "name": "Zhu",
-   "q": "Q227007",
-   "side": "start",
-   "drawn": -749,
-   "wd": -699
+   "why": "date-disputed",
+   "history": "Zhu was a Zhou vassal state from the Western Zhou period; Wikidata’s year is not its founding."
   },
   {
    "name": "Đại Việt",
-   "q": "Q1317991",
-   "side": "end",
-   "drawn": 1770,
-   "wd": 1677
+   "why": "other-identity",
+   "history": "Đại Việt was the name of the Vietnamese state until 1804; the QID is the Mạc dynasty (1527–1677), one of its ruling houses."
   }
- ]
+ ],
+ "pending": []
 }

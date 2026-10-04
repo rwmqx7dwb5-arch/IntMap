@@ -317,8 +317,8 @@ const readWiki = () => JSON.parse(readFileSync(FACTS, 'utf8')).wiki || {};
 /* ══ WHEN CLIOPATRIA DRAWS A NAME OUTSIDE THE POLITY'S LIFE (historical-verification.md §2-2) ══════════
    A verified QID's own lifespan is a second statement about the same polity, and where the two differ by
    more than FINDING_SLACK years the difference is a FINDING — the machine does not decide which is
-   history. scripts/histclio/review.json judges: `rows` (the name is withheld after the year history
-   places the end; the shape stays, as Cliopatria drew it), `refuted` (examined, not applied, with the
+   history. scripts/histclio/review.json judges: `rows` (the name is withheld before the year history
+   places the beginning, `s`, and/or after the year it places the end, `e`; the shape stays, as Cliopatria drew it), `refuted` (examined, not applied, with the
    reason), `pending` (not yet judged — drawn as Cliopatria states, and counted). The gate fails on any
    finding in none of the three, so the next release arrives already counted.
      observed 2026-10-04: with verified QIDs, 79 names are drawn more than 25 years after Wikidata's
@@ -341,19 +341,26 @@ export function findingsOf(feats, facts) {
   }
   return out.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : a.side < b.side ? -1 : 1));
 }
-/* the rows a review row withholds the name of: from 1 January of the year after `e` */
+/* the sides a review entry judges: a row judges the side(s) it bounds (`s` start, `e` end); a refuted
+   entry judges its `side`, or both when it names none. A finding is judged by name AND side, so one
+   name can be bounded on one side and refuted on the other (Kingdom of Poland). */
+export const judgedSides = (r) => (r.s != null || r.e != null ? [r.s != null && 'start', r.e != null && 'end'].filter(Boolean) : r.side ? [r.side] : ['start', 'end']);
+export const judgedKeys = (review) => new Set([...review.rows, ...review.refuted].flatMap((r) => judgedSides(r).map((x) => r.name + '|' + x)));
+/* the rows a review row withholds the name of: before 1 January of `s` (the first year history places
+   the polity in) and from 1 January of the year after `e` (the last). The shape stays; the name does not. */
 function applyReview(rows, review) {
   const by = new Map(review.rows.map((r) => [r.name, r]));
   const out = [];
   for (const r of rows) {
     const R = by.get(r.name);
-    if (!R || R.e == null) { out.push(r); continue; }
-    const cut = ymd(R.e + 1, 1, 1);
-    if (r.e <= cut) { out.push(r); continue; }
-    const wm = { ...r.meta, wn: r.name, ws: 'end', wy: R.e }; if (R.wd) wm.wq = R.wd;
-    const withheld = { ...r, name: '', qid: null, meta: wm };
-    if (r.s >= cut) out.push({ ...withheld, s: r.s });
-    else { out.push({ ...r, e: cut }); out.push({ ...withheld, s: cut }); }
+    if (!R || (R.e == null && R.s == null)) { out.push(r); continue; }
+    const lo = R.s != null ? ymd(R.s, 1, 1) : -Infinity, hi = R.e != null ? ymd(R.e + 1, 1, 1) : Infinity;
+    const withheld = (side, y) => { const wm = { ...r.meta, wn: r.name, ws: side, wy: y }; if (R.wd) wm.wq = R.wd; if (R.circa) wm.wc = 1;
+      return { ...r, name: '', qid: null, meta: wm }; };
+    /* the row cut at the two bounds: before `lo` withheld as not yet begun, after `hi` as ended */
+    if (r.s < lo) out.push({ ...withheld('start', R.s), s: r.s, e: Math.min(r.e, lo) });
+    if (Math.max(r.s, lo) < Math.min(r.e, hi)) out.push({ ...r, s: Math.max(r.s, lo), e: Math.min(r.e, hi) });
+    if (r.e > hi) out.push({ ...withheld('end', R.e), s: Math.max(r.s, hi), e: r.e });
   }
   return out;
 }
@@ -731,9 +738,9 @@ async function build({ measure } = {}) {
     const body = 'window.__HISTCLIO=' + JSON.stringify({ ...head, rings, feats }) + ';\n';
     writeFileSync(OUT, body);
     /* the findings nobody has judged yet are listed as pending — counted, drawn as Cliopatria states them */
-    const judged = new Set([...review.rows, ...review.refuted].map((r) => r.name));
+    const judged = judgedKeys(review);
     const found = findingsOf(feats, readFacts());
-    review.pending = found.filter((x) => !judged.has(x.name)).map((x) => ({ name: x.name, q: x.q, side: x.side, drawn: x.drawn, wd: x.wd }));
+    review.pending = found.filter((x) => !judged.has(x.name + '|' + x.side)).map((x) => ({ name: x.name, q: x.q, side: x.side, drawn: x.drawn, wd: x.wd }));
     writeFileSync(REVIEW, JSON.stringify(review, null, 1) + '\n');
     console.error(`review: ${found.length} finding(s) — ${review.rows.length} name(s) withheld by a reviewed row, ${review.refuted.length} refuted, ${review.pending.length} pending`);
     console.error(`data/hist-clio.js: ${feats.length} rows, ${rings.length} rings, ${rings.reduce((a, r) => a + r.length, 0)} points, ${(body.length / 1e6).toFixed(2)} MB`);
@@ -815,12 +822,19 @@ export function check() {
     ok(bad === 0, bad + ' shipped QID(s) are not shown to be the polity drawn: ' + eg.join(', ')); }
   /* every finding is judged or counted, and every reviewed row is honoured on the shipped rows */
   { const review = JSON.parse(readFileSync(REVIEW, 'utf8'));
-    const listed = new Set([...review.rows, ...review.refuted, ...review.pending].map((r) => r.name));
-    const loose = findingsOf(d.feats, readFacts()).filter((x) => !listed.has(x.name));
+    const twice = [], once = new Set();
+    for (const r of [...review.rows, ...review.refuted]) for (const x of judgedSides(r)) { const k = r.name + '|' + x; if (once.has(k)) twice.push(k); once.add(k); }
+    ok(twice.length === 0, 'scripts/histclio/review.json judges ' + twice.length + ' name/side more than once: ' + twice.slice(0, 4).join(', '));
+    const listed = judgedKeys(review); for (const p of review.pending) listed.add(p.name + '|' + p.side);
+    const loose = findingsOf(d.feats, readFacts()).filter((x) => !listed.has(x.name + '|' + x.side));
     ok(loose.length === 0, loose.length + ' finding(s) of a name drawn outside its polity\'s life are in no list of scripts/histclio/review.json: ' + loose.slice(0, 4).map((x) => x.name + ' (' + x.side + ' ' + x.drawn + ' vs ' + x.wd + ')').join(', '));
     for (const R of review.rows) {
-      const late = d.feats.filter((f) => f[0].en === R.name && f[5] - 1 > R.e);
+      ok(R.s != null || R.e != null, R.name + ': a reviewed row must bound a start (s) or an end (e)');
+      const late = R.e == null ? [] : d.feats.filter((f) => f[0].en === R.name && f[5] - 1 > R.e);
       ok(late.length === 0, R.name + ' is still named after ' + R.e + ', the year scripts/histclio/review.json places its end');
+      const early = R.s == null ? [] : d.feats.filter((f) => f[0].en === R.name && f[2] < R.s);
+      ok(early.length === 0, R.name + ' is still named before ' + R.s + ', the year scripts/histclio/review.json places its beginning');
+      ok(/^Q\d+$/.test(String(R.wd || '')), R.name + ': a reviewed row must name the Wikidata item (wd) of the polity it bounds');
       ok(typeof R.history === 'string' && R.history.length > 20, R.name + ': a reviewed row must say what history states');
     } }
   /* ⚠ CC BY 4.0 MAKES CREDIT A CONDITION OF REDISTRIBUTION: the reader-facing row must exist, by its exact name */

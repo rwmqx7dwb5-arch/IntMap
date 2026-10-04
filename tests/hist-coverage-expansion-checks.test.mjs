@@ -63,6 +63,38 @@ test('④ historical verification: named years and places (historical-verificati
   /* Constantinople fell 29 May 1453 */
   assert.ok(names(1450).has('Byzantine Empire'));
   assert.ok(!names(1460).has('Byzantine Empire'), 'Byzantine Empire drawn after 1453');
+  /* (clio-lifespan-review) judged findings of scripts/histclio/review.json, end side:
+     Ayutthaya sacked Angkor 1431; Portugal took Malacca 1511; Georgia divided 1490 */
+  assert.ok(names(1400).has('Khmer Empire'));
+  assert.ok(!names(1500).has('Khmer Empire'), 'Khmer Empire drawn after 1431');
+  assert.ok(names(1500).has('Sultanate of Malacca'));
+  assert.ok(!names(1600).has('Sultanate of Malacca'), 'Sultanate of Malacca drawn after 1511');
+  assert.ok(names(1450).has('Kingdom of Georgia'));
+  assert.ok(!names(1750).has('Kingdom of Georgia'), 'Kingdom of Georgia drawn after 1490');
+  /* start side: Otto I crowned 962; «Later Zhou» (951–960) is not the Eastern Zhou of 500 BC */
+  assert.ok(!names(950).has('Holy Roman Empire'), 'Holy Roman Empire drawn before 962');
+  assert.ok(names(1000).has('Holy Roman Empire'));
+  assert.ok(!names(-499).has('Later Zhou'), 'Later Zhou drawn in 500 BC');
+  /* refuted findings stay named: the Old Swiss Confederacy (1291) and the Piast realm before 1025 */
+  assert.ok(names(1500).has('Swiss Confederation'), 'a refuted finding withheld the Swiss Confederation');
+  assert.ok(names(1000).has('Kingdom of Poland'), 'a refuted finding withheld the Kingdom of Poland');
+  /* the withheld shape says which name, which side and the year history gives (the card reads these) */
+  const w = d.feats.filter((f) => f[9] && f[9].wn === 'Holy Roman Empire');
+  assert.ok(w.length && w.every((f) => f[9].ws === 'start' && f[9].wy === 962 && f[9].wq === 'Q12548' && !f[0].en), 'the Holy Roman Empire rows before 962 are not withheld as «start 962»');
+  const c = d.feats.filter((f) => f[9] && f[9].wn === 'Himyarite Kingdom');
+  assert.ok(c.length && c.every((f) => f[9].ws === 'end' && f[9].wy === 570 && f[9].wc === 1), 'an approximate end is not carried as circa');
+});
+
+test('④b every finding is judged by name AND side, and each side is judged once', async () => {
+  const { judgedSides } = await import('../scripts/build-hist-clio.mjs');
+  const review = JSON.parse(readFileSync(join(ROOT, 'scripts', 'histclio', 'review.json'), 'utf8'));
+  const seen = new Map();
+  for (const r of [...review.rows, ...review.refuted]) for (const s of judgedSides(r)) {
+    const k = r.name + '|' + s; assert.ok(!seen.has(k), k + ' is judged twice'); seen.set(k, r); }
+  /* Kingdom of Poland: the start refuted as a title, the end as another item — two entries, one per side */
+  assert.equal(seen.get('Kingdom of Poland|start').why, 'name-not-claim');
+  assert.equal(seen.get('Kingdom of Poland|end').why, 'other-identity');
+  for (const r of review.refuted) assert.ok(['date-disputed', 'other-identity', 'name-not-claim'].includes(r.why) && r.history.length > 20, r.name + ': a refutation needs a reason and a sentence of history');
 });
 
 test('⑤ the composed band: no Cliopatria row keeps a quarter of its ground where OHM states it', () => {
