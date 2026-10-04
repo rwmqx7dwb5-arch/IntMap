@@ -177,7 +177,6 @@ IntMapLang.define('de', { ui: {
       proIntel:"RU·CN lokale Primärquellen-Intel",
       srcModalTitle:"Datenquellen & Namensnennung",
       srcModalSub:"IntMap aggregiert die folgenden Drittanbieter-Daten, -Bilder und -APIs. Alle Marken gehören ihren Eigentümern.",
-      screenshotSaved:"Screenshot gespeichert ✓",
       measureClickClose:"Klicken Sie auf den ersten Punkt zum Schließen",
       blueberryTitle:"IntMap unterstützen",
       blueberryBody:"Mein Ziel ist es, eine Karte zu schaffen, auf der Geografie, Klima, Geschichte, Ökologie, Demografie und das Weltgeschehen an einem Ort erkundet werden können.\nIntMap wird unabhängig entwickelt und wird laufend um neue Ebenen, Datensätze und Funktionen erweitert.\nWenn Ihnen IntMap gefällt und Sie seine zukünftige Entwicklung unterstützen möchten, können Sie unten beitragen.",

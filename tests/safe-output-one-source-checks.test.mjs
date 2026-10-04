@@ -64,7 +64,8 @@ test('① every one-line delegate to IntMapSafe.html, evaluated: quotes and tags
     assert.equal(fn(null), '', `${d.f}: null is empty, not "null"`);
   }
   /* the two of the five copies that did not encode `"` which this change could reach */
-  for (const f of ['js/analysis-edu.js', 'js/analysis-research.js']) assert.ok(delegates.some((d) => d.f === f), f + ' delegates');
+  /* (country-analysis-unify) js/analysis-research.js, the other of the two, left with the research panel */
+  for (const f of ['js/analysis-edu.js']) assert.ok(delegates.some((d) => d.f === f), f + ' delegates');
 });
 
 /* ── ② ─────────────────────────────────────────────────────────────────────── */

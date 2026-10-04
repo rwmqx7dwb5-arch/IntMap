@@ -106,8 +106,6 @@ export const LAZY_REGISTRY = Object.freeze({
   companyPanel: { publishes: 'IntMapCompanyPanel', load: () => import('./company-panel.js'), mount: (IM_HOST, m) => { window.IntMapCompanyPanel=m.companyPanel(IM_HOST); }, also: ['companyData', 'companyFacilities'] },
   companyFootprint: { publishes: 'IntMapCompanyFootprint', load: () => import('./company-footprint.js'), mount: (IM_HOST, m) => { window.IntMapCompanyFootprint=m.companyFootprint(IM_HOST); }, also: ['companyData'] },
   companyFacilities: { publishes: 'IntMapCompanyFacilities', load: () => import('./company-facilities.js'), mount: (IM_HOST, m) => { window.IntMapCompanyFacilities=m.companyFacilities(IM_HOST); }, also: ['companyData'] },
-  analysisTimeSeries: { publishes: '__imAnalysisTimeSeries', load: () => import('./analysis-timeseries.js'), mount: (IM_HOST, m) => { m.analysisTimeSeries(IM_HOST); } },
-  analysisResearch: { publishes: '__imAnalysisResearch', load: () => import('./analysis-research.js'), mount: (IM_HOST, m) => { m.analysisResearch(IM_HOST); } },
   analysisCorrelate: { publishes: '__imAnalysisCorrelate', load: () => import('./analysis-correlate.js'), mount: (IM_HOST, m) => { m.analysisCorrelate(IM_HOST); } },
   analysisEvents: { publishes: '__imAnalysisEvents', load: () => import('./analysis-world-events.js'), mount: (IM_HOST, m) => { m.analysisEvents(IM_HOST); } },
   analysisEdu: { publishes: '__imAnalysisEdu', load: () => import('./analysis-edu.js'), mount: (IM_HOST, m) => { m.analysisEdu(IM_HOST); } },

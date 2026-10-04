@@ -26,6 +26,7 @@ import { codeOnly } from '../scripts/code-only.mjs';
 import '../js/safe-html.js';   /* publishes globalThis.IntMapSafe — the escaper the browser writes through */
 import { LAYERS, layerDeclaration } from '../js/layer-manifest.js';
 import { TIME } from '../js/layer-time-decl.js';
+import { wbRows } from './helpers/wb-rows.mjs';   /* (country-analysis-unify) the World Bank rows as js/wb-layers.js builds them */
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -88,11 +89,12 @@ test('③ a second row painting a series, undeclared, is a problem — the gate 
 /* the browser, evaluated with the host js/wb-layers.js hands it — entries read from the real WB table */
 async function browser() {
   const { makeIndicatorBrowser } = await import('../js/indicator-browser.js');
-  const src = read('js/wb-layers.js');
+  /* (country-analysis-unify) the rows as js/wb-layers.js builds them — its table joined to js/wb-indicators.js by the shipped
+     `_wbInd` (tests/helpers/wb-rows.mjs). The single-series rows, as before: a modal row is one entry per mode in the app. */
   const entries = [];
-  for (const m of codeOnly(src).matchAll(/\{id:'(wb[a-z0-9]+)', code:('[^']+'|\[[^\]]+\]), n:LA\(('[^']*'),('[^']*')/g)) {
-    const codes = [...m[2].matchAll(/'([^']+)'/g)].map((x) => x[1]);
-    entries.push({ id: m[1], row: 'bx-' + m[1], base: m[1], mode: null, code: codes.length > 1 ? codes : codes[0], key: codes.join('+'), n: [m[3].slice(1, -1), m[4].slice(1, -1)], unit: '%', ramp: [0, '#000', 1, '#fff'] });
+  for (const L of wbRows().filter((r) => !r.modes)) {
+    const codes = [].concat(L.code);
+    entries.push({ id: L.id, row: 'bx-' + L.id, base: L.id, mode: null, code: L.code, key: codes.join('+'), n: [L.n[0], L.n[1]], unit: '%', ramp: [0, '#000', 1, '#fff'] });
   }
   const boxes = new Map();
   const box = (id) => { if (!boxes.has(id)) boxes.set(id, { id, checked: false, matches: () => true, dispatchEvent() { calls.push([id, this.checked]); return true; }, closest: () => null }); return boxes.get(id); };

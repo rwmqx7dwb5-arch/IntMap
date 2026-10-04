@@ -44,6 +44,7 @@ import { afterTick, tickKey, stopEarlyTimers } from '../js/runtime.js';
 import { LAYERS, packageOf } from '../js/layer-manifest.js';
 import { clockFor, ownRelayUrl } from '../js/proxy-fetch.js';
 import { inFlight } from '../js/layer-rows.js';
+import { readWorldBank, wbClock, wbIndicator } from '../js/wb-indicators.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DL = stripComments(readLF(join(ROOT, 'js/data-layers.js')));
@@ -439,6 +440,7 @@ function layerEnv() {
   const over = {
     jsonWithin, readWithin, clockFor, ownRelayUrl,
     untilObserved, isUnobserved, afterTick, tickKey,   /* (unobserved-is-not-refused) the real policy and the wheel's one-shot */
+    readWorldBank, wbClock, wbIndicator,   /* (country-analysis-unify) the fertility row reads the World Bank through the one read — the real one, on the stubbed fetch */
     GE: () => engine, HOST: { lang: 'en', countryGeo: {}, canDraw: () => true },
     loadCountryData: () => Promise.resolve(), countryStats: {},
     satToast: (m) => toasts.push(m), imToast: (m) => toasts.push(m),
@@ -637,7 +639,10 @@ function clockedHostReads(root) {
 test('⑦ every read of a host proxy-fetch gives its own clock takes that clock from clockFor()', (t) => {
   const r = clockedHostReads(ROOT);
   t.diagnostic('reads of a clocked host: ' + r.reads.join(', '));
-  assert.ok(r.reads.length >= 5, 'the check found almost no reads of a clocked host — it is measuring nothing (' + r.reads.join(', ') + ')');
+  /* (country-analysis-unify) the World Bank was the clocked host read in eight places; it is read in ONE now
+     (js/wb-indicators.js readWorldBank), so «it found several» became «it finds that one» — the scanner still has to
+     see the read for the check to be measuring anything (and (cont.) below proves it can tell the three shapes apart) */
+  assert.ok(r.reads.some((x) => /^js\/wb-indicators\.js:\d+$/.test(x)), 'the check did not find the one World Bank read — it is measuring nothing (' + r.reads.join(', ') + ')');
   assert.deepEqual(r.problems, [], 'a read of a host with its own clock does not carry it:\n' + r.problems.join('\n'));
 });
 

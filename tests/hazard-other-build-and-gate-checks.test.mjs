@@ -83,7 +83,9 @@ test('R193 ⑧ nothing large is fetched on the boot path that nobody is waiting 
      left behind — the duplication that round removed. The property is unchanged: whoever composes
      the screen pulls its own 198 kB library at that moment and never at boot. */
   assert.match(read('js/atlas-view-capture.js'), /IntMapVendor\.html2canvas\(\)/, 'the capture path fetches its own library');
-  assert.match(read('js/screenshot.js'), /await import\('\.\/atlas-view-capture\.js'\)/, '…and the shutter reaches it on demand, not at boot');
+  /* (country-analysis-unify) the shutter is the share panel's Image tab now: its picture (js/map-recorder.js, which imports the
+     capture) is fetched the first time the tab is shown — on demand, not at boot */
+  assert.match(read('js/map-ui.js'), /import\('\.\/map-recorder\.js'\)/, '…and the shutter reaches it on demand, not at boot');
   assert.match(read('js/atlas-reply.js'), /IntMapVendor\.katex\(\)/, 'and the maths path fetches KaTeX');
   /* the country file waits for the map's own idle */
   const ab = read('js/app-body.js');

@@ -16,8 +16,7 @@
  *  both halves of the hand-off — what this file returns and reads, what the core takes and passes — from
  *  the two files themselves, so neither list can drift into a silent `undefined`.
  * ==========================================================================*/
-import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) the World Bank's clock, stated once — it was a hand-written 12 s here */
-import { readWithin } from './fetch-deadline.js';
+import { readWorldBank, WB_INDICATORS } from './wb-indicators.js';   /* (country-analysis-unify) the one World Bank read (under the host's clock, stalled-fetch-and-surface-gauge) and the one catalogue */
 import { IntMapTime } from './chronos.js';
 import * as bus from './bus.js';
 export function makeTimeCountries(HOST, CTX) {
@@ -37,15 +36,10 @@ export function makeTimeCountries(HOST, CTX) {
     const WB_FLOOR=1960;
     /* field on countryStats ← World Bank indicator (all-countries, one year). scale normalises to the
        units countryStats already uses (gdp & milSpend in US$ billions; the rest raw). */
-    const FIELDS=[
-      {f:'gdp',      ind:'NY.GDP.MKTP.CD', scale:1e-9},
-      {f:'gdppc',    ind:'NY.GDP.PCAP.CD', scale:1},
-      {f:'pop',      ind:'SP.POP.TOTL',    scale:1},
-      {f:'lifeExp',  ind:'SP.DYN.LE00.IN', scale:1},
-      {f:'tfr',      ind:'SP.DYN.TFRT.IN', scale:1},
-      {f:'internet', ind:'IT.NET.USER.ZS', scale:1},
-      {f:'milSpend', ind:'MS.MIL.XPND.CD', scale:1e-9}
-    ];
+    /* (country-analysis-unify) the fields are the catalogue's: every indicator in js/wb-indicators.js that names a country-table
+       field (`stat`) is read for the year, scaled to the table's unit (`statScale` — GDP and military spending are US$ billions).
+       It was a seven-row copy of the same codes here. */
+    const FIELDS=WB_INDICATORS.filter(I=>I.stat).map(I=>({ f:I.stat, ind:I.code, scale:I.statScale||1 }));
     /* ══ ⚠⚠⚠ (#R270) HDI DOES HAVE AN ANNUAL SERIES, AND THIS FILE SAID IT DOES NOT ═════════════════
        「年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」 (re-sent.)
 
@@ -102,9 +96,8 @@ export function makeTimeCountries(HOST, CTX) {
     async function fetchYear(year){ if(yearCache[year]) return yearCache[year];
       const out={}; FIELDS.forEach(F=>out[F.f]={});
       for(const F of FIELDS){ try{
-        const u='https://api.worldbank.org/v2/country/all/indicator/'+F.ind+'?format=json&per_page=400&date='+year;
-        const j=JSON.parse((await readWithin(u,clockFor(u))).text);
-        (j&&j[1]||[]).forEach(row=>{ if(row&&row.value!=null){ const iso=row.countryiso3code||(row.country&&row.country.id); if(iso&&iso.length===3) out[F.f][iso]=+row.value*F.scale; } });
+        const r=await readWorldBank({ code:F.ind, date:String(year), perPage:400 });
+        r.rows.forEach(row=>{ if(row.iso3&&row.iso3.length===3) out[F.f][row.iso3]=row.v*F.scale; });
       }catch(_){} }
       if(Object.keys(out.gdp).length>10||Object.keys(out.pop).length>10) yearCache[year]=out;   /* cache only a real result */
       return out; }

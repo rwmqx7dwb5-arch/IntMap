@@ -69,6 +69,7 @@ import { dataLayers, layerDeclaration } from './layer-manifest.js';   /* (map-la
 import { IntMapLang } from './lang-registry.js';
 import { icon, iconNode } from './icons.js';   /* (icon-system) the one icon set — js/icons.js */
 import * as bus from './bus.js';
+import { wbIndicatorFor } from './wb-indicators.js';   /* (country-analysis-unify) which World Bank series fills a country-table field — the catalogue's `stat` */
 import { layerRowLabel, registryBoxes } from './layer-row-label.js';   /* (ux-next) the row's name — one reading, shared with the command palette */
 
 const CAP_RUN = capabilityRunners(CAPABILITY_MODULES);   /* dispatch spelling → run, derived once from the entries (js/atlas-caps.js) */
@@ -1247,14 +1248,14 @@ export function atlasConsole(HOST){
       return out; }
     /* some bundled fields are lazy-filled by their layer (tfr — R70); explore/scoreMap fill them from the
        World Bank bulk endpoint on demand so 「少子化と相関する指標」 works without the layer ever having been on */
-    const _WBFILL={tfr:{c:'SP.DYN.TFRT.IN',f:'tfr'},lifeExp:{c:'SP.DYN.LE00.IN',f:'lifeExp'},internet:{c:'IT.NET.USER.ZS',f:'internet'}};
-    async function _fillMetric(key){ try{ const spec=_WBFILL[key]; if(!spec) return;
+    /* (country-analysis-unify) the series that fills a field is js/wb-indicators.js's (`stat`) — this was its own three-entry copy */
+    async function _fillMetric(key){ try{ const I=wbIndicatorFor(key); if(!I) return; const spec={c:I.code,f:key,sc:I.statScale||1};
       let have=0; for(const cd in countryStats){ const s=countryStats[cd]; if(s&&s[spec.f]!=null&&!isNaN(s[spec.f])) have++; }
       if(have>=25) return;
       if(!(window.IntMapWB&&window.IntMapWB.fetch)) return;
       const m=await window.IntMapWB.fetch(spec.c); if(!m) return;
       for(const cd in m){ const v=m[cd]&&m[cd].v; if(v==null||!isFinite(v)) continue;
-        const s=countryStats[cd]; if(s&&(s[spec.f]==null||isNaN(s[spec.f]))) s[spec.f]=+v; } }catch(_){} }
+        const s=countryStats[cd]; if(s&&(s[spec.f]==null||isNaN(s[spec.f]))) s[spec.f]=(+v)*spec.sc; } }catch(_){} }
     function _pearson(xs,ys){ const n=xs.length; if(n<3) return null; let sx=0,sy=0; for(let i=0;i<n;i++){ sx+=xs[i]; sy+=ys[i]; }
       const mx=sx/n,my=sy/n; let sxy=0,sxx=0,syy=0;
       for(let i=0;i<n;i++){ const dx=xs[i]-mx,dy=ys[i]-my; sxy+=dx*dy; sxx+=dx*dx; syy+=dy*dy; }
@@ -2988,6 +2989,9 @@ export function atlasConsole(HOST){
       try{ const act={type:'brief',place:String(name||'')}; if(ll&&ll.lng!=null&&isFinite(+ll.lng)){ act.lng=+ll.lng; act.lat=+ll.lat; }
         const r=await dispatch(act); if(gen!==_runGen){ _markCancelled(ai); return; }
         ai.innerHTML=(r&&r.html)||''; recordTurn('Research: '+String(name||''),'',[act],(r&&r.ok)?[]:[act]);
+        /* (country-analysis-unify) …and the next question. The research panel this replaced ended every brief with questions
+           about the place; here they are the starters askHere offers around the same point (pointExamples), under the brief. */
+        if(r&&r.ok&&act.lng!=null){ try{ READ.offer(ai, pointExamples(act.lng,act.lat,Math.max(GE().camera.getZoom(),5),3)); }catch(_){} }
       }catch(e){ if(gen===_runGen) ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; else { _markCancelled(ai); return; } }
       msgTools(ai,null); }
     /* (#R82) wire Atlas INTO the kernel: the OS's semantic dispatcher = Atlas's action layer; its state = the

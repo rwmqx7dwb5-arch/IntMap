@@ -177,7 +177,13 @@ export default [
     catalogueSilent: '2026-09-18',   /* ㉓'s ledger (#R802, measured that day): its `doc` does not yet name its own subject in both en and jp — delete this line when it does */
     schema: () => ({ type: 'object', properties: { country: str(), name: str(), place: str() }, anyOf: [{ required: ['country'] }, { required: ['name'] }, { required: ['place'] }] }),
     async run(a, dctx, K) { const ensureData = K.ensureData, resolveCountry = K.resolveCountry, showCountryDetail = K.showCountryDetail, R = K.R, note = K.note, L = K.L, esc = K.esc, warn = K.warn;
-      { await ensureData(); const c=await resolveCountry(a.country||a.place||a.name); if(c&&c.code&&typeof showCountryDetail==='function'){ try{ showCountryDetail(c.code,c.name); }catch(_){} let ok=false; try{ if(window.IntMapTimeSeries&&window.IntMapTimeSeries.open){ window.IntMapTimeSeries.open(); ok=true; } }catch(_){} return R(ok, ok?note(icon('chart')+' '+L('Time-series','時系列','Zeitreihe','Динамика','Series temporales')+': '+esc(c.name)):warn('')); } return R(false, warn(L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.place||''))); }
+      { await ensureData(); const c=await resolveCountry(a.country||a.place||a.name); if(c&&c.code&&typeof showCountryDetail==='function'){ try{ showCountryDetail(c.code,c.name); }catch(_){}
+          /* (country-analysis-unify) the comparison panel's time-series view with this one country (js/stats-compare.js timeline) —
+             what the card's 「時系列グラフ」 opens too. It answers with the panel's state, so «opened» is the panel saying it is open
+             on this country, not this call having been made. */
+          let st=null; try{ await window.IntMapLazy.need('statsCompare'); const SC=window.IntMapStatsCompare; if(SC&&SC.timeline) st=SC.timeline(c.code); }catch(_){}
+          const ok=!!(st&&st.open&&st.codes.indexOf(c.code)>=0);
+          return R(ok, ok?note(icon('chart')+' '+L('Time-series','時系列','Zeitreihe','Динамика','Series temporales')+': '+esc(c.name)):warn('')); } return R(false, warn(L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.place||''))); }
     },
   },
   {

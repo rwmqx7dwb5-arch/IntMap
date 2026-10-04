@@ -26,6 +26,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import { featureFilter } from '@maplibre/maplibre-gl-style-spec';
 import * as LM from '../js/layer-manifest.js';
+import { wbRows, wbRowSeries } from './helpers/wb-rows.mjs';   /* (country-analysis-unify) the World Bank rows as js/wb-layers.js builds them */
 import { codeOnly } from '../scripts/code-only.mjs';
 import { readLF } from '../scripts/eol.mjs';
 import { publishedList } from './helpers/layer-groups.mjs';
@@ -794,12 +795,15 @@ test('R289 ④ CO₂ and defence spending are one row each, with both views stil
   const wb = read('js/wb-layers.js');
   assert.ok(!/\{id:'wbco2t'/.test(wb), 'the separate total-CO₂ row is gone');
   assert.match(wb, /\{id:'wbco2', modes:\[/, 'and the survivor is modal');
+  /* (country-analysis-unify) EVALUATED: the series are the catalogue's (js/wb-indicators.js), joined to the rows by the shipped
+     `_wbInd` — tests/helpers/wb-rows.mjs runs both */
+  const painted = wbRowSeries().flatMap((r) => [].concat(r.code));
   for (const code of ['EN.GHG.CO2.MT.CE.AR5', 'EN.GHG.CO2.PC.CE.AR5']) {
-    assert.equal(wb.split(`code:'${code}'`).length - 1, 1, `${code} must be declared exactly once`);
+    assert.equal(painted.filter((c) => c === code).length, 1, `${code} must be declared exactly once`);
   }
   /* the FIRST mode is the default, and it is the total — the name the row always had */
-  const block = wb.slice(wb.indexOf("{id:'wbco2', modes:["));
-  assert.ok(block.indexOf('EN.GHG.CO2.MT.CE.AR5') < block.indexOf('EN.GHG.CO2.PC.CE.AR5'),
+  const co2 = wbRows().find((r) => r.id === 'wbco2');
+  assert.deepEqual(co2.modes.map((m) => m.code), ['EN.GHG.CO2.MT.CE.AR5', 'EN.GHG.CO2.PC.CE.AR5'],
     'the total is the first mode, and the first mode is the default');
   /* ⚠ THE RAMP IS RE-ASSERTED ON EVERY REPAINT. The addLayer branch runs once; a mode change after
      it would otherwise paint megatonnes through the per-capita ramp. */

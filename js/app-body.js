@@ -53,7 +53,7 @@ import { makeLayerFavs } from './layer-favs.js';
 import { makeProjection } from './map-projection.js';   /* (#R298) Globe / Flat and the flat map's free scroll — one subject, five places, see the file */
 import { makePremiumPlan } from './premium-plan.js';
 import { STRIPE_DONATE, installSupporter, renderSupportCosts } from './supporter.js';   /* (supporter-funnel) where support goes, and when to mention it */
-import { makeScreenshot } from './screenshot.js';
+import { readWorldBank, wbIndicator, wbIndicatorFor } from './wb-indicators.js';   /* (country-analysis-unify) the one World Bank read and its catalogue */
 import { installCapabilityKernel } from './atlas-capabilities.js';   /* (#R318) EAGER: the 124 capability descriptors, so a capability is discoverable before its module loads (§3/§10). The executor, the result shape and the state ledger are NOT — installCapabilityKernel installs IntMapOS.execute() as a thin await over an import(), because nothing needs the machinery until something actually runs. #R311's startup budget measured what mounting all of it eagerly costs a reader who never asks a question: +18.9 kB brotli. */
 import { makeSessionTabs } from './session-tabs.js';
 import { makeTimeCountries } from './time-countries.js';
@@ -61,7 +61,7 @@ import { IntMapTime } from './chronos.js';
 import { IntMapGeoEngine } from './geo-engine.js';
 import { IntMapLang } from './lang-registry.js';
 import { aiCore } from './ai-core.js';
-import { aiResearch, correlate, edu, timeSeries, worldEvents } from './analysis-panels.js';
+import { correlate, edu, worldEvents } from './analysis-panels.js';
 import { articleReader } from './article-reader.js';
 import { authUi } from './auth-ui.js';
 import { betaOverlays } from './beta-overlays.js';
@@ -1326,9 +1326,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     gdpPPPPromise=(async()=>{
       try{ const c=JSON.parse(localStorage.getItem('intmap_gdpppp')||'null');
         if(c&&c.ts&&(Date.now()-c.ts<30*864e5)&&c.pc){ _mergePPP(c.pc,c.tot); return; } }catch(_){}
-      const fetchInd=async(ind)=>{ try{ const u='https://api.worldbank.org/v2/country/all/indicator/'+ind+'?format=json&per_page=400&mrnev=1';
-          const j=JSON.parse((await readWithin(u,clockFor(u))).text); const out={};   /* (stalled-fetch-and-surface-gauge) a read that never ends is `{}`, like a refused one */ (j&&j[1]||[]).forEach(d=>{ if(d&&d.countryiso3code&&d.value!=null) out[d.countryiso3code]=d.value; }); return out; }catch(_){ return {}; } };
-      const [pc,tot]=await Promise.all([fetchInd('NY.GDP.PCAP.PP.CD'),fetchInd('NY.GDP.MKTP.PP.CD')]);
+      const fetchInd=async(k)=>{ const r=await readWorldBank({ code:wbIndicator(k).code, mrnev:1, perPage:400 }); const out={};   /* (country-analysis-unify) js/wb-indicators.js — anything but an answer is `{}`, as before */ r.rows.forEach(d=>{ if(d.iso3) out[d.iso3]=d.v; }); return out; };
+      const [pc,tot]=await Promise.all([fetchInd('gdppcppp'),fetchInd('gdpppp')]);
       if(Object.keys(pc).length||Object.keys(tot).length){ try{ localStorage.setItem('intmap_gdpppp',JSON.stringify({ts:Date.now(),pc,tot})); }catch(_){} }
       _mergePPP(pc,tot);
     })();
@@ -2348,10 +2347,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     try{ renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){ renderStats(searchVal()); } };
   /* (#R102) back-fill a lazy World-Bank metric (life-expectancy / fertility) so sorting by it shows REAL values, not "—".
      One indicator = one WB request; re-renders when it lands (only if that metric is still selected). */
-  window._imFillStat=async function(key){ try{ const codes={lifeExp:'SP.DYN.LE00.IN',tfr:'SP.DYN.TFRT.IN',internet:'IT.NET.USER.ZS'}; const c=codes[key]; if(!c) return;
+  window._imFillStat=async function(key){ try{ const I=wbIndicatorFor(key); if(!I) return; const c=I.code;   /* (country-analysis-unify) the field's series is the catalogue's `stat` (js/wb-indicators.js) */
     let have=0; for(const cd in countryStats){ const s=countryStats[cd]; if(s&&s[key]!=null&&isFinite(s[key])) have++; } if(have>=25) return;
     if(!(window.IntMapWB&&window.IntMapWB.fetch)) return; const m=await window.IntMapWB.fetch(c); if(!m) return;
-    for(const cd in m){ const v=m[cd]&&m[cd].v; if(v==null||!isFinite(v)) continue; const s=countryStats[cd]; if(s&&(s[key]==null||!isFinite(s[key]))) s[key]=+v; }
+    for(const cd in m){ const v=m[cd]&&m[cd].v; if(v==null||!isFinite(v)) continue; const s=countryStats[cd]; if(s&&(s[key]==null||!isFinite(s[key]))) s[key]=(+v)*(I.statScale||1); }
     try{ if(statsSort===key && window._countriesActive && window._countriesActive()) renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){}
   }catch(_){} };
   /* Toggle a country in the compare set WITHOUT re-rendering the whole list (keeps scroll
@@ -3508,10 +3507,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R167) moved to js/mobile-ui.js — see Architecture.md §3.1. */
   layoutReflow(IM_HOST);
 
-  /* (#R200) moved to js/screenshot.js — a real ES module (see the import at the top of this file), not a
-     window.IntMapModules entry and not a line in src/main.js's ordered list. */
-  makeScreenshot(IM_HOST, { GE, aiWaitMapIdle, imToast, t, ymdISO });
-
   /* (#R200) moved to js/layer-favs.js — a real ES module (see the import at the top of this file), not a
      window.IntMapModules entry and not a line in src/main.js's ordered list. */
   _IM_LFAVS = makeLayerFavs(IM_HOST, { escapeHtml, i18n, saveSettings, t });
@@ -3864,11 +3859,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
   layerHoverPopup(IM_HOST);
 
-  /* ===== (#R9b/#9) Per-country time-series graphs from the World Bank Open Data API (CORS *). Opened
-     from the country detail popup; draws a small SVG line chart per indicator. ===== */
-  /* (#R166) moved to js/analysis-panels.js — see Architecture.md §3.1. */
-  timeSeries(IM_HOST);
-
   /* ===== (#R62) COUNTRY COMPARISON — rebuilt from the ground up ("根本的な部分から作り変えて"): up to FIVE
      countries side by side, ~20 indicators (multi-select), SOURCE switching (World Bank ⇄ IMF WEO for the
      economic series — different institutions report different GDP figures), latest values table + overlaid
@@ -3996,13 +3986,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     }catch(_){ applying=false; } };
   })();
 
-  /* ===== (#R20) AI RESEARCH ASSISTANT — click a place label → "AI brief": the configured BYOK model
-     writes a structured brief (background · history · economy · military/strategic significance ·
-     recent developments), seeded with the nearby geocoded news headlines so it is stronger on "now"
-     than an encyclopedia. Needs an AI key (Settings → AI features); reuses askAI(). ===== */
-  /* (#R166) moved to js/analysis-panels.js — see Architecture.md §3.1. */
-  aiResearch(IM_HOST);
-
   /* ===== (#R39) TWO-LAYER CORRELATION / SCATTER — pick any two NUMERIC, ABSOLUTE-SCALE country metrics
      ("数値があるかつ絶対尺度のレイヤーのみ") and see a scatter plot + correlation coefficient over every
      country that has both values. Opened from a button at the bottom of the Layers panel. ===== */
@@ -4064,6 +4047,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R166) moved to js/map-ui.js — see Architecture.md §3.1. */
   share(IM_HOST);
   try{ const _sb=document.getElementById('btn-share'); if(_sb) _sb.onclick=()=>{ try{ window.IntMapShare.open(); }catch(_){} }; }catch(_){}
+  /* (country-analysis-unify) 「Screenshot」 is the share panel's Image tab: one picture of the map, with its legends and every data credit burned in
+     (js/map-recorder.js postcard). The PNG it used to save (js/screenshot.js) was #map-container alone, and the attribution row (#map-credit) sits OUTSIDE it — a picture of the map without the credits it owes. */
+  try{ const _ss=document.getElementById('btn-screenshot'); if(_ss) _ss.onclick=()=>{ try{ window.IntMapShare.open({ tab:'image' }); }catch(_){} }; }catch(_){}
 
   /* ===== (#R42) "Atlas" — natural-language console (beta) ("自然言語版ターミナル"). Type a request in plain
      language and the AI turns it into a STRICT JSON action plan that this REAL dispatcher executes against the

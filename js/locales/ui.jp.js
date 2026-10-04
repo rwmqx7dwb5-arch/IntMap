@@ -210,7 +210,6 @@ IntMapLang.define('jp', { ui: {
       viewSourcesPage:"データ出典ページを開く ↗",
       srcModalTitle:"データ出典・帰属表示",
       srcModalSub:"IntMapは以下の第三者のデータ・画像・APIを利用しています。各商標は権利者に帰属します。",
-      screenshotSaved:"スクリーンショットを保存しました ✓",
       measureClickClose:"最初の点をクリックで閉じる",
       lblMapColor:"地図の配色",
       mapColorAuto:"テーマに合わせる",

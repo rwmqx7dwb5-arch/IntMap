@@ -824,19 +824,19 @@ export function countriesUi(HOST){
         const a=b.getAttribute('data-cpact');
         try{
           if(a==='isolate'){ if(window.IntMapIsolate) window.IntMapIsolate.enter((window._cpCurrent||{}).code); return; }
-          if(a==='timeseries'){ if(window.IntMapTimeSeries) window.IntMapTimeSeries.open(); return; }
+          /* (country-analysis-unify) the time-series button opens the comparison panel's time-series view with this one country —
+             the same chart, series and sources as 「国を比較」, not a second chart of its own (js/stats-compare.js timeline) */
+          if(a==='timeseries'){ const _c=(window._cpCurrent||{}).code; window.IntMapLazy.need('statsCompare').then(()=>{ try{ const SC=window.IntMapStatsCompare; if(SC) SC.timeline(_c); }catch(_){} }); return; }
           /* (#R311) the country card's Compare item is a door into the on-demand comparison panel */
           if(a==='compare'){ window.IntMapLazy.need('statsCompare').then(()=>{ try{ if(window.IntMapStatsCompare) window.IntMapStatsCompare.open(); }catch(_){} }); return; }
           if(a==='brief'){
-            /* the SAME ladder the attribute used to spell out, verbatim: Atlas if it is (or can be)
-               loaded, then the console's own brief, then the research panel. `_aiName` was already
-               encodeURIComponent'd — it is read back out of the attribute and decoded exactly as before. */
+            /* (country-analysis-unify) ONE PATH: Atlas's brief, fetched if it is not here yet (js/atlas-loader.js). There were three
+               — Atlas, else the console's own brief, else a separate research panel — so WHICH screen and WHICH format the reader
+               got depended on whether Atlas had happened to load, and the panel's brief had no web search and no sources.
+               `_aiName` was encodeURIComponent'd into the attribute; it is decoded exactly as before. */
             const _n=decodeURIComponent(b.getAttribute('data-cpname')||'');
             const _l=(window._cpCurrent&&window._cpCurrent._ll)||null;
-            if(window.IntMapAtlas){ window.IntMapAtlas.ensure().then(function(C){ try{
-              if(C&&C.brief){ C.brief(_n,_l); } else if(window.IntMapAIResearch){ window.IntMapAIResearch.open(_n,_l); } }catch(e2){} }); }
-            else if(window.IntMapConsole&&window.IntMapConsole.brief){ window.IntMapConsole.brief(_n,_l); }
-            else if(window.IntMapAIResearch){ window.IntMapAIResearch.open(_n,_l); }
+            window.IntMapAtlas.call('brief',_n,_l);
           }
         }catch(e){}
       });

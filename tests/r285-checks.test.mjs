@@ -63,10 +63,8 @@ const EXPECTED_CALLS = {
   /* (atlas-capability-modules) three of the kernel's nine moved with their capabilities' runs */
   'js/atlas-console.js': 6,          /* analyze, mapReport, planner, vision, region outline, region units */
   'js/atlas-cap-research.js': 3,     /* brief, researchMap, historical */
-  /* (#R322) the two prompts moved with the AI-research body when js/analysis-panels.js was split
-     into an eager shell and five lazy implementations. Same two calls, same file's worth of code —
-     only the file name changed, and the count is what this table is actually about. */
-  'js/analysis-research.js': 2,      /* place brief, ask-about-this-point */
+  /* (country-analysis-unify) js/analysis-research.js's two (place brief, ask-about-this-point) left with the panel:
+     every 「AI調査」 is the brief above (js/atlas-cap-research.js) and «ask about here» was already Atlas's askHere. */
   'js/app-body.js': 2,               /* satellite-image comparison, area news summary */
   'js/atlas-geo-resolve.js': 2,      /* place verification, region resolution */
   'js/atlas-gloss.js': 1,            /* (#R491) the term gloss: one prompt, whose own task role is the glossary */

@@ -672,8 +672,11 @@ layer-pkg-alliances.js            **レイヤー・パッケージ** NATO dl-nat
                                   凡例が述べる加盟国数（描いている加盟国から）
 layer-packs.js                    追加レイヤーパック（地球と空／土地被覆／ベータ2／宗教・言語／
                                   タイムゾーン／GIBS の科学プロダクト）
-wb-layers.js                      世界銀行指標の塗り分けと最新統計の更新。国別指標の行 `bx-wbind` の塗り手（`indicators()`・
-                                  `paintIndicator`）と共有リンクの `wbind`
+wb-indicators.js                  **世界銀行の指標の目録と、その取得の 1 本**——指標ごとのキー・系列コード（合算 `parts`・廃止系列の
+                                  `fallback`）・名前・単位・国テーブルの欄（`stat`）と、`readWorldBank`（共有キャッシュ・同時 6 本・
+                                  ok / none / unavailable と `late`）。系列コードと API の住所はここ以外の js/ に書かない
+wb-layers.js                      世界銀行指標の塗り分けと最新統計の更新。行は指標のキーと色だけを持つ（系列・名前・単位は
+                                  wb-indicators.js）。国別指標の行 `bx-wbind` の塗り手（`indicators()`・`paintIndicator`）と共有リンクの `wbind`
 indicator-browser.js              **国別指標**——国の統計を 1 つのレイヤーで、検索と分野（その指標の行が立つ棚）で選ぶ（凡例の中）。
                                   同じ系列を塗る行は宣言の `measures` から 1 項目に。初めて行を点けたときに wb-layers.js が読む。
                                   Atlas `layers.indicator`。docs/MAP-LAYERS.md §7.2
@@ -1033,9 +1036,9 @@ atlas-view-ground.js              **見たものの裏づけ**（#R589）— `lo
 atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャプチャ1本と、1ターン分のフレーム台帳。
                                   **入口は `makeViewCapture(deps)` の1つだけ**（tests/layer-boot-graph-checks.test.mjs #R175 ③ が
                                   「動的 import でしか届かない export は死んだ export」と見るため）。
-                                  `captureCanvas` は screenshot.js が #R200 から撮ってきたのと**同じ**絵
+                                  `captureCanvas` は Screenshot ボタンが #R200 から撮ってきたのと**同じ**絵
                                   （WebGL を render tick 内で読む／#R231 の1座標系／DOM オーバーレイ合成）で、
-                                  ボタンと Atlas の両方がこれを呼ぶ。`captureFrame` は撮った**画素を台帳に置き**、
+                                  共有パネルの「画像」（map-recorder.js の postcard）と Atlas の両方がこれを呼ぶ。`captureFrame` は撮った**画素を台帳に置き**、
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
@@ -1081,16 +1084,15 @@ atlas-answer-render.js            Atlas — 構造化回答の描画（#R350）�
 
 ```
 analysis-panels.js                分析パネルの EAGER SHELL ——「起動時に走るもの」だけ:
-                                  5つのファクトリ登録・#btn-correlate と #edu-mount/#btn-edu の生成・
+                                  3つのファクトリ登録・#btn-correlate と #edu-mount/#btn-edu の生成・
                                   言語切替の再翻訳・地図クリックの転送、そして
-                                  IntMapTimeSeries / IntMapAIResearch / IntMapCorrelate / IntMapEdu
-                                  の非同期ファサード（呼ばれてから実装を取りに行く）
-analysis-timeseries.js            ↳ 時系列チャートの実装        __imAnalysisTimeSeries（遅延）
-analysis-research.js              ↳ AI リサーチの実装           __imAnalysisResearch（遅延）
+                                  IntMapCorrelate / IntMapEdu の非同期ファサード（呼ばれてから実装を取りに行く）。
+                                  国の時系列は stats-compare.js の時系列表示（`timeline`）、「AI調査」は Atlas の brief
 analysis-correlate.js             ↳ 相関・散布図の実装          __imAnalysisCorrelate（遅延）
 analysis-world-events.js          ↳ 世界の出来事の実装 __imAnalysisEvents（遅延）——time-index.js の索引を**地図の時刻まで**新しい順に並べる（手書きの表は無い）
 analysis-edu.js                   ↳ 学習モード・地図クイズの実装 __imAnalysisEdu（遅延）
-stats-compare.js                  多国統計比較 IntMapStatsCompare
+stats-compare.js                  多国統計比較 IntMapStatsCompare。1 か国の時系列（`timeline`——国カードの「時系列グラフ」と
+                                  Atlas `data.timeSeries` の行き先）もこの時系列表示。指標の系列と名前は wb-indicators.js
 countries-ui.js                   Countries タブと国の詳細
 companies-ui.js                   Companies タブ・比較ビュー・ダッシュボード
 company-panel.js                  企業プロフィールのパネル（概要・財務・事業・拠点・進出国・組織・出典） IntMapCompanyPanel
@@ -1263,8 +1265,6 @@ command-palette.js                **コマンドパレット**（Ctrl/⌘+K）�
                                   経路で実行する。最後の行は Atlas。Atlas `panel.palette`。必要になったときに読む
 layer-row-label.js                レイヤー登録簿の 1 行が読者に見せる名前（Atlas とコマンドパレットが同じ読み方をする）
 onboarding.js                     ウェルカムカード・ガイドツアーへの入口（`_imStartDemo`。ツアー本体は tour-player.js）・進捗コントロール
-screenshot.js                     スクリーンショットのボタン（busy 状態・`capture-mode`・フラッシュ・保存。
-                                  **絵そのものは atlas-view-capture.js**——Atlas と同じ1本を呼ぶ）
 sidebar-style.js                  左サイドバーの材質（不透明／フロスト2種）と、フロスト時にカメラへ渡す左 inset
 search-geocode.js                 検索欄——問い合わせの前処理・ジオコーディング・結果カード。`goToLocal`（端末上の 1 行へ同じ飛び方で）
 wiki-lookup.js                    地物の Wikipedia 記事を**照会用の欄**（wikidata・name:<言語>・name:en…）から引く。表示用の `name`

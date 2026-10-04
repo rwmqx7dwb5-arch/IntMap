@@ -72,7 +72,9 @@ test('R241 ① a tuple of translations is a CALL, so every existing instrument c
      demanding `LA('` of a file with nothing to declare would be a check that only ever asserts that
      somebody kept a helper alive to satisfy it. */
   for (const f of ['js/weather.js', 'js/layer-packs.js', 'js/data-layers.js',
-    'js/analysis-timeseries.js', 'js/analysis-correlate.js', 'js/analysis-world-events.js',
+    /* (country-analysis-unify) js/analysis-timeseries.js left — its table was six rows of the comparison's; the World
+       Bank names it held are js/wb-indicators.js's tuples now */
+    'js/wb-indicators.js', 'js/analysis-correlate.js', 'js/analysis-world-events.js',
     'js/stats-compare.js', 'js/atlas-console.js',
     'js/world-packs.js', 'js/world-packs-rows.js', 'js/sims.js']) {
     assert.match(code(R(f)), /IntMapLang\.pickArgs\(\)/, `${f} declares the tuple helper`);

@@ -9,6 +9,7 @@
  * ========================================================================== */
 import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch-and-surface-gauge) how long one read of a host may take. (fetch-deadline-layer) The relay URL it also gave the cable preview is the layer's business now — see layerReads below */
 import { readWithin, jsonWithin } from './fetch-deadline.js';
+import { readWorldBank, wbIndicator } from './wb-indicators.js';   /* (country-analysis-unify) the one World Bank read and the one catalogue of its series */
 import { layerReads } from './data-layers.js';   /* (fetch-deadline-layer) the cable and radar rows' OWN reads — a preview draws what its layer would, fetched the way its layer fetches it */
 
 export function layerPreviews(countryStats,loadCountryData){
@@ -201,41 +202,41 @@ export function layerPreviews(countryStats,loadCountryData){
       /* (#R289) the CO₂ row is MODAL now (total ↔ per capita) and this copy is only the answer
          BEFORE js/wb-layers.js has registered — so it is the DEFAULT mode's series and ramp.
          `IntMapWB.codeOf`/`rampOf` answer for whichever mode is actually on. */
-      'bx-wbco2':{c:'EN.GHG.CO2.MT.CE.AR5',r:[5,'#1a9850',50,'#a6d96a',300,'#fee08b',1500,'#f46d43',10000,'#a50026']},
-      'bx-wburb':{c:'SP.URB.TOTL.IN.ZS',r:[20,'#edf8e9',40,'#bae4b3',60,'#74c476',80,'#31a354',95,'#006d2c']},
-      'bx-wbelec':{c:'EG.ELC.ACCS.ZS',r:[20,'#a50026',50,'#f46d43',80,'#fee08b',95,'#a6d96a',100,'#1a9850']},
-      'bx-wbhealth':{c:'SH.XPD.CHEX.GD.ZS',r:[2,'#fff7ec',4,'#fdd49e',8,'#fc8d59',12,'#d7301f',18,'#7f0000']},
-      'bx-wbforest':{c:'AG.LND.FRST.ZS',r:[5,'#f6e8c3',20,'#c7eae5',40,'#80cdc1',60,'#35978f',80,'#01665e']},
-      'bx-wbrenew':{c:'EG.FEC.RNEW.ZS',r:[5,'#fff7ec',20,'#fdd49e',40,'#a6d96a',60,'#66bd63',85,'#006837']},
-      'bx-wbmobile':{c:'IT.CEL.SETS.P2',r:[30,'#fee08b',80,'#a6d96a',110,'#66bd63',140,'#1a9850',180,'#006837']},
-      'bx-wbinfl':{c:'FP.CPI.TOTL.ZG',r:[0,'#1a9850',3,'#a6d96a',6,'#fee08b',15,'#f46d43',40,'#a50026']},
-      'bx-wbinfmort':{c:'SP.DYN.IMRT.IN',r:[2,'#1a9850',8,'#a6d96a',25,'#fee08b',50,'#f46d43',90,'#a50026']},
-      'bx-wbgdpgrow':{c:'NY.GDP.MKTP.KD.ZG',r:[-8,'#67001f',-4,'#d6604d',-1.5,'#f4a582',0,'#ffffff',1.5,'#92c5de',4,'#4393c3',8,'#053061']},
-      'bx-wblit':{c:'SE.ADT.LITR.ZS',r:[40,'#a50026',60,'#f46d43',80,'#fee08b',92,'#a6d96a',100,'#1a9850']},
-      'bx-wbwater':{c:'SH.H2O.SMDW.ZS',r:[30,'#a50026',55,'#f46d43',75,'#fee08b',90,'#a6d96a',100,'#1a9850']},
-      'bx-wbsan':{c:'SH.STA.SMSS.ZS',r:[20,'#a50026',45,'#f46d43',70,'#fee08b',90,'#a6d96a',100,'#1a9850']},
-      'bx-wbpov':{c:'SI.POV.DDAY',r:[0,'#1a9850',2,'#a6d96a',10,'#fee08b',30,'#f46d43',60,'#a50026']},
-      'bx-wbgini':{c:'SI.POV.GINI',r:[25,'#1a9850',32,'#a6d96a',38,'#fee08b',45,'#f46d43',60,'#a50026']},
-      'bx-wbtrade':{c:'NE.TRD.GNFS.ZS',r:[20,'#fff7ec',50,'#fdd49e',90,'#fc8d59',150,'#d7301f',300,'#7f0000']},
-      'bx-wbtax':{c:'GC.TAX.TOTL.GD.ZS',r:[5,'#fff7ec',12,'#fdd49e',20,'#a6d96a',30,'#66bd63',45,'#006837']},
-      'bx-wbagri':{c:'AG.LND.AGRI.ZS',r:[5,'#f6e8c3',25,'#dfc27d',45,'#c7eae5',65,'#80cdc1',85,'#01665e']},
-      'bx-wbphys':{c:'SH.MED.PHYS.ZS',r:[0.1,'#a50026',0.5,'#f46d43',1.5,'#fee08b',3,'#a6d96a',6,'#1a9850']},
-      'bx-wbschool':{c:'SE.SEC.ENRR',r:[30,'#a50026',55,'#f46d43',80,'#fee08b',100,'#a6d96a',130,'#1a9850']},
-      'bx-wbelecuse':{c:'EG.USE.ELEC.KH.PC',r:[100,'#fff7ec',1000,'#fdd49e',4000,'#fc8d59',10000,'#d7301f',20000,'#7f0000']},
-      'bx-wbrenelec':{c:'EG.ELC.RNEW.ZS',r:[5,'#fff7ec',25,'#fdd49e',50,'#a6d96a',75,'#66bd63',100,'#006837']},
-      'bx-wbfdi':{c:'BX.KLT.DINV.WD.GD.ZS',r:[-2,'#a50026',1,'#fee08b',4,'#a6d96a',8,'#66bd63',15,'#006837']},
-      'bx-wbmilppl':{c:'MS.MIL.TOTL.P1',r:[5000,'#fff7ec',50000,'#fdd49e',200000,'#fc8d59',800000,'#d7301f',2000000,'#7f0000']},
-      'bx-wblife':{c:'SP.DYN.LE00.IN',r:[50,'#a50026',60,'#f46d43',70,'#fee08b',78,'#a6d96a',85,'#1a9850']},
-      'bx-wbunemp':{c:'SL.UEM.TOTL.ZS',r:[2,'#1a9850',5,'#a6d96a',10,'#fee08b',20,'#f46d43',35,'#a50026']},
-      'bx-wbnet':{c:'IT.NET.USER.ZS',r:[10,'#a50026',30,'#f46d43',55,'#fee08b',80,'#a6d96a',98,'#1a9850']},
-      'bx-wbdebt':{c:'GC.DOD.TOTL.GD.ZS',r:[20,'#1a9850',45,'#a6d96a',70,'#fee08b',110,'#f46d43',180,'#a50026']},
-      'bx-wbmanuf':{c:'NV.IND.MANF.ZS',r:[5,'#fff7ec',12,'#fdd49e',20,'#fc8d59',28,'#d7301f',40,'#7f0000']},
-      'bx-wbu5mort':{c:'SH.DYN.MORT',r:[3,'#1a9850',10,'#a6d96a',30,'#fee08b',70,'#f46d43',120,'#a50026']},
-      'bx-wbpopgrow':{c:'SP.POP.GROW',r:[-1,'#2c7fb8',0,'#7fcdbb',1.5,'#ffffb2',3,'#fe9929',5,'#cc4c02']},
-      'bx-wbenergy':{c:'EG.USE.PCAP.KG.OE',r:[200,'#fff7ec',1000,'#fdd49e',3000,'#fc8d59',6000,'#d7301f',12000,'#7f0000']},
-      'beta-dl-unemp':{c:'SL.UEM.TOTL.ZS',r:[2,'#1a9850',5,'#a6d96a',10,'#fee08b',20,'#f46d43',35,'#a50026']},
-      'dl-tfr':{c:'SP.DYN.TFRT.IN',r:[1,'#2c7fb8',2.1,'#7fcdbb',3,'#ffffb2',4.5,'#fe9929',6.5,'#cc4c02']},   /* countryStats.tfr is only filled AFTER the layer's own lazy fetch — preview goes to WB directly (same ramp as the layer) */
-      'beta-dl-cpi':{c:'GOV_WGI_CC.SC',url:'https://api.worldbank.org/v2/country/all/indicator/GOV_WGI_CC.SC?format=json&source=3&date=2023&per_page=400',r:[10,'#a50026',30,'#f46d43',50,'#fee08b',70,'#74c476',90,'#1a9850']}   /* WGI lives under source=3 and rejects mrnev — same query the layer itself uses */
+      'bx-wbco2':{k:'co2t',r:[5,'#1a9850',50,'#a6d96a',300,'#fee08b',1500,'#f46d43',10000,'#a50026']},
+      'bx-wburb':{k:'urban',r:[20,'#edf8e9',40,'#bae4b3',60,'#74c476',80,'#31a354',95,'#006d2c']},
+      'bx-wbelec':{k:'elec',r:[20,'#a50026',50,'#f46d43',80,'#fee08b',95,'#a6d96a',100,'#1a9850']},
+      'bx-wbhealth':{k:'health',r:[2,'#fff7ec',4,'#fdd49e',8,'#fc8d59',12,'#d7301f',18,'#7f0000']},
+      'bx-wbforest':{k:'forest',r:[5,'#f6e8c3',20,'#c7eae5',40,'#80cdc1',60,'#35978f',80,'#01665e']},
+      'bx-wbrenew':{k:'renew',r:[5,'#fff7ec',20,'#fdd49e',40,'#a6d96a',60,'#66bd63',85,'#006837']},
+      'bx-wbmobile':{k:'mobile',r:[30,'#fee08b',80,'#a6d96a',110,'#66bd63',140,'#1a9850',180,'#006837']},
+      'bx-wbinfl':{k:'infl',r:[0,'#1a9850',3,'#a6d96a',6,'#fee08b',15,'#f46d43',40,'#a50026']},
+      'bx-wbinfmort':{k:'infmort',r:[2,'#1a9850',8,'#a6d96a',25,'#fee08b',50,'#f46d43',90,'#a50026']},
+      'bx-wbgdpgrow':{k:'growth',r:[-8,'#67001f',-4,'#d6604d',-1.5,'#f4a582',0,'#ffffff',1.5,'#92c5de',4,'#4393c3',8,'#053061']},
+      'bx-wblit':{k:'lit',r:[40,'#a50026',60,'#f46d43',80,'#fee08b',92,'#a6d96a',100,'#1a9850']},
+      'bx-wbwater':{k:'water',r:[30,'#a50026',55,'#f46d43',75,'#fee08b',90,'#a6d96a',100,'#1a9850']},
+      'bx-wbsan':{k:'san',r:[20,'#a50026',45,'#f46d43',70,'#fee08b',90,'#a6d96a',100,'#1a9850']},
+      'bx-wbpov':{k:'pov',r:[0,'#1a9850',2,'#a6d96a',10,'#fee08b',30,'#f46d43',60,'#a50026']},
+      'bx-wbgini':{k:'gini',r:[25,'#1a9850',32,'#a6d96a',38,'#fee08b',45,'#f46d43',60,'#a50026']},
+      'bx-wbtrade':{k:'trade',r:[20,'#fff7ec',50,'#fdd49e',90,'#fc8d59',150,'#d7301f',300,'#7f0000']},
+      'bx-wbtax':{k:'tax',r:[5,'#fff7ec',12,'#fdd49e',20,'#a6d96a',30,'#66bd63',45,'#006837']},
+      'bx-wbagri':{k:'agri',r:[5,'#f6e8c3',25,'#dfc27d',45,'#c7eae5',65,'#80cdc1',85,'#01665e']},
+      'bx-wbphys':{k:'phys',r:[0.1,'#a50026',0.5,'#f46d43',1.5,'#fee08b',3,'#a6d96a',6,'#1a9850']},
+      'bx-wbschool':{k:'school',r:[30,'#a50026',55,'#f46d43',80,'#fee08b',100,'#a6d96a',130,'#1a9850']},
+      'bx-wbelecuse':{k:'elecuse',r:[100,'#fff7ec',1000,'#fdd49e',4000,'#fc8d59',10000,'#d7301f',20000,'#7f0000']},
+      'bx-wbrenelec':{k:'renelec',r:[5,'#fff7ec',25,'#fdd49e',50,'#a6d96a',75,'#66bd63',100,'#006837']},
+      'bx-wbfdi':{k:'fdi',r:[-2,'#a50026',1,'#fee08b',4,'#a6d96a',8,'#66bd63',15,'#006837']},
+      'bx-wbmilppl':{k:'milppl',r:[5000,'#fff7ec',50000,'#fdd49e',200000,'#fc8d59',800000,'#d7301f',2000000,'#7f0000']},
+      'bx-wblife':{k:'life',r:[50,'#a50026',60,'#f46d43',70,'#fee08b',78,'#a6d96a',85,'#1a9850']},
+      'bx-wbunemp':{k:'unemp',r:[2,'#1a9850',5,'#a6d96a',10,'#fee08b',20,'#f46d43',35,'#a50026']},
+      'bx-wbnet':{k:'net',r:[10,'#a50026',30,'#f46d43',55,'#fee08b',80,'#a6d96a',98,'#1a9850']},
+      'bx-wbdebt':{k:'debt',r:[20,'#1a9850',45,'#a6d96a',70,'#fee08b',110,'#f46d43',180,'#a50026']},
+      'bx-wbmanuf':{k:'manuf',r:[5,'#fff7ec',12,'#fdd49e',20,'#fc8d59',28,'#d7301f',40,'#7f0000']},
+      'bx-wbu5mort':{k:'u5mort',r:[3,'#1a9850',10,'#a6d96a',30,'#fee08b',70,'#f46d43',120,'#a50026']},
+      'bx-wbpopgrow':{k:'popgrow',r:[-1,'#2c7fb8',0,'#7fcdbb',1.5,'#ffffb2',3,'#fe9929',5,'#cc4c02']},
+      'bx-wbenergy':{k:'energy',r:[200,'#fff7ec',1000,'#fdd49e',3000,'#fc8d59',6000,'#d7301f',12000,'#7f0000']},
+      'beta-dl-unemp':{k:'unemp',r:[2,'#1a9850',5,'#a6d96a',10,'#fee08b',20,'#f46d43',35,'#a50026']},
+      'dl-tfr':{k:'tfr',r:[1,'#2c7fb8',2.1,'#7fcdbb',3,'#ffffb2',4.5,'#fe9929',6.5,'#cc4c02']},   /* countryStats.tfr is only filled AFTER the layer's own lazy fetch — preview goes to WB directly (same ramp as the layer) */
+      'beta-dl-cpi':{k:'cpi',date:'2023',r:[10,'#a50026',30,'#f46d43',50,'#fee08b',70,'#74c476',90,'#1a9850']}   /* WGI rejects mrnev — the year the layer itself asks for; its source (3) is the catalogue's */
     };
     /* gentle: ONE request at a time with a 350 ms gap — preview traffic must never trip the WB rate limit
        (the R69 lesson: bursts get the whole IP throttled and then EVERYTHING WB-backed shows "no data") */
@@ -244,11 +245,12 @@ export function layerPreviews(countryStats,loadCountryData){
     function _wbPump2(){ while(_wbBusy<1&&_wbQueue.length){ const t=_wbQueue.shift(); _wbBusy++;
       const done=v=>{ setTimeout(()=>{ _wbBusy--; _wbPump2(); },350); t.res(v); };
       try{
-        if(!t.spec.url&&window.IntMapWB&&window.IntMapWB.fetch){ window.IntMapWB.fetch(t.spec.c).then(m=>done(m||{})).catch(()=>done({})); }
+        if(!t.spec.date&&!t.spec.source&&window.IntMapWB&&window.IntMapWB.fetch){ window.IntMapWB.fetch(t.spec.c).then(m=>done(m||{})).catch(()=>done({})); }
         /* (stalled-fetch-and-surface-gauge) under the host's clock: the queue runs ONE read at a time, so a read
            that never ended held every later preview behind it for the session */
-        else{ const u=t.spec.url||('https://api.worldbank.org/v2/country/all/indicator/'+t.spec.c+'?format=json&mrnev=1&per_page=400');
-          readWithin(u,clockFor(u)).then(r=>JSON.parse(r.text)).then(j=>{ const m={}; ((j&&j[1])||[]).forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code) m[d.countryiso3code]={v:+d.value}; }); done(m); }).catch(()=>done({})); }
+        /* (country-analysis-unify) js/wb-indicators.js readWorldBank — under the host's clock, as before; anything but an answer is {} */
+        else{ readWorldBank({ code:t.spec.c, date:t.spec.date||'', source:t.spec.source||0, mrnev:t.spec.date?0:1, perPage:400 })
+          .then(r=>{ const m={}; r.rows.forEach(d=>{ if(d.iso3) m[d.iso3]={v:d.v}; }); done(m); }).catch(()=>done({})); }
       }catch(_){ done({}); } } }
     /* (#R270) the ramp comes from the LAYER when it is loaded (`IntMapWB.rampOf`), because the copy
        in WBP below went stale the moment #R268 made GDP growth diverging — the tile was still red →
@@ -259,8 +261,8 @@ export function layerPreviews(countryStats,loadCountryData){
     /* (#R289) the same rule for the INDICATOR. A modal layer (CO₂ total ↔ per capita) changes which
        series it paints, and the WBP copy is the pre-load answer only — exactly as the ramp copy is. */
     function wbCode(id,spec){ try{ const c=window.IntMapWB&&window.IntMapWB.codeOf&&window.IntMapWB.codeOf(String(id).replace(/^bx-/,''));
-      if(c) return c; }catch(_){} return spec.c; }
-    function wbChoro(spec,id){ return wbValues({url:spec.url,c:wbCode(id,spec)}).then(m=>{ if(!m||Object.keys(m).length<5) return null;
+      if(c) return c; }catch(_){} const I=wbIndicator(spec.k); return I?(I.parts||I.code):null; }   /* (country-analysis-unify) before the layer module is up: the catalogue's series for the row's indicator */
+    function wbChoro(spec,id){ const I=wbIndicator(spec.k); return wbValues({date:spec.date,source:I&&I.source,c:wbCode(id,spec)}).then(m=>{ if(!m||Object.keys(m).length<5) return null;
       const c=cnv(),ctx=c.getContext('2d'); ocean(ctx);
       const r=wbRamp(id,spec);
       const ok=drawLand(ctx,cd=>{ const e=m[cd]; return e?rampColor(r,e.v):'#1b2a3d'; });

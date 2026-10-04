@@ -76,14 +76,15 @@ test('R231 Atlas: the image row is its own element, the text keeps the bubble', 
 
 /* ── ⑩ the AI research reply does not open by naming the place ──────────────────────────────── */
 test('R231 AI research: the leading place-name line is asked against AND removed', () => {
-  /* (#R322) the AI-research body lives in its own file since the analysis panels were split into an
-     eager shell and five lazy implementations. The claim is unchanged — this is where it is now. */
-  const ap = read('js/analysis-research.js');
-  /* (tests-by-topic) THE STRIP IS RUN. It is a pure function nested in the panel's factory, so it is
+  /* (country-analysis-unify) the research panel (js/analysis-research.js) is gone: every 「AI調査」 is Atlas's brief, whose
+     reply goes through js/atlas-reply.js `dropLeadTitle` and whose prompt (js/atlas-cap-research.js research.brief) asks
+     the same. The claim is unchanged — this is where the one remaining brief does it. */
+  const ap = read('js/atlas-reply.js');
+  /* (tests-by-topic) THE STRIP IS RUN. It is a pure function nested in the reply factory, so it is
      lifted out of the shipped file by its AST node and called — not matched line by line. */
   let node = null;
   walk.simple(acorn.parse(ap, { ecmaVersion: 'latest', sourceType: 'module' }),
-    { FunctionDeclaration(n) { if (n.id && n.id.name === '_dropLeadTitle') node = n; } });
+    { FunctionDeclaration(n) { if (n.id && n.id.name === 'dropLeadTitle') node = n; } });
   assert.ok(node, 'the defensive strip exists');
   const drop = new Function(`return (${ap.slice(node.start, node.end)});`)();
   assert.equal(drop('**Kyiv**\n\nKyiv is the capital.', 'Kyiv'), 'Kyiv is the capital.', 'a bold line that is only the place name is dropped');
@@ -91,9 +92,10 @@ test('R231 AI research: the leading place-name line is asked against AND removed
   /* equality, never containment — a title that CONTAINS the name is a real title */
   assert.equal(drop('## Kyiv: a city on the Dnipro\nText', 'Kyiv'), '## Kyiv: a city on the Dnipro\nText', 'only an exact match is dropped');
   assert.equal(drop('Kyiv is the capital.', 'Kyiv'), 'Kyiv is the capital.', 'prose that starts with the name is left alone');
-  /* spelling kept: that the reply is PASSED through the strip, and what the prompt tells the model, are the text of a lazy browser panel. */
-  assert.match(ap, /md\(_dropLeadTitle\(out\|\|'',name\)\)/, 'and is applied to the reply');
-  assert.match(ap, /Do NOT open with a heading or bold line that merely repeats the place name/, 'the model is told too');
+  /* spelling kept: that the reply is PASSED through the strip, and what the prompt tells the model, are the text of the lazy Atlas brief. */
+  const brief = read('js/atlas-cap-research.js');
+  assert.match(brief, /const bodyB=dropLeadTitle\(txtB,nm3\)/, 'and is applied to the reply');
+  assert.match(brief, /Do NOT open with a heading or bold line that merely repeats the place name/, 'the model is told too');
   const at = (read('js/atlas-console.js') + '\n' + capsSource());
   assert.match(at, /_titleIsJustThePlace/, 'the Atlas researchMap title does the same');
   assert.match(at, /_bare\(_tt\)===_bare\(place\)/, 'by equality');

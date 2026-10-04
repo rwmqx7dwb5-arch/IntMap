@@ -179,7 +179,6 @@ IntMapLang.define('zh-hans', {
     "proIntel":"俄・中在地一手来源情报",
     "reportBugBtn":"回报错误",
     "screenshotBtn":"地图屏幕撷取（隐藏控制项，保留图例）",
-    "screenshotSaved":"已保存屏幕撷取 ✓",
     "sendFeedbackBtn":"传送意见回馈",
     "shareView":"分享此画面（复制链接）",
     "showRankOff":"关闭",
@@ -461,7 +460,7 @@ IntMapLang.define('zh-hans', {
     'Age of the elements': "元素的年龄",   /* satellite-detail.js */
     'AGL': "离地高度",   /* flight-sim.js */
     'ago': "前",
-    'AI-generated — verify with primary sources for important decisions.': "AI 生成内容 — 重要决策请以原始数据查证。",   /* analysis-panels.js */
+    /* analysis-panels.js */
     'Air around it': "周围空气",   /* aircraft-detail.js */
     'air quality': "空气质量",   /* atlas-console.js */
     'air quality (no place given)': "空气质量（未指定地点）",   /* atlas-console.js */
@@ -545,9 +544,9 @@ IntMapLang.define('zh-hans', {
     'As of': "数据时间",   /* atlas-console.js */
     'Ashfall': "火山灰降落",   /* sims.js */
     /* atlas-console.js */
-    'Ask a follow-up…': "继续追问…",   /* analysis-panels.js */
+    /* analysis-panels.js */
     'Ask AI about here': "询问 AI 关于此地",   /* analysis-panels.js */
-    'Ask anything about this spot…': "想问这个地点的什么都可以…",   /* analysis-panels.js */
+    /* analysis-panels.js */
     'Ask Atlas': "询问 Atlas",   /* tool-panel.js */
     'Ask Atlas anything…': "想问 Atlas 什么都可以…",   /* atlas-console.js */
     'Ask in plain language — Atlas drives the map for you. Try:': "用日常语言提问 — Atlas 会替你操作地图。试试看：",   /* atlas-console.js */
@@ -1720,7 +1719,7 @@ IntMapLang.define('zh-hans', {
     'Reports': "报告",
     'Research: ': "研究：",   /* analysis-panels.js atlas-console.js */
     'Researching…': "研究中…",   /* atlas-console.js */
-    'Researching… (background, history, economy, military, recent developments)': "研究中…（背景、历史、经济、军事、近期发展）",   /* analysis-panels.js */
+    /* analysis-panels.js */
     'Reset': "重置",   /* stats-compare.js terrain-water.js */
     'RESET': "重置",   /* flight-sim.js */
     'Reset layout': "重置版面",   /* workspace.js */
@@ -2043,7 +2042,7 @@ IntMapLang.define('zh-hans', {
     /* sims.js */
     /* atlas-console.js */
     'Subway': "地铁",   /* routing.js */
-    'Suggested questions': "建议的问题",   /* analysis-panels.js */
+    /* analysis-panels.js */
     'sum of circles (overlaps counted twice)': "各圆面积之和（重叠处重复计算）",   /* atlas-console.js */
     'summer': "夏季",   /* sims.js */
     'sun': "太阳",   /* sims.js */
@@ -2158,7 +2157,7 @@ IntMapLang.define('zh-hans', {
     'These names are ambiguous — which did you mean for each?': "这些名称不明确 — 每一个你指的是哪一个？",   /* atlas-console.js */
     'Thickness': "厚度",   /* tool-panel.js */
     'Thinking': "思考中",   /* atlas-console.js */
-    'Thinking…': "思考中…",   /* analysis-panels.js */
+    /* analysis-panels.js */
     'This browser cannot run the solver in a background thread, so the propagation model is unavailable here.': "这个浏览器无法在背景线程中执行求解器，因此此处无法使用传播模型。",   /* tsunami.js */
     'This camera is momentarily offline.': "这台摄影机暂时离线。",   /* cameras.js */
     'this company on Wikidata ↗': "在 Wikidata 上查看这家公司 ↗",   /* industry-web.js */
@@ -2228,7 +2227,7 @@ IntMapLang.define('zh-hans', {
     'Tropic of Capricorn': "南回归线",   /* map-readout.js */
     'True airspeed': "真空速",   /* aircraft-detail.js */
     'True scale': "实际比例",   /* space.js */
-    'Try asking': "试着问",   /* analysis-panels.js */
+    /* analysis-panels.js */
     'Tsunami propagation': "海啸传播",   /* atlas-console.js tsunami.js */
     'turn': "转弯",   /* routing.js */
     'Turn left': "左转",   /* routing.js street-view.js */
@@ -2695,7 +2694,6 @@ IntMapLang.define('zh-hans', {
   "Aurora forecast (NOAA)": "极光预报（NOAA）",
   "Clear sky": "晴朗",
   "CO₂ per capita": "人均二氧化碳",
-  "CO₂ per capita (t)": "人均二氧化碳（吨）",
   "Color relief (ASTER GDEM)": "彩色地势图（ASTER GDEM）",
   "Contour lines": "等高线",
   "Corruption indicator": "贪腐指标",
@@ -2707,12 +2705,10 @@ IntMapLang.define('zh-hans', {
   "Drizzle": "毛毛雨",
   "dry": "干燥",
   "Ecoregions (WWF/RESOLVE)": "生态区（WWF/RESOLVE）",
-  "Education spending (% GDP)": "教育支出（占GDP）",
   "Elevation relief (hillshade)": "阴影起伏",
   "Enhanced monitoring": "加强监测",
   "Exclusion — permanent resettlement": "禁止进入区——永久迁离",
   "Exports (% GDP)": "出口（占GDP）",
-  "FDI inflows (% GDP)": "外资流入（占GDP）",
   "Fertility rate": "总生育率",
   "Fog": "雾",
   "Forest area": "森林面积",
@@ -2725,17 +2721,13 @@ IntMapLang.define('zh-hans', {
   "Geopolitics": "地缘政治",
   "GHRSST MUR sea-ice concentration": "GHRSST MUR 海冰密集度",
   "Auto-rotate": "自动旋转",
-  "Govt debt (% GDP)": "政府债务（占GDP）",
   "HDI": "人类发展指数",
-  "Health spending (% GDP)": "医疗支出（占GDP）",
   "Heavy drizzle": "强毛毛雨",
   "Heavy rain": "大雨",
   "Heavy showers": "强阵雨",
   "Heavy snow": "大雪",
   "high": "高",
-  "Homicide rate (/100k)": "凶杀率（每10万人）",
   "humid": "潮湿",
-  "Inflation (CPI)": "通膨（CPI）",
   "Internet penetration": "网络普及率",
   "Internet users": "网络用户",
   "Internet users %": "网络使用率 %",
@@ -2762,7 +2754,6 @@ IntMapLang.define('zh-hans', {
   "Pharma manufacturing hubs": "制药生产基地",
   "Population": "人口",
   "Precipitation (IMERG)": "降水量（IMERG）",
-  "R&D (% GDP)": "研发支出（占GDP）",
   "Rain": "雨",
   "Relocation right / monitoring": "迁居权／监测区",
   "Renewable energy": "再生能源",
@@ -2857,13 +2848,7 @@ IntMapLang.define('zh-hans', {
   "Strike / dip / rake": "走向／倾角／滑移角",
   "Time since the rupture began": "自破裂开始经过的时间",
   "When": "发生时间",
-  "Time-series — ": "时间序列 — ",
-  "Source: World Bank Open Data": "来源：世界银行公开数据",
-  "No data available": "没有可用的数据",
   " Do NOT open with a heading or bold line that merely repeats the place name — it is already on screen above your reply. Start straight with the content.": " 不要以只是重复地名的标题或粗体行开头——它已显示在你的回复上方。请直接从内容开始。",
-  "Recent nearby news headlines — reflect these in \"Recent developments\":\n": "附近的近期新闻标题——请反映在「近期动态」中：\n",
-  "Context — recent nearby headlines:\n": "脉络——附近的近期标题：\n",
-  "Conversation so far:\n": "目前为止的对话：\n",
   "Quiz mode": "测验模式",
   "Score ": "得分 ",
   "streak ": "连续 ",
@@ -3686,7 +3671,6 @@ IntMapLang.define('zh-hans', {
   "Tohoku Shinkansen": "东北新干线",
   "Tokaido–Sanyo Shinkansen": "东海道・山阳新干线",
   "Tonkin": "东京（越南北圻）",
-  "Tourist arrivals": "旅游客人次",
   "Trade % of GDP": "贸易 占GDP %",
   "Transjordan": "外约旦",
   "Transvaal": "德兰士瓦",
@@ -3786,7 +3770,6 @@ IntMapLang.define('zh-hans', {
   "E-commerce": "电子商务",
   "Eastern Africa": "东非",
   "Eastern Europe": "东欧",
-  "Education spend %GDP": "教育支出占 GDP %",
   "EIU score (0–10) of elections, pluralism, civil liberties and governance. Higher = more democratic.": "EIU 对选举、多元、公民自由与治理的评分（0～10）。愈高愈民主。",
   "Electricity use /capita": "人均用电量",
   "Elevation data": "高程数据",
@@ -3797,7 +3780,6 @@ IntMapLang.define('zh-hans', {
   "EU members": "欧盟成员国",
   "Europe": "欧洲",
   "Exclusive Economic Zone — the sea a country controls for fishing & resources, out to 200 nautical miles.": "专属经济海域 — 国家可管理渔业与资源的海域，自岸起 200 海里。",
-  "Female labor force %": "女性劳动参与率 %",
   "Financials": "金融",
   "Fiscal & trade": "财政与贸易",
   "Fixed-wing / VTOL survey aircraft": "定翼／垂直起降测绘机",
@@ -3852,7 +3834,6 @@ IntMapLang.define('zh-hans', {
   "Projected coastline change if sea level rises by the chosen amount — areas below that height flood.": "依所选海平面上升幅度推估的海岸线变化 — 低于该高度的地区将被淹没。",
   "Prosumer quadcopter (~1 kg)": "半专业四旋翼机（约 1 公斤）",
   "Public webcams worldwide, loaded live from OpenStreetMap for the current view — pan/zoom for more. Click a point: YouTube/image/panorama cams play in the popup, others open the operator page.": "全球公开网络摄影机，依目前画面范围自 OpenStreetMap 实时加载（平移或缩放可加载更多）。点击一个点：YouTube、影像与全景会在窗口中播放，其余则开启营运者页面。",
-  "R&D spend %GDP": "研发支出占 GDP %",
   "Radio line of sight": "无线电视距",
   "Radio link & line of sight": "无线电链路与视距",
   "Radio range": "无线电距离",

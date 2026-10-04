@@ -19,6 +19,8 @@ import { gunzipSync } from 'node:zlib';
 import { LAZY_REGISTRY } from '../js/lazy-modules.js';
 import { uiLocale, uiLocaleCodes } from './helpers/layer-locale-tables.mjs';
 import { codeOnly, codeOnly as code } from '../scripts/code-only.mjs';
+import { wbRows, wbRowSeries } from './helpers/wb-rows.mjs';   /* (country-analysis-unify) the rows as js/wb-layers.js builds them, joined to js/wb-indicators.js */
+import { wbIndicator } from '../js/wb-indicators.js';
 
 /* shared by the blocks below: the repository root, and one of its files as text */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -154,12 +156,15 @@ test('R266 ②: the sea-surface-temperature ANOMALY layer explains what an anoma
 });
 
 test('R266 ③: no World-Bank layer points at an indicator the Bank has retired', () => {
-  const s = read('js/wb-layers.js');
+  /* (country-analysis-unify) EVALUATED: the series each row paints is its indicator's in js/wb-indicators.js, joined by
+     js/wb-layers.js's own `_wbInd` (tests/helpers/wb-rows.mjs runs the shipped table and the shipped join) */
+  const series = wbRowSeries();
+  const codes = series.flatMap((r) => [].concat(r.code));
   /* the API answers «The indicator was not found. It may have been deleted or archived.» for both */
   for (const dead of ['SM.POP.REFG', 'SH.STA.OWAD.ZS']) {
-    assert.ok(!s.includes("code:'" + dead + "'"), dead + ' is archived — the layer can only ever say 「取得できませんでした」');
+    assert.ok(!codes.includes(dead), dead + ' is archived — the layer can only ever say 「取得できませんでした」');
   }
-  assert.ok(s.includes("'SM.POP.RHCR.EA'") && s.includes("'SM.POP.RRWA.EA'"),
+  assert.deepEqual(series.find((r) => r.id === 'wbref').code, ['SM.POP.RHCR.EA', 'SM.POP.RRWA.EA'],
     'the refugee layer must sum the UNHCR and UNRWA series that replaced SM.POP.REFG');
   /* the exact duplicates are merged, not both kept */
   /* ⚠ COUNTED BY SPLITTING, NOT BY BUILDING A REGEXP. Escaping dots and not backslashes is what
@@ -167,7 +172,7 @@ test('R266 ③: no World-Bank layer points at an indicator the Bank has retired'
      the shape is wrong even where the input is a literal I control. A substring count needs no
      escaping at all. */
   for (const ind of ['SP.URB.TOTL.IN.ZS', 'ST.INT.ARVL']) {
-    const n = s.split("code:'" + ind + "'").length - 1;
+    const n = codes.filter((c) => c === ind).length;
     assert.equal(n, 1, ind + ' is declared twice — that is the 「何が違うか」 report');
   }
 });
@@ -244,7 +249,9 @@ test('R266 ⑧: annual precipitation is a measured field, and its grid is read f
   }
   /* the country-average World-Bank precipitation layer is still there — this is additive */
   const lp = read('js/layer-packs.js');
-  assert.match(lp, /AG\.LND\.PRCP\.MM/);
+  /* (country-analysis-unify) the row names its indicator; the series is the catalogue's */
+  assert.match(lp, /precip:\{k:'precip',/);
+  assert.equal(wbIndicator('precip').code, 'AG.LND.PRCP.MM');
   /* ⚠ (#R266 追記) …AND THE TWO ARE NOT BOTH CALLED «Annual precipitation». Measured on production:
      the new 1 km field and the World-Bank country average both read 「年降水量」 in the layer list —
      the very ambiguity 「人口密度レイヤは、国別とグリッドで名称の区別をつけて」 was reported about,
@@ -289,8 +296,8 @@ test('R266 ⑪: 1520 and 1524 are two gauges, and the three population layers ar
   const en = uiLocale('en').ui;
   assert.equal(en.lyrPop, 'Population density (by country)');
   assert.equal(en.lyrPopGrid, 'Population density (1 km grid)');
-  /* the World-Bank row's name is written inside js/wb-layers.js's own factory table */
-  assert.match(read('js/wb-layers.js'), /Population density \/km² \(World Bank\)/);
+  /* the World-Bank row's name is its indicator's (js/wb-indicators.js), as the row builds it (country-analysis-unify) */
+  assert.equal(wbRows().find((r) => r.id === 'wbdensity').n[0], 'Population density /km² (World Bank)');
   const codes = uiLocaleCodes();
   assert.ok(codes.length >= 9, 'all nine UI tables are found (' + codes.join(',') + ')');
   for (const c of codes) {

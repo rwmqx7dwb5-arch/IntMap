@@ -13,11 +13,11 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { everyTick, stopTick, afterTick, tickKey } from './runtime.js';   /* the one timer wheel — js/runtime.js */
-import { clockFor } from './proxy-fetch.js';   /* (stalled-fetch) how long one read of a host may take. (layer-packages) The relay rung of the cable ladder (ownRelayUrl) went with the cables to js/layer-pkg-subcables.js */
+import { readWorldBank, wbClock, wbIndicator } from './wb-indicators.js';   /* (country-analysis-unify) the fertility row's World Bank read — the one read, under the host's clock (stalled-fetch). (layer-packages) The relay rung of the cable ladder (ownRelayUrl) went with the cables to js/layer-pkg-subcables.js */
 import './night-lights.js';   /* (#R550) which night-lights epoch is on screen — window.IntMapNightLights */
 import { layerInflight } from './layer-rows.js';   /* (heal-waits-for-inflight) the request a row started and has not finished — see ④ there */
 import { layerState } from './layer-state.js';   /* (layer-failure-state) what became of a row's request — failed / unobserved and why — kept, shown on the row, told once, readable by Atlas */
-import { readWithin, untilObserved, isUnobserved } from './fetch-deadline.js';   /* (stalled-fetch) every read a row's request waits on, under a clock (the radar's rvFetch is js/layer-pkg-radar.js now); (unobserved-is-not-refused) and what a row does when that clock runs out — see rowUntilObserved */
+import { untilObserved, isUnobserved } from './fetch-deadline.js';   /* (stalled-fetch) every read a row's request waits on, under a clock (the radar's rvFetch is js/layer-pkg-radar.js now); (unobserved-is-not-refused) and what a row does when that clock runs out — see rowUntilObserved */
 /* (layer-manifest) WHICH LAYERS EXIST, their shelves and their defaults are js/layer-manifest.js. The five lists
    below and reorganizeLayerPanel's taxonomy used to be written out here by hand; they are derived now. */
 import { defaultLayers, defaultOn, basicRows, basicLayers, hiddenRows, layerGroups, betaKeys, layerFor, packageOf, loadPackage } from './layer-manifest.js';   /* (layer-packages) …and which rows a package implements, and the package's literal import */
@@ -4683,7 +4683,7 @@ export function dataLayers(HOST){
           req=withCountries(()=>{ try{ addChoro('tfr'); setVis('tfr-fill',true);
             const apply=()=>applyChoro('tfr',s=>s.tfr!=null?s.tfr:null);
             if(window._tfrData){ apply(); }
-            else { const u='https://api.worldbank.org/v2/country/all/indicator/SP.DYN.TFRT.IN?format=json&date=2022&per_page=400'; return rowUntilObserved('dl-tfr',s=>readWithin(u,clockFor(u)*s).then(r=>JSON.parse(r.text)),clockFor(u)).then(j=>{ const arr=(j&&j[1])||[]; window._tfrData={}; arr.forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code){ window._tfrData[d.countryiso3code]=+d.value; if(countryStats[d.countryiso3code]) countryStats[d.countryiso3code].tfr=+d.value; } }); apply(); }).catch(e=>{ if(e&&e.reason==='aborted') return;   /* unticked or re-ticked while it waited — that switch owns the row */
+            else { return rowUntilObserved('dl-tfr',s=>readWorldBank({ code:wbIndicator('tfr').code, date:'2022', perPage:400, scale:s }).then(r=>{ if(r.status==='unavailable') throw r.error||new Error('not JSON'); return r; }),wbClock()).then(r=>{ window._tfrData={}; r.rows.forEach(d=>{ if(d.iso3){ window._tfrData[d.iso3]=d.v; if(countryStats[d.iso3]) countryStats[d.iso3].tfr=d.v; } }); apply(); }).catch(e=>{ if(e&&e.reason==='aborted') return;   /* unticked or re-ticked while it waited — that switch owns the row */
               /* (unobserved-is-not-refused) silent through every retry: nothing is kept (`_tfrData` stays unset, so the next
                  switch-on reads again) and the grey «no data» fill is taken down rather than left claiming the world has none */
               try{ layerState.report('dl-tfr',e,{told:true}); }catch(_){}   /* (layer-failure-state) unobserved or failed — classified from `e` */

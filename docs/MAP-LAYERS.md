@@ -733,10 +733,12 @@ CORS ヘッダを返さない。media ホストだけが実体を `Access-Contro
 `vm` でスクリプトとしても評価される）は `window.IntMapLayers.declaration(id)` で同じものを訊く。
 ⚠ Atlas の `layerCatalog()`（`js/atlas-console.js`）はまだ DOM を歩いている——作り替えは Atlas 側の回。
 
-**同じ系列を塗る行——`measures` と国別指標。** 世界銀行の指標は 2 つのモジュールが別々の表で持っている
-（`js/wb-layers.js` の `WB` と `js/layer-packs.js` の `WB`）。どの行がどの系列を塗るかを宣言の `measures` が述べ、
-**その主張を拒める読み手**は `scripts/lib/indicator-series.mjs` の `discoverSeries`——世界銀行の API ホストを含む
-ファイルの行表（`{id:'<key>', code:…}`・`modes` の各 `code`・`<key>:{ind:…}`）と、国の表を塗る `applyChoro('<key>',s=>s.<field>`
+**同じ系列を塗る行——`measures` と国別指標。** 世界銀行の指標を塗る行は 2 つのモジュールの表にある
+（`js/wb-layers.js` の `WB` と `js/layer-packs.js` の `WB`）が、**どちらも指標のキー（`k`）を書くだけで、系列コード・名前・
+単位は `js/wb-indicators.js` の目録 1 つが持つ**（取得も同じファイルの `readWorldBank` 1 本）。どの行がどの系列を塗るかを
+宣言の `measures` が述べ、**その主張を拒める読み手**は `scripts/lib/indicator-series.mjs` の `discoverSeries`——世界銀行の
+API ホストを含むか目録を import するファイルの行表（`{id:'<key>', k:…}` / `{id:'<key>', code:…}`・`modes` の各 `k` / `code`・
+`<key>:{k:…}` / `<key>:{ind:…}`。`k` は目録の系列に読み替える）と、国の表を塗る `applyChoro('<key>',s=>s.<field>`
 から、**コードが実際に塗る系列**を発見する。行の特定は綴りではなく、同じファイルが組み立てる id（`'bx-'+…`・
 `'beta-dl-'+…`）とリテラルの id の中で宣言が 1 つに決まるときだけ（`precip` は世界銀行の行と IMERG の `dl-precip` の
 2 つの別レイヤーで、短い名前は手がかりにならない）。`scripts/layer-descriptors.mjs --check` は**両方向**を見る:
