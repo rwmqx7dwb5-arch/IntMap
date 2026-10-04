@@ -69,8 +69,7 @@ newsjp: 地点プロファイルと「いま、ここ」を 1 枚のカードに
 - 遅延チャンク `place-dossier` は 19.6 kB → 52.4 kB に増える。**増えたのではなく寄った**: 以前は `place-dossier` 19.6 kB ＋ `here-now`
   25.5 kB ＋ `atlas-world-objects` 16.4 kB ＝ 61.5 kB で、今は `place-dossier` 52.4 kB ＋ `events-near` 9.3 kB ＋ `great-circle` 0.2 kB
   ＝ 61.9 kB（`here-now` と `atlas-world-objects` のチャンクは消えた）。`place-watch` は 29.1 → 24.3 kB（−4.8 kB）。
-  ⚠ `perf-budget --update` は「この木は CI が測る木ではない（origin/main が 2 commit 先）」として天井の書き換えを拒んだ。
-  rebase 後の木で `node scripts/perf-budget.mjs --update` を走らせて `place-dossier` の天井を上げる（理由はこの節）。
+  rebase 後の木で `node scripts/perf-budget.mjs --update` を走らせ、`place-dossier` の天井だけを 19.2 kB → 52.4 kB に上げた（他の行は書いていない。消えた `here-now` の行は main の CI が落とす）。
 - `tests/global-surface-baseline.json` を `--update` で**下げた**: `window.IntMapAtlas` 38 → 35・`IntMapSafe` 144 → 143・`IntMapWx` 39 → 35。
   二重の取得と二重の描画が消えた分、窓口を読む箇所が減った。
 
