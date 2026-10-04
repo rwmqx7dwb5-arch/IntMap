@@ -1,6 +1,7 @@
 ---
 title: 1 つの名前に 2 つの寿命がある政体を表せなかった——Cliopatria の審査に「間（gaps）」を足し、ナジュド首長国の 1892–1901 を外した
 date: 2026-10-05
+pr: 997
 newsen: Historical borders no longer name the Emirate of Nejd between its fall in 1891 and Ibn Saud's return in 1902; the shape stays and its card gives both years.
 newsjp: 歴史地図で、1891 年の滅亡から 1902 年の Ibn Saud の帰還までの間、ナジュド首長国の名前を描かなくなりました。形は残り、カードが両方の年を述べます。
 ---
