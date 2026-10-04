@@ -153,3 +153,9 @@ installable-app ①〜⑤ がすべて緑（timelapse-video-export ② は 1 度
 - `tests/history-era-names-checks.test.mjs` #R695 ③: 識別子の欄が答える QID の母集合に `data/hist-clio.js` を足した。
 - `tests/marketing-engine-checks.test.mjs` ⑥: 1913 年は CShapes が先頭の合成、紀元前 3000 年は枚を含む合成。
 - `.github/workflows/ci.yml` の境界の環の数（74,737）。
+
+### PR の CI（2 回目）
+
+- `check:surface`: `window.IntMapSafe` の読みが 144 → 145。この branch の差分には無く、main 自身の CI（Gates）も同じ門で赤
+  ——main に入った変更の 1 読みを台帳に数えた（`node scripts/global-surface.mjs --update`）。
+- `timelapse-video-export ②`: WebM の再生で数えたコマが 3 でなく 2（再生のタイミングに依る計数）。単独の再実行では緑。
