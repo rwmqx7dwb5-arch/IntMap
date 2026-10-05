@@ -1632,7 +1632,7 @@ Atlas の語（「平均寿命」）は組の**両方の行**に届く: 点け�
   小片こそが押された単位かもしれない。
 - ⚠⚠ **歴史区分のデータは `data/hist-admin1.js`（第1級・`window.__HISTADM1`）と
   `data/hist-admin2.js`（第2級・`window.__HISTADM2`・40.66 MB・**z6 未満では取得もしない**）と
-  `data/hist-admin3.js`（第3階層・admin_level 7・`window.__HISTADM3`・1.16 MB・**z8 未満では取得もしない**）で、
+  `data/hist-admin3.js`（第3階層・admin_level 7・`window.__HISTADM3`・1.17 MB・**z8 未満では取得もしない**）で、
   どれも OpenHistoricalMap・CC0 1.0で、被覆は部分的である。地図はそれを埋めずに<b>言う</b>。**
   ⚠⚠⚠ **(#R719) その「部分的」を測った値がこれである**——0.25° の陸地格子で、ある日付に在force の
   第1級区分がその升を覆うかを数えた（2026-09-15）:
