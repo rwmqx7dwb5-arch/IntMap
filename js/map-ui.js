@@ -2718,7 +2718,16 @@ export function labelPopup(HOST){
     /* (#R564) …and `imta2-lbl`, the deeper era tier, for the same reason `imta-lbl` is here: a name
        that answers a tap at one zoom must not stop answering it at the next. */
     const PLACE_LBL=['ofm-country','ofm-admin1','imta-lbl','imta2-lbl','ofm-city','ofm-other'];
-    const ALL_LBL=PLACE_LBL.concat(['geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak']);
+    /* ══ (poi-label-click) THE POINT LABELS ARE LABELS TOO ═════════════════════════════════════════════════════════
+       「地点・施設ラベルをクリックしても無反応なのは不親切では？」 (2026-10-05, «Places, businesses & facilities»): the
+       station, hospital and shop names (`ofm-poi`, and its dot `ofm-poi-dot`) were in none of these lists — no click,
+       no cursor, no padded tap — so a name that looks exactly like a peak's answered nothing. They are named points with
+       no area, which is what the geo labels already are (a peak, a river), so they join THAT group: the same popup with
+       the name in both scripts, copy, Wikipedia and the AI brief, and no Isolate/Move. The group is ONE list now — it
+       was written out three times (this line, the per-layer wiring and the padded tap's pattern), so a fourth member
+       would have had to be added in three places. */
+    const GEO_LBL=['geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak','ofm-poi','ofm-poi-dot'];
+    const ALL_LBL=PLACE_LBL.concat(GEO_LBL);
     // Source-owned places use the same exact/padded arbitration as every existing place label.
     // Their source supplies the answer, not another competing map click listener.
     window.IntMapPlaceReaders={ids:()=>Array.from(placeReaders.keys()),register(id,reader){
@@ -2733,7 +2742,7 @@ export function labelPopup(HOST){
     }};
     function wire(){ if(wired) return; if(!GE().layers.has('ofm-country')) return; wired=true;
       GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-admin1',onLabel(false)); GE().events.onLayer('click','imta-lbl',onLabel(false)); GE().events.onLayer('click','imta2-lbl',onLabel(false));   /* (#R530/#R564) the era ones, same behaviour */ GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
-      ['geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].forEach(id=>{ try{ GE().events.onLayer('click',id,onGeoLabel()); }catch(_){} });
+      GEO_LBL.forEach(id=>{ try{ GE().events.onLayer('click',id,onGeoLabel()); }catch(_){} });
       ALL_LBL.filter(id=>!placeReaders.has(id)).forEach(id=>{ GE().events.onLayer('mouseenter',id,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',id,()=>{ GE().render.canvas().style.cursor=''; }); });
       /* clicking the map away from any label clears the highlight */
       /* (#R210) …and the padded fallback runs in the SAME microtask defer as the per-layer path.
@@ -2764,7 +2773,7 @@ export function labelPopup(HOST){
              than it should be and the reader pays for it in missed taps rather than in frames. */
           const pad=((typeof window._imTouchPrimary==='function'?window._imTouchPrimary():(typeof isMobile==='function'&&isMobile()))?15:6);
           const near=GE().coords.queryRenderedFeatures([[e.point.x-pad,e.point.y-pad],[e.point.x+pad,e.point.y+pad]],{layers:ls});
-          if(near.length){ if(readPlace(near[0],e)) return; const lid=(near[0].layer&&near[0].layer.id)||''; const p=near[0].properties||{}; const geoLbl=/^(geo-sea|ofm-water|ofm-river|ofm-peak)$/.test(lid);
+          if(near.length){ if(readPlace(near[0],e)) return; const lid=(near[0].layer&&near[0].layer.id)||''; const p=near[0].properties||{}; const geoLbl=GEO_LBL.includes(lid);
             const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
             const nm=(lid==='geo-sea')?(p[gl]||p.en||''):(p.name||p['name:en']||p.name_en||p['name_en']||'');
             /* (#R252) the padded tap is the same click, so it gets the same two-name heading */
