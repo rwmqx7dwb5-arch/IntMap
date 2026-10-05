@@ -49,11 +49,11 @@ CShapes と OHM の長い辺の多くは本当に直線の国境（北緯 49 度
 - **事実の期間の間だけ効く**: 環は時代をまたいで共有される（Cliopatria の行の境と事実の期間の境はめったに一致しない）。
   初版は「環を使う行の期間が丸ごと事実の期間に入ること」を求め、ほとんどの区間で何も動かなかった（隣の環の 1 年のずれ——
   «Gothia» 270–308 対 ローマの撤退 271——で全部落ちる）。そこで差し替えに事実の期間を持たせ、読み手が時計の日付で絞る
-  （`js/border-coast.js` `courseEpoch`・`js/time-borders.js` の線のメモと合成のキーを「事実の期間の境」ごとに分けた）。
+  （`js/hist-courses.js` `epoch`・`js/time-borders.js` の線のメモと合成のキーを「事実の期間の境」ごとに分けた）。
 - **1 つの境界は 1 本の線**: 同じ 2 頂点の辺を描く環（Cliopatria の隣国と、Cliopatria に沿って切られた年別の枚）には同じ頂点で
   差し替えを運ぶ。実測（初版を地図で見た）: 300 年のローマ帝国の環と «Gothia» の環が鉄門の弦を共有し、ローマ側だけを差し替えた
   ので川と弦が並んで描かれた。運べない組み合わせが残れば両方とも元の線に戻す（今回はゼロ）。
-- **読み手**: `js/border-coast.js` の `ringLines` が印の run の中の範囲を地物の頂点で置き換える（`spliceRun`）。線だけが変わり、
+- **読み手**: `js/hist-courses.js`（遅延 import。下の「起動費用」）が印の run の中の範囲を地物の頂点で置き換える（`splice`）。`js/border-coast.js` の `ringLines` はそれを呼ぶだけ。線だけが変わり、
   塗り・クリック・名前・日付は元の記録のまま。両側の政体が差し替えられるところは同じ頂点を通るので継ぎ目に段差が出ない。
   ファイルが無ければ従来どおり（取り外せる）。`js/boot-stage.js` に `phone:'need'`（Cliopatria の線を初めて描くときに読む・0.33 MB）。
 
@@ -145,3 +145,11 @@ generatedAt・asOf（Overpass の osm_base）・cadence・builtBy・schema・qua
 generatedAt・asOf・quality の 4 つ）で、これらは取得と生成のたびに変わる値なので、check:datagov が実行せずに読む純データの
 `GOVERNANCE` 宣言には書けない——同じ値は束の先頭が述べている。初回の `npm test` はこの 2 件（束と書き手）を新しい未宣言として
 落とし（束の側は attribution を真偽値で書いていなかった）、束の側は直し、書き手の側の 7 facet だけを記録した（main への rebase 後の台帳で 185 件・2,444 facet）。
+
+### 起動費用（check:perf）
+
+初回の CI で `eager.brotli` が 1,185.6 kB（天井 1,179.4 kB・幅 5.9 kB）で赤になった。main 自身がすでに 1,185.0 kB（+5.5 kB）で、
+この PR の分は約 0.6 kB（差し替えの読み手を起動経路の `js/border-coast.js` に置いていた）。天井は上げず、読み手を
+`js/hist-courses.js` に分けて Cliopatria の線を初めて描くときだけ import するようにし、起動経路に残るのはフックだけにした
+（各ファイルを esbuild で縮めて brotli で比べた増分: border-coast +196 B・time-borders +80 B・boot-stage +13 B・reference-data +1 B、計 0.29 kB）。
+⚠ main の余白は 0.4 kB しか残っていない——次に起動経路へ足す PR はこの幅で落ちる（天井の bot が main を測り直すまで）。

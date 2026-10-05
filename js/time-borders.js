@@ -381,7 +381,7 @@ export function timeBorders(HOST){
        depends on the date as well as the collection: lines are memoised per collection AND per course epoch, and a
        composed collection remembers the instant it was composed for (`_tOf`) */
     const _courseEp=t=>{ try{ return _BC().courseEpoch(t); }catch(_){ return -1; } };
-    function coursesLoad(){ try{ return _BC().loadCourses(); }catch(_){ return Promise.resolve(null); } }
+    const coursesLoad=()=>{ try{ _BC().loadCourses(); }catch(_){} };
     const _tOf=new WeakMap();
     /* (#R711) Marks/detail arrival changes only the currently drawn line. Dropping the
        year cache did not repaint anything (_applyBorders only controls visibility), and
@@ -1241,7 +1241,7 @@ export function timeBorders(HOST){
        year re-localized) makes that statement describe something that is no longer drawn. */
     function _pushLbl(fc){ _blankClose(); try{ if(GE().layers.hasSource('imtb-lbl-src')) GE().layers.setSourceData('imtb-lbl-src',_labelFC(fc)); }catch(_){} }
     function ensure(){ try{ if(!_imCanDraw()) return false;
-      if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · Cliopatria (Seshat Global History Databank, CC BY 4.0) · historical-basemaps (aourednik, GPL-3.0) · river and wall courses © OpenStreetMap contributors (ODbL)'});
+      if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · Cliopatria (Seshat Global History Databank, CC BY 4.0) · historical-basemaps (aourednik, GPL-3.0) · © OpenStreetMap contributors (ODbL)'});
       /* ══ (#R531) THE STROKED OUTLINE IS NOT THE POLYGON ═══════════════════════════════════════
          「昔の国境は海岸より先まであるのが気持ち悪い。」 A political record's ring is two kinds of edge in
          one loop: the boundaries between polities, which only that record knows, and the polity's own
@@ -1257,7 +1257,7 @@ export function timeBorders(HOST){
          ⚠ AND THE CREDIT MOVES WITH THE LINE. `imtb-src` kept the attribution because it was what
          drew; after this it only holds the click target, and the visible line would have come from a
          source that credits nobody. Both carry it — MapLibre folds identical strings into one. */
-      if(!GE().layers.hasSource('imtb-ln-src')) GE().layers.addSource('imtb-ln-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · Cliopatria (Seshat Global History Databank, CC BY 4.0) · historical-basemaps (aourednik, GPL-3.0) · river and wall courses © OpenStreetMap contributors (ODbL)'});
+      if(!GE().layers.hasSource('imtb-ln-src')) GE().layers.addSource('imtb-ln-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · Cliopatria (Seshat Global History Databank, CC BY 4.0) · historical-basemaps (aourednik, GPL-3.0) · © OpenStreetMap contributors (ODbL)'});
       /* (#R520) the era NAMES — one Point per country, derived from `imtb-src` (see `_labelFC`). No `attribution`
          of its own: it is the same datasets, already credited by the source it is derived from, whose
          `imtb-line` is on screen in exactly the moments these labels are. */

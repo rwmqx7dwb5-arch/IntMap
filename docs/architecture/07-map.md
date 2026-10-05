@@ -1053,8 +1053,8 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
   海岸線の写しが 6 km より遠くまでさまようので、同じ測り方（`--sweep`）で読み取った 10 km を使う（実測と根拠は
   [`docs/MAP-LAYERS.md`](../MAP-LAYERS.md) §7.13）。
 - **粗い記録の線は、史料が述べる区間だけ川・城壁の実形で引き直す**（`data/hist-courses.js`・`scripts/build-hist-courses.mjs`・
-  事実は `scripts/histcourse/courses.json`）。読み手は同じ `js/border-coast.js` で、印で決まった run の中の指定範囲を
-  OpenStreetMap の地物の頂点で置き換える（`spliceRun`）。線だけが変わり、塗り・名前・日付・クリックは記録のまま。
+  事実は `scripts/histcourse/courses.json`）。読み手は `js/hist-courses.js`（起動経路に載らない。Cliopatria の線を初めて描くとき
+  `js/border-coast.js` が import する）で、印で決まった run の中の指定範囲を OpenStreetMap の地物の頂点で置き換える（`splice`）。線だけが変わり、塗り・名前・日付・クリックは記録のまま。
   対象・規則・計器は [`docs/MAP-LAYERS.md`](../MAP-LAYERS.md) §7.13 が正本。
   ⚠ **印は任意**: 読めなかったときと、**実行時に GitHub から取りに行く** historical-basemaps の
   スナップショット（束が答えない年だけ通る経路）には印が無く、そこは環を丸ごと描く。

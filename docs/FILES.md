@@ -706,6 +706,9 @@ cameras.js                        ライブカメラ層（export cameras）
 beta-overlays.js                  ベータのオーバーレイ（export betaOverlays。火山レイヤー本体＝色モード4種・VEIによる大きさ・凡例・volcano.* コマンド）
 volcano-intel.js                  火山の深さ window.IntMapVolcano（遅延）——噴火履歴11,043件・警戒レベルの4段・気象庁↔GVPの結合・詳細カード
 volcano-layers.js                 火山の3レイヤー window.IntMapVolcanoLayers（遅延）——火山灰SIGMET・USGSハザード域・衛星SO₂
+hist-courses.js                   粗い記録の国境線を、史料が述べる川・城壁の区間で引き直す**読み手**（data/hist-courses.js・
+                                  scripts/build-hist-courses.mjs）。起動経路に載らない——js/border-coast.js が Cliopatria の線を初めて
+                                  描くとき import する。差し替えは事実の期間（`days`）の間だけ効き、`epoch(t)` が線のメモの鍵
 hist-bundles.js                   リングプールした歴史記録（data/cshapes.js・hist-borders.js・hist-eras.js・
                                   hist-admin1〜3.js と、border-coast.js の HIST_ADMIN_GAPS が列挙する継ぎ足しの記録）を読む**唯一の扉**
                                   window.IntMapHistBundles。束は Blob Worker で取得・JSON.parse・保持し、
