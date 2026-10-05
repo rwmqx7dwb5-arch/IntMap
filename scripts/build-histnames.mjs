@@ -483,6 +483,10 @@ async function identifiers() {
       for (const l of want) if (!keep[l] && n[l]) keep[l] = n[l];
       if (Object.keys(keep).length) { row = { a: was ? (was.a | a) : a, n: keep }; if (was) widened++; else added++; }
     }
+    /* (hist-colonial-era-borders) …and a kept row answers only the languages some record still lacks — the rule
+       `checkShipped` holds the table to. A record that stops asking (a Cliopatria row now cut away by the ground
+       another record states) leaves the languages that record's neighbours write themselves. */
+    if (row) row = { a: row.a, n: Object.fromEntries(Object.entries(row.n || {}).filter(([l]) => want.has(l))) };
     if (row && Object.keys(row.n || {}).length) byQid[q] = row;
   }
   t.byQid = byQid; t.lanes.qid = Object.keys(byQid).length;

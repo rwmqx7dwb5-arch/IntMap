@@ -31,6 +31,11 @@
  *  ⚠ From 1886 CShapes is the record above, and Cliopatria draws only the ground CShapes leaves (the interior
  *    of Africa before the partition, measured: CShapes puts 75.7% of the land inside a polity on 1 July 1886).
  *    The sheets are not used from 1886: CShapes and Cliopatria answer there.
+ *  ⚠ (hist-colonial-era-borders) …and between them, from 1886 to LATE_TOP, OpenHistoricalMap: CShapes states sovereign
+ *    states, so on 1886-01-01 the colonial blocs OHM states (the Congo Free State, German East Africa, Greenland under
+ *    Denmark…) left the map. `--ohm-late` cuts OHM's relations on CShapes' days against CShapes into
+ *    data/hist-borders-late.js, and Cliopatria is cut against CShapes ∪ that file. After 1886 the page draws
+ *        CShapes (day) → OpenHistoricalMap where CShapes is silent (day, to LATE_TOP) → Cliopatria (year).
  *
  *  ══ WHAT IS SUBTRACTED, AND AT WHICH INSTANT ════════════════════════════════════════════════════
  *  · Cliopatria − OHM: a Cliopatria row that overlaps the OHM band is split at every date on which the
@@ -72,7 +77,7 @@ import os from 'node:os';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import pc from 'polygon-clipping';
 import { simplifyRing, ringArea } from './histborders/geom.mjs';
-import { CLIOPATRIA, AOUREDNIK_BASEMAPS } from './lib/upstream-cadence.mjs';
+import { CLIOPATRIA, AOUREDNIK_BASEMAPS, OPENHISTORICALMAP } from './lib/upstream-cadence.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'hist-clio.js');
@@ -94,7 +99,7 @@ export const UPSTREAM = {
 const ZIP_URL = `https://github.com/${UPSTREAM.repo}/raw/${UPSTREAM.commit}/${UPSTREAM.file}`;
 export const CREDIT_ROW = 'Cliopatria — Seshat Global History Databank (CC BY 4.0)';
 export const CITATION = 'Bennett, J. S. et al. Cliopatria — A geospatial database of world-wide political entities from 3400BCE to 2024CE. Scientific Data 12, 313 (2025). doi:10.1038/s41597-025-04516-9';
-export const SRC = `Cliopatria ${UPSTREAM.release} (Seshat Global History Databank, github.com/${UPSTREAM.repo}) · CC BY 4.0 · adapted by IntMap: simplified, BC years made astronomical, and the ground OpenHistoricalMap (1689–1885) and CShapes (1886–2019) state removed on their own dates`;
+export const SRC = `Cliopatria ${UPSTREAM.release} (Seshat Global History Databank, github.com/${UPSTREAM.repo}) · CC BY 4.0 · adapted by IntMap: simplified, BC years made astronomical, and the ground OpenHistoricalMap (1689–1885, and from 1886 where CShapes is silent) and CShapes (1886–2019) state removed on their own dates`;
 export const REST_SRC = 'aourednik/historical-basemaps (github.com/aourednik/historical-basemaps) · GPL-3.0 · adapted by IntMap: each sheet before 1886 less the ground OpenHistoricalMap and Cliopatria state at that sheet\'s year';
 
 export const GOVERNANCE = {
@@ -108,6 +113,12 @@ export const GOVERNANCE = {
     publisher: 'aourednik/historical-basemaps',
     url: 'https://github.com/aourednik/historical-basemaps',
     ...AOUREDNIK_BASEMAPS,
+    builtBy: 'scripts/build-hist-clio.mjs',
+  },
+  /* (hist-colonial-era-borders) OpenHistoricalMap's relations on CShapes' days, less CShapes' ground — see `ohmLate` */
+  'data/hist-borders-late.js': {
+    publisher: 'OpenHistoricalMap',
+    ...OPENHISTORICALMAP,
     builtBy: 'scripts/build-hist-clio.mjs',
   },
 };
@@ -359,7 +370,7 @@ function ohmRows() {
   const c = evalBundle(CSF, '__CSHAPES');
   let top = -Infinity;
   const cs = c.feats.map((f) => { const polys = cleanPolys(f[8].map((p) => p.map((ri) => c.rings[ri]))); const e = dayAfter(f[5], f[6], f[7]); if (e > top) top = e;
-    return { s: ymd(f[2], f[3], f[4]), e, polys, bb: bboxOf(polys), cells: cellsOf(polys), g: 'cs' + JSON.stringify(f[8]) }; });
+    return { s: ymd(f[2], f[3], f[4]), e, polys, bb: bboxOf(polys), cells: cellsOf(polys), g: 'cs' + JSON.stringify(f[8]), cs: 1 }; });
   const d = evalBundle(HB, '__HISTB');
   return { window: d.window, top, rows: cs.concat(d.feats.map((f) => {
     /* the cutter at the composition's own scale: OHM is drawn at 0.004° and four decimals, and a
@@ -368,7 +379,16 @@ function ohmRows() {
     /* `g` is the record's own geometry identity — the ring indices it pools. A relation renamed or re-dated
        with the same outline is the same cutter, and the subtraction is not paid for twice */
     return { s: ymd(f[2], f[3], f[4]), e: ymd(f[5], f[6], f[7]), polys, bb: bboxOf(polys), cells: cellsOf(polys), g: JSON.stringify(f[8]) };
-  })) };
+  })).concat(lateCutters()) };
+}
+/* (hist-colonial-era-borders) and from 1886, OpenHistoricalMap on the ground CShapes leaves — data/hist-borders-late.js,
+   already less CShapes (`ohmLate`), so above Cliopatria the record is CShapes ∪ that file. Absent, the chain is as before. */
+const HBL = join(ROOT, 'data', 'hist-borders-late.js');
+function lateCutters() {
+  if (!existsSync(HBL)) return [];
+  const d = evalBundle(HBL, '__HISTBLATE');
+  return d.feats.map((f) => { const polys = f[8].map((p) => p.map((ri) => d.rings[ri]));
+    return { s: ymd(f[2], f[3], f[4]), e: ymd(f[5], f[6], f[7]), polys, bb: bboxOf(polys), cells: cellsOf(polys), g: 'ol' + JSON.stringify(f[8]) }; });
 }
 
 /* ── upstream ────────────────────────────────────────────────────────────── */
@@ -557,6 +577,66 @@ async function restSheets(clio, ohm, clip) {
   return { rings, snaps };
 }
 
+/* ── 3. (hist-colonial-era-borders) OpenHistoricalMap on CShapes' days, less CShapes ──────────────────
+   The relations scripts/build-hist-borders.mjs reads (`buildLate`, into its cache) are cut here as a Cliopatria
+   row is: split at every day the CShapes states holding their ground change, each piece the relation less
+   those states, the same sliver rule. What is left is the ground CShapes does not state that day — and only
+   that is written, so the page draws CShapes, then this file, then Cliopatria (cut against both by `build`),
+   and decides nothing itself. The dates stay OHM's and CShapes' days (end EXCLUSIVE, like data/hist-borders.js). */
+/* ⚠⚠ HOW FAR OHM ANSWERS ON CShapes' DAYS — THE LAST YEAR, MEASURED, NOT CHOSEN FOR ROUNDNESS.
+   observed 2026-10-05: OHM's relations in force 1886–1960 (1,107, cut against CShapes by this file with the top at
+   1960) measured on the gate's grid (0.25°, cos-latitude, Natural Earth outline land), as the share of the world's
+   land OHM adds over CShapes ∪ Cliopatria, split by what the ground is:
+       year   land   Greenland  Antarctica   sea cells
+       1886   3.15     1.45       0.00         556      ← the Congo Free State, German East Africa, Angola, Sokoto…
+       1890   4.84     1.45       0.00         562
+       1895   0.85     1.45       0.00         549      ← CShapes' partition of Africa has arrived
+       1899–1923  0.03–0.09 (1904: 1.10 — CShapes' own one-year gap in West Africa)   Greenland 1.36–1.45   0.00   460–638
+       1925   0.03     1.36       0.62         541      ← the Colony of Madagascar and Dependencies states Adélie Land
+       1933   0.03     1.34       4.19         833      ← «Australia» states the Australian Antarctic Territory
+       1936   0.03     0.01       4.19         856      ← Cliopatria states Greenland from here
+       1953   0.03     0.01       4.19       5,864      ← territorial seas: Chile, Indonesia, the Soviet Union, the PRC…
+       1960   0.08     0.01       3.57      12,570
+   Below 1925 every piece OHM adds is ground a polity held (the coastal ribbon of ~500 cells is the same one the
+   bundle below 1886 draws). From 1925 OHM's admin_level=2 relations begin to state CLAIMS ON ANTARCTICA that no
+   other record states and that the state system never recognised, and from 1953 maritime zones. So OHM answers
+   to the end of 1923 — the last whole year before the first Antarctic piece (1924-11-21).
+   ⚠ What this leaves: Greenland 1924–1935 (1.36% of the land) is again stated by no record until Cliopatria's
+   Greenland in 1936; the Protectorate of Kuwait and other small pieces after 1923 are not drawn by OHM.
+   expires: when OHM re-tags Antarctic claims or territorial seas, or CShapes / Cliopatria start to state the ground
+   between — re-measure with `--ohm-late --top <year>` and the split above (scripts/hist-fidelity.mjs politiesAt,
+   `rec: 'ohm-late'`); canon: here. */
+export const LATE_TOP = 1923;
+function lateTop() { const i = process.argv.indexOf('--top'); return i > 0 ? +process.argv[i + 1] : LATE_TOP; }
+const LATE_SRC = 'OpenHistoricalMap (openhistoricalmap.org) · CC0 1.0 · adapted by IntMap: the admin_level=2 relations in force from 1886, less the ground CShapes states on its own dates';
+async function ohmLate(ohm, clip, topYear) {
+  const { buildLate } = await import('./build-hist-borders.mjs');
+  const raw = await buildLate(topYear);
+  const T0 = ymd(raw.window[0], 1, 1), T1 = Math.min(ymd(topYear + 1, 1, 1), ohm.top);
+  const rows = [];
+  for (const r of raw.recs) {
+    const s = Math.max(ymd(...r.sArr), T0), e = Math.min(ymd(...r.eArr), T1);
+    if (!(s < e)) continue;
+    const polys = cleanPolys(r.polys); if (!polys.length) continue;
+    rows.push({ r, row: { s, e, polys, bb: bboxOf(polys), area: areaOf(polys) } });
+  }
+  const done = await clip(rows.map((x) => ({ kind: 'late', row: x.row })));
+  const rings = [], pool2 = new Map(), feats = [];
+  const put = (q) => { const k = q.join(';'); let i = pool2.get(k); if (i == null) { i = rings.length; rings.push(q); pool2.set(k, i); } return i; };
+  rows.forEach(({ r }, i) => {
+    /* only names that DIFFER from English are carried, as in data/hist-borders.js */
+    const nm = { en: r.names.en };
+    for (const k of Object.keys(r.names)) if (k !== 'en' && r.names[k] && r.names[k] !== r.names.en) nm[k] = r.names[k];
+    for (const pc of done[i]) feats.push([nm, r.wd, ...unymd(pc.s), ...unymd(pc.e), pc.polys.map((p) => p.map(put)), r.id]);
+  });
+  feats.sort((a, b) => ymd(a[2], a[3], a[4]) - ymd(b[2], b[3], b[4]) || a[9] - b[9]);
+  for (const f of feats) f.length = 9;
+  const body = 'window.__HISTBLATE=' + JSON.stringify({ v: 1, src: LATE_SRC, end: 'exclusive', window: [raw.window[0], topYear],
+    basis: { 'data/cshapes.js': sha(CSF) }, relations: raw.recs.length, rings, feats }) + ';\n';
+  writeFileSync(HBL, body);
+  console.error(`data/hist-borders-late.js: ${raw.recs.length} relations in force ${raw.window[0]}–${topYear} → ${feats.length} pieces CShapes does not state, ${rings.length} rings, ${rings.reduce((a, q) => a + q.length, 0)} points, ${(body.length / 1e6).toFixed(2)} MB`);
+}
+
 /* ── the subtractions run on worker threads ──────────────────────────────────
    ⚠ MEASURED 2026-10-04: one thread spent over half an hour in the 1689–1885 rows alone (a large polity
    is split at every OHM border change around it and each piece is a polygon difference). The work is
@@ -568,7 +648,7 @@ async function restSheets(clio, ohm, clip) {
 const JOBS = join(CACHE, 'jobs');
 /* only what the geometry depends on — a row's name or QID changing must not miss the cache */
 function jobKey(job, ohmSha) {
-  const g = job.kind === 'row' ? { k: 'row', s: job.row.s, e: job.row.e, area: job.row.area, polys: job.row.polys }
+  const g = job.kind === 'row' || job.kind === 'late' ? { k: job.kind, s: job.row.s, e: job.row.e, area: job.row.area, polys: job.row.polys }
     : { k: 'sheet', t: job.t, band: job.band, list: job.polysList, above: job.above.map((a) => a.polys) };
   return createHash('sha256').update(ohmSha).update(JSON.stringify(g)).digest('hex'); }
 function pool(ohm) {
@@ -576,10 +656,12 @@ function pool(ohm) {
   const workers = [];
   for (let i = 0; i < N; i++) workers.push(new Worker(fileURLToPath(import.meta.url), { workerData: { role: 'clip', ohm }, resourceLimits: { maxOldGenerationSizeMb: 4096 } }));
   mkdirSync(JOBS, { recursive: true });
-  const ohmSha = sha(HB) + ':' + sha(CSF) + ':' + SLIVER_W + ':ground:' + DEC + ':' + CUT_CELLS;
+  const ohmSha = sha(HB) + ':' + sha(CSF) + ':' + SLIVER_W + ':ground:' + DEC + ':' + CUT_CELLS + (existsSync(HBL) ? ':late:' + sha(HBL) : '');
+  /* (hist-colonial-era-borders) a 'late' job is cut against CShapes alone — its key must not hold the file it writes */
+  const csSha = sha(CSF) + ':' + SLIVER_W + ':ground:' + DEC + ':' + CUT_CELLS;
   const run = (jobs) => new Promise((resolve, reject) => {
     const out = new Array(jobs.length); let left = jobs.length; const t0 = Date.now();
-    const keys = jobs.map((j) => jobKey(j, ohmSha)), todo = [];
+    const keys = jobs.map((j) => jobKey(j, j.kind === 'late' ? csSha : ohmSha)), todo = [];
     jobs.forEach((j, i) => { const f = join(JOBS, keys[i] + '.json'); if (existsSync(f)) { out[i] = JSON.parse(readFileSync(f, 'utf8')); left--; } else todo.push(i); });
     if (jobs.length - todo.length) console.error(`  … ${jobs.length - todo.length} of ${jobs.length} subtraction jobs read from the cache`);
     if (!left) return resolve(out);
@@ -601,11 +683,12 @@ function pool(ohm) {
   return { run, close: () => Promise.all(workers.map((w) => w.terminate())), N };
 }
 function workerMain() {
-  const ohmRowsW = workerData.ohm.rows;
+  const ohmRowsW = workerData.ohm.rows, csRowsW = ohmRowsW.filter((o) => o.cs);
   parentPort.on('message', ({ id, job }) => {
     STATS.clipped = 0; STATS.failed = 0; STATS.widths = []; CUTSTAT.kept = 0; CUTSTAT.ignored = 0;
     let out;
     if (job.kind === 'row') out = splitRow(job.row, ohmRowsW);
+    else if (job.kind === 'late') out = splitRow(job.row, csRowsW);
     else {
       const above = job.above.slice();
       if (job.band) for (const o of ohmRowsW) if (o.s <= job.t && o.e > job.t) above.push(o);
@@ -613,6 +696,13 @@ function workerMain() {
     }
     parentPort.postMessage({ id, out, stats: { clipped: STATS.clipped, failed: STATS.failed, widths: STATS.widths, kept: CUTSTAT.kept, ignored: CUTSTAT.ignored } });
   });
+}
+
+/* (hist-colonial-era-borders) `--ohm-late`: re-cut data/hist-borders-late.js from OpenHistoricalMap's cache. A separate
+   step, because only it needs that cache — `build` reads the committed file as a record above Cliopatria. */
+async function lateOnly() {
+  const ohm = ohmRows(), P = pool(ohm);
+  try { await ohmLate(ohm, P.run, lateTop()); } finally { await P.close(); }
 }
 
 /* ── build ───────────────────────────────────────────────────────────────── */
@@ -635,7 +725,7 @@ async function build({ measure } = {}) {
     let lo = Infinity; for (const f of feats) lo = Math.min(lo, f[2]);
     const head = { v: 1, src: SRC, citation: CITATION, upstream: { release: UPSTREAM.release, commit: UPSTREAM.commit, sha256: UPSTREAM.sha256 },
       /* end EXCLUSIVE, like data/hist-borders.js: a row is in force on [start, end) */
-      end: 'exclusive', window: [lo, Math.floor(ohm.top / 10000) - (ohm.top % 10000 === 101 ? 1 : 0)], basis: { 'data/hist-borders.js': sha(HB), 'data/cshapes.js': sha(CSF) },
+      end: 'exclusive', window: [lo, Math.floor(ohm.top / 10000) - (ohm.top % 10000 === 101 ? 1 : 0)], basis: { 'data/hist-borders.js': sha(HB), 'data/cshapes.js': sha(CSF), ...(existsSync(HBL) ? { 'data/hist-borders-late.js': sha(HBL) } : {}) },
       /* name → [first, last] astronomical year Cliopatria draws it over before 1886: the span its QID was verified on */
       ids: Object.fromEntries(Object.keys(raw.ids).sort().map((k) => [k, raw.ids[k]])) };
     const body = 'window.__HISTCLIO=' + JSON.stringify({ ...head, rings, feats }) + ';\n';
@@ -678,6 +768,7 @@ export function check() {
   if (bad.length) return fail(bad);
   ok(d.basis['data/hist-borders.js'] === sha(HB), 'data/hist-clio.js was subtracted from another data/hist-borders.js — rebuild it');
   ok(d.basis['data/cshapes.js'] === sha(CSF), 'data/hist-clio.js was subtracted from another data/cshapes.js — rebuild it');
+  checkLate(d, ok, bad);
   ok(r.basis['data/hist-borders.js'] === sha(HB), 'data/hist-eras-rest.js was subtracted from another data/hist-borders.js — rebuild it');
   ok(r.basis['data/hist-clio.js'] === sha(OUT), 'data/hist-eras-rest.js was subtracted from another data/hist-clio.js — rebuild it');
   if (existsSync(ER)) ok(r.basis['data/hist-eras.js'] === sha(ER), 'data/hist-eras-rest.js was cut from another data/hist-eras.js — rebuild it');
@@ -736,7 +827,30 @@ export function check() {
   const ref = readFileSync(join(ROOT, 'js', 'reference-data.js'), 'utf8');
   ok(ref.includes("n:'" + CREDIT_ROW + "'") && /lic:'CC BY 4.0'/.test(ref.slice(ref.indexOf(CREDIT_ROW))), 'js/reference-data.js does not credit Cliopatria as «' + CREDIT_ROW + '» with its licence');
   if (bad.length) return fail(bad);
-  console.log(`hist-clio ok — ${d.feats.length} rows ${d.window[0]}–${d.window[1]}, ${d.rings.length} rings; hist-eras-rest ${r.snaps.length} sheets, ${r.rings.length} rings; both made against the shipped neighbours`);
+  console.log(`hist-clio ok — ${d.feats.length} rows ${d.window[0]}–${d.window[1]}, ${d.rings.length} rings; hist-eras-rest ${r.snaps.length} sheets, ${r.rings.length} rings; hist-borders-late ${evalBundle(HBL, '__HISTBLATE').feats.length} rows 1886–${LATE_TOP}; all made against the shipped neighbours`);
+}
+/* (hist-colonial-era-borders) data/hist-borders-late.js: OHM on CShapes' days. Made against the shipped CShapes, every row
+   inside its window and ending by its top, every ring resolvable and used — and Cliopatria cut against THIS file. */
+function checkLate(d, ok, bad) {
+  ok(existsSync(HBL), 'data/hist-borders-late.js is missing — node scripts/build-hist-clio.mjs --ohm-late');
+  if (!existsSync(HBL)) return;
+  const L = evalBundle(HBL, '__HISTBLATE');
+  ok(L && L.v === 1 && /OpenHistoricalMap/.test(L.src) && /CC0/.test(L.src), 'data/hist-borders-late.js must name OpenHistoricalMap and CC0');
+  ok(L && L.end === 'exclusive' && Array.isArray(L.window) && L.window[0] === 1886 && L.window[1] === LATE_TOP, `data/hist-borders-late.js must run 1886–${LATE_TOP} with exclusive ends (LATE_TOP)`);
+  ok(L && L.basis && L.basis['data/cshapes.js'] === sha(CSF), 'data/hist-borders-late.js was cut against another data/cshapes.js — node scripts/build-hist-clio.mjs --ohm-late');
+  ok(d.basis['data/hist-borders-late.js'] === sha(HBL), 'data/hist-clio.js was subtracted from another data/hist-borders-late.js — rebuild it');
+  if (!L || !Array.isArray(L.feats) || !Array.isArray(L.rings)) return;
+  const lo = ymd(L.window[0], 1, 1), hi = ymd(L.window[1] + 1, 1, 1), used = new Uint8Array(L.rings.length);
+  L.feats.forEach((f, i) => {
+    const s = ymd(f[2], f[3], f[4]), e = ymd(f[5], f[6], f[7]), n = f[0] && f[0].en;
+    if (!n) bad.push(`hist-borders-late row ${i} has no English name`);
+    if (!(lo <= s && s < e && e <= hi)) bad.push(`hist-borders-late row ${i} (${n}) is outside ${L.window.join('–')} or ends before it starts`);
+    if (!Array.isArray(f[8]) || !f[8].length) bad.push(`hist-borders-late row ${i} (${n}) has no polygons`);
+    else for (const p of f[8]) for (const ri of p) { if (!(ri >= 0 && ri < L.rings.length)) bad.push(`hist-borders-late row ${i} points at ring ${ri}`); else used[ri] = 1; }
+  });
+  L.rings.forEach((g, i) => { if (!Array.isArray(g) || g.length < 3 || g.some((p) => !(p[0] >= -180.001 && p[0] <= 180.001 && p[1] >= -90.001 && p[1] <= 90.001))) bad.push(`hist-borders-late ring ${i} is not a ring on the globe`); });
+  const orphan = used.reduce((a, v) => a + (v ? 0 : 1), 0);
+  ok(orphan === 0, `${orphan} hist-borders-late ring(s) are referenced by no row`);
 }
 function fail(bad) {
   console.error('hist-clio: ' + bad.length + ' problem(s)');
@@ -749,5 +863,6 @@ if (!isMainThread && workerData && workerData.role === 'clip') workerMain();
 else if (process.argv[1] && join(process.argv[1]) === join(fileURLToPath(import.meta.url))) {
   if (arg.includes('--check')) check();
   else if (arg.includes('--fetch')) await fetchUpstream();
+  else if (arg.includes('--ohm-late')) await lateOnly();
   else await build({ measure: arg.includes('--measure') });
 }

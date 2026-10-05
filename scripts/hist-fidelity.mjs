@@ -251,30 +251,37 @@ function records() {
   for (const f of cs.feats) { if (f[2] < csLo) csLo = f[2]; if (f[5] > csHi) csHi = f[5]; }
   /* (hist-coverage-expansion) the two records the page composes below CShapes — absent, the band chain answers */
   const opt = (rel) => (fs.existsSync(path.join(ROOT, rel)) ? load(rel) : null);
-  _rec = { cs, hb, er, csLo, csHi, hbLo: hb.window[0], hbHi: hb.window[1], cl: opt('data/hist-clio.js'), rs: opt('data/hist-eras-rest.js') };
+  _rec = { cs, hb, er, csLo, csHi, hbLo: hb.window[0], hbHi: hb.window[1], cl: opt('data/hist-clio.js'), rs: opt('data/hist-eras-rest.js'),
+    /* (hist-colonial-era-borders) OpenHistoricalMap on the ground CShapes leaves, from 1886 */
+    ol: opt('data/hist-borders-late.js') };
   return _rec;
 }
 const resolve = (polys, rings) => polys.map((poly) => poly.map((r) => rings[r]));
 export function politiesAt(y, opt = {}) {
   /* `opt.band` asks for the chain as it was before the composition (one record per band) — the comparison the
-     checks make, never what the gate records */
+     checks make, never what the gate records. `opt.late === false` leaves out OpenHistoricalMap on CShapes' days
+     (the composition as it was before hist-colonial-era-borders) — again a comparison, never the record.
+     Each entry names the record it came from (`rec`), so a listing can say who drew what. */
   const R = records(), { cs, hb, er, csLo, csHi, hbLo, hbHi } = R, cl = opt.band ? null : R.cl, rs = opt.band ? null : R.rs, out = [];
+  const ol = opt.band || opt.late === false ? null : R.ol;
   if (y >= csLo && y <= csHi) {
-    for (const f of cs.feats) if (inForce(f, y, 7, 1)) out.push({ nm: f[0], polys: resolve(f[8], cs.rings) });
+    for (const f of cs.feats) if (inForce(f, y, 7, 1)) out.push({ nm: f[0], polys: resolve(f[8], cs.rings), rec: 'cshapes' });
+    /* (hist-colonial-era-borders) …then OpenHistoricalMap on the ground CShapes leaves (js/time-borders.js csComposite) */
+    if (ol) for (const f of ol.feats) if (inForce(f, y, 7, 1)) out.push({ nm: f[0].en, polys: resolve(f[8], ol.rings), rec: 'ohm-late' });
     /* (hist-coverage-expansion) …and Cliopatria on the ground CShapes leaves (js/time-borders.js csComposite) */
-    if (cl) for (const f of cl.feats) if (!(f[9] && f[9].r) && inForce(f, y, 7, 1)) out.push({ nm: f[0].en, polys: resolve(f[8], cl.rings) });
+    if (cl) for (const f of cl.feats) if (!(f[9] && f[9].r) && inForce(f, y, 7, 1)) out.push({ nm: f[0].en, polys: resolve(f[8], cl.rings), rec: 'clio' });
     return out;
   }
   /* (hist-coverage-expansion) below CShapes the page draws a COMPOSITION — OHM in its band, Cliopatria, and
      the sheet less both (js/time-borders.js `compositeAt`); the subtraction is in the files, so the measure
      is their union. The sheet is chosen as this gate has always chosen it (latest at or before the year). */
   if (y < csLo && cl && rs) {
-    if (y >= hbLo && y <= hbHi) for (const f of hb.feats) if (inForce(f, y, 7, 1)) out.push({ nm: (f[0] && f[0].en) || f[1], polys: resolve(f[8], hb.rings) });
+    if (y >= hbLo && y <= hbHi) for (const f of hb.feats) if (inForce(f, y, 7, 1)) out.push({ nm: (f[0] && f[0].en) || f[1], polys: resolve(f[8], hb.rings), rec: 'ohm' });
     /* a realm (`r`) is the union of member rows drawn beside it — its ground is counted through them */
-    for (const f of cl.feats) if (!(f[9] && f[9].r) && inForce(f, y, 7, 1)) out.push({ nm: f[0].en, polys: resolve(f[8], cl.rings) });
+    for (const f of cl.feats) if (!(f[9] && f[9].r) && inForce(f, y, 7, 1)) out.push({ nm: f[0].en, polys: resolve(f[8], cl.rings), rec: 'clio' });
     let sb = null;
     for (const s of rs.snaps) if (s.y <= y && (!sb || s.y > sb.y)) sb = s;
-    if (sb) for (const f of sb.feats) out.push({ nm: (f[0] && f[0].en) || '?', polys: resolve(f[2], rs.rings) });
+    if (sb) for (const f of sb.feats) out.push({ nm: (f[0] && f[0].en) || '?', polys: resolve(f[2], rs.rings), rec: 'sheet ' + sb.y });
     return out;
   }
   if (y >= hbLo && y <= hbHi) {
@@ -706,10 +713,31 @@ function listYear(bs, y, box) {
   }
 }
 
+/* (hist-colonial-era-borders) the polities the map draws there that year, as `politiesAt` composes them, each with the
+   record that drew it — the enumeration historical-verification.md §2-1 asks for, of the country layer itself. A polity is
+   listed when its drawn ground's centroid (cell-weighted on the gate's grid) lies in the box, with that ground in cells. */
+function listPolities(y, box) {
+  const ps = politiesAt(y), m = measure(ps, [], RES), { cid, NX, NY } = m.cells, G = kGrid(RES);
+  const acc = ps.map(() => [0, 0, 0]);
+  for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) { const c = cid[j * NX + i]; if (c < 0) continue;
+    const a = acc[c]; a[0]++; a[1] += G.lonC(i); a[2] += G.latC(j); }
+  const by = new Map();
+  ps.forEach((p, i) => { const [n, sx, sy] = acc[i]; if (!n) return; const x = sx / n, yy = sy / n;
+    if (x < box[0] || x > box[2] || yy < box[1] || yy > box[3]) return;
+    const k = p.rec || '?'; if (!by.has(k)) by.set(k, []); by.get(k).push([p.nm, n]); });
+  console.log(`polities drawn in ${y} (1 July) with their ground's centre in the box, by record:`);
+  for (const [k, rows] of by) {
+    rows.sort((a, b) => b[1] - a[1]);
+    console.log(`  ${k}: ${rows.length}`);
+    for (const [n, c] of rows) console.log(`      ${String(c).padStart(6)} cells  ${n}`);
+  }
+}
+
 async function main() {
   const bs = bundles();
   if (has('--year')) {
     const y = parseInt(arg('--year', '1900'), 10), box = arg('--in', '-180,-90,180,90').split(',').map(Number);
+    listPolities(y, box);
     listYear(bs, y, box);
     return listEra(y, box);
   }
