@@ -53,6 +53,12 @@ newsjp: タイムラプスの動画が、重い計算機でもコマを落とさ
 - smoke の ①② に `via === 'webcodecs'` と、長さがちょうど（コマ数＋1）/fps であることを足した——**締める方向の変更**で、
   旧い「負荷で伸びるので 2.5 倍まで許す」幅は要らなくなった。
 
+## 2b. 配る重さ
+
+- 遅延チャンク `map-recorder` が 35.7 kB → 41.8 kB（+6.1 kB）。中身は muxer（`js/video-mux.js`）と WebCodecs の書き手。
+  書き出し欄を開いたとき／Atlas が録画・絵葉書を頼んだときにしか読まれず、起動の重さには入らない。依存を足す案（mediabunny など）
+  より小さい。天井は `node scripts/perf-budget.mjs --update` で、超えた行だけ上げた。
+
 ## 3. 検査
 
 - `tests/timelapse-hold-frame-checks.test.mjs`: muxer が書いたバイトを読み戻す（WebM の block の時刻・鍵・cluster・
