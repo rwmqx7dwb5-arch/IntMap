@@ -324,6 +324,9 @@ function eraIndex() {
   const cl = fs.existsSync(path.join(ROOT, 'data/hist-clio.js')) ? loadBundle('data/hist-clio.js').data : null;
   const rs = fs.existsSync(path.join(ROOT, 'data/hist-eras-rest.js')) ? loadBundle('data/hist-eras-rest.js').data : null;
   const he = (cl && rs) ? rs : loadBundle('data/hist-eras.js').data;
+  /* (hist-colonial-era-borders) from 1886 the page composes OpenHistoricalMap on the ground CShapes leaves,
+     BEFORE Cliopatria (data/hist-borders-late.js, already less CShapes' ground) — the same order politiesAt reads */
+  const ol = fs.existsSync(path.join(ROOT, 'data/hist-borders-late.js')) ? loadBundle('data/hist-borders-late.js').data : null;
 
   const pack = (d, feats, nameOf) => feats.map((f, i) => {
     const polys = f[8].map((poly) => poly.map((ri) => d.rings[ri]).filter((r) => r && r.length >= 4)).filter((p) => p.length);
@@ -337,6 +340,7 @@ function eraIndex() {
   /* a realm (`r`) is the union of member rows drawn beside it — its ground is answered through them,
      exactly as `politiesAt` counts it */
   const clU = cl && rs ? pack(cl, cl.feats.filter((f) => !(f[9] && f[9].r)), (f, i) => 'cl' + i).map((u) => ({ ...u, rec: 'cl' })) : [];
+  const olU = ol ? pack(ol, ol.feats, (f, i) => 'ol' + i).map((u) => ({ ...u, rec: 'ol' })) : [];
   let csMin = Infinity, csMax = -Infinity;
   for (const f of cs.feats) { csMin = Math.min(csMin, f[2]); csMax = Math.max(csMax, f[5]); }
   const hbWin = hb.window || [Infinity, -Infinity];
@@ -376,6 +380,7 @@ function eraIndex() {
   const bandOf = (u) => (u.rec === 'cs' ? [csFrom, ceil]
                        : u.rec === 'hb' ? [hbFrom, csFrom]
                        : u.rec === 'cl' ? [ymd(-999999, 1, 1), ceil]
+                       : u.rec === 'ol' ? [csFrom, ceil]
                        : [ymd(he.snaps[0].y, 1, 1), clU.length ? csFrom : hbFrom]);
 
   /** every polity from any of the three records whose box meets this one, with its span clipped to
@@ -384,6 +389,7 @@ function eraIndex() {
     const out = [];
     for (const u of csU) if (meets(u.bb, box)) out.push(u);
     for (const u of hbU) if (meets(u.bb, box)) out.push(u);
+    for (const u of olU) if (meets(u.bb, box)) out.push(u);
     for (const u of clU) if (meets(u.bb, box)) out.push(u);
     for (const u of heU) if (meets(u.bb, box)) out.push(u);
     return out.map((u) => { const b = bandOf(u); return { id: u.id, rec: u.rec, polys: u.polys, bb: u.bb, s: Math.max(u.s, b[0]), e: Math.min(u.e, b[1]) }; })

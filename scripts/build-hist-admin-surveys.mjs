@@ -109,7 +109,7 @@ export const GOVERNANCE = {
         "paidBy": "Virtual Shanghai (ENP-China Project) — Provinces in Republican China, 1912-1949 (CC0 1.0)"
       }
     ],
-    cadence: 'irregular',
+    cadence: 'static',
     cadenceBasis: { observed: 'finished historical atlases; on 2026-10-05 the newest revision among them is Virtual Shanghai (2026-06-19), the oldest AHCB (2011)', expires: 'when a publisher announces a new edition', canon: 'scripts/histsurveys/<publisher>.mjs SOURCE' },
     builtBy: 'scripts/build-hist-admin-surveys.mjs',
   },
@@ -126,7 +126,7 @@ export const GOVERNANCE = {
       }
     ],
     licence: 'CC BY-NC-SA 4.0',
-    cadence: 'irregular',
+    cadence: 'static',
     cadenceBasis: { observed: 'on 2026-10-05 the HGIS de las Indias gazetteer is at V4 (2023-10-26)', expires: 'when the publisher releases a new version', canon: 'scripts/histsurveys/hgisindias.mjs SOURCE' },
     builtBy: 'scripts/build-hist-admin-surveys.mjs',
   },

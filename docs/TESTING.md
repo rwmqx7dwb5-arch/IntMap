@@ -1919,9 +1919,9 @@ internal consistency is not geographic accuracy.
 
 ⚠ **こちらは再導出する。** `scripts/build-border-coast.mjs --check` は上流を必要としない——
 入力は `data/` から**発見された**束（いまは6つ——`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-eras` / `hist-kuni`）と
-`data/coastline.json.gz` だけなので、**全 75,327 リングを判定し直して `data/border-coast.js` と
+`data/coastline.json.gz` だけなので、**全 78,319 リングを判定し直して `data/border-coast.js` と
 バイト単位で突き合わせる**。⚠ **束の母集合そのものも門である**——印されている集合が `data/` の束の集合と一致しなければ落ちるので、束を1つ足して印を忘れることができない（`data/hist-eras.js` は、手で並べた一覧だったころ気づかれずに抜けていた）。⚠ **`npm test` の中の写しは `--sample 8`**
-（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 75,327 リング）ので、網羅版は CI の
+（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 78,319 リング）ので、網羅版は CI の
 `npm run check:bordercoast` に置き、suite の中は 8 本に 1 本を再導出する。形の検査は
 **全件**を歩いたままなので、抜けるのは「再導出」の母数だけ）。
 上の門が「記録が自分自身と整合するか」を問うのに対し、ここは
