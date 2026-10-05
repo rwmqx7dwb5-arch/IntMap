@@ -1,0 +1,1440 @@
+{
+ "country": "RUE",
+ "atomSet": "ristat-1897-uyezd@v3",
+ "atomGroups": [
+  "Oulu governorate",
+  "Vaasa governorate",
+  "Abo-Björneborg governorate",
+  "Häme governorate",
+  "Uusimaa governorate",
+  "Mikkeli governorate",
+  "Kuopio governorate",
+  "Vyborg governorate",
+  "St. Petersburg governorate",
+  "Novgorod governorate",
+  "Pskov governorate",
+  "Olonets governorate",
+  "Arkhangelsk governorate",
+  "Estonia governorate",
+  "Livonia governorate",
+  "Kurland governorate"
+ ],
+ "scope": {
+  "from": "1783-07-14",
+  "to": "1917-11-06"
+ },
+ "polityNote": "Russian Empire (to 1917-11-06). Finnish läänit belong to the Grand Duchy of Finland, in personal union with the Empire from 1809-09-17 (Old Finland/Vyborg gub. joined it 1812); before that the western Finnish läns were Swedish. Courland joined in 1795. German occupation of Courland (1915) and Riga (1917-09) did not change the governorates de jure. Old Style decree dates converted to Gregorian.",
+ "units": [
+  {
+   "id": "RUE:Oulu",
+   "names": {
+    "en": "Oulu (Uleåborg) Province",
+    "ja": "オウル州",
+    "local": "Uleåborgs län / Oulun lääni"
+   },
+   "wikidata": "Q202112",
+   "spans": [
+    {
+     "from": "1881-01-01",
+     "precision": "day",
+     "to": "1903",
+     "atoms": [
+      "U1897-3",
+      "U1897-4",
+      "U1897-27",
+      "U1897-2",
+      "U1897-1",
+      "U1897-28"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20180416094129/http://www.doria.fi/bitstream/handle/10024/91484/xtia_vael_1880-1975_1979_dig_63.pdf",
+       "title": "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+       "says": "Transfers between läänit 1881–1976: first entries are part of Kuhmoniemi Kuopio→Oulu 1903, Loimaa part of Ypäjä Turku-Pori→Häme 1912, part of Vilppula Vaasa→Häme 1916.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Finland kept the Gregorian calendar; dates are Gregorian. Span starts at 1881-01-01, the first year of the Tilastokeskus list of transfers between läänit; the 1870 reform re-drew lines and 1870–1880 has no complete change list. Ends 1903 (year precision): part of Kuhmoniemi moved Kuopio→Oulu."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Vaasa",
+   "names": {
+    "en": "Vaasa (Vasa) Province",
+    "ja": "ヴァーサ州",
+    "local": "Vasa län / Vaasan lääni"
+   },
+   "wikidata": "Q1337549",
+   "spans": [
+    {
+     "from": "1881-01-01",
+     "precision": "day",
+     "to": "1916",
+     "atoms": [
+      "U1897-30",
+      "U1897-33",
+      "U1897-34",
+      "U1897-29",
+      "U1897-32",
+      "U1897-31"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20180416094129/http://www.doria.fi/bitstream/handle/10024/91484/xtia_vael_1880-1975_1979_dig_63.pdf",
+       "title": "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+       "says": "Transfers between läänit 1881–1976: first entries are part of Kuhmoniemi Kuopio→Oulu 1903, Loimaa part of Ypäjä Turku-Pori→Häme 1912, part of Vilppula Vaasa→Häme 1916.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Finland kept the Gregorian calendar; dates are Gregorian. Span starts at 1881-01-01, the first year of the Tilastokeskus list of transfers between läänit; the 1870 reform re-drew lines and 1870–1880 has no complete change list. Ends 1916 (year precision): part of Vilppula moved Vaasa→Häme."
+    }
+   ]
+  },
+  {
+   "id": "RUE:AboBjorneborg",
+   "names": {
+    "en": "Turku and Pori (Åbo-Björneborg) Province",
+    "ja": "トゥルク・ポリ州",
+    "local": "Åbo och Björneborgs län / Turun ja Porin lääni"
+   },
+   "wikidata": "Q1138022",
+   "spans": [
+    {
+     "from": "1881-01-01",
+     "precision": "day",
+     "to": "1912",
+     "atoms": [
+      "U1897-35",
+      "U1897-42",
+      "U1897-38",
+      "U1897-40",
+      "U1897-39",
+      "U1897-41",
+      "U1897-36",
+      "U1897-37"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20180416094129/http://www.doria.fi/bitstream/handle/10024/91484/xtia_vael_1880-1975_1979_dig_63.pdf",
+       "title": "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+       "says": "Transfers between läänit 1881–1976: first entries are part of Kuhmoniemi Kuopio→Oulu 1903, Loimaa part of Ypäjä Turku-Pori→Häme 1912, part of Vilppula Vaasa→Häme 1916.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Finland kept the Gregorian calendar; dates are Gregorian. Span starts at 1881-01-01, the first year of the Tilastokeskus list of transfers between läänit; the 1870 reform re-drew lines and 1870–1880 has no complete change list. Ends 1912 (year precision): Loimaa part of Ypäjä moved Turku-Pori→Häme."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Hame",
+   "names": {
+    "en": "Häme (Tavastehus) Province",
+    "ja": "ハメ州",
+    "local": "Tavastehus län / Hämeen lääni"
+   },
+   "wikidata": "Q1320740",
+   "spans": [
+    {
+     "from": "1881-01-01",
+     "precision": "day",
+     "to": "1912",
+     "atoms": [
+      "U1897-45",
+      "U1897-44",
+      "U1897-46",
+      "U1897-48",
+      "U1897-43",
+      "U1897-47"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20180416094129/http://www.doria.fi/bitstream/handle/10024/91484/xtia_vael_1880-1975_1979_dig_63.pdf",
+       "title": "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+       "says": "Transfers between läänit 1881–1976: first entries are part of Kuhmoniemi Kuopio→Oulu 1903, Loimaa part of Ypäjä Turku-Pori→Häme 1912, part of Vilppula Vaasa→Häme 1916.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fi.wikipedia.org/w/index.php?oldid=24001106",
+       "title": "fi.wikipedia «Hämeen lääni» (rev. 24001106; cites Hämeen historia 4:1, 1969)",
+       "says": "New administrative division in force from start of 1870 moved parishes/villages between Häme, Turku-Pori, Vaasa and Mikkeli läänit; 1917 Hausjärvi south part to Uusimaa.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Finland kept the Gregorian calendar; dates are Gregorian. Span starts at 1881-01-01, the first year of the Tilastokeskus list of transfers between läänit; the 1870 reform re-drew lines and 1870–1880 has no complete change list. Ends 1912 (year precision): Loimaa part of Ypäjä joined Häme."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Uusimaa",
+   "names": {
+    "en": "Uusimaa (Nyland) Province",
+    "ja": "ウーシマー州",
+    "local": "Nylands län / Uudenmaan lääni"
+   },
+   "wikidata": "Q1372937",
+   "spans": [
+    {
+     "from": "1881-01-01",
+     "precision": "day",
+     "to": "1917",
+     "atoms": [
+      "U1897-50",
+      "U1897-49",
+      "U1897-51",
+      "U1897-52"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20180416094129/http://www.doria.fi/bitstream/handle/10024/91484/xtia_vael_1880-1975_1979_dig_63.pdf",
+       "title": "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+       "says": "Transfers between läänit 1881–1976: first entries are part of Kuhmoniemi Kuopio→Oulu 1903, Loimaa part of Ypäjä Turku-Pori→Häme 1912, part of Vilppula Vaasa→Häme 1916.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://fi.wikipedia.org/w/index.php?oldid=22780363",
+       "title": "fi.wikipedia «Hyvinkään maalaiskunta» (rev. 22780363)",
+       "says": "Hyvinkää formed 1917 from parts of Nurmijärvi (Uusimaa) and Hausjärvi (Häme); parish formed 1.6.1917; joined Uusimaa lääni.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Finland kept the Gregorian calendar; dates are Gregorian. Span starts at 1881-01-01, the first year of the Tilastokeskus list of transfers between läänit; the 1870 reform re-drew lines and 1870–1880 has no complete change list. Ends 1917 (year precision; Hyvinkää parish formed 1917-06-01): southern Hausjärvi (Häme) joined Uusimaa with Hyvinkää."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Mikkeli",
+   "names": {
+    "en": "Mikkeli (S:t Michel) Province",
+    "ja": "ミッケリ州",
+    "local": "S:t Michels län / Mikkelin lääni"
+   },
+   "wikidata": "Q1200972",
+   "spans": [
+    {
+     "from": "1881-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-53",
+      "U1897-56",
+      "U1897-54",
+      "U1897-55"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20180416094129/http://www.doria.fi/bitstream/handle/10024/91484/xtia_vael_1880-1975_1979_dig_63.pdf",
+       "title": "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+       "says": "Transfers between läänit 1881–1976: first entries are part of Kuhmoniemi Kuopio→Oulu 1903, Loimaa part of Ypäjä Turku-Pori→Häme 1912, part of Vilppula Vaasa→Häme 1916.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Finland kept the Gregorian calendar; dates are Gregorian. Span starts at 1881-01-01, the first year of the Tilastokeskus list of transfers between läänit; the 1870 reform re-drew lines and 1870–1880 has no complete change list. No transfer touching Mikkeli lääni is listed before 1960."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Kuopio",
+   "names": {
+    "en": "Kuopio Province",
+    "ja": "クオピオ州",
+    "local": "Kuopio län / Kuopion lääni"
+   },
+   "wikidata": "Q1372345",
+   "spans": [
+    {
+     "from": "1881-01-01",
+     "precision": "day",
+     "to": "1903",
+     "atoms": [
+      "U1897-59",
+      "U1897-60",
+      "U1897-61",
+      "U1897-58",
+      "U1897-26",
+      "U1897-57"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/20180416094129/http://www.doria.fi/bitstream/handle/10024/91484/xtia_vael_1880-1975_1979_dig_63.pdf",
+       "title": "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+       "says": "Transfers between läänit 1881–1976: first entries are part of Kuhmoniemi Kuopio→Oulu 1903, Loimaa part of Ypäjä Turku-Pori→Häme 1912, part of Vilppula Vaasa→Häme 1916.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Finland kept the Gregorian calendar; dates are Gregorian. Span starts at 1881-01-01, the first year of the Tilastokeskus list of transfers between läänit; the 1870 reform re-drew lines and 1870–1880 has no complete change list. Ends 1903 (year precision): part of Kuhmoniemi moved Kuopio→Oulu."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Vyborg",
+   "names": {
+    "en": "Vyborg (Viipuri) Province",
+    "ja": "ヴィープリ州",
+    "local": "Viborgs län / Viipurin lääni (Выборгская губерния)"
+   },
+   "wikidata": "Q1144791",
+   "spans": [
+    {
+     "from": "1864-02-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-62",
+      "U1897-63",
+      "U1897-64",
+      "U1897-65",
+      "U1897-66",
+      "U1897-67",
+      "U1897-68",
+      "U1897-838",
+      "U1897-69"
+     ],
+     "sources": [
+      {
+       "url": "https://fi.wikipedia.org/w/index.php?oldid=23802498",
+       "title": "fi.wikipedia «Viipurin lääni» (rev. 23802498)",
+       "says": "Changes after 1812: 1831 reform, 1864 Sestroretsk works area to Russia, 1919 part of Valkeala to Kuusankoski, 1920 Uusi Matkaselkä village.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=149475910",
+       "title": "ru.wikipedia «Санкт-Петербургская губерния» (rev. 149475910; cites ПСЗ-II № 40551)",
+       "says": "Decree of 1.2.1864 detached the Sestroretsk arms works with adjoining land from Vyborg governorate (Finland) and joined it to St Petersburg governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "ПСЗ-2 № 40551, 1864-02-01 O.S. (Sestroretsk works area to St Petersburg gub.). Next change of the lääni line: 1919 (Kuusankoski), after scope."
+    }
+   ]
+  },
+  {
+   "id": "RUE:StPetersburg",
+   "names": {
+    "en": "Saint Petersburg (from 1914 Petrograd) Governorate",
+    "ja": "サンクトペテルブルク県",
+    "local": "Санкт-Петербургская губерния (с 1914 Петроградская)"
+   },
+   "wikidata": "Q49512",
+   "spans": [
+    {
+     "from": "1864-02-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-10",
+      "U1897-9",
+      "U1897-833",
+      "U1897-834",
+      "U1897-7",
+      "U1897-11",
+      "U1897-831",
+      "U1897-832"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=149475910",
+       "title": "ru.wikipedia «Санкт-Петербургская губерния» (rev. 149475910; cites ПСЗ-II № 40551)",
+       "says": "Decree of 1.2.1864 detached the Sestroretsk arms works with adjoining land from Vyborg governorate (Finland) and joined it to St Petersburg governorate.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/spb.html",
+       "title": "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Санкт-Петербургская губерния",
+       "says": "After 1812 (Sestroretsk works given to Vyborg gub.) the list has no outer-boundary change of the governorate to 1897; later entries concern towns and the city prefecture.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "ПСЗ-2 № 40551, 1864-02-01 O.S. Den (to 1897) lists no other outer change after 1812; ru.wikipedia lists none 1897–1917 (Narva left only on 1917-12-23 O.S.)."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Novgorod",
+   "names": {
+    "en": "Novgorod Governorate",
+    "ja": "ノヴゴロド県",
+    "local": "Новгородская губерния"
+   },
+   "wikidata": "Q2566158",
+   "spans": [
+    {
+     "from": "1824-08-19",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-12",
+      "U1897-13",
+      "U1897-18",
+      "U1897-14",
+      "U1897-15",
+      "U1897-16",
+      "U1897-17",
+      "U1897-19",
+      "U1897-20",
+      "U1897-21",
+      "U1897-22"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/novg.html",
+       "title": "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Новгородская губерния",
+       "says": "7.8.1824 (ПСЗ-1 № 30013) Demyansk uyezd formed from parts of Novgorod uyezds and of Kholm uyezd of Pskov gub.; later entries are internal.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/tver.html",
+       "title": "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Тверская губерния",
+       "says": "After 1824 only an internal 1862 entry (Selizharovo posad); no change touching Novgorod or Pskov.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "ПСЗ-1 № 30013, 1824-08-07 O.S. (Demyansk uyezd formed partly from Kholm uyezd of Pskov gub.). Later Den entries (1859, 1885, 1895) are internal; neighbour pages (Tver, Yaroslavl, Vologda, St Petersburg, Pskov, Olonets) list no later outer change."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Pskov",
+   "names": {
+    "en": "Pskov Governorate",
+    "ja": "プスコフ県",
+    "local": "Псковская губерния"
+   },
+   "wikidata": "Q1458686",
+   "spans": [
+    {
+     "from": "1824-08-19",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-139",
+      "U1897-140",
+      "U1897-143",
+      "U1897-144",
+      "U1897-146",
+      "U1897-141",
+      "U1897-145",
+      "U1897-142"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/pskov.html",
+       "title": "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Псковская губерния",
+       "says": "7.8.1824 (ПСЗ-1 № 30013): part of Kholm uyezd joined to Demyansk uyezd of Novgorod gub.; no later change listed.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "ПСЗ-1 № 30013, 1824-08-07 O.S. No later entry on Den's Pskov page or on Tver/Smolensk pages; Vitebsk and Livonia lists show no change on the common line."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Olonets",
+   "names": {
+    "en": "Olonets Governorate",
+    "ja": "オロネツ県",
+    "local": "Олонецкая губерния"
+   },
+   "wikidata": "Q2045591",
+   "spans": [
+    {
+     "from": "1891-11-28",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-25",
+      "U1897-74",
+      "U1897-70",
+      "U1897-71",
+      "U1897-72",
+      "U1897-73",
+      "U1897-75"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/olon.html",
+       "title": "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Олонецкая губерния",
+       "says": "16.11.1891 (ПСЗ-3 № 8070): village Luzskaya of Onega uyezd (Arkhangelsk gub.) joined to Vodlozero volost of Pudozh uyezd (Olonets gub.).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "ПСЗ-3 № 8070, 1891-11-16 O.S. Next outer change: Kargopol uyezd to Vologda gub. 1919-04-30, after scope."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Arkhangelsk",
+   "names": {
+    "en": "Arkhangelsk Governorate",
+    "ja": "アルハンゲリスク県",
+    "local": "Архангельская губерния"
+   },
+   "wikidata": "Q1540280",
+   "spans": [
+    {
+     "from": "1891-11-28",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-24",
+      "U1897-23",
+      "U1897-76",
+      "U1897-77",
+      "U1897-81",
+      "U1897-82",
+      "U1897-78",
+      "U1897-79",
+      "U1897-80"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/olon.html",
+       "title": "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Олонецкая губерния",
+       "says": "16.11.1891 (ПСЗ-3 № 8070): village Luzskaya of Onega uyezd (Arkhangelsk gub.) joined to Vodlozero volost of Pudozh uyezd (Olonets gub.).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/arh.html",
+       "title": "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Архангельская губерния",
+       "says": "16.11.1891 change not on this page; later entries (1858, 1869, 1883, 1891 Pechora uyezd) are internal re-cuts of uyezds.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/volog.html",
+       "title": "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Вологодская губерния",
+       "says": "After 1784 only internal transfers (1849 Velsk→Kadnikov volosts); no change touching Arkhangelsk, Olonets or Novgorod.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "ПСЗ-3 № 8070, 1891-11-16 O.S. (village Luzskaya of Onega uyezd to Olonets gub.). 1899 renaming Kola→Aleksandrovsk uyezd is internal; Murman krai split off only in 1918."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Estonia",
+   "names": {
+    "en": "Estonia (Estland) Governorate",
+    "ja": "エストニア行政区",
+    "local": "Эстляндская губерния"
+   },
+   "wikidata": "Q720496",
+   "spans": [
+    {
+     "from": "1783-07-14",
+     "precision": "day",
+     "to": "1917-04-12",
+     "atoms": [
+      "U1897-147",
+      "U1897-149",
+      "U1897-148",
+      "U1897-150"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=155114454",
+       "title": "ru.wikipedia «Эстляндская губерния» (rev. 155114454)",
+       "says": "Reval viceroyalty by decree 3.7.1783, Estland gub. 12.12.1796; on 30.03.1917 Verro, Pernov, Fellin, Yuryev and Ezel uyezds of Livonia passed to Estland.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From = scope start (Reval viceroyalty decree 1783-07-03 O.S.; four districts unchanged). Ends with the Provisional Government statute of 1917-03-30 O.S. joining northern Livonia to Estland."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Livonia",
+   "names": {
+    "en": "Livonia (Livland) Governorate",
+    "ja": "リヴォニア州",
+    "local": "Лифляндская губерния"
+   },
+   "wikidata": "Q1419584",
+   "spans": [
+    {
+     "from": "1783-07-14",
+     "precision": "day",
+     "to": "1917-04-12",
+     "atoms": [
+      "U1897-151",
+      "U1897-154",
+      "U1897-155",
+      "U1897-153",
+      "U1897-156",
+      "U1897-157",
+      "U1897-158",
+      "U1897-835",
+      "U1897-152"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=155114482",
+       "title": "ru.wikipedia «Лифляндская губерния» (rev. 155114482)",
+       "says": "Riga viceroyalty 1783 with nine uyezds, renamed Livland gub. 1796; 30.03.1917 five uyezds and part of Valk uyezd transferred to Estland.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From = scope start (Riga viceroyalty 1783, decree of 1783-07-03 O.S. together with Reval). Ends 1917-03-30 O.S. (Estonian autonomy statute)."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Kurland",
+   "names": {
+    "en": "Courland (Kurland) Governorate",
+    "ja": "クールラント県",
+    "local": "Курляндская губерния"
+   },
+   "wikidata": "Q386371",
+   "spans": [
+    {
+     "from": "1819",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "U1897-159",
+      "U1897-163",
+      "U1897-166",
+      "U1897-167",
+      "U1897-160",
+      "U1897-165",
+      "U1897-161",
+      "U1897-162",
+      "U1897-164",
+      "U1897-168"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154901389",
+       "title": "ru.wikipedia «Курляндская губерния» (rev. 154901389)",
+       "says": "Formed 1795 from the Duchy and Pilten; in 1819 coastal strip with Polangen passed from Vilna governorate to Courland; occupied by Germany 1915.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377347001",
+       "title": "en.wikipedia «Palanga» (rev. 1377347001)",
+       "says": "In 1819 Palanga was transferred from Vilna Governorate to Grobin county of Courland Governorate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Year precision: Polangen strip transferred from Vilna gub. in 1819, day not found. German occupation from 1915 did not change the governorate de jure."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1824-08-19",
+   "precision": "day",
+   "what": "Demyansk uyezd formed from parts of Novgorod uyezds and Pskov's Kholm uyezd (ПСЗ-1 № 30013, 1824-08-07 O.S.)",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/novg.html",
+     "title": "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Новгородская губерния",
+     "says": "7.8.1824 (ПСЗ-1 № 30013) Demyansk uyezd formed from parts of Novgorod uyezds and of Kholm uyezd of Pskov gub.; later entries are internal.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1864-02-13",
+   "precision": "day",
+   "what": "Sestroretsk arms works area moved from Vyborg gub. (Finland) to St Petersburg gub. (ПСЗ-2 № 40551, 1864-02-01 O.S.)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=149475910",
+     "title": "ru.wikipedia «Санкт-Петербургская губерния» (rev. 149475910; cites ПСЗ-II № 40551)",
+     "says": "Decree of 1.2.1864 detached the Sestroretsk arms works with adjoining land from Vyborg governorate (Finland) and joined it to St Petersburg governorate.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1891-11-28",
+   "precision": "day",
+   "what": "Village Luzskaya moved from Onega uyezd (Arkhangelsk) to Pudozh uyezd (Olonets) (ПСЗ-3 № 8070, 1891-11-16 O.S.)",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/olon.html",
+     "title": "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Олонецкая губерния",
+     "says": "16.11.1891 (ПСЗ-3 № 8070): village Luzskaya of Onega uyezd (Arkhangelsk gub.) joined to Vodlozero volost of Pudozh uyezd (Olonets gub.).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1903",
+   "precision": "year",
+   "what": "Part of Kuhmoniemi moved from Kuopio to Oulu lääni",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/20180416094129/http://www.doria.fi/bitstream/handle/10024/91484/xtia_vael_1880-1975_1979_dig_63.pdf",
+     "title": "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+     "says": "Transfers between läänit 1881–1976: first entries are part of Kuhmoniemi Kuopio→Oulu 1903, Loimaa part of Ypäjä Turku-Pori→Häme 1912, part of Vilppula Vaasa→Häme 1916.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1912",
+   "precision": "year",
+   "what": "Loimaa part of Ypäjä moved from Turku-Pori to Häme lääni",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/20180416094129/http://www.doria.fi/bitstream/handle/10024/91484/xtia_vael_1880-1975_1979_dig_63.pdf",
+     "title": "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+     "says": "Transfers between läänit 1881–1976: first entries are part of Kuhmoniemi Kuopio→Oulu 1903, Loimaa part of Ypäjä Turku-Pori→Häme 1912, part of Vilppula Vaasa→Häme 1916.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1916",
+   "precision": "year",
+   "what": "Part of Vilppula moved from Vaasa to Häme lääni",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/20180416094129/http://www.doria.fi/bitstream/handle/10024/91484/xtia_vael_1880-1975_1979_dig_63.pdf",
+     "title": "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+     "says": "Transfers between läänit 1881–1976: first entries are part of Kuhmoniemi Kuopio→Oulu 1903, Loimaa part of Ypäjä Turku-Pori→Häme 1912, part of Vilppula Vaasa→Häme 1916.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1917",
+   "precision": "year",
+   "what": "Southern Hausjärvi moved from Häme to Uusimaa lääni with the formation of Hyvinkää",
+   "sources": [
+    {
+     "url": "https://fi.wikipedia.org/w/index.php?oldid=22780363",
+     "title": "fi.wikipedia «Hyvinkään maalaiskunta» (rev. 22780363)",
+     "says": "Hyvinkää formed 1917 from parts of Nurmijärvi (Uusimaa) and Hausjärvi (Häme); parish formed 1.6.1917; joined Uusimaa lääni.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://fi.wikipedia.org/w/index.php?oldid=24001106",
+     "title": "fi.wikipedia «Hämeen lääni» (rev. 24001106; cites Hämeen historia 4:1, 1969)",
+     "says": "New administrative division in force from start of 1870 moved parishes/villages between Häme, Turku-Pori, Vaasa and Mikkeli läänit; 1917 Hausjärvi south part to Uusimaa.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1917-04-12",
+   "precision": "day",
+   "what": "Northern Livonia (five uyezds and part of Valk) joined to Estland (statute of 1917-03-30 O.S.)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=155114454",
+     "title": "ru.wikipedia «Эстляндская губерния» (rev. 155114454)",
+     "says": "Reval viceroyalty by decree 3.7.1783, Estland gub. 12.12.1796; on 30.03.1917 Verro, Pernov, Fellin, Yuryev and Ezel uyezds of Livonia passed to Estland.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=155114482",
+     "title": "ru.wikipedia «Лифляндская губерния» (rev. 155114482)",
+     "says": "Riga viceroyalty 1783 with nine uyezds, renamed Livland gub. 1796; 30.03.1917 five uyezds and part of Valk uyezd transferred to Estland.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1819",
+   "precision": "year",
+   "what": "Polangen strip moved from Vilna to Courland governorate",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1377347001",
+     "title": "en.wikipedia «Palanga» (rev. 1377347001)",
+     "says": "In 1819 Palanga was transferred from Vilna Governorate to Grobin county of Courland Governorate.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [
+  {
+   "atom": "U1897-3",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-4",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-27",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-2",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-1",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-28",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-30",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-33",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-34",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-29",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-32",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-31",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-35",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-42",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-38",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-40",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-39",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-41",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-36",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-37",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-45",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-44",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-46",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-48",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-43",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-47",
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Part of the Kingdom of Sweden until the Treaty of Fredrikshamn (1809-09-17; Russian military occupation from 1808)."
+  },
+  {
+   "atom": "U1897-159",
+   "from": "1783-07-14",
+   "to": "1795-03",
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+  },
+  {
+   "atom": "U1897-163",
+   "from": "1783-07-14",
+   "to": "1795-03",
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+  },
+  {
+   "atom": "U1897-166",
+   "from": "1783-07-14",
+   "to": "1795-03",
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+  },
+  {
+   "atom": "U1897-167",
+   "from": "1783-07-14",
+   "to": "1795-03",
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+  },
+  {
+   "atom": "U1897-160",
+   "from": "1783-07-14",
+   "to": "1795-03",
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+  },
+  {
+   "atom": "U1897-165",
+   "from": "1783-07-14",
+   "to": "1795-03",
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+  },
+  {
+   "atom": "U1897-161",
+   "from": "1783-07-14",
+   "to": "1795-03",
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+  },
+  {
+   "atom": "U1897-162",
+   "from": "1783-07-14",
+   "to": "1795-03",
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+  },
+  {
+   "atom": "U1897-164",
+   "from": "1783-07-14",
+   "to": "1795-03",
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+  },
+  {
+   "atom": "U1897-168",
+   "from": "1783-07-14",
+   "to": "1795-03",
+   "why": "Duchy of Courland and Semigallia / Pilten / Lithuanian Samogitia (Polish-Lithuanian), outside the Russian Empire until the annexation of March 1795."
+  }
+ ],
+ "unresolved": [
+  {
+   "what": "Uusimaa, Mikkeli and Kuopio areas before 1809",
+   "atoms": [
+    "U1897-50",
+    "U1897-49",
+    "U1897-51",
+    "U1897-52",
+    "U1897-53",
+    "U1897-56",
+    "U1897-54",
+    "U1897-55",
+    "U1897-59",
+    "U1897-60",
+    "U1897-61",
+    "U1897-58",
+    "U1897-26",
+    "U1897-57"
+   ],
+   "from": "1783-07-14",
+   "to": "1809-09-17",
+   "why": "Split between Swedish Finland (outside the Empire) and Russian Old Finland (Vyborg gub.) along the 1743 Åbo / 1790 Värälä border; whether that line follows 1897 härad lines was not established, so the atoms cannot be declared outside or assigned.",
+   "checked": [
+    "fi.wikipedia articles on all eight läänit (Hämeen, Turun ja Porin, Vaasan, Oulun, Kuopion, Mikkelin, Uudenmaan, Viipurin lääni)",
+    "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+    "fi.wikipedia «Luettelo Suomen kihlakunnista»",
+    "fi.wikipedia «Luettelo Suomen kihlakunnista» (Kymi härad split 1743)"
+   ],
+   "needs": "parish-level atoms for Finland 1743–1812"
+  },
+  {
+   "what": "Vyborg governorate / Viipuri lääni before 1864",
+   "unit": "RUE:Vyborg",
+   "atoms": [
+    "U1897-62",
+    "U1897-63",
+    "U1897-64",
+    "U1897-65",
+    "U1897-66",
+    "U1897-67",
+    "U1897-68",
+    "U1897-838",
+    "U1897-69"
+   ],
+   "from": "1783-07-14",
+   "to": "1864-02-13",
+   "why": "Until 1811 a governorate of the Empire bounded by the Swedish border (1743/1790), which cuts 1897 härad lines; Old Finland joined the Grand Duchy 1812; 1812-04-25 O.S. Sestroretsk works area (part of an 1897 St Petersburg uyezd) attached to Vyborg gub. until 1864; 1831 lääni reform moved Savonlinna area and Kymenkartano parts across its line.",
+   "checked": [
+    "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Санкт-Петербургская губерния",
+    "fi.wikipedia «Viipurin lääni» rev. 23802498",
+    "ru.wikipedia «Санкт-Петербургская губерния» rev. 149475910"
+   ],
+   "needs": "parish-level atoms (pre-1831 lines) and the Sestroretsk area as its own atom"
+  },
+  {
+   "what": "Oulu governorate 1809–1880",
+   "unit": "RUE:Oulu",
+   "atoms": [
+    "U1897-3",
+    "U1897-4",
+    "U1897-27",
+    "U1897-2",
+    "U1897-1",
+    "U1897-28"
+   ],
+   "from": "1809-09-17",
+   "to": "1881-01-01",
+   "why": "Swedish-era läns to 1831, the lääni reform of 1831 and the administrative division in force from 1870-01-01 moved parishes and villages (e.g. Kuru, Teisko, Tampere, 9 Somero villages, 4 Punkalaidun villages, part of Keuruu, Korpilahti) across lääni lines that are not 1897 härad lines; for 1870–1880 no complete list of transfers was found, so no outline is claimed before 1881.",
+   "checked": [
+    "fi.wikipedia articles on all eight läänit (Hämeen, Turun ja Porin, Vaasan, Oulun, Kuopion, Mikkelin, Uudenmaan, Viipurin lääni)",
+    "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+    "fi.wikipedia «Luettelo Suomen kihlakunnista»"
+   ],
+   "needs": "parish-level atoms for the Grand Duchy and a complete list of lääni transfers 1831–1880"
+  },
+  {
+   "what": "Vaasa governorate 1809–1880",
+   "unit": "RUE:Vaasa",
+   "atoms": [
+    "U1897-30",
+    "U1897-33",
+    "U1897-34",
+    "U1897-29",
+    "U1897-32",
+    "U1897-31"
+   ],
+   "from": "1809-09-17",
+   "to": "1881-01-01",
+   "why": "Swedish-era läns to 1831, the lääni reform of 1831 and the administrative division in force from 1870-01-01 moved parishes and villages (e.g. Kuru, Teisko, Tampere, 9 Somero villages, 4 Punkalaidun villages, part of Keuruu, Korpilahti) across lääni lines that are not 1897 härad lines; for 1870–1880 no complete list of transfers was found, so no outline is claimed before 1881.",
+   "checked": [
+    "fi.wikipedia articles on all eight läänit (Hämeen, Turun ja Porin, Vaasan, Oulun, Kuopion, Mikkelin, Uudenmaan, Viipurin lääni)",
+    "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+    "fi.wikipedia «Luettelo Suomen kihlakunnista»"
+   ],
+   "needs": "parish-level atoms for the Grand Duchy and a complete list of lääni transfers 1831–1880"
+  },
+  {
+   "what": "Abo-Björneborg governorate 1809–1880",
+   "unit": "RUE:AboBjorneborg",
+   "atoms": [
+    "U1897-35",
+    "U1897-42",
+    "U1897-38",
+    "U1897-40",
+    "U1897-39",
+    "U1897-41",
+    "U1897-36",
+    "U1897-37"
+   ],
+   "from": "1809-09-17",
+   "to": "1881-01-01",
+   "why": "Swedish-era läns to 1831, the lääni reform of 1831 and the administrative division in force from 1870-01-01 moved parishes and villages (e.g. Kuru, Teisko, Tampere, 9 Somero villages, 4 Punkalaidun villages, part of Keuruu, Korpilahti) across lääni lines that are not 1897 härad lines; for 1870–1880 no complete list of transfers was found, so no outline is claimed before 1881.",
+   "checked": [
+    "fi.wikipedia articles on all eight läänit (Hämeen, Turun ja Porin, Vaasan, Oulun, Kuopion, Mikkelin, Uudenmaan, Viipurin lääni)",
+    "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+    "fi.wikipedia «Luettelo Suomen kihlakunnista»"
+   ],
+   "needs": "parish-level atoms for the Grand Duchy and a complete list of lääni transfers 1831–1880"
+  },
+  {
+   "what": "Häme governorate 1809–1880",
+   "unit": "RUE:Hame",
+   "atoms": [
+    "U1897-45",
+    "U1897-44",
+    "U1897-46",
+    "U1897-48",
+    "U1897-43",
+    "U1897-47"
+   ],
+   "from": "1809-09-17",
+   "to": "1881-01-01",
+   "why": "Swedish-era läns to 1831, the lääni reform of 1831 and the administrative division in force from 1870-01-01 moved parishes and villages (e.g. Kuru, Teisko, Tampere, 9 Somero villages, 4 Punkalaidun villages, part of Keuruu, Korpilahti) across lääni lines that are not 1897 härad lines; for 1870–1880 no complete list of transfers was found, so no outline is claimed before 1881.",
+   "checked": [
+    "fi.wikipedia articles on all eight läänit (Hämeen, Turun ja Porin, Vaasan, Oulun, Kuopion, Mikkelin, Uudenmaan, Viipurin lääni)",
+    "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+    "fi.wikipedia «Luettelo Suomen kihlakunnista»"
+   ],
+   "needs": "parish-level atoms for the Grand Duchy and a complete list of lääni transfers 1831–1880"
+  },
+  {
+   "what": "Uusimaa governorate 1809–1880",
+   "unit": "RUE:Uusimaa",
+   "atoms": [
+    "U1897-50",
+    "U1897-49",
+    "U1897-51",
+    "U1897-52"
+   ],
+   "from": "1809-09-17",
+   "to": "1881-01-01",
+   "why": "Swedish-era läns to 1831, the lääni reform of 1831 and the administrative division in force from 1870-01-01 moved parishes and villages (e.g. Kuru, Teisko, Tampere, 9 Somero villages, 4 Punkalaidun villages, part of Keuruu, Korpilahti) across lääni lines that are not 1897 härad lines; for 1870–1880 no complete list of transfers was found, so no outline is claimed before 1881.",
+   "checked": [
+    "fi.wikipedia articles on all eight läänit (Hämeen, Turun ja Porin, Vaasan, Oulun, Kuopion, Mikkelin, Uudenmaan, Viipurin lääni)",
+    "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+    "fi.wikipedia «Luettelo Suomen kihlakunnista»"
+   ],
+   "needs": "parish-level atoms for the Grand Duchy and a complete list of lääni transfers 1831–1880"
+  },
+  {
+   "what": "Mikkeli governorate 1809–1880",
+   "unit": "RUE:Mikkeli",
+   "atoms": [
+    "U1897-53",
+    "U1897-56",
+    "U1897-54",
+    "U1897-55"
+   ],
+   "from": "1809-09-17",
+   "to": "1881-01-01",
+   "why": "Swedish-era läns to 1831, the lääni reform of 1831 and the administrative division in force from 1870-01-01 moved parishes and villages (e.g. Kuru, Teisko, Tampere, 9 Somero villages, 4 Punkalaidun villages, part of Keuruu, Korpilahti) across lääni lines that are not 1897 härad lines; for 1870–1880 no complete list of transfers was found, so no outline is claimed before 1881.",
+   "checked": [
+    "fi.wikipedia articles on all eight läänit (Hämeen, Turun ja Porin, Vaasan, Oulun, Kuopion, Mikkelin, Uudenmaan, Viipurin lääni)",
+    "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+    "fi.wikipedia «Luettelo Suomen kihlakunnista»"
+   ],
+   "needs": "parish-level atoms for the Grand Duchy and a complete list of lääni transfers 1831–1880"
+  },
+  {
+   "what": "Kuopio governorate 1809–1880",
+   "unit": "RUE:Kuopio",
+   "atoms": [
+    "U1897-59",
+    "U1897-60",
+    "U1897-61",
+    "U1897-58",
+    "U1897-26",
+    "U1897-57"
+   ],
+   "from": "1809-09-17",
+   "to": "1881-01-01",
+   "why": "Swedish-era läns to 1831, the lääni reform of 1831 and the administrative division in force from 1870-01-01 moved parishes and villages (e.g. Kuru, Teisko, Tampere, 9 Somero villages, 4 Punkalaidun villages, part of Keuruu, Korpilahti) across lääni lines that are not 1897 härad lines; for 1870–1880 no complete list of transfers was found, so no outline is claimed before 1881.",
+   "checked": [
+    "fi.wikipedia articles on all eight läänit (Hämeen, Turun ja Porin, Vaasan, Oulun, Kuopion, Mikkelin, Uudenmaan, Viipurin lääni)",
+    "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+    "fi.wikipedia «Luettelo Suomen kihlakunnista»"
+   ],
+   "needs": "parish-level atoms for the Grand Duchy and a complete list of lääni transfers 1831–1880"
+  },
+  {
+   "what": "St Petersburg governorate before 1864",
+   "unit": "RUE:StPetersburg",
+   "atoms": [
+    "U1897-10",
+    "U1897-9",
+    "U1897-833",
+    "U1897-834",
+    "U1897-7",
+    "U1897-11",
+    "U1897-831",
+    "U1897-832"
+   ],
+   "from": "1783-07-14",
+   "to": "1864-02-13",
+   "why": "Olonets oblast part of the governorate to 1784; Narva town (inside 1897 Yamburg uyezd) outside any governorate 1797–1802; the pre-1812 line with Vyborg gub. is not established; 1812–1864 the Sestroretsk works area (part of an 1897 uyezd) belonged to Vyborg gub.",
+   "checked": [
+    "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Санкт-Петербургская губерния",
+    "ru.wikipedia «Санкт-Петербургская губерния» rev. 149475910",
+    "ru.wikipedia «Сестрорецк»"
+   ],
+   "needs": "the Sestroretsk area and Narva town as separate atoms; a source for the 1802–1812 Vyborg line"
+  },
+  {
+   "what": "Novgorod and Pskov governorates before 1824",
+   "atoms": [
+    "U1897-12",
+    "U1897-13",
+    "U1897-18",
+    "U1897-14",
+    "U1897-15",
+    "U1897-16",
+    "U1897-17",
+    "U1897-19",
+    "U1897-20",
+    "U1897-21",
+    "U1897-22",
+    "U1897-139",
+    "U1897-140",
+    "U1897-143",
+    "U1897-144",
+    "U1897-146",
+    "U1897-141",
+    "U1897-145",
+    "U1897-142"
+   ],
+   "from": "1783-07-14",
+   "to": "1824-08-19",
+   "why": "Demyansk uyezd (1897) was formed in 1824 from parts of Novgorod uyezds and part of Pskov's Kholm uyezd, so the pre-1824 Novgorod–Pskov line runs inside 1897 uyezds (also 1796–1801 Olonets lands inside Novgorod gub.).",
+   "checked": [
+    "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Новгородская губерния",
+    "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Псковская губерния"
+   ],
+   "needs": "pre-1824 uyezd atoms for Novgorod/Pskov"
+  },
+  {
+   "what": "Olonets and Arkhangelsk governorates before 1891",
+   "atoms": [
+    "U1897-25",
+    "U1897-74",
+    "U1897-70",
+    "U1897-71",
+    "U1897-72",
+    "U1897-73",
+    "U1897-75",
+    "U1897-24",
+    "U1897-23",
+    "U1897-76",
+    "U1897-77",
+    "U1897-81",
+    "U1897-82",
+    "U1897-78",
+    "U1897-79",
+    "U1897-80"
+   ],
+   "from": "1783-07-14",
+   "to": "1891-11-28",
+   "why": "Olonets was an oblast of St Petersburg to 1784, divided between Arkhangelsk and Novgorod 1796–1801, Kem uyezd moved 1802; from 1802 to 1891 the Onega/Pudozh line differed from 1897 by the village Luzskaya (moved 1891-11-16 O.S.), a line inside 1897 uyezds.",
+   "checked": [
+    "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Олонецкая губерния",
+    "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Архангельская губерния",
+    "RNB, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897)» (after V. E. Den 1902): Вологодская губерния"
+   ],
+   "needs": "village-level atoms on the Onega–Pudozh line"
+  },
+  {
+   "what": "Courland 1795–1818",
+   "unit": "RUE:Kurland",
+   "atoms": [
+    "U1897-159",
+    "U1897-163",
+    "U1897-166",
+    "U1897-167",
+    "U1897-160",
+    "U1897-165",
+    "U1897-161",
+    "U1897-162",
+    "U1897-164",
+    "U1897-168"
+   ],
+   "from": "1795-03",
+   "to": "1819",
+   "why": "Until 1819 the Polangen coastal strip (inside 1897 Grobin uyezd) belonged to Vilna governorate (before Oct 1795 to Poland-Lithuania); the day of the 1819 transfer was not found.",
+   "checked": [
+    "ru.wikipedia «Курляндская губерния» rev. 154901389",
+    "en/lt/de.wikipedia «Palanga»"
+   ],
+   "needs": "Polangen strip as its own atom"
+  },
+  {
+   "what": "Oulu governorate 1903–1917",
+   "unit": "RUE:Oulu",
+   "atoms": [
+    "U1897-3",
+    "U1897-4",
+    "U1897-27",
+    "U1897-2",
+    "U1897-1",
+    "U1897-28"
+   ],
+   "from": "1903",
+   "to": null,
+   "why": "Partial transfer: part of Kuhmoniemi moved from Kuopio to Oulu in 1903 (line inside 1897 härad); the new line runs through 1897 härad atoms. Year precision because only the year is stated.",
+   "checked": [
+    "fi.wikipedia articles on all eight läänit (Hämeen, Turun ja Porin, Vaasan, Oulun, Kuopion, Mikkelin, Uudenmaan, Viipurin lääni)",
+    "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+    "fi.wikipedia «Luettelo Suomen kihlakunnista»",
+    "fi.wikipedia «Hyvinkään maalaiskunta»"
+   ],
+   "needs": "parish/village-level atoms"
+  },
+  {
+   "what": "Kuopio governorate 1903–1917",
+   "unit": "RUE:Kuopio",
+   "atoms": [
+    "U1897-59",
+    "U1897-60",
+    "U1897-61",
+    "U1897-58",
+    "U1897-26",
+    "U1897-57"
+   ],
+   "from": "1903",
+   "to": null,
+   "why": "Partial transfer: part of Kuhmoniemi moved to Oulu in 1903; the new line runs through 1897 härad atoms. Year precision because only the year is stated.",
+   "checked": [
+    "fi.wikipedia articles on all eight läänit (Hämeen, Turun ja Porin, Vaasan, Oulun, Kuopion, Mikkelin, Uudenmaan, Viipurin lääni)",
+    "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+    "fi.wikipedia «Luettelo Suomen kihlakunnista»",
+    "fi.wikipedia «Hyvinkään maalaiskunta»"
+   ],
+   "needs": "parish/village-level atoms"
+  },
+  {
+   "what": "Abo-Björneborg governorate 1912–1917",
+   "unit": "RUE:AboBjorneborg",
+   "atoms": [
+    "U1897-35",
+    "U1897-42",
+    "U1897-38",
+    "U1897-40",
+    "U1897-39",
+    "U1897-41",
+    "U1897-36",
+    "U1897-37"
+   ],
+   "from": "1912",
+   "to": null,
+   "why": "Partial transfer: Loimaa part of Ypäjä moved to Häme in 1912; the new line runs through 1897 härad atoms. Year precision because only the year is stated.",
+   "checked": [
+    "fi.wikipedia articles on all eight läänit (Hämeen, Turun ja Porin, Vaasan, Oulun, Kuopion, Mikkelin, Uudenmaan, Viipurin lääni)",
+    "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+    "fi.wikipedia «Luettelo Suomen kihlakunnista»",
+    "fi.wikipedia «Hyvinkään maalaiskunta»"
+   ],
+   "needs": "parish/village-level atoms"
+  },
+  {
+   "what": "Häme governorate 1912–1917",
+   "unit": "RUE:Hame",
+   "atoms": [
+    "U1897-45",
+    "U1897-44",
+    "U1897-46",
+    "U1897-48",
+    "U1897-43",
+    "U1897-47"
+   ],
+   "from": "1912",
+   "to": null,
+   "why": "Partial transfer: Loimaa part of Ypäjä joined Häme 1912, part of Vilppula from Vaasa 1916, southern Hausjärvi to Uusimaa 1917; the new line runs through 1897 härad atoms. Year precision because only the year is stated.",
+   "checked": [
+    "fi.wikipedia articles on all eight läänit (Hämeen, Turun ja Porin, Vaasan, Oulun, Kuopion, Mikkelin, Uudenmaan, Viipurin lääni)",
+    "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+    "fi.wikipedia «Luettelo Suomen kihlakunnista»",
+    "fi.wikipedia «Hyvinkään maalaiskunta»"
+   ],
+   "needs": "parish/village-level atoms"
+  },
+  {
+   "what": "Vaasa governorate 1916–1917",
+   "unit": "RUE:Vaasa",
+   "atoms": [
+    "U1897-30",
+    "U1897-33",
+    "U1897-34",
+    "U1897-29",
+    "U1897-32",
+    "U1897-31"
+   ],
+   "from": "1916",
+   "to": null,
+   "why": "Partial transfer: part of Vilppula moved to Häme in 1916; the new line runs through 1897 härad atoms. Year precision because only the year is stated.",
+   "checked": [
+    "fi.wikipedia articles on all eight läänit (Hämeen, Turun ja Porin, Vaasan, Oulun, Kuopion, Mikkelin, Uudenmaan, Viipurin lääni)",
+    "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+    "fi.wikipedia «Luettelo Suomen kihlakunnista»",
+    "fi.wikipedia «Hyvinkään maalaiskunta»"
+   ],
+   "needs": "parish/village-level atoms"
+  },
+  {
+   "what": "Uusimaa governorate 1917–1917",
+   "unit": "RUE:Uusimaa",
+   "atoms": [
+    "U1897-50",
+    "U1897-49",
+    "U1897-51",
+    "U1897-52"
+   ],
+   "from": "1917",
+   "to": null,
+   "why": "Partial transfer: southern Hausjärvi (Häme) joined Uusimaa with Hyvinkää in 1917; the new line runs through 1897 härad atoms. Year precision because only the year is stated.",
+   "checked": [
+    "fi.wikipedia articles on all eight läänit (Hämeen, Turun ja Porin, Vaasan, Oulun, Kuopion, Mikkelin, Uudenmaan, Viipurin lääni)",
+    "Tilastokeskus, Tilastollisia tiedonantoja 63 (1979), Väestön elinkeino kunnittain 1880–1975, Liite 4: Kuntien siirrot läänistä toiseen 1881–1976 (p. 353–354)",
+    "fi.wikipedia «Luettelo Suomen kihlakunnista»",
+    "fi.wikipedia «Hyvinkään maalaiskunta»"
+   ],
+   "needs": "parish/village-level atoms"
+  },
+  {
+   "what": "Estland and Livonia after the Estonian autonomy statute",
+   "atoms": [
+    "U1897-147",
+    "U1897-149",
+    "U1897-148",
+    "U1897-150",
+    "U1897-151",
+    "U1897-154",
+    "U1897-155",
+    "U1897-153",
+    "U1897-156",
+    "U1897-157",
+    "U1897-158",
+    "U1897-835",
+    "U1897-152"
+   ],
+   "from": "1917-04-12",
+   "to": null,
+   "why": "Statute of 1917-03-30 O.S. moved Yuryev, Verro, Pernov, Fellin and Ezel uyezds and the Estonian part of Valk uyezd to Estland; the Valk line cuts an 1897 uyezd (and the transfer was carried out over 1917).",
+   "checked": [
+    "ru.wikipedia «Эстляндская губерния» rev. 155114454",
+    "ru.wikipedia «Лифляндская губерния» rev. 155114482"
+   ],
+   "needs": "volost-level atoms for Valk uyezd"
+  }
+ ]
+}

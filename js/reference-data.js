@@ -595,6 +595,17 @@ export const IntMapRefData = (function(){
      cite:'Stangl, Werner, 2019, "Data: Territorial gazetteer for Spanish America, 1701-1808", https://doi.org/10.7910/DVN/YPEU5E, Harvard Dataverse, V4. Werner Stangl (ed.), HGIS de las Indias (2015ff.).'},
     {n:'Pelagios MAGIS — Pleiades Regions (Roman provinces digitised by Pedar Foss from the Barrington Atlas; CC BY) with Pleiades (CC BY 3.0)',u:'https://github.com/pelagios/magis-pleiades-regions',lic:'CC BY (version not stated by the publisher)',licUrl:'https://github.com/pelagios/magis-pleiades-regions#readme',credit:true,
      cite:'Copyright AWMC & Foss, CC-BY (Pelagios MAGIS, Pleiades Regions); dates and names from Pleiades, https://pleiades.stoa.org/ (CC BY 3.0).'},
+    /* ⚠⚠ (hist-reconstruction) AND WHERE NO RECORD STATES THE UNITS AT ALL, INTMAP RECONSTRUCTS THEM FROM CITED
+       FACTS — data/hist-admin-recon.js: a unit on a span is a union of finer units whose lines are the historical
+       ones, and every membership carries its source (docs/HIST-RECONSTRUCTION.md; the facts are the dossiers in
+       scripts/histrecon/dossiers/ and the Meiji tables in scripts/histrecon/). One row per atom set it draws from
+       (Natural Earth and RISTAT have their rows above), and one for the dossiers themselves. */
+    {n:'IntMap — reconstructed historical first-level divisions: dossiers of cited facts',u:'https://github.com/rwmqx7dwb5-arch/IntMap/tree/main/scripts/histrecon',credit:false,
+     cite:'IntMap, reconstructed historical divisions — one cited fact per membership (scripts/histrecon/dossiers and scripts/histrecon/meiji-prefectures.json); method in docs/HIST-RECONSTRUCTION.md.'},
+    {n:'国土交通省 国土数値情報 行政区域データ（N03・1920 年 1 月 1 日時点）— 明治の府県の復元の部品',u:'https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-2015.html',lic:'国土数値情報ダウンロードサイトコンテンツ利用規約（旧国土情報利用約款準拠版）',licUrl:'https://nlftp.mlit.go.jp/ksj/other/agreement_02.html',credit:true,
+     cite:'出典：国土数値情報（行政区域データ N03, 1920年（大正9年）1月1日時点）（国土交通省）を加工して作成。'},
+    {n:'政府統計の総合窓口（e-Stat）国勢調査 2020 年 小地域（町丁・字等別）境界データ — 明治の府県の復元で旧村を切り分ける部品',u:'https://www.e-stat.go.jp/gis',lic:'政府標準利用規約（第2.0版）',licUrl:'https://www.e-stat.go.jp/terms-of-use',credit:true,
+     cite:'出典：政府統計の総合窓口(e-Stat)（https://www.e-stat.go.jp/）「国勢調査 2020年 小地域（町丁・字等別）境界データ」を加工して作成。'},
     /* ⚠⚠⚠ (#R700) THE LICENCE AND THE CITATION ARE VALUES ON THE ROW, NOT A SENTENCE SOMEBODY
        REMEMBERED TO WRITE. CShapes is CC BY-NC-SA 4.0 — attribution is a CONDITION of redistributing
        it, and IntMap redistributes it as 5.6 MB of committed bytes (data/cshapes.js) rather than as

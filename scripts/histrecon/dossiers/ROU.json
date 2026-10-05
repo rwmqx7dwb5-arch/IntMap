@@ -1,0 +1,1998 @@
+{
+ "country": "ROU",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1981-07-27",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Socialist Republic of Romania (to 1989-12) and Romania; no change of the state border in scope.",
+ "units": [
+  {
+   "id": "ROU:Satu Mare@1981",
+   "names": {
+    "en": "Satu Mare County",
+    "ja": "サトゥ・マーレ県",
+    "local": "Județul Satu Mare"
+   },
+   "wikidata": "Q165459",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-301"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Arad@1981",
+   "names": {
+    "en": "Arad County",
+    "ja": "アラド県",
+    "local": "Județul Arad"
+   },
+   "wikidata": "Q179559",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-276"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Bihor@1981",
+   "names": {
+    "en": "Bihor County",
+    "ja": "ビホル県",
+    "local": "Județul Bihor"
+   },
+   "wikidata": "Q179588",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-277"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Timiș@1981",
+   "names": {
+    "en": "Timiș County",
+    "ja": "ティミシュ県",
+    "local": "Județul Timiș"
+   },
+   "wikidata": "Q185586",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-280"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Mehedinți@1981",
+   "names": {
+    "en": "Mehedinți County",
+    "ja": "メヘディンチ県",
+    "local": "Județul Mehedinți"
+   },
+   "wikidata": "Q191717",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-124"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Dolj@1981",
+   "names": {
+    "en": "Dolj County",
+    "ja": "ドルジュ県",
+    "local": "Județul Dolj"
+   },
+   "wikidata": "Q191065",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-122"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Teleorman@1981",
+   "names": {
+    "en": "Teleorman County",
+    "ja": "テレオルマン県",
+    "local": "Județul Teleorman"
+   },
+   "wikidata": "Q191653",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-127"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Constanța@1981",
+   "names": {
+    "en": "Constanța County",
+    "ja": "コンスタンツァ県",
+    "local": "Județul Constanța"
+   },
+   "wikidata": "Q188505",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-133"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Olt@1981",
+   "names": {
+    "en": "Olt County",
+    "ja": "オルト県",
+    "local": "Județul Olt"
+   },
+   "wikidata": "Q188945",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-126"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Caraș-Severin@1981",
+   "names": {
+    "en": "Caraș-Severin County",
+    "ja": "カラシュ＝セヴェリン県",
+    "local": "Județul Caraș-Severin"
+   },
+   "wikidata": "Q187925",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-278"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Botoșani@1981",
+   "names": {
+    "en": "Botoșani County",
+    "ja": "ボトシャニ県",
+    "local": "Județul Botoșani"
+   },
+   "wikidata": "Q178861",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-287"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Iași@1981",
+   "names": {
+    "en": "Iași County",
+    "ja": "ヤシ県",
+    "local": "Județul Iași"
+   },
+   "wikidata": "Q182888",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-308"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Vaslui@1981",
+   "names": {
+    "en": "Vaslui County",
+    "ja": "ヴァスルイ県",
+    "local": "Județul Vaslui"
+   },
+   "wikidata": "Q167199",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-316"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Galați@1981",
+   "names": {
+    "en": "Galați County",
+    "ja": "ガラツィ県",
+    "local": "Județul Galați"
+   },
+   "wikidata": "Q188796",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-315"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Suceava@1981",
+   "names": {
+    "en": "Suceava County",
+    "ja": "スチャヴァ県",
+    "local": "Județul Suceava"
+   },
+   "wikidata": "Q181209",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-311"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Maramureș@1981",
+   "names": {
+    "en": "Maramureș County",
+    "ja": "マラムレシュ県",
+    "local": "Județul Maramureș"
+   },
+   "wikidata": "Q188813",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-298"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Tulcea@1981",
+   "names": {
+    "en": "Tulcea County",
+    "ja": "トゥルチャ県",
+    "local": "Județul Tulcea"
+   },
+   "wikidata": "Q191078",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-4847"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Cluj@1981",
+   "names": {
+    "en": "Cluj County",
+    "ja": "クルジュ県",
+    "local": "Județul Cluj"
+   },
+   "wikidata": "Q182624",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-296"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Bistrița-Năsăud@1981",
+   "names": {
+    "en": "Bistrița-Năsăud County",
+    "ja": "ビストリツァ＝ナサウド県",
+    "local": "Județul Bistrița-Năsăud"
+   },
+   "wikidata": "Q181513",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-295"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Sălaj@1981",
+   "names": {
+    "en": "Sălaj County",
+    "ja": "サラージュ県",
+    "local": "Județul Sălaj"
+   },
+   "wikidata": "Q190690",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-300"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Dâmbovița@1981",
+   "names": {
+    "en": "Dâmbovița County",
+    "ja": "ドゥンボヴィツァ県",
+    "local": "Județul Dâmbovița"
+   },
+   "wikidata": "Q188797",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-130"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Argeș@1981",
+   "names": {
+    "en": "Argeș County",
+    "ja": "アルジェシュ県",
+    "local": "Județul Argeș"
+   },
+   "wikidata": "Q179567",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-302"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Gorj@1981",
+   "names": {
+    "en": "Gorj County",
+    "ja": "ゴルジュ県",
+    "local": "Județul Gorj"
+   },
+   "wikidata": "Q190406",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-123"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Hunedoara@1981",
+   "names": {
+    "en": "Hunedoara County",
+    "ja": "フネドアラ県",
+    "local": "Județul Hunedoara"
+   },
+   "wikidata": "Q191071",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-297"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Vâlcea@1981",
+   "names": {
+    "en": "Vâlcea County",
+    "ja": "ヴルチャ県",
+    "local": "Județul Vâlcea"
+   },
+   "wikidata": "Q186838",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-304"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Prahova@1981",
+   "names": {
+    "en": "Prahova County",
+    "ja": "プラホヴァ県",
+    "local": "Județul Prahova"
+   },
+   "wikidata": "Q188665",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-310"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Covasna@1981",
+   "names": {
+    "en": "Covasna County",
+    "ja": "コヴァスナ県",
+    "local": "Județul Covasna"
+   },
+   "wikidata": "Q188959",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-306"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Vrancea@1981",
+   "names": {
+    "en": "Vrancea County",
+    "ja": "ヴランチャ県",
+    "local": "Județul Vrancea"
+   },
+   "wikidata": "Q182778",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-317"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Buzău@1981",
+   "names": {
+    "en": "Buzău County",
+    "ja": "ブザウ県",
+    "local": "Județul Buzău"
+   },
+   "wikidata": "Q185309",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-314"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Brașov@1981",
+   "names": {
+    "en": "Brașov County",
+    "ja": "ブラショフ県",
+    "local": "Județul Brașov"
+   },
+   "wikidata": "Q182614",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-305"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Sibiu@1981",
+   "names": {
+    "en": "Sibiu County",
+    "ja": "シビウ県",
+    "local": "Județul Sibiu"
+   },
+   "wikidata": "Q184797",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-303"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Mureș@1981",
+   "names": {
+    "en": "Mureș County",
+    "ja": "ムレシュ県",
+    "local": "Județul Mureș"
+   },
+   "wikidata": "Q190711",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-299"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Harghita@1981",
+   "names": {
+    "en": "Harghita County",
+    "ja": "ハルギタ県",
+    "local": "Județul Harghita"
+   },
+   "wikidata": "Q190702",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-307"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Neamț@1981",
+   "names": {
+    "en": "Neamț County",
+    "ja": "ネアムツ県",
+    "local": "Județul Neamț"
+   },
+   "wikidata": "Q188661",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-309"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Bacău@1981",
+   "names": {
+    "en": "Bacău County",
+    "ja": "バカウ県",
+    "local": "Județul Bacău"
+   },
+   "wikidata": "Q179779",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-312"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Alba@1981",
+   "names": {
+    "en": "Alba County",
+    "ja": "アルバ県",
+    "local": "Județul Alba"
+   },
+   "wikidata": "Q45868",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-294"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Brăila@1981",
+   "names": {
+    "en": "Brăila County",
+    "ja": "ブライラ県",
+    "local": "Județul Brăila"
+   },
+   "wikidata": "Q188503",
+   "spans": [
+    {
+     "from": "1981-07-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-313"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "1981-07-27 is the date the county composition is attested (republication of Law 2/1968 after Decree 15/1981), not the county creation (1968). Village-by-village comparison of the 1981 annex with present SIRUTA localities found no village of this county now in another county and none from another county now in it (only name noise from merged/renamed villages); post-1989 changes were limited to Ilfov per the cited article."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Călărași@1983",
+   "names": {
+    "en": "Călărași County",
+    "ja": "カララシ県",
+    "local": "Județul Călărași"
+   },
+   "wikidata": "Q188948",
+   "spans": [
+    {
+     "from": "1983",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "ROU-129"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ro.wikipedia.org/w/index.php?title=Comuna_Ileana,_C%C4%83l%C4%83ra%C8%99i&oldid=17273879",
+       "title": "Comuna Ileana, Călărași (Wikipedia RO, rev. 17273879)",
+       "says": "Ileana stayed in Ialomița in 1981 and was transferred to Călărași the following year (Decree 115/1982).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Valid from the first day after Ileana commune was moved from Ialomița by Decree 115/1982 (day of that decree not retrieved; 1983 is the earliest whole year certainly after it). No later Călărași village is found in another county."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Ialomița@1983",
+   "names": {
+    "en": "Ialomița County",
+    "ja": "ヤロミツァ県",
+    "local": "Județul Ialomița"
+   },
+   "wikidata": "Q193044",
+   "spans": [
+    {
+     "from": "1983",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "ROU-132"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ro.wikipedia.org/w/index.php?title=Comuna_Nuci,_Ilfov&oldid=17878614",
+       "title": "Comuna Nuci, Ilfov (Wikipedia RO, rev. 17878614)",
+       "says": "Nuci passed to Ialomița in Jan 1981 and, months later (Decree 263 of 2 Sep 1981), to the Ilfov Agricultural Sector.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ro.wikipedia.org/w/index.php?title=Comuna_Ileana,_C%C4%83l%C4%83ra%C8%99i&oldid=17273879",
+       "title": "Comuna Ileana, Călărași (Wikipedia RO, rev. 17273879)",
+       "says": "Ileana stayed in Ialomița in 1981 and was transferred to Călărași the following year (Decree 115/1982).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "After the Sep 1981 transfers to the Ilfov Agricultural Sector (Decree 263/1981) and Ileana transfer to Călărași (Decree 115/1982). Year precision: decree day not retrieved."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Giurgiu@1987",
+   "names": {
+    "en": "Giurgiu County",
+    "ja": "ジュルジュ県",
+    "local": "Județul Giurgiu"
+   },
+   "wikidata": "Q193055",
+   "spans": [
+    {
+     "from": "1987",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "ROU-131"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://bucurestiivechisinoi.ro/2015/02/judetul-ilfov-scurt-istoric/",
+       "title": "Județul Ilfov: scurt istoric (București Vechi și Noi, 2015)",
+       "says": "Decree 15 of 23 Jan 1981 abolished Ilfov county; decrees 368/1985, 209/1986 and others moved communes to or from the agricultural sector.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ro.wikipedia.org/w/index.php?title=Comuna_Cornetu,_Ilfov&oldid=17432269",
+       "title": "Comuna Cornetu, Ilfov (Wikipedia RO, rev. 17432269)",
+       "says": "Cornetu went to Giurgiu by Decree 15/1981 and to the Ilfov Agricultural Sector by Decree 368 of 25 Nov 1985.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ro.wikipedia.org/w/index.php?title=Comuna_Vidra,_Ilfov&oldid=17723176",
+       "title": "Comuna Vidra, Ilfov (Wikipedia RO, rev. 17723176)",
+       "says": "Vidra passed to the Ilfov Agricultural Sector in 1986 (statement uncited in the article).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://query.wikidata.org/",
+       "title": "Wikidata: localities with SIRUTA code (P843) and their present county",
+       "says": "Gives each present-day SIRUTA locality and the county it lies in today (queried 2026-10-05; used for the village-by-village comparison with the 1981 annex).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Giurgiu lost Berceni (1981), Ciorogârla, Clinceni, Cornetu, Dărăști-Ilfov, Domnești, Dragomirești-Vale (Decree 368/1985) and Vidra (1986) to the Ilfov Agricultural Sector. 1987 = first whole year after the last attested transfer."
+    }
+   ]
+  },
+  {
+   "id": "ROU:București",
+   "names": {
+    "en": "Municipality of Bucharest",
+    "ja": "ブカレスト",
+    "local": "Municipiul București"
+   },
+   "wikidata": "Q19660",
+   "spans": [
+    {
+     "from": "1987",
+     "precision": "year",
+     "to": "1997-04-10",
+     "atoms": [
+      "ROU-128",
+      "ROU-4844"
+     ],
+     "sources": [
+      {
+       "url": "https://geografie.ubbcluj.ro/ccau/legislatie/L_2_1968.pdf",
+       "title": "Legea nr. 2/1968, republicată (Buletinul Oficial nr. 54-55 din 27 iulie 1981)",
+       "says": "Republished annex lists, county by county, every town, commune and village in force on 27 July 1981; Sectorul Agricol Ilfov is subordinate to Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ro.wikipedia.org/w/index.php?title=Jude%C8%9Bul_Ilfov&oldid=17933531",
+       "title": "Județul Ilfov (Wikipedia RO, rev. 17933531)",
+       "says": "Law 50/1997 re-established Ilfov County within the limits of the former Ilfov Agricultural Sector, removing it from Bucharest authority.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uro.html",
+       "title": "Counties of Romania (statoids.com, updated 2015-06-30)",
+       "says": "Change history: 1968 reform; 1981-01-23 Călărași and Giurgiu formed; 41 divisions at the 1992 census; Ilfov county split from Bucharest 1997; 41 counties plus Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://bucurestiivechisinoi.ro/2015/02/judetul-ilfov-scurt-istoric/",
+       "title": "Județul Ilfov: scurt istoric (București Vechi și Noi, 2015)",
+       "says": "Decree 15 of 23 Jan 1981 abolished Ilfov county; decrees 368/1985, 209/1986 and others moved communes to or from the agricultural sector.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The municipality included the subordinate Ilfov Agricultural Sector (art. 8 of Law 2/1968 as republished 1981); the sector extent at 1997 = present Ilfov County (Law 50/1997, within the limits of the former sector). 1987: first whole year after the last attested commune transfer into the sector (1986)."
+    },
+    {
+     "from": "1997-04-10",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-128"
+     ],
+     "sources": [
+      {
+       "url": "http://www.legex.ro/Legea-50-1997-11556.aspx",
+       "title": "Legea nr. 50 din 9 aprilie 1997 (Monitorul Oficial nr. 61 din 10 aprilie 1997)",
+       "says": "Amends Law 69/1991 art. 126: the Ilfov agricultural sector gets county status as Ilfov County, seat in Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ro.wikipedia.org/w/index.php?title=Jude%C8%9Bul_Ilfov&oldid=17933531",
+       "title": "Județul Ilfov (Wikipedia RO, rev. 17933531)",
+       "says": "Law 50/1997 re-established Ilfov County within the limits of the former Ilfov Agricultural Sector, removing it from Bucharest authority.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Law 50/1997 published and in force 1997-04-10 (Constitution 1991: laws take effect on publication). statoids gives 1997-05-09."
+    }
+   ]
+  },
+  {
+   "id": "ROU:Ilfov@1997",
+   "names": {
+    "en": "Ilfov County",
+    "ja": "イルフォヴ県",
+    "local": "Județul Ilfov"
+   },
+   "wikidata": "Q191670",
+   "spans": [
+    {
+     "from": "1997-04-10",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ROU-4844"
+     ],
+     "sources": [
+      {
+       "url": "http://www.legex.ro/Legea-50-1997-11556.aspx",
+       "title": "Legea nr. 50 din 9 aprilie 1997 (Monitorul Oficial nr. 61 din 10 aprilie 1997)",
+       "says": "Amends Law 69/1991 art. 126: the Ilfov agricultural sector gets county status as Ilfov County, seat in Bucharest.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ro.wikipedia.org/w/index.php?title=Jude%C8%9Bul_Ilfov&oldid=17933531",
+       "title": "Județul Ilfov (Wikipedia RO, rev. 17933531)",
+       "says": "Law 50/1997 re-established Ilfov County within the limits of the former Ilfov Agricultural Sector, removing it from Bucharest authority.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Romania&oldid=1321342661",
+       "title": "Administrative divisions of Romania (Wikipedia, rev. 1321342661)",
+       "says": "States that the only territorial adjustment after 1989 was the formation of Ilfov County from the Bucharest agricultural sector (cites an Arges prefecture history page).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Former Ilfov Agricultural Sector, unchanged in extent, becomes a county. statoids dates it 1997-05-09; the law publication date is used."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1981-01-23",
+   "precision": "day",
+   "what": "Decree 15/1981: Ilfov and Ialomița reorganised; Giurgiu and Călărași created; Ilfov Agricultural Sector under Bucharest (before scope start)",
+   "sources": [
+    {
+     "url": "https://bucurestiivechisinoi.ro/2015/02/judetul-ilfov-scurt-istoric/",
+     "title": "Județul Ilfov: scurt istoric (București Vechi și Noi, 2015)",
+     "says": "Decree 15 of 23 Jan 1981 abolished Ilfov county; decrees 368/1985, 209/1986 and others moved communes to or from the agricultural sector.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://statoids.com/uro.html",
+     "title": "Counties of Romania (statoids.com, updated 2015-06-30)",
+     "says": "Change history: 1968 reform; 1981-01-23 Călărași and Giurgiu formed; 41 divisions at the 1992 census; Ilfov county split from Bucharest 1997; 41 counties plus Bucharest.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1981-09-02",
+   "precision": "day",
+   "what": "Decree 263/1981: Grădiștea, Nuci, Petrăchioaia from Ialomița to the Ilfov Agricultural Sector",
+   "sources": [
+    {
+     "url": "https://ro.wikipedia.org/w/index.php?title=Comuna_Nuci,_Ilfov&oldid=17878614",
+     "title": "Comuna Nuci, Ilfov (Wikipedia RO, rev. 17878614)",
+     "says": "Nuci passed to Ialomița in Jan 1981 and, months later (Decree 263 of 2 Sep 1981), to the Ilfov Agricultural Sector.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1982",
+   "precision": "year",
+   "what": "Decree 115/1982: Ileana commune from Ialomița to Călărași",
+   "sources": [
+    {
+     "url": "https://ro.wikipedia.org/w/index.php?title=Comuna_Ileana,_C%C4%83l%C4%83ra%C8%99i&oldid=17273879",
+     "title": "Comuna Ileana, Călărași (Wikipedia RO, rev. 17273879)",
+     "says": "Ileana stayed in Ialomița in 1981 and was transferred to Călărași the following year (Decree 115/1982).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1985-11-25",
+   "precision": "day",
+   "what": "Decree 368/1985: Ciorogârla, Clinceni, Cornetu, Dărăști-Ilfov, Domnești, Dragomirești-Vale from Giurgiu to the Ilfov Agricultural Sector",
+   "sources": [
+    {
+     "url": "https://ro.wikipedia.org/w/index.php?title=Comuna_Cornetu,_Ilfov&oldid=17432269",
+     "title": "Comuna Cornetu, Ilfov (Wikipedia RO, rev. 17432269)",
+     "says": "Cornetu went to Giurgiu by Decree 15/1981 and to the Ilfov Agricultural Sector by Decree 368 of 25 Nov 1985.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://bucurestiivechisinoi.ro/2015/02/judetul-ilfov-scurt-istoric/",
+     "title": "Județul Ilfov: scurt istoric (București Vechi și Noi, 2015)",
+     "says": "Decree 15 of 23 Jan 1981 abolished Ilfov county; decrees 368/1985, 209/1986 and others moved communes to or from the agricultural sector.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1986",
+   "precision": "year",
+   "what": "Vidra from Giurgiu to the Ilfov Agricultural Sector (Decree 209 of 1986-06-18 is named among the decrees; link to Vidra not confirmed)",
+   "sources": [
+    {
+     "url": "https://ro.wikipedia.org/w/index.php?title=Comuna_Vidra,_Ilfov&oldid=17723176",
+     "title": "Comuna Vidra, Ilfov (Wikipedia RO, rev. 17723176)",
+     "says": "Vidra passed to the Ilfov Agricultural Sector in 1986 (statement uncited in the article).",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://bucurestiivechisinoi.ro/2015/02/judetul-ilfov-scurt-istoric/",
+     "title": "Județul Ilfov: scurt istoric (București Vechi și Noi, 2015)",
+     "says": "Decree 15 of 23 Jan 1981 abolished Ilfov county; decrees 368/1985, 209/1986 and others moved communes to or from the agricultural sector.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1997-04-10",
+   "precision": "day",
+   "what": "Law 50/1997: Ilfov Agricultural Sector becomes Ilfov County, separate from Bucharest",
+   "sources": [
+    {
+     "url": "http://www.legex.ro/Legea-50-1997-11556.aspx",
+     "title": "Legea nr. 50 din 9 aprilie 1997 (Monitorul Oficial nr. 61 din 10 aprilie 1997)",
+     "says": "Amends Law 69/1991 art. 126: the Ilfov agricultural sector gets county status as Ilfov County, seat in Bucharest.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://ro.wikipedia.org/w/index.php?title=Jude%C8%9Bul_Ilfov&oldid=17933531",
+     "title": "Județul Ilfov (Wikipedia RO, rev. 17933531)",
+     "says": "Law 50/1997 re-established Ilfov County within the limits of the former Ilfov Agricultural Sector, removing it from Bucharest authority.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1992-01-07",
+   "n": 41,
+   "sources": [
+    {
+     "url": "https://statoids.com/uro.html",
+     "title": "Counties of Romania (statoids.com, updated 2015-06-30)",
+     "says": "Change history: 1968 reform; 1981-01-23 Călărași and Giurgiu formed; 41 divisions at the 1992 census; Ilfov county split from Bucharest 1997; 41 counties plus Bucharest.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2002-03-18",
+   "n": 42,
+   "sources": [
+    {
+     "url": "https://statoids.com/uro.html",
+     "title": "Counties of Romania (statoids.com, updated 2015-06-30)",
+     "says": "Change history: 1968 reform; 1981-01-23 Călărași and Giurgiu formed; 41 divisions at the 1992 census; Ilfov county split from Bucharest 1997; 41 counties plus Bucharest.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Ilfov Agricultural Sector / Bucharest municipality, 1981-07-27 to 1987",
+   "unit": "ROU:București",
+   "atoms": [
+    "ROU-128",
+    "ROU-4844"
+   ],
+   "from": "1981-07-27",
+   "to": "1987",
+   "why": "Communes moved into the sector from Ialomița (Sep 1981) and Giurgiu (1981, Nov 1985, 1986); its line ran through today’s Giurgiu and Ialomița atoms.",
+   "checked": [
+    "Law 2/1968 republished 1981 (annex, full text)",
+    "ro.wikipedia commune histories of Berceni, Ciorogârla, Cornetu, Dărăști-Ilfov, Domnești, Dragomirești-Vale, Vidra, Grădiștea, Nuci, Petrăchioaia, Ileana",
+    "bucurestiivechisinoi.ro (decrees 368/1985, 209/1986)",
+    "cjilfov.ro history",
+    "statoids.com/uro.html",
+    "legislatie.just.ro (unreachable from here)",
+    "village-name comparison 1981 annex vs Wikidata SIRUTA"
+   ],
+   "needs": "commune-level atoms (Romanian UAT polygons from ANCPI/INSPIRE — licence to verify — or OSM admin_level=6/8, ODbL) plus each decree’s commune list and day"
+  },
+  {
+   "what": "Giurgiu County, 1981-07-27 to 1987",
+   "unit": "ROU:Giurgiu@1987",
+   "atoms": [
+    "ROU-131"
+   ],
+   "from": "1981-07-27",
+   "to": "1987",
+   "why": "Eight communes then in Giurgiu now lie in the Ilfov atom; partial transfers.",
+   "checked": [
+    "Law 2/1968 republished 1981 (annex, full text)",
+    "ro.wikipedia commune histories of Berceni, Ciorogârla, Cornetu, Dărăști-Ilfov, Domnești, Dragomirești-Vale, Vidra, Grădiștea, Nuci, Petrăchioaia, Ileana",
+    "bucurestiivechisinoi.ro (decrees 368/1985, 209/1986)",
+    "cjilfov.ro history",
+    "statoids.com/uro.html",
+    "legislatie.just.ro (unreachable from here)",
+    "village-name comparison 1981 annex vs Wikidata SIRUTA"
+   ],
+   "needs": "commune-level atoms (as above)"
+  },
+  {
+   "what": "Ialomița County, 1981-07-27 to 1983",
+   "unit": "ROU:Ialomița@1983",
+   "atoms": [
+    "ROU-132"
+   ],
+   "from": "1981-07-27",
+   "to": "1983",
+   "why": "Until Sep 1981 Ialomița held Grădiștea, Nuci, Petrăchioaia (now Ilfov atom) and until 1982 Ileana (now Călărași atom).",
+   "checked": [
+    "Law 2/1968 republished 1981 (annex, full text)",
+    "ro.wikipedia commune histories of Berceni, Ciorogârla, Cornetu, Dărăști-Ilfov, Domnești, Dragomirești-Vale, Vidra, Grădiștea, Nuci, Petrăchioaia, Ileana",
+    "bucurestiivechisinoi.ro (decrees 368/1985, 209/1986)",
+    "cjilfov.ro history",
+    "statoids.com/uro.html",
+    "legislatie.just.ro (unreachable from here)",
+    "village-name comparison 1981 annex vs Wikidata SIRUTA"
+   ],
+   "needs": "commune-level atoms (as above) and the day of Decree 115/1982"
+  },
+  {
+   "what": "Călărași County, 1981-07-27 to 1983",
+   "unit": "ROU:Călărași@1983",
+   "atoms": [
+    "ROU-129"
+   ],
+   "from": "1981-07-27",
+   "to": "1983",
+   "why": "Ileana commune (now inside the Călărași atom) belonged to Ialomița until 1982.",
+   "checked": [
+    "Law 2/1968 republished 1981 (annex, full text)",
+    "ro.wikipedia commune histories of Berceni, Ciorogârla, Cornetu, Dărăști-Ilfov, Domnești, Dragomirești-Vale, Vidra, Grădiștea, Nuci, Petrăchioaia, Ileana",
+    "bucurestiivechisinoi.ro (decrees 368/1985, 209/1986)",
+    "cjilfov.ro history",
+    "statoids.com/uro.html",
+    "legislatie.just.ro (unreachable from here)",
+    "village-name comparison 1981 annex vs Wikidata SIRUTA"
+   ],
+   "needs": "commune-level atoms and the day of Decree 115/1982"
+  },
+  {
+   "what": "1968-02-17 to 1981-07-27: 39 counties + Bucharest (Law 2/1968; county limits fixed in the annexes of 1968-12-20), then Decree 15/1981 of 1981-01-23",
+   "from": "1968-02-17",
+   "to": "1981-07-27",
+   "why": "Not claimed: old Ilfov and Ialomița differ from any union of today’s atoms (parts went to Giurgiu and Călărași, Giurgiu also took part of Teleorman), and no complete list of 1968–1981 State Council decrees moving communes between other counties was obtainable.",
+   "checked": [
+    "statoids.com/uro.html",
+    "juridice.ro on the 1968 legislative process",
+    "Law 2/1968 republished 1981"
+   ],
+   "needs": "the 1968 annexes and every 1968–1981 decree; commune-level atoms"
+  },
+  {
+   "what": "Before 1968: 1950–1968 regions and raions; 1925–1950 71 județe (plus 1938–40 ținuturi); pre-1918 Old Kingdom districts",
+   "to": "1968-02-17",
+   "why": "Different layouts whose lines do not follow today’s county boundaries.",
+   "checked": [
+    "statoids.com/uro.html"
+   ],
+   "needs": "other atom sets (e.g. interwar plăși/communes)"
+  }
+ ]
+}

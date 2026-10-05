@@ -1,0 +1,2071 @@
+{
+ "country": "NGA",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1961-06-01",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Federation of Nigeria (independent 1960-10-01), from 1961-06-01 when Northern Cameroons joined the Northern Region (before that date parts of the Borno, Adamawa and Taraba atoms were outside Nigeria). Units are drawn as actually administered: Bakassi (NE: in Cameroon) was Nigerian-administered until 2008-08-14, and Darak/Lake Chad villages (NE: in Cameroon, ICJ line) until Dec 2003, so Cross River and Borno outlines differ from the NE atoms before those dates.",
+ "units": [
+  {
+   "id": "NGA:Northern@1961",
+   "names": {
+    "en": "Northern Region (with Sardauna Province)",
+    "ja": "北部州",
+    "local": "Northern Region"
+   },
+   "wikidata": "Q3509092",
+   "spans": [
+    {
+     "from": "1961-06-01",
+     "precision": "day",
+     "to": "1967-05-27",
+     "atoms": [
+      "NGA-2869",
+      "NGA-2868",
+      "NGA-2870",
+      "NGA-2864",
+      "NGA-2871",
+      "NGA-2879",
+      "NGA-2872",
+      "NGA-2851",
+      "NGA-3470",
+      "NGA-2849",
+      "NGA-2865",
+      "NGA-2846",
+      "NGA-2866",
+      "NGA-2867",
+      "NGA-2858",
+      "NGA-2859",
+      "NGA-2839",
+      "NGA-2873",
+      "NGA-2881",
+      "NGA-2848"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=British_Cameroons&oldid=1377159908",
+       "title": "Wikipedia — British Cameroons (oldid 1377159908)",
+       "says": "Northern Cameroons became the Sardauna Province of Northern Nigeria on 1 June 1961.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1967-05-27 entry",
+       "says": "Eastern split into East-Central, Rivers, South-Eastern; Northern into six states; Western into Lagos (Colony province + federal territory) and Western; Mid-Western became a state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Union of every atom of the later northern states. All later transfers among them stayed inside the former Northern Region (Igala, FCT, Kogi); no north–south transfer is recorded. Starts when Northern Cameroons joined (statoids writes 1962-06-01; Wikipedia 1 June 1961 is used). Bourha Wango (a single village on the Cameroon border near Adamawa/Borno) changed hands on 13 Jul 2004; below NE 10m resolution, not represented."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Lagos@1967",
+   "names": {
+    "en": "Lagos State",
+    "ja": "ラゴス州",
+    "local": "Lagos State"
+   },
+   "wikidata": "Q815913",
+   "spans": [
+    {
+     "from": "1967-05-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2850"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1967-05-27 entry",
+       "says": "Eastern split into East-Central, Rivers, South-Eastern; Northern into six states; Western into Lagos (Colony province + federal territory) and Western; Mid-Western became a state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria (change history)",
+       "says": "12 states 1967-05-27; 19 states + FCT 1976-02-03 with Igala, Ughelli, Opobo transfers; Akwa Ibom, Katsina 1987-09-23; nine states 1991-08-27; six states 1996-10-01.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006). Colony province + Lagos federal territory."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Western@1967",
+   "names": {
+    "en": "Western State",
+    "ja": "西部州 (ナイジェリア)",
+    "local": "Western State"
+   },
+   "wikidata": "Q7988329",
+   "spans": [
+    {
+     "from": "1967-05-27",
+     "precision": "day",
+     "to": "1976-02-03",
+     "atoms": [
+      "NGA-2852",
+      "NGA-2856",
+      "NGA-2855",
+      "NGA-2853",
+      "NGA-2854"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1967-05-27 entry",
+       "says": "Eastern split into East-Central, Rivers, South-Eastern; Northern into six states; Western into Lagos (Colony province + federal territory) and Western; Mid-Western became a state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Divided wholly into Ogun, Ondo and Oyo in 1976 (later Osun, Ekiti split from those)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Kano@1967",
+   "names": {
+    "en": "Kano State",
+    "ja": "カノ州",
+    "local": "Kano State"
+   },
+   "wikidata": "Q682571",
+   "spans": [
+    {
+     "from": "1967-05-27",
+     "precision": "day",
+     "to": "1991-08-27",
+     "atoms": [
+      "NGA-2869",
+      "NGA-2868"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1967-05-27 entry",
+       "says": "Eastern split into East-Central, Rivers, South-Eastern; Northern into six states; Western into Lagos (Colony province + federal territory) and Western; Mid-Western became a state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Jigawa split wholly from Kano in 1991."
+    },
+    {
+     "from": "1991-08-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2869"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:NorthCentral@1967",
+   "names": {
+    "en": "North-Central State",
+    "local": "North-Central State"
+   },
+   "wikidata": null,
+   "spans": [
+    {
+     "from": "1967-05-27",
+     "precision": "day",
+     "to": "1976-02-03",
+     "atoms": [
+      "NGA-2864",
+      "NGA-2870"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1967-05-27 entry",
+       "says": "Eastern split into East-Central, Rivers, South-Eastern; Northern into six states; Western into Lagos (Colony province + federal territory) and Western; Mid-Western became a state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Renamed Kaduna State in 1976 without territorial change; Katsina split from it in 1987."
+    }
+   ]
+  },
+  {
+   "id": "NGA:NorthEastern@1967",
+   "names": {
+    "en": "North-Eastern State",
+    "ja": "北東部州 (ナイジェリア)",
+    "local": "North-Eastern State"
+   },
+   "wikidata": "Q9294802",
+   "spans": [
+    {
+     "from": "1967-05-27",
+     "precision": "day",
+     "to": "1976-02-03",
+     "atoms": [
+      "NGA-2839",
+      "NGA-2873",
+      "NGA-2858",
+      "NGA-2859",
+      "NGA-2881",
+      "NGA-2848"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1967-05-27 entry",
+       "says": "Eastern split into East-Central, Rivers, South-Eastern; Northern into six states; Western into Lagos (Colony province + federal territory) and Western; Mid-Western became a state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Divided wholly into Bauchi, Borno and Gongola in 1976. Bourha Wango (a single village on the Cameroon border near Adamawa/Borno) changed hands on 13 Jul 2004; below NE 10m resolution, not represented."
+    }
+   ]
+  },
+  {
+   "id": "NGA:EastCentral@1967",
+   "names": {
+    "en": "East-Central State",
+    "ja": "東部中央州",
+    "local": "East-Central State"
+   },
+   "wikidata": "Q3511658",
+   "spans": [
+    {
+     "from": "1967-05-27",
+     "precision": "day",
+     "to": "1976-02-03",
+     "atoms": [
+      "NGA-2857",
+      "NGA-2862",
+      "NGA-2863",
+      "NGA-2843",
+      "NGA-2841"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1967-05-27 entry",
+       "says": "Eastern split into East-Central, Rivers, South-Eastern; Northern into six states; Western into Lagos (Colony province + federal territory) and Western; Mid-Western became a state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Divided into Anambra and Imo in 1976; Abia, Enugu and Ebonyi later came only from these. No transfer with Rivers is recorded for 1976 (only Opobo SE→Rivers and Ughelli MW→Rivers)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Kaduna@1976",
+   "names": {
+    "en": "Kaduna State",
+    "ja": "カドゥナ州",
+    "local": "Kaduna State"
+   },
+   "wikidata": "Q878284",
+   "spans": [
+    {
+     "from": "1976-02-03",
+     "precision": "day",
+     "to": "1987-09-23",
+     "atoms": [
+      "NGA-2864",
+      "NGA-2870"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1987-09-23 entry",
+       "says": "Akwa Ibom split from Cross River; Katsina split from Kaduna.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    },
+    {
+     "from": "1987-09-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2864"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1987-09-23 entry",
+       "says": "Akwa Ibom split from Cross River; Katsina split from Kaduna.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Bauchi@1976",
+   "names": {
+    "en": "Bauchi State",
+    "ja": "バウチ州",
+    "local": "Bauchi State"
+   },
+   "wikidata": "Q503936",
+   "spans": [
+    {
+     "from": "1976-02-03",
+     "precision": "day",
+     "to": "1996-10-01",
+     "atoms": [
+      "NGA-2858",
+      "NGA-2859"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Gombe split wholly from Bauchi in 1996."
+    },
+    {
+     "from": "1996-10-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2858"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Bendel@1976",
+   "names": {
+    "en": "Bendel State (Mid-Western State until 1976)",
+    "local": "Bendel State"
+   },
+   "wikidata": "Q27536437",
+   "spans": [
+    {
+     "from": "1976-02-03",
+     "precision": "day",
+     "to": "1991-08-27",
+     "atoms": [
+      "NGA-2860",
+      "NGA-2861"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Divided wholly into Delta and Edo in 1991. Wikidata dates the renaming Mid-Western→Bendel to 1976-03-17; the territory (after Ughelli left for Rivers) dates from 1976-02-03."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Gongola@1976",
+   "names": {
+    "en": "Gongola State",
+    "ja": "ゴンゴラ州",
+    "local": "Gongola State"
+   },
+   "wikidata": "Q3508968",
+   "spans": [
+    {
+     "from": "1976-02-03",
+     "precision": "day",
+     "to": "1991-08-27",
+     "atoms": [
+      "NGA-2881",
+      "NGA-2848"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Divided wholly into Adamawa and Taraba in 1991. Bourha Wango (a single village on the Cameroon border near Adamawa/Borno) changed hands on 13 Jul 2004; below NE 10m resolution, not represented."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Niger@1976",
+   "names": {
+    "en": "Niger State",
+    "ja": "ナイジャ州",
+    "local": "Niger State"
+   },
+   "wikidata": "Q503932",
+   "spans": [
+    {
+     "from": "1976-02-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2851"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Ogun@1976",
+   "names": {
+    "en": "Ogun State",
+    "ja": "オグン州",
+    "local": "Ogun State"
+   },
+   "wikidata": "Q836657",
+   "spans": [
+    {
+     "from": "1976-02-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2852"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Ondo@1976",
+   "names": {
+    "en": "Ondo State",
+    "ja": "オンド州",
+    "local": "Ondo State"
+   },
+   "wikidata": "Q836654",
+   "spans": [
+    {
+     "from": "1976-02-03",
+     "precision": "day",
+     "to": "1996-10-01",
+     "atoms": [
+      "NGA-2853",
+      "NGA-2854"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Ekiti split wholly from Ondo in 1996."
+    },
+    {
+     "from": "1996-10-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2853"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Oyo@1976",
+   "names": {
+    "en": "Oyo State",
+    "ja": "オヨ州",
+    "local": "Oyo State"
+   },
+   "wikidata": "Q503905",
+   "spans": [
+    {
+     "from": "1976-02-03",
+     "precision": "day",
+     "to": "1991-08-27",
+     "atoms": [
+      "NGA-2856",
+      "NGA-2855"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Osun split wholly from Oyo in 1991."
+    },
+    {
+     "from": "1991-08-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2856"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Plateau@1976",
+   "names": {
+    "en": "Plateau State",
+    "ja": "プラトー州",
+    "local": "Plateau State"
+   },
+   "wikidata": "Q503928",
+   "spans": [
+    {
+     "from": "1976-02-03",
+     "precision": "day",
+     "to": "1996-10-01",
+     "atoms": [
+      "NGA-2866",
+      "NGA-2867"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Nasarawa split wholly from Plateau in 1996."
+    },
+    {
+     "from": "1996-10-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2866"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Rivers@1976",
+   "names": {
+    "en": "Rivers State",
+    "ja": "リバーズ州",
+    "local": "Rivers State"
+   },
+   "wikidata": "Q503923",
+   "spans": [
+    {
+     "from": "1976-02-03",
+     "precision": "day",
+     "to": "1996-10-01",
+     "atoms": [
+      "NGA-2844",
+      "NGA-2845"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "After the 1976 Ughelli/Opobo transfers; Bayelsa split wholly from Rivers in 1996."
+    },
+    {
+     "from": "1996-10-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2844"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Sokoto@1976",
+   "names": {
+    "en": "Sokoto State",
+    "ja": "ソコト州",
+    "local": "Sokoto State"
+   },
+   "wikidata": "Q503941",
+   "spans": [
+    {
+     "from": "1976-02-03",
+     "precision": "day",
+     "to": "1991-08-27",
+     "atoms": [
+      "NGA-2871",
+      "NGA-2879",
+      "NGA-2872"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Kebbi (1991) and Zamfara (1996) split wholly from Sokoto."
+    },
+    {
+     "from": "1991-08-27",
+     "precision": "day",
+     "to": "1996-10-01",
+     "atoms": [
+      "NGA-2871",
+      "NGA-2872"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    },
+    {
+     "from": "1996-10-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2871"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:FCT@1976",
+   "names": {
+    "en": "Federal Capital Territory",
+    "ja": "連邦首都地区",
+    "local": "Federal Capital Territory"
+   },
+   "wikidata": "Q509300",
+   "spans": [
+    {
+     "from": "1976-02-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-3470"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+       "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006). Called Abuja Capital Territory 1987–; national capital from 1991."
+    }
+   ]
+  },
+  {
+   "id": "NGA:AkwaIbom@1987",
+   "names": {
+    "en": "Akwa Ibom State",
+    "ja": "アクワ・イボム州",
+    "local": "Akwa Ibom State"
+   },
+   "wikidata": "Q424388",
+   "spans": [
+    {
+     "from": "1987-09-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2842"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1987-09-23 entry",
+       "says": "Akwa Ibom split from Cross River; Katsina split from Kaduna.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Katsina@1987",
+   "names": {
+    "en": "Katsina State",
+    "ja": "カツィナ州",
+    "local": "Katsina State"
+   },
+   "wikidata": "Q657821",
+   "spans": [
+    {
+     "from": "1987-09-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2870"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1987-09-23 entry",
+       "says": "Akwa Ibom split from Cross River; Katsina split from Kaduna.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Adamawa@1991",
+   "names": {
+    "en": "Adamawa State",
+    "ja": "アダマワ州",
+    "local": "Adamawa State"
+   },
+   "wikidata": "Q337514",
+   "spans": [
+    {
+     "from": "1991-08-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2881"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006). Bourha Wango (a single village on the Cameroon border near Adamawa/Borno) changed hands on 13 Jul 2004; below NE 10m resolution, not represented."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Taraba@1991",
+   "names": {
+    "en": "Taraba State",
+    "ja": "タラバ州",
+    "local": "Taraba State"
+   },
+   "wikidata": "Q463959",
+   "spans": [
+    {
+     "from": "1991-08-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2848"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Anambra@1976",
+   "names": {
+    "en": "Anambra State",
+    "ja": "アナンブラ州",
+    "local": "Anambra State"
+   },
+   "wikidata": "Q117714",
+   "spans": [
+    {
+     "from": "1991-08-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2857"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From 1991 (after Enugu left) Anambra is the NE atom; not affected in 1996."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Imo@1976",
+   "names": {
+    "en": "Imo State",
+    "ja": "イモ州",
+    "local": "Imo State"
+   },
+   "wikidata": "Q842939",
+   "spans": [
+    {
+     "from": "1991-08-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2843"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From 1991 (after Abia left) Imo is the NE atom; not affected in 1996."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Benue@1976",
+   "names": {
+    "en": "Benue State",
+    "ja": "ベヌエ州",
+    "local": "Benue State"
+   },
+   "wikidata": "Q429908",
+   "spans": [
+    {
+     "from": "1991-08-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2846"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006). After Kogi took Igala in 1991."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Kwara@1967",
+   "names": {
+    "en": "Kwara State",
+    "ja": "クワラ州",
+    "local": "Kwara State"
+   },
+   "wikidata": "Q464953",
+   "spans": [
+    {
+     "from": "1991-08-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2849"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006). After Kogi took Kabba in 1991."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Kogi@1991",
+   "names": {
+    "en": "Kogi State",
+    "ja": "コギ州",
+    "local": "Kogi State"
+   },
+   "wikidata": "Q387745",
+   "spans": [
+    {
+     "from": "1991-08-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2865"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Delta@1991",
+   "names": {
+    "en": "Delta State",
+    "ja": "デルタ州",
+    "local": "Delta State"
+   },
+   "wikidata": "Q503910",
+   "spans": [
+    {
+     "from": "1991-08-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2860"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Edo@1991",
+   "names": {
+    "en": "Edo State",
+    "ja": "エド州",
+    "local": "Edo State"
+   },
+   "wikidata": "Q682704",
+   "spans": [
+    {
+     "from": "1991-08-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2861"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Jigawa@1991",
+   "names": {
+    "en": "Jigawa State",
+    "ja": "ジガワ州",
+    "local": "Jigawa State"
+   },
+   "wikidata": "Q682691",
+   "spans": [
+    {
+     "from": "1991-08-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2868"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Kebbi@1991",
+   "names": {
+    "en": "Kebbi State",
+    "ja": "ケビ州",
+    "local": "Kebbi State"
+   },
+   "wikidata": "Q748523",
+   "spans": [
+    {
+     "from": "1991-08-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2879"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Osun@1991",
+   "names": {
+    "en": "Osun State",
+    "ja": "オスン州",
+    "local": "Osun State"
+   },
+   "wikidata": "Q682721",
+   "spans": [
+    {
+     "from": "1991-08-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2855"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Yobe@1991",
+   "names": {
+    "en": "Yobe State",
+    "ja": "ヨベ州",
+    "local": "Yobe State"
+   },
+   "wikidata": "Q682777",
+   "spans": [
+    {
+     "from": "1991-08-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2873"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+       "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Abia@1991",
+   "names": {
+    "en": "Abia State",
+    "ja": "アビア州",
+    "local": "Abia State"
+   },
+   "wikidata": "Q320852",
+   "spans": [
+    {
+     "from": "1996-10-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2841"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "After Ebonyi took part of it in 1996."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Enugu@1991",
+   "names": {
+    "en": "Enugu State",
+    "ja": "エヌグ州",
+    "local": "Enugu State"
+   },
+   "wikidata": "Q3817714",
+   "spans": [
+    {
+     "from": "1996-10-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2862"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "After Ebonyi took part of it in 1996."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Bayelsa@1996",
+   "names": {
+    "en": "Bayelsa State",
+    "ja": "バイエルサ州",
+    "local": "Bayelsa State"
+   },
+   "wikidata": "Q532153",
+   "spans": [
+    {
+     "from": "1996-10-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2845"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Ebonyi@1996",
+   "names": {
+    "en": "Ebonyi State",
+    "ja": "エボニ州",
+    "local": "Ebonyi State"
+   },
+   "wikidata": "Q506808",
+   "spans": [
+    {
+     "from": "1996-10-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2863"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Ekiti@1996",
+   "names": {
+    "en": "Ekiti State",
+    "ja": "エキティ州",
+    "local": "Ekiti State"
+   },
+   "wikidata": "Q534917",
+   "spans": [
+    {
+     "from": "1996-10-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2854"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Gombe@1996",
+   "names": {
+    "en": "Gombe State",
+    "ja": "ゴンベ州",
+    "local": "Gombe State"
+   },
+   "wikidata": "Q376241",
+   "spans": [
+    {
+     "from": "1996-10-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2859"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Nasarawa@1996",
+   "names": {
+    "en": "Nasarawa State",
+    "ja": "ナサラワ州",
+    "local": "Nasarawa State"
+   },
+   "wikidata": "Q836645",
+   "spans": [
+    {
+     "from": "1996-10-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2867"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Zamfara@1996",
+   "names": {
+    "en": "Zamfara State",
+    "ja": "ザムファラ州",
+    "local": "Zamfara State"
+   },
+   "wikidata": "Q145793",
+   "spans": [
+    {
+     "from": "1996-10-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2872"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ung.html",
+       "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+       "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No later change touching this unit is recorded (statoids change list through 2006)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:Borno@1976",
+   "names": {
+    "en": "Borno State",
+    "ja": "ボルノ州",
+    "local": "Borno State"
+   },
+   "wikidata": "Q130626",
+   "spans": [
+    {
+     "from": "2004-07-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2839"
+     ],
+     "sources": [
+      {
+       "url": "https://www.ipinst.org/wp-content/uploads/publications/bakassipub.pdf",
+       "title": "International Peace Institute, Pacific Settlement of Border Disputes: Lessons from the Bakassi Affair (Oct 2008)",
+       "says": "Authority transferred in the Lake Chad area in December 2003, along the land boundary (Ndabakura, Narki, Bourha Wango) on 13 July 2004, Bakassi except Atabong/Abana on 14 August 2006.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.icj-cij.org/node/103905",
+       "title": "ICJ — Summary of the Judgment of 10 October 2002 (Cameroon v. Nigeria)",
+       "says": "Nigeria invoked some twenty years of administration of Darak and Lake Chad villages; the Court held sovereignty Cameroonian along the 1931 Henderson-Fleuriau line.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Drawn from the last transfer to Cameroon (land villages Ndabakura and Narki, 13 Jul 2004); Lake Chad villages were transferred in Dec 2003. NE follows the ICJ line in Lake Chad (tripoint ≈14.065°E 13.078°N)."
+    }
+   ]
+  },
+  {
+   "id": "NGA:CrossRiver@1976",
+   "names": {
+    "en": "Cross River State",
+    "ja": "クロスリバー州",
+    "local": "Cross River State"
+   },
+   "wikidata": "Q739676",
+   "spans": [
+    {
+     "from": "2008-08-14",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NGA-2847"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Bakassi&oldid=1374974435",
+       "title": "Wikipedia — Bakassi (oldid 1374974435)",
+       "says": "Bakassi was administered by Nigeria (Bakassi LGA, Cross River State) until its final handover to Cameroon on 14 August 2008.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.ipinst.org/wp-content/uploads/publications/bakassipub.pdf",
+       "title": "International Peace Institute, Pacific Settlement of Border Disputes: Lessons from the Bakassi Affair (Oct 2008)",
+       "says": "Authority transferred in the Lake Chad area in December 2003, along the land boundary (Ndabakura, Narki, Bourha Wango) on 13 July 2004, Bakassi except Atabong/Abana on 14 August 2006.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The NE atom excludes the Bakassi peninsula (verified: NE puts it in CMR-799); Nigerian administration there ended on 2008-08-14."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1961-06-01",
+   "precision": "day",
+   "what": "Northern Cameroons joins the Northern Region as Sardauna Province",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=British_Cameroons&oldid=1377159908",
+     "title": "Wikipedia — British Cameroons (oldid 1377159908)",
+     "says": "Northern Cameroons became the Sardauna Province of Northern Nigeria on 1 June 1961.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1963-08-09",
+   "precision": "day",
+   "what": "Mid-Western Region separated from Western Region (statoids: 1963-06; Wikidata 1963-06-01)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ung.html",
+     "title": "Statoids — States of Nigeria (change history)",
+     "says": "12 states 1967-05-27; 19 states + FCT 1976-02-03 with Igala, Ughelli, Opobo transfers; Akwa Ibom, Katsina 1987-09-23; nine states 1991-08-27; six states 1996-10-01.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1967-05-27",
+   "precision": "day",
+   "what": "Regions replaced by twelve states",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ung.html",
+     "title": "Statoids — States of Nigeria: 1967-05-27 entry",
+     "says": "Eastern split into East-Central, Rivers, South-Eastern; Northern into six states; Western into Lagos (Colony province + federal territory) and Western; Mid-Western became a state.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1976-02-03",
+   "precision": "day",
+   "what": "Nineteen states and FCT; transfers Igala (Kwara→Benue), Ughelli (Mid-Western→Rivers), Opobo (South-Eastern→Rivers)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ung.html",
+     "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+     "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1987-09-23",
+   "precision": "day",
+   "what": "Akwa Ibom and Katsina created",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ung.html",
+     "title": "Statoids — States of Nigeria: 1987-09-23 entry",
+     "says": "Akwa Ibom split from Cross River; Katsina split from Kaduna.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1991-08-27",
+   "precision": "day",
+   "what": "Nine new states (30 + FCT)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ung.html",
+     "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+     "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1996-10-01",
+   "precision": "day",
+   "what": "Six new states (36 + FCT)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ung.html",
+     "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+     "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2003-12",
+   "precision": "month",
+   "what": "Lake Chad villages handed to Cameroon",
+   "sources": [
+    {
+     "url": "https://www.ipinst.org/wp-content/uploads/publications/bakassipub.pdf",
+     "title": "International Peace Institute, Pacific Settlement of Border Disputes: Lessons from the Bakassi Affair (Oct 2008)",
+     "says": "Authority transferred in the Lake Chad area in December 2003, along the land boundary (Ndabakura, Narki, Bourha Wango) on 13 July 2004, Bakassi except Atabong/Abana on 14 August 2006.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2004-07-13",
+   "precision": "day",
+   "what": "Land-boundary villages handed over",
+   "sources": [
+    {
+     "url": "https://www.ipinst.org/wp-content/uploads/publications/bakassipub.pdf",
+     "title": "International Peace Institute, Pacific Settlement of Border Disputes: Lessons from the Bakassi Affair (Oct 2008)",
+     "says": "Authority transferred in the Lake Chad area in December 2003, along the land boundary (Ndabakura, Narki, Bourha Wango) on 13 July 2004, Bakassi except Atabong/Abana on 14 August 2006.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2008-08-14",
+   "precision": "day",
+   "what": "Final handover of Bakassi to Cameroon (most of it on 2006-08-14)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Bakassi&oldid=1374974435",
+     "title": "Wikipedia — Bakassi (oldid 1374974435)",
+     "says": "Bakassi was administered by Nigeria (Bakassi LGA, Cross River State) until its final handover to Cameroon on 14 August 2008.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.ipinst.org/wp-content/uploads/publications/bakassipub.pdf",
+     "title": "International Peace Institute, Pacific Settlement of Border Disputes: Lessons from the Bakassi Affair (Oct 2008)",
+     "says": "Authority transferred in the Lake Chad area in December 2003, along the land boundary (Ndabakura, Narki, Bourha Wango) on 13 July 2004, Bakassi except Atabong/Abana on 14 August 2006.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1970-01-01",
+   "n": 12,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ung.html",
+     "title": "Statoids — States of Nigeria: 1967-05-27 entry",
+     "says": "Eastern split into East-Central, Rivers, South-Eastern; Northern into six states; Western into Lagos (Colony province + federal territory) and Western; Mid-Western became a state.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1980-01-01",
+   "n": 20,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ung.html",
+     "title": "Statoids — States of Nigeria: 1976-02-03 entry",
+     "says": "Seven new states and FCT (from parts of Niger and Plateau); Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1990-01-01",
+   "n": 22,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ung.html",
+     "title": "Statoids — States of Nigeria: 1987-09-23 entry",
+     "says": "Akwa Ibom split from Cross River; Katsina split from Kaduna.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1993-01-01",
+   "n": 31,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ung.html",
+     "title": "Statoids — States of Nigeria: 1991-08-27 entry",
+     "says": "Abia from Imo; Bendel into Delta and Edo; Enugu from Anambra; Gongola into Adamawa and Taraba; Jigawa from Kano; Kebbi from Sokoto; Kogi from parts of Benue and Kwara; Osun from Oyo; Yobe from Borno.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2000-01-01",
+   "n": 37,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ung.html",
+     "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+     "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2010-01-01",
+   "n": 37,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ung.html",
+     "title": "Statoids — States of Nigeria: 1996-10-01 entry",
+     "says": "Bayelsa from Rivers; Ebonyi from parts of Abia and Enugu; Ekiti from Ondo; Gombe from Bauchi; Nasarawa from Plateau; Zamfara from Sokoto.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Southern regions 1961–1967: Western Region (incl. Colony Province of Lagos), Lagos Federal Territory, Mid-Western Region (from 1963-08-09), Eastern Region",
+   "atoms": [
+    "NGA-2850",
+    "NGA-2852",
+    "NGA-2856",
+    "NGA-2855",
+    "NGA-2853",
+    "NGA-2854",
+    "NGA-2860",
+    "NGA-2861",
+    "NGA-2857",
+    "NGA-2862",
+    "NGA-2863",
+    "NGA-2843",
+    "NGA-2841",
+    "NGA-2844",
+    "NGA-2845",
+    "NGA-2847",
+    "NGA-2842"
+   ],
+   "from": "1961-06-01",
+   "to": "1967-05-27",
+   "why": "Lagos State (one NE atom) = Colony Province (then Western Region) + Lagos Federal Territory; Mid-Western lost Ughelli to Rivers in 1976; the Eastern Region contained Bakassi (in a Cameroonian NE atom). None of these is a union of NE atoms.",
+   "checked": [
+    "statoids ung.html",
+    "Wikipedia Bakassi oldid 1374974435"
+   ],
+   "needs": "finer atoms: Nigerian LGAs/divisions (e.g. geoBoundaries NGA ADM2, licence to be checked) for Ughelli, Opobo, Lagos Colony/Federal Territory, plus a Bakassi outline"
+  },
+  {
+   "what": "Six 1967 states whose lines moved in 1976: North-Western, Benue-Plateau, Kwara, Mid-Western, Rivers, South-Eastern",
+   "unit": "NGA:NorthWestern@1967",
+   "atoms": [
+    "NGA-2871",
+    "NGA-2879",
+    "NGA-2872",
+    "NGA-2851",
+    "NGA-3470",
+    "NGA-2846",
+    "NGA-2866",
+    "NGA-2867",
+    "NGA-2849",
+    "NGA-2865",
+    "NGA-2860",
+    "NGA-2861",
+    "NGA-2844",
+    "NGA-2845",
+    "NGA-2847",
+    "NGA-2842"
+   ],
+   "from": "1967-05-27",
+   "to": "1976-02-03",
+   "why": "In 1976 the FCT was cut from Niger (North-Western) and Plateau (Benue-Plateau), Igala moved Kwara→Benue, Ughelli Mid-Western→Rivers, Opobo South-Eastern→Rivers; South-Eastern also held Bakassi.",
+   "checked": [
+    "statoids ung.html",
+    "Wikipedia Bakassi oldid 1374974435"
+   ],
+   "needs": "finer atoms: LGAs/divisions (Igala, Ughelli, Opobo, FCT source areas)"
+  },
+  {
+   "what": "Benue-Plateau State 1967–1976",
+   "unit": "NGA:BenuePlateau@1967",
+   "from": "1967-05-27",
+   "to": "1976-02-03",
+   "why": "Atoms withheld in the North-Western entry (same window, same 1976 transfers).",
+   "checked": [
+    "statoids ung.html"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Kwara State (1967 extent) 1967–1976",
+   "unit": "NGA:Kwara67@1967",
+   "from": "1967-05-27",
+   "to": "1976-02-03",
+   "why": "Atoms withheld in the North-Western entry (same window, same 1976 transfers).",
+   "checked": [
+    "statoids ung.html"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Mid-Western State 1967–1976",
+   "unit": "NGA:MidWestern@1967",
+   "from": "1967-05-27",
+   "to": "1976-02-03",
+   "why": "Atoms withheld in the North-Western entry (same window, same 1976 transfers).",
+   "checked": [
+    "statoids ung.html"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Rivers State (1967 extent) 1967–1976",
+   "unit": "NGA:Rivers67@1967",
+   "from": "1967-05-27",
+   "to": "1976-02-03",
+   "why": "Atoms withheld in the North-Western entry (same window, same 1976 transfers).",
+   "checked": [
+    "statoids ung.html"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "South-Eastern State 1967–1976",
+   "unit": "NGA:SouthEastern@1967",
+   "from": "1967-05-27",
+   "to": "1976-02-03",
+   "why": "Atoms withheld in the North-Western entry (same window, same 1976 transfers).",
+   "checked": [
+    "statoids ung.html"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Anambra (incl. Enugu) and Imo (incl. Abia) 1976–1991",
+   "unit": "NGA:Anambra@1976",
+   "atoms": [
+    "NGA-2857",
+    "NGA-2862",
+    "NGA-2863",
+    "NGA-2843",
+    "NGA-2841"
+   ],
+   "from": "1976-02-03",
+   "to": "1991-08-27",
+   "why": "Ebonyi (1996) was formed from parts of Abia (then Imo) and Enugu (then Anambra); the Anambra/Imo line runs through the NE Ebonyi atom.",
+   "checked": [
+    "statoids ung.html"
+   ],
+   "needs": "finer atoms: LGAs (Afikpo / Abakaliki areas)"
+  },
+  {
+   "what": "Imo State 1976–1991 (with Abia)",
+   "unit": "NGA:Imo@1976",
+   "from": "1976-02-03",
+   "to": "1991-08-27",
+   "why": "Atoms withheld in the Anambra entry.",
+   "checked": [
+    "statoids ung.html"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Benue (with Igala) and Kwara (with Kabba) 1976–1991",
+   "unit": "NGA:Benue@1976",
+   "atoms": [
+    "NGA-2846",
+    "NGA-2849",
+    "NGA-2865"
+   ],
+   "from": "1976-02-03",
+   "to": "1991-08-27",
+   "why": "Kogi (1991) was formed from parts of Benue and Kwara; their pre-1991 line runs through the NE Kogi atom.",
+   "checked": [
+    "statoids ung.html"
+   ],
+   "needs": "finer atoms: LGAs (Igala / Kabba divisions)"
+  },
+  {
+   "what": "Kwara State 1976–1991 (with Kabba)",
+   "unit": "NGA:Kwara@1967",
+   "from": "1976-02-03",
+   "to": "1991-08-27",
+   "why": "Atoms withheld in the Benue entry.",
+   "checked": [
+    "statoids ung.html"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Borno State (with Yobe) 1976–1991, Lake Chad villages",
+   "unit": "NGA:Borno@1976",
+   "atoms": [
+    "NGA-2839",
+    "NGA-2873"
+   ],
+   "from": "1976-02-03",
+   "to": "1991-08-27",
+   "why": "Nigeria administered Darak and some 30 Lake Chad villages, east of the ICJ line that the NE atom follows, for about twenty years before 2002; the start date is not established, so the window starts conservatively at the creation of Borno State.",
+   "checked": [
+    "ICJ summary 2002",
+    "IPI Bakassi report 2008"
+   ],
+   "needs": "an outline of the Nigerian-administered Lake Chad villages and the date administration began"
+  },
+  {
+   "what": "Borno State 1991–2004, Lake Chad and land-boundary villages",
+   "unit": "NGA:Borno@1976",
+   "atoms": [
+    "NGA-2839"
+   ],
+   "from": "1991-08-27",
+   "to": "2004-07-13",
+   "why": "As above; transfers to Cameroon in Dec 2003 (Lake Chad) and on 13 Jul 2004 (Ndabakura, Narki).",
+   "checked": [
+    "IPI Bakassi report 2008"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Cross River State 1976–1987 (with Akwa Ibom and Bakassi)",
+   "unit": "NGA:CrossRiver@1976",
+   "atoms": [
+    "NGA-2847",
+    "NGA-2842"
+   ],
+   "from": "1976-02-03",
+   "to": "1987-09-23",
+   "why": "The Nigerian-administered Bakassi peninsula lies in the Cameroonian NE atom CMR-799, so the state outline extends beyond NGA atoms.",
+   "checked": [
+    "Wikipedia Bakassi oldid 1374974435",
+    "NE point-in-polygon test (Bakassi in CMR-799)"
+   ],
+   "needs": "a Bakassi LGA outline (e.g. geoBoundaries NGA ADM2 2008-era, licence to be checked)"
+  },
+  {
+   "what": "Cross River State 1987–2008 (with Bakassi)",
+   "unit": "NGA:CrossRiver@1976",
+   "atoms": [
+    "NGA-2847"
+   ],
+   "from": "1987-09-23",
+   "to": "2008-08-14",
+   "why": "As above; most of Bakassi passed to Cameroon on 2006-08-14, the Atabong/Abana zone on 2008-08-14.",
+   "checked": [
+    "IPI Bakassi report 2008",
+    "Wikipedia Bakassi oldid 1374974435"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Abia (with part of Ebonyi) and Enugu (with part of Ebonyi) 1991–1996",
+   "unit": "NGA:Abia@1991",
+   "atoms": [
+    "NGA-2841",
+    "NGA-2862",
+    "NGA-2863"
+   ],
+   "from": "1991-08-27",
+   "to": "1996-10-01",
+   "why": "Ebonyi was formed from parts of both; their 1991 line runs through the NE Ebonyi atom.",
+   "checked": [
+    "statoids ung.html"
+   ],
+   "needs": "finer atoms: LGAs"
+  },
+  {
+   "what": "Enugu State 1991–1996",
+   "unit": "NGA:Enugu@1991",
+   "from": "1991-08-27",
+   "to": "1996-10-01",
+   "why": "Atoms withheld in the Abia entry.",
+   "checked": [
+    "statoids ung.html"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Northern Nigeria provinces/regions before 1961-06-01 and Nigeria before independence",
+   "from": "1960-10-01",
+   "to": "1961-06-01",
+   "why": "Before scope: Northern Cameroons (parts of Borno, Adamawa, Taraba atoms) was a separate trust territory until 1961-06-01.",
+   "checked": [
+    "Wikipedia British Cameroons oldid 1377159908"
+   ],
+   "needs": "Northern Cameroons outline"
+  }
+ ]
+}

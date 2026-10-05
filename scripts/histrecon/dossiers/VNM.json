@@ -1,0 +1,2255 @@
+{
+  "country": "VNM",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1997-01-01",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Socialist Republic of Vietnam (since 1976-07-02). Scope starts with the 1997 layout; earlier layouts listed as unresolved.",
+  "units": [
+    {
+      "id": "VNM:KonTum",
+      "names": {
+        "en": "Kon Tum Province",
+        "ja": "コントゥム省",
+        "local": "Tỉnh Kon Tum"
+      },
+      "wikidata": "Q36315",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-486"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:GiaLai",
+      "names": {
+        "en": "Gia Lai Province",
+        "ja": "ザライ省",
+        "local": "Tỉnh Gia Lai"
+      },
+      "wikidata": "Q36662",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-478"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:BinhPhuoc",
+      "names": {
+        "en": "Bình Phước Province",
+        "ja": "ビンフオック省",
+        "local": "Tỉnh Bình Phước"
+      },
+      "wikidata": "Q36672",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-484"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:TayNinh",
+      "names": {
+        "en": "Tây Ninh Province",
+        "ja": "タイニン省",
+        "local": "Tỉnh Tây Ninh"
+      },
+      "wikidata": "Q36608",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-444"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:LongAn",
+      "names": {
+        "en": "Long An Province",
+        "ja": "ロンアン省",
+        "local": "Tỉnh Long An"
+      },
+      "wikidata": "Q26573",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-503"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:DongThap",
+      "names": {
+        "en": "Đồng Tháp Province",
+        "ja": "ドンタップ省",
+        "local": "Tỉnh Đồng Tháp"
+      },
+      "wikidata": "Q36676",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-500"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:AnGiang",
+      "names": {
+        "en": "An Giang Province",
+        "ja": "アンザン省",
+        "local": "Tỉnh An Giang"
+      },
+      "wikidata": "Q36592",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-498"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:KienGiang",
+      "names": {
+        "en": "Kiên Giang Province",
+        "ja": "キエンザン省",
+        "local": "Tỉnh Kiên Giang"
+      },
+      "wikidata": "Q36576",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-502"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:SonLa",
+      "names": {
+        "en": "Sơn La Province",
+        "ja": "ソンラ省",
+        "local": "Tỉnh Sơn La"
+      },
+      "wikidata": "Q33379",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-455"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:ThanhHoa",
+      "names": {
+        "en": "Thanh Hóa Province",
+        "ja": "タインホア省",
+        "local": "Tỉnh Thanh Hóa"
+      },
+      "wikidata": "Q36512",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-456"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:NgheAn",
+      "names": {
+        "en": "Nghệ An Province",
+        "ja": "ゲアン省",
+        "local": "Tỉnh Nghệ An"
+      },
+      "wikidata": "Q36587",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-475"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:HaTinh",
+      "names": {
+        "en": "Hà Tĩnh Province",
+        "ja": "ハティン省",
+        "local": "Tỉnh Hà Tĩnh"
+      },
+      "wikidata": "Q33351",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-474"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:QuangBinh",
+      "names": {
+        "en": "Quảng Bình Province",
+        "ja": "クアンビン省",
+        "local": "Tỉnh Quảng Bình"
+      },
+      "wikidata": "Q23533",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-476"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:QuangTri",
+      "names": {
+        "en": "Quảng Trị Province",
+        "ja": "クアンチ省",
+        "local": "Tỉnh Quảng Trị"
+      },
+      "wikidata": "Q36579",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-489"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:ThuaThienHue",
+      "names": {
+        "en": "Thừa Thiên Huế Province",
+        "ja": "トゥアティエン＝フエ省",
+        "local": "Tỉnh Thừa Thiên Huế"
+      },
+      "wikidata": "Q36399",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-490"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:QuangNam",
+      "names": {
+        "en": "Quảng Nam Province",
+        "ja": "クアンナム省",
+        "local": "Tỉnh Quảng Nam"
+      },
+      "wikidata": "Q33356",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-487"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:HaGiang",
+      "names": {
+        "en": "Hà Giang Province",
+        "ja": "ハザン省",
+        "local": "Tỉnh Hà Giang"
+      },
+      "wikidata": "Q36685",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-512"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:CaoBang",
+      "names": {
+        "en": "Cao Bằng Province",
+        "ja": "カオバン省",
+        "local": "Tỉnh Cao Bằng"
+      },
+      "wikidata": "Q36865",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-511"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:LangSon",
+      "names": {
+        "en": "Lạng Sơn Province",
+        "ja": "ランソン省",
+        "local": "Tỉnh Lạng Sơn"
+      },
+      "wikidata": "Q33403",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-454"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:QuangNinh",
+      "names": {
+        "en": "Quảng Ninh Province",
+        "ja": "クアンニン省",
+        "local": "Tỉnh Quảng Ninh"
+      },
+      "wikidata": "Q33396",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-429"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:SocTrang",
+      "names": {
+        "en": "Sóc Trăng Province",
+        "ja": "ソクチャン省",
+        "local": "Tỉnh Sóc Trăng"
+      },
+      "wikidata": "Q33272",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-508"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:TienGiang",
+      "names": {
+        "en": "Tiền Giang Province",
+        "ja": "ティエンザン省",
+        "local": "Tỉnh Tiền Giang"
+      },
+      "wikidata": "Q36666",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-4834"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:BaRiaVungTau",
+      "names": {
+        "en": "Bà Rịa-Vũng Tàu Province",
+        "ja": "バリア＝ブンタウ省",
+        "local": "Tỉnh Bà Rịa – Vũng Tàu"
+      },
+      "wikidata": "Q36874",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-495"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:HoChiMinh",
+      "names": {
+        "en": "Hồ Chí Minh (municipality)",
+        "ja": "ホーチミン市",
+        "local": "Thành phố Hồ Chí Minh"
+      },
+      "wikidata": "Q1854",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-501"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:KhanhHoa",
+      "names": {
+        "en": "Khánh Hòa Province",
+        "ja": "カインホア省",
+        "local": "Tỉnh Khánh Hòa"
+      },
+      "wikidata": "Q33369",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-479"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:CaMau",
+      "names": {
+        "en": "Cà Mau Province",
+        "ja": "カマウ省",
+        "local": "Tỉnh Cà Mau"
+      },
+      "wikidata": "Q33354",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-507"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:BacLieu",
+      "names": {
+        "en": "Bạc Liêu Province",
+        "ja": "バクリエウ省",
+        "local": "Tỉnh Bạc Liêu"
+      },
+      "wikidata": "Q36658",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-506"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:VinhLong",
+      "names": {
+        "en": "Vĩnh Long Province",
+        "ja": "ヴィンロン省",
+        "local": "Tỉnh Vĩnh Long"
+      },
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-510"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:TraVinh",
+      "names": {
+        "en": "Trà Vinh Province",
+        "ja": "チャーヴィン省",
+        "local": "Tỉnh Trà Vinh"
+      },
+      "wikidata": "Q36615",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-509"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:BenTre",
+      "names": {
+        "en": "Bến Tre Province",
+        "ja": "ベンチェ省",
+        "local": "Tỉnh Bến Tre"
+      },
+      "wikidata": "Q33366",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-504"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:DongNai",
+      "names": {
+        "en": "Đồng Nai Province",
+        "ja": "ドンナイ省",
+        "local": "Tỉnh Đồng Nai"
+      },
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-497"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:BinhThuan",
+      "names": {
+        "en": "Bình Thuận Province",
+        "ja": "ビントゥアン省",
+        "local": "Tỉnh Bình Thuận"
+      },
+      "wikidata": "Q36869",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-496"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:NinhThuan",
+      "names": {
+        "en": "Ninh Thuận Province",
+        "ja": "ニントゥアン省",
+        "local": "Tỉnh Ninh Thuận"
+      },
+      "wikidata": "Q36903",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-481"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:PhuYen",
+      "names": {
+        "en": "Phú Yên Province",
+        "ja": "フーイエン省",
+        "local": "Tỉnh Phú Yên"
+      },
+      "wikidata": "Q36725",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-482"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:BinhDinh",
+      "names": {
+        "en": "Bình Định Province",
+        "ja": "ビンディン省",
+        "local": "Tỉnh Bình Định"
+      },
+      "wikidata": "Q36693",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-485"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:QuangNgai",
+      "names": {
+        "en": "Quảng Ngãi Province",
+        "ja": "クアンガイ省",
+        "local": "Tỉnh Quảng Ngãi"
+      },
+      "wikidata": "Q33304",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-488"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:DaNang",
+      "names": {
+        "en": "Đà Nẵng (municipality)",
+        "ja": "ダナン",
+        "local": "Thành phố Đà Nẵng"
+      },
+      "wikidata": "Q25282",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-491"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:NinhBinh",
+      "names": {
+        "en": "Ninh Bình Province",
+        "ja": "ニンビン省",
+        "local": "Tỉnh Ninh Bình"
+      },
+      "wikidata": "Q36900",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-466"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:NamDinh",
+      "names": {
+        "en": "Nam Định Province",
+        "ja": "ナムディン省",
+        "local": "Tỉnh Nam Định"
+      },
+      "wikidata": "Q36907",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-468"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:ThaiBinh",
+      "names": {
+        "en": "Thái Bình Province",
+        "ja": "タイビン省",
+        "local": "Tỉnh Thái Bình"
+      },
+      "wikidata": "Q36681",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-471"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:Haiphong",
+      "names": {
+        "en": "Hải Phòng (municipality)",
+        "ja": "ハイフォン",
+        "local": "Thành phố Hải Phòng"
+      },
+      "wikidata": "Q72818",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-4600"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:TuyenQuang",
+      "names": {
+        "en": "Tuyên Quang Province",
+        "ja": "トゥエンクアン省",
+        "local": "Tỉnh Tuyên Quang"
+      },
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-457"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:YenBai",
+      "names": {
+        "en": "Yên Bái Province",
+        "ja": "イエンバイ省",
+        "local": "Tỉnh Yên Bái"
+      },
+      "wikidata": "Q36349",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-458"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:BacKan",
+      "names": {
+        "en": "Bắc Kạn Province",
+        "ja": "バクカン省",
+        "local": "Tỉnh Bắc Kạn"
+      },
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-451"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:HungYen",
+      "names": {
+        "en": "Hưng Yên Province",
+        "ja": "フンイエン省",
+        "local": "Tỉnh Hưng Yên"
+      },
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-461"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:BacNinh",
+      "names": {
+        "en": "Bắc Ninh Province",
+        "ja": "バクニン省",
+        "local": "Tỉnh Bắc Ninh"
+      },
+      "wikidata": "Q33408",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-463"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:BacGiang",
+      "names": {
+        "en": "Bắc Giang Province",
+        "ja": "バクザン省",
+        "local": "Tỉnh Bắc Giang"
+      },
+      "wikidata": "Q36367",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-470"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:ThaiNguyen",
+      "names": {
+        "en": "Thái Nguyên Province",
+        "ja": "タイグエン省",
+        "local": "Tỉnh Thái Nguyên"
+      },
+      "wikidata": "Q26575",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-452"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:HaiDuong",
+      "names": {
+        "en": "Hải Dương Province",
+        "ja": "ハイズオン省",
+        "local": "Tỉnh Hải Dương"
+      },
+      "wikidata": "Q36729",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-460"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:HaNam",
+      "names": {
+        "en": "Hà Nam Province",
+        "ja": "ハナム省",
+        "local": "Tỉnh Hà Nam"
+      },
+      "wikidata": "Q36413",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-467"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:BinhDuong",
+      "names": {
+        "en": "Bình Dương Province",
+        "ja": "ビンズオン省",
+        "local": "Tỉnh Bình Dương"
+      },
+      "wikidata": "Q36866",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-483"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:LamDong",
+      "names": {
+        "en": "Lâm Đồng Province",
+        "ja": "ラムドン省",
+        "local": "Tỉnh Lâm Đồng"
+      },
+      "wikidata": "Q36721",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-480"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:CanThoProvince",
+      "names": {
+        "en": "Cần Thơ Province",
+        "ja": "カントー省",
+        "local": "Tỉnh Cần Thơ"
+      },
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": "2004-01-01",
+          "atoms": [
+            "VNM-499",
+            "VNM-505"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "2003-11-25: Cần Thơ split into Cần Thơ municipality and Hậu Giang; Đắk Nông from Đắk Lắk; Điện Biên from Lai Châu; Than Uyên moved from Lào Cai to Lai Châu.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-so-22-2003-qh11-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết số 22/2003/QH11 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Cần Thơ, Đắk Lắk and Lai Châu; moves Than Uyên district from Lào Cai to the new Lai Châu; Điện Biên 9,554 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:CanThoCity",
+      "names": {
+        "en": "Cần Thơ (municipality)",
+        "ja": "カントー",
+        "local": "Thành phố Cần Thơ"
+      },
+      "wikidata": "Q216075",
+      "spans": [
+        {
+          "from": "2004-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-499"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "2003-11-25: Cần Thơ split into Cần Thơ municipality and Hậu Giang; Đắk Nông from Đắk Lắk; Điện Biên from Lai Châu; Than Uyên moved from Lào Cai to Lai Châu.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-so-22-2003-qh11-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết số 22/2003/QH11 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Cần Thơ, Đắk Lắk and Lai Châu; moves Than Uyên district from Lào Cai to the new Lai Châu; Điện Biên 9,554 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:HauGiang",
+      "names": {
+        "en": "Hậu Giang Province",
+        "ja": "ハウザン省",
+        "local": "Tỉnh Hậu Giang"
+      },
+      "wikidata": "Q36320",
+      "spans": [
+        {
+          "from": "2004-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-505"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "2003-11-25: Cần Thơ split into Cần Thơ municipality and Hậu Giang; Đắk Nông from Đắk Lắk; Điện Biên from Lai Châu; Than Uyên moved from Lào Cai to Lai Châu.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-so-22-2003-qh11-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết số 22/2003/QH11 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Cần Thơ, Đắk Lắk and Lai Châu; moves Than Uyên district from Lào Cai to the new Lai Châu; Điện Biên 9,554 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:DakLak",
+      "names": {
+        "en": "Đắk Lắk Province",
+        "ja": "ダクラク省",
+        "local": "Tỉnh Đắk Lắk"
+      },
+      "wikidata": "Q36690",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": "2004-01-01",
+          "atoms": [
+            "VNM-477",
+            "VNM-4835"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "2003-11-25: Cần Thơ split into Cần Thơ municipality and Hậu Giang; Đắk Nông from Đắk Lắk; Điện Biên from Lai Châu; Than Uyên moved from Lào Cai to Lai Châu.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2004-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-477"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "2003-11-25: Cần Thơ split into Cần Thơ municipality and Hậu Giang; Đắk Nông from Đắk Lắk; Điện Biên from Lai Châu; Than Uyên moved from Lào Cai to Lai Châu.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-so-22-2003-qh11-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết số 22/2003/QH11 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Cần Thơ, Đắk Lắk and Lai Châu; moves Than Uyên district from Lào Cai to the new Lai Châu; Điện Biên 9,554 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:DakNong",
+      "names": {
+        "en": "Đắk Nông Province",
+        "ja": "ダクノン省",
+        "local": "Tỉnh Đắk Nông"
+      },
+      "wikidata": "Q36723",
+      "spans": [
+        {
+          "from": "2004-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "VNM-4835"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "2003-11-25: Cần Thơ split into Cần Thơ municipality and Hậu Giang; Đắk Nông from Đắk Lắk; Điện Biên from Lai Châu; Than Uyên moved from Lào Cai to Lai Châu.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-so-22-2003-qh11-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết số 22/2003/QH11 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Cần Thơ, Đắk Lắk and Lai Châu; moves Than Uyên district from Lào Cai to the new Lai Châu; Điện Biên 9,554 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VNM:LaiChauOld",
+      "names": {
+        "en": "Lai Châu Province (until 2003)",
+        "ja": "ライチャウ省（旧）",
+        "local": "Tỉnh Lai Châu"
+      },
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": "2004-01-01",
+          "atoms": [
+            "VNM-453",
+            "VNM-450"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "2003-11-25: Cần Thơ split into Cần Thơ municipality and Hậu Giang; Đắk Nông from Đắk Lắk; Điện Biên from Lai Châu; Than Uyên moved from Lào Cai to Lai Châu.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-so-22-2003-qh11-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết số 22/2003/QH11 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Cần Thơ, Đắk Lắk and Lai Châu; moves Than Uyên district from Lào Cai to the new Lai Châu; Điện Biên 9,554 km².",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Old Lai Châu (capital Điện Biên Phủ), before the 2004 split; NE's two atoms together trace it."
+        }
+      ]
+    },
+    {
+      "id": "VNM:LaoCai",
+      "names": {
+        "en": "Lào Cai Province",
+        "ja": "ラオカイ省",
+        "local": "Tỉnh Lào Cai"
+      },
+      "wikidata": "Q36446",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": "2004-01-01",
+          "atoms": [
+            "VNM-5483"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-so-22-2003-qh11-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết số 22/2003/QH11 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Cần Thơ, Đắk Lắk and Lai Châu; moves Than Uyên district from Lào Cai to the new Lai Châu; Điện Biên 9,554 km².",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Includes Than Uyên district until 1 Jan 2004 (NE's outline still includes it: 7,947 km² vs 6,357 km² after the transfer)."
+        }
+      ]
+    },
+    {
+      "id": "VNM:VinhPhuc",
+      "names": {
+        "en": "Vĩnh Phúc Province",
+        "ja": "ヴィンフック省",
+        "local": "Tỉnh Vĩnh Phúc"
+      },
+      "wikidata": "Q27566",
+      "spans": [
+        {
+          "from": "1997-01-01",
+          "precision": "day",
+          "to": "2008-08-01",
+          "atoms": [
+            "VNM-464"
+          ],
+          "sources": [
+            {
+              "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+              "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+              "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uvn.html",
+              "title": "Statoids: Provinces of Vietnam, change history",
+              "says": "2008-08-01: Hà Tây province and parts of Hòa Bình and Vĩnh Phúc provinces merged with Hanoi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Vĩnh Phúc with Mê Linh (1,370.73 km² in 1996; NE 1,363 km²)."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1997-01-01",
+      "precision": "day",
+      "what": "Eight provinces split under the resolution of 6 Nov 1996 (new provinces operating from 1 Jan 1997)",
+      "sources": [
+        {
+          "url": "https://hethongphapluat.com/nghi-quyet-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+          "title": "Nghị quyết của Quốc hội ngày 6/11/1996 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+          "says": "Splits Bắc Thái, Hà Bắc, Hải Hưng, Minh Hải, Nam Hà, Quảng Nam-Đà Nẵng, Sông Bé, Vĩnh Phú; Vĩnh Phúc includes Mê Linh, 1,370.73 km².",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://vi.wikipedia.org/w/index.php?oldid=75611683",
+          "title": "Bắc Ninh (vi.wikipedia, revision 75611683)",
+          "says": "National Assembly resolution of 6 Nov 1996 split Hà Bắc into Bắc Giang and Bắc Ninh; the new provinces operated from 1 Jan 1997.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2004-01-01",
+      "precision": "day",
+      "what": "Cần Thơ, Đắk Lắk and Lai Châu split; Than Uyên moved from Lào Cai to Lai Châu (Resolution 22/2003/QH11)",
+      "sources": [
+        {
+          "url": "https://hethongphapluat.com/nghi-quyet-so-22-2003-qh11-ve-viec-chia-va-dieu-chinh-dia-gioi-hanh-chinh-mot-so-tinh-do-quoc-hoi-ban-hanh.html",
+          "title": "Nghị quyết số 22/2003/QH11 về việc chia và điều chỉnh địa giới hành chính một số tỉnh",
+          "says": "Splits Cần Thơ, Đắk Lắk and Lai Châu; moves Than Uyên district from Lào Cai to the new Lai Châu; Điện Biên 9,554 km².",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://vi.wikipedia.org/w/index.php?oldid=75588945",
+          "title": "Điện Biên (vi.wikipedia, revision 75588945)",
+          "says": "Điện Biên province established 1 Jan 2004 under Resolution 22/2003/QH11 of 26 Nov 2003.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2008-08-01",
+      "precision": "day",
+      "what": "Hà Tây, Mê Linh (Vĩnh Phúc) and four communes of Lương Sơn (Hòa Bình) merged into Hanoi (Resolution 15/2008/QH12); Tân Đức commune moved to Phú Thọ (Resolution 14/2008/QH12)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uvn.html",
+          "title": "Statoids: Provinces of Vietnam, change history",
+          "says": "2008-08-01: Hà Tây province and parts of Hòa Bình and Vĩnh Phúc provinces merged with Hanoi.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://vi.wikipedia.org/w/index.php?oldid=75603595",
+          "title": "Hà Tây (tỉnh) (vi.wikipedia, revision 75603595)",
+          "says": "Hà Tây existed 12 Aug 1991 to 1 Aug 2008, when it merged into Hanoi under Resolution 15/2008/QH12.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://vi.wikipedia.org/w/index.php?oldid=75402775",
+          "title": "Mê Linh (vi.wikipedia, revision 75402775)",
+          "says": "Tân Đức commune of Ba Vì (Hà Tây/Hanoi) was transferred to Việt Trì, Phú Thọ in 2008 under Resolution 14/2008/QH12.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1998-01-01",
+      "n": 61,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uvn.html",
+          "title": "Statoids: Provinces of Vietnam, change history",
+          "says": "1996-11-06 resolution: eight provinces split; the divisions then unchanged until the 2003 resolution (effective 2004).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2005-01-01",
+      "n": 64,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uvn.html",
+          "title": "Statoids: Provinces of Vietnam, change history",
+          "says": "2003-11-25: Cần Thơ split into Cần Thơ municipality and Hậu Giang; Đắk Nông from Đắk Lắk; Điện Biên from Lai Châu; Than Uyên moved from Lào Cai to Lai Châu.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2019-12-31",
+      "n": 63,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uvn.html",
+          "title": "Statoids: Provinces of Vietnam, change history",
+          "says": "2008-08-01: Hà Tây province and parts of Hòa Bình and Vĩnh Phúc provinces merged with Hanoi.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Hanoi (whole scope)",
+      "unit": "VNM:HaNoi",
+      "atoms": [
+        "VNM-462"
+      ],
+      "from": "1997-01-01",
+      "to": null,
+      "why": "NE's Hanoi is a hybrid matching no real layout: it already contains Hà Tây (merged 1 Aug 2008) but not Mê Linh (in Hanoi since 1 Aug 2008; NE leaves it in Vĩnh Phúc). Before 2008 it holds two provinces (Hanoi and Hà Tây).",
+      "checked": [
+        "NE geometry: point grid over Mê Linh falls in VNM-464",
+        "Resolution 15/2008/QH12 via vi.wikipedia Hà Tây",
+        "statoids uvn.html"
+      ],
+      "needs": "district-level atoms (geoBoundaries VNM ADM2, CC BY; or GADM — not redistributable)"
+    },
+    {
+      "what": "Hà Tây Province 1997-2008",
+      "unit": "VNM:HaTay",
+      "from": "1997-01-01",
+      "to": "2008-08-01",
+      "why": "Inside NE's Hanoi atom; no separate atom.",
+      "checked": [
+        "vi.wikipedia Hà Tây rev 75603595"
+      ],
+      "needs": "geoBoundaries VNM ADM2"
+    },
+    {
+      "what": "Vĩnh Phúc from 2008",
+      "unit": "VNM:VinhPhuc",
+      "atoms": [
+        "VNM-464"
+      ],
+      "from": "2008-08-01",
+      "to": null,
+      "why": "NE's Vĩnh Phúc still contains Mê Linh, which belongs to Hanoi since 1 Aug 2008.",
+      "checked": [
+        "NE geometry point grid",
+        "statoids uvn.html"
+      ],
+      "needs": "geoBoundaries VNM ADM2 (Mê Linh district)"
+    },
+    {
+      "what": "Hòa Bình (whole scope)",
+      "unit": "VNM:HoaBinh",
+      "atoms": [
+        "VNM-459"
+      ],
+      "from": "1997-01-01",
+      "to": null,
+      "why": "Four communes of Lương Sơn moved to Hanoi on 1 Aug 2008; at NE's scale it cannot be established on which side of NE's Hòa Bình/Hanoi line they lie, so neither the pre- nor the post-2008 outline can be asserted.",
+      "checked": [
+        "statoids uvn.html",
+        "NE geometry spot checks"
+      ],
+      "needs": "commune-level atoms for Lương Sơn / Quốc Oai / Thạch Thất (geoBoundaries VNM ADM3)"
+    },
+    {
+      "what": "Phú Thọ (whole scope)",
+      "unit": "VNM:PhuTho",
+      "atoms": [
+        "VNM-469"
+      ],
+      "from": "1997-01-01",
+      "to": null,
+      "why": "Tân Đức commune moved from Ba Vì (Hà Tây/Hanoi) to Việt Trì in 2008 (Resolution 14/2008/QH12); which side of NE's line it lies on is not established, and the exact effective day of 14/2008 was not found.",
+      "checked": [
+        "vi.wikipedia Mê Linh rev 75402775"
+      ],
+      "needs": "commune-level atoms (geoBoundaries VNM ADM3) and the text of Resolution 14/2008/QH12"
+    },
+    {
+      "what": "Lai Châu (new) and Điện Biên from 2004",
+      "unit": "VNM:LaiChau",
+      "atoms": [
+        "VNM-453",
+        "VNM-450"
+      ],
+      "from": "2004-01-01",
+      "to": null,
+      "why": "NE's Lai Châu/Điện Biên line does not follow the 2004 split (NE Điện Biên 11,797 km² vs 9,554 km² in Resolution 22/2003), and the new Lai Châu includes Than Uyên, which NE leaves in Lào Cai.",
+      "checked": [
+        "Resolution 22/2003/QH11 (hethongphapluat)",
+        "NE areas"
+      ],
+      "needs": "geoBoundaries VNM ADM2"
+    },
+    {
+      "what": "Điện Biên from 2004",
+      "unit": "VNM:DienBien",
+      "from": "2004-01-01",
+      "to": null,
+      "why": "See previous entry.",
+      "checked": [
+        "Resolution 22/2003/QH11"
+      ],
+      "needs": "geoBoundaries VNM ADM2"
+    },
+    {
+      "what": "Lào Cai from 2004",
+      "unit": "VNM:LaoCai",
+      "atoms": [
+        "VNM-5483"
+      ],
+      "from": "2004-01-01",
+      "to": null,
+      "why": "NE's Lào Cai still includes Than Uyên district (in Lai Châu since 1 Jan 2004).",
+      "checked": [
+        "Resolution 22/2003/QH11",
+        "NE area 7,947 km² vs 6,357 km²"
+      ],
+      "needs": "geoBoundaries VNM ADM2 (Than Uyên)"
+    },
+    {
+      "what": "Vietnam 1976-07-02 to 1997-01-01",
+      "from": "1976-07-02",
+      "to": "1997-01-01",
+      "why": "Mergers of 1976, Hanoi's 1978 and 1991 boundary changes, the 1979 Vũng Tàu-Côn Đảo special zone, the 1989 and 1991-92 splits (with district transfers, e.g. Mê Linh to Vĩnh Phú, five Hanoi districts to Hà Tây), and the 1996 transfer of Ngân Sơn and Ba Bể from Cao Bằng to Bắc Kạn put lines inside NE atoms; per-province effective days of the 1991 resolution were not established.",
+      "checked": [
+        "statoids uvn.html",
+        "1996 resolution text (hethongphapluat)",
+        "vi.wikipedia Hà Tây"
+      ],
+      "needs": "district-level atoms (geoBoundaries VNM ADM2) and per-province decree dates"
+    }
+  ]
+}

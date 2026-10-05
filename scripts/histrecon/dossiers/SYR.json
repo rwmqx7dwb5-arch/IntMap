@@ -1,0 +1,566 @@
+{
+  "country": "SYR",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1974-06-26",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Syrian Arab Republic. De jure governorates; the Israeli-occupied Golan (since 1967, Israeli law 1981) is not among the SYR atoms; civil-war control (2011-2019) does not change governorate boundaries.",
+  "units": [
+    {
+      "id": "SYR:Aleppo_Governorate@1974",
+      "names": {
+        "en": "Aleppo Governorate",
+        "ja": "アレッポ県",
+        "local": "محافظة حلب"
+      },
+      "wikidata": "Q214064",
+      "spans": [
+        {
+          "from": "1974-06-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SYR-137"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usy.html",
+              "title": "Statoids — Provinces of Syria (change history)",
+              "says": "Aleppo Governorate: last listed change ~1960 (Idlib split); no change listed after ~1972 except Damascus/Rif Dimashq (1987).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Governorates_of_Syria&oldid=1371192542",
+              "title": "Governorates of Syria (Wikipedia, oldid 1371192542)",
+              "says": "History: Idlib ~1960, Quneitra 1964-08-27, Tartus 1970s, Damascus city a governorate 1987; no later changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = scope start (after the 1974 disengagement), not creation."
+        }
+      ]
+    },
+    {
+      "id": "SYR:Idlib_Governorate@1974",
+      "names": {
+        "en": "Idlib Governorate",
+        "ja": "イドリブ県",
+        "local": "محافظة إدلب"
+      },
+      "wikidata": "Q233218",
+      "spans": [
+        {
+          "from": "1974-06-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SYR-140"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usy.html",
+              "title": "Statoids — Provinces of Syria (change history)",
+              "says": "Idlib Governorate: last listed change ~1960 (split from Aleppo); no change listed after ~1972 except Damascus/Rif Dimashq (1987).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Governorates_of_Syria&oldid=1371192542",
+              "title": "Governorates of Syria (Wikipedia, oldid 1371192542)",
+              "says": "History: Idlib ~1960, Quneitra 1964-08-27, Tartus 1970s, Damascus city a governorate 1987; no later changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = scope start (after the 1974 disengagement), not creation."
+        }
+      ]
+    },
+    {
+      "id": "SYR:Raqqa_Governorate@1974",
+      "names": {
+        "en": "Raqqa Governorate",
+        "ja": "ラッカ県",
+        "local": "محافظة الرقة"
+      },
+      "wikidata": "Q235563",
+      "spans": [
+        {
+          "from": "1974-06-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SYR-136"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usy.html",
+              "title": "Statoids — Provinces of Syria (change history)",
+              "says": "Raqqa Governorate: last listed change ~1960 (Euphrates split), renamed ~1963/1970; no change listed after ~1972 except Damascus/Rif Dimashq (1987).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Governorates_of_Syria&oldid=1371192542",
+              "title": "Governorates of Syria (Wikipedia, oldid 1371192542)",
+              "says": "History: Idlib ~1960, Quneitra 1964-08-27, Tartus 1970s, Damascus city a governorate 1987; no later changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = scope start (after the 1974 disengagement), not creation."
+        }
+      ]
+    },
+    {
+      "id": "SYR:Deir_ez-Zor_Governorate@1974",
+      "names": {
+        "en": "Deir ez-Zor Governorate",
+        "ja": "デリゾール県",
+        "local": "محافظة دير الزور"
+      },
+      "wikidata": "Q232387",
+      "spans": [
+        {
+          "from": "1974-06-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SYR-142"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usy.html",
+              "title": "Statoids — Provinces of Syria (change history)",
+              "says": "Deir ez-Zor Governorate: last listed change ~1960 (Euphrates split); no change listed after ~1972 except Damascus/Rif Dimashq (1987).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Governorates_of_Syria&oldid=1371192542",
+              "title": "Governorates of Syria (Wikipedia, oldid 1371192542)",
+              "says": "History: Idlib ~1960, Quneitra 1964-08-27, Tartus 1970s, Damascus city a governorate 1987; no later changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = scope start (after the 1974 disengagement), not creation."
+        }
+      ]
+    },
+    {
+      "id": "SYR:Hasakah_Governorate@1974",
+      "names": {
+        "en": "Hasakah Governorate",
+        "ja": "ハサカ県",
+        "local": "محافظة الحسكة"
+      },
+      "wikidata": "Q233914",
+      "spans": [
+        {
+          "from": "1974-06-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SYR-141"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usy.html",
+              "title": "Statoids — Provinces of Syria (change history)",
+              "says": "Hasakah Governorate: last listed change ~1946 (renamed ~1954); no change listed after ~1972 except Damascus/Rif Dimashq (1987).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Governorates_of_Syria&oldid=1371192542",
+              "title": "Governorates of Syria (Wikipedia, oldid 1371192542)",
+              "says": "History: Idlib ~1960, Quneitra 1964-08-27, Tartus 1970s, Damascus city a governorate 1987; no later changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = scope start (after the 1974 disengagement), not creation."
+        }
+      ]
+    },
+    {
+      "id": "SYR:Hama_Governorate@1974",
+      "names": {
+        "en": "Hama Governorate",
+        "ja": "ハマー県",
+        "local": "محافظة حماة"
+      },
+      "wikidata": "Q232355",
+      "spans": [
+        {
+          "from": "1974-06-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SYR-138"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usy.html",
+              "title": "Statoids — Provinces of Syria (change history)",
+              "says": "Hama Governorate: last listed change ~1946; no change listed after ~1972 except Damascus/Rif Dimashq (1987).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Governorates_of_Syria&oldid=1371192542",
+              "title": "Governorates of Syria (Wikipedia, oldid 1371192542)",
+              "says": "History: Idlib ~1960, Quneitra 1964-08-27, Tartus 1970s, Damascus city a governorate 1987; no later changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = scope start (after the 1974 disengagement), not creation."
+        }
+      ]
+    },
+    {
+      "id": "SYR:Homs_Governorate@1974",
+      "names": {
+        "en": "Homs Governorate",
+        "ja": "ホムス県",
+        "local": "محافظة حمص"
+      },
+      "wikidata": "Q214094",
+      "spans": [
+        {
+          "from": "1974-06-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SYR-139"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usy.html",
+              "title": "Statoids — Provinces of Syria (change history)",
+              "says": "Homs Governorate: last listed change ~1946; no change listed after ~1972 except Damascus/Rif Dimashq (1987).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Governorates_of_Syria&oldid=1371192542",
+              "title": "Governorates of Syria (Wikipedia, oldid 1371192542)",
+              "says": "History: Idlib ~1960, Quneitra 1964-08-27, Tartus 1970s, Damascus city a governorate 1987; no later changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = scope start (after the 1974 disengagement), not creation."
+        }
+      ]
+    },
+    {
+      "id": "SYR:Suwayda_Governorate@1974",
+      "names": {
+        "en": "Suwayda Governorate",
+        "ja": "スワイダー県",
+        "local": "محافظة السويداء"
+      },
+      "wikidata": "Q236797",
+      "spans": [
+        {
+          "from": "1974-06-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SYR-143"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usy.html",
+              "title": "Statoids — Provinces of Syria (change history)",
+              "says": "Suwayda Governorate: last listed change ~1946 (renamed ~1954); no change listed after ~1972 except Damascus/Rif Dimashq (1987).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Governorates_of_Syria&oldid=1371192542",
+              "title": "Governorates of Syria (Wikipedia, oldid 1371192542)",
+              "says": "History: Idlib ~1960, Quneitra 1964-08-27, Tartus 1970s, Damascus city a governorate 1987; no later changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = scope start (after the 1974 disengagement), not creation."
+        }
+      ]
+    },
+    {
+      "id": "SYR:Daraa_Governorate@1974",
+      "names": {
+        "en": "Daraa Governorate",
+        "ja": "ダルアー県",
+        "local": "محافظة درعا"
+      },
+      "wikidata": "Q1689560",
+      "spans": [
+        {
+          "from": "1974-06-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SYR-146"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usy.html",
+              "title": "Statoids — Provinces of Syria (change history)",
+              "says": "Daraa Governorate: last listed change 1964-08-27 (Fiq district to Quneitra); no change listed after ~1972 except Damascus/Rif Dimashq (1987).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Governorates_of_Syria&oldid=1371192542",
+              "title": "Governorates of Syria (Wikipedia, oldid 1371192542)",
+              "says": "History: Idlib ~1960, Quneitra 1964-08-27, Tartus 1970s, Damascus city a governorate 1987; no later changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = scope start (after the 1974 disengagement), not creation."
+        }
+      ]
+    },
+    {
+      "id": "SYR:Latakia_Governorate@1974",
+      "names": {
+        "en": "Latakia Governorate",
+        "ja": "ラタキア県",
+        "local": "محافظة اللاذقية"
+      },
+      "wikidata": "Q233236",
+      "spans": [
+        {
+          "from": "1974-06-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SYR-134"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usy.html",
+              "title": "Statoids — Provinces of Syria (change history)",
+              "says": "Latakia Governorate: last listed change ~1972 (Tartus split); no change listed after ~1972 except Damascus/Rif Dimashq (1987).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Governorates_of_Syria&oldid=1371192542",
+              "title": "Governorates of Syria (Wikipedia, oldid 1371192542)",
+              "says": "History: Idlib ~1960, Quneitra 1964-08-27, Tartus 1970s, Damascus city a governorate 1987; no later changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = scope start (after the 1974 disengagement), not creation."
+        }
+      ]
+    },
+    {
+      "id": "SYR:Tartus_Governorate@1974",
+      "names": {
+        "en": "Tartus Governorate",
+        "ja": "タルトゥース県",
+        "local": "محافظة طرطوس"
+      },
+      "wikidata": "Q232382",
+      "spans": [
+        {
+          "from": "1974-06-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SYR-135"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usy.html",
+              "title": "Statoids — Provinces of Syria (change history)",
+              "says": "Tartus Governorate: last listed change ~1972 (split from Latakia); no change listed after ~1972 except Damascus/Rif Dimashq (1987).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Governorates_of_Syria&oldid=1371192542",
+              "title": "Governorates of Syria (Wikipedia, oldid 1371192542)",
+              "says": "History: Idlib ~1960, Quneitra 1964-08-27, Tartus 1970s, Damascus city a governorate 1987; no later changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Start = scope start (after the 1974 disengagement), not creation."
+        }
+      ]
+    },
+    {
+      "id": "SYR:Quneitra_Governorate@1974",
+      "names": {
+        "en": "Quneitra Governorate",
+        "ja": "クネイトラ県",
+        "local": "محافظة القنيطرة"
+      },
+      "wikidata": "Q219690",
+      "spans": [
+        {
+          "from": "1974-06-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SYR-145"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usy.html",
+              "title": "Statoids — Provinces of Syria (change history)",
+              "says": "Quneitra Governorate: last listed change 1964-08-27 (created); no change listed after ~1972 except Damascus/Rif Dimashq (1987).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Governorates_of_Syria&oldid=1371192542",
+              "title": "Governorates of Syria (Wikipedia, oldid 1371192542)",
+              "says": "History: Idlib ~1960, Quneitra 1964-08-27, Tartus 1970s, Damascus city a governorate 1987; no later changes.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Quneitra_Governorate&oldid=1377411753",
+              "title": "Quneitra Governorate (Wikipedia, oldid 1377411753)",
+              "says": "Mostly occupied by Israel in 1967; disengagement in force June 1974, Quneitra city returned (Assad visited 26 June).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Drawn: the Syrian-administered part outside the UNDOF area of separation (the occupied Golan is not a SYR atom; the AoS is withheld, see unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "SYR:Damascus_Governorate@1987",
+      "names": {
+        "en": "Damascus Governorate",
+        "ja": "ダマスカス県",
+        "local": "محافظة دمشق"
+      },
+      "wikidata": "Q2007044",
+      "spans": [
+        {
+          "from": "1987",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYR-4843"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usy.html",
+              "title": "Statoids — Provinces of Syria (change history)",
+              "says": "1987: Damascus city became a province; Dimashq province placed under Damascus jurisdiction as Rif Dimashq.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Governorates_of_Syria&oldid=1371192542",
+              "title": "Governorates of Syria (Wikipedia, oldid 1371192542)",
+              "says": "In 1987 the City of Damascus was formally designated an independent governorate.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Year precision only; no day for the 1987 act found."
+        }
+      ]
+    },
+    {
+      "id": "SYR:Rif_Dimashq_Governorate@1987",
+      "names": {
+        "en": "Rif Dimashq Governorate",
+        "ja": "ダマスカス郊外県",
+        "local": "محافظة ريف دمشق"
+      },
+      "wikidata": "Q232399",
+      "spans": [
+        {
+          "from": "1987",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "SYR-144"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usy.html",
+              "title": "Statoids — Provinces of Syria (change history)",
+              "says": "1987: Damascus city became a province; Dimashq province placed under Damascus jurisdiction as Rif Dimashq.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Governorates_of_Syria&oldid=1371192542",
+              "title": "Governorates of Syria (Wikipedia, oldid 1371192542)",
+              "says": "In 1987 the City of Damascus was formally designated an independent governorate.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Year precision only; no day for the 1987 act found."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1987",
+      "precision": "year",
+      "what": "Damascus city made a governorate; surrounding Dimashq province renamed Rif Dimashq",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/usy.html",
+          "title": "Statoids — Provinces of Syria (change history)",
+          "says": "1987 change listed.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "2004-09-22",
+      "n": 14,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/usy.html",
+          "title": "Statoids — Provinces of Syria (change history)",
+          "says": "Syria is divided into fourteen provinces (2004 census table).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "UNDOF area of separation (NE feature SYR-5261) — governorate membership of its parts",
+      "atoms": [
+        "SYR-5261"
+      ],
+      "from": "1974-06-26",
+      "to": null,
+      "why": "NE carves the 1974 area of separation out as its own feature; it is Syrian-administered but straddles Quneitra and probably Rif Dimashq (Hermon slopes) and Dar'a (south end); the governorate lines inside it are not carried by NE.",
+      "checked": [
+        "Quneitra Governorate (Wikipedia oldid 1377411753): Quneitra subdistrict mostly in the UNDOF zone",
+        "NE admin-1 SYR (UNDOF feature, no governorate)"
+      ],
+      "needs": "nahiya-level atoms (e.g. OCHA COD-AB Syria ADM3, licence to check)"
+    },
+    {
+      "what": "Damascus city and Dimashq/Rif Dimashq before 1987",
+      "unit": "SYR:Damascus_Governorate@1987",
+      "atoms": [
+        "SYR-4843",
+        "SYR-144"
+      ],
+      "from": "1974-06-26",
+      "to": "1987",
+      "why": "Damascus city was separated in 1962 but its status changed in 1987; whether its limits equalled the present 116 km² before 1987 was not established.",
+      "checked": [
+        "statoids.com/usy.html",
+        "Governorates of Syria (Wikipedia oldid 1371192542)"
+      ],
+      "needs": "the 1962/1987 decrees and Damascus city-limit history (no finer atoms needed if unchanged)"
+    },
+    {
+      "what": "Earlier layouts 1946-1974 (Euphrates split ~1960, Idlib ~1960, Quneitra 1964-08-27, Tartus ~1972; Golan occupation 1967 and 1973-74 salient)",
+      "from": "1946-04-17",
+      "to": "1974-06-26",
+      "why": "Quneitra was made in 1964 from Quneitra district (Damascus) and Fiq district (Dar'a), mostly occupied 1967-1974 with front lines through NE atoms; the Tartus split year is only approximate (~1972).",
+      "checked": [
+        "statoids.com/usy.html",
+        "Quneitra Governorate (Wikipedia oldid 1377411753)"
+      ],
+      "needs": "district/nahiya geometry 1946-1974 and dated decrees"
+    }
+  ]
+}

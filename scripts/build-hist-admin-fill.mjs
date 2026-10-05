@@ -162,8 +162,8 @@ export const GRID = parseFloat(argOf('--grid', '0.1'));
    inside Armenia: the share of LOCATED points falling in a neighbour reads 0, 0, 0, 0, 2, 3, 4, 5,
    7, 7 and 8 %. A unit genuinely split between two states is a different order of magnitude — half
    its ground is in the other one. 20 % sits above the artefact and far below the defect. */
-const STRADDLE_MAX = 0.20;
-const LOCATED_MIN = 0.60;
+export const STRADDLE_MAX = 0.20;
+export const LOCATED_MIN = 0.60;
 /* ⚠ overlap is the OTHER direction: a record unit that covers a quarter of this ground is already
    answering for it, and two lines over one province is the thing #R530 removed. */
 export const OVERLAP_MIN = 0.25;
@@ -326,7 +326,7 @@ export function hitMask(polys, pts) {
    none of the three boundaries is typed here. */
 const ymd = (y, m, d) => y * 10000 + m * 100 + d;
 
-function eraIndex() {
+export function eraIndex() {
   const cs = loadBundle('data/cshapes.js').data;
   const hb = loadBundle('data/hist-borders.js').data;
   /* ══ ⚠⚠⚠ (hist-coverage-depth) THE ERA RECORD IS THE ONE THE READER SEES, NOT THE BAND CHAIN ══════
@@ -427,12 +427,36 @@ const meets = (a, b) => !(a[2] < b[0] || a[0] > b[2] || a[3] < b[1] || a[1] > b[
    carried back is the weaker claim and keeps silent, exactly as it does for OpenHistoricalMap. */
 export function recordFiles() {
   const tiers = fs.readdirSync(path.join(ROOT, 'data')).filter((n) => /^hist-admin\d+\.js$/.test(n)).sort().map((n) => 'data/' + n);
-  const surveyed = HIST_ADMIN_GAPS.filter((g) => g.derived === false && fs.existsSync(path.join(ROOT, g.file))).map((g) => g.file);
+  /* (hist-reconstruction) a reconstruction is derived, but from a cited timeline of the unit itself — the outline
+     carried back on «Wikidata says the name was founded in D» is the weaker claim and yields to it too */
+  const surveyed = HIST_ADMIN_GAPS.filter((g) => (g.derived === false || g.reconstructed) && fs.existsSync(path.join(ROOT, g.file))).map((g) => g.file);
   return tiers.concat(surveyed);
 }
-function recordUnits() {
+/* ══ (hist-reconstruction) THE SAME UNIT, BY ITS IDENTIFIER — NOT ONLY BY WHERE ITS SAMPLES FALL ══════════════
+   Test 4 asks whether a record's units cover 25% of this unit's sample points. A unit smaller than the lattice
+   has ONE lattice point, and an outline from a different Natural Earth vintage can put it across the line.
+   MEASURED 2026-10-05: Ajman (AE-AJ) sampled one point; in the reconstruction's pinned Natural Earth commit that
+   point lies in Sharjah, so the fill drew Ajman 1980-2002 over the reconstruction's Ajman (Q159477) — the same
+   emirate twice (a new «contested» pair in data/hist-claims.json). ⇒ a reconstructed row whose date record
+   names the same Wikidata item (dates[i].wikidata, written by build-hist-admin-recon.mjs from the dossier)
+   answers for the unit on its own span. .agents/rules/historical-verification.md §4-2: bind by identifier. */
+export function reconSpansByItem() {
+  const out = new Map();
+  for (const g of HIST_ADMIN_GAPS.filter((x) => x.reconstructed && fs.existsSync(path.join(ROOT, x.file)))) {
+    const { data: d } = loadBundle(g.file);
+    d.feats.forEach((f, i) => {
+      const q = d.dates && d.dates[i] && d.dates[i].wikidata;
+      if (!q) return;
+      if (!out.has(q)) out.set(q, []);
+      out.get(q).push([ymd(f[2], f[3], f[4]), ymd(f[5], f[6], f[7])]);
+    });
+  }
+  for (const [q, v] of out) out.set(q, union(v, []));
+  return out;
+}
+export function recordUnits(files = recordFiles()) {
   const out = [];
-  for (const rel of recordFiles()) {
+  for (const rel of files) {
     const { data: d } = loadBundle(rel);
     for (const f of d.feats) {
       const polys = f[8].map((poly) => poly.map((ri) => d.rings[ri]).filter((r) => r && r.length >= 4)).filter((p) => p.length);
@@ -883,6 +907,7 @@ async function main() {
   const unplaced = new Set();
   const era = eraIndex();
   const rec = recordUnits();
+  const reconSpans = reconSpansByItem();
   console.error('· record units consulted for overlap: ' + rec.length);
 
   const rings = [], ringKey = new Map(), feats = [];
@@ -1045,7 +1070,10 @@ async function main() {
       const answeredIv = [];
 
       /* test 4 — the record's own units take the ground back for their own spans (`answeredSpans`). */
-      for (const iv of answeredSpans(pts, box, rec, ymd(-999999, 1, 1), ymd(9999, 1, 1)).spans) {
+      /* (hist-reconstruction) a reconstructed row naming the SAME Wikidata item answers for this unit on its span,
+         whatever the shapes' samples say — see reconSpansByItem() */
+      const byItem = (u.wd && u.wd.qid && reconSpans.get(u.wd.qid)) || [];
+      for (const iv of union(answeredSpans(pts, box, rec, ymd(-999999, 1, 1), ymd(9999, 1, 1)).spans, byItem)) {
         answeredIv.push(iv);
         const before = alive.length;
         alive = subtract(alive, iv);

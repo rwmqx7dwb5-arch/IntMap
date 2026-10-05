@@ -1,0 +1,472 @@
+{
+  "country": "ISL",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1998-12-15",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Republic of Iceland. First level = the eight statistical regions (landsvæði) of Statistics Iceland, which are groupings of municipalities and not administrative governments. Earlier first-level layouts (amt until 1904, then 23 sýslur + kaupstaðir, constituencies 1959-2003) are not unions of NE atoms and are not covered; scope starts at the earliest date found documenting the eight regions (ISO 3166-2, 1998-12-15).",
+  "units": [
+    {
+      "id": "ISL:Hofudborgarsvaedi@1998",
+      "names": {
+        "en": "Capital Region",
+        "ja": "大レイキャヴィーク",
+        "local": "Höfuðborgarsvæðið"
+      },
+      "wikidata": "Q203304",
+      "spans": [
+        {
+          "from": "1998-12-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ISL-5131",
+            "ISL-709"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uis.html",
+              "title": "Iceland Regions (Statoids, Gwillim Law)",
+              "says": "ISO 3166-2 (1998-12-15) showed the Statistics Iceland regions; 2006-01-28 Siglufjörður moved Northland West to Northland East; 2006-04-08 Skeggjastaðahreppur moved Eastland to Northland East.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Iceland&oldid=1363009392",
+              "title": "Regions of Iceland (Wikipedia, oldid 1363009392)",
+              "says": "Eight regions follow the 1959-2003 constituencies; transfers: Siglufjörður (2006) and Langanesbyggð area (2006) to Northeast, Bæjarhreppur (2012) Westfjords to Northwest; Hornafjörður changed association in 2008.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://is.wikipedia.org/w/index.php?title=Landshlutar_%C3%8Dslands&oldid=1907649",
+              "title": "Landshlutar Íslands (Wikipedia, oldid 1907649)",
+              "says": "Iceland is divided into eight regions based on the grouping of municipalities into regional associations, essentially the 1959 constituency division.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Statistics Iceland region (landsvæði, first digit of the municipality code). No municipality moved into or out of this region between 1998-12-15 and 2019-12-31 per the change lists cited. NE splits Reykjavík (code 0000) from the rest of the region (ISO 3166-2:1998 practice); the region is their union."
+        }
+      ]
+    },
+    {
+      "id": "ISL:Sudurnes@1998",
+      "names": {
+        "en": "Southern Peninsula Region",
+        "ja": "南西アイスランド",
+        "local": "Suðurnes"
+      },
+      "wikidata": "Q212768",
+      "spans": [
+        {
+          "from": "1998-12-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ISL-704"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uis.html",
+              "title": "Iceland Regions (Statoids, Gwillim Law)",
+              "says": "ISO 3166-2 (1998-12-15) showed the Statistics Iceland regions; 2006-01-28 Siglufjörður moved Northland West to Northland East; 2006-04-08 Skeggjastaðahreppur moved Eastland to Northland East.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Iceland&oldid=1363009392",
+              "title": "Regions of Iceland (Wikipedia, oldid 1363009392)",
+              "says": "Eight regions follow the 1959-2003 constituencies; transfers: Siglufjörður (2006) and Langanesbyggð area (2006) to Northeast, Bæjarhreppur (2012) Westfjords to Northwest; Hornafjörður changed association in 2008.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://is.wikipedia.org/w/index.php?title=Landshlutar_%C3%8Dslands&oldid=1907649",
+              "title": "Landshlutar Íslands (Wikipedia, oldid 1907649)",
+              "says": "Iceland is divided into eight regions based on the grouping of municipalities into regional associations, essentially the 1959 constituency division.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Statistics Iceland region (landsvæði, first digit of the municipality code). No municipality moved into or out of this region between 1998-12-15 and 2019-12-31 per the change lists cited."
+        }
+      ]
+    },
+    {
+      "id": "ISL:Vesturland@1998",
+      "names": {
+        "en": "Western Region",
+        "ja": "西アイスランド",
+        "local": "Vesturland"
+      },
+      "wikidata": "Q221791",
+      "spans": [
+        {
+          "from": "1998-12-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ISL-710"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uis.html",
+              "title": "Iceland Regions (Statoids, Gwillim Law)",
+              "says": "ISO 3166-2 (1998-12-15) showed the Statistics Iceland regions; 2006-01-28 Siglufjörður moved Northland West to Northland East; 2006-04-08 Skeggjastaðahreppur moved Eastland to Northland East.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Iceland&oldid=1363009392",
+              "title": "Regions of Iceland (Wikipedia, oldid 1363009392)",
+              "says": "Eight regions follow the 1959-2003 constituencies; transfers: Siglufjörður (2006) and Langanesbyggð area (2006) to Northeast, Bæjarhreppur (2012) Westfjords to Northwest; Hornafjörður changed association in 2008.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://is.wikipedia.org/w/index.php?title=Landshlutar_%C3%8Dslands&oldid=1907649",
+              "title": "Landshlutar Íslands (Wikipedia, oldid 1907649)",
+              "says": "Iceland is divided into eight regions based on the grouping of municipalities into regional associations, essentially the 1959 constituency division.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Statistics Iceland region (landsvæði, first digit of the municipality code). No municipality moved into or out of this region between 1998-12-15 and 2019-12-31 per the change lists cited."
+        }
+      ]
+    },
+    {
+      "id": "ISL:Sudurland@1998",
+      "names": {
+        "en": "Southern Region",
+        "ja": "南アイスランド",
+        "local": "Suðurland"
+      },
+      "wikidata": "Q204796",
+      "spans": [
+        {
+          "from": "1998-12-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ISL-705"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uis.html",
+              "title": "Iceland Regions (Statoids, Gwillim Law)",
+              "says": "ISO 3166-2 (1998-12-15) showed the Statistics Iceland regions; 2006-01-28 Siglufjörður moved Northland West to Northland East; 2006-04-08 Skeggjastaðahreppur moved Eastland to Northland East.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Iceland&oldid=1363009392",
+              "title": "Regions of Iceland (Wikipedia, oldid 1363009392)",
+              "says": "Eight regions follow the 1959-2003 constituencies; transfers: Siglufjörður (2006) and Langanesbyggð area (2006) to Northeast, Bæjarhreppur (2012) Westfjords to Northwest; Hornafjörður changed association in 2008.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://is.wikipedia.org/w/index.php?title=Landshlutar_%C3%8Dslands&oldid=1907649",
+              "title": "Landshlutar Íslands (Wikipedia, oldid 1907649)",
+              "says": "Iceland is divided into eight regions based on the grouping of municipalities into regional associations, essentially the 1959 constituency division.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Statistics Iceland region (landsvæði, first digit of the municipality code). No municipality moved into or out of this region between 1998-12-15 and 2019-12-31 per the change lists cited. Hornafjörður joined the southern regional association in 2008 but stays in the statistical Eastern Region, as in the NE atoms."
+        }
+      ]
+    },
+    {
+      "id": "ISL:Vestfirdir@1998",
+      "names": {
+        "en": "Westfjords Region",
+        "ja": "西部フィヨルド",
+        "local": "Vestfirðir"
+      },
+      "wikidata": "Q727267",
+      "spans": [
+        {
+          "from": "1998-12-15",
+          "precision": "day",
+          "to": "2012-01-01",
+          "atoms": [
+            "ISL-690"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uis.html",
+              "title": "Iceland Regions (Statoids, Gwillim Law)",
+              "says": "ISO 3166-2 (1998-12-15) showed the Statistics Iceland regions; 2006-01-28 Siglufjörður moved Northland West to Northland East; 2006-04-08 Skeggjastaðahreppur moved Eastland to Northland East.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Iceland&oldid=1363009392",
+              "title": "Regions of Iceland (Wikipedia, oldid 1363009392)",
+              "says": "Eight regions follow the 1959-2003 constituencies; transfers: Siglufjörður (2006) and Langanesbyggð area (2006) to Northeast, Bæjarhreppur (2012) Westfjords to Northwest; Hornafjörður changed association in 2008.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=H%C3%BAna%C3%BEing_vestra&oldid=1376234996",
+              "title": "Húnaþing vestra (Wikipedia, oldid 1376234996)",
+              "says": "On 1 January 2012 Húnaþing vestra merged with Bæjarhreppur, keeping its name.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "NE still places former Bæjarhreppur (Hrútafjörður west shore, e.g. Brú) in Vestfirðir, i.e. the pre-2012 region."
+        }
+      ]
+    },
+    {
+      "id": "ISL:NordurlandVestra@2006",
+      "names": {
+        "en": "Northwestern Region",
+        "ja": "北アイスランド西部",
+        "local": "Norðurland vestra"
+      },
+      "wikidata": "Q210866",
+      "spans": [
+        {
+          "from": "2006-01-28",
+          "precision": "day",
+          "to": "2012-01-01",
+          "atoms": [
+            "ISL-697"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uis.html",
+              "title": "Iceland Regions (Statoids, Gwillim Law)",
+              "says": "ISO 3166-2 (1998-12-15) showed the Statistics Iceland regions; 2006-01-28 Siglufjörður moved Northland West to Northland East; 2006-04-08 Skeggjastaðahreppur moved Eastland to Northland East.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Iceland&oldid=1363009392",
+              "title": "Regions of Iceland (Wikipedia, oldid 1363009392)",
+              "says": "Eight regions follow the 1959-2003 constituencies; transfers: Siglufjörður (2006) and Langanesbyggð area (2006) to Northeast, Bæjarhreppur (2012) Westfjords to Northwest; Hornafjörður changed association in 2008.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=H%C3%BAna%C3%BEing_vestra&oldid=1376234996",
+              "title": "Húnaþing vestra (Wikipedia, oldid 1376234996)",
+              "says": "On 1 January 2012 Húnaþing vestra merged with Bæjarhreppur, keeping its name.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ISL:NordurlandEystra@2006",
+      "names": {
+        "en": "Northeastern Region",
+        "ja": "北アイスランド東部",
+        "local": "Norðurland eystra"
+      },
+      "wikidata": "Q241551",
+      "spans": [
+        {
+          "from": "2006-04-08",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ISL-702"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uis.html",
+              "title": "Iceland Regions (Statoids, Gwillim Law)",
+              "says": "ISO 3166-2 (1998-12-15) showed the Statistics Iceland regions; 2006-01-28 Siglufjörður moved Northland West to Northland East; 2006-04-08 Skeggjastaðahreppur moved Eastland to Northland East.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Iceland&oldid=1363009392",
+              "title": "Regions of Iceland (Wikipedia, oldid 1363009392)",
+              "says": "Eight regions follow the 1959-2003 constituencies; transfers: Siglufjörður (2006) and Langanesbyggð area (2006) to Northeast, Bæjarhreppur (2012) Westfjords to Northwest; Hornafjörður changed association in 2008.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ISL:Austurland@2006",
+      "names": {
+        "en": "Eastern Region",
+        "ja": "東アイスランド",
+        "local": "Austurland"
+      },
+      "wikidata": "Q220663",
+      "spans": [
+        {
+          "from": "2006-04-08",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ISL-695"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uis.html",
+              "title": "Iceland Regions (Statoids, Gwillim Law)",
+              "says": "ISO 3166-2 (1998-12-15) showed the Statistics Iceland regions; 2006-01-28 Siglufjörður moved Northland West to Northland East; 2006-04-08 Skeggjastaðahreppur moved Eastland to Northland East.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Iceland&oldid=1363009392",
+              "title": "Regions of Iceland (Wikipedia, oldid 1363009392)",
+              "says": "Eight regions follow the 1959-2003 constituencies; transfers: Siglufjörður (2006) and Langanesbyggð area (2006) to Northeast, Bæjarhreppur (2012) Westfjords to Northwest; Hornafjörður changed association in 2008.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Includes Hornafjörður (statistical region; NE agrees)."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "2006-01-28",
+      "precision": "day",
+      "what": "Siglufjörður (merged into Fjallabyggð) moved from Norðurland vestra to Norðurland eystra",
+      "sources": [
+        {
+          "url": "https://statoids.com/uis.html",
+          "title": "Iceland Regions (Statoids, Gwillim Law)",
+          "says": "ISO 3166-2 (1998-12-15) showed the Statistics Iceland regions; 2006-01-28 Siglufjörður moved Northland West to Northland East; 2006-04-08 Skeggjastaðahreppur moved Eastland to Northland East.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Iceland&oldid=1363009392",
+          "title": "Regions of Iceland (Wikipedia, oldid 1363009392)",
+          "says": "Eight regions follow the 1959-2003 constituencies; transfers: Siglufjörður (2006) and Langanesbyggð area (2006) to Northeast, Bæjarhreppur (2012) Westfjords to Northwest; Hornafjörður changed association in 2008.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2006-04-08",
+      "precision": "day",
+      "what": "Skeggjastaðahreppur (merged into Langanesbyggð) moved from Austurland to Norðurland eystra",
+      "sources": [
+        {
+          "url": "https://statoids.com/uis.html",
+          "title": "Iceland Regions (Statoids, Gwillim Law)",
+          "says": "ISO 3166-2 (1998-12-15) showed the Statistics Iceland regions; 2006-01-28 Siglufjörður moved Northland West to Northland East; 2006-04-08 Skeggjastaðahreppur moved Eastland to Northland East.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Iceland&oldid=1363009392",
+          "title": "Regions of Iceland (Wikipedia, oldid 1363009392)",
+          "says": "Eight regions follow the 1959-2003 constituencies; transfers: Siglufjörður (2006) and Langanesbyggð area (2006) to Northeast, Bæjarhreppur (2012) Westfjords to Northwest; Hornafjörður changed association in 2008.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2012-01-01",
+      "precision": "day",
+      "what": "Bæjarhreppur merged into Húnaþing vestra: moved from Vestfirðir to Norðurland vestra",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=H%C3%BAna%C3%BEing_vestra&oldid=1376234996",
+          "title": "Húnaþing vestra (Wikipedia, oldid 1376234996)",
+          "says": "On 1 January 2012 Húnaþing vestra merged with Bæjarhreppur, keeping its name.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Iceland&oldid=1363009392",
+          "title": "Regions of Iceland (Wikipedia, oldid 1363009392)",
+          "says": "Eight regions follow the 1959-2003 constituencies; transfers: Siglufjörður (2006) and Langanesbyggð area (2006) to Northeast, Bæjarhreppur (2012) Westfjords to Northwest; Hornafjörður changed association in 2008.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "2008-01-01",
+      "n": 8,
+      "sources": [
+        {
+          "url": "https://statoids.com/uis.html",
+          "title": "Iceland Regions (Statoids, Gwillim Law)",
+          "says": "ISO 3166-2 (1998-12-15) showed the Statistics Iceland regions; 2006-01-28 Siglufjörður moved Northland West to Northland East; 2006-04-08 Skeggjastaðahreppur moved Eastland to Northland East.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://is.wikipedia.org/w/index.php?title=Landshlutar_%C3%8Dslands&oldid=1907649",
+          "title": "Landshlutar Íslands (Wikipedia, oldid 1907649)",
+          "says": "Iceland is divided into eight regions based on the grouping of municipalities into regional associations, essentially the 1959 constituency division.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Norðurland vestra before 2006-01-28 (incl. Siglufjörður)",
+      "unit": "ISL:NordurlandVestra@1998",
+      "atoms": [
+        "ISL-697"
+      ],
+      "from": "1998-12-15",
+      "to": "2006-01-28",
+      "why": "Siglufjörður was in this region; its area lies inside the present Norðurland eystra atom.",
+      "checked": [
+        "statoids uis",
+        "Wikipedia Regions of Iceland"
+      ],
+      "needs": "finer atoms: Icelandic municipalities of the relevant year (Landmælingar Íslands IS 50V / Statistics Iceland municipal boundaries; licence not verified here)"
+    },
+    {
+      "what": "Norðurland eystra before 2006-04-08",
+      "unit": "ISL:NordurlandEystra@1998",
+      "atoms": [
+        "ISL-702"
+      ],
+      "from": "1998-12-15",
+      "to": "2006-04-08",
+      "why": "Lacked Siglufjörður until 2006-01-28 and Skeggjastaðahreppur until 2006-04-08.",
+      "checked": [
+        "statoids uis"
+      ],
+      "needs": "finer atoms: Icelandic municipalities of the relevant year (Landmælingar Íslands IS 50V / Statistics Iceland municipal boundaries; licence not verified here)"
+    },
+    {
+      "what": "Austurland before 2006-04-08 (incl. Skeggjastaðahreppur)",
+      "unit": "ISL:Austurland@1998",
+      "atoms": [
+        "ISL-695"
+      ],
+      "from": "1998-12-15",
+      "to": "2006-04-08",
+      "why": "Skeggjastaðahreppur (Bakkafjörður) belonged to Austurland; it lies inside the present Norðurland eystra atom.",
+      "checked": [
+        "statoids uis"
+      ],
+      "needs": "finer atoms: Icelandic municipalities of the relevant year (Landmælingar Íslands IS 50V / Statistics Iceland municipal boundaries; licence not verified here)"
+    },
+    {
+      "what": "Vestfirðir from 2012 (without Bæjarhreppur)",
+      "unit": "ISL:Vestfirdir@2012",
+      "atoms": [
+        "ISL-690",
+        "ISL-697"
+      ],
+      "from": "2012-01-01",
+      "to": "2020-01-01",
+      "why": "Bæjarhreppur moved to Norðurland vestra on 2012-01-01, but NE still draws it inside the Vestfirðir atom (Brú tests inside ISL-690), so both regions differ from the atoms after that date.",
+      "checked": [
+        "Wikipedia Húnaþing vestra",
+        "Wikipedia Regions of Iceland",
+        "NE point-in-polygon test"
+      ],
+      "needs": "finer atoms: Icelandic municipalities of the relevant year (Landmælingar Íslands IS 50V / Statistics Iceland municipal boundaries; licence not verified here)"
+    },
+    {
+      "what": "Norðurland vestra from 2012 (with Bæjarhreppur)",
+      "unit": "ISL:NordurlandVestra@2012",
+      "atoms": [],
+      "from": "2012-01-01",
+      "to": "2020-01-01",
+      "why": "See Vestfirðir entry (atoms withheld there).",
+      "checked": [
+        "Wikipedia Húnaþing vestra"
+      ],
+      "needs": "finer atoms: Icelandic municipalities of the relevant year (Landmælingar Íslands IS 50V / Statistics Iceland municipal boundaries; licence not verified here)"
+    }
+  ]
+}

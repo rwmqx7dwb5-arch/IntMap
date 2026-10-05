@@ -1,0 +1,424 @@
+{
+  "country": "MOZ",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1975-06-25",
+    "to": "2019-12-31"
+  },
+  "polityNote": "People's Republic / Republic of Mozambique from independence on 1975-06-25.",
+  "units": [
+    {
+      "id": "MOZ:CaboDelgado@1975",
+      "names": {
+        "en": "Cabo Delgado Province",
+        "ja": "カボ・デルガード州",
+        "local": "Província de Cabo Delgado"
+      },
+      "wikidata": "Q466538",
+      "spans": [
+        {
+          "from": "1975-06-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-1198"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law)",
+              "says": "Change history: districts of 1954; Mozambique independent 1975-06-25; renames 1976–77; districts become provinces; Maputo city split from Maputo province.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope. No later inter-provincial change recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:Niassa@1975",
+      "names": {
+        "en": "Niassa Province",
+        "ja": "ニアサ州",
+        "local": "Província do Niassa"
+      },
+      "wikidata": "Q622799",
+      "spans": [
+        {
+          "from": "1975-06-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-1199"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law)",
+              "says": "Change history: districts of 1954; Mozambique independent 1975-06-25; renames 1976–77; districts become provinces; Maputo city split from Maputo province.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope. No later inter-provincial change recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:Nampula@1975",
+      "names": {
+        "en": "Nampula Province (Moçambique district until ~1977)",
+        "ja": "ナンプーラ州",
+        "local": "Província de Nampula"
+      },
+      "wikidata": "Q622794",
+      "spans": [
+        {
+          "from": "1975-06-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-1200"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law)",
+              "says": "Change history: districts of 1954; Mozambique independent 1975-06-25; renames 1976–77; districts become provinces; Maputo city split from Maputo province.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope. No later inter-provincial change recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:Zambezia@1975",
+      "names": {
+        "en": "Zambézia Province",
+        "ja": "ザンベジア州",
+        "local": "Província da Zambézia"
+      },
+      "wikidata": "Q622803",
+      "spans": [
+        {
+          "from": "1975-06-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-1906"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law)",
+              "says": "Change history: districts of 1954; Mozambique independent 1975-06-25; renames 1976–77; districts become provinces; Maputo city split from Maputo province.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope. No later inter-provincial change recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:Tete@1975",
+      "names": {
+        "en": "Tete Province",
+        "ja": "テテ州",
+        "local": "Província de Tete"
+      },
+      "wikidata": "Q605787",
+      "spans": [
+        {
+          "from": "1975-06-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-1190"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law)",
+              "says": "Change history: districts of 1954; Mozambique independent 1975-06-25; renames 1976–77; districts become provinces; Maputo city split from Maputo province.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope. No later inter-provincial change recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:Manica@1975",
+      "names": {
+        "en": "Manica Province (Vila Pery district until 1975/76)",
+        "ja": "マニカ州",
+        "local": "Província de Manica"
+      },
+      "wikidata": "Q622792",
+      "spans": [
+        {
+          "from": "1975-06-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-1192"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70677288",
+              "title": "Wikipédia (pt): Província de Manica, rev. 70677288",
+              "says": "Manica e Sofala divided 5 Aug 1970 into Vila Pery and Sofala; Decreto-Lei 61/75 of 3 June moved Tambara and Guro from Sofala to Manica.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73109674",
+              "title": "Wikipédia (pt): Província de Sofala, rev. 73109674",
+              "says": "Sofala district created 5 Aug 1970; by Decreto-Lei 61/75 of 3 June, Tambara and Guro transferred to Vila Pery (now Manica).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law)",
+              "says": "Change history: districts of 1954; Mozambique independent 1975-06-25; renames 1976–77; districts become provinces; Maputo city split from Maputo province.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span starts at independence, after Decreto-Lei 61/75 (1975-06-03) moved Tambara and Guro to Manica (Vila Pery)."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:Sofala@1975",
+      "names": {
+        "en": "Sofala Province",
+        "ja": "ソファラ州",
+        "local": "Província de Sofala"
+      },
+      "wikidata": "Q622801",
+      "spans": [
+        {
+          "from": "1975-06-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-1905"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70677288",
+              "title": "Wikipédia (pt): Província de Manica, rev. 70677288",
+              "says": "Manica e Sofala divided 5 Aug 1970 into Vila Pery and Sofala; Decreto-Lei 61/75 of 3 June moved Tambara and Guro from Sofala to Manica.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=73109674",
+              "title": "Wikipédia (pt): Província de Sofala, rev. 73109674",
+              "says": "Sofala district created 5 Aug 1970; by Decreto-Lei 61/75 of 3 June, Tambara and Guro transferred to Vila Pery (now Manica).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law)",
+              "says": "Change history: districts of 1954; Mozambique independent 1975-06-25; renames 1976–77; districts become provinces; Maputo city split from Maputo province.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span starts at independence, after Decreto-Lei 61/75 (1975-06-03) moved Tambara and Guro to Manica (Vila Pery)."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:Inhambane@1975",
+      "names": {
+        "en": "Inhambane Province",
+        "ja": "イニャンバネ州",
+        "local": "Província de Inhambane"
+      },
+      "wikidata": "Q466547",
+      "spans": [
+        {
+          "from": "1975-06-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-1925"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law)",
+              "says": "Change history: districts of 1954; Mozambique independent 1975-06-25; renames 1976–77; districts become provinces; Maputo city split from Maputo province.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope. No later inter-provincial change recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:Gaza@1975",
+      "names": {
+        "en": "Gaza Province",
+        "ja": "ガザ州",
+        "local": "Província de Gaza"
+      },
+      "wikidata": "Q466526",
+      "spans": [
+        {
+          "from": "1975-06-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MOZ-1207"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law)",
+              "says": "Change history: districts of 1954; Mozambique independent 1975-06-25; renames 1976–77; districts become provinces; Maputo city split from Maputo province.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope. No later inter-provincial change recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "MOZ:Maputo@1975",
+      "names": {
+        "en": "Maputo Province (Lourenço Marques district until 1976), including Maputo city",
+        "ja": "マプート州",
+        "local": "Província de Maputo"
+      },
+      "wikidata": "Q379658",
+      "spans": [
+        {
+          "from": "1975-06-25",
+          "precision": "day",
+          "to": "1980-06-26",
+          "atoms": [
+            "MOZ-1927",
+            "MOZ-5854"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umz.html",
+              "title": "Statoids: Provinces of Mozambique (G. Law)",
+              "says": "Change history: districts of 1954; Mozambique independent 1975-06-25; renames 1976–77; districts become provinces; Maputo city split from Maputo province.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=69667666",
+              "title": "Wikipédia (pt): Província de Maputo, rev. 69667666",
+              "says": "Maputo city elevated to province and separated in 1980 by Resolução CP AP n.º 5/80 of 26 June 1980; Matola is the provincial capital.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Before the city was separated, the province = NE Maputo province atom + NE Maputo city atom."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1975-06-03",
+      "precision": "day",
+      "what": "Tambara and Guro transferred from Sofala to Vila Pery (Manica) by Decreto-Lei 61/75 (before scope)",
+      "sources": [
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=70677288",
+          "title": "Wikipédia (pt): Província de Manica, rev. 70677288",
+          "says": "Manica e Sofala divided 5 Aug 1970 into Vila Pery and Sofala; Decreto-Lei 61/75 of 3 June moved Tambara and Guro from Sofala to Manica.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=73109674",
+          "title": "Wikipédia (pt): Província de Sofala, rev. 73109674",
+          "says": "Sofala district created 5 Aug 1970; by Decreto-Lei 61/75 of 3 June, Tambara and Guro transferred to Vila Pery (now Manica).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1980-06-26",
+      "precision": "day",
+      "what": "Maputo city separated from Maputo province with provincial status (Resolução CP AP 5/80)",
+      "sources": [
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=69667666",
+          "title": "Wikipédia (pt): Província de Maputo, rev. 69667666",
+          "says": "Maputo city elevated to province and separated in 1980 by Resolução CP AP n.º 5/80 of 26 June 1980; Matola is the provincial capital.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1975-06-25",
+      "n": 10,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umz.html",
+          "title": "Statoids: Provinces of Mozambique (G. Law)",
+          "says": "Change history: districts of 1954; Mozambique independent 1975-06-25; renames 1976–77; districts become provinces; Maputo city split from Maputo province.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2007-08-01",
+      "n": 11,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umz.html",
+          "title": "Statoids: Provinces of Mozambique (G. Law)",
+          "says": "Change history: districts of 1954; Mozambique independent 1975-06-25; renames 1976–77; districts become provinces; Maputo city split from Maputo province.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Maputo province and Maputo city after the 1980 separation",
+      "unit": "MOZ:Maputo@1980",
+      "atoms": [
+        "MOZ-1927",
+        "MOZ-5854"
+      ],
+      "from": "1980-06-26",
+      "to": null,
+      "why": "The NE \"Maputo\" city atom (≈100 km²) is not the city's territory: KaTembe and Inhaca island (both municipal districts of Maputo city) fall in the NE province atom (point tests), and INE gives the city 602 km². The city/province line therefore runs through the NE province atom.",
+      "checked": [
+        "statoids umz.html table (INE areas)",
+        "pt.wikipedia Província de Maputo rev. 69667666",
+        "Natural Earth point tests (Inhaca, KaTembe → MOZ-1927)"
+      ],
+      "needs": "geoBoundaries MOZ ADM2 (CC BY 4.0) or OCHA COD-AB Mozambique ADM2 (Maputo city districts incl. KaTembe and KaNyaka)"
+    },
+    {
+      "what": "Maputo city (province-level) after 1980",
+      "unit": "MOZ:MaputoCity@1980",
+      "from": "1980-06-26",
+      "to": null,
+      "why": "See previous entry: NE city atom omits KaTembe and Inhaca.",
+      "checked": [
+        "statoids umz.html"
+      ],
+      "needs": "geoBoundaries MOZ ADM2 (CC BY 4.0)"
+    },
+    {
+      "what": "Colonial districts 1954–1975 (Manica e Sofala until 1970; Tambara/Guro in Sofala 1970–1975)",
+      "from": "1954-10-20",
+      "to": "1975-06-25",
+      "why": "Outside scope. Manica/Sofala line moved in 1975 (Tambara, Guro); other 1954 lines not verified against present ones.",
+      "checked": [
+        "statoids umz.html",
+        "pt.wikipedia Província de Manica rev. 70677288"
+      ],
+      "needs": "district-level atoms (geoBoundaries MOZ ADM2) for Tambara and Guro"
+    }
+  ]
+}

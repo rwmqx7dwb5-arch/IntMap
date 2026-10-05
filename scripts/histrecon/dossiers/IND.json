@@ -1,0 +1,1777 @@
+{
+ "country": "IND",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1950-01-26",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Republic of India from 26 Jan 1950. Kashmir: Indian-administered part as NE draws it (Siachen separate, Aksai Chin outside). Portuguese/French possessions and Sikkim are listed as outside until they joined.",
+ "units": [
+  {
+   "id": "IND:Andaman and Nicobar Islands",
+   "names": {
+    "en": "Andaman and Nicobar Islands",
+    "ja": "アンダマン・ニコバル諸島",
+    "local": "अण्डमान और निकोबार द्वीपसमूह"
+   },
+   "wikidata": "Q40888",
+   "spans": [
+    {
+     "from": "1950-01-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-2474"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Andaman_and_Nicobar_Islands&oldid=1376919091",
+       "title": "Wikipedia — Andaman and Nicobar Islands",
+       "says": "Infobox: union territory 1 November 1956 (Part D territory before).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_acts_of_the_Parliament_of_India&oldid=1377843596",
+       "title": "Wikipedia — List of acts of the Parliament of India",
+       "says": "Boundary acts after 1956: Rajasthan–MP 1959, AP–Madras 1959, Acquired Territories 1960, AP–Mysore 1968, Bihar–UP 1968, Haryana–UP 1979, plus reorganisation acts 1960–2019.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Delhi",
+   "names": {
+    "en": "Delhi",
+    "ja": "デリー",
+    "local": "दिल्ली"
+   },
+   "wikidata": "Q1353",
+   "spans": [
+    {
+     "from": "1950-01-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-2428"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Delhi&oldid=1377903439",
+       "title": "Wikipedia — Delhi",
+       "says": "Infobox: Part C state 26 January 1950; union territory 1 November 1956.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_acts_of_the_Parliament_of_India&oldid=1377843596",
+       "title": "Wikipedia — List of acts of the Parliament of India",
+       "says": "Boundary acts after 1956: Rajasthan–MP 1959, AP–Madras 1959, Acquired Territories 1960, AP–Mysore 1968, Bihar–UP 1968, Haryana–UP 1979, plus reorganisation acts 1960–2019.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Manipur",
+   "names": {
+    "en": "Manipur",
+    "ja": "マニプル州",
+    "local": "मणिपुर"
+   },
+   "wikidata": "Q1193",
+   "spans": [
+    {
+     "from": "1950-01-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-2478"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Manipur&oldid=1376438092",
+       "title": "Wikipedia — Manipur",
+       "says": "Infobox: merged with India 15 October 1949; union territory 1 November 1956.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_acts_of_the_Parliament_of_India&oldid=1377843596",
+       "title": "Wikipedia — List of acts of the Parliament of India",
+       "says": "Boundary acts after 1956: Rajasthan–MP 1959, AP–Madras 1959, Acquired Territories 1960, AP–Mysore 1968, Bihar–UP 1968, Haryana–UP 1979, plus reorganisation acts 1960–2019.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Part C state → UT 1956 → state 21 Jan 1972, same territory."
+    }
+   ]
+  },
+  {
+   "id": "IND:Tripura",
+   "names": {
+    "en": "Tripura",
+    "ja": "トリプラ州",
+    "local": "त्रिपुरा"
+   },
+   "wikidata": "Q1363",
+   "spans": [
+    {
+     "from": "1950-01-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-3301"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Tripura&oldid=1376901806",
+       "title": "Wikipedia — Tripura",
+       "says": "Infobox: merged with India 15 October 1949; union territory 1 November 1956.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_acts_of_the_Parliament_of_India&oldid=1377843596",
+       "title": "Wikipedia — List of acts of the Parliament of India",
+       "says": "Boundary acts after 1956: Rajasthan–MP 1959, AP–Madras 1959, Acquired Territories 1960, AP–Mysore 1968, Bihar–UP 1968, Haryana–UP 1979, plus reorganisation acts 1960–2019.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Part C state → UT 1956 → state 21 Jan 1972, same territory. Sub-kilometre exchanges with East Pakistan/Bangladesh (Acquired Territories (Merger) Act 1960; adverse possessions exchanged 31 Jul 2015) are below the resolution of the NE line and are not treated as boundary changes here."
+    }
+   ]
+  },
+  {
+   "id": "IND:Odisha",
+   "names": {
+    "en": "Odisha",
+    "ja": "オリッサ州",
+    "local": "ओडिशा"
+   },
+   "wikidata": "Q22048",
+   "spans": [
+    {
+     "from": "1950-01-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-2444"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1949: native states merged with Orissa; no later change to Orissa (Odisha, renamed 2011) is listed.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_acts_of_the_Parliament_of_India&oldid=1377843596",
+       "title": "Wikipedia — List of acts of the Parliament of India",
+       "says": "Boundary acts after 1956: Rajasthan–MP 1959, AP–Madras 1959, Acquired Territories 1960, AP–Mysore 1968, Bihar–UP 1968, Haryana–UP 1979, plus reorganisation acts 1960–2019.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Puducherry",
+   "names": {
+    "en": "Puducherry",
+    "ja": "ポンディシェリ連邦直轄領",
+    "local": "पुदुचेरी"
+   },
+   "wikidata": "Q66743",
+   "spans": [
+    {
+     "from": "1954-11-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-3262"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Puducherry_(union_territory)&oldid=1378386273",
+       "title": "Wikipedia — Puducherry (union territory)",
+       "says": "French India transferred to India de facto on 1 November 1954 and de jure on 16 August 1962.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "De facto transfer used; de jure cession 16 Aug 1962."
+    }
+   ]
+  },
+  {
+   "id": "IND:Lakshadweep",
+   "names": {
+    "en": "Lakshadweep",
+    "ja": "ラクシャディープ諸島",
+    "local": "लक्षद्वीप"
+   },
+   "wikidata": "Q26927",
+   "spans": [
+    {
+     "from": "1956-11-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-2443"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Lakshadweep&oldid=1375230606",
+       "title": "Wikipedia — Lakshadweep",
+       "says": "Infobox: union territory formed 1 November 1956.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1956-11-01: States Reorganisation Act took effect; Part A/B/C distinction abolished, states reorganised.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Kerala",
+   "names": {
+    "en": "Kerala",
+    "ja": "ケーララ州",
+    "local": "केरल"
+   },
+   "wikidata": "Q1186",
+   "spans": [
+    {
+     "from": "1956-11-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-2442"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Kerala&oldid=1377893279",
+       "title": "Wikipedia — Kerala",
+       "says": "Formed on 1 November 1956 under the States Reorganisation Act.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_acts_of_the_Parliament_of_India&oldid=1377843596",
+       "title": "Wikipedia — List of acts of the Parliament of India",
+       "says": "Boundary acts after 1956: Rajasthan–MP 1959, AP–Madras 1959, Acquired Territories 1960, AP–Mysore 1968, Bihar–UP 1968, Haryana–UP 1979, plus reorganisation acts 1960–2019.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Nagaland",
+   "names": {
+    "en": "Naga Hills–Tuensang Area / Nagaland",
+    "ja": "ナガランド州",
+    "local": "नागालैण्ड"
+   },
+   "wikidata": "Q1599",
+   "spans": [
+    {
+     "from": "1957-12-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-2479"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1957-12-01: Naga Hills–Tuensang Area split from Assam as a centrally administered area; 1963-12-01 it became Nagaland state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Nagaland&oldid=1377164241",
+       "title": "Wikipedia — Nagaland",
+       "says": "The State of Nagaland was formally inaugurated on 1 December 1963.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "NHTA (Naga Hills district of Assam + Tuensang division of NEFA) 1957–63, then the State of Nagaland with the same territory."
+    }
+   ]
+  },
+  {
+   "id": "IND:Rajasthan",
+   "names": {
+    "en": "Rajasthan",
+    "ja": "ラージャスターン州",
+    "local": "राजस्थान"
+   },
+   "wikidata": "Q1437",
+   "spans": [
+    {
+     "from": "1959-10-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-3250"
+     ],
+     "sources": [
+      {
+       "url": "https://www.legitquest.com/act/the-rajasthan-and-madhya-pradesh-transfer-of-territories-act-1959/10440",
+       "title": "Rajasthan and Madhya Pradesh (Transfer of Territories) Act, 1959",
+       "says": "Appointed day 1 October 1959: villages Dotada, Pipalda, Barkheda of Chittorgarh (Rajasthan) transferred to Mandsaur district, Madhya Pradesh.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_acts_of_the_Parliament_of_India&oldid=1377843596",
+       "title": "Wikipedia — List of acts of the Parliament of India",
+       "says": "Boundary acts after 1956: Rajasthan–MP 1959, AP–Madras 1959, Acquired Territories 1960, AP–Mysore 1968, Bihar–UP 1968, Haryana–UP 1979, plus reorganisation acts 1960–2019.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Madhya Pradesh",
+   "names": {
+    "en": "Madhya Pradesh",
+    "ja": "マディヤ・プラデーシュ州",
+    "local": "मध्य प्रदेश"
+   },
+   "wikidata": "Q1188",
+   "spans": [
+    {
+     "from": "1959-10-01",
+     "precision": "day",
+     "to": "2000-11-01",
+     "atoms": [
+      "IND-3261",
+      "IND-3260"
+     ],
+     "sources": [
+      {
+       "url": "https://www.legitquest.com/act/the-rajasthan-and-madhya-pradesh-transfer-of-territories-act-1959/10440",
+       "title": "Rajasthan and Madhya Pradesh (Transfer of Territories) Act, 1959",
+       "says": "Appointed day 1 October 1959: villages Dotada, Pipalda, Barkheda of Chittorgarh (Rajasthan) transferred to Mandsaur district, Madhya Pradesh.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "2000-11-01 Chhattisgarh from Madhya Pradesh; 2000-11-09 Uttaranchal from Uttar Pradesh; 2000-11-15 Jharkhand from Bihar.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Before 2000 = modern MP + Chhattisgarh (Chhattisgarh formed wholly from MP districts)."
+    },
+    {
+     "from": "2000-11-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-3261"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "2000-11-01 Chhattisgarh from Madhya Pradesh; 2000-11-09 Uttaranchal from Uttar Pradesh; 2000-11-15 Jharkhand from Bihar.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Chhattisgarh",
+   "names": {
+    "en": "Chhattisgarh",
+    "ja": "チャッティースガル州",
+    "local": "छत्तीसगढ़"
+   },
+   "wikidata": "Q1168",
+   "spans": [
+    {
+     "from": "2000-11-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-3260"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "2000-11-01 Chhattisgarh from Madhya Pradesh; 2000-11-09 Uttaranchal from Uttar Pradesh; 2000-11-15 Jharkhand from Bihar.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Tamil Nadu",
+   "names": {
+    "en": "Madras State / Tamil Nadu",
+    "ja": "タミル・ナードゥ州",
+    "local": "तमिल नाडु"
+   },
+   "wikidata": "Q1445",
+   "spans": [
+    {
+     "from": "1960-04-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-3263"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Andhra_Pradesh_and_Madras_Alteration_of_Boundaries_Act,_1959&oldid=1368303341",
+       "title": "Wikipedia — Andhra Pradesh and Madras (Alteration of Boundaries) Act, 1959",
+       "says": "Commenced 1 April 1960; villages of Chittoor went to Madras in exchange for Chingleput and Salem villages.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1960-04-01: Madras ceded 573 km² to Andhra Pradesh in exchange for 1,062 km².",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Named Madras State until 14 Jan 1969."
+    }
+   ]
+  },
+  {
+   "id": "IND:Maharashtra",
+   "names": {
+    "en": "Maharashtra",
+    "ja": "マハーラーシュトラ州",
+    "local": "महाराष्ट्र"
+   },
+   "wikidata": "Q1191",
+   "spans": [
+    {
+     "from": "1960-05-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-2447"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1960-05-01: Bombay state split into Gujarat and Maharashtra by the Bombay Reorganization Act.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_acts_of_the_Parliament_of_India&oldid=1377843596",
+       "title": "Wikipedia — List of acts of the Parliament of India",
+       "says": "Boundary acts after 1956: Rajasthan–MP 1959, AP–Madras 1959, Acquired Territories 1960, AP–Mysore 1968, Bihar–UP 1968, Haryana–UP 1979, plus reorganisation acts 1960–2019.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Gujarat",
+   "names": {
+    "en": "Gujarat",
+    "ja": "グジャラート州",
+    "local": "गुजरात"
+   },
+   "wikidata": "Q1061",
+   "spans": [
+    {
+     "from": "1968-02-19",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-3264"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Sir_Creek&oldid=1369309915",
+       "title": "Wikipedia — Sir Creek",
+       "says": "In 1968 an international tribunal resolved the Great Rann of Kutch claims; from then the boundary is fixed by the 1968 award.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_acts_of_the_Parliament_of_India&oldid=1377843596",
+       "title": "Wikipedia — List of acts of the Parliament of India",
+       "says": "Boundary acts after 1956: Rajasthan–MP 1959, AP–Madras 1959, Acquired Territories 1960, AP–Mysore 1968, Bihar–UP 1968, Haryana–UP 1979, plus reorganisation acts 1960–2019.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The Indo-Pakistan Western Boundary (Rann of Kutch) award was delivered on 19 Feb 1968 and fixes the line from then; physical hand-over (1969) not dated here."
+    }
+   ]
+  },
+  {
+   "id": "IND:Karnataka",
+   "names": {
+    "en": "Mysore State / Karnataka",
+    "ja": "カルナータカ州",
+    "local": "कर्नाटक"
+   },
+   "wikidata": "Q1185",
+   "spans": [
+    {
+     "from": "1968-10-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-2446"
+     ],
+     "sources": [
+      {
+       "url": "https://tilakmarg.com/acts/andhra-pradesh-and-mysore-transfer-of-territory-act-1968/",
+       "title": "Andhra Pradesh and Mysore (Transfer of Territory) Act, 1968",
+       "says": "Appointed day 1 October 1968: survey no. 19 of Abakavaripalli (Bagepalli taluk, Kolar, Mysore) added to Hindupur taluk, Andhra Pradesh.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_acts_of_the_Parliament_of_India&oldid=1377843596",
+       "title": "Wikipedia — List of acts of the Parliament of India",
+       "says": "Boundary acts after 1956: Rajasthan–MP 1959, AP–Madras 1959, Acquired Territories 1960, AP–Mysore 1968, Bihar–UP 1968, Haryana–UP 1979, plus reorganisation acts 1960–2019.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Named Mysore until 1 Nov 1973."
+    }
+   ]
+  },
+  {
+   "id": "IND:Andhra Pradesh",
+   "names": {
+    "en": "Andhra Pradesh",
+    "ja": "アーンドラ・プラデーシュ州",
+    "local": "आन्ध्र प्रदेश"
+   },
+   "wikidata": "Q1159",
+   "spans": [
+    {
+     "from": "1968-10-01",
+     "precision": "day",
+     "to": "2014-06-02",
+     "atoms": [
+      "IND-2441",
+      "IND-20011"
+     ],
+     "sources": [
+      {
+       "url": "https://tilakmarg.com/acts/andhra-pradesh-and-mysore-transfer-of-territory-act-1968/",
+       "title": "Andhra Pradesh and Mysore (Transfer of Territory) Act, 1968",
+       "says": "Appointed day 1 October 1968: survey no. 19 of Abakavaripalli (Bagepalli taluk, Kolar, Mysore) added to Hindupur taluk, Andhra Pradesh.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "2014-06-02: Telangana state split from Andhra Pradesh.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "United Andhra Pradesh = modern AP + Telangana."
+    },
+    {
+     "from": "2014-07-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-2441"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Andhra_Pradesh_Reorganisation_Act,_2014&oldid=1378106172",
+       "title": "Wikipedia — Andhra Pradesh Reorganisation Act, 2014",
+       "says": "The AP Reorganisation (Amendment) Act, gazetted 17 July 2014, transferred seven Khammam mandals (Polavaram area) from Telangana to Andhra Pradesh.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Telangana",
+   "names": {
+    "en": "Telangana",
+    "ja": "テランガーナ州",
+    "local": "तेलंगाना"
+   },
+   "wikidata": "Q677037",
+   "spans": [
+    {
+     "from": "2014-07-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-20011"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Andhra_Pradesh_Reorganisation_Act,_2014&oldid=1378106172",
+       "title": "Wikipedia — Andhra Pradesh Reorganisation Act, 2014",
+       "says": "The AP Reorganisation (Amendment) Act, gazetted 17 July 2014, transferred seven Khammam mandals (Polavaram area) from Telangana to Andhra Pradesh.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "2014-06-02: Telangana state split from Andhra Pradesh.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Punjab",
+   "names": {
+    "en": "Punjab",
+    "ja": "パンジャーブ州",
+    "local": "पंजाब"
+   },
+   "wikidata": "Q22424",
+   "spans": [
+    {
+     "from": "1966-11-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-3249"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1966-11-01: Punjab Reorganisation Act split Punjab into Punjab, Haryana and Chandigarh UT; hill areas went to Himachal Pradesh.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_acts_of_the_Parliament_of_India&oldid=1377843596",
+       "title": "Wikipedia — List of acts of the Parliament of India",
+       "says": "Boundary acts after 1956: Rajasthan–MP 1959, AP–Madras 1959, Acquired Territories 1960, AP–Mysore 1968, Bihar–UP 1968, Haryana–UP 1979, plus reorganisation acts 1960–2019.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Chandigarh",
+   "names": {
+    "en": "Chandigarh",
+    "ja": "チャンディーガル",
+    "local": "चण्डीगढ़"
+   },
+   "wikidata": "Q43433",
+   "spans": [
+    {
+     "from": "1966-11-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-2427"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1966-11-01: Punjab Reorganisation Act split Punjab into Punjab, Haryana and Chandigarh UT; hill areas went to Himachal Pradesh.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Himachal Pradesh",
+   "names": {
+    "en": "Himachal Pradesh",
+    "ja": "ヒマーチャル・プラデーシュ州",
+    "local": "हिमाचल प्रदेश"
+   },
+   "wikidata": "Q1177",
+   "spans": [
+    {
+     "from": "1966-11-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-2429"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1966-11-01: Punjab Reorganisation Act split Punjab into Punjab, Haryana and Chandigarh UT; hill areas went to Himachal Pradesh.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Himachal_Pradesh&oldid=1376671540",
+       "title": "Wikipedia — Himachal Pradesh",
+       "says": "Union territory from 1 Nov 1956; state from 25 Jan 1971 (statehood without territorial change).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Jammu and Kashmir (state)",
+   "names": {
+    "en": "Jammu and Kashmir (state)",
+    "ja": "ジャンムー・カシミール州",
+    "local": "जम्मू और कश्मीर"
+   },
+   "wikidata": "Q1180",
+   "spans": [
+    {
+     "from": "1972-12-17",
+     "precision": "day",
+     "to": "2019-10-31",
+     "atoms": [
+      "IND-2431",
+      "IND-20012"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1972-12-17: a new line of control between India and Pakistan in Jammu and Kashmir took effect.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Jammu_and_Kashmir_Reorganisation_Act,_2019&oldid=1376799845",
+       "title": "Wikipedia — Jammu and Kashmir Reorganisation Act, 2019",
+       "says": "Union territories of Jammu and Kashmir and of Ladakh in effect from 31 October 2019.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Indian-administered part; NE keeps Siachen as a separate feature (KAS) and Aksai Chin outside India."
+    }
+   ]
+  },
+  {
+   "id": "IND:Jammu and Kashmir (union territory)",
+   "names": {
+    "en": "Jammu and Kashmir (union territory)",
+    "ja": "ジャンムー・カシミール連邦直轄領",
+    "local": "जम्मू और कश्मीर"
+   },
+   "wikidata": "Q66278313",
+   "spans": [
+    {
+     "from": "2019-10-31",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-2431"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Jammu_and_Kashmir_Reorganisation_Act,_2019&oldid=1376799845",
+       "title": "Wikipedia — Jammu and Kashmir Reorganisation Act, 2019",
+       "says": "Union territories of Jammu and Kashmir and of Ladakh in effect from 31 October 2019.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Ladakh",
+   "names": {
+    "en": "Ladakh",
+    "ja": "ラダック",
+    "local": "लद्दाख़"
+   },
+   "wikidata": "Q200667",
+   "spans": [
+    {
+     "from": "2019-10-31",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-20012"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Jammu_and_Kashmir_Reorganisation_Act,_2019&oldid=1376799845",
+       "title": "Wikipedia — Jammu and Kashmir Reorganisation Act, 2019",
+       "says": "Union territories of Jammu and Kashmir and of Ladakh in effect from 31 October 2019.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Assam",
+   "names": {
+    "en": "Assam",
+    "ja": "アッサム州",
+    "local": "असम"
+   },
+   "wikidata": "Q1164",
+   "spans": [
+    {
+     "from": "1957-12-01",
+     "precision": "day",
+     "to": "1970-04-02",
+     "atoms": [
+      "IND-2477",
+      "IND-2489",
+      "IND-3300",
+      "IND-3299"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1957-12-01: Naga Hills–Tuensang Area split from Assam as a centrally administered area; 1963-12-01 it became Nagaland state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1970-04-02: Meghalaya split from Assam as an autonomous state.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Assam incl. NEFA (constitutionally part of Assam), Khasi–Jaintia/Garo hills and Mizo district. Sub-kilometre exchanges with East Pakistan/Bangladesh (Acquired Territories (Merger) Act 1960; adverse possessions exchanged 31 Jul 2015) are below the resolution of the NE line and are not treated as boundary changes here."
+    },
+    {
+     "from": "1970-04-02",
+     "precision": "day",
+     "to": "1972-01-20",
+     "atoms": [
+      "IND-2477",
+      "IND-3300",
+      "IND-3299"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1970-04-02: Meghalaya split from Assam as an autonomous state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1972-01-20: Arunachal Pradesh and Mizoram union territories split from Assam; 1972-01-21 Manipur and Tripura became states.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Meghalaya treated as a separate unit from its autonomous-state date (statoids lists it as split). Sub-kilometre exchanges with East Pakistan/Bangladesh (Acquired Territories (Merger) Act 1960; adverse possessions exchanged 31 Jul 2015) are below the resolution of the NE line and are not treated as boundary changes here."
+    },
+    {
+     "from": "1972-01-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-2477"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1972-01-20: Arunachal Pradesh and Mizoram union territories split from Assam; 1972-01-21 Manipur and Tripura became states.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Arunachal_Pradesh&oldid=1377980254",
+       "title": "Wikipedia — Arunachal Pradesh",
+       "says": "Union territory from 21 January 1972; state from 20 February 1987.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Sub-kilometre exchanges with East Pakistan/Bangladesh (Acquired Territories (Merger) Act 1960; adverse possessions exchanged 31 Jul 2015) are below the resolution of the NE line and are not treated as boundary changes here."
+    }
+   ]
+  },
+  {
+   "id": "IND:Meghalaya",
+   "names": {
+    "en": "Meghalaya",
+    "ja": "メーガーラヤ州",
+    "local": "मेघालय"
+   },
+   "wikidata": "Q1195",
+   "spans": [
+    {
+     "from": "1970-04-02",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-2489"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Meghalaya&oldid=1378353437",
+       "title": "Wikipedia — Meghalaya",
+       "says": "Autonomous state from 2 April 1970 under the Assam Reorganisation (Meghalaya) Act; statehood on 21 January 1972.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1970-04-02: Meghalaya split from Assam as an autonomous state.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Autonomous state within Assam 1970–72, full state 21 Jan 1972 (same territory). Sub-kilometre exchanges with East Pakistan/Bangladesh (Acquired Territories (Merger) Act 1960; adverse possessions exchanged 31 Jul 2015) are below the resolution of the NE line and are not treated as boundary changes here."
+    }
+   ]
+  },
+  {
+   "id": "IND:Mizoram",
+   "names": {
+    "en": "Mizoram",
+    "ja": "ミゾラム州",
+    "local": "मिज़ोरम"
+   },
+   "wikidata": "Q1502",
+   "spans": [
+    {
+     "from": "1972-01-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-3300"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Mizoram&oldid=1377880195",
+       "title": "Wikipedia — Mizoram",
+       "says": "Union territory status on 21 January 1972, separating it from Assam; full statehood 20 February 1987.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1972-01-20: Arunachal Pradesh and Mizoram union territories split from Assam; 1972-01-21 Manipur and Tripura became states.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Statoids gives 20 Jan 1972; Wikipedia 21 Jan (used; the day between is withheld)."
+    }
+   ]
+  },
+  {
+   "id": "IND:Arunachal Pradesh",
+   "names": {
+    "en": "Arunachal Pradesh",
+    "ja": "アルナーチャル・プラデーシュ州",
+    "local": "अरुणाचल प्रदेश"
+   },
+   "wikidata": "Q1162",
+   "spans": [
+    {
+     "from": "1972-01-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-3299"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Arunachal_Pradesh&oldid=1377980254",
+       "title": "Wikipedia — Arunachal Pradesh",
+       "says": "Union territory from 21 January 1972; state from 20 February 1987.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1972-01-20: Arunachal Pradesh and Mizoram union territories split from Assam; 1972-01-21 Manipur and Tripura became states.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Statoids gives 20 Jan 1972; Wikipedia 21 Jan (used)."
+    }
+   ]
+  },
+  {
+   "id": "IND:Sikkim",
+   "names": {
+    "en": "Sikkim",
+    "ja": "シッキム州",
+    "local": "सिक्किम"
+   },
+   "wikidata": "Q1505",
+   "spans": [
+    {
+     "from": "1975-04-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-3259"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "1975-04-26: Status of Sikkim changed from protectorate to state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Sikkim&oldid=1378355819",
+       "title": "Wikipedia — Sikkim",
+       "says": "On 16 May 1975 Sikkim became the 22nd state of the Indian Union.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 36th Amendment is deemed in force from 26 Apr 1975; Sikkim celebrates statehood on 16 May 1975."
+    }
+   ]
+  },
+  {
+   "id": "IND:Goa",
+   "names": {
+    "en": "Goa",
+    "ja": "ゴア州",
+    "local": "गोवा"
+   },
+   "wikidata": "Q1171",
+   "spans": [
+    {
+     "from": "1987-05-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-3265"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Goa,_Daman_and_Diu&oldid=1346048556",
+       "title": "Wikipedia — Goa, Daman and Diu",
+       "says": "Union territory from 19 December 1961; Goa became a state on 30 May 1987, Daman and Diu a separate UT.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Uttarakhand",
+   "names": {
+    "en": "Uttaranchal / Uttarakhand",
+    "ja": "ウッタラーカンド州",
+    "local": "उत्तराखण्ड"
+   },
+   "wikidata": "Q1499",
+   "spans": [
+    {
+     "from": "2000-11-09",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-3254"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "2000-11-01 Chhattisgarh from Madhya Pradesh; 2000-11-09 Uttaranchal from Uttar Pradesh; 2000-11-15 Jharkhand from Bihar.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:Jharkhand",
+   "names": {
+    "en": "Jharkhand",
+    "ja": "ジャールカンド州",
+    "local": "झारखण्ड"
+   },
+   "wikidata": "Q1184",
+   "spans": [
+    {
+     "from": "2000-11-15",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-3256"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uin.html",
+       "title": "Statoids — States of India, change history",
+       "says": "2000-11-01 Chhattisgarh from Madhya Pradesh; 2000-11-09 Uttaranchal from Uttar Pradesh; 2000-11-15 Jharkhand from Bihar.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "IND:West Bengal",
+   "names": {
+    "en": "West Bengal",
+    "ja": "西ベンガル州",
+    "local": "पश्चिम बंगाल"
+   },
+   "wikidata": "Q1356",
+   "spans": [
+    {
+     "from": "2015-08-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "IND-3257"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Bangladesh%E2%80%93India_enclaves&oldid=1376307970",
+       "title": "Wikipedia — Bangladesh–India enclaves",
+       "says": "The enclaves were exchanged at midnight on 31 July 2015 (India received 51, Bangladesh 111).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "NE has no Cooch Behar enclaves, i.e. it shows the post-exchange territory."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1956-11-01",
+   "precision": "day",
+   "what": "States Reorganisation Act",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uin.html",
+     "title": "Statoids — States of India, change history",
+     "says": "1956-11-01: States Reorganisation Act took effect; Part A/B/C distinction abolished, states reorganised.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1957-12-01",
+   "precision": "day",
+   "what": "Naga Hills–Tuensang Area separated from Assam",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uin.html",
+     "title": "Statoids — States of India, change history",
+     "says": "1957-12-01: Naga Hills–Tuensang Area split from Assam as a centrally administered area; 1963-12-01 it became Nagaland state.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1959-10-01",
+   "precision": "day",
+   "what": "Rajasthan–Madhya Pradesh village transfer",
+   "sources": [
+    {
+     "url": "https://www.legitquest.com/act/the-rajasthan-and-madhya-pradesh-transfer-of-territories-act-1959/10440",
+     "title": "Rajasthan and Madhya Pradesh (Transfer of Territories) Act, 1959",
+     "says": "Appointed day 1 October 1959: villages Dotada, Pipalda, Barkheda of Chittorgarh (Rajasthan) transferred to Mandsaur district, Madhya Pradesh.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1960-04-01",
+   "precision": "day",
+   "what": "Andhra Pradesh–Madras exchange",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Andhra_Pradesh_and_Madras_Alteration_of_Boundaries_Act,_1959&oldid=1368303341",
+     "title": "Wikipedia — Andhra Pradesh and Madras (Alteration of Boundaries) Act, 1959",
+     "says": "Commenced 1 April 1960; villages of Chittoor went to Madras in exchange for Chingleput and Salem villages.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1960-05-01",
+   "precision": "day",
+   "what": "Bombay split into Gujarat and Maharashtra",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uin.html",
+     "title": "Statoids — States of India, change history",
+     "says": "1960-05-01: Bombay state split into Gujarat and Maharashtra by the Bombay Reorganization Act.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1966-11-01",
+   "precision": "day",
+   "what": "Punjab reorganisation",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uin.html",
+     "title": "Statoids — States of India, change history",
+     "says": "1966-11-01: Punjab Reorganisation Act split Punjab into Punjab, Haryana and Chandigarh UT; hill areas went to Himachal Pradesh.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1968-02-19",
+   "precision": "day",
+   "what": "Rann of Kutch award",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Sir_Creek&oldid=1369309915",
+     "title": "Wikipedia — Sir Creek",
+     "says": "In 1968 an international tribunal resolved the Great Rann of Kutch claims; from then the boundary is fixed by the 1968 award.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1968-10-01",
+   "precision": "day",
+   "what": "AP–Mysore transfer",
+   "sources": [
+    {
+     "url": "https://tilakmarg.com/acts/andhra-pradesh-and-mysore-transfer-of-territory-act-1968/",
+     "title": "Andhra Pradesh and Mysore (Transfer of Territory) Act, 1968",
+     "says": "Appointed day 1 October 1968: survey no. 19 of Abakavaripalli (Bagepalli taluk, Kolar, Mysore) added to Hindupur taluk, Andhra Pradesh.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1970-04-02",
+   "precision": "day",
+   "what": "Meghalaya autonomous state",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Meghalaya&oldid=1378353437",
+     "title": "Wikipedia — Meghalaya",
+     "says": "Autonomous state from 2 April 1970 under the Assam Reorganisation (Meghalaya) Act; statehood on 21 January 1972.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1972-01-21",
+   "precision": "day",
+   "what": "North-Eastern Areas reorganisation",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uin.html",
+     "title": "Statoids — States of India, change history",
+     "says": "1972-01-20: Arunachal Pradesh and Mizoram union territories split from Assam; 1972-01-21 Manipur and Tripura became states.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Arunachal_Pradesh&oldid=1377980254",
+     "title": "Wikipedia — Arunachal Pradesh",
+     "says": "Union territory from 21 January 1972; state from 20 February 1987.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1972-12-17",
+   "precision": "day",
+   "what": "Line of Control in Kashmir",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uin.html",
+     "title": "Statoids — States of India, change history",
+     "says": "1972-12-17: a new line of control between India and Pakistan in Jammu and Kashmir took effect.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1975-04-26",
+   "precision": "day",
+   "what": "Sikkim becomes a state",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uin.html",
+     "title": "Statoids — States of India, change history",
+     "says": "1975-04-26: Status of Sikkim changed from protectorate to state.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1987-05-30",
+   "precision": "day",
+   "what": "Goa state; Daman and Diu UT",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Goa,_Daman_and_Diu&oldid=1346048556",
+     "title": "Wikipedia — Goa, Daman and Diu",
+     "says": "Union territory from 19 December 1961; Goa became a state on 30 May 1987, Daman and Diu a separate UT.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2000-11-01",
+   "precision": "day",
+   "what": "Chhattisgarh, Uttaranchal (11-09), Jharkhand (11-15)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uin.html",
+     "title": "Statoids — States of India, change history",
+     "says": "2000-11-01 Chhattisgarh from Madhya Pradesh; 2000-11-09 Uttaranchal from Uttar Pradesh; 2000-11-15 Jharkhand from Bihar.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2014-06-02",
+   "precision": "day",
+   "what": "Telangana",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uin.html",
+     "title": "Statoids — States of India, change history",
+     "says": "2014-06-02: Telangana state split from Andhra Pradesh.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2015-07-31",
+   "precision": "day",
+   "what": "Enclave exchange with Bangladesh at midnight",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Bangladesh%E2%80%93India_enclaves&oldid=1376307970",
+     "title": "Wikipedia — Bangladesh–India enclaves",
+     "says": "The enclaves were exchanged at midnight on 31 July 2015 (India received 51, Bangladesh 111).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2019-10-31",
+   "precision": "day",
+   "what": "J&K and Ladakh union territories",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Jammu_and_Kashmir_Reorganisation_Act,_2019&oldid=1376799845",
+     "title": "Wikipedia — Jammu and Kashmir Reorganisation Act, 2019",
+     "says": "Union territories of Jammu and Kashmir and of Ladakh in effect from 31 October 2019.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [],
+ "atomsOutside": [
+  {
+   "atom": "IND-3262",
+   "from": "1950-01-26",
+   "to": "1954-11-01",
+   "why": "French India (Pondichéry, Karikal, Mahé, Yanaon) until the de facto transfer of 1 Nov 1954."
+  },
+  {
+   "atom": "IND-3259",
+   "from": "1950-01-26",
+   "to": "1975-04-26",
+   "why": "Kingdom of Sikkim (Indian protectorate from 1950), not part of India."
+  },
+  {
+   "atom": "IND-3265",
+   "from": "1950-01-26",
+   "to": "1961-12-19",
+   "why": "Portuguese India until 19 Dec 1961."
+  }
+ ],
+ "unresolved": [
+  {
+   "what": "Dadra & Nagar Haveli and Daman & Diu",
+   "unit": "IND:Dadra and Nagar Haveli",
+   "atoms": [
+    "IND-2445"
+   ],
+   "from": "1950-01-26",
+   "to": null,
+   "why": "NE merges DNH and Daman & Diu, which were separate (Portuguese until 1954/1961; DNH UT from 1961-08-11; Daman & Diu in Goa, Daman and Diu 1961–87, then a UT) until 26 Jan 2020, after scope end.",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "separate DNH, Daman and Diu district polygons (e.g. geoBoundaries IND ADM2)"
+  },
+  {
+   "what": "Daman and Diu UT 1987–2019",
+   "unit": "IND:Daman and Diu",
+   "atoms": [],
+   "from": "1987-05-30",
+   "to": null,
+   "why": "Inside the merged NE atom IND-2445 (withheld above).",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "Daman and Diu district polygons"
+  },
+  {
+   "what": "Goa, Daman and Diu UT 1961–1987",
+   "unit": "IND:Goa, Daman and Diu",
+   "atoms": [
+    "IND-3265"
+   ],
+   "from": "1961-12-19",
+   "to": "1987-05-30",
+   "why": "Daman and Diu are inside the NE atom that also holds Dadra and Nagar Haveli, so the union-territory cannot be assembled.",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "separate Daman and Diu polygons"
+  },
+  {
+   "what": "Uttar Pradesh (incl. Uttarakhand) 1950–2000",
+   "unit": "IND:Uttar Pradesh",
+   "atoms": [
+    "IND-3253",
+    "IND-3254"
+   ],
+   "from": "1950-01-26",
+   "to": "2000-11-09",
+   "why": "Riverine transfers by the Bihar–UP (Ganga/Ghaghra) Act 1968 and Haryana–UP (Yamuna) Act 1979; their appointed days were not found, so the dates of the NE lines cannot be fixed.",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "village/diara boundary atoms along the Ganga, Ghaghra and Yamuna plus the appointed-day notifications"
+  },
+  {
+   "what": "Uttar Pradesh 2000–2019",
+   "unit": "IND:Uttar Pradesh",
+   "atoms": [
+    "IND-3253"
+   ],
+   "from": "2000-11-09",
+   "to": null,
+   "why": "Appointed days of the 1968 and 1979 boundary acts not established; cannot assert the NE line was in force from 2000.",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "appointed-day notifications of Acts 24/1968 and 31/1979"
+  },
+  {
+   "what": "Bihar (incl. Jharkhand) 1950–2000",
+   "unit": "IND:Bihar",
+   "atoms": [
+    "IND-3258",
+    "IND-3256"
+   ],
+   "from": "1950-01-26",
+   "to": "2000-11-15",
+   "why": "Purulia/Islampur went to West Bengal 1956 (partial districts); Ballia–Saran riverine transfer with UP (Act 24/1968, appointed day not found).",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "district atoms, e.g. geoBoundaries IND ADM2 (licence per source) / 1951–61 census district maps"
+  },
+  {
+   "what": "Bihar 2000–2019",
+   "unit": "IND:Bihar",
+   "atoms": [
+    "IND-3258"
+   ],
+   "from": "2000-11-15",
+   "to": null,
+   "why": "Appointed day of the Bihar–UP boundary act 1968 not established.",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "appointed-day notification of Act 24/1968"
+  },
+  {
+   "what": "Haryana 1966–2019",
+   "unit": "IND:Haryana",
+   "atoms": [
+    "IND-2430"
+   ],
+   "from": "1966-11-01",
+   "to": null,
+   "why": "Haryana–UP Yamuna boundary fixed by Act 31/1979 on an appointed day not found in any copy reached.",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "appointed-day notification of Act 31/1979 and the fixed Yamuna line"
+  },
+  {
+   "what": "Punjab, PEPSU, Himachal, Bilaspur 1950–1966",
+   "unit": "IND:Punjab (1950–66)",
+   "atoms": [
+    "IND-3249",
+    "IND-2430",
+    "IND-2427",
+    "IND-2429"
+   ],
+   "from": "1950-01-26",
+   "to": "1966-11-01",
+   "why": "PEPSU merged 1956; 1966 hill areas (Kangra, Kullu, Shimla, Lahaul-Spiti, part of Hoshiarpur and Ambala) moved to Himachal — partial transfers inside modern atoms.",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "district atoms, e.g. geoBoundaries IND ADM2 (licence per source) / 1951–61 census district maps"
+  },
+  {
+   "what": "Bombay State, Saurashtra, Kutch 1950–1960",
+   "unit": "IND:Bombay",
+   "atoms": [
+    "IND-3264",
+    "IND-2447"
+   ],
+   "from": "1950-01-26",
+   "to": "1960-05-01",
+   "why": "1956 reorganisation moved Vidarbha/Marathwada into and Kannada districts out of Bombay — partial at atom level; also Kutch award later.",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "district atoms, e.g. geoBoundaries IND ADM2 (licence per source) / 1951–61 census district maps"
+  },
+  {
+   "what": "Gujarat 1960–1968",
+   "unit": "IND:Gujarat",
+   "atoms": [
+    "IND-3264"
+   ],
+   "from": "1960-05-01",
+   "to": "1968-02-19",
+   "why": "The 1968 Rann of Kutch award gave Pakistan ~10% of the disputed area; the earlier outer line is not the NE line.",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "pre-1968 Kutch boundary geometry"
+  },
+  {
+   "what": "Madras, Andhra, Travancore-Cochin, Mysore, Hyderabad 1950–1956",
+   "unit": "IND:Madras",
+   "atoms": [
+    "IND-3263",
+    "IND-2442",
+    "IND-2446",
+    "IND-2441",
+    "IND-20011",
+    "IND-2443"
+   ],
+   "from": "1950-01-26",
+   "to": "1956-11-01",
+   "why": "Linguistic reorganisation of 1953/1956 cut through modern states (Malabar, South Kanara, Bellary, Hyderabad’s districts).",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "district atoms, e.g. geoBoundaries IND ADM2 (licence per source) / 1951–61 census district maps"
+  },
+  {
+   "what": "Madras State 1956–1960",
+   "unit": "IND:Tamil Nadu",
+   "atoms": [
+    "IND-3263"
+   ],
+   "from": "1956-11-01",
+   "to": "1960-04-01",
+   "why": "AP–Madras exchange of villages on 1 Apr 1960.",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "village atoms of Chittoor, Chingleput, Salem"
+  },
+  {
+   "what": "Mysore State 1956–1968",
+   "unit": "IND:Karnataka",
+   "atoms": [
+    "IND-2446"
+   ],
+   "from": "1956-11-01",
+   "to": "1968-10-01",
+   "why": "AP–Mysore transfer of one survey number on 1 Oct 1968 (tiny but a real line change).",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "village atoms of Bagepalli taluk"
+  },
+  {
+   "what": "Andhra Pradesh 1956–1968",
+   "unit": "IND:Andhra Pradesh",
+   "atoms": [
+    "IND-2441",
+    "IND-20011"
+   ],
+   "from": "1956-11-01",
+   "to": "1968-10-01",
+   "why": "AP–Madras exchange 1960 and AP–Mysore transfer 1968.",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "village atoms along the AP–TN and AP–Karnataka lines"
+  },
+  {
+   "what": "Andhra Pradesh and Telangana 2–17 June/July 2014",
+   "unit": "IND:Andhra Pradesh",
+   "atoms": [
+    "IND-2441",
+    "IND-20011"
+   ],
+   "from": "2014-06-02",
+   "to": "2014-07-17",
+   "why": "Seven Polavaram-area mandals moved from Telangana to AP by the amendment act gazetted 17 Jul 2014 (ordinance date and retroactivity not established).",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "mandal atoms of Khammam district"
+  },
+  {
+   "what": "Madhya Pradesh, Madhya Bharat, Bhopal, Vindhya Pradesh, Ajmer, Rajasthan 1950–1959",
+   "unit": "IND:Madhya Pradesh",
+   "atoms": [
+    "IND-3261",
+    "IND-3260",
+    "IND-3250"
+   ],
+   "from": "1950-01-26",
+   "to": "1959-10-01",
+   "why": "1956 mergers and partial transfers (Sironj, Sunel tappa, Abu) and the Rajasthan–MP village transfer of 1 Oct 1959.",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "district atoms, e.g. geoBoundaries IND ADM2 (licence per source) / 1951–61 census district maps"
+  },
+  {
+   "what": "West Bengal 1950–2015",
+   "unit": "IND:West Bengal",
+   "atoms": [
+    "IND-3257"
+   ],
+   "from": "1950-01-26",
+   "to": "2015-08-01",
+   "why": "Chandernagore merged 1954, Purulia/Islampur added 1956 (partial Bihar districts), and until 31 Jul 2015 Cooch Behar contained Bangladeshi enclaves and Indian enclaves lay in Bangladesh; NE omits the enclaves.",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "pre-2015 enclave polygons and 1950–56 district atoms"
+  },
+  {
+   "what": "Assam (with NEFA, Naga Hills, Khasi–Garo, Mizo) 1950–1957",
+   "unit": "IND:Assam",
+   "atoms": [
+    "IND-2477",
+    "IND-2489",
+    "IND-3300",
+    "IND-3299",
+    "IND-2479"
+   ],
+   "from": "1950-01-26",
+   "to": "1957-12-01",
+   "why": "Assam (Alteration of Boundaries) Act 1951 ceded the Dewangiri area to Bhutan on a date not established.",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "the 1951 Dewangiri cession date and geometry"
+  },
+  {
+   "what": "Assam, Mizoram, Arunachal 20–21 Jan 1972",
+   "unit": "IND:Assam",
+   "atoms": [
+    "IND-2477",
+    "IND-3300",
+    "IND-3299"
+   ],
+   "from": "1972-01-20",
+   "to": "1972-01-21",
+   "why": "Sources differ by one day (statoids 20 Jan, Wikipedia 21 Jan) on the separation of Mizoram and Arunachal Pradesh.",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "the appointed-day notification of the North-Eastern Areas (Reorganisation) Act 1971"
+  },
+  {
+   "what": "Jammu and Kashmir 1950–1972",
+   "unit": "IND:Jammu and Kashmir (state)",
+   "atoms": [
+    "IND-2431",
+    "IND-20012"
+   ],
+   "from": "1950-01-26",
+   "to": "1972-12-17",
+   "why": "The 1971 war changed the de facto line (Turtuk area to India, Chhamb to Pakistan); the 1949 ceasefire line is not the NE line.",
+   "checked": [
+    "statoids.com/uin.html",
+    "Wikipedia: List of acts of the Parliament of India and the articles cited per unit",
+    "texts of the Rajasthan–MP 1959, AP–Mysore 1968, Haryana–UP 1979 acts (appointed day of the last not stated in any copy reached)",
+    "NE geometry (no enclaves; Siachen separate; Aksai Chin outside)"
+   ],
+   "needs": "the 1949 ceasefire line geometry"
+  }
+ ]
+}

@@ -1,0 +1,958 @@
+{
+ "country": "PER",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1944-11-27",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Republic of Peru throughout. Units are the departments plus the Constitutional Province of Callao; from 2002 the regions plus Metropolitan Lima.",
+ "units": [
+  {
+   "id": "PER:Ancash@1944",
+   "names": {
+    "en": "Áncash Department",
+    "ja": "アンカシュ県",
+    "local": "Departamento de Áncash"
+   },
+   "wikidata": "Q205089",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-577"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Apurimac@1944",
+   "names": {
+    "en": "Apurímac Department",
+    "ja": "アプリマク県",
+    "local": "Departamento de Apurímac"
+   },
+   "wikidata": "Q208185",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-569"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Arequipa@1944",
+   "names": {
+    "en": "Arequipa Department",
+    "ja": "アレキパ県",
+    "local": "Departamento de Arequipa"
+   },
+   "wikidata": "Q205068",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-570"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Ayacucho@1944",
+   "names": {
+    "en": "Ayacucho Department",
+    "ja": "アヤクーチョ県",
+    "local": "Departamento de Ayacucho"
+   },
+   "wikidata": "Q205112",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-586"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Cajamarca@1944",
+   "names": {
+    "en": "Cajamarca Department",
+    "ja": "カハマルカ県",
+    "local": "Departamento de Cajamarca"
+   },
+   "wikidata": "Q205078",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-578"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Callao@1944",
+   "names": {
+    "en": "Constitutional Province of Callao",
+    "ja": "カヤオ特別区",
+    "local": "Provincia Constitucional del Callao"
+   },
+   "wikidata": "Q2634400",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-3505"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Cusco@1944",
+   "names": {
+    "en": "Cusco Department",
+    "ja": "クスコ県",
+    "local": "Departamento del Cusco"
+   },
+   "wikidata": "Q205057",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-571"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Huancavelica@1944",
+   "names": {
+    "en": "Huancavelica Department",
+    "ja": "ワンカベリカ県",
+    "local": "Departamento de Huancavelica"
+   },
+   "wikidata": "Q505220",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-588"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Huanuco@1944",
+   "names": {
+    "en": "Huanuco Department",
+    "ja": "ワヌコ県",
+    "local": "Departamento de Huánuco"
+   },
+   "wikidata": "Q215221",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-579"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Ica@1944",
+   "names": {
+    "en": "Ica Department",
+    "ja": "イカ県",
+    "local": "Departamento de Ica"
+   },
+   "wikidata": "Q208186",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-589"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Junin@1944",
+   "names": {
+    "en": "Junín Department",
+    "ja": "フニン県",
+    "local": "Departamento de Junín"
+   },
+   "wikidata": "Q207973",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-590"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Departamento_de_Pasco&oldid=174833922",
+       "title": "Wikipedia (es) — Departamento de Pasco (oldid 174833922)",
+       "says": "Pasco created 27 Nov 1944 by Ley 10030 from northern Junín (Cerro de Pasco province and the new Carrión and Oxapampa provinces).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Pasco@1944",
+   "names": {
+    "en": "Pasco Department",
+    "ja": "パスコ県",
+    "local": "Departamento de Pasco"
+   },
+   "wikidata": "Q211208",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-581"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Departamento_de_Pasco&oldid=174833922",
+       "title": "Wikipedia (es) — Departamento de Pasco (oldid 174833922)",
+       "says": "Pasco created 27 Nov 1944 by Ley 10030 from northern Junín (Cerro de Pasco province and the new Carrión and Oxapampa provinces).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:LaLibertad@1944",
+   "names": {
+    "en": "La Libertad Department",
+    "ja": "ラ・リベルタ県",
+    "local": "Departamento de La Libertad"
+   },
+   "wikidata": "Q205126",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-580"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Lambayeque@1944",
+   "names": {
+    "en": "Lambayeque Department",
+    "ja": "ランバイエケ県",
+    "local": "Departamento de Lambayeque"
+   },
+   "wikidata": "Q210061",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-566"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:MadreDeDios@1944",
+   "names": {
+    "en": "Madre de Dios Department",
+    "ja": "マードレ・デ・ディオス県",
+    "local": "Departamento de Madre de Dios"
+   },
+   "wikidata": "Q210896",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-572"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Moquegua@1944",
+   "names": {
+    "en": "Moquegua Department",
+    "ja": "モケグア県",
+    "local": "Departamento de Moquegua"
+   },
+   "wikidata": "Q208182",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-574"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Piura@1944",
+   "names": {
+    "en": "Piura Department",
+    "ja": "ピウラ県",
+    "local": "Departamento de Piura"
+   },
+   "wikidata": "Q208183",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-567"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Puno@1944",
+   "names": {
+    "en": "Puno Department",
+    "ja": "プーノ県",
+    "local": "Departamento de Puno"
+   },
+   "wikidata": "Q205104",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-573"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:SanMartin@1944",
+   "names": {
+    "en": "San Martin Department",
+    "ja": "サン・マルティン県",
+    "local": "Departamento de San Martín"
+   },
+   "wikidata": "Q211793",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-582"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Tacna@1944",
+   "names": {
+    "en": "Tacna Department",
+    "ja": "タクナ県",
+    "local": "Departamento de Tacna"
+   },
+   "wikidata": "Q207413",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-575"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Tumbes@1944",
+   "names": {
+    "en": "Tumbes Department",
+    "ja": "トゥンベス県",
+    "local": "Departamento de Tumbes"
+   },
+   "wikidata": "Q209597",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-568"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Departamento_de_Tumbes&oldid=175507140",
+       "title": "Wikipedia (es) — Departamento de Tumbes (oldid 175507140)",
+       "says": "Littoral province of Tumbes (1901) raised to department in 1942, segregated from Piura.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "No first-level change involving this unit after the creation of Pasco (1944-11-27) in the change list, other than the 2002 change of status from department to region."
+    }
+   ]
+  },
+  {
+   "id": "PER:Amazonas@1832",
+   "names": {
+    "en": "Amazonas Department",
+    "ja": "アマソナス県",
+    "local": "Departamento de Amazonas"
+   },
+   "wikidata": "Q201162",
+   "spans": [
+    {
+     "from": "1998-10-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-584"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Ecuadorian%E2%80%93Peruvian_territorial_dispute&oldid=1374831282",
+       "title": "Wikipedia (en) — Ecuadorian–Peruvian territorial dispute (oldid 1374831282)",
+       "says": "Rio Protocol 1942; demarcation problems arbitrated (Dias de Aguiar, July 1945); Cóndor sector contested until the Brasilia Act of 26 Oct 1998.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the Brasilia Presidential Act; formal demarcation began 1999-05-13."
+    }
+   ]
+  },
+  {
+   "id": "PER:Loreto@1866",
+   "names": {
+    "en": "Loreto Department",
+    "ja": "ロレート県",
+    "local": "Departamento de Loreto"
+   },
+   "wikidata": "Q200938",
+   "spans": [
+    {
+     "from": "1945-07",
+     "precision": "month",
+     "to": "1980-06-18",
+     "atoms": [
+      "PER-585",
+      "PER-583"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Ecuadorian%E2%80%93Peruvian_territorial_dispute&oldid=1374831282",
+       "title": "Wikipedia (en) — Ecuadorian–Peruvian territorial dispute (oldid 1374831282)",
+       "says": "Rio Protocol 1942; demarcation problems arbitrated (Dias de Aguiar, July 1945); Cóndor sector contested until the Brasilia Act of 26 Oct 1998.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Departamento_de_Ucayali&oldid=174832394",
+       "title": "Wikipedia (es) — Departamento de Ucayali (oldid 174832394)",
+       "says": "Ucayali department created 18 June 1980; the newest department; provinces Coronel Portillo, Atalaya, Padre Abad, Purús.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Conservative start after the July 1945 arbitration of Rio Protocol demarcation problems (day not established; the sources do not say which sectors besides the Cóndor it covered). Before 1980 Loreto included the territory that became Ucayali (formed wholly from Loreto)."
+    },
+    {
+     "from": "1980-06-18",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-585"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Departamento_de_Ucayali&oldid=174832394",
+       "title": "Wikipedia (es) — Departamento de Ucayali (oldid 174832394)",
+       "says": "Ucayali department created 18 June 1980; the newest department; provinces Coronel Portillo, Atalaya, Padre Abad, Purús.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PER:Ucayali@1980",
+   "names": {
+    "en": "Ucayali Department",
+    "ja": "ウカヤリ県",
+    "local": "Departamento de Ucayali"
+   },
+   "wikidata": "Q207424",
+   "spans": [
+    {
+     "from": "1980-06-18",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-583"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Departamento_de_Ucayali&oldid=174832394",
+       "title": "Wikipedia (es) — Departamento de Ucayali (oldid 174832394)",
+       "says": "Ucayali department created 18 June 1980; the newest department; provinces Coronel Portillo, Atalaya, Padre Abad, Purús.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PER:Lima@1944",
+   "names": {
+    "en": "Lima Department (Lima Region from 2002)",
+    "ja": "リマ県",
+    "local": "Departamento de Lima"
+   },
+   "wikidata": "Q211795",
+   "spans": [
+    {
+     "from": "1944-11-27",
+     "precision": "day",
+     "to": "2002-11-16",
+     "atoms": [
+      "PER-591",
+      "PER-587"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Department including the province of Lima."
+    },
+    {
+     "from": "2002-11-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-591"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Statoids dates the separation to the Organic Law of Regional Governments (Ley 27867, promulgated 2002-11-16, published 2002-11-18); regional governments took office 2003-01-01."
+    }
+   ]
+  },
+  {
+   "id": "PER:LimaMetropolitana@2002",
+   "names": {
+    "en": "Lima Province (Metropolitan Lima)",
+    "ja": "リマ郡",
+    "local": "Provincia de Lima (Municipalidad Metropolitana de Lima)"
+   },
+   "wikidata": "Q579240",
+   "spans": [
+    {
+     "from": "2002-11-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PER-587"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/upe.html",
+       "title": "Statoids — Regions of Peru (change history)",
+       "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Province of Lima outside any region, coextensive with the Metropolitan Municipality of Lima."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1944-11-27",
+   "precision": "day",
+   "what": "Pasco department split from Junín (Ley 10030)",
+   "sources": [
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=Departamento_de_Pasco&oldid=174833922",
+     "title": "Wikipedia (es) — Departamento de Pasco (oldid 174833922)",
+     "says": "Pasco created 27 Nov 1944 by Ley 10030 from northern Junín (Cerro de Pasco province and the new Carrión and Oxapampa provinces).",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.statoids.com/upe.html",
+     "title": "Statoids — Regions of Peru (change history)",
+     "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1945-07",
+   "precision": "month",
+   "what": "Dias de Aguiar award on Rio Protocol demarcation problems",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Ecuadorian%E2%80%93Peruvian_territorial_dispute&oldid=1374831282",
+     "title": "Wikipedia (en) — Ecuadorian–Peruvian territorial dispute (oldid 1374831282)",
+     "says": "Rio Protocol 1942; demarcation problems arbitrated (Dias de Aguiar, July 1945); Cóndor sector contested until the Brasilia Act of 26 Oct 1998.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1980-06-18",
+   "precision": "day",
+   "what": "Ucayali department split from Loreto",
+   "sources": [
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=Departamento_de_Ucayali&oldid=174832394",
+     "title": "Wikipedia (es) — Departamento de Ucayali (oldid 174832394)",
+     "says": "Ucayali department created 18 June 1980; the newest department; provinces Coronel Portillo, Atalaya, Padre Abad, Purús.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.statoids.com/upe.html",
+     "title": "Statoids — Regions of Peru (change history)",
+     "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1998-10-26",
+   "precision": "day",
+   "what": "Brasilia Presidential Act fixes the Cordillera del Cóndor boundary with Ecuador",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Ecuadorian%E2%80%93Peruvian_territorial_dispute&oldid=1374831282",
+     "title": "Wikipedia (en) — Ecuadorian–Peruvian territorial dispute (oldid 1374831282)",
+     "says": "Rio Protocol 1942; demarcation problems arbitrated (Dias de Aguiar, July 1945); Cóndor sector contested until the Brasilia Act of 26 Oct 1998.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2002-11-16",
+   "precision": "day",
+   "what": "Departments become regions; province of Lima separated from Lima region",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/upe.html",
+     "title": "Statoids — Regions of Peru (change history)",
+     "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2019-12-31",
+   "n": 26,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/upe.html",
+     "title": "Statoids — Regions of Peru (change history)",
+     "says": "Pasco split from Junín 1944-11-27; Ucayali split from Loreto 1980-06-18; 2002-11-16 Lima province separated from Lima region; 25 regions + 1 province.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Amazonas department 1944-11-27 – 1998-10-26",
+   "unit": "PER:Amazonas@1832",
+   "atoms": [
+    "PER-584"
+   ],
+   "from": "1944-11-27",
+   "to": "1998-10-26",
+   "why": "The Cordillera del Cóndor sector of the boundary with Ecuador was undemarcated and contested (Ecuadorian posts, wars of 1981 and 1995) until the Brasilia Act; the atom's outer line is the post-1998 line.",
+   "checked": [
+    "en.wikipedia Ecuadorian–Peruvian territorial dispute oldid 1374831282",
+    "statoids upe.html"
+   ],
+   "needs": "an atom for the disputed Cenepa/Cordillera del Cóndor zone"
+  },
+  {
+   "what": "Loreto (incl. later Ucayali) 1944-11-27 – July 1945",
+   "unit": "PER:Loreto@1866",
+   "atoms": [
+    "PER-585",
+    "PER-583"
+   ],
+   "from": "1944-11-27",
+   "to": "1945-07",
+   "why": "Demarcation problems of the Rio Protocol line were arbitrated in July 1945; until then the northern line of Loreto is not established as the atom's line.",
+   "checked": [
+    "en.wikipedia Ecuadorian–Peruvian territorial dispute oldid 1374831282"
+   ],
+   "needs": "pre-award demarcation line (not available as atoms)"
+  },
+  {
+   "what": "Departments before 1944-11-27 (Junín including Pasco, Tacna before 1929, Ecuador/Colombia boundary changes 1922–1942, Madre de Dios carved from Cusco and Puno in 1912)",
+   "from": "1912-12-26",
+   "to": "1944-11-27",
+   "why": "Junín+Pasco would be a union of atoms, but the Ecuador boundary (Rio Protocol 1942) and Colombia boundary (1922/1934) changed outer lines of Loreto, Amazonas, Cajamarca, Piura and Tumbes in this window; Madre de Dios was formed from parts of Cusco and Puno. Not claimed (outside scope).",
+   "checked": [
+    "statoids upe.html",
+    "es.wikipedia Departamento de Tumbes oldid 175507140"
+   ],
+   "needs": "district-level atoms (INEI) and pre-1942 international lines"
+  }
+ ]
+}

@@ -1,0 +1,426 @@
+{
+  "country": "NER",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1964-07-17",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Republic of Niger throughout the scope. NE depicts 7 regions + Niamey (since 1988). National outline changes by ICJ judgments (Benin 2005, Burkina Faso 2013) are polity-level and not handled here.",
+  "units": [
+    {
+      "id": "NER:Agadez@1964",
+      "names": {
+        "en": "Agadez Region",
+        "ja": "アガデス州",
+        "local": "Agadez"
+      },
+      "wikidata": "Q389944",
+      "spans": [
+        {
+          "from": "1964-07-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NER-800"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/une.html",
+              "title": "Regions of Niger (Statoids)",
+              "says": "Change list: 1964-07-17 seven departments; 1988-04 Niamey department capital moved to Tillaberi; 1992 Tillaberi separated from Niamey; 2001 departments renamed regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=234848686",
+              "title": "Diffa (région) — Wikipédia",
+              "says": "Created as a department by law 64-023 of 17 July 1964; region by law 98-31 of 14 Sep 1998; 2011 new departments inside the region.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Department under law 64-023 of 17 July 1964 (promulgation date; Wikipedia also gives 14 Aug 1964); region from 1998/2001 with no boundary change in the change lists."
+        }
+      ]
+    },
+    {
+      "id": "NER:Diffa@1964",
+      "names": {
+        "en": "Diffa Region",
+        "ja": "ディファ州",
+        "local": "Diffa"
+      },
+      "wikidata": "Q1053302",
+      "spans": [
+        {
+          "from": "1964-07-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NER-796"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/une.html",
+              "title": "Regions of Niger (Statoids)",
+              "says": "Change list: 1964-07-17 seven departments; 1988-04 Niamey department capital moved to Tillaberi; 1992 Tillaberi separated from Niamey; 2001 departments renamed regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=234848686",
+              "title": "Diffa (région) — Wikipédia",
+              "says": "Created as a department by law 64-023 of 17 July 1964; region by law 98-31 of 14 Sep 1998; 2011 new departments inside the region.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Department under law 64-023 of 17 July 1964 (promulgation date; Wikipedia also gives 14 Aug 1964); region from 1998/2001 with no boundary change in the change lists."
+        }
+      ]
+    },
+    {
+      "id": "NER:Dosso@1964",
+      "names": {
+        "en": "Dosso Region",
+        "ja": "ドッソ州",
+        "local": "Dosso"
+      },
+      "wikidata": "Q850055",
+      "spans": [
+        {
+          "from": "1964-07-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NER-93"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/une.html",
+              "title": "Regions of Niger (Statoids)",
+              "says": "Change list: 1964-07-17 seven departments; 1988-04 Niamey department capital moved to Tillaberi; 1992 Tillaberi separated from Niamey; 2001 departments renamed regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=234848686",
+              "title": "Diffa (région) — Wikipédia",
+              "says": "Created as a department by law 64-023 of 17 July 1964; region by law 98-31 of 14 Sep 1998; 2011 new departments inside the region.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Department under law 64-023 of 17 July 1964 (promulgation date; Wikipedia also gives 14 Aug 1964); region from 1998/2001 with no boundary change in the change lists."
+        }
+      ]
+    },
+    {
+      "id": "NER:Maradi@1964",
+      "names": {
+        "en": "Maradi Region",
+        "ja": "マラディ州",
+        "local": "Maradi"
+      },
+      "wikidata": "Q850036",
+      "spans": [
+        {
+          "from": "1964-07-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NER-91"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/une.html",
+              "title": "Regions of Niger (Statoids)",
+              "says": "Change list: 1964-07-17 seven departments; 1988-04 Niamey department capital moved to Tillaberi; 1992 Tillaberi separated from Niamey; 2001 departments renamed regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=234848686",
+              "title": "Diffa (région) — Wikipédia",
+              "says": "Created as a department by law 64-023 of 17 July 1964; region by law 98-31 of 14 Sep 1998; 2011 new departments inside the region.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Department under law 64-023 of 17 July 1964 (promulgation date; Wikipedia also gives 14 Aug 1964); region from 1998/2001 with no boundary change in the change lists."
+        }
+      ]
+    },
+    {
+      "id": "NER:Tahoua@1964",
+      "names": {
+        "en": "Tahoua Region",
+        "ja": "タウア州",
+        "local": "Tahoua"
+      },
+      "wikidata": "Q871083",
+      "spans": [
+        {
+          "from": "1964-07-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NER-95"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/une.html",
+              "title": "Regions of Niger (Statoids)",
+              "says": "Change list: 1964-07-17 seven departments; 1988-04 Niamey department capital moved to Tillaberi; 1992 Tillaberi separated from Niamey; 2001 departments renamed regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=234848686",
+              "title": "Diffa (région) — Wikipédia",
+              "says": "Created as a department by law 64-023 of 17 July 1964; region by law 98-31 of 14 Sep 1998; 2011 new departments inside the region.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Department under law 64-023 of 17 July 1964 (promulgation date; Wikipedia also gives 14 Aug 1964); region from 1998/2001 with no boundary change in the change lists."
+        }
+      ]
+    },
+    {
+      "id": "NER:Zinder@1964",
+      "names": {
+        "en": "Zinder Region",
+        "ja": "ザンデール州",
+        "local": "Zinder"
+      },
+      "wikidata": "Q204367",
+      "spans": [
+        {
+          "from": "1964-07-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NER-92"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/une.html",
+              "title": "Regions of Niger (Statoids)",
+              "says": "Change list: 1964-07-17 seven departments; 1988-04 Niamey department capital moved to Tillaberi; 1992 Tillaberi separated from Niamey; 2001 departments renamed regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=234848686",
+              "title": "Diffa (région) — Wikipédia",
+              "says": "Created as a department by law 64-023 of 17 July 1964; region by law 98-31 of 14 Sep 1998; 2011 new departments inside the region.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Department under law 64-023 of 17 July 1964 (promulgation date; Wikipedia also gives 14 Aug 1964); region from 1998/2001 with no boundary change in the change lists."
+        }
+      ]
+    },
+    {
+      "id": "NER:Niamey-dept@1964",
+      "names": {
+        "en": "Niamey Department",
+        "local": "Département de Niamey"
+      },
+      "spans": [
+        {
+          "from": "1964-07-17",
+          "precision": "day",
+          "to": "1988-04-07",
+          "atoms": [
+            "NER-4859",
+            "NER-94"
+          ],
+          "sources": [
+            {
+              "url": "https://stat-niger.org/wp-content/uploads/2020/05/Monographie_Tillabery-2.pdf",
+              "title": "Monographie de la région de Tillabéri (INS Niger)",
+              "says": "Erected a department by ordinance 88-20 of 7 April 1988 covering the former Niamey department except the Niamey urban community; region by law 98-31.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=236076604",
+              "title": "Tillabéri (région) — Wikipédia",
+              "says": "The 1964 law created seven departments, Tillabéri lying in Niamey department; ordinance 88-20 of 7 April 1988 created Tillabéri department; Niamey enclaved in it.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/une.html",
+              "title": "Regions of Niger (Statoids)",
+              "says": "Change list: 1964-07-17 seven departments; 1988-04 Niamey department capital moved to Tillaberi; 1992 Tillaberi separated from Niamey; 2001 departments renamed regions.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Niamey department 1964-1988 = present Tillabéri + Niamey (Tillabéri = the former department minus the Niamey urban community)."
+        }
+      ]
+    },
+    {
+      "id": "NER:Tillaberi@1988",
+      "names": {
+        "en": "Tillabéri Region",
+        "ja": "ティラベリ州",
+        "local": "Tillabéri"
+      },
+      "wikidata": "Q861914",
+      "spans": [
+        {
+          "from": "1988-04-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NER-4859"
+          ],
+          "sources": [
+            {
+              "url": "https://stat-niger.org/wp-content/uploads/2020/05/Monographie_Tillabery-2.pdf",
+              "title": "Monographie de la région de Tillabéri (INS Niger)",
+              "says": "Erected a department by ordinance 88-20 of 7 April 1988 covering the former Niamey department except the Niamey urban community; region by law 98-31.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=236076604",
+              "title": "Tillabéri (région) — Wikipédia",
+              "says": "The 1964 law created seven departments, Tillabéri lying in Niamey department; ordinance 88-20 of 7 April 1988 created Tillabéri department; Niamey enclaved in it.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "INS Niger dates the department to ordinance 88-20 of 7 April 1988; Statoids gives 1992 for the separation (see events)."
+        }
+      ]
+    },
+    {
+      "id": "NER:Niamey@1988",
+      "names": {
+        "en": "Niamey (Communauté urbaine)",
+        "ja": "ニアメ",
+        "local": "Communauté urbaine de Niamey"
+      },
+      "wikidata": "Q3674",
+      "spans": [
+        {
+          "from": "1988-04-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "NER-94"
+          ],
+          "sources": [
+            {
+              "url": "https://stat-niger.org/wp-content/uploads/2020/05/Monographie_Tillabery-2.pdf",
+              "title": "Monographie de la région de Tillabéri (INS Niger)",
+              "says": "Erected a department by ordinance 88-20 of 7 April 1988 covering the former Niamey department except the Niamey urban community; region by law 98-31.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=236076604",
+              "title": "Tillabéri (région) — Wikipédia",
+              "says": "The 1964 law created seven departments, Tillabéri lying in Niamey department; ordinance 88-20 of 7 April 1988 created Tillabéri department; Niamey enclaved in it.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1964-07-17",
+      "precision": "day",
+      "what": "Law 64-023: seven departments (Agadez, Diffa, Dosso, Maradi, Niamey, Tahoua, Zinder)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/une.html",
+          "title": "Regions of Niger (Statoids)",
+          "says": "Change list: 1964-07-17 seven departments; 1988-04 Niamey department capital moved to Tillaberi; 1992 Tillaberi separated from Niamey; 2001 departments renamed regions.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=234848686",
+          "title": "Diffa (région) — Wikipédia",
+          "says": "Created as a department by law 64-023 of 17 July 1964; region by law 98-31 of 14 Sep 1998; 2011 new departments inside the region.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1988-04-07",
+      "precision": "day",
+      "what": "Ordinance 88-20: Tillabéri department = former Niamey department minus the Niamey urban community",
+      "sources": [
+        {
+          "url": "https://stat-niger.org/wp-content/uploads/2020/05/Monographie_Tillabery-2.pdf",
+          "title": "Monographie de la région de Tillabéri (INS Niger)",
+          "says": "Erected a department by ordinance 88-20 of 7 April 1988 covering the former Niamey department except the Niamey urban community; region by law 98-31.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=236076604",
+          "title": "Tillabéri (région) — Wikipédia",
+          "says": "The 1964 law created seven departments, Tillabéri lying in Niamey department; ordinance 88-20 of 7 April 1988 created Tillabéri department; Niamey enclaved in it.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1998-09-14",
+      "precision": "day",
+      "what": "Law 98-31: departments become regions, limits fixed (no territorial change)",
+      "sources": [
+        {
+          "url": "https://stat-niger.org/wp-content/uploads/2020/05/Monographie_Tillabery-2.pdf",
+          "title": "Monographie de la région de Tillabéri (INS Niger)",
+          "says": "Erected a department by ordinance 88-20 of 7 April 1988 covering the former Niamey department except the Niamey urban community; region by law 98-31.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=234848686",
+          "title": "Diffa (région) — Wikipédia",
+          "says": "Created as a department by law 64-023 of 17 July 1964; region by law 98-31 of 14 Sep 1998; 2011 new departments inside the region.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1964-07-17",
+      "n": 7,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/une.html",
+          "title": "Regions of Niger (Statoids)",
+          "says": "Change list: 1964-07-17 seven departments; 1988-04 Niamey department capital moved to Tillaberi; 1992 Tillaberi separated from Niamey; 2001 departments renamed regions.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1988-04-07",
+      "n": 8,
+      "sources": [
+        {
+          "url": "https://stat-niger.org/wp-content/uploads/2020/05/Monographie_Tillabery-2.pdf",
+          "title": "Monographie de la région de Tillabéri (INS Niger)",
+          "says": "Erected a department by ordinance 88-20 of 7 April 1988 covering the former Niamey department except the Niamey urban community; region by law 98-31.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.statoids.com/une.html",
+          "title": "Regions of Niger (Statoids)",
+          "says": "Change list: 1964-07-17 seven departments; 1988-04 Niamey department capital moved to Tillaberi; 1992 Tillaberi separated from Niamey; 2001 departments renamed regions.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Niger before 1964-07-17 (16 colonial cercles, 31 circonscriptions from 1961-12-31)",
+      "from": "1960-08-03",
+      "to": "1964-07-17",
+      "why": "The cercle/circonscription grid is finer than and not aligned with the NE atoms.",
+      "checked": [
+        "statoids.com/une.html",
+        "fr.wikipedia Régions du Niger"
+      ],
+      "needs": "arrondissement atoms (geoBoundaries NER ADM2, CC BY 4.0) with 1961-64 lineage"
+    }
+  ]
+}

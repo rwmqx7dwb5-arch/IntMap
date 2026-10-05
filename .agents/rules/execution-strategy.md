@@ -72,7 +72,7 @@
 | CShapes の国境と、その下 | `npm run check:cshapes` `npm run check:histborders` |
 | 全時代の国境 | `npm run check:histeras` `npm run check:histclio` |
 | 歴史的な政体名 | `npm run check:histnames` |
-| 歴史的な行政区分（令制国・穴埋め・出版元） | `npm run check:histadmin` `npm run check:kuni` `npm run check:histfill` `npm run check:histsurveys` |
+| 歴史的な行政区分 | `npm run check:histadmin` `npm run check:kuni` `npm run check:histfill` `npm run check:histsurveys` `npm run check:histrecon` |
 | 歴史地図が述べていること | `npm run check:histfidelity` |
 | 国境のどの辺を描くか | `npm run check:bordercoast` |
 | 拡大時の精密な輪郭 | `npm run check:borderdetail` |

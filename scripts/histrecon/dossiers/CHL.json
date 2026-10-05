@@ -1,0 +1,798 @@
+{
+ "country": "CHL",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1979-10-26",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Republic of Chile throughout. Regions of the 1974–76 regionalisation as re-delimited by DL 2.867 of 1979; the Antarctic claim is not part of the atom set.",
+ "units": [
+  {
+   "id": "CHL:Tarapaca@1979",
+   "names": {
+    "en": "Tarapacá Region",
+    "ja": "タラパカ州",
+    "local": "Región de Tarapacá"
+   },
+   "wikidata": "Q2114",
+   "spans": [
+    {
+     "from": "1979-10-26",
+     "precision": "day",
+     "to": "2007-10-08",
+     "atoms": [
+      "CHL-2693",
+      "CHL-2694"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=7019",
+       "title": "Decreto Ley 2.867 «Delimita las regiones y provincias del país» (LeyChile, BCN)",
+       "says": "Modifies the territory of the regions (Tarapacá, Antofagasta, Atacama, Coquimbo, Valparaíso, Metropolitana and others); single version in force from 1979-10-26.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=259864",
+       "title": "Ley 20.175 «Crea la XV Región de Arica y Parinacota» (LeyChile, BCN)",
+       "says": "Region = current provinces Arica and Parinacota; published 2007-04-11; in force 180 days after publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ucl.html",
+       "title": "Statoids — Regions of Chile (change history)",
+       "says": "1976-01-01 thirteen regions; 2007-10-02 Los Ríos from Los Lagos (Valdivia province); 2007-10-08 Arica y Parinacota from Tarapacá; Ñuble from Biobío 2018.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Before 2007 Tarapacá included the provinces of Arica and Parinacota, which became the whole of Arica y Parinacota."
+    },
+    {
+     "from": "2007-10-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHL-2693"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=259864",
+       "title": "Ley 20.175 «Crea la XV Región de Arica y Parinacota» (LeyChile, BCN)",
+       "says": "Region = current provinces Arica and Parinacota; published 2007-04-11; in force 180 days after publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ucl.html",
+       "title": "Statoids — Regions of Chile (change history)",
+       "says": "1976-01-01 thirteen regions; 2007-10-02 Los Ríos from Los Lagos (Valdivia province); 2007-10-08 Arica y Parinacota from Tarapacá; Ñuble from Biobío 2018.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "2007-04-11 publication + 180 days."
+    }
+   ]
+  },
+  {
+   "id": "CHL:AricaParinacota@1979",
+   "names": {
+    "en": "Arica y Parinacota Region",
+    "ja": "アリカ・イ・パリナコータ州",
+    "local": "Región de Arica y Parinacota"
+   },
+   "wikidata": "Q2109",
+   "spans": [
+    {
+     "from": "2007-10-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHL-2694"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=259864",
+       "title": "Ley 20.175 «Crea la XV Región de Arica y Parinacota» (LeyChile, BCN)",
+       "says": "Region = current provinces Arica and Parinacota; published 2007-04-11; in force 180 days after publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ucl.html",
+       "title": "Statoids — Regions of Chile (change history)",
+       "says": "1976-01-01 thirteen regions; 2007-10-02 Los Ríos from Los Lagos (Valdivia province); 2007-10-08 Arica y Parinacota from Tarapacá; Ñuble from Biobío 2018.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Ley 20.175 published 2007-04-11, in force 180 days later."
+    }
+   ]
+  },
+  {
+   "id": "CHL:Antofagasta@1979",
+   "names": {
+    "en": "Antofagasta Region",
+    "ja": "アントファガスタ州",
+    "local": "Región de Antofagasta"
+   },
+   "wikidata": "Q2118",
+   "spans": [
+    {
+     "from": "1979-10-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHL-2695"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=7019",
+       "title": "Decreto Ley 2.867 «Delimita las regiones y provincias del país» (LeyChile, BCN)",
+       "says": "Modifies the territory of the regions (Tarapacá, Antofagasta, Atacama, Coquimbo, Valparaíso, Metropolitana and others); single version in force from 1979-10-26.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Chile&oldid=174835186",
+       "title": "Wikipedia (es) — Organización territorial de Chile (oldid 174835186)",
+       "says": "1979 adjustments modified regional limits; the 1976 regional division lasts to today, the exceptions being 2007 (Arica y Parinacota, Los Ríos) and Ñuble.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Region boundaries as re-delimited by DL 2.867 (published and in force 1979-10-26); no later inter-regional transfer found other than the 2007 and 2018 splits."
+    }
+   ]
+  },
+  {
+   "id": "CHL:Atacama@1979",
+   "names": {
+    "en": "Atacama Region",
+    "ja": "アタカマ州",
+    "local": "Región de Atacama"
+   },
+   "wikidata": "Q2120",
+   "spans": [
+    {
+     "from": "1979-10-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHL-2696"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=7019",
+       "title": "Decreto Ley 2.867 «Delimita las regiones y provincias del país» (LeyChile, BCN)",
+       "says": "Modifies the territory of the regions (Tarapacá, Antofagasta, Atacama, Coquimbo, Valparaíso, Metropolitana and others); single version in force from 1979-10-26.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Chile&oldid=174835186",
+       "title": "Wikipedia (es) — Organización territorial de Chile (oldid 174835186)",
+       "says": "1979 adjustments modified regional limits; the 1976 regional division lasts to today, the exceptions being 2007 (Arica y Parinacota, Los Ríos) and Ñuble.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Region boundaries as re-delimited by DL 2.867 (published and in force 1979-10-26); no later inter-regional transfer found other than the 2007 and 2018 splits."
+    }
+   ]
+  },
+  {
+   "id": "CHL:Coquimbo@1979",
+   "names": {
+    "en": "Coquimbo Region",
+    "ja": "コキンボ州",
+    "local": "Región de Coquimbo"
+   },
+   "wikidata": "Q2121",
+   "spans": [
+    {
+     "from": "1979-10-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHL-2697"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=7019",
+       "title": "Decreto Ley 2.867 «Delimita las regiones y provincias del país» (LeyChile, BCN)",
+       "says": "Modifies the territory of the regions (Tarapacá, Antofagasta, Atacama, Coquimbo, Valparaíso, Metropolitana and others); single version in force from 1979-10-26.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Chile&oldid=174835186",
+       "title": "Wikipedia (es) — Organización territorial de Chile (oldid 174835186)",
+       "says": "1979 adjustments modified regional limits; the 1976 regional division lasts to today, the exceptions being 2007 (Arica y Parinacota, Los Ríos) and Ñuble.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Region boundaries as re-delimited by DL 2.867 (published and in force 1979-10-26); no later inter-regional transfer found other than the 2007 and 2018 splits."
+    }
+   ]
+  },
+  {
+   "id": "CHL:Valparaiso@1979",
+   "names": {
+    "en": "Valparaíso Region",
+    "ja": "バルパライソ州",
+    "local": "Región de Valparaíso"
+   },
+   "wikidata": "Q219458",
+   "spans": [
+    {
+     "from": "1979-10-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHL-2699"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=7019",
+       "title": "Decreto Ley 2.867 «Delimita las regiones y provincias del país» (LeyChile, BCN)",
+       "says": "Modifies the territory of the regions (Tarapacá, Antofagasta, Atacama, Coquimbo, Valparaíso, Metropolitana and others); single version in force from 1979-10-26.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Chile&oldid=174835186",
+       "title": "Wikipedia (es) — Organización territorial de Chile (oldid 174835186)",
+       "says": "1979 adjustments modified regional limits; the 1976 regional division lasts to today, the exceptions being 2007 (Arica y Parinacota, Los Ríos) and Ñuble.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Region boundaries as re-delimited by DL 2.867 (published and in force 1979-10-26); no later inter-regional transfer found other than the 2007 and 2018 splits."
+    }
+   ]
+  },
+  {
+   "id": "CHL:Metropolitana@1979",
+   "names": {
+    "en": "Santiago Metropolitan Region",
+    "ja": "首都州",
+    "local": "Región Metropolitana de Santiago"
+   },
+   "wikidata": "Q2131",
+   "spans": [
+    {
+     "from": "1979-10-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHL-2698"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=7019",
+       "title": "Decreto Ley 2.867 «Delimita las regiones y provincias del país» (LeyChile, BCN)",
+       "says": "Modifies the territory of the regions (Tarapacá, Antofagasta, Atacama, Coquimbo, Valparaíso, Metropolitana and others); single version in force from 1979-10-26.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Chile&oldid=174835186",
+       "title": "Wikipedia (es) — Organización territorial de Chile (oldid 174835186)",
+       "says": "1979 adjustments modified regional limits; the 1976 regional division lasts to today, the exceptions being 2007 (Arica y Parinacota, Los Ríos) and Ñuble.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=San_Pedro_(Chile)&oldid=172188051",
+       "title": "Wikipedia (es) — San Pedro (Chile) (oldid 172188051)",
+       "says": "With Alhué, belonged 1974–1979 to Cachapoal province (O'Higgins region), then transferred definitively to the Metropolitan Region.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Region boundaries as re-delimited by DL 2.867 (published and in force 1979-10-26); no later inter-regional transfer found other than the 2007 and 2018 splits."
+    }
+   ]
+  },
+  {
+   "id": "CHL:OHiggins@1979",
+   "names": {
+    "en": "O'Higgins Region",
+    "ja": "リベルタドール・ベルナルド・オイギンス州",
+    "local": "Región del Libertador General Bernardo O'Higgins"
+   },
+   "wikidata": "Q2133",
+   "spans": [
+    {
+     "from": "1979-10-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHL-2703"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=7019",
+       "title": "Decreto Ley 2.867 «Delimita las regiones y provincias del país» (LeyChile, BCN)",
+       "says": "Modifies the territory of the regions (Tarapacá, Antofagasta, Atacama, Coquimbo, Valparaíso, Metropolitana and others); single version in force from 1979-10-26.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Chile&oldid=174835186",
+       "title": "Wikipedia (es) — Organización territorial de Chile (oldid 174835186)",
+       "says": "1979 adjustments modified regional limits; the 1976 regional division lasts to today, the exceptions being 2007 (Arica y Parinacota, Los Ríos) and Ñuble.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=San_Pedro_(Chile)&oldid=172188051",
+       "title": "Wikipedia (es) — San Pedro (Chile) (oldid 172188051)",
+       "says": "With Alhué, belonged 1974–1979 to Cachapoal province (O'Higgins region), then transferred definitively to the Metropolitan Region.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Region boundaries as re-delimited by DL 2.867 (published and in force 1979-10-26); no later inter-regional transfer found other than the 2007 and 2018 splits."
+    }
+   ]
+  },
+  {
+   "id": "CHL:Maule@1979",
+   "names": {
+    "en": "Maule Región",
+    "ja": "マウレ州",
+    "local": "Región del Maule"
+   },
+   "wikidata": "Q2166",
+   "spans": [
+    {
+     "from": "1979-10-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHL-2705"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=7019",
+       "title": "Decreto Ley 2.867 «Delimita las regiones y provincias del país» (LeyChile, BCN)",
+       "says": "Modifies the territory of the regions (Tarapacá, Antofagasta, Atacama, Coquimbo, Valparaíso, Metropolitana and others); single version in force from 1979-10-26.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Chile&oldid=174835186",
+       "title": "Wikipedia (es) — Organización territorial de Chile (oldid 174835186)",
+       "says": "1979 adjustments modified regional limits; the 1976 regional division lasts to today, the exceptions being 2007 (Arica y Parinacota, Los Ríos) and Ñuble.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Region boundaries as re-delimited by DL 2.867 (published and in force 1979-10-26); no later inter-regional transfer found other than the 2007 and 2018 splits."
+    }
+   ]
+  },
+  {
+   "id": "CHL:Biobio@1979",
+   "names": {
+    "en": "Biobío Region",
+    "ja": "ビオビオ州",
+    "local": "Región del Biobío"
+   },
+   "wikidata": "Q2170",
+   "spans": [
+    {
+     "from": "1979-10-26",
+     "precision": "day",
+     "to": "2018-09-06",
+     "atoms": [
+      "CHL-2702",
+      "CHL-20010"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=7019",
+       "title": "Decreto Ley 2.867 «Delimita las regiones y provincias del país» (LeyChile, BCN)",
+       "says": "Modifies the territory of the regions (Tarapacá, Antofagasta, Atacama, Coquimbo, Valparaíso, Metropolitana and others); single version in force from 1979-10-26.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=1107597",
+       "title": "Ley 21.033 «Crea la XVI Región de Ñuble» (LeyChile, BCN)",
+       "says": "Ñuble = provinces Diguillín, Punilla, Itata (former Ñuble province communes); published 2017-09-05; in force one year later (text version from 2018-09-06).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ucl.html",
+       "title": "Statoids — Regions of Chile (change history)",
+       "says": "1976-01-01 thirteen regions; 2007-10-02 Los Ríos from Los Lagos (Valdivia province); 2007-10-08 Arica y Parinacota from Tarapacá; Ñuble from Biobío 2018.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Before 2018 Biobío included the Ñuble province, which became the whole of the Ñuble region."
+    },
+    {
+     "from": "2018-09-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHL-2702"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=1107597",
+       "title": "Ley 21.033 «Crea la XVI Región de Ñuble» (LeyChile, BCN)",
+       "says": "Ñuble = provinces Diguillín, Punilla, Itata (former Ñuble province communes); published 2017-09-05; in force one year later (text version from 2018-09-06).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CHL:Nuble@1979",
+   "names": {
+    "en": "Ñuble Region",
+    "ja": "ニュブレ州",
+    "local": "Región de Ñuble"
+   },
+   "wikidata": "Q24076693",
+   "spans": [
+    {
+     "from": "2018-09-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHL-20010"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=1107597",
+       "title": "Ley 21.033 «Crea la XVI Región de Ñuble» (LeyChile, BCN)",
+       "says": "Ñuble = provinces Diguillín, Punilla, Itata (former Ñuble province communes); published 2017-09-05; in force one year later (text version from 2018-09-06).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ucl.html",
+       "title": "Statoids — Regions of Chile (change history)",
+       "says": "1976-01-01 thirteen regions; 2007-10-02 Los Ríos from Los Lagos (Valdivia province); 2007-10-08 Arica y Parinacota from Tarapacá; Ñuble from Biobío 2018.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Published 2017-09-05, in force one year later; BCN shows the original text in force from 2018-09-06. Statoids gives 2018-09-08 as implementation date."
+    }
+   ]
+  },
+  {
+   "id": "CHL:Araucania@1979",
+   "names": {
+    "en": "Araucanía Region",
+    "ja": "ラ・アラウカニア州",
+    "local": "Región de La Araucanía"
+   },
+   "wikidata": "Q2176",
+   "spans": [
+    {
+     "from": "1979-10-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHL-2700"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=7019",
+       "title": "Decreto Ley 2.867 «Delimita las regiones y provincias del país» (LeyChile, BCN)",
+       "says": "Modifies the territory of the regions (Tarapacá, Antofagasta, Atacama, Coquimbo, Valparaíso, Metropolitana and others); single version in force from 1979-10-26.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Chile&oldid=174835186",
+       "title": "Wikipedia (es) — Organización territorial de Chile (oldid 174835186)",
+       "says": "1979 adjustments modified regional limits; the 1976 regional division lasts to today, the exceptions being 2007 (Arica y Parinacota, Los Ríos) and Ñuble.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Region boundaries as re-delimited by DL 2.867 (published and in force 1979-10-26); no later inter-regional transfer found other than the 2007 and 2018 splits."
+    }
+   ]
+  },
+  {
+   "id": "CHL:LosLagos@1979",
+   "names": {
+    "en": "Los Lagos Region",
+    "ja": "ロス・ラゴス州",
+    "local": "Región de Los Lagos"
+   },
+   "wikidata": "Q2178",
+   "spans": [
+    {
+     "from": "1979-10-26",
+     "precision": "day",
+     "to": "2007-10-02",
+     "atoms": [
+      "CHL-2704",
+      "CHL-2701"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=7019",
+       "title": "Decreto Ley 2.867 «Delimita las regiones y provincias del país» (LeyChile, BCN)",
+       "says": "Modifies the territory of the regions (Tarapacá, Antofagasta, Atacama, Coquimbo, Valparaíso, Metropolitana and others); single version in force from 1979-10-26.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=259774",
+       "title": "Ley 20.174 «Crea la XIV Región de Los Ríos» (LeyChile, BCN)",
+       "says": "Region of Los Ríos = provinces Valdivia and Ranco (communes listed); published 2007-04-05; in force 180 days after publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ucl.html",
+       "title": "Statoids — Regions of Chile (change history)",
+       "says": "1976-01-01 thirteen regions; 2007-10-02 Los Ríos from Los Lagos (Valdivia province); 2007-10-08 Arica y Parinacota from Tarapacá; Ñuble from Biobío 2018.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Before 2007 Los Lagos included Valdivia province (later split into Valdivia and Ranco), which became the whole of Los Ríos."
+    },
+    {
+     "from": "2007-10-02",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHL-2704"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=259774",
+       "title": "Ley 20.174 «Crea la XIV Región de Los Ríos» (LeyChile, BCN)",
+       "says": "Region of Los Ríos = provinces Valdivia and Ranco (communes listed); published 2007-04-05; in force 180 days after publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ucl.html",
+       "title": "Statoids — Regions of Chile (change history)",
+       "says": "1976-01-01 thirteen regions; 2007-10-02 Los Ríos from Los Lagos (Valdivia province); 2007-10-08 Arica y Parinacota from Tarapacá; Ñuble from Biobío 2018.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CHL:LosRios@1979",
+   "names": {
+    "en": "Los Ríos Region",
+    "ja": "ロス・リオス州",
+    "local": "Región de Los Ríos"
+   },
+   "wikidata": "Q2177",
+   "spans": [
+    {
+     "from": "2007-10-02",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHL-2701"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=259774",
+       "title": "Ley 20.174 «Crea la XIV Región de Los Ríos» (LeyChile, BCN)",
+       "says": "Region of Los Ríos = provinces Valdivia and Ranco (communes listed); published 2007-04-05; in force 180 days after publication.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/ucl.html",
+       "title": "Statoids — Regions of Chile (change history)",
+       "says": "1976-01-01 thirteen regions; 2007-10-02 Los Ríos from Los Lagos (Valdivia province); 2007-10-08 Arica y Parinacota from Tarapacá; Ñuble from Biobío 2018.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Ley 20.174 published 2007-04-05, in force 180 days later."
+    }
+   ]
+  },
+  {
+   "id": "CHL:Aysen@1979",
+   "names": {
+    "en": "Aysén Region",
+    "ja": "アイセン・デル・ヘネラル・カルロス・イバニェス・デル・カンポ州",
+    "local": "Región de Aysén del General Carlos Ibáñez del Campo"
+   },
+   "wikidata": "Q2181",
+   "spans": [
+    {
+     "from": "1995-10-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHL-2691"
+     ],
+     "sources": [
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Lago_del_Desierto&oldid=170090537",
+       "title": "Wikipedia (es) — Lago del Desierto (oldid 170090537)",
+       "says": "Chile–Argentina dispute over the zone between hito 62 and Mount Fitz Roy settled by arbitral award 1994-10-21; confirmed 1995-10-13 when Chile's reconsideration was rejected.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=7019",
+       "title": "Decreto Ley 2.867 «Delimita las regiones y provincias del país» (LeyChile, BCN)",
+       "says": "Modifies the territory of the regions (Tarapacá, Antofagasta, Atacama, Coquimbo, Valparaíso, Metropolitana and others); single version in force from 1979-10-26.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the date the 1994 Laguna del Desierto award became final. The Southern Patagonian Ice Field line (1998 agreement) is partly undemarcated; NE draws one line there."
+    }
+   ]
+  },
+  {
+   "id": "CHL:Magallanes@1979",
+   "names": {
+    "en": "Magellan and the Chilean Antarctic Region",
+    "ja": "マガジャネス・イ・デ・ラ・アンタルティカ・チレーナ州",
+    "local": "Región de Magallanes y de la Antártica Chilena"
+   },
+   "wikidata": "Q2189",
+   "spans": [
+    {
+     "from": "1979-10-26",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "CHL-2692"
+     ],
+     "sources": [
+      {
+       "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=7019",
+       "title": "Decreto Ley 2.867 «Delimita las regiones y provincias del país» (LeyChile, BCN)",
+       "says": "Modifies the territory of the regions (Tarapacá, Antofagasta, Atacama, Coquimbo, Valparaíso, Metropolitana and others); single version in force from 1979-10-26.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Chile&oldid=174835186",
+       "title": "Wikipedia (es) — Organización territorial de Chile (oldid 174835186)",
+       "says": "1979 adjustments modified regional limits; the 1976 regional division lasts to today, the exceptions being 2007 (Arica y Parinacota, Los Ríos) and Ñuble.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Region boundaries as re-delimited by DL 2.867 (published and in force 1979-10-26); no later inter-regional transfer found other than the 2007 and 2018 splits."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1979-10-26",
+   "precision": "day",
+   "what": "DL 2.867 re-delimits regions and provinces (communes San Pedro and Alhué move from O'Higgins to the Metropolitan Region, Quillagua area to Tarapacá, etc.)",
+   "sources": [
+    {
+     "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=7019",
+     "title": "Decreto Ley 2.867 «Delimita las regiones y provincias del país» (LeyChile, BCN)",
+     "says": "Modifies the territory of the regions (Tarapacá, Antofagasta, Atacama, Coquimbo, Valparaíso, Metropolitana and others); single version in force from 1979-10-26.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=San_Pedro_(Chile)&oldid=172188051",
+     "title": "Wikipedia (es) — San Pedro (Chile) (oldid 172188051)",
+     "says": "With Alhué, belonged 1974–1979 to Cachapoal province (O'Higgins region), then transferred definitively to the Metropolitan Region.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1995-10-13",
+   "precision": "day",
+   "what": "Laguna del Desierto award (1994-10-21) confirmed; the zone is Argentine",
+   "sources": [
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=Lago_del_Desierto&oldid=170090537",
+     "title": "Wikipedia (es) — Lago del Desierto (oldid 170090537)",
+     "says": "Chile–Argentina dispute over the zone between hito 62 and Mount Fitz Roy settled by arbitral award 1994-10-21; confirmed 1995-10-13 when Chile's reconsideration was rejected.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2007-10-02",
+   "precision": "day",
+   "what": "Los Ríos region split from Los Lagos",
+   "sources": [
+    {
+     "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=259774",
+     "title": "Ley 20.174 «Crea la XIV Región de Los Ríos» (LeyChile, BCN)",
+     "says": "Region of Los Ríos = provinces Valdivia and Ranco (communes listed); published 2007-04-05; in force 180 days after publication.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2007-10-08",
+   "precision": "day",
+   "what": "Arica y Parinacota region split from Tarapacá",
+   "sources": [
+    {
+     "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=259864",
+     "title": "Ley 20.175 «Crea la XV Región de Arica y Parinacota» (LeyChile, BCN)",
+     "says": "Region = current provinces Arica and Parinacota; published 2007-04-11; in force 180 days after publication.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2018-09-06",
+   "precision": "day",
+   "what": "Ñuble region split from Biobío",
+   "sources": [
+    {
+     "url": "https://nuevo.leychile.cl/servicios/Navegar/get_norma_json?idNorma=1107597",
+     "title": "Ley 21.033 «Crea la XVI Región de Ñuble» (LeyChile, BCN)",
+     "says": "Ñuble = provinces Diguillín, Punilla, Itata (former Ñuble province communes); published 2017-09-05; in force one year later (text version from 2018-09-06).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1980-01-01",
+   "n": 13,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ucl.html",
+     "title": "Statoids — Regions of Chile (change history)",
+     "says": "1976-01-01 thirteen regions; 2007-10-02 Los Ríos from Los Lagos (Valdivia province); 2007-10-08 Arica y Parinacota from Tarapacá; Ñuble from Biobío 2018.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2008-01-01",
+   "n": 15,
+   "sources": [
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Chile&oldid=174835186",
+     "title": "Wikipedia (es) — Organización territorial de Chile (oldid 174835186)",
+     "says": "1979 adjustments modified regional limits; the 1976 regional division lasts to today, the exceptions being 2007 (Arica y Parinacota, Los Ríos) and Ñuble.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2019-12-31",
+   "n": 16,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ucl.html",
+     "title": "Statoids — Regions of Chile (change history)",
+     "says": "1976-01-01 thirteen regions; 2007-10-02 Los Ríos from Los Lagos (Valdivia province); 2007-10-08 Arica y Parinacota from Tarapacá; Ñuble from Biobío 2018.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=Organizaci%C3%B3n_territorial_de_Chile&oldid=174835186",
+     "title": "Wikipedia (es) — Organización territorial de Chile (oldid 174835186)",
+     "says": "1979 adjustments modified regional limits; the 1976 regional division lasts to today, the exceptions being 2007 (Arica y Parinacota, Los Ríos) and Ñuble.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Aysén region 1979-10-26 – 1995-10-13",
+   "unit": "CHL:Aysen@1979",
+   "atoms": [
+    "CHL-2691"
+   ],
+   "from": "1979-10-26",
+   "to": "1995-10-13",
+   "why": "Chile claimed (and until 1965 policed) the Laguna del Desierto valley, which the 1994 award gave almost wholly to Argentina; the NE atom follows the post-award line, so Aysén's outline under Chilean law before the award is not the atom.",
+   "checked": [
+    "es.wikipedia Lago del Desierto oldid 170090537",
+    "en.wikipedia Laguna del Desierto incident oldid 1375552167",
+    "DL 2.867 (LeyChile)"
+   ],
+   "needs": "an atom for the pre-1994 Chilean-claimed Laguna del Desierto zone (e.g. the arbitral tribunal's map of the disputed area)"
+  },
+  {
+   "what": "Regions 1976-01-01 – 1979-10-26 and the 25 provinces before 1976",
+   "from": "1976-01-01",
+   "to": "1979-10-26",
+   "why": "Before DL 2.867 the regional limits differed (e.g. San Pedro and Alhué in O'Higgins, Quillagua in Antofagasta, Taltal south of Punta Carrizalillo in Antofagasta); those lines run through NE region atoms. The pre-1976 provinces are not unions of NE regions either. Not claimed (outside scope).",
+   "checked": [
+    "DL 2.867 text (LeyChile idNorma 7019)",
+    "DL 2.868 (LeyChile idNorma 7020)",
+    "statoids ucl.html",
+    "es.wikipedia San Pedro (Chile) oldid 172188051"
+   ],
+   "needs": "commune-level atoms of 1979 (e.g. INE/IDE Chile comunas, or geoBoundaries CHL ADM3, licence to be checked)"
+  }
+ ]
+}

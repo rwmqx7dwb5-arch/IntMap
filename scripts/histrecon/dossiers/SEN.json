@@ -1,0 +1,787 @@
+{
+  "country": "SEN",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1984-03-24",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Republic of Senegal (independent since 1960-08-20) throughout the scope. NE depicts the 14-region layout in force since 2008-09-10.",
+  "units": [
+    {
+      "id": "SEN:Dakar@1984",
+      "names": {
+        "en": "Dakar Region",
+        "ja": "ダカール州",
+        "local": "Région de Dakar"
+      },
+      "wikidata": "Q856268",
+      "spans": [
+        {
+          "from": "1984-03-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SEN-759"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usn.html",
+              "title": "Regions of Senegal (Statoids)",
+              "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=237767175",
+              "title": "Régions du Sénégal — Wikipédia",
+              "says": "10 regions from the reform of 24 March 1984; Matam 11th region 2002; Kaffrine, Kédougou, Sédhiou created 10 September 2008.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Renamed from Cap-Vert in the 1984 reform; only the post-1984 span is claimed."
+        }
+      ]
+    },
+    {
+      "id": "SEN:Diourbel@1984",
+      "names": {
+        "en": "Diourbel Region",
+        "ja": "ジュルベル州",
+        "local": "Région de Diourbel"
+      },
+      "wikidata": "Q856261",
+      "spans": [
+        {
+          "from": "1984-03-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SEN-763"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usn.html",
+              "title": "Regions of Senegal (Statoids)",
+              "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=237767175",
+              "title": "Régions du Sénégal — Wikipédia",
+              "says": "10 regions from the reform of 24 March 1984; Matam 11th region 2002; Kaffrine, Kédougou, Sédhiou created 10 September 2008.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SEN:Thies@1984",
+      "names": {
+        "en": "Thiès Region",
+        "ja": "ティエス州",
+        "local": "Région de Thiès"
+      },
+      "wikidata": "Q847682",
+      "spans": [
+        {
+          "from": "1984-03-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SEN-768"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usn.html",
+              "title": "Regions of Senegal (Statoids)",
+              "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=237767175",
+              "title": "Régions du Sénégal — Wikipédia",
+              "says": "10 regions from the reform of 24 March 1984; Matam 11th region 2002; Kaffrine, Kédougou, Sédhiou created 10 September 2008.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SEN:Ziguinchor@1984",
+      "names": {
+        "en": "Ziguinchor Region",
+        "ja": "ジガンショール州",
+        "local": "Région de Ziguinchor"
+      },
+      "wikidata": "Q822692",
+      "spans": [
+        {
+          "from": "1984-03-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SEN-775"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usn.html",
+              "title": "Regions of Senegal (Statoids)",
+              "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=218223243",
+              "title": "Sédhiou (région) — Wikipédia",
+              "says": "Sédhiou department erected into a region in 2008 by dismemberment of Kolda region.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Split from Casamance in 1984; Sédhiou (2008) was taken from Kolda only."
+        }
+      ]
+    },
+    {
+      "id": "SEN:Louga@1984",
+      "names": {
+        "en": "Louga Region",
+        "ja": "ルーガ州",
+        "local": "Région de Louga"
+      },
+      "wikidata": "Q738061",
+      "spans": [
+        {
+          "from": "2002-02-21",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SEN-766"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ysn.html",
+              "title": "Departments of Senegal (Statoids)",
+              "says": "2002-02-21: Matam department formed from parts of Linguère (Louga region) and former Matam department; departments of the 14 regions listed.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/usn.html",
+              "title": "Regions of Senegal (Statoids)",
+              "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SEN:Saint-Louis@1984",
+      "names": {
+        "en": "Saint-Louis Region",
+        "ja": "サンルイ州",
+        "local": "Région de Saint-Louis"
+      },
+      "wikidata": "Q178872",
+      "spans": [
+        {
+          "from": "2002-02-21",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SEN-5517"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usn.html",
+              "title": "Regions of Senegal (Statoids)",
+              "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239441583",
+              "title": "Matam (région) — Wikipédia",
+              "says": "Created by law 2002-02 of 15 February 2002 from the former Fleuve (Saint-Louis) region; departments per decree of 21 February 2002.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SEN:Matam@2002",
+      "names": {
+        "en": "Matam Region",
+        "ja": "マタム州",
+        "local": "Région de Matam"
+      },
+      "wikidata": "Q856275",
+      "spans": [
+        {
+          "from": "2002-02-21",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SEN-767"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usn.html",
+              "title": "Regions of Senegal (Statoids)",
+              "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239441583",
+              "title": "Matam (région) — Wikipédia",
+              "says": "Created by law 2002-02 of 15 February 2002 from the former Fleuve (Saint-Louis) region; departments per decree of 21 February 2002.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ysn.html",
+              "title": "Departments of Senegal (Statoids)",
+              "says": "2002-02-21: Matam department formed from parts of Linguère (Louga region) and former Matam department; departments of the 14 regions listed.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Law 2002-02 of 15 Feb 2002 created the region; the territory was fixed by the decree of 21 Feb 2002 (Statoids date)."
+        }
+      ]
+    },
+    {
+      "id": "SEN:Fatick@1984",
+      "names": {
+        "en": "Fatick Region",
+        "ja": "ファティック州",
+        "local": "Région de Fatick"
+      },
+      "wikidata": "Q856282",
+      "spans": [
+        {
+          "from": "2008-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SEN-764"
+          ],
+          "sources": [
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239740016",
+              "title": "Kaolack (région) — Wikipédia",
+              "says": "Region created by the reform of 24 March 1984; in 2008 Kaffrine became a region and Guinguinéo was transferred to Kaolack from Fatick region.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/usn.html",
+              "title": "Regions of Senegal (Statoids)",
+              "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SEN:Kaolack@1984",
+      "names": {
+        "en": "Kaolack Region",
+        "ja": "カオラック州",
+        "local": "Région de Kaolack"
+      },
+      "wikidata": "Q847671",
+      "spans": [
+        {
+          "from": "2008-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SEN-765"
+          ],
+          "sources": [
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=239740016",
+              "title": "Kaolack (région) — Wikipédia",
+              "says": "Region created by the reform of 24 March 1984; in 2008 Kaffrine became a region and Guinguinéo was transferred to Kaolack from Fatick region.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/usn.html",
+              "title": "Regions of Senegal (Statoids)",
+              "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SEN:Kaffrine@2008",
+      "names": {
+        "en": "Kaffrine Region",
+        "ja": "カフリン州",
+        "local": "Région de Kaffrine"
+      },
+      "wikidata": "Q1059694",
+      "spans": [
+        {
+          "from": "2008-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SEN-5516"
+          ],
+          "sources": [
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235258445",
+              "title": "Kaffrine (région) — Wikipédia",
+              "says": "Region created 2008 from former Kaolack region (about two thirds of it); territory fixed by decree 2008-1025 of 10 September 2008.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/usn.html",
+              "title": "Regions of Senegal (Statoids)",
+              "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SEN:Kolda@1984",
+      "names": {
+        "en": "Kolda Region",
+        "ja": "コルダ州",
+        "local": "Région de Kolda"
+      },
+      "wikidata": "Q738081",
+      "spans": [
+        {
+          "from": "1984-03-24",
+          "precision": "day",
+          "to": "2008-02-01",
+          "atoms": [
+            "SEN-774",
+            "SEN-5514"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usn.html",
+              "title": "Regions of Senegal (Statoids)",
+              "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=218223243",
+              "title": "Sédhiou (région) — Wikipédia",
+              "says": "Sédhiou department erected into a region in 2008 by dismemberment of Kolda region.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Kolda 1984-2008 = present Kolda + present Sédhiou (Sédhiou region was the former Sédhiou department of Kolda)."
+        },
+        {
+          "from": "2008-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SEN-774"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usn.html",
+              "title": "Regions of Senegal (Statoids)",
+              "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=218223243",
+              "title": "Sédhiou (région) — Wikipédia",
+              "says": "Sédhiou department erected into a region in 2008 by dismemberment of Kolda region.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SEN:Sedhiou@2008",
+      "names": {
+        "en": "Sédhiou Region",
+        "ja": "セディウ州",
+        "local": "Région de Sédhiou"
+      },
+      "wikidata": "Q589848",
+      "spans": [
+        {
+          "from": "2008-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SEN-5514"
+          ],
+          "sources": [
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=218223243",
+              "title": "Sédhiou (région) — Wikipédia",
+              "says": "Sédhiou department erected into a region in 2008 by dismemberment of Kolda region.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/usn.html",
+              "title": "Regions of Senegal (Statoids)",
+              "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SEN:Tambacounda@1984",
+      "names": {
+        "en": "Tambacounda Region",
+        "ja": "タンバクンダ州",
+        "local": "Région de Tambacounda"
+      },
+      "wikidata": "Q848554",
+      "spans": [
+        {
+          "from": "1984-03-24",
+          "precision": "day",
+          "to": "2008-02-01",
+          "atoms": [
+            "SEN-779",
+            "SEN-5515"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usn.html",
+              "title": "Regions of Senegal (Statoids)",
+              "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=236292751",
+              "title": "Kédougou (région) — Wikipédia",
+              "says": "Created 2008 by partition of former Sénégal oriental (Tambacounda region); decree 2008-1025 of 10 September 2008 (JO 6446).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Tambacounda 1984-2008 = present Tambacounda + present Kédougou (Kédougou region came from Tambacounda only)."
+        },
+        {
+          "from": "2008-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SEN-779"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/usn.html",
+              "title": "Regions of Senegal (Statoids)",
+              "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=236292751",
+              "title": "Kédougou (région) — Wikipédia",
+              "says": "Created 2008 by partition of former Sénégal oriental (Tambacounda region); decree 2008-1025 of 10 September 2008 (JO 6446).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SEN:Kedougou@2008",
+      "names": {
+        "en": "Kédougou Region",
+        "ja": "ケドゥグ州",
+        "local": "Région de Kédougou"
+      },
+      "wikidata": "Q1046666",
+      "spans": [
+        {
+          "from": "2008-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "SEN-5515"
+          ],
+          "sources": [
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=236292751",
+              "title": "Kédougou (région) — Wikipédia",
+              "says": "Created 2008 by partition of former Sénégal oriental (Tambacounda region); decree 2008-1025 of 10 September 2008 (JO 6446).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/usn.html",
+              "title": "Regions of Senegal (Statoids)",
+              "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1984-03-24",
+      "precision": "day",
+      "what": "Reform into 10 regions: Casamance split into Ziguinchor and Kolda, Sine-Saloum into Fatick and Kaolack; Cap-Vert, Fleuve, Sénégal oriental renamed Dakar, Saint-Louis, Tambacounda",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/usn.html",
+          "title": "Regions of Senegal (Statoids)",
+          "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=237767175",
+          "title": "Régions du Sénégal — Wikipédia",
+          "says": "10 regions from the reform of 24 March 1984; Matam 11th region 2002; Kaffrine, Kédougou, Sédhiou created 10 September 2008.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2002-02-21",
+      "precision": "day",
+      "what": "Matam region split from Saint-Louis, taking also part of Linguère department (Louga region)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/usn.html",
+          "title": "Regions of Senegal (Statoids)",
+          "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.statoids.com/ysn.html",
+          "title": "Departments of Senegal (Statoids)",
+          "says": "2002-02-21: Matam department formed from parts of Linguère (Louga region) and former Matam department; departments of the 14 regions listed.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=239441583",
+          "title": "Matam (région) — Wikipédia",
+          "says": "Created by law 2002-02 of 15 February 2002 from the former Fleuve (Saint-Louis) region; departments per decree of 21 February 2002.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2008-02-01",
+      "precision": "day",
+      "what": "National Assembly votes the creation of Kaffrine, Kédougou and Sédhiou regions (territory fixed only by decree 2008-1025 of 10 Sep 2008)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/usn.html",
+          "title": "Regions of Senegal (Statoids)",
+          "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=235258445",
+          "title": "Kaffrine (région) — Wikipédia",
+          "says": "Region created 2008 from former Kaolack region (about two thirds of it); territory fixed by decree 2008-1025 of 10 September 2008.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2008-09-10",
+      "precision": "day",
+      "what": "Decree 2008-1025 fixes the 14 regions: Kaffrine from Kaolack, Kédougou from Tambacounda, Sédhiou from Kolda; Guinguinéo moved from Fatick to Kaolack",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/usn.html",
+          "title": "Regions of Senegal (Statoids)",
+          "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=239740016",
+          "title": "Kaolack (région) — Wikipédia",
+          "says": "Region created by the reform of 24 March 1984; in 2008 Kaffrine became a region and Guinguinéo was transferred to Kaolack from Fatick region.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=236292751",
+          "title": "Kédougou (région) — Wikipédia",
+          "says": "Created 2008 by partition of former Sénégal oriental (Tambacounda region); decree 2008-1025 of 10 September 2008 (JO 6446).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1984-03-24",
+      "n": 10,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/usn.html",
+          "title": "Regions of Senegal (Statoids)",
+          "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=237767175",
+          "title": "Régions du Sénégal — Wikipédia",
+          "says": "10 regions from the reform of 24 March 1984; Matam 11th region 2002; Kaffrine, Kédougou, Sédhiou created 10 September 2008.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2002-02-21",
+      "n": 11,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/usn.html",
+          "title": "Regions of Senegal (Statoids)",
+          "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2008-09-10",
+      "n": 14,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/usn.html",
+          "title": "Regions of Senegal (Statoids)",
+          "says": "Change list: 1984-03-24 ten regions; 2002-02-21 Matam split from Saint-Louis; 2008-09-10 Kaffrine, Kédougou, Sédhiou split from Kaolack, Tambacounda, Kolda.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=237767175",
+          "title": "Régions du Sénégal — Wikipédia",
+          "says": "10 regions from the reform of 24 March 1984; Matam 11th region 2002; Kaffrine, Kédougou, Sédhiou created 10 September 2008.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Louga region 1984-03-24 → 2002-02-21",
+      "unit": "SEN:Louga@1984",
+      "atoms": [
+        "SEN-766"
+      ],
+      "from": "1984-03-24",
+      "to": "2002-02-21",
+      "why": "In 2002 Matam department took part of Linguère department (Louga region) besides the old Matam department of Saint-Louis, so the pre-2002 Louga/Saint-Louis line runs inside the NE Matam atom (SEN-767). Pre-2002 Louga = SEN-766 + part of SEN-767; pre-2002 Saint-Louis = SEN-5517 + the rest of SEN-767. Atoms are withheld per unit only to keep the partition; neither shape is claimed.",
+      "checked": [
+        "statoids.com/ysn.html (2002-02-21 note)",
+        "statoids.com/usn.html",
+        "fr.wikipedia Matam (région) oldid 239441583"
+      ],
+      "needs": "department or arrondissement atoms with 2002 lineage, e.g. geoBoundaries SEN ADM2/ADM3 (CC BY 4.0), plus the 2002 split of Linguère department"
+    },
+    {
+      "what": "Saint-Louis region 1984-03-24 → 2002-02-21",
+      "unit": "SEN:Saint-Louis@1984",
+      "atoms": [
+        "SEN-5517",
+        "SEN-767"
+      ],
+      "from": "1984-03-24",
+      "to": "2002-02-21",
+      "why": "In 2002 Matam department took part of Linguère department (Louga region) besides the old Matam department of Saint-Louis, so the pre-2002 Louga/Saint-Louis line runs inside the NE Matam atom (SEN-767). Pre-2002 Louga = SEN-766 + part of SEN-767; pre-2002 Saint-Louis = SEN-5517 + the rest of SEN-767. Atoms are withheld per unit only to keep the partition; neither shape is claimed.",
+      "checked": [
+        "statoids.com/ysn.html (2002-02-21 note)",
+        "statoids.com/usn.html",
+        "fr.wikipedia Matam (région) oldid 239441583"
+      ],
+      "needs": "department or arrondissement atoms with 2002 lineage, e.g. geoBoundaries SEN ADM2/ADM3 (CC BY 4.0), plus the 2002 split of Linguère department"
+    },
+    {
+      "what": "Fatick region 1984-03-24 → 2008-09-10",
+      "unit": "SEN:Fatick@1984",
+      "atoms": [
+        "SEN-764"
+      ],
+      "from": "1984-03-24",
+      "to": "2008-09-10",
+      "why": "Guinguinéo was transferred from Fatick region to Kaolack region in 2008, so the pre-2008 Fatick/Kaolack line runs inside the NE Kaolack atom (SEN-765). Pre-2008 Fatick = SEN-764 + the Guinguinéo part of SEN-765; pre-2008 Kaolack = the rest of SEN-765 + SEN-5516. The transfer may date from decree 2008-747 of 10 July 2008 (creation of Guinguinéo department) rather than 10 Sep 2008.",
+      "checked": [
+        "fr.wikipedia Kaolack (région) oldid 239740016",
+        "fr.wikipedia Département de Guinguinéo (decree 2008-747 of 10 July 2008)",
+        "statoids.com/ysn.html"
+      ],
+      "needs": "department atoms: geoBoundaries SEN ADM2 (CC BY 4.0), which carries Guinguinéo department as a unit"
+    },
+    {
+      "what": "Kaolack region 1984-03-24 → 2008-09-10",
+      "unit": "SEN:Kaolack@1984",
+      "atoms": [
+        "SEN-765",
+        "SEN-5516"
+      ],
+      "from": "1984-03-24",
+      "to": "2008-09-10",
+      "why": "Guinguinéo was transferred from Fatick region to Kaolack region in 2008, so the pre-2008 Fatick/Kaolack line runs inside the NE Kaolack atom (SEN-765). Pre-2008 Fatick = SEN-764 + the Guinguinéo part of SEN-765; pre-2008 Kaolack = the rest of SEN-765 + SEN-5516. The transfer may date from decree 2008-747 of 10 July 2008 (creation of Guinguinéo department) rather than 10 Sep 2008.",
+      "checked": [
+        "fr.wikipedia Kaolack (région) oldid 239740016",
+        "fr.wikipedia Département de Guinguinéo (decree 2008-747 of 10 July 2008)",
+        "statoids.com/ysn.html"
+      ],
+      "needs": "department atoms: geoBoundaries SEN ADM2 (CC BY 4.0), which carries Guinguinéo department as a unit"
+    },
+    {
+      "what": "Kolda region 2008-02-01 → 2008-09-10: which layout was legally in force",
+      "unit": "SEN:Kolda@1984",
+      "atoms": [
+        "SEN-774",
+        "SEN-5514"
+      ],
+      "from": "2008-02-01",
+      "to": "2008-09-10",
+      "why": "The Assembly voted the three new regions on 2008-02-01 and Wikipedia dates Sédhiou to March 2008 and Kédougou to February 2008, but their territory was fixed by decree 2008-1025 of 2008-09-10 (the date Statoids uses). The promulgation date of the law was not found, so neither the old nor the new layout is claimed in this window (both are unions of these atoms).",
+      "checked": [
+        "statoids.com/usn.html",
+        "fr.wikipedia Sédhiou (région) oldid 218223243",
+        "fr.wikipedia Kédougou (région) oldid 236292751",
+        "fr.wikipedia Régions du Sénégal oldid 237767175"
+      ],
+      "needs": "the promulgated law (JORS 2008) modifying law 72-02, with its date of entry into force"
+    },
+    {
+      "what": "Tambacounda region 2008-02-01 → 2008-09-10: which layout was legally in force",
+      "unit": "SEN:Tambacounda@1984",
+      "atoms": [
+        "SEN-779",
+        "SEN-5515"
+      ],
+      "from": "2008-02-01",
+      "to": "2008-09-10",
+      "why": "The Assembly voted the three new regions on 2008-02-01 and Wikipedia dates Sédhiou to March 2008 and Kédougou to February 2008, but their territory was fixed by decree 2008-1025 of 2008-09-10 (the date Statoids uses). The promulgation date of the law was not found, so neither the old nor the new layout is claimed in this window (both are unions of these atoms).",
+      "checked": [
+        "statoids.com/usn.html",
+        "fr.wikipedia Sédhiou (région) oldid 218223243",
+        "fr.wikipedia Kédougou (région) oldid 236292751",
+        "fr.wikipedia Régions du Sénégal oldid 237767175"
+      ],
+      "needs": "the promulgated law (JORS 2008) modifying law 72-02, with its date of entry into force"
+    },
+    {
+      "what": "Senegal before 1984-03-24 (7 regions from 1960, Louga split from Diourbel 1976-06-26: 8 regions)",
+      "from": "1960",
+      "to": "1984-03-24",
+      "why": "Not researched to the needed standard: boundaries of Cap-Vert, Diourbel, Fleuve, Thiès and the 1984 department redraw (every region divided into three departments) are not established as unchanged, so no atom unions are claimed before 1984.",
+      "checked": [
+        "statoids.com/usn.html",
+        "statoids.com/ysn.html",
+        "fr.wikipedia Régions du Sénégal"
+      ],
+      "needs": "department-level change list 1960-1984 and arrondissement atoms (geoBoundaries SEN ADM3, CC BY 4.0)"
+    }
+  ]
+}

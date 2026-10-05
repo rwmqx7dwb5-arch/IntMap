@@ -1,0 +1,1536 @@
+{
+ "country": "RUE",
+ "atomSet": "ristat-1897-uyezd@v3",
+ "atomGroups": [
+  "Moscow governorate",
+  "Tver governorate",
+  "Yaroslavl governorate",
+  "Vologda governorate",
+  "Kostroma governorate",
+  "Vladimir governorate",
+  "Smolensk governorate",
+  "Kaluga governorate",
+  "Tula governorate",
+  "Orel governorate",
+  "Kursk governorate",
+  "Ryazan governorate",
+  "Tambov governorate",
+  "Voronezh governorate",
+  "Nizhny Novgorod governorate",
+  "Penza governorate"
+ ],
+ "scope": {
+  "from": "1780-02-05",
+  "to": "1917-11-06"
+ },
+ "polityNote": "Russian Empire (to 1917-11-06). Namestnichestva (vice-royalties, 1775–1796) and governorates (from 1796) of central European Russia. Old Style decree dates converted to Gregorian (+11 before 1800-03-01 O.S., +12 in the 19th century).",
+ "units": [
+  {
+   "id": "RUE:Moscow",
+   "names": {
+    "en": "Moscow Governorate",
+    "ja": "モスクワ県",
+    "local": "Московская губерния"
+   },
+   "wikidata": "Q1137842",
+   "spans": [
+    {
+     "from": "1782-05-29",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-426",
+      "U1897-427",
+      "U1897-428",
+      "U1897-429",
+      "U1897-430",
+      "U1897-431",
+      "U1897-434",
+      "U1897-435",
+      "U1897-436",
+      "U1897-437",
+      "U1897-432",
+      "U1897-438",
+      "U1897-433"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/mosk.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница mosk.html",
+       "says": "5.10.1781 (ПСЗ-1 № 15245) Moscow governorate formed, 14 uyezds; 18.5.1782 Vereya uyezd formed; later entries only abolish/restore uyezds inside it.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=155084265",
+       "title": "Московская губерния — Википедия (oldid 155084265)",
+       "says": "1781 new Moscow governorate; 1796 five uyezds abolished, 1802 three restored; next changes 1918 onwards.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "ПСЗ-1 № 15398, 1782-05-18 O.S. (Vereya uyezd formed; its source territory is not stated, so the span starts after it). Neighbour pages (Tver, Smolensk, Kaluga, Tula, Ryazan, Vladimir) list no later transfer across the Moscow line; ru.wikipedia lists none to 1917 (the Moscow city prefecture, 1905, did not change the governorate's territory)."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Tver",
+   "names": {
+    "en": "Tver Governorate",
+    "ja": "トヴェリ県",
+    "local": "Тверская губерния"
+   },
+   "wikidata": "Q2327841",
+   "spans": [
+    {
+     "from": "1781-10-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-83",
+      "U1897-86",
+      "U1897-87",
+      "U1897-85",
+      "U1897-90",
+      "U1897-93",
+      "U1897-94",
+      "U1897-91",
+      "U1897-89",
+      "U1897-88",
+      "U1897-84",
+      "U1897-92"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/tver.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница tver.html",
+       "says": "Last change of the outer line 3.8.1777 (exchange with Yaroslavl); 1796/1803 uyezds abolished and restored, 1809 and 1862 entries internal.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/mosk.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница mosk.html",
+       "says": "5.10.1781 (ПСЗ-1 № 15245) Moscow governorate formed, 14 uyezds; 18.5.1782 Vereya uyezd formed; later entries only abolish/restore uyezds inside it.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153847206",
+       "title": "Тверская губерния — Википедия (oldid 153847206)",
+       "says": "Twelve uyezds from 1803 until 1918; no change of the governorate's territory stated before 1917.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Span starts with the formation of the Moscow namestnichestvo (ПСЗ-1 № 15245, 1781-10-05 O.S.), the last neighbour formed. Novgorod and Pskov pages: their 1799 and 1824 re-cuts do not touch Tver."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Yaroslavl",
+   "names": {
+    "en": "Yaroslavl Governorate",
+    "ja": "ヤロスラヴリ県",
+    "local": "Ярославская губерния"
+   },
+   "wikidata": "Q2417759",
+   "spans": [
+    {
+     "from": "1780-02-05",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-95",
+      "U1897-96",
+      "U1897-98",
+      "U1897-99",
+      "U1897-101",
+      "U1897-102",
+      "U1897-97",
+      "U1897-100",
+      "U1897-104",
+      "U1897-103"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/yar.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница yar.html",
+       "says": "3.8.1777 namestnichestvo of 12 uyezds; 1796 two uyezds abolished; 1822 Romanov and Borisoglebsk merged — no outer change listed.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/volog.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница volog.html",
+       "says": "25.1.1780 (ПСЗ-1 № 14973) Vologda namestnichestvo formed from Vologda, Velikii Ustyug and Arkhangelsk oblasts; no transfer with Yaroslavl.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154396932",
+       "title": "Ярославская губерния — Википедия (oldid 154396932)",
+       "says": "From 1796 to the Soviet period the only changes were the abolition of two uyezds and the 1822 merger of Romanov and Borisoglebsk.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Starts with the formation of the Vologda namestnichestvo (ПСЗ-1 № 14973, 1780-01-25 O.S.), the last neighbour formed; Kostroma (1778-09-05 O.S.) had taken part of Yaroslavl lands earlier. Tver, Novgorod, Vladimir, Kostroma pages list no later transfer with Yaroslavl."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Vologda",
+   "names": {
+    "en": "Vologda Governorate",
+    "ja": "ヴォログダ県",
+    "local": "Вологодская губерния"
+   },
+   "wikidata": "Q86761",
+   "spans": [
+    {
+     "from": "1784-04-06",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-111",
+      "U1897-113",
+      "U1897-107",
+      "U1897-112",
+      "U1897-108",
+      "U1897-105",
+      "U1897-106",
+      "U1897-110",
+      "U1897-836",
+      "U1897-837"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/volog.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница volog.html",
+       "says": "26.3.1784 (ПСЗ-1 № 15968) Arkhangelsk oblast separated; 1796 Krasnoborsk and Lalsk uyezds abolished; 1849 Velsk→Kadnikov volosts — internal.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=146177952",
+       "title": "Вологодская губерния — Википедия (oldid 146177952)",
+       "says": "Arkhangelsk namestnichestvo separated 1784; governorate 1796; next territorial events 1918.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "ПСЗ-1 № 15968, 1784-03-26 O.S. Arkhangelsk, Olonets, Novgorod, Yaroslavl, Kostroma, Vyatka and Perm pages list no later transfer touching Vologda."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Kostroma",
+   "names": {
+    "en": "Kostroma Governorate",
+    "ja": "コストロマ県",
+    "local": "Костромская губерния"
+   },
+   "wikidata": "Q2142534",
+   "spans": [
+    {
+     "from": "1888-12-07",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-116",
+      "U1897-118",
+      "U1897-121",
+      "U1897-124",
+      "U1897-122",
+      "U1897-125",
+      "U1897-114",
+      "U1897-117",
+      "U1897-115",
+      "U1897-119",
+      "U1897-120",
+      "U1897-123"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/kostr.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница kostr.html",
+       "says": "25.11.1888 (ПСЗ-3 № 5576) Ramenskaya volost of Vetluga uyezd joined to Klyuchevskaya volost of Kotelnich uyezd, Vyatka governorate.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/vyatsk.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница vyatsk.html",
+       "says": "25.11.1888 (ПСЗ-3 № 5576) Ramenskaya volost of Kostroma's Vetluga uyezd joined to Kotelnich uyezd; no other transfer with Kostroma.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=146250583",
+       "title": "Костромская губерния — Википедия (oldid 146250583)",
+       "says": "Twelve uyezds from 1802 to 1918; no later territorial change before 1917 stated.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "ПСЗ-3 № 5576, 1888-11-25 O.S. Last change of the outer line before 1897 (Den); none 1897–1917 found."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Vladimir",
+   "names": {
+    "en": "Vladimir Governorate",
+    "ja": "ヴラジーミル県",
+    "local": "Владимирская губерния"
+   },
+   "wikidata": "Q2573304",
+   "spans": [
+    {
+     "from": "1781-10-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-126",
+      "U1897-131",
+      "U1897-132",
+      "U1897-127",
+      "U1897-133",
+      "U1897-134",
+      "U1897-135",
+      "U1897-137",
+      "U1897-138",
+      "U1897-128",
+      "U1897-129",
+      "U1897-130",
+      "U1897-136"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/vlad.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница vlad.html",
+       "says": "1.9.1778 namestnichestvo of 14 uyezds; 1796 four abolished, 1803 three restored; 1848–1871 entries concern towns only.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/mosk.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница mosk.html",
+       "says": "5.10.1781 (ПСЗ-1 № 15245) Moscow governorate formed, 14 uyezds; 18.5.1782 Vereya uyezd formed; later entries only abolish/restore uyezds inside it.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=152653529",
+       "title": "Владимирская губерния — Википедия (oldid 152653529)",
+       "says": "Thirteen uyezds from 1803; no change of the governorate's territory stated before 1917.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Starts with the Moscow namestnichestvo (ПСЗ-1 № 15245, 1781-10-05 O.S.), the last neighbour formed (Kostroma took part of Suzdal uyezd 1778-09-05 O.S.; Nizhny Novgorod namestnichestvo 1779-09-05 O.S.)."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Smolensk",
+   "names": {
+    "en": "Smolensk Governorate",
+    "ja": "スモレンスク県",
+    "local": "Смоленская губерния"
+   },
+   "wikidata": "Q1540313",
+   "spans": [
+    {
+     "from": "1802-03-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-403",
+      "U1897-404",
+      "U1897-407",
+      "U1897-409",
+      "U1897-405",
+      "U1897-410",
+      "U1897-413",
+      "U1897-414",
+      "U1897-408",
+      "U1897-406",
+      "U1897-411",
+      "U1897-412"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/smol.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница smol.html",
+       "says": "1776 namestnichestvo of 12 uyezds; 1796 three abolished, 1802 restored; 1892 land added to Roslavl town — no outer change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153801087",
+       "title": "Черниговская губерния — Википедия (oldid 153801087)",
+       "says": "Chernigov governorate formed in 1802 by splitting the Little Russian governorate; its next territorial change was in 1919.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=155088315",
+       "title": "Смоленская губерния — Википедия (oldid 155088315)",
+       "says": "Twelve uyezds from 1802 until the Soviet reorganisation; no transfer before 1917 stated.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "ПСЗ-1 № 20162, 1802-02-27 O.S.: the Belarus governorate was split into Vitebsk and Mogilev and the Little Russian into Chernigov and Poltava; Smolensk's western and southern neighbours are not covered by Den, so the span starts when their 1897 units were formed."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Kaluga",
+   "names": {
+    "en": "Kaluga Governorate",
+    "ja": "カルーガ県",
+    "local": "Калужская губерния"
+   },
+   "wikidata": "Q326353",
+   "spans": [
+    {
+     "from": "1782-05-29",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-415",
+      "U1897-416",
+      "U1897-418",
+      "U1897-419",
+      "U1897-421",
+      "U1897-422",
+      "U1897-423",
+      "U1897-424",
+      "U1897-425",
+      "U1897-417",
+      "U1897-420"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/kalug.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница kalug.html",
+       "says": "Last outer change 19.9.1777 (Odoev uyezd to Tula); 1796 three uyezds abolished, 1802 two restored; 1840 Sukhinichi town — internal.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/mosk.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница mosk.html",
+       "says": "5.10.1781 (ПСЗ-1 № 15245) Moscow governorate formed, 14 uyezds; 18.5.1782 Vereya uyezd formed; later entries only abolish/restore uyezds inside it.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154862026",
+       "title": "Калужская губерния — Википедия (oldid 154862026)",
+       "says": "Eleven uyezds from 1802; no transfer of territory before 1917 stated.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Starts after the Vereya uyezd of Moscow governorate was formed (ПСЗ-1 № 15398, 1782-05-18 O.S.) because Den does not say whether it took Kaluga land."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Tula",
+   "names": {
+    "en": "Tula Governorate",
+    "ja": "トゥーラ県",
+    "local": "Тульская губерния"
+   },
+   "wikidata": "Q1010812",
+   "spans": [
+    {
+     "from": "1781-10-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-439",
+      "U1897-440",
+      "U1897-444",
+      "U1897-445",
+      "U1897-442",
+      "U1897-447",
+      "U1897-448",
+      "U1897-449",
+      "U1897-450",
+      "U1897-443",
+      "U1897-441",
+      "U1897-446"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/tul.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница tul.html",
+       "says": "19.9.1777 namestnichestvo of 12 uyezds; 1796 three abolished, 1802 restored — no outer change listed.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/mosk.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница mosk.html",
+       "says": "5.10.1781 (ПСЗ-1 № 15245) Moscow governorate formed, 14 uyezds; 18.5.1782 Vereya uyezd formed; later entries only abolish/restore uyezds inside it.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153679145",
+       "title": "Тульская губерния — Википедия (oldid 153679145)",
+       "says": "Twelve uyezds from 1802; no transfer of territory before 1917 stated.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Starts with the Moscow namestnichestvo (ПСЗ-1 № 15245, 1781-10-05 O.S.), the last neighbour formed (Ryazan and Orel 1778)."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Orel",
+   "names": {
+    "en": "Oryol Governorate",
+    "ja": "オリョール県",
+    "local": "Орловская губерния"
+   },
+   "wikidata": "Q348785",
+   "spans": [
+    {
+     "from": "1802-03-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-452",
+      "U1897-454",
+      "U1897-455",
+      "U1897-456",
+      "U1897-459",
+      "U1897-460",
+      "U1897-462",
+      "U1897-458",
+      "U1897-457",
+      "U1897-451",
+      "U1897-453",
+      "U1897-461"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/orlov.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница orlov.html",
+       "says": "5.9.1778 namestnichestvo of 13 uyezds; 1782 Dmitrovsk; 1796 three abolished, 1802–1803 restored to 12 uyezds — no outer change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153801087",
+       "title": "Черниговская губерния — Википедия (oldid 153801087)",
+       "says": "Chernigov governorate formed in 1802 by splitting the Little Russian governorate; its next territorial change was in 1919.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153104750",
+       "title": "Орловская губерния — Википедия (oldid 153104750)",
+       "says": "Twelve uyezds from 1803; no change of territory before 1917 stated.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Starts with the Chernigov governorate (ПСЗ-1 № 20162, 1802-02-27 O.S.), whose line with Orel is not in Den's change list before that."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Kursk",
+   "names": {
+    "en": "Kursk Governorate",
+    "ja": "クルスク県",
+    "local": "Курская губерния"
+   },
+   "wikidata": "Q2530893",
+   "spans": [
+    {
+     "from": "1802-03-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-464",
+      "U1897-465",
+      "U1897-467",
+      "U1897-466",
+      "U1897-468",
+      "U1897-469",
+      "U1897-472",
+      "U1897-475",
+      "U1897-476",
+      "U1897-477",
+      "U1897-470",
+      "U1897-471",
+      "U1897-473",
+      "U1897-474",
+      "U1897-463"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/kursk.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница kursk.html",
+       "says": "29.8.1797 (ПСЗ-1 № 18116) line with Sloboda-Ukraine fixed; 1802 15 uyezds; 1838 Graivoron, 1893 Cherkasskoe to Graivoron — internal.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153801087",
+       "title": "Черниговская губерния — Википедия (oldid 153801087)",
+       "says": "Chernigov governorate formed in 1802 by splitting the Little Russian governorate; its next territorial change was in 1919.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153407416",
+       "title": "Курская губерния — Википедия (oldid 153407416)",
+       "says": "Fifteen uyezds from 1802 (Khotmyzhsk renamed Graivoron 1838); no transfer before 1917 stated.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Starts with the Chernigov governorate (ПСЗ-1 № 20162, 1802-02-27 O.S.); the Kharkov page lists no later transfer with Kursk."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Ryazan",
+   "names": {
+    "en": "Ryazan Governorate",
+    "ja": "リャザン県",
+    "local": "Рязанская губерния"
+   },
+   "wikidata": "Q1540291",
+   "spans": [
+    {
+     "from": "1781-10-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-506",
+      "U1897-507",
+      "U1897-508",
+      "U1897-509",
+      "U1897-510",
+      "U1897-512",
+      "U1897-515",
+      "U1897-511",
+      "U1897-513",
+      "U1897-514",
+      "U1897-516",
+      "U1897-517"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/ryaz.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница ryaz.html",
+       "says": "24.8.1778 namestnichestvo; 16.9.1779 Ranenburg uyezd; 1796 three uyezds abolished, 1802 restored, 1803 twelve uyezds.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/mosk.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница mosk.html",
+       "says": "5.10.1781 (ПСЗ-1 № 15245) Moscow governorate formed, 14 uyezds; 18.5.1782 Vereya uyezd formed; later entries only abolish/restore uyezds inside it.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=155365637",
+       "title": "Рязанская губерния — Википедия (oldid 155365637)",
+       "says": "Twelve uyezds from 1803; Egorevsk uyezd left only in 1923.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Starts with the Moscow namestnichestvo (ПСЗ-1 № 15245, 1781-10-05 O.S.); Elatma uyezd passed to Tambov and Ranenburg was formed on 1779-09-16 O.S."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Tambov",
+   "names": {
+    "en": "Tambov Governorate",
+    "ja": "タンボフ県",
+    "local": "Тамбовская губерния"
+   },
+   "wikidata": "Q1540306",
+   "spans": [
+    {
+     "from": "1783-02-10",
+     "precision": "day",
+     "to": "1797-10-22",
+     "atoms": [
+      "U1897-520",
+      "U1897-521",
+      "U1897-518",
+      "U1897-522",
+      "U1897-525",
+      "U1897-526",
+      "U1897-528",
+      "U1897-527",
+      "U1897-519",
+      "U1897-523",
+      "U1897-524",
+      "U1897-529"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/tamb.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница tamb.html",
+       "says": "30.1.1783 (ПСЗ-1 № 15656) parts moved to Saratov and Voronezh and part of Zadonsk to Tambov; next outer change 11.10.1797.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/penz.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница penz.html",
+       "says": "9.9.1801 (ПСЗ-1 № 20004) Penza governorate restored in its former borders with all 13 uyezds it had before; later entries (1887, 1894) are internal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "ПСЗ-1 № 15656, 1783-01-30 O.S. Ends 1797-10-11 O.S. (ПСЗ-1 № 18199, former Penza governorate divided; its uyezds were joined in 1798). Valid with 1897 lines because the 1801 restoration of Penza returned the pre-1797 line (Den)."
+    },
+    {
+     "from": "1801-09-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-520",
+      "U1897-521",
+      "U1897-518",
+      "U1897-522",
+      "U1897-525",
+      "U1897-526",
+      "U1897-528",
+      "U1897-527",
+      "U1897-519",
+      "U1897-523",
+      "U1897-524",
+      "U1897-529"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/tamb.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница tamb.html",
+       "says": "9.9.1801 (ПСЗ-1 № 20004) Penza governorate restored in its former borders; 1802–1803 internal re-creation of uyezds.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/penz.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница penz.html",
+       "says": "9.9.1801 (ПСЗ-1 № 20004) Penza governorate restored in its former borders with all 13 uyezds it had before; later entries (1887, 1894) are internal.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154727274",
+       "title": "Тамбовская губерния — Википедия (oldid 154727274)",
+       "says": "Former Penza uyezds returned to the restored Penza governorate; no later transfer before 1917 stated.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "ПСЗ-1 № 20004, 1801-09-09 O.S. ru.wikipedia dates the return of the Penza parts to 1803 (ПСЗ-1 № 20774 confirmed the 1801 decree); the legal act is 1801."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Voronezh",
+   "names": {
+    "en": "Voronezh Governorate",
+    "ja": "ヴォロネジ県",
+    "local": "Воронежская губерния"
+   },
+   "wikidata": "Q956083",
+   "spans": [
+    {
+     "from": "1824-01-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-531",
+      "U1897-532",
+      "U1897-533",
+      "U1897-530",
+      "U1897-535",
+      "U1897-536",
+      "U1897-538",
+      "U1897-539",
+      "U1897-540",
+      "U1897-541",
+      "U1897-534",
+      "U1897-537"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/voron.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница voron.html",
+       "says": "9.1.1824 (ПСЗ-1 № 29729) Starobelsk uyezd joined to Sloboda-Ukraine; 1862 and 1865 entries abolish supernumerary towns only.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/harkov.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница harkov.html",
+       "says": "9.1.1824 Starobelsk uyezd from Voronezh to Sloboda-Ukraine; later entries internal.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153683119",
+       "title": "Воронежская губерния — Википедия (oldid 153683119)",
+       "says": "Starobelsk uyezd passed back to Sloboda-Ukraine in 1824; twelve uyezds thereafter.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "ПСЗ-1 № 29729, 1824-01-09 O.S. Don Host, Saratov, Tambov and Kursk pages list no later transfer with Voronezh."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Nizhny",
+   "names": {
+    "en": "Nizhny Novgorod Governorate",
+    "ja": "ニジニ・ノヴゴロド県",
+    "local": "Нижегородская губерния"
+   },
+   "wikidata": "Q536319",
+   "spans": [
+    {
+     "from": "1781-10-09",
+     "precision": "day",
+     "to": "1797-10-22",
+     "atoms": [
+      "U1897-652",
+      "U1897-653",
+      "U1897-654",
+      "U1897-651",
+      "U1897-656",
+      "U1897-649",
+      "U1897-657",
+      "U1897-648",
+      "U1897-647",
+      "U1897-650",
+      "U1897-655"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/nizeg.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница nizeg.html",
+       "says": "5.9.1779 namestnichestvo of 13 uyezds; 1796 three uyezds abolished; next outer change 11.10.1797 (Penza partition).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/kazan.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница kazan.html",
+       "says": "28.9.1781 (ПСЗ-1 № 15241) Kazan namestnichestvo formed; no transfer with Nizhny Novgorod listed.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/penz.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница penz.html",
+       "says": "9.9.1801 (ПСЗ-1 № 20004) Penza governorate restored in its former borders with all 13 uyezds it had before; later entries (1887, 1894) are internal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Starts with the Kazan namestnichestvo (ПСЗ-1 № 15241, 1781-09-28 O.S.), the last neighbour formed. Ends 1797-10-11 O.S. (ПСЗ-1 № 18199)."
+    },
+    {
+     "from": "1801-09-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-652",
+      "U1897-653",
+      "U1897-654",
+      "U1897-651",
+      "U1897-656",
+      "U1897-649",
+      "U1897-657",
+      "U1897-648",
+      "U1897-647",
+      "U1897-650",
+      "U1897-655"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/nizeg.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница nizeg.html",
+       "says": "9.9.1801 Penza restored in its borders before the partition; 1804 Makarev, 1817–1820 Lukoyanov, 1885 Lyskovo — internal.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153493237",
+       "title": "Нижегородская губерния — Википедия (oldid 153493237)",
+       "says": "Eleven uyezds from 1804; no transfer before 1917 stated.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "ПСЗ-1 № 20004, 1801-09-09 O.S."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Penza",
+   "names": {
+    "en": "Penza Governorate",
+    "ja": "ペンザ県",
+    "local": "Пензенская губерния"
+   },
+   "wikidata": "Q1424567",
+   "spans": [
+    {
+     "from": "1780-11-18",
+     "precision": "day",
+     "to": "1796-12-23",
+     "atoms": [
+      "U1897-637",
+      "U1897-638",
+      "U1897-640",
+      "U1897-642",
+      "U1897-643",
+      "U1897-644",
+      "U1897-641",
+      "U1897-646",
+      "U1897-639",
+      "U1897-645"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/penz.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница penz.html",
+       "says": "15.9.1780 namestnichestvo of 13 uyezds; next change 12.12.1796, when part of abolished Saratov was added.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/sarat.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница sarat.html",
+       "says": "7.11.1780 (ПСЗ-1 № 15080) Saratov namestnichestvo formed; 1782–1783 transfers involve Tambov and Astrakhan, not Penza.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/penz.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница penz.html",
+       "says": "9.9.1801 (ПСЗ-1 № 20004) Penza governorate restored in its former borders with all 13 uyezds it had before; later entries (1887, 1894) are internal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Starts with the Saratov namestnichestvo (ПСЗ-1 № 15080, 1780-11-07 O.S.), the last neighbour formed. Ends ПСЗ-1 № 17634, 1796-12-12 O.S. The 1801 restoration with all 13 former uyezds gives the 1780 line, which is the 1897 line."
+    },
+    {
+     "from": "1801-09-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-637",
+      "U1897-638",
+      "U1897-640",
+      "U1897-642",
+      "U1897-643",
+      "U1897-644",
+      "U1897-641",
+      "U1897-646",
+      "U1897-639",
+      "U1897-645"
+     ],
+     "sources": [
+      {
+       "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/penz.html",
+       "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница penz.html",
+       "says": "9.9.1801 (ПСЗ-1 № 20004) Penza governorate restored in its former borders with all 13 uyezds it had before; later entries (1887, 1894) are internal.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=151020910",
+       "title": "Пензенская губерния — Википедия (oldid 151020910)",
+       "says": "Governorate restored 1801; ten uyezds from 1803; no transfer of territory before 1917 stated.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "ПСЗ-1 № 20004, 1801-09-09 O.S.; confirmed 1803-05-24 O.S. (ПСЗ-1 № 20774), when supernumerary towns were restored as uyezd towns."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1781-10-16",
+   "precision": "day",
+   "what": "Moscow namestnichestvo formed from the remnant of the old Moscow governorate (ПСЗ-1 № 15245, 1781-10-05 O.S.)",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/mosk.html",
+     "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница mosk.html",
+     "says": "5.10.1781 (ПСЗ-1 № 15245) Moscow governorate formed, 14 uyezds; 18.5.1782 Vereya uyezd formed; later entries only abolish/restore uyezds inside it.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1782-05-29",
+   "precision": "day",
+   "what": "Vereya uyezd formed in Moscow governorate (ПСЗ-1 № 15398, 1782-05-18 O.S.)",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/mosk.html",
+     "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница mosk.html",
+     "says": "5.10.1781 (ПСЗ-1 № 15245) Moscow governorate formed, 14 uyezds; 18.5.1782 Vereya uyezd formed; later entries only abolish/restore uyezds inside it.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1784-04-06",
+   "precision": "day",
+   "what": "Arkhangelsk namestnichestvo separated from Vologda (ПСЗ-1 № 15968, 1784-03-26 O.S.)",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/volog.html",
+     "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница volog.html",
+     "says": "26.3.1784 Arkhangelsk namestnichestvo formed from the Arkhangelsk oblast of Vologda namestnichestvo.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1796-12-23",
+   "precision": "day",
+   "what": "Saratov governorate abolished and divided between Penza and Astrakhan (ПСЗ-1 № 17634, 1796-12-12 O.S.)",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/sarat.html",
+     "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница sarat.html",
+     "says": "12.12.1796 Saratov governorate abolished and divided between Penza and Astrakhan governorates.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1797-10-22",
+   "precision": "day",
+   "what": "Former Penza governorate divided between Tambov, Nizhny Novgorod, Simbirsk and Saratov (ПСЗ-1 № 18199, 1797-10-11 O.S.; uyezds assigned 1798-04-12 O.S.)",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/penz.html",
+     "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница penz.html",
+     "says": "11.10.1797 Penza divided; 12.4.1798 its uyezds assigned to Nizhny Novgorod, Saratov, Simbirsk and Tambov.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1801-09-21",
+   "precision": "day",
+   "what": "Penza governorate restored in its former borders (ПСЗ-1 № 20004, 1801-09-09 O.S.)",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/penz.html",
+     "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница penz.html",
+     "says": "9.9.1801 (ПСЗ-1 № 20004) Penza governorate restored in its former borders with all 13 uyezds it had before; later entries (1887, 1894) are internal.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1802-03-11",
+   "precision": "day",
+   "what": "Chernigov and Poltava formed from the Little Russian governorate; Vitebsk and Mogilev from Belarus (ПСЗ-1 № 20162, 1802-02-27 O.S.)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=153801087",
+     "title": "Черниговская губерния — Википедия (oldid 153801087)",
+     "says": "Chernigov governorate formed in 1802 by splitting the Little Russian governorate; its next territorial change was in 1919.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1802-03-18",
+   "precision": "day",
+   "what": "Boguchar, Ostrogozhsk and Starobelsk uyezds (Sloboda-Ukraine) and Novokhopersk (Saratov) joined to Voronezh (ПСЗ-1 № 20205, 6/29.03.1802 O.S.)",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/voron.html",
+     "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница voron.html",
+     "says": "6/29.3.1802 (ПСЗ-1 № 20205) Boguchar, Ostrogozhsk, Starobelsk and Novokhopersk uyezds joined to Voronezh governorate.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1824-01-21",
+   "precision": "day",
+   "what": "Starobelsk uyezd returned from Voronezh to Sloboda-Ukraine (ПСЗ-1 № 29729, 1824-01-09 O.S.)",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/voron.html",
+     "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница voron.html",
+     "says": "9.1.1824 Starobelsk uyezd joined to Sloboda-Ukrainian governorate.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1888-12-07",
+   "precision": "day",
+   "what": "Ramenskaya volost of Vetluga uyezd (Kostroma) joined to Kotelnich uyezd (Vyatka) (ПСЗ-3 № 5576, 1888-11-25 O.S.)",
+   "sources": [
+    {
+     "url": "https://web.archive.org/web/2025/https://nlr.ru/res/refer/r_imp/gub/kostr.html",
+     "title": "РНБ, «Справочные материалы об изменениях внутренних и внешних границ губерний Европейской России (1775–1897 гг.)» (по В. Э. Дену, 1902), страница kostr.html",
+     "says": "25.11.1888 Ramenskaya volost of Vetluga uyezd joined to Kotelnich uyezd of Vyatka governorate.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Tver Governorate before the Moscow namestnichestvo",
+   "unit": "RUE:Tver",
+   "atoms": [
+    "U1897-83",
+    "U1897-86",
+    "U1897-87",
+    "U1897-85",
+    "U1897-90",
+    "U1897-93",
+    "U1897-94",
+    "U1897-91",
+    "U1897-89",
+    "U1897-88",
+    "U1897-84",
+    "U1897-92"
+   ],
+   "from": "1780-02-05",
+   "to": "1781-10-16",
+   "why": "Moscow namestnichestvo formed 1781-10-05 O.S. (ПСЗ-1 № 15245) from the remnant of the pre-reform Moscow governorate; Den gives only its internal division, not whether its line with this neighbour was re-drawn, and the decree text was not read.",
+   "checked": [
+    "РНБ / Ден, appendix page mosk.html",
+    "РНБ / Ден, appendix page tver.html",
+    "ru.wikipedia Московская губерния oldid 155084265"
+   ]
+  },
+  {
+   "what": "Vladimir Governorate before the Moscow namestnichestvo",
+   "unit": "RUE:Vladimir",
+   "atoms": [
+    "U1897-126",
+    "U1897-131",
+    "U1897-132",
+    "U1897-127",
+    "U1897-133",
+    "U1897-134",
+    "U1897-135",
+    "U1897-137",
+    "U1897-138",
+    "U1897-128",
+    "U1897-129",
+    "U1897-130",
+    "U1897-136"
+   ],
+   "from": "1780-02-05",
+   "to": "1781-10-16",
+   "why": "Moscow namestnichestvo formed 1781-10-05 O.S. (ПСЗ-1 № 15245) from the remnant of the pre-reform Moscow governorate; Den gives only its internal division, not whether its line with this neighbour was re-drawn, and the decree text was not read.",
+   "checked": [
+    "РНБ / Ден, appendix page mosk.html",
+    "РНБ / Ден, appendix page vlad.html",
+    "ru.wikipedia Московская губерния oldid 155084265"
+   ]
+  },
+  {
+   "what": "Tula Governorate before the Moscow namestnichestvo",
+   "unit": "RUE:Tula",
+   "atoms": [
+    "U1897-439",
+    "U1897-440",
+    "U1897-444",
+    "U1897-445",
+    "U1897-442",
+    "U1897-447",
+    "U1897-448",
+    "U1897-449",
+    "U1897-450",
+    "U1897-443",
+    "U1897-441",
+    "U1897-446"
+   ],
+   "from": "1780-02-05",
+   "to": "1781-10-16",
+   "why": "Moscow namestnichestvo formed 1781-10-05 O.S. (ПСЗ-1 № 15245) from the remnant of the pre-reform Moscow governorate; Den gives only its internal division, not whether its line with this neighbour was re-drawn, and the decree text was not read.",
+   "checked": [
+    "РНБ / Ден, appendix page mosk.html",
+    "РНБ / Ден, appendix page tul.html",
+    "ru.wikipedia Московская губерния oldid 155084265"
+   ]
+  },
+  {
+   "what": "Ryazan Governorate before the Moscow namestnichestvo",
+   "unit": "RUE:Ryazan",
+   "atoms": [
+    "U1897-506",
+    "U1897-507",
+    "U1897-508",
+    "U1897-509",
+    "U1897-510",
+    "U1897-512",
+    "U1897-515",
+    "U1897-511",
+    "U1897-513",
+    "U1897-514",
+    "U1897-516",
+    "U1897-517"
+   ],
+   "from": "1780-02-05",
+   "to": "1781-10-16",
+   "why": "Moscow namestnichestvo formed 1781-10-05 O.S. (ПСЗ-1 № 15245) from the remnant of the pre-reform Moscow governorate; Den gives only its internal division, not whether its line with this neighbour was re-drawn, and the decree text was not read.",
+   "checked": [
+    "РНБ / Ден, appendix page mosk.html",
+    "РНБ / Ден, appendix page ryaz.html",
+    "ru.wikipedia Московская губерния oldid 155084265"
+   ]
+  },
+  {
+   "what": "Moscow Governorate before Vereya uyezd was formed",
+   "unit": "RUE:Moscow",
+   "atoms": [
+    "U1897-426",
+    "U1897-427",
+    "U1897-428",
+    "U1897-429",
+    "U1897-430",
+    "U1897-431",
+    "U1897-434",
+    "U1897-435",
+    "U1897-436",
+    "U1897-437",
+    "U1897-432",
+    "U1897-438",
+    "U1897-433"
+   ],
+   "from": "1780-02-05",
+   "to": "1782-05-29",
+   "why": "Moscow governorate (pre-reform remnant, namestnichestvo from 1781-10-05 O.S.) formed Vereya uyezd on 1782-05-18 O.S. (ПСЗ-1 № 15398); Den does not say from which lands, and Vereya borders Kaluga's Borovsk and Maloyaroslavets uyezds, so the Moscow–Kaluga line before it is not established.",
+   "checked": [
+    "РНБ / Ден, appendix page mosk.html",
+    "РНБ / Ден, appendix page kalug.html",
+    "ru.wikipedia Верейский уезд oldid 149257135"
+   ]
+  },
+  {
+   "what": "Kaluga Governorate before Vereya uyezd was formed",
+   "unit": "RUE:Kaluga",
+   "atoms": [
+    "U1897-415",
+    "U1897-416",
+    "U1897-418",
+    "U1897-419",
+    "U1897-421",
+    "U1897-422",
+    "U1897-423",
+    "U1897-424",
+    "U1897-425",
+    "U1897-417",
+    "U1897-420"
+   ],
+   "from": "1780-02-05",
+   "to": "1782-05-29",
+   "why": "Moscow governorate (pre-reform remnant, namestnichestvo from 1781-10-05 O.S.) formed Vereya uyezd on 1782-05-18 O.S. (ПСЗ-1 № 15398); Den does not say from which lands, and Vereya borders Kaluga's Borovsk and Maloyaroslavets uyezds, so the Moscow–Kaluga line before it is not established.",
+   "checked": [
+    "РНБ / Ден, appendix page mosk.html",
+    "РНБ / Ден, appendix page kalug.html",
+    "ru.wikipedia Верейский уезд oldid 149257135"
+   ]
+  },
+  {
+   "what": "Vologda namestnichestvo with the Arkhangelsk oblast",
+   "unit": "RUE:Vologda",
+   "atoms": [
+    "U1897-111",
+    "U1897-113",
+    "U1897-107",
+    "U1897-112",
+    "U1897-108",
+    "U1897-105",
+    "U1897-106",
+    "U1897-110",
+    "U1897-836",
+    "U1897-837"
+   ],
+   "from": "1780-02-05",
+   "to": "1784-04-06",
+   "why": "Until 1784-03-26 O.S. the namestnichestvo also held the Arkhangelsk oblast (the 1897 Arkhangelsk uyezds, another region's atom group), so these atoms alone do not form the unit.",
+   "checked": [
+    "РНБ / Ден, appendix page volog.html",
+    "РНБ / Ден, appendix page arh.html",
+    "ru.wikipedia Вологодская губерния oldid 146177952"
+   ],
+   "needs": "the Arkhangelsk governorate atoms in the same dossier"
+  },
+  {
+   "what": "Kostroma before the Ramenskaya volost transfer",
+   "unit": "RUE:Kostroma",
+   "atoms": [
+    "U1897-116",
+    "U1897-118",
+    "U1897-121",
+    "U1897-124",
+    "U1897-122",
+    "U1897-125",
+    "U1897-114",
+    "U1897-117",
+    "U1897-115",
+    "U1897-119",
+    "U1897-120",
+    "U1897-123"
+   ],
+   "from": "1780-02-05",
+   "to": "1888-12-07",
+   "why": "Until 1888-11-25 O.S. Ramenskaya volost, which lies inside the 1897 Kotelnich uyezd of Vyatka governorate, belonged to Kostroma's Vetluga uyezd; the Kostroma–Vyatka line then ran through an 1897 uyezd.",
+   "checked": [
+    "РНБ / Ден, appendix page kostr.html",
+    "РНБ / Ден, appendix page vyatsk.html",
+    "ru.wikipedia Ветлужский уезд oldid 147330117",
+    "ru.wikipedia Котельничский уезд oldid 154516703"
+   ],
+   "needs": "Ramenskaya volost as a separate atom (1897 Kotelnich uyezd split along the 1888 line)"
+  },
+  {
+   "what": "Smolensk Governorate before Chernigov governorate was formed",
+   "unit": "RUE:Smolensk",
+   "atoms": [
+    "U1897-403",
+    "U1897-404",
+    "U1897-407",
+    "U1897-409",
+    "U1897-405",
+    "U1897-410",
+    "U1897-413",
+    "U1897-414",
+    "U1897-408",
+    "U1897-406",
+    "U1897-411",
+    "U1897-412"
+   ],
+   "from": "1780-02-05",
+   "to": "1802-03-11",
+   "why": "The lines with the Novgorod-Seversky namestnichestvo (1782), the Little Russian governorate (1796–1802) and the Polotsk/Mogilev/Belarus units are outside Den's change list, so the line before the 1802 units was not established.",
+   "checked": [
+    "РНБ / Ден, appendix page smol.html",
+    "РНБ / Ден, appendix page harkov.html",
+    "ru.wikipedia Малороссийская губерния oldid 152612540",
+    "ru.wikipedia Черниговская губерния oldid 153801087"
+   ]
+  },
+  {
+   "what": "Oryol Governorate before Chernigov governorate was formed",
+   "unit": "RUE:Orel",
+   "atoms": [
+    "U1897-452",
+    "U1897-454",
+    "U1897-455",
+    "U1897-456",
+    "U1897-459",
+    "U1897-460",
+    "U1897-462",
+    "U1897-458",
+    "U1897-457",
+    "U1897-451",
+    "U1897-453",
+    "U1897-461"
+   ],
+   "from": "1780-02-05",
+   "to": "1802-03-11",
+   "why": "The lines with the Novgorod-Seversky namestnichestvo (1782), the Little Russian governorate (1796–1802) are outside Den's change list, so the line before the 1802 units was not established.",
+   "checked": [
+    "РНБ / Ден, appendix page orlov.html",
+    "РНБ / Ден, appendix page harkov.html",
+    "ru.wikipedia Малороссийская губерния oldid 152612540",
+    "ru.wikipedia Черниговская губерния oldid 153801087"
+   ]
+  },
+  {
+   "what": "Kursk Governorate before Chernigov governorate was formed",
+   "unit": "RUE:Kursk",
+   "atoms": [
+    "U1897-464",
+    "U1897-465",
+    "U1897-467",
+    "U1897-466",
+    "U1897-468",
+    "U1897-469",
+    "U1897-472",
+    "U1897-475",
+    "U1897-476",
+    "U1897-477",
+    "U1897-470",
+    "U1897-471",
+    "U1897-473",
+    "U1897-474",
+    "U1897-463"
+   ],
+   "from": "1780-02-05",
+   "to": "1802-03-11",
+   "why": "Before 1797-08-29 O.S. (ПСЗ-1 № 18116) the line with Sloboda-Ukraine was moved by souls and villages (1779, and 1797-05-01 O.S.), not along 1897 uyezd lines. The lines with the Novgorod-Seversky namestnichestvo (1782), the Little Russian governorate (1796–1802) are outside Den's change list, so the line before the 1802 units was not established.",
+   "checked": [
+    "РНБ / Ден, appendix page kursk.html",
+    "РНБ / Ден, appendix page harkov.html",
+    "ru.wikipedia Малороссийская губерния oldid 152612540",
+    "ru.wikipedia Черниговская губерния oldid 153801087"
+   ]
+  },
+  {
+   "what": "Tambov before the 1783 transfers",
+   "unit": "RUE:Tambov",
+   "atoms": [
+    "U1897-520",
+    "U1897-521",
+    "U1897-518",
+    "U1897-522",
+    "U1897-525",
+    "U1897-526",
+    "U1897-528",
+    "U1897-527",
+    "U1897-519",
+    "U1897-523",
+    "U1897-524",
+    "U1897-529"
+   ],
+   "from": "1780-02-05",
+   "to": "1783-02-10",
+   "why": "In 1782–1783 (ПСЗ-1 № 15343, 15485, 15656) parts of Borisoglebsk, Gvazda and Kirsanov circuits went to Saratov and Voronezh and part of Zadonsk came to Tambov: partial transfers through 1897 uyezds.",
+   "checked": [
+    "РНБ / Ден, appendix page tamb.html",
+    "РНБ / Ден, appendix page sarat.html",
+    "РНБ / Ден, appendix page voron.html"
+   ]
+  },
+  {
+   "what": "Tambov holding former Penza uyezds",
+   "unit": "RUE:Tambov",
+   "atoms": [
+    "U1897-520",
+    "U1897-521",
+    "U1897-518",
+    "U1897-522",
+    "U1897-525",
+    "U1897-526",
+    "U1897-528",
+    "U1897-527",
+    "U1897-519",
+    "U1897-523",
+    "U1897-524",
+    "U1897-529"
+   ],
+   "from": "1797-10-22",
+   "to": "1801-09-21",
+   "why": "Tambov received Verkhnii Lomov, Kerensk, Nizhnii Lomov and Chembar uyezds of the partitioned Penza governorate and re-cut them with its own uyezds (1798); those 1780 uyezd lines are not 1897 uyezd lines, so the outline cannot be built.",
+   "checked": [
+    "РНБ / Ден, appendix page tamb.html",
+    "РНБ / Ден, appendix page penz.html"
+   ],
+   "needs": "1780-era Penza uyezd lines"
+  },
+  {
+   "what": "Nizhny Novgorod before the Kazan namestnichestvo",
+   "unit": "RUE:Nizhny",
+   "atoms": [
+    "U1897-652",
+    "U1897-653",
+    "U1897-654",
+    "U1897-651",
+    "U1897-656",
+    "U1897-649",
+    "U1897-657",
+    "U1897-648",
+    "U1897-647",
+    "U1897-650",
+    "U1897-655"
+   ],
+   "from": "1780-02-05",
+   "to": "1781-10-09",
+   "why": "The Kazan namestnichestvo was formed 1781-09-28 O.S. from the pre-reform Kazan governorate; Den gives only its uyezd list, so whether the Nizhny–Kazan line was re-drawn is not established.",
+   "checked": [
+    "РНБ / Ден, appendix page nizeg.html",
+    "РНБ / Ден, appendix page kazan.html"
+   ]
+  },
+  {
+   "what": "Nizhny Novgorod holding former Penza uyezds",
+   "unit": "RUE:Nizhny",
+   "atoms": [
+    "U1897-652",
+    "U1897-653",
+    "U1897-654",
+    "U1897-651",
+    "U1897-656",
+    "U1897-649",
+    "U1897-657",
+    "U1897-648",
+    "U1897-647",
+    "U1897-650",
+    "U1897-655"
+   ],
+   "from": "1797-10-22",
+   "to": "1801-09-21",
+   "why": "Krasnoslobodsk, Narovchat and Troitsk uyezds of partitioned Penza joined Nizhny Novgorod and were merged (1798); the Troitsk/Narovchat lines with Penza's other uyezds are not 1897 lines.",
+   "checked": [
+    "РНБ / Ден, appendix page nizeg.html",
+    "РНБ / Ден, appendix page penz.html"
+   ],
+   "needs": "1780-era Penza uyezd lines"
+  },
+  {
+   "what": "Penza before the Saratov namestnichestvo",
+   "unit": "RUE:Penza",
+   "atoms": [
+    "U1897-637",
+    "U1897-638",
+    "U1897-640",
+    "U1897-642",
+    "U1897-643",
+    "U1897-644",
+    "U1897-641",
+    "U1897-646",
+    "U1897-639",
+    "U1897-645"
+   ],
+   "from": "1780-02-05",
+   "to": "1780-11-18",
+   "why": "Penza namestnichestvo opened 1780-09-15 O.S. (ПСЗ-1 № 15061); its line with Saratov was set when the Saratov namestnichestvo opened 1780-11-07 O.S.; before 1780-09 the area belonged to pre-reform governorates.",
+   "checked": [
+    "РНБ / Ден, appendix page penz.html",
+    "РНБ / Ден, appendix page sarat.html"
+   ]
+  },
+  {
+   "what": "Penza (Saratov) governorate 1796–1801",
+   "unit": "RUE:Penza",
+   "atoms": [
+    "U1897-637",
+    "U1897-638",
+    "U1897-640",
+    "U1897-642",
+    "U1897-643",
+    "U1897-644",
+    "U1897-641",
+    "U1897-646",
+    "U1897-639",
+    "U1897-645"
+   ],
+   "from": "1796-12-23",
+   "to": "1801-09-21",
+   "why": "From 1796-12-12 O.S. Penza held part of abolished Saratov governorate (renamed Saratov 1797), and from 1797-10-11 O.S. it was partitioned between four governorates; neither outline is a union of 1897 Penza uyezds.",
+   "checked": [
+    "РНБ / Ден, appendix page penz.html",
+    "РНБ / Ден, appendix page sarat.html",
+    "РНБ / Ден, appendix page simb.html"
+   ]
+  },
+  {
+   "what": "Voronezh before 1824",
+   "unit": "RUE:Voronezh",
+   "atoms": [
+    "U1897-531",
+    "U1897-532",
+    "U1897-533",
+    "U1897-530",
+    "U1897-535",
+    "U1897-536",
+    "U1897-538",
+    "U1897-539",
+    "U1897-540",
+    "U1897-541",
+    "U1897-534",
+    "U1897-537"
+   ],
+   "from": "1780-02-05",
+   "to": "1824-01-21",
+   "why": "Before 1796 and in 1796–1802 Voronezh had other lines (1797 parts of Bakhmut, Donetsk, Slavyansk; Boguchar and Ostrogozhsk in Sloboda-Ukraine); 1802–1824 it also held Starobelsk uyezd, which is in the Kharkov governorate atom group, so these atoms alone do not form it.",
+   "checked": [
+    "РНБ / Ден, appendix page voron.html",
+    "РНБ / Ден, appendix page harkov.html",
+    "РНБ / Ден, appendix page ekat.html",
+    "ru.wikipedia Воронежская губерния oldid 153683119",
+    "ru.wikipedia Старобельский уезд oldid 153208688"
+   ],
+   "needs": "Starobelsk uyezd atom in the same dossier (1802–1824)"
+  }
+ ]
+}

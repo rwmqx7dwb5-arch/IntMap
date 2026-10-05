@@ -1,0 +1,1974 @@
+{
+  "country": "IDN",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1950-08-17",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Republic of Indonesia (unitary state) from 1950-08-17. Western New Guinea was under Dutch administration until 1962-10-01 and UNTEA until 1963-05-01; Portuguese/East Timor (TLS atoms, not in this dossier) was administered as Indonesian province Timor Timur 1976-07-17 to 1999-10-19.",
+  "units": [
+    {
+      "id": "IDN:SumateraUtara@1950",
+      "names": {
+        "en": "North Sumatra",
+        "ja": "北スマトラ州",
+        "local": "Sumatera Utara"
+      },
+      "wikidata": "Q2140",
+      "spans": [
+        {
+          "from": "1950-08-17",
+          "precision": "day",
+          "to": "1956-12-07",
+          "atoms": [
+            "IDN-381",
+            "IDN-1136"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/pp/pp-no-21-tahun-1950",
+              "title": "PP No. 21 Tahun 1950: Pembentukan Daerah Propinsi",
+              "says": "Forms the ten provinces of the unitary Republic, in force on the day the unitary state was formed (17 Aug 1950).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://id.wikipedia.org/w/index.php?oldid=30007516",
+              "title": "Provinsi di Indonesia (id.wikipedia, revision 30007516), section Sejarah",
+              "says": "17 Aug 1950: North Sumatra among the ten provinces; Aceh was split from it on 7 Dec 1956.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Includes Aceh residency until UU 24/1956."
+        },
+        {
+          "from": "1956-12-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-381"
+          ],
+          "sources": [
+            {
+              "url": "https://id.wikisource.org/wiki/Undang-Undang_Republik_Indonesia_Nomor_24_Tahun_1956",
+              "title": "UU No. 24 Tahun 1956: Pembentukan Daerah Otonom Propinsi Atjeh (Wikisource text)",
+              "says": "Separates seven Aceh kabupaten and Kutaraja from North Sumatra as Aceh province; promulgated and in force 7 Dec 1956.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:Aceh@1956",
+      "names": {
+        "en": "Aceh",
+        "ja": "アチェ州",
+        "local": "Aceh"
+      },
+      "wikidata": "Q1823",
+      "spans": [
+        {
+          "from": "1956-12-07",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1136"
+          ],
+          "sources": [
+            {
+              "url": "https://id.wikisource.org/wiki/Undang-Undang_Republik_Indonesia_Nomor_24_Tahun_1956",
+              "title": "UU No. 24 Tahun 1956: Pembentukan Daerah Otonom Propinsi Atjeh (Wikisource text)",
+              "says": "Separates seven Aceh kabupaten and Kutaraja from North Sumatra as Aceh province; promulgated and in force 7 Dec 1956.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://id.wikipedia.org/w/index.php?oldid=30007516",
+              "title": "Provinsi di Indonesia (id.wikipedia, revision 30007516), section Sejarah",
+              "says": "7 Dec 1956: autonomous region Aceh split from North Sumatra.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:SumateraTengah@1950",
+      "names": {
+        "en": "Central Sumatra",
+        "ja": "中部スマトラ州",
+        "local": "Sumatera Tengah"
+      },
+      "spans": [
+        {
+          "from": "1950-08-17",
+          "precision": "day",
+          "to": "1957-08-10",
+          "atoms": [
+            "IDN-539",
+            "IDN-1930",
+            "IDN-492",
+            "IDN-1796"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/pp/pp-no-21-tahun-1950",
+              "title": "PP No. 21 Tahun 1950: Pembentukan Daerah Propinsi",
+              "says": "Forms the ten provinces of the unitary Republic, in force on the day the unitary state was formed (17 Aug 1950).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pasal.id/peraturan/uudrt/uudrt-no-19-tahun-1957",
+              "title": "UU Darurat No. 19 Tahun 1957: Pembentukan Daerah Swatantra Tingkat I Sumatera Barat, Jambi dan Riau",
+              "says": "Splits Central Sumatra into West Sumatra (with Pesisir Selatan/Kerinci), Jambi and Riau; in force on promulgation 10 Aug 1957.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:SumateraBarat@1957",
+      "names": {
+        "en": "West Sumatra",
+        "ja": "西スマトラ州",
+        "local": "Sumatera Barat"
+      },
+      "wikidata": "Q2772",
+      "spans": [
+        {
+          "from": "1958-08-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-539"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-61-tahun-1958",
+              "title": "UU No. 61 Tahun 1958: Penetapan UU Darurat 19/1957 sebagai undang-undang",
+              "says": "Moves the Kerinci Hulu, Tengah and Hilir kecamatan from West Sumatra to Jambi; enacted 25 Jul, promulgated 31 Jul 1958.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Kerinci transferred to Jambi by UU 61/1958 (enacted 25 Jul, promulgated 31 Jul 1958); the span starts on the first day both dates are past. 10 Aug 1957 to 31 Jul 1958 is withheld (unresolved)."
+        }
+      ]
+    },
+    {
+      "id": "IDN:Jambi@1957",
+      "names": {
+        "en": "Jambi",
+        "ja": "ジャンビ州",
+        "local": "Jambi"
+      },
+      "wikidata": "Q2051",
+      "spans": [
+        {
+          "from": "1958-08-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1930"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-61-tahun-1958",
+              "title": "UU No. 61 Tahun 1958: Penetapan UU Darurat 19/1957 sebagai undang-undang",
+              "says": "Moves the Kerinci Hulu, Tengah and Hilir kecamatan from West Sumatra to Jambi; enacted 25 Jul, promulgated 31 Jul 1958.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "See West Sumatra: Kerinci joined Jambi under UU 61/1958."
+        }
+      ]
+    },
+    {
+      "id": "IDN:Riau@1957",
+      "names": {
+        "en": "Riau",
+        "ja": "リアウ州",
+        "local": "Riau"
+      },
+      "wikidata": "Q2175",
+      "spans": [
+        {
+          "from": "1957-08-10",
+          "precision": "day",
+          "to": "2002-10-25",
+          "atoms": [
+            "IDN-492",
+            "IDN-1796"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uudrt/uudrt-no-19-tahun-1957",
+              "title": "UU Darurat No. 19 Tahun 1957: Pembentukan Daerah Swatantra Tingkat I Sumatera Barat, Jambi dan Riau",
+              "says": "Splits Central Sumatra into West Sumatra (with Pesisir Selatan/Kerinci), Jambi and Riau; in force on promulgation 10 Aug 1957.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Riau's 1957 kabupaten: Bengkalis, Kampar, Inderagiri, Kepulauan Riau."
+        },
+        {
+          "from": "2002-10-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-492"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-25-tahun-2002",
+              "title": "UU No. 25 Tahun 2002: Pembentukan Provinsi Kepulauan Riau",
+              "says": "Forms Riau Islands province from Riau; in force 25 Oct 2002.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:KepulauanRiau@2002",
+      "names": {
+        "en": "Riau Islands",
+        "ja": "リアウ諸島州",
+        "local": "Kepulauan Riau"
+      },
+      "wikidata": "Q2223",
+      "spans": [
+        {
+          "from": "2002-10-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1796"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-25-tahun-2002",
+              "title": "UU No. 25 Tahun 2002: Pembentukan Provinsi Kepulauan Riau",
+              "says": "Forms Riau Islands province from Riau; in force 25 Oct 2002.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uid.html",
+              "title": "Statoids: Provinces of Indonesia, change history",
+              "says": "Kepulauan Riau split from Riau; consists of Karimun, Kepulauan Riau, Lingga, Natuna, Batam and Tanjung Pinang.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Statoids gives 2002-09-24 (DPR approval); the law was promulgated and took effect 25 Oct 2002."
+        }
+      ]
+    },
+    {
+      "id": "IDN:SumateraSelatan@1950",
+      "names": {
+        "en": "South Sumatra",
+        "ja": "南スマトラ州",
+        "local": "Sumatera Selatan"
+      },
+      "wikidata": "Q2271",
+      "spans": [
+        {
+          "from": "1950-08-17",
+          "precision": "day",
+          "to": "1964-01-01",
+          "atoms": [
+            "IDN-1230",
+            "IDN-1229",
+            "IDN-1225",
+            "IDN-1231"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/pp/pp-no-21-tahun-1950",
+              "title": "PP No. 21 Tahun 1950: Pembentukan Daerah Propinsi",
+              "says": "Forms the ten provinces of the unitary Republic, in force on the day the unitary state was formed (17 Aug 1950).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://id.wikipedia.org/w/index.php?oldid=30007516",
+              "title": "Provinsi di Indonesia (id.wikipedia, revision 30007516), section Sejarah",
+              "says": "South Sumatra (1948) comprised the residencies of Bengkulu, Palembang, Lampung and Bangka-Belitung.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "1964-01-01",
+          "precision": "day",
+          "to": "1967-09-12",
+          "atoms": [
+            "IDN-1230",
+            "IDN-1225",
+            "IDN-1231"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-14-tahun-1964",
+              "title": "UU No. 14 Tahun 1964: Pembentukan Daerah Tingkat I Lampung",
+              "says": "Enacts Perpu 3/1964 forming Lampung from South Sumatra; retroactive to 1 January 1964.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Lampung split retroactively from 1 Jan 1964 (Perpu 3/1964 of 13 Feb 1964, enacted by UU 14/1964)."
+        },
+        {
+          "from": "1967-09-12",
+          "precision": "day",
+          "to": "2000-12-04",
+          "atoms": [
+            "IDN-1230",
+            "IDN-1231"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-9-tahun-1967",
+              "title": "UU No. 9 Tahun 1967: Pembentukan Propinsi Bengkulu",
+              "says": "Forms Bengkulu province from South Sumatra; enacted and promulgated 12 Sep 1967.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2000-12-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1230"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-27-tahun-2000",
+              "title": "UU No. 27 Tahun 2000: Pembentukan Propinsi Kepulauan Bangka Belitung",
+              "says": "Forms Bangka Belitung Islands province from South Sumatra; in force 4 Dec 2000.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:Lampung@1964",
+      "names": {
+        "en": "Lampung",
+        "ja": "ランプン州",
+        "local": "Lampung"
+      },
+      "wikidata": "Q2110",
+      "spans": [
+        {
+          "from": "1964-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1229"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-14-tahun-1964",
+              "title": "UU No. 14 Tahun 1964: Pembentukan Daerah Tingkat I Lampung",
+              "says": "Enacts Perpu 3/1964 forming Lampung from South Sumatra; retroactive to 1 January 1964.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Legal effect retroactive to 1 Jan 1964; Perpu 3/1964 dated 13 Feb 1964; Lampung's anniversary is kept on 18 Mar 1964."
+        }
+      ]
+    },
+    {
+      "id": "IDN:Bengkulu@1967",
+      "names": {
+        "en": "Bengkulu",
+        "ja": "ブンクル州",
+        "local": "Bengkulu"
+      },
+      "wikidata": "Q1890",
+      "spans": [
+        {
+          "from": "1967-09-12",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1225"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-9-tahun-1967",
+              "title": "UU No. 9 Tahun 1967: Pembentukan Propinsi Bengkulu",
+              "says": "Forms Bengkulu province from South Sumatra; enacted and promulgated 12 Sep 1967.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Date of enactment and promulgation; no separate commencement found in the text."
+        }
+      ]
+    },
+    {
+      "id": "IDN:BangkaBelitung@2000",
+      "names": {
+        "en": "Bangka Belitung Islands",
+        "ja": "バンカ・ブリトゥン州",
+        "local": "Kepulauan Bangka Belitung"
+      },
+      "wikidata": "Q1866",
+      "spans": [
+        {
+          "from": "2000-12-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1231"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-27-tahun-2000",
+              "title": "UU No. 27 Tahun 2000: Pembentukan Propinsi Kepulauan Bangka Belitung",
+              "says": "Forms Bangka Belitung Islands province from South Sumatra; in force 4 Dec 2000.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:JawaBarat@1950",
+      "names": {
+        "en": "West Java",
+        "ja": "西ジャワ州",
+        "local": "Jawa Barat"
+      },
+      "wikidata": "Q3724",
+      "spans": [
+        {
+          "from": "1950-08-17",
+          "precision": "day",
+          "to": "1957-01-18",
+          "atoms": [
+            "IDN-1223",
+            "IDN-1226",
+            "IDN-1227"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/pp/pp-no-21-tahun-1950",
+              "title": "PP No. 21 Tahun 1950: Pembentukan Daerah Propinsi",
+              "says": "Forms the ten provinces of the unitary Republic, in force on the day the unitary state was formed (17 Aug 1950).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://id.wikipedia.org/w/index.php?oldid=30007516",
+              "title": "Provinsi di Indonesia (id.wikipedia, revision 30007516), section Sejarah",
+              "says": "Kotapraja Jakarta Raya became a level-I region (province equivalent) on 18 Jan 1957.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Includes Banten residency and Jakarta until 1957."
+        },
+        {
+          "from": "1974-12-28",
+          "precision": "day",
+          "to": "2000-10-17",
+          "atoms": [
+            "IDN-1223",
+            "IDN-1226"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/pp/pp-no-45-tahun-1974",
+              "title": "PP No. 45 Tahun 1974: Perubahan Batas Wilayah Daerah Khusus Ibukota Jakarta",
+              "says": "Changes the boundary between DKI Jakarta and West Java's Tangerang and Bekasi kabupaten; in force 28 Dec 1974.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2000-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1223"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-23-tahun-2000",
+              "title": "UU No. 23 Tahun 2000: Pembentukan Propinsi Banten",
+              "says": "Forms Banten province from West Java; in force 17 Oct 2000.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:Jakarta@1957",
+      "names": {
+        "en": "Jakarta",
+        "ja": "ジャカルタ首都特別州",
+        "local": "Daerah Khusus Ibukota Jakarta"
+      },
+      "wikidata": "Q3630",
+      "spans": [
+        {
+          "from": "1974-12-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1227"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/pp/pp-no-45-tahun-1974",
+              "title": "PP No. 45 Tahun 1974: Perubahan Batas Wilayah Daerah Khusus Ibukota Jakarta",
+              "says": "Changes the boundary between DKI Jakarta and West Java's Tangerang and Bekasi kabupaten; in force 28 Dec 1974.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "DKI Jakarta's outer boundary as fixed by PP 45/1974; no later change found."
+        }
+      ]
+    },
+    {
+      "id": "IDN:Banten@2000",
+      "names": {
+        "en": "Banten",
+        "ja": "バンテン州",
+        "local": "Banten"
+      },
+      "wikidata": "Q3540",
+      "spans": [
+        {
+          "from": "2000-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1226"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-23-tahun-2000",
+              "title": "UU No. 23 Tahun 2000: Pembentukan Propinsi Banten",
+              "says": "Forms Banten province from West Java; in force 17 Oct 2000.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:JawaTengah@1950",
+      "names": {
+        "en": "Central Java",
+        "ja": "中部ジャワ州",
+        "local": "Jawa Tengah"
+      },
+      "wikidata": "Q3557",
+      "spans": [
+        {
+          "from": "1950-08-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1224"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/pp/pp-no-21-tahun-1950",
+              "title": "PP No. 21 Tahun 1950: Pembentukan Daerah Propinsi",
+              "says": "Forms the ten provinces of the unitary Republic, in force on the day the unitary state was formed (17 Aug 1950).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uid.html",
+              "title": "Statoids: Provinces of Indonesia, change history",
+              "says": "Jawa Tengah: one of the ten 1950 provinces; no later split or transfer recorded.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:Yogyakarta@1950",
+      "names": {
+        "en": "Special Region of Yogyakarta",
+        "ja": "ジョグジャカルタ特別州",
+        "local": "Daerah Istimewa Yogyakarta"
+      },
+      "wikidata": "Q3741",
+      "spans": [
+        {
+          "from": "1950-08-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-540"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-3-tahun-1950",
+              "title": "UU No. 3 Tahun 1950: Pembentukan Daerah Istimewa Jogjakarta",
+              "says": "Forms the Special Region of Yogyakarta at province level; in force on promulgation (6 Jul 1950).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://id.wikipedia.org/w/index.php?oldid=30007516",
+              "title": "Provinsi di Indonesia (id.wikipedia, revision 30007516), section Sejarah",
+              "says": "On 17 Aug 1950 the Special Region of Yogyakarta was re-formed as a province with special status.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:JawaTimur@1950",
+      "names": {
+        "en": "East Java",
+        "ja": "東ジャワ州",
+        "local": "Jawa Timur"
+      },
+      "wikidata": "Q3586",
+      "spans": [
+        {
+          "from": "1950-08-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1233"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/pp/pp-no-21-tahun-1950",
+              "title": "PP No. 21 Tahun 1950: Pembentukan Daerah Propinsi",
+              "says": "Forms the ten provinces of the unitary Republic, in force on the day the unitary state was formed (17 Aug 1950).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uid.html",
+              "title": "Statoids: Provinces of Indonesia, change history",
+              "says": "Jawa Timur: one of the ten 1950 provinces; no later split or transfer recorded.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:SundaKecil@1950",
+      "names": {
+        "en": "Lesser Sunda Islands (Nusa Tenggara)",
+        "ja": "小スンダ州（ヌサ・トゥンガラ州）",
+        "local": "Sunda Kecil / Nusa Tenggara"
+      },
+      "spans": [
+        {
+          "from": "1950-08-17",
+          "precision": "day",
+          "to": "1958-08-14",
+          "atoms": [
+            "IDN-1232",
+            "IDN-555",
+            "IDN-1235"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/pp/pp-no-21-tahun-1950",
+              "title": "PP No. 21 Tahun 1950: Pembentukan Daerah Propinsi",
+              "says": "Forms the ten provinces of the unitary Republic, in force on the day the unitary state was formed (17 Aug 1950).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-64-tahun-1958",
+              "title": "UU No. 64 Tahun 1958: Pembentukan Daerah-daerah Tingkat I Bali, Nusa Tenggara Barat dan Nusa Tenggara Timur",
+              "says": "Divides Nusa Tenggara into Bali, West and East Nusa Tenggara; promulgated and in force 14 Aug 1958.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Renamed Nusa Tenggara in 1954 (UU Darurat 9/1954) without territorial change."
+        }
+      ]
+    },
+    {
+      "id": "IDN:Bali@1958",
+      "names": {
+        "en": "Bali",
+        "ja": "バリ州",
+        "local": "Bali"
+      },
+      "spans": [
+        {
+          "from": "1958-08-14",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1232"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-64-tahun-1958",
+              "title": "UU No. 64 Tahun 1958: Pembentukan Daerah-daerah Tingkat I Bali, Nusa Tenggara Barat dan Nusa Tenggara Timur",
+              "says": "Divides Nusa Tenggara into Bali, West and East Nusa Tenggara; promulgated and in force 14 Aug 1958.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:NusaTenggaraBarat@1958",
+      "names": {
+        "en": "West Nusa Tenggara",
+        "ja": "西ヌサ・トゥンガラ州",
+        "local": "Nusa Tenggara Barat"
+      },
+      "wikidata": "Q5062",
+      "spans": [
+        {
+          "from": "1958-08-14",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-555"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-64-tahun-1958",
+              "title": "UU No. 64 Tahun 1958: Pembentukan Daerah-daerah Tingkat I Bali, Nusa Tenggara Barat dan Nusa Tenggara Timur",
+              "says": "Divides Nusa Tenggara into Bali, West and East Nusa Tenggara; promulgated and in force 14 Aug 1958.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:NusaTenggaraTimur@1958",
+      "names": {
+        "en": "East Nusa Tenggara",
+        "ja": "東ヌサ・トゥンガラ州",
+        "local": "Nusa Tenggara Timur"
+      },
+      "wikidata": "Q5061",
+      "spans": [
+        {
+          "from": "1958-08-14",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1235"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-64-tahun-1958",
+              "title": "UU No. 64 Tahun 1958: Pembentukan Daerah-daerah Tingkat I Bali, Nusa Tenggara Barat dan Nusa Tenggara Timur",
+              "says": "Divides Nusa Tenggara into Bali, West and East Nusa Tenggara; promulgated and in force 14 Aug 1958.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:Kalimantan@1950",
+      "names": {
+        "en": "Kalimantan (Borneo)",
+        "ja": "カリマンタン州",
+        "local": "Kalimantan"
+      },
+      "spans": [
+        {
+          "from": "1950-08-17",
+          "precision": "day",
+          "to": "1957-01-01",
+          "atoms": [
+            "IDN-1228",
+            "IDN-1234",
+            "IDN-1931",
+            "IDN-1185"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/pp/pp-no-21-tahun-1950",
+              "title": "PP No. 21 Tahun 1950: Pembentukan Daerah Propinsi",
+              "says": "Forms the ten provinces of the unitary Republic, in force on the day the unitary state was formed (17 Aug 1950).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://kalbar.bpk.go.id/pemerintah-daerah-provinsi-kalimantan-barat-1/",
+              "title": "BPK Perwakilan Kalimantan Barat: Pemerintah Daerah Provinsi Kalimantan Barat",
+              "says": "UU 25/1956 forming West, South and East Kalimantan took effect from 1 January 1957.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:KalimantanBarat@1957",
+      "names": {
+        "en": "West Kalimantan",
+        "ja": "西カリマンタン州",
+        "local": "Kalimantan Barat"
+      },
+      "wikidata": "Q3916",
+      "spans": [
+        {
+          "from": "1957-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1228"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-25-tahun-1956",
+              "title": "UU No. 25 Tahun 1956: Pembentukan Daerah Otonom Propinsi Kalimantan Barat, Kalimantan Selatan dan Kalimantan Timur",
+              "says": "Divides Kalimantan province into West, South and East Kalimantan; in force on a date set by the Interior Minister.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://kalbar.bpk.go.id/pemerintah-daerah-provinsi-kalimantan-barat-1/",
+              "title": "BPK Perwakilan Kalimantan Barat: Pemerintah Daerah Provinsi Kalimantan Barat",
+              "says": "UU 25/1956 forming West, South and East Kalimantan took effect from 1 January 1957.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "UU 25/1956 promulgated 7 Dec 1956; commencement fixed at 1 Jan 1957."
+        }
+      ]
+    },
+    {
+      "id": "IDN:KalimantanSelatan@1957",
+      "names": {
+        "en": "South Kalimantan",
+        "ja": "南カリマンタン州",
+        "local": "Kalimantan Selatan"
+      },
+      "wikidata": "Q3906",
+      "spans": [
+        {
+          "from": "1957-01-01",
+          "precision": "day",
+          "to": "1957-05-23",
+          "atoms": [
+            "IDN-1234",
+            "IDN-1931"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-25-tahun-1956",
+              "title": "UU No. 25 Tahun 1956: Pembentukan Daerah Otonom Propinsi Kalimantan Barat, Kalimantan Selatan dan Kalimantan Timur",
+              "says": "Divides Kalimantan province into West, South and East Kalimantan; in force on a date set by the Interior Minister.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://kalbar.bpk.go.id/pemerintah-daerah-provinsi-kalimantan-barat-1/",
+              "title": "BPK Perwakilan Kalimantan Barat: Pemerintah Daerah Provinsi Kalimantan Barat",
+              "says": "UU 25/1956 forming West, South and East Kalimantan took effect from 1 January 1957.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Included the Dayak kabupaten Barito, Kapuas and Kotawaringin until Central Kalimantan was formed."
+        },
+        {
+          "from": "1957-05-23",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1234"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uudrt/uudrt-no-10-tahun-1957",
+              "title": "UU Darurat No. 10 Tahun 1957: Pembentukan Daerah Swatantra Tingkat I Kalimantan Tengah",
+              "says": "Forms Central Kalimantan from South Kalimantan's Dayak kabupaten; promulgated and in force 23 May 1957.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:KalimantanTimur@1957",
+      "names": {
+        "en": "East Kalimantan",
+        "ja": "東カリマンタン州",
+        "local": "Kalimantan Timur"
+      },
+      "wikidata": "Q3899",
+      "spans": [
+        {
+          "from": "1957-01-01",
+          "precision": "day",
+          "to": "2012-11-17",
+          "atoms": [
+            "IDN-1185"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-25-tahun-1956",
+              "title": "UU No. 25 Tahun 1956: Pembentukan Daerah Otonom Propinsi Kalimantan Barat, Kalimantan Selatan dan Kalimantan Timur",
+              "says": "Divides Kalimantan province into West, South and East Kalimantan; in force on a date set by the Interior Minister.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://kalbar.bpk.go.id/pemerintah-daerah-provinsi-kalimantan-barat-1/",
+              "title": "BPK Perwakilan Kalimantan Barat: Pemerintah Daerah Provinsi Kalimantan Barat",
+              "says": "UU 25/1956 forming West, South and East Kalimantan took effect from 1 January 1957.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-20-tahun-2012",
+              "title": "UU No. 20 Tahun 2012: Pembentukan Provinsi Kalimantan Utara",
+              "says": "Forms North Kalimantan province from East Kalimantan; promulgated and in force 17 Nov 2012.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:KalimantanTengah@1957",
+      "names": {
+        "en": "Central Kalimantan",
+        "ja": "中部カリマンタン州",
+        "local": "Kalimantan Tengah"
+      },
+      "wikidata": "Q3891",
+      "spans": [
+        {
+          "from": "1957-05-23",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1931"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uudrt/uudrt-no-10-tahun-1957",
+              "title": "UU Darurat No. 10 Tahun 1957: Pembentukan Daerah Swatantra Tingkat I Kalimantan Tengah",
+              "says": "Forms Central Kalimantan from South Kalimantan's Dayak kabupaten; promulgated and in force 23 May 1957.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:Sulawesi@1950",
+      "names": {
+        "en": "Sulawesi (Celebes)",
+        "ja": "スラウェシ州",
+        "local": "Sulawesi"
+      },
+      "spans": [
+        {
+          "from": "1950-08-17",
+          "precision": "day",
+          "to": "1961-01-01",
+          "atoms": [
+            "IDN-513",
+            "IDN-1837",
+            "IDN-557",
+            "IDN-1236",
+            "IDN-1237",
+            "IDN-556"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/pp/pp-no-21-tahun-1950",
+              "title": "PP No. 21 Tahun 1950: Pembentukan Daerah Propinsi",
+              "says": "Forms the ten provinces of the unitary Republic, in force on the day the unitary state was formed (17 Aug 1950).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pasal.id/peraturan/perppu/perppu-no-47-tahun-1960",
+              "title": "Perpu No. 47 Tahun 1960: Pembentukan Daerah Tingkat I Sulawesi Utara-Tengah dan Sulawesi Selatan-Tenggara",
+              "says": "Splits Sulawesi into North-Central and South-Southeast Sulawesi, in force 1 January 1961.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:SulawesiUtaraTengah@1961",
+      "names": {
+        "en": "North-Central Sulawesi",
+        "ja": "北・中部スラウェシ州",
+        "local": "Sulawesi Utara-Tengah"
+      },
+      "spans": [
+        {
+          "from": "1961-01-01",
+          "precision": "day",
+          "to": "1964-01-01",
+          "atoms": [
+            "IDN-513",
+            "IDN-1837",
+            "IDN-557"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/perppu/perppu-no-47-tahun-1960",
+              "title": "Perpu No. 47 Tahun 1960: Pembentukan Daerah Tingkat I Sulawesi Utara-Tengah dan Sulawesi Selatan-Tenggara",
+              "says": "Splits Sulawesi into North-Central and South-Southeast Sulawesi, in force 1 January 1961.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-13-tahun-1964",
+              "title": "UU No. 13 Tahun 1964: Pembentukan Daerah Tingkat I Sulawesi Tengah dan Sulawesi Tenggara",
+              "says": "Enacts Perpu 2/1964 splitting off Central and Southeast Sulawesi; retroactive to 1 January 1964.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:SulawesiSelatanTenggara@1961",
+      "names": {
+        "en": "South-Southeast Sulawesi",
+        "ja": "南・南東スラウェシ州",
+        "local": "Sulawesi Selatan-Tenggara"
+      },
+      "spans": [
+        {
+          "from": "1961-01-01",
+          "precision": "day",
+          "to": "1964-01-01",
+          "atoms": [
+            "IDN-1236",
+            "IDN-1237",
+            "IDN-556"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/perppu/perppu-no-47-tahun-1960",
+              "title": "Perpu No. 47 Tahun 1960: Pembentukan Daerah Tingkat I Sulawesi Utara-Tengah dan Sulawesi Selatan-Tenggara",
+              "says": "Splits Sulawesi into North-Central and South-Southeast Sulawesi, in force 1 January 1961.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-13-tahun-1964",
+              "title": "UU No. 13 Tahun 1964: Pembentukan Daerah Tingkat I Sulawesi Tengah dan Sulawesi Tenggara",
+              "says": "Enacts Perpu 2/1964 splitting off Central and Southeast Sulawesi; retroactive to 1 January 1964.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:SulawesiUtara@1964",
+      "names": {
+        "en": "North Sulawesi",
+        "ja": "北スラウェシ州",
+        "local": "Sulawesi Utara"
+      },
+      "wikidata": "Q5068",
+      "spans": [
+        {
+          "from": "1964-01-01",
+          "precision": "day",
+          "to": "2000-12-22",
+          "atoms": [
+            "IDN-513",
+            "IDN-1837"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-13-tahun-1964",
+              "title": "UU No. 13 Tahun 1964: Pembentukan Daerah Tingkat I Sulawesi Tengah dan Sulawesi Tenggara",
+              "says": "Enacts Perpu 2/1964 splitting off Central and Southeast Sulawesi; retroactive to 1 January 1964.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Retroactive commencement per UU 13/1964 (Perpu 2/1964 of 13 Feb 1964)."
+        },
+        {
+          "from": "2000-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-513"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-38-tahun-2000",
+              "title": "UU No. 38 Tahun 2000: Pembentukan Provinsi Gorontalo",
+              "says": "Forms Gorontalo province from North Sulawesi; in force 22 Dec 2000.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:SulawesiTengah@1964",
+      "names": {
+        "en": "Central Sulawesi",
+        "ja": "中部スラウェシ州",
+        "local": "Sulawesi Tengah"
+      },
+      "wikidata": "Q5065",
+      "spans": [
+        {
+          "from": "1964-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-557"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-13-tahun-1964",
+              "title": "UU No. 13 Tahun 1964: Pembentukan Daerah Tingkat I Sulawesi Tengah dan Sulawesi Tenggara",
+              "says": "Enacts Perpu 2/1964 splitting off Central and Southeast Sulawesi; retroactive to 1 January 1964.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Retroactive commencement; the province keeps 13 Apr 1964 as its anniversary."
+        }
+      ]
+    },
+    {
+      "id": "IDN:SulawesiSelatan@1964",
+      "names": {
+        "en": "South Sulawesi",
+        "ja": "南スラウェシ州",
+        "local": "Sulawesi Selatan"
+      },
+      "wikidata": "Q5078",
+      "spans": [
+        {
+          "from": "1964-01-01",
+          "precision": "day",
+          "to": "2004-10-05",
+          "atoms": [
+            "IDN-1236",
+            "IDN-1237"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-13-tahun-1964",
+              "title": "UU No. 13 Tahun 1964: Pembentukan Daerah Tingkat I Sulawesi Tengah dan Sulawesi Tenggara",
+              "says": "Enacts Perpu 2/1964 splitting off Central and Southeast Sulawesi; retroactive to 1 January 1964.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2004-10-05",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1236"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-26-tahun-2004",
+              "title": "UU No. 26 Tahun 2004: Pembentukan Provinsi Sulawesi Barat",
+              "says": "Forms West Sulawesi province from South Sulawesi; in force 5 Oct 2004.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:SulawesiTenggara@1964",
+      "names": {
+        "en": "Southeast Sulawesi",
+        "ja": "南東スラウェシ州",
+        "local": "Sulawesi Tenggara"
+      },
+      "wikidata": "Q5075",
+      "spans": [
+        {
+          "from": "1964-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-556"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-13-tahun-1964",
+              "title": "UU No. 13 Tahun 1964: Pembentukan Daerah Tingkat I Sulawesi Tengah dan Sulawesi Tenggara",
+              "says": "Enacts Perpu 2/1964 splitting off Central and Southeast Sulawesi; retroactive to 1 January 1964.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Retroactive commencement; the province keeps 27 Apr 1964 as its anniversary."
+        }
+      ]
+    },
+    {
+      "id": "IDN:Gorontalo@2000",
+      "names": {
+        "en": "Gorontalo",
+        "ja": "ゴロンタロ州",
+        "local": "Gorontalo"
+      },
+      "wikidata": "Q5067",
+      "spans": [
+        {
+          "from": "2000-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1837"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-38-tahun-2000",
+              "title": "UU No. 38 Tahun 2000: Pembentukan Provinsi Gorontalo",
+              "says": "Forms Gorontalo province from North Sulawesi; in force 22 Dec 2000.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:SulawesiBarat@2004",
+      "names": {
+        "en": "West Sulawesi",
+        "ja": "西スラウェシ州",
+        "local": "Sulawesi Barat"
+      },
+      "wikidata": "Q5082",
+      "spans": [
+        {
+          "from": "2004-10-05",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1237"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-26-tahun-2004",
+              "title": "UU No. 26 Tahun 2004: Pembentukan Provinsi Sulawesi Barat",
+              "says": "Forms West Sulawesi province from South Sulawesi; in force 5 Oct 2004.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uid.html",
+              "title": "Statoids: Provinces of Indonesia, change history",
+              "says": "Sulawesi Barat split from Sulawesi Selatan: Majene, Mamasa, Mamuju, Mamuju Utara, Polewali Mandar.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Statoids gives 2004-10-16 (inauguration); the law took effect 5 Oct 2004."
+        }
+      ]
+    },
+    {
+      "id": "IDN:Maluku@1950",
+      "names": {
+        "en": "Maluku",
+        "ja": "マルク州",
+        "local": "Maluku"
+      },
+      "wikidata": "Q5093",
+      "spans": [
+        {
+          "from": "1950-08-17",
+          "precision": "day",
+          "to": "1999-10-04",
+          "atoms": [
+            "IDN-554",
+            "IDN-538"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/pp/pp-no-21-tahun-1950",
+              "title": "PP No. 21 Tahun 1950: Pembentukan Daerah Propinsi",
+              "says": "Forms the ten provinces of the unitary Republic, in force on the day the unitary state was formed (17 Aug 1950).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-46-tahun-1999",
+              "title": "UU No. 46 Tahun 1999: Pembentukan Propinsi Maluku Utara, Kabupaten Buru dan Kabupaten Maluku Tenggara Barat",
+              "says": "Forms North Maluku province from Maluku; in force on promulgation 4 Oct 1999.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "1999-10-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-554"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-46-tahun-1999",
+              "title": "UU No. 46 Tahun 1999: Pembentukan Propinsi Maluku Utara, Kabupaten Buru dan Kabupaten Maluku Tenggara Barat",
+              "says": "Forms North Maluku province from Maluku; in force on promulgation 4 Oct 1999.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Statoids gives 1999-09-16 (DPR approval); the law was promulgated and took effect 4 Oct 1999."
+        }
+      ]
+    },
+    {
+      "id": "IDN:MalukuUtara@1999",
+      "names": {
+        "en": "North Maluku",
+        "ja": "北マルク州",
+        "local": "Maluku Utara"
+      },
+      "wikidata": "Q5094",
+      "spans": [
+        {
+          "from": "1999-10-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-538"
+          ],
+          "sources": [
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-46-tahun-1999",
+              "title": "UU No. 46 Tahun 1999: Pembentukan Propinsi Maluku Utara, Kabupaten Buru dan Kabupaten Maluku Tenggara Barat",
+              "says": "Forms North Maluku province from Maluku; in force on promulgation 4 Oct 1999.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:IrianBarat@1963",
+      "names": {
+        "en": "West Irian / Irian Jaya / Papua",
+        "ja": "イリアン・ジャヤ州（パプア州）",
+        "local": "Irian Barat / Irian Jaya / Papua"
+      },
+      "wikidata": "Q5095",
+      "spans": [
+        {
+          "from": "1963-05-01",
+          "precision": "day",
+          "to": "1999-10-04",
+          "atoms": [
+            "IDN-558",
+            "IDN-1933"
+          ],
+          "sources": [
+            {
+              "url": "https://id.wikipedia.org/w/index.php?oldid=30007516",
+              "title": "Provinsi di Indonesia (id.wikipedia, revision 30007516), section Sejarah",
+              "says": "1 May 1963: UNTEA handed West Irian to Indonesia and the province of Irian Barat was formed (Penpres 1/1963).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pasal.id/peraturan/uu/uu-no-12-tahun-1969",
+              "title": "UU No. 12 Tahun 1969: Pembentukan Propinsi Otonom Irian Barat dan Kabupaten-kabupaten Otonom di Propinsi Irian Barat",
+              "says": "Constitutes Irian Barat as an autonomous province; in force 10 Sep 1969.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Renamed Irian Jaya 1973 and Papua 2001 without territorial change. Its status between 1963 and the 1969 Act of Free Choice was contested internationally."
+        },
+        {
+          "from": "2004-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-558"
+          ],
+          "sources": [
+            {
+              "url": "https://id.wikipedia.org/w/index.php?oldid=30007516",
+              "title": "Provinsi di Indonesia (id.wikipedia, revision 30007516), section Sejarah",
+              "says": "11 Nov 2004: the Constitutional Court voided UU 45/1999 but recognised Irian Jaya Barat as effectively existing; Central Irian Jaya returned to Papua.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "IDN:PapuaBarat@2003",
+      "names": {
+        "en": "West Papua (Irian Jaya Barat)",
+        "ja": "西パプア州",
+        "local": "Papua Barat"
+      },
+      "wikidata": "Q5096",
+      "spans": [
+        {
+          "from": "2004-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IDN-1933"
+          ],
+          "sources": [
+            {
+              "url": "https://id.wikipedia.org/w/index.php?oldid=30007516",
+              "title": "Provinsi di Indonesia (id.wikipedia, revision 30007516), section Sejarah",
+              "says": "Constitutional Court ruling of 11 Nov 2004 left Irian Jaya Barat in existence (renamed Papua Barat 2007).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uid.html",
+              "title": "Statoids: Provinces of Indonesia, change history",
+              "says": "2003-11-14: Irian Jaya Barat split from Papua.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Earlier start is unresolved: law of 4 Oct 1999, activated by Inpres 1/2003, administration from Nov 2003."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1950-08-17",
+      "precision": "day",
+      "what": "Unitary Republic of Indonesia formed with ten provinces plus the Special Region of Yogyakarta",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/pp/pp-no-21-tahun-1950",
+          "title": "PP No. 21 Tahun 1950: Pembentukan Daerah Propinsi",
+          "says": "Forms the ten provinces of the unitary Republic, in force on the day the unitary state was formed (17 Aug 1950).",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://pasal.id/peraturan/uu/uu-no-3-tahun-1950",
+          "title": "UU No. 3 Tahun 1950: Pembentukan Daerah Istimewa Jogjakarta",
+          "says": "Forms the Special Region of Yogyakarta at province level; in force on promulgation (6 Jul 1950).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1956-12-07",
+      "precision": "day",
+      "what": "Aceh separated from North Sumatra",
+      "sources": [
+        {
+          "url": "https://id.wikisource.org/wiki/Undang-Undang_Republik_Indonesia_Nomor_24_Tahun_1956",
+          "title": "UU No. 24 Tahun 1956: Pembentukan Daerah Otonom Propinsi Atjeh (Wikisource text)",
+          "says": "Separates seven Aceh kabupaten and Kutaraja from North Sumatra as Aceh province; promulgated and in force 7 Dec 1956.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1957-01-01",
+      "precision": "day",
+      "what": "Kalimantan divided into West, South and East Kalimantan",
+      "sources": [
+        {
+          "url": "https://kalbar.bpk.go.id/pemerintah-daerah-provinsi-kalimantan-barat-1/",
+          "title": "BPK Perwakilan Kalimantan Barat: Pemerintah Daerah Provinsi Kalimantan Barat",
+          "says": "UU 25/1956 forming West, South and East Kalimantan took effect from 1 January 1957.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1957-01-18",
+      "precision": "day",
+      "what": "Kotapraja Jakarta Raya becomes a level-I region",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/uu/uu-no-1-tahun-1957",
+          "title": "UU No. 1 Tahun 1957: Pokok-pokok Pemerintahan Daerah",
+          "says": "Local-government law under which Kotapraja Jakarta Raya ranks as a level-I region; in force on promulgation 18 Jan 1957.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://id.wikipedia.org/w/index.php?oldid=30007516",
+          "title": "Provinsi di Indonesia (id.wikipedia, revision 30007516), section Sejarah",
+          "says": "18 Jan 1957: Jakarta Raya made a level-I region.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1957-05-23",
+      "precision": "day",
+      "what": "Central Kalimantan formed from South Kalimantan",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/uudrt/uudrt-no-10-tahun-1957",
+          "title": "UU Darurat No. 10 Tahun 1957: Pembentukan Daerah Swatantra Tingkat I Kalimantan Tengah",
+          "says": "Forms Central Kalimantan from South Kalimantan's Dayak kabupaten; promulgated and in force 23 May 1957.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1957-08-10",
+      "precision": "day",
+      "what": "Central Sumatra split into West Sumatra, Jambi and Riau",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/uudrt/uudrt-no-19-tahun-1957",
+          "title": "UU Darurat No. 19 Tahun 1957: Pembentukan Daerah Swatantra Tingkat I Sumatera Barat, Jambi dan Riau",
+          "says": "Splits Central Sumatra into West Sumatra (with Pesisir Selatan/Kerinci), Jambi and Riau; in force on promulgation 10 Aug 1957.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1958-07-31",
+      "precision": "day",
+      "what": "Kerinci moved from West Sumatra to Jambi (UU 61/1958 promulgated)",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/uu/uu-no-61-tahun-1958",
+          "title": "UU No. 61 Tahun 1958: Penetapan UU Darurat 19/1957 sebagai undang-undang",
+          "says": "Moves the Kerinci Hulu, Tengah and Hilir kecamatan from West Sumatra to Jambi; enacted 25 Jul, promulgated 31 Jul 1958.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1958-08-14",
+      "precision": "day",
+      "what": "Nusa Tenggara split into Bali, NTB, NTT",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/uu/uu-no-64-tahun-1958",
+          "title": "UU No. 64 Tahun 1958: Pembentukan Daerah-daerah Tingkat I Bali, Nusa Tenggara Barat dan Nusa Tenggara Timur",
+          "says": "Divides Nusa Tenggara into Bali, West and East Nusa Tenggara; promulgated and in force 14 Aug 1958.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1961-01-01",
+      "precision": "day",
+      "what": "Sulawesi split into North-Central and South-Southeast Sulawesi",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/perppu/perppu-no-47-tahun-1960",
+          "title": "Perpu No. 47 Tahun 1960: Pembentukan Daerah Tingkat I Sulawesi Utara-Tengah dan Sulawesi Selatan-Tenggara",
+          "says": "Splits Sulawesi into North-Central and South-Southeast Sulawesi, in force 1 January 1961.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1963-05-01",
+      "precision": "day",
+      "what": "West Irian transferred from UNTEA to Indonesia",
+      "sources": [
+        {
+          "url": "https://id.wikipedia.org/w/index.php?oldid=30007516",
+          "title": "Provinsi di Indonesia (id.wikipedia, revision 30007516), section Sejarah",
+          "says": "UNTEA transferred Irian Barat to Indonesia on 1 May 1963.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1964-01-01",
+      "precision": "day",
+      "what": "Lampung, Central Sulawesi and Southeast Sulawesi formed (retroactive commencement)",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/uu/uu-no-13-tahun-1964",
+          "title": "UU No. 13 Tahun 1964: Pembentukan Daerah Tingkat I Sulawesi Tengah dan Sulawesi Tenggara",
+          "says": "Enacts Perpu 2/1964 splitting off Central and Southeast Sulawesi; retroactive to 1 January 1964.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://pasal.id/peraturan/uu/uu-no-14-tahun-1964",
+          "title": "UU No. 14 Tahun 1964: Pembentukan Daerah Tingkat I Lampung",
+          "says": "Enacts Perpu 3/1964 forming Lampung from South Sumatra; retroactive to 1 January 1964.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1967-09-12",
+      "precision": "day",
+      "what": "Bengkulu formed from South Sumatra",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/uu/uu-no-9-tahun-1967",
+          "title": "UU No. 9 Tahun 1967: Pembentukan Propinsi Bengkulu",
+          "says": "Forms Bengkulu province from South Sumatra; enacted and promulgated 12 Sep 1967.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1974-12-28",
+      "precision": "day",
+      "what": "Boundary between DKI Jakarta and West Java (Tangerang, Bekasi) changed",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/pp/pp-no-45-tahun-1974",
+          "title": "PP No. 45 Tahun 1974: Perubahan Batas Wilayah Daerah Khusus Ibukota Jakarta",
+          "says": "Changes the boundary between DKI Jakarta and West Java's Tangerang and Bekasi kabupaten; in force 28 Dec 1974.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1976-07-17",
+      "precision": "day",
+      "what": "East Timor annexed as province Timor Timur",
+      "sources": [
+        {
+          "url": "https://id.wikipedia.org/w/index.php?oldid=30007516",
+          "title": "Provinsi di Indonesia (id.wikipedia, revision 30007516), section Sejarah",
+          "says": "17 Jul 1976: Portuguese Timor integrated as province Timor Timur.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1999-10-04",
+      "precision": "day",
+      "what": "North Maluku formed; West and Central Irian Jaya enacted",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/uu/uu-no-45-tahun-1999",
+          "title": "UU No. 45 Tahun 1999: Pembentukan Propinsi Irian Jaya Tengah, Propinsi Irian Jaya Barat, ...",
+          "says": "Forms West and Central Irian Jaya provinces from Irian Jaya; in force on promulgation 4 Oct 1999.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://pasal.id/peraturan/uu/uu-no-46-tahun-1999",
+          "title": "UU No. 46 Tahun 1999: Pembentukan Propinsi Maluku Utara, Kabupaten Buru dan Kabupaten Maluku Tenggara Barat",
+          "says": "Forms North Maluku province from Maluku; in force on promulgation 4 Oct 1999.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1999-10-19",
+      "precision": "day",
+      "what": "MPR revokes the integration of East Timor",
+      "sources": [
+        {
+          "url": "https://id.wikipedia.org/w/index.php?oldid=30007516",
+          "title": "Provinsi di Indonesia (id.wikipedia, revision 30007516), section Sejarah",
+          "says": "19 Oct 1999: MPR revoked TAP VI/MPR/1978 after the referendum.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2000-10-17",
+      "precision": "day",
+      "what": "Banten formed",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/uu/uu-no-23-tahun-2000",
+          "title": "UU No. 23 Tahun 2000: Pembentukan Propinsi Banten",
+          "says": "Forms Banten province from West Java; in force 17 Oct 2000.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2000-12-04",
+      "precision": "day",
+      "what": "Bangka Belitung formed",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/uu/uu-no-27-tahun-2000",
+          "title": "UU No. 27 Tahun 2000: Pembentukan Propinsi Kepulauan Bangka Belitung",
+          "says": "Forms Bangka Belitung Islands province from South Sumatra; in force 4 Dec 2000.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2000-12-22",
+      "precision": "day",
+      "what": "Gorontalo formed",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/uu/uu-no-38-tahun-2000",
+          "title": "UU No. 38 Tahun 2000: Pembentukan Provinsi Gorontalo",
+          "says": "Forms Gorontalo province from North Sulawesi; in force 22 Dec 2000.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2002-10-25",
+      "precision": "day",
+      "what": "Riau Islands formed",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/uu/uu-no-25-tahun-2002",
+          "title": "UU No. 25 Tahun 2002: Pembentukan Provinsi Kepulauan Riau",
+          "says": "Forms Riau Islands province from Riau; in force 25 Oct 2002.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2004-10-05",
+      "precision": "day",
+      "what": "West Sulawesi formed",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/uu/uu-no-26-tahun-2004",
+          "title": "UU No. 26 Tahun 2004: Pembentukan Provinsi Sulawesi Barat",
+          "says": "Forms West Sulawesi province from South Sulawesi; in force 5 Oct 2004.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2004-11-11",
+      "precision": "day",
+      "what": "Constitutional Court ruling on UU 45/1999 (Irian Jaya Barat remains)",
+      "sources": [
+        {
+          "url": "https://id.wikipedia.org/w/index.php?oldid=30007516",
+          "title": "Provinsi di Indonesia (id.wikipedia, revision 30007516), section Sejarah",
+          "says": "MK decision 018/PUU-I/2003 of 11 Nov 2004.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2012-11-17",
+      "precision": "day",
+      "what": "North Kalimantan formed from East Kalimantan",
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/uu/uu-no-20-tahun-2012",
+          "title": "UU No. 20 Tahun 2012: Pembentukan Provinsi Kalimantan Utara",
+          "says": "Forms North Kalimantan province from East Kalimantan; promulgated and in force 17 Nov 2012.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1950-08-18",
+      "n": 11,
+      "sources": [
+        {
+          "url": "https://pasal.id/peraturan/pp/pp-no-21-tahun-1950",
+          "title": "PP No. 21 Tahun 1950: Pembentukan Daerah Propinsi",
+          "says": "Forms the ten provinces of the unitary Republic, in force on the day the unitary state was formed (17 Aug 1950).",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://pasal.id/peraturan/uu/uu-no-3-tahun-1950",
+          "title": "UU No. 3 Tahun 1950: Pembentukan Daerah Istimewa Jogjakarta",
+          "says": "Forms the Special Region of Yogyakarta at province level; in force on promulgation (6 Jul 1950).",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://id.wikipedia.org/w/index.php?oldid=30007516",
+          "title": "Provinsi di Indonesia (id.wikipedia, revision 30007516), section Sejarah",
+          "says": "1950: ten provinces plus the Special Region of Yogyakarta.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1968-01-01",
+      "n": 26,
+      "sources": [
+        {
+          "url": "https://id.wikipedia.org/w/index.php?oldid=30007516",
+          "title": "Provinsi di Indonesia (id.wikipedia, revision 30007516), section Sejarah",
+          "says": "Bengkulu (1967) was the only new province of the New Order before Timor Timur.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1990-01-01",
+      "n": 27,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uid.html",
+          "title": "Statoids: Provinces of Indonesia, change history",
+          "says": "Population history table (1980, 1990 censuses) lists 27 provinces including Timor Timur.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2005-01-01",
+      "n": 33,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uid.html",
+          "title": "Statoids: Provinces of Indonesia, change history",
+          "says": "Change history through Sulawesi Barat (2004) gives 33 provinces until Kalimantan Utara (2012).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2019-12-31",
+      "n": 34,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uid.html",
+          "title": "Statoids: Provinces of Indonesia, change history",
+          "says": "Kalimantan Utara split from Kalimantan Timur 2012/2013, giving 34 provinces.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [
+    {
+      "atom": "IDN-558",
+      "from": "1950-08-17",
+      "to": "1963-05-01",
+      "why": "Netherlands New Guinea (Dutch administration until 1962-10-01, then UNTEA until 1963-05-01); not administered by Indonesia."
+    },
+    {
+      "atom": "IDN-1933",
+      "from": "1950-08-17",
+      "to": "1963-05-01",
+      "why": "Netherlands New Guinea (Dutch administration until 1962-10-01, then UNTEA until 1963-05-01); not administered by Indonesia."
+    }
+  ],
+  "unresolved": [
+    {
+      "what": "West Sumatra and Jambi between the 1957 split and the Kerinci transfer",
+      "unit": "IDN:SumateraBarat@1957",
+      "atoms": [
+        "IDN-539",
+        "IDN-1930"
+      ],
+      "from": "1957-08-10",
+      "to": "1958-08-01",
+      "why": "From 10 Aug 1957 West Sumatra held Kerinci (three kecamatan now in Jambi); the line between West Sumatra and Jambi ran through the NE Jambi atom. The exact commencement of UU 61/1958 (25 or 31 Jul 1958) is also not settled.",
+      "checked": [
+        "UU Darurat 19/1957 and UU 61/1958 texts on pasal.id",
+        "id.wikipedia Provinsi di Indonesia rev 30007516",
+        "statoids uid.html"
+      ],
+      "needs": "kabupaten-level atoms carrying Kerinci (geoBoundaries IDN ADM2, CC BY 4.0)"
+    },
+    {
+      "what": "Jambi 1957-08-10 to 1958-08-01 (Kerinci not yet in Jambi)",
+      "unit": "IDN:Jambi@1957",
+      "from": "1957-08-10",
+      "to": "1958-08-01",
+      "why": "See the West Sumatra entry; atoms withheld there.",
+      "checked": [
+        "UU Darurat 19/1957",
+        "UU 61/1958"
+      ],
+      "needs": "geoBoundaries IDN ADM2 (Kerinci)"
+    },
+    {
+      "what": "DKI Jakarta and West Java (incl. Banten) 1957-01-18 to 1974-12-28",
+      "unit": "IDN:Jakarta@1957",
+      "atoms": [
+        "IDN-1227",
+        "IDN-1223",
+        "IDN-1226"
+      ],
+      "from": "1957-01-18",
+      "to": "1974-12-28",
+      "why": "PP 45/1974 moved villages between Jakarta and Tangerang/Bekasi; the pre-1974 Jakarta boundary runs inside the NE Jakarta, West Java and Banten atoms.",
+      "checked": [
+        "PP 45/1974 text (pasal.id)",
+        "id.wikipedia Provinsi di Indonesia"
+      ],
+      "needs": "desa-level atoms for Jakarta, Tangerang and Bekasi as of 1974 (e.g. BPS/BIG village boundaries; licence to be checked)"
+    },
+    {
+      "what": "West Java 1957-01-18 to 1974-12-28",
+      "unit": "IDN:JawaBarat@1950",
+      "from": "1957-01-18",
+      "to": "1974-12-28",
+      "why": "Its line with Jakarta before PP 45/1974 is not an NE line (atoms withheld in the Jakarta entry).",
+      "checked": [
+        "PP 45/1974"
+      ],
+      "needs": "desa-level atoms (see Jakarta entry)"
+    },
+    {
+      "what": "Irian Jaya / Papua and Irian Jaya Barat 1999-10-04 to 2004-11-11",
+      "unit": "IDN:IrianBarat@1963",
+      "atoms": [
+        "IDN-558",
+        "IDN-1933"
+      ],
+      "from": "1999-10-04",
+      "to": "2004-11-11",
+      "why": "UU 45/1999 created Irian Jaya Barat on 4 Oct 1999, but implementation was suspended, revived by Inpres 1/2003 (Jan 2003), with a governor from Nov 2003, and the law voided by the Constitutional Court on 11 Nov 2004 while recognising the province. Sources disagree on when the split took legal effect.",
+      "checked": [
+        "UU 45/1999 (pasal.id)",
+        "id.wikipedia Provinsi di Indonesia rev 30007516",
+        "statoids uid.html (2003-11-14)"
+      ],
+      "needs": "a settled legal start date for Irian Jaya Barat (not finer atoms)"
+    },
+    {
+      "what": "Irian Jaya Barat before the Constitutional Court ruling",
+      "unit": "IDN:PapuaBarat@2003",
+      "from": "1999-10-04",
+      "to": "2004-11-11",
+      "why": "See previous entry.",
+      "checked": [
+        "UU 45/1999",
+        "MK 018/PUU-I/2003 as cited by id.wikipedia"
+      ],
+      "needs": "settled legal start date"
+    },
+    {
+      "what": "East Kalimantan and North Kalimantan from 2012-11-17",
+      "unit": "IDN:KalimantanTimur@1957",
+      "atoms": [
+        "IDN-1185"
+      ],
+      "from": "2012-11-17",
+      "to": null,
+      "why": "The NE atom set has no North Kalimantan feature: IDN-1185 still covers both provinces (Bulungan, Malinau, Nunukan, Tana Tidung, Tarakan belong to North Kalimantan).",
+      "checked": [
+        "NE atom catalogue (33 IDN atoms)",
+        "UU 20/2012"
+      ],
+      "needs": "North Kalimantan outline (e.g. geoBoundaries IDN ADM1 or ADM2, CC BY 4.0)"
+    },
+    {
+      "what": "North Kalimantan",
+      "unit": "IDN:KalimantanUtara@2012",
+      "from": "2012-11-17",
+      "to": null,
+      "why": "Exists since 17 Nov 2012 but has no separate NE atom.",
+      "checked": [
+        "NE atom catalogue",
+        "UU 20/2012"
+      ],
+      "needs": "geoBoundaries IDN ADM1/ADM2"
+    },
+    {
+      "what": "Timor Timur province (1976-07-17 to 1999-10-19)",
+      "unit": "IDN:TimorTimur@1976",
+      "from": "1976-07-17",
+      "to": "1999-10-19",
+      "why": "The province's territory is carried by the TLS atoms (Timor-Leste), not by IDN atoms; it belongs to a dossier keyed on TLS atoms. Listed so that the count of 27 provinces holds.",
+      "checked": [
+        "id.wikipedia Provinsi di Indonesia",
+        "statoids uid.html"
+      ],
+      "needs": "a dossier entry that may use TLS atoms (TLS-541 to TLS-553) under Indonesian administration"
+    }
+  ]
+}

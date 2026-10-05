@@ -1,0 +1,578 @@
+{
+  "country": "SOM",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1984-06",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Somali Democratic Republic / Federal Republic of Somalia (de jure, including Somaliland). NE puts Somaliland in a separate adm0 (SOL), so its five regions are listed as unresolved units without atoms.",
+  "units": [
+    {
+      "id": "SOM:Nugaal@1984",
+      "names": {
+        "en": "Nugal",
+        "ja": "ヌガール州",
+        "local": "Nugaal"
+      },
+      "wikidata": "Q1046329",
+      "spans": [
+        {
+          "from": "1984-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SOM-2413"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uso.html",
+              "title": "Statoids — Regions of Somalia (Gwillim Law)",
+              "says": "~1982 eight provinces became sixteen regions; 1984-06 Awdal split from Woqooyi Galbeed and Sool from Nugaal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Somalia&oldid=1369122785",
+              "title": "Wikipedia: Administrative divisions of Somalia (rev 1369122785)",
+              "says": "Middle/Lower Juba, Gedo, Bay, Bakool created 1974–75; in June 1984 Awdal and Sool split off, forming the current 18 regions.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens when the 18-region layout is attested (June 1984). The region itself is older (1974–75 per Mukhtar via Wikipedia, ~1982 per statoids); not claimed earlier. De jure through 2019 (the federal government still lists the 18 regions). Nugaal lost Sool in June 1984; before that its territory reaches into the NE Somaliland feature."
+        }
+      ]
+    },
+    {
+      "id": "SOM:Mudug@1984",
+      "names": {
+        "en": "Mudug",
+        "ja": "ムドゥグ州",
+        "local": "Mudug"
+      },
+      "wikidata": "Q877034",
+      "spans": [
+        {
+          "from": "1984-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SOM-2412"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uso.html",
+              "title": "Statoids — Regions of Somalia (Gwillim Law)",
+              "says": "~1982 eight provinces became sixteen regions; 1984-06 Awdal split from Woqooyi Galbeed and Sool from Nugaal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Somalia&oldid=1369122785",
+              "title": "Wikipedia: Administrative divisions of Somalia (rev 1369122785)",
+              "says": "Middle/Lower Juba, Gedo, Bay, Bakool created 1974–75; in June 1984 Awdal and Sool split off, forming the current 18 regions.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens when the 18-region layout is attested (June 1984). The region itself is older (1974–75 per Mukhtar via Wikipedia, ~1982 per statoids); not claimed earlier. De jure through 2019 (the federal government still lists the 18 regions)."
+        }
+      ]
+    },
+    {
+      "id": "SOM:Galguduud@1984",
+      "names": {
+        "en": "Galguduud",
+        "ja": "ガルグドゥード州",
+        "local": "Galguduud"
+      },
+      "wikidata": "Q876772",
+      "spans": [
+        {
+          "from": "1984-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SOM-2408"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uso.html",
+              "title": "Statoids — Regions of Somalia (Gwillim Law)",
+              "says": "~1982 eight provinces became sixteen regions; 1984-06 Awdal split from Woqooyi Galbeed and Sool from Nugaal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Somalia&oldid=1369122785",
+              "title": "Wikipedia: Administrative divisions of Somalia (rev 1369122785)",
+              "says": "Middle/Lower Juba, Gedo, Bay, Bakool created 1974–75; in June 1984 Awdal and Sool split off, forming the current 18 regions.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens when the 18-region layout is attested (June 1984). The region itself is older (1974–75 per Mukhtar via Wikipedia, ~1982 per statoids); not claimed earlier. De jure through 2019 (the federal government still lists the 18 regions)."
+        }
+      ]
+    },
+    {
+      "id": "SOM:Hiiraan@1984",
+      "names": {
+        "en": "Hiran",
+        "ja": "ヒーラーン州",
+        "local": "Hiiraan"
+      },
+      "wikidata": "Q660040",
+      "spans": [
+        {
+          "from": "1984-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SOM-2409"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uso.html",
+              "title": "Statoids — Regions of Somalia (Gwillim Law)",
+              "says": "~1982 eight provinces became sixteen regions; 1984-06 Awdal split from Woqooyi Galbeed and Sool from Nugaal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Somalia&oldid=1369122785",
+              "title": "Wikipedia: Administrative divisions of Somalia (rev 1369122785)",
+              "says": "Middle/Lower Juba, Gedo, Bay, Bakool created 1974–75; in June 1984 Awdal and Sool split off, forming the current 18 regions.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens when the 18-region layout is attested (June 1984). The region itself is older (1974–75 per Mukhtar via Wikipedia, ~1982 per statoids); not claimed earlier. De jure through 2019 (the federal government still lists the 18 regions)."
+        }
+      ]
+    },
+    {
+      "id": "SOM:Bakool@1984",
+      "names": {
+        "en": "Bakool",
+        "ja": "バコール州",
+        "local": "Bakool"
+      },
+      "wikidata": "Q282471",
+      "spans": [
+        {
+          "from": "1984-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SOM-2312"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uso.html",
+              "title": "Statoids — Regions of Somalia (Gwillim Law)",
+              "says": "~1982 eight provinces became sixteen regions; 1984-06 Awdal split from Woqooyi Galbeed and Sool from Nugaal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Somalia&oldid=1369122785",
+              "title": "Wikipedia: Administrative divisions of Somalia (rev 1369122785)",
+              "says": "Middle/Lower Juba, Gedo, Bay, Bakool created 1974–75; in June 1984 Awdal and Sool split off, forming the current 18 regions.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens when the 18-region layout is attested (June 1984). The region itself is older (1974–75 per Mukhtar via Wikipedia, ~1982 per statoids); not claimed earlier. De jure through 2019 (the federal government still lists the 18 regions)."
+        }
+      ]
+    },
+    {
+      "id": "SOM:Gedo@1984",
+      "names": {
+        "en": "Gedo",
+        "ja": "ゲド州",
+        "local": "Gedo"
+      },
+      "wikidata": "Q856719",
+      "spans": [
+        {
+          "from": "1984-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SOM-2314"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uso.html",
+              "title": "Statoids — Regions of Somalia (Gwillim Law)",
+              "says": "~1982 eight provinces became sixteen regions; 1984-06 Awdal split from Woqooyi Galbeed and Sool from Nugaal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Somalia&oldid=1369122785",
+              "title": "Wikipedia: Administrative divisions of Somalia (rev 1369122785)",
+              "says": "Middle/Lower Juba, Gedo, Bay, Bakool created 1974–75; in June 1984 Awdal and Sool split off, forming the current 18 regions.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens when the 18-region layout is attested (June 1984). The region itself is older (1974–75 per Mukhtar via Wikipedia, ~1982 per statoids); not claimed earlier. De jure through 2019 (the federal government still lists the 18 regions)."
+        }
+      ]
+    },
+    {
+      "id": "SOM:Bari@1984",
+      "names": {
+        "en": "Bari",
+        "ja": "バリ州",
+        "local": "Bari"
+      },
+      "wikidata": "Q729170",
+      "spans": [
+        {
+          "from": "1984-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SOM-1"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uso.html",
+              "title": "Statoids — Regions of Somalia (Gwillim Law)",
+              "says": "~1982 eight provinces became sixteen regions; 1984-06 Awdal split from Woqooyi Galbeed and Sool from Nugaal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Somalia&oldid=1369122785",
+              "title": "Wikipedia: Administrative divisions of Somalia (rev 1369122785)",
+              "says": "Middle/Lower Juba, Gedo, Bay, Bakool created 1974–75; in June 1984 Awdal and Sool split off, forming the current 18 regions.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens when the 18-region layout is attested (June 1984). The region itself is older (1974–75 per Mukhtar via Wikipedia, ~1982 per statoids); not claimed earlier. De jure through 2019 (the federal government still lists the 18 regions)."
+        }
+      ]
+    },
+    {
+      "id": "SOM:JubbadaHoose@1984",
+      "names": {
+        "en": "Lower Juba",
+        "ja": "下部ジュバ州",
+        "local": "Jubbada Hoose"
+      },
+      "wikidata": "Q877042",
+      "spans": [
+        {
+          "from": "1984-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SOM-2645"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uso.html",
+              "title": "Statoids — Regions of Somalia (Gwillim Law)",
+              "says": "~1982 eight provinces became sixteen regions; 1984-06 Awdal split from Woqooyi Galbeed and Sool from Nugaal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Somalia&oldid=1369122785",
+              "title": "Wikipedia: Administrative divisions of Somalia (rev 1369122785)",
+              "says": "Middle/Lower Juba, Gedo, Bay, Bakool created 1974–75; in June 1984 Awdal and Sool split off, forming the current 18 regions.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens when the 18-region layout is attested (June 1984). The region itself is older (1974–75 per Mukhtar via Wikipedia, ~1982 per statoids); not claimed earlier. De jure through 2019 (the federal government still lists the 18 regions)."
+        }
+      ]
+    },
+    {
+      "id": "SOM:JubbadaDhexe@1984",
+      "names": {
+        "en": "Middle Juba",
+        "ja": "中部ジュバ州",
+        "local": "Jubbada Dhexe"
+      },
+      "wikidata": "Q1046324",
+      "spans": [
+        {
+          "from": "1984-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SOM-2315"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uso.html",
+              "title": "Statoids — Regions of Somalia (Gwillim Law)",
+              "says": "~1982 eight provinces became sixteen regions; 1984-06 Awdal split from Woqooyi Galbeed and Sool from Nugaal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Somalia&oldid=1369122785",
+              "title": "Wikipedia: Administrative divisions of Somalia (rev 1369122785)",
+              "says": "Middle/Lower Juba, Gedo, Bay, Bakool created 1974–75; in June 1984 Awdal and Sool split off, forming the current 18 regions.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens when the 18-region layout is attested (June 1984). The region itself is older (1974–75 per Mukhtar via Wikipedia, ~1982 per statoids); not claimed earlier. De jure through 2019 (the federal government still lists the 18 regions)."
+        }
+      ]
+    },
+    {
+      "id": "SOM:ShabeellahaHoose@1984",
+      "names": {
+        "en": "Lower Shebelle",
+        "ja": "下部シャベレ州",
+        "local": "Shabeellaha Hoose"
+      },
+      "wikidata": "Q877028",
+      "spans": [
+        {
+          "from": "1984-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SOM-2316"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uso.html",
+              "title": "Statoids — Regions of Somalia (Gwillim Law)",
+              "says": "~1982 eight provinces became sixteen regions; 1984-06 Awdal split from Woqooyi Galbeed and Sool from Nugaal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Somalia&oldid=1369122785",
+              "title": "Wikipedia: Administrative divisions of Somalia (rev 1369122785)",
+              "says": "Middle/Lower Juba, Gedo, Bay, Bakool created 1974–75; in June 1984 Awdal and Sool split off, forming the current 18 regions.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens when the 18-region layout is attested (June 1984). The region itself is older (1974–75 per Mukhtar via Wikipedia, ~1982 per statoids); not claimed earlier. De jure through 2019 (the federal government still lists the 18 regions)."
+        }
+      ]
+    },
+    {
+      "id": "SOM:Banaadir@1984",
+      "names": {
+        "en": "Banaadir",
+        "ja": "バナディール州",
+        "local": "Banaadir"
+      },
+      "wikidata": "Q806070",
+      "spans": [
+        {
+          "from": "1984-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SOM-2407"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uso.html",
+              "title": "Statoids — Regions of Somalia (Gwillim Law)",
+              "says": "~1982 eight provinces became sixteen regions; 1984-06 Awdal split from Woqooyi Galbeed and Sool from Nugaal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Somalia&oldid=1369122785",
+              "title": "Wikipedia: Administrative divisions of Somalia (rev 1369122785)",
+              "says": "Middle/Lower Juba, Gedo, Bay, Bakool created 1974–75; in June 1984 Awdal and Sool split off, forming the current 18 regions.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens when the 18-region layout is attested (June 1984). The region itself is older (1974–75 per Mukhtar via Wikipedia, ~1982 per statoids); not claimed earlier. De jure through 2019 (the federal government still lists the 18 regions)."
+        }
+      ]
+    },
+    {
+      "id": "SOM:ShabeellahaDhexe@1984",
+      "names": {
+        "en": "Middle Shebelle",
+        "ja": "中部シェベリ州",
+        "local": "Shabeellaha Dhexe"
+      },
+      "wikidata": "Q678435",
+      "spans": [
+        {
+          "from": "1984-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SOM-2410"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uso.html",
+              "title": "Statoids — Regions of Somalia (Gwillim Law)",
+              "says": "~1982 eight provinces became sixteen regions; 1984-06 Awdal split from Woqooyi Galbeed and Sool from Nugaal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Somalia&oldid=1369122785",
+              "title": "Wikipedia: Administrative divisions of Somalia (rev 1369122785)",
+              "says": "Middle/Lower Juba, Gedo, Bay, Bakool created 1974–75; in June 1984 Awdal and Sool split off, forming the current 18 regions.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens when the 18-region layout is attested (June 1984). The region itself is older (1974–75 per Mukhtar via Wikipedia, ~1982 per statoids); not claimed earlier. De jure through 2019 (the federal government still lists the 18 regions)."
+        }
+      ]
+    },
+    {
+      "id": "SOM:Bay@1984",
+      "names": {
+        "en": "Bay",
+        "ja": "ベイ州",
+        "local": "Baay"
+      },
+      "wikidata": "Q812064",
+      "spans": [
+        {
+          "from": "1984-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "SOM-2313"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uso.html",
+              "title": "Statoids — Regions of Somalia (Gwillim Law)",
+              "says": "~1982 eight provinces became sixteen regions; 1984-06 Awdal split from Woqooyi Galbeed and Sool from Nugaal.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Somalia&oldid=1369122785",
+              "title": "Wikipedia: Administrative divisions of Somalia (rev 1369122785)",
+              "says": "Middle/Lower Juba, Gedo, Bay, Bakool created 1974–75; in June 1984 Awdal and Sool split off, forming the current 18 regions.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Span opens when the 18-region layout is attested (June 1984). The region itself is older (1974–75 per Mukhtar via Wikipedia, ~1982 per statoids); not claimed earlier. De jure through 2019 (the federal government still lists the 18 regions)."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1984-06",
+      "precision": "month",
+      "what": "Awdal split from Woqooyi Galbeed and Sool from Nugaal: 18 regions.",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uso.html",
+          "title": "Statoids — Regions of Somalia (Gwillim Law)",
+          "says": "~1982 eight provinces became sixteen regions; 1984-06 Awdal split from Woqooyi Galbeed and Sool from Nugaal.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Somalia&oldid=1369122785",
+          "title": "Wikipedia: Administrative divisions of Somalia (rev 1369122785)",
+          "says": "Middle/Lower Juba, Gedo, Bay, Bakool created 1974–75; in June 1984 Awdal and Sool split off, forming the current 18 regions.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1984-06",
+      "n": 18,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uso.html",
+          "title": "Statoids — Regions of Somalia (Gwillim Law)",
+          "says": "~1982 eight provinces became sixteen regions; 1984-06 Awdal split from Woqooyi Galbeed and Sool from Nugaal.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Administrative_divisions_of_Somalia&oldid=1369122785",
+          "title": "Wikipedia: Administrative divisions of Somalia (rev 1369122785)",
+          "says": "Middle/Lower Juba, Gedo, Bay, Bakool created 1974–75; in June 1984 Awdal and Sool split off, forming the current 18 regions.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Awdal region (1984-06 →): inside the single NE feature \"Somaliland\" (adm0 SOL), not in the SOM atom set",
+      "unit": "SOM:Awdal@1984",
+      "from": "1984-06",
+      "to": null,
+      "why": "Natural Earth gives the five north-western regions as one feature under a separate adm0 (SOL+00?), so no SOM atom carries them and the five cannot be separated.",
+      "checked": [
+        "ne-atoms.json (SOM has 13 atoms, SOL has 1)",
+        "statoids uso.html"
+      ],
+      "needs": "geoBoundaries SOM ADM1 (18 regions; licence to check) or OCHA COD-AB Somalia"
+    },
+    {
+      "what": "WoqooyiGalbeed region (1984-06 →): inside the single NE feature \"Somaliland\" (adm0 SOL), not in the SOM atom set",
+      "unit": "SOM:WoqooyiGalbeed@1984",
+      "from": "1984-06",
+      "to": null,
+      "why": "Natural Earth gives the five north-western regions as one feature under a separate adm0 (SOL+00?), so no SOM atom carries them and the five cannot be separated.",
+      "checked": [
+        "ne-atoms.json (SOM has 13 atoms, SOL has 1)",
+        "statoids uso.html"
+      ],
+      "needs": "geoBoundaries SOM ADM1 (18 regions; licence to check) or OCHA COD-AB Somalia"
+    },
+    {
+      "what": "Togdheer region (1984-06 →): inside the single NE feature \"Somaliland\" (adm0 SOL), not in the SOM atom set",
+      "unit": "SOM:Togdheer@1984",
+      "from": "1984-06",
+      "to": null,
+      "why": "Natural Earth gives the five north-western regions as one feature under a separate adm0 (SOL+00?), so no SOM atom carries them and the five cannot be separated.",
+      "checked": [
+        "ne-atoms.json (SOM has 13 atoms, SOL has 1)",
+        "statoids uso.html"
+      ],
+      "needs": "geoBoundaries SOM ADM1 (18 regions; licence to check) or OCHA COD-AB Somalia"
+    },
+    {
+      "what": "Sanaag region (1984-06 →): inside the single NE feature \"Somaliland\" (adm0 SOL), not in the SOM atom set",
+      "unit": "SOM:Sanaag@1984",
+      "from": "1984-06",
+      "to": null,
+      "why": "Natural Earth gives the five north-western regions as one feature under a separate adm0 (SOL+00?), so no SOM atom carries them and the five cannot be separated.",
+      "checked": [
+        "ne-atoms.json (SOM has 13 atoms, SOL has 1)",
+        "statoids uso.html"
+      ],
+      "needs": "geoBoundaries SOM ADM1 (18 regions; licence to check) or OCHA COD-AB Somalia"
+    },
+    {
+      "what": "Sool region (1984-06 →): inside the single NE feature \"Somaliland\" (adm0 SOL), not in the SOM atom set",
+      "unit": "SOM:Sool@1984",
+      "from": "1984-06",
+      "to": null,
+      "why": "Natural Earth gives the five north-western regions as one feature under a separate adm0 (SOL+00?), so no SOM atom carries them and the five cannot be separated.",
+      "checked": [
+        "ne-atoms.json (SOM has 13 atoms, SOL has 1)",
+        "statoids uso.html"
+      ],
+      "needs": "geoBoundaries SOM ADM1 (18 regions; licence to check) or OCHA COD-AB Somalia"
+    },
+    {
+      "what": "Eight provinces 1964–~1982 and the 16-region layout ~1974/82 → 1984-06",
+      "from": "1960-07-01",
+      "to": "1984-06",
+      "why": "Before scope. Province lines (Alto/Basso Giuba, Benadir, Migiurtinia, Mudugh, Hiiraan, Burao, Hargeisa) do not coincide with NE region lines throughout, and the date of the 16-region reform is disputed between sources (1974–75 vs ~1982).",
+      "checked": [
+        "statoids uso.html",
+        "Wikipedia Administrative divisions of Somalia rev 1369122785"
+      ],
+      "needs": "district-level atoms of 1975-era Somalia"
+    },
+    {
+      "what": "Federal member states (Jubaland 2013, South West 2014, Galmudug 2015, Hirshabelle 2016, Puntland 1998) — a possible competing first level",
+      "from": "1998",
+      "to": null,
+      "why": "Not drawn: this dossier keeps the 18 de jure regions. Galmudug/Puntland divide Mudug at Galkayo, a line inside an NE atom.",
+      "checked": [
+        "Wikipedia Administrative divisions of Somalia rev 1369122785"
+      ],
+      "needs": "district atoms for Mudug"
+    }
+  ]
+}

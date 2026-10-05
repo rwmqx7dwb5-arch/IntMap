@@ -1,0 +1,850 @@
+{
+  "country": "TUN",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1980-05-28",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Republic of Tunisia (independent 1956-03-20). NE's 23 features are the 1983-2000 layout (no separate Ariana/Manouba).",
+  "units": [
+    {
+      "id": "TUN:Beja@1980",
+      "names": {
+        "en": "Béja Governorate",
+        "ja": "ベジャ県",
+        "local": "ولاية باجة"
+      },
+      "wikidata": "Q276576",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-103"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "Beja: unchanged since Siliana (1974-06-05, Law 74-47); no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Bizerte@1980",
+      "names": {
+        "en": "Bizerte Governorate",
+        "ja": "ビゼルト県",
+        "local": "ولاية بنزرت"
+      },
+      "wikidata": "Q241129",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-105"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "Bizerte: no change listed after Law 72-1 / 76-82.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Jendouba@1980",
+      "names": {
+        "en": "Jendouba Governorate",
+        "ja": "ジェンドゥーバ県",
+        "local": "ولاية جندوبة"
+      },
+      "wikidata": "Q276580",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-106"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "Jendouba: no territorial change listed after 1956 (renamed 1966).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Kairouan@1980",
+      "names": {
+        "en": "Kairouan Governorate",
+        "ja": "ケルアン県",
+        "local": "ولاية القيروان"
+      },
+      "wikidata": "Q276574",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-118"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "Kairouan: no change listed after 1956.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Kasserine@1980",
+      "names": {
+        "en": "Kasserine Governorate",
+        "ja": "カスリーヌ県",
+        "local": "ولاية القصرين"
+      },
+      "wikidata": "Q388047",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-110"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "Kasserine: unchanged since Sidi Bou Zid (1973-12-08, Law 73-75).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Kef@1980",
+      "names": {
+        "en": "Kef Governorate",
+        "ja": "ケフ県",
+        "local": "ولاية الكاف"
+      },
+      "wikidata": "Q328199",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-109"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "Kef: unchanged since Siliana (1974-06-05).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Mahdia@1980",
+      "names": {
+        "en": "Mahdia Governorate",
+        "ja": "マーディア県",
+        "local": "ولاية المهدية"
+      },
+      "wikidata": "Q328164",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-116"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "Mahdia: created 1974-03-09 (Law 74-8); no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Monastir@1980",
+      "names": {
+        "en": "Monastir Governorate",
+        "ja": "モナスティル県",
+        "local": "ولاية المنستير"
+      },
+      "wikidata": "Q318102",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-117"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "Monastir: created 1974-03-09 (Law 74-8); no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Nabeul@1980",
+      "names": {
+        "en": "Nabeul Governorate",
+        "ja": "ナブール県",
+        "local": "ولاية نابل"
+      },
+      "wikidata": "Q328145",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-107"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "Nabeul: no change listed after Law 72-1.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Sfax@1980",
+      "names": {
+        "en": "Sfax Governorate",
+        "ja": "スファックス県",
+        "local": "ولاية صفاقس"
+      },
+      "wikidata": "Q241145",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-114"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "Sfax: unchanged since Mahdia (1974-03-09).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Sidi_Bouzid@1980",
+      "names": {
+        "en": "Sidi Bouzid Governorate",
+        "ja": "シディブジッド県",
+        "local": "ولاية سيدي بوزيد"
+      },
+      "wikidata": "Q327097",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-113"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "Sidi Bouzid: created 1973-12-08 (Law 73-75); no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Siliana@1980",
+      "names": {
+        "en": "Siliana Governorate",
+        "ja": "シリアナ県",
+        "local": "ولاية سليانة"
+      },
+      "wikidata": "Q328115",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-115"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "Siliana: created 1974-06-05 (Law 74-47); no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Sousse@1980",
+      "names": {
+        "en": "Sousse Governorate",
+        "ja": "スース県",
+        "local": "ولاية سوسة"
+      },
+      "wikidata": "Q276565",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-119"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "Sousse: unchanged since Mahdia/Monastir (1974-03-09).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Zaghouan@1980",
+      "names": {
+        "en": "Zaghouan Governorate",
+        "ja": "ザグアン県",
+        "local": "ولاية زغوان"
+      },
+      "wikidata": "Q27916",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-120"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "Zaghouan: formed 1976-08-11 (Law 76-82); no later change listed.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Gafsa@1980",
+      "names": {
+        "en": "Gafsa Governorate",
+        "ja": "ガフサ県",
+        "local": "ولاية قفصة"
+      },
+      "wikidata": "Q269968",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-112"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "1980-05-28: Tozeur governorate split from Gafsa (Law 80-35); no later change.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Tozeur@1980",
+      "names": {
+        "en": "Tozeur Governorate",
+        "ja": "トズール県",
+        "local": "ولاية توزر"
+      },
+      "wikidata": "Q388059",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-101"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "1980-05-28: Tozeur governorate split from Gafsa under Law 80-35.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Medenine@1980",
+      "names": {
+        "en": "Medenine Governorate",
+        "ja": "メドニン県",
+        "local": "ولاية مدنين"
+      },
+      "wikidata": "Q327087",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": "1981-03-01",
+          "atoms": [
+            "TUN-96",
+            "TUN-98"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "1981-03-01: Tataouine split from Médenine (Law 81-11); Médenine had been unchanged since 1956.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "1981-03-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-96"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "1981-03-01: Tataouine split from Médenine under Law 81-11; no later change.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Tataouine@1981",
+      "names": {
+        "en": "Tataouine Governorate",
+        "ja": "タタウイヌ県",
+        "local": "ولاية تطاوين"
+      },
+      "wikidata": "Q327045",
+      "spans": [
+        {
+          "from": "1981-03-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-98"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "1981-03-01: Tataouine governorate split from Médenine under Law 81-11.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Gabes@1980",
+      "names": {
+        "en": "Gabès Governorate",
+        "ja": "ガベズ県",
+        "local": "ولاية قابس"
+      },
+      "wikidata": "Q242263",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": "1981-09-24",
+          "atoms": [
+            "TUN-111",
+            "TUN-97"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "1981-09-24: Kébili split from Gabès (Law 81-18); Nefzaoua had joined Gabès in 1959 (Law 59-79).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "1981-09-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-111"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "1981-09-24: Kébili split from Gabès under Law 81-18; no later change.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Kebili@1981",
+      "names": {
+        "en": "Kebili Governorate",
+        "ja": "ケビリ県",
+        "local": "ولاية قبلي"
+      },
+      "wikidata": "Q286063",
+      "spans": [
+        {
+          "from": "1981-09-24",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-97"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "1981-09-24: Kébili governorate split from Gabès under Law 81-18.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Tunis",
+      "names": {
+        "en": "Tunis Governorate",
+        "ja": "チュニス県",
+        "local": "ولاية تونس"
+      },
+      "wikidata": "Q328109",
+      "spans": [
+        {
+          "from": "1980-05-28",
+          "precision": "day",
+          "to": "1983-03",
+          "atoms": [
+            "TUN-108",
+            "TUN-104",
+            "TUN-102"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "1976-08-11 Law 76-82 reorganised Tunis/Tunis-Sud; 1983 Ariana and Ben Arous split from Tunis.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Ends at the start of March 1983 (month precision): Ariana was created by a decree of March 1983 (ar/fr Wikipedia), ratified by Law 83-104 of 1983-12-03 (statoids)."
+        },
+        {
+          "from": "1983-12-03",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-108"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "1983-12-03: Ariana and Ben Arous governorates split from Tunis under Law 83-104; no later change to Tunis.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Ben_Arous@1983",
+      "names": {
+        "en": "Ben Arous Governorate",
+        "ja": "ベンナラス県",
+        "local": "ولاية بن عروس"
+      },
+      "wikidata": "Q238555",
+      "spans": [
+        {
+          "from": "1983-12-03",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TUN-104"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "1983-12-03: Ben Arous split from Tunis under Law 83-104.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?title=Gouvernorat_de_Ben_Arous&oldid=236470687",
+              "title": "Gouvernorat de Ben Arous (fr.wikipedia oldid 236470687)",
+              "says": "Created 3 December 1983; area 761 km².",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TUN:Ariana@1983",
+      "names": {
+        "en": "Ariana Governorate",
+        "ja": "アリアナ県",
+        "local": "ولاية أريانة"
+      },
+      "wikidata": "Q233116",
+      "spans": [
+        {
+          "from": "1983-12-03",
+          "precision": "day",
+          "to": "2000-07-31",
+          "atoms": [
+            "TUN-102"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utn.html",
+              "title": "Statoids — Governorates of Tunisia (change history)",
+              "says": "1983-12-03 Ariana split from Tunis (Law 83-104); 2000-07-31 Manouba split from Ariana (Law 2000-78).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?title=Gouvernorat_de_l%27Ariana&oldid=236470638",
+              "title": "Gouvernorat de l'Ariana (fr.wikipedia oldid 236470638)",
+              "says": "Created March 1983; in 2000 the Manouba delegation (western part) became a governorate.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "NE feature TUN-102 is labelled «Manubah» but its outline is Ariana + Manouba (1,633 km² vs 482 + 1,137 km²; contains Ariana, Raoued, La Soukra, Kalaat el-Andalous, Tebourba), i.e. the Ariana governorate of 1983-2000."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1980-05-28",
+      "precision": "day",
+      "what": "Tozeur split from Gafsa (Law 80-35)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/utn.html",
+          "title": "Statoids — Governorates of Tunisia (change history)",
+          "says": "1980-05-28 Tozeur governorate split from Gafsa.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1981-03-01",
+      "precision": "day",
+      "what": "Tataouine split from Médenine (Law 81-11)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/utn.html",
+          "title": "Statoids — Governorates of Tunisia (change history)",
+          "says": "1981-03-01 Tataouine split from Médenine.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1981-09-24",
+      "precision": "day",
+      "what": "Kébili split from Gabès (Law 81-18)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/utn.html",
+          "title": "Statoids — Governorates of Tunisia (change history)",
+          "says": "1981-09-24 Kébili split from Gabès.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1983-12-03",
+      "precision": "day",
+      "what": "Ariana and Ben Arous split from Tunis (Law 83-104)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/utn.html",
+          "title": "Statoids — Governorates of Tunisia (change history)",
+          "says": "1983-12-03 Ariana and Ben Arous split from Tunis.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2000-07-31",
+      "precision": "day",
+      "what": "Manouba split from Ariana (Law 2000-78)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/utn.html",
+          "title": "Statoids — Governorates of Tunisia (change history)",
+          "says": "2000-07-31 Manouba split from Ariana.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1990-01-01",
+      "n": 23,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/utn.html",
+          "title": "Statoids — Governorates of Tunisia (change history)",
+          "says": "24 governorates after 2000 minus Manouba (2000) = 23 between 1983 and 2000.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2010-01-01",
+      "n": 24,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/utn.html",
+          "title": "Statoids — Governorates of Tunisia (change history)",
+          "says": "Tunisia is divided into 24 wilayat.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Tunis / Ariana / Ben Arous during 1983 (between the March 1983 creation decree and Law 83-104 of 1983-12-03)",
+      "unit": "TUN:Tunis",
+      "atoms": [
+        "TUN-108",
+        "TUN-104",
+        "TUN-102"
+      ],
+      "from": "1983-03",
+      "to": "1983-12-03",
+      "why": "Sources disagree on the creation date (ar/fr Wikipedia: decree of March 1983, governors from March 1983; statoids: Law 83-104 of 1983-12-03); exact day of the March decree not found.",
+      "checked": [
+        "statoids.com/utn.html",
+        "fr.wikipedia Gouvernorat de l'Ariana oldid 236470638 / Ben Arous oldid 236470687",
+        "ar.wikipedia ولاية أريانة oldid 70818774"
+      ],
+      "needs": "JORT text of the March 1983 decree (no finer atoms needed)"
+    },
+    {
+      "what": "Ariana (reduced) after Manouba split, 2000-07-31 →",
+      "unit": "TUN:Ariana@2000",
+      "atoms": [
+        "TUN-102"
+      ],
+      "from": "2000-07-31",
+      "to": null,
+      "why": "Law 2000-78 made the Manouba delegations a governorate; the Ariana/Manouba line runs inside NE atom TUN-102, which NE has not split.",
+      "checked": [
+        "statoids.com/utn.html",
+        "fr.wikipedia Gouvernorat de l'Ariana oldid 236470638",
+        "NE admin-1 TUN (23 features, no Ariana)"
+      ],
+      "needs": "delegation-level atoms (e.g. geoBoundaries TUN ADM2 / INS délégations; licence to check)"
+    },
+    {
+      "what": "Manouba governorate 2000-07-31 →",
+      "unit": "TUN:Manouba@2000",
+      "from": "2000-07-31",
+      "to": null,
+      "why": "Carved from Ariana inside NE atom TUN-102.",
+      "checked": [
+        "statoids.com/utn.html"
+      ],
+      "needs": "delegation-level atoms"
+    },
+    {
+      "what": "Layouts before 1980-05-28 (14 governorates 1956, 1959, Tunis-Sud 1972, Sidi Bou Zid 1973, Mahdia/Monastir and Siliana 1974, Zaghouan 1976)",
+      "from": "1956-06-21",
+      "to": "1980-05-28",
+      "why": "Several were formed from PARTS of 2-4 governorates (Tunis-Sud 1972, Sidi Bou Zid 1973, Mahdia 1974, Siliana 1974) and the 1976 Tunis/Tunis-Sud → Tunis/Zaghouan reorganisation moved territory both ways; statoids (Law 76-82, 1976-08-11) and fr.wikipedia (Zaghouan created November 1976) disagree on the date.",
+      "checked": [
+        "statoids.com/utn.html",
+        "fr.wikipedia Gouvernorat de Zaghouan oldid 235885778"
+      ],
+      "needs": "delegation-level geometry of 1956-1980"
+    }
+  ]
+}

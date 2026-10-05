@@ -1,0 +1,588 @@
+{
+  "country": "MRT",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1990-09-10",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Islamic Republic of Mauritania throughout the scope (Tiris el Gharbia, held 1976-1979, lies outside both the scope and the MRT atoms). NE depicts the 13-unit layout of 1990-09-10 → 2014-11-25 (single Nouakchott wilaya).",
+  "units": [
+    {
+      "id": "MRT:Hodh-Ech-Chargui@1990",
+      "names": {
+        "en": "Hodh Ech Chargui",
+        "ja": "ホズ・エッ・シャルギ州",
+        "local": "الحوض الشرقي"
+      },
+      "wikidata": "Q12621",
+      "spans": [
+        {
+          "from": "1990-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MRT-2796"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umr.html",
+              "title": "Regions of Mauritania (Statoids)",
+              "says": "Change list: 1990-09-10 Nouakchott from district to regional status; 2014-11-25 Nouakchott split into Nouakchott Nord, Ouest and Sud.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ymr.html",
+              "title": "Departments of Mauritania (Statoids)",
+              "says": "Department change list: 1990-09-10 Nouakchott nine departments; 2010 N'Beiket Lehwach (within Hodh ech Chargui); 2013 Chami probably split from Nouadhibou.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No inter-wilaya change in the region and department change lists between 1990 and 2019 except the 2014 Nouakchott split."
+        }
+      ]
+    },
+    {
+      "id": "MRT:Hodh-El-Gharbi@1990",
+      "names": {
+        "en": "Hodh El Gharbi",
+        "ja": "ホズ・エル・ガルビ州",
+        "local": "الحوض الغربي"
+      },
+      "wikidata": "Q850435",
+      "spans": [
+        {
+          "from": "1990-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MRT-2797"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umr.html",
+              "title": "Regions of Mauritania (Statoids)",
+              "says": "Change list: 1990-09-10 Nouakchott from district to regional status; 2014-11-25 Nouakchott split into Nouakchott Nord, Ouest and Sud.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ymr.html",
+              "title": "Departments of Mauritania (Statoids)",
+              "says": "Department change list: 1990-09-10 Nouakchott nine departments; 2010 N'Beiket Lehwach (within Hodh ech Chargui); 2013 Chami probably split from Nouadhibou.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No inter-wilaya change in the region and department change lists between 1990 and 2019 except the 2014 Nouakchott split."
+        }
+      ]
+    },
+    {
+      "id": "MRT:Assaba@1990",
+      "names": {
+        "en": "Assaba",
+        "ja": "アサバ州",
+        "local": "لعصابة"
+      },
+      "wikidata": "Q738546",
+      "spans": [
+        {
+          "from": "1990-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MRT-2789"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umr.html",
+              "title": "Regions of Mauritania (Statoids)",
+              "says": "Change list: 1990-09-10 Nouakchott from district to regional status; 2014-11-25 Nouakchott split into Nouakchott Nord, Ouest and Sud.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ymr.html",
+              "title": "Departments of Mauritania (Statoids)",
+              "says": "Department change list: 1990-09-10 Nouakchott nine departments; 2010 N'Beiket Lehwach (within Hodh ech Chargui); 2013 Chami probably split from Nouadhibou.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No inter-wilaya change in the region and department change lists between 1990 and 2019 except the 2014 Nouakchott split."
+        }
+      ]
+    },
+    {
+      "id": "MRT:Gorgol@1990",
+      "names": {
+        "en": "Gorgol",
+        "ja": "ゴルゴル州",
+        "local": "كوركول"
+      },
+      "wikidata": "Q859831",
+      "spans": [
+        {
+          "from": "1990-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MRT-2791"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umr.html",
+              "title": "Regions of Mauritania (Statoids)",
+              "says": "Change list: 1990-09-10 Nouakchott from district to regional status; 2014-11-25 Nouakchott split into Nouakchott Nord, Ouest and Sud.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ymr.html",
+              "title": "Departments of Mauritania (Statoids)",
+              "says": "Department change list: 1990-09-10 Nouakchott nine departments; 2010 N'Beiket Lehwach (within Hodh ech Chargui); 2013 Chami probably split from Nouadhibou.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No inter-wilaya change in the region and department change lists between 1990 and 2019 except the 2014 Nouakchott split."
+        }
+      ]
+    },
+    {
+      "id": "MRT:Brakna@1990",
+      "names": {
+        "en": "Brakna",
+        "ja": "ブラクナ州",
+        "local": "لبراكنة"
+      },
+      "wikidata": "Q12632",
+      "spans": [
+        {
+          "from": "1990-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MRT-2784"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umr.html",
+              "title": "Regions of Mauritania (Statoids)",
+              "says": "Change list: 1990-09-10 Nouakchott from district to regional status; 2014-11-25 Nouakchott split into Nouakchott Nord, Ouest and Sud.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ymr.html",
+              "title": "Departments of Mauritania (Statoids)",
+              "says": "Department change list: 1990-09-10 Nouakchott nine departments; 2010 N'Beiket Lehwach (within Hodh ech Chargui); 2013 Chami probably split from Nouadhibou.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No inter-wilaya change in the region and department change lists between 1990 and 2019 except the 2014 Nouakchott split."
+        }
+      ]
+    },
+    {
+      "id": "MRT:Trarza@1990",
+      "names": {
+        "en": "Trarza",
+        "ja": "トラルザ州",
+        "local": "اترارزة"
+      },
+      "wikidata": "Q859581",
+      "spans": [
+        {
+          "from": "1990-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MRT-2788"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umr.html",
+              "title": "Regions of Mauritania (Statoids)",
+              "says": "Change list: 1990-09-10 Nouakchott from district to regional status; 2014-11-25 Nouakchott split into Nouakchott Nord, Ouest and Sud.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ymr.html",
+              "title": "Departments of Mauritania (Statoids)",
+              "says": "Department change list: 1990-09-10 Nouakchott nine departments; 2010 N'Beiket Lehwach (within Hodh ech Chargui); 2013 Chami probably split from Nouadhibou.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No inter-wilaya change in the region and department change lists between 1990 and 2019 except the 2014 Nouakchott split."
+        }
+      ]
+    },
+    {
+      "id": "MRT:Adrar@1990",
+      "names": {
+        "en": "Adrar",
+        "ja": "アドラル州",
+        "local": "آدرار"
+      },
+      "wikidata": "Q366626",
+      "spans": [
+        {
+          "from": "1990-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MRT-2795"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umr.html",
+              "title": "Regions of Mauritania (Statoids)",
+              "says": "Change list: 1990-09-10 Nouakchott from district to regional status; 2014-11-25 Nouakchott split into Nouakchott Nord, Ouest and Sud.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ymr.html",
+              "title": "Departments of Mauritania (Statoids)",
+              "says": "Department change list: 1990-09-10 Nouakchott nine departments; 2010 N'Beiket Lehwach (within Hodh ech Chargui); 2013 Chami probably split from Nouadhibou.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No inter-wilaya change in the region and department change lists between 1990 and 2019 except the 2014 Nouakchott split."
+        }
+      ]
+    },
+    {
+      "id": "MRT:Dakhlet-Nouadhibou@1990",
+      "names": {
+        "en": "Dakhlet Nouadhibou",
+        "ja": "ダフレト・ヌアジブ州",
+        "local": "داخلت انواذيبو"
+      },
+      "wikidata": "Q859573",
+      "spans": [
+        {
+          "from": "1990-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MRT-2785"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umr.html",
+              "title": "Regions of Mauritania (Statoids)",
+              "says": "Change list: 1990-09-10 Nouakchott from district to regional status; 2014-11-25 Nouakchott split into Nouakchott Nord, Ouest and Sud.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ymr.html",
+              "title": "Departments of Mauritania (Statoids)",
+              "says": "Department change list: 1990-09-10 Nouakchott nine departments; 2010 N'Beiket Lehwach (within Hodh ech Chargui); 2013 Chami probably split from Nouadhibou.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1301636027",
+              "title": "Chami (National Assembly district) — Wikipedia",
+              "says": "Chami district (Dakhlet Nouadhibou wilaya) created 2013 from the Nouadhibou district.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://horizon.documentation.ird.fr/exl-doc/pleins_textes/divers21-04/010080735.pdf",
+              "title": "Chami, ville nouvelle et ville de l'or (L'Espace Politique 38, 2019)",
+              "says": "Chami founded 2012 at the confines of Inchiri and Dakhlet Nouadhibou; erected a commune and department chef-lieu a year later.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No inter-wilaya change in the region and department change lists between 1990 and 2019 except the 2014 Nouakchott split."
+        }
+      ]
+    },
+    {
+      "id": "MRT:Tagant@1990",
+      "names": {
+        "en": "Tagant",
+        "ja": "タガント州",
+        "local": "تكانت"
+      },
+      "wikidata": "Q843903",
+      "spans": [
+        {
+          "from": "1990-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MRT-2798"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umr.html",
+              "title": "Regions of Mauritania (Statoids)",
+              "says": "Change list: 1990-09-10 Nouakchott from district to regional status; 2014-11-25 Nouakchott split into Nouakchott Nord, Ouest and Sud.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ymr.html",
+              "title": "Departments of Mauritania (Statoids)",
+              "says": "Department change list: 1990-09-10 Nouakchott nine departments; 2010 N'Beiket Lehwach (within Hodh ech Chargui); 2013 Chami probably split from Nouadhibou.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No inter-wilaya change in the region and department change lists between 1990 and 2019 except the 2014 Nouakchott split."
+        }
+      ]
+    },
+    {
+      "id": "MRT:Guidimaka@1990",
+      "names": {
+        "en": "Guidimaka",
+        "ja": "ギディマカ州",
+        "local": "كيدي ماغة"
+      },
+      "wikidata": "Q768119",
+      "spans": [
+        {
+          "from": "1990-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MRT-2790"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umr.html",
+              "title": "Regions of Mauritania (Statoids)",
+              "says": "Change list: 1990-09-10 Nouakchott from district to regional status; 2014-11-25 Nouakchott split into Nouakchott Nord, Ouest and Sud.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ymr.html",
+              "title": "Departments of Mauritania (Statoids)",
+              "says": "Department change list: 1990-09-10 Nouakchott nine departments; 2010 N'Beiket Lehwach (within Hodh ech Chargui); 2013 Chami probably split from Nouadhibou.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No inter-wilaya change in the region and department change lists between 1990 and 2019 except the 2014 Nouakchott split."
+        }
+      ]
+    },
+    {
+      "id": "MRT:Tiris-Zemmour@1990",
+      "names": {
+        "en": "Tiris Zemmour",
+        "ja": "ティリス・ゼムール州",
+        "local": "تيرس زمور"
+      },
+      "wikidata": "Q859567",
+      "spans": [
+        {
+          "from": "1990-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MRT-2783"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umr.html",
+              "title": "Regions of Mauritania (Statoids)",
+              "says": "Change list: 1990-09-10 Nouakchott from district to regional status; 2014-11-25 Nouakchott split into Nouakchott Nord, Ouest and Sud.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ymr.html",
+              "title": "Departments of Mauritania (Statoids)",
+              "says": "Department change list: 1990-09-10 Nouakchott nine departments; 2010 N'Beiket Lehwach (within Hodh ech Chargui); 2013 Chami probably split from Nouadhibou.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No inter-wilaya change in the region and department change lists between 1990 and 2019 except the 2014 Nouakchott split."
+        }
+      ]
+    },
+    {
+      "id": "MRT:Inchiri@1990",
+      "names": {
+        "en": "Inchiri",
+        "ja": "インシリ州",
+        "local": "إينشيري"
+      },
+      "wikidata": "Q850022",
+      "spans": [
+        {
+          "from": "1990-09-10",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MRT-2786"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umr.html",
+              "title": "Regions of Mauritania (Statoids)",
+              "says": "Change list: 1990-09-10 Nouakchott from district to regional status; 2014-11-25 Nouakchott split into Nouakchott Nord, Ouest and Sud.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ymr.html",
+              "title": "Departments of Mauritania (Statoids)",
+              "says": "Department change list: 1990-09-10 Nouakchott nine departments; 2010 N'Beiket Lehwach (within Hodh ech Chargui); 2013 Chami probably split from Nouadhibou.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1301636027",
+              "title": "Chami (National Assembly district) — Wikipedia",
+              "says": "Chami district (Dakhlet Nouadhibou wilaya) created 2013 from the Nouadhibou district.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://horizon.documentation.ird.fr/exl-doc/pleins_textes/divers21-04/010080735.pdf",
+              "title": "Chami, ville nouvelle et ville de l'or (L'Espace Politique 38, 2019)",
+              "says": "Chami founded 2012 at the confines of Inchiri and Dakhlet Nouadhibou; erected a commune and department chef-lieu a year later.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No inter-wilaya change in the region and department change lists between 1990 and 2019 except the 2014 Nouakchott split."
+        }
+      ]
+    },
+    {
+      "id": "MRT:Nouakchott@1990",
+      "names": {
+        "en": "Nouakchott",
+        "ja": "ヌアクショット",
+        "local": "نواكشوط"
+      },
+      "spans": [
+        {
+          "from": "1990-09-10",
+          "precision": "day",
+          "to": "2014-11-25",
+          "atoms": [
+            "MRT-2787"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umr.html",
+              "title": "Regions of Mauritania (Statoids)",
+              "says": "Change list: 1990-09-10 Nouakchott from district to regional status; 2014-11-25 Nouakchott split into Nouakchott Nord, Ouest and Sud.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ymr.html",
+              "title": "Departments of Mauritania (Statoids)",
+              "says": "Department change list: 1990-09-10 Nouakchott nine departments; 2010 N'Beiket Lehwach (within Hodh ech Chargui); 2013 Chami probably split from Nouadhibou.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.finances.gov.mr/Recueil_des_textes_relatifs_a_la_mission_du_Ministere/Textes/TXT%20GL/D%C3%A9cret%202014-182%203%20Wilayas.pdf",
+              "title": "Décret n° 2014-182 bis du 2 décembre 2014 portant création des Wilayas de Nouakchott",
+              "says": "Creates three wilayas in Nouakchott grouping its nine moughataas: Nord (Dar Naim, Teyarett, Toujounine), Ouest, Sud.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Wilaya status from 1990-09-10 (district before); split 2014 into three wilayas grouping the same nine moughataas."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1990-09-10",
+      "precision": "day",
+      "what": "Nouakchott changes from district to wilaya (regional) status, reorganised into nine moughataas",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umr.html",
+          "title": "Regions of Mauritania (Statoids)",
+          "says": "Change list: 1990-09-10 Nouakchott from district to regional status; 2014-11-25 Nouakchott split into Nouakchott Nord, Ouest and Sud.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.statoids.com/ymr.html",
+          "title": "Departments of Mauritania (Statoids)",
+          "says": "Department change list: 1990-09-10 Nouakchott nine departments; 2010 N'Beiket Lehwach (within Hodh ech Chargui); 2013 Chami probably split from Nouadhibou.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2013-05-06",
+      "precision": "day",
+      "what": "Chami moughataa created inside Dakhlet Nouadhibou from Nouadhibou (no inter-wilaya change)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ymr.html",
+          "title": "Departments of Mauritania (Statoids)",
+          "says": "Department change list: 1990-09-10 Nouakchott nine departments; 2010 N'Beiket Lehwach (within Hodh ech Chargui); 2013 Chami probably split from Nouadhibou.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1301636027",
+          "title": "Chami (National Assembly district) — Wikipedia",
+          "says": "Chami district (Dakhlet Nouadhibou wilaya) created 2013 from the Nouadhibou district.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2014-11-25",
+      "precision": "day",
+      "what": "Nouakchott split into Nouakchott Nord, Nouakchott Ouest and Nouakchott Sud (decree 2014-182 bis dated 2 Dec 2014)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umr.html",
+          "title": "Regions of Mauritania (Statoids)",
+          "says": "Change list: 1990-09-10 Nouakchott from district to regional status; 2014-11-25 Nouakchott split into Nouakchott Nord, Ouest and Sud.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.finances.gov.mr/Recueil_des_textes_relatifs_a_la_mission_du_Ministere/Textes/TXT%20GL/D%C3%A9cret%202014-182%203%20Wilayas.pdf",
+          "title": "Décret n° 2014-182 bis du 2 décembre 2014 portant création des Wilayas de Nouakchott",
+          "says": "Creates three wilayas in Nouakchott grouping its nine moughataas: Nord (Dar Naim, Teyarett, Toujounine), Ouest, Sud.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1990-09-10",
+      "n": 13,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umr.html",
+          "title": "Regions of Mauritania (Statoids)",
+          "says": "Change list: 1990-09-10 Nouakchott from district to regional status; 2014-11-25 Nouakchott split into Nouakchott Nord, Ouest and Sud.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Nouakchott Nord, Nouakchott Ouest, Nouakchott Sud 2014-11-25 → 2019-12-31",
+      "unit": "MRT:Nouakchott-Nord@2014",
+      "atoms": [
+        "MRT-2787"
+      ],
+      "from": "2014-11-25",
+      "to": null,
+      "why": "The three wilayas group the nine moughataas of Nouakchott; their lines run inside the single NE Nouakchott atom. Date: Statoids gives 2014-11-25, the decree is dated 2014-12-02; the earlier date is used to start the withholding. (Ouest and Sud also withheld.)",
+      "checked": [
+        "décret 2014-182 bis (finances.gov.mr)",
+        "statoids.com/umr.html",
+        "statoids.com/ymr.html"
+      ],
+      "needs": "moughataa atoms for Nouakchott (geoBoundaries MRT ADM2, CC BY 4.0)"
+    },
+    {
+      "what": "Mauritania before 1990-09-10 (12 regions + Nouakchott district; Tiris Zemmour ~1962, Inchiri date unknown)",
+      "from": "1960-11-28",
+      "to": "1990-09-10",
+      "why": "Creation dates of Inchiri and of the earlier regions, and whether the Nouakchott district had the same limits before 1990 (when it was reorganised into nine moughataas), could not be established.",
+      "checked": [
+        "statoids.com/umr.html",
+        "statoids.com/ymr.html",
+        "en.wikipedia Regions of Mauritania",
+        "en.wikipedia Inchiri region",
+        "Persée REMMM 1989 «Centre et régions en Mauritanie»"
+      ],
+      "needs": "ordinances on the regions (e.g. ordinance 79-026 of 20 Feb 1979 on regions and the Nouakchott district) with their annexes"
+    }
+  ]
+}

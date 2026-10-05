@@ -1,0 +1,1224 @@
+{
+ "country": "AFG",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "2004-07",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Islamic Republic / Transitional State of Afghanistan, 2004–2019. NE duplicates names: AFG-1769 «Parwan» is Panjshir and AFG-1753 «Uruzgan» is Daykundi (by gn_name and position).",
+ "units": [
+  {
+   "id": "AFG:Badakhshan",
+   "names": {
+    "en": "Badakhshan Province",
+    "ja": "バダフシャーン州",
+    "local": "ولایت بدخشان"
+   },
+   "wikidata": "Q165376",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1760"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Takhar",
+   "names": {
+    "en": "Takhar Province",
+    "ja": "タハール州",
+    "local": "ولایت تخار"
+   },
+   "wikidata": "Q186395",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1765"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Kunduz",
+   "names": {
+    "en": "Kunduz Province",
+    "ja": "クンドゥーズ州",
+    "local": "ولایت قندوز"
+   },
+   "wikidata": "Q186418",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1763"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Balkh",
+   "names": {
+    "en": "Balkh Province",
+    "ja": "バルフ州",
+    "local": "ولایت بلخ"
+   },
+   "wikidata": "Q121104",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1744"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Jowzjan",
+   "names": {
+    "en": "Jowzjan Province",
+    "ja": "ジューズジャーン州",
+    "local": "ولایت جوزجان"
+   },
+   "wikidata": "Q183036",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1746"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Faryab",
+   "names": {
+    "en": "Faryab Province",
+    "ja": "ファーリヤーブ州",
+    "local": "ولایت فاریاب"
+   },
+   "wikidata": "Q173830",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1745"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Badghis",
+   "names": {
+    "en": "Badghis Province",
+    "ja": "バードギース州",
+    "local": "ولایت بادغیس"
+   },
+   "wikidata": "Q172052",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1741"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Herat",
+   "names": {
+    "en": "Herat Province",
+    "ja": "ヘラート州",
+    "local": "ولایت هرات"
+   },
+   "wikidata": "Q182844",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1742"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Nimruz",
+   "names": {
+    "en": "Nimruz Province",
+    "ja": "ニームルーズ州",
+    "local": "ولایت نیمروز"
+   },
+   "wikidata": "Q183021",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1751"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Farah",
+   "names": {
+    "en": "Farah Province",
+    "ja": "ファラー州",
+    "local": "ولایت فراه"
+   },
+   "wikidata": "Q180330",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1749"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Kunar",
+   "names": {
+    "en": "Kunar Province",
+    "ja": "クナル州",
+    "local": "ولایت کنر"
+   },
+   "wikidata": "Q188147",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1762"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Nuristan",
+   "names": {
+    "en": "Nuristan Province",
+    "ja": "ヌーリスターン州",
+    "local": "ولایت نورستان"
+   },
+   "wikidata": "Q167485",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1761"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Nangarhar",
+   "names": {
+    "en": "Nangarhar Province",
+    "ja": "ナンガルハール州",
+    "local": "ولایت ننگرهار"
+   },
+   "wikidata": "Q178471",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1764"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Khost",
+   "names": {
+    "en": "Khost Province",
+    "ja": "ホースト州",
+    "local": "ولایت خوست"
+   },
+   "wikidata": "Q185752",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1758"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Paktia",
+   "names": {
+    "en": "Paktia Province",
+    "ja": "パクティヤー州",
+    "local": "ولایت پکتیا"
+   },
+   "wikidata": "Q182493",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-3413"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Paktika",
+   "names": {
+    "en": "Paktika Province",
+    "ja": "パクティーカー州",
+    "local": "ولایت پکتیکا"
+   },
+   "wikidata": "Q185575",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1759"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Zabul",
+   "names": {
+    "en": "Zabul Province",
+    "ja": "ザーブル州",
+    "local": "ولایت زابل"
+   },
+   "wikidata": "Q139126",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1755"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Kandahar",
+   "names": {
+    "en": "Kandahar Province",
+    "ja": "カンダハール州",
+    "local": "ولایت قندهار"
+   },
+   "wikidata": "Q173808",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1754"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Helmand",
+   "names": {
+    "en": "Helmand Province",
+    "ja": "ヘルマンド州",
+    "local": "ولایت هلمند"
+   },
+   "wikidata": "Q173821",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1750"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Ghazni",
+   "names": {
+    "en": "Ghazni Province",
+    "ja": "ガズニー州",
+    "local": "ولایت غزنی"
+   },
+   "wikidata": "Q180415",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1757"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Panjshir",
+   "names": {
+    "en": "Panjshir Province",
+    "ja": "パンジシール州",
+    "local": "ولایت پنجشیر"
+   },
+   "wikidata": "Q181235",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1769"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Panjshir_Province&oldid=1365971866",
+       "title": "Wikipedia — Panjshir Province",
+       "says": "In April 2004 Panjshir District of Parwan Province was turned into a province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Kabul",
+   "names": {
+    "en": "Kabul Province",
+    "ja": "カーブル州",
+    "local": "ولایت کابل"
+   },
+   "wikidata": "Q188933",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1767"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Laghman",
+   "names": {
+    "en": "Laghman Province",
+    "ja": "ラグマーン州",
+    "local": "ولایت لغمان"
+   },
+   "wikidata": "Q185442",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1770"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Logar",
+   "names": {
+    "en": "Logar Province",
+    "ja": "ローガル州",
+    "local": "ولایت لوگر"
+   },
+   "wikidata": "Q6667298",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1771"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Kapisa",
+   "names": {
+    "en": "Kapisa Province",
+    "ja": "カーピーサー州",
+    "local": "ولایت کاپیسا"
+   },
+   "wikidata": "Q173816",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1768"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Maidan Wardak",
+   "names": {
+    "en": "Maidan Wardak Province",
+    "ja": "ヴァルダク州",
+    "local": "ولایت میدان وردک"
+   },
+   "wikidata": "Q183056",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1774"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Bamyan",
+   "names": {
+    "en": "Bamyan Province",
+    "ja": "バーミヤーン州",
+    "local": "ولایت بامیان"
+   },
+   "wikidata": "Q171382",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1743"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Parwan",
+   "names": {
+    "en": "Parwan Province",
+    "ja": "パルヴァーン州",
+    "local": "ولایت پروان"
+   },
+   "wikidata": "Q188157",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1772"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Panjshir_Province&oldid=1365971866",
+       "title": "Wikipedia — Panjshir Province",
+       "says": "In April 2004 Panjshir District of Parwan Province was turned into a province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Sar-e Pol",
+   "names": {
+    "en": "Sar-e Pol Province",
+    "ja": "サーレポル州",
+    "local": "ولایت سرپل"
+   },
+   "wikidata": "Q182487",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1748"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Ghōr",
+   "names": {
+    "en": "Ghōr Province",
+    "ja": "ゴール州",
+    "local": "ولایت غور"
+   },
+   "wikidata": "Q186392",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1747"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Baghlan",
+   "names": {
+    "en": "Baghlan Province",
+    "ja": "バグラーン州",
+    "local": "ولایت بغلان"
+   },
+   "wikidata": "Q170309",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1766"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  },
+  {
+   "id": "AFG:Samangan",
+   "names": {
+    "en": "Samangan Province",
+    "ja": "サマンガーン州",
+    "local": "ولایت سمنگان"
+   },
+   "wikidata": "Q183015",
+   "spans": [
+    {
+     "from": "2004-07",
+     "precision": "month",
+     "to": null,
+     "atoms": [
+      "AFG-1773"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uaf.html",
+       "title": "Statoids — Provinces of Afghanistan, change history",
+       "says": "Lists no province creation, merger or district transfer after the 2004-06 reorganisation (page updated 2015).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 34-province layout with its 2004 district reassignments was announced in June 2004 (month only); the span starts in July 2004 to stay inside it. NE geometry is assumed to be that layout (AIMS-derived); no later inter-province change is documented except Gizab."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "2004-03-28",
+   "precision": "day",
+   "what": "Daykundi split from Uruzgan",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Daikundi_Province&oldid=1373616012",
+     "title": "Wikipedia — Daikundi Province",
+     "says": "Daikundi was created on 28 March 2004 from the northern districts of Uruzgan Province.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2004-04",
+   "precision": "month",
+   "what": "Panjshir split from Parwan",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Panjshir_Province&oldid=1365971866",
+     "title": "Wikipedia — Panjshir Province",
+     "says": "In April 2004 Panjshir District of Parwan Province was turned into a province.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2004-06",
+   "precision": "month",
+   "what": "34 provinces / 397 districts announced; districts reassigned",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uaf.html",
+     "title": "Statoids — Provinces of Afghanistan, change history",
+     "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2006",
+   "precision": "year",
+   "what": "Gizab re-annexed to Uruzgan",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Gizab_District&oldid=1377359860",
+     "title": "Wikipedia — Gizab District",
+     "says": "Gizab was moved from Uruzgan to Daykundi in 2004, re-annexed to Uruzgan in 2006, and later transferred back to Daykundi.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2004-07",
+   "n": 34,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uaf.html",
+     "title": "Statoids — Provinces of Afghanistan, change history",
+     "says": "2004-06: the president’s office announced 34 instead of 32 provinces (Daikondi, Panjshir added) and 397 districts; several districts moved between provinces.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Uruzgan Province 2004–2019",
+   "unit": "AFG:Uruzgan",
+   "atoms": [
+    "AFG-1752"
+   ],
+   "from": "2004-07",
+   "to": null,
+   "why": "The Uruzgan–Daykundi line moved with Gizab district (to Daykundi 2004, back to Uruzgan 2006, later to Daykundi again); the transfer dates are not established and which state NE depicts is unknown.",
+   "checked": [
+    "statoids.com/uaf.html",
+    "Wikipedia Gizab District, Daikundi Province, Uruzgan Province",
+    "NE feature properties (AFG-1753 gn_name «Wilayat-e Daykundi», AFG-1769 gn_name «Panjshir»: NE mislabels them Uruzgan/Parwan)"
+   ],
+   "needs": "district atoms with dated Gizab affiliation, e.g. geoBoundaries AFG ADM2 (licence per source) plus decree dates"
+  },
+  {
+   "what": "Daykundi Province 2004–2019",
+   "unit": "AFG:Daykundi",
+   "atoms": [
+    "AFG-1753"
+   ],
+   "from": "2004-07",
+   "to": null,
+   "why": "Same Gizab shifts as Uruzgan; NE labels this feature «Uruzgan» but its gn_name is Wilayat-e Daykundi.",
+   "checked": [
+    "statoids.com/uaf.html",
+    "Wikipedia Gizab District, Daikundi Province, Uruzgan Province",
+    "NE feature properties (AFG-1753 gn_name «Wilayat-e Daykundi», AFG-1769 gn_name «Panjshir»: NE mislabels them Uruzgan/Parwan)"
+   ],
+   "needs": "district atoms with dated Gizab affiliation"
+  },
+  {
+   "what": "1964–2004 layouts (28–32 provinces)",
+   "from": null,
+   "to": null,
+   "why": "Outside scope. Not unions of modern provinces: ~1988 many provincial boundaries adjusted (e.g. northern Samangan to Balkh); Sar-e Pol (1988, from Balkh, Jowzjan, Samangan) and Nurestan (1988, from Konar, Laghman) had several parents; Khost (~1995) date not established.",
+   "checked": [
+    "statoids.com/uaf.html"
+   ],
+   "needs": "district atoms with a dated district-to-province table for 1964–2004"
+  }
+ ]
+}

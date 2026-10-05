@@ -1,0 +1,806 @@
+{
+  "country": "KHM",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "2008-12-22",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Kingdom of Cambodia (since 1993). Scope starts with the royal decree of 22 Dec 2008; earlier changes (1979-2001) are dated only to the year in the sources found.",
+  "units": [
+    {
+      "id": "KHM:Ratanakiri",
+      "names": {
+        "en": "Ratanakiri Province",
+        "ja": "ラタナキリ州",
+        "local": "ខេត្តរតនគិរី"
+      },
+      "wikidata": "Q747846",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1795"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "KHM:Mondulkiri",
+      "names": {
+        "en": "Mondulkiri Province",
+        "ja": "モンドルキリ州",
+        "local": "ខេត្តមណ្ឌលគិរី"
+      },
+      "wikidata": "Q652830",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1794"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "KHM:Kratie",
+      "names": {
+        "en": "Kratié Province",
+        "ja": "クラチエ州",
+        "local": "ខេត្តក្រចេះ"
+      },
+      "wikidata": "Q785896",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1793"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "KHM:SvayRieng",
+      "names": {
+        "en": "Svay Rieng Province",
+        "ja": "スヴァイリエン州",
+        "local": "ខេត្តស្វាយរៀង"
+      },
+      "wikidata": "Q751864",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1801"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "KHM:PreyVeng",
+      "names": {
+        "en": "Prey Veng Province",
+        "ja": "プレイベン州",
+        "local": "ខេត្តព្រៃវែង"
+      },
+      "wikidata": "Q856788",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1790"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "KHM:Takeo",
+      "names": {
+        "en": "Takéo Province",
+        "ja": "タケオ州",
+        "local": "ខេត្តតាកែវ"
+      },
+      "wikidata": "Q613345",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1802"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "KHM:Kampot",
+      "names": {
+        "en": "Kampot Province",
+        "ja": "カンポット州",
+        "local": "ខេត្តកំពត"
+      },
+      "wikidata": "Q748470",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1797"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "KHM:OddarMeanchey",
+      "names": {
+        "en": "Oddar Meanchey Province",
+        "ja": "ウドーミアンチェイ州",
+        "local": "ខេត្តឧត្តរមានជ័យ"
+      },
+      "wikidata": "Q629538",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1782"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "KHM:PreahVihear",
+      "names": {
+        "en": "Preah Vihear Province",
+        "ja": "プリアヴィヒア州",
+        "local": "ខេត្តព្រះវិហារ"
+      },
+      "wikidata": "Q502151",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1791"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "KHM:SiemReap",
+      "names": {
+        "en": "Siem Reap Province",
+        "ja": "シェムリアップ州",
+        "local": "ខេត្តសៀមរាប"
+      },
+      "wikidata": "Q652818",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1781"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "KHM:BanteayMeanchey",
+      "names": {
+        "en": "Banteay Meanchey Province",
+        "ja": "バンテイメンチェイ州",
+        "local": "ខេត្តបន្ទាយមានជ័យ"
+      },
+      "wikidata": "Q3817",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1777"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "KHM:Pailin",
+      "names": {
+        "en": "Pailin Province",
+        "ja": "パイリン",
+        "local": "ខេត្តប៉ៃលិន"
+      },
+      "wikidata": "Q506646",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1783"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Municipality (krong) until 22 Dec 2008, province from then; territory unchanged by the decree."
+        }
+      ]
+    },
+    {
+      "id": "KHM:StungTreng",
+      "names": {
+        "en": "Stung Treng Province",
+        "ja": "ストゥントレン州",
+        "local": "ខេត្តស្ទឹងត្រែង"
+      },
+      "wikidata": "Q837889",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1792"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "KHM:Kep",
+      "names": {
+        "en": "Kep Province",
+        "ja": "ケップ",
+        "local": "ខេត្តកែប"
+      },
+      "wikidata": "Q852089",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1798"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Municipality (krong) until 22 Dec 2008, province from then; territory unchanged by the decree."
+        }
+      ]
+    },
+    {
+      "id": "KHM:KampongChhnang",
+      "names": {
+        "en": "Kampong Chhnang Province",
+        "ja": "コンポンチュナン州",
+        "local": "ខេត្តកំពង់ឆ្នាំង"
+      },
+      "wikidata": "Q877468",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1785"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "KHM:KampongThom",
+      "names": {
+        "en": "Kampong Thom Province",
+        "ja": "コンポントム州",
+        "local": "ខេត្តកំពង់ធំ"
+      },
+      "wikidata": "Q502148",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1788"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "KHM:KampongSpeu",
+      "names": {
+        "en": "Kampong Speu Province",
+        "ja": "コンポンスプー州",
+        "local": "ខេត្តកំពង់ស្ពឺ"
+      },
+      "wikidata": "Q652867",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "KHM-1787"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "KHM:KampongCham",
+      "names": {
+        "en": "Kampong Cham Province",
+        "ja": "コンポンチャム州",
+        "local": "ខេត្តកំពង់ចាម"
+      },
+      "wikidata": "Q142258",
+      "spans": [
+        {
+          "from": "2008-12-22",
+          "precision": "day",
+          "to": "2013-12-31",
+          "atoms": [
+            "KHM-1784"
+          ],
+          "sources": [
+            {
+              "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+              "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+              "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2008-12-22 decree: Kep, Pailin, Preah Sihanouk become provinces; boundary adjustments only between Battambang/Pursat and Preah Sihanouk/Koh Kong; next change 2013 (Tbong Khmum).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ukh.html",
+              "title": "Statoids: Provinces of Cambodia, change history",
+              "says": "2013-12-31: Tbong Khmum province formed from the districts of Kampong Cham east of the Mekong.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1364595717",
+              "title": "Provinces of Cambodia (en.wikipedia, revision 1364595717)",
+              "says": "31 Dec 2013: royal decree split Kampong Cham into Kampong Cham (west) and Tbong Khmum (east).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Includes the districts east of the Mekong that formed Tbong Khmum on 31 Dec 2013."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "2008-12-22",
+      "precision": "day",
+      "what": "Kep, Pailin and Preah Sihanouk become provinces; Battambang/Pursat and Preah Sihanouk/Koh Kong boundaries re-demarcated",
+      "sources": [
+        {
+          "url": "https://web.archive.org/web/2015/https://www.phnompenhpost.com/national/decree-creates-three-new-provinces",
+          "title": "Phnom Penh Post, 31 Dec 2008: Decree creates three new provinces",
+          "says": "Royal decree of 22 Dec 2008 makes Kep, Sihanoukville and Pailin provinces and re-demarcates Battambang/Pursat and Sihanoukville/Koh Kong boundaries.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2013-12-31",
+      "precision": "day",
+      "what": "Tbong Khmum province split from Kampong Cham",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ukh.html",
+          "title": "Statoids: Provinces of Cambodia, change history",
+          "says": "2013-12-31: Tbong Khmum province formed from the districts of Kampong Cham east of the Mekong.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1364595717",
+          "title": "Provinces of Cambodia (en.wikipedia, revision 1364595717)",
+          "says": "31 Dec 2013: royal decree split Kampong Cham into Kampong Cham (west) and Tbong Khmum (east).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "2010-01-01",
+      "n": 24,
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1364595717",
+          "title": "Provinces of Cambodia (en.wikipedia, revision 1364595717)",
+          "says": "23 provinces plus the capital Phnom Penh before the 2013 split.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2019-12-31",
+      "n": 25,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ukh.html",
+          "title": "Statoids: Provinces of Cambodia, change history",
+          "says": "2013-12-31: Tbong Khmum province formed from the districts of Kampong Cham east of the Mekong.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1364595717",
+          "title": "Provinces of Cambodia (en.wikipedia, revision 1364595717)",
+          "says": "31 Dec 2013: royal decree split Kampong Cham into Kampong Cham (west) and Tbong Khmum (east).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Battambang, Pursat, Koh Kong and Preah Sihanouk (whole scope)",
+      "unit": "KHM:Battambang",
+      "atoms": [
+        "KHM-1778",
+        "KHM-1780",
+        "KHM-1779",
+        "KHM-1800"
+      ],
+      "from": "2008-12-22",
+      "to": null,
+      "why": "The 22 Dec 2008 decree re-demarcated Battambang/Pursat and Preah Sihanouk/Koh Kong; the details were not published in the sources found, so it cannot be established whether NE's lines are the pre- or post-2008 ones.",
+      "checked": [
+        "Phnom Penh Post 31 Dec 2008 (archived)",
+        "statoids ukh.html",
+        "en.wikipedia Provinces of Cambodia rev 1364595717"
+      ],
+      "needs": "the 2008 decree's annex, or district/commune atoms (geoBoundaries KHM ADM2/ADM3, CC BY; Open Development Cambodia boundaries, check licence)"
+    },
+    {
+      "what": "Pursat Province",
+      "unit": "KHM:Pursat",
+      "from": "2008-12-22",
+      "to": null,
+      "why": "See Battambang entry (atoms withheld there).",
+      "checked": [
+        "Phnom Penh Post 2008"
+      ],
+      "needs": "geoBoundaries KHM ADM2"
+    },
+    {
+      "what": "Koh Kong Province",
+      "unit": "KHM:KohKong",
+      "from": "2008-12-22",
+      "to": null,
+      "why": "See Battambang entry.",
+      "checked": [
+        "Phnom Penh Post 2008"
+      ],
+      "needs": "geoBoundaries KHM ADM2"
+    },
+    {
+      "what": "Preah Sihanouk Province",
+      "unit": "KHM:PreahSihanouk",
+      "from": "2008-12-22",
+      "to": null,
+      "why": "See Battambang entry.",
+      "checked": [
+        "Phnom Penh Post 2008"
+      ],
+      "needs": "geoBoundaries KHM ADM2"
+    },
+    {
+      "what": "Phnom Penh and Kandal (whole scope)",
+      "unit": "KHM:PhnomPenh",
+      "atoms": [
+        "KHM-1789",
+        "KHM-1786"
+      ],
+      "from": "2008-12-22",
+      "to": null,
+      "why": "NE's Phnom Penh measures 398 km² (the old ~375 km² city); Phnom Penh is 678.46 km² by the 2019 census after absorbing communes of Kandal. The date(s) of the expansion were not established, so neither outline can be dated.",
+      "checked": [
+        "en.wikipedia Phnom Penh rev 1377809900",
+        "en.wikipedia Kandal province rev 1373524476",
+        "NE area"
+      ],
+      "needs": "dated sub-decrees on Phnom Penh's boundary and commune atoms (geoBoundaries KHM ADM3)"
+    },
+    {
+      "what": "Kandal Province",
+      "unit": "KHM:Kandal",
+      "from": "2008-12-22",
+      "to": null,
+      "why": "See Phnom Penh entry.",
+      "checked": [
+        "en.wikipedia Kandal province"
+      ],
+      "needs": "geoBoundaries KHM ADM3"
+    },
+    {
+      "what": "Kampong Cham and Tbong Khmum from 2013-12-31",
+      "unit": "KHM:KampongCham",
+      "atoms": [
+        "KHM-1784"
+      ],
+      "from": "2013-12-31",
+      "to": null,
+      "why": "NE has no Tbong Khmum feature; KHM-1784 still covers both provinces.",
+      "checked": [
+        "NE catalogue (24 KHM atoms)",
+        "statoids ukh.html"
+      ],
+      "needs": "Tbong Khmum outline (geoBoundaries KHM ADM1/ADM2)"
+    },
+    {
+      "what": "Tbong Khmum Province",
+      "unit": "KHM:TbongKhmum",
+      "from": "2013-12-31",
+      "to": null,
+      "why": "Exists from 31 Dec 2013 without an NE atom.",
+      "checked": [
+        "statoids ukh.html"
+      ],
+      "needs": "geoBoundaries KHM ADM1"
+    },
+    {
+      "what": "Cambodia 1953 to 2008-12-22",
+      "from": "1953-11-09",
+      "to": "2008-12-22",
+      "why": "Provinces split ~1960-62, abolished 1975-79 (Khmer Rouge zones), re-created 1979, with Preah Vihear ~1980, Kampong Som ~1983, Banteay Meanchey 1988 (from parts of three provinces), Oddar Meanchey and Kep ~1995, Pailin ~1997; sources give years only and some lines (Banteay Meanchey 1988) run inside NE atoms.",
+      "checked": [
+        "statoids ukh.html",
+        "en.wikipedia Provinces of Cambodia"
+      ],
+      "needs": "dated decrees and district atoms (geoBoundaries KHM ADM2)"
+    }
+  ]
+}

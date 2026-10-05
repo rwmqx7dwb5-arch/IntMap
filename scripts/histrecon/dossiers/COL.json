@@ -1,0 +1,1035 @@
+{
+ "country": "COL",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1977-12-23",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Republic of Colombia throughout. 22 departments, intendancies, commissaries and the Distrito Especial of Bogotá; from 1991-07-04 32 departments and the Capital District.",
+ "units": [
+  {
+   "id": "COL:Antioquia@1977",
+   "names": {
+    "en": "Antioquia",
+    "ja": "アンティオキア県",
+    "local": "Departamento de Antioquia"
+   },
+   "wikidata": "Q123304",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1314"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Atlantico@1977",
+   "names": {
+    "en": "Atlántico Department",
+    "ja": "アトランティコ県",
+    "local": "Departamento del Atlántico"
+   },
+   "wikidata": "Q230882",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1412"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Bolivar@1977",
+   "names": {
+    "en": "Bolívar Department",
+    "ja": "ボリーバル県",
+    "local": "Departamento de Bolívar"
+   },
+   "wikidata": "Q230597",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1413"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Boyaca@1977",
+   "names": {
+    "en": "Boyacá Department",
+    "ja": "ボヤカ県",
+    "local": "Departamento de Boyacá"
+   },
+   "wikidata": "Q121233",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1315"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Caldas@1977",
+   "names": {
+    "en": "Caldas Department",
+    "ja": "カルダス県",
+    "local": "Departamento de Caldas"
+   },
+   "wikidata": "Q230607",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1397"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Cauca@1977",
+   "names": {
+    "en": "Cauca Department",
+    "ja": "カウカ県",
+    "local": "Departamento del Cauca"
+   },
+   "wikidata": "Q230602",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1404"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Cesar@1977",
+   "names": {
+    "en": "Cesar Department",
+    "ja": "セサール県",
+    "local": "Departamento del Cesar"
+   },
+   "wikidata": "Q234916",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1414"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Choco@1977",
+   "names": {
+    "en": "Chocó Department",
+    "ja": "チョコ県",
+    "local": "Departamento del Chocó"
+   },
+   "wikidata": "Q230584",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1415"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Cordoba@1977",
+   "names": {
+    "en": "Córdoba Department",
+    "ja": "コルドバ県",
+    "local": "Departamento de Córdoba"
+   },
+   "wikidata": "Q234912",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1316"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Cundinamarca@1977",
+   "names": {
+    "en": "Cundinamarca Department",
+    "ja": "クンディナマルカ県",
+    "local": "Departamento de Cundinamarca"
+   },
+   "wikidata": "Q232564",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1398"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Huila@1977",
+   "names": {
+    "en": "Huila Department",
+    "ja": "ウイラ県",
+    "local": "Departamento del Huila"
+   },
+   "wikidata": "Q234920",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1405"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:LaGuajira@1977",
+   "names": {
+    "en": "La Guajira Department",
+    "ja": "ラ・グアヒーラ県",
+    "local": "Departamento de La Guajira"
+   },
+   "wikidata": "Q272747",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1318"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Magdalena@1977",
+   "names": {
+    "en": "Magdalena Department",
+    "ja": "マグダレーナ県",
+    "local": "Departamento del Magdalena"
+   },
+   "wikidata": "Q199910",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1416"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Meta@1977",
+   "names": {
+    "en": "Meta",
+    "ja": "メタ県",
+    "local": "Departamento del Meta"
+   },
+   "wikidata": "Q238629",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1425"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Narino@1977",
+   "names": {
+    "en": "Nariño Department",
+    "ja": "ナリーニョ県",
+    "local": "Departamento de Nariño"
+   },
+   "wikidata": "Q230217",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1406"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:NorteDeSantander@1977",
+   "names": {
+    "en": "Norte de Santander Department",
+    "ja": "ノルテ・デ・サンタンデール県",
+    "local": "Departamento de Norte de Santander"
+   },
+   "wikidata": "Q233058",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1421"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Quindio@1977",
+   "names": {
+    "en": "Quindío Department",
+    "ja": "キンディオ県",
+    "local": "Departamento del Quindío"
+   },
+   "wikidata": "Q13995",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1400"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Risaralda@1977",
+   "names": {
+    "en": "Risaralda Department",
+    "ja": "リサラルダ県",
+    "local": "Departamento de Risaralda"
+   },
+   "wikidata": "Q13993",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1401"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Santander@1977",
+   "names": {
+    "en": "Santander Department",
+    "ja": "サンタンデール県",
+    "local": "Departamento de Santander"
+   },
+   "wikidata": "Q235166",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1317"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Sucre@1977",
+   "names": {
+    "en": "Sucre Department",
+    "ja": "スクレ県",
+    "local": "Departamento de Sucre"
+   },
+   "wikidata": "Q235188",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1417"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Tolima@1977",
+   "names": {
+    "en": "Tolima Department",
+    "ja": "トリマ県",
+    "local": "Departamento del Tolima"
+   },
+   "wikidata": "Q234501",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1402"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:ValleDelCauca@1977",
+   "names": {
+    "en": "Valle del Cauca Department",
+    "ja": "バジェ・デル・カウカ県",
+    "local": "Departamento del Valle del Cauca"
+   },
+   "wikidata": "Q13990",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1408",
+      "COL+99?"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Isla_de_Malpelo&oldid=174959012",
+       "title": "Wikipedia (es) — Isla de Malpelo (oldid 174959012)",
+       "says": "Malpelo is part of the department of Valle del Cauca, under the special jurisdiction of Buenaventura.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only). The minor NE island atom COL+99? (lon −81.6, lat 4.0) is Malpelo."
+    }
+   ]
+  },
+  {
+   "id": "COL:Arauca@1977",
+   "names": {
+    "en": "Arauca Department",
+    "ja": "アラウカ県",
+    "local": "Departamento de Arauca"
+   },
+   "wikidata": "Q230223",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1420"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Caqueta@1977",
+   "names": {
+    "en": "Caquetá Department",
+    "ja": "カケタ県",
+    "local": "Departamento del Caquetá"
+   },
+   "wikidata": "Q13985",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1403"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Casanare@1977",
+   "names": {
+    "en": "Casanare Department",
+    "ja": "カサナレ県",
+    "local": "Departamento de Casanare"
+   },
+   "wikidata": "Q13984",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1422"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Putumayo@1977",
+   "names": {
+    "en": "Putumayo Department",
+    "ja": "プトゥマヨ県",
+    "local": "Departamento del Putumayo"
+   },
+   "wikidata": "Q232953",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1407"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:SanAndres@1977",
+   "names": {
+    "en": "Archipelago of San Andrés, Providencia and Santa Catalina",
+    "ja": "サン・アンドレス・イ・プロビデンシア県",
+    "local": "Departamento Archipiélago de San Andrés, Providencia y Santa Catalina"
+   },
+   "wikidata": "Q26855",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1342"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Amazonas@1977",
+   "names": {
+    "en": "Amazonas Department",
+    "ja": "アマソナス県",
+    "local": "Departamento del Amazonas"
+   },
+   "wikidata": "Q44724",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1283"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Guainia@1977",
+   "names": {
+    "en": "Guainía Department",
+    "ja": "グアイニア県",
+    "local": "Departamento del Guainía"
+   },
+   "wikidata": "Q238645",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1424"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Guaviare@1977",
+   "names": {
+    "en": "Guaviare Department",
+    "ja": "グアビアーレ県",
+    "local": "Departamento del Guaviare"
+   },
+   "wikidata": "Q272885",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1423"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Guaviare&oldid=174432122",
+       "title": "Wikipedia (es) — Guaviare (oldid 174432122)",
+       "says": "Ley 55 of 23 Dec 1977 segregated the Comisaría del Guaviare from Vaupés; department by the constitution of 4 July 1991.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Vaup%C3%A9s&oldid=172430023",
+       "title": "Wikipedia (es) — Vaupés (oldid 172430023)",
+       "says": "Laws 18 of 1963 and 55 of 1977 segregated Guainía and Guaviare, giving Vaupés its current configuration; department since 1991.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Vaupes@1977",
+   "names": {
+    "en": "Vaupés Department",
+    "ja": "バウペス県",
+    "local": "Departamento del Vaupés"
+   },
+   "wikidata": "Q234505",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1426"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Guaviare&oldid=174432122",
+       "title": "Wikipedia (es) — Guaviare (oldid 174432122)",
+       "says": "Ley 55 of 23 Dec 1977 segregated the Comisaría del Guaviare from Vaupés; department by the constitution of 4 July 1991.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Vaup%C3%A9s&oldid=172430023",
+       "title": "Wikipedia (es) — Vaupés (oldid 172430023)",
+       "says": "Laws 18 of 1963 and 55 of 1977 segregated Guainía and Guaviare, giving Vaupés its current configuration; department since 1991.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Vichada@1977",
+   "names": {
+    "en": "Vichada Department",
+    "ja": "ビチャーダ県",
+    "local": "Departamento del Vichada"
+   },
+   "wikidata": "Q268729",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1427"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only)."
+    }
+   ]
+  },
+  {
+   "id": "COL:Bogota@1977",
+   "names": {
+    "en": "Bogotá (Distrito Especial; Capital District from 1991)",
+    "ja": "ボゴタ",
+    "local": "Bogotá, Distrito Capital"
+   },
+   "wikidata": "Q2841",
+   "spans": [
+    {
+     "from": "1977-12-23",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "COL-1399"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uco.html",
+       "title": "Statoids — Departments of Colombia (change history)",
+       "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same outline since the creation of the Comisaría del Guaviare (Ley 55, 1977-12-23): the change list shows no later first-level territorial change; intendancies and commissaries became departments on 1991-07-04 (status only). Bogotá has been a Distrito Especial separate from Cundinamarca's administration since 1955-01-01 (statoids)."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1977-12-23",
+   "precision": "day",
+   "what": "Comisaría del Guaviare segregated from the Comisaría del Vaupés (Ley 55 of 1977)",
+   "sources": [
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=Guaviare&oldid=174432122",
+     "title": "Wikipedia (es) — Guaviare (oldid 174432122)",
+     "says": "Ley 55 of 23 Dec 1977 segregated the Comisaría del Guaviare from Vaupés; department by the constitution of 4 July 1991.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=Vaup%C3%A9s&oldid=172430023",
+     "title": "Wikipedia (es) — Vaupés (oldid 172430023)",
+     "says": "Laws 18 of 1963 and 55 of 1977 segregated Guainía and Guaviare, giving Vaupés its current configuration; department since 1991.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1991-07-04",
+   "precision": "day",
+   "what": "New constitution: all intendancies and commissaries become departments; Bogotá becomes Capital District (status changes, no territory moved)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uco.html",
+     "title": "Statoids — Departments of Colombia (change history)",
+     "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=Guaviare&oldid=174432122",
+     "title": "Wikipedia (es) — Guaviare (oldid 174432122)",
+     "says": "Ley 55 of 23 Dec 1977 segregated the Comisaría del Guaviare from Vaupés; department by the constitution of 4 July 1991.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2019-12-31",
+   "n": 33,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uco.html",
+     "title": "Statoids — Departments of Colombia (change history)",
+     "says": "Change list to 1991-07: Casanare 1974, Guaviare split from Vaupés, 1991 constitution turns all intendancies and commissaries into departments; 32 departments + capital district.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Layouts before 1977-12-23 (Vaupés incl. Guaviare 1963–1977; Casanare in Boyacá before 1974; Caldas before 1966; Bolívar before 1967; Magdalena before 1967; earlier intendancy/commissary rearrangements)",
+   "from": "1886-08-05",
+   "to": "1977-12-23",
+   "why": "Several earlier units are unions of NE atoms (e.g. Vaupés+Guaviare, Caldas+Quindío+Risaralda), but the change list for 1886–1977 is only approximately dated (statoids gives «~1935», «~1942», «~1950») and records transfers between units (Cauca→Antioquia corridor, Caquetá→Putumayo) whose lines run through NE atoms. Not claimed (outside scope).",
+   "checked": [
+    "statoids uco.html",
+    "es.wikipedia Guaviare oldid 174432122",
+    "es.wikipedia Vaupés oldid 172430023"
+   ],
+   "needs": "per-unit creation laws with dates, and municipal atoms (DANE MGN) for the inter-departmental transfers"
+  }
+ ]
+}

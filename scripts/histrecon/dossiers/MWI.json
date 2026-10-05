@@ -1,0 +1,1070 @@
+{
+  "country": "MWI",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1964-07-06",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Malawi from independence on 1964-07-06. Units are the districts (statoids' primary subdivisions and the NE admin-1 level); districts are grouped into three regions (Northern, Central, Southern), which the region field of NE carries.",
+  "units": [
+    {
+      "id": "MWI:Chitipa@1964",
+      "names": {
+        "en": "Chitipa District",
+        "ja": "チティパ県",
+        "local": "Chitipa District"
+      },
+      "wikidata": "Q1044337",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1873"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Karonga@1964",
+      "names": {
+        "en": "Karonga District",
+        "ja": "カロンガ県",
+        "local": "Karonga District"
+      },
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1194"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "NE quirk: atom MWI-1194 is labelled \"Chitipa\" but its GeoNames name is Karonga District and it contains Karonga town (point test); the real Chitipa is MWI-1873."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Rumphi@1964",
+      "names": {
+        "en": "Rumphi District (Rumpi until 1971)",
+        "ja": "ルンピ県",
+        "local": "Rumphi District (Rumpi until 1971)"
+      },
+      "wikidata": "Q1044312",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1903"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Mzimba@1964",
+      "names": {
+        "en": "Mzimba District",
+        "ja": "ムジンバ県",
+        "local": "Mzimba District"
+      },
+      "wikidata": "Q1045435",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1900"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Kasungu@1964",
+      "names": {
+        "en": "Kasungu District",
+        "ja": "カスング県",
+        "local": "Kasungu District"
+      },
+      "wikidata": "Q868778",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1899"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Nkhotakota@1964",
+      "names": {
+        "en": "Nkhotakota District",
+        "ja": "ンコタコタ県",
+        "local": "Nkhotakota District"
+      },
+      "wikidata": "Q687248",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1902"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Ntchisi@1964",
+      "names": {
+        "en": "Ntchisi District",
+        "ja": "ンチシ県",
+        "local": "Ntchisi District"
+      },
+      "wikidata": "Q798235",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1913"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Dowa@1964",
+      "names": {
+        "en": "Dowa District",
+        "ja": "ドーワ県",
+        "local": "Dowa District"
+      },
+      "wikidata": "Q195356",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1908"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Salima@1964",
+      "names": {
+        "en": "Salima District",
+        "ja": "サリマ県",
+        "local": "Salima District"
+      },
+      "wikidata": "Q195353",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1914"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Lilongwe@1964",
+      "names": {
+        "en": "Lilongwe District",
+        "ja": "リロングウェ県",
+        "local": "Lilongwe District"
+      },
+      "wikidata": "Q1058453",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1909"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Mchinji@1964",
+      "names": {
+        "en": "Mchinji District",
+        "ja": "ムチンジ県",
+        "local": "Mchinji District"
+      },
+      "wikidata": "Q868792",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1911"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Dedza@1964",
+      "names": {
+        "en": "Dedza District",
+        "ja": "デッザ県",
+        "local": "Dedza District"
+      },
+      "wikidata": "Q667153",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1907"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Ntcheu@1964",
+      "names": {
+        "en": "Ntcheu District",
+        "ja": "ンチェウ県",
+        "local": "Ntcheu District"
+      },
+      "wikidata": "Q797937",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1912"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Mangochi@1964",
+      "names": {
+        "en": "Mangochi District (Fort Johnston until 1971)",
+        "ja": "マンゴチ県",
+        "local": "Mangochi District (Fort Johnston until 1971)"
+      },
+      "wikidata": "Q722505",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1910"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Zomba@1964",
+      "names": {
+        "en": "Zomba District",
+        "ja": "ゾンバ県",
+        "local": "Zomba District"
+      },
+      "wikidata": "Q1058442",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1920"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Chikwawa@1964",
+      "names": {
+        "en": "Chikwawa District",
+        "ja": "チクワワ県",
+        "local": "Chikwawa District"
+      },
+      "wikidata": "Q722509",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1916"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Nsanje@1964",
+      "names": {
+        "en": "Nsanje District",
+        "ja": "ンサンジェ県",
+        "local": "Nsanje District"
+      },
+      "wikidata": "Q198587",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1919"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:Thyolo@1964",
+      "names": {
+        "en": "Thyolo District",
+        "ja": "チョロ県",
+        "local": "Thyolo District"
+      },
+      "wikidata": "Q722515",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MWI-1918"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "District existed at independence; no change touching it in the statoids change list."
+        }
+      ]
+    },
+    {
+      "id": "MWI:NkhataBay@1964",
+      "names": {
+        "en": "Nkhata Bay District",
+        "ja": "ンカタベイ県",
+        "local": "Nkhata Bay"
+      },
+      "wikidata": "Q1051505",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": "1998-06",
+          "atoms": [
+            "MWI-1901",
+            "MWI-5509"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Included Likoma and Chizumulu islands until Likoma district was split off."
+        },
+        {
+          "from": "1998-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "MWI-1901"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MWI:Likoma@1998",
+      "names": {
+        "en": "Likoma District",
+        "ja": "リコマ県",
+        "local": "Likoma"
+      },
+      "wikidata": "Q740622",
+      "spans": [
+        {
+          "from": "1998-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "MWI-5509"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MWI:Machinga@1964",
+      "names": {
+        "en": "Machinga District (Kasupe until renamed)",
+        "ja": "マチンガ県",
+        "local": "Machinga"
+      },
+      "wikidata": "Q198585",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": "1998-06",
+          "atoms": [
+            "MWI-1904",
+            "MWI-1915"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "1998-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "MWI-1904"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MWI:Balaka@1998",
+      "names": {
+        "en": "Balaka District",
+        "ja": "バラカ県",
+        "local": "Balaka"
+      },
+      "wikidata": "Q870044",
+      "spans": [
+        {
+          "from": "1998-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "MWI-1915"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MWI:Mulanje@1964",
+      "names": {
+        "en": "Mulanje District (Mlanje until 1971)",
+        "ja": "ムランジェ県",
+        "local": "Mulanje"
+      },
+      "wikidata": "Q509097",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": "1998-06",
+          "atoms": [
+            "MWI-1923",
+            "MWI-1924"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "1998-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "MWI-1923"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MWI:Phalombe@1998",
+      "names": {
+        "en": "Phalombe District",
+        "ja": "パロンベ県",
+        "local": "Phalombe"
+      },
+      "wikidata": "Q538991",
+      "spans": [
+        {
+          "from": "1998-06",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "MWI-1924"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MWI:Blantyre@1964",
+      "names": {
+        "en": "Blantyre District",
+        "ja": "ブランタイヤ県",
+        "local": "Blantyre"
+      },
+      "wikidata": "Q1059262",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": "1969-05",
+          "atoms": [
+            "MWI-1921",
+            "MWI-1922",
+            "MWI-5510"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Included the later Mwanza and Neno districts (Neno merged into Blantyre ~1958; Mwanza split off 1971-01)."
+        },
+        {
+          "from": "1969-05",
+          "precision": "month",
+          "to": "1970-01",
+          "atoms": [
+            "MWI-1921",
+            "MWI-1922",
+            "MWI-5510",
+            "MWI-1917"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Chiradzulu merged into Blantyre."
+        },
+        {
+          "from": "1970-01",
+          "precision": "month",
+          "to": "1971-01",
+          "atoms": [
+            "MWI-1921",
+            "MWI-1922",
+            "MWI-5510"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Chiradzulu split off again; assumed on its former line (source gives no boundary change)."
+        },
+        {
+          "from": "1971-01",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "MWI-1921"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MWI:Chiradzulu@1964",
+      "names": {
+        "en": "Chiradzulu District",
+        "ja": "チラズル県",
+        "local": "Chiradzulu"
+      },
+      "wikidata": "Q722501",
+      "spans": [
+        {
+          "from": "1964-07-06",
+          "precision": "day",
+          "to": "1969-05",
+          "atoms": [
+            "MWI-1917"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "1970-01",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "MWI-1917"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MWI:Mwanza@1971",
+      "names": {
+        "en": "Mwanza District",
+        "ja": "ムワンザ県",
+        "local": "Mwanza"
+      },
+      "wikidata": "Q797933",
+      "spans": [
+        {
+          "from": "1971-01",
+          "precision": "month",
+          "to": "2003",
+          "atoms": [
+            "MWI-1922",
+            "MWI-5510"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi (G. Law)",
+              "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1336885284",
+              "title": "Wikipedia: Neno District, rev. 1336885284",
+              "says": "Neno District created in 2003 when Mwanza District was split into Neno and Mwanza under decentralisation.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Included Neno until the split."
+        },
+        {
+          "from": "2007-07",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "MWI-1922"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi — update note on Neno",
+              "says": "Neno split from Mwanza: one source says 2007-07, Wikipedia says 2003; possibly official 2003, implemented by 2007.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MWI:Neno@2007",
+      "names": {
+        "en": "Neno District",
+        "ja": "ネノ県",
+        "local": "Neno"
+      },
+      "wikidata": "Q1195298",
+      "spans": [
+        {
+          "from": "2007-07",
+          "precision": "month",
+          "to": null,
+          "atoms": [
+            "MWI-5510"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umw.html",
+              "title": "Statoids: Districts of Malawi — update note on Neno",
+              "says": "Neno split from Mwanza: one source says 2007-07, Wikipedia says 2003; possibly official 2003, implemented by 2007.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1336885284",
+              "title": "Wikipedia: Neno District, rev. 1336885284",
+              "says": "Neno District created in 2003 when Mwanza District was split into Neno and Mwanza under decentralisation.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Latest of the two dates reported for the split (2003 legal / 2007-07 implementation); the window between is unresolved."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1969-05",
+      "precision": "month",
+      "what": "Chiradzulu merged into Blantyre",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umw.html",
+          "title": "Statoids: Districts of Malawi (G. Law)",
+          "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1970-01",
+      "precision": "month",
+      "what": "Chiradzulu split from Blantyre again",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umw.html",
+          "title": "Statoids: Districts of Malawi (G. Law)",
+          "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1971-01",
+      "precision": "month",
+      "what": "Mwanza split from Blantyre",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umw.html",
+          "title": "Statoids: Districts of Malawi (G. Law)",
+          "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1998-06",
+      "precision": "month",
+      "what": "Balaka (from Machinga), Phalombe (from Mulanje), Likoma (from Nkhata Bay) created",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umw.html",
+          "title": "Statoids: Districts of Malawi (G. Law)",
+          "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2003",
+      "precision": "year",
+      "what": "Neno split from Mwanza (implementation reported 2007-07)",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1336885284",
+          "title": "Wikipedia: Neno District, rev. 1336885284",
+          "says": "Neno District created in 2003 when Mwanza District was split into Neno and Mwanza under decentralisation.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.statoids.com/umw.html",
+          "title": "Statoids: Districts of Malawi — update note on Neno",
+          "says": "Neno split from Mwanza: one source says 2007-07, Wikipedia says 2003; possibly official 2003, implemented by 2007.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1964-07-06",
+      "n": 23,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umw.html",
+          "title": "Statoids: Districts of Malawi (G. Law)",
+          "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2008-06-08",
+      "n": 28,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umw.html",
+          "title": "Statoids: Districts of Malawi (G. Law)",
+          "says": "Change history since 1958: 23 districts at independence; Chiradzulu merged 1969-05/split 1970-01; Mwanza from Blantyre 1971-01; Balaka, Phalombe, Likoma 1998-06; Neno 2003.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Mwanza / Neno between the two reported split dates",
+      "unit": "MWI:Neno@2003",
+      "atoms": [
+        "MWI-1922",
+        "MWI-5510"
+      ],
+      "from": "2003",
+      "to": "2007-07",
+      "why": "Sources disagree: Wikipedia dates the split to 2003, statoids' source to 2007-07 (administrative structures in place only later). Which territory was a separate district in between is not settled.",
+      "checked": [
+        "statoids umw.html update note",
+        "Wikipedia Neno District rev. 1336885284"
+      ],
+      "needs": "the Malawi Government Gazette notice creating Neno district"
+    },
+    {
+      "what": "Mwanza 2003–2007",
+      "unit": "MWI:Mwanza@2003",
+      "from": "2003",
+      "to": "2007-07",
+      "why": "see previous entry",
+      "checked": [
+        "statoids umw.html"
+      ],
+      "needs": "Malawi Government Gazette"
+    }
+  ]
+}

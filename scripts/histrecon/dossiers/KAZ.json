@@ -1,0 +1,596 @@
+{
+ "country": "KAZ",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1991-12-16",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Republic of Kazakhstan from 16 Dec 1991. NE depicts the 1999–2018 layout (14 regions, Almaty and Astana cities; no Shymkent, no 2022 regions).",
+ "units": [
+  {
+   "id": "KAZ:West Kazakhstan",
+   "names": {
+    "en": "West Kazakhstan Region",
+    "ja": "西カザフスタン州",
+    "local": "Батыс Қазақстан облысы"
+   },
+   "wikidata": "Q486007",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "KAZ-3201"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence (1991) Kazakhstan had 19 regions plus Almaty city; the 1997–1999 changes listed do not involve this region.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Kazakhstan&oldid=1373139140",
+       "title": "Wikipedia — Regions of Kazakhstan",
+       "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Aktobe",
+   "names": {
+    "en": "Aktobe Region",
+    "ja": "アクトベ州",
+    "local": "Ақтөбе облысы"
+   },
+   "wikidata": "Q485437",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "KAZ-3195"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence (1991) Kazakhstan had 19 regions plus Almaty city; the 1997–1999 changes listed do not involve this region.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Kazakhstan&oldid=1373139140",
+       "title": "Wikipedia — Regions of Kazakhstan",
+       "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Atyrau",
+   "names": {
+    "en": "Atyrau Region",
+    "ja": "アティラウ州",
+    "local": "Атырау облысы"
+   },
+   "wikidata": "Q427658",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "KAZ-3198"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence (1991) Kazakhstan had 19 regions plus Almaty city; the 1997–1999 changes listed do not involve this region.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Kazakhstan&oldid=1373139140",
+       "title": "Wikipedia — Regions of Kazakhstan",
+       "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Mangystau",
+   "names": {
+    "en": "Mangystau Region",
+    "ja": "マンギスタウ州",
+    "local": "Маңғыстау облысы"
+   },
+   "wikidata": "Q238931",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "KAZ-3236"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence (1991) Kazakhstan had 19 regions plus Almaty city; the 1997–1999 changes listed do not involve this region.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Kazakhstan&oldid=1373139140",
+       "title": "Wikipedia — Regions of Kazakhstan",
+       "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Kyzylorda",
+   "names": {
+    "en": "Kyzylorda Region",
+    "ja": "クズロルダ州",
+    "local": "Қызылорда облысы"
+   },
+   "wikidata": "Q485322",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "KAZ-3197"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence (1991) Kazakhstan had 19 regions plus Almaty city; the 1997–1999 changes listed do not involve this region.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Kazakhstan&oldid=1373139140",
+       "title": "Wikipedia — Regions of Kazakhstan",
+       "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Includes the Baikonur complex leased to Russia since 1994–95, which remains Kazakh territory (statoids treats it as part of Qyzylorda)."
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Jambyl",
+   "names": {
+    "en": "Jambyl Region",
+    "ja": "ジャンブール州",
+    "local": "Жамбыл облысы"
+   },
+   "wikidata": "Q486657",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "KAZ-3252"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence (1991) Kazakhstan had 19 regions plus Almaty city; the 1997–1999 changes listed do not involve this region.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Kazakhstan&oldid=1373139140",
+       "title": "Wikipedia — Regions of Kazakhstan",
+       "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Pavlodar",
+   "names": {
+    "en": "Pavlodar Region",
+    "ja": "パブロダール州",
+    "local": "Павлодар облысы"
+   },
+   "wikidata": "Q486144",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "KAZ-3205"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence (1991) Kazakhstan had 19 regions plus Almaty city; the 1997–1999 changes listed do not involve this region.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Kazakhstan&oldid=1373139140",
+       "title": "Wikipedia — Regions of Kazakhstan",
+       "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KAZ:South Kazakhstan",
+   "names": {
+    "en": "South Kazakhstan Region",
+    "ja": "南カザフスタン州",
+    "local": "Түркістан облысы"
+   },
+   "wikidata": "Q815330",
+   "spans": [
+    {
+     "from": "1991-12-16",
+     "precision": "day",
+     "to": "2018-06-19",
+     "atoms": [
+      "KAZ-3251"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "At independence (1991) Kazakhstan had 19 regions plus Almaty city; the 1997–1999 changes listed do not involve this region.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Turkistan_Region&oldid=1373651901",
+       "title": "Wikipedia — Turkistan Region",
+       "says": "On 19 June 2018 Shymkent was taken out of the region, the capital moved to Turkistan and the region was renamed Turkistan Region.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "NE still draws South Kazakhstan with Shymkent inside."
+    }
+   ]
+  },
+  {
+   "id": "KAZ:East Kazakhstan",
+   "names": {
+    "en": "East Kazakhstan Region",
+    "ja": "東カザフスタン州",
+    "local": "Шығыс Қазақстан облысы"
+   },
+   "wikidata": "Q36156",
+   "spans": [
+    {
+     "from": "1997-05-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "KAZ-3206"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "1997-05-03: Semey region merged with East Kazakhstan.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Kazakhstan&oldid=1373139140",
+       "title": "Wikipedia — Regions of Kazakhstan",
+       "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Kostanay",
+   "names": {
+    "en": "Kostanay Region",
+    "ja": "コスタナイ州",
+    "local": "Қостанай облысы"
+   },
+   "wikidata": "Q485605",
+   "spans": [
+    {
+     "from": "1997-05-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "KAZ-3196"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "1997-04-22: Torghay region merged with Qostanay; 1997-05-03 completes the 1997 mergers (western Qaraghandy to Aqmola).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Kazakhstan&oldid=1373139140",
+       "title": "Wikipedia — Regions of Kazakhstan",
+       "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Started at 1997-05-03, the last 1997 merger date, because the date on which former Torgay raions reached Akmola is not separately established."
+    }
+   ]
+  },
+  {
+   "id": "KAZ:Karaganda",
+   "names": {
+    "en": "Karaganda Region",
+    "ja": "カラガンダ州",
+    "local": "Қарағанды облысы"
+   },
+   "wikidata": "Q485429",
+   "spans": [
+    {
+     "from": "1997-05-03",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "KAZ-3203"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "1997-05-03: Zhezqazghan merged with eastern Qaraghandy to form a new Qaraghandy; western part went to Aqmola.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Kazakhstan&oldid=1373139140",
+       "title": "Wikipedia — Regions of Kazakhstan",
+       "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "KAZ:North Kazakhstan",
+   "names": {
+    "en": "North Kazakhstan Region",
+    "ja": "北カザフスタン州",
+    "local": "Солтүстік Қазақстан облысы"
+   },
+   "wikidata": "Q485088",
+   "spans": [
+    {
+     "from": "1999-04-10",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "KAZ-3204"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/ukz.html",
+       "title": "Statoids — Regions of Kazakhstan, change history",
+       "says": "1999-04-10: Enbekshilder, Shuchinsk and Zerendi raions transferred from North Kazakhstan to Aqmola.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Kazakhstan&oldid=1373139140",
+       "title": "Wikipedia — Regions of Kazakhstan",
+       "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1997-04-22",
+   "precision": "day",
+   "what": "Taldykorgan merged into Almaty region; Torgay into Kostanay (and Akmola)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ukz.html",
+     "title": "Statoids — Regions of Kazakhstan, change history",
+     "says": "1997-04-22: Taldyqorghan merged with Almaty; Torghay merged with Qostanay.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1997-05-03",
+   "precision": "day",
+   "what": "Kokshetau into North Kazakhstan; Semey into East Kazakhstan; Zhezkazgan into Karaganda",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/ukz.html",
+     "title": "Statoids — Regions of Kazakhstan, change history",
+     "says": "1997-05-03: Kökshetau into North Kazakhstan, Semey into East Kazakhstan, Zhezqazghan with eastern Qaraghandy.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1999-04-10",
+   "precision": "day",
+   "what": "Three raions from North Kazakhstan to Akmola",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Regions_of_Kazakhstan&oldid=1373139140",
+     "title": "Wikipedia — Regions of Kazakhstan",
+     "says": "After the 1997 reform the last change took place in 1999 (former Kokshetau parts of North Kazakhstan to Akmola); new regions next created in 2022.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2018-06-19",
+   "precision": "day",
+   "what": "Shymkent separated; South Kazakhstan renamed Turkistan",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Turkistan_Region&oldid=1373651901",
+     "title": "Wikipedia — Turkistan Region",
+     "says": "On 19 June 2018 Shymkent was taken out of the region, the capital moved to Turkistan and the region was renamed Turkistan Region.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Semipalatinsk (Semey) and East Kazakhstan 1991–1997",
+   "unit": "KAZ:Semey",
+   "atoms": [
+    "KAZ-3206"
+   ],
+   "from": "1991-12-16",
+   "to": "1997-05-03",
+   "why": "Two regions inside one NE atom; the internal line is not an NE boundary.",
+   "checked": [
+    "statoids.com/ukz.html",
+    "Wikipedia Regions of Kazakhstan, Turkistan Region, Almaty; ru.wikipedia Астана, Алма-Ата",
+    "adilet.zan.kz (search not reachable)"
+   ],
+   "needs": "finer atoms: Kazakh raion (district) boundaries, e.g. geoBoundaries KAZ ADM2 (licence per source), with dated city-limit changes"
+  },
+  {
+   "what": "Taldykorgan and Almaty regions, Almaty city 1991–2019",
+   "unit": "KAZ:Almaty",
+   "atoms": [
+    "KAZ-3207",
+    "KAZ-4829"
+   ],
+   "from": "1991-12-16",
+   "to": null,
+   "why": "Taldykorgan merged into Almaty region 1997-04-22 (two regions in one atom before); the Almaty city/region line moved several times by annexation of suburbs (dates not all established), so NE’s line cannot be dated.",
+   "checked": [
+    "statoids.com/ukz.html",
+    "Wikipedia Regions of Kazakhstan, Turkistan Region, Almaty; ru.wikipedia Астана, Алма-Ата",
+    "adilet.zan.kz (search not reachable)"
+   ],
+   "needs": "finer atoms: Kazakh raion (district) boundaries, e.g. geoBoundaries KAZ ADM2 (licence per source), with dated city-limit changes"
+  },
+  {
+   "what": "Torgay and Kostanay 1991–1997",
+   "unit": "KAZ:Torgay",
+   "atoms": [
+    "KAZ-3196"
+   ],
+   "from": "1991-12-16",
+   "to": "1997-05-03",
+   "why": "Torgay was divided between Kostanay and Akmola, so neither old region is a union of NE atoms.",
+   "checked": [
+    "statoids.com/ukz.html",
+    "Wikipedia Regions of Kazakhstan, Turkistan Region, Almaty; ru.wikipedia Астана, Алма-Ата",
+    "adilet.zan.kz (search not reachable)"
+   ],
+   "needs": "finer atoms: Kazakh raion (district) boundaries, e.g. geoBoundaries KAZ ADM2 (licence per source), with dated city-limit changes"
+  },
+  {
+   "what": "Zhezkazgan and Karaganda 1991–1997",
+   "unit": "KAZ:Zhezkazgan",
+   "atoms": [
+    "KAZ-3203"
+   ],
+   "from": "1991-12-16",
+   "to": "1997-05-03",
+   "why": "Old Karaganda’s western part went to Akmola; Zhezkazgan lies inside the modern Karaganda atom.",
+   "checked": [
+    "statoids.com/ukz.html",
+    "Wikipedia Regions of Kazakhstan, Turkistan Region, Almaty; ru.wikipedia Астана, Алма-Ата",
+    "adilet.zan.kz (search not reachable)"
+   ],
+   "needs": "finer atoms: Kazakh raion (district) boundaries, e.g. geoBoundaries KAZ ADM2 (licence per source), with dated city-limit changes"
+  },
+  {
+   "what": "Kokshetau and North Kazakhstan 1991–1999",
+   "unit": "KAZ:Kokshetau",
+   "atoms": [
+    "KAZ-3204"
+   ],
+   "from": "1991-12-16",
+   "to": "1999-04-10",
+   "why": "Kokshetau merged into North Kazakhstan 1997, then three of its raions went to Akmola 1999.",
+   "checked": [
+    "statoids.com/ukz.html",
+    "Wikipedia Regions of Kazakhstan, Turkistan Region, Almaty; ru.wikipedia Астана, Алма-Ата",
+    "adilet.zan.kz (search not reachable)"
+   ],
+   "needs": "finer atoms: Kazakh raion (district) boundaries, e.g. geoBoundaries KAZ ADM2 (licence per source), with dated city-limit changes"
+  },
+  {
+   "what": "Akmola region and Astana city 1991–2019",
+   "unit": "KAZ:Akmola",
+   "atoms": [
+    "KAZ-3202",
+    "KAZ-4830"
+   ],
+   "from": "1991-12-16",
+   "to": null,
+   "why": "Akmola took parts of Torgay and Karaganda (1997) and raions of North Kazakhstan (1999); the Astana city limits were changed by decrees (latest in scope 7 Feb 2018), so NE’s city line cannot be dated.",
+   "checked": [
+    "statoids.com/ukz.html",
+    "Wikipedia Regions of Kazakhstan, Turkistan Region, Almaty; ru.wikipedia Астана, Алма-Ата",
+    "adilet.zan.kz (search not reachable)"
+   ],
+   "needs": "finer atoms: Kazakh raion (district) boundaries, e.g. geoBoundaries KAZ ADM2 (licence per source), with dated city-limit changes"
+  },
+  {
+   "what": "Turkistan Region and Shymkent city 2018–2019",
+   "unit": "KAZ:Turkistan",
+   "atoms": [
+    "KAZ-3251"
+   ],
+   "from": "2018-06-19",
+   "to": null,
+   "why": "Shymkent became a city of republican significance on 19 June 2018; NE has no separate Shymkent feature.",
+   "checked": [
+    "statoids.com/ukz.html",
+    "Wikipedia Regions of Kazakhstan, Turkistan Region, Almaty; ru.wikipedia Астана, Алма-Ата",
+    "adilet.zan.kz (search not reachable)"
+   ],
+   "needs": "finer atoms: Shymkent city limits (e.g. geoBoundaries KAZ ADM2)"
+  },
+  {
+   "what": "Shymkent city 2018–2019",
+   "unit": "KAZ:Shymkent",
+   "atoms": [],
+   "from": "2018-06-19",
+   "to": null,
+   "why": "Inside the NE South Kazakhstan atom (withheld above).",
+   "checked": [
+    "statoids.com/ukz.html",
+    "Wikipedia Regions of Kazakhstan, Turkistan Region, Almaty; ru.wikipedia Астана, Алма-Ата",
+    "adilet.zan.kz (search not reachable)"
+   ],
+   "needs": "Shymkent city limits"
+  }
+ ]
+}

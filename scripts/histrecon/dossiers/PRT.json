@@ -1,0 +1,991 @@
+{
+  "country": "PRT",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1900-01-01",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Portugal (monarchy to 1910-10-05, then republic) throughout; colonies are not in the PRT atoms. First level = administrative districts (continental and, until 1976, insular) and from 1976 the two autonomous regions. The 1936-1959 provinces (statoids: created 1933, abolished 1959-09-21) were a separate tier whose lines did not follow district lines; districts continued underneath and are what is modelled here.",
+  "units": [
+    {
+      "id": "PRT:Aveiro@1835",
+      "names": {
+        "en": "Aveiro District",
+        "ja": "アヴェイロ県",
+        "local": "Distrito de Aveiro"
+      },
+      "wikidata": "Q210527",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-739"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+              "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+              "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/ypt.html",
+              "title": "Portugal Municipalities (Statoids, Gwillim Law)",
+              "says": "Municipal change history (1998 onward) lists only municipalities created and parishes transferred inside one district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No district-level change recorded after 1900 other than Setúbal (1926); see unresolved/report on the residual risk of unrecorded parish transfers between districts before 1998."
+        }
+      ]
+    },
+    {
+      "id": "PRT:Beja@1835",
+      "names": {
+        "en": "Beja District",
+        "ja": "ベージャ県",
+        "local": "Distrito de Beja"
+      },
+      "wikidata": "Q321455",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-743"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+              "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+              "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/ypt.html",
+              "title": "Portugal Municipalities (Statoids, Gwillim Law)",
+              "says": "Municipal change history (1998 onward) lists only municipalities created and parishes transferred inside one district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No district-level change recorded after 1900 other than Setúbal (1926); see unresolved/report on the residual risk of unrecorded parish transfers between districts before 1998."
+        }
+      ]
+    },
+    {
+      "id": "PRT:Braga@1835",
+      "names": {
+        "en": "Braga District",
+        "ja": "ブラガ県",
+        "local": "Distrito de Braga"
+      },
+      "wikidata": "Q326203",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-749"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+              "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+              "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/ypt.html",
+              "title": "Portugal Municipalities (Statoids, Gwillim Law)",
+              "says": "Municipal change history (1998 onward) lists only municipalities created and parishes transferred inside one district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No district-level change recorded after 1900 other than Setúbal (1926); see unresolved/report on the residual risk of unrecorded parish transfers between districts before 1998."
+        }
+      ]
+    },
+    {
+      "id": "PRT:Braganca@1835",
+      "names": {
+        "en": "Bragança District",
+        "ja": "ブラガンサ県",
+        "local": "Distrito de Bragança"
+      },
+      "wikidata": "Q373528",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-750"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+              "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+              "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/ypt.html",
+              "title": "Portugal Municipalities (Statoids, Gwillim Law)",
+              "says": "Municipal change history (1998 onward) lists only municipalities created and parishes transferred inside one district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No district-level change recorded after 1900 other than Setúbal (1926); see unresolved/report on the residual risk of unrecorded parish transfers between districts before 1998."
+        }
+      ]
+    },
+    {
+      "id": "PRT:CasteloBranco@1835",
+      "names": {
+        "en": "Castelo Branco District",
+        "ja": "カステロ・ブランコ県",
+        "local": "Distrito de Castelo Branco"
+      },
+      "wikidata": "Q273529",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-751"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+              "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+              "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/ypt.html",
+              "title": "Portugal Municipalities (Statoids, Gwillim Law)",
+              "says": "Municipal change history (1998 onward) lists only municipalities created and parishes transferred inside one district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No district-level change recorded after 1900 other than Setúbal (1926); see unresolved/report on the residual risk of unrecorded parish transfers between districts before 1998."
+        }
+      ]
+    },
+    {
+      "id": "PRT:Coimbra@1835",
+      "names": {
+        "en": "Coimbra District",
+        "ja": "コインブラ県",
+        "local": "Distrito de Coimbra"
+      },
+      "wikidata": "Q244517",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-752"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+              "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+              "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/ypt.html",
+              "title": "Portugal Municipalities (Statoids, Gwillim Law)",
+              "says": "Municipal change history (1998 onward) lists only municipalities created and parishes transferred inside one district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No district-level change recorded after 1900 other than Setúbal (1926); see unresolved/report on the residual risk of unrecorded parish transfers between districts before 1998."
+        }
+      ]
+    },
+    {
+      "id": "PRT:Evora@1835",
+      "names": {
+        "en": "Évora District",
+        "ja": "エヴォラ県",
+        "local": "Distrito de Évora"
+      },
+      "wikidata": "Q274118",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-744"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+              "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+              "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/ypt.html",
+              "title": "Portugal Municipalities (Statoids, Gwillim Law)",
+              "says": "Municipal change history (1998 onward) lists only municipalities created and parishes transferred inside one district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No district-level change recorded after 1900 other than Setúbal (1926); see unresolved/report on the residual risk of unrecorded parish transfers between districts before 1998."
+        }
+      ]
+    },
+    {
+      "id": "PRT:Faro@1835",
+      "names": {
+        "en": "Faro District",
+        "ja": "ファーロ県",
+        "local": "Distrito de Faro"
+      },
+      "wikidata": "Q244521",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-745"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+              "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+              "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/ypt.html",
+              "title": "Portugal Municipalities (Statoids, Gwillim Law)",
+              "says": "Municipal change history (1998 onward) lists only municipalities created and parishes transferred inside one district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No district-level change recorded after 1900 other than Setúbal (1926); see unresolved/report on the residual risk of unrecorded parish transfers between districts before 1998."
+        }
+      ]
+    },
+    {
+      "id": "PRT:Guarda@1835",
+      "names": {
+        "en": "Guarda District",
+        "ja": "グアルダ県",
+        "local": "Distrito de Guarda"
+      },
+      "wikidata": "Q273533",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-753"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+              "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+              "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/ypt.html",
+              "title": "Portugal Municipalities (Statoids, Gwillim Law)",
+              "says": "Municipal change history (1998 onward) lists only municipalities created and parishes transferred inside one district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No district-level change recorded after 1900 other than Setúbal (1926); see unresolved/report on the residual risk of unrecorded parish transfers between districts before 1998."
+        }
+      ]
+    },
+    {
+      "id": "PRT:Leiria@1835",
+      "names": {
+        "en": "Leiria District",
+        "ja": "レイリア県",
+        "local": "Distrito de Leiria"
+      },
+      "wikidata": "Q244512",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-740"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+              "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+              "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/ypt.html",
+              "title": "Portugal Municipalities (Statoids, Gwillim Law)",
+              "says": "Municipal change history (1998 onward) lists only municipalities created and parishes transferred inside one district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No district-level change recorded after 1900 other than Setúbal (1926); see unresolved/report on the residual risk of unrecorded parish transfers between districts before 1998."
+        }
+      ]
+    },
+    {
+      "id": "PRT:Portalegre@1835",
+      "names": {
+        "en": "Portalegre District",
+        "ja": "ポルタレグレ県",
+        "local": "Distrito de Portalegre"
+      },
+      "wikidata": "Q225189",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-747"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+              "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+              "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/ypt.html",
+              "title": "Portugal Municipalities (Statoids, Gwillim Law)",
+              "says": "Municipal change history (1998 onward) lists only municipalities created and parishes transferred inside one district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No district-level change recorded after 1900 other than Setúbal (1926); see unresolved/report on the residual risk of unrecorded parish transfers between districts before 1998."
+        }
+      ]
+    },
+    {
+      "id": "PRT:Porto@1835",
+      "names": {
+        "en": "Porto District",
+        "ja": "ポルト県",
+        "local": "Distrito de Porto"
+      },
+      "wikidata": "Q322792",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-754"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+              "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+              "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/ypt.html",
+              "title": "Portugal Municipalities (Statoids, Gwillim Law)",
+              "says": "Municipal change history (1998 onward) lists only municipalities created and parishes transferred inside one district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No district-level change recorded after 1900 other than Setúbal (1926); see unresolved/report on the residual risk of unrecorded parish transfers between districts before 1998."
+        }
+      ]
+    },
+    {
+      "id": "PRT:Santarem@1835",
+      "names": {
+        "en": "Santarém District",
+        "ja": "サンタレン県",
+        "local": "Distrito de Santarém"
+      },
+      "wikidata": "Q244510",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-748"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+              "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+              "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/ypt.html",
+              "title": "Portugal Municipalities (Statoids, Gwillim Law)",
+              "says": "Municipal change history (1998 onward) lists only municipalities created and parishes transferred inside one district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No district-level change recorded after 1900 other than Setúbal (1926); see unresolved/report on the residual risk of unrecorded parish transfers between districts before 1998."
+        }
+      ]
+    },
+    {
+      "id": "PRT:VianadoCastelo@1835",
+      "names": {
+        "en": "Viana do Castelo District",
+        "ja": "ヴィアナ・ド・カステロ県",
+        "local": "Distrito de Viana do Castelo"
+      },
+      "wikidata": "Q326214",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-741"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+              "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+              "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/ypt.html",
+              "title": "Portugal Municipalities (Statoids, Gwillim Law)",
+              "says": "Municipal change history (1998 onward) lists only municipalities created and parishes transferred inside one district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No district-level change recorded after 1900 other than Setúbal (1926); see unresolved/report on the residual risk of unrecorded parish transfers between districts before 1998."
+        }
+      ]
+    },
+    {
+      "id": "PRT:VilaReal@1835",
+      "names": {
+        "en": "Vila Real District",
+        "ja": "ヴィラ・レアル県",
+        "local": "Distrito de Vila Real"
+      },
+      "wikidata": "Q379372",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-756"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+              "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+              "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/ypt.html",
+              "title": "Portugal Municipalities (Statoids, Gwillim Law)",
+              "says": "Municipal change history (1998 onward) lists only municipalities created and parishes transferred inside one district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No district-level change recorded after 1900 other than Setúbal (1926); see unresolved/report on the residual risk of unrecorded parish transfers between districts before 1998."
+        }
+      ]
+    },
+    {
+      "id": "PRT:Viseu@1835",
+      "names": {
+        "en": "Viseu District",
+        "ja": "ヴィゼウ県",
+        "local": "Distrito de Viseu"
+      },
+      "wikidata": "Q273525",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-755"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+              "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+              "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/ypt.html",
+              "title": "Portugal Municipalities (Statoids, Gwillim Law)",
+              "says": "Municipal change history (1998 onward) lists only municipalities created and parishes transferred inside one district.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "No district-level change recorded after 1900 other than Setúbal (1926); see unresolved/report on the residual risk of unrecorded parish transfers between districts before 1998."
+        }
+      ]
+    },
+    {
+      "id": "PRT:Lisboa@1835",
+      "names": {
+        "en": "Lisbon District (incl. future Setúbal)",
+        "ja": "リスボン県",
+        "local": "Distrito de Lisboa"
+      },
+      "wikidata": "Q207199",
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": "1926-12-22",
+          "atoms": [
+            "PRT-746",
+            "PRT-5498"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distrito_de_Set%C3%BAbal&oldid=72772370",
+              "title": "Distrito de Setúbal (Wikipédia, oldid 72772370)",
+              "says": "Setúbal district created 22 Dec 1926 by Decreto n.º 12870, by detaching concelhos from Lisboa district; the last district created.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Setúbal district was formed wholly from Lisboa concelhos (Decreto 12870, 22-12-1926); decree date used, publication/entry-into-force day not separately established."
+        }
+      ]
+    },
+    {
+      "id": "PRT:Lisboa@1926",
+      "names": {
+        "en": "Lisbon District",
+        "ja": "リスボン県",
+        "local": "Distrito de Lisboa"
+      },
+      "wikidata": "Q207199",
+      "spans": [
+        {
+          "from": "1926-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-746"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distrito_de_Set%C3%BAbal&oldid=72772370",
+              "title": "Distrito de Setúbal (Wikipédia, oldid 72772370)",
+              "says": "Setúbal district created 22 Dec 1926 by Decreto n.º 12870, by detaching concelhos from Lisboa district; the last district created.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PRT:Setubal@1926",
+      "names": {
+        "en": "Setúbal District",
+        "ja": "セトゥーバル県",
+        "local": "Distrito de Setúbal"
+      },
+      "wikidata": "Q274109",
+      "spans": [
+        {
+          "from": "1926-12-22",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-5498"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distrito_de_Set%C3%BAbal&oldid=72772370",
+              "title": "Distrito de Setúbal (Wikipédia, oldid 72772370)",
+              "says": "Setúbal district created 22 Dec 1926 by Decreto n.º 12870, by detaching concelhos from Lisboa district; the last district created.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "PRT:Funchal@1835",
+      "names": {
+        "en": "Funchal (Autonomous) District",
+        "local": "Distrito (Autónomo) do Funchal"
+      },
+      "spans": [
+        {
+          "from": "1900-01-01",
+          "precision": "day",
+          "to": "1976-04-25",
+          "atoms": [
+            "PRT-736"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?title=Distrito_do_Funchal&oldid=73024845",
+              "title": "Distrito do Funchal (Wikipédia, oldid 73024845)",
+              "says": "The (autonomous) district of Funchal was extinguished with the creation of the Autonomous Region of Madeira in 1976.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Funchal district = the whole Madeira archipelago (statoids: Madeira formed from Funchal district), so the territory equals the present Madeira atom."
+        }
+      ]
+    },
+    {
+      "id": "PRT:Madeira@1976",
+      "names": {
+        "en": "Autonomous Region of Madeira",
+        "ja": "マデイラ諸島",
+        "local": "Região Autónoma da Madeira"
+      },
+      "wikidata": "Q26253",
+      "spans": [
+        {
+          "from": "1976-04-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-736"
+          ],
+          "sources": [
+            {
+              "url": "https://www.parlamento.pt/Parlamento/Documents/CRP1976.pdf",
+              "title": "Constituição da República Portuguesa, texto original de 1976 (Assembleia da República)",
+              "says": "Art. 6(2): Azores and Madeira archipelagos constitute autonomous regions; art. 312(3): the Constitution enters into force on 25 April 1976.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Constitution approved/promulgated 2 April 1976 (statoids gives that date), in force 25 April 1976 (art. 312); entry into force used."
+        }
+      ]
+    },
+    {
+      "id": "PRT:Azores@1976",
+      "names": {
+        "en": "Autonomous Region of the Azores",
+        "ja": "アゾレス諸島",
+        "local": "Região Autónoma dos Açores"
+      },
+      "wikidata": "Q25263",
+      "spans": [
+        {
+          "from": "1976-04-25",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "PRT-735"
+          ],
+          "sources": [
+            {
+              "url": "https://www.parlamento.pt/Parlamento/Documents/CRP1976.pdf",
+              "title": "Constituição da República Portuguesa, texto original de 1976 (Assembleia da República)",
+              "says": "Art. 6(2): Azores and Madeira archipelagos constitute autonomous regions; art. 312(3): the Constitution enters into force on 25 April 1976.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/upt.html",
+              "title": "Portugal Districts (Statoids, Gwillim Law)",
+              "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Constitution in force 25 April 1976 (art. 312); statoids gives the approval date 1976-04-02."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1926-12-22",
+      "precision": "day",
+      "what": "Setúbal district created from concelhos of Lisboa district (Decreto 12870)",
+      "sources": [
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?title=Distrito_de_Set%C3%BAbal&oldid=72772370",
+          "title": "Distrito de Setúbal (Wikipédia, oldid 72772370)",
+          "says": "Setúbal district created 22 Dec 1926 by Decreto n.º 12870, by detaching concelhos from Lisboa district; the last district created.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://statoids.com/upt.html",
+          "title": "Portugal Districts (Statoids, Gwillim Law)",
+          "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1976-04-25",
+      "precision": "day",
+      "what": "Constitution in force: Azores (3 districts) and Madeira (Funchal district) become autonomous regions",
+      "sources": [
+        {
+          "url": "https://www.parlamento.pt/Parlamento/Documents/CRP1976.pdf",
+          "title": "Constituição da República Portuguesa, texto original de 1976 (Assembleia da República)",
+          "says": "Art. 6(2): Azores and Madeira archipelagos constitute autonomous regions; art. 312(3): the Constitution enters into force on 25 April 1976.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://statoids.com/upt.html",
+          "title": "Portugal Districts (Statoids, Gwillim Law)",
+          "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1910-01-01",
+      "n": 21,
+      "sources": [
+        {
+          "url": "https://statoids.com/upt.html",
+          "title": "Portugal Districts (Statoids, Gwillim Law)",
+          "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+          "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+          "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1950-01-01",
+      "n": 22,
+      "sources": [
+        {
+          "url": "https://statoids.com/upt.html",
+          "title": "Portugal Districts (Statoids, Gwillim Law)",
+          "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+          "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+          "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1990-01-01",
+      "n": 20,
+      "sources": [
+        {
+          "url": "https://statoids.com/upt.html",
+          "title": "Portugal Districts (Statoids, Gwillim Law)",
+          "says": "From 1900 Portugal was divided into districts; 1926-12-22 Setúbal district split from Lisboa; 1976 Azores (Angra, Horta, Ponta Delgada) and Madeira (Funchal) became autonomous regions.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?title=Distritos_de_Portugal&oldid=73122317",
+          "title": "Distritos de Portugal (Wikipédia, oldid 73122317)",
+          "says": "The district model has had practically no changes since 1835 except the creation of Setúbal district in 1926; the four island districts were suppressed by the 1976 Constitution.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Angra do Heroísmo District",
+      "unit": "PRT:AngraDoHeroismo@1835",
+      "atoms": [
+        "PRT-735"
+      ],
+      "from": "1900-01-01",
+      "to": "1976-04-25",
+      "why": "Before 1976 the Azores were three districts (Angra do Heroísmo: Terceira, São Jorge, Graciosa; Horta: Faial, Pico, Flores, Corvo; Ponta Delgada: São Miguel, Santa Maria). NE has one atom for the whole archipelago, so none of the three can be drawn.",
+      "checked": [
+        "statoids upt.html",
+        "Wikipédia Distrito de Angra do Heroísmo",
+        "Wikipédia Distritos de Portugal"
+      ],
+      "needs": "finer atoms: Azores islands or concelhos (DGT CAOP, licence not verified here)"
+    },
+    {
+      "what": "Horta District",
+      "unit": "PRT:Horta@1835",
+      "atoms": [],
+      "from": "1900-01-01",
+      "to": "1976-04-25",
+      "why": "Before 1976 the Azores were three districts (Angra do Heroísmo: Terceira, São Jorge, Graciosa; Horta: Faial, Pico, Flores, Corvo; Ponta Delgada: São Miguel, Santa Maria). NE has one atom for the whole archipelago, so none of the three can be drawn. (atom withheld in the Angra entry)",
+      "checked": [
+        "statoids upt.html"
+      ],
+      "needs": "finer atoms: Azores islands or concelhos (DGT CAOP)"
+    },
+    {
+      "what": "Ponta Delgada District",
+      "unit": "PRT:PontaDelgada@1835",
+      "atoms": [],
+      "from": "1900-01-01",
+      "to": "1976-04-25",
+      "why": "Before 1976 the Azores were three districts (Angra do Heroísmo: Terceira, São Jorge, Graciosa; Horta: Faial, Pico, Flores, Corvo; Ponta Delgada: São Miguel, Santa Maria). NE has one atom for the whole archipelago, so none of the three can be drawn. (atom withheld in the Angra entry)",
+      "checked": [
+        "statoids upt.html"
+      ],
+      "needs": "finer atoms: Azores islands or concelhos (DGT CAOP)"
+    }
+  ]
+}

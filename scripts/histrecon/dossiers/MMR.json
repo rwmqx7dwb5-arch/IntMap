@@ -1,0 +1,619 @@
+{
+  "country": "MMR",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1974-01-04",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Socialist Republic of the Union of Burma from 1974, Union of Myanmar from 1989, Republic of the Union of Myanmar from 2011.",
+  "units": [
+    {
+      "id": "MMR:Rakhine",
+      "names": {
+        "en": "Rakhine State",
+        "ja": "ラカイン州",
+        "local": "ရခိုင်ပြည်နယ်"
+      },
+      "wikidata": "Q233838",
+      "spans": [
+        {
+          "from": "1974-01-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MMR-3273"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umm.html",
+              "title": "Statoids: Divisions of Myanmar, change history",
+              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
+        }
+      ]
+    },
+    {
+      "id": "MMR:Chin",
+      "names": {
+        "en": "Chin State",
+        "ja": "チン州",
+        "local": "ချင်းပြည်နယ်"
+      },
+      "wikidata": "Q46910",
+      "spans": [
+        {
+          "from": "1974-01-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MMR-3274"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umm.html",
+              "title": "Statoids: Divisions of Myanmar, change history",
+              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
+        }
+      ]
+    },
+    {
+      "id": "MMR:Kachin",
+      "names": {
+        "en": "Kachin State",
+        "ja": "カチン州",
+        "local": "ကချင်ပြည်နယ်"
+      },
+      "wikidata": "Q140646",
+      "spans": [
+        {
+          "from": "1974-01-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MMR-3296"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umm.html",
+              "title": "Statoids: Divisions of Myanmar, change history",
+              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
+        }
+      ]
+    },
+    {
+      "id": "MMR:Sagaing",
+      "names": {
+        "en": "Sagaing Region",
+        "ja": "ザガイン管区",
+        "local": "စစ်ကိုင်းတိုင်းဒေသကြီး"
+      },
+      "wikidata": "Q847289",
+      "spans": [
+        {
+          "from": "1974-01-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MMR-3302"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umm.html",
+              "title": "Statoids: Divisions of Myanmar, change history",
+              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
+        }
+      ]
+    },
+    {
+      "id": "MMR:Shan",
+      "names": {
+        "en": "Shan State",
+        "ja": "シャン州",
+        "local": "ရှမ်းပြည်နယ်"
+      },
+      "wikidata": "Q456847",
+      "spans": [
+        {
+          "from": "1974-01-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MMR-3277"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umm.html",
+              "title": "Statoids: Divisions of Myanmar, change history",
+              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
+        }
+      ]
+    },
+    {
+      "id": "MMR:Kayah",
+      "names": {
+        "en": "Kayah State",
+        "ja": "カヤー州",
+        "local": "ကယားပြည်နယ်"
+      },
+      "wikidata": "Q652845",
+      "spans": [
+        {
+          "from": "1974-01-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MMR-2473"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umm.html",
+              "title": "Statoids: Divisions of Myanmar, change history",
+              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
+        }
+      ]
+    },
+    {
+      "id": "MMR:Kayin",
+      "names": {
+        "en": "Kayin State",
+        "ja": "カレン州",
+        "local": "ကရင်ပြည်နယ်"
+      },
+      "wikidata": "Q495342",
+      "spans": [
+        {
+          "from": "1974-01-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MMR-3266"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umm.html",
+              "title": "Statoids: Divisions of Myanmar, change history",
+              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
+        }
+      ]
+    },
+    {
+      "id": "MMR:Mon",
+      "names": {
+        "en": "Mon State",
+        "ja": "モン州",
+        "local": "မွန်ပြည်နယ်"
+      },
+      "wikidata": "Q818742",
+      "spans": [
+        {
+          "from": "1974-01-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MMR-3270"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umm.html",
+              "title": "Statoids: Divisions of Myanmar, change history",
+              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
+        }
+      ]
+    },
+    {
+      "id": "MMR:Tanintharyi",
+      "names": {
+        "en": "Tanintharyi Region",
+        "ja": "タニンダーイー管区",
+        "local": "တနင်္သာရီတိုင်းဒေသကြီး"
+      },
+      "wikidata": "Q843954",
+      "spans": [
+        {
+          "from": "1974-01-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MMR-3279"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umm.html",
+              "title": "Statoids: Divisions of Myanmar, change history",
+              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
+        }
+      ]
+    },
+    {
+      "id": "MMR:Ayeyarwady",
+      "names": {
+        "en": "Ayeyarwady Region",
+        "ja": "エーヤワディ管区",
+        "local": "ဧရာဝတီတိုင်းဒေသကြီး"
+      },
+      "wikidata": "Q47047",
+      "spans": [
+        {
+          "from": "1974-01-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MMR-3275"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umm.html",
+              "title": "Statoids: Divisions of Myanmar, change history",
+              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
+        }
+      ]
+    },
+    {
+      "id": "MMR:Yangon",
+      "names": {
+        "en": "Yangon Region",
+        "ja": "ヤンゴン管区",
+        "local": "ရန်ကုန်တိုင်းဒေသကြီး"
+      },
+      "wikidata": "Q856781",
+      "spans": [
+        {
+          "from": "1974-01-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MMR-3269"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umm.html",
+              "title": "Statoids: Divisions of Myanmar, change history",
+              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
+        }
+      ]
+    },
+    {
+      "id": "MMR:Bago",
+      "names": {
+        "en": "Bago Region",
+        "ja": "バゴー管区",
+        "local": "ပဲခူးတိုင်းဒေသကြီး"
+      },
+      "wikidata": "Q800124",
+      "spans": [
+        {
+          "from": "1974-01-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MMR-3268"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umm.html",
+              "title": "Statoids: Divisions of Myanmar, change history",
+              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
+        }
+      ]
+    },
+    {
+      "id": "MMR:Magway",
+      "names": {
+        "en": "Magway Region",
+        "ja": "マグウェ管区",
+        "local": "မကွေးတိုင်းဒေသကြီး"
+      },
+      "wikidata": "Q833013",
+      "spans": [
+        {
+          "from": "1974-01-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MMR-3276"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umm.html",
+              "title": "Statoids: Divisions of Myanmar, change history",
+              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Named division/state as in 1974; 1989 English renamings (Burma→Myanmar spellings) and the 2008 division→region change did not alter territory."
+        }
+      ]
+    },
+    {
+      "id": "MMR:Mandalay",
+      "names": {
+        "en": "Mandalay Region",
+        "ja": "マンダレー管区",
+        "local": "မန္တလေးတိုင်းဒေသကြီး"
+      },
+      "wikidata": "Q119494",
+      "spans": [
+        {
+          "from": "1974-01-04",
+          "precision": "day",
+          "to": "2008-05-29",
+          "atoms": [
+            "MMR-3267"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umm.html",
+              "title": "Statoids: Divisions of Myanmar, change history",
+              "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+              "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+              "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/umm.html",
+              "title": "Statoids: Divisions of Myanmar, change history",
+              "says": "2008-05-29: new constitution makes divisions regions and establishes Naypyidaw as a union territory, changing the extent of Mandalay.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Mandalay Division including the Pyinmana/Lewe/Tatkon area that became Naypyidaw Union Territory."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1974-01-04",
+      "precision": "day",
+      "what": "1974 constitution: 7 states and 7 divisions (Mon State from Tenasserim; Chin and Arakan become states)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umm.html",
+          "title": "Statoids: Divisions of Myanmar, change history",
+          "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1373904475",
+          "title": "Constitution of Myanmar (en.wikipedia, revision 1373904475), section 1974 constitution",
+          "says": "The 1974 constitution was adopted (ratified and effective) on 3 January 1974.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1989-06-19",
+      "precision": "day",
+      "what": "English names changed (Burma→Myanmar, Arakan→Rakhine, Karen→Kayin, Pegu→Bago, Rangoon→Yangon, Irrawaddy→Ayeyarwady, Magwe→Magway, Tenasserim→Tanintharyi); no territorial change",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umm.html",
+          "title": "Statoids: Divisions of Myanmar, change history",
+          "says": "1989-06-19 renamings of country, divisions and states.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2008-05-29",
+      "precision": "day",
+      "what": "2008 constitution approved: divisions become regions; Naypyidaw Union Territory separated from Mandalay",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umm.html",
+          "title": "Statoids: Divisions of Myanmar, change history",
+          "says": "2008-05-29: new constitution makes divisions regions and establishes Naypyidaw as a union territory, changing the extent of Mandalay.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1377853481",
+          "title": "Nay Pyi Taw Union Territory (en.wikipedia, revision 1377853481)",
+          "says": "The union territory was officially separated from the Mandalay Region in 2008; the Naypyidaw Council was formed 30 Mar 2011.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1980-01-01",
+      "n": 14,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umm.html",
+          "title": "Statoids: Divisions of Myanmar, change history",
+          "says": "1974-01-04: new constitution in force; Chin and Rakhine become states, Mon state split from Tenasserim; 7 states and 7 divisions.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2019-12-31",
+      "n": 15,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umm.html",
+          "title": "Statoids: Divisions of Myanmar, change history",
+          "says": "2008-05-29: new constitution makes divisions regions and establishes Naypyidaw as a union territory, changing the extent of Mandalay.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1377853481",
+          "title": "Nay Pyi Taw Union Territory (en.wikipedia, revision 1377853481)",
+          "says": "Naypyidaw Union Territory: bordered by Mandalay Region on all sides.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Mandalay Region and Naypyidaw Union Territory from 2008",
+      "unit": "MMR:Mandalay",
+      "atoms": [
+        "MMR-3267"
+      ],
+      "from": "2008-05-29",
+      "to": null,
+      "why": "NE has no Naypyidaw feature; MMR-3267 still covers Naypyidaw (its townships Pyinmana, Lewe, Tatkon and the new city townships). The legal start of the union territory is also unsettled: constitution approved 29 May 2008, in force 31 Jan 2011, council formed 30 Mar 2011.",
+      "checked": [
+        "NE atom catalogue (14 MMR atoms)",
+        "statoids umm.html",
+        "en.wikipedia Nay Pyi Taw Union Territory rev 1377853481"
+      ],
+      "needs": "Naypyidaw outline (MIMU township boundaries, licence to be checked; or geoBoundaries MMR ADM1/ADM3, CC BY)"
+    },
+    {
+      "what": "Naypyidaw Union Territory",
+      "unit": "MMR:Naypyidaw",
+      "from": "2008-05-29",
+      "to": null,
+      "why": "Exists since 2008/2011 without an NE atom (inside MMR-3267).",
+      "checked": [
+        "NE atom catalogue",
+        "statoids umm.html"
+      ],
+      "needs": "MIMU / geoBoundaries township-level atoms"
+    },
+    {
+      "what": "Burma 1948-01-04 to 1974-01-04",
+      "from": "1948-01-04",
+      "to": "1974-01-04",
+      "why": "The 1948-74 layout (Tenasserim including the later Mon State; Karen State created 1952 from parts of Amherst, Thaton and Toungoo districts; Rangoon Division from 1964 enlarged in 1972 by Hanthawaddy and Hmawbi) has lines that run inside NE atoms (Mon/Kayin/Tanintharyi, Yangon/Bago).",
+      "checked": [
+        "statoids umm.html change history"
+      ],
+      "needs": "district/township-level atoms with the 1948-74 district lines (e.g. MIMU township boundaries)"
+    }
+  ]
+}

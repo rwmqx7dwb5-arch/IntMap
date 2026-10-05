@@ -48,12 +48,16 @@ import { IntMapGeoEngine } from './geo-engine.js';
      nonCommercial  the record carries sources licensed for non-commercial use only (share-alike, so
                     the file itself is under that licence) — kept apart from the open record exactly as
                     data/cshapes.js keeps CShapes apart; scripts/build-hist-admin-surveys.mjs sorts the
-                    publishers into the two by their own licence */
+                    publishers into the two by their own licence
+     reconstructed  IntMap assembled the row from cited facts as a union of finer units (scripts/build-hist-admin-recon.mjs,
+                    docs/HIST-RECONSTRUCTION.md) — derived (the reader is told), but a cited timeline: it yields to every
+                    record that is not derived and outranks the present-day outline carried back */
 export const HIST_ADMIN_GAPS = [
   { file: 'data/hist-kuni.js',             global: '__HISTKUNI',        set: 'hk',              derived: true },
   { file: 'data/hist-admin-surveys.js',    global: '__HISTADMSURVEY',   set: 'histadmsurvey',   derived: false },
   { file: 'data/hist-admin-surveys-nc.js', global: '__HISTADMSURVEYNC', set: 'histadmsurveync', derived: false, nonCommercial: true },
   { file: 'data/hist-admin-fill.js',       global: '__HISTADMFILL',     set: 'histadmfill',     derived: true },
+  { file: 'data/hist-admin-recon.js',      global: '__HISTADMRECON',    set: 'histadmrecon',    derived: true, reconstructed: true },
 ];
 export const IntMapBorderCoast = (function () {
   let _D = null, _P = null;

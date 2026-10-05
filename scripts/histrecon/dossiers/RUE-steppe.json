@@ -1,0 +1,613 @@
+{
+ "country": "RUE",
+ "atomSet": "ristat-1897-uyezd@v3",
+ "atomGroups": [
+  "Akmola region",
+  "Semipalatinsk region",
+  "Turgay region",
+  "Semirechye region",
+  "Syr-Darya region",
+  "Fergana region",
+  "Samarkand region",
+  "Transcaspian region",
+  "Bukhara",
+  "Khiva"
+ ],
+ "scope": {
+  "from": "1868-11-02",
+  "to": "1917-11-06"
+ },
+ "polityNote": "Russian Empire (Steppe and Turkestan general-governorates) to 1917-11-06. Bukhara and Khiva were protectorates, not provinces, and are outside. Old Style dates converted to Gregorian (+12 days in the 19th century).",
+ "units": [
+  {
+   "id": "RUE:Akmola",
+   "names": {
+    "en": "Akmolinsk Oblast",
+    "ja": "アクモリンスク州",
+    "local": "Акмолинская область"
+   },
+   "wikidata": "Q604615",
+   "spans": [
+    {
+     "from": "1869-01-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-797",
+      "U1897-795",
+      "U1897-796",
+      "U1897-794",
+      "U1897-793"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154849250",
+       "title": "Акмолинская область (1868—1920) — Википедия (oldid 154849250)",
+       "says": "Akmola oblast formed by ukaz 21 Oct 1868 No. 46380; opened 1 Jan 1869 with Omsk, Petropavlovsk, Kokchetav, Akmolinsk okrugs; Omsk was temporarily in Tobolsk gub.; later only Sarysu/Atbasar okrug added inside, okrugs renamed uyezds 1898.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=152144516",
+       "title": "Область Сибирских Киргизов — Википедия (oldid 152144516)",
+       "says": "Oblast of Siberian Kirghiz abolished by ukaz 21 Oct 1868 No. 46380; divided into Akmola and Semipalatinsk oblasts; Omsk temporarily in Tobolsk gub. until Akmola oblast opened 1 Jan 1869.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Ukaz 21 Oct 1868 O.S. (ПСЗ-2 № 46380) created the oblast; it opened 1 Jan 1869 O.S. = 1869-01-13, when the city of Omsk (temporarily attached to Tobolsk gub.) passed to it. Okrug→uyezd renaming 1898 and the Sarysu/Atbasar okrug 1869 are internal. No outer change found to 1917."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Turgay",
+   "names": {
+    "en": "Turgay Oblast",
+    "ja": "トゥルガイ州",
+    "local": "Тургайская область"
+   },
+   "wikidata": "Q3280801",
+   "spans": [
+    {
+     "from": "1868-11-02",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-789",
+      "U1897-790",
+      "U1897-792",
+      "U1897-791"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153692164",
+       "title": "Тургайская область (Российская империя) — Википедия (oldid 153692164)",
+       "says": "Turgay oblast established by ukaz 21 Oct 1868 from the eastern part of the Orenburg Kirghiz oblast; four uyezds (Ilets/Aktyubinsk, Irgiz, Nikolaevsk/Kustanai, Turgay); no territorial change before 1919.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154939706",
+       "title": "Кустанайский уезд — Википедия (oldid 154939706)",
+       "says": "Nikolaevsk uyezd formed 1868 in Turgay oblast (Ilets, Irgiz, Nikolaevsk, Turgay uyezds); renamed Kustanai 8 (20) Feb 1895; moved to Chelyabinsk gub. only in 1919.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Ukaz 21 Oct 1868 O.S. (ПСЗ-2 № 46380) = 1868-11-02; oblast administration opened at Orenburg 2 Jan 1869 O.S. Ilets→Aktyubinsk (1891) and Nikolaevsk→Kustanai (1895) are renamings. No outer change found to 1917."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Semipalatinsk",
+   "names": {
+    "en": "Semipalatinsk Oblast",
+    "ja": "セミパラチンスク州",
+    "local": "Семипалатинская область"
+   },
+   "wikidata": "Q4415516",
+   "spans": [
+    {
+     "from": "1883-10-31",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-798",
+      "U1897-799",
+      "U1897-800",
+      "U1897-801",
+      "U1897-802"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=151483637",
+       "title": "Семипалатинская область (Российская империя) — Википедия (oldid 151483637)",
+       "says": "Formed 1854; okrugs became uyezds 1868; Zaisan pristavstvo (lands gained by the Chuguchak protocol) attached 1869, Zaisan uyezd 1875; five uyezds in the early 20th century.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://zh.wikipedia.org/w/index.php?oldid=93858717",
+       "title": "伊犁條約 — 維基百科 (oldid 93858717)",
+       "says": "Sub-protocols: Ili 1882-08-06, Kashgar NE 1882-12-07, Kobdo–Tarbagatai 1883-08-12, Tarbagatai SW 1883-10-03, Kashgar NW (Uzbel) 1884-06-03.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375169804",
+       "title": "Treaty of Saint Petersburg (1881) — Wikipedia (oldid 1375169804)",
+       "says": "Treaty 24 Feb 1881: Art. 7 new Ili border, Art. 8 adjustments east of Lake Zaysan; Russia evacuated Ili March 1883; final protocol signed 31 Oct 1883.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Outer line fixed with the last Russo-Chinese demarcation protocol touching the oblast: Tarbagatai SW protocol 1883-10-03 (Gregorian; = 21 Sep 1883 O.S.), after the Kobdo–Tarbagatai protocol 1883-08-12 that executed Art. 8 (east of Lake Zaisan) of the 1881 treaty. No later outer change found to 1917. / the final Tarbagatai protocol is dated 1883-10-03 (zh.wikipedia) and 1883-10-31 (en.wikipedia); the later date is used and the window between them is unresolved"
+    }
+   ]
+  },
+  {
+   "id": "RUE:Semirechye",
+   "names": {
+    "en": "Semirechye Oblast",
+    "ja": "セミレチエ州",
+    "local": "Семиреченская область"
+   },
+   "wikidata": "Q2381321",
+   "spans": [
+    {
+     "from": "1883-10-31",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-804",
+      "U1897-803",
+      "U1897-805",
+      "U1897-806",
+      "U1897-807",
+      "U1897-808"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=152839554",
+       "title": "Семиреченская область — Википедия (oldid 152839554)",
+       "says": "Semirechye oblast established 11 (23) Jul 1867; to Steppe GG 1882/1891, back to Turkestan GG 1 Jul 1899; six uyezds in the early 20th century.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=148077157",
+       "title": "Джаркентский уезд — Википедия (oldid 148077157)",
+       "says": "Dzharkent uyezd of Semirechye oblast formed in 1882 (on the part of the Ili region retained by Russia).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://zh.wikipedia.org/w/index.php?oldid=93858717",
+       "title": "伊犁條約 — 維基百科 (oldid 93858717)",
+       "says": "Sub-protocols: Ili 1882-08-06, Kashgar NE 1882-12-07, Kobdo–Tarbagatai 1883-08-12, Tarbagatai SW 1883-10-03, Kashgar NW (Uzbel) 1884-06-03.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Dzharkent uyezd (1882) took the strip of Ili retained by Russia; Ili protocol 1882-08-06, Kashgar protocol 1882-12-07 and Tarbagatai SW protocol 1883-10-03 (Gregorian) fixed the Chinese line of the oblast. Transfers between Steppe and Turkestan GGs (1882, 1899) did not move the line. / the final Tarbagatai protocol is dated 1883-10-03 (zh.wikipedia) and 1883-10-31 (en.wikipedia); the later date is used and the window between them is unresolved"
+    }
+   ]
+  },
+  {
+   "id": "RUE:SyrDarya",
+   "names": {
+    "en": "Syr-Darya Oblast",
+    "ja": "シルダリヤ州",
+    "local": "Сыр-Дарьинская область"
+   },
+   "wikidata": "Q2381380",
+   "spans": [
+    {
+     "from": "1887-01-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-810",
+      "U1897-813",
+      "U1897-812",
+      "U1897-809",
+      "U1897-811",
+      "U1897-814"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=153438472",
+       "title": "Сырдарьинская область (Российская империя) — Википедия (oldid 153438472)",
+       "says": "Founded 11 (23) Jul 1867; in 1886 Jizzakh and Khojent uyezds were transferred to the new Samarkand oblast; Amu-Darya otdel later part of the oblast; separated only in 1920.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=146367837",
+       "title": "Амударьинский отдел — Википедия (oldid 146367837)",
+       "says": "Amu-Darya otdel formed 1873 on lands ceded by the Khiva khanate; included in Syr-Darya oblast in 1887.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Положение об управлении Туркестанского края, 12 Jun 1886 O.S. (ПСЗ-3 т. VI № 3814), in force 1 Jan 1887 O.S. = 1887-01-13: Jizzakh and Khojent uyezds went to Samarkand oblast and the Amu-Darya otdel became part of Syr-Darya oblast. No outer change found to 1917."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Samarkand",
+   "names": {
+    "en": "Samarkand Oblast",
+    "ja": "サマルカンド州",
+    "local": "Самаркандская область"
+   },
+   "wikidata": "Q2393875",
+   "spans": [
+    {
+     "from": "1887-01-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-822",
+      "U1897-823",
+      "U1897-824",
+      "U1897-821"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=152715005",
+       "title": "Самаркандская область (Российская империя) — Википедия (oldid 152715005)",
+       "says": "Samarkand oblast formed 1 (13) Jan 1887 from the Zeravshan okrug (1868) with Jizzakh, Katta-Kurgan, Samarkand and Khojent uyezds; existed to 1919.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=147653056",
+       "title": "Джизакский уезд — Википедия (oldid 147653056)",
+       "says": "Jizzakh uyezd formed 1868 in Syr-Darya oblast; transferred to Samarkand oblast in 1886 (effective with its formation).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Formed under the 1886 Turkestan statute, in force 1 Jan 1887 O.S. = 1887-01-13 (Wikipedia also cites War Department order 1886 No. 1741). No outer change found to 1917."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Fergana",
+   "names": {
+    "en": "Fergana Oblast",
+    "ja": "フェルガナ州",
+    "local": "Ферганская область"
+   },
+   "wikidata": "Q1017737",
+   "spans": [
+    {
+     "from": "1897-02-09",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "U1897-827",
+      "U1897-828",
+      "U1897-830",
+      "U1897-826",
+      "U1897-829"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=154659986",
+       "title": "Ферганская область (Российская империя) — Википедия (oldid 154659986)",
+       "says": "Fergana oblast founded 5 Mar 1876 from the Kokand khanate; Eastern Pamir (two volosts, Pamir detachment) finally included in the oblast in 1897.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikisource.org/w/index.php?oldid=5368843",
+       "title": "ЭСБЕ, «Ферганская область» (т. XXXV, 1902) — Викитека (oldid 5368843)",
+       "says": "Oblast lies with the Pamir between 37° and 42° N; divided into 5 uyezds and the Pamir; formed 19 Feb 1876 from the Kokand khanate.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The RISTAT Osh atom contains the Eastern Pamir. The Pamir was settled by the Anglo-Russian agreement of 1895 and finally included in the oblast in 1897 (day not found); the span starts at the census day 28 Jan 1897 O.S. = 1897-02-09, when the census counted the Pamir inside Fergana oblast. No outer change found to 1917."
+    }
+   ]
+  },
+  {
+   "id": "RUE:Transcaspian",
+   "names": {
+    "en": "Transcaspian Oblast",
+    "ja": "ザカスピ州",
+    "local": "Закаспийская область"
+   },
+   "wikidata": "Q1960533",
+   "spans": [
+    {
+     "from": "1894",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "U1897-815",
+      "U1897-816",
+      "U1897-817",
+      "U1897-818",
+      "U1897-819"
+     ],
+     "sources": [
+      {
+       "url": "https://ru.wikisource.org/w/index.php?oldid=5369307",
+       "title": "ЭСБЕ, «Закаспийская область» (т. XII, 1894) — Викитека (oldid 5369307)",
+       "says": "Merv 1884, Panjdeh 1885, Atek 1886 added; Afghan border delimited 1887; late 1893 Persia ceded Firuza and received Khisar.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://ru.wikipedia.org/w/index.php?oldid=150886779",
+       "title": "Закаспийская область — Википедия (oldid 150886779)",
+       "says": "Formed 6 (18) May 1881 from Akhal-Teke, Krasnovodsk, Mangyshlak units; territory finally formed by 1890; to Turkestan GG 26 Dec 1897; internal pristavstvo transfers only to 1917.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last outer change: Firuza ceded by Persia, Khisar to Persia, late 1893 (ESBE; day not found). Year precision 1894 = first date the source guarantees the 1897 line. Transfer to Turkestan GG (26 Dec 1897 O.S.) did not move the line. Pristavstvo transfers (1891, 1917) are internal."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1868-11-02",
+   "precision": "day",
+   "what": "Steppe statute: Akmola, Semipalatinsk, Turgay and Ural oblasts formed from the Orenburg and Siberian Kirghiz oblasts (ukaz 21 Oct 1868 O.S., ПСЗ-2 № 46380)",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=152144516",
+     "title": "Область Сибирских Киргизов — Википедия (oldid 152144516)",
+     "says": "Oblast of Siberian Kirghiz abolished by ukaz 21 Oct 1868 No. 46380; divided into Akmola and Semipalatinsk oblasts; Omsk temporarily in Tobolsk gub. until Akmola oblast opened 1 Jan 1869.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1883-10-03",
+   "precision": "day",
+   "what": "Tarbagatai SW protocol, last Russo-Chinese protocol on the Semipalatinsk/Semirechye line",
+   "sources": [
+    {
+     "url": "https://zh.wikipedia.org/w/index.php?oldid=93858717",
+     "title": "伊犁條約 — 維基百科 (oldid 93858717)",
+     "says": "Sub-protocols: Ili 1882-08-06, Kashgar NE 1882-12-07, Kobdo–Tarbagatai 1883-08-12, Tarbagatai SW 1883-10-03, Kashgar NW (Uzbel) 1884-06-03.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1887-01-13",
+   "precision": "day",
+   "what": "Turkestan statute in force: Samarkand oblast formed; Jizzakh and Khojent to it; Amu-Darya otdel into Syr-Darya oblast",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=152715005",
+     "title": "Самаркандская область (Российская империя) — Википедия (oldid 152715005)",
+     "says": "Samarkand oblast formed 1 (13) Jan 1887 from the Zeravshan okrug (1868) with Jizzakh, Katta-Kurgan, Samarkand and Khojent uyezds; existed to 1919.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=146367837",
+     "title": "Амударьинский отдел — Википедия (oldid 146367837)",
+     "says": "Amu-Darya otdel formed 1873 on lands ceded by the Khiva khanate; included in Syr-Darya oblast in 1887.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1894",
+   "precision": "year",
+   "what": "Firuza–Khisar exchange with Persia completed (late 1893)",
+   "sources": [
+    {
+     "url": "https://ru.wikisource.org/w/index.php?oldid=5369307",
+     "title": "ЭСБЕ, «Закаспийская область» (т. XII, 1894) — Викитека (oldid 5369307)",
+     "says": "Merv 1884, Panjdeh 1885, Atek 1886 added; Afghan border delimited 1887; late 1893 Persia ceded Firuza and received Khisar.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1897-02-09",
+   "precision": "day",
+   "what": "Census day; Eastern Pamir counted in Fergana oblast",
+   "sources": [
+    {
+     "url": "https://ru.wikipedia.org/w/index.php?oldid=154659986",
+     "title": "Ферганская область (Российская империя) — Википедия (oldid 154659986)",
+     "says": "Fergana oblast founded 5 Mar 1876 from the Kokand khanate; Eastern Pamir (two volosts, Pamir detachment) finally included in the oblast in 1897.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [],
+ "atomsOutside": [
+  {
+   "atom": "U1897-825",
+   "why": "Emirate of Bukhara: Russian protectorate (Bukhara from 1868/1873, Khiva from 1873), not a province of the Empire; outside the guberniya/oblast layer for the whole scope."
+  },
+  {
+   "atom": "U1897-820",
+   "why": "Khanate of Khiva: Russian protectorate (Bukhara from 1868/1873, Khiva from 1873), not a province of the Empire; outside the guberniya/oblast layer for the whole scope."
+  }
+ ],
+ "unresolved": [
+  {
+   "what": "Akmola oblast before Omsk city joined",
+   "unit": "RUE:Akmola",
+   "atoms": [
+    "U1897-797",
+    "U1897-795",
+    "U1897-796",
+    "U1897-794",
+    "U1897-793"
+   ],
+   "from": "1868-11-02",
+   "to": "1869-01-13",
+   "why": "Between the ukaz and the opening the city of Omsk (inside the 1897 Omsk uyezd) was temporarily in Tobolsk gub., so the outline was not the 1897 one.",
+   "checked": [
+    "ru.wikipedia oblast articles (oldids cited in units)",
+    "ru.wikipedia uyezd articles for all 1897 uyezds of the region",
+    "ESBE oblast articles (ru.wikisource)",
+    "zh.wikipedia 伊犁條約 (sub-protocols 1882–1884)"
+   ],
+   "needs": "city-level detail (not in RISTAT)"
+  },
+  {
+   "what": "Semipalatinsk oblast 1868–1883",
+   "unit": "RUE:Semipalatinsk",
+   "atoms": [
+    "U1897-798",
+    "U1897-799",
+    "U1897-800",
+    "U1897-801",
+    "U1897-802"
+   ],
+   "from": "1868-11-02",
+   "to": "1883-10-03",
+   "why": "Zaisan pristavstvo attached 1869 and split between uyezds; the Chinese line east of Lake Zaisan was moved under Art. 8 of the 1881 treaty and the 1883 protocols, so parts of 1897 uyezds changed.",
+   "checked": [
+    "ru.wikipedia oblast articles (oldids cited in units)",
+    "ru.wikipedia uyezd articles for all 1897 uyezds of the region",
+    "ESBE oblast articles (ru.wikisource)",
+    "zh.wikipedia 伊犁條約 (sub-protocols 1882–1884)"
+   ],
+   "needs": "pre-1883 boundary lines (none in RISTAT)"
+  },
+  {
+   "what": "Semirechye oblast 1868–1883",
+   "unit": "RUE:Semirechye",
+   "atoms": [
+    "U1897-804",
+    "U1897-803",
+    "U1897-805",
+    "U1897-806",
+    "U1897-807",
+    "U1897-808"
+   ],
+   "from": "1868-11-02",
+   "to": "1883-10-03",
+   "why": "Ili (Kuldja) region occupied 1871–1881 and largely returned 1882–83; the retained strip became Dzharkent uyezd 1882; Chinese line redrawn by protocols to 1883-10-03, so parts of 1897 uyezds changed.",
+   "checked": [
+    "ru.wikipedia oblast articles (oldids cited in units)",
+    "ru.wikipedia uyezd articles for all 1897 uyezds of the region",
+    "ESBE oblast articles (ru.wikisource)",
+    "zh.wikipedia 伊犁條約 (sub-protocols 1882–1884)"
+   ],
+   "needs": "pre-1883 boundary lines"
+  },
+  {
+   "what": "Syr-Darya oblast before the 1886 statute",
+   "unit": "RUE:SyrDarya",
+   "atoms": [
+    "U1897-810",
+    "U1897-813",
+    "U1897-812",
+    "U1897-809",
+    "U1897-811",
+    "U1897-814"
+   ],
+   "from": "1868-11-02",
+   "to": "1887-01-13",
+   "why": "Before 1887 the oblast also held Jizzakh and Khojent uyezds and did not hold the Amu-Darya otdel (separate from 1873); whether its lines then coincided with 1897 uyezd lines was not established (Namangan area to Fergana 1875–76).",
+   "checked": [
+    "ru.wikipedia oblast articles (oldids cited in units)",
+    "ru.wikipedia uyezd articles for all 1897 uyezds of the region",
+    "ESBE oblast articles (ru.wikisource)",
+    "zh.wikipedia 伊犁條約 (sub-protocols 1882–1884)"
+   ],
+   "needs": "1868–1886 uyezd lines"
+  },
+  {
+   "what": "Samarkand area before 1887 (Zeravshan okrug)",
+   "atoms": [
+    "U1897-822",
+    "U1897-823",
+    "U1897-824",
+    "U1897-821"
+   ],
+   "from": "1868-11-02",
+   "to": "1887-01-13",
+   "why": "Zeravshan okrug (1868, enlarged 1868–1870) plus Jizzakh and Khojent uyezds of Syr-Darya oblast; the line between the okrug and those uyezds is not shown to equal the 1897 uyezd lines.",
+   "checked": [
+    "ru.wikipedia oblast articles (oldids cited in units)",
+    "ru.wikipedia uyezd articles for all 1897 uyezds of the region",
+    "ESBE oblast articles (ru.wikisource)",
+    "zh.wikipedia 伊犁條約 (sub-protocols 1882–1884)",
+    "ru.wikipedia Зеравшанский округ oldid 148983113"
+   ],
+   "needs": "Zeravshan okrug boundary"
+  },
+  {
+   "what": "Fergana area before the census of 1897",
+   "unit": "RUE:Fergana",
+   "atoms": [
+    "U1897-827",
+    "U1897-828",
+    "U1897-830",
+    "U1897-826",
+    "U1897-829"
+   ],
+   "from": "1868-11-02",
+   "to": "1897-02-09",
+   "why": "Kokand khanate to 1876 (Namangan part Russian from 1875); oblast from 5 Mar 1876 without the Eastern Pamir, which the RISTAT Osh atom contains; Pamir occupied 1891–93, settled 1895, finally included 1897.",
+   "checked": [
+    "ru.wikipedia oblast articles (oldids cited in units)",
+    "ru.wikipedia uyezd articles for all 1897 uyezds of the region",
+    "ESBE oblast articles (ru.wikisource)",
+    "zh.wikipedia 伊犁條約 (sub-protocols 1882–1884)"
+   ],
+   "needs": "Osh uyezd without the Pamir"
+  },
+  {
+   "what": "Transcaspian area before 1894",
+   "unit": "RUE:Transcaspian",
+   "atoms": [
+    "U1897-815",
+    "U1897-816",
+    "U1897-817",
+    "U1897-818",
+    "U1897-819"
+   ],
+   "from": "1868-11-02",
+   "to": "1894",
+   "why": "Mangyshlak (Ural obl. to 1870) and Krasnovodsk pristavstvos, oblast 1881; Merv 1884, Panjdeh 1885, Atek 1886, Afghan line 1887, Firuza–Khisar exchange late 1893; each moved part of an 1897 uyezd.",
+   "checked": [
+    "ru.wikipedia oblast articles (oldids cited in units)",
+    "ru.wikipedia uyezd articles for all 1897 uyezds of the region",
+    "ESBE oblast articles (ru.wikisource)",
+    "zh.wikipedia 伊犁條約 (sub-protocols 1882–1884)",
+    "ru.wikipedia Мервский уезд oldid 146401853"
+   ],
+   "needs": "pre-1894 boundary lines"
+  },
+  {
+   "what": "Semipalatinsk Oblast 1883-10-03 → 1883-10-31",
+   "unit": "RUE:Semipalatinsk",
+   "atoms": [
+    "U1897-798",
+    "U1897-799",
+    "U1897-800",
+    "U1897-801",
+    "U1897-802"
+   ],
+   "from": "1883-10-03",
+   "to": "1883-10-31",
+   "why": "sources disagree on the date of the final 1883 boundary protocol with Qing (10-03 vs 10-31)",
+   "checked": [
+    "zh.wikipedia 塔爾巴哈台西南界約",
+    "en.wikipedia Treaty of Saint Petersburg (1881)"
+   ],
+   "needs": "the protocol text"
+  },
+  {
+   "what": "Semirechye Oblast 1883-10-03 → 1883-10-31",
+   "unit": "RUE:Semirechye",
+   "atoms": [
+    "U1897-804",
+    "U1897-803",
+    "U1897-805",
+    "U1897-806",
+    "U1897-807",
+    "U1897-808"
+   ],
+   "from": "1883-10-03",
+   "to": "1883-10-31",
+   "why": "sources disagree on the date of the final 1883 boundary protocol with Qing (10-03 vs 10-31)",
+   "checked": [
+    "zh.wikipedia 塔爾巴哈台西南界約",
+    "en.wikipedia Treaty of Saint Petersburg (1881)"
+   ],
+   "needs": "the protocol text"
+  }
+ ]
+}

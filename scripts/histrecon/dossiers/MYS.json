@@ -1,0 +1,701 @@
+{
+  "country": "MYS",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1957-08-31",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Federation of Malaya (independent 1957-08-31; 11 states) until 1963-09-16, then Malaysia (adding Sabah, Sarawak and Singapore; Singapore left 1965-08-09 and has no MYS atom).",
+  "units": [
+    {
+      "id": "MYS:Perlis",
+      "names": {
+        "en": "Perlis",
+        "ja": "プルリス州",
+        "local": "Perlis"
+      },
+      "wikidata": "Q213467",
+      "spans": [
+        {
+          "from": "1957-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MYS-1141"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1948-02-01 Federation of Malaya formed of nine Malay states plus Malacca and Penang; no state territory change recorded until 1974.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MYS:Kedah",
+      "names": {
+        "en": "Kedah",
+        "ja": "ケダ州",
+        "local": "Kedah"
+      },
+      "wikidata": "Q188947",
+      "spans": [
+        {
+          "from": "1957-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MYS-1140"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1948-02-01 Federation of Malaya formed of nine Malay states plus Malacca and Penang; no state territory change recorded until 1974.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MYS:Kelantan",
+      "names": {
+        "en": "Kelantan",
+        "ja": "クランタン州",
+        "local": "Kelantan"
+      },
+      "wikidata": "Q185944",
+      "spans": [
+        {
+          "from": "1957-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MYS-1144"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1948-02-01 Federation of Malaya formed of nine Malay states plus Malacca and Penang; no state territory change recorded until 1974.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MYS:Perak",
+      "names": {
+        "en": "Perak",
+        "ja": "ペラ州",
+        "local": "Perak"
+      },
+      "wikidata": "Q188953",
+      "spans": [
+        {
+          "from": "1957-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MYS-1137"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1948-02-01 Federation of Malaya formed of nine Malay states plus Malacca and Penang; no state territory change recorded until 1974.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MYS:Penang",
+      "names": {
+        "en": "Penang",
+        "ja": "ペナン州",
+        "local": "Pulau Pinang"
+      },
+      "wikidata": "Q188096",
+      "spans": [
+        {
+          "from": "1957-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MYS-1139"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1948-02-01 Federation of Malaya formed of nine Malay states plus Malacca and Penang; no state territory change recorded until 1974.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MYS:NegeriSembilan",
+      "names": {
+        "en": "Negeri Sembilan",
+        "ja": "ヌグリ・スンビラン州",
+        "local": "Negeri Sembilan"
+      },
+      "wikidata": "Q213893",
+      "spans": [
+        {
+          "from": "1957-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MYS-1146"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1948-02-01 Federation of Malaya formed of nine Malay states plus Malacca and Penang; no state territory change recorded until 1974.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MYS:Melaka",
+      "names": {
+        "en": "Malacca",
+        "ja": "ムラカ州",
+        "local": "Melaka"
+      },
+      "wikidata": "Q185221",
+      "spans": [
+        {
+          "from": "1957-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MYS-1145"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1948-02-01 Federation of Malaya formed of nine Malay states plus Malacca and Penang; no state territory change recorded until 1974.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MYS:Johor",
+      "names": {
+        "en": "Johor",
+        "ja": "ジョホール州",
+        "local": "Johor"
+      },
+      "wikidata": "Q183032",
+      "spans": [
+        {
+          "from": "1957-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MYS-1143"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1948-02-01 Federation of Malaya formed of nine Malay states plus Malacca and Penang; no state territory change recorded until 1974.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MYS:Pahang",
+      "names": {
+        "en": "Pahang",
+        "ja": "パハン州",
+        "local": "Pahang"
+      },
+      "wikidata": "Q191346",
+      "spans": [
+        {
+          "from": "1957-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MYS-1147"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1948-02-01 Federation of Malaya formed of nine Malay states plus Malacca and Penang; no state territory change recorded until 1974.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MYS:Terengganu",
+      "names": {
+        "en": "Terengganu",
+        "ja": "トレンガヌ州",
+        "local": "Terengganu"
+      },
+      "wikidata": "Q189701",
+      "spans": [
+        {
+          "from": "1957-08-31",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MYS-1149"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1948-02-01 Federation of Malaya formed of nine Malay states plus Malacca and Penang; no state territory change recorded until 1974.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MYS:Selangor",
+      "names": {
+        "en": "Selangor",
+        "ja": "セランゴール州",
+        "local": "Selangor"
+      },
+      "wikidata": "Q189710",
+      "spans": [
+        {
+          "from": "1957-08-31",
+          "precision": "day",
+          "to": "1974-02-01",
+          "atoms": [
+            "MYS-1148",
+            "MYS-4831",
+            "MYS-4832"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1948-02-01 Federation of Malaya formed of nine Malay states plus Malacca and Penang; no state territory change recorded until 1974.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1974-02-01 Kuala Lumpur federal territory split from Selangor.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1375404106",
+              "title": "Federal territories of Malaysia (en.wikipedia, revision 1375404106)",
+              "says": "Kuala Lumpur became the first federal territory on 1 Feb 1974 (Federal Territory of Kuala Lumpur Agreement).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Includes Kuala Lumpur and the Prang Besar/Sepang land later ceded for Putrajaya."
+        },
+        {
+          "from": "1974-02-01",
+          "precision": "day",
+          "to": "2001-02-01",
+          "atoms": [
+            "MYS-1148",
+            "MYS-4832"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1974-02-01 Kuala Lumpur federal territory split from Selangor.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1375404106",
+              "title": "Federal territories of Malaysia (en.wikipedia, revision 1375404106)",
+              "says": "Kuala Lumpur became the first federal territory on 1 Feb 1974 (Federal Territory of Kuala Lumpur Agreement).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        },
+        {
+          "from": "2001-02-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MYS-1148"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "2001-02-01 Putrajaya federal territory split from Sepang district of Selangor.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1375404106",
+              "title": "Federal territories of Malaysia (en.wikipedia, revision 1375404106)",
+              "says": "Putrajaya became the third federal territory on 1 Feb 2001, on land ceded by Selangor.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MYS:KualaLumpur",
+      "names": {
+        "en": "Federal Territory of Kuala Lumpur",
+        "ja": "クアラルンプール",
+        "local": "Wilayah Persekutuan Kuala Lumpur"
+      },
+      "wikidata": "Q1865",
+      "spans": [
+        {
+          "from": "1974-02-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MYS-4831"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1974-02-01 Kuala Lumpur federal territory split from Selangor.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1375404106",
+              "title": "Federal territories of Malaysia (en.wikipedia, revision 1375404106)",
+              "says": "Kuala Lumpur became the first federal territory on 1 Feb 1974 (Federal Territory of Kuala Lumpur Agreement).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MYS:Putrajaya",
+      "names": {
+        "en": "Federal Territory of Putrajaya",
+        "ja": "プトラジャヤ",
+        "local": "Wilayah Persekutuan Putrajaya"
+      },
+      "wikidata": "Q182378",
+      "spans": [
+        {
+          "from": "2001-02-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MYS-4832"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "2001-02-01 Putrajaya federal territory split from Sepang district of Selangor.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1375404106",
+              "title": "Federal territories of Malaysia (en.wikipedia, revision 1375404106)",
+              "says": "Putrajaya became the third federal territory on 1 Feb 2001, on land ceded by Selangor.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MYS:Sabah",
+      "names": {
+        "en": "Sabah (North Borneo)",
+        "ja": "サバ州",
+        "local": "Sabah"
+      },
+      "wikidata": "Q179029",
+      "spans": [
+        {
+          "from": "1963-09-16",
+          "precision": "day",
+          "to": "1984-04-16",
+          "atoms": [
+            "MYS-1186",
+            "MYS-4833"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1963-09-16 Malaysia formed from Malaya, Singapore, Sarawak and North Borneo (renamed Sabah); Labuan was part of North Borneo since 1946.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1984-04-16 Labuan federal territory split from Sabah.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1375404106",
+              "title": "Federal territories of Malaysia (en.wikipedia, revision 1375404106)",
+              "says": "Labuan became the second federal territory on 16 Apr 1984.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Includes Labuan until it became a federal territory."
+        },
+        {
+          "from": "1984-04-16",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MYS-1186"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1984-04-16 Labuan federal territory split from Sabah.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1375404106",
+              "title": "Federal territories of Malaysia (en.wikipedia, revision 1375404106)",
+              "says": "Labuan became the second federal territory on 16 Apr 1984.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MYS:Sarawak",
+      "names": {
+        "en": "Sarawak",
+        "ja": "サラワク州",
+        "local": "Sarawak"
+      },
+      "wikidata": "Q170462",
+      "spans": [
+        {
+          "from": "1963-09-16",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MYS-1187"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1963-09-16 Malaysia formed from Malaya, Singapore, Sarawak and North Borneo (renamed Sabah); Labuan was part of North Borneo since 1946.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MYS:Labuan",
+      "names": {
+        "en": "Federal Territory of Labuan",
+        "ja": "ラブアン",
+        "local": "Wilayah Persekutuan Labuan"
+      },
+      "wikidata": "Q214504",
+      "spans": [
+        {
+          "from": "1984-04-16",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "MYS-4833"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/umy.html",
+              "title": "Statoids: States of Malaysia, change history",
+              "says": "1984-04-16 Labuan federal territory split from Sabah.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1375404106",
+              "title": "Federal territories of Malaysia (en.wikipedia, revision 1375404106)",
+              "says": "Labuan became the second federal territory on 16 Apr 1984.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1957-08-31",
+      "precision": "day",
+      "what": "Federation of Malaya independent with 11 states",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umy.html",
+          "title": "Statoids: States of Malaysia, change history",
+          "says": "1948-02-01 Federation of Malaya formed of nine Malay states plus Malacca and Penang; no state territory change recorded until 1974.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1963-09-16",
+      "precision": "day",
+      "what": "Malaysia formed: Sabah (with Labuan) and Sarawak join",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umy.html",
+          "title": "Statoids: States of Malaysia, change history",
+          "says": "1963-09-16 Malaysia formed from Malaya, Singapore, Sarawak and North Borneo (renamed Sabah); Labuan was part of North Borneo since 1946.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1974-02-01",
+      "precision": "day",
+      "what": "Kuala Lumpur federal territory from Selangor",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umy.html",
+          "title": "Statoids: States of Malaysia, change history",
+          "says": "1974-02-01 Kuala Lumpur federal territory split from Selangor.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1375404106",
+          "title": "Federal territories of Malaysia (en.wikipedia, revision 1375404106)",
+          "says": "Kuala Lumpur became the first federal territory on 1 Feb 1974 (Federal Territory of Kuala Lumpur Agreement).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1984-04-16",
+      "precision": "day",
+      "what": "Labuan federal territory from Sabah",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umy.html",
+          "title": "Statoids: States of Malaysia, change history",
+          "says": "1984-04-16 Labuan federal territory split from Sabah.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1375404106",
+          "title": "Federal territories of Malaysia (en.wikipedia, revision 1375404106)",
+          "says": "Labuan became the second federal territory on 16 Apr 1984.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2001-02-01",
+      "precision": "day",
+      "what": "Putrajaya federal territory from Selangor",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umy.html",
+          "title": "Statoids: States of Malaysia, change history",
+          "says": "2001-02-01 Putrajaya federal territory split from Sepang district of Selangor.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1375404106",
+          "title": "Federal territories of Malaysia (en.wikipedia, revision 1375404106)",
+          "says": "Putrajaya became the third federal territory on 1 Feb 2001, on land ceded by Selangor.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1960-01-01",
+      "n": 11,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umy.html",
+          "title": "Statoids: States of Malaysia, change history",
+          "says": "1948-02-01 Federation of Malaya formed of nine Malay states plus Malacca and Penang; no state territory change recorded until 1974.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1970-01-01",
+      "n": 13,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/umy.html",
+          "title": "Statoids: States of Malaysia, change history",
+          "says": "1963-09-16 Malaysia formed from Malaya, Singapore, Sarawak and North Borneo (renamed Sabah); Labuan was part of North Borneo since 1946.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2019-12-31",
+      "n": 16,
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1375404106",
+          "title": "Federal territories of Malaysia (en.wikipedia, revision 1375404106)",
+          "says": "Malaysia has three federal territories (Kuala Lumpur, Labuan, Putrajaya) besides the 13 states.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [
+    {
+      "atom": "MYS-1186",
+      "from": "1957-08-31",
+      "to": "1963-09-16",
+      "why": "British colony (North Borneo / Sarawak) until Malaysia was formed on 1963-09-16; not part of the Federation of Malaya."
+    },
+    {
+      "atom": "MYS-1187",
+      "from": "1957-08-31",
+      "to": "1963-09-16",
+      "why": "British colony (North Borneo / Sarawak) until Malaysia was formed on 1963-09-16; not part of the Federation of Malaya."
+    },
+    {
+      "atom": "MYS-4833",
+      "from": "1957-08-31",
+      "to": "1963-09-16",
+      "why": "British colony (North Borneo / Sarawak) until Malaysia was formed on 1963-09-16; not part of the Federation of Malaya."
+    }
+  ],
+  "unresolved": []
+}

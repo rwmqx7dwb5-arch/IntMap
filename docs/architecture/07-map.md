@@ -922,7 +922,11 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
   上流が単位を持たないが**出版元が自分で測って日付を述べた**範囲は、その出版元の記録が埋める
   （`data/hist-admin-surveys.js`、CC BY-NC-SA の出版元だけを分けた `data/hist-admin-surveys-nc.js`。
   どの出版元か・何年かは `docs/MAP-LAYERS.md` §7.7）。これは IntMap の導出ではなく**出版元の記録**で、
-  遡らせた区分はそれにも譲る。継ぎ足す記録の一覧は **`js/border-coast.js` の `HIST_ADMIN_GAPS` ただ 1 か所**にあり、
+  遡らせた区分はそれにも譲る。上流も出版元も持たず、今日の区分を遡らせることもできない範囲は、
+  **IntMap が史実から復元した区分**（`data/hist-admin-recon.js`——区分を「境界が史実の線と一致する細かい単位の和集合」とし、
+  所属を 1 件ずつ出典つきの事実として組んだもの）が埋める。導出だが調書の出典を持ち、上流と出版元に譲り、
+  遡らせた区分はそれに譲る（方法・形式・判定基準・対象の選び方の正本は `docs/HIST-RECONSTRUCTION.md`、門は `npm run check:histrecon`）。
+  継ぎ足す記録の一覧は **`js/border-coast.js` の `HIST_ADMIN_GAPS` ただ 1 か所**にあり、
   描く `js/time-admin1.js`・測る `scripts/hist-fidelity.mjs`・譲る側のビルダーがそれを読む。各記録の
   `derived` が「IntMap の導出（true）か出版元の記録（false）か」を述べ、レイヤーの注記は両者を別に数える。
   ⚠ **遡らせる区間の規則は `docs/MAP-LAYERS.md` §7.7 が正本**（門は `npm run check:histfill`）。
@@ -1029,9 +1033,10 @@ Atlas の `research.related` / `research.impact` / 実世界オブジェクト�
   「その政体が持つ海岸線の写し」は基図のほうが正確に知っている。同梱の海岸線
   （`data/coastline.json.gz`＝Natural Earth 1:10m・2 km 許容）に対して、**ある辺のどこか1点でも
   `INLAND_KM` より内陸なら境界、そうでなければ海岸線の写し**と判定し、
-  11の束（`cshapes` / `hist-borders` / `hist-borders-late` / `hist-clio` / `hist-eras-rest` /
-  `hist-admin1` / `hist-admin2` / `hist-admin3` / `hist-eras` / `hist-kuni` / `hist-admin-fill`）の
-  全リング **78,464 本**に
+  14の束（`cshapes` / `hist-borders` / `hist-borders-late` / `hist-clio` / `hist-eras-rest` /
+  `hist-admin1` / `hist-admin2` / `hist-admin3` / `hist-eras` / `hist-kuni` / `hist-admin-fill` /
+  `hist-admin-surveys` / `hist-admin-surveys-nc` / `hist-admin-recon`）の
+  全リング **82,131 本**に
   ついて「描く run」を印す。⚠ **どの束を印すかは書き並べていない**——`data/` を走査し、
   「1つのグローバルに `rings`（[経度,緯度] の配列の配列）を持つ束」であるものを**発見する**
   （`discoverBundles()`）。手で並べた一覧は短くなっても誰も気づかないので、

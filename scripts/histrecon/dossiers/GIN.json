@@ -1,0 +1,408 @@
+{
+  "country": "GIN",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1994",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Republic of Guinea throughout the scope. NE atoms are the 33 prefectures + Conakry (layout since 1985); the first-level units since 1994 are the seven administrative regions + Conakry, built here as unions of prefectures. NE quirk: four prefecture atoms (Boké, Faranah, Kankan, Kindia) carry the Wikidata QID of the region, not the prefecture.",
+  "units": [
+    {
+      "id": "GIN:Boké@1994",
+      "names": {
+        "en": "Boké Region",
+        "ja": "ボケ州",
+        "local": "Région de Boké"
+      },
+      "wikidata": "Q862611",
+      "spans": [
+        {
+          "from": "1994",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "GIN-5646",
+            "GIN-5639",
+            "GIN-5629",
+            "GIN-5628",
+            "GIN-5638"
+          ],
+          "sources": [
+            {
+              "url": "https://www.webguine.site/bibliotheque/general/mBinns/intro.html",
+              "title": "Binns, Guinea (World Bibliographical Series) — Introduction (webGuinée)",
+              "says": "Until 1994 Guinea had four administrative divisions; reorganized in 1994 into seven regions: Kindia, Boké, Labé, Mamou, Faranah, Kankan, N'Zérékoré.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ugn.html",
+              "title": "Prefectures of Guinea (Statoids)",
+              "says": "34 prefectures grouped into seven governorates/regions and Conakry; last prefecture changes 1985 (Coyah, Koubia, Lélouma, Lola, Mandiana); 1980 Youkoukoun renamed Koundara.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://dhsprogram.com/pubs/pdf/FR109/01Chapitre01.pdf",
+              "title": "Guinée EDS 1999, chapitre 1 (DHS Program)",
+              "says": "Guinea is subdivided into seven administrative regions plus Conakry, made of 33 prefectures in total.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its prefectures (NE region field, Statoids grouping, Wikidata P131). Only the year 1994 is established for the creation; prefecture limits unchanged since 1985 per Statoids."
+        }
+      ]
+    },
+    {
+      "id": "GIN:Kindia@1994",
+      "names": {
+        "en": "Kindia Region",
+        "ja": "キンディア州",
+        "local": "Région de Kindia"
+      },
+      "wikidata": "Q868520",
+      "spans": [
+        {
+          "from": "1994",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "GIN-5643",
+            "GIN-5637",
+            "GIN-5635",
+            "GIN-5631",
+            "GIN-5660"
+          ],
+          "sources": [
+            {
+              "url": "https://www.webguine.site/bibliotheque/general/mBinns/intro.html",
+              "title": "Binns, Guinea (World Bibliographical Series) — Introduction (webGuinée)",
+              "says": "Until 1994 Guinea had four administrative divisions; reorganized in 1994 into seven regions: Kindia, Boké, Labé, Mamou, Faranah, Kankan, N'Zérékoré.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ugn.html",
+              "title": "Prefectures of Guinea (Statoids)",
+              "says": "34 prefectures grouped into seven governorates/regions and Conakry; last prefecture changes 1985 (Coyah, Koubia, Lélouma, Lola, Mandiana); 1980 Youkoukoun renamed Koundara.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://dhsprogram.com/pubs/pdf/FR109/01Chapitre01.pdf",
+              "title": "Guinée EDS 1999, chapitre 1 (DHS Program)",
+              "says": "Guinea is subdivided into seven administrative regions plus Conakry, made of 33 prefectures in total.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its prefectures (NE region field, Statoids grouping, Wikidata P131). Only the year 1994 is established for the creation; prefecture limits unchanged since 1985 per Statoids."
+        }
+      ]
+    },
+    {
+      "id": "GIN:Labé@1994",
+      "names": {
+        "en": "Labé Region",
+        "ja": "ラベ州",
+        "local": "Région de Labé"
+      },
+      "wikidata": "Q868515",
+      "spans": [
+        {
+          "from": "1994",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "GIN-5652",
+            "GIN-5645",
+            "GIN-5658",
+            "GIN-5649",
+            "GIN-5648"
+          ],
+          "sources": [
+            {
+              "url": "https://www.webguine.site/bibliotheque/general/mBinns/intro.html",
+              "title": "Binns, Guinea (World Bibliographical Series) — Introduction (webGuinée)",
+              "says": "Until 1994 Guinea had four administrative divisions; reorganized in 1994 into seven regions: Kindia, Boké, Labé, Mamou, Faranah, Kankan, N'Zérékoré.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ugn.html",
+              "title": "Prefectures of Guinea (Statoids)",
+              "says": "34 prefectures grouped into seven governorates/regions and Conakry; last prefecture changes 1985 (Coyah, Koubia, Lélouma, Lola, Mandiana); 1980 Youkoukoun renamed Koundara.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://dhsprogram.com/pubs/pdf/FR109/01Chapitre01.pdf",
+              "title": "Guinée EDS 1999, chapitre 1 (DHS Program)",
+              "says": "Guinea is subdivided into seven administrative regions plus Conakry, made of 33 prefectures in total.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its prefectures (NE region field, Statoids grouping, Wikidata P131). Only the year 1994 is established for the creation; prefecture limits unchanged since 1985 per Statoids."
+        }
+      ]
+    },
+    {
+      "id": "GIN:Mamou@1994",
+      "names": {
+        "en": "Mamou Region",
+        "ja": "マムー州",
+        "local": "Région de Mamou"
+      },
+      "wikidata": "Q1043650",
+      "spans": [
+        {
+          "from": "1994",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "GIN-5653",
+            "GIN-5633",
+            "GIN-5656"
+          ],
+          "sources": [
+            {
+              "url": "https://www.webguine.site/bibliotheque/general/mBinns/intro.html",
+              "title": "Binns, Guinea (World Bibliographical Series) — Introduction (webGuinée)",
+              "says": "Until 1994 Guinea had four administrative divisions; reorganized in 1994 into seven regions: Kindia, Boké, Labé, Mamou, Faranah, Kankan, N'Zérékoré.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ugn.html",
+              "title": "Prefectures of Guinea (Statoids)",
+              "says": "34 prefectures grouped into seven governorates/regions and Conakry; last prefecture changes 1985 (Coyah, Koubia, Lélouma, Lola, Mandiana); 1980 Youkoukoun renamed Koundara.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://dhsprogram.com/pubs/pdf/FR109/01Chapitre01.pdf",
+              "title": "Guinée EDS 1999, chapitre 1 (DHS Program)",
+              "says": "Guinea is subdivided into seven administrative regions plus Conakry, made of 33 prefectures in total.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its prefectures (NE region field, Statoids grouping, Wikidata P131). Only the year 1994 is established for the creation; prefecture limits unchanged since 1985 per Statoids."
+        }
+      ]
+    },
+    {
+      "id": "GIN:Faranah@1994",
+      "names": {
+        "en": "Faranah Region",
+        "ja": "ファラナ州",
+        "local": "Région de Faranah"
+      },
+      "wikidata": "Q870166",
+      "spans": [
+        {
+          "from": "1994",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "GIN-5636",
+            "GIN-5632",
+            "GIN-5634",
+            "GIN-5644"
+          ],
+          "sources": [
+            {
+              "url": "https://www.webguine.site/bibliotheque/general/mBinns/intro.html",
+              "title": "Binns, Guinea (World Bibliographical Series) — Introduction (webGuinée)",
+              "says": "Until 1994 Guinea had four administrative divisions; reorganized in 1994 into seven regions: Kindia, Boké, Labé, Mamou, Faranah, Kankan, N'Zérékoré.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ugn.html",
+              "title": "Prefectures of Guinea (Statoids)",
+              "says": "34 prefectures grouped into seven governorates/regions and Conakry; last prefecture changes 1985 (Coyah, Koubia, Lélouma, Lola, Mandiana); 1980 Youkoukoun renamed Koundara.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://dhsprogram.com/pubs/pdf/FR109/01Chapitre01.pdf",
+              "title": "Guinée EDS 1999, chapitre 1 (DHS Program)",
+              "says": "Guinea is subdivided into seven administrative regions plus Conakry, made of 33 prefectures in total.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its prefectures (NE region field, Statoids grouping, Wikidata P131). Only the year 1994 is established for the creation; prefecture limits unchanged since 1985 per Statoids."
+        }
+      ]
+    },
+    {
+      "id": "GIN:Kankan@1994",
+      "names": {
+        "en": "Kankan Region",
+        "ja": "カンカン州",
+        "local": "Région de Kankan"
+      },
+      "wikidata": "Q870191",
+      "spans": [
+        {
+          "from": "1994",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "GIN-5641",
+            "GIN-5654",
+            "GIN-5657",
+            "GIN-5642",
+            "GIN-5647"
+          ],
+          "sources": [
+            {
+              "url": "https://www.webguine.site/bibliotheque/general/mBinns/intro.html",
+              "title": "Binns, Guinea (World Bibliographical Series) — Introduction (webGuinée)",
+              "says": "Until 1994 Guinea had four administrative divisions; reorganized in 1994 into seven regions: Kindia, Boké, Labé, Mamou, Faranah, Kankan, N'Zérékoré.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ugn.html",
+              "title": "Prefectures of Guinea (Statoids)",
+              "says": "34 prefectures grouped into seven governorates/regions and Conakry; last prefecture changes 1985 (Coyah, Koubia, Lélouma, Lola, Mandiana); 1980 Youkoukoun renamed Koundara.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://dhsprogram.com/pubs/pdf/FR109/01Chapitre01.pdf",
+              "title": "Guinée EDS 1999, chapitre 1 (DHS Program)",
+              "says": "Guinea is subdivided into seven administrative regions plus Conakry, made of 33 prefectures in total.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its prefectures (NE region field, Statoids grouping, Wikidata P131). Only the year 1994 is established for the creation; prefecture limits unchanged since 1985 per Statoids."
+        }
+      ]
+    },
+    {
+      "id": "GIN:Nzérékoré@1994",
+      "names": {
+        "en": "Nzérékoré Region",
+        "ja": "ンゼレコレ州",
+        "local": "Région de Nzérékoré"
+      },
+      "wikidata": "Q870146",
+      "spans": [
+        {
+          "from": "1994",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "GIN-5640",
+            "GIN-5627",
+            "GIN-5650",
+            "GIN-5651",
+            "GIN-5659",
+            "GIN-5655"
+          ],
+          "sources": [
+            {
+              "url": "https://www.webguine.site/bibliotheque/general/mBinns/intro.html",
+              "title": "Binns, Guinea (World Bibliographical Series) — Introduction (webGuinée)",
+              "says": "Until 1994 Guinea had four administrative divisions; reorganized in 1994 into seven regions: Kindia, Boké, Labé, Mamou, Faranah, Kankan, N'Zérékoré.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/ugn.html",
+              "title": "Prefectures of Guinea (Statoids)",
+              "says": "34 prefectures grouped into seven governorates/regions and Conakry; last prefecture changes 1985 (Coyah, Koubia, Lélouma, Lola, Mandiana); 1980 Youkoukoun renamed Koundara.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://dhsprogram.com/pubs/pdf/FR109/01Chapitre01.pdf",
+              "title": "Guinée EDS 1999, chapitre 1 (DHS Program)",
+              "says": "Guinea is subdivided into seven administrative regions plus Conakry, made of 33 prefectures in total.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region = union of its prefectures (NE region field, Statoids grouping, Wikidata P131). Only the year 1994 is established for the creation; prefecture limits unchanged since 1985 per Statoids."
+        }
+      ]
+    },
+    {
+      "id": "GIN:Conakry@1994",
+      "names": {
+        "en": "Conakry",
+        "ja": "コナクリ",
+        "local": "Conakry"
+      },
+      "wikidata": "Q3733",
+      "spans": [
+        {
+          "from": "1994",
+          "precision": "year",
+          "to": null,
+          "atoms": [
+            "GIN-5630"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/ugn.html",
+              "title": "Prefectures of Guinea (Statoids)",
+              "says": "34 prefectures grouped into seven governorates/regions and Conakry; last prefecture changes 1985 (Coyah, Koubia, Lélouma, Lola, Mandiana); 1980 Youkoukoun renamed Koundara.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://dhsprogram.com/pubs/pdf/FR109/01Chapitre01.pdf",
+              "title": "Guinée EDS 1999, chapitre 1 (DHS Program)",
+              "says": "Guinea is subdivided into seven administrative regions plus Conakry, made of 33 prefectures in total.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Conakry is the eighth first-level unit beside the seven regions; status renamed (gouvernorat, ville, zone spéciale) without territorial change."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1985",
+      "precision": "year",
+      "what": "Coyah, Koubia, Lélouma, Lola, Mandiana prefectures created (34-unit layout of NE)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/ugn.html",
+          "title": "Prefectures of Guinea (Statoids)",
+          "says": "34 prefectures grouped into seven governorates/regions and Conakry; last prefecture changes 1985 (Coyah, Koubia, Lélouma, Lola, Mandiana); 1980 Youkoukoun renamed Koundara.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1994",
+      "precision": "year",
+      "what": "The four administrative divisions reorganized into seven regions (+ Conakry)",
+      "sources": [
+        {
+          "url": "https://www.webguine.site/bibliotheque/general/mBinns/intro.html",
+          "title": "Binns, Guinea (World Bibliographical Series) — Introduction (webGuinée)",
+          "says": "Until 1994 Guinea had four administrative divisions; reorganized in 1994 into seven regions: Kindia, Boké, Labé, Mamou, Faranah, Kankan, N'Zérékoré.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1999",
+      "n": 8,
+      "sources": [
+        {
+          "url": "https://dhsprogram.com/pubs/pdf/FR109/01Chapitre01.pdf",
+          "title": "Guinée EDS 1999, chapitre 1 (DHS Program)",
+          "says": "Guinea is subdivided into seven administrative regions plus Conakry, made of 33 prefectures in total.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Guinea before 1994: four divisions (Guinée maritime, Moyenne, Haute, Forestière) over 33 prefectures + Conakry; earlier 29-33 «régions administratives»",
+      "from": "1958-10-02",
+      "to": "1994",
+      "why": "Whether the four pre-1994 divisions were first-level units with exact prefecture membership, and their dates, could not be established; the natural regions do not follow prefecture lines everywhere (e.g. Kissidougou).",
+      "checked": [
+        "webguine.site Binns introduction",
+        "statoids.com/ugn.html",
+        "foncier-developpement.fr fiche pays Guinée (ordinance 079/PRG/86 of 25 March 1986 on territorial reorganization, text not found)"
+      ],
+      "needs": "ordinance 079/PRG/86 and the 1994 text creating the regions"
+    }
+  ]
+}

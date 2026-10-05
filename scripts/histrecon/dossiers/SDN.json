@@ -1,0 +1,1056 @@
+{
+ "country": "SDN",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1991",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Republic of the Sudan (independent 1956-01-01). Before 2011-07-09 the same polity also held the territory of the SDS atoms (see the SDS dossier for those units). This dossier covers only the land of the NE SDN atoms (the post-2011 Sudan).",
+ "units": [
+  {
+   "id": "SDN:Northern@1991",
+   "names": {
+    "en": "Northern State (1991–94: Northern + River Nile)",
+    "ja": "北部州（1991–94年）",
+    "local": "الولاية الشمالية"
+   },
+   "spans": [
+    {
+     "from": "1991",
+     "precision": "year",
+     "to": "1994-02-14",
+     "atoms": [
+      "SDN-878",
+      "SDN-877"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decree year only; each 1994 state lies within one 1991 state, so the 1991 state is the union of its 1994 successors."
+    }
+   ]
+  },
+  {
+   "id": "SDN:Eastern@1991",
+   "names": {
+    "en": "Eastern State (1991–94: Kassala + Red Sea + Gedarif)",
+    "ja": "東部州（1991–94年）",
+    "local": "الولاية الشرقية"
+   },
+   "spans": [
+    {
+     "from": "1991",
+     "precision": "year",
+     "to": "1994-02-14",
+     "atoms": [
+      "SDN-149",
+      "SDN-884",
+      "SDN-876"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "As Northern State."
+    }
+   ]
+  },
+  {
+   "id": "SDN:Central@1991",
+   "names": {
+    "en": "Central State (1991–94: Gezira + White Nile + Sennar + Blue Nile)",
+    "ja": "中部州（1991–94年）",
+    "local": "الولاية الوسطى"
+   },
+   "spans": [
+    {
+     "from": "1991",
+     "precision": "year",
+     "to": "1994-02-14",
+     "atoms": [
+      "SDN-875",
+      "SDN-879",
+      "SDN-880",
+      "SDN-148"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "As Northern State."
+    }
+   ]
+  },
+  {
+   "id": "SDN:Khartoum",
+   "names": {
+    "en": "Khartoum",
+    "ja": "ハルツーム州",
+    "local": "ولاية الخرطوم"
+   },
+   "wikidata": "Q310385",
+   "spans": [
+    {
+     "from": "1991",
+     "precision": "year",
+     "to": null,
+     "atoms": [
+      "SDN-874"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Unchanged in 1994 and after."
+    }
+   ]
+  },
+  {
+   "id": "SDN:Kordofan@1991",
+   "names": {
+    "en": "Kordofan State (1991–94)",
+    "ja": "コルドファン州（1991–94年）",
+    "local": "ولاية كردفان"
+   },
+   "spans": [
+    {
+     "from": "1991",
+     "precision": "year",
+     "to": "1994-02-14",
+     "atoms": [
+      "SDN-882",
+      "SDN-883"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Union of the later North, West and South Kordofan; Abyei lies inside SDN-882."
+    }
+   ]
+  },
+  {
+   "id": "SDN:Darfur@1991",
+   "names": {
+    "en": "Darfur State (1991–94)",
+    "ja": "ダルフール州（1991–94年）",
+    "local": "ولاية دارفور"
+   },
+   "spans": [
+    {
+     "from": "1991",
+     "precision": "year",
+     "to": "1994-02-14",
+     "atoms": [
+      "SDN-881",
+      "SDN-5856",
+      "SDN-5857",
+      "SDN-5858",
+      "SDN-5859"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Union of the later Darfur states; Kafia Kingi (transferred from Bahr el Ghazal in 1960) lies inside SDN-5856."
+    }
+   ]
+  },
+  {
+   "id": "SDN:Northern@1994",
+   "names": {
+    "en": "Northern",
+    "ja": "北部州",
+    "local": "الولاية الشمالية"
+   },
+   "wikidata": "Q310118",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SDN-878"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 (statoids, en.wikipedia); no later change of this state's territory is recorded through 2019."
+    }
+   ]
+  },
+  {
+   "id": "SDN:RiverNile@1994",
+   "names": {
+    "en": "River Nile",
+    "ja": "ナイル川州",
+    "local": "ولاية نهر النيل"
+   },
+   "wikidata": "Q849297",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SDN-877"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 (statoids, en.wikipedia); no later change of this state's territory is recorded through 2019."
+    }
+   ]
+  },
+  {
+   "id": "SDN:RedSea@1994",
+   "names": {
+    "en": "Red Sea",
+    "ja": "紅海州",
+    "local": "ولاية البحر الأحمر"
+   },
+   "wikidata": "Q310120",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SDN-149"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 (statoids, en.wikipedia); no later change of this state's territory is recorded through 2019. See unresolved note on Halaib/Bir Tawil."
+    }
+   ]
+  },
+  {
+   "id": "SDN:Kassala@1994",
+   "names": {
+    "en": "Kassala",
+    "ja": "カッサラ州",
+    "local": "ولاية كسلا"
+   },
+   "wikidata": "Q954963",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SDN-884"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 (statoids, en.wikipedia); no later change of this state's territory is recorded through 2019."
+    }
+   ]
+  },
+  {
+   "id": "SDN:Gedarif@1994",
+   "names": {
+    "en": "Gedarif",
+    "ja": "ガダーレフ州",
+    "local": "ولاية القضارف"
+   },
+   "wikidata": "Q309478",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SDN-876"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 (statoids, en.wikipedia); no later change of this state's territory is recorded through 2019."
+    }
+   ]
+  },
+  {
+   "id": "SDN:Gezira@1994",
+   "names": {
+    "en": "Gezira",
+    "ja": "ジャジーラ州",
+    "local": "ولاية الجزيرة"
+   },
+   "wikidata": "Q309469",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SDN-875"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 (statoids, en.wikipedia); no later change of this state's territory is recorded through 2019."
+    }
+   ]
+  },
+  {
+   "id": "SDN:WhiteNile@1994",
+   "names": {
+    "en": "White Nile",
+    "ja": "白ナイル州",
+    "local": "ولاية النيل الأبيض"
+   },
+   "wikidata": "Q311371",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SDN-879"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 (statoids, en.wikipedia); no later change of this state's territory is recorded through 2019."
+    }
+   ]
+  },
+  {
+   "id": "SDN:Sennar@1994",
+   "names": {
+    "en": "Sennar",
+    "ja": "センナール州",
+    "local": "ولاية سنار"
+   },
+   "wikidata": "Q865534",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SDN-880"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 (statoids, en.wikipedia); no later change of this state's territory is recorded through 2019."
+    }
+   ]
+  },
+  {
+   "id": "SDN:BlueNile@1994",
+   "names": {
+    "en": "Blue Nile",
+    "ja": "青ナイル州",
+    "local": "ولاية النيل الأزرق"
+   },
+   "wikidata": "Q309489",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SDN-148"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 (statoids, en.wikipedia); no later change of this state's territory is recorded through 2019."
+    }
+   ]
+  },
+  {
+   "id": "SDN:NorthDarfur@1994",
+   "names": {
+    "en": "North Darfur",
+    "ja": "北ダルフール州",
+    "local": "ولاية شمال دارفور"
+   },
+   "wikidata": "Q688306",
+   "spans": [
+    {
+     "from": "1994-02-14",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SDN-881"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "2012-01-10: Central Darfur formed (statoids finds its localities all in former West Darfur); East Darfur split from South Darfur.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Created 1994-02-14 (statoids, en.wikipedia); no later change of this state's territory is recorded through 2019. Not touched by the 2012 Darfur reform."
+    }
+   ]
+  },
+  {
+   "id": "SDN:NorthKordofan@2005",
+   "names": {
+    "en": "North Kordofan (2005–13 extent incl. northern West Kordofan)",
+    "ja": "北コルドファン州",
+    "local": "ولاية شمال كردفان"
+   },
+   "wikidata": "Q864093",
+   "spans": [
+    {
+     "from": "2005-08-16",
+     "precision": "day",
+     "to": "2013-07-13",
+     "atoms": [
+      "SDN-883"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "2005-08-16: West Kordofan split; En Nuhud and Ghubaysh to North Kordofan, the rest to South Kordofan; 2013-07-13 West Kordofan restored as before.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377169016",
+       "title": "West Kordofan — en.wikipedia, oldid 1377169016",
+       "says": "Abolished August 2005, territory divided between North and South Kordofan under the CPA Southern Kordofan protocol; re-established July 2013.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SDN:SouthKordofan@2005",
+   "names": {
+    "en": "South Kordofan (2005–13 extent incl. southern West Kordofan and Abyei)",
+    "ja": "南コルドファン州",
+    "local": "ولاية جنوب كردفان"
+   },
+   "wikidata": "Q465490",
+   "spans": [
+    {
+     "from": "2005-08-16",
+     "precision": "day",
+     "to": "2013-07-13",
+     "atoms": [
+      "SDN-882"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "2005-08-16: southern West Kordofan (Abyei, Es Salam, Lagawa) merged into South Kordofan; 2013-07-13 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377169016",
+       "title": "West Kordofan — en.wikipedia, oldid 1377169016",
+       "says": "Abolished August 2005, territory divided between North and South Kordofan under the CPA Southern Kordofan protocol; re-established July 2013.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Boundaries per the 2004 CPA protocol = former Southern Kordofan Province; Abyei had special administrative status under the Presidency but is listed within the state by statoids."
+    }
+   ]
+  },
+  {
+   "id": "SDN:CentralDarfur@2012",
+   "names": {
+    "en": "Central Darfur",
+    "ja": "中部ダルフール州",
+    "local": "ولاية وسط دارفور"
+   },
+   "wikidata": "Q4116493",
+   "spans": [
+    {
+     "from": "2012-01-10",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SDN-5859"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "2012-01-10: Central Darfur formed (statoids finds its localities all in former West Darfur); East Darfur split from South Darfur.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375333994",
+       "title": "Central Darfur — en.wikipedia, oldid 1375333994",
+       "says": "Created January 2012 in the Darfur peace process from land of West Darfur and South Darfur.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SDN:WestDarfur@2012",
+   "names": {
+    "en": "West Darfur",
+    "ja": "西ダルフール州",
+    "local": "ولاية غرب دارفور"
+   },
+   "wikidata": "Q846331",
+   "spans": [
+    {
+     "from": "2012-01-10",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SDN-5858"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "2012-01-10: Central Darfur formed (statoids finds its localities all in former West Darfur); East Darfur split from South Darfur.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SDN:SouthDarfur@2012",
+   "names": {
+    "en": "South Darfur",
+    "ja": "南ダルフール州",
+    "local": "ولاية جنوب دارفور"
+   },
+   "wikidata": "Q838778",
+   "spans": [
+    {
+     "from": "2012-01-10",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SDN-5856"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "2012-01-10: Central Darfur formed (statoids finds its localities all in former West Darfur); East Darfur split from South Darfur.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SDN:EastDarfur@2012",
+   "names": {
+    "en": "East Darfur",
+    "ja": "東ダルフール州",
+    "local": "ولاية شرق دارفور"
+   },
+   "wikidata": "Q3545641",
+   "spans": [
+    {
+     "from": "2012-01-10",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "SDN-5857"
+     ],
+     "sources": [
+      {
+       "url": "http://www.statoids.com/usd.html",
+       "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+       "says": "2012-01-10: Central Darfur formed (statoids finds its localities all in former West Darfur); East Darfur split from South Darfur.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+       "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+       "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1991",
+   "precision": "year",
+   "what": "Federal system: nine states matching the 1948–73 provinces",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/usd.html",
+     "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+     "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+     "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+     "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1994-02-14",
+   "precision": "day",
+   "what": "Twenty-six states (16 in the north), each a subset of one former state",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/usd.html",
+     "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+     "says": "1991 federal system with nine states matching the 1948 provinces; 1994-02-14 twenty-six states, each a subset of one former state.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+     "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+     "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2005-08-16",
+   "precision": "day",
+   "what": "West Kordofan abolished, divided between North and South Kordofan",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/usd.html",
+     "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+     "says": "2005-08-16 West Kordofan split into two parts.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1377169016",
+     "title": "West Kordofan — en.wikipedia, oldid 1377169016",
+     "says": "Abolished August 2005, territory divided between North and South Kordofan under the CPA Southern Kordofan protocol; re-established July 2013.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2011-07-09",
+   "precision": "day",
+   "what": "South Sudan independent (ten southern states leave)",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/usd.html",
+     "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+     "says": "2011-07-09: South Sudan split from Sudan.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2012-01-10",
+   "precision": "day",
+   "what": "Central Darfur and East Darfur created",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/usd.html",
+     "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+     "says": "2012-01-10: Central Darfur formed (statoids finds its localities all in former West Darfur); East Darfur split from South Darfur.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1375333994",
+     "title": "Central Darfur — en.wikipedia, oldid 1375333994",
+     "says": "Created January 2012 in the Darfur peace process from land of West Darfur and South Darfur.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2013-07-13",
+   "precision": "day",
+   "what": "West Kordofan restored",
+   "sources": [
+    {
+     "url": "http://www.statoids.com/usd.html",
+     "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+     "says": "2013-07-13: West Kordofan state restored as it was before 2005-08-16.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1377169016",
+     "title": "West Kordofan — en.wikipedia, oldid 1377169016",
+     "says": "Abolished August 2005, territory divided between North and South Kordofan under the CPA Southern Kordofan protocol; re-established July 2013.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2012-06-01",
+   "n": 17,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1366540825",
+     "title": "States of Sudan — en.wikipedia, oldid 1366540825",
+     "says": "1991: nine federal states matching the 1948–73 provinces; 14 Feb 1994: 26 states; Jan 2012 Central and East Darfur (17 states); Jul 2013 West Kordofan restored.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2015-11-28",
+   "n": 18,
+   "sources": [
+    {
+     "url": "http://www.statoids.com/usd.html",
+     "title": "States of Sudan — Statoids (Gwillim Law, last updated 2015-11-28)",
+     "says": "Sudan is divided into 18 wilayat (states).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "North, West and South Kordofan 1994–2005",
+   "unit": "SDN:WestKordofan@1994",
+   "atoms": [
+    "SDN-882",
+    "SDN-883"
+   ],
+   "from": "1994-02-14",
+   "to": "2005-08-16",
+   "why": "West Kordofan (En Nuhud, Ghubaysh, Abyei, Es Salam, Lagawa…) was cut out of both NE Kordofan atoms; its lines run inside them.",
+   "checked": [
+    "statoids usd (change history 1919–2013)",
+    "en.wikipedia States of Sudan oldid 1366540825",
+    "en.wikipedia West Kordofan oldid 1377169016"
+   ],
+   "needs": "Sudan locality atoms (e.g. OCHA COD-AB SDN ADM2, licence to check)"
+  },
+  {
+   "what": "North Kordofan 1994–2005",
+   "unit": "SDN:NorthKordofan@1994",
+   "atoms": [],
+   "from": "1994-02-14",
+   "to": "2005-08-16",
+   "why": "see West Kordofan 1994–2005",
+   "checked": [
+    "statoids usd (change history 1919–2013)",
+    "en.wikipedia States of Sudan oldid 1366540825"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "South Kordofan 1994–2005",
+   "unit": "SDN:SouthKordofan@1994",
+   "atoms": [],
+   "from": "1994-02-14",
+   "to": "2005-08-16",
+   "why": "see West Kordofan 1994–2005",
+   "checked": [
+    "statoids usd (change history 1919–2013)",
+    "en.wikipedia States of Sudan oldid 1366540825"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "North, West and South Kordofan since 2013",
+   "unit": "SDN:WestKordofan@2013",
+   "atoms": [
+    "SDN-882",
+    "SDN-883"
+   ],
+   "from": "2013-07-13",
+   "to": null,
+   "why": "Restored West Kordofan again takes territory from both NE atoms.",
+   "checked": [
+    "statoids usd (change history 1919–2013)",
+    "en.wikipedia States of Sudan oldid 1366540825",
+    "en.wikipedia West Kordofan oldid 1377169016"
+   ],
+   "needs": "Sudan locality atoms (as above)"
+  },
+  {
+   "what": "North Kordofan since 2013",
+   "unit": "SDN:NorthKordofan@2013",
+   "atoms": [],
+   "from": "2013-07-13",
+   "to": null,
+   "why": "see West Kordofan since 2013",
+   "checked": [
+    "statoids usd (change history 1919–2013)",
+    "en.wikipedia States of Sudan oldid 1366540825"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "South Kordofan since 2013",
+   "unit": "SDN:SouthKordofan@2013",
+   "atoms": [],
+   "from": "2013-07-13",
+   "to": null,
+   "why": "see West Kordofan since 2013",
+   "checked": [
+    "statoids usd (change history 1919–2013)",
+    "en.wikipedia States of Sudan oldid 1366540825"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "West Darfur and South Darfur 1994–2012",
+   "unit": "SDN:WestDarfur@1994",
+   "atoms": [
+    "SDN-5856",
+    "SDN-5857",
+    "SDN-5858",
+    "SDN-5859"
+   ],
+   "from": "1994-02-14",
+   "to": "2012-01-10",
+   "why": "Sources disagree whether Central Darfur (2012) was taken only from West Darfur (statoids: all localities found were West Darfur) or also from South Darfur (en.wikipedia); so the pre-2012 West/South line inside these atoms is not settled.",
+   "checked": [
+    "statoids usd (change history 1919–2013)",
+    "en.wikipedia States of Sudan oldid 1366540825",
+    "en.wikipedia Central Darfur oldid 1375333994",
+    "en.wikipedia South Darfur (no locality detail)",
+    "NE areas vs. stated areas (WD+CD 84,053 vs 79,460 km²; SD+ED 136,213 vs 127,300 km²: both ≈+6%, inconclusive)"
+   ],
+   "needs": "Sudan locality atoms with pre-2012 locality-to-state membership (e.g. OCHA COD-AB SDN ADM2 of 2011, licence to check)"
+  },
+  {
+   "what": "South Darfur 1994–2012",
+   "unit": "SDN:SouthDarfur@1994",
+   "atoms": [],
+   "from": "1994-02-14",
+   "to": "2012-01-10",
+   "why": "see West Darfur 1994–2012",
+   "checked": [
+    "statoids usd (change history 1919–2013)",
+    "en.wikipedia States of Sudan oldid 1366540825"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Hala'ib triangle and Bir Tawil (country-outline caveat, no atom withheld)",
+   "atoms": [],
+   "from": "1991",
+   "to": null,
+   "why": "NE draws Hala'ib (administered by Sudan as part of Red Sea until Egyptian control in the 1990s) in Egypt, and puts Bir Tawil (never administered by Sudan) inside SDN-149 Red Sea. The Red Sea outline therefore follows NE's country line, not the state's exact line.",
+   "checked": [
+    "NE geometry point tests (Hala'ib → EGY-1556; Bir Tawil → SDN-149)",
+    "statoids usd (territorial extent note)"
+   ],
+   "needs": "a polity outline decision for Hala'ib/Bir Tawil (country layer), not finer admin atoms"
+  },
+  {
+   "what": "Layouts before 1991 (1956 provinces; 1973/74 and 1976 provinces; 1980–91 regions)",
+   "atoms": [],
+   "from": "1956-01-01",
+   "to": "1991",
+   "why": "Out of scope here: not established that the 1956–1991 inter-provincial lines (Nile province formed 1974 from parts of Northern and Kassala; Kafia Kingi moved to Darfur 1960) coincide with NE lines; dates of 1973/1974 conflict between sources.",
+   "checked": [
+    "statoids usd (change history 1919–2013)",
+    "en.wikipedia States of Sudan oldid 1366540825",
+    "en.wikipedia Kafia Kingi oldid 1377801384"
+   ],
+   "needs": "district-level atoms with 1956–1991 lines (none open found)"
+  }
+ ]
+}

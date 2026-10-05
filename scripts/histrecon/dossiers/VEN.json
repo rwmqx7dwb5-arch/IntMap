@@ -1,0 +1,1080 @@
+{
+ "country": "VEN",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1933-12-13",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Venezuela (Estados Unidos de Venezuela; República de Venezuela; República Bolivariana from 1999). The Guayana Esequiba claim is not administered and has no NE atom.",
+ "units": [
+  {
+   "id": "VEN:Anzoategui@1909",
+   "names": {
+    "en": "Anzoátegui State",
+    "ja": "アンソアテギ州",
+    "local": "Estado Anzoátegui"
+   },
+   "wikidata": "Q190922",
+   "spans": [
+    {
+     "from": "1933-12-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-40"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Aragua@1909",
+   "names": {
+    "en": "Aragua State",
+    "ja": "アラグア州",
+    "local": "Estado Aragua"
+   },
+   "wikidata": "Q190687",
+   "spans": [
+    {
+     "from": "1933-12-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-41"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Barinas@1909",
+   "names": {
+    "en": "Barinas State (Zamora until 1937)",
+    "ja": "バリナス州",
+    "local": "Estado Barinas"
+   },
+   "wikidata": "Q43271",
+   "spans": [
+    {
+     "from": "1933-12-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-26"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Carabobo@1909",
+   "names": {
+    "en": "Carabobo State",
+    "ja": "カラボボ州",
+    "local": "Estado Carabobo"
+   },
+   "wikidata": "Q191186",
+   "spans": [
+    {
+     "from": "1933-12-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-33"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Cojedes@1909",
+   "names": {
+    "en": "Cojedes State",
+    "ja": "コヘデス州",
+    "local": "Estado Cojedes"
+   },
+   "wikidata": "Q205460",
+   "spans": [
+    {
+     "from": "1933-12-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-32"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Falcon@1909",
+   "names": {
+    "en": "Falcón State",
+    "ja": "ファルコン州",
+    "local": "Estado Falcón"
+   },
+   "wikidata": "Q202071",
+   "spans": [
+    {
+     "from": "1933-12-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-23"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Guarico@1909",
+   "names": {
+    "en": "Guárico State",
+    "ja": "グアリコ州",
+    "local": "Estado Guárico"
+   },
+   "wikidata": "Q202075",
+   "spans": [
+    {
+     "from": "1933-12-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-45"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Lara@1909",
+   "names": {
+    "en": "Lara State",
+    "ja": "ララ州",
+    "local": "Estado Lara"
+   },
+   "wikidata": "Q205796",
+   "spans": [
+    {
+     "from": "1933-12-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-34"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Merida@1909",
+   "names": {
+    "en": "Mérida State",
+    "ja": "メリダ州",
+    "local": "Estado Mérida"
+   },
+   "wikidata": "Q165582",
+   "spans": [
+    {
+     "from": "1933-12-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-27"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Miranda@1909",
+   "names": {
+    "en": "Miranda State",
+    "ja": "ミランダ州",
+    "local": "Estado Miranda"
+   },
+   "wikidata": "Q191174",
+   "spans": [
+    {
+     "from": "1933-12-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-47"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Monagas@1909",
+   "names": {
+    "en": "Monagas State",
+    "ja": "モナガス州",
+    "local": "Estado Monagas"
+   },
+   "wikidata": "Q205776",
+   "spans": [
+    {
+     "from": "1933-12-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-46"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Portuguesa@1909",
+   "names": {
+    "en": "Portuguesa State",
+    "ja": "ポルトゥゲサ州",
+    "local": "Estado Portuguesa"
+   },
+   "wikidata": "Q205784",
+   "spans": [
+    {
+     "from": "1933-12-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-35"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Sucre@1909",
+   "names": {
+    "en": "Sucre State",
+    "ja": "スクレ州",
+    "local": "Estado Sucre"
+   },
+   "wikidata": "Q205824",
+   "spans": [
+    {
+     "from": "1933-12-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-49"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Trujillo@1909",
+   "names": {
+    "en": "Trujillo State",
+    "ja": "トルヒージョ州",
+    "local": "Estado Trujillo"
+   },
+   "wikidata": "Q202068",
+   "spans": [
+    {
+     "from": "1933-12-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-29"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Yaracuy@1909",
+   "names": {
+    "en": "Yaracuy State",
+    "ja": "ヤラクイ州",
+    "local": "Estado Yaracuy"
+   },
+   "wikidata": "Q201121",
+   "spans": [
+    {
+     "from": "1933-12-13",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-36"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last inter-state transfer in the change list is 1933-12-13 (Carabobo/Aragua/Guárico); no later change touching this state except status/name changes."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Zulia@1909",
+   "names": {
+    "en": "Zulia State",
+    "ja": "スリア州",
+    "local": "Estado Zulia"
+   },
+   "wikidata": "Q43269",
+   "spans": [
+    {
+     "from": "1941-09-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-31"
+     ],
+     "sources": [
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Tratado_L%C3%B3pez_de_Mesa-Gil_Borges&oldid=170963218",
+       "title": "Wikipedia (es) — Tratado López de Mesa-Gil Borges (oldid 170963218)",
+       "says": "1941 boundary treaty with Colombia (signed 5 Apr, ratifications exchanged 12 Sep 1941); Venezuela recovered Sarare/Apure areas, Yavita (Amazonas), eastern Perijá (Zulia).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the exchange of ratifications of the 1941 boundary treaty with Colombia, which settled the remaining land boundary sectors."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Tachira@1909",
+   "names": {
+    "en": "Táchira State",
+    "ja": "タチラ州",
+    "local": "Estado Táchira"
+   },
+   "wikidata": "Q41144",
+   "spans": [
+    {
+     "from": "1941-09-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-28"
+     ],
+     "sources": [
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Tratado_L%C3%B3pez_de_Mesa-Gil_Borges&oldid=170963218",
+       "title": "Wikipedia (es) — Tratado López de Mesa-Gil Borges (oldid 170963218)",
+       "says": "1941 boundary treaty with Colombia (signed 5 Apr, ratifications exchanged 12 Sep 1941); Venezuela recovered Sarare/Apure areas, Yavita (Amazonas), eastern Perijá (Zulia).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the exchange of ratifications of the 1941 boundary treaty with Colombia, which settled the remaining land boundary sectors."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Apure@1909",
+   "names": {
+    "en": "Apure State",
+    "ja": "アプレ州",
+    "local": "Estado Apure"
+   },
+   "wikidata": "Q41146",
+   "spans": [
+    {
+     "from": "1941-09-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-25"
+     ],
+     "sources": [
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Tratado_L%C3%B3pez_de_Mesa-Gil_Borges&oldid=170963218",
+       "title": "Wikipedia (es) — Tratado López de Mesa-Gil Borges (oldid 170963218)",
+       "says": "1941 boundary treaty with Colombia (signed 5 Apr, ratifications exchanged 12 Sep 1941); Venezuela recovered Sarare/Apure areas, Yavita (Amazonas), eastern Perijá (Zulia).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the exchange of ratifications of the 1941 boundary treaty with Colombia, which settled the remaining land boundary sectors."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Amazonas@1909",
+   "names": {
+    "en": "Amazonas (Federal Territory; State from 1992-07-23)",
+    "ja": "アマソナス州",
+    "local": "Estado Amazonas"
+   },
+   "wikidata": "Q170453",
+   "spans": [
+    {
+     "from": "1941-09-12",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-38"
+     ],
+     "sources": [
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Tratado_L%C3%B3pez_de_Mesa-Gil_Borges&oldid=170963218",
+       "title": "Wikipedia (es) — Tratado López de Mesa-Gil Borges (oldid 170963218)",
+       "says": "1941 boundary treaty with Colombia (signed 5 Apr, ratifications exchanged 12 Sep 1941); Venezuela recovered Sarare/Apure areas, Yavita (Amazonas), eastern Perijá (Zulia).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the exchange of ratifications of the 1941 boundary treaty with Colombia, which settled the remaining land boundary sectors."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Bolivar@1909",
+   "names": {
+    "en": "Bolívar State",
+    "ja": "ボリバル州",
+    "local": "Estado Bolívar"
+   },
+   "wikidata": "Q191164",
+   "spans": [
+    {
+     "from": "1995-01-25",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-39"
+     ],
+     "sources": [
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Estado_Delta_Amacuro&oldid=174833783",
+       "title": "Wikipedia (es) — Estado Delta Amacuro (oldid 174833783)",
+       "says": "State from Gaceta Ext. 4.295 (3 Aug 1991); the 25 Jan 1995 state division law annexed four hamlets formerly under Bolívar.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "From the Delta Amacuro state law that took over four hamlets formerly under Bolívar (NE assumed to show the post-1995 line)."
+    }
+   ]
+  },
+  {
+   "id": "VEN:DeltaAmacuro@1901",
+   "names": {
+    "en": "Delta Amacuro (Federal Territory; State from 1991)",
+    "ja": "デルタアマクロ州",
+    "local": "Estado Delta Amacuro"
+   },
+   "wikidata": "Q201137",
+   "spans": [
+    {
+     "from": "1995-01-25",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-65"
+     ],
+     "sources": [
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Estado_Delta_Amacuro&oldid=174833783",
+       "title": "Wikipedia (es) — Estado Delta Amacuro (oldid 174833783)",
+       "says": "State from Gaceta Ext. 4.295 (3 Aug 1991); the 25 Jan 1995 state division law annexed four hamlets formerly under Bolívar.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "As for Bolívar. Status change territory→state: Gaceta Ext. 4.295 of 1991-08-03 (statoids gives 1991-03-08)."
+    }
+   ]
+  },
+  {
+   "id": "VEN:NuevaEsparta@1909",
+   "names": {
+    "en": "Nueva Esparta State",
+    "ja": "ヌエバ・エスパルタ州",
+    "local": "Estado Nueva Esparta"
+   },
+   "wikidata": "Q204876",
+   "spans": [
+    {
+     "from": "1949-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-48"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikisource.org/wiki/Constituci%C3%B3n_de_la_Rep%C3%BAblica_de_Venezuela_(1953)",
+       "title": "Wikisource — Constitución de la República de Venezuela (1953)",
+       "says": "Federal Dependencies are the maritime islands except Margarita, Coche and Cubagua, which form the State of Nueva Esparta.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Conservative start: Cubagua passed from the Federal Dependencies to Nueva Esparta under the 1947 constitution (statoids dates it 1948); both sources agree it had happened by the end of 1948, and the 1953 constitution confirms it."
+    }
+   ]
+  },
+  {
+   "id": "VEN:DependenciasFederales@1938",
+   "names": {
+    "en": "Federal Dependencies",
+    "ja": "連邦保護領",
+    "local": "Dependencias Federales"
+   },
+   "wikidata": "Q130343",
+   "spans": [
+    {
+     "from": "1949-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-44",
+      "VEN+99?"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikisource.org/wiki/Constituci%C3%B3n_de_la_Rep%C3%BAblica_de_Venezuela_(1953)",
+       "title": "Wikisource — Constitución de la República de Venezuela (1953)",
+       "says": "Federal Dependencies are the maritime islands except Margarita, Coche and Cubagua, which form the State of Nueva Esparta.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Dependencias_federales_de_Venezuela&oldid=174774087",
+       "title": "Wikipedia (es) — Dependencias federales de Venezuela (oldid 174774087)",
+       "says": "All Venezuelan islands except Margarita, Coche and Cubagua (Nueva Esparta) form the Federal Dependencies, including Isla de Aves; organic law of 1938.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Conservative start: Cubagua passed from the Federal Dependencies to Nueva Esparta under the 1947 constitution (statoids dates it 1948); both sources agree it had happened by the end of 1948, and the 1953 constitution confirms it. The NE minor island atom VEN+99? (lon −63.6, lat 15.7) is Isla de Aves, part of the Federal Dependencies."
+    }
+   ]
+  },
+  {
+   "id": "VEN:DistritoFederal@1909",
+   "names": {
+    "en": "Federal District (Venezuela)",
+    "local": "Distrito Federal"
+   },
+   "wikidata": "Q5410691",
+   "spans": [
+    {
+     "from": "1933-12-13",
+     "precision": "day",
+     "to": "1998-05-29",
+     "atoms": [
+      "VEN-43",
+      "VEN-42"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Estado_La_Guaira&oldid=174889562",
+       "title": "Wikipedia (es) — Estado La Guaira (oldid 174889562)",
+       "says": "Created 29 May 1998 when the Organic Law creating Territorio Federal Vargas (Gaceta 36.464) separated Vargas municipality from the Distrito Federal; renamed La Guaira 2019.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Libertador and Vargas departments/municipalities; Vargas municipality later became the whole of Vargas."
+    },
+    {
+     "from": "1998-05-29",
+     "precision": "day",
+     "to": "1999-12-30",
+     "atoms": [
+      "VEN-43"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Estado_La_Guaira&oldid=174889562",
+       "title": "Wikipedia (es) — Estado La Guaira (oldid 174889562)",
+       "says": "Created 29 May 1998 when the Organic Law creating Territorio Federal Vargas (Gaceta 36.464) separated Vargas municipality from the Distrito Federal; renamed La Guaira 2019.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "VEN:DistritoCapital@1999",
+   "names": {
+    "en": "Capital District",
+    "ja": "首都地区",
+    "local": "Distrito Capital"
+   },
+   "wikidata": "Q492791",
+   "spans": [
+    {
+     "from": "1999-12-30",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-43"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Distrito Federal renamed Distrito Capital by the 1999 constitution; same territory."
+    }
+   ]
+  },
+  {
+   "id": "VEN:Vargas@1998",
+   "names": {
+    "en": "Vargas (La Guaira from 2019)",
+    "ja": "バルガス州",
+    "local": "Estado La Guaira (Vargas)"
+   },
+   "wikidata": "Q205843",
+   "spans": [
+    {
+     "from": "1998-05-29",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "VEN-42"
+     ],
+     "sources": [
+      {
+       "url": "https://es.wikipedia.org/w/index.php?title=Estado_La_Guaira&oldid=174889562",
+       "title": "Wikipedia (es) — Estado La Guaira (oldid 174889562)",
+       "says": "Created 29 May 1998 when the Organic Law creating Territorio Federal Vargas (Gaceta 36.464) separated Vargas municipality from the Distrito Federal; renamed La Guaira 2019.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uve.html",
+       "title": "Statoids — States of Venezuela (change history)",
+       "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Federal Territory from 1998-05-29 (statoids gives 1998-04-22 for the decision, upheld 1998-05-28), State from 1998-12-31; renamed La Guaira 2019."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1933-12-13",
+   "precision": "day",
+   "what": "Turiamo transferred from Carabobo to Aragua; municipalities exchanged between Aragua and Guárico",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uve.html",
+     "title": "Statoids — States of Venezuela (change history)",
+     "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1941-09-12",
+   "precision": "day",
+   "what": "Colombia–Venezuela boundary treaty in force",
+   "sources": [
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=Tratado_L%C3%B3pez_de_Mesa-Gil_Borges&oldid=170963218",
+     "title": "Wikipedia (es) — Tratado López de Mesa-Gil Borges (oldid 170963218)",
+     "says": "1941 boundary treaty with Colombia (signed 5 Apr, ratifications exchanged 12 Sep 1941); Venezuela recovered Sarare/Apure areas, Yavita (Amazonas), eastern Perijá (Zulia).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1948",
+   "precision": "year",
+   "what": "Cubagua transferred from the Federal Dependencies to Nueva Esparta (1947 constitution; statoids gives 1948)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uve.html",
+     "title": "Statoids — States of Venezuela (change history)",
+     "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://es.wikisource.org/wiki/Constituci%C3%B3n_de_la_Rep%C3%BAblica_de_Venezuela_(1953)",
+     "title": "Wikisource — Constitución de la República de Venezuela (1953)",
+     "says": "Federal Dependencies are the maritime islands except Margarita, Coche and Cubagua, which form the State of Nueva Esparta.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1995-01-25",
+   "precision": "day",
+   "what": "Delta Amacuro takes four hamlets formerly under Bolívar",
+   "sources": [
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=Estado_Delta_Amacuro&oldid=174833783",
+     "title": "Wikipedia (es) — Estado Delta Amacuro (oldid 174833783)",
+     "says": "State from Gaceta Ext. 4.295 (3 Aug 1991); the 25 Jan 1995 state division law annexed four hamlets formerly under Bolívar.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1998-05-29",
+   "precision": "day",
+   "what": "Territorio Federal Vargas separated from the Distrito Federal",
+   "sources": [
+    {
+     "url": "https://es.wikipedia.org/w/index.php?title=Estado_La_Guaira&oldid=174889562",
+     "title": "Wikipedia (es) — Estado La Guaira (oldid 174889562)",
+     "says": "Created 29 May 1998 when the Organic Law creating Territorio Federal Vargas (Gaceta 36.464) separated Vargas municipality from the Distrito Federal; renamed La Guaira 2019.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1999-12-30",
+   "precision": "day",
+   "what": "Distrito Federal renamed Distrito Capital",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uve.html",
+     "title": "Statoids — States of Venezuela (change history)",
+     "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1935-01-01",
+   "n": 24,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uve.html",
+     "title": "Statoids — States of Venezuela (change history)",
+     "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2019-12-31",
+   "n": 25,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uve.html",
+     "title": "Statoids — States of Venezuela (change history)",
+     "says": "Lists 1933-12-13 Carabobo/Aragua/Guárico transfers, 1948 Cubagua to Nueva Esparta, 1991/1992 Delta Amacuro and Amazonas states, 1998 Vargas split from Distrito Federal.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Zulia, Táchira, Apure, Amazonas 1933-12-13 – 1941-09-12",
+   "unit": "VEN:Zulia@1909",
+   "atoms": [
+    "VEN-31"
+   ],
+   "from": "1933-12-13",
+   "to": "1941-09-12",
+   "why": "The 1941 treaty with Colombia moved territory in these states (Sarare basin and Rómulo Gallegos in Apure, Yavita in Amazonas, eastern Perijá in Zulia); before it their outer lines are not the atoms' lines.",
+   "checked": [
+    "es.wikipedia Tratado López de Mesa-Gil Borges oldid 170963218",
+    "en.wikipedia Colombia–Venezuela border oldid 1377302928",
+    "statoids uve.html"
+   ],
+   "needs": "pre-1941 boundary line with Colombia (not available as atoms)"
+  },
+  {
+   "what": "Zulia, Táchira, Apure, Amazonas 1933-12-13 – 1941-09-12",
+   "unit": "VEN:Tachira@1909",
+   "atoms": [
+    "VEN-28"
+   ],
+   "from": "1933-12-13",
+   "to": "1941-09-12",
+   "why": "The 1941 treaty with Colombia moved territory in these states (Sarare basin and Rómulo Gallegos in Apure, Yavita in Amazonas, eastern Perijá in Zulia); before it their outer lines are not the atoms' lines.",
+   "checked": [
+    "es.wikipedia Tratado López de Mesa-Gil Borges oldid 170963218",
+    "en.wikipedia Colombia–Venezuela border oldid 1377302928",
+    "statoids uve.html"
+   ],
+   "needs": "pre-1941 boundary line with Colombia (not available as atoms)"
+  },
+  {
+   "what": "Zulia, Táchira, Apure, Amazonas 1933-12-13 – 1941-09-12",
+   "unit": "VEN:Apure@1909",
+   "atoms": [
+    "VEN-25"
+   ],
+   "from": "1933-12-13",
+   "to": "1941-09-12",
+   "why": "The 1941 treaty with Colombia moved territory in these states (Sarare basin and Rómulo Gallegos in Apure, Yavita in Amazonas, eastern Perijá in Zulia); before it their outer lines are not the atoms' lines.",
+   "checked": [
+    "es.wikipedia Tratado López de Mesa-Gil Borges oldid 170963218",
+    "en.wikipedia Colombia–Venezuela border oldid 1377302928",
+    "statoids uve.html"
+   ],
+   "needs": "pre-1941 boundary line with Colombia (not available as atoms)"
+  },
+  {
+   "what": "Zulia, Táchira, Apure, Amazonas 1933-12-13 – 1941-09-12",
+   "unit": "VEN:Amazonas@1909",
+   "atoms": [
+    "VEN-38"
+   ],
+   "from": "1933-12-13",
+   "to": "1941-09-12",
+   "why": "The 1941 treaty with Colombia moved territory in these states (Sarare basin and Rómulo Gallegos in Apure, Yavita in Amazonas, eastern Perijá in Zulia); before it their outer lines are not the atoms' lines.",
+   "checked": [
+    "es.wikipedia Tratado López de Mesa-Gil Borges oldid 170963218",
+    "en.wikipedia Colombia–Venezuela border oldid 1377302928",
+    "statoids uve.html"
+   ],
+   "needs": "pre-1941 boundary line with Colombia (not available as atoms)"
+  },
+  {
+   "what": "Bolívar and Delta Amacuro before 1995-01-25",
+   "unit": "VEN:Bolivar@1909",
+   "atoms": [
+    "VEN-39"
+   ],
+   "from": "1933-12-13",
+   "to": "1995-01-25",
+   "why": "The 1995 annexation of hamlets by Delta Amacuro moved the Bolívar–Delta Amacuro line inside the present atoms.",
+   "checked": [
+    "es.wikipedia Estado Delta Amacuro oldid 174833783",
+    "statoids uve.html"
+   ],
+   "needs": "parish-level atoms (INE Venezuela parroquias) carrying the pre-1995 line"
+  },
+  {
+   "what": "Bolívar and Delta Amacuro before 1995-01-25",
+   "unit": "VEN:DeltaAmacuro@1901",
+   "atoms": [
+    "VEN-65"
+   ],
+   "from": "1933-12-13",
+   "to": "1995-01-25",
+   "why": "The 1995 annexation of hamlets by Delta Amacuro moved the Bolívar–Delta Amacuro line inside the present atoms.",
+   "checked": [
+    "es.wikipedia Estado Delta Amacuro oldid 174833783",
+    "statoids uve.html"
+   ],
+   "needs": "parish-level atoms (INE Venezuela parroquias) carrying the pre-1995 line"
+  },
+  {
+   "what": "Nueva Esparta and Federal Dependencies before Cubagua's transfer",
+   "unit": "VEN:NuevaEsparta@1909",
+   "atoms": [
+    "VEN-48"
+   ],
+   "from": "1933-12-13",
+   "to": "1949-01-01",
+   "why": "Cubagua (inside the Nueva Esparta atom) belonged to the Federal Dependencies until 1947/1948; the two sources disagree on the year, so the span starts only once both agree.",
+   "checked": [
+    "statoids uve.html",
+    "Wikisource Constitución de 1953",
+    "es.wikipedia Dependencias federales oldid 174774087"
+   ],
+   "needs": "Cubagua as a separate atom, and the 1947 constitution text to fix the date"
+  },
+  {
+   "what": "Layouts 1909-08-05 – 1933-12-13",
+   "from": "1909-08-05",
+   "to": "1933-12-13",
+   "why": "1917 and 1933 transfers between Carabobo, Aragua and Guárico run through NE atoms. Not claimed (outside scope).",
+   "checked": [
+    "statoids uve.html"
+   ],
+   "needs": "municipal atoms (INE Venezuela)"
+  },
+  {
+   "what": "Nueva Esparta and Federal Dependencies before Cubagua's transfer",
+   "unit": "VEN:DependenciasFederales@1938",
+   "atoms": [
+    "VEN-44",
+    "VEN+99?"
+   ],
+   "from": "1933-12-13",
+   "to": "1949-01-01",
+   "why": "Cubagua (inside the Nueva Esparta atom) belonged to the Federal Dependencies until 1947/1948; the two sources disagree on the year, so the span starts only once both agree.",
+   "checked": [
+    "statoids uve.html",
+    "Wikisource Constitución de 1953",
+    "es.wikipedia Dependencias federales oldid 174774087"
+   ],
+   "needs": "Cubagua as a separate atom, and the 1947 constitution text to fix the date"
+  }
+ ]
+}

@@ -1,0 +1,1794 @@
+{
+  "country": "IRL",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1922-12-06",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Irish Free State from 1922-12-06, Éire/Ireland from 1937-12-29 (Republic of Ireland Act 1949). First level = local government areas: administrative counties and county boroughs (cities from 2002), which is what the NE atoms depict (29 counties + 5 cities of 1994-2014).",
+  "units": [
+    {
+      "id": "IRL:Donegal@1922",
+      "names": {
+        "en": "County Donegal",
+        "ja": "ドニゴール県",
+        "local": "Contae Dhún na nGall"
+      },
+      "wikidata": "Q179424",
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-729"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://revisedacts.lawreform.ie/classlist/25",
+              "title": "Local Government – Classified List of Legislation (Law Reform Commission)",
+              "says": "Lists boundary alteration orders 1996-2009: only town/urban-district orders plus the Limerick City Boundary Alteration Order 2008 affect city/county areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ]
+    },
+    {
+      "id": "IRL:Leitrim@1922",
+      "names": {
+        "en": "County Leitrim",
+        "ja": "リートリム県",
+        "local": "Contae Liatroma"
+      },
+      "wikidata": "Q107397",
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-730"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://revisedacts.lawreform.ie/classlist/25",
+              "title": "Local Government – Classified List of Legislation (Law Reform Commission)",
+              "says": "Lists boundary alteration orders 1996-2009: only town/urban-district orders plus the Limerick City Boundary Alteration Order 2008 affect city/county areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ]
+    },
+    {
+      "id": "IRL:Cavan@1922",
+      "names": {
+        "en": "County Cavan",
+        "ja": "キャバン県",
+        "local": "Contae an Chabháin"
+      },
+      "wikidata": "Q187402",
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-79"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://revisedacts.lawreform.ie/classlist/25",
+              "title": "Local Government – Classified List of Legislation (Law Reform Commission)",
+              "says": "Lists boundary alteration orders 1996-2009: only town/urban-district orders plus the Limerick City Boundary Alteration Order 2008 affect city/county areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ]
+    },
+    {
+      "id": "IRL:Monaghan@1922",
+      "names": {
+        "en": "County Monaghan",
+        "ja": "モナハン県",
+        "local": "Contae Mhuineacháin"
+      },
+      "wikidata": "Q184760",
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-3412"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://revisedacts.lawreform.ie/classlist/25",
+              "title": "Local Government – Classified List of Legislation (Law Reform Commission)",
+              "says": "Lists boundary alteration orders 1996-2009: only town/urban-district orders plus the Limerick City Boundary Alteration Order 2008 affect city/county areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ]
+    },
+    {
+      "id": "IRL:Sligo@1922",
+      "names": {
+        "en": "County Sligo",
+        "ja": "スライゴ県",
+        "local": "Contae Shligigh"
+      },
+      "wikidata": "Q179325",
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-728"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://revisedacts.lawreform.ie/classlist/25",
+              "title": "Local Government – Classified List of Legislation (Law Reform Commission)",
+              "says": "Lists boundary alteration orders 1996-2009: only town/urban-district orders plus the Limerick City Boundary Alteration Order 2008 affect city/county areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ]
+    },
+    {
+      "id": "IRL:Mayo@1922",
+      "names": {
+        "en": "County Mayo",
+        "ja": "メイヨー県",
+        "local": "Contae Mhaigh Eo"
+      },
+      "wikidata": "Q178626",
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-714"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://revisedacts.lawreform.ie/classlist/25",
+              "title": "Local Government – Classified List of Legislation (Law Reform Commission)",
+              "says": "Lists boundary alteration orders 1996-2009: only town/urban-district orders plus the Limerick City Boundary Alteration Order 2008 affect city/county areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ]
+    },
+    {
+      "id": "IRL:Roscommon@1922",
+      "names": {
+        "en": "County Roscommon",
+        "ja": "ロスコモン県",
+        "local": "Contae Ros Comáin"
+      },
+      "wikidata": "Q179437",
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-727"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://revisedacts.lawreform.ie/classlist/25",
+              "title": "Local Government – Classified List of Legislation (Law Reform Commission)",
+              "says": "Lists boundary alteration orders 1996-2009: only town/urban-district orders plus the Limerick City Boundary Alteration Order 2008 affect city/county areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ]
+    },
+    {
+      "id": "IRL:Longford@1922",
+      "names": {
+        "en": "County Longford",
+        "ja": "ロングフォード県",
+        "local": "Contae an Longfoirt"
+      },
+      "wikidata": "Q186220",
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-731"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://revisedacts.lawreform.ie/classlist/25",
+              "title": "Local Government – Classified List of Legislation (Law Reform Commission)",
+              "says": "Lists boundary alteration orders 1996-2009: only town/urban-district orders plus the Limerick City Boundary Alteration Order 2008 affect city/county areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ]
+    },
+    {
+      "id": "IRL:Westmeath@1922",
+      "names": {
+        "en": "County Westmeath",
+        "ja": "ウェストミーズ県",
+        "local": "Contae na hIarmhí"
+      },
+      "wikidata": "Q182633",
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-717"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://revisedacts.lawreform.ie/classlist/25",
+              "title": "Local Government – Classified List of Legislation (Law Reform Commission)",
+              "says": "Lists boundary alteration orders 1996-2009: only town/urban-district orders plus the Limerick City Boundary Alteration Order 2008 affect city/county areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ]
+    },
+    {
+      "id": "IRL:Offaly@1922",
+      "names": {
+        "en": "County Offaly",
+        "ja": "オファリー県",
+        "local": "Contae Uíbh Fhailí"
+      },
+      "wikidata": "Q184445",
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-716"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://revisedacts.lawreform.ie/classlist/25",
+              "title": "Local Government – Classified List of Legislation (Law Reform Commission)",
+              "says": "Lists boundary alteration orders 1996-2009: only town/urban-district orders plus the Limerick City Boundary Alteration Order 2008 affect city/county areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ]
+    },
+    {
+      "id": "IRL:Laois@1922",
+      "names": {
+        "en": "County Laois",
+        "ja": "リーシュ県",
+        "local": "Contae Laoise"
+      },
+      "wikidata": "Q55299",
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-723"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://revisedacts.lawreform.ie/classlist/25",
+              "title": "Local Government – Classified List of Legislation (Law Reform Commission)",
+              "says": "Lists boundary alteration orders 1996-2009: only town/urban-district orders plus the Limerick City Boundary Alteration Order 2008 affect city/county areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ]
+    },
+    {
+      "id": "IRL:Kildare@1922",
+      "names": {
+        "en": "County Kildare",
+        "ja": "キルデア県",
+        "local": "Contae Chill Dara"
+      },
+      "wikidata": "Q173332",
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-721"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://revisedacts.lawreform.ie/classlist/25",
+              "title": "Local Government – Classified List of Legislation (Law Reform Commission)",
+              "says": "Lists boundary alteration orders 1996-2009: only town/urban-district orders plus the Limerick City Boundary Alteration Order 2008 affect city/county areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ]
+    },
+    {
+      "id": "IRL:Carlow@1922",
+      "names": {
+        "en": "County Carlow",
+        "ja": "カーロウ県",
+        "local": "Contae Cheatharlach"
+      },
+      "wikidata": "Q181882",
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-77"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://revisedacts.lawreform.ie/classlist/25",
+              "title": "Local Government – Classified List of Legislation (Law Reform Commission)",
+              "says": "Lists boundary alteration orders 1996-2009: only town/urban-district orders plus the Limerick City Boundary Alteration Order 2008 affect city/county areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ]
+    },
+    {
+      "id": "IRL:Wexford@1922",
+      "names": {
+        "en": "County Wexford",
+        "ja": "ウェックスフォード県",
+        "local": "Contae Loch Garman"
+      },
+      "wikidata": "Q184599",
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-718"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://revisedacts.lawreform.ie/classlist/25",
+              "title": "Local Government – Classified List of Legislation (Law Reform Commission)",
+              "says": "Lists boundary alteration orders 1996-2009: only town/urban-district orders plus the Limerick City Boundary Alteration Order 2008 affect city/county areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ]
+    },
+    {
+      "id": "IRL:Kerry@1922",
+      "names": {
+        "en": "County Kerry",
+        "ja": "ケリー県",
+        "local": "Contae Chiarraí"
+      },
+      "wikidata": "Q184469",
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-725"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://revisedacts.lawreform.ie/classlist/25",
+              "title": "Local Government – Classified List of Legislation (Law Reform Commission)",
+              "says": "Lists boundary alteration orders 1996-2009: only town/urban-district orders plus the Limerick City Boundary Alteration Order 2008 affect city/county areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ]
+    },
+    {
+      "id": "IRL:Clare@1922",
+      "names": {
+        "en": "County Clare",
+        "ja": "クレア県",
+        "local": "Contae an Chláir"
+      },
+      "wikidata": "Q181862",
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-76"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://revisedacts.lawreform.ie/classlist/25",
+              "title": "Local Government – Classified List of Legislation (Law Reform Commission)",
+              "says": "Lists boundary alteration orders 1996-2009: only town/urban-district orders plus the Limerick City Boundary Alteration Order 2008 affect city/county areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ]
+    },
+    {
+      "id": "IRL:Meath@1977",
+      "names": {
+        "en": "County Meath",
+        "local": "Contae na Mí",
+        "ja": "ミーズ県"
+      },
+      "spans": [
+        {
+          "from": "1977-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-715"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ],
+      "wikidata": "Q183544"
+    },
+    {
+      "id": "IRL:Louth@1977",
+      "names": {
+        "en": "County Louth",
+        "local": "Contae Lú",
+        "ja": "ラウス県"
+      },
+      "spans": [
+        {
+          "from": "1977-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-712"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+              "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ],
+      "wikidata": "Q183539"
+    },
+    {
+      "id": "IRL:Wicklow@1957",
+      "names": {
+        "en": "County Wicklow",
+        "local": "Contae Chill Mhantáin",
+        "ja": "ウィックロー県"
+      },
+      "spans": [
+        {
+          "from": "1957-04-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-719"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1957/prv/1/enacted/en/print",
+              "title": "Wicklow County (Extension of Boundary) Provisional Order, 1957, confirmed 1957",
+              "says": "In force 1 April 1957: an area detached from the County of Dublin and added to the County of Wicklow (Bray area).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ],
+      "wikidata": "Q182591"
+    },
+    {
+      "id": "IRL:Kilkenny@1955",
+      "names": {
+        "en": "County Kilkenny",
+        "local": "Contae Chill Chainnigh",
+        "ja": "キルケニー県"
+      },
+      "spans": [
+        {
+          "from": "1955-04-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-722"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1955/prv/1/enacted/en/print",
+              "title": "Local Government Provisional Orders Confirmation Act, 1955 (County Borough of Waterford (Extension of Boundary) Provisional Order, 1955)",
+              "says": "In force 1 April 1955: areas of County Kilkenny and County Waterford added to the City of Waterford.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ],
+      "wikidata": "Q180231"
+    },
+    {
+      "id": "IRL:DublinCity@1994",
+      "names": {
+        "en": "Dublin City (county borough; city from 2002)",
+        "local": "Cathair Bhaile Átha Cliath",
+        "ja": "ダブリン"
+      },
+      "spans": [
+        {
+          "from": "1994-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-5575"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1993/act/31/enacted/en/print",
+              "title": "Local Government (Dublin) Act, 1993",
+              "says": "On the establishment day the city/county boundary is altered (s. 8) and Dún Laoghaire-Rathdown, Fingal and South Dublin counties are established (s. 9).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2001/act/37/enacted/en/print",
+              "title": "Local Government Act 2001, Schedule 5",
+              "says": "Local government areas: 29 counties (incl. North and South Tipperary, Fingal, South Dublin, Dún Laoghaire-Rathdown) and 5 cities (Cork, Dublin, Galway, Limerick, Waterford).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ],
+      "wikidata": "Q1761"
+    },
+    {
+      "id": "IRL:Fingal@1994",
+      "names": {
+        "en": "Fingal",
+        "local": "Fine Gall",
+        "ja": "フィンガル市"
+      },
+      "spans": [
+        {
+          "from": "1994-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-5574"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1993/act/31/enacted/en/print",
+              "title": "Local Government (Dublin) Act, 1993",
+              "says": "On the establishment day the city/county boundary is altered (s. 8) and Dún Laoghaire-Rathdown, Fingal and South Dublin counties are established (s. 9).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2001/act/37/enacted/en/print",
+              "title": "Local Government Act 2001, Schedule 5",
+              "says": "Local government areas: 29 counties (incl. North and South Tipperary, Fingal, South Dublin, Dún Laoghaire-Rathdown) and 5 cities (Cork, Dublin, Galway, Limerick, Waterford).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ],
+      "wikidata": "Q520000"
+    },
+    {
+      "id": "IRL:SouthDublin@1994",
+      "names": {
+        "en": "South Dublin",
+        "local": "Áth Cliath Theas",
+        "ja": "南ダブリン市"
+      },
+      "spans": [
+        {
+          "from": "1994-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-5573"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1993/act/31/enacted/en/print",
+              "title": "Local Government (Dublin) Act, 1993",
+              "says": "On the establishment day the city/county boundary is altered (s. 8) and Dún Laoghaire-Rathdown, Fingal and South Dublin counties are established (s. 9).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2001/act/37/enacted/en/print",
+              "title": "Local Government Act 2001, Schedule 5",
+              "says": "Local government areas: 29 counties (incl. North and South Tipperary, Fingal, South Dublin, Dún Laoghaire-Rathdown) and 5 cities (Cork, Dublin, Galway, Limerick, Waterford).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ],
+      "wikidata": "Q822865"
+    },
+    {
+      "id": "IRL:DunLaoghaireRathdown@1994",
+      "names": {
+        "en": "Dún Laoghaire–Rathdown",
+        "local": "Dún Laoghaire–Ráth an Dúin",
+        "ja": "ダン・レアリー＝ラスダウン市"
+      },
+      "spans": [
+        {
+          "from": "1994-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-5576"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1993/act/31/enacted/en/print",
+              "title": "Local Government (Dublin) Act, 1993",
+              "says": "On the establishment day the city/county boundary is altered (s. 8) and Dún Laoghaire-Rathdown, Fingal and South Dublin counties are established (s. 9).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2001/act/37/enacted/en/print",
+              "title": "Local Government Act 2001, Schedule 5",
+              "says": "Local government areas: 29 counties (incl. North and South Tipperary, Fingal, South Dublin, Dún Laoghaire-Rathdown) and 5 cities (Cork, Dublin, Galway, Limerick, Waterford).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ],
+      "wikidata": "Q538417"
+    },
+    {
+      "id": "IRL:CorkCounty@1965",
+      "names": {
+        "en": "County Cork",
+        "local": "Contae Chorcaí",
+        "ja": "コーク県"
+      },
+      "spans": [
+        {
+          "from": "1965-07-01",
+          "precision": "day",
+          "to": "2019-05-31",
+          "atoms": [
+            "IRL-78"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1965/si/141/made/en/print",
+              "title": "S.I. No. 141/1965 – County Borough of Cork (Extension of Boundary) Provisional Order, 1965 (commencement)",
+              "says": "The County Borough of Cork (Extension of Boundary) Provisional Order, 1965 comes into force on 1 July 1965.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=2019_Cork_boundary_change&oldid=1373622603",
+              "title": "2019 Cork boundary change (Wikipedia, oldid 1373622603)",
+              "says": "Under the Local Government Act 2019 the city boundary was extended into County Cork on 31 May 2019; previous extension 1965 (S.I. 141/1965).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ],
+      "wikidata": "Q162475"
+    },
+    {
+      "id": "IRL:CorkCity@1965",
+      "names": {
+        "en": "Cork City (county borough; city from 2002)",
+        "local": "Cathair Chorcaí",
+        "ja": "コーク"
+      },
+      "spans": [
+        {
+          "from": "1965-07-01",
+          "precision": "day",
+          "to": "2019-05-31",
+          "atoms": [
+            "IRL-5569"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1965/si/141/made/en/print",
+              "title": "S.I. No. 141/1965 – County Borough of Cork (Extension of Boundary) Provisional Order, 1965 (commencement)",
+              "says": "The County Borough of Cork (Extension of Boundary) Provisional Order, 1965 comes into force on 1 July 1965.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?title=2019_Cork_boundary_change&oldid=1373622603",
+              "title": "2019 Cork boundary change (Wikipedia, oldid 1373622603)",
+              "says": "Under the Local Government Act 2019 the city boundary was extended into County Cork on 31 May 2019; previous extension 1965 (S.I. 141/1965).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "NE city atom (~60 km2) is the pre-2019 city (39 km2 official), not the 187 km2 city of 31 May 2019."
+        }
+      ],
+      "wikidata": "Q36647"
+    },
+    {
+      "id": "IRL:Galway@1922",
+      "names": {
+        "en": "County Galway (incl. Galway borough)",
+        "local": "Contae na Gaillimhe",
+        "ja": "ゴールウェイ県"
+      },
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": "1986-01-01",
+          "atoms": [
+            "IRL-713",
+            "IRL-5568"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1985/act/7/enacted/en/print",
+              "title": "Local Government (Reorganisation) Act, 1985",
+              "says": "s. 5: Borough of Galway ceases to be part of the county on the appointed day as County Borough; s. 10: Dublin city/county boundary altered.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1985/si/425/made/en/print",
+              "title": "S.I. No. 425/1985 – County Borough of Galway (Appointed Day) Order, 1985",
+              "says": "1 January 1986 is the appointed day on which Galway becomes a county borough.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Galway town (borough from 1937) was part of the administrative county until it became a county borough; no county-line change touched Galway. Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ],
+      "wikidata": "Q169923"
+    },
+    {
+      "id": "IRL:GalwayCounty@1986",
+      "names": {
+        "en": "County Galway",
+        "local": "Contae na Gaillimhe",
+        "ja": "ゴールウェイ県"
+      },
+      "spans": [
+        {
+          "from": "1986-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-713"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1985/si/425/made/en/print",
+              "title": "S.I. No. 425/1985 – County Borough of Galway (Appointed Day) Order, 1985",
+              "says": "1 January 1986 is the appointed day on which Galway becomes a county borough.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1985/act/7/enacted/en/print",
+              "title": "Local Government (Reorganisation) Act, 1985",
+              "says": "s. 5: Borough of Galway ceases to be part of the county on the appointed day as County Borough; s. 10: Dublin city/county boundary altered.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2001/act/37/enacted/en/print",
+              "title": "Local Government Act 2001, Schedule 5",
+              "says": "Local government areas: 29 counties (incl. North and South Tipperary, Fingal, South Dublin, Dún Laoghaire-Rathdown) and 5 cities (Cork, Dublin, Galway, Limerick, Waterford).",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ],
+      "wikidata": "Q169923"
+    },
+    {
+      "id": "IRL:GalwayCity@1986",
+      "names": {
+        "en": "Galway City (county borough; city from 2002)",
+        "local": "Cathair na Gaillimhe"
+      },
+      "spans": [
+        {
+          "from": "1986-01-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-5568"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1985/si/425/made/en/print",
+              "title": "S.I. No. 425/1985 – County Borough of Galway (Appointed Day) Order, 1985",
+              "says": "1 January 1986 is the appointed day on which Galway becomes a county borough.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1985/act/7/enacted/en/print",
+              "title": "Local Government (Reorganisation) Act, 1985",
+              "says": "s. 5: Borough of Galway ceases to be part of the county on the appointed day as County Borough; s. 10: Dublin city/county boundary altered.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2001/act/37/enacted/en/print",
+              "title": "Local Government Act 2001, Schedule 5",
+              "says": "Local government areas: 29 counties (incl. North and South Tipperary, Fingal, South Dublin, Dún Laoghaire-Rathdown) and 5 cities (Cork, Dublin, Galway, Limerick, Waterford).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "The 1985 s. 19 extension of the borough took effect before the appointed day; no later city/county alteration listed."
+        }
+      ],
+      "wikidata": "Q133862337"
+    },
+    {
+      "id": "IRL:WaterfordCounty@1980",
+      "names": {
+        "en": "County Waterford",
+        "local": "Contae Phort Láirge",
+        "ja": "ウォーターフォード県"
+      },
+      "spans": [
+        {
+          "from": "1980-01-01",
+          "precision": "day",
+          "to": "2014-06-01",
+          "atoms": [
+            "IRL-1444"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1979/prv/2/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1979 (County Borough of Waterford (Extension of Boundary) Provisional Order, 1979)",
+              "says": "Order comes into operation 1 Jan 1980; area of County Waterford added to the county borough of Waterford.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2014/act/1/enacted/en/print",
+              "title": "Local Government Reform Act 2014, s. 9",
+              "says": "On the 2014 establishment day Limerick city+county, North+South Tipperary and Waterford city+county are amalgamated into single local government areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2014/si/215/made/en/print",
+              "title": "S.I. No. 215/2014 – Local Government Reform Act 2014 (2014 Establishment Day) Order 2014",
+              "says": "1 June 2014 is appointed as the 2014 establishment day.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ],
+      "wikidata": "Q184594"
+    },
+    {
+      "id": "IRL:WaterfordCity@1980",
+      "names": {
+        "en": "Waterford City (county borough; city from 2002)",
+        "local": "Cathair Phort Láirge",
+        "ja": "ウォーターフォード"
+      },
+      "spans": [
+        {
+          "from": "1980-01-01",
+          "precision": "day",
+          "to": "2014-06-01",
+          "atoms": [
+            "IRL-5571"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/1979/prv/2/enacted/en/print",
+              "title": "Local Government Provisional Order Confirmation Act, 1979 (County Borough of Waterford (Extension of Boundary) Provisional Order, 1979)",
+              "says": "Order comes into operation 1 Jan 1980; area of County Waterford added to the county borough of Waterford.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2014/act/1/enacted/en/print",
+              "title": "Local Government Reform Act 2014, s. 9",
+              "says": "On the 2014 establishment day Limerick city+county, North+South Tipperary and Waterford city+county are amalgamated into single local government areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2014/si/215/made/en/print",
+              "title": "S.I. No. 215/2014 – Local Government Reform Act 2014 (2014 Establishment Day) Order 2014",
+              "says": "1 June 2014 is appointed as the 2014 establishment day.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ],
+      "wikidata": "Q183551"
+    },
+    {
+      "id": "IRL:WaterfordCityCounty@2014",
+      "names": {
+        "en": "Waterford City and County",
+        "local": "Cathair agus Contae Phort Láirge",
+        "ja": "ウォーターフォード県"
+      },
+      "spans": [
+        {
+          "from": "2014-06-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-1444",
+            "IRL-5571"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2014/act/1/enacted/en/print",
+              "title": "Local Government Reform Act 2014, s. 9",
+              "says": "On the 2014 establishment day Limerick city+county, North+South Tipperary and Waterford city+county are amalgamated into single local government areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2014/si/215/made/en/print",
+              "title": "S.I. No. 215/2014 – Local Government Reform Act 2014 (2014 Establishment Day) Order 2014",
+              "says": "1 June 2014 is appointed as the 2014 establishment day.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ],
+      "wikidata": "Q184594"
+    },
+    {
+      "id": "IRL:LimerickCityCounty@2014",
+      "names": {
+        "en": "Limerick City and County",
+        "local": "Cathair agus Contae Luimnigh",
+        "ja": "リムリック県"
+      },
+      "spans": [
+        {
+          "from": "2014-06-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-726",
+            "IRL-5570"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2014/act/1/enacted/en/print",
+              "title": "Local Government Reform Act 2014, s. 9",
+              "says": "On the 2014 establishment day Limerick city+county, North+South Tipperary and Waterford city+county are amalgamated into single local government areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2014/si/215/made/en/print",
+              "title": "S.I. No. 215/2014 – Local Government Reform Act 2014 (2014 Establishment Day) Order 2014",
+              "says": "1 June 2014 is appointed as the 2014 establishment day.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ],
+      "wikidata": "Q178283"
+    },
+    {
+      "id": "IRL:NorthTipperary@1922",
+      "names": {
+        "en": "North Tipperary (Tipperary North Riding until 2002)",
+        "local": "Tiobraid Árann Thuaidh",
+        "ja": "北ティペラリー県"
+      },
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": "2014-06-01",
+          "atoms": [
+            "IRL-724"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2014/act/1/enacted/en/print",
+              "title": "Local Government Reform Act 2014, s. 9",
+              "says": "On the 2014 establishment day Limerick city+county, North+South Tipperary and Waterford city+county are amalgamated into single local government areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2014/si/215/made/en/print",
+              "title": "S.I. No. 215/2014 – Local Government Reform Act 2014 (2014 Establishment Day) Order 2014",
+              "says": "1 June 2014 is appointed as the 2014 establishment day.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Riding line unchanged: no boundary order between the ridings was found (Clonmel 1990 order stayed inside the South Riding). Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ],
+      "wikidata": "Q1076424"
+    },
+    {
+      "id": "IRL:SouthTipperary@1922",
+      "names": {
+        "en": "South Tipperary (Tipperary South Riding until 2002)",
+        "local": "Tiobraid Árann Theas",
+        "ja": "南ティペラリー県"
+      },
+      "spans": [
+        {
+          "from": "1922-12-06",
+          "precision": "day",
+          "to": "2014-06-01",
+          "atoms": [
+            "IRL-5572"
+          ],
+          "sources": [
+            {
+              "url": "https://statoids.com/uie.html",
+              "title": "Ireland Counties (Statoids, Gwillim Law)",
+              "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2014/act/1/enacted/en/print",
+              "title": "Local Government Reform Act 2014, s. 9",
+              "says": "On the 2014 establishment day Limerick city+county, North+South Tipperary and Waterford city+county are amalgamated into single local government areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2014/si/215/made/en/print",
+              "title": "S.I. No. 215/2014 – Local Government Reform Act 2014 (2014 Establishment Day) Order 2014",
+              "says": "1 June 2014 is appointed as the 2014 establishment day.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Free State/Ireland from 1922-12-06. Irish Statute Book private (provisional-order confirmation) acts 1923-2005 nos. 1-5 were scanned: county-line changes are only Waterford 1955 (Kilkenny), Wicklow 1957 (Dublin), Drogheda 1977 (Meath to Louth); city extensions otherwise stay inside their own county."
+        }
+      ],
+      "wikidata": "Q1076415"
+    },
+    {
+      "id": "IRL:Tipperary@2014",
+      "names": {
+        "en": "County Tipperary",
+        "local": "Contae Thiobraid Árann",
+        "ja": "ティペラリー県"
+      },
+      "spans": [
+        {
+          "from": "2014-06-01",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "IRL-724",
+            "IRL-5572"
+          ],
+          "sources": [
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2014/act/1/enacted/en/print",
+              "title": "Local Government Reform Act 2014, s. 9",
+              "says": "On the 2014 establishment day Limerick city+county, North+South Tipperary and Waterford city+county are amalgamated into single local government areas.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.irishstatutebook.ie/eli/2014/si/215/made/en/print",
+              "title": "S.I. No. 215/2014 – Local Government Reform Act 2014 (2014 Establishment Day) Order 2014",
+              "says": "1 June 2014 is appointed as the 2014 establishment day.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ],
+      "wikidata": "Q184618"
+    }
+  ],
+  "events": [
+    {
+      "date": "1955-04-01",
+      "precision": "day",
+      "what": "Waterford county borough extended into Counties Kilkenny and Waterford",
+      "sources": [
+        {
+          "url": "https://www.irishstatutebook.ie/eli/1955/prv/1/enacted/en/print",
+          "title": "Local Government Provisional Orders Confirmation Act, 1955 (County Borough of Waterford (Extension of Boundary) Provisional Order, 1955)",
+          "says": "In force 1 April 1955: areas of County Kilkenny and County Waterford added to the City of Waterford.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1957-04-01",
+      "precision": "day",
+      "what": "Part of County Dublin (Bray area) transferred to County Wicklow",
+      "sources": [
+        {
+          "url": "https://www.irishstatutebook.ie/eli/1957/prv/1/enacted/en/print",
+          "title": "Wicklow County (Extension of Boundary) Provisional Order, 1957, confirmed 1957",
+          "says": "In force 1 April 1957: an area detached from the County of Dublin and added to the County of Wicklow (Bray area).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1965-07-01",
+      "precision": "day",
+      "what": "Cork county borough extended into County Cork",
+      "sources": [
+        {
+          "url": "https://www.irishstatutebook.ie/eli/1965/si/141/made/en/print",
+          "title": "S.I. No. 141/1965 – County Borough of Cork (Extension of Boundary) Provisional Order, 1965 (commencement)",
+          "says": "The County Borough of Cork (Extension of Boundary) Provisional Order, 1965 comes into force on 1 July 1965.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1977-01-01",
+      "precision": "day",
+      "what": "Part of Drogheda transferred from County Meath to County Louth",
+      "sources": [
+        {
+          "url": "https://www.irishstatutebook.ie/eli/1976/prv/1/enacted/en/print",
+          "title": "Local Government Provisional Order Confirmation Act, 1976 (County of Louth and Borough of Drogheda (Boundaries) Provisional Order, 1976)",
+          "says": "In operation 1 Jan 1977: an area detached from County Meath and added to County Louth and to the Borough of Drogheda.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1980-01-01",
+      "precision": "day",
+      "what": "Waterford county borough extended into County Waterford",
+      "sources": [
+        {
+          "url": "https://www.irishstatutebook.ie/eli/1979/prv/2/enacted/en/print",
+          "title": "Local Government Provisional Order Confirmation Act, 1979 (County Borough of Waterford (Extension of Boundary) Provisional Order, 1979)",
+          "says": "Order comes into operation 1 Jan 1980; area of County Waterford added to the county borough of Waterford.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1985-05-09",
+      "precision": "day",
+      "what": "Dublin county borough/County Dublin boundary altered (both directions)",
+      "sources": [
+        {
+          "url": "https://www.irishstatutebook.ie/eli/1985/si/129/made/en/print",
+          "title": "S.I. No. 129/1985 – Local Government (Reorganisation) Act, 1985 (Commencement) (No. 2) Order",
+          "says": "Sections 10 and 18 (Dublin city/county boundary transfers) come into operation on 9 May 1985.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.irishstatutebook.ie/eli/1985/act/7/enacted/en/print",
+          "title": "Local Government (Reorganisation) Act, 1985",
+          "says": "s. 5: Borough of Galway ceases to be part of the county on the appointed day as County Borough; s. 10: Dublin city/county boundary altered.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1986-01-01",
+      "precision": "day",
+      "what": "Galway becomes a county borough, leaving County Galway",
+      "sources": [
+        {
+          "url": "https://www.irishstatutebook.ie/eli/1985/si/425/made/en/print",
+          "title": "S.I. No. 425/1985 – County Borough of Galway (Appointed Day) Order, 1985",
+          "says": "1 January 1986 is the appointed day on which Galway becomes a county borough.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1994-01-01",
+      "precision": "day",
+      "what": "County Dublin replaced by Dún Laoghaire–Rathdown, Fingal and South Dublin; city boundary altered",
+      "sources": [
+        {
+          "url": "https://www.irishstatutebook.ie/eli/1993/act/31/enacted/en/print",
+          "title": "Local Government (Dublin) Act, 1993",
+          "says": "On the establishment day the city/county boundary is altered (s. 8) and Dún Laoghaire-Rathdown, Fingal and South Dublin counties are established (s. 9).",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://statoids.com/uie.html",
+          "title": "Ireland Counties (Statoids, Gwillim Law)",
+          "says": "1898 Act created administrative counties and county boroughs; 1985 Galway county borough; 1994-01-01 Dublin county split in three; 2014 Limerick, Waterford and Tipperary mergers.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2008-03-01",
+      "precision": "day",
+      "what": "Limerick city boundary extended into County Limerick",
+      "sources": [
+        {
+          "url": "https://www.irishstatutebook.ie/eli/2008/si/53/made/en/print",
+          "title": "S.I. No. 53/2008 – Limerick City Boundary Alteration Order 2008",
+          "says": "In operation 1 March 2008: areas detached from Limerick County and added to Limerick City.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2014-06-01",
+      "precision": "day",
+      "what": "Limerick, Waterford city/county and North/South Tipperary amalgamated",
+      "sources": [
+        {
+          "url": "https://www.irishstatutebook.ie/eli/2014/act/1/enacted/en/print",
+          "title": "Local Government Reform Act 2014, s. 9",
+          "says": "On the 2014 establishment day Limerick city+county, North+South Tipperary and Waterford city+county are amalgamated into single local government areas.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.irishstatutebook.ie/eli/2014/si/215/made/en/print",
+          "title": "S.I. No. 215/2014 – Local Government Reform Act 2014 (2014 Establishment Day) Order 2014",
+          "says": "1 June 2014 is appointed as the 2014 establishment day.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2019-05-31",
+      "precision": "day",
+      "what": "Cork city boundary extended into County Cork",
+      "sources": [
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=2019_Cork_boundary_change&oldid=1373622603",
+          "title": "2019 Cork boundary change (Wikipedia, oldid 1373622603)",
+          "says": "Under the Local Government Act 2019 the city boundary was extended into County Cork on 31 May 2019; previous extension 1965 (S.I. 141/1965).",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.irishstatutebook.ie/eli/2019/act/1/enacted/en/print",
+          "title": "Local Government Act 2019 (No. 1 of 2019)",
+          "says": "Provides for alteration of the Cork city/county boundary, effective on a transfer day appointed by ministerial order (s. 7).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "2005-01-01",
+      "n": 34,
+      "sources": [
+        {
+          "url": "https://www.irishstatutebook.ie/eli/2001/act/37/enacted/en/print",
+          "title": "Local Government Act 2001, Schedule 5",
+          "says": "Local government areas: 29 counties (incl. North and South Tipperary, Fingal, South Dublin, Dún Laoghaire-Rathdown) and 5 cities (Cork, Dublin, Galway, Limerick, Waterford).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2015-01-01",
+      "n": 31,
+      "sources": [
+        {
+          "url": "https://www.irishstatutebook.ie/eli/2014/act/1/enacted/en/print",
+          "title": "Local Government Reform Act 2014, s. 9",
+          "says": "On the 2014 establishment day Limerick city+county, North+South Tipperary and Waterford city+county are amalgamated into single local government areas.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.irishstatutebook.ie/eli/2001/act/37/enacted/en/print",
+          "title": "Local Government Act 2001, Schedule 5",
+          "says": "Local government areas: 29 counties (incl. North and South Tipperary, Fingal, South Dublin, Dún Laoghaire-Rathdown) and 5 cities (Cork, Dublin, Galway, Limerick, Waterford).",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "County Meath before the 1977 Drogheda transfer",
+      "unit": "IRL:Meath@1922",
+      "atoms": [
+        "IRL-715",
+        "IRL-712"
+      ],
+      "from": "1922-12-06",
+      "to": "1977-01-01",
+      "why": "A part of Drogheda south of the Boyne moved from Meath to Louth on 1977-01-01; the earlier line lies inside the present Louth atom.",
+      "checked": [
+        "Provisional Order 1976",
+        "statoids uie",
+        "Irish Statute Book private acts 1923-2005"
+      ],
+      "needs": "finer atoms: Tailte Éireann (OSi) Townlands / Electoral Divisions – National Statutory Boundaries (data.gov.ie; licence not stated in the catalogue API, to be verified on the Tailte Éireann terms page)"
+    },
+    {
+      "what": "County Louth before the 1977 Drogheda transfer",
+      "unit": "IRL:Louth@1922",
+      "atoms": [],
+      "from": "1922-12-06",
+      "to": "1977-01-01",
+      "why": "See Meath entry (atoms withheld there).",
+      "checked": [
+        "Provisional Order 1976"
+      ],
+      "needs": "finer atoms: Tailte Éireann (OSi) Townlands / Electoral Divisions – National Statutory Boundaries (data.gov.ie; licence not stated in the catalogue API, to be verified on the Tailte Éireann terms page)"
+    },
+    {
+      "what": "County Wicklow before 1957",
+      "unit": "IRL:Wicklow@1922",
+      "atoms": [
+        "IRL-719"
+      ],
+      "from": "1922-12-06",
+      "to": "1957-04-01",
+      "why": "An area of County Dublin (Bray) joined Wicklow on 1957-04-01; the pre-1957 line runs inside the present Wicklow/Dún Laoghaire–Rathdown atoms. (Co. Dublin side is withheld in the Dublin entry.)",
+      "checked": [
+        "Wicklow County (Extension of Boundary) Provisional Order 1957"
+      ],
+      "needs": "finer atoms: Tailte Éireann (OSi) Townlands / Electoral Divisions – National Statutory Boundaries (data.gov.ie; licence not stated in the catalogue API, to be verified on the Tailte Éireann terms page)"
+    },
+    {
+      "what": "County Kilkenny before 1955",
+      "unit": "IRL:Kilkenny@1922",
+      "atoms": [
+        "IRL-722"
+      ],
+      "from": "1922-12-06",
+      "to": "1955-04-01",
+      "why": "Part of County Kilkenny was added to Waterford county borough on 1955-04-01; the earlier line lies inside the present Waterford City atom.",
+      "checked": [
+        "Provisional Orders Confirmation Act 1955"
+      ],
+      "needs": "finer atoms: Tailte Éireann (OSi) Townlands / Electoral Divisions – National Statutory Boundaries (data.gov.ie; licence not stated in the catalogue API, to be verified on the Tailte Éireann terms page)"
+    },
+    {
+      "what": "Dublin county borough before 1994",
+      "unit": "IRL:DublinCountyBorough@1922",
+      "atoms": [
+        "IRL-5575",
+        "IRL-5574",
+        "IRL-5573",
+        "IRL-5576"
+      ],
+      "from": "1922-12-06",
+      "to": "1994-01-01",
+      "why": "The city/county line moved in 1930-31, 1941, 1942, 1953, 1985-05-09 and again on 1994-01-01 (1993 Act s. 8); only the 1994 line is carried by NE atoms. The union of the four atoms is also not County Dublin + city before 1957-04-01 (Bray transfer).",
+      "checked": [
+        "Local Government (Reorganisation) Act 1985 s. 10",
+        "S.I. 129/1985",
+        "Local Government (Dublin) Act 1993 s. 8",
+        "provisional orders 1941, 1953"
+      ],
+      "needs": "finer atoms: Tailte Éireann (OSi) Townlands / Electoral Divisions – National Statutory Boundaries (data.gov.ie; licence not stated in the catalogue API, to be verified on the Tailte Éireann terms page)"
+    },
+    {
+      "what": "County Dublin (administrative county) before 1994",
+      "unit": "IRL:DublinCounty@1922",
+      "atoms": [],
+      "from": "1922-12-06",
+      "to": "1994-01-01",
+      "why": "See the county borough entry (atoms withheld there).",
+      "checked": [
+        "Local Government (Dublin) Act 1993"
+      ],
+      "needs": "finer atoms: Tailte Éireann (OSi) Townlands / Electoral Divisions – National Statutory Boundaries (data.gov.ie; licence not stated in the catalogue API, to be verified on the Tailte Éireann terms page)"
+    },
+    {
+      "what": "Cork county borough before 1965",
+      "unit": "IRL:CorkCity@1922",
+      "atoms": [
+        "IRL-5569",
+        "IRL-78"
+      ],
+      "from": "1922-12-06",
+      "to": "1965-07-01",
+      "why": "City extended in 1955 (1954 order) and 1965-07-01; earlier lines run inside the present County Cork atom.",
+      "checked": [
+        "Provisional Orders 1955 and 1965",
+        "S.I. 141/1965"
+      ],
+      "needs": "finer atoms: Tailte Éireann (OSi) Townlands / Electoral Divisions – National Statutory Boundaries (data.gov.ie; licence not stated in the catalogue API, to be verified on the Tailte Éireann terms page)"
+    },
+    {
+      "what": "County Cork before 1965",
+      "unit": "IRL:CorkCounty@1922",
+      "atoms": [],
+      "from": "1922-12-06",
+      "to": "1965-07-01",
+      "why": "See Cork county borough entry.",
+      "checked": [
+        "S.I. 141/1965"
+      ],
+      "needs": "finer atoms: Tailte Éireann (OSi) Townlands / Electoral Divisions – National Statutory Boundaries (data.gov.ie; licence not stated in the catalogue API, to be verified on the Tailte Éireann terms page)"
+    },
+    {
+      "what": "Cork City after the 2019 extension",
+      "unit": "IRL:CorkCity@2019",
+      "atoms": [
+        "IRL-5569",
+        "IRL-78"
+      ],
+      "from": "2019-05-31",
+      "to": "2020-01-01",
+      "why": "From 2019-05-31 the city took ~148 km2 of County Cork; NE atoms carry only the 1965 line.",
+      "checked": [
+        "Wikipedia 2019 Cork boundary change",
+        "Local Government Act 2019"
+      ],
+      "needs": "finer atoms: 2019 Cork city/county boundary (Tailte Éireann administrative areas) or townlands (licence to verify)"
+    },
+    {
+      "what": "County Cork after the 2019 extension",
+      "unit": "IRL:CorkCounty@2019",
+      "atoms": [],
+      "from": "2019-05-31",
+      "to": "2020-01-01",
+      "why": "See previous entry.",
+      "checked": [
+        "Local Government Act 2019"
+      ],
+      "needs": "as above"
+    },
+    {
+      "what": "Limerick county borough/city before 2014",
+      "unit": "IRL:LimerickCity@1922",
+      "atoms": [
+        "IRL-5570",
+        "IRL-726"
+      ],
+      "from": "1922-12-06",
+      "to": "2014-06-01",
+      "why": "City extended into County Limerick in 1950 and on 2008-03-01. The NE city atom is generalised (29 km2 vs an official 20.35 km2) and cannot be dated to either the 1950 or the 2008 line, so neither window can be claimed.",
+      "checked": [
+        "Provisional Order 1950",
+        "S.I. 53/2008",
+        "Wikipedia Limerick City Council (20.35 km2)"
+      ],
+      "needs": "finer atoms: Limerick city boundaries of 1950 and 2008 (S.I. 53/2008 maps) or townlands (Tailte Éireann)"
+    },
+    {
+      "what": "County Limerick (administrative county) before 2014",
+      "unit": "IRL:LimerickCounty@1922",
+      "atoms": [],
+      "from": "1922-12-06",
+      "to": "2014-06-01",
+      "why": "See Limerick city entry.",
+      "checked": [
+        "S.I. 53/2008"
+      ],
+      "needs": "as above"
+    },
+    {
+      "what": "Waterford county borough before 1980",
+      "unit": "IRL:WaterfordCity@1922",
+      "atoms": [
+        "IRL-5571",
+        "IRL-1444"
+      ],
+      "from": "1922-12-06",
+      "to": "1980-01-01",
+      "why": "City extended 1944, 1955 (incl. part of Kilkenny), 1966 and 1980-01-01; only the 1980 line is carried.",
+      "checked": [
+        "Provisional Orders 1944, 1955, 1966, 1979"
+      ],
+      "needs": "finer atoms: Tailte Éireann (OSi) Townlands / Electoral Divisions – National Statutory Boundaries (data.gov.ie; licence not stated in the catalogue API, to be verified on the Tailte Éireann terms page)"
+    },
+    {
+      "what": "County Waterford before 1980",
+      "unit": "IRL:WaterfordCounty@1922",
+      "atoms": [],
+      "from": "1922-12-06",
+      "to": "1980-01-01",
+      "why": "See Waterford city entry.",
+      "checked": [
+        "Provisional Order 1979"
+      ],
+      "needs": "finer atoms: Tailte Éireann (OSi) Townlands / Electoral Divisions – National Statutory Boundaries (data.gov.ie; licence not stated in the catalogue API, to be verified on the Tailte Éireann terms page)"
+    }
+  ]
+}

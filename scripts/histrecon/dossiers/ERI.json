@@ -1,0 +1,270 @@
+{
+  "country": "ERI",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1996-04-15",
+    "to": "2019-12-31"
+  },
+  "polityNote": "State of Eritrea (independent 1993-05-24). The Ethiopia–Eritrea frontier (Badme) is a polity-level question not settled in this dossier.",
+  "units": [
+    {
+      "id": "ERI:SouthernRedSea@1996",
+      "names": {
+        "en": "Southern Red Sea Region",
+        "ja": "デブバウィ・ケイバハリ地方",
+        "local": "ዞባ ደቡባዊ ቀይሕ ባሕሪ"
+      },
+      "wikidata": "Q27928",
+      "spans": [
+        {
+          "from": "1996-04-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ERI-1565"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uer.html",
+              "title": "Statoids — Regions of Eritrea (Gwillim Law)",
+              "says": "1996-04-15: Eritrea reorganized into six regions (statoids ties it to the constitution, which was never implemented).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.ohchr.org/sites/default/files/Documents/HRBodies/HRCouncil/CoIEritrea/A_HRC_29_CRP-1_Chapter_V.pdf",
+              "title": "UN Commission of Inquiry on Eritrea, A/HRC/29/CRP.1 ch. V",
+              "says": "Proclamation No. 86/1996 (April 1996) abolished the provinces and established six regions (zobas), which still exist.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Proclamation 86/1996 dated April 1996 (COI); the day 15 April is from statoids."
+        }
+      ]
+    },
+    {
+      "id": "ERI:Debub@1996",
+      "names": {
+        "en": "Debub Region",
+        "ja": "デブブ地方",
+        "local": "ዞባ ደቡብ"
+      },
+      "wikidata": "Q27728",
+      "spans": [
+        {
+          "from": "1996-04-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ERI-1562"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uer.html",
+              "title": "Statoids — Regions of Eritrea (Gwillim Law)",
+              "says": "1996-04-15: Eritrea reorganized into six regions (statoids ties it to the constitution, which was never implemented).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.ohchr.org/sites/default/files/Documents/HRBodies/HRCouncil/CoIEritrea/A_HRC_29_CRP-1_Chapter_V.pdf",
+              "title": "UN Commission of Inquiry on Eritrea, A/HRC/29/CRP.1 ch. V",
+              "says": "Proclamation No. 86/1996 (April 1996) abolished the provinces and established six regions (zobas), which still exist.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Proclamation 86/1996 dated April 1996 (COI); the day 15 April is from statoids."
+        }
+      ]
+    },
+    {
+      "id": "ERI:NorthernRedSea@1996",
+      "names": {
+        "en": "Northern Red Sea Region",
+        "ja": "セメナウィ・ケイバハリ地方",
+        "local": "ዞባ ሰሜናዊ ቀይሕ ባሕሪ"
+      },
+      "wikidata": "Q27910",
+      "spans": [
+        {
+          "from": "1996-04-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ERI-1563"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uer.html",
+              "title": "Statoids — Regions of Eritrea (Gwillim Law)",
+              "says": "1996-04-15: Eritrea reorganized into six regions (statoids ties it to the constitution, which was never implemented).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.ohchr.org/sites/default/files/Documents/HRBodies/HRCouncil/CoIEritrea/A_HRC_29_CRP-1_Chapter_V.pdf",
+              "title": "UN Commission of Inquiry on Eritrea, A/HRC/29/CRP.1 ch. V",
+              "says": "Proclamation No. 86/1996 (April 1996) abolished the provinces and established six regions (zobas), which still exist.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Proclamation 86/1996 dated April 1996 (COI); the day 15 April is from statoids."
+        }
+      ]
+    },
+    {
+      "id": "ERI:GashBarka@1996",
+      "names": {
+        "en": "Gash-Barka Region",
+        "ja": "ガシュ・バルカ地方",
+        "local": "ዞባ ጋሽ ባርካ"
+      },
+      "wikidata": "Q873012",
+      "spans": [
+        {
+          "from": "1996-04-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ERI-1560"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uer.html",
+              "title": "Statoids — Regions of Eritrea (Gwillim Law)",
+              "says": "1996-04-15: Eritrea reorganized into six regions (statoids ties it to the constitution, which was never implemented).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.ohchr.org/sites/default/files/Documents/HRBodies/HRCouncil/CoIEritrea/A_HRC_29_CRP-1_Chapter_V.pdf",
+              "title": "UN Commission of Inquiry on Eritrea, A/HRC/29/CRP.1 ch. V",
+              "says": "Proclamation No. 86/1996 (April 1996) abolished the provinces and established six regions (zobas), which still exist.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Proclamation 86/1996 dated April 1996 (COI); the day 15 April is from statoids."
+        }
+      ]
+    },
+    {
+      "id": "ERI:Maekel@1996",
+      "names": {
+        "en": "Maekel Region",
+        "ja": "マアカル地方",
+        "local": "ዞባ ማእከል"
+      },
+      "wikidata": "Q27710",
+      "spans": [
+        {
+          "from": "1996-04-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ERI-1564"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uer.html",
+              "title": "Statoids — Regions of Eritrea (Gwillim Law)",
+              "says": "1996-04-15: Eritrea reorganized into six regions (statoids ties it to the constitution, which was never implemented).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.ohchr.org/sites/default/files/Documents/HRBodies/HRCouncil/CoIEritrea/A_HRC_29_CRP-1_Chapter_V.pdf",
+              "title": "UN Commission of Inquiry on Eritrea, A/HRC/29/CRP.1 ch. V",
+              "says": "Proclamation No. 86/1996 (April 1996) abolished the provinces and established six regions (zobas), which still exist.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Proclamation 86/1996 dated April 1996 (COI); the day 15 April is from statoids."
+        }
+      ]
+    },
+    {
+      "id": "ERI:Anseba@1996",
+      "names": {
+        "en": "Anseba Region",
+        "ja": "アンセバ地方",
+        "local": "ዞባ ዓንሰባ"
+      },
+      "wikidata": "Q569468",
+      "spans": [
+        {
+          "from": "1996-04-15",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "ERI-1561"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uer.html",
+              "title": "Statoids — Regions of Eritrea (Gwillim Law)",
+              "says": "1996-04-15: Eritrea reorganized into six regions (statoids ties it to the constitution, which was never implemented).",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.ohchr.org/sites/default/files/Documents/HRBodies/HRCouncil/CoIEritrea/A_HRC_29_CRP-1_Chapter_V.pdf",
+              "title": "UN Commission of Inquiry on Eritrea, A/HRC/29/CRP.1 ch. V",
+              "says": "Proclamation No. 86/1996 (April 1996) abolished the provinces and established six regions (zobas), which still exist.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Proclamation 86/1996 dated April 1996 (COI); the day 15 April is from statoids."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1996-04-15",
+      "precision": "day",
+      "what": "Ten provinces replaced by six regions (Proclamation 86/1996).",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uer.html",
+          "title": "Statoids — Regions of Eritrea (Gwillim Law)",
+          "says": "1996-04-15: Eritrea reorganized into six regions (statoids ties it to the constitution, which was never implemented).",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.ohchr.org/sites/default/files/Documents/HRBodies/HRCouncil/CoIEritrea/A_HRC_29_CRP-1_Chapter_V.pdf",
+          "title": "UN Commission of Inquiry on Eritrea, A/HRC/29/CRP.1 ch. V",
+          "says": "Proclamation No. 86/1996 (April 1996) abolished the provinces and established six regions (zobas), which still exist.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "1996-04-15",
+      "n": 6,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uer.html",
+          "title": "Statoids — Regions of Eritrea (Gwillim Law)",
+          "says": "1996-04-15: Eritrea reorganized into six regions (statoids ties it to the constitution, which was never implemented).",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.ohchr.org/sites/default/files/Documents/HRBodies/HRCouncil/CoIEritrea/A_HRC_29_CRP-1_Chapter_V.pdf",
+          "title": "UN Commission of Inquiry on Eritrea, A/HRC/29/CRP.1 ch. V",
+          "says": "Proclamation No. 86/1996 (April 1996) abolished the provinces and established six regions (zobas), which still exist.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Ten provinces (awrajas) 1993-05-24 → 1996-04-15",
+      "from": "1993-05-24",
+      "to": "1996-04-15",
+      "why": "Before scope: the provinces (Akele Guzai, Barka, Denkalia, Gash-Setit, Hamasien, Sahel, Semhar, Senhit, Seraye, Asmara) were redrawn into the six regions, whose lines cut across them.",
+      "checked": [
+        "statoids uer.html",
+        "Wikipedia Regions of Eritrea rev 1344960307"
+      ],
+      "needs": "sub-zoba / village atoms tagged with former awraja"
+    }
+  ]
+}

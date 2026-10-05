@@ -1,0 +1,427 @@
+{
+ "country": "ARE",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1971-12-02",
+  "to": "2019-12-31"
+ },
+ "polityNote": "United Arab Emirates from 1971-12-02 (six emirates); Ras al-Khaimah joined in early 1972.",
+ "units": [
+  {
+   "id": "ARE:UmmAlQuwain@1971",
+   "names": {
+    "en": "Emirate of Umm Al Quwain",
+    "ja": "ウンム・アル＝カイワイン",
+    "local": "أم القيوين"
+   },
+   "wikidata": "Q175021",
+   "spans": [
+    {
+     "from": "1971-12-02",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARE-339"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377754123",
+       "title": "United Arab Emirates — Wikipedia (oldid 1377754123)",
+       "says": "Six emirates united 2 December 1971; Ras al-Khaimah joined later (body text: 10 January 1972; infobox: 10 February 1972).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uae.html",
+       "title": "Statoids — Emirates of the United Arab Emirates (Gwillim Law)",
+       "says": "1971-12-02: Umm al Qaywayn among the six founding emirates; no later change listed.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Has no international land border; no inter-emirate boundary change found."
+    }
+   ]
+  },
+  {
+   "id": "ARE:Ajman@1971",
+   "names": {
+    "en": "Emirate of Ajman",
+    "ja": "アジュマーン",
+    "local": "إمارة عجمان"
+   },
+   "wikidata": "Q159477",
+   "spans": [
+    {
+     "from": "1971-12-02",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARE-346"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1377754123",
+       "title": "United Arab Emirates — Wikipedia (oldid 1377754123)",
+       "says": "Six emirates united 2 December 1971; Ras al-Khaimah joined later (body text: 10 January 1972; infobox: 10 February 1972).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uae.html",
+       "title": "Statoids — Emirates of the United Arab Emirates (Gwillim Law)",
+       "says": "Ajman consists of three enclaves; no change listed after 1971.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Three sections; NE geometry shows no shared line with Oman. No inter-emirate change found."
+    }
+   ]
+  },
+  {
+   "id": "ARE:AbuDhabi@2002",
+   "names": {
+    "en": "Emirate of Abu Dhabi",
+    "ja": "アブダビ首長国",
+    "local": "إمارة أبو ظبي"
+   },
+   "wikidata": "Q187712",
+   "spans": [
+    {
+     "from": "2002-06-22",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARE-349"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375870416",
+       "title": "Oman–United Arab Emirates border — Wikipedia (oldid 1375870416)",
+       "says": "Ras al-Khaimah sector settled 1979; southern section 1999; complete delimitation ratified in Abu Dhabi on 22 June 2002.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uae.html",
+       "title": "Statoids — Emirates of the United Arab Emirates (Gwillim Law)",
+       "says": "No inter-emirate change listed after 1972.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1354814812",
+       "title": "Saudi Arabia–United Arab Emirates border — Wikipedia (oldid 1354814812)",
+       "says": "1974 Treaty of Jeddah defines the line drawn today; the UAE never ratified it.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders Oman (1999/2002) and Saudi Arabia (1974 treaty line, applied de facto). Span starts when the whole Oman–UAE line was delimited (treaty maps unpublished)."
+    }
+   ]
+  },
+  {
+   "id": "ARE:Dubai@2002",
+   "names": {
+    "en": "Emirate of Dubai",
+    "ja": "ドバイ首長国",
+    "local": "إمارة دبي"
+   },
+   "wikidata": "Q613",
+   "spans": [
+    {
+     "from": "2002-06-22",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARE-350"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375870416",
+       "title": "Oman–United Arab Emirates border — Wikipedia (oldid 1375870416)",
+       "says": "Ras al-Khaimah sector settled 1979; southern section 1999; complete delimitation ratified in Abu Dhabi on 22 June 2002.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uae.html",
+       "title": "Statoids — Emirates of the United Arab Emirates (Gwillim Law)",
+       "says": "No inter-emirate change listed after 1972.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Hatta exclave borders Oman; Dubai–Sharjah line set by the 19 Oct 1981 arbitral award. Span starts when the whole Oman–UAE line was delimited (treaty maps unpublished)."
+    }
+   ]
+  },
+  {
+   "id": "ARE:Sharjah@2002",
+   "names": {
+    "en": "Emirate of Sharjah",
+    "ja": "シャールジャ",
+    "local": "إمارة الشارقة"
+   },
+   "wikidata": "Q188810",
+   "spans": [
+    {
+     "from": "2002-06-22",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARE-348"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375870416",
+       "title": "Oman–United Arab Emirates border — Wikipedia (oldid 1375870416)",
+       "says": "Ras al-Khaimah sector settled 1979; southern section 1999; complete delimitation ratified in Abu Dhabi on 22 June 2002.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uae.html",
+       "title": "Statoids — Emirates of the United Arab Emirates (Gwillim Law)",
+       "says": "No inter-emirate change listed after 1972.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "East-coast exclaves and Nahwa border Oman; Dubai–Sharjah line set by the 1981 award. Span starts when the whole Oman–UAE line was delimited (treaty maps unpublished)."
+    }
+   ]
+  },
+  {
+   "id": "ARE:Fujairah@2002",
+   "names": {
+    "en": "Emirate of Fujairah",
+    "ja": "フジャイラ",
+    "local": "إمارة الفجيرة"
+   },
+   "wikidata": "Q4091",
+   "spans": [
+    {
+     "from": "2002-06-22",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARE-341"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375870416",
+       "title": "Oman–United Arab Emirates border — Wikipedia (oldid 1375870416)",
+       "says": "Ras al-Khaimah sector settled 1979; southern section 1999; complete delimitation ratified in Abu Dhabi on 22 June 2002.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uae.html",
+       "title": "Statoids — Emirates of the United Arab Emirates (Gwillim Law)",
+       "says": "No inter-emirate change listed after 1972.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders Musandam and Batinah North. Span starts when the whole Oman–UAE line was delimited (treaty maps unpublished)."
+    }
+   ]
+  },
+  {
+   "id": "ARE:RasAlKhaimah@2002",
+   "names": {
+    "en": "Ras Al Khaimah",
+    "ja": "ラアス・アル＝ハイマ",
+    "local": "رأس الخيمة"
+   },
+   "wikidata": "Q170024",
+   "spans": [
+    {
+     "from": "2002-06-22",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "ARE-338"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?oldid=1375870416",
+       "title": "Oman–United Arab Emirates border — Wikipedia (oldid 1375870416)",
+       "says": "Ras al-Khaimah sector settled 1979; southern section 1999; complete delimitation ratified in Abu Dhabi on 22 June 2002.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://statoids.com/uae.html",
+       "title": "Statoids — Emirates of the United Arab Emirates (Gwillim Law)",
+       "says": "No inter-emirate change listed after 1972.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Borders Musandam (sector settled 1979). Span starts when the whole Oman–UAE line was delimited (treaty maps unpublished)."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1971-12-02",
+   "precision": "day",
+   "what": "Six emirates form the UAE",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1377754123",
+     "title": "United Arab Emirates — Wikipedia (oldid 1377754123)",
+     "says": "Six emirates united 2 December 1971; Ras al-Khaimah joined later (body text: 10 January 1972; infobox: 10 February 1972).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1972-02-10",
+   "precision": "day",
+   "what": "Ras al-Khaimah joins (Wikipedia body text says 10 January; Statoids 1 February)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1377754123",
+     "title": "United Arab Emirates — Wikipedia (oldid 1377754123)",
+     "says": "Six emirates united 2 December 1971; Ras al-Khaimah joined later (body text: 10 January 1972; infobox: 10 February 1972).",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://statoids.com/uae.html",
+     "title": "Statoids — Emirates of the United Arab Emirates (Gwillim Law)",
+     "says": "1972-02-01: Ras al Khaymah merged with the UAE.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2002-06-22",
+   "precision": "day",
+   "what": "Complete Oman–UAE delimitation ratified",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1375870416",
+     "title": "Oman–United Arab Emirates border — Wikipedia (oldid 1375870416)",
+     "says": "Ras al-Khaimah sector settled 1979; southern section 1999; complete delimitation ratified in Abu Dhabi on 22 June 2002.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "1971-12-02",
+   "n": 6,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1377754123",
+     "title": "United Arab Emirates — Wikipedia (oldid 1377754123)",
+     "says": "Six emirates united 2 December 1971; Ras al-Khaimah joined later (body text: 10 January 1972; infobox: 10 February 1972).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2010-01-01",
+   "n": 7,
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?oldid=1377754123",
+     "title": "United Arab Emirates — Wikipedia (oldid 1377754123)",
+     "says": "Six emirates united 2 December 1971; Ras al-Khaimah joined later (body text: 10 January 1972; infobox: 10 February 1972).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [
+  {
+   "atom": "ARE-338",
+   "from": "1971-12-02",
+   "to": "1972-01-10",
+   "why": "Ras al-Khaimah had not yet joined the federation (earliest stated accession date 10 January 1972)."
+  }
+ ],
+ "unresolved": [
+  {
+   "what": "Jointly administered (neutral) zones",
+   "atoms": [
+    "ARE-344",
+    "ARE-347"
+   ],
+   "from": "1971-12-02",
+   "to": null,
+   "why": "NE features \"Neutral Zone\" (ARE-344, hasc AE.X01~, by Fujairah/Sharjah; ARE-347 Sayh Mudayrah, AE.X02~) are condominia of two emirates, not first-level units, and belong to no single emirate. Their establishment dates were not found.",
+   "checked": [
+    "statoids.com/uae.html",
+    "NE attributes"
+   ],
+   "needs": "a source on the creation of the inter-emirate joint areas; they will never be one emirate's territory"
+  },
+  {
+   "what": "Ras al-Khaimah between accession and the Oman–UAE delimitation",
+   "unit": "ARE:RasAlKhaimah@2002",
+   "atoms": [
+    "ARE-338"
+   ],
+   "from": "1972-01-10",
+   "to": "2002-06-22",
+   "why": "Accession date disputed (10 Jan / 1 Feb / 10 Feb 1972) and its line with Musandam was only settled in 1979 and delimited as a whole in 2002.",
+   "checked": [
+    "United Arab Emirates oldid 1377754123",
+    "statoids.com/uae.html",
+    "Oman–UAE border oldid 1375870416"
+   ],
+   "needs": "the 1979 and 2002 delimitation texts"
+  },
+  {
+   "what": "Abu Dhabi before the Oman–UAE delimitation (and before the 1974 Saudi treaty)",
+   "unit": "ARE:AbuDhabi@2002",
+   "atoms": [
+    "ARE-349"
+   ],
+   "from": "1971-12-02",
+   "to": "2002-06-22",
+   "why": "Saudi line moved by the 1974 Treaty of Jeddah (UAE lost the Khor al-Udaid corridor); Oman line delimited 1999/2002 with unpublished maps.",
+   "checked": [
+    "Saudi Arabia–UAE border oldid 1354814812",
+    "Oman–UAE border oldid 1375870416"
+   ],
+   "needs": "the 1999/2002 delimitation maps"
+  },
+  {
+   "what": "Dubai before the Oman–UAE delimitation",
+   "unit": "ARE:Dubai@2002",
+   "atoms": [
+    "ARE-350"
+   ],
+   "from": "1971-12-02",
+   "to": "2002-06-22",
+   "why": "Dubai–Sharjah boundary disputed until the 1981 arbitral award; Hatta–Oman line delimited 2002.",
+   "checked": [
+    "Oman–UAE border oldid 1375870416",
+    "Dubai/Sharjah Boundary Arbitration 1981 (secondary references only)"
+   ],
+   "needs": "the 2002 delimitation maps"
+  },
+  {
+   "what": "Sharjah before the Oman–UAE delimitation",
+   "unit": "ARE:Sharjah@2002",
+   "atoms": [
+    "ARE-348"
+   ],
+   "from": "1971-12-02",
+   "to": "2002-06-22",
+   "why": "Dubai–Sharjah line disputed until 1981; east-coast exclaves and Nahwa border Oman (2002).",
+   "checked": [
+    "Oman–UAE border oldid 1375870416"
+   ],
+   "needs": "the 2002 delimitation maps"
+  },
+  {
+   "what": "Fujairah before the Oman–UAE delimitation",
+   "unit": "ARE:Fujairah@2002",
+   "atoms": [
+    "ARE-341"
+   ],
+   "from": "1971-12-02",
+   "to": "2002-06-22",
+   "why": "Borders Musandam and Batinah North; line delimited 2002.",
+   "checked": [
+    "Oman–UAE border oldid 1375870416"
+   ],
+   "needs": "the 2002 delimitation maps"
+  }
+ ]
+}

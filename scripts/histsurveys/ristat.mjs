@@ -132,7 +132,7 @@ function wkbGeometry(b, p0) {
   }
   throw new Error(`ristat: WKB type ${t} is not an area`);
 }
-function gpkgGeometry(blob) {
+export function gpkgGeometry(blob) {
   const b = Buffer.from(blob);
   if (b[0] !== 0x47 || b[1] !== 0x50) throw new Error('ristat: not a GeoPackage geometry blob');
   const flags = b[3];
@@ -156,7 +156,7 @@ function clipRing(ring, east) {                                    /* Sutherland
   out.push(out[0].slice());
   return out;
 }
-function wrapPolygons(polys) {
+export function wrapPolygons(polys) {
   const res = [];
   for (const poly of polys) {
     let hi = -1e9, lo = 1e9;

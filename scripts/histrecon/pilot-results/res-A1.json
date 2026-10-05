@@ -1,0 +1,730 @@
+{
+ "cluster": "A1",
+ "transfers": [
+  {
+   "key": "1880 海西郡 (愛知県)",
+   "date": "1880-05-07",
+   "date_basis": "三重県令告示 dated 明治13年5月10日 says the 15 villages were handed to Aichi \"本月七日\" = 1880-05-07 (solar calendar already; no conversion). Wikipedia 桑名郡/海西郡 give 5月10日, which is the date of the notice, not of the handover.",
+   "from_pref": "三重県",
+   "to_pref": "愛知県",
+   "from_gun": "桑名郡",
+   "to_gun": "海西郡",
+   "crosses_prefecture_at_time": true,
+   "matters_for_intervals": "All intervals before 1880-05-07 in which 桑名郡 (安濃津県 1872-01-02..1872-04-24; 三重県 1872-04-24..1876-04-18; 三重県 1876-04-18..1880-05-07) and 海西郡 (名古屋県/愛知県) differ: the 15 villages sit on the MIE side until 1880-05-07 and on the AICHI side afterwards. The 三重県 interval 1876-04-18..1881-02-07 must be cut at 1880-05-07. Before 1872-01-02 (outside the withheld list): 五明村/小島新田/福原新田/川原欠新田 were 旧幕府領 -> 長島藩領 (1871-01) i.e. 長島県, the others 桑名県/度会県 area; all Ise side anyway.",
+   "villages_pre1889": [
+    "五明村",
+    "小島新田",
+    "福原新田",
+    "川原欠新田",
+    "加稲新田",
+    "加稲九郎治新田",
+    "三好新田",
+    "加稲付新田",
+    "富島新田",
+    "富島付新田",
+    "加稲山新田",
+    "稲荷崎新田",
+    "稲荷崎付新田",
+    "富崎新田",
+    "境新田"
+   ],
+   "n03_1920_municipalities": [
+    {
+     "pref1920": "愛知県",
+     "gun": "海部郡",
+     "name": "弥富町",
+     "whole_or_part": "part",
+     "part_detail": "Moved from 桑名郡: 五明村, 小島新田 (1889 彌富村; 1903 町制; 1906 弥富町 <- 弥富町[鯏浦・五明・小島新田・平島新田], 十四山村[鎌倉新田], 市腋村[荷之上・五之三]). Did NOT move (always Aichi): 鯏浦村, 平島新田, 鎌倉新田, 荷之上, 五之三."
+    },
+    {
+     "pref1920": "愛知県",
+     "gun": "海部郡",
+     "name": "鍋田村",
+     "whole_or_part": "part",
+     "part_detail": "Moved from 桑名郡: 川原欠新田 (1889 大藤村) and, via 1889 両国村: 富島新田, 富島付新田, 富崎新田, 加稲新田, 加稲山新田, 加稲九郎治新田, 三好新田, 稲荷崎付新田, 稲荷崎新田, 加稲付新田, 境新田. Did NOT move (always Aichi, 海西郡): 芝井新田, 森津村, 鎌島新田, 松名新田, 寛延新田, 間崎新田, 稲元新田, 稲荷新田 (大藤村); 狐地新田, 稲吉新田, 稲狐新田, 三稲新田, 三稲外繰出新田 (両国村); 前ヶ須新田, 中山新田 (from 弥富村)."
+    },
+    {
+     "pref1920": "愛知県",
+     "gun": "海部郡",
+     "name": "立田村",
+     "whole_or_part": "part",
+     "part_detail": "Moved from 桑名郡: only the 桑名郡 portion of 福原新田 (1889 立和村 <- 立田村, 三ツ和村, 福原新田; 1906 立田村 absorbs 立和村). 福原新田 existed in BOTH 郡 and the two pieces were united after 1880 (海西郡 article). Everything else of 立田村 was always Aichi."
+    }
+   ],
+   "chain": "桑名郡 villages -> (1880-05-07) 海西郡 (Aichi) -> 1889-10-01 町村制: 五明村・小島新田 -> 彌富村; 川原欠新田 -> 大藤村; 富島新田・富島付新田・富崎新田・加稲新田・加稲山新田・加稲九郎治新田・三好新田・稲荷崎付新田・稲荷崎新田・加稲付新田・境新田 -> 両国村; 福原新田 -> 立和村 -> 1906-07-01: 弥富町 / 鍋田村 (大藤村+両国村+弥富町[前ヶ須新田・中山新田]) / 立田村 -> 1913 海部郡 -> 1920 N03.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%A1%91%E5%90%8D%E9%83%A1&oldid=105801262",
+     "quote": "本月七日該県へ引渡候条、此旨布連候事"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%A1%91%E5%90%8D%E9%83%A1&oldid=105801262",
+     "quote": "明治一三年五月十日　三重県令　岩村定高"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%A1%91%E5%90%8D%E9%83%A1&oldid=105801262",
+     "quote": "福原新田　小島新田　五明村　川原欠新田　加稲新田　加稲九郎次新田　加稲付新田　三好新田"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B5%B7%E8%A5%BF%E9%83%A1%20(%E6%84%9B%E7%9F%A5%E7%9C%8C)&oldid=102565470",
+     "quote": "'''[[両国村]]''' ← 富島新田、富島付新田、富崎新田、加稲新田、加稲山新田、加稲九郎治新田、三好新田、稲荷崎付新田、稲荷崎新田、加稲付新田、境新田"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B5%B7%E8%A5%BF%E9%83%A1%20(%E6%84%9B%E7%9F%A5%E7%9C%8C)&oldid=102565470",
+     "quote": "'''[[鍋田村]]''' ← 大藤村、両国村、弥富町［前ヶ須新田・中山新田］"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B5%B7%E8%A5%BF%E9%83%A1%20(%E6%84%9B%E7%9F%A5%E7%9C%8C)&oldid=102565470",
+     "quote": "'''[[立和村]]''' ← 立田村、三ツ和村、福原新田（現・愛西市）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%BC%A5%E5%AF%8C%E5%B8%82&oldid=110869053",
+     "quote": "旧伊勢領の五明村・小島新田を合併し、"
+    }
+   ],
+   "notes": "The sweep took 海西郡 (愛知県) 1880 as \"out\" with a junk village list (\"存在した福原新田\", \"95村\"); the real content is an IN-transfer of 15 villages from 三重県桑名郡. Spelling: the notice writes 加稲九郎次新田, the Aichi article 加稲九郎治新田. N03 町村 are 弥富町/鍋田村/立田村 (all 海部郡, formed 1906 and unchanged in 1920)."
+  },
+  {
+   "key": "1887 海西郡 (愛知県)",
+   "date": "1887-07-12",
+   "date_basis": "Four independent Wikipedia articles (海西郡 愛知/岐阜, 松山中島村, 海津郡 table) give 明治20年7月12日 (solar). No primary 告示 found; the day is repeated consistently.",
+   "from_pref": "愛知県",
+   "to_pref": "岐阜県",
+   "from_gun": "海西郡 (尾張)",
+   "to_gun": "海西郡 (美濃)",
+   "crosses_prefecture_at_time": true,
+   "matters_for_intervals": "Every interval before 1887-07-12 in which Aichi 海西郡 was in 名古屋県 (1872-01-02..1872-05-08) / 愛知県 (1872-05-08..1872-12-27, 1872-12-27..1887-07-12): 松山中島村 sits on the AICHI side until 1887-07-12, then on 岐阜県 (1876-08-21..1891 interval). It does NOT touch the Gifu 海西郡 intervals before 1887-07-12 (those villages are Gifu throughout) - i.e. the Gifu-side 海津郡 1920 町村 other than 松山中島 were never Aichi.",
+   "villages_pre1889": [
+    "松山中島村"
+   ],
+   "n03_1920_municipalities": [
+    {
+     "pref1920": "岐阜県",
+     "gun": "海津郡",
+     "name": "東江村",
+     "whole_or_part": "part",
+     "part_detail": "Only 松山中島村 (1889 発足; 1897 -> 東江村 <- 秋江・草場・大和田・松山中島・駒ヶ江・長瀬・日原・長久保・立野). 松山中島村 was swept into the Kiso/Nagara river channel by 1892-95 (木曽三川分流工事); the 1920 polygon of 東江村 may contain it only as river bed - cannot be checked from names alone."
+    }
+   ],
+   "chain": "松山中島村 (Aichi 海西郡, 109村 list) -> 1887-07-12 Gifu 海西郡 -> 1889-07-01 松山中島村 -> 1897-04-01 海津郡 -> 東江村 -> 1920 N03 東江村.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B5%B7%E8%A5%BF%E9%83%A1%20(%E6%84%9B%E7%9F%A5%E7%9C%8C)&oldid=102565470",
+     "quote": "明治20年（1887年）7月12日 - 松山中島村の所属郡が岐阜県海西郡に変更。（94村）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%BE%E5%B1%B1%E4%B8%AD%E5%B3%B6%E6%9D%91%20(%E5%B2%90%E9%98%9C%E7%9C%8C)&oldid=100738564",
+     "quote": "1887年（明治20年）7月12日 - 愛知県海西郡から岐阜県海西郡に編入される。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B5%B7%E8%A5%BF%E9%83%A1%20(%E5%B2%90%E9%98%9C%E7%9C%8C)&oldid=110730484",
+     "quote": "明治20年（1887年）7月12日 - 愛知県海西郡松山中島村の所属郡が本郡に変更。（25村）"
+    }
+   ],
+   "notes": "Sweep direction \"unclear\" resolved: Aichi -> Gifu. The Gifu 海西郡 article parsed as \"out 25村\" is the same event seen from the Gifu side (mirror)."
+  },
+  {
+   "key": "1887 中島郡 (愛知県)",
+   "date": "1887-07-12",
+   "date_basis": "INFERRED. Sources give only \"明治20年\" (Gifu 中島郡/馬飼村/拾町野村) and \"明治20年7月\" (祐賀村: 東加賀野井村); the day is not attested. 7月12日 is the attested day of the paired 松山中島村 exchange of the same year/month and is used as best estimate. For the map any day in July 1887 is equivalent: it only matters at 1887-07.",
+   "from_pref": "岐阜県",
+   "to_pref": "愛知県",
+   "from_gun": "中島郡 (美濃)",
+   "to_gun": "中島郡 (尾張)",
+   "crosses_prefecture_at_time": true,
+   "matters_for_intervals": "Every interval before 1887-07 where Gifu 中島郡 (岐阜県 1872-01-02..1876-08-21, 1876-08-21..1887-07) and Aichi 中島郡 (名古屋県/愛知県) differ: the 4 villages are GIFU side until 1887-07 and AICHI afterwards. Before 1872-01-02 they were 尾張藩(名古屋藩)領 -> 名古屋県 (1871-08-29..1872-01-02), outside the withheld intervals.",
+   "villages_pre1889": [
+    "三拾町村",
+    "馬飼村",
+    "拾町野村",
+    "東加賀野井村"
+   ],
+   "n03_1920_municipalities": [
+    {
+     "pref1920": "愛知県",
+     "gun": "中島郡",
+     "name": "祖父江町",
+     "whole_or_part": "part",
+     "part_detail": "三拾町村 only (1889 祖父江村 <- 下祖父江村, 三拾町村; 1906 祖父江町 <- 祖父江町, 丸甲村, 領内村, 牧川村, 山崎村). All the rest is always Aichi."
+    },
+    {
+     "pref1920": "愛知県",
+     "gun": "中島郡",
+     "name": "長岡村",
+     "whole_or_part": "part",
+     "part_detail": "馬飼村 and 拾町野村 (1906 長岡村 <- 馬飼村, 拾町野村, 西鵜之本村, 四貫村, 神明津村). 西鵜之本・四貫・神明津 were always Aichi (尾張 中島郡/今尾藩)."
+    },
+    {
+     "pref1920": "愛知県",
+     "gun": "中島郡",
+     "name": "朝日村",
+     "whole_or_part": "part",
+     "part_detail": "東加賀野井村 only (1889 祐賀村 <- 祐久村, 東加賀野井村; 1906 朝日村 <- 祐賀村, 上祖父江村, 明地村, 玉野村, 大徳村[西萩原・蓮池])."
+    }
+   ],
+   "chain": "美濃 中島郡 villages (Gifu) -> 1887 Aichi 中島郡 -> 1889-10-01: 三拾町村 -> 祖父江村; 馬飼村, 拾町野村 -> separate villages in a 組合村; 東加賀野井村 -> 祐賀村 -> 1896 祖父江町 / 1906-05-10: 祖父江町, 長岡村, 朝日村 -> 1920 N03.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%AD%E5%B3%B6%E9%83%A1%20(%E6%84%9B%E7%9F%A5%E7%9C%8C)&oldid=98753063",
+     "quote": "美濃国中島郡三拾町村・馬飼村・拾町野村・東加賀野井村の所属郡が本郡に変更。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%AD%E5%B3%B6%E9%83%A1%20(%E5%B2%90%E9%98%9C%E7%9C%8C)&oldid=108836964",
+     "quote": "明治20年（1887年） - 三拾町村・馬飼村・拾町野村・東加賀野井村の所属郡が愛知県中島郡に変更。（28村）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%A5%90%E8%B3%80%E6%9D%91&oldid=98763523",
+     "quote": "1887年（明治20年）7月 - 岐阜県中島郡東加賀野井村が、愛知県中島郡に編入される。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%8B%BE%E7%94%BA%E9%87%8E%E6%9D%91&oldid=104395505",
+     "quote": "1887年（明治20年） - 岐阜県中島郡から愛知県中島郡に編入される。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%AD%E5%B3%B6%E9%83%A1%20(%E6%84%9B%E7%9F%A5%E7%9C%8C)&oldid=98753063",
+     "quote": "'''[[長岡村 (愛知県)|長岡村]]''' ← 馬飼村、拾町野村、西鵜之本村、四貫村、神明津村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%AD%E5%B3%B6%E9%83%A1%20(%E6%84%9B%E7%9F%A5%E7%9C%8C)&oldid=98753063",
+     "quote": "'''[[朝日村 (愛知県)|朝日村]]''' ← 祐賀村、上祖父江村、明地村、玉野村、大徳村［西萩原・蓮池］"
+    }
+   ],
+   "notes": "Sweep direction \"out\" with 中島郡->中島郡 is correct only as Gifu->Aichi; Aichi article = IN. Same-named 郡 on both sides of the Kiso; the 1889 町村制 in Aichi was 10-01 vs Gifu 07-01. The 三拾町村 appears as 三拾町野村 in 旧高旧領. Note also 1889-07-01: 大須村 字寺島 (Gifu 中島郡) -> Gifu 海西郡 幡長村 (both Gifu; irrelevant to prefecture intervals)."
+  },
+  {
+   "key": "1889 安八郡",
+   "date": "1889-07-01",
+   "date_basis": "Gifu 町村制 施行日 明治22年7月1日 (solar); 海西郡 (岐阜県) and 安八郡 articles list the 郡 change under the same bullet.",
+   "from_pref": "岐阜県",
+   "to_pref": "岐阜県",
+   "from_gun": "安八郡",
+   "to_gun": "海西郡 (美濃)",
+   "crosses_prefecture_at_time": false,
+   "matters_for_intervals": "none. Both 安八郡 and Gifu 海西郡 are 岐阜県 on every date from 1872-01-02 (大垣県/名古屋県/今尾県 only before that, outside the withheld intervals). The withholding is an artefact: the sweep matched the Gifu article's \"海西郡\" to the Aichi 海西郡 (same name) and therefore put 愛知県/海部郡 into the blocks.",
+   "villages_pre1889": [
+    "勝賀村",
+    "蛇池村"
+   ],
+   "n03_1920_municipalities": [
+    {
+     "pref1920": "岐阜県",
+     "gun": "海津郡",
+     "name": "海西村",
+     "whole_or_part": "part",
+     "part_detail": "勝賀村 and 蛇池村 (1897 海西村 <- 野寺・勝賀・幡長・岡・者結・蛇池). In 安八郡 -> 海西郡 both in Gifu, so no prefecture interval is affected."
+    }
+   ],
+   "chain": "勝村+須賀村 -> 勝賀村 (1875, 安八郡); 脇田村 (安八郡) + 野市場村 (海西郡) -> 蛇池村 (1875-01, 安八郡); 1889-07-01 町村制 勝賀村・蛇池村 -> 海西郡; 1897-04-01 海津郡 海西村; 1920 N03 海西村.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%AE%89%E5%85%AB%E9%83%A1&oldid=108818498",
+     "quote": "勝賀村・蛇池村の所属郡が海西郡に変更。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B5%B7%E8%A5%BF%E9%83%A1%20(%E5%B2%90%E9%98%9C%E7%9C%8C)&oldid=110730484",
+     "quote": "安八郡勝賀村・蛇池村の所属郡が本郡に変更。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%AE%89%E5%85%AB%E9%83%A1&oldid=108818498",
+     "quote": "蛇池村 ← 脇田村、海西郡野市場村"
+    }
+   ],
+   "notes": "Not a prefecture transfer. The same article rows \"1897 安八郡 -> 海津郡\" (多芸島村 etc.) are outside 1871-1890 and also within Gifu. \"1889 海西郡 (岐阜県) 古中島村 -> 下石津郡\" is also Gifu->Gifu (1920 大江村)."
+  },
+  {
+   "key": "1887 海西郡 (岐阜県)",
+   "date": "1887-07-12",
+   "date_basis": "Four independent Wikipedia articles (海西郡 愛知/岐阜, 松山中島村, 海津郡 table) give 明治20年7月12日 (solar). No primary 告示 found; the day is repeated consistently.",
+   "from_pref": "愛知県",
+   "to_pref": "岐阜県",
+   "from_gun": "海西郡 (尾張)",
+   "to_gun": "海西郡 (美濃)",
+   "crosses_prefecture_at_time": true,
+   "matters_for_intervals": "Every interval before 1887-07-12 in which Aichi 海西郡 was in 名古屋県 (1872-01-02..1872-05-08) / 愛知県 (1872-05-08..1872-12-27, 1872-12-27..1887-07-12): 松山中島村 sits on the AICHI side until 1887-07-12, then on 岐阜県 (1876-08-21..1891 interval). It does NOT touch the Gifu 海西郡 intervals before 1887-07-12 (those villages are Gifu throughout) - i.e. the Gifu-side 海津郡 1920 町村 other than 松山中島 were never Aichi.",
+   "villages_pre1889": [
+    "松山中島村"
+   ],
+   "n03_1920_municipalities": [
+    {
+     "pref1920": "岐阜県",
+     "gun": "海津郡",
+     "name": "東江村",
+     "whole_or_part": "part",
+     "part_detail": "Only 松山中島村 (1889 発足; 1897 -> 東江村 <- 秋江・草場・大和田・松山中島・駒ヶ江・長瀬・日原・長久保・立野). 松山中島村 was swept into the Kiso/Nagara river channel by 1892-95 (木曽三川分流工事); the 1920 polygon of 東江村 may contain it only as river bed - cannot be checked from names alone."
+    }
+   ],
+   "chain": "松山中島村 (Aichi 海西郡, 109村 list) -> 1887-07-12 Gifu 海西郡 -> 1889-07-01 松山中島村 -> 1897-04-01 海津郡 -> 東江村 -> 1920 N03 東江村.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B5%B7%E8%A5%BF%E9%83%A1%20(%E6%84%9B%E7%9F%A5%E7%9C%8C)&oldid=102565470",
+     "quote": "明治20年（1887年）7月12日 - 松山中島村の所属郡が岐阜県海西郡に変更。（94村）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%BE%E5%B1%B1%E4%B8%AD%E5%B3%B6%E6%9D%91%20(%E5%B2%90%E9%98%9C%E7%9C%8C)&oldid=100738564",
+     "quote": "1887年（明治20年）7月12日 - 愛知県海西郡から岐阜県海西郡に編入される。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B5%B7%E8%A5%BF%E9%83%A1%20(%E5%B2%90%E9%98%9C%E7%9C%8C)&oldid=110730484",
+     "quote": "明治20年（1887年）7月12日 - 愛知県海西郡松山中島村の所属郡が本郡に変更。（25村）"
+    }
+   ],
+   "notes": "Mirror of \"1887 海西郡 (愛知県)\": the Gifu-side article describes the same 1887-07-12 transfer of 松山中島村 (parsed by the sweep as out of 25 villages). See T2. Direction: Aichi -> Gifu, so the Gifu 海津郡 町村 gain, they do not lose."
+  },
+  {
+   "key": "1887 中島郡 (岐阜県)",
+   "date": "1887-07-12",
+   "date_basis": "INFERRED. Sources give only \"明治20年\" (Gifu 中島郡/馬飼村/拾町野村) and \"明治20年7月\" (祐賀村: 東加賀野井村); the day is not attested. 7月12日 is the attested day of the paired 松山中島村 exchange of the same year/month and is used as best estimate. For the map any day in July 1887 is equivalent: it only matters at 1887-07.",
+   "from_pref": "岐阜県",
+   "to_pref": "愛知県",
+   "from_gun": "中島郡 (美濃)",
+   "to_gun": "中島郡 (尾張)",
+   "crosses_prefecture_at_time": true,
+   "matters_for_intervals": "Every interval before 1887-07 where Gifu 中島郡 (岐阜県 1872-01-02..1876-08-21, 1876-08-21..1887-07) and Aichi 中島郡 (名古屋県/愛知県) differ: the 4 villages are GIFU side until 1887-07 and AICHI afterwards. Before 1872-01-02 they were 尾張藩(名古屋藩)領 -> 名古屋県 (1871-08-29..1872-01-02), outside the withheld intervals.",
+   "villages_pre1889": [
+    "三拾町村",
+    "馬飼村",
+    "拾町野村",
+    "東加賀野井村"
+   ],
+   "n03_1920_municipalities": [
+    {
+     "pref1920": "愛知県",
+     "gun": "中島郡",
+     "name": "祖父江町",
+     "whole_or_part": "part",
+     "part_detail": "三拾町村 only (1889 祖父江村 <- 下祖父江村, 三拾町村; 1906 祖父江町 <- 祖父江町, 丸甲村, 領内村, 牧川村, 山崎村). All the rest is always Aichi."
+    },
+    {
+     "pref1920": "愛知県",
+     "gun": "中島郡",
+     "name": "長岡村",
+     "whole_or_part": "part",
+     "part_detail": "馬飼村 and 拾町野村 (1906 長岡村 <- 馬飼村, 拾町野村, 西鵜之本村, 四貫村, 神明津村). 西鵜之本・四貫・神明津 were always Aichi (尾張 中島郡/今尾藩)."
+    },
+    {
+     "pref1920": "愛知県",
+     "gun": "中島郡",
+     "name": "朝日村",
+     "whole_or_part": "part",
+     "part_detail": "東加賀野井村 only (1889 祐賀村 <- 祐久村, 東加賀野井村; 1906 朝日村 <- 祐賀村, 上祖父江村, 明地村, 玉野村, 大徳村[西萩原・蓮池])."
+    }
+   ],
+   "chain": "美濃 中島郡 villages (Gifu) -> 1887 Aichi 中島郡 -> 1889-10-01: 三拾町村 -> 祖父江村; 馬飼村, 拾町野村 -> separate villages in a 組合村; 東加賀野井村 -> 祐賀村 -> 1896 祖父江町 / 1906-05-10: 祖父江町, 長岡村, 朝日村 -> 1920 N03.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%AD%E5%B3%B6%E9%83%A1%20(%E6%84%9B%E7%9F%A5%E7%9C%8C)&oldid=98753063",
+     "quote": "美濃国中島郡三拾町村・馬飼村・拾町野村・東加賀野井村の所属郡が本郡に変更。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%AD%E5%B3%B6%E9%83%A1%20(%E5%B2%90%E9%98%9C%E7%9C%8C)&oldid=108836964",
+     "quote": "明治20年（1887年） - 三拾町村・馬飼村・拾町野村・東加賀野井村の所属郡が愛知県中島郡に変更。（28村）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%A5%90%E8%B3%80%E6%9D%91&oldid=98763523",
+     "quote": "1887年（明治20年）7月 - 岐阜県中島郡東加賀野井村が、愛知県中島郡に編入される。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%8B%BE%E7%94%BA%E9%87%8E%E6%9D%91&oldid=104395505",
+     "quote": "1887年（明治20年） - 岐阜県中島郡から愛知県中島郡に編入される。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%AD%E5%B3%B6%E9%83%A1%20(%E6%84%9B%E7%9F%A5%E7%9C%8C)&oldid=98753063",
+     "quote": "'''[[長岡村 (愛知県)|長岡村]]''' ← 馬飼村、拾町野村、西鵜之本村、四貫村、神明津村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%AD%E5%B3%B6%E9%83%A1%20(%E6%84%9B%E7%9F%A5%E7%9C%8C)&oldid=98753063",
+     "quote": "'''[[朝日村 (愛知県)|朝日村]]''' ← 祐賀村、上祖父江村、明地村、玉野村、大徳村［西萩原・蓮池］"
+    }
+   ],
+   "notes": "Mirror of \"1887 中島郡 (愛知県)\": Gifu-side article of the same transfer (parsed \"unclear\"); direction Gifu -> Aichi. Gifu 羽島郡 1920 町村 lose nothing at 町村 level (the four villages are Aichi 町村 in 1920 N03). See T3."
+  },
+  {
+   "key": "1882 神崎郡 (滋賀県)",
+   "date": "1882 (day/month not stated in any source found)",
+   "date_basis": "神崎郡 article: \"明治15年（1882年）\"; 蒲生郡: \"明治15年（1882年）\". The day is irrelevant: both 郡 are in 滋賀県 after 1872-10-30.",
+   "from_pref": "滋賀県",
+   "to_pref": "滋賀県",
+   "from_gun": "蒲生郡",
+   "to_gun": "神崎郡",
+   "crosses_prefecture_at_time": false,
+   "matters_for_intervals": "1872-01-02..1872-10-30 only: 蒲生郡 (incl. 須田村, 寺社領) = 大津県 (1872-01-02..02-27) then 滋賀県 (02-27..10-30); 神崎郡 = 長浜県 (1872-01-02..04-04), 犬上県 (04-04..10-30). So the 須田村 tract (=> 南須田) is 大津県/滋賀県 while the rest of 能登川村 (能登川, 北須田) is 長浜県/犬上県 in those intervals. After 1872-10-30 everything is 滋賀県.",
+   "villages_pre1889": [
+    "須田村 (蒲生郡; 山下新田 merged in; renamed 南須田村 on moving)"
+   ],
+   "n03_1920_municipalities": [
+    {
+     "pref1920": "滋賀県",
+     "gun": "神崎郡",
+     "name": "能登川村",
+     "whole_or_part": "part",
+     "part_detail": "南須田 (= old 蒲生郡須田村) only. 能登川村 (1894-06-20 from 八条村) = 能登川 + 北須田 (both branched from 神崎郡 伊庭村) + 南須田. In 1872-01-02..1872-10-30 the 南須田 part belongs to 大津県/滋賀県, the other two to 長浜県/犬上県."
+    }
+   ],
+   "chain": "蒲生郡須田村 (寺社領; 山下新田 merged) -> 1882 神崎郡 南須田村 -> 1889-04-01 八条村 -> 1894-06-20 能登川村 (能登川・北須田・南須田) -> 1920 N03 能登川村.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%A5%9E%E5%B4%8E%E9%83%A1%20(%E6%BB%8B%E8%B3%80%E7%9C%8C)&oldid=109684518",
+     "quote": "明治15年（1882年） - 蒲生郡須田村の所属郡が本郡に変更。同時に改称して南須田村となる。（85村）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E8%92%B2%E7%94%9F%E9%83%A1&oldid=109678329",
+     "quote": "明治15年（1882年） - 須田村が所属郡を変更・改称して"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%85%AB%E6%9D%A1%E6%9D%91%20(%E6%BB%8B%E8%B3%80%E7%9C%8C)&oldid=100955716",
+     "quote": "1894年（明治27年）6月20日 - 分割し、大字能登川・北須田・南須田に"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%A4%A7%E6%B4%A5%E7%9C%8C&oldid=111254720",
+     "quote": "第1次府県統合により近江国南部の5郡の区域をもって、改めて'''大津県'''が発足。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%BB%8B%E8%B3%80%E7%9C%8C&oldid=111208969",
+     "quote": "（高島郡・神崎郡以北）に統合された"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%8A%AC%E4%B8%8A%E7%9C%8C&oldid=107421225",
+     "quote": "** [[神崎郡 (滋賀県)|神崎郡]]"
+    }
+   ],
+   "notes": "CORRECTION of the source: 神崎郡 (滋賀県) says 神崎郡 passed 長浜県 -> 大津県 on 1872-01-09 (citing 太政官日誌 第105号). That is the 高島郡 sentence of the 高島郡/犬上県/大津県 articles with the direction reversed: those state 高島郡 moved 大津県 -> 長浜県 on 1872-01-09 (same citation), 大津県 lists only 南部5郡, 滋賀県 says 長浜県 = 高島郡・神崎郡以北, 犬上県 lists 神崎郡, 愛知郡 says whole 長浜県. So 神崎郡 stays 長浜県 -> 犬上県 -> 滋賀県 (1872-10-30), as the assembly already has. Sweep rows \"1879 愛知川村 神崎->愛知\" and \"1897 葉枝見村\" are within 滋賀県 (irrelevant); \"称して南須田村, 85村\" are parse artefacts. Whether 須田村 (寺社領) was 大津県 in 1872: 蒲生郡 article says 寺社領 -> 大津県 (1871-10) and 全域 大津県 on 1872-01-02."
+  },
+  {
+   "key": "1879 安濃郡 (三重県)",
+   "date": "1872 (明治5年; month/day not stated)",
+   "date_basis": "Both 安濃郡 and 一志郡 articles place the change under 明治5年. The sweep dated it 1879 by mistake (year-context); the 安濃郡 article bullet is a sub-bullet of 明治5年 following the 3月17日 (1872-04-24) renaming, but sub-bullet order does not fix the date.",
+   "from_pref": "度会県 (formally: 一志郡 = 度会県 from 1872-01-02)",
+   "to_pref": "安濃津県 -> 三重県",
+   "from_gun": "一志郡",
+   "to_gun": "安濃郡",
+   "crosses_prefecture_at_time": true,
+   "matters_for_intervals": "1872-01-02..1876-04-18: 一志郡 = 度会県 but 安濃郡 = 安濃津県 (to 1872-04-24) then 三重県 (to 1876-04-18). Conclusion (see notes): treat 垂水・藤方・伊予町・八幡町 as 安濃津県/三重県 for ALL of 1872-01-02..1876-04-18 (and after), never 度会県. So the 度会県 interval takes NO part of 藤水村 or 津市; the 1920 一志郡 町村 lose nothing.",
+   "villages_pre1889": [
+    "垂水村",
+    "藤方村",
+    "伊予町",
+    "八幡町"
+   ],
+   "n03_1920_municipalities": [
+    {
+     "pref1920": "三重県",
+     "gun": "安濃郡",
+     "name": "藤水村",
+     "whole_or_part": "whole",
+     "part_detail": "藤水村 = 垂水村 + 藤方村 (大部分): every constituent was in the transferred set."
+    },
+    {
+     "pref1920": "三重県",
+     "gun": "",
+     "name": "津市",
+     "whole_or_part": "part",
+     "part_detail": "伊予町, 八幡町, and 藤方村の一部 (went to 津市 at the 1889 市制) were the 一志郡-side pieces; the rest of 津市 (津城下 町 etc.; 建部村・塔世村 added 1909) was always 安濃郡/三重県."
+    }
+   ],
+   "chain": "垂水村・藤方村 (津藩領; 旧高旧領 lists them as 安濃郡) + 伊予町・八幡町 -> 1872 安濃郡 -> 1889-04-01: 垂水村+藤方村(大部分) -> 藤水村; 伊予町・八幡町・藤方村一部 -> 津市 -> 1920 N03.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%AE%89%E6%BF%83%E9%83%A1%20(%E4%B8%89%E9%87%8D%E7%9C%8C)&oldid=108676806",
+     "quote": "一志郡との境界が相川に定まり、同郡垂水村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%AE%89%E6%BF%83%E9%83%A1%20(%E4%B8%89%E9%87%8D%E7%9C%8C)&oldid=108676806",
+     "quote": "「旧高旧領取調帳」では本郡として記載。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%80%E5%BF%97%E9%83%A1&oldid=104954585",
+     "quote": "明治5年（1872年） - 安濃郡との境界が相川に定まり、垂水村・藤方村の所属郡が同郡に変更。（1町132村1浦）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%80%E5%BF%97%E9%83%A1&oldid=104954585",
+     "quote": "第1次府県統合により、全域が'''[[度会県]]'''の管轄となる。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%BA%A6%E4%BC%9A%E7%9C%8C&oldid=111251092",
+     "quote": "3月から4月にかけて、上記区域内の[[久居県]]・[[津県]]・[[鳥羽県]]・[[和歌山県]]・[[新宮県]]・[[吹上県]]の管轄地域が引き渡される。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%89%E9%87%8D%E7%9C%8C&oldid=111252725",
+     "quote": "（桑名県・亀山県・長島県・神戸県・菰野県・津県）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%89%E9%87%8D%E7%9C%8C&oldid=111252725",
+     "quote": "（久居県・鳥羽県・度会県）に統合される"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B4%A5%E5%B8%82&oldid=111206784",
+     "quote": "明治5年<br />所属変更<br />安濃郡垂水村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E8%97%A4%E6%B0%B4%E6%9D%91&oldid=84441411",
+     "quote": "安濃郡垂水村および藤方村の大部分の区域をもって"
+    }
+   ],
+   "notes": "The sweep rows \"1879 安濃郡\" and \"1872 一志郡\" are ONE event (明治5年, both articles). REASONING: (1) 津藩 = 津県 was merged into 安濃津県, 久居県 into 度会県 (三重県 article); 度会県 took over the 津県/久居県 parts of its counties only in 1872-03/04 (度会県 article). (2) 旧高旧領取調帳 (compiled before this) already lists 垂水・藤方 under 安濃郡, i.e. de facto Tsu-city territory. (3) The 相川 boundary was fixed in the same year, evidently when the counties were handed to 度会県 - so these four never effectively passed to 度会県. Residual doubt: for a few weeks of 1872 (01-02 .. date of 相川 decision) they were nominally 一志郡 = 度会県 on paper; we treat the de facto 安濃津県. Also (outside scope) the other 津藩領 villages of 一志郡 were likewise de facto 安濃津県 until the spring 1872 handover although nominally 度会県."
+  },
+  {
+   "key": "1872 一志郡",
+   "date": "1872 (明治5年; month/day not stated)",
+   "date_basis": "Both 安濃郡 and 一志郡 articles place the change under 明治5年. The sweep dated it 1879 by mistake (year-context); the 安濃郡 article bullet is a sub-bullet of 明治5年 following the 3月17日 (1872-04-24) renaming, but sub-bullet order does not fix the date.",
+   "from_pref": "度会県 (formally: 一志郡 = 度会県 from 1872-01-02)",
+   "to_pref": "安濃津県 -> 三重県",
+   "from_gun": "一志郡",
+   "to_gun": "安濃郡",
+   "crosses_prefecture_at_time": true,
+   "matters_for_intervals": "1872-01-02..1876-04-18: 一志郡 = 度会県 but 安濃郡 = 安濃津県 (to 1872-04-24) then 三重県 (to 1876-04-18). Conclusion (see notes): treat 垂水・藤方・伊予町・八幡町 as 安濃津県/三重県 for ALL of 1872-01-02..1876-04-18 (and after), never 度会県. So the 度会県 interval takes NO part of 藤水村 or 津市; the 1920 一志郡 町村 lose nothing.",
+   "villages_pre1889": [
+    "垂水村",
+    "藤方村",
+    "伊予町",
+    "八幡町"
+   ],
+   "n03_1920_municipalities": [
+    {
+     "pref1920": "三重県",
+     "gun": "安濃郡",
+     "name": "藤水村",
+     "whole_or_part": "whole",
+     "part_detail": "藤水村 = 垂水村 + 藤方村 (大部分): every constituent was in the transferred set."
+    },
+    {
+     "pref1920": "三重県",
+     "gun": "",
+     "name": "津市",
+     "whole_or_part": "part",
+     "part_detail": "伊予町, 八幡町, and 藤方村の一部 (went to 津市 at the 1889 市制) were the 一志郡-side pieces; the rest of 津市 (津城下 町 etc.; 建部村・塔世村 added 1909) was always 安濃郡/三重県."
+    }
+   ],
+   "chain": "垂水村・藤方村 (津藩領; 旧高旧領 lists them as 安濃郡) + 伊予町・八幡町 -> 1872 安濃郡 -> 1889-04-01: 垂水村+藤方村(大部分) -> 藤水村; 伊予町・八幡町・藤方村一部 -> 津市 -> 1920 N03.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%AE%89%E6%BF%83%E9%83%A1%20(%E4%B8%89%E9%87%8D%E7%9C%8C)&oldid=108676806",
+     "quote": "一志郡との境界が相川に定まり、同郡垂水村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%AE%89%E6%BF%83%E9%83%A1%20(%E4%B8%89%E9%87%8D%E7%9C%8C)&oldid=108676806",
+     "quote": "「旧高旧領取調帳」では本郡として記載。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%80%E5%BF%97%E9%83%A1&oldid=104954585",
+     "quote": "明治5年（1872年） - 安濃郡との境界が相川に定まり、垂水村・藤方村の所属郡が同郡に変更。（1町132村1浦）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%80%E5%BF%97%E9%83%A1&oldid=104954585",
+     "quote": "第1次府県統合により、全域が'''[[度会県]]'''の管轄となる。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E5%BA%A6%E4%BC%9A%E7%9C%8C&oldid=111251092",
+     "quote": "3月から4月にかけて、上記区域内の[[久居県]]・[[津県]]・[[鳥羽県]]・[[和歌山県]]・[[新宮県]]・[[吹上県]]の管轄地域が引き渡される。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%89%E9%87%8D%E7%9C%8C&oldid=111252725",
+     "quote": "（桑名県・亀山県・長島県・神戸県・菰野県・津県）"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%89%E9%87%8D%E7%9C%8C&oldid=111252725",
+     "quote": "（久居県・鳥羽県・度会県）に統合される"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B4%A5%E5%B8%82&oldid=111206784",
+     "quote": "明治5年<br />所属変更<br />安濃郡垂水村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E8%97%A4%E6%B0%B4%E6%9D%91&oldid=84441411",
+     "quote": "安濃郡垂水村および藤方村の大部分の区域をもって"
+    }
+   ],
+   "notes": "Same event as \"1879 安濃郡 (三重県)\" seen from the 一志郡 article (parsed \"out of 132村\", direction 一志郡->同郡 is parse noise: it is 一志郡 -> 安濃郡). See T8. The 津市 block appears in the blocks only because 伊予町・八幡町・藤方一部 ended up in 津市."
+  },
+  {
+   "key": "1883 桑名郡 (三重県) -> 下石津郡 (EXTRA, not in the sweep)",
+   "date": "1883-11-01",
+   "date_basis": "三重県令告示 dated 明治16年11月1日 (\"今般 伊勢国・美濃国国界更生ニ付、右村々美濃国へ編入相成候条、此旨告示候事\"). The 金廻村 article says 1883-12-27 (岐阜県に編入); the two dates are not reconciled (notice vs. effective?).",
+   "from_pref": "三重県",
+   "to_pref": "岐阜県",
+   "from_gun": "桑名郡",
+   "to_gun": "下石津郡",
+   "crosses_prefecture_at_time": true,
+   "matters_for_intervals": "三重県 (1876-04-18..1881-02-07 and its successor) before 1883-11-01 vs 岐阜県 (1876-08-21..1891): 油島新田・金廻村・江内村 are MIE side until the transfer, GIFU afterwards. The sweep did not list it; it affects 岐阜県/海津郡 and 三重県/桑名郡 blocks.",
+   "villages_pre1889": [
+    "江内村",
+    "油島新田",
+    "金廻村"
+   ],
+   "n03_1920_municipalities": [
+    {
+     "pref1920": "岐阜県",
+     "gun": "海津郡",
+     "name": "大江村",
+     "whole_or_part": "part",
+     "part_detail": "金廻村, 油島村 (<- 油島新田+江内村, 1889). 大江村 (1897) <- 外浜村, 石亀村, 森下村, 古中島村, 福江村, 金廻村, 油島村, 万寿新田[大江川より東]; the others were always Gifu (古中島村 moved 海西郡->下石津郡 within Gifu in 1889)."
+    }
+   ],
+   "chain": "桑名郡 江内村・油島新田・金廻村 -> 1883 下石津郡 -> 1889-07-01 油島村 (<- 油島新田・江内村) and 金廻村 -> 1897-04-01 海津郡 大江村 -> 1920 N03.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%A1%91%E5%90%8D%E9%83%A1&oldid=105801262",
+     "quote": "桑名郡　油島新田　同・金廻村　同・江内村"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%A1%91%E5%90%8D%E9%83%A1&oldid=105801262",
+     "quote": "明治一六年十一月一日　三重県令　岩村定高"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%8B%E7%9F%B3%E6%B4%A5%E9%83%A1&oldid=94554776",
+     "quote": "油島新田・江内村が合併して油島村が発足。"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E9%87%91%E5%BB%BB%E6%9D%91&oldid=100738505",
+     "quote": "1883年（明治16年）12月27日 - 岐阜県に編入され、下石津郡金廻村となる。"
+    }
+   ],
+   "notes": "Added because the 桑名郡 article is the source of the 1880 notice and also states this Mie->Gifu change; if this is already handled elsewhere, ignore."
+  }
+ ],
+ "splits": [],
+ "dates": [
+  {
+   "key": "1880 海西郡 (愛知県)",
+   "date": "1880-05-07",
+   "act": "三重県令（岩村定高）布達 dated 明治13年5月10日; 引渡 on 5月7日",
+   "reasoning": "Solar dates, no conversion. The notice text says \"本月七日該県へ引渡\", so hand-over 1880-05-07; 05-10 is the notice date used by Wikipedia.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%A1%91%E5%90%8D%E9%83%A1&oldid=105801262",
+     "quote": "本月七日該県へ引渡候条、此旨布連候事"
+    },
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%A1%91%E5%90%8D%E9%83%A1&oldid=105801262",
+     "quote": "明治一三年五月十日　三重県令　岩村定高"
+    }
+   ]
+  },
+  {
+   "key": "1887 海西郡 (愛知県)",
+   "date": "1887-07-12",
+   "act": "not found (官報/内務省告示 presumably)",
+   "reasoning": "Solar. Stated identically in 4 articles.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%9D%BE%E5%B1%B1%E4%B8%AD%E5%B3%B6%E6%9D%91%20(%E5%B2%90%E9%98%9C%E7%9C%8C)&oldid=100738564",
+     "quote": "1887年（明治20年）7月12日 - 愛知県海西郡から岐阜県海西郡に編入される。"
+    }
+   ]
+  },
+  {
+   "key": "1887 中島郡 (愛知県)",
+   "date": "1887-07-12 (inferred)",
+   "act": "not found",
+   "reasoning": "Only month (7月) attested for 東加賀野井村; same-month paired exchange 07-12 used as estimate.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%A5%90%E8%B3%80%E6%9D%91&oldid=98763523",
+     "quote": "1887年（明治20年）7月 - 岐阜県中島郡東加賀野井村が、愛知県中島郡に編入される。"
+    }
+   ]
+  },
+  {
+   "key": "1889 安八郡",
+   "date": "1889-07-01",
+   "act": "Gifu 町村制 施行",
+   "reasoning": "Same-day as 町村制 in Gifu; both 郡 in 岐阜県.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%B5%B7%E8%A5%BF%E9%83%A1%20(%E5%B2%90%E9%98%9C%E7%9C%8C)&oldid=110730484",
+     "quote": "明治22年（1889年）7月1日 - 町村制の施行により"
+    }
+   ]
+  },
+  {
+   "key": "1882 神崎郡 (滋賀県)",
+   "date": "1882",
+   "act": "not found",
+   "reasoning": "Only the year is stated; irrelevant to intervals because both 郡 are 滋賀県 after 1872-10-30.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E7%A5%9E%E5%B4%8E%E9%83%A1%20(%E6%BB%8B%E8%B3%80%E7%9C%8C)&oldid=109684518",
+     "quote": "明治15年（1882年） - 蒲生郡須田村の所属郡が本郡に変更。同時に改称して南須田村となる。（85村）"
+    }
+   ]
+  },
+  {
+   "key": "1879 安濃郡 (三重県) / 1872 一志郡",
+   "date": "1872 (明治5年)",
+   "act": "not found",
+   "reasoning": "Only 明治5年 is stated (any day of 1872 solar after 02-09, since 明治5年 starts 1872-02-09); NOT 1879.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E4%B8%80%E5%BF%97%E9%83%A1&oldid=104954585",
+     "quote": "明治5年（1872年） - 安濃郡との境界が相川に定まり、垂水村・藤方村の所属郡が同郡に変更。"
+    }
+   ]
+  },
+  {
+   "key": "1883 桑名郡 -> 下石津郡",
+   "date": "1883-11-01",
+   "act": "三重県令告示 明治16年11月1日",
+   "reasoning": "Notice date; 金廻村 article says 12-27. Unreconciled.",
+   "sources": [
+    {
+     "url": "https://ja.wikipedia.org/w/index.php?title=%E6%A1%91%E5%90%8D%E9%83%A1&oldid=105801262",
+     "quote": "明治一六年十一月一日　三重県令　岩村定高"
+    }
+   ]
+  }
+ ],
+ "stillUnresolved": [
+  {
+   "what": "Exact day of the 1887 中島郡 (Gifu->Aichi) transfer (4 villages)",
+   "searched": [
+    "海西郡/中島郡 (愛知・岐阜)",
+    "祐賀村",
+    "拾町野村",
+    "馬飼村",
+    "祖父江町",
+    "himuka.blue.coocan.jp nakashima",
+    "pref.gifu.lg.jp 251589.pdf (unreadable)",
+    "WebSearch 官報/告示"
+   ],
+   "why": "No source states a day; only 1887 / 1887-07. 07-12 inferred from the paired 松山中島村 exchange. Effect: only the 1887-07 map frame."
+  },
+  {
+   "what": "Date of the 相川 boundary decision (垂水・藤方・伊予町・八幡町) and whether these four were ever effectively 度会県 in early 1872",
+   "searched": [
+    "一志郡",
+    "安濃郡 (三重県)",
+    "度会県",
+    "三重県",
+    "津市",
+    "藤水村",
+    "bunka.pref.mie.lg.jp chronology (no detail)"
+   ],
+   "why": "Sources give only 明治5年. Resolved de facto as 安濃津県/三重県; the nominal 度会県 window (<=~3 months of 1872) is not provable either way without the 三重県/度会県 引継 records."
+  },
+  {
+   "what": "Effective date of the 1883 桑名郡->下石津郡 transfer (11-01 notice vs 12-27)",
+   "searched": [
+    "桑名郡",
+    "金廻村",
+    "下石津郡"
+   ],
+   "why": "Two articles differ; no primary text for the Gifu side."
+  },
+  {
+   "what": "Whether the 1920 N03 polygon 東江村 contains the 松山中島村 tract (it was river bed by 1895)",
+   "searched": [
+    "松山中島村 (岐阜県)",
+    "海津郡"
+   ],
+   "why": "Needs the N03 geometry; names alone cannot show it."
+  }
+ ],
+ "corrections": [
+  "The 1879 安濃郡 and 1872 一志郡 rows are one event dated 明治5年 (1872), not 1879.",
+  "The 1880 transfer is 三重県桑名郡 -> 愛知県海西郡 (IN for the Aichi article), handover 1880-05-07 (notice 05-10), 15 villages; the sweep \"out\" and its village list (\"存在した福原新田\", \"95村\") are parse noise.",
+  "Rows \"1887/1889 海西郡 (岐阜県)\", \"1889 安八郡\", \"1887 中島郡 (岐阜県)\" are partly mirrors of the Aichi-side events and partly Gifu-internal; the 安八郡/海西郡 (岐阜) 1889 changes (勝賀村・蛇池村, 古中島村) never cross a prefecture - they were withheld only because Aichi 海西郡 has the same name.",
+  "神崎郡 (滋賀県) article: the \"1872-01-09 長浜県 -> 大津県\" line is wrong (copied from 高島郡 with the direction reversed); 神崎郡 stays 長浜県 -> 犬上県 -> 滋賀県.",
+  "Wikipedia 桑名郡/海西郡 date 1880-05-10 is the notice date; actual hand-over 1880-05-07.",
+  "Missed by the sweep: 1883 三重県桑名郡 江内村・油島新田・金廻村 -> 岐阜県下石津郡 (see transfer 10).",
+  "一志郡 article says the whole 一志郡 became 度会県 on 1872-01-02, yet its 津藩領 villages were 津県 (-> 安濃津県); 度会県 only received them in 1872-03/04. This affects other 一志郡 町村 outside this cluster."
+ ]
+}

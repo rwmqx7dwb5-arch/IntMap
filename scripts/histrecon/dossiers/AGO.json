@@ -1,0 +1,727 @@
+{
+  "country": "AGO",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "1975-11-11",
+    "to": "2019-12-31"
+  },
+  "polityNote": "People's Republic / Republic of Angola from independence on 1975-11-11 (Cabinda included throughout). Earlier colonial districts are outside this dossier (see unresolved).",
+  "units": [
+    {
+      "id": "AGO:Cabinda@1975",
+      "names": {
+        "en": "Cabinda Province",
+        "ja": "カビンダ州",
+        "local": "Província de Cabinda"
+      },
+      "wikidata": "Q168787",
+      "spans": [
+        {
+          "from": "1975-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-1885"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "AGO:Zaire@1975",
+      "names": {
+        "en": "Zaire Province",
+        "ja": "ザイーレ州",
+        "local": "Província do Zaire"
+      },
+      "wikidata": "Q196674",
+      "spans": [
+        {
+          "from": "1975-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-1882"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "AGO:Uige@1975",
+      "names": {
+        "en": "Uíge Province",
+        "ja": "ウイジェ州",
+        "local": "Província do Uíge"
+      },
+      "wikidata": "Q216972",
+      "spans": [
+        {
+          "from": "1975-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-1881"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "AGO:Malanje@1975",
+      "names": {
+        "en": "Malanje Province",
+        "ja": "マランジェ州",
+        "local": "Província de Malanje"
+      },
+      "wikidata": "Q219072",
+      "spans": [
+        {
+          "from": "1975-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-1876"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "AGO:CuanzaSul@1975",
+      "names": {
+        "en": "Cuanza Sul Province",
+        "ja": "クアンザ・スル州",
+        "local": "Província do Cuanza Sul"
+      },
+      "wikidata": "Q216998",
+      "spans": [
+        {
+          "from": "1975-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-1879"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "AGO:Benguela@1975",
+      "names": {
+        "en": "Benguela Province",
+        "ja": "ベンゲラ州",
+        "local": "Província de Benguela"
+      },
+      "wikidata": "Q212786",
+      "spans": [
+        {
+          "from": "1975-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-1887"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "AGO:Huambo@1975",
+      "names": {
+        "en": "Huambo Province",
+        "ja": "ウアンボ州",
+        "local": "Província do Huambo"
+      },
+      "wikidata": "Q218848",
+      "spans": [
+        {
+          "from": "1975-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-1890"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "AGO:Bie@1975",
+      "names": {
+        "en": "Bié Province",
+        "ja": "ビエ州",
+        "local": "Província do Bié"
+      },
+      "wikidata": "Q213977",
+      "spans": [
+        {
+          "from": "1975-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-1886"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "AGO:Moxico@1975",
+      "names": {
+        "en": "Moxico Province",
+        "ja": "モシコ州",
+        "local": "Província do Moxico"
+      },
+      "wikidata": "Q173988",
+      "spans": [
+        {
+          "from": "1975-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-1892"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "AGO:CuandoCubango@1975",
+      "names": {
+        "en": "Cuando Cubango Province",
+        "ja": "クアンド・クバンゴ州",
+        "local": "Província do Cuando Cubango"
+      },
+      "wikidata": "Q215268",
+      "spans": [
+        {
+          "from": "1975-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-1888"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "AGO:Namibe@1975",
+      "names": {
+        "en": "Namibe Province (Moçâmedes until 1985)",
+        "ja": "ナミベ州",
+        "local": "Província do Namibe"
+      },
+      "wikidata": "Q216819",
+      "spans": [
+        {
+          "from": "1975-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-1893"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "AGO:Huila@1975",
+      "names": {
+        "en": "Huíla Province",
+        "ja": "ウイラ州",
+        "local": "Província da Huíla"
+      },
+      "wikidata": "Q214572",
+      "spans": [
+        {
+          "from": "1975-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-1891"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70675763",
+              "title": "Wikipédia (pt): Cunene, rev. 70675763",
+              "says": "Cunene was detached from Huíla district on 10 July 1970 by decree 330/70 (i.e. before independence).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "AGO:Cunene@1975",
+      "names": {
+        "en": "Cunene Province",
+        "ja": "クネネ州",
+        "local": "Província do Cunene"
+      },
+      "wikidata": "Q216987",
+      "spans": [
+        {
+          "from": "1975-11-11",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-1889"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=70675763",
+              "title": "Wikipédia (pt): Cunene, rev. 70675763",
+              "says": "Cunene was detached from Huíla district on 10 July 1970 by decree 330/70 (i.e. before independence).",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Unit predates independence; span starts at the dossier scope (independence). No later inter-provincial change touching it is recorded by the sources consulted."
+        }
+      ]
+    },
+    {
+      "id": "AGO:Lunda@1975",
+      "names": {
+        "en": "Lunda Province",
+        "ja": "ルンダ州",
+        "local": "Província da Lunda"
+      },
+      "spans": [
+        {
+          "from": "1975-11-11",
+          "precision": "day",
+          "to": "1978-07-04",
+          "atoms": [
+            "AGO-1874",
+            "AGO-1875"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=71712255",
+              "title": "Wikipédia (pt): Lunda Sul, rev. 71712255",
+              "says": "On 4 July 1978 Decreto-Lei 84/78 divided Lunda province in two: the original part became Lunda Sul, Lunda Norte was created.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=72911093",
+              "title": "Wikipédia (pt): Lunda Norte, rev. 72911093",
+              "says": "Lunda Norte officially created 4 July 1978 by decree-law 84/78, separated from Lunda; bounded by DR Congo, Lunda Sul and Malanje.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Lunda = Lunda Norte + Lunda Sul: the 1978 decree divided the whole province in two."
+        }
+      ]
+    },
+    {
+      "id": "AGO:LundaNorte@1978",
+      "names": {
+        "en": "Lunda Norte Province",
+        "ja": "ルンダ・ノルテ州",
+        "local": "Província da Lunda Norte"
+      },
+      "wikidata": "Q214221",
+      "spans": [
+        {
+          "from": "1978-07-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-1874"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=72911093",
+              "title": "Wikipédia (pt): Lunda Norte, rev. 72911093",
+              "says": "Lunda Norte officially created 4 July 1978 by decree-law 84/78, separated from Lunda; bounded by DR Congo, Lunda Sul and Malanje.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=71712255",
+              "title": "Wikipédia (pt): Lunda Sul, rev. 71712255",
+              "says": "On 4 July 1978 Decreto-Lei 84/78 divided Lunda province in two: the original part became Lunda Sul, Lunda Norte was created.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Date of Decreto-Lei 84/78 as stated; promulgation vs entry into force not distinguished by the source."
+        }
+      ]
+    },
+    {
+      "id": "AGO:LundaSul@1978",
+      "names": {
+        "en": "Lunda Sul Province",
+        "ja": "ルンダ・スル州",
+        "local": "Província da Lunda Sul"
+      },
+      "wikidata": "Q219648",
+      "spans": [
+        {
+          "from": "1978-07-04",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-1875"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=71712255",
+              "title": "Wikipédia (pt): Lunda Sul, rev. 71712255",
+              "says": "On 4 July 1978 Decreto-Lei 84/78 divided Lunda province in two: the original part became Lunda Sul, Lunda Norte was created.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "AGO:CuanzaNorte@1980",
+      "names": {
+        "en": "Cuanza Norte Province",
+        "ja": "クアンザ・ノルテ州",
+        "local": "Província do Cuanza Norte"
+      },
+      "wikidata": "Q216834",
+      "spans": [
+        {
+          "from": "1980-04-26",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "AGO-1878"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=72390930",
+              "title": "Wikipédia (pt): Bengo, rev. 72390930",
+              "says": "Bengo constituted 26 Apr 1980; Pango Aluquém, Dembos, Bula Atumba moved from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "After Pango Aluquém, Dembos and Bula Atumba went to the new Bengo province. Statoids (2005 observation) notes maps still showing two of them in Cuanza Norte; Natural Earth places them in Bengo (point test), consistent with the 1980 statement."
+        }
+      ]
+    },
+    {
+      "id": "AGO:Bengo@1980",
+      "names": {
+        "en": "Bengo Province",
+        "ja": "ベンゴ州",
+        "local": "Província do Bengo"
+      },
+      "wikidata": "Q191299",
+      "spans": [
+        {
+          "from": "1980-04-26",
+          "precision": "day",
+          "to": "2011-09-01",
+          "atoms": [
+            "AGO-1877"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=72390930",
+              "title": "Wikipédia (pt): Bengo, rev. 72390930",
+              "says": "Bengo constituted 26 Apr 1980; Pango Aluquém, Dembos, Bula Atumba moved from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Natural Earth Bengo still contains Ícolo e Bengo and Quiçama (point tests at Catete and Muxima), i.e. the pre-2011 extent. Statoids dates Bengo to 1985; pt.wikipedia gives 26 Apr 1980 with a cited source — the specific date was taken."
+        }
+      ]
+    },
+    {
+      "id": "AGO:Luanda@1980",
+      "names": {
+        "en": "Luanda Province",
+        "ja": "ルアンダ州",
+        "local": "Província de Luanda"
+      },
+      "wikidata": "Q190066",
+      "spans": [
+        {
+          "from": "1980-04-26",
+          "precision": "day",
+          "to": "2011-09-01",
+          "atoms": [
+            "AGO-1880"
+          ],
+          "sources": [
+            {
+              "url": "https://pt.wikipedia.org/w/index.php?oldid=72390930",
+              "title": "Wikipédia (pt): Bengo, rev. 72390930",
+              "says": "Bengo constituted 26 Apr 1980; Pango Aluquém, Dembos, Bula Atumba moved from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://www.statoids.com/uao.html",
+              "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+              "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Natural Earth Luanda (2,814 km²) is the small pre-2011 province (Ícolo e Bengo / Quiçama fall in the Bengo atom)."
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "1978-07-04",
+      "precision": "day",
+      "what": "Lunda divided into Lunda Norte and Lunda Sul (Decreto-Lei 84/78)",
+      "sources": [
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=71712255",
+          "title": "Wikipédia (pt): Lunda Sul, rev. 71712255",
+          "says": "On 4 July 1978 Decreto-Lei 84/78 divided Lunda province in two: the original part became Lunda Sul, Lunda Norte was created.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=72911093",
+          "title": "Wikipédia (pt): Lunda Norte, rev. 72911093",
+          "says": "Lunda Norte officially created 4 July 1978 by decree-law 84/78, separated from Lunda; bounded by DR Congo, Lunda Sul and Malanje.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1980-04-26",
+      "precision": "day",
+      "what": "Bengo province constituted; Pango Aluquém, Dembos, Bula Atumba transferred from Cuanza Norte",
+      "sources": [
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=72390930",
+          "title": "Wikipédia (pt): Bengo, rev. 72390930",
+          "says": "Bengo constituted 26 Apr 1980; Pango Aluquém, Dembos, Bula Atumba moved from Cuanza Norte; Lei 29/11 (1 Sep 2011) moved Ícolo e Bengo and Quissama to Luanda.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "1985",
+      "precision": "year",
+      "what": "Moçâmedes renamed Namibe (no territorial change)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uao.html",
+          "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+          "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2011-09-01",
+      "precision": "day",
+      "what": "Ícolo e Bengo and Quissama transferred from Bengo to Luanda (Lei 29/11)",
+      "sources": [
+        {
+          "url": "https://pt.wikipedia.org/w/index.php?oldid=72390930",
+          "title": "Lei n.º 29/11 de 1 de Setembro — Alteração da Divisão Político-Administrativa das Províncias de Luanda e Bengo (as cited in pt.wikipedia Bengo rev. 72390930)",
+          "says": "Law of 1 Sep 2011 transferred the municipalities Ícolo e Bengo and Quissama from Bengo to Luanda province.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "2015-01-01",
+      "n": 18,
+      "sources": [
+        {
+          "url": "https://www.statoids.com/uao.html",
+          "title": "Statoids: Provinces of Angola (G. Law, updated 2016-10-06)",
+          "says": "Change history: provinces split 1951–~1971 and after independence (Lunda ~1978, Luanda→Bengo); renames only otherwise; notes minor boundary changes.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Luanda, Cuanza Norte and their territory before Bengo was formed",
+      "unit": "AGO:Luanda@1975",
+      "atoms": [
+        "AGO-1880",
+        "AGO-1877",
+        "AGO-1878"
+      ],
+      "from": "1975-11-11",
+      "to": "1980-04-26",
+      "why": "Bengo was formed from parts of both Luanda and Cuanza Norte (three Cuanza Norte municipalities plus the Dande/Icolo e Bengo/Quiçama area); the pre-1980 Luanda–Cuanza Norte line runs through the NE Bengo atom.",
+      "checked": [
+        "statoids uao.html change history",
+        "pt.wikipedia Bengo rev. 72390930",
+        "pt.wikipedia Cuanza Norte rev. 71714003"
+      ],
+      "needs": "municipality-level atoms (geoBoundaries AGO ADM2, CC BY 4.0, or OCHA COD-AB Angola ADM2) with 1980 municipality membership"
+    },
+    {
+      "what": "Cuanza Norte before 1980-04-26",
+      "unit": "AGO:CuanzaNorte@1975",
+      "from": "1975-11-11",
+      "to": "1980-04-26",
+      "why": "Included Pango Aluquém, Dembos and Bula Atumba, now inside the NE Bengo atom.",
+      "checked": [
+        "pt.wikipedia Bengo rev. 72390930"
+      ],
+      "needs": "geoBoundaries AGO ADM2 (CC BY 4.0)"
+    },
+    {
+      "what": "Luanda and Bengo after Lei 29/11",
+      "unit": "AGO:Luanda@2011",
+      "atoms": [
+        "AGO-1880",
+        "AGO-1877"
+      ],
+      "from": "2011-09-01",
+      "to": null,
+      "why": "Ícolo e Bengo and Quiçama moved from Bengo to Luanda; that line runs through the NE Bengo atom (NE still shows the pre-2011 layout).",
+      "checked": [
+        "pt.wikipedia Bengo rev. 72390930 citing Lei 29/11",
+        "Natural Earth point tests (Catete, Muxima fall in Bengo)"
+      ],
+      "needs": "geoBoundaries AGO ADM2 (CC BY 4.0) — Ícolo e Bengo and Quiçama municipalities"
+    },
+    {
+      "what": "Bengo after Lei 29/11",
+      "unit": "AGO:Bengo@2011",
+      "from": "2011-09-01",
+      "to": null,
+      "why": "Reduced Bengo is the NE Bengo atom minus two municipalities.",
+      "checked": [
+        "pt.wikipedia Bengo rev. 72390930"
+      ],
+      "needs": "geoBoundaries AGO ADM2 (CC BY 4.0)"
+    },
+    {
+      "what": "Colonial districts of Portuguese West Africa / Angola before independence (1900–1975)",
+      "from": "1900",
+      "to": "1975-11-11",
+      "why": "Outside scope; statoids reports 1950s–1971 splits with area transfers (e.g. Benguela→Bié/Malange, Congo→Luanda) not along present provincial lines, and dates only approximate.",
+      "checked": [
+        "statoids uao.html change history"
+      ],
+      "needs": "colonial district boundaries (no redistributable dataset found)"
+    }
+  ]
+}

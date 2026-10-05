@@ -1,0 +1,998 @@
+{
+  "country": "TCD",
+  "atomSet": "ne-admin1@ca96624",
+  "scope": {
+    "from": "2002-10-17",
+    "to": "2019-12-31"
+  },
+  "polityNote": "Republic of Chad throughout the scope. NE depicts the 22-unit layout of 2008-02-19 → 2012-09-04 (Ennedi not yet split into Ennedi Est / Ennedi Ouest).",
+  "units": [
+    {
+      "id": "TCD:Batha@2002",
+      "names": {
+        "en": "Batha Region",
+        "ja": "バタ州",
+        "local": "Batha"
+      },
+      "wikidata": "Q180414",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-1472"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region since decree 419/PR/MAT/02 of 17 Oct 2002; no first-level boundary change touching it until 2019 in the change lists (only the 2008 and 2012 splits elsewhere). Renamed province in 2018 without territorial change."
+        }
+      ]
+    },
+    {
+      "id": "TCD:Chari-Baguirmi@2002",
+      "names": {
+        "en": "Chari-Baguirmi Region",
+        "ja": "シャリ＝バギルミ州",
+        "local": "Chari-Baguirmi"
+      },
+      "wikidata": "Q843975",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-5580"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region since decree 419/PR/MAT/02 of 17 Oct 2002; no first-level boundary change touching it until 2019 in the change lists (only the 2008 and 2012 splits elsewhere). Renamed province in 2018 without territorial change."
+        }
+      ]
+    },
+    {
+      "id": "TCD:Guera@2002",
+      "names": {
+        "en": "Guéra Region",
+        "ja": "ゲラ州",
+        "local": "Guéra"
+      },
+      "wikidata": "Q175706",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-1474"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region since decree 419/PR/MAT/02 of 17 Oct 2002; no first-level boundary change touching it until 2019 in the change lists (only the 2008 and 2012 splits elsewhere). Renamed province in 2018 without territorial change."
+        }
+      ]
+    },
+    {
+      "id": "TCD:Hadjer-Lamis@2002",
+      "names": {
+        "en": "Hadjer-Lamis Region",
+        "ja": "ハジェル＝ラミ州",
+        "local": "Hadjer-Lamis"
+      },
+      "wikidata": "Q1042437",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-1464"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region since decree 419/PR/MAT/02 of 17 Oct 2002; no first-level boundary change touching it until 2019 in the change lists (only the 2008 and 2012 splits elsewhere). Renamed province in 2018 without territorial change."
+        }
+      ]
+    },
+    {
+      "id": "TCD:Lac@2002",
+      "names": {
+        "en": "Lac Region",
+        "ja": "ラク州",
+        "local": "Lac"
+      },
+      "wikidata": "Q867869",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-1466"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region since decree 419/PR/MAT/02 of 17 Oct 2002; no first-level boundary change touching it until 2019 in the change lists (only the 2008 and 2012 splits elsewhere). Renamed province in 2018 without territorial change."
+        }
+      ]
+    },
+    {
+      "id": "TCD:Logone-Occidental@2002",
+      "names": {
+        "en": "Logone Occidental Region",
+        "ja": "ロゴン・オクシデンタル州",
+        "local": "Logone Occidental"
+      },
+      "wikidata": "Q305257",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-1484"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region since decree 419/PR/MAT/02 of 17 Oct 2002; no first-level boundary change touching it until 2019 in the change lists (only the 2008 and 2012 splits elsewhere). Renamed province in 2018 without territorial change."
+        }
+      ]
+    },
+    {
+      "id": "TCD:Logone-Oriental@2002",
+      "names": {
+        "en": "Logone Oriental Region",
+        "ja": "ロゴン・オリエンタル州",
+        "local": "Logone Oriental"
+      },
+      "wikidata": "Q167514",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-1485"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region since decree 419/PR/MAT/02 of 17 Oct 2002; no first-level boundary change touching it until 2019 in the change lists (only the 2008 and 2012 splits elsewhere). Renamed province in 2018 without territorial change."
+        }
+      ]
+    },
+    {
+      "id": "TCD:Mandoul@2002",
+      "names": {
+        "en": "Mandoul Region",
+        "ja": "マンドゥル州",
+        "local": "Mandoul"
+      },
+      "wikidata": "Q597410",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-1488"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region since decree 419/PR/MAT/02 of 17 Oct 2002; no first-level boundary change touching it until 2019 in the change lists (only the 2008 and 2012 splits elsewhere). Renamed province in 2018 without territorial change."
+        }
+      ]
+    },
+    {
+      "id": "TCD:Mayo-Kebbi-Est@2002",
+      "names": {
+        "en": "Mayo-Kebbi Est Region",
+        "ja": "東マヨ・ケッビ州",
+        "local": "Mayo-Kebbi Est"
+      },
+      "wikidata": "Q911421",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-1486"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region since decree 419/PR/MAT/02 of 17 Oct 2002; no first-level boundary change touching it until 2019 in the change lists (only the 2008 and 2012 splits elsewhere). Renamed province in 2018 without territorial change."
+        }
+      ]
+    },
+    {
+      "id": "TCD:Mayo-Kebbi-Ouest@2002",
+      "names": {
+        "en": "Mayo-Kebbi Ouest Region",
+        "ja": "西マヨ・ケッビ州",
+        "local": "Mayo-Kebbi Ouest"
+      },
+      "wikidata": "Q910393",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-4858"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region since decree 419/PR/MAT/02 of 17 Oct 2002; no first-level boundary change touching it until 2019 in the change lists (only the 2008 and 2012 splits elsewhere). Renamed province in 2018 without territorial change."
+        }
+      ]
+    },
+    {
+      "id": "TCD:Moyen-Chari@2002",
+      "names": {
+        "en": "Moyen-Chari Region",
+        "ja": "モワイヤン・シャリ州",
+        "local": "Moyen-Chari"
+      },
+      "wikidata": "Q177799",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-5583"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region since decree 419/PR/MAT/02 of 17 Oct 2002; no first-level boundary change touching it until 2019 in the change lists (only the 2008 and 2012 splits elsewhere). Renamed province in 2018 without territorial change."
+        }
+      ]
+    },
+    {
+      "id": "TCD:Salamat@2002",
+      "names": {
+        "en": "Salamat Region",
+        "ja": "サラマト州",
+        "local": "Salamat"
+      },
+      "wikidata": "Q385584",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-1489"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region since decree 419/PR/MAT/02 of 17 Oct 2002; no first-level boundary change touching it until 2019 in the change lists (only the 2008 and 2012 splits elsewhere). Renamed province in 2018 without territorial change."
+        }
+      ]
+    },
+    {
+      "id": "TCD:Tandjile@2002",
+      "names": {
+        "en": "Tandjilé Region",
+        "ja": "タンジレ州",
+        "local": "Tandjilé"
+      },
+      "wikidata": "Q867856",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-1487"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region since decree 419/PR/MAT/02 of 17 Oct 2002; no first-level boundary change touching it until 2019 in the change lists (only the 2008 and 2012 splits elsewhere). Renamed province in 2018 without territorial change."
+        }
+      ]
+    },
+    {
+      "id": "TCD:Wadi-Fira@2002",
+      "names": {
+        "en": "Wadi Fira Region",
+        "ja": "ワジ・フィラ州",
+        "local": "Wadi Fira"
+      },
+      "wikidata": "Q860813",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-1473"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Region since decree 419/PR/MAT/02 of 17 Oct 2002; no first-level boundary change touching it until 2019 in the change lists (only the 2008 and 2012 splits elsewhere). Renamed province in 2018 without territorial change."
+        }
+      ]
+    },
+    {
+      "id": "TCD:NDjamena@2002",
+      "names": {
+        "en": "Ville de N'Djamena",
+        "ja": "ンジャメナ",
+        "local": "Ville de N'Djamena"
+      },
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-4857"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Separate first-level unit (Ville de N'Djamena) since the 2002 regions."
+        }
+      ]
+    },
+    {
+      "id": "TCD:BET@2002",
+      "names": {
+        "en": "Borkou-Ennedi-Tibesti Region",
+        "ja": "ボルク・エネディ・ティベスティ州",
+        "local": "Borkou-Ennedi-Tibesti"
+      },
+      "wikidata": "Q893861",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": "2008-02-19",
+          "atoms": [
+            "TCD-5577",
+            "TCD-5579",
+            "TCD-5578"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1374439639",
+              "title": "Borkou-Ennedi-Tibesti Region — Wikipedia",
+              "says": "One of the then 18 regions, with departments Borkou, Ennedi Est (Bahaï), Ennedi Ouest, Tibesti; split in 2008 into Borkou, Ennedi and Tibesti regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=233667885",
+              "title": "Wadi Hawar (département) — Wikipédia",
+              "says": "Department with chef-lieu Bahaï, created by ordinance 002/PR/08 of 19 Feb 2008; now in Ennedi Est.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "BET split wholly into Borkou, Ennedi and Tibesti (Wadi Hawar department of Ennedi was drawn from BET's Ennedi Est department, chef-lieu Bahaï)."
+        }
+      ]
+    },
+    {
+      "id": "TCD:Kanem@2002",
+      "names": {
+        "en": "Kanem Region",
+        "ja": "カネム州",
+        "local": "Kanem"
+      },
+      "wikidata": "Q849841",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": "2008-02-19",
+          "atoms": [
+            "TCD-1465",
+            "TCD-5581"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Kanem 2002-2008 = present Kanem + Barh El Gazel (split from Kanem only)."
+        },
+        {
+          "from": "2008-02-19",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-1465"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TCD:Ouaddai@2002",
+      "names": {
+        "en": "Ouaddaï Region",
+        "ja": "ワダイ州",
+        "local": "Ouaddaï"
+      },
+      "wikidata": "Q841338",
+      "spans": [
+        {
+          "from": "2002-10-17",
+          "precision": "day",
+          "to": "2008-02-19",
+          "atoms": [
+            "TCD-1475",
+            "TCD-5582"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ],
+          "dateNote": "Ouaddaï 2002-2008 = present Ouaddaï + Sila (split from Ouaddaï only)."
+        },
+        {
+          "from": "2008-02-19",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-1475"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TCD:Borkou@2008",
+      "names": {
+        "en": "Borkou Region",
+        "ja": "ボルク州",
+        "local": "Borkou"
+      },
+      "wikidata": "Q1139666",
+      "spans": [
+        {
+          "from": "2008-02-19",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-5577"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1374439639",
+              "title": "Borkou-Ennedi-Tibesti Region — Wikipedia",
+              "says": "One of the then 18 regions, with departments Borkou, Ennedi Est (Bahaï), Ennedi Ouest, Tibesti; split in 2008 into Borkou, Ennedi and Tibesti regions.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TCD:Tibesti@2008",
+      "names": {
+        "en": "Tibesti Region",
+        "ja": "ティベスティ州",
+        "local": "Tibesti"
+      },
+      "wikidata": "Q737711",
+      "spans": [
+        {
+          "from": "2008-02-19",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-5578"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1374439639",
+              "title": "Borkou-Ennedi-Tibesti Region — Wikipedia",
+              "says": "One of the then 18 regions, with departments Borkou, Ennedi Est (Bahaï), Ennedi Ouest, Tibesti; split in 2008 into Borkou, Ennedi and Tibesti regions.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TCD:Ennedi@2008",
+      "names": {
+        "en": "Ennedi Region",
+        "ja": "エネディ州",
+        "local": "Ennedi"
+      },
+      "wikidata": "Q748093",
+      "spans": [
+        {
+          "from": "2008-02-19",
+          "precision": "day",
+          "to": "2012-09-04",
+          "atoms": [
+            "TCD-5579"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://en.wikipedia.org/w/index.php?oldid=1374439639",
+              "title": "Borkou-Ennedi-Tibesti Region — Wikipedia",
+              "says": "One of the then 18 regions, with departments Borkou, Ennedi Est (Bahaï), Ennedi Ouest, Tibesti; split in 2008 into Borkou, Ennedi and Tibesti regions.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=233667885",
+              "title": "Wadi Hawar (département) — Wikipédia",
+              "says": "Department with chef-lieu Bahaï, created by ordinance 002/PR/08 of 19 Feb 2008; now in Ennedi Est.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TCD:Sila@2008",
+      "names": {
+        "en": "Sila Region",
+        "ja": "シラ州",
+        "local": "Sila"
+      },
+      "wikidata": "Q1149611",
+      "spans": [
+        {
+          "from": "2008-02-19",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-5582"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TCD:Barh-El-Gazel@2008",
+      "names": {
+        "en": "Barh El Gazel Region",
+        "ja": "バル・エル＝ガゼル州",
+        "local": "Barh El Gazel"
+      },
+      "wikidata": "Q1050621",
+      "spans": [
+        {
+          "from": "2008-02-19",
+          "precision": "day",
+          "to": null,
+          "atoms": [
+            "TCD-5581"
+          ],
+          "sources": [
+            {
+              "url": "https://www.statoids.com/utd.html",
+              "title": "Regions of Chad (Statoids)",
+              "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+              "accessed": "2026-10-05"
+            },
+            {
+              "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+              "title": "Administration territoriale du Tchad — Wikipédia",
+              "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+              "accessed": "2026-10-05"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "date": "2002-10-17",
+      "precision": "day",
+      "what": "Decree 419/PR/MAT/02: 18 regions (incl. Ville de N'Djamena) replace the 28 departments of 1999",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/utd.html",
+          "title": "Regions of Chad (Statoids)",
+          "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+          "title": "Administration territoriale du Tchad — Wikipédia",
+          "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2008-02-19",
+      "precision": "day",
+      "what": "Ordinance 002/PR/08: BET split into Borkou, Ennedi, Tibesti; Sila from Ouaddaï; Barh El Gazel from Kanem (22 regions)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/utd.html",
+          "title": "Regions of Chad (Statoids)",
+          "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+          "title": "Administration territoriale du Tchad — Wikipédia",
+          "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?oldid=1374439639",
+          "title": "Borkou-Ennedi-Tibesti Region — Wikipedia",
+          "says": "One of the then 18 regions, with departments Borkou, Ennedi Est (Bahaï), Ennedi Ouest, Tibesti; split in 2008 into Borkou, Ennedi and Tibesti regions.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2012-09-04",
+      "precision": "day",
+      "what": "Ordinance 027/PR/2012: Ennedi split into Ennedi Est and Ennedi Ouest (23 regions)",
+      "sources": [
+        {
+          "url": "https://www.statoids.com/utd.html",
+          "title": "Regions of Chad (Statoids)",
+          "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+          "title": "Administration territoriale du Tchad — Wikipédia",
+          "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "date": "2002-10-17",
+      "n": 18,
+      "sources": [
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+          "title": "Administration territoriale du Tchad — Wikipédia",
+          "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "date": "2008-02-19",
+      "n": 22,
+      "sources": [
+        {
+          "url": "https://fr.wikipedia.org/w/index.php?oldid=235042492",
+          "title": "Administration territoriale du Tchad — Wikipédia",
+          "says": "Decree 419/PR/MAT/02 of 17 Oct 2002 created 18 regions; ordinance 002/PR/08 of 19 Feb 2008 split BET, Ouaddaï (Sila), Kanem (Barh el Gazel); ordinance 027/PR/2012 split Ennedi.",
+          "accessed": "2026-10-05"
+        },
+        {
+          "url": "https://www.statoids.com/utd.html",
+          "title": "Regions of Chad (Statoids)",
+          "says": "Change list: 1999-09-01 28 departments; 2002-10-17 regions; 2008-02-19 BET split in three, Sila from Ouaddaï, Barh el Ghazel from Kanem; 2012-09-04 Ennedi split.",
+          "accessed": "2026-10-05"
+        }
+      ]
+    }
+  ],
+  "atomsOutside": [],
+  "unresolved": [
+    {
+      "what": "Ennedi Est and Ennedi Ouest regions 2012-09-04 → 2019-12-31",
+      "unit": "TCD:Ennedi-Est@2012",
+      "atoms": [
+        "TCD-5579"
+      ],
+      "from": "2012-09-04",
+      "to": null,
+      "why": "Ordinance 027/PR/2012 split Ennedi into Ennedi Est and Ennedi Ouest; NE has a single Ennedi atom, so the line between the two runs inside it. (Ennedi Ouest, unit TCD:Ennedi-Ouest@2012, also withheld here.)",
+      "checked": [
+        "statoids.com/utd.html",
+        "fr.wikipedia Administration territoriale du Tchad oldid 235042492"
+      ],
+      "needs": "department atoms: geoBoundaries TCD ADM2 (CC BY 4.0) or OCHA COD-AB Chad ADM2 with the Ennedi Est (Amdjarass, Wadi Hawar) / Ennedi Ouest (Fada, Mourtcha) departments"
+    },
+    {
+      "what": "Chad before 2002-10-17: 14 prefectures (1962/1973-1999) and 28 departments (1999-09-01, decree 355/PR/MISD/99)",
+      "from": "1960-08-11",
+      "to": "2002-10-17",
+      "why": "No source found stating that the 2002 regions were formed from whole prefectures without sub-prefecture transfers; the 1999 departments were a new grid. Unions such as Mayo-Kebbi = Est + Ouest are plausible but unproven, so nothing is claimed.",
+      "checked": [
+        "statoids.com/utd.html",
+        "fr.wikipedia Administration territoriale du Tchad",
+        "en.wikipedia Regions of Chad"
+      ],
+      "needs": "sub-prefecture lineage 1962-2002 and sub-prefecture atoms (geoBoundaries TCD ADM3, CC BY 4.0)"
+    }
+  ]
+}

@@ -1,0 +1,3465 @@
+{
+ "country": "PHL",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1992-01-01",
+  "to": "2019-12-31"
+ },
+ "polityNote": "Republic of the Philippines (independent since 1946-07-04). Units are provinces plus cities independent of a province (highly urbanized and independent component cities, as in the PSA PSGC); Metro Manila (NCR) is one unit. Unlegislated internal boundary disputes (e.g. Benguet-Ilocos Sur; Calauag, Quezon vs Santa Elena, Camarines Norte, settled 2001 for the administering side) are not treated as changes; NE lines are taken as the legal lines.",
+ "units": [
+  {
+   "id": "PHL:Abra",
+   "names": {
+    "en": "Abra",
+    "ja": "アブラ州",
+    "local": "Abra"
+   },
+   "wikidata": "Q13711",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2542"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:AgusandelNorte",
+   "names": {
+    "en": "Agusan del Norte",
+    "ja": "北アグサン州",
+    "local": "Agusan del Norte"
+   },
+   "wikidata": "Q13714",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2587"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:AgusandelSur",
+   "names": {
+    "en": "Agusan del Sur",
+    "ja": "南アグサン州",
+    "local": "Agusan del Sur"
+   },
+   "wikidata": "Q13721",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2588"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Aklan",
+   "names": {
+    "en": "Aklan",
+    "ja": "アクラン州",
+    "local": "Aklan"
+   },
+   "wikidata": "Q13723",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2525"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Albay",
+   "names": {
+    "en": "Albay",
+    "ja": "アルバイ州",
+    "local": "Albay"
+   },
+   "wikidata": "Q13726",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2536"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Antique",
+   "names": {
+    "en": "Antique",
+    "ja": "アンティーケ州",
+    "local": "Antique"
+   },
+   "wikidata": "Q13727",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2526"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Aurora",
+   "names": {
+    "en": "Aurora",
+    "ja": "アウロラ州",
+    "local": "Aurora"
+   },
+   "wikidata": "Q13730",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2549"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Basilan",
+   "names": {
+    "en": "Basilan",
+    "ja": "バシラン州",
+    "local": "Basilan"
+   },
+   "wikidata": "Q13737",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2519"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Bataan",
+   "names": {
+    "en": "Bataan",
+    "ja": "バターン州",
+    "local": "Bataan"
+   },
+   "wikidata": "Q13739",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2555"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Batanes",
+   "names": {
+    "en": "Batanes",
+    "ja": "バタネス州",
+    "local": "Batanes"
+   },
+   "wikidata": "Q13740",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2543"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Batangas",
+   "names": {
+    "en": "Batangas",
+    "ja": "バタンガス州",
+    "local": "Batangas"
+   },
+   "wikidata": "Q13744",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2564"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Benguet",
+   "names": {
+    "en": "Benguet",
+    "ja": "ベンゲット州",
+    "local": "Benguet"
+   },
+   "wikidata": "Q13750",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2559"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Bohol",
+   "names": {
+    "en": "Bohol",
+    "ja": "ボホール州",
+    "local": "Bohol"
+   },
+   "wikidata": "Q13752",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2513"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Bukidnon",
+   "names": {
+    "en": "Bukidnon",
+    "ja": "ブキドノン州",
+    "local": "Bukidnon"
+   },
+   "wikidata": "Q13753",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2589"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Bulacan",
+   "names": {
+    "en": "Bulacan",
+    "ja": "ブラカン州",
+    "local": "Bulacan"
+   },
+   "wikidata": "Q13755",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2565"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Cagayan",
+   "names": {
+    "en": "Cagayan",
+    "ja": "カガヤン州",
+    "local": "Cagayan"
+   },
+   "wikidata": "Q13759",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2545"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:CamarinesNorte",
+   "names": {
+    "en": "Camarines Norte",
+    "ja": "北カマリネス州",
+    "local": "Camarines Norte"
+   },
+   "wikidata": "Q13763",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2537"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:CamarinesSur",
+   "names": {
+    "en": "Camarines Sur",
+    "ja": "南カマリネス州",
+    "local": "Camarines Sur"
+   },
+   "wikidata": "Q13767",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2538"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Camiguin",
+   "names": {
+    "en": "Camiguin",
+    "ja": "カミギン州",
+    "local": "Camiguin"
+   },
+   "wikidata": "Q13769",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2590"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Capiz",
+   "names": {
+    "en": "Capiz",
+    "ja": "カピス州",
+    "local": "Capiz"
+   },
+   "wikidata": "Q13772",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2528"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Catanduanes",
+   "names": {
+    "en": "Catanduanes",
+    "ja": "カタンドゥアネス州",
+    "local": "Catanduanes"
+   },
+   "wikidata": "Q13778",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2539"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Cavite",
+   "names": {
+    "en": "Cavite",
+    "ja": "カヴィテ州",
+    "local": "Kabite"
+   },
+   "wikidata": "Q13785",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2563"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:DavaoOriental",
+   "names": {
+    "en": "Davao Oriental",
+    "ja": "東ダバオ州",
+    "local": "Davao Oriental"
+   },
+   "wikidata": "Q13806",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2597"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:EasternSamar",
+   "names": {
+    "en": "Eastern Samar",
+    "ja": "東サマル州",
+    "local": "Silangang Samar"
+   },
+   "wikidata": "Q13809",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2582"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Ifugao",
+   "names": {
+    "en": "Ifugao",
+    "ja": "イフガオ州",
+    "local": "Ifugao"
+   },
+   "wikidata": "Q13812",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2551"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:IlocosNorte",
+   "names": {
+    "en": "Ilocos Norte",
+    "ja": "北イロコス州",
+    "local": "Ilocos Norte"
+   },
+   "wikidata": "Q13813",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2547"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:IlocosSur",
+   "names": {
+    "en": "Ilocos Sur",
+    "ja": "南イロコス州",
+    "local": "Ilocos Sur"
+   },
+   "wikidata": "Q12741",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2548"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:LaUnion",
+   "names": {
+    "en": "La Union",
+    "ja": "ラウニオン州",
+    "local": "La Union"
+   },
+   "wikidata": "Q13829",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2561"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Laguna",
+   "names": {
+    "en": "Laguna",
+    "ja": "ラグナ州",
+    "local": "Laguna"
+   },
+   "wikidata": "Q13840",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2566"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:LanaodelNorte",
+   "names": {
+    "en": "Lanao del Norte",
+    "ja": "北ラナオ州",
+    "local": "Lanao del Norte"
+   },
+   "wikidata": "Q13841",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2573"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:LanaodelSur",
+   "names": {
+    "en": "Lanao del Sur",
+    "ja": "南ラナオ州",
+    "local": "Lanao del Sur"
+   },
+   "wikidata": "Q13843",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2574"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Marinduque",
+   "names": {
+    "en": "Marinduque",
+    "ja": "マリンドゥケ州",
+    "local": "Marinduque"
+   },
+   "wikidata": "Q13846",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2569"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Masbate",
+   "names": {
+    "en": "Masbate",
+    "ja": "マスバテ州",
+    "local": "Masbate"
+   },
+   "wikidata": "Q13847",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2540"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:MisamisOccidental",
+   "names": {
+    "en": "Misamis Occidental",
+    "ja": "西ミサミス州",
+    "local": "Misamis Occidental"
+   },
+   "wikidata": "Q13857",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2523"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:MisamisOriental",
+   "names": {
+    "en": "Misamis Oriental",
+    "ja": "東ミサミス州",
+    "local": "Misamis Oriental"
+   },
+   "wikidata": "Q13860",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2595"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:MountainProvince",
+   "names": {
+    "en": "Mountain Province",
+    "ja": "マウンテン州",
+    "local": "Lalawigang Bulubundukin"
+   },
+   "wikidata": "Q13861",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2552"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:NegrosOccidental",
+   "names": {
+    "en": "Negros Occidental",
+    "ja": "西ネグロス州",
+    "local": "Negros Occidental"
+   },
+   "wikidata": "Q13862",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2518"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:NegrosOriental",
+   "names": {
+    "en": "Negros Oriental",
+    "ja": "東ネグロス州",
+    "local": "Negros Oriental"
+   },
+   "wikidata": "Q13863",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2516"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:NorthernSamar",
+   "names": {
+    "en": "Northern Samar",
+    "ja": "北サマル州",
+    "local": "Hilagang Samar"
+   },
+   "wikidata": "Q13864",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2586"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:NuevaEcija",
+   "names": {
+    "en": "Nueva Ecija",
+    "ja": "ヌエヴァ・エシハ州",
+    "local": "Nueva Ecija"
+   },
+   "wikidata": "Q13865",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2557"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:NuevaVizcaya",
+   "names": {
+    "en": "Nueva Vizcaya",
+    "ja": "ヌエヴァ・ヴィスカヤ州",
+    "local": "Nueva Vizcaya"
+   },
+   "wikidata": "Q13866",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2553"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:OccidentalMindoro",
+   "names": {
+    "en": "Occidental Mindoro",
+    "ja": "西ミンドロ州",
+    "local": "Occidental Mindoro"
+   },
+   "wikidata": "Q13867",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2570"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:OrientalMindoro",
+   "names": {
+    "en": "Oriental Mindoro",
+    "ja": "東ミンドロ州",
+    "local": "Oriental Mindoro"
+   },
+   "wikidata": "Q13868",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2571"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Pampanga",
+   "names": {
+    "en": "Pampanga",
+    "ja": "パンパンガ州",
+    "local": "Pampanga"
+   },
+   "wikidata": "Q13870",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2558"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Pangasinan",
+   "names": {
+    "en": "Pangasinan",
+    "ja": "パンガシナン州",
+    "local": "Pangasinan"
+   },
+   "wikidata": "Q13871",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2562"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Quezon",
+   "names": {
+    "en": "Quezon",
+    "ja": "ケソン州",
+    "local": "Quezon"
+   },
+   "wikidata": "Q13872",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2572"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Quirino",
+   "names": {
+    "en": "Quirino",
+    "ja": "キリノ州",
+    "local": "Quirino"
+   },
+   "wikidata": "Q13873",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2554"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Rizal",
+   "names": {
+    "en": "Rizal",
+    "ja": "リサール州",
+    "local": "Rizal"
+   },
+   "wikidata": "Q13874",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2567"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Romblon",
+   "names": {
+    "en": "Romblon",
+    "ja": "ロンブロン州",
+    "local": "Romblon"
+   },
+   "wikidata": "Q13875",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2535"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Samar",
+   "names": {
+    "en": "Samar",
+    "ja": "サマル州",
+    "local": "Samar"
+   },
+   "wikidata": "Q13876",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2584"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Siquijor",
+   "names": {
+    "en": "Siquijor",
+    "ja": "シキホル州",
+    "local": "Siquijor"
+   },
+   "wikidata": "Q13879",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2517"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Sorsogon",
+   "names": {
+    "en": "Sorsogon",
+    "ja": "ソルソゴン州",
+    "local": "Sorsogon"
+   },
+   "wikidata": "Q13881",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2541"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:SouthernLeyte",
+   "names": {
+    "en": "Southern Leyte",
+    "ja": "南レイテ州",
+    "local": "Katimugang Leyte"
+   },
+   "wikidata": "Q13884",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2585"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:SultanKudarat",
+   "names": {
+    "en": "Sultan Kudarat",
+    "ja": "スルタン・クダラット州",
+    "local": "Sultan Kudarat"
+   },
+   "wikidata": "Q13885",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2580"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Sulu",
+   "names": {
+    "en": "Sulu",
+    "ja": "スールー州",
+    "local": "Sulu"
+   },
+   "wikidata": "Q13887",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2524"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:SurigaodelSur",
+   "names": {
+    "en": "Surigao del Sur",
+    "ja": "南スリガオ州",
+    "local": "Surigao del Sur"
+   },
+   "wikidata": "Q13891",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2594"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Tarlac",
+   "names": {
+    "en": "Tarlac",
+    "ja": "タルラック州",
+    "local": "Tarlac"
+   },
+   "wikidata": "Q13892",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2556"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:TawiTawi",
+   "names": {
+    "en": "Tawi-Tawi",
+    "ja": "タウイタウイ州",
+    "local": "Tawi-Tawi"
+   },
+   "wikidata": "Q13893",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2511"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Zambales",
+   "names": {
+    "en": "Zambales",
+    "ja": "サンバレス州",
+    "local": "Zambales"
+   },
+   "wikidata": "Q13895",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2560"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:ZamboangadelNorte",
+   "names": {
+    "en": "Zamboanga del Norte",
+    "ja": "北サンボアンガ州",
+    "local": "Zamboanga del Norte"
+   },
+   "wikidata": "Q13899",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2520"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:SouthCotabato",
+   "names": {
+    "en": "South Cotabato",
+    "ja": "南コタバト州",
+    "local": "Timog Cotabato"
+   },
+   "wikidata": "Q13882",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": "1992-03-16",
+     "atoms": [
+      "PHL-2599",
+      "PHL-2598"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra1992/ra_7228_1992.html",
+       "title": "Republic Act No. 7228 (1992-03-16)",
+       "says": "Segregates Alabel, Glan, Maasin, Maitum, Malapatan, Malungon and Kiamba from South Cotabato as Sarangani, subject to plebiscite.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Before Sarangani was carved out, South Cotabato = modern South Cotabato + Sarangani (General Santos already a separate HUC). Sarangani creation date differs between sources (1992-03-16 approval vs 1992-05-19 plebiscite); that window is withheld."
+    },
+    {
+     "from": "1992-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2599"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra1992/ra_7228_1992.html",
+       "title": "Republic Act No. 7228 (1992-03-16)",
+       "says": "Segregates Alabel, Glan, Maasin, Maitum, Malapatan, Malungon and Kiamba from South Cotabato as Sarangani, subject to plebiscite.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Sarangani creation date differs between sources (1992-03-16 approval vs 1992-05-19 plebiscite); that window is withheld."
+    }
+   ]
+  },
+  {
+   "id": "PHL:Sarangani",
+   "names": {
+    "en": "Sarangani",
+    "ja": "サランガニ州",
+    "local": "Sarangani"
+   },
+   "wikidata": "Q13877",
+   "spans": [
+    {
+     "from": "1992-05-20",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2598"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra1992/ra_7228_1992.html",
+       "title": "Republic Act No. 7228 (1992-03-16)",
+       "says": "Segregates Alabel, Glan, Maasin, Maitum, Malapatan, Malungon and Kiamba from South Cotabato as Sarangani, subject to plebiscite.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Sarangani&oldid=1375508910",
+       "title": "Wikipedia: Sarangani",
+       "says": "Infobox gives establishment as 19 May 1992; created by RA 7228 of 16 March 1992 from South Cotabato's third district.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "1992-03-16: Sarangani province split from South Cotabato.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Sarangani creation date differs between sources (1992-03-16 approval vs 1992-05-19 plebiscite); that window is withheld."
+    }
+   ]
+  },
+  {
+   "id": "PHL:Leyte",
+   "names": {
+    "en": "Leyte",
+    "ja": "レイテ州",
+    "local": "Leyte"
+   },
+   "wikidata": "Q13844",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": "1992-05-11",
+     "atoms": [
+      "PHL-2583",
+      "PHL-2581",
+      "PHL-5535"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra1991/ra_7160_1991.html",
+       "title": "Republic Act No. 7160 (Local Government Code of 1991), Sec. 462",
+       "says": "Existing sub-provinces become regular provinces on approval in a plebiscite held with the first national elections after the Code takes effect.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Biliran&oldid=1375547221",
+       "title": "Wikipedia: Biliran",
+       "says": "Biliran was a sub-province of Leyte (RA 2141, 1959) until it became a province on 11 May 1992 under RA 7160.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Includes sub-province Biliran and Tacloban (then a component city of Leyte); Ormoc is a separate unit."
+    },
+    {
+     "from": "1992-05-11",
+     "precision": "day",
+     "to": "2008-12-18",
+     "atoms": [
+      "PHL-2583",
+      "PHL-5535"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "1992-05-11: Biliran province split from Leyte, following a referendum.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://lawphil.net/executive/proc/proc2008/proc_1637_2008.html",
+       "title": "Proclamation No. 1637 (2008)",
+       "says": "Converts the City of Tacloban, a component city, into a highly urbanized city.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Tacloban remained a component city of Leyte until its HUC conversion was ratified."
+    },
+    {
+     "from": "2008-12-18",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2583"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Tacloban&oldid=1378233532",
+       "title": "Wikipedia: Tacloban",
+       "says": "Proclaimed highly urbanized city 4 October 2008; ratified by plebiscite 18 December 2008.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Biliran",
+   "names": {
+    "en": "Biliran",
+    "ja": "ビリラン州",
+    "local": "Biliran"
+   },
+   "wikidata": "Q13751",
+   "spans": [
+    {
+     "from": "1992-05-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2581"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra1991/ra_7160_1991.html",
+       "title": "Republic Act No. 7160 (Local Government Code of 1991), Sec. 462",
+       "says": "Existing sub-provinces become regular provinces on approval in a plebiscite held with the first national elections after the Code takes effect.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "1992-05-11: Biliran province split from Leyte, following a referendum.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Iloilo",
+   "names": {
+    "en": "Iloilo",
+    "ja": "イロイロ州",
+    "local": "Iloilo"
+   },
+   "wikidata": "Q13825",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": "1992-05-11",
+     "atoms": [
+      "PHL-2529",
+      "PHL-2530"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra1991/ra_7160_1991.html",
+       "title": "Republic Act No. 7160 (Local Government Code of 1991), Sec. 462",
+       "says": "Existing sub-provinces become regular provinces on approval in a plebiscite held with the first national elections after the Code takes effect.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Guimaras&oldid=1375542858",
+       "title": "Wikipedia: Guimaras",
+       "says": "Guimaras became a regular province on 11 May 1992 after a plebiscite under Sec. 462 of RA 7160.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Includes sub-province Guimaras; Iloilo City is a separate unit."
+    },
+    {
+     "from": "1992-05-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2529"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "1992-05-11: Guimaras province split from Iloilo, following a referendum.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Guimaras",
+   "names": {
+    "en": "Guimaras",
+    "ja": "ギマラス州",
+    "local": "Guimaras"
+   },
+   "wikidata": "Q13810",
+   "spans": [
+    {
+     "from": "1992-05-11",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2530"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra1991/ra_7160_1991.html",
+       "title": "Republic Act No. 7160 (Local Government Code of 1991), Sec. 462",
+       "says": "Existing sub-provinces become regular provinces on approval in a plebiscite held with the first national elections after the Code takes effect.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "1992-05-11: Guimaras province split from Iloilo, following a referendum.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Isabela",
+   "names": {
+    "en": "Isabela",
+    "ja": "イサベラ州",
+    "local": "Isabela"
+   },
+   "wikidata": "Q13826",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": "1994-07-04",
+     "atoms": [
+      "PHL-2550",
+      "PHL-5537"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra1994/ra_7720_1994.html",
+       "title": "Republic Act No. 7720 (1994)",
+       "says": "Converts the Municipality of Santiago, Isabela, within its present bounds, into an independent component city upon plebiscite ratification.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Santiago was a municipality of Isabela until its ICC charter was ratified."
+    },
+    {
+     "from": "1994-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2550"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/judjuris/juri1999/sep1999/gr_133064_1999.html",
+       "title": "Miranda v. Aguirre, G.R. No. 133064 (1999-09-16)",
+       "says": "RA 7720 ratified 4 July 1994; RA 8528 downgrading Santiago to component city held unconstitutional for lack of plebiscite.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:KalingaApayao",
+   "names": {
+    "en": "Kalinga-Apayao",
+    "local": "Kalinga-Apayao"
+   },
+   "wikidata": "Q3550632",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": "1995-05-08",
+     "atoms": [
+      "PHL-4931",
+      "PHL-2546"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra1995/ra_7878_1995.html",
+       "title": "Republic Act No. 7878 (1995-02-14)",
+       "says": "Converts the sub-provinces Kalinga and Apayao of Kalinga-Apayao into regular provinces, existing upon plebiscite ratification.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Kalinga",
+   "names": {
+    "en": "Kalinga",
+    "ja": "カリンガ州",
+    "local": "Kalinga"
+   },
+   "wikidata": "Q13827",
+   "spans": [
+    {
+     "from": "1995-05-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-4931"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra1995/ra_7878_1995.html",
+       "title": "Republic Act No. 7878 (1995-02-14)",
+       "says": "Kalinga and Apayao begin to exist upon ratification in a plebiscite held within 120 days of approval.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=1995_in_the_Philippines&oldid=1374599327",
+       "title": "Wikipedia: 1995 in the Philippines",
+       "says": "Kalinga-Apayao voters ratified RA 7878 in a plebiscite on 8 May 1995, creating Kalinga and Apayao.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "statoids gives 1995-02-14, the approval date; the law makes ratification the start."
+    }
+   ]
+  },
+  {
+   "id": "PHL:Apayao",
+   "names": {
+    "en": "Apayao",
+    "ja": "アパヤオ州",
+    "local": "Apayao"
+   },
+   "wikidata": "Q13728",
+   "spans": [
+    {
+     "from": "1995-05-08",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2546"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra1995/ra_7878_1995.html",
+       "title": "Republic Act No. 7878 (1995-02-14)",
+       "says": "Kalinga and Apayao begin to exist upon ratification in a plebiscite held within 120 days of approval.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=1995_in_the_Philippines&oldid=1374599327",
+       "title": "Wikipedia: 1995 in the Philippines",
+       "says": "Kalinga-Apayao voters ratified RA 7878 in a plebiscite on 8 May 1995, creating Kalinga and Apayao.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "statoids gives 1995-02-14, the approval date; the law makes ratification the start."
+    }
+   ]
+  },
+  {
+   "id": "PHL:DavaoDelNorte",
+   "names": {
+    "en": "Davao del Norte",
+    "ja": "北ダバオ州",
+    "local": "Davao del Norte"
+   },
+   "wikidata": "Q13792",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": "1998-03-07",
+     "atoms": [
+      "PHL-2591",
+      "PHL-2592"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra1998/ra_8470_1998.html",
+       "title": "Republic Act No. 8470 (1998-01-30)",
+       "says": "Creates Compostela Valley from 11 municipalities of Davao del Norte, effective on plebiscite approval; the rest stays Davao del Norte.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Davao_del_Norte&oldid=1375502162",
+       "title": "Wikipedia: Davao del Norte",
+       "says": "RA 6430 (1972) renamed Davao del Norte to Davao; RA 8470 (1998) split off Compostela Valley and the name reverted.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Named \"Davao\" under RA 6430 (1972) until 1998, though RA 8470 itself already calls it Davao del Norte."
+    },
+    {
+     "from": "1998-03-07",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2591"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "1998-03-07: Compostela Valley split from Davao province; Davao renamed back to Davao del Norte.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:CompostelaValley",
+   "names": {
+    "en": "Compostela Valley (Davao de Oro)",
+    "ja": "ダバオ・デ・オロ州",
+    "local": "Compostela Valley"
+   },
+   "wikidata": "Q13789",
+   "spans": [
+    {
+     "from": "1998-03-07",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2592"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra1998/ra_8470_1998.html",
+       "title": "Republic Act No. 8470 (1998-01-30)",
+       "says": "Creates Compostela Valley from 11 municipalities of Davao del Norte, effective on plebiscite approval; the rest stays Davao del Norte.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Davao_de_Oro&oldid=1375419709",
+       "title": "Wikipedia: Davao de Oro",
+       "says": "RA 8470 ratified by plebiscite in the mother province on 7 March 1998; renamed Davao de Oro by a December 2019 plebiscite.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Renamed Davao de Oro in December 2019 without territorial change."
+    }
+   ]
+  },
+  {
+   "id": "PHL:ZamboangaDelSur",
+   "names": {
+    "en": "Zamboanga del Sur",
+    "ja": "南サンボアンガ州",
+    "local": "Zamboanga del Sur"
+   },
+   "wikidata": "Q13900",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": "2001-02-22",
+     "atoms": [
+      "PHL-2522",
+      "PHL-2521"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra2000/ra_8973_2000.html",
+       "title": "Republic Act No. 8973 (2000-11-07)",
+       "says": "Creates Zamboanga Sibugay from 16 municipalities of Zamboanga del Sur upon plebiscite approval.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Includes the 16 municipalities that became Zamboanga Sibugay; Zamboanga City is a separate unit. Plebiscite 2001-02-22, statoids 2001-02-23, results proclaimed 2001-02-26: the window 2001-02-22 to 2001-02-26 is withheld."
+    },
+    {
+     "from": "2001-02-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2522"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra2000/ra_8973_2000.html",
+       "title": "Republic Act No. 8973 (2000-11-07)",
+       "says": "Creates Zamboanga Sibugay from 16 municipalities of Zamboanga del Sur upon plebiscite approval.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Plebiscite 2001-02-22, statoids 2001-02-23, results proclaimed 2001-02-26: the window 2001-02-22 to 2001-02-26 is withheld."
+    }
+   ]
+  },
+  {
+   "id": "PHL:ZamboangaSibugay",
+   "names": {
+    "en": "Zamboanga Sibugay",
+    "ja": "サンボアンガ・シブガイ州",
+    "local": "Zamboanga Sibugay"
+   },
+   "wikidata": "Q13902",
+   "spans": [
+    {
+     "from": "2001-02-27",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2521"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra2000/ra_8973_2000.html",
+       "title": "Republic Act No. 8973 (2000-11-07)",
+       "says": "Creates Zamboanga Sibugay from 16 municipalities of Zamboanga del Sur upon plebiscite approval.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=2001_Zamboanga_Sibugay_creation_plebiscite&oldid=1364552001",
+       "title": "Wikipedia: 2001 Zamboanga Sibugay creation plebiscite",
+       "says": "Plebiscite held 22 February 2001, 70.04% in favour; results announced 26 February 2001.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Plebiscite 2001-02-22, statoids 2001-02-23, results proclaimed 2001-02-26: the window 2001-02-22 to 2001-02-26 is withheld."
+    }
+   ]
+  },
+  {
+   "id": "PHL:Maguindanao",
+   "names": {
+    "en": "Maguindanao",
+    "ja": "マギンダナオ州",
+    "local": "Maguindanao"
+   },
+   "wikidata": "Q13845",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": "2006-10-28",
+     "atoms": [
+      "PHL-2576"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no change to Maguindanao between 1992 and the 2006-10-30 Shariff Kabunsuan entry.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Cotabato City is a separate unit (independent component city)."
+    },
+    {
+     "from": "2008-12-17",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2576"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Shariff_Kabunsuan&oldid=1361629411",
+       "title": "Wikipedia: Shariff Kabunsuan",
+       "says": "Created from Maguindanao's first district by MMAA 201, plebiscite 28 Oct 2006; voided in Sema v. COMELEC, reconsideration denied.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://chanrobles.com/scresolutions/2008decemberresolutions.php?id=262",
+       "title": "Sema v. COMELEC, G.R. No. 177597, Resolution of 2008-12-16",
+       "says": "Supreme Court en banc denied all motions for reconsideration with finality.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Shariff Kabunsuan found unconstitutional; Maguindanao reverted to its original status on 2008-07-16.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Decision of 2008-07-16 became final with the 2008-12-16 resolution; the span starts the day after."
+    }
+   ]
+  },
+  {
+   "id": "PHL:SurigaoDelNorte",
+   "names": {
+    "en": "Surigao del Norte",
+    "ja": "北スリガオ州",
+    "local": "Surigao del Norte"
+   },
+   "wikidata": "Q13889",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": "2006-12-02",
+     "atoms": [
+      "PHL-2593"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "2006-12-02: Dinagat Islands formed from seven Surigao del Norte municipalities; no earlier change since 1992.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Dinagat_Islands&oldid=1375373816",
+       "title": "Wikipedia: Dinagat Islands",
+       "says": "Dinagat was part of Surigao del Norte's first district until it became a province on 2 December 2006 (RA 9355).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "NE atom PHL-2593 includes the Dinagat Islands; NE gives Q13807 (the Dinagat Islands item) as its QID."
+    }
+   ]
+  },
+  {
+   "id": "PHL:DavaoDelSur",
+   "names": {
+    "en": "Davao del Sur",
+    "ja": "南ダバオ州",
+    "local": "Davao del Sur"
+   },
+   "wikidata": "Q13794",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": "2013-10-28",
+     "atoms": [
+      "PHL-2596"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "2013-10-28: Davao Occidental split from Davao del Sur by plebiscite; no earlier change since 1992.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://lawphil.net/statutes/repacts/ra2013/ra_10360_2013.html",
+       "title": "Republic Act No. 10360 (2013)",
+       "says": "Creates Davao Occidental from Sta. Maria, Malita, Don Marcelino, Jose Abad Santos and Sarangani of Davao del Sur upon plebiscite.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "NE atom PHL-2596 includes Davao Occidental; Davao City is a separate unit."
+    }
+   ]
+  },
+  {
+   "id": "PHL:Cotabato",
+   "names": {
+    "en": "Cotabato",
+    "ja": "コタバト州",
+    "local": "Cotabato"
+   },
+   "wikidata": "Q13791",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": "2019-02-06",
+     "atoms": [
+      "PHL-2579"
+     ],
+     "sources": [
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Until the 2019 Bangsamoro plebiscite in which 63 of its barangays voted to join BARMM."
+    }
+   ]
+  },
+  {
+   "id": "PHL:Cebu",
+   "names": {
+    "en": "Cebu",
+    "ja": "セブ州",
+    "local": "Cebu"
+   },
+   "wikidata": "Q13786",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": "2007-07-21",
+     "atoms": [
+      "PHL-2514",
+      "PHL-5524"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/executive/proc/proc2007/proc_1222_2007.html",
+       "title": "Proclamation No. 1222 (2007-01-23)",
+       "says": "Converts the City of Lapu-Lapu from a component city into a highly-urbanized city, subject to a plebiscite.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Lapu-Lapu was a component city of Cebu; Cebu City and Mandaue are separate units."
+    },
+    {
+     "from": "2007-07-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2514"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Lapu-Lapu_City&oldid=1375622870",
+       "title": "Wikipedia: Lapu-Lapu City",
+       "says": "Proclaimed HUC 23 January 2007; plebiscite held 21 July 2007 with Puerto Princesa, both approved.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:Palawan",
+   "names": {
+    "en": "Palawan",
+    "ja": "パラワン州",
+    "local": "Palawan"
+   },
+   "wikidata": "Q13869",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": "2007-07-21",
+     "atoms": [
+      "PHL-2534",
+      "PHL-5533"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/executive/proc/proc2007/proc_1264_2007.html",
+       "title": "Proclamation No. 1264 (2007-03-26)",
+       "says": "Declares the City of Puerto Princesa a highly-urbanized city under Secs. 452-453 of the LGC.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Puerto Princesa was a component city of Palawan until its HUC conversion was ratified."
+    },
+    {
+     "from": "2007-07-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-2534"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Puerto_Princesa&oldid=1377835130",
+       "title": "Wikipedia: Puerto Princesa",
+       "says": "Converted to HUC by Proclamation 1264 (26 March 2007); plebiscite of 21 July 2007 approved it.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "Province change history lists no creation, split or territorial change for this province from 1992 to its latest entry (2013-10-28).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:MetroManila",
+   "names": {
+    "en": "Metro Manila (National Capital Region)",
+    "ja": "マニラ首都圏",
+    "local": "Kalakhang Maynila"
+   },
+   "wikidata": "Q13580",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5543",
+      "PHL-5549",
+      "PHL-5545",
+      "PHL-5546",
+      "PHL-5544",
+      "PHL-5547",
+      "PHL-5554",
+      "PHL-5555",
+      "PHL-5556",
+      "PHL-5557",
+      "PHL-5558",
+      "PHL-5559",
+      "PHL-5553",
+      "PHL-5550",
+      "PHL-5552",
+      "PHL-5542",
+      "PHL-5551"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/statutes/presdecs/pd1975/pd_824_1975.html",
+       "title": "Presidential Decree No. 824 (1975-11-07)",
+       "says": "Creates the Metropolitan Manila public corporation.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/uph.html",
+       "title": "Statoids: Provinces of the Philippines (change history)",
+       "says": "1975-11-08: Metropolitan Manila split from Rizal; listed as a region-level primary division with no later change.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=List_of_internal_boundary_disputes_in_the_Philippines&oldid=1370612863",
+       "title": "Wikipedia: List of internal boundary disputes in the Philippines",
+       "says": "Lists pending Metro Manila boundary disputes (Caloocan-San Jose del Monte etc.) and the Makati-Taguig case settled in 2023.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Drawn as one unit (union of its 16 cities and Pateros): intra-NCR lines such as Makati-Taguig were disputed 1993-2023 and are not claimed here."
+    }
+   ]
+  },
+  {
+   "id": "PHL:AngelesCity",
+   "names": {
+    "en": "Angeles",
+    "ja": "アンヘレス",
+    "local": "Lungsod ng Angeles"
+   },
+   "wikidata": "Q55741",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5538"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Angeles_City&oldid=1378157648",
+       "title": "Wikipedia: Angeles City",
+       "says": "Chartered city 1964 (RA 3700); infobox gives highly urbanized city status from 13 October 1986.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:BacolodCity",
+   "names": {
+    "en": "Bacolod",
+    "ja": "バコロド",
+    "local": "Lungsod ng Bacolod"
+   },
+   "wikidata": "Q5217",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5525"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Bacolod&oldid=1375379797",
+       "title": "Wikipedia: Bacolod",
+       "says": "Bacolod was classified a highly urbanized city on 27 September 1984.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:BaguioCity",
+   "names": {
+    "en": "Baguio",
+    "ja": "バギオ",
+    "local": "Lungsod ng Baguio"
+   },
+   "wikidata": "Q1822",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5539"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Baguio&oldid=1378394336",
+       "title": "Wikipedia: Baguio",
+       "says": "Chartered city since 1909, HUC (infobox date 22 December 1979); administered independently of Benguet.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:ButuanCity",
+   "names": {
+    "en": "Butuan",
+    "ja": "ブトゥアン",
+    "local": "Lungsod ng Butuan"
+   },
+   "wikidata": "Q1686",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5532"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Butuan&oldid=1378158143",
+       "title": "Wikipedia: Butuan",
+       "says": "Reclassified from chartered city to highly urbanized city on 7 February 1985; independent of Agusan del Norte.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:CagayandeOroCity",
+   "names": {
+    "en": "Cagayan de Oro",
+    "ja": "カガヤン・デ・オロ",
+    "local": "Lungsod ng Cagayan de Oro"
+   },
+   "wikidata": "Q1645",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5531"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Cagayan_de_Oro&oldid=1375630719",
+       "title": "Wikipedia: Cagayan de Oro",
+       "says": "Chartered 1950 (RA 521); declared highly urbanized city by the Ministry of Local Government on 22 November 1983.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:CebuCity",
+   "names": {
+    "en": "Cebu City",
+    "ja": "セブ",
+    "local": "Lungsod ng Cebu"
+   },
+   "wikidata": "Q1467",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5522"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Cebu_City&oldid=1375526805",
+       "title": "Wikipedia: Cebu City",
+       "says": "Charter 1937; HUC (infobox 22 December 1979), administratively independent of the provincial government.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:DavaoCity",
+   "names": {
+    "en": "Davao City",
+    "ja": "ダバオ",
+    "local": "Lungsod ng Dabaw"
+   },
+   "wikidata": "Q1473",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5528"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Davao_City&oldid=1377444510",
+       "title": "Wikipedia: Davao City",
+       "says": "Chartered 1936-37; highly urbanized city (infobox 22 December 1979).",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:GeneralSantosCity",
+   "names": {
+    "en": "General Santos",
+    "ja": "ジェネラル・サントス",
+    "local": "Lungsod ng Heneral Santos"
+   },
+   "wikidata": "Q594275",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5529"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=General_Santos&oldid=1378100152",
+       "title": "Wikipedia: General Santos",
+       "says": "City 1968 (RA 5412); highly urbanized city independent from South Cotabato since 5 September 1988.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:IliganCity",
+   "names": {
+    "en": "Iligan",
+    "ja": "イリガン",
+    "local": "Lungsod ng Iligan"
+   },
+   "wikidata": "Q285488",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5530"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Iligan&oldid=1376830639",
+       "title": "Wikipedia: Iligan",
+       "says": "Chartered city 1950 (RA 525); highly urbanized city since 22 November 1983.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:IloiloCity",
+   "names": {
+    "en": "Iloilo City",
+    "ja": "イロイロ",
+    "local": "Lungsod ng Iloilo"
+   },
+   "wikidata": "Q459787",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5526"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Iloilo_City&oldid=1377433563",
+       "title": "Wikipedia: Iloilo City",
+       "says": "Highly urbanized city since 22 December 1979 under Batas Pambansa; residents do not vote for provincial officials.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:LucenaCity",
+   "names": {
+    "en": "Lucena",
+    "ja": "ルセナ",
+    "local": "Lungsod ng Lucena"
+   },
+   "wikidata": "Q104125",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5560"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Lucena&oldid=1377228611",
+       "title": "Wikipedia: Lucena",
+       "says": "Declared a highly urbanized city on 1 July 1991, independent of Quezon province.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Its voters still take part in Quezon provincial elections."
+    }
+   ]
+  },
+  {
+   "id": "PHL:MandaueCity",
+   "names": {
+    "en": "Mandaue",
+    "ja": "マンダウエ",
+    "local": "Lungsod ng Mandaue"
+   },
+   "wikidata": "Q1889017",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5523"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Mandaue&oldid=1378540228",
+       "title": "Wikipedia: Mandaue",
+       "says": "Chartered city 30 August 1969; recognized as highly urbanized city on 15 February 1991.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Its voters still take part in Cebu provincial elections."
+    }
+   ]
+  },
+  {
+   "id": "PHL:OlongapoCity",
+   "names": {
+    "en": "Olongapo",
+    "ja": "オロンガポ",
+    "local": "Lungsod ng Olongapo"
+   },
+   "wikidata": "Q56759",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5540"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Olongapo&oldid=1373639382",
+       "title": "Wikipedia: Olongapo",
+       "says": "Upgraded to highly urbanized city on 7 December 1983; Zambales has no jurisdiction over the city.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1983 date is marked citation needed on Wikipedia; only its being before 1992 is relied on."
+    }
+   ]
+  },
+  {
+   "id": "PHL:ZamboangaCity",
+   "names": {
+    "en": "Zamboanga City",
+    "ja": "サンボアンガ",
+    "local": "Lungsod ng Zamboanga"
+   },
+   "wikidata": "Q1629",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-4932"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Zamboanga_City&oldid=1378596982",
+       "title": "Wikipedia: Zamboanga City",
+       "says": "Independent chartered city, designated highly urbanized city on 22 November 1983.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:CotabatoCity",
+   "names": {
+    "en": "Cotabato City",
+    "ja": "コタバト",
+    "local": "Lungsod ng Cotabato"
+   },
+   "wikidata": "Q726993",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5527"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Santiago%2C_Isabela&oldid=1378602258",
+       "title": "Wikipedia: Santiago, Isabela",
+       "says": "Santiago (RA 7720, 1994) became the 5th independent component city, after Cotabato City, Dagupan, Naga and Ormoc.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Cotabato_City&oldid=1377129644",
+       "title": "Wikipedia: Cotabato City",
+       "says": "Independent component city, not subject to the provincial government; joined Bangsamoro in 2019 without territorial change.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:DagupanCity",
+   "names": {
+    "en": "Dagupan",
+    "ja": "ダグパン",
+    "local": "Lungsod ng Dagupan"
+   },
+   "wikidata": "Q875070",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5541"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Santiago%2C_Isabela&oldid=1378602258",
+       "title": "Wikipedia: Santiago, Isabela",
+       "says": "Santiago (RA 7720, 1994) became the 5th independent component city, after Cotabato City, Dagupan, Naga and Ormoc.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Dagupan&oldid=1378397319",
+       "title": "Wikipedia: Dagupan",
+       "says": "City by RA 170 of 20 June 1947; an independent component city.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:NagaCity",
+   "names": {
+    "en": "Naga",
+    "ja": "ナガ",
+    "local": "Lungsod ng Naga"
+   },
+   "wikidata": "Q2207",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5536"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Santiago%2C_Isabela&oldid=1378602258",
+       "title": "Wikipedia: Santiago, Isabela",
+       "says": "Santiago (RA 7720, 1994) became the 5th independent component city, after Cotabato City, Dagupan, Naga and Ormoc.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Naga%2C_Camarines_Sur&oldid=1378555688",
+       "title": "Wikipedia: Naga, Camarines Sur",
+       "says": "Naga is an independent component city in the Bicol Region.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:OrmocCity",
+   "names": {
+    "en": "Ormoc",
+    "ja": "オルモック",
+    "local": "Lungsod ng Ormoc"
+   },
+   "wikidata": "Q1014782",
+   "spans": [
+    {
+     "from": "1992-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5534"
+     ],
+     "sources": [
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Santiago%2C_Isabela&oldid=1378602258",
+       "title": "Wikipedia: Santiago, Isabela",
+       "says": "Santiago (RA 7720, 1994) became the 5th independent component city, after Cotabato City, Dagupan, Naga and Ormoc.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Ormoc&oldid=1374173320",
+       "title": "Wikipedia: Ormoc",
+       "says": "City by RA 179 (1947); independent component city not subject to the provincial government of Leyte.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PHL:SantiagoCity",
+   "names": {
+    "en": "Santiago",
+    "ja": "サンティアゴ",
+    "local": "Lungsod ng Santiago"
+   },
+   "wikidata": "Q50180",
+   "spans": [
+    {
+     "from": "1994-07-04",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5537"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/judjuris/juri1999/sep1999/gr_133064_1999.html",
+       "title": "Miranda v. Aguirre, G.R. No. 133064 (1999-09-16)",
+       "says": "RA 7720 ratified 4 July 1994; RA 8528 downgrading Santiago to component city held unconstitutional for lack of plebiscite.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Santiago%2C_Isabela&oldid=1378602258",
+       "title": "Wikipedia: Santiago, Isabela",
+       "says": "Santiago (RA 7720, 1994) became the 5th independent component city, after Cotabato City, Dagupan, Naga and Ormoc.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Wikipedia gives the plebiscite as 6 July 1994; the Supreme Court decision (4 July) is followed. The RA 8528 (1998) downgrade was voided for lack of plebiscite."
+    }
+   ]
+  },
+  {
+   "id": "PHL:LapuLapuCity",
+   "names": {
+    "en": "Lapu-Lapu",
+    "ja": "ラプ＝ラプ市",
+    "local": "Lungsod ng Lapu-Lapu"
+   },
+   "wikidata": "Q574903",
+   "spans": [
+    {
+     "from": "2007-07-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5524"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/executive/proc/proc2007/proc_1222_2007.html",
+       "title": "Proclamation No. 1222 (2007-01-23)",
+       "says": "Converts Lapu-Lapu from a component city into a highly-urbanized city; a COMELEC plebiscite in the city follows.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Lapu-Lapu_City&oldid=1375622870",
+       "title": "Wikipedia: Lapu-Lapu City",
+       "says": "Plebiscite held 21 July 2007; majority approved conversion to HUC.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "City-only plebiscite (before Umali v. COMELEC, 2014, required province-wide votes); never annulled."
+    }
+   ]
+  },
+  {
+   "id": "PHL:PuertoPrincesaCity",
+   "names": {
+    "en": "Puerto Princesa",
+    "ja": "プエルト・プリンセサ",
+    "local": "Lungsod ng Puerto Princesa"
+   },
+   "wikidata": "Q111739",
+   "spans": [
+    {
+     "from": "2007-07-21",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5533"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/executive/proc/proc2007/proc_1264_2007.html",
+       "title": "Proclamation No. 1264 (2007-03-26)",
+       "says": "Converts the City of Puerto Princesa into a highly-urbanized city.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Puerto_Princesa&oldid=1377835130",
+       "title": "Wikipedia: Puerto Princesa",
+       "says": "Plebiscite of 21 July 2007 approved the conversion.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "City-only plebiscite; never annulled."
+    }
+   ]
+  },
+  {
+   "id": "PHL:TaclobanCity",
+   "names": {
+    "en": "Tacloban",
+    "ja": "タクロバン",
+    "local": "Lungsod ng Tacloban"
+   },
+   "wikidata": "Q40626",
+   "spans": [
+    {
+     "from": "2008-12-18",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "PHL-5535"
+     ],
+     "sources": [
+      {
+       "url": "https://lawphil.net/executive/proc/proc2008/proc_1637_2008.html",
+       "title": "Proclamation No. 1637 (2008-10-04)",
+       "says": "Converts the City of Tacloban into a highly-urbanized city.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Tacloban&oldid=1378233532",
+       "title": "Wikipedia: Tacloban",
+       "says": "Ratified by the people on 18 December 2008; declared HUC that night.",
+       "accessed": "2026-10-05"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1992-05-11",
+   "precision": "day",
+   "what": "Sub-provinces Biliran (Leyte) and Guimaras (Iloilo) become provinces by plebiscite under LGC Sec. 462",
+   "sources": [
+    {
+     "url": "https://lawphil.net/statutes/repacts/ra1991/ra_7160_1991.html",
+     "title": "Republic Act No. 7160 (Local Government Code of 1991), Sec. 462",
+     "says": "Existing sub-provinces become regular provinces on approval in a plebiscite held with the first national elections after the Code takes effect.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.statoids.com/uph.html",
+     "title": "Statoids: Provinces of the Philippines (change history)",
+     "says": "1992-05-11: Biliran split from Leyte; Guimaras split from Iloilo, following referendums.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1994-07-04",
+   "precision": "day",
+   "what": "Santiago (Isabela) becomes an independent component city (RA 7720 ratified)",
+   "sources": [
+    {
+     "url": "https://lawphil.net/judjuris/juri1999/sep1999/gr_133064_1999.html",
+     "title": "Miranda v. Aguirre, G.R. No. 133064 (1999-09-16)",
+     "says": "RA 7720 ratified 4 July 1994; RA 8528 downgrading Santiago to component city held unconstitutional for lack of plebiscite.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1995-05-08",
+   "precision": "day",
+   "what": "Kalinga-Apayao split into Kalinga and Apayao (RA 7878 ratified)",
+   "sources": [
+    {
+     "url": "https://lawphil.net/statutes/repacts/ra1995/ra_7878_1995.html",
+     "title": "Republic Act No. 7878 (1995-02-14)",
+     "says": "Kalinga and Apayao begin to exist upon ratification in a plebiscite held within 120 days of approval.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=1995_in_the_Philippines&oldid=1374599327",
+     "title": "Wikipedia: 1995 in the Philippines",
+     "says": "Kalinga-Apayao voters ratified RA 7878 in a plebiscite on 8 May 1995, creating Kalinga and Apayao.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1998-03-07",
+   "precision": "day",
+   "what": "Compostela Valley created from Davao del Norte (RA 8470 ratified)",
+   "sources": [
+    {
+     "url": "https://lawphil.net/statutes/repacts/ra1998/ra_8470_1998.html",
+     "title": "Republic Act No. 8470 (1998-01-30)",
+     "says": "Creates Compostela Valley from 11 municipalities of Davao del Norte, effective on plebiscite approval; the rest stays Davao del Norte.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.statoids.com/uph.html",
+     "title": "Statoids: Provinces of the Philippines (change history)",
+     "says": "1998-03-07: Compostela Valley split from Davao province.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2006-10-28",
+   "precision": "day",
+   "what": "Shariff Kabunsuan carved from Maguindanao (MMAA 201 plebiscite); voided by Supreme Court 2008-07-16, final 2008-12-16",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Shariff_Kabunsuan&oldid=1361629411",
+     "title": "Wikipedia: Shariff Kabunsuan",
+     "says": "Created from Maguindanao's first district by MMAA 201, plebiscite 28 Oct 2006; voided in Sema v. COMELEC, reconsideration denied.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2006-12-02",
+   "precision": "day",
+   "what": "Dinagat Islands created from Surigao del Norte (RA 9355); voided 2010-02-10/11, upheld 2011-04-12, entry of judgment 2012-10-24",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Dinagat_Islands&oldid=1375373816",
+     "title": "Wikipedia: Dinagat Islands",
+     "says": "Province from 2 Dec 2006; SC voided it 11 Feb 2010, reversed 12 Apr 2011; entry of judgment 24 Oct 2012.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://lawphil.net/statutes/repacts/ra2006/ra_9355_2006.html",
+     "title": "Republic Act No. 9355",
+     "says": "Dinagat Islands created upon approval by Surigao del Norte voters in a plebiscite.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2007-07-21",
+   "precision": "day",
+   "what": "Lapu-Lapu and Puerto Princesa become highly urbanized cities by plebiscite",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Lapu-Lapu_City&oldid=1375622870",
+     "title": "Wikipedia: Lapu-Lapu City",
+     "says": "Plebiscites for Lapu-Lapu and Puerto Princesa HUC conversion held 21 July 2007, both approved.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2008-12-18",
+   "precision": "day",
+   "what": "Tacloban becomes a highly urbanized city by plebiscite",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Tacloban&oldid=1378233532",
+     "title": "Wikipedia: Tacloban",
+     "says": "HUC conversion ratified 18 December 2008.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2013-10-28",
+   "precision": "day",
+   "what": "Davao Occidental created from Davao del Sur (RA 10360)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/uph.html",
+     "title": "Statoids: Provinces of the Philippines (change history)",
+     "says": "2013-10-28: Davao Occidental split from Davao del Sur by plebiscite.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2019-02-06",
+   "precision": "day",
+   "what": "Second Bangsamoro plebiscite: 63 barangays of Cotabato province vote to join BARMM (results 2019-02-14; turnover 2019-11-20)",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Cotabato_City&oldid=1377129644",
+     "title": "Wikipedia: Cotabato City",
+     "says": "Bangsamoro Organic Law ratified in the 2019 plebiscites; Cotabato City joined the region.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [],
+ "atomsOutside": [],
+ "unresolved": [
+  {
+   "what": "Philippine first-level layouts 1946-07-04 to 1991-12-31 are not claimed",
+   "from": "1946-07-04",
+   "to": "1992-01-01",
+   "why": "City independence/HUC dates 1946-1991 were not all established to day precision (e.g. HUC dates 1979-1991 rest on single Wikipedia infoboxes), and Negros del Norte (1986) cannot be drawn; scope starts at the Local Government Code effectivity.",
+   "checked": [
+    "statoids uph.html change history (provinces only; statoids does not track chartered cities)"
+   ],
+   "needs": "per-city charter and HUC/ICC dates 1946-1991 from the laws and proclamations; Negros del Norte needs municipal atoms"
+  },
+  {
+   "what": "South Cotabato / Sarangani split: legal date of creation",
+   "atoms": [
+    "PHL-2599",
+    "PHL-2598"
+   ],
+   "from": "1992-03-16",
+   "to": "1992-05-20",
+   "why": "RA 7228 (approved 1992-03-16) makes creation subject to plebiscite; statoids dates the split 1992-03-16; Wikipedia gives a 1992-05-19 plebiscite but its cited source (the Act) does not state it.",
+   "checked": [
+    "RA 7228 text (lawphil)",
+    "statoids uph.html",
+    "Wikipedia Sarangani oldid 1375508910 and Legislative districts of Sarangani",
+    "sarangani.gov.ph (no history page reachable)"
+   ],
+   "needs": "COMELEC or Official Gazette record of the Sarangani plebiscite date"
+  },
+  {
+   "what": "Zamboanga del Sur / Zamboanga Sibugay split: legal date",
+   "atoms": [
+    "PHL-2522",
+    "PHL-2521"
+   ],
+   "from": "2001-02-22",
+   "to": "2001-02-27",
+   "why": "Plebiscite 2001-02-22 (Wikipedia citing PhilStar), statoids 2001-02-23, provincial day 24 Feb, results proclaimed 2001-02-26: the legal start day is not settled.",
+   "checked": [
+    "RA 8973 Sec. 49 (lawphil)",
+    "Wikipedia 2001 Zamboanga Sibugay creation plebiscite oldid 1364552001",
+    "statoids uph.html",
+    "Official Gazette Proclamation No. 8 s.2001 (HTTP 403)"
+   ],
+   "needs": "COMELEC resolution or provincial board of canvassers proclamation for the 2001 plebiscite"
+  },
+  {
+   "what": "Maguindanao atom while Shariff Kabunsuan existed",
+   "unit": "PHL:ShariffKabunsuan@2006",
+   "atoms": [
+    "PHL-2576"
+   ],
+   "from": "2006-10-28",
+   "to": "2008-12-17",
+   "why": "Shariff Kabunsuan (Maguindanao district 1 municipalities) and rump Maguindanao both lie inside the single NE atom PHL-2576; no NE line separates them.",
+   "checked": [
+    "Wikipedia Shariff Kabunsuan oldid 1361629411",
+    "statoids uph.html 2006-10-30 entry",
+    "Sema v. COMELEC resolution 2008-12-16 (chanrobles)"
+   ],
+   "needs": "finer atoms carrying municipal lines (e.g. geoBoundaries PHL ADM3 or PSA/NAMRIA municipal boundaries; licences not yet checked)"
+  },
+  {
+   "what": "Surigao del Norte atom after Dinagat Islands was created",
+   "unit": "PHL:DinagatIslands@2006",
+   "atoms": [
+    "PHL-2593"
+   ],
+   "from": "2006-12-02",
+   "to": null,
+   "why": "NE atom PHL-2593 contains both Surigao del Norte and Dinagat Islands (RA 9355; voided 2010-02-10/11, reinstated 2011-04-12); the atom holds two units throughout.",
+   "checked": [
+    "NE geometry bbox (coordinator)",
+    "RA 9355 (lawphil)",
+    "Wikipedia Dinagat Islands oldid 1375373816",
+    "statoids uph.html"
+   ],
+   "needs": "finer atoms with the Dinagat island lines (e.g. geoBoundaries PHL ADM2/ADM3; licence not yet checked)"
+  },
+  {
+   "what": "Davao del Sur atom after Davao Occidental was created",
+   "unit": "PHL:DavaoOccidental@2013",
+   "atoms": [
+    "PHL-2596"
+   ],
+   "from": "2013-10-28",
+   "to": null,
+   "why": "NE atom PHL-2596 contains both Davao del Sur and Davao Occidental (RA 10360); the atom holds two units.",
+   "checked": [
+    "NE geometry bbox (coordinator)",
+    "RA 10360 (lawphil)",
+    "statoids uph.html"
+   ],
+   "needs": "finer atoms with municipal lines (e.g. geoBoundaries PHL ADM2/ADM3; licence not yet checked)"
+  },
+  {
+   "what": "Cotabato province after the 2019 Bangsamoro plebiscite",
+   "atoms": [
+    "PHL-2579"
+   ],
+   "from": "2019-02-06",
+   "to": null,
+   "why": "63 barangays in Cotabato municipalities voted to join BARMM (proclaimed 2019-02-14, turned over 2019-11-20) while staying in their municipalities; their status relative to the province and their lines cannot be carried by the province atom.",
+   "checked": [
+    "Wikipedia Special Geographic Area (current revision via WebFetch)",
+    "Wikipedia Cotabato City oldid 1377129644"
+   ],
+   "needs": "barangay-level atoms (PSA/NAMRIA) and the legal status of the 63 barangays during 2019"
+  }
+ ]
+}

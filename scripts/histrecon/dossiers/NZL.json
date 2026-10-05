@@ -1,0 +1,900 @@
+{
+ "country": "NZL",
+ "atomSet": "ne-admin1@ca96624",
+ "scope": {
+  "from": "1992-07-01",
+  "to": "2019-12-31"
+ },
+ "polityNote": "New Zealand (dominion from 1907, fully sovereign) — territory unchanged over the scope. First-level units = the regions of the Local Government Act (from 1989-11-01) plus the Chatham Islands; outlying islands and Tokelau lie outside the regions.",
+ "units": [
+  {
+   "id": "NZL:Northland@1989",
+   "names": {
+    "en": "Northland Region",
+    "ja": "ノースランド地方",
+    "local": "Northland Region"
+   },
+   "wikidata": "Q59596",
+   "spans": [
+    {
+     "from": "1992-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-3404"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "Northland Region: constitution 1989; later orders amend constitution, harbour vesting and seaward boundary (mean low water springs); no boundary alteration with another region is listed.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unz.html",
+       "title": "Statoids — Regions of New Zealand (change history)",
+       "says": "1989-11-01 fourteen regional councils; 1992 Nelson-Marlborough abolished, Nelson/Marlborough/Tasman become regions; 2010-11-01 Auckland unitary with southern boundary adjusted.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Valid since the region’s constitution (1989-11-01); the dossier scope starts 1992-07-01."
+    }
+   ]
+  },
+  {
+   "id": "NZL:Auckland@2010",
+   "names": {
+    "en": "Auckland",
+    "ja": "オークランド地方",
+    "local": "Auckland"
+   },
+   "wikidata": "Q726917",
+   "spans": [
+    {
+     "from": "2012-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-3398"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "Auckland Council constituted 2010; boundaries determined 2010 and amended between Auckland and Waikato Region by notices in Gazette 2011 pp.1204 and 2046.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unz.html",
+       "title": "Statoids — Regions of New Zealand (change history)",
+       "says": "1989-11-01 fourteen regional councils; 1992 Nelson-Marlborough abolished, Nelson/Marlborough/Tasman become regions; 2010-11-01 Auckland unitary with southern boundary adjusted.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Last boundary amendment with Waikato Region gazetted in 2011 (day not established); span starts 2012-01-01. The 2012 notice (Gaz. 2012 p.1688) moves only an internal ward boundary."
+    }
+   ]
+  },
+  {
+   "id": "NZL:Waikato@1989",
+   "names": {
+    "en": "Waikato Region",
+    "ja": "ワイカト地方",
+    "local": "Waikato Region"
+   },
+   "wikidata": "Q139918",
+   "spans": [
+    {
+     "from": "2012-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-5468"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "Waikato Region: boundary alteration with Bay of Plenty (1994); parts of former Franklin District included 2010; Auckland–Waikato boundary amended twice in 2011.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unz.html",
+       "title": "Statoids — Regions of New Zealand (change history)",
+       "says": "1989-11-01 fourteen regional councils; 1992 Nelson-Marlborough abolished, Nelson/Marlborough/Tasman become regions; 2010-11-01 Auckland unitary with southern boundary adjusted.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Same conservative start as Auckland."
+    }
+   ]
+  },
+  {
+   "id": "NZL:BayOfPlenty@1989",
+   "names": {
+    "en": "Bay of Plenty Region",
+    "ja": "ベイ・オブ・プレンティ地方",
+    "local": "Bay of Plenty Region"
+   },
+   "wikidata": "Q2192924",
+   "spans": [
+    {
+     "from": "1995-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-3399"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "Bay of Plenty Region: Local Government (Waikato Region and Bay of Plenty Region) Reorganisation Amendment Order 1994 (Gaz. 1994 p.1625) — boundary alteration with Waikato Region; nothing later.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1994 order’s commencement day was not established; span starts 1995-01-01."
+    }
+   ]
+  },
+  {
+   "id": "NZL:Gisborne@1989",
+   "names": {
+    "en": "Gisborne District (region)",
+    "ja": "ギズボーン地方",
+    "local": "Gisborne District (region)"
+   },
+   "wikidata": "Q140246",
+   "spans": [
+    {
+     "from": "1998-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-3396"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "Gisborne: 1995 order re-defining Gisborne Region; Gisborne District Boundary Alteration Notice 1997 (Gaz. 1997 p.298) including adjacent islands, islets and rocks; 2011 seaward boundary only.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1997 notice’s day was not established; span starts 1998-01-01."
+    }
+   ]
+  },
+  {
+   "id": "NZL:HawkesBay@1989",
+   "names": {
+    "en": "Hawke's Bay Region",
+    "ja": "ホークス・ベイ地方",
+    "local": "Hawke's Bay Region"
+   },
+   "wikidata": "Q251825",
+   "spans": [
+    {
+     "from": "1995-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-3397"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "Hawke's Bay Region: boundary alteration with Manawatu-Wanganui Region by order 1994 (Gaz. 1994 p.3654, corrigendum p.4344); nothing later.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "The 1994 order’s day was not established; span starts 1995-01-01."
+    }
+   ]
+  },
+  {
+   "id": "NZL:ManawatuWhanganui@1989",
+   "names": {
+    "en": "Manawatū-Whanganui Region",
+    "ja": "マナワツ・ワンガヌイ地方",
+    "local": "Manawatū-Whanganui Region"
+   },
+   "wikidata": "Q139907",
+   "spans": [
+    {
+     "from": "1995-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-3334"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "Manawatu-Wanganui Region: boundary alterations with Taranaki (Gaz. 1994 p.637) and Hawke's Bay (Gaz. 1994 p.3654) in 1994; renamed Manawatū-Whanganui 2019 (name only).",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Both 1994 orders’ days not established; span starts 1995-01-01."
+    }
+   ]
+  },
+  {
+   "id": "NZL:Taranaki@1989",
+   "names": {
+    "en": "Taranaki Region",
+    "ja": "タラナキ地方",
+    "local": "Taranaki Region"
+   },
+   "wikidata": "Q140207",
+   "spans": [
+    {
+     "from": "1995-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-3405"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "Taranaki Region: boundary alteration with Manawatu-Wanganui Region (Stratford/Ruapehu districts) by order 1994 (Gaz. 1994 p.637); nothing later.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Span starts 1995-01-01 (1994 order, day not established)."
+    }
+   ]
+  },
+  {
+   "id": "NZL:Wellington@1989",
+   "names": {
+    "en": "Wellington Region",
+    "ja": "ウェリントン地方",
+    "local": "Wellington Region"
+   },
+   "wikidata": "Q856010",
+   "spans": [
+    {
+     "from": "1992-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-5469"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "Wellington Region: constitution 1989; 1990 amending orders; 1995 order alters only the Wellington North and Porirua constituency boundaries inside the region; no boundary alteration with another region.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unz.html",
+       "title": "Statoids — Regions of New Zealand (change history)",
+       "says": "1989-11-01 fourteen regional councils; 1992 Nelson-Marlborough abolished, Nelson/Marlborough/Tasman become regions; 2010-11-01 Auckland unitary with southern boundary adjusted.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Scope start 1992-07-01."
+    }
+   ]
+  },
+  {
+   "id": "NZL:Marlborough@1992",
+   "names": {
+    "en": "Marlborough District (region)",
+    "ja": "マールボロ地方",
+    "local": "Marlborough District (region)"
+   },
+   "wikidata": "Q140083",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-3401"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "Marlborough Region constituted by Local Government Amendment Act 1992 s.110; boundary alterations with Tasman District by notices 2002 (Gaz. 2002 p.603) and 2003 (Gaz. 2003 p.1380); 2011 seaward boundary only.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Nelson-Marlborough_Regional_Council&oldid=1363260796",
+       "title": "Wikipedia — Nelson-Marlborough Regional Council (cites Local Government Amendment Act 1992)",
+       "says": "Local Government Amendment Act 1992 (assent 20 May 1992) disestablished the Nelson-Marlborough Regional Council on 1 July 1992; Kaikoura District went to Canterbury.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Span starts the 1 January after the 2003 notice (day not established)."
+    }
+   ]
+  },
+  {
+   "id": "NZL:Tasman@1992",
+   "names": {
+    "en": "Tasman District (region)",
+    "ja": "タスマン地方",
+    "local": "Tasman District (region)"
+   },
+   "wikidata": "Q666142",
+   "spans": [
+    {
+     "from": "2004-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-3403"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "Tasman Region constituted 1992; boundary with Nelson City in Waimea Inlet defined 1995 (Gaz. 1995 p.457); boundary alterations with Marlborough District 2002 and 2003.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Nelson-Marlborough_Regional_Council&oldid=1363260796",
+       "title": "Wikipedia — Nelson-Marlborough Regional Council (cites Local Government Amendment Act 1992)",
+       "says": "Local Government Amendment Act 1992 (assent 20 May 1992) disestablished the Nelson-Marlborough Regional Council on 1 July 1992; Kaikoura District went to Canterbury.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Span starts the 1 January after the 2003 notice."
+    }
+   ]
+  },
+  {
+   "id": "NZL:Nelson@1992",
+   "names": {
+    "en": "Nelson City (region)",
+    "ja": "ネルソン地方",
+    "local": "Nelson City (region)"
+   },
+   "wikidata": "Q1995856",
+   "spans": [
+    {
+     "from": "1996-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-3402"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "Nelson Region constituted 1992; boundaries defined 1995 (Gaz. 1995 p.457), incl. the boundary with Tasman District in Waimea Inlet; 2011 notice moves seaward boundaries only.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Nelson-Marlborough_Regional_Council&oldid=1363260796",
+       "title": "Wikipedia — Nelson-Marlborough Regional Council (cites Local Government Amendment Act 1992)",
+       "says": "Local Government Amendment Act 1992 (assent 20 May 1992) disestablished the Nelson-Marlborough Regional Council on 1 July 1992; Kaikoura District went to Canterbury.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Conservative start: the 1995 Gazette notice (p.457) defining the boundaries of regions and districts set up in 1992 is dated 1995 but its day was not established; the span starts on the following 1 January so that no pre-definition line is claimed."
+    }
+   ]
+  },
+  {
+   "id": "NZL:Canterbury@1989",
+   "names": {
+    "en": "Canterbury Region",
+    "ja": "カンタベリー地方",
+    "local": "Canterbury Region"
+   },
+   "wikidata": "Q657004",
+   "spans": [
+    {
+     "from": "1996-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-3400"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "Canterbury Region: Kaikoura District and part of Hurunui District included on abolition of Nelson-Marlborough Region (1992 Act ss.115, 117); boundaries defined Gaz. 1995 p.457; 1998 drainage-district order is functional only.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://en.wikipedia.org/w/index.php?title=Nelson-Marlborough_Regional_Council&oldid=1363260796",
+       "title": "Wikipedia — Nelson-Marlborough Regional Council (cites Local Government Amendment Act 1992)",
+       "says": "Local Government Amendment Act 1992 (assent 20 May 1992) disestablished the Nelson-Marlborough Regional Council on 1 July 1992; Kaikoura District went to Canterbury.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Conservative start: the 1995 Gazette notice (p.457) defining the boundaries of regions and districts set up in 1992 is dated 1995 but its day was not established; the span starts on the following 1 January so that no pre-definition line is claimed."
+    }
+   ]
+  },
+  {
+   "id": "NZL:WestCoast@1989",
+   "names": {
+    "en": "West Coast Region",
+    "ja": "ウェスト・コースト地方",
+    "local": "West Coast Region"
+   },
+   "wikidata": "Q541468",
+   "spans": [
+    {
+     "from": "1996-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-3406"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "West Coast Region: part of Tasman District excluded from region (1992 Act s.116); boundaries defined Gaz. 1995 p.457; 2018–2019 orders transfer planning functions only.",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unz.html",
+       "title": "Statoids — Regions of New Zealand (change history)",
+       "says": "1989-11-01 fourteen regional councils; 1992 Nelson-Marlborough abolished, Nelson/Marlborough/Tasman become regions; 2010-11-01 Auckland unitary with southern boundary adjusted.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Conservative start: the 1995 Gazette notice (p.457) defining the boundaries of regions and districts set up in 1992 is dated 1995 but its day was not established; the span starts on the following 1 January so that no pre-definition line is claimed."
+    }
+   ]
+  },
+  {
+   "id": "NZL:Otago@1989",
+   "names": {
+    "en": "Otago Region",
+    "ja": "オタゴ地方",
+    "local": "Otago Region"
+   },
+   "wikidata": "Q692912",
+   "spans": [
+    {
+     "from": "2000-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-3407"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "Otago Region: Local Government (Clutha District and Southland District) Boundary Alteration Notice 1999 (Gaz. 1999 p.4360, revoking p.1888) — boundary alteration with Southland Region.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Span starts the 1 January after the 1999 notice (day not established)."
+    }
+   ]
+  },
+  {
+   "id": "NZL:Southland@1989",
+   "names": {
+    "en": "Southland Region",
+    "ja": "サウスランド地方",
+    "local": "Southland Region"
+   },
+   "wikidata": "Q864971",
+   "spans": [
+    {
+     "from": "2000-01-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-3408"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "Southland Region: boundary alteration with Otago Region by the Clutha District and Southland District Boundary Alteration Notice 1999.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Span starts 2000-01-01."
+    }
+   ]
+  },
+  {
+   "id": "NZL:Chatham@1901",
+   "names": {
+    "en": "Chatham Islands (Chatham Islands County to 1995, Chatham Islands Territory since)",
+    "ja": "チャタム諸島",
+    "local": "Chatham Islands (Chatham Islands County to 1995, Chatham Islands Territory since)"
+   },
+   "wikidata": "Q115459",
+   "spans": [
+    {
+     "from": "1992-07-01",
+     "precision": "day",
+     "to": null,
+     "atoms": [
+      "NZL-5470"
+     ],
+     "sources": [
+      {
+       "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+       "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+       "says": "Chatham Islands County (Act 1901) was the only district untouched by the 1989 reorganisation; abolished and replaced by Chatham Islands Territory under the Chatham Islands Council Act 1995 (same area).",
+       "accessed": "2026-10-05"
+      },
+      {
+       "url": "https://www.statoids.com/unz.html",
+       "title": "Statoids — Regions of New Zealand (change history)",
+       "says": "1989-11-01 fourteen regional councils; 1992 Nelson-Marlborough abolished, Nelson/Marlborough/Tasman become regions; 2010-11-01 Auckland unitary with southern boundary adjusted.",
+       "accessed": "2026-10-05"
+      }
+     ],
+     "dateNote": "Not part of any region; its council holds regional-council functions. Territory unchanged across the 1995 change of status."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "date": "1989-11-01",
+   "precision": "day",
+   "what": "22 local government regions replaced by 14 regions with regional councils (boundaries on watersheds)",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/unz.html",
+     "title": "Statoids — Regions of New Zealand (change history)",
+     "says": "1989-11-01 fourteen regional councils; 1992 Nelson-Marlborough abolished, Nelson/Marlborough/Tasman become regions; 2010-11-01 Auckland unitary with southern boundary adjusted.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+     "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+     "says": "Regions constituted by Orders in Council published 13 June 1989 (Gaz. 1989 pp.2245–2529).",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1992-07-01",
+   "precision": "day",
+   "what": "Nelson-Marlborough Region abolished; Nelson, Tasman, Marlborough regions constituted; Kaikoura and part of Hurunui to Canterbury; part of Tasman District out of West Coast",
+   "sources": [
+    {
+     "url": "https://en.wikipedia.org/w/index.php?title=Nelson-Marlborough_Regional_Council&oldid=1363260796",
+     "title": "Wikipedia — Nelson-Marlborough Regional Council (cites Local Government Amendment Act 1992)",
+     "says": "Local Government Amendment Act 1992 (assent 20 May 1992) disestablished the Nelson-Marlborough Regional Council on 1 July 1992; Kaikoura District went to Canterbury.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+     "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+     "says": "Local Government Amendment Act 1992 ss.110–117.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1994",
+   "precision": "year",
+   "what": "Boundary alterations Waikato–Bay of Plenty, Manawatu-Wanganui–Taranaki, Hawke’s Bay–Manawatu-Wanganui",
+   "sources": [
+    {
+     "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+     "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+     "says": "Reorganisation amendment orders 1994, Gaz. 1994 pp.637, 1625, 3654.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1995",
+   "precision": "year",
+   "what": "Boundaries of the 1992 regions defined; Chatham Islands County replaced by Chatham Islands Territory",
+   "sources": [
+    {
+     "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+     "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+     "says": "Gaz. 1995 p.457; Chatham Islands Council Act 1995.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "1999",
+   "precision": "year",
+   "what": "Clutha–Southland district boundary alteration moves the Otago–Southland regional boundary",
+   "sources": [
+    {
+     "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+     "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+     "says": "Gaz. 1999 p.4360.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2003",
+   "precision": "year",
+   "what": "Marlborough–Tasman boundary alteration (second of two, 2002 and 2003)",
+   "sources": [
+    {
+     "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+     "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+     "says": "Gaz. 2002 p.603; Gaz. 2003 p.1380.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  },
+  {
+   "date": "2010-11-01",
+   "precision": "day",
+   "what": "Auckland Council (unitary) replaces Auckland Region; southern parts of Franklin District go to Waikato Region",
+   "sources": [
+    {
+     "url": "https://www.statoids.com/unz.html",
+     "title": "Statoids — Regions of New Zealand (change history)",
+     "says": "1989-11-01 fourteen regional councils; 1992 Nelson-Marlborough abolished, Nelson/Marlborough/Tasman become regions; 2010-11-01 Auckland unitary with southern boundary adjusted.",
+     "accessed": "2026-10-05"
+    },
+    {
+     "url": "https://www.lgc.govt.nz/assets/Resources/Index-1989-onwards.pdf",
+     "title": "Local Government Commission — Local government arrangements in New Zealand 1989 onwards (index of every statute and Gazette notice on constitution and boundaries of regions and districts, Feb 2026)",
+     "says": "Local Government (Auckland Boundaries) Determination 2010; amended 2011.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "counts": [
+  {
+   "date": "2019-12-31",
+   "n": 17,
+   "sources": [
+    {
+     "url": "https://www.statoids.com/unz.html",
+     "title": "Statoids — Regions of New Zealand (change history)",
+     "says": "1989-11-01 fourteen regional councils; 1992 Nelson-Marlborough abolished, Nelson/Marlborough/Tasman become regions; 2010-11-01 Auckland unitary with southern boundary adjusted.",
+     "accessed": "2026-10-05"
+    }
+   ]
+  }
+ ],
+ "atomsOutside": [
+  {
+   "atom": "NZL-5479",
+   "why": "New Zealand outlying island group outside every region and territorial authority (Stats NZ \"Area Outside Region\"); no first-level unit administers it (statoids unz.html, territorial extent)."
+  },
+  {
+   "atom": "NZL-5478",
+   "why": "New Zealand outlying island group outside every region and territorial authority (Stats NZ \"Area Outside Region\"); no first-level unit administers it (statoids unz.html, territorial extent)."
+  },
+  {
+   "atom": "NZL-5477",
+   "why": "New Zealand outlying island group outside every region and territorial authority (Stats NZ \"Area Outside Region\"); no first-level unit administers it (statoids unz.html, territorial extent)."
+  },
+  {
+   "atom": "NZL-5471",
+   "why": "New Zealand outlying island group outside every region and territorial authority (Stats NZ \"Area Outside Region\"); no first-level unit administers it (statoids unz.html, territorial extent)."
+  },
+  {
+   "atom": "NZL-5480",
+   "why": "New Zealand outlying island group outside every region and territorial authority (Stats NZ \"Area Outside Region\"); no first-level unit administers it (statoids unz.html, territorial extent)."
+  },
+  {
+   "atom": "NZL-5476",
+   "why": "New Zealand outlying island group outside every region and territorial authority (Stats NZ \"Area Outside Region\"); no first-level unit administers it (statoids unz.html, territorial extent)."
+  },
+  {
+   "atom": "NZL-5472",
+   "why": "Tokelau: non-self-governing territory of New Zealand (Tokelau Act 1948), outside the regional system; not a region."
+  }
+ ],
+ "unresolved": [
+  {
+   "what": "Auckland Region and Waikato Region before the last 2011 boundary amendment",
+   "unit": "NZL:Auckland@2010",
+   "atoms": [
+    "NZL-3398",
+    "NZL-5468"
+   ],
+   "from": "1992-07-01",
+   "to": "2012-01-01",
+   "why": "Before 2010 the Auckland Region reached further south (parts of former Franklin District); the 2010 determination and two 2011 amendments moved the Auckland–Waikato line through the present atoms. The 1994 Waikato–Bay of Plenty change also falls in this window.",
+   "checked": [
+    "LGC index 1989 onwards (Auckland, Waikato Region, Waikato District, Hauraki District entries)",
+    "statoids unz.html"
+   ],
+   "needs": "finer atoms: Stats NZ meshblock or statistical area 2 boundaries of the relevant year (Stats NZ Datafinder, CC BY 4.0)"
+  },
+  {
+   "what": "Waikato Region before 2012 (see Auckland entry)",
+   "unit": "NZL:Waikato@1989",
+   "from": "1992-07-01",
+   "to": "2012-01-01",
+   "why": "Shares withheld atoms with the Auckland entry.",
+   "checked": [
+    "as above"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Bay of Plenty Region before the 1994 boundary alteration with Waikato",
+   "unit": "NZL:BayOfPlenty@1989",
+   "atoms": [
+    "NZL-3399"
+   ],
+   "from": "1992-07-01",
+   "to": "1995-01-01",
+   "why": "The 1994 order moved the Waikato–Bay of Plenty line, which lies inside today’s atoms; its exact day was not established, so the window runs to the next 1 January.",
+   "checked": [
+    "LGC index (Bay of Plenty Region, Waikato Region)",
+    "NZ Gazette 1994 not reachable online (nzlii blocked)"
+   ],
+   "needs": "finer atoms (Stats NZ meshblocks, CC BY 4.0) and the 1994 order’s schedule"
+  },
+  {
+   "what": "Hawke's Bay, Manawatu-Wanganui and Taranaki before the 1994 boundary alterations",
+   "unit": "NZL:ManawatuWhanganui@1989",
+   "atoms": [
+    "NZL-3397",
+    "NZL-3334",
+    "NZL-3405"
+   ],
+   "from": "1992-07-01",
+   "to": "1995-01-01",
+   "why": "Two 1994 orders moved the Taranaki–Manawatu-Wanganui (Stratford/Ruapehu) and Hawke’s Bay–Manawatu-Wanganui (Central Hawke’s Bay/Tararua) lines inside today’s atoms.",
+   "checked": [
+    "LGC index (regions and the Ruapehu, Stratford, Tararua, Central Hawke’s Bay district entries)"
+   ],
+   "needs": "finer atoms (Stats NZ meshblocks, CC BY 4.0)"
+  },
+  {
+   "what": "Hawke's Bay Region 1992–1995 (atoms withheld in the Manawatu-Wanganui entry)",
+   "unit": "NZL:HawkesBay@1989",
+   "from": "1992-07-01",
+   "to": "1995-01-01",
+   "why": "See previous entry.",
+   "checked": [
+    "as above"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Taranaki Region 1992–1995 (atoms withheld in the Manawatu-Wanganui entry)",
+   "unit": "NZL:Taranaki@1989",
+   "from": "1992-07-01",
+   "to": "1995-01-01",
+   "why": "See previous entry.",
+   "checked": [
+    "as above"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Gisborne Region before the 1997 inclusion of adjacent islands",
+   "unit": "NZL:Gisborne@1989",
+   "atoms": [
+    "NZL-3396"
+   ],
+   "from": "1992-07-01",
+   "to": "1998-01-01",
+   "why": "A 1995 order re-defined the Gisborne Region and a 1997 notice added adjacent islands, islets and rocks to the district; whether those islets are inside the NE atom could not be established, so the earlier outline is not claimed.",
+   "checked": [
+    "LGC index (Gisborne District, Gisborne Region)"
+   ],
+   "needs": "the 1997 notice schedule and an islet-level atom set (LINZ/Stats NZ, CC BY 4.0)"
+  },
+  {
+   "what": "Marlborough and Tasman before the 2002–2003 boundary alterations",
+   "unit": "NZL:Marlborough@1992",
+   "atoms": [
+    "NZL-3401",
+    "NZL-3403"
+   ],
+   "from": "1992-07-01",
+   "to": "2004-01-01",
+   "why": "Two notices (2002, 2003) moved the Marlborough–Tasman district line, which is also a regional line, inside today’s atoms.",
+   "checked": [
+    "LGC index (Marlborough District, Tasman District)"
+   ],
+   "needs": "finer atoms (Stats NZ meshblocks, CC BY 4.0)"
+  },
+  {
+   "what": "Tasman Region 1992–2004 (atoms withheld in the Marlborough entry)",
+   "unit": "NZL:Tasman@1992",
+   "from": "1992-07-01",
+   "to": "2004-01-01",
+   "why": "See previous entry.",
+   "checked": [
+    "as above"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Nelson, Canterbury and West Coast regions before the 1995 definition of the 1992 boundaries",
+   "unit": "NZL:Canterbury@1989",
+   "atoms": [
+    "NZL-3402",
+    "NZL-3400",
+    "NZL-3406"
+   ],
+   "from": "1992-07-01",
+   "to": "1996-01-01",
+   "why": "The 1992 Act moved Kaikoura and part of Hurunui into Canterbury and part of Tasman out of West Coast; the resulting lines were defined by Gazette notice in 1995 (day not established). Whether the defined line equals the 1992 line could not be verified, so 1992–1995 is withheld.",
+   "checked": [
+    "LGC index (Canterbury, Nelson, Tasman, West Coast entries)",
+    "Wikipedia Nelson-Marlborough Regional Council"
+   ],
+   "needs": "Gaz. 1995 p.457 schedule; Stats NZ meshblocks (CC BY 4.0)"
+  },
+  {
+   "what": "Nelson Region 1992–1996 (atoms withheld in the Canterbury entry)",
+   "unit": "NZL:Nelson@1992",
+   "from": "1992-07-01",
+   "to": "1996-01-01",
+   "why": "See previous entry.",
+   "checked": [
+    "as above"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "West Coast Region 1992–1996 (atoms withheld in the Canterbury entry)",
+   "unit": "NZL:WestCoast@1989",
+   "from": "1992-07-01",
+   "to": "1996-01-01",
+   "why": "See previous entry.",
+   "checked": [
+    "as above"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Otago and Southland before the 1999 boundary alteration",
+   "unit": "NZL:Otago@1989",
+   "atoms": [
+    "NZL-3407",
+    "NZL-3408"
+   ],
+   "from": "1992-07-01",
+   "to": "2000-01-01",
+   "why": "The 1999 Clutha–Southland district boundary alteration moved the Otago–Southland regional line inside today’s atoms.",
+   "checked": [
+    "LGC index (Clutha District, Otago Region, Southland Region)"
+   ],
+   "needs": "finer atoms (Stats NZ meshblocks, CC BY 4.0)"
+  },
+  {
+   "what": "Southland Region 1992–2000 (atoms withheld in the Otago entry)",
+   "unit": "NZL:Southland@1989",
+   "from": "1992-07-01",
+   "to": "2000-01-01",
+   "why": "See previous entry.",
+   "checked": [
+    "as above"
+   ],
+   "needs": "as above"
+  },
+  {
+   "what": "Layouts before 1992-07-01: Nelson-Marlborough Region (1989–1992), the 22 local government regions (1974/1982–1989), statistical areas and provincial districts",
+   "from": "1900-01-01",
+   "to": "1992-07-01",
+   "why": "Nelson-Marlborough took in parts of today’s Canterbury atom (Kaikoura, part of Hurunui) and West Coast lost part of Tasman District in 1992, so the 1989 layout is not a union of today’s atoms; earlier layouts followed different (non-watershed) lines.",
+   "checked": [
+    "statoids unz.html change history",
+    "LGC index 1989 onwards"
+   ],
+   "needs": "finer atoms (Stats NZ meshblocks / historical county boundaries)"
+  }
+ ]
+}
