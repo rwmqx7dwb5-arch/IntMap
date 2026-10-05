@@ -4059,7 +4059,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   try{ const _sb=document.getElementById('btn-share'); if(_sb) _sb.onclick=()=>{ try{ window.IntMapShare.open(); }catch(_){} }; }catch(_){}
   /* (country-analysis-unify) 「Screenshot」 is the share panel's Image tab: one picture of the map, with its legends and every data credit burned in
      (js/map-recorder.js postcard). The PNG it used to save (js/screenshot.js) was #map-container alone, and the attribution row (#map-credit) sits OUTSIDE it — a picture of the map without the credits it owes. */
-  try{ const _ss=document.getElementById('btn-screenshot'); if(_ss) _ss.onclick=()=>{ try{ window.IntMapShare.open({ tab:'image' }); }catch(_){} }; }catch(_){}
+  /* (share-simple) …and it SAVES that picture at once rather than opening the panel on it (「どちらを押してもShare this viewウィンドウが開くのはきもい」):
+     js/map-ui.js `IntMapShare.screenshot`. Choosing a shape or a caption is the share panel's «More options ▸ Image». */
+  try{ const _ss=document.getElementById('btn-screenshot'); if(_ss) _ss.onclick=()=>{ try{ window.IntMapShare.screenshot(); }catch(_){} }; }catch(_){}
 
   /* ===== (#R42) "Atlas" — natural-language console (beta) ("自然言語版ターミナル"). Type a request in plain
      language and the AI turns it into a STRICT JSON action plan that this REAL dispatcher executes against the

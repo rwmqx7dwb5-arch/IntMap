@@ -308,7 +308,6 @@ IntMapLang.define('en', { ui: {
       offlineBack:"You’re back online. Reload to download what could not be fetched.",
       offlineReload:"Reload",
       /* (share-embed-distribution) the share panel's Link / Embed tabs and the embedded view itself (js/map-ui.js share, js/embed-mode.js) */
-      shareTabLink:"Link",
       shareTabEmbed:"Embed",
       embedDesc:"Put this map on another website. The frame shows exactly the view you have now, read-only.",
       embedSize:"Size",
@@ -344,7 +343,8 @@ IntMapLang.define('en', { ui: {
       postcardSaveCopy:"Save image & copy link",
       postcardMaking:"Making the image…",
       postcardSavedCopied:"Image saved. The link is copied — paste it beside the image.",
-      postcardSavedNoCopy:"Image saved. Copy the link from the Link tab.",
+      postcardSavedNoCopy:"Image saved. Copy the link at the top of this panel.",
+      screenshotSaved:"Map image saved — with its legends and data credits.",
       postcardLegendsOmitted:"{n} legend(s) did not fit and are not in the image",
       postcardCredits:"Credited in the image: ",
       postcardBusy:"A time-lapse is being recorded — make the image when it ends.",

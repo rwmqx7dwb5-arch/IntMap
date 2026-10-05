@@ -4049,6 +4049,13 @@ export function share(HOST){
         +'#share-panel .sh-tab[aria-selected="true"]{background:var(--popup-bg);color:var(--text-main);box-shadow:0 1px 3px rgba(0,0,0,0.12);}'
         +'#share-panel .sh-tab:focus-visible{outline:2px solid var(--primary-color);outline-offset:1px;}'
         +'#share-panel .sh-pane[hidden]{display:none;}'
+        /* (share-simple) the options the first glance does not need, folded under one quiet line */
+        +'#share-panel .sh-more{margin-top:12px;border-top:1px solid rgba(128,128,128,0.16);padding-top:8px;}'
+        +'#share-panel .sh-more>summary{cursor:pointer;list-style:none;font-size:12.5px;font-weight:600;color:var(--text-muted);padding:4px 0;display:flex;align-items:center;gap:6px;}'
+        +'#share-panel .sh-more>summary::-webkit-details-marker{display:none;}'
+        +'#share-panel .sh-more>summary::before{content:"";width:6px;height:6px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(-45deg);transition:transform .15s ease;margin:0 3px 0 1px;}'
+        +'#share-panel .sh-more[open]>summary::before{transform:rotate(45deg);}'
+        +'#share-panel .sh-more>summary:hover{color:var(--text-main);}'
         +'#share-panel{max-height:calc(100vh - 96px);overflow-y:auto;}'
         /* (map-postcard) the caption fields above the tabs */
         +'#share-panel .sh-cap{display:flex;flex-direction:column;gap:6px;margin-top:10px;}'
@@ -4074,6 +4081,12 @@ export function share(HOST){
     /* (map-postcard) …AND A THIRD: THE SAME MAP AS ONE PICTURE (js/map-recorder.js `createPostcardTab`, fetched the first
        time the Image tab is shown). Above the tabs, the caption — the title and note the link carries — so the link, the
        embed code and the picture all say it. */
+    /* ══ (share-simple) ONE THING AT FIRST GLANCE: THE LINK ══════════════════════════════════════════════════════
+       「shareからどちらを押してもShare this viewウィンドウが開くのはちょっときもい。しかも、素人からしたら画面が複雑すぎ。」
+       (2026-10-05) The panel opened with a title field, a note field, three tabs, three picture shapes and a picture
+       preview all at once — for a reader who wanted a link. Now it opens on the link and its Copy button; the caption,
+       the embed and the picture are all still here, under «More options», and open by themselves when a caller asks
+       for one of them (Atlas, a size, a caption). Nothing was removed. The Link is no longer a tab: it is always shown. */
     let tab='link', embedTab=null, embedLoad=null, pcTab=null, pcLoad=null, pcHost=null, capT=0, pcT=0;
     const TABS=['link','embed','image'];
     function link(){ return (window.IntMapBookmark&&window.IntMapBookmark.link)?window.IntMapBookmark.link():location.href; }
@@ -4117,19 +4130,20 @@ export function share(HOST){
         'Incluye: posición, zoom, proyección, mapa base, todas las capas activas, viaje en el tiempo y comparación.');
       panel.innerHTML='<button class="sh-x" title="'+t('close')+'">×</button>'
         +'<h4>'+icon('link')+' '+L('Share this view','このビューを共有','Diese Ansicht teilen','Поделиться видом','Compartir esta vista')+'</h4>'
-        /* (map-postcard) the caption's fields are built below, and their values set as properties — never written into this markup */
-        +'<div class="sh-cap"></div>'
-        +'<div class="sh-tabs" role="tablist">'
-          +'<button class="sh-tab" type="button" role="tab" data-tab="link">'+t('shareTabLink')+'</button>'
-          +'<button class="sh-tab" type="button" role="tab" data-tab="embed">'+t('shareTabEmbed')+'</button>'
-          +'<button class="sh-tab" type="button" role="tab" data-tab="image">'+t('shareTabImage')+'</button></div>'
-        +'<div class="sh-pane" data-pane="link" role="tabpanel">'
+        +'<div class="sh-pane" data-pane="link">'
           +'<div style="font-size:11.5px;color:var(--text-muted);">'+L('Anyone who opens this link sees the map exactly as you do now.','このリンクを開くと、今あなたが見ている状態がそのまま再現されます。','Wer den Link öffnet, sieht die Karte genau wie Sie jetzt.','Открывший ссылку увидит карту точно как вы сейчас.','Quien abra el enlace verá el mapa tal como lo ves ahora.')+'</div>'
           +'<div class="sh-row"><input class="sh-url" type="text" readonly value="'+String(lk).replace(/"/g,'&quot;')+'"><button class="sh-btn sh-copy">'+icon('clipboard')+' '+L('Copy','コピー','Kopieren','Копировать','Copiar')+'</button></div>'
           +(navigator.share?('<div class="sh-row"><button class="sh-btn sec sh-native" style="flex:1;">'+icon('share')+' '+L('Share…','共有…','Teilen…','Поделиться…','Compartir…')+'</button></div>'):'')
-          +'<div class="sh-inc">'+inc+'</div></div>'
-        +'<div class="sh-pane" data-pane="embed" role="tabpanel"></div>'
-        +'<div class="sh-pane" data-pane="image" role="tabpanel"></div>';
+          +'</div>'
+        +'<details class="sh-more"><summary>'+L('More options','その他のオプション')+'</summary>'
+          +'<div class="sh-inc" style="margin-top:4px;border-top:none;padding-top:0;">'+inc+'</div>'
+          /* (map-postcard) the caption's fields are built below, and their values set as properties — never written into this markup */
+          +'<div class="sh-cap"></div>'
+          +'<div class="sh-tabs" role="tablist">'
+            +'<button class="sh-tab" type="button" role="tab" data-tab="embed">'+t('shareTabEmbed')+'</button>'
+            +'<button class="sh-tab" type="button" role="tab" data-tab="image">'+t('shareTabImage')+'</button></div>'
+          +'<div class="sh-pane" data-pane="embed" role="tabpanel"></div>'
+          +'<div class="sh-pane" data-pane="image" role="tabpanel"></div></details>';
       const urlEl=panel.querySelector('.sh-url'), embedPane=panel.querySelector('.sh-pane[data-pane="embed"]');
       const capTi=document.createElement('input'); capTi.type='text'; capTi.className='sh-cap-t'; capTi.maxLength=MapState.TITLE_MAX; capTi.enterKeyHint='done';
       capTi.setAttribute('aria-label',t('captionTitle')); capTi.placeholder=t('captionTitlePh'); capTi.value=cap.title;
@@ -4138,10 +4152,14 @@ export function share(HOST){
       const capHint=document.createElement('div'); capHint.className='sh-cap-hint'; capHint.textContent=t('captionHint');
       panel.querySelector('.sh-cap').append(capTi,capNo,capHint);
       let built=null;
-      const show=(name)=>{ tab=name;
-        panel.querySelectorAll('.sh-tab').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.tab===name)));
-        panel.querySelectorAll('.sh-pane').forEach(p=>{ p.hidden=(p.dataset.pane!==name); }); };
+      /* the link pane is never hidden; the tabs choose between the folded panes, and a fold opened on the link shows the embed */
+      const more=panel.querySelector('.sh-more');
+      const show=(name)=>{ tab=name; const sel=name==='link'?'embed':name;
+        panel.querySelectorAll('.sh-tab').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.tab===sel)));
+        panel.querySelectorAll('.sh-pane').forEach(p=>{ if(p.dataset.pane!=='link') p.hidden=(p.dataset.pane!==sel); }); };
       show(tab);
+      if(tab!=='link'||o.title!=null||o.note!=null) more.open=true;   /* a caller who asked for the embed, the picture or a caption sees it */
+      more.addEventListener('toggle',()=>{ if(!more.open){ try{ embedTab&&embedTab.stopPreview(); }catch(_){} } });
       if(tab==='link'){ try{ urlEl.focus(); urlEl.select(); }catch(_){} }
       panel.querySelector('.sh-x').onclick=close;
       const copyBtn=panel.querySelector('.sh-copy');
@@ -4155,7 +4173,6 @@ export function share(HOST){
       capTi.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); onCap(); } });
       panel.querySelectorAll('.sh-tab').forEach(b=>{ b.onclick=()=>{ try{ embedTab&&embedTab.stopPreview(); }catch(_){}
         show(b.dataset.tab); if(b.dataset.tab==='embed'&&built) built.refresh();   /* the map may have moved since the panel opened */
-        if(b.dataset.tab==='link'){ try{ urlEl.value=link(); }catch(_){} }
         if(b.dataset.tab==='image') showPostcard(); }; });
       const embedReady=loadEmbedTab().then(c=>{ if(o.tab==='embed') c.embed(o); built=c.render(embedPane); return true; })
         .catch(()=>{ embedPane.replaceChildren(iconNode('warning'),' '+t('embedUnavailable')); return false; });
@@ -4165,6 +4182,20 @@ export function share(HOST){
     /* (map-postcard) the picture's face for Atlas: open the Image tab (caption and shape as asked) and hand back what was
        made — the file name, its size, what it credits, how many legends it carries — or null when it could not be made */
     function postcard(o){ o=o||{}; return Promise.resolve(open({ tab:'image', size:o.size, title:o.title, note:o.note })).then(r=>r||null); }
-    return { open, close, link, embed, caption:(o)=>(o?setCaption(o):{ title:cap.title, note:cap.note }), postcard };
+    /* (share-simple) «Map screenshot» SAVES — it does not open this panel. The same picture the Image tab makes (the map, its
+       legends, every data credit, the wordmark and the link — js/map-recorder.js `postcard`, the tab's default shape), written
+       to a file at once, and a toast that says so. The panel's Image tab is still the place to choose a shape or add a caption.
+       → the postcard's result without its blob ({ ok, name, … } or { ok:false, error }) */
+    async function screenshot(o){ o=o||{};
+      let r=null;
+      try{ const m=await import('./map-recorder.js');
+        r=await m.postcard({ size:o.size, title:cap.title, note:cap.note, link:link(), lang:HOST.lang }); }
+      catch(_){ r={ ok:false, error:'unavailable' }; }
+      if(r&&r.ok){ const a=document.createElement('a'); a.href=r.url; a.download=r.name; a.rel='noopener'; document.body.appendChild(a);
+        try{ a.click(); }finally{ a.remove(); }
+        try{ HOST.imToast(t('screenshotSaved')); }catch(_){} }
+      else { try{ HOST.imToast(r&&r.error==='busy'?t('postcardBusy'):r&&r.error==='not-drawn'?t('postcardNotDrawn'):t('postcardFailed')); }catch(_){} }
+      return r?Object.assign({},r,{ blob:undefined }):null; }
+    return { open, close, link, embed, caption:(o)=>(o?setCaption(o):{ title:cap.title, note:cap.note }), postcard, screenshot };
   })();
 }

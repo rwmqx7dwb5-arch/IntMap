@@ -308,7 +308,6 @@ IntMapLang.define('jp', { ui: {
       offlineBack:"オンラインに戻りました。再読み込みすると、取得できなかったデータを読み込みます。",
       offlineReload:"再読み込み",
       /* (share-embed-distribution) 共有パネルの「リンク／埋め込み」タブと、埋め込み表示そのもの（js/map-ui.js share・js/embed-mode.js） */
-      shareTabLink:"リンク",
       shareTabEmbed:"埋め込み",
       embedDesc:"この地図を他のウェブサイトに載せます。フレームには、いま表示している状態がそのまま読み取り専用で表示されます。",
       embedSize:"サイズ",
@@ -344,7 +343,8 @@ IntMapLang.define('jp', { ui: {
       postcardSaveCopy:"画像を保存してリンクをコピー",
       postcardMaking:"画像を作っています…",
       postcardSavedCopied:"画像を保存しました。リンクをコピーしたので、画像と一緒に貼り付けてください。",
-      postcardSavedNoCopy:"画像を保存しました。リンクは「リンク」タブからコピーしてください。",
+      postcardSavedNoCopy:"画像を保存しました。リンクはこのパネル上部からコピーしてください。",
+      screenshotSaved:"地図の画像を保存しました（凡例と出典入り）。",
       postcardLegendsOmitted:"凡例 {n} 件は入りきらず、画像に入っていません",
       postcardCredits:"画像内の出典: ",
       postcardBusy:"タイムラプスを録画中です。終わってから画像を作ってください。",

@@ -248,10 +248,12 @@ test('④ the brief ends with the next questions — the same offer the arrival 
 
 /* ══ ⑤ ONE PICTURE ════════════════════════════════════════════════════════════════════════════ */
 
-test('⑤ 「Screenshot」 opens the share panel\'s Image tab — the picture that carries the legends and the credits', () => {
+test('⑤ 「Screenshot」 saves the share panel\'s Image-tab picture — the one that carries the legends and the credits', () => {
   /* 綴りのまま: 主張はボタンの配線と旧モジュールの不在で、ボタンは DOM の上でしか押せない（絵そのものは tests の postcard 検査が評価している） */
   const ab = codeOnly(read('js/app-body.js'));
-  assert.match(ab, /const _ss=document\.getElementById\('btn-screenshot'\); if\(_ss\) _ss\.onclick=\(\)=>\{ try\{ window\.IntMapShare\.open\(\{ tab:'image' \}\); \}catch\(_\)\{\} \};/);
+  /* (share-simple) it saves that picture at once instead of opening the panel on it — the same postcard() the Image tab makes */
+  assert.match(ab, /const _ss=document\.getElementById\('btn-screenshot'\); if\(_ss\) _ss\.onclick=\(\)=>\{ try\{ window\.IntMapShare\.screenshot\(\); \}catch\(_\)\{\} \};/);
+  assert.match(codeOnly(read('js/map-ui.js')), /async function screenshot\(o\)\{[\s\S]*?await import\('\.\/map-recorder\.js'\);[\s\S]*?m\.postcard\(/);
   assert.equal(existsSync(join(ROOT, 'js/screenshot.js')), false);
   assert.doesNotMatch(ab, /makeScreenshot|screenshot\.js/);
   /* the picture the tab makes burns the credits in — js/map-recorder.js postcard, drawn from the same capture Atlas uses */
