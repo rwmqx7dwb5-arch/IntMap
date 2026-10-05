@@ -176,13 +176,13 @@
     },
     {
       "year": 2019,
-      "pct": 71.64,
-      "pctArea": 64.48,
+      "pct": 71.85,
+      "pctArea": 64.73,
       "polityLand": 91.4,
-      "unitLand": 60.4,
-      "zero": 99,
-      "partial": 19,
-      "full": 76
+      "unitLand": 60.64,
+      "zero": 96,
+      "partial": 20,
+      "full": 78
     }
   ],
   "claims": {

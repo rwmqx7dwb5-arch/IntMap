@@ -242,6 +242,24 @@ function inPolys(polys, x, y) {
   }
   return false;
 }
+/* (hist-fill-never-whole) how far (degrees) a point lies from a polygon's edge, or Infinity beyond `tol` —
+   every ring is asked, holes included, and a ring whose box is farther than `tol` is not walked */
+const ringBox = new WeakMap();
+export function edgeDistance(polys, x, y, tol) {
+  let best = Infinity;
+  for (const poly of polys) for (const r of poly) {
+    let b = ringBox.get(r); if (!b) { b = bbox(r); ringBox.set(r, b); }
+    if (x < b[0] - tol || x > b[2] + tol || y < b[1] - tol || y > b[3] + tol) continue;
+    for (let k = 1; k < r.length; k++) {
+      const ax = r[k - 1][0], ay = r[k - 1][1], dx = r[k][0] - ax, dy = r[k][1] - ay;
+      const L = dx * dx + dy * dy;
+      const t = L ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L)) : 0;
+      const d = Math.hypot(ax + t * dx - x, ay + t * dy - y);
+      if (d < best) best = d;
+    }
+  }
+  return best <= tol ? best : Infinity;
+}
 /* the points test 3 and test 4 are asked of. A grid inside the unit, falling back to the unit's
    own vertices when the unit is smaller than the grid — an empty sample must never read as a pass. */
 export function samplePoints(polys) {
@@ -516,7 +534,20 @@ export async function wikidataSpans() {
     for (const [code, list] of byCode(rs)) {
       if (out.has(code)) continue;
       const keep = holders(list);
-      let cur = null;
+      /* ══ ⚠⚠⚠ (hist-fill-never-whole) ONE ITEM'S STATEMENTS ARE ONE UNIT'S; TWO ITEMS ARE TWO LIVES ══════════
+         Everything below folded EVERY holder of a code into one record, so the rule for 香川県 — several
+         foundings stated on ONE item, drawn from the last — was also applied ACROSS items. Where a reform reused
+         the code, that dated the predecessor's outline by the successor's founding and gave it the predecessor's
+         dissolution as well. MEASURED 2026-10-05 (`--only LVA --diagnose`): `LV-058` is held at equal rank by
+         Q932445 (Ludza Municipality, 2009-07-01 → 2021-06-30) and Q97231943 (the merged one, 2021-07-01 →), and
+         was read as ONE unit founded 2021-07-01; so were 16 more Latvian codes. Natural Earth's 119 outlines are
+         the 2009-2021 municipalities, 76 of which state their 2021 end, so Latvia's set floor (2021-07-01) fell
+         after three quarters of its own set had ended and the whole country was refused on every date — while
+         every one of the 119 was in force together from 2011-01-01 to 2021-06-30.
+         ⇒ each item is folded alone (the Kagawa rule, unchanged, inside it) and the code keeps one LIFE per
+         item (`lives`). The top-level `s`/`e`/`qid` stay the latest-founded item's, as before. Which life the
+         outline is, the SET decides (`setLife` below): a code's life counts only where its siblings coexist. */
+      const items = new Map();
       for (const r of list) {
         const qid = r.item.value.split('/').pop();
         if (!keep.has(qid)) continue;
@@ -536,24 +567,48 @@ export async function wikidataSpans() {
            ⇒ every stated inception is kept (`ss`) and the unit is drawn from the LATEST of them: the one date
            every statement about its beginning has passed. That can only make a span shorter, never invent a
            year, and where the dates are several opinions about ONE founding it is the cautious one. */
-        if (!cur) cur = { qid, s, ss: [], es: [], e: null, via };
-        if (!cur.ss.includes(s)) cur.ss.push(s);
-        if (s > cur.s) { cur.s = s; cur.qid = qid; }
-        if (e != null && !cur.es.includes(e)) cur.es.push(e);
+        const it = items.get(qid) || { qid, ss: [], es: [] };
+        if (!it.ss.includes(s)) it.ss.push(s);
+        if (e != null && !it.es.includes(e)) it.es.push(e);
+        items.set(qid, it);
       }
-      if (cur) out.set(code, cur);
+      if (!items.size) continue;
+      /* …and a dissolution the unit was refounded AFTER is the end of an earlier incarnation, not of this
+         one (香川県's 1876 merger into 愛媛県): the end that bounds the outline is the first stated one after
+         the item's latest inception, or none. */
+      const lives = [...items.values()].map((it) => {
+        const s = Math.max(...it.ss), after = it.es.filter((x) => x > s);
+        return { qid: it.qid, s, e: after.length ? Math.min(...after) : null };
+      }).sort((a, b) => a.s - b.s || (a.qid < b.qid ? -1 : 1));
+      const last = lives.reduce((a, b) => (b.s > a.s ? b : a));
+      const ss = [...new Set([...items.values()].flatMap((it) => it.ss))];
+      const es = [...new Set([...items.values()].flatMap((it) => it.es))];
+      out.set(code, { qid: last.qid, s: last.s, e: last.e, ss, es, via, lives });
     }
   }
   fold(rows, 'P300');
   fold(hrows, 'P8119');
-  /* …and a dissolution the unit was refounded AFTER is the end of an earlier incarnation, not of this
-     one (香川県's 1876 merger into 愛媛県): the end that bounds the outline is the first stated one after
-     the latest inception, or none. */
-  for (const v of out.values()) {
-    const after = v.es.filter((x) => x > v.s);
-    v.e = after.length ? Math.min(...after) : null;
-  }
   return out;
+}
+
+/* ══ (hist-fill-never-whole) WHEN A COUNTRY'S SET IS IN FORCE TOGETHER ═══════════════════════════════════
+   A unit's stated life is the union of its items' lives; the set is in force on the dates where EVERY unit
+   that states anything has one in force. The set floor (below) is the first of those dates — for a set of
+   one life per unit that is exactly the latest stated founding, as it always was. ONE function, so the
+   build and `--redate` cannot disagree about it. */
+const livesOf = (w) => (w.lives && w.lives.length ? w.lives : [{ qid: w.qid, s: w.s, e: w.e }])
+  .map((l) => [l.s, l.e == null ? ymd(9999, 1, 1) : l.e]).filter(([s, e]) => s < e);
+export function setLife(wds) {
+  let both = [[ymd(-999999, 1, 1), ymd(9999, 1, 1)]];
+  for (const w of wds) both = intersect(both, union(livesOf(w), []));
+  return both;
+}
+/* the floor: the first date the dated set is in force together, or — where it never is — the latest stated
+   founding, so such a country still reaches the whole-country rule and is refused there as `never-whole` */
+export function setFloorOf(wds) {
+  if (!wds.length) return null;
+  const both = setLife(wds);
+  return both.length ? both[0][0] : Math.max(...wds.map((w) => w.s));
 }
 
 /* ══ (hist-coverage) ONE NATURAL EARTH UNIT → ITS IDENTIFIERS → ITS DATED SPAN ═══════════════════════
@@ -571,7 +626,9 @@ export function spanOf(spans, ids) {
 
 /* ══ (hist-fidelity-sweep) THE STATED INCEPTIONS TRAVEL WITH THE BUNDLE ═══════════════════════════
    `inception[code]` is the latest inception Wikidata states for that ISO 3166-2 code (YYYYMMDD, the
-   stamp the rows use), for every unit of every admitted country that states one. It is the evidence
+   stamp the rows use), for every unit of every admitted country that states one. (hist-fill-never-whole) Where
+   SEVERAL items hold the code it is the earliest of their lives' starts — each item's own latest founding —
+   and `lives[code]` carries every life as [start, end|null], so the gate can ask that a row lies inside one. It is the evidence
    for the two claims the rows make — «not before my own last founding» and «not before my country's
    set was complete» — so npm run check:histfidelity can re-derive both OFFLINE from the shipped bytes,
    the way `deferred` lets `--check` re-derive the whole-country rule. */
@@ -579,7 +636,17 @@ function inceptionOf(countries, byCountry, spans) {
   const out = {};
   for (const iso3 of countries) for (const u of byCountry.get(iso3).all) {
     const w = u.code && spanOf(spans, u.ids || { code: u.code, hasc: null });
-    if (w && Number.isFinite(w.s)) out[u.code] = w.s;
+    if (w && Number.isFinite(w.s)) out[u.code] = w.lives && w.lives.length ? Math.min(...w.lives.map((l) => l.s)) : w.s;
+  }
+  return Object.fromEntries(Object.entries(out).sort((a, b) => (a[0] < b[0] ? -1 : 1)));
+}
+/* (hist-fill-never-whole) the codes several Wikidata items hold, and each item's life — the evidence for rows
+   drawn in a predecessor's life (`fillInceptionProblems` in scripts/hist-fidelity.mjs reads it) */
+function livesOfCodes(countries, byCountry, spans) {
+  const out = {};
+  for (const iso3 of countries) for (const u of byCountry.get(iso3).all) {
+    const w = u.code && spanOf(spans, u.ids || { code: u.code, hasc: null });
+    if (w && w.lives && w.lives.length > 1) out[u.code] = w.lives.map((l) => [l.s, l.e]);
   }
   return Object.fromEntries(Object.entries(out).sort((a, b) => (a[0] < b[0] ? -1 : 1)));
 }
@@ -599,9 +666,9 @@ function inceptionViaOf(countries, byCountry, spans) {
    The same shape as scripts/build-hist-admin1.mjs `--dates`, and for the same reason: a full build
    re-asks today's Wikidata which units of every country are dated at all and re-runs the geometric tests
    over the whole world, which is a larger and different change than the one rule this pass exists for.
-   This pass applies that ONE rule to the rows already shipped: a country is drawn from the
-   latest inception any of its units states — each unit's own latest (`wikidataSpans`), maximised over
-   the country, exactly the set floor the build computes — and no row starts before it. A row that ends
+   This pass applies that ONE rule to the rows already shipped: a country is drawn from its set floor
+   (`setFloorOf`, the same function the build calls — the latest founding its units state, or where codes
+   have several lives the first date all of them are in force) — and no row starts before it. A row that ends
    on or before the new floor leaves with its rings; nothing else changes. */
 async function redate() {
   const rel = path.relative(ROOT, OUT).replace(/\\/g, '/');
@@ -618,8 +685,7 @@ async function redate() {
   const countries = [...new Set(d.feats.map((f) => f[11]))].sort();
   const floor = new Map(), before = new Map();
   for (const iso3 of countries) {
-    let F = null;
-    for (const u of byCountry.get(iso3).all) { const w = u.code && spanOf(spans, u.ids); if (w && (F == null || w.s > F)) F = w.s; }
+    const F = setFloorOf(byCountry.get(iso3).all.map((u) => u.code && spanOf(spans, u.ids)).filter(Boolean));
     if (F != null) floor.set(iso3, F);
   }
   const keep = [], moved = new Map(), dropped = [];
@@ -644,7 +710,8 @@ async function redate() {
   }
   d.feats = keep;
   const admitted = countries.filter((c) => byCountry.has(c));
-  const head = { ...d, built: new Date().toISOString().slice(0, 10), inception: inceptionOf(admitted, new Map(admitted.map((c) => [c, { all: byCountry.get(c).all }])), spans) };
+  const cs = new Map(admitted.map((c) => [c, { all: byCountry.get(c).all }]));
+  const head = { ...d, built: new Date().toISOString().slice(0, 10), inception: inceptionOf(admitted, cs, spans), lives: livesOfCodes(admitted, cs, spans) };
   /* the key order the build writes: inception sits before the rings, so the file stays diffable */
   const { rings, feats, ...rest } = head;
   fs.writeFileSync(OUT, 'window.' + GLOBAL + '=' + JSON.stringify({ ...rest, rings, feats }) + ';\n');
@@ -760,7 +827,9 @@ async function main() {
      ⇒ a unit its own upstream never dated takes the LATEST inception stated by a unit of the same
      country. That is the weakest claim the set supports — «by this date every member that states a
      date had been established» — and it can never draw a unit before its own stated date, because
-     it is the maximum of them. For Japan it is 1888-12-03, the day Kagawa separated from Ehime and
+     it is the maximum of them. (hist-fill-never-whole) Precisely, it is the first date on which every
+     dated member has a stated life in force (`setFloorOf`): the same date wherever each code has one
+     life, and the predecessors' window where a reform reused codes (Latvia 2011-01-01, not 2021-07-01). For Japan it is 1888-12-03, the day Kagawa separated from Ehime and
      the 47-prefecture set took the extent it still has.
      ⚠ THE GUARD IS THAT THE SET MUST ACTUALLY BE DATED: at least three units and at least half of
      them. Turkey states 7 of 81 and stays refused; France 95 of 101 and Japan 27 of 47 pass.
@@ -770,17 +839,16 @@ async function main() {
   const setFloor = new Map();
   for (const [iso3, c] of byCountry) {
     if (c.dated < SET_FLOOR_MIN || c.dated * 2 < c.all.length) continue;
-    let latest = null;
-    for (const u of c.all) if (u.wd && (latest == null || u.wd.s > latest)) latest = u.wd.s;
+    const latest = setFloorOf(c.all.filter((u) => u.wd).map((u) => u.wd));
     if (latest != null) setFloor.set(iso3, latest);
   }
   let floored = 0;
   for (const [iso3, c] of byCountry) {
     const f = setFloor.get(iso3);
     if (f == null) continue;
-    for (const u of c.all) if (!u.wd) { u.wd = { s: f, e: null, derived: 'the latest inception stated by a unit of the same country' }; c.dated++; floored++; }
+    for (const u of c.all) if (!u.wd) { u.wd = { s: f, e: null, derived: 'the first date every dated unit of the same country is in force' }; c.dated++; floored++; }
   }
-  console.error('· set floor: ' + setFloor.size + ' country(ies) date their own undated units from their latest stated inception (' + floored + ' unit(s))');
+  console.error('· set floor: ' + setFloor.size + ' country(ies) date their own undated units from the first date their dated set is in force (' + floored + ' unit(s))');
 
   const admitted = [], refusedPartial = [], refusedNoFloor = [], refusedNoId = [];
   /* ══ (hist-coverage) A COUNTRY THIS RECORD DOES NOT ANSWER IS A HOLE, AND A HOLE STATES ITS REASON ══
@@ -845,9 +913,13 @@ async function main() {
       for (const poly of polys) { const b = bbox(poly[0]); mnx = Math.min(mnx, b[0]); mny = Math.min(mny, b[1]); mxx = Math.max(mxx, b[2]); mxy = Math.max(mxy, b[3]); }
       const box = [mnx, mny, mxx, mxy];
 
-      const start = Math.max(u.wd.s, setFloor.get(iso3), ymd(era.floor, 1, 1));   /* (#R730) the set's floor, not the constitution's */
-      const end = u.wd.e == null ? ymd(9999, 1, 1) : u.wd.e;
-      if (end <= start) { stats.droppedEmpty++; continue; }
+      /* (#R730) the set's floor, not the constitution's — (hist-fill-never-whole) applied to each of the code's
+         lives: one per Wikidata item that holds it (`wikidataSpans`). Where they are several, the set decides
+         which one this outline is, through the whole-country intersection below. */
+      const lo = Math.max(setFloor.get(iso3), ymd(era.floor, 1, 1));
+      const lives = (u.wd.lives || [u.wd]).map((l) => ({ qid: l.qid, start: Math.max(l.s, lo), end: l.e == null ? ymd(9999, 1, 1) : l.e }))
+        .filter((l) => l.start < l.end);
+      if (!lives.length) { stats.droppedEmpty++; continue; }
 
       /* test 3 — evaluated exactly once per interval on which the era map cannot change here.
          ⚠ THE POINT-IN-POLYGON WORK IS DONE ONCE PER (point, polity), NOT ONCE PER INTERVAL. The
@@ -860,69 +932,96 @@ async function main() {
         let n = 0; for (let i = 0; i < mask.length; i++) n += mask[i];
         return { n, mask };
       });
-      const bps = new Set();
-      for (const eu of near) { if (eu.s > start && eu.s < end) bps.add(eu.s); if (eu.e > start && eu.e < end) bps.add(eu.e); }
-      if (era.present > start && era.present < end) bps.add(era.present);
+      const edgeMemo = new Map();
       let alive = [];
       /* (hist-coverage-depth) the intervals on which the era record places NONE of this ground */
       const silent = [];
       /* ⚠ the first interval has nothing behind it, so «no record answers» means «not drawn» there
          — the fill never starts on a date the era record is silent about. */
-      let lastVerdict = false;
-      let cur = start;
-      for (const stop of [...bps].sort((a, b) => a - b).concat([end])) {
-        const inForce = [];
-        for (let k = 0; k < near.length; k++) if (near[k].s <= cur && near[k].e > cur && hitsOf[k].n) inForce.push(k);
-        let located = 0, best = 0;
-        const claimed = new Uint8Array(pts.length);
-        for (const k of inForce) {
-          let own = 0;
-          const mask = hitsOf[k].mask;
-          for (let i = 0; i < pts.length; i++) if (mask[i]) { own++; if (!claimed[i]) { claimed[i] = 1; located++; } }
-          if (own > best) best = own;
+      for (const { start, end } of lives) {
+        const bps = new Set();
+        for (const eu of near) { if (eu.s > start && eu.s < end) bps.add(eu.s); if (eu.e > start && eu.e < end) bps.add(eu.e); }
+        if (era.present > start && era.present < end) bps.add(era.present);
+        let lastVerdict = false;
+        let cur = start;
+        for (const stop of [...bps].sort((a, b) => a - b).concat([end])) {
+          const inForce = [];
+          for (let k = 0; k < near.length; k++) if (near[k].s <= cur && near[k].e > cur) inForce.push(k);   /* (hist-fill-never-whole) a polity holding none of the points can still touch their cells */
+          let located = 0, best = 0;
+          const claimed = new Uint8Array(pts.length);
+          const own = new Map();
+          for (const k of inForce) {
+            let n = 0;
+            const mask = hitsOf[k].mask;
+            for (let i = 0; i < pts.length; i++) if (mask[i]) { n++; if (!claimed[i]) { claimed[i] = 1; located++; } }
+            own.set(k, n);
+          }
+          /* ══ ⚠⚠ (hist-fill-never-whole) A SAMPLE POINT STANDS FOR ITS CELL, AND A CELL THE POLITY TOUCHES IS PLACED ══
+             The lattice is GRID degrees apart, so each point answers for a GRID-wide cell around it. A point that
+             falls just outside every polity's edge — the era outline's coast drawn a few hundred metres inland of
+             Natural Earth's — is a point whose CELL the polity still covers in part: at the scale this test
+             measures, that ground is placed. MEASURED 2026-10-05 (`--only LVA --diagnose`): Carnikava (LV-020), a
+             strip of the Gulf of Riga's shore, is sampled on TWO lattice points; one sits 0.2 km outside CShapes'
+             Latvian coast, so it read `located 50%`, fell under LOCATED_MIN on every date 2011-2019, and withheld
+             all 119 of Latvia's units. ⇒ a point no polity holds is placed in the NEAREST in-force polity whose edge
+             passes within half a cell (GRID / 2) of it — the inscribed half-cell, so a cell touched only at its
+             corner still reads as unplaced. A point farther than that is still unplaced, and the straddle test
+             still decides between polities. Distances are asked lazily, only of points left unclaimed. */
+          for (let i = 0; i < pts.length; i++) {
+            if (claimed[i]) continue;
+            let nk = -1, nd = Infinity;
+            for (const k of inForce) {
+              const key = k * pts.length + i;
+              let d = edgeMemo.get(key);
+              if (d === undefined) { d = edgeDistance(near[k].polys, pts[i][0], pts[i][1], GRID / 2); edgeMemo.set(key, d); }
+              if (d < nd) { nd = d; nk = k; }
+            }
+            if (nk >= 0) { claimed[i] = 1; located++; own.set(nk, own.get(nk) + 1); }
+          }
+          for (const n of own.values()) if (n > best) best = n;
+          /* ══ ⚠⚠⚠ A SEAM IN THE RECORD IS NOT A STATEMENT ABOUT THE LAND ════════════════════════
+             MEASURED on Sweden (`--only SWE --diagnose`): the intervals this test was throwing away
+             were `1719..1719`, `1814..1814`, `1905..1905` and `2019..9999` — a day at the Treaty of
+             Nystad, a day at the Treaty of Kiel, a day at the dissolution of the union, and every
+             date after data/cshapes.js's window ends. On those the era record places NOTHING here
+             (`located` is 0), which is not «this ground was somewhere else»: it is «no record covers
+             this instant». Withholding on it was withholding on the record's own seams, and it is
+             how the first build lost 16 of its 25 countries — one unit failing at one instant empties
+             the whole country's intersection.
+             So a verdict is only ever formed where the record ANSWERS. Where it says nothing, the
+             last verdict it did give stands. ⚠ That is not an assumption about the world: the first
+             interval of every unit begins at the LATER of its own stated inception and its COUNTRY's
+             (test 2), so an unanswered interval can never carry a verdict from before either. */
+          /* ══ ⚠⚠ (hist-coverage-depth) AFTER THE ERA RECORD ENDS, THE PAGE DRAWS THE PRESENT-DAY MAP ══
+             js/time-borders.js keeps the MODERN borders for every date after CShapes' window, and this
+             outline set IS the present-day map's first level: on those dates the ground is in this unit's
+             own country by the definition of the set, not by a guess. MEASURED 2026-10-05
+             (`--only IND --diagnose`): India's set is complete only from 2020-01-26 (Dadra and Nagar Haveli
+             and Daman and Diu), every one of its 36 units' first interval began after 2019-12-31, met
+             «no record answers» with nothing behind it, and India was refused whole on every date. */
+          const present = cur >= era.present;
+          /* ⚠ (hist-coverage-depth) A UNIT SMALLER THAN THE SAMPLE GRID IS SAMPLED ON ITS OWN VERTICES — on
+             its boundary — and for a coastal one about half of those lie in the sea of the coarser era
+             outline (19.4 points per degree against the unit's ~100) by construction, not by history.
+             MEASURED 2026-10-05 (`--only AUS --diagnose`): Jervis Bay Territory (0.16° × 0.08°, nine
+             vertices) read `located 50% straddle 0%` on every date 1915-2019 and withheld all of
+             Australia. LOCATED_MIN is a share of an INTERIOR lattice; on a boundary sample the era record
+             answers as soon as it places any of it, and the straddle test below still decides. */
+          const answered = present || (located > 0 && (pts.vertex || located / pts.length >= LOCATED_MIN));
+          const ok = present ? true : answered ? (located - best) / located <= STRADDLE_MAX : lastVerdict;
+          if (!ok && !present && located === 0) silent.push([cur, stop]);
+          if (DIAG) console.error('    ' + u.code + ' ' + splitYmd(cur)[0] + '..' + splitYmd(stop)[0]
+            + ' located ' + (located / pts.length * 100).toFixed(0) + '% straddle '
+            + (located ? ((located - best) / located * 100).toFixed(0) : '—') + '% ' + (ok ? 'KEEP' : 'drop'));
+          if (answered) lastVerdict = ok;
+          if (ok) alive.push([cur, stop]);
+          else if (!answered) stats.droppedUnlocated++;
+          else stats.droppedStraddle++;
+          cur = stop;
         }
-        /* ══ ⚠⚠⚠ A SEAM IN THE RECORD IS NOT A STATEMENT ABOUT THE LAND ════════════════════════
-           MEASURED on Sweden (`--only SWE --diagnose`): the intervals this test was throwing away
-           were `1719..1719`, `1814..1814`, `1905..1905` and `2019..9999` — a day at the Treaty of
-           Nystad, a day at the Treaty of Kiel, a day at the dissolution of the union, and every
-           date after data/cshapes.js's window ends. On those the era record places NOTHING here
-           (`located` is 0), which is not «this ground was somewhere else»: it is «no record covers
-           this instant». Withholding on it was withholding on the record's own seams, and it is
-           how the first build lost 16 of its 25 countries — one unit failing at one instant empties
-           the whole country's intersection.
-           So a verdict is only ever formed where the record ANSWERS. Where it says nothing, the
-           last verdict it did give stands. ⚠ That is not an assumption about the world: the first
-           interval of every unit begins at the LATER of its own stated inception and its COUNTRY's
-           (test 2), so an unanswered interval can never carry a verdict from before either. */
-        /* ══ ⚠⚠ (hist-coverage-depth) AFTER THE ERA RECORD ENDS, THE PAGE DRAWS THE PRESENT-DAY MAP ══
-           js/time-borders.js keeps the MODERN borders for every date after CShapes' window, and this
-           outline set IS the present-day map's first level: on those dates the ground is in this unit's
-           own country by the definition of the set, not by a guess. MEASURED 2026-10-05
-           (`--only IND --diagnose`): India's set is complete only from 2020-01-26 (Dadra and Nagar Haveli
-           and Daman and Diu), every one of its 36 units' first interval began after 2019-12-31, met
-           «no record answers» with nothing behind it, and India was refused whole on every date. */
-        const present = cur >= era.present;
-        /* ⚠ (hist-coverage-depth) A UNIT SMALLER THAN THE SAMPLE GRID IS SAMPLED ON ITS OWN VERTICES — on
-           its boundary — and for a coastal one about half of those lie in the sea of the coarser era
-           outline (19.4 points per degree against the unit's ~100) by construction, not by history.
-           MEASURED 2026-10-05 (`--only AUS --diagnose`): Jervis Bay Territory (0.16° × 0.08°, nine
-           vertices) read `located 50% straddle 0%` on every date 1915-2019 and withheld all of
-           Australia. LOCATED_MIN is a share of an INTERIOR lattice; on a boundary sample the era record
-           answers as soon as it places any of it, and the straddle test below still decides. */
-        const answered = present || (located > 0 && (pts.vertex || located / pts.length >= LOCATED_MIN));
-        const ok = present ? true : answered ? (located - best) / located <= STRADDLE_MAX : lastVerdict;
-        if (!ok && !present && located === 0) silent.push([cur, stop]);
-        if (DIAG) console.error('    ' + u.code + ' ' + splitYmd(cur)[0] + '..' + splitYmd(stop)[0]
-          + ' located ' + (located / pts.length * 100).toFixed(0) + '% straddle '
-          + (located ? ((located - best) / located * 100).toFixed(0) : '—') + '% ' + (ok ? 'KEEP' : 'drop'));
-        if (answered) lastVerdict = ok;
-        if (ok) alive.push([cur, stop]);
-        else if (!answered) stats.droppedUnlocated++;
-        else stats.droppedStraddle++;
-        cur = stop;
       }
       /* merge the intervals the era map happened to split but the verdict did not */
-      alive = alive.reduce((acc, iv) => { const last = acc[acc.length - 1]; if (last && last[1] === iv[0]) last[1] = iv[1]; else acc.push(iv.slice()); return acc; }, []);
+      alive = union(alive, []);
       /* ══ ⚠⚠⚠ (hist-coverage-depth) GROUND NO POLITY IS DRAWN ON CANNOT MAKE A COUNTRY LOOK PARTIAL ══
          The whole-country rule exists for what the reader SEES: a country drawn with provinces over
          part of it. Where the era record places none of a unit's ground, the reader sees no country
@@ -958,7 +1057,7 @@ async function main() {
       const cover = union(shown, silent);
       if (!cover.length) continue;
 
-      live.push({ u, polys, alive, shown, cover, answeredIv });
+      live.push({ u, polys, lives, alive, shown, cover, answeredIv });
     }
 
     /* ══ ⚠⚠⚠ THE WHOLE-COUNTRY RULE IS ABOUT THE OUTPUT, NOT THE INPUT ════════════════════════
@@ -988,12 +1087,22 @@ async function main() {
       const ringIx = L.polys.map((poly) => poly.map(poolRing));
       const en = L.u.f.n.split('|')[0];
       stats.units++;
-      for (const [s, e] of spans) {
-        const [sy, sm, sd] = splitYmd(s), [ey, em, ed] = splitYmd(e);
-        pending.push({ qid: L.u.wd.qid, row: [en, 4, sy, sm, sd, ey, em, ed, ringIx, { en }, L.u.code, iso3] });
-        stats.rows++;
+      /* (hist-fill-never-whole) a row is one life's: it is cut where the item holding the code changes, and
+         named by THAT item — Ludza Municipality 2009 and the Ludza Municipality of 2021 are two items with
+         two sets of labels. Where two items' lives overlap, the later-founded one answers for the overlap. */
+      let rest = spans;
+      for (const life of [...L.lives].sort((a, b) => b.start - a.start)) {
+        const mine = intersect(rest, [[life.start, life.end]]);
+        if (!mine.length) continue;
+        for (const iv of mine) rest = subtract(rest, iv);
+        const qid = life.qid || L.u.wd.qid;
+        for (const [s, e] of mine) {
+          const [sy, sm, sd] = splitYmd(s), [ey, em, ed] = splitYmd(e);
+          pending.push({ qid, row: [en, 4, sy, sm, sd, ey, em, ed, ringIx, { en }, L.u.code, iso3] });
+          stats.rows++;
+        }
+        qids.push(qid);
       }
-      qids.push(L.u.wd.qid);
     }
   }
 
@@ -1026,6 +1135,7 @@ async function main() {
        no country is drawn over them, so they are not a hole in one. `--check` re-verifies it. */
     unplaced: [...unplaced].filter((c) => !drawnCodes.has(c) && !deferred.has(c)).sort(),
     inception: inceptionOf(admitted, byCountry, spans),
+    lives: livesOfCodes(admitted, byCountry, spans),
     /* (hist-coverage) the units dated through their HASC code rather than their ISO 3166-2 one */
     inceptionVia: inceptionViaOf(admitted, byCountry, spans),
     /* (hist-coverage) every country of the outline set this record does not draw, and why */
