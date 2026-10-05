@@ -602,12 +602,21 @@ export function windowManager(HOST){
          jumped half its width and drifted while resizing. Neutralise the transform + bottom/right anchors first,
          pin to the exact on-screen box, then read the transform-free offset. */
       panel.style.setProperty('transform','none','important'); panel.style.setProperty('right','auto','important'); panel.style.setProperty('bottom','auto','important');
+      /* (compare-window-bounds) the width/height written below are the OUTER box measured above; on a content-box window
+         they grew it by its border on every grab (measured on the compare window: +2 px per press) */
+      panel.style.setProperty('box-sizing','border-box','important');
       panel.style.setProperty('left',(r.left-opr.left)+'px','important'); panel.style.setProperty('top',(r.top-opr.top)+'px','important');
       const sx=e.clientX, sy=e.clientY, sw=r.width, sh=r.height, sl=panel.offsetLeft, st=panel.offsetTop;
       try{ panel.setPointerCapture&&panel.setPointerCapture(e.pointerId); }catch(_){}
+      /* (compare-window-bounds) THE EDGE STOPS AT THE SCREEN. A dragged edge could carry the window past the viewport, where
+         the edge — the only handle that could bring it back — was then off-screen too. The bounds are the offset
+         parent's box (the viewport for a fixed window); `opts.bounds()` narrows a side (the compare window's left edge
+         stops at the sidebar). The minimum size still wins over a bound too tight for it. */
+      let B={l:0,t:0,r:op.clientWidth||window.innerWidth,b:op.clientHeight||window.innerHeight};
+      try{ if(typeof opts.bounds==='function') B=Object.assign(B,opts.bounds()||{}); }catch(_){}
       const mv=(ev)=>{ let w=sw,h=sh,l=sl,t=st; const dx=ev.clientX-sx, dy=ev.clientY-sy;
-        if(d.indexOf('e')>=0) w=Math.max(minW,sw+dx); if(d.indexOf('s')>=0) h=Math.max(minH,sh+dy);
-        if(d.indexOf('w')>=0){ w=Math.max(minW,sw-dx); l=sl+(sw-w); } if(d.indexOf('n')>=0){ h=Math.max(minH,sh-dy); t=st+(sh-h); }
+        if(d.indexOf('e')>=0) w=Math.max(minW,Math.min(sw+dx,B.r-sl)); if(d.indexOf('s')>=0) h=Math.max(minH,Math.min(sh+dy,B.b-st));
+        if(d.indexOf('w')>=0){ w=Math.max(minW,Math.min(sw-dx,sl+sw-B.l)); l=sl+(sw-w); } if(d.indexOf('n')>=0){ h=Math.max(minH,Math.min(sh-dy,st+sh-B.t)); t=st+(sh-h); }
         panel.style.setProperty('width',w+'px','important'); panel.style.setProperty('height',h+'px','important');
         panel.style.setProperty('left',l+'px','important'); panel.style.setProperty('top',t+'px','important'); panel.setAttribute('data-dragged','1'); _geoBump(); };   /* (#R311) …and the same for the resize */
       const up=(ev)=>{ delete panel.dataset.resizing; try{ panel.releasePointerCapture&&panel.releasePointerCapture(ev.pointerId); }catch(_){} document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); panel.style.cursor=''; _geoBump(); };
