@@ -588,18 +588,42 @@ export function newsTimeline(HOST){
        about.html promises «Every year of the world, on one map», and the first screen said so with a 23 px
        clock in a corner: nothing on it told a new reader that the map is not only today's. So the COLLAPSED
        entry carries the axis itself — a short rail beside the button, from the kernel's floor to now, with a
-       few marks on it and a dot where the map is. A mark is a jump: it writes the master clock exactly as the
-       Year slider does (setYear, or setNow for «Now»), so the map, the button's own label and its accent all
+       few marks on it and a dot where the map is. A mark is an exact jump, and the rail between the marks is
+       SCRUBBABLE — by drag and by wheel — (「Chronosボタンでスクロールするときに、1900や1600、123000BCといった目盛りの
+       或る年代にしか離散的にしかスクラブできないのは不便。」). Every route writes the master clock through the ONE
+       rule the Year slider uses (`writeYearAtPos`: setYear, or setNow at the end), so the map, the button's own label and its accent all
        follow through the one subscriber below (refreshUI), and nothing here keeps a second idea of the year.
        ⚠ NOTHING IS INVENTED HERE. The ends are the kernel's (`YMIN()`, `curY`), the positions are the rail's
        own mapping (`y2p`, js/hist-scale.js — the same one the slider uses, so a mark sits where the slider would
        put that year), and the marks are `niceTicks` — the derivation the ruler above already uses, asked for
        a handful instead of sixty-four. No list of «interesting years» to maintain (#R349, #R679).
        ⚠ NOT A POP-UP AND NOT A CARD (#R104 retired the welcome card on the reader's instruction): it opens
-       nothing, it moves nothing until it is pressed, and it is part of the button the reader already had.
+       nothing, it moves nothing until it is pressed, dragged or wheeled, and it is part of the button the reader already had.
        ⚠ Desktop only, by the stylesheet: on a phone the collapsed entry is the sheet head's clock (mobile-shell). */
     const peek=document.getElementById('ntl-peek');
     let _peekHere=null;
+    /* the ONE rule that turns a rail position into a write on the master clock — the Year slider's 'input' handler
+       and the peek rail both go through it (one judgment, one place) */
+    function writeYearAtPos(p){ const y=p2y(p); if(y>=curY) IntMapTime.setNow({source:'ui'}); else if(y>=YMIN()) IntMapTime.setYear(y,{source:'ui'}); return y; }
+    /* one write per animation frame: a pointer or wheel burst keeps only its latest position */
+    let _pkScrubbed=false, _pkPos=null, _pkRaf=0, _pkLast=null, _pkFloat=null;
+    function peekWrite(p){ _pkPos=p; if(_pkRaf) return; _pkRaf=requestAnimationFrame(()=>{ _pkRaf=0; const q=_pkPos; _pkPos=null; if(q==null) return;
+      try{ _pkLast=Math.min(writeYearAtPos(q),curY); }catch(_){} }); }
+    /* the float position behind the wheel: the clock holds integer years, so small deltas accumulate here; it is
+       re-read from the clock whenever the clock moved for any other reason than our last write */
+    function peekFloat(){ let e=null; try{ e=IntMapTime.state(); }catch(_){}
+      const clockY=e?(e.isLive?curY:e.year):null;   /* a write still waiting for its frame is ours too */
+      if(_pkFloat==null||(!_pkRaf&&clockY!==_pkLast)){ _pkFloat=e?(e.isLive?YPOS:y2p(e.year)):0; _pkLast=null; }
+      return _pkFloat; }
+    const peekClamp=p=>Math.max(0,Math.min(YPOS,p));
+    if(peek) peek.addEventListener('wheel',ev=>{ ev.preventDefault(); ev.stopPropagation();
+      const tr=peek.querySelector('.ntl-peek-track'), w=tr&&tr.getBoundingClientRect().width; if(!(w>0)) return;
+      let d=ev.deltaY||ev.deltaX; if(ev.deltaMode===1) d*=16;   /* lines → px */
+      /* 0.25 = how far a wheel pixel travels, as a fraction of a track pixel. ESTIMATE, not measured on a device: a 100 px notch
+         then moves 25 px of track (~7% of a 360 px rail), slow enough to stop on one year in the dense recent part of the
+         rail and still cross the whole rail in about 14 notches. Lapses when the rail's width or a device's notch size
+         changes — retune against a real mouse and trackpad. */
+      _pkFloat=peekClamp(peekFloat()+d*YPOS/w*0.25); peekWrite(_pkFloat); },{passive:false});
     /* `nowT` is buildScale's own «Now» — the word the ruler under the slider already ends on */
     function buildPeek(nowT){ if(!peek) return;
       const lo=YMIN();
@@ -611,12 +635,28 @@ export function newsTimeline(HOST){
       const track=document.createElement('div'); track.className='ntl-peek-track';
       const mk=(key,label,p,go)=>{ const b=document.createElement('button'); b.type='button'; b.className='ntl-peek-m';
         b.dataset.year=key; b.style.setProperty('--p',pct(p)); b.textContent=label; b.title=label;
-        b.addEventListener('click',ev=>{ ev.stopPropagation(); go(); }); track.appendChild(b); };
+        b.addEventListener('click',ev=>{ ev.stopPropagation(); if(_pkScrubbed){ _pkScrubbed=false; return; } go(); });   /* a scrub must not end in a mark's click: it would snap back to that mark's year */ track.appendChild(b); };
       marks.forEach(y=>mk(String(y),yLabel(y),y2p(y),()=>IntMapTime.setYear(y,{source:'ui'})));
       mk('now',nowT,YPOS,()=>IntMapTime.setNow({source:'ui'}));
       _peekHere=document.createElement('span'); _peekHere.className='ntl-peek-here'; _peekHere.setAttribute('aria-hidden','true');
       track.appendChild(_peekHere);
       peek.replaceChildren(track);
+      /* DRAG / PRESS on the rail. A press that never moves ≥3 px is a click: on a mark that mark's own exact jump runs
+         (not written twice here); on bare track it jumps to where it was pressed. ≥3 px makes it a scrub. */
+      let down=null;
+      const posOf=ev=>{ const r=track.getBoundingClientRect(); return r.width>0?peekClamp((ev.clientX-r.left)/r.width*YPOS):0; };
+      track.addEventListener('pointerdown',ev=>{ if(ev.button>0||ev.isPrimary===false) return; ev.stopPropagation();
+        down={ id:ev.pointerId, x:ev.clientX, onMark:!!(ev.target.closest&&ev.target.closest('.ntl-peek-m')), moved:false }; _pkScrubbed=false; });
+      track.addEventListener('pointermove',ev=>{ if(!down||ev.pointerId!==down.id) return; ev.stopPropagation();
+        if(!down.moved){ if(Math.abs(ev.clientX-down.x)<3) return; down.moved=true; _pkScrubbed=true; peek.classList.add('scrub');
+          try{ track.setPointerCapture(ev.pointerId); }catch(_){} }
+        _pkFloat=posOf(ev); peekWrite(_pkFloat); });
+      const end=(ev,cancel)=>{ if(!down||ev.pointerId!==down.id) return; ev.stopPropagation(); const d=down; down=null; peek.classList.remove('scrub');
+        if(!d.moved&&!d.onMark&&!cancel){ _pkFloat=posOf(ev); peekWrite(_pkFloat); }
+        if(_pkScrubbed) setTimeout(()=>{ _pkScrubbed=false; },0); };
+      track.addEventListener('pointerup',ev=>end(ev,false));
+      track.addEventListener('pointercancel',ev=>end(ev,true));
+      track.addEventListener('lostpointercapture',ev=>end(ev,true));
       try{ placePeek(IntMapTime.state()); }catch(_){}
       thinPeek(); }
     /* where the map is on the rail — the same position the Year slider would show for this instant */
@@ -780,7 +820,7 @@ export function newsTimeline(HOST){
        「時刻」 tab, which is where the model's transport now lives (「わざわざ分けるな」, twice over) */
     window._imTimeMachineForecast=()=>{ try{ tl.classList.remove('collapsed'); localizeChrome(); applyMode('time'); lapseMount(); }catch(_){} };
     slider.addEventListener('input',()=>{ if(_self) return;
-      if(mode==='year'){ const y=p2y(parseInt(slider.value,10)); if(y>=curY) IntMapTime.setNow({source:'ui'}); else if(y>=YMIN()) IntMapTime.setYear(y,{source:'ui'}); }
+      if(mode==='year'){ writeYearAtPos(parseInt(slider.value,10)); }
       else if(mode==='time'){ _applyTimeOfDay(parseInt(slider.value,10)||0); }   /* (#R137) minutes-of-day → clock */
       else { IntMapTime.setDaysAgo(3650-parseInt(slider.value,10),{source:'ui'}); } });
     if(datePicker) datePicker.addEventListener('change',()=>{ if(_self) return; if(!datePicker.value){ IntMapTime.setNow({source:'ui'}); } else { const d=new Date(datePicker.value+'T00:00:00'); if(!isNaN(d.getTime())) IntMapTime.set(d,{source:'ui'}); } });
